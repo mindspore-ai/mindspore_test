@@ -27,7 +27,7 @@ from mindspore._checkparam import is_stub_tensor
 from mindspore._c_expression import TraceRecorder as tr
 from mindspore._c_expression import JitExecutor_
 from mindspore._c_expression import TensorNode
-from mindspore._c_expression import Tensor, CSRTensor, COOTensor
+from mindspore._c_expression import TensorPy as Tensor, CSRTensor, COOTensor
 
 
 class TraceJitContext(JitContext):

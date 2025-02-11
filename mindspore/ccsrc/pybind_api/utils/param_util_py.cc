@@ -15,31 +15,39 @@
  */
 #include <utility>
 #include <vector>
+#include <algorithm>
 #include "ir/anf.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/ms_context.h"
 #include "include/common/pybind_api/api_register.h"
+#include "include/common/utils/tensor_py.h"
 #include "runtime/device/multi_stream_controller.h"
 
 namespace mindspore {
 namespace {
-int SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) {
+int SendRecv(const std::vector<tensor::TensorPyPtr> &params, int src_rank, int dst_rank) {
   const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   auto device_ctx = device::DeviceContextManager::GetInstance().GetDeviceContext(device_name);
   MS_EXCEPTION_IF_NULL(device_ctx);
   MS_EXCEPTION_IF_NULL(device_ctx->device_res_manager_);
   device::DeviceContextManager::GetInstance().SyncAllStreams();
-  return device_ctx->device_res_manager_->SendRecv(params, src_rank, dst_rank);
+  tensor::TensorPtrList params_;
+  (void)std::transform(params.begin(), params.end(), std::back_inserter(params_),
+                       [](const tensor::TensorPyPtr &p) { return p->GetTensor(); });
+  return device_ctx->device_res_manager_->SendRecv(params_, src_rank, dst_rank);
 }
 
-int ResetParams(const std::vector<tensor::TensorPtr> &params) {
+int ResetParams(const std::vector<tensor::TensorPyPtr> &params) {
   const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   auto device_ctx = device::DeviceContextManager::GetInstance().GetDeviceContext(device_name);
   MS_EXCEPTION_IF_NULL(device_ctx);
   MS_EXCEPTION_IF_NULL(device_ctx->device_res_manager_);
   device::DeviceContextManager::GetInstance().SyncAllStreams();
-  return device_ctx->device_res_manager_->ResetParams(params);
+  tensor::TensorPtrList params_;
+  (void)std::transform(params.begin(), params.end(), std::back_inserter(params_),
+                       [](const tensor::TensorPyPtr &p) { return p->GetTensor(); });
+  return device_ctx->device_res_manager_->ResetParams(params_);
 }
 }  // namespace
 

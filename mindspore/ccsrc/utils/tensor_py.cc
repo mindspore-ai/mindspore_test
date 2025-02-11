@@ -311,6 +311,65 @@ bool TensorPy::HasAutoGrad() const { return GetBaseTensor()->HasAutoGrad(); }
 
 bool TensorPy::NeedContiguous() const { return GetBaseTensor()->NeedContiguous(); }
 
+const py::object TensorPy::GetGrad() const {
+  if (!grad_.check() || grad_.is_none()) {
+    return py::none();
+  }
+  return grad_;
+}
+
+void TensorPy::SetGrad(const py::object &grad) { grad_ = grad; }
+
+const py::object TensorPy::GetGradFn() const {
+  if (!grad_fn_.check() || grad_fn_.is_none()) {
+    return py::none();
+  }
+  return grad_fn_;
+}
+
+void TensorPy::SetGradFn(const py::object &grad_fn) { grad_fn_ = grad_fn; }
+
+const py::object TensorPy::GetRequiresGrad() const {
+  if (!requires_grad_.check() || requires_grad_.is_none()) {
+    return py::none();
+  }
+  return requires_grad_;
+}
+
+void TensorPy::SetRequiresGrad(const py::object &requires_grad) { requires_grad_ = requires_grad; }
+
+const py::object TensorPy::GetRetainGrad() const {
+  if (!retain_grad_.check() || retain_grad_.is_none()) {
+    return py::none();
+  }
+  return retain_grad_;
+}
+
+void TensorPy::SetRetainGrad(const py::object &retain_grad) { retain_grad_ = retain_grad; }
+
+const py::object TensorPy::GetSliceNumOfPersistentData() const {
+  if (!slice_num_of_persistent_data_.check() || slice_num_of_persistent_data_.is_none()) {
+    return py::none();
+  }
+  return slice_num_of_persistent_data_;
+}
+
+void TensorPy::SetSliceNumOfPersistentData(const py::object &slice_num_of_persistent_data) {
+  slice_num_of_persistent_data_ = slice_num_of_persistent_data;
+}
+
+const py::object TensorPy::GetSliceShapeOfPersistentData() const {
+  if (!slice_shape_of_persistent_data_.check() || slice_shape_of_persistent_data_.is_none()) {
+    return py::none();
+  }
+  return slice_shape_of_persistent_data_;
+}
+
+void TensorPy::SetSliceShapeOfPersistentData(const py::object &slice_shape_of_persistent_data) {
+  slice_shape_of_persistent_data_ = slice_shape_of_persistent_data;
+}
+
+/* =========================================== Common Function ================================================= */
 bool IsTensorPy(const py::handle &obj) { return py::isinstance<TensorPy>(obj); }
 
 const TensorPyPtr ConvertToTensorPy(const py::handle &obj) { return obj.cast<TensorPyPtr>(); }
@@ -323,6 +382,7 @@ const TensorPtr ConvertToTensor(const py::handle &obj) {
 
   return nullptr;
 }
+/* =========================================== Common Function ================================================= */
 
 }  // namespace tensor
 }  // namespace mindspore

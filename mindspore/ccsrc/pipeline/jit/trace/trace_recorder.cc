@@ -33,6 +33,7 @@
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/ps/static_analysis/prim.h"
 #include "frontend/operator/ops_front_infer_function.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace py = pybind11;
 namespace mindspore {
@@ -75,8 +76,8 @@ CNodePtr GenerateCNode(const FuncGraphPtr &func_graph, const PrimitivePtr &prim,
 }
 
 void SyncTensor(const py::object &obj) {
-  if (py::isinstance<tensor::Tensor>(obj)) {
-    const auto &tensor = py::cast<tensor::TensorPtr>(obj);
+  if (tensor::IsTensorPy(obj)) {
+    const auto &tensor = tensor::ConvertToTensor(obj);
     MS_EXCEPTION_IF_NULL(tensor);
     tensor->data_sync();
   } else if (py::isinstance<py::tuple>(obj)) {
@@ -299,6 +300,7 @@ AnfNodePtr TraceRecorder::ConvertParameterObj(const py::object &input_obj) {
   MS_LOG(DEBUG) << "Created a new weight parameter for " << top_func_graph->ToString() << ", param: " << param_name;
   return top_func_graph->AddFvParameter(param_name, value);
 }
+
 void TraceRecorder::NewFuncGraphNode(const py::tuple &info, const py::args &inputs) {
   const py::bool_ &is_nested = info[4];
   if (is_nested) {
@@ -320,7 +322,7 @@ void TraceRecorder::NewFuncGraphNode(const py::tuple &info, const py::args &inpu
   for (size_t i = 0; i < inputs.size(); ++i) {
     AnfNodePtr node;
     auto input_obj = inputs[i];
-    bool is_parameter = py::hasattr(input_obj, "__parameter__") && py::isinstance<tensor::MetaTensor>(input_obj);
+    bool is_parameter = py::hasattr(input_obj, "__parameter__") && tensor::IsTensorPy(input_obj);
     // When the input of a cnode is a weight, add it to the top graph.
     if (is_parameter) {
       node = ConvertParameterObj(input_obj);
@@ -356,7 +358,7 @@ void TraceRecorder::NewNode(const py::object &prim_obj, const py::object &prim_r
   for (size_t i = 0; i < inputs.size(); ++i) {
     AnfNodePtr node;
     auto input_obj = inputs[i];
-    bool is_parameter = py::hasattr(input_obj, "__parameter__") && py::isinstance<tensor::MetaTensor>(input_obj);
+    bool is_parameter = py::hasattr(input_obj, "__parameter__") && tensor::IsTensorPy(input_obj);
     // When the input of a cnode is a weight, add it to the top graph.
     if (is_parameter) {
       node = ConvertParameterObj(input_obj);
@@ -391,7 +393,7 @@ void TraceRecorder::NewNode(const py::object &prim_obj, const py::object &prim_r
 }
 
 AnfNodePtr TraceRecorder::GetNode(const py::object &obj, const DebugInfoPtr &debug_info, bool set_abstract) {
-  if (py::isinstance<tensor::MetaTensor>(obj)) {
+  if (tensor::IsTensorPy(obj)) {
     return GetTensorNode(obj, debug_info, set_abstract);
   } else if (py::isinstance<py::bool_>(obj)) {
     MS_LOG(DEBUG) << "Constant bool: " << py::str(obj);
@@ -462,7 +464,7 @@ AnfNodePtr TraceRecorder::GetNode(const py::object &obj, const DebugInfoPtr &deb
 
 AnfNodePtr TraceRecorder::GetTensorNode(const py::object &tensor_obj, const DebugInfoPtr &debug_info,
                                         bool set_abstract) {
-  const auto &tensor = tensor_obj.cast<tensor::TensorPtr>();
+  const auto &tensor = tensor::ConvertToTensor(tensor_obj);
   MS_EXCEPTION_IF_NULL(tensor);
   // Get the preceding CNode firstly.
   if (tensor->has_user_data("__node__")) {
@@ -529,8 +531,8 @@ AnfNodePtr TraceRecorder::GetListNode(const py::list &list_obj, const DebugInfoP
 
 void TraceRecorder::SetNode(const py::object &obj, const AnfNodePtr &node, const DebugInfoPtr &debug_info,
                             bool set_abstract) {
-  if (py::isinstance<tensor::MetaTensor>(obj)) {
-    const auto &tensor = obj.cast<tensor::TensorPtr>();
+  if (tensor::IsTensorPy(obj)) {
+    const auto &tensor = tensor::ConvertToTensor(obj);
     MS_EXCEPTION_IF_NULL(tensor);
     tensor->set_user_data<AnfNode>("__node__", node);
     MS_LOG(INFO) << "Set node to [" << py::str(obj.get_type()) << "] " << GetPyObjId(obj) << "/" << py::str(obj)
@@ -606,7 +608,7 @@ void TraceRecorder::SetTupleNode(const py::tuple &tuple_obj, const AnfNodePtr &n
   const auto &prim = GetCNodePrimitive(node);
   // It's mutable tuple.
   for (size_t i = 0; i < tuple_obj.size(); ++i) {
-    if (!IsMutable(tuple_obj) && !py::isinstance<tensor::MetaTensor>(tuple_obj[i])) {
+    if (!IsMutable(tuple_obj) && !tensor::IsTensorPy(tuple_obj[i])) {
       continue;
     }
     // Create Tuple GetItem CNode.
@@ -639,10 +641,10 @@ void TraceRecorder::SetListNode(const py::list &list_obj, const AnfNodePtr &node
 }
 
 void TraceRecorder::SyncTensorNode(const py::object &old_tensor_obj, const py::object &new_tensor_obj) {
-  if (!py::isinstance<tensor::MetaTensor>(old_tensor_obj) || !py::isinstance<tensor::MetaTensor>(new_tensor_obj)) {
+  if (!tensor::IsTensorPy(old_tensor_obj) || !tensor::IsTensorPy(new_tensor_obj)) {
     return;
   }
-  const auto &old_tensor = old_tensor_obj.cast<tensor::TensorPtr>();
+  const auto &old_tensor = tensor::ConvertToTensor(old_tensor_obj);
   MS_EXCEPTION_IF_NULL(old_tensor);
   if (!old_tensor->has_user_data("__node__")) {
     MS_LOG(INTERNAL_EXCEPTION) << "Has no node in tensor, [" << py::str(old_tensor_obj.get_type()) << "] "
@@ -650,7 +652,7 @@ void TraceRecorder::SyncTensorNode(const py::object &old_tensor_obj, const py::o
   }
   const auto &node = old_tensor->user_data<AnfNode>("__node__");
   MS_EXCEPTION_IF_NULL(node);
-  const auto &new_tensor = new_tensor_obj.cast<tensor::TensorPtr>();
+  const auto &new_tensor = tensor::ConvertToTensor(new_tensor_obj);
   MS_EXCEPTION_IF_NULL(new_tensor);
   new_tensor->set_user_data<AnfNode>("__node__", node);
   MS_LOG(DEBUG) << "Sync node from [" << py::str(old_tensor_obj.get_type()) << "] ptr: " << old_tensor.get() << " to ["
@@ -686,7 +688,8 @@ py::object TraceRecorder::InitTraceGraphInputs(const AbstractBasePtr &abs, const
     MS_EXCEPTION_IF_NULL(shape_ptr);
     auto shape_vec = shape_ptr->GetShapeVector();
     auto tensor_ptr = std::make_shared<tensor::Tensor>(type_id, shape_vec);
-    auto py_tensor = py::cast(tensor_ptr);
+    auto tensor_py = std::make_shared<tensor::TensorPy>(tensor_ptr);
+    auto py_tensor = py::cast(tensor_py);
     SetNode(py_tensor, param, param->debug_info());
     return py_tensor;
   } else {

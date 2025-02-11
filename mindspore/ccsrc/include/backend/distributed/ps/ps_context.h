@@ -23,6 +23,7 @@
 #include "include/backend/distributed/ps/constants.h"
 #include "include/backend/visible.h"
 #include "ir/tensor.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace ps {
@@ -126,10 +127,10 @@ class BACKEND_EXPORT PSContext {
 
   void set_checkpoint_load_status(bool status);
 
-  int32_t StoreWarmUpPtrByTensor(int32_t param_key, const tensor::TensorPtr &tensor_ptr);
+  int32_t StoreWarmUpPtrByTensor(int32_t param_key, const tensor::TensorPyPtr &tensorpy_ptr);
 
-  int32_t StoreWarmUpPtrByTensorList(int32_t param_key, const tensor::TensorPtr &key_ptr,
-                                     const tensor::TensorPtr &value_ptr, const tensor::TensorPtr &status_ptr);
+  int32_t StoreWarmUpPtrByTensorList(int32_t param_key, const tensor::TensorPyPtr &key_ptr,
+                                     const tensor::TensorPyPtr &value_ptr, const tensor::TensorPyPtr &status_ptr);
 
  private:
   PSContext();

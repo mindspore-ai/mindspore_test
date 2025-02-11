@@ -1007,8 +1007,6 @@ class MetaTensorData : public ItemData {
       tensor_ptr = tensor::ConvertToTensor(obj);
     } else if (py::isinstance<mindspore::tensor::MapTensor>(obj)) {
       tensor_ptr = py::cast<mindspore::tensor::MapTensorPtr>(obj);
-    } else {
-      tensor_ptr = py::cast<mindspore::tensor::MetaTensorPtr>(obj);
     }
     if (tensor_ptr != nullptr) {
       StoreTensor(tensor_ptr);
@@ -1174,7 +1172,7 @@ class TensorData : public MetaTensorData {
     } else if (py::isinstance<mindspore::tensor::MapTensor>(obj)) {
       tensor_ptr = py::cast<mindspore::tensor::MapTensorPtr>(obj);
     } else {
-      tensor_ptr = py::cast<mindspore::tensor::TensorPtr>(obj);
+      tensor_ptr = tensor::ConvertToTensor(obj);
     }
     if (tensor_ptr != nullptr) {
       if (OptStrategy::MakeCalcStrategyByShape(tensor_ptr->shape()) != OptStrategy::CalcKind::kCalcValue) {
@@ -1781,7 +1779,7 @@ template <typename T>
 ItemDataPtr CreateMutablePyData(PyObject *obj, bool need_specialize, int recurse_depth) {
   return std::make_shared<T>(obj, false, recurse_depth);
 }
-static bool CheckMetaTensorObject(PyObject *obj) { return py::isinstance<mindspore::tensor::MetaTensor>(obj); }
+static bool CheckMetaTensorObject(PyObject *obj) { return tensor::IsTensorPy(obj); }
 
 static bool CheckTensorObject(PyObject *obj) {
   return tensor::IsTensorPy(py::cast<py::object>(obj)) || IsStubTensor(py::cast<py::object>(obj));

@@ -112,21 +112,21 @@ namespace tensor {
 // Tensor python wrapper and adapter class.
 class TensorPybind {
  public:
-  // brief Create Tensor from a numpy array object.
-  //
-  // param input [py::array] Data value of the tensor.
-  // param data_type [TypeId] Data type of the tensor.
+  /// \brief Create Tensor from a numpy array object.
+  ///
+  /// \param[in] input [py::array] Data value of the tensor.
+  /// \param[in] type_ptr [TypePtr] Data type of the tensor.
   static TensorPtr MakeTensor(const py::array &input, const TypePtr &type_ptr = nullptr);
 
-  // brief Create Tensor from a numpy array without copy.
-  //
-  // param input [py::array] Data value of the tensor.
+  /// \brief Create Tensor from a numpy array without copy.
+  ///
+  /// \param[in] input [py::array] Data value of the tensor.
   static TensorPtr MakeTensorOfNumpy(const py::array &input);
 
-  // brief Create Tensor from a numpy array without copy, use persistent tensor data.
-  //
-  // param input [py::array] Data value of the tensor.
-  // param input [py::int_] slice num of data.
+  /// \brief Create Tensor from a numpy array without copy, use persistent tensor data.
+  ///
+  /// \param[in] input [py::array] Data value of the tensor.
+  /// \param[in] slice_num [py::int_] slice num of data.
   static TensorPtr MakePersistentDataTensorOfNumpy(const py::array &input, const py::int_ slice_num);
 
   static py::bytes GetBytes(const Tensor &tensor);
@@ -142,9 +142,9 @@ class TensorPybind {
 
   static py::array AsNumpy(const Tensor &tensor);
 
-  // brief Get slice data as numpy of tensor which use persistent tensor data.
-  //
-  // return [py::array] Slice Data of the tensor at slice_index.
+  /// \brief Get slice data as numpy of tensor which use persistent tensor data.
+  ///
+  /// \return [py::array] Slice Data of the tensor at slice_index.
   static py::array AsNumpyOfSlice(const Tensor &tensor, const int32_t param_key, int slice_index);
 
   static py::object TensorGetItem(const py::object &self, const py::object &py_index);
@@ -209,24 +209,108 @@ class RowTensorPy {
 
 class TensorPyImpl {
  public:
+  /// \brief Create a C++ Tensor.
+  ///
+  /// \param[in] input [py::dict] The input form python, as like: {"input_data": input_data, "dtype": dtype,
+  /// "init": init, "const_arg": const_arg, "device": device, "symbolic_shape": symbolic_shape}.
+  ///
+  /// \return A C++ Tensor.
   static TensorPtr InitTensor(const py::dict &input);
+
+  /// \brief Get the initialization form python.
+  ///
+  /// \param[in] input [py::dict] The input form python.
+  ///
+  /// \return The initialization.
   static py::object GetInitializerFromPython(const py::dict &input);
+
+  /// \brief Get the constant argument form python.
+  ///
+  /// \param[in] input [py::dict] The input form python.
+  ///
+  /// \return The constant argument.
   static bool GetConstArgFromPython(const py::dict &input);
+
+  /// \brief Get the device info form python.
+  ///
+  /// \param[in] input [py::dict] The input form python.
+  ///
+  /// \return The device info.
   static std::string GetDeviceFromPython(const py::dict &input);
+
+  /// \brief Get the dynamically optimize shape form python.
+  ///
+  /// \param[in] input [py::dict] The input form python.
+  ///
+  /// \return The dynamically optimize shape.
   static py::object GetSymbolicShapeFromPython(const py::dict &input);
+
+  /// \brief Get the type of Tensor form python.
+  ///
+  /// \param[in] input [py::dict] The input form python.
+  ////
+  /// \return The type of Tensor.
   static const TypePtr GetDtypeFromPython(const py::dict &input);
+
+  /// \brief Get the shape of Tensor form python.
+  ///
+  /// \param[in] input [py::dict] The input form python.
+  ///
+  /// \return The shape of Tensor.
   static const ShapeVector GetShapeFromPython(const py::dict &input);
+
+  /// \brief Create a TensorPy.
+  ///
+  /// \param[in] input [py::dict] The input form python.
+  ///
+  /// \return A TensorPy.
   static const TensorPyPtr InitTensorPy(const py::dict &input);
 
+  /// \brief  Create TensorPy from a numpy array without copy.
+  ///
+  /// \param[in] input [py::array] Data value of the tensorpy.
+  ///
+  /// \return This pointer address of TensorPy.
   static TensorPyPtr MakeTensorOfNumpy(const py::array &input);
+
+  /// \brief Create TensorPy from a numpy array without copy, use persistent tensor data.
+  ///
+  /// \param[in] input [py::array] Data value of the tensor.
+  /// \param[in] slice_num [py::int_] Slice num of data.
+  ///
+  /// \return This pointer address of TensorPy.
   static TensorPyPtr MakePersistentDataTensorOfNumpy(const py::array &input, const py::int_ slice_num);
+
+  /// \brief Convert python object to Tensor.
+  ///
+  /// \param[in] bytes_obj [py::bytes] Python object.
+  /// \param[in] dims [py::tuple] The demension.
+  /// \param[in] type_ptr [TypePtr] The data type.
+  ///
+  /// \return A created TensorPy.
   static TensorPyPtr ConvertBytesToTensor(const py::bytes &bytes_obj, const py::tuple &dims, const TypePtr &type_ptr);
+
+  /// \brief Release device address of graph output tensor by TensorPy.
+  ///
+  /// \param[in] tensorpy [TensorPyPtr] The TensorPy.
   static void SetOffload(const TensorPyPtr &tensorpy);
+
+  /// \brief Get Tensor data pointer for c++ type, and put it to py::bytes.
+  ///
+  /// \param[in] tensorpy [TensorPyPtr] The TensorPy.
+  ///
+  /// \return The pointer in the object.
   static py::bytes GetBytes(const TensorPyPtr &tensorpy);
+
+  /// \brief Convert asynchronous Tensor into numpy data.
+  ///
+  /// \param[in] tensorpy [TensorPyPtr] The TensorPy.
+  ///
+  /// \return The numpy data.
   static py::array SyncAsNumpy(const TensorPyPtr &tensorpy);
   static void FlushFromCache(const TensorPyPtr &tensorpy);
   static py::array AsNumpyOfSlice(const TensorPyPtr &tensorpy, const int32_t param_key, int slice_index);
-  static TensorPtr MoveTo(const TensorPyPtr &tensorpy, const std::string &to, bool blocking = True);
+  static TensorPyPtr MoveTo(const TensorPyPtr &tensorpy, const std::string &to, bool blocking = True);
   static void SetDeviceAddress(const TensorPyPtr &tensorpy, uintptr_t addr, const ShapeVector &shape,
                                const TypePtr type_ptr);
   static void SetUserData(const TensorPyPtr &tensorpy, const py::str &key, const py::object &value);
@@ -237,6 +321,9 @@ class TensorPyImpl {
   static py::list GetHooks(const TensorPyPtr &tensorpy);
   static uintptr_t DataPtr(const TensorPyPtr &tensorpy);
 
+  /// \brief Get a python Tensor.
+  ///
+  /// \return A python Tensor.
   static py::object GetPythonTensor();
 };
 

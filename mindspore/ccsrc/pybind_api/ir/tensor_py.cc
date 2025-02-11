@@ -965,9 +965,11 @@ py::array TensorPyImpl::AsNumpyOfSlice(const TensorPyPtr &tensorpy, const int32_
   return TensorPybind::AsNumpyOfSlice(*tensor, param_key, slice_index);
 }
 
-TensorPtr TensorPyImpl::MoveTo(const TensorPyPtr &tensorpy, const std::string &to, bool blocking) {
+TensorPyPtr TensorPyImpl::MoveTo(const TensorPyPtr &tensorpy, const std::string &to, bool blocking) {
   auto tensor = tensorpy->GetTensor().get();
-  return TensorPybind::MoveTo(*tensor, to, blocking);
+  auto to_tensor = TensorPybind::MoveTo(*tensor, to, blocking);
+  MS_EXCEPTION_IF_NULL(to_tensor);
+  return std::make_shared<TensorPy>(to_tensor);
 }
 
 void TensorPyImpl::SetDeviceAddress(const TensorPyPtr &tensorpy, uintptr_t addr, const ShapeVector &shape,
@@ -1033,18 +1035,78 @@ void RegTensorPyProperty(py::class_<TensorPy, std::shared_ptr<TensorPy>> *tensor
   tensor_class->def_property("__ms_parameter_output__", &TensorPy::IsMSParameterOutput,
                              &TensorPy::SetMSParameterOutput);
 
-  tensor_class->def_property_readonly("dtype", &TensorPy::GetDtype);
-  tensor_class->def_property_readonly("shape", &TensorPy::GetShape);
+  tensor_class->def_property_readonly("dtype", &TensorPy::GetDtype, "Get the MetaTensor's dtype.");
+  tensor_class->def_property_readonly("shape", &TensorPy::GetShape, "Get the MetaTensor's shape.");
   tensor_class->def_property("param_info", &TensorPy::GetParamInfo, &TensorPy::SetParamInfo);
 
   tensor_class->def_property("init_flag", &TensorPy::IsInit, &TensorPy::SetInitFlag);
   tensor_class->def_property("adapter_flag", &TensorPy::IsAdapter, &TensorPy::SetAdapterFlag);
-  tensor_class->def_property("_dtype", &TensorPy::GetDtype, &TensorPy::SetDtype);
+  tensor_class->def_property("_dtype", &TensorPy::GetDtype, &TensorPy::SetDtype, R"mydelimiter(
+                             Get the tensor's data type.
+
+                             Returns:
+                                 type, the data type of tensor.
+
+                             Examples:
+                                 >>> data = mindspore.Tensor(np.ones((2, 1), np.int32))
+                                 >>> data.dtype
+                                 Int32
+                             )mydelimiter");
   tensor_class->def_property("_shape", &TensorPy::GetPyTupleShape, &TensorPy::SetShape);
-  tensor_class->def_property_readonly("_size", &TensorPy::GetDataSize);
-  tensor_class->def_property_readonly("_itemsize", &TensorPy::GetPyItemSize);
-  tensor_class->def_property_readonly("_nbytes", &TensorPy::GetPyNBytes);
-  tensor_class->def_property_readonly("_strides", &TensorPy::GetPyTupleStrides);
+  tensor_class->def_property_readonly("_size", &TensorPy::GetDataSize, R"mydelimiter(
+                             Get tensor's data size.
+
+                             Returns:
+                                 size_t, the size of tensor.
+
+                             Examples:
+                                 >>> data = mindspore.Tensor(np.ones((2, 3)))
+                                 >>> data.size
+                                 6
+                             )mydelimiter");
+  tensor_class->def_property_readonly("_itemsize", &TensorPy::GetPyItemSize, R"mydelimiter(
+                             Get the tensor's length of one element in bytes.
+
+                             Returns:
+                                 itemsize, length of one element in bytes.
+
+                             Examples:
+                                 >>> data = mindspore.Tensor(np.ones((2, 1), np.int32))
+                                 >>> data.itemsize
+                                 4
+                             )mydelimiter");
+  tensor_class->def_property_readonly("_nbytes", &TensorPy::GetPyNBytes, R"mydelimiter(
+                             Get the tensor's total number of bytes.
+
+                             Returns:
+                                 nbytes, total number of bytes taken by the tensor.
+
+                             Examples:
+                                 >>> data = mindspore.Tensor(np.ones((2, 1), np.int32))
+                                 >>> data.nbytes
+                                 4
+                             )mydelimiter");
+  tensor_class->def_property_readonly("_strides", &TensorPy::GetPyTupleStrides, R"mydelimiter(
+                             Get the tensor's tuple of bytes to step in each dimension
+                             when traversing an array.
+
+                             Returns:
+                                 tuple[int], the strides of the tensor.
+
+                             Examples:
+                                 >>> data = mindspore.Tensor(np.ones((2, 1), np.int32))
+                                 >>> data.strides
+                                 (4, 4)
+                             )mydelimiter");
+
+  tensor_class->def_property("slice_num_of_persistent_data_", &TensorPy::GetSliceNumOfPersistentData,
+                             &TensorPy::SetSliceNumOfPersistentData);
+  tensor_class->def_property("slice_shape_of_persistent_data_", &TensorPy::GetSliceShapeOfPersistentData,
+                             &TensorPy::SetSliceShapeOfPersistentData);
+  tensor_class->def_property("_grad", &TensorPy::GetGrad, &TensorPy::SetGrad);
+  tensor_class->def_property("_grad_fn", &TensorPy::GetGradFn, &TensorPy::SetGradFn);
+  tensor_class->def_property("_requires_grad", &TensorPy::GetRequiresGrad, &TensorPy::SetRequiresGrad);
+  tensor_class->def_property("_retain_grad", &TensorPy::GetRetainGrad, &TensorPy::SetRetainGrad);
 }
 
 void RegTensorPyFunction(py::class_<TensorPy, std::shared_ptr<TensorPy>> *tensor_class) {
@@ -1055,22 +1117,196 @@ void RegTensorPyFunction(py::class_<TensorPy, std::shared_ptr<TensorPy>> *tensor
   tensor_class->def("_get_flattened_tensors", TensorPy::GetFlattenedTensors);
   tensor_class->def("_get_fusion_size", TensorPy::GetFusionSize);
   tensor_class->def("_is_test_stub", TensorPy::CheckStub);
-  tensor_class->def("from_numpy", TensorPyImpl::MakeTensorOfNumpy);
-  tensor_class->def("persistent_data_from_numpy", TensorPyImpl::MakePersistentDataTensorOfNumpy);
-  tensor_class->def("get_bytes", TensorPyImpl::GetBytes);
-  tensor_class->def("convert_bytes_to_tensor", TensorPyImpl::ConvertBytesToTensor);
-  tensor_class->def("asnumpy", TensorPyImpl::SyncAsNumpy);
-  tensor_class->def("_flush_from_cache", TensorPyImpl::FlushFromCache);
-  tensor_class->def("is_persistent_data", &TensorPy::IsPersistentData);
-  tensor_class->def("asnumpy_of_slice_persistent_data", TensorPyImpl::AsNumpyOfSlice);
-  tensor_class->def("is_init", &TensorPy::IsInit);
-  tensor_class->def("set_init_flag", &TensorPy::SetInitFlag);
-  tensor_class->def("dim", &TensorPy::DataDim);
-  tensor_class->def("assign_value_cpp", &TensorPy::AssignValue);
-  tensor_class->def("set_dtype", &TensorPy::SetDtype);
-  tensor_class->def("offload", &TensorPy::Offload);
-  tensor_class->def("offload_file_path", &TensorPy::GetOffloadFilePath);
-  tensor_class->def("move_to", TensorPyImpl::MoveTo);
+  tensor_class->def("from_numpy", TensorPyImpl::MakeTensorOfNumpy, R"mydelimiter(
+                             Creates a Tensor from a numpy.ndarray without copy.
+
+                             Arg:
+                                 array (numpy.ndarray): The input ndarray.
+
+                             Returns:
+                                 Tensor, tensor with shared data to input ndarray.
+
+                             Examples:
+                                 >>> a = np.ones((2, 3))
+                                 >>> t = mindspore.Tensor.from_numpy(a)
+                             )mydelimiter");
+  tensor_class->def("persistent_data_from_numpy", TensorPyImpl::MakePersistentDataTensorOfNumpy, R"mydelimiter(
+                             Creates a Tensor from a numpy.ndarray without copy.
+                             Use persistent data tensor.
+
+                             Arg:
+                                 array (numpy.ndarray): The input ndarray.
+                                 slice_num (int): The slice num of persistent data tensor.
+
+                             Returns:
+                                 Tensor, tensor with shared data to input ndarray.
+
+                             Examples:
+                                 >>> a = np.ones((2, 3))
+                                 >>> t = mindspore.Tensor.persistent_data_from_numpy(a, 1)
+                             )mydelimiter");
+  tensor_class->def("get_bytes", TensorPyImpl::GetBytes, R"mydelimiter(
+                             Get raw data of tensor with type of bytes.
+
+                             Returns:
+                                 Bytes of tensor.
+
+                             Examples:
+                                 >>> import mindspore as ms
+                                 >>> from mindspore import Tensor
+                                 >>> x = ms.Tensor([1, 2, 3], ms.int16)
+                                 >>> print(x.get_bytes())
+                                 b'\x01\x00\x02\x00\x03\x00'
+                             )mydelimiter");
+  tensor_class->def("convert_bytes_to_tensor", TensorPyImpl::ConvertBytesToTensor, R"mydelimiter(
+                             Convert raw data to tensor.
+
+                             Returns:
+                                 Tensor.
+
+                             Examples:
+                                 >>> import mindspore as ms
+                                 >>> from mindspore import Tensor
+                                 >>> x = Tensor([1, 2, 3], ms.int16)
+                                 >>> out = Tensor.convert_bytes_to_tensor(x.get_bytes(), x.shape, x.dtype)
+                                 >>> print(x.asnumpy())
+                                 [1 2 3]
+                             )mydelimiter");
+  tensor_class->def("asnumpy", TensorPyImpl::SyncAsNumpy, R"mydelimiter(
+                             Convert tensor to numpy.ndarray.
+
+                             Returns:
+                                 numpy.ndarray.
+
+                             Examples:
+                                 >>> data = mindspore.Tensor(np.ones((2, 3)))
+                                 >>> array = data.asnumpy()
+                                 >>> array
+                                 array([[1., 1., 1.],
+                                        [1., 1., 1.]])
+                             )mydelimiter");
+  tensor_class->def("_flush_from_cache", TensorPyImpl::FlushFromCache, R"mydelimiter(
+                             Flush Cache data to Host if tensor is cache enable.
+
+                             Returns:
+                                 None.
+
+                             Examples:
+                                 >>> data = mindspore.Tensor(np.ones((2, 3)))
+                                 >>> data._flush_from_cache()
+                             )mydelimiter");
+  tensor_class->def("is_persistent_data", &TensorPy::IsPersistentData, R"mydelimiter(
+                             Check if tensor have persistent data.
+
+                             Returns:
+                                 Bool.
+
+                             Examples:
+                                 >>> data = mindspore.Tensor(np.ones((2, 3)))
+                                 >>> data.is_persistent_data()
+                             )mydelimiter");
+  tensor_class->def("asnumpy_of_slice_persistent_data", TensorPyImpl::AsNumpyOfSlice, R"mydelimiter(
+                             Convert tensor to numpy.ndarray of a slice.
+
+                             Returns:
+                                 numpy.ndarray.
+
+                             Examples:
+                                 >>> data = mindspore.Tensor(np.ones((2000000000, 256)))
+                                 >>> data.asnumpy_of_slice_persistent_data(0, 1)
+                             )mydelimiter");
+  tensor_class->def("is_init", &TensorPy::IsInit, R"mydelimiter(
+                             Get tensor init_flag.
+
+                             Returns:
+                                 bool, whether the tensor init.
+
+                             Examples:
+                                 >>> data = mindspore.Tensor(np.ones((2, 3)))
+                                 >>> data.is_init()
+                                 False
+                             )mydelimiter");
+  tensor_class->def("set_init_flag", &TensorPy::SetInitFlag, R"mydelimiter(
+                             Set tensor init_flag.
+
+                             Examples:
+                                 >>> data = mindspore.Tensor(np.ones((2, 3)))
+                                 >>> data.set_init_flag(True)
+                             )mydelimiter");
+  tensor_class->def("dim", &TensorPy::DataDim, R"mydelimiter(
+                             Get tensor's data dimension.
+
+                             Returns:
+                                 int, the dimension of tensor.
+
+                             Examples:
+                                 >>> data = mindspore.Tensor(np.ones((2, 3)))
+                                 >>> data.dim()
+                                 2
+                             )mydelimiter");
+  tensor_class->def("assign_value_cpp", &TensorPy::AssignValue, R"mydelimiter(
+                             Assign another tensor value to this.
+
+                             Arg:
+                                 value (:class:`mindspore.tensor`): The value tensor.
+
+                             Examples:
+                                 >>> data = mindspore.Tensor(np.ones((1, 2), np.float32))
+                                 >>> data2 = mindspore.Tensor(np.ones((2, 2), np.float32))
+                                 >>> data.assign_value(data2)
+                                 >>> data.shape
+                                 (2, 2)
+                             )mydelimiter");
+  tensor_class->def("set_dtype", &TensorPy::SetDtype, R"mydelimiter(
+                              Set the tensor's data type.
+
+                              Arg:
+                                  dtype (:class:`mindspore.dtype`): The type of output tensor.
+
+                              Examples:
+                                  >>> data = mindspore.Tensor(np.ones((1, 2), np.float32))
+                                  >>> data.set_dtype(mindspore.int32)
+                                  mindspore.int32
+                              )mydelimiter");
+  tensor_class->def("offload", &TensorPy::Offload, R"mydelimiter(
+                              Offload tensor data to file.
+
+                              Arg:
+                                  str : file path to save tensor data.
+                              Returns:
+                                  bool, whether the tensor offload success.
+                              Examples:
+                                  >>> data = mindspore.Tensor(np.ones((1, 2), np.float32))
+                                  >>> data.offload('./test.data')
+                                  True
+                              )mydelimiter");
+  tensor_class->def("offload_file_path", &TensorPy::GetOffloadFilePath, R"mydelimiter(
+                              Offload file path for tensor.
+
+                              Returns:
+                                 str, offload file path for tensor.
+                              Examples:
+                                  >>> data = mindspore.Tensor(np.ones((1, 2), np.float32))
+                                  >>> ret = data.offload('./test.data')
+                                  >>> ret = (data.offload_file_path() != '')
+                                  True
+                              )mydelimiter");
+  tensor_class->def("move_to", TensorPyImpl::MoveTo, py::arg("to"), py::arg("blocking") = nullptr, R"mydelimiter(
+                               Copy tensor between host and device asynchronously if blocking=False,
+                               otherwise synchronously. if the arg `to`=`CPU`, means D2H copy;
+                               if the arg `to`=`GPU` or `to`=`ASCEND`, means H2D copy.
+
+                               Args:
+                                   str: A string, "CPU" or "ASCEND" or "GPU".
+                                   bool: A bool type value, Default: ``True`` .
+
+                               Returns:
+                                      Tensor, with the same type and shape as the "self".
+
+                              Examples:
+                                  >>> data = mindspore.Tensor(np.ones((1, 2), np.float32))
+                                  >>> ret = data.move_to("CPU")
+                              )mydelimiter");
   tensor_class->def("_set_user_data", TensorPyImpl::SetUserData);
   tensor_class->def("_get_user_data", TensorPyImpl::GetUserData);
   tensor_class->def("set_cast_dtype", &TensorPy::SetCastDtype, py::arg("dtype") = nullptr);
@@ -1084,7 +1320,8 @@ void RegTensorPyFunction(py::class_<TensorPy, std::shared_ptr<TensorPy>> *tensor
   tensor_class->def("__str__", &TensorPy::ToString);
   tensor_class->def("__repr__", &TensorPy::ToStringRepr);
   tensor_class->def("_offload", TensorPyImpl::SetOffload);
-  tensor_class->def("set_device_address", TensorPyImpl::SetDeviceAddress);
+  tensor_class->def("set_device_address", TensorPyImpl::SetDeviceAddress, py::arg("addr"), py::arg("shape"),
+                    py::arg("type_ptr"));
   tensor_class->def("__getitem__", TensorPybind::TensorGetItem);
   tensor_class->def("__setitem__", TensorPybind::TensorSetItem);
   tensor_class->def(py::pickle(
@@ -1101,7 +1338,19 @@ void RegTensorPyFunction(py::class_<TensorPy, std::shared_ptr<TensorPy>> *tensor
       param["input_data"] = t[0].cast<py::array>();
       return TensorPyImpl::InitTensorPy(param);
     }));
-  tensor_class->def("_item", TensorPyImpl::Item, "get scalar from tensor, index is None");
+  tensor_class->def("_item", TensorPyImpl::Item, R"mydelimiter(
+                            Return the value of this tensor as standard Python number.
+                            This only works for tensors with one element.
+
+                            Returns:
+                                A scalar, type is defined by the dtype of the Tensor.
+
+                            Examples:
+                                # index is None:
+                                >>> t = mindspore.Tensor([1])
+                                >>> t.item()
+                                1
+                            )mydelimiter");
   tensor_class->def("_has_auto_grad", &TensorPy::HasAutoGrad);
   tensor_class->def("hooks", TensorPyImpl::GetHooks);
   tensor_class->def("_data_ptr", TensorPyImpl::DataPtr);

@@ -924,7 +924,6 @@ static const std::vector<DataConvertFuncPtr> &GetDataConvertFuncs() {
     std::make_shared<ByTypeDataConvertFunc<py::float_>>(ConvertFloatWithType),
     std::make_shared<ByTypeDataConvertFunc<py::str>>(PyCast<StringImm, string>),
     std::make_shared<ByTypeDataConvertFunc<py::none>>(kNone),
-    std::make_shared<ByTypeDataConvertFunc<MetaTensor>>(ObjCast<MetaTensorPtr>),
     std::make_shared<ByTypeDataConvertFunc<CSRTensor>>(ObjCast<CSRTensorPtr>),
     std::make_shared<ByTypeDataConvertFunc<COOTensor>>(ObjCast<COOTensorPtr>),
     std::make_shared<ByTypeDataConvertFunc<MapTensor>>(ObjCast<MapTensorPtr>),
