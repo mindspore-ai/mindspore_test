@@ -1029,8 +1029,9 @@ kernel::KernelModPtr GeKernelExecutor::CreateKernelMod(const std::string &op_nam
   return kernel_ptr;
 }
 
-void GeKernelExecutor::DoStreamAssign(const KernelGraphPtr &kernel_graph,
-                                      const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events) const {
+void GeKernelExecutor::DoStreamAssign(
+  const KernelGraphPtr &kernel_graph,
+  const std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> &mock_exec_order) const {
   MS_LOG(DEBUG) << "Status record: start stream assign.";
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -1044,7 +1045,7 @@ void GeKernelExecutor::DoStreamAssign(const KernelGraphPtr &kernel_graph,
   if (common::IsDisableRuntimeConfig(common::kRuntimeMultiStream)) {
     MS_LOG(INFO) << "Force single stream.";
   } else {
-    AclStreamAssign::GetInstance().AssignStream(NOT_NULL(kernel_graph), sched_events, res_manager_);
+    AclStreamAssign::GetInstance().AssignStream(NOT_NULL(kernel_graph), mock_exec_order, res_manager_);
   }
 #ifdef ENABLE_DUMP_IR
   auto context_ptr = MsContext::GetInstance();
@@ -1128,6 +1129,32 @@ void CreateEventKernelMod(const KernelGraphPtr &kernel_graph) {
 }
 }  // namespace
 
+void ResetNodeIds(const KernelGraphPtr &kernel_graph) {
+  if (!kernel_graph->memory_managed_by_ge()) {
+    MS_LOG(INFO) << "Start reset node id";
+    mindspore::HashMap<std::string, int> node_ids;
+    const auto &all_nodes = mindspore::TopoSort(kernel_graph->get_return(), SuccDeeperSimple);
+    for (const auto &node : all_nodes) {
+      if (node != nullptr && node->isa<CNode>()) {
+        const auto &cnode = node->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(cnode);
+        const auto &fullname = cnode->fullname_with_scope();
+        auto op_index = fullname.rfind("-op");
+        if (op_index != string::npos) {
+          auto scope_prefix = fullname.substr(0, op_index);
+          if (node_ids.find(scope_prefix) == node_ids.end()) {
+            node_ids[scope_prefix] = 0;
+          } else {
+            node_ids[scope_prefix]++;
+          }
+          cnode->set_fullname_with_scope(scope_prefix + "-op" + std::to_string(node_ids[scope_prefix]));
+        }
+      }
+    }
+    MS_LOG(INFO) << "End reset node id";
+  }
+}
+
 void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
   MS_EXCEPTION_IF_NULL(graph);
   uint64_t start_time = profiler::GetClockSyscnt();
@@ -1171,17 +1198,13 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
       nop_op_to_memcpy_.insert(node);
     }
   }
-
-  std::vector<std::pair<CNodePtr, CNodePtr>> sched_events;
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto ms_context_exec_order = AnfAlgo::GetExecOrderAlgo(graph->cast<KernelGraphPtr>());
-  MS_LOG(INFO) << "Current Exec Order Algo in MS Context is " << ms_context_exec_order;
-  const std::string kExecOrderGpto = "gpto";
-  if (ms_context_exec_order == kExecOrderGpto) {
-    mindspore::gpto::GPTO(kernel_graph, &sched_events);
+  ResetNodeIds({kernel_graph});
+  std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> mock_exec_order;
+  if (common::GetEnv("MS_ENABLE_GPTO") == "1") {
+    MS_LOG(INFO) << "Current Exec Order Algo in MS Context is GPTO";
+    mindspore::gpto::GPTO(res_manager_, kernel_graph, &mock_exec_order);
   }
-  DoStreamAssign(kernel_graph, sched_events);
+  DoStreamAssign(kernel_graph, mock_exec_order);
   CreateEventKernelMod(kernel_graph);
   InitGeMemory(kernel_graph);
   kernel_graph->PrintGraphExecuteOrder();
