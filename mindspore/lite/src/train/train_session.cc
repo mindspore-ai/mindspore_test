@@ -79,9 +79,6 @@ void AddNonConstTrainableParams(const std::vector<kernel::KernelExec *> &in_kern
 }  // namespace
 const char *kGradName = "Gradients";
 const char *kOptimizerName = "optimizer";
-constexpr auto kObfNodeName = "obf_op-obf_mul";
-constexpr size_t kFloatSize = 4;
-constexpr int kDataIndex = 1;
 
 TrainSession::TrainSession() {
   is_train_session_ = true;
@@ -804,13 +801,6 @@ void TrainSession::CompileOptimizedKernels() {
 }
 
 int TrainSession::FindConstFoldedKernels() {
-  float obf_ratio = ModelRecoverObfuscate(false);
-  if (!FloatCompare(obf_ratio, 1.0)) {
-    MS_LOG(INFO) << "obfuscated model do not need const folding.";
-    const_fold_kernels_ = this->inference_kernels_;
-    const_output_tensors_ = {};
-    return RET_OK;
-  }
   const_fold_kernels_.clear();
   const_output_tensors_.clear();
   for (auto kernel : this->inference_kernels_) {
@@ -1198,7 +1188,6 @@ int TrainSession::FindExportKernels(std::vector<kernel::KernelExec *> *export_ke
 template <typename DestType>
 int TrainSession::ExportByDifferentType(DestType destination, ModelType model_type, QuantizationType quant_type,
                                         bool orig_train_state, std::vector<std::string> output_tensor_name) {
-  float obf_ratio = ModelRecoverObfuscate();
   TrainExport texport(destination);
   int status = texport.ExportInit(model_.get()->graph_.name_, model_.get()->graph_.version_);
   TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "Fail to init export");
@@ -1225,9 +1214,6 @@ int TrainSession::ExportByDifferentType(DestType destination, ModelType model_ty
           status = Train();
           TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "Train failed.");
         }
-        if (!FloatCompare(obf_ratio, 1.0)) {
-          ModelDeObfuscate(obf_ratio);
-        }
         return status;
       }
       status = texport.ExportNet(
@@ -1251,16 +1237,10 @@ int TrainSession::ExportByDifferentType(DestType destination, ModelType model_ty
     status = texport.SaveToFile();
     if (status != RET_OK) {
       MS_LOG(ERROR) << "failed to save to " << destination;
-      if (!FloatCompare(obf_ratio, 1.0)) {
-        ModelDeObfuscate(obf_ratio);
-      }
       return status;
     }
   } else {
     status = texport.SaveToBuffer();
-  }
-  if (!FloatCompare(obf_ratio, 1.0)) {
-    ModelDeObfuscate(obf_ratio);
   }
   TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "failed to save to file or model buffer.");
   return RET_OK;
@@ -1443,62 +1423,6 @@ size_t TrainSession::GetInplaceTensorOffset(kernel::KernelExec *kernel,
   auto tensor = kernel->in_tensors().at(input_idx);
   ref_count->at(tensor) = ref_count->at(tensor) + 1;
   return offset_map.at(tensor);
-}
-
-lite::Tensor *TrainSession::FindObfTensor() {
-  for (auto node : model_->graph_.all_nodes_) {
-    if (node->name_.find(kObfNodeName) != std::string::npos) {
-      auto idx = node->input_indices_[kDataIndex];
-      return tensors_[idx];
-    }
-  }
-  return nullptr;
-}
-
-int TrainSession::ChangeObfWeight(std::string tensor_name, float obf_ratio) {
-  float data[1] = {obf_ratio};
-  auto new_tensor = lite::Tensor::CreateTensor(tensor_name, TypeId::kNumberTypeFloat32, {1, 1}, data, kFloatSize);
-  std::vector<lite::Tensor *> modify_tensors;
-  if (new_tensor == nullptr) {
-    MS_LOG(ERROR) << "Create tensor failed";
-    return RET_ERROR;
-  }
-  modify_tensors.emplace_back(new_tensor);
-  auto ret = this->UpdateWeights(modify_tensors);
-  if (ret != kSuccess) {
-    MS_LOG(ERROR) << "UpdateWeights failed.";
-    return RET_ERROR;
-  }
-  return RET_OK;
-}
-
-float TrainSession::ModelRecoverObfuscate(bool change_weight) {
-  float true_obf_ratio = 1.0;
-  auto tensor = FindObfTensor();
-  if (tensor != nullptr) {
-    std::string tensor_name = tensor->tensor_name();
-    true_obf_ratio = *(reinterpret_cast<float *>(tensor->data()));
-    if (!change_weight) {
-      return true_obf_ratio;
-    }
-    float init_obf_ratio = 1.0;
-    ChangeObfWeight(tensor_name, init_obf_ratio);
-  }
-  return true_obf_ratio;
-}
-
-int TrainSession::ModelDeObfuscate(float obf_ratio) {
-  if (!FloatCompare(obf_ratio, 0.0)) {
-    auto *tensor = FindObfTensor();
-    if (tensor != nullptr) {
-      std::string tensor_name = tensor->tensor_name();
-      return ChangeObfWeight(tensor_name, obf_ratio);
-    }
-    MS_LOG(ERROR) << "Obfuscate tensor is null";
-    return RET_ERROR;
-  }
-  MS_LOG(ERROR) << "Obfuscate value is 0";
-  return RET_ERROR;
 }
 }  // namespace lite
 }  // namespace mindspore

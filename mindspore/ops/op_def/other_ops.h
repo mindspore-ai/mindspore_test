@@ -30,7 +30,6 @@ GVAR_DEF(PrimitivePtr, kPrimInnerAbs, std::make_shared<Primitive>(kInnerAbsOpNam
 GVAR_DEF(PrimitivePtr, kPrimInnerRound, std::make_shared<Primitive>("inner_round"));
 GVAR_DEF(PrimitivePtr, kPrimScaleGrad, std::make_shared<Primitive>("ScaleGrad"));
 GVAR_DEF(PrimitivePtr, kPrimPopulationCount, std::make_shared<Primitive>("PopulationCount"));
-GVAR_DEF(PrimitivePtr, kPrimOpaquePredicate, std::make_shared<Primitive>("OpaquePredicate"));
 
 // spectral
 GVAR_DEF(PrimitivePtr, kPrimBartlettWindow, std::make_shared<Primitive>(kBartlettWindowOpName));

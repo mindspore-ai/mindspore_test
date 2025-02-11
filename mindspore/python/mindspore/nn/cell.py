@@ -20,7 +20,6 @@ import inspect
 import os
 import time
 from collections import OrderedDict
-import numpy
 
 from mindspore._checkparam import args_type_check, check_hook_fn
 from mindspore.common._auto_dynamic import is_auto_dynamic, convert_inputs_to_dynamic
@@ -34,7 +33,7 @@ from mindspore import _checkparam as Validator
 from mindspore.common import dtype as mstype
 from mindspore.common.api import _cell_graph_executor, _pynative_executor, _get_args_for_run, cells_compile_cache, \
     _no_grad
-from mindspore.common.api import _generate_branch_control_input, _convert_python_data, _get_args_for_run_predict
+from mindspore.common.api import _convert_python_data, _get_args_for_run_predict
 from mindspore.common.api import _process_dyn_args, _generate_dyn_compile_args
 from mindspore.common.parameter import Parameter, ParameterTuple
 from mindspore.common.tensor import Tensor
@@ -2804,12 +2803,10 @@ class GraphCell(Cell):
             The key is the parameter name whose type is str, and the value is a Tensor or Parameter.
             If the parameter exists in the graph according to the name, update it's value.
             If the parameter does not exist, ignore it. Default: ``None`` .
-        obf_random_seed (Union[int, None]): The random seed used for dynamic obfuscation. "dynamic obfuscation" is
-            used for model protection, which can refer to :func:`mindspore.obfuscate_model`. If the input `graph` is
-            a func_graph loaded from a mindir file obfuscated with `obf_random_seed` , then `obf_random_seed` should be
-            provided. `obf_random_seed` should be in (0, 9223372036854775807]. default: ``None`` .
+        obf_random_seed (Union[int, None]): The random seed used for dynamic obfuscation, which is not supported now.
 
     Raises:
+        NotImplementedError: Dynamic structure obfuscation is not supported now.
         TypeError: If the `graph` is not a FuncGraph.
         TypeError: If the `params_init` is not a dict.
         TypeError: If the key of the `params_init` is not a str.
@@ -2839,20 +2836,12 @@ class GraphCell(Cell):
 
     def __init__(self, graph, params_init=None, obf_random_seed=None):
         super(GraphCell, self).__init__(auto_prefix=True)
+        if obf_random_seed is not None:
+            raise NotImplementedError("Dynamic structure obfuscation is not supported now.")
         if not isinstance(graph, FuncGraph):
             raise TypeError(f"For 'GraphCell', the argument 'graph' must be a FuncGraph loaded from MindIR, "
                             f"but got type {type(graph)}.")
         self.graph = graph
-        self.obf_random_seed = obf_random_seed
-        if obf_random_seed is not None:
-            if not isinstance(obf_random_seed, int):
-                raise TypeError("'obf_random_seed' must be int, but got {}.".format(type(obf_random_seed)))
-            int_64_max = 9223372036854775807
-            if obf_random_seed <= 0 or obf_random_seed > int_64_max:
-                raise ValueError(
-                    "'obf_random_seed' must be larger than 0, and less or equal than int64 ({}),"
-                    "but got {}.".format(int_64_max, obf_random_seed))
-            self._branch_control_input = _generate_branch_control_input(self.obf_random_seed)
         params_init = {} if params_init is None else params_init
         if not isinstance(params_init, dict):
             raise TypeError(f"For 'GraphCell', the argument 'params_init' must be a dict, but got {type(params_init)}.")
@@ -2872,10 +2861,7 @@ class GraphCell(Cell):
     def __call__(self, *args, **kwargs):
         self.phase = "graph_load_from_mindir"
         self._add_attr("graph_load_from_mindir", self.graph)
-        if not self.obf_random_seed:
-            return self.compile_and_run(*args, **kwargs)
-        append_input = Tensor((numpy.ones((1,)) * self._branch_control_input).astype(numpy.int32))
-        return self.compile_and_run(*args, append_input, **kwargs)
+        return self.compile_and_run(*args, **kwargs)
 
 
 def _check_param_list_tuple(value):
