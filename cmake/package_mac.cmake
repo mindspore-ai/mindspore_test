@@ -98,12 +98,12 @@ if(ENABLE_MINDDATA)
     install(FILES ${tinyxml2_LIBPATH}/libtinyxml2.10.0.0.dylib
         DESTINATION ${INSTALL_LIB_DIR} RENAME libtinyxml2.10.dylib COMPONENT mindspore)
 
-    install(FILES ${icu4c_LIBPATH}/libicuuc.69.1.dylib
-        DESTINATION ${INSTALL_LIB_DIR} RENAME libicuuc.69.dylib COMPONENT mindspore)
-    install(FILES ${icu4c_LIBPATH}/libicudata.69.1.dylib
-        DESTINATION ${INSTALL_LIB_DIR} RENAME libicudata.69.dylib COMPONENT mindspore)
-    install(FILES ${icu4c_LIBPATH}/libicui18n.69.1.dylib
-        DESTINATION ${INSTALL_LIB_DIR} RENAME libicui18n.69.dylib COMPONENT mindspore)
+    install(FILES ${icu4c_LIBPATH}/libicuuc.74.1.dylib
+        DESTINATION ${INSTALL_LIB_DIR} RENAME libicuuc.74.dylib COMPONENT mindspore)
+    install(FILES ${icu4c_LIBPATH}/libicudata.74.1.dylib
+        DESTINATION ${INSTALL_LIB_DIR} RENAME libicudata.74.dylib COMPONENT mindspore)
+    install(FILES ${icu4c_LIBPATH}/libicui18n.74.1.dylib
+        DESTINATION ${INSTALL_LIB_DIR} RENAME libicui18n.74.dylib COMPONENT mindspore)
 
     if(ENABLE_FFMPEG)
         install(FILES ${ffmpeg_LIBPATH}/libavcodec.59.37.100.dylib

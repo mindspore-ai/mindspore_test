@@ -12,13 +12,13 @@ if(ENABLE_GITEE_EULER)
     execute_process(COMMAND mkdir ${ICU4C_SRC})
     execute_process(COMMAND tar -xf ${ICU4C_TAR_SRC}/icu4c-69_1-src.tgz --strip-components 1 -C ${ICU4C_SRC})
 else()
-if(ENABLE_GITEE)
-    set(REQ_URL "https://gitee.com/mirrors/icu/repository/archive/release-69-1.tar.gz")
-    set(SHA256 "cb085ebf0152045a84c84011348bb7e09e38248c02b5a85f69a7d85866774b82")
-else()
-    set(REQ_URL "https://github.com/unicode-org/icu/archive/release-69-1.tar.gz")
-    set(SHA256 "39ce83dd5d15c7539dde261733e106a391923f82caf1ce52ecaebb72d93b4579")
-endif()
+    if(ENABLE_GITEE)
+        set(REQ_URL "https://gitee.com/mirrors/icu/repository/archive/release-74-1.tar.gz")
+        set(SHA256 "ca464bfa73bc00ebdb850546514d01f3a983159fda0f7682ff6bf4d3de56844c")
+    else()
+        set(REQ_URL "https://github.com/unicode-org/icu/archive/release-74-1.tar.gz")
+        set(SHA256 "ca464bfa73bc00ebdb850546514d01f3a983159fda0f7682ff6bf4d3de56844c")
+    endif()
 endif()
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
@@ -34,7 +34,7 @@ else()
     file(WRITE ${CMAKE_BINARY_DIR}/icu4c_filter.json ${JSON_FILE})
     if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
         mindspore_add_pkg(icu4c
-                VER 69.1
+                VER 74.1
                 LIBS ${LIB_ICU_COMMON} ${LIB_ICU_DATA} ${LIB_ICU_I18N}
                 URL ${REQ_URL}
                 SHA256 ${SHA256}
@@ -45,7 +45,7 @@ else()
                 )
     else()
         mindspore_add_pkg(icu4c
-                VER 69.1
+                VER 74.1
                 LIBS ${LIB_ICU_COMMON} ${LIB_ICU_DATA} ${LIB_ICU_I18N}
                 URL ${REQ_URL}
                 SHA256 ${SHA256}
