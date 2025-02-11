@@ -1074,26 +1074,15 @@ void FuncGraphSpecializer::ProcessNode(const AnfNodePtr &node) {
       real_abs = abs->inplace_abstract();
       MS_LOG(INFO) << "Use inplace abstract, " << abs->ToString() << " -> " << real_abs->ToString();
     }
-    bool ignore_build_value = GetIgnoreBuildValueFlag(node_input);
-    AnfNodePtr replace_node = nullptr;
-    if (!ignore_build_value) {
-      // First try to check if node_input can be replaced by a ValueNode. If cannot, then try to check if
-      // can be replaced by another CNode from anfnode_config_map, otherwise use the replicated node.
-      replace_node = BuildPossibleValueNode(node_input, real_abs, attrs, node);
-    }
-    if (replace_node == nullptr) {
-      replace_node = BuildReplacedNode(input_conf);
-      MS_EXCEPTION_IF_NULL(replace_node);
-      replace_node->set_abstract(real_abs);
-      MS_LOG(DEBUG) << "Set replaced input[" << i << "]: " << replace_node->DebugString()
-                    << ", NodeConfig: " << input_conf->ToString() << ", result: " << real_abs.get() << "/"
-                    << real_abs->ToString();
-    } else {
-      MS_EXCEPTION_IF_NULL(real_abs);
-      MS_LOG(DEBUG) << "Build possible value node for node: " << node_input->DebugString()
-                    << ", real_abs: " << real_abs->ToString() << ", replace_node: " << replace_node->DebugString();
-    }
+    AnfNodePtr replace_node = BuildReplacedNode(input_conf);
     MS_EXCEPTION_IF_NULL(replace_node);
+    replace_node->set_abstract(real_abs);
+    auto replace_value_node = BuildPossibleValueNode(replace_node, real_abs, attrs, node);
+    if (replace_value_node != nullptr) {
+      MS_LOG(DEBUG) << "Convert replace_node " << replace_node->DebugString() << " to value node "
+                    << replace_value_node->DebugString();
+      replace_node = replace_value_node;
+    }
     if (enable_eliminate_unused_element) {
       UpdateSequenceNode(replace_node, node_input, real_abs);
     }
@@ -1968,20 +1957,23 @@ AnfNodePtr FuncGraphSpecializer::BuildValueNodeForAbstractFunction(const AnfNode
   return nullptr;
 }
 
-AnfNodePtr FuncGraphSpecializer::BuildPossibleValueNode(const AnfNodePtr &origin_node, const AbstractBasePtr &ival,
+AnfNodePtr FuncGraphSpecializer::BuildPossibleValueNode(const AnfNodePtr &origin_node, const AbstractBasePtr &abstract,
                                                         const AttrValueMapPtr &attrs, const AnfNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(origin_node);
-  MS_EXCEPTION_IF_NULL(ival);
+  MS_EXCEPTION_IF_NULL(abstract);
+  if (GetIgnoreBuildValueFlag(origin_node)) {
+    return nullptr;
+  }
 
-  AbstractFunctionPtr abs = dyn_cast<AbstractFunction>(ival);
-  if (abs != nullptr) {
+  AbstractFunctionPtr abstract_func = dyn_cast<AbstractFunction>(abstract);
+  if (abstract_func != nullptr) {
     // Cannot build a deterministic ValueNode if there are multiple possible AbstractFunction.
-    if (abs->isa<AbstractFuncUnion>()) {
+    if (abstract_func->isa<AbstractFuncUnion>()) {
       return nullptr;
     }
-    return BuildValueNodeForAbstractFunction(origin_node, ival, attrs, cnode, abs);
+    return BuildValueNodeForAbstractFunction(origin_node, abstract, attrs, cnode, abstract_func);
   } else {
-    ValuePtr val = ival->BuildValue();
+    ValuePtr val = abstract->BuildValue();
     if (val->ContainsValueAny()) {
       return nullptr;
     }
@@ -2001,7 +1993,7 @@ AnfNodePtr FuncGraphSpecializer::BuildPossibleValueNode(const AnfNodePtr &origin
     if (IsPrimitiveCNode(origin_node, prim::kPrimPyExecute)) {
       return nullptr;
     }
-    return BuildValueNode(val, origin_node, ival);
+    return BuildValueNode(val, origin_node, abstract);
   }
 }
 
