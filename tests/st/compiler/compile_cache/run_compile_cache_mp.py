@@ -30,7 +30,7 @@ import mindspore.dataset as ds
 
 parser = argparse.ArgumentParser(description='Parameters')
 parser.add_argument("--run_o2", type=bool, default=False)
-args = parser.parse_args(args=[])
+args, _ = parser.parse_known_args()
 ms.set_seed(1)
 
 class MyIter:
