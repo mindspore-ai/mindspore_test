@@ -24,28 +24,32 @@
 #include "mindspore/ops/kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
 
 namespace mindspore::kernel::pyboost {
-namespace {
 
 void LaunchCustomAclnn(const std::string &aclnn_name, const std::shared_ptr<OpRunner> &op,
-                       std::vector<BaseTensorPtr> input_tensors, std::vector<BaseTensorPtr> output_tensors) {
+                       const std::vector<ValuePtr> &inputs, const std::vector<BaseTensorPtr> &output_tensors) {
   MS_EXCEPTION_IF_NULL(op);
   MS_LOG(DEBUG) << "Run device task custom " << aclnn_name << " start";
   MS_VLOG(VL_CUSTOM_OP) << "Run device task custom " << aclnn_name << " start";
 
-  auto arg_num = input_tensors.size() + output_tensors.size();
+  auto arg_num = inputs.size() + output_tensors.size();
   auto kernel_mod = GetCustomAclnnPyboostKernelMod(aclnn_name, arg_num);
   MS_EXCEPTION_IF_NULL(kernel_mod);
   auto stream_id = op->stream_id();
   auto device_context = op->device_context();
   runtime::ProfilerRecorder aclnn_profiler(runtime::ProfilerModule::kPynative,
                                            runtime::ProfilerEvent::kPyBoostLaunchAclnn, aclnn_name, false);
-  kernel_mod->Launch(input_tensors, output_tensors, op);
+
+  kernel_mod->Launch(inputs, output_tensors, op);
   auto sync = runtime::RuntimeConf::GetInstance()->launch_blocking();
   if (sync) {
     if (!device::ascend::AscendStreamMng::GetInstance().SyncAllStreams()) {
       MS_LOG(EXCEPTION) << "SyncStream failed for op " << aclnn_name;
     }
   } else {
+    std::vector<BaseTensorPtr> input_tensors;
+    for (const auto &item : inputs) {
+      (void)input_tensors.emplace_back(item->cast<BaseTensorPtr>());
+    }
     runtime::DeviceAddressUtils::ProcessCrossStreamAddress(aclnn_name, device_context, stream_id, input_tensors,
                                                            output_tensors);
   }
@@ -53,7 +57,6 @@ void LaunchCustomAclnn(const std::string &aclnn_name, const std::shared_ptr<OpRu
   MS_LOG(DEBUG) << "Run device task custom " << aclnn_name << " end";
   MS_VLOG(VL_CUSTOM_OP) << "Run device task custom " << aclnn_name << " end";
 }
-}  // namespace
 
 std::vector<tensor::BaseTensorPtr> CustomExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
                                                             const ValueTuplePtr &tensors_tensor_list) {
@@ -75,18 +78,19 @@ std::vector<tensor::BaseTensorPtr> CustomExtAscendCustomize(const std::shared_pt
   }
 
   // Async
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, tensors_tensor_list_vector]() {
-    auto primitive = op->primitive();
-    auto aclnn_name = GetValue<std::string>(primitive->GetAttr("reg_op_name"));
+  PyBoostUtils::DispatchRun(
+    std::make_shared<runtime::PyBoostDeviceTask>([op, tensors_tensor_list_vector, tensors_tensor_list]() {
+      auto primitive = op->primitive();
+      auto aclnn_name = GetValue<std::string>(primitive->GetAttr("reg_op_name"));
 
-    auto device_context = op->device_context();
-    const auto &outputs = op->outputs();
-    // Malloc for input tensors
-    PyBoostUtils::MallocOpInputs(device_context, tensors_tensor_list_vector);
-    // Malloc for output tensors
-    PyBoostUtils::MallocOpOutputs(device_context, outputs);
-    LaunchCustomAclnn(aclnn_name, op, tensors_tensor_list_vector, op->outputs());
-  }));
+      auto device_context = op->device_context();
+      const auto &outputs = op->outputs();
+      // Malloc for input tensors
+      PyBoostUtils::MallocOpInputs(device_context, tensors_tensor_list_vector);
+      // Malloc for output tensors
+      PyBoostUtils::MallocOpOutputs(device_context, outputs);
+      LaunchCustomAclnn(aclnn_name, op, tensors_tensor_list->value(), op->outputs());
+    }));
   return op->outputs();
 }
 }  // namespace mindspore::kernel::pyboost

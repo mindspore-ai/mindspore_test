@@ -52,6 +52,16 @@ auto GetTupleFront(const std::vector<KernelTensor *> &vecs) {
   return GetTupleFrontImpl<N>(vecs, std::make_index_sequence<N>());
 }
 
+template <size_t N, std::size_t... Is>
+auto GetTupleFrontImpl(const std::vector<ValuePtr> &vecs, std::index_sequence<Is...>) {
+  return std::make_tuple(vecs[Is]...);
+}
+
+template <size_t N>
+auto GetTupleFront(const std::vector<ValuePtr> &vecs) {
+  return GetTupleFrontImpl<N>(vecs, std::make_index_sequence<N>());
+}
+
 template <typename T, typename... Vecs>
 std::vector<T> ConcatVecs(const std::vector<T> &vec, const Vecs &... vecs) {
   std::vector<T> result = vec;
