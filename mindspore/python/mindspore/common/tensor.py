@@ -2920,11 +2920,11 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
                 repeated_subs.append(tensor_operator_registry.get('repeat_elements')(sub, rep, axis))
         return tensor_operator_registry.get('concatenate')(repeated_subs, axis)
 
-    def bernoulli(self, p=0.5, seed=None):
+    def bernoulli(self, *, generator=None):
         r"""
-        For details, please refer to :func:`mindspore.ops.bernoulli`.
+        For details, please refer to :func:`mindspore.mint.bernoulli`.
         """
-        return tensor_operator_registry.get('bernoulli')(self, p, seed)
+        return tensor_operator_registry.get('bernoulli')(self, generator=generator)
 
     def random_(self, from_=0, to=None, *, generator=None):
         r"""

@@ -20,7 +20,7 @@ from mindspore.common._register_for_tensor import tensor_operator_registry
 from mindspore.ops import _constants
 from mindspore.ops.function import *
 from mindspore.ops.function.array_func import chunk_ext, zero_
-from mindspore.ops.function.math_func import all, argmax_ext, float_power_ext, erfinv_, tanh_
+from mindspore.ops.function.math_func import all, argmax_ext, float_power_ext, erfinv_, tanh_, bernoulli_ext
 from mindspore.ops.function.random_func import random_, uniform_ext, uniform_, normal_
 from mindspore.ops import operations as P
 from mindspore.ops.operations import array_ops
@@ -395,7 +395,7 @@ setattr(tensor_operator_registry, 'tensor_scatter_add', tensor_scatter_add)
 setattr(tensor_operator_registry, 'inplace_scatter_add', auto_generate.inplace_scatter_add)
 setattr(tensor_operator_registry, 'slice_scatter', slice_scatter)
 setattr(tensor_operator_registry, 'select_scatter', select_scatter)
-setattr(tensor_operator_registry, 'bernoulli', bernoulli)
+setattr(tensor_operator_registry, 'bernoulli', bernoulli_ext)
 setattr(tensor_operator_registry, 'poisson', P.Poisson)
 setattr(tensor_operator_registry, 'randperm', P.Randperm)
 setattr(tensor_operator_registry, 'multinomial', multinomial)

@@ -3698,11 +3698,11 @@ def sparse_ndim_(x):
     return F.tuple_len(x.shape)
 
 
-def bernoulli(input, p=0.5, seed=None):
+def bernoulli(input, *, generator=None):
     """
     Randomly draws binary numbers from a Bernoulli distribution.
     """
-    return F.bernoulli(input, p, seed)
+    return F.bernoulli_ext(input, generator=generator)
 
 
 def gather_nd(input_x, indices):
