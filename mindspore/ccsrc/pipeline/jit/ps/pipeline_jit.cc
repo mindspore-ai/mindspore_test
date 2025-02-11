@@ -134,7 +134,7 @@ std::vector<PassItem> GetJitPasses(const ResourcePtr &resource, bool build_top_g
     (void)jit_passes.emplace_back(kAutoMonadReorder, OrderEnforceAction);
     (void)jit_passes.emplace_back(kGetJitBpropGraph, GetJitBpropGraph);
     (void)jit_passes.emplace_back(kRewriterAfterJitBprop, RewriterAfterOptAPassAfterJitBprop);
-    (void)jit_passes.emplace_back(kEliminateSpecialOpNode, EliminateSpecialOpNode);
+    (void)jit_passes.emplace_back(kOptAfterJitGrad, OptAfterJitGrad);
     (void)jit_passes.emplace_back(kValidate, ValidatePass);
   }
 
