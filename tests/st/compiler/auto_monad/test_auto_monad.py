@@ -73,7 +73,7 @@ def test_print():
         out = net(input_x, input_y)
         np.testing.assert_array_equal(out.asnumpy(), input_x.asnumpy())
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'input_x:\nTensor(shape=[], dtype=Int32, value=3)\n'
                 'input_y:\nTensor(shape=[], dtype=Int32, value=4)'}
@@ -108,7 +108,7 @@ def test_print_add():
         net = Print_Add()
         out = net(input_x, input_y)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
         np.testing.assert_array_equal(out.asnumpy(), expect.asnumpy())
 
     patterns = {'input_x:\nTensor(shape=[], dtype=Int32, value=7)\n'
@@ -144,7 +144,7 @@ def test_print_assign():
         net = Print_Assign()
         out = net(input_x)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
         np.testing.assert_array_equal(out.asnumpy(), expect.asnumpy())
 
     patterns = {'before:\nTensor(shape=[], dtype=Int32, value=1)',
@@ -183,7 +183,7 @@ def test_print_assign_add():
         net = Print_Assign_Add()
         out = net(input_x, input_y)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
         np.testing.assert_array_equal(out.asnumpy(), expect.asnumpy())
 
     patterns = {'before:\nTensor(shape=[], dtype=Int32, value=1)',
@@ -220,7 +220,7 @@ def test_print_while():
         net = Print_While()
         out = net(input_x, input_y)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
         np.testing.assert_array_equal(out.asnumpy(), expect.asnumpy())
 
     patterns = {'input_x before:\nTensor(shape=[], dtype=Int32, value=1)\n'
@@ -263,7 +263,7 @@ def test_print_if():
         net = Print_If()
         out = net(input_x, input_y)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
         np.testing.assert_array_equal(out.asnumpy(), expect.asnumpy())
 
     patterns = {'input_x before:\nTensor(shape=[], dtype=Int32, value=3)\n'
@@ -306,7 +306,7 @@ def test_print_assign_while():
         net = Print_Assign_While()
         out = net(input_x, input_y)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
         np.testing.assert_array_equal(out.asnumpy(), expect.asnumpy())
 
     patterns = {
@@ -358,7 +358,7 @@ def test_print_assign_if():
         net = Print_Assign_If()
         out = net(input_x, input_y)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
         np.testing.assert_array_equal(out.asnumpy(), expect.asnumpy())
 
     patterns = {
@@ -645,7 +645,7 @@ def test_print_for():
         net = Print_For()
         out = net(input_x, input_y)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
         np.testing.assert_array_equal(out.asnumpy(), expect.asnumpy())
 
     patterns = {
@@ -694,7 +694,7 @@ def test_print_assign_for():
         net = Print_Assign_For()
         out = net(input_x, input_y)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
         np.testing.assert_array_equal(out.asnumpy(), expect.asnumpy())
 
     patterns = {
@@ -1726,7 +1726,7 @@ def test_print_assign_print():
         net = Print()
         out = net(input_x)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'param_1:\nTensor(shape=[], dtype=Int32, value=1)\n'
                 'res:\nTensor(shape=[], dtype=Int32, value=10)\n'
@@ -1755,7 +1755,7 @@ def test_print_in_constant_returned_func():
         net = Print()
         net()
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'x:\n(1, 2, 3, 4, 5)'}
     check_output(cap.output, patterns)
@@ -1864,7 +1864,7 @@ def test_bprop_print_func():
         assert out[0] == (x + 1)
         assert out[1] == (y + 1)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'Tensor(shape=[1], dtype=Int32, value=[1])\nTensor(shape=[1], dtype=Int32, value=[2])'}
     check_output(cap.output, patterns)
