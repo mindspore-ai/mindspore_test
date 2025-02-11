@@ -565,10 +565,11 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(kernel));
       MS_LOG(DEBUG) << "Kernel tensor created without set stream id, but set after device address created.";
       if (is_move_to) {
-        kernel_tensor->set_heterogeneous_info(std::make_shared<kernel::HeterogeneousInfo>());
         if (move_to == kToCpu) {
+          kernel_tensor->set_heterogeneous_info(std::make_shared<kernel::HeterogeneousInfo>());
           kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = kernel::NeedAllocateHeteRes::NeedHostMem;
         } else if (move_to == kToDisk) {
+          kernel_tensor->set_heterogeneous_info(std::make_shared<kernel::HeterogeneousInfo>());
           kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = kernel::NeedAllocateHeteRes::NeedDiskFile;
         }
       }

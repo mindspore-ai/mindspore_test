@@ -103,30 +103,6 @@ class BACKEND_EXPORT AutoMemoryOffload {
   HashMap<const void *, void *> init_host_ptr_;
   HashMap<const void *, void *> swap_host_ptr_;
 };
-
-class BACKEND_EXPORT MindRTAutoOffloadAdapter {
- public:
-  MindRTAutoOffloadAdapter(DynamicMemPoolBestFit *mem_pool, size_t stream_id)
-      : mem_pool_(mem_pool), stream_id_(stream_id) {}
-  ~MindRTAutoOffloadAdapter() = default;
-  bool Malloc(DeviceAddress *key);
-  void *Malloc(size_t size, const HashSet<const void *> &pinned_mem = {});
-  std::vector<void *> MallocContinuousMem(const std::vector<size_t> &size_list);
-
- private:
-  // Return the host ptr where the data is copied to
-  void SwapOut(DeviceAddress *device_address);
-  template <typename MallocInfo, typename ReturnType>
-  bool TryAllocMemory(const MallocInfo &info, size_t total_size, const HashSet<const void *> &pinned_mem,
-                      const std::function<bool(const MallocInfo &, DynamicMemPoolBestFit *, ReturnType *)> &alloc_func,
-                      ReturnType *ret);
-
-  DynamicMemPoolBestFit *mem_pool_;
-  size_t stream_id_;
-  // Read/Write lock for all_mem_ map.
-  std::shared_mutex all_mem_mutex_;
-  HashSet<DeviceAddress *> all_mem_;
-};
 }  // namespace device
 }  // namespace mindspore
 

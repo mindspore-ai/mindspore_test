@@ -46,7 +46,7 @@ class BACKEND_EXPORT PinMemPool : public DynamicMemPoolBestFit, public PinnedMem
   void SetMemPoolBlockSize(size_t available_pin_mem_size) override;
   size_t max_size_{0};
   size_t total_used_memory_{0};
-  bool pinned_mem_{false};
+  bool pinned_mem_{true};
   bool inited_{false};
   std::mutex mutex_;
 };

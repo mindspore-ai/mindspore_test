@@ -528,12 +528,7 @@ bool AscendDeviceAddress::SyncDeviceToHost(const ShapeVector &shape, size_t size
       CopyDeviceToHost(host_ptr, size);
       sync_ok = true;
     } else if (type_id() == kNumberTypeFloat32 && type == kNumberTypeFloat64) {
-      if (mem_offloaded()) {
-        FloatToDouble(host_ptr, loadable_mem_->offload_ptr_, GetSize() / sizeof(float));
-        sync_ok = true;
-      } else {
-        sync_ok = SyncDeviceToHostAndFloatToFloat64(host_ptr, size, GetDevicePtr(), GetSize());
-      }
+      sync_ok = SyncDeviceToHostAndFloatToFloat64(host_ptr, size, GetDevicePtr(), GetSize());
     } else {
       auto shape_size = abstract::ShapeSize(host_shape);
       auto host = std::vector<uint8_t>(GetSize());
@@ -729,18 +724,6 @@ bool AscendDeviceAddress::SyncDeviceToDevice(const DeviceSync *src_device_addr) 
     MS_LOG(WARNING) << "Move data to device failed, check previous log for details.";
   }
   if (format() == src_device_address->format() && type_id() == src_device_address->type_id()) {
-    if (src_device_address->mem_offloaded()) {
-      auto device_context = GetDeviceContext();
-      MS_EXCEPTION_IF_NULL(device_context);
-      void *temp_device_ptr = device_context->device_res_manager_->AllocateMemory(src_device_address->GetSize());
-      MS_EXCEPTION_IF_NULL(temp_device_ptr);
-      SyncMemory(temp_device_ptr, src_device_address->GetOffloadPtr(), src_device_address->GetSize(),
-                 ACL_MEMCPY_HOST_TO_DEVICE);
-      const auto ret = SyncDeviceToDevice(ShapeVector(), src_device_address->GetSize(), src_device_address->type_id(),
-                                          temp_device_ptr, src_device_address->format());
-      device_context->device_res_manager_->FreeMemory(temp_device_ptr);
-      return ret;
-    }
     return SyncDeviceToDevice(ShapeVector(), src_device_address->GetSize(), src_device_address->type_id(),
                               src_device_address->GetPtr(), src_device_address->format());
   } else {
@@ -802,16 +785,11 @@ bool AscendDeviceAddress::AsyncDeviceToDevice(const ShapeVector & /* shape */, s
     MS_LOG(WARNING) << "Move data to device failed, check previous log for details.";
   }
   std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
-  bool ret;
-  if (mem_offloaded()) {
-    ret = MemcpyAsync(loadable_mem_->offload_ptr_, src_ptr, size, static_cast<int32_t>(ACL_MEMCPY_DEVICE_TO_HOST),
-                      AscendStreamMng::GetInstance().default_stream());
-  } else {
-    ret = MemcpyAsync(GetDevicePtr(), src_ptr, size, static_cast<int32_t>(ACL_MEMCPY_DEVICE_TO_DEVICE),
-                      AscendStreamMng::GetInstance().default_stream());
-  }
+  bool ret = MemcpyAsync(GetDevicePtr(), src_ptr, size, static_cast<int32_t>(ACL_MEMCPY_DEVICE_TO_DEVICE),
+                         AscendStreamMng::GetInstance().default_stream());
   if (!ret) {
     MS_LOG(ERROR) << "MemcpyAsync failed!";
+    return false;
   }
   return ret;
 }
@@ -943,12 +921,6 @@ bool AscendDeviceAddress::ConvertFormatAndSyncHostToDevice(const ShapeVector &sh
 void AscendDeviceAddress::ClearDeviceMemory() {
   std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
   (void)Wait();
-  if (loadable_mem_ != nullptr && loadable_mem_->offload_ptr_ != nullptr) {
-    auto device_context = GetDeviceContext();
-    MS_EXCEPTION_IF_NULL(device_context);
-    device_context->device_res_manager_->FreeOffloadMemory(loadable_mem_->offload_ptr_);
-    loadable_mem_->offload_ptr_ = nullptr;
-  }
   if (GetDevicePtr() != nullptr && from_mem_pool()) {
     if (communication_ptr_ != nullptr) {
       AscendMemoryPool::GetInstance().FreeTensorMem(communication_ptr_);
@@ -1115,12 +1087,6 @@ AscendDeviceAddress::~AscendDeviceAddress() {
     // multi GPUDeviceAddress objects use same device pointer in ref case.
     std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
     (void)Wait();
-    if (loadable_mem_ != nullptr && loadable_mem_->offload_ptr_ != nullptr) {
-      auto device_context = GetDeviceContext();
-      MS_EXCEPTION_IF_NULL(device_context);
-      device_context->device_res_manager_->FreeOffloadMemory(loadable_mem_->offload_ptr_);
-      loadable_mem_->offload_ptr_ = nullptr;
-    }
     LoadableDeviceAddress::ReleaseResource();
   } catch (const std::exception &e) {
     MS_LOG(ERROR) << "AscendDeviceAddress destructor failed: " << e.what();

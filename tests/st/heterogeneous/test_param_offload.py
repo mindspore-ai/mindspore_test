@@ -64,7 +64,7 @@ def test_param_offload():
     ms.set_seed(1)
     context.set_context(jit_level='O0')
     context.set_context(memory_offload='ON')
-    context.set_context(max_device_memory='8GB')
+    context.set_context(max_device_memory='8.5GB')
 
     epoch = 8
     batch_size = 32
