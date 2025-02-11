@@ -59,6 +59,7 @@ from mindspore.ops.auto_generate.gen_ops_prim import conv3d_ext_op, conv3d_paddi
 from mindspore.common.generator import default_generator
 from mindspore.ops.auto_generate import hardshrink, hardsigmoid, hardswish
 from mindspore.ops.auto_generate import softshrink
+from mindspore.ops.auto_generate import moe_token_unpermute
 from mindspore.ops.auto_generate import adaptive_avg_pool2d_ext_op
 from mindspore.ops.auto_generate.pyboost_inner_prim import nllloss_impl
 from mindspore.ops.function.array_func import gather_ext
@@ -9264,6 +9265,7 @@ __all__ = [
     'gaussian_nll_loss',
     'lp_pool1d',
     'lp_pool2d',
+    'moe_token_unpermute',
     'max_unpool1d',
     'max_unpool2d',
     'max_unpool3d',
