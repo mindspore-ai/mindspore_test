@@ -242,8 +242,8 @@ void LoadInputs(const CNodePtr &cnode, std::vector<device::DeviceAddress *> devi
 
     auto dump_shape = GetInputKernelShapeVec(input_kernel, device_addr, j, trans_flag);
 
-    auto ret = device_addr->LoadMemToHost(input_tensor_name, UintToInt(exec_order), host_format, dump_shape, type, 0,
-                                          true, root_graph_id, false, trans_flag, async_copy);
+    auto ret = LoadMemToHost(*device_addr, input_tensor_name, UintToInt(exec_order), host_format, dump_shape, type, 0,
+                             true, root_graph_id, false, trans_flag, async_copy);
     if (!ret) {
       MS_LOG(WARNING) << "LoadMemToHost failed: tensor_name:" << input_tensor_name << ", host_format:" << host_format
                       << ", device_format:" << device_format << ".";
@@ -278,8 +278,8 @@ void LoadOutputs(const CNodePtr &cnode, std::vector<device::DeviceAddress *> dev
     auto device_addr = device_tensors[j];
     auto dump_shape = GetOutputKernelShapeVec(cnode, device_addr, j, trans_flag);
 
-    auto ret = device_addr->LoadMemToHost(tensor_name, UintToInt(exec_order), host_format, dump_shape, type, j, false,
-                                          root_graph_id, false, trans_flag);
+    auto ret = LoadMemToHost(*device_addr, tensor_name, UintToInt(exec_order), host_format, dump_shape, type, j, false,
+                             root_graph_id, false, trans_flag);
     if (!ret) {
       MS_LOG(WARNING) << "LoadMemToHost failed: tensor_name:" << tensor_name << ", host_format:" << host_format
                       << ", device_format:" << device_format << ".!";
