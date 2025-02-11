@@ -20,10 +20,10 @@ paged_attention:
     attn_mask:
       dtype: tensor
       default: None
-    alibi_mask:
+    q_seq_lens:
       dtype: tensor
       default: None
-    q_seq_lens:
+    alibi_mask:
       dtype: tensor
       default: None
     head_num:
