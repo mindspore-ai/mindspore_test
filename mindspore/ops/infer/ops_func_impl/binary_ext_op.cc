@@ -20,44 +20,53 @@
 #include <string>
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
+#include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
-namespace mindspore::ops {
-static inline bool isIntegralType(TypeId t) {
+namespace mindspore {
+namespace ops {
+static inline bool IsIntegralBinaryType(TypeId t) {
   return t == kNumberTypeInt8 || t == kNumberTypeInt16 || t == kNumberTypeInt32 || t == kNumberTypeInt64 ||
          t == kNumberTypeUInt8 || t == kNumberTypeUInt16 || t == kNumberTypeUInt32 || t == kNumberTypeUInt64;
 }
-
-TypePtr BinaryExtOpFuncImpl::InferType(const PrimitivePtr &primitive,
-                                       const std::vector<AbstractBasePtr> &input_args) const {
-  std::map<std::string, TypePtr> types;
-  (void)types.emplace("x", input_args[kInputIndex0]->GetType());
-  (void)types.emplace("y", input_args[kInputIndex1]->GetType());
-
-  auto dtype1 = input_args[kInputIndex0]->GetType();
-  auto dtype2 = input_args[kInputIndex1]->GetType();
-
-  auto element1 = dtype1->cast<TensorTypePtr>()->element();
-  MS_EXCEPTION_IF_NULL(element1);
-  auto type_id1 = element1->type_id();
-
-  auto element2 = dtype2->cast<TensorTypePtr>()->element();
-  MS_EXCEPTION_IF_NULL(element2);
-  auto type_id2 = element2->type_id();
-
-  auto alpha_type = input_args[kInputIndex2]->GetType();
-  if (alpha_type == kFloat32 && (isIntegralType(type_id1) || isIntegralType(type_id2))) {
-    MS_EXCEPTION(ValueError) << "For '" << primitive->name()
-                             << "', floating alpha need floating input and other, but got " << dtype1->ToString()
-                             << " and " << dtype2->ToString();
+ShapeArray BinaryExtOpFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  auto output_shape = input_infos[kInputIndex0]->GetShape();
+  std::vector<std::string> input_names = {"input", "other", "alpha"};
+  for (size_t i = 1; i < input_infos.size(); ++i) {
+    auto input_shape = input_infos[i]->GetShape();
+    output_shape = CalBroadCastShape(output_shape, input_shape, primitive->name(), input_names[i - 1], input_names[i]);
   }
-
-  if (alpha_type == kBool && (type_id1 != kNumberTypeBool || type_id2 != kNumberTypeBool)) {
-    MS_EXCEPTION(ValueError) << "For '" << primitive->name()
-                             << "', boolean alpha need boolean input and other, but got " << dtype1->ToString()
-                             << " and " << dtype2->ToString();
-  }
-
-  return CheckAndConvertUtils::CheckMathBinaryOpTensorType(types, common_valid_types_with_complex_and_bool,
-                                                           primitive->name());
+  return {output_shape};
 }
-}  // namespace mindspore::ops
+
+std::vector<TypeId> BinaryExtOpFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                   const InferInfoPtrList &input_infos) const {
+  auto input = input_infos[kInputIndex0]->GetType();
+  auto other = input_infos[kInputIndex1]->GetType();
+  auto alpha = input_infos[kInputIndex2]->GetType();
+  auto typePtr = TypeIdToType(input);
+  if (alpha == kNumberTypeFloat32 && (IsIntegralBinaryType(input) || IsIntegralBinaryType(other))) {
+    MS_EXCEPTION(TypeError) << "For '" << primitive->name()
+                            << "', floating alpha need floating input and other, but got " << TypeIdToString(input)
+                            << " and " << TypeIdToString(other);
+  }
+  if (alpha == kNumberTypeBool && (input != kNumberTypeBool || other != kNumberTypeBool)) {
+    MS_EXCEPTION(TypeError) << "For '" << primitive->name() << "', boolean alpha need boolean input and other, but got "
+                            << TypeIdToString(input) << " and " << TypeIdToString(other);
+  }
+  if (input != other) {
+    MS_EXCEPTION(TypeError) << "For primitive[" << primitive->name()
+                            << "], the input arguments must have same data type, but got Tensor["
+                            << TypeIdToString(input) << "] and Tensor[" << TypeIdToString(other) << "]";
+  }
+  if (!std::any_of(common_valid_types_with_complex_and_bool.begin(), common_valid_types_with_complex_and_bool.end(),
+                   [&typePtr](TypePtr accept) { return typePtr == accept; })) {
+    MS_EXCEPTION(TypeError) << "For primitive[" << primitive->name()
+                            << "], the input arguments must have error data type, got Tensor[" << TypeIdToString(input)
+                            << "] and Tensor[" << TypeIdToString(other) << "]";
+  }
+  return {input};
+}
+
+}  // namespace ops
+}  // namespace mindspore
