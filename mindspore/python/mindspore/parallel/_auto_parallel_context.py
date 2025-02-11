@@ -1055,6 +1055,10 @@ class _AutoParallelContext:
                 parallel_optimizer_config[grad_shard_name], grad_shard_name, grad_shard_name)
             self._context_handle.set_grad_accumulation_shard(
                 parallel_optimizer_config[grad_shard_name])
+            if optimizer_level_name in parallel_optimizer_config \
+                    and parallel_optimizer_config[optimizer_level_name] != "level2":
+                raise ValueError(f"The optimizer_level is set as {parallel_optimizer_config[optimizer_level_name]}, "
+                                 "thus cannot set grad_accumulation_shard as True.")
 
         if threshold_name in parallel_optimizer_config:
             Validator.check_non_negative_int(
@@ -1072,6 +1076,8 @@ class _AutoParallelContext:
             if optimizer_level not in ["level1", "level2", "level3"]:
                 raise ValueError("Optimizer level should in ['level1', 'level2', 'level3'], but got {}"
                                  .format(optimizer_level_name))
+            if self._context_handle.get_grad_accumulation_shard() and optimizer_level != "level2":
+                raise ValueError("The grad_accumulation shard is set, thus cannot set optimizer_level != 'level2'")
             if optimizer_level == "level2":
                 self._context_handle.set_grad_accumulation_shard(True)
             if optimizer_level == "level3":
