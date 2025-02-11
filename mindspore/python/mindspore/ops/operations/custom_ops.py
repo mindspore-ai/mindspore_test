@@ -41,6 +41,8 @@ from ._ms_kernel import determine_variable_usage
 from ._custom_grad import autodiff_bprop
 from ._pyfunc_registry import add_pyfunc
 
+from ._custom_ops_utils import ExtensionLoader
+
 if platform.system() != "Windows":
     import fcntl
 
@@ -1085,3 +1087,122 @@ class Custom(ops.PrimitiveWithInfer):
             return output
         # pylint: disable=protected-access
         return ops.primitive._run_op(self, self.name, args)
+
+
+class CustomOpBuilder:
+    r"""
+    CustomOpBuilder is used to initialize and configure custom operators for MindSpore.
+
+    Args:
+        name (str): The unique name of the custom operator module, used to identify the operator.
+        sources (str or list[str]): The source file(s) of the custom operator. It can be a single file path or
+                                    a list of file paths.
+        backend (str, optional): The target backend for the operator, such as "CPU" or "Ascend". Default: ``None``.
+        include_paths (list[str], optional): Additional include paths needed during compilation. Default: ``None``.
+        cflags (str, optional): Extra C++ compiler flags to be used during compilation. Default: ``None``.
+        ldflags (str, optional): Extra linker flags to be used during linking. Default: ``None``.
+
+    .. note::
+        If the `backend` argument is provided, additional default flags will be automatically added to
+        the compilation and linking steps to support the operator's target backend.
+        The `sources` argument must point to valid source files for the custom operator.
+        If `include_paths`, `cflags`, or `ldflags` are not provided, default values will be used.
+        The `load()` method will use the provided arguments to compile and load the custom operator.
+
+    Supported Platforms:
+        ``Ascend`` ``CPU``
+
+    Examples:
+        >>> builder = CustomOpBuilder(
+        ...     name="custom_op_cpu",
+        ...     sources="custom_ops_impl/pybind_op_cpu.cpp",
+        ...     backend="CPU"
+        ... )
+        >>> my_ops = builder.load()
+    """
+    _mindspore_path = None
+    _loaded_ops = {}
+    _ms_code_base = None
+
+    def __init__(self, name, sources, backend=None, include_paths=None, cflags=None, ldflags=None):
+        self.name = name
+        self.source = sources
+        self.backend = backend
+        self.include_paths = include_paths
+        self.cflags = cflags
+        self.ldflags = ldflags
+        if CustomOpBuilder._mindspore_path is None:
+            CustomOpBuilder._mindspore_path = os.path.dirname(os.path.abspath(ms.__file__))
+            CustomOpBuilder._ms_code_base = os.path.join(CustomOpBuilder._mindspore_path, "include")
+        if self.backend == "Ascend":
+            self.ascend_cann_path = os.getenv("ASCEND_OPP_PATH").split('opp')[0]
+
+    def get_sources(self):
+        """source files"""
+        return self.source
+
+    def get_include_paths(self):
+        """include paths"""
+        include_list = self.include_paths if self.include_paths is not None else []
+        include_list.append(CustomOpBuilder._mindspore_path)
+        include_list.append(os.path.join(CustomOpBuilder._mindspore_path, "include"))
+        include_list.append(os.path.join(CustomOpBuilder._mindspore_path, "include/third_party"))
+        include_list.append(os.path.join(CustomOpBuilder._mindspore_path, "include/third_party/robin_hood_hashing"))
+
+        if self.backend == "Ascend":
+            include_list.append(os.path.join(self.ascend_cann_path, "include"))
+        include_list += self._get_ms_inner_includes()
+        return include_list
+
+    def _get_ms_inner_includes(self):
+        """include paths for inner module interface."""
+        ms_inner_code_base = os.path.join(CustomOpBuilder._mindspore_path, "include", "mindspore")
+        include_list = []
+        include_list.append(ms_inner_code_base + "/core/include")
+        include_list.append(ms_inner_code_base + "/core/mindrt/include")
+        include_list.append(ms_inner_code_base + "/core/mindrt")
+        include_list.append(ms_inner_code_base + "/ops")
+        include_list.append(ms_inner_code_base + "/ccsrc")
+        include_list.append(ms_inner_code_base + "/ccsrc/include")
+        include_list.append(ms_inner_code_base + "/ccsrc/minddata/mindrecord/include")
+        return include_list
+
+    def get_cflags(self):
+        """cxx flags"""
+        flags = ['-fstack-protector-all', '-Wl,-z,relro,-z,now,-z,noexecstack', '-fPIC', '-pie',
+                 '-Wl,--disable-new-dtags,--rpath', '-s']
+        flags += ['-DENABLE_FAST_HASH_TABLE=1']
+        if self.cflags is not None:
+            flags.append(self.cflags)
+        return flags
+
+    def get_ldflags(self):
+        """extra ld flags"""
+        flags = [
+            '-L' + os.path.abspath(os.path.join(CustomOpBuilder._mindspore_path, 'lib')),
+            '-lmindspore_core',
+            '-lmindspore_backend',
+            '-lmindspore_pynative'
+        ]
+        if self.backend == "Ascend":
+            flags.append('-L' + os.path.abspath(os.path.join(CustomOpBuilder._mindspore_path, 'lib/plugin')))
+            flags.append('-L' + os.path.abspath(os.path.join(self.ascend_cann_path, "lib64")))
+            flags.append('-lascendcl')
+            flags.append('-l:libmindspore_ascend.so.2')
+        if self.ldflags is not None:
+            flags.append(self.ldflags)
+        return flags
+
+    def load(self):
+        """load module"""
+        if self.name in CustomOpBuilder._loaded_ops:
+            return CustomOpBuilder._loaded_ops[self.name]
+
+        op_module = ExtensionLoader().load(
+            module_name=self.name,
+            sources=self.get_sources(),
+            extra_include_paths=self.get_include_paths(),
+            extra_cflags=self.get_cflags(),
+            extra_ldflags=self.get_ldflags())
+        mod = CustomOpBuilder._loaded_ops[self.name] = op_module
+        return mod
