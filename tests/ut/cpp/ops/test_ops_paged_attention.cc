@@ -44,6 +44,7 @@ struct PagedAttentionShapeParams {
   ValuePtr kv_head;
   ValuePtr kv_cache_quant_mode;
   ValuePtr mask_mode;
+  ValuePtr mla_v_dim;
 };
 
 class TestPagedAttention : public TestOps, public testing::WithParamInterface<PagedAttentionShapeParams> {};
@@ -68,17 +69,18 @@ TEST_P(TestPagedAttention, DynShape) {
   auto kv_head = param.kv_head->ToAbstract();
   auto kv_cache_quant_mode = param.kv_cache_quant_mode->ToAbstract();
   auto mask_mode = param.mask_mode->ToAbstract();
+  auto mla_v_dim = param.mla_v_dim->ToAbstract();
 
   PagedAttentionFuncImpl func_impl;
   auto prim = std::make_shared<Primitive>("PagedAttention");
 
   auto out_dtype = func_impl.InferType(
     prim, {query, key_cache, value_cache, block_tables, context_lens, antiquant_scale, antiquant_offset, attn_mask,
-           q_seq_lens, num_head, scale_value, kv_head, kv_cache_quant_mode, mask_mode});
+           q_seq_lens, alibi_mask, num_head, scale_value, kv_head, kv_cache_quant_mode, mask_mode, mla_v_dim});
   ASSERT_TRUE(*out_dtype == *expect_type);
   auto out_shape = func_impl.InferShape(
     prim, {query, key_cache, value_cache, block_tables, context_lens, antiquant_scale, antiquant_offset, attn_mask,
-           q_seq_lens, num_head, scale_value, kv_head, kv_cache_quant_mode, mask_mode});
+           q_seq_lens, alibi_mask, num_head, scale_value, kv_head, kv_cache_quant_mode, mask_mode, mla_v_dim});
   ASSERT_TRUE(*out_shape == *expect_shape);
 }
 
@@ -93,11 +95,12 @@ INSTANTIATE_TEST_CASE_P(TestPagedAttention, TestPagedAttention,
                                                                   kInt32,
                                                                   {2},
                                                                   kInt32,
-                                                                  CreateScalar<int>(40),
+                                                                  CreateScalar<int64_t>(40),
                                                                   CreateScalar<float>(1.0),
-                                                                  CreateScalar<int>(40),
-                                                                  CreateScalar<int>(0),
-                                                                  CreateScalar<int>(0)},
+                                                                  CreateScalar<int64_t>(40),
+                                                                  CreateScalar<int64_t>(0),
+                                                                  CreateScalar<int64_t>(0),
+                                                                  CreateScalar<int64_t>(0)},
                                         PagedAttentionShapeParams{{-1, 40, 128},
                                                                   kFloat16,
                                                                   {256, 16, 40, 128},
@@ -108,10 +111,11 @@ INSTANTIATE_TEST_CASE_P(TestPagedAttention, TestPagedAttention,
                                                                   kInt32,
                                                                   {-1},
                                                                   kInt32,
-                                                                  CreateScalar<int>(40),
+                                                                  CreateScalar<int64_t>(40),
                                                                   CreateScalar<float>(1.0),
-                                                                  CreateScalar<int>(40),
-                                                                  CreateScalar<int>(0),
-                                                                  CreateScalar<int>(0)}));
+                                                                  CreateScalar<int64_t>(40),
+                                                                  CreateScalar<int64_t>(0),
+                                                                  CreateScalar<int64_t>(0),
+                                                                  CreateScalar<int64_t>(0)}));
 }  // namespace ops
 }  // namespace mindspore
