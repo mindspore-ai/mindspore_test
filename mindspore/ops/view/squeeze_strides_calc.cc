@@ -25,13 +25,12 @@ constexpr size_t kSqueezeCalcInputsNum = 2;
 constexpr auto kSqueezedNum = 1;
 }  // namespace
 TensorStorageInfoPtrList SqueezeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (CheckInputsNull(inputs, kSqueezeCalcInputsNum) || !inputs[0]->isa<tensor::BaseTensor>() ||
-      !inputs[1]->isa<ValueSequence>()) {
+  if (CheckInputsNull(inputs, kSqueezeCalcInputsNum) || !inputs[kInputIndex0]->isa<tensor::BaseTensor>() ||
+      (!inputs[kInputIndex1]->isa<ValueSequence>() && !inputs[kInputIndex1]->isa<None>())) {
     return {};
   }
   auto tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(tensor);
-  const auto &axis = GetValue<std::vector<int64_t>>(inputs[1]);
   auto old_tensor_info = GetOldTensorInfo(tensor);
   auto oldShape = old_tensor_info->old_shape;
   auto oldStrides = old_tensor_info->old_strides;
@@ -46,20 +45,24 @@ TensorStorageInfoPtrList SqueezeCalc(const PrimitivePtr &prim, const std::vector
   }
 
   std::vector<bool> seen_dims(ndims, false);
-
-  if (axis.empty()) {
+  if (inputs[kInputIndex1]->isa<None>()) {
     for (size_t i = 0; i < ndims; i++) {
       seen_dims[i] = true;
     }
   } else {
-    for (int64_t dim : axis) {
-      CheckAndConvertUtils::CheckInRange<int64_t>("element or value of axis", dim, kIncludeLeft, {-ndims, ndims},
-                                                  "Squeeze");
-      const auto wrap_dim = DynamicDimWrap(dim, ndims);
-      seen_dims[wrap_dim] = true;
+    const auto &axis = GetValue<std::vector<int64_t>>(inputs[kInputIndex1]);
+    if (!axis.empty() || axis.size() == 0) {
+      for (size_t i = 0; i < axis.size(); i++) {
+        CheckAndConvertUtils::CheckInRange<int64_t>("element or value of axis", axis[i], kIncludeLeft, {-ndims, ndims},
+                                                    "Squeeze");
+        const auto wrap_dim = DynamicDimWrap(axis[i], ndims);
+        MS_EXCEPTION_IF_CHECK_FAIL(
+          !seen_dims[wrap_dim],
+          "For Squeeze, wrap_dim appears multiple times in the list of dim, which is not allowed.");
+        seen_dims[wrap_dim] = true;
+      }
     }
   }
-
   // delete shape dim if it equals one in seen dimension.
   ShapeVector newShape;
   StridesVecotr newStrides;
