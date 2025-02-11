@@ -32,6 +32,8 @@
   STOP_TRACE_REASON_KIND(Trace_Fail, "Trace_Fail")                                          \
   STOP_TRACE_REASON_KIND(StopTraceSkip_Exception, "Skip_exception")                         \
   STOP_TRACE_REASON_KIND(StopTraceTensorHook, "StopTraceTensorHook")                        \
+  STOP_TRACE_REASON_KIND(StopTraceUDReset, "UD_Reset")                                      \
+  STOP_TRACE_REASON_KIND(StopTraceUDAnalyzeError, "UDAnalyzeError")                         \
   STOP_TRACE_REASON_KIND(StopTrace_Reason_Count, "StopTrace_Reason_Count")
 
 enum StopTraceReason {

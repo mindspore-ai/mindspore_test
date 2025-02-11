@@ -48,6 +48,7 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"print_tb", &GraphJitConfig::SetBool<GraphJitConfig::kPrintTraceback>},
   {"print_bb", &GraphJitConfig::SetBool<GraphJitConfig::kPrintBB>},
   {"print_cfg", &GraphJitConfig::SetBool<GraphJitConfig::kPrintCFG>},
+  {"print_bytecode", &GraphJitConfig::SetBool<GraphJitConfig::kPrintBytecode>},
   {"interpret_captured_code", &GraphJitConfig::SetBool<GraphJitConfig::kInterpretCapturedCode>},
   {"compile_without_capture", &GraphJitConfig::SetBool<GraphJitConfig::kCompileWithoutCapture>},
   {"compile_with_try", &GraphJitConfig::SetBool<GraphJitConfig::kCompileWithTry>},
@@ -73,6 +74,7 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"pijit_context_mode", &GraphJitConfig::SetBool<GraphJitConfig::kPIJitContextMode>},
   {"expand_graph_input", &GraphJitConfig::SetBool<GraphJitConfig::kExpandGraphInput>},
   {"expand_graph_output", &GraphJitConfig::SetBool<GraphJitConfig::kExpandGraphOutput>},
+  {"subgraph_break_opt", &GraphJitConfig::SetBool<GraphJitConfig::kSubgraphBreakOpt>},
   // kEnableOptimizeForAttrItem
   {"_symbolic", &GraphJitConfig::SetInt<GraphJitConfig::kSymbolic>},
   {"MAX_INLINE_DEPTH", &GraphJitConfig::SetInt<GraphJitConfig::kMaxInlineDepth>},
@@ -102,6 +104,7 @@ GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
   bool_conf[kPrintTraceback - kBoolConf] = false;
   bool_conf[kPrintBB - kBoolConf] = false;
   bool_conf[kPrintCFG - kBoolConf] = false;
+  bool_conf[kPrintBytecode - kBoolConf] = false;
   bool_conf[kInterpretCapturedCode - kBoolConf] = false;
   bool_conf[kCompileWithoutCapture - kBoolConf] = false;
   bool_conf[kCompileWithTry - kBoolConf] = true;
@@ -126,6 +129,7 @@ GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
   bool_conf[kEnableMsApiInfer - kBoolConf] = false;
   bool_conf[kExpandGraphInput - kBoolConf] = true;
   bool_conf[kExpandGraphOutput - kBoolConf] = true;
+  bool_conf[kSubgraphBreakOpt - kBoolConf] = false;
 
   bool_conf[kEnableEliminateUnusedOperation - kBoolConf] = false;
   bool_conf[kFeatureBreakAtInlinedFunction - kBoolConf] = true;

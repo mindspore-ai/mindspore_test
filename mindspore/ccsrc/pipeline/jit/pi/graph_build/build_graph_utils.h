@@ -17,6 +17,7 @@
 #ifndef MINDSPORE_PI_JIT_GRAPH_BUILD_BUILD_UTILS_H_
 #define MINDSPORE_PI_JIT_GRAPH_BUILD_BUILD_UTILS_H_
 #include <utility>
+#include <optional>
 #include <string>
 #include "pybind11/pybind11.h"
 #include "ir/anf.h"

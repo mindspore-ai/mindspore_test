@@ -75,6 +75,10 @@ class AbstractWrapper {
   AbstractBasePtr abstract_;
   GradInfo grad_info_;
 };
+
+inline std::string ToString(const AbstractWrapperPtr &wrapper) {
+  return wrapper != nullptr ? wrapper->ToString() : "NULL";
+}
 }  // namespace pijit
 }  // namespace mindspore
 

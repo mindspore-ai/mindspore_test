@@ -18,6 +18,7 @@
 
 #include <set>
 #include <vector>
+#include <list>
 #include <map>
 #include <memory>
 #include <string>
@@ -100,9 +101,16 @@ class GraphAnalyzer {
     std::string ToString();
   };
 
+  struct GraphBreakInfo {
+    bool is_break_at_call = false;
+    // Contains only subgraphs, and top-graph is not in it.
+    // The topmost subgraph is at the beginning of the list and the bottommost subgraph at the end.
+    std::list<Graph *> captured_subgraphs;
+  };
+
  public:
   explicit GraphAnalyzer(const GraphBuilderPtr &graph_builder)
-      : graph_(graph_builder->GetGraph()), graph_builder_(graph_builder), info_() {}
+      : graph_(graph_builder->GetGraph()), graph_builder_(graph_builder), info_(), graph_break_info_() {}
 
   void Analyze();
 
@@ -111,24 +119,22 @@ class GraphAnalyzer {
 
   bool NeedInterpret() const { return need_interpret_; }
 
-  const auto &alive_locals() const { return alive_locals_; }
+  const GraphBreakInfo &graph_break_info() const { return graph_break_info_; }
 
  private:
   // Collect top-graph closure side-effect nodes.
   void CollectClosureSideEffect();
-  // optimize
   void OptimizeSideEffectRecord() const;
-  // rollback
   void ResetSideEffectRecord() const;
 
   // UD analyze
   void UseDefAnalyze();
-
-  std::vector<ValueNode *> GetAliveLocals(Graph *g);
-
-  bool AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes);
-
+  bool AnalyzeTopGraphAliveNodes(const std::vector<ValueNode *> &alive_nodes);
   void UpdateCapturedOrder();
+  void AnalyzeSubGraphBreakRecursive(CallNode *call_node);
+  std::vector<ValueNode *> SubGraphUseDefAnalyze(Graph *graph);
+  bool AnalyzeSubGraphAliveNodes(const std::vector<ValueNode *> &alive_nodes, Graph *graph,
+                                 std::vector<ValueNode *> *graph_outputs);
 
   void CollectCapturedAndInterpret();
 
@@ -147,8 +153,8 @@ class GraphAnalyzer {
   Graph *graph_;
   GraphBuilderPtr graph_builder_;
   CapturedInfo info_;
+  GraphBreakInfo graph_break_info_;
   bool need_interpret_{false};
-  std::vector<int> alive_locals_{};
 };
 }  // namespace pijit
 }  // namespace mindspore

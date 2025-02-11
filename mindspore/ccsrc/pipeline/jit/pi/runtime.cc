@@ -428,6 +428,7 @@ static auto HandleUnsupportedSyntax(JitCompileResults *jcr, const GraphBuilderPt
     break_op == WITH_CLEANUP_START || break_op == WITH_CLEANUP_FINISH || break_op == END_FINALLY || break_op == RERAISE;
   if (g->StackSize() > 0 || unsupported) {
     // something happened in with syntax
+    MS_LOG(DEBUG) << "Break at unsupported syntax";
     jcr->code()->SetGuard(std::make_shared<OptGuard>());
     AddConfigToGuard(*jcr->conf(), jcr->code()->GetGuard());
     jcr->conf()->SetBool<GraphJitConfig::kSkipException>(Py_True);
@@ -495,6 +496,7 @@ static void GraphCapture(JitCompileResults *jcr) {
   }
 
   if (conf.GetBoolConfig(GraphJitConfig::kPrintAfterAll)) {
+    PY_PRINTF("*** Dump ByteCode After CodeGen on [%A] ***", new_code.ptr());
     Utils::DisFuncObject(new_code.ptr());
     GRAPH_JIT_LOG_F("\n\n");
   }
@@ -642,7 +644,7 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
     return false;
   }
   ShapeContext sc(c->origin_frame().frame(), c->input_signature().ptr());
-  MS_LOG(DEBUG) << "---start compile " << py::str(reinterpret_cast<PyObject *>(code)) << "---";
+  MS_LOG(INFO) << "Start compile " << py::str(reinterpret_cast<PyObject *>(code));
 
   // new guard code
   c->set_code(c->codehub()->AddOptTarget(OptOption::CreateOptionByPoint(c)));
@@ -983,6 +985,7 @@ static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, EvalFram
       MS_LOG(EXCEPTION) << "shouldn't reach here";
       break;
   }
+  MS_LOG(INFO) << "Fall back to python execute: " << PyFrameWrapper(frame).GetCode().Name();
   c->set_origin_frame(nullptr);
   PyObject *res = _PyEval_EvalFrameDefault(tstate, frame, 0);
   return py::reinterpret_steal<py::object>(res);

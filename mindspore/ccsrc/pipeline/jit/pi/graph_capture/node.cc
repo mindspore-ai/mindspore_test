@@ -151,5 +151,8 @@ void CallNode::SetSubGraph(Graph *n) {
     n->SetParent(GetGraph());
   }
 }
+
+std::string ToString(const pijit::AbstractNode *node) { return node == nullptr ? "NULL" : node->ToString(); }
+
 }  // namespace pijit
 }  // namespace mindspore

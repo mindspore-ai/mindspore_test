@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 #include "pipeline/jit/pi/graph_capture/graph.h"
-#include <set>
 #include <algorithm>
 #include <memory>
 #include <string>
@@ -228,6 +227,7 @@ bool Graph::IsBreakAtLoop() const {
  */
 bool Graph::ShouldNeverCompile() const {
   if (this->IsBreakAtLoop() && !this->RestoreLoopStatus()) {
+    MS_LOG(DEBUG) << "Break at loop, should never compile";
     return true;
   }
 
@@ -533,11 +533,10 @@ std::vector<ValueNode *> Graph::CollectAliveNode(int bci, std::vector<int> *ids)
     BitMap alive = this->GetCFG()->GetLiveness()->CollectAlive(bci);
     result = CollectAliveNode(this->GetFrame(bci), &alive, ids);
   }
-  if (GetSideEffect()->IsEmpty()) {
+  if (side_effect_->IsEmpty()) {
     return result;
   }
   // alive locals must be original node
-  result.insert(result.end(), side_effect_->GetRequiredNodes().begin(), side_effect_->GetRequiredNodes().end());
   for (auto &node : result) {
     auto new_node = this->GetSideEffect()->GetSource(node);
     if (new_node->GetOpcode() == LOAD_ATTR) {  // transform the alive attribute source
@@ -870,6 +869,15 @@ std::string FrameStates::ToString() const {
   std::for_each(cell_free.begin(), cell_free.end(), [&s](ValueNode *i) { s << i->ToString() << "\n"; });
   s << "\n";
   return s.str();
+}
+
+std::string GetFileName(const Graph *graph) { return PyUnicode_AsUTF8(graph->GetCodeObj()->co_filename); }
+
+std::string GetNameAndLocation(const Graph *graph) {
+  std::ostringstream ss;
+  PyCodeWrapper co(graph->GetCodeObj());
+  ss << "'" << graph->GetCodeName() << "' " << graph << " at \"" << co.FileName() << ":" << co.FirstLine() << "\"";
+  return ss.str();
 }
 
 }  // namespace pijit

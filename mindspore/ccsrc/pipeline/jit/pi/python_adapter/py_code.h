@@ -63,7 +63,6 @@ class PyCodeWrapper {
  private:
   PyCodeObject *ptr_;
 };
-
 }  // namespace pijit
 }  // namespace mindspore
 

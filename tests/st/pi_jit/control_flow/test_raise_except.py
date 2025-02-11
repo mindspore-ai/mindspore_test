@@ -7,7 +7,6 @@ from tests.mark_utils import arg_mark
 import pytest
 
 
-
 @arg_mark(
     plat_marks=["cpu_linux"],
     level_mark="level0",
@@ -168,6 +167,7 @@ def test_except_case_5():
     assert jcr["break_count_"] == 1
 
 
+# todo: should fix it for subgraph break optimization.
 @arg_mark(
     plat_marks=["cpu_linux"],
     level_mark="level0",
@@ -474,7 +474,7 @@ def test_except_case_15():
     def func():
         i = 1
         with MyFile():
-            i =2
+            i = 2
             raise ArithmeticError
         return i
 

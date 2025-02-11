@@ -245,7 +245,7 @@ class CodeBreakGenerator {
         no_graph_(false) {}
 
   // collect nodes inputs and outputs at graph analyze
-  void Init(const Graph *, const GraphAnalyzer &);
+  void Init(const GraphAnalyzer &, Graph *);
 
   // generate a code to call graph, unsupported operations, and untracked operations that will be compiled
   py::object MakeDispatchCode();
@@ -290,14 +290,11 @@ class CodeBreakGenerator {
   void BreakAtIf(CodeGenerator *code_gen) const;
 
   // generate specialize code if break point is call
-  bool BreakAtCall(CodeGenerator *code_gen) const;
+  void BreakAtCall(CodeGenerator *code_gen) const;
 
   void RestoreStack(CodeGenerator *code_gen) const;
 
   void RestoreLocals(CodeGenerator *code_gen, bool load) const;
-
-  // return co_cellvars and co_freevars
-  std::vector<std::string> GetClosureNames() const;
 
   FuncGraphBuilderPtr FGBuilder() const { return fg_builder_; }
 
@@ -334,9 +331,6 @@ class CodeBreakGenerator {
 
   GraphInputInfo graph_inputs_info_;
 
-  // break point info
-  ValueNode *break_point_node_;
-
   // break bci alive locals
   std::vector<int> alive_locals_;
 
@@ -349,6 +343,10 @@ class CodeBreakGenerator {
   int extra_local_;
 
   bool no_graph_;
+
+  bool is_break_at_call_ = false;
+  // The top-graph is at the beginning of the vector and the bottommost subgraph at the end.
+  std::vector<Graph *> call_stack_{};
 };
 
 // add a key and value to py::dict, check key conflict or rename the key

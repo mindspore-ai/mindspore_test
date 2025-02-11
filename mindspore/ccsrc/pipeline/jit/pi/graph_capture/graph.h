@@ -118,7 +118,7 @@ class Graph {
     Instr *break_point_;
     ValueNode *break_point_node_;
     std::vector<int> alive_locals_;
-    std::vector<ValueNode *> alive_nodes_;
+    std::vector<ValueNode *> alive_nodes_;  // Does not include side-effect alive nodes!
     int bci_;
     StopTraceReason reason_;
   };
@@ -126,7 +126,7 @@ class Graph {
   Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf);
   virtual ~Graph() {}
 
-  const auto &break_info() const { return break_info_; }
+  const BreakInfo &break_info() const { return break_info_; }
   void set_break_info(const BreakInfo &info) { break_info_ = info; }
 
   ValueNode *GetGeneratorResult() const { return generator_result_; }
@@ -198,11 +198,10 @@ class Graph {
   const std::shared_ptr<SideEffect> &GetSideEffect() const;
   void SetSideEffect(const std::shared_ptr<SideEffect> &handler);
 
-  // collect alive node, output bitmap
   std::vector<ValueNode *> CollectAliveNode(int bci, std::vector<int> * = nullptr) const;
-
   // collect alive node, clear the bit if alive local is unbound
   static std::vector<ValueNode *> CollectAliveNode(const FrameStates &, BitMap *, std::vector<int> * = nullptr);
+
   void FoundInnerClass() { found_inner_class = true; }
 
   const auto &prepare() const { return prepare_; }
@@ -257,6 +256,13 @@ class Graph {
 
   std::shared_ptr<FuncGraphBuilder> func_graph_builder_;
 };
+
+// Return the file path of python code.
+std::string GetFileName(const Graph *graph);
+
+// Return a string in format: 'func_name' at "file_path:line_number"
+std::string GetNameAndLocation(const Graph *graph);
+
 }  // namespace pijit
 }  // namespace mindspore
 

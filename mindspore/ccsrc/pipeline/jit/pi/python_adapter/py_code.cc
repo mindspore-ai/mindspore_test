@@ -172,6 +172,5 @@ py::object PyCodeWrapper::DeepCopy() {
 #endif
   throw py::error_already_set();
 }
-
 }  // namespace pijit
 }  // namespace mindspore

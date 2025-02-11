@@ -20,6 +20,7 @@
 #include <unordered_map>
 #include <utility>
 #include <memory>
+#include <optional>
 #include <string>
 #include "pipeline/jit/pi/python_adapter/py_frame.h"
 #include "pipeline/jit/pi/graph_capture/graph.h"
@@ -204,7 +205,7 @@ class GraphBuilder {
   std::vector<ValueNode *> UnpackConstObject(const py::object &);
 
   // return true if not inline
-  virtual bool WhiteListFuncCheckAndInfer(CallNode *, const py::object &f);
+  bool WhiteListFuncCheckAndInfer(CallNode *, const py::object &f);
 
   bool DoSetItem(ValueNode *map, ValueNode *key, ValueNode *val);
 
@@ -328,8 +329,8 @@ class GraphBuilder {
    */
   bool Symbolic(ValueNode *node);
 
- protected:
-  GraphBuilderPtr sub_graph = nullptr;
+ private:
+  GraphBuilderPtr sub_graph_ = nullptr;
   GraphBuilder *root_;
   GraphBuilder *parent_;
   Graph *graph_;
@@ -352,8 +353,6 @@ class GraphBuilder {
   ValueNode *DoMixedPrecisionAttrAccess(const Instr &instr, ValueNode *node, ValueNode *attr);
   bool ResolveNoGrad(CallNode *call_node, StopTraceReason *stop_reason);
 
-  std::string co_name_;
-
   void FGAddTopInputsWithExpander();
   void FGAddTopInputs();
   bool FGAddInputs(const std::vector<ValueNode *> &args);
@@ -372,15 +371,11 @@ class GraphBuilder {
 
   // Collect side effect nodes that need to be returned from current graph.
   void CollectSideEffectOutputs();
-  // Roll back the side effect nodes generated in current graph (and all its subgraphs).
-  void RollbackSideEffectRecords();
-  FuncGraphPtr BuildSubFuncGraph(const GraphBuilderPtr &subgraph_builder, const std::vector<ValueNode *> &args,
-                                 CallNode *call_node);
+  FuncGraphPtr BuildSubFuncGraph(const GraphBuilderPtr &subgraph_builder, CallNode *call_node);
   bool FGAddOutput();
   bool FGAddSideEffectOutput();
   bool HandleSubGraphOutput(const AbstractWrapperPtr &output, const GraphBuilderPtr &subgraph_builder,
                             CallNode *call_node);
-  AbstractWrapperPtr FGTupleGetItem(const AbstractWrapperPtr &tuple, int index);
 
   AbstractWrapperPtr HandleGetShapeOfDynamicLengthTensor(const AbstractWrapperPtr &abstract_wrapper);
   std::pair<bool, std::vector<py::object>> GetConstantInputsObject(CallNode *call_node);
@@ -413,6 +408,15 @@ class GraphBuilder {
   py::object FGAddNodeTensorOverload(CallNode *call_node, const py::object &callable_info,
                                      StopTraceReason *stop_reason);
 };
+
+namespace fg_build_utils {
+AbstractWrapperPtr FgTupleGetItem(const FuncGraphBuilderPtr &fg_builder, const AbstractWrapperPtr &tuple, int index);
+std::optional<std::vector<AbstractWrapperPtr>> FgTupleUnpack(const FuncGraphBuilderPtr &fg_builder,
+                                                             const AbstractWrapperPtr &tuple);
+// Add AnfNode in parent FuncGraph to call the subgraph's FuncGraph.
+AbstractWrapperPtr FgCallSubGraph(CallNode *call_node);
+}  // namespace fg_build_utils
+
 }  // namespace pijit
 }  // namespace mindspore
 

@@ -141,6 +141,10 @@ class SideEffect {
   // return the side-effect handler required nodes
   const std::set<ValueNode *> &GetRequiredNodes() const;
 
+  // The argument `node` is a side-effect node, and the function returns the required nodes used to restore
+  // this side-effect operation.
+  std::vector<ValueNode *> GetKeepAlive(ValueNode *node) const;
+
  private:
   struct Entry {
     ValueNode *node_;

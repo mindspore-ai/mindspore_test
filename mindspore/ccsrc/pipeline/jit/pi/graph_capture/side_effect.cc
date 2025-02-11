@@ -233,7 +233,23 @@ std::vector<ValueNode *> SideEffect::GetKeepAlive(const Entry &e) const {
   return alive;
 }
 
+std::vector<ValueNode *> SideEffect::GetKeepAlive(ValueNode *node) const {
+  auto it = nodes_.find(node);
+  if (it == nodes_.end()) {
+    MS_LOG(DEBUG) << "Is not side-effect node! " << ToString(node);  // It shouldn't happen
+    return {};
+  }
+  return GetKeepAlive(it->second);
+}
+
 void SideEffect::ResetRecord(const std::set<ValueNode *> &nodes_set) {
+  if (nodes_set.empty()) {
+    MS_LOG(DEBUG) << "Clear all side-effect nodes";
+    keep_alive_.clear();
+    nodes_.clear();
+    data_->ClearCache();
+    return;
+  }
   // remove if record not find in final node set
   auto size = nodes_.size();
   for (auto iter = nodes_.begin(), end = nodes_.end(); iter != end;) {
