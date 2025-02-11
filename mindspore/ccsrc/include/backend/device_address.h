@@ -271,7 +271,6 @@ class DeviceAddress : public mindspore::DeviceSync {
   void set_from_persistent_mem(bool from_persistent_mem) { from_persistent_mem_ = from_persistent_mem; }
   bool need_recycle() const { return need_recycle_; }
   void set_need_recycle(bool need_recycle) { need_recycle_ = need_recycle; }
-  virtual bool mem_offloaded() const { return false; }
   void set_status(DeviceAddressStatus status) { status_ = status; }
   DeviceAddressStatus status() const { return status_; }
   virtual DeviceType GetDeviceType() const { return DeviceType::kUnknown; }

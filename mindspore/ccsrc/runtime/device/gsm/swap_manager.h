@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,43 +26,10 @@
 #include "include/backend/device_address.h"
 #include "runtime/device/gsm/io_handle.h"
 #include "runtime/device/gsm/pin_mem_pool.h"
-#include "include/backend/kernel_info.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {
 namespace device {
-class SwappableTensorCandidates {
-  using CandidateItem = std::pair<std::weak_ptr<DeviceAddress>, DeviceAddress *>;
-
- public:
-  class CandidateIter {
-   public:
-    explicit CandidateIter(SwappableTensorCandidates *candidates);
-    bool IsEnd();
-    void Next();
-    DeviceAddressPtr Get();
-
-   private:
-    size_t current_size_level_{0};
-    size_t current_candidate_idx_{0};
-    std::vector<std::vector<CandidateItem>> &swappable_tensors_;
-    std::vector<std::queue<size_t>> &null_index_;
-    HashSet<DeviceAddress *> &all_swappable_tensors_;
-  };
-  void Init(size_t size_level_num);
-  DeviceAddressPtr GetLowerBoundCandidate(size_t size);
-  CandidateIter Begin();
-  void Add(const DeviceAddressPtr &candidate);
-
- private:
-  size_t GetSizeLevel(size_t size) const;
-
-  size_t size_level_num_;
-  std::vector<std::vector<CandidateItem>> swappable_tensors_;
-  std::vector<std::queue<size_t>> null_index_;
-  HashSet<DeviceAddress *> all_swappable_tensors_;
-};
-
 class BACKEND_EXPORT SwapManager {
  public:
   SwapManager(size_t stream_id, DynamicMemPool *device_memory_pool, PinMemPool *pin_mem_pool);
@@ -87,14 +54,8 @@ class BACKEND_EXPORT SwapManager {
   bool WaitAsyncIO(AsyncIOToken sync_token);
   std::string GetSwapFileName(uint32_t device_id) const;
 
-  // Swapping and swappable tensors
-  void AddSwappableTensor(const DeviceAddressPtr &device_address);
   void AddSwappingTensor(const DeviceAddress *device_address);
 
-  void SetSwappableBeforeMemAllocate(const std::vector<DeviceAddress *> &inputs,
-                                     const std::vector<DeviceAddress *> &outputs) const;
-  void SetSwappableBeforeMemFree(const std::vector<DeviceAddress *> &inputs,
-                                 const std::vector<DeviceAddress *> &outputs, const KernelInfo *kernel_info) const;
   PinMemPool *GetPinMemPool() { return pin_mem_pool_; }
 
  private:
@@ -108,10 +69,6 @@ class BACKEND_EXPORT SwapManager {
   bool TryAllocate(std::queue<const DeviceAddress *> queue, const Input &input, uint32_t stream_id,
                    Output (SwapManager::*allocate_func)(const Input &, uint32_t),
                    const std::function<bool(Output)> &success, Output *output);
-  template <class Input, class Output>
-  bool SwapOutTemp(const std::pair<DeviceAddressStatus, StorageType> &swap_type, size_t total_size, const Input &input,
-                   uint32_t stream_id, Output (SwapManager::*allocate_func)(const Input &, uint32_t),
-                   const std::function<bool(Output)> &success, Output *output);
 
  private:
   size_t stream_id_;
@@ -123,7 +80,6 @@ class BACKEND_EXPORT SwapManager {
   struct compare {
     bool operator()(const DeviceAddressPtr &l, const DeviceAddressPtr &r) const { return l->GetSize() < r->GetSize(); }
   };
-  SwappableTensorCandidates candidates_;
   const size_t size_level_num_{0};
   std::mutex swapping_tensors_device_mutex_;
   std::queue<const DeviceAddress *> swapping_tensors_device_;

@@ -23,22 +23,6 @@
 
 namespace mindspore {
 namespace runtime {
-void MemorySwapActor::FetchRealParameters(OpContext<mindspore::runtime::DeviceTensor> *context) {
-  MS_EXCEPTION_IF_NULL(context);
-  const auto &data_iter = input_op_datas_.find(context->sequential_num_);
-  if (data_iter == input_op_datas_.end()) {
-    return;
-  }
-  for (auto &input_data : data_iter->second) {
-    MS_EXCEPTION_IF_NULL(input_data);
-    size_t input_index = IntToSize(input_data->index_);
-    if (input_index >= real_parameters_.size()) {
-      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The input index is out of range.");
-    }
-    real_parameters_[input_index] = input_data->data_;
-  }
-}
-
 void MemorySwapActor::UpdateDeviceTensors(OpContext<mindspore::runtime::DeviceTensor> *context) {
   MS_EXCEPTION_IF_NULL(context);
   const auto &data_iter = input_op_datas_.find(context->sequential_num_);
@@ -139,84 +123,6 @@ void MemorySwapActor::Run(OpContext<mindspore::runtime::DeviceTensor> *const con
       Swap(context, swap_to_map[action_type], device_tensors);
     } else {
       MS_LOG(WARNING) << "Unknown swap action type, skip.";
-    }
-  }
-  EraseInput(context);
-  SendOutput(context);
-}
-
-void MemorySwapInActor::Run(OpContext<DeviceTensor> *context) {
-  MS_EXCEPTION_IF_NULL(context);
-  FetchRealParameters(context);
-  if (continuous_device_tensors_.size() != continuous_device_tensor_sizes_.size()) {
-    MS_LOG(EXCEPTION) << "Size of continuous_device_tensors_ and continuous_device_tensor_sizes_ should be same,"
-                         " bug got"
-                      << continuous_device_tensors_.size() << ", " << continuous_device_tensor_sizes_.size();
-  }
-
-  MS_EXCEPTION_IF_CHECK_FAIL((!device_contexts_.empty()), "The device context doesn't exist.");
-  MS_EXCEPTION_IF_NULL(device_contexts_[0]);
-  MS_EXCEPTION_IF_NULL(device_contexts_[0]->device_res_manager_);
-  for (size_t j = 0; j < continuous_device_tensors_.size(); ++j) {
-    const auto &device_ptrs =
-      device_contexts_[0]->device_res_manager_->AllocateContinuousMemory(continuous_device_tensor_sizes_[j]);
-    for (size_t k = 0; k < continuous_device_tensors_[j].size(); ++k) {
-      MS_EXCEPTION_IF_NULL(continuous_device_tensors_[j][k]);
-      continuous_device_tensors_[j][k]->set_ptr(device_ptrs[k]);
-      continuous_device_tensors_[j][k]->set_from_mem_pool(true);
-    }
-  }
-  for (const auto &device_tensor : device_tensors_to_swap_) {
-    MS_EXCEPTION_IF_NULL(device_tensor);
-    if (device_tensor->mem_offloaded() && !device_tensor->Load(stream_id_)) {
-      MS_LOG(EXCEPTION) << "Load device tensor from host to device failed.";
-    }
-  }
-  for (const auto &real_parameter : real_parameters_) {
-    MS_EXCEPTION_IF_NULL(real_parameter);
-    if (real_parameter->mem_offloaded() && !real_parameter->Load(stream_id_)) {
-      MS_LOG(EXCEPTION) << "Load device tensor from host to device failed.";
-    }
-  }
-  EraseInput(context);
-  SendOutput(context);
-}
-
-void MemorySwapOutActor::Run(OpContext<DeviceTensor> *context) {
-  MS_EXCEPTION_IF_NULL(context);
-  FetchRealParameters(context);
-  for (const auto &device_tensor : device_tensors_to_swap_) {
-    MS_EXCEPTION_IF_NULL(device_tensor);
-    if (device_tensor->mem_offloaded() || device_tensor->GetPtr() == nullptr) {
-      continue;
-    }
-    if (!device_tensor->Offload(stream_id_)) {
-      MS_LOG(EXCEPTION) << "Offload device tensor from device to host failed.";
-    }
-  }
-  for (const auto &device_tensor : device_tensors_to_free_) {
-    MS_EXCEPTION_IF_NULL(device_tensor);
-    // Offload DeviceTensor with max original_ref_count which will not be used anymore in current sub graph.
-    // DeviceTensor without max original_ref_count will be free in MemoryManagerActor::FreeMemoryByRefCount.
-    if (device_tensor->mem_offloaded() || device_tensor->GetPtr() == nullptr ||
-        device_tensor->original_ref_count() != SIZE_MAX) {
-      continue;
-    }
-    if (!device_tensor->Offload(stream_id_)) {
-      MS_LOG(EXCEPTION) << "Offload device tensor from device to host failed.";
-    }
-  }
-
-  for (size_t i = 0; i < real_parameters_.size(); ++i) {
-    const auto &real_parameter = real_parameters_[i];
-    MS_EXCEPTION_IF_NULL(real_parameter);
-    if (real_parameter->mem_offloaded() || real_parameter->GetPtr() == nullptr) {
-      continue;
-    }
-    if (swap_out_real_parameter_[i] || real_parameter->original_ref_count() == SIZE_MAX) {
-      if (!real_parameter->Offload(stream_id_)) {
-        MS_LOG(EXCEPTION) << "Offload device tensor from device to host failed.";
-      }
     }
   }
   EraseInput(context);
