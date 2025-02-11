@@ -29,7 +29,7 @@
 #include "plugin/device/ascend/kernel/internal/internal_spinlock.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
 #include "plugin/device/ascend/kernel/internal/internal_helper.h"
-#include "include/backend/debug/profiler/profiling.h"
+#include "debug/profiler/profiling.h"
 
 namespace mindspore {
 namespace kernel {

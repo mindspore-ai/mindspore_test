@@ -23,13 +23,12 @@
 #include <atomic>
 #include <set>
 
-#include "common/debug/profiler/profiling_data_dumper.h"
-#include "include/backend/debug/profiler/profiling.h"
+#include "debug/profiler/profiling_data_dumper.h"
+#include "debug/profiler/profiling.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/utils/comm_manager.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_vmm_adapter.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
-#include "plugin/device/ascend/hal/profiler/ascend_profiling.h"
 #ifdef ENABLE_DEBUGGER
 #include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
 #endif

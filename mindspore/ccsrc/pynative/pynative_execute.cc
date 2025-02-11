@@ -33,7 +33,7 @@
 #include "runtime/pynative/op_compiler.h"
 #include "runtime/pynative/op_runner.h"
 #include "runtime/pynative/lazy_fusion.h"
-#include "include/common/profiler.h"
+#include "debug/profiler/profiler.h"
 #include "ir/cell.h"
 #include "include/common/utils/stub_tensor.h"
 #include "include/common/utils/python_utils.h"

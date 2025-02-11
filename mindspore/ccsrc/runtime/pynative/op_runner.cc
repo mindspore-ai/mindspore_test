@@ -38,7 +38,7 @@
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "kernel/framework_utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "include/backend/debug/profiler/profiling.h"
+#include "debug/profiler/profiling.h"
 #include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "runtime/pynative/ir_converter.h"

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "common/debug/profiler/report_data.h"
+#include "debug/profiler/report_data.h"
 
 namespace mindspore {
 namespace profiler {

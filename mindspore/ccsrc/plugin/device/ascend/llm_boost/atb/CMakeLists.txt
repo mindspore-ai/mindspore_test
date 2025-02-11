@@ -22,7 +22,7 @@ set_property(SOURCE ${MS_LLM_BOOST_910B} PROPERTY COMPILE_DEFINITIONS
 
 add_library(ms_atb_boost SHARED ${MS_LLM_BOOST_910B})
 
-target_link_libraries(ms_atb_boost PRIVATE mindspore_backend mindspore_core mindspore_common)
+target_link_libraries(ms_atb_boost PRIVATE mindspore_backend mindspore_core mindspore_common mindspore_profiler)
 target_link_libraries(ms_atb_boost PRIVATE proto_input mindspore::protobuf)
 target_link_libraries(ms_atb_boost PRIVATE securec d_collective)
 target_link_libraries(ms_atb_boost PRIVATE mindspore::ssl mindspore::crypto)

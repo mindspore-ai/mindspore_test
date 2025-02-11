@@ -18,7 +18,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/stub_tensor.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "include/common/profiler.h"
+#include "debug/profiler/profiler.h"
 #include "include/common/utils/anfalgo.h"
 
 namespace mindspore {

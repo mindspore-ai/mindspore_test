@@ -15,7 +15,7 @@
  */
 
 #include <string>
-#include "include/common/profiler.h"
+#include "debug/profiler/profiler.h"
 #include "runtime/pipeline/task/device_task.h"
 #include "runtime/pipeline/pipeline.h"
 

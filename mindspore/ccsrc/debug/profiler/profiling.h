@@ -28,7 +28,7 @@
 #include <utility>
 #include <vector>
 #include "utils/hash_map.h"
-#include "include/backend/visible.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 namespace profiler {
@@ -65,7 +65,7 @@ struct MemoryPoolInfo {
   size_t total_active = 0;
 };
 
-class BACKEND_EXPORT ProfilerManager {
+class PROFILER_EXPORT ProfilerManager {
  public:
   static std::shared_ptr<ProfilerManager> &GetInstance();
   ProfilerManager() = default;
@@ -87,7 +87,7 @@ class BACKEND_EXPORT ProfilerManager {
   std::string profile_framework_ = "NULL";
 };
 
-class BACKEND_EXPORT Profiler {
+class PROFILER_EXPORT Profiler {
  public:
   static std::shared_ptr<Profiler> GetInstance(const std::string &name) noexcept;
   static bool Register(const std::string &name, const std::shared_ptr<Profiler> &instance);
@@ -165,13 +165,13 @@ class BACKEND_EXPORT Profiler {
   static std::map<std::string, std::shared_ptr<Profiler>> &GetInstanceMap();
 };
 
-BACKEND_EXPORT void CollectHostInfo(const std::string &module, const std::string &event, const std::string &stage,
-                                    const uint64_t &start_time, const uint64_t &end_time, int8_t level = 0,
-                                    const std::map<std::string, std::string> &custom_info = {});
+PROFILER_EXPORT void CollectHostInfo(const std::string &module, const std::string &event, const std::string &stage,
+                                     const uint64_t &start_time, const uint64_t &end_time, int8_t level = 0,
+                                     const std::map<std::string, std::string> &custom_info = {});
 
-BACKEND_EXPORT uint64_t GetClockTime();
+PROFILER_EXPORT uint64_t GetClockTime();
 
-BACKEND_EXPORT uint64_t GetClockSyscnt();
+PROFILER_EXPORT uint64_t GetClockSyscnt();
 
 }  // namespace profiler
 }  // namespace mindspore

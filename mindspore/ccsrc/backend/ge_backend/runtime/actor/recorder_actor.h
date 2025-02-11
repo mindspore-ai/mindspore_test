@@ -23,7 +23,7 @@
 #include "backend/ge_backend/runtime/actor/actor_common.h"
 #include "backend/ge_backend/runtime/device_tensor_store.h"
 #include "runtime/hardware/device_context.h"
-#include "include/backend/debug/profiler/profiling.h"
+#include "debug/profiler/profiling.h"
 #include "common/kernel.h"
 
 namespace mindspore {

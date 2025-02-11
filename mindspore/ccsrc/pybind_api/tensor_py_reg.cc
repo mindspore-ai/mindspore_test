@@ -22,7 +22,7 @@
 #include "include/common/pybind_api/api_register.h"
 #include "abstract/abstract_value.h"
 #include "pybind_api/ir/tensor_index_py.h"
-#include "include/common/profiler.h"
+#include "debug/profiler/profiler.h"
 #include "include/backend/mbuf_device_address.h"
 #include "utils/ordered_set.h"
 #include "pybind_api/ir/tensor_register/tensor_func_reg.h"

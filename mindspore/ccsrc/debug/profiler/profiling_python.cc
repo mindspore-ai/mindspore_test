@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "common/debug/profiler/profiling_python.h"
-#include "common/debug/profiler/profiling_data_dumper.h"
-#include "common/debug/profiler/profiling_framework_data.h"
-#include "include/backend/debug/profiler/profiling.h"
+#include "debug/profiler/profiling_python.h"
+#include "debug/profiler/profiling_data_dumper.h"
+#include "debug/profiler/profiling_framework_data.h"
+#include "debug/profiler/profiling.h"
 #include <Python.h>
 #include <typeinfo>
 
