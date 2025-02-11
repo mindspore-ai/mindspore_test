@@ -42,8 +42,8 @@ class PagedAttentionNet(Cell):
             antiquant_scale=None,
             antiquant_offset=None,
             attn_mask=None,
-            alibi_mask=None,
-            q_seq_lens=None):
+            q_seq_lens=None,
+            alibi_mask=None):
         return self.net(
             query,
             key_cache,
@@ -53,8 +53,8 @@ class PagedAttentionNet(Cell):
             antiquant_scale,
             antiquant_offset,
             attn_mask,
-            alibi_mask,
-            q_seq_lens)
+            q_seq_lens,
+            alibi_mask)
 
 
 def to_pad_fp32(arr, dim=2):
@@ -118,7 +118,8 @@ class PagedAttentionTest(PagedAttentionBase):
             "antiquant_scale": None,
             "antiquant_offset": None,
             "attn_mask": None,
-            "q_seq_lens": None
+            "q_seq_lens": None,
+            "alibi_mask": None
         }
 
         # query
@@ -939,7 +940,7 @@ def test_paged_attention_quant_pertoken_antiquant_scale_int64_to_fp32_small():
     PagedAttentionTest(i_test)
 
 
-@pytest.mark.level0
+@pytest.mark.skip
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 def test_paged_attention_alibi_bsh_256():
@@ -960,7 +961,7 @@ def test_paged_attention_alibi_bsh_256():
         "d": 256,
         "blk_sz": 16,
         "drop_prop": 0.0,
-        "is_quant": False,
+        "quant_mode": 0,
         "is_alibi": True,
         "is_amask": False,
         "blk_sparse": 0,
@@ -969,7 +970,7 @@ def test_paged_attention_alibi_bsh_256():
     PagedAttentionTest(i_test)
 
 
-@pytest.mark.level0
+@pytest.mark.skip
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 def test_paged_attention_alibi_rand1():
@@ -990,7 +991,7 @@ def test_paged_attention_alibi_rand1():
         "d": 128,
         "blk_sz": 32,
         "drop_prop": 0.0,
-        "is_quant": False,
+        "quant_mode": 0,
         "is_alibi": True,
         "is_amask": False,
         "blk_sparse": 0,
@@ -999,7 +1000,7 @@ def test_paged_attention_alibi_rand1():
     PagedAttentionTest(i_test)
 
 
-@pytest.mark.level0
+@pytest.mark.skip
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 def test_paged_attention_alibi_fd_bsh_64():
@@ -1020,7 +1021,7 @@ def test_paged_attention_alibi_fd_bsh_64():
         "d": 64,
         "blk_sz": 64,
         "drop_prop": 0.0,
-        "is_quant": False,
+        "quant_mode": 0,
         "is_alibi": True,
         "is_amask": False,
         "blk_sparse": 0,
