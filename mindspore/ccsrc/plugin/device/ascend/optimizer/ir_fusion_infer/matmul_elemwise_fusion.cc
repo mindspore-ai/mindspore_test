@@ -82,9 +82,6 @@ const AnfNodePtr MatmulElemFusion::Process(const FuncGraphPtr &func_graph, const
                                            const EquivPtr &equiv) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (!ms_context->IsEnableInferBoost()) {
-    return nullptr;
-  }
   auto const &soc_version = ms_context->ascend_soc_version();
   if (!soc_version.empty() && soc_version != "ascend910b" && soc_version != "ascend910_93") {
     return nullptr;

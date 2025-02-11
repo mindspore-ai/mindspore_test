@@ -47,10 +47,6 @@ const AnfNodePtr RmsNormQuantFusion::Process(const FuncGraphPtr &graph, const An
                                              const EquivPtr &equiv) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (!ms_context->IsEnableInferBoost()) {
-    return nullptr;
-  }
-
   const std::string fusion_op_name = "RmsNormQuant";
   auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
   bool enable_add_rmsnorm =

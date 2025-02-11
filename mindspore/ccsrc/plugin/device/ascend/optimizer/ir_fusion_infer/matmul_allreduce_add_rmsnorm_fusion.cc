@@ -52,13 +52,6 @@ const BaseRef MatMulAllReduceAddRmsNormFusion::DefinePattern() const {
 }
 
 bool MatMulAllReduceAddRmsNormFusion::IsSupport(const AnfNodePtr &node, const FuncGraphPtr &graph) const {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (!ms_context->IsEnableInferBoost()) {
-    MS_LOG(INFO) << "for MatMulAllReduceAddRmsNormFusion ops, infer_boost must be enabled.";
-    return false;
-  }
-
   bool is_enable_lccl = device::ascend::EnableLccl();
   if (is_enable_lccl) {
     MS_LOG(INFO) << "disable MatMulAllReduceAddRmsNormFusion when lccl is enabled.";
@@ -66,6 +59,8 @@ bool MatMulAllReduceAddRmsNormFusion::IsSupport(const AnfNodePtr &node, const Fu
   }
 
   // only support ascend910b
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
   auto soc_version = ms_context->ascend_soc_version();
   if (soc_version != kAscendVersion910b) {
     MS_LOG(INFO) << "MatMulAllReduceAddRmsNorm does not support soc version " << soc_version;
