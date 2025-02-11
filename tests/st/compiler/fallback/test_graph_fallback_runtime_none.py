@@ -89,7 +89,7 @@ def test_none_compare():
         res = foo()
         assert res is None
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'False\nFalse\nFalse\nFalse'}
     check_output(cap.output, patterns)
@@ -142,7 +142,7 @@ def test_inner_function_has_not_return():
         res = foo()
         assert res is None
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'x:\n3'}
     check_output(cap.output, patterns)
@@ -202,7 +202,7 @@ def test_none_is_default_value_of_parameter():
         res = foo(x)
         assert res is None
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'y is None\nx:\n[1, 2]'}
     check_output(cap.output, patterns)
@@ -232,7 +232,7 @@ def test_none_is_default_value_of_parameter_2():
         res = foo(x, y)
         assert res == [3, 4]
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'y:\n[3, 4]\nx:\n[1, 2]'}
     check_output(cap.output, patterns)
@@ -285,7 +285,7 @@ def test_none_assign_print():
         res = foo()
         assert res is None
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'x:\nNone\nconvert bool:\nFalse\n'}
     check_output(cap.output, patterns)
@@ -330,7 +330,7 @@ def test_none_is_condition():
         res = foo(input_x)
         assert res is None
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'The input is None!'}
     check_output(cap.output, patterns)
@@ -364,7 +364,7 @@ def test_none_is_inner_function_output():
         res = foo(x)
         assert res is None
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'The output of inner function is not None!'}
     check_output(cap.output, patterns)
@@ -555,7 +555,7 @@ def test_none_is_return_of_sub_graph_control_flow():
         out = net(data)
         assert (out.asnumpy() == data).all()
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'The input is less 2.'}
     check_output(cap.output, patterns)

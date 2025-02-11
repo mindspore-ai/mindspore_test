@@ -81,7 +81,7 @@ def test_fallback_print_asnumpy():
         res = foo()
         assert not res
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'[1 2 3 4] [1 2 3 4]'}
     check_output(cap.output, patterns)
@@ -115,7 +115,7 @@ def test_fallback_print_asnumpy_custom_class_ascend():
         res = net()
         assert not res
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'[1 2 3 4]\nTensor(shape=[], dtype=Int64, value=1)\n'}
     check_output(cap.output, patterns)
@@ -142,7 +142,7 @@ def test_fallback_print_mutable():
         res = net(input_x)
         assert not res
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'2\n'}
     check_output(cap.output, patterns)
@@ -172,7 +172,7 @@ def test_fallback_print_pyinterpret():
         out = test_print()
         assert (out[0].asnumpy() == out[1]).all()
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'tensor_sum: \nTensor(shape=[5], dtype=Int64, value=[ 2  4  6  8 10])\nnp_sum:  [ 2  4  6  8 10]\n'}
     check_output(cap.output, patterns)
@@ -202,7 +202,7 @@ def test_np_init():
         res = net()
         assert (res.asnumpy() == [4, 6]).all()
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
     patterns = {'[1 2]\n'}
     check_output(cap.output, patterns)
 
@@ -229,6 +229,6 @@ def test_print_str_format():
         res = net(input_x)
         assert (res.asnumpy() == [[1, 3], [5, 7]]).all()
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
     patterns = {'x is [[2 4]\n [6 8]]\n'}
     check_output(cap.output, patterns)

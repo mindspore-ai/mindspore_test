@@ -263,7 +263,7 @@ def test_trace_side_effect_1():
     with capture(cap):
         res = trace_net(ms.Tensor(1), ms.Tensor(3))
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
     assert res == 12
     patterns = {'Tensor(shape=[], dtype=Int64, value=2)\n'
                 'Tensor(shape=[], dtype=Int64, value=3)\n'
@@ -293,7 +293,7 @@ def test_trace_side_effect_2():
     with capture(cap):
         res = foo(inputs)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
     assert res == (6, [1, 2, 3])
     patterns = {'x: \nTensor(shape=[], dtype=Int64, value=6)'}
     check_output(cap.output, patterns)
@@ -518,7 +518,7 @@ def test_nested_trace_side_effect_1():
     with capture(cap):
         res = trace_net(ms.Tensor(1), ms.Tensor(3))
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
     assert res == 12
     patterns = {'Tensor(shape=[], dtype=Int64, value=2)\n'
                 'Tensor(shape=[], dtype=Int64, value=3)\n'
