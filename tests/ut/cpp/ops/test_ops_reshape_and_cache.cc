@@ -39,6 +39,16 @@ struct ReshapeAndCacheShapeParams {
   TypePtr value_cache_type;
   ShapeVector slot_mapping_shape;
   TypePtr slot_mapping_type;
+  ShapeVector key_scale_shape;
+  TypePtr key_scale_type;
+  ShapeVector value_scale_shape;
+  TypePtr value_scale_type;
+  ShapeVector batch_valid_length_shape;
+  TypePtr batch_valid_length_type;
+  ShapeVector key_value_scale_cache_shape;
+  TypePtr key_value_scale_cache_type;
+  ValuePtr is_prefill;
+  ValuePtr cache_config;
 };
 
 class TestReshapeAndCache : public TestOps, public testing::WithParamInterface<ReshapeAndCacheShapeParams> {};
@@ -50,6 +60,14 @@ TEST_P(TestReshapeAndCache, DynShape) {
   auto key_cache = std::make_shared<abstract::AbstractTensor>(param.key_cache_type, param.key_cache_shape);
   auto value_cache = std::make_shared<abstract::AbstractTensor>(param.value_cache_type, param.value_cache_shape);
   auto slot_mapping = std::make_shared<abstract::AbstractTensor>(param.slot_mapping_type, param.slot_mapping_shape);
+  auto key_scale = std::make_shared<abstract::AbstractTensor>(param.key_scale_type, param.key_scale_shape);
+  auto value_scale = std::make_shared<abstract::AbstractTensor>(param.value_scale_type, param.value_scale_shape);
+  auto batch_valid_length =
+    std::make_shared<abstract::AbstractTensor>(param.batch_valid_length_type, param.batch_valid_length_shape);
+  auto key_value_scale_cache =
+    std::make_shared<abstract::AbstractTensor>(param.key_value_scale_cache_type, param.key_value_scale_cache_shape);
+  auto is_prefill = param.is_prefill->ToAbstract();
+  auto cache_config = param.cache_config->ToAbstract();
 
   auto key_shape = std::make_shared<abstract::Shape>(param.key_shape);
   auto expect_shape = key_shape;
@@ -58,18 +76,54 @@ TEST_P(TestReshapeAndCache, DynShape) {
   ReshapeAndCacheFuncImpl func_impl;
   auto prim = std::make_shared<Primitive>("ReshapeAndCache");
 
-  auto out_dtype = func_impl.InferType(prim, {key, value, key_cache, value_cache, slot_mapping});
+  auto out_dtype = func_impl.InferType(prim, {key, value, key_cache, value_cache, slot_mapping, key_scale, value_scale,
+                                              batch_valid_length, key_value_scale_cache, is_prefill, cache_config});
   ASSERT_TRUE(*out_dtype == *expect_type);
-  auto out_shape = func_impl.InferShape(prim, {key, value, key_cache, value_cache, slot_mapping});
+  auto out_shape = func_impl.InferShape(prim, {key, value, key_cache, value_cache, slot_mapping, key_scale, value_scale,
+                                               batch_valid_length, key_value_scale_cache, is_prefill, cache_config});
   ASSERT_TRUE(*out_shape == *expect_shape);
 }
 
-INSTANTIATE_TEST_CASE_P(
-  TestReshapeAndCache, TestReshapeAndCache,
-  testing::Values(
-    ReshapeAndCacheShapeParams{
-      {3, 4, 20}, kFloat16, {3, 4, 20}, kFloat16, {20, 30, 4, 5}, kFloat16, {20, 30, 4, 5}, kFloat16, {12}, kInt32},
-    ReshapeAndCacheShapeParams{
-      {-1, 4, 20}, kFloat16, {-1, 4, 20}, kFloat16, {20, 30, 4, 5}, kFloat16, {20, 30, 4, 5}, kFloat16, {-1}, kInt32}));
+INSTANTIATE_TEST_CASE_P(TestReshapeAndCache, TestReshapeAndCache,
+                        testing::Values(ReshapeAndCacheShapeParams{{3, 4, 20},
+                                                                   kFloat16,
+                                                                   {3, 4, 20},
+                                                                   kFloat16,
+                                                                   {20, 30, 4, 5},
+                                                                   kFloat16,
+                                                                   {20, 30, 4, 5},
+                                                                   kFloat16,
+                                                                   {12},
+                                                                   kInt32,
+                                                                   {3, 4, 20},
+                                                                   kFloat32,
+                                                                   {3, 4, 20},
+                                                                   kFloat32,
+                                                                   {12},
+                                                                   kInt32,
+                                                                   {3, 4, 20},
+                                                                   kFloat16,
+                                                                   CreateScalar(false),
+                                                                   CreateScalar<int64_t>(1)},
+                                        ReshapeAndCacheShapeParams{{-1, 4, 20},
+                                                                   kFloat16,
+                                                                   {-1, 4, 20},
+                                                                   kFloat16,
+                                                                   {20, 30, 4, 5},
+                                                                   kFloat16,
+                                                                   {20, 30, 4, 5},
+                                                                   kFloat16,
+                                                                   {-1},
+                                                                   kInt32,
+                                                                   {-1, 4, 20},
+                                                                   kFloat32,
+                                                                   {-1, 4, 20},
+                                                                   kFloat32,
+                                                                   {-1},
+                                                                   kInt32,
+                                                                   {-1, 4, 20},
+                                                                   kFloat16,
+                                                                   CreateScalar(false),
+                                                                   CreateScalar<int64_t>(1)}));
 }  // namespace ops
 }  // namespace mindspore
