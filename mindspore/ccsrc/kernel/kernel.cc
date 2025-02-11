@@ -504,7 +504,7 @@ ValuePtr KernelTensor::GetValue() const {
     return kNone;
   }
   if (!SetKernelTensorValue()) {
-    MS_LOG(EXCEPTION) << "Failed to set KernelTensorValue.";
+    MS_LOG(EXCEPTION) << "Failed to set KernelTensorValue for kernel tensor:" << this;
   }
   return host_info_->kernel_tensor_value_ != nullptr ? host_info_->kernel_tensor_value_ : value_;
 }

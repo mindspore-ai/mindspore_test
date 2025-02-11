@@ -82,6 +82,7 @@ const char kAllocMemoryPool[] = "older_pool";
 const char kRuntimeConf[] = "MS_DEV_RUNTIME_CONF";
 const char kRuntimeInline[] = "inline";
 const char kRuntimeSwitchInline[] = "switch_inline";
+const char kRuntimeNewRefCount[] = "new_ref_count";
 const char kRuntimeControlFlowOptimize[] = "control_flow_optimize";
 const char kRuntimeMultiStream[] = "multi_stream";
 const char kRuntimePipeline[] = "pipeline";
