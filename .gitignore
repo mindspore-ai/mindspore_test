@@ -117,16 +117,8 @@ mindspore/lite/test/do_test/
 
 # auto gen code files
 auto_generate/
-mindspore/python/mindspore/ops_generate/ops.yaml
-mindspore/python/mindspore/ops_generate/deprecated_ops.yaml
-mindspore/python/mindspore/ops_generate/ops_doc.yaml
-mindspore/python/mindspore/ops_generate/api_def.yaml
-mindspore/python/mindspore/ops_generate/tensor_method_doc.yaml
-mindspore/python/mindspore/ops_generate/mint_func_doc.yaml
-mindspore/python/mindspore/ops_generate/inner_ops.yaml
-mindspore/python/mindspore/ops_generate/inner_ops_doc.yaml
+gen_file_lists.json
 mindspore/python/mindspore/ops/functional_overload.py
-mindspore/ops/kernel/ascend/opapi/aclnn_kernel_register_auto.cc
 mindspore/ccsrc/pipeline/pynative/op_function/auto_generate/functional_map.cc
 mindspore/python/mindspore/common/_tensor_docs.py
 mindspore/python/mindspore/common/_tensor_cpp_method.py

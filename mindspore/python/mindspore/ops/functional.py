@@ -36,7 +36,7 @@ from mindspore.ops.function.math_func import dot
 from mindspore.ops.function.array_func import new_empty
 from mindspore.ops import auto_generate
 from mindspore.ops.auto_generate import cast
-from mindspore.ops_generate.gen_ops_inner_prim import DtypeToEnum
+from mindspore.ops._utils.arg_dtype_cast import DtypeToEnum
 from mindspore.ops.operations.manually_defined.ops_def import scalar_div, scalar_mod, scalar_add, scalar_mul, \
     scalar_sub, scalar_gt, scalar_ge, scalar_le, scalar_lt, scalar_eq, scalar_floordiv, scalar_log, scalar_pow, \
     scalar_uadd, scalar_usub

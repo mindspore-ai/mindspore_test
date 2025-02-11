@@ -23,7 +23,8 @@ import numpy as np
 from mindspore.ops import signature as sig
 from mindspore.ops.primitive import Primitive, prim_attr_register, prim_arg_register, PrimitiveWithInfer
 from mindspore.ops._primitive_cache import _get_cache_prim
-from mindspore.ops.auto_generate import gen_arg_handler as handler
+from mindspore.ops._utils import arg_handler as handler
+from mindspore.ops._utils.arg_dtype_cast import DtypeToEnum
 from mindspore.common import Tensor, CSRTensor, COOTensor
 from mindspore.common._stub_tensor import _convert_stub
 from mindspore._c_expression import typing
@@ -33,7 +34,6 @@ from mindspore.common import dtype as mstype
 from mindspore.common._utils import is_shape_unknown
 from mindspore import _checkparam as validator
 from mindspore.ops.operations.manually_defined._inner import ScalarCast
-from mindspore.ops_generate.gen_ops_inner_prim import DtypeToEnum
 from mindspore.common.initializer import Zero
 from mindspore.common.parameter import Parameter
 from mindspore.ops.auto_generate.gen_ops_prim import FlashAttentionScore

@@ -15,12 +15,12 @@
 
 import numpy as np
 import pytest
-from tests.st.utils import test_utils
 
 from mindspore import ops, mutable, Tensor
 import mindspore as ms
-from mindspore.ops_generate.gen_ops_inner_prim import ListToTuple, TupleToList
+from mindspore.ops._utils.arg_dtype_cast import ListToTuple, TupleToList
 from tests.mark_utils import arg_mark
+from tests.st.utils import test_utils
 
 
 @test_utils.run_with_cell

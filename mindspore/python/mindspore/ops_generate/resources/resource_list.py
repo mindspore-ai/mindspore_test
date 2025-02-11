@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,20 +13,16 @@
 # limitations under the License.
 # ============================================================================
 
-"""
-Primitive operator classes and operator functional.
+"""Resource list."""
 
-A collection of operators to build neural networks or to compute functions.
-"""
+from enum import Enum
 
-from . import gen_ops_def
-from .._utils import arg_handler, arg_dtype_cast
-
-from .gen_ops_prim import *
-from .gen_ops_def import *
-from ..operations.manually_defined.ops_def import *
-from .._utils.arg_handler import *
-from .._utils.arg_dtype_cast import *
-
-
-__all__ = []
+class ResourceType(Enum):
+    OP_PROTO = 0
+    DEPRECATED_OP_PROTO = 1
+    OP_DOC_YAML = 2
+    TENSOR_METHOD_DOC_YAML = 3
+    MINT_FUNC_DOC_YAML = 4
+    TENSOR_METHOD_PROTOS = 5
+    MINT_FUNC_PROTOS = 6
+    ALIAS_API_MAPPING = 7

@@ -23,7 +23,11 @@
 #include <vector>
 
 #include "infer/ops_func_impl/batch_norm_grad.h"
+#include "utils/check_convert_utils.h"
+#include "ops_utils/op_utils.h"
 
+namespace mindspore {
+namespace ops {
 class OPS_API BatchNormGradWithAddAndActivationFuncImpl : public BatchNormGradFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive,
@@ -50,5 +54,7 @@ class OPS_API BatchNormGradWithAddAndActivationFuncImpl : public BatchNormGradFu
  protected:
   size_t GetAttrPosZero() const override { return 8; }
 };
+}  // namespace ops
+}  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_OPS_BATCH_NORM_GRAD_WITH_ADD_AND_ACTIVATION_H_
