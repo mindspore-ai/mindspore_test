@@ -21,6 +21,7 @@ import numpy as np
 
 import mindspore.dataset as ds
 from mindspore import log as logger
+from mindspore.dataset import Shuffle
 from mindspore.mindrecord import FileWriter
 from util import config_get_set_seed
 
@@ -1252,6 +1253,13 @@ def test_minddataset_distributed_samples(cleanup_tmp_file):
                                num_shards=5, shard_id=3, shuffle=False)
     for i, item in enumerate(data_set5.create_dict_iterator(num_epochs=1, output_numpy=True)):
         assert output5[i] == item['data']
+
+    # Verify that MindDataset iterates data normally without shard sampling
+    data_set6 = ds.MindDataset(mindrecord_name, columns_list, 1, shuffle=Shuffle.PARTIAL)
+    count = 0
+    for _ in data_set6.create_dict_iterator(num_epochs=1, output_numpy=True):
+        count += 1
+    assert count == data_set6.get_dataset_size()
 
     ds.config.set_seed(origin_seed)
     del os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"]
