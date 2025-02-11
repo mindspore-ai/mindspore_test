@@ -18,7 +18,7 @@
 
 #include "utils/log_adapter.h"
 #include "acl/error_codes/rt_error_codes.h"
-#include "plugin/device/ascend/hal/device/ascend_gmem_adapter.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_gmem_adapter.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "pybind_api/gil_scoped_long_running.h"

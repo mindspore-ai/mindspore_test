@@ -28,7 +28,9 @@
 #include "include/common/utils/utils.h"
 #include "runtime/device/ms_device_shape_transfer.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
+#include "include/backend/debug/debugger/debugger.h"
 #ifdef ENABLE_DEBUGGER
 #include "debug/tensor_load.h"
 #endif
