@@ -1093,32 +1093,6 @@ REG_BPROP_BUILDER("Identity").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   return {dout};
 });
 
-REG_BPROP_BUILDER("MoeTokenUnpermute").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
-  auto permuted_tokens = ib->GetInput(kIndex0);
-  auto sorted_indices = ib->GetInput(kIndex1);
-  auto probs = ib->GetInput(kIndex2);
-  auto padded_mode = ib->GetInput(kIndex3);
-  auto restore_shape = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex6);
-
-  ShapeVector restore_shape_val = {1, 1};
-  auto padded_mode_type = padded_mode->abstract()->BuildType();
-  NodePtr res_grad;
-  if (padded_mode_type->isa<TypeNone>()) {
-    res_grad = ib->Emit("MoeTokenUnpermuteGrad", {permuted_tokens, dout, sorted_indices, probs, ib->Value<bool>(false),
-                                                  ib->EmitValue(MakeValue(restore_shape_val))});
-  } else {
-    res_grad = ib->Emit("MoeTokenUnpermuteGrad", {permuted_tokens, dout, sorted_indices, probs, padded_mode,
-                                                  ib->EmitValue(MakeValue(restore_shape_val))});
-  }
-
-  auto dpermuted_tokens =
-    permuted_tokens->need_compute_grad_out() ? ib->TupleGetItem(res_grad, kIndex0) : ib->OutZeros(permuted_tokens);
-  auto dprobs = probs->need_compute_grad_out() ? ib->TupleGetItem(res_grad, kIndex1) : ib->OutZeros(probs);
-  return {dpermuted_tokens, ib->OutZeros(sorted_indices), dprobs, ib->OutZeros(padded_mode),
-          ib->OutZeros(restore_shape)};
-});
-
 REG_BPROP_BUILDER("Clone").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(kIndex2);
   return {dout};
