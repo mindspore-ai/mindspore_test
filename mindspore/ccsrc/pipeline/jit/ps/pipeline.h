@@ -286,6 +286,7 @@ AbstractBasePtr ArgsToAbstract(const py::object &arg, const ValuePtr &value, boo
 void AddManagerForFuncGraphArgs(const ResourcePtr &resource, const ValuePtrList &arguments);
 void CheckInterpretNodeLineInfos();
 void SetHookForArgAbstract(const py::object &arg, abstract::AbstractBasePtr abs);
+void PreJit(const py::object &args, const py::object &kwargs);
 }  // namespace pipeline
 }  // namespace mindspore
 
