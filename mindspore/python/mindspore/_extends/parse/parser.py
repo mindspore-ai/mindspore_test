@@ -18,7 +18,6 @@
 
 from __future__ import absolute_import
 import os
-import sys
 import ast
 import re
 import hashlib
@@ -48,6 +47,7 @@ from mindspore._checkparam import is_stub_tensor
 from .namespace import Namespace, ModuleNamespace, ClosureNamespace, ClassMemberNamespace
 from .resources import parse_object_map, ops_symbol_map, convert_object_map, convert_class_to_function_map, trope_ns
 from .resources import SYMBOL_UNDEFINE, constant_fold_functions
+from .jit_fallback_modules.check_utils import third_party_checker
 from ...common.api import _convert_python_data
 
 # Define resolve type
@@ -98,12 +98,6 @@ SYNTAX_UNSUPPORTED_EXTERNAL_TYPE = 2   # Unsupported external type
 SYNTAX_HYBRID_TYPE = 3                 # Hybrid type
 SYNTAX_UNSUPPORTED_NAMESPACE = 4       # Unsupported namespace
 
-# Module source location
-MODULE_FROM_MINDSPORE = 0
-MODULE_FROM_THIRDPARTY = 1
-MODULE_FROM_USER_WORKSPACE = 2
-
-
 # Process expr statement white list
 # Add as needed, eg: "clear", "extend", "insert", "remove", "reverse"
 parse_expr_statement_white_list = (
@@ -135,14 +129,6 @@ _unsupported_python_builtin_type = (
 # Unsupported python builtin type in JIT Fallback.
 _fallback_unsupported_python_builtin_type = (
     compile, eval, exec
-)
-
-_modules_from_mindspore = (
-    "mindspore", "msadapter", "mindocr", "mindyolo", "mindnlp", "mindcv", "mindspore_rec", "mindaudio", "mindone",
-    "mindspore_rl", "mindformers", "mindpet", "mindpose", "mindface", "mindsearch", "mindinsight", "mindelec",
-    "mindflow", "mindsponge", "mindearth", "sciai", "mindquantum", "mindarmour", "mindpandas", "mindvision",
-    "mindspore_gl", "mindspore_federated", "mindspore_gs", "mindspore_serving", "mindspore_xai", "mindspore_hub",
-    "ringmo_framework", "troubleshooter", "mindtorch", "mindchemistry",
 )
 
 _global_params = {}
@@ -929,133 +915,9 @@ def check_is_subclass(target_object, parent):
     return False
 
 
-class ThirdPartyLibraryChecker:
-    """
-    Check if a module or function is from third-party libraries.
-
-    Rules for detecting third-party libraries:
-
-    1. The mindspore module and its suite are not third-party libraries.
-
-    2. Python built-in modules and python standard libraries are third-party libraries.
-
-    3. Modules with module names provided by MS_JIT_IGNORE_MODULES are treated as third-party
-       libraries, but those provided by MS_JIT_MODULES are not.
-
-    4. Third-party libraries have 'site-packages' in their installation path.
-    """
-    def __init__(self):
-        self.user_workspace_dir = self.get_top_level_module_path(os.getcwd())
-        self.python_builtin_dir = os.path.realpath(os.path.dirname(os.__file__))
-
-    @staticmethod
-    def get_jit_modules():
-        """Modules in jit_modules require jit."""
-        jit_modules = []
-        # Get jit modules from environment variable.
-        env_modules = os.getenv('MS_JIT_MODULES')
-        if env_modules is not None:
-            jit_modules = env_modules.split(',')
-        return jit_modules
-
-    @staticmethod
-    def get_jit_ignore_modules():
-        """Modules in jit_ignore_modules do not need jit."""
-        jit_ignore_modules = []
-        # Get jit ignore modules from environment variable.
-        env_modules = os.getenv('MS_JIT_IGNORE_MODULES')
-        if env_modules is not None:
-            jit_ignore_modules = env_modules.split(',')
-        # sys.builtin_module_names do not need jit.
-        jit_ignore_modules.extend(sys.builtin_module_names)
-        return jit_ignore_modules
-
-    @staticmethod
-    def is_mindspore_related_module(module):
-        """Check if module is mindspore module or its suite."""
-        module_leftmost_name = module.__name__.split('.')[0]
-        return module_leftmost_name in _modules_from_mindspore
-
-    def get_top_level_module_path(self, module_path):
-        """Get the path of the top level package of the current working directory."""
-        module_abspath = os.path.realpath(module_path)
-        upper_path = os.path.realpath(os.path.dirname(module_abspath))
-        if module_abspath == upper_path:
-            return module_abspath
-        # Check whether __init__.py exists in the upper directory.
-        init_path = os.path.join(upper_path, '__init__.py')
-        # If the path does not exist or is accessed without permission, os.path.isfile returns false.
-        if os.path.isfile(init_path):
-            module_abspath = self.get_top_level_module_path(upper_path)
-        return module_abspath
-
-    def is_third_party_module(self, module):
-        """Check if module is a third-party library."""
-        module_leftmost_name = module.__name__.split('.')[0]
-        # Modules in jit_ignore_modules are treated as third-party libraries, such as sys.builtin_module_names.
-        jit_ignore_modules = self.get_jit_ignore_modules()
-        if module_leftmost_name in jit_ignore_modules:
-            logger.debug(f"Found third-party module '{module_leftmost_name}' in jit_ignore_modules.")
-            return True
-        # Modules in jit_modules require jit and they are considered to be in user workspace.
-        jit_modules = self.get_jit_modules()
-        if module_leftmost_name in jit_modules:
-            logger.debug(f"Found user-defined module '{module_leftmost_name}' in jit_modules.")
-            return False
-        # A modules without __file__ attribute is considered to be in user workspace.
-        if not hasattr(module, '__file__'):
-            return False
-        module_path = os.path.realpath(module.__file__)
-        # Python builtin modules are treated as third-party libraries.
-        if module_path.startswith(self.python_builtin_dir):
-            logger.debug(f"Found python builtin module '{module.__name__}', which is a third-party module.")
-            return True
-        # Check if module is under user workspace directory.
-        if module_path.startswith(self.user_workspace_dir):
-            logger.debug(f"Found module '{module.__name__}' in user_workspace_dir: {self.user_workspace_dir}")
-            return False
-        # Third-party modules are under site-packages.
-        split_path = module_path.split(os.path.sep)
-        result = "site-packages" in split_path
-        if result:
-            logger.debug(f"Found third-party module '{module.__name__}' in path '{module_path}'")
-        return result
-
-    def get_module_source_location(self, module):
-        """Get the source location of the module."""
-        if self.is_mindspore_related_module(module):
-            return MODULE_FROM_MINDSPORE
-        if self.is_third_party_module(module):
-            return MODULE_FROM_THIRDPARTY
-        return MODULE_FROM_USER_WORKSPACE
-
-    def is_third_party_module_or_function(self, value):
-        """Check if value is from a third-party library."""
-        if inspect.ismodule(value):
-            module = value
-        elif (isinstance(value, types.FunctionType) and not hasattr(value, "__jit_function__")) or \
-            (isinstance(value, types.MethodType) and not hasattr(value.__func__, "__jit_function__")):
-            value_hashable = True
-            try:
-                hash(value)
-            except TypeError:
-                value_hashable = False
-            if value_hashable and value in _convert_map():
-                return False
-            module = inspect.getmodule(value)
-            if module is None:
-                return False
-        else:
-            return False
-        return self.get_module_source_location(module) == MODULE_FROM_THIRDPARTY
-
-
-third_party_checker = ThirdPartyLibraryChecker()
-
-
 def is_from_third_party_library(value):
     """Check if value is from a third-party library."""
-    return third_party_checker.is_third_party_module_or_function(value)
+    return third_party_checker.is_from_third_party_module(value)
 
 
 def get_const_abs(obj):
