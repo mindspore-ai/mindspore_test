@@ -134,6 +134,9 @@ int FractionalMaxPool3DWithFixedKsizeCPUKernelMod::Resize(const std::vector<Kern
       inputW_ = input_shape_[kDimSize4FormatNDHWCIndexW];
     }
   }
+  if (outputD_ == 0 || outputH_ == 0 || outputW_ == 0) {
+    MS_EXCEPTION(ValueError) << "For '" << kernel_name_ << "', the value of shape must be greater than 0.";
+  }
   if (outputD_ + kernelsizeD_ - 1 >= inputD_) {
     MS_EXCEPTION(ValueError) << "For '" << kernel_name_ << "', out(): pool depth ," << kernelsizeD_
                              << "too large relative to input depth" << inputD_ << ".";
