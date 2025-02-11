@@ -1508,12 +1508,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         validator.check_value_type('eps', eps, (float,), 'Tensor.logit')
         return tensor_operator_registry.get('logit')(self, eps)
 
-    def logaddexp(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.logaddexp`.
-        """
-        return tensor_operator_registry.get('logaddexp')(self, other)
-
     def logaddexp2(self, other):
         r"""
         For details, please refer to :func:`mindspore.ops.logaddexp2`.
@@ -3247,13 +3241,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.dsplit`.
         """
         return tensor_operator_registry.get('dsplit')(self, indices_or_sections)
-
-    def xlogy(self, y):
-        r"""
-        For details, please refer to :func:`mindspore.ops.xlogy`.
-        The parameter `y` of the current interface is the same as the parameter `other` of the reference interface.
-        """
-        return tensor_operator_registry.get("xlogy")(self, y)
 
     def eigvals(self):
         r"""

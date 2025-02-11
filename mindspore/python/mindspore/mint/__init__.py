@@ -54,7 +54,7 @@ from mindspore.ops.functional_overload import min
 from mindspore.ops.auto_generate import sinc
 from mindspore.ops.auto_generate import sinh
 from mindspore.ops.auto_generate import cosh
-from mindspore.ops.function.math_func import xlogy_ext as xlogy
+from mindspore.ops.functional_overload import xlogy
 # 5
 from mindspore.ops.auto_generate import cumsum_ext as cumsum
 # 6

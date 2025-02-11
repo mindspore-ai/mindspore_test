@@ -348,6 +348,9 @@ deprecated_tensor_method_map = {
     # 156
 
     # 157
+    "logaddexp": "deprecated_tensor_logaddexp",
+
+    "xlogy": "tensor_xlogy",
 
     # 158
     "unsqueeze": "deprecated_tensor_unsqueeze",
