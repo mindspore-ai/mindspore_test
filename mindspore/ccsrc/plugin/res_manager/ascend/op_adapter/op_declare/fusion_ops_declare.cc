@@ -140,21 +140,30 @@ INPUT_MAP(FusedInferAttentionScore) = {{kIndex1, INPUT_DESC(query)},
                                        {kIndex14, INPUT_DESC(antiquant_offset)},
                                        {kIndex15, INPUT_DESC(block_table)},
                                        {kIndex16, INPUT_DESC(query_padding_size)},
-                                       {kIndex17, INPUT_DESC(kv_padding_size)}};
+                                       {kIndex17, INPUT_DESC(kv_padding_size)},
+                                       {kIndex18, INPUT_DESC(key_antiquant_scale)},
+                                       {kIndex19, INPUT_DESC(key_antiquant_offset)},
+                                       {kIndex20, INPUT_DESC(value_antiquant_scale)},
+                                       {kIndex21, INPUT_DESC(value_antiquant_offset)},
+                                       {kIndex22, INPUT_DESC(key_shared_prefix)},
+                                       {kIndex23, INPUT_DESC(value_shared_prefix)},
+                                       {kIndex24, INPUT_DESC(actual_shared_prefix_len)}};
 DYN_INPUT_MAP(FusedInferAttentionScore) = {{kIndex2, DYN_INPUT_DESC(key)}, {kIndex3, DYN_INPUT_DESC(value)}};
 ATTR_MAP(FusedInferAttentionScore) = EMPTY_ATTR_MAP;
 INPUT_ATTR_MAP(FusedInferAttentionScore) = {
-  {kIndex18, ATTR_DESC(num_heads, AnyTraits<int64_t>())},
-  {kIndex19, ATTR_DESC(scale, AnyTraits<float>())},
-  {kIndex20, ATTR_DESC(pre_tokens, AnyTraits<int64_t>())},
-  {kIndex21, ATTR_DESC(next_tokens, AnyTraits<int64_t>())},
-  {kIndex22, ATTR_DESC(input_layout, AnyTraits<FASInputLayoutMode>())},
-  {kIndex23, ATTR_DESC(num_key_value_heads, AnyTraits<int64_t>())},
-  {kIndex24, ATTR_DESC(sparse_mode, AnyTraits<int64_t>())},
-  {kIndex25, ATTR_DESC(inner_precise, AnyTraits<int64_t>())},
-  {kIndex26, ATTR_DESC(block_size, AnyTraits<int64_t>())},
-  {kIndex27, ATTR_DESC(antiquant_mode, AnyTraits<int64_t>())},
-  {kIndex28, ATTR_DESC(softmax_lse_flag, AnyTraits<bool>())},
+  {kIndex25, ATTR_DESC(num_heads, AnyTraits<int64_t>())},
+  {kIndex26, ATTR_DESC(scale, AnyTraits<float>())},
+  {kIndex27, ATTR_DESC(pre_tokens, AnyTraits<int64_t>())},
+  {kIndex28, ATTR_DESC(next_tokens, AnyTraits<int64_t>())},
+  {kIndex29, ATTR_DESC(input_layout, AnyTraits<FASInputLayoutMode>())},
+  {kIndex30, ATTR_DESC(num_key_value_heads, AnyTraits<int64_t>())},
+  {kIndex31, ATTR_DESC(sparse_mode, AnyTraits<int64_t>())},
+  {kIndex32, ATTR_DESC(inner_precise, AnyTraits<int64_t>())},
+  {kIndex33, ATTR_DESC(block_size, AnyTraits<int64_t>())},
+  {kIndex34, ATTR_DESC(antiquant_mode, AnyTraits<int64_t>())},
+  {kIndex35, ATTR_DESC(softmax_lse_flag, AnyTraits<bool>())},
+  {kIndex36, ATTR_DESC(key_antiquant_mode, AnyTraits<int64_t>())},
+  {kIndex37, ATTR_DESC(value_antiquant_mode, AnyTraits<int64_t>())},
 };
 OUTPUT_MAP(FusedInferAttentionScore) = {{kIndex0, OUTPUT_DESC(attention_out)}, {kIndex1, OUTPUT_DESC(softmax_lse)}};
 REG_ADPT_DESC(FusedInferAttentionScore, "FusedInferAttentionScore", ADPT_DESC(FusedInferAttentionScore))
