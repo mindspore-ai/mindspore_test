@@ -269,9 +269,9 @@ if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "full")
                 ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.a DESTINATION
                 ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-        install(FILES ${jpeg_turbo_LIBPATH}/libjpeg.so.62.3.0 DESTINATION ${TURBO_DIR}/lib
+        install(FILES ${jpeg_turbo_LIBPATH}/libjpeg.so.62.4.0 DESTINATION ${TURBO_DIR}/lib
                 RENAME libjpeg.so.62 COMPONENT ${RUNTIME_COMPONENT_NAME})
-        install(FILES ${jpeg_turbo_LIBPATH}/libturbojpeg.so.0.2.0 DESTINATION ${TURBO_DIR}/lib
+        install(FILES ${jpeg_turbo_LIBPATH}/libturbojpeg.so.0.3.0 DESTINATION ${TURBO_DIR}/lib
                 RENAME libturbojpeg.so.0 COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${TOP_DIR}/mindspore/lite/build/securec/src/libsecurec.a
                 DESTINATION ${SECUREC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
@@ -296,9 +296,9 @@ if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "wrapper")
     else()
         install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
         ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-        install(FILES ${jpeg_turbo_LIBPATH}/libjpeg.so.62.3.0 DESTINATION ${TURBO_DIR}/lib RENAME libjpeg.so.62
+        install(FILES ${jpeg_turbo_LIBPATH}/libjpeg.so.62.4.0 DESTINATION ${TURBO_DIR}/lib RENAME libjpeg.so.62
                 COMPONENT ${RUNTIME_COMPONENT_NAME})
-        install(FILES ${jpeg_turbo_LIBPATH}/libturbojpeg.so.0.2.0 DESTINATION ${TURBO_DIR}/lib RENAME libturbojpeg.so.0
+        install(FILES ${jpeg_turbo_LIBPATH}/libturbojpeg.so.0.3.0 DESTINATION ${TURBO_DIR}/lib RENAME libturbojpeg.so.0
                 COMPONENT ${RUNTIME_COMPONENT_NAME})
     endif()
 endif()
@@ -323,9 +323,9 @@ if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "lite")
     else()
         install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
         ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-        install(FILES ${TOP_DIR}/third_party/libjpeg-turbo/lib/libjpeg.so.62.3.0
+        install(FILES ${TOP_DIR}/third_party/libjpeg-turbo/lib/libjpeg.so.62.4.0
                 DESTINATION ${TURBO_DIR}/lib RENAME libjpeg.so.62 COMPONENT ${RUNTIME_COMPONENT_NAME})
-        install(FILES ${TOP_DIR}/third_party/libjpeg-turbo/lib/libturbojpeg.so.0.2.0
+        install(FILES ${TOP_DIR}/third_party/libjpeg-turbo/lib/libturbojpeg.so.0.3.0
                 DESTINATION ${TURBO_DIR}/lib RENAME libturbojpeg.so.0 COMPONENT ${RUNTIME_COMPONENT_NAME})
     endif()
 endif()
