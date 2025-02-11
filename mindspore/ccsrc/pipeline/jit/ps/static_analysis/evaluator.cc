@@ -984,8 +984,9 @@ AbstractBasePtr GetPhysicalViewAbs(const AbstractBasePtr &logical_view_abs, cons
         MS_LOG(EXCEPTION) << "The axis in vmap's 'out_axes' should be a None or a scalar of type Int64Imm, but got a "
                           << sub_out_axes->ToString() << ".";
       });
-    logical_view_abs_sequence->set_elements(physical_view_abs_list);
-    return logical_view_abs;
+    auto ret = logical_view_abs->Clone();
+    dyn_cast_ptr<AbstractSequence>(ret)->set_elements(physical_view_abs_list);
+    return ret;
   }
 
   // for the single output case, outputs: A, and out_axes: 1 or (1,).
