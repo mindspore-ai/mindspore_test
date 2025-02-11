@@ -16,6 +16,7 @@
 from __future__ import absolute_import
 
 import os
+import sys
 import glob
 import math
 import json
@@ -30,6 +31,7 @@ from safetensors import safe_open
 
 import mindspore as ms
 from mindspore import log as logger
+from mindspore.log import vlog_print
 from mindspore.parallel._parallel_serialization import _get_device_num_from_strategy, _make_dir, \
     _extract_layout_map, _extract_src_dst_layout_map, _parameter_not_in_local_stage, _extract_pipeline_stage_num, \
     _insert_opt_shard_reshape, _extract_src_dst_layout_map_by_src
@@ -287,6 +289,7 @@ def _count_redundancy_list(rank_num, param_name, redundancy_dict, device_num):
 def _find_remove_redundancy_rank_id(pipe_param_list, single_param_dict, file_dict, saftensor_dict, redundancy_dict,
                                     needed_rank, device_num):
     """Find the rank_id under redundant groups."""
+    io_time = 0
     for param_name in pipe_param_list:
         rank_num = int(needed_rank)
         redundancy_ranks = _count_redundancy_list(rank_num, param_name, redundancy_dict, device_num)
@@ -299,11 +302,16 @@ def _find_remove_redundancy_rank_id(pipe_param_list, single_param_dict, file_dic
                     open_file_id = real_rank
                     break
         if open_file_id is not None:
+            start_time = time.time()
             output = file_dict[open_file_id].get_tensor(param_name)
+            end_time = time.time()
+            cost_time = end_time - start_time
+            io_time += cost_time
             saftensor_dict[param_name] = output
         else:
             raise ValueError(f"For _transform_safetensors_single, {param_name} should be in "
                              f"{redundancy_ranks}, but in {single_param_dict[param_name]}.")
+    return io_time
 
 
 def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map, src_stage_device_num,
@@ -316,6 +324,7 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
     """
     Transforms safetensors files to a specified format without using parallel processing.
     """
+    io_cost_time = 0
     if src_strategy_file is not None:
         from mindspore.train._utils import get_parameter_redundancy
         redundancy_dict_tmp = get_parameter_redundancy(src_strategy_file)
@@ -352,8 +361,10 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
             if pipe_param_list:
                 saftensor_dict = dict()
                 if src_strategy_file is not None:
-                    _find_remove_redundancy_rank_id(pipe_param_list, single_param_dict, file_dict, saftensor_dict,
-                                                    redundancy_dict, needed_rank, device_num)
+                    io_time = _find_remove_redundancy_rank_id(pipe_param_list, single_param_dict, file_dict,
+                                                              saftensor_dict, redundancy_dict, needed_rank,
+                                                              device_num)
+                    io_cost_time += io_time
                 else:
                     with safe_open(all_safetensor_files_map.get(int(needed_rank)), framework="np") as f:
                         if not unified_flag:
@@ -362,11 +373,17 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
                             dst_param_name_set = set(dst_strategy_list_keys)
                             hyper_param_set = all_param_name_set - (src_param_name_set & dst_param_name_set)
                             pipe_param_list.extend(list(hyper_param_set))
+                        io_time = 0
                         for param_name in pipe_param_list:
                             if param_name not in f.keys():
                                 # param not in ckpt file, check reason
                                 continue
+                            start_time = time.time()
                             output = f.get_tensor(param_name)
+                            end_time = time.time()
+                            cost_time = end_time - start_time
+                            io_time += cost_time
+                            io_cost_time += io_time
                             save_param_name = param_name
                             if choice_func is not None:
                                 choice_out = choice_func(param_name)
@@ -380,7 +397,12 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
                                                      f"'choice_func' must be bool or str, but got {type(choice_out)}.")
                             saftensor_dict[save_param_name] = output
             else:
+                start_time = time.time()
                 saftensor_dict = load_file(all_safetensor_files_map.get(int(needed_rank)))
+                end_time = time.time()
+                cost_time = end_time - start_time
+                io_cost_time += cost_time
+
             for param_name, param in saftensor_dict.items():
                 src_rank = int(needed_rank) % src_stage_device_num
                 param_total_dict[param_name][src_rank] = param
@@ -422,7 +444,7 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
                     ms.save_checkpoint(transform_param_dict, save_file_name)
             del param_total_dict_keys
         del param_total_dict
-
+    return io_cost_time
 
 def _save_final_safetensors(_transform_param_list, output_format):
     """save file with list"""
@@ -551,6 +573,7 @@ def _extrace_number(file_name):
     number_ls = re.findall(r'\d+', file_name)
     number_ls = [int(i) for i in number_ls]
     return number_ls[-2:]
+
 
 def _collect_safetensor_files(src_safetensors_dir, format='safetensors', file_suffix=None):
     """
@@ -801,13 +824,18 @@ def _transform_safetensors_single_semaphore(needed_rank_list_map, all_safetensor
                                             ckpt_prefix, dst_safetensors_dir, output_format,
                                             _transform_param_list, pipe_param_list=None, file_index=None,
                                             unified_flag=False, src_strategy_file=None, choice_func=None):
+    """transform safetensors single semaphore"""
+    total_io_cost_time = 0
     for i in file_index:
-        _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map, src_stage_device_num,
-                                      dst_stage_device_num, src_strategy_dict, dst_strategy_dict,
-                                      origin_src_strategy_list,
-                                      origin_dst_strategy_list, ckpt_prefix, dst_safetensors_dir, output_format,
-                                      _transform_param_list, pipe_param_list[i], i, unified_flag, src_strategy_file,
-                                      choice_func)
+        io_cost_time = _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map,
+                                                     src_stage_device_num, dst_stage_device_num, src_strategy_dict,
+                                                     dst_strategy_dict, origin_src_strategy_list,
+                                                     origin_dst_strategy_list, ckpt_prefix, dst_safetensors_dir,
+                                                     output_format, _transform_param_list, pipe_param_list[i], i,
+                                                     unified_flag, src_strategy_file, choice_func)
+        total_io_cost_time += io_cost_time
+    vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
+               f"Unified safetensors io cost time:{total_io_cost_time}.")
 
 
 def _split_list(split_list, split_num):
@@ -916,6 +944,7 @@ def _load_parallel_checkpoint(file_info):
     dst_stage_device_num = np.prod(dst_strategy_list.get(list(dst_strategy_list.keys())[0])[0]) if dst_strategy_list \
                                                                                                    is not None else 1
     local_rank_id = rank_id % dst_stage_device_num
+    total_io_cost_time = 0
     for param_name in param_list:
         if param_name not in param_name_map:
             continue
@@ -965,14 +994,22 @@ def _load_parallel_checkpoint(file_info):
             to_info_tuple = (to_opt_shard_size, to_dev_matrix_origin, to_tensor_map_origin, origin_tensor_shape)
             _insert_opt_shard_reshape(param_rank_map, from_info_tuple, to_info_tuple)
             transform_operator_stack = _generate_transform_operator_stack(param_rank_map, local_rank_id)
-
+            start_time = time.time()
             slice_param = _apply_sf_obj_transform_operators(transform_operator_stack, sf_obj, device_num)
+            end_time = time.time()
+            cost_time = end_time - start_time
+            total_io_cost_time += cost_time
         else:
+            start_time = time.time()
             slice_param = sf_obj[:]
+            end_time = time.time()
+            cost_time = end_time - start_time
+            total_io_cost_time += cost_time
         cur_param_name = name_map.get(param_name) if name_map is not None and param_name in name_map else param_name
         _check_name_map_value_is_str(cur_param_name)
         total_param[cur_param_name] = ms.Parameter(ms.Tensor.from_numpy(slice_param))
-
+    vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
+               f"load distributed safetensors io cost time:{total_io_cost_time}.")
     total_param = _process_hyper_params(file_list, total_safetensors_dir, name_map, total_param)
     if net is not None:
         if not return_param_dict:
