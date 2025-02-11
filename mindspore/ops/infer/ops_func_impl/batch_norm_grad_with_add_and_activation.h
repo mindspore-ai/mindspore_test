@@ -40,15 +40,15 @@ class OPS_API BatchNormGradWithAddAndActivationFuncImpl : public BatchNormGradFu
     }
     auto scale_shape_ptr = input_args[kInputIndex2]->GetShape();
     auto x_shape_ptr = std::make_shared<abstract::TensorShape>(x_shape);
-    return std::make_shared<abstract::TupleShape>(std::move(std::vector<abstract::BaseShapePtr>{
-      x_shape_ptr, scale_shape_ptr->Clone(), scale_shape_ptr->Clone(), x_shape_ptr->Clone()}));
+    return std::make_shared<abstract::TupleShape>(std::vector<abstract::BaseShapePtr>{
+      x_shape_ptr, scale_shape_ptr->Clone(), scale_shape_ptr->Clone(), x_shape_ptr->Clone()});
   }
 
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override {
     auto x_type_ptr = input_args[kInputIndex1]->GetType();
     auto scale_type_ptr = input_args[kInputIndex2]->GetType();
-    return std::make_shared<Tuple>(std::move(std::vector<TypePtr>{x_type_ptr->Clone(), scale_type_ptr->Clone(),
-                                                                  scale_type_ptr->Clone(), x_type_ptr->Clone()}));
+    return std::make_shared<Tuple>(
+      std::vector<TypePtr>{x_type_ptr->Clone(), scale_type_ptr->Clone(), scale_type_ptr->Clone(), x_type_ptr->Clone()});
   }
 
  protected:

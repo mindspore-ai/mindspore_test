@@ -46,7 +46,7 @@ const std::map<std::string, BackendType> backend_name_to_type = {{kMSBackendName
 const std::map<BackendType, std::string> backend_type_to_name = {{kMSBackend, kMSBackendName},
                                                                  {kGEBackend, kGEBackendName}};
 
-class BACKEND_EXPORT BackendManager {
+class BACKEND_MANAGER_EXPORT BackendManager {
  public:
   static BackendManager &GetInstance();
   // Record the BackendCreator by the backend name.
@@ -72,7 +72,7 @@ class BACKEND_EXPORT BackendManager {
   BackendBasePtr backends_[kInvalidBackend];
 };
 
-class BACKEND_EXPORT BackendRegister {
+class BACKEND_MANAGER_EXPORT BackendRegister {
  public:
   BackendRegister(const std::string &backend_name, BackendCreator &&backend_creator) {
     BackendManager::GetInstance().Register(backend_name, std::move(backend_creator));
