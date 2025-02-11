@@ -66,7 +66,7 @@ class TensorReport(Primitive):
     @prim_attr_register
     def __init__(self):
         """Initialize TensorReport"""
-        self.add_prim_attr("side_effect_io", True)
+        self.add_prim_attr("side_effect_mem", True)
         self.add_prim_attr("channel_name", "ms_tensor_report")
 
     def __call__(self, file, input_x):

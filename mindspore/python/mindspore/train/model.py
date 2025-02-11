@@ -35,7 +35,7 @@ from mindspore.train.metrics import get_metrics, get_metric_fn
 from mindspore._checkparam import check_input_data, check_output_data
 from mindspore import _checkparam as Validator
 from mindspore.train.callback import _InternalCallbackParam, RunContext, _CallbackManager, Callback, TimeMonitor,\
-    TFTRegister
+    TrainFaultTolerance
 from mindspore.train.callback import __all__ as internal_cb_names
 from mindspore.train.callback._cluster_monitor import ClusterMonitor
 from mindspore import context
@@ -90,6 +90,7 @@ def _save_final_ckpt(func):
     """
     Decorator function, which saves the current checkpoint when an exception occurs during training.
     """
+
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         obj = None
@@ -106,7 +107,7 @@ def _save_final_ckpt(func):
                 # pylint: disable=W0212
                 prefix = _chg_ckpt_file_name_if_same_exist(obj._directory, obj._exception_prefix, True)
                 cur_ckpoint_file = prefix + "-" + str(self._current_epoch_num) + "_" \
-                    + str(self._current_step_num) + "_breakpoint.ckpt"
+                                   + str(self._current_step_num) + "_breakpoint.ckpt"
                 cur_file = os.path.join(obj._directory, cur_ckpoint_file)
                 if "epoch_num" in obj._append_dict:
                     obj._append_dict["epoch_num"] = obj._append_epoch_num + self._current_epoch_num
@@ -117,56 +118,69 @@ def _save_final_ckpt(func):
                 raise e
         else:
             func(self, *args, **kwargs)
+
     return wrapper
+
+
+def _handle_exception_info(obj, uce_env, tft, e):
+    """handle exception info"""
+    logger.info("uce wrapper caught RuntimeError")
+    if not uce_env:
+        logger.error("uce wrapper caught RuntimeError but uce not enable, enter MindIO TTP process.",
+                     exc_info=True)
+        tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
+        raise e
+    e_str = str(e)
+    logger.warning("uce wrapper caught RuntimeError e_str:{}".format(e_str))
+    if "UCEError" in e_str:
+        logger.info("uce wrapper report UCEError")
+        obj.is_uce_rank = True
+        tft.tft_report_error(tft.ReportState.RS_UCE.value)
+    elif "ForceStopError" in e_str:
+        logger.warning("uce wrapper caught RuntimeError ForceStopError")
+        force_stop_err = tft.ReportState.RS_NORMAL.value
+        tft.tft_report_error(force_stop_err)
+    elif "ARF FINISH" in e_str:
+        logger.warning(f"ARF FINISH")
+        _set_recovery_context(is_arf=True)
+        tft.tft_report_error(tft.ReportState.RS_PREREPAIR_FINISH.value)
+    else:
+        logger.error("uce wrapper caught other RuntimeError, enter MindIO TTP process.", exc_info=True)
+        tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
+        raise e
+
 
 def _handle_tft(func):
     """
     Decorator function, which starts uce handle process when an exception occurs during training.
     """
+
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         obj = None
-        if kwargs.get('callbacks') and isinstance(kwargs.get('callbacks'), TFTRegister):
+        if kwargs.get('callbacks') and isinstance(kwargs.get('callbacks'), TrainFaultTolerance):
             obj = kwargs.get('callbacks')
         if kwargs.get('callbacks') and isinstance(kwargs.get('callbacks'), list):
             for item in kwargs.get('callbacks'):
-                if isinstance(item, TFTRegister):
+                if isinstance(item, TrainFaultTolerance):
                     obj = item
         if obj:
             tft = obj.tft
             tft_env = os.getenv("MS_ENABLE_TFT", "")
-            uce_env = "UCE:1" in tft_env
+            uce_env = "UCE:1" in tft_env or "ARF:1" in tft_env
             while True:
                 try:
                     return func(self, *args, **kwargs)
                 except RuntimeError as e:
-                    logger.info("uce wrapper caught RuntimeError")
-                    if not uce_env:
-                        logger.error("uce wrapper caught RuntimeError but uce not enable, enter MindIO TTP process.",
-                                     exc_info=True)
-                        tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
-                        raise e
-                    e_str = str(e)
-                    logger.info("uce wrapper caught RuntimeError e_str:{}".format(e_str))
-                    if "UCEError" in e_str:
-                        logger.info("uce wrapper report UCEError")
-                        obj.is_uce_rank = True
-                        tft.tft_report_error(tft.ReportState.RS_UCE.value)
-                    elif "ForceStopError" in e_str:
-                        logger.info("uce wrapper caught RuntimeError ForceStopError")
-                        force_stop_err = tft.ReportState.RS_NORMAL.value
-                        tft.tft_report_error(force_stop_err)
-                    else:
-                        logger.error("uce wrapper caught other RuntimeError, enter MindIO TTP process.", exc_info=True)
-                        tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
-                        raise e
+                    _handle_exception_info(obj, uce_env, tft, e)
                     ret = tft.tft_wait_next_action()
                     if ret == tft.Action.EXIT.value:
                         raise e
                     repair_step = tft.tft_get_repair_step()
-                    logger.info("uce wrapper caught repair finish REPAIR STEP: {} batch_num: \
-{}".format(repair_step, self.batch_num))
-                    initial_epoch = int(repair_step/self.batch_num)
+                    logger.warning(
+                        "uce wrapper caught repair finish REPAIR STEP: {} batch_num:{}".format(repair_step,
+                                                                                               self.batch_num))
+                    initial_epoch = int(repair_step / self.batch_num)
                     initial_step = repair_step % self.batch_num
                     kwargs["initial_epoch"] = initial_epoch
 
@@ -189,9 +203,9 @@ def _handle_tft(func):
                     kwargs["initial_step"] = cb_initial_step
                     # reset all accu grads to zero
                     obj._reset_acc_grads()
-
-                    logger.info("uce wrapper repair complete  \
-initial_epoch: {}, cb_initial_step: {} ".format(initial_epoch, cb_initial_step))
+                    logger.warning(
+                        "uce wrapper repair complete initial_epoch: {}, cb_initial_step: {} ".format(initial_epoch,
+                                                                                                     cb_initial_step))
                     continue
                 except BaseException as e:
                     logger.error("uce wrapper caught BaseException error, enter MindIO TTP process.", exc_info=True)
@@ -199,6 +213,7 @@ initial_epoch: {}, cb_initial_step: {} ".format(initial_epoch, cb_initial_step))
                     raise e
         else:
             return func(self, *args, **kwargs)
+
     return wrapper
 
 
@@ -215,7 +230,7 @@ def _check_tft():
         if ms_mode != mindspore.GRAPH_MODE:
             raise ValueError("TFT is only supported in GRAPH_MODE")
         jit_level = context.get_context("jit_level")
-        if jit_level == "O2" and "UCE:1" in tft_env:
+        if jit_level == "O2" and ("UCE:1" in tft_env or "ARF:1" in tft_env):
             raise ValueError("TFT is not supported when using jit_level == O2")
 
 
@@ -1055,7 +1070,7 @@ class Model:
             if should_stop:
                 break
 
-            need_reset_to_beginning = self.enable_recovery and _get_recovery_context("need_reset")\
+            need_reset_to_beginning = self.enable_recovery and _get_recovery_context("need_reset") \
                                       and not _get_recovery_context("latest_ckpt_file")
             self.epoch_iter += 1
             if need_reset_to_beginning:
@@ -1099,7 +1114,7 @@ class Model:
         Check whether enable recovery and execution mode consistency.
         """
 
-        enable_recovery = _get_recovery_context("enable_recovery")
+        enable_recovery = _get_recovery_context("enable_recovery") and context.get_context("device_target") == "GPU"
         if not enable_recovery:
             self.enable_recovery = False
         else:
@@ -1116,6 +1131,8 @@ class Model:
             dataset_size (int): The number of batches in a dataset.
             sink_size (int): Control the amount of data in each sink. Default: -1.
         """
+        if context.get_context("device_target") != "GPU":
+            return
         if not self.enable_recovery:
             self.need_load_ckpt = False
 
@@ -1144,7 +1161,7 @@ class Model:
                 load_checkpoint(cb_params.latest_ckpt_file, cb_params.train_network)
             except BaseException as e:
                 os.remove(cb_params.latest_ckpt_file)
-                raise RuntimeError(e.__str__() + ", load ckpt failed and remove the ckpt: "\
+                raise RuntimeError(e.__str__() + ", load ckpt failed and remove the ckpt: " \
                                    + cb_params.latest_ckpt_file) from e
             _reset_training_dataset(cb_params.cur_step_num, dataset_helper.iter.dataset.get_dataset_size())
             self.need_load_ckpt = False
@@ -1862,6 +1879,7 @@ class Model:
         Returns:
             Tensor, array(s) of predictions.
         """
+
         def _get_lite_context(lite_context_input):
             # use default lite context parameters for now
             device_target = context.get_context("device_target").lower()
@@ -1895,7 +1913,7 @@ class Model:
         if not self._mindspore_lite:
             self._mindspore_lite = importlib.import_module('mindspore_lite')
 
-        use_past = False    # default execute full model inference
+        use_past = False  # default execute full model inference
         model_group_id = None
         if self._predict_network.get_flags().__contains__("is_first_iteration"):
             is_first_iteration = self._predict_network.get_flags()['is_first_iteration']

@@ -38,6 +38,7 @@ constexpr char kEnvRecoveryPath[] = "MS_RECOVERY_PATH";
 constexpr char kEnvRecoveryInterval[] = "MS_RECOVERY_INTERVAL";
 
 bool IsEnableRecovery();
+bool IsEnableGpuRecovery();
 std::string RecoveryPath();
 
 // Used to save disaster recovery-related state quantities and provide disaster recovery-related
@@ -56,6 +57,7 @@ class BACKEND_EXPORT RecoveryContext {
 
   // Get whether enable recovery or not.
   bool enable_recovery() const { return enable_recovery_; }
+  bool enable_gpu_recovery() const { return enable_gpu_recovery_; }
 
   // Get the persistent directory.
   const std::string &recovery_path() const { return recovery_path_; }
@@ -93,6 +95,8 @@ class BACKEND_EXPORT RecoveryContext {
   void set_global_rank_id(uint32_t global_rank_id) { global_rank_id_ = global_rank_id; }
   // Set global rank size.
   void set_global_rank_size(uint32_t global_rank_size) { global_rank_size_ = global_rank_size; }
+  void SetIsRebootNode(bool is_reboot);
+  void SetIsArf(bool is_arf);
 
   // Obtain the global step corresponding to the global latest checkpoint in each training process. Since there may be
   // some processes that fails to save the checkpoint, it is necessary for AllGather to save the latest step of the
@@ -125,6 +129,7 @@ class BACKEND_EXPORT RecoveryContext {
 
   // Whether enable recovery or not, set by environment variable 'MS_ENABLE_RECOVERY'.
   bool enable_recovery_{false};
+  bool enable_gpu_recovery_{false};
 
   // The persistent directory, set by environment variable 'MS_RECOVERY_PATH'.
   std::string recovery_path_;

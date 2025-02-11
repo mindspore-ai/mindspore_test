@@ -1,7 +1,7 @@
-mindspore.train.TFTRegister
-================================
+mindspore.train.TrainFaultTolerance
+===================================
 
-.. py:class:: mindspore.train.TFTRegister(ctrl_rank_id, ctrl_ip, ctrl_port, ckpt_save_path)
+.. py:class:: mindspore.train.TrainFaultTolerance(ctrl_rank_id, ctrl_ip, ctrl_port, ckpt_save_path)
 
     该回调用于开启 `MindIO的TTP特性 <https://www.hiascend.com/document/detail/zh/mindx-dl/60rc1/mindio/mindiottp/mindiottp001.html>`_，该CallBack会嵌入训练的流程，完成TTP 的初始化、上报、异常处理等操作。
 
@@ -21,7 +21,7 @@ mindspore.train.TFTRegister
     样例：
 
     .. note::
-        在运行TFTRegister的用例之前，需要配置相应的环境变量。推荐使用msrun进行分布式的启动，
+        在运行TrainFaultTolerance的用例之前，需要配置相应的环境变量。推荐使用msrun进行分布式的启动，
         参考 `msrun启动方式 <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_。
         用例应该在4张卡上运行。
 

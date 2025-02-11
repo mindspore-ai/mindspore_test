@@ -514,7 +514,7 @@ class ModelCheckpoint(Callback):
         if callable(prefix):
             self._prefix_func = prefix
 
-        if _get_recovery_context("enable_recovery"):
+        if context.get_context("device_target") == "GPU" and _get_recovery_context("enable_recovery"):
             _set_recovery_context(ckpt_path=self._directory)
 
         if config is None:

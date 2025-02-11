@@ -47,7 +47,7 @@ AscendCommunicationGroup::AscendCommunicationGroup(const std::string &name, cons
 
 bool AscendCommunicationGroup::Initialize(void *root_info) {
   if (initialized_) {
-    return false;
+    return true;
   }
   if (hccl::HcclAdapter::GetInstance().UseHcclCM()) {
     // If using hccl CM envs to launch distributed job, no need to call HcclCommInitRootInfo. The group will be
@@ -101,7 +101,7 @@ bool AscendCommunicationGroup::Initialize(void *root_info) {
 
 bool AscendCommunicationGroup::Finalize() {
   if (!initialized_) {
-    return false;
+    return true;
   }
   if (hccl::HcclAdapter::GetInstance().UseHcclCM()) {
     // If using hccl CM envs to launch distributed job, comm_ is not initialized. So directly return.

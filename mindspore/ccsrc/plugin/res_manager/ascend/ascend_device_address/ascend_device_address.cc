@@ -381,6 +381,13 @@ void AscendDeviceAddress::SyncStream() const {
   MS_LOG(DEBUG) << "SyncStream Start!";
   auto ret = SyncStreamUtils();
   if (!ret) {
+    MS_LOG(WARNING) << "Uce flag: " << UCEException::GetInstance().get_uce_flag()
+                    << ", force stop flag: " << UCEException::GetInstance().get_force_stop_flag();
+    if (UCEException::GetInstance().get_uce_flag()) {
+      MS_LOG(EXCEPTION) << "UCEError occurs when execute.";
+    } else if (UCEException::GetInstance().get_force_stop_flag()) {
+      MS_LOG(EXCEPTION) << "ForceStopError occurs when execute.";
+    }
     MS_LOG(EXCEPTION) << "Sync stream error!";
   }
   MS_LOG(DEBUG) << "SyncStream Finish!";

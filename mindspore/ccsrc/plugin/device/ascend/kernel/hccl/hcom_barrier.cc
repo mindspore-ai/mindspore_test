@@ -71,6 +71,10 @@ bool HcomBarrierKernel::Launch(const std::vector<KernelTensor *> &, const std::v
     return true;
   }
 #endif
+  if (NeedReGetHcom(group_, hccl_inner_comm_name_)) {
+    MS_LOG(WARNING) << "Hccl inner name had changed, need re-get hcom";
+    comm_ = AscendCollectiveCommLib::GetInstance().GetHcomByGroup(group_);
+  }
   auto hccl_result = hccl::HcclAdapter::GetInstance().HcclBarrier(stream_ptr, comm_);
   if (hccl_result != HCCL_SUCCESS) {
     MS_LOG(ERROR) << "HcclBarrier failed, ret:" << hccl_result;

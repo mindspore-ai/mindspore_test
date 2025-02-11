@@ -91,6 +91,8 @@ class DataPrepareActor : public DebugAwareActor {
                                      OpContext<DeviceTensor> *const context);
   void PrepareDataForHostTensorQueueNew(const VectorRef &args, OpContext<DeviceTensor> *const context);
 
+  void RaiseARFError(const VectorRef &args);
+
   // Prepare the device data for persistent device tensor of weight node from host tensor.
   void PrepareDataForWeightNode(const AnfNodePtr &backend_node, const AnfNodePtr &front_node, const TensorPtr &tensor,
                                 const DeviceContext *device_context, OpContext<DeviceTensor> *const context);

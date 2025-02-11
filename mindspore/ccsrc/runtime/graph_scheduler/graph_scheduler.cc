@@ -287,7 +287,7 @@ bool QueryFinishTransform(const std::string &actor_set_name) {
 }
 
 void DoDisasterRecovery(const std::string &actor_set_name) {
-  if (RecoveryContext::GetInstance()->enable_recovery() && CollectiveManager::instance()->need_reinit()) {
+  if (RecoveryContext::GetInstance()->enable_gpu_recovery() && CollectiveManager::instance()->need_reinit()) {
     MS_LOG(INFO) << "Begin reinitialize collective communication for recovery.";
     bool ret = false;
     while (!ret) {
@@ -875,7 +875,7 @@ ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info
     graph_compiler_info.strategy_ = GraphExecutionStrategy::kPipeline;
   }
   // Check whether UCE is enabled.
-  UCEException::GetInstance().CheckUceEnv();
+  UCEException::GetInstance().CheckUceARFEnv();
   InitGraphParameterStore(graph_compiler_info);
   PersistDeviceTensor(graph_compiler_info);
   uint64_t start_time_1 = profiler::GetClockSyscnt();
@@ -908,7 +908,7 @@ ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info
   MS_LOG(INFO) << "Graph(" << graph_compiler_info.name_ << ") transforms actor end.";
 
 #if defined(__linux__) && defined(WITH_BACKEND)
-  if (ClusterContext::instance()->initialized() && RecoveryContext::GetInstance()->enable_recovery()) {
+  if (ClusterContext::instance()->initialized() && RecoveryContext::GetInstance()->enable_gpu_recovery()) {
     SendFinishTransform(graph_compiler_info.name_);
   }
 #endif
@@ -1069,7 +1069,7 @@ void GraphScheduler::RefreshContextAndThreadPool(ActorSet *const actor_set, Acto
 }
 
 void CheckUceBeforeGraphRun(ActorSet *const actor_set) {
-  if (UCEException::GetInstance().enable_uce()) {
+  if (UCEException::GetInstance().enable_uce() || UCEException::GetInstance().enable_arf()) {
     if (UCEException::GetInstance().get_uce_flag()) {
       MS_LOG(INFO) << "Restart from step after a uce error occurs.";
     } else if (UCEException::GetInstance().get_force_stop_flag()) {
@@ -1148,7 +1148,7 @@ void ClearKernelActorDataForUce(ActorSet *const actor_set) {
 }
 
 void GraphScheduler::ProcessUceError(ActorSet *const actor_set) {
-  if (!UCEException::GetInstance().enable_uce()) {
+  if (!(UCEException::GetInstance().enable_uce() || UCEException::GetInstance().enable_arf())) {
     return;
   }
 
@@ -1176,6 +1176,11 @@ void GraphScheduler::ProcessUceError(ActorSet *const actor_set) {
   } else if (UCEException::GetInstance().get_force_stop_flag()) {
     actor_set->is_execution_failed_ = false;
     MS_LOG(EXCEPTION) << "ForceStopError occurs when execute.";
+  } else if (UCEException::GetInstance().is_reboot_node()) {
+    MS_LOG(WARNING) << "Try to raise arf finish !";
+    actor_set->is_execution_failed_ = false;
+    UCEException::GetInstance().set_reboot_node(false);
+    MS_LOG(EXCEPTION) << "ARF FINISH !";
   }
 }
 

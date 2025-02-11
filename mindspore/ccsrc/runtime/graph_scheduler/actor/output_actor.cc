@@ -220,7 +220,7 @@ void OutputActor::RunOpControl(AID *const, OpContext<DeviceTensor> *const contex
   MS_LOG(DEBUG) << "Actor(" << GetAID().Name() << ") receive the input op control and current count:" << current_count_;
 
   // Trigger disaster recovery and return empty output.
-  if (RecoveryContext::GetInstance()->enable_recovery() && CollectiveManager::instance()->need_reinit()) {
+  if (RecoveryContext::GetInstance()->enable_gpu_recovery() && CollectiveManager::instance()->need_reinit()) {
     FreeOutputNodeMem();
     ClearOutputCache();
     SET_OPCONTEXT_SUCCESS_RET((*context));

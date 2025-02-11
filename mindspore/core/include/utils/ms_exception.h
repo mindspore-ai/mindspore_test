@@ -126,7 +126,7 @@ class MS_CORE_API StaticAnalysisException {
 class MS_CORE_API UCEException {
  public:
   static UCEException &GetInstance();
-  bool get_has_throw_error() const { return force_stop_flag_ || uce_flag_; }
+  bool get_has_throw_error() const { return force_stop_flag_ || uce_flag_ || is_reboot_node_; }
 
   void set_force_stop_flag(bool flag) { force_stop_flag_ = flag; }
   bool get_force_stop_flag() const { return force_stop_flag_; }
@@ -134,13 +134,24 @@ class MS_CORE_API UCEException {
   void set_uce_flag(bool flag) { uce_flag_ = flag; }
   bool get_uce_flag() const { return uce_flag_; }
 
+  void set_reboot_node(bool flag) { is_reboot_node_ = flag; }
+  bool is_reboot_node() const { return is_reboot_node_; }
+  void set_is_arf(bool flag) { is_arf_ = flag; }
+  bool is_arf() const { return is_arf_; }
+  bool enable_arf() { return arf_env_; }
+
   bool enable_uce() { return uce_env_; }
-  void CheckUceEnv() {
+  void CheckUceARFEnv() {
     auto tftEnv = common::GetEnv("MS_ENABLE_TFT");
     constexpr std::string_view optUCE = "UCE:1";
     if (!tftEnv.empty() && (tftEnv.find(optUCE) != std::string::npos)) {
       uce_env_ = true;
       MS_LOG(WARNING) << "UCE enabled.";
+    }
+    constexpr std::string_view optARF = "ARF:1";
+    if (!tftEnv.empty() && (tftEnv.find(optARF) != std::string::npos)) {
+      arf_env_ = true;
+      MS_LOG(WARNING) << "ARF enabled.";
     }
   }
 
@@ -152,6 +163,9 @@ class MS_CORE_API UCEException {
   bool force_stop_flag_{false};
   bool uce_flag_{false};
   bool uce_env_{false};
+  bool arf_env_{false};
+  bool is_reboot_node_{false};
+  bool is_arf_{false};
 };
 }  // namespace mindspore
 

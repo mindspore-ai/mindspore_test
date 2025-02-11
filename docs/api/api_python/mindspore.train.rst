@@ -28,7 +28,7 @@ mindspore.train
     mindspore.train.OnRequestExit
     mindspore.train.ReduceLROnPlateau
     mindspore.train.RunContext
-    mindspore.train.TFTRegister
+    mindspore.train.TrainFaultTolerance
     mindspore.train.TimeMonitor
 
 评价指标

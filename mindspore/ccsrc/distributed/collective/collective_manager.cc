@@ -338,6 +338,9 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
     MS_LOG(WARNING) << "This rank: " << global_rank_id_ << " is not in the group ranks: " << group_ranks
                     << ". This may cause some exception when initializing the group.";
   }
+  if (group_map_.count(group_name) == 0) {
+    (void)group_infos_.emplace_back(std::make_pair(group_name, group_ranks));
+  }
   group_map_[group_name] = group_ranks;
 
   // Create simulation communication group.
@@ -399,6 +402,18 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
   }
 
   PROF_END(distributed_create_group);
+  return true;
+}
+
+bool CollectiveManager::DestroyDeviceSideCommunicationGroup(const std::string &group_name) {
+  MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
+  if (!need_host_collective_ || !common::GetEnv(kSimulationLevel).empty()) {
+    RETURN_IF_FALSE_WITH_LOG(device_comm_lib_instance_->DestroyDeviceCommunicationGroup(group_name),
+                             "Failed to destroy device communication group " + group_name);
+    return true;
+  }
+  RETURN_IF_FALSE_WITH_LOG(device_comm_lib_instance_->DestroyCommunicationGroup(group_name),
+                           "Failed to destroy device communication group " + group_name);
   return true;
 }
 
@@ -758,7 +773,7 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
       ret = true;
       // In disaster recovery scenarios, it is necessary to ensure that the unique id obtained from the Scheduler is a
       // newly generated one.
-      if (RecoveryContext::GetInstance()->enable_recovery()) {
+      if (RecoveryContext::GetInstance()->enable_gpu_recovery()) {
         ret = CheckUniqueIDLatest(group_name, root_info_size, root_info);
         if (!ret) {
           // The time interval for querying latest unique id from scheduler: 3 second.
@@ -788,6 +803,8 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
   if (!ret) {
     MS_LOG(ERROR) << "Failed to create comm group on device side for " << group_name;
   }
+  MS_LOG(INFO) << "Delete unique after build ok.";
+  host_comm_lib_instance_->ClearUniqueID(group_name);
   MS_LOG(WARNING) << "End initialize communication group on the device side: " << group_name;
   return ret;
 }

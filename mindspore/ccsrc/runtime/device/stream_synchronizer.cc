@@ -30,7 +30,7 @@ std::shared_ptr<StreamSynchronizer> StreamSynchronizer::instance_ = nullptr;
 
 void StreamSynchronizer::Initialize() {
   // Non disaster recovery mode does not need to start thread and timeout mechanisms.
-  if (!RecoveryContext::GetInstance()->enable_recovery()) {
+  if (!RecoveryContext::GetInstance()->enable_gpu_recovery()) {
     return;
   }
 
@@ -60,7 +60,7 @@ bool StreamSynchronizer::SyncStream(const std::string &device_name, uint32_t tim
   MS_EXCEPTION_IF_NULL(device_context);
 
   // If disable recovery or timeout==0, sync stream directly to improve performance.
-  if (!RecoveryContext::GetInstance()->enable_recovery() || timeout == 0) {
+  if (!RecoveryContext::GetInstance()->enable_gpu_recovery() || timeout == 0) {
     device_context->Initialize();
     return device_context->device_res_manager_->SyncAllStreams();
   }

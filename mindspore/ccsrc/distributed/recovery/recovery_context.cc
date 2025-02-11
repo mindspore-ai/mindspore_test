@@ -77,7 +77,12 @@ void RemoveAllCkptFiles(const std::string &directory, const std::vector<std::str
 }
 }  // namespace
 
-bool IsEnableRecovery() { return common::GetEnv(kEnvEnableRecovery) == std::string("1"); }
+bool IsEnableRecovery() { return (common::GetEnv(kEnvEnableRecovery) == std::string("1")); }
+
+bool IsEnableGpuRecovery() {
+  return common::GetEnv(kEnvEnableRecovery) == std::string("1") &&
+         MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kGPUDevice;
+}
 
 std::string RecoveryPath() { return common::GetEnv(kEnvRecoveryPath); }
 
@@ -92,13 +97,17 @@ void RecoveryContext::Initialize() {
     return;
   }
 
+  enable_gpu_recovery_ = IsEnableGpuRecovery();
+
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   context_ptr->set_param<bool>(MS_CTX_ENABLE_RECOVERY, true);
 
-  recovery_path_ = RecoveryPath();
-  if (recovery_path_.empty()) {
-    MS_LOG(EXCEPTION) << "The recovery path is empty, please export MS_RECOVERY_PATH correctly.";
+  if (enable_gpu_recovery_) {
+    recovery_path_ = RecoveryPath();
+    if (recovery_path_.empty()) {
+      MS_LOG(EXCEPTION) << "The recovery path is empty, please export MS_RECOVERY_PATH correctly.";
+    }
   }
 
   auto env_recovery_interval = common::GetEnv(kEnvRecoveryInterval);
@@ -107,31 +116,44 @@ void RecoveryContext::Initialize() {
   }
 
   node_role_ = common::GetEnv(distributed::kEnvRole);
-  if (distributed::kValidRoleName.count(node_role_) == 0) {
+  if (!node_role_.empty() && distributed::kValidRoleName.count(node_role_) == 0) {
     MS_LOG(EXCEPTION) << "Role name '" << node_role_ << "' is invalid. ";
   }
 
-  // 2. Get real recovery path and create config file.
-  if (!storage::FileIOUtils::IsFileOrDirExist(recovery_path_)) {
-    storage::FileIOUtils::CreateDirRecursive(recovery_path_);
+  if (enable_gpu_recovery_) {
+    // 2. Get real recovery path and create config file.
+    if (!storage::FileIOUtils::IsFileOrDirExist(recovery_path_)) {
+      storage::FileIOUtils::CreateDirRecursive(recovery_path_);
+    }
+
+    auto ret = FileUtils::GetRealPath(recovery_path_.c_str());
+    if (!ret.has_value()) {
+      MS_LOG(EXCEPTION) << "Cannot get real path of persistent storage path: " << recovery_path_;
+    }
+    recovery_path_ = ret.value();
+
+    std::string config_file_path = recovery_path_ + kConfigJson;
+    if (!storage::FileIOUtils::IsFileOrDirExist(config_file_path)) {
+      CreateConfigFile(config_file_path);
+    }
+
+    // 3. Set config content to PSContext.
+    ps::PSContext::instance()->set_config_file_path(config_file_path);
   }
 
-  auto ret = FileUtils::GetRealPath(recovery_path_.c_str());
-  if (!ret.has_value()) {
-    MS_LOG(EXCEPTION) << "Cannot get real path of persistent storage path: " << recovery_path_;
-  }
-  recovery_path_ = ret.value();
-
-  std::string config_file_path = recovery_path_ + kConfigJson;
-  if (!storage::FileIOUtils::IsFileOrDirExist(config_file_path)) {
-    CreateConfigFile(config_file_path);
-  }
-
-  // 3. Set config content to PSContext.
-  ps::PSContext::instance()->set_config_file_path(config_file_path);
   ps::PSContext::instance()->set_node_id(common::GetEnv(distributed::cluster::topology::kEnvNodeId));
 
   initialized_ = true;
+}
+
+void RecoveryContext::SetIsRebootNode(bool is_reboot) {
+  MS_LOG(WARNING) << "Set is reboot node flag: " << is_reboot;
+  UCEException::GetInstance().set_reboot_node(is_reboot);
+}
+
+void RecoveryContext::SetIsArf(bool is_arf) {
+  MS_LOG(WARNING) << "Set is arf: " << is_arf;
+  UCEException::GetInstance().set_is_arf(is_arf);
 }
 
 void RecoveryContext::ObtainGlobalLatestCkptInfo() {
@@ -360,7 +382,7 @@ void RecoveryContext::CreateConfigFile(const std::string &config_file_path) {
 
 void RecoveryContext::CreatePersistentFile() {
   std::unique_lock<std::mutex> lock(create_persist_json_mtx_);
-  if (node_role_ == distributed::kEnvRoleOfScheduler) {
+  if (node_role_.empty() || node_role_ == distributed::kEnvRoleOfScheduler) {
     return;
   }
 
@@ -385,7 +407,7 @@ void RecoveryContext::CreatePersistentFile() {
 }
 
 void RecoveryContext::SetCkptPath(const std::string &path) {
-  if (node_role_ == distributed::kEnvRoleOfScheduler) {
+  if (node_role_.empty() || node_role_ == distributed::kEnvRoleOfScheduler) {
     return;
   }
 

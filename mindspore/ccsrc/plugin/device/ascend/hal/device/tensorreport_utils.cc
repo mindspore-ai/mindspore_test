@@ -83,7 +83,9 @@ bool TensorReportUtils::IsEnable() {
   auto tftEnv = common::GetEnv("MS_ENABLE_TFT");
   constexpr std::string_view optUCE = "UCE:1";
   constexpr std::string_view optTTP = "TTP:1";
-  if (!tftEnv.empty() && (tftEnv.find(optUCE) != std::string::npos || tftEnv.find(optTTP) != std::string::npos)) {
+  constexpr std::string_view optARF = "ARF:1";
+  if (!tftEnv.empty() && (tftEnv.find(optUCE) != std::string::npos || tftEnv.find(optTTP) != std::string::npos ||
+                          tftEnv.find(optARF) != std::string::npos)) {
     return true;
   }
   return false;

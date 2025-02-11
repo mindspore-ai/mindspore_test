@@ -168,6 +168,13 @@ std::string OpApiUtil::GetCommName(const std::string &group) {
   return device::ascend::AscendCollectiveCommLib::GetInstance().HcclInnerCommName(group);
 }
 
+bool OpApiUtil::NeedRebuildWorkspaceSize(const std::string &group, const std::string &inner_name) {
+  if (!mindspore::UCEException::GetInstance().enable_arf()) {
+    return false;
+  }
+  return OpApiUtil::GetCommName(group) != inner_name;
+}
+
 uint8_t AclUtil::KeepOriginDType() {
   static std::string version = "";
   static uint8_t need_keep_dtype = 0;

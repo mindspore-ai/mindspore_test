@@ -39,6 +39,10 @@ bool HcomAllToAllKernel::Launch(const std::vector<KernelTensor *> &inputs, const
   params_.sendcount = count;
 
   auto output_device_ptr = outputs.empty() ? nullptr : outputs[0]->device_ptr();
+  if (NeedReGetHcom(group_, hccl_inner_comm_name_)) {
+    MS_LOG(WARNING) << "Hccl inner name had changed, need re-get hcom";
+    comm_ = AscendCollectiveCommLib::GetInstance().GetHcomByGroup(group_);
+  }
   auto hccl_result = hccl::HcclAdapter::GetInstance().HcclAllToAll(inputs[0]->device_ptr(), output_device_ptr, params_,
                                                                    data_type_, stream_ptr, comm_);
   if (hccl_result != HCCL_SUCCESS) {
