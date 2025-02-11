@@ -130,24 +130,24 @@ void GetBackendCommonUnifyMindIRPassManager(PassManagerPtr *unify_mindir_pm) {
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::BatchNormGradUnifyMindIR>());
   (*unify_mindir_pm)->AddPass(std::make_shared<BnGradSplit>());
   (*unify_mindir_pm)->AddPass(std::make_shared<BatchNormGrad2BNInferGrad>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<BatchNormGradInferFission>());
   (*unify_mindir_pm)->AddPass(std::make_shared<BatchNorm2BNInfer>());
 
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::LambFissionGe>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AdjustPrintForGe>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::GetNextForGE>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::SyncBnSplit>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::SyncBnGradSplit>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::AdaptiveMaxPool2DGeFusion>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AvgPoolGradForGE>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::MatmulReduceScatterFusion>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::AllGatherMatmulFusion>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddAttrToDump>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AscendMindIROpAdapter>());
 }
 
 PassManagerPtr GetBackendFusionGroupPassManager() {
   auto pm = std::make_shared<PassManager>("unify_mindir_2");
+  pm->AddFusionPass(std::make_shared<BatchNormGradInferFission>());
+  pm->AddFusionPass(std::make_shared<opt::LambFissionGe>());
+  pm->AddFusionPass(std::make_shared<opt::AdaptiveMaxPool2DGeFusion>());
+  pm->AddFusionPass(std::make_shared<opt::MatmulReduceScatterFusion>());
+  pm->AddFusionPass(std::make_shared<opt::AllGatherMatmulFusion>());
   pm->AddFusionPass(std::make_shared<opt::FlashAttentionFusionV1>());
   pm->AddFusionPass(std::make_shared<opt::FlashAttentionFusionV2>());
   pm->AddFusionPass(std::make_shared<opt::QuantBatchMatmulAllReduceFusion>());
