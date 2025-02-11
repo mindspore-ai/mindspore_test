@@ -22,9 +22,10 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "include/backend/debug/profiler/profiling.h"
+#include "debug/profiler/profiling.h"
 #include "utils/log_adapter.h"
 #include "utils/file_utils.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 namespace profiler {
@@ -116,7 +117,7 @@ using OpTypeInfos = std::unordered_map<std::string, OpType>;  // <op_full_name, 
 using OpDetailInfos = std::vector<OpDetailInfo>;
 using MemoryInfoList = std::vector<MemoryPoolInfo>;
 
-class BACKEND_EXPORT DataSaver {
+class PROFILER_EXPORT DataSaver {
  public:
   DataSaver() = default;
 

@@ -16,7 +16,7 @@
 #include "pipeline/jit/pi/auto_grad/async_task_manager.h"
 #include <string>
 #include <vector>
-#include "include/common/profiler.h"
+#include "debug/profiler/profiler.h"
 
 namespace mindspore {
 namespace pijit {

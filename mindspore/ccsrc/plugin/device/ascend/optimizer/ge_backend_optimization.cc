@@ -34,7 +34,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/debug/dump_proto.h"
 #include "include/common/utils/parallel_context.h"
-#include "include/backend/debug/profiler/profiling.h"
+#include "debug/profiler/profiling.h"
 #include "plugin/device/ascend/optimizer/backend_common_unify_mindir.h"
 #include "plugin/device/ascend/optimizer/enhancer/eliminate_maketuple_getitem.h"
 #include "plugin/device/ascend/optimizer/format_type/deal_ref_output.h"

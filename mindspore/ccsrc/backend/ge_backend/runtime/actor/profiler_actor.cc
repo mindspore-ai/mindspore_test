@@ -21,7 +21,7 @@
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "utils/file_utils.h"
-#include "include/backend/debug/profiler/profiling.h"
+#include "debug/profiler/profiling.h"
 
 namespace mindspore {
 namespace ge_backend {

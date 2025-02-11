@@ -22,7 +22,7 @@
 #include "pybind11/pybind11.h"
 
 #include "include/common/utils/scoped_long_running.h"
-#include "include/common/profiler.h"
+#include "debug/profiler/profiler.h"
 
 namespace py = pybind11;
 

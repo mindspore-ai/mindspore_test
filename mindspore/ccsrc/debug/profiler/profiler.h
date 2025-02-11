@@ -264,7 +264,7 @@ static const std::map<ProfilerEvent, std::string> kProfilerEventString = {
   } while (0);
 
 // Record the profiler data by the constructor and destructor of this class.
-class COMMON_EXPORT ProfilerRecorder {
+class PROFILER_EXPORT ProfilerRecorder {
  public:
   ProfilerRecorder(ProfilerModule module, ProfilerEvent event, const std::string &op_name, bool is_inner_event = false,
                    bool need_py_stack = false, uint64_t flow_id = UINT64_MAX);
@@ -297,7 +297,7 @@ class COMMON_EXPORT ProfilerRecorder {
   std::unique_ptr<Data> data_{nullptr};
 };
 
-class COMMON_EXPORT PythonProfilerRecorder {
+class PROFILER_EXPORT PythonProfilerRecorder {
  public:
   explicit PythonProfilerRecorder(const std::string &record_name);
   ~PythonProfilerRecorder() = default;
@@ -312,7 +312,7 @@ class COMMON_EXPORT PythonProfilerRecorder {
   ProfilerEvent event_;
 };
 
-class COMMON_EXPORT ProfilerStageRecorder {
+class PROFILER_EXPORT ProfilerStageRecorder {
  public:
   explicit ProfilerStageRecorder(ProfilerStage stage);
   ~ProfilerStageRecorder();
@@ -489,7 +489,7 @@ struct ProfilerModuleInfo {
 using ProfilerModuleInfoPtr = std::shared_ptr<ProfilerModuleInfo>;
 
 using ProfilerDataSpan = std::list<ProfilerDataPtr>;
-class COMMON_EXPORT ProfilerAnalyzer {
+class PROFILER_EXPORT ProfilerAnalyzer {
  public:
   static ProfilerAnalyzer &GetInstance() noexcept;
 
