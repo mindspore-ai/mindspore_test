@@ -1432,6 +1432,7 @@ FuncGraphPtr GradOperation::GenerateFuncGraph(const AbstractBasePtrList &args_ab
   std::ostringstream ss;
   ss << "grad{" << nparam << "}";
   grad_fg->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  grad_fg->set_flag("grad_fg", true);
   if (grad_fg->debug_info() != nullptr) {
     grad_fg->debug_info()->set_name(ss.str());
   }

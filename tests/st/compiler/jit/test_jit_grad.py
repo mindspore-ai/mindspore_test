@@ -410,3 +410,56 @@ def test_jit_grad_with_dynamic_shape_change_param():
     grad2 = grad_net(x2, y2)
     grad2_jit = grad_net_jit(x2, y2)
     compare_result(grad2, grad2_jit)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_jit_grad_with_custom_bprop():
+    """
+    Feature: Custom cell bprop.
+    Description: Test grad jit scene for custom cell bprop.
+    Expectation: Success.
+    """
+    class SubNet(nn.Cell):
+        def __init__(self):
+            super(SubNet, self).__init__()
+            self.matmul = ops.MatMul()
+
+        def construct(self, x, y):
+            out = self.matmul(x, y)
+            return out
+
+        def bprop(self, x, y, out, dout):
+            return 2 * x, 2 * y
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.sub_net = SubNet()
+            self.z = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
+
+        @jit
+        def construct(self, x, y):
+            x = x * self.z
+            out = self.sub_net(x, y)
+            return out
+
+    class GradNetWrtX(nn.Cell):
+        def __init__(self, net):
+            super(GradNetWrtX, self).__init__()
+            self.net = net
+            self.grad_op = ops.GradOperation(get_all=True)
+
+        def construct(self, x, y):
+            gradient_function = self.grad_op(self.net)
+            return gradient_function(x, y)
+
+    x = Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32)
+    y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3], [2.1, 1.2, 3.3]], dtype=mstype.float32)
+    output = GradNetWrtX(Net())(x, y)
+    expect_dx = np.array([[1.0, 1.2, 0.8],
+                          [2.4, 2.6, 2.2]]).astype(np.float32)
+    expect_dy = np.array([[0.02, 0.6, 2.2],
+                          [0.2, 0.4, 2.6],
+                          [4.2, 2.4, 6.6]]).astype(np.float32)
+    assert np.allclose(output[0].asnumpy(), expect_dx)
+    assert np.allclose(output[1].asnumpy(), expect_dy)
