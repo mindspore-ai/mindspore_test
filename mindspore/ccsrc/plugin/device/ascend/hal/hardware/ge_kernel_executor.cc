@@ -1202,7 +1202,7 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
       MS_EXCEPTION_IF_NULL(kernel_mod);
       is_host_reshape_op = kernel_mod->GetKernelModType() == kernel::KernelModType::HostKernelMod;
     }
-    bool is_nop_op = transform::AclHelper::IsNopNode(node);
+    bool is_nop_op = device::ascend::AclHelper::IsNopNode(node);
     bool is_transpose_nop =
       (op_name == prim::kPrimTransposeD->name()) && common::AnfAlgo::HasNodeAttr(kAttrNopOp, node);
     if (is_transpose_nop || (is_nop_op && !is_host_reshape_op)) {

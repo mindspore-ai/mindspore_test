@@ -35,6 +35,9 @@ ValuePtr InferValuePyPythonDef(const std::string &op_name, const AbstractBasePtr
 
   py::list args;
   for (const auto &abs : input_args) {
+    if (abs->isa<abstract::AbstractMonad>()) {
+      continue;
+    }
     auto value = abs->GetValue();
     args.append(ValueToPyData(value));
   }
