@@ -25,9 +25,6 @@ from mindspore import log as logger
 from mindspore.dataset.core.config import ErrorSamplesMode
 from util import config_get_set_seed, visualize_list
 
-# Need to run all these tests in separate processes since we are modifying a config flag
-pytestmark = pytest.mark.forked
-
 # Set global variable
 TOTAL_SIZE = 100
 

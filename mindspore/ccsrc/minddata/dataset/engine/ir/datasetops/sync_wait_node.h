@@ -30,10 +30,10 @@ namespace dataset {
 class SyncWaitNode : public DatasetNode {
  public:
   /// \brief Constructor
-  SyncWaitNode(std::shared_ptr<DatasetNode> child, const std::string &condition_name, py::function callback);
+  SyncWaitNode(std::shared_ptr<DatasetNode> child, const std::string &condition_name, const py::function &callback);
 
   /// \brief Destructor
-  ~SyncWaitNode() override = default;
+  ~SyncWaitNode() override;
 
   /// \brief Node name getter
   /// \return Name of the current node

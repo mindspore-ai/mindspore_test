@@ -109,7 +109,7 @@ class PyDSCallback : public DSCallback {
   /// \param f the python function
   /// \param cb_param
   /// \return Status
-  static Status ExecutePyfunc(py::function f, const CallbackParam &cb_param);
+  static Status ExecutePyfunc(const py::function &f, const CallbackParam &cb_param);
 
  private:
   py::function begin_func_;

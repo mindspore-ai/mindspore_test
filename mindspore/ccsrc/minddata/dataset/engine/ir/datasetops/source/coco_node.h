@@ -31,7 +31,7 @@ class CocoNode : public MappableSourceNode {
   /// \brief Constructor.
   CocoNode(const std::string &dataset_dir, const std::string &annotation_file, const std::string &task,
            const bool &decode, const std::shared_ptr<SamplerObj> &sampler, std::shared_ptr<DatasetCache> cache,
-           const bool &extra_metadata, py::function decrypt = py::none());
+           const bool &extra_metadata, const py::function &decrypt = py::object());
 #else
   /// \brief Constructor.
   CocoNode(const std::string &dataset_dir, const std::string &annotation_file, const std::string &task,
@@ -40,7 +40,7 @@ class CocoNode : public MappableSourceNode {
 #endif
 
   /// \brief Destructor.
-  ~CocoNode() override = default;
+  ~CocoNode() override;
 
   /// \brief Node name getter.
   /// \return Name of the current node.

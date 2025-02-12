@@ -90,7 +90,7 @@ TensorShape &TensorShape::operator=(TensorShape &&shape) noexcept {
 }
 
 #ifdef ENABLE_PYTHON
-TensorShape::TensorShape(py::list l) {
+TensorShape::TensorShape(const py::list &l) {
   std::vector<dsize_t> list_c;
   for (auto &i : l) {
     if (!i.is_none()) {

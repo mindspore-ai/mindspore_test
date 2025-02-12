@@ -161,7 +161,7 @@ class CocoOp : public MappableLeafOp {
   ///     and returns the decrypted bytes data. Default: None, no decryption.
   CocoOp(const TaskType &task_type, const std::string &image_folder_path, const std::string &annotation_path,
          int32_t num_workers, int32_t queue_size, bool decode, std::unique_ptr<DataSchema> data_schema,
-         std::shared_ptr<SamplerRT> sampler, bool extra_metadata, py::function decrypt = py::none());
+         std::shared_ptr<SamplerRT> sampler, bool extra_metadata, const py::function &decrypt = py::object());
 #else
   /// \brief Constructor.
   /// \param[in] task_type Task type of Coco.
@@ -179,7 +179,7 @@ class CocoOp : public MappableLeafOp {
 #endif
 
   /// \brief Destructor.
-  ~CocoOp() = default;
+  ~CocoOp() override;
 
   /// \brief A print method typically used for debugging.
   /// \param[out] out The output stream to write output to.

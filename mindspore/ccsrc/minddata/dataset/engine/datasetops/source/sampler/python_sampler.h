@@ -31,11 +31,11 @@ class PythonSamplerRT : public SamplerRT {
   //                      data from the dataset.
   // @param py_sampler_instance - the python instance of the sampler
   // @param int64_t samples_per_tensor - Num of Sampler Ids to fetch via 1 GetNextSample call
-  explicit PythonSamplerRT(int64_t num_samples, py::object py_sampler_instance,
-                           int64_t samples_per_tensor = std::numeric_limits<int64_t>::max());
+  PythonSamplerRT(int64_t num_samples, const py::object &py_sampler_instance,
+                  int64_t samples_per_tensor = std::numeric_limits<int64_t>::max());
 
   // Destructor.
-  ~PythonSamplerRT() = default;
+  ~PythonSamplerRT() override;
 
   // Initialize the sampler.
   // @return Status
@@ -65,9 +65,8 @@ class PythonSamplerRT : public SamplerRT {
  private:
   bool need_to_reset_;  // Whether Reset() should be called before calling GetNextSample()
 
-  py::object py_sampler_instance;  // The handle to the py_sampler python object
+  py::object py_sampler_instance_;  // The handle to the py_sampler python object
 };
 }  // namespace dataset
 }  // namespace mindspore
-
 #endif  // MINDSPORE_CCSRC_MINDDATA_DATASET_ENGINE_DATASETOPS_SOURCE_SAMPLER_PYTHON_SAMPLER_H_

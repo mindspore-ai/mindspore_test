@@ -58,7 +58,7 @@ class CelebAOp : public MappableLeafOp {
   //     and returns the decrypted bytes data. Default: None, no decryption.
   CelebAOp(int32_t num_workers, const std::string &dir, int32_t queue_size, bool decode, const std::string &usage,
            const std::set<std::string> &exts, std::unique_ptr<DataSchema> schema, std::shared_ptr<SamplerRT> sampler,
-           py::function decrypt = py::none());
+           const py::function &decrypt = py::object());
 #else
   // Constructor
   // @param int32_t - num_workers - Num of workers reading images in parallel
@@ -73,7 +73,7 @@ class CelebAOp : public MappableLeafOp {
            const std::set<std::string> &exts, std::unique_ptr<DataSchema> schema, std::shared_ptr<SamplerRT> sampler);
 #endif
 
-  ~CelebAOp() override = default;
+  ~CelebAOp() override;
 
   // A print method typically used for debugging
   // @param out

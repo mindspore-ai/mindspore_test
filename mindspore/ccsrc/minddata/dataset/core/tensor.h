@@ -132,7 +132,7 @@ class DATASET_API Tensor {
   /// \param[in] obj pybind11 wrapper for Python dictionary object
   /// \param[out] out Created Tensor
   /// \return Status
-  static Status CreateFromPythonObject(py::object obj, TensorPtr *out);
+  static Status CreateFromPythonObject(const py::object &obj, TensorPtr *out);
 #endif
 
 #ifndef ENABLE_ANDROID

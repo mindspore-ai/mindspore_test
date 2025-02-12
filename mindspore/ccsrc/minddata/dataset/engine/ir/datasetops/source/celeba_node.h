@@ -33,7 +33,7 @@ class CelebANode : public MappableSourceNode {
   /// \brief Constructor
   CelebANode(const std::string &dataset_dir, const std::string &usage, const std::shared_ptr<SamplerObj> &sampler,
              const bool &decode, const std::set<std::string> &extensions, const std::shared_ptr<DatasetCache> &cache,
-             py::function decrypt = py::none());
+             const py::function &decrypt = py::object());
 #else
   /// \brief Constructor
   CelebANode(const std::string &dataset_dir, const std::string &usage, const std::shared_ptr<SamplerObj> &sampler,
@@ -41,7 +41,7 @@ class CelebANode : public MappableSourceNode {
 #endif
 
   /// \brief Destructor
-  ~CelebANode() override = default;
+  ~CelebANode() override;
 
   /// \brief Node name getter
   /// \return Name of the current node

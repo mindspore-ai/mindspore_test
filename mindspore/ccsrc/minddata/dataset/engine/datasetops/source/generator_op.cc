@@ -150,7 +150,7 @@ Status GeneratorOp::Init() {
   return CreateGeneratorObject();
 }
 
-Status GeneratorOp::PyRowToTensorRow(py::object py_data, TensorRow *tensor_row) {
+Status GeneratorOp::PyRowToTensorRow(const py::object &py_data, TensorRow *tensor_row) {
   if (!py::isinstance<py::tuple>(py_data)) {
     RETURN_STATUS_ERROR(StatusCode::kMDPyFuncException,
                         "Invalid Python function, the 'source' of 'GeneratorDataset' should return a tuple of NumPy "

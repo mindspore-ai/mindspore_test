@@ -21,9 +21,6 @@ import mindspore.common.dtype as mstype
 import mindspore.dataset.vision as C
 import mindspore.dataset.transforms as C2
 
-# Run these tests in separate processes since some tests update config parameters, like offload
-pytestmark = pytest.mark.forked
-
 DATA_DIR = "../data/dataset/testPK/data"
 BATCH_SIZE = 2
 

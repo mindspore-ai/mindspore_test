@@ -47,7 +47,7 @@ const char kImageSetsExtension[] = ".txt";
 VOCOp::VOCOp(const TaskType &task_type, const std::string &task_mode, const std::string &folder_path,
              const std::map<std::string, int32_t> &class_index, int32_t num_workers, int32_t queue_size, bool decode,
              std::unique_ptr<DataSchema> data_schema, std::shared_ptr<SamplerRT> sampler, bool extra_metadata,
-             py::function decrypt)
+             const py::function &decrypt)
     : MappableLeafOp(num_workers, queue_size, std::move(sampler)),
       decode_(decode),
       row_cnt_(0),
@@ -56,8 +56,19 @@ VOCOp::VOCOp(const TaskType &task_type, const std::string &task_mode, const std:
       folder_path_(folder_path),
       class_index_(class_index),
       data_schema_(std::move(data_schema)),
-      extra_metadata_(extra_metadata),
-      decrypt_(std::move(decrypt)) {}
+      extra_metadata_(extra_metadata) {
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    decrypt_ = decrypt;
+  }
+}
+
+VOCOp::~VOCOp() {
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    decrypt_ = py::object();
+  }
+}
 #else
 VOCOp::VOCOp(const TaskType &task_type, const std::string &task_mode, const std::string &folder_path,
              const std::map<std::string, int32_t> &class_index, int32_t num_workers, int32_t queue_size, bool decode,
@@ -71,6 +82,8 @@ VOCOp::VOCOp(const TaskType &task_type, const std::string &task_mode, const std:
       class_index_(class_index),
       data_schema_(std::move(data_schema)),
       extra_metadata_(extra_metadata) {}
+
+VOCOp::~VOCOp() = default;
 #endif
 
 void VOCOp::Print(std::ostream &out, bool show_all) const {

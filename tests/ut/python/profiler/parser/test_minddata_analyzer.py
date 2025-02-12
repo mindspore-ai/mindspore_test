@@ -18,8 +18,9 @@ Test MindData Profiling Analyzer Support
 import csv
 import json
 import os
+
 import numpy as np
-import pytest
+
 import mindspore.common.dtype as mstype
 import mindspore.dataset as ds
 import mindspore.dataset.transforms as transforms
@@ -27,7 +28,6 @@ import mindspore._c_dataengine as cde
 from mindspore.profiler.parser.minddata_analyzer import MinddataProfilingAnalyzer
 
 
-@pytest.mark.forked
 class TestMinddataProfilingAnalyzer:
     """
     Test the MinddataProfilingAnalyzer class

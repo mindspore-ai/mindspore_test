@@ -46,7 +46,7 @@ bool PyDSCallback::IsNStepEndNeeded() { return step_end_needed_; }
 bool PyDSCallback::IsEpochEndNeeded() { return epoch_end_needed_; }
 bool PyDSCallback::IsEndNeeded() { return end_needed_; }
 
-Status PyDSCallback::ExecutePyfunc(py::function f, const CallbackParam &cb_param) {
+Status PyDSCallback::ExecutePyfunc(const py::function &f, const CallbackParam &cb_param) {
   {
     // Acquire Python GIL
     py::gil_scoped_acquire gil_acquire;

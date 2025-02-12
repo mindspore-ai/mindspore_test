@@ -23,8 +23,6 @@ import mindspore.dataset.vision as vision
 from mindspore import log as logger
 from util import config_get_set_seed, visualize_list, config_get_set_num_parallel_workers
 
-pytestmark = pytest.mark.forked
-
 # tf_file_dataset description:
 # test1.data: 10 samples - [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 # test2.data: 10 samples - [11, 12, 13, 14, 15, 16, 17, 18, 19, 20]

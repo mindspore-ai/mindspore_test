@@ -30,9 +30,6 @@ import mindspore.dataset.debug as debug
 from mindspore import log as logger
 from util import dataset_equal
 
-# Need to run all these tests in separate processes since tests are modifying config parameters
-pytestmark = pytest.mark.forked
-
 DATA_DIR = ["../data/dataset/test_tf_file_3_images/train-0000-of-0001.data"]
 SCHEMA_DIR = "../data/dataset/test_tf_file_3_images/datasetSchema.json"
 
@@ -170,7 +167,7 @@ def test_deterministic_run_fail():
     ds.config.set_num_parallel_workers(1)
     # First dataset
     data1 = ds.TFRecordDataset(DATA_DIR, SCHEMA_DIR, columns_list=["image"], shuffle=False)
-    # Assuming we get the same seed on calling constructor, if this op is re-used then result won't be
+    # Assuming we get the same seed on calling constructor, if this op is reused then result won't be
     # the same in between the two datasets. For example, RandomCrop constructor takes seed (0)
     # outputs a deterministic series of numbers, e,g "a" = [1, 2, 3, 4, 5, 6] <- pretend these are random
     random_crop_op = vision.RandomCrop([512, 512], [200, 200, 200, 200])
@@ -562,8 +559,10 @@ def test_debug_mode_error_case():
     with pytest.raises(TypeError) as error_info:
         ds.config.set_debug_mode(True, debug.PrintDataHook())
     assert "debug_hook_list is not a list" in str(error_info.value)
+
     def func():
         pass
+
     with pytest.raises(TypeError) as error_info:
         ds.config.set_debug_mode(True, [func])
     assert "All items in debug_hook_list must be of type DebugHook" in str(error_info.value)

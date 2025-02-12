@@ -16,7 +16,7 @@
 Test Python Multiprocessing with AutoTuning
 """
 import numpy as np
-import pytest
+
 import mindspore.dataset as ds
 import mindspore.dataset.transforms as transforms
 import mindspore.dataset.vision as vision
@@ -28,7 +28,7 @@ CIFAR100_DATA_DIR = "../data/dataset/testCifar100Data"
 
 def create_pyfunc_dataset(batch_size=32, repeat_size=1, num_parallel_workers=1, num_samples=None):
     """
-    Create Cifar10 dataset pipline with Map ops containing only Python functions and Python Multiprocessing enabled
+    Create Cifar10 dataset pipeline with Map ops containing only Python functions and Python Multiprocessing enabled
     for Map ops and Batch op
     """
 
@@ -132,7 +132,7 @@ def create_mixed_map_dataset(batch_size=32, repeat_size=1, num_parallel_workers=
 
 def create_per_batch_map_dataset(batch_size=32, repeat_size=1, num_parallel_workers=1, num_samples=None):
     """
-    Create Cifar100 dataset pipline with Batch op using per_batch_map and Python Multiprocessing enabled
+    Create Cifar100 dataset pipeline with Batch op using per_batch_map and Python Multiprocessing enabled
     """
 
     # Define dataset
@@ -161,7 +161,7 @@ def create_per_batch_map_dataset(batch_size=32, repeat_size=1, num_parallel_work
 
 def create_mp_dataset(batch_size=32, repeat_size=1, num_parallel_workers=1, num_samples=None):
     """
-    Create Cifar10 dataset pipline with Python Multiprocessing enabled for
+    Create Cifar10 dataset pipeline with Python Multiprocessing enabled for
     - Batch op using batch_per_map
     - Map ops using Pyfuncs
     """
@@ -199,7 +199,6 @@ def create_mp_dataset(batch_size=32, repeat_size=1, num_parallel_workers=1, num_
     return cifar10_ds
 
 
-@pytest.mark.forked
 class TestPythonMultiprocAutotune:
 
     def setup_method(self):

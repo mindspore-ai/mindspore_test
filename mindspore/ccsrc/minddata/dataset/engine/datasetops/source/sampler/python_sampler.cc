@@ -24,11 +24,16 @@
 
 namespace mindspore {
 namespace dataset {
+PythonSamplerRT::PythonSamplerRT(int64_t num_samples, const py::object &py_sampler_instance, int64_t samples_per_tensor)
+    : SamplerRT(num_samples, samples_per_tensor), need_to_reset_(false) {
+  py::gil_scoped_acquire gil_acquire;
+  py_sampler_instance_ = py_sampler_instance;
+}
 
-PythonSamplerRT::PythonSamplerRT(int64_t num_samples, py::object py_sampler_instance, int64_t samples_per_tensor)
-    : SamplerRT(num_samples, samples_per_tensor),
-      need_to_reset_(false),
-      py_sampler_instance(std::move(py_sampler_instance)) {}
+PythonSamplerRT::~PythonSamplerRT() {
+  py::gil_scoped_acquire gil_acquire;
+  py_sampler_instance_ = py::object();
+}
 
 Status PythonSamplerRT::GetBatchSizes(std::deque<int64_t> *batch_sizes) {
   RETURN_UNEXPECTED_IF_NULL(batch_sizes);
@@ -36,7 +41,7 @@ Status PythonSamplerRT::GetBatchSizes(std::deque<int64_t> *batch_sizes) {
   {
     py::gil_scoped_acquire gil_acquire;
     try {
-      py::object py_ret = py_sampler_instance.attr("_get_batch_sizes")();
+      py::object py_ret = py_sampler_instance_.attr("_get_batch_sizes")();
       auto sizes = py::cast<py::list>(py_ret);
       (void)std::transform(sizes.begin(), sizes.end(), std::back_inserter(*batch_sizes),
                            [](const auto &size) { return py::cast<int64_t>(size); });
@@ -63,7 +68,7 @@ Status PythonSamplerRT::GetNextSample(TensorRow *out) {
         return Status(StatusCode::kMDPythonInterpreterFailure, "[Internal ERROR] Python Interpreter is finalized");
       }
       try {
-        py::object py_ret = py_sampler_instance.attr("_get_indices")();
+        py::object py_ret = py_sampler_instance_.attr("_get_indices")();
         py::array np_sample_ids = py_ret.cast<py::array>();
         std::shared_ptr<Tensor> ids_from_np;
         RETURN_IF_NOT_OK(Tensor::CreateFromNpArray(np_sample_ids, &ids_from_np));  // copy numpy to tensor
@@ -109,7 +114,7 @@ Status PythonSamplerRT::InitSampler() {
       return Status(StatusCode::kMDPythonInterpreterFailure, "[Internal ERROR] Python Interpreter is finalized");
     }
     try {
-      py_sampler_instance.attr("_handshake")(num_rows_, num_samples_);
+      py_sampler_instance_.attr("_handshake")(num_rows_, num_samples_);
     } catch (const py::error_already_set &e) {
       return Status(StatusCode::kMDPyFuncException,
                     "[Internal ERROR] python sampler execute _handshake failed: " + std::string(e.what()));
@@ -125,8 +130,8 @@ Status PythonSamplerRT::ResetSampler(const bool failover_reset) {
     {
       py::gil_scoped_acquire gil_acquire;
       try {
-        (void)py_sampler_instance.attr("_get_indices")();
-        (void)py_sampler_instance.attr("_get_batch_sizes")();
+        (void)py_sampler_instance_.attr("_get_indices")();
+        (void)py_sampler_instance_.attr("_get_batch_sizes")();
       } catch (const py::error_already_set &e) {
         RETURN_STATUS_UNEXPECTED(e.what());
       }
@@ -140,7 +145,7 @@ Status PythonSamplerRT::ResetSampler(const bool failover_reset) {
     return Status(StatusCode::kMDPythonInterpreterFailure, "[Internal ERROR] Python Interpreter is finalized");
   }
   try {
-    py_sampler_instance.attr("reset")();
+    py_sampler_instance_.attr("reset")();
   } catch (const py::error_already_set &e) {
     return Status(StatusCode::kMDPyFuncException, e.what());
   }

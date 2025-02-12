@@ -30,7 +30,7 @@ def cleanup_fixture(request):
         for file in files:
             if os.path.exists(file):
                 os.remove(file)
-        files = glob.glob(os.path.join(DATA_IWSLT2017_DIR, "texts/DeEnItNlRo/DeEnItNlRo-DeEnItNlRo/*.de-en"))
+        files = glob.glob(os.path.join(DATA_IWSLT2017_DIR, "texts/DeEnItNlRo/DeEnItNlRo/DeEnItNlRo-DeEnItNlRo/*.de-en"))
         for file in files:
             if os.path.exists(file):
                 os.remove(file)

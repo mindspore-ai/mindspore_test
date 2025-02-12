@@ -87,7 +87,7 @@ class DATASET_API TensorShape {
 #ifdef ENABLE_PYTHON
   /// \brief Construct a TensorShape via a python list.
   /// \param[in] l A py::list of the shape.
-  explicit TensorShape(py::list l);
+  explicit TensorShape(const py::list &l);
 #endif
 
   ~TensorShape() = default;
