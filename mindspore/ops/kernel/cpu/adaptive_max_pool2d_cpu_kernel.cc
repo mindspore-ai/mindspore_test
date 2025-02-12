@@ -23,25 +23,23 @@
 #include <functional>
 #include "abstract/utils.h"
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "mindspore/ops/infer/adaptive_max_pool2d.h"
+#include "mindspore/ops/infer/ops_func_impl/adaptive_max_pool2d.h"
 
 namespace mindspore {
 namespace kernel {
 bool AdaptiveMaxPool2dCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
-  // (H_out, W_out)
-  auto output_size = GetValue<std::vector<int64_t>>(primitive_->GetAttr(ops::kOutputSize));
-  (void)std::copy(output_size.begin(), output_size.end(), std::back_inserter(attr_output_size_));
   return MatchKernelFunc(kernel_name_, inputs, outputs);
 }
 
 bool AdaptiveMaxPool2dCpuKernelMod::ResizedInputSize(const std::vector<KernelTensor *> &inputs) {
   auto input_shape = inputs[kIndex0]->GetShapeVector();
+
   size_t rank = static_cast<size_t>(input_shape.size());
   if (rank != ops::kFormatCHWShapeSize && rank != ops::kFormatNCHWShapeSize) {
-    MS_LOG(ERROR) << "For primitive[AdaptiveMaxPool2D], the shape size of input argument[input_x] must "
-                     "be 3 or 4, but got:"
-                  << rank;
+    MS_LOG(EXCEPTION) << "For primitive[AdaptiveMaxPool2D], the shape size of input argument[input_x] must "
+                         "be 3 or 4, but got:"
+                      << rank;
     return false;
   }
 
@@ -55,8 +53,15 @@ bool AdaptiveMaxPool2dCpuKernelMod::ResizedInputSize(const std::vector<KernelTen
 
 bool AdaptiveMaxPool2dCpuKernelMod::ResizedOutputSize() {
   if (attr_output_size_.size() != ops::kOutputSizeAttrSize) {
-    MS_LOG(ERROR) << "For primitive[AdaptiveMaxPool2D], the size of attr[output_size] should be 2, but got:"
-                  << attr_output_size_.size();
+    attr_output_size_.clear();
+    MS_LOG(EXCEPTION) << "For primitive[AdaptiveMaxPool2D], the size of attr[output_size] should be 2, but got:"
+                      << attr_output_size_.size();
+    return false;
+  }
+
+  if (attr_output_size_[0] == 0 || attr_output_size_[1] == 0) {
+    attr_output_size_.clear();
+    MS_LOG(EXCEPTION) << "For primitive[AdaptiveMaxPool2D], the output_size is illegal";
     return false;
   }
   // If the output_size is none, the output shapes should be same as the input.
@@ -65,7 +70,8 @@ bool AdaptiveMaxPool2dCpuKernelMod::ResizedOutputSize() {
   output_width_ =
     (attr_output_size_[1] != ops::kPyValueNone ? static_cast<size_t>(attr_output_size_[1]) : input_width_);
   if (output_height_ == 0 || output_width_ == 0) {
-    MS_LOG(ERROR) << "Output range should not be zero.";
+    attr_output_size_.clear();
+    MS_LOG(EXCEPTION) << "Output range should not be zero.";
     return false;
   }
   output_hw_ = output_height_ * output_width_;
@@ -78,9 +84,8 @@ int AdaptiveMaxPool2dCpuKernelMod::Resize(const std::vector<KernelTensor *> &inp
     return ret;
   }
 
-  // Check the parameters valid.
-  if (inputs.size() != 1) {
-    MS_LOG(ERROR) << "For primitive[AdaptiveMaxPool2D], the size of input should be 1, but got " << inputs.size();
+  if (inputs.size() != 2) {
+    MS_LOG(EXCEPTION) << "For primitive[AdaptiveMaxPool2D], the size of input should be 1, but got " << inputs.size();
     return KRET_RESIZE_FAILED;
   }
 
@@ -88,9 +93,15 @@ int AdaptiveMaxPool2dCpuKernelMod::Resize(const std::vector<KernelTensor *> &inp
     return KRET_RESIZE_FAILED;
   }
 
+  auto output_size = inputs[kIndex1]->GetValueWithCheck<std::vector<int64_t>>();
+  (void)std::copy(output_size.begin(), output_size.end(), std::back_inserter(attr_output_size_));
+
   if (!ResizedOutputSize()) {
+    attr_output_size_.clear();
     return KRET_RESIZE_FAILED;
   }
+  attr_output_size_.clear();
+  // Check the parameters valid.
 
   return KRET_OK;
 }
@@ -167,17 +178,38 @@ bool AdaptiveMaxPool2dCpuKernelMod::LaunchKernel(const std::vector<KernelTensor 
 
 const AdaptiveMaxPool2dCpuKernelMod::FuncList &AdaptiveMaxPool2dCpuKernelMod::GetFuncList() const {
   static const std::vector<std::pair<KernelAttr, AdaptiveMaxPool2dCpuKernelMod::KernelRunFunc>> func_list = {
-    {KernelAttr().AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeFloat16),
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeFloat16)
+       .AddInputAttr(kObjectTypeTuple, kNumberTypeInt64)
+       .AddOutputAttr(kNumberTypeFloat16),
      &AdaptiveMaxPool2dCpuKernelMod::LaunchKernel<float16>},
-    {KernelAttr().AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32),
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddInputAttr(kObjectTypeTuple, kNumberTypeInt64)
+       .AddOutputAttr(kNumberTypeFloat32),
      &AdaptiveMaxPool2dCpuKernelMod::LaunchKernel<float>},
-    {KernelAttr().AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeFloat64),
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeFloat64)
+       .AddInputAttr(kObjectTypeTuple, kNumberTypeInt64)
+       .AddOutputAttr(kNumberTypeFloat64),
      &AdaptiveMaxPool2dCpuKernelMod::LaunchKernel<double>},
-    {KernelAttr().AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeInt64),
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeFloat16)
+       .AddInputAttr(kObjectTypeTuple, kNumberTypeInt64)
+       .AddOutputAttr(kNumberTypeFloat16)
+       .AddOutputAttr(kNumberTypeInt64),
      &AdaptiveMaxPool2dCpuKernelMod::LaunchKernel<float16>},
-    {KernelAttr().AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeInt64),
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddInputAttr(kObjectTypeTuple, kNumberTypeInt64)
+       .AddOutputAttr(kNumberTypeFloat32)
+       .AddOutputAttr(kNumberTypeInt64),
      &AdaptiveMaxPool2dCpuKernelMod::LaunchKernel<float>},
-    {KernelAttr().AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeInt64),
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeFloat64)
+       .AddInputAttr(kObjectTypeTuple, kNumberTypeInt64)
+       .AddOutputAttr(kNumberTypeFloat64)
+       .AddOutputAttr(kNumberTypeInt64),
      &AdaptiveMaxPool2dCpuKernelMod::LaunchKernel<double>},
   };
   return func_list;

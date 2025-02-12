@@ -33,12 +33,13 @@ class AdaptiveMaxPool2DFusion : public PatternProcessPass {
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
 };
 
-class AdaptiveMaxPool2DGeFusion : public AdaptiveMaxPool2DFusion {
+class AdaptiveMaxPool2DGeFusion : public PatternProcessPass {
  public:
-  explicit AdaptiveMaxPool2DGeFusion(bool multigraph = true)
-      : AdaptiveMaxPool2DFusion("adaptive_max_pool2d_ge_fusion", multigraph) {}
+  explicit AdaptiveMaxPool2DGeFusion(const std::string &name = "adaptive_max_pool2d_ge_fusion", bool multigraph = true)
+      : PatternProcessPass(name, multigraph) {}
   ~AdaptiveMaxPool2DGeFusion() override = default;
   const BaseRef DefinePattern() const override;
+  const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
 
  private:
   std::vector<std::string> MustExistPrimitiveName() const override;

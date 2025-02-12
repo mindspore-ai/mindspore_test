@@ -1632,13 +1632,12 @@ def get_apply_adagrad_da_vmap_rule(prim, axis_size):
     return vmap_rule
 
 
-@vmap_rules_getters.register(NN.AdaptiveMaxPool2D)
+@vmap_rules_getters.register(P.AdaptiveMaxPool2D)
 def get_adaptive_max_pool_2d_vmap_rule(prim, axis_size):
     """VmapRule for `AdaptiveMaxPool2D`."""
     nchw_index = 4
     chw_reverse_index = -3
     hw_size = 2
-    output_size = prim.output_size
 
     @_primexpr
     def get_output_shape(x_ori_shape, output_size):
@@ -1661,8 +1660,8 @@ def get_adaptive_max_pool_2d_vmap_rule(prim, axis_size):
             output_shape += (w_out,)
         return output_shape
 
-    def vmap_rule(input_x_bdim):
-        is_all_none, result = vmap_general_preprocess(prim, input_x_bdim)
+    def vmap_rule(input_x_bdim, output_size_bdim):
+        is_all_none, result = vmap_general_preprocess(prim, input_x_bdim, output_size_bdim)
         if is_all_none:
             return result
 
@@ -1670,18 +1669,20 @@ def get_adaptive_max_pool_2d_vmap_rule(prim, axis_size):
         x = _bdim_at_front(input_x, input_x_dim, axis_size)
         x_ndim = F.rank(x)
 
+        output_size, _ = output_size_bdim
+
         if x_ndim > nchw_index:
             # for the case of NCHW
             x_ori_shape = F.shape(x)
             x = F.reshape(x, (-1,) + x_ori_shape[chw_reverse_index:])
             output_shape = get_output_shape(x_ori_shape, output_size)
-            out, indices = prim(x)
+            out, indices = prim(output_size=output_size)(x)
             out = F.reshape(out, output_shape)
             indices = F.reshape(indices, output_shape)
             return (out, 0), (indices, 0)
 
         # for the case of CHW
-        out, indices = prim(x)
+        out, indices = prim(output_size=output_size)(x)
         return (out, 0), (indices, 0)
 
     return vmap_rule

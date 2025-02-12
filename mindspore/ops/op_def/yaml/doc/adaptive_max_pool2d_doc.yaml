@@ -1,0 +1,30 @@
+adaptive_max_pool2d:
+    description: |  
+        Performs 2D adaptive max pooling on a multi-plane input signal.
+
+        Refer to :func:`mindspore.ops.adaptive_max_pool2d` for more details.
+  
+        Inputs:
+            - **input** (Tensor) - The input of AdaptiveMaxPool2D, which is a 3D or 4D tensor, with float16, float32 or float64 data type.
+            - **output_size** (tuple) - The target output size. `output_size` can be a tuple :math:`(H, W)`, :math:`H` and :math:`W` should be int.
+  
+        Outputs:
+            Tensor, with the same type as the `input`.
+  
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+  
+        Examples:
+            >>> # case 3: output_size=(1, 2)
+            >>> input = Tensor(np.array([[[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
+            ...                             [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
+            ...                             [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]]]]), mindspore.float32)
+            >>> adaptive_max_pool_2d = ops.AdaptiveMaxPool2D((1, 2))
+            >>> output = adaptive_max_pool_2d(input)
+            >>> print(output[0])
+            [[[[8. 9.]]
+              [[8. 9.]]
+              [[8. 9.]]]]
+            [[[[7, 8]]
+              [[7, 8]]
+              [[7, 8]]]]

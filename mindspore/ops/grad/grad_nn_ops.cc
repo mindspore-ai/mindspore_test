@@ -3129,12 +3129,13 @@ REG_BPROP_BUILDER("DynamicGRUV2").SetUnusedInputs({i3, i4, i5}).SetBody(BODYFUNC
 
 REG_BPROP_BUILDER("AdaptiveMaxPool2D").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto output_size = ib->GetInput(kIndex1);
+  auto out = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex3);
   auto index = ib->TupleGetItem(out, 1);
   auto dy = ib->TupleGetItem(dout, 0);
   auto dx = ib->Emit("AdaptiveMaxPool2DGrad", {dy, x, index});
-  return {dx};
+  return {dx, ib->OutZeros(output_size)};
 });
 
 REG_BPROP_BUILDER("AdaptiveMaxPool3D").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) {
@@ -3255,17 +3256,16 @@ REG_BPROP_BUILDER("SoftShrink").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(lambd)};
 });
 
-REG_BPROP_BUILDER("SoftMarginLoss").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("SoftMarginLoss").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   auto predict = ib->GetInput(kIndex0);
   auto label = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
-  auto dx = predict->need_compute_grad_out()
-              ? ib->Emit("SoftMarginLossGrad", {predict, label, dout}, {{"reduction", ib->GetAttr("reduction")}})
-              : ib->OutZeros(predict);
-  auto dy = label->need_compute_grad_out()
-              ? ib->Emit("SoftMarginLossGrad", {label, predict, dout}, {{"reduction", ib->GetAttr("reduction")}})
-              : ib->OutZeros(label);
-  return {dx, dy};
+  auto reduction = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+  auto dx = predict->need_compute_grad_out() ? ib->Emit("SoftMarginLossGrad", {predict, label, dout, reduction})
+                                             : ib->OutZeros(predict);
+  auto dy = label->need_compute_grad_out() ? ib->Emit("SoftMarginLossGrad", {label, predict, dout, reduction})
+                                           : ib->OutZeros(label);
+  return {dx, dy, ib->OutZeros(reduction)};
 });
 
 REG_BPROP_BUILDER("MultilabelMarginLoss").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) {
