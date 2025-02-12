@@ -1077,11 +1077,17 @@ void FuncGraphSpecializer::ProcessNode(const AnfNodePtr &node) {
     AnfNodePtr replace_node = BuildReplacedNode(input_conf);
     MS_EXCEPTION_IF_NULL(replace_node);
     replace_node->set_abstract(real_abs);
-    auto replace_value_node = BuildPossibleValueNode(replace_node, real_abs, attrs, node);
-    if (replace_value_node != nullptr) {
-      MS_LOG(DEBUG) << "Convert replace_node " << replace_node->DebugString() << " to value node "
-                    << replace_value_node->DebugString();
-      replace_node = replace_value_node;
+    MS_LOG(DEBUG) << "Set replaced input[" << i << "]: " << replace_node->DebugString()
+                  << ", NodeConfig: " << input_conf->ToString() << ", result: " << real_abs.get() << "/"
+                  << real_abs->ToString();
+    if (!GetIgnoreBuildValueFlag(replace_node)) {
+      auto replace_value_node = BuildPossibleValueNode(replace_node, real_abs, attrs, node);
+      if (replace_value_node != nullptr) {
+        MS_LOG(DEBUG) << "Build possible value node for node: " << replace_node->DebugString()
+                      << ", real_abs: " << real_abs->ToString()
+                      << ", replaced value node: " << replace_value_node->DebugString();
+        replace_node = replace_value_node;
+      }
     }
     if (enable_eliminate_unused_element) {
       UpdateSequenceNode(replace_node, node_input, real_abs);
@@ -1961,9 +1967,6 @@ AnfNodePtr FuncGraphSpecializer::BuildPossibleValueNode(const AnfNodePtr &origin
                                                         const AttrValueMapPtr &attrs, const AnfNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(origin_node);
   MS_EXCEPTION_IF_NULL(abstract);
-  if (GetIgnoreBuildValueFlag(origin_node)) {
-    return nullptr;
-  }
 
   AbstractFunctionPtr abstract_func = dyn_cast<AbstractFunction>(abstract);
   if (abstract_func != nullptr) {
