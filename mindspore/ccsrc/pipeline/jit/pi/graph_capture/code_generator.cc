@@ -1124,7 +1124,7 @@ py::object CodeBreakGenerator::MakeDispatchCode() {
 
   CodeGenerator code_gen(&interpret_);
 
-  if (no_graph_ && !side_effect_handler_->IsEmpty()) {
+  if (no_graph_) {
     interpret_.outputs.resize(interpret_.outputs.size() - side_effect_handler_->GetRequiredNodes().size());
     int stack_count = interpret_.outputs.size() - alive_locals_.size();
     int output_index = 0;
