@@ -86,16 +86,6 @@ void DumpMemToFile(const std::string &file_path, const device::DeviceAddress &ad
 
 /*
  * Feature group: Dump.
- * Target device group: Ascend, GPU.
- * Runtime category: MSBackend
- * Description: Load the device data into host mem.
- */
-bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_name, int execution_order,
-                   const std::string &host_fmt, const ShapeVector &host_shape, TypeId host_type, size_t slot,
-                   bool keep_prev, uint32_t root_graph_id, bool force_update, bool trans_flag, bool async_copy = True);
-
-/*
- * Feature group: Dump.
  * Target device group: Ascend, GPU, CPU.
  * Runtime category: Old runtime, MindRT.
  * Description: Dump string content into file path. Current purpose is to save operator overflow information in json

@@ -18,6 +18,7 @@
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/leaper_trans.h"
 #include "include/common/factory/ms_factory.h"
+#include "include/backend/debug/tensor_data.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 namespace mindspore {
 namespace device {
@@ -36,8 +37,6 @@ constexpr size_t kPtrIndex2 = 2;
 constexpr size_t kPtrIndex3 = 3;
 constexpr uint32_t kRankStep = 2;
 constexpr uint32_t kStartPort = 21234;
-constexpr size_t kFloat32Size = 4;
-constexpr size_t kFloat64Size = 8;
 
 bool CCOOLGroupCheckNotEmpty(const std::string &group) {
   if ((group).length() == 0) {

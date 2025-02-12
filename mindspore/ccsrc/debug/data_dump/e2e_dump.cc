@@ -201,6 +201,29 @@ void E2eDump::DumpOutputImpl(const CNodePtr &node, bool trans_flag, const std::s
   }
 }
 
+void E2eDump::DumpOutputData(const CNodePtr &node, bool trans_flag, const std::string &dump_path,
+                             std::string *kernel_name) {
+  if (IsMindRTKernelByKernel()) {
+    MS_LOG(INFO) << "DumpOutputData is only for graph mode on Ascend";
+    return;
+  }
+  MS_EXCEPTION_IF_NULL(node);
+  GetFileKernelName(NOT_NULL(kernel_name));
+  auto output_size = AnfAlgo::GetOutputTensorNum(node);
+  for (size_t j = 0; j < output_size; ++j) {
+    if (!AnfAlgo::OutputAddrExist(node, j)) {
+      continue;
+    }
+    auto addr = AnfAlgo::GetOutputAddr(node, j);
+    MS_EXCEPTION_IF_NULL(addr);
+    ShapeVector int_shapes;
+    GetDumpIntShape(node, j, NOT_NULL(&int_shapes), trans_flag);
+    auto type = common::AnfAlgo::GetOutputInferDataType(node, j);
+    std::string file_path = GenDataFilePath(node, *kernel_name, dump_path, j, false);
+    DumpMemToFile(file_path, *addr, int_shapes, type, trans_flag);
+  }
+}
+
 void E2eDump::DumpInput(const session::KernelGraph *graph, const std::string &dump_path, const Debugger *debugger) {
   MS_EXCEPTION_IF_NULL(graph);
   auto &dump_json_parser = DumpJsonParser::GetInstance();
@@ -387,6 +410,32 @@ void E2eDump::DumpInputImpl(const CNodePtr &node, bool trans_flag, const std::st
   }
 }
 
+void E2eDump::DumpInputData(const CNodePtr &node, bool trans_flag, const std::string &dump_path,
+                            std::string *kernel_name) {
+  if (IsMindRTKernelByKernel()) {
+    MS_LOG(INFO) << "DumpInputData is only for graph mode on Ascend";
+    return;
+  }
+  MS_EXCEPTION_IF_NULL(node);
+  GetFileKernelName(NOT_NULL(kernel_name));
+  auto input_size = common::AnfAlgo::GetInputTensorNum(node);
+  for (size_t j = 0; j < input_size; ++j) {
+    auto kernel_with_index = common::AnfAlgo::GetPrevNodeOutput(node, j);
+    auto input = kernel_with_index.first;
+    auto index = kernel_with_index.second;
+    if (!AnfAlgo::OutputAddrExist(input, index)) {
+      continue;
+    }
+    auto addr = AnfAlgo::GetOutputAddr(input, index);
+    MS_EXCEPTION_IF_NULL(addr);
+    ShapeVector int_shapes;
+    GetDumpIntShape(input, index, NOT_NULL(&int_shapes), trans_flag);
+    auto type = common::AnfAlgo::GetOutputInferDataType(input, index);
+    std::string file_path = GenDataFilePath(node, *kernel_name, dump_path, j, true);
+    DumpMemToFile(file_path, *addr, int_shapes, type, trans_flag);
+  }
+}
+
 void E2eDump::DumpSingleAnfNode(const AnfNodePtr &anf_node, const size_t output_index, const std::string &dump_path,
                                 bool trans_flag, const Debugger *debugger) {
   MS_EXCEPTION_IF_NULL(anf_node);
@@ -440,7 +489,7 @@ void E2eDump::DumpSingleAnfNode(const AnfNodePtr &anf_node, const size_t output_
       auto format = kOpFormat_DEFAULT;
       std::string tensor_name = node_name + ":0";
       uint32_t root_graph_id = debugger->GetCurrentRootGraphId();
-      bool ret = LoadMemToHost(*addr, tensor_name, 0, format, int_shapes, type, 0, true, root_graph_id, false, true);
+      bool ret = addr->LoadMemToHost(tensor_name, 0, format, int_shapes, type, 0, true, root_graph_id, false, true);
       if (!ret) {
         MS_LOG(ERROR) << "LoadMemToHost failed, tensor_name: " << tensor_name;
       } else {
@@ -499,7 +548,7 @@ void E2eDump::DumpSingleParameterNode(const AnfNodePtr &anf_node, const std::str
       auto format = kOpFormat_DEFAULT;
       std::string tensor_name = node_name + ":0";
       uint32_t root_graph_id = debugger->GetCurrentRootGraphId();
-      bool ret = LoadMemToHost(*addr, tensor_name, 0, format, int_shapes, type, 0, true, root_graph_id, false, true);
+      bool ret = addr->LoadMemToHost(tensor_name, 0, format, int_shapes, type, 0, true, root_graph_id, false, true);
       if (!ret) {
         MS_LOG(ERROR) << "LoadMemToHost failed, tensor_name: " << tensor_name;
       }
