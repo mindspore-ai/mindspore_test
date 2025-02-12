@@ -117,6 +117,23 @@ void CPUDeviceAddress::ClearUserData() {
   }
 }
 
+bool CPUDeviceAddress::DumpMemToFile(const std::string &filepath, const std::string &, const ShapeVector &host_shape,
+                                     TypeId host_type, bool) const {
+  bool ret = false;
+  if (filepath.empty()) {
+    MS_LOG(ERROR) << "Dump file path is null!";
+    return ret;
+  }
+  std::string path = filepath + '.' + format() + "." + TypeIdToString(host_type);
+  MS_LOG(DEBUG) << "E2E Dump path is " << path;
+  if (GetSize() == 0) {
+    MS_LOG(INFO) << "Data size is 0 for file: " << path << ", no need to dump.";
+    return true;
+  }
+  ret = DumpJsonParser::DumpToFile(path, GetDevicePtr(), GetSize(), host_shape, host_type);
+  return ret;
+}
+
 bool CPUDeviceAddress::SyncDeviceToHost(const ShapeVector &, size_t size, TypeId type, void *host_ptr) const {
   // The input or output may be empty.
   if ((size == 0) || (GetSize() == 0)) {

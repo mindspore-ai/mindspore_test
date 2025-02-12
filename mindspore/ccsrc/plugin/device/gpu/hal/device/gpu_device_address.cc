@@ -26,6 +26,11 @@
 #include "plugin/device/gpu/hal/device/gpu_hash_table_util.h"
 #include "plugin/device/gpu/hal/device/gpu_common.h"
 #include "plugin/device/gpu/hal/device/gpu_event.h"
+#ifdef ENABLE_DEBUGGER
+#include "debug/debug_services.h"
+#include "debug/tensor_load.h"
+#include "include/backend/debug/debugger/debugger.h"
+#endif
 #ifdef ENABLE_DUMP_IR
 #include "include/common/debug/rdr/recorder_manager.h"
 #include "plugin/device/gpu/hal/device/gpu_device_synchronizer.h"
@@ -438,21 +443,49 @@ bool GPUDeviceAddress::CopyDeviceToHost(void *dst, const void *src, const size_t
  * Description: Load tensor to host and create tensor_data object for the loaded tensor.
  */
 #ifdef ENABLE_DEBUGGER
-mindspore::tensor::TensorPtr GPUDeviceAddress::LoadMemToHost(const std::string &tensor_name,
-                                                             const ShapeVector &host_shape, TypeId host_type, bool,
-                                                             bool) const {
+bool GPUDeviceAddress::LoadMemToHost(const std::string &tensor_name, int execution_order, const std::string &host_fmt,
+                                     const ShapeVector &host_shape, TypeId host_type, size_t slot, bool keep_prev,
+                                     uint32_t root_graph_id, bool force_update, bool, bool) const {
+  bool ret = false;
+  if (GetSize() == 0) {
+    return true;
+  }
+  auto debugger = Debugger::GetInstance();
+  MS_EXCEPTION_IF_NULL(debugger);
+  if (debugger->TensorExistsInCurrent(tensor_name) && !force_update) {
+    MS_LOG(INFO) << tensor_name << " already loaded for this step so not loading it again.";
+    return true;
+  }
+
+  if (host_type > TypeId::kNumberTypeEnd || host_type < TypeId::kNumberTypeBegin || host_type == kNumberTypeComplex64) {
+    MS_LOG(INFO) << "Cannot create tensor with type: " << TypeIdLabel(host_type);
+    return false;
+  }
   mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
   size_t host_size = out_tensor->data().nbytes();
   if (host_size == 0) {
     MS_LOG(INFO) << "Host size is 0 for tensor: " << tensor_name << ", no need to load.";
-    return std::make_shared<mindspore::tensor::Tensor>();
   }
   auto ret_rt_memcpy = SyncDeviceToHost(host_shape, host_size, host_type, out_tensor->data_c());
   if (!ret_rt_memcpy) {
     MS_LOG(ERROR) << "Copy device mem to host failed";
-    return nullptr;
+    return ret;
   }
-  return out_tensor;
+  auto tensor_data = std::make_shared<mindspore::TensorData>();
+  MS_EXCEPTION_IF_NULL(tensor_data);
+  tensor_data->SetName(tensor_name);
+  tensor_data->SetExecutionOrder(execution_order);
+  tensor_data->SetSlot(slot);
+  tensor_data->SetTensor(out_tensor);
+  tensor_data->SetDataPtr(static_cast<char *>(out_tensor->data_c()));
+  tensor_data->SetByteSize(out_tensor->data().nbytes());
+  tensor_data->SetType(host_type);
+  tensor_data->SetShape(out_tensor->shape());
+  tensor_data->SetRootGraphId(root_graph_id);
+  tensor_data->SetFormat(host_fmt);
+  ret = debugger->LoadNewTensor(tensor_data, keep_prev);
+  MS_LOG(INFO) << "E2E tensor name is " << tensor_name;
+  return ret;
 }
 #endif
 }  // namespace gpu

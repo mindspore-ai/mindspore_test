@@ -73,8 +73,9 @@ class GPUDeviceAddress : public LoadableDeviceAddress {
   DeviceType GetDeviceType() const override { return DeviceType::kGPU; }
 
 #ifdef ENABLE_DEBUGGER
-  mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
-                                             TypeId host_type, bool trans_flag, bool async_copy = true) const override;
+  bool LoadMemToHost(const std::string &tensor_name, int execution_order, const std::string &host_fmt,
+                     const ShapeVector &host_shape, TypeId host_type, size_t slot, bool keep_prev,
+                     uint32_t root_graph_id, bool force_update, bool trans_flag, bool async_copy = true) const override;
 #endif
 
   // Asynchronously copy host memory to device side.
