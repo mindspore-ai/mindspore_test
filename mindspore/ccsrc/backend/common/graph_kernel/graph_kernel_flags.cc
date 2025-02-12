@@ -23,6 +23,7 @@
 #include <utility>
 #include "nlohmann/json.hpp"
 #include "utils/ms_context.h"
+#include "utils/file_utils.h"
 #include "include/common/utils/utils.h"
 
 namespace mindspore::graphkernel {
@@ -76,11 +77,35 @@ std::pair<std::string, std::string> ParseFlag(const std::string &flag) {
   return std::pair<std::string, std::string>();
 }
 
+std::map<std::string, std::string> ParseFlagsByJson(const std::string &json_path) {
+  std::map<std::string, std::string> flag_map;
+  auto realpath = FileUtils::GetRealPath(json_path.c_str());
+  if (!realpath.has_value()) {
+    MS_LOG(ERROR) << "Failed to get real path.";
+  }
+  std::ifstream jsonFile(realpath.value(), std::ifstream::in);
+  if (!jsonFile.is_open()) {
+    MS_LOG(ERROR) << "Failed to open graph kernel flags file. ";
+  }
+  nlohmann::json flags_json = nlohmann::json::parse(jsonFile);
+  for (auto it = flags_json.begin(); it != flags_json.end(); ++it) {
+    if (it.value().is_string()) {
+      flag_map[it.key()] = it.value();
+    } else {
+      MS_LOG(ERROR) << "Flags's value should be string.";
+    }
+  }
+  return flag_map;
+}
+
 std::map<std::string, std::string> ParseFlags(const std::string &flags) {
   std::map<std::string, std::string> flag_map;
   auto tokens = GetTokens(flags, " ");
   for (const auto &token : tokens) {
     auto flag = ParseFlag(token);
+    if (flag.first == "path") {
+      return ParseFlagsByJson(flag.second);
+    }
     if (flag.first != "") {
       if (!flag_map.insert(flag).second) {
         MS_LOG(WARNING) << "For 'context.set_context', the flag '" << flag.first
@@ -394,6 +419,8 @@ void GraphKernelFlags::RegisterFlags(std::map<std::string, std::string> *flag_ma
   reg.AddFlag("enable_packet_ops_only", &enable_packet_ops_only);
   reg.AddFlag("disable_packet_ops", &disable_packet_ops);
   reg.AddFlag("disable_matmul_post_fusion", &disable_matmul_post_fusion);
+  reg.AddFlag("enable_fusion_pattern_only", &enable_fusion_pattern_only);
+  reg.AddFlag("disable_fusion_pattern", &disable_fusion_pattern);
 
   if (enable_dynamic_shape_fusion && !is_ascend) {
     kernel_generator = "AKG_V2";
@@ -474,6 +501,8 @@ std::string GraphKernelFlags::DumpAllFlags() const {
   json["enable_packet_ops_only"] = enable_packet_ops_only;
   json["disable_packet_ops"] = disable_packet_ops;
   json["disable_matmul_post_fusion"] = disable_matmul_post_fusion;
+  json["enable_fusion_pattern_only"] = enable_fusion_pattern_only;
+  json["disable_fusion_pattern"] = disable_fusion_pattern;
 
   return json.dump();
 }

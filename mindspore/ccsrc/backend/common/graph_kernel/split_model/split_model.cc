@@ -160,6 +160,21 @@ void SplitModel::InitGraph(const LiteGraphPtr &litegraph) {
 }
 
 void SplitModel::AddPattern(const std::shared_ptr<FusePattern> &pn, bool enable) {
+  auto &flags = GraphKernelFlags::GetInstance();
+  if (!flags.enable_fusion_pattern_only.empty()) {
+    if (std::none_of(flags.enable_fusion_pattern_only.begin(), flags.enable_fusion_pattern_only.end(),
+                     [&pn](std::string only) { return pn->name().find(only) != std::string::npos; })) {
+      enable = false;
+      MS_LOG(INFO) << "Disable pattern by only flag: " << pn->name();
+    }
+  } else if (std::any_of(flags.disable_fusion_pattern.begin(), flags.disable_fusion_pattern.end(),
+                         [&pn](std::string dis) { return pn->name().find(dis) != std::string::npos; })) {
+    enable = false;
+    MS_LOG(INFO) << "Disable pattern by disable flag: " << pn->name();
+  }
+  if (enable) {
+    MS_LOG(INFO) << "Enable pattern: " << pn->name();
+  }
   (void)patterns_.emplace_back(std::make_pair(pn, enable));
   patterns_.back().first->SetCircleChecker(reach_table_);
 }

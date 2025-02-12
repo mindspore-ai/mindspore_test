@@ -309,6 +309,16 @@ class BACKEND_EXPORT GraphKernelFlags {
    */
   std::vector<std::string> disable_packet_ops;
 
+  /**
+   * Fusion pattern to be enabled (case sensitive).
+   * Note that the "disable_fusion_pattern" will be ignored if this flag is set.
+   */
+  std::vector<std::string> enable_fusion_pattern_only;
+  /**
+   * Fusion pattern to be disabled (case sensitive).
+   */
+  std::vector<std::string> disable_fusion_pattern;
+
  private:
   GraphKernelFlags(const std::string &graph_kernel_flags, bool enable_graph_kernel)
       : flags_cache_(graph_kernel_flags), enable_graph_kernel_(enable_graph_kernel) {}
