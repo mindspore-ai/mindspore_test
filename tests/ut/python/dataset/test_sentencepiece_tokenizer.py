@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2020-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ def test_from_vocab_to_str_unigram():
     tokenizer = text.SentencePieceTokenizer(vocab, out_type=SPieceTokenizerOutType.STRING)
     dataset = ds.TextFileDataset(DATA_FILE, shuffle=False)
     dataset = dataset.map(operations=tokenizer)
-    expect = ["▁", "I", "▁use", "▁MindSpore", "▁", "to", "▁", "t", "r", "a", "i", "n", "▁", "m", "y", "▁model", "."]
+    expect = ["▁", "I", "▁", "u", "s", "e", "▁MindSpore", "▁to", "▁", "t", "r", "a", "in", "▁", "m", "y", "▁model", "."]
     for i in dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
         ret = i["text"]
         for key, value in enumerate(ret):
@@ -117,7 +117,7 @@ def test_from_vocab_to_int():
     tokenizer = text.SentencePieceTokenizer(vocab, out_type=SPieceTokenizerOutType.INT)
     dataset = ds.TextFileDataset(DATA_FILE, shuffle=False)
     dataset = dataset.map(operations=tokenizer)
-    expect = [3, 41, 59, 53, 3, 29, 3, 6, 12, 99, 7, 10, 3, 11, 20, 45, 19]
+    expect = [3, 39, 3, 12, 5, 4, 47, 33, 3, 6, 97, 99, 24, 3, 14, 25, 45, 20]
     for i in dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
         ret = i["text"]
         for key, value in enumerate(ret):
@@ -136,7 +136,7 @@ def test_from_file_to_str(cleanup_tmp_file):
     tokenizer = text.SentencePieceTokenizer("./m.model", out_type=SPieceTokenizerOutType.STRING)
     dataset = ds.TextFileDataset(DATA_FILE, shuffle=False)
     dataset = dataset.map(operations=tokenizer)
-    expect = ["▁", "I", "▁use", "▁MindSpore", "▁", "to", "▁", "t", "r", "a", "i", "n", "▁", "m", "y", "▁model", "."]
+    expect = ["▁", "I", "▁", "u", "s", "e", "▁MindSpore", "▁to", "▁", "t", "r", "a", "in", "▁", "m", "y", "▁model", "."]
     for i in dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
         ret = i["text"]
         for key, value in enumerate(ret):
@@ -155,7 +155,7 @@ def test_from_file_to_int(cleanup_tmp_file):
     tokenizer = text.SentencePieceTokenizer("./m.model", out_type=SPieceTokenizerOutType.INT)
     dataset = ds.TextFileDataset(DATA_FILE, shuffle=False)
     dataset = dataset.map(operations=tokenizer)
-    expect = [3, 41, 59, 53, 3, 29, 3, 6, 12, 99, 7, 10, 3, 11, 20, 45, 19]
+    expect = [3, 39, 3, 12, 5, 4, 47, 33, 3, 6, 97, 99, 24, 3, 14, 25, 45, 20]
     for i in dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
         ret = i["text"]
         for key, value in enumerate(ret):
@@ -173,7 +173,7 @@ def test_build_from_dataset():
     tokenizer = text.SentencePieceTokenizer(vocab, out_type=SPieceTokenizerOutType.STRING)
     dataset = ds.TextFileDataset(DATA_FILE, shuffle=False)
     dataset = dataset.map(operations=tokenizer)
-    expect = ["▁", "I", "▁use", "▁MindSpore", "▁", "to", "▁", "t", "r", "a", "i", "n", "▁", "m", "y", "▁model", "."]
+    expect = ["▁", "I", "▁", "u", "s", "e", "▁MindSpore", "▁to", "▁", "t", "r", "a", "in", "▁", "m", "y", "▁model", "."]
     for i in dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
         ret = i["text"]
         for key, value in enumerate(ret):
@@ -192,7 +192,7 @@ def zip_test(dataset):
     dataset_2 = copy.deepcopy(dataset)
     dataset_1 = dataset_1.apply(apply_func)
     dataset_zip = ds.zip((dataset_1, dataset_2))
-    expect = ["▁", "I", "▁use", "▁MindSpore", "▁", "to", "▁", "t", "r", "a", "i", "n", "▁", "m", "y", "▁model", "."]
+    expect = ["▁", "I", "▁", "u", "s", "e", "▁MindSpore", "▁to", "▁", "t", "r", "a", "in", "▁", "m", "y", "▁model", "."]
     for i in dataset_zip.create_dict_iterator(num_epochs=1, output_numpy=True):
         ret = i["text"]
         for key, value in enumerate(ret):
@@ -202,7 +202,7 @@ def zip_test(dataset):
 def concat_test(dataset):
     dataset_1 = copy.deepcopy(dataset)
     dataset = dataset.concat(dataset_1)
-    expect = ["▁", "I", "▁use", "▁MindSpore", "▁", "to", "▁", "t", "r", "a", "i", "n", "▁", "m", "y", "▁model", "."]
+    expect = ["▁", "I", "▁", "u", "s", "e", "▁MindSpore", "▁to", "▁", "t", "r", "a", "in", "▁", "m", "y", "▁model", "."]
     for i in dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
         ret = i["text"]
         for key, value in enumerate(ret):

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,8 +73,8 @@ TEST_F(MindDataTestPipeline, TestSentencePieceVocabSuccess1) {
   ASSERT_OK(iter->GetNextRow(&row));
 
   // Expected result after tokenization
-  std::vector<std::string> expected = {"▁", "I", "▁use", "▁MindSpore", "▁", "to", "▁",      "t", "r",
-                                       "a", "i", "n",    "▁",          "m", "y",  "▁model", "."};
+  std::vector<std::string> expected = {"▁", "I", "▁", "u", "s", "e", "▁MindSpore", "▁to", "▁",      "t", "r",
+                                       "a", "in",    "▁",          "m", "y",  "▁model", "."};
   std::shared_ptr<Tensor> de_expected_tensor;
   ASSERT_OK(Tensor::CreateFromVector(expected, &de_expected_tensor));
   auto expected_tensor = mindspore::MSTensor(std::make_shared<mindspore::dataset::DETensor>(de_expected_tensor));
@@ -139,8 +139,8 @@ TEST_F(MindDataTestPipeline, TestSentencePieceVocabSuccess2) {
   ASSERT_OK(iter->GetNextRow(&row));
 
   // Expected result after tokenization
-  std::vector<std::string> expected = {"▁", "I", "▁use", "▁MindSpore", "▁", "to", "▁",      "t", "r",
-                                       "a", "i", "n",    "▁",          "m", "y",  "▁model", "."};
+  std::vector<std::string> expected = {"▁", "I", "▁", "u", "s", "e", "▁MindSpore", "▁to", "▁",      "t", "r",
+                                       "a", "in",    "▁",          "m", "y",  "▁model", "."};
   std::shared_ptr<Tensor> de_expected_tensor;
   ASSERT_OK(Tensor::CreateFromVector(expected, &de_expected_tensor));
   auto expected_tensor = mindspore::MSTensor(std::make_shared<mindspore::dataset::DETensor>(de_expected_tensor));
