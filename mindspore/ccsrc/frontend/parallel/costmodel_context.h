@@ -22,7 +22,6 @@
 #include <vector>
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
-#include "include/common/visible.h"
 
 namespace mindspore {
 namespace parallel {
@@ -49,7 +48,7 @@ constexpr float DEFAULT_RP_MATMUL_MEM_COEF = 0.1;
 #define DEFAULT_DP_ALGO_SINGLE_LOOP false
 constexpr int64_t TRAINING_PHASE = 0;
 
-class FRONTEND_EXPORT CostModelContext {
+class CostModelContext {
  public:
   ~CostModelContext() = default;
   CostModelContext(const CostModelContext &) = delete;

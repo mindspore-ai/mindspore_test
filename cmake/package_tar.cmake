@@ -22,7 +22,7 @@ set(INSTALL_PLUGIN_DIR "${INSTALL_LIB_DIR}/plugin")
 
 # set package files
 install(
-        TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend mindspore_pyboost mindspore_frontend
+        TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend mindspore_pyboost
             mindspore_backend_manager
         DESTINATION ${INSTALL_LIB_DIR}
         COMPONENT mindspore

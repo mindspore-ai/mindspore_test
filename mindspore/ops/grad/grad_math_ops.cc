@@ -20,7 +20,7 @@
 #include <cmath>
 
 #include "frontend/expander/bprop/bprop_irbuilder.h"
-#include "grad/grad_utils.h"
+#include "frontend/expander/bprop/common_utils.h"
 #include "include/common/expander/core/node.h"
 #include "include/common/utils/utils.h"
 #include "ir/functor.h"

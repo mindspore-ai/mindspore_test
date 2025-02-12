@@ -203,7 +203,7 @@ endif()
 
 ################# Link with external libraries ########################
 if(NOT MSLITE_ENABLE_CLOUD_MIND_DATA)
-    target_link_libraries(_c_dataengine PRIVATE proto_input)
+    target_link_libraries(_c_dataengine PRIVATE mindspore)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
