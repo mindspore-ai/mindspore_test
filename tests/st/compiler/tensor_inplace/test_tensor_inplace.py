@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-import pytest
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import context, Tensor, Parameter
@@ -397,7 +396,6 @@ def test_tensor_inplace_add_control_flow_multi_2():
     assert out == 6
 
 
-@pytest.mark.skip(reason="In GRAPH_MODE, the result is not as expected")
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 def test_tensor_inplace_index_add():

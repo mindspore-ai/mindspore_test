@@ -88,7 +88,7 @@ abstract::ShapePtr InplaceIndexAddInferShape(const PrimitivePtr &primitive,
 TypePtr InplaceIndexAddInferType(const PrimitivePtr &prim, const std::vector<AbstractBasePtr> &input_args) {
   MS_EXCEPTION_IF_NULL(prim);
   const int64_t input_num = 3;
-  CheckAndConvertUtils::CheckInputArgs(input_args, kEqual, input_num, prim->name());
+  CheckAndConvertUtils::CheckInputArgs(input_args, kGreaterEqual, input_num, prim->name());
   const std::set<TypePtr> valid_types = {kUInt8, kInt8, kInt16, kInt32, kFloat16, kFloat32, kFloat64};
   const std::set<TypePtr> indices_types = {kInt32};
   auto var_type = input_args[kInputIndex0]->GetType();
@@ -105,7 +105,7 @@ AbstractBasePtr InplaceIndexAddInfer(const abstract::AnalysisEnginePtr &, const 
                                      const std::vector<AbstractBasePtr> &input_args) {
   MS_EXCEPTION_IF_NULL(primitive);
   const int64_t input_num = 3;
-  CheckAndConvertUtils::CheckInputArgs(input_args, kEqual, input_num, primitive->name());
+  CheckAndConvertUtils::CheckInputArgs(input_args, kGreaterEqual, input_num, primitive->name());
   auto infer_type = InplaceIndexAddInferType(primitive, input_args);
   auto infer_shape = InplaceIndexAddInferShape(primitive, input_args);
   return abstract::MakeAbstract(infer_shape, infer_type);
