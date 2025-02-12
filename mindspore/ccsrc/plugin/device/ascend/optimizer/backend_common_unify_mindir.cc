@@ -85,15 +85,10 @@ void GetBackendCommonUnifyMindIRPassManager(PassManagerPtr *unify_mindir_pm) {
   MS_EXCEPTION_IF_NULL(unify_mindir_pm);
   (*unify_mindir_pm)->AddPass(std::make_shared<RenormSplit>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::ReduceAxisUpdate>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::ClipByNormFission>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::SpaceToBatchNDAttrUpdate>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::BatchToSpaceNDAttrUpdate>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AdamWeightDecayUnifyMindIR>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddDependForAdamW>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<CdistFission>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<CdistGradFission>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::BatchMatMulReduceScatterAllToAllFusion>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::AllToAllAllGatherBatchMatMulFusion>());
 
   // Since the SparseSoftmaxCrossEntropyWithLogits operator can only use AICPU and has poor execution performance,
   // it does not take effect for the time being.
@@ -130,24 +125,29 @@ void GetBackendCommonUnifyMindIRPassManager(PassManagerPtr *unify_mindir_pm) {
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::BatchNormGradUnifyMindIR>());
   (*unify_mindir_pm)->AddPass(std::make_shared<BnGradSplit>());
   (*unify_mindir_pm)->AddPass(std::make_shared<BatchNormGrad2BNInferGrad>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<BatchNormGradInferFission>());
   (*unify_mindir_pm)->AddPass(std::make_shared<BatchNorm2BNInfer>());
 
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::LambFissionGe>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AdjustPrintForGe>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::GetNextForGE>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::SyncBnSplit>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::SyncBnGradSplit>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::AdaptiveMaxPool2DGeFusion>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AvgPoolGradForGE>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::MatmulReduceScatterFusion>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::AllGatherMatmulFusion>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddAttrToDump>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AscendMindIROpAdapter>());
 }
 
 PassManagerPtr GetBackendFusionGroupPassManager() {
   auto pm = std::make_shared<PassManager>("unify_mindir_2");
+  pm->AddFusionPass(std::make_shared<opt::ClipByNormFission>());
+  pm->AddFusionPass(std::make_shared<CdistFission>());
+  pm->AddFusionPass(std::make_shared<CdistGradFission>());
+  pm->AddFusionPass(std::make_shared<opt::BatchMatMulReduceScatterAllToAllFusion>());
+  pm->AddFusionPass(std::make_shared<opt::AllToAllAllGatherBatchMatMulFusion>());
+  pm->AddFusionPass(std::make_shared<BatchNormGradInferFission>());
+  pm->AddFusionPass(std::make_shared<opt::LambFissionGe>());
+  pm->AddFusionPass(std::make_shared<opt::AdaptiveMaxPool2DGeFusion>());
+  pm->AddFusionPass(std::make_shared<opt::MatmulReduceScatterFusion>());
+  pm->AddFusionPass(std::make_shared<opt::AllGatherMatmulFusion>());
   pm->AddFusionPass(std::make_shared<opt::FlashAttentionFusionV1>());
   pm->AddFusionPass(std::make_shared<opt::FlashAttentionFusionV2>());
   pm->AddFusionPass(std::make_shared<opt::QuantBatchMatmulAllReduceFusion>());
