@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2022 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,27 +18,31 @@ import pytest
 from tests.mark_utils import arg_mark
 
 import mindspore as ms
+import mindspore.nn as nn
+from mindspore import Tensor
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'],
-          level_mark='level1',
+
+class Net(nn.Cell):
+    def construct(self, x, y):
+        return x.multiply(y)
+
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+          level_mark='level2',
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_dist_normal(mode):
+def test_multiply(mode):
     """
-    Feature: dist
-    Description: Verify the result of norm
-    Expectation: success
+    Feature: test Tensor.log10.
+    Description: Verify the result of Tensor.log10.
+    Expectation: expect correct forward result.
     """
     ms.set_context(mode=mode)
-    x = ms.Tensor([[1, 2, 3], [4, 5, 6]], dtype=ms.float32)
-    y = ms.Tensor([[6, 5, 4], [3, 2, 1]], dtype=ms.float32)
-    p = 2
-    output = x.dist(y, p)
-    expect_output = np.array([8.3666], dtype=np.float32)
-    assert np.allclose(output.asnumpy(), expect_output)
+    x = Tensor([1, 2, 3], dtype=ms.float32)
+    y = Tensor([1, 2, 3], dtype=ms.float32)
+    multiply = Net()
+    output = multiply(x, y)
+    expect_output = np.array([1, 4, 9], dtype=np.float32)
 
-    p = 1
-    output = x.dist(y, p)
-    expect_output = np.array([18.0], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expect_output)

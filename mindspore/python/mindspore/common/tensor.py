@@ -3645,6 +3645,13 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('cumprod')(self, dim, dtype)
 
+    def multiply(self, value):
+        r"""
+        For details, please refer to :func:`mindspore.ops.mul`.
+        The parameter `value` of the current interface is the same as the parameter `other` of the reference interface.
+        """
+        return tensor_operator_registry.get('multiply')(self, value)
+
     def equal(self, other):
         r"""
         For details, please refer to :func:`mindspore.ops.equal`.

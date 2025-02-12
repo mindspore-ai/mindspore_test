@@ -24,12 +24,12 @@ import mindspore.mint as mint
 
 
 @test_utils.run_with_cell
-def argsort_forward(input_x, dim=-1, descending=False, stable=False):
-    return mint.argsort(input_x, dim, descending, stable)
+def argsort_forward(input_x, dim=-1, descending=False):
+    return mint.argsort(input_x, dim, descending)
 
 
-@arg_mark(plat_marks=['platform_ascend910b', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
-          level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_argsort_normal(mode):
     """
@@ -53,7 +53,7 @@ def test_argsort_normal(mode):
     assert np.allclose(out.asnumpy(), np.array(expect))
 
 
-@arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend'], level_mark='level2', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_argsort_dynamic_shape():
     """
@@ -61,10 +61,8 @@ def test_argsort_dynamic_shape():
     Description: Verify the result of argsort forward with dynamic shape
     Expectation: success
     """
-
     inputs1 = ms.Tensor(np.array([[1, 10, 2], [0, 6, 1]], np.float32))
     inputs2 = ms.Tensor(np.array([[[5, 0.1, -1.2], [0, 5.5, 1.2]], [[-5, 0.1, 1.2], [0, -5.5, 1.2]]], np.float32))
 
-
-    TEST_OP(argsort_forward, [[inputs1, 1, False, True], [inputs2, -1, True, False]], 'argsort',
-            disable_mode=['GRAPH_MODE'], disable_grad=True, disable_yaml_check=True)
+    TEST_OP(argsort_forward, [[inputs1, 1, False], [inputs2, -1, True]], 'argsort', disable_mode=['GRAPH_MODE'],
+            disable_grad=True, disable_yaml_check=True)

@@ -94,7 +94,7 @@ from mindspore.ops.functional import log
 # 20
 
 # 21
-from mindspore.ops.functional_overload import mul
+from mindspore.ops.function.math_func import mul_ext as mul
 # 22
 from mindspore.ops.functional import cumprod
 # 23
@@ -158,7 +158,7 @@ from mindspore.ops.functional import tile
 # 52
 
 # 53
-from mindspore.ops.function.math_func import dist_ext as dist
+
 # 54
 from mindspore.ops.function.random_func import normal_ext as normal
 # 55
@@ -251,8 +251,8 @@ from mindspore.ops.function.math_func import diff_ext as diff
 
 # 99
 
-# 100 multiply
-from mindspore.ops.functional_overload import multiply
+# 100
+
 # 101
 
 # 102
@@ -1872,7 +1872,7 @@ __all__ = [
     # 52
 
     # 53
-    'dist',
+
     # 54
     'normal',
     # 55
@@ -1970,7 +1970,7 @@ __all__ = [
     # 99
 
     # 100
-    'multiply',
+
     # 101
 
     # 102
