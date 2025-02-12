@@ -1,6 +1,8 @@
 import mindspore
 from mindspore import Tensor
 from mindspore import context
+import mindspore.communication
+import mindspore.communication.comm_func
 from mindspore.nn.cell import Cell
 from mindspore.ops.auto_generate.gen_ops_prim import BatchNormReduceGrad
 from mindspore.ops.auto_generate.gen_ops_prim import BatchNormElemtGrad
@@ -9,6 +11,7 @@ from mindspore.ops import ReduceOp
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore.communication._comm_helper import _get_size_helper, HCCL_WORLD_COMM_GROUP
 from mindspore.ops._primitive_cache import _get_cache_prim
+from mindspore.communication.comm_func import all_gather_into_tensor as all_gather_into_tensor_dy
 from mindspore.ops import operations as P
 from mindspore import ops, mint
 
@@ -111,7 +114,8 @@ def bprop_pynative(input_x, weight, bias, running_mean, running_var, eps, moment
         num_channels = sum_dy_shape[0]
         combined = mint.cat([sum_dy, sum_dy_xmu], dim=0)
 
-        new_combined = all_reduce(combined, group=process_group)
+        new_combined, _ = mindspore.communication.comm_func.all_reduce(
+            combined, group=process_group)
 
         sum_dy, sum_dy_xmu = mint.split(new_combined, num_channels)
 
@@ -227,7 +231,7 @@ def construct_pynative(input, weight, bias, running_mean, running_var, eps, mome
     # batch_norm_gather_stats_with_counts calculates global mean & invstd based on
     # all gathered mean, invstd and count.
     # world_size * (2C + 1)
-    combined = all_gather_into_tensor(combined, process_group)
+    combined, _ = all_gather_into_tensor_dy(combined, process_group)
     combined = ops.reshape(combined, [world_size, -1])
     # world_size * (2C + 1) -> world_size * C, world_size * C, world_size * 1
     mean_val_all, invstd_val_all, count_val_all = mint.split(
