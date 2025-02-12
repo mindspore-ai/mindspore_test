@@ -1072,8 +1072,9 @@ FuncGraphPtr ProcessLazyInline(const py::object &obj, const ValuePtrList &args_v
     }
     PyObjectWrapperPtr python_obj = std::make_shared<PyObjectWrapper>(obj, "graph python obj");
     base_graph->set_python_obj(python_obj);
-    MS_LOG(DEBUG) << "Parse reusing function: " << reusing_graph->ToString();
     reusing_graph = MakeReusingGraph(base_graph);
+    MS_EXCEPTION_IF_NULL(reusing_graph);
+    MS_LOG(DEBUG) << "Parse reusing function: " << reusing_graph->ToString();
     data_converter::CacheObjectValue(obj_key, reusing_graph);
   }
   // Let the original cell graph call the reusable graph.
