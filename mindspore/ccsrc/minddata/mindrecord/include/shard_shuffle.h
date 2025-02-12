@@ -18,6 +18,8 @@
 #define MINDSPORE_CCSRC_MINDDATA_MINDRECORD_INCLUDE_SHARD_SHUFFLE_H_
 
 #include <random>
+#include <string>
+
 #include "minddata/mindrecord/include/shard_operator.h"
 
 namespace mindspore {
@@ -31,6 +33,8 @@ class MINDRECORD_API ShardShuffle : public ShardOperator {
                dataset::ShuffleMode shuffle_mode = dataset::ShuffleMode::kGlobal);
 
   ~ShardShuffle() override{};
+
+  std::string Name() override { return "ShardShuffle"; }
 
   Status Execute(ShardTaskList &tasks) override;
 

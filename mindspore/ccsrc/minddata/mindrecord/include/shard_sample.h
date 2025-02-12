@@ -40,6 +40,8 @@ class MINDRECORD_API ShardSample : public ShardOperator {
 
   ~ShardSample() override{};
 
+  std::string Name() override { return "ShardSample"; }
+
   Status Execute(ShardTaskList &tasks) override;
 
   Status UpdateTasks(ShardTaskList &tasks, int64_t taking);  // NOLINT

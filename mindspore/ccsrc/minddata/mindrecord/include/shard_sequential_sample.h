@@ -33,6 +33,8 @@ class MINDRECORD_API ShardSequentialSample : public ShardSample {
 
   ~ShardSequentialSample() override{};
 
+  std::string Name() override { return "ShardSequentialSample"; }
+
   Status Execute(ShardTaskList &tasks) override;
 
   int64_t GetNumSamples(int64_t dataset_size, int64_t num_classes) override;

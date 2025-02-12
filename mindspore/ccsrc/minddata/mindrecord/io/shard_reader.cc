@@ -181,8 +181,8 @@ void ShardReader::UpdateLoadModeByShuffleMode() {
         break;
       }
       case dataset::ShuffleMode::kFalse: {
-        load_mode_ = LoadMode::kFast;
-        tasks_.load_mode_ = LoadMode::kFast;
+        load_mode_ = LoadMode::kLazy;
+        tasks_.load_mode_ = LoadMode::kLazy;
         break;
       }
       default:
