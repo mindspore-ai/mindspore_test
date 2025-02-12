@@ -195,9 +195,9 @@ class BACKEND_EXPORT MemTracker {
                                   TypeId dtype, const ShapeVector &shape, TensorStorageInfoPtr tensor_info,
                                   const std::string &file_name, size_t line_num) = 0;
 
-  virtual void Dump() = 0;
+  virtual void Dump(size_t rank_id) = 0;
   virtual void UpdateProfilingPos() = 0;
-  virtual void DumpProfilingMemInfo(const std::string &path, const std::string &file_name) = 0;
+  virtual void DumpProfilingMemInfo(size_t rank_id, const std::string &path, const std::string &file_name) = 0;
   virtual bool IsEnabled() = 0;
   virtual ~MemTracker() = default;
 };
@@ -225,9 +225,9 @@ class BACKEND_EXPORT MemoryTrackerEnabled : public MemTracker {
                    size_t line_num) override;
   void BindDevicePtr(DeviceAddress *device_address, DeviceMemPtr device_ptr, const std::string &file_name,
                      size_t line_num) override;
-  void Dump() override;
+  void Dump(size_t rank_id) override;
   void UpdateProfilingPos() override;
-  void DumpProfilingMemInfo(const std::string &path, const std::string &file_name) override;
+  void DumpProfilingMemInfo(size_t rank_id, const std::string &path, const std::string &file_name) override;
   void MarkTensorAsInput(const std::string &task_name, const std::string &device_name, DeviceMemPtr device_ptr,
                          TypeId dtype, const ShapeVector &shape, TensorStorageInfoPtr tensor_info,
                          const std::string &file_name, size_t line_num) override;
@@ -236,7 +236,7 @@ class BACKEND_EXPORT MemoryTrackerEnabled : public MemTracker {
                           const std::string &file_name, size_t line_num) override;
 
   bool IsEnabled() override { return true; }
-  std::tuple<std::string, std::string, std::string> GetPath();
+  std::tuple<std::string, std::string, std::string> GetPath(size_t rank_id);
   MemoryTrackerEnabled(const MemoryTrackerEnabled &) = delete;
   MemoryTrackerEnabled &operator=(const MemoryTrackerEnabled &) = delete;
 
@@ -286,9 +286,9 @@ class BACKEND_EXPORT MemoryTrackerDisabled : public MemTracker {
   void AddNestedTask(const std::string &task_name, const std::string &node_name, const std::string &graph_name,
                      const std::string &file_name, size_t line_num) override {}
   void DelNestedTask() override {}
-  void UpdateTask(const std::string &task_name, const std::unordered_map<std::string, std::string> &attrs) override{};
-  void CacheLastTask() override{};
-  void EmptyCache() override{};
+  void UpdateTask(const std::string &task_name, const std::unordered_map<std::string, std::string> &attrs) override {}
+  void CacheLastTask() override {}
+  void EmptyCache() override {}
   void AddMemInfo(const std::string &task_name, MemType type, size_t size, DeviceAddress *device_address,
                   const std::string &file_name, const size_t line_num) override {}
   void AddCompileTimeMemInfo(const std::string &task_name, size_t size, DeviceMemPtr device_ptr, MemType mem_type,
@@ -302,13 +302,13 @@ class BACKEND_EXPORT MemoryTrackerDisabled : public MemTracker {
                      size_t line_num) override {}
   void MarkTensorAsInput(const std::string &task_name, const std::string &device_name, DeviceMemPtr device_ptr,
                          TypeId dtype, const ShapeVector &shape, TensorStorageInfoPtr tensor_info,
-                         const std::string &file_name, size_t line_num) override{};
+                         const std::string &file_name, size_t line_num) override {}
   void MarkTensorAsOutput(const std::string &task_name, const std::string &device_name, DeviceMemPtr device_ptr,
                           TypeId dtype, const ShapeVector &shape, TensorStorageInfoPtr tensor_info,
-                          const std::string &file_name, size_t line_num) override{};
-  void Dump() override {}
+                          const std::string &file_name, size_t line_num) override {}
+  void Dump(size_t rank_id) override {}
   void UpdateProfilingPos() override {}
-  void DumpProfilingMemInfo(const std::string &path, const std::string &file_name) override {}
+  void DumpProfilingMemInfo(size_t rank_id, const std::string &path, const std::string &file_name) override {}
   bool IsEnabled() override { return false; }
   MemoryTrackerDisabled(const MemoryTrackerDisabled &) = delete;
   MemoryTrackerDisabled &operator=(const MemoryTrackerDisabled &) = delete;

@@ -15,6 +15,11 @@
  */
 
 #include <algorithm>
+#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/common/utils/comm_manager.h"
+#ifdef ENABLE_DEBUGGER
+#include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
+#endif
 #include "plugin/device/gpu/hal/device/gpu_memory_allocator.h"
 #include "plugin/device/gpu/hal/device/cuda_driver.h"
 #include "utils/log_adapter.h"
@@ -58,6 +63,27 @@ bool GPUMemoryAllocator::Init() {
   float increase_size = runtime::RuntimeConf::GetInstance()->mem_block_increase_size();
   size_t increase_size_byte = FloatToSize(increase_size * kGBToByte);
   Initialize(init_size_byte, increase_size_byte, available_device_memory_);
+#ifdef ENABLE_DEBUGGER
+  // Set memory profiler callback func.
+  SetMemoryProfilerCallback([&]() {
+    static auto profiler_inst = profiler::Profiler::GetInstance(kCPUDevice);
+    MS_EXCEPTION_IF_NULL(profiler_inst);
+    if (profiler_inst->GetEnableFlag() && profiler_inst->GetProfileMemoryFlag()) {
+      profiler_inst->RecordMemoryPoolInfo(TotalUsedMemStatistics(), TotalMemStatistics(),
+                                          TotalUsedByEventMemStatistics());
+    }
+  });
+#endif
+
+  SetRankIdGetter([]() {
+    size_t rank_id = SIZE_MAX;
+#if !defined(BUILD_LITE)
+    if (distributed::collective::CollectiveManager::instance()->initialized()) {
+      rank_id = CommManager::GetInstance().GetRank();
+    }
+#endif
+    return rank_id;
+  });
   return true;
 }
 

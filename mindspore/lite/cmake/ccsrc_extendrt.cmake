@@ -84,6 +84,7 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
             ${CMAKE_CURRENT_SOURCE_DIR}/mock/anf_ir_dump.cc
             ${CCSRC_DIR}/common/debug/common.cc
             ${CCSRC_DIR}/common/debug/env_config_parser.cc
+            ${CCSRC_DIR}/memory/mem_pool/mem_pool_util.cc
             ${CCSRC_DIR}/memory/mem_pool/dynamic_mem_pool.cc
             ${CCSRC_DIR}/memory/mem_pool/abstract_dynamic_mem_pool.cc
             ${CCSRC_DIR}/memory/mem_pool/mem_dynamic_allocator.cc

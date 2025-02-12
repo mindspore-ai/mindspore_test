@@ -23,9 +23,6 @@
 #include <utility>
 #include <string>
 
-#ifdef ENABLE_DEBUGGER
-#include "include/backend/debug/profiler/profiling.h"
-#endif
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/utils/utils.h"
 #include "utils/log_adapter.h"
@@ -231,15 +228,10 @@ DeviceMemPtr DynamicMemPoolBestFit::AllocTensorMem(size_t size, bool from_persis
     }
   }
 
-// report memory data to profiler
-#ifdef ENABLE_DEBUGGER
-  static auto profiler_inst = profiler::Profiler::GetInstance(kCPUDevice);
-  MS_EXCEPTION_IF_NULL(profiler_inst);
-  if (profiler_inst->GetEnableFlag() && profiler_inst->GetProfileMemoryFlag()) {
-    profiler_inst->RecordMemoryPoolInfo(TotalUsedMemStatistics(), TotalMemStatistics(),
-                                        TotalUsedByEventMemStatistics());
+  // report memory data to profiler
+  if (memory_profiler_callback_) {
+    memory_profiler_callback_();
   }
-#endif
 
   if (IsNeedProfilieMemoryLog()) {
     MS_LOG(WARNING) << "Need Profile Memory, Memory pool alloc, total mem: " << TotalMemStatistics()
@@ -867,15 +859,10 @@ void DynamicMemPoolBestFit::CombineMemBuf(const DynamicMemBlockPtr &mem_block,
   MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Combine mem buf release mem buf, device_addr : " << mem_buf->device_addr_
                                        << ".";
 
-// report memory data to profiler
-#ifdef ENABLE_DEBUGGER
-  static auto profiler_inst = profiler::Profiler::GetInstance(kCPUDevice);
-  MS_EXCEPTION_IF_NULL(profiler_inst);
-  if (profiler_inst->GetEnableFlag() && profiler_inst->GetProfileMemoryFlag()) {
-    profiler_inst->RecordMemoryPoolInfo(TotalUsedMemStatistics(), TotalMemStatistics(),
-                                        TotalUsedByEventMemStatistics());
+  // report memory data to profiler
+  if (memory_profiler_callback_) {
+    memory_profiler_callback_();
   }
-#endif
 
   if (IsNeedProfilieMemoryLog()) {
     MS_LOG(WARNING) << "Need Profile Memory, Memory pool free, total mem: " << TotalMemStatistics()
@@ -1148,7 +1135,7 @@ void DynamicMemPoolBestFit::ReleaseDeviceRes() {
   fn(common_mem_);
   fn(persistent_mem_);
 
-  tracker::MemTrackerManager::GetInstance().Dump();
+  tracker::MemTrackerManager::GetInstance().Dump(rank_id_getter_());
 }
 
 void DynamicMemPoolBestFit::DumpDynamicMemPoolStateInfo() {

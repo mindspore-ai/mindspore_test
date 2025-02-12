@@ -16,7 +16,16 @@
 
 #include "plugin/device/cpu/hal/hardware/cpu_memory_pool.h"
 #include "utils/log_adapter.h"
+
+#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/common/utils/comm_manager.h"
 #include "include/common/utils/utils.h"
+#ifdef ENABLE_DEBUGGER
+#include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
+#endif
+#include "runtime/runtime_conf/runtime_conf.h"
+#include "utils/convert_utils_base.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace device {
@@ -24,6 +33,43 @@ namespace cpu {
 namespace {
 const char kMemAvailable[] = "MemAvailable";
 }
+
+CPUMemoryPool &CPUMemoryPool::GetInstance() {
+  static CPUMemoryPool instance;
+  static std::once_flag flag;
+  std::call_once(flag, [&]() {
+    float init_size = runtime::RuntimeConf::GetInstance()->mem_init_size();
+    size_t init_size_byte = FloatToSize(init_size * kGBToByte);
+    float increase_size = runtime::RuntimeConf::GetInstance()->mem_block_increase_size();
+    size_t increase_size_byte = FloatToSize(increase_size * kGBToByte);
+    float max_size = runtime::RuntimeConf::GetInstance()->mem_max_size();
+    size_t max_size_byte = FloatToSize(max_size * kGBToByte);
+    instance.Initialize(init_size_byte, increase_size_byte, max_size_byte);
+#ifdef ENABLE_DEBUGGER
+    // Set memory profiler callback func.
+    instance.SetMemoryProfilerCallback([&]() {
+      static auto profiler_inst = profiler::Profiler::GetInstance(kCPUDevice);
+      MS_EXCEPTION_IF_NULL(profiler_inst);
+      if (profiler_inst->GetEnableFlag() && profiler_inst->GetProfileMemoryFlag()) {
+        profiler_inst->RecordMemoryPoolInfo(instance.TotalUsedMemStatistics(), instance.TotalMemStatistics(),
+                                            instance.TotalUsedByEventMemStatistics());
+      }
+    });
+#endif
+
+    instance.SetRankIdGetter([]() {
+      size_t rank_id = SIZE_MAX;
+#if !defined(BUILD_LITE)
+      if (distributed::collective::CollectiveManager::instance()->initialized()) {
+        rank_id = CommManager::GetInstance().GetRank();
+      }
+#endif
+      return rank_id;
+    });
+  });
+  return instance;
+}
+
 size_t CPUMemoryPool::AllocDeviceMem(size_t alloc_size, DeviceMemPtr *addr) {
   if (alloc_size == 0) {
     MS_LOG(EXCEPTION) << "The memory alloc size is 0.";
