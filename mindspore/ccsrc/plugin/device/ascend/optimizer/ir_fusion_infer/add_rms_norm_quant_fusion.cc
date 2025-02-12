@@ -64,10 +64,6 @@ const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const
                                                 const EquivPtr &equiv) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (!ms_context->IsEnableInferBoost()) {
-    return nullptr;
-  }
-
   const std::string fusion_op_name = "AddRmsNormQuantV2";
   auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
   bool enable_add_rmsnorm =
@@ -336,10 +332,6 @@ const AnfNodePtr AddRmsNormDynamicQuantFusion::Process(const FuncGraphPtr &graph
                                                        const EquivPtr &equiv) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (!ms_context->IsEnableInferBoost()) {
-    return nullptr;
-  }
-
   auto soc = ms_context->ascend_soc_version();
   if (soc.find("ascend910_93") == std::string::npos && soc.find("ascend910b") == std::string::npos) {
     MS_LOG(INFO) << "AddRmsNormDynamicQuant does not support " << soc;

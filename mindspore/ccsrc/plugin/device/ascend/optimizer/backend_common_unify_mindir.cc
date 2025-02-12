@@ -152,27 +152,32 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->AddFusionPass(std::make_shared<opt::FlashAttentionFusionV2>());
   pm->AddFusionPass(std::make_shared<opt::QuantBatchMatmulAllReduceFusion>());
   pm->AddFusionPass(std::make_shared<opt::MatMulAllReduceFusion>());
-  pm->AddFusionPass(std::make_shared<opt::MatMulAllReduceAddRmsNormFusion>());
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (ms_context->IsEnableInferBoost()) {
+    pm->AddFusionPass(std::make_shared<opt::MatMulAllReduceAddRmsNormFusion>());
 
 #ifdef ENABLE_INTERNAL_KERNELS
-  pm->AddFusionPass(std::make_shared<opt::AddLayernormFusion>());
-  pm->AddFusionPass(std::make_shared<opt::AddLayernormV3Fusion>());
-  pm->AddFusionPass(std::make_shared<opt::AddLayernormExtFusion>());
-  pm->AddFusionPass(std::make_shared<opt::QbmmAddFusion>());
-  pm->AddFusionPass(std::make_shared<opt::InferenceSwiGLUFusion>());
-  pm->AddFusionPass(std::make_shared<opt::InferenceMatmulSplitFusion>());
-  pm->AddFusionPass(std::make_shared<opt::AddRmsNormDynamicQuantFusion>());
-  pm->AddFusionPass(std::make_shared<opt::ShapeReshapeFusion>());
-  pm->AddFusionPass(std::make_shared<opt::AddRmsNormQuantFusion>());
-  pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastQuantFusion>());
-  pm->AddFusionPass(std::make_shared<opt::RmsNormQuantFusion>());
-  pm->AddFusionPass(std::make_shared<opt::AddRmsNormFusion>());
-  pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastFusion>());
-  pm->AddFusionPass(std::make_shared<opt::SplitConcatFusion>());
-  pm->AddFusionPass(std::make_shared<opt::MatmulElemFusion>());
-  pm->AddFusionPass(std::make_shared<opt::QbmmAllReduceAddFusion>());
-  pm->AddFusionPass(std::make_shared<opt::RemoveFATensorToTupleOps>());
+    pm->AddFusionPass(std::make_shared<opt::AddLayernormFusion>());
+    pm->AddFusionPass(std::make_shared<opt::AddLayernormV3Fusion>());
+    pm->AddFusionPass(std::make_shared<opt::AddLayernormExtFusion>());
+    pm->AddFusionPass(std::make_shared<opt::QbmmAddFusion>());
+    pm->AddFusionPass(std::make_shared<opt::InferenceSwiGLUFusion>());
+    pm->AddFusionPass(std::make_shared<opt::InferenceMatmulSplitFusion>());
+    pm->AddFusionPass(std::make_shared<opt::AddRmsNormDynamicQuantFusion>());
+    pm->AddFusionPass(std::make_shared<opt::ShapeReshapeFusion>());
+    pm->AddFusionPass(std::make_shared<opt::AddRmsNormQuantFusion>());
+    pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastQuantFusion>());
+    pm->AddFusionPass(std::make_shared<opt::RmsNormQuantFusion>());
+    pm->AddFusionPass(std::make_shared<opt::AddRmsNormFusion>());
+    pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastFusion>());
+    pm->AddFusionPass(std::make_shared<opt::SplitConcatFusion>());
+    pm->AddFusionPass(std::make_shared<opt::MatmulElemFusion>());
+    pm->AddFusionPass(std::make_shared<opt::QbmmAllReduceAddFusion>());
+    pm->AddFusionPass(std::make_shared<opt::RemoveFATensorToTupleOps>());
 #endif  // ENABLE_INTERNAL_KERNELS
+  }
   return pm;
 }
 

@@ -214,12 +214,6 @@ const BaseRef ShapeReshapeFusion::DefinePattern() const {
 
 const AnfNodePtr ShapeReshapeFusion::Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                              const EquivPtr &equiv) const {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (!ms_context->IsEnableInferBoost()) {
-    return nullptr;
-  }
-
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(equiv);
 

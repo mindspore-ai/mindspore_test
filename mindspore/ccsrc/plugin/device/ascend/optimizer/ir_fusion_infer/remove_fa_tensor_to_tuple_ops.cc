@@ -59,12 +59,6 @@ const BaseRef RemoveFATensorToTupleOps::DefinePattern() const {
 
 const AnfNodePtr RemoveFATensorToTupleOps::Process(const FuncGraphPtr &graph, const AnfNodePtr &node,
                                                    const EquivPtr &) const {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (!ms_context->IsEnableInferBoost()) {
-    return nullptr;
-  }
-
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(graph);
   auto manager = graph->manager();
