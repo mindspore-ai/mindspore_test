@@ -1508,12 +1508,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         validator.check_value_type('eps', eps, (float,), 'Tensor.logit')
         return tensor_operator_registry.get('logit')(self, eps)
 
-    def logaddexp2(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.logaddexp2`.
-        """
-        return tensor_operator_registry.get('logaddexp2')(self, other)
-
     def logcumsumexp(self, axis):
         r"""
         For details, please refer to :func:`mindspore.ops.logcumsumexp`.

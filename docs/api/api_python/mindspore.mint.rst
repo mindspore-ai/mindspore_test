@@ -148,6 +148,7 @@ Tensor
     mindspore.mint.log2
     mindspore.mint.log10
     mindspore.mint.logaddexp
+    mindspore.mint.logaddexp2
     mindspore.mint.logical_and
     mindspore.mint.logical_not
     mindspore.mint.logical_or

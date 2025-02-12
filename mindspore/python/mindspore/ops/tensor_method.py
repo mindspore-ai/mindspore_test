@@ -353,7 +353,7 @@ from mindspore.ops.auto_generate import isinf
 # 151 fmod
 from mindspore.ops.function.math_func import fmod
 # 152
-
+from mindspore.ops.auto_generate import logaddexp2
 # 153
 from mindspore.ops.auto_generate import acos_ext, acosh_ext, asin_ext, asinh_ext, atan_ext, dot
 # 154 isneginf
@@ -1457,6 +1457,11 @@ def tensor_median_dim(input, dim=-1, keepdim=False):
 
 
 # 156
+def tensor_logaddexp2(input, other):
+    return logaddexp2(input, other)
+
+def deprecated_tensor_logaddexp2(input, other):
+    return F.logaddexp2(input, other)
 
 # 157
 def tensor_empty(*size, dtype=None, device=None):
