@@ -15,7 +15,7 @@
  */
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "mindspore/ops/op_def/other_op_name.h"
-#include "frontend/expander/bprop/common_utils.h"
+#include "grad/grad_utils.h"
 #include "include/common/utils/utils.h"
 #include "ir/anf.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
