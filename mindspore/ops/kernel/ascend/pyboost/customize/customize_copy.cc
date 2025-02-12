@@ -28,7 +28,7 @@ void CustomizeCopyAscendInner(device::DeviceContext *device_context, const devic
   // The input_addr_list address is malloc before
   // Malloc for output tensors
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", "Contiguous", "");
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", device::tracker::MemType::kPyNativeOutput,
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kPyNativeOutput,
                                                  output_addr->GetSize(), output_addr.get());
   if (output_addr->GetPtr() == nullptr) {
     if (!device_context->device_res_manager_->AllocateMemory(output_addr.get())) {

@@ -859,10 +859,8 @@ void KernelActor::CopyInputDeviceTensor(DeviceTensor *device_tensor, size_t inpu
     input_kernel_tensors_[input_index]->set_size(device_tensor->GetSize());
   }
 
-  device::DynamicMemAllocatorDebugInfo::SetDebugInfo(GetAID().Name(), device::AllocatorType::kKernelOutput,
-                                                     input_index);
   if (new_device_tensor->GetPtr() == nullptr) {
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, GetAID().Name(), device::tracker::MemType::kOther,
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, GetAID().Name(), memory::mem_pool::MemType::kOther,
                                                    new_device_tensor->GetSize(), new_device_tensor.get());
     if (!device_contexts_[0]->device_res_manager_->AllocateMemory(new_device_tensor.get(), kDefaultStreamIndex)) {
       SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(strategy_, *context, *(device_contexts_[0]), GetAID().Name(),

@@ -39,7 +39,7 @@ void *AclAllocator::AllocFunc(void *obj, size_t size) {
   }
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "AclWorkspace", "AclWorkspace", "");
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, "AclWorkspace", size, block,
-                                                 device::tracker::MemType::kWorkSpace);
+                                                 memory::mem_pool::MemType::kWorkSpace);
   return block;
 }
 

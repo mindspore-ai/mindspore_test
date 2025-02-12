@@ -45,7 +45,7 @@ namespace {
 constexpr size_t kNeedRecycleOutput = 5;
 
 void UpdateTracker(const std::string &task_name, const std::string &node_name, const std::string &graph_str,
-                   size_t size, void *device_ptr, device::tracker::MemType mem_type) {
+                   size_t size, void *device_ptr, memory::mem_pool::MemType mem_type) {
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, task_name, node_name, graph_str, false);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, task_name, size, device_ptr, mem_type);
 }
@@ -148,7 +148,7 @@ device::DeviceAddressPtr CreateOutputDeviceAddress(const KernelGraphPtr &kernel_
   }
   if (!need_not_alloc) {
     UpdateTracker("ValueNodeOutput", output_node->fullname_with_scope(), kernel_graph->ToString(), tensor_size, mem,
-                  device::tracker::MemType::kConstantValue);
+                  memory::mem_pool::MemType::kConstantValue);
   }
 
   const auto kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
@@ -314,7 +314,7 @@ void AllocConstMemory(const backend::ge_backend::RunOptions &options, const Kern
                     << ", graph: " << graph->ToString() << ", device address addr: " << memory;
   }
   UpdateTracker("AllocConstMemory", "ConstMemory", graph->ToString(), memory_size, memory,
-                device::tracker::MemType::kGeConst);
+                memory::mem_pool::MemType::kGeConst);
   auto graph_runner = backend::ge_backend::GetGraphRunner();
   MS_EXCEPTION_IF_NULL(graph_runner);
   auto ret = graph_runner->SetConstMemory(options, memory, memory_size);
@@ -362,7 +362,7 @@ void GEMemoryAllocator::AllocUnuseInput(const KernelGraphPtr &kernel_graph, cons
                     << ", device address addr: " << memory;
   }
   UpdateTracker("UnusedInput", input_node->fullname_with_scope(), kernel_graph->ToString(), memory_size, memory,
-                device::tracker::MemType::kOther);
+                memory::mem_pool::MemType::kOther);
 }
 
 void GEMemoryAllocator::AllocUnuseInput(const KernelGraphPtr &kernel_graph, kernel::KernelTensor *tensor,
@@ -376,7 +376,7 @@ void GEMemoryAllocator::AllocUnuseInput(const KernelGraphPtr &kernel_graph, kern
                     << ", graph: " << kernel_graph->ToString() << ", device address addr: " << memory;
   }
   UpdateTracker("UnusedInput", kernel_graph->ToString(), kernel_graph->ToString(), tensor->size(), memory,
-                device::tracker::MemType::kOther);
+                memory::mem_pool::MemType::kOther);
 }
 
 void GEMemoryAllocator::ProcessGraphDeviceAddress(const KernelGraphPtr &kernel_graph, DeviceContext *device_context,

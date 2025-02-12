@@ -31,13 +31,13 @@
 #include <tuple>
 
 #include "include/backend/visible.h"
+#include "include/backend/mem_reuse/mem_pool_util.h"
 #include "include/common/utils/stream_util.h"
 #include "ir/device_event.h"
 
 namespace mindspore {
 namespace device {
 constexpr int kShiftOffset = 2;
-constexpr int kAllocatorTypeNum = 6;
 // Alloc memory aligned according to 512 bytes.
 constexpr size_t kDynamicMemAlignSize = 512;
 // The minimum unit size (1G) of memory block used for dynamic extend.
@@ -59,10 +59,6 @@ const char kPersistentMemPoolType[] = "persistent_mem_pool";
 // The status of memory buf.
 enum class DynamicMemBufStatus : int { kMemBufIdle, kMemBufUsed, kMemBufEagerFree, kMemBufUsedByEvent };
 BACKEND_EXPORT const std::string &DynamicMemBufStatusToString(DynamicMemBufStatus status);
-
-// Memory allocator type is used to record the memory classification statistics information.
-enum class AllocatorType : int { kWeight, kConstantValue, kKernelOutput, kGraphOutput, kWorkspace, kOther };
-BACKEND_EXPORT const std::string &AllocatorTypeToString(AllocatorType allocator_type);
 
 // The Comparator of device address from small to large.
 using DeviceMemPtr = void(*);
@@ -272,7 +268,7 @@ class BACKEND_EXPORT DynamicMemPool {
 // Recording information for debugging the memory allocator.
 struct BACKEND_EXPORT AllocatorDebugInfo {
   std::string name_{"Unknown"};
-  AllocatorType type_{AllocatorType::kOther};
+  memory::mem_pool::MemType type_{memory::mem_pool::MemType::kOther};
   int input_index_{-1};
   int output_index_{-1};
   uint8_t run_mode_{0};
@@ -283,8 +279,8 @@ class BACKEND_EXPORT DynamicMemAllocatorDebugInfo {
   static AllocatorDebugInfo &GetDebugInfo() noexcept;
 
   // Set the debug info when memory alloc.
-  static void SetDebugInfo(const std::string &name, AllocatorType type, int input_index = -1, int output_index = -1,
-                           uint8_t run_mode = 0);
+  static void SetDebugInfo(const std::string &name, memory::mem_pool::MemType type, int input_index = -1,
+                           int output_index = -1, uint8_t run_mode = 0);
 
  private:
   DynamicMemAllocatorDebugInfo() = default;

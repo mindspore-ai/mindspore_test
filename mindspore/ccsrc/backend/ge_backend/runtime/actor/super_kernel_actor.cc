@@ -233,7 +233,7 @@ void SuperKernelActor::Run(OpContext<DeviceTensor> *const context) {
                         << ", device address class ptr: " << output_address << ", device address size: " << info.size;
       }
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
-        AddMemInfo, GetAID().Name(), device::tracker::MemType::kGraphOutput, device_tensor->GetSize(), device_tensor);
+        AddMemInfo, GetAID().Name(), memory::mem_pool::MemType::kGraphOutput, device_tensor->GetSize(), device_tensor);
     }
     SendMemoryAllocReq(context);
   } else {

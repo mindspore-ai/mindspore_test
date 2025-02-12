@@ -82,7 +82,7 @@ void GEMemoryManager::AllocGEMemory(GEAllocFunc alloc_func, GEUpdateMemoryFunc u
     ptr->has_alloc = true;
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "AllocGEMemory", "", "", false);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, "AllocGEMemory", ptr->memory_size,
-                                                   ptr->memory_ptr, device::tracker::MemType::kGeFixed);
+                                                   ptr->memory_ptr, memory::mem_pool::MemType::kGeFixed);
   }
   for (auto &kv : graph_memory_) {
     if (need_alloc_ptrs.find(kv.second.reuse_memory) == need_alloc_ptrs.end()) {

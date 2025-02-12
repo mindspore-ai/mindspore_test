@@ -43,7 +43,7 @@ uint8_t *MemoryManager::MallocOutputMem(const AnfNodePtr &node, size_t index, Me
     if (context_ptr->get_param<bool>(MS_CTX_ENABLE_HCCL)) {
       communication_mem = true;
     }
-    if (type == kStaticMem) {
+    if (type == MemType::kStaticMem) {
       ptr = MallocStaticMem(size, communication_mem);
       address->set_from_mem_pool(true);
       if (communication_mem) {
@@ -56,10 +56,10 @@ uint8_t *MemoryManager::MallocOutputMem(const AnfNodePtr &node, size_t index, Me
     return ptr;
   }
 
-  if (type == kStaticMem) {
+  if (type == MemType::kStaticMem) {
     ptr = MallocStaticMem(size, false);
     address->set_from_mem_pool(true);
-  } else if (type == kDynamicMem) {
+  } else if (type == MemType::kDynamicMem) {
     ptr = MallocDynamicMem(size, false);
   }
   address->SetDevicePtr(ptr);
@@ -75,10 +75,10 @@ uint8_t *MemoryManager::MallocWorkSpaceMem(size_t size) { return MallocDynamicMe
 uint8_t *MemoryManager::MallocMem(MemType type, size_t size, const DeviceAddressPtr &address, uint32_t graph_id) {
   MS_EXCEPTION_IF_NULL(address);
   uint8_t *ptr = nullptr;
-  if (type == kStaticMem) {
+  if (type == MemType::kStaticMem) {
     ptr = MallocStaticMem(size, false, graph_id);
     address->set_from_mem_pool(true);
-  } else if (type == kDynamicMem) {
+  } else if (type == MemType::kDynamicMem) {
     ptr = MallocDynamicMem(size, false);
   }
   address->SetDevicePtr(ptr);

@@ -104,7 +104,7 @@ void PreLaunchComm::Launch(std::vector<LaunchCommNode> &launch_hccl_nodes, Sorte
       auto kernel_tensor = std::make_shared<KernelTensor>(*input_kernel_tensor);
       const auto &new_device_tensor = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "AllocMemoryForPreLaunchComm",
-                                                     device::tracker::MemType::kOther, new_device_tensor->GetSize(),
+                                                     memory::mem_pool::MemType::kOther, new_device_tensor->GetSize(),
                                                      new_device_tensor.get());
       device_context->device_res_manager_->AllocateMemory(new_device_tensor.get(), stream_id);
       input_kernel_tensor->set_device_ptr(new_device_tensor->GetMutablePtr());
@@ -115,7 +115,7 @@ void PreLaunchComm::Launch(std::vector<LaunchCommNode> &launch_hccl_nodes, Sorte
       auto kernel_tensor = std::make_shared<KernelTensor>(*output_kernel_tensor);
       const auto &new_device_tensor = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "AllocMemoryForPreLaunchComm",
-                                                     device::tracker::MemType::kOther, new_device_tensor->GetSize(),
+                                                     memory::mem_pool::MemType::kOther, new_device_tensor->GetSize(),
                                                      new_device_tensor.get());
       device_context->device_res_manager_->AllocateMemory(new_device_tensor.get(), stream_id);
       output_kernel_tensor->set_device_ptr(new_device_tensor->GetMutablePtr());

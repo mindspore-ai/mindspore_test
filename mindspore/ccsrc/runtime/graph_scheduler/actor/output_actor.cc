@@ -541,8 +541,7 @@ void OutputActor::UpdateOutputDeviceAddress() {
     MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
     // If the output node whose output address ptr can't be changed, then alloc the new device memory and copy the data:
     if (IsOutputAddressPersisted(device_tensor, output_nodes_[i])) {
-      device::DynamicMemAllocatorDebugInfo::SetDebugInfo(GetAID().Name(), device::AllocatorType::kOther);
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, GetAID().Name(), device::tracker::MemType::kOther,
+      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, GetAID().Name(), memory::mem_pool::MemType::kOther,
                                                      tensor_device_address->GetSize(), tensor_device_address.get());
       if (!device_context->device_res_manager_->AllocateMemory(tensor_device_address.get(), kDefaultStreamIndex)) {
         MS_LOG_WITH_NODE(EXCEPTION, output_node)

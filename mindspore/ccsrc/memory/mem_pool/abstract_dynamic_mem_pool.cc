@@ -23,7 +23,6 @@
 #include <chrono>
 #include <fstream>
 
-#include "include/backend/mem_reuse/mem_pool_util.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/utils/utils.h"
 #include "utils/log_adapter.h"
@@ -913,7 +912,7 @@ void AbstractDynamicMemPool::DumpDynamicMemPoolStateInfo() { SplitAndDumpLog(Dyn
 std::string AbstractDynamicMemPool::DynamicMemPoolStateInfo() const {
   std::stringstream ss;
   // Classify mem buf and stat mem buf state info.
-  size_t mem_buf_used_stat[kAllocatorTypeNum] = {0};
+  size_t mem_buf_used_stat[static_cast<int>(memory::mem_pool::MemType::kOther) + 1] = {0};
   struct AddrComparator {
     bool operator()(MemBuf *const &left, MemBuf *const &right) const { return left->addr_ < right->addr_; }
   };
@@ -935,12 +934,21 @@ std::string AbstractDynamicMemPool::DynamicMemPoolStateInfo() const {
     ss << stream_id_allocator.second->DumpStateInfo();
   }
 
+  size_t other_used_size = 0;
+  int start = static_cast<int>(memory::mem_pool::MemType::kGraphOutput);
+  int end = static_cast<int>(memory::mem_pool::MemType::kOther);
+  for (int i = start; i <= end; i++) {
+    other_used_size += mem_buf_used_stat[i];
+  }
+
   ss << "The dynamic memory pool stat info : " << mem_stat_.ToReadableString()
      << ", actual peak used mem:" << ActualPeakStatistics() / kMBToByte
-     << "M. Weight used size:" << mem_buf_used_stat[static_cast<int>(AllocatorType::kWeight)] / kMBToByte
-     << "M, constant value used size:" << mem_buf_used_stat[static_cast<int>(AllocatorType::kConstantValue)] / kMBToByte
-     << "M, kernel output used size:" << mem_buf_used_stat[static_cast<int>(AllocatorType::kKernelOutput)] / kMBToByte
-     << "M, other used size:" << mem_buf_used_stat[static_cast<int>(AllocatorType::kOther)] / kMBToByte << "M.\n";
+     << "M. Weight used size:" << mem_buf_used_stat[static_cast<int>(memory::mem_pool::MemType::kWeight)] / kMBToByte
+     << "M, constant value used size:"
+     << mem_buf_used_stat[static_cast<int>(memory::mem_pool::MemType::kConstantValue)] / kMBToByte
+     << "M, kernel output used size:"
+     << mem_buf_used_stat[static_cast<int>(memory::mem_pool::MemType::kKernel)] / kMBToByte
+     << "M, other used size:" << other_used_size / kMBToByte << "M.\n";
   return ss.str();
 }
 

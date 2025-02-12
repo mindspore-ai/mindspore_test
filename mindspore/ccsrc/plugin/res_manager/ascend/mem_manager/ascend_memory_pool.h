@@ -258,7 +258,7 @@ class BACKEND_EXPORT AscendMemoryPool {
 
   static AbstractAscendMemoryPoolSupport &GetInstance();
 
-  static void SetEnhancedMemoryPool(bool enable) { pool_ = enable ? enhanced_instance_ : instance_; }
+  static void SetEnhancedMemoryPool(bool enable);
 
  private:
   AscendMemoryPool() {}

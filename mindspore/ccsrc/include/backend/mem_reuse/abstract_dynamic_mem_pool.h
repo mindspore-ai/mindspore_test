@@ -107,7 +107,7 @@ struct BACKEND_EXPORT MemBuf : EventBase {
     builder.Append("stream_id_", stream_id_);
     builder.Append("status_", DynamicMemBufStatusToString(status_));
     builder.Append("owner_name_", owner_name_);
-    builder.Append("alloc_type_", AllocatorTypeToString(alloc_type_));
+    builder.Append("alloc_type_", MemTypeToStr(alloc_type_));
     return builder.ToString();
   }
 
@@ -122,7 +122,7 @@ struct BACKEND_EXPORT MemBuf : EventBase {
   MemBufStatus status_;
 
   std::string owner_name_;
-  AllocatorType alloc_type_{AllocatorType::kOther};
+  memory::mem_pool::MemType alloc_type_{memory::mem_pool::MemType::kOther};
 };
 
 struct MemBufComparator {

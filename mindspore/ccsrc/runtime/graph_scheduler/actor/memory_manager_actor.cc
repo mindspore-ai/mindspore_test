@@ -30,14 +30,6 @@ void OnMemoryAllocFinish(const AID &from_aid, OpContext<DeviceTensor> *const op_
     ActorDispatcher::Send(from_aid, &MemoryAwareActor::OnMemoryAllocFinish, op_context);
   }
 }
-
-bool NeedSetDebugInfo() {
-  static bool need_set_debug_info = MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PROF_MEM) ||
-                                    common::IsEnableAllocConfig(common::kAllocMemoryTracker) ||
-                                    common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat) ||
-                                    common::GetEnv("GLOG_v") == "0";
-  return need_set_debug_info;
-}
 }  // namespace
 
 void MemoryManagerActor::AllocateMemory(const std::vector<DeviceTensor *> *alloc_list,
@@ -51,15 +43,11 @@ void MemoryManagerActor::AllocateMemory(const std::vector<DeviceTensor *> *alloc
     }
 
     if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), device::tracker::MemType::kKernel,
+      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), memory::mem_pool::MemType::kKernel,
                                                      device_tensor->GetSize(), device_tensor);
     }
 
     try {
-      if (NeedSetDebugInfo()) {
-        // Allocate memory through the device context.
-        device::DynamicMemAllocatorDebugInfo::SetDebugInfo(from_aid.Name(), device::AllocatorType::kKernelOutput);
-      }
       bool success = false;
       if (device_tensor->continuous_device_addresses() == nullptr) {
         success = device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex);
@@ -107,7 +95,7 @@ bool MemoryManagerActor::AllocateContinuousMemory(const DeviceTensor *device_ten
       device_address->set_from_mem_pool(true);
       if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
         device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(),
-                                                       device::tracker::MemType::kContinuousMemory,
+                                                       memory::mem_pool::MemType::kContinuousMemory,
                                                        device_address->GetSize(), device_address.get());
         device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, device_address.get(), device_addresses[i]);
       }
@@ -154,7 +142,7 @@ void MemoryManagerActor::AllocateContinuousMemory(const std::vector<std::vector<
       continue;
     }
     // Allocate memory through the device context.
-    device::DynamicMemAllocatorDebugInfo::SetDebugInfo(from_aid.Name(), device::AllocatorType::kKernelOutput);
+    device::DynamicMemAllocatorDebugInfo::SetDebugInfo(from_aid.Name(), memory::mem_pool::MemType::kKernel);
     auto dev_ptr_list = device_context->device_res_manager_->AllocateContinuousMemory(size_list, stream_id);
     if (dev_ptr_list.empty() || dev_ptr_list.size() != alloc_list.size()) {
       MS_LOG(ERROR) << "Allocate continuous memory failed, device ptr list size: " << dev_ptr_list.size()
@@ -186,7 +174,7 @@ void MemoryManagerActor::AllocateContinuousMemory(const std::vector<std::vector<
         device_context->device_res_manager_->FreeMemory(old_dev_addr.get());
       }
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(),
-                                                     device::tracker::MemType::kContinuousMemory,
+                                                     memory::mem_pool::MemType::kContinuousMemory,
                                                      alloc_list[index]->GetSize(), alloc_list[index].get());
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, alloc_list[index].get(), dev_ptr_list[index]);
       alloc_list[index]->set_ptr(dev_ptr_list[index]);
@@ -227,10 +215,9 @@ void MemoryManagerActor::AllocateBatchMemory(const std::vector<DeviceTensor *> *
 
     try {
       // Allocate memory through the device context.
-      device::DynamicMemAllocatorDebugInfo::SetDebugInfo(from_aid.Name(), device::AllocatorType::kKernelOutput);
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "BatchMemory", "", false);
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
-        AddMemInfo, from_aid.Name(), device::tracker::MemType::kBatchMemory, device_tensor->GetSize(), device_tensor);
+        AddMemInfo, from_aid.Name(), memory::mem_pool::MemType::kBatchMemory, device_tensor->GetSize(), device_tensor);
       if (!device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex)) {
         SetOpContextMemoryAllocFail(from_aid.Name(), device_context, device_tensor->GetSize(), op_context);
         return;
@@ -268,7 +255,7 @@ void MemoryManagerActor::AllocateSomasMemory(SomasInfo *const somas_info, const 
 
   if (common::IsEnableAllocConfig(common::kAllocSomasWholeBlock)) {
     try {
-      device::DynamicMemAllocatorDebugInfo::SetDebugInfo(from_aid.Name(), device::AllocatorType::kKernelOutput);
+      device::DynamicMemAllocatorDebugInfo::SetDebugInfo(from_aid.Name(), memory::mem_pool::MemType::kKernel);
       auto device_ptr = device_context->device_res_manager_->AllocateMemory(somas_info->whole_block_size_);
       if (device_ptr == nullptr) {
         MS_LOG(INFO) << from_aid.Name()
@@ -277,7 +264,7 @@ void MemoryManagerActor::AllocateSomasMemory(SomasInfo *const somas_info, const 
       } else {
         device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, from_aid.Name(),
                                                        somas_info->whole_block_size_, device_ptr,
-                                                       device::tracker::MemType::kSomas);
+                                                       memory::mem_pool::MemType::kSomas);
         somas_info->base_address_ = device_ptr;
         PROFILER_END(start_time, ProfilerModule::kRuntime, ProfilerEvent::kMemoryAlloc, from_aid.Name(), false);
         MS_LOG(INFO) << from_aid.Name() << " allocate somas whole block memory succeeded and continue running.";
@@ -299,14 +286,14 @@ void MemoryManagerActor::AllocateSomasMemory(SomasInfo *const somas_info, const 
         std::string error_info = from_aid.Name() + " already has the base somas address.";
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*op_context), error_info);
       }
-      device::DynamicMemAllocatorDebugInfo::SetDebugInfo(from_aid.Name(), device::AllocatorType::kKernelOutput);
+      device::DynamicMemAllocatorDebugInfo::SetDebugInfo(from_aid.Name(), memory::mem_pool::MemType::kKernel);
       auto device_ptr = device_context->device_res_manager_->AllocateMemory(block_size);
       if (device_ptr == nullptr) {
         SetOpContextMemoryAllocFail(from_aid.Name(), device_context, block_size, op_context);
         return;
       }
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, from_aid.Name(), block_size, device_ptr,
-                                                     device::tracker::MemType::kSomas);
+                                                     memory::mem_pool::MemType::kSomas);
       merged_base_addresses[block_offset] = device_ptr;
     }
   } catch (const std::exception &e) {
@@ -369,7 +356,6 @@ void MemoryManagerActor::FreeSomasMemory(SomasInfo *const somas_info, const Devi
     (void)keep_addrs.emplace_back(output_address->GetMutablePtr());
   }
 
-  device::DynamicMemAllocatorDebugInfo::SetDebugInfo(from_aid.Name(), device::AllocatorType::kGraphOutput);
   // Free the whole block memory.
   if (somas_info->base_address_ != nullptr) {
     device_context->device_res_manager_->FreePartMemorys({somas_info->base_address_}, keep_addrs,
@@ -401,7 +387,7 @@ void MemoryManagerActor::FreeSomasMemory(SomasInfo *const somas_info, const Devi
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "SomasOutput", "", false);
   for (auto &output_address : somas_info->graph_output_device_addresses_) {
     output_address->set_from_mem_pool(true);
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), device::tracker::MemType::kSomasOutput,
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), memory::mem_pool::MemType::kSomasOutput,
                                                    output_address->GetSize(), output_address);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, output_address, output_address->GetPtr());
     FreeMemoryByRefCount(output_address, device_context, from_aid.Name());

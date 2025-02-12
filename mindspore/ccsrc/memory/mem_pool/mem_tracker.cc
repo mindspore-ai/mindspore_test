@@ -24,7 +24,6 @@
 #include <unordered_map>
 
 #include "include/backend/mem_reuse/dynamic_mem_pool.h"
-#include "include/backend/mem_reuse/mem_pool_util.h"
 #include "ir/dtype.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
@@ -40,32 +39,6 @@ namespace device {
 namespace tracker {
 constexpr int64_t kIllegalStartTimeStamp = -1L;
 namespace {
-
-AllocatorType GetAllocatorType(MemType mem_type) {
-  static std::map<MemType, device::AllocatorType> mem_allocator_type_map = {
-    {MemType::kWeight, AllocatorType::kWeight},
-    {MemType::kConstantValue, AllocatorType::kConstantValue},
-    {MemType::kKernel, AllocatorType::kConstantValue},
-    {MemType::kGraphOutput, AllocatorType::kGraphOutput},
-    {MemType::kSomas, AllocatorType::kConstantValue},
-    {MemType::kSomasOutput, AllocatorType::kKernelOutput},
-    {MemType::kGeConst, AllocatorType::kConstantValue},
-    {MemType::kGeFixed, AllocatorType::kOther},
-    {MemType::kBatchMemory, AllocatorType::kConstantValue},
-    {MemType::kContinuousMemory, AllocatorType::kConstantValue},
-    {MemType::kPyNativeInput, AllocatorType::kConstantValue},
-    {MemType::kPyNativeOutput, AllocatorType::kKernelOutput},
-    {MemType::kWorkSpace, AllocatorType::kWorkspace},
-    {MemType::kOther, AllocatorType::kOther}};
-
-  auto iter = mem_allocator_type_map.find(mem_type);
-  if (iter == mem_allocator_type_map.end()) {
-    MS_LOG(WARNING) << "Not found mem_type:" << mem_type << " in mem_allocator_type_map.";
-    return AllocatorType::kOther;
-  }
-  return iter->second;
-}
-
 bool IsPyNative() {
   static bool is_pynative = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode;
   // PythonStack is no need in graph mode.
@@ -505,7 +478,7 @@ MemInfoPtr MemoryTrackerEnabled::NewMemInfo(const std::string &task_name, MemTyp
   }
 
   const auto &node_name = iter->second->node_name;
-  DynamicMemAllocatorDebugInfo::SetDebugInfo(node_name, GetAllocatorType(type));
+  DynamicMemAllocatorDebugInfo::SetDebugInfo(node_name, type);
 
   mem_info->producer_task = iter->second;
   mem_info_list_.push_back(mem_info);
@@ -534,6 +507,14 @@ void MemoryTrackerEnabled::AddMemInfo(const std::string &task_name, MemType type
     device_address_mem_map[device_address] = mem_info;
   } else {
     AddMemInfoForKernelTensor(task_name, type, size, device_address->kernel_tensor().get(), file_name, line_num);
+  }
+  if (MS_UNLIKELY(enable_memory_debug_info_)) {
+    auto &&iter = task_map_.find(task_name);
+    if (iter != task_map_.end()) {
+      device::DynamicMemAllocatorDebugInfo::SetDebugInfo(iter->second->node_name, type);
+    } else {
+      MS_LOG(INFO) << "Find task : " << task_name << " failed.";
+    }
   }
 }
 
@@ -732,7 +713,7 @@ const std::vector<std::pair<std::string, std::function<void(const MemBlockInfoPt
    [](const MemBlockInfoPtr &mem_block, std::ofstream &oss) {
      auto mem_info = mem_block->mem_info.lock();
      if (mem_info) {
-       oss << MemTypeToStr.at(mem_info->type);
+       oss << MemTypeToStr(mem_info->type);
      }
    }},
   {"producer_task",
@@ -968,6 +949,33 @@ void MemoryTrackerEnabled::DumpProfilingMemInfo(size_t rank_id, const std::strin
   MS_LOG(INFO) << "MemoryTracker DumpProfilingMemInfo end, last_profiling_pos:" << last_profiling_pos_;
 }
 
+void MemoryTrackerDisabled::AddTask(const std::string &task_name, const std::string &node_name,
+                                    const std::string &graph_name, const std::string &file_name, size_t line_num) {
+  return AddTask(task_name, node_name, graph_name, false, file_name, line_num);
+}
+
+void MemoryTrackerDisabled::AddTask(const std::string &task_name, const std::string &node_name,
+                                    const std::string &graph_name, const bool to_graph, const std::string &file_name,
+                                    size_t line_num) {
+  if (MS_UNLIKELY(enable_memory_debug_info_)) {
+    if (task_map_.count(task_name) == 0) {
+      (void)task_map_.emplace(task_name, node_name);
+    }
+  }
+}
+
+void MemoryTrackerDisabled::AddMemInfo(const std::string &task_name, MemType type, size_t size,
+                                       DeviceAddress *device_address, const std::string &file_name,
+                                       const size_t line_num) {
+  if (MS_UNLIKELY(enable_memory_debug_info_)) {
+    auto &&iter = task_map_.find(task_name);
+    if (iter == task_map_.end()) {
+      MS_LOG(INFO) << "Find task : " << task_name << " failed.";
+    } else {
+      DynamicMemAllocatorDebugInfo::SetDebugInfo(iter->second, type);
+    }
+  }
+}
 }  // namespace tracker
 }  // namespace device
 }  // namespace mindspore
