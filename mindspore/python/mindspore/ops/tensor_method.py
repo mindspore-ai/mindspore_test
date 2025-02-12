@@ -463,6 +463,9 @@ from mindspore.ops.auto_generate import triangular_solve
 
 from .._checkparam import check_axis_in_range
 from ..ops.composite.multitype_ops import _compile_utils as compile_utils
+
+# 1100 reshape_as
+
 ########################################functions########################################
 def place_holder():
     logger.error(
@@ -1929,6 +1932,12 @@ def tensor_subtract(input, other, *, alpha=1):
 def tensor_true_divide(input, other):
     return div(input, other)
 
+# 1100 reshape_as
+def tensor_reshape_as(input, other):
+    return reshape(input, other.shape)
+
+def deprecated_tensor_reshape_as(input, other):
+    return reshape(input, other.shape)
 
 def all_gather_matmul(
         input,

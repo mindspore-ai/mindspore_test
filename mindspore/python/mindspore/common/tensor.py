@@ -1575,33 +1575,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('col2im')(self, output_size, kernel_size, dilation, padding_value, stride)
 
-    def reshape_as(self, other):
-        """
-        Change the shape of the Tensor to the shape of `other` without changing the data.
-
-        Args:
-            other(Tensor): The result tensor has the same shape as `other`.
-
-        Returns:
-            Tensor, has the same shape as `other`.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import mindspore as ms
-            >>> from mindspore import Tensor
-            >>> import numpy as np
-            >>> x = Tensor([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]], dtype=ms.float32)
-            >>> y = Tensor(np.arange(6).reshape(3,2))
-            >>> output = x.reshape_as(y)
-            >>> print(output)
-            [[-0.1  0.3]
-             [ 3.6  0.4]
-             [ 0.5 -3.2]]
-        """
-        return tensor_operator_registry.get('reshape')(self, other.shape)
-
     def ravel(self):
         """
         Return a contiguous flattened tensor.

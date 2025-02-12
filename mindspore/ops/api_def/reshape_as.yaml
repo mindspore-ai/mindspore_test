@@ -1,0 +1,14 @@
+reshape_as:
+  - op_yaml: reshape_as_op.yaml
+    py_method: tensor_reshape_as # callback to python function "def tensor_reshape_as"
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/reshape_as_method.yaml
+    py_method: deprecated_tensor_reshape_as # callback to python function "def deprecated_tensor_reshape_as"
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

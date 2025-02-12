@@ -1,0 +1,10 @@
+#operator reshape_as
+reshape_as:
+  args:
+    input:
+      dtype: tensor
+    other:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor
