@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,19 @@
  * limitations under the License.
  */
 
-#include "infer/ops_func_impl/argsort.h"
-#include <utility>
+#include "infer/ops_func_impl/inplace_log.h"
 #include <memory>
 #include <vector>
-#include "mindspore/ops/ops_utils/op_utils.h"
-#include "ir/dtype.h"
-#include "mindspore/ops/op_def/op_name.h"
-#include "utils/check_convert_utils.h"
 
 namespace mindspore {
 namespace ops {
-ShapeArray ArgSortFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
-  auto &x_tensor = input_infos[kInputIndex0];
-  auto x_shape = x_tensor->GetShape();
-  return {x_shape};
+ShapeArray InplaceLogFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  return {input_infos[0]->GetShape()};
 }
 
-std::vector<TypeId> ArgSortFuncImpl::InferType(const PrimitivePtr &primitive,
-                                               const InferInfoPtrList &input_infos) const {
-  return {kNumberTypeInt64};
+std::vector<TypeId> InplaceLogFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                  const InferInfoPtrList &input_infos) const {
+  return {input_infos[0]->GetType()};
 }
 }  // namespace ops
 }  // namespace mindspore

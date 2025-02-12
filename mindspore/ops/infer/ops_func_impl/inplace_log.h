@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,24 @@
  * limitations under the License.
  */
 
-#include "infer/ops_func_impl/argsort.h"
-#include <utility>
-#include <memory>
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_INPLACE_LOG_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_INPLACE_LOG_H_
+
+#include <set>
 #include <vector>
-#include "mindspore/ops/ops_utils/op_utils.h"
-#include "ir/dtype.h"
+#include "ops/ops_func_impl/op_func_impl.h"
+#include "ops/base_operator.h"
 #include "mindspore/ops/op_def/op_name.h"
-#include "utils/check_convert_utils.h"
 
 namespace mindspore {
 namespace ops {
-ShapeArray ArgSortFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
-  auto &x_tensor = input_infos[kInputIndex0];
-  auto x_shape = x_tensor->GetShape();
-  return {x_shape};
-}
-
-std::vector<TypeId> ArgSortFuncImpl::InferType(const PrimitivePtr &primitive,
-                                               const InferInfoPtrList &input_infos) const {
-  return {kNumberTypeInt64};
-}
+class OPS_API InplaceLogFuncImpl : public OpFuncImpl {
+ public:
+  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  bool GeneralInferRegistered() const override { return true; }
+};
 }  // namespace ops
 }  // namespace mindspore
+
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_INPLACE_LOG_H_

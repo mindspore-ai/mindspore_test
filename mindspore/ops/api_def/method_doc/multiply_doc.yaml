@@ -1,0 +1,5 @@
+multiply:
+  description: |
+    multiply(value) -> Tensor
+
+    For more details, please refer to :func:`mindspore.mint.mul`. In this context, `value` corresponds to parameter `other` of the referenced function.
