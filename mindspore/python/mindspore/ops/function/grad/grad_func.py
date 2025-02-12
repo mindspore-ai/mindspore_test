@@ -1389,22 +1389,22 @@ def stop_gradient(value):
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import ops
-        >>> from mindspore import Tensor
-        >>> from mindspore import dtype as mstype
-        >>> def net(x, y):
-        ...     out1 = ops.MatMul()(x, y)
-        ...     out2 = ops.MatMul()(x, y)
-        ...     out2 = ops.stop_gradient(out2)
-        ...     return out1, out2
-        ...
-        >>> x = Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32)
-        >>> y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3], [2.1, 1.2, 3.3]], dtype=mstype.float32)
-        >>> grad_fn = ops.grad(net)
-        >>> output = grad_fn(x, y)
-        >>> print(output)
-        [[1.4100001 1.6       6.5999994]
-         [1.4100001 1.6       6.5999994]]
+        >>> import mindspore
+        >>> def f1(x):
+        ...     return x ** 2
+        >>> x = 3.0
+        >>> f1(x)
+        9.0
+        >>> mindspore.ops.grad(f1)(mindspore.tensor(x))
+        Tensor(shape=[], dtype=Float32, value= 6)
+        >>>
+        >>> # The same function with stop_gradient, return a zero gradient because x is effectively treated as a constant.
+        >>> def f2(x):
+        ...     return mindspore.ops.stop_gradient(x) ** 2
+        >>> f2(x)
+        9.0
+        >>> mindspore.ops.grad(f2)(mindspore.tensor(x))
+        Tensor(shape=[], dtype=Float32, value= 0)
     """
     return stop_gradient_(value)
 
