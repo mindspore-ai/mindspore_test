@@ -1239,41 +1239,33 @@ void MatMulOp::RectifyAbstract(const PrimitivePtr &prim, AbstractBasePtrList *ab
 std::vector<DShape> MatMulOp::InferShape(const NodePtrList &inputs, const DAttrs &attrs) {
   // the prim's infer shape does not supports batch dims
   constexpr size_t kMatMulRank = 2;
-  if (inputs[0]->shape.size() > kMatMulRank || inputs[1]->shape.size() > kMatMulRank) {
-    NodePtrList new_inputs = inputs;
-    std::vector<DShape> batches(inputs.size());
-    auto cut_batches = [&new_inputs, &batches, kMatMulRank](size_t i) -> void {
-      const auto &shape_i = new_inputs[i]->shape;
-      if (shape_i.size() > kMatMulRank) {
-        DShape real_shape(shape_i.cend() - kMatMulRank, shape_i.cend());
-        new_inputs[i] = std::make_shared<inner::Node>(NodeBase{real_shape, new_inputs[i]->type, new_inputs[i]->format});
-        batches[i].assign(shape_i.cbegin(), shape_i.cend() - kMatMulRank);
-      }
-    };
-
-    cut_batches(0);
-    cut_batches(1);
-    if (batches[0].size() != batches[1].size()) {
-      MS_LOG(EXCEPTION) << "The Matmul's batch rank should be equal, but got " << batches[0].size() << " vs "
-                        << batches[1].size();
-    }
-    DShape batch;
-    for (size_t i = 0; i < batches[0].size(); i++) {
-      if (batches[0][i] != batches[1][i]) {
-        if (batches[0][i] != 1 && batches[1][i] != 1) {
-          MS_LOG(EXCEPTION) << "The Matmul's batch dim is unmatched. got " << inputs[0]->shape << " and "
-                            << inputs[1]->shape;
-        }
-      }
-      batch.push_back(std::max(batches[0][i], batches[1][i]));
-    }
-
-    auto out_shape = PrimOp::InferShape(new_inputs, attrs)[0];
-    // just reuse the `batch` vector
-    (void)batch.insert(batch.end(), out_shape.begin(), out_shape.end());
-    return {batch};
+  DShape rev_shape[kDim2] = {inputs[0]->shape, inputs[1]->shape};
+  auto size = std::max(rev_shape[0].size(), rev_shape[1].size());
+  DShape output_shape(size);
+  for (size_t i = 0; i < kDim2; i++) {
+    std::reverse(rev_shape[i].begin(), rev_shape[i].end());
+    rev_shape[i].resize(size, 1);
   }
-  return PrimOp::InferShape(inputs, attrs);
+  for (size_t i = kMatMulRank; i < size; i++) {
+    if (rev_shape[0][i] != 1 && rev_shape[1][i] != 1) {
+      MS_LOG(EXCEPTION) << "The Matmul's batch dim is unmatched. got " << inputs[0]->shape << " and "
+                        << inputs[1]->shape;
+    }
+    output_shape[i] = std::max(rev_shape[0][i], rev_shape[1][i]);
+  }
+  auto tranA = GetValue<bool>(attrs.at(kTransposeA));
+  auto tranB = GetValue<bool>(attrs.at(kTransposeB));
+  output_shape[1] = tranA ? rev_shape[0][0] : rev_shape[0][1];
+  output_shape[0] = tranB ? rev_shape[1][1] : rev_shape[1][0];
+
+  std::reverse(output_shape.begin(), output_shape.end());
+
+  if (inputs.size() > kSizeTwo &&
+      (inputs[kSizeTwo]->shape.size() != 1 || inputs[kSizeTwo]->shape[0] != output_shape.back())) {
+    MS_LOG(EXCEPTION) << "The MatmulBiasAdd's shape is unmatched. got " << output_shape << " and "
+                      << inputs[kSizeTwo]->shape;
+  }
+  return {output_shape};
 }
 
 std::vector<TypeId> MatMulOp::InferType(const NodePtrList &inputs, const DAttrs &attrs) {

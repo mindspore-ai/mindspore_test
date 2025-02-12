@@ -220,6 +220,7 @@ class DvmSupportChecker {
   static bool DvmMatMulSupported(const AnfNodePtr &node) {
     auto node_output_type = GetNodeOutputType(node);
     constexpr int64_t MAX_GM_STRIDE = UINT16_MAX;
+    constexpr int64_t MIN_DIM = 512;
     if (common::AnfAlgo::IsDynamicShape(node)) {
       return false;
     }
@@ -232,6 +233,10 @@ class DvmSupportChecker {
     auto b_shape = GetShape(cnode->input(kIndex2));
     auto c_shape = GetShape(node);
     if (a_shape.back() > MAX_GM_STRIDE || b_shape.back() > MAX_GM_STRIDE) {
+      return false;
+    }
+    if (IsPrimitiveCNode(node, prim::kPrimMatMul) && c_shape.back() <= MIN_DIM &&
+        c_shape[c_shape.size() - kSizeTwo] <= MIN_DIM) {
       return false;
     }
     if (IsPrimitiveCNode(node, prim::kPrimBatchMatMul) && c_shape.size() > kSizeFour) {

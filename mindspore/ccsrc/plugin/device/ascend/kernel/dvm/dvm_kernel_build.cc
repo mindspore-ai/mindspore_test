@@ -346,15 +346,18 @@ class OpBuilder {
   void HandlerMatMulOp(const CNodePtr &node, const PrimitivePtr &prim, const std::string &prim_name) {
     // Input: (prim, a, b)
     constexpr auto kMatMulInputNum = 3;
-    if (node->size() != kMatMulInputNum) {
+    constexpr auto kMatMulBiasAddInputNum = 4;
+    if (node->size() == kMatMulInputNum || node->size() == kMatMulBiasAddInputNum) {
+      auto transpose_a = GetValue<bool>(prim->GetAttr(kTransposeA));
+      auto transpose_b = GetValue<bool>(prim->GetAttr(kTransposeB));
+      auto op =
+        kernel_->MatMul(GetInput(node->input(kIndex1)), GetInput(node->input(kIndex2)), transpose_a, transpose_b,
+                        node->size() == kMatMulBiasAddInputNum ? GetInput(node->input(kIndex3)) : nullptr);
+      EmitOp(node, op);
+    } else {
       MS_LOG_WITH_NODE(EXCEPTION, node) << "Input size of " << prim_name << " should be " << kMatMulInputNum
                                         << " but got " << node->size();
     }
-    auto transpose_a = GetValue<bool>(prim->GetAttr(kTransposeA));
-    auto transpose_b = GetValue<bool>(prim->GetAttr(kTransposeB));
-    auto op = kernel_->MatMul(GetInput(node->input(kIndex1)), GetInput(node->input(kIndex2)), transpose_a, transpose_b,
-                              nullptr);
-    EmitOp(node, op);
   }
 
   std::pair<dvm::ShapeRef *, dvm::DType> GetNodeShapeAndType(const AnfNodePtr &node) {

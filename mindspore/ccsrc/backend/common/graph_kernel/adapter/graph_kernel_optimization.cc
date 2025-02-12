@@ -150,9 +150,6 @@ PassManagerPtr GraphKernelOptimizer::Cluster() const {
   // Cluster basic kernels and composite kernels
   pm->Add(std::make_shared<StaticShapeCluster>(), OptLevel_1);
 
-  // Add Cast for op's inputs if the input data type is not supported by op
-  pm->Add(std::make_shared<ConvertBFloat16>(), OptLevel_1, is_dvm);
-
   // Eliminate the outputs without external user
   pm->Add(std::make_shared<EliminateRedundantOutput>(), OptLevel_1);
   return pm;
@@ -170,14 +167,17 @@ PassManagerPtr GraphKernelOptimizer::HighLevelOpt1() const {
   // normalize the Reduce axis
   pm->Add(std::make_shared<AxisNormalizer>(), OptLevel_1);
 
-  // Cast the input of ReduceSum from float16 to float32 for higher precision
-  pm->Add(std::make_shared<RaiseReductionPrecision>(), OptLevel_2);
-
   // Insert PadAkg and UnPadAkg Ops for MatMul
   pm->Add(std::make_shared<InsertPadOps>(), OptLevel_1, is_gpu);
 
   // Universal arithmetic simplify
   pm->Add(std::make_shared<ArithmeticSimplify>(), OptLevel_2);
+
+  // Add Cast for op's inputs if the input data type is not supported by op
+  pm->Add(std::make_shared<ConvertBFloat16>(), OptLevel_1, is_dvm);
+
+  // Cast the input of ReduceSum from float16 to float32 for higher precision
+  pm->Add(std::make_shared<RaiseReductionPrecision>(), OptLevel_2);
 
   // Common subexpression elimination
   pm->Add(std::make_shared<GraphKernelCSE>(), OptLevel_2);
