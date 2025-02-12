@@ -308,6 +308,7 @@ using BesselI1eCost = GeLUCost;
 using L2NormalizeCost = GeLUCost;
 using MaxPoolCost = GeLUCost;
 using IndexCost = GeLUCost;
+using RepeatInterleaveCost = GeLUCost;
 
 class SoftmaxCost : public OperatorCost {
  public:
@@ -337,6 +338,7 @@ class SoftmaxCost : public OperatorCost {
 };
 
 using CumSumCost = SoftmaxCost;
+using CumsumExtCost = SoftmaxCost;
 using CumProdCost = SoftmaxCost;
 
 class TileCost : public SoftmaxCost {
