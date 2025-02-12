@@ -117,8 +117,11 @@ static BaseTensorPtrSet parse_to_save(const FunctionPtr &fptr) {
   size_t num_to_save = to_save_tp.size();
   for (size_t i = 0; i < num_to_save; i++) {
     py::object elem = to_save_tp[i];
-    if (!tensor::IsTensorPy(elem) && !IsStubTensor(elem)) {
+    if (!tensor::IsTensorPy(elem) && !IsStubTensor(elem) && !py::isinstance<py::none>(elem)) {
       MS_LOG(EXCEPTION) << "element of to_save should be a tensor or subtensor, but get a " << elem.get_type();
+    }
+    if (py::isinstance<py::none>(elem)) {
+      continue;
     }
     auto tensor = parse::ConvertTensor(elem);
     auto value = PyNativeAlgo::Common::StubNodeToValue(tensor);

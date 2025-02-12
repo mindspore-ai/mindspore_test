@@ -76,7 +76,7 @@ struct FunctionContext {
   }
 };
 
-class COMMON_EXPORT FunctionBase {
+class ME_EXPORT FunctionBase {
  public:
   // The enter of custom function.
   static py::object apply(const py::object &cls, const py::args &inputs);
@@ -120,7 +120,7 @@ class COMMON_EXPORT FunctionBase {
 
 using FunctionPtr = std::shared_ptr<FunctionBase>;
 
-COMMON_EXPORT void RegFunctionBase(const py::module *m);
+ME_EXPORT void RegFunctionBase(const py::module *m);
 
 }  // namespace mindspore::pynative::autograd
 #endif  // MINDSPORE_CCSRC_PIPELINE_PYNATIVE_GRAD_FUNCTION_PY_H_
