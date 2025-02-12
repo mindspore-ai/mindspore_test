@@ -367,57 +367,32 @@ def concat(tensors, axis=0):
 
 def eye(n, m=None, dtype=None):
     """
-    Creates a tensor with ones on the diagonal and zeros in the rest.
-
-    Note:
-        The data type of returned tensor can be float16, float32, int8, int16, int32, int64, uint8
-        or bool on Ascend platforms.
+    Returns a tensor with ones on the diagonal and zeros in the rest.
 
     Args:
-        n (int): The number of rows of returned tensor. Constant value only.
-        m (int, optional): The number of columns of returned tensor. Constant value only.
-            Default: ``None`` , if ``None`` , the number of columns is as the same as n.
-        dtype (mindspore.dtype, optional): MindSpore's dtype, the data type of the returned tensor.
-            The data type can be bool or Number.
-            Default: ``None`` , the data type of the returned tensor is mindspore.float32.
+        n (int): The number of rows returned.
+        m (int, optional): The number of columns returned. If ``None`` , the number of columns is as the same as n.
+        dtype (mindspore.dtype, optional): The data type returned.
 
     Returns:
-        Tensor, a tensor with ones on the diagonal and the rest of elements are zero. The shape of `output` depends on
-        the user's Inputs `n` and `m`. And the data type depends on Inputs `dtype`.
-
-    Raises:
-        TypeError: If `m` or `n` is not an int.
-        ValueError: If `m` or `n` is less than 0.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import ops
-        >>> output = ops.eye(2, 2, mindspore.int32)
+        >>> output = mindspore.ops.eye(3)
         >>> print(output)
-        [[1 0]
-         [0 1]]
-        >>> print(output.dtype)
-        Int32
-        >>> output = ops.eye(1, 2, mindspore.float32)
+        [[1. 0. 0.]
+         [0. 1. 0.]
+         [0. 0. 1.]]
+        >>>
+        >>> output = mindspore.ops.eye(3, 4)
         >>> print(output)
-        [[1. 0.]]
-        >>> print(output.dtype)
-        Float32
-        >>> output = ops.eye(2, dtype=mindspore.int32)
-        >>> print(output)
-        [[1 0]
-         [0 1]]
-        >>> print(output.dtype)
-        Int32
-        >>> output = ops.eye(2)
-        >>> print(output)
-        [[1. 0.]
-         [0. 1.]]
-        >>> print(output.dtype)
-        Float32
+        [[1. 0. 0. 0.]
+         [0. 1. 0. 0.]
+         [0. 0. 1. 0.]]
     """
     if m is None:
         m = n
