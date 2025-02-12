@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "frontend/expander/bprop/bprop_irbuilder.h"
-#include "grad/grad_utils.h"
+#include "frontend/expander/bprop/common_utils.h"
 #include "include/common/utils/utils.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 

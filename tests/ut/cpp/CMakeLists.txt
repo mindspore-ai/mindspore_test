@@ -290,7 +290,7 @@ foreach(comp ${ALL_UT_COMPS})
         target_link_libraries(ut_${comp}_tests PRIVATE -Wl,--start-group _ut_mindspore_ascend_obj _ut_mindspore_obj)
         target_link_libraries(ut_${comp}_tests PRIVATE _c_mindrecord _c_dataengine)
     endif()
-    target_link_libraries(ut_${comp}_tests PRIVATE -Wl,--start-group mindspore_frontend _ut_obj_static
+    target_link_libraries(ut_${comp}_tests PRIVATE -Wl,--start-group mindspore _ut_obj_static
             -Wl,--end-group)
     target_link_libraries(ut_${comp}_tests PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common
             mindspore_backend_manager)

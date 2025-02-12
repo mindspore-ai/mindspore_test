@@ -57,17 +57,12 @@ foreach(_comp ${SUB_COMP})
     string(REPLACE "/" "_" sub ${_comp})
     if(TARGET _mindspore_${sub}_obj)
         list(APPEND SUB_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_${sub}_obj>)
-        add_dependencies(_mindspore_${sub}_obj proto_input mindspore_core mindspore_ops mindspore_backend)
-    endif()
-    if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-        target_compile_definitions(_mindspore_${sub}_obj PRIVATE FRONTEND_DLL)
+        add_dependencies(_mindspore_${sub}_obj proto_input mindspore_core mindspore_ops)
     endif()
 endforeach()
 
 set_property(SOURCE ${SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_ME)
-add_library(mindspore_frontend SHARED ${SUB_OBJECTS_SRC})
-target_link_libraries(mindspore_frontend PRIVATE mindspore_backend)
-
+add_library(mindspore STATIC ${SUB_OBJECTS_SRC})
 
 set(COMMON_SUB_COMP
         availability
@@ -99,10 +94,10 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(mindspore_common PRIVATE mindspore::pybind11_module)
 endif()
 
-target_link_libraries(mindspore_frontend PUBLIC securec mindspore::flatbuffers)
+target_link_libraries(mindspore PUBLIC securec mindspore::flatbuffers)
 
 if(NOT WIN32)
-    target_link_libraries(mindspore_frontend PUBLIC dl)
+    target_link_libraries(mindspore PUBLIC dl)
 endif()
 
 set(BACKEND_SUB_COMP
@@ -194,15 +189,15 @@ endif()
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     if(MSVC)
-        target_link_libraries(mindspore_frontend PUBLIC proto_input mindspore::protobuf mindspore::sentencepiece)
+        target_link_libraries(mindspore PUBLIC proto_input mindspore::protobuf mindspore::sentencepiece)
     else()
-        target_link_libraries(mindspore_frontend PUBLIC -Wl,--start-group proto_input mindspore::protobuf
+        target_link_libraries(mindspore PUBLIC -Wl,--start-group proto_input mindspore::protobuf
                 mindspore::sentencepiece -Wl,--end-group)
     endif()
 elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    target_link_libraries(mindspore_frontend PUBLIC -Wl proto_input mindspore::protobuf mindspore::sentencepiece -Wl)
+    target_link_libraries(mindspore PUBLIC -Wl proto_input mindspore::protobuf mindspore::sentencepiece -Wl)
 else()
-    target_link_libraries(mindspore_frontend PUBLIC -Wl,--start-group proto_input mindspore::protobuf -Wl,--end-group)
+    target_link_libraries(mindspore PUBLIC -Wl,--start-group proto_input mindspore::protobuf -Wl,--end-group)
 endif()
 
 # set c_expression building
@@ -225,30 +220,28 @@ else()
 endif()
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-    target_link_libraries(mindspore_frontend PUBLIC mindspore::pybind11_module)
+    target_link_libraries(mindspore PUBLIC mindspore::pybind11_module)
     if(NOT MSVC)
-        target_link_libraries(_c_expression PRIVATE -Wl,--whole-archive mindspore_ops_grad
-                -Wl,--no-whole-archive mindspore_core mindspore_frontend
+        target_link_libraries(_c_expression PRIVATE -Wl,--whole-archive mindspore mindspore_ops_grad
+                -Wl,--no-whole-archive mindspore_core
                 mindspore_ops mindspore_common mindspore_backend mindspore_pyboost mindspore_backend_manager)
     else()
         target_link_libraries(_c_expression PRIVATE mindspore_core mindspore_ops
-                mindspore_common mindspore_backend mindspore_frontend mindspore_ops_grad
-                mindspore_backend_manager mindspore_pyboost)
+                mindspore_common mindspore_backend mindspore mindspore_ops_grad mindspore_pyboost
+                mindspore_backend_manager)
         target_link_options(_c_expression PRIVATE "/WHOLEARCHIVE:mindspore_ops_grad.lib")
     endif()
 elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    target_link_libraries(mindspore_frontend PUBLIC proto_input mindspore::protobuf mindspore::eigen mindspore::json)
-    target_link_libraries(_c_expression PRIVATE -Wl,-all_load mindspore_ops_grad proto_input -Wl,-noall_load
-            mindspore_core mindspore_ops mindspore_common mindspore_backend mindspore_frontend mindspore_pyboost
-            mindspore_backend_manager)
+    target_link_libraries(mindspore PUBLIC proto_input mindspore::protobuf mindspore::eigen mindspore::json)
+    target_link_libraries(_c_expression PRIVATE -Wl,-all_load mindspore mindspore_ops_grad proto_input -Wl,-noall_load
+        mindspore_core mindspore_ops mindspore_common mindspore_backend mindspore_pyboost mindspore_backend_manager)
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 else()
     if(ENABLE_CPU AND NOT WIN32)
-        target_link_libraries(mindspore_frontend PUBLIC proto_input mindspore::protobuf mindspore::eigen
-                mindspore::json)
+        target_link_libraries(mindspore PUBLIC proto_input mindspore::protobuf mindspore::eigen mindspore::json)
     endif()
-    target_link_libraries(_c_expression PRIVATE -Wl,--whole-archive mindspore_ops_grad proto_input
-            -Wl,--no-whole-archive mindspore_core mindspore_ops mindspore_common mindspore_backend mindspore_frontend
+    target_link_libraries(_c_expression PRIVATE -Wl,--whole-archive mindspore mindspore_ops_grad
+            proto_input -Wl,--no-whole-archive mindspore_core mindspore_ops mindspore_common mindspore_backend
             mindspore_pyboost mindspore_backend_manager)
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 endif()

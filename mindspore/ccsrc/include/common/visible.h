@@ -41,14 +41,4 @@
 #define ME_EXPORT __attribute__((visibility("default")))
 #endif
 
-#if (defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__CYGWIN__))
-#ifdef FRONTEND_DLL
-#define FRONTEND_EXPORT __declspec(dllexport)
-#else
-#define FRONTEND_EXPORT __declspec(dllimport)
-#endif
-#else
-#define FRONTEND_EXPORT __attribute__((visibility("default")))
-#endif
-
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_VISIBLE_H_
