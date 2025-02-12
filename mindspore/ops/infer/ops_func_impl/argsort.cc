@@ -17,7 +17,6 @@
 #include "infer/ops_func_impl/argsort.h"
 #include <utility>
 #include <memory>
-#include <vector>
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ir/dtype.h"
 #include "mindspore/ops/op_def/op_name.h"
@@ -25,15 +24,29 @@
 
 namespace mindspore {
 namespace ops {
-ShapeArray ArgSortFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
-  auto &x_tensor = input_infos[kInputIndex0];
-  auto x_shape = x_tensor->GetShape();
-  return {x_shape};
+BaseShapePtr ArgSortFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                         const std::vector<AbstractBasePtr> &input_args) const {
+  auto x_shape_vec = input_args[kInputIndex0]->GetShape()->GetShapeVector();
+  return std::make_shared<abstract::TensorShape>(x_shape_vec);
 }
 
-std::vector<TypeId> ArgSortFuncImpl::InferType(const PrimitivePtr &primitive,
-                                               const InferInfoPtrList &input_infos) const {
-  return {kNumberTypeInt64};
+ShapeArray ArgSortFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(x_tensor);
+  const auto &x_shape_vec = x_tensor->shape();
+  ShapeVector output_shape(x_shape_vec);
+  return {output_shape};
 }
+
+TypePtr ArgSortFuncImpl::InferType(const PrimitivePtr &primitive,
+                                   const std::vector<AbstractBasePtr> &input_args) const {
+  auto type = kInt64;
+  return std::make_shared<TensorType>(type);
+}
+
+TypePtrList ArgSortFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  return {kInt64};
+}
+
 }  // namespace ops
 }  // namespace mindspore

@@ -193,7 +193,6 @@ Reduction Operations
     mindspore.mint.amin
     mindspore.mint.argmax
     mindspore.mint.argmin
-    mindspore.mint.argsort
     mindspore.mint.all
     mindspore.mint.any
     mindspore.mint.cumprod

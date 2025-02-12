@@ -186,7 +186,7 @@ from mindspore.ops.function.array_func import min as min_func
 # 69 minimum
 
 # 70 mul
-from mindspore.ops.auto_generate import mul, muls
+
 # 71 nan_to_num
 
 # 72 narrow
@@ -392,11 +392,6 @@ from mindspore.ops.auto_generate import sinc
 from mindspore.ops.auto_generate import sinh
 from mindspore.ops.function.array_func import unsqueeze
 
-# 202 multiply
-
-# 203 dist
-from mindspore.ops.function.math_func import dist_ext
-
 # 204 erfc
 from mindspore.ops.auto_generate import erfc
 
@@ -427,8 +422,6 @@ from mindspore.ops.function.math_func import var_ext
 
 # 1029 exp_
 from mindspore.ops.auto_generate.gen_ops_prim import inplace_exp_op
-# 1030 log_
-from mindspore.ops.auto_generate.gen_ops_prim import inplace_log_op
 
 
 ########################################functions########################################
@@ -522,7 +515,7 @@ def deprecated_tensor_argmin(input, axis=None, keepdims=False):
 
 
 # 12 argsort
-def tensor_argsort(input, dim=-1, descending=False, stable=False):
+def tensor_argsort(input, dim=-1, descending=False):
     return argsort(input, dim, descending)
 
 
@@ -854,11 +847,8 @@ def tensor_minimum(input, other):
 
 
 # 70 mul
-def tensor_mul_tensor(input, value):
-    return mul(input, value)
-
-def tensor_mul_scalar(input, value):
-    return muls(input, value)
+def tensor_mul(input, other):
+    return F.mul(input, other)
 
 
 # 71 nan_to_num
@@ -1490,18 +1480,6 @@ def tensor_log10(input):
     return log10(input)
 
 
-# 202 multiply
-def tensor_multiply_tensor(input, value):
-    return mul(input, value)
-
-def tensor_multiply_scalar(input, value):
-    return muls(input, value)
-
-# 203 dist
-def tensor_dist(input, other, p=2):
-    return dist_ext(input, other, p)
-
-
 # 501
 def tensor_addbmm(input, batch1, batch2, *, beta=1, alpha=1):
     return addbmm(input, batch1, batch2, beta=beta, alpha=alpha)
@@ -1701,7 +1679,3 @@ def matmul_reduce_scatter(
 # 1029
 def tensor_exp_(input):
     return inplace_exp_op(input)
-
-# 1030
-def tensor_log_(input):
-    return inplace_log_op(input)

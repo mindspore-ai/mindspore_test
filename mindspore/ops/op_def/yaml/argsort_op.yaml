@@ -9,9 +9,6 @@ argsort:
         descending:
             dtype: bool
             default: False
-        stable:
-            dtype: bool
-            default: False
     returns:
         output:
             dtype: tensor
@@ -21,4 +18,5 @@ argsort:
         name: argsort_ext
     dispatch:
         enable: True
-        Ascend: ArgSortAscend
+        CPU: None
+        GPU: None

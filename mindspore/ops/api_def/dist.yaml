@@ -1,7 +1,0 @@
-dist:
-  op_yaml: norm_op.yaml
-  py_method: tensor_dist
-  Ascend: py_method
-  CPU: py_method
-  GPU: py_method
-  interface: tensor

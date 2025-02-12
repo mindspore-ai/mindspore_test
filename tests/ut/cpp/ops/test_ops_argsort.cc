@@ -14,36 +14,32 @@
  * limitations under the License.
  */
 
-#include "ops/utils/general_infer_utils.h"
+#include <vector>
+#include "ops/test_ops_cmp_utils.h"
+#include "ir/dtype/number.h"
+#include "infer/ops_func_impl/argsort.h"
+#include "ops/test_value_utils.h"
+#include "abstract/dshape.h"
 
-namespace mindspore::ops {
-namespace {
-std::vector<GeneralInferParam> prepare_params() {
-  GeneralInferParamGenerator generator;
-  generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3, 5}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<bool>(1)},
-                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(True)},
-                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)}})
-    .FeedExpectedOutput({{2, 3, 5}}, {kNumberTypeInt64});
-
-  generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3, -1}, kNumberTypeFloat16},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<bool>(1)},
-                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(True)},
-                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)}})
-    .FeedExpectedOutput({{2, 3, -1}}, {kNumberTypeInt64});
-
-  generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeInt32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<bool>(1)},
-                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(True)},
-                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)}})
-    .FeedExpectedOutput({{-2}}, {kNumberTypeInt64});
-
-  return generator.Generate();
+namespace mindspore {
+namespace ops {
+static std::vector<MultiInputOpParams> GetCases() {
+  auto dyn_rank = abstract::TensorShape::kShapeRankAny;
+  auto dyn_dim = abstract::TensorShape::kShapeDimAny;
+  std::vector<MultiInputOpParams> cases = {
+    MultiInputOpParams{{{4, 2, 3}}, {kFloat16}, {{4, 2, 3}}, {kInt64}, {CreatePyInt(0), CreateScalar(True)}},
+    MultiInputOpParams{
+      {{dyn_rank}}, {kFloat16}, {{dyn_rank}}, {kInt64}, {CreatePyInt(1), CreatePyInt(False)}},
+    MultiInputOpParams{
+      {{4, dyn_dim, 3}}, {kFloat16}, {{4, dyn_dim, 3}}, {kInt64}, {CreatePyInt(2), CreateScalar(True)}},
+  };
+  return cases;
 }
-}  // namespace
 
-INSTANTIATE_TEST_CASE_P(ArgSort, GeneralInferTest, testing::ValuesIn(prepare_params()));
-}  // namespace mindspore::ops
+#define ARG_OP_FUNC_IMPL_TEST_WITH_DEFAULT_CASES(op_name) \
+  OP_FUNC_IMPL_TEST_DECLARE(op_name, MultiInputOpParams)  \
+  INSTANTIATE_TEST_CASE_P(Test##op_name, Test##op_name, testing::ValuesIn(GetCases()));
+
+ARG_OP_FUNC_IMPL_TEST_WITH_DEFAULT_CASES(ArgSort)
+}  // namespace ops
+}  // namespace mindspore
