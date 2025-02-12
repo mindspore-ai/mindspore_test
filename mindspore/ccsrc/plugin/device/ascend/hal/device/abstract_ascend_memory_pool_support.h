@@ -54,8 +54,6 @@ class BACKEND_EXPORT AbstractAscendMemoryPoolSupport : virtual public DynamicMem
   // The related interface of device memory eager free.
   const bool IsEnableEagerFree() const override;
 
-  void WaitPipeline() override;
-
   const bool SyncAllStreams() override;
 
   size_t AllocDeviceMemByEagerFree(size_t size, DeviceMemPtr *addr) override;

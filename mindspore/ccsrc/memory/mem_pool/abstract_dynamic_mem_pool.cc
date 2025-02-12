@@ -879,9 +879,11 @@ void AbstractDynamicMemPool::DefragMemory() {
 }
 
 void AbstractDynamicMemPool::WaitPipelineHelper() {
-  lock_.unlock();
-  WaitPipeline();
-  lock_.lock();
+  if (pipeline_callback_) {
+    lock_.unlock();
+    pipeline_callback_();
+    lock_.lock();
+  }
 }
 
 namespace {

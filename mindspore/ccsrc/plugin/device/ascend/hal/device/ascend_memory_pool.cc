@@ -37,6 +37,7 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
+#include "runtime/pipeline/pipeline.h"
 #include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
@@ -517,6 +518,7 @@ AbstractAscendMemoryPoolSupport &AscendMemoryPool::GetInstance() {
 #endif
       return rank_id;
     });
+    instance_->SetPipelineCallback([]() { runtime::Pipeline::Get().launch_stage()->Wait(); });
     pool_ = instance_;
   });
   return *pool_;

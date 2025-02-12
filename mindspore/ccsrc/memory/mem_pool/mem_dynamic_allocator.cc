@@ -29,7 +29,6 @@
 #include "utils/ms_context.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_utils.h"
-#include "runtime/pipeline/pipeline.h"
 #include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
@@ -643,17 +642,19 @@ size_t DynamicMemPoolBestFit::CalMemBlockAllocSize(size_t size, bool from_persis
 }
 
 void DynamicMemPoolBestFit::WaitPipelineHelper() {
+  if (pipeline_callback_) {
 #ifdef __APPLE__
-  spin_lock_.unlock();
+    spin_lock_.unlock();
 #else
-  mutex_.unlock();
+    mutex_.unlock();
 #endif
-  WaitPipeline();
+    pipeline_callback_();
 #ifdef __APPLE__
-  spin_lock_.lock();
+    spin_lock_.lock();
 #else
-  mutex_.lock();
+    mutex_.lock();
 #endif
+  }
 }
 
 const std::pair<size_t, size_t> DynamicMemPoolBestFit::FreeIdleMemsByEagerFree() {
