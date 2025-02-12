@@ -153,6 +153,10 @@ class BuiltinSampler:
         Add a sub-sampler for given sampler. The parent will receive all data from the
         output of sub-sampler sampler and apply its sample logic to return new samples.
 
+        Note:
+            - If a child sampler is added and it has a shuffle option, its value cannot be ``Shuffle.PARTIAL`` .
+              Additionally, the parent sampler's shuffle value must be ``Shuffle.GLOBAL`` .
+
         Args:
             sampler (Sampler): Object used to choose samples from the dataset. Only builtin
                 samplers(:class:`mindspore.dataset.DistributedSampler` ,
@@ -170,6 +174,15 @@ class BuiltinSampler:
         """
         if self.child_sampler is not None:
             raise RuntimeError("Cannot add child sampler, this sampler already has a child.")
+
+        if sampler is not None and sampler.get_shuffle_mode() == Shuffle.PARTIAL:
+            raise RuntimeError("When multiple samplers are used, ensure that the shuffle of the input sampler "
+                               "must not be Shuffle.PARTIAL.")
+
+        if self.get_shuffle_mode() != Shuffle.GLOBAL and self.get_shuffle_mode() != Shuffle.FALSE:
+            raise RuntimeError("When multiple samplers are used, ensure that the shuffle of the current sampler "
+                               "must be Shuffle.FALSE or Shuffle.GLOBAL, but got: {}.".format(self.get_shuffle_mode()))
+
         self.child_sampler = sampler
 
     def get_child(self):
@@ -271,6 +284,10 @@ class BuiltinSampler:
             return child_samples
 
         return self.num_samples
+
+    def get_shuffle_mode(self):
+        """ Not implemented. """
+        return Shuffle.FALSE
 
 
 class Sampler(BuiltinSampler):
@@ -567,6 +584,9 @@ class DistributedSampler(BuiltinSampler):
         self.offset = offset
         return self
 
+    def get_shuffle_mode(self):
+        """Get the shuffle mode"""
+        return self.shuffle
 
 class PKSampler(BuiltinSampler):
     """
@@ -654,6 +674,10 @@ class PKSampler(BuiltinSampler):
         c_sampler.add_child(c_child_sampler)
         c_sampler.set_num_samples(num_samples)
         return c_sampler
+
+    def get_shuffle_mode(self):
+        """Get the shuffle mode"""
+        return Shuffle.FALSE
 
 
 class RandomSampler(BuiltinSampler):
@@ -783,6 +807,10 @@ class RandomSampler(BuiltinSampler):
 
         return self.child_sampler.is_sharded()
 
+    def get_shuffle_mode(self):
+        """Get the shuffle mode"""
+        return self.shuffle
+
 
 class SequentialSampler(BuiltinSampler):
     """
@@ -851,6 +879,10 @@ class SequentialSampler(BuiltinSampler):
             return False
 
         return self.child_sampler.is_sharded()
+
+    def get_shuffle_mode(self):
+        """Get the shuffle mode"""
+        return Shuffle.FALSE
 
 
 class SubsetSampler(BuiltinSampler):
@@ -941,6 +973,10 @@ class SubsetSampler(BuiltinSampler):
 
         return min(len(self.indices), num_samples)
 
+    def get_shuffle_mode(self):
+        """Get the shuffle mode"""
+        return Shuffle.FALSE
+
 
 class SubsetRandomSampler(SubsetSampler):
     """
@@ -982,6 +1018,10 @@ class SubsetRandomSampler(SubsetSampler):
         c_sampler.add_child(c_child_sampler)
         c_sampler.set_num_samples(self.get_num_samples())
         return c_sampler
+
+    def get_shuffle_mode(self):
+        """Get the shuffle mode"""
+        return Shuffle.GLOBAL
 
 
 class IterSampler(Sampler):
@@ -1091,3 +1131,7 @@ class WeightedRandomSampler(BuiltinSampler):
             return False
 
         return self.child_sampler.is_sharded()
+
+    def get_shuffle_mode(self):
+        """Get the shuffle mode"""
+        return Shuffle.GLOBAL

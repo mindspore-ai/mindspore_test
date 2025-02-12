@@ -3208,6 +3208,104 @@ def test_parameter_shuffle_num_shards_shard_id(add_and_remove_mindrecord_files, 
     del os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"]
 
 
+def test_parameter_shuffle_PARTIAL_when_set_init_step(add_and_remove_mindrecord_files):
+    """
+    Feature: MindDataset
+    Description: Test MindDataset when shuffle is PARTIAL with set_init_step
+    Expectation: Output is equal to the expected output
+    """
+    file_name = os.environ.get('PYTEST_CURRENT_TEST').split(':')[-1].split(' ')[0]
+    mindrecord_files = ["{}{}".format(file_name, str(x)) for x in mindrecord_sample_count]
+    actual_dataset_size = sum(mindrecord_sample_count)
+
+    dataset = ds.MindDataset(dataset_files=mindrecord_files, shuffle=Shuffle.PARTIAL)
+    get_attribute(dataset, actual_dataset_size)
+    dataset.set_init_step(123)
+    count = 0
+    for item in dataset.create_dict_iterator(num_epochs=1):
+        count += 1
+    assert count == actual_dataset_size - 123
+
+    dataset2 = ds.MindDataset(dataset_files=mindrecord_files, shuffle=Shuffle.PARTIAL, num_shards=8, shard_id=3)
+    get_attribute(dataset2, math.ceil(actual_dataset_size / 8))
+    dataset2.set_init_step(13)
+    count = 0
+    for item in dataset2.create_dict_iterator(num_epochs=1):
+        count += 1
+    assert count == math.ceil(actual_dataset_size / 8) - 13
+
+    original_seed = config_get_set_seed(1234)
+    os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"] = "true"
+
+    dataset3 = ds.MindDataset(dataset_files=mindrecord_files, shuffle=Shuffle.PARTIAL)
+    get_attribute(dataset3, actual_dataset_size)
+    dataset3.set_init_step(123)
+    count = 0
+    for item in dataset3.create_dict_iterator(num_epochs=1):
+        count += 1
+    assert count == actual_dataset_size - 123
+
+    dataset4 = ds.MindDataset(dataset_files=mindrecord_files, shuffle=Shuffle.PARTIAL, num_shards=8, shard_id=3)
+    get_attribute(dataset4, math.ceil(actual_dataset_size / 8))
+    dataset4.set_init_step(13)
+    count = 0
+    for item in dataset4.create_dict_iterator(num_epochs=1):
+        count += 1
+    assert count == math.ceil(actual_dataset_size / 8) - 13
+
+    ds.config.set_seed(original_seed)
+    del os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"]
+
+
+def test_parameter_shuffle_add_sampler(add_and_remove_mindrecord_files):
+    """
+    Feature: MindDataset
+    Description: Test MindDataset when shuffle with add_sampler
+    Expectation: Output is equal to the expected output
+    """
+    file_name = os.environ.get('PYTEST_CURRENT_TEST').split(':')[-1].split(' ')[0]
+    mindrecord_files = ["{}{}".format(file_name, str(x)) for x in mindrecord_sample_count]
+    actual_dataset_size = sum(mindrecord_sample_count)
+
+    dataset = ds.MindDataset(dataset_files=mindrecord_files, shuffle=Shuffle.PARTIAL)
+    with pytest.raises(RuntimeError) as e:
+        sampler = ds.DistributedSampler(num_shards=8, shard_id=1, shuffle=Shuffle.INFILE)
+        dataset.add_sampler(sampler)
+        count = 0
+        for item in dataset.create_dict_iterator(num_epochs=1):
+            count += 1
+    assert "ensure that the shuffle of the current sampler" in str(e)
+
+    dataset = ds.MindDataset(dataset_files=mindrecord_files, shuffle=Shuffle.GLOBAL)
+    with pytest.raises(RuntimeError) as e:
+        sampler = ds.DistributedSampler(num_shards=4, shard_id=3, shuffle=Shuffle.INFILE)
+        dataset.add_sampler(sampler)
+        count = 0
+        for item in dataset.create_dict_iterator(num_epochs=1):
+            count += 1
+    assert "ensure that the shuffle of the input sampler" in str(e)
+
+    with pytest.raises(RuntimeError) as e:
+        sampler = ds.DistributedSampler(num_shards=8, shard_id=1, shuffle=Shuffle.PARTIAL)
+        random_sampler = ds.RandomSampler(shuffle=Shuffle.PARTIAL)
+        sampler.add_child(random_sampler)
+        dataset = ds.MindDataset(dataset_files=mindrecord_files, sampler=sampler)
+        count = 0
+        for item in dataset.create_dict_iterator(num_epochs=1):
+            count += 1
+    assert "ensure that the shuffle of the input sampler" in str(e)
+
+    with pytest.raises(RuntimeError) as e:
+        sampler2 = ds.DistributedSampler(num_shards=8, shard_id=1, shuffle=Shuffle.INFILE)
+        random_sampler2 = ds.RandomSampler(shuffle=Shuffle.GLOBAL)
+        sampler2.add_child(random_sampler2)
+        dataset = ds.MindDataset(dataset_files=mindrecord_files, sampler=sampler2)
+        count = 0
+        for item in dataset.create_dict_iterator(num_epochs=1):
+            count += 1
+    assert "ensure that the shuffle of the current sampler" in str(e)
+
+
 if __name__ == '__main__':
     test_nlp_compress_data(add_and_remove_nlp_compress_file)
     test_nlp_compress_data_old_version(add_and_remove_nlp_compress_file)
@@ -3251,3 +3349,5 @@ if __name__ == '__main__':
     test_parameter_RandomSampler(add_and_remove_mindrecord_files, ds.RandomSampler(), 184)
     test_parameter_DistributedSampler(add_and_remove_mindrecord_files)
     test_parameter_shuffle_num_shards_shard_id(add_and_remove_mindrecord_files, None, 8, 5, 136)
+    test_parameter_shuffle_PARTIAL_when_set_init_step(add_and_remove_mindrecord_files)
+    test_parameter_shuffle_add_sampler(add_and_remove_mindrecord_files)

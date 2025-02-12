@@ -40,6 +40,8 @@ class MINDRECORD_API ShardDistributedSample : public ShardSample {
 
   ~ShardDistributedSample() override{};
 
+  std::string Name() override { return "ShardDistributedSample"; }
+
   virtual void UpdateShuffleMode(dataset::ShuffleMode shuffle_mode) {
     ShardSample::UpdateShuffleMode(shuffle_mode);
     if (shuffle_op_) {

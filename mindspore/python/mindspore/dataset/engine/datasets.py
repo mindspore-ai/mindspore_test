@@ -2372,6 +2372,10 @@ class MappableDataset(SourceDataset):
         """
         Add a child sampler for the current dataset.
 
+        Note:
+            - If the sampler is added and it has a shuffle option, its value must be ``Shuffle.GLOBAL`` .
+              Additionally, the original sampler's shuffle value cannot be ``Shuffle.PARTIAL`` .
+
         Args:
             new_sampler (Sampler): The child sampler to be added.
 
@@ -2385,6 +2389,16 @@ class MappableDataset(SourceDataset):
         # Note: By adding a sampler, the sampled IDs will flow to the new_sampler
         # after first passing through the current samplers attached to this dataset.
         self.dataset_size = None
+
+        if self.sampler is not None and self.sampler.get_shuffle_mode() == Shuffle.PARTIAL:
+            raise RuntimeError("When multiple samplers are used, ensure that the shuffle of the current sampler "
+                               "must not be Shuffle.PARTIAL.")
+
+        if new_sampler.get_shuffle_mode() != Shuffle.GLOBAL and new_sampler.get_shuffle_mode() != Shuffle.FALSE:
+            raise RuntimeError("When multiple samplers are used, ensure that the shuffle of the input sampler "
+                               "must be Shuffle.FALSE or Shuffle.GLOBAL, but got: {}."
+                               .format(new_sampler.get_shuffle_mode()))
+
         new_sampler.add_child(self.sampler)
         self.sampler = new_sampler
 
