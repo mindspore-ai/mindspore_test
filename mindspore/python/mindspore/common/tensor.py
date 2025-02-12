@@ -3106,7 +3106,10 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             >>> print(out2)
             1
         """
-        return self.asnumpy().tolist()
+        if self.ndim == 1 and self.size == 0:
+            return []
+        return self._tolist()
+
 
     def unsorted_segment_min(self, segment_ids, num_segments):
         r"""

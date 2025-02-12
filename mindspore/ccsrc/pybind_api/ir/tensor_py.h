@@ -136,6 +136,8 @@ class TensorPybind {
   static TensorPtr ConvertBytesToTensor(const py::bytes &bytes_obj, const py::tuple &dims,
                                         const TypePtr &type_ptr = nullptr);
 
+  static py::object ToList(const Tensor &tensor);
+
   static py::object Item(const Tensor &tensor);
 
   static py::array SyncAsNumpy(const Tensor &tensor);
@@ -315,6 +317,7 @@ class TensorPyImpl {
                                const TypePtr type_ptr);
   static void SetUserData(const TensorPyPtr &tensorpy, const py::str &key, const py::object &value);
   static const py::object GetUserData(const TensorPyPtr &tensorpy, const py::str &key);
+  static py::object ToList(const TensorPyPtr &tensorpy);
   static py::object Item(const TensorPyPtr &tensorpy);
   static uint64_t RegisterTensorBackwardHook(const TensorPyPtr &tensorpy, const py::function &hook);
   static void RemoveTensorBackwardHook(uint64_t handle_id);
