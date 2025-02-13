@@ -1959,8 +1959,6 @@ class AlltoAllV(PrimitiveWithInfer):
 
             This example should be run with 2 devices.
 
-        >>> import numpy as np
-        >>> import mindspore as ms
         >>> from mindspore import ops
         >>> import mindspore.nn as nn
         >>> from mindspore.communication import init, get_rank
@@ -1973,8 +1971,8 @@ class AlltoAllV(PrimitiveWithInfer):
         ...         super(Net, self).__init__()
         ...         self.all_to_all = ops.AlltoAllV()
         ...
-        ...     def construct(self, x):
-        ...         return self.all_to_all(x)
+        ...     def construct(self, x, send_numel_list, recv_numel_list):
+        ...         return self.all_to_all(x, send_numel_list, recv_numel_list)
         >>> send_numel_list = []
         >>> recv_numel_list = []
         >>> if rank == 0:

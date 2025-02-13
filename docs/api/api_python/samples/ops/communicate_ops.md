@@ -430,6 +430,72 @@ rank0~rank7的结果为：
 [[[[0. 1. 2. 3. 4. 5. 6. 7.]]]]
 ```
 
+## AlltoAllV
+
+![image](./images/alltoallv.png)
+
+`AlltoAllV`操作会将输入数据在特定的维度按照`send_numel_list`切分成指定的块数，并按顺序发送给其他rank，同时从其他rank按照`recv_numel_list`接收指定大小的输入，按顺序在特定的维度拼接数据。例如上图中，将Tensor在零维切分成3块，同时接收其他rank的数据，并在一维进行拼接，最后输出拼接后的数据。
+
+示例代码如下：我们使用`AlltoAllV`算子进行2卡的数据交换，把每张卡在第0维按照`send_numel_list`进行切分，并按顺序把切分的数据发送给其他卡，同时按照`recv_numel_list`接收其他卡的数据，再进行拼接；最终每张卡输出拼接后的数据。
+
+```python
+from mindspore import ops
+import mindspore.nn as nn
+from mindspore.communication import init, get_rank
+from mindspore import Tensor
+init()
+rank = get_rank()
+class Net(nn.Cell):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.all_to_all = ops.AlltoAllV()
+    def construct(self, x, send_numel_list, recv_numel_list):
+        return self.all_to_all(x, send_numel_list, recv_numel_list)
+send_numel_list = []
+recv_numel_list = []
+if rank == 0:
+   send_tensor = Tensor([0, 1, 2.])
+   send_numel_list = [1, 2]
+   recv_numel_list = [1, 2]
+elif rank == 1:
+   send_tensor = Tensor([3, 4, 5.])
+   send_numel_list = [2, 1]
+   recv_numel_list = [2, 1]
+net = Net()
+output = net(send_tensor, send_numel_list, recv_numel_list)
+print(output)
+```
+
+使用shell脚本启动2卡脚本，下述中的`rank_table_file`文件可以使用[models](https://gitee.com/mindspore/models)下面的hccl_tools.py生成，对应的目录文件为`models/utils/hccl_tools`。示例shell脚本如下：
+
+```shell
+export MINDSPORE_HCCL_CONFIG_PATH=rank_table_file
+export DEVICE_NUM=2
+BASE_PATH=$(cd "$(dirname $0)"; pwd)
+for((i=0; i<$DEVICE_NUM; i++)); do
+    rm -rf ${BASE_PATH}/rank${i}
+    mkdir ${BASE_PATH}/rank${i}
+    cp -r ${BASE_PATH}/alltoallv.py ${BASE_PATH}/rank${i}/
+    cd ${BASE_PATH}/rank${i}
+    export RANK_ID=${i}
+    export DEVICE_ID=${i}
+    echo "start training for device $i"
+    python alltoallv.py > log.txt 2>&1 &
+done
+```
+
+rank0的结果为：
+
+```text
+[0. 3. 4.]
+```
+
+rank1的结果为：
+
+```text
+[1. 2. 5]
+```
+
 ## CollectiveScatter
 
 ![image](./images/collectscatter.png)
