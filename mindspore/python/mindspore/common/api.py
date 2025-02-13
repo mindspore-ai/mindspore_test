@@ -1710,6 +1710,15 @@ class _PyNativeExecutor:
         """
         self._executor.set_is_run_recompute(status)
 
+    def high_order(self):
+        """
+        Is high order of current scene, this is a inner interface.
+
+        Return:
+            Bool.
+        """
+        return self._executor.high_order()
+
     def set_cell_use_dynamic_shape_process(self, flag):
         """
         Set the dynamic shape flag of eval process.

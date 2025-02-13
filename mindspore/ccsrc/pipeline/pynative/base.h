@@ -176,10 +176,13 @@ using FrontendOpRunInfoPtr = std::shared_ptr<FrontendOpRunInfo>;
 struct InputArgsInfo {
   InputArgsInfo() = default;
   ~InputArgsInfo() = default;
-  InputArgsInfo(bool is_grad_topest_cell, bool is_high_order_top_cell)
-      : is_grad_topest_cell(is_grad_topest_cell), is_high_order_top_cell(is_high_order_top_cell) {}
+  InputArgsInfo(bool is_grad_topest_cell, bool is_inner_grad_topest_cell, bool is_high_order_top_cell)
+      : is_grad_topest_cell(is_grad_topest_cell),
+        is_inner_grad_topest_cell(is_inner_grad_topest_cell),
+        is_high_order_top_cell(is_high_order_top_cell) {}
 
   bool is_grad_topest_cell;
+  bool is_inner_grad_topest_cell;
   bool is_high_order_top_cell;
 
   bool is_need_recompute{false};

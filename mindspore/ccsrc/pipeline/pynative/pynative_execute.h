@@ -76,7 +76,7 @@ class ME_EXPORT PyNativeExecutor : public std::enable_shared_from_this<PyNativeE
   void set_forward_use_dynamic_shape_process(bool flag) const;
   void SetDynamicInput(const py::object &obj, const py::args &args) const;
   py::object GetDynamicInput(const py::object &actual_input) const;
-
+  bool IsHighOrder() const;
   py::object CheckAlreadyRun(const prim::GradOperationPtr &grad, const py::object &obj, const py::object &weights,
                              const py::object &grad_hash_id, const py::args &args) const;
   void ClearRes() const;
