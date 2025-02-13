@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,6 @@
 
 namespace mindspore {
 namespace opt {
-constexpr auto kMoveToNpuStr = "NPU";
-constexpr auto kMoveToCpuStr = "CPU";
-constexpr auto kMoveToDiskStr = "Disk";
 constexpr auto kParamterDiskUserDataName = "parameter_device";
 
 bool InsertMoveTo::Run(const FuncGraphPtr &graph) {
@@ -111,13 +108,13 @@ CNodePtr InsertMoveTo::InsertParamMoveTo(const ParameterPtr &parameter, const Of
   const auto following_node = kernel_graph_->execution_order()[pre_load_execution_order_r];
   MS_EXCEPTION_IF_NULL(following_node);
 
-  const MoveToInfo to_d_info{kMoveToNpuStr, parameter, info.user_node_, info.input_index_, pre_node, following_node};
+  const MoveToInfo to_d_info{kToNpu, parameter, info.user_node_, info.input_index_, pre_node, following_node};
 
   auto move_to_d_node = MoveToUtils::InsertMoveTo(kernel_graph_, to_d_info);
   MS_LOG(INFO) << "Add MoveTo node[" << move_to_d_node->DebugString() << "] for " << info.input_index_ << "th input of "
                << info.user_node_->fullname_with_scope() << ".";
 
-  if (info.offload_device_ == kMoveToDiskStr) {
+  if (info.offload_device_ == kToDisk) {
     const auto load_lead = load_lead_dh_ + load_lead_hf_;
     const auto l = info.execution_order_ > load_lead ? info.execution_order_ - load_lead : 0;
     const auto l_node = kernel_graph_->execution_order()[l];
@@ -126,7 +123,7 @@ CNodePtr InsertMoveTo::InsertParamMoveTo(const ParameterPtr &parameter, const Of
     const auto r_node = kernel_graph_->execution_order()[r];
     MS_EXCEPTION_IF_NULL(r_node);
 
-    const MoveToInfo to_h_info{kMoveToCpuStr, parameter, move_to_d_node, 1, l_node, r_node};
+    const MoveToInfo to_h_info{kToCpu, parameter, move_to_d_node, 1, l_node, r_node};
 
     const auto move_to_h_node = MoveToUtils::InsertMoveTo(kernel_graph_, to_h_info);
     MS_LOG(INFO) << "Add MoveTo node[" << move_to_h_node->DebugString() << "] for " << info.input_index_

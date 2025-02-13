@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,6 +78,7 @@
 #include "frontend/parallel/pass/interleave_split_concat_branches.h"
 #include "frontend/parallel/pass/interleave_parallel_branches.h"
 #include "frontend/parallel/pass/begin_end_overlap_inline.h"
+#include "frontend/parallel/pass/offload_activation.h"
 #include "frontend/parallel/pass/split_matmul_comm_elementwise_fp.h"
 #include "frontend/parallel/pass/split_layernorm_comm_fp.h"
 #include "frontend/parallel/pipeline_transformer/pipeline_transformer.h"
@@ -375,6 +376,12 @@ bool InplaceValidationAfterExpandWrapper(const FuncGraphPtr &root, const opt::Op
 }
 bool ReAutoMonadWrapper(const FuncGraphPtr &root, const opt::OptimizerPtr &) { return ReAutoMonad(root); }
 REGISTER_OPT_PASS_FUNC(ReAutoMonadWrapper)
+
+bool OffloadActivationWrapper(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
+  return parallel::OffloadActivation(root);
+}
+REGISTER_OPT_PASS_FUNC(OffloadActivationWrapper)
+
 bool parallel_mode() {
 #if defined(__linux__) && defined(WITH_BACKEND)
   if (ps::PSContext::instance()->is_server() || ps::PSContext::instance()->is_scheduler()) {
@@ -605,6 +612,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, cons
      {"get_grad_eliminate_", get_grad},
      {"virtual_output", opt::OptPassConfig({irpass.virtual_output_eliminate_})},
      {"merge_forward", opt::OptPassConfig(ad::MergeForward)},
+     {"offload_activation", opt::OptPassConfig(OffloadActivationWrapper)},
      {"cell_reuse_recompute_pass", opt::OptPassConfig(opt::irpass::Recomputation())},
      {"cell_reuse_handle_not_recompute_node_pass", cell_reuse_handle_not_recompute_node_pass},
      {"before_grad", before_grad},

@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ constexpr int64_t kNpuInt = 0;
 constexpr int64_t kCpuInt = 1;
 constexpr int64_t kDiskInt = 2;
 
-static const std::map<std::string, int64_t> ToStrMap{{kToNup, kNpuInt}, {kToCpu, kCpuInt}, {kToDisk, kDiskInt}};
+static const std::map<std::string, int64_t> ToStrMap{{kToNpu, kNpuInt}, {kToCpu, kCpuInt}, {kToDisk, kDiskInt}};
 
 std::map<std::pair<int64_t, int64_t>, MoveFunc> MoveTo::func_map_ = {
   {{kNpuInt, kCpuInt}, &MoveTo::MoveFromDToH},  {{kNpuInt, kDiskInt}, &MoveTo::MoveFromDToF},

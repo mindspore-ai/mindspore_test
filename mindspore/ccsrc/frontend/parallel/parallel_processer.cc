@@ -1097,6 +1097,13 @@ static void StepReplaceOp(OperatorVector replace_op, const CNodePtr &node) {
       MS_LOG(INFO) << "The redistribution node in reshape would not be recomputed.";
       prim->set_attr(RECOMPUTE, MakeValue(do_recompute));
     }
+    if (GetPrimitiveFlag(origin_prim, kAttrOffload)) {
+      prim->set_attr(kAttrOffload, MakeValue(true));
+      const auto &backward_prefetch_iter = origin_prim_attrs.find(kAttrBackwardPrefetch);
+      if (backward_prefetch_iter != origin_prim_attrs.end()) {
+        prim->set_attr(kAttrBackwardPrefetch, backward_prefetch_iter->second);
+      }
+    }
     if (prim->name() == GET_NEXT && origin_prim_attrs.find(SYMBOLS) != origin_prim_attrs.end()) {
       prim->set_attr(SYMBOLS, origin_prim_attrs[SYMBOLS]);
     }

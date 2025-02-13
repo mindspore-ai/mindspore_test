@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -597,6 +597,27 @@ class Cell(Cell_):
         all_prims = self._get_prims_recursively()
         for prim in all_prims:
             prim.add_prim_attr("strategy_gen_mode", "data_parallel")
+
+    def offload(self, backward_prefetch="Auto"):
+        """
+        Set the cell offload. All primitive ops in the cell will be set offload. For the intermediate activations
+        calculated by these primitive ops, we will not save them in the forward pass, but offload them and onload them
+        in the backward pass.
+
+        Note:
+            - Not supported in pynative mode
+
+        Args:
+            backward_prefetch(Union[str, int]): Specifies whether the activation is prefetched in backward pass.
+        """
+        if context._get_mode() == context.PYNATIVE_MODE:
+            raise ValueError("The Cell offload does not support PyNative mode now.")
+        if isinstance(backward_prefetch, str):
+            Validator.check_string(backward_prefetch, ['Auto'], 'backward_prefetch', self.cls_name)
+        else:
+            Validator.check_non_negative_int(backward_prefetch)
+        for prim in self._get_prims_recursively():
+            prim._offload(backward_prefetch=backward_prefetch)
 
     def shard(self, in_strategy, out_strategy=None, parameter_plan=None, device="Ascend", level=0):
         """
