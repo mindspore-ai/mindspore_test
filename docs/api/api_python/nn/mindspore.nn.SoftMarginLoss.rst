@@ -23,7 +23,7 @@ mindspore.nn.SoftMarginLoss
         - **logits** (Tensor) - 预测值，数据类型为float16、float32、bfloat16（Atlas训练系列产品不支持）。
         - **labels** (Tensor) - 目标值，shape与 `logits` 的相同。
 
-    返回：
+    输出：
         Tensor或Scalar，如果 `reduction` 为"none"，其shape与 `logits` 相同。否则，将返回Scalar。
 
     异常：
