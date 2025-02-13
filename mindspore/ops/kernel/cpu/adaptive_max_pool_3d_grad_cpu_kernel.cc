@@ -36,6 +36,10 @@ int AdaptiveMaxPool3DGradCpuKernelMod::Resize(const std::vector<KernelTensor *> 
 
   input_x_shape_ = inputs[kIndex1]->GetShapeVector();
   output_shape_ = input_x_shape_;
+  if (CHECK_SHAPE_NULL(input_x_shape_, kernel_name_, "input") ||
+      CHECK_SHAPE_NULL(output_shape_, kernel_name_, "output")) {
+    return KRET_RESIZE_FAILED;
+  }
   const size_t dim_num = input_x_shape_.size();
   const size_t kDimNum4 = 4;
   const size_t kDimNum5 = 5;
