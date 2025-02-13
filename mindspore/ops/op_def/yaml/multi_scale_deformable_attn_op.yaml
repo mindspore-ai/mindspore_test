@@ -1,0 +1,21 @@
+#operator multi_scale_deformable_attn
+multi_scale_deformable_attn:
+  args:
+    value:
+      dtype: tensor
+    shape:
+      dtype: tensor
+    offset:
+      dtype: tensor
+    locations:
+      dtype: tensor
+    weight:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor
+  function:
+    disable: True
+  dispatch:
+    enable: True
+    Ascend: MultiScaleDeformableAttnAscend

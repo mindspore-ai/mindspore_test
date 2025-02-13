@@ -305,7 +305,8 @@ REG_ADPT_DESC(Renorm, prim::kPrimRenorm->name(), ADPT_DESC(Renorm))
 
 // SoftMarginLoss
 INPUT_MAP(SoftMarginLoss) = {{1, INPUT_DESC(input_x)}, {2, INPUT_DESC(input_y)}};
-ATTR_MAP(SoftMarginLoss) = {{"reduction", ATTR_DESC(reduction, AnyTraits<std::string>())}};
+ATTR_MAP(SoftMarginLoss) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(SoftMarginLoss) = {{3, ATTR_DESC(reduction, AnyTraits<GEReduction>())}};
 OUTPUT_MAP(SoftMarginLoss) = {{0, OUTPUT_DESC(output_z)}};
 REG_ADPT_DESC(SoftMarginLoss, prim::kPrimSoftMarginLoss->name(), ADPT_DESC(SoftMarginLoss))
 

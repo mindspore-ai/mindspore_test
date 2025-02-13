@@ -23,7 +23,7 @@
 #include <algorithm>
 #include <functional>
 #include <map>
-#include "mindspore/ops/infer/grad/soft_margin_loss_grad.h"
+#include "mindspore/ops/infer/ops_func_impl/soft_margin_loss_grad.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_class/softmarginloss_grad_helper.h"

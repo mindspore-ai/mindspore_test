@@ -42,6 +42,7 @@ from mindspore.ops.auto_generate.pyboost_inner_prim import cross_impl
 from mindspore.ops.auto_generate.pyboost_inner_prim import reduce_max_impl, reduce_min_impl
 from mindspore.ops.operations.math_ops import Ormqr
 from mindspore.ops.operations.math_ops import DivMod
+from mindspore.ops.auto_generate import multi_scale_deformable_attn_op
 from mindspore.ops.operations.array_ops import MatrixSetDiagV3, Transpose
 from mindspore.ops.auto_generate import (minimum, maximum, mul, muls, sin, sinc, sinh, cummax, real, conj, add, sub, cos,
                                          cosh, nan_to_num, norm_op, lp_norm_v2_op, linalg_vector_norm_op, std_op,
@@ -13383,6 +13384,64 @@ def isnan_ext(tensor):
     return not_equal_op(tensor, tensor)
 
 
+def multi_scale_deformable_attn_function(value, shape, offset, locations, weight):
+    r"""
+    The multi-scale deformable attention mechanism fuses the feature maps of multiple perspectives.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    .. note::
+        Atlas training series products are not supported.
+
+    Args:
+        value (Tensor): Feature tensor, the data type supports float32 and float16.
+            The shape is :math:`(bs, num\_keys, num\_heads, embed\_dims)`. Among them, bs is the batch size,
+            num_keys is the size of the feature map, num_heads is the number of heads, embed_dims is the
+            dimension of the fearure map, where embed_dims needs to be a multiple of ``8``.
+        shape (Tensor): Shape of feature, the data type supports int32 and int64. The shape is :math:`(num\_levels, 2)`.
+            Among them, num_levels is the number of feature maps, and 2 represents H and W respectively.
+        offset (Tensor): Offset tensor, the data type supports int32 and int64. The shape is :math:`(num\_levels)`.
+        locations (Tensor): Location tensor, the data type supports float32 and float16.
+            The shape is :math:`(bs, num\_queries, num\_heads, num\_levels, num\_points, 2)`. Among them,
+            bs is the batch size, num_queries is the number of queries, num_heads is the number of heads,
+            num_levels is the number of feature maps, num_points is the number of sampling points,
+            and ``2`` represents x and y respectively.
+        weight (Tensor): Weight tensor, the data type supports float32 and float16. The shape is
+            :math:`(bs, num\_queries, num\_heads, num\_levels, num\_points)`. Among them, bs is the batch size,
+            num_queries is the number of queries, num_heads is the number of heads, num_levels is the number
+            of feature maps, num_points is the number of sampling points.
+
+    Returns:
+        Tensor, The fused feature tensor, the data type is float32 or float16.
+        The shape is :math:`(bs, num\_queries, num\_heads*embed\_dims)`.
+
+    Raises:
+        RuntimeError: If the data type of `value` is neither float32 nor float16.
+        RuntimeError: If the data type of `shape` is neither int32 nor int64.
+        RuntimeError: If the data type of `offset` is neither int32 nor int64.
+        RuntimeError: If the data type of `locations` is neither float32 nor float16.
+        RuntimeError: If the data type of `weight` is neither float32 nor float16.
+        RuntimeError: `embed_dims` is not the multiples of ``8``.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> import numpy as np
+        >>> value = Tensor(np.random.randn(2, 3, 4, 8), dtype=ms.float32)
+        >>> data = [[1, 2], [3, 4], [5, 6]]
+        >>> shape = ms.Tensor(data, dtype=ms.int32)
+        >>> data1 = [1, 2, 3]
+        >>> shape = ms.Tensor(data1, dtype=ms.int32)
+        >>> locations = ms.Tensor(np.random.randn(2, 3, 4, 3, 2, 2), dtype=ms.float32)
+        >>> weight = ms.Tensor(np.random.randn(2, 3, 4, 3, 2), dtype=ms.float32)
+        >>> out = ms.ops.multi_scale_deformable_attn_function(value, shape, offset, locations, weight)
+    """
+    return multi_scale_deformable_attn_op(value, shape, offset, locations, weight)
+
+
 def rotated_iou(boxes, query_boxes, trans=False, mode=0, is_cross=True, v_threshold=0.0, e_threshold=0.0):
     r"""
     Calculate the overlap area between rotated rectangles.
@@ -13973,5 +14032,6 @@ __all__ = [
     'dot',
     'batch_dot',
     'eps',
+    'multi_scale_deformable_attn_function',
 ]
 __all__.sort()

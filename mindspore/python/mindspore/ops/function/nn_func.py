@@ -59,8 +59,10 @@ from mindspore.ops.auto_generate.gen_ops_prim import conv3d_ext_op, conv3d_paddi
 from mindspore.common.generator import default_generator
 from mindspore.ops.auto_generate import hardshrink, hardsigmoid, hardswish
 from mindspore.ops.auto_generate import softshrink
+from mindspore.ops.auto_generate import soft_margin_loss
 from mindspore.ops.auto_generate import adaptive_avg_pool2d_ext_op
 from mindspore.ops.auto_generate.pyboost_inner_prim import nllloss_impl
+from mindspore.ops.auto_generate.pyboost_inner_prim import adaptive_max_pool2d_impl
 from mindspore.ops.function.array_func import gather_ext
 from mindspore.ops.operations.manually_defined import flash_attention_score, fused_infer_attention_score
 
@@ -905,7 +907,7 @@ def adaptive_max_pool2d(input, output_size, return_indices=False):
         \end{align}
 
     Note:
-        Ascend platform only supports float16 type for input.
+        In KBK mode, `output_size` does not support mutable.
 
     Args:
         input (Tensor): A 3D or 4D tensor,
@@ -914,7 +916,7 @@ def adaptive_max_pool2d(input, output_size, return_indices=False):
             or an int H for :math:`(H, H)`. :math:`H` and :math:`W` can be int or None.
             If it is None, it means the output size is the same as the input size.
 
-        return_indices (bool): If `return_indices` is ``True`` , the indices of max value would be output.
+        return_indices (bool, optional): If `return_indices` is ``True`` , the indices of max value would be output.
             Default: ``False`` .
 
     Returns:
@@ -966,11 +968,17 @@ def adaptive_max_pool2d(input, output_size, return_indices=False):
           [[8. 9.]]
           [[8. 9.]]]]
     """
+    output_size_ = None
     _check_adaptive_max_pool2d(return_indices)
-    _adaptive_max_pool2d = _get_cache_prim(NN_OPS.AdaptiveMaxPool2D)(output_size)
-    out = _adaptive_max_pool2d(input)
-    output = out if return_indices else out[0]
-    return output
+
+    if isinstance(output_size, int):
+        output_size_ = (output_size, output_size)
+    else:
+        output_size_ = tuple(-1 if val is None else val for val in output_size)
+
+    if return_indices:
+        return adaptive_max_pool2d_impl(input, output_size_)
+    return adaptive_max_pool2d_impl(input, output_size_)[0]
 
 
 def adaptive_max_pool3d(input, output_size, return_indices=False):
@@ -2929,58 +2937,6 @@ def softsign(x):
     return softsign_(x)
 
 
-def soft_margin_loss(input, target, reduction='mean'):
-    r"""
-    Calculate the soft margin loss of input and target.
-
-    Creates a criterion that optimizes a two-class classification
-    logistic loss between input tensor :math:`x` and target tensor :math:`y`
-    (containing 1 or -1).
-
-    .. math::
-        \text{loss}(x, y) = \sum_i \frac{\log(1 + \exp(-y[i]*x[i]))}{\text{x.nelement}()}
-
-    where :math:`x.nelement()` is the number of elements of :math:`x`.
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
-    Args:
-        input (Tensor): Predict data. Data type must be float16 or float32.
-        target (Tensor): Ground truth data, with the same type and shape as `input`.
-        reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
-            ``'sum'`` . Default: ``'mean'`` .
-
-            - ``'none'``: no reduction will be applied.
-            - ``'mean'``: compute and return the mean of elements in the output.
-            - ``'sum'``: the output elements will be summed.
-
-    Outputs:
-        Tensor or Scalar. If `reduction` is ``'none'``, its shape is the same as `input`.
-        Otherwise, a scalar value will be returned.
-
-    Raises:
-        TypeError: If `input` or `target` is not a Tensor.
-        TypeError: If dtype of `input` or `target` is neither float16 nor float32.
-        ValueError: If shape of `input` is not the same as that of `target`.
-        ValueError: If `reduction` is not one of ``'none'``, ``'mean'`` or ``'sum'``.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> logits = Tensor(np.array([[0.3, 0.7], [0.5, 0.5]]), mindspore.float32)
-        >>> labels = Tensor(np.array([[-1, 1], [1, -1]]), mindspore.float32)
-        >>> output = ops.soft_margin_loss(logits, labels)
-        >>> print(output)
-        0.6764238
-    """
-    soft_margin_loss_op = _get_cache_prim(P.SoftMarginLoss)(reduction=reduction)
-    output = soft_margin_loss_op(input, target)
-    return output
 
 
 def softmax(input, axis=-1, *, dtype=None):
@@ -9226,7 +9182,6 @@ __all__ = [
     'softplus',
     'selu',
     'silu',
-    'soft_margin_loss',
     'softmax',
     'softmin',
     'pdist',
@@ -9248,6 +9203,7 @@ __all__ = [
     'conv2d',
     'conv_transpose2d',
     'sigmoid',
+    'soft_margin_loss',
     'logsigmoid',
     'relu',
     'relu6',

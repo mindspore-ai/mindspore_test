@@ -113,7 +113,7 @@ from mindspore.ops.functional import group_norm
 # 43
 
 # 44
-
+from mindspore.ops.auto_generate import soft_margin_loss
 # 45
 
 # 46
@@ -175,7 +175,7 @@ from mindspore.ops.functional import embedding
 # 74
 
 # 75
-
+from mindspore.ops.function.nn_func import adaptive_max_pool2d
 # 76
 
 # 77
@@ -1002,7 +1002,7 @@ __all__ = [
     # 43
 
     # 44
-
+    'soft_margin_loss',
     # 45
 
     # 46
@@ -1119,6 +1119,9 @@ __all__ = [
     'adaptive_avg_pool3d',
     # 254
     'max_unpool2d',
+
+    # 288
+    'adaptive_max_pool2d',
 
     # 312
     'normalize',

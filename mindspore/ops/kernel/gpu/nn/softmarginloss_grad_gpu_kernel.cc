@@ -32,18 +32,21 @@ const std::vector<std::pair<KernelAttr, SoftMarginLossGradPtrCreatorFunc>> kerne
      .AddInputAttr(kNumberTypeFloat32)
      .AddInputAttr(kNumberTypeFloat32)
      .AddInputAttr(kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
      .AddOutputAttr(kNumberTypeFloat32),
    CreateSoftMarginLossGradKernelPtr<float>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeFloat16)
      .AddInputAttr(kNumberTypeFloat16)
      .AddInputAttr(kNumberTypeFloat16)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
      .AddOutputAttr(kNumberTypeFloat16),
    CreateSoftMarginLossGradKernelPtr<half>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeFloat64)
      .AddInputAttr(kNumberTypeFloat64)
      .AddInputAttr(kNumberTypeFloat64)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
      .AddOutputAttr(kNumberTypeFloat64),
    CreateSoftMarginLossGradKernelPtr<double>}};
 }  // namespace
@@ -68,10 +71,8 @@ bool SoftMarginLossGradGpuKernelMod::Init(const std::vector<KernelTensor *> &inp
   if (!is_match) {
     return false;
   }
-  attr_ptr_->reduction = GetValue<std::string>(primitive_->GetAttr("reduction"));
 
   helper_ptr_ = std::move(kernel_attr[index].second(kernel_name_, device_id_));
-  helper_ptr_->SetKernelParam(attr_ptr_);
 
   Resize(inputs, outputs);
   return true;
@@ -79,10 +80,19 @@ bool SoftMarginLossGradGpuKernelMod::Init(const std::vector<KernelTensor *> &inp
 
 int SoftMarginLossGradGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
                                            const std::vector<KernelTensor *> &outputs) {
-  int ret = KernelMod::Resize(inputs, outputs);
-  if (ret != KRET_OK) {
+  if (auto ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
     return ret;
   }
+
+  auto reduction = static_cast<Reduction>(inputs[kIndex3]->GetValueWithCheck<int64_t>());
+  if (reduction == Reduction::NONE) {
+    attr_ptr_->reduction = "none";
+  } else if (reduction == Reduction::MEAN) {
+    attr_ptr_->reduction = "mean";
+  } else {
+    attr_ptr_->reduction = "sum";
+  }
+  helper_ptr_->SetKernelParam(attr_ptr_);
 
   int dout_index = 2;
   std::vector<std::vector<int64_t>> input_shapes;

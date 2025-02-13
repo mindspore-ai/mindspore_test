@@ -21,6 +21,8 @@ from __future__ import absolute_import
 import mindspore.ops as ops
 from mindspore.mint.nn import functional as F
 from mindspore.nn.cell import Cell
+from mindspore.nn import AdaptiveMaxPool2d
+from mindspore.nn import SoftMarginLoss
 from mindspore.nn import EmbeddingExt as Embedding, MaxPool2dExt as MaxPool2d, LayerNormExt as LayerNorm, Linear
 import mindspore.nn as nn
 
@@ -1061,7 +1063,7 @@ __all__ = [
     # 47
 
     # 48
-
+    'SoftMarginLoss',
     # 49
 
     # 50
@@ -1190,6 +1192,9 @@ __all__ = [
 
     # 294
     'SmoothL1Loss',
+
+    # 388
+    'AdaptiveMaxPool2d',
 
     # 393
     'Dropout2d',

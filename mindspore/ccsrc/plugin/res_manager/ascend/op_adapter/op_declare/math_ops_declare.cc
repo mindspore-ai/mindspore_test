@@ -180,9 +180,8 @@ REG_ADPT_DESC(PdistGrad, prim::kPrimPdistGrad->name(), CUST_ADPT_DESC(PdistGrad)
 
 // SoftMarginLossGrad
 INPUT_MAP(SoftMarginLossGrad) = {{1, INPUT_DESC(predict)}, {2, INPUT_DESC(label)}, {3, INPUT_DESC(dout)}};
-ATTR_MAP(SoftMarginLossGrad) = {
-  {"reduction", ATTR_DESC(reduction, AnyTraits<std::string>())},
-};
+ATTR_MAP(SoftMarginLossGrad) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(SoftMarginLossGrad) = {{4, ATTR_DESC(reduction, AnyTraits<GEReduction>())}};
 OUTPUT_MAP(SoftMarginLossGrad) = {{0, OUTPUT_DESC(gradient)}};
 REG_ADPT_DESC(SoftMarginLossGrad, prim::kPrimSoftMarginLossGrad->name(), ADPT_DESC(SoftMarginLossGrad))
 

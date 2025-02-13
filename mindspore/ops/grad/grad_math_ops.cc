@@ -5280,6 +5280,23 @@ REG_BPROP_BUILDER("Outer").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return grad;
 });
 
+REG_BPROP_BUILDER("MultiScaleDeformableAttn").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
+  auto value = ib->GetInput(kIndex0);
+  auto shape = ib->GetInput(kIndex1);
+  auto offset = ib->GetInput(kIndex2);
+  auto locations_trans = ib->GetInput(kIndex3);
+  auto weight = ib->GetInput(kIndex4);
+  auto grad_output = ib->GetInput(kIndex6);
+
+  auto grad_out =
+    ib->Emit("MultiScaleDeformableAttnGrad", {value, shape, offset, locations_trans, weight, grad_output});
+  auto grad0 = ib->TupleGetItem(grad_out, 0);
+  auto grad1 = ib->TupleGetItem(grad_out, 1);
+  auto grad2 = ib->TupleGetItem(grad_out, 2);
+
+  return {grad0, ib->OutZeros(shape), ib->OutZeros(offset), grad1, grad2};
+});
+
 REG_BPROP_BUILDER("Dot").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto other = ib->GetInput(kIndex1);

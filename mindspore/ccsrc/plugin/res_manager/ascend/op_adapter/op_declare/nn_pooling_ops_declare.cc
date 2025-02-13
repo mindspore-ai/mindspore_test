@@ -244,7 +244,8 @@ REG_ADPT_DESC(Upsample, kNameUpsample, ADPT_DESC(Upsample))
 
 // AdaptiveMaxPool2d
 INPUT_MAP(AdaptiveMaxPool2d) = {{1, INPUT_DESC(x)}};
-ATTR_MAP(AdaptiveMaxPool2d) = {{"output_size", ATTR_DESC(output_size, AnyTraits<std::vector<int64_t>>())}};
+ATTR_MAP(AdaptiveMaxPool2d) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(AdaptiveMaxPool2d) = {{2, ATTR_DESC(output_size, AnyTraits<std::vector<int64_t>>())}};
 OUTPUT_MAP(AdaptiveMaxPool2d) = {{0, OUTPUT_DESC(y)}, {1, OUTPUT_DESC(argmax)}};
 REG_ADPT_DESC(AdaptiveMaxPool2d, kAdaptiveMaxPool2dOpName, ADPT_DESC(AdaptiveMaxPool2d))
 REG_ADPT_DESC(AdaptiveMaxPool2D, kNameAdaptiveMaxPool2D, ADPT_DESC(AdaptiveMaxPool2d))

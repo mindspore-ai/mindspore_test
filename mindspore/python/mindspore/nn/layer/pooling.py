@@ -1728,13 +1728,13 @@ class AdaptiveMaxPool2d(Cell):
         \end{align}
 
     Note:
-        Ascend platform only supports float16 type for input.
+        In KBK mode, `output_size` does not support mutable.
 
     Args:
         output_size (Union[int, tuple]): The target output size. `output_size` can be a tuple :math:`(H, W)`,
             or an int H for :math:`(H, H)`. :math:`H` and :math:`W` can be int or None.
             If it is None, it means the output size is the same as the input size.
-        return_indices (bool): If `return_indices` is ``True`` , the indices of max value would be output.
+        return_indices (bool, optional): If `return_indices` is ``True`` , the indices of max value would be output.
             Default: ``False`` .
 
     Inputs:
@@ -1797,15 +1797,11 @@ class AdaptiveMaxPool2d(Cell):
     def __init__(self, output_size, return_indices=False):
         """Initialize AdaptiveMaxPool2d."""
         super(AdaptiveMaxPool2d, self).__init__()
-        validator.check_value_type('return_indices', return_indices, [bool], self.cls_name)
-        self.adaptive_max_pool2d = ops.AdaptiveMaxPool2D(output_size)
+        self.output_size = output_size
         self.return_indices = return_indices
 
     def construct(self, input):
-        output = self.adaptive_max_pool2d(input)
-        if self.return_indices:
-            return output
-        return output[0]
+        return ops.adaptive_max_pool2d(input, self.output_size, self.return_indices)
 
 
 class AdaptiveMaxPool3d(Cell):

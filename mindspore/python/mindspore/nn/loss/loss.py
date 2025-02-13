@@ -732,16 +732,18 @@ class SoftMarginLoss(LossBase):
             - ``'sum'``: the output elements will be summed.
 
     Inputs:
-        - **logits** (Tensor) - Predict data. Data type must be float16 or float32.
-        - **labels** (Tensor) - Ground truth data, with the same type and shape as `logits`.
+        - **logits** (Tensor) - Predict data. Data type must be float16, float32,
+          bfloat16 (Atlas training series products are not supported).
+        - **labels** (Tensor) - Ground truth data, with the same shape as `logits`.
 
-    Outputs:
+    Returns:
         Tensor or Scalar, if `reduction` is ``"none"``, its shape is the same as `logits`.
         Otherwise, a scalar value will be returned.
 
     Raises:
         TypeError: If `logits` or `labels` is not a Tensor.
-        TypeError: If dtype of `logits` or `labels` is neither float16 nor float32.
+        TypeError: If dtype of `logits` or `labels` is not float16, float32,
+                   bfloat16 (Atlas training series products are not supported).
         ValueError: If shape of `logits` is not the same as `labels`.
         ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``.
 
@@ -762,10 +764,10 @@ class SoftMarginLoss(LossBase):
 
     def __init__(self, reduction='mean'):
         super(SoftMarginLoss, self).__init__()
-        self.soft_margin_loss = P.SoftMarginLoss(reduction)
+        self.reduction = reduction
 
     def construct(self, logits, labels):
-        return self.soft_margin_loss(logits, labels)
+        return F.soft_margin_loss(logits, labels, self.reduction)
 
 
 class SoftmaxCrossEntropyWithLogits(LossBase):
