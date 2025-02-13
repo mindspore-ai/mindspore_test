@@ -52,7 +52,6 @@ class GraphKernelOptimizer {
   bool is_gpu{false};
   bool is_ascend{false};
   bool is_cpu{false};
-  bool is_ge{false};
   bool is_dvm{false};
 };
 

@@ -175,32 +175,6 @@ void AclAfterCreateKernel(const KernelGraphPtr &kernel_graph) {
                 << kernel_graph->graph_id();
 }
 
-namespace {
-void AddCommFusionForKbk(const PassManagerPtr &opt_acl_pm, const KernelGraphPtr &kernel_graph) {
-  auto is_kbk = !kernel_graph->is_graph_run_mode();
-  if (!is_kbk) {
-    MS_LOG(INFO) << "This not kbk mode. Do not do communication operation fusion.";
-    return;
-  }
-  // Do communication op fusion before InsertTensorMoveForCommunication pass.
-  // So these passes are before kernel select process, no need to generate kernel build info in them.
-  if (parallel::ParallelContext::GetInstance()->enable_all_reduce_fusion()) {
-    MS_LOG(INFO) << "Parallel comm_fusion of AllReduce is enabled.";
-    opt_acl_pm->AddFusionPass(std::make_shared<opt::AllReduceFusion>());
-  }
-  if (parallel::ParallelContext::GetInstance()->enable_all_gather_fusion()) {
-    MS_LOG(INFO) << "Parallel comm_fusion of AllGather is enabled.";
-    opt_acl_pm->AddFusionPass(std::make_shared<opt::AllGatherFusion>());
-    opt_acl_pm->AddFusionPass(std::make_shared<opt::ConcatOutputsForAllGather>());
-  }
-  if (parallel::ParallelContext::GetInstance()->enable_reduce_scatter_fusion()) {
-    MS_LOG(INFO) << "Parallel comm_fusion of ReduceScatter is enabled.";
-    opt_acl_pm->AddFusionPass(std::make_shared<opt::ReduceScatterFusion>());
-    opt_acl_pm->AddFusionPass(std::make_shared<opt::SplitInputsForReduceScatter>());
-  }
-}
-}  // namespace
-
 void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
   MS_LOG(DEBUG) << "Status record: start ascend backend optimize acl pass. graph id: " << kernel_graph->graph_id();
@@ -218,8 +192,6 @@ void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph) {
   auto opt_acl_pm = std::make_shared<PassManager>("opt_acl_pm");
   opt_acl_pm->AddPass(std::make_shared<opt::ProcessCallInline>());
   opt_acl_pm->AddPass(std::make_shared<SeedAdapter>());
-
-  AddCommFusionForKbk(opt_acl_pm, kernel_graph);
 
   if (common::IsEnableRuntimeConfig(common::kRuntimeInsertTensorMove)) {
     opt_acl_pm->AddPass(std::make_shared<opt::InsertTensorMoveForHcclOpGe>());
@@ -312,8 +284,8 @@ void GEUnifyMindIR(const KernelGraphPtr &kernel_graph) {
   }
 #endif
   auto optimizer = std::make_shared<opt::GraphOptimizer>();
-  optimizer->AddPassManager(GetGEUnifyMindIRPassManager());
-  optimizer->AddPassManager(GetGEFusionGroupPassManager());
+  optimizer->AddPassManager(GetBackendCommonUnifyMindIRPassManager());
+  optimizer->AddPassManager(GetBackendFusionGroupPassManager());
   (void)optimizer->Optimize(kernel_graph);
   PROF_END(GEUnifyMindIR);
 #ifdef ENABLE_DUMP_IR
@@ -395,14 +367,5 @@ void GEDynamicUnifyMindIR(const FuncGraphPtr &func_graph) {
   (void)profiler::CollectHostInfo("GE", "GE Dynamic Shape Unify MindIR", "GEBackend_Dynamic_UnifyMindIR", start_time,
                                   profiler::GetClockSyscnt(), 0);
 }
-
-PassManagerPtr GetGEUnifyMindIRPassManager() {
-  auto unify_mindir_pm = std::make_shared<opt::PassManager>("unify_mindir_1");
-  MS_EXCEPTION_IF_NULL(unify_mindir_pm);
-  GetBackendCommonUnifyMindIRPassManager(&unify_mindir_pm);
-  return unify_mindir_pm;
-}
-
-PassManagerPtr GetGEFusionGroupPassManager() { return GetBackendFusionGroupPassManager(); }
 }  // namespace opt
 }  // namespace mindspore

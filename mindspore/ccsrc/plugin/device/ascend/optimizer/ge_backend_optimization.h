@@ -28,8 +28,6 @@ void GEAfterInlineOptimize(const KernelGraphPtr &kernel_graph);
 void GEDynamicUnifyMindIR(const FuncGraphPtr &func_graph);
 void GEBackendOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph);
 void AclAfterCreateKernel(const KernelGraphPtr &kernel_graph);
-PassManagerPtr GetGEUnifyMindIRPassManager();
-PassManagerPtr GetGEFusionGroupPassManager();
 }  // namespace opt
 }  // namespace mindspore
 
