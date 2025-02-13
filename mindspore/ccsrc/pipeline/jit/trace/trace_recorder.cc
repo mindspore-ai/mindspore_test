@@ -375,7 +375,7 @@ void TraceRecorder::NewNode(const py::object &prim_obj, const py::object &prim_r
   const auto &prim_py = std::make_shared<PrimitivePy>(prim_obj);
   AnfNodePtr cnode;
   if (py::cast<bool>(do_signature)) {
-    cnode = prim::GenerateCNode(graph_stack_.top(), prim_py->name(), prim_py, abs_inputs, node_inputs);
+    cnode = prim::GenerateCNodeBySignatures(graph_stack_.top(), prim_py->name(), prim_py, abs_inputs, node_inputs);
   } else {
     cnode = GenerateCNode(graph_stack_.top(), prim_py, node_inputs);
   }

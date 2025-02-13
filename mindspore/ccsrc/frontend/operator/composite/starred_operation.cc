@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ using mindspore::abstract::AbstractSequencePtr;
 using mindspore::abstract::AbstractTensor;
 using mindspore::abstract::AbstractTuple;
 
+namespace {
 void SetSequenceElementsUseFlagsForStarred(const AbstractBasePtrList &args_abs_list) {
   // Handle for DDE.
   for (size_t i = 0; i < args_abs_list.size(); ++i) {
@@ -46,6 +47,7 @@ void SetSequenceElementsUseFlagsForStarred(const AbstractBasePtrList &args_abs_l
     }
   }
 }
+}  // namespace
 
 // x = (1, 2, 3, 4)
 // a, *b, c = x    // targets(a, *b, c) = assign(x)

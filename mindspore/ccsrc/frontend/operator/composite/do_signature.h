@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,16 +57,17 @@ class DoSignatureMetaFuncGraph : public MetaFuncGraph {
 using RWSignaturePtr = std::shared_ptr<DoSignatureMetaFuncGraph>;
 
 // shared with pynative
-void RaiseExceptionForConvertRefDtype(const ValuePtr &func, const std::string &ref_type, const std::string &target_type,
-                                      size_t index);
+std::string ErrorMessageForConvertRefDtype(const ValuePtr &func, const std::string &ref_type,
+                                           const std::string &target_type, size_t index);
 bool IfRaiseExceptionForCheckParameter(const std::string &func_name, const ValuePtr &function,
                                        const SignatureEnumRW &sig, const TypePtr &type);
 
 std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph, const std::string &func_name,
                                                  const ValuePtr &function, const AbstractBasePtrList &args_abs_list,
                                                  const std::vector<AnfNodePtr> &params_list);
-AnfNodePtr GenerateCNode(const FuncGraphPtr &func_graph, const std::string &func_name, const ValuePtr &function,
-                         const AbstractBasePtrList &args_abs_list, const AnfNodePtrList &old_node_inputs);
+AnfNodePtr GenerateCNodeBySignatures(const FuncGraphPtr &func_graph, const std::string &func_name,
+                                     const ValuePtr &function, const AbstractBasePtrList &args_abs_list,
+                                     const AnfNodePtrList &old_node_inputs);
 }  // namespace prim
 }  // namespace mindspore
 
