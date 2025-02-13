@@ -47,6 +47,11 @@ constexpr auto kSuccessKeyWord = "Success";
 constexpr size_t kSuccessKeyWordSize = GetStrLen(kSuccessKeyWord);
 constexpr size_t kBufferSize = 999;
 constexpr auto kGpuPluginName = "libmindspore_gpu";
+#if defined(_WIN32)
+constexpr bool kIsWindowsPlatform = true;
+#else
+constexpr bool kIsWindowsPlatform = false;
+#endif
 
 #ifdef __linux__
 class FdScope {
@@ -246,11 +251,7 @@ bool PluginLoader::GetPluginPath(std::string *file_path) {
     MS_LOG(INFO) << "Current so path empty or the path [" << cur_so_path << "] is invalid.";
     return false;
   }
-#ifndef _WIN32
-  auto plugin_so_path = cur_so_path.substr(0, pos) + "/plugin";
-#else
-  auto plugin_so_path = cur_so_path.substr(0, pos);
-#endif
+  auto plugin_so_path = kIsWindowsPlatform ? cur_so_path.substr(0, pos) : cur_so_path.substr(0, pos) + "/plugin";
   if (plugin_so_path.size() >= PATH_MAX) {
     MS_LOG(INFO) << "Current path [" << plugin_so_path << "] is invalid.";
     return false;
@@ -345,7 +346,8 @@ void DeviceContextManager::LoadPlugin() {
   std::map<std::string, std::set<std::string>> multi_version_plugin_map;  // key: plugin name, value: so file name
   while ((entry = readdir(dir)) != nullptr) {
     auto plugin_file = plugin_path_ + PATH_SEPARATOR + entry->d_name;
-    if (plugin_file.find("libmindspore_") == std::string::npos) {
+    auto plugin_prefix = kIsWindowsPlatform ? "mindspore_" : "libmindspore_";
+    if (plugin_file.find(plugin_prefix) == std::string::npos) {
       continue;
     }
     std::string file_name = entry->d_name;
@@ -362,10 +364,10 @@ void DeviceContextManager::LoadPlugin() {
       std::string cuda_home = common::GetEnv(kCudaHomeEnv);
       if (cuda_home.empty()) {
         MS_LOG(INFO) << "Please set env CUDA_HOME to path of cuda, if you want to enable gpu backend.";
-        continue;
       } else {
         (void)SelectGpuPlugin(cuda_home, file_names);
       }
+      continue;
     }
     for (auto iter = file_names.rbegin(); iter != file_names.rend(); iter++) {
       const auto &file_name = *iter;

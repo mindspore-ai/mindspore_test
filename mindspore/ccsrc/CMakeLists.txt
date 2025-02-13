@@ -227,10 +227,11 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
                 -Wl,--no-whole-archive mindspore_core
                 mindspore_ops mindspore_common mindspore_backend mindspore_pyboost mindspore_backend_manager
                 mindspore_res_manager)
+        target_link_libraries(_c_expression PRIVATE -Wl,--no-as-needed mindspore_ops_host -Wl,--as-needed)
     else()
         target_link_libraries(_c_expression PRIVATE mindspore_core mindspore_ops
                 mindspore_common mindspore_backend mindspore mindspore_ops_grad mindspore_pyboost
-                mindspore_backend_manager mindspore_res_manager)
+                mindspore_backend_manager mindspore_res_manager mindspore_ops_host)
         target_link_options(_c_expression PRIVATE "/WHOLEARCHIVE:mindspore_ops_grad.lib")
     endif()
 elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")

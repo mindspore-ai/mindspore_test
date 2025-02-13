@@ -8,8 +8,6 @@ file(GLOB_RECURSE _PYBOOST_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "grad_functions/auto_generate/*.cc"
 )
 
-list(APPEND _PYBOOST_SRC_LIST ${_PYBOOST_CPU_SRC_LIST})
-
 set_property(SOURCE ${_PYBOOST_SRC_LIST} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_PYNATIVE)
 add_library(mindspore_pyboost SHARED ${_PYBOOST_SRC_LIST})
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")

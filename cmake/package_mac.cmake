@@ -37,6 +37,7 @@ set(INSTALL_BASE_DIR ".")
 set(INSTALL_BIN_DIR "bin")
 set(INSTALL_CFG_DIR "config")
 set(INSTALL_LIB_DIR "lib")
+set(INSTALL_PLUGIN_DIR "${INSTALL_LIB_DIR}/plugin")
 # set package files
 install(
     TARGETS _c_expression
