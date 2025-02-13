@@ -32,6 +32,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/debug/dump_proto.h"
 #include "include/common/utils/parallel_context.h"
+#include "include/common/utils/anfalgo.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "plugin/device/ascend/optimizer/backend_common_unify_mindir.h"
 #include "plugin/device/ascend/optimizer/enhancer/eliminate_maketuple_getitem.h"
@@ -179,7 +180,7 @@ void GEBackendOptimizeACLAfterKernelPacket(const KernelGraphPtr &kernel_graph) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  auto is_ge_mode = context_ptr->GetJitLevel() == kAttrJitLevelO2;
+  auto is_ge_mode = mindspore::common::AnfAlgo::IsBackendGe();
   if (is_ge_mode || (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "0") ||
       common::IsDisableRuntimeConfig(common::kRuntimeView) || context_ptr->IsEnableInferBoost() ||
       kernel_graph->is_from_single_op()) {

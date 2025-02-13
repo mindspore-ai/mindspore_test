@@ -385,7 +385,7 @@ CNodePtr NewTransposeNode(const AnfNodePtr &tensor_node, const AnfNodePtr &tuple
   std::vector<AnfNodePtr> transpose_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimTranspose->name())),
                                               tensor_node, tuple};
   static const bool close_view_op = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "0");
-  auto ge_mode = MsContext::GetInstance()->GetJitLevel() == kAttrJitLevelO2;
+  auto ge_mode = common::AnfAlgo::IsBackendGe();
   if (!ge_mode && !close_view_op) {
     auto monad_input = NewValueNode(kUMonad);
     monad_input->set_abstract(kUMonad->ToAbstract());

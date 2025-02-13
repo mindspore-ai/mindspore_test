@@ -693,7 +693,7 @@ bool AclHelper::IsNopNode(const CNodePtr &node) {
   auto op_name = common::AnfAlgo::GetCNodeName(node);
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  bool is_ge_mode = ms_context->GetJitLevel() == kAttrJitLevelO2;
+  auto is_ge_mode = common::AnfAlgo::IsBackendGe();
   bool is_view_node =
     !is_ge_mode && (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") != "0") && common::AnfAlgo::IsViewNode(node);
   return (nop_nodes.find(op_name) != nop_nodes.end()) && !is_view_node;

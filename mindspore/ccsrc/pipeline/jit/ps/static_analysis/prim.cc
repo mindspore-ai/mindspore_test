@@ -1419,7 +1419,7 @@ AbstractBasePtr PrimitiveFunctionEvaluator::ProcessViewInplaceAbstract(const Abs
     if (close_view_op) {
       prim_func_->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(false));
     } else {
-      auto ge_mode = MsContext::GetInstance()->GetJitLevel() == kAttrJitLevelO2;
+      auto ge_mode = common::AnfAlgo::IsBackendGe();
       if (ge_mode) {
         prim_func_->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(false));
         MS_LOG(WARNING) << "The view feature is not currently supported in GE mode.";

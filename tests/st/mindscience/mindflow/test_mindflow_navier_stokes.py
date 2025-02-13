@@ -102,7 +102,7 @@ def test_mindflow_navier_stokes():
     grad_fn = ops.value_and_grad(
         forward_fn, None, optimizer.parameters, has_aux=False)
 
-    @jit
+    @jit(backend="GE")
     def train_step(pde_data, bc_data, bc_label, ic_data, ic_label):
         loss, grads = grad_fn(pde_data, bc_data, bc_label, ic_data, ic_label)
         if use_ascend:

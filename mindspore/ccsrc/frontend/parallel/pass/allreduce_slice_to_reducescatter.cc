@@ -21,6 +21,7 @@
 #include <string>
 #include <utility>
 #include "include/common/utils/utils.h"
+#include "include/common/utils/anfalgo.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"
@@ -86,7 +87,7 @@ CNodePtr CreateTransposeNode(const FuncGraphPtr &graph, const AnfNodePtr &input_
   std::vector<AnfNodePtr> transpose_inputs = {NewValueNode(prim::kPrimTranspose->Clone()), input_node,
                                               transpose_perm_node};
   static const bool close_view_op = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "0");
-  auto ge_mode = MsContext::GetInstance()->GetJitLevel() == kAttrJitLevelO2;
+  auto ge_mode = common::AnfAlgo::IsBackendGe();
   if (!close_view_op && !ge_mode) {
     auto monad_input = NewValueNode(kUMonad);
     monad_input->set_abstract(kUMonad->ToAbstract());
