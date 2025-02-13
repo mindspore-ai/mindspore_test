@@ -15,9 +15,71 @@
 """shard"""
 
 import copy
+import numpy as np
 import mindspore as ms
 from mindspore import log as logger
 from mindspore._c_expression import Shard_
+
+
+class DistributedTensorInfo:
+    """
+    Describe the distributed information of a tensor.
+
+    Args:
+        distributed_info (Union[Layout, DeviceMesh]): The distributed information of a tensor.
+
+    Raises:
+        TypeError: If `distributed_info` is not a Layout type.
+
+    Examples:
+        >>> from mindspore import DistributedTensorInfo, Layout
+        >>> layout = Layout((2, 2), ("dp", "mp"))
+        >>> src_layout = layout("dp", "mp")
+        >>> distributed_info = DistributedTensorInfo(src_layout)
+        >>> print(distributed_info.sharding_strategy)
+        [2, 2]
+    """
+    def __init__(self, distributed_info):
+        if isinstance(distributed_info, Layout):
+            self._layout = distributed_info
+            self._distributed_info = distributed_info
+        else:
+            raise TypeError(
+                f"DistributedTensorInfo only supports Layout or DeviceMesh as input, but got {type(distributed_info)}")
+        self._sharding_strategy = None
+
+    @property
+    def layout(self):
+        """return layout of current tensor"""
+        return self._layout
+
+    @property
+    def distributed_info(self):
+        """return the distributed info, it depends on user's input """
+        return self._distributed_info
+
+    @property
+    def sharding_strategy(self):
+        """return the sharding strategy of current tensor"""
+        if self._sharding_strategy is None:
+            layout_info = self._layout.to_dict()
+            device_matrix = layout_info["device_matrix"]
+            tensor_map = layout_info["tensor_map"]
+            sharding_strategy = []
+            for map_value in tensor_map:
+                if isinstance(map_value, (tuple, list)):
+                    shard_size = 1
+                    for value in map_value:
+                        if value != -1:
+                            shard_size *= device_matrix[len(device_matrix) - value - 1]
+                    sharding_strategy.append(shard_size)
+                else:
+                    if map_value != -1:
+                        sharding_strategy.append(device_matrix[len(device_matrix) - map_value - 1])
+                    else:
+                        sharding_strategy.append(1)
+            self._sharding_strategy = sharding_strategy
+        return self._sharding_strategy
 
 
 class Layout:
@@ -38,12 +100,15 @@ class Layout:
         alias_name (tuple): The alias name for each axis of device_matrix, its length shoits element type is string.
                             When using "interleaved_parallel" as an alias name, the tensor would be split into multiple
                             copies on the corresponding partition dimension on a single card.
+        rank_list (list): Data is allocated to the device according to rank_list. Default: None.
     Raises:
         TypeError: `device_matrix` is not a tuple type.
         TypeError: `alias_name` is not a tuple type.
+        TypeError: 'rank_list' is not a list type.
         ValueError: `device_matrix` length is not equal to `alias_name` length.
         TypeError: The element of `device_matrix` is not int type.
         TypeError: The element of `alias_name` is not a str type.
+        TypeError: The element of `rank_list` is not int type.
         ValueError: The element of `alias_name` is an empty str.
         ValueError: The element of `alias_name` is "None".
         ValueError: `alias_name` contains repeated element.
@@ -53,13 +118,14 @@ class Layout:
         >>> layout = Layout((2, 2, 2), ("dp", "sp", "mp"))
         >>> layout0 = layout("dp", "mp")
         >>> print(layout0.to_dict())
-        {"device_matrix": (2, 2, 2), "tensor_map": (2, 0), "interleaved_parallel": False}
+        {"device_matrix": (2, 2, 2), "tensor_map": (2, 0), "interleaved_parallel": False,
+         "rank_list": [0, 1, 2, 3, 4, 1, 6, 7]}
         >>> # Total device num is 4, but split the tensor in local device into two copies.
         >>> layout = Layout((2, 2, 2), ("dp", "sp", "interleaved_parallel"))
         >>> layout1 = layout(("dp", "interleaved_parallel"), "sp")
     """
 
-    def __init__(self, device_matrix, alias_name):
+    def __init__(self, device_matrix, alias_name, rank_list=None):
         if not isinstance(device_matrix, tuple):
             raise TypeError(f'device_matrix must be tuple type, but got:{type(device_matrix)}')
         if not isinstance(alias_name, tuple):
@@ -85,6 +151,20 @@ class Layout:
         self._device_shape = device_matrix
         self._alias_name = alias_name
         self._tensor_map = None
+        self._rank_list = list(range(np.prod(np.array(self._device_shape))))
+        if rank_list is not None:
+            if not isinstance(rank_list, list):
+                raise TypeError(f"The rank_list should be a list, but got {type(rank_list).__name__}.")
+            for in_ele in rank_list:
+                if not isinstance(in_ele, int):
+                    raise TypeError(f"The element of rank_list should be int, but got {type(in_ele).__name__}.")
+            if len(np.array(rank_list).shape) != 1:
+                raise ValueError(
+                    f"The rank_list should be a 1-D list, but got {len(np.array(rank_list).shape)}-D list.")
+            if len(rank_list) != np.prod(np.array(self._device_shape)):
+                raise ValueError(f"The length of rank_list should be equal to the product of device_matrix, "
+                                 f"but got {len(rank_list)} and {np.prod(np.array(self._device_shape))}.")
+            self._rank_list = rank_list
 
     def __call__(self, *tensor_map):
         self._tensor_map = ()
@@ -125,8 +205,8 @@ class Layout:
             raise ValueError("The tensor_map of layout is None")
         interleaved_parallel = "interleaved_parallel" in self._alias_name
         return {"device_matrix": self._device_shape, "tensor_map": self._tensor_map,
-                "interleaved_parallel": interleaved_parallel, "alias_name": self._alias_name}
-
+                "interleaved_parallel": interleaved_parallel, "alias_name": self._alias_name,
+                "rank_list": self._rank_list}
 
 
 class Shard(Shard_):
@@ -315,7 +395,7 @@ class Shard(Shard_):
             for in_ele in layout:
                 if not isinstance(in_ele, Layout):
                     raise TypeError(f"The {log_info} item should be a object of class Layout.")
-                layout_value += (in_ele.to_dict(),)
+                layout_value += ({k: v for k, v in in_ele.to_dict().items() if k != "rank_list"},)
         return layout_value
 
     def _check_tuple_strategy(self, dim_strategy):
