@@ -155,6 +155,7 @@ def assert_executed_by_graph_mode(func, *, call_count: int = None):
     if call_count is not None:
         assert jcr['code']['call_count_'] == call_count
 
+
 def assert_no_graph_break(func, *, call_count: int = None):
     jcr = get_code_extra(getattr(func, "__wrapped__", func))
     assert jcr is not None
@@ -171,7 +172,8 @@ def assert_has_graph_break(func, *, break_count: int = 1, call_count: int = None
     assert jcr['break_count_'] == break_count, f'break_count expect: {break_count}, actual: {jcr["break_count_"]}'
     if call_count is not None:
         assert jcr['code']['call_count_'] == call_count
-        
+
+
 def assert_graph_compile_status(func, break_count=None, call_count=None, compile_count=None):
     jcr = get_code_extra(getattr(func, "__wrapped__", func))
     assert jcr is not None
@@ -180,6 +182,7 @@ def assert_graph_compile_status(func, break_count=None, call_count=None, compile
     assert call_count is None or jcr['code']['call_count_'] == call_count
     assert compile_count is None or jcr['compile_count_'] == compile_count
     assert has_graph(jcr)
+
 
 def pi_jit_with_config(function=None, jit_config=None):
     wrap_func = PIJitCaptureContext(jit_config)

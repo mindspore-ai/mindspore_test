@@ -158,7 +158,7 @@ def test_tuple_executed_by_graph():
     Description: Support python built-in function tuple in pijit.
     Expectation: No exception.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def func(x):
         return tuple((x, x + 1, x + 2))
 

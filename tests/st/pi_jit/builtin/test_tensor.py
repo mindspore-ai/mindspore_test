@@ -27,7 +27,7 @@ def test_tensor_instantiation_1():
     Description: Transform tensor instantiation to primitive. Only compile once
     Expectation: The result is match. Only compile once
     """
-    @jit(mode='PIJit')
+    @jit(capture_mode='bytecode')
     def func(x: Tensor):
         return ms.tensor(x), ms.tensor(x, x.dtype)
 
@@ -49,7 +49,7 @@ def test_tensor_instantiation_2(data):
     Description: Dynamic tensor instantiation.
     Expectation: The result is match.
     """
-    @jit(mode='PIJit')
+    @jit(capture_mode='bytecode')
     def func(x, y: Tensor):
         x = ms.tensor(x)
         if x.dtype == ms.bool_:
@@ -71,7 +71,7 @@ def test_tensor_instantiation_3():
     Description: Tensor instantiation.
     Expectation: The result is match.
     """
-    @jit(mode='PIJit')
+    @jit(capture_mode='bytecode')
     def func(x, y, z, dtype):
         # now it's constant
         return x + ms.tensor(shape=(x, y, z), dtype=dtype, init=False)

@@ -82,7 +82,7 @@ def test_builtin_function():
     Description: Support python built-in functions in pijit.
     Expectation: No exception.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def func(x):
         return float(x + 1), int(x + 1), bool(x + 1), str(x + 1)
 
@@ -101,7 +101,7 @@ def test_builtin_executed_by_graph():
     Description: Support python built-in functions in pijit.
     Expectation: No exception.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def func(x):
         return float(x * 2), int(x * 2), bool(x * 2), str(x * 2)
 

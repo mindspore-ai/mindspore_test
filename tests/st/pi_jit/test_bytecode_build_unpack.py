@@ -60,7 +60,7 @@ def test_build_list_unpack(func, x, y, z):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(x, y, z)
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, capture_mode="bytecode")
     ms_res = wrapped_func(x, y, z)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     check_func_compile_state(wrapped_func)
@@ -78,7 +78,7 @@ def test_build_set_unpack(func, x, y, z):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(x, y, z)
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, capture_mode="bytecode")
     ms_res = set(wrapped_func(x, y, z))
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     check_func_compile_state(wrapped_func)
@@ -96,7 +96,7 @@ def test_build_tuple_unpack(func, x, y, z):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(x, y, z)
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, capture_mode="bytecode")
     ms_res = wrapped_func(x, y, z)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     check_func_compile_state(wrapped_func)
@@ -114,7 +114,7 @@ def test_build_tuple_unpack_with_call(func, x, y, z):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(x, y, z)
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, capture_mode="bytecode")
     ms_res = wrapped_func(x, y, z)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     check_func_compile_state(wrapped_func)
@@ -132,7 +132,7 @@ def test_build_map_unpack(func, x, y, z):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(x, y, z)
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, capture_mode="bytecode")
     ms_res = wrapped_func(x, y, z)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     check_func_compile_state(wrapped_func)
@@ -150,7 +150,7 @@ def test_build_map_unpack_with_call(func, x, y, z):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(x, y, z)
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, capture_mode="bytecode")
     ms_res = wrapped_func(x, y, z)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     check_func_compile_state(wrapped_func)
@@ -169,7 +169,7 @@ def test_build_mix_unpack_with_call(func, a, b, c, d):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(a, b, c, d)
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, capture_mode="bytecode")
     ms_res = wrapped_func(a, b, c, d)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     check_func_compile_state(wrapped_func)

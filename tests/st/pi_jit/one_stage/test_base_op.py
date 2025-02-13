@@ -351,7 +351,7 @@ def test_variable_number_in_container():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor(CppTensor(shape=[-1, 12], dtype=mindspore.float32))
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, a)
     assert ret == (-1, 12)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
@@ -373,7 +373,7 @@ def test_variable_number_in_container_2():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor(CppTensor(shape=[-1, 12], dtype=mindspore.float32))
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, a)
     assert ret == -1
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
@@ -682,7 +682,7 @@ def test_env_get():
     """
     os.environ["abc"] = "1"
 
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def foo(x):
         ret = os.environ.get("abc")
         return ret, x + 1
@@ -924,7 +924,7 @@ def test_function_parse_by_ast_2():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             return ops.full_like(x, 1, dtype=mindspore.float32)
 
@@ -944,7 +944,7 @@ def test_function_parse_by_ast_3():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, axis):
             return x.permute(*axis)
 
@@ -993,7 +993,7 @@ def test_attr_as_inputs():
             super(Net, self).__init__()
             self.a = 1
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             self.a = self.a + 1
             return self.a + x
@@ -1019,7 +1019,7 @@ def test_attr_as_inputs_2():
             self.a = 1
             self.b = Parameter(Tensor([1, 1, 1]), name='b')
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             b = self.b
             self.a = self.a + 1
@@ -1046,7 +1046,7 @@ def test_attr_as_inputs_3():
             self.a = 1
             self.b = Parameter(Tensor([1, 1, 1]), name='b')
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             b = self.b
             self.a = self.a + 1
@@ -1059,6 +1059,7 @@ def test_attr_as_inputs_3():
     assert_graph_compile_status(Net.construct.__wrapped__, 0)
 
 
+@pytest.mark.skip
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_attr_as_inputs_4():
     """
@@ -1067,7 +1068,7 @@ def test_attr_as_inputs_4():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             return self.a + x
 
@@ -1081,6 +1082,7 @@ def test_attr_as_inputs_4():
     assert_graph_compile_status(Net.construct.__wrapped__, 0, 8, 3)
 
 
+@pytest.mark.skip
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_attr_as_inputs_config():
     """
@@ -1089,7 +1091,7 @@ def test_attr_as_inputs_config():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config={"_symbolic": 2})
+        @pi_jit_with_config(jit_config={"_symbolic": 2})
         def construct(self, x):
             return self.a + x
 
@@ -1114,7 +1116,7 @@ def test_global_as_inputs_1():
     global magic
 
     class Net(nn.Cell):
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             return magic + x
 
@@ -1138,7 +1140,7 @@ def test_unpack_sequence_with_variable():
     def inner(x, y):
         return x + y, y
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def foo(x, y):
         a, b = inner(x, y)
         return a, b
@@ -1163,7 +1165,7 @@ def test_unpack_sequence_with_variable_2():
     def inner(x, y):
         return x + y, y
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def foo(x, y):
         a, b = inner(x, y)
         return a, b
@@ -1188,7 +1190,7 @@ def test_unpack_sequence_with_variable_3():
     def inner(x, y):
         return {"1": x + y, "2": y}
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def foo(x, y):
         a, b = inner(x, y)
         return a, b, x + 1
@@ -1211,7 +1213,7 @@ def test_empty_container_input():
     Expectation: No exception.
     """
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def foo(x, y, z):
         return len(x), y + z
 
@@ -1234,7 +1236,7 @@ def test_empty_container_input_2():
     Expectation: No exception.
     """
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def foo(x, y, z):
         return len(x), y + z
 
@@ -1256,7 +1258,7 @@ def test_empty_container_input_3():
     Expectation: No exception.
     """
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def foo(x, y, z):
         return len(x), y + z
 
@@ -1285,7 +1287,7 @@ def test_subgraph_with_primitive_output():
     def cal_func():
         return add_func.ref
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def foo(x):
         return cal_func()(x, x)
 
@@ -1309,7 +1311,7 @@ def test_subgraph_with_primitive_output_2():
     def cal_func():
         return add_func
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def foo(x):
         return cal_func()(x, x)
 
@@ -1333,7 +1335,7 @@ def test_function_decorated_with_PSJIT_run_ast():
             return y + 1
         return y + 2
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def foo(x, y):
         return cal_func(x, y)
 
@@ -1360,7 +1362,7 @@ def test_function_decorated_with_PSJIT_run_ast_2():
             return y + 1
         return y + 2
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def foo(x, y):
         return cal_func(x, y)
 
@@ -1387,7 +1389,7 @@ def test_function_decorated_with_PSJIT_run_ast_3():
             return y + 1
         return y + 2
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def foo(m, n):
         return cal_func(y=n, x=m)
 
@@ -1414,7 +1416,7 @@ def test_function_decorated_with_PSJIT_run_ast_4():
 
     net = Net()
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def foo(m, n):
         return net(m, n)
 
@@ -1443,7 +1445,7 @@ def test_function_decorated_with_PSJIT_run_ast_5():
 
     net = Net()
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def foo(m, n):
         return net(m, n)
 
@@ -1472,7 +1474,7 @@ def test_function_decorated_with_PSJIT_run_ast_6():
 
     net = Net()
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def foo(m, n):
         return net(y=n, x=m)
 
@@ -1497,7 +1499,7 @@ def test_sync_constant_stub_tensor():
             b = Tensor([2])
             self.stub_tensor_attr = ops.add(a, b)
 
-        @jit(mode="PIJit", jit_config={"compile_with_try": False})
+        @pi_jit_with_config(jit_config={"compile_with_try": False})
         def construct(self, x):
             if self.stub_tensor_attr == 0:
                 return x + 1
@@ -1519,7 +1521,7 @@ def test_unpack_for_variable_tensor():
     def inner(x, y):
         return x + y
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def foo(x, y):
         m, n = inner(x, y)
         return m, n

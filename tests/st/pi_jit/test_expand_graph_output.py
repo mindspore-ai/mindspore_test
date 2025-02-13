@@ -3,6 +3,7 @@ from mindspore import jit, context, Tensor
 from mindspore.common import dtype as mstype
 from .share.utils import match_value, assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 # set feature expand graph output on
 config = { "expand_graph_output": True, }
@@ -33,7 +34,7 @@ def test_call_result(func, x, y):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     t = create_nested_tuple(x, y)
-    wrapped_func = jit(func, mode='PIJit', jit_config=config)
+    wrapped_func = pi_jit_with_config(func, jit_config=config)
     ms_res = wrapped_func(x, y, t)
     assert_executed_by_graph_mode(wrapped_func)
     res = func(x, y, t)
@@ -52,7 +53,7 @@ def test_nested_tuple(func, x, y):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     t = create_nested_tuple(x, y)
-    wrapped_func = jit(func, mode='PIJit', jit_config=config)
+    wrapped_func = pi_jit_with_config(func, jit_config=config)
     ms_res = wrapped_func(x, y, t)
     assert_executed_by_graph_mode(wrapped_func)
     res = func(x, y, t)

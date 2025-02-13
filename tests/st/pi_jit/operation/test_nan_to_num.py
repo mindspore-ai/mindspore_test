@@ -21,6 +21,7 @@ from mindspore import Tensor, context, ops, jit
 
 from ..share.utils import match_array, assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 jit_cfg = {'compile_with_try': False}
 
@@ -40,7 +41,7 @@ def test_nan_to_num():
     x = Tensor(np.array([float('nan'), float('inf'), -float('inf'), 5.0]), ms.float32)
     o1 = fn(x)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x)
 
     match_array(o1, o2)
@@ -62,7 +63,7 @@ def test_nan_to_num_with_default_params():
     x = Tensor(np.array([float('nan'), float('inf'), -float('inf'), 5.0]), ms.float32)
     o1 = fn(x)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x)
 
     match_array(o1, o2)
@@ -84,7 +85,7 @@ def test_NanToNum():
     x = Tensor(np.array([float('nan'), float('inf'), -float('inf'), 3.14]), ms.float32)
     o1 = fn(x)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x)
 
     match_array(o1, o2)
@@ -106,7 +107,7 @@ def test_NanToNum_with_default_params():
     x = Tensor(np.array([float('nan'), float('inf'), -float('inf'), 3.14]), ms.float32)
     o1 = fn(x)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x)
 
     match_array(o1, o2)

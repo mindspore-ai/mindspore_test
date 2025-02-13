@@ -1,3 +1,4 @@
+import sys
 import pytest
 from mindspore import Tensor, jit, ops
 from mindspore import numpy as np
@@ -5,6 +6,7 @@ import mindspore.nn as nn
 from mindspore import context
 from .share.utils import match_array
 from tests.mark_utils import arg_mark
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 from mindspore._c_expression import get_code_extra
 
 condition = not (sys.version_info.major == 3 and sys.version_info.minor in [8,9])
@@ -27,7 +29,7 @@ def test001():
             if result[0,0] > 10:
                 result = result + a
         return result
-    fn = jit(func, mode="PIJit", jit_config=jit_config)
+    fn = pi_jit_with_config(func, jit_config=jit_config)
     x1 = np.randn((2,4))
     expect = func(x1)
     got = fn(x1)
@@ -56,7 +58,7 @@ def test002():
         else:
             result = result + 1
         return result
-    fn = jit(func, mode="PIJit", jit_config=jit_config)
+    fn = pi_jit_with_config(func, jit_config=jit_config)
     x1 = np.randn((2,4))
     expect = func(x1)
     got = fn(x1)
@@ -84,7 +86,7 @@ def test003():
             else:
                 result = result + 2
         return result
-    fn = jit(func, mode="PIJit", jit_config=jit_config)
+    fn = pi_jit_with_config(func, jit_config=jit_config)
     x1 = np.randn((2,4))
     expect = func(x1)
     got = fn(x1)
@@ -114,7 +116,7 @@ def test004():
             else:
                 result = result + 2
         return result
-    fn = jit(func, mode="PIJit", jit_config=jit_config)
+    fn = pi_jit_with_config(func, jit_config=jit_config)
     x1 = np.randn((2,4))
     expect = func(x1)
     got = fn(x1)
@@ -144,7 +146,7 @@ def test005():
             else:
                 result = result + 2
         return result
-    fn = jit(func, mode="PIJit", jit_config=jit_config)
+    fn = pi_jit_with_config(func, jit_config=jit_config)
     x1 = np.randn((2,4))
     expect = func(x1)
     got = fn(x1)
@@ -175,7 +177,7 @@ def test006():
     x3 = np.randn((2,4))
     x4 = np.randn((2,4))
     tensor_list=[x1,x2,x3,x4]
-    fn = jit(func, mode="PIJit", jit_config=jit_config)
+    fn = pi_jit_with_config(func, jit_config=jit_config)
     expect = func(tensor_list)
     got = fn(tensor_list)
     allclose = np.isclose(expect,got).all()
@@ -205,7 +207,7 @@ def test007():
     x3 = np.randn((4,3))
     x4 = np.randn((5,3))
     tensor_list=[x1,x2,x3,x4]
-    fn = jit(func, mode="PIJit", jit_config=jit_config)
+    fn = pi_jit_with_config(func, jit_config=jit_config)
     expect = func(tensor_list)
     got = fn(tensor_list)
     allclose = np.isclose(expect,got).all()
@@ -233,7 +235,7 @@ def test008():
                 result = result + 2
             i += 1
         return result
-    fn = jit(func, mode="PIJit", jit_config=jit_config)
+    fn = pi_jit_with_config(func, jit_config=jit_config)
     x1 = np.randn((2,4))
     expect = func(x1)
     got = fn(x1)

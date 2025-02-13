@@ -32,7 +32,7 @@ def test_invert_operation_int():
     Expectation: No exception.
     """
     class InvertNet(nn.Cell):
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             return ~x
 
@@ -57,7 +57,7 @@ def test_invert_operation_bool():
     Expectation: No exception.
     """
     class InvertNet(nn.Cell):
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             return ~x
 
@@ -86,7 +86,7 @@ def test_invert_operation_tensor():
     Expectation: No exception.
     """
     class InvertNet(nn.Cell):
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             return ~x
 
@@ -112,7 +112,7 @@ def test_invert_operation_tensor_bool():
     Expectation: No exception.
     """
     class InvertNet(nn.Cell):
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             return ~x
 
@@ -138,7 +138,7 @@ def test_invert_operation_float():
     Expectation: No exception.
     """
     class InvertNet(nn.Cell):
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             return ~x
 

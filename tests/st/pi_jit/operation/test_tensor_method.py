@@ -19,6 +19,7 @@ from mindspore.common._stub_tensor import StubTensor
 
 from tests.st.pi_jit.share.utils import assert_equal, assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 jit_cfg = {'compile_with_try': False}
 
@@ -38,7 +39,7 @@ def test_tensor_type_guard():
     x = ops.arange(0, 4)  # It is a StubTensor
     o1 = fn(x)
 
-    compiled_fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    compiled_fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     x = ops.arange(0, 4)  # It is a StubTensor
     o2 = compiled_fn(x)
 

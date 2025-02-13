@@ -34,7 +34,7 @@ def test_position_args_and_keyword_args_1(func, a, b, c):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(a, *b, **c)
-    jit_res = jit(func, mode='PIJit')(a, *b, **c)
+    jit_res = jit(func, capture_mode="bytecode")(a, *b, **c)
     match_array(res, jit_res, error=0, err_msg=str(jit_res))
 
 def position_args_and_keyword_args_2(a, *b, **c):
@@ -52,7 +52,7 @@ def test_position_args_and_keyword_args_2(func, a, b):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(a, *b, e=2, f=3)
-    jit_res = jit(func, mode='PIJit')(a, *b, e=2, f=3)
+    jit_res = jit(func, capture_mode="bytecode")(a, *b, e=2, f=3)
     match_array(res, jit_res, error=0, err_msg=str(jit_res))
 
 def position_args_and_keyword_args_3(a, b, *c):
@@ -71,7 +71,7 @@ def test_position_args_and_keyword_args_3(func, a, b, c):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(a, b, *c)
-    jit_res = jit(func, mode='PIJit')(a, b, *c)
+    jit_res = jit(func, capture_mode="bytecode")(a, b, *c)
     match_array(res, jit_res, error=0, err_msg=str(jit_res))
 
 def position_args_and_keyword_args_4(a, b, *c):
@@ -92,7 +92,7 @@ def test_position_args_and_keyword_args_4(func, a, b, c, d, e):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(a, b, c, d, e)
-    jit_res = jit(func, mode='PIJit')(a, b, c, d, e)
+    jit_res = jit(func, capture_mode="bytecode")(a, b, c, d, e)
     match_array(res, jit_res, error=0, err_msg=str(jit_res))
 
 def position_args_and_keyword_args_5(a, b, *, c):
@@ -110,5 +110,5 @@ def test_position_args_and_keyword_args_5(func, a, b):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(a, b, c=3)
-    jit_res = jit(func, mode='PIJit')(a, b, c=3)
+    jit_res = jit(func, capture_mode="bytecode")(a, b, c=3)
     match_array(res, jit_res, error=0, err_msg=str(jit_res))

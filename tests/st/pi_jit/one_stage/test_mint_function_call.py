@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore.mint import clamp
 from tests.mark_utils import arg_mark
 from tests.st.pi_jit.share.utils import assert_executed_by_graph_mode
-
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_mint_clamp_with_tensor():
@@ -27,7 +27,7 @@ def test_mint_clamp_with_tensor():
     Description: Test functional feature with clamp.
     Expectation: Run success
     """
-    @ms.jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def func(x, min, max):  # pylint: disable=redefined-builtin
         return clamp(x, min, max)
 
@@ -45,7 +45,7 @@ def test_mint_clamp_with_scalar():
     Description: Test functional feature with clamp.
     Expectation: Run success
     """
-    @ms.jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def func(x, min, max):  # pylint: disable=redefined-builtin
         return clamp(x, min, max)
 
@@ -63,7 +63,7 @@ def test_mint_clamp_default():
     Description: Test functional feature with clamp.
     Expectation: Run success
     """
-    @ms.jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def func(x, min):  # pylint: disable=redefined-builtin
         return clamp(x, min)
 
@@ -80,7 +80,7 @@ def test_mint_clamp_keyword():
     Description: Test functional feature with clamp.
     Expectation: Run success
     """
-    @ms.jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def func(x, min):  # pylint: disable=redefined-builtin
         return clamp(x, min, max=ms.Tensor(4)), clamp(x, max=3, min=1)
 

@@ -413,7 +413,7 @@ def test_infer_self_conflict():
         def calc(self, x):
             return x + self.x
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def func(self, x):
             m1 = types.MethodType(calc, x) # method from class instantiation
             m2 = x.calc                    # method from attribute
@@ -442,7 +442,7 @@ def test_builtin_attr():
     Description: Got no graph break
     Expectation: The results should match for both modes.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def fn(x, y):
         return "x({x}) + y({y}) = {}".format(x + y, x=x, y=y)
 
@@ -461,7 +461,7 @@ def test_code_generate():
                  must be mark tow same local and same alive between 'r' and refacted variable
     Expectation: The results should match for both modes.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def fn(x, y):
         y = "x({x}) + y({y}) = {}".format(x + y, x=x, y=y)
         r = {'y' : y}

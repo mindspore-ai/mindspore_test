@@ -14,9 +14,9 @@
 # ============================================================================
 """Test call class to create instance"""
 import mindspore as ms
-from mindspore import Tensor
+from mindspore import Tensor, jit
 from mindspore import context
-from ..share.utils import match_array, assert_executed_by_graph_mode, pi_jit_with_config
+from ..share.utils import match_array, assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
 
 
@@ -76,7 +76,7 @@ def test_create_tensor_by_ms_api():
     context.set_context(mode=context.PYNATIVE_MODE)
     expect = fn()
 
-    fn = jit(fn, mode="PIJit")
+    fn = jit(fn, capture_mode="bytecode")
     actual = fn()
 
     match_array(actual.asnumpy(), expect.asnumpy())

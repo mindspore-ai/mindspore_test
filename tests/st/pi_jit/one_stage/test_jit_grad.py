@@ -300,7 +300,7 @@ def test_jit_grad_with_invalid_input():
     Description: Test grad scene for tensor in container used as jit input.
     Expectation: RuntimeError.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def inner_func(m):
         return 2 * m["x"][0] + m["y"]
 
@@ -326,7 +326,7 @@ def test_jit_grad_with_invalid_input_2():
     Description: Test grad scene for tensor in container used as jit input.
     Expectation: RuntimeError.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def inner_func(x, y):
         return 2 * x[0] + y
 

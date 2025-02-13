@@ -21,7 +21,7 @@ from mindspore import jit
 from mindspore import ops
 from mindspore import Tensor
 from tests.mark_utils import arg_mark
-
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 def count_file_key(file, key):
     """Count key string in file"""
@@ -80,7 +80,7 @@ def test_debug_info_for_binary_op():
     Expectation: No exception, the IR should have debug info.
     """
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def foo(x, y):
         m = x + y
         return m
@@ -98,7 +98,7 @@ def test_debug_info_for_primitive_call():
     Expectation: No exception, the IR should have debug info.
     """
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def foo(x, y):
         m = ops.add(x, y)
         return m
@@ -119,7 +119,7 @@ def test_debug_info_for_func_graph_call():
         ret = x + y
         return ret
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def foo(x, y):
         m = inner(x, y)
         return m
@@ -138,7 +138,7 @@ def test_debug_info_for_binary_op_with_break():
     Expectation: No exception, the IR should have debug info.
     """
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def foo(x, y):
         m = x + y
         print("aaaa", flush=True)  # break here
@@ -162,7 +162,7 @@ def test_debug_info_for_graph_call_with_break():
         ret = x + y
         return ret
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def foo(x, y):
         m = x + y
         print("aaaa", flush=True)  # break here
@@ -186,7 +186,7 @@ def test_debug_info_for_ops_call_with_break():
         ret = x + y
         return ret
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def foo(x, y):
         m = x + y
         print("aaaa", flush=True)  # break here

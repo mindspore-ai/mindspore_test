@@ -77,7 +77,7 @@ def test_for_iter_unrolling(func, param):
 
     config = {"loop_unrolling": True}
     excepted = func(param)
-    result = pi_jit_with_config(function=func, jit_config=config)(param)
+    result = pi_jit_with_config(function=func, jit_config=jit_cfg)(param)
     jcr = get_code_extra(func)
 
     assert jcr["stat"] == "GRAPH_CALLABLE"
@@ -96,7 +96,7 @@ def test_not_implement_for_iter(func, param):
     """
     config = {"loop_unrolling": True}
     excepted = func(param)
-    result = pi_jit_with_config(function=func, jit_config=config)(param)
+    result = pi_jit_with_config(function=func, jit_config=jit_cfg)(param)
     jcr = get_code_extra(func)
 
     assert jcr["stat"] == "GRAPH_CALLABLE"
@@ -125,7 +125,7 @@ def test_for_zip_iter_1():
     b = (1.5, 2.0, 2.5)
     o1 = fn(a, b)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(a, b)
 
     match_array(o1, o2)
@@ -152,7 +152,7 @@ def test_for_zip_iter_2():
     c = [-0.5, 2.0]
     o1 = fn(a, b, c)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(a, b, c)
 
     match_array(o1, o2)

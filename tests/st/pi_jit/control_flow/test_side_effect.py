@@ -23,7 +23,7 @@ import types
 import numpy
 from tests.mark_utils import arg_mark
 from ..share.utils import match_array, assert_executed_by_graph_mode
-
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 def assert_no_graph_break(func, call_count: int = None):
     jcr = get_code_extra(getattr(func, "__wrapped__", func))
@@ -460,7 +460,7 @@ def test_subgraph_side_effect_of_dict():
     o1 = fn(x1)
 
     x2 = {'x': Tensor([1, 2, 3])}
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x2)
 
     match_array(o1, o2)
@@ -476,7 +476,7 @@ class Net1(mindspore.nn.Cell):
         super(Net1, self).__init__()
         self.memory = Tensor([1, 2, 3])
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def construct(self, x: Tensor):
         self.update_memory()
         return x + self.memory
@@ -541,7 +541,7 @@ def test_side_effect_of_store_attr_in_deep_subgraph():
     o1 = net1(x)
 
     net2 = Net2()
-    fn = jit(net2.construct, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(net2.construct, jit_config=jit_cfg)
     o2 = fn(x)
 
     match_array(o1, o2)
@@ -574,7 +574,7 @@ def test_side_effect_of_store_attr_in_nested_cell():
     o1 = net1(x)
 
     net2 = Net3()
-    fn = jit(net2.construct, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(net2.construct, jit_config=jit_cfg)
     o2 = fn(x)
 
     match_array(o1, o2)
@@ -590,7 +590,7 @@ class Net4(mindspore.nn.Cell):
         super(Net4, self).__init__()
         self.memory = Tensor([1, 2, 3])
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def construct(self, x: Tensor):
         self.update_memory()
         return 2 * x
@@ -611,7 +611,7 @@ def test_subgraph_has_side_effect_but_has_no_return_value():
     o1 = net1(x)
 
     net2 = Net4()
-    fn = jit(net2.construct, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(net2.construct, jit_config=jit_cfg)
     o2 = fn(x)
 
     match_array(o1, o2)
@@ -637,7 +637,7 @@ def test_list_setitem():
     x = ops.ones((2, 3, 4))
     o1 = fn(x, 0)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x, 0)
 
     assert o1 == o2
@@ -662,7 +662,7 @@ def test_list_setitem_by_inplace_add():
     x = Tensor([-1, 0, 1])
     o1 = fn(lst, 2, x)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     lst = [Tensor([1, 1, 1]), Tensor([2, 2, 2]), Tensor([3, 3, 3])]
     o2 = fn(lst, 2, x)
 
@@ -698,7 +698,7 @@ def test_list_setitem_in_subgraph():
     o1 = fn(x1)
 
     x2 = [Tensor([1, 2, 3])]
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x2)
 
     match_array(o1, o2)
@@ -726,7 +726,7 @@ def test_tensor_setitem_by_slice():
     indices = (0, 1)
     o1 = fn(x, indices, -1)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x, indices, -1)
 
     match_array(o1, o2)
@@ -760,7 +760,7 @@ def test_graph_reusing_for_store_int_attr_outside_of_jit():
         net1.a += 1
 
     net2 = Net5()
-    fn = jit(net2.construct, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(net2.construct, jit_config=jit_cfg)
     phase = ''
     for i in range(3):
         o = fn(x)
@@ -803,7 +803,7 @@ def test_subgraph_return_const_value_and_has_tuple_side_effect():
     o1 = net1(x)
 
     net2 = Net6()
-    net2.construct = jit(net2.construct, mode='PIJit', jit_config=jit_cfg)
+    net2.construct = pi_jit_with_config(net2.construct, jit_config=jit_cfg)
     o2 = net2(x)
 
     match_array(o1, o2)
@@ -850,7 +850,7 @@ def test_subgraph_return_user_defined_class_and_has_side_effect():
     o1 = net1(x)
 
     net2 = Net7()
-    net2.construct = jit(net2.construct, mode='PIJit', jit_config=jit_cfg)
+    net2.construct = pi_jit_with_config(net2.construct, jit_config=jit_cfg)
     o2 = net2(x)
 
     match_array(o1, o2)
@@ -890,7 +890,7 @@ def test_subgraph_break_and_reset_side_effect_node_1():
     o1 = net1(x)
 
     net2 = Net8()
-    net2.construct = jit(net2.construct, mode='PIJit', jit_config=jit_cfg)
+    net2.construct = pi_jit_with_config(net2.construct, jit_config=jit_cfg)
     o2 = net2(x)
 
     match_array(o1, o2)
@@ -927,7 +927,7 @@ def test_subgraph_break_and_reset_side_effect_node_2():
     o1 = net1(x)
 
     net2 = Net9()
-    net2.construct = jit(net2.construct, mode='PIJit', jit_config=jit_cfg)
+    net2.construct = pi_jit_with_config(net2.construct, jit_config=jit_cfg)
     o2 = net2(x)
 
     match_array(o1, o2)
@@ -973,7 +973,7 @@ def test_subgraph_break_and_reset_side_effect_node_3():
     o1 = net1(x)
 
     net2 = Net10()
-    net2.construct = jit(net2.construct, mode='PIJit', jit_config=jit_cfg)
+    net2.construct = pi_jit_with_config(net2.construct, jit_config=jit_cfg)
     o2 = net2(x)
 
     match_array(o1, o2)
@@ -992,7 +992,7 @@ def test_side_effect_eliminate(has_side_effect : bool):
     if not has_side_effect:
         pytest.skip("Variable escape analysis not implement. For this case, the variable 't' is escaped if 'r[1]' returned")
 
-    @jit(mode="PIJit")
+    @jit(capture_mode='bytecode')
     def func(has_side_effect : bool, x : Tensor = Tensor([3])):
         t = Tensor([1])
         r = [[t + t], [t]]
@@ -1015,7 +1015,7 @@ def test_side_effect_eliminate_2():
     Description: Validate side effect optimize
     Expectation: No exception
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode='bytecode')
     def func(x : Tensor = Tensor([3, 3])):
         # t = Tensor.new_zeros(x, x.shape) builtin method new_zeros of PyCapsule
         # t = mindspore.tensor(x) fix it after Tensor constant
@@ -1048,7 +1048,7 @@ def test_side_effect_merge():
     x2=Tensor(data)
 
     func(x1)
-    jit(func, mode="PIJit")(x2)
+    jit(func, capture_mode="bytecode")(x2)
     assert (x1 == x2).all()
 
     assert_no_graph_break(func)

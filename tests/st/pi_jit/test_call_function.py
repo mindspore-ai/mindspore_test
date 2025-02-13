@@ -18,7 +18,7 @@ from mindspore import numpy as np
 from mindspore import Tensor, jit, context, ops
 from .share.utils import match_array, assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
-
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 def func(x, k=1):
     return x + k
@@ -210,7 +210,7 @@ def test_subgraph_return_a_freevar():
     a = Tensor([1, 2])
     o1 = fn(a)
 
-    compiled_fn = jit(fn, mode='PIJit', jit_config={'compile_with_try': False})
+    compiled_fn = pi_jit_with_config(fn, jit_config={'compile_with_try': False})
     o2 = compiled_fn(a)
 
     match_array(o1, o2)

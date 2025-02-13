@@ -20,7 +20,7 @@ from ..share.utils import match_array
 from tests.mark_utils import arg_mark
 from mindspore._c_expression import get_code_extra
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def jit_add_sub(a, b, c):
     return a + b - c
 

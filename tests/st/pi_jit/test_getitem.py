@@ -22,6 +22,7 @@ from mindspore._c_expression import get_code_extra
 
 from .share.utils import match_array, assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 jit_cfg = {"compile_with_try": False}
 
@@ -75,7 +76,7 @@ def test_CellList_getitem(cell):
     o1 = net(x)
 
     net.layers[0].a = 0
-    net.construct = jit(net.construct, mode='PIJit', jit_config=jit_cfg)
+    net.construct = pi_jit_with_config(net.construct, jit_config=jit_cfg)
     o2 = net(x)
 
     match_array(o1, o2)
@@ -105,7 +106,7 @@ def test_list_of_cell_getitem(cell):
     o1 = net(x)
 
     net.layers[0].a = 0
-    net.construct = jit(net.construct, mode='PIJit', jit_config=jit_cfg)
+    net.construct = pi_jit_with_config(net.construct, jit_config=jit_cfg)
     o2 = net(x)
 
     match_array(o1, o2)
@@ -134,7 +135,7 @@ def test_list_of_custom_class_getitem():
     lst = [MyData()]
     o1 = fn(lst, x)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(lst, x)
 
     match_array(o1, o2)
@@ -169,7 +170,7 @@ def test_custom_class_getitem():
     x = Tensor([1, 2, 3])
     o1 = fn(data, x)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(data, x)
 
     match_array(o1, o2)
@@ -184,7 +185,7 @@ def test_list_getitem_index_out_of_bound():
     Expectation: Graph break, and exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor, lst: list):
         return x + lst[1]
 

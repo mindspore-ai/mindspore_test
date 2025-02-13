@@ -27,6 +27,7 @@ from mindspore.ops import operations as P
 from tests.mark_utils import arg_mark
 from ..share.utils import match_array, assert_no_graph_break, assert_equal, assert_has_graph_break, \
     assert_executed_by_graph_mode
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 context.set_context(mode=context.PYNATIVE_MODE)
 
@@ -132,7 +133,7 @@ def test_list_comp_1(fn):
 
     o1 = fn()
 
-    compiled_fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    compiled_fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = compiled_fn()
 
     assert_equal(o1, o2)
@@ -156,7 +157,7 @@ def test_list_comp_2():
     z = ops.randn(2, 3)
     o1 = fn(x, y, z)
 
-    compiled_fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    compiled_fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = compiled_fn(x, y, z)
 
     match_array(o1, o2, error=7)
@@ -180,7 +181,7 @@ def test_list_comp_3():
     z = ops.randn(2, 3)
     o1 = fn(x, y, z)
 
-    compiled_fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    compiled_fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = compiled_fn(x, y, z)
 
     assert o1 == o2
@@ -207,7 +208,7 @@ def test_list_comp_4():
     x = [{'a': a1, 'b': b1}, {'a': a2, 'b': b2}]
     o1 = fn(x)
 
-    compiled_fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    compiled_fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = compiled_fn(x)
 
     match_array(o1[0], o2[0])
@@ -232,7 +233,7 @@ def test_list_comp_5():
     x = [{'a': a1}, {'a': a2}]
     o1 = fn(x)
 
-    compiled_fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    compiled_fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = compiled_fn(x)
 
     match_array(o1[0], o2[0])
@@ -261,7 +262,7 @@ def test_list_comp_6():
     k = 0.5
     o1 = fn(x, m, k)
 
-    compiled_fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    compiled_fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = compiled_fn(x, m, k)
 
     match_array(o1, o2)
@@ -309,7 +310,7 @@ def test_list_comp_7():
     x, y, z = mutable(x), mutable(y), mutable(z)
     o1 = net(x, y, z)
 
-    net.construct = jit(net.construct, mode='PIJit', jit_config=jit_cfg)
+    net.construct = pi_jit_with_config(net.construct, jit_config=jit_cfg)
     o2 = net(x, y, z)
 
     assert type(o2) is tuple and len(o2) == 3
@@ -335,7 +336,7 @@ def test_list_comp_8():
 
     o1 = fn()
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn()
 
     assert_equal(o1, o2)
@@ -350,7 +351,7 @@ def test_list_comp_9():
     Expectation: no graph break.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def foo():
         a = "abcdef"
         return tuple([i for i in a])
@@ -382,7 +383,7 @@ def test_list_comp_10():
     grouped_2 = None
     o1 = fn(tensor_list, world_size, grouped_1, grouped_2)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(tensor_list, world_size, grouped_1, grouped_2)
 
     assert_equal(o1, o2)
@@ -419,7 +420,7 @@ def test_list_comp_11():
     labels = [Tensor([0., 1., 0.])]
 
     o1 = net.construct(logits1, logits2, logits3, labels=labels)
-    o2 = jit(net.construct, mode='PIJit', jit_config=jit_cfg)(logits1, logits2, logits3, labels=labels)
+    o2 = pi_jit_with_config(net.construct, jit_config=jit_cfg)(logits1, logits2, logits3, labels=labels)
 
     assert_equal(o1, o2)
     assert_no_graph_break(net.construct)
@@ -452,7 +453,7 @@ def test_list_comp_12():
     x = F.randn(2, 4)
 
     o1 = net.construct(x)
-    o2 = jit(net.construct, mode='PIJit', jit_config=jit_cfg)(x)
+    o2 = pi_jit_with_config(net.construct, jit_config=jit_cfg)(x)
 
     assert_equal(o1, o2)
     assert_no_graph_break(net.construct)
@@ -482,7 +483,7 @@ def test_list_comp_13():
     x = {'a': F.arange(0, 8), 'b': F.arange(0, 16), 'c': F.arange(11, 21)}
 
     o1 = net.construct(x)
-    o2 = jit(net.construct, mode='PIJit', jit_config=jit_cfg)(x)
+    o2 = pi_jit_with_config(net.construct, jit_config=jit_cfg)(x)
 
     assert_equal(o1, o2)
     assert_no_graph_break(net.construct)
@@ -502,7 +503,7 @@ def test_list_comprehension_with_tuple():
     data = (ops.randn(2, 2), ops.randn(1, 4))
     o1 = fn(data)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(data)
 
     assert_equal(o1, o2)
@@ -523,7 +524,7 @@ def test_list_comprehension_with_tuple_for_loop():
     data = (ops.randn(2, 2), ops.randn(1, 4))
     o1 = fn(data)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(data)
 
     assert_equal(o1, o2)
@@ -544,7 +545,7 @@ def test_list_comprehension_with_list_for_loop():
     data = [ops.randn(2, 2), ops.randn(1, 4)]
     o1 = fn(data)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(data)
 
     assert_equal(o1, o2)
@@ -566,7 +567,7 @@ def test_list_comprehension_with_const_dict():
     x = Tensor([1, 2, 3])
     o1 = fn(x)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x)
 
     assert_equal(o1, o2)
@@ -587,7 +588,7 @@ def test_list_comprehension_with_dict_from_argument():
     x = {'a': Tensor([1, 2, 3]), 'b': Tensor([2, 3, 4])}
     o1 = fn(x)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x)
 
     assert_equal(o1, o2)
@@ -609,7 +610,7 @@ def test_list_comprehension_with_dict_keys():
     x = Tensor([1, 2, 3])
     o1 = fn(x)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x)
 
     assert_equal(o1, o2)
@@ -631,7 +632,7 @@ def test_list_comprehension_with_dict_values():
     d = {'1': Tensor([1, 2, 3]), '2': Tensor([3, 3, 3]), '3': Tensor([5, 6, 7])}
     o1 = fn(d)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(d)
 
     assert_equal(o1, o2)
@@ -653,7 +654,7 @@ def test_list_comprehension_with_dict_items():
     d = {1: Tensor([1, 2, 3]), 2: Tensor([3, 3, 3]), 3: Tensor([5, 6, 7])}
     o1 = fn(d)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(d)
 
     assert_equal(o1, o2)
@@ -674,7 +675,7 @@ def test_list_comprehension_with_range_1():
     lst = [Tensor([1, 2, 3]), Tensor([4, 5, 6]), Tensor([5, 6, 7])]
     o1 = fn(lst)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(lst)
 
     assert_equal(o1, o2)
@@ -696,7 +697,7 @@ def test_list_comprehension_with_range_2():
     n = 2
     o1 = fn(lst, n)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(lst, n)
 
     assert_equal(o1, o2)
@@ -718,7 +719,7 @@ def test_list_comprehension_with_range_3():
     n = 0
     o1 = fn(lst, n)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(lst, n)
 
     assert_equal(o1, o2)
@@ -739,7 +740,7 @@ def test_list_comprehension_with_range_4():
     lst = [Tensor([1, 2, 3]), Tensor([2, 3, 4]), Tensor([3, 4, 5])]
     o1 = fn(lst)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(lst)
 
     assert_equal(o1, o2)
@@ -760,7 +761,7 @@ def test_list_comprehension_with_range_5():
     lst = [Tensor([1, 2, 3]), Tensor([2, 3, 4]), Tensor([3, 4, 5])]
     o1 = fn(lst)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(lst)
 
     assert_equal(o1, o2)
@@ -782,7 +783,7 @@ def test_list_comprehension_with_zip_1():
     seq2 = (1, 2)
     o1 = fn(seq1, seq2)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(seq1, seq2)
 
     assert_equal(o1, o2)
@@ -804,7 +805,7 @@ def test_list_comprehension_with_zip_2():
     seq2 = (1, 2, 3, 4, 5)  # longer than seq1
     o1 = fn(seq1, seq2)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(seq1, seq2)
 
     assert_equal(o1, o2)
@@ -826,7 +827,7 @@ def test_list_comprehension_with_zip_3():
     seq2 = (1, 2, 3, 4, 5)  # longer than seq1
     o1 = fn(seq1, seq2)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(seq1, seq2)
 
     assert_equal(o1, o2)
@@ -848,7 +849,7 @@ def test_list_comprehension_with_zip_4():
     d = {'a': 1, 'b': 2, 'c': 3}  # longer than seq
     o1 = fn(seq, d)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(seq, d)
 
     assert_equal(o1, o2)
@@ -869,7 +870,7 @@ def test_list_comprehension_with_enumerate_1():
     seq = [ops.rand(2, 2), ops.rand(1, 4)]
     o1 = fn(seq)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(seq)
 
     assert_equal(o1, o2)
@@ -890,7 +891,7 @@ def test_list_comprehension_with_enumerate_2():
     d = {1: Tensor([1, 2, 3]), 2: Tensor([4, 5, 6])}
     o1 = fn(d)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(d)
 
     assert_equal(o1, o2)
@@ -911,7 +912,7 @@ def test_list_comprehension_with_enumerate_3():
     seq = (Tensor([1, 2, 3]), Tensor([4, 5, 6]))
     o1 = fn(seq)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(seq)
 
     assert_equal(o1, o2)
@@ -932,7 +933,7 @@ def test_list_comprehension_with_variable_input():
     x = Tensor([1, 2, 3])
     o1 = fn(x)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x)
 
     assert_equal(o1, o2)
@@ -953,7 +954,7 @@ def test_list_comprehension_with_variable_input_2():
     x = Tensor([1, 2, 3])
     o1 = fn(x)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x)
 
     assert_equal(o1, o2)
@@ -975,7 +976,7 @@ def test_list_comprehension_with_variable_input_3():
     x = Tensor([1, 2, 3])
     o1 = fn(x)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x)
 
     assert_equal(o1, o2)
@@ -997,7 +998,7 @@ def test_list_comprehension_with_variable_input_and_condition():
     x = Tensor([1, 2, 3])
     o1 = fn(x)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x)
 
     assert_equal(o1, o2)
@@ -1019,7 +1020,7 @@ def test_list_comprehension_with_variable_input_and_condition_2():
     x = Tensor([1, 2, 3])
     o1 = fn(x)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x)
 
     assert_equal(o1, o2)
@@ -1041,7 +1042,7 @@ def test_list_comprehension_with_variable_input_and_condition_3():
     x = Tensor([1, 2, 3])
     o1 = fn(x)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x)
 
     assert_equal(o1, o2)
@@ -1064,7 +1065,7 @@ def test_list_comprehension_with_iterator_input():
 
     o1 = fn()
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn()
 
     assert_equal(o1, o2)
@@ -1091,7 +1092,7 @@ def test_list_comprehension_with_iterator_input_2():
     w = Tensor([7, 8, 9])
     o1 = fn(x, y, z, w)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x, y, z, w)
 
     assert_equal(o1, o2)
@@ -1118,7 +1119,7 @@ def test_list_comprehension_with_multi_for_loop_and_multi_if_condition():
     data = mutable(data)
     o1 = fn(data)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(data)
 
     assert_equal(o1, o2)
@@ -1139,7 +1140,7 @@ def test_nested_list_comprehension():
     x = Tensor([1, 2, 3])
     o1 = fn(x)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x)
 
     assert_equal(o1, o2)
@@ -1162,7 +1163,7 @@ def test_graph_break_before_list_comprehension_1():
     seq = [Tensor([1, 2, 3]), Tensor([2, 3, 4])]
     o1 = fn(seq)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(seq)
 
     assert_equal(o1, o2)
@@ -1186,7 +1187,7 @@ def test_graph_break_before_list_comprehension_2():
     x = Tensor([3, 4, 5])
     o1 = fn(seq, x)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(seq, x)
 
     assert_equal(o1, o2)
@@ -1210,7 +1211,7 @@ def test_graph_break_after_list_comprehension_1():
     seq = [Tensor([1, 2, 3]), Tensor([2, 3, 4])]
     o1 = fn(seq)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(seq)
 
     assert_equal(o1, o2)
@@ -1235,7 +1236,7 @@ def test_graph_break_after_list_comprehension_2():
     a = Tensor([3, 4, 5])
     o1 = fn(seq, a)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(seq, a)
 
     assert_equal(o1, o2)
@@ -1257,7 +1258,7 @@ def test_graph_break_in_list_comprehension_1():
     a = Tensor([3, 4, 5])
     o1 = fn(seq, a)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(seq, a)
 
     assert_equal(o1, o2)
@@ -1280,7 +1281,7 @@ def test_graph_break_in_list_comprehension_2():
     a = Tensor([3, 4, 5])
     o1 = fn(seq, a)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(seq, a)
 
     assert_equal(o1, o2)
@@ -1308,7 +1309,7 @@ def test_graph_break_in_list_comprehension_3():
     a = Tensor([3, 4, 5])
     o1 = fn(seq, a)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(seq, a)
 
     assert_equal(o1, o2)
