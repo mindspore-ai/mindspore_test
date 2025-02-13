@@ -255,7 +255,7 @@ class BACKEND_EXPORT DynamicMemPool {
   }
 
   // Set rank id getter for memory pool to generate dump path.
-  void SetRankIdGetter(const std::function<size_t()> &rank_id_getter) {
+  virtual void SetRankIdGetter(const std::function<size_t()> &rank_id_getter) {
     if (rank_id_getter != nullptr) {
       rank_id_getter_ = rank_id_getter;
     }
