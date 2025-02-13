@@ -1201,7 +1201,7 @@ class SideEffectFinder {
     MS_EXCEPTION_IF_NULL(switch_node);
     auto fg = switch_node->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
-    auto manager = fg->manager();
+    auto manager = Manage(fg, false);
     MS_EXCEPTION_IF_NULL(manager);
     const auto &node_users = manager->node_users();
     auto found = node_users.find(switch_node);
@@ -1415,7 +1415,7 @@ class AutoMonadConverter {
   bool CheckNoEliminateNodeHasUsers(const CNodePtr &cnode) {
     auto fg = cnode->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
-    auto manager = fg->manager();
+    auto manager = Manage(fg, false);
     MS_EXCEPTION_IF_NULL(manager);
     const auto &node_users = manager->node_users();
     auto found = node_users.find(cnode);
@@ -1474,7 +1474,7 @@ class AutoMonadConverter {
   bool CheckHasUpdateStateUsers(const CNodePtr &cnode) const {
     auto fg = cnode->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
-    auto manager = fg->manager();
+    auto manager = Manage(fg, false);
     MS_EXCEPTION_IF_NULL(manager);
     const auto &node_users = manager->node_users();
     auto found = node_users.find(cnode);
@@ -1503,7 +1503,7 @@ class AutoMonadConverter {
   bool CheckHasOtherUsers(const CNodePtr &cnode) const {
     auto fg = cnode->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
-    auto manager = fg->manager();
+    auto manager = Manage(fg, false);
     MS_EXCEPTION_IF_NULL(manager);
     const auto &node_users = manager->node_users();
     auto found = node_users.find(cnode);
