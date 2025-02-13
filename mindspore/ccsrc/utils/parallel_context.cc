@@ -102,6 +102,9 @@ void ParallelContext::Reset() {
   is_dynamic_shape_parallel_ = false;
   dynamic_shape_parallel_flag_is_set_ = false;
   zero3_ = false;
+  dataset_strategy_devmat_.clear();
+  dataset_strategy_tensormap_.clear();
+  dataset_strategy_alias_name_.clear();
 }
 
 void ParallelContext::set_device_num(int64_t device_num) {

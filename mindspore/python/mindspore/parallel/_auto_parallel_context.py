@@ -1193,6 +1193,7 @@ class _AutoParallelContext:
         self.check_context_handle()
         self._context_handle.reset()
         _ParallelFusionConfig.reset()
+        self._dataset_layout = None
 
     def _check_and_default_group(self, group):
         """Validate the given group, if group is empty, returns a default fusion group"""
@@ -1527,6 +1528,33 @@ def _get_auto_parallel_context(attr_key):
         raise ValueError("Get context keyword %s is not recognized!" % attr_key)
     get_func = _get_auto_parallel_context_func_map[attr_key]
     return get_func()
+
+
+def _get_all_auto_parallel_context():
+    """get auto parallel context before reset"""
+    _auto_paralell_context_value_map = {}
+    _pipeline_config = {}
+    for key, value in _get_auto_parallel_context_func_map.items():
+        if key == "pipeline_interleave":
+            _pipeline_config[key] = value()
+        elif key == "pipeline_scheduler":
+            _pipeline_config[key] = value()
+        else:
+            _auto_paralell_context_value_map[key] = value()
+    return _auto_paralell_context_value_map, _pipeline_config
+
+
+def _recover_auto_parallel_context(context_value_map, pp_config):
+    """set auto parallel context after transformation"""
+    # set the same auto parallel context after transform
+    from mindspore.context import reset_auto_parallel_context
+    reset_auto_parallel_context()
+    for key, value in context_value_map.items():
+        # list is empty or full_batch_is_set is not needed to set
+        if (isinstance(value, list) and not value) or (key == "full_batch_is_set"):
+            continue
+        _set_auto_parallel_context_func_map[key](value)
+    _set_auto_parallel_context_func_map["pipeline_config"](pp_config)
 
 
 def _reset_auto_parallel_context():
