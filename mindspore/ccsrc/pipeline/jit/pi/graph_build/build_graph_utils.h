@@ -39,7 +39,7 @@ bool IsParameterSequence(const py::object &object);
 ParameterPtr AddParameter(const FuncGraphPtr &fg);
 
 py::tuple GetMethodInfo(const py::object &obj);
-std::optional<std::string> GetTensorMethodName(const py::object &obj);
+std::string GetTensorMethodName(const py::object &obj);
 bool IsTensorMethod(const py::object &obj);
 bool IsTensorOverloadMethod(const py::object &obj);
 bool EnableTensorOverload();

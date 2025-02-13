@@ -4896,9 +4896,8 @@ py::object GraphBuilder::GetPyObject(ValueNode *node) {
 
 static bool IsForbiddenConvertFunc(const py::handle &func) {
   static std::vector<std::string> tensor_method_forbidden_list = {"__setitem__", "tolist"};
-  const auto &method_name_wrapper = GetTensorMethodName(py::cast<py::object>(func));
-  if (method_name_wrapper.has_value()) {
-    const auto &method_name = method_name_wrapper.value();
+  const auto &method_name = GetTensorMethodName(py::cast<py::object>(func));
+  if (method_name != "") {
     return std::any_of(tensor_method_forbidden_list.begin(), tensor_method_forbidden_list.end(),
                        [&method_name](const std::string &name) { return method_name == name; });
   }
@@ -5039,8 +5038,8 @@ py::object GraphBuilder::FGAddNodeTensorOverload(CallNode *call_node, const py::
   const auto &call_node_inputs = call_node->getInputs();
   (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
   const auto &name = GetTensorMethodName(callable_info);
-  MS_EXCEPTION_IF_CHECK_FAIL(name.has_value(), "Fail to get tensor method name");
-  const auto &functional_prim = abstract::BuildMethodFunctional(name.value());
+  MS_EXCEPTION_IF_CHECK_FAIL(name != "", "Fail to get tensor method name");
+  const auto &functional_prim = abstract::BuildMethodFunctional(name);
   FGAddNode(call_node, functional_prim, HandleInputArgs(args), stop_reason);
   return py::object();
 }

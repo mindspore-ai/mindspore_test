@@ -240,28 +240,28 @@ py::tuple GetMethodInfo(const py::object &obj) {
   return python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_GET_METHOD_INFO, obj);
 }
 
-std::optional<std::string> GetTensorMethodName(const py::object &obj) {
+std::string GetTensorMethodName(const py::object &obj) {
   constexpr auto tensor_func_list_mod_str = "mindspore._extends.pijit.tensor_func_list";
   constexpr auto get_tensor_method_name_str = "get_tensor_method_name";
   py::module mod = python_adapter::GetPyModule(tensor_func_list_mod_str);
   py::object name_obj = python_adapter::CallPyModFn(mod, get_tensor_method_name_str, FunctionId(obj));
   if (py::isinstance<py::none>(name_obj)) {
-    return std::nullopt;
+    return "";
   }
   return name_obj.cast<std::string>();
 }
 
 bool IsTensorMethod(const py::object &obj) {
   const auto &method_name = GetTensorMethodName(obj);
-  return method_name.has_value();
+  return method_name != "";
 }
 
 bool IsTensorOverloadMethod(const py::object &obj) {
   const auto &method_name = GetTensorMethodName(obj);
-  if (!method_name.has_value()) {
+  if (method_name == "") {
     return false;
   }
-  return ops::tensor_method_overload_map.find(method_name.value()) != ops::tensor_method_overload_map.end();
+  return ops::tensor_method_overload_map.find(method_name) != ops::tensor_method_overload_map.end();
 }
 
 bool EnableTensorOverload() {
