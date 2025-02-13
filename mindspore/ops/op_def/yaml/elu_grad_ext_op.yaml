@@ -3,11 +3,14 @@ elu_grad_ext:
   args:
     dout:
       dtype: tensor
-    x:
+    x_or_out:
       dtype: tensor
     alpha:
       dtype: float
       default: 1.0
+    is_result:
+      dtype: bool
+      default: False
   returns:
     dx:
       dtype: tensor

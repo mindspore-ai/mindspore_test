@@ -625,8 +625,8 @@ NodePtr FuncBuilder::DropoutGradExt(const NodePtr &input, const NodePtr &mask, c
 
 NodePtr FuncBuilder::EluExt(const NodePtr &input, const NodePtr &alpha) { return NativeFunc::EluExt(input, alpha); }
 
-NodePtr FuncBuilder::EluGradExt(const NodePtr &dout, const NodePtr &x, const NodePtr &alpha) {
-  return NativeFunc::EluGradExt(dout, x, alpha);
+NodePtr FuncBuilder::EluGradExt(const NodePtr &dout, const NodePtr &x, const NodePtr &alpha, const NodePtr &is_result) {
+  return NativeFunc::EluGradExt(dout, x, alpha, is_result);
 }
 
 NodePtr FuncBuilder::EmbeddingDenseBackward(const NodePtr &grad, const NodePtr &indices, const NodePtr &num_weights,

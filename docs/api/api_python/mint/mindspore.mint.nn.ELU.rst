@@ -1,7 +1,7 @@
 mindspore.mint.nn.ELU
 =====================
 
-.. py:class:: mindspore.mint.nn.ELU(alpha=1.0)
+.. py:class:: mindspore.mint.nn.ELU(alpha=1.0, inplace=False)
 
     指数线性单元激活函数(Exponential Linear Unit activation function)。
 
@@ -25,13 +25,15 @@ mindspore.mint.nn.ELU
         这是一个实验性API，后续可能修改或删除。
 
     参数：
-        - **alpha** (float, 可选) - ELU的alpha值，数据类型为float。默认值： ``1.0`` 。
+        - **alpha** (float, 可选) - ELU的alpha值，数据类型为float。默认值： ``1.0``。
+        - **inplace** (bool, 可选) - 是否使用原地更新模式，数据类型为bool。默认值： ``False``。
 
     输入：
         - **input** (Tensor) - 用于计算ELU的任意维度的Tensor。
 
     输出：
-        Tensor，数据类型和shape与 `input` 相同。
+        Tensor，输出的shape和数据类型与 `input` 相同。
 
     异常：
-        - **TypeError** - 如果 `alpha` 不是float。
+        - **RuntimeError** - 如果 `input` 的数据类型不是float16、float32或bfloat16。
+        - **TypeError** - 如果 `alpha` 的数据类型不是float。

@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-#include "infer/ops_func_impl/inplace_tanh.h"
 #include <vector>
-#include <unordered_set>
+#include "infer/ops_func_impl/inplace_elu.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace ops {
-ShapeArray InplaceTanhFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+ShapeArray InplaceEluFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   return {input_infos[kInputIndex0]->GetShape()};
 }
 
-std::vector<TypeId> InplaceTanhFuncImpl::InferType(const PrimitivePtr &primitive,
-                                                   const InferInfoPtrList &input_infos) const {
+std::vector<TypeId> InplaceEluFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                  const InferInfoPtrList &input_infos) const {
   return {input_infos[kInputIndex0]->GetType()};
 }
 }  // namespace ops

@@ -251,7 +251,8 @@ from mindspore.ops.function.nn_func import mse_loss_ext as mse_loss
 # 323
 
 # 324
-from mindspore.ops.auto_generate import elu_ext as elu
+from mindspore.ops.auto_generate import elu_ext
+from mindspore.ops.auto_generate import inplace_elu
 
 # 421
 from mindspore.ops.auto_generate import flatten_ext as flatten
@@ -277,53 +278,157 @@ from mindspore.ops.function.nn_func import cross_entropy_ext as cross_entropy
 from mindspore.ops.function.nn_func import nll_loss_ext as nll_loss
 
 
+def elu(input, alpha=1.0, inplace=False):
+    r"""
+    Exponential Linear Unit activation function
+
+    Applies the exponential linear unit function element-wise. The activation function is defined as:
+
+    .. math::
+        ELU_{i} =
+        \begin{cases}
+        x_i, &\text{if } x_i \geq 0; \cr
+        \alpha * (\exp(x_i) - 1), &\text{otherwise.}
+        \end{cases}
+
+    where :math:`x_i` represents the element of the input and :math:`\alpha` represents the `alpha` parameter, and
+    `alpha` represents the smoothness of the ELU.
+
+    ELU Activation Function Graph:
+
+    .. image:: ../images/ELU.png
+        :align: center
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input of ELU is a Tensor of any dimension.
+        alpha (float, optional): The alpha value of ELU, the data type is float. Default: ``1.0``.
+        inplace (bool, optional): Whether to use inplace mode, the data type is bool. Default: ``False``.
+
+    Returns:
+        Tensor, with the same shape and type as the `input`.
+
+    Raises:
+        RuntimeError: If the dtype of `input` is not float16, float32 or bfloat16.
+        TypeError: If the dtype of `alpha` is not float.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> import numpy as np
+        >>> input = Tensor(np.array([-1, -2, 0, 2, 1]), mindspore.float32)
+        >>> output = mint.nn.functional.elu(input)
+        >>> print(output)
+        [-0.63212055  -0.86466473  0.  2.  1.]
+    """
+    if inplace:
+        return inplace_elu(input, alpha)
+    return elu_ext(input, alpha)
+
+
+def elu_(input, alpha=1.0):
+    r"""
+    Exponential Linear Unit activation function
+
+    Applies the exponential linear unit function inplace element-wise. The activation function is defined as:
+
+    .. math::
+        ELU_{i} =
+        \begin{cases}
+        x_i, &\text{if } x_i \geq 0; \cr
+        \alpha * (\exp(x_i) - 1), &\text{otherwise.}
+        \end{cases}
+
+    where :math:`x_i` represents the element of the input and :math:`\alpha` represents the `alpha` parameter, and
+    `alpha` represents the smoothness of the ELU.
+
+    ELU Activation Function Graph:
+
+    .. image:: ../images/ELU.png
+        :align: center
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input of ELU is a Tensor of any dimension.
+        alpha (float, optional): The alpha value of ELU, the data type is float and `alpha` should be
+            greater than 0. Default: ``1.0``.
+
+    Returns:
+        Tensor, with the same shape and type as the `input`.
+
+    Raises:
+        RuntimeError: If the dtype of `input` is not float16, float32 or bfloat16.
+        TypeError: If the dtype of `alpha` is not float.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> import numpy as np
+        >>> input = Tensor(np.array([-1, -2, 0, 2, 1]), mindspore.float32)
+        >>> mint.nn.functional.elu_(input)
+        >>> print(input)
+        [-0.63212055  -0.86466473  0.  2.  1.]
+    """
+    return inplace_elu(input, alpha)
+
+
 def hardtanh(input, min_val=-1.0, max_val=1.0, inplace=False):
     r"""
-     Applies the hardtanh activation function element-wise. The activation function is defined as:
+    Applies the hardtanh activation function element-wise. The activation function is defined as:
 
-     .. math::
-         \text{hardtanh}(input) = \begin{cases}
-             max\_val, & \text{ if } input > max\_val \\
-             min\_val, & \text{ if } input < min\_val \\
-             input, & \text{ otherwise. }
-         \end{cases}
+    .. math::
+        \text{hardtanh}(input) = \begin{cases}
+            max\_val, & \text{ if } input > max\_val \\
+            min\_val, & \text{ if } input < min\_val \\
+            input, & \text{ otherwise. }
+        \end{cases}
 
-     Linear region range :math:`[min\_val, max\_val]` can be adjusted using `min_val` and `max_val`.
+    Linear region range :math:`[min\_val, max\_val]` can be adjusted using `min_val` and `max_val`.
 
-     Hardtanh Activation Function Graph:
+    Hardtanh Activation Function Graph:
 
-     .. image:: ../images/Hardtanh.png
-         :align: center
+    .. image:: ../images/Hardtanh.png
+        :align: center
 
     .. warning::
         This is an experimental optimizer API that is subject to change.
 
-     Args:
-         input (Tensor): Input Tensor.
-         min_val (Union[bool, int, float], optional): Minimum value of the linear region range. Default: ``-1.0`` .
-         max_val (Union[bool, int, float], optional): Maximum value of the linear region range. Default: ``1.0`` .
-         inplace (bool, optional): Whether to apply erasing inplace. Default: ``False``.
+    Args:
+        input (Tensor): Input Tensor.
+        min_val (Union[bool, int, float], optional): Minimum value of the linear region range. Default: ``-1.0`` .
+        max_val (Union[bool, int, float], optional): Maximum value of the linear region range. Default: ``1.0`` .
+        inplace (bool, optional): Whether to apply erasing inplace. Default: ``False``.
 
-     Returns:
-         Tensor, with the same dtype and shape as `input`.
+    Returns:
+        Tensor, with the same dtype and shape as `input`.
 
-     Raises:
-         TypeError: If `input` is not a Tensor.
-         TypeError: If dtype of `input` is not one of: int8, int16, int32, int64, uint8, float16, float32, bfloat16.
-         TypeError: If dtype of `min_val` is neither float nor int.
-         TypeError: If dtype of `max_val` is neither float nor int.
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If dtype of `input` is not one of: int8, int16, int32, int64, uint8, float16, float32, bfloat16.
+        TypeError: If dtype of `min_val` is neither float nor int.
+        TypeError: If dtype of `max_val` is neither float nor int.
 
-     Supported Platforms:
-         ``Ascend``
+    Supported Platforms:
+        ``Ascend``
 
-     Examples:
-         >>> import mindspore
-         >>> from mindspore import Tensor, mint
-         >>> x = Tensor([-1, -2, 0, 2, 1], mindspore.float16)
-         >>> output = mint.nn.functional.hardtanh(x, min_val=-1.0, max_val=1.0, inplace=False)
-         >>> print(output)
-         [-1. -1.  0.  1.  1.]
-     """
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> x = Tensor([-1, -2, 0, 2, 1], mindspore.float16)
+        >>> output = mint.nn.functional.hardtanh(x, min_val=-1.0, max_val=1.0, inplace=False)
+        >>> print(output)
+        [-1. -1.  0.  1.  1.]
+    """
     if inplace:
         return hardtanh_(input, min_val, max_val)
     return hardtanh_op(input, min_val, max_val)
@@ -1130,6 +1235,7 @@ __all__ = [
 
     # 324
     'elu',
+    'elu_',
     # 325
 
     #556

@@ -490,6 +490,7 @@ Non-linear activation functions
 
     mindspore.mint.nn.functional.batch_norm
     mindspore.mint.nn.functional.elu
+    mindspore.mint.nn.functional.elu_
     mindspore.mint.nn.functional.gelu
     mindspore.mint.nn.functional.group_norm
     mindspore.mint.nn.functional.hardshrink
