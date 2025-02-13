@@ -13,20 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/hal/device/ascend_memory_manager.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_memory_manager.h"
 
 #include <algorithm>
 #include <string>
 #include <unordered_map>
 
-#include "plugin/device/ascend/hal/device/ascend_memory_adapter.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_memory_adapter.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "utils/ms_context.h"
-#include "plugin/device/ascend/hal/profiler/memory_profiling.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
-
-using mindspore::profiler::ascend::MemoryProfiling;
 
 namespace mindspore {
 namespace device {
@@ -102,16 +99,6 @@ uint8_t *AscendMemoryManager::MallocStaticMem(size_t size, bool communication_me
     align_size = GetCommonAlignSize(size);
   }
   MS_LOG(INFO) << "Malloc Memory for Static: size[" << align_size << "] communication_mem:" << communication_mem;
-
-  if (MemoryProfiling::GetInstance().IsMemoryProfilingInitialized() && graph_id != kInvalidGraphId) {
-    auto node = MemoryProfiling::GetInstance().GetGraphMemoryNode(graph_id);
-    if (node == nullptr) {
-      node = MemoryProfiling::GetInstance().AddGraphMemoryNode(graph_id);
-      MS_LOG(INFO) << "Add graph memory node for static memory profiling, graph id is " << graph_id;
-    }
-
-    node->AddStaticMemorySize(SizeToUint(align_size));
-  }
 
   uint8_t *alloc_address = reinterpret_cast<uint8_t *>(AscendMemoryPool::GetInstance().AllocTensorMem(align_size));
   if (alloc_address != nullptr) {

@@ -27,7 +27,7 @@
 #include "ir/tensor.h"
 #include "pybind_api/ir/tensor_py.h"
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "plugin/device/ascend/hal/device/ascend_device_address.h"
+#include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 
 
 namespace mindspore {

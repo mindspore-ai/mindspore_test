@@ -35,7 +35,7 @@
 #include "plugin/device/ascend/acl_ir/op_api_exec.h"
 #include "plugin/device/ascend/acl_ir/op_api_util.h"
 #include "utils/ms_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_memory_manager.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_memory_manager.h"
 #include "kernel/ascend/opapi/aclnn_kernel_utils.h"
 
 namespace mindspore {

@@ -59,6 +59,6 @@ if(ENABLE_D OR ENABLE_ACL)
     endforeach()
     file(GLOB_RECURSE _ADAPTER_SRC_LIST "${ADAPTER_PATH}/*.cc")
     set_property(SOURCE ${_ADAPTER_SRC_LIST} PROPERTY COMPILE_DEFINITIONS
-      SUBMODULE_ID=mindspore::SubModuleId::SM_GE_ADPT)
+      SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
     add_library(_mindspore_ascend_op_adapter_obj OBJECT ${_ADAPTER_SRC_LIST} ${OPS_PROTO_OBJECTS})
 endif()

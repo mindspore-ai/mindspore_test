@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_ASCEND_ASCEND_DYNAMIC_MEM_ADAPTER_H_
-#define MINDSPORE_CCSRC_RUNTIME_DEVICE_ASCEND_ASCEND_DYNAMIC_MEM_ADAPTER_H_
+#ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_ASCEND_ASCEND_TWO_POINTER_MEM_ADAPTER_H_
+#define MINDSPORE_CCSRC_RUNTIME_DEVICE_ASCEND_ASCEND_TWO_POINTER_MEM_ADAPTER_H_
 
-#include "plugin/device/ascend/hal/device/ascend_memory_adapter.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_memory_adapter.h"
 #include <string>
 #include <memory>
 #include <vector>
@@ -25,22 +25,34 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
-class AscendDynamicMemAdapter : public AscendMemAdapter {
+class AscendTwoPointerMemAdapter : public AscendMemAdapter {
  public:
   bool Initialize() override;
   bool DeInitialize() override;
   uint8_t *MallocStaticDevMem(size_t size, const std::string &tag = "") override;
   uint8_t *MallocDynamicDevMem(size_t size, const std::string &tag = "") override;
   void ResetDynamicMemory() override;
+  void SimulationInitialize() override;
   std::string DevMemStatistics() const override;
   size_t GetDynamicMemUpperBound(void *min_static_addr) const override;
   [[nodiscard]] uint64_t FreeDevMemSize() const override;
 
  private:
-  size_t has_alloc_size = 0;
+  std::string DevMemDetailInfo() const;
+  uint8_t *device_mem_base_addr_{nullptr};
+  // static memory info, from a high address to a low address
+  int64_t static_mem_offset_{0};
+  // dynamic memory info, from a low address to a high address
+  int64_t cur_dynamic_mem_offset_{0};
+  // Maximum dynamic memory have already allocated, dynamically updated
+  int64_t max_dynamic_mem_offset_{0};
+  // History maximum dynamic memory (used in memory pool recycle mode)
+  int64_t history_max_dynamic_mem_offset_{0};
+  std::vector<std::shared_ptr<MemoryBlock>> dynamic_memory_block_list_;
   std::vector<std::shared_ptr<MemoryBlock>> static_memory_block_list_;
 };
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_RUNTIME_DEVICE_ASCEND_ASCEND_DYNAMIC_MEM_ADAPTER_H_
+
+#endif  // MINDSPORE_CCSRC_RUNTIME_DEVICE_ASCEND_ASCEND_TWO_POINTER_MEM_ADAPTER_H_

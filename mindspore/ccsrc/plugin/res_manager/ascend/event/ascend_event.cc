@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/device/ascend_event.h"
+#include "plugin/res_manager/ascend/event/ascend_event.h"
 #include <cstdint>
 #include <string>
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"

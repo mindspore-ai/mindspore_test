@@ -23,7 +23,7 @@
 #include <queue>
 #include <mutex>
 #include <utility>
-#include "plugin/device/ascend/hal/device/ascend_device_address.h"
+#include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "plugin/device/ascend/kernel/dvm/dvm.h"
 #include "mindspore/core/include/ir/base_tensor.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"

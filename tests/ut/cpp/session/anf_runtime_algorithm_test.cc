@@ -24,7 +24,7 @@
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "mindspore/ccsrc/include/backend/kernel_info.h"
-#include "mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_device_address.h"
+#include "mindspore/ccsrc/plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/anfalgo.h"
 

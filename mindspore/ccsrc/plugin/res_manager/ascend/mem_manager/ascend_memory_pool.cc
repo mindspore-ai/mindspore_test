@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/device/ascend_memory_pool.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_memory_pool.h"
 
 #include <fcntl.h>
 #include <sys/syscall.h>
@@ -28,7 +28,7 @@
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/utils/comm_manager.h"
-#include "plugin/device/ascend/hal/device/ascend_vmm_adapter.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_vmm_adapter.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "plugin/device/ascend/hal/profiler/ascend_profiling.h"
 #ifdef ENABLE_DEBUGGER

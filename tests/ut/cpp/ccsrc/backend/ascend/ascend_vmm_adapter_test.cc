@@ -17,7 +17,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #define private public
 #define protected public
-#include "plugin/device/ascend/hal/device/ascend_vmm_adapter.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_vmm_adapter.h"
 #undef private
 #undef protected
 

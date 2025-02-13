@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/device/ascend_pin_mem_pool.h"
-#include "utils/ms_context.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_pin_mem_pool.h"
 #include "utils/log_adapter.h"
-#include "runtime/device/kernel_runtime_manager.h"
+#include "utils/ms_context.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
@@ -25,16 +24,6 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
-AscendPinMemPool::AscendPinMemPool() {
-  if (pinned_mem_) {
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    runtime_instance_ = device::KernelRuntimeManager::Instance().GetKernelRuntime(kAscendDevice, device_id);
-    MS_EXCEPTION_IF_NULL(runtime_instance_);
-  }
-}
-
 AscendPinMemPool &AscendPinMemPool::GetInstance() {
   static AscendPinMemPool instance{};
   return instance;

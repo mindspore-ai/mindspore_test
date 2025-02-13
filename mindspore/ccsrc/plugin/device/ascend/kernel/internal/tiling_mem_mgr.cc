@@ -20,7 +20,7 @@
 #include "utils/ms_context.h"
 #include "mindspore/ccsrc/runtime/hardware/device_context_manager.h"
 #include "plugin/device/ascend/kernel/internal/internal_ascend_adapter.h"
-#include "plugin/device/ascend/hal/device/ascend_memory_pool.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_memory_pool.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "acl/acl.h"

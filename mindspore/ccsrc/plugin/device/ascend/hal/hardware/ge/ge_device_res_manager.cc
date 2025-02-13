@@ -21,8 +21,8 @@
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_device_address.h"
-#include "plugin/device/ascend/hal/device/ascend_device_synchronizer.h"
+#include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
+#include "plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.h"
 #include "plugin/device/cpu/hal/device/cpu_device_synchronizer.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 

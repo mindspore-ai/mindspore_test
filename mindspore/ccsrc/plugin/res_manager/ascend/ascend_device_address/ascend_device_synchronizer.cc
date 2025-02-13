@@ -14,16 +14,27 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/device/ascend_device_synchronizer.h"
+#include "plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "include/common/utils/utils.h"
 #include "utils/log_adapter.h"
+#include "utils/ms_context.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
+namespace {
+bool BindDeviceToCurrentThread() {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  AscendHalManager::GetInstance().SetContext(device_id);
+  return true;
+}
+}  // namespace
 bool AscendDeviceSynchronizer::SyncDeviceToHost(void *host_ptr, const void *device_ptr, size_t size,
                                                 const std::string &device_name, uint32_t device_id,
                                                 mindspore::Format format, const ShapeVector &shape, size_t stream_id,
@@ -36,9 +47,7 @@ bool AscendDeviceSynchronizer::SyncDeviceToHost(void *host_ptr, const void *devi
   }
   MS_ERROR_IF_NULL(stream);
 
-  auto ascend_device_context = DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
-  MS_EXCEPTION_IF_NULL(ascend_device_context);
-  if (!ascend_device_context->device_res_manager_->BindDeviceToCurrentThread(false)) {
+  if (!BindDeviceToCurrentThread()) {
     MS_LOG(WARNING) << "Bind device to current thread failed.";
   }
 
@@ -69,9 +78,7 @@ bool AscendDeviceSynchronizer::SyncHostToDevice(void *device_ptr, const void *ho
   }
   MS_ERROR_IF_NULL(stream);
 
-  auto ascend_device_context = DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
-  MS_EXCEPTION_IF_NULL(ascend_device_context);
-  if (!ascend_device_context->device_res_manager_->BindDeviceToCurrentThread(false)) {
+  if (!BindDeviceToCurrentThread()) {
     MS_LOG(WARNING) << "Bind device to current thread failed.";
   }
 
