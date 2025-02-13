@@ -633,9 +633,12 @@ void AddVirtualAssignAdd(const FuncGraphPtr &root) {
       if (IsPrimitiveCNode(temp_node.first, prim::kPrimCast)) {
         temp_node = *node_users_map[temp_node.first].begin();
       }
+      bool insert_before_ag_in_zero3 =
+        ParallelContext::GetInstance()->zero3() && IsPrimitiveCNode(temp_node.first, prim::kPrimMicroStepAllGather);
       if (!IsSomePrimitiveList(
             temp_node.first->cast<CNodePtr>(),
-            {prim::kPrimMirrorMicroStep->name(), prim::kPrimMicroStepAllGather->name(), prim::kPrimLoad->name()})) {
+            {prim::kPrimMirrorMicroStep->name(), prim::kPrimMicroStepAllGather->name(), prim::kPrimLoad->name()}) ||
+          insert_before_ag_in_zero3) {
         InsertVirtualAssignAdd(temp_node, root->manager(), accu_parameter, node_users_map);
         continue;
       }
