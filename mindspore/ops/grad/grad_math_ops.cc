@@ -52,8 +52,6 @@ bool CloneInplaceInputFuncForInplaceDiv(const PynativeCallback &cb) {
   return false;
 }
 
-bool CheckCloneForInplaceSub(const PynativeCallback &cb) { return !cb.IsNotRequiresGrad(kIndex0); }
-
 void FreeTensorOfInplaceDivTensor(const PynativeCallback &cb) {
   auto &inputs = *cb.GetInputs();
   if (inputs[kIndex1]->isa<tensor::BaseTensor>() && cb.IsNotRequiresGrad(kIndex1)) {
@@ -1317,59 +1315,53 @@ REG_BPROP_BUILDER("Sub").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(ib)
   return BinopGradCommon(ib, x, y, dx, dy);
 });
 
-REG_BPROP_BUILDER("InplaceSubExt")
-  .CloneInplaceInput(CheckCloneForInplaceSub)
-  .SetUnusedInputs({i0, i1, i3})
-  .SetBody(BODYFUNC(ib) {
-    auto input = ib->GetInput(kIndex0);
-    auto other = ib->GetInput(kIndex1);
-    auto alpha = ib->GetInput(kIndex2);
-    auto dout = ib->GetInput(kIndex4);
-    NodePtr input_bc = nullptr;
-    NodePtr other_bc = nullptr;
+REG_BPROP_BUILDER("InplaceSubExt").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto other = ib->GetInput(kIndex1);
+  auto alpha = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+  NodePtr input_bc = nullptr;
+  NodePtr other_bc = nullptr;
 
-    if (input->need_compute_grad_out()) {
-      input_bc = dout;
-    }
+  if (input->need_compute_grad_out()) {
+    input_bc = dout;
+  }
 
-    if (other->need_compute_grad_out()) {
-      auto alpha_opt = GetAlpha(alpha);
-      if (!alpha_opt.has_value()) {
+  if (other->need_compute_grad_out()) {
+    auto alpha_opt = GetAlpha(alpha);
+    if (!alpha_opt.has_value()) {
+      other_bc = ib->Neg(dout);
+      auto alpha_tensor = ib->ScalarToTensor(alpha, ib->GetDtype(input));
+      other_bc = ib->Mul(other_bc, alpha_tensor);
+    } else {
+      auto tolerance = 1e-9;
+      auto alpha_dtype = ib->GetDtypeId(alpha);
+      if ((alpha_dtype == kNumberTypeInt64 && alpha_opt.value() == 1) ||
+          (alpha_dtype == kNumberTypeFloat32 && fabs(alpha_opt.value() - 1) < tolerance)) {
         other_bc = ib->Neg(dout);
-        auto alpha_tensor = ib->ScalarToTensor(alpha, ib->GetDtype(input));
-        other_bc = ib->Mul(other_bc, alpha_tensor);
       } else {
-        auto tolerance = 1e-9;
-        auto alpha_dtype = ib->GetDtypeId(alpha);
-        if ((alpha_dtype == kNumberTypeInt64 && alpha_opt.value() == 1) ||
-            (alpha_dtype == kNumberTypeFloat32 && fabs(alpha_opt.value() - 1) < tolerance)) {
-          other_bc = ib->Neg(dout);
-        } else {
-          other_bc = ib->Neg(dout);
-          other_bc = ib->Emit("Muls", {other_bc, alpha});
-        }
+        other_bc = ib->Neg(dout);
+        other_bc = ib->Emit("Muls", {other_bc, alpha});
       }
     }
+  }
 
-    std::vector<NodePtr> ret = BinopGradCommon(ib, input, other, input_bc, other_bc);
-    auto input_cast = ib->Cast(ret[0], ib->GetDtype(input));
-    auto other_cast = ib->Cast(ret[1], ib->GetDtype(other));
-    return {input_cast, other_cast, ib->OutZeros(alpha)};
-  });
+  std::vector<NodePtr> ret = BinopGradCommon(ib, input, other, input_bc, other_bc);
+  auto input_cast = input->need_compute_grad_out() ? ib->Cast(ret[0], ib->GetDtype(input)) : ib->OutZeros(input);
+  auto other_cast = other->need_compute_grad_out() ? ib->Cast(ret[1], ib->GetDtype(other)) : ib->OutZeros(other);
+  return {input_cast, other_cast, ib->OutZeros(alpha)};
+});
 
-REG_BPROP_BUILDER("InplaceSubScalar")
-  .CloneInplaceInput(CheckCloneForInplaceSub)
-  .SetUnusedInputs({i0, i3})
-  .SetBody(BODYFUNC(ib) {
-    auto input = ib->GetInput(kIndex0);
-    auto other = ib->GetInput(kIndex1);
-    auto alpha = ib->GetInput(kIndex2);
-    auto dout = ib->GetInput(kIndex4);
-    NodePtr input_bc = nullptr;
+REG_BPROP_BUILDER("InplaceSubScalar").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto other = ib->GetInput(kIndex1);
+  auto alpha = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+  NodePtr input_bc = nullptr;
 
-    input_bc = ib->Cast(dout, ib->GetDtype(input));
-    return {input_bc, ib->OutZeros(other), ib->OutZeros(alpha)};
-  });
+  input_bc = ib->Cast(dout, ib->GetDtype(input));
+  return {input_bc, ib->OutZeros(other), ib->OutZeros(alpha)};
+});
 
 REG_BPROP_BUILDER("FmodTensor").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
@@ -1419,8 +1411,8 @@ REG_BPROP_BUILDER("InplaceDiv")
     }
 
     std::vector<NodePtr> ret = BinopGradCommon(ib, input, other, bc_input, bc_other);
-    auto input_cast = ib->Cast(ret[0], ib->GetDtype(input));
-    auto other_cast = ib->Cast(ret[1], ib->GetDtype(other));
+    auto input_cast = input->need_compute_grad_out() ? ib->Cast(ret[0], ib->GetDtype(input)) : ib->OutZeros(input);
+    auto other_cast = other->need_compute_grad_out() ? ib->Cast(ret[1], ib->GetDtype(other)) : ib->OutZeros(other);
     return {input_cast, other_cast};
   });
 
@@ -1437,7 +1429,7 @@ REG_BPROP_BUILDER("InplaceDivs").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) 
   bc_input = ib->Emit("Divs", {dout, other});
 
   auto input_cast = ib->Cast(bc_input, ib->GetDtype(input));
-  return {bc_input, ib->OutZeros(other)};
+  return {input_cast, ib->OutZeros(other)};
 });
 
 REG_BPROP_BUILDER("InplaceDivMod").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUNC(ib) {
