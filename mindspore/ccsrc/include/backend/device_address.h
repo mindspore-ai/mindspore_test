@@ -167,6 +167,10 @@ class DeviceAddress : public mindspore::DeviceSync {
   }
 
   virtual ~DeviceAddress() {
+    if (address_common_ != nullptr && address_common_->pointer_ref_count_ != nullptr &&
+        address_common_->pointer_ref_count_->new_ref_count() != SIZE_MAX && GetPtr() != nullptr) {
+      MS_LOG(DEBUG) << "Maybe memory leak detect in device address:" << PrintInfo();
+    }
     if (!from_mem_pool() && deleter_ && GetDevicePtr() != nullptr) {
       deleter_(static_cast<uint8_t *>(GetDevicePtr()));
       SetDevicePtr(nullptr);
@@ -311,6 +315,20 @@ class DeviceAddress : public mindspore::DeviceSync {
 
   size_t IncreaseCounter() { return address_common_->pointer_ref_count_->IncreaseCounter(); }
   size_t DecreaseCounter() { return address_common_->pointer_ref_count_->DecreaseCounter(); }
+
+  void IncreaseNewRefCount(size_t i = 1) {
+    address_common_->pointer_ref_count_->IncreaseNewRefCount(i);
+    MS_LOG(DEBUG) << "Increase new ref count for device address:" << PrintInfo();
+  }
+  size_t DecreaseNewRefCount() {
+    size_t ref_count = address_common_->pointer_ref_count_->DecreaseNewRefCount();
+    MS_LOG(DEBUG) << "Decrease new ref count for device address:" << PrintInfo();
+    return ref_count;
+  }
+  void set_new_ref_count(size_t new_ref_count) const {
+    address_common_->pointer_ref_count_->set_new_ref_count(new_ref_count);
+  }
+  size_t new_ref_count() const { return address_common_->pointer_ref_count_->new_ref_count(); }
 
   // The related interface of reference count operation.
   void set_original_ref_count(size_t original_ref_count) const override {
