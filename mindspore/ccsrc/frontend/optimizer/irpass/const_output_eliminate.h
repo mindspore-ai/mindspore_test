@@ -94,11 +94,13 @@ class ConstOutputEliminater : public AnfVisitor {
   bool grad_mode_ = false;
   size_t grad_index_ = 0;
   AbstractBasePtr new_out_abstract_ = nullptr;
+  TypePtr element_type_ = nullptr;
 
   void Reset() {
     grad_mode_ = false;
     grad_index_ = 0;
     new_out_abstract_ = nullptr;
+    element_type_ = nullptr;
   }
 
   AbstractBasePtr GetTupleAbstract(const std::vector<AnfNodePtr> &inputs) const {
@@ -187,7 +189,7 @@ class ConstOutputEliminater : public AnfVisitor {
     return DoProcess(fg);
   }
 
-  bool DoProcess(const FuncGraphPtr &func, bool is_replace = false) const {
+  bool DoProcess(const FuncGraphPtr &func, bool is_replace = false) {
     MS_EXCEPTION_IF_NULL(func);
     auto &fg_use_map = func->func_graph_cnodes_index();
     if (fg_use_map.empty()) {
@@ -219,7 +221,7 @@ class ConstOutputEliminater : public AnfVisitor {
     return true;
   }
 
-  bool SubUsersProcess(const AnfNodeIndexSet &users, bool is_replace) const {
+  bool SubUsersProcess(const AnfNodeIndexSet &users, bool is_replace) {
     for (auto &user : users) {
       if (IsPrimitiveCNode(user.first, prim::kPrimDepend) && user.second == kDependAttachNodeIndex) {
         continue;
@@ -251,7 +253,7 @@ class ConstOutputEliminater : public AnfVisitor {
     return true;
   }
 
-  bool ConstNodeRealUserProcess(const AnfNodePtr &node, const FuncGraphPtr &func, bool is_replace) const {
+  bool ConstNodeRealUserProcess(const AnfNodePtr &node, const FuncGraphPtr &func, bool is_replace) {
     MS_EXCEPTION_IF_NULL(node);
     MS_EXCEPTION_IF_NULL(func);
 
@@ -272,6 +274,17 @@ class ConstOutputEliminater : public AnfVisitor {
 
       if (!is_replace) {
         // Check
+        const auto element = user.first->abstract();
+        if (element->isa<abstract::AbstractTensor>()) {
+          const auto &tensor_abstract = element->cast<abstract::AbstractTensorPtr>();
+          MS_EXCEPTION_IF_NULL(tensor_abstract);
+          const auto &tensor_type = tensor_abstract->BuildType();
+          if (element_type_ == nullptr) {
+            element_type_ = tensor_type;
+          } else if (tensor_type != element_type_) {
+            return false;
+          }
+        }
         auto ret = RealUserCallerCheck(user.first, user.first->func_graph());
         if (!ret) {
           return false;
@@ -297,9 +310,9 @@ class ConstOutputEliminater : public AnfVisitor {
     return true;
   }
 
-  tensor::TensorPtr Tensor0Builder() const { return std::make_shared<tensor::Tensor>(0.0); }
+  tensor::TensorPtr Tensor0Builder() const { return std::make_shared<tensor::Tensor>(0.0, element_type_); }
 
-  bool RealUserCallerCheck(const AnfNodePtr &node, const FuncGraphPtr &func) const {
+  bool RealUserCallerCheck(const AnfNodePtr &node, const FuncGraphPtr &func) {
     MS_EXCEPTION_IF_NULL(node);
     MS_EXCEPTION_IF_NULL(func);
 
