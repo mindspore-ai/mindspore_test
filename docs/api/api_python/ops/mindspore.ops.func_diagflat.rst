@@ -3,10 +3,10 @@ mindspore.ops.diagflat
 
 .. py:function:: mindspore.ops.diagflat(input, offset=0)
 
-    如果input是一维Tensor，则返回input作为对角线的二维Tensor，如果input是大于等于二维的Tensor，则将input展开后作为对角线的二维Tensor。
+    如果input是一维tensor，则返回input作为对角线的二维tensor，如果input是大于等于二维的tensor，则将input展开后作为对角线的二维tensor。
 
     参数：
-        - **input** (Tensor) - 输入Tensor。
+        - **input** (Tensor) - 输入tensor。
         - **offset** (int, 可选) - 对角线偏移量。默认值： ``0`` 。
 
           - 当 `offset` 是正整数时，对角线向上方偏移。
