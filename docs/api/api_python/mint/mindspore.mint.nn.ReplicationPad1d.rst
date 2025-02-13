@@ -3,7 +3,7 @@ mindspore.mint.nn.ReplicationPad1d
 
 .. py:class:: mindspore.mint.nn.ReplicationPad1d(padding)
 
-    使用输入边界值对输入最后1维 `input` 进行填充。
+    使用输入边界值，对输入的最后1维 `input` 进行填充。
 
     更多参考详见 :func:`mindspore.mint.nn.functional.pad`。
 
@@ -20,6 +20,6 @@ mindspore.mint.nn.ReplicationPad1d
         Tensor，填充后的Tensor。
 
     异常：
-        - **TypeError** - `padding` 不是一个integer或包含2个int的tuple或者list。
+        - **TypeError** - `padding` 不是一个integer，或包含2个int的tuple，或list。
         - **TypeError** - `input` 不是Tensor。
         - **ValueError** - `padding` 是tuple或list，且长度和Tensor的维度不匹配。
