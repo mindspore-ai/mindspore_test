@@ -31,8 +31,6 @@ class OPS_API GroupedMatmulBaseFuncImpl : public OpFuncImpl {
  public:
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
-  TypeIdList InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
-
   int32_t CheckValidation(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
   bool GeneralInferRegistered() const override { return true; }
@@ -41,14 +39,17 @@ class OPS_API GroupedMatmulBaseFuncImpl : public OpFuncImpl {
   struct Indexes {
     int64_t x = 0;
     int64_t weight = 1;
-    int64_t group_list = 8;
     int64_t split_item_offset = -4;
     int64_t group_type_offset = -3;
-    int64_t transpose_a = 10;
-    int64_t transpose_b = 11;
+    int64_t transpose_a_offset = -2;
+    int64_t transpose_b_offset = -1;
   } idxes_;
 
   virtual void FetchGroupInfo(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+    MS_LOG(EXCEPTION) << "Not implement exception";
+  }
+
+  virtual int64_t FetchGroupListIndex(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
     MS_LOG(EXCEPTION) << "Not implement exception";
   }
 
@@ -59,14 +60,12 @@ class OPS_API GroupedMatmulBaseFuncImpl : public OpFuncImpl {
   std::pair<int32_t, int64_t> CommonCheckValidation(const PrimitivePtr &primitive,
                                                     const InferInfoPtrList &input_infos) const;
 
-  bool EnableInternal(const std::string &op_name) const;
-
   virtual int32_t PrivateCheckValidation(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
                                          int64_t group_type) const {
     return OP_CHECK_SUCCESS;
   }
 
-  virtual bool GetTransposeValue(const InferInfoPtrList &input_infos, size_t transpose_index) const { return false; }
+  virtual bool GetTransposeValue(const InferInfoPtrList &input_infos, int64_t transpose_index) const { return false; }
 
  private:
   std::pair<ShapeArray, ShapeArray> FetchInputAndWeightShapes(const PrimitivePtr &primitive,

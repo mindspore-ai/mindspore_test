@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/ascend/opapi/aclnn/grouped_matmul_v4_aclnn_kernel.h"
+#include "kernel/ascend/opapi/aclnn/grouped_matmul_v2_aclnn_kernel.h"
+
 #include <algorithm>
 #include <iterator>
 #include <vector>
 #include <memory>
 #include <functional>
+
 #include "ir/tensor.h"
 #include "common/kernel.h"
 #include "runtime/device/kernel_runtime.h"
@@ -27,15 +29,14 @@
 
 namespace mindspore {
 namespace kernel {
-namespace grouped_matmul_v4 {
+namespace grouped_matmul_v2 {
 namespace {
 std::vector<std::vector<KernelTensor *>> DealWithListTensors(const std::vector<int64_t> &group_info,
                                                              const std::vector<int64_t> &start_idxs,
                                                              const std::vector<KernelTensor *> &inputs) {
-  // x, weight, bias, scale, offset, antiquant_scale, antiquant_offset, pre_token_scale, activation_input,
-  // activation_quant_scale, activation_quant_offset would be list[tensor] or None
+  // x, weight, bias, scale, offset, antiquant_scale, antiquant_offset would be list[tensor] or None
   std::vector<std::vector<KernelTensor *>> list_inputs{};
-  for (size_t i = 0; i < kIndex12; i++) {
+  for (size_t i = 0; i < kIndex7; i++) {
     std::vector<KernelTensor *> input_i{};
     if (group_info[i] > 0) {
       input_i.assign(inputs.begin() + start_idxs[i], inputs.begin() + start_idxs[i + 1]);
@@ -56,40 +57,37 @@ std::vector<int64_t> ComputeStartIdxsFromGroupInfo(const std::vector<int64_t> &g
 }
 }  // namespace
 
-void GroupedMatmulV4Ascend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
+void GroupedMatmulV2Ascend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
   group_info_ = GetValue<std::vector<int64_t>>(primitive_->GetAttr("group_info"));
   start_idxs_ = ComputeStartIdxsFromGroupInfo(group_info_);
 
   auto list_inputs = DealWithListTensors(group_info_, start_idxs_, inputs);
-  const auto &group_list = inputs[start_idxs_[group_list_idx_]];
-  const auto split_item_idx = start_idxs_.back();
-  split_item_ = inputs.at(split_item_idx)->GetValueWithCheck<int64_t>();
-  group_type_ = inputs.at(split_item_idx + kIndex1)->GetValueWithCheck<int64_t>();
-  group_list_type_ = inputs.at(split_item_idx + kIndex2)->GetValueWithCheck<int64_t>();
-  act_type_ = inputs.at(split_item_idx + kIndex3)->GetValueWithCheck<int64_t>();
+  auto group_list_idx = start_idxs_.back();
+  group_list_.clear();
+  if (inputs[group_list_idx]->GetType()->type_id() != kMetaTypeNone) {
+    group_list_ = inputs[group_list_idx]->GetValueWithCheck<std::vector<int64_t>>();
+  }
+  split_item_ = inputs.at(group_list_idx + kIndex1)->GetValueWithCheck<int64_t>();
+  group_type_ = inputs.at(group_list_idx + kIndex2)->GetValueWithCheck<int64_t>();
 
   GetWorkspaceForResize(list_inputs[kIndex0], list_inputs[kIndex1], list_inputs[kIndex2], list_inputs[kIndex3],
-                        list_inputs[kIndex4], list_inputs[kIndex5], list_inputs[kIndex6], list_inputs[kIndex7],
-                        group_list, list_inputs[kIndex9], list_inputs[kIndex10], list_inputs[kIndex11], split_item_,
-                        group_type_, group_list_type_, act_type_, outputs, activation_feature_out_,
-                        dyn_quant_scale_out_);
+                        list_inputs[kIndex4], list_inputs[kIndex5], list_inputs[kIndex6], group_list_, split_item_,
+                        group_type_, outputs);
 }
 
-bool GroupedMatmulV4Ascend::Launch(const std::vector<KernelTensor *> &inputs,
+bool GroupedMatmulV2Ascend::Launch(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &workspace,
                                    const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
   auto list_inputs = DealWithListTensors(group_info_, start_idxs_, inputs);
-  const auto &group_list = inputs[start_idxs_[group_list_idx_]];
   RunOp(stream_ptr, workspace, list_inputs[kIndex0], list_inputs[kIndex1], list_inputs[kIndex2], list_inputs[kIndex3],
-        list_inputs[kIndex4], list_inputs[kIndex5], list_inputs[kIndex6], list_inputs[kIndex7], group_list,
-        list_inputs[kIndex9], list_inputs[kIndex10], list_inputs[kIndex11], split_item_, group_type_, group_list_type_,
-        act_type_, outputs, activation_feature_out_, dyn_quant_scale_out_);
+        list_inputs[kIndex4], list_inputs[kIndex5], list_inputs[kIndex6], group_list_, split_item_, group_type_,
+        outputs);
   return true;
 }
 
-MS_ACLNN_KERNEL_FACTORY_REG(GroupedMatmulV4, GroupedMatmulV4Ascend);
-}  // namespace grouped_matmul_v4
+MS_ACLNN_KERNEL_FACTORY_REG(GroupedMatmulV2, GroupedMatmulV2Ascend);
+}  // namespace grouped_matmul_v2
 }  // namespace kernel
 }  // namespace mindspore

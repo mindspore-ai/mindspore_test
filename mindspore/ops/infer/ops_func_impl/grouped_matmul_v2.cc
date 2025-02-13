@@ -18,6 +18,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <algorithm>
 
 #include "ops/ops_func_impl/op_func_impl.h"
 #include "ops_utils/op_utils.h"
@@ -47,14 +48,30 @@ void GroupedMatmulV2FuncImpl::FetchGroupInfo(const PrimitivePtr &primitive, cons
   primitive->set_attr("group_info", MakeValue(dyn_input_sizes));  // len of tuple input
 }
 
+int64_t GroupedMatmulV2FuncImpl::FetchGroupListIndex(const PrimitivePtr &primitive,
+                                                     const InferInfoPtrList &input_infos) const {
+  const auto input_num = SizeToLong(input_infos.size());
+  return input_num + group_list_offset_;
+}
+
 int64_t GroupedMatmulV2FuncImpl::FetchGroupListSize(const PrimitivePtr &primitive,
                                                     const InferInfoPtrList &input_infos) const {
-  const auto &group_list_opt = input_infos[idxes_.group_list]->GetArrayValue<int64_t>();
+  const auto group_list_idx = FetchGroupListIndex(primitive, input_infos);
+  const auto &group_list_opt = input_infos.at(group_list_idx)->GetArrayValue<int64_t>();
   if (MS_UNLIKELY(!group_list_opt.has_value())) {
     return abstract::Shape::kShapeDimAny;
   }
   const auto &group_list = group_list_opt.value();
   return SizeToLong(group_list.size());
+}
+
+TypeIdList GroupedMatmulV2FuncImpl::InferType(const PrimitivePtr &primitive,
+                                              const InferInfoPtrList &input_infos) const {
+  const auto &x_tensors = input_infos[idxes_.x]->GetSequenceElements();
+  TypeIdList output_types;
+  std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
+                 [](const InferInfoPtr &info) { return info->GetType(); });
+  return output_types;
 }
 
 int32_t GroupedMatmulV2FuncImpl::PrivateCheckValidation(const PrimitivePtr &primitive,
@@ -70,7 +87,8 @@ int32_t GroupedMatmulV2FuncImpl::PrivateCheckValidation(const PrimitivePtr &prim
     x_shape = input_infos[idxes_.x]->GetShape();
   }
 
-  const auto &group_list_info = input_infos[idxes_.group_list];
+  const auto group_list_idx = FetchGroupListIndex(primitive, input_infos);
+  const auto &group_list_info = input_infos.at(group_list_idx);
   auto group_list_opt = group_list_info->GetArrayValue<int64_t>();
   if (MS_UNLIKELY(IsDynamic(x_shape) || !group_list_opt.has_value() || group_list_opt.value().HasUnknownValue())) {
     return OP_CHECK_RETRY;

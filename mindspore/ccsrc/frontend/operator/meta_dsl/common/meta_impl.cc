@@ -29,6 +29,8 @@
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
@@ -288,6 +290,16 @@ NodePtr MetaImpl::Scan(const std::function<void(const NodePtr &, const NodePtr &
   NodePtrList node_list{NewValueNode(prim::kPrimScan), NewValueNode(loop_graph), init, xs, length};
   return NewNode(node_list);
 }
+
+NodePtr MetaImpl::MakeTuple(const std::vector<NodePtr> &nodes) {
+  auto cnode_inputs(nodes);
+  cnode_inputs.insert(cnode_inputs.begin(), NewValueNode(prim::kPrimMakeTuple));
+  return NewNode(cnode_inputs);
+}
+
+NodePtr MetaImpl::ListToTuple(const NodePtr &node) { return NewNode({NewValueNode(prim::kPrimListToTuple), node}); }
+
+NodePtr MetaImpl::SequenceLen(const NodePtr &node) { return NewNode({NewValueNode(prim::kPrimSequenceLen), node}); }
 
 NodePtr MetaImpl::Equal(const NodePtr &x, const NodePtr &y) { return NewNode({GetMultitypeOps("equal"), x, y}); }
 

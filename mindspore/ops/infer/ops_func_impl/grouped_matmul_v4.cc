@@ -27,17 +27,28 @@
 
 namespace mindspore {
 namespace ops {
+namespace {
+std::vector<int64_t> ComputeStartIdxsFromGroupInfo(const std::vector<int64_t> &group_info) {
+  std::vector<int64_t> start_idxs{0};
+  int64_t cur_end_idx = 0;
+  for (size_t i = 0; i < group_info.size(); ++i) {
+    cur_end_idx += (group_info[i] == 0 ? 1 : group_info[i]);
+    start_idxs.push_back(cur_end_idx);
+  }
+  return start_idxs;
+}
+}  // namespace
 void GroupedMatmulV4FuncImpl::FetchGroupInfo(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   // for tensortuple(input arg) in backend split. (AscendConvertTupleInputToDynamicInput pass)
   std::vector<int64_t> dyn_input_sizes;
   for (size_t i = 0; i < kIndex12; i++) {
     const auto &tensors = input_infos[i];
-    if (tensors->IsNone()) {
-      dyn_input_sizes.push_back(0);
+    if (i == LongToSize(group_list_idx_)) {
+      dyn_input_sizes.push_back(1);
       continue;
     }
-    if (i == LongToSize(idxes_.group_list)) {
-      dyn_input_sizes.push_back(1);
+    if (tensors->IsNone()) {
+      dyn_input_sizes.push_back(0);
       continue;
     }
     if (MS_UNLIKELY(tensors->IsDynamicSequence())) {
@@ -51,13 +62,25 @@ void GroupedMatmulV4FuncImpl::FetchGroupInfo(const PrimitivePtr &primitive, cons
   primitive->set_attr("group_info", MakeValue(dyn_input_sizes));  // len of tuple input
 }
 
+int64_t GroupedMatmulV4FuncImpl::FetchGroupListIndex(const PrimitivePtr &primitive,
+                                                     const InferInfoPtrList &input_infos) const {
+  if (MS_LIKELY(input_infos[idxes_.x]->IsSequence())) {
+    return group_list_idx_;
+  }
+  // Runtime phase: the element in input_args is KernelTensor. (tuple is expanded)
+  const auto &group_info = GetValue<std::vector<int64_t>>(primitive->GetAttr("group_info"));
+  const auto &start_idxes = ComputeStartIdxsFromGroupInfo(group_info);
+  return start_idxes.at(group_list_idx_);
+}
+
 int64_t GroupedMatmulV4FuncImpl::FetchGroupListSize(const PrimitivePtr &primitive,
                                                     const InferInfoPtrList &input_infos) const {
-  const auto &group_list_shape = input_infos[idxes_.group_list]->GetShape();
+  const auto group_list_idx = FetchGroupListIndex(primitive, input_infos);
+  const auto &group_list_shape = input_infos.at(group_list_idx)->GetShape();
   MS_CHECK_VALUE(group_list_shape.size() == kIndex1,
                  CheckAndConvertUtils::FormatCheckIntegerMsg("group_list's rank", group_list_shape.size(), kEqual,
                                                              kIndex1, primitive));
-  return input_infos[idxes_.group_list]->IsDynamic() ? abstract::Shape::kShapeDimAny : group_list_shape[kIndex0];
+  return input_infos[group_list_idx]->IsDynamic() ? abstract::Shape::kShapeDimAny : group_list_shape[kIndex0];
 }
 
 TypeIdList GroupedMatmulV4FuncImpl::InferType(const PrimitivePtr &primitive,

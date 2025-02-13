@@ -1,0 +1,14 @@
+gmm:
+  - op_yaml: gmm_op.yaml
+    py_method: tensor_gmm
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: function
+
+  - op_yaml: gmm_v2_op.yaml
+    py_method: tensor_gmm
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: function

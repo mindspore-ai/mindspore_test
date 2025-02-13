@@ -85,9 +85,13 @@ template <typename T>
 bool SequenceGetItemCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &,
                                                const std::vector<KernelTensor *> &outputs) {
+  auto output_size = output_size_list_[0];
+  if (output_size == 0) {
+    return true;
+  }
+
   const auto input_addr = GetDeviceAddress<T>(inputs, 0);
   auto output_addr = GetDeviceAddress<T>(outputs, 0);
-  auto output_size = output_size_list_[0];
   auto target_addr_base = reinterpret_cast<char *>(input_addr) + offset_size_;
   auto cp_ret = memcpy_s(output_addr, output_size, target_addr_base, output_size);
   if (cp_ret != EOK) {
@@ -100,6 +104,11 @@ bool SequenceGetItemCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *>
 const std::vector<std::pair<KernelAttr, SequenceGetItemCpuKernelMod::KernelRunFunc>>
   &SequenceGetItemCpuKernelMod::GetFuncList() const {
   static const std::vector<std::pair<KernelAttr, SequenceGetItemCpuKernelMod::KernelRunFunc>> func_list = {
+    {KernelAttr()
+       .AddInputAttr(kObjectTypeTuple, kNumberTypeBFloat16)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+       .AddOutputAttr(kNumberTypeBFloat16),
+     &SequenceGetItemCpuKernelMod::LaunchKernel<bfloat16>},
     {KernelAttr()
        .AddInputAttr(kObjectTypeTuple, kNumberTypeFloat16)
        .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)

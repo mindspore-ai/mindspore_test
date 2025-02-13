@@ -27,19 +27,25 @@ class OPS_API GroupedMatmulV2FuncImpl final : public GroupedMatmulBaseFuncImpl {
   GroupedMatmulV2FuncImpl() {
     idxes_.x = 0;
     idxes_.weight = 1;
-    idxes_.group_list = 7;
     idxes_.split_item_offset = -2;
     idxes_.group_type_offset = -1;
   }
   ~GroupedMatmulV2FuncImpl() = default;
 
+  TypeIdList InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+
  protected:
   void FetchGroupInfo(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+
+  int64_t FetchGroupListIndex(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
   int64_t FetchGroupListSize(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
   int32_t PrivateCheckValidation(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
                                  int64_t group_type) const override;
+
+ private:
+  int64_t group_list_offset_{-3};
 };
 }  // namespace ops
 }  // namespace mindspore
