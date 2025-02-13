@@ -582,6 +582,10 @@ void MindRTBackend::RunActorSet(const ActorInfo &actor_info, runtime::ActorSet *
   }
 
   std::vector<std::vector<tensor::TensorPtr>> input_tensors;
+  // make sure enable input optimize condition right.
+  MS_LOG(INFO) << "Start to run graph, args size: " << args.size() << ", graph: " << actor_set->name_;
+  runtime::ActorDispatcher::set_enable_sub_graph_execute_for_cur_actor_set(actor_set->enable_kbk_sub_graph_execute_);
+  runtime::ActorDispatcher::set_enable_input_optimize_for_cur_actor_set(actor_set->enable_input_optimize_);
   if (!runtime::EnableInputOptimize()) {
     input_tensors = GetRunGraphInputs(graph_compiler_info, args);
     if (graphs.size() > input_tensors.size()) {
