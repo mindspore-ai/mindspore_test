@@ -254,7 +254,10 @@ def compare_result(expect, actual, stage='', index=None, ignore_output_index=Non
             compare_result(exp, act, stage, i)
     else:
         if isinstance(expect, Tensor):
-            result = np.allclose(expect.asnumpy(), actual.asnumpy(), rtol=1e-03, atol=1e-03, equal_nan=True)
+            if expect.dtype == ms.bfloat16:
+                result = np.allclose(expect.float().asnumpy(), actual.float().asnumpy(), rtol=1e-03, atol=1e-03, equal_nan=True)
+            else:
+                result = np.allclose(expect.asnumpy(), actual.asnumpy(), rtol=1e-03, atol=1e-03, equal_nan=True)
             debug_log_args(expect, tag=f"compare_result Tensor expect")
             debug_log_args(actual, tag=f"compare_result Tensor actual")
         else:
