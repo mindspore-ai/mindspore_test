@@ -10005,60 +10005,40 @@ def _check_is_tensor(param_name, input, cls_name):
 
 def any(input, axis=None, keep_dims=False):
     r"""
-    Reduces a dimension of `input` by the "logical OR" of all elements in the dimension, by default. And also can
-    reduce a dimension of `input` along the `axis`. Determine whether the dimensions of the output and input are the
-    same by controlling `keep_dims`.
-
-    Note:
-        The `axis` with tensor type is only used for compatibility with older versions and is not recommended.
+    Tests if any element in input evaluates to True along the given axes.
 
     Args:
-        input (Tensor): Input Tensor(bool),has the shape :math:`(N, *)` where :math:`*` means,
-            any number of additional dimensions.
-        axis (Union[int, tuple(int), list(int), Tensor], optional): The dimensions to reduce.
-            Suppose the rank of `input` is r, `axis` must be in the range [-rank(input), rank(input)).
-            Default: ``None`` , all dimensions are reduced.
-        keep_dims (bool, optional): If ``True`` , keep these reduced dimensions and the length is 1.
-            If ``False`` , don't keep these dimensions. Default : ``False`` .
+        input (Tensor): Input Tensor.
+        axis (Union[int, tuple(int), list(int), Tensor], optional): The dimensions to reduce. Default: ``None`` , all
+            dimensions are reduced.
+        keep_dims (bool, optional): whether the output tensor has dim retained or not. Default : ``False`` .
 
     Returns:
-        Tensor, the dtype is bool.
-
-        - If `axis` is ``None`` , and `keep_dims` is ``False`` ,
-          the output is a 0-D Tensor representing the "logical OR" of all elements in the input Tensor.
-        - If `axis` is int, such as 2, and `keep_dims` is ``False`` ,
-          the shape of output is :math:`(input_1, input_3, ..., input_R)`.
-        - If `axis` is tuple(int), such as (2, 3), and `keep_dims` is ``False`` ,
-          the shape of output is :math:`(input_1, input_4, ..., input_R)`.
-        - If `axis` is 1-D Tensor, such as [2, 3], and `keep_dims` is ``False`` ,
-          the shape of output is :math:`(input_1, input_4, ..., input_R)`.
-
-    Raises:
-        TypeError: If `keep_dims` is not a bool.
-        TypeError: If `input` is not a Tensor(bool).
-        TypeError: If `axis` is not one of the following: int, tuple, list or Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([[True, False], [True, True]]))
-        >>> # case 1: Reduces a dimension by the "logical OR" of all elements in the dimension.
-        >>> output = ops.any(x, keep_dims=True)
-        >>> print(output)
-        [[ True]]
-        >>> print(output.shape)
-        (1, 1)
-        >>> # case 2: Reduces a dimension along axis 0.
-        >>> output = ops.any(x, axis=0)
-        >>> print(output)
-        [ True True]
-        >>> # case 3: Reduces a dimension along axis 1.
-        >>> output = ops.any(x, axis=1)
-        >>> print(output)
-        [ True True]
+        >>> import mindspore
+        >>> input = mindspore.tensor([[True, False], [True, True]])
+        >>>
+        >>> # case 1:  By default, mindspore.ops.any tests along all the axes.
+        >>> mindspore.ops.any(input)
+        Tensor(shape=[], dtype=Bool, value= True)
+        >>>
+        >>> # case 2: Reduces a dimension along axis 2, with keep_dims False.
+        >>> mindspore.ops.any(input, axis=1)
+        Tensor(shape=[2], dtype=Bool, value= [ True,  True])
+        >>>
+        >>> # case 3: Reduces a dimension along axis (2, 3), with keep_dims False.
+        >>> mindspore.ops.any(input, axis=(0,1))
+        Tensor(shape=[], dtype=Bool, value= True)
+        >>>
+        >>> # case 4: Reduces a dimension along axis [2, 3], with keep_dims True.
+        >>> mindspore.ops.any(input, axis=[0,1], keep_dims=True)
+        Tensor(shape=[1, 1], dtype=Bool, value=
+        [[ True]])
     """
     if axis is None:
         axis = ()
@@ -12635,6 +12615,7 @@ def count_nonzero(x, axis=(), keep_dims=False, dtype=mstype.int32):
             If false, don't keep these dimensions. Default: ``False`` .
         dtype (Union[Number, mindspore.bool\_], optional): The data type of the output tensor.
             Default: ``mstype.int32`` .
+
 
     Returns:
           Tensor, number of nonzero element across axis specified by `axis`.
