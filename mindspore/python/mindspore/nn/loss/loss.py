@@ -736,7 +736,7 @@ class SoftMarginLoss(LossBase):
           bfloat16 (Atlas training series products are not supported).
         - **labels** (Tensor) - Ground truth data, with the same shape as `logits`.
 
-    Returns:
+    Outputs:
         Tensor or Scalar, if `reduction` is ``"none"``, its shape is the same as `logits`.
         Otherwise, a scalar value will be returned.
 
