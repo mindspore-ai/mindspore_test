@@ -23,7 +23,7 @@
 
 #include "securec/include/securec.h"
 #include "ir/tensor.h"
-#include "pybind_api/ir/tensor_py.h"
+#include "frontend/ir/tensor_py.h"
 
 using mindspore::tensor::TensorPybind;
 

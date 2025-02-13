@@ -39,7 +39,7 @@
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "ir/cell.h"
 #include "ir/func_graph_cloner.h"
-#include "pybind_api/ir/primitive_py.h"
+#include "frontend/ir/primitive_py.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pipeline/jit/ps/parse/data_converter.h"

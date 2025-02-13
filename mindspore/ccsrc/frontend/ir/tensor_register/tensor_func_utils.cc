@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "pybind_api/ir/tensor_register/auto_generate/tensor_func_utils.h"
+#include "frontend/ir/tensor_register/auto_generate/tensor_func_utils.h"
 
 namespace mindspore {
 namespace tensor {

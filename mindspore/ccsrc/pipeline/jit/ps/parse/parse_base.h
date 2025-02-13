@@ -22,7 +22,8 @@
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "ir/manager.h"
-#include "pybind_api/export_flags.h"
+#include "frontend/ir/export_flags.h"
+#include "include/common/visible.h"
 
 namespace py = pybind11;
 namespace mindspore {
@@ -251,8 +252,8 @@ enum SyntaxSupportType : int {
 };
 
 // Convert python object to ValuePtr.
-bool ConvertData(const py::object &obj, ValuePtr *data, bool use_signature = false, const TypePtr &dtype = nullptr,
-                 bool forbid_reuse = false);
+FRONTEND_EXPORT bool ConvertData(const py::object &obj, ValuePtr *data, bool use_signature = false,
+                                 const TypePtr &dtype = nullptr, bool forbid_reuse = false);
 
 bool ConvertStubData(const py::object &obj, ValuePtr *data, bool use_signature = false, const TypePtr &dtype = nullptr,
                      bool forbid_reuse = false);

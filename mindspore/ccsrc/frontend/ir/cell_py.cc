@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "pybind_api/ir/cell_py.h"
+#include "frontend/ir/cell_py.h"
 #include <string>
 
 #include "include/common/pybind_api/api_register.h"

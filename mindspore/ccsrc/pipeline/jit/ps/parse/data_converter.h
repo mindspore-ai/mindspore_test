@@ -30,6 +30,7 @@
 #include "include/common/utils/python_adapter.h"
 #include "utils/log_adapter.h"
 #include "ops/op_def.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 namespace parse {
@@ -55,7 +56,7 @@ py::object CreatePythonObject(const py::object &type, const py::tuple &args_kwar
 py::object CallPythonScript(const py::object &script, const py::tuple &args_kwargs);
 py::set GetPythonScriptIdAttrs(const py::object &script);
 void MakeProperNameToFuncGraph(const FuncGraphPtr &func_graph, std::string name);
-ValuePtr PyDataToValue(const py::object &obj);
+FRONTEND_EXPORT ValuePtr PyDataToValue(const py::object &obj);
 ValuePtr PyDataToStubNode(const py::object &obj);
 void ClearObjectCache();
 }  // namespace data_converter

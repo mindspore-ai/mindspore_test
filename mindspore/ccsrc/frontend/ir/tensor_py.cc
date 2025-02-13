@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "pybind_api/ir/tensor_py.h"
+#include "frontend/ir/tensor_py.h"
 
 #include <utility>
 #include <algorithm>
@@ -27,14 +27,14 @@
 #include "utils/cache_embedding_hashmap_struct.h"
 #include "include/common/utils/python_adapter.h"
 #include "mindspore/ccsrc/include/backend/distributed/embedding_cache/embedding_cache_utils.h"
-#include "pybind_api/ir/tensor_index_py.h"
+#include "frontend/ir/tensor_index_py.h"
 #include "include/common/profiler.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pipeline/pipeline.h"
 #include "include/backend/mbuf_device_address.h"
 #include "utils/ordered_set.h"
-#include "pybind_api/ir/tensor_register/tensor_func_reg.h"
+#include "frontend/ir/tensor_register/tensor_func_reg.h"
 
 namespace mindspore {
 namespace pynative::autograd {

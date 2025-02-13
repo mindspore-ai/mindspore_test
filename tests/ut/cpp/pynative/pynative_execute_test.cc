@@ -16,7 +16,7 @@
 #include <iostream>
 #include <memory>
 #include "common/common_test.h"
-#include "pybind_api/ir/primitive_py.h"
+#include "frontend/ir/primitive_py.h"
 #include "include/common/utils/python_adapter.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/convert_utils_py.h"

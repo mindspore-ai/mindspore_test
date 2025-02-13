@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#include "pybind_api/ir/tensor_index_py.h"
-
+#include "frontend/ir/tensor_index_py.h"
 #include <pybind11/stl.h>
 #include <string>
 #include <algorithm>

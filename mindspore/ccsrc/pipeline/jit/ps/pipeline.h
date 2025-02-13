@@ -63,7 +63,7 @@ class Pipeline {
   std::vector<ActionItem> actions_;
 };
 
-class ExecutorPy : public std::enable_shared_from_this<ExecutorPy> {
+class FRONTEND_EXPORT ExecutorPy : public std::enable_shared_from_this<ExecutorPy> {
  public:
   ExecutorPy() = default;
   virtual ~ExecutorPy() = default;
@@ -139,7 +139,7 @@ class ExecutorPy : public std::enable_shared_from_this<ExecutorPy> {
 using ExecutorPyPtr = std::shared_ptr<ExecutorPy>;
 
 // A function pipeline.
-class GraphExecutorPy : public ExecutorPy {
+class FRONTEND_EXPORT GraphExecutorPy : public ExecutorPy {
  public:
   static std::shared_ptr<GraphExecutorPy> GetInstance() {
     std::lock_guard<std::mutex> i_lock(instance_lock_);
@@ -231,29 +231,30 @@ std::string GetJitLevel();
 std::string GetObjDesc(const py::object &source);
 bool IsPhaseLoadFromMindIR(const std::string &phase);
 void CheckArgsValid(const py::object &source, const py::tuple &args);
-py::bool_ VerifyInputSignature(const py::list &input_signature, const py::tuple &inputs);
+FRONTEND_EXPORT py::bool_ VerifyInputSignature(const py::list &input_signature, const py::tuple &inputs);
 
 bool InitDistribute(const std::map<std::string, std::string> &options);
 
-void ResetOpId();
-void ResetOpIdWithOffset();
-void InitHccl();
-void FinalizeHccl();
-uint32_t GetHcclRankId();
-uint32_t GetHcclRankSize();
-void InitPipeline();
+FRONTEND_EXPORT void ResetOpId();
+FRONTEND_EXPORT void ResetOpIdWithOffset();
+FRONTEND_EXPORT void InitHccl();
+FRONTEND_EXPORT void FinalizeHccl();
+FRONTEND_EXPORT uint32_t GetHcclRankId();
+FRONTEND_EXPORT uint32_t GetHcclRankSize();
+FRONTEND_EXPORT void InitPipeline();
 void FinalizeBackend();
 void ME_EXPORT ClearResAtexit();
 void CloseTsd(bool force = false);
-void MemoryRecycle();
-void BindDeviceCtx();
+FRONTEND_EXPORT void MemoryRecycle();
+FRONTEND_EXPORT void BindDeviceCtx();
 
-FuncGraphPtr LoadMindIR(const std::string &file_name, const char *dec_key, const size_t key_len,
-                        const std::string &dec_mode, const py::object decrypt = py::none());
+FRONTEND_EXPORT FuncGraphPtr LoadMindIR(const std::string &file_name, const char *dec_key, const size_t key_len,
+                                        const std::string &dec_mode, const py::object decrypt = py::none());
 
-FuncGraphPtr SplitMindIR(const std::string &file_name);
+FRONTEND_EXPORT FuncGraphPtr SplitMindIR(const std::string &file_name);
 
-FuncGraphPtr SplitDynamicMindIR(const std::string &file_name, size_t device_num, size_t rank_id, bool sapp);
+FRONTEND_EXPORT FuncGraphPtr SplitDynamicMindIR(const std::string &file_name, size_t device_num, size_t rank_id,
+                                                bool sapp);
 
 // init and exec dataset sub graph
 bool ME_EXPORT InitExecDataset(const std::string &queue_name, int64_t iter_num, int64_t batch_size,
@@ -267,13 +268,16 @@ bool InitExecDatasetVm(const std::string &queue_name, int64_t size, int64_t batc
 
 void ProcessVmArgInner(const py::tuple &args, const ResourcePtr &res, VectorRef *const arg_list);
 
-py::bytes PyEncrypt(char *plain_data, size_t plain_len, char *key, size_t key_len, const std::string &enc_mode);
-py::bytes PyDecrypt(const std::string &encrypt_data_path, char *key, size_t key_len, const std::string &dec_mode);
-py::bytes PyDecryptData(char *model_data, size_t data_size, char *key, size_t key_len, const std::string &dec_mode);
-bool PyIsCipherFile(const std::string &file_path);
-void FinalizeCluster();
-void SwapCache(const tensor::TensorPyPtr &host, const tensor::TensorPyPtr &device,
-               const tensor::TensorPyPtr &block_mapping, const bool &type);
+FRONTEND_EXPORT py::bytes PyEncrypt(char *plain_data, size_t plain_len, char *key, size_t key_len,
+                                    const std::string &enc_mode);
+FRONTEND_EXPORT py::bytes PyDecrypt(const std::string &encrypt_data_path, char *key, size_t key_len,
+                                    const std::string &dec_mode);
+FRONTEND_EXPORT py::bytes PyDecryptData(char *model_data, size_t data_size, char *key, size_t key_len,
+                                        const std::string &dec_mode);
+FRONTEND_EXPORT bool PyIsCipherFile(const std::string &file_path);
+FRONTEND_EXPORT void FinalizeCluster();
+FRONTEND_EXPORT void SwapCache(const tensor::TensorPyPtr &host, const tensor::TensorPyPtr &device,
+                               const tensor::TensorPyPtr &block_mapping, const bool &type);
 bool IsPhaseExport(const std::string &phase);
 py::object BaseRefToPyDataWithUserData(const BaseRef &value, const AbstractBasePtr &abs);
 void SetLoopCount(const ResourcePtr &resource);
@@ -288,7 +292,7 @@ void AddManagerForFuncGraphArgs(const ResourcePtr &resource, const ValuePtrList 
 void CheckInterpretNodeLineInfos();
 void SetHookForArgAbstract(const py::object &arg, abstract::AbstractBasePtr abs);
 bool RunJitPipeline();
-void PreJit(const py::object &args, const py::object &kwargs);
+FRONTEND_EXPORT void PreJit(const py::object &args, const py::object &kwargs);
 }  // namespace pipeline
 }  // namespace mindspore
 

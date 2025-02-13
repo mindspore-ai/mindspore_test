@@ -28,7 +28,7 @@ mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/super_kernel_actor.cc:mi
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/kernel_actor.cc:mindspore::runtime::KernelActor::ExecuteLaunchKernelTask
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::LaunchAllKernels
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/data_prepare_actor.cc:mindspore::runtime::DataPrepareActor::PrepareDataForHostTensorQueueNew
-mindspore/mindspore/ccsrc/pipeline/jit/ps/init.cc:PYBIND11_MODULE
+mindspore/mindspore/ccsrc/pybind_api/init.cc:PYBIND11_MODULE
 mindspore/mindspore/ccsrc/pipeline/jit/ps/parse/resolve.cc:mindspore::parse::Resolver::ResolveObjectToNode
 mindspore/mindspore/ccsrc/pipeline/jit/ps/parse/parse.cc:mindspore::parse::Parser::ParseIf
 mindspore/mindspore/ccsrc/pipeline/jit/ps/parse/parse.cc:mindspore::parse::Parser::ParseAttribute
@@ -37,7 +37,7 @@ mindspore/mindspore/ccsrc/include/common/utils/python_utils.h:mindspore::HandleE
 mindspore/mindspore/ccsrc/backend/common/session/anf_runtime_algorithm.cc:mindspore::session::AnfRuntimeAlgorithm::FlattenInputArg
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/output_actor.cc:mindspore::runtime::OutputActor::CreateOutputTensor
 mindspore/mindspore/ccsrc/pipeline/jit/ps/static_analysis/prim.cc:mindspore::abstract::ConvertAbstractToPython
-mindspore/mindspore/ccsrc/pybind_api/ir/log_adapter_py.h:mindspore::PyExceptionInitializer::HandleExceptionPy
+mindspore/mindspore/ccsrc/frontend/ir/log_adapter_py.h:mindspore::PyExceptionInitializer::HandleExceptionPy
 mindspore/mindspore/ops/kernel/gpu/math/unary_op_gpu_kernel.h:mindspore::kernel::UnaryOpGpuKernel::Launch
 mindspore/mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fission/dynamic_rnn_grad_fission_v2.cc:mindspore::opt::AddLSTMInputGradNode
 mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/drop_out_gen_mask_kernels.cc:aicpu::ARMDropOutGenMaskKernel
@@ -79,8 +79,8 @@ mindspore/mindspore/python/mindspore/ops/_grad_experimental/grad_math_ops.py:get
 mindspore/mindspore/python/mindspore/ops/operations/array_ops.py:_compute_slicing_shape
 mindspore/mindspore/python/mindspore/ops_generate/gen_pyboost_func.py:generate_pyboost_op_source_code
 mindspore/mindspore/python/mindspore/ops_generate/gen_pyboost_func.py:generate_pyboost_functions
-mindspore/mindspore/ccsrc/pybind_api/ir/tensor_py.cc:mindspore::tensor::GetDataType
-mindspore/mindspore/ccsrc/pybind_api/ir/tensor_index_py.cc:mindspore::tensor::TensorIndex::GetItemByTupleWithView
+mindspore/mindspore/ccsrc/frontend/ir/tensor_py.cc:mindspore::tensor::GetDataType
+mindspore/mindspore/ccsrc/frontend/ir/tensor_index_py.cc:mindspore::tensor::TensorIndex::GetItemByTupleWithView
 mindspore/mindspore/ccsrc/pybind_api/np_dtype/np_dtypes.cc:mindspore::np_dtypes::RegisterNpTypeUFuncs
 mindspore/mindspore/ccsrc/frontend/operator/composite/tensor_index.cc:mindspore::prim::TensorIndexGetitem::GetStrideInfoFromTuple
 mindspore/mindspore/lite/src/litert/thread_pool.c:GetArch
@@ -314,8 +314,8 @@ mindspore/mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion/lamb_next_mv_
 mindspore/mindspore/ops/kernel/cpu/nnacl/experimental/conv_fp32_nchwx_avx512.c:conv2d_compute_fp32_nchwx_avx512
 mindspore/mindspore/lite/src/litert/kernel/cpu/control/tensorlist_setitem.cc:mindspore::kernel::TensorListSetItemCPUKernel::Run
 mindspore/mindspore/python/mindspore/ops/_utils/utils.py:get_broadcast_shape
-mindspore/mindspore/ccsrc/pybind_api/ir/dtype_py.cc:mindspore::RegTyping
-mindspore/mindspore/ccsrc/pybind_api/ir/tensor_py.cc:mindspore::tensor::RegTensorPyFunction
+mindspore/mindspore/ccsrc/frontend/ir/dtype_py.cc:mindspore::RegTyping
+mindspore/mindspore/ccsrc/frontend/ir/tensor_py.cc:mindspore::tensor::RegTensorPyFunction
 mindspore/mindspore/ops/kernel/cpu/eltwise_grad_cpu_kernel.cc:mindspore::kernel::EltWiseGradCpuTypeFunc<T>::InitFunc
 mindspore/mindspore/lite/tools/converter/quantizer/weight_quantizer.cc:mindspore::lite::quant::WeightQuantizer::LinearQuant
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv3d
@@ -324,7 +324,7 @@ mindspore/mindspore/ops/kernel/cpu/nnacl/fp32/matmul_avx512_mask_fp32.c:GemmRowx
 mindspore/mindspore/ops/kernel/cpu/crop_and_resize_cpu_kernel.cc:mindspore::kernel::CropAndResizeCpuKernelMod::LaunchKernel
 mindspore/mindspore/ccsrc/plugin/device/cpu/hal/device/cpu_device_address.cc:mindspore::device::cpu::CPUDeviceAddress::SyncHostToDevice
 mindspore/mindspore/ops/kernel/cpu/cast_cpu_kernel.cc:mindspore::kernel::Cast
-mindspore/mindspore/ccsrc/pybind_api/ir/tensor_py.cc:mindspore::tensor::GetPyTypeFormat
+mindspore/mindspore/ccsrc/frontend/ir/tensor_py.cc:mindspore::tensor::GetPyTypeFormat
 mindspore/mindspore/core/ir/dtype/type.cc:mindspore::NormalizeTypeId
 mindspore/mindspore/ops/infer/sparse_to_dense_v2.cc:mindspore::ops::SparseToDenseV2InferShape
 mindspore/mindspore/ops/infer/ops_func_impl/div.cc:mindspore::ops::DivFrontendFuncImpl::InferValue
@@ -332,7 +332,7 @@ mindspore/mindspore/ops/kernel/gpu/math/cumprod_gpu_kernel.cc:mindspore::kernel:
 mindspore/mindspore/ops/kernel/cpu/cumprod_cpu_kernel.cc:mindspore::kernel::CumProdCpuKernelMod::GetFuncList
 mindspore/mindspore/ops/kernel/cpu/mkldnn/pooling_cpu_kernel.cc:mindspore::kernel::PoolingCpuKernelMod::InitPoolingFields
 mindspore/mindspore/ops/kernel/cpu/mkldnn/pooling_cpu_kernel_nnacl.cc:mindspore::kernel::PoolingCpuKernelNnaclMod::Resize
-mindspore/mindspore/ccsrc/pybind_api/ir/tensor_py.cc:mindspore::tensor::TensorPybind::Item
+mindspore/mindspore/ccsrc/frontend/ir/tensor_py.cc:mindspore::tensor::TensorPybind::Item
 mindspore/mindspore/ccsrc/pybind_api/ir/tensor_py.cc:mindspore::tensor::GetItemForToList
 
 # AICPU migration

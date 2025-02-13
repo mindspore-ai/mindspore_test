@@ -119,9 +119,9 @@
 #include "ir/cell.h"
 #endif
 
-#include "pybind_api/ir/log_adapter_py.h"  // Only include one-time in the whole project.
-#include "pybind_api/ir/py_execute_py.h"   // Only include one-time in the whole project.
-#include "pybind_api/ir/tensor_register/auto_generate/tensor_func_utils.h"
+#include "frontend/ir/log_adapter_py.h"  // Only include one-time in the whole project.
+#include "frontend/ir/py_execute_py.h"   // Only include one-time in the whole project.
+#include "frontend/ir/tensor_register/auto_generate/tensor_func_utils.h"
 #include "include/common/utils/compile_cache_context.h"
 #include "include/common/utils/tensor_py.h"
 

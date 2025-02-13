@@ -31,7 +31,7 @@
 #include "utils/hash_set.h"
 #include "pybind11/numpy.h"
 #include "pybind11/pytypes.h"
-#include "pybind_api/ir/base_ref_py.h"
+#include "frontend/ir/base_ref_py.h"
 #include "ir/anf.h"
 #include "pipeline/pynative/grad/auto_grad.h"
 #include "frontend/operator/composite/composite.h"

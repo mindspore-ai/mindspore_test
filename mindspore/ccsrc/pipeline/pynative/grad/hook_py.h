@@ -27,6 +27,7 @@
 #include "pybind11/pytypes.h"
 #include "ir/tensor.h"
 #include "pipeline/pynative/grad/variable.h"
+#include "include/common/visible.h"
 
 namespace mindspore::pynative::autograd {
 namespace py = pybind11;
@@ -35,14 +36,14 @@ struct RegisterHook {
   /// \brief Register a backward hook
   ///
   /// \ void
-  static uint64_t RegisterTensorBackwardHook(const tensor::Tensor &tensor, const py::function &hook);
+  FRONTEND_EXPORT static uint64_t RegisterTensorBackwardHook(const tensor::Tensor &tensor, const py::function &hook);
 
   /// \brief Remove a backward hook
   ///
   /// \ void
-  static void RemoveTensorBackwardHookOfGraph(uint64_t tensor_id, uint64_t handle_id);
-  static void RemoveTensorBackwardHook(uint64_t handle_id);
-  static py::list GetHooks(const tensor::Tensor &tensor);
+  FRONTEND_EXPORT static void RemoveTensorBackwardHookOfGraph(uint64_t tensor_id, uint64_t handle_id);
+  FRONTEND_EXPORT static void RemoveTensorBackwardHook(uint64_t handle_id);
+  FRONTEND_EXPORT static py::list GetHooks(const tensor::Tensor &tensor);
 
   /// \brief Update weight meta
   ///

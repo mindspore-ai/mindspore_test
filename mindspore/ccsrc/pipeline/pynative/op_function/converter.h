@@ -25,6 +25,7 @@
 #include "include/common/pybind_api/api_register.h"
 #include "include/common/utils/primfunc_utils.h"
 #include "ops/op_def.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 namespace pynative {
@@ -104,7 +105,7 @@ struct FunctionParameter {
 };
 
 // single overload
-struct FunctionSignature {
+struct FRONTEND_EXPORT FunctionSignature {
   explicit FunctionSignature(const std::string &fmt, int index);
   bool CheckParamValid(const py::object &obj, const FunctionParameter &param);
   bool Parse(const py::list &args, const py::dict &kwargs, py::list *python_args);
@@ -118,7 +119,7 @@ struct FunctionSignature {
 };
 
 // parser util
-struct PythonArgParser {
+struct FRONTEND_EXPORT PythonArgParser {
   explicit PythonArgParser(std::vector<std::string> fmts, const std::string &function_name);
   inline const FunctionSignature &Parse(const py::list &args, const py::dict &kwargs, py::list *python_args,
                                         const bool &is_method);
@@ -141,7 +142,7 @@ inline const FunctionSignature &PythonArgParser::Parse(const py::list &args, con
   MS_EXCEPTION(TypeError) << ParseError(args, kwargs, is_method);
 }
 
-class Converter {
+class FRONTEND_EXPORT Converter {
  public:
   explicit Converter(ops::OpDef *op_def);
   void Parse(const py::list &python_args);

@@ -242,6 +242,7 @@ ValueTuplePtr Converter::ToIntList(const py::list &python_args, size_t i) {
   }
   return ConvertValueTupleByCastDtype(python_args, op_arg, i);
 }
+template FRONTEND_EXPORT ValueTuplePtr Converter::ToIntList<py::tuple>(const py::list &python_args, size_t i);
 
 template <typename T>
 std::optional<ValueTuplePtr> Converter::ToIntListOptional(const py::list &python_args, size_t i) {

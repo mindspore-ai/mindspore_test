@@ -27,6 +27,7 @@
 #include "pipeline/pynative/grad/auto_grad.h"
 #include "pipeline/pynative/grad/ir/bprop_tensor_replace.h"
 #include "pipeline/jit/ps/resource.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 namespace pynative {
@@ -37,7 +38,7 @@ struct JitCompileInfo {
   bool is_dynamic_shape_{false};
 };
 
-class Jit {
+class FRONTEND_EXPORT Jit {
  public:
   Jit() = default;
   ~Jit() = default;

@@ -21,12 +21,13 @@
 #include <map>
 #include "frontend/parallel/status.h"
 #include "frontend/parallel/tensor_layout/tensor_layout.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 namespace parallel {
 using ReplacementMemo = std::map<size_t, int64_t>;
 
-class LayoutTransfer {
+class FRONTEND_EXPORT LayoutTransfer {
  public:
   LayoutTransfer() = default;
   virtual ~LayoutTransfer() = 0;

@@ -31,7 +31,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
-#include "pybind_api/ir/primitive_py.h"
+#include "frontend/ir/primitive_py.h"
 
 namespace mindspore {
 namespace prim {

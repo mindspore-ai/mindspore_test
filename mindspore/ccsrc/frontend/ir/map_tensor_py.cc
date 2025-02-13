@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include "pybind_api/ir/map_tensor_py.h"
+#include "frontend/ir/map_tensor_py.h"
 #include <memory>
 #include <string>
 #include <utility>
 #include "pybind11/pytypes.h"
-#include "pybind_api/ir/tensor_py.h"
+#include "frontend/ir/tensor_py.h"
 #include "include/common/pybind_api/api_register.h"
 #include "include/common/utils/python_adapter.h"
 #include "mindspore/ccsrc/include/backend/distributed/embedding_cache/embedding_cache_utils.h"

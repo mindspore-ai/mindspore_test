@@ -24,6 +24,7 @@
 #include "runtime/pipeline/task/task.h"
 #include "pipeline/pynative/base.h"
 #include "backend/common/session/session_basic.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 namespace pynative {
@@ -40,7 +41,7 @@ class FrontendTask : public runtime::AsyncTask {
   FrontendOpRunInfoPtr op_run_info_;
 };
 
-class PassthroughFrontendTask : public runtime::AsyncTask {
+class FRONTEND_EXPORT PassthroughFrontendTask : public runtime::AsyncTask {
  public:
   explicit PassthroughFrontendTask(std::function<void(void)> run_func)
       : AsyncTask(runtime::kFrontendTask), run_func_(std::move(run_func)) {}

@@ -18,7 +18,7 @@
 #include <vector>
 #include <tuple>
 #include <string>
-#include "pybind_api/ir/arg_handler.h"
+#include "frontend/ir/arg_handler.h"
 #include "pipeline/pynative/pynative_utils.h"
 #include "mindspore/ops/op_def/op_enum.h"
 

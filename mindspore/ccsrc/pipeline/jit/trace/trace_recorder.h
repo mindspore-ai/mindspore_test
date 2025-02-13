@@ -24,7 +24,7 @@
 #include <unordered_map>
 
 #include "pybind11/pybind11.h"
-#include "pybind_api/ir/primitive_py.h"
+#include "frontend/ir/primitive_py.h"
 #include "include/common/visible.h"
 #include "ir/func_graph.h"
 #include "ir/anf.h"
@@ -86,7 +86,7 @@ class TraceRecorder {
   std::unordered_map<std::string, AnfNodePtr> py_obj_node_map_;  // The map from py::object id() to AnfNode.
 };
 
-void RegTraceRecorderPy(const py::module *m);
+FRONTEND_EXPORT void RegTraceRecorderPy(const py::module *m);
 }  // namespace trace
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PIPELINE_JIT_TRACE_RECORDER_H_

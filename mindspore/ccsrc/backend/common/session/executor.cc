@@ -22,7 +22,7 @@
 #include "runtime/device/kernel_runtime_manager.h"
 #include "include/common/utils/comm_manager.h"
 #include "include/common/utils/scoped_long_running.h"
-#include "pybind_api/ir/tensor_py.h"
+#include "frontend/ir/tensor_py.h"
 
 using mindspore::tensor::TensorPybind;
 namespace mindspore::session {

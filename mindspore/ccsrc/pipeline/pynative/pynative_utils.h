@@ -29,6 +29,7 @@
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "pipeline/pynative/forward/forward_task.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 namespace pynative {
@@ -58,9 +59,11 @@ struct Common {
   static ValuePtr StubNodeToValue(const ValuePtr &val);
   static void StubNodeToValue(const FrontendOpRunInfoPtr &op_run_info);
   static tensor::BaseTensorPtr StubNodeToTensor(const ValuePtr &value);
-  static tensor::BaseTensorPtr ConvertStubNodeToTensor(const ValuePtr &v, bool need_contiguous, bool requires_grad);
-  static std::optional<tensor::BaseTensorPtr> ConvertStubNodeToTensor(const std::optional<ValuePtr> &v,
-                                                                      bool need_contiguous, bool requires_grad);
+  FRONTEND_EXPORT static tensor::BaseTensorPtr ConvertStubNodeToTensor(const ValuePtr &v, bool need_contiguous,
+                                                                       bool requires_grad);
+  FRONTEND_EXPORT static std::optional<tensor::BaseTensorPtr> ConvertStubNodeToTensor(const std::optional<ValuePtr> &v,
+                                                                                      bool need_contiguous,
+                                                                                      bool requires_grad);
   static ValueTuplePtr ConvertStubNodeToValueTuple(const ValueListPtr &v, bool need_contiguous, bool requires_grad);
   static ValueTuplePtr ConvertStubNodeToValueTuple(const ValueTuplePtr &v, bool need_contiguous, bool requires_grad);
   static std::optional<ValueTuplePtr> ConvertStubNodeToValueTuple(const std::optional<ValueTuplePtr> &v,
@@ -250,7 +253,7 @@ struct GradCommon {
 };
 };  // namespace PyNativeAlgo
 
-void DispatchOp(const std::shared_ptr<runtime::AsyncTask> &task);
+FRONTEND_EXPORT void DispatchOp(const std::shared_ptr<runtime::AsyncTask> &task);
 }  // namespace pynative
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PIPELINE_PYNATIVE_PYNATIVE_UTILS_H_

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "pybind_api/ir/primitive_py.h"
+#include "frontend/ir/primitive_py.h"
 
 #include <map>
 #include "ir/signature.h"
@@ -22,8 +22,8 @@
 #include "include/common/utils/python_adapter.h"
 #include "pybind11/pytypes.h"
 #include "include/common/pybind_api/api_register.h"
-#include "pybind_api/export_flags.h"
-#include "pybind_api/ir/base_ref_py.h"
+#include "frontend/ir/export_flags.h"
+#include "frontend/ir/base_ref_py.h"
 #include "utils/convert_utils_base.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "utils/ms_context.h"

@@ -22,7 +22,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/optimizer/op_adaptation_info_factory.h"
-#include "pybind_api/ir/primitive_py.h"
+#include "frontend/ir/primitive_py.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "utils/ms_context.h"
 #include "ir/cell.h"

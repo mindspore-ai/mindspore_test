@@ -21,21 +21,22 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 #include "include/backend/visible.h"
+#include "include/common/visible.h"
 
 namespace py = pybind11;
 namespace mindspore {
-void RegTyping(py::module *m);
-void RegCNode(const py::module *m);
-void RegCell(const py::module *m);
-void RegMetaFuncGraph(const py::module *m);
-void RegFuncGraph(const py::module *m);
-void RegUpdateFuncGraphHyperParams(py::module *m);
-void RegParamInfo(const py::module *m);
-void RegPrimitive(const py::module *m);
-void RegPrimitiveFunction(const py::module *m);
-void RegFunctional(const py::module *m);
-void RegSignatureEnumRW(const py::module *m);
-void RegValues(const py::module *m);
+FRONTEND_EXPORT void RegTyping(py::module *m);
+FRONTEND_EXPORT void RegCNode(const py::module *m);
+FRONTEND_EXPORT void RegCell(const py::module *m);
+FRONTEND_EXPORT void RegMetaFuncGraph(const py::module *m);
+FRONTEND_EXPORT void RegFuncGraph(const py::module *m);
+FRONTEND_EXPORT void RegUpdateFuncGraphHyperParams(py::module *m);
+FRONTEND_EXPORT void RegParamInfo(const py::module *m);
+FRONTEND_EXPORT void RegPrimitive(const py::module *m);
+FRONTEND_EXPORT void RegPrimitiveFunction(const py::module *m);
+FRONTEND_EXPORT void RegFunctional(const py::module *m);
+FRONTEND_EXPORT void RegSignatureEnumRW(const py::module *m);
+FRONTEND_EXPORT void RegValues(const py::module *m);
 void RegMsContext(const py::module *m);
 void RegDeviceManagerConf(const py::module *m);
 void RegSecurity(py::module *m);
@@ -46,14 +47,14 @@ void RegSendRecv(py::module *m);
 void RegResetParams(py::module *m);
 void RegCleanTdtChannel(py::module *m);
 void RegTFT(py::module *m);
-void RegTensorDoc(py::module *m);
+FRONTEND_EXPORT void RegTensorDoc(py::module *m);
 void RegReuseDataPtr(py::module *m);
 void RegPreJit(py::module *m);
 
 namespace hal {
 void RegStream(py::module *m);
 void RegEvent(py::module *m);
-void RegCommHandle(py::module *m);
+FRONTEND_EXPORT void RegCommHandle(py::module *m);
 void RegMemory(py::module *m);
 void RegUtils(py::module *m);
 }  // namespace hal
@@ -66,24 +67,24 @@ BACKEND_EXPORT void RegRuntimeConf(py::module *m);
 }  // namespace runtime
 
 namespace pynative {
-void RegPyNativeExecutor(const py::module *m);
-void RegisterPyBoostFunction(py::module *m);
-void RegisterCustomizeFunction(py::module *m);
-void RegisterFunctional(py::module *m);
+FRONTEND_EXPORT void RegPyNativeExecutor(const py::module *m);
+FRONTEND_EXPORT void RegisterPyBoostFunction(py::module *m);
+FRONTEND_EXPORT void RegisterCustomizeFunction(py::module *m);
+FRONTEND_EXPORT void RegisterFunctional(py::module *m);
 void RegDirectOps(py::module *m);
 }  // namespace pynative
 
 namespace pijit {
-void RegPIJitInterface(py::module *m);
+FRONTEND_EXPORT void RegPIJitInterface(py::module *m);
 }
 
 namespace tensor {
-void RegMetaTensor(const py::module *m);
-void RegCSRTensor(const py::module *m);
-void RegCOOTensor(const py::module *m);
-void RegRowTensor(const py::module *m);
-void RegMapTensor(const py::module *m);
-void RegTensorPy(const py::module *m);
+FRONTEND_EXPORT void RegMetaTensor(const py::module *m);
+FRONTEND_EXPORT void RegCSRTensor(const py::module *m);
+FRONTEND_EXPORT void RegCOOTensor(const py::module *m);
+FRONTEND_EXPORT void RegRowTensor(const py::module *m);
+FRONTEND_EXPORT void RegMapTensor(const py::module *m);
+FRONTEND_EXPORT void RegTensorPy(const py::module *m);
 }  // namespace tensor
 
 namespace profiler {
@@ -96,11 +97,11 @@ void RegDumpControl(py::module *m);
 }
 
 namespace prim {
-void RegCompositeOpsGroup(const py::module *m);
+FRONTEND_EXPORT void RegCompositeOpsGroup(const py::module *m);
 }
 #ifdef _MSC_VER
 namespace abstract {
-void RegPrimitiveFrontEval();
+FRONTEND_EXPORT void RegPrimitiveFrontEval();
 }
 #endif
 

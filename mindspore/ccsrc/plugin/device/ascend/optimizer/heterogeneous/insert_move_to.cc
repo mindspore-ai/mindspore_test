@@ -23,7 +23,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/offload_context.h"
-#include "pybind_api/ir/tensor_py.h"
+#include "frontend/ir/tensor_py.h"
 
 namespace mindspore {
 namespace opt {

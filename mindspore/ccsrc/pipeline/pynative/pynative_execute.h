@@ -27,11 +27,12 @@
 #include "frontend/operator/composite/composite.h"
 #include "ir/anf.h"
 #include "include/fork_utils.h"
+#include "include/common/visible.h"
 
 namespace mindspore::pynative {
 namespace py = pybind11;
 
-class ME_EXPORT PyNativeExecutor : public std::enable_shared_from_this<PyNativeExecutor> {
+class FRONTEND_EXPORT PyNativeExecutor : public std::enable_shared_from_this<PyNativeExecutor> {
  public:
   static const std::shared_ptr<PyNativeExecutor> &GetInstance() {
     std::lock_guard<std::mutex> i_lock(instance_lock_);

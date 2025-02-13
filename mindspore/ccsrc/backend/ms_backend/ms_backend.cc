@@ -33,7 +33,7 @@
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pipeline/pynative/grad/jit/jit_call_graph.h"
 #include "ir/anf.h"
-#include "pybind_api/ir/base_ref_py.h"
+#include "frontend/ir/base_ref_py.h"
 #include "pybind_api/pybind_patch.h"
 #include "include/common/utils/callbacks.h"
 #include "include/common/utils/convert_utils.h"

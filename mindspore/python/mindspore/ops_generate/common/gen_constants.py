@@ -45,8 +45,8 @@ PYBOOST_NATIVE_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pipeline/pynative/grad/func
 PYBOOST_AUTO_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pipeline/pynative/op_function/auto_generate"
 PIPELINE_PYBOOST_FUNC_GEN_PATH = "mindspore/ccsrc/pipeline/pynative/op_function/auto_generate"
 PYBOOST_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pyboost/grad_functions/auto_generate"
-TENSOR_FUNC_REGISTER_PATH = "mindspore/ccsrc/pybind_api/ir/tensor_register/auto_generate"
-TENSOR_API_PATH = "mindspore/ccsrc/pybind_api/ir/tensor_api/auto_generate"
+TENSOR_FUNC_REGISTER_PATH = "mindspore/ccsrc/frontend/ir/tensor_register/auto_generate"
+TENSOR_API_PATH = "mindspore/ccsrc/frontend/ir/tensor_api/auto_generate"
 ADD_TENSOR_DOCS_PY_PATH = "mindspore/python/mindspore/common"
 ADD_MINT_DOCS_PY_PATH = "mindspore/python/mindspore/mint"
 

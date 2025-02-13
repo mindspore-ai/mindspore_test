@@ -33,7 +33,7 @@
 #include "pipeline/jit/ps/fallback.h"
 #include "pipeline/jit/trace/trace_recorder.h"
 #include "abstract/param_validator.h"
-#include "pybind_api/ir/tensor_py.h"
+#include "frontend/ir/tensor_py.h"
 #include "frontend/operator/ops.h"
 #include "infer/deprecated_infer/infer_functions.h"
 #include "include/common/utils/convert_utils_py.h"

@@ -33,7 +33,7 @@ namespace expander {
 namespace bprop {
 class BpropBuilder;
 using BpropBuilderFunc = std::function<NodePtrList(BpropBuilder *)>;
-class PynativeCallback {
+class FRONTEND_EXPORT PynativeCallback {
  public:
   virtual const std::string &opname() const = 0;
   virtual ValuePtr *GetInput(size_t index) const = 0;

@@ -16,12 +16,13 @@
 
 #include "pybind11/pybind11.h"
 #include "mindspore/core/include/ir/anf.h"
+#include "include/common/visible.h"
 
 namespace py = pybind11;
 namespace mindspore::pynative {
 
-py::object Empty(const py::list &args);
-py::object EmptyLike(const py::list &args);
-py::object NewEmpty(const py::list &args);
+FRONTEND_EXPORT py::object Empty(const py::list &args);
+FRONTEND_EXPORT py::object EmptyLike(const py::list &args);
+FRONTEND_EXPORT py::object NewEmpty(const py::list &args);
 py::object Pyboost_Empty_Base(const PrimitivePtr &prim, const py::list &args);
 }  // namespace mindspore::pynative

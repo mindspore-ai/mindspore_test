@@ -22,7 +22,7 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "include/common/utils/convert_utils_py.h"
-#include "pybind_api/ir/base_ref_py.h"
+#include "frontend/ir/base_ref_py.h"
 
 namespace mindspore {
 py::function GetBpropFunctionByObj(const py::object &obj, bool get_closure) {
