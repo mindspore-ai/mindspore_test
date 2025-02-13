@@ -329,8 +329,13 @@ class GraphBuilder {
    */
   bool Symbolic(ValueNode *node);
 
+  BindArgumentsHelper<ValueNode *> PackInputsForFunc(const py::object &obj, int op_code,
+                                                     const std::vector<ValueNode *> &inputs,
+                                                     ValueNode *self_node = nullptr, bool eliminate_sens = false);
+  GraphBuilderPtr get_prev_call_builder() const { return prev_call_builder_; }
+
  private:
-  GraphBuilderPtr sub_graph_ = nullptr;
+  GraphBuilderPtr prev_call_builder_ = nullptr;
   GraphBuilder *root_;
   GraphBuilder *parent_;
   Graph *graph_;
@@ -359,10 +364,6 @@ class GraphBuilder {
 
   std::vector<ValueNode *> GetNewArgs(CallNode *call_node, AObject *vobj = nullptr,
                                       const GraphBuilderPtr &subgraph = nullptr);
-  bool IsGradCallable(ValueNode *node);
-  py::object ResolveGradCall(CallNode *call_node, StopTraceReason *stop_reason);
-  void HandleGradForwardSideEffect(const FuncGraphPtr &forward_fg, const AbstractWrapperPtr &grad,
-                                   const GraphBuilderPtr &subgraph_builder, CallNode *call_node);
 
   py::object HandleConstantFoldFunc(const std::vector<py::object> &args, CallNode *call_node,
                                     StopTraceReason *stop_reason);
@@ -392,13 +393,6 @@ class GraphBuilder {
   AbstractWrapperPtr HandleBuildOp(const Instr &instr, const std::vector<ValueNode *> &p);
   AbstractWrapperPtr HandleBuildStringOp(const PrimitivePtr &primitive, const AbstractWrapperPtrList &inputs_wrapper);
 
-  BindArgumentsHelper<ValueNode *> PackInputsForFunc(const py::object &obj, int op_code,
-                                                     const std::vector<ValueNode *> &inputs,
-                                                     ValueNode *self_node = nullptr, bool eliminate_sens = false);
-
-  std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>> BuildForwardGraph(CallNode *call_node);
-  AbstractWrapperPtrList HandleInputsForGrad(CallNode *call_node, BindArgumentsHelper<ValueNode *> forward_inputs);
-  void HandleCustomBProp(const FuncGraphPtr &graph, const py::object &obj) const;
   bool ConvertClassType(const py::object &callable_info, CallNode *call_node, StopTraceReason *stop_reason);
   std::pair<bool, py::object> ConvertCallableObject(const py::object &callable_info) const;
   py::object ResolveCallableWithByteCode(CallNode *call_node, StopTraceReason *stop_reason);
@@ -409,6 +403,8 @@ class GraphBuilder {
                                      StopTraceReason *stop_reason);
 };
 
+void GuardRegisterHook(ValueNode *node);
+
 namespace fg_build_utils {
 AbstractWrapperPtr FgTupleGetItem(const FuncGraphBuilderPtr &fg_builder, const AbstractWrapperPtr &tuple, int index);
 std::optional<std::vector<AbstractWrapperPtr>> FgTupleUnpack(const FuncGraphBuilderPtr &fg_builder,
@@ -416,7 +412,6 @@ std::optional<std::vector<AbstractWrapperPtr>> FgTupleUnpack(const FuncGraphBuil
 // Add AnfNode in parent FuncGraph to call the subgraph's FuncGraph.
 AbstractWrapperPtr FgCallSubGraph(CallNode *call_node);
 }  // namespace fg_build_utils
-
 }  // namespace pijit
 }  // namespace mindspore
 

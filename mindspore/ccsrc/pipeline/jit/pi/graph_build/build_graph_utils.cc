@@ -278,6 +278,55 @@ bool IsConvertToInterpretedObject(const py::object &obj) {
   return py::isinstance<Cell>(obj) || PyCFunction_Check(obj.ptr()) || IsTensorOverloadMethod(obj);
 }
 
+ValuePtr ConvertPyObjToValue(const py::handle &handle) {
+  MS_EXCEPTION_IF_NULL(handle.ptr());
+  py::object obj = py::reinterpret_borrow<py::object>(handle);
+  ValuePtr ret = nullptr;
+  try {
+    MS_LOG_TRY_CATCH_SCOPE;
+    PyRecursionScope rec_check(obj);
+    SyncStubTensor(handle);
+
+    if (py::list::check_(obj) || py::tuple::check_(obj) || pijit::IsCellList(obj)) {
+      std::vector<ValuePtr> elements;
+      for (const auto &i : obj) {
+        auto v = ConvertPyObjToValue(i);
+        if (v == nullptr) {
+          return nullptr;
+        }
+        elements.push_back(v);
+      }
+      if (py::list::check_(obj)) {
+        return std::make_shared<ValueList>(elements);
+      } else {
+        return std::make_shared<ValueTuple>(elements);
+      }
+    }
+    if (py::dict::check_(obj)) {
+      std::vector<std::pair<ValuePtr, ValuePtr>> elements;
+      for (const auto &i : py::cast<py::dict>(obj)) {
+        auto k = ConvertPyObjToValue(i.first);
+        auto v = ConvertPyObjToValue(i.second);
+        if (k == nullptr || v == nullptr) {
+          return nullptr;
+        }
+        elements.push_back(std::make_pair(k, v));
+      }
+      return std::make_shared<ValueDictionary>(elements);
+    }
+    if (IsConvertToInterpretedObject(obj)) {
+      return std::make_shared<parse::InterpretedObject>(obj);
+    }
+    if (parse::ConvertData(obj, &ret)) {
+      return ret;
+    }
+  } catch (const std::exception &e) {
+    MS_LOG(INFO) << e.what();
+  }
+  MS_LOG(INFO) << "Failed to convert python object." << py::str(handle);
+  return nullptr;
+}
+
 void PrintConstantAbstract(const AbstractBasePtr &abstract) {
   if (abstract == nullptr) {
     return;
@@ -301,6 +350,27 @@ void PrintConstantAbstract(const AbstractBasePtr &abstract) {
     return;
   }
   MS_LOG(INFO) << "Encounter constant value node with abstract: " << abstract->ToString();
+}
+
+void AttachCustomBPropToGraph(const FuncGraphPtr &graph, const py::object &obj) {
+  if (graph == nullptr || obj.ptr() == nullptr) {
+    return;
+  }
+  if (!py::hasattr(obj, parse::CUSTOM_BPROP_NAME)) {
+    return;
+  }
+  bool enable_bprop_debug = py::cast<bool>(py::getattr(obj, "bprop_debug"));
+  FuncGraphPtr bprop_graph = enable_bprop_debug
+                               ? parse::ConvertToBpropCut(obj)
+                               : parse::ConvertToFuncGraph(obj, {}, parse::PYTHON_MOD_GET_BPROP_METHOD);
+  if (bprop_graph != nullptr) {
+    (void)graph->transforms().emplace(parse::CUSTOM_BPROP_NAME, FuncGraphTransform(bprop_graph));
+    (void)bprop_graph->transforms().emplace("primal", FuncGraphTransform(graph));
+    graph->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, true);
+    graph->set_flag(FUNC_GRAPH_FLAG_PRIMAL_OF_BPROP, true);
+    MS_LOG(INFO) << "Add custom bprop to graph.";
+  }
+  return;
 }
 
 bool HasRegisterHook(const py::object &obj) { return HookUtils::HasRegisterHook(obj); }

@@ -430,20 +430,6 @@ std::vector<py::object> AbstractWrapper::GetDictKeysObject() const {
   return ret;
 }
 
-void AbstractWrapper::UpdateGradInfo(const ValuePtr &meta) {
-  MS_EXCEPTION_IF_NULL(meta);
-  auto grad = meta->cast<prim::GradOperationPtr>();
-  MS_EXCEPTION_IF_NULL(grad);
-  grad_info_.get_all_ = grad->get_all_;
-  grad_info_.get_by_list_ = grad->get_by_list_;
-  grad_info_.sens_param_ = grad->sens_param_;
-  grad_info_.get_by_position_ = grad->get_by_position_;
-  grad_info_.has_aux_ = grad->has_aux_;
-  grad_info_.get_value_ = grad->get_value_;
-  grad_info_.return_ids_ = grad->return_ids_;
-  grad_info_.merge_forward_ = grad->merge_forward_;
-}
-
 std::vector<py::object> AbstractWrapper::GetSliceInputsPyObject() const {
   MS_EXCEPTION_IF_NULL(abstract_);
   if (!abstract_->isa<abstract::AbstractSlice>()) {

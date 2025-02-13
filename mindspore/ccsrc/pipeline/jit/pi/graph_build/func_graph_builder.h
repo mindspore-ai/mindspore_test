@@ -89,6 +89,14 @@ class FuncGraphBuilder {
   /// \return The abstract wrapper of the infer result.
   AbstractWrapperPtr AddNode(const ValuePtr &callable_value, const AbstractWrapperPtrList &inputs_abstract_wrapper);
 
+  /// \brief Add a cnode to the graph with abstract, no need to evaluate.
+  ///
+  /// \param[in] inputs The inputs of new node.
+  /// \param[in] inputs_obj The abstract of new node.
+  ///
+  /// \return The abstract wrapper of the new node.
+  AbstractWrapperPtr AddNodeWithAbstract(const AnfNodePtrList &inputs, const AbstractBasePtr &abstract);
+
   /// \brief Add a cnode to the graph with graph is parsed in ast and byte code is CallFunctionEx.
   ///
   /// \param[in] callable_obj The callable python object.
@@ -270,15 +278,6 @@ class FuncGraphBuilder {
   /// \note Nodes created during the conversion of Dict nodes need to be added to the graph using this method.
   void AddLocalVariableNode(const AbstractWrapperPtr &wrapper, const AnfNodePtr &node);
 
-  AbstractWrapperPtr BuildGradNetNode(const ValuePtr &callable_value, const py::object &callable_obj,
-                                      const AbstractWrapperPtrList &inputs_abstract_wrapper);
-
-  AbstractWrapperPtr BuildGradNode(const AbstractWrapperPtr &key, const FuncGraphPtr &forward_fg,
-                                   const AbstractWrapperPtrList &inputs);
-
-  static FuncGraphPtr BuildCallForwardGraphForGrad(const FuncGraphPtr &fg, const std::vector<size_t> &arg_len,
-                                                   bool is_cell);
-
   AbstractWrapperPtr AddAttributeInput(const py::object &object);
 
  private:
@@ -300,9 +299,6 @@ class FuncGraphBuilder {
 
   AbstractWrapperPtr TryToAddNode(const ValuePtr &callable_value,
                                   const AbstractWrapperPtrList &inputs_abstract_wrapper);
-
-  AbstractWrapperPtr HandleGrad(const AbstractWrapperPtr &key, const FuncGraphPtr &forward_fg,
-                                const AbstractWrapperPtrList &inputs);
 
   void MarkNodeIsolated(const AnfNodePtr &node, bool force);
 

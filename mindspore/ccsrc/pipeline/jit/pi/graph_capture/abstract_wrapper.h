@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,27 +24,18 @@
 #include "pybind11/pybind11.h"
 #include "ir/value.h"
 #include "abstract/abstract_value.h"
+#include "pipeline/jit/pi/graph_capture/graph_build_helper.h"
 
 namespace py = pybind11;
 
 namespace mindspore {
 namespace pijit {
 constexpr auto kPijitNamedtupleType = "pijit_namedtuple_type";
+constexpr auto kPijitBuildHelper = "pijit_build_helper";
 
 class AbstractWrapper;
 using AbstractWrapperPtr = std::shared_ptr<AbstractWrapper>;
 using AbstractWrapperPtrList = std::vector<AbstractWrapperPtr>;
-
-struct GradInfo {
-  bool get_all_;
-  bool get_by_list_;
-  bool sens_param_;
-  bool get_by_position_;
-  bool has_aux_;
-  bool get_value_;
-  bool return_ids_;
-  bool merge_forward_;
-};
 
 class AbstractWrapper {
  public:
@@ -61,9 +52,6 @@ class AbstractWrapper {
   int TryToGetSize() const;
 
   std::vector<py::object> GetDictKeysObject() const;
-
-  GradInfo grad_info() const { return grad_info_; }
-  void UpdateGradInfo(const ValuePtr &meta);
   std::vector<py::object> GetSliceInputsPyObject() const;
 
   static py::object ConvertToPyObject(const AbstractWrapperPtr &wrapper);
@@ -71,9 +59,18 @@ class AbstractWrapper {
   static py::object FetchPythonObject(const AbstractWrapperPtr &wrapper);
   static bool MarkObjectPiJItShouldCompile(const py::object &object);
 
+  GraphBuildHelperPtr graph_builder_helper() const {
+    if (!abstract_->has_user_data(kPijitBuildHelper)) {
+      return nullptr;
+    }
+    return abstract_->user_data<GraphBuildHelper>(kPijitBuildHelper);
+  }
+  void set_graph_builder_helper(const GraphBuildHelperPtr &graph_builder_helper) {
+    abstract_->set_user_data(kPijitBuildHelper, graph_builder_helper);
+  }
+
  private:
   AbstractBasePtr abstract_;
-  GradInfo grad_info_;
 };
 
 inline std::string ToString(const AbstractWrapperPtr &wrapper) {
