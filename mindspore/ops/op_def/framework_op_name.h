@@ -64,7 +64,6 @@ constexpr auto kStreamSendOpName = "StreamSend";
 constexpr auto kStreamRecvOpName = "StreamRecv";
 constexpr auto kRaiseOpName = "raise";
 constexpr auto kFormatOpName = "Format";
-constexpr auto kMoveToOpName = "MoveTo";
 constexpr auto kMoveAssignOpName = "MoveAssign";
 constexpr auto kTraceGraphOpName = "TraceGraph";
 }  // namespace mindspore

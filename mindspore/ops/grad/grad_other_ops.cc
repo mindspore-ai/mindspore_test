@@ -94,5 +94,11 @@ REG_BPROP_BUILDER("_DynamicLossScale").SetUnusedInputs({i0, i2}).SetBody(BODYFUN
                       {{"split_overflow", MakeValue(true)}, {"layer_overflow", ib->GetAttr("layer")}});
   return {res, ib->OutZeros(loss_scale)};
 });
+
+REG_BPROP_BUILDER("MoveTo").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
+  auto dout = ib->GetInput(kIndex2);
+  return {dout};
+});
+
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop
