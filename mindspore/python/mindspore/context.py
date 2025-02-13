@@ -1725,11 +1725,15 @@ def set_context(**kwargs):
               - enable_grad_comm_opt (bool): Enable overlap between dx ops and data parallel communication ops if True.
                 Currently, do not support
                 `O2 <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.JitConfig.html>`_
-                Default: False.
+                Caution when parallel gradient communication and calculation are well overlapped, the performance
+                may not be improved after this option is enabled. Determine whether to enable this option based on the
+                actual scenario. Default: False.
               - enable_opt_shard_comm_opt (bool): Enable overlap between forward ops
                 and optimizer parallel allgather communication if True. Currently, do not support
                 `O2 <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.JitConfig.html>`_
-                Default: False.
+                Caution if the weight aggregation communication and calculation are well overlapped, the performance
+                may not be improved after this option is enabled. Determine whether to enable this option based on the
+                actual scenario Default: False.
               - compute_communicate_fusion_level (int): Enable the fusion between compute and communicate.
                 Default: ``0``. Note: This function must be used with Ascend Training Solution 24.0.RC2 or later.
 
