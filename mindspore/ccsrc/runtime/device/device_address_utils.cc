@@ -24,6 +24,7 @@
 #include "ops/op_def.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "ir/tensor.h"
 #include "include/backend/device_address.h"
 #include "include/backend/kernel_info.h"
