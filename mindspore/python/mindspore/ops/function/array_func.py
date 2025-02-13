@@ -5034,35 +5034,42 @@ def tuple_to_array(input_x):
 
 def diagflat(input, offset=0):
     r"""
-    Create a 2-D Tensor which diagonal is the flattened `input` .
+    If `input` is a vector (1-D tensor), then returns a 2-D square tensor with the elements of `input` as the diagonal,
+    If `input` is a tensor with more than one dimension, then returns a 2-D tensor with diagonal elements equal to a
+    flattened `input`.
 
     Args:
-        input (Tensor): Input Tensor, which is flattened and set as the diagonal of the output.
-        offset (int, optional): `offset` controls which diagonal to choose. Default: ``0`` .
+        input (Tensor): Input Tensor.
+        offset (int, optional): Diagonal offset. Default: ``0`` .
 
-            - When `offset` is zero, the diagonal chosen is the main diagonal.
-            - When `offset` is a positive integer, the diagonal chosen is up the main diagonal.
-            - When `offset` is a negative integer, the diagonal chosen is down the main diagonal.
+            - When `offset` is a positive integer, shift the diagonal upward.
+            - When `offset` is a negative integer, shift the diagonal downward.
 
     Returns:
-        The 2-D Tensor, whose diagonal is the flattened `input`.
-
-    Raises:
-        TypeError: If `input` is not a tensor.
-        TypeError: If `offset` is not an integer.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor([1, 2], mindspore.float32)
-        >>> output = ops.diagflat(x, 1)
-        >>> print(output)
-        [[0. 1. 0.]
-         [0. 0. 2.]
-         [0. 0. 0.]]
+        >>> mindspore.ops.diagflat(mindspore.tensor([1, 2, 3]))
+        Tensor(shape=[3, 3], dtype=Int64, value=
+        [[1, 0, 0],
+         [0, 2, 0],
+         [0, 0, 3]])
+        >>> mindspore.ops.diagflat(mindspore.tensor([1, 2, 3]), 1)
+        Tensor(shape=[4, 4], dtype=Int64, value=
+        [[0, 1, 0, 0],
+         [0, 0, 2, 0],
+         [0, 0, 0, 3],
+         [0, 0, 0, 0]])
+        >>> mindspore.ops.diagflat(mindspore.tensor([[1, 2], [3, 4]]))
+        Tensor(shape=[4, 4], dtype=Int64, value=
+        [[1, 0, 0, 0],
+         [0, 2, 0, 0],
+         [0, 0, 3, 0],
+         [0, 0, 0, 4]])
     """
     if not isinstance(input, Tensor):
         raise TypeError(
