@@ -286,7 +286,7 @@ class CustomFunctionContextNet(_Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        x, x2, y = ctx.to_save
+        x, x2, y = ctx.saved_tensors
         age = ctx.age
         assert np.allclose(x.asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
         assert np.allclose(x2.asnumpy(), np.array([4], dtype=np.float32), 0.00001, 0.00001)
@@ -636,7 +636,7 @@ class CustomFunctionViewNotInAndDirtyNet(_Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        x, y = ctx.to_save
+        x, y = ctx.saved_tensors
         return ops.OnesLike()(x), ops.OnesLike()(y) * 2
 
 
@@ -677,7 +677,7 @@ class CustomFunctionMultiDiffOutputNet(_Function):
 
     @staticmethod
     def backward(ctx, grad_output, grad_output1):
-        x, y = ctx.to_save
+        x, y = ctx.saved_tensors
         return ops.OnesLike()(x), ops.OnesLike()(y) * 2
 
 
@@ -705,3 +705,79 @@ def test_custom_function_multi_diff_output():
     with pytest.raises(RuntimeError) as err:
         grad_net(net)(x, y)
     assert "A view of base is being inplace modified" in str(err.value)
+
+
+class CustomFunctionMaterializeGradsNet(_Function):
+    @staticmethod
+    def forward(ctx, x, y):
+        x2 = x*x
+        z = x2+1
+        return z, x2
+
+    @staticmethod
+    def backward(ctx, grad_output, grad_output1):
+        grad_output2 = grad_output1 + 2
+        return grad_output, grad_output2
+
+
+class CustomFunctionMaterializeGradsWrap(nn.Cell):
+    def construct(self, x, y):
+        z, _ = CustomFunctionMaterializeGradsNet.apply(x, y)
+        return z
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_materialize_grad():
+    """
+    Feature: Custom autograd function.
+    Description: None output grad tensor should be materialized default.
+    Expectation: success.
+    """
+    x = Tensor([2, 2], mindspore.float32)
+    y = Tensor([3, 3], mindspore.float32)
+    net = CustomFunctionMaterializeGradsWrap()
+    grad_net = C.GradOperation(get_all=True)
+    grads = grad_net(net)(x, y)
+    assert np.allclose(grads[0].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
+    assert np.allclose(grads[1].asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
+
+
+class CustomFunctionNotMaterializeGradsNet(_Function):
+    @staticmethod
+    def forward(ctx, x, y):
+        x2 = x*x
+        z = x2+1
+        ctx.set_materialize_grads(False)
+        return z, x2
+
+    @staticmethod
+    def backward(ctx, grad_output, grad_output1):
+        with pytest.raises(TypeError):
+            grad_output = grad_output1 + 2
+        return grad_output, grad_output
+
+
+class CustomFunctionNotMaterializeGradsWrap(nn.Cell):
+    def construct(self, x, y):
+        z, _ = CustomFunctionNotMaterializeGradsNet.apply(x, y)
+        return z
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_not_materialize_grad():
+    """
+    Feature: Custom autograd function.
+    Description: None output grad tensors are not materialized.
+    Expectation: success.
+    """
+    x = Tensor([2, 2], mindspore.float32)
+    y = Tensor([3, 3], mindspore.float32)
+    net = CustomFunctionNotMaterializeGradsWrap()
+    grad_net = C.GradOperation(get_all=True)
+    grad_net(net)(x, y)

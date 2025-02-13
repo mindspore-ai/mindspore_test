@@ -83,19 +83,28 @@ class ME_EXPORT FunctionBase {
 
   py::object needs_input_grad() const { return needs_input_grad_; }
 
-  void set_needs_input_grad(py::object needs_input_grad) { needs_input_grad_ = needs_input_grad; }
+  void set_needs_input_grad(const py::object &needs_input_grad) { needs_input_grad_ = needs_input_grad; }
 
-  py::object to_save() const { return to_save_; }
+  py::object saved_tensors() const { return saved_tensors_; }
 
-  void set_to_save(py::object to_save) { to_save_ = to_save; }
+  void set_saved_tensors(const py::object &saved_tensors) { saved_tensors_ = saved_tensors; }
 
   py::object non_differentiable() { return non_differentiable_; }
 
-  void set_non_differentiable(py::object non_differentiable) { non_differentiable_ = non_differentiable; }
+  void set_non_differentiable(const py::object &non_differentiable) { non_differentiable_ = non_differentiable; }
 
   py::object dirty_tensors() { return dirty_tensors_; }
 
-  void set_dirty_tensors(py::object dirty_tensors) { dirty_tensors_ = dirty_tensors; }
+  void set_dirty_tensors(const py::object &dirty_tensors) { dirty_tensors_ = dirty_tensors; }
+
+  bool materialize_grads() { return materialize_grads_; }
+
+  void set_materialize_grads(const py::object &materialize_grads) {
+    if (!py::isinstance<py::bool_>(materialize_grads)) {
+      MS_LOG(EXCEPTION) << "set_materialize_grads need bool value, but get a " << materialize_grads.get_type();
+    }
+    materialize_grads_ = py::cast<bool>(materialize_grads);
+  }
 
   std::vector<bool> is_tensor_input() { return is_tensor_input_; }
 
@@ -106,13 +115,17 @@ class ME_EXPORT FunctionBase {
   py::object needs_input_grad_;
 
   // The context carry tensors from forward function to backward function. Result of `save_for_backward` function.
-  py::object to_save_;
+  py::object saved_tensors_;
 
   // The tensors that are not differentiable decided by use. Result of `mark_non_differentiable` function.
   py::object non_differentiable_;
 
   // The tensor that have been modified. Result of `mark_dirty` function.
   py::object dirty_tensors_;
+
+  // The flag indicate whether to materialize none output grad tensors into
+  // tensors full of zeros.
+  bool materialize_grads_ = true;
 
   // True is the input is tensor
   std::vector<bool> is_tensor_input_;

@@ -130,11 +130,21 @@ ValuePtrList PyBackwardNode::CallBackward(const ValuePtrList &grads) {
   // Construct input for backward function.
   py::gil_scoped_acquire gil_acquire;
   auto gradients = ValueListToValue(grads);
-  py::object py_tensor_grad = CTensorToPyStubNodes(gradients);
   auto ctx = py::cast<FunctionPtr>(obj_);
   MS_EXCEPTION_IF_NULL(ctx);
+  py::object py_tensor_grad;
+  if (ctx->materialize_grads()) {
+    const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    // Python grad func can not process None, we need to convert None to zero tensor.
+    auto func_builder = FuncBuilder(name_, device_target, nullptr);
+    auto filled_zeros_grad = func_builder.FillZeros(gradients, out_abstract_);
+    py_tensor_grad = CTensorToPyStubNodes(filled_zeros_grad);
+  } else {
+    py_tensor_grad = CTensorToPyStubNodes(gradients);
+  }
   MS_LOG(DEBUG) << "Args info, grad is tuple " << py::isinstance<py::tuple>(py_tensor_grad) << ", is tensor input size "
-                << ctx->is_tensor_input().size();
+                << ctx->is_tensor_input().size() << "materialize_grads " << ctx->materialize_grads();
+
   py::tuple fn_args = ConstructBackwardArgs(obj_, py_tensor_grad);
   // Call python backward function.
   py::object grads_obj = backward_fn_(*fn_args);
