@@ -3,6 +3,7 @@ from mindspore import jit, context, Tensor
 from mindspore.common import dtype as mstype
 from .share.utils import match_array, assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 # set feature expand graph input on
 config = { "expand_graph_input": True, }
@@ -76,7 +77,7 @@ def test_list(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     s = [x1, x2, y1, y2]
-    wrapped_func = jit(func, mode='PIJit', jit_config=config)
+    wrapped_func = pi_jit_with_config(func, jit_config=config)
     ms_res = wrapped_func(s)
     assert_executed_by_graph_mode(wrapped_func)
     res = func(s)
@@ -104,7 +105,7 @@ def test_nest_list(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     s = [[x1, x2], [y1, y2]]
-    wrapped_func = jit(func, mode='PIJit', jit_config=config)
+    wrapped_func = pi_jit_with_config(func, jit_config=config)
     ms_res = wrapped_func(s)
     assert_executed_by_graph_mode(wrapped_func)
     res = func(s)
@@ -132,7 +133,7 @@ def test_tuple(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     s = (x1, x2, y1, y2)
-    wrapped_func = jit(func, mode='PIJit', jit_config=config)
+    wrapped_func = pi_jit_with_config(func, jit_config=config)
     ms_res = wrapped_func(s)
     assert_executed_by_graph_mode(wrapped_func)
     res = func(s)
@@ -157,7 +158,7 @@ def test_nested_tuple(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     s = ((x1, x2), (y1, y2))
-    wrapped_func = jit(func, mode='PIJit', jit_config=config)
+    wrapped_func = pi_jit_with_config(func, jit_config=config)
     ms_res = wrapped_func(s)
     assert_executed_by_graph_mode(wrapped_func)
     res = func(s)
@@ -182,7 +183,7 @@ def test_mix_nested_list_tuple(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     s = ([x1, x2], (y1, y2))
-    wrapped_func = jit(func, mode='PIJit', jit_config=config)
+    wrapped_func = pi_jit_with_config(func, jit_config=config)
     ms_res = wrapped_func(s)
     assert_executed_by_graph_mode(wrapped_func)
     res = func(s)
@@ -207,7 +208,7 @@ def test_mix_nested_list_tuple_dict(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     s = [(x1, x2), {'a': y1, 'b': y2}]
-    wrapped_func = jit(func, mode='PIJit', jit_config=config)
+    wrapped_func = pi_jit_with_config(func, jit_config=config)
     ms_res = wrapped_func(s)
     assert_executed_by_graph_mode(wrapped_func)
     res = func(s)
@@ -232,7 +233,7 @@ def test_dict(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     d = {'a': x1, 'b': x2, 'c': y1, 'd':y2}
-    wrapped_func = jit(func, mode='PIJit', jit_config=config)
+    wrapped_func = pi_jit_with_config(func, jit_config=config)
     ms_res = wrapped_func(d)
     assert_executed_by_graph_mode(wrapped_func)
     res = func(d)
@@ -260,7 +261,7 @@ def test_nested_dict(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     d = { 'd1': {'a': x1, 'b': x2}, 'd2': {'c': y1, 'd':y2}}
-    wrapped_func = jit(func, mode='PIJit', jit_config=config)
+    wrapped_func = pi_jit_with_config(func, jit_config=config)
     ms_res = wrapped_func(d)
     assert_executed_by_graph_mode(wrapped_func)
     res = func(d)
@@ -288,7 +289,7 @@ def test_mix_nested_dict_list_tuple(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     d = {'t': (x1, x2), 'l': [y1, y2]}
-    wrapped_func = jit(func, mode='PIJit', jit_config=config)
+    wrapped_func = pi_jit_with_config(func, jit_config=config)
     ms_res = wrapped_func(d)
     assert_executed_by_graph_mode(wrapped_func)
     res = func(d)
@@ -312,7 +313,7 @@ def test_vargs_1(func, x1, x2, y1, y2):
     Expectation: the result match
     """
     context.set_context(mode=context.PYNATIVE_MODE)
-    wrapped_func = jit(func, mode='PIJit', jit_config=config)
+    wrapped_func = pi_jit_with_config(func, jit_config=config)
     ms_res = wrapped_func(x1, x2, y1, y2)
     assert_executed_by_graph_mode(wrapped_func)
     res = func(x1, x2, y1, y2)
@@ -336,7 +337,7 @@ def test_vargs_2(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     s = (x2, [y1, y2])
-    wrapped_func = jit(func, mode='PIJit', jit_config=config)
+    wrapped_func = pi_jit_with_config(func, jit_config=config)
     ms_res = wrapped_func(x1, s)
     assert_executed_by_graph_mode(wrapped_func)
     res = func(x1, s)
@@ -361,7 +362,7 @@ def test_vargs_3(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     s = [{'a': x2}, (y1, y2)]
-    wrapped_func = jit(func, mode='PIJit', jit_config=config)
+    wrapped_func = pi_jit_with_config(func, jit_config=config)
     ms_res = wrapped_func(x1, s)
     assert_executed_by_graph_mode(wrapped_func)
     res = func(x1, s)
@@ -385,7 +386,7 @@ def test_kwargs_1(func, x1, x2, y1, y2):
     Expectation: the result match
     """
     context.set_context(mode=context.PYNATIVE_MODE)
-    wrapped_func = jit(func, mode='PIJit', jit_config=config)
+    wrapped_func = pi_jit_with_config(func, jit_config=config)
     ms_res = wrapped_func(k=x1, s=[x2, y1], d={'a': y2})
     assert_executed_by_graph_mode(wrapped_func)
     res = func(k=x1, s=[x2, y1], d={'a': y2})
@@ -408,7 +409,7 @@ def test_kwargs_2(func, x1, x2, y1, y2):
     Expectation: the result match
     """
     context.set_context(mode=context.PYNATIVE_MODE)
-    wrapped_func = jit(func, mode='PIJit', jit_config=config)
+    wrapped_func = pi_jit_with_config(func, jit_config=config)
     ms_res = wrapped_func(k=x1, s=({'a':[{'b': x2}]}, [{'c': y1}]), d={'e': [y2]})
     assert_executed_by_graph_mode(wrapped_func)
     res = func(k=x1, s=({'a':[{'b': x2}]}, [{'c': y1}]), d={'e': [y2]})
@@ -433,7 +434,7 @@ def test_mix_args_vargs_kwargs(func, x1, x2, y1, y2):
     context.set_context(mode=context.PYNATIVE_MODE)
     d = {'t': (x1, x2), 'l': [y1, y2]}
     s = [{'a': x2}, (y1, y2)]
-    wrapped_func = jit(func, mode='PIJit', jit_config=config)
+    wrapped_func = pi_jit_with_config(func, jit_config=config)
     ms_res = wrapped_func(d, x1, s, k=x1, s=({'a':[{'b': x2}]}, [{'c': y1}]), d={'e': [y2]})
     assert_executed_by_graph_mode(wrapped_func)
     res = func(d, x1, s, k=x1, s=({'a':[{'b': x2}]}, [{'c': y1}]), d={'e': [y2]})
@@ -459,7 +460,7 @@ def test_closure_1(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     inner = func(x1, x2, y1, y2)
-    wrapped_func = jit(inner, mode='PIJit', jit_config=config)
+    wrapped_func = pi_jit_with_config(inner, jit_config=config)
     ms_res = wrapped_func()
     assert_executed_by_graph_mode(wrapped_func)
     res = inner()
@@ -479,7 +480,7 @@ def test_closure_2(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     inner = func(x1, x2, y1, y2)
-    wrapped_func = jit(inner, mode='PIJit', jit_config=config)
+    wrapped_func = pi_jit_with_config(inner, jit_config=config)
     ms_res = wrapped_func()
     assert_executed_by_graph_mode(wrapped_func)
     res = inner()
@@ -499,7 +500,7 @@ def test_closure_3(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     inner = func(x1, x2, y1, y2)
-    wrapped_func = jit(inner, mode='PIJit', jit_config=config)
+    wrapped_func = pi_jit_with_config(inner, jit_config=config)
     ms_res = wrapped_func()
     assert_executed_by_graph_mode(wrapped_func)
     res = inner()

@@ -439,7 +439,7 @@ def test_graph_parameter_is_closure_variable_v6():
         return producer, consumer
 
     producer, consumer = factory()
-    consumer = jit(consumer, mode="PIJit")
+    consumer = jit(consumer, capture_mode="bytecode")
 
     res = []
     x = Tensor([1, 1])

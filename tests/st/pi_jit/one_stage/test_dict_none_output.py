@@ -77,7 +77,7 @@ def test_tuple_with_none(func, x):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(x)
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, capture_mode="bytecode")
     ms_res = wrapped_func(x,)
     result_compare(res, ms_res)
     check_func_compile_state(wrapped_func)
@@ -93,7 +93,7 @@ def test_nested_tuple_with_none(func, x):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(x)
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, capture_mode="bytecode")
     ms_res = wrapped_func(x,)
     result_compare(res, ms_res)
     check_func_compile_state(wrapped_func)
@@ -109,7 +109,7 @@ def test_tuple_with_dict(func, x):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(x)
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, capture_mode="bytecode")
     ms_res = wrapped_func(x,)
     result_compare(res, ms_res)
     check_func_compile_state(wrapped_func)
@@ -125,7 +125,7 @@ def test_tuple_with_recursive(func, x):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(x)
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, capture_mode="bytecode")
     ms_res = wrapped_func(x,)
     result_compare(res, ms_res)
     check_func_compile_state(wrapped_func)
@@ -141,7 +141,7 @@ def test_dict(func, x):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(x)
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, capture_mode="bytecode")
     ms_res = wrapped_func(x,)
     result_compare(res, ms_res)
     check_func_compile_state(wrapped_func)
@@ -157,7 +157,7 @@ def test_dict_with_none(func, x):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(x)
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, capture_mode="bytecode")
     ms_res = wrapped_func(x,)
     result_compare(res, ms_res)
     check_func_compile_state(wrapped_func)
@@ -173,7 +173,7 @@ def test_dict_with_tuple(func, x):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(x)
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, capture_mode="bytecode")
     ms_res = wrapped_func(x,)
     result_compare(res, ms_res)
     check_func_compile_state(wrapped_func)
@@ -189,7 +189,7 @@ def test_dict_with_nested_tuple(func, x):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(x)
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, capture_mode="bytecode")
     ms_res = wrapped_func(x,)
     result_compare(res, ms_res)
     check_func_compile_state(wrapped_func)
@@ -205,7 +205,7 @@ def test_nested_dict_with_tuple(func, x):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(x)
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, capture_mode="bytecode")
     ms_res = wrapped_func(x,)
     result_compare(res, ms_res)
     check_func_compile_state(wrapped_func)
@@ -221,7 +221,7 @@ def test_nested_dict_tuple_with_call(func, x):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     res = func(x)
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, capture_mode="bytecode")
     ms_res = wrapped_func(x,)
     result_compare(res, ms_res)
 

@@ -18,7 +18,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from tests.mark_utils import arg_mark
-from tests.st.pi_jit.share.utils import assert_executed_by_graph_mode
+from tests.st.pi_jit.share.utils import assert_executed_by_graph_mode, pi_jit_with_config
 
 
 @arg_mark(plat_marks=['platform_ascend', 'cpu_linux'], level_mark='level0', card_mark='onecard',
@@ -29,7 +29,7 @@ def test_method_clamp():
     Description: Test functional feature with Tensor.clamp.
     Expectation: Run success
     """
-    @ms.jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def func(x, min, max):
         return x.clamp(min, max)
 
@@ -49,7 +49,7 @@ def test_method_clamp_default():
     Description: Test functional feature with Tensor.clamp.
     Expectation: Run success
     """
-    @ms.jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def func(x, min):
         return x.clamp(min)
 
@@ -66,7 +66,7 @@ def test_method_clamp_keyword():
     Description: Test functional feature with Tensor.clamp.
     Expectation: Run success
     """
-    @ms.jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def func(x, min):
         return x.clamp(min, max=ms.Tensor(4)), x.clamp(max=3, min=1)
 
@@ -83,7 +83,7 @@ def test_method_clamp_exception():
     Description: Test functional feature with Tensor.clamp.
     Expectation: Raise expected exception.
     """
-    @ms.jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def func(x, min, max):
         return x.clamp(min, max)
 
@@ -99,7 +99,7 @@ def test_method_max():
     Description: Test functional feature with Tensor.max.
     Expectation: Run success
     """
-    @ms.jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def func(x):
         return x.max()
 
@@ -115,7 +115,7 @@ def test_method_max_keyword():
     Description: Test functional feature with Tensor.max.
     Expectation: Run success
     """
-    @ms.jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def func(x):
         return x.max(keepdims=False)
 
@@ -131,7 +131,7 @@ def test_method_min_exception():
     Description: Test functional feature with Tensor.min.
     Expectation: Raise expected exception.
     """
-    @ms.jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def func(x):
         return x.min(None, False, None)
 
@@ -147,7 +147,7 @@ def test_method_reshape():
     Description: Test functional feature with Tensor.reshape.
     Expectation: Run success
     """
-    @ms.jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def func(x):
         return x.reshape(1, 2, 3)
 
@@ -165,7 +165,7 @@ def test_method_transpose():
     Description: Test functional feature with Tensor.transpose.
     Expectation: Run success
     """
-    @ms.jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def func(x):
         return x.transpose(1, 0)
 

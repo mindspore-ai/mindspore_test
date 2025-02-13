@@ -16,6 +16,7 @@
 from mindspore import Tensor, jit
 from .share.utils import assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_config_disable_pijit():
@@ -24,7 +25,7 @@ def test_config_disable_pijit():
     Description: Jit config
     Expectation: The result match
     """
-    @jit(mode="PIJit", jit_config={'_disable_pijit':lambda args, kwds: args[0] > 1})
+    @pi_jit_with_config(jit_config={'_disable_pijit':lambda args, kwds: args[0] > 1})
     def func(x, y):
         return x + y
 

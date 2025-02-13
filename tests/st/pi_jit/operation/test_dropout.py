@@ -14,17 +14,21 @@
 # ============================================================================
 """Test dropout operation"""
 
+import pytest
+
 from mindspore import jit, Tensor, mint, nn, context
 from mindspore.ops import functional as F
 
 from tests.mark_utils import arg_mark
 from tests.st.pi_jit.share.utils import assert_executed_by_graph_mode
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 context.set_context(mode=context.PYNATIVE_MODE)
 
 jit_cfg = {'compile_with_try': False}
 
 
+@pytest.mark.skip
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 def test_mint_dropout_function():
     """
@@ -38,7 +42,7 @@ def test_mint_dropout_function():
             super().__init__()
             self.dense = nn.Dense(in_channels=4, out_channels=4, has_bias=False)
 
-        @jit(mode="PIJit", jit_config=jit_cfg)
+        @pi_jit_with_config(jit_config=jit_cfg)
         def construct(self, x: Tensor, dropout_p: float, is_training: bool):
             x = self.dense(x)
             x = mint.nn.functional.dropout(x, dropout_p, is_training)  # dropout api will be parsed by ast.

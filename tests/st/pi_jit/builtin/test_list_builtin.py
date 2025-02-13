@@ -160,7 +160,7 @@ def test_list_executed_by_graph():
     Description: Support python built-in function list in pijit.
     Expectation: No exception.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def func(x):
         return list((x, x + 1, x + 2))
 

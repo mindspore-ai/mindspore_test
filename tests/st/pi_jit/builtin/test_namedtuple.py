@@ -23,6 +23,7 @@ from mindspore import context, jit, Tensor, ops
 
 from tests.mark_utils import arg_mark
 from ..share.utils import match_array, assert_executed_by_graph_mode, assert_no_graph_break
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 
 context.set_context(mode=context.PYNATIVE_MODE)
@@ -38,7 +39,7 @@ def test_namedtuple_getattr():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(p: "Point"):
         return ops.sub(p.x, p.y)
 
@@ -58,7 +59,7 @@ def test_namedtuple_getattr_with_wrong_keyword():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(p: "Point"):
         return ops.sub(p.x, p.z)
 
@@ -78,7 +79,7 @@ def test_namedtuple_getitem(idx: int, expect: Tensor):
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(p: "Point", i: int):
         return ops.sub(p[i], 0)
 
@@ -101,7 +102,7 @@ def test_create_namedtuple_with_positional_args():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor, y: Tensor):
         p = Point(x, y)
         return ops.sub(p.x, p.y)
@@ -122,7 +123,7 @@ def test_create_namedtuple_with_keyword_args():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor, y: Tensor):
         p = Point(x=x, y=y)
         return ops.sub(p.x, p.y)
@@ -143,7 +144,7 @@ def test_create_namedtuple_with_disordered_keyword_args():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor, y: Tensor):
         p = Point(y=y, x=x)
         return ops.sub(p.x, p.y)
@@ -167,7 +168,7 @@ def test_create_namedtuple_with_positional_and_keyword_args():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor, y: Tensor, z: Tensor):
         p = Point3D(x, z=z, y=y)
         return ops.add(p.x, p.y) - p.z
@@ -192,7 +193,7 @@ def test_create_namedtuple_with_positional_and_default_args():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor, y: Tensor):
         p = PointV2(x, y)
         return ops.add(p.x, p.y) + p.offset
@@ -225,7 +226,7 @@ def test_create_namedtuple_with_positional_and_keywords_and_default_args():
     z = Tensor([2, 2, 2])
     o1 = fn(x, y, z)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x, y, z)
 
     match_array(o1, o2)
@@ -243,7 +244,7 @@ def test_create_namedtuple_entirely_using_default_args():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor):
         p = PointV4()
         return x + p.x - p.y
@@ -266,7 +267,7 @@ def test_create_namedtuple_with_default_args_of_tensor_type():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor):
         p = PointV5(x)
         return ops.sub(p.x, p.y)
@@ -296,7 +297,7 @@ def test_create_namedtuple_with_variable_length_args():
     z = Tensor([2, 2, 2])
     o1 = fn(x, y, z)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x, y, z)
 
     match_array(o1, o2)
@@ -324,7 +325,7 @@ def test_create_namedtuple_with_variable_length_args_and_kwargs():
     z = Tensor([2, 2, 2])
     o1 = fn(x, y, z, offset=0.5, scale=2.0)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x, y, z, offset=0.5, scale=2.0)
 
     match_array(o1, o2)
@@ -352,7 +353,7 @@ def test_create_namedtuple_with_all_kinds_of_arguments():
     z = Tensor([2, 2, 2])
     o1 = fn(x, y, z, offset=0.5)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x, y, z, offset=0.5)
 
     match_array(o1, o2)
@@ -370,7 +371,7 @@ def test_create_namedtuple_with_rename():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor, y: Tensor):
         p = PointV8(x, 1, y, 3)
         return ops.sub(p.x, p.y) + p._1 - p._3
@@ -391,7 +392,7 @@ def test_create_namedtuple_with_too_few_args():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor):
         p = Point(x)
         return ops.add(p.x, 1)
@@ -410,7 +411,7 @@ def test_create_namedtuple_with_too_many_args():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor, y: Tensor):
         p = Point(x, y, x)
         return ops.add(p.x, p.y)
@@ -433,7 +434,7 @@ def test_create_namedtuple_with_wrong_keyword_args():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor, y: Tensor):
         p = PointV9(x, z=y)
         return ops.add(p.x, p.y)
@@ -453,7 +454,7 @@ def test_create_namedtuple_and_return_in_top_graph():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor, y: Tensor):
         return Point(x + y, x - y)
 
@@ -475,7 +476,7 @@ def test_create_namedtuple_with_None_and_return_in_top_graph():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor, y: Tensor):
         return Point(None, x - y)
 
@@ -498,7 +499,7 @@ def test_create_namedtuple_with_nested_None_and_return_in_top_graph():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor, y: Tensor):
         t = (None, x + y)
         return Point(t, x - y)
@@ -525,7 +526,7 @@ def test_create_namedtuple_with_dict_and_return_in_top_graph():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor, y: Tensor):
         d = {'a': x + y}
         return Point(d, x - y)
@@ -550,7 +551,7 @@ def test_create_namedtuple_with_numpy_object_and_return_in_top_graph():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor, y: Tensor, lst: list):
         return Point(lst[0], x - y)
 
@@ -577,7 +578,7 @@ def test_create_namedtuple_with_nested_namedtuple_and_return_in_top_graph():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor, y: Tensor):
         c = Color(x * 2, y * 2, None)
         return Point(c, x - y)
@@ -608,7 +609,7 @@ def test_create_namedtuple_in_subgraph_and_return_in_top_graph():
     def creat_namedtuple(x: Tensor, y: Tensor):
         return Point(x + y, x - y)
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor, y: Tensor):
         return creat_namedtuple(x, y)
 
@@ -633,7 +634,7 @@ def test_create_namedtuple_with_None_in_subgraph_and_return_in_top_graph():
     def creat_namedtuple(x: Tensor, y: Tensor):
         return Point(None, x - y)
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor, y: Tensor):
         return creat_namedtuple(x, y)
 
@@ -659,7 +660,7 @@ def test_create_namedtuple_and_return_in_subgraph():
     def create_point(x: Tensor, y: Tensor):
         return Point(x + y, x - y)
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor, y: Tensor):
         p = create_point(x, y)
         return p.x + p[1]
@@ -688,7 +689,7 @@ def test_create_namedtuple_and_put_it_in_nested_structures_then_return_in_subgra
         p = create_point(x, y)
         return [p, x - y]
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor, y: Tensor):
         ret = f1(x, y)
         t = ret[0]
@@ -726,7 +727,7 @@ def test_namedtuple_add():
     y = Tensor([1, 1, 1])
     o1 = fn(x, y)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x, y)
 
     assert_tuple_equals(o1, o2)
@@ -750,7 +751,7 @@ def test_namedtuple_add_namedtuple():
     y = Tensor([1, 1, 1])
     o1 = fn(x, y)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x, y)
 
     assert_tuple_equals(o1, o2)
@@ -773,7 +774,7 @@ def test_namedtuple_multiply():
     y = Tensor([1, 1, 1])
     o1 = fn(x, y)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x, y)
 
     assert_tuple_equals(o1, o2)
@@ -797,7 +798,7 @@ def test_namedtuple_unpack():
     y = Tensor([1, 1, 1])
     o1 = fn(x, y)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x, y)
 
     match_array(o1, o2)
@@ -823,7 +824,7 @@ def test_namedtuple_slice():
     y = Tensor([1, 1, 1])
     o1 = fn(x, y)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x, y)
 
     assert_tuple_equals(o1, o2)
@@ -846,7 +847,7 @@ def test_namedtuple_slice_with_step():
     y = Tensor([1, 1, 1])
     o1 = fn(x, y)
 
-    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = fn(x, y)
 
     assert_tuple_equals(o1, o2)
@@ -861,7 +862,7 @@ def test_namedtuple_len():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: Tensor, y: Tensor):
         p = Point(x, y)
         return ops.add(len(p), 1)
@@ -885,7 +886,7 @@ def test_namedtuple_index_method():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: int):
         p = PointV10(x, x + 1, x, x + 1, x)
         return ops.add(p.index(x + 1), x)
@@ -904,7 +905,7 @@ def test_namedtuple_count_method():
     Expectation: No exception.
     """
 
-    @jit(mode='PIJit', jit_config=jit_cfg)
+    @pi_jit_with_config(jit_config=jit_cfg)
     def fn(x: int):
         p = PointV10(x, x + 1, x, x + 1, x)
         return ops.add(p.count(x), x)

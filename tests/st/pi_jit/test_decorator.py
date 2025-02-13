@@ -20,6 +20,7 @@ from mindspore import context, jit, Tensor, ops
 
 from tests.mark_utils import arg_mark
 from tests.st.pi_jit.share.utils import assert_equal, assert_executed_by_graph_mode
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 context.set_context(mode=context.PYNATIVE_MODE)
 
@@ -67,7 +68,7 @@ def test_decorator_and_context_manager():
     a = Tensor([1, 2, 3])
     o1 = fn(a)
 
-    compiled_fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    compiled_fn = pi_jit_with_config(fn, jit_config=jit_cfg)
     o2 = compiled_fn(a)
 
     assert_equal(o1, o2)

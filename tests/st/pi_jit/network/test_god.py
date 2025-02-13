@@ -1,3 +1,4 @@
+import sys
 import pytest
 from mindspore import JitConfig, jit,context
 from mindspore import numpy as np
@@ -17,7 +18,7 @@ def test_tensor_is_contiguous():
             x = x.contiguous()
         return x
     x = np.randn((2,4))
-    jit_fn = jit(fn=fn, mode="PIJit")
+    jit_fn = jit(fn, capture_mode="bytecode")
     result1 = jit_fn(x)
     reuslt2 = fn(x)
     assert_no_graph_break(jit_fn)
@@ -39,7 +40,7 @@ def test_bytecode_LIST_EXTEND():
         return a
     x = np.randn((2,4))
     y = [x,x]
-    jit_fn = jit(fn=fn, mode="PIJit")
+    jit_fn = jit(fn, capture_mode="bytecode")
     result1 = jit_fn(x,y)
     reuslt2 = fn(x,y)
     assert_no_graph_break(jit_fn)

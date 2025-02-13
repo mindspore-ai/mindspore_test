@@ -16,7 +16,7 @@
 from mindspore import Tensor
 from mindspore import context
 from mindspore.common.api import jit
-from ..share.utils import match_array, assert_executed_by_graph_mode
+from ..share.utils import match_array, assert_executed_by_graph_mode, pi_jit_with_config
 from tests.mark_utils import arg_mark
 
 
@@ -37,7 +37,7 @@ def test_abs():
     x = Tensor([1, -1, 2, -2])
     o1 = fn(x)
 
-    fn = jit(fn, mode="PIJit", jit_config=cfg)
+    fn = pi_jit_with_config(fn, jit_config=cfg)
     o2 = fn(x)
 
     match_array(o1, o2)
@@ -51,7 +51,7 @@ def test_len():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def fn(x: Tensor):
         return len(x) + 1
 
@@ -76,7 +76,7 @@ def test_pow():
     x = Tensor([1, -1, 2, -2])
     o1 = fn(x)
 
-    fn = jit(fn, mode="PIJit", jit_config=cfg)
+    fn = pi_jit_with_config(fn, jit_config=cfg)
     o2 = fn(x)
 
     match_array(o1, o2)

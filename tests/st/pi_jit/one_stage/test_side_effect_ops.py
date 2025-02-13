@@ -27,7 +27,7 @@ from mindspore import Tensor
 from mindspore import ops
 from mindspore.common.api import jit
 from tests.st.pi_jit.share.utils import assert_no_graph_break
-
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 class Capture():
     def __init__(self):
@@ -78,7 +78,7 @@ def test_print_tensor():
             super(Net, self).__init__()
             self.print = ops.Print()
 
-        @jit(mode="PIJit", jit_config={"compile_with_try": False})
+        @pi_jit_with_config(jit_config={"compile_with_try": False})
         def construct(self, x):
             self.print("result: ", x+1)
             return x+1
@@ -111,7 +111,7 @@ def test_print_tensor_multiple_times():
             super(Net, self).__init__()
             self.print = ops.Print()
 
-        @jit(mode="PIJit", jit_config={"compile_with_try": False})
+        @pi_jit_with_config(jit_config={"compile_with_try": False})
         def construct(self, x):
             self.print("result1: ", x)
             x = x + 1
@@ -147,7 +147,7 @@ def test_print_constant_scalar():
             super(Net, self).__init__()
             self.print = ops.Print()
 
-        @jit(mode="PIJit", jit_config={"compile_with_try": False})
+        @pi_jit_with_config(jit_config={"compile_with_try": False})
         def construct(self, x, y):
             self.print("constant: ", y)
             self.print("result1: ", x)
@@ -200,7 +200,7 @@ def test_print_in_sub_graph():
             self.print = ops.Print()
             self.inner_net = InnerNet()
 
-        @jit(mode="PIJit", jit_config={"compile_with_try": False})
+        @pi_jit_with_config(jit_config={"compile_with_try": False})
         def construct(self, x, y):
             ret = self.inner_net(x, y)
             self.print("out result: ", ret)
@@ -251,7 +251,7 @@ def test_print_in_sub_graph_with_no_return():
             self.print = ops.Print()
             self.inner_net = InnerNet()
 
-        @jit(mode="PIJit", jit_config={"compile_with_try": False})
+        @pi_jit_with_config(jit_config={"compile_with_try": False})
         def construct(self, x, y):
             self.inner_net(x, y)
             return x + y

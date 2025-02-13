@@ -25,7 +25,7 @@ from mindspore.ops.composite import GradOperation
 from mindspore.common.parameter import ParameterTuple
 from mindspore._c_expression import jit_mode_pi_enable, jit_mode_pi_disable, get_code_extra
 
-from tests.st.pi_jit.share.utils import match_array, assert_no_graph_break
+from tests.st.pi_jit.share.utils import match_array, assert_no_graph_break, pi_jit_with_config
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -805,7 +805,7 @@ def test_grad_with_invalid_output():
             self.net = net
             self.grad_op = GradOperation(False, False, False)
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             grad_ret = self.grad_op(self.net)(x, y)
             return grad_ret
@@ -844,7 +844,7 @@ def test_grad_with_invalid_output_2():
             self.net = net
             self.grad_op = GradOperation(False, False, False)
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             grad_ret = self.grad_op(self.net)(x, y)
             return grad_ret
@@ -883,7 +883,7 @@ def test_grad_with_invalid_output_3():
             self.net = net
             self.grad_op = GradOperation(False, False, False)
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             grad_ret = self.grad_op(self.net)(x, y)
             return grad_ret
@@ -943,7 +943,7 @@ def test_with_no_grad():
     b = Tensor([2, 2, 2])
     o1 = grad_net(a, b)
 
-    net.block.construct = jit(net.block.construct, mode='PIJit', jit_config={'compile_with_try': False})
+    net.block.construct = pi_jit_with_config(net.block.construct)
     o2 = grad_net(a, b)
 
     match_array(o1, o2)
@@ -968,7 +968,7 @@ def test_value_and_grad_operation():
             super(GradNet, self).__init__()
             self.net = net
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             grad_ret = ops.value_and_grad(self.net)(x, y)
             return grad_ret
@@ -1007,7 +1007,7 @@ def test_value_and_grad_operation_with_kwargs():
             super(GradNet, self).__init__()
             self.net = net
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             grad_ret = ops.value_and_grad(self.net)(x, y)
             return grad_ret
@@ -1044,7 +1044,7 @@ def test_value_and_grad_operation_with_invalid_output():
             super(GradNet, self).__init__()
             self.net = net
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             grad_ret = ops.value_and_grad(self.net)(x, y)
             return grad_ret
@@ -1085,7 +1085,7 @@ def test_value_and_grad_operation_with_side_effect():
             super(GradNet, self).__init__()
             self.net = net
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             grad_ret = ops.value_and_grad(self.net)(x, y)
             return grad_ret
@@ -1126,7 +1126,7 @@ def test_value_and_grad_operation_with_side_effect_2():
             super(GradNet, self).__init__()
             self.net = net
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             grad_ret = ops.value_and_grad(self.net)(x, y)
             return grad_ret

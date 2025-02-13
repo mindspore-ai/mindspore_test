@@ -18,7 +18,7 @@ from mindspore import context
 from mindspore.common.api import jit
 from mindspore._c_expression import get_code_extra
 
-from .share.utils import assert_executed_by_graph_mode, match_array
+from .share.utils import assert_executed_by_graph_mode, match_array, pi_jit_with_config
 from tests.mark_utils import arg_mark
 
 
@@ -45,7 +45,7 @@ def test_build_fstring_case_1():
     context.set_context(mode=context.PYNATIVE_MODE)
     s1 = fn('hello')
 
-    fn = jit(fn, mode="PIJit", jit_config=cfg)
+    fn = pi_jit_with_config(fn, jit_config=cfg)
     s2 = fn('hello')
 
     assert s1 == s2
@@ -64,7 +64,7 @@ def test_build_fstring_case_2():
     context.set_context(mode=context.PYNATIVE_MODE)
     s1 = fn('hello', ' world')
 
-    fn = jit(fn, mode="PIJit", jit_config=cfg)
+    fn = pi_jit_with_config(fn, jit_config=cfg)
     s2 = fn('hello', ' world')
 
     assert s1 == s2
@@ -83,7 +83,7 @@ def test_build_fstring_case_3():
     context.set_context(mode=context.PYNATIVE_MODE)
     s1 = fn(1)
 
-    fn = jit(fn, mode="PIJit", jit_config=cfg)
+    fn = pi_jit_with_config(fn, jit_config=cfg)
     s2 = fn(1)
 
     assert s1 == s2
@@ -108,7 +108,7 @@ def test_build_fstring_case_4():
     d = {'a1': Tensor([1, 2, 3]), 'a2': Tensor([2, 4, 6])}
     o1 = fn(x, d)
 
-    fn = jit(fn, mode="PIJit", jit_config=cfg)
+    fn = pi_jit_with_config(fn, jit_config=cfg)
     o2 = fn(x, d)
 
     match_array(o1, o2)
@@ -127,7 +127,7 @@ def test_string_add_string():
     context.set_context(mode=context.PYNATIVE_MODE)
     s1 = fn('hello', ' world')
 
-    fn = jit(fn, mode="PIJit", jit_config=cfg)
+    fn = pi_jit_with_config(fn, jit_config=cfg)
     s2 = fn('hello', ' world')
 
     assert s1 == s2

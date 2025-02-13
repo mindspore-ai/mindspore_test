@@ -8,7 +8,7 @@ import numpy as np
 
 from tests.mark_utils import arg_mark
 from ..share.utils import match_array, assert_executed_by_graph_mode
-
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_shape_not_none():
@@ -52,7 +52,7 @@ def test_create_new_tensor_from_dynamic_shape_tensor():
     x = Tensor(np.array([1, 0, 2, 0, 3]), ms.int32)
     o1 = fn(x)
     # Set print_after_all=True, to check printing dynamic shape tensor will not throw exception.
-    fn = jit(fn, mode='PIJit', jit_config={'print_after_all': True, 'compile_with_try': False})
+    fn = pi_jit_with_config(fn, jit_config={'print_after_all': True, 'compile_with_try': False})
     o2 = fn(x)
 
     assert_executed_by_graph_mode(fn)

@@ -20,6 +20,7 @@ from mindspore import context, jit, Tensor, ops, nn, mutable
 
 from tests.mark_utils import arg_mark
 from tests.st.pi_jit.share.utils import assert_no_graph_break, assert_equal
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 context.set_context(mode=context.PYNATIVE_MODE)
 
@@ -52,7 +53,8 @@ def test_Parameter_in_nested_tuple_list_or_dict():
     model2 = Model()
     model2.dense = model1.dense
     model2.all_params = model1.all_params
-    model2.construct = jit(model2.construct, mode='PIJit', jit_config=jit_cfg)
+    
+    model2.construct = pi_jit_with_config(model2.construct, jit_config=jit_cfg)
 
     x = ops.rand(2, 4)
     y = ops.rand(3, 3)
