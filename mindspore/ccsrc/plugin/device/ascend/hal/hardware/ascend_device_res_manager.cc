@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2023 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -855,15 +855,15 @@ void AscendDeviceResManager::StopDevice(int32_t device_id) {
 }
 
 void *AscendDeviceResManager::GetCopyDataStream() const {
-  auto copy_data_stream = AscendStreamMng::GetInstance().GetCopyStream();
-  if (copy_data_stream == nullptr) {
+  auto copy_out_data_stream = AscendStreamMng::GetInstance().GetCopyOutStream();
+  if (copy_out_data_stream == nullptr) {
     size_t copy_stream_id;
     AscendStreamMng::GetInstance().CreateStream(&copy_stream_id);
     MS_LOG(INFO) << "Create ascend copy data stream, stream id: " << copy_stream_id;
-    copy_data_stream = AscendStreamMng::GetInstance().GetStream(copy_stream_id);
-    AscendStreamMng::GetInstance().SetCopyStream(copy_data_stream);
+    copy_out_data_stream = AscendStreamMng::GetInstance().GetStream(copy_stream_id);
+    AscendStreamMng::GetInstance().SetCopyOutStream(copy_out_data_stream);
   }
-  return copy_data_stream;
+  return copy_out_data_stream;
 }
 
 }  // namespace ascend

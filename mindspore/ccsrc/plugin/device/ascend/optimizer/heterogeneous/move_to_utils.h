@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,9 @@ class MoveToUtils {
  public:
   static CNodePtr InsertMoveTo(const KernelGraphPtr &kernel_graph, const MoveToInfo &info);
   static CNodePtr InsertMoveAssign(const KernelGraphPtr &kernel_graph, const MoveAssignInfo &info);
+
+  static CNodePtr InsertDependNode(const KernelGraphPtr &kernel_graph, const CNodePtr &pre_node,
+                                   const CNodePtr &post_node);
 };
 }  // namespace opt
 }  // namespace mindspore

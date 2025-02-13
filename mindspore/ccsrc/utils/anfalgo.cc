@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1800,6 +1800,31 @@ bool AnfAlgo::IsNodeOutputDynamicShape(const AnfNodePtr &node) {
     return true;
   }
   return base_shape->IsDynamic();
+}
+
+std::string AnfAlgo::GetMoveToDstStr(const AnfNodePtr &node) {
+  constexpr size_t kToInputIdx = 2;
+  MS_EXCEPTION_IF_NULL(node);
+  if (!node->isa<CNode>() || !IsPrimitiveCNode(node, prim::kPrimMoveTo)) {
+    return "";
+  }
+  const auto cnode = node->cast<CNodePtr>();
+  if (cnode == nullptr) {
+    return "";
+  }
+  const auto &kernel_with_index = common::AnfAlgo::VisitKernelWithReturnType(cnode->input(kToInputIdx), 0, true);
+  const auto &to_input = kernel_with_index.first;
+  if (to_input == nullptr || !to_input->isa<ValueNode>()) {
+    MS_LOG(INFO) << "The second input of MoveTo is not a ValueNode.";
+    return "";
+  }
+  auto to_value_node = to_input->cast<ValueNodePtr>();
+  auto to_value = to_value_node->value();
+  if (!to_value->isa<StringImm>()) {
+    MS_LOG(INFO) << "The value of the second input of MoveTo[" << node->ToString() << "] is not a string.";
+    return "";
+  }
+  return to_value->cast<StringImmPtr>()->value();
 }
 
 bool AnfAlgo::IsNodeInputDynamicShape(const CNodePtr &anf_node_ptr) {

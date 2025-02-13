@@ -203,13 +203,13 @@ bool GeDeviceResManager::SyncStream(void *stream) const {
 }
 
 void *GeDeviceResManager::GetCopyDataStream() const {
-  auto copy_data_stream = AscendStreamMng::GetInstance().GetCopyStream();
+  auto copy_data_stream = AscendStreamMng::GetInstance().GetCopyOutStream();
   if (copy_data_stream == nullptr) {
     size_t copy_stream_id;
     AscendStreamMng::GetInstance().CreateStream(&copy_stream_id);
     MS_LOG(INFO) << "Create ascend copy data stream, stream id: " << copy_stream_id;
     copy_data_stream = AscendStreamMng::GetInstance().GetStream(copy_stream_id);
-    AscendStreamMng::GetInstance().SetCopyStream(copy_data_stream);
+    AscendStreamMng::GetInstance().SetCopyOutStream(copy_data_stream);
   }
   return copy_data_stream;
 }
