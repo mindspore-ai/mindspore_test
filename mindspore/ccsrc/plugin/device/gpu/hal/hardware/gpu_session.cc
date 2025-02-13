@@ -57,7 +57,7 @@
 #include "backend/common/pass/getitem_tuple.h"
 #include "backend/common/pass/optimize_updatestate.h"
 #include "backend/common/pass/adjust_depend_for_parallel_optimizer_recompute_all_gather.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/debug/dump_proto.h"
 #ifdef ENABLE_DEBUGGER
@@ -360,7 +360,7 @@ void GPUSession::LoadInputData(const std::shared_ptr<KernelGraph> &kernel_graph,
           tensor->set_device_address(device_address);
         }
         auto size = UpdateGraphInputAbstract(input_node, tensor);
-        if (!device_address->SyncHostToDevice(trans::GetRuntimePaddingShape(pk_node, 0), size, tensor->data_type(),
+        if (!device_address->SyncHostToDevice(AnfAlgo::GetRuntimePaddingShape(pk_node, 0), size, tensor->data_type(),
                                               tensor->data_c())) {
           MS_LOG(EXCEPTION) << "SyncHostToDevice failed.";
         }

@@ -17,7 +17,7 @@
 #include "plugin/device/ascend/kernel/simu/simu_receive.h"
 #include <vector>
 #include "abstract/utils.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 

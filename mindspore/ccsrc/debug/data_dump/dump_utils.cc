@@ -24,7 +24,7 @@
 #include <queue>
 #include <algorithm>
 
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "utils/ms_context.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -162,7 +162,7 @@ void GetDumpIntShape(const AnfNodePtr &node, size_t index, NotNull<ShapeVector *
     if (IsValueNode<None>(node)) {
       return;
     }
-    *int_shapes = trans::GetRuntimePaddingShape(node, index);
+    *int_shapes = AnfAlgo::GetRuntimePaddingShape(node, index);
   } else {
     *int_shapes = AnfAlgo::GetOutputDeviceShape(node, index);
   }

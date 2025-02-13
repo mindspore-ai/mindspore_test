@@ -168,7 +168,7 @@ void SyncTensorData(const TensorPtr &host_tensor, const DeviceTensorPtr &device_
   ShapeVector host_shape = {};
   // GetRuntimePaddingShape doesn't support the value tuple node.
   if (!node->isa<ValueNode>()) {
-    host_shape = trans::GetRuntimePaddingShape(node, 0);
+    host_shape = AnfAlgo::GetRuntimePaddingShape(node, 0);
   }
   auto get_tensor_num = (host_tensor->isa<tensor::MapTensor>() ? kMapTensorNum : kNormalTensorNum);
   for (size_t i = 0; i < get_tensor_num; ++i) {

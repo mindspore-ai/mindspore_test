@@ -56,7 +56,7 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
             ${CCSRC_DIR}/backend/operator/ops_backend_infer_function.cc
             ${CCSRC_DIR}/backend/graph_compiler/graph_partition.cc
             ${CMAKE_CURRENT_SOURCE_DIR}/mock/segment_runner.cc
-            ${CCSRC_DIR}/runtime/device/ms_device_shape_transfer.cc
+            ${CCSRC_DIR}/utils/ms_device_shape_transfer.cc
             ${CCSRC_DIR}/runtime/device/kernel_info.cc
             ${CCSRC_DIR}/runtime/device/convert_tensor_utils.cc
             ${CCSRC_DIR}/runtime/device/kernel_runtime_manager.cc

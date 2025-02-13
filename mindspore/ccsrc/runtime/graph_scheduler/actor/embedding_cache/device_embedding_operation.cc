@@ -270,7 +270,7 @@ ValueNodePtr DeviceEmbeddingOperation::NewValueNode(int64_t value, const DeviceC
 
   const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
     {value_node, output_idx}, value_addr, tensor_size, output_format, output_type_id,
-    trans::GetRuntimePaddingShape(value_node, output_idx), device_context->device_context_key().device_name_,
+    AnfAlgo::GetRuntimePaddingShape(value_node, output_idx), device_context->device_context_key().device_name_,
     device_context->device_context_key().device_id_);
   kernel_tensor->set_stream_id(stream_id);
   auto address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);

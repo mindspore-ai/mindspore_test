@@ -78,7 +78,7 @@ void SyncTensorData(const TensorPtr &host_tensor, const DeviceTensorPtr &device_
   ShapeVector host_shape = {};
   // GetRuntimePaddingShape doesn't support the value tuple node.
   if (!node->isa<ValueNode>()) {
-    host_shape = trans::GetRuntimePaddingShape(node, 0);
+    host_shape = AnfAlgo::GetRuntimePaddingShape(node, 0);
   }
   // Copy data from host tensor to device.
   auto host_tensor_size = LongToSize(host_tensor->data().nbytes());

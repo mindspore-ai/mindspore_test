@@ -28,7 +28,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/pynative/op_runtime_info.h"
 #include "runtime/device/kernel_runtime_manager.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
@@ -488,7 +488,7 @@ void KernelRuntime::RunOpAssignOutputMemory(const AnfNodePtr &kernel,
     auto output_type = AnfAlgo::GetOutputDeviceDataType(kernel, i);
     auto device_address = CreateDeviceAddress(nullptr, output_sizes[i], output_format, output_type, {kernel, i});
     MS_EXCEPTION_IF_NULL(device_address);
-    device_address->set_host_shape(trans::GetRuntimePaddingShape(kernel, i));
+    device_address->set_host_shape(AnfAlgo::GetRuntimePaddingShape(kernel, i));
     if (is_gradient_out) {
       device_address->set_from_persistent_mem(true);
     }
@@ -668,7 +668,7 @@ void KernelRuntime::GetDeviceAddress(const AnfNodePtr &item,
 
   if (*device_address != nullptr && (*device_address)->GetPtr() == nullptr) {
     auto tensor_size = AnfAlgo::GetOutputTensorMemSize(item, index);
-    (*device_address)->set_host_shape(trans::GetRuntimePaddingShape(item, index));
+    (*device_address)->set_host_shape(AnfAlgo::GetRuntimePaddingShape(item, index));
     MS_LOG(INFO) << "Assign Static Memory for Input node, size:" << tensor_size
                  << " node:" << item->fullname_with_scope() << " debug:" << item->DebugString() << " index: " << index;
     if (!graph.has_flag(kFlagEnableZeroCopyInGraph)) {
@@ -838,7 +838,7 @@ void KernelRuntime::AssignCommunicationNodeOutputMem(MemType type, const AnfNode
     } else {
       address->set_ptr(output_ptr);
     }
-    address->set_host_shape(trans::GetRuntimePaddingShape(node, j));
+    address->set_host_shape(AnfAlgo::GetRuntimePaddingShape(node, j));
     AnfAlgo::SetOutputAddr(address, j, node.get());
     output_ptr += align_size_list[j];
   }
@@ -983,7 +983,7 @@ void KernelRuntime::AssignNodeOutputMem(MemType type, const AnfNodePtr &node, in
     } else {
       MS_LOG(DEBUG) << "Skip mem alloc for device address:" << device_address << " node:" << node->DebugString();
     }
-    device_address->set_host_shape(trans::GetRuntimePaddingShape(node, i));
+    device_address->set_host_shape(AnfAlgo::GetRuntimePaddingShape(node, i));
     AnfAlgo::SetOutputAddr(device_address, i, node.get());
   }
 }
@@ -1047,7 +1047,7 @@ void KernelRuntime::AssignValueNodeTensor(const ValueNodePtr &value_node, const 
       address = CreateDeviceAddress(nullptr, node_size, output_format, output_type_id, {value_node, output_idx});
     }
     MS_EXCEPTION_IF_NULL(address);
-    address->set_host_shape(trans::GetRuntimePaddingShape(value_node, output_idx));
+    address->set_host_shape(AnfAlgo::GetRuntimePaddingShape(value_node, output_idx));
     address->set_from_persistent_mem(true);
     if (ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_INFER) &&
         !mem_manager_->MallocMemFromMemPool(address, node_size)) {
@@ -1065,7 +1065,7 @@ void KernelRuntime::AssignValueNodeTensor(const ValueNodePtr &value_node, const 
     if (tensor->isa<tensor::Tensor>()) {
       format = std::dynamic_pointer_cast<tensor::Tensor>(tensor)->device_info().host_format_;
     }
-    if (!address->SyncHostToDevice(trans::GetRuntimePaddingShape(value_node, 0), tensor_size, tensor->data_type(),
+    if (!address->SyncHostToDevice(AnfAlgo::GetRuntimePaddingShape(value_node, 0), tensor_size, tensor->data_type(),
                                    format, tensor->data_ptr())) {
       MS_EXCEPTION(NotExistsError) << "ValueNode SyncHostToDevice fail!" << value_node->DebugString()
                                    << "node format is" << AnfAlgo::GetOutputFormat(value_node, output_idx)
@@ -1584,7 +1584,7 @@ void KernelRuntime::InitGraphInputTensors(const std::shared_ptr<MemScheduler> &m
       device_address->set_ptr(nullptr);
     }
     if (need_sync) {
-      const auto &shape = trans::GetRuntimePaddingShape(input_node, 0);
+      const auto &shape = AnfAlgo::GetRuntimePaddingShape(input_node, 0);
       if (device_address->GetPtr() != nullptr) {
         (void)device_address->SyncHostToDevice(shape, LongToSize(tensor->data().nbytes()), tensor->data_type(),
                                                tensor->device_info().host_format_, tensor->data_ptr());

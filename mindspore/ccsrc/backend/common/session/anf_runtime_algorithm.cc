@@ -40,9 +40,10 @@
 #include "kernel/kernel.h"
 #include "kernel/kernel_build_info.h"
 #include "kernel/common_utils.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "runtime/device/convert_tensor_utils.h"
 #include "utils/trace_base.h"
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"
@@ -617,6 +618,43 @@ bool AnfRuntimeAlgorithm::IsRealSquenceOutput(const AnfNodePtr &node) {
 
 bool AnfRuntimeAlgorithm::IsShapesDynamic(const std::vector<ShapeVector> &shapes) {
   return std::any_of(shapes.cbegin(), shapes.cend(), [](const auto &shape) { return IsDynamic(shape); });
+}
+
+ShapeVector AnfRuntimeAlgorithm::GetRuntimePaddingShape(const AnfNodePtr &node, size_t index) {
+  MS_EXCEPTION_IF_NULL(node);
+  ShapeVector host_shape;
+  if (node->isa<ValueNode>()) {
+    auto value_node = node->cast<ValueNodePtr>();
+    MS_EXCEPTION_IF_NULL(value_node);
+    auto node_value = value_node->value();
+    MS_EXCEPTION_IF_NULL(node_value);
+    // Scalar has no shape.
+    if (node_value->isa<Scalar>()) {
+      return {};
+    }
+    if (node_value->isa<StringImm>()) {
+      auto string_value = node_value->cast<StringImmPtr>();
+      MS_EXCEPTION_IF_NULL(string_value);
+      return {SizeToLong(string_value->ToString().size())};
+    }
+    if (node_value->isa<ValueSequence>()) {
+      MS_LOG(INFO) << "GetRuntimePaddingShape does not support the value sequence for value node:"
+                   << node->fullname_with_scope() << ", debug name:" << node->DebugString();
+      return {0};
+    }
+    auto tensor = node_value->cast<tensor::BaseTensorPtr>();
+    if (tensor == nullptr) {
+      MS_LOG(INTERNAL_EXCEPTION) << " The node[ " << node->DebugString() << "]'s cannot convert ";
+    }
+    host_shape = tensor->shape();
+  } else {
+    host_shape = common::AnfAlgo::GetOutputInferShape(node, index);
+  }
+  auto format = GetOutputFormat(node, index);
+  if (trans::IsNeedPadding(format, host_shape)) {
+    host_shape = trans::PaddingShape(host_shape, format, GetOutputReshapeType(node, index), node);
+  }
+  return host_shape;
 }
 
 ShapeVector AnfRuntimeAlgorithm::GetOutputDeviceShape(const AnfNodePtr &node, size_t output_idx) {

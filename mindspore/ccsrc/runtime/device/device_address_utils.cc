@@ -29,7 +29,7 @@
 #include "include/backend/kernel_info.h"
 #include "include/backend/py_execute_utils.h"
 #include "runtime/device/hash_table.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/pynative/op_runner.h"
 #include "runtime/pynative/op_executor.h"
@@ -272,7 +272,7 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const DeviceContext *devic
       size_t tensor_size = AnfAlgo::GetOutputTensorMemSize(item, index);
       const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
         {item, index}, nullptr, tensor_size, AnfAlgo::GetOutputFormat(item, index), output_type_id,
-        trans::GetRuntimePaddingShape(item, index), real_device_context->device_context_key().device_name_,
+        AnfAlgo::GetRuntimePaddingShape(item, index), real_device_context->device_context_key().device_name_,
         real_device_context->device_context_key().device_id_);
       MS_EXCEPTION_IF_NULL(kernel_tensor);
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(item));
@@ -559,7 +559,7 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
         graph->set_enable_kbk_sub_graph_execute(false);
       }
       const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
-        {kernel, i}, nullptr, address_size, output_format, output_type, trans::GetRuntimePaddingShape(kernel, i),
+        {kernel, i}, nullptr, address_size, output_format, output_type, AnfAlgo::GetRuntimePaddingShape(kernel, i),
         real_device_context->device_context_key().device_name_, real_device_context->device_context_key().device_id_,
         user_data);
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(kernel));
@@ -615,7 +615,7 @@ void DeviceAddressUtils::CreateGraphOutputDeviceAddress(const DeviceContext *dev
       auto output_type = AnfAlgo::GetOutputDeviceDataType(output, i);
       auto address_size = AnfAlgo::GetOutputTensorMemSize(output, i);
       const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
-        {output, i}, nullptr, address_size, output_format, output_type, trans::GetRuntimePaddingShape(output, i),
+        {output, i}, nullptr, address_size, output_format, output_type, AnfAlgo::GetRuntimePaddingShape(output, i),
         real_device_context->device_context_key().device_name_, real_device_context->device_context_key().device_id_);
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(output));
       auto device_address = real_device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);

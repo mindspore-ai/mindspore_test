@@ -237,6 +237,9 @@ class BACKEND_EXPORT AnfRuntimeAlgorithm {
   static void UpdateOutputAddrSize(device::KernelInfo const *kernel_info, const CNodePtr &kernel);
   static bool IsShapesDynamic(const std::vector<ShapeVector> &shapes);
 
+  // Get shape after padding
+  static ShapeVector GetRuntimePaddingShape(const AnfNodePtr &node, size_t index);
+
   // Check whether the kernel has input node which is a computed depend kernel.
   static bool HasComputedDependInputNode(const CNodePtr &kernel);
 

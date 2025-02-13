@@ -21,7 +21,7 @@
 #include <map>
 #include <limits>
 #include "include/backend/debug/data_dump/tensor_stat_dump.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "utils/ms_context.h"
 #include "debug/data_dump/overflow_counter.h"
 

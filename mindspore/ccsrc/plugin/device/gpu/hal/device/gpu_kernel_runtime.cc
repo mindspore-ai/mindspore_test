@@ -36,7 +36,7 @@
 #include "plugin/device/gpu/hal/device/gpu_memory_manager.h"
 #include "kernel/framework_utils.h"
 #include "plugin/device/gpu/hal/device/gpu_memory_copy_manager.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "ir/dtype.h"
 #include "include/backend/optimizer/helper.h"
 #include "plugin/device/gpu/hal/profiler/gpu_profiling.h"

@@ -29,7 +29,7 @@
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/image_op_name.h"
 #include "mindspore/ops/op_def/math_op_name.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/acl_ir/acl_adapter_info.h"
 #include "plugin/device/ascend/acl_ir/ge_adapter_info.h"

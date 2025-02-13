@@ -24,7 +24,6 @@
 #include "runtime/device/loadable_device_address.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_pool.h"
 #include "ir/dtype.h"
-#include "kernel/kernel.h"
 #include "utils/shape_utils.h"
 #include "acl/acl_rt.h"
 

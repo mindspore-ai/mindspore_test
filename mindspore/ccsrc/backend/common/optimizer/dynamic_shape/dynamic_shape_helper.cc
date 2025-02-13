@@ -26,7 +26,7 @@
 #include <utility>
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "utils/anf_utils.h"
@@ -132,7 +132,7 @@ tensor::TensorPtr CreateTensorFromIndexedNode(const std::pair<AnfNodePtr, size_t
     type = GetSequenceType(seq_abs);
     shape = {SizeToLong(elem_num)};
   } else if (abs->isa<abstract::AbstractTensor>() || abs->isa<abstract::AbstractSequence>()) {
-    shape = trans::GetRuntimePaddingShape(real_input, real_input_index);
+    shape = AnfAlgo::GetRuntimePaddingShape(real_input, real_input_index);
     if (real_input->isa<ValueNode>()) {
       // the type of ValueNode in KernelInfo is kTypeUnknown
       type = common::AnfAlgo::GetOutputInferDataType(real_input, real_input_index);

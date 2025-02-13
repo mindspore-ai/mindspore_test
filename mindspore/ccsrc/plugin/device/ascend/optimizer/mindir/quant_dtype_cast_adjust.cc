@@ -17,10 +17,11 @@
 
 #include <memory>
 
+#include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
-#include "runtime/device/ms_device_shape_transfer.h"
 
 namespace mindspore {
 namespace opt {

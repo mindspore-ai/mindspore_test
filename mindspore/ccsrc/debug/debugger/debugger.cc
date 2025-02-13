@@ -41,7 +41,7 @@
 #include "include/backend/debug/debugger/proto_exporter.h"
 #include "debug/debugger/debugger_utils.h"
 #include "debug/debug_services.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "proto/debug_graph.pb.h"
 
 using debugger::GraphProto;
@@ -520,7 +520,7 @@ void Debugger::LoadSingleAnfnode(const AnfNodePtr &anf_node, const size_t output
   }
   auto format = kOpFormat_DEFAULT;
   string tensor_name = node_name + ':' + "0";
-  ShapeVector int_shapes = trans::GetRuntimePaddingShape(anf_node, output_index);
+  ShapeVector int_shapes = AnfAlgo::GetRuntimePaddingShape(anf_node, output_index);
   bool ret =
     LoadMemToHost(*addr, tensor_name, exec_order, format, int_shapes, type, 0, false, root_graph_id, false, true);
   if (!ret) {

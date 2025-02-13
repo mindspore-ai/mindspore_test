@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include <functional>
 #include <unordered_map>
 #include <numeric>
@@ -23,6 +23,30 @@
 
 namespace mindspore {
 namespace trans {
+namespace {
+void HalfToFloat(void *dst, const void *src, size_t elem_num) {
+  if (dst == nullptr || src == nullptr) {
+    return;
+  }
+  auto half_data = static_cast<const float16 *>(src);
+  auto float_data = static_cast<float *>(dst);
+  for (size_t i = 0; i < elem_num; ++i) {
+    float tmp = half_to_float(half_data[i]);
+    float_data[i] = tmp;
+  }
+}
+
+void FloatToHalf(void *dst, const void *src, size_t elem_num) {
+  if (dst == nullptr || src == nullptr) {
+    return;
+  }
+  auto float_data = static_cast<const float *>(src);
+  auto half_data = static_cast<float16 *>(dst);
+  for (size_t i = 0; i < elem_num; ++i) {
+    half_data[i] = float16(float_data[i]);
+  }
+}
+}  // namespace
 static const ShapeValueDType kShapeDimAny = abstract::Shape::kShapeDimAny;
 
 const int b1 = 1;
@@ -264,43 +288,6 @@ bool IsNeedPadding(const std::string &format, const ShapeVector &shape) {
   return false;
 }
 
-ShapeVector GetRuntimePaddingShape(const AnfNodePtr &node, size_t index) {
-  MS_EXCEPTION_IF_NULL(node);
-  ShapeVector host_shape;
-  if (node->isa<ValueNode>()) {
-    auto value_node = node->cast<ValueNodePtr>();
-    MS_EXCEPTION_IF_NULL(value_node);
-    auto node_value = value_node->value();
-    MS_EXCEPTION_IF_NULL(node_value);
-    // Scalar has no shape.
-    if (node_value->isa<Scalar>()) {
-      return {};
-    }
-    if (node_value->isa<StringImm>()) {
-      auto string_value = node_value->cast<StringImmPtr>();
-      MS_EXCEPTION_IF_NULL(string_value);
-      return {SizeToLong(string_value->ToString().size())};
-    }
-    if (node_value->isa<ValueSequence>()) {
-      MS_LOG(INFO) << "GetRuntimePaddingShape does not support the value sequence for value node:"
-                   << node->fullname_with_scope() << ", debug name:" << node->DebugString();
-      return {0};
-    }
-    auto tensor = node_value->cast<tensor::BaseTensorPtr>();
-    if (tensor == nullptr) {
-      MS_LOG(INTERNAL_EXCEPTION) << " The node[ " << node->DebugString() << "]'s cannot convert ";
-    }
-    host_shape = tensor->shape();
-  } else {
-    host_shape = common::AnfAlgo::GetOutputInferShape(node, index);
-  }
-  auto format = AnfAlgo::GetOutputFormat(node, index);
-  if (IsNeedPadding(format, host_shape)) {
-    host_shape = PaddingShape(host_shape, format, AnfAlgo::GetOutputReshapeType(node, index), node);
-  }
-  return host_shape;
-}
-
 bool TransDataType(const TypeIdArgs &args, void *result) {
   DataTypeTransfer dataTypeTransfer;
   return dataTypeTransfer.TransDataType(args, result);
@@ -387,10 +374,10 @@ bool DataTypeTransfer::CastKernel(const TypeIdArgs &args, void *dst, int64_t dat
     {DataTypeTransMode::FROM_FLOAT64_TO_FLOAT32, TransDataSrc2Dst<double, float>}};
 
   if (mode == DataTypeTransMode::FROM_FLOAT_TO_FLOAT16) {
-    device::FloatToHalf(dst, args.data, LongToSize(data_size));
+    FloatToHalf(dst, args.data, LongToSize(data_size));
     return true;
   } else if (mode == DataTypeTransMode::FROM_FLOAT16_TO_FLOAT) {
-    device::HalfToFloat(dst, args.data, LongToSize(data_size));
+    HalfToFloat(dst, args.data, LongToSize(data_size));
     return true;
   }
   auto iter = cast_kernel_map.find(mode);
