@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -500,6 +500,28 @@ class Primitive(Primitive_):
             raise TypeError("Recompute is not supported in pynative mode currently.")
         Validator.check_bool(mode)
         self.add_prim_attr("recompute", mode)
+        return self
+
+    def _offload(self, backward_prefetch="Auto"):
+        """
+        Set the primitive offload. If a primitive set offload feeds into some nodes for offloading
+        gradient, rather than storing the intermediate activation computed in forward pass, we will
+        offload the activations computed in forward pass and upload them backward pass.
+
+        Note:
+            - Not supported in pynative mode
+
+        Args:
+            backward_prefetch(Union[str, int]): Specifies whether the activation is prefetched in backward pass.
+        """
+        if context.get_context("mode") == context.PYNATIVE_MODE:
+            raise ValueError("Offload is not supported in pynative mode currently.")
+        self.add_prim_attr("offload", True)
+        if isinstance(backward_prefetch, str):
+            Validator.check_string(backward_prefetch, ['Auto'], 'backward_prefetch', 'Primitive._offload')
+        else:
+            Validator.check_non_negative_int(backward_prefetch)
+        self.add_prim_attr("backward_prefetch", backward_prefetch)
         return self
 
     def place(self, role, rank_id):

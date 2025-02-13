@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {
 namespace device {
@@ -70,6 +71,37 @@ void AddStreamIdForCommunicationOp(const AnfNodePtr &node) {
   common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kWorldGroupStreamIndex), node);
 }
 
+void AssignStreamForMoveTo(const AnfNodePtr &node) {
+  const auto &dst_str = common::AnfAlgo::GetMoveToDstStr(node);
+  if (dst_str == kToCpu) {
+    auto copy_out_stream = AscendStreamMng::GetInstance().GetCopyOutStream();
+    size_t copy_out_stream_id;
+    if (copy_out_stream == nullptr) {
+      AscendStreamMng::GetInstance().CreateStream(&copy_out_stream_id);
+      MS_LOG(INFO) << "Create ascend copy out stream, stream id: " << copy_out_stream_id;
+      copy_out_stream = AscendStreamMng::GetInstance().GetStream(copy_out_stream_id);
+      AscendStreamMng::GetInstance().SetCopyOutStream(copy_out_stream);
+    }
+    copy_out_stream_id = AscendStreamMng::GetInstance().GetStreamId(copy_out_stream);
+    AnfAlgo::SetStreamId(copy_out_stream_id, node.get());
+    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(copy_out_stream_id), node);
+  } else if (dst_str == kToNpu) {
+    auto copy_in_stream = AscendStreamMng::GetInstance().GetCopyInStream();
+    size_t copy_in_stream_id;
+    if (copy_in_stream == nullptr) {
+      AscendStreamMng::GetInstance().CreateStream(&copy_in_stream_id);
+      MS_LOG(INFO) << "Create ascend copy in stream, stream id: " << copy_in_stream_id;
+      copy_in_stream = AscendStreamMng::GetInstance().GetStream(copy_in_stream_id);
+      AscendStreamMng::GetInstance().SetCopyInStream(copy_in_stream);
+    }
+    copy_in_stream_id = AscendStreamMng::GetInstance().GetStreamId(copy_in_stream);
+    AnfAlgo::SetStreamId(copy_in_stream_id, node.get());
+    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(copy_in_stream_id), node);
+  } else {
+    MS_LOG(EXCEPTION) << "Get error MoveTo dst string: " << dst_str;
+  }
+}
+
 void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_manager) {
   MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<CNode>()) {
@@ -77,8 +109,12 @@ void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_man
   }
   auto cnode = node->cast<CNodePtr>();
   if (!common::AnfAlgo::HasNodeAttr(kAttrGroup, cnode)) {
-    AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
-    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
+    if (IsPrimitiveCNode(node, prim::kPrimMoveTo)) {
+      AssignStreamForMoveTo(node);
+    } else {
+      AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
+      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
+    }
   } else {
     auto prim = GetCNodePrimitive(cnode);
     MS_EXCEPTION_IF_NULL(prim);
@@ -143,6 +179,8 @@ void AclStreamAssign::AssignStream(
       MS_LOG(INFO) << "Set stream id by no group for node " << node->fullname_with_scope();
       if (common::AnfAlgo::IsCommunicationOp(node) && !common::AnfAlgo::IsLcclCommunicationOp(node)) {
         AddStreamIdForCommunicationOp(node);
+      } else if (IsPrimitiveCNode(node, prim::kPrimMoveTo)) {
+        AssignStreamForMoveTo(node);
       } else {
         AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
         common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
@@ -264,6 +302,56 @@ void AclStreamAssign::AddBoundarySendRecvKernel(const NotNull<KernelGraphPtr> &k
   SetForSwitchInline(kernel_graph, send_node, recv_node, pre_cnode, next_cnode);
 }
 
+void AclStreamAssign::AddDelayedSendRecvKernel(const NotNull<mindspore::KernelGraphPtr> &kernel_graph,
+                                               const CNodePtr &kernel, size_t exec_idx, uint32_t record_stream_id,
+                                               std::vector<CNodePtr> *exec_order,
+                                               std::map<size_t, std::set<size_t>> *no_event_streams,
+                                               mindspore::HashMap<size_t, std::vector<CNodePtr>> *delayed_recv_nodes) {
+  constexpr int64_t kDefaultDelayNum = 1;
+  if (IsPrimitiveCNode(kernel, prim::kPrimMoveTo) && common::AnfAlgo::GetMoveToDstStr(kernel) == kToCpu) {
+    // Get pre_fetch size.
+    int64_t pre_fetch = kDefaultDelayNum;
+    const auto &prim = GetCNodePrimitive(kernel);
+    const auto &attrs = prim->attrs();
+    const auto &attr_iter = attrs.find(kAttrBackwardPrefetch);
+    if (attr_iter != attrs.end()) {
+      const auto &pre_fetch_value = attr_iter->second;
+      if (pre_fetch_value->isa<Int64Imm>()) {
+        pre_fetch = GetValue<int64_t>(pre_fetch_value);
+      }
+    }
+    // Create send and recv kernels.
+    auto &resource_manager = AscendStreamMng::GetInstance();
+    uint32_t event_id = resource_manager.ApplyNewEvent();
+    auto event = resource_manager.ApplyRtEvent();
+    auto event_generate_id = ++event_generate_id_;
+    auto send_node = CreateSendApplyKernel(kernel_graph, event_id, record_stream_id, event_generate_id);
+    common::AnfAlgo::SetNodeAttr(kAttrRecordEvent, MakeValue(reinterpret_cast<uintptr_t>(event)), send_node);
+    auto recv_node =
+      CreateRecvApplyKernel(kernel_graph, event_id, record_stream_id, kDefaultStreamIndex, event_generate_id);
+    common::AnfAlgo::SetNodeAttr(kAttrWaitEvent, MakeValue(reinterpret_cast<uintptr_t>(event)), recv_node);
+    exec_order->push_back(send_node);
+
+    auto node_before_recv_index =
+      exec_idx + pre_fetch >= exec_order->size() ? exec_order->size() - 1 : exec_idx + pre_fetch;
+    while (node_before_recv_index < exec_order->size() - 1) {
+      const auto &node_before_recv = (*exec_order)[node_before_recv_index];
+      if (AnfAlgo::GetStreamId(node_before_recv) == kDefaultStreamIndex) {
+        break;
+      }
+      node_before_recv_index += 1;
+    }
+    (*delayed_recv_nodes)[node_before_recv_index].emplace_back(recv_node);
+    MS_LOG(DEBUG) << "Add send and recv for MoveTo, send: " << exec_idx << ", recv: " << node_before_recv_index;
+  }
+  const auto &iter = delayed_recv_nodes->find(exec_idx);
+  if (iter != delayed_recv_nodes->end()) {
+    const auto &recv_nodes = iter->second;
+    std::copy(recv_nodes.begin(), recv_nodes.end(), std::back_inserter(*exec_order));
+    (*no_event_streams)[kDefaultStreamIndex].erase(record_stream_id);
+  }
+}
+
 void AclStreamAssign::ProcessSideEffect(const NotNull<KernelGraphPtr> &kernel_graph, const CNodePtr kernel,
                                         size_t process_stream_id, const CNodePtr last_kernel,
                                         std::vector<AnfNodePtr> *real_inputs,
@@ -319,6 +407,7 @@ void AclStreamAssign::UpdateEventsToExecutionOrder(
   std::map<AnfNodePtr, std::set<size_t>> side_effect_map;
   std::map<size_t, std::set<size_t>> no_event_streams;  // wait_stream -> record_stream
   auto exec_kernels = kernel_graph->execution_order();
+  mindspore::HashMap<size_t, std::vector<CNodePtr>> delayed_recv_nodes;
   std::vector<CNodePtr> new_exec_orders;
 
   std::set<size_t> streams_set;
@@ -333,6 +422,7 @@ void AclStreamAssign::UpdateEventsToExecutionOrder(
     AddBoundarySendRecvKernel(kernel_graph, kDefaultStreamIndex, stream, &new_exec_orders, &no_event_streams);
   }
   CNodePtr last_kernel = nullptr;
+  size_t cur_idx = 0;
   for (auto &kernel : exec_kernels) {
     auto before_iter = recv_before_node.find(kernel);
     if (before_iter != recv_before_node.end()) {
@@ -370,11 +460,14 @@ void AclStreamAssign::UpdateEventsToExecutionOrder(
       }
     }
     new_exec_orders.push_back(kernel);
+    AddDelayedSendRecvKernel(kernel_graph, kernel, cur_idx, process_stream_id, &new_exec_orders, &no_event_streams,
+                             &delayed_recv_nodes);
     last_kernel = kernel;
     auto after_iter = send_after_node.find(kernel);
     if (after_iter != send_after_node.end()) {
       (void)std::copy(after_iter->second.begin(), after_iter->second.end(), std::back_inserter(new_exec_orders));
     }
+    cur_idx += 1;
   }
   auto graph_output = kernel_graph->output();
   auto graph_output_iter = recv_before_node.find(graph_output);

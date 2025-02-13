@@ -1,0 +1,208 @@
+/**
+ * Copyright 2025 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "plugin/device/ascend/optimizer/heterogeneous/insert_pre_fetch_depend.h"
+
+#include <queue>
+#include <utility>
+#include <stack>
+
+#include "include/common/utils/anfalgo.h"
+#include "plugin/device/ascend/optimizer/heterogeneous/move_to_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+
+namespace mindspore {
+namespace opt {
+void InsertPreFetchDepend::Init(const FuncGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  func_graph_ = graph;
+  kernel_graph_ = graph->cast<KernelGraphPtr>();
+  MS_EXCEPTION_IF_NULL(kernel_graph_);
+  manager_ = graph->manager();
+  MS_EXCEPTION_IF_NULL(manager_);
+
+  kernel_graph_->SetExecOrderByDefault();
+  MakeExecOrderCache();
+}
+
+void InsertPreFetchDepend::MakeExecOrderCache() {
+  const auto &execution_order = kernel_graph_->execution_order();
+  for (size_t i = 0; i < execution_order.size(); ++i) {
+    exec_order_cache_[execution_order[i]] = i;
+  }
+}
+
+size_t InsertPreFetchDepend::CalPreFetchCeiling(const CNodePtr &move_to_node) {
+  size_t ceiling = 0;
+  const auto &move_to_input = move_to_node->input(kIndex1);
+  if (!move_to_input->isa<CNode>()) {
+    return ceiling;
+  }
+
+  std::queue<CNodePtr> to_visit;
+  to_visit.push(move_to_input->cast<CNodePtr>());
+  while (!to_visit.empty()) {
+    const auto &node = to_visit.front();
+    to_visit.pop();
+    if (node == nullptr) {
+      continue;
+    }
+    const auto is_depend = IsPrimitiveCNode(node, prim::kPrimDepend);
+    if (is_depend) {
+      for (size_t i = kIndex1; i <= kIndex2; i += 1) {
+        const auto &input = node->input(i);
+        if (!input->isa<CNode>()) {
+          continue;
+        }
+        to_visit.push(input->cast<CNodePtr>());
+      }
+    } else {
+      const auto &exec_order_iter = exec_order_cache_.find(node);
+      if (exec_order_iter != exec_order_cache_.end()) {
+        ceiling = exec_order_iter->second > ceiling ? exec_order_iter->second : ceiling;
+      }
+    }
+  }
+  return ceiling;
+}
+
+size_t InsertPreFetchDepend::GetFirstUserExecOrder(const mindspore::CNodePtr &move_to_node) {
+  const auto users = manager_->node_users()[move_to_node];
+  if (users.empty()) {
+    return false;
+  }
+  size_t bw_node_exec_order = SIZE_MAX;
+  std::stack<std::pair<AnfNodePtr, int>> to_visit;
+  std::stack<int> make_tuple_stack;
+  for (const auto &user : users) {
+    to_visit.push(user);
+  }
+  while (!to_visit.empty()) {
+    auto user = to_visit.top();
+    to_visit.pop();
+    if (!user.first->isa<CNode>()) {
+      continue;
+    }
+    auto user_node = user.first->cast<CNodePtr>();
+    if (IsPrimitiveCNode(user_node, prim::kPrimDepend) && user.second == kIndex1) {
+      for (const auto &depend_user : manager_->node_users()[user_node]) {
+        to_visit.push(depend_user);
+      }
+      continue;
+    }
+    if (IsPrimitiveCNode(user_node, prim::kPrimMakeTuple)) {
+      make_tuple_stack.push(user.second);
+      for (const auto &make_tuple_user : manager_->node_users()[user_node]) {
+        to_visit.push(make_tuple_user);
+      }
+      continue;
+    }
+    if (IsPrimitiveCNode(user_node, prim::kPrimTupleGetItem)) {
+      const auto get_item_idx = GetGetitemIndex(user_node);
+      if (get_item_idx != make_tuple_stack.top()) {
+        continue;
+      }
+      for (const auto &get_item_user : manager_->node_users()[user_node]) {
+        to_visit.push(get_item_user);
+      }
+      make_tuple_stack.pop();
+      continue;
+    }
+
+    const auto &exec_order_iter = exec_order_cache_.find(user_node);
+    if (exec_order_iter == exec_order_cache_.end()) {
+      continue;
+    }
+    const auto exec_order = exec_order_iter->second;
+    if (exec_order < bw_node_exec_order) {
+      bw_node_exec_order = exec_order;
+    }
+  }
+  return bw_node_exec_order;
+}
+
+bool InsertPreFetchDepend::CalExecutionOrder(const CNodePtr &move_to_node, int64_t prefetch, size_t *pre_exec_order,
+                                             size_t *post_exec_order) {
+  const auto bw_node_exec_order = GetFirstUserExecOrder(move_to_node);
+  if (prefetch + 1 > SizeToInt(bw_node_exec_order)) {
+    return false;
+  }
+  if (prefetch + 1 == SizeToInt(bw_node_exec_order) && exec_order_cache_[move_to_node] == 0) {
+    return false;
+  }
+  const auto prefetch_ceiling = CalPreFetchCeiling(move_to_node);
+  auto pre_order = bw_node_exec_order - 1 - prefetch;
+  pre_order = pre_order > prefetch_ceiling ? pre_order : prefetch_ceiling;
+  auto post_order = pre_order + 1;
+  const auto &execution_order = kernel_graph_->execution_order();
+  if (execution_order[pre_order] == move_to_node) {
+    pre_order -= 1;
+  } else if (execution_order[post_order] == move_to_node) {
+    post_order += 1;
+  }
+  *pre_exec_order = pre_order;
+  *post_exec_order = post_order;
+  return true;
+}
+
+void InsertPreFetchDepend::InsertDepend(const CNodePtr &move_to_node, int64_t prefetch) {
+  MS_EXCEPTION_IF_NULL(move_to_node);
+  size_t pre_exec_order;
+  size_t post_exec_order;
+  if (!CalExecutionOrder(move_to_node, prefetch, &pre_exec_order, &post_exec_order)) {
+    return;
+  }
+  const auto &execution_order = kernel_graph_->execution_order();
+  const auto &pre_node = execution_order[pre_exec_order];
+  MS_EXCEPTION_IF_NULL(pre_node);
+  const auto &post_node = execution_order[post_exec_order];
+  MS_EXCEPTION_IF_NULL(post_node);
+  if (MoveToUtils::InsertDependNode(kernel_graph_, pre_node, move_to_node) == nullptr) {
+    MS_LOG(WARNING) << "Insert depend for pre fetch " << move_to_node->fullname_with_scope()
+                    << " failed. Prefetch: " << prefetch << ", pre node: " << pre_node->DebugString();
+  }
+  if (MoveToUtils::InsertDependNode(kernel_graph_, move_to_node, post_node) == nullptr) {
+    MS_LOG(WARNING) << "Insert depend for pre fetch " << move_to_node->fullname_with_scope()
+                    << " failed. Prefetch: " << prefetch << ", post node: " << post_node->DebugString();
+  }
+}
+
+bool InsertPreFetchDepend::Run(const FuncGraphPtr &graph) {
+  Init(graph);
+  bool changed = false;
+  const auto &execution_order = kernel_graph_->execution_order();
+  for (const auto &cnode : execution_order) {
+    if (!IsPrimitiveCNode(cnode, prim::kPrimMoveTo) || common::AnfAlgo::GetMoveToDstStr(cnode) != kToNpu) {
+      continue;
+    }
+    const auto &prim = GetCNodePrimitive(cnode);
+    const auto &attr_iter = prim->attrs().find(kAttrBackwardPrefetch);
+    if (attr_iter == prim->attrs().end()) {
+      continue;
+    }
+    const auto &pre_fetch_value = attr_iter->second;
+    if (!pre_fetch_value->isa<Int64Imm>()) {
+      continue;
+    }
+    const auto pre_fetch = GetValue<int64_t>(pre_fetch_value);
+    InsertDepend(cnode, pre_fetch);
+    changed = true;
+  }
+  return changed;
+}
+
+}  // namespace opt
+}  // namespace mindspore

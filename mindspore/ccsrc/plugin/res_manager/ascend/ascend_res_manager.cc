@@ -859,15 +859,15 @@ void AscendResManager::StopDevice(int32_t device_id) {
 }
 
 void *AscendResManager::GetCopyDataStream() const {
-  auto copy_data_stream = AscendStreamMng::GetInstance().GetCopyStream();
-  if (copy_data_stream == nullptr) {
+  auto copy_out_data_stream = AscendStreamMng::GetInstance().GetCopyOutStream();
+  if (copy_out_data_stream == nullptr) {
     size_t copy_stream_id;
     AscendStreamMng::GetInstance().CreateStream(&copy_stream_id);
     MS_LOG(INFO) << "Create ascend copy data stream, stream id: " << copy_stream_id;
-    copy_data_stream = AscendStreamMng::GetInstance().GetStream(copy_stream_id);
-    AscendStreamMng::GetInstance().SetCopyStream(copy_data_stream);
+    copy_out_data_stream = AscendStreamMng::GetInstance().GetStream(copy_stream_id);
+    AscendStreamMng::GetInstance().SetCopyOutStream(copy_out_data_stream);
   }
-  return copy_data_stream;
+  return copy_out_data_stream;
 }
 
 MS_REGISTER_HAL_RES_MANAGER(kAscendDevice, DeviceTargetType::kAscend, AscendResManager);
