@@ -461,6 +461,21 @@ inline pid_t GetCurrentPID() {
   return getpid();
 #endif
 }
+
+py::object GetSelfFromArgs(const py::object &args) {
+  if (!py::isinstance<py::tuple>(args)) {
+    return py::object();
+  }
+  auto args_tuple = py::cast<py::tuple>(args);
+  if (args_tuple.size() == 0) {
+    return py::object();
+  }
+  py::object first_arg = args_tuple[0];
+  if (!py::isinstance<Cell>(first_arg)) {
+    return py::object();
+  }
+  return first_arg;
+}
 }  // namespace
 
 void AddManagerForFuncGraphArgs(const ResourcePtr &resource, const ValuePtrList &arguments) {
@@ -2846,6 +2861,11 @@ py::object BaseRefToPyDataWithUserData(const BaseRef &value, const AbstractBaseP
     return GetVectorRefPyData(vec_ref, abs);
   }
   return BaseRefToPyData(value, abs);
+}
+
+void PreJit(const py::object &args, const py::object &kwargs) {
+  const auto &self = GetSelfFromArgs(args);
+  parse::Parser::InitParserEnvironment(self);
 }
 }  // namespace pipeline
 }  // namespace mindspore
