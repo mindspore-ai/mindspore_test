@@ -1,0 +1,18 @@
+#operator threshold
+threshold:
+  args:
+    input:
+      dtype: tensor
+    threshold:
+      dtype: float
+      type_cast: int
+    value:
+      dtype: float
+      type_cast: int
+  returns:
+    output:
+      dtype: tensor
+  dispatch:
+    enable: True
+    Ascend: ThresholdAscend
+  

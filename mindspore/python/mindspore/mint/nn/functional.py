@@ -242,6 +242,9 @@ from mindspore.ops.auto_generate import l1_loss_ext as l1_loss  # pylint: disabl
 #254
 from mindspore.ops.auto_generate import max_unpool2d_ext as max_unpool2d
 
+# 256
+from mindspore.ops.auto_generate import inplace_threshold as threshold_
+from mindspore.ops.auto_generate import threshold as threshold_op
 # 257
 
 # 258
@@ -936,6 +939,52 @@ def upsample(input, size=None, scale_factor=None, mode="nearest", align_corners=
     return interpolate(input, size, scale_factor, mode, align_corners)
 
 
+def threshold(input, threshold, value, inplace=False):  # pylint: disable=W0621
+    r"""
+    Compute the Threshold activation function element-wise.
+
+    The Threshold is defined as:
+
+    .. math::
+        y =
+        \begin{cases}
+        x, &\text{ if } x > \text{threshold} \\
+        \text{value}, &\text{ otherwise }
+        \end{cases}
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input Tensor.
+        threshold (Union[int, float]): The value of the threshold.
+        value (Union[int, float]): The value to replace with when element is less than threshold.
+        inplace (bool, optional): Whether to apply erasing inplace. Default: ``False``.
+
+    Returns:
+        Tensor, the same shape and data type as the input.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `threshold` is not a float or an int.
+        TypeError: If `value` is not a float or an int.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> inputs = mindspore.Tensor([0.0, 2, 3], mindspore.float32)
+        >>> outputs = mint.nn.functional.threshold(inputs, 1, 100)
+        >>> print(outputs)
+        [100.   2.   3.]
+    """
+    if inplace is True:
+        return threshold_(input, threshold, value)
+    return threshold_op(input, threshold, value)
+
+
 def adaptive_avg_pool3d(input, output_size):
     r"""
     Performs 3D adaptive average pooling on a multi-plane input signal.
@@ -1224,6 +1273,9 @@ __all__ = [
     'adaptive_avg_pool3d',
     # 254
     'max_unpool2d',
+    # 256
+    'threshold',
+    'threshold_',
 
     # 288
     'adaptive_max_pool2d',

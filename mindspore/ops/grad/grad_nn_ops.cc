@@ -470,6 +470,19 @@ void FreeTensorsOfLSTM(const PynativeCallback &cb) {
   }
 }
 
+void FreeTensorsOfThresholdGrad(const PynativeCallback &cb) {
+  cb.FreeOutputDeviceAddress();
+  auto &inputs = *cb.GetInputs();
+  cb.FreeDeviceAddress(&inputs[kIndex0]);
+  cb.FreeDeviceAddress(&inputs[kIndex3]);
+  cb.FreeOutputDeviceAddress();
+  if (cb.IsNotRequiresGrad(kIndex0)) {
+    cb.FreeDeviceAddress(&inputs[kIndex1]);
+    cb.FreeDeviceAddress(&inputs[kIndex4]);
+    MS_LOG(DEBUG) << "Clear device address for inputs[1] and inputs[4] of " << cb.opname();
+  }
+}
+
 REG_BPROP_BUILDERS_BEGIN(GradNnOps)
 REG_BPROP_BUILDER("Conv2D").FreeUselessValues(FreeTensorsOfMul).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
@@ -1434,6 +1447,44 @@ REG_BPROP_BUILDER("InplaceReLU").FreeUselessValues_I({}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(kIndex2);
   auto dx = ib->ReluGrad(dout, out);
   return {dx};
+});
+
+REG_BPROP_BUILDER("Threshold").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto threshold = ib->GetInput(kIndex1);
+  auto value = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+  auto dx = ib->Emit("ThresholdGrad", {dout, input, threshold});
+  return {dx, ib->OutZeros(threshold), ib->OutZeros(value)};
+});
+
+REG_BPROP_BUILDER("InplaceThreshold").SetUnusedInputs({i3}).CloneInplaceInput().SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto threshold = ib->GetInput(kIndex1);
+  auto value = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+  auto dx = ib->Emit("ThresholdGrad", {dout, input, threshold});
+  return {dx, ib->OutZeros(threshold), ib->OutZeros(value)};
+});
+
+REG_BPROP_BUILDER("ThresholdGrad").FreeUselessValues(FreeTensorsOfThresholdGrad).SetBody(BODYFUNC(ib) {
+  auto grad_output = ib->GetInput(kIndex0);
+  auto input = ib->GetInput(kIndex1);
+  auto threshold = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+  NodePtr dx = nullptr;
+  NodePtr dy = nullptr;
+  if (grad_output->need_compute_grad_out()) {
+    dx = ib->Emit("ThresholdGrad", {dout, input, threshold});
+  } else {
+    dx = ib->OutZeros(grad_output);
+  }
+  if (input->need_compute_grad_out()) {
+    dy = ib->Emit("ZerosLikeExt", {input, ib->Value(static_cast<int64_t>(ib->GetDtypeId(dout)))});
+  } else {
+    dy = ib->OutZeros(input);
+  }
+  return {dx, dy, ib->OutZeros(threshold)};
 });
 
 DEF_PURE_SHAPE_CALC(g_topk_1)

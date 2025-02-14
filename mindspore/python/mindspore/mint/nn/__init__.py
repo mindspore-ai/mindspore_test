@@ -253,6 +253,9 @@ from mindspore.nn.loss import L1LossExt as L1Loss
 # 254
 from mindspore.mint.nn.layer.pooling import MaxUnpool2d
 
+# 256
+from mindspore.mint.nn.layer.activation import Threshold
+
 # 257
 
 # 258
@@ -290,6 +293,7 @@ from mindspore.ops.function.nn_func import cross_entropy_ext as cross_entropy
 
 from mindspore.ops.function.nn_func import _nllloss_nd as nllloss
 
+from mindspore.ops.auto_generate import upsample_nearest2d_op, upsample_bilinear2d_op
 
 class NLLLoss(Cell):
     r"""
@@ -952,6 +956,143 @@ class BCELoss(Cell):
         return self.bce_loss(input, target)
 
 
+class UpsamplingNearest2d(Cell):
+    r"""
+    Performs nearest neighbor upsampling operation.
+
+    This operator scale up the volumetric input with specified `size` or `scale_factor` factors, using nearest
+    neighbor algorithm.
+
+    .. note::
+        One of `size` or `scale_factor` must be given, and can not specified both at the same time.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        size (Union[tuple[int], list[int]], optional): A tuple or list of int specifying the output volumetric size.
+            Default: ``None``.
+        scale_factor (Union[tuple[float], list[float]], optional): A tuple or list of float specifying the upsampling
+            factors. Default: ``None``.
+
+    Inputs:
+        - **input** (Tensor) - 4D tensor of shape :math:`(N, C, H_{in}, W_{in})`.
+          Supporting types: [uint8, float16, float32, float64].
+
+    Outputs:
+        Upsampled output with the same type as `input` , whose shape is :math:`(N, C, H_{out}, W_{out})`.
+
+    Raises:
+        TypeError: When `size` is not ``None`` and `size` is not list[int] or tuple[int].
+        TypeError: When `scale_factor` is not ``None`` and `scale_factor` is not list[float] or tuple[float].
+        TypeError: If dtype of `input` is not in [uint8, float16, float32, float64].
+        ValueError: If any value of `size` is negative or zero when `size` is not ``None``.
+        ValueError: If any value of `scale_factor` is negative or zero when `scale_factor` is not ``None``.
+        ValueError: If shape of `input` is not 4D.
+        ValueError: If both `scale_factor` and `size` are specified or neither `scale_factor` nor `size` is specified.
+        ValueError: If size of `scale_factor` is not equal to 2 when `scale_factor` is specified.
+        ValueError: If size of `size` is not equal to 2 when `size` is specified.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, nn
+        >>> from mindspore import dtype as mstype
+        >>> inut = Tensor(np.arange(12).astype(np.float32).reshape(1, 2, 2, 3))
+        >>> size = [4, 4]
+        >>> net = nn.UpsamplingNearest2d(size, None)
+        >>> output = net(inut)
+        >>> print(output)
+        [[[[0., 0., 1., 2.],
+            [0., 0., 1., 2.],
+            [3., 3., 4., 5.],
+            [3., 3., 4., 5.]],
+            [[6., 6., 7., 8.],
+            [6., 6., 7., 8.],
+            [9., 9., 10., 10.],
+            [9., 9., 10., 10.]]]]
+    """
+
+    def __init__(self, size=None, scale_factor=None):
+        """Initialize UpsamplingNearest2d."""
+        super(UpsamplingNearest2d, self).__init__()
+        self.size = size
+        self.scale_factor = scale_factor
+
+    def construct(self, input):
+        return upsample_nearest2d_op(input, self.size, self.scale_factor)
+
+class UpsamplingBilinear2d(Cell):
+    r"""
+    Performs upsampling with trilinear interpolation across 2dims for 4dim input Tensor.
+
+    This operator scale up the volumetric input with specified `size` or `scale_factor` factors,
+    using trilinear upscaling algorithm.
+
+    Note:
+        One of `scale_factor` and `size` must be specified. And it is an error if both are specified.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        size (Union[tuple[int], list[int]], optional): A tuple or list of int specifying the output volumetric size.
+            Default: ``None``.
+        scale_factor (Union[tuple[float], list[float]], optional): A tuple or list of float specifying the upsampling
+            factors. Default: ``None``.
+
+    Inputs:
+        - **input** (Tensor) - 4D tensor of shape :math:`(N, C, H_{in}, W_{in})`.
+          Supporting types: [float16, float32, float64].
+
+    Outputs:
+        Upsampled output with the same type as `input` , whose shape is :math:`(N, C, H_{out}, W_{out})`.
+
+    Raises:
+        TypeError: When `size` is not ``None`` and `size` is not list[int] or tuple[int].
+        TypeError: When `scale_factor` is not ``None`` and `scale_factor` is not list[float] or tuple[float].
+        TypeError: If dtype of `input` is not in [float16, float32, float64].
+        ValueError: If any value of `size` is negative or zero when `size` is not ``None``.
+        ValueError: If any value of `scale_factor` is negative or zero when `size` is not ``None``.
+        ValueError: If shape of `input` is not 4D.
+        ValueError: If both `scale_factor` and `size` are specified or neither `scale_factor` nor `size` is specified.
+        ValueError: If size of `size` is not equal to 2 when `size` is specified.
+        ValueError: If size of `scale_factor` is not equal to 2 when `scale_factor` is specified.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, nn
+        >>> size=[4, 5]
+        >>> net = nn.UpsampleTrilinear2d(size, None)
+        >>> in_x = Tensor(np.array([[[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]],
+        >>>                          [[0.7, 0.8, 0.9], [1.0, 1.1, 1.2]]]]).astype(np.float32))
+        >>> out = net(in_x)
+        >>> print(out)
+        [[[[0.1000, 0.1500, 0.2000, 0.2500, 0.3000],
+            [0.2000, 0.2500, 0.3000, 0.3500, 0.4000],
+            [0.3000, 0.3500, 0.4000, 0.4500, 0.5000],
+            [0.4000, 0.4500, 0.5000, 0.5500, 0.6000]],
+            [[0.7000, 0.7500, 0.8000, 0.8500, 0.9000],
+            [0.8000, 0.8500, 0.9000, 0.9500, 1.0000],
+            [0.9000, 0.9500, 1.0000, 1.0500, 1.1000],
+            [1.0000, 1.0500, 1.1000, 1.1500, 1.2000]]]]
+    """
+
+    def __init__(self, size=None, scale_factor=None):
+        """Initialize UpsamplingBilinear2d."""
+        super(UpsamplingBilinear2d, self).__init__()
+        self.size = size
+        self.scale_factor = scale_factor
+
+    def construct(self, input):
+        return upsample_bilinear2d_op(input, self.size, self.scale_factor, True)
+
+
 __all__ = [
     # 1
     'BCEWithLogitsLoss',
@@ -1184,6 +1325,8 @@ __all__ = [
     'L1Loss',
     # 254
     'MaxUnpool2d',
+    # 256
+    'Threshold',
     # 267
     'Mish',
     # 258
@@ -1218,4 +1361,6 @@ __all__ = [
     'BatchNorm2d',
     # 676
     'BatchNorm3d',
+    'UpsamplingNearest2d',
+    'UpsamplingBilinear2d',
 ]
