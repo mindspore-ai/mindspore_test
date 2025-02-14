@@ -1322,6 +1322,14 @@ bool OptInlineAction(const ResourcePtr &resource) {
   return true;
 }
 
+bool OptAddAttrWithInlineAction(const ResourcePtr &resource) {
+  if (parallel::ParallelContext::GetInstance()->parallel_mode() == "semi_auto_parallel" ||
+      parallel::ParallelContext::GetInstance()->parallel_mode() == "auto_parallel") {
+    return OptimizeAction(resource, kAddAttrWithInlinePass);
+  }
+  return true;
+}
+
 bool VmOptimizeAction(const ResourcePtr &resource) {
   EventMessage::PrintCompileStatusMessage("Start performing graph optimization.");
 #if defined(__linux__) && defined(WITH_BACKEND)
@@ -2118,6 +2126,8 @@ static std::vector<ActionItem> CommonPipeline(bool trace_flag) {
 
   // Do data structure simplifications and inline.
   (void)actions.emplace_back(std::make_pair(kInline, OptInlineAction));
+
+  (void)actions.emplace_back(std::make_pair(kAddAttr, OptAddAttrWithInlineAction));
 
   (void)actions.emplace_back(std::make_pair("parallel-infer-symbol", AutoParallelSymbolWithReNormalizeAction));
 

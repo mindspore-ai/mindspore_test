@@ -34,6 +34,14 @@ class ExpandShardPrim : public ExpandMetaFgPrim {
   bool operator()(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer) override;
 };
 using ExpandShardPrimPtr = std::shared_ptr<ExpandShardPrim>;
+
+class ExpandAddAttrPrim : public ExpandMetaFgPrim {
+ public:
+  ExpandAddAttrPrim() { prim_ = prim::kPrimAddAttr; }
+  virtual ~ExpandAddAttrPrim() = default;
+  bool operator()(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer) override;
+};
+using ExpandAddAttrPrimPtr = std::shared_ptr<ExpandAddAttrPrim>;
 }  // namespace irpass
 }  // namespace opt
 }  // namespace mindspore
