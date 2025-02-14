@@ -41,6 +41,8 @@ file(GLOB_RECURSE MS_OPTIMIZER_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "./ir_fusion_infer/inference_weight_preprocess_utils.cc"
         "./ir_fusion_infer/inference_matmul_split_fusion.cc"
         "./ir_fusion_infer/inference_swiglu_fusion.cc"
+        "./ir_fusion_infer/inference_swiglu_fusion_v2.cc"
+        "./ir_fusion_infer/swiglu_dynamic_quant_fusion.cc"
         "./ir_fusion_infer/inference_qbmm_fusion_base.cc"
         "./ir_fusion_infer/inference_qbmm_add_fusion.cc"
         "./ir_fusion_infer/inference_qbmm_allreduce_add_fusion.cc"
