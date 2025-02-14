@@ -20,6 +20,7 @@
 #include <cstdio>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -78,6 +79,7 @@ class BACKEND_EXPORT CPUProfiler : public Profiler {
   uint64_t op_time_stop_;
 
   std::optional<bool> is_gpu_hetero_ = {};
+  std::mutex mutex_;
 };
 }  // namespace cpu
 }  // namespace profiler
