@@ -16,7 +16,7 @@ from enum import Enum
 import multiprocessing.context
 import numbers
 import os
-from typing import Any, AnyStr, Callable, Generic, Iterable, List, Mapping, Optional, overload, Protocol, Self, \
+from typing import Any, AnyStr, Callable, Generic, Iterable, List, Mapping, Optional, overload, Protocol, \
     Sequence, TypeVar, Union
 
 import numpy as np
@@ -25,8 +25,9 @@ from mindspore.common import Tensor
 from mindspore.common.generator import Generator
 
 from .dataset import Dataset, IterableDataset
-from .sampler import BatachSampler, RandomSampler, Sampler, SequentialSampler
+from .sampler import BatchSampler, RandomSampler, Sampler, SequentialSampler, InfiniteSampler
 from .utils.fetch import _MapDatasetFetcher, _IterableDatasetFetcher
+from .utils.collate import default_collate, default_convert
 
 _T = TypeVar("_T")
 _T_co = TypeVar("_T_co", covariant=True)
@@ -58,13 +59,13 @@ class DatasetType(str, Enum):
 
 class FetcherFactory:
     @staticmethod
-    def create_fetcher(dataset_type, dataset, auto_collation, drop_last=False):
+    def create_fetcher(dataset_type, dataset, auto_collation, collate_fn, drop_last=False):
         if dataset_type == DatasetType.MapDataset:
-            return _MapDatasetFetcher(dataset, auto_collation)
+            return _MapDatasetFetcher(dataset, auto_collation, collate_fn)
         elif dataset_type == DatasetType.IterableDataset:
-            return _IterableDatasetFetcher(dataset, auto_collation, drop_last)
+            return _IterableDatasetFetcher(dataset, auto_collation, collate_fn, drop_last)
         else:
-            raise ValueError("Unknown dataset type: {}".format(dataset_types))
+            raise ValueError("Unknown dataset type: {}".format(dataset_type))
 
 class DataLoader(Generic[_T_co]):
     def __init__(self,
@@ -91,17 +92,33 @@ class DataLoader(Generic[_T_co]):
         self.num_workers = num_workers
         self.presistent_workers = presistent_workers
         self.generator = generator
+        self.collate_fn = collate_fn
 
         if isinstance(dataset, IterableDataset):
             self.dataset_type = DatasetType.IterableDataset
         else:
             self.dataset_type = DatasetType.MapDataset
+        
+        if self.dataset_type == DatasetType.IterableDataset:
+            if sampler is not None:
+                raise ValueError(
+                    f"DataLoader with IterableDataset: expected unspecified sampler option, but got sampler={sampler}"
+                )
+            if batch_sampler is not None:
+                raise ValueError(
+                    f"DataLoader with IterableDataset: expected unspecified batch_sampler option, but got batch_sampler={batch_sampler}"
+                )
+            if shuffle not in {False, None}:
+                raise ValueError(
+                    f"DataLoader with IterableDataset: expected unspecified shuffle option, but got shuffle={shuffle}"
+                )
+            sampler = InfiniteSampler()
 
         if shuffle is not None and sampler is not None:
             raise ValueError("`shuffle` and `sampler` can not specify at the same time.")
         elif shuffle is None and sampler is None:
             sampler = SequentialSampler(self.dataset)
-        elif shuffle is not None:
+        elif shuffle is True:
             sampler = RandomSampler(self.dataset, generator=self.generator)
 
         self.sampler = sampler
@@ -113,7 +130,7 @@ class DataLoader(Generic[_T_co]):
             self.batch_sampler = batch_sampler
             self.auto_collation = True
         elif batch_size is not None:
-            self.batch_sampler = BatachSampler(sampler, batch_size, self.drop_last)
+            self.batch_sampler = BatchSampler(sampler, batch_size, self.drop_last)
             self.auto_collation = True
         else:
             self.auto_collation = False
@@ -146,8 +163,9 @@ class _Iterator(Generic[_T_co]):
         self.auto_collation = dataloader.auto_collation
         self.index_sampler = dataloader.index_sampler
         self.sampler_iterator = iter(self.index_sampler)
+        self.collate_fn = dataloader.collate_fn
 
-    def __iter__(self) -> Self:
+    def __iter__(self):
         return self
 
     def __len__(self) -> int:
@@ -166,7 +184,7 @@ class _SingleProcessIterator(_Iterator):
     def __init__(self, dataloader: DataLoader) -> None:
         super().__init__(dataloader)
         self.dataset_fetcher = FetcherFactory.create_fetcher(self.dataset_type, self.dataset, self.auto_collation,
-                                                             self.drop_last)
+                                                             self.collate_fn, self.drop_last)
 
     def _get_next_data(self):
         next_index = self._get_next_index()
