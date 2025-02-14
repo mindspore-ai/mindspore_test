@@ -16,7 +16,7 @@ mindspore.dataset.vision.Resize
         - **interpolation** (:class:`~.vision.Inter`, 可选) - 图像插值方法。可选值详见 :class:`mindspore.dataset.vision.Inter` 。
           默认值： ``Inter.LINEAR``。
 
-          - **Ascend模式**：通过 `.device("Ascend")` 设定执行设备为 Ascend 时， `Inter.ANTIALIAS` 、 `Inter.AREA` 、 `Inter.PILCUBIC` 差值方法不支持。
+          - **Ascend模式**：通过 `.device("Ascend")` 设定执行设备为 Ascend 时， `Inter.ANTIALIAS` 、 `Inter.AREA` 、 `Inter.PILCUBIC` 插值方法不支持。
 
     异常：
         - **TypeError** - 当 `size` 的类型不为int或Sequence[int]。

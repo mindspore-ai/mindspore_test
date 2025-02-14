@@ -5,14 +5,14 @@ mindspore.train.Fbeta
 
     计算Fbeta评分。
 
-    Fbeta评分是精度(Precision)和召回率(Recall)的加权平均值。
+    Fbeta评分是精度（Precision）和召回率（Recall）的加权平均值。
 
     .. math::
         F_\beta=\frac{(1+\beta^2) \cdot true\_positive}
                 {(1+\beta^2) \cdot true\_positive +\beta^2 \cdot false\_negative + false\_positive}
 
     参数：
-        - **beta** (Union[float, int]) - F-measure中的beta系数 。
+        - **beta** (Union[float, int]) - F-measure中的beta系数。
 
     .. py:method:: clear()
 
@@ -26,7 +26,7 @@ mindspore.train.Fbeta
             - **average** (bool) - 是否计算Fbeta平均值。默认值： ``False`` 。
 
         返回：
-            numpy.ndarray或numpy.float64，计算的Fbeta 评分结果。
+            numpy.ndarray或numpy.float64，计算的Fbeta评分结果。
 
     .. py:method:: update(*inputs)
 
