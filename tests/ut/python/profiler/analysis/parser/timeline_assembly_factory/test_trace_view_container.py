@@ -12,11 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
+"""test trace view container"""
 import unittest
-from unittest.mock import Mock
-from mindspore.profiler.analysis.parser.timeline_event.timeline_event_pool import TimelineEventPool
-from mindspore.profiler.analysis.parser.timeline_assembly_factory.trace_view_container import TraceViewContainer
+from decimal import Decimal
+from unittest.mock import Mock  # pylint: disable=ungrouped-imports
+
+from mindspore.profiler.analysis.parser.timeline_assembly_factory.trace_view_container import \
+    TraceViewContainer
+from mindspore.profiler.analysis.parser.timeline_event.timeline_event_pool import \
+    TimelineEventPool
+from mindspore.profiler.common.constant import (ProfilerStepNameConstant,
+                                                TimelineLayerName)
+
+from mindspore.profiler.common.constant import EventConstant
 
 
 # pylint: disable=protected-access
@@ -157,6 +165,52 @@ class TestTraceViewContainer(unittest.TestCase):
         self.assertEqual(stored_event.tid, 2)
         self.assertIsNone(stored_event.parent)
         self.assertEqual(stored_event.children, [])
+
+    #
+    def test_step_id_time_dict_should_return_correct_dict_when_events_have_different_step_ids(self):
+        """Test the correct dictionary when events have different step IDs"""
+        # Create a TimelineEventPool instance to simulate a specific process ID and timeline layer name
+        pool = TimelineEventPool(pid=1)
+        pool.name = TimelineLayerName.MINDSPORE.value
+
+        # Create the first mock event with step ID 1, start time 10, and duration 5
+        event1 = Mock()
+        event1.name = f"{ProfilerStepNameConstant.PROFILER_STEP}#1"
+        event1.ts = Decimal('10')
+        event1.dur = Decimal('5')
+        event1.ph = EventConstant.INSTANT_EVENT
+
+        # Create the second mock event with step ID 2, start time 20, and duration 10
+        event2 = Mock()
+        event2.name = f"{ProfilerStepNameConstant.PROFILER_STEP}#2"
+        event2.ts = Decimal('20')
+        event2.dur = Decimal('10')
+        event2.ph = EventConstant.INSTANT_EVENT
+
+        # Create the third mock event with step ID 3, start time 30, and duration 15
+        event3 = Mock()
+        event3.name = f"{ProfilerStepNameConstant.PROFILER_STEP}#3"
+        event3.ts = Decimal('30')
+        event3.dur = Decimal('15')
+        event3.ph = EventConstant.INSTANT_EVENT
+
+        # Add the mock events to the event pool
+        pool.add_event(event1)
+        pool.add_event(event2)
+        pool.add_event(event3)
+
+        # Add the event pool to the container for subsequent retrieval and verification
+        self.container.add_event_pool(pool)
+
+        # Call the method to get the step ID and time dictionary, and compare it with the expected result
+        result = self.container.get_step_id_time_dict()
+        expected = {
+            '1': (Decimal('10'), Decimal('15')),
+            '2': (Decimal('20'), Decimal('30')),
+            '3': (Decimal('30'), Decimal('45'))
+        }
+        # Use an assertion to verify that the result matches the expected outcome
+        self.assertEqual(result, expected)
 
 
 if __name__ == '__main__':

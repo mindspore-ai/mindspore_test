@@ -51,7 +51,7 @@ class DynamicProfilerArgs:
     """
     Data class for dynamic profile config.
     """
-    FMT = "iiiiii????"
+    FMT = "i" * 6 + "?" * 6
     SIZE = struct.calcsize(FMT)
 
     def __init__(self,
@@ -61,6 +61,8 @@ class DynamicProfilerArgs:
                  profiler_level: int = 0,
                  analyse_mode: int = -1,
                  activities: int = 0,
+                 profile_memory: bool = False,
+                 mstx: bool = False,
                  parallel_strategy: bool = False,
                  with_stack: bool = False,
                  data_simplification: bool = True,
@@ -72,6 +74,8 @@ class DynamicProfilerArgs:
         self._profiler_level = profiler_level
         self._analyse_mode = analyse_mode
         self._activities = activities
+        self._profile_memory = profile_memory
+        self._mstx = mstx
         self._parallel_strategy = parallel_strategy
         self._with_stack = with_stack
         self._data_simplification = data_simplification
@@ -103,6 +107,18 @@ class DynamicProfilerArgs:
         if not isinstance(self._activities, int):
             logger.warning("activities should be int type, activities will be reset to 0.")
             self._activities = 0
+
+        if not isinstance(self._profile_memory, bool):
+            logger.warning("profile_memory should be bool type, profile_memory will be reset to False.")
+            self._profile_memory = False
+
+        if not isinstance(self._mstx, bool):
+            logger.warning("mstx should be bool type, mstx will be reset to False.")
+            self._mstx = False
+
+        if not isinstance(self._parallel_strategy, bool):
+            logger.warning("parallel_strategy should be bool type, parallel_strategy will be reset to False.")
+            self._parallel_strategy = False
 
         if not isinstance(self._with_stack, bool):
             logger.warning("with_stack should be bool type, with_stack will be reset to False.")
@@ -187,6 +203,8 @@ class DynamicProfilerArgs:
 
     def _convert_profiler_level(self, profiler_level: int) -> ProfilerLevel:
         """ convert profiler_level to real args in Profiler."""
+        if profiler_level == -1:
+            return ProfilerLevel.LevelNone
         if profiler_level == 0:
             return ProfilerLevel.Level0
         if profiler_level == 1:
@@ -224,6 +242,7 @@ class DynamicProfilerArgs:
         if aicore_metrics == 6:
             return AicoreMetrics.L2Cache
         return AicoreMetrics.AiCoreNone
+
 
 class DynamicProfilerMonitorBase(Callback):
     """
@@ -639,12 +658,18 @@ if sys.version_info >= (3, 8):
                   indicates that AI Core utilization is not collected, and 0 indicates PipeUtilization, 1 indicates
                   ArithmeticUtilization, 2 stands for Memory, 3 stands for MemoryL0, 4 stands for MemoryUB, 5 indicates
                   ResourceConflictRatio, 6 indicates L2Cache.
-                - profiler_level (int, optional) - Sets the level of performance data collection, where 0 represents
-                  ProfilerLevel.Level0, 1 represents ProfilerLevel.Level1, and 2 represents ProfilerLevel.Level2. The
-                  default value is 0, indicating the ProfilerLevel.Level0 collection level.
+                - profiler_level (int, optional) - Sets the level of performance data collection, where -1 represents
+                  ProfilerLevel.LevelNone, 0 represents ProfilerLevel.Level0, 1 represents ProfilerLevel.Level1, and
+                  2 represents ProfilerLevel.Level2. The default value is 0, indicating the ProfilerLevel.Level0
+                  collection level.
                 - activities (int, optional) - Sets the devices for performance data collection, where 0 represents
                   CPU+NPU, 1 represents CPU, and 2 represents NPU. The default value is 0, indicating the collection
                   of CPU+NPU performance data.
+                - profile_memory (bool, optional) - Set whether to collect memory performance data, true indicates that
+                  memory performance data is collected, false indicates that memory performance data is not collected.
+                  The default value is false, indicating that memory performance data is not collected.
+                - mstx (bool, optional) - Set whether to enable mstx, true indicates that mstx is enabled, false
+                  indicates that mstx is disabled. The default value is false, indicating that mstx is not enabled.
                 - analyse_mode (int, optional) - Sets the mode for online analysis, corresponding to the analyse_mode
                   parameter of the mindspore.Profiler.analyse interface, where 0 represents "sync" and 1 represents
                   "async". The default value is -1, indicating that online analysis is not used.

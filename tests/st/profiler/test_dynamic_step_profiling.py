@@ -88,6 +88,7 @@ def test_dynamic_step_profiler():
         "profile_framework": 1,
         "analyse_mode": 0,
         "with_stack": True,
+        "profile_memory": True,
         "parallel_strategy": True,
         "data_simplification": False,
     }
@@ -141,3 +142,10 @@ def test_dynamic_step_profiler():
                                     fuzzy_match=False
                                     )
         FileChecker.check_csv_items(kernel_details_step_6_7_path, {"Name": ["*BiasAdd*", "*MatMul"]})
+        # Check operate_memory.csv
+        operate_memory_2_5_path = glob.glob(f"{profiler_step_2_5_path}/*_ascend_ms/"
+                                            f"ASCEND_PROFILER_OUTPUT/operator_memory.csv")[0]
+        operate_memory_6_7_path = glob.glob(f"{profiler_step_6_7_path}/*_ascend_ms/"
+                                            f"ASCEND_PROFILER_OUTPUT/operator_memory.csv")[0]
+        FileChecker.check_csv_items(operate_memory_2_5_path, {"Name": ["Unknown"]})
+        FileChecker.check_csv_items(operate_memory_6_7_path, {"Name": ["Unknown"]})

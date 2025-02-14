@@ -13,18 +13,17 @@
 # limitations under the License.
 # ============================================================================
 """Ascend kernel details viewer"""
-import os
 import csv
+import os
 from decimal import Decimal
 
-from mindspore import log as logger
 from mindspore.profiler.analysis.viewer.base_viewer import BaseViewer
-from mindspore.profiler.analysis.parser.timeline_assembly_factory.trace_view_container import TraceViewContainer
+from mindspore.profiler.common.constant import JitLevel, ProfilerLevel
 from mindspore.profiler.common.constant import OpSummaryHeaders
-from mindspore.profiler.common.path_manager import PathManager
-from mindspore.profiler.common.constant import TimelineLayerName
-from mindspore.profiler.common.constant import ProfilerStepNameConstant, JitLevel, ProfilerLevel
 from mindspore.profiler.common.log import ProfilerLogger
+from mindspore.profiler.common.path_manager import PathManager
+
+from mindspore import log as logger
 
 
 class AscendKernelDetailsViewer(BaseViewer):
@@ -145,7 +144,7 @@ class AscendKernelDetailsViewer(BaseViewer):
         Update op summary op name to framework launch op name.
         """
         self._logger.info("Update kernel name start")
-        step_id_to_time_dict = _generate_step_id_dict_by_trace_container(self.trace_container)
+        step_id_to_time_dict = self.trace_container.get_step_id_time_dict()
         dev_kernels = self.trace_container.hardware_op_event
         _generate_hardware_op_event_step_id(dev_kernels, step_id_to_time_dict)
 
@@ -207,23 +206,6 @@ class AscendKernelDetailsViewer(BaseViewer):
             if not self._jit_level == JitLevel.GRAPH_LEVEL:
                 self.op_summary[OpSummaryHeaders.STEP_ID.value] = step_ids
         self._logger.info("Update kernel name done")
-
-
-def _generate_step_id_dict_by_trace_container(trace_container: TraceViewContainer):
-    """
-    Generate the step id to time dict.
-    """
-    # Retrieve all events from the trace container for the Mindspore timeline layer
-    events = trace_container.get_pool_by_name(TimelineLayerName.MINDSPORE.value).get_all_events()
-
-    # Filter events that contain "ProfilerStep" and create a dictionary mapping (start_ts, end_ts) to step ID
-    step_id_to_time_dict = {}
-    for event in events:
-        event_name = event.name
-        if ProfilerStepNameConstant.PROFILER_STEP in event_name:
-            step_id_to_time_dict[event.name.split("#")[-1]] = (event.ts, event.dur + event.ts)
-
-    return step_id_to_time_dict
 
 
 def _generate_hardware_op_event_step_id(hardware_op_events_dict: dict, step_id_to_time_dict: dict):

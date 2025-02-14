@@ -15,6 +15,7 @@ from collections import defaultdict
 
 from mindspore.profiler.analysis.parser.timeline_event.timeline_event_pool import TimelineEventPool
 from mindspore.profiler.analysis.parser.timeline_event.base_event import BaseEvent
+from mindspore.profiler.common.constant import ProfilerStepNameConstant, TimelineLayerName
 
 
 class TraceViewContainer:
@@ -82,3 +83,19 @@ class TraceViewContainer:
     def get_all_pools(self) -> List[TimelineEventPool]:
         """Get all event pools."""
         return list(self.event_pools.values())
+
+    def get_step_id_time_dict(self) -> Dict:
+        """Get step id to time dict."""
+        # Retrieve all events from the trace container for the Mindspore timeline layer
+        events = self.get_pool_by_name(TimelineLayerName.MINDSPORE.value).get_all_events()
+
+        # Filter events that contain "ProfilerStep" and create a dictionary mapping (start_ts, end_ts) to step ID
+        step_id_to_time_dict = dict(sorted(
+            (
+                event.name.split("#")[-1], (event.ts, event.dur + event.ts)
+            )
+            for event in events
+            if ProfilerStepNameConstant.PROFILER_STEP in event.name
+        ))
+
+        return step_id_to_time_dict
