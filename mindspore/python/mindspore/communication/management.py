@@ -105,6 +105,20 @@ def _set_envs():
         os.environ["RANK_SIZE"] = str(get_group_size())
 
 
+def _check_hccl():
+    """Check hcll is installed needed."""
+    if not GlobalComm.CHECK_ENVS:
+        return
+    try:
+        from hccl import sys_version as hccl_version
+        v = '.'.join(hccl_version.__sys_version__.split('.')[0:2])
+        logger.debug(f"\"hccl\" wheel package version {v} is installed")
+    except Exception as e:
+        logger.error(f"Check hccl failed: {e}")
+        raise RuntimeError("\"hccl\" wheel was not installed correctly. For details, refer to the installation "
+                           "guidelines: https://www.mindspore.cn/install")
+
+
 def init(backend_name=None):
     """
     Initialize distributed backends required by communication services, e.g. ``"hccl"`` / ``"nccl"`` / ``"mccl"``.
@@ -185,6 +199,7 @@ def init(backend_name=None):
         if not host_init:
             _check_parallel_envs()
         GlobalComm.BACKEND = Backend("hccl")
+        _check_hccl()
         init_hccl()
         GlobalComm.WORLD_COMM_GROUP = HCCL_WORLD_COMM_GROUP
     elif backend_name == "nccl":
