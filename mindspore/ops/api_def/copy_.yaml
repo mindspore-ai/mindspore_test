@@ -2,7 +2,7 @@ copy_:
   - op_yaml: inplace_copy_op.yaml
     py_method: tensor_copy_
     Ascend: pyboost
-    CPU: py_method
+    CPU: pyboost
     GPU: py_method
     interface: tensor
 

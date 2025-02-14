@@ -16,3 +16,4 @@ inplace_copy:
   dispatch:
     enable: True
     Ascend: InplaceCopyAscend
+    CPU: InplaceCopyCPU
