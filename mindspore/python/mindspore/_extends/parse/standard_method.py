@@ -3413,8 +3413,8 @@ def normal_(input, mean=0, std=1, *, generator=None):
     """
     if generator is None:
         generator = default_generator
-    seed, offset = generator._step(  # pylint: disable=protected-access
-        generator_step_)
+
+    seed, offset = generator._step(generator_step_)
     return inplace_normal_op(input, mean, std, seed, offset)
 
 
