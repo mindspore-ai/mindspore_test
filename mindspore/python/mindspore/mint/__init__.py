@@ -445,6 +445,12 @@ from mindspore.ops.function.math_func import float_power_ext as float_power
 # 708
 from mindspore.ops.function.math_func import std_ext as std
 
+# 719
+from mindspore.ops.functional_overload import add
+
+# 720
+from mindspore.ops.functional_overload import sub
+
 # 887
 from mindspore.ops.auto_generate import log2_ext as log2
 
@@ -459,64 +465,6 @@ from mindspore.ops.auto_generate.gen_ops_prim import equal_ext_op
 
 # 1023
 from mindspore.ops.function.array_func import unbind_ext as unbind
-
-
-def add(input, other, *, alpha=1):
-    r"""
-    Adds scaled other value to input Tensor.
-
-    .. math::
-
-        out_{i} = input_{i} + alpha \times other_{i}
-
-    Note:
-        - When the two inputs have different shapes,
-          they must be able to broadcast to a common shape.
-        - The two inputs and alpha comply with the implicit type conversion rules to make the data types
-          consistent.
-
-    Args:
-        input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
-            a bool or a tensor whose data type is
-            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
-        other (Union[Tensor, number.Number, bool]): The second input, is a number.Number or
-            a bool or a tensor whose data type is
-            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
-
-    Keyword Args:
-        alpha (number.Number): A scaling factor applied to `other`, default: ``1``.
-
-    Returns:
-        Tensor with a shape that is the same as the broadcasted shape of the input `input` and `other`,
-        and the data type is the one with higher precision or higher digits among the two inputs and alpha.
-
-    Raises:
-        TypeError: If the type of `input`, `other`, or `alpha` is not one of the following: Tensor, number.Number, bool.
-        TypeError: If `alpha` is of type float but `input` and `other` are not of type float.
-        TypeError: If `alpha` is of type bool but `input` and `other` are not of type bool.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import numpy as np
-        >>> import mindspore
-        >>> from mindspore import Tensor
-        >>> from mindspore import mint
-        >>> x = Tensor(1, mindspore.int32)
-        >>> y = Tensor(np.array([4, 5, 6]).astype(np.float32))
-        >>> alpha = 0.5
-        >>> output = mint.add(x, y, alpha=alpha)
-        >>> print(output)
-        [3. 3.5 4.]
-        >>> # the data type of x is int32, the data type of y is float32,
-        >>> # alpha is a float, and the output is the data format of higher precision float32.
-        >>> print(output.dtype)
-        Float32
-    """
-    return ops.auto_generate.add_ext(input, other, alpha)
 
 
 def any(input, dim=None, keepdim=False):
@@ -1426,64 +1374,6 @@ def squeeze(input, dim):
          [1. 1.]]
     """
     return squeeze_impl(input, dim)
-
-
-def sub(input, other, *, alpha=1):
-    r"""
-    Subtracts scaled other value from input Tensor.
-
-    .. math::
-
-        out_{i} = input_{i} - alpha \times other_{i}
-
-    Note:
-        - When the two inputs have different shapes,
-          they must be able to broadcast to a common shape.
-        - The two inputs and alpha comply with the implicit type conversion rules to make the data types
-          consistent.
-
-    Args:
-        input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
-            a bool or a tensor whose data type is
-            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
-        other (Union[Tensor, number.Number, bool]): The second input, is a number.Number or
-            a bool or a tensor whose data type is
-            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
-
-    Keyword Args:
-        alpha (number.Number, optional): A scaling factor applied to `other`, default ``1``.
-
-    Returns:
-        Tensor with a shape that is the same as the broadcasted shape of the input `input` and `other`,
-        and the data type is the one with higher precision or higher digits among the two inputs and alpha.
-
-    Raises:
-        TypeError: If the type of `input`, `other`, or `alpha` is not one of the following: Tensor, number.Number, bool.
-        TypeError: If `alpha` is of type float but `input` and `other` are not of type float.
-        TypeError: If `alpha` is of type bool but `input` and `other` are not of type bool.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import numpy as np
-        >>> import mindspore
-        >>> from mindspore import Tensor
-        >>> from mindspore import mint
-        >>> x = Tensor(np.array([4, 5, 6]).astype(np.float32))
-        >>> y = Tensor(1, mindspore.int32)
-        >>> alpha = 0.5
-        >>> output = mint.sub(x, y, alpha=alpha)
-        >>> print(output)
-        [3.5 4.5 5.5]
-        >>> # the data type of x is float32, the data type of y is int32,
-        >>> # alpha is a float, and the output is the data format of higher precision float32.
-        >>> print(output.dtype)
-        Float32
-    """
-    return ops.auto_generate.sub_ext(input, other, alpha)
 
 
 def swapaxes(input, axis0, axis1):

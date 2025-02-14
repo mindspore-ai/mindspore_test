@@ -1,10 +1,11 @@
 add:
-  - op_yaml: add_op.yaml
-    py_method: deprecated_tensor_add
+  - op_yaml: add_scalar_op.yaml
+    py_method: tensor_add_ext
+    kwonlyargs: alpha
     Ascend: pyboost
-    CPU: pyboost
-    GPU: pyboost
-    interface: tensor
+    CPU: py_method
+    GPU: py_method
+    interface: tensor, function
 
   - op_yaml: add_ext_op.yaml
     py_method: tensor_add_ext
@@ -12,7 +13,7 @@ add:
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
-    interface: tensor
+    interface: tensor, function
 
   - op_yaml: deprecated/add_method.yaml
     py_method: deprecated_tensor_add
