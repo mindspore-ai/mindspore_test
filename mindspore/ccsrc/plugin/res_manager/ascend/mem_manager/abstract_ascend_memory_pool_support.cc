@@ -28,7 +28,6 @@
 #include "utils/convert_utils_base.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
-#include "runtime/pipeline/pipeline.h"
 #include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
@@ -159,8 +158,6 @@ size_t AbstractAscendMemoryPoolSupport::GetVmmUsedMemSize() const {
 const bool AbstractAscendMemoryPoolSupport::IsEnableEagerFree() const {
   return AscendGmemAdapter::GetInstance().is_eager_free_enabled();
 }
-
-void AbstractAscendMemoryPoolSupport::WaitPipeline() { runtime::Pipeline::Get().launch_stage()->Wait(); }
 
 const bool AbstractAscendMemoryPoolSupport::SyncAllStreams() { return AscendStreamMng::GetInstance().SyncAllStreams(); }
 
