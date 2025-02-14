@@ -706,6 +706,15 @@ OptPassGroupMap GetA1A2(const opt::irpass::OptimizeIRPassLib &irpass) {
   return a1_a2;
 }
 
+OptPassGroupMap GetAddAttr(const opt::irpass::OptimizeIRPassLib &irpass) {
+  opt::OptPassGroupMap addattr_pass_group;
+  (void)addattr_pass_group.emplace_back("tag_attr", opt::OptPassConfig(parallel::HandleAddAttr));
+  (void)addattr_pass_group.emplace_back("meta_addattr_fg_expand",
+                                        opt::OptPassConfig(opt::irpass::ExpandMetaAddAttrFg()));
+  (void)addattr_pass_group.emplace_back("addattr_inline", opt::OptPassConfig({irpass.inline_}));
+  return addattr_pass_group;
+}
+
 OptPassGroupMap GetOptPassesAfterCconv(const opt::irpass::OptimizeIRPassLib &irpass) {
   opt::OptPassConfig c_1 = opt::OptPassConfig({
     // Safe inlining,
@@ -925,6 +934,7 @@ void InitOpt(const ResourcePtr &resource) {
     g_pass_opts["jit_opt_b"] = Optimizer::MakeOptimizer("jit_opt_b", resource, GetJitOptPassesB(irpass));
     g_pass_opts["jit_opt_after_cconv"] =
       Optimizer::MakeOptimizer("jit_opt_after_cconv", resource, GetJitOptPassesAfterCconv(irpass), false, true);
+    g_pass_opts["add_attr"] = Optimizer::MakeOptimizer("add_attr", resource, GetAddAttr(irpass));
   }
 }
 }  // namespace
@@ -971,6 +981,7 @@ bool OptPassRNGroup(const ResourcePtr &resource) { return OptPassGroup(resource,
 bool SymEngOptGroup(const ResourcePtr &resource) { return OptPassGroup(resource, "symbol_engine_opt"); }
 
 bool OptPassGradEpilogueGroup(const ResourcePtr &resource) { return OptPassGroup(resource, "opt_grad_epilogue"); }
+bool OptPassAddAttr(const ResourcePtr &resource) { return OptPassGroup(resource, "add_attr"); }
 
 bool AddRecomputationPass(const ResourcePtr &resource) {
   auto context = MsContext::GetInstance();
@@ -1638,5 +1649,6 @@ std::vector<PassItem> kPynativePasses = {{"opt_a", OptPassAGroup},
                                          {"transform_graph", OptPassTransformGraphGroup}};
 
 std::vector<PassItem> kInlinePasses = {{kRewriterBeforeOptA, RewriterBeforeOptAPass}, {"a1a2", OptPassA1A2}};
+std::vector<PassItem> kAddAttrWithInlinePass = {{kAddAttrWithInline, OptPassAddAttr}};
 }  // namespace pipeline
 }  // namespace mindspore

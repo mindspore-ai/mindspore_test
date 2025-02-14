@@ -574,5 +574,134 @@ bool Shard(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
 #endif
   return change;
 }
+
+static std::vector<std::pair<std::string, ValuePtr>> GetPrimAttrFromAddAttrNode(const AnfNodePtr &addattr_node) {
+  const size_t kAddAttrAttrPairIndex = 2;
+  std::vector<std::pair<std::string, ValuePtr>> kv_pair_vec;
+  if (!addattr_node || !addattr_node->isa<CNode>() || !IsPrimitiveCNode(addattr_node, prim::kPrimAddAttr)) {
+    return kv_pair_vec;
+  }
+  CNodePtr addattr_cnode = addattr_node->cast<CNodePtr>();
+  AnfNodePtr attr_pair_node = addattr_cnode->input(kAddAttrAttrPairIndex);
+  MS_EXCEPTION_IF_NULL(attr_pair_node);
+  ValueNodePtr attr_pair_vnode = attr_pair_node->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(attr_pair_vnode->value());
+  if (!attr_pair_vnode->value()->isa<ValueTuple>()) {
+    MS_LOG_WITH_NODE(EXCEPTION, addattr_node) << "Parse attr_pair to ValueTuple failed. Please check attr_pair format.";
+  }
+  std::vector<ValuePtr> attr_pair_vals = attr_pair_vnode->value()->cast<ValueTuplePtr>()->value();
+  MS_LOG(INFO) << "In HandleAddAttr, Parse attr pairs success.";
+  for (const ValuePtr &val : attr_pair_vals) {
+    if (!val->isa<ValueTuple>()) {
+      continue;
+    }
+    auto pair_value_tuple = GetValueSequence(val);
+    if (pair_value_tuple.size() != 2) {
+      MS_LOG(EXCEPTION) << "attr key-value pair length should be 2, but got: " << pair_value_tuple.size();
+    }
+    auto primitive_key_value = pair_value_tuple.at(kIndex0);
+    auto primitive_value_value = pair_value_tuple.at(kIndex1);
+    std::string prim_key = GetValue<std::string>(primitive_key_value);
+    kv_pair_vec.emplace_back(prim_key, primitive_value_value);
+    MS_LOG(INFO) << "Obtain key: " << prim_key << ", value: " << primitive_value_value->ToString();
+  }
+  return kv_pair_vec;
+}
+
+static void GetNestedAddAttrPrims(const AnfNodePtr &addattr_node,
+                                  std::vector<std::pair<std::string, ValuePtr>> *kv_pairs) {
+  if (!addattr_node || !addattr_node->isa<CNode>() || !IsPrimitiveCNode(addattr_node, prim::kPrimAddAttr)) {
+    return;
+  }
+  const size_t kAddAttrFnIndex = 1;
+  CNodePtr addattr_cnode = addattr_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(addattr_cnode);
+  AnfNodePtr fn_node = addattr_cnode->input(kAddAttrFnIndex);
+  MS_EXCEPTION_IF_NULL(fn_node);
+  ValueNodePtr fn_vnode = fn_node->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(fn_vnode);
+  FuncGraphPtr graph_need_inline = GetValueNode<FuncGraphPtr>(fn_vnode);
+  MS_EXCEPTION_IF_NULL(graph_need_inline);
+  MS_LOG(DEBUG) << "Find graph need inline: " << graph_need_inline->ToString();
+  // Collect prim attr from addattr_node into kv_pairs
+  auto kv_vec = GetPrimAttrFromAddAttrNode(addattr_node);
+  std::copy(kv_vec.begin(), kv_vec.end(), std::back_inserter(*kv_pairs));
+  auto addattr_iter = std::find_if(graph_need_inline->nodes().begin(), graph_need_inline->nodes().end(),
+                                   [](const AnfNodePtr &node) { return IsPrimitiveCNode(node, prim::kPrimAddAttr); });
+  if (addattr_iter != graph_need_inline->nodes().end()) {
+    GetNestedAddAttrPrims(*addattr_iter, kv_pairs);
+  }
+  return;
+}
+
+static void GetNodesToTagAttr(const AnfNodePtr &addattr_node, AnfNodePtrList *nodes_to_tag) {
+  if (!addattr_node || !addattr_node->isa<CNode>() || !IsPrimitiveCNode(addattr_node, prim::kPrimAddAttr)) {
+    return;
+  }
+  const size_t kAddAttrFnIndex = 1;
+  CNodePtr addattr_cnode = addattr_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(addattr_cnode);
+  AnfNodePtr fn_node = addattr_cnode->input(kAddAttrFnIndex);
+  MS_EXCEPTION_IF_NULL(fn_node);
+  ValueNodePtr fn_vnode = fn_node->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(fn_vnode);
+  FuncGraphPtr graph_need_inline = GetValueNode<FuncGraphPtr>(fn_vnode);
+  MS_EXCEPTION_IF_NULL(graph_need_inline);
+  auto addattr_iter = std::find_if(graph_need_inline->nodes().begin(), graph_need_inline->nodes().end(),
+                                   [](const AnfNodePtr &node) { return IsPrimitiveCNode(node, prim::kPrimAddAttr); });
+  graph_need_inline->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, false);
+  if (addattr_iter != graph_need_inline->nodes().end()) {
+    GetNodesToTagAttr(*addattr_iter, nodes_to_tag);
+  } else {
+    // collect nodes to tag
+    std::copy_if(graph_need_inline->nodes().begin(), graph_need_inline->nodes().end(),
+                 std::back_inserter(*nodes_to_tag), [](const AnfNodePtr &node) {
+                   return !IsPrimitiveCNode(node, prim::kPrimDepend) &&
+                          !IsPrimitiveCNode(node, prim::kPrimUpdateState) && !IsPrimitiveCNode(node, prim::kPrimReturn);
+                 });
+  }
+  return;
+}
+
+bool HandleAddAttr(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
+  MS_EXCEPTION_IF_NULL(root);
+  MS_LOG(INFO) << "HandleAddAttr pass start.";
+  bool change = false;
+  AnfNodePtr ret = root->get_return();
+  std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
+  for (auto &node : all_nodes) {
+    if (!IsPrimitiveCNode(node, prim::kPrimAddAttr)) {
+      continue;
+    }
+    change = true;
+    std::vector<std::pair<std::string, ValuePtr>> kv_pair_vec;
+    AnfNodePtrList nodes_to_tag;
+    (void)GetNestedAddAttrPrims(node, &kv_pair_vec);
+    (void)GetNodesToTagAttr(node, &nodes_to_tag);
+    for (AnfNodePtr &node_to_tag : nodes_to_tag) {
+      if (!node_to_tag->isa<CNode>()) {
+        continue;
+      }
+      CNodePtr cnode_to_tag = node_to_tag->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode_to_tag);
+      PrimitivePtr prim = GetCNodePrimitive(cnode_to_tag);
+      if (!prim) {
+        continue;
+      }
+      prim = prim->Clone();
+      MS_EXCEPTION_IF_NULL(prim);
+      for (const auto &p : kv_pair_vec) {
+        prim->AddAttr(p.first, p.second);
+      }
+      FuncGraphPtr fg = node->func_graph();
+      MS_EXCEPTION_IF_NULL(fg);
+      FuncGraphManagerPtr fg_mng = fg->manager();
+      MS_EXCEPTION_IF_NULL(fg_mng);
+      (void)fg_mng->SetEdge(cnode_to_tag, kIndex0, NewValueNode(prim));
+    }
+  }
+  return change;
+}
+
 }  // namespace parallel
 }  // namespace mindspore

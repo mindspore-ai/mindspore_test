@@ -774,6 +774,10 @@ from .reshard_func import (
     reshard,
 )
 
+from ._add_attr_func import (
+    _add_attr,
+)
+
 from ..operations.manually_defined import (rank, scalar_cast)
 
 __all__ = []
@@ -794,4 +798,5 @@ __all__.extend(clip_func.__all__)
 __all__.extend(fft_func.__all__)
 __all__.extend(other_func.__all__)
 __all__.extend(reshard_func.__all__)
+__all__.extend(_add_attr_func.__all__)
 __all__.sort()

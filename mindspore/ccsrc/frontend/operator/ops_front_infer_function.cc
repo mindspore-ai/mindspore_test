@@ -902,6 +902,23 @@ AbstractBasePtr InferImplShard(const AnalysisEnginePtr &, const PrimitivePtr &pr
   return AbstractFunction::MakeAbstractFunction(shard_v);
 }
 
+AbstractBasePtr InferImplAddAttr(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                 const AbstractBasePtrList &args_abs_list) {
+  // Inputs: func, attr_dict
+  const size_t addattr_input_size = 2;
+  CheckArgsSize(primitive->name(), args_abs_list, addattr_input_size);
+  MS_LOG(DEBUG) << "Evaluate AddAttr: " << args_abs_list[0]->ToString();
+  AbstractFunctionPtr x = dyn_cast<AbstractFunction>(args_abs_list[0]);
+  MS_EXCEPTION_IF_NULL(x);
+  AbstractFuncAtomPtrList add_attr_v;
+  auto build_add_attr_v = [&add_attr_v](const AbstractFuncAtomPtr &func) {
+    auto add_attr_closure = std::make_shared<AddAttrTransformedAbstractClosure>(func);
+    add_attr_v.push_back(add_attr_closure);
+  };
+  x->Visit(build_add_attr_v);
+  return AbstractFunction::MakeAbstractFunction(add_attr_v);
+}
+
 AbstractBasePtr InferImplVmap(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
                               const AbstractBasePtrList &args_abs_list) {
   // args: An object of AbstractFunction.
@@ -1164,6 +1181,7 @@ REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(BroadcastGradientArgs, prim::kPrimBroadcastGr
 REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(Reusing, prim::kPrimReusing, InferImplReusing, nullptr);
 REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(Taylor, prim::kPrimTaylor, InferImplTaylor, nullptr);
 REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(Shard, prim::kPrimShard, InferImplShard, nullptr);
+REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(AddAttr, prim::kPrimAddAttr, InferImplAddAttr, nullptr);
 REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(Vmap, prim::kPrimVmap, InferImplVmap, nullptr);
 REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(StringUpper, prim::kPrimStringUpper, InferImplStringUpper, nullptr);
 REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(StringLower, prim::kPrimStringLower, InferImplStringLower, nullptr);
