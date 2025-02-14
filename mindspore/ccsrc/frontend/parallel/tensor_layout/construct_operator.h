@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,6 +69,7 @@ class ConstructOperator {
   int64_t virtual_rank_ = -1;
   bool check_group() { return virtual_rank_ < 0; }
   Status CreateGroupByDim(size_t axis, std::vector<Group> *group);
+  Status InferDevListByDim(size_t axis, std::vector<Device> *dev_list);
 };
 }  // namespace parallel
 }  // namespace mindspore

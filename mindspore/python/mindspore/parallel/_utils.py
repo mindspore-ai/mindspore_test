@@ -26,6 +26,7 @@ from mindspore.common import dtype as mstype
 from mindspore.communication.management import get_group_size, get_rank
 from mindspore.communication._comm_helper import _is_initialized
 from mindspore.parallel._auto_parallel_context import auto_parallel_context
+from mindspore.parallel.shard import Layout
 from mindspore.common.seed import get_seed
 from mindspore._c_expression import GraphExecutor_, TensorPy as Tensor_
 from mindspore.parallel._tensor import _load_tensor_by_layout, _load_tensor_shape_by_layout
@@ -168,6 +169,33 @@ def _init_optimizer_state(parameter, phase):
     graph_executor.updata_param_node_default_input(phase, {parameter.name: parameter})
 
 
+def _to_full_shape_layout(shapes, dataset_strategy):
+    """to full shape for layout"""
+    new_shapes = []
+    for index, shape in enumerate(shapes):
+        layout = dataset_strategy[index]
+        layout_dict = layout.to_dict()
+        devmat = layout_dict["device_matrix"]
+        tensormap = layout_dict["tensor_map"]
+        new_shape = []
+        for i, item in enumerate(shape):
+            correspond_tensor_map = tensormap[i]
+            shard_size = 1
+            if isinstance(correspond_tensor_map, tuple):
+                for value in correspond_tensor_map:
+                    if value != -1:
+                        shard_size *= devmat[len(devmat) - value - 1]
+            else:
+                if correspond_tensor_map != -1:
+                    shard_size *= devmat[len(devmat) - correspond_tensor_map - 1]
+            if item > 0:
+                new_shape += (item * shard_size,)  # static shape
+            else:
+                new_shape += (item,)  # dynamic shape
+        new_shapes.append(new_shape)
+    return new_shapes
+
+
 def _to_full_shapes(shapes, device_num):
     """Expanding batch dimension according to device_num, adapt to mindspore minddata graph solution."""
     new_shapes = []
@@ -178,6 +206,8 @@ def _to_full_shapes(shapes, device_num):
         if len(shapes) != len(dataset_strategy):
             raise ValueError("The input shapes size {} is not equal to "
                              "dataset strategy size {}".format(len(shapes), len(dataset_strategy)))
+        if isinstance(dataset_strategy[0], Layout):
+            return _to_full_shape_layout(shapes, dataset_strategy)
         for index, shape in enumerate(shapes):
             if len(shape) != len(dataset_strategy[index]):
                 raise ValueError("The input shapes item size {} is not equal to "

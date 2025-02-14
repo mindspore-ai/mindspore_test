@@ -99,18 +99,72 @@ RankList DatasetReaderOptimizer::InferReapteDataRankThroughDataStrategy(const St
   return rank_list;
 }
 
-RankList DatasetReaderOptimizer::InferRepeatRankListWithinStage() {
-  RankList rank_list = {};
+std::vector<RankList> DatasetReaderOptimizer::InferRepeatDataRankThroughLayout() {
+  // ((2, 2, 2),)
+  auto all_dev_mat = ParallelContext::GetInstance()->dataset_strategy_devmat();
+  // (((2), (1), (0)),)
+  auto all_tensor_map = ParallelContext::GetInstance()->dataset_strategy_tensormap();
+  std::vector<RankList> all_rank_list;
+  std::vector<int64_t> last_repeated_dim;
+  for (size_t idx = 0; idx < all_dev_mat.size(); ++idx) {
+    RankList rank_list = {};
+    if (virtual_dataset_ == nullptr) {
+      all_rank_list.push_back(rank_list);
+      continue;
+    }
+    auto tensor_map = all_tensor_map.at(idx);
+    auto dev_mat = all_dev_mat.at(idx);
+    std::vector<int64_t> used_dev_idx = {};
+    std::vector<int64_t> repeated_dim = {};
+    for (size_t i = 0; i < tensor_map.size(); ++i) {
+      for (size_t j = 0; j < tensor_map.at(i).size(); ++j) {
+        auto tensor_map_value = tensor_map.at(i).at(j);
+        if (tensor_map_value != -1) {
+          auto real_idx = dev_mat.size() - LongToSize(tensor_map_value) - 1;
+          used_dev_idx.push_back(SizeToLong(real_idx));
+        }
+      }
+    }
+    for (size_t i = 0; i < dev_mat.size(); ++i) {
+      if (std::find(used_dev_idx.begin(), used_dev_idx.end(), i) == used_dev_idx.end()) {
+        repeated_dim.push_back(SizeToLong(i));
+      }
+    }
+    if (!repeated_dim.empty()) {
+      DeviceMatrix device_matrix =
+        DeviceMatrix(g_device_manager->global_rank(), g_device_manager->GetDeviceListInThisStage(), dev_mat);
+      device_matrix.GetDevicesAlongMultiDim(repeated_dim, &rank_list);
+    }
+    if (!all_rank_list.empty()) {
+      if (!std::equal(repeated_dim.begin(), repeated_dim.end(), last_repeated_dim.begin())) {
+        MS_LOG(EXCEPTION) << "The repeated dim for each layout must be equal, but got current repeated_dim "
+                          << repeated_dim << ", last repeated_dim " << last_repeated_dim;
+      }
+    }
+    last_repeated_dim = repeated_dim;
+    all_rank_list.push_back(rank_list);
+  }
+  return all_rank_list;
+}
+
+std::vector<RankList> DatasetReaderOptimizer::InferRepeatRankListWithinStage() {
+  std::vector<RankList> rank_list = {{}};
   if (opt_level_ != WITHIN_STAGE && opt_level_ != OPT_ALL) {
     return rank_list;
   }
+
+  if (!ParallelContext::GetInstance()->dataset_strategy_tensormap().empty() &&
+      !ParallelContext::GetInstance()->dataset_strategy_devmat().empty()) {
+    return InferRepeatDataRankThroughLayout();
+  }
+
   auto data_stra = ParallelContext::GetInstance()->dataset_strategy();
   if (!data_stra.empty()) {
-    return InferReapteDataRankThroughDataStrategy(data_stra);
+    return {InferReapteDataRankThroughDataStrategy(data_stra)};
   }
   bool full_batch = ParallelContext::GetInstance()->full_batch();
   if (full_batch) {
-    return g_device_manager->GetDeviceListInThisStage();
+    return {g_device_manager->GetDeviceListInThisStage()};
   }
   return rank_list;
 }
@@ -203,6 +257,10 @@ RankList DatasetReaderOptimizer::InferRepeatRankList(const RankList &within_stag
 bool DatasetReaderOptimizer::CreateZeroNode(const Shapes &shapes, const std::vector<TypePtr> &types,
                                             std::vector<AnfNodePtr> *const input_vec) {
   auto data_stra = ParallelContext::GetInstance()->dataset_strategy();
+  // ((2, 2, 2),)
+  auto all_dev_mat = ParallelContext::GetInstance()->dataset_strategy_devmat();
+  // (((2), (1), (0)),)
+  auto all_tensor_map = ParallelContext::GetInstance()->dataset_strategy_tensormap();
   if (shapes.size() != types.size()) {
     return false;
   }
@@ -221,6 +279,30 @@ bool DatasetReaderOptimizer::CreateZeroNode(const Shapes &shapes, const std::vec
       }
       for (size_t j = 0; j < cur_input_stra.size(); ++j) {
         slice_shape.emplace_back(cur_input_shape.at(j) / cur_input_stra.at(j));
+      }
+    } else if (!all_dev_mat.empty() && !all_tensor_map.empty()) {
+      if (all_tensor_map.size() != shapes.size()) {
+        MS_LOG(ERROR) << "layout size is not equal to input size, layout size " << all_tensor_map.size()
+                      << ", input size " << shapes.size();
+        return false;
+      }
+      auto cur_tensor_map = all_tensor_map.at(i);
+      auto cur_dev_mat = all_dev_mat.at(i);
+      if (cur_tensor_map.size() != cur_input_shape.size()) {
+        MS_LOG(ERROR) << "for " << i << " input, shape size is " << cur_input_shape.size() << ", tensor map size is "
+                      << cur_tensor_map.size();
+        return false;
+      }
+      for (size_t j = 0; j < cur_tensor_map.size(); ++j) {
+        size_t shard_size = 1;
+        for (size_t k = 0; k < cur_tensor_map.at(j).size(); ++k) {
+          auto val = cur_tensor_map.at(j).at(k);
+          if (val != -1) {
+            auto real_idx = cur_dev_mat.size() - val - 1;
+            shard_size *= cur_dev_mat.at(real_idx);
+          }
+        }
+        slice_shape.emplace_back(cur_input_shape.at(j) / SizeToLong(shard_size));
       }
     } else {
       slice_shape = cur_input_shape;
@@ -308,10 +390,11 @@ void DatasetReaderOptimizer::BroadcastDataset() {
   if (virtual_dataset_ == nullptr) {
     return;
   }
-  auto reapte_rank_within_stage = InferRepeatRankListWithinStage();
+  auto reapte_rank_within_stage = InferRepeatRankListWithinStage().at(0);
   const auto &node_users_map = manager_->node_users();
   auto dataset_users = node_users_map.at(virtual_dataset_);
   std::set<int64_t> data_used_stage;
+  std::vector<int64_t> tuple_get_item_idx = {};
   for (const auto &node_pair : dataset_users) {
     auto cnode = node_pair.first->cast<CNodePtr>();
     if (!IsPrimitiveCNode(cnode, prim::kPrimTupleGetItem)) {
@@ -320,6 +403,7 @@ void DatasetReaderOptimizer::BroadcastDataset() {
     auto cur_input_parameter = FindDatasetParameter(cnode, node_users_map);
     if (cur_input_parameter != nullptr) {
       FindAllStageIdUsedDataParameter(cur_input_parameter, node_users_map, &data_used_stage);
+      tuple_get_item_idx.push_back(GetTupleGetItemIndex(cnode));
     }
   }
   RankList reapte_rank_between_stage;

@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ from mindspore import context
 import mindspore.log as logger
 from mindspore.parallel._dp_allreduce_fusion import _set_fusion_strategy_by_idx, _set_fusion_strategy_by_size
 from mindspore.parallel._ps_context import _is_role_pserver
+from mindspore.parallel.shard import Layout
 from mindspore._c_expression import AutoParallelContext
 from mindspore._checkparam import args_type_check
 from mindspore import _checkparam as Validator
@@ -102,6 +103,7 @@ class _AutoParallelContext:
     def __init__(self):
         self._context_handle = AutoParallelContext.get_instance()
         self._dataset_strategy_using_str = True
+        self._dataset_layout = None
 
     def check_context_handle(self):
         """
@@ -587,6 +589,9 @@ class _AutoParallelContext:
         if not isinstance(dataset_strategy, tuple):
             raise TypeError("For 'set_auto_parallel_context', the argument 'dataset_strategy' "
                             "must be str or tuple type, but got the type : {}.".format(type(dataset_strategy)))
+        if dataset_strategy and isinstance(dataset_strategy[0], Layout):
+            self._set_dataset_strategy_layout(dataset_strategy)
+            return
         for ele in dataset_strategy:
             if not isinstance(ele, tuple):
                 raise TypeError("For 'set_auto_parallel_context', the element of argument "
@@ -601,8 +606,36 @@ class _AutoParallelContext:
         self._dataset_strategy_using_str = False
         self._context_handle.set_dataset_strategy(dataset_strategy)
 
+    def _set_dataset_strategy_layout(self, dataset_strategy):
+        """set dataset layout to c++ by using pybind."""
+        dataset_devmat = []
+        dataset_tensormap = []
+        dataset_alias_name = []
+        self._dataset_layout = dataset_strategy
+        for ele in dataset_strategy:
+            if not isinstance(ele, Layout):
+                raise TypeError(f"All the dataset_strategy elements should be Layout, but got {type(ele)}")
+            layout_to_dict = ele.to_dict()
+            dataset_devmat.append(layout_to_dict["device_matrix"])
+            dataset_alias_name.append(layout_to_dict["alias_name"])
+            if layout_to_dict["interleaved_parallel"]:
+                raise ValueError("For dataset_strategy, layout does not support interleaved_parallel")
+            tensor_map = []
+            for value in layout_to_dict["tensor_map"]:
+                if isinstance(value, tuple):
+                    tensor_map.append(value)
+                elif isinstance(value, int):
+                    tensor_map.append((value,))
+                else:
+                    raise TypeError(f"value in tensor map must be tuple or int, but got {type(value)}")
+            dataset_tensormap.append(tuple(tensor_map))
+        self._context_handle.set_dataset_layout(dataset_devmat, dataset_tensormap, dataset_alias_name)
+
+
     def get_dataset_strategy(self):
         """Get dataset sharding strategy."""
+        if self._dataset_layout is not None:
+            return self._dataset_layout
         self.check_context_handle()
         if self._dataset_strategy_using_str:
             if self._context_handle.get_full_batch():
@@ -1140,6 +1173,7 @@ class _AutoParallelContext:
         self.check_context_handle()
         self._context_handle.reset()
         _ParallelFusionConfig.reset()
+        self._dataset_layout = None
 
     def _check_and_default_group(self, group):
         """Validate the given group, if group is empty, returns a default fusion group"""
