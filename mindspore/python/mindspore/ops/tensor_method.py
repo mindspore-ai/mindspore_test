@@ -34,6 +34,7 @@ from mindspore import Tensor
 from mindspore.common import dtype as mstype
 # 4 common import
 from mindspore.common import COOTensor
+
 # 5 common import
 
 # 6 common import
@@ -411,6 +412,9 @@ from mindspore.ops.auto_generate import log1p
 from mindspore.ops.function.math_func import addbmm
 # 502
 from mindspore.ops.function.math_func import addmm
+# 846
+from mindspore.ops.function.math_func import count_nonzero
+
 # 880
 from mindspore.ops.auto_generate import lerp, lerp_scalar
 
@@ -1514,6 +1518,19 @@ def deprecated_tensor_addmv(input, mat, vec, *, beta=1, alpha=1):
     For details, please refer to :func:`mindspore.ops.addmv`.
     """
     return addmv(input, mat, vec, beta=beta, alpha=alpha)
+
+
+# 846
+def deprecated_tensor_count_nonzero(input,
+                                    axis=(),
+                                    keep_dims=False,
+                                    dtype=None):
+    if dtype is None:
+        return count_nonzero(input,
+                             axis=axis,
+                             keep_dims=keep_dims,
+                             dtype=mstype.int32)
+    return count_nonzero(input, axis=axis, keep_dims=keep_dims, dtype=dtype)
 
 
 def tensor_clone(input):
