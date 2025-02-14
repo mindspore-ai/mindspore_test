@@ -61,6 +61,7 @@ mindspore/mindspore/python/mindspore/ops/function/nn_func.py:pad
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv1d
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv3d
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv3d_ext
+mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv1d_ext
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv2d
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:cross_entropy_ext
 mindspore/mindspore/python/mindspore/ops/function/math_func.py:cov

@@ -41,19 +41,19 @@ mindspore.mint.nn.Conv3d
     参数：
         - **in_channels** (int) - Conv3d层输入Tensor的空间维度。
         - **out_channels** (int) - Conv3d层输出Tensor的空间维度。
-        - **kernel_size** (Union[int, tuple[int]]) - 指定三维卷积核的高度和宽度。数据类型是整数或两个整数的元组。整数表示卷积核的高度和宽度。两个整数的元组分别表示卷积核的高度和宽度。
-        - **stride** (Union[int, tuple[int]]，可选) - 三维卷积核的移动步长。数据类型为整型或三个整型的tuple。一个整数表示在深度、高度和宽度方向的移动步长均为该值。三个整数的tuple分别表示在深度、高度和宽度方向的移动步长。默认值： ``1`` 。
-        - **padding** (Union[int, tuple[int], str]，可选) - 输入的深度、高度和宽度方向上的填充数。数据类型是整数或字符串{ `valid` ， `same` }或三个整数的元组。该值应大于或等于0。默认值： ``0`` 。
+        - **kernel_size** (Union[int, tuple[int], list[int]]) - 指定三维卷积核的高度和宽度。数据类型是整数或两个整数的元组。整数表示卷积核的高度和宽度。两个整数的元组分别表示卷积核的高度和宽度。
+        - **stride** (Union[int, tuple[int], list[int]]，可选) - 三维卷积核的移动步长。数据类型为整型或三个整型的tuple。一个整数表示在深度、高度和宽度方向的移动步长均为该值。三个整数的tuple分别表示在深度、高度和宽度方向的移动步长。默认值： ``1`` 。
+        - **padding** (Union[int, tuple[int], list[int], str]，可选) - 输入的深度、高度和宽度方向上的填充数。数据类型是整数或字符串{ ``"valid"`` ，  ``"same"`` }或三个整数的元组。该值应大于或等于0。默认值： ``0`` 。
 
           - ``"same"``：在输入的边缘加上衬垫，这样当 `stride` 设置为“1”时，输入和输出的形状是相同的。填充量由运算符内部计算。如果填充量是偶数，则均匀分布在输入周围，如果填充量为奇数，则多余的填充量会流向右侧/底部。
             如果设置了此模式，则 `padding` 必须为0。
           - ``"valid"``：输入没有填充，输出返回最大可能的高度和宽度。无法完成整个步幅的额外像素将被丢弃。如果设置了此模式，则 `padding` 必须为0。
 
         - **padding_mode** (str，可选) - 使用填充值0指定填充模式。它可以设置为： ``"zeros"`` 、 ``"reflect"`` 、 ``"circular"`` 或 ``"replicate"`` 。默认值： ``"zeros"`` 。
-        - **dilation** (Union[int, tuple[int]]，可选) - 控制内核点之间的空间。默认值： ``1`` 。
+        - **dilation** (Union[int, tuple[int], list[int]]，可选) - 控制内核点之间的空间。默认值： ``1`` 。
         - **groups** (int，可选) - 拆分过滤成组， `in_channel` 和 `out_channels` 必须能被 `groups` 整除。如果组等于 `in_channels` 和 `out_channels` 。默认值： `1` 。
         - **bias** (bool，可选) - Conv3d层是否具有偏置参数。默认值： `True` 。
-        - **dtype** (:class:`mindspore.dtype`，可选) - Parameters的dtype。默认值： ``mstype.float32`` 。
+        - **dtype** (:class:`mindspore.dtype`，可选) - Parameters的dtype。默认值： ``None``， 使用 ``mstype.float32`` 。
 
     输入：
         - **x** (Tensor) - shape为 :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})` 或 :math:`(C_{in}, D_{in}, H_{in}, W_{in})` 的Tensor。

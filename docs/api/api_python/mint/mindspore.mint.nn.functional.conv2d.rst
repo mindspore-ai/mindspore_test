@@ -34,16 +34,16 @@ mindspore.mint.nn.functional.conv2d
         这是一个实验性API，后续可能修改或删除。
     
     参数：
-        - **input** (Tensor) - shape为 :math:`(N, C_{in}, H_{in}, W_{in})` 或 :math:`(N, C_{in}, H_{in}, W_{in})` 的Tensor。
+        - **input** (Tensor) - shape为 :math:`(N, C_{in}, H_{in}, W_{in})` 或 :math:`(C_{in}, H_{in}, W_{in})` 的Tensor。
         - **weight** (Tensor) - shape为 :math:`(C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]}, \text{kernel_size[1]})` ，则卷积核的大小为 :math:`(\text{kernel_size[0]}, \text{kernel_size[1]})` 。
         - **bias** (Tensor，可选) - 偏置Tensor，shape为 :math:`(C_{out})` 的Tensor。如果 `bias` 是 ``None`` ，将不会添加偏置。默认值： ``None`` 。
-        - **stride** (Union(int, tuple[int])，可选) - 卷积核移动的步长，数据类型为int，或者由2个int组成的tuple。一个int表示在高度和宽度方向的移动步长均为该值。两个int组成的tuple分别表示在高度和宽度方向的移动步长。默认值： ``1`` 。
-        - **padding** (Union[int, tuple[int], str]，可选) - 输入的高度和宽度方向上填充的数量。数据类型为int或包含2个整数的tuple或string { ``"valid"`` ，  ``"same"`` } 。如果 `padding` 是一个整数，那么 `padding_{H}` 和 `padding_{W}` 都等于 `padding` 。如果 `padding` 是一个有2个整数的tuple，那么 `padding_{H}` 和 `padding_{W}` 分别等于 `padding[0]` 和 `padding[1]` 。值应该要大于等于0。默认值： ``0`` 。
+        - **stride** (Union(int, tuple[int], list[int])，可选) - 卷积核移动的步长，数据类型为int，或者由2个int组成的tuple。一个int表示在高度和宽度方向的移动步长均为该值。两个int组成的tuple分别表示在高度和宽度方向的移动步长。默认值： ``1`` 。
+        - **padding** (Union[int, tuple[int], list[int], str]，可选) - 输入的高度和宽度方向上填充的数量。数据类型为int或包含2个整数的tuple或string { ``"valid"`` ，  ``"same"`` } 。如果 `padding` 是一个整数，那么 `padding_{H}` 和 `padding_{W}` 都等于 `padding` 。如果 `padding` 是一个有2个整数的tuple，那么 `padding_{H}` 和 `padding_{W}` 分别等于 `padding[0]` 和 `padding[1]` 。值应该要大于等于0。默认值： ``0`` 。
         
           - ``"same"``：在输入的四周填充，使得当 `stride` 为 ``1`` 时，输入和输出的shape一致。待填充的量由算子内部计算，若为偶数，则均匀地填充在四周，若为奇数，多余的填充量将补充在底部/右侧。若设置该模式，`stride` 的值必须为1。
           - ``"valid"``：不对输入进行填充，返回输出可能的最大高度和宽度，不能构成一个完整stride的额外的像素将被丢弃。
 
-        - **dilation** (Union(int, tuple[int])，可选) - 卷积核元素间的间隔。数据类型为int或由2个int组成的tuple。若 :math:`k > 1` ，则卷积核间隔 `k` 个元素进行采样。垂直和水平方向上的 `k` ，其取值范围分别为[1, H]和[1, W]。默认值： ``1`` 。
+        - **dilation** (Union(int, tuple[int], list[int])，可选) - 卷积核元素间的间隔。数据类型为int或由2个int组成的tuple。若 :math:`k > 1` ，则卷积核间隔 `k` 个元素进行采样。垂直和水平方向上的 `k` ，其取值范围分别为[1, H]和[1, W]。默认值： ``1`` 。
         - **groups** (int，可选) - 将过滤器拆分为组。默认值： ``1`` 。
 
           - :math:`(C_{in} \text{ % } \text{groups} == 0)` ， :math:`(C_{out} \text{ % } \text{groups} == 0)` ， :math:`(C_{out} >= \text{groups})` ， :math:`(\text{kernel_size[1]} = C_{in} / \text{groups})` 。
@@ -62,5 +62,5 @@ mindspore.mint.nn.functional.conv2d
         - **ValueError** - 如果 `stride` 或 `diation` 小于1。
         - **ValueError** - 如果 `padding` 是 ``"same"`` ， `stride` 不等于1。
         - **ValueError** - 输入参数不满足卷积输出公式。
-        - **ValueError** - `KernelSize` 不能超过输入特征图的大小。
+        - **ValueError** - `kernel_size` 不能超过输入特征图的大小。
         - **ValueError** - `padding` 值不能导致计算区域超出输入大小。

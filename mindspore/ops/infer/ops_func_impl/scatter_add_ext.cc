@@ -72,15 +72,6 @@ BaseShapePtr ScatterAddExtFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr ScatterAddExtFuncImpl::InferType(const PrimitivePtr &primitive,
                                          const std::vector<AbstractBasePtr> &input_args) const {
-  auto input_type = input_args[kIndex0]->GetType();
-  auto src_type = input_args[kIndex3]->GetType();
-  std::map<std::string, TypePtr> types;
-  (void)types.emplace("input", input_type);
-  (void)types.emplace("src", src_type);
-  (void)CheckAndConvertUtils::CheckTypeSame(types, primitive->name());
-  const std::set<TypePtr> valid_types = {kInt8,    kInt16,   kInt32,   kInt64, kUInt8,
-                                         kFloat16, kFloat32, kFloat64, kBool,  kBFloat16};
-  (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, valid_types, primitive->name());
   return input_args[kIndex0]->GetType()->Clone();
 }
 }  // namespace ops
