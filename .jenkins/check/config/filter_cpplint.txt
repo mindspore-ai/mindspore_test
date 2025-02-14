@@ -58,6 +58,7 @@
 "mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/data_prepare_actor.cc"                    "runtime/references"
 "mindspore/mindspore/ccsrc/frontend/parallel/ops_info/fft_info.h"                                   "readability/namespace"
 "mindspore/mindspore/ccsrc/frontend/parallel/ops_info/fft_info.h"                                   "whitespace/indent"
+"mindspore/mindspore/ccsrc/frontend/operator/meta_dsl/common/utils.h"                               "whitespace/empty_loop_body"
 "mindspore/mindspore/ccsrc/plugin/device/ascend/llm_boost/atb/boost_model_atb.h"           "runtime/references"
 "mindspore/mindspore/ccsrc/pipeline/jit/pi/python_adapter/pycore.c"                                 "readability/casting"
 "mindspore/mindspore/ops/kernel/ascend/pyboost/customize/batch_norm_gather_stats_with_counts.h"    "whitespace/line_length"

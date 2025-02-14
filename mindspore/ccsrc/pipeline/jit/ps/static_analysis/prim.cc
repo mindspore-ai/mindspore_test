@@ -34,6 +34,7 @@
 #include "frontend/operator/composite/do_signature.h"
 #include "frontend/operator/ops.h"
 #include "frontend/operator/ops_front_infer_function.h"
+#include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 #include "frontend/operator/composite/unpack_call.h"
 #include "frontend/operator/composite/functional_overload.h"
 #include "include/common/fallback.h"
@@ -3032,6 +3033,35 @@ AnfNodePtr ConvertWeakNode(const AnfNodeWeakPtr &weak_node) {
   return node;
 }
 }  // namespace
+
+EvalResultPtr PrimitiveToMetaEvaluator::EvalPrim(const AnalysisEnginePtr &engine,
+                                                 const AbstractBasePtrList &args_abs_list, const ConfigPtr &,
+                                                 const AnfNodeConfigPtr &out_conf) {
+  // Convert Primitive to MetaImpl.
+  MS_EXCEPTION_IF_NULL(out_conf);
+  MS_EXCEPTION_IF_NULL(out_conf->node());
+  auto cnode = out_conf->node()->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  ScopeGuard scope_guard(cnode->scope());
+  TraceGuard trace_guard(MakeTraceInfo<TraceResolve>(cnode->debug_info()));
+  const auto &fg = cnode->func_graph();
+  MS_EXCEPTION_IF_NULL(fg);
+
+  const auto &op_name = prim_->name();
+  const auto &meta_op = prim::CreateMetaImpl(op_name);
+  meta_op->set_prim(prim_);
+  MS_EXCEPTION_IF_NULL(meta_op);
+  AnfNodePtrList op_inputs{NewValueNode(meta_op)};
+  constexpr size_t index_data = 1;
+  (void)std::transform(cnode->weak_inputs().begin() + index_data, cnode->weak_inputs().end(),
+                       std::back_inserter(op_inputs), ConvertWeakNode);
+  AnfNodePtr new_cnode = fg->NewCNodeInOrder(op_inputs);
+  new_cnode->set_debug_info(cnode->debug_info());
+  auto new_conf = engine->MakeConfig(new_cnode, out_conf->context(), out_conf->func_graph());
+  MS_LOG(DEBUG) << "Convert Primitive [" << op_name << "] to MetaImpl. Old node: " << cnode->DebugString()
+                << "], new node: " << new_cnode->DebugString();
+  return engine->ForwardConfig(out_conf, new_conf);
+}
 
 EvalResultPtr DoTransPrimitiveFunctionEvaluator::EvalPrim(const AnalysisEnginePtr &engine,
                                                           const AbstractBasePtrList &args_abs_list, const ConfigPtr &,
