@@ -7,6 +7,4 @@ mindspore.hal.empty_cache
 
     .. note::
         - 接口即将废弃，请使用接口 :func:`mindspore.runtime.empty_cache` 代替。
-
-    .. note::
-        - 目前MindSpore内存池没有清空内存碎片的功能，该接口预留但实现为空方法并以日志方式提示。
+        - 目前MindSpore内存池没有清空内存碎片的功能，此为预留接口，实现为空方法。使用时，会通过日志方式提示。

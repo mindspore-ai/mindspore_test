@@ -9,7 +9,7 @@ mindspore.ops.sinh
         output_i = \sinh(input_i)
 
     参数：
-        - **input** (Tensor) - sinh的输入Tensor。支持数据类型：
+        - **input** (Tensor) - sinh的输入Tensor。支持数据类型如下：
 
           - GPU/CPU： float16、float32、float64、complex64或complex128。
           - Ascend： bool、int8、uint8、int16、int32、int64、float16、float32、float64、complex64、complex128或bfloat16。
@@ -23,5 +23,5 @@ mindspore.ops.sinh
         - **TypeError** - 如果 `input` 不是Tensor。
         - **TypeError** - 
 
-          - CPU/GPU: 如果 `input` 的数据类型不是float16、float32、float64、complex64或complex128。
-          - Ascend: 如果 `input` 的数据类型不是bool、int8、uint8、int16、int32、int64、float16、float32、float64、complex64、complex128或bfloat16。
+          - CPU/GPU：如果 `input` 的数据类型不是float16、float32、float64、complex64或complex128。
+          - Ascend：如果 `input` 的数据类型不是bool、int8、uint8、int16、int32、int64、float16、float32、float64、complex64、complex128或bfloat16。

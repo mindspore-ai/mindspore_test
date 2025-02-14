@@ -5,7 +5,7 @@ mindspore.ops.l1_loss
 
     用于计算预测值和目标值之间的平均绝对误差。
 
-    假设 :math:`x` 和 :math:`y` 为预测值和目标值，均为一维Tensor，长度 :math:`N` ， `reduction` 设置为 ``'none'`` ，则计算 :math:`x` 和 :math:`y` 的loss不进行降维操作。
+    假设 :math:`x` 和 :math:`y` 为预测值和目标值，均为一维Tensor，长度为 :math:`N` ， `reduction` 设置为 ``'none'`` ，则计算 :math:`x` 和 :math:`y` 的loss不进行降维操作。
 
     公式如下：
 
@@ -14,7 +14,7 @@ mindspore.ops.l1_loss
 
     其中， :math:`N` 为batch size。
 
-    如果 `reduction` 是 ``'mean'`` 或者 ``'sum'`` ，则：
+    如果 `reduction` 设置为 ``'mean'`` 或者 ``'sum'`` ，则：
 
     .. math::
         \ell(x, y) =
