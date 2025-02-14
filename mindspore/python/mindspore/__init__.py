@@ -47,6 +47,7 @@ from mindspore import mint
 from mindspore.ops._utils import arg_handler, arg_dtype_cast
 from mindspore import onnx
 from mindspore import graph
+from mindspore import multiprocessing
 
 __all__ = ["run_check"]
 __all__.extend(__version__)

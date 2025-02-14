@@ -635,7 +635,7 @@ def test_python_sampler_randomness():
     for _ in range(2):
         result = []
         dataset_iter = dataset.create_dict_iterator(num_epochs=num_epochs, output_numpy=True)
-        for epoch in range(num_epochs):
+        for _ in range(num_epochs):
             for data in dataset_iter:
                 result.append(data["data"])
         total_result.append(result)

@@ -389,6 +389,14 @@ Others
 .. autoclass:: {{ name }}
     :members: sync_epoch_begin, sync_step_begin
 
+{% elif fullname=="mindspore.dataset.dataloader.DistributedSampler" %}
+
+{{ fullname | underline }}
+
+.. autoclass:: {{ name }}
+    :exclude-members: set_epoch
+    :members:
+
 {% elif "mindspore.dataset.vision" in fullname and objname[0].istitle() %}
 
 {{ fullname | underline }}
