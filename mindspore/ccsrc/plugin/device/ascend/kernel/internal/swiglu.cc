@@ -21,13 +21,25 @@
 
 namespace mindspore {
 namespace kernel {
+constexpr auto swiglu_fusion_str = "swiglu_v2";
 internal::InternalOpPtr InternalSwiGLU::CreateKernel(const internal::InputsImmutableInfoList &inputs_ii,
                                                      const internal::OutputsImmutableInfoList &outputs_ii,
                                                      const std::vector<KernelTensor *> &ms_inputs,
                                                      const std::vector<KernelTensor *> &ms_outputs) {
   internal::SwiGLUParam param;
   param.axis = -1;
-  return internal::CreateSwiGLUOp(inputs_ii, outputs_ii, param, internal::kInternalSwiGLUOpName);
+  param.is_fusion_v2 = false;
+  param.with_dyn_quant = false;
+  auto value_str = primitive_->GetAttr("FusionType");
+  MS_EXCEPTION_IF_NULL(value_str);
+  std::string fusion_type = GetValue<std::string>(value_str);
+  if (fusion_type == swiglu_fusion_str) {
+    param.is_fusion_v2 = true;  // swiglu小排和SwiGLUDynamicQuant融合算子共用一个kernel
+    return internal::CreateSwiGLUDynamicQuantOp(inputs_ii, outputs_ii, param,
+                                                internal::kInternalSwiGLUDynamicQuantOpName);
+  } else {
+    return internal::CreateSwiGLUOp(inputs_ii, outputs_ii, param, internal::kInternalSwiGLUOpName);
+  }
 }
 
 MS_INTERNAL_KERNEL_FACTORY_REG(Swiglu, internal::kInternalSwiGLUOpName, InternalSwiGLU);
