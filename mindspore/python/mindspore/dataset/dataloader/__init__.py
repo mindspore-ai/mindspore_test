@@ -16,5 +16,6 @@
 from .dataloader import *
 from .dataset import *
 from .sampler import *
+from .distributed import *
 
-__all__ = ["DataLoader", "Dataset", "IterableDataset", "Sampler"]
+__all__ = ["DataLoader", "Dataset", "IterableDataset", "TensorDataset", "Sampler"]

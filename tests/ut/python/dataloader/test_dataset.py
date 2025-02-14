@@ -15,7 +15,7 @@
 
 import pytest
 
-import mindspore.dataset as ds
+import mindspore.dataset.dataloader as ds
 
 
 def test_iterate_dataset():

@@ -1,26 +1,31 @@
-# Copyright 2025 Huawei Technologies Co., Ltd
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
+import collections
+import numpy as np
 
-import pytest
-
-import mindspore.dataset as ds
+import mindspore as ms
+import mindspore.dataset.dataloader as ds
 
 
-def test_dataloader():
-    dataset = ds.Dataset()
-    dataloader = ds.DataLoader(dataset)
+class MyDataset(ds.Dataset):
+    def __init__(self, num_samples):
+        super().__init__()
+        self.num_samples = num_samples
+        self.data = [idx for idx in range(num_samples)]
+
+    def __getitem__(self, index):
+        return np.array(self.data[index])
+
+    def __len__(self):
+        return self.num_samples
+    
+
+class MyIterDataset(ds.dataset.IterableDataset):
+    def __init__(self, num_samples):
+        super().__init__()
+        self.num_samples = num_samples
+        self.data = [np.array(idx) for idx in range(num_samples)]
+
+    def __iter__(self):
+        return iter(self.data)
 
 
 class MySampler:
@@ -39,31 +44,110 @@ class MySampler:
             return data
         else:
             raise StopIteration
+    
 
-
-class MyDataset(ds.Dataset):
-    def __init__(self, num_samples):
-        super().__init__()
-        self.num_samples = num_samples
-        self.data = [idx for idx in range(num_samples)]
-
-    def __getitem__(self, index):
-        return self.data[index]
-
-    def __len__(self):
-        return self.num_samples
-
-
-def test_dataloader_single_process_iteration():
+def test_dataloader_mapdataset_single_process():
+    """
+    Feature: 
+    Description: 
+    Expectation: 
+    """
     dataset = MyDataset(10)
     sampler = MySampler(5)
+    
+    dataloader = ds.DataLoader(dataset, batch_size=None)
+    assert list(dataloader) == [ms.Tensor(i) for i in range(10)]
+    
     dataloader = ds.DataLoader(dataset, batch_size=None, sampler=sampler)
+    assert list(dataloader) == [ms.Tensor(i) for i in range(5)]
+
+
+def test_dataloader_iterdataset_single_process():
+    """
+    Feature: 
+    Description: 
+    Expectation: 
+    """
+    dataset = MyIterDataset(10)
+    dataloader = ds.DataLoader(dataset, batch_size=None)
+    assert list(dataloader) == [ms.Tensor(i) for i in range(10)]
+
+
+def test_dataloader_mapdataset_multi_process():
+    """
+    Feature: 
+    Description: 
+    Expectation: 
+    """
+    dataset = MyDataset(10)
+    
+    
+    dataloader = ds.DataLoader(dataset, batch_size=3, num_workers=4, prefetch_factor=1)
+    for data in dataloader:
+        print(data)
+
+    dataloader = ds.DataLoader(dataset, batch_size=1, num_workers=2, sampler=ds.sampler.RandomSampler(dataset, replacement=True))
+    for data in dataloader:
+        print(data)
+    '''
+    dataloader = ds.DataLoader(dataset, batch_size=2, num_workers=12, shuffle=False)
+    for data in dataloader:
+        print(data)
+    '''
+    
+
+def test_dataloader_mapdataset_multi_process_exception():
+    """
+    Feature: 
+    Description: 
+    Expectation: 
+    """
+    class ExceptionDataset(ds.Dataset):
+        def __init__(self, num_samples):
+            super().__init__()
+            self.num_samples = num_samples
+            self.data = [idx for idx in range(num_samples)]
+
+        def __getitem__(self, index):
+            if index == int(self.num_samples / 2):
+                raise RuntimeError("I got an exception!!!")
+            return np.array(self.data[index])
+
+        def __len__(self):
+            return self.num_samples
+
+    dataset = ExceptionDataset(9)
+    
+    dataloader = ds.DataLoader(dataset, batch_size=3, num_workers=4, prefetch_factor=1)
+    for data in dataloader:
+        print(data)
+
+def test_dataloader_iterdataset_multi_process():
+    """
+    Feature: 
+    Description: 
+    Expectation: 
+    """
+    '''
+    import torch.utils.data as torchdata
+    class MyIterDataset(torchdata.IterableDataset):
+        def __init__(self, num_samples):
+            super().__init__()
+            self.num_samples = num_samples
+            self.data = [np.array(idx) for idx in range(num_samples)]
+
+        def __iter__(self):
+            return iter(self.data)
+    '''
+    dataset = MyIterDataset(3)
+    
+    dataloader = ds.DataLoader(dataset, batch_size=None, num_workers=2, prefetch_factor=2)
     for data in dataloader:
         print(data)
 
 
-# def test_dataloader_multiprocess_num_worker_warning():
-#     dataset = ds.Dataset()
-#     dataloader = ds.DataLoader(dataset, num_workers=64)
-#     for data in dataloader:
-#         break
+def test_tensordataset():
+    dataset = ds.TensorDataset(ms.Tensor([1, 2, 3, 4, 5]))
+    print(len(dataset))
+    for data in dataset:
+        print(data)
