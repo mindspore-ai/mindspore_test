@@ -9997,13 +9997,13 @@ def _check_is_tensor(param_name, input, cls_name):
 
 def any(input, axis=None, keep_dims=False):
     r"""
-    Tests if any element in input evaluates to True along the given axes.
+    Tests if any element in `input` evaluates to `True` along the given axes.
 
     Args:
-        input (Tensor): Input Tensor.
-        axis (Union[int, tuple(int), list(int), Tensor], optional): The dimensions to reduce. Default: ``None`` , all
-            dimensions are reduced.
-        keep_dims (bool, optional): whether the output tensor has dim retained or not. Default : ``False`` .
+        input (Tensor): The input tensor.
+        axis (Union[int, tuple(int), list(int), Tensor], optional): The dimensions to reduce. If ``None`` ,
+                all dimensions are reduced.
+        keep_dims (bool, optional): Whether the output tensor has dim retained or not.
 
     Returns:
         Tensor
@@ -10019,15 +10019,15 @@ def any(input, axis=None, keep_dims=False):
         >>> mindspore.ops.any(input)
         Tensor(shape=[], dtype=Bool, value= True)
         >>>
-        >>> # case 2: Reduces a dimension along axis 2, with keep_dims False.
+        >>> # case 2: Reduces a dimension along axis 1, with keep_dims False.
         >>> mindspore.ops.any(input, axis=1)
         Tensor(shape=[2], dtype=Bool, value= [ True,  True])
         >>>
-        >>> # case 3: Reduces a dimension along axis (2, 3), with keep_dims False.
+        >>> # case 3: Reduces a dimension along axis (0, 1), with keep_dims False.
         >>> mindspore.ops.any(input, axis=(0,1))
         Tensor(shape=[], dtype=Bool, value= True)
         >>>
-        >>> # case 4: Reduces a dimension along axis [2, 3], with keep_dims True.
+        >>> # case 4: Reduces a dimension along axis [0, 1], with keep_dims True.
         >>> mindspore.ops.any(input, axis=[0,1], keep_dims=True)
         Tensor(shape=[1, 1], dtype=Bool, value=
         [[ True]])
