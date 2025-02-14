@@ -51,7 +51,7 @@ deprecated_tensor_method_map = {
     # 16 bool
 
     # 17 broadcast_to
-
+    "broadcast_to": "deprecated_tensor_broadcast_to",
     # 18 byte
 
     # 19 ceil

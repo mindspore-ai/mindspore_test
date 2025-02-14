@@ -1397,12 +1397,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('ger')(self, vec2)
 
-    def broadcast_to(self, shape):
-        """
-        For details, please refer to :func:`mindspore.ops.broadcast_to`.
-        """
-        return tensor_operator_registry.get('broadcast_to')(self, shape)
-
     def real(self):
         r"""
         For details, please refer to :func:`mindspore.ops.real`.
