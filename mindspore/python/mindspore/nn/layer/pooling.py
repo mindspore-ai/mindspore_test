@@ -1270,8 +1270,8 @@ class AvgPool1d(_PoolNd):
         This interface currently does not support Atlas A2 training series products.
 
     Args:
-        kernel_size (int): The size of kernel window used to take the average value, Default: ``1`` .
-        stride (int): The distance of kernel moving, an int number that represents
+        kernel_size (int, optional): The size of kernel window used to take the average value, Default: ``1`` .
+        stride (int, optional): The distance of kernel moving, an int number that represents
             the width of movement is strides, Default: ``1`` .
         pad_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
             ``"same"`` , ``"valid"`` or ``"pad"`` . Default: ``"valid"`` .
@@ -1282,17 +1282,20 @@ class AvgPool1d(_PoolNd):
               uniformly distributed around the input, if it is odd, the excess padding is goes to the right side.
               If this mode is set, `padding` must be 0.
             - ``"valid"``: No padding is applied to the input, and the output returns the maximum
-              possible length. Extra pixels that could not complete a full stride will
-              be discarded. If this mode is set, `padding` must be 0.
+              possible length. If a full stride cannot be formed, the extra pixels will be discarded.
+              If this mode is set, `padding` must be 0.
             - ``"pad"``: Pad the input with a specified amount. In this mode, the amount of padding
               at the begin and end is determined by the `padding` parameter.
               If this mode is set, `padding` must be greater than or equal to 0.
 
-        padding (Union(int, tuple[int], list[int])): Pooling padding value, only ``"pad"`` mode can be set to non-zero.
+        padding (Union(int, tuple[int], list[int]), optional): Pooling padding value,
+            only ``"pad"`` mode can be set to non-zero.
             Default: ``0`` . padding can only be an integer or a tuple/list containing a single integer, in which case
             padding times or padding[0] times are padded on both sides of the input.
-        ceil_mode (bool): If ``True`` , use ceil to compute the output shape instead of floor. Default: ``False`` .
-        count_include_pad (bool): If ``True`` , averaging calculation will include the zero-padding. Default: ``True`` .
+        ceil_mode (bool, optional): If ``True`` , use ceil to compute the output shape instead of floor.
+            Default: ``False`` .
+        count_include_pad (bool, optional): If ``True`` , averaging calculation will include the zero-padding.
+            Default: ``True`` .
 
     Inputs:
         - **x** (Tensor) - Tensor of shape :math:`(N, C_{in}, L_{in})` or :math:`(C_{in}, L_{in})`.

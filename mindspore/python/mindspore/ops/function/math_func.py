@@ -5151,8 +5151,8 @@ def addbmm_ext(input, batch1, batch2, *, beta=1, alpha=1):
     r"""
     Applies batch matrix multiplication to `batch1` and `batch2`, with a reduced add step and add `input` to the result.
 
-    The optional values `alpha` and `beta` are the matrix-matrix product between `batch1` and `batch2` and the scale
-    factor for the added tensor `input` respectively. If `beta` is 0, then `input` will be ignored.
+    The optional value `alpha` is the matrix-matrix product between `batch1` and `batch2`, and `beta` is the scale
+    factor for the added tensor `input`. If `beta` is 0, then `input` will be ignored.
 
     .. math::
         output = \beta input + \alpha (\sum_{i=0}^{b-1} {batch1_i @ batch2_i})
