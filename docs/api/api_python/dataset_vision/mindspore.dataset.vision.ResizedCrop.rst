@@ -3,7 +3,7 @@ mindspore.dataset.vision.ResizedCrop
 
 .. py:class:: mindspore.dataset.vision.ResizedCrop(top, left, height, width, size, interpolation=Inter.BILINEAR)
 
-    裁切输入图像的指定区域并放缩到指定尺寸大小。
+    裁切输入图像的指定区域，并缩放到指定尺寸大小。
 
     支持 Ascend 硬件加速，需要通过 `.device("Ascend")` 方式开启。
 
@@ -13,8 +13,10 @@ mindspore.dataset.vision.ResizedCrop
         - **height** (int) - 裁切区域的高度。
         - **width** (int) - 裁切区域的宽度。
         - **size** (Union[int, Sequence[int, int]]) - 图像的输出尺寸大小。
-          若输入int，将调整图像的较短边长度为 `size` ，且保持图像的宽高比不变；
-          若输入Sequence[int, int]，其输入格式需要是 (高度, 宽度) 。
+
+          - 若输入int，将调整图像的较短边长度为 `size` ，且保持图像的宽高比不变。
+          - 若输入Sequence[int, int]，其输入格式需要是 (高度, 宽度) 。
+
         - **interpolation** (:class:`~.vision.Inter`, 可选) - 图像插值方法。可选值详见 :class:`mindspore.dataset.vision.Inter` 。
           默认值： ``Inter.BILINEAR``。
 
@@ -40,11 +42,11 @@ mindspore.dataset.vision.ResizedCrop
 
         指定该变换执行的设备。
 
-        - 当执行设备是 Ascend 时，输入数据支持 `uint8` 和 `float32` 类型，输入数据的通道仅支持 1和3。输入数据的高度限制范围为[4, 32768]、宽度限制范围为[6, 32768]。
+        当执行设备是 Ascend 时，输入数据支持 `uint8` 和 `float32` 类型，输入数据的通道仅支持 1和3。输入数据的高度限制范围为[4, 32768]，宽度限制范围为[6, 32768]。
 
         参数：
-            - **device_target** (str, 可选) - 算子将在指定的设备上运行。当前支持 ``CPU`` 和 ``Ascend`` 。默认值： ``CPU`` 。
+            - **device_target** (str, 可选) - 算子将在指定的设备上运行。当前支持 ``"CPU"`` 和 ``"Ascend"`` 。默认值： ``"CPU"`` 。
 
         异常：
             - **TypeError** - 当 `device_target` 的类型不为str。
-            - **ValueError** - 当 `device_target` 的取值不为 ``CPU`` / ``Ascend`` 。
+            - **ValueError** - 当 `device_target` 的取值不为 ``"CPU"`` / ``"Ascend"`` 。
