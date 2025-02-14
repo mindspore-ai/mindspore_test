@@ -60,6 +60,7 @@ from tests.st.mint import (
     test_multinomial,
     test_nan_to_num,
     test_nn_linear,
+    test_nn_AvgPool3d,
     test_nn_kldivloss,
 )
 
@@ -151,6 +152,7 @@ ops_group_cases_registry_level0 = [
     [test_multinomial.test_multinomial_std, ("ascend910b",), 4, (('pynative', 'KBK',),)],
     [test_nan_to_num.test_nan_to_num_std, ("ascend910b",), 32, (('pynative', 'KBK', 'GE'),)],
     [test_nn_linear.test_mint_nn_linear_binary_cases_910b, ("ascend910b",), 21, (("pynative", "KBK"),)],
+    [test_nn_AvgPool3d.test_mint_avg_pool3d_binary_cases, ("ascend910b",), 20, (("pynative", "KBK"),)],
     [test_addmv.test_mint_addmv_normal, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE,),)],
     [test_cdist.test_mint_cdist_binary_cases, ("ascend910b",), 4, (("KBK", "GRAPH"),)],
     [test_matmul.test_matmul_binary_cases, ("ascend910b",), 282, (('pynative', 'KBK'),)],

@@ -392,6 +392,7 @@ Pooling Layers
     mindspore.mint.nn.AdaptiveAvgPool3d
     mindspore.mint.nn.AdaptiveMaxPool1d
     mindspore.mint.nn.AvgPool2d
+    mindspore.mint.nn.AvgPool3d
     mindspore.mint.nn.MaxUnpool2d
 
 Padding Layers
@@ -480,6 +481,7 @@ Pooling functions
     mindspore.mint.nn.functional.adaptive_max_pool1d
     mindspore.mint.nn.functional.avg_pool1d
     mindspore.mint.nn.functional.avg_pool2d
+    mindspore.mint.nn.functional.avg_pool3d
     mindspore.mint.nn.functional.max_pool2d
     mindspore.mint.nn.functional.max_unpool2d
 

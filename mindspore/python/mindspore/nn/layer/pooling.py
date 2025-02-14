@@ -32,7 +32,7 @@ from mindspore.ops.auto_generate import avg_pool1d_ext
 __all__ = ['AvgPool3d', 'MaxPool3d', 'AvgPool2d', 'MaxPool2d', 'AvgPool1d', 'MaxPool1d', 'FractionalMaxPool2d',
            'FractionalMaxPool3d', 'AdaptiveAvgPool1d', 'AdaptiveMaxPool1d', 'AdaptiveMaxPool2d', 'AdaptiveMaxPool3d',
            'AdaptiveAvgPool2d', 'AdaptiveAvgPool3d', 'MaxUnpool1d', 'MaxUnpool2d', 'MaxUnpool3d', 'LPPool1d',
-           'LPPool2d', 'AvgPool2dExt', 'MaxPool2dExt', 'AvgPool1dExt']
+           'LPPool2d', 'AvgPool2dExt', 'AvgPool3dExt', 'MaxPool2dExt', 'AvgPool1dExt']
 
 
 class _PoolNd(Cell):
@@ -1019,6 +1019,47 @@ class AvgPool3d(_PoolNd):
         if expand_batch:
             out = out.squeeze(0)
         return out
+
+
+class AvgPool3dExt(Cell):
+    r"""
+    Applies a 3D average pooling over an input Tensor which can be regarded as
+    a composition of 3D input planes.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    For details, please refer to :func:`mindspore.mint.nn.functional.avg_pool3d`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> pool = ms.nn.AvgPool3dExt(kernel_size=3, stride=1)
+        >>> x = ms.ops.randn(1, 2, 4, 4, 5).astype(ms.float32)
+        >>> output = pool(x)
+        >>> print(output.shape)
+        (1, 2, 2, 2, 3)
+        >>> x1 = ms.ops.randn(6, 5, 7, 7, 5).astype(ms.float32)
+        >>> pool2 = ms.nn.AvgPool3dExt(4, stride=2, padding=(2, 2, 1), divisor_override=10)
+        >>> output2 = pool2(x1)
+        >>> print(output2.shape)
+        (6, 5, 4, 4, 2)
+    """
+    def __init__(self, kernel_size, stride=None, padding=0, ceil_mode=False,
+                 count_include_pad=True, divisor_override=None):
+        super(AvgPool3dExt, self).__init__()
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+        self.ceil_mode = ceil_mode
+        self.count_include_pad = count_include_pad
+        self.divisor_override = divisor_override
+
+    def construct(self, input):
+        return ops.function.nn_func.avg_pool3d_ext(input, self.kernel_size, self.stride, self.padding,
+                                                   self.ceil_mode, self.count_include_pad, self.divisor_override)
 
 
 class AvgPool1dExt(Cell):
