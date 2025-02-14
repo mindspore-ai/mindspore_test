@@ -31,6 +31,7 @@
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/cast.h"
 #include "mindspore/ops/op_def/array_ops.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace kernel {
@@ -390,27 +391,28 @@ void PyBoostUtils::LaunchKernel(const PrimitivePtr &primitive, const DeviceConte
     PyBoostUtils::CreateWorkSpaceDeviceAddress(kernel_mod, device_context, primitive->name());
   const auto &workspace_kernel_tensors = PyBoostUtils::GetKernelTensorFromAddress(workspace_device_address);
 
-  const auto &device_name = device_context->device_context_key().device_name_;
-  void *stream_ptr = device_context->device_res_manager_->GetStream(stream_id);
-  if (!PyboostKernelExtraFuncFactory::GetInstance().IsEnableProfiler(device_name)) {
+  auto launch_kernel_func = [&]() {
+    runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeLaunchTask,
+                                       real_name, false);
+    void *stream_ptr = device_context->device_res_manager_->GetStream(stream_id);
     if (!kernel_mod->Launch(input_address_info.first, workspace_kernel_tensors, output_address_info.first,
                             stream_ptr)) {
       MS_LOG(EXCEPTION) << "Launch kernel failed, name: " << real_name;
     }
-  } else {
-    const auto &input_kts = input_address_info.first;
-    std::vector<BaseShapePtr> input_shapes;
-    for (auto kt : input_kts) {
-      MS_EXCEPTION_IF_NULL(kt);
-      input_shapes.push_back(kt->GetShape());
+    static bool sync_stream = runtime::RuntimeConf::GetInstance()->launch_blocking();
+    if (sync_stream) {
+      if (!device_context->device_res_manager_->SyncStream(stream_id)) {
+        MS_LOG(EXCEPTION) << "SyncStream failed, op name " << real_name;
+      }
     }
-    PyboostKernelExtraFuncFactory::GetInstance().LaunchKernelWithProfiler(
-      device_name, device_context, real_name, {}, [&]() {
-        if (!kernel_mod->Launch(input_address_info.first, workspace_kernel_tensors, output_address_info.first,
-                                stream_ptr)) {
-          MS_LOG(EXCEPTION) << "Launch kernel failed, name: " << real_name;
-        }
-      });
+  };
+
+  const auto &device_name = device_context->device_context_key().device_name_;
+  if (!PyboostKernelExtraFuncFactory::GetInstance().IsEnableProfiler(device_name)) {
+    launch_kernel_func();
+  } else {
+    PyboostKernelExtraFuncFactory::GetInstance().LaunchKernelWithProfiler(device_name, device_context, real_name, {},
+                                                                          [&]() { launch_kernel_func(); });
   }
   if (kernel_mod->IsNeedUpdateOutputShapeAndSize()) {
     kernel_mod->UpdateOutputShapeAndSize(input_address_info.first, output_address_info.first);
