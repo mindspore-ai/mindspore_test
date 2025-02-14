@@ -26,16 +26,38 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace opt {
 namespace {
 constexpr auto kAttrIsInsertedByGE = "is_inserted_by_ge";
 
+std::vector<int64_t> GetNumeList(const CNodePtr &origin_node, size_t index) {
+  auto input = common::AnfAlgo::GetInputNode(origin_node, index);
+
+  MS_EXCEPTION_IF_NULL(input);
+  auto input_abstract = input->abstract();
+  MS_EXCEPTION_IF_NULL(input_abstract);
+  auto input_value = input_abstract->GetValue();
+  MS_EXCEPTION_IF_NULL(input_value);
+  auto array = GetArrayValue<int64_t>(input_value);
+  if (!array.has_value()) {
+    MS_LOG(INFO) << "Array has no value.";
+    return {};
+  }
+  auto array_value = array.value();
+  if (array_value.HasUnknownValue()) {
+    MS_LOG(INFO) << "Array_value has unknown value.";
+    return {};
+  }
+  return array_value.ToVector();
+}
+
 std::tuple<std::vector<int64_t>, std::vector<int64_t>, std::vector<int64_t>, std::vector<int64_t>>
 GetAlltoAllVForGEInput(const CNodePtr &origin_node) {
-  auto send_numel_list = common::AnfAlgo::GetNodeAttr<std::vector<int64_t>>(origin_node, kAttrSendNumelList);
-  auto recv_numel_list = common::AnfAlgo::GetNodeAttr<std::vector<int64_t>>(origin_node, kAttrRecvNumelList);
+  auto send_numel_list = GetNumeList(origin_node, kIndex1);
+  auto recv_numel_list = GetNumeList(origin_node, kIndex2);
   auto send_offset_list = common::AnfAlgo::HasNodeAttr(kAttrSendOffsetList, origin_node)
                             ? common::AnfAlgo::GetNodeAttr<std::vector<int64_t>>(origin_node, kAttrSendOffsetList)
                             : std::vector<int64_t>{};
@@ -65,12 +87,10 @@ CNodePtr AlltoAllVForGE::CreateAlltoAllVForGENode(const FuncGraphPtr &graph, con
   MS_EXCEPTION_IF_NULL(origin_node);
   auto [send_numel_list, send_offset_list, recv_numel_list, recv_offset_list] = GetAlltoAllVForGEInput(origin_node);
 
-  AnfNodePtrList atav_inputs = {NewValueNode(std::make_shared<Primitive>(kAlltoAllVGEOpName)),
-                                common::AnfAlgo::GetInputNode(origin_node, 0),
-                                CreateShapeValueNode(graph, send_numel_list),
-                                CreateShapeValueNode(graph, send_offset_list),
-                                CreateShapeValueNode(graph, recv_numel_list),
-                                CreateShapeValueNode(graph, recv_offset_list)};
+  AnfNodePtrList atav_inputs = {
+    NewValueNode(std::make_shared<Primitive>(kAlltoAllVGEOpName)), common::AnfAlgo::GetInputNode(origin_node, kIndex0),
+    common::AnfAlgo::GetInputNode(origin_node, kIndex1),           CreateShapeValueNode(graph, send_offset_list),
+    common::AnfAlgo::GetInputNode(origin_node, kIndex2),           CreateShapeValueNode(graph, recv_offset_list)};
   auto atav_node = NewCNode(atav_inputs, graph);
   MS_EXCEPTION_IF_NULL(atav_node);
   atav_node->set_scope(origin_node->scope());

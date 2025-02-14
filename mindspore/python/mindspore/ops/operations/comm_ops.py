@@ -1931,21 +1931,17 @@ class AlltoAllV(PrimitiveWithInfer):
           concatenated before call this primitive.
 
     Args:
-        send_numel_list(Union[tuple[int], list[int]]): split numel to scatter to different remote rank.
-        recv_numel_list(Union[tuple[int], list[int]]): split numel to gather from different remote rank.
         group (str): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP``, which
-          means ``"hccl_world_group"`` in Ascend, and ``"nccl_world_group"`` in GPU.
-        TODO:
+          means ``"hccl_world_group"`` in Ascend.
 
     Inputs:
         - **input_x** (Tensor) - flatten tensor to scatter. The shape of tensor is :math:`(x_1)`.
+        send_numel_list(Union[tuple[int], list[int], Tensor]): split numel to scatter to different remote rank.
+        recv_numel_list(Union[tuple[int], list[int], Tensor]): split numel to gather from different remote rank.
 
     Outputs:
         Tensor. flattened and concatenated tensor gather from remote ranks.
         If gather result is empty, it will return a Tensor with value 0, which has no actual meaning.
-
-    Raises:
-        TypeError: If 'send_numel_list'  or 'recv_numel_list' is not type of tuple and list.
 
     Supported Platforms:
         ``Ascend``
@@ -1963,8 +1959,6 @@ class AlltoAllV(PrimitiveWithInfer):
 
             This example should be run with 2 devices.
 
-        >>> import numpy as np
-        >>> import mindspore as ms
         >>> from mindspore import ops
         >>> import mindspore.nn as nn
         >>> from mindspore.communication import init, get_rank
@@ -1975,20 +1969,22 @@ class AlltoAllV(PrimitiveWithInfer):
         >>> class Net(nn.Cell):
         ...     def __init__(self):
         ...         super(Net, self).__init__()
-        ...         if rank == 0:
-        ...             self.all_to_all = ops.AlltoAllV([1, 2], [1, 2])
-        ...         else:
-        ...             self.all_to_all = ops.AlltoAllV([2, 1], [2, 1])
+        ...         self.all_to_all = ops.AlltoAllV()
         ...
-        ...     def construct(self, x):
-        ...         return self.all_to_all(x)
-        ...
+        ...     def construct(self, x, send_numel_list, recv_numel_list):
+        ...         return self.all_to_all(x, send_numel_list, recv_numel_list)
+        >>> send_numel_list = []
+        >>> recv_numel_list = []
         >>> if rank == 0:
         >>>    send_tensor = Tensor([0, 1, 2.])
+        >>>    send_numel_list = [1, 2]
+        >>>    recv_numel_list = [1, 2]
         >>> elif rank == 1:
         >>>    send_tensor = Tensor([3, 4, 5.])
+        >>>    send_numel_list = [2, 1]
+        >>>    recv_numel_list = [2, 1]
         >>> net = Net()
-        >>> output = net(send_tensor)
+        >>> output = net(send_tensor, send_numel_list, recv_numel_list)
         >>> print(output)
         rank 0:
         [0. 3. 4]
@@ -1998,15 +1994,7 @@ class AlltoAllV(PrimitiveWithInfer):
     """
 
     @prim_attr_register
-    def __init__(self, send_numel_list, recv_numel_list, group=None, split_sizes_empty=False):
-        validator.check_value_type("send_numel_list", send_numel_list, [tuple, list], self.name)
-        validator.check_value_type("recv_numel_list", recv_numel_list, [tuple, list], self.name)
+    def __init__(self, group=None):
         self.group = GlobalComm.WORLD_COMM_GROUP if group is None else _get_group(group)
-        self.send_numel_list = send_numel_list
-        self.recv_numel_list = recv_numel_list
-        self.split_sizes_empty = split_sizes_empty
         self.rank_size = get_group_size(self.group)
-
         self.add_prim_attr('group', self.group)
-        self.add_prim_attr('send_numel_list', send_numel_list)
-        self.add_prim_attr('recv_numel_list', recv_numel_list)

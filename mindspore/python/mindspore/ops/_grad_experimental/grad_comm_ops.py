@@ -27,7 +27,7 @@ from mindspore.ops.operations._inner_ops import issubclass_
 from mindspore.common.sparse_tensor import RowTensorInner
 from mindspore.ops.composite.multitype_ops.zeros_like_impl import zeros_like
 from mindspore.ops.operations.comm_ops import (AllGather, _MiniStepAllGather, _HostAllGather, AllReduce,
-                                               NeighborExchange, AlltoAll, NeighborExchangeV2, Broadcast,
+                                               NeighborExchange, AlltoAll, AlltoAllV, NeighborExchangeV2, Broadcast,
                                                _GetTensorSlice, _MirrorOperator, _MirrorMiniStepOperator, ReduceOp,
                                                ReduceScatter, _HostReduceScatter, _VirtualDiv, _VirtualAdd, _AllSwap,
                                                _VirtualAssignAdd, _VirtualAccuGrad, _MirrorMicroStepOperator,
@@ -631,6 +631,21 @@ def get_bprop_all_to_all(self):
     def bprop(x, out, dout):
         dx = all_to_all_grad(dout)
         return (dx,)
+
+    return bprop
+
+
+@bprop_getters.register(AlltoAllV)
+def get_bprop_all_to_all_v(self):
+    """Generate bprop for AlltoAll."""
+    all_to_all_v_grad = AlltoAllV(self.group)
+    if hasattr(self, "instance_name") and self.instance_name:
+        instance_name = "grad" + self.instance_name
+        all_to_all_v_grad.set_prim_instance_name(instance_name)
+
+    def bprop(x, send_numel_list, recv_numel_list, out, dout):
+        dx = all_to_all_v_grad(dout, recv_numel_list, send_numel_list)
+        return (dx, zeros_like(send_numel_list), zeros_like(recv_numel_list))
 
     return bprop
 

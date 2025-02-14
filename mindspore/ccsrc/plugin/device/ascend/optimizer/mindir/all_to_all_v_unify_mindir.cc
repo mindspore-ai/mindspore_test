@@ -196,14 +196,14 @@ CNodePtr CreateAlltoAllVUnifyMindIRNode(const FuncGraphPtr &graph, const AnfNode
   auto rank_size = GetRankSize(group);
   auto [send_mem_range, recv_mem_range] = CalcAlltoAllVAttr(origin_node, rank_size, origin_output_shapes);
 
-  AnfNodePtrList atav_inputs = {NewValueNode(std::make_shared<Primitive>(kAlltoAllVOpName)), input_node};
+  AnfNodePtrList atav_inputs = {NewValueNode(std::make_shared<Primitive>(kAlltoAllVOpName)), input_node,
+                                CreateShapeValueNode(graph, send_mem_range.counts),
+                                CreateShapeValueNode(graph, recv_mem_range.counts)};
   auto atav_node = NewCNode(atav_inputs, graph);
   MS_EXCEPTION_IF_NULL(atav_node);
   atav_node->set_scope(origin_node->scope());
   atav_node->set_fullname_with_scope(origin_node->fullname_with_scope());
-  common::AnfAlgo::SetNodeAttr(kAttrSendNumelList, MakeValue(send_mem_range.counts), atav_node);
   common::AnfAlgo::SetNodeAttr(kAttrSendOffsetList, MakeValue(send_mem_range.displs), atav_node);
-  common::AnfAlgo::SetNodeAttr(kAttrRecvNumelList, MakeValue(recv_mem_range.counts), atav_node);
   common::AnfAlgo::SetNodeAttr(kAttrRecvOffsetList, MakeValue(recv_mem_range.displs), atav_node);
   common::AnfAlgo::SetNodeAttr(kAttrGroup, MakeValue<std::string>(group), atav_node);
   common::AnfAlgo::SetNodeAttr(kAttrGroupRankIds, MakeValue<std::vector<uint32_t>>(group_rank_ids), atav_node);

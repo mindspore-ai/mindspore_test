@@ -31,6 +31,8 @@ from mindspore.communication._comm_helper import (
     _get_size_helper,
     _get_backend,
     _get_group_ranks,
+    _is_available,
+    _is_initialized,
 )
 from mindspore.communication import (
     init,
@@ -114,6 +116,66 @@ def _object_to_tensor(obj, size=0):
 def _tensor_to_object(tensor, tensor_size):
     buf = tensor.asnumpy().tobytes()[:tensor_size]
     return restricted_loads(buf)
+
+
+def is_available():
+    """
+    Checks if distributed module is available.
+
+    Note:
+        Always returns `True` because MindSpore always has distributed ability on all platforms.
+
+    Returns:
+        bool, whether this distributed module is available.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For Ascend devices, it is recommended to use the msrun startup method
+            without any third-party or configuration file dependencies.
+            Please see the `msrun start up
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            for more details.
+
+        >>> import mindspore as ms
+        >>> from mindspore.mint.distributed import is_available
+        >>> ms.set_device(device_target="Ascend")
+        >>> is_available()
+    """
+    return _is_available()
+
+
+def is_initialized():
+    """
+    Checks if default process group has been initialized.
+
+    Returns:
+        bool, whether the default process group has been initialized.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For Ascend devices, it is recommended to use the msrun startup method
+            without any third-party or configuration file dependencies.
+            Please see the `msrun start up
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            for more details.
+
+        >>> import mindspore as ms
+        >>> from mindspore.mint.distributed import init_process_group, is_initialized
+        >>> ms.set_device(device_target="Ascend")
+        >>> init_process_group()
+        >>> is_initialized()
+    """
+    return _is_initialized()
 
 
 def init_process_group(backend="hccl",

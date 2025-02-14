@@ -535,6 +535,13 @@ KernelWithIndex FetchRealFrontNode(const KernelWithIndex &node_with_index, const
   }
   return front_node_with_idx;
 }
+
+bool NoNeedContinuesOp(const AnfNodePtr &kernel) {
+  bool flag = !common::AnfAlgo::IsCommunicationOp(kernel) ||
+              common::AnfAlgo::GetCNodeName(kernel) == kMatMulAllReduceOpName ||
+              common::AnfAlgo::GetCNodeName(kernel) == kAlltoAllVOpName;
+  return flag;
+}
 }  // namespace
 
 GraphScheduler &GraphScheduler::GetInstance() noexcept {
@@ -1777,8 +1784,7 @@ void GraphScheduler::ProcessContinuousMemoryInfo(const ActorSetPtr &actor_set,
         if (common::AnfAlgo::GetCNodeName(kernel) == kFlattenConcatOpName) {
           graph_compiler_info.exist_flatten_concat_ = true;
         }
-        if (!common::AnfAlgo::IsCommunicationOp(kernel) ||
-            common::AnfAlgo::GetCNodeName(kernel) == kMatMulAllReduceOpName) {
+        if (NoNeedContinuesOp(kernel)) {
           continue;
         }
         auto key =
