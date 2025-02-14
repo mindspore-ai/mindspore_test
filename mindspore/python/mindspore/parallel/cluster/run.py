@@ -85,7 +85,7 @@ def get_args():
         "--sim_level",
         default=-1,
         type=int,
-        choices=[0, 1],
+        choices=[0, 1, 2, 3],
         help="specifies simulation level. When this argument is set, msrun only spawns one process "
              "but export RANK_SIZE with value worker_num and RANK_ID with value sim_rank_id."
     )

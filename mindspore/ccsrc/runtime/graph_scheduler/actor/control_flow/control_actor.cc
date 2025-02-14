@@ -471,7 +471,7 @@ void ControlActor::CreateHeterDeviceTensor(DeviceTensor *const node_device_tenso
                 << " type:" << node_device_tensor->GetDeviceType();
 
   device::DynamicMemAllocatorDebugInfo::SetDebugInfo(GetAID().Name(), device::AllocatorType::kOther, 0);
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), "UpdateOutputData", "");
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), "UpdateOutputData", "", false);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, GetAID().Name(), device::tracker::MemType::kOther,
                                                  new_device_tensor->GetSize(), new_device_tensor.get());
   auto data_stream_id = input_device_tensor->stream_id();

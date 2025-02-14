@@ -80,7 +80,7 @@ void GEMemoryManager::AllocGEMemory(GEAllocFunc alloc_func, GEUpdateMemoryFunc u
       MS_LOG(EXCEPTION) << "Out of memory, Alloc GE memory failed, size: " << ptr->memory_size;
     }
     ptr->has_alloc = true;
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "AllocGEMemory", "", "");
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "AllocGEMemory", "", "", false);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, "AllocGEMemory", ptr->memory_size,
                                                    ptr->memory_ptr, device::tracker::MemType::kGeFixed);
   }

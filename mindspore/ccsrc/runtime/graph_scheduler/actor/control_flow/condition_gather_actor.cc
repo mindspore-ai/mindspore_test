@@ -205,7 +205,7 @@ void ConditionGatherActor::Run(OpContext<DeviceTensor> *const context) {
   try {
     MS_EXCEPTION_IF_NULL(kernel_);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), kernel_->fullname_with_scope(),
-                                                   kernel_->func_graph()->ToString());
+                                                   kernel_->func_graph()->ToString(), false);
     FetchInput(context);
     if (memory_free_list_.size() > 0) {
       SendMemoryFreeReq(context);

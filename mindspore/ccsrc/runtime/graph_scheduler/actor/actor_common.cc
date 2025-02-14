@@ -246,17 +246,16 @@ bool IsMemoryActor(KernelTransformType actor_type) {
 }
 
 bool IsSkippedLaunch(const CNodePtr &kernel, const KernelGraphPtr &kernel_graph) {
+  if (common::IsCompileSimulation()) {
+    return true;
+  }
   static std::string launch_skipped = "";
   static bool first_get_launch_skipped_env = true;
   static const char kLaunchSkippedEnv[] = "MS_KERNEL_LAUNCH_SKIP";
   if (first_get_launch_skipped_env) {
     launch_skipped = common::GetEnv(kLaunchSkippedEnv);
     first_get_launch_skipped_env = false;
-    if (launch_skipped.empty() && common::IsCompileSimulation()) {
-      launch_skipped = "ALL";
-    }
   }
-
   if (launch_skipped.empty()) {
     return false;
   }
@@ -274,7 +273,7 @@ bool IsSkippedLaunch(const CNodePtr &kernel, const KernelGraphPtr &kernel_graph)
     return false;
   }
 
-  if ((launch_skipped == "ALL") || (launch_skipped == "all") || (launch_skipped == launch_name)) {
+  if (launch_skipped == launch_name) {
     MS_LOG(DEBUG) << "Skip the launch of " << full_name;
     return true;
   }
@@ -948,7 +947,7 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   auto device_tensors = graph_parameter_store->Fetch(outer_index, inner_index);
   if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), from_aid.Name(), "");
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), from_aid.Name(), "", false);
   }
   bool in_callback = false;
   for (const auto device_tensor : device_tensors) {
@@ -997,7 +996,7 @@ void SyncDeviceTensorsInParameterStore(size_t outer_index, size_t inner_index, c
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   auto device_tensors = graph_parameter_store->Fetch(outer_index, inner_index);
   if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), from_aid.Name(), "");
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), from_aid.Name(), "", false);
   }
   bool in_callback = false;
   for (const auto device_tensor : device_tensors) {
