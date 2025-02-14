@@ -1170,9 +1170,10 @@ NodePtr FuncBuilder::DynamicQuantExt(const NodePtr &x, const NodePtr &smooth_sca
 NodePtr FuncBuilder::GroupedMatmul(const NodePtr &x, const NodePtr &weight, const NodePtr &bias, const NodePtr &scale,
                                    const NodePtr &offset, const NodePtr &antiquant_scale,
                                    const NodePtr &antiquant_offset, const NodePtr &group_list,
-                                   const NodePtr &split_item, const NodePtr &group_type) {
+                                   const NodePtr &split_item, const NodePtr &group_type, const NodePtr &transpose_a,
+                                   const NodePtr &transpose_b) {
   return NativeFunc::GroupedMatmul(x, weight, bias, scale, offset, antiquant_scale, antiquant_offset, group_list,
-                                   split_item, group_type);
+                                   split_item, group_type, transpose_a, transpose_b);
 }
 
 NodePtr FuncBuilder::MoeFinalizeRouting(const NodePtr &expanded_x, const NodePtr &x1, const NodePtr &x2,

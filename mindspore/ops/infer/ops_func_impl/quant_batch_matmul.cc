@@ -20,7 +20,6 @@
 #include <string>
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace ops {
@@ -40,8 +39,6 @@ BaseShapePtr QuantBatchMatmulFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                   const std::vector<AbstractBasePtr> &input_args) const {
   auto prim_name = primitive->name();
   auto x1_shape_map = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[kQbmmInputX1]->GetShape());
-  // 310p do not support the situation of (batch size > 1) temporarily in acme kernel
-  CheckBatchMatmulInputBatchWhetherMoreThanOne(input_args, x1_shape_map[kShape]);
   auto x2_shape_map = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[kQbmmInputX2]->GetShape());
   if (x1_shape_map.empty()) {
     MS_LOG(EXCEPTION) << "For '" << prim_name
@@ -126,19 +123,6 @@ TypePtr QuantBatchMatmulFuncImpl::InferType(const PrimitivePtr &primitive,
     return kBFloat16;
   } else {
     return kFloat16;
-  }
-}
-
-void QuantBatchMatmulFuncImpl::CheckBatchMatmulInputBatchWhetherMoreThanOne(
-  const std::vector<AbstractBasePtr> &input_args, const ShapeVector &x1_shape) const {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  bool enable_infer_boost = ms_context->IsEnableInferBoost() && ms_context->ascend_soc_version() == kAscendVersion310p;
-  if (x1_shape.size() > kQbmmMatSize && x1_shape[0] > 1 && enable_infer_boost &&
-      !input_args[kQbmmInputBias]->GetType()->isa<TypeNone>()) {
-    MS_EXCEPTION(ValueError) << "For QuantBatchMatmul"
-                             << ", the batch size of the input 'x' is temporarily not supported for more than one "
-                             << "in Ascend310P";
   }
 }
 

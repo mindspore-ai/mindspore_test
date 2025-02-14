@@ -43,10 +43,19 @@ constexpr auto kPhaseNameDecode = "decode";
 constexpr auto kPhaseNameIncrement = "increment";
 constexpr auto kQuantLinearSparseName = "QuantLinearSparse";
 constexpr auto kQuantBatchMatmulName = "QuantBatchMatmul";
+constexpr auto kGroupedMatmulName = "GroupedMatmul";
 constexpr auto CONST_2 = 2;
 constexpr auto Align16 = 16;
 constexpr auto kQuantLinearSparseBiasIdx = 5;  // primitive input weight deq_scale compress_idx bias
 constexpr auto kMatMulWeightIdx = 2;           // primitive input weight ...
+constexpr auto kSingleTensor = 3;              // split_item mode
+
+static const std::unordered_map<mindspore::internal::LogLevel, mindspore::MsLogLevel> kLogLevelMap = {
+  {mindspore::internal::LogLevel::DEBUG, mindspore::MsLogLevel::kDebug},
+  {mindspore::internal::LogLevel::INFO, mindspore::MsLogLevel::kInfo},
+  {mindspore::internal::LogLevel::WARNING, mindspore::MsLogLevel::kWarning},
+  {mindspore::internal::LogLevel::ERROR, mindspore::MsLogLevel::kError},
+  {mindspore::internal::LogLevel::EXCEPTION, mindspore::MsLogLevel::kException}};
 
 // unordered_map vector<vector<vector<size_t>>> represents:
 // list[op_name][0] for phase prefill, list[op_name][1] for phase increment;
@@ -57,7 +66,8 @@ static std::unordered_map<std::string, std::vector<std::vector<std::vector<size_
   {kQuantBatchMatmulName, {{{0, 1}, {}}, {{1}, {}}}},
   {kPagedAttentionOpName, {{{0, 1, 2, 7}, {0}}, {{0, 1, 2, 7}, {0}}}},
   {kFlashAttentionScoreOpName, {{{0, 1, 2, 6}, {3}}, {{0, 1, 2, 6}, {3}}}},
-  {kReshapeAndCacheOpName, {{{2, 3}, {}}, {{2, 3}, {}}}}};
+  {kReshapeAndCacheOpName, {{{2, 3}, {}}, {{2, 3}, {}}}},
+  {kGroupedMatmulName, {{{1}, {}}, {{1}, {}}}}};
 
 // unordered_map mean:
 // key is input_idx, value is special_format value
@@ -209,6 +219,20 @@ bool InternalKernelPlugin::IsRegisteredKernel(const AnfNodePtr &anf_node) {
   GetMsTypesList(cnode, &ms_in_dtypes, &ms_out_dtypes);
   if (Factory<InternalKernelMod>::Instance().IsRegistered(opname)) {
     auto internal_op_name = TransInternalOpName(opname);
+    if (opname == kGroupedMatmulName) {
+      // current internal GroupedMatmul only support specific type
+      auto &inputs = cnode->inputs();
+      auto split_item_node = inputs[kIndex8 + 1]->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(split_item_node);
+      auto group_type_node = inputs[kIndex9 + 1]->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(group_type_node);
+      auto split_item = GetValue<int64_t>(split_item_node->value());
+      auto group_type = GetValue<int64_t>(group_type_node->value());
+      // split_item mode is SingleTensor
+      if (!(split_item == kSingleTensor && group_type == 0)) {
+        return false;
+      }
+    }
     auto internal_in_dtypes = InternalKernelModInOutMap::GetInstance()->MapInternalInputDtypes(opname, ms_in_dtypes);
     auto internal_out_dtypes = InternalKernelModInOutMap::GetInstance()->MapInternalOutputDtypes(opname, ms_out_dtypes);
     return internal::IsInternalKernelDtypesSupported(internal_op_name, internal_in_dtypes, internal_out_dtypes);

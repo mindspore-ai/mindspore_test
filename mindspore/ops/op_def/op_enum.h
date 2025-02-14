@@ -64,6 +64,8 @@ enum FASInputLayoutMode : int64_t {
 
 enum PagedAttentionKVCacheQuantMode : int64_t { DEFAULT = 0, PERTOKEN = 1 };
 
+enum PagedAttentionMaskMode : int64_t { MASK_DEFAULT = 0, TRAPEZOIDAL = 1 };
+
 enum ErrorMode : int64_t { CYCLE = 0, SPECIFIC = 1 };
 
 enum FlipMode : int64_t { BITFLIP = 0, BITFLIP_DESIGNED = 1, MULTIPLY = 2, MULTIPLY_MAX = 3 };

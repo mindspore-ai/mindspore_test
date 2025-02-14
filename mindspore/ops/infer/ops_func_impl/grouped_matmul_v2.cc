@@ -37,5 +37,9 @@ int64_t GroupedMatmulV2FuncImpl::FetchGroupListSize(const PrimitivePtr &primitiv
   const auto &group_list = group_list_opt.value();
   return SizeToLong(group_list.size());
 }
+
+bool GroupedMatmulV2FuncImpl::GetTransposeValue(const InferInfoPtrList &input_infos, size_t transpose_index) const {
+  return false;
+}
 }  // namespace ops
 }  // namespace mindspore

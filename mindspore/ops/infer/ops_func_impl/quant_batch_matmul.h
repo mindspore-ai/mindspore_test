@@ -31,8 +31,6 @@ class OPS_API QuantBatchMatmulFuncImpl : public OpFuncImpl {
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 
  private:
-  void CheckBatchMatmulInputBatchWhetherMoreThanOne(const std::vector<AbstractBasePtr> &input_args,
-                                                    const ShapeVector &x1_shape) const;
   void CheckBatchMatmulInputSize(const std::string &op_name, const std::string &input_name,
                                  const ShapeVector &shape) const;
   void CheckBatchMatmulInputWhetherCanBeMul(const std::string &name, const ShapeVector &x1_shape,

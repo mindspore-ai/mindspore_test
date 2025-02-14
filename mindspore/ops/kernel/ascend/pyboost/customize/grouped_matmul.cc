@@ -40,7 +40,8 @@ void GroupedMatmulAscendCustomize(const std::shared_ptr<OpRunner> &op, const Val
                                   const std::optional<ValueTuplePtr> &antiquant_scale_tensor_list,
                                   const std::optional<ValueTuplePtr> &antiquant_offset_tensor_list,
                                   const std::optional<BaseTensorPtr> &group_list_tensor, const Int64ImmPtr &split_item,
-                                  const Int64ImmPtr &group_type) {
+                                  const Int64ImmPtr &group_type, const mindspore::BoolImmPtr &transpose_a,
+                                  const mindspore::BoolImmPtr &transpose_b) {
   MS_LOG(DEBUG) << "Call GroupedMatmul start";
   // Convert ValuePtr to c++ scalar
   OpRunner::InferOpOutput(op, x_tensor_list, weight_tensor_list, bias_tensor_list, scale_tensor_list,
