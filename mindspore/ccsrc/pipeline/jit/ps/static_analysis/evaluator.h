@@ -438,6 +438,40 @@ class ShardEvaluator : public Evaluator {
   AbstractFunctionPtr primal_func_;
 };
 
+class AddAttrEvaluator : public Evaluator {
+ public:
+  AddAttrEvaluator(const EvaluatorPtr &evaluator, const AbstractFunctionPtr &orig_func)
+      : Evaluator("AddAttrEvaluator"), evaluator_(evaluator), primal_func_(orig_func) {}
+  ~AddAttrEvaluator() override = default;
+  MS_DECLARE_PARENT(ShardEvaluator, Evaluator);
+
+  AnfNodePtr bound_node() const override {
+    if (evaluator_ != nullptr) {
+      return evaluator_->bound_node();
+    }
+    return bound_node_.lock();
+  }
+
+  void set_bound_node(const AnfNodePtr &node) override {
+    if (evaluator_ != nullptr) {
+      evaluator_->set_bound_node(node);
+    }
+    bound_node_ = AnfNodeWeakPtr(node);
+  }
+
+  EvalResultPtr Eval(AnalysisEnginePtr, const AbstractBasePtrList &, const AnfNodeConfigPtr &) override {
+    MS_LOG(INTERNAL_EXCEPTION) << "Should not be called, Run() method should be called";
+  }
+
+  EvalResultPtr Run(AnalysisEnginePtr engine, const ConfigPtrList &args_conf_list, const AnfNodeConfigPtr &) override;
+
+  std::string ToString() const override { return identifier_ + "_" + evaluator_->ToString(); }
+
+ private:
+  EvaluatorPtr evaluator_;
+  AbstractFunctionPtr primal_func_;
+};
+
 class VmapEvaluator : public Evaluator {
  public:
   VmapEvaluator(const EvaluatorPtr &evaluator, const AbstractFunctionPtr &orig_func, const ValuePtr &in_axes,

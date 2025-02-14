@@ -552,6 +552,36 @@ class MS_CORE_API ShardTransformedAbstractClosure final : public AbstractFuncAto
   AbstractFuncAtomPtr fn_;
 };
 
+/// \brief AddAttrTransformedAbstractClosure defines interface for abstract of Function
+/// transformed through the application of AddAttr.
+class MS_CORE_API AddAttrTransformedAbstractClosure final : public AbstractFuncAtom {
+ public:
+  /// \brief Constructor of AddAttrTransformedAbstractClosure
+  ///
+  /// \param[in] fn The AbstractFuncAtom transformed through the application of AddAttr.
+  explicit AddAttrTransformedAbstractClosure(const AbstractFuncAtomPtr &fn) : fn_(fn) {}
+
+  /// \brief Destructor of AddAttrTransformedAbstractClosure
+  ~AddAttrTransformedAbstractClosure() override = default;
+  MS_DECLARE_PARENT(AddAttrTransformedAbstractClosure, AbstractFuncAtom)
+
+  /// \brief Get the AbstractFuncAtom AddAttrTransformedAbstractClosure corresponding to.
+  ///
+  /// \return The AbstractFuncAtom AddAttrTransformedAbstractClosure corresponding to.
+  const AbstractFuncAtomPtr &fn() const { return fn_; }
+
+  AbstractFunctionPtr Copy() const override { return std::make_shared<AddAttrTransformedAbstractClosure>(fn_); }
+
+  bool operator==(const AbstractFunction &other) const override;
+
+  std::size_t hash() const override;
+
+  std::string ToString() const override { return "AddAttr(" + fn_->ToString() + ")"; }
+
+ private:
+  AbstractFuncAtomPtr fn_;
+};
+
 /// \brief VmapTransformedAbstractClosure defines interface for abstract of Function
 /// transformed through the application of Vmap.
 class MS_CORE_API VmapTransformedAbstractClosure final : public AbstractFuncAtom {

@@ -861,6 +861,23 @@ EvalResultPtr ShardEvaluator::Run(AnalysisEnginePtr engine, const ConfigPtrList 
   return res;
 }
 
+EvalResultPtr AddAttrEvaluator::Run(AnalysisEnginePtr engine, const ConfigPtrList &args_conf_list,
+                                    const AnfNodeConfigPtr &) {
+  AbstractBasePtrList args_abs_list = EvaluateArguments(args_conf_list);
+  MS_EXCEPTION_IF_NULL(evaluator_cache_mgr_);
+  auto eval_result = evaluator_cache_mgr_->GetValue(args_abs_list);
+  if (eval_result != nullptr) {
+    return eval_result;
+  }
+
+  // Call the original evaluator, get the result: y = f(x)
+  EvalResultPtr result = evaluator_->Run(engine, args_conf_list, nullptr);
+  MS_EXCEPTION_IF_NULL(result);
+  auto res = std::make_shared<EvalResult>(result->abstract(), std::make_shared<AttrValueMap>());
+  evaluator_cache_mgr_->SetValue(args_abs_list, res);
+  return res;
+}
+
 namespace {
 AbstractBasePtr ReduceDim(int *axis, const AbstractBasePtr &orig_abs, int *axis_size) {
   MS_EXCEPTION_IF_NULL(axis);

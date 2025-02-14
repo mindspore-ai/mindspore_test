@@ -365,6 +365,7 @@ class AnalysisEngine : public std::enable_shared_from_this<AnalysisEngine> {
   EvaluatorPtr _GetEvaluatorFor(const std::shared_ptr<VirtualAbstractClosure> &func);
   EvaluatorPtr _GetEvaluatorFor(const std::shared_ptr<JTransformedAbstractClosure> &func);
   EvaluatorPtr _GetEvaluatorFor(const std::shared_ptr<TaylorTransformedAbstractClosure> &func);
+  EvaluatorPtr _GetEvaluatorFor(const std::shared_ptr<AddAttrTransformedAbstractClosure> &func);
   EvaluatorPtr _GetEvaluatorFor(const std::shared_ptr<ShardTransformedAbstractClosure> &func);
   EvaluatorPtr _GetEvaluatorFor(const std::shared_ptr<VmapTransformedAbstractClosure> &func);
 

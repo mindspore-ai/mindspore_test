@@ -83,7 +83,8 @@ AbstractBasePtr InferImplConvertToMsTensor(const AnalysisEnginePtr &, const Prim
                                            const AbstractBasePtrList &args_abs_list);
 AbstractBasePtr InferImplDtypeToEnum(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
                                      const AbstractBasePtrList &args_abs_list);
-
+AbstractBasePtr InferImplAddAttr(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                 const AbstractBasePtr &arg_abs_list);
 // Delete this when the infer value can be mapped to the CPU backend operator.
 bool PrimNeedFrontendInferValue(const PrimitivePtr &primitive);
 

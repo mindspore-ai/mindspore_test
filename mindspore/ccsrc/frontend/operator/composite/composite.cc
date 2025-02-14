@@ -2096,6 +2096,45 @@ FuncGraphPtr Shard::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) 
   return shard_fg;
 }
 
+FuncGraphPtr AddAttr::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
+  if (kAddAttrInputSize != args_abs_list.size()) {
+    MS_LOG(EXCEPTION) << "'AddAttr' requires " << kAddAttrInputSize << " inputs. Includes func, attr_dict.";
+  }
+  MS_EXCEPTION_IF_NULL(args_abs_list[0]);
+  AbstractFunctionPtr abs_func = dyn_cast<AbstractFunction>(args_abs_list[0]);
+  if (!abs_func) {
+    MS_LOG(EXCEPTION) << "'AddAttr' 0-th arg must be a 'Function', but got " << args_abs_list[0]->ToString();
+  }
+  auto real_fn = dyn_cast<FuncGraphAbstractClosure>(abs_func);
+  MS_EXCEPTION_IF_NULL(real_fn);
+  FuncGraphPtr input_fg = real_fn->func_graph();
+  input_fg->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, true);
+  MS_EXCEPTION_IF_NULL(input_fg);
+  FuncGraphPtr addattr_fg = nullptr;
+  {
+    TraceGuard g(MakeTraceInfo<TraceAddAttr>(input_fg->debug_info()));
+    addattr_fg = std::make_shared<FuncGraph>();
+  }
+  addattr_fg->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  // Create the debug info
+  auto parameter_size = input_fg->parameters().size();
+  std::ostringstream oss;
+  oss << "add_attr{" << parameter_size << "}";
+  addattr_fg->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  if (addattr_fg->debug_info() != nullptr) {
+    addattr_fg->debug_info()->set_name(oss.str());
+  }
+  // Make AddAttr Node
+  AnfNodePtrList addattr_inputs;
+  addattr_inputs.emplace_back(NewValueNode(prim::kPrimAddAttr));
+  for (size_t i = 0; i < args_abs_list.size(); ++i) {
+    addattr_inputs.emplace_back(addattr_fg->add_parameter());
+  }
+  CNodePtr addattr_node = addattr_fg->NewCNodeInOrder(std::move(addattr_inputs));
+  addattr_fg->set_output(addattr_node);
+  return addattr_fg;
+}
+
 void ListSliceSetItem::CheckArgs(const AbstractBasePtrList &args_abs_list) {
   constexpr size_t kSliceSetItemArgsSizeargs_size = 3;
   constexpr size_t kSliceSetItemListIndex = 0;
