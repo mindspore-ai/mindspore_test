@@ -400,10 +400,11 @@ static bool TryLoopBodyReCapture(JitCompileResults *jcr, const GraphBuilderPtr &
 
 static auto HandleBreakAtLoop(JitCompileResults *jcr, const GraphBuilderPtr &g) {
   // one stage need adapter
-  if (g->GetGraph()->IsBreakAtLoopAfterUnrolling()) {
+  if (jcr->conf()->GetBoolConfig(GraphJitConfig::kLoopUnrolling) && g->GetGraph()->IsBreakAtLoop()) {
     if (jcr->conf()->GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
       GRAPH_JIT_LOG_F("===> graph break after loop unrolling\n%s\n", g->GetGraph()->ToString(1).c_str());
     }
+    MS_LOG(INFO) << "Top graph is graph break at loop after unrolling. Disable loop unrolling and re-capture graph";
     // reset guard
     jcr->code()->SetGuard(std::make_shared<OptGuard>());
     AddConfigToGuard(*jcr->conf(), jcr->code()->GetGuard());

@@ -186,7 +186,6 @@ class Graph {
   bool RestoreLoopStatus() const { return false; }
   bool IsBreakAtLoop() const;
   bool ShouldNeverCompile() const;
-  bool IsBreakAtLoopAfterUnrolling() const;
   const std::vector<ValueNode *> &GetTracedNodes() const { return traced_nodes_; }
   std::vector<ValueNode *> &GetTracedNodes() { return traced_nodes_; }
 

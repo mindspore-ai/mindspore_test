@@ -234,28 +234,6 @@ bool Graph::ShouldNeverCompile() const {
   return found_inner_class;
 }
 
-bool Graph::IsBreakAtLoopAfterUnrolling() const {
-  if (!Config().GetBoolConfig(GraphJitConfig::kLoopUnrolling)) {
-    return false;
-  }
-  if (GetStopTraceBci() == -1) {
-    return false;
-  }
-  if (traced_nodes_.empty()) {
-    return false;
-  }
-  if (GetStopTraceBci() > traced_nodes_.back()->bci()) {
-    return false;
-  }
-  bool break_with_loop_unroll = false;
-  for (auto node : traced_nodes_) {
-    if (node->bci() >= GetStopTraceBci()) {
-      break_with_loop_unroll |= node->GetBlock() != nullptr && node->GetBlock()->is_loop_body();
-    }
-  }
-  return break_with_loop_unroll;
-}
-
 void Graph::SetFrame(int bci, const FrameStates &f) {
   // just set once, used to restore the first status if has a loop
   auto &ptr = frame_states_[bci];
