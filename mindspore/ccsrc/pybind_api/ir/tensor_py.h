@@ -284,7 +284,7 @@ class TensorPyImpl {
   /// \brief Convert python object to Tensor.
   ///
   /// \param[in] bytes_obj [py::bytes] Python object.
-  /// \param[in] dims [py::tuple] The demension.
+  /// \param[in] dims [py::tuple] The dimensions.
   /// \param[in] type_ptr [TypePtr] The data type.
   ///
   /// \return A created TensorPy.
