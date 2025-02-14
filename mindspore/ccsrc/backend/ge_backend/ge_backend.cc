@@ -716,7 +716,8 @@ BackendGraphId GEBackend::CompileWholeGraph(const FuncGraphPtr &func_graph) {
   std::vector<KernelGraphPtr> all_graphs;
 
   auto kg_mgr = std::make_shared<session::KernelGraphMgr>();
-  KernelGraphPtr root_graph = kg_mgr->ConstructKernelGraph(func_graph, &all_graphs, device::DeviceType::kAscend);
+  KernelGraphPtr root_graph =
+    kg_mgr->ConstructKernelGraph(func_graph, &all_graphs, device::DeviceType::kAscend, jit_setting_);
   MS_EXCEPTION_IF_NULL(root_graph);
   for (const auto &graph : all_graphs) {
     MS_EXCEPTION_IF_NULL(graph);
@@ -1825,7 +1826,7 @@ void GEBackend::CompileGraphFromSegment(const GraphSegmentPtr &segment) {
     device_context->Initialize();
 
     GraphId graph_id = graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), device_context,
-                                                     device::RunMode::kGraphMode, false);
+                                                     jit_setting_, device::RunMode::kGraphMode, false);
     auto new_fg = graph_compiler_->Fetch(graph_id);
     MS_EXCEPTION_IF_NULL(new_fg);
 
@@ -1887,10 +1888,10 @@ std::shared_ptr<mindspore::ge_backend::runtime::GraphCompilerInfo> GEBackend::Co
       context_ptr->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
     strategy = mindspore::ge_backend::runtime::GraphExecutionStrategy::kPipelineWithExecutionOrder;
   }
-  auto compile_func = [graph_compiler = this->graph_compiler_](
+  auto compile_func = [graph_compiler = this->graph_compiler_, jit_setting = this->jit_setting_](
                         const GraphSegmentPtr &segment, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
                         const DeviceContext *device_context, device::RunMode run_mode) -> KernelGraphPtr {
-    auto graph_id = graph_compiler->CompileGraph(segment, io_nodes, device_context, run_mode, false);
+    auto graph_id = graph_compiler->CompileGraph(segment, io_nodes, device_context, jit_setting, run_mode, false);
     return graph_compiler->Fetch(graph_id);
   };
 

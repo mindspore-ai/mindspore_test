@@ -154,8 +154,8 @@ void ResetNodeId(const std::vector<KernelGraphPtr> &graphs) {
 
 GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
                                     const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                                    const DeviceContext *device_context, device::RunMode run_mode,
-                                    bool run_in_pynative) {
+                                    const DeviceContext *device_context, const session::JitSetting &jit_setting,
+                                    device::RunMode run_mode, bool run_in_pynative) {
   MS_EXCEPTION_IF_NULL(segment);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_LOG(INFO) << "Status record: start compile graph.";
@@ -164,8 +164,8 @@ GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
   // Generate kernel graph.
   uint64_t start_time = profiler::GetClockSyscnt();
   PROF_START(ConstructKernelGraph);
-  auto kernel_graph =
-    session_->ConstructKernelGraph(nodes, io_nodes.second, device_target, true, IsEnableZeroCopy(run_in_pynative));
+  auto kernel_graph = session_->ConstructKernelGraph(nodes, io_nodes.second, device_target, jit_setting, true,
+                                                     IsEnableZeroCopy(run_in_pynative));
   PROF_END(ConstructKernelGraph);
 
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageConstructKernelGraph, start_time,

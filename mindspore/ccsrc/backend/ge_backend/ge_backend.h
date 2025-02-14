@@ -66,6 +66,7 @@ class BACKEND_EXPORT GEBackend : public BackendBase {
   mindspore::HashMap<FuncGraphPtr, uint32_t> graph_run_iter_;
   // <BackendGraphId, compile_type> : comile&run in whole or sub graph
   mindspore::HashMap<BackendGraphId, CompileType> graph_compile_type_;
+  session::JitSetting jit_setting_;
 
   // for subgraph
   std::shared_ptr<mindspore::ge_backend::runtime::GraphCompiler> graph_compiler_;
