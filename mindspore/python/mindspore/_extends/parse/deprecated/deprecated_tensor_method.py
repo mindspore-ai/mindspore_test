@@ -47,7 +47,7 @@ deprecated_tensor_method_map = {
     # 14 bfloat16
 
     # 15 bmm
-
+    "bmm": "deprecated_tensor_bmm",
     # 16 bool
 
     # 17 broadcast_to

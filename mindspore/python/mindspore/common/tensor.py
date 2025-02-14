@@ -3054,12 +3054,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         validator.check_bool(sorted, 'sorted')
         return tensor_operator_registry.get("top_k")(self, k, sorted)
 
-    def bmm(self, mat2):
-        r"""
-        For details, please refer to :func:`mindspore.ops.bmm`.
-        """
-        return tensor_operator_registry.get('bmm')(self, mat2)
-
     def to(self, dtype):
         r"""
         Performs tensor dtype conversion.
