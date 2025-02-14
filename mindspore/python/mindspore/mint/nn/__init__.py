@@ -964,7 +964,7 @@ class UpsamplingNearest2d(Cell):
     neighbor algorithm.
 
     .. note::
-        One of `size` or `scale_factor` must be given, and can not specified both at the same time.
+        One of `size` or `scale_factor` must be given, and an error will be reported if both are specified.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
