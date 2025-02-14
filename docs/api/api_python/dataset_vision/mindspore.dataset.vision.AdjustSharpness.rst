@@ -8,8 +8,7 @@ mindspore.dataset.vision.AdjustSharpness
     支持 Ascend 硬件加速，需要通过 `.device("Ascend")` 方式开启。
 
     参数：
-        - **sharpness_factor** (float) - 锐度调节因子，需为非负数。输入 ``0`` 值将得到模糊图像， ``1`` 值将得到原始图像，
-          ``2`` 值将调整图像锐度为原来的2倍。
+        - **sharpness_factor** (float) - 锐度调节因子，需为非负数。输入 ``0.0`` 值将得到模糊图像， ``1.0`` 值将得到原始图像， ``2.0`` 值将调整图像锐度为原来的2倍。
 
     异常：
         - **TypeError** - 如果 `sharpness_factor` 不是float类型。

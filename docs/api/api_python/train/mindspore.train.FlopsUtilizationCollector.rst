@@ -4,15 +4,17 @@ mindspore.train.FlopsUtilizationCollector
 .. py:class:: mindspore.train.FlopsUtilizationCollector(data_size=None, computility=1, full_flops=True, enable_ma_collector=False)
 
     FlopsUtilizationCollector接口统计模型利用率信息MFU，硬件利用率信息HFU。
+    
     当前接口只统计MatMul、BatchMatMul、FlashAttentionScore、Conv2D算子的正反向flops信息。
+    
     只支持静态图静态shape模式。
 
     参数：
-        - **data_size** (int) - 表示每隔多少个step打印一次信息, 默认值为None。
+        - **data_size** (int) - 表示每隔多少个step打印一次信息，默认值为None。
 
         - **computility** (int) - 表示每张计算卡的峰值算力。默认值： ``1`` 。
 
-        - **full_flops** (bool) - 表示是否统计完整的模型信息，如果设置为True，会统计完整的模型信息，如果设置为False，将会统计对应每张卡的分片模型信息。默认值： ``True`` 。
+        - **full_flops** (bool) - 表示是否统计完整的模型信息。如果设置为True，会统计完整的模型信息；如果设置为False，将会统计对应每张卡的分片模型信息。默认值： ``True`` 。
 
         - **enable_ma_collector** (bool) - 表示是否是否将flops写日志，提供给云上任务进行采集。默认值： ``False`` 。
 
