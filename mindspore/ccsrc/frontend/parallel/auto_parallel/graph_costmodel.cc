@@ -108,7 +108,9 @@ void CostGraph::StrategyPropagate(const std::map<OperatorInfoPtr, StrategyPtr, O
   _diff_stra_params.clear();
   // GetNext as a isolate op can not be propagated
   for (auto &op : entire_costgraph->GetOperators()) {
-    if (op->selected_strategy() == nullptr) {
+    // After BFS, if op still doesn't have strategy, then give it a default one,
+    // if op is new shape base, it doesn't has selected strategy
+    if (op->selected_strategy() == nullptr && !op->is_new_shape_node()) {
       MS_LOG(INFO) << "Set default strategy for op: " << op->name();
       op->SetSelectedStrategy(op->GetStrategyCost()[0]->strategy_ptr, 0);
     }
@@ -191,9 +193,14 @@ void CostGraph::CheckConfiguredPrevEdgeConsistency(const EdgePtr &edge) const {
   }
 }
 
-bool CheckStandAlone(const OperatorInfoPtr &op1, const OperatorInfoPtr &op2) {
+bool IsOpNotPropagate(const OperatorInfoPtr &op1, const OperatorInfoPtr &op2) {
   if (op1->IsStandAlone() || op2->IsStandAlone()) {
     MS_LOG(INFO) << "StandAlone in edge " << op1->name() << " - " << op2->name()
+                 << " doesn't propagate strategy, continue.";
+    return true;
+  }
+  if (op1->is_new_shape_node() || op2->is_new_shape_node()) {
+    MS_LOG(INFO) << "New shape op in edge " << op1->name() << " - " << op2->name()
                  << " doesn't propagate strategy, continue.";
     return true;
   }
@@ -244,7 +251,7 @@ void CostGraph::BFSPrevNode(const std::shared_ptr<Edge> &edge, int64_t curr_dept
   const auto &curr_op = edge->next_operator();
   const auto &prev_op = edge->prev_operator();
   bool is_has_stra_op = visited.at(prev_op) || configured_ops.find(prev_op) != configured_ops.end();
-  if (CheckStandAlone(prev_op, curr_op)) {
+  if (IsOpNotPropagate(prev_op, curr_op)) {
     return;
   }
   if (edge->InitEdgeCost() != SUCCESS && !is_has_stra_op) {
@@ -341,7 +348,7 @@ void CostGraph::BFSNextNode(const std::shared_ptr<Edge> &edge, int64_t curr_dept
   const auto &curr_op = edge->prev_operator();
   const auto &next_op = edge->next_operator();
   bool is_has_stra_op = visited.at(next_op) || configured_ops.find(next_op) != configured_ops.end();
-  if (CheckStandAlone(curr_op, next_op)) {
+  if (IsOpNotPropagate(curr_op, next_op)) {
     return;
   }
   if (edge->InitEdgeCost() != SUCCESS && !is_has_stra_op) {
@@ -1836,8 +1843,8 @@ Status CostGraph::InitSelectedStrategy() {
       return result_op;
     }
   }
-  auto result = InitReshapeStrategy();
-  return result;
+
+  return SUCCESS;
 }
 
 Status CostGraph::ComputeOpsAndEdgesParameterInvolved() {
