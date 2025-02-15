@@ -18,22 +18,24 @@
         - **optimizer** (Cell) - 用于更新网络权重的优化器。如果 `optimizer` 为None， 那么 `network` 的网络结构里需要包括反向传播和权重更新逻辑。默认值： ``None`` 。
         - **metrics** (Union[dict, set]) - 用于模型评估的一组评价函数。例如：{'accuracy', 'recall'}。默认值： ``None`` 。
         - **eval_network** (Cell) - 用于评估的神经网络。未定义情况下，`Model` 会使用 `network` 和 `loss_fn` 封装一个 `eval_network` 。默认值： ``None`` 。
-        - **eval_indexes** (list) - 在定义 `eval_network` 的情况下使用。如果 `eval_indexes` 为默认值None，`Model` 会将 `eval_network` 的所有输出传给 `metrics` 。如果配置 `eval_indexes` ，必须包含三个元素，分别为损失值、预测值和标签在 `eval_network` 输出中的位置，此时，损失值将传给损失评价函数，预测值和标签将传给其他评价函数。推荐使用评价函数的 :func:`mindspore.train.Metric.set_indexes` 代替 `eval_indexes` 。默认值： ``None`` 。
+        - **eval_indexes** (list) - 在定义 `eval_network` 的情况下使用。如果 `eval_indexes` 为默认值None，`Model` 会将 `eval_network` 的所有输出传给 `metrics` 。如果配置 `eval_indexes` ，必须包含三个元素，分别为损失值、预测值和标签在 `eval_network` 输出中的位置，此时，损失值将传给损失评价函数，预测值和标签将传给其他评价函数。推荐使用评价函数 :func:`mindspore.train.Metric.set_indexes` 代替 `eval_indexes` 。默认值： ``None`` 。
         - **amp_level** (str) - `mindspore.amp.build_train_network <https://www.mindspore.cn/docs/zh-CN/master/api_python/amp/mindspore.amp.build_train_network.html>`_ 的可选参数 `level` ， `level` 为混合精度等级，该参数支持["O0", "O1", "O2", "O3", "auto"]。默认值： ``"O0"`` 。
 
           `amp_level` 的详细配置信息可参考 :func:`mindspore.amp.auto_mixed_precision` 。
 
-          通过 `kwargs` 设置 `keep_batchnorm_fp32` ，可修改BatchNorm的精度策略， `keep_batchnorm_fp32` 必须为bool类型；通过 `kwargs` 设置 `loss_scale_manager` 可修改损失缩放策略，`loss_scale_manager` 必须为 :class:`mindspore.amp.LossScaleManager` 的子类，
+          通过 `kwargs` 设置 `keep_batchnorm_fp32` ，可修改BatchNorm的精度策略， `keep_batchnorm_fp32` 必须为bool类型；通过 `kwargs` 设置 `loss_scale_manager` ，可修改损失缩放策略，`loss_scale_manager` 必须为 :class:`mindspore.amp.LossScaleManager` 的子类。
 
         - **boost_level** (str) - `mindspore.boost` 的可选参数，为boost模式训练等级。支持["O0", "O1", "O2"]。默认值： ``"O0"`` 。
 
-          - "O0": 不变化。
-          - "O1": 启用boost模式，性能将提升约20%，准确率保持不变。
-          - "O2": 启用boost模式，性能将提升约30%，准确率下降小于3%。
+          - "O0"：不变化。
+          - "O1"：启用boost模式，性能将提升约20%，准确率保持不变。
+          - "O2"：启用boost模式，性能将提升约30%，准确率下降小于3%。
 
           如果想自行配置boost模式，可以将 `boost_config_dict` 设置为 `boost.py`。
+
           为使功能生效，需要同时设置optimizer、eval_network或metric参数。
-          注意：当前默认开启的优化仅适用部分网络，并非所有网络都能获得相同收益。建议在图模式+Ascend平台下开启该模式，同时为了获取更好的加速效果，请参考文档配置boost_config_dict。
+
+          注意：当前默认开启的优化仅适用部分网络，并非所有网络都能获得相同收益。建议在Ascend平台的图模式下开启boost模式，同时为了获取更好的加速效果，请参考文档配置boost_config_dict。
 
     .. py:method:: build(train_dataset=None, valid_dataset=None, sink_size=-1, epoch=1)
 
@@ -95,7 +97,7 @@
             - **callbacks** (Optional[list[Callback], Callback]) - 训练过程中需要执行的回调对象或者回调对象列表。默认值： ``None`` 。
             - **dataset_sink_mode** (bool) - 训练数据是否直接下沉至处理器进行处理。使用PYNATIVE_MODE模式或CPU处理器时，模型训练流程将以非下沉模式执行。默认值： ``False`` 。
             - **valid_dataset_sink_mode** (bool) - 推理数据是否直接下沉至处理器进行处理。默认值： ``False`` 。
-            - **sink_size** (int) - 控制每次数据下沉的step数量。`dataset_sink_mode` 为False时 `sink_size` 无效。如果sink_size=-1，则每一次epoch下沉完整数据集。如果sink_size>0，则每一次epoch下沉数据量为sink_size的数据集。默认值： ``-1`` 。
+            - **sink_size** (int) - 控制每次数据下沉的step数量。`dataset_sink_mode` 为False时，`sink_size` 设置无效。如果sink_size=-1，则每一次epoch下沉完整数据集。如果sink_size>0，则每一次epoch下沉数据量为sink_size的数据集。默认值： ``-1`` 。
             - **initial_epoch** (int) - 从哪个epoch开始训练，一般用于中断恢复训练场景。默认值： ``0`` 。
 
         教程样例：
@@ -104,7 +106,7 @@
 
     .. py:method:: infer_predict_layout(*predict_data, skip_backend_compile=False)
 
-        在 `AUTO_PARALLEL` 或 `SEMI_AUTO_PARALLEL` 模式下为预测网络生成参数layout。数据可以是单个或多个张量。
+        在 `AUTO_PARALLEL` 或 `SEMI_AUTO_PARALLEL` 模式下，为预测网络生成参数layout。数据可以是单个或多个张量。
 
         .. note:: 同一批次数据应放在一个张量中。
 
@@ -120,7 +122,7 @@
 
     .. py:method:: infer_train_layout(train_dataset, dataset_sink_mode=True, sink_size=-1)
 
-        在 `AUTO_PARALLEL` 或 `SEMI_AUTO_PARALLEL` 模式下为训练网络生成参数layout。当前仅支持在数据下沉模式下使用。
+        在 `AUTO_PARALLEL` 或 `SEMI_AUTO_PARALLEL` 模式下，为训练网络生成参数layout。当前仅支持在数据下沉模式下使用。
 
         .. warning:: 这是一个实验性API，后续可能修改或删除。
 
@@ -129,7 +131,7 @@
         参数：
             - **train_dataset** (Dataset) - 一个训练数据集迭代器。如果没有损失函数（loss_fn），返回一个包含多个数据的元组（data1, data2, data3, ...）并传递给网络。否则，返回一个元组（data, label），数据和标签将被分别传递给网络和损失函数。
             - **dataset_sink_mode** (bool) - 决定是否以数据集下沉模式进行训练。默认值： ``True`` 。PyNative模式下或处理器为CPU时，训练模型流程使用的是数据不下沉（non-sink）模式。默认值： ``True`` 。
-            - **sink_size** (int) - 控制每次数据下沉的step数量，如果 `sink_size` =-1，则每一次epoch下沉完整数据集。如果 `sink_size` >0，则每一次epoch下沉数据量为 `sink_size` 的数据集。如果 `dataset_sink_mode` 为False，则设置 `sink_size` 为无效。默认值： ``-1`` 。
+            - **sink_size** (int) - 控制每次数据下沉的step数量。`dataset_sink_mode` 为False时，`sink_size` 设置无效。如果 `sink_size` =-1，则每一次epoch下沉完整数据集。如果 `sink_size` >0，则每一次epoch下沉数据量为 `sink_size` 的数据集。默认值： ``-1`` 。
 
         返回：
             Dict，用于加载分布式checkpoint的参数layout字典。
@@ -202,7 +204,7 @@
             - **train_dataset** (Dataset) - 一个训练数据集迭代器。如果定义了 `loss_fn` ，则数据和标签会被分别传给 `network` 和 `loss_fn` ，此时数据集需要返回一个元组（data, label）。如果数据集中有多个数据或者标签，可以设置 `loss_fn` 为None，并在 `network` 中实现损失函数计算，此时数据集返回的所有数据组成的元组（data1, data2, data3, ...）会传给 `network` 。
             - **callbacks** (Optional[list[Callback], Callback]) - 训练过程中需要执行的回调对象或者回调对象列表。默认值： ``None`` 。
             - **dataset_sink_mode** (bool) - 数据是否直接下沉至处理器进行处理。使用PYNATIVE_MODE模式或CPU处理器时，模型训练流程将以非下沉模式执行。默认值： ``False`` 。
-            - **sink_size** (int) - 控制每次数据下沉的step数量。`dataset_sink_mode` 为False时 `sink_size` 无效。如果sink_size=-1，则每一次epoch下沉完整数据集。如果sink_size>0，则每一次epoch下沉数据量为sink_size的数据集。默认值： ``-1`` 。
+            - **sink_size** (int) - 控制每次数据下沉的step数量。`dataset_sink_mode` 为False时，`sink_size` 设置无效。如果sink_size=-1，则每一次epoch下沉完整数据集。如果sink_size>0，则每一次epoch下沉数据量为sink_size的数据集。默认值： ``-1`` 。
             - **initial_epoch** (int) - 从哪个epoch开始训练，一般用于中断恢复训练场景。默认值： ``0`` 。
 
     .. py:method:: train_network
