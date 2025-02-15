@@ -28,6 +28,7 @@
 
 namespace {
 constexpr auto kRankSize = "rank_size";
+constexpr auto kDependInputAbs = "depend_input_abs";
 }  // namespace
 
 namespace mindspore {
@@ -94,6 +95,7 @@ AbstractBasePtr InferImplDepend(const AnalysisEnginePtr &, const PrimitivePtr &p
     }
   }
   depends_abs->set_inplace_abstract(depends->inplace_abstract());
+  depends_abs->set_user_data<abstract::AbstractBase>(kDependInputAbs, depends);
   return depends_abs;
 }
 
