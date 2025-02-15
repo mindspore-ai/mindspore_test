@@ -1924,7 +1924,7 @@ class BatchISendIRecv(PrimitiveWithInfer):
 
 class AlltoAllV(PrimitiveWithInfer):
     """
-    AllToAll which support uneven split.
+    AllToAllV which support uneven scatter and gather compared with AllToAll.
 
     Note:
         - Only support flatten tensor as input. input tensor should be flattened and
@@ -1936,11 +1936,11 @@ class AlltoAllV(PrimitiveWithInfer):
 
     Inputs:
         - **input_x** (Tensor) - flatten tensor to scatter. The shape of tensor is :math:`(x_1)`.
-        send_numel_list(Union[tuple[int], list[int], Tensor]): split numel to scatter to different remote rank.
-        recv_numel_list(Union[tuple[int], list[int], Tensor]): split numel to gather from different remote rank.
+        - **send_numel_list** (Union[tuple[int], list[int], Tensor]) - split numel to scatter to different remote rank.
+        - **recv_numel_list** (Union[tuple[int], list[int], Tensor]) - split numel to gather from different remote rank.
 
     Outputs:
-        Tensor. flattened and concatenated tensor gather from remote ranks.
+        Tensor， flattened and concatenated tensor gather from remote ranks.
         If gather result is empty, it will return a Tensor with value 0, which has no actual meaning.
 
     Supported Platforms:
@@ -1976,13 +1976,13 @@ class AlltoAllV(PrimitiveWithInfer):
         >>> send_numel_list = []
         >>> recv_numel_list = []
         >>> if rank == 0:
-        >>>    send_tensor = Tensor([0, 1, 2.])
-        >>>    send_numel_list = [1, 2]
-        >>>    recv_numel_list = [1, 2]
+        ...    send_tensor = Tensor([0, 1, 2.])
+        ...    send_numel_list = [1, 2]
+        ...    recv_numel_list = [1, 2]
         >>> elif rank == 1:
-        >>>    send_tensor = Tensor([3, 4, 5.])
-        >>>    send_numel_list = [2, 1]
-        >>>    recv_numel_list = [2, 1]
+        ...    send_tensor = Tensor([3, 4, 5.])
+        ...    send_numel_list = [2, 1]
+        ...    recv_numel_list = [2, 1]
         >>> net = Net()
         >>> output = net(send_tensor, send_numel_list, recv_numel_list)
         >>> print(output)
