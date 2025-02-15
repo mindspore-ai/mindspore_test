@@ -39,6 +39,8 @@
 namespace mindspore {
 namespace abstract {
 namespace {
+constexpr auto kDependInputAbs = "depend_input_abs";
+
 EvalResultPtr GetEvalResult(const AnfNodeConfigPtr &conf) {
   try {
     MS_EXCEPTION_IF_NULL(conf);
@@ -60,6 +62,10 @@ EvalResultPtr GetEvalResult(const AnfNodeConfigPtr &conf) {
 
 void SyncInplaceAbstract(const AbstractBasePtr &source_abs, const AbstractBasePtr &target_abs) {
   // Sync for tensor.
+  if (target_abs->has_user_data(kDependInputAbs)) {
+    const auto &depend_input_abs = target_abs->user_data<abstract::AbstractBase>(kDependInputAbs);
+    SyncInplaceAbstract(source_abs, depend_input_abs);
+  }
   if (source_abs->inplace_abstract() != nullptr) {
     if (!(source_abs->GetShape()->IsDynamic())) {
       target_abs->set_inplace_abstract(source_abs->inplace_abstract());
