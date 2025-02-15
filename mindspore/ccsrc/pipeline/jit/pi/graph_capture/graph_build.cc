@@ -4656,10 +4656,10 @@ TracePtr CreateRegisterHookTrace(const TracePtr &trace) {
     },
     [trace, hook_str](bool simple) -> std::string {
       auto obj = py::cast<py::object>(trace->GetObject());
-      if (!py::isinstance<tensor::BaseTensor>(obj)) {
+      if (!tensor::IsTensorPy(obj)) {
         return "Hook can't be attached to non-tensor.";
       }
-      auto tensor = py::cast<tensor::BaseTensorPtr>(obj);
+      auto tensor = tensor::ConvertToTensor(obj);
       if (simple) {
         return "Guard backward hook fn on Tensor[" + std::string(tensor->id()) + "].";
       }
@@ -5268,7 +5268,7 @@ py::object TensorDTypeObjectByData(ValueNode *data_node) {
     MS_LOG(INFO) << "data is nullptr";
     return dtype_object;
   }
-  dtype_object = py::module::import("mindspore").attr("Tensor").attr("_set_default_dtype")(data, dtype_object);
+  dtype_object = py::module::import("mindspore.common.tensor").attr("_set_default_dtype")(data, dtype_object);
   if (dtype_object.ptr() == Py_None) {
     // NOTE: list[bool] type is return None, check it
     MS_LOG(INFO) << "dtype_object is None";

@@ -17,6 +17,7 @@
 #include <set>
 #include <vector>
 #include <functional>
+#include "include/common/utils/tensor_py.h"
 #include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pipeline/jit/pi/graph_capture/node.h"
 #include "pipeline/jit/pi/graph_capture/graph.h"
@@ -47,10 +48,10 @@ void ConstantInfo::set_value(const py::object &op) {
 
 namespace {
 bool IsDynamicShapeTensor(const py::object &obj) {
-  if (obj.ptr() == nullptr || !py::isinstance<mindspore::tensor::Tensor>(obj)) {
+  if (obj.ptr() == nullptr || !tensor::IsTensorPy(obj)) {
     return false;
   }
-  auto tensor = py::cast<mindspore::tensor::TensorPtr>(obj);
+  auto tensor = tensor::ConvertToTensor(obj);
   const ShapeVector &shape = tensor->shape();
   return std::any_of(shape.begin(), shape.end(), [](ShapeValueDType dim) { return dim < 0; });
 }

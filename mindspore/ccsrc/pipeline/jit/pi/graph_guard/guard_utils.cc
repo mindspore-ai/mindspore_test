@@ -1621,7 +1621,7 @@ class TensorData : public MetaTensorData {
     if (obj == nullptr) {
       return false;
     }
-    if (tensor::IsTensorPy(py::cast<py::object>(obj))) {
+    if (tensor::IsTensorPy(py::cast<py::object>(obj)) || IsStubTensor(py::cast<py::object>(obj))) {
       bool ret = MetaTensorData::operator==(obj);
       mindspore::tensor::MetaTensorPtr mtensor_ptr = nullptr;
       PyObject *stub = nullptr;
@@ -2975,8 +2975,8 @@ GuardItemPtr GuardType(TracePtr obj) { return std::make_shared<TypeGuard>(obj); 
 
 GuardItemPtr GuardId(TracePtr obj) {
   auto pyObj = py::cast<py::object>(obj->GetObject());
-  bool is_param = IsParameterObject(py_obj);
-  if (!is_param && (IsStubTensor(pyObj) || tensor::IsTensorPy(py_obj))) {
+  bool is_param = IsParameterObject(pyObj);
+  if (!is_param && (IsStubTensor(pyObj) || tensor::IsTensorPy(pyObj))) {
     return GuardEqual(obj, false, INT_MAX);
   } else {
     return std::make_shared<IdGuard>(obj);
