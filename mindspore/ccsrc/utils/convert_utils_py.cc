@@ -635,12 +635,11 @@ py::object VectorToPyData(const Any &value) {
   py::object ret;
   if (value.is<std::vector<tensor::TensorPtr>>()) {
     MS_LOG(DEBUG) << "vector_tensor";
-    std::vector<tensor::TensorPtr> outputs;
-    outputs = value.cast<std::vector<tensor::TensorPtr>>();
+    std::vector<tensor::TensorPyPtr> outputs;
+    outputs = value.cast<std::vector<tensor::TensorPyPtr>>();
     py::tuple tensor_tuple(outputs.size());
     for (std::size_t i = 0; i < outputs.size(); ++i) {
-      auto tensorpy = std::make_shared<tensor::TensorPy>(outputs[i]);
-      tensor_tuple[i] = *tensorpy;
+      tensor_tuple[i] = *outputs[i];
     }
     ret = tensor_tuple;
   } else {

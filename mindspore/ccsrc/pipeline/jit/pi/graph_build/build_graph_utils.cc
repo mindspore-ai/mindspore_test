@@ -21,6 +21,7 @@
 #include "utils/flags.h"
 #include "utils/ms_context.h"
 #include "ir/meta_func_graph.h"
+#include "include/common/utils/tensor_py.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pybind_api/ir/primitive_py.h"
@@ -115,10 +116,10 @@ bool IsMsTensorMethod(const py::object &obj) {
 }
 
 bool HasRegisterHook(const py::object &obj) {
-  if (!py::isinstance<tensor::BaseTensor>(obj)) {
+  if (!tensor::IsTensorPy(obj)) {
     return false;
   }
-  auto tensor = py::cast<tensor::BaseTensorPtr>(obj);
+  auto tensor = tensor::ConvertToTensor(obj);
   const auto &grad_meta_data = pynative::autograd::impl::get_autograd_meta_impl(tensor);
   if (grad_meta_data == nullptr || !grad_meta_data->is_register_hook()) {
     return false;
@@ -131,7 +132,7 @@ py::list GetRegisterHookList(const py::object &obj) {
     return py::list();
   }
   py::list hook_fn_list;
-  auto tensor = py::cast<tensor::BaseTensorPtr>(obj);
+  auto tensor = tensor::ConvertToTensor(obj);
   const auto &grad_meta_data = pynative::autograd::impl::get_autograd_meta_impl(tensor);
   const auto &backward_hooks = grad_meta_data->backward_hooks();
   for (const auto &[id, hook] : backward_hooks) {

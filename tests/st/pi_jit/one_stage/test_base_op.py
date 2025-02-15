@@ -28,7 +28,7 @@ from mindspore.common.api import jit
 from tests.mark_utils import arg_mark
 from mindspore._c_expression import get_code_extra
 from tests.st.pi_jit.share.utils import pi_jit_with_config
-from mindspore._c_expression import Tensor as CppTensor
+from mindspore._c_expression import TensorPy as CppTensor
 from tests.st.pi_jit.share.utils import assert_graph_compile_status
 
 cfg = {
