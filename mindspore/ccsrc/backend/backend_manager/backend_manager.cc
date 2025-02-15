@@ -60,6 +60,12 @@ void BackendManager::Register(const std::string &backend_name, BackendCreator &&
   }
 }
 
+void BackendManager::Clear() {
+  for (size_t i = 0; i < kInvalidBackend; i++) {
+    backends_[i] = nullptr;
+  }
+}
+
 std::pair<BackendType, BackendGraphId> BackendManager::Build(const FuncGraphPtr &func_graph,
                                                              const std::string &backend_name) {
   MS_EXCEPTION_IF_NULL(func_graph);

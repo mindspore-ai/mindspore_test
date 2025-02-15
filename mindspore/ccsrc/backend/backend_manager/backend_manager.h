@@ -60,6 +60,9 @@ class BACKEND_MANAGER_EXPORT BackendManager {
   // which are generated through the graph Build interface above.
   RunningStatus Run(BackendType backend_type, BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs);
 
+  // Clear the members.
+  void Clear();
+
  private:
   BackendManager() = default;
   ~BackendManager() = default;
