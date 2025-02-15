@@ -14,6 +14,7 @@
 # ============================================================================
 """ test_bprop """
 import numpy as np
+import pytest
 import mindspore as ms
 from mindspore import grad
 import mindspore.nn as nn
@@ -894,3 +895,86 @@ def test_grad_jit_stop_gradient():
     grads = grad_net(net)(x)
     assert np.allclose(grads[0][0].asnumpy(), np.array([0], dtype=np.float32), 0.00001, 0.00001)
     assert np.allclose(grads[1][0].asnumpy(), np.array([4], dtype=np.float32), 0.00001, 0.00001)
+
+
+class StopGradientInplaceNet(nn.Cell):
+    def construct(self, x):
+        y = x * x
+        ops.stop_gradient_(y)
+        z = y * x
+        return z
+
+
+class StopGradientInplaceViewNet(nn.Cell):
+    def construct(self, x):
+        y = x * x
+        y = y[0]
+        ops.stop_gradient_(y)
+        z = y * x
+        return z
+
+
+class StopGradientInplaceParameterNet(nn.Cell):
+    def __init__(self):
+        super(StopGradientInplaceParameterNet, self).__init__()
+        self.p1 = Parameter(Tensor([2.0, 3.0], dtype=ms.float32))
+
+    def construct(self, x):
+        ops.stop_gradient_(self.p1)
+        return x * self.p1
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_auto_grad_stop_gradient_inplace():
+    """
+    Feature: Test stop gradient inplace.
+    Description: Test stop gradient inplace.
+    Expectation: Success.
+    """
+    x = Tensor([2.0, 3.0], ms.float32)
+    grad_op = ops.GradOperation(get_all=True, get_by_list=True)
+
+    net = StopGradientInplaceNet()
+    grads = grad_op(net)(x)
+    assert np.allclose(grads[0][0].asnumpy(), np.array([4.0, 9.0], dtype=np.float32), 0.00001, 0.00001)
+
+    net = StopGradientInplaceParameterNet()
+    grads = grad_op(net, net.trainable_params())(x)
+    assert np.allclose(grads[0][0].asnumpy(), np.array([2.0, 3.0], dtype=np.float32), 0.00001, 0.00001)
+    assert np.allclose(grads[1][0].asnumpy(), np.array([0.0, 0.0], dtype=np.float32), 0.00001, 0.00001)
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_no_grad_stop_gradient_inplace_view():
+    """
+    Feature: Test stop gradient inplace view in no grad mode.
+    Description: Test stop gradient inplace view in no grad mode.
+    Expectation: Success.
+    """
+    x = Tensor([2.0, 3.0], ms.float32)
+    net = StopGradientInplaceViewNet()
+    out = net(x)
+    assert np.allclose(out.asnumpy(), np.array([8.0, 12.0], dtype=np.float32), 0.00001, 0.00001)
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_auto_grad_stop_gradient_inplace_view_error():
+    """
+    Feature: Test stop gradient inplace view exception.
+    Description: The operation will raise error.
+    Expectation: Success.
+    """
+    x = Tensor([2.0, 3.0], ms.float32)
+    net = StopGradientInplaceViewNet()
+    grad_op = ops.GradOperation(get_all=True)
+    with pytest.raises(RuntimeError, match="Cannot stop_gradient view inplace"):
+        grad_op(net)(x)

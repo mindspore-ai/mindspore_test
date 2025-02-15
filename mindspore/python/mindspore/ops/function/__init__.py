@@ -649,6 +649,7 @@ from .grad import (
     vjp,
     linearize,
     stop_gradient,
+    stop_gradient_,
     get_grad
 )
 from .debug_func import (

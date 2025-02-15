@@ -27,6 +27,7 @@ from .grad_func import (
     vjp,
     linearize,
     stop_gradient,
+    stop_gradient_,
     get_grad
 )
 
