@@ -2660,10 +2660,12 @@ int64_t OperatorInfo::ComputeOpAndPrevEdgeParameterInvolved() {
 }
 
 Status OperatorInfo::set_is_parameter(const std::vector<bool> &is_parameter) {
-  if (is_parameter.size() != inputs_shape_.size()) {
-    MS_LOG(ERROR) << name_ << ": Is_parameter: " << is_parameter.size()
-                  << " do not have the same number of inputs_shape_: " << inputs_shape_.size();
-    return FAILED;
+  if (inputs_shape_new_.size() == 0) {
+    if (is_parameter.size() != inputs_shape_.size()) {
+      MS_LOG(ERROR) << name_ << ": Is_parameter: " << is_parameter.size()
+                    << " do not have the same number of inputs_shape_: " << inputs_shape_.size();
+      return FAILED;
+    }
   }
   is_parameter_ = is_parameter;
   operator_cost()->set_is_parameter(is_parameter);
@@ -2861,15 +2863,19 @@ Status OperatorInfo::InferVirtualDivOpsByLayout() {
 
 Status OperatorInfo::SetInputAndOutputTypeLength(const std::vector<size_t> &input_lengths,
                                                  const std::vector<size_t> &output_lengths) {
-  if (input_lengths.size() != inputs_shape_.size()) {
-    MS_LOG(ERROR) << name_ << ": Input_lengths: " << input_lengths.size()
-                  << " do not have the same number of inputs shape: " << inputs_shape_.size();
-    return FAILED;
+  if (inputs_shape_new_.size() == 0) {
+    if (input_lengths.size() != inputs_shape_.size()) {
+      MS_LOG(ERROR) << name_ << ": Input_lengths: " << input_lengths.size()
+                    << " do not have the same number of inputs shape: " << inputs_shape_.size();
+      return FAILED;
+    }
   }
-  if (output_lengths.size() != outputs_shape_.size()) {
-    MS_LOG(ERROR) << name_ << ": Output_lengths: " << output_lengths.size()
-                  << " do not have the same number of outputs shape: " << outputs_shape_.size();
-    return FAILED;
+  if (outputs_shape_new_.size() == 0) {
+    if (output_lengths.size() != outputs_shape_.size()) {
+      MS_LOG(ERROR) << name_ << ": Output_lengths: " << output_lengths.size()
+                    << " do not have the same number of outputs shape: " << outputs_shape_.size();
+      return FAILED;
+    }
   }
   inputs_type_lengths_ = input_lengths;
   outputs_type_lengths_ = output_lengths;
@@ -2897,10 +2903,12 @@ double OperatorInfo::GetOutputsTotalSize() {
 }
 
 Status OperatorInfo::set_outputs_type(const std::vector<TypePtr> &outputs_type) {
-  if (outputs_type.size() != outputs_shape_.size()) {
-    MS_LOG(ERROR) << name_ << ": Outputs type: " << outputs_type.size()
-                  << " do not have the same number of outputs shape: " << outputs_shape_.size();
-    return FAILED;
+  if (outputs_shape_new_.size() == 0) {
+    if (outputs_type.size() != outputs_shape_.size()) {
+      MS_LOG(ERROR) << name_ << ": Outputs type: " << outputs_type.size()
+                    << " do not have the same number of outputs shape: " << outputs_shape_.size();
+      return FAILED;
+    }
   }
   outputs_type_ = outputs_type;
   return SUCCESS;
