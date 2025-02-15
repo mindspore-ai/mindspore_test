@@ -80,8 +80,12 @@ class CustomBackward : public BackwardNode {
 
 class PyBackwardNode : public BackwardNode {
  public:
-  PyBackwardNode(string name, py::function backward_fn, py::object obj, size_t output_size = 1)
-      : BackwardNode(std::move(name), output_size), backward_fn_(std::move(backward_fn)), obj_(std::move(obj)) {}
+  PyBackwardNode(string name, py::function backward_fn, py::object obj, abstract::AbstractBasePtr out_abstract,
+                 size_t output_size = 1)
+      : BackwardNode(std::move(name), output_size),
+        backward_fn_(std::move(backward_fn)),
+        obj_(std::move(obj)),
+        out_abstract_(std::move(out_abstract)) {}
   ~PyBackwardNode() override;
   ValuePtrList CallBackward(const ValuePtrList &grads) override;
   void Release() override;
@@ -89,6 +93,7 @@ class PyBackwardNode : public BackwardNode {
  private:
   py::function backward_fn_;
   py::object obj_;
+  abstract::AbstractBasePtr out_abstract_;
 };
 
 }  // namespace autograd

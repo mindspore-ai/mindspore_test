@@ -44,10 +44,13 @@ class _Function(FunctionBase_):
         return super().apply(cls, *args, **kwargs)
 
     def save_for_backward(self, *tensors: Tensor):
-        self.to_save = tensors
+        self.saved_tensors = tensors
 
     def mark_dirty(self, *args: Tensor):
         self.dirty_tensors = args
 
     def mark_non_differentiable(self, *args: Tensor):
         self.non_differentiable = args
+
+    def set_materialize_grads(self, value: bool):
+        self.materialize_grads = value

@@ -106,12 +106,12 @@ static BaseTensorPtrSet parse_non_differentiable(const FunctionPtr &fptr) {
 
 static BaseTensorPtrSet parse_to_save(const FunctionPtr &fptr) {
   BaseTensorPtrSet to_save_tensors;
-  py::object to_save_obj = fptr->to_save();
+  py::object to_save_obj = fptr->saved_tensors();
   if (!to_save_obj) {
     return to_save_tensors;
   }
   if (!py::isinstance<py::tuple>(to_save_obj)) {
-    MS_LOG(EXCEPTION) << "to_save of functionbase should be a tuple, but get a " << to_save_obj.get_type();
+    MS_LOG(EXCEPTION) << "saved_tensors of functionbase should be a tuple, but get a " << to_save_obj.get_type();
   }
   py::tuple to_save_tp = py::cast<py::tuple>(to_save_obj);
   size_t num_to_save = to_save_tp.size();
@@ -213,7 +213,7 @@ void ConstructContextAfterForward(const std::shared_ptr<FunctionContext> &contex
   context->to_save_tensors = parse_to_save(ctx);
   MS_LOG(DEBUG) << "Parse info, dirty size: " << context->dirty_tensors.size()
                 << ", non_diff size: " << context->non_diff_tensors.size()
-                << "to_save size: " << context->to_save_tensors.size();
+                << "saved_tensors size: " << context->to_save_tensors.size();
 
   // Convert input object to tensors.
   BaseTensorPtrSet input_base_tensors;
@@ -335,9 +335,10 @@ void RegFunctionBase(const py::module *m) {
     .def(py::init<>())
     .def_static("apply", &FunctionBase::apply, "functionbase apply interface.")
     .def_property("needs_input_grad", &FunctionBase::needs_input_grad, &FunctionBase::set_needs_input_grad)
-    .def_property("to_save", &FunctionBase::to_save, &FunctionBase::set_to_save)
+    .def_property("saved_tensors", &FunctionBase::saved_tensors, &FunctionBase::set_saved_tensors)
     .def_property("non_differentiable", &FunctionBase::non_differentiable, &FunctionBase::set_non_differentiable)
-    .def_property("dirty_tensors", &FunctionBase::dirty_tensors, &FunctionBase::set_dirty_tensors);
+    .def_property("dirty_tensors", &FunctionBase::dirty_tensors, &FunctionBase::set_dirty_tensors)
+    .def_property("materialize_grads", &FunctionBase::materialize_grads, &FunctionBase::set_materialize_grads);
 }
 }  // namespace autograd
 }  // namespace pynative
