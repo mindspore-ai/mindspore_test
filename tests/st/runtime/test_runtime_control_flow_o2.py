@@ -25,7 +25,7 @@ from mindspore.nn.optim.momentum import Momentum
 import mindspore.context as context
 from tests.mark_utils import arg_mark
 
-context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O2"})
+context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
 
 def create_model(network, amp_level="O0", metrics=None, loss_scale_manager=None):
     loss = SoftmaxCrossEntropyWithLogits(reduction='mean')

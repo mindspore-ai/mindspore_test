@@ -514,6 +514,7 @@ def test_cell_in_list():
     Description: Test raise join in control flow(switch_layer).
     Expectation: No exception.
     """
+    context.set_context(jit_config={"jit_level": "O0"})
     net = CellInList()
     x = Tensor(np.ones((1, 1, 224, 224)), mstype.float32)
     idx = Tensor(0, mstype.int32)

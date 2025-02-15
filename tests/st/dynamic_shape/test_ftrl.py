@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 import numpy as np
-import pytest
 import mindspore.nn as nn
 from mindspore import Tensor, Parameter, context
 from mindspore.nn import TrainOneStepCell
@@ -87,6 +86,7 @@ def test_lazy_adam_net_sparse():
     Description: Test dynamic shape ops.
     Expectation: No exception.
     """
+    context.set_context(jit_config={"jit_level": "O0"})
     indices = Tensor(np.array([0, 0, 1]).astype(np.int32))
     label = Tensor(np.zeros([2, 1, 2]).astype(np.float32))
     net = NetWithSparseGatherV2()

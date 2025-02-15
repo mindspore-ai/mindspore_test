@@ -44,6 +44,8 @@ def test_embeddinglookup_para_customed_dtype(mode):
     Expectation: success
     """
     ms.set_context(mode=mode)
+    if mode == ms.GRAPH_MODE:
+        ms.set_context(jit_config={"jit_level": "O0"})
     net = Net()
     x = Tensor(np.array([[1, 0], [3, 2]]), ms.int32)
     output = net(x)

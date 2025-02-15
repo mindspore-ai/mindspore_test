@@ -68,7 +68,7 @@ def test_print_tensor_many_times():
     """
     os.environ['MS_DUMP_SLICE_SIZE'] = '2048'
     os.environ['MS_DUMP_WAIT_TIME'] = '53'
-    ms.set_context(mode=ms.GRAPH_MODE)
+    ms.set_context(mode=ms.GRAPH_MODE, jit_config={"jit_level": "O0"})
     print_file = os.getcwd() + "/test_print_tensor_many_times.pb"
     ms.set_context(print_file_path=print_file)
     x = np.full((1024, 512, 7, 7), 1.22222121, np.float32)
@@ -112,7 +112,7 @@ def test_print_tensor_many_times2():
 
     os.environ['MS_DUMP_SLICE_SIZE'] = '2048'
     os.environ['MS_DUMP_WAIT_TIME'] = '53'
-    ms.set_context(mode=ms.GRAPH_MODE)
+    ms.set_context(mode=ms.GRAPH_MODE, jit_config={"jit_level": "O0"})
     x = np.full((1024, 512, 256, 4), 1.22222121, np.float32)
     y = np.full((1024, 512, 256, 4), 1.22222121, np.float16)
     input1 = Tensor(x)

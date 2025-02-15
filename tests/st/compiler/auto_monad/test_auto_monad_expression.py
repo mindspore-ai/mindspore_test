@@ -426,6 +426,7 @@ def test_parameter_tuple_assign_addn_inner_net_control_flow():
             self.assign(inner_params[0], 2 * y)
             return out_res1 + out_res2, inner_params[0] + inner_params[1]
 
+    context.set_context(jit_config={"jit_level": "O0"})
     input_x = Tensor(3)
     input_y = Tensor(5)
     net = Net()

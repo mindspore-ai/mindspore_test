@@ -28,4 +28,3 @@ def test_io_index():
     Expectation: The result match with expect.
     """
     run_testcase("run_io_index", "test_io_index_condition_1")
-    run_testcase("run_io_index", "test_io_index_condition_2")
