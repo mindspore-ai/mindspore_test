@@ -62,12 +62,17 @@ int SvdCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std
   if (ret != 0) {
     return ret;
   }
+  auto in_shape = inputs[kIndex0]->GetShapeVector();
+  if (IsShapeNone(in_shape)) {
+    MS_LOG(EXCEPTION) << "For " << kernel_name_ << ", the input can not be a empty tensor, but got: " << in_shape;
+  }
 
   std::vector<size_t> input_shape = std::vector<size_t>(inputs.at(kIndex0)->GetDeviceShapeVector().begin(),
                                                         inputs.at(kIndex0)->GetDeviceShapeVector().end());
   size_t dim = input_shape.size();
   if (dim < kDim2) {
-    MS_LOG(EXCEPTION) << "For " << kernel_name_ << ", input dimension must be greater than or equal to 2.";
+    MS_LOG(EXCEPTION) << "For " << kernel_name_
+                      << ", input dimension must be greater than or equal to 2, but got: " << dim;
   }
 
   num_of_rows_ = input_shape[dim - kDim2];
