@@ -29,9 +29,6 @@
 #include "acl/acl_rt.h"
 
 namespace mindspore {
-#ifdef ENABLE_DEBUGGER
-class Debugger;
-#endif
 namespace device {
 class LaunchKernel;
 namespace ascend {
@@ -89,13 +86,8 @@ class AscendDeviceAddress : public LoadableDeviceAddress {
   bool CopyHostToDevice(void *dst, const void *src, const size_t &size) const override;
   void ClearDeviceMemory() override;
   DeviceType GetDeviceType() const override { return DeviceType::kAscend; }
-  bool DumpMemToFile(const std::string &filepath, const std::string &host_fmt, const ShapeVector &host_shape,
-                     TypeId host_type, bool trans_flag) const override;
-#ifdef ENABLE_DEBUGGER
-  bool LoadMemToHost(const std::string &tensor_name, int execution_order, const std::string &host_fmt,
-                     const ShapeVector &host_shape, TypeId host_type, size_t slot, bool keep_prev,
-                     uint32_t root_graph_id, bool force_update, bool trans_flag, bool async_copy = true) const override;
-#endif
+  mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
+                                             TypeId host_type, bool trans_flag, bool async_copy = true) const override;
 
   // Asynchronously copy host memory to device side.
   bool AsyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,
