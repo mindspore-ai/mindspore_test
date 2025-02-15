@@ -127,7 +127,18 @@ void Capture(const py::list &args, py::object *res, std::string class_name) {
   if (!IsTracing()) {
     return;
   }
-  const py::object &prim_py = python_adapter::CallPyFn("mindspore.ops", class_name);
+  std::string ops_module_name = "mindspore.ops";
+  std::string auto_gen_module_name = "mindspore.ops.auto_generate";
+  py::module ops_mod = py::module::import(ops_module_name.c_str());
+  py::module auto_gen_mod = py::module::import(auto_gen_module_name.c_str());
+  py::object prim_py;
+  if (py::hasattr(ops_mod, class_name.c_str())) {
+    prim_py = python_adapter::CallPyFn(ops_module_name, class_name);
+  } else if (py::hasattr(auto_gen_mod, class_name.c_str())) {
+    prim_py = python_adapter::CallPyFn(auto_gen_module_name, class_name);
+  } else {
+    MS_LOG(EXCEPTION) << "Cannot find primitive for op: " << class_name;
+  }
   *res = CaptureRun(py::args(py::tuple(args)), *res, prim_py);
 }
 

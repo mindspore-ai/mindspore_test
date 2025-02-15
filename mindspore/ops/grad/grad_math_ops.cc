@@ -1168,6 +1168,25 @@ REG_BPROP_BUILDER("AddExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(
   return ret;
 });
 
+REG_BPROP_BUILDER("AddScalar").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto other = ib->GetInput(kIndex1);
+  auto alpha = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+
+  auto dtype_input = ib->GetDtype(input);
+  bool is_complex_input = (*dtype_input) == (*kComplex64) || (*dtype_input) == (*kComplex128);
+
+  auto dtype_dout = ib->GetDtype(dout);
+  bool is_complex_dout = (*dtype_dout) == (*kComplex64) || (*dtype_dout) == (*kComplex128);
+
+  if (!is_complex_input && is_complex_dout) {
+    return {ib->Real(dout), ib->OutZeros(other), ib->OutZeros(alpha)};
+  }
+
+  return {dout, ib->OutZeros(other), ib->OutZeros(alpha)};
+});
+
 REG_BPROP_BUILDER("InplaceAddsExt").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
@@ -1234,6 +1253,25 @@ REG_BPROP_BUILDER("InplaceMuls").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) 
   auto dout = ib->GetInput(kIndex3);
   auto dx = ib->Emit("Muls", {dout, y});
   return {dx, ib->OutZeros(y)};
+});
+
+REG_BPROP_BUILDER("SubScalar").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto other = ib->GetInput(kIndex1);
+  auto alpha = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+
+  auto dtype_input = ib->GetDtype(input);
+  bool is_complex_input = (*dtype_input) == (*kComplex64) || (*dtype_input) == (*kComplex128);
+
+  auto dtype_dout = ib->GetDtype(dout);
+  bool is_complex_dout = (*dtype_dout) == (*kComplex64) || (*dtype_dout) == (*kComplex128);
+
+  if (!is_complex_input && is_complex_dout) {
+    return {ib->Real(dout), ib->OutZeros(other), ib->OutZeros(alpha)};
+  }
+
+  return {dout, ib->OutZeros(other), ib->OutZeros(alpha)};
 });
 
 REG_BPROP_BUILDER("SubExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(ib) {
