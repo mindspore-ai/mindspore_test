@@ -455,6 +455,13 @@ class MS_CORE_API Tensor : public BaseTensor {
   /// \return Tensors that data are pointed to each contiguous memory chunks, empty if failed.
   static TensorPtrList GetFlattenedTensors(const TensorPtrList &tensors);
 
+  /// \brief Get tensor for each contiguous memory chunks used.
+  ///
+  /// \param[in] tensor The given tensor.
+  ///
+  /// \return Tensor that data are pointed to each contiguous memory chunks, empty if failed.
+  static const TensorPtr GetFlattenedTensor(const TensorPtr &tensor);
+
   /// \brief Get tensors stub flag.
   ///
   /// \param[in] none.

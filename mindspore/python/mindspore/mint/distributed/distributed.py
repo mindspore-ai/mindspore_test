@@ -23,7 +23,7 @@ from mindspore import log as logger
 from mindspore.common import dtype as mstype
 from mindspore.ops import ReduceOp, cat
 from mindspore.common.tensor import Tensor
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.ops.primitive import _primexpr
 from mindspore.communication._comm_helper import (
     _destroy_group_helper,

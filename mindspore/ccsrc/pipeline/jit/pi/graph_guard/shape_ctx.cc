@@ -18,6 +18,7 @@
 #include <map>
 #include "ir/tensor.h"
 #include "pipeline/jit/pi/python_adapter/pydef.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace py = pybind11;
 
@@ -136,8 +137,8 @@ static bool CheckSymbolicShape(PyObject *attr, mindspore::tensor::TensorPtr org)
 }
 
 static bool CheckTensorValid(PyObject *sig, PyObject *org) {
-  mindspore::tensor::TensorPtr psig = py::cast<mindspore::tensor::TensorPtr>(sig);
-  mindspore::tensor::TensorPtr porg = py::cast<mindspore::tensor::TensorPtr>(org);
+  mindspore::tensor::TensorPtr psig = mindspore::tensor::ConvertToTensor(py::cast<py::object>(sig));
+  mindspore::tensor::TensorPtr porg = mindspore::tensor::ConvertToTensor(py::cast<py::object>(org));
   if (IsShapeUnknown(psig) && !CheckDynamicShape(psig, porg)) {
     return false;
   }
@@ -185,8 +186,8 @@ static bool CheckItemValid(PyObject *sig, PyObject *org) {
   if (sig == nullptr || org == nullptr || sig == Py_None || org == Py_None) {
     return true;
   }
-  if (py::isinstance<mindspore::tensor::Tensor>(sig) && py::isinstance<mindspore::tensor::Tensor>(org) &&
-      !CheckTensorValid(sig, org)) {
+  if (mindspore::tensor::IsTensorPy(py::cast<py::object>(sig)) &&
+      mindspore::tensor::IsTensorPy(py::cast<py::object>(org)) && !CheckTensorValid(sig, org)) {
     return false;
   }
   if (PyList_Check(sig) && PyList_Check(org) && !CheckListValid(sig, org)) {

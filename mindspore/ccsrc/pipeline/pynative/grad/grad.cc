@@ -47,6 +47,7 @@
 #include "pipeline/pynative/grad/custom_function.h"
 #include "availability/silent_check/silent_check.h"
 #include "utils/log_adapter.h"
+#include "include/common/utils/tensor_py.h"
 #include "backend/graph_compiler/backend.h"
 #include "mindspore/ccsrc/pyboost/grad_functions/value_converter.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
@@ -401,10 +402,10 @@ void SetCustomBpropInputs(const py::object &obj, autograd::CustomContext *contex
       auto weights_tuple = py::cast<py::tuple>(weights);
       context->weight_size = weights_tuple.size();
       for (size_t i = 0; i < weights_tuple.size(); ++i) {
-        if (!py::isinstance<tensor::Tensor>(weights_tuple[i])) {
+        if (!tensor::IsTensorPy(weights_tuple[i])) {
           MS_LOG(EXCEPTION) << "For cell bprop, element of internal params should be tensor type!";
         }
-        auto tensor = weights_tuple[i].cast<tensor::TensorPtr>();
+        auto tensor = tensor::ConvertToTensor(weights_tuple[i]);
         (void)context->inputs.emplace_back(tensor);
         (void)context->input_value_grad_type.emplace_back(
           PyNativeAlgo::AutoGradUtil::SetValueGradInfo(tensor, InputType::kConstant));

@@ -27,7 +27,7 @@ import numpy as np
 from mindspore import context
 from mindspore import log as logger
 from mindspore.common import dtype as mstype
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 
 EQ = 1  # ==
 NE = 2  # !=
@@ -1252,7 +1252,7 @@ def check_symbolic_shape(dynamic_inputs, actual_inputs):
         for index, (dyn_input, net_input) in enumerate(zip(dyn_inputs, net_inputs)):
             if isinstance(dyn_input, (tuple, list)):
                 run_check(dyn_input, net_input)
-            elif hasattr(dyn_input, "symbolic_shape"):
+            elif hasattr(dyn_input, "symbolic_shape") and getattr(dyn_input, "symbolic_shape") is not None:
                 _check_symbol(dyn_input, net_input, index, symbolic_shape_data)
 
     run_check(dynamic_inputs, actual_inputs)

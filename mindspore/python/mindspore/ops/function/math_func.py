@@ -103,7 +103,7 @@ from mindspore.ops.operations.math_ops import (
 )
 from mindspore.common.tensor import Tensor
 from mindspore.ops._primitive_cache import _get_cache_prim
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 import mindspore.ops.function as F
 from mindspore.ops.operations._sequence_ops import TupleToTensor
 

@@ -15,7 +15,6 @@
 """dryrun."""
 import traceback
 import os
-from mindspore._c_expression import Tensor as Tensor_
 from mindspore.common import Tensor
 from mindspore import log as logger
 from mindspore.common._stub_tensor import StubTensor
@@ -52,7 +51,7 @@ def no_inject_traceback_for_print(self):
         return "Unknown Tensor type!"
     if self.has_init:
         self.init_data()
-    return str(Tensor_.asnumpy(self))
+    return str(Tensor.asnumpy(self))
 
 
 def set_simulation():

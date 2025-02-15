@@ -20,8 +20,10 @@
 #include <string>
 #include <tuple>
 #include <vector>
+#include <algorithm>
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/factory/ms_factory.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -42,14 +44,18 @@ int64_t LlmBoostBinder::Init(const std::string &param) {
   return impl_->Init(param);
 }
 
-std::vector<tensor::TensorPtr> LlmBoostBinder::Forward(const py::list &py_inputs, const std::string &param) {
+std::vector<tensor::TensorPyPtr> LlmBoostBinder::Forward(const py::list &py_inputs, const std::string &param) {
   MS_LOG(INFO) << "TransformerBoost forward";
   std::vector<tensor::TensorPtr> inputs;
   for (auto &obj : py_inputs) {
-    auto tensor = IsStubTensor(obj) ? ConvertStubTensor(obj) : obj.cast<tensor::TensorPtr>();
+    auto tensor = IsStubTensor(obj) ? ConvertStubTensor(obj) : tensor::ConvertToTensor(obj);
     inputs.emplace_back(tensor);
   }
-  return impl_->Forward(inputs, param);
+  std::vector<tensor::TensorPtr> outputs = impl_->Forward(inputs, param);
+  std::vector<tensor::TensorPyPtr> py_outputs;
+  (void)std::transform(outputs.begin(), outputs.end(), std::back_inserter(py_outputs),
+                       [](const tensor::TensorPtr &p) { return std::make_shared<tensor::TensorPy>(p); });
+  return py_outputs;
 }
 
 int64_t LlmBoostBinder::SetKVCache(const py::list &py_kcache, const py::list &py_vcache) {
@@ -57,11 +63,11 @@ int64_t LlmBoostBinder::SetKVCache(const py::list &py_kcache, const py::list &py
   std::vector<tensor::TensorPtr> msKCacheTensors;
   std::vector<tensor::TensorPtr> msVCacheTensors;
   for (auto &obj : py_kcache) {
-    auto tensor = IsStubTensor(obj) ? ConvertStubTensor(obj) : obj.cast<tensor::TensorPtr>();
+    auto tensor = IsStubTensor(obj) ? ConvertStubTensor(obj) : tensor::ConvertToTensor(obj);
     msKCacheTensors.emplace_back(tensor);
   }
   for (auto &obj : py_vcache) {
-    auto tensor = IsStubTensor(obj) ? ConvertStubTensor(obj) : obj.cast<tensor::TensorPtr>();
+    auto tensor = IsStubTensor(obj) ? ConvertStubTensor(obj) : tensor::ConvertToTensor(obj);
     msVCacheTensors.emplace_back(tensor);
   }
   return impl_->SetKVCache(msKCacheTensors, msVCacheTensors);
@@ -71,7 +77,7 @@ int64_t LlmBoostBinder::SetWeight(const py::list &py_weights) {
   MS_LOG(INFO) << "LlmBoostBinder::SetWeight";
   std::vector<tensor::TensorPtr> weights;
   for (auto &obj : py_weights) {
-    auto tensor = IsStubTensor(obj) ? ConvertStubTensor(obj) : obj.cast<tensor::TensorPtr>();
+    auto tensor = IsStubTensor(obj) ? ConvertStubTensor(obj) : tensor::ConvertToTensor(obj);
     weights.emplace_back(tensor);
   }
   return impl_->SetWeight(weights);
@@ -124,7 +130,7 @@ int64_t LlmBoostBinder::SetWeightMap(const pybind11::dict &dict) {
   for (auto &item : dict) {
     auto str = std::string(pybind11::str(item.first));
     auto obj = item.second;
-    auto tensor = obj.cast<mindspore::tensor::TensorPtr>();
+    auto tensor = tensor::ConvertToTensor(obj);
     weight_map[str] = tensor;
   }
   if (impl_ == nullptr) {

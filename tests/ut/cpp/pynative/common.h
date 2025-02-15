@@ -25,6 +25,7 @@
 
 #include "ir/tensor.h"
 #include "include/common/utils/stub_tensor.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 class PyCommon : public testing::Test {
@@ -50,7 +51,8 @@ class PyCommon : public testing::Test {
   }
 
   pybind11::object NewPyTensor(const tensor::BaseTensorPtr &tensor) {
-    return tensor_module_.attr("Tensor")(tensor);
+    auto tensorpy =  std::make_shared<tensor::TensorPy>(tensor);
+    return tensor_module_.attr("Tensor")(tensorpy);
   }
 
   pybind11::object NewPyStubTensor(const stub::StubNodePtr &stub_tensor) {

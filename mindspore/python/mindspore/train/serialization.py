@@ -59,7 +59,7 @@ from mindspore.common.api import _get_parameter_layout
 from mindspore.common.initializer import initializer, One
 from mindspore.common.parameter import Parameter, _offload_if_config
 from mindspore.common.tensor import Tensor
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.common._utils import is_shape_unknown
 from mindspore.common.file_system import FileSystem, _register_basic_file_system, _register_mindio_file_system
 from mindspore.communication.management import get_rank, get_group_size

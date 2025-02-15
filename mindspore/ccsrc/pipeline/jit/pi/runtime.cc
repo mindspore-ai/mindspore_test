@@ -50,6 +50,7 @@
 #include "pipeline/jit/pi/graph_capture/bytecode_inliner.h"
 #include "utils/convert_utils_base.h"
 #include "pipeline/jit/pi/eval_frame_hook.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pijit {
@@ -962,11 +963,10 @@ static bool CheckTensorInContainer(py::object args) {
       }
     }
   }
-  if (IsStubTensor(args) || py::isinstance<mindspore::tensor::Tensor>(args.ptr())) {
+  if (IsStubTensor(args) || tensor::IsTensorPy(args)) {
     return true;
-  } else {
-    return false;
   }
+  return false;
 }
 
 static bool CheckAbstract(abstract::AbstractBasePtr abs, bool incontainer);

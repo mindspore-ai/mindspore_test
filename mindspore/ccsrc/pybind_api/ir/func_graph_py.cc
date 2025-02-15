@@ -18,6 +18,7 @@
 #include "ir/func_graph.h"
 
 #include "include/common/pybind_api/api_register.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 py::dict UpdateFuncGraphHyperParams(const FuncGraphPtr &func_graph, const py::dict &params_init) {
@@ -38,22 +39,22 @@ py::dict UpdateFuncGraphHyperParams(const FuncGraphPtr &func_graph, const py::di
       py::object new_param;
 
       if (params_init.contains(param_name)) {
-        const auto &new_value = params_init[param_name].cast<tensor::TensorPtr>();
+        const auto &new_value = tensor::ConvertToTensorPy(params_init[param_name]);
         MS_EXCEPTION_IF_NULL(new_value);
-        if (new_value->shape() != old_value->shape() || new_value->data_type() != old_value->data_type()) {
+        if (new_value->GetShape() != old_value->shape() || new_value->GetDataType() != old_value->data_type()) {
           MS_EXCEPTION(ValueError)
             << "Only support update parameter by Tensor or Parameter with same shape and dtype as it. "
                "The parameter '"
             << param_name.cast<std::string>() << "' has shape " << old_value->shape() << " and dtype "
-            << TypeIdLabel(old_value->data_type()) << ", but got the update value with shape " << new_value->shape()
-            << " and dtype " << TypeIdLabel(new_value->data_type()) << ".";
+            << TypeIdLabel(old_value->data_type()) << ", but got the update value with shape " << new_value->GetShape()
+            << " and dtype " << TypeIdLabel(new_value->GetDataType()) << ".";
         }
         new_param = ParamInit(*new_value);
       } else {
-        new_param = ParamInit(*old_value);
+        new_param = ParamInit(std::make_shared<tensor::TensorPy>(old_value));
       }
       py::setattr(new_param, "param_info", ParamInfoInit(old_value->param_info()));
-      param_node->set_default_param(new_param.cast<tensor::TensorPtr>());
+      param_node->set_default_param(tensor::ConvertToTensor(new_param));
       hyper_params[param_name] = new_param;
     }
   }

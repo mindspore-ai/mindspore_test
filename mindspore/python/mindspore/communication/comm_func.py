@@ -20,7 +20,7 @@ from mindspore.communication import GlobalComm, get_group_rank_from_world_rank, 
 from mindspore.communication.management import _get_group
 from mindspore.communication._comm_helper import _get_group_rank_from_world_rank_from_cache_helper
 from mindspore.common.tensor import Tensor
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.ops import ReduceOp, cat
 from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore.ops.primitive import _primexpr

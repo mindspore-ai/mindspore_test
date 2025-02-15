@@ -18,7 +18,7 @@
 
 import os
 from mindspore import log as logger
-from mindspore._c_expression import GraphExecutor_, JitExecutor_, Tensor
+from mindspore._c_expression import GraphExecutor_, JitExecutor_, TensorPy as Tensor
 from mindspore.common._utils import is_shape_unknown, is_dim_unknown
 from mindspore.common.parameter import Parameter
 

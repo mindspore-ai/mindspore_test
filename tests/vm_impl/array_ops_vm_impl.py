@@ -22,6 +22,7 @@ from mindspore._c_expression import typing
 from mindspore.ops.operations import _grad_ops as G
 from mindspore.ops.vm_impl_registry import vm_impl_registry as vm_impl_getters
 from .vm_interface import vm
+from mindspore.common._stub_tensor import _convert_stub
 
 
 # pylint: disable=unused-argument
@@ -30,6 +31,7 @@ def vm_impl_assign(self):
     """Generate vm_impl function for Assign"""
 
     def vm_impl(x, value, u=None):
+        x = _convert_stub(x) # fix by TensorPy of packing future in the future
         x.assign_value(value)
         return x
 

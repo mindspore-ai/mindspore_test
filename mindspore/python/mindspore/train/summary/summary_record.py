@@ -26,7 +26,7 @@ from mindspore import log as logger
 from mindspore.nn import Cell
 from mindspore import context
 from mindspore._c_expression import security
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.common import dtype as mstype
 from mindspore.common.tensor import Tensor
 from mindspore import _checkparam as Validator

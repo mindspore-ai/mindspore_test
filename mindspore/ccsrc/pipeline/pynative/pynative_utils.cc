@@ -44,6 +44,7 @@
 #include "include/common/pynative/abstract_converter.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "pipeline/pynative/grad/grad_utils.h"
+#include "include/common/utils/tensor_py.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
 
 namespace mindspore {
@@ -1054,8 +1055,8 @@ std::vector<int64_t> Common::BuildShape(const abstract::AbstractBasePtr &abs) {
 void Common::ClearRes() { kGradAbstractConverter.clear(); }
 
 std::string PyParser::GetIdByPyObj(const py::object &obj) {
-  if (py::isinstance<tensor::BaseTensor>(obj)) {
-    return obj.cast<tensor::BaseTensorPtr>()->id();
+  if (tensor::IsTensorPy(obj)) {
+    return tensor::ConvertToTensor(obj)->id();
   }
   if (IsStubTensor(obj)) {
     return ConvertStubTensor(obj)->id();
@@ -1136,7 +1137,7 @@ void PyParser::SetPrim(const FrontendOpRunInfoPtr &op_run_info, const py::object
 }
 
 std::string PyParser::BuilidPyInputTypeString(const py::object &obj) {
-  if (py::isinstance<mindspore::tensor::BaseTensor>(obj)) {
+  if (tensor::IsTensorPy(obj)) {
     return "Tensor";
   }
   if (IsStubTensor(obj)) {

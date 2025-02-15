@@ -41,6 +41,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pijit {
@@ -4618,8 +4619,7 @@ ValueNode *MindGraphBuilder::HandleGetattr(ValueNode *target_node, const Instr &
   if (abstract_wrapper != nullptr) {
     graph_attr_node->set_abstract_wrapper(abstract_wrapper);
   }
-  if (attr_obj.ptr() != nullptr && py::hasattr(attr_obj, "__parameter__") &&
-      py::isinstance<tensor::MetaTensor>(attr_obj)) {
+  if (attr_obj.ptr() != nullptr && py::hasattr(attr_obj, "__parameter__") && tensor::IsTensorPy(attr_obj)) {
     graph_->GuardValueNode(graph_attr_node, GuardLevel::GId);
     return graph_attr_node;
   }

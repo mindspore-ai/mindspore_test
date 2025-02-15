@@ -76,7 +76,7 @@ void InsertMoveTo::CollectOffloadedParameter() {
       if (meta_tensor == nullptr) {
         continue;
       }
-      const auto &user_data = meta_tensor->user_data<tensor::TensorPy::TensorPyUserData>(kParamterDiskUserDataName);
+      const auto &user_data = meta_tensor->user_data<tensor::TensorPybind::TensorPyUserData>(kParamterDiskUserDataName);
       if (user_data == nullptr) {
         continue;
       }

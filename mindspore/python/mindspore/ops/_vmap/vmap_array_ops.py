@@ -21,7 +21,7 @@ import mindspore
 import mindspore.numpy as mnp
 from mindspore import ops
 from mindspore.common import Tensor
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.ops.primitive import constexpr, _primexpr

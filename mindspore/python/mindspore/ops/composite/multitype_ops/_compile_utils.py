@@ -18,7 +18,6 @@ from __future__ import absolute_import
 from enum import IntEnum
 import numpy as np
 
-from mindspore._c_expression import Tensor as Tensor_
 from mindspore.ops.composite.multitype_ops import _constexpr_utils as const_utils
 from mindspore.ops import functional as F
 from mindspore.ops import operations as P
@@ -52,8 +51,8 @@ select_view = SelectView()
 copy_with_slice = CopyWithSlice()
 
 tensor_1d = Tensor([0], dtype=mstype.int64)
-empty_tensor_1d = Tensor_(shape=(0,), dtype=mstype.int64)
-empty_tensor_9d = Tensor_(shape=(0,)*9, dtype=mstype.int64)
+empty_tensor_1d = Tensor(shape=(0,), dtype=mstype.int64)
+empty_tensor_9d = Tensor(shape=(0,)*9, dtype=mstype.int64)
 
 
 

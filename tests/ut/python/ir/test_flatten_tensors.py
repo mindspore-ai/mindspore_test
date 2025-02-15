@@ -16,7 +16,7 @@
 import numpy as np
 import mindspore as ms
 import mindspore.common.initializer as init
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.common import Tensor, Parameter
 from mindspore.nn import Cell
 from mindspore import context

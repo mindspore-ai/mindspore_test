@@ -30,7 +30,7 @@ from mindspore.ops.primitive import constexpr, _primexpr
 from mindspore.ops.function.random_func import _get_seed
 from mindspore.nn.layer.basic import tril as nn_tril
 from mindspore.nn.layer.basic import triu as nn_triu
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 
 from mindspore.numpy.utils import _check_input_for_asarray, _deep_list, _deep_tensor_to_nparray, \
     _check_input_tensor, _convert_64_to_32, _get_dtype_from_scalar, \
@@ -133,7 +133,7 @@ def asarray_const(a, dtype=None):
             elif dtype == mstype.int64:
                 dtype = mstype.int32
         if a.size == 0:
-            a = Tensor_(a)
+            a = Tensor(a)
 
     if isinstance(a, onp.ndarray) and dtype is None:
         if a.dtype is onp.dtype('object'):
@@ -945,7 +945,7 @@ def identity(n, dtype=mstype.float32):
 @constexpr
 def empty_compile(dtype, shape):
     """Returns an empty Tensor."""
-    return Tensor_(dtype, shape)
+    return Tensor(dtype=dtype, shape=shape)
 
 
 def empty(shape, dtype=mstype.float32):

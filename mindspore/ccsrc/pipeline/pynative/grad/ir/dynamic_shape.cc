@@ -18,6 +18,7 @@
 #include <algorithm>
 #include "pipeline/pynative/pynative_utils.h"
 #include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pynative {
@@ -372,9 +373,9 @@ py::object DynamicShape::GetDynamicInput(const py::object &actual_input) {
     }
     return dyn_shape_args;
   }
-  if (py::isinstance<tensor::BaseTensor>(actual_input)) {
+  if (tensor::IsTensorPy(actual_input)) {
     const auto &infer = PyNativeAlgo::Common::GetPyNativeExecutor()->forward_executor()->infer_operation();
-    auto tensor_ptr = py::cast<tensor::BaseTensorPtr>(actual_input);
+    auto tensor_ptr = tensor::ConvertToTensor(actual_input);
     MS_EXCEPTION_IF_NULL(tensor_ptr);
     auto dyn_compile_tensor = std::make_shared<tensor::BaseTensor>(tensor_ptr->data_type(), tensor_ptr->shape_c());
     const auto &abs = infer->GetNodeAbsById(PyNativeAlgo::PyParser::GetIdByPyObj(actual_input));

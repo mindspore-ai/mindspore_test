@@ -33,6 +33,7 @@
 #include "ir/anf.h"
 #include "frontend/operator/composite/unpack_call.h"
 #include "pipeline/pynative/op_function/auto_generate/functional_map.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace {
@@ -79,9 +80,7 @@ bool Mutable(const py::object &obj, const ValuePtr &value = nullptr) {
   return py::hasattr(obj, mutable_attr) && py::cast<bool>(py::getattr(obj, mutable_attr));
 }
 
-bool IsParameter(const py::object &obj) {
-  return py::hasattr(obj, "__parameter__") && py::isinstance<tensor::MetaTensor>(obj);
-}
+bool IsParameter(const py::object &obj) { return py::hasattr(obj, "__parameter__") && tensor::IsTensorPy(obj); }
 
 bool TensorArgMutable(const py::object &obj, const ValuePtr &value) {
   if (!value->isa<tensor::MetaTensor>()) {

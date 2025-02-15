@@ -19,7 +19,7 @@
 from __future__ import absolute_import
 from mindspore import Tensor, CSRTensor, COOTensor, Parameter
 from mindspore import dtype as mstype
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.common import mutable
 from mindspore.common.generator import default_generator
 import mindspore.common._monad as monad
@@ -2394,7 +2394,7 @@ def bool_func(*data):
 def cast_to_int(*data):
     target = data[0]
     if isinstance(target, (Tensor, Tensor_)):
-        target = Tensor(target, internal=True)
+        target = Tensor(target)
     if len(data) == 1:
         return int(target)
     return int(target, data[1])
@@ -2432,7 +2432,7 @@ def int_func(*data):
 @constexpr
 def cast_to_float(data):
     if isinstance(data, (Tensor, Tensor_)):
-        data = Tensor(data, internal=True)
+        data = Tensor(data)
     return float(data)
 
 
@@ -3213,7 +3213,7 @@ def random_categorical(x, num_sample, seed=0, dtype=mstype.int64):
 @constexpr
 def empty_tensor(dtype):
     """Return empty tensor"""
-    return Tensor_([], dtype)
+    return Tensor([], dtype)
 
 
 @constexpr
@@ -3290,7 +3290,7 @@ check_bool = constexpr(validator.check_bool)
 @constexpr
 def empty_compile(dtype, shape):
     """Returns an empty Tensor."""
-    return Tensor_(dtype, shape)
+    return Tensor(dtype=dtype, shape=shape)
 
 
 def tensor_bool(x):

@@ -153,6 +153,7 @@ class FuncGrad : public AutoGrad {
   // Reverse connect jit or higher order sub bprop funcgraph
   bool KPynativeWithFProp(const GradParamPtr &grad_param) override;
   void CallCustomBprop(const CustomContext &context) override;
+  void CallCustomFunction(const std::shared_ptr<FunctionContext> &context) override;
   // Save get and update variable of tensor.
   VariablePtr SafeGetVariableImpl(const tensor::BaseTensorPtr &tensor) override;
 
@@ -160,7 +161,8 @@ class FuncGrad : public AutoGrad {
                   const GradAttr &grad_attr, const ValuePtr &sens = nullptr);
 
  private:
-  void RebaseVariable(const OpGradInfoPtr &op_grad_info, const VariablePtr &variable);
+  void RebaseVariable(const OpGradInfoPtr &op_grad_info, const VariablePtr &variable, const BaseTensorPtr &input_tensor,
+                      size_t output_index);
   void UpdateNextEdges(const BackwardNodePtr &grad_node, const ValuePtrList &inputs);
   void BackPropagate();
   void BuildForwardLastNode(const ValuePtr &sens_gradient);
@@ -190,6 +192,10 @@ class FuncGrad : public AutoGrad {
                         const std::vector<size_t> &grad_position);
   void PruningInput(const GradAttr &grad_attr, const std::vector<size_t> &grad_position);
   void PruningWeights(const tensor::BaseTensorPtrList &weights, const GradAttr &grad_attr);
+  void ProcessForwardOutput(const ValuePtrList &flatten_outputs, const BaseTensorPtrSet &input_base_tensors,
+                            const BaseTensorPtrSet &dirty_tensors, const BaseTensorPtrSet &non_diff_tensors,
+                            const ValuePtrList &inputs, const std::vector<InputType> &input_value_grad_type,
+                            const FuncVariablePtr &variable);
   bool is_run_recompute_{false};
   std::shared_ptr<FuncBuilder> func_impl_;
   OrderedSet<FuncVariablePtr> variable_set_;
