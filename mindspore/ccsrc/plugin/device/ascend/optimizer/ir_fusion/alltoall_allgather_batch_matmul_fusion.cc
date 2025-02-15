@@ -746,6 +746,9 @@ bool AllToAllAllGatherBatchMatMulFusion::Run(const FuncGraphPtr &func_graph) {
 
   if (mc2_fusion_level == kMC2FusionForward || mc2_fusion_level == kMC2FusionBackward ||
       mc2_fusion_level == kMC2FusionFull) {
+    if (common::IsExecuteSimulation()) {
+      MS_LOG(EXCEPTION) << "Not support compute_communication_fusion_level when MS_SIMULATION_LEVEL=3.";
+    }
     return NodePass::Run(func_graph);
   } else {
     MS_LOG(DEBUG) << "MC2 fusion level is " << mc2_fusion_level
