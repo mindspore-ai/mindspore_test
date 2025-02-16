@@ -167,7 +167,6 @@ def test_except_case_5():
     assert jcr["break_count_"] == 1
 
 
-# todo: should fix it for subgraph break optimization.
 @arg_mark(
     plat_marks=["cpu_linux"],
     level_mark="level0",

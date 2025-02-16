@@ -129,7 +129,7 @@ GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
   bool_conf[kEnableMsApiInfer - kBoolConf] = false;
   bool_conf[kExpandGraphInput - kBoolConf] = true;
   bool_conf[kExpandGraphOutput - kBoolConf] = true;
-  bool_conf[kSubgraphBreakOpt - kBoolConf] = false;
+  bool_conf[kSubgraphBreakOpt - kBoolConf] = true;
 
   bool_conf[kEnableEliminateUnusedOperation - kBoolConf] = false;
   bool_conf[kFeatureBreakAtInlinedFunction - kBoolConf] = true;

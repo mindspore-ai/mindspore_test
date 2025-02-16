@@ -21,16 +21,18 @@ import mindspore as ms
 from mindspore import Tensor, jit, context, ops, nn
 from mindspore._c_expression import get_code_extra
 
-from tests.st.pi_jit.share.utils import match_array, assert_has_graph_break, assert_equal,pi_jit_with_config
+from tests.st.pi_jit.one_stage.test_utils import save_graph_ir, check_ir_num
+from tests.st.pi_jit.share.utils import match_array, assert_has_graph_break, assert_equal, pi_jit_with_config
 from tests.mark_utils import arg_mark
 
-SKIP_PY37 = pytest.mark.skipif(sys.version_info[:2] == (3,7), reason="Not support py37 setup loop bytecode")
+SKIP_PY37 = pytest.mark.skipif(sys.version_info[:2] == (3, 7), reason="Not support py37 setup loop bytecode")
 
 context.set_context(mode=context.PYNATIVE_MODE)
 
 jit_cfg = {'compile_with_try': False, 'subgraph_break_opt': True}
 
 
+@save_graph_ir(ir_name='graph_before_compile')
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_call_function_graph_break_two_layers_v1():
     """
@@ -58,8 +60,10 @@ def test_call_function_graph_break_two_layers_v1():
 
     match_array(o1, o2)
     assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 2)
 
 
+@save_graph_ir(ir_name='graph_before_compile')
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_call_function_graph_break_two_layers_v2():
     """
@@ -88,8 +92,10 @@ def test_call_function_graph_break_two_layers_v2():
 
     match_array(o1, o2)
     assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 2)
 
 
+@save_graph_ir(ir_name='graph_before_compile')
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_call_function_graph_break_two_layers_v3():
     """
@@ -119,8 +125,10 @@ def test_call_function_graph_break_two_layers_v3():
 
     match_array(o1, o2)
     assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 2)
 
 
+@save_graph_ir(ir_name='graph_before_compile')
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_call_function_graph_break_two_layers_v4():
     """
@@ -133,12 +141,13 @@ def test_call_function_graph_break_two_layers_v4():
     def f2(x: Tensor):
         a = x + 1  # alive local
         d = {'k': 2}  # alive local, unsupported output
+        b = x - 1
         print('GRAPH BREAK', flush=True)  # break
-        return a * d['k']
+        return a * d['k'] * b
 
     def f1(x: Tensor):
         y = x * 2  # alive local
-        d = {'bias': 1}  # alive local, unsupported output
+        d = {'bias': 1}  # alive local
         z = f2(x)
         return y + z + d['bias']
 
@@ -151,8 +160,10 @@ def test_call_function_graph_break_two_layers_v4():
 
     match_array(o1, o2)
     assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 3)
 
 
+@save_graph_ir(ir_name='graph_before_compile')
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_call_function_graph_break_three_layers_v1():
     """
@@ -189,8 +200,10 @@ def test_call_function_graph_break_three_layers_v1():
 
     match_array(o1, o2)
     assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 2)
 
 
+@save_graph_ir(ir_name='graph_before_compile')
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_call_function_graph_break_three_layers_v2():
     """
@@ -228,8 +241,11 @@ def test_call_function_graph_break_three_layers_v2():
     o2 = f1(x)
 
     match_array(o1, o2)
+    assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 4)
 
 
+@save_graph_ir(ir_name='graph_before_compile')
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_call_function_graph_break_four_layers_v1():
     """
@@ -268,6 +284,7 @@ def test_call_function_graph_break_four_layers_v1():
 
     match_array(o1, o2)
     assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 2)
 
 
 @SKIP_PY37
@@ -798,6 +815,7 @@ def test_call_function_graph_break_in_recursion():
     match_array(o1, o2)
 
 
+@save_graph_ir(ir_name='graph_before_compile')
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_break_at_first_statement():
     """
@@ -828,8 +846,10 @@ def test_break_at_first_statement():
 
     match_array(o1, o2)
     assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 1)
 
 
+@save_graph_ir(ir_name='graph_before_compile')
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_param_is_dict_and_is_alive_local_v1():
     """
@@ -858,8 +878,10 @@ def test_param_is_dict_and_is_alive_local_v1():
 
     match_array(o1, o2)
     assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 2)
 
 
+@save_graph_ir(ir_name='graph_before_compile')
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_param_is_dict_and_is_alive_local_v2():
     """
@@ -889,6 +911,7 @@ def test_param_is_dict_and_is_alive_local_v2():
 
     match_array(o1, o2)
     assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 2)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -1192,6 +1215,7 @@ class SetattrNetV1(nn.Cell):
         return temp
 
 
+@save_graph_ir(ir_name='graph_before_compile')
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_setattr_side_effect_v1():
     """
@@ -1206,6 +1230,7 @@ def test_setattr_side_effect_v1():
 
     net2 = SetattrNetV1()
     net2.construct = pi_jit_with_config(net2.construct, jit_config=jit_cfg)
+    x = Tensor([0.5, 1.0, 1.5])
     o2 = net2(x)
 
     match_array(o1, o2, error=7)
@@ -1214,3 +1239,170 @@ def test_setattr_side_effect_v1():
     match_array(net1.tensor, net2.tensor, error=7)
     assert_equal(net1.list_attr, net2.list_attr)
     assert_equal(net1.tuple_attr, net2.tuple_attr)
+    check_ir_num('graph_before_compile', 2)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_in_if_block_v1():
+    """
+    Feature: test graph break in call_function.
+    Description: one graph break in f2.
+    Expectation: The result of PIJit is same as pynative.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    def f2(x: Tensor):
+        a = x + 1  # alive local
+        if len(a.shape) >= 2:
+            print('GRAPH BREAK', flush=True)  # break
+            a = a * 2
+        return a + 1
+
+    def f1(x: Tensor):
+        y = x * 2  # alive local
+        z = f2(x)
+        return y + z
+
+    x = Tensor([[1, 2, 3], [4, 5, 6]])
+    o1 = f1(x)
+
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    x = Tensor([[1, 2, 3], [4, 5, 6]])
+    o2 = f1(x)
+
+    match_array(o1, o2)
+    assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 2)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_in_if_block_v2():
+    """
+    Feature: test graph break in call_function.
+    Description: one graph break in f2.
+    Expectation: The result of PIJit is same as pynative.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    def f2(x: Tensor):
+        a = x + 1  # alive local
+        if len(a.shape) >= 2:
+            if len(a.shape) < 3:
+                print('GRAPH BREAK', flush=True)  # break
+                return a
+            a = a * 2
+        else:
+            a = a * 3
+        return a + 1
+
+    def f1(x: Tensor):
+        y = x * 2  # alive local
+        z = f2(x)
+        return y + z
+
+    x = Tensor([[1, 2, 3], [4, 5, 6]])
+    o1 = f1(x)
+
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    x = Tensor([[1, 2, 3], [4, 5, 6]])
+    o2 = f1(x)
+
+    match_array(o1, o2)
+    assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 2)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_at_if_statement():
+    """
+    Feature: test graph break in call_function.
+    Description: graph break at if statement. This situation is unsupported for now, cannot apply optimization.
+    Expectation: The result of PIJit is same as pynative.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    def f2(x: Tensor):
+        a = x + 1  # alive local
+        if a.sum() >= 100:  # break!
+            a = a * 2
+        else:
+            a = a * 3
+        return a + 1
+
+    def f1(x: Tensor):
+        y = x * 2  # alive local
+        z = f2(x)
+        return y + z
+
+    x = Tensor([[1, 2, 3], [4, 5, 6]])
+    o1 = f1(x)
+
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    x = Tensor([[1, 2, 3], [4, 5, 6]])
+    o2 = f1(x)
+
+    match_array(o1, o2)
+    assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 4)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_at_calling_nested_Cell():
+    """
+    Feature: test graph break in call_function.
+    Description: one graph break at callling nested nn.Cell.
+    Expectation: The result of PIJit is same as pynative.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    class Layer3(nn.Cell):
+        def construct(self, x):
+            y = x + 1
+            print('GRAPH BREAK', flush=True)  # break!
+            return x + y
+
+    class Layer2(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.layer = Layer3()
+
+        def construct(self, x):
+            x = x * 2
+            y = self.layer(x)
+            return x + y
+
+    class Layer1(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.layer = Layer2()
+
+        def construct(self, x):
+            x = x * 2
+            y = self.layer(x)
+            return x + y
+
+    class Model(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.layer = Layer1()
+
+        def construct(self, x: Tensor):
+            x = x * 2
+            y = self.layer(x)
+            return x + y
+
+    model = Model()
+    x = Tensor([[1, 2, 3], [4, 5, 6]])
+    o1 = model(x)
+
+    model.construct = pi_jit_with_config(model.construct, jit_config=jit_cfg)
+    x = Tensor([[1, 2, 3], [4, 5, 6]])
+    o2 = model(x)
+
+    match_array(o1, o2)
+    assert_has_graph_break(model.construct, break_count=1)
+    check_ir_num('graph_before_compile', 2)

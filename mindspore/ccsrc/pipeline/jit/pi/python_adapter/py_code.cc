@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "pipeline/jit/pi/python_adapter/py_code.h"
+#include <string>
 #if IS_PYTHON_3_11_PLUS
 #include "internal/pycore_code.h"
 #endif
@@ -172,5 +173,10 @@ py::object PyCodeWrapper::DeepCopy() {
 #endif
   throw py::error_already_set();
 }
+
+std::string ToString(const PyCodeWrapper &code) {
+  return std::string(py::str(reinterpret_cast<PyObject *>(code.ptr())));
+}
+
 }  // namespace pijit
 }  // namespace mindspore

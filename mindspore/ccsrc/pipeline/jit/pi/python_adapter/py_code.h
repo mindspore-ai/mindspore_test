@@ -16,6 +16,7 @@
 #ifndef MINDSPORE_PI_JIT_PYTHON_ADAPTER_PY_CODE_H
 #define MINDSPORE_PI_JIT_PYTHON_ADAPTER_PY_CODE_H
 
+#include <string>
 #include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pybind11/pybind11.h"
 
@@ -63,6 +64,9 @@ class PyCodeWrapper {
  private:
   PyCodeObject *ptr_;
 };
+
+std::string ToString(const PyCodeWrapper &code);
+
 }  // namespace pijit
 }  // namespace mindspore
 

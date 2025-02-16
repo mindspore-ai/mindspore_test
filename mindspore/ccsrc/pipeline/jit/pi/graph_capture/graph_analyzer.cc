@@ -745,6 +745,15 @@ CallNode *FindBreakAtCall(const Graph *graph) {
 
 // Check if the graph is break at calling subgraph.
 inline bool IsBreakAtCall(Graph *graph) { return FindBreakAtCall(graph) != nullptr; }
+
+bool IsEnableSubGraphBreakOptimize(const Graph *graph) {
+#if IS_PYTHON_3_11_PLUS
+  return false;
+#else
+  return graph->Config().GetBoolConfig(GraphJitConfig::kSubgraphBreakOpt) &&
+         common::GetCompileConfig("PIJIT_SUBGRAPH_BREAK_OPTIMIZE") != "0";
+#endif
+}
 }  // namespace
 
 void GraphAnalyzer::UseDefAnalyze() {
@@ -766,7 +775,7 @@ void GraphAnalyzer::UseDefAnalyze() {
   // SubGraph break optimization.
   if (IsBreakAtCall(graph_)) {
     graph_break_info_.is_break_at_call = true;
-    if (graph_->Config().GetBoolConfig(GraphJitConfig::kSubgraphBreakOpt)) {
+    if (IsEnableSubGraphBreakOptimize(graph_)) {
       CallNode *call_node = FindBreakAtCall(graph_);
       AnalyzeSubGraphBreakRecursive(call_node);
     }
@@ -797,6 +806,21 @@ bool CanCapturePartialGraph(const Graph *graph) {
   }
   if (PyCodeWrapper(graph->GetCodeObj()).CellVarsSize() > 0) {
     MS_LOG(INFO) << "Has cellvar, can not capture graph: " << GetNameAndLocation(graph);
+    return false;
+  }
+  static const std::unordered_set<int> unsupported_break_op = {
+    JUMP_IF_FALSE_OR_POP, JUMP_IF_TRUE_OR_POP,   POP_JUMP_IF_FALSE, POP_JUMP_IF_TRUE, YIELD_VALUE,
+    YIELD_FROM,           GET_YIELD_FROM_ITER,   SETUP_WITH,        SETUP_FINALLY,    WITH_CLEANUP_START,
+    WITH_CLEANUP_FINISH,  END_FINALLY,           SETUP_EXCEPT,      POP_EXCEPT,       RERAISE,
+    RAISE_VARARGS,        JUMP_IF_NOT_EXC_MATCH, BEGIN_FINALLY,     POP_FINALLY,      CALL_FINALLY,
+    JUMP_ABSOLUTE,        JUMP_FORWARD};
+  int break_bci = graph->GetStopTraceBci();
+  const auto &instr_pool = graph->GetCFG()->instr_pool();
+  MS_EXCEPTION_IF_CHECK_FAIL(break_bci >= 0 && break_bci < SizeToInt(instr_pool.size()), "Illegal break bci");
+  const Instr *break_point = instr_pool[break_bci].get();
+  if (unsupported_break_op.find(break_point->op()) != unsupported_break_op.end()) {
+    MS_LOG(INFO) << "Is unsupported break op: " << break_point->ToString()
+                 << " , can not capture graph: " << GetNameAndLocation(graph);
     return false;
   }
   return true;
@@ -900,6 +924,8 @@ void GraphAnalyzer::AnalyzeSubGraphBreakRecursive(CallNode *root) {
     auto &captured = info_.captured_;
     captured.outputs.insert(captured.outputs.end(), total_outputs.begin(), total_outputs.end());
     captured.operations.insert(captured.operations.end(), total_outputs.begin(), total_outputs.end());
+  } else {
+    MS_LOG(DEBUG) << "No subgraph captured";
   }
 }
 
@@ -960,6 +986,7 @@ bool GraphAnalyzer::AnalyzeSubGraphAliveNodes(const std::vector<ValueNode *> &al
     auto node = nodes.front();
     nodes.pop_front();
     if (NeedSkipAddGraphOutput(node)) {
+      MS_LOG(DEBUG) << "No need to add subgraph output: " << node->ToString();
       continue;
     }
     if (std::find(graph_outputs->begin(), graph_outputs->end(), node) != graph_outputs->end()) {
@@ -970,13 +997,19 @@ bool GraphAnalyzer::AnalyzeSubGraphAliveNodes(const std::vector<ValueNode *> &al
       continue;
     }
     if (fg_builder->AddOutput(node->abstract_wrapper(), true)) {
-      MS_LOG(INFO) << "Add subgraph output success: " << node->ToString();
+      MS_LOG(DEBUG) << "Add subgraph output success: " << node->ToString();
       graph_outputs->push_back(node);
+      continue;
+    }
+    if (!IsValidOutput(node) && node->GetOpcode() == LOAD_ATTR) {
+      MS_LOG(DEBUG) << "Reconstruct subgraph output: " << node->ToString();
+      ADD_NODE(info_.outputs_optimize_.operations, node);
+      nodes.insert(nodes.end(), node->getInputs().begin(), node->getInputs().end());
       continue;
     }
     MS_LOG(INFO) << "Add subgraph output failed: " << node->ToString();
     if (!CheckNewBreakBci(graph, node)) {
-      graph->StopTraceAt(0, StopTraceReason::kStopTraceUDAnalyzeError);
+      graph->StopTraceAt(graph->GetStopTraceBci(), StopTraceReason::kStopTraceUDAnalyzeError);
       fg_builder->ClearOutputNodes();
       graph_outputs->clear();
       return true;

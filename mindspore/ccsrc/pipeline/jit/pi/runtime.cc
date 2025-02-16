@@ -474,6 +474,7 @@ static void GraphCapture(JitCompileResults *jcr) {
     if (jcr->conf()->GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
       GRAPH_JIT_LOG_F("===> graph break after loop unrolling\n%s\n", g->GetGraph()->ToString(1).c_str());
     }
+    MS_LOG(INFO) << "Cannot capture graph, mark it as NEVER_COMPILE: " << ToString(jcr->origin_frame().GetCode());
     jcr->set_stat(JitCompileResults::NEVER_COMPILE);
     return;
   }
@@ -645,7 +646,7 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
     return false;
   }
   ShapeContext sc(c->origin_frame().frame(), c->input_signature().ptr());
-  MS_LOG(INFO) << "Start compile " << py::str(reinterpret_cast<PyObject *>(code));
+  MS_LOG(INFO) << "Start compile " << ToString(frame.GetCode());
 
   // new guard code
   c->set_code(c->codehub()->AddOptTarget(OptOption::CreateOptionByPoint(c)));
@@ -855,6 +856,15 @@ static bool CheckGuard(JitCompileResults *c, const PyFrameWrapper &f) {
   return c->code() != nullptr;
 }
 
+static void InitCompileConfig() {
+  static bool initialized = false;
+  if (!initialized) {
+    MS_LOG(INFO) << "Init compile config";
+    CompileConfigManager::GetInstance().CollectCompileConfig();
+    initialized = true;
+  }
+}
+
 static bool JitCompileWithTry(PyThreadState *tstate, JitCompileResults *c) {
   TimeRecorder time_recorder(__FUNCTION__, kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
 
@@ -862,6 +872,7 @@ static bool JitCompileWithTry(PyThreadState *tstate, JitCompileResults *c) {
   JitSyntaxLevelScope jit_syntax_level_scope;
   StaticAnalysisExceptionCleaner exception_cleaner;
   CaptureContext::DisableScope compiler_disable_scope;
+  InitCompileConfig();
 
   if (!c->conf()->GetBoolConfig(GraphJitConfig::kCompileWithTry)) {
     return JitCompile(tstate, c);
@@ -986,7 +997,7 @@ static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, EvalFram
       MS_LOG(EXCEPTION) << "shouldn't reach here";
       break;
   }
-  MS_LOG(INFO) << "Fall back to python execute: " << PyFrameWrapper(frame).GetCode().Name();
+  MS_LOG(INFO) << "Fall back to python execute: " << ToString(PyFrameWrapper(frame).GetCode());
   c->set_origin_frame(nullptr);
   PyObject *res = _PyEval_EvalFrameDefault(tstate, frame, 0);
   return py::reinterpret_steal<py::object>(res);
