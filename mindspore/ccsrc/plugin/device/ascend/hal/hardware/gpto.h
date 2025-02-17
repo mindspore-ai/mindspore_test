@@ -591,6 +591,9 @@ void PushTasksToVisit(std::queue<GptoTaskPtr> *, std::unordered_map<size_t, size
 void InitializeTaskInlineCondition(const CNodePtr &, GptoTaskPtr *,
                                    std::unordered_map<GptoTaskPtr, std::pair<size_t, size_t>> *,
                                    std::unordered_map<GptoTaskPtr, std::pair<size_t, size_t>> *);
+void ExtractSwitchGather(std::map<GptoTaskPtr, GptoTaskPtr, TaskDepthSort> *,
+                         std::unordered_map<GptoTaskPtr, std::pair<size_t, size_t>> *,
+                         std::unordered_map<GptoTaskPtr, std::pair<size_t, size_t>> *);
 void UpdateTasksInlineCondition(std::unordered_map<CNodePtr, GptoTaskPtr> *,
                                 std::map<GptoTaskPtr, GptoTaskPtr, TaskDepthSort> *);
 void UpdateExecutionOrder(const KernelGraphPtr &, const SchedulingOutput &);
