@@ -327,8 +327,11 @@ void InlineSubGraph(const KernelGraphPtr &graph, const KernelGraphPtr &sub_graph
   AnfNodePtrList inp;
   auto &call_input = kernel_cnode->inputs();
   // let operators on different subgraphs will not be executed interleavedly
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto pp_1f1b_value = ms_context->get_param<std::string>(MS_CTX_PP_1F1B_OVERLAP);
   for (size_t i = 1; i < call_input.size(); i++) {
-    if (last_call != nullptr && (*last_call) != nullptr) {
+    if (pp_1f1b_value.empty() && last_call != nullptr && (*last_call) != nullptr) {
       auto depend = graph->NewCNode({NewValueNode(prim::kPrimDepend), call_input[i], (*last_call)});
       MS_EXCEPTION_IF_NULL(depend);
       depend->set_abstract(call_input[i]->abstract());
@@ -338,8 +341,8 @@ void InlineSubGraph(const KernelGraphPtr &graph, const KernelGraphPtr &sub_graph
     }
   }
   const auto &ref_map = sub_graph->GetRefMap();
-  auto out = session::KernelGraphMgr::DoInline(sub_graph, main_graph, inp, kernel_cnode->input(0)->scope(),
-                                               kernel_info->graph_id(), ref_map, graph, is_switch_inline);
+  auto out = session::KernelGraphMgr::DoInline(sub_graph, main_graph, inp, kernel_cnode, kernel_info->graph_id(),
+                                               ref_map, graph, is_switch_inline);
   (void)mng->Replace(kernel_cnode, out);
   // Inline graph boundary: MakeTuple---->Depend---->Tensormove
   // Avoid long link times at runtime

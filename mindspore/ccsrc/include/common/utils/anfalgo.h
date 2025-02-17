@@ -331,6 +331,11 @@ class COMMON_EXPORT AnfAlgo {
   static std::vector<ValuePtr> TransformVectorRefToMultiValue(const VectorRef &base_ref);
   static bool HasIncorporateCallNode(const CNodePtr &cnode);
   static bool IsDynamicGraph(const FuncGraphPtr &func_graph);
+  static CNodePtr CreateMakeTupleNode(const FuncGraphPtr &func_graph, const AnfNodePtrList &tuple_inputs);
+  static void InsertDepend(const AnfNodePtr &prior_node, const AnfNodePtr &post_node,
+                           const FuncGraphManagerPtr &manager, const FuncGraphPtr &root,
+                           const std::string &attr_tag = "", const size_t post_node_input_index = 1);
+
   static bool IsMonadType(const TypeId &type_id);
   // check if is ge backend
   static bool IsBackendGe();

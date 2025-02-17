@@ -205,20 +205,23 @@ std::vector<Triplet> SeqpipeScheduler::FpBpExecuteOrder(bool is_bp) {
 void SeqpipeScheduler::GetBorderNode() {
   PipelineScheduler::GetBorderNode();
   GetCleanAssigns();
-  auto set_seq_chunk = [&](std::vector<Border> borders) {
+  auto set_seq_chunk = [&](std::vector<Border> borders, bool is_bp) {
     for (auto &node : borders) {
-      if (node.border->HasPrimalAttr(SEQ_CHUNK)) {
-        node.seq_chunk = GetValue<int64_t>(node.border->GetPrimalAttr(SEQ_CHUNK));
+      if (node.border->HasPrimalAttr(kSeqChunk)) {
+        node.seq_chunk = GetValue<int64_t>(node.border->GetPrimalAttr(kSeqChunk));
       }
-      node.border->AddAttr(SEQ_CHUNK, MakeValue<int64_t>(node.seq_chunk));
+      node.border->AddAttr(kSeqChunk, MakeValue<int64_t>(node.seq_chunk));
+      node.border->AddAttr(kChunk, MakeValue<int64_t>(node.chunk));
+      node.border->AddAttr(kMicro, MakeValue<int64_t>(node.micro));
+      node.border->AddAttr(kIsBp, MakeValue<bool>(is_bp));
     }
   };
-  set_seq_chunk(fwd_begin_);
-  set_seq_chunk(fwd_end_);
-  set_seq_chunk(fwd_cell_);
-  set_seq_chunk(bwd_begin_);
-  set_seq_chunk(bwd_end_);
-  set_seq_chunk(bwd_cell_);
+  set_seq_chunk(fwd_begin_, false);
+  set_seq_chunk(fwd_end_, false);
+  set_seq_chunk(fwd_cell_, false);
+  set_seq_chunk(bwd_begin_, true);
+  set_seq_chunk(bwd_end_, true);
+  set_seq_chunk(bwd_cell_, true);
 }
 
 void SeqpipeScheduler::SendRecvControl(const std::pair<BorderStruct, BorderStruct> &send,
@@ -292,6 +295,10 @@ void SeqpipeScheduler::ExtractDataStruct() {
   sorted_bwd_cell_ = BorderMap(bwd_cell_);
   ComputeCycleList();
   ComputeBias();
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto pp_1f1b_overlap = ms_context->get_param<std::string>(MS_CTX_PP_1F1B_OVERLAP);
+  bp_fp_inline_ = bias_ > 1 && !pp_1f1b_overlap.empty();  // ToDo: Add parallel context config
   int64_t cycle_list0 = SizeToLong(cycle_list_[0]);
   warm_up_size_ = LongToSize((stage_num_ - 1 - stage_) * bias_ + (chunk_num_ - 1) * cycle_list0 * seq_chunk_size_ +
                              seq_chunk_size_ - 1);
@@ -535,7 +542,12 @@ BorderPair SeqpipeScheduler::GetBorderNode(const std::string &border_type, size_
     return send_node;
   }
   if (border_type == kReceive) {
-    return GetBorderNodeRecv(index);
+    if (recv_nodes_map_.count(index) > 0) {
+      return recv_nodes_map_[index];
+    }
+    auto recv = GetBorderNodeRecv(index);
+    recv_nodes_map_[index] = recv;
+    return recv;
   }
   auto cell_node =
     execute_order_[index].is_bp ? sorted_bwd_cell_[chunk][micro][seq_chunk] : sorted_fwd_cell_[chunk][micro][seq_chunk];
@@ -625,23 +637,82 @@ void SeqsmartvppScheduler::ControlSendRecvOrder(const BorderPair &send, const Bo
   }
 }
 
-void SeqpipeScheduler::Reorder() {
-  ExtractDataStruct();
-  ControlCleanAssigns();
-  ComputePrefetchInfo();
-
+void SeqpipeScheduler::Reorder1f1bOverlap() {
   for (size_t index = 0; index < execute_order_.size() - 1; ++index) {
     auto prior_cell = GetBorderNode(kCell, index);
     auto post_recv = GetBorderNode(kReceive, index + 1);
     auto next_cell = GetBorderNode(kCell, index + 1);
-    ControlOrder(prior_cell.second, next_cell.first, "call_call");
+    auto send = GetBorderNode(kSend, index);
+    bool is_1b1f = execute_order_[index].is_bp && !execute_order_[index + 1].is_bp;
+    if (bp_fp_inline_ && is_1b1f) {
+      if (IsPrimitiveCNode(post_recv.first.border, prim::kPrimReceive)) {
+        auto cell_inputs = prior_cell.second.border->inputs();
+        for (const auto &cell_input : cell_inputs) {
+          if (IsPrimitiveCNode(cell_input, prim::kPrimDepend)) {
+            ControlOrder({cell_input->cast<CNodePtr>(), 0, 0}, post_recv.first, "input_recv_1f1b");
+          }
+        }
+      }
+      if (IsPrimitiveCNode(send.second.border, prim::kPrimSend)) {
+        auto next_users = GetOutputNodesWithFilter(next_cell.first.border, [&](const AnfNodePtr &anode) {
+          return IsPrimitiveCNode(anode, prim::kPrimTupleGetItem);
+        });
+        for (const auto &next_user : next_users) {
+          if (IsPrimitiveCNode(next_user.first, prim::kPrimDepend)) {
+            ControlOrder(send.second, {next_user.first->cast<CNodePtr>(), 0, 0}, "send_out_1f1b");
+          }
+        }
+      }
+      if (index > 0) {
+        auto prior_prior_cell = GetBorderNode(kCell, index - 1);
+        ControlOrder(prior_prior_cell.second, next_cell.first, "call_call_1f1b");
+      }
+      if (index < execute_order_.size() - 3) {
+        auto next_next_cell = GetBorderNode(kCell, index + 2);
+        ControlOrder(prior_cell.second, next_next_cell.first, "call_call_1f1b");
+      }
+    }
+  }
+}
+
+void SeqpipeScheduler::Add1f1bAttr(const BorderPair &recv, const std::string &tag, size_t index_1f1b) {
+  if (IsPrimitiveCNode(recv.second.border)) {
+    recv.second.border->AddAttr(kCNodeAttr1f1bIndexRecv, MakeValue<size_t>(index_1f1b));
+  }
+  if (IsPrimitiveCNode(recv.first.border)) {
+    recv.first.border->AddAttr(kCNodeAttr1f1bIndexRecv, MakeValue<size_t>(index_1f1b));
+  }
+}
+
+void SeqpipeScheduler::Reorder() {
+  ExtractDataStruct();
+  ControlCleanAssigns();
+  ComputePrefetchInfo();
+  size_t index_1f1b = 0;
+  for (size_t index = 0; index < execute_order_.size() - 1; ++index) {
+    auto prior_cell = GetBorderNode(kCell, index);
+    auto post_recv = GetBorderNode(kReceive, index + 1);
+    auto next_cell = GetBorderNode(kCell, index + 1);
+    bool is_1b1f = execute_order_[index].is_bp && !execute_order_[index + 1].is_bp;
+    if (!(bp_fp_inline_ && is_1b1f)) {
+      ControlOrder(prior_cell.second, next_cell.first, "call_call");
+    } else {
+      prior_cell.second.border->AddAttr(kCNodeAttr1f1bIndexBp, MakeValue<size_t>(index_1f1b));
+      next_cell.first.border->AddAttr(kCNodeAttr1f1bIndexFp, MakeValue<size_t>(index_1f1b));
+      auto prior_recv = GetBorderNode(kReceive, index);
+      Add1f1bAttr(prior_recv, kCNodeAttr1f1bIndexRecv, index_1f1b);
+      Add1f1bAttr(post_recv, kCNodeAttr1f1bIndexInterRecv, index_1f1b);
+      ++index_1f1b;
+    }
     if (IsPrimitiveCNode(post_recv.first.border, prim::kPrimReceive)) {
       SchedulerNode receive_node = {"receive", post_recv.first.seq_chunk, post_recv.first.micro, post_recv.first.chunk,
                                     post_recv.first.border->HasPrimalAttr(kPrimalAttrForwardUniqueId)};
       if (scheduler_node_order_[index].count(receive_node) == 0) {
         scheduler_node_order_[index][receive_node] = 0;
       }
-      ControlOrder(prior_cell.second, post_recv.first, "call_recv");
+      if (!(bp_fp_inline_ && is_1b1f)) {
+        ControlOrder(prior_cell.second, post_recv.first, "call_recv");
+      }
     }
     // send to recv or recv to send
     auto send = GetBorderNode(kSend, index);
@@ -652,12 +723,15 @@ void SeqpipeScheduler::Reorder() {
       if (scheduler_node_order_[index].count(send_node) == 0) {
         scheduler_node_order_[index][send_node] = 0;
       }
-      ControlOrder(send.second, next_cell.first, "send_call");
+      if (!(bp_fp_inline_ && is_1b1f)) {
+        ControlOrder(send.second, next_cell.first, "send_call");
+      }
     }
-    if (IsPrimitiveCNode(send.first.border, prim::kPrimSend)) {
+    if (IsPrimitiveCNode(send.first.border, prim::kPrimSend) && !(bp_fp_inline_ && is_1b1f)) {
       ControlOrder(prior_cell.second, send.first, "call_send");
     }
   }
+  Reorder1f1bOverlap();
   SchedulerOrder();
   OptimizerShardCommReorder();
 }

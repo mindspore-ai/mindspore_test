@@ -28,7 +28,9 @@
 #include "backend/common/pass/insert_type_transform_op.h"
 #include "backend/common/pass/insert_tensor_move_for_communication.h"
 #include "backend/common/pass/split_inputs_for_reduce_scatter.h"
+#include "backend/common/pass/label_1f1b_overlap_node.h"
 #include "backend/common/pass/overlap_grad_reduce.h"
+#include "backend/common/pass/overlap_1b1f.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/debug/dump_proto.h"
 #include "include/common/utils/parallel_context.h"
@@ -164,6 +166,7 @@ void GEBackendOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph) {
   if (!common::IsDisableRuntimeConfig(common::kRuntimeView)) {
     opt_acl_after_kernel_select_pm->AddPass(std::make_shared<opt::GraphViewReplacePass>());
   }
+  opt_acl_after_kernel_select_pm->AddPass(std::make_shared<Label1F1BOverlapNode>());
   optimizer->AddPassManager(opt_acl_after_kernel_select_pm);
   (void)optimizer->Optimize(kernel_graph);
   PROF_END(GEBackendOptimizeACLAfterKernelSelect);
@@ -231,6 +234,7 @@ void GEAfterInlineOptimize(const KernelGraphPtr &kernel_graph) {
   if (ms_context->get_param<bool>(MS_CTX_ENABLE_GRAD_COMM_OPT)) {
     after_inline_pm->AddPass(std::make_shared<OverlapGradReduce>());
   }
+  after_inline_pm->AddPass(std::make_shared<Overlap1b1f>());
   optimizer->AddPassManager(after_inline_pm);
   (void)optimizer->Optimize(kernel_graph);
   PROF_END(GEAfterInlineOptimize);

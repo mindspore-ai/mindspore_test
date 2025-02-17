@@ -28,6 +28,7 @@
 #include "include/common/utils/parallel_context.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "mindspore/core/include/utils/ms_context.h"
+#include "include/common/utils/anfalgo.h"
 
 namespace mindspore {
 namespace opt {
@@ -82,43 +83,6 @@ bool IsFromGradMirrorAR(const AnfNodePtr &node) {
     return false;
   }
   return true;
-}
-
-CNodePtr CreateMakeTupleNode(const FuncGraphPtr &func_graph, const AnfNodePtrList &tuple_inputs) {
-  MS_EXCEPTION_IF_NULL(func_graph);
-  AnfNodePtrList new_make_tuple_inputs = {NewValueNode(prim::kPrimMakeTuple)};
-  (void)new_make_tuple_inputs.insert(new_make_tuple_inputs.cend(), tuple_inputs.cbegin(), tuple_inputs.cend());
-  auto make_tuple_node = func_graph->NewCNode(new_make_tuple_inputs);
-  MS_EXCEPTION_IF_NULL(make_tuple_node);
-
-  // MakeTuple's abstract must consist of all inputs' abstract in case unexpected graph compiling error.
-  AbstractBasePtrList abstract_list;
-  (void)std::for_each(tuple_inputs.cbegin(), tuple_inputs.cend(),
-                      [&](const auto &input) { (void)abstract_list.emplace_back(input->abstract()); });
-  if (std::find_if(abstract_list.begin(), abstract_list.end(), [](auto abs) { return !abs; }) != abstract_list.end()) {
-    return make_tuple_node;
-  }
-  make_tuple_node->set_abstract(std::make_shared<abstract::AbstractTuple>(abstract_list));
-  return make_tuple_node;
-}
-
-void InsertDepend(const AnfNodePtr &prior_node, const AnfNodePtr &post_node, const FuncGraphManagerPtr &manager,
-                  const FuncGraphPtr &root, const std::string &attr_tag = "", const size_t post_node_input_index = 1) {
-  MS_EXCEPTION_IF_NULL(prior_node);
-  MS_EXCEPTION_IF_NULL(post_node);
-  if (prior_node == post_node) {
-    return;
-  }
-  auto post_cnode = post_node->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(post_cnode);
-  std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), post_cnode->input(post_node_input_index),
-                                          prior_node};
-  auto depend_node = root->NewCNode(depend_input);
-  depend_node->set_abstract(post_cnode->input(post_node_input_index)->abstract());
-  if (!attr_tag.empty()) {
-    depend_node->AddAttr(attr_tag, MakeValue<bool>(true));
-  }
-  manager->SetEdge(post_node, post_node_input_index, depend_node);
 }
 
 std::optional<std::string> GetRefKeyFromNode(const AnfNodePtr &node) {
@@ -430,7 +394,7 @@ bool OverlapGradReduce::DoOverlapGradReduce(const KernelGraphPtr &kernel_graph, 
       auto grad_reduce_list = grad_reduce_user.grad_reduce_list;
       if (assign_add_list.size() > 1) {
         AnfNodePtrList inputs(assign_add_list.begin(), assign_add_list.end());
-        auto make_tuple_cnode = CreateMakeTupleNode(kernel_graph, inputs);
+        auto make_tuple_cnode = common::AnfAlgo::CreateMakeTupleNode(kernel_graph, inputs);
         MS_EXCEPTION_IF_NULL(make_tuple_cnode);
         auto accu_input = grad_reduce_list.front()->input(kIndex1);
         while (IsPrimitiveCNode(accu_input, prim::kPrimDepend)) {
@@ -441,8 +405,8 @@ bool OverlapGradReduce::DoOverlapGradReduce(const KernelGraphPtr &kernel_graph, 
         depend_cnode->AddAttr("grad_comm_assign_add_depend", MakeValue<bool>(true));
         manager->SetEdge(grad_reduce_list.front(), kIndex1, depend_cnode);
       } else {
-        InsertDepend(assign_add_list.front(), grad_reduce_list.front(), manager, kernel_graph,
-                     "grad_comm_assign_add_depend");
+        common::AnfAlgo::InsertDepend(assign_add_list.front(), grad_reduce_list.front(), manager, kernel_graph,
+                                      "grad_comm_assign_add_depend");
       }
     }
     // Move all communication users to the back of the last gradient communication.
@@ -450,7 +414,8 @@ bool OverlapGradReduce::DoOverlapGradReduce(const KernelGraphPtr &kernel_graph, 
       if (IsPrimitiveCNode(next_op_user.first, prim::kPrimDepend) && next_op_user.second == kIndex2) {
         continue;
       }
-      InsertDepend(last_grad_reduce_node, next_op_user.first, manager, kernel_graph, "last_grad_comm_compute_depend");
+      common::AnfAlgo::InsertDepend(last_grad_reduce_node, next_op_user.first, manager, kernel_graph,
+                                    "last_grad_comm_compute_depend");
     }
   }
 
@@ -466,7 +431,8 @@ bool OverlapGradReduce::DoOverlapGradReduce(const KernelGraphPtr &kernel_graph, 
       auto cur_grad_reduce_user = grad_reduce_user_list.at(i);
       auto pre_grad_reduce_cnode = pre_grad_reduce_user.grad_reduce_list.back();
       auto cur_grad_reduce_cnode = cur_grad_reduce_user.grad_reduce_list.front();
-      InsertDepend(pre_grad_reduce_cnode, cur_grad_reduce_cnode, manager, kernel_graph, "grad_comm_in_order_depend");
+      common::AnfAlgo::InsertDepend(pre_grad_reduce_cnode, cur_grad_reduce_cnode, manager, kernel_graph,
+                                    "grad_comm_in_order_depend");
       pre_grad_reduce_user = cur_grad_reduce_user;
     }
     // Insert depend between grad reduce and next op
@@ -477,8 +443,10 @@ bool OverlapGradReduce::DoOverlapGradReduce(const KernelGraphPtr &kernel_graph, 
 
       auto cur_grad_compute_node = cur_grad_reduce_user.latest_dw_compute_nodes.front();
       auto next_grad_compute_node = next_grad_reduce_user.latest_dw_compute_nodes.front();
-      InsertDepend(cur_grad_compute_node, next_grad_compute_node, manager, kernel_graph, "dw_in_order_depend");
-      InsertDepend(cur_grad_reduce_cnode, next_grad_compute_node, manager, kernel_graph, "grad_comm_next_dw_depend");
+      common::AnfAlgo::InsertDepend(cur_grad_compute_node, next_grad_compute_node, manager, kernel_graph,
+                                    "dw_in_order_depend");
+      common::AnfAlgo::InsertDepend(cur_grad_reduce_cnode, next_grad_compute_node, manager, kernel_graph,
+                                    "grad_comm_next_dw_depend");
     }
   } else {
     // Insert depend node to correspond dx
@@ -505,7 +473,8 @@ bool OverlapGradReduce::DoOverlapGradReduce(const KernelGraphPtr &kernel_graph, 
         continue;
       }
 
-      InsertDepend(cur_grad_reduce_cnode, dx_compute_node, manager, kernel_graph, "grad_comm_dx_depend");
+      common::AnfAlgo::InsertDepend(cur_grad_reduce_cnode, dx_compute_node, manager, kernel_graph,
+                                    "grad_comm_dx_depend");
     }
   }
   return true;

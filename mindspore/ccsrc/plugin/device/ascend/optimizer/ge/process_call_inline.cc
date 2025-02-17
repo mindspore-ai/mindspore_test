@@ -69,6 +69,7 @@ const AnfNodePtr ProcessCallInline::Process(const FuncGraphPtr &graph, const Anf
     new_call_node->set_scope(node->scope());
     new_call_node->set_abstract(cnode->abstract());
     common::AnfAlgo::SetNodeAttr(kAttrKernelGraph, MakeValue(sub_kernel_graph), new_call_node);
+    new_call_node->set_attrs(cnode->attrs());
     return new_call_node;
   }
   return nullptr;

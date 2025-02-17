@@ -2819,6 +2819,44 @@ bool AnfAlgo::IsDynamicGraph(const FuncGraphPtr &func_graph) {
   return false;
 }
 
+CNodePtr AnfAlgo::CreateMakeTupleNode(const FuncGraphPtr &func_graph, const AnfNodePtrList &tuple_inputs) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  AnfNodePtrList new_make_tuple_inputs = {NewValueNode(prim::kPrimMakeTuple)};
+  (void)new_make_tuple_inputs.insert(new_make_tuple_inputs.cend(), tuple_inputs.cbegin(), tuple_inputs.cend());
+  auto make_tuple_node = func_graph->NewCNode(new_make_tuple_inputs);
+  MS_EXCEPTION_IF_NULL(make_tuple_node);
+
+  // MakeTuple's abstract must consist of all inputs' abstract in case unexpected graph compiling error.
+  AbstractBasePtrList abstract_list;
+  (void)std::for_each(tuple_inputs.cbegin(), tuple_inputs.cend(),
+                      [&](const auto &input) { (void)abstract_list.emplace_back(input->abstract()); });
+  if (std::find_if(abstract_list.begin(), abstract_list.end(), [](auto abs) { return !abs; }) != abstract_list.end()) {
+    return make_tuple_node;
+  }
+  make_tuple_node->set_abstract(std::make_shared<abstract::AbstractTuple>(abstract_list));
+  return make_tuple_node;
+}
+
+void AnfAlgo::InsertDepend(const AnfNodePtr &prior_node, const AnfNodePtr &post_node,
+                           const FuncGraphManagerPtr &manager, const FuncGraphPtr &root, const std::string &attr_tag,
+                           const size_t post_node_input_index) {
+  MS_EXCEPTION_IF_NULL(prior_node);
+  MS_EXCEPTION_IF_NULL(post_node);
+  if (prior_node == post_node) {
+    return;
+  }
+  auto post_cnode = post_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(post_cnode);
+  std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), post_cnode->input(post_node_input_index),
+                                          prior_node};
+  auto depend_node = root->NewCNode(depend_input);
+  depend_node->set_abstract(post_cnode->input(post_node_input_index)->abstract());
+  if (!attr_tag.empty()) {
+    depend_node->AddAttr(attr_tag, MakeValue<bool>(true));
+  }
+  (void)manager->SetEdge(post_node, post_node_input_index, depend_node);
+}
+
 bool AnfAlgo::IsMonadType(const TypeId &type_id) {
   if (std::any_of(monad_type_id.begin(), monad_type_id.end(),
                   [&type_id](const TypeId m_type_id) { return type_id == m_type_id; })) {

@@ -102,6 +102,8 @@ class SeqpipeScheduler : public PipelineScheduler {
   virtual void ControlSendRecvOrder(const BorderPair &send, const BorderPair &post_recv, size_t index);
   virtual void ComputeBias();
   void ComputePrefetchInfo();
+  void Reorder1f1bOverlap();
+  void Add1f1bAttr(const BorderPair &recv, const std::string &tag, size_t index_1f1b);
   std::pair<Border, Border> SeqpipeBorder(const std::vector<Border> &borders, int64_t seq_chunk, int64_t chunk,
                                           int64_t micro);
   std::unordered_map<std::string, std::vector<Border>> clean_mask_cache_assigns_;
@@ -129,6 +131,8 @@ class SeqpipeScheduler : public PipelineScheduler {
   bool before_small_micro_handle_stage_ = false;
   std::vector<std::unordered_map<SchedulerNode, size_t, SchedulerNodeHash>> scheduler_node_order_;
   void InsertSchedulerNode(SchedulerNode prior_node, SchedulerNode next_node, size_t index);
+  bool bp_fp_inline_ = false;
+  std::unordered_map<size_t, BorderPair> recv_nodes_map_;
 };
 
 class SeqvppScheduler : public SeqpipeScheduler {

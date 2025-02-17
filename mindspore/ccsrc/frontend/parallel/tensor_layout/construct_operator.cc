@@ -367,6 +367,20 @@ Status ConstructOperator::AlltoAllOP(const Args &args) {
   }
 
   std::string group_name = group_list[0].name();
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto pp_1f1b_value = ms_context->get_param<std::string>(MS_CTX_PP_1F1B_OVERLAP);
+  if (!pp_1f1b_value.empty()) {
+    auto rank_ids = parallel::g_device_manager->FindRankListByHashName(group_name);
+    if (rank_ids.empty()) {
+      return SUCCESS;
+    }
+    auto dev_list = parallel::g_device_manager->CreateDeviceListByRankList(rank_ids);
+    group_name = group_name + "_all2all";
+    parallel::Group cur_device_list;
+    (void)parallel::g_device_manager->CreateGroup(group_name, dev_list, &cur_device_list);
+  }
+
   ValuePtr attr_value_group = MakeValue(group_name);
   Attr attr_group = std::make_pair(GROUP, attr_value_group);
   ValuePtr attr_value_split_count = MakeValue(split_count);

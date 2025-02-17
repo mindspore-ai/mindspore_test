@@ -43,6 +43,8 @@ void ExtractBackwardMatMul(const std::vector<CNodePtr> &origin_nodes_topological
 std::string AnfNodeInfo(const AnfNodePtr &anf_node);
 void ExtendDxDwMap(const std::vector<CNodePtr> &origin_nodes_topological,
                    std::unordered_map<CNodePtr, CNodePtr> *backward_matmul_dx_dw_map);
+void ExtractForwardBackwardGraph(const FuncGraphPtr &graph, std::vector<FuncGraphPtr> *forward_graphs,
+                                 std::vector<FuncGraphPtr> *backward_graphs);
 }  // namespace parallel
 }  // namespace mindspore
 

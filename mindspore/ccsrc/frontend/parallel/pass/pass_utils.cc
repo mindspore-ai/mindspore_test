@@ -155,5 +155,31 @@ std::string AnfNodeInfo(const AnfNodePtr &anf_node) {
   }
   return unique_id;
 }
+
+void ExtractForwardBackwardGraph(const FuncGraphPtr &graph, std::vector<FuncGraphPtr> *forward_graphs,
+                                 std::vector<FuncGraphPtr> *backward_graphs) {
+  auto context = MsContext::GetInstance();
+  const auto is_cell_reuse = context->CellReuseLevel() != CellReuseLevel::kNoCellReuse;
+  auto manager = graph->manager();
+  if (!is_cell_reuse) {
+    forward_graphs->emplace_back(graph);
+    backward_graphs->emplace_back(graph);
+  } else {
+    for (const auto &each_graph : manager->func_graphs()) {
+      if (IsCellReuseForwardGraph(each_graph)) {
+        auto forward_graph = each_graph;
+        auto backward_graph = GetCellReuseBackwardGraph(forward_graph);
+        if (backward_graph == nullptr) {
+          MS_LOG(WARNING)
+            << "Failed to find backward cell reuse graph, skip pass 'overlap_gradmatmul_and_gradallreduce'.";
+          continue;
+        }
+        forward_graphs->emplace_back(forward_graph);
+        backward_graphs->emplace_back(backward_graph);
+      }
+    }
+  }
+}
+
 }  // namespace parallel
 }  // namespace mindspore
