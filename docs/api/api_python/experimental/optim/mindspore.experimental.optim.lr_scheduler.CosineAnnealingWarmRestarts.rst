@@ -3,13 +3,15 @@ mindspore.experimental.optim.lr_scheduler.CosineAnnealingWarmRestarts
 
 .. py:class:: mindspore.experimental.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0, T_mult=1, eta_min=0, last_epoch=-1)
 
-    使用余弦退火热重启对优化器参数组的学习率进行改变。下述公式中， :math:`\eta_{max}` 为初始学习率，:math:`\eta_{min}` 为学习率变化的最小值，:math:`\eta_{t}` 为当前学习率，:math:`T_{0}` 为初始周期，:math:`T_{i}` 为当前周期，即SGDR两次热重启之间的迭代数，:math:`T_{cur}` 为当前周期内的迭代数。
+    使用余弦退火热重启对优化器参数组的学习率进行改变。
 
     .. math::
         \eta_t = \eta_{min} + \frac{1}{2}(\eta_{max} - \eta_{min})\left(1 +
         \cos\left(\frac{T_{cur}}{T_{i}}\pi\right)\right)
 
-    当 :math:`T_{cur}=T_{i}` 时，:math:`\eta_t = \eta_{min}`，热重启后 :math:`T_{cur}=0` 时，设置 :math:`\eta_t=\eta_{max}`。
+    其中， :math:`\eta_{max}` 为初始学习率，:math:`\eta_{min}` 为学习率变化的最小值，:math:`\eta_{t}` 为当前学习率，:math:`T_{0}` 为初始周期，:math:`T_{i}` 为当前周期，即SGDR两次热重启之间的迭代数，:math:`T_{cur}` 为当前周期内的迭代数。
+
+    当 :math:`T_{cur}=T_{i}` 时，:math:`\eta_t = \eta_{min}`；热重启后 :math:`T_{cur}=0` 时， :math:`\eta_t=\eta_{max}`。
 
     详情请查看 `SGDR: Stochastic Gradient Descent with Warm Restarts <https://arxiv.org/abs/1608.03983>`_。
 
@@ -19,9 +21,9 @@ mindspore.experimental.optim.lr_scheduler.CosineAnnealingWarmRestarts
     参数：
         - **optimizer** (:class:`mindspore.experimental.optim.Optimizer`) - 优化器实例。
         - **T_0** (int) - 余弦函数的初始周期数。
-        - **T_mult** (int, 可选) - 迭代中对 :math:`T_{i}` 进行增长的乘法系数。默认值：``1``。
+        - **T_mult** (int, 可选) - 迭代中对 :math:`T_{i}` 进行增长的乘法系数。默认值： ``1``。
         - **eta_min** (Union(float, int), 可选) - 学习率的最小值。默认值： ``0``。
-        - **last_epoch** (int，可选) - 当前scheduler的 `step()` 方法的执行次数。默认值： ``-1``。
+        - **last_epoch** (int，可选) - 当前学习率调整策略的 `step()` 方法的执行次数。默认值： ``-1``。
 
     异常：
         - **ValueError** - `T_0` 小于等于0或不是int类型。

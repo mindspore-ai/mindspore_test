@@ -10,10 +10,10 @@ mindspore.experimental.optim.lr_scheduler.LRScheduler
 
     参数：
         - **optimizer** (:class:`mindspore.experimental.optim.Optimizer`) - 优化器实例。
-        - **last_epoch** (int，可选) - 当前scheduler的 `step()` 方法的执行次数。默认值： ``-1``。
+        - **last_epoch** (int，可选) - 当前学习率调整策略的 `step()` 方法的执行次数。默认值： ``-1``。
 
     异常：
-        - **TypeError** - `optimizer` 不是优化器。
+        - **TypeError** - `optimizer` 不满足类型要求。
         - **KeyError** - `last_epoch` 不是 -1 且 ``'initial_lr'`` 不在参数组内。
         - **ValueError** - `last_epoch` 不是int类型。
         - **ValueError** - `last_epoch` 小于-1。
