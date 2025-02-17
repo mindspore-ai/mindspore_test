@@ -30,6 +30,7 @@ from mindspore._c_expression import clean_tdt_channel
 from mindspore._c_expression import send_recv, reset_params
 from mindspore._c_expression import CollectiveManager
 from mindspore._c_expression import _get_uce_process_strategy, _get_uce_mem_info
+from mindspore._c_expression import TensorPy as Tensor_
 import mindspore
 import mindspore.common.dtype as mstype
 
@@ -293,7 +294,7 @@ class TFTRegister(Callback):
         for key, param in self.cb_params.train_network.parameters_and_names():
             if "tft_g_one_flag" in key:
                 with mindspore.hal.StreamCtx(self.s1):
-                    tft_g_one_flag = Tensor(Tensor.move_to(param, "CPU", False))
+                    tft_g_one_flag = Tensor(Tensor_.move_to(param, "CPU", False))
                 self.s1.synchronize()
                 return int(tft_g_one_flag) == 1
         return False
