@@ -3,7 +3,7 @@ mindspore.mint.greater_equal
 
 .. py:function:: mindspore.mint.greater_equal(input, other)
 
-    给定两个张量（Tensors），逐元素比较它们，以检查第一个张量中的每个元素是否大于或等于第二个张量中的相应元素。
+    给定两个Tensor，逐元素比较它们，以检查第一个Tensor中的每个元素是否大于或等于第二个Tensor中的相应元素。
 
     更多参考详见 :func:`mindspore.ops.ge`。
 

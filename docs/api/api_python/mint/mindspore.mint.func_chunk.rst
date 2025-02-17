@@ -6,7 +6,7 @@ mindspore.mint.chunk
     沿着指定轴 `dim` 将输入Tensor切分成 `chunks` 个sub-tensor。
 
     .. note::
-        此函数返回的数量可能小于通过 `chunks` 指定的数量!
+        此函数返回的数量可能小于通过 `chunks` 指定的数量。
 
     .. warning::
         这是一个实验性API，后续可能修改或删除。
