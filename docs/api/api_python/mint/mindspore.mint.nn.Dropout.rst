@@ -14,14 +14,14 @@ mindspore.mint.nn.Dropout
         - `p` 表示输入Tensor中元素设置成0的概率。
 
     参数：
-        - **p** (float，可选) - 输入神经元丢弃概率，例如，`p` =0.9，删除90%的神经元。默认值： ``0.5`` 。
-        - **inplace** (bool，可选) - 若为 ``True`` 则启用原地更新功能。默认值： ``False`` 。
+        - **p** (float，可选) - 输入神经元丢弃概率。例如，`p` =0.9，删除90%的神经元。默认值： ``0.5`` 。
+        - **inplace** (bool，可选) - 若为 ``True`` ，则启用原地更新功能。默认值： ``False`` 。
 
     输入：
         - **x** (Tensor) - Dropout的输入。
 
     输出：
-        Tensor，输出为Tensor，其shape与 `x` shape相同。
+        Tensor，输出为Tensor，其shape与 `x` 的 shape相同。
 
     异常：
         - **TypeError** - `p` 数据类型不是float。
