@@ -1608,6 +1608,20 @@ def _infer_value_for_Reduce(input_x, axis, keep_dims, prim_name):
     return value
 
 
+def infer_value_for_Arange(start, end, step, dtype=None):
+    """Infer value for Arange op."""
+    if start is None or end is None or step is None:
+        return None
+    np_dtype = np.int64
+    if dtype is None:
+        has_float = any(isinstance(i, float) for i in [start, end, step])
+        if has_float:
+            np_dtype = np.float32
+    else:
+        np_dtype = mstype.dtype_to_nptype(typing.type_id_to_type(dtype))
+    return Tensor(np.arange(start, end, step, dtype=np_dtype))
+
+
 def _infer_value_for_ReduceExtand(input_x, axis, keep_dims, dtype, prim_name):
     """Infer value for Common ReduceExtand op."""
     value = None
