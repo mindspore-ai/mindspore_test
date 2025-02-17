@@ -369,6 +369,7 @@
     mindspore.Tensor.topk
     mindspore.Tensor.trace
     mindspore.Tensor.transpose
+    mindspore.Tensor.triangular_solve
     mindspore.Tensor.tril
     mindspore.Tensor.triu
     mindspore.Tensor.true_divide

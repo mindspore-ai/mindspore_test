@@ -433,6 +433,9 @@ from mindspore.ops.function.math_func import nan_to_num
 # 613
 from mindspore.ops.functional_overload import nansum
 
+# 615
+from mindspore.ops.auto_generate import triangular_solve
+
 # 664
 from mindspore.ops.function.array_func import meshgrid_ext as meshgrid
 
@@ -2055,6 +2058,9 @@ __all__ = [
 
     # 613
     'nansum',
+
+    # 615
+    'triangular_solve',
 
     # 664
     'meshgrid',

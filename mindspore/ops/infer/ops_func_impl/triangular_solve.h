@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_OPS_INFER_OPS_FUNC_IMPL_TRIANGULAR_SOLVE_H_
-#define MINDSPORE_OPS_INFER_OPS_FUNC_IMPL_TRIANGULAR_SOLVE_H_
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_TRIANGULAR_SOLVE_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_TRIANGULAR_SOLVE_H_
 
+#include <memory>
 #include <vector>
+#include "mindapi/base/macros.h"
 #include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
@@ -31,4 +33,4 @@ class OPS_API TriangularSolveFuncImpl : public OpFuncImpl {
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_OPS_INFER_OPS_FUNC_IMPL_TRIANGULAR_SOLVE_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_TRIANGULAR_SOLVE_H_

@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,10 @@
 namespace mindspore {
 namespace kernel {
 
-class TriangularSolveAclnnKernelMod : public AclnnKernelMod {
+class TriangularSolveAscend : public AclnnKernelMod {
  public:
-  TriangularSolveAclnnKernelMod() : AclnnKernelMod(std::move("aclnnTriangularSolve")) {}
-  ~TriangularSolveAclnnKernelMod() = default;
+  TriangularSolveAscend() : AclnnKernelMod(std::move("aclnnTriangularSolve")) {}
+  ~TriangularSolveAscend() = default;
 
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,

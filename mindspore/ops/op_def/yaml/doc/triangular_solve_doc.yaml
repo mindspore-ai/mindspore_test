@@ -1,0 +1,46 @@
+triangular_solve:
+    description: |
+        Solves a system of equations with a square upper or lower triangular invertible matrix `A` and multiple right-hand sides `b`.
+
+        In symbols, it solves :math:`A X = b` and assumes `A` is square upper-triangular (or lower-triangular if ``upper = False``) and does not have zeros on the diagonal.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            b (Tensor):  A Tensor of shape :math:`(*, M, K)` where `*` is zero of more batch dimensions.
+            A (Tensor): A Tensor of shape :math:`(*, M, M)` where `*` is zero of more batch dimensions.
+            upper (bool, optional): Whether `A` is upper or lower triangular. Default: ``True``.
+            transpose (bool, optional): Solves :math:`op(A) X = b` where :math:`op(A) = A^T` if this flag is True, and :math:`op(A) = A` if it is False, Default: ``False``.
+            unitriangular (bool, optional): Whether `A` is unit triangular. If True, the diagonal elements of `A` are assumed to be 1 and not referenced from `A`. Default: ``False``.
+
+        Returns:
+            A tuple of X and A.
+
+        Raises:
+            TypeError: If argument `b` is not Tensor.
+            TypeError: If argument `A` is not Tensor.
+            TypeError: If `upper` is not bool.
+            TypeError: If `transpose` is not bool.
+            TypeError: If `unitriangular` is not bool.
+            ValueError: If the rank of `b` or `A` is not in the range of :math:`[2, 6]`.
+            ValueError: If the shapes of `b` and `A` are not matched.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import ops
+            >>> from mindspore import Tensor
+            >>> b = Tensor(np.ones((2, 3, 4), dtype=np.float32))
+            >>> A = Tensor(np.ones((2, 3, 3), dtype=np.float32))
+            >>> output = ops.triangular_solve(b, A)
+            >>> print(output[0])
+            [[[ 0.  0.  0.  0.]
+              [ 0.  0.  0.  0.]
+              [ 1.  1.  1.  1.]]
+             [[ 0.  0.  0.  0.]
+              [ 0.  0.  0.  0.]
+              [ 1.  1.  1.  1.]]]
+        
