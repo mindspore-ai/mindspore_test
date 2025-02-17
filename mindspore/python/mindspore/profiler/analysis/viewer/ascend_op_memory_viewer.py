@@ -64,7 +64,7 @@ class OpMemoryEvent(BaseEvent):
     FIX_DATA_FORMAT = "<i11QI4B"
     FIX_DATA_SIZE = struct.calcsize(FIX_DATA_FORMAT)
     FREE_VALUE = 18446744073709551615  # 2^64 - 1
-    NAME_KEY = 3
+    NAME_KEY = 13
 
     def __init__(self, data: Dict):
         super().__init__(data)

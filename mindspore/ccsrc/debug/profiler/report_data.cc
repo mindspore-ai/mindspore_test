@@ -17,6 +17,55 @@
 
 namespace mindspore {
 namespace profiler {
-namespace ascend {}  // namespace ascend
+namespace ascend {
+
+std::vector<uint8_t> OpRangeData::encode() {
+  std::vector<uint8_t> tlvBytes;
+
+  // Fixed data
+  // 5 * 8 = 40 bytes
+  encodeFixedData<uint64_t>(thread_id, tlvBytes);
+  encodeFixedData<uint64_t>(flow_id, tlvBytes);
+  encodeFixedData<uint64_t>(step, tlvBytes);
+  encodeFixedData<uint64_t>(start_time_ns, tlvBytes);
+  encodeFixedData<uint64_t>(end_time_ns, tlvBytes);
+  // 4 bytes
+  encodeFixedData<int32_t>(process_id, tlvBytes);
+  // 2 * 2 = 4 bytes
+  encodeFixedData<uint16_t>(module_index, tlvBytes);
+  encodeFixedData<uint16_t>(event_index, tlvBytes);
+  encodeFixedData<uint16_t>(stage_index, tlvBytes);
+  // 1 byte
+  encodeFixedData<int8_t>(level, tlvBytes);
+  // 2 bytes
+  encodeFixedData<bool>(is_graph_data, tlvBytes);
+  encodeFixedData<bool>(is_stage, tlvBytes);
+  encodeFixedData<bool>(is_stack, tlvBytes);
+  // Dynamic length data
+  encodeStrData(static_cast<uint16_t>(OpRangeDataType::NAME), op_name, tlvBytes);
+  encodeStrData(static_cast<uint16_t>(OpRangeDataType::FULL_NAME), op_full_name, tlvBytes);
+  if (!custom_info.empty()) {
+    encodeStrMapData(static_cast<uint16_t>(OpRangeDataType::CUSTOM_INFO), custom_info, tlvBytes);
+  }
+  encodeStrData(static_cast<uint16_t>(OpRangeDataType::MODULE_GRAPH), module_graph, tlvBytes);
+  encodeStrData(static_cast<uint16_t>(OpRangeDataType::EVENT_GRAPH), event_graph, tlvBytes);
+
+  std::vector<uint8_t> resultTLV;
+  size_t totalSize = sizeof(uint16_t) + sizeof(uint32_t) + tlvBytes.size();
+  resultTLV.reserve(totalSize);
+
+  uint16_t dataType = static_cast<uint16_t>(ReportFileType::OP_RANGE);
+  for (size_t i = 0; i < sizeof(uint16_t); ++i) {
+    resultTLV.push_back((dataType >> (i * 8)) & 0xff);
+  }
+  uint32_t length = tlvBytes.size();
+  for (size_t i = 0; i < sizeof(uint32_t); ++i) {
+    resultTLV.push_back((length >> (i * 8)) & 0xff);
+  }
+  resultTLV.insert(resultTLV.end(), tlvBytes.cbegin(), tlvBytes.cend());
+  return resultTLV;
+}
+
+}  // namespace ascend
 }  // namespace profiler
 }  // namespace mindspore

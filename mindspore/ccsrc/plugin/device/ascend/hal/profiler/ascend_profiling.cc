@@ -185,7 +185,7 @@ void AscendProfiler::Init(const std::string &profiling_path, uint32_t device_id,
 
   if (config_.cpuTrace) {
     ProfilingFrameworkData::Device_Id = config_.rankId;
-    ProfilingDataDumper::GetInstance().Init(config_.frameworkDataPath, config_.rankId);
+    ProfilingDataDumper::GetInstance().Init(config_.frameworkDataPath);
     profiler::ascend::ParallelStrategy::GetInstance()->SetOutputPath(config_.frameworkDataPath);
     InitFwkMemProfiling();
     MS_LOG(INFO) << "cpu_trace is enabled";
@@ -272,6 +272,7 @@ void AscendProfiler::Stop() {
     }
     profiler::ascend::ParallelStrategy::GetInstance()->SaveParallelStrategyToFile();
     ProfilingDataDumper::GetInstance().Stop();
+    ProfilingDataDumper::GetInstance().UnInit();
     MS_LOG(INFO) << "Stop AscendProfiler cpu trace";
   }
   StepProfilingEnable(false);

@@ -18,13 +18,12 @@ from collections import defaultdict
 from typing import List, Dict, Any
 
 from mindspore import log as logger
-from mindspore.profiler.common.constant import FileConstant, EventConstant
+from mindspore.profiler.common.constant import FileConstant
 from mindspore.profiler.common.file_manager import FileManager
 from mindspore.profiler.analysis.viewer.base_viewer import BaseViewer
 from mindspore.profiler.analysis.parser.timeline_event.fwk_event import (
     FwkCompleteEvent,
     OpRangeStructField,
-    FwkArgsDecoder
 )
 from mindspore.profiler.common.log import ProfilerLogger
 
@@ -69,10 +68,10 @@ class MsDatasetViewer(BaseViewer):
         """Calculate statistics for dataset operations."""
         dataset_op_data = []
         for data in fwk_tlv_data:
-            if (data[FileConstant.FIX_SIZE_DATA][OpRangeStructField.START_NS.value] <
-                    data[FileConstant.FIX_SIZE_DATA][OpRangeStructField.END_NS.value]):  # dur > 0
-                name = data.get(FwkArgsDecoder.TLV_TYPES.get(EventConstant.OP_NAME), "")
-                if name.split('::')[0] == self._DATASET_OP_PREFIX:
+            if (data[FileConstant.FIX_SIZE_DATA][OpRangeStructField.START_TIME_NS.value] <
+                    data[FileConstant.FIX_SIZE_DATA][OpRangeStructField.END_TIME_NS.value]):  # dur > 0
+                name = data.get(OpRangeStructField.MODULE_GRAPH.value, "")
+                if name == self._DATASET_OP_PREFIX:
                     dataset_op_data.append(FwkCompleteEvent(data))
 
         dataset_op_stats = defaultdict(list)

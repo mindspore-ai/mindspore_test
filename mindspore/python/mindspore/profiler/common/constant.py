@@ -137,6 +137,7 @@ class EventConstant:
     TOP_SCOPE_NAMES = ('Default', 'Gradients', 'recompute_Default')
     KERNEL_LAUNCH_KEYWORDS = ("KernelLaunch", "LaunchTask")
     MSTX_KEYWORD = "Mstx"
+    STACK_EVENT_CAT = "python_function"
 
     FLOW_OP = "flow"
     INVALID_FLOW_ID = 18446744073709551615
