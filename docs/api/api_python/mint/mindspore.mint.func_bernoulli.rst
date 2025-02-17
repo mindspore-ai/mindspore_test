@@ -4,7 +4,7 @@ mindspore.mint.bernoulli
 .. py:function:: mindspore.mint.bernoulli(input, *, generator=None)
 
 
-    从伯努利分布中进行采样，并根据输入 `input` 中第 `i` 个元素给出的概率值将输出 `output` 中的第 `i` 元素随机设置为0或1。
+    从伯努利分布中进行采样，并根据输入 `input` 中第 `i` 个元素给出的概率值，将输出 `output` 中的第 `i` 元素随机设置为0或1。
 
     .. math::
 

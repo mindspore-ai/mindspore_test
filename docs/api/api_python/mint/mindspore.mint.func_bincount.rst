@@ -3,11 +3,11 @@ mindspore.mint.bincount
 
 .. py:function:: mindspore.mint.bincount(input, weights=None, minlength=0)
 
-    统计 input 中每个值的出现次数。
+    统计 `input` 中每个值的出现次数。
 
-    如果不指定 minlength ，输出Tensor的长度为输入 input 中最大值加1。如果指定了 minlength，则输出Tensor的长度为 input 中最大值加1和 minlength 的最大值。
+    如果不指定 `minlength` ，输出Tensor的长度为输入 `input` 中最大值加1。如果指定了 `minlength` ，则输出Tensor的长度为 `input` 中最大值加1和 `minlength` 之间的最大值。
 
-    输出Tensor中每个值标记了该索引值在 input 中的出现次数。如果指定了 weights，对输出的结果进行加权处理，即 :math:`out[n]+=weight[i]` 而不是 :math:`out[n]+=1`。
+    输出Tensor中每个值标记了该索引值在 `input` 中的出现次数。如果指定了 `weights` ，对输出的结果进行加权处理，即 :math:`out[n]+=weight[i]` 而不是 :math:`out[n]+=1`。
     
     .. warning::
         这是一个实验性API，后续可能修改或删除。
