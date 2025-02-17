@@ -1018,7 +1018,8 @@ void FuncGrad::WeightNodeNotInGradButHasTensorHook(const FuncVariablePtr &variab
 }
 
 void FuncGrad::ConstructParameterNodes(const ValuePtrList &inputs) {
-  for (const auto &value : inputs) {
+  for (int32_t i = inputs.size() - 1; i >= 0; i--) {
+    auto value = inputs[i];
     if (!value->isa<tensor::BaseTensor>()) {
       continue;
     }
