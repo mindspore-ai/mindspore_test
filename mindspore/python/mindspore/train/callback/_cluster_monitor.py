@@ -132,21 +132,10 @@ class ClusterMonitor(Callback):
         self.full_path = self.log_path + self.log_name
 
         self.write_dp_tp_flag = True
-        self.initial_rank = 0
 
     def begin(self, run_context):
         _remove_pre_log()
-        pp_num = _get_auto_parallel_context("pipeline_stages")
-        device_num = _get_device_num()
 
-        original_list = list(range(device_num))
-        chunk_size = device_num // pp_num
-        split_pp_lists = []
-        for i in range(0, device_num, chunk_size):
-            end_index = i + chunk_size if i + chunk_size <= device_num else device_num
-            split_pp_lists.append(original_list[i:end_index])
-
-        self.initial_rank = (self.global_rank // chunk_size) * chunk_size
         with _perf_mutex:
             dir_path = os.path.dirname(self.full_path)
             if not os.path.exists(dir_path):
@@ -157,8 +146,6 @@ class ClusterMonitor(Callback):
             with open(self.full_path, 'w') as file:
                 log_message = f'UUID:{self.uuid_value}\nFRAMEWORK:{self.frame_work}\nGLOBAL RANKID:{self.global_rank}\n'
                 file.write(log_message)
-                for _, split_pp_list in enumerate(split_pp_lists):
-                    file.write(f'PP:{split_pp_list}\n')
             os.chmod(self.full_path, stat.S_IRUSR)
 
     def step_begin(self, run_context):
@@ -183,10 +170,24 @@ class ClusterMonitor(Callback):
         if self.enabled and self.enabled_dtp_group and self.write_dp_tp_flag:
             cb_params = run_context.original_args()
             param_layout_dict = cb_params.train_network.parameter_layout_dict
-            dp, tp = _get_dp_tp_from_layout(param_layout_dict, self.initial_rank)
+
+            pp_num = _get_auto_parallel_context("pipeline_stages")
+            device_num = _get_device_num()
+
+            original_list = list(range(device_num))
+            chunk_size = device_num // pp_num
+            initial_rank = (self.global_rank // chunk_size) * chunk_size
+            split_pp_lists = []
+            for i in range(0, device_num, chunk_size):
+                end_index = i + chunk_size if i + chunk_size <= device_num else device_num
+                split_pp_lists.append(original_list[i:end_index])
+            dp, tp = _get_dp_tp_from_layout(param_layout_dict, initial_rank)
+
             with _perf_mutex:
                 os.chmod(self.full_path, stat.S_IWUSR)
                 with open(self.full_path, 'a') as file:
+                    for _, split_pp_list in enumerate(split_pp_lists):
+                        file.write(f'PP:{split_pp_list}\n')
                     for dp_value in dp:
                         file.write(f'dp:{dp_value}\n')
                     for tp_value in tp:
