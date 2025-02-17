@@ -14,22 +14,23 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/internal/add.h"
+#include "plugin/device/ascend/kernel/internal/less.h"
 
 #include <memory>
 #include "kernel/kernel.h"
+
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
 
 namespace mindspore {
 namespace kernel {
-internal::InternalOpPtr InternalAdd::CreateKernel(const internal::InputsImmutableInfoList &inputs_ii,
-                                                  const internal::OutputsImmutableInfoList &outputs_ii,
-                                                  const std::vector<KernelTensor *> &ms_inputs,
-                                                  const std::vector<KernelTensor *> &ms_outputs) {
-  return internal::CreateAddOp(inputs_ii, outputs_ii, internal::kInternalAddOpName);
+internal::InternalOpPtr InternalLess::CreateKernel(const internal::InputsImmutableInfoList &inputs_ii,
+                                                   const internal::OutputsImmutableInfoList &outputs_ii,
+                                                   const std::vector<KernelTensor *> &ms_inputs,
+                                                   const std::vector<KernelTensor *> &ms_outputs) {
+  return internal::CreateLessOp(inputs_ii, outputs_ii, internal::kInternalLessOpName);
 }
-MS_INTERNAL_KERNEL_FACTORY_REG(Add, internal::kInternalAddOpName, InternalAdd);
-REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(Add, INPUT_NUM_2, INDEX_0, INDEX_1);
-REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(Add, OUTPUT_NUM_1, INDEX_0);
+MS_INTERNAL_KERNEL_FACTORY_REG(Less, internal::kInternalLessOpName, InternalLess);
+REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(Less, INPUT_NUM_2, INDEX_0, INDEX_1);
+REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(Less, OUTPUT_NUM_1, INDEX_0);
 }  // namespace kernel
 }  // namespace mindspore
