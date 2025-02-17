@@ -6,11 +6,9 @@ dropout_gen_mask_ext:
         p:
             dtype: float
         seed:
-            dtype: int
-            type_cast: tensor
+            dtype: tensor
         offset:
-            dtype: int
-            type_cast: tensor
+            dtype: tensor
         dtype:
             dtype: TypeId
             arg_handler: dtype_to_type_id

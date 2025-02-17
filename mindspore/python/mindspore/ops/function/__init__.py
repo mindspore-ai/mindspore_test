@@ -490,6 +490,7 @@ from .nn_func import (
     flipud,
     fractional_max_pool2d,
     fractional_max_pool3d,
+    speed_fusion_attention,
     pixel_shuffle,
     pixel_unshuffle,
     hardshrink,

@@ -241,6 +241,7 @@ TEST_P(GeneralInferTest, test_infer) {
     << "Convert param to InferInfo failed.";
 
   try {
+    (void) op_func.CheckValidation(prim, abstract_infos);
     const auto &abstract_infer_shapes = op_func.InferShape(prim, abstract_infos);
     const auto &abstract_infer_types = ToTypeName(op_func.InferType(prim, abstract_infos));
     if (expect_throw) {
@@ -254,6 +255,7 @@ TEST_P(GeneralInferTest, test_infer) {
 
   if (!is_dynamic) {
     try {
+      (void) op_func.CheckValidation(prim, value_infos);
       const auto &value_infer_shapes = op_func.InferShape(prim, value_infos);
       const auto &value_infer_types = ToTypeName(op_func.InferType(prim, value_infos));
       if (expect_throw) {

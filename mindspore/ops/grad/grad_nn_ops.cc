@@ -4229,6 +4229,105 @@ REG_BPROP_BUILDER("FlashAttentionScore").SetBody((BODYFUNC(ib) {
           g_scale_value, g_pre_tokens, g_next_tokens,     g_inner_precise,    g_input_layout, g_sparse_mode};
 }));
 
+REG_BPROP_BUILDER("SpeedFusionAttention").SetBody((BODYFUNC(ib) {
+  auto query = ib->GetInput(kIndex0);
+  auto key = ib->GetInput(kIndex1);
+  auto value = ib->GetInput(kIndex2);
+  auto head_num = ib->GetInput(kIndex3);
+  auto input_layout = ib->GetInput(kIndex4);
+  auto seed_in = ib->GetInput(kIndex5);
+  auto offset_in = ib->GetInput(kIndex6);
+  auto pse = ib->GetInput(kIndex7);
+  auto padding_mask = ib->GetInput(kIndex8);
+  auto atten_mask = ib->GetInput(kIndex9);
+  auto scale = ib->GetInput(kIndex10);
+  auto keep_prob = ib->GetInput(kIndex11);
+  auto pre_tokens = ib->GetInput(kIndex12);
+  auto next_tokens = ib->GetInput(kIndex13);
+  auto inner_precise = ib->GetInput(kIndex14);
+  auto prefix = ib->GetInput(kIndex15);
+  auto actual_seq_qlen = ib->GetInput(kIndex16);
+  auto actual_seq_kvlen = ib->GetInput(kIndex17);
+  auto sparse_mode = ib->GetInput(kIndex18);
+  auto gen_mask_parallel = ib->GetInput(kIndex19);
+  auto sync = ib->GetInput(kIndex20);
+  auto pse_type = ib->GetInput(kIndex21);
+  auto q_start_idx = ib->GetInput(kIndex22);
+  auto kv_start_idx = ib->GetInput(kIndex23);
+  auto out = ib->GetInput(kIndex24);
+  auto dout = ib->GetInput(kIndex25);
+
+  auto attention_out = ib->TupleGetItem(out, kIndex0);
+  auto softmax_max = ib->TupleGetItem(out, kIndex1);
+  auto softmax_sum = ib->TupleGetItem(out, kIndex2);
+  auto softmax_out = ib->TupleGetItem(out, kIndex3);
+  auto seed = ib->TupleGetItem(out, kIndex4);
+  auto offset = ib->TupleGetItem(out, kIndex5);
+  auto numels = ib->TupleGetItem(out, kIndex6);
+  auto dy = ib->TupleGetItem(dout, kIndex0);
+
+  auto ret = ib->Emit("SpeedFusionAttentionGrad", {query,
+                                                   key,
+                                                   value,
+                                                   dy,
+                                                   head_num,
+                                                   input_layout,
+                                                   pse,
+                                                   padding_mask,
+                                                   atten_mask,
+                                                   softmax_max,
+                                                   softmax_sum,
+                                                   softmax_out,
+                                                   attention_out,
+                                                   scale,
+                                                   keep_prob,
+                                                   pre_tokens,
+                                                   next_tokens,
+                                                   inner_precise,
+                                                   seed,
+                                                   offset,
+                                                   numels,
+                                                   prefix,
+                                                   actual_seq_qlen,
+                                                   actual_seq_kvlen,
+                                                   sparse_mode,
+                                                   gen_mask_parallel,
+                                                   sync,
+                                                   pse_type,
+                                                   q_start_idx,
+                                                   kv_start_idx});
+
+  auto dq = ib->TupleGetItem(ret, kIndex0);
+  auto dk = ib->TupleGetItem(ret, kIndex1);
+  auto dv = ib->TupleGetItem(ret, kIndex2);
+  auto dp = ib->TupleGetItem(ret, kIndex3);
+
+  return {dq,
+          dk,
+          dv,
+          ib->OutZeros(head_num),
+          ib->OutZeros(input_layout),
+          ib->OutZeros(seed_in),
+          ib->OutZeros(offset_in),
+          dp,
+          ib->OutZeros(padding_mask),
+          ib->OutZeros(atten_mask),
+          ib->OutZeros(scale),
+          ib->OutZeros(keep_prob),
+          ib->OutZeros(pre_tokens),
+          ib->OutZeros(next_tokens),
+          ib->OutZeros(inner_precise),
+          ib->OutZeros(prefix),
+          ib->OutZeros(actual_seq_qlen),
+          ib->OutZeros(actual_seq_kvlen),
+          ib->OutZeros(sparse_mode),
+          ib->OutZeros(gen_mask_parallel),
+          ib->OutZeros(sync),
+          ib->OutZeros(pse_type),
+          ib->OutZeros(q_start_idx),
+          ib->OutZeros(kv_start_idx)};
+}));
+
 REG_BPROP_BUILDER("RmsNorm").FreeUselessValues_IO({i2}, {i0}).SetBody((BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto gamma = ib->GetInput(kIndex1);
