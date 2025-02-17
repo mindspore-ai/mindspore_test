@@ -1,5 +1,5 @@
-#operator adaptive_avg_pool1d
-adaptive_avg_pool1d:
+#operator adaptive_max_pool1d
+adaptive_max_pool1d:
   args:
     input:
       dtype: tensor
@@ -9,9 +9,13 @@ adaptive_avg_pool1d:
   returns:
     output:
       dtype: tensor
+    indices:
+      dtype: tensor
+  function:
+      disable: True
   class:
-      name: AdaptiveAvgPool1D
+      name: AdaptiveMaxPool1D
   dispatch:
     enable: True
-    Ascend: AdaptiveAvgPool1DAscend
+    Ascend: AdaptiveMaxPool1DAscend
 

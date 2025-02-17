@@ -32,6 +32,7 @@ from mindspore.mint.nn.layer.activation import LogSigmoid
 from mindspore.mint.nn.layer.activation import SiLU
 from mindspore.mint.nn.layer.activation import Threshold
 from mindspore.mint.nn.layer.basic import Dropout2d
+from mindspore.mint.nn.layer.pooling import AdaptiveMaxPool1d
 from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool1d
 from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool2d
 from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool3d
@@ -46,6 +47,7 @@ __all__ = [
     'LogSigmoid',
     'SiLU',
     'Dropout2d',
+    'AdaptiveMaxPool1d',
     'AdaptiveAvgPool1d',
     'AdaptiveAvgPool2d',
     'AdaptiveAvgPool3d',

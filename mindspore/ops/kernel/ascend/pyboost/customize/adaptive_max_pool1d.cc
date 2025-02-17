@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,25 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "kernel/ascend/pyboost/customize/adaptive_avg_pool1d.h"
-#include <memory>
+#include "kernel/ascend/pyboost/customize/adaptive_max_pool1d.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "mindspore/ccsrc/pyboost/auto_generate/reshape.h"
-#include "mindspore/ccsrc/pyboost/auto_generate/adaptive_avg_pool2d_ext.h"
+#include "mindspore/ccsrc/pyboost//auto_generate/reshape.h"
+#include "mindspore/ccsrc/pyboost//auto_generate/adaptive_max_pool2d.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-namespace {
-constexpr int kShape2dDims = 2;
-}
-tensor::BaseTensorPtr AdaptiveAvgPool1DAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                       const BaseTensorPtr &input_x_tensor,
-                                                       const ValueTuplePtr &output_size) {
+std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> AdaptiveMaxPool1DAscendCustomize(
+  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_x_tensor, const ValueTuplePtr &output_size) {
   OpRunner::InferOpOutput(op, input_x_tensor, output_size);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_x_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
@@ -52,27 +46,31 @@ tensor::BaseTensorPtr AdaptiveAvgPool1DAscendCustomize(const std::shared_ptr<OpR
   auto output_size_val = ConvertValueTupleToVector<int64_t>(output_size);
   auto output_size_2d = std::make_shared<ValueTuple>(
     std::vector<ValuePtr>{std::make_shared<Int64Imm>(1), std::make_shared<Int64Imm>(output_size_val[0])});
-  // call AdaptiveAvgPool2dExt
-  auto adaptive_avg_pool2d_op =
-    CREATE_PYBOOST_OP(AdaptiveAvgPool2DExt, op->device_context()->device_context_key_.device_name_);
-  auto output_adaptive_avg_pool2d_tensor = adaptive_avg_pool2d_op->Call(input_x_imm, output_size_2d);
-
+  // call AdaptiveMaxPool2d
+  auto adaptive_max_pool2d_op =
+    CREATE_PYBOOST_OP(AdaptiveMaxPool2D, op->device_context()->device_context_key_.device_name_);
+  tensor::BaseTensorPtr output_adaptive_max_pool2d_tensor;
+  tensor::BaseTensorPtr output_adaptive_max_pool2d_indices;
+  std::tie(output_adaptive_max_pool2d_tensor, output_adaptive_max_pool2d_indices) =
+    adaptive_max_pool2d_op->Call(input_x_imm, output_size_2d);
   // squeeze shape
-  auto shape_pool2d = output_adaptive_avg_pool2d_tensor->shape();
-  auto shape_pool2d_dim = SizeToLong(shape_pool2d.size());
+  auto shape_pool2d = output_adaptive_max_pool2d_tensor->shape();
+  auto shape_pool2d_dim = shape_pool2d.size();
   std::vector<ValuePtr> squeeze_input_shape;
-  if (shape_pool2d_dim <= kShape2dDims) {
-    MS_LOG(EXCEPTION) << "For AdaptiveAvgPool1DAscendCustomize, the value of shape_pool2d.size is invalid.";
+  if (shape_pool2d_dim <= kDim2) {
+    MS_LOG(EXCEPTION) << "For AdaptiveMaxPool1DAscendCustomize, the value of shape_pool2d.size is invalid.";
   }
-  constexpr int offset = 2;
-  for (auto i = 0; i < shape_pool2d_dim - offset; i++) {
+  constexpr size_t offset = 2;
+  for (size_t i = 0; i < shape_pool2d_dim - offset; i++) {
     squeeze_input_shape.emplace_back(std::make_shared<Int64Imm>(shape_pool2d[i]));
   }
   squeeze_input_shape.emplace_back(std::make_shared<Int64Imm>(shape_pool2d[shape_pool2d_dim - 1]));
   auto output_tensor =
-    reshape_op->Call(output_adaptive_avg_pool2d_tensor, std::make_shared<ValueTuple>(squeeze_input_shape));
-  op->set_outputs(reshape_op->outputs());
-  return output_tensor;
+    reshape_op->Call(output_adaptive_max_pool2d_tensor, std::make_shared<ValueTuple>(squeeze_input_shape));
+  auto output_indices =
+    reshape_op->Call(output_adaptive_max_pool2d_indices, std::make_shared<ValueTuple>(squeeze_input_shape));
+  op->set_outputs({output_tensor, output_indices});
+  return std::make_tuple(output_tensor, output_indices);
 }
 }  // namespace pyboost
 }  // namespace kernel
