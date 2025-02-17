@@ -1019,6 +1019,42 @@ class Parameter(Tensor_):
     def _remove_hook(self):
         set_parameter_hook_updated(True)
 
+    def _offload(self):
+        r"""
+        Offload parameter to host with releasing device resource.
+
+        Supported Platforms:
+            ``Ascend``
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Examples:
+            >>> from mindspore import Parameter, Tensor
+            >>> x = Parameter(Tensor(np.array([1, 2], dtype=np.float32)), name="param")
+            >>> x._offload()
+        """
+        return Tensor_._offload(self, True)
+
+
+    def _load(self):
+        r"""
+        Load parameter to device.
+
+        Supported Platforms:
+            ``Ascend``
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Examples:
+            >>> from mindspore import Parameter, Tensor
+            >>> x = Parameter(Tensor(np.array([1, 2], dtype=np.float32)), name="param")
+            >>> x._offload()
+            >>> x._load()
+        """
+        return Tensor_._load(self)
+
 
 class ParameterTuple(tuple):
     """
@@ -1093,6 +1129,7 @@ class ParameterTuple(tuple):
                 _clone_hash_table(x.name, x.key, x1.name, x1.key)
                 _insert_accumu_init_info(x1.name, init_to_value(init))
         return ParameterTuple(new)
+
 
     def __parameter_tuple__(self):
         """For parse check."""

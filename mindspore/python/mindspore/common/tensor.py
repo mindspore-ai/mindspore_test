@@ -4074,7 +4074,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             >>> x = ms.Tensor([1, 2, 3], ms.int64)
             >>> x._offload()
         """
-        return TensorPy_._offload(self)
+        return TensorPy_._offload(self, False)
 
     def _data_ptr(self):
         r"""

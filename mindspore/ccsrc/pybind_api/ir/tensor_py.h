@@ -163,7 +163,10 @@ class TensorPybind {
 
   static void FlushFromCache(const Tensor &tensor);
 
-  static void Offload(const Tensor &tensor);
+  static void Offload(const Tensor &tensor, bool release);
+
+  static void Load(const Tensor &tensor);
+
   // move tensor from device to host, or host to device asynchronously
   static TensorPtr MoveTo(const Tensor &self, const std::string &to, bool blocking = True);
 
@@ -296,7 +299,12 @@ class TensorPyImpl {
   /// \brief Release device address of graph output tensor by TensorPy.
   ///
   /// \param[in] tensorpy [TensorPyPtr] The TensorPy.
-  static void SetOffload(const TensorPyPtr &tensorpy);
+  static void SetOffload(const TensorPyPtr &tensorpy, bool release);
+
+  /// \brief Load device address of graph input tensor by TensorPy.
+  ///
+  /// \param[in] tensorpy [TensorPyPtr] The TensorPy.
+  static void SetLoad(const TensorPyPtr &tensorpy);
 
   /// \brief Get Tensor data pointer for c++ type, and put it to py::bytes.
   ///

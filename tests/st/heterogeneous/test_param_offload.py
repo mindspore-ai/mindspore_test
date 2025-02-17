@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2024-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,17 +24,21 @@ from mindspore.ops import operations as P
 from mindspore import Parameter
 from mindspore.common.initializer import initializer
 from tests.mark_utils import arg_mark
-
+# disable pylint too broad Exception
+# pylint: disable=W0212
 context.set_context(mode=context.GRAPH_MODE,
                     memory_optimize_level='O0')
 
 
 class TestNet(nn.Cell):
     """Test network"""
-    def __init__(self):
+    def __init__(self, offload=True):
         super(TestNet, self).__init__()
         self.fc1_werght = Parameter(initializer('normal', [28*28, 2560*50], ms.float32))
-        self.fc2_werght = Parameter(initializer('normal', [2560*50, 2560], ms.float32), device="CPU")
+        if offload:
+            self.fc2_werght = Parameter(initializer('normal', [2560*50, 2560], ms.float32), device="CPU")
+        else:
+            self.fc2_werght = Parameter(initializer('normal', [2560*50, 2560], ms.float32))
         self.fc3_werght = Parameter(initializer('normal', [2560, 10], ms.float32))
 
         self.flatten = P.Flatten()
@@ -84,4 +88,57 @@ def test_param_offload():
         label = Tensor(np.ones([batch_size]).astype(np.int32))
         loss = train_network(data, label)
         losses.append(loss)
+    assert losses[-1].asnumpy() <= 2.28684
+
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
+def test_param_offload_between_nets():
+    '''
+    Feature: Parameter offload
+    Description: Test parameter offload between training
+    Expectation: Train TestNet success
+    '''
+    ms.set_seed(1)
+    context.set_context(jit_level='O0')
+
+    epoch = 4
+    batch_size = 32
+
+    net = TestNet()
+    optimizer = nn.SGD(net.trainable_params(), 1e-2)
+    loss_fn = nn.CrossEntropyLoss()
+    net_with_loss = WithLossCell(net, loss_fn)
+    net_with_loss.set_train()
+    train_network = TrainOneStepCell(
+        net_with_loss, optimizer)  # optimizer
+    train_network.set_train()
+    losses = []
+    data = Tensor(np.ones([batch_size, 1, 28, 28]
+                          ).astype(np.float32) * 0.01)
+    label = Tensor(np.ones([batch_size]).astype(np.int32))
+
+    for _ in range(0, epoch):
+        loss = train_network(data, label)
+        losses.append(loss)
+
+    before_offload_mem = ms.hal.memory_stats()['total_allocated_memory']
+    offload_nbytes = 0
+    for _, param in train_network.parameters_and_names():
+        offload_nbytes += param.nbytes
+        param._offload()
+    after_offload_mem = ms.hal.memory_stats()['total_allocated_memory']
+    assert before_offload_mem - after_offload_mem >= offload_nbytes
+
+    before_load_mem = ms.hal.memory_stats()['total_allocated_memory']
+    load_nbytes = 0
+    for _, param in train_network.parameters_and_names():
+        load_nbytes += param.nbytes
+        param._load()
+    after_load_mem = ms.hal.memory_stats()['total_allocated_memory']
+    assert after_load_mem - before_load_mem >= load_nbytes
+
+    for _ in range(0, epoch):
+        loss = train_network(data, label)
+        losses.append(loss)
+
     assert losses[-1].asnumpy() <= 2.28684
