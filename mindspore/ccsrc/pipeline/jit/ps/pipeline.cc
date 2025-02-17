@@ -2057,7 +2057,8 @@ py::dict ExecutorPy::GetParams(const std::string &phase) {
     std::string name = param_ptr->name();
     auto tensor = std::dynamic_pointer_cast<tensor::Tensor>(param_ptr->default_param());
     if (tensor != nullptr) {
-      parameter_dict[py::str(name)] = *tensor;
+      auto tensor_py = std::make_shared<tensor::TensorPy>(tensor);
+      parameter_dict[py::str(name)] = *tensor_py;
     }
   }
   return parameter_dict;

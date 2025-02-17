@@ -1403,6 +1403,10 @@ py::tuple GetSparseTensorShape(const T &sparse_tensor) {
 
 py::tuple CSRTensorPy::GetPyTupleShape(const CSRTensor &csr_tensor) { return GetSparseTensorShape(csr_tensor); }
 
+TensorPyPtr CSRTensorPy::GetIndptr(const CSRTensorPtr &csr_tensor) {
+  return std::make_shared<TensorPy>(csr_tensor->GetIndptr());
+}
+
 TensorPyPtr CSRTensorPy::GetIndices(const CSRTensorPtr &csr_tensor) {
   return std::make_shared<TensorPy>(csr_tensor->GetIndices());
 }
@@ -1424,7 +1428,7 @@ void RegCSRTensor(const py::module *m) {
          py::arg("input"))
     .def_property_readonly("_shape", CSRTensorPy::GetPyTupleShape)
     .def_property_readonly("_dtype", &CSRTensor::Dtype)
-    .def_property_readonly("_indptr", &CSRTensor::GetIndptr)
+    .def_property_readonly("_indptr", CSRTensorPy::GetIndptr)
     .def_property_readonly("_indices", CSRTensorPy::GetIndices)
     .def_property_readonly("_values", CSRTensorPy::GetValues)
     .def("__str__", &CSRTensor::ToString)

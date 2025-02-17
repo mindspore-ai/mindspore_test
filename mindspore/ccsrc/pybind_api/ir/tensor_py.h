@@ -187,6 +187,7 @@ class TensorPybind {
 class CSRTensorPy {
  public:
   static py::tuple GetPyTupleShape(const CSRTensor &csr_tensor);
+  static TensorPyPtr GetIndptr(const CSRTensorPtr &csr_tensor);
   static TensorPyPtr GetIndices(const CSRTensorPtr &csr_tensor);
   static TensorPyPtr GetValues(const CSRTensorPtr &csr_tensor);
 };
