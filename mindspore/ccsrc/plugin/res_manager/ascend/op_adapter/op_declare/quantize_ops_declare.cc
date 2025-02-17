@@ -16,6 +16,7 @@
 
 #include "plugin/res_manager/ascend/op_adapter/op_declare/quantize_ops_declare.h"
 #include <string>
+#include <vector>
 
 namespace mindspore::device::ascend {
 // AscendQuant
@@ -63,6 +64,21 @@ INPUT_ATTR_MAP(QuantBatchMatmulV3) = {{7, ATTR_DESC(transpose_x1, AnyTraits<bool
 OUTPUT_MAP(QuantBatchMatmulV3) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(QuantBatchMatmulV3, kNameQuantBatchMatmul, ADPT_DESC(QuantBatchMatmulV3))
 
+// QuantConv2D
+INPUT_MAP(QuantConv2D) = {
+  {1, INPUT_DESC(x)}, {2, INPUT_DESC(filter)}, {3, INPUT_DESC(scale)}, {4, INPUT_DESC(bias)}, {5, INPUT_DESC(offset)}};
+ATTR_MAP(QuantConv2D) = {{"dtype", ATTR_DESC(dtype, AnyTraits<GEType>(), AnyTraits<int64_t>())},
+                         {"strides", ATTR_DESC(strides, AnyTraits<int64_t>(), AnyTraits<std::vector<int64_t>>())},
+                         {"pads", ATTR_DESC(pads, AnyTraits<int64_t>(), AnyTraits<std::vector<int64_t>>())},
+                         {"dilations", ATTR_DESC(dilations, AnyTraits<int64_t>(), AnyTraits<std::vector<int64_t>>())},
+                         {"groups", ATTR_DESC(groups, AnyTraits<int64_t>())},
+                         {"data_format", ATTR_DESC(data_format, AnyTraits<std::string>())},
+                         {"offset_x", ATTR_DESC(offset_x, AnyTraits<int64_t>())},
+                         {"round_mode", ATTR_DESC(round_mode, AnyTraits<std::string>())}};
+OUTPUT_MAP(QuantConv2D) = {{0, OUTPUT_DESC(y)}};
+REG_ADPT_DESC(QuantConv2D, kNameQuantConv2D, ADPT_DESC(QuantConv2D))
+
+// AscendAntiQuantV2
 INPUT_MAP(AscendAntiQuantV2) = {{1, INPUT_DESC(x)}, {2, INPUT_DESC(scale)}, {3, INPUT_DESC(offset)}};
 ATTR_MAP(AscendAntiQuantV2) = {{"sqrt_mode", ATTR_DESC(sqrt_mode, AnyTraits<bool>())},
                                {"dtype", ATTR_DESC(dst_type, AnyTraits<GEType>(), AnyTraits<int64_t>())}};
