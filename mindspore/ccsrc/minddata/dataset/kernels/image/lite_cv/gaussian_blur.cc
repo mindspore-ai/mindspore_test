@@ -19,13 +19,6 @@
 #include "lite_cv/lite_mat.h"
 #include "lite_cv/image_process.h"
 
-#ifdef ENABLE_ANDROID
-#if defined(__arm__) || defined(__aarch64__) || defined(_M_ARM) || defined(_M_ARM64)
-#define USE_NEON
-#include <arm_neon.h>
-#endif
-#endif
-
 namespace mindspore {
 namespace dataset {
 static void GetGaussianKernel(float *kernel, int size, double sigma) {

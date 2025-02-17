@@ -15,11 +15,7 @@
  */
 #include "minddata/dataset/kernels/image/rgb_to_bgr_op.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/image_utils.h"
-#else
-#include "minddata/dataset/kernels/image/lite_image_utils.h"
-#endif
 
 namespace mindspore {
 namespace dataset {

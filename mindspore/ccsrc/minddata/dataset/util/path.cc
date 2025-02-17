@@ -26,11 +26,7 @@
 #endif
 
 #include "./securec.h"
-#ifndef BUILD_LITE
 #include "utils/file_utils.h"
-#else
-#include "mindspore/lite/src/common/file_utils.h"
-#endif
 #include "utils/ms_utils.h"
 #include "minddata/dataset/util/log_adapter.h"
 

@@ -27,9 +27,7 @@
 #endif
 
 #include "./securec.h"
-#ifndef ENABLE_ANDROID
 #include "proto/example.pb.h"
-#endif
 #ifdef ENABLE_PYTHON
 #include "pybind11/numpy.h"
 #include "pybind11/pybind11.h"
@@ -135,7 +133,6 @@ class DATASET_API Tensor {
   static Status CreateFromPythonObject(py::object obj, TensorPtr *out);
 #endif
 
-#ifndef ENABLE_ANDROID
   /// Create a tensor of type DE_STRING from a BytesList.
   /// \param[in] bytes_list protobuf's Bytelist
   /// \param[in] shape shape of the output tensor
@@ -153,7 +150,6 @@ class DATASET_API Tensor {
   /// \return Status Code
   static Status CreateFromByteList(const dataengine::BytesList &bytes_list, const TensorShape &shape,
                                    const DataType &type, dsize_t pad_size, TensorPtr *out);
-#endif
 
   /// Create a Tensor from a given list of values.
   /// \param[in] items elements of the tensor

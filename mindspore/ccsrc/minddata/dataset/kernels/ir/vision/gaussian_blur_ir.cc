@@ -16,7 +16,7 @@
 #include "minddata/dataset/kernels/ir/vision/gaussian_blur_ir.h"
 
 #include "minddata/dataset/kernels/image/gaussian_blur_op.h"
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_gaussian_blur_op.h"
 #endif
 #include "minddata/dataset/kernels/ir/validators.h"
@@ -67,7 +67,7 @@ std::shared_ptr<TensorOp> GaussianBlurOperation::Build() {
   if (device_target_ == "CPU") {
     std::shared_ptr<GaussianBlurOp> tensor_op = std::make_shared<GaussianBlurOp>(kernel_x, kernel_y, sigma_x, sigma_y);
     return tensor_op;
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_target_ == "Ascend") {
     std::shared_ptr<DvppGaussianBlurOp> dvpp_tensor_op =
       std::make_shared<DvppGaussianBlurOp>(kernel_x, kernel_y, sigma_x, sigma_y);

@@ -16,7 +16,7 @@
 #include "minddata/dataset/kernels/ir/vision/affine_ir.h"
 
 #include "minddata/dataset/kernels/image/affine_op.h"
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_affine_op.h"
 #endif
 #include "minddata/dataset/kernels/ir/validators.h"
@@ -96,7 +96,7 @@ std::shared_ptr<TensorOp> AffineOperation::Build() {
     std::shared_ptr<AffineOp> tensor_op =
       std::make_shared<AffineOp>(degrees_, translation_, scale_, shear_, interpolation_, fill_value_);
     return tensor_op;
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_target_ == "Ascend") {
     std::shared_ptr<DvppAffineOp> dvpp_tensor_op =
       std::make_shared<DvppAffineOp>(degrees_, translation_, scale_, shear_, interpolation_, fill_value_);

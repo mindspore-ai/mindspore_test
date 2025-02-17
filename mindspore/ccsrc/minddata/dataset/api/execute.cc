@@ -20,7 +20,7 @@
 #include <fstream>
 #include <locale>
 #include <string>
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__) && !defined(ENABLE_ANDROID)
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include <sys/sysinfo.h>
 #include <opencv2/core/utility.hpp>
 #endif
@@ -36,17 +36,12 @@
 #include "minddata/dataset/core/ascend_resource.h"
 #include "minddata/dataset/kernels/image/dvpp/utils/CommonDataType.h"
 #include "minddata/dataset/kernels/ir/vision/ascend_vision_ir.h"
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/image_utils.h"
 #endif
-#ifndef BUILD_LITE
 #include "utils/file_utils.h"
 namespace platform = mindspore;
-#else
-#include "mindspore/lite/src/common/file_utils.h"
-namespace platform = mindspore::lite;
-#endif
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/acl_adapter.h"
 #include "minddata/dataset/kernels/image/dvpp/utils/ErrorCode.h"
 #endif
@@ -70,7 +65,7 @@ struct Execute::ExtraInfo {
 };
 
 Status Execute::InitResource(MapTargetDevice device_type, uint32_t device_id) {
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__) && !defined(ENABLE_ANDROID)
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
   // set num threads of opencv for eager mode
   int32_t thread_num = get_nprocs();
   if (thread_num == 0) {
@@ -98,7 +93,7 @@ Status Execute::InitResource(MapTargetDevice device_type, uint32_t device_id) {
     }
 #endif
     device_type_ = device_type;
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_type == MapTargetDevice::kAscend910B) {
     MS_LOG(INFO) << "InitResource for Ascend910B";
     if (device_context_ == nullptr) {
@@ -144,7 +139,7 @@ Execute::Execute(const std::shared_ptr<TensorOperation> &op, MapTargetDevice dev
   (void)ops_.emplace_back(op);
   device_type_ = device_type;
   info_ = std::make_shared<ExtraInfo>();
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   device_context_ = nullptr;
 #endif
 
@@ -475,7 +470,7 @@ Status PyExecute::operator()(const std::vector<std::shared_ptr<Tensor>> &input_t
     }
     *out = std::move(de_tensor_list.getRow());
     CHECK_FAIL_RETURN_UNEXPECTED(!out->empty(), "Output Tensor is not valid.");
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (transforms_rt[0]->IsDvppOp() == true) {
     (void)InitResource(MapTargetDevice::kAscend910B);
 

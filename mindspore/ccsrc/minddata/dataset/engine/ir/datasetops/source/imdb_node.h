@@ -95,13 +95,11 @@ class IMDBNode : public MappableSourceNode {
   /// \param[in] sampler Tells IMDBOp what to read.
   void SetSampler(std::shared_ptr<SamplerObj> sampler) override { sampler_ = sampler; }
 
-#ifndef ENABLE_ANDROID
   /// \brief Function to read dataset in json
   /// \param[in] json_obj The JSON object to be deserialized
   /// \param[out] ds Deserialized dataset
   /// \return Status The status code returned
   static Status from_json(nlohmann::json json_obj, std::shared_ptr<DatasetNode> *ds);
-#endif
 
  private:
   std::string dataset_dir_;

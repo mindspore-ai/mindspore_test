@@ -15,10 +15,8 @@
  */
 #include "minddata/dataset/kernels/ir/vision/equalize_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/equalize_op.h"
-#endif
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_equalize_op.h"
 #endif
 #include "minddata/dataset/kernels/ir/validators.h"
@@ -27,7 +25,6 @@
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // EqualizeOperation
 EqualizeOperation::EqualizeOperation(const std::string &device_target) : device_target_(device_target) {}
 
@@ -47,7 +44,7 @@ Status EqualizeOperation::ValidateParams() {
 std::shared_ptr<TensorOp> EqualizeOperation::Build() {
   if (device_target_ == "CPU") {
     return std::make_shared<EqualizeOp>();
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_target_ == "Ascend") {
     return std::make_shared<DvppEqualizeOp>();
 #endif
@@ -83,7 +80,6 @@ MapTargetDevice EqualizeOperation::Type() {
   }
   return MapTargetDevice::kInvalid;
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

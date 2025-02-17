@@ -15,16 +15,13 @@
  */
 #include "minddata/dataset/kernels/ir/vision/random_vertical_flip_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/random_vertical_flip_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // RandomVerticalFlipOperation
 RandomVerticalFlipOperation::RandomVerticalFlipOperation(float prob) : TensorOperation(true), probability_(prob) {}
 
@@ -55,7 +52,6 @@ Status RandomVerticalFlipOperation::from_json(nlohmann::json op_params, std::sha
   *operation = std::make_shared<vision::RandomVerticalFlipOperation>(prob);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

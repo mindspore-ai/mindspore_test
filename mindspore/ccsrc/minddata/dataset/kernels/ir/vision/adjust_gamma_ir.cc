@@ -15,16 +15,13 @@
  */
 #include "minddata/dataset/kernels/ir/vision/adjust_gamma_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/adjust_gamma_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // AdjustGammaOperation
 AdjustGammaOperation::AdjustGammaOperation(float gamma, float gain) : gamma_(gamma), gain_(gain) {}
 
@@ -57,7 +54,6 @@ Status AdjustGammaOperation::from_json(nlohmann::json op_params, std::shared_ptr
   *operation = std::make_shared<vision::AdjustGammaOperation>(gamma, gain);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

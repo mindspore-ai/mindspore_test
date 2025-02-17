@@ -52,13 +52,11 @@ class AddSkipPass : public IRTreePass {
     /// \return Status The status code returned
     Status Visit(std::shared_ptr<BuildVocabNode> node, bool *const modified) override;
 
-#ifndef ENABLE_ANDROID
     /// \brief Performs finder work for BuildSentenceVocabNode that has special rules about skip injection.
     /// \param[in] node The node being visited
     /// \param[in, out] modified Indicator if the node was changed at all
     /// \return Status The status code returned
     Status Visit(std::shared_ptr<BuildSentenceVocabNode> node, bool *const modified) override;
-#endif
 
     /// \brief Performs finder work for ShuffleNode that has special rules about skip injection.
     /// \param[in] node The node being visited

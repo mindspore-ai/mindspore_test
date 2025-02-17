@@ -16,7 +16,7 @@
 #include "minddata/dataset/kernels/ir/vision/normalize_ir.h"
 
 #include "minddata/dataset/kernels/image/normalize_op.h"
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_normalize_v2_op.h"
 #endif
 #include "minddata/dataset/kernels/ir/validators.h"
@@ -47,7 +47,7 @@ Status NormalizeOperation::ValidateParams() {
 std::shared_ptr<TensorOp> NormalizeOperation::Build() {
   if (device_target_ == "CPU") {
     return std::make_shared<NormalizeOp>(mean_, std_, is_hwc_);
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_target_ == "Ascend") {
     return std::make_shared<DvppNormalizeV2Op>(mean_, std_, is_hwc_);
 #endif

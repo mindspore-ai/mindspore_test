@@ -72,8 +72,7 @@ class TreeAdapter {
   // unique_ptr overloads operator bool(), will return false if it doesn't manage an object
   // This is needed by Iterator to get data by 'GetNext'.
   std::weak_ptr<DatasetOp> GetRoot() const {
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
     return tree_ ? tree_->root() : receive_tree_->root();
 #else
     return tree_ ? tree_->root() : nullptr;
@@ -120,8 +119,7 @@ class TreeAdapter {
   // Run the mandatory pass augmenting the IR tree
   Status PostPass(const std::shared_ptr<DatasetNode> &ir);
 
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
   // Insert SendBridgeOp and ReceiveBridgeOp to the tree
   Status InsertSendReceiveOp();
 
@@ -143,8 +141,7 @@ class TreeAdapter {
   std::unordered_map<std::string, int32_t> column_name_map_;
   std::shared_ptr<DatasetNode> input_ir_;
   std::shared_ptr<DatasetNode> root_ir_;
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
   // Launch the subprocess
   Status LaunchSubprocess();
 

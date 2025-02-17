@@ -30,11 +30,9 @@ namespace dataset {
 class BatchNode;
 class BucketBatchByLengthNode;
 class BuildVocabNode;
-#ifndef ENABLE_ANDROID
 class CacheLookupNode;
 class CacheMergeNode;
 class CacheNode;
-#endif
 class ConcatNode;
 class EpochCtrlNode;
 class FilterNode;
@@ -52,9 +50,7 @@ class ZipNode;
 #ifdef ENABLE_PYTHON
 class SyncWaitNode;
 #endif
-#ifndef ENABLE_ANDROID
 class BuildSentenceVocabNode;
-#endif
 // Leaf IR node
 class AlbumNode;
 class CelebANode;
@@ -69,13 +65,11 @@ class VOCNode;
 #ifdef ENABLE_PYTHON
 class GeneratorNode;
 #endif
-#ifndef ENABLE_ANDROID
 class CLUENode;
 class CSVNode;
 class MindDataNode;
 class TextFileNode;
 class TFRecordNode;
-#endif
 
 // The base class Pass is the basic unit of tree transformation.
 // The actual implementation of the passes will be derived from here.
@@ -160,22 +154,18 @@ class IRNodePass : public IRPass {
   virtual Status VisitAfter(std::shared_ptr<BatchNode> node, bool *const modified);
   virtual Status Visit(std::shared_ptr<BucketBatchByLengthNode> node, bool *const modified);
   virtual Status VisitAfter(std::shared_ptr<BucketBatchByLengthNode> node, bool *const modified);
-#ifndef ENABLE_ANDROID
   virtual Status Visit(std::shared_ptr<BuildSentenceVocabNode> node, bool *const modified);
   virtual Status VisitAfter(std::shared_ptr<BuildSentenceVocabNode> node, bool *const modified);
-#endif
   virtual Status Visit(std::shared_ptr<BuildVocabNode> node, bool *const modified);
   virtual Status VisitAfter(std::shared_ptr<BuildVocabNode> node, bool *const modified);
   virtual Status Visit(std::shared_ptr<ConcatNode> node, bool *const modified);
   virtual Status VisitAfter(std::shared_ptr<ConcatNode> node, bool *const modified);
-#ifndef ENABLE_ANDROID
   virtual Status Visit(std::shared_ptr<CacheMergeNode> node, bool *const modified);
   virtual Status VisitAfter(std::shared_ptr<CacheMergeNode> node, bool *const modified);
   virtual Status Visit(std::shared_ptr<CacheLookupNode> node, bool *const modified);
   virtual Status VisitAfter(std::shared_ptr<CacheLookupNode> node, bool *const modified);
   virtual Status Visit(std::shared_ptr<CacheNode> node, bool *const modified);
   virtual Status VisitAfter(std::shared_ptr<CacheNode> node, bool *const modified);
-#endif
   virtual Status Visit(std::shared_ptr<EpochCtrlNode> node, bool *const modified);
   virtual Status VisitAfter(std::shared_ptr<EpochCtrlNode> node, bool *const modified);
   virtual Status Visit(std::shared_ptr<FilterNode> node, bool *const modified);
@@ -186,10 +176,8 @@ class IRNodePass : public IRPass {
 #endif
   virtual Status Visit(std::shared_ptr<MapNode> node, bool *const modified);
   virtual Status VisitAfter(std::shared_ptr<MapNode> node, bool *const modified);
-#ifndef ENABLE_ANDROID
   virtual Status Visit(std::shared_ptr<MindDataNode> node, bool *const modified);
   virtual Status VisitAfter(std::shared_ptr<MindDataNode> node, bool *const modified);
-#endif
   virtual Status Visit(std::shared_ptr<ProjectNode> node, bool *const modified);
   virtual Status VisitAfter(std::shared_ptr<ProjectNode> node, bool *const modified);
   virtual Status Visit(std::shared_ptr<RandomNode> node, bool *const modified);

@@ -18,7 +18,6 @@
 #include "minddata/dataset/engine/datasetops/source/sampler/sequential_sampler.h"
 #include "minddata/dataset/core/config_manager.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/util/random.h"
 #include "minddata/mindrecord/include/shard_distributed_sample.h"
 #include "minddata/mindrecord/include/shard_operator.h"
@@ -26,7 +25,6 @@
 #include "minddata/mindrecord/include/shard_sample.h"
 #include "minddata/mindrecord/include/shard_sequential_sample.h"
 #include "minddata/mindrecord/include/shard_shuffle.h"
-#endif
 
 namespace mindspore {
 namespace dataset {
@@ -61,7 +59,6 @@ Status SequentialSamplerObj::to_json(nlohmann::json *const out_json) {
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status SequentialSamplerObj::from_json(nlohmann::json json_obj, int64_t num_samples,
                                        std::shared_ptr<SamplerObj> *sampler) {
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "start_index", "SequentialSampler"));
@@ -71,7 +68,6 @@ Status SequentialSamplerObj::from_json(nlohmann::json json_obj, int64_t num_samp
   RETURN_IF_NOT_OK(SamplerObj::from_json(json_obj, sampler));
   return Status::OK();
 }
-#endif
 
 Status SequentialSamplerObj::SamplerBuild(std::shared_ptr<SamplerRT> *sampler) {
   // runtime sampler object
@@ -81,14 +77,12 @@ Status SequentialSamplerObj::SamplerBuild(std::shared_ptr<SamplerRT> *sampler) {
   return s;
 }
 
-#ifndef ENABLE_ANDROID
 std::shared_ptr<mindrecord::ShardOperator> SequentialSamplerObj::BuildForMindDataset() {
   // runtime mindrecord sampler object
   auto mind_sampler = std::make_shared<mindrecord::ShardSequentialSample>(num_samples_, start_index_);
 
   return mind_sampler;
 }
-#endif
 
 std::shared_ptr<SamplerObj> SequentialSamplerObj::SamplerCopy() {
   auto sampler = std::make_shared<SequentialSamplerObj>(start_index_, num_samples_);

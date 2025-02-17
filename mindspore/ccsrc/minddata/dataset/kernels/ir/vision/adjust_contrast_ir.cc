@@ -15,10 +15,8 @@
  */
 #include "minddata/dataset/kernels/ir/vision/adjust_contrast_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/adjust_contrast_op.h"
-#endif
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_adjust_contrast_op.h"
 #endif
 #include "minddata/dataset/kernels/ir/validators.h"
@@ -27,7 +25,6 @@
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // AdjustContrastOperation
 AdjustContrastOperation::AdjustContrastOperation(float contrast_factor, const std::string &device_target)
     : contrast_factor_(contrast_factor), device_target_(device_target) {}
@@ -47,7 +44,7 @@ std::shared_ptr<TensorOp> AdjustContrastOperation::Build() {
   if (device_target_ == "CPU") {
     std::shared_ptr<AdjustContrastOp> tensor_op = std::make_shared<AdjustContrastOp>(contrast_factor_);
     return tensor_op;
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_target_ == "Ascend") {
     return std::make_shared<DvppAdjustContrastOp>(contrast_factor_);
 #endif
@@ -86,7 +83,6 @@ MapTargetDevice AdjustContrastOperation::Type() {
     return MapTargetDevice::kInvalid;
   }
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

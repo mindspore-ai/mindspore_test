@@ -192,7 +192,7 @@ class MapOp : public ParallelOp<std::unique_ptr<MapWorkerJob>, TensorRow> {
   // @return Status The status code returned
   Status WorkerEntry(int32_t worker_id) override;  //  In: workerId assigned by tree_
 
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   // Private function for worker thread to perform TensorOp's compute function and get the result.
   // @param in_row Input TensorRow
   // @param[out] out_row Generated TensorRow
@@ -222,7 +222,7 @@ class MapOp : public ParallelOp<std::unique_ptr<MapWorkerJob>, TensorRow> {
   // @return - Status
   Status InitPrivateVariable(std::unordered_map<std::string, int32_t> *col_name_id_map);
 
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   // Init Ascend910B resource.
   // @return - Status
   Status InitResource(const std::vector<std::vector<std::shared_ptr<TensorOp>>> &tfuncs,

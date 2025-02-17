@@ -17,7 +17,7 @@
 #include "minddata/dataset/kernels/ir/vision/solarize_ir.h"
 
 #include "minddata/dataset/kernels/image/solarize_op.h"
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_solarize_op.h"
 #endif
 #include "minddata/dataset/util/validators.h"
@@ -25,7 +25,6 @@
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // SolarizeOperation
 SolarizeOperation::SolarizeOperation(const std::vector<float> &threshold, const std::string &device_target)
     : threshold_(threshold), device_target_(device_target) {}
@@ -64,7 +63,7 @@ std::shared_ptr<TensorOp> SolarizeOperation::Build() {
   if (device_target_ == "CPU") {
     std::shared_ptr<SolarizeOp> tensor_op = std::make_shared<SolarizeOp>(threshold_);
     return tensor_op;
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_target_ == "Ascend") {
     std::shared_ptr<DvppSolarizeOp> dvpp_tensor_op = std::make_shared<DvppSolarizeOp>(threshold_);
     return dvpp_tensor_op;
@@ -100,7 +99,6 @@ MapTargetDevice SolarizeOperation::Type() {
   }
   return MapTargetDevice::kInvalid;
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

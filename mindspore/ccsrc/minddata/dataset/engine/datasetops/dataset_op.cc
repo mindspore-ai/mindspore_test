@@ -29,9 +29,7 @@
 #include "minddata/dataset/engine/operator_connector.h"
 #include "minddata/dataset/util/log_adapter.h"
 #include "minddata/dataset/util/sig_handler.h"
-#ifndef ENABLE_ANDROID
 #include "utils/system/crc32c.h"
-#endif
 
 namespace mindspore {
 namespace dataset {
@@ -401,7 +399,6 @@ Status DatasetOp::FetchRemoveSampler(std::shared_ptr<SamplerRT> *sampler) {
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 uint32_t DatasetOp::GenerateCRC(const std::shared_ptr<DatasetOp> &op) {
   std::stringstream ss;
   op->tree_->Print(ss, op);
@@ -455,7 +452,6 @@ uint32_t DatasetOp::GenerateCRC(const std::shared_ptr<DatasetOp> &op) {
   uint32_t cache_crc = system::Crc32c::GetMaskCrc32cValue(ss_str.c_str(), ss_str.length());
   return cache_crc;
 }
-#endif
 
 void DatasetOp::UpdateRepeatAndEpochCounter() {
   op_current_repeats_++;
@@ -502,9 +498,7 @@ int64_t DatasetOp::GetTreeRepeatCount() {
 std::vector<int32_t> DatasetOp::GetMPWorkerPIDs() const { return std::vector<int32_t>(); }
 
 Status DatasetOp::Launch() {
-#ifndef ENABLE_ANDROID
   RegisterMainHandlers();
-#endif
   return Status::OK();
 }
 

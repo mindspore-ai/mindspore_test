@@ -21,9 +21,7 @@ namespace mindspore::dataset {
 
 uint64_t GetSyscnt() {
   uint64_t time_cnt = 0;
-#if !defined(ENABLE_ANDROID)
   time_cnt = profiler::GetClockSyscnt();
-#endif
   return time_cnt;
 }
 
@@ -35,19 +33,15 @@ double GetMilliTimeStamp() {
 
 Status CollectPipelineInfo(const std::string &event, const std::string &stage, const uint64_t &start_time,
                            const std::map<std::string, std::string> &custom_info) {
-#if !defined(ENABLE_ANDROID)
   (void)profiler::CollectHostInfo("Dataset", event, stage, start_time, profiler::GetClockSyscnt(), InfoLevel::kUser,
                                   custom_info);
-#endif
   return Status::OK();
 }
 
 Status CollectOpInfo(const std::string &event, const std::string &stage, const uint64_t &start_time,
                      const std::map<std::string, std::string> &custom_info) {
-#if !defined(ENABLE_ANDROID)
   (void)profiler::CollectHostInfo("Dataset", event, stage, start_time, profiler::GetClockSyscnt(),
                                   InfoLevel::kDeveloper, custom_info);
-#endif
   return Status::OK();
 }
 }  // namespace mindspore::dataset

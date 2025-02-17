@@ -22,9 +22,7 @@
 #include <utility>
 #include <vector>
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/serdes.h"
-#endif
 #include "minddata/dataset/engine/datasetops/map_op/map_op.h"
 #include "minddata/dataset/engine/opt/pass.h"
 #include "minddata/dataset/kernels/ir/tensor_operation.h"
@@ -94,7 +92,7 @@ Status MapNode::Build(std::vector<std::shared_ptr<DatasetOp>> *const node_ops) {
     }
   }
 
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   // whether mixing DVPP operators with CPU operators
   bool dvpp_op_flag = false;
   bool cpu_op_flag = false;
@@ -216,7 +214,6 @@ Status MapNode::to_json(nlohmann::json *out_json) {
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status MapNode::from_json(nlohmann::json json_obj, std::shared_ptr<DatasetNode> ds,
                           std::shared_ptr<DatasetNode> *result) {
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "num_parallel_workers", kMapNode));
@@ -233,7 +230,6 @@ Status MapNode::from_json(nlohmann::json json_obj, std::shared_ptr<DatasetNode> 
   (void)(*result)->SetConnectorQueueSize(json_obj["connector_queue_size"]);
   return Status::OK();
 }
-#endif
 
 // Gets the dataset size
 Status MapNode::GetDatasetSize(const std::shared_ptr<DatasetSizeGetter> &size_getter, bool estimate,

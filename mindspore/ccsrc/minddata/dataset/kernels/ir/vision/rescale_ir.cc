@@ -15,15 +15,13 @@
  */
 #include "minddata/dataset/kernels/ir/vision/rescale_ir.h"
 
-#if !defined(ENABLE_ANDROID) || defined(ENABLE_MINDDATA_PYTHON)
 #include "minddata/dataset/kernels/image/rescale_op.h"
-#endif
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#if !defined(ENABLE_ANDROID) || defined(ENABLE_MINDDATA_PYTHON)
+#if defined(ENABLE_MINDDATA_PYTHON)
 // RescaleOperation
 RescaleOperation::RescaleOperation(float rescale, float shift) : rescale_(rescale), shift_(shift) {}
 

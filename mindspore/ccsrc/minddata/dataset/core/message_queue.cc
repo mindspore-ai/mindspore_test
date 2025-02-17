@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace dataset {
-#if !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID)
+#if !defined(_WIN32) && !defined(_WIN64)
 MessageQueue::MessageQueue(key_t key, int msg_queue_id)
     : mtype_(0),
       shm_id_(-1),

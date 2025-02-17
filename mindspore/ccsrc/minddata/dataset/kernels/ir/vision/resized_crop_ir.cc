@@ -16,10 +16,8 @@
 
 #include "minddata/dataset/kernels/ir/vision/resized_crop_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/resized_crop_op.h"
-#endif
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_resized_crop_op.h"
 #endif
 #include "minddata/dataset/kernels/ir/validators.h"
@@ -28,7 +26,6 @@
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // ResizedCropOperation
 ResizedCropOperation::ResizedCropOperation(int32_t top, int32_t left, int32_t height, int32_t width,
                                            const std::vector<int32_t> &size, InterpolationMode interpolation,
@@ -73,7 +70,7 @@ std::shared_ptr<TensorOp> ResizedCropOperation::Build() {
     std::shared_ptr<ResizedCropOp> tensor_op =
       std::make_shared<ResizedCropOp>(top_, left_, height_, width_, size_, interpolation_);
     return tensor_op;
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_target_ == "Ascend") {
     std::shared_ptr<DvppResizedCropOp> dvpp_tensor_op =
       std::make_shared<DvppResizedCropOp>(top_, left_, height_, width_, size_, interpolation_);
@@ -130,7 +127,6 @@ MapTargetDevice ResizedCropOperation::Type() {
     return MapTargetDevice::kInvalid;
   }
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

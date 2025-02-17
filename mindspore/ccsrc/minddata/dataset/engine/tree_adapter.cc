@@ -16,19 +16,16 @@
 
 #include "minddata/dataset/engine/tree_adapter.h"
 
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
 #include <sys/prctl.h>
 #endif
 
 #include "minddata/dataset/core/client.h"
 #include "minddata/dataset/engine/ir/datasetops/root_node.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/opt/optional/tensor_op_fusion_pass.h"
 #include "minddata/dataset/engine/opt/pre/cache_transform_pass.h"
 #include "minddata/dataset/engine/opt/pre/node_offload_pass.h"
 #include "minddata/dataset/engine/opt/post/repeat_pass.h"
-#endif
 #include "minddata/dataset/engine/opt/pass.h"
 #include "minddata/dataset/engine/opt/post/auto_worker_pass.h"
 #ifdef ENABLE_PYTHON
@@ -44,8 +41,7 @@
 #include "minddata/dataset/engine/opt/pre/node_removal_pass.h"
 #include "minddata/dataset/engine/opt/pre/skip_pushdown_pass.h"
 #include "minddata/dataset/engine/perf/info_collector.h"
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
 #include "minddata/dataset/engine/datasetops/send_bridge_op.h"
 #include "minddata/dataset/engine/datasetops/receive_bridge_op.h"
 #include "minddata/dataset/core/shared_memory_queue.h"
@@ -71,8 +67,7 @@ TreeAdapter::TreeAdapter(UsageFlag usage)
       cur_batch_num_(0),
       cur_connector_size_(0),
       cur_connector_capacity_(0) {
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
   parent_process_id_ = -1;
   process_id_ = getpid();
   sub_process_id_ = -1;
@@ -114,7 +109,6 @@ Status TreeAdapter::PrePass(const std::shared_ptr<DatasetNode> &ir) {
   if (usage_ == kDeGetter) {
     (void)actions.emplace_back(std::make_unique<GetterPass>());
   }
-#ifndef ENABLE_ANDROID
   (void)actions.emplace_back(std::make_unique<CacheTransformPass>());
 
   std::unique_ptr<NodeOffloadPass> offload = std::make_unique<NodeOffloadPass>();
@@ -124,7 +118,6 @@ Status TreeAdapter::PrePass(const std::shared_ptr<DatasetNode> &ir) {
   RETURN_IF_NOT_OK(offload->Run(ir, &offload_mod));
   // Creates JSON object of offload nodes.
   offload_json_ = offload->GetOffloadJson();
-#endif
   // Apply pre-pass actions
   for (auto &action : actions) {
     auto m = false;
@@ -140,9 +133,7 @@ Status TreeAdapter::Optimize(const std::shared_ptr<DatasetNode> &ir) {
   // Vector of optimizations
   std::vector<std::unique_ptr<IRNodePass>> optimizations;
   MS_LOG(INFO) << "Running optimization pass loops";
-#ifndef ENABLE_ANDROID
   (void)optimizations.emplace_back(std::make_unique<TensorOpFusionPass>());
-#endif
   // Apply optimization pass actions
   for (auto &optimization : optimizations) {
     bool modified = false;
@@ -166,9 +157,7 @@ Status TreeAdapter::PostPass(const std::shared_ptr<DatasetNode> &ir) {
 #ifdef ENABLE_PYTHON
   (void)actions.emplace_back(std::make_unique<GeneratorNodePass>());
 #endif
-#ifndef ENABLE_ANDROID
   (void)actions.emplace_back(std::make_unique<RepeatPass>());
-#endif
   // We will gradually move RepeatPass from ExecutionTree::PrepareTreePostAction to here.
 
   for (auto &action : actions) {
@@ -208,8 +197,7 @@ Status TreeAdapter::BuildExecutionTreeRecur(const std::shared_ptr<DatasetNode> &
   return Status::OK();
 }
 
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
 Status TreeAdapter::InsertSendReceiveOp() {
   RETURN_UNEXPECTED_IF_NULL(tree_);
 
@@ -337,8 +325,7 @@ Status TreeAdapter::Build(const std::shared_ptr<DatasetNode> &root_ir, int64_t i
     RETURN_IF_NOT_OK(AdjustReset(init_epoch));
   }
 
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
   if (independent_dataset_) {
     MS_LOG(INFO) << "The original execution tree: " << *tree_;
 
@@ -386,8 +373,7 @@ Status TreeAdapter::Compile(const std::shared_ptr<DatasetNode> &input_ir, int32_
   tree_state_ = kCompileStateIRGraphBuilt;
   MS_LOG(INFO) << "Input plan:" << '\n' << *input_ir << '\n';
 
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
   // update the independent dataset flag
   // MS_INDEPENDENT_DATASET : parameter -> flag
   //         true               true       true
@@ -455,8 +441,7 @@ Status TreeAdapter::AdjustReset(const int64_t epoch_num) {
 }
 
 Status TreeAdapter::CheckTreeIfNull() {
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
   if (tree_ == nullptr && (send_tree_ == nullptr || receive_tree_ == nullptr)) {
     RETURN_STATUS_UNEXPECTED("Tree tree_ && (send_tree_ || receive_tree_) is a nullptr.");
   }
@@ -517,8 +502,7 @@ Status TreeAdapter::GetNext(TensorRow *row) {
   return Status::OK();
 }
 
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
 void TreeAdapter::SubprocessExit(int exit_code) {
   // get the newest message queue and shared memory queue
   auto message_queue = dynamic_cast<SendBridgeOp *>(tree_->root().get())->GetMessageQueue();
@@ -577,7 +561,7 @@ void TreeAdapter::SubprocessExit(int exit_code) {
   // need acquire gil before destroy device
   GilAcquireWithCheck gil_acquire_with_check;
 
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   // If the main process has exited, the independent dataset process does not need to release the device.
   auto ms_context = MsContext::GetInstance();
   if (ms_context != nullptr) {
@@ -721,8 +705,7 @@ Status TreeAdapter::Launch() {
   VLOG_FLOW("Dataset Pipeline launched.");
   RETURN_IF_NOT_OK(CheckTreeIfNull());
 
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
   if (independent_dataset_) {
     // move the send_tree_ to tree_ and launch it
     tree_ = std::move(send_tree_);
@@ -810,7 +793,7 @@ Status TreeAdapter::Launch() {
   }
 #endif
 
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__) && !defined(ENABLE_ANDROID)
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
   if (!independent_dataset_) {
     // set num threads of opencv only for main process
     int32_t thread_num = get_nprocs();
@@ -825,7 +808,7 @@ Status TreeAdapter::Launch() {
 
   RETURN_IF_NOT_OK(tree_->Launch());
 
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__) && !defined(ENABLE_ANDROID)
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
   if (independent_dataset_) {
     // ignore the SIGCHLD, the independent dataset process will exit successful without to be a defunct status
     signal(SIGCHLD, SIG_IGN);

@@ -35,7 +35,6 @@ Status SkipFirstEpochSamplerObj::to_json(nlohmann::json *const out_json) {
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status SkipFirstEpochSamplerObj::from_json(nlohmann::json json_obj, std::shared_ptr<SamplerObj> *sampler) {
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "start_index", "SkipFirstEpochSampler"));
   int64_t start_index = json_obj["start_index"];
@@ -44,7 +43,6 @@ Status SkipFirstEpochSamplerObj::from_json(nlohmann::json json_obj, std::shared_
   RETURN_IF_NOT_OK(SamplerObj::from_json(json_obj, sampler));
   return Status::OK();
 }
-#endif
 
 Status SkipFirstEpochSamplerObj::SamplerBuild(std::shared_ptr<SamplerRT> *sampler) {
   // runtime sampler object

@@ -16,16 +16,13 @@
 
 #include "minddata/dataset/kernels/ir/vision/rand_augment_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/rand_augment_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // RandAugmentOperation
 RandAugmentOperation::RandAugmentOperation(int32_t num_ops, int32_t magnitude, int32_t num_magnitude_bins,
                                            InterpolationMode interpolation, const std::vector<uint8_t> &fill_value)
@@ -91,7 +88,6 @@ Status RandAugmentOperation::from_json(nlohmann::json op_params, std::shared_ptr
     std::make_shared<vision::RandAugmentOperation>(num_ops, magnitude, num_magnitude_bins, interpolation, fill_value);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

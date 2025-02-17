@@ -24,9 +24,7 @@
 #include <vector>
 #include <utility>
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/core/cv_tensor.h"
-#endif
 #include "minddata/dataset/core/global_context.h"
 #ifdef ENABLE_PYTHON
 #include "minddata/dataset/core/pybind_support.h"
@@ -278,7 +276,6 @@ Status Tensor::CreateFromPythonObject(py::object obj, std::shared_ptr<Tensor> *o
 
 #endif
 
-#ifndef ENABLE_ANDROID
 Status Tensor::CreateFromByteList(const dataengine::BytesList &bytes_list, const TensorShape &shape, TensorPtr *out) {
   RETURN_UNEXPECTED_IF_NULL(out);
   *out = std::make_shared<Tensor>(TensorShape({static_cast<dsize_t>(bytes_list.value_size())}),
@@ -320,7 +317,6 @@ Status Tensor::CreateFromByteList(const dataengine::BytesList &bytes_list, const
   RETURN_IF_NOT_OK((*out)->Reshape(shape));
   return Status::OK();
 }
-#endif
 
 Status Tensor::CreateFromFile(const std::string &path, std::shared_ptr<Tensor> *out) {
   RETURN_UNEXPECTED_IF_NULL(out);
@@ -354,7 +350,6 @@ Status Tensor::CreateFromFile(const std::string &path, std::shared_ptr<Tensor> *
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status Tensor::CreateFromByteList(const dataengine::BytesList &bytes_list, const TensorShape &shape,
                                   const DataType &type, dsize_t pad_size, TensorPtr *out) {
   RETURN_UNEXPECTED_IF_NULL(out);
@@ -386,7 +381,6 @@ Status Tensor::CreateFromByteList(const dataengine::BytesList &bytes_list, const
 
   return Status::OK();
 }
-#endif
 
 // Memcpy the given strided array's used part to consecutive memory
 // Consider a 3-d array

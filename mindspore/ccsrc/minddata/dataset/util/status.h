@@ -113,29 +113,15 @@ const float MAX_MEMORY_USAGE_THRESHOLD = 0.8;
 float GetMemoryUsage();
 #endif
 
-#ifndef ENABLE_ANDROID
 #define VLOG_FLOW(message)       \
   do {                           \
     MS_VLOG(VL_FLOW) << message; \
   } while (false)
-#else
-#define VLOG_FLOW(message) \
-  do {                     \
-    ;                      \
-  } while (false)
-#endif
 
-#ifndef ENABLE_ANDROID
 #define VLOG_MD(message)       \
   do {                         \
     MS_VLOG(VL_MD) << message; \
   } while (false)
-#else
-#define VLOG_MD(message) \
-  do {                   \
-    ;                    \
-  } while (false)
-#endif
 }  // namespace dataset
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_MINDDATA_DATASET_UTIL_STATUS_H_

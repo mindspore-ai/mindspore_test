@@ -22,9 +22,7 @@
 #include <vector>
 
 #include "minddata/dataset/engine/datasetops/concat_op.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/serdes.h"
-#endif
 #include "minddata/dataset/engine/opt/pass.h"
 #include "minddata/dataset/util/status.h"
 namespace mindspore {
@@ -166,7 +164,6 @@ Status ConcatNode::to_json(nlohmann::json *out_json) {
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status ConcatNode::from_json(nlohmann::json json_obj, std::vector<std::shared_ptr<DatasetNode>> datasets,
                              std::shared_ptr<DatasetNode> *result) {
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "sampler", kConcatNode));
@@ -182,6 +179,5 @@ Status ConcatNode::from_json(nlohmann::json json_obj, std::vector<std::shared_pt
     std::make_shared<ConcatNode>(datasets, sampler, children_flag_and_nums, children_start_end_index, children_sizes);
   return Status::OK();
 }
-#endif
 }  // namespace dataset
 }  // namespace mindspore

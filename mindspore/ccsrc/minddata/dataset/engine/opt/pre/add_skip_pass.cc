@@ -55,7 +55,6 @@ Status AddSkipPass::InjectionFinder::Visit(std::shared_ptr<BuildVocabNode> node,
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 // Performs finder work for BuildSentencePieceVocabNode that has special rules about skip injection
 Status AddSkipPass::InjectionFinder::Visit(std::shared_ptr<BuildSentenceVocabNode> node, bool *const modified) {
   RETURN_UNEXPECTED_IF_NULL(node);
@@ -63,7 +62,6 @@ Status AddSkipPass::InjectionFinder::Visit(std::shared_ptr<BuildSentenceVocabNod
   injection_point_ = nullptr;
   return Status::OK();
 }
-#endif
 
 // Detect shuffle node
 Status AddSkipPass::InjectionFinder::Visit(std::shared_ptr<ShuffleNode> node, bool *const modified) {

@@ -31,13 +31,11 @@ class InsertMapPass : public IRNodePass {
   /// \brief Destructor
   ~InsertMapPass() override = default;
 
-#ifndef ENABLE_ANDROID
   /// \brief Insert map node to parse the protobuf for TFRecord.
   /// \param[in] node The TFRecordNode being visited.
   /// \param[in, out] modified Indicator if the node was changed at all.
   /// \return The status code.
   Status Visit(std::shared_ptr<TFRecordNode> node, bool *const modified) override;
-#endif
 };
 }  // namespace dataset
 }  // namespace mindspore
