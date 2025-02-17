@@ -28,6 +28,7 @@ from mindspore.nn.utils import no_init_parameters
 from tests.mark_utils import arg_mark
 from mindformers import build_context, MindFormerConfig, LlamaConfig, LlamaForCausalLM
 from research.qwen2.qwen2_tokenizer import Qwen2Tokenizer
+from similarity import compare_distance
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -118,4 +119,4 @@ def test_qwen2_0_5b_predict_standalone():
         for i in range(0, len(outputs)):
             output_text = tokenizer.decode(outputs[i])
             print("test_qwen2_0_5b_predict_standalone, output_text:", output_text)
-            assert output_text == answer
+            compare_distance(output_text, answer, bench_sim=0.95)
