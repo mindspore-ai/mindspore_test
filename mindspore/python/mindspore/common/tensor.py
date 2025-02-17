@@ -181,7 +181,7 @@ def _init(input_data=None, dtype=None, shape=None, init=None, const_arg=False, d
             "symbolic_shape": symbolic_shape}
 
 
-def tensor(input_data=None, dtype=None, shape=None, init=None, const_arg=False):
+def tensor(input_data=None, dtype=None, shape=None, init=None, internal=False, const_arg=False):
     """
     Create a new Tensor in Cell.construct() or function decorated by @jit.
 
@@ -250,6 +250,10 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         init (Initializer): The information of init data.
             `init` is used for delayed initialization in parallel mode, when using init, `dtype` and `shape` must be
             set. Default: ``None`` .
+        internal (bool): Whether it is created by the framework.
+-            ``'True'`` means that the tensor is created by framework.
+-            ``'False'`` means that the tensor is created by user.
+-            Default: ``False`` .
         const_arg (bool): Whether the tensor is a constant when it is used for the argument of a network.
             Default: ``False`` .
         device(str): This parameter is reserved and does not need to be configured.

@@ -1365,14 +1365,15 @@ void RegTensorPy(const py::module *m) {
       PyObject *dtype_;
       PyObject *shape_;
       PyObject *init_;
+      PyObject *internal_;
       PyObject *const_arg_;
       PyObject *device_;
     };
-    static const char *kws[] = {"input_data", "dtype", "shape", "init", "const_arg", "device", nullptr};
-    constexpr const char fmt[] = "|OOOOOO:Tensor";
-    TensorInitialization args = {Py_None, Py_None, Py_None, Py_None, Py_False, Py_None};
+    static const char *kws[] = {"input_data", "dtype", "shape", "init", "internal", "const_arg", "device", nullptr};
+    constexpr const char fmt[] = "|OOOOOOO:Tensor";
+    TensorInitialization args = {Py_None, Py_None, Py_None, Py_None, Py_False, Py_False, Py_None};
     if (!PyArg_ParseTupleAndKeywords(va.ptr(), kw.ptr(), fmt, const_cast<char **>(kws), &args.input_data_, &args.dtype_,
-                                     &args.shape_, &args.init_, &args.const_arg_, &args.device_)) {
+                                     &args.shape_, &args.init_, &args.internal_, &args.const_arg_, &args.device_)) {
       MS_EXCEPTION(TypeError) << "Not support tensor input parameter type!!!";
     }
     auto p = TensorPyImpl::GetPythonTensor().attr("_init")(
