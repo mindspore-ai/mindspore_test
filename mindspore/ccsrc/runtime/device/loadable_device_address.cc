@@ -26,53 +26,6 @@ constexpr size_t kFileAlignSize = 512;
 constexpr char kSwapFileSuffix[] = ".data";
 }  // namespace
 
-bool LoadableDeviceAddress::Offload(size_t stream_id) {
-  if (loadable_mem_ == nullptr) {
-    loadable_mem_ = std::make_unique<LoadableMember>();
-  }
-  std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
-  if (loadable_mem_->mem_offloaded_) {
-    MS_LOG(WARNING) << "Trying to offload an offloaded AscendDeviceAddress.";
-    return true;
-  }
-  MS_EXCEPTION_IF_NULL(GetDevicePtr());
-  auto device_context = GetDeviceContext();
-  MS_EXCEPTION_IF_NULL(device_context);
-  loadable_mem_->offload_ptr_ = device_context->device_res_manager_->AllocateOffloadMemory(GetSize());
-  if (loadable_mem_->offload_ptr_ == nullptr) {
-    MS_LOG(EXCEPTION) << "Alloc host memory for offloading failed, size: " << GetSize() << ".";
-  }
-  if (!AsyncDeviceToHost({}, GetSize(), kTypeUnknown, loadable_mem_->offload_ptr_, stream_id)) {
-    return false;
-  }
-  device_context->device_res_manager_->FreeMemory(GetDevicePtr());
-  SetDevicePtr(nullptr);
-  loadable_mem_->mem_offloaded_ = true;
-  return true;
-}
-
-bool LoadableDeviceAddress::Load(size_t stream_id) {
-  std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
-  if (loadable_mem_ == nullptr || !loadable_mem_->mem_offloaded_) {
-    MS_LOG(DEBUG) << "Trying to load a loaded AscendDeviceAddress.";
-    return true;
-  }
-  MS_EXCEPTION_IF_NULL(loadable_mem_->offload_ptr_);
-  auto device_context = GetDeviceContext();
-  MS_EXCEPTION_IF_NULL(device_context);
-  if (GetDevicePtr() == nullptr && !device_context->device_res_manager_->AllocateMemory(this)) {
-    MS_LOG(EXCEPTION) << "Alloc memory for loading failed, size: " << GetSize() << ".";
-  }
-  MS_EXCEPTION_IF_NULL(GetDevicePtr());
-  if (!AsyncHostToDevice({}, GetSize(), kTypeUnknown, loadable_mem_->offload_ptr_, stream_id)) {
-    return false;
-  }
-  device_context->device_res_manager_->FreeOffloadMemory(loadable_mem_->offload_ptr_);
-  loadable_mem_->offload_ptr_ = nullptr;
-  loadable_mem_->mem_offloaded_ = false;
-  return true;
-}
-
 bool LoadableDeviceAddress::MoveTo(mindspore::device::StorageType dst, bool async, size_t stream_id) {
   bool ret = Wait();
   if (!ret) {
@@ -389,15 +342,11 @@ void LoadableDeviceAddress::Swap(mindspore::device::DeviceAddress *other) {
     }
     loadable_device_address->loadable_mem_->storage_info_ = loadable_mem_->storage_info_;
     loadable_device_address->status_ = status_;
-    loadable_device_address->loadable_mem_->offload_ptr_ = loadable_mem_->offload_ptr_;
-    loadable_device_address->loadable_mem_->mem_offloaded_ = loadable_mem_->mem_offloaded_;
     loadable_mem_->storage_info_.host_ptr_ = nullptr;
     loadable_mem_->storage_info_.file_name_ = "";
     loadable_mem_->storage_info_.host_ptr_mutable_ = true;
     loadable_mem_->storage_info_.file_name_mutable_ = true;
     status_ = DeviceAddressStatus::kInDevice;
-    loadable_mem_->offload_ptr_ = nullptr;
-    loadable_mem_->mem_offloaded_ = false;
   }
 }
 
@@ -443,21 +392,6 @@ bool LoadableDeviceAddress::Wait() const {
   return true;
 }
 
-void LoadableDeviceAddress::SetOffloadPtr(void *offload_ptr) {
-  if (loadable_mem_ == nullptr) {
-    loadable_mem_ = std::make_unique<LoadableMember>();
-  }
-  std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
-  loadable_mem_->offload_ptr_ = offload_ptr;
-  loadable_mem_->mem_offloaded_ = (offload_ptr != nullptr);
-}
-
-void *LoadableDeviceAddress::GetOffloadPtr() const {
-  MS_EXCEPTION_IF_NULL(loadable_mem_);
-  std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
-  return loadable_mem_->offload_ptr_;
-}
-
 // Return whether DeviceAddress has a valid ptr.
 bool LoadableDeviceAddress::IsPtrValid() const {
   std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
@@ -471,8 +405,7 @@ bool LoadableDeviceAddress::IsPtrValid() const {
     }
   }
   if (loadable_mem_ != nullptr) {
-    if (loadable_mem_->offload_ptr_ != nullptr || loadable_mem_->storage_info_.host_ptr_ != nullptr ||
-        !loadable_mem_->storage_info_.file_name_.empty()) {
+    if (loadable_mem_->storage_info_.host_ptr_ != nullptr || !loadable_mem_->storage_info_.file_name_.empty()) {
       return true;
     }
   }
@@ -482,14 +415,10 @@ bool LoadableDeviceAddress::IsPtrValid() const {
 // Load first if data is offloaded and return the device ptr.
 void *LoadableDeviceAddress::GetValidPtr(size_t stream_id) {
   std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
-  if (mem_offloaded() && !Load(stream_id)) {
-    MS_LOG(EXCEPTION) << "Load offloaded memory failed";
-  }
   if (!MoveToDevice(false)) {
     MS_LOG(ERROR) << "Move data to device failed.";
     return nullptr;
   }
-
   return DeviceAddress::GetValidPtr(stream_id);
 }
 }  // namespace device

@@ -90,10 +90,8 @@ void AscendDeviceResManager::Initialize() {
   }
   mem_manager_ = runtime_instance_->GetMemoryManager();
   MS_EXCEPTION_IF_NULL(mem_manager_);
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
-    swap_manager_ = std::make_shared<SwapManager>(kDefaultStreamIndex, &AscendMemoryPool::GetInstance(),
-                                                  &AscendPinMemPool::GetInstance());
-  }
+  swap_manager_ = std::make_shared<SwapManager>(kDefaultStreamIndex, &AscendMemoryPool::GetInstance(),
+                                                &AscendPinMemPool::GetInstance());
   initialized_ = true;
 }
 
@@ -152,38 +150,13 @@ bool AscendDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint3
     stream_id = address->stream_id();
   }
 
-  if (swap_manager_ != nullptr) {
-    const auto kernel_tensor = address->kernel_tensor();
-    const auto &hete_info = kernel_tensor == nullptr ? nullptr : kernel_tensor->heterogeneous_info();
-    if (hete_info != nullptr) {
-      if (hete_info->need_alloc_hete_res_ == kernel::NeedAllocateHeteRes::NeedHostMem) {
-        if (hete_info->host_ptr_ != nullptr) {
-          MS_LOG(ERROR) << "Memory leak detected!";
-          return false;
-        }
-        auto host_ptr = swap_manager_->AllocHostMemory(address->GetSize());
-        hete_info->host_ptr_ = host_ptr;
-        address->set_from_mem_pool(true);
-        return true;
-      }
-      if (hete_info->need_alloc_hete_res_ == kernel::NeedAllocateHeteRes::NeedDiskFile) {
-        if (!hete_info->file_name_.empty()) {
-          MS_LOG(ERROR) << "Memory leak detected!";
-          return false;
-        }
-        auto file_name = swap_manager_->GetSwapFileName(device_context_->device_context_key_.device_id_);
-        swap_manager_->CreateFile(file_name, address->GetSize());
-        hete_info->file_name_ = file_name;
-        return true;
-      }
-    }
-
-    device_ptr = swap_manager_->AllocDeviceMemory(address->GetSize(), stream_id);
-  } else {
-    device_ptr = mem_manager_->MallocMemFromMemPool(address->GetSize(), address->from_persistent_mem(),
-                                                    address->need_recycle(), stream_id);
+  const auto &hete_info =
+    address->kernel_tensor() == nullptr ? nullptr : address->kernel_tensor()->heterogeneous_info();
+  if (hete_info != nullptr) {
+    return AllocateForHete(address, hete_info);
   }
-
+  device_ptr = mem_manager_->MallocMemFromMemPool(address->GetSize(), address->from_persistent_mem(),
+                                                  address->need_recycle(), stream_id);
   if (!device_ptr) {
     return false;
   }
@@ -197,6 +170,31 @@ bool AscendDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint3
   return true;
 }
 
+bool AscendDeviceResManager::AllocateForHete(mindspore::device::DeviceAddress *const &address,
+                                             mindspore::kernel::HeterogeneousInfoPtr hete_info) const {
+  MS_EXCEPTION_IF_NULL(address);
+  MS_EXCEPTION_IF_NULL(hete_info);
+  if (hete_info->need_alloc_hete_res_ == kernel::NeedAllocateHeteRes::NeedHostMem) {
+    if (hete_info->host_ptr_ != nullptr) {
+      MS_LOG(ERROR) << "Memory leak detected!";
+      return false;
+    }
+    auto host_ptr = swap_manager_->AllocHostMemory(address->GetSize());
+    hete_info->host_ptr_ = host_ptr;
+    address->set_from_mem_pool(true);
+  }
+  if (hete_info->need_alloc_hete_res_ == kernel::NeedAllocateHeteRes::NeedDiskFile) {
+    if (!hete_info->file_name_.empty()) {
+      MS_LOG(ERROR) << "Memory leak detected!";
+      return false;
+    }
+    auto file_name = swap_manager_->GetSwapFileName(device_context_->device_context_key_.device_id_);
+    swap_manager_->CreateFile(file_name, address->GetSize());
+    hete_info->file_name_ = file_name;
+  }
+  return true;
+}
+
 void *AscendDeviceResManager::AllocateMemory(size_t size, uint32_t stream_id) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -204,9 +202,6 @@ void *AscendDeviceResManager::AllocateMemory(size_t size, uint32_t stream_id) co
   AscendHalManager::GetInstance().SetContext(device_id);
 
   MS_EXCEPTION_IF_NULL(mem_manager_);
-  if (swap_manager_ != nullptr) {
-    return swap_manager_->AllocDeviceMemory(size, stream_id);
-  }
   return mem_manager_->MallocMemFromMemPool(size, false, false, stream_id);
 }
 
@@ -216,9 +211,6 @@ void *AscendDeviceResManager::AllocateStaticMemory(size_t size, uint32_t stream_
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   AscendHalManager::GetInstance().SetContext(device_id);
 
-  if (swap_manager_ != nullptr) {
-    return swap_manager_->AllocDeviceMemory(size, stream_id);
-  }
   return mem_manager_->MallocMemFromMemPool(size, true, false, stream_id);
 }
 
@@ -227,21 +219,24 @@ size_t AscendDeviceResManager::GetMaxUsedMemorySize() const {
   return mem_manager_->GetMaxUsedMemorySize();
 }
 
+void AscendDeviceResManager::FreeForHete(mindspore::kernel::HeterogeneousInfoPtr hete_info) const {
+  MS_EXCEPTION_IF_NULL(hete_info);
+  if (hete_info->host_ptr_ != nullptr) {
+    swap_manager_->FreeHostMemory(hete_info->host_ptr_);
+    hete_info->host_ptr_ = nullptr;
+  }
+  if (!hete_info->file_name_.empty()) {
+    swap_manager_->DeleteFile(hete_info->file_name_);
+    hete_info->file_name_ = "";
+  }
+}
+
 void AscendDeviceResManager::FreeMemory(DeviceAddress *const &address) const {
   MS_EXCEPTION_IF_NULL(address);
-  if (swap_manager_ != nullptr) {
-    const auto &hete_info =
-      address->kernel_tensor() == nullptr ? nullptr : address->kernel_tensor()->heterogeneous_info();
-    if (hete_info != nullptr) {
-      if (hete_info->host_ptr_ != nullptr) {
-        swap_manager_->FreeHostMemory(hete_info->host_ptr_);
-        hete_info->host_ptr_ = nullptr;
-      }
-      if (!hete_info->file_name_.empty()) {
-        swap_manager_->DeleteFile(hete_info->file_name_);
-        hete_info->file_name_ = "";
-      }
-    }
+  const auto &hete_info =
+    address->kernel_tensor() == nullptr ? nullptr : address->kernel_tensor()->heterogeneous_info();
+  if (hete_info != nullptr) {
+    FreeForHete(hete_info);
   }
 
   void *device_ptr = address->GetMutablePtr();
@@ -356,9 +351,6 @@ std::vector<void *> AscendDeviceResManager::AllocateContinuousMemory(const std::
   for (auto size : size_list) {
     auto align_size = device::MemoryManager::GetCommonAlignSize(size);
     aligned_size_list.emplace_back(align_size);
-  }
-  if (swap_manager_ != nullptr) {
-    return swap_manager_->AllocDeviceContinuousMem(aligned_size_list, stream_id);
   }
   return mem_manager_->MallocContinuousMemFromMemPool(aligned_size_list, stream_id);
 }

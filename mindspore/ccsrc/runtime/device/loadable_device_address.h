@@ -32,13 +32,10 @@ struct SwapEvent {
   AsyncIOToken aio_token_{kInvalidAsyncIOToken};
   std::shared_ptr<DeviceEvent> device_event_{nullptr};
 };
-using SwapEventPtr = std::shared_ptr<SwapEvent>;
+
 struct LoadableMember {
-  bool mem_offloaded_{false};
-  void *offload_ptr_{nullptr};
   mutable SwapEvent swap_event_;
   mutable StorageInfo storage_info_{nullptr};
-  bool swappable_{false};
 };
 using LoadableMemberPtr = std::unique_ptr<LoadableMember>;
 
@@ -64,19 +61,6 @@ class BACKEND_EXPORT LoadableDeviceAddress : public DeviceAddress {
                         const KernelWithIndex &node_index, const std::string &device_name, uint32_t device_id)
       : DeviceAddress(ptr, size, format, type_id, node_index, device_name, device_id) {}
 
-  bool mem_offloaded() const final {
-    if (loadable_mem_ == nullptr) {
-      return false;
-    }
-    return loadable_mem_->mem_offloaded_;
-  }
-
-  // Offload data from device to host and free device memory
-  bool Offload(size_t stream_id) final;
-
-  // Load data from host to device and free host memory
-  bool Load(size_t stream_id) final;
-
   // Move data to destination hardware and free resource on source hardware
   bool MoveTo(StorageType dest, bool async, size_t stream_id) override;
 
@@ -84,11 +68,6 @@ class BACKEND_EXPORT LoadableDeviceAddress : public DeviceAddress {
 
   void SetStorageInfo(const StorageInfo &storage_info) final;
   StorageInfo GetStorageInfo() const final;
-
-  // Set host ptr data offloaded to
-  void SetOffloadPtr(void *offload_ptr) final;
-  // Get offloaded host ptr
-  void *GetOffloadPtr() const final;
 
   // Return whether DeviceAddress has a valid ptr.
   bool IsPtrValid() const final;
@@ -104,17 +83,6 @@ class BACKEND_EXPORT LoadableDeviceAddress : public DeviceAddress {
 
   virtual bool FileToDeviceDirectly(void *ptr, size_t size, const std::string &file_name, size_t stream_id) const {
     return false;
-  }
-
-  void set_swappable(bool swappable) override {
-    if (loadable_mem_ == nullptr) {
-      loadable_mem_ = std::make_unique<LoadableMember>();
-    }
-    loadable_mem_->swappable_ = swappable;
-  }
-  bool swappable() override {
-    auto swappable = loadable_mem_ == nullptr ? false : loadable_mem_->swappable_;
-    return swappable && !(status_ == DeviceAddressStatus::kInDevice && GetDevicePtr() == nullptr);
   }
 
  protected:
