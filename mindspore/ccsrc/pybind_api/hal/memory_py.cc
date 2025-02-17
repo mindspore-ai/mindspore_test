@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,37 @@
 
 namespace mindspore {
 namespace hal {
+namespace {
+py::dict CreateEmptyMemoryStats() {
+  py::dict memory_stats;
+  py::dict commom_mem_pool_stats;
+  py::dict persistent_mem_pool_stats;
+  memory_stats["total_reserved_memory"] = 0;
+  memory_stats["total_allocated_memory"] = 0;
+  memory_stats["total_idle_memory"] = 0;
+  memory_stats["total_eager_free_memory"] = 0;
+  memory_stats["max_reserved_memory"] = 0;
+  memory_stats["max_allocated_memory"] = 0;
+  commom_mem_pool_stats["block_unit_size"] = 0;
+  commom_mem_pool_stats["block_counts"] = 0;
+  commom_mem_pool_stats["blocks_info"] =
+    std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>{};
+  persistent_mem_pool_stats["block_counts"] = 0;
+  persistent_mem_pool_stats["block_unit_size"] = 0;
+  persistent_mem_pool_stats["blocks_info"] =
+    std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>{};
+  memory_stats["commom_mem_pool_stats"] = commom_mem_pool_stats;
+  memory_stats["persistent_mem_pool_stats"] = persistent_mem_pool_stats;
+  return memory_stats;
+}
+}  // namespace
+
 py::dict MemoryStats(const std::string &device_target) {
   runtime::Pipeline::Get().WaitAll();
   auto device_ctx = device::DeviceContextManager::GetInstance().GetDeviceContext(device_target);
   if (device_ctx == nullptr) {
-    MS_LOG(EXCEPTION) << "Device context of device " << device_target << " is not created yet.";
+    MS_LOG(INFO) << "Device context of device " << device_target << " is not created yet.";
+    return CreateEmptyMemoryStats();
   }
 
   // Memory statistics result to be returned.
@@ -71,7 +97,8 @@ void ResetMaxMemoryReserved(const std::string &device_target) {
   runtime::Pipeline::Get().WaitAll();
   auto device_ctx = device::DeviceContextManager::GetInstance().GetDeviceContext(device_target);
   if (device_ctx == nullptr) {
-    MS_LOG(EXCEPTION) << "Device context of device " << device_target << " is not created yet.";
+    MS_LOG(INFO) << "Device context of device " << device_target << " is not created yet.";
+    return;
   }
 
   device_ctx->device_res_manager_->ResetMaxMemoryReserved();
@@ -81,7 +108,8 @@ void ResetMaxMemoryAllocated(const std::string &device_target) {
   runtime::Pipeline::Get().WaitAll();
   auto device_ctx = device::DeviceContextManager::GetInstance().GetDeviceContext(device_target);
   if (device_ctx == nullptr) {
-    MS_LOG(EXCEPTION) << "Device context of device " << device_target << " is not created yet.";
+    MS_LOG(INFO) << "Device context of device " << device_target << " is not created yet.";
+    return;
   }
 
   device_ctx->device_res_manager_->ResetMaxMemoryAllocated();
