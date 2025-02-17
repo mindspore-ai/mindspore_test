@@ -90,7 +90,6 @@ class ControlActor : public MemoryAwareActor {
  protected:
   friend class ControlNodeScheduler;
   friend class SchedulerHelper;
-  friend class MemSwapScheduler;
 
   void Init() override;
 
