@@ -177,6 +177,11 @@ size_t GetDeviceCapacity();
 bool IsIgnoreSplitTensor(const CNodePtr &node, int64_t index);
 bool MergeConcatSlice(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphManagerPtr &manager);
 void UpdateMicroBatchInterleavedStatus(const std::vector<AnfNodePtr> &all_nodes);
+Status GetLayoutFromAttrValue(const ValuePtr &layout_item, std::vector<std::string> *alias_name,
+                              std::vector<int64_t> *device_matrix_vector,
+                              std::vector<std::vector<int64_t>> *tensor_map_vector, bool *interleaved_parallel);
+Status ConvertValueTupleToTensorLayoutVector(const ValueTuplePtr &in_layout_value, const NewShapes &inputs_shape,
+                                             std::vector<TensorLayoutBasePtr> *out_tensor_layouts);
 Status ExtractUserConfigLayout(const mindspore::HashMap<std::string, ValuePtr> &prim_attrs, const Shapes &inputs_shape,
                                const Shapes &outputs_shape,
                                std::vector<std::shared_ptr<TensorLayout>> *in_tensor_layouts,

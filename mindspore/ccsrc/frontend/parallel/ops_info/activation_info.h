@@ -265,6 +265,9 @@ class AShardIdentityInfo : public ReLUInfo {
                      const PrimitiveAttrs &attrs)
       : ReLUInfo(name, inputs_shape, outputs_shape, attrs) {}
   ~AShardIdentityInfo() override = default;
+
+ protected:
+  Status CheckOutputLayout() override;
 };
 
 class identityInfo : public ActivationOther {

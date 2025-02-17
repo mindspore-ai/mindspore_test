@@ -37,6 +37,8 @@ class COMMON_EXPORT AnfDumpHandler {
   HANDLER_DEFINE(ValuePtr, InStrategyValue, AnfNodePtr);
   HANDLER_DEFINE(ValuePtr, InStrategyStageValue, AnfNodePtr);
   HANDLER_DEFINE(ValuePtr, OutStrategyValue, AnfNodePtr);
+  HANDLER_DEFINE(ValueTuplePtr, InLayoutValue, AnfNodePtr);
+  HANDLER_DEFINE(ValueTuplePtr, OutLayoutValue, AnfNodePtr);
   HANDLER_DEFINE(std::string, ValueNodeStr, ValueNodePtr);
   HANDLER_DEFINE(void, DumpDat, std::string, FuncGraphPtr);
 };

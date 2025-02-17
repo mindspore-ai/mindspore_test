@@ -22,6 +22,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <set>
 
 #include "frontend/parallel/device_matrix.h"
 
@@ -181,6 +182,16 @@ class Strategy {
     }
     oss << "]";
     return oss.str();
+  }
+
+  std::set<int64_t> GetElement() {
+    std::set<int64_t> res;
+    for (size_t i = 0; i < this->GetInputNumber(); ++i) {
+      for (size_t j = 0; j < this->GetInputDim()[i].size(); ++j) {
+        res.insert(this->GetInputDim()[i][j]);
+      }
+    }
+    return res;
   }
 
  private:

@@ -254,7 +254,7 @@ def check_node_strategy(graph_path, graph_name, check_pairs):
                 raise ValueError(f"Failed to find {node_name} in {file_path}")
             split_grep_output = str(grep_output, 'utf-8').strip().split("\n")
             for line in split_grep_output:
-                real_value = re.findall(r".*in_strategy: (\(.*\))", line)[0]
+                real_value = re.findall(r".*in_strategy: (\(\(.*\)\))", line)[0]
                 assert real_value in expected_value, (
                     f"The strategy of {node_name} is not correct, expect {expected_value}, but got {real_value}")
 

@@ -195,15 +195,6 @@ Status SelfDefineShardInfo::InferOperatorVectorListForShapeList(const TensorInfo
       mirror_ops.emplace_back(std::make_shared<OperatorVectorValue>(mirror_op));
       continue;
     }
-    if (is_auto_parallel_) {
-      if (g_device_manager->CheckDeviceList(repeated_rank_list) != SUCCESS) {
-        MS_LOG(INFO) << name_ << ": Try to create communication group : " << repeated_rank_list
-                     << " failed in auto parallel mode, "
-                        "this error can be ignored in parallel strategies searching step";
-        return FAILED;
-      }
-      return SUCCESS;
-    }
 
     Group mirror_group;
     if (g_device_manager->CreateGroup(repeated_rank_list, &mirror_group) != SUCCESS) {
@@ -232,15 +223,6 @@ Status SelfDefineShardInfo::InferOperatorVectorValueForShapeValue(const TensorIn
     MS_LOG(INFO) << name_ << ": The mirror group is empty, the input index is " << input_idx;
     mirror_ops_new->emplace_back(std::make_shared<OperatorVectorValue>(mirror_op));
     mirror_ops->emplace_back(mirror_op);
-    return SUCCESS;
-  }
-  if (is_auto_parallel_) {
-    if (g_device_manager->CheckDeviceList(repeated_rank_list) != SUCCESS) {
-      MS_LOG(INFO) << name_ << ": Try to create communication group : " << repeated_rank_list
-                   << " failed in auto parallel mode, "
-                      "this error can be ignored in parallel strategies searching step";
-      return FAILED;
-    }
     return SUCCESS;
   }
 

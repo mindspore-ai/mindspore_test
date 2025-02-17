@@ -33,10 +33,7 @@ Status Edge::InitEdgeCost() {
   pre_op_output_.clear();
   next_op_input_.clear();
   cost_map_.clear();
-  std::string edge_without_digit = GetEdgeNameNoDigit();
-  bool use_sp = (ParallelContext::GetInstance()->strategy_search_mode() == kShardingPropagation) ||
-                (ParallelContext::GetInstance()->sharding_propagation());
-
+  dp_cost_map_.clear();
   for (auto &swc : prev_op_->GetStrategyCost()) {
     MS_EXCEPTION_IF_NULL(swc);
     (void)pre_op_output_.emplace_back(
@@ -47,15 +44,7 @@ Status Edge::InitEdgeCost() {
     (void)next_op_input_.emplace_back(
       std::make_pair(swc->strategy_ptr, swc->inputs_ptr[next_op_input_index_].tensor_layout()));
   }
-  if (use_sp && entire_costgraph->FindCostMapInCache(edge_without_digit, pre_op_output_, next_op_input_, &cost_map_)) {
-    MS_LOG(INFO) << "Find the same cost map in cache, skip InitEdgeCost.";
-    return Status::SUCCESS;
-  }
   if (is_identity_edge) {
-    // the strategy of reshape will be made in step_parallel with no cost_map_, so skip InitEdgeCost
-    if (use_sp && edge_name_.find(RESHAPE) != std::string::npos) {
-      return Status::SUCCESS;
-    }
     InitIdentityEdgeCost(&has_available_cost);
   } else {
     InitNotIdentityEdgeCost(&has_available_cost);
@@ -80,30 +69,36 @@ Status Edge::InitEdgeCost() {
     MS_LOG(ERROR) << "Generating cost for edge: " << edge_name_ << " failed.";
     return Status::FAILED;
   }
-  if (use_sp) {
-    entire_costgraph->SaveCostMapToCache(edge_without_digit, pre_op_output_, next_op_input_, cost_map_);
-  }
   return Status::SUCCESS;
 }
 
 void Edge::InitIdentityEdgeCost(bool *has_available_cost) {
+  bool use_sp = (ParallelContext::GetInstance()->strategy_search_mode() == kShardingPropagation) ||
+                (ParallelContext::GetInstance()->sharding_propagation());
+  // the strategy of reshape will be made in step_parallel with no cost_map_, so skip InitEdgeCost
+  if (use_sp && edge_name_.find(RESHAPE) != std::string::npos) {
+    *has_available_cost = true;
+    return;
+  }
   for (auto &target_output : pre_op_output_) {
-    auto target_output_lyt = target_output.second;
     auto target_output_str = target_output.first;
+    auto target_output_lyt = target_output.second;
     for (auto &target_input : next_op_input_) {
-      auto target_input_lyt = target_input.second;
       auto target_input_str = target_input.first;
+      auto target_input_lyt = target_input.second;
       // for identity_info ops, no need to compare device_matrix
       if ((target_output_lyt == target_input_lyt) || (target_output_lyt.IsSameWithoutSplit(target_input_lyt) &&
                                                       edge_name().find(IDENTITY_INFO) != std::string::npos)) {
-        CostPtrKey ck = {target_output_str, target_input_str};
+        CostPtrKey ck = std::make_pair(target_output_lyt, target_input_lyt);
+        DpCostPtrKey dp_ck = std::make_pair(target_output_str, target_input_str);
         CostPtr cost = std::make_shared<Cost>(0.0, 0.0);
         MS_EXCEPTION_IF_NULL(cost);
         cost->communication_without_parameter_ = 0.0;
         cost->communication_with_partial_para_ = 0.0;
         CostPtrList cl;
         cl.push_back(cost);
-        (void)cost_map_.emplace(std::make_pair(ck, cl));
+        (void)cost_map_.emplace(ck, cl);
+        (void)dp_cost_map_.emplace(dp_ck, cl);
         *has_available_cost = true;
       }
     }
@@ -111,39 +106,44 @@ void Edge::InitIdentityEdgeCost(bool *has_available_cost) {
 }
 
 void Edge::InitNotIdentityEdgeCost(bool *has_available_cost) {
+  bool use_sp = (ParallelContext::GetInstance()->strategy_search_mode() == kShardingPropagation) ||
+                (ParallelContext::GetInstance()->sharding_propagation());
+  auto type_length = prev_op_->GetOutputTypeLengths()[prev_op_output_index_];
+  auto type = prev_op_->outputs_type()[prev_op_output_index_];
   for (auto &target_output : pre_op_output_) {
-    auto target_output_lyt = target_output.second;
     auto target_output_str = target_output.first;
-    auto type_length = prev_op_->GetOutputTypeLengths()[prev_op_output_index_];
-    auto type = prev_op_->outputs_type()[prev_op_output_index_];
+    auto target_output_lyt = target_output.second;
     for (auto &target_input : next_op_input_) {
-      auto target_input_lyt = target_input.second;
       auto target_input_str = target_input.first;
-      CostPtr cost;
-      if (GetRedistributionCost(target_output_lyt, target_input_lyt, type_length, type, &cost) != SUCCESS) {
-        MS_LOG(EXCEPTION) << "Failure: redistribution cost calculation failed";
-      }
-      MS_EXCEPTION_IF_NULL(cost);
-      MS_LOG(DEBUG) << "The redistribution cost: computation_cost: " << cost->computation_cost_
-                    << ", communication_cost: " << cost->communication_cost_
-                    << ", communication_without_parameter_: " << cost->communication_without_parameter_
-                    << ", communication_with_partial_para_: " << cost->communication_with_partial_para_ << ".";
-      // refine communication cost calculation for practice
-      RefineForPracticalCost(cost, true);
-      cost->communication_forward_ = cost->communication_redis_forward_;
-      CostPtrKey ck = {target_output_str, target_input_str};
+      auto target_input_lyt = target_input.second;
+      CostPtrKey ck = {target_output_lyt, target_input_lyt};
+      DpCostPtrKey dp_ck = std::make_pair(target_output_str, target_input_str);
       CostPtrList cl;
-      cl.push_back(cost);
-      (void)cost_map_.emplace(std::make_pair(ck, cl));
+      if (use_sp && entire_costgraph->FindEdgeCostPtrInCache(target_output_lyt, target_input_lyt, &cl)) {
+        MS_LOG(INFO) << "Find the same cost in cache, skip GetRedistributionCost.";
+      } else {
+        CostPtr cost;
+        if (GetRedistributionCost(target_output_lyt, target_input_lyt, type_length, type, &cost) != SUCCESS) {
+          MS_LOG(EXCEPTION) << "Failure: redistribution cost calculation failed";
+        }
+        MS_EXCEPTION_IF_NULL(cost);
+        MS_LOG(DEBUG) << "The redistribution cost: computation_cost: " << cost->computation_cost_
+                      << ", communication_cost: " << cost->communication_cost_
+                      << ", communication_without_parameter_: " << cost->communication_without_parameter_
+                      << ", communication_with_partial_para_: " << cost->communication_with_partial_para_ << ".";
+        // refine communication cost calculation for practice
+        RefineForPracticalCost(cost, true);
+        cost->communication_forward_ = cost->communication_redis_forward_;
+        cl.push_back(cost);
+      }
+      (void)cost_map_.emplace(ck, cl);
+      (void)dp_cost_map_.emplace(dp_ck, cl);
+      if (use_sp) {
+        entire_costgraph->SaveEdgeCostPtrToCache(target_output_lyt, target_input_lyt, cl);
+      }
       *has_available_cost = true;
     }
   }
-}
-
-std::string Edge::GetEdgeNameNoDigit() {
-  std::string no_num_name = edge_name_;
-  no_num_name.erase(std::remove_if(no_num_name.begin(), no_num_name.end(), ::isdigit), no_num_name.end());
-  return no_num_name;
 }
 
 Status Edge::GetRedistributionCost(const TensorLayout &prev_op_output_layout, const TensorLayout &next_op_input_layout,
@@ -188,12 +188,34 @@ Status Edge::GetRedistributionCost(const TensorLayout &prev_op_output_layout, co
 }
 
 CostPtrList Edge::GetCostList(StrategyPtr output_str, StrategyPtr input_str) {
-  CostPtrKey ck = {output_str, input_str};
+  DpCostPtrKey ck = {output_str, input_str};
   CostPtrList result;
-  if (cost_map_.find(ck) != cost_map_.end()) {
-    return cost_map_.at(ck);
+  if (dp_cost_map_.find(ck) != dp_cost_map_.end()) {
+    return dp_cost_map_.at(ck);
   }
   return result;
+}
+
+CostPtr Edge::GetCostByLayoutPair(const CostPtrKey &layout_pair) {
+  if (cost_map_.find(layout_pair) == cost_map_.end()) {
+    MS_LOG(WARNING) << "No available cost under current layout pair of the edge: " << edge_name_ << ", "
+                    << "layout_pair.first: " << layout_pair.first.ToString() << ", "
+                    << "layout_pair.second: " << layout_pair.second.ToString() << ". ";
+    return nullptr;
+  }
+  auto cost_vec = cost_map_[layout_pair];
+  if (cost_vec.empty()) {
+    MS_LOG(EXCEPTION) << "No available cost under current layout pair of the edge: " << edge_name_ << ", "
+                      << "layout_pair.first: " << layout_pair.first.ToString() << ", "
+                      << "layout_pair.second: " << layout_pair.second.ToString() << ". ";
+  }
+  if (cost_vec.size() > 1) {
+    MS_LOG(INFO) << "There are " << cost_vec.size()
+                 << " costs available under the layout pair of the edge: " << edge_name_ << ", "
+                 << "layout_pair.first: " << layout_pair.first.ToString() << ", "
+                 << "layout_pair.second: " << layout_pair.second.ToString() << ". ";
+  }
+  return cost_vec[0];
 }
 
 CostPtrList Edge::CreateEdgeEliminationCostList(const StrategyPtr &output_st_ptr, const std::vector<EdgePtr> &edges,
@@ -246,8 +268,8 @@ void Edge::EdgeEliminationSetNewCost(OperatorInfoPtr, const std::vector<EdgePtr>
     for (const auto &input_pair : next_op_input_) {
       StrategyPtr input_st_ptr = input_pair.first;
       CostPtrList clist = CreateEdgeEliminationCostList(output_st_ptr, edges, input_st_ptr);
-      CostPtrKey key = {output_st_ptr, input_st_ptr};
-      cost_map_[key] = clist;
+      DpCostPtrKey key = {output_st_ptr, input_st_ptr};
+      dp_cost_map_[key] = clist;
       if ((!valid) && (!clist.empty())) {
         valid = true;
       }
@@ -319,8 +341,8 @@ void Edge::OpEliminationSetNewCost(const EdgePtr &e1, const OperatorInfoPtr &op,
       StrategyPtr input_st_ptr = input_pair.first;
 
       CostPtrList clist = CreateOpEliminationCostList(e1, output_st_ptr, op, e2, input_st_ptr);
-      CostPtrKey key = {output_st_ptr, input_st_ptr};
-      cost_map_[key] = clist;
+      DpCostPtrKey key = {output_st_ptr, input_st_ptr};
+      dp_cost_map_[key] = clist;
       if ((!valid) && (!clist.empty())) {
         valid = true;
       }
@@ -365,34 +387,6 @@ Status Edge::CalculateMemoryCostForInference() {
   return SUCCESS;
 }
 
-CostPtr Edge::GetCostByStrategyPair(const StrategyPtr &output_str, const StrategyPtr &input_str) {
-  CostPtrList cost_vec;
-  if (cost_map_.find({output_str, input_str}) == cost_map_.end()) {
-    for (const auto &key_value : cost_map_) {
-      const StrategyPtr &candidate_output_stra = key_value.first.first;
-      const StrategyPtr &candidate_input_stra = key_value.first.second;
-      const CostPtrList &candidate_cost = key_value.second;
-      if (candidate_output_stra->IsEqual(output_str) && candidate_input_stra->IsEqual(input_str)) {
-        cost_vec = candidate_cost;
-      }
-    }
-  } else {
-    cost_vec = cost_map_[{output_str, input_str}];
-  }
-  if (cost_vec.empty()) {
-    MS_LOG(WARNING) << "output_str: " << output_str->ToString() << ", "
-                    << "input_str: " << input_str->ToString() << ". "
-                    << "No available cost under current strategy pair of the edge: " << edge_name_;
-    return nullptr;
-  }
-  if (cost_vec.size() > 1) {
-    MS_LOG(INFO) << "output_str: " << output_str->ToString() << ", "
-                 << "input_str: " << input_str->ToString() << ". "
-                 << "Multiple costs available under the stratey pair of the edge: " << edge_name_;
-  }
-  return cost_vec[0];
-}
-
 StrategyPtr Edge::GetNextOpStrategyByOutStrategy(const StrategyPtr &out_strategy) {
   std::vector<std::shared_ptr<StrategyWithCost>> strategy_cost = next_op_->GetStrategyCost();
   if (strategy_cost.empty()) {
@@ -411,106 +405,78 @@ StrategyPtr Edge::GetNextOpStrategyByOutStrategy(const StrategyPtr &out_strategy
   return strategy_cost[0]->strategy_ptr;
 }
 
-StrategyPtr Edge::GetNextOpStrategyByPrevOpStrategyWithMiniComm(const StrategyPtr &prev_op_stra) {
-  std::vector<std::pair<StrategyPtr, double>> next_op_stras;
+struct CompareSwcCost {
+ public:
+  CompareSwcCost() {}
+
+  bool operator()(const std::pair<std::shared_ptr<StrategyWithCost>, CostPtr> &a,
+                  const std::pair<std::shared_ptr<StrategyWithCost>, CostPtr> &b) const {
+    if (!common::IsDoubleEqual(a.second->communication_cost_, b.second->communication_cost_)) {
+      return a.second->communication_cost_ < b.second->communication_cost_;
+    }
+    if (!common::IsDoubleEqual(a.second->computation_cost_, b.second->computation_cost_)) {
+      return a.second->computation_cost_ < b.second->computation_cost_;
+    }
+    if (!common::IsDoubleEqual(a.first->cost_list[0]->communication_without_parameter_,
+                               b.first->cost_list[0]->communication_without_parameter_)) {
+      return a.first->cost_list[0]->communication_without_parameter_ <
+             b.first->cost_list[0]->communication_without_parameter_;
+    }
+    return a.first->strategy_ptr->Compare(b.first->strategy_ptr);
+  }
+};
+
+std::shared_ptr<StrategyWithCost> Edge::GetNextOpSwcByPrevOpStrategyWithMiniComm(const StrategyPtr &prev_op_stra) {
+  std::vector<std::pair<TensorLayout, CostPtr>> next_op_layouts;
   // First, try to find the strategy with zero communication cost.
   for (const auto &key_value : cost_map_) {
-    const auto &candidate_prev_op_stra = key_value.first.first;
-    if (prev_op_stra->IsEqual(candidate_prev_op_stra) && (key_value.second[0]->communication_cost_ < EPS)) {
-      (void)next_op_stras.emplace_back(key_value.first.second, key_value.second[0]->computation_cost_);
-    }
+    const CostPtr &candidate_cost = key_value.second[0];
+    (void)next_op_layouts.emplace_back(key_value.first.second, candidate_cost);
   }
-  if (next_op_stras.empty()) {
-    // Second, if there is not strategy with zero communication cost, find the one with minimum communication cost.
-    std::vector<std::pair<StrategyPtr, double>> next_stras;
-    for (auto &key_value : cost_map_) {
-      const auto &candidate_prev_op_stra = key_value.first.first;
-      if (prev_op_stra->IsEqual(candidate_prev_op_stra)) {
-        (void)next_stras.emplace_back(key_value.first.second, key_value.second[0]->communication_cost_);
-      }
-    }
-    if (next_stras.empty()) {
-      MS_LOG(ERROR) << "There are no available strategy for zero communication cost for edge: " << edge_name_;
-      return nullptr;
-    }
-    MS_LOG(WARNING) << "Inconsistency occurred at edge: " << edge_name();
-    auto min_stra =
-      std::min_element(next_stras.begin(), next_stras.end(),
-                       [this](const std::pair<StrategyPtr, double> &a, const std::pair<StrategyPtr, double> &b) {
-                         return !IsDoubleEqual(a.second, b.second) ? a.second < b.second : a.first->Compare(b.first);
-                       });
-    return min_stra->first;
+  std::vector<std::pair<std::shared_ptr<StrategyWithCost>, CostPtr>> candidate_swcs;
+
+  if (next_op_layouts.empty()) {
+    MS_LOG(ERROR) << "There are no available layout for edge: " << edge_name_;
+    return nullptr;
   }
-  if (next_op_stras.size() > 1) {
-    MS_LOG(INFO) << "There are multiple strategies for edge: " << edge_name_
-                 << " with zero communication cost, choose the one with minimum computation costs.";
+  if (next_op_layouts.size() > 1) {
+    MS_LOG(INFO) << "There are multiple layouts for edge: " << edge_name_;
   }
-  auto next_op = next_op_;
-  auto min_next_op_stra = std::min_element(
-    next_op_stras.begin(), next_op_stras.end(),
-    [this, &next_op](const std::pair<StrategyPtr, double> &a, const std::pair<StrategyPtr, double> &b) {
-      if (!IsDoubleEqual(a.second, b.second)) {
-        return a.second < b.second;
-      }
-      auto cost_a = next_op->GetCostByStrategyPtr(a.first)[0]->communication_without_parameter_;
-      auto cost_b = next_op->GetCostByStrategyPtr(b.first)[0]->communication_without_parameter_;
-      if (!IsDoubleEqual(cost_a, cost_b)) {
-        return cost_a < cost_b;
-      }
-      return a.first->Compare(b.first);
-    });
-  return min_next_op_stra->first;
+  for (const auto &layout : next_op_layouts) {
+    auto swcs = next_op_->GetSwcByInputLayout(layout.first, next_op_input_index_);
+    std::transform(swcs.begin(), swcs.end(), std::back_inserter(candidate_swcs),
+                   [&](const auto &swc) { return std::make_pair(swc, layout.second); });
+  }
+  MS_LOG(INFO) << "There are " << candidate_swcs.size() << " candidate swcs for edge: " << edge_name_
+               << ", choose the one with minimum costs.";
+  auto min_swc = std::min_element(candidate_swcs.begin(), candidate_swcs.end(), CompareSwcCost());
+  return min_swc->first;
 }
 
-StrategyPtr Edge::GetPrevOpStrategyByNextOpStrategyWithMiniComm(const StrategyPtr &next_op_stra) {
-  std::vector<std::pair<StrategyPtr, double>> prev_op_stras;
+std::shared_ptr<StrategyWithCost> Edge::GetPrevOpSwcByNextOpStrategyWithMiniComm(const StrategyPtr &next_op_stra) {
+  std::vector<std::pair<TensorLayout, CostPtr>> prev_op_layouts;
   // First, try to find the strategy with zero communication cost.
   for (const auto &key_value : cost_map_) {
-    const auto &candidate_next_op_stra = key_value.first.second;
-    if (next_op_stra->IsEqual(candidate_next_op_stra) && (key_value.second[0]->communication_cost_ < EPS)) {
-      (void)prev_op_stras.emplace_back(key_value.first.first, key_value.second[0]->computation_cost_);
-    }
+    const auto &candidate_cost = key_value.second[0];
+    (void)prev_op_layouts.emplace_back(key_value.first.first, candidate_cost);
   }
-  if (prev_op_stras.empty()) {
-    // Second, if there is no strategy with zero communication cost, find the one with minimum communication cost.
-    std::vector<std::pair<StrategyPtr, double>> prev_stras;
-    for (auto &key_value : cost_map_) {
-      const auto &candidate_next_op_stra = key_value.first.second;
-      if (next_op_stra->IsEqual(candidate_next_op_stra)) {
-        (void)prev_stras.emplace_back(key_value.first.first, key_value.second[0]->communication_cost_);
-      }
-    }
-    if (prev_stras.empty()) {
-      MS_LOG(ERROR) << "There are no available strategy for zero communication cost for edge: " << edge_name_;
-      return nullptr;
-    }
-    MS_LOG(WARNING) << "Inconsistency occurred at edge: " << edge_name();
-    auto min_prev_stra =
-      std::min_element(prev_stras.begin(), prev_stras.end(),
-                       [this](const std::pair<StrategyPtr, double> &a, const std::pair<StrategyPtr, double> &b) {
-                         return !IsDoubleEqual(a.second, b.second) ? a.second < b.second : a.first->Compare(b.first);
-                       });
-    return min_prev_stra->first;
+  std::vector<std::pair<std::shared_ptr<StrategyWithCost>, CostPtr>> candidate_swcs;
+  if (prev_op_layouts.empty()) {
+    MS_LOG(ERROR) << "There are no available layout for edge: " << edge_name_;
+    return nullptr;
   }
-  if (prev_op_stras.size() > 1) {
-    MS_LOG(INFO) << "There are multiple strategies for edge: " << edge_name_
-                 << " with zero communication costs, choose the one with minimum computation costs.";
+  if (prev_op_layouts.size() > 1) {
+    MS_LOG(INFO) << "There are multiple layouts for edge: " << edge_name_;
   }
-  auto prev_op = prev_op_;
-  auto min_prev_op_stra = std::min_element(
-    prev_op_stras.begin(), prev_op_stras.end(),
-    [this, &prev_op](const std::pair<StrategyPtr, double> &a, const std::pair<StrategyPtr, double> &b) {
-      if (!IsDoubleEqual(a.second, b.second)) {
-        return a.second < b.second;
-      }
-      auto cost_a = prev_op->GetCostByStrategyPtr(a.first)[0]->communication_without_parameter_;
-      auto cost_b = prev_op->GetCostByStrategyPtr(b.first)[0]->communication_without_parameter_;
-      if (!IsDoubleEqual(cost_a, cost_b)) {
-        return cost_a < cost_b;
-      }
-      return a.first->Compare(b.first);
-    });
-  return min_prev_op_stra->first;
+  for (const auto &layout : prev_op_layouts) {
+    auto swcs = prev_op_->GetSwcByOutputLayout(layout.first, prev_op_output_index_);
+    std::transform(swcs.begin(), swcs.end(), std::back_inserter(candidate_swcs),
+                   [&](const auto &swc) { return std::make_pair(swc, layout.second); });
+  }
+  MS_LOG(INFO) << "There are " << candidate_swcs.size() << " candidate swcs for edge: " << edge_name_
+               << ", choose the one with minimum costs.";
+  auto min_swc = std::min_element(candidate_swcs.begin(), candidate_swcs.end(), CompareSwcCost());
+  return min_swc->first;
 }
 
 int64_t Edge::GetReshapeSWCIndexByNextOpStrategy(const StrategyPtr &next_op_stra) {
@@ -592,18 +558,23 @@ StrategyPtr Edge::GetNextOpStrategyByReshapeSWCIndex(int64_t swc_index) {
   return stra;
 }
 
-bool Edge::CheckStrategyConsistency(StrategyPtr prev_stra, StrategyPtr next_stra,
-                                    std::set<OperatorInfoPtr> *_diff_stra_params) {
-  if (prev_stra == nullptr) {
-    MS_LOG(EXCEPTION) << prev_op_->name() << "'s selected strategy is null!";
+bool Edge::CheckLayoutConsistency(std::set<OperatorInfoPtr> *_diff_stra_params) {
+  auto prev_op_swc = prev_op_->GetStrategyCost();
+  auto next_op_swc = next_op_->GetStrategyCost();
+  if (prev_op_swc.empty() || prev_op_swc.size() > 1) {
+    MS_LOG(ERROR) << "Illegal swc size:" << prev_op_swc.size() << " for prev op in edge:" << edge_name_;
+    return false;
   }
-  if (next_stra == nullptr) {
-    MS_LOG(EXCEPTION) << next_op_->name() << "'s selected strategy is null!";
+  if (next_op_swc.empty() || next_op_swc.size() > 1) {
+    MS_LOG(ERROR) << "Illegal swc size:" << next_op_swc.size() << " for next op in edge:" << edge_name_;
+    return false;
   }
-  auto cost = GetCostByStrategyPair(prev_stra, next_stra);
+  TensorLayout output_layout = prev_op_swc[0]->outputs_ptr[prev_op_output_index_].tensor_layout();
+  TensorLayout input_layout = next_op_swc[0]->inputs_ptr[next_op_input_index_].tensor_layout();
+  auto cost = GetCostByLayoutPair({output_layout, input_layout});
   if (cost == nullptr || cost->communication_cost_ > 0.0) {
-    MS_LOG(INFO) << "The edge " << edge_name_ << "'s strategy: prev_stra is " << prev_stra->ToString()
-                 << ", next_stra is " << next_stra->ToString();
+    MS_LOG(INFO) << "The edge " << edge_name_ << "'s layout: prev op output layout is " << output_layout.ToString()
+                 << ", next op input layout is " << input_layout.ToString();
     if (prev_op_->IsTmpIdentity()) {
       if (_diff_stra_params->count(prev_op_) == 0) {
         _diff_stra_params->insert(prev_op_);
@@ -625,18 +596,6 @@ bool Edge::CheckStrategyConsistency(StrategyPtr prev_stra, StrategyPtr next_stra
     return false;
   }
   return true;
-}
-
-void Edge::SetCostMapAndInputOutput(const std::map<CostPtrKey, CostPtrList> &cost_map) {
-  cost_map_ = cost_map;
-  pre_op_output_.clear();
-  next_op_input_.clear();
-
-  for (const auto &key_value : cost_map_) {
-    auto &key_pair = key_value.first;
-    (void)pre_op_output_.emplace_back(std::make_pair(key_pair.first, TensorLayout()));
-    (void)next_op_input_.emplace_back(std::make_pair(key_pair.second, TensorLayout()));
-  }
 }
 
 // Return true if there are available strategies in this edge.
