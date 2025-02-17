@@ -19,7 +19,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <queue>
 #include <set>
 
 #include "frontend/parallel/auto_parallel/graph_costmodel.h"
@@ -95,31 +94,30 @@ void CostGraph::StrategyPropagate(const std::map<OperatorInfoPtr, StrategyPtr, O
   if (ops_stras.empty()) {
     MS_LOG(EXCEPTION) << "There is no operator that is configured sharding strategy.";
   }
+  configured_ops = ops_stras;
   _diff_stra_params.clear();
-  std::map<OperatorInfoPtr, bool> visited;
+
   for (auto &op : ops_) {
     visited[op] = false;
   }
   for (auto &op_stra : ops_stras) {
-    BFS(op_stra.first, op_stra.second, ops_stras, &visited);
+    BFS(op_stra.first, op_stra.second);
   }
 
-  ProcessDiffStraParams(ops_stras);
+  ProcessDiffStraParams();
   _diff_stra_params.clear();
   // GetNext as a isolate op can not be propagated
   for (auto &op : entire_costgraph->GetOperators()) {
     if (op->selected_strategy() == nullptr) {
       MS_LOG(INFO) << "Set default strategy for op: " << op->name();
-      op->SetSelectedStrategy(op->strategy_cost()[0]->strategy_ptr, 0);
+      op->SetSelectedStrategy(op->GetStrategyCost()[0]->strategy_ptr, 0);
     }
   }
 }
 
-bool CheckStrategyIsNull(StrategyPtr sp) { return sp == nullptr; }
-
 bool CheckSwcIndexInvalid(int64_t swc_index) { return swc_index == -1; }
 
-bool CheckVisitedEdgeConsistency(const EdgePtr &edge) {
+bool CostGraph::CheckVisitedEdgeConsistency(const EdgePtr &edge) const {
   MS_EXCEPTION_IF_NULL(edge);
   auto prev_op = edge->prev_operator();
   auto next_op = edge->next_operator();
@@ -141,8 +139,7 @@ bool CheckVisitedEdgeConsistency(const EdgePtr &edge) {
       MS_LOG(WARNING) << "Inconsistency occurred at edge: " << edge->edge_name();
     }
   } else {
-    consistency =
-      edge->CheckStrategyConsistency(prev_op->selected_strategy(), next_op->selected_strategy(), &_diff_stra_params);
+    consistency = edge->CheckLayoutConsistency(&_diff_stra_params);
     if (!consistency) {
       MS_LOG(WARNING) << "Inconsistency occurred at edge: " << edge->edge_name();
     }
@@ -150,8 +147,7 @@ bool CheckVisitedEdgeConsistency(const EdgePtr &edge) {
   return consistency;
 }
 
-bool CheckConfiguredSuccEdgeConsistency(const EdgePtr &edge,
-                                        const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare> &configured_ops) {
+bool CostGraph::CheckConfiguredSuccEdgeConsistency(const EdgePtr &edge) const {
   MS_EXCEPTION_IF_NULL(edge);
   auto curr_op = edge->prev_operator();
   auto next_op = edge->next_operator();
@@ -167,7 +163,7 @@ bool CheckConfiguredSuccEdgeConsistency(const EdgePtr &edge,
     }
     return consistency;
   } else {
-    consistency = edge->CheckStrategyConsistency(curr_op->selected_strategy(), next_op_conf_stra, &_diff_stra_params);
+    consistency = edge->CheckLayoutConsistency(&_diff_stra_params);
     if (!consistency) {
       MS_LOG(WARNING) << "Inconsistency occurred at edge: " << edge->edge_name();
     }
@@ -175,8 +171,7 @@ bool CheckConfiguredSuccEdgeConsistency(const EdgePtr &edge,
   return consistency;
 }
 
-void CheckConfiguredPrevEdgeConsistency(const EdgePtr &edge,
-                                        const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare> &configured_ops) {
+void CostGraph::CheckConfiguredPrevEdgeConsistency(const EdgePtr &edge) const {
   auto curr_op = edge->next_operator();
   auto prev_op = edge->prev_operator();
   auto prev_op_conf_stra = configured_ops.at(prev_op);
@@ -189,8 +184,7 @@ void CheckConfiguredPrevEdgeConsistency(const EdgePtr &edge,
       MS_LOG(WARNING) << "Inconsistency occurred at edge: " << edge->edge_name();
     }
   } else {
-    auto consistency =
-      edge->CheckStrategyConsistency(prev_op_conf_stra, curr_op->selected_strategy(), &_diff_stra_params);
+    auto consistency = edge->CheckLayoutConsistency(&_diff_stra_params);
     if (!consistency) {
       MS_LOG(WARNING) << "Inconsistency occurred at edge: " << edge->edge_name();
     }
@@ -206,178 +200,240 @@ bool CheckStandAlone(const OperatorInfoPtr &op1, const OperatorInfoPtr &op2) {
   return false;
 }
 
-void BFSPreNode(
-  const std::shared_ptr<Edge> &edge, std::map<OperatorInfoPtr, bool> *visited, int64_t curr_depth,
-  const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare> &configured_ops, const OperatorInfoPtr &curr_op,
-  std::queue<std::pair<std::pair<OperatorInfoPtr, std::pair<StrategyPtr, int64_t>>, int64_t>> *next_level) {
+void CostGraph::BFSPrevNodeIfPrevIsReshape(const std::shared_ptr<Edge> &edge, int64_t curr_depth) {
   MS_EXCEPTION_IF_NULL(edge);
-  MS_EXCEPTION_IF_NULL(visited);
-  MS_EXCEPTION_IF_NULL(curr_op);
-  MS_EXCEPTION_IF_NULL(next_level);
+  const auto &curr_op = edge->next_operator();
   const auto &prev_op = edge->prev_operator();
-  bool is_has_stra_op = visited->at(prev_op) || configured_ops.find(prev_op) != configured_ops.end();
+  if (curr_op->IsVirtualOutput() || curr_op->IsConcat()) {
+    MS_LOG(INFO) << "virtualoutput or concat after reshape, no need set strategy.";
+    visited.at(prev_op) = true;
+    return;
+  }
+  auto swc_index = edge->GetReshapeSWCIndexByNextOpStrategy(curr_op->selected_strategy());
+  if (CheckSwcIndexInvalid(swc_index)) {
+    MS_LOG(WARNING) << "No available strategy found at edge: " << edge->edge_name() << " for: " << prev_op->name();
+    return;
+  }
+  (void)next_level.emplace(std::make_pair(prev_op, std::make_pair(nullptr, swc_index)), curr_depth + 1);
+  prev_op->set_swc_index(swc_index, curr_depth + 1);
+  visited.at(prev_op) = true;
+  return;
+}
+
+void CostGraph::BFSPrevNodeIfCurrIsReshape(const std::shared_ptr<Edge> &edge, int64_t curr_depth) {
+  MS_EXCEPTION_IF_NULL(edge);
+  const auto &curr_op = edge->next_operator();
+  const auto &prev_op = edge->prev_operator();
+  auto prev_stra = edge->GetPrevOpStrategyByReshapeSWCIndex(curr_op->swc_index());
+  if (prev_stra == nullptr) {
+    MS_LOG(WARNING) << "No available strategy found at edge: " << edge->edge_name() << " for: " << prev_op->name();
+    return;
+  }
+  (void)next_level.emplace(std::make_pair(prev_op, std::make_pair(prev_stra, -1)), curr_depth + 1);
+  prev_op->SetSelectedStrategy(prev_stra, LongToSize(curr_depth + 1));
+  prev_op->ClearStrategyCost();
+  if (prev_op->SetCostUnderStrategy(prev_stra) != SUCCESS) {
+    MS_LOG(EXCEPTION) << "Failure: operator " << prev_op->name() << " SetCostUnderStrategy failed";
+  }
+  visited.at(prev_op) = true;
+  return;
+}
+
+void CostGraph::BFSPrevNode(const std::shared_ptr<Edge> &edge, int64_t curr_depth) {
+  MS_EXCEPTION_IF_NULL(edge);
+  const auto &curr_op = edge->next_operator();
+  const auto &prev_op = edge->prev_operator();
+  bool is_has_stra_op = visited.at(prev_op) || configured_ops.find(prev_op) != configured_ops.end();
   if (CheckStandAlone(prev_op, curr_op)) {
     return;
   }
   if (edge->InitEdgeCost() != SUCCESS && !is_has_stra_op) {
     MS_LOG(EXCEPTION) << "Edge cost initialization failed.";
   }
-  if (visited->at(prev_op)) {
+  if (visited.at(prev_op)) {
     (void)CheckVisitedEdgeConsistency(edge);
     return;
   }
   if ((curr_depth > 0) && (configured_ops.find(prev_op) != configured_ops.end())) {
-    CheckConfiguredPrevEdgeConsistency(edge, configured_ops);
+    CheckConfiguredPrevEdgeConsistency(edge);
   }
   if (configured_ops.find(prev_op) != configured_ops.end()) {
     return;
   }
   if (prev_op->IsReshape()) {
-    if (curr_op->IsVirtualOutput() || curr_op->IsConcat()) {
-      MS_LOG(INFO) << "virtualoutput or concat after reshape, no need set strategy.";
-      visited->at(prev_op) = true;
-      return;
-    }
-    auto swc_index = edge->GetReshapeSWCIndexByNextOpStrategy(curr_op->selected_strategy());
-    if (CheckSwcIndexInvalid(swc_index)) {
-      MS_LOG(WARNING) << "No available strategy found at edge: " << edge->edge_name() << " for: " << prev_op->name();
-      return;
-    }
-    (void)next_level->emplace(std::make_pair(prev_op, std::make_pair(nullptr, swc_index)), curr_depth + 1);
-    prev_op->set_swc_index(swc_index, curr_depth + 1);
-  } else if (curr_op->IsReshape()) {
-    auto prev_stra = edge->GetPrevOpStrategyByReshapeSWCIndex(curr_op->swc_index());
-    if (CheckStrategyIsNull(prev_stra)) {
-      MS_LOG(WARNING) << "No available strategy found at edge: " << edge->edge_name() << " for: " << prev_op->name();
-      return;
-    }
-    (void)next_level->emplace(std::make_pair(prev_op, std::make_pair(prev_stra, -1)), curr_depth + 1);
-    prev_op->SetSelectedStrategy(prev_stra, LongToSize(curr_depth + 1));
-    prev_op->ClearStrategyCost();
-    if (prev_op->SetCostUnderStrategy(prev_stra) != SUCCESS) {
-      MS_LOG(EXCEPTION) << "Failure: operator " << prev_op->name() << " SetCostUnderStrategy failed";
-    }
-  } else {
-    const auto &prev_op_stra = edge->GetPrevOpStrategyByNextOpStrategyWithMiniComm(curr_op->selected_strategy());
-    if (prev_op_stra == nullptr) {
-      MS_LOG(EXCEPTION) << "Current op " << curr_op->name() << "'s strategy is "
-                        << curr_op->selected_strategy()->ToString() << ". " << prev_op->name()
-                        << "'s strategy is null in the edge: " << edge->edge_name();
-    }
-    (void)next_level->emplace(std::make_pair(prev_op, std::make_pair(prev_op_stra, -1)), curr_depth + 1);
-    prev_op->SetSelectedStrategy(prev_op_stra, LongToSize(curr_depth + 1));
+    return BFSPrevNodeIfPrevIsReshape(edge, curr_depth);
+  }
+  if (curr_op->IsReshape()) {
+    return BFSPrevNodeIfCurrIsReshape(edge, curr_depth);
+  }
+
+  prev_op->LayoutPropagationBegin();
+  const auto &candidate_swc = edge->GetPrevOpSwcByNextOpStrategyWithMiniComm(curr_op->selected_strategy());
+  if (candidate_swc == nullptr) {
+    MS_LOG(EXCEPTION) << "Current op " << curr_op->name() << "'s strategy is "
+                      << curr_op->selected_strategy()->ToString() << ". " << prev_op->name()
+                      << "'s candidate swc is null in the edge: " << edge->edge_name();
+  }
+  const auto &prev_op_stra = candidate_swc->strategy_ptr;
+  if (prev_op_stra == nullptr) {
+    MS_LOG(EXCEPTION) << "Current op " << curr_op->name() << "'s strategy is "
+                      << curr_op->selected_strategy()->ToString() << ". " << prev_op->name()
+                      << "'s strategy is null in the edge: " << edge->edge_name();
+  }
+  (void)next_level.emplace(std::make_pair(prev_op, std::make_pair(prev_op_stra, -1)), curr_depth + 1);
+  prev_op->SetSelectedStrategy(prev_op_stra, LongToSize(curr_depth + 1));
+  prev_op->ClearStrategyCost();
+  if (prev_op->SetCostUnderStrategyWithCost(candidate_swc) != SUCCESS) {
+    MS_LOG(WARNING) << "Operator " << prev_op->name()
+                    << " not support SetCostUnderStrategyWithCost. Try to SetCostUnderStrategy.";
     prev_op->ClearStrategyCost();
     if (prev_op->SetCostUnderStrategy(prev_op_stra) != SUCCESS) {
-      MS_LOG(EXCEPTION) << "Failure: operator " << prev_op->name() << " SetCostUnderStrategy failed";
+      MS_LOG(EXCEPTION) << "Operator " << prev_op->name() << " SetCostUnderStrategy failed";
     }
   }
-  visited->at(prev_op) = true;
+  prev_op->set_config_by_layout(true);
+  prev_op->LayoutPropagationEnd();
+  visited.at(prev_op) = true;
   return;
 }
 
-void BFSNextNode(
-  const std::shared_ptr<Edge> &edge, std::map<OperatorInfoPtr, bool> *visited, int64_t curr_depth,
-  const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare> &configured_ops, const OperatorInfoPtr &curr_op,
-  std::queue<std::pair<std::pair<OperatorInfoPtr, std::pair<StrategyPtr, int64_t>>, int64_t>> *next_level) {
+void CostGraph::BFSNextNodeIfNextIsReshape(const std::shared_ptr<Edge> &edge, int64_t curr_depth) {
   MS_EXCEPTION_IF_NULL(edge);
-  MS_EXCEPTION_IF_NULL(visited);
-  MS_EXCEPTION_IF_NULL(curr_op);
-  MS_EXCEPTION_IF_NULL(next_level);
+  const auto &curr_op = edge->prev_operator();
   const auto &next_op = edge->next_operator();
-  bool is_has_stra_op = visited->at(next_op) || configured_ops.find(next_op) != configured_ops.end();
+  auto swc_index = edge->GetReshapeSWCIndexByPrevOpStrategy(curr_op->selected_strategy());
+  if (CheckSwcIndexInvalid(swc_index)) {
+    MS_LOG(WARNING) << "No available strategy found at edge: " << edge->edge_name() << " for: " << next_op->name();
+    return;
+  }
+  (void)next_level.emplace(std::make_pair(next_op, std::make_pair(nullptr, swc_index)), curr_depth + 1);
+  next_op->set_swc_index(swc_index, curr_depth + 1);
+  visited.at(next_op) = true;
+  return;
+}
+
+void CostGraph::BFSNextNodeIfCurrIsReshape(const std::shared_ptr<Edge> &edge, int64_t curr_depth) {
+  MS_EXCEPTION_IF_NULL(edge);
+  const auto &curr_op = edge->prev_operator();
+  const auto &next_op = edge->next_operator();
+  if (next_op->IsVirtualOutput() || next_op->IsConcat()) {
+    MS_LOG(INFO) << "virtualoutput or concat after reshape, no need set strategy.";
+    visited.at(next_op) = true;
+    return;
+  }
+  auto stra = edge->GetNextOpStrategyByReshapeSWCIndex(curr_op->swc_index());
+  if (stra == nullptr) {
+    MS_LOG(WARNING) << "No available strategy found at edge: " << edge->edge_name() << " for: " << curr_op->name();
+    return;
+  }
+  (void)next_level.emplace(std::make_pair(next_op, std::make_pair(stra, -1)), curr_depth + 1);
+  next_op->SetSelectedStrategy(stra, LongToSize(curr_depth + 1));
+  next_op->ClearStrategyCost();
+  if (next_op->SetCostUnderStrategy(stra) != SUCCESS) {
+    MS_LOG(EXCEPTION) << "Failure: operator " << next_op->name() << " SetCostUnderStrategy failed";
+  }
+  visited.at(next_op) = true;
+  return;
+}
+
+void CostGraph::BFSNextNode(const std::shared_ptr<Edge> &edge, int64_t curr_depth) {
+  MS_EXCEPTION_IF_NULL(edge);
+  const auto &curr_op = edge->prev_operator();
+  const auto &next_op = edge->next_operator();
+  bool is_has_stra_op = visited.at(next_op) || configured_ops.find(next_op) != configured_ops.end();
   if (CheckStandAlone(curr_op, next_op)) {
     return;
   }
   if (edge->InitEdgeCost() != SUCCESS && !is_has_stra_op) {
     MS_LOG(EXCEPTION) << "Edge cost initialization failed.";
   }
-  if (visited->at(next_op)) {
+  if (visited.at(next_op)) {
     (void)CheckVisitedEdgeConsistency(edge);
     return;
   }
   if ((curr_depth > 0) && (configured_ops.find(next_op) != configured_ops.end())) {
-    (void)CheckConfiguredSuccEdgeConsistency(edge, configured_ops);
+    (void)CheckConfiguredSuccEdgeConsistency(edge);
   }
   if (configured_ops.find(next_op) != configured_ops.end()) {
     return;
   }
+
+  if (next_op->IsReshape()) {
+    return BFSNextNodeIfNextIsReshape(edge, curr_depth);
+  }
   if (curr_op->IsReshape()) {
-    if (next_op->IsVirtualOutput() || next_op->IsConcat()) {
-      MS_LOG(INFO) << "virtualoutput or concat after reshape, no need set strategy.";
-      visited->at(next_op) = true;
-      return;
+    return BFSNextNodeIfCurrIsReshape(edge, curr_depth);
+  }
+
+  if (curr_op->out_strategy() != nullptr) {
+    const auto &next_op_stra = edge->GetNextOpStrategyByOutStrategy(curr_op->out_strategy());
+    if (next_op_stra == nullptr) {
+      MS_LOG(EXCEPTION) << "Current op " << curr_op->name() << "'s strategy is "
+                        << curr_op->selected_strategy()->ToString() << ". " << next_op->name()
+                        << "'s strategy is null in the edge: " << edge->edge_name();
     }
-    auto stra = edge->GetNextOpStrategyByReshapeSWCIndex(curr_op->swc_index());
-    if (CheckStrategyIsNull(stra)) {
-      MS_LOG(WARNING) << "No available strategy found at edge: " << edge->edge_name() << " for: " << curr_op->name();
-      return;
-    }
-    (void)next_level->emplace(std::make_pair(next_op, std::make_pair(stra, -1)), curr_depth + 1);
-    next_op->SetSelectedStrategy(stra, LongToSize(curr_depth + 1));
+    (void)next_level.emplace(std::make_pair(next_op, std::make_pair(next_op_stra, -1)), curr_depth + 1);
+    next_op->SetSelectedStrategy(next_op_stra, LongToSize(curr_depth + 1));
     next_op->ClearStrategyCost();
-    if (next_op->SetCostUnderStrategy(stra) != SUCCESS) {
+    if (next_op->SetCostUnderStrategy(next_op_stra) != SUCCESS) {
       MS_LOG(EXCEPTION) << "Failure: operator " << next_op->name() << " SetCostUnderStrategy failed";
     }
-    visited->at(next_op) = true;
-    return;
-  }
-  if (next_op->IsReshape()) {
-    auto swc_index = edge->GetReshapeSWCIndexByPrevOpStrategy(curr_op->selected_strategy());
-    if (CheckSwcIndexInvalid(swc_index)) {
-      MS_LOG(WARNING) << "No available strategy found at edge: " << edge->edge_name() << " for: " << next_op->name();
-      return;
-    }
-    (void)next_level->emplace(std::make_pair(next_op, std::make_pair(nullptr, swc_index)), curr_depth + 1);
-    next_op->set_swc_index(swc_index, curr_depth + 1);
-    visited->at(next_op) = true;
+    visited.at(next_op) = true;
     return;
   }
 
-  StrategyPtr next_op_stra;
-  if (curr_op->out_strategy() != nullptr) {
-    next_op_stra = edge->GetNextOpStrategyByOutStrategy(curr_op->out_strategy());
-  } else {
-    next_op_stra = edge->GetNextOpStrategyByPrevOpStrategyWithMiniComm(curr_op->selected_strategy());
-    if (next_op_stra == nullptr) {
-      MS_LOG(INFO) << "The strategy is: " << curr_op->selected_strategy()->ToString();
-      MS_LOG(EXCEPTION) << next_op->name() << "'s strategy is null in the edge: " << edge->edge_name();
-    }
+  next_op->LayoutPropagationBegin();
+  const auto &candidate_swc = edge->GetNextOpSwcByPrevOpStrategyWithMiniComm(curr_op->selected_strategy());
+  if (candidate_swc == nullptr) {
+    MS_LOG(EXCEPTION) << "Current op " << curr_op->name() << "'s strategy is "
+                      << curr_op->selected_strategy()->ToString() << ". " << next_op->name()
+                      << "'s candidate swc is null in the edge: " << edge->edge_name();
   }
-  (void)next_level->emplace(std::make_pair(next_op, std::make_pair(next_op_stra, -1)), curr_depth + 1);
+  const auto &next_op_stra = candidate_swc->strategy_ptr;
+  if (next_op_stra == nullptr) {
+    MS_LOG(EXCEPTION) << "Current op " << curr_op->name() << "'s strategy is "
+                      << curr_op->selected_strategy()->ToString() << ". " << next_op->name()
+                      << "'s strategy is null in the edge: " << edge->edge_name();
+  }
+  (void)next_level.emplace(std::make_pair(next_op, std::make_pair(next_op_stra, -1)), curr_depth + 1);
   next_op->SetSelectedStrategy(next_op_stra, LongToSize(curr_depth + 1));
   next_op->ClearStrategyCost();
-  if (next_op->SetCostUnderStrategy(next_op_stra) != SUCCESS) {
-    MS_LOG(EXCEPTION) << "Failure: operator " << next_op->name() << " SetCostUnderStrategy failed";
+  if (next_op->SetCostUnderStrategyWithCost(candidate_swc) != SUCCESS) {
+    MS_LOG(WARNING) << "Operator " << next_op->name()
+                    << " not support SetCostUnderStrategyWithCost. Try to SetCostUnderStrategy.";
+    next_op->ClearStrategyCost();
+    if (next_op->SetCostUnderStrategy(next_op_stra) != SUCCESS) {
+      MS_LOG(EXCEPTION) << "Operator " << next_op->name() << " SetCostUnderStrategy failed";
+    }
   }
-  visited->at(next_op) = true;
+  next_op->set_config_by_layout(true);
+  next_op->LayoutPropagationEnd();
+  visited.at(next_op) = true;
   return;
 }
 
-void CostGraph::BFS(const OperatorInfoPtr &op, const StrategyPtr &op_stra,
-                    const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare> &configured_ops,
-                    std::map<OperatorInfoPtr, bool> *visited) const {
-  std::queue<std::pair<std::pair<OperatorInfoPtr, std::pair<StrategyPtr, int64_t>>, int64_t>> next_level;
+void CostGraph::BFS(const OperatorInfoPtr &op, const StrategyPtr &op_stra) {
+  next_level = std::queue<std::pair<std::pair<OperatorInfoPtr, std::pair<StrategyPtr, int64_t>>, int64_t>>();
   (void)next_level.emplace(std::make_pair(op, std::make_pair(op_stra, -1)), 0);
   op->SetSelectedStrategy(op_stra, 0);
   while (!next_level.empty()) {
     auto curr_op = next_level.front().first.first;
     auto configured_stra = next_level.front().first.second.first;
     auto curr_depth = next_level.front().second;
-    visited->at(curr_op) = true;
+    visited.at(curr_op) = true;
     MS_LOG(INFO) << "curr_depth: " << curr_depth << " curr_op: " << curr_op->name();
     for (auto &edge : curr_op->succ_edges()) {
-      BFSNextNode(edge, visited, curr_depth, configured_ops, curr_op, &next_level);
+      BFSNextNode(edge, curr_depth);
     }
     for (auto &edge : curr_op->prev_edges()) {
-      BFSPreNode(edge, visited, curr_depth, configured_ops, curr_op, &next_level);
+      BFSPrevNode(edge, curr_depth);
     }
     next_level.pop();
   }
 }
 
 // An additional propagation to deal with incontinuous strategy between the ops that share params.
-void CostGraph::ProcessDiffStraParams(
-  const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare> &configured_ops) const {
+void CostGraph::ProcessDiffStraParams() const {
   for (auto &curr_identity_op : _diff_stra_params) {
     auto succ_edges = curr_identity_op->succ_edges();
     auto is_target = [&](const std::shared_ptr<Edge> &edge) {
@@ -394,7 +450,12 @@ void CostGraph::ProcessDiffStraParams(
           MS_LOG(EXCEPTION) << "Edge cost initialization failed.";
         }
         const auto curr_op = (*it)->next_operator();
-        const auto &prev_op_stra = (*it)->GetPrevOpStrategyByNextOpStrategyWithMiniComm(curr_op->selected_strategy());
+        const auto &candidate_swc = (*it)->GetPrevOpSwcByNextOpStrategyWithMiniComm(curr_op->selected_strategy());
+        if (candidate_swc == nullptr) {
+          MS_LOG(EXCEPTION) << curr_identity_op->name()
+                            << "'s candidate swc is null in the edge: " << (*it)->edge_name();
+        }
+        const auto &prev_op_stra = candidate_swc->strategy_ptr;
         if (prev_op_stra == nullptr) {
           MS_LOG(EXCEPTION) << curr_identity_op->name() << "'s strategy is null in the edge: " << (*it)->edge_name();
         }
@@ -407,22 +468,21 @@ void CostGraph::ProcessDiffStraParams(
     }
     for (auto &edge : succ_edges) {
       const auto &next_op = edge->next_operator();
-      ParamPropagation(curr_identity_op, edge, configured_ops);
+      ParamPropagation(curr_identity_op, edge);
       if (next_op->name().find(CAST) != std::string::npos) {
         for (auto &cast_edge : next_op->succ_edges()) {
-          ParamPropagation(next_op, cast_edge, configured_ops);
+          ParamPropagation(next_op, cast_edge);
         }
       }
     }
   }
 }
 
-void CostGraph::ParamPropagation(const OperatorInfoPtr &curr_op, const std::shared_ptr<Edge> edge,
-                                 const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare> &configured_ops) const {
+void CostGraph::ParamPropagation(const OperatorInfoPtr &curr_op, const std::shared_ptr<Edge> edge) const {
   const auto &next_op = edge->next_operator();
   MS_LOG(INFO) << "params propagation at " << curr_op->name() << "->" << next_op->name();
   if ((configured_ops.find(next_op) != configured_ops.end())) {
-    auto consistency = CheckConfiguredSuccEdgeConsistency(edge, configured_ops);
+    auto consistency = CheckConfiguredSuccEdgeConsistency(edge);
     if (!consistency) {
       MS_LOG(EXCEPTION) << "Incorrect strategy configuration.";
     }
@@ -438,7 +498,11 @@ void CostGraph::ParamPropagation(const OperatorInfoPtr &curr_op, const std::shar
   if (edge->InitEdgeCost() != SUCCESS) {
     MS_LOG(EXCEPTION) << "Edge cost initialization failed.";
   }
-  const auto &next_op_stra = edge->GetNextOpStrategyByPrevOpStrategyWithMiniComm(curr_op->selected_strategy());
+  const auto &candidate_swc = edge->GetNextOpSwcByPrevOpStrategyWithMiniComm(curr_op->selected_strategy());
+  if (candidate_swc == nullptr) {
+    MS_LOG(EXCEPTION) << next_op->name() << "'s candidate swc is null in the edge: " << edge->edge_name();
+  }
+  const auto &next_op_stra = candidate_swc->strategy_ptr;
   if (next_op_stra == nullptr) {
     MS_LOG(EXCEPTION) << next_op->name() << "'s strategy is null in the edge: " << edge->edge_name();
   }
@@ -451,8 +515,6 @@ void CostGraph::ParamPropagation(const OperatorInfoPtr &curr_op, const std::shar
 
 std::vector<std::shared_ptr<CostGraph>> CostGraph::ConstructConnectedComponents(
   std::vector<OperatorInfoPtr> alive_ops) {
-  std::map<OperatorInfoPtr, bool> visited;
-
   for (auto &op : alive_ops) {
     visited[op] = false;
   }
@@ -462,35 +524,33 @@ std::vector<std::shared_ptr<CostGraph>> CostGraph::ConstructConnectedComponents(
     if ((!visited[op]) && op->is_alive()) {
       std::shared_ptr<CostGraph> new_component = std::make_shared<CostGraph>();
       MS_EXCEPTION_IF_NULL(new_component);
-      DFS(op, &visited, new_component);
+      DFS(op, new_component);
       connected_compoents_.push_back(new_component);
     }
   }
   return connected_compoents_;
 }
 
-void CostGraph::DFS(const OperatorInfoPtr &current_op, std::map<OperatorInfoPtr, bool> *visited,
-                    const std::shared_ptr<CostGraph> &component) {
-  MS_EXCEPTION_IF_NULL(visited);
+void CostGraph::DFS(const OperatorInfoPtr &current_op, const std::shared_ptr<CostGraph> &component) {
   MS_EXCEPTION_IF_NULL(component);
-  visited->at(current_op) = true;
+  visited.at(current_op) = true;
   component->AddOperator(current_op);
 
   for (auto &edge : current_op->succ_edges()) {
-    bool bool_test = (visited->find(edge->next_operator()) != visited->end()) &&
-                     (!visited->at(edge->next_operator())) && edge->next_operator()->is_alive();
+    bool bool_test = (visited.find(edge->next_operator()) != visited.end()) && (!visited.at(edge->next_operator())) &&
+                     edge->next_operator()->is_alive();
     if (bool_test) {
       component->AddEdge(current_op, edge->next_operator(), edge);
-      DFS(edge->next_operator(), visited, component);
+      DFS(edge->next_operator(), component);
     }
   }
 
   for (auto &edge : current_op->prev_edges()) {
-    bool bool_test = (visited->find(edge->prev_operator()) != visited->end()) &&
-                     (!visited->at(edge->prev_operator())) && edge->prev_operator()->is_alive();
+    bool bool_test = (visited.find(edge->prev_operator()) != visited.end()) && (!visited.at(edge->prev_operator())) &&
+                     edge->prev_operator()->is_alive();
     if (bool_test) {
       component->AddEdge(edge->prev_operator(), current_op, edge);
-      DFS(edge->prev_operator(), visited, component);
+      DFS(edge->prev_operator(), component);
     }
   }
 }
@@ -1094,164 +1154,6 @@ void CostGraph::CreateSourceEliminationSubCostList(StrategyPtr op1_old_stra, con
       op1_new_clist->push_back(std::move(new_cost));
     }
   }
-}
-
-std::pair<std::vector<EdgePtr>, std::vector<EdgePtr>> UpdateEdgesIncidentToNodes(
-  OperatorInfoPtr op1, std::vector<EdgePtr> *op1_old_succ_edges,
-  std::vector<std::map<CostPtrKey, CostPtrList>> *op1_new_edges_cost, std::vector<EdgePtr> *op1_new_succ_edges,
-  const OperatorInfoPtr op2, std::vector<EdgePtr> *op2_old_succ_edges,
-  std::vector<std::map<CostPtrKey, CostPtrList>> *op2_new_edges_cost, std::vector<EdgePtr> *op2_new_succ_edges) {
-  for (size_t i = 0; i < op1_old_succ_edges->size(); ++i) {
-    auto &new_cost_map = op1_new_edges_cost->at(i);
-    auto ith_edge = op1_old_succ_edges->at(i);
-
-    std::string new_edge_name = op1->name() + OPERATOR_TO_OPERATOR_CONNECTOR + ith_edge->next_operator()->name();
-    std::shared_ptr<Edge> new_edge;
-    if (ith_edge->is_combined()) {
-      std::vector<size_t> output_indexs;
-      std::vector<size_t> input_indexs;
-      output_indexs = ith_edge->prev_op_output_indexs();
-      input_indexs = ith_edge->next_op_input_indexs();
-      new_edge =
-        std::make_shared<Edge>(new_edge_name, op1, ith_edge->next_operator(), output_indexs, input_indexs, true);
-    } else {
-      size_t output_index;
-      size_t input_index;
-      output_index = ith_edge->prev_op_output_index();
-      input_index = ith_edge->next_op_input_index();
-      new_edge =
-        std::make_shared<Edge>(new_edge_name, op1, ith_edge->next_operator(), output_index, input_index, false);
-    }
-    new_edge->SetCostMapAndInputOutput(new_cost_map);
-    // replace the old successive edges with the new ones.
-    op1->ReplaceSuccEdge(ith_edge->next_operator(), new_edge);
-    ith_edge->next_operator()->ReplacePreEdge(op1, new_edge);
-    (void)op1_new_succ_edges->erase(op1_new_succ_edges->cbegin() + SizeToLong(i));
-    (void)op1_new_succ_edges->emplace(op1_new_succ_edges->begin() + SizeToLong(i), new_edge);
-  }
-  for (size_t i = 0; i < op2_old_succ_edges->size(); ++i) {
-    auto &new_cost_map = op2_new_edges_cost->at(i);
-    auto ith_edge = op2_old_succ_edges->at(i);
-    const auto &destination = ith_edge->next_operator();
-
-    std::string new_edge_name = op1->name() + OPERATOR_TO_OPERATOR_CONNECTOR + destination->name();
-    std::shared_ptr<Edge> new_edge;
-    if (ith_edge->is_combined()) {
-      std::vector<size_t> output_indexs, input_indexs;
-      output_indexs = ith_edge->prev_op_output_indexs();
-      input_indexs = ith_edge->next_op_input_indexs();
-      new_edge = std::make_shared<Edge>(new_edge_name, op1, destination, output_indexs, input_indexs, true);
-    } else {
-      size_t output_index;
-      size_t input_index;
-      output_index = ith_edge->prev_op_output_index();
-      input_index = ith_edge->next_op_input_index();
-      new_edge = std::make_shared<Edge>(new_edge_name, op1, destination, output_index, input_index, false);
-    }
-    new_edge->SetCostMapAndInputOutput(new_cost_map);
-    // replace the old successive edges with the new ones.
-    destination->ReplacePreEdge(op2, new_edge);
-    op1->AddSuccEdge(new_edge);
-    (void)op2_new_succ_edges->erase(op2_new_succ_edges->cbegin() + SizeToLong(i));
-    (void)op2_new_succ_edges->emplace(op2_new_succ_edges->begin() + SizeToLong(i), new_edge);
-  }
-  return std::make_pair(*op1_new_succ_edges, *op2_new_succ_edges);
-}
-
-std::pair<std::vector<std::shared_ptr<Edge>>, std::vector<std::shared_ptr<Edge>>> CostGraph::EliminationSources(
-  const OperatorInfoPtr op1, const OperatorInfoPtr op2) const {
-  MS_EXCEPTION_IF_NULL(op1);
-  MS_EXCEPTION_IF_NULL(op2);
-  MS_LOG(INFO) << "Now source eliminating node: " << op2->name() << " to node: " << op1->name();
-
-  auto op1_old_succ_edges = op1->GetAliveSuccEdges();
-  std::vector<std::map<StrategyPtr, std::vector<std::pair<StrategyPtr, CostPtrList>>>> op1_edges_reorganised_cost(
-    op1_old_succ_edges.size());
-  std::vector<std::map<CostPtrKey, CostPtrList>> op1_new_edges_cost(op1_old_succ_edges.size());
-  std::vector<std::shared_ptr<Edge>> op1_new_succ_edges(op1_old_succ_edges.size());
-
-  auto op2_old_succ_edges = op2->GetAliveSuccEdges();
-  std::vector<std::map<StrategyPtr, std::vector<std::pair<StrategyPtr, CostPtrList>>>> op2_edges_reorganised_cost(
-    op2_old_succ_edges.size());
-  std::vector<std::map<CostPtrKey, CostPtrList>> op2_new_edges_cost(op2_old_succ_edges.size());
-  std::vector<std::shared_ptr<Edge>> op2_new_succ_edges(op2_old_succ_edges.size());
-
-  // Construct cost_map for the data_structure of 'op1_edges_reorganised_cost' and 'op2_edges_reorganised_cost'
-  for (size_t i = 0; i < op1_old_succ_edges.size(); ++i) {
-    const auto &op1_cost_map = op1_old_succ_edges[i]->GetCostMap();
-    std::map<StrategyPtr, std::vector<std::pair<StrategyPtr, CostPtrList>>> from_tocost;
-    for (const auto &key_value : op1_cost_map) {
-      const auto &from_to_strategies = key_value.first;
-      const auto &costlist = key_value.second;
-      from_tocost[from_to_strategies.first].push_back(std::make_pair(from_to_strategies.second, costlist));
-    }
-    op1_edges_reorganised_cost[i] = from_tocost;
-  }
-
-  for (size_t i = 0; i < op2_old_succ_edges.size(); ++i) {
-    const auto &op2_cost_map = op2_old_succ_edges[i]->GetCostMap();
-    std::map<StrategyPtr, std::vector<std::pair<StrategyPtr, CostPtrList>>> from_tocost;
-    for (const auto &key_value : op2_cost_map) {
-      const auto &from_to_strategies = key_value.first;
-      const auto &costlist = key_value.second;
-      from_tocost[from_to_strategies.first].push_back(std::make_pair(from_to_strategies.second, costlist));
-    }
-    op2_edges_reorganised_cost[i] = from_tocost;
-  }
-
-  // Merge op2 into op1
-  const auto &op1_old_stra_cost = op1->GetStrategyCost();
-  const auto &op2_old_stra_cost = op2->GetStrategyCost();
-  std::vector<std::shared_ptr<StrategyWithCost>> op1_new_stra_cost;
-
-  for (auto &op1_stra_cost : op1_old_stra_cost) {
-    auto op1_old_stra = op1_stra_cost->strategy_ptr;
-    auto op1_old_costlist = op1_stra_cost->cost_list;
-
-    for (auto &op2_stra_cost : op2_old_stra_cost) {
-      auto op2_stra = op2_stra_cost->strategy_ptr;
-      auto op2_costlist = op2_stra_cost->cost_list;
-
-      StrategyPtr op1_new_stra = std::make_shared<Strategy>(*op1_old_stra);
-      op1_new_stra->CoverStrategy(op2_stra);
-      CostPtrList op1_new_costlist;
-      // Calculate new cost for 'op1_new_costlist'
-      CreateSourceEliminationSubCostList(op1_old_stra, op1_old_costlist, op2_stra, op2_costlist, &op1_new_costlist);
-      std::shared_ptr<StrategyWithCost> swc = std::make_shared<StrategyWithCost>(op1_new_stra, op1_new_costlist);
-      op1_new_stra_cost.push_back(swc);
-
-      // Set cost for new successive edges of op1 and op2
-      for (size_t i = 0; i < op1_old_succ_edges.size(); ++i) {
-        auto &from_tocost = op1_edges_reorganised_cost[i];
-        auto &to_cost = from_tocost[op1_old_stra];
-        auto &new_cost_map = op1_new_edges_cost[i];
-        for (auto &stra_costlit : to_cost) {
-          auto &to_strategy = stra_costlit.first;
-          auto &edge_costlist = stra_costlit.second;
-          CostPtrKey new_key = {op1_new_stra, to_strategy};
-          new_cost_map[new_key] = edge_costlist;
-        }
-      }
-      for (size_t i = 0; i < op2_old_succ_edges.size(); ++i) {
-        auto &from_tocost = op2_edges_reorganised_cost[i];
-        auto &to_cost = from_tocost[op2_stra];
-        auto &new_cost_map = op2_new_edges_cost[i];
-        for (auto &stra_costlist : to_cost) {
-          auto &to_strategy = stra_costlist.first;
-          auto &edge_costlist = stra_costlist.second;
-          CostPtrKey new_key = {op1_new_stra, to_strategy};
-          new_cost_map[new_key] = edge_costlist;
-        }
-      }
-    }
-  }
-  op1->SetStrategyCost(op1_new_stra_cost);
-  op2->SetNotAlive();
-
-  // Update the edges incident to op1, and edges incident to op2
-  MS_LOG(INFO) << "Source eliminating node: " << op2->name() << " to node: " << op1->name() + " succeeded.";
-  return UpdateEdgesIncidentToNodes(op1, &op1_old_succ_edges, &op1_new_edges_cost, &op1_new_succ_edges, op2,
-                                    &op2_old_succ_edges, &op2_new_edges_cost, &op2_new_succ_edges);
 }
 
 // Check the graph whether a TriangleElimination can be performed
@@ -1921,6 +1823,10 @@ Status CostGraph::InitSelectedStrategy() {
     if (op->IsReshape()) {
       continue;
     }
+    if (op->is_config_by_layout()) {
+      op->set_auto_parallel(false);
+      continue;
+    }
     StrategyPtr out_strategy = nullptr;
     if (op->out_strategy() != nullptr) {
       out_strategy = op->out_strategy();
@@ -1946,16 +1852,14 @@ Status CostGraph::ComputeOpsAndEdgesParameterInvolved() {
   return SUCCESS;
 }
 
-void CostGraph::DFSForTopoOrder(const OperatorInfoPtr &current_op, std::map<OperatorInfoPtr, bool> *visited,
-                                std::vector<OperatorInfoPtr> *topo_order) {
+void CostGraph::DFSForTopoOrder(const OperatorInfoPtr &current_op, std::vector<OperatorInfoPtr> *topo_order) {
   MS_EXCEPTION_IF_NULL(current_op);
-  MS_EXCEPTION_IF_NULL(visited);
   MS_EXCEPTION_IF_NULL(topo_order);
 
-  visited->at(current_op) = true;
+  visited.at(current_op) = true;
   for (const auto &s_edge : current_op->succ_edges()) {
-    if (!visited->at(s_edge->next_operator())) {
-      DFSForTopoOrder(s_edge->next_operator(), visited, topo_order);
+    if (!visited.at(s_edge->next_operator())) {
+      DFSForTopoOrder(s_edge->next_operator(), topo_order);
     }
   }
   topo_order->push_back(current_op);
@@ -1963,14 +1867,13 @@ void CostGraph::DFSForTopoOrder(const OperatorInfoPtr &current_op, std::map<Oper
 
 // Compute a topological order of the costgraph
 void CostGraph::TopologyOrder(std::vector<OperatorInfoPtr> *topo_order) {
-  std::map<OperatorInfoPtr, bool> visited;
   for (auto &op : ops_) {
     visited[op] = false;
   }
 
   for (auto &op : ops_) {
     if (!visited[op]) {
-      DFSForTopoOrder(op, &visited, topo_order);
+      DFSForTopoOrder(op, topo_order);
     }
   }
 }
@@ -2223,7 +2126,9 @@ void CostGraph::CheckApproximateCostGraphEdges() {
 }
 
 bool CostGraph::FindReshapeCostInCache(const TensorLayout &from, const TensorLayout &to, CostPtr *result) {
-  auto key = std::make_pair(from, to);
+  auto key_from = std::make_pair(from.device_arrangement(), from.tensor_map());
+  auto key_to = std::make_pair(to.device_arrangement(), to.tensor_map());
+  auto key = std::make_pair(key_from, key_to);
   auto iter = reshape_cost_cache_.find(key);
   if (iter != reshape_cost_cache_.end()) {
     *result = iter->second;
@@ -2233,60 +2138,31 @@ bool CostGraph::FindReshapeCostInCache(const TensorLayout &from, const TensorLay
 }
 
 void CostGraph::SaveReshapeCostToCache(const TensorLayout &from, const TensorLayout &to, const CostPtr &result) {
-  auto key = std::make_pair(from, to);
+  auto key_from = std::make_pair(from.device_arrangement(), from.tensor_map());
+  auto key_to = std::make_pair(to.device_arrangement(), to.tensor_map());
+  auto key = std::make_pair(key_from, key_to);
   reshape_cost_cache_.emplace(key, result);
 }
 
-bool CostGraph::CheckCacheEqual(const std::vector<std::pair<StrategyPtr, TensorLayout>> &pairs_a,
-                                const std::vector<std::pair<StrategyPtr, TensorLayout>> &pairs_b) const {
-  if (pairs_a.size() != pairs_b.size()) {
-    return false;
-  }
-  for (size_t i = 0; i < pairs_a.size(); i++) {
-    std::pair<StrategyPtr, TensorLayout> pair_a = pairs_a[i];
-    std::pair<StrategyPtr, TensorLayout> pair_b = pairs_b[i];
-    if (!pair_a.first->IsEqual(pair_b.first)) {
-      return false;
-    }
-    if (pair_a.second != pair_b.second) {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool CostGraph::FindCostMapInCache(const std::string &edge_name,
-                                   const std::vector<std::pair<StrategyPtr, TensorLayout>> &pre_op_output,
-                                   const std::vector<std::pair<StrategyPtr, TensorLayout>> &next_op_input,
-                                   std::map<CostPtrKey, CostPtrList> *cost_map) {
-  auto key = edge_name;
+bool CostGraph::FindEdgeCostPtrInCache(const TensorLayout &prev_layout, const TensorLayout &next_layout,
+                                       CostPtrList *cost) {
+  auto key_prev = std::make_pair(prev_layout.device_arrangement(), prev_layout.tensor_map());
+  auto key_next = std::make_pair(next_layout.device_arrangement(), next_layout.tensor_map());
+  auto key = std::make_pair(key_prev, key_next);
   auto iter = cost_map_cache_.find(key);
-  if (iter == cost_map_cache_.end()) {
-    return false;
-  }
-  for (auto &layout_cost_map : iter->second) {
-    auto layout_cost_map_key = layout_cost_map.first;
-    auto layout_cost_map_value = layout_cost_map.second;
-    if (CheckCacheEqual(layout_cost_map_key.first, pre_op_output) &&
-        CheckCacheEqual(layout_cost_map_key.second, next_op_input)) {
-      *cost_map = layout_cost_map_value;
-      return true;
-    }
+  if (iter != cost_map_cache_.end()) {
+    *cost = iter->second;
+    return true;
   }
   return false;
 }
 
-void CostGraph::SaveCostMapToCache(const std::string &edge_name,
-                                   const std::vector<std::pair<StrategyPtr, TensorLayout>> &pre_op_output,
-                                   const std::vector<std::pair<StrategyPtr, TensorLayout>> &next_op_input,
-                                   const std::map<CostPtrKey, CostPtrList> &cost_map) {
-  std::string key = edge_name;
-  auto iter = cost_map_cache_.find(key);
-  if (iter == cost_map_cache_.end()) {
-    cost_map_cache_[key] = {std::make_pair(std::make_pair(pre_op_output, next_op_input), cost_map)};
-  } else {
-    (void)iter->second.emplace_back(std::make_pair(std::make_pair(pre_op_output, next_op_input), cost_map));
-  }
+void CostGraph::SaveEdgeCostPtrToCache(const TensorLayout &prev_layout, const TensorLayout &next_layout,
+                                       const CostPtrList &cost) {
+  auto key_prev = std::make_pair(prev_layout.device_arrangement(), prev_layout.tensor_map());
+  auto key_next = std::make_pair(next_layout.device_arrangement(), next_layout.tensor_map());
+  auto key = std::make_pair(key_prev, key_next);
+  cost_map_cache_.emplace(key, cost);
 }
 }  // namespace parallel
 }  // namespace mindspore

@@ -332,32 +332,32 @@ void SetLayoutToOperater(const OperatorInfoPtr &operator_info, const mindspore::
     MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure:operator " << operator_info->name()
                                        << " extract configured layout failed";
   }
+  CheckStrategyUsedDevices(operator_info);
+  operator_info->set_config_by_layout(true);
+
   Strategies in_strategy;
   (void)std::transform(in_tensor_layouts.begin(), in_tensor_layouts.end(), std::back_inserter(in_strategy),
                        [](const auto &layout) { return layout->get_in_layout_strategy(); });
   MS_LOG(INFO) << "Converted strategies from in_tensor_layouts: " << in_strategy;
   StrategyPtr in_strategy_ptr = NewStrategy(0, in_strategy);
-  operator_info->set_strategy(in_strategy_ptr);
-  // Set cost for this configured strategy
-  if (operator_info->SetCostUnderStrategy(in_strategy_ptr) != SUCCESS) {
-    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure: operator " << operator_info->name()
-                                       << " SetCostUnderStrategy failed";
-  }
-  CheckStrategyUsedDevices(operator_info);
-  operator_info->set_config_by_layout(true);
-  (void)configured_stra_ops_.emplace(operator_info, in_strategy_ptr);
+  StrategyPtr out_strategy_ptr = nullptr;
   if (OutLayoutFound(attrs)) {
     Strategies out_strategy;
     (void)std::transform(out_tensor_layouts.begin(), out_tensor_layouts.end(), std::back_inserter(out_strategy),
                          [](const auto &layout) { return layout->get_out_layout_strategy(); });
     MS_LOG(INFO) << "Converted strategies from out_tensor_layouts: " << out_strategy;
-    StrategyPtr out_strategy_ptr = NewStrategy(0, out_strategy);
+    out_strategy_ptr = NewStrategy(0, out_strategy);
     operator_info->set_out_strategy(out_strategy_ptr);
   }
+  // Set cost for this configured strategy
+  if (operator_info->SetCostUnderLayout(in_strategy_ptr, out_strategy_ptr, in_tensor_layouts, out_tensor_layouts) !=
+      SUCCESS) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure: operator " << operator_info->name() << " SetCostUnderLayout failed";
+  }
+  (void)configured_stra_ops_.emplace(operator_info, in_strategy_ptr);
 }
 
-void SetOutStrategyToOperator(const OperatorInfoPtr &operator_info, const PrimitivePtr &prim,
-                              mindspore::HashMap<std::string, ValuePtr> attrs) {
+void SetOutStrategyToOperator(const OperatorInfoPtr &operator_info, mindspore::HashMap<std::string, ValuePtr> attrs) {
   // In this case, when attrs has out_strategy, the out_strategy will be set to operator
   StrategyPtr strategyPtr;
   if (!OutStrategyFound(attrs)) {
@@ -492,7 +492,7 @@ OperatorInfoPtr CreateTheOperatorInfo(const PrimitivePtr &prim, const CNodePtr &
     }
     // If the user input strategy (tuple-like), set the strategy to the operator_info.
     if (OutStrategyFound(attrs)) {
-      SetOutStrategyToOperator(operator_info, prim, attrs);
+      SetOutStrategyToOperator(operator_info, attrs);
     }
     if ((StrategyFound(attrs) && prim->name() != CAST) || load_strategy_from_ckpt) {
       SetStrategyToOperator(operator_info, prim, attrs, is_last_nodes, stra_map, strategy_key_name);
@@ -785,7 +785,11 @@ void PreProcessPreCastForSP(const OperatorInfoPtr &prev_op_info, const OperatorI
     if (edge_ptr->InitEdgeCost() != SUCCESS) {
       MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Edge cost initialization failed";
     }
-    const auto cast_stra = edge_ptr->GetPrevOpStrategyByNextOpStrategyWithMiniComm(next_op_stra);
+    const auto &candidate_swc = edge_ptr->GetPrevOpSwcByNextOpStrategyWithMiniComm(next_op_stra);
+    if (candidate_swc == nullptr) {
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "No available candidate swc for: " << prev_op_info->name();
+    }
+    const auto cast_stra = candidate_swc->strategy_ptr;
     if (cast_stra == nullptr) {
       MS_LOG_WITH_NODE(EXCEPTION, cnode) << "No available strategy for: " << prev_op_info->name();
     }
@@ -1160,9 +1164,9 @@ void ReshapeCostCompute(const std::vector<AnfNodePtr> &all_nodes) {
       auto reshape_info1 = std::dynamic_pointer_cast<ReshapeInfo>(operator_info);
       reshape_info1->SetCostForReshapeWithParameter();
       pre_operator_info = reshape_info1;
-      pre_stra_costs = reshape_info1->strategy_cost();
+      pre_stra_costs = reshape_info1->GetStrategyCost();
     } else {
-      pre_stra_costs = pre_operator_info->strategy_cost();
+      pre_stra_costs = pre_operator_info->GetStrategyCost();
     }
     // get next node's strategy_cost_
     std::vector<std::pair<OperatorInfoPtr, int64_t>> next_ops_index;
@@ -1183,7 +1187,7 @@ void ReshapeCostCompute(const std::vector<AnfNodePtr> &all_nodes) {
         if (ParallelContext::GetInstance()->strategy_search_mode() == kRecursiveProgramming) {
           ConstructCNodeCostGraphEdges(op_index.first->cnode(), all_nodes);
         }
-        auto op_cost = op_index.first->strategy_cost();
+        auto op_cost = op_index.first->GetStrategyCost();
         (void)next_costs_index.emplace_back(std::make_pair(op_cost, op_index.second));
       }
       reshape_info->set_next_operator_name(next_ops_index[0].first->name());
@@ -1297,11 +1301,6 @@ Status ParallelStrategySearch(const std::vector<AnfNodePtr> &all_nodes, const Fu
     // Label the cnodes of the op if they were already created
     for (const auto &cnode : op->cnodes()) {
       cnode->AddAttr(OP_INFO_CREATED, MakeValue(true));
-    }
-    // Clear strategy if set strategy using layout
-    if (op->is_config_by_layout()) {
-      op->clear_strategy();
-      op->clear_out_strategy();
     }
   }
   // Remove some operatorInfo from the CNODEs
