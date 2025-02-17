@@ -245,72 +245,6 @@ void MemSwapScheduler::GetRealParameters(const KernelGraphPtr &graph, const Cont
   real_parameters_[graph->graph_id()].swap(real_parameters);
 }
 
-void MemSwapScheduler::AddSwappableRootParameter(
-  const mindspore::runtime::GraphCompilerInfo &graph_compiler_info) const {
-  DeviceContext *device_context = nullptr;
-  std::shared_ptr<device::SwapManager> swap_manager = nullptr;
-  for (const auto &context : graph_compiler_info.device_contexts_) {
-    if (context == nullptr) {
-      continue;
-    }
-    if (context->device_res_manager_ == nullptr) {
-      continue;
-    }
-    swap_manager = context->device_res_manager_->swap_manager();
-    if (swap_manager != nullptr) {
-      device_context = context;
-      break;
-    }
-  }
-  if (swap_manager == nullptr) {
-    return;
-  }
-  MS_EXCEPTION_IF_NULL(device_context);
-  for (const auto &parameter : graph_compiler_info.origin_parameters_order_) {
-    const auto &device_tensors = DeviceTensorStore::GetInstance().Fetch(parameter.get());
-    if (device_tensors.empty()) {
-      MS_LOG(INFO) << "Device tensor store is empty for parameter " << parameter->DebugString();
-      continue;
-    }
-    for (const auto &device_tensor : device_tensors) {
-      if (device_tensor != nullptr && device_tensor->GetDeviceType() == device_context->GetDeviceType()) {
-        swap_manager->AddSwappableTensor(device_tensor);
-      }
-    }
-  }
-}
-
-void MemSwapScheduler::AddSwappableTensors(const mindspore::device::DeviceContext *device_context,
-                                           const std::shared_ptr<device::SwapStrategy> &strategy,
-                                           const KernelGraphPtr &graph) const {
-  MS_EXCEPTION_IF_NULL(device_context);
-  MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-  const auto &swap_manager = device_context->device_res_manager_->swap_manager();
-  MS_EXCEPTION_IF_NULL(swap_manager);
-  MS_EXCEPTION_IF_NULL(strategy);
-  MS_EXCEPTION_IF_NULL(graph);
-  const auto &tensor_infos = strategy->tensor_infos_;
-  const auto &ref_map = graph->GetRefMap();
-  for (const auto &tensor_info : tensor_infos) {
-    MS_EXCEPTION_IF_NULL(tensor_info);
-    if (tensor_info->is_workspace_ || tensor_info->node_ == nullptr) {
-      continue;
-    }
-    // Continuous memory are not swappable.
-    if (tensor_info->is_fused_ || !tensor_info->fused_tensor_ids_.empty()) {
-      continue;
-    }
-    const auto &anf_with_out_index = std::make_pair(tensor_info->node_, tensor_info->index_);
-    const auto &device_address = AnfAlgo::GetMutableOutputAddr(tensor_info->node_, tensor_info->index_, false);
-    MS_EXCEPTION_IF_NULL(device_address);
-    if (ref_map.find(anf_with_out_index) != ref_map.end()) {
-      device_address->set_swappable(false);
-    } else {
-      swap_manager->AddSwappableTensor(device_address);
-    }
-  }
-}
-
 void MemSwapScheduler::BuildSwapActorForGraph(const KernelGraphPtr &graph, const ControlNodeParserPtr &parser,
                                               const DeviceContext *device_context,
                                               std::vector<MemSwapActorPtr> *actors) {
@@ -327,7 +261,6 @@ void MemSwapScheduler::BuildSwapActorForGraph(const KernelGraphPtr &graph, const
   MS_EXCEPTION_IF_NULL(swap_strategy);
   MS_LOG(INFO) << "Graph " << graph->graph_id() << ": " << swap_strategy->GetStatisticInfo();
   graph_strategy_map_[graph->graph_id()] = swap_strategy;
-  AddSwappableTensors(device_context, swap_strategy, graph);
 
   if (swap_strategy->actions_.empty()) {
     return;
@@ -396,7 +329,6 @@ std::vector<std::vector<MemSwapActorPtr>> MemSwapScheduler::Build(const GraphCom
     BuildSwapActorForGraph(graph, graph_compiler_info.control_node_parser_, device_context, &actors);
     swap_actors.emplace_back(actors);
   }
-  AddSwappableRootParameter(graph_compiler_info);
   return swap_actors;
 }
 

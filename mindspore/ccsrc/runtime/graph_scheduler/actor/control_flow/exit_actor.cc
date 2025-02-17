@@ -366,10 +366,6 @@ void ExitActor::CopyDeviceAddress(OpContext<DeviceTensor> *const context) {
                   << " shape:"
                   << (kernel_tensor->GetShape() == nullptr ? "null" : kernel_tensor->GetShape()->ToString())
                   << (kernel_tensor->GetType() == nullptr ? "null" : kernel_tensor->GetType()->ToString());
-    const auto &swap_manager = device_context->device_res_manager_->swap_manager();
-    if (swap_manager != nullptr) {
-      swap_manager->AddSwappableTensor(new_device_tensor);
-    }
     (void)created_device_tensors_.emplace_back(new_device_tensor);
     (void)new_device_tensors.emplace_back(new_device_tensor.get());
     new_device_tensor->set_need_sync_user_data(input_device_tensor->need_sync_user_data());

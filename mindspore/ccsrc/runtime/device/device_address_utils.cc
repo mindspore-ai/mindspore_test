@@ -24,6 +24,7 @@
 #include "ops/op_def.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "ir/tensor.h"
 #include "include/backend/device_address.h"
 #include "include/backend/kernel_info.h"
@@ -565,10 +566,11 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(kernel));
       MS_LOG(DEBUG) << "Kernel tensor created without set stream id, but set after device address created.";
       if (is_move_to) {
-        kernel_tensor->set_heterogeneous_info(std::make_shared<kernel::HeterogeneousInfo>());
         if (move_to == kToCpu) {
+          kernel_tensor->set_heterogeneous_info(std::make_shared<kernel::HeterogeneousInfo>());
           kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = kernel::NeedAllocateHeteRes::NeedHostMem;
         } else if (move_to == kToDisk) {
+          kernel_tensor->set_heterogeneous_info(std::make_shared<kernel::HeterogeneousInfo>());
           kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = kernel::NeedAllocateHeteRes::NeedDiskFile;
         }
       }

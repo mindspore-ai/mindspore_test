@@ -150,6 +150,9 @@ class AscendDeviceResManager : public DeviceResManager {
   std::vector<std::pair<device::DeviceMemPtr, size_t>> GetMemUceAddr() override;
 
  private:
+  bool AllocateForHete(DeviceAddress *const &address, mindspore::kernel::HeterogeneousInfoPtr hete_info) const;
+  void FreeForHete(mindspore::kernel::HeterogeneousInfoPtr hete_info) const;
+
   KernelRuntime *runtime_instance_ = nullptr;
   // Only used in graph_mode with MS_DISABLE_REF_MODE, delete it when delete MS_DISABLE_REF_MODE
   bool is_use_cpu_memory_ = false;
