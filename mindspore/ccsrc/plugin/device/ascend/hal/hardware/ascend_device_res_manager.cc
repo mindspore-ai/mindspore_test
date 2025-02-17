@@ -141,10 +141,10 @@ bool AscendDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint3
     return false;
   }
 
-  if (!BindDeviceToCurrentThread(false)) {
-    MS_LOG(ERROR) << "Bind context to current thread failed";
-    return false;
-  }
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  AscendHalManager::GetInstance().SetContext(device_id);
 
   void *device_ptr = nullptr;
 
@@ -198,10 +198,10 @@ bool AscendDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint3
 }
 
 void *AscendDeviceResManager::AllocateMemory(size_t size, uint32_t stream_id) const {
-  if (!BindDeviceToCurrentThread(false)) {
-    MS_LOG(EXCEPTION) << "Bind context to current thread failed";
-    return nullptr;
-  }
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  AscendHalManager::GetInstance().SetContext(device_id);
 
   MS_EXCEPTION_IF_NULL(mem_manager_);
   if (swap_manager_ != nullptr) {
@@ -211,10 +211,10 @@ void *AscendDeviceResManager::AllocateMemory(size_t size, uint32_t stream_id) co
 }
 
 void *AscendDeviceResManager::AllocateStaticMemory(size_t size, uint32_t stream_id) const {
-  if (!BindDeviceToCurrentThread(false)) {
-    MS_LOG(EXCEPTION) << "Bind context to current thread failed";
-    return nullptr;
-  }
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  AscendHalManager::GetInstance().SetContext(device_id);
 
   if (swap_manager_ != nullptr) {
     return swap_manager_->AllocDeviceMemory(size, stream_id);
@@ -346,10 +346,10 @@ void AscendDeviceResManager::SwapOut(const void *device_ptr, void *host_ptr, siz
 
 std::vector<void *> AscendDeviceResManager::AllocateContinuousMemory(const std::vector<size_t> &size_list,
                                                                      uint32_t stream_id) const {
-  if (!BindDeviceToCurrentThread(false)) {
-    MS_LOG(EXCEPTION) << "Bind context to current thread failed";
-    return {};
-  }
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  AscendHalManager::GetInstance().SetContext(device_id);
 
   MS_EXCEPTION_IF_NULL(mem_manager_);
   std::vector<size_t> aligned_size_list;
@@ -541,10 +541,10 @@ bool AscendDeviceResManager::SyncStream(size_t stream_id) const {
 }
 
 bool AscendDeviceResManager::SyncAllStreams() const {
-  if (!BindDeviceToCurrentThread(false)) {
-    MS_LOG(ERROR) << "Bind context to current thread failed";
-    return false;
-  }
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  AscendHalManager::GetInstance().SetContext(device_id);
 
   return AscendStreamMng::GetInstance().SyncAllStreams();
 }
