@@ -12,7 +12,7 @@ mindspore.nn.probability.distribution.Categorical
         - **dtype** (mindspore.dtype) - 事件样例的类型。默认值： ``mstype.int32`` 。
         - **name** (str) - 分布的名称。默认值： ``Categorical`` 。
 
-    .. note:: 
+    .. note::
         `probs` 的秩必须至少为1，值是合适的概率，并且总和为1。
 
     异常：

@@ -18,7 +18,7 @@ mindspore.nn.probability.distribution.Gumbel
         - **dtype** (mindspore.dtype) - 分布类型。默认值： ``mstype.float32`` 。
         - **name** (str) - 分布的名称。默认值： ``'Gumbel'`` 。
 
-    .. note:: 
+    .. note::
         - `scale` 必须大于零。
         - `dtype` 必须是浮点类型，因为Gumbel分布是连续的。
         - GPU后端不支持 `kl_loss` 和 `cross_entropy` 。

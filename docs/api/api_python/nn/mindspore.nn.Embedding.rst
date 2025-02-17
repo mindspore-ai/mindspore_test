@@ -7,7 +7,7 @@ mindspore.nn.Embedding
 
     用于存储词向量并使用索引进行检索，根据输入Tensor中的id，从 `embedding_table` 中查询对应的embedding向量。当输入为id组成的序列时，输出为对应embedding向量构成的矩阵。
 
-    .. note:: 
+    .. note::
         当 `use_one_hot` 等于True时，x的类型必须是mindspore.int32。
 
     参数：

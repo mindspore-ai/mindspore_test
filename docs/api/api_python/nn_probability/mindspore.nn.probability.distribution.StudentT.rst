@@ -23,7 +23,7 @@ mindspore.nn.probability.distribution.StudentT
         - **dtype** (mindspore.dtype, 可选) - 事件样例的类型。默认值： ``mstype.float32`` 。
         - **name** (str, 可选) - 分布的名称。默认值： ``'StudentT'`` 。
 
-    .. note:: 
+    .. note::
         - `df` 必须大于0。
         - `sd` 必须大于0。
         - `dtype` 必须是float，因为StudentT分布是连续的。

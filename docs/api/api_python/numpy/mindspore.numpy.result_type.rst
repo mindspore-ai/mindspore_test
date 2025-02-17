@@ -5,7 +5,7 @@ mindspore.numpy.result_type
 
     返回对入参使用类型提升规则所得的类型。
 
-    .. note:: 
+    .. note::
         提升规则与原版 NumPy 略有不同，更类似于 jax，因为更倾向于 32 位而不是 64 位数据类型。复数类型不支持。
 
     参数：

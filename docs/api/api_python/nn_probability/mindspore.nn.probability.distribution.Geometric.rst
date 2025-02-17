@@ -14,7 +14,7 @@ mindspore.nn.probability.distribution.Geometric
         - **dtype** (mindspore.dtype) - 事件样例的类型。默认值： ``mstype.int32`` 。
         - **name** (str) - 分布的名称。默认值： ``'Geometric'`` 。
 
-    .. note:: 
+    .. note::
         `probs` 必须是合适的概率（0<p<1）。`dist_spec_args` 是 `probs`。
 
 

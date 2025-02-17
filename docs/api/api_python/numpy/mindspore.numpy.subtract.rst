@@ -5,7 +5,7 @@ mindspore.numpy.subtract
 
     逐元素减去给定参数。
 
-    .. note:: 
+    .. note::
         不支持NumPy参数 `out` 、 `where` 、 `casting` 、 `order` 、 `subok` 、 `signature` 、 `extobj` 。
 
     参数：

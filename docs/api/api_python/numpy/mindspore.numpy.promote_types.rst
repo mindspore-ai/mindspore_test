@@ -5,7 +5,7 @@ mindspore.numpy.promote_types
 
     返回 `type1` 与 `type2` 都可以安全转换的最小位数和最小标量类型的数据类型。
     
-    .. note:: 
+    .. note::
         类型提升规则与原版NumPy略有不同，更类似于jax，因为其更倾向于32位而非64位数据类型。
 
     参数：

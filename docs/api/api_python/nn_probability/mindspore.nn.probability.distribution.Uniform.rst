@@ -18,7 +18,7 @@ mindspore.nn.probability.distribution.Uniform
         - **dtype** (mindspore.dtype) - 事件样例的类型。默认值： ``mstype.float32`` 。
         - **name** (str) - 分布的名称。默认值： ``'Uniform'`` 。
 
-    .. note:: 
+    .. note::
         - `low` 必须小于 `high` 。
         - `dtype` 必须是float类型，因为均匀分布是连续的。
 

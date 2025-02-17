@@ -5,7 +5,7 @@ mindspore.numpy.rint
 
     将数组的元素四舍五入到最接近的整数。
 
-    .. note:: 
+    .. note::
         不支持NumPy参数 `out` 、 `where` 、 `casting` 、 `order` 、 `subok` 、 `signature` 、 `extobj` 。
 
     参数：

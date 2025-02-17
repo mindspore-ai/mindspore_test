@@ -19,7 +19,7 @@ mindspore.nn.probability.distribution.LogNormal
         - **dtype** (mindspore.dtype) - 分布类型。默认值： ``mstype.float32`` 。
         - **name** (str) - 分布的名称。默认值： ``'LogNormal'`` 。
 
-    .. note:: 
+    .. note::
         - `scale` 必须大于零。
         - `dtype` 必须是float，因为对数正态分布是连续的。
 
