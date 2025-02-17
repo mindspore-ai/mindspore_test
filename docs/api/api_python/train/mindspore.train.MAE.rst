@@ -18,7 +18,7 @@ mindspore.train.MAE
 
     .. py:method:: eval()
 
-        计算平均绝对差（MAE）。
+        计算平均绝对误差（MAE）。
 
         返回：
             numpy.float64，计算的MAE的结果。
