@@ -1102,6 +1102,7 @@ class UpsamplingNearest2d(Cell):
     def construct(self, input):
         return upsample_nearest2d_op(input, self.size, self.scale_factor)
 
+
 class UpsamplingBilinear2d(Cell):
     r"""
     Performs upsampling with trilinear interpolation across 2dims for 4dim input Tensor.
