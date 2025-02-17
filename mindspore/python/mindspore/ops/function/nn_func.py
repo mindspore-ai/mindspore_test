@@ -45,6 +45,7 @@ from mindspore.ops.auto_generate import log_softmax, dense, prelu, celu, fast_ge
 from mindspore.ops.auto_generate import relu_op, inplace_relu_op
 from mindspore.ops.auto_generate import group_norm_op, rms_norm, add_rms_norm, layer_norm_ext_op, batch_norm_ext_op,\
     mse_loss_ext
+# 1
 from mindspore.ops.auto_generate import (reflection_pad_1d_op, reflection_pad_2d_op, add_layernorm_v2_op,
                                          reflection_pad_3d_op,  # pylint: disable=W0611
                                          replication_pad_1d_op, replication_pad_2d_op, replication_pad_3d_op,
@@ -53,6 +54,44 @@ from mindspore.ops.auto_generate import (reflection_pad_1d_op, reflection_pad_2d
                                          upsample_linear1d_op, upsample_bilinear2d_op, upsample_bicubic2d_op,
                                          upsample_trilinear3d_impl, fill_scalar_op, floor_op, nllloss_2d_op,
                                          masked_fill_op, masked_select, ones, flatten_ext, conv_transpose2d)
+# 2
+
+# 3
+
+# 4
+
+# 5
+
+# 6
+
+# 7
+
+# 8
+
+# 9
+
+# 10
+
+# 11
+
+# 12
+
+# 13
+
+# 14
+
+# 15
+
+# 16
+
+# 17
+
+# 18
+
+# 19
+
+# 20
+
 from mindspore.ops.auto_generate.gen_ops_prim import embedding_op, MaxPoolWithIndices, \
     PromptFlashAttention, MaxPoolWithMask
 from mindspore.ops.auto_generate.gen_ops_prim import conv3d_ext_op, conv3d_padding_op, conv2d_ext_op, conv2d_padding_op, conv1d_ext_op, conv1d_padding_op

@@ -32,8 +32,47 @@ from mindspore.ops.operations._inner_ops import DynamicBroadcastTo
 from mindspore.ops.operations._sequence_ops import TupleToTensor
 from mindspore.ops.composite.multitype_ops import _constexpr_utils as const_utils
 from mindspore.ops.operations._sequence_ops import TensorToList
+# 1
 from mindspore.ops.auto_generate import OnesLikeExt, ZerosLikeExt, FillScalar, FillTensor, Arange, Chunk, UniqueDim, \
     Unique2, SortExt, NonZero, NonZeroExt, Scatter, ScatterValue, NewOnes, NewZeros
+# 2
+
+# 3
+
+# 4
+
+# 5
+
+# 6
+
+# 7
+
+# 8
+
+# 9
+
+# 10
+
+# 11
+
+# 12
+
+# 13
+
+# 14
+
+# 15
+
+# 16
+
+# 17
+
+# 18
+
+# 19
+
+# 20
+
 from mindspore.ops.auto_generate.gen_ops_prim import SplitTensor, Meshgrid
 from mindspore.ops.auto_generate.gen_ops_prim import SplitWithSize, RepeatInterleaveInt, RepeatInterleaveTensor
 from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostSearchSortedPrim, meshgrid_impl, concat_impl, \
