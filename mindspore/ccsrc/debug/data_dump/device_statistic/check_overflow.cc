@@ -18,12 +18,16 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <map>
+#include <set>
 #include "debug/debugger/debugger_utils.h"
 #include "include/common/debug/common.h"
 #include "debug/data_dump/device_statistic/kernel_factory.h"
 
 namespace mindspore {
 namespace datadump {
+
+std::map<std::uint32_t, DeviceAddressPtr> CheckOverflowKernel::cache_;
 
 vector<KernelTensor *> CheckOverflowKernel::CheckInputs(vector<KernelTensor *> inputs) {
   std::vector<KernelTensor *> check_kernel_tensors;
@@ -53,7 +57,10 @@ DeviceAddressPtr CheckOverflowKernel::LaunchKernelAsync(vector<KernelTensor *> i
     return nullptr;
   }
 
-  auto output_addr = GetOutputDeviceAddress(kNumberTypeBool);
+  if (cache_.find(stream_id) == cache_.end()) {
+    cache_[stream_id] = GetOutputDeviceAddress(kNumberTypeBool);
+  }
+  auto output_addr = cache_[stream_id];
   vector<KernelTensor *> outputs{output_addr->kernel_tensor().get()};
 
   MS_EXCEPTION_IF_NULL(output_addr);
