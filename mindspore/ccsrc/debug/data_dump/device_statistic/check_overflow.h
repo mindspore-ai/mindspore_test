@@ -19,6 +19,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <map>
 #include "debug/data_dump/device_statistic/statistic_kernel.h"
 #include "op_def/nn_op_name.h"
 
@@ -36,6 +37,9 @@ class CheckOverflowKernel : public StatisticKernel {
   vector<KernelTensor *> CheckInputs(vector<KernelTensor *> inputs);
   DeviceAddressPtr LaunchKernelAsync(KernelTensor *input, const std::uint32_t stream_id) = delete;
   DeviceAddressPtr LaunchKernelAsync(vector<KernelTensor *> inputs, const std::uint32_t stream_id) override;
+
+ private:
+  static std::map<std::uint32_t, DeviceAddressPtr> cache_;
 };
 
 }  // namespace datadump
