@@ -272,6 +272,8 @@ from mindspore.ops.function.nn_func import glu_ext as glu
 # 537
 from mindspore.ops.auto_generate import hardtanh as hardtanh_op
 from mindspore.ops.auto_generate import inplace_hardtanh as hardtanh_
+# 548
+from mindspore.ops.function.nn_func import kl_div_ext as kl_div
 # 556
 from mindspore.ops.function.nn_func import logsigmoid_ext as logsigmoid
 
@@ -1318,4 +1320,6 @@ __all__ = [
     'hardtanh',
     'hardtanh_',
     'relu6',
+    # 548
+    'kl_div',
 ]

@@ -60,6 +60,7 @@ from tests.st.mint import (
     test_multinomial,
     test_nan_to_num,
     test_nn_linear,
+    test_nn_kldivloss,
 )
 
 ops_group_cases_registry_level0 = [
@@ -153,6 +154,7 @@ ops_group_cases_registry_level0 = [
     [test_addmv.test_mint_addmv_normal, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE,),)],
     [test_cdist.test_mint_cdist_binary_cases, ("ascend910b",), 4, (("KBK", "GRAPH"),)],
     [test_matmul.test_matmul_binary_cases, ("ascend910b",), 282, (('pynative', 'KBK'),)],
+    [test_nn_kldivloss.test_mint_nn_kldivloss_normal, ("ascend910b",), 4, (('pynative', 'KBK'),)],
 ]
 
 
@@ -173,6 +175,7 @@ ops_group_cases_registry_level1 = [
     [test_func_conv2d.test_conv2d_vmap, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE),)],
     [test_ops_concat.test_concat_binary_cases, ("ascend910b",), 1172, (('pynative', 'kbk'),)],
     [test_ops_gelu.test_ops_gelu_binary_cases, ("ascend910b",), 968, (('pynative', 'kbk', 'ge'),)],
+    [test_nn_kldivloss.test_mint_nn_kldivloss_broadcast, ("ascend910b",), 4, (('pynative', 'KBK'),)],
 ]
 
 

@@ -41,7 +41,7 @@ from mindspore.ops.operations.nn_ops import TripletMarginLoss
 from mindspore.ops.operations._sequence_ops import TupleToTensor, TensorToTuple, ListToTensor
 from mindspore.common.api import _function_forbid_reuse
 from mindspore.ops.auto_generate import log_softmax, dense, prelu, celu, fast_gelu, silu, elu, sigmoid, relu6, \
-    softmax_impl, swiglu, logsigmoid_op
+    softmax_impl, swiglu, logsigmoid_op, kl_div_op, divs_op
 from mindspore.ops.auto_generate import relu_op, inplace_relu_op
 from mindspore.ops.auto_generate import group_norm_op, rms_norm, add_rms_norm, layer_norm_ext_op, batch_norm_ext_op,\
     mse_loss_ext
@@ -2042,6 +2042,79 @@ def kl_div(logits, labels, reduction='mean'):
         return kl_div_sum / total_size
 
     return _get_cache_prim(P.KLDivLoss)(reduction=reduction)(logits, labels)
+
+
+def kl_div_ext(input, target, reduction='mean', log_target=False):
+    r"""
+    Computes the Kullback-Leibler divergence between the `input` and the `target`.
+
+    For tensors of the same shape :math:`x` and :math:`y`,
+    the updating formulas of KLDivLoss algorithm are as follows,
+
+    .. math::
+        L(x, y) = y \cdot (\log y - x)
+
+    Then,
+
+    .. math::
+        \ell(x, y) = \begin{cases}
+        L(x, y), & \text{if reduction} = \text{'none';}\\
+        \operatorname{mean}(L(x, y)), & \text{if reduction} = \text{'mean';}\\
+        \operatorname{sum}(L(x, y)) / x.\operatorname{shape}[0], & \text{if reduction} = \text{'batchmean';}\\
+        \operatorname{sum}(L(x, y)),  & \text{if reduction} = \text{'sum'.}
+        \end{cases}
+
+    where :math:`x` represents `input`, :math:`y` represents `target`, and :math:`\ell(x, y)` represents the output.
+
+    Note:
+        - Currently it does not support inputs that require `input` to broadcast to `target`.
+        - The output aligns with the mathematical definition of Kullback-Leibler divergence
+          only when `reduction` is set to ``'batchmean'``.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input Tensor. The data type must be float16, float32 or bfloat16(only supported by Atlas A2
+            training series products).
+        target (Tensor): The target Tensor which has the same type as `input`. The shape of `target` must be
+            broadcastable to the shape of `input`.
+        reduction (str, optional): Specifies the reduction to be applied to the output. Default: ``'mean'``.
+        log_target (bool, optional): Specifies whether `target` is passed in the log space. Default: ``False``.
+
+    Returns:
+        Tensor, has the same dtype as `input`. If `reduction` is ``'none'``, then output has the shape as broadcast
+        result of the `input` and `target`. Otherwise, it is a scalar Tensor.
+
+    Raises:
+        TypeError: If neither `input` nor `target` is a Tensor.
+        TypeError: If dtype of `input` or `target` is not float16, float32 or bfloat16.
+        TypeError: If dtype of `target` is not the same as `input`.
+        ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``, ``'batchmean'``.
+        ValueError: If shape of `target` can not be broadcast to the shape of `input`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> from mindspore import ops
+        >>> import numpy as np
+        >>> input = ms.Tensor(np.array([[0.5, 0.5], [0.4, 0.6]]), ms.float32)
+        >>> target = ms.Tensor(np.array([[0., 1.], [1., 0.]]), ms.float32)
+        >>> output = ops.kl_div_ext(input, target, reduction='mean', log_target=False)
+        >>> print(output)
+        -0.225
+    """
+    if reduction == 'batchmean':
+        reduced = kl_div_op(input, target, 'sum', log_target)
+    else:
+        reduced = kl_div_op(input, target, reduction, log_target)
+
+    if reduction == 'batchmean' and input.ndim != 0:
+        reduced = divs_op(reduced, input.shape[0])
+
+    return reduced
 
 
 @constexpr

@@ -1,0 +1,2 @@
+__imatmul__:
+  alias: __matmul__

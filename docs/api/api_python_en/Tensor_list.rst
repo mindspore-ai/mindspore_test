@@ -159,6 +159,7 @@
     mindspore.Tensor.floor
     mindspore.Tensor.floor_
     mindspore.Tensor.floor_divide
+    mindspore.Tensor.floor_divide_
     mindspore.Tensor.flush_from_cache
     mindspore.Tensor.fmax
     mindspore.Tensor.fmod

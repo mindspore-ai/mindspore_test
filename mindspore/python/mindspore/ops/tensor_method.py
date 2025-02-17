@@ -21,7 +21,7 @@ from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.ops.composite.multitype_ops import _compile_utils as utils
 from mindspore.ops.composite.multitype_ops._compile_utils import (
-    sequence_to_tensor, _tensor_sub, _tensor_pow, _tensor_div
+    sequence_to_tensor, _tensor_sub, _tensor_pow, _tensor_div, _tensor_floordiv
 )
 from mindspore.ops.auto_generate.gen_ops_prim import (
     inplace_scatter_src_op, inplace_scatter_src_reduce_op, inplace_scatter_value_op, inplace_scatter_value_reduce_op
@@ -1688,6 +1688,10 @@ def all_gather_matmul(
     For details, please refer to :func:`mindspore.ops.all_gather_matmul`.
     """
     raise NotImplementedError('all_gather_matmul only supports Ascend.')
+
+
+def tensor_floor_divide_(input, other):
+    return _tensor_floordiv(input, other)
 
 
 def matmul_reduce_scatter(
