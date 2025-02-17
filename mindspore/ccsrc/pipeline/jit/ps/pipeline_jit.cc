@@ -417,11 +417,14 @@ void JitExecutorPy::CleanCompileRes(const ResourcePtr &resource) {
   MS_LOG(INFO) << "Clean compile resource end";
 }
 
-pipeline::ExecutorPyPtr GetExecutor() {
+pipeline::ExecutorPyPtr GetExecutor(const std::string &phase) {
   if (common::GetEnv("MS_DEV_JIT_PIPELINE") == "0") {
     return pipeline::GraphExecutorPy::GetInstance();
   }
-  return pipeline::JitExecutorPy::GetInstance();
+  if (phase.empty() || pipeline::JitExecutorPy::GetInstance()->HasCompiled(phase)) {
+    return pipeline::JitExecutorPy::GetInstance();
+  }
+  return pipeline::GraphExecutorPy::GetInstance();
 }
 }  // namespace pipeline
 }  // namespace mindspore

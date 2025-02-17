@@ -583,10 +583,10 @@ void Jit::GradJitInner(const FrontendOpRunInfoPtr &op_run_info, const GradExecut
   top_cell->set_jit_out_has_dict(grad_param->jit_out_has_dict);
 }
 
-bool Jit::GetJitGradGraph(const pipeline::ResourcePtr &resource) {
-  pipeline::ExecutorPyPtr graph_executor = pipeline::GetExecutor();
+bool Jit::GetJitGradGraph(const pipeline::ResourcePtr &resource, const std::string &phase) {
+  graph_phase_ = phase;
+  pipeline::ExecutorPyPtr graph_executor = pipeline::GetExecutor(graph_phase_);
   MS_EXCEPTION_IF_NULL(graph_executor);
-  graph_phase_ = graph_executor->phase();
   MS_LOG(DEBUG) << "The phase of current pipeline graph is: " << graph_phase_;
   // Exporting graph in PyNative mode or only running forward process no need to do this action.
   const auto &pynative_grad_executor = PyNativeExecutor::grad_executor();
@@ -644,7 +644,7 @@ py::object Jit::GradJit(const py::args &args) {
     MS_LOG(EXCEPTION) << "The graph phase is empty, can not obtain jit func graph.";
   }
   MS_LOG(DEBUG) << "jit func graph phase: " << graph_phase_;
-  pipeline::ExecutorPyPtr executor = pipeline::GetExecutor();
+  pipeline::ExecutorPyPtr executor = pipeline::GetExecutor(graph_phase_);
   MS_EXCEPTION_IF_NULL(executor);
   const auto &grad_executor = mindspore::pynative::PyNativeExecutor::grad_executor();
   // For no grad function, execute forward graph directly
