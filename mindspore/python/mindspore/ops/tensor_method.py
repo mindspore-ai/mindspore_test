@@ -1850,5 +1850,10 @@ def tensor_floor_div_scalar(input, other):
 def tensor_exp_(input):
     return inplace_exp_op(input)
 
+
 def tensor_gelu(input, *, approximate):
     return gelu(input, approximate)
+
+
+def deprecated_pixel_shuffle(input, upscale_factor):
+    return F.pixel_shuffle(input, upscale_factor)

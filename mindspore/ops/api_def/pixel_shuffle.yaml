@@ -1,0 +1,7 @@
+pixel_shuffle:
+  - op_yaml: pixel_shuffle_op.yaml
+    py_method: deprecated_pixel_shuffle
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: function

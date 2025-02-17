@@ -438,7 +438,7 @@ Dropout层
     mindspore.mint.nn.NLLLoss
     mindspore.mint.nn.SmoothL1Loss
 
-图像处理层
+Vision层
 ^^^^^^^^^^^^^^^
 
 .. mscnplatwarnautosummary::
@@ -446,6 +446,7 @@ Dropout层
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.nn.PixelShuffle
     mindspore.mint.nn.Upsample
 
 工具
@@ -596,6 +597,7 @@ Vision函数
     mindspore.mint.nn.functional.interpolate
     mindspore.mint.nn.functional.grid_sample
     mindspore.mint.nn.functional.pad
+    mindspore.mint.nn.functional.pixel_shuffle
 
 mindspore.mint.optim
 ---------------------
