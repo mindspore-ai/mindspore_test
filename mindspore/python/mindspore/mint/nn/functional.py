@@ -1084,15 +1084,16 @@ def adaptive_max_pool1d(input, output_size, return_indices=False):
         Union(Tensor, tuple(Tensor, Tensor))).
 
         - If `return_indices` is False, output is a Tensor, with shape :math:`(N, C, L_{out})`. It has the same data
-          type as `x`.
+          type as `input`.
         - If `return_indices` is True, output is a Tuple of 2 Tensors, representing the result and where the max
           values are generated.
 
     Raises:
         TypeError: If `input` is not a tensor.
         TypeError: If dtype of `input` is not float16, float32 or float64.
-        TypeError: If `output_size` is not int.
+        TypeError: If `output_size` is not int or tuple.
         TypeError: If `return_indices` is not a bool.
+        ValueError: If `output_size` is a tuple and the length of `output_size` is not 1.
 
     Supported Platforms:
         ``Ascend``
