@@ -148,6 +148,11 @@ class ParamInfo {
   std::string storage_format() const { return storage_format_; }
   void set_storage_format(const std::string &storage_format) { storage_format_ = storage_format; }
 
+  bool is_pipeline_shared_param() const { return is_pipeline_shared_param_; }
+  void set_is_pipeline_shared_param(bool is_pipeline_shared_param) {
+    is_pipeline_shared_param_ = is_pipeline_shared_param;
+  }
+
  private:
   std::string name_{"Parameter"};
   bool requires_grad_{true};
@@ -189,6 +194,8 @@ class ParamInfo {
   std::vector<int64_t> quant_shape_;
   // Used to ignore unused param
   bool ignore_device_addr_{false};
+  // Used to indicate shared parameter for pipeline parallel
+  bool is_pipeline_shared_param_{false};
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_IR_PARAM_INFO_H_

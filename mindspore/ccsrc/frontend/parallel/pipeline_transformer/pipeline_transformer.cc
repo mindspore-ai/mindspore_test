@@ -1161,6 +1161,13 @@ AnfNodePtr PipelineTransformer::InsertReceive(const FuncGraphPtr &graph, const A
     recv->AddPrimalAttr(PIPELINE_PARAM, value);
     auto param = care_node ? care_node : node;
     recv->set_user_data<AnfNode>(INPUT_PARAM, param);
+    auto param_node = param->cast<ParameterPtr>();
+    if (param_node != nullptr) {
+      const auto &recv_param_info = param_node->param_info();
+      if (recv_param_info != nullptr) {
+        recv_param_info->set_is_pipeline_shared_param(true);
+      }
+    }
   } else {
     recv->AddPrimalAttr(PIPELINE_BEGIN, value);
   }
