@@ -557,6 +557,11 @@ static void CheckpointStrategy(const std::vector<AnfNodePtr> &all_nodes, const F
     if (param_names.empty()) {
       continue;
     }
+    param_names.erase(std::remove_if(param_names.begin(), param_names.end(),
+                                     [](const auto &param_pair) {
+                                       return param_pair.second->param_info()->is_pipeline_shared_param();
+                                     }),
+                      param_names.end());
     string param_name = param_names[0].first;
     PrimitivePtr prim = GetValueNode<PrimitivePtr>(cnode->input(0));
     MS_EXCEPTION_IF_NULL(prim);
