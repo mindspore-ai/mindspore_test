@@ -1081,7 +1081,7 @@ def adaptive_max_pool1d(input, output_size, return_indices=False):
         return_indices (bool, optional): Whether to return the index of the maximum value. Default: ``False`` .
 
     Returns:
-        Union(Tensor, tuple(Tensor, Tensor))).
+        Union(Tensor, tuple(Tensor, Tensor)).
 
         - If `return_indices` is False, output is a Tensor, with shape :math:`(N, C, L_{out})`. It has the same data
           type as `input`.

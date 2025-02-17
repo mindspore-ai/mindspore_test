@@ -233,7 +233,7 @@ class MaxUnpool2d(Cell):
           and output_size must belong to
           :math:`[(N, C, H_{out} - stride[0], W_{out} - stride[1]), (N, C, H_{out} + stride[0], W_{out} + stride[1])]`.
 
-    Returns:
+    Outputs:
         Tensor, with shape :math:`(N, C, H_{out}, W_{out})` or :math:`(C, H_{out}, W_{out})`,
         with the same data type with `input`.
 
@@ -302,7 +302,7 @@ class AdaptiveMaxPool1d(_AdaptiveMaxPoolNd):
     Inputs:
         - **input** (Tensor) - The input with shape :math:`(N, C, L_{in})` or :math:`(C, L_{in})` .
 
-    Output:
+    Outputs:
         Union(Tensor, tuple(Tensor, Tensor)).
 
         - If `return_indices` is False, output is a Tensor, with shape :math:`(N, C, L_{out})`. It has the same data
