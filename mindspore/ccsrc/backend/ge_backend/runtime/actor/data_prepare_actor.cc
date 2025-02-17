@@ -491,7 +491,7 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
     for (size_t j = 0; j < input_nodes.size(); ++j) {
       const auto &input_node = input_nodes[j];
       MS_EXCEPTION_IF_NULL(input_node);
-      const auto &real_device_context = device::FetchRealDeviceContext(input_node, device_context);
+      const auto &real_device_context = device_context;
       MS_EXCEPTION_IF_NULL(real_device_context);
       const auto &front_node = AnfAlgo::FetchFrontNodeByBackendNode(input_node, *graph);
       MS_LOG(DEBUG) << "Backend input node:" << input_node->DebugString()

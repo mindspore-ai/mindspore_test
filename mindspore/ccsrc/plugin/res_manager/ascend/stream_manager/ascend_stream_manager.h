@@ -25,11 +25,12 @@
 #include "acl/acl_rt.h"
 #include "plugin/res_manager/ascend/stream_manager/callback_thread.h"
 #include "utils/hash_map.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
-class AscendStreamMng {
+class BACKEND_EXPORT AscendStreamMng {
  public:
   static AscendStreamMng &GetInstance();
 

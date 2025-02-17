@@ -16,13 +16,13 @@
 #include "common/common_test.h"
 #define private public
 #define protected public
-#include "plugin/device/ascend/hal/hardware/ge/ge_memory_manager.h"
+#include "backend/ge_backend/executor/ge_memory_manager.h"
 #undef private
 #undef protected
 
 namespace mindspore {
-namespace device {
-namespace ascend {
+namespace backend {
+namespace ge_backend {
 class TestGeMemoryManager : public UT::Common {
  public:
   TestGeMemoryManager() = default;
@@ -200,6 +200,6 @@ TEST_F(TestGeMemoryManager, test_get_workspace) {
   auto workspace_memory = GEMemoryManager::Instance().GetWorkspaceMemory("test");
   EXPECT_EQ(workspace_memory, 1024);
 }
-}  // namespace ascend
-}  // namespace device
+}  // namespace ge_backend
+}  // namespace backend
 }  // namespace mindspore

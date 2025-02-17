@@ -157,6 +157,7 @@ target_link_libraries(mindspore_backend PRIVATE mindspore_core mindspore_ops
         mindspore_common mindspore_backend_manager proto_input mindspore_res_manager)
 target_link_libraries(mindspore_backend PRIVATE securec)
 
+
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set_target_properties(mindspore_backend PROPERTIES MACOSX_RPATH ON)
     set_target_properties(mindspore_backend PROPERTIES INSTALL_RPATH @loader_path)
@@ -250,6 +251,11 @@ else()
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 endif()
 
+if(ENABLE_D OR ENABLE_ACL)
+    target_link_libraries(_c_expression PRIVATE -Wl,--no-whole-archive mindspore_ge_backend)
+endif()
+
+
 target_link_libraries(_c_expression PRIVATE mindspore::glog)
 set_target_properties(_c_expression PROPERTIES INSTALL_RPATH ${ORIGIN_PATH}/lib:${ORIGIN_PATH}/lib/plugin)
 
@@ -270,6 +276,7 @@ endif()
 add_subdirectory(pyboost)
 add_subdirectory(backend/backend_manager)
 add_subdirectory(runtime/device/res_manager)
+add_subdirectory(backend/ge_backend)
 
 if(ENABLE_MINDDATA)
     add_subdirectory(minddata/mindrecord)

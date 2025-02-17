@@ -35,7 +35,7 @@ using mindspore::kernel::KernelLaunchAddr;
 // it is synchronous and blocked.
 class ProfilerActor : public ActorBase {
  public:
-  ProfilerActor() : ActorBase("ProfilerActor") {}
+  ProfilerActor() : ActorBase("GEProfilerActor") {}
   ~ProfilerActor() override = default;
 
   void AscendStepStart(const std::vector<KernelGraphPtr> &graphs, std::vector<DeviceContext *> device_contexts);

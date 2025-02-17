@@ -18,10 +18,9 @@
 
 #include <memory>
 #include <string>
-#include "backend/common/pass/add_parallel_group_id_attr.h"
+
 #include "backend/common/pass/dropout_gen_mask_fusion.h"
 #include "backend/common/pass/common_subexpression_elimination.h"
-#include "backend/common/pass/custom_defined_depend.h"
 #include "backend/common/pass/communication_op_fusion.h"
 #include "backend/common/pass/concat_outputs_for_all_gather.h"
 #include "backend/common/pass/erase_visit_attr.h"
@@ -38,111 +37,20 @@
 #include "plugin/device/ascend/optimizer/enhancer/eliminate_maketuple_getitem.h"
 #include "plugin/device/ascend/optimizer/format_type/deal_ref_output.h"
 #include "plugin/device/ascend/optimizer/format_type/set_fracz_group_attr.h"
-#include "plugin/device/ascend/optimizer/ge/all_to_all_v_for_ge.h"
-#include "plugin/device/ascend/optimizer/ge/maketuple_depend_remover.h"
-#include "plugin/device/ascend/optimizer/ge/fused_cast_add.h"
-#include "plugin/device/ascend/optimizer/ge/expand_dims_for_batchnorm.h"
-#include "plugin/device/ascend/optimizer/ge/convert_data_depend_to_control_depend.h"
-#include "plugin/device/ascend/optimizer/ge/convert_condition_input_to_scalar.h"
-#include "plugin/device/ascend/optimizer/ge/hcom/add_parallel_group_for_hcom.h"
-#include "plugin/device/ascend/optimizer/ge/hcom/insert_tensor_move_for_hccl_op_ge.h"
-#include "plugin/device/ascend/optimizer/ge/hcom/insert_depend_for_all_gather_ge.h"
-#include "plugin/device/ascend/optimizer/ge/trans_depend_value_to_int32.h"
 #include "plugin/device/ascend/optimizer/ge/expander_fallback.h"
 #include "plugin/device/ascend/optimizer/ge/insert_identity.h"
-#include "plugin/device/ascend/optimizer/ge/dropout_gen_mask_depend.h"
-#include "plugin/device/ascend/optimizer/ge/unfold_maketuple.h"
-#include "plugin/device/ascend/optimizer/ge/unfold_nested_output.h"
-#include "plugin/device/ascend/optimizer/ge/resize_bilinear_add_attr.h"
 #include "plugin/device/ascend/optimizer/ge/process_call_inline.h"
 #include "plugin/device/ascend/optimizer/ge/process_partial_inline.h"
-#include "plugin/device/ascend/optimizer/ge/hcom/insert_load_for_allgather.h"
-#include "plugin/device/ascend/optimizer/ge/shape_unify_mindir.h"
-#include "plugin/device/ascend/optimizer/ge/inputs_unify_mindir.h"
-#include "plugin/device/ascend/optimizer/ge/maketuple_unify_mindir.h"
-#include "plugin/device/ascend/optimizer/ge/add_cast_for_ge.h"
-#include "plugin/device/ascend/optimizer/ge/bce_with_logits_loss_for_ge.h"
-#include "plugin/device/ascend/optimizer/ge/nan_to_num_for_ge.h"
-#include "plugin/device/ascend/optimizer/ge/scalar_unify_mindir.h"
-#include "plugin/device/ascend/optimizer/ge/tuple_unify_mindir.h"
-#include "plugin/device/ascend/optimizer/ge/add_noop_to_es_grad.h"
-#include "plugin/device/ascend/optimizer/ge/remove_tensor_to_scalar_or_tuple_ops.h"
-#include "plugin/device/ascend/optimizer/ge/scalar_ops_output_unify_mindir.h"
-#include "plugin/device/ascend/optimizer/ge/ge_convert_const_input_to_tensor_input.h"
 #include "plugin/device/ascend/optimizer/ge/convert_pad_v3_paddings.h"
-#include "plugin/device/ascend/optimizer/ge/broadcast_for_select.h"
-#include "plugin/device/ascend/optimizer/ge/fa_alltoallv_parallel.h"
 #include "plugin/device/ascend/optimizer/heterogeneous/insert_move_to.h"
-#include "plugin/device/ascend/optimizer/mindir/centralization_mindir.h"
-#include "plugin/device/ascend/optimizer/mindir/specialized_prepare.h"
-#include "plugin/device/ascend/optimizer/mindir/tensor_array.h"
 #include "plugin/device/ascend/optimizer/ir_fission/seed_adapter.h"
-#include "plugin/device/ascend/optimizer/ir_fission/ascend_convert_tuple_input_to_dynamic_input.h"
-#include "plugin/device/ascend/optimizer/ir_fusion/histogram_fixed_width_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/shape_reshape_fusion.h"
+#include "plugin/device/ascend/optimizer/ge/hcom/insert_tensor_move_for_hccl_op_ge.h"
+#include "plugin/device/ascend/optimizer/ge/resize_bilinear_add_attr.h"
+#include "backend/common/pass/custom_defined_depend.h"
 
 namespace mindspore {
 namespace opt {
-void GEBackendOptimization(const KernelGraphPtr &kernel_graph) {
-  MS_EXCEPTION_IF_NULL(kernel_graph);
-  MS_LOG(DEBUG) << "Status record: start ascend backend optimize ge pass. graph id: " << kernel_graph->graph_id();
-  PROF_START(GEBackendOptimization);
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-#ifdef ENABLE_DUMP_IR
-  if (context_ptr->CanDump(kIntroductory)) {
-    std::string file_name = "hwopt_d_before_opt_ge_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
-    DumpIR(file_name, kernel_graph, true, kWholeStack);
-  }
-#endif
-  auto optimizer = std::make_shared<GraphOptimizer>();
-  auto opt_ge_pm = std::make_shared<PassManager>("opt_ge_pm");
-  opt_ge_pm->AddPass(std::make_shared<HistogramFixedWidthFusion>());
-  opt_ge_pm->AddPass(std::make_shared<opt::TensorArrayAddFlowCond1>());
-  opt_ge_pm->AddPass(std::make_shared<opt::TensorArrayAddFlowCond2>());
-  opt_ge_pm->AddPass(std::make_shared<opt::GeTensorArrayCastIndex>());
-  opt_ge_pm->AddPass(std::make_shared<opt::TensorArrayPrepare>());
-  opt_ge_pm->AddPass(std::make_shared<opt::CentralizationMindIR>());
-  opt_ge_pm->AddPass(std::make_shared<opt::TransDependValueToInt32>());
-  opt_ge_pm->AddPass(std::make_shared<opt::AddParallelGroupIdAttr>());
-  opt_ge_pm->AddPass(std::make_shared<opt::GEConvertConstInputToTensorInput>());
-  opt_ge_pm->AddPass(std::make_shared<opt::RemoveTensorToScalarOrTupleOps>());
-  opt_ge_pm->AddPass(std::make_shared<opt::AlltoAllVForGE>());
-  opt_ge_pm->AddPass(std::make_shared<opt::FaAlltoAllvParallel>());
-  opt_ge_pm->AddPass(std::make_shared<opt::InsertLoadForAllGather>());
-  opt_ge_pm->AddPass(std::make_shared<opt::InsertTensorMoveForHcclOpGe>());
-  opt_ge_pm->AddPass(std::make_shared<opt::InsertDependForAllGatherGe>());
-  opt_ge_pm->AddPass(std::make_shared<opt::ConvertCondInputToScalar>());
-  opt_ge_pm->AddPass(std::make_shared<opt::ConvertDataDependToControlDepend>());
-  opt_ge_pm->AddPass(std::make_shared<opt::MakeTupleDependRemover>());
-  opt_ge_pm->AddPass(std::make_shared<opt::FusedCastAdd>());
-  opt_ge_pm->AddPass(std::make_shared<opt::AddParallelGroupForHcom>());
-  opt_ge_pm->AddPass(std::make_shared<opt::ExpandDimsForBatchNorm>());
-  opt_ge_pm->AddPass(std::make_shared<opt::DropoutGenMaskDepend>());
-  opt_ge_pm->AddPass(std::make_shared<opt::AddCastForGe>());
-  opt_ge_pm->AddPass(std::make_shared<opt::NanToNumForGe>());
-  opt_ge_pm->AddPass(std::make_shared<opt::ResizeBilinearAddAttr>());
-  opt_ge_pm->AddPass(std::make_shared<opt::AscendConvertTupleInputToDynamicInput>(true, true));
-  opt_ge_pm->AddPass(std::make_shared<opt::UnfoldNestedOutput>("unfold_nested_output"));
-  opt_ge_pm->AddPass(std::make_shared<opt::UnfoldMaketuple>("unfold_nested_maketuple"));
-  opt_ge_pm->AddPass(std::make_shared<opt::BroadCastForSelect>());
-  opt_ge_pm->AddPass(std::make_shared<opt::AddNoOpToESGrad>());
-  opt_ge_pm->AddPass(std::make_shared<opt::BCEWithLogitsLossForGe>());
-  opt_ge_pm->AddPass(std::make_shared<opt::CustomDefinedDepend>(true, kernel_graph->graph_id()));
-
-  optimizer->AddPassManager(opt_ge_pm);
-  (void)optimizer->Optimize(kernel_graph);
-  kernel_graph->SetExecOrderByDefault();
-  PROF_END(GEBackendOptimization);
-#ifdef ENABLE_DUMP_IR
-  if (context_ptr->CanDump(kIntroductory)) {
-    std::string file_name = "hwopt_d_end_opt_ge_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
-    DumpIR(file_name, kernel_graph, true, kWholeStack);
-  }
-#endif
-  MS_LOG(DEBUG) << "Status record: end ascend backend optimize ge pass. graph id: " << kernel_graph->graph_id();
-}
-
 void AclAfterCreateKernel(const KernelGraphPtr &kernel_graph) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
   MS_LOG(DEBUG) << "Status record: start ascend backend optimize acl pass after kernel create. graph id: "
@@ -333,38 +241,6 @@ void GEAfterInlineOptimize(const KernelGraphPtr &kernel_graph) {
   }
 #endif
   (void)profiler::CollectHostInfo("GE", "Graph Optimization", "BackendOptimization_AfterInline", start_time,
-                                  profiler::GetClockSyscnt(), 0);
-}
-
-void GEDynamicUnifyMindIR(const FuncGraphPtr &func_graph) {
-  uint64_t start_time = profiler::GetClockSyscnt();
-  MS_EXCEPTION_IF_NULL(func_graph);
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-#ifdef ENABLE_DUMP_IR
-  if (context_ptr->CanDump(kIntroductory)) {
-    std::string file_name = "hwopt_d_before_ge_dynamic_shape_unify_mindir_graph.ir";
-    DumpIR(file_name, func_graph);
-    DumpIRProto(func_graph, "before_ge_dynamic_shape_unify_mindir_hwopt");
-  }
-#endif
-  auto dynamic_unify_mindir_pm = std::make_shared<opt::PassManager>("ge_dynamic_unify_mindir_pm");
-  dynamic_unify_mindir_pm->AddPass(std::make_shared<opt::ScalarOpsOutputUnifyMindIR>());
-  dynamic_unify_mindir_pm->AddPass(std::make_shared<opt::ShapeUnifyMindIR>());
-  dynamic_unify_mindir_pm->AddPass(std::make_shared<opt::MakeTupleUnifyMindIR>());
-  dynamic_unify_mindir_pm->AddPass(std::make_shared<opt::InputsUnifyMindIR>());
-  dynamic_unify_mindir_pm->AddPass(std::make_shared<opt::ScalarUnifyMindIR>());
-  dynamic_unify_mindir_pm->AddPass(std::make_shared<opt::TupleUnifyMindIR>());
-  auto optimizer = std::make_shared<opt::GraphOptimizer>();
-  optimizer->AddPassManager(dynamic_unify_mindir_pm);
-  (void)optimizer->Optimize(func_graph);
-#ifdef ENABLE_DUMP_IR
-  if (context_ptr->CanDump(kIntroductory)) {
-    std::string file_name = "hwopt_d_after_ge_dynamic_shape_unify_mindir_graph.ir";
-    DumpIR(file_name, func_graph);
-  }
-#endif
-  (void)profiler::CollectHostInfo("GE", "GE Dynamic Shape Unify MindIR", "GEBackend_Dynamic_UnifyMindIR", start_time,
                                   profiler::GetClockSyscnt(), 0);
 }
 }  // namespace opt

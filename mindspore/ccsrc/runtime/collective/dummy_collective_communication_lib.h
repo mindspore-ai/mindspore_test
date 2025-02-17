@@ -22,6 +22,7 @@
 #include "runtime/collective/communication_group.h"
 #include "runtime/collective/collective_communication_lib.h"
 #include "utils/ms_context.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 constexpr int kDecimalBase = 10;
@@ -54,7 +55,7 @@ class DummyCommunicationGroup : public CommunicationGroup {
 /// \brief DummyCollectiveCommunicationLib to maintain collective communication relationship without real device
 /// communication.
 ///
-class DummyCollectiveCommunicationLib : public CollectiveCommunicationLib {
+class BACKEND_EXPORT DummyCollectiveCommunicationLib : public CollectiveCommunicationLib {
  public:
   DummyCollectiveCommunicationLib();
 

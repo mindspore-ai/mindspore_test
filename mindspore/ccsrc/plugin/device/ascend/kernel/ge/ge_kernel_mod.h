@@ -26,7 +26,7 @@
 #include "kernel/kernel.h"
 #include "include/common/factory/ms_factory.h"
 #include "include/common/utils/anfalgo.h"
-#include "plugin/device/ascend/hal/hardware/ge/ge_graph_executor.h"
+#include "backend/ge_backend/executor/ge_graph_executor.h"
 
 namespace mindspore {
 namespace kernel {
@@ -48,7 +48,7 @@ class GeKernelMod : public KernelMod {
 
   void set_skip_run(bool flag) { skip_run_ = flag; }
 
-  void set_executor(device::ascend::GeGraphExecutor *executor) { graph_executor_ = executor; }
+  void set_executor(backend::ge_backend::GeGraphExecutor *executor) { graph_executor_ = executor; }
 
   void set_graph(const KernelGraphPtr &graph) { graph_ = graph; }
 
@@ -64,7 +64,7 @@ class GeKernelMod : public KernelMod {
 
  protected:
   bool skip_run_{false};
-  device::ascend::GeGraphExecutor *graph_executor_ = nullptr;
+  backend::ge_backend::GeGraphExecutor *graph_executor_ = nullptr;
   std::vector<std::pair<uint32_t, uint32_t>> io_indexes_;
   KernelGraphPtr graph_;
   AnfNodeWeakPtr node_;

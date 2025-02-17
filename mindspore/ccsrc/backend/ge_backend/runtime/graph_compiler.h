@@ -86,7 +86,7 @@ struct BACKEND_EXPORT GraphCompilerInfo {
                     const std::vector<AnfNodePtr> &origin_parameters_order, const ControlNodeParserPtr &parser,
                     const KernelMapPosition &origin_outputs_order, size_t outputs_num, size_t inputs_num,
                     const std::string &name, bool need_erase, GraphExecutionStrategy strategy, CompileFunc compile_func,
-                    const std::string &graph_phase)
+                    const std::string &graph_phase, const FuncGraphPtr &root_graph)
       : graphs_(graphs),
         device_contexts_(device_contexts),
         tensors_mask_(tensors_mask),
@@ -102,7 +102,8 @@ struct BACKEND_EXPORT GraphCompilerInfo {
         exist_flatten_concat_(false),
         strategy_(strategy),
         compile_func_(std::move(compile_func)),
-        graph_phase_(graph_phase) {}
+        graph_phase_(graph_phase),
+        root_graph_(root_graph) {}
   ~GraphCompilerInfo();
   std::vector<KernelGraphPtr> graphs_;
   std::vector<DeviceContext *> device_contexts_;
@@ -122,6 +123,7 @@ struct BACKEND_EXPORT GraphCompilerInfo {
   mutable GraphExecutionStrategy strategy_;
   CompileFunc compile_func_;
   std::string graph_phase_;
+  FuncGraphPtr root_graph_;
 };
 
 class GraphCompiler {
@@ -132,7 +134,8 @@ class GraphCompiler {
   // Construct kernel graph from anf nodes list and compile kernel graph in Graph mode,
   // the detailed implementation of compiling graph is in 'CompileGraphImpl'.
   GraphId CompileGraph(const GraphSegmentPtr &segment, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                       const DeviceContext *device_context, device::RunMode run_mode, bool run_in_pynative = false);
+                       const DeviceContext *device_context, const session::JitSetting &jit_setting,
+                       device::RunMode run_mode, bool run_in_pynative = false);
 
   GraphId CompileGraph(const KernelGraphPtr &kernel_graph, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
                        const DeviceContext *device_context, device::RunMode run_mode, bool run_in_pynative);
@@ -163,8 +166,6 @@ class GraphCompiler {
   // The member variable 'session_' will be removed after removing session module.
   // Now all the GraphCompiler share the same 'session_'.
   session::SessionPtr session_;
-  bool use_cache_to_compile_graph_ = false;
-  bool export_compile_cache_ = false;
 };
 }  // namespace runtime
 }  // namespace ge_backend

@@ -80,9 +80,6 @@ class BACKEND_EXPORT GraphScheduler {
   // Whether graph scheduler is initialized.
   bool initialized() const { return init_; }
 
-  // Remove non weight parameter device address.
-  void RemoveNodeAddr(const GraphCompilerInfo &graph_compiler_info);
-
   // The callback function after process fork finish to reinitialize multi pipeline actors.
   void ChildAfterFork();
 

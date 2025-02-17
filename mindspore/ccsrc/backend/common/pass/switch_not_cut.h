@@ -17,10 +17,11 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_PASS_SWITCH_NOT_CUT_H_
 #include <string>
 #include "include/backend/optimizer/pass.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace opt {
-class SwitchNotCut : public Pass {
+class BACKEND_EXPORT SwitchNotCut : public Pass {
  public:
   explicit SwitchNotCut(const std::string &name = "switch_not_cut") : Pass(name) {}
   ~SwitchNotCut() override = default;

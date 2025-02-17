@@ -48,7 +48,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/dummy_ascend_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/hardware/ge/ge_utils.h"
+#include "backend/ge_backend/executor/ge_utils.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 #include "plugin/res_manager/ascend/op_adapter/io_format_map.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter.h"
@@ -901,7 +901,7 @@ void DfGraphConvertor::InitParamWithData(const TensorOrderMap &tensors) {
       node->set_user_data(kNoNeedAllocDeviceAddress, std::make_shared<bool>(true));
     } else {
       auto &infer_need_update_parameter_names =
-        Singleton<mindspore::device::ascend::InferNeedUpdateParaNames>::Instance().GetInferParameterNames();
+        Singleton<InferNeedUpdateParaNames>::Instance().GetInferParameterNames();
       // we need three variable ops for each graph with same name
       // build init subgraph
       auto adpt = device::ascend::FindAdapter(device::ascend::kNameParam, training_);

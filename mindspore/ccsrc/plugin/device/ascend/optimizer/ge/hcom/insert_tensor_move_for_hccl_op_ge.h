@@ -18,10 +18,11 @@
 
 #include <memory>
 #include "include/backend/optimizer/optimizer.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace opt {
-class InsertTensorMoveForHcclOpGe : public PatternProcessPass {
+class BACKEND_EXPORT InsertTensorMoveForHcclOpGe : public PatternProcessPass {
  public:
   explicit InsertTensorMoveForHcclOpGe(bool multigraph = true)
       : PatternProcessPass("insert_tensor_move_for_hccl_op_ge", multigraph) {}

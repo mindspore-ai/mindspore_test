@@ -17,9 +17,12 @@
 #define MINDSPORE_CCSRC_BACKEND_BACKENDMANAGER_BACKENDBASE_H_
 
 #include <memory>
+#include <string>
+#include <map>
 #include "mindspore/core/include/base/base.h"
 #include "mindspore/core/include/base/base_ref.h"
 #include "backend/backend_manager/visible.h"
+#include "ir/tensor.h"
 
 namespace mindspore {
 namespace backend {
@@ -31,6 +34,10 @@ enum RunningStatus {
   kRunningFailure,
 };
 
+enum IRFormat {
+  kAir = 0,
+};
+
 // The base class of all supported backend.
 class BACKEND_MANAGER_EXPORT BackendBase {
  public:
@@ -39,6 +46,19 @@ class BACKEND_MANAGER_EXPORT BackendBase {
 
   // The backend graph Run interface by the graph_id which are generated through the graph Build interface above.
   virtual RunningStatus Run(BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs) = 0;
+
+  // convert mindir to ir_format
+  virtual void ConvertIR(const FuncGraphPtr &anf_graph,
+                         const std::map<std::string, std::shared_ptr<tensor::Tensor>> &init_tensors,
+                         IRFormat ir_format) {
+    return;
+  }
+
+  // export graph to ir_format. If is_save_to_file=True, save as file; if False, return as string
+  virtual std::string ExportIR(const FuncGraphPtr &anf_graph, const std::string &file_name, bool is_save_to_file,
+                               IRFormat ir_format) {
+    return "";
+  }
 };
 
 using BackendBasePtr = std::shared_ptr<BackendBase>;
