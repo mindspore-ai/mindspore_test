@@ -73,14 +73,14 @@ def set_memory(init_size="2GB", increase_size="2GB", max_size="1024GB", optimize
 
 def _check_memory_conf_valid(memory_size):
     """
-    Check whether the configuration memory value format is "xxGB" and can not be "0G".
+    Check whether the configuration memory value format is "xxGB" and can not be "0GB".
     """
     if not Validator.check_str_by_regular(memory_size, _MEMORY_PATTERN):
         raise ValueError("The memory value should be in correct format!"
                          "It must be a string ending with 'GB', in addition to that, it must contain "
                          "only numbers or decimal points, such as \"5GB\" or \"3.5GB\", but got {}."
                          .format(memory_size))
-    if memory_size == "0G" or memory_size == "0.0G":
+    if memory_size == "0GB" or memory_size == "0.0GB":
         raise ValueError("The memory value should not be \"0GB\".")
 
 def _is_initialized(device_target):
