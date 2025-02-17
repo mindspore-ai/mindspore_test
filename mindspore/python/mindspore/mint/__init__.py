@@ -168,7 +168,8 @@ from mindspore.ops.function.math_func import norm_ext as norm
 # 57
 from mindspore.ops.functional import broadcast_to
 # 58
-from mindspore.ops.function.math_func import greater_equal
+from mindspore.ops.functional_overload import greater_equal, ge
+
 # 59
 from mindspore.ops.functional import square
 # 60

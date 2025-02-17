@@ -97,7 +97,7 @@ deprecated_tensor_method_map = {
     # 39 greater
 
     # 40 greater_equal
-
+    "greater_equal": "deprecated_tensor_greater_equal",
     # 41 gt
 
     # 42 half

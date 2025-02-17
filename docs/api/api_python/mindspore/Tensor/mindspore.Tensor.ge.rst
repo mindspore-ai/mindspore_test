@@ -1,6 +1,6 @@
 mindspore.Tensor.ge
 ===================
 
-.. py:method:: mindspore.Tensor.ge(x)
+.. py:method:: mindspore.Tensor.ge(other)
 
-    详情请参考 :func:`mindspore.ops.ge`。
+    :func:`mindspore.Tensor.greater_equal` 的别名。

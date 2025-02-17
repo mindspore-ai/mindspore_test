@@ -1375,12 +1375,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('ger')(self, vec2)
 
-    def ge(self, x):
-        """
-        For details, please refer to :func:`mindspore.ops.ge`.
-        """
-        return tensor_operator_registry.get('ge')(self, x)
-
     def broadcast_to(self, shape):
         """
         For details, please refer to :func:`mindspore.ops.broadcast_to`.
