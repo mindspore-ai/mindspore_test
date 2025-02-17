@@ -52,7 +52,7 @@ mindspore.ops.tensordump
 
     样例：
 
-    .. note:: 
+    .. note::
         使用msrun命令运行下面的例子：msrun \-\-worker_num=2 \-\-local_worker_num=2 \-\-master_port=11450
         \-\-log_dir=msrun_log \-\-join=True \-\-cluster_time_out=300 tensordump_example.py
 

@@ -18,7 +18,7 @@ mindspore.nn.probability.distribution.Logistic
         - **dtype** (mindspore.dtype) - 事件样例的类型。默认值： ``mstype.float32`` 。
         - **name** (str) - 分布的名称。默认值： ``'Logistic'`` 。
 
-    .. note:: 
+    .. note::
         - `scale` 必须大于零。
         - `dtype` 必须是float，因为Logistic分布是连续的。
 

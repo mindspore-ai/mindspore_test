@@ -7,7 +7,7 @@ mindspore.numpy.tan
 
     等价于 :math:`np.sin(x)/np.cos(x)` ，逐元素计算。
 
-    .. note:: 
+    .. note::
         不支持NumPy参数 `out` 、 `where` 、 `casting` 、 `order` 、 `subok` 、 `signature` 、 `extobj` 。
 
     参数：

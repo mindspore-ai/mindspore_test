@@ -5,7 +5,7 @@ mindspore.numpy.empty_like
 
     返回一个shape和类型与给定数组相同的新数组。
 
-    .. note:: 
+    .. note::
         输入数组在整个维度上必须具有相同的大小。如果 ``prototype`` 不是Tensor，且未设置 ``dtype`` ，则 ``dtype`` 默认为float32。
 
     参数：

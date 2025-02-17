@@ -5,7 +5,7 @@ mindspore.numpy.ravel_multi_index
 
     将元素为索引数组的tuple转换为展平的索引数组，并对多重索引应用边界模式。
     
-    .. note:: 
+    .. note::
         不支持 `raise` 模式。 默认模式为 `clip` 。
 
     参数：

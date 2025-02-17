@@ -13,7 +13,7 @@ mindspore.nn.probability.distribution.TransformedDistribution
         - **seed** (int) - 采样时使用的种子。如果为None，则使用全局种子。默认值： ``None`` 。如果在初始化TransformedDistribution对象时给出了此种子，则对象的采样函数将使用此种子；否则，将使用基础分布的种子。
         - **name** (str) - 转换分布的名称。默认值： ``'transformed_distribution'``。
 
-    .. note:: 
+    .. note::
         用于初始化原始分布的参数不能为None。例如，由于未指定 `mean` 和 `sd` ，因此无法使用mynormal = msd.Normal(dtype=mindspore.float32)初始化TransformedDistribution。
         `batch_shape` 为原始分布的 batch 的 shape。
         `broadcast_shape` 为原始分布和概率映射经过广播后的 shape。

@@ -22,7 +22,7 @@ mindspore.ops.moe_token_unpermute
 
     返回：
         Tensor，类型与 `permuted_tokens` 一致。如果 `padded_mode` 为 ``False``， 则shape为[`num_tokens`， `hidden_size`]。
-        如果`padded_mode` 为 ``True``，则shape由 `restore_shape` 指定。
+        如果 `padded_mode` 为 ``True``，则shape由 `restore_shape` 指定。
 
     异常：
         - **TypeError** - `input` 不是Tensor。
