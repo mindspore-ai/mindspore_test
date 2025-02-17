@@ -85,11 +85,6 @@ MsContext::MsContext(const std::string &policy, const std::string &target) {
   SetAscendConfig();
 }
 
-MsContext::~MsContext() {
-  set_env_ = nullptr;
-  check_env_ = nullptr;
-}
-
 std::shared_ptr<MsContext> MsContext::GetInstance() {
   static std::once_flag inst_context_init_flag_ = {};
   std::call_once(inst_context_init_flag_, [&]() {
@@ -334,7 +329,13 @@ void MsContext::SetEnv(const std::string &device) {
 
   if (auto iter = PluginPathMap().find(device); iter != PluginPathMap().end()) {
     const auto &library_path = iter->second;
-    set_env_(device, library_path);
+    try {
+      set_env_(device, library_path);
+    } catch (const std::exception &e) {
+      set_env_ = nullptr;
+      check_env_ = nullptr;
+      MS_LOG(EXCEPTION) << e.what();
+    }
   }
 }
 
