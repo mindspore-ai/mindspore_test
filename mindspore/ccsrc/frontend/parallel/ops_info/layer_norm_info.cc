@@ -386,7 +386,11 @@ Status LayerNormInfo::CheckOutputLayout() {
     return FAILED;
   }
   if (output_infer_tensor_layout_.tensor_shape_before().array().empty()) {
-    MS_LOG(ERROR) << "Parameter of output tensor layout for layernorm is not allowed to be set by users.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "Parameter of output tensor layout for layernorm is not allowed to be set by users.";
+    } else {
+      MS_LOG(ERROR) << "Parameter of output tensor layout for layernorm is not allowed to be set by users.";
+    }
     return FAILED;
   }
   MS_LOG(INFO) << "Using output tensor layout infer by input tensor layout.";

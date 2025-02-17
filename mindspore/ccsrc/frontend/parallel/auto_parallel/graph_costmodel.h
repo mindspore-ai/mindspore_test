@@ -22,6 +22,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <queue>
 #include "frontend/parallel/auto_parallel/edge_costmodel.h"
 #include "frontend/parallel/costmodel_context.h"
 #include "frontend/parallel/ops_info/operator_info.h"
@@ -52,12 +53,9 @@ class CostGraph {
   void RemoveOperator(const OperatorInfoPtr &op);
   bool IsOperatorInCostGraph(const OperatorInfoPtr &op);
   void StrategyPropagate(const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare> &);
-  void BFS(const OperatorInfoPtr &op, const StrategyPtr &op_stra,
-           const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare> &configured_ops,
-           std::map<OperatorInfoPtr, bool> *visited) const;
-  void ProcessDiffStraParams(const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare> &configured_ops) const;
-  void ParamPropagation(const OperatorInfoPtr &curr_op, const std::shared_ptr<Edge> edge,
-                        const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare> &configured_ops) const;
+  void BFS(const OperatorInfoPtr &op, const StrategyPtr &op_stra);
+  void ProcessDiffStraParams() const;
+  void ParamPropagation(const OperatorInfoPtr &curr_op, const std::shared_ptr<Edge> edge) const;
   // the edge is in the form: u --> v
   void AddEdge(OperatorInfoPtr u_node, OperatorInfoPtr v_node, const EdgePtr &edge);
   std::vector<std::shared_ptr<Edge>> GetOriginalPrevEdges(const OperatorInfoPtr &v_node) { return in_edges_[v_node]; }
@@ -66,8 +64,7 @@ class CostGraph {
   bool IsEdgeInCostGraph(const std::string &, size_t, size_t);
 
   std::vector<std::shared_ptr<CostGraph>> ConstructConnectedComponents(std::vector<OperatorInfoPtr>);
-  void DFS(const OperatorInfoPtr &current_op, std::map<OperatorInfoPtr, bool> *visited,
-           const std::shared_ptr<CostGraph> &component);
+  void DFS(const OperatorInfoPtr &current_op, const std::shared_ptr<CostGraph> &component);
 
   CostPtrList CreateFinalCostList(const OperatorInfoPtr &u, const EdgePtr &e, const OperatorInfoPtr &v) const;
   CostPtrList CreateFinalSingleCostList(const OperatorInfoPtr &u) const;
@@ -160,10 +157,6 @@ class CostGraph {
   void CreateSourceEliminationSubCostList(StrategyPtr op1_old_stra, const CostPtrList &op1_old_clist,
                                           StrategyPtr op2_old_stra, const CostPtrList &op2_old_clist,
                                           CostPtrList *op1_new_clist) const;
-  // We merge 'op2' into op1. The returned value are '<Edges1, Edges2>'. 'Edges1' are newly updated edges for 'op1',
-  // 'Edges2' are newly updated edges for 'op2'.
-  std::pair<std::vector<std::shared_ptr<Edge>>, std::vector<std::shared_ptr<Edge>>> EliminationSources(
-    const OperatorInfoPtr op1, const OperatorInfoPtr op2) const;
   // Calculate memory cost for training phase or inference phase.
   Status CalculateMemoryCost();
   // When the input of a operator is neither a WEIGHT, nor a output of a subsequent operator involving WEIGHT, then
@@ -215,35 +208,35 @@ class CostGraph {
   const std::map<std::string, std::string> get_tuple_getitem_list() const { return tuple_getitem_list_; }
 
   // For the cost of reshape, avoid multiple calculation
-  std::map<std::pair<TensorLayout, TensorLayout>, CostPtr> reshape_cost_cache_;
   bool FindReshapeCostInCache(const TensorLayout &from, const TensorLayout &to, CostPtr *result);
   void SaveReshapeCostToCache(const TensorLayout &from, const TensorLayout &to, const CostPtr &result);
 
   // For accelerate InitEdgeCost
-  // In cost_map_cache_, key=> Edge name without number, value=> vector of cache, which means there are several cache
-  // using the same edge name. In the vector of cache is a pair, pair.first is cache key, pair.second is the cost_map_.
-  // The cache key is made of another pair of <pre_op_output_, next_op_input_>
-  std::map<std::string, std::vector<std::pair<std::pair<std::vector<std::pair<StrategyPtr, TensorLayout>>,
-                                                        std::vector<std::pair<StrategyPtr, TensorLayout>>>,
-                                              std::map<CostPtrKey, CostPtrList>>>>
-    cost_map_cache_;
-  bool CheckCacheEqual(const std::vector<std::pair<StrategyPtr, TensorLayout>> &layouts_a,
-                       const std::vector<std::pair<StrategyPtr, TensorLayout>> &layouts_b) const;
-  bool FindCostMapInCache(const std::string &edge_name,
-                          const std::vector<std::pair<StrategyPtr, TensorLayout>> &pre_op_output,
-                          const std::vector<std::pair<StrategyPtr, TensorLayout>> &next_op_input,
-                          std::map<CostPtrKey, CostPtrList> *cost_map);
-  void SaveCostMapToCache(const std::string &edge_name,
-                          const std::vector<std::pair<StrategyPtr, TensorLayout>> &pre_op_output,
-                          const std::vector<std::pair<StrategyPtr, TensorLayout>> &next_op_input,
-                          const std::map<CostPtrKey, CostPtrList> &cost_map);
+  // In cost_map_cache_, key=> device_matrix and tensor_map of {pre_op_output_, next_op_input_}, value=> vector of cache
+  bool FindEdgeCostPtrInCache(const TensorLayout &prev_layout, const TensorLayout &next_layout, CostPtrList *cost);
+  void SaveEdgeCostPtrToCache(const TensorLayout &prev_layout, const TensorLayout &next_layout,
+                              const CostPtrList &cost);
 
  private:
   void TopologyOrder(std::vector<OperatorInfoPtr> *topo_order);
-  void DFSForTopoOrder(const OperatorInfoPtr &current_op, std::map<OperatorInfoPtr, bool> *visited,
-                       std::vector<OperatorInfoPtr> *topo_order);
+  void DFSForTopoOrder(const OperatorInfoPtr &current_op, std::vector<OperatorInfoPtr> *topo_order);
   Status DetermineCriticalOps(const std::vector<OperatorInfoPtr> &topo_order);
   void MarkCriticalOpsAndEdges(const std::map<OperatorInfoPtr, int64_t> &candidate_ops);
+
+  std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare> configured_ops;
+  std::map<OperatorInfoPtr, bool> visited;
+  std::queue<std::pair<std::pair<OperatorInfoPtr, std::pair<StrategyPtr, int64_t>>, int64_t>> next_level;
+  void BFSNextNode(const std::shared_ptr<Edge> &edge, int64_t curr_depth);
+  void BFSPrevNode(const std::shared_ptr<Edge> &edge, int64_t curr_depth);
+  void BFSNextNodeIfNextIsReshape(const std::shared_ptr<Edge> &edge, int64_t curr_depth);
+  void BFSNextNodeIfCurrIsReshape(const std::shared_ptr<Edge> &edge, int64_t curr_depth);
+  void BFSPrevNodeIfPrevIsReshape(const std::shared_ptr<Edge> &edge, int64_t curr_depth);
+  void BFSPrevNodeIfCurrIsReshape(const std::shared_ptr<Edge> &edge, int64_t curr_depth);
+
+  bool CheckVisitedEdgeConsistency(const EdgePtr &edge) const;
+  bool CheckConfiguredSuccEdgeConsistency(const EdgePtr &edge) const;
+  void CheckConfiguredPrevEdgeConsistency(const EdgePtr &edge) const;
+
   // Needed by rec_parser
   std::vector<std::vector<std::string>> inputs_tensor_name_list_;
   // Needed by rec_parser 2
@@ -254,6 +247,9 @@ class CostGraph {
   std::vector<std::shared_ptr<CostGraph>> connected_compoents_;
   std::map<OperatorInfoPtr, std::vector<EdgePtr>> out_edges_;
   std::map<OperatorInfoPtr, std::vector<EdgePtr>> in_edges_;
+
+  std::map<CostCacheKey, CostPtr> reshape_cost_cache_;
+  std::map<CostCacheKey, CostPtrList> cost_map_cache_;
 };
 }  // namespace parallel
 }  // namespace mindspore

@@ -191,6 +191,7 @@ class TensorLayout {
   int64_t GetSliceDeviceDimensionByTensorDimensionIndex(uint64_t idx) const;
   bool TensorShapeDimensionIsDividedBySplitDeviceDimension() const;
   int64_t GetTensorDimensionIndexByDeviceDimensionIndex(int64_t idx) const;
+  Status SetDefaultTensorMapAndShapeBefore(const Shape &tensor_map, const Shape &tensor_shape);
 
   Arrangement device_arrangement_origin_;
   Arrangement tensor_shape_origin_;
