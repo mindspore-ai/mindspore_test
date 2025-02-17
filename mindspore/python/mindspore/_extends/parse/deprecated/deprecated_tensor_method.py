@@ -136,7 +136,6 @@ deprecated_tensor_method_map = {
 
     # 59 logical_or
     "logical_or": "tensor_logical_or",
-
     # 60 long
 
     # 61 lt
@@ -364,6 +363,11 @@ deprecated_tensor_method_map = {
 
     # 161
     "fmod": "deprecated_tensor_fmod",
+    "bitwise_or": "deprecated_bitwise_or",
+    "bitwise_and": "deprecated_bitwise_and",
+    "bitwise_xor": "deprecated_bitwise_xor",
+    "baddbmm": "deprecated_baddbmm",
+
     # 162 log10
     "log10": "tensor_log10",
 

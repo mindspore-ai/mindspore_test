@@ -3934,7 +3934,7 @@ def atanh(x):
     return F.atanh(x)
 
 
-def baddbmm(x, batch1, batch2, beta=1, alpha=1):
+def baddbmm(x, batch1, batch2, *, beta=1, alpha=1):
     r"""
     For details, please refer to :func:`mindspore.ops.baddbmm`.
     """

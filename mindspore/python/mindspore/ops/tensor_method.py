@@ -379,6 +379,8 @@ from mindspore.ops.function.math_func import frac
 
 # 161 bitwise_not
 from mindspore.ops.auto_generate.gen_ops_prim import bitwise_not_op
+from mindspore.ops.function.math_func import bitwise_or, bitwise_and, bitwise_xor
+from mindspore.ops.auto_generate import logical_xor_op
 
 # 162 log10
 from mindspore.ops.function.math_func import log10
@@ -1473,11 +1475,24 @@ def tensor_histc(input, bins=100, min=0, max=0):
 def tensor_frac(input):
     return frac(input)
 
+# 161 bitwise_not baddbmm bitwise_or bitwise_and bitwise_xor logical_xor
+def deprecated_baddbmm(input, batch1, batch2, *, beta=1, alpha=1):
+    return F.baddbmm(input, batch1, batch2, beta=beta, alpha=alpha)
 
-# 161 bitwise_not
 def tensor_bitwise_not(input):
     return bitwise_not_op(input)
 
+def deprecated_bitwise_or(input, other):
+    return bitwise_or(input, other)
+
+def deprecated_bitwise_and(input, other):
+    return bitwise_and(input, other)
+
+def deprecated_bitwise_xor(input, other):
+    return bitwise_xor(input, other)
+
+def tensor_logical_xor(input, other):
+    return logical_xor_op(input, other)
 
 # 162
 def tensor_log10(input):
