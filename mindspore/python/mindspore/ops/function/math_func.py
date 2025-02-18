@@ -7319,93 +7319,63 @@ def logsumexp(input, dim, keepdim=False):
 
 def amin(input, axis=None, keepdims=False, *, initial=None, where=None):
     r"""
-    Reduces all dimensions of a tensor by returning the minimum value in `input`, by default. And also can
-    reduce a dimension of `input` along specified `axis`. `keepdims` determines whether the dimensions of
-    output and input are the same.
-
-    Note:
-        The `axis` with tensor type is only used for compatibility with older versions and is not recommended.
+    Return the minimum values along the given axis of the tensor.
 
     Args:
-        input (Tensor[Number]): The input tensor. The dtype of the tensor to be reduced is number.
-            :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
-        axis (Union[int, tuple(int), list(int), Tensor], optional): The dimensions to reduce. Default: ``None`` ,
-            reduce all dimensions. Only constant value is allowed. Assume the rank of `x` is r, and the value range is
-            [-r,r).
-        keepdims (bool, optional): If ``True`` , keep these reduced dimensions and the length is 1. If ``False`` ,
-            don't keep these dimensions. Default: ``False`` .
+        input (Tensor[Number]): The input tensor.
+        axis (Union[int, tuple(int), list(int), Tensor], optional): Specify the axis for computation. If ``None`` ,
+            compute all elements in the `input` . Default ``None`` .
+        keepdims (bool, optional): Whether the output tensor has dim retained. Default ``False`` .
 
     Keyword Args:
-        initial (scalar, optional): The minimum value of an output element. Must be present to allow computation
-            on empty slice. Default: ``None`` .
-        where (Tensor[bool], optional): A Tensor indicating whether to replace the primitive value in `input` with the
-            value in `initial`. If ``True`` , do not replace, otherwise replace. For the index of ``True`` in `where`,
-            the corresponding value in `initial` must be assigned. Default: ``None`` , which indicates ``True`` by
-            default.
+        initial (scalar, optional): Initial value for the minimum. Default ``None`` .
+        where (Tensor[bool], optional): Specifies the range over which to compute the minimum values. The shape of this
+            tensor must bebroadcastable to the shape of `input` . An `initial` value must be specified. Default
+            ``None`` , indicating that all elements are to be computed.
 
     Returns:
-        Tensor, has the same data type as input tensor.
-
-        - If `axis` is ``None`` , and `keepdims` is ``False`` ,
-          the output is a 0-D tensor representing the product of all elements in the input tensor.
-        - If `axis` is int, set as 1, and `keepdims` is ``False`` ,
-          the shape of output is :math:`(x_0, x_2, ..., x_R)`.
-        - If `axis` is tuple(int), set as (1, 2), and `keepdims` is ``False`` ,
-          the shape of output is :math:`(x_0, x_3, ..., x_R)`.
-        - If `axis` is 1-D Tensor, set as [1, 2], and `keepdims` is ``False`` ,
-          the shape of output is :math:`(x_0, x_3, ..., x_R)`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `axis` is not one of the following: int, tuple, list or Tensor.
-        TypeError: If `keepdims` is not a bool.
-        ValueError: If `axis` is out of range.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.random.randn(3, 4, 5, 6).astype(np.float32))
-        >>> output = ops.amin(x, 1, keepdims=True)
-        >>> result = output.shape
-        >>> print(result)
-        (3, 1, 5, 6)
-        >>> # case 1: Reduces a dimension by the minimum value of all elements in the dimension.
-        >>> x = Tensor(np.array([[[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3]],
-        ...                      [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
-        ...                      [[7, 7, 7, 7, 7, 7], [8, 8, 8, 8, 8, 8], [9, 9, 9, 9, 9, 9]]]), mindspore.float32)
-        >>> output = ops.amin(x)
-        >>> print(output)
-        1.0
-        >>> print(output.shape)
-        ()
-        >>> # case 2: Reduces a dimension along axis 0.
-        >>> output = ops.amin(x, 0, True)
-        >>> print(output)
-        [[[1. 1. 1. 1. 1. 1.]
-          [2. 2. 2. 2. 2. 2.]
-          [3. 3. 3. 3. 3. 3.]]]
-        >>> # case 3: Reduces a dimension along axis 1.
-        >>> output = ops.amin(x, 1, True)
-        >>> print(output)
-        [[[1. 1. 1. 1. 1. 1.]]
-         [[4. 4. 4. 4. 4. 4.]]
-         [[7. 7. 7. 7. 7. 7.]]]
-        >>> # case 4: Reduces a dimension along axis 2.
-        >>> output = ops.amin(x, 2, True)
-        >>> print(output)
-        [[[1.]
-          [2.]
-          [3.]]
-         [[4.]
-          [5.]
-          [6.]]
-         [[7.]
-          [8.]
-          [9.]]]
+        >>> input = mindspore.tensor([[2, 5, 1, 6],
+        ...                           [3, -7, -2, 4],
+        ...                           [8, -4, 1, -3]])
+        >>> # case 1: By default, compute the minimum of all elements.
+        >>> mindspore.ops.min(input)
+        Tensor(shape=[], dtype=Int64, value= -7)
+        >>>
+        >>> # case 2: Compute minimum along axis 1.
+        >>> mindspore.ops.min(input, axis=1)
+        Tensor(shape=[3], dtype=Int64, value= [ 1, -7, -4])
+        >>>
+        >>> # case 3: If keepdims=True, the output shape will be same of that of the input.
+        >>> mindspore.ops.min(input, axis=1, keepdims=True)
+        Tensor(shape=[3, 1], dtype=Int64, value=
+        [[ 1],
+         [-7],
+         [-4]])
+        >>>
+        >>> # case 4: Use "where" to include only specific elements in computing the minimum.
+        >>> where = mindspore.tensor([[1, 0, 1, 0],
+        ...                           [0, 0, 1, 1],
+        ...                           [1, 1, 1, 0]], dtype=mindspore.bool_)
+        >>> mindspore.ops.min(input, axis=1, keepdims=True, initial=0, where=where)
+        Tensor(shape=[3, 1], dtype=Int64, value=
+         [[ 0],
+          [-2],
+          [-4]])
+        >>>
+        >>> # case 5: The shape of "where" must be broadcast compatible with input.
+        >>> where = mindspore.tensor([[False],
+        ...                           [False],
+        ...                           [False]])
+        >>> mindspore.ops.min(input, axis=0, keepdims=True, initial=0, where=where)
+        Tensor(shape=[1, 4], dtype=Int64, value=
+         [[0, 0, 0, 0]])
     """
     if axis is None:
         axis = ()
@@ -7430,92 +7400,64 @@ def _init_and_select_elem(input, initial, where, cmp_fn):
 
 def amax(input, axis=None, keepdims=False, *, initial=None, where=None):
     r"""
-    Reduces all dimensions of a tensor by returning the maximum value in `input`, by default. And also can
-    reduce a dimension of `input` along specified `axis`.  `keepdims` determines whether the dimensions of
-    output and input are the same.
-
-    Note:
-        The `axis` with tensor type is only used for compatibility with older versions and is not recommended.
+    Return the maximum values along the given axis of the tensor.
 
     Args:
-        input (Tensor[Number]): The input tensor. The dtype of the tensor to be reduced is number.
-            :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
-        axis (Union[int, tuple(int), list(int), Tensor], optional): The dimensions to reduce. Default: ``None`` ,
-            reduce all dimensions. Only constant value is allowed. Assume the rank of `x` is r, and the value range is
-            [-r,r).
-        keepdims (bool, optional): If ``True`` , keep these reduced dimensions and the length is 1. If ``False`` ,
-            don't keep these dimensions. Default: ``False`` .
+        input (Tensor[Number]): The input tensor.
+        axis (Union[int, tuple(int), list(int), Tensor], optional): Specify the axis for computation. If ``None`` ,
+            compute all elements in the `input` . Default ``None`` .
+        keepdims (bool, optional): Whether the output tensor has dim retained. Default ``False`` .
 
     Keyword Args:
-        initial (scalar, optional): The minimum value of an output element. Must be present to allow computation
-            on empty slice. Default: ``None`` .
-        where (Tensor[bool], optional): A Tensor indicating whether to replace the primitive value in `input` with the
-            value in `initial`. If ``True`` , do not replace, otherwise replace. For the index of ``True`` in `where`,
-            the corresponding value in `initial` must be assigned. Default: ``None`` , which indicates ``True`` by
-            default.
+        initial (scalar, optional): Initial value for the maximum. Default ``None`` .
+        where (Tensor[bool], optional): Specifies the range over which to compute the maximum values. The shape of this
+            tensor must be broadcastable to the shape of `input` . An `initial` value must be specified. Default
+            ``None`` , indicating that all elements are to be computed.
+
 
     Returns:
-        Tensor, has the same data type as input tensor.
-
-        - If `axis` is ``None`` , and `keepdims` is ``False`` , the output is a 0-D tensor representing the product of
-          all elements in the input tensor.
-        - If `axis` is int, set as 1, and `keepdims` is ``False`` , the shape of output is :math:`(x_0, x_2, ..., x_R)`.
-        - If `axis` is tuple(int), set as (1, 2), and `keepdims` is ``False`` , the shape of output is
-          :math:`(x_0, x_3, ..., x_R)`.
-        - If `axis` is 1-D Tensor, set as [1, 2], and `keepdims` is ``False`` , the shape of output is
-          :math:`(x_0, x_3, ..., x_R)`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `axis` is not one of the following: int, tuple, list or Tensor.
-        TypeError: If `keepdims` is not a bool.
-        ValueError: If `axis` is out of range.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.random.randn(3, 4, 5, 6).astype(np.float32))
-        >>> output = ops.amax(x, 1, keepdims=True)
-        >>> result = output.shape
-        >>> print(result)
-        (3, 1, 5, 6)
-        >>> # case 1: Reduces a dimension by the maximum value of all elements in the dimension.
-        >>> x = Tensor(np.array([[[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3]],
-        ...                      [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
-        ...                      [[7, 7, 7, 7, 7, 7], [8, 8, 8, 8, 8, 8], [9, 9, 9, 9, 9, 9]]]), mindspore.float32)
-        >>> output = ops.amax(x)
-        >>> print(output)
-        9.0
-        >>> print(output.shape)
-        ()
-        >>> # case 2: Reduces a dimension along axis 0.
-        >>> output = ops.amax(x, 0, True)
-        >>> print(output)
-        [[[7. 7. 7. 7. 7. 7.]
-          [8. 8. 8. 8. 8. 8.]
-          [9. 9. 9. 9. 9. 9.]]]
-        >>> # case 3: Reduces a dimension along axis 1.
-        >>> output = ops.amax(x, 1, True)
-        >>> print(output)
-        [[[3. 3. 3. 3. 3. 3.]]
-         [[6. 6. 6. 6. 6. 6.]]
-         [[9. 9. 9. 9. 9. 9.]]]
-        >>> # case 4: Reduces a dimension along axis 2.
-        >>> output = ops.amax(x, 2, True)
-        >>> print(output)
-        [[[1.]
-          [2.]
-          [3.]]
-         [[4.]
-          [5.]
-          [6.]]
-         [[7.]
-          [8.]
-          [9.]]]
+        >>> input = mindspore.tensor([[9, 3, 4, 5],
+        ...                           [5, 2, 7, 4],
+        ...                           [8, 1, 3, 6]])
+        >>> # case 1: By default, compute the maximum of all elements.
+        >>> mindspore.ops.amax(input)
+        Tensor(shape=[], dtype=Int64, value= 9)
+        >>>
+        >>> # case 2: Compute maximum along axis 1.
+        >>> mindspore.ops.amax(input, axis=1)
+        Tensor(shape=[3], dtype=Int64, value= [9, 7, 8])
+        >>>
+        >>> # case 3: If keepdims=True, the output shape will be same of that of the input.
+        >>> mindspore.ops.amax(input, axis=1, keepdims=True)
+        Tensor(shape=[3, 1], dtype=Int64, value=
+        [[9],
+         [7],
+         [8]])
+        >>>
+        >>> # case 4: Use "where" to include only specific elements in computing the maximum.
+        >>> where = mindspore.tensor([[0, 0, 1, 0],
+        ...                           [0, 0, 1, 1],
+        ...                           [1, 1, 1, 0]], dtype=mindspore.bool_)
+        >>> mindspore.ops.amax(input, axis=1, keepdims=True, initial=0, where=where)
+        Tensor(shape=[3, 1], dtype=Int64, value=
+        [[4],
+         [7],
+         [8]])
+        >>>
+        >>> # case 5: The shape of "where" must be broadcast compatible with input.
+        >>> where = mindspore.tensor([[False],
+        ...                           [False],
+        ...                           [False]])
+        >>> mindspore.ops.amax(input, axis=0, keepdims=True, initial=0, where=where)
+        Tensor(shape=[1, 4], dtype=Int64, value=
+        [[0, 0, 0, 0]])
     """
     if axis is None:
         axis = ()
