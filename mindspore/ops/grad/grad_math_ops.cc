@@ -1904,6 +1904,17 @@ REG_BPROP_BUILDER("LogAddExp").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return BinopGradCommon(ib, x, y, dx, dy);
 });
 
+REG_BPROP_BUILDER("LogAddExp2").FreeUselessValues_O({}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  auto exp_x_y_1p = ib->Add(ib->Emit("PowScalarTensor", {ib->Value(2), ib->Sub(x, y)}), ib->Tensor(1, ib->GetDtype(x)));
+  auto exp_y_x_1p = ib->Add(ib->Emit("PowScalarTensor", {ib->Value(2), ib->Sub(y, x)}), ib->Tensor(1, ib->GetDtype(x)));
+  auto dx = ib->Div(dout, exp_y_x_1p);
+  auto dy = ib->Div(dout, exp_x_y_1p);
+  return BinopGradCommon(ib, x, y, dx, dy);
+});
+
 REG_BPROP_BUILDER("LogSumExp").SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto dim = ib->GetInput(kIndex1);

@@ -418,6 +418,7 @@ from mindspore.ops.auto_generate import log10_ext as log10
 
 # 553
 from mindspore.ops.auto_generate import logaddexp_ext as logaddexp
+from mindspore.ops.auto_generate import logaddexp2
 
 # 557
 from mindspore.ops.auto_generate import logsumexp_ext as logsumexp
@@ -2041,6 +2042,7 @@ __all__ = [
 
     # 553
     'logaddexp',
+    'logaddexp2',
 
     # 557
     'logsumexp',
