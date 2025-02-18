@@ -38,6 +38,7 @@ class InternalGroupedMatmul : public InternalKernelMod {
   uint64_t GenerateTilingKey(const std::vector<KernelTensor *> &inputs) override;
 
  private:
+  internal::MatmulParam param_;
   internal::TensorFormat output_format_;
 };
 }  // namespace kernel
