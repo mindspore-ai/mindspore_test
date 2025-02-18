@@ -225,7 +225,7 @@ from mindspore.mint.nn.layer.activation import SiLU, LogSigmoid
 # 94
 
 # 95
-
+from mindspore.nn.layer import AvgPool3dExt as AvgPool3d
 # 96
 
 # 97
@@ -1379,7 +1379,7 @@ __all__ = [
     # 94
     'AdaptiveMaxPool1d',
     # 95
-
+    'AvgPool3d',
     # 96
     'AdaptiveAvgPool1d',
 

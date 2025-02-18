@@ -2720,6 +2720,26 @@ REG_BPROP_BUILDER("AvgPool3D").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
+REG_BPROP_BUILDER("AvgPool3DExt").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto kernel_size = ib->GetInput(kIndex1);
+  auto stride = ib->GetInput(kIndex2);
+  auto padding = ib->GetInput(kIndex3);
+  auto ceil_mode = ib->GetInput(kIndex4);
+  auto count_include_pad = ib->GetInput(kIndex5);
+  auto divisor_override = ib->GetInput(kIndex6);
+  auto dout = ib->GetInput(kIndex8);
+  auto dx = ib->Emit("AvgPool3DGradExt",
+                     {dout, input, kernel_size, stride, padding, ceil_mode, count_include_pad, divisor_override});
+  return {dx,
+          ib->OutZeros(kernel_size),
+          ib->OutZeros(stride),
+          ib->OutZeros(padding),
+          ib->OutZeros(ceil_mode),
+          ib->OutZeros(count_include_pad),
+          ib->OutZeros(divisor_override)};
+});
+
 REG_BPROP_BUILDER("Mish").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto dout = ib->GetInput(kIndex2);

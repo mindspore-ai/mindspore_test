@@ -81,7 +81,7 @@ from mindspore.ops.auto_generate import (reflection_pad_1d_op, reflection_pad_2d
 # 14
 
 # 15
-
+from mindspore.ops.auto_generate import avg_pool3d_ext_op
 # 16
 
 # 17
@@ -827,6 +827,77 @@ def avg_pool3d(input_x, kernel_size=1, stride=1, padding=0, ceil_mode=False, cou
                                                count_include_pad=count_include_pad,
                                                divisor_override=divisor_override)
     return avg_pool_op(input_x)
+
+
+def avg_pool3d_ext(input, kernel_size, stride=None, padding=0, ceil_mode=False, count_include_pad=True,
+                   divisor_override=None):
+    r"""
+    Applies a 3D average pooling over an input Tensor which can be regarded as a composition of
+    3D input planes. Typically the input is of shape :math:`(N, C, D_{in}, H_{in}, W_{in})` ,
+    outputs regional average in the :math:`(D_{in}, H_{in}, W_{in})` -dimension.
+    Given kernel size :math:`(kD, kH, kW)` and `stride` , the operation is as follows.
+
+    .. math::
+        \text{output}(N_i, C_j, d, h, w) = \frac{1}{kD * kH * kW} \sum_{l=0}^{kD-1} \sum_{m=0}^{kH-1} \sum_{n=0}^{kW-1}
+
+        \text{input}(N_i, C_j, stride[0] \times d + l, stride[1] \times h + m, stride[2] \times w + n)
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Note:
+        This interface currently does not support Atlas A2 training series products.
+
+    Args:
+        input (Tensor): Tensor of shape :math:`(N, C, D_{in}, H_{in}, W_{in})` or :math:`(C, D_{in}, H_{in}, W_{in})`.
+        kernel_size (Union[int, tuple[int], list[int]]): The size of kernel used to take the average value.
+            Can be a single number or a tuple :math:`(kD, kH, kW)` .
+        stride (Union[int, tuple[int], list[int]], optional): The distance of kernel moving.
+            Can be a single number or a tuple :math:`(sD, sH, sW)` . Default: ``None``,
+            where its value is equal to `kernel_size`.
+        padding (Union[int, tuple[int], list[int]], optional): Implicit zero padding to be added on both sides.
+            Can be a single number or a tuple :math:`(padD, padH, padW)` . Default: ``0``.
+        ceil_mode (bool, optional): If True, apply ceil instead of floor to compute the output shape.
+            Default: ``False``.
+        count_include_pad (bool, optional): If True, include the zero-padding in the averaging calculation.
+            Default: ``True`` .
+        divisor_override (int, optional): If specified, it will be used as divisor in the averaging calculation,
+            otherwise size of pooling region will be used. Default: ``None``.
+
+    Returns:
+        Tensor, with shape :math:`(N, C, D_{out}, H_{out}, W_{out})` or :math:`(C, D_{out}, H_{out}, W_{out})`.
+
+        .. math::
+            \begin{array}{ll} \\
+                D_{out} = \frac{D_{in} + 2 \times padding[0] - kernel\_size[0]}{stride[0]} + 1 \\
+                H_{out} = \frac{H_{in} + 2 \times padding[1] - kernel\_size[0]}{stride[1]} + 1 \\
+                W_{out} = \frac{W_{in} + 2 \times padding[2] - kernel\_size[1]}{stride[2]} + 1
+            \end{array}
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `kernel_size` or `stride` is neither int nor tuple.
+        TypeError: If `ceil_mode` or `count_include_pad` is not a bool.
+        TypeError: If `divisor_override` is not an int or None.
+        ValueError: If the dimension of `input` is not equal to `4` or `5`.
+        ValueError: If `kernel_size` or `stride` is less than 1.
+        ValueError: If value of `padding` is less than `0`.
+        ValueError: If `kernel_size`, `padding` or `stride` is a tuple whose length is not equal to `1` or `3`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> input_x = Tensor(np.arange(1 * 2 * 2 * 2 * 3).reshape((1, 2, 2, 2, 3)), mindspore.float16)
+        >>> output = ops.avg_pool3d_ext(input_x, kernel_size=2, stride=1)
+        >>> print(output)
+        [[[[[ 5.  6.]]]
+          [[[17. 18.]]]]]
+    """
+    return avg_pool3d_ext_op(input, kernel_size, stride, padding, ceil_mode, count_include_pad, divisor_override)
 
 
 @constexpr
