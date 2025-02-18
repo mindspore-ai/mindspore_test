@@ -44,6 +44,8 @@ typedef struct {
   std::vector<ShapeVector> origin_output_shapes;
   std::vector<ShapeVector> shard_input_shapes;
   std::vector<ShapeVector> shard_output_shapes;
+  std::string op_type;
+  bool is_recompute;
 } OpInfo;
 
 using OpInfoPtr = std::shared_ptr<OpInfo>;
@@ -269,10 +271,9 @@ void GetBpNodeInfos(std::unordered_map<CNodePtr, OpInfoPtr> *op_info_map_dx_dw_m
   }
 }
 
-nlohmann::ordered_json ToJson(const CNodePtr &para_node,
-                              std::unordered_map<std::string, OpInfoPtr> op_info_map_dx_dw_map,
-                              std::unordered_map<CNodePtr, OpInfoPtr> bprop_op_info_map_dx_dw_map) {
-  nlohmann::ordered_json args;
+void ToJson(const CNodePtr &para_node, std::unordered_map<std::string, OpInfoPtr> op_info_map_dx_dw_map,
+            std::unordered_map<CNodePtr, OpInfoPtr> bprop_op_info_map_dx_dw_map,
+            std::unordered_map<std::string, OpInfoPtr> *all_op_info, std::string op_id) {
   MS_EXCEPTION_IF_NULL(para_node);
   auto prim = GetCNodePrimitive(para_node);
   MS_EXCEPTION_IF_NULL(prim);
@@ -285,19 +286,12 @@ nlohmann::ordered_json ToJson(const CNodePtr &para_node,
     op_info = op_info_map_dx_dw_map[para_node->UniqueId()];
   }
   MS_EXCEPTION_IF_NULL(op_info);
-  args["op_name"] = para_node->UniqueName();
-  args["op_type"] = prim->name();
-  args["intput_origin_shape"] = op_info->origin_input_shapes;
-  args["intput_shard_shape"] = op_info->shard_input_shapes;
-  args["origin_output_shape"] = op_info->origin_output_shapes;
-  args["output_shard_shape"] = op_info->shard_output_shapes;
-  args["is_recompute"] = common::AnfAlgo::IsRecompute(para_node);
-  args["shard_flops"] = op_info->shard_flops;
-  args["full_flops"] = op_info->full_flops;
-  return args;
+  op_info->is_recompute = common::AnfAlgo::IsRecompute(para_node);
+  op_info->op_type = prim->name();
+  (*all_op_info)[op_id] = op_info;
 }
 
-void GetCalOps(const FuncGraphPtr &graph, size_t *op_id, nlohmann::ordered_json *args,
+void GetCalOps(const FuncGraphPtr &graph, size_t *op_id, std::unordered_map<std::string, OpInfoPtr> *all_op_info,
                const std::unordered_map<std::string, OpInfoPtr> &op_info_map_dx_dw_map,
                const std::unordered_map<CNodePtr, OpInfoPtr> &bprop_op_info_map_dx_dw_map) {
   MS_EXCEPTION_IF_NULL(graph);
@@ -306,25 +300,27 @@ void GetCalOps(const FuncGraphPtr &graph, size_t *op_id, nlohmann::ordered_json 
     MS_EXCEPTION_IF_NULL(node);
     if (IsValueNode<FuncGraph>(node->input(0))) {
       FuncGraphPtr sub_graph = node->input(0)->cast<ValueNodePtr>()->value()->cast<FuncGraphPtr>();
-      GetCalOps(sub_graph, op_id, args, op_info_map_dx_dw_map, bprop_op_info_map_dx_dw_map);
+      GetCalOps(sub_graph, op_id, all_op_info, op_info_map_dx_dw_map, bprop_op_info_map_dx_dw_map);
     } else if (GetCNodePrimitive(node) &&
                (fp_primitive_set.find(GetCNodePrimitive(node)->name()) != fp_primitive_set.end() ||
                 bp_primitive_set.find(GetCNodePrimitive(node)->name()) != bp_primitive_set.end())) {
-      (*args)[std::to_string(*op_id)] = ToJson(node, op_info_map_dx_dw_map, bprop_op_info_map_dx_dw_map);
+      ToJson(node, op_info_map_dx_dw_map, bprop_op_info_map_dx_dw_map, all_op_info, std::to_string(*op_id));
       *op_id = *op_id + 1;
     } else if (node->input(0)->isa<CNode>() && node->input(0)->abstract() != nullptr) {
       auto abs = node->input(0)->abstract();
       if (abs->isa<abstract::FuncGraphAbstractClosure>()) {
         const auto &abstract_func_graph = abs->cast<abstract::FuncGraphAbstractClosurePtr>();
         MS_EXCEPTION_IF_NULL(abstract_func_graph->func_graph());
-        GetCalOps(abstract_func_graph->func_graph(), op_id, args, op_info_map_dx_dw_map, bprop_op_info_map_dx_dw_map);
+        GetCalOps(abstract_func_graph->func_graph(), op_id, all_op_info, op_info_map_dx_dw_map,
+                  bprop_op_info_map_dx_dw_map);
       } else if (abs->isa<abstract::PartialAbstractClosure>()) {
         const auto &abstract_partial_func = abs->cast<abstract::PartialAbstractClosurePtr>();
         const auto &abstract_fn = abstract_partial_func->fn();
         if (abstract_fn->isa<abstract::FuncGraphAbstractClosure>()) {
           const auto &abstract_func_graph = abstract_fn->cast<abstract::FuncGraphAbstractClosurePtr>();
           MS_EXCEPTION_IF_NULL(abstract_func_graph->func_graph());
-          GetCalOps(abstract_func_graph->func_graph(), op_id, args, op_info_map_dx_dw_map, bprop_op_info_map_dx_dw_map);
+          GetCalOps(abstract_func_graph->func_graph(), op_id, all_op_info, op_info_map_dx_dw_map,
+                    bprop_op_info_map_dx_dw_map);
         }
       }
     }
@@ -335,22 +331,22 @@ void GetCalOps(const FuncGraphPtr &graph, size_t *op_id, nlohmann::ordered_json 
 py::tuple FlopsCollection(const FuncGraphPtr &graph) {
   MS_LOG(INFO) << "cal model flops.";
   size_t op_id = 0;
-  nlohmann::ordered_json args;
-  int64_t full_mfu = 0;
-  int64_t full_hfu = 0;
-  int64_t shard_mfu = 0;
-  int64_t shard_hfu = 0;
+  double full_mfu = 0;
+  double full_hfu = 0;
+  double shard_mfu = 0;
+  double shard_hfu = 0;
   bool is_dynamic_shape = false;
   std::unordered_map<std::string, OpInfoPtr> op_info_map_dx_dw_map;
   std::unordered_map<CNodePtr, OpInfoPtr> bprop_info_map_dx_dw_map;
+  std::unordered_map<std::string, OpInfoPtr> all_op_info;
   GetFwdNodeInfos(&op_info_map_dx_dw_map, graph);
   GetBpNodeInfos(&bprop_info_map_dx_dw_map, op_info_map_dx_dw_map, graph);
-  GetCalOps(graph, &op_id, &args, op_info_map_dx_dw_map, bprop_info_map_dx_dw_map);
-  constexpr size_t json_dump_mode = 2;
-  for (auto arg : args) {
-    auto full_op_flops = static_cast<int64_t>(arg["full_flops"]);
-    auto shard_op_flops = static_cast<int64_t>(arg["shard_flops"]);
-    if (arg["op_type"] == prim::kPrimFlashAttentionScoreGrad->name()) {
+  GetCalOps(graph, &op_id, &all_op_info, op_info_map_dx_dw_map, bprop_info_map_dx_dw_map);
+  for (auto &op_info_item : all_op_info) {
+    auto op_info = op_info_item.second;
+    auto full_op_flops = static_cast<double>(op_info->full_flops);
+    auto shard_op_flops = static_cast<double>(op_info->shard_flops);
+    if (op_info->op_type == prim::kPrimFlashAttentionScoreGrad->name()) {
       const double expand_ratio_fa_bp = 1.5;
       if (shard_op_flops < 0) {
         is_dynamic_shape = true;
@@ -366,12 +362,11 @@ py::tuple FlopsCollection(const FuncGraphPtr &graph) {
       full_hfu += full_op_flops;
       shard_hfu += shard_op_flops;
     }
-    if (!arg["is_recompute"]) {
+    if (!op_info->is_recompute) {
       full_mfu += full_op_flops;
       shard_mfu += shard_op_flops;
     }
   }
-  MS_LOG(DEBUG) << args.dump(json_dump_mode);
   return py::make_tuple(full_mfu, full_hfu, shard_mfu, shard_hfu, is_dynamic_shape);
 }
 }  // namespace parallel
