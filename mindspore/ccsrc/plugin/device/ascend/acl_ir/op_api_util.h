@@ -51,8 +51,6 @@ class AclUtil {
  public:
   static uint8_t KeepOriginDType();
 
-  static void SetDeterministic();
-
   static aclError SetCompileMode(const int64_t is_dyncmic);
 
   static aclError SetPrecisionMode(const std::string &mode);
