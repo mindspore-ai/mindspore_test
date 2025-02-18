@@ -20,6 +20,7 @@
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
 #include "infer/ops_func_impl/arange.h"
+#include "ops/utils/general_infer_utils.h"
 
 namespace mindspore {
 namespace ops {
@@ -34,5 +35,51 @@ OP_FUNC_IMPL_TEST_CASES(
       {{}, {}, {}}, {kInt64, kInt64, kInt64}, {{-1}}, {kFloat32}, {CreateScalar<int64_t>(kNumberTypeFloat32)}},
     MultiInputOpParams{{{-1}, {-1}, {-1}}, {kFloat32, kFloat32, kFloat32}, {{-1}}, {kFloat32}, {mindspore::kNone}},
     MultiInputOpParams{{{-2}, {-2}, {-2}}, {kFloat64, kFloat64, kFloat64}, {{-1}}, {kFloat64}, {mindspore::kNone}}));
+
+    template <typename T>
+    tensor::TensorPtr CreateArangeTensor(const TypeId &type, const ShapeVector &shape, std::vector<T> value) {
+      void *data_ptr = &value[0];
+      auto tensor = std::make_shared<tensor::Tensor>(type, shape, data_ptr, type);
+      return tensor;
+    }
+    
+    struct ArangeInferValueParams {
+      ValuePtr start_value;
+      ValuePtr end_value;
+      ValuePtr step_value;
+      tensor::TensorPtr out;
+    };
+    
+    class TestArangeInferValue : public TestOps, public testing::WithParamInterface<ArangeInferValueParams> {};
+    
+    TEST_P(TestArangeInferValue, dyn_shape_infer_value) {
+      const auto param = GetParam();
+      auto start = param.start_value->ToAbstract();
+      auto end = param.end_value->ToAbstract();
+      auto step = param.step_value->ToAbstract();
+      ASSERT_NE(start, nullptr);
+      ASSERT_NE(end, nullptr);
+      ASSERT_NE(step, nullptr);
+      auto input_args = abstract::AbstractBasePtrList{start, end, step};
+      auto value_opt = abstract::InferValueByFuncImpl(prim::kPrimArange, input_args);
+      if (!value_opt.has_value()) {
+        MS_LOG(ERROR) << "Log have no infer value implement!";
+        ASSERT_TRUE(false);
+      }
+      auto infer_out = value_opt.value();
+      if (infer_out == nullptr) {
+        MS_LOG(ERROR) << "Log can not infer value with inputs: " << input_args;
+        ASSERT_TRUE(false);
+      }
+      auto infer_tensor = infer_out->cast<tensor::TensorPtr>();
+      ASSERT_NE(infer_tensor, nullptr);
+      ASSERT_TRUE(infer_tensor->ValueEqual(*param.out));
+    }
+    
+    INSTANTIATE_TEST_CASE_P(
+      TestArangeInferValue, TestArangeInferValue,
+      testing::Values(ArangeInferValueParams{CreateScalar<int64_t>(1), CreateScalar<int64_t>(5), CreateScalar<int64_t>(1),
+                                             CreateArangeTensor<int64_t>(kNumberTypeInt64, ShapeVector{4}, std::vector<int64_t>{1, 2, 3, 4})}));
+    
 }  // namespace ops
 }  // namespace mindspore
