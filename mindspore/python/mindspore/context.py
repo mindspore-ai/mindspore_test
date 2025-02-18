@@ -1025,7 +1025,8 @@ def set_auto_parallel_context(**kwargs):
 
                         - pipeline_interleave(bool): Indicates whether to enable the interleaved execution mode.
                         - pipeline_scheduler(str): Indicates the scheduling mode for pipeline parallelism. Only support
-                          ``gpipe/1f1b/seqpipe``.
+                          ``gpipe/1f1b/seqpipe/seqvpp/seqsmartvpp``. When applying seqsmartvpp, the pipeline parallel
+                          must be an even number.
         parallel_optimizer_config (dict): A dict contains the keys and values for setting the parallel optimizer
                         configure. The configure provides more detailed behavior control about parallel training
                         when parallel optimizer is enabled. The configure will be effective when we use
