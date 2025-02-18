@@ -682,6 +682,10 @@ def tensor_greater_equal(input, other):
     return greater_equal(input, other)
 
 
+def deprecated_tensor_greater_equal(input, other):
+    return greater_equal(input, other)
+
+
 # 41 gt
 
 # 42 half

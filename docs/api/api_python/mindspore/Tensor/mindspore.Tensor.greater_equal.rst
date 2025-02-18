@@ -5,6 +5,13 @@ mindspore.Tensor.greater_equal
 
     逐元素计算 :math:`self >= other` 的bool值。
 
+    .. math::
+
+        out_{i} =\begin{cases}
+            & \text{True,    if } self_{i}>=other_{i} \\
+            & \text{False,   if } self_{i}<other_{i}
+            \end{cases}
+
     参数：
         - **other** (Union[Tensor, Number]) - `other` 应该是一个Number或数据类型为number或bool的Tensor。
 
