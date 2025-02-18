@@ -35,6 +35,7 @@ import threading
 import platform
 import psutil
 import numpy as np
+import dill
 
 import mindspore._c_dataengine as cde
 
@@ -46,7 +47,7 @@ from . import samplers
 from .queue import _SharedQueue
 from .validators import check_generator_dataset, check_numpy_slices_dataset, check_padded_dataset
 from ..core.config import get_enable_shared_mem, get_prefetch_size, get_multiprocessing_timeout_interval, \
-    get_enable_watchdog, get_debug_mode, get_seed, set_seed
+    get_enable_watchdog, get_debug_mode, get_seed, set_seed, get_multiprocessing_start_method
 from ..core.datatypes import mstypelist_to_detypelist
 from ..core.py_util_helpers import ExceptionHandler
 from ..core.validator_helpers import type_check
@@ -220,9 +221,12 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
         self.pids = []
         self.check_interval = get_multiprocessing_timeout_interval()  # the interval of check queue's size
 
+        multiprocessing.set_start_method(get_multiprocessing_start_method(), True)
         # Event for end of epoch
         if self.multi_process is True:
             try:
+                # Objects may be incompatible between processes created in different contexts, and locks created using
+                # fork contexts cannot be passed to processes started using the spawn startup method
                 self.eof = multiprocessing.Event()
             except Exception:
                 raise RuntimeError("Init multiprocessing.Event() failed, This might be caused by insufficient shm,"
@@ -245,6 +249,7 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
         for worker_id in range(self.num_worker):
             if self.multi_process is True:
                 try:
+                    logger.info("Multiprocessing start method: {}".format(multiprocessing.get_start_method()))
                     worker = _GeneratorWorkerMp(self.dataset, self.eof, self.max_rowsize, queue_size, self.ppid,
                                                 self.count, worker_id)
                     worker.daemon = True
@@ -269,6 +274,7 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                 worker.daemon = True
                 self.need_join = True
             self.workers.append(worker)
+        multiprocessing.set_start_method("fork", True)
 
         if self.multi_process:
             logger.info("Launch generator worker process(es): {}".format([worker.pid for worker in self.workers]))
@@ -478,6 +484,10 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
 
             self.workers.clear()
             self.workers = None
+            # Under independent processes, the GeneratorDataset pulls up multiple processes in a spawn manner, and
+            # after the use case exits normally, there will be a warning: UserWarning: resource_tracker: There appear
+            # to be %d leaked semaphore objects to clean up at shutdown.
+            self.eof = None
 
     def _abort_monitor(self):
         """Deregister workers monitored by the watch dog and join clean process."""
@@ -691,6 +701,25 @@ class _GeneratorWrapper:
         return next(self.generator_new)
 
 
+class _PickleGeneratorSource:
+    """Starting multiple processes in spawn mode requires pickling source object in GeneratorDataset."""
+    def __init__(self, dataset):
+        self.dataset = dataset
+
+    def __getitem__(self, index):
+        return self.dataset[index]
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getstate__(self):
+        state = dill.dumps(self.dataset)
+        return state
+
+    def __setstate__(self, state):
+        self.dataset = dill.loads(state)
+
+
 class GeneratorDataset(MappableDataset, UnionBaseDataset):
     """
     A source dataset that generates data from Python by invoking Python data source each epoch.
@@ -873,7 +902,8 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
             self.source = _GeneratorWrapper(self.source)
 
         self.prepared_source = None  # source to be sent to C++
-        if hasattr(self, 'operator_mixed') and getattr(self, 'operator_mixed') is True:
+        if hasattr(self, 'operator_mixed') and getattr(self, 'operator_mixed') is True and \
+           get_multiprocessing_start_method() == "fork":
             self.num_parallel_workers = 1
             logger.warning(
                 "Input 'source' of 'GeneratorDataset' includes network computing operators like in mindspore.nn, "
@@ -993,6 +1023,8 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
 
             if self.num_parallel_workers > 1 and not get_debug_mode():
                 self.__validate_memory_usage()
+                # Starting multiple processes in spawn mode requires pickling source object
+                self.source = _PickleGeneratorSource(self.source)
 
                 sample_fn = SamplerFn(self.source, self.num_parallel_workers, self.python_multiprocessing,
                                       self.max_rowsize)
