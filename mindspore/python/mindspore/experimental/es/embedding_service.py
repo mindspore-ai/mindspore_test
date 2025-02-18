@@ -125,18 +125,20 @@ class EmbeddingServiceOut:
 
 class EmbeddingService:
     r"""
-    Currently, ES(EmbeddingService) feature can only create one object which can support model training and inference
+    ES(EmbeddingService) feature can support model training and inference
     for PS embedding and data_parallel embedding, and provide unified embedding management, storage,
     and computing capabilities for training and inference.
     PS embedding refer to tables that vocab_size more than 100,000, and recommended to store them on the
     Parameter Server (PS). Data_parallel embedding refer to tables that vocab_size less than 100,000, and recommended
     to store them on device.
 
+    Currently, ES feature can only create one instance of EmbeddingService object.
+
     .. warning::
         This is an experimental EmbeddingService API that is subject to change.
 
     .. note::
-        This API needs to call 'mindspore.communication.init()' before,
+        This API needs to call :func:`mindspore.communication.init` before,
         and it can take effect after the dynamic networking is completed.
 
     Raises:
@@ -241,24 +243,25 @@ class EmbeddingService:
             name (str): The embedding table name.
             init_vocabulary_size (int): The size of embedding table.
             embedding_dim (int): The embedding dim of data in embedding table.
-            max_feature_count (int, optional): The count of keys when look up for PS.
-            initializer (Initializer, optional): The initialization strategy for the PS embedding, default is
-                ``Uniform``.
+            max_feature_count (int, optional): The count of keys when look up for PS. Default: ``None``.
+            initializer (Initializer, optional): The initialization strategy for the PS embedding,
+                default is ``Uniform(scale=0.01)``.
             embedding_type (str, optional): The embedding type, configurable parameters ["PS", "data_parallel"],
                 ``"PS"`` means initializing PS embedding, ``"data_parallel"`` means initializing data_parallel
                 embedding, and default is ``"PS"``.
             ev_option (EmbeddingVariableOption, optional): Properties of the PS embedding,
                 is a EmbeddingVariableOption obj which returned by embedding_variable_option function.
                 Default is ``None``.
-            multihot_lens (int, optional): The param only use when allow_merge is enabled, and not support now.
+            multihot_lens (int, optional): The param only use when `allow_merge` is enabled, and not support now.
                 Default is ``None``.
             optimizer (str, optional): The type of optimizer in the train mode for PS embedding,
                 cannot be shared among each PS embedding, and currently only ``"Adam"``, ``"Ftrl"``, ``"SGD"`` and
                 ``"RMSProp"`` are supported, and default is ``None``.
             allow_merge (bool, optional): Whether to enable merge data_parallel embeddings, currently only be False,
                 and default is ``False``.
-            optimizer_param (float, optional): The "initialize accumulator value" param of optimizer
-                which configured by user, representing the init value of moment accumulator, and default is ``None``.
+            optimizer_param (float, optional): The "initialize accumulator value" param
+                of optimizer which configured by user,
+                representing the init value of moment accumulator, and default is ``None``.
             mode (str, optional): Run mode, configurable parameters ["train", "predict", "export"],
                 ``"train"`` means train mode, ``"predict"`` means predict mode, ``"export"`` mean export mode,
                 and default is ``"train"``.
@@ -399,7 +402,8 @@ class EmbeddingService:
         Args:
             filter_freq (int): The frequency threshold value for feature admission.
             default_key (int, optional): The key that number of occurrences does not reach the threshold,
-                return value of default key as the corresponding value when look up embedding, and default is ``None``.
+                return value of `default_key` as the corresponding value when look up embedding,
+                and default is ``None``.
             default_value (int/float, optional): The key that number of occurrences does not reach the threshold,
                 return default value which length value is embedding dim, and default is ``None``.
 
@@ -471,7 +475,8 @@ class EmbeddingService:
             communication_option (None, optional): Reserved option, currently not supported. Default is ``None``.
 
         Returns:
-            EmbeddingVariableOption object, used as the ev_option parameter for embedding_init.
+            EmbeddingVariableOption object, used as the ev_option parameter for
+            :func:`mindspore.mindspore.experimental.es.EmbeddingService.embedding_init` .
 
         Raises:
             TypeError: If value of "filter_option" is not None and the type of "filter_option" is not CounterFilter.
@@ -503,7 +508,8 @@ class EmbeddingService:
 
         .. note::
             This function can only be executed by rank 0.
-            Need to call embedding_variable_option to set evict_option for each PS embedding before export.
+            Need to call :func:`mindspore.experimental.es.EmbeddingService.embedding_variable_option`
+            to set evict_option for each PS embedding before export.
 
         Args:
             file_path (str): The path to export embedding ckpt, and the last character cannot be ``"/"``.

@@ -1,7 +1,7 @@
 mindspore.Tensor.count_nonzero
 ==============================
 
-.. py:method:: Tensor.count_nonzero(dim=None)
+.. py:method:: mindspore.Tensor.count_nonzero(dim=None)
 
     计算输入Tensor指定轴上的非零元素的数量。如果没有指定维度，则计算Tensor中所有非零元素的数量。
 
@@ -18,7 +18,7 @@ mindspore.Tensor.count_nonzero
         - **TypeError** - `dim` 类型不是int、tuple(int)、list(int)或None。
         - **ValueError** - `dim` 取值不在 :math:`[-self.ndim, self.ndim)` 范围。
     
-    .. py:method:: Tensor.count_nonzero(axis=(), keep_dims=False, dtype=None)
+    .. py:method:: mindspore.Tensor.count_nonzero(axis=(), keep_dims=False, dtype=None)
         :noindex:
 
     计算输入Tensor指定轴上的非零元素的数量。如果没有指定维度，则计算Tensor中所有非零元素的数量。

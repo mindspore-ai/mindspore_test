@@ -16,10 +16,10 @@ mindspore.dataset.vision.AutoAugment
 
         - **interpolation** (:class:`~.vision.Inter`, 可选) - 图像插值方法。可选值详见 :class:`mindspore.dataset.vision.Inter` 。
           默认值： ``Inter.NEAREST``。
-        - **fill_value** (Union[int, tuple[int]], 可选) - 填充的像素值。
+        - **fill_value** (Union[int, tuple[int]], 可选) - 填充的像素值。默认值： ``0`` 。
 
           - 如果是3元素元组，则分别用于填充R、G、B通道。
-          - 如果是整数，则用于所有 RGB 通道。 `fill_value` 值必须在 [0, 255] 范围内。默认值： ``0`` 。
+          - 如果是整数，则用于所有 RGB 通道。 `fill_value` 值必须在 [0, 255] 范围内。
 
     异常：
         - **TypeError** - 如果 `policy` 不是 :class:`mindspore.dataset.vision.AutoAugmentPolicy` 类型。
