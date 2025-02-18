@@ -46,7 +46,7 @@ def test_logical_xor(mode):
     Expectation: expect correct forward result
     """
     x, y, expect = generate_random_input((2, 3, 4, 5), np.int32)
-    y2 = 6
+    y2 = True
     expect2 = np.logical_xor(x, y2)
     x = Tensor(x, dtype=ms.int32)
     y = Tensor(y, dtype=ms.int32)
