@@ -1481,6 +1481,8 @@ def deprecated_tensor_logaddexp(input, other):
     return F.logaddexp(input, other)
 
 def tensor_xlogy(input, other):
+    if isinstance(other, (float, int, bool)):
+        other = F.scalar_to_tensor(other)
     return xlogy_op(input, other)
 
 # 158
