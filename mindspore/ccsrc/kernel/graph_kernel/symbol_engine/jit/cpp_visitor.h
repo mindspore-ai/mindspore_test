@@ -26,7 +26,7 @@
 #include "symbolic_shape/symbol.h"
 #include "symbolic_shape/operation.h"
 #include "symbolic_shape/symbol_visitor.h"
-#include "backend/common/graph_kernel/symbol_engine/jit/syntax.h"
+#include "kernel/graph_kernel/symbol_engine/jit/syntax.h"
 
 namespace mindspore::graphkernel::symshape {
 class CppVisitor : public ast::Visitor {

@@ -20,7 +20,7 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "kernel/graph_kernel/graph_kernel_json_generator.h"
 #include "kernel/framework_utils.h"
-#include "backend/common/graph_kernel/adapter/fake_abstract_shape.h"
+#include "kernel/graph_kernel/fake_abstract_shape.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/debug/anf_ir_dump.h"

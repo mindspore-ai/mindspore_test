@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "backend/common/graph_kernel/symbol_engine/jit/transform_visitor.h"
+#include "kernel/graph_kernel/symbol_engine/jit/transform_visitor.h"
 
 #include <memory>
 #include <string>

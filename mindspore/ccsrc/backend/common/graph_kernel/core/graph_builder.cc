@@ -309,8 +309,11 @@ void EliminateRedundantParameters(const FuncGraphPtr &func_graph, AnfNodePtrList
   *inputs = std::move(new_inputs);
 }
 
-std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodes(const AnfNodePtrList &nodes,
-                                                                             const ClusterConfig &config) {
+std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodes(const AnfNodePtrList &nodes) {
+  return BuildGraphFromNodesInner(nodes, {});
+}
+std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodesInner(const AnfNodePtrList &nodes,
+                                                                                  const ClusterConfig &config) {
   FuncGraphPtr fg = nullptr;
   {
     // limit the lifetime of guard.
@@ -370,7 +373,7 @@ std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildSingleGraphFromNod
   FuncGraphPtr fg;
   AnfNodePtrList inputs;
   AnfNodePtrList outputs;
-  std::tie(fg, inputs, outputs) = BuildGraphFromNodes(nodes, config);
+  std::tie(fg, inputs, outputs) = BuildGraphFromNodesInner(nodes, config);
 
   FuncGraphManagerPtr mng = GkUtils::GetFuncGraphManager(fg);
   MS_EXCEPTION_IF_NULL(mng);

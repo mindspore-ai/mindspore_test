@@ -157,7 +157,7 @@ bool AkgKernelBuilder::SingleOpParallelBuild(const std::vector<AnfNodePtr> &anf_
       if (is_custom_node) {
         // in this case, the cnode is a CustomOp (no matter whether graph kernel mode is enabled or not)
         // generate the fused json for the single kernel cnode
-        if (!graph_kernel_json_generator.CollectFusedJsonWithSingleKernel(cnode)) {
+        if (!graph_kernel_json_generator.CollectFusedJsonWithSingleKernel(cnode, build_func_)) {
           MS_EXCEPTION(UnknownError) << "Collect op info failed. op[" << anf_node->fullname_with_scope() << "].";
         }
       } else {

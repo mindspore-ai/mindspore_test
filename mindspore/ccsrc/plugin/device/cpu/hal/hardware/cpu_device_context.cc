@@ -55,7 +55,7 @@
 #include "backend/common/pass/dynamic_sequence_ops_adaptation.h"
 #include "backend/common/graph_kernel/adapter/graph_kernel_optimization.h"
 #include "backend/common/expander/fallback/expander_fallback.h"
-#include "backend/common/graph_kernel/value_graph_binder.h"
+#include "backend/common/pass/value_graph_binder.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
@@ -521,7 +521,7 @@ void CPUKernelExecutor::SetOperatorInfo(const KernelGraphPtr &graph) const {
     }
   }
   if (do_expand) {
-    (void)graphkernel::BindValueToGraph().Run(graph);
+    (void)opt::BindValueToGraph().Run(graph);
     graph->SetExecOrderByDefault();
   }
   (void)profiler::CollectHostInfo(kModelNameCPU, kEventOptimizeGraph, kStageSetKernelInfo, start_time,

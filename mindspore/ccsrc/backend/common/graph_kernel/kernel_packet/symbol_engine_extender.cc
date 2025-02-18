@@ -29,7 +29,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
-#include "backend/common/graph_kernel/kernel_packet/kernel_packet_engine.h"
+#include "kernel/graph_kernel/kernel_packet/kernel_packet_engine.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "backend/common/pass/insert_type_transform_op.h"

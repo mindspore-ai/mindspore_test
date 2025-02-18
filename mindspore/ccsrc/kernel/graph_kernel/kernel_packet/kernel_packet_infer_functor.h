@@ -18,7 +18,7 @@
 
 #include <string>
 #include <vector>
-#include "backend/common/graph_kernel/set_infershape_functor.h"
+#include "kernel/graph_kernel/set_infershape_functor.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_kernel_mod.h"
 
 namespace mindspore {

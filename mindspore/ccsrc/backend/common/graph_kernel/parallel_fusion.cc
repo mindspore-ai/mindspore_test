@@ -27,7 +27,6 @@
 #include "kernel/kernel.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "kernel/common_utils.h"
-#include "frontend/operator/ops.h"
 #include "ir/func_graph_cloner.h"
 #include "backend/common/graph_kernel/core/update_state_formatter.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"

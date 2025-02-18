@@ -37,7 +37,7 @@
 #include "backend/common/graph_kernel/raise_reduction_precision.h"
 #include "backend/common/graph_kernel/graph_kernel_cse.h"
 #include "backend/common/graph_kernel/core/shape_ops_splitter.h"
-#include "backend/common/graph_kernel/value_graph_binder.h"
+#include "backend/common/pass/value_graph_binder.h"
 #include "backend/common/graph_kernel/parallel_fusion.h"
 #include "backend/common/graph_kernel/optimize_assign.h"
 #include "backend/common/graph_kernel/core/split_umonad.h"
@@ -65,7 +65,7 @@
 #include "backend/common/graph_kernel/kernel_packet/symbol_engine_extender.h"
 #include "backend/common/graph_kernel/convert_call_to_prim.h"
 #include "backend/common/graph_kernel/core/graph_kernel_op_combiner.h"
-#include "backend/common/graph_kernel/set_infershape_functor.h"
+#include "kernel/graph_kernel/set_infershape_functor.h"
 #include "backend/common/graph_kernel/convert_input_and_attr.h"
 #include "backend/common/graph_kernel/convert_bfloat16.h"
 #include "backend/common/graph_kernel/deal_with_side_effect.h"
@@ -306,7 +306,7 @@ PassManagerPtr GraphKernelOptimizer::PostProcess() const {
   pm->Add(std::make_shared<ConvertGraphKernelToFrontEnd>(), OptLevel_1);
 
   // Add the new tensors to the kernel_graph
-  pm->Add(std::make_shared<BindValueToGraph>(), OptLevel_1);
+  pm->Add(std::make_shared<opt::BindValueToGraph>(), OptLevel_1);
 
   // Update side effect attr, update kernel graph ref pair(used in device address allocation)
   pm->Add(std::make_shared<DealWithSideEffect>(), OptLevel_1, is_dvm);

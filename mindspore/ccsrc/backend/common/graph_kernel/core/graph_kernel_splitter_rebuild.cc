@@ -148,7 +148,7 @@ void Rebuilder::CreateSubGraphs() {
     FuncGraphPtr fg;
     AnfNodePtrList inputs;
     AnfNodePtrList outputs;
-    std::tie(fg, inputs, outputs) = BuildGraphFromNodes(nodes, config);
+    std::tie(fg, inputs, outputs) = BuildGraphFromNodesInner(nodes, config);
 
     AnfNodePtrList call_inputs = {NewValueNode(fg)};
     (void)std::transform(inputs.begin(), inputs.end(), std::back_inserter(call_inputs),

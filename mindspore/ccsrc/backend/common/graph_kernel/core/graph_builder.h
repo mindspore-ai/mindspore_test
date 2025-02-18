@@ -30,8 +30,9 @@ struct ClusterConfig {
   AnfNodePtr only_output_basenode{nullptr};
 };
 
-std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodes(
-  const AnfNodePtrList &nodes, const ClusterConfig &config = ClusterConfig{});
+std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodesInner(const AnfNodePtrList &nodes,
+                                                                                  const ClusterConfig &config);
+std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodes(const AnfNodePtrList &nodes);
 std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildSingleGraphFromNodes(
   const AnfNodePtrList &nodes, const ClusterConfig &config = ClusterConfig());
 CNodePtr CreateNewFuseCNode(const FuncGraphPtr &main_fg, const FuncGraphPtr &sub_fg, const AnfNodePtrList &inputs);
