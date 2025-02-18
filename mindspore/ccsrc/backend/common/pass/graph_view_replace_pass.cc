@@ -75,13 +75,15 @@ bool GraphViewReplacePass::Run(const FuncGraphPtr &func_graph) {
     }
     auto cnode = node->cast<CNodePtr>();
     auto kernel_name = AnfUtils::GetCNodeName(node);
+    // Use MS_DEV_VIEW_OP="XXX,XX" to enable some of the view ops.
     if (!mindspore::common::IsEnableAclnnViewOp(kernel_name)) {
       continue;
     }
+    // The view op list defined in yamls
     if (!common::AnfAlgo::IsViewNode(node)) {
       continue;
     }
-    // Skip reshapeview when input is from view
+    // Skip reshapeview when input is from view. Need to be done when the ref count is ready.
     if (kernel_name == "Reshape" && IsInputsFromView(cnode)) {
       continue;
     }

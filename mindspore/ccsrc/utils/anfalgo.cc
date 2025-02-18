@@ -2136,21 +2136,28 @@ bool AnfAlgo::CheckStridedSliceForwardOrBackWardIsNopNode(const CNodePtr &cnode)
   }
   return std::all_of(attrs_val.begin(), attrs_val.end(), [](int element) { return element == 0; });
 }
-bool AnfAlgo::IsViewNode(const AnfNodePtr &node) {
-  // Read view tag from op yamls when all the view kernel support aclnn kernelmod.
-  static const std::set<std::string> view_ops = {"BroadcastTo",  "Chunk",       "ExpandDims",        "SelectExt",
-                                                 "SliceExt",     "SplitTensor", "SplitWithSize",     "Transpose",
-                                                 "TransposeExt", "UnstackExt",  "InnerStridedSlice", "Narrow"};
-  constexpr size_t view_len = 4;
 
+namespace {
+// Read view tag from op yamls.
+// When all the view kernel support aclnn kernelmod, change is_graph_view_ to is_view
+bool CheckViewInYaml(const std::string &name) {
+  const auto &op_def = mindspore::ops::GetOpDef(name);
+  bool is_view = (op_def != nullptr ? op_def->is_graph_view_ : false);
+  return is_view;
+}
+}  // namespace
+
+bool AnfAlgo::IsViewNode(const AnfNodePtr &node) {
+  constexpr size_t view_len = 4;
   CNodePtr cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
   auto node_name = AnfAlgo::GetCNodeName(cnode);
-  if (view_ops.count(node_name)) {
+  bool is_view = CheckViewInYaml(node_name);
+  if (is_view) {
     return true;
   }
   if (node_name.length() > view_len) {
-    return view_ops.count(node_name.substr(0, node_name.length() - view_len));
+    return CheckViewInYaml(node_name.substr(0, node_name.length() - view_len));
   }
   return false;
 }
