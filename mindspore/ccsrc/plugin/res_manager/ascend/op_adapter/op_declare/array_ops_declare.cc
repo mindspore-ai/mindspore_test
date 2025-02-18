@@ -375,8 +375,8 @@ CUST_OUTPUT_MAP(GenerateEodMaskV2) = {{0, OUTPUT_DESC(output_ids)}};
 REG_ADPT_DESC(GenerateEodMaskV2, prim::kPrimGenerateEodMaskV2->name(), CUST_ADPT_DESC(GenerateEodMaskV2));
 
 // TopKRouter
-CUST_INPUT_MAP(TopKRouter) = {
-  {1, INPUT_DESC(x)}, {2, INPUT_DESC(capacity)}, {3, INPUT_DESC(expert_num)}, {4, INPUT_DESC(drop_type)}};
+CUST_INPUT_MAP(TopKRouter) = {{1, INPUT_DESC(x)},         {2, INPUT_DESC(capacity)},  {3, INPUT_DESC(expert_num)},
+                              {4, INPUT_DESC(drop_type)}, {5, INPUT_DESC(threshold)}, {6, INPUT_DESC(router_prob)}};
 CUST_ATTR_MAP(TopKRouter) = EMPTY_ATTR_MAP;
 CUST_OUTPUT_MAP(TopKRouter) = {{0, OUTPUT_DESC(dispatch_index)}, {1, OUTPUT_DESC(combine_index)}};
 REG_ADPT_DESC(TopKRouter, prim::kPrimTopKRouter->name(), CUST_ADPT_DESC(TopKRouter));
