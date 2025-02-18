@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_COMMON_LAZY_FUSION_FLAGS_H
-#define MINDSPORE_CCSRC_COMMON_LAZY_FUSION_FLAGS_H
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_DVM_LAZY_FUSION_FLAGS_H
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_DVM_LAZY_FUSION_FLAGS_H
 
 #include <map>
 #include <memory>
@@ -100,4 +100,4 @@ class BACKEND_EXPORT LazyFusionFlags {
   void RegisterFlags(std::map<std::string, std::string> *flag_map);
 };
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_COMMON_LAZY_FUSION_FLAGS_H
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_DVM_LAZY_FUSION_FLAGS_H

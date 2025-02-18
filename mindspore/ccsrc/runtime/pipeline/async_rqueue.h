@@ -56,12 +56,12 @@ class BACKEND_EXPORT AsyncRQueue {
   virtual ~AsyncRQueue();
 
   // Add task to the end of the queue.
-  void Push(const AsyncTaskPtr &task);
+  virtual void Push(const AsyncTaskPtr &task);
 
   bool CanPush() const;
 
   // Wait for all async task finish executing.
-  void Wait();
+  virtual void Wait();
 
   // Check if the queue is empty.
   bool Empty();

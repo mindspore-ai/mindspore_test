@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/pyboost/dvm.h"
+#include "plugin/device/ascend/kernel/dvm/lazy_fusion_op.h"
 #include <memory>
 #include <vector>
 #include <string>
@@ -23,6 +23,8 @@
 #include "base/bfloat16.h"
 #include "infer/ops_func_impl/tile.h"
 #include "plugin/device/ascend/kernel/dvm/lazy_fusion_kernel.h"
+#include "plugin/device/ascend/kernel/dvm/lazy_fusion_flags.h"
+#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace kernel {
@@ -89,7 +91,7 @@ ShapeVector GetReduceDim(const std::optional<ValueTuplePtr> &dim, size_t rank) {
 
 template <typename... Args>
 void CheckForwardFuse(const device::DeviceContext *context, size_t stream, const Args &... inputs) {
-  auto k = static_cast<LazyFusionKernelAscend *>(g_lazy_fusion_manager.Get(context, stream));
+  auto k = g_lazy_fusion_manager.Get(context, stream);
   bool fuse_forward = false;
   ((fuse_forward = fuse_forward || k->HasTensor(inputs)), ...);
   // flush if current op has no relation with previous ops
@@ -126,7 +128,7 @@ template <typename F, typename... Args>
 void DvmCall(const std::string &op_name, OpRunner *op, const F &func, const Args &... inputs) {
   size_t stream = op->stream_id();
   const DeviceContext *context = op->device_context();
-  auto k = static_cast<LazyFusionKernelAscend *>(g_lazy_fusion_manager.Get(context, stream));
+  auto k = g_lazy_fusion_manager.Get(context, stream);
   MS_LOG(INFO) << op_name << " call start, kernel id is " << k->id();
   op->ProfileTrackerTask();
   PyBoostUtils::PrepareOpInputs(context, stream, inputs...);
@@ -161,7 +163,7 @@ void BinaryDvmCall(const std::string &op_name, OpRunner *op, dvm::BinaryOpType o
                    const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor, const TypeId dst_type) {
   size_t stream = op->stream_id();
   const DeviceContext *context = op->device_context();
-  auto k = static_cast<LazyFusionKernelAscend *>(g_lazy_fusion_manager.Get(context, stream));
+  auto k = g_lazy_fusion_manager.Get(context, stream);
   MS_LOG(INFO) << op_name << " call start, kernel id is " << k->id();
   op->ProfileTrackerTask();
   auto type_id = input_tensor->data_type();
@@ -169,20 +171,20 @@ void BinaryDvmCall(const std::string &op_name, OpRunner *op, dvm::BinaryOpType o
   if (IsScalar(input_tensor)) {
     PyBoostUtils::PrepareOpInputs(context, stream, other_tensor);
     if (type_id == kNumberTypeInt32) {
-      obj = k->kernel_.Binary(op_type, TensorToScalar<int32_t>(input_tensor), k->Input(other_tensor));
+      obj = k->Binary(op_type, TensorToScalar<int32_t>(input_tensor), k->Input(other_tensor));
     } else {
-      obj = k->kernel_.Binary(op_type, TensorToScalar<float>(input_tensor), k->Input(other_tensor));
+      obj = k->Binary(op_type, TensorToScalar<float>(input_tensor), k->Input(other_tensor));
     }
   } else if (IsScalar(other_tensor)) {
     PyBoostUtils::PrepareOpInputs(context, stream, input_tensor);
     if (type_id == kNumberTypeInt32) {
-      obj = k->kernel_.Binary(op_type, k->Input(input_tensor), TensorToScalar<int32_t>(other_tensor));
+      obj = k->Binary(op_type, k->Input(input_tensor), TensorToScalar<int32_t>(other_tensor));
     } else {
-      obj = k->kernel_.Binary(op_type, k->Input(input_tensor), TensorToScalar<float>(other_tensor));
+      obj = k->Binary(op_type, k->Input(input_tensor), TensorToScalar<float>(other_tensor));
     }
   } else {
     PyBoostUtils::PrepareOpInputs(context, stream, input_tensor, other_tensor);
-    obj = k->kernel_.Binary(op_type, k->Input(input_tensor), k->Input(other_tensor));
+    obj = k->Binary(op_type, k->Input(input_tensor), k->Input(other_tensor));
   }
   auto tensor = k->Output(obj, dst_type, k->GetShape(obj));
 
@@ -204,7 +206,7 @@ tensor::BaseTensorPtr CastAscendDvm::Call(const BaseTensorPtr &input_tensor, con
     [&input_tensor, dst_type](LazyFusionKernelAscend *k) -> BaseTensorPtr {
       auto src_obj = k->Input(input_tensor, false);
       auto dst_dtype = k->TransType(dst_type);
-      auto obj = k->kernel_.Cast(src_obj, dst_dtype);
+      auto obj = k->Cast(src_obj, dst_dtype);
       return k->Output(obj, dst_type, input_tensor->shape());
     },
     input_tensor);
@@ -218,7 +220,7 @@ tensor::BaseTensorPtr AbsAscendDvm::Call(const BaseTensorPtr &input_tensor) {
   DvmCall(
     op_name_, this,
     [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
-      auto obj = k->kernel_.Unary(dvm::UnaryOpType::kAbs, k->Input(input_tensor));
+      auto obj = k->Unary(dvm::UnaryOpType::kAbs, k->Input(input_tensor));
       return k->Output(obj, input_tensor->data_type(), input_tensor->shape());
     },
     input_tensor);
@@ -233,8 +235,8 @@ tensor::BaseTensorPtr NegAscendDvm::Call(const BaseTensorPtr &input_tensor) {
     op_name_, this,
     [&input_tensor](LazyFusionKernelAscend *k) -> BaseTensorPtr {
       auto obj = input_tensor->data_type() == kNumberTypeInt32
-                   ? k->kernel_.Binary(dvm::BinaryOpType::kMul, k->Input(input_tensor), -1)
-                   : k->kernel_.Binary(dvm::BinaryOpType::kMul, k->Input(input_tensor), -1.0f);
+                   ? k->Binary(dvm::BinaryOpType::kMul, k->Input(input_tensor), -1)
+                   : k->Binary(dvm::BinaryOpType::kMul, k->Input(input_tensor), -1.0f);
       return k->Output(obj, input_tensor->data_type(), input_tensor->shape());
     },
     input_tensor);
@@ -248,7 +250,7 @@ tensor::BaseTensorPtr ExpAscendDvm::Call(const BaseTensorPtr &input_tensor) {
   DvmCall(
     op_name_, this,
     [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
-      auto obj = k->kernel_.Unary(dvm::UnaryOpType::kExp, k->Input(input_tensor));
+      auto obj = k->Unary(dvm::UnaryOpType::kExp, k->Input(input_tensor));
       return k->Output(obj, input_tensor->data_type(), input_tensor->shape());
     },
     input_tensor);
@@ -262,7 +264,7 @@ tensor::BaseTensorPtr SqrtAscendDvm::Call(const BaseTensorPtr &x_tensor) {
   DvmCall(
     op_name_, this,
     [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
-      auto obj = k->kernel_.Unary(dvm::UnaryOpType::kSqrt, k->Input(x_tensor));
+      auto obj = k->Unary(dvm::UnaryOpType::kSqrt, k->Input(x_tensor));
       return k->Output(obj, x_tensor->data_type(), x_tensor->shape());
     },
     x_tensor);
@@ -276,7 +278,7 @@ tensor::BaseTensorPtr ReciprocalAscendDvm::Call(const BaseTensorPtr &x_tensor) {
   DvmCall(
     op_name_, this,
     [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
-      auto obj = k->kernel_.Unary(dvm::UnaryOpType::kReciprocal, k->Input(x_tensor));
+      auto obj = k->Unary(dvm::UnaryOpType::kReciprocal, k->Input(x_tensor));
       return k->Output(obj, x_tensor->data_type(), x_tensor->shape());
     },
     x_tensor);
@@ -290,7 +292,7 @@ tensor::BaseTensorPtr IsFiniteAscendDvm::Call(const BaseTensorPtr &x_tensor) {
   DvmCall(
     op_name_, this,
     [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
-      auto obj = k->kernel_.Unary(dvm::UnaryOpType::kIsFinite, k->Input(x_tensor));
+      auto obj = k->Unary(dvm::UnaryOpType::kIsFinite, k->Input(x_tensor));
       return k->Output(obj, kNumberTypeBool, x_tensor->shape());
     },
     x_tensor);
@@ -304,7 +306,7 @@ tensor::BaseTensorPtr RoundAscendDvm::Call(const BaseTensorPtr &x_tensor, const 
   DvmCall(
     op_name_, this,
     [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
-      auto obj = k->kernel_.Unary(dvm::UnaryOpType::kRound, k->Input(x_tensor));
+      auto obj = k->Unary(dvm::UnaryOpType::kRound, k->Input(x_tensor));
       return k->Output(obj, x_tensor->data_type(), x_tensor->shape());
     },
     x_tensor);
@@ -318,7 +320,7 @@ tensor::BaseTensorPtr CeilAscendDvm::Call(const BaseTensorPtr &x_tensor) {
   DvmCall(
     op_name_, this,
     [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
-      auto obj = k->kernel_.Unary(dvm::UnaryOpType::kCeil, k->Input(x_tensor));
+      auto obj = k->Unary(dvm::UnaryOpType::kCeil, k->Input(x_tensor));
       return k->Output(obj, x_tensor->data_type(), x_tensor->shape());
     },
     x_tensor);
@@ -332,7 +334,7 @@ tensor::BaseTensorPtr FloorAscendDvm::Call(const BaseTensorPtr &x_tensor) {
   DvmCall(
     op_name_, this,
     [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
-      auto obj = k->kernel_.Unary(dvm::UnaryOpType::kFloor, k->Input(x_tensor));
+      auto obj = k->Unary(dvm::UnaryOpType::kFloor, k->Input(x_tensor));
       return k->Output(obj, x_tensor->data_type(), x_tensor->shape());
     },
     x_tensor);
@@ -346,7 +348,7 @@ tensor::BaseTensorPtr TruncAscendDvm::Call(const BaseTensorPtr &x_tensor) {
   DvmCall(
     op_name_, this,
     [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
-      auto obj = k->kernel_.Unary(dvm::UnaryOpType::kTrunc, k->Input(x_tensor));
+      auto obj = k->Unary(dvm::UnaryOpType::kTrunc, k->Input(x_tensor));
       return k->Output(obj, x_tensor->data_type(), x_tensor->shape());
     },
     x_tensor);
@@ -466,7 +468,7 @@ tensor::BaseTensorPtr MulsAscendDvm::Call(const BaseTensorPtr &input_tensor, con
   DvmCall(
     op_name_, this,
     [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
-      auto obj = k->kernel_.Binary(dvm::BinaryOpType::kMul, k->Input(input_tensor), scalar);
+      auto obj = k->Binary(dvm::BinaryOpType::kMul, k->Input(input_tensor), scalar);
       return k->Output(obj, input_tensor->data_type(), input_tensor->shape());
     },
     input_tensor);
@@ -480,8 +482,8 @@ tensor::BaseTensorPtr LogicalNotAscendDvm::Call(const BaseTensorPtr &x_tensor) {
   DvmCall(
     op_name_, this,
     [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
-      auto input_obj = k->kernel_.Cast(k->Input(x_tensor), dvm::DType::kBool);
-      auto obj = k->kernel_.Unary(dvm::UnaryOpType::kLogicalNot, input_obj);
+      auto input_obj = k->Cast(k->Input(x_tensor), dvm::DType::kBool);
+      auto obj = k->Unary(dvm::UnaryOpType::kLogicalNot, input_obj);
       return k->Output(obj, kNumberTypeBool, x_tensor->shape());
     },
     x_tensor);
@@ -495,9 +497,9 @@ tensor::BaseTensorPtr LogicalAndAscendDvm::Call(const BaseTensorPtr &input_tenso
   DvmCall(
     op_name_, this,
     [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
-      auto input_obj = k->kernel_.Cast(k->Input(input_tensor), dvm::DType::kBool);
-      auto other_obj = k->kernel_.Cast(k->Input(other_tensor), dvm::DType::kBool);
-      auto obj = k->kernel_.Binary(dvm::BinaryOpType::kLogicalAnd, input_obj, other_obj);
+      auto input_obj = k->Cast(k->Input(input_tensor), dvm::DType::kBool);
+      auto other_obj = k->Cast(k->Input(other_tensor), dvm::DType::kBool);
+      auto obj = k->Binary(dvm::BinaryOpType::kLogicalAnd, input_obj, other_obj);
       return k->Output(obj, kNumberTypeBool, k->GetShape(obj));
     },
     input_tensor, other_tensor);
@@ -511,9 +513,9 @@ tensor::BaseTensorPtr LogicalOrAscendDvm::Call(const BaseTensorPtr &input_tensor
   DvmCall(
     op_name_, this,
     [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
-      auto input_obj = k->kernel_.Cast(k->Input(input_tensor), dvm::DType::kBool);
-      auto other_obj = k->kernel_.Cast(k->Input(other_tensor), dvm::DType::kBool);
-      auto obj = k->kernel_.Binary(dvm::BinaryOpType::kLogicalOr, input_obj, other_obj);
+      auto input_obj = k->Cast(k->Input(input_tensor), dvm::DType::kBool);
+      auto other_obj = k->Cast(k->Input(other_tensor), dvm::DType::kBool);
+      auto obj = k->Binary(dvm::BinaryOpType::kLogicalOr, input_obj, other_obj);
       return k->Output(obj, kNumberTypeBool, k->GetShape(obj));
     },
     input_tensor, other_tensor);
@@ -528,17 +530,17 @@ tensor::BaseTensorPtr SigmoidAscendDvm::Call(const BaseTensorPtr &input_tensor) 
     op_name_, this,
     [&input_tensor](LazyFusionKernelAscend *k) -> BaseTensorPtr {
       auto input_obj = k->Input(input_tensor);
-      auto input_type = k->kernel_.GetDType(input_obj);
+      auto input_type = k->GetDType(input_obj);
       auto need_cast = input_tensor->data_type() == kNumberTypeFloat16;
       if (need_cast) {
-        input_obj = k->kernel_.Cast(input_obj, dvm::DType::kFloat32);
+        input_obj = k->Cast(input_obj, dvm::DType::kFloat32);
       }
-      auto neg_x = k->kernel_.Binary(dvm::BinaryOpType::kMul, input_obj, -1.0f);
-      auto exp_neg_x = k->kernel_.Unary(dvm::UnaryOpType::kExp, neg_x);
-      auto add_exp = k->kernel_.Binary(dvm::BinaryOpType::kAdd, exp_neg_x, 1.0f);
-      auto obj = k->kernel_.Unary(dvm::UnaryOpType::kReciprocal, add_exp);
+      auto neg_x = k->Binary(dvm::BinaryOpType::kMul, input_obj, -1.0f);
+      auto exp_neg_x = k->Unary(dvm::UnaryOpType::kExp, neg_x);
+      auto add_exp = k->Binary(dvm::BinaryOpType::kAdd, exp_neg_x, 1.0f);
+      auto obj = k->Unary(dvm::UnaryOpType::kReciprocal, add_exp);
       if (need_cast) {
-        obj = k->kernel_.Cast(obj, input_type);
+        obj = k->Cast(obj, input_type);
       }
       return k->Output(obj, input_tensor->data_type(), input_tensor->shape());
     },
@@ -555,17 +557,17 @@ tensor::BaseTensorPtr SigmoidGradAscendDvm::Call(const BaseTensorPtr &y_tensor, 
     [&y_tensor, &dy_tensor](LazyFusionKernelAscend *k) -> BaseTensorPtr {
       auto y_obj = k->Input(y_tensor);
       auto dy_obj = k->Input(dy_tensor);
-      auto y_type = k->kernel_.GetDType(y_obj);
+      auto y_type = k->GetDType(y_obj);
       auto need_cast = y_tensor->data_type() == kNumberTypeFloat16;
       if (need_cast) {
-        y_obj = k->kernel_.Cast(y_obj, dvm::DType::kFloat32);
-        dy_obj = k->kernel_.Cast(dy_obj, dvm::DType::kFloat32);
+        y_obj = k->Cast(y_obj, dvm::DType::kFloat32);
+        dy_obj = k->Cast(dy_obj, dvm::DType::kFloat32);
       }
-      auto one_sub_y = k->kernel_.Binary(dvm::BinaryOpType::kSub, 1.0f, y_obj);
-      auto y_mul_dy = k->kernel_.Binary(dvm::BinaryOpType::kMul, y_obj, dy_obj);
-      auto obj = k->kernel_.Binary(dvm::BinaryOpType::kMul, one_sub_y, y_mul_dy);
+      auto one_sub_y = k->Binary(dvm::BinaryOpType::kSub, 1.0f, y_obj);
+      auto y_mul_dy = k->Binary(dvm::BinaryOpType::kMul, y_obj, dy_obj);
+      auto obj = k->Binary(dvm::BinaryOpType::kMul, one_sub_y, y_mul_dy);
       if (need_cast) {
-        obj = k->kernel_.Cast(obj, y_type);
+        obj = k->Cast(obj, y_type);
       }
       return k->Output(obj, y_tensor->data_type(), y_tensor->shape());
     },
@@ -581,17 +583,17 @@ tensor::BaseTensorPtr SiLUAscendDvm::Call(const BaseTensorPtr &input_tensor) {
     op_name_, this,
     [&input_tensor](LazyFusionKernelAscend *k) -> BaseTensorPtr {
       auto input_obj = k->Input(input_tensor);
-      auto input_type = k->kernel_.GetDType(input_obj);
+      auto input_type = k->GetDType(input_obj);
       auto need_cast = input_tensor->data_type() == kNumberTypeFloat16;
       if (need_cast) {
-        input_obj = k->kernel_.Cast(input_obj, dvm::DType::kFloat32);
+        input_obj = k->Cast(input_obj, dvm::DType::kFloat32);
       }
-      auto neg_x = k->kernel_.Binary(dvm::BinaryOpType::kMul, input_obj, -1.0f);
-      auto exp_neg_x = k->kernel_.Unary(dvm::UnaryOpType::kExp, neg_x);
-      auto add_exp = k->kernel_.Binary(dvm::BinaryOpType::kAdd, exp_neg_x, 1.0f);
-      auto obj = k->kernel_.Binary(dvm::BinaryOpType::kDiv, input_obj, add_exp);
+      auto neg_x = k->Binary(dvm::BinaryOpType::kMul, input_obj, -1.0f);
+      auto exp_neg_x = k->Unary(dvm::UnaryOpType::kExp, neg_x);
+      auto add_exp = k->Binary(dvm::BinaryOpType::kAdd, exp_neg_x, 1.0f);
+      auto obj = k->Binary(dvm::BinaryOpType::kDiv, input_obj, add_exp);
       if (need_cast) {
-        obj = k->kernel_.Cast(obj, input_type);
+        obj = k->Cast(obj, input_type);
       }
       return k->Output(obj, input_tensor->data_type(), input_tensor->shape());
     },
@@ -608,23 +610,23 @@ tensor::BaseTensorPtr SiLUGradAscendDvm::Call(const BaseTensorPtr &dout_tensor, 
     [&dout_tensor, &x_tensor](LazyFusionKernelAscend *k) -> BaseTensorPtr {
       auto dout_obj = k->Input(dout_tensor);
       auto x_obj = k->Input(x_tensor);
-      auto x_type = k->kernel_.GetDType(x_obj);
+      auto x_type = k->GetDType(x_obj);
       auto need_cast = x_tensor->data_type() == kNumberTypeFloat16;
       if (need_cast) {
-        x_obj = k->kernel_.Cast(x_obj, dvm::DType::kFloat32);
-        dout_obj = k->kernel_.Cast(dout_obj, dvm::DType::kFloat32);
+        x_obj = k->Cast(x_obj, dvm::DType::kFloat32);
+        dout_obj = k->Cast(dout_obj, dvm::DType::kFloat32);
       }
-      auto neg_x = k->kernel_.Binary(dvm::BinaryOpType::kMul, x_obj, -1.0f);
-      auto exp_neg_x = k->kernel_.Unary(dvm::UnaryOpType::kExp, neg_x);
-      auto add_exp = k->kernel_.Binary(dvm::BinaryOpType::kAdd, exp_neg_x, 1.0f);
-      auto sigmod = k->kernel_.Unary(dvm::UnaryOpType::kReciprocal, add_exp);
-      auto out = k->kernel_.Binary(dvm::BinaryOpType::kDiv, x_obj, add_exp);
-      auto sigmod_out0 = k->kernel_.Binary(dvm::BinaryOpType::kAdd, sigmod, out);
-      auto sigmod_out1 = k->kernel_.Binary(dvm::BinaryOpType::kMul, sigmod, out);
-      auto sub_res = k->kernel_.Binary(dvm::BinaryOpType::kSub, sigmod_out0, sigmod_out1);
-      auto obj = k->kernel_.Binary(dvm::BinaryOpType::kMul, sub_res, dout_obj);
+      auto neg_x = k->Binary(dvm::BinaryOpType::kMul, x_obj, -1.0f);
+      auto exp_neg_x = k->Unary(dvm::UnaryOpType::kExp, neg_x);
+      auto add_exp = k->Binary(dvm::BinaryOpType::kAdd, exp_neg_x, 1.0f);
+      auto sigmod = k->Unary(dvm::UnaryOpType::kReciprocal, add_exp);
+      auto out = k->Binary(dvm::BinaryOpType::kDiv, x_obj, add_exp);
+      auto sigmod_out0 = k->Binary(dvm::BinaryOpType::kAdd, sigmod, out);
+      auto sigmod_out1 = k->Binary(dvm::BinaryOpType::kMul, sigmod, out);
+      auto sub_res = k->Binary(dvm::BinaryOpType::kSub, sigmod_out0, sigmod_out1);
+      auto obj = k->Binary(dvm::BinaryOpType::kMul, sub_res, dout_obj);
       if (need_cast) {
-        obj = k->kernel_.Cast(obj, x_type);
+        obj = k->Cast(obj, x_type);
       }
       return k->Output(obj, x_tensor->data_type(), x_tensor->shape());
     },
@@ -640,29 +642,29 @@ tensor::BaseTensorPtr GeLUAscendDvm::Call(const BaseTensorPtr &input_tensor) {
     op_name_, this,
     [&input_tensor](LazyFusionKernelAscend *k) -> BaseTensorPtr {
       auto x_obj = k->Input(input_tensor);
-      auto input_dtype = k->kernel_.GetDType(x_obj);
+      auto input_dtype = k->GetDType(x_obj);
 
       // Constants used in the GeLU approximation
       constexpr float csv_value = 0.044715f;
       constexpr float csv_value_sqrt_eight_div_pi = -1.5957691216057308f;
-      x_obj = k->kernel_.Cast(x_obj, dvm::DType::kFloat32);
+      x_obj = k->Cast(x_obj, dvm::DType::kFloat32);
       // Compute x^2
-      auto x_squared = k->kernel_.Binary(dvm::BinaryOpType::kMul, x_obj, x_obj);
+      auto x_squared = k->Binary(dvm::BinaryOpType::kMul, x_obj, x_obj);
       // Compute x^3
-      auto x_cubed = k->kernel_.Binary(dvm::BinaryOpType::kMul, x_squared, x_obj);
+      auto x_cubed = k->Binary(dvm::BinaryOpType::kMul, x_squared, x_obj);
       // mul_1 = x_cubed * csv_value
-      auto mul_1 = k->kernel_.Binary(dvm::BinaryOpType::kMul, x_cubed, csv_value);
+      auto mul_1 = k->Binary(dvm::BinaryOpType::kMul, x_cubed, csv_value);
       // tanh_res = x_obj + mul_1
-      auto tanh_res = k->kernel_.Binary(dvm::BinaryOpType::kAdd, x_obj, mul_1);
+      auto tanh_res = k->Binary(dvm::BinaryOpType::kAdd, x_obj, mul_1);
       // y = tanh_res * csv_value_sqrt_eight_div_pi
-      auto y = k->kernel_.Binary(dvm::BinaryOpType::kMul, tanh_res, csv_value_sqrt_eight_div_pi);
+      auto y = k->Binary(dvm::BinaryOpType::kMul, tanh_res, csv_value_sqrt_eight_div_pi);
       // exp_0 = exp(y)
-      auto exp_0 = k->kernel_.Unary(dvm::UnaryOpType::kExp, y);
+      auto exp_0 = k->Unary(dvm::UnaryOpType::kExp, y);
       // add_0 = exp_0 + 1
-      auto add_0 = k->kernel_.Binary(dvm::BinaryOpType::kAdd, exp_0, 1.0f);
+      auto add_0 = k->Binary(dvm::BinaryOpType::kAdd, exp_0, 1.0f);
       // result = x_obj / add_0
-      auto result = k->kernel_.Binary(dvm::BinaryOpType::kDiv, x_obj, add_0);
-      result = k->kernel_.Cast(result, input_dtype);
+      auto result = k->Binary(dvm::BinaryOpType::kDiv, x_obj, add_0);
+      result = k->Cast(result, input_dtype);
       return k->Output(result, input_tensor->data_type(), input_tensor->shape());
     },
     input_tensor);
@@ -679,52 +681,52 @@ tensor::BaseTensorPtr GeLUGradAscendDvm::Call(const BaseTensorPtr &dy_tensor, co
     [&dy_tensor, &x_tensor](LazyFusionKernelAscend *k) -> BaseTensorPtr {
       auto dy_obj = k->Input(dy_tensor);
       auto x_obj = k->Input(x_tensor);
-      auto input_dtype = k->kernel_.GetDType(x_obj);
+      auto input_dtype = k->GetDType(x_obj);
 
       // Constants used in the GeLU gradient computation
       constexpr float cs_value = 0.044715f;
       constexpr float cs_sqrt_two_div_pi = 0.7978845608028564f;  // sqrt(2 / π)
       constexpr float cs_value_tri = 0.134145f;                  // cs_value * 3
-      x_obj = k->kernel_.Cast(x_obj, dvm::DType::kFloat32);
-      dy_obj = k->kernel_.Cast(dy_obj, dvm::DType::kFloat32);
+      x_obj = k->Cast(x_obj, dvm::DType::kFloat32);
+      dy_obj = k->Cast(dy_obj, dvm::DType::kFloat32);
       // Compute x^2
-      auto x_squared = k->kernel_.Binary(dvm::BinaryOpType::kMul, x_obj, x_obj);
+      auto x_squared = k->Binary(dvm::BinaryOpType::kMul, x_obj, x_obj);
       // Compute x^3
-      auto x_cubed = k->kernel_.Binary(dvm::BinaryOpType::kMul, x_squared, x_obj);
+      auto x_cubed = k->Binary(dvm::BinaryOpType::kMul, x_squared, x_obj);
       // Calculate mul_right
-      auto mul_double_mul_tri = k->kernel_.Binary(dvm::BinaryOpType::kMul, cs_value_tri, x_squared);
-      auto mul_add_one = k->kernel_.Binary(dvm::BinaryOpType::kAdd, 1.0f, mul_double_mul_tri);
-      auto mul_right = k->kernel_.Binary(dvm::BinaryOpType::kMul, cs_sqrt_two_div_pi, mul_add_one);
+      auto mul_double_mul_tri = k->Binary(dvm::BinaryOpType::kMul, cs_value_tri, x_squared);
+      auto mul_add_one = k->Binary(dvm::BinaryOpType::kAdd, 1.0f, mul_double_mul_tri);
+      auto mul_right = k->Binary(dvm::BinaryOpType::kMul, cs_sqrt_two_div_pi, mul_add_one);
       // Calculate tanh_para
-      auto mul_triple_mul_csvalue = k->kernel_.Binary(dvm::BinaryOpType::kMul, cs_value, x_cubed);
-      auto mul_add_x = k->kernel_.Binary(dvm::BinaryOpType::kAdd, x_obj, mul_triple_mul_csvalue);
-      auto tanh_para = k->kernel_.Binary(dvm::BinaryOpType::kMul, cs_sqrt_two_div_pi, mul_add_x);
+      auto mul_triple_mul_csvalue = k->Binary(dvm::BinaryOpType::kMul, cs_value, x_cubed);
+      auto mul_add_x = k->Binary(dvm::BinaryOpType::kAdd, x_obj, mul_triple_mul_csvalue);
+      auto tanh_para = k->Binary(dvm::BinaryOpType::kMul, cs_sqrt_two_div_pi, mul_add_x);
       // Compute tanh_res = tanh(tanh_para)
       auto Tanh = [&k](const auto &input) {
         // Implement tanh(x) = 1 - 2 / (e^{2x} + 1)
-        auto two_input = k->kernel_.Binary(dvm::BinaryOpType::kMul, input, 2.0f);
-        auto exp_two_input = k->kernel_.Unary(dvm::UnaryOpType::kExp, two_input);
-        auto denom = k->kernel_.Binary(dvm::BinaryOpType::kAdd, exp_two_input, 1.0f);
-        auto two_div_denom = k->kernel_.Binary(dvm::BinaryOpType::kDiv, 2.0f, denom);
-        return k->kernel_.Binary(dvm::BinaryOpType::kSub, 1.0f, two_div_denom);
+        auto two_input = k->Binary(dvm::BinaryOpType::kMul, input, 2.0f);
+        auto exp_two_input = k->Unary(dvm::UnaryOpType::kExp, two_input);
+        auto denom = k->Binary(dvm::BinaryOpType::kAdd, exp_two_input, 1.0f);
+        auto two_div_denom = k->Binary(dvm::BinaryOpType::kDiv, 2.0f, denom);
+        return k->Binary(dvm::BinaryOpType::kSub, 1.0f, two_div_denom);
       };
       auto tanh_res = Tanh(tanh_para);
       // Compute 0.5 * (1.0 + tanh_res)
-      auto tanh_res_add_one = k->kernel_.Binary(dvm::BinaryOpType::kAdd, 1.0f, tanh_res);
-      auto half_mul_tanh_res_add_one = k->kernel_.Binary(dvm::BinaryOpType::kMul, 0.5f, tanh_res_add_one);
+      auto tanh_res_add_one = k->Binary(dvm::BinaryOpType::kAdd, 1.0f, tanh_res);
+      auto half_mul_tanh_res_add_one = k->Binary(dvm::BinaryOpType::kMul, 0.5f, tanh_res_add_one);
       // Compute 1.0 - tanh_res^2
-      auto tanh_res_squared = k->kernel_.Binary(dvm::BinaryOpType::kMul, tanh_res, tanh_res);
-      auto one_sub_tanh_res_squared = k->kernel_.Binary(dvm::BinaryOpType::kSub, 1.0f, tanh_res_squared);
+      auto tanh_res_squared = k->Binary(dvm::BinaryOpType::kMul, tanh_res, tanh_res);
+      auto one_sub_tanh_res_squared = k->Binary(dvm::BinaryOpType::kSub, 1.0f, tanh_res_squared);
       // Compute 0.5 * x_obj * (1 - tanh_res^2)
-      auto half_mul_x = k->kernel_.Binary(dvm::BinaryOpType::kMul, 0.5f, x_obj);
-      auto mul_tmp = k->kernel_.Binary(dvm::BinaryOpType::kMul, half_mul_x, one_sub_tanh_res_squared);
+      auto half_mul_x = k->Binary(dvm::BinaryOpType::kMul, 0.5f, x_obj);
+      auto mul_tmp = k->Binary(dvm::BinaryOpType::kMul, half_mul_x, one_sub_tanh_res_squared);
       // Compute mul_final = mul_tmp * mul_right
-      auto mul_final = k->kernel_.Binary(dvm::BinaryOpType::kMul, mul_tmp, mul_right);
+      auto mul_final = k->Binary(dvm::BinaryOpType::kMul, mul_tmp, mul_right);
       // Compute result_tmp = half_mul_tanh_res_add_one + mul_final
-      auto result_tmp = k->kernel_.Binary(dvm::BinaryOpType::kAdd, half_mul_tanh_res_add_one, mul_final);
+      auto result_tmp = k->Binary(dvm::BinaryOpType::kAdd, half_mul_tanh_res_add_one, mul_final);
       // Compute result = dy_obj * result_tmp
-      auto result = k->kernel_.Binary(dvm::BinaryOpType::kMul, dy_obj, result_tmp);
-      result = k->kernel_.Cast(result, input_dtype);
+      auto result = k->Binary(dvm::BinaryOpType::kMul, dy_obj, result_tmp);
+      result = k->Cast(result, input_dtype);
       return k->Output(result, x_tensor->data_type(), x_tensor->shape());
     },
     dy_tensor, x_tensor);
@@ -740,17 +742,16 @@ tensor::BaseTensorPtr SumExtAscendDvm::Call(const BaseTensorPtr &input_tensor, c
   DvmCall(
     op_name_, this,
     [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
-      auto input_obj = k->kernel_.Cast(k->Input(input_tensor), dvm::DType::kFloat32);
+      auto input_obj = k->Cast(k->Input(input_tensor), dvm::DType::kFloat32);
       auto dim_value = GetReduceDim(dim, input_tensor->shape().size());
-      auto reduce_obj =
-        k->kernel_.Reduce(dvm::ReduceOpType::kSum, input_obj, k->GetShapeRef(dim_value), keepdim->value());
+      auto reduce_obj = k->Reduce(dvm::ReduceOpType::kSum, input_obj, k->GetShapeRef(dim_value), keepdim->value());
       auto output_type = input_tensor->data_type();
       auto dst_dtype = k->TransType(output_type);
       if (dst_type != kMetaTypeNone) {
         dst_dtype = k->TransType(dst_type);
         output_type = dst_type;
       }
-      reduce_obj = k->kernel_.Cast(reduce_obj, dst_dtype);
+      reduce_obj = k->Cast(reduce_obj, dst_dtype);
       return k->Output(reduce_obj, output_type, k->GetShape(reduce_obj));
     },
     input_tensor);
@@ -772,9 +773,9 @@ tensor::BaseTensorPtr AddExtAscendDvm::Call(const BaseTensorPtr &input_tensor, c
       auto input_obj = k->Input(input_tensor);
       auto other_obj = k->Input(other_tensor);
       if (scalar != 1.0) {
-        other_obj = k->kernel_.Binary(dvm::BinaryOpType::kMul, other_obj, scalar);
+        other_obj = k->Binary(dvm::BinaryOpType::kMul, other_obj, scalar);
       }
-      auto out_obj = k->kernel_.Binary(dvm::BinaryOpType::kAdd, input_obj, other_obj);
+      auto out_obj = k->Binary(dvm::BinaryOpType::kAdd, input_obj, other_obj);
       return k->Output(out_obj, input_tensor->data_type(), k->GetShape(out_obj));
     },
     input_tensor, other_tensor);
@@ -797,7 +798,7 @@ tensor::BaseTensorPtr TileAscendDvm::Call(const BaseTensorPtr &input_tensor, con
   DvmCall(
     op_name_, this,
     [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
-      auto out_obj = k->kernel_.Broadcast(k->Input(input_tensor), k->GetShapeRef(output_shape));
+      auto out_obj = k->Broadcast(k->Input(input_tensor), k->GetShapeRef(output_shape));
       return k->Output(out_obj, input_tensor->data_type(), output_shape);
     },
     input_tensor);
@@ -819,25 +820,25 @@ tensor::BaseTensorPtr LinalgVectorNormAscendDvm::Call(const BaseTensorPtr &x_ten
     op_name_, this,
     [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
       auto dim_value = GetReduceDim(dim, x_tensor->shape().size());
-      auto input_obj = k->kernel_.Cast(k->Input(x_tensor), dvm::DType::kFloat32);
+      auto input_obj = k->Cast(k->Input(x_tensor), dvm::DType::kFloat32);
       dvm::NDObject *out_obj = nullptr;
       auto ord_value = ord->value();
       // sum(|x|^ord)^(1/ord)
       if (ord_value == 1.0f) {
-        auto x_abs = k->kernel_.Unary(dvm::UnaryOpType::kAbs, input_obj);
-        out_obj = k->kernel_.Reduce(dvm::ReduceOpType::kSum, x_abs, k->GetShapeRef(dim_value), keepdim->value());
+        auto x_abs = k->Unary(dvm::UnaryOpType::kAbs, input_obj);
+        out_obj = k->Reduce(dvm::ReduceOpType::kSum, x_abs, k->GetShapeRef(dim_value), keepdim->value());
       } else if (ord_value == 2.0f) {
-        auto x_square = k->kernel_.Binary(dvm::BinaryOpType::kMul, input_obj, input_obj);
-        auto x_sum = k->kernel_.Reduce(dvm::ReduceOpType::kSum, x_square, k->GetShapeRef(dim_value), keepdim->value());
-        out_obj = k->kernel_.Unary(dvm::UnaryOpType::kSqrt, x_sum);
+        auto x_square = k->Binary(dvm::BinaryOpType::kMul, input_obj, input_obj);
+        auto x_sum = k->Reduce(dvm::ReduceOpType::kSum, x_square, k->GetShapeRef(dim_value), keepdim->value());
+        out_obj = k->Unary(dvm::UnaryOpType::kSqrt, x_sum);
       } else {
-        auto x_abs = k->kernel_.Unary(dvm::UnaryOpType::kAbs, input_obj);
-        auto x_pow = k->kernel_.Binary(dvm::BinaryOpType::kPow, x_abs, ord_value);
-        auto x_sum = k->kernel_.Reduce(dvm::ReduceOpType::kSum, x_pow, k->GetShapeRef(dim_value), keepdim->value());
-        out_obj = k->kernel_.Binary(dvm::BinaryOpType::kPow, x_sum, 1.0f / ord_value);
+        auto x_abs = k->Unary(dvm::UnaryOpType::kAbs, input_obj);
+        auto x_pow = k->Binary(dvm::BinaryOpType::kPow, x_abs, ord_value);
+        auto x_sum = k->Reduce(dvm::ReduceOpType::kSum, x_pow, k->GetShapeRef(dim_value), keepdim->value());
+        out_obj = k->Binary(dvm::BinaryOpType::kPow, x_sum, 1.0f / ord_value);
       }
       if (input_type != kNumberTypeBFloat16) {
-        out_obj = k->kernel_.Cast(out_obj, k->TransType(input_type));
+        out_obj = k->Cast(out_obj, k->TransType(input_type));
       }
       return k->Output(out_obj, output_type, k->GetShape(out_obj));
     },
@@ -868,7 +869,7 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> 
     return AdamWAscend::Call(var_tensor, m_tensor, v_tensor, max_v_tensor, gradient_tensor, step_tensor, lr, beta1,
                              beta2, decay, eps, amsgrad, maximize);
   }
-  auto k = static_cast<LazyFusionKernelAscend *>(g_lazy_fusion_manager.Get(device_context_, stream_id_));
+  auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
   MS_LOG(INFO) << op_name() << " call start, kernel id is " << k->id();
   ProfileTrackerTask();
   if (amsgrad_imm) {
@@ -883,35 +884,32 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> 
   auto v_obj = k->Input(v_tensor);
   auto gradient_obj = k->Input(gradient_tensor);
   auto step_obj = k->Input(step_tensor);
-  auto grad = maximize_imm ? k->kernel_.Binary(dvm::BinaryOpType::kMul, gradient_obj, -1.0f) : gradient_obj;
+  auto grad = maximize_imm ? k->Binary(dvm::BinaryOpType::kMul, gradient_obj, -1.0f) : gradient_obj;
   // m_t <-- beta1 * m + (1 - beta1) * grad
-  auto m_t = k->kernel_.Binary(dvm::BinaryOpType::kAdd, k->kernel_.Binary(dvm::BinaryOpType::kMul, m_obj, beta1_imm),
-                               k->kernel_.Binary(dvm::BinaryOpType::kMul, grad, 1.0f - beta1_imm));
+  auto m_t = k->Binary(dvm::BinaryOpType::kAdd, k->Binary(dvm::BinaryOpType::kMul, m_obj, beta1_imm),
+                       k->Binary(dvm::BinaryOpType::kMul, grad, 1.0f - beta1_imm));
   // v_t <-- beta2 * v + (1 - beta2) * grad^2
   auto v_t =
-    k->kernel_.Binary(dvm::BinaryOpType::kAdd, k->kernel_.Binary(dvm::BinaryOpType::kMul, v_obj, beta2_imm),
-                      k->kernel_.Binary(dvm::BinaryOpType::kMul, k->kernel_.Binary(dvm::BinaryOpType::kMul, grad, grad),
-                                        1.0f - beta2_imm));
+    k->Binary(dvm::BinaryOpType::kAdd, k->Binary(dvm::BinaryOpType::kMul, v_obj, beta2_imm),
+              k->Binary(dvm::BinaryOpType::kMul, k->Binary(dvm::BinaryOpType::kMul, grad, grad), 1.0f - beta2_imm));
   // var_t <-- var - lr * deday * var
-  auto var_t =
-    decay_imm == 0.0f ? var_obj : k->kernel_.Binary(dvm::BinaryOpType::kMul, var_obj, 1.0f - lr_imm * decay_imm);
+  auto var_t = decay_imm == 0.0f ? var_obj : k->Binary(dvm::BinaryOpType::kMul, var_obj, 1.0f - lr_imm * decay_imm);
   // real step is step + 1
-  auto step_value = step_tensor->data_type() == var_type ? step_obj : k->kernel_.Cast(step_obj, k->TransType(var_type));
-  step_value = k->kernel_.Binary(dvm::BinaryOpType::kAdd, step_value, 1.0f);
+  auto step_value = step_tensor->data_type() == var_type ? step_obj : k->Cast(step_obj, k->TransType(var_type));
+  step_value = k->Binary(dvm::BinaryOpType::kAdd, step_value, 1.0f);
   // var_t <-- var_t - (m_t * lr / (1 - beta1^t)) / (sqrt(max(max_v, v_t) / (1 - beta2^t)) + eps)
-  auto scale1 = k->kernel_.Binary(dvm::BinaryOpType::kDiv, lr_imm,
-                                  k->kernel_.Binary(dvm::BinaryOpType::kSub, 1.0f,
-                                                    k->kernel_.Binary(dvm::BinaryOpType::kPow, beta1_imm, step_value)));
-  auto m_t_scale = k->kernel_.Binary(dvm::BinaryOpType::kMul, m_t, scale1);
-  auto v_t_used = amsgrad_imm ? k->kernel_.Binary(dvm::BinaryOpType::kMaximum, k->Input(max_v_tensor), v_t) : v_t;
-  auto scale2 = k->kernel_.Binary(dvm::BinaryOpType::kDiv, 1.0f,
-                                  k->kernel_.Binary(dvm::BinaryOpType::kSub, 1.0f,
-                                                    k->kernel_.Binary(dvm::BinaryOpType::kPow, beta2_imm, step_value)));
-  auto v_t_sqrt =
-    k->kernel_.Unary(dvm::UnaryOpType::kSqrt, k->kernel_.Binary(dvm::BinaryOpType::kMul, v_t_used, scale2));
-  var_t = k->kernel_.Binary(dvm::BinaryOpType::kSub, var_t,
-                            k->kernel_.Binary(dvm::BinaryOpType::kDiv, m_t_scale,
-                                              k->kernel_.Binary(dvm::BinaryOpType::kAdd, v_t_sqrt, epsilon_imm)));
+  auto scale1 =
+    k->Binary(dvm::BinaryOpType::kDiv, lr_imm,
+              k->Binary(dvm::BinaryOpType::kSub, 1.0f, k->Binary(dvm::BinaryOpType::kPow, beta1_imm, step_value)));
+  auto m_t_scale = k->Binary(dvm::BinaryOpType::kMul, m_t, scale1);
+  auto v_t_used = amsgrad_imm ? k->Binary(dvm::BinaryOpType::kMaximum, k->Input(max_v_tensor), v_t) : v_t;
+  auto scale2 =
+    k->Binary(dvm::BinaryOpType::kDiv, 1.0f,
+              k->Binary(dvm::BinaryOpType::kSub, 1.0f, k->Binary(dvm::BinaryOpType::kPow, beta2_imm, step_value)));
+  auto v_t_sqrt = k->Unary(dvm::UnaryOpType::kSqrt, k->Binary(dvm::BinaryOpType::kMul, v_t_used, scale2));
+  var_t =
+    k->Binary(dvm::BinaryOpType::kSub, var_t,
+              k->Binary(dvm::BinaryOpType::kDiv, m_t_scale, k->Binary(dvm::BinaryOpType::kAdd, v_t_sqrt, epsilon_imm)));
   // update
   outputs_.push_back(var_tensor);
   k->Output(outputs_[kIndex0], var_t);
@@ -945,14 +943,14 @@ tensor::BaseTensorPtr InplaceCopyAscendDvm::Call(const BaseTensorPtr &variable_t
     FlushLazyFusion();
     return outputs_[0];
   }
-  auto k = static_cast<LazyFusionKernelAscend *>(g_lazy_fusion_manager.Get(device_context_, stream_id_));
+  auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
   MS_LOG(INFO) << op_name() << " call start, kernel id is " << k->id();
   ProfileTrackerTask();
   PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, variable_tensor, value_tensor);
   // copy value_tensor to variable_tensor
   auto value_obj = k->Input(value_tensor, false);
   if (value_tensor->shape() != variable_tensor->shape()) {
-    value_obj = k->kernel_.Broadcast(value_obj, k->GetShapeRef(variable_tensor->shape()));
+    value_obj = k->Broadcast(value_obj, k->GetShapeRef(variable_tensor->shape()));
   }
   outputs_.push_back(variable_tensor);
   k->Output(outputs_[0], value_obj);
@@ -982,7 +980,7 @@ tensor::BaseTensorPtr DenseAscendDvm::Call(const BaseTensorPtr &input_tensor, co
       auto input_obj = k->Input(input_tensor, false);
       auto weight_obj = k->Input(weight_tensor, false);
       auto bias_obj = bias == nullptr ? nullptr : k->Input(bias, false);
-      auto out_obj = k->kernel_.MatMul(input_obj, weight_obj, false, true, bias_obj);
+      auto out_obj = k->MatMul(input_obj, weight_obj, false, true, bias_obj);
       return k->Output(out_obj, input_tensor->data_type(), k->GetShape(out_obj));
     },
     input_tensor, weight_tensor, bias_tensor);
@@ -1003,8 +1001,8 @@ tensor::BaseTensorPtr MatMulAscendDvm::Call(const BaseTensorPtr &input_tensor, c
       auto weight_obj = k->Input(mat2_tensor, false);
       auto trans_a = GetValue<bool>(transpose_a);
       auto trans_b = GetValue<bool>(transpose_b);
-      auto out_obj = k->kernel_.MatMul(input_obj, weight_obj, trans_a, trans_b, nullptr);
-      out_obj = k->kernel_.Cast(out_obj, k->TransType(output_type));
+      auto out_obj = k->MatMul(input_obj, weight_obj, trans_a, trans_b, nullptr);
+      out_obj = k->Cast(out_obj, k->TransType(output_type));
       return k->Output(out_obj, output_type, k->GetShape(out_obj));
     },
     input_tensor, mat2_tensor);
@@ -1025,8 +1023,8 @@ tensor::BaseTensorPtr BatchMatMulAscendDvm::Call(const BaseTensorPtr &x_tensor, 
       auto weight_obj = k->Input(y_tensor, false);
       auto trans_a = GetValue<bool>(transpose_a);
       auto trans_b = GetValue<bool>(transpose_b);
-      auto out_obj = k->kernel_.MatMul(input_obj, weight_obj, trans_a, trans_b, nullptr);
-      out_obj = k->kernel_.Cast(out_obj, k->TransType(output_type));
+      auto out_obj = k->MatMul(input_obj, weight_obj, trans_a, trans_b, nullptr);
+      out_obj = k->Cast(out_obj, k->TransType(output_type));
       return k->Output(out_obj, output_type, k->GetShape(out_obj));
     },
     x_tensor, y_tensor);
@@ -1041,7 +1039,7 @@ tensor::BaseTensorPtr BatchMatMulAscendDvm::Call(const BaseTensorPtr &x_tensor, 
     };                                                                                               \
   }
 
-void LazyFusionAscendInit() {
+void RegisterLazyFusionOp() {
   const auto &disable_ops = LazyFusionFlags::GetInstance().disable_ops;
   MS_REPLACE_DVM_OP(Add);
   MS_REPLACE_DVM_OP(Cast);
@@ -1087,6 +1085,18 @@ void LazyFusionAscendInit() {
   MS_REPLACE_DVM_OP(Dense);
   MS_REPLACE_DVM_OP(MatMul);
   MS_REPLACE_DVM_OP(BatchMatMul);
+}
+
+void LazyFusionAscendInit() {
+  if (LazyFusionFlags::GetInstance().opt_level < OptLevel_1 || runtime::RuntimeConf::GetInstance()->launch_blocking() ||
+      MsContext::GetInstance()->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON") {
+    MS_LOG(INFO) << "Skip init lazy fusion.";
+    return;
+  }
+  MS_LOG(INFO) << "Init lazy fusion.";
+  RegisterLazyFusionOp();
+  runtime::Pipeline::Get().UpdateBackendStage(
+    std::make_unique<LazyFusionQueue>("backend_queue", runtime::kThreadWaitLevel::kLevelBackend));
   if (LazyFusionFlags::GetInstance().online_tuning) {
     dvm::SetOnlineTuning(true);
   }
