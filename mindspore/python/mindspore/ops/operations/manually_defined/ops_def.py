@@ -1571,6 +1571,17 @@ def infer_value_for_Tile(input, dims):
     return Tensor(np.tile(input.asnumpy(), dims))
 
 
+def infer_value_for_EqualExt(x, y):
+    """Infer value for EqualExt op."""
+    if x is None or y is None:
+        return None
+    result = np.equal(x.asnumpy(), y.asnumpy())
+    value = False
+    if result.all():
+        value = True
+    return Tensor(value)
+
+
 def infer_value_for_Concat(tensors, axis):
     """Infer value for Concat op."""
     if not tensors or None in tensors or axis is None:
