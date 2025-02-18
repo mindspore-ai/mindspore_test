@@ -11,7 +11,7 @@ add:
     Note:
         - When `self` and `other` have different shapes,
           they must be able to broadcast to a common shape.
-        - `self`, `other` and alpha comply with the implicit type conversion rules to make the data types
+        - `self`, `other` and `alpha` comply with the implicit type conversion rules to make the data types
           consistent.
 
     Args:
