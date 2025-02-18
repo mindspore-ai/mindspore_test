@@ -236,8 +236,8 @@ def _test_internal_asd_flash_attention_score(parma_dict, in_layout, ms_dtype, is
         dyn_shape = [None] * qkv_rank
         dyn_tensor = ms.Tensor(shape=dyn_shape, dtype=ms_dtype)
         dyn_seq = ms.Tensor(shape=(None), dtype=ms.int32)
-        dyn_mask = ms.Tensor(shape=(None, None, None, None), dtype=ms.float16) if in_layout == "BSH" else ms.Tensor(
-            shape=(None, None), dtype=ms.float16)  # if not enable_alibi else None
+        dyn_mask = ms.Tensor(shape=(None, None, None, None), dtype=ms_dtype) if in_layout == "BSH" else ms.Tensor(
+            shape=(None, None), dtype=ms_dtype)  # if not enable_alibi else None
         dyn_alibi = ms.Tensor(shape=(None, None, None, None), dtype=ms_dtype) if enable_alibi else None
         net.set_inputs(dyn_tensor, dyn_tensor, dyn_tensor, dyn_alibi, None, None, dyn_mask, None, dyn_seq, dyn_seq)
         batch_seq_list = [
@@ -256,7 +256,7 @@ def _test_internal_asd_flash_attention_score(parma_dict, in_layout, ms_dtype, is
         expect = test_fa.calc_expect_func()
 
         alibi_tensor = ms.Tensor(alibi).astype(ms_dtype) if enable_alibi else None
-        amask_tensor = ms.Tensor(amask).astype(ms.float16)# if not enable_alibi else None
+        amask_tensor = ms.Tensor(amask).astype(ms_dtype)# if not enable_alibi else None
         output = net(ms.Tensor(q).astype(ms_dtype),
                      ms.Tensor(k).astype(ms_dtype),
                      ms.Tensor(v).astype(ms_dtype),
