@@ -23,4 +23,4 @@ mindspore.Tensor.baddbmm
     异常：
         - **TypeError** - `self` 、 `batch1` 或 `batch2` 的类型不是Tensor。
         - **TypeError** - `self` 、 `batch1` 或 `batch2` 数据类型不一致。
-        - **ValueError** - `batch1` 或 `batch2` 的不是三维Tensor。
+        - **ValueError** - `batch1` 或 `batch2` 不是三维Tensor。
