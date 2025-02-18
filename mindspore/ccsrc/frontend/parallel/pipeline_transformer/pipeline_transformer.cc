@@ -884,6 +884,20 @@ AnfNodeIndexSet PipelineTransformer::GetParameterLoadUsers(const AnfNodePtr &nod
   return users;
 }
 
+static bool IsFreezedGradGraph(const AnfNodePtr &node) {
+  if (!node->isa<CNode>()) {
+    return false;
+  }
+  auto cnode = node->cast<CNodePtr>();
+  if (IsValueNode<FuncGraph>(cnode->input(0))) {
+    auto graph = GetValueNode<FuncGraphPtr>(cnode->input(0));
+    if (graph->has_flag(FREEZE)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 std::pair<std::vector<AnfNodePtr>, std::vector<AnfNodePtr>> PipelineTransformer::HandleSharedParameter() {
   auto parameters = root_->parameters();
   std::vector<AnfNodePtr> sends = {};
@@ -1143,6 +1157,8 @@ SendAttr PipelineTransformer::InsertSend(const AnfNodePtr &parameter, int64_t us
   }
   send->AddPrimalAttr(MICRO, value);
   send->AddPrimalAttr(DEST_RANK, MakeValue(user_node_stage));
+  auto is_freeze = IsFreezedGradGraph(parameter);
+  send->AddPrimalAttr(FREEZE, MakeValue(is_freeze));
   auto abstract = parameter->abstract();
   if (care_node) {
     abstract = care_node->abstract();
@@ -1212,6 +1228,8 @@ AnfNodePtr PipelineTransformer::InsertReceive(const FuncGraphPtr &graph, const A
   }
   recv->AddPrimalAttr(MICRO, value);
   recv->AddPrimalAttr(SRC_RANK, MakeValue(node_stage));
+  auto is_freeze = IsFreezedGradGraph(node);
+  recv->AddPrimalAttr(FREEZE, MakeValue(is_freeze));
   auto node_abstract = node->abstract();
   if (node->isa<CNode>()) {
     auto cnode = node->cast<CNodePtr>();
@@ -1595,6 +1613,9 @@ AnfNodePtr PipelineTransformer::GenNewSendFromOld(const AnfNodePtr &node, const 
   if (care_node) {
     abstract = care_node->abstract();
   }
+  if (old->HasPrimalAttr(FREEZE)) {
+    send->AddPrimalAttr(FREEZE, old->GetPrimalAttr(FREEZE));
+  }
   send->set_abstract(abstract);
   if (old->has_user_data<TensorLayout>()) {
     send->set_user_data<TensorLayout>(old->user_data<TensorLayout>());
@@ -1725,6 +1746,9 @@ AnfNodePtr PipelineTransformer::GenNewRecvFromOld(const AnfNodePtr &node, const 
   recv->set_abstract(abstract_clone);
 
   recv->AddPrimalAttr(MICRO, value);
+  if (cnode->HasPrimalAttr(FREEZE)) {
+    recv->AddPrimalAttr(FREEZE, cnode->GetPrimalAttr(FREEZE));
+  }
   recv->set_user_data<TensorLayout>(std::make_shared<TensorLayout>(*tensor_layout));
   recv->set_user_data<OperatorInfo>(node->user_data<OperatorInfo>());
   return recv;

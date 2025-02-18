@@ -165,6 +165,7 @@ constexpr char REDUCE_OP_MIN[] = "min";
 constexpr char REDUCE_OP_ANY[] = "sum";
 constexpr char REDUCE_OP_ALL[] = "prod";
 constexpr char REDUCE_OP_PROD[] = "prod";
+constexpr char FREEZE[] = "freeze";
 constexpr char OP_PATH[] = "mindspore.ops.operations";
 constexpr char INNER_OP_PATH[] = "mindspore.ops.operations._inner_ops";
 constexpr char GRAD_OP_PATH[] = "mindspore.ops.operations._grad_ops";

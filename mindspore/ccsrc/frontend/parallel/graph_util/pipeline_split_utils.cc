@@ -1170,6 +1170,14 @@ AnfNodePtr GetActualOp(const AnfNodePtr &node) {
   return node;
 }
 
+bool static IsBorderNode(const AnfNodePtr &node) {
+  if (!node->isa<CNode>() || IsPrimitiveCNode(node, prim::kPrimDepend) ||
+      IsPrimitiveCNode(node, prim::kPrimZerosLike)) {
+    return false;
+  }
+  return true;
+}
+
 void GetBorderNode(std::vector<AnfNodePtr> *forward_start, std::vector<AnfNodePtr> *forward_end,
                    std::vector<AnfNodePtr> *backward_start, std::vector<AnfNodePtr> *backward_end,
                    std::vector<AnfNodePtr> *forward_params, std::vector<AnfNodePtr> *backward_params,
@@ -1178,8 +1186,7 @@ void GetBorderNode(std::vector<AnfNodePtr> *forward_start, std::vector<AnfNodePt
   int64_t slice_index = 0;
   auto all_nodes = DeepScopedGraphSearch(root->get_return());
   for (auto &node : all_nodes) {
-    if (!node->isa<CNode>() || IsPrimitiveCNode(node, prim::kPrimDepend) ||
-        IsPrimitiveCNode(node, prim::kPrimZerosLike)) {
+    if (!IsBorderNode(node)) {
       continue;
     }
     auto prim = GetCNodePrimitive(node);
@@ -1190,6 +1197,12 @@ void GetBorderNode(std::vector<AnfNodePtr> *forward_start, std::vector<AnfNodePt
       backward_end->push_back(node);
     }
     if (cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
+      if (cnode->HasPrimalAttr(FREEZE)) {
+        auto freeze_v = cnode->GetPrimalAttr(FREEZE);
+        if (GetValue<bool>(freeze_v)) {
+          continue;
+        }
+      }
       auto forward_node_name = cnode->GetPrimalAttr(kPrimalAttrForwardNodeName);
       if (std::find(name_list.begin(), name_list.end(), forward_node_name) != name_list.end()) {
         continue;
