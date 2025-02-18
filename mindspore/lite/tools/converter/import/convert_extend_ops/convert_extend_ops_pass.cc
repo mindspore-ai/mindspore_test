@@ -30,6 +30,8 @@ constexpr auto kNameMatMulExtPatternName = "MatMulExtPatternName";
 constexpr auto kNameMaxPatternName = "MaxPatternName";
 constexpr auto kNameMinPatternName = "MinPatternName";
 constexpr auto kNameDensePatternName = "DensePatternName";
+constexpr auto kNameOnesPatternName = "OnesPatternName";
+constexpr auto kNameZerosPatternName = "ZerosPatternName";
 }  // namespace
 
 VectorRef ConvertExtendOpsPass::DefineSumExtPattern() const {
@@ -89,6 +91,28 @@ VectorRef ConvertExtendOpsPass::DefineDensePattern() const {
   return dense_ref;
 }
 
+VectorRef ConvertExtendOpsPass::DefineOnesPattern() const {
+  auto is_ones = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimOnes>);
+  MS_CHECK_TRUE_RET(is_ones != nullptr, {});
+  auto input = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(input != nullptr, {});
+  auto dtype = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(dtype != nullptr, {});
+  VectorRef ones_ref = VectorRef({is_ones, input, dtype});
+  return ones_ref;
+}
+
+VectorRef ConvertExtendOpsPass::DefineZerosPattern() const {
+  auto is_zeros = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimZeros>);
+  MS_CHECK_TRUE_RET(is_zeros != nullptr, {});
+  auto input = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(input != nullptr, {});
+  auto dtype = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(dtype != nullptr, {});
+  VectorRef zeros_ref = VectorRef({is_zeros, input, dtype});
+  return zeros_ref;
+}
+
 std::unordered_map<std::string, VectorRef> ConvertExtendOpsPass::DefinePatterns() const {
   std::unordered_map<std::string, VectorRef> patterns;
   patterns[kNameSumExtPatternName] = DefineSumExtPattern();
@@ -96,6 +120,8 @@ std::unordered_map<std::string, VectorRef> ConvertExtendOpsPass::DefinePatterns(
   patterns[kNameMaxPatternName] = DefineMaxPattern();
   patterns[kNameMinPatternName] = DefineMinPattern();
   patterns[kNameDensePatternName] = DefineDensePattern();
+  patterns[kNameOnesPatternName] = DefineOnesPattern();
+  patterns[kNameZerosPatternName] = DefineZerosPattern();
   return patterns;
 }
 
@@ -109,11 +135,10 @@ AnfNodePtr ConvertExtendOpsPass::Process(const std::string &pattern_name, const 
   }
 
   static std::unordered_map<std::string, ConvertExtendOpsSubPass> sub_pass_map = {
-    {kNameSumExtPatternName, ConvertSumExtPass},
-    {kNameMatMulExtPatternName, ConvertMatMulExtPass},
-    {kNameMaxPatternName, ConvertMaxMinPass},
-    {kNameMinPatternName, ConvertMaxMinPass},
-    {kNameDensePatternName, ConvertDensePass}};
+    {kNameSumExtPatternName, ConvertSumExtPass}, {kNameMatMulExtPatternName, ConvertMatMulExtPass},
+    {kNameMaxPatternName, ConvertMaxMinPass},    {kNameMinPatternName, ConvertMaxMinPass},
+    {kNameDensePatternName, ConvertDensePass},   {kNameOnesPatternName, ConvertOnesPass},
+    {kNameZerosPatternName, ConvertZerosPass}};
 
   if (sub_pass_map.find(pattern_name) != sub_pass_map.end()) {
     MS_LOG(INFO) << "The node " << node->fullname_with_scope() << " is matched pattern[" << pattern_name

@@ -5,7 +5,7 @@ mindspore.numpy.sum
 
     返回指定轴上数组元素的总和。
 
-    .. note:: 
+    .. note::
         不支持NumPy参数 `out` 、 `where` 、 `casting` 、 `order` 、 `subok` 、 `signature` 、 `extobj` 。
 
     参数：

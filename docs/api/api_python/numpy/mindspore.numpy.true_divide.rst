@@ -7,7 +7,7 @@ mindspore.numpy.true_divide
 
     该函数与Python默认的“向下取整除”不同，它返回真除法的结果。
 
-    .. note:: 
+    .. note::
         不支持NumPy参数 `out` 、 `where` 、 `casting` 、 `order` 、 `subok` 、 `signature` 、 `extobj` 。
 
     参数：

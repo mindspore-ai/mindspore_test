@@ -1,0 +1,5 @@
+logaddexp2:
+  description: |
+    logaddexp2(other) -> Tensor
+
+    For details, please refer to :func:`mindspore.ops.logaddexp2`.

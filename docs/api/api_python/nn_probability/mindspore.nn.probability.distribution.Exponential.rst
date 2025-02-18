@@ -17,7 +17,7 @@ mindspore.nn.probability.distribution.Exponential
         - **dtype** (mindspore.dtype) - 事件样例的类型。默认值： ``mstype.float32``。
         - **name** (str) - 分布的名称。默认值： ``'Exponential'``。
 
-    .. note:: 
+    .. note::
         - `rate` 中的元素必须大于0。
         - `dtype` 必须是float，因为指数分布是连续的。
 

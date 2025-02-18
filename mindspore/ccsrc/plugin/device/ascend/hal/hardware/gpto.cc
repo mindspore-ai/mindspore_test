@@ -2402,6 +2402,33 @@ void PushTasksToVisit(std::queue<std::weak_ptr<GptoTask>> *tasks_to_visit,
   }
 }
 
+void ExtractSwitchGather(std::map<GptoTaskPtr, GptoTaskPtr, TaskDepthSort> *switch_gather,
+                         std::unordered_map<GptoTaskPtr, std::pair<size_t, size_t>> *switch_attribute_ids,
+                         std::unordered_map<GptoTaskPtr, std::pair<size_t, size_t>> *gather_attribute_ids) {
+  MS_EXCEPTION_IF_NULL(switch_gather);
+  MS_EXCEPTION_IF_NULL(switch_attribute_ids);
+  MS_EXCEPTION_IF_NULL(gather_attribute_ids);
+  for (auto &switch_it : *switch_attribute_ids) {
+    const auto &switch_task = switch_it.first;
+    auto switch_pair = switch_it.second;
+
+    std::unordered_map<GptoTaskPtr, std::pair<size_t, size_t>>::iterator gather_it;
+    for (gather_it = gather_attribute_ids->begin(); gather_it != gather_attribute_ids->end(); ++gather_it) {
+      if (gather_it->second == switch_pair) {
+        break;
+      }
+    }
+    if (gather_it == gather_attribute_ids->end()) {
+      MS_LOG(INTERNAL_EXCEPTION) << "Could not find matching ConditionGather for a given ConditionSwitch "
+                                 << switch_pair;
+    }
+    const auto &gather_task = gather_it->first;
+    (*switch_gather)[switch_task] = gather_task;
+    MS_LOG(DEBUG) << "Mapped ConditionSwitch task " << switch_task->id() << " to ConditionGather task "
+                  << gather_task->id();
+  }
+}
+
 void UpdateTasksInlineCondition(std::unordered_map<CNodePtr, GptoTaskPtr> *cnode_to_task_map_ptr,
                                 std::map<GptoTaskPtr, GptoTaskPtr, TaskDepthSort> *switch_gather) {
   MS_EXCEPTION_IF_NULL(cnode_to_task_map_ptr);
@@ -2570,27 +2597,8 @@ SchedulingInput ExtractSchedulingInput(mindspore::device::DeviceResManager *devi
   // Start Step 2 ConditionSwitch/Gather for inline: identify matching switch/gather pairs
   MS_LOG(INFO) << "Start Extract GPTO Switch/Gather";
   ComputeDepthAndTopLevel(scheduling_input.tasks);  // if kept here, do not call again later in Process()
-
   std::map<GptoTaskPtr, GptoTaskPtr, TaskDepthSort> switch_gather;
-  for (auto &switch_it : switch_attribute_ids) {
-    const auto &switch_task = switch_it.first;
-    auto switch_pair = switch_it.second;
-
-    std::unordered_map<GptoTaskPtr, std::pair<size_t, size_t>>::iterator gather_it;
-    for (gather_it = gather_attribute_ids.begin(); gather_it != gather_attribute_ids.end(); ++gather_it) {
-      if (gather_it->second == switch_pair) {
-        break;
-      }
-    }
-    if (gather_it == gather_attribute_ids.end()) {
-      MS_LOG(INTERNAL_EXCEPTION) << "Could not find matching ConditionGather for a given ConditionSwitch "
-                                 << switch_pair;
-    }
-    const auto &gather_task = gather_it->first;
-    switch_gather[switch_task] = gather_task;
-    MS_LOG(DEBUG) << "Mapped ConditionSwitch task " << switch_task->id() << " to ConditionGather task "
-                  << gather_task->id();
-  }
+  ExtractSwitchGather(&switch_gather, &switch_attribute_ids, &gather_attribute_ids);
   MS_LOG(INFO) << "End Extract GPTO Switch/Gather";
   // End Step 2 ConditionSwitch/Gather for inline
 
@@ -3064,25 +3072,26 @@ void ExtractTensors(const std::vector<GptoTaskPtr> &tasks, std::set<GptoTensorPt
 void MockExecutionOrder(const SchedulingOutput &scheduling_output,
                         std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> *mock_exec_order,
                         size_t num_events) {
+  const size_t kSendRecv = 2;
   std::vector<Interval> task_times = scheduling_output.task_times;
   std::sort(task_times.begin(), task_times.end(), [](Interval x, Interval y) {
     return x.start < y.start || (x.start == y.start && x.task->gpto_type() > y.task->gpto_type());
   });
-  mock_exec_order->resize(task_times.size() + 2 * num_events);
+  mock_exec_order->resize(task_times.size() + kSendRecv * num_events);
   size_t mock_idx = mock_exec_order->capacity() - 1;
   size_t event_id = 0;
   for (std::vector<Interval>::reverse_iterator rit = task_times.rbegin(); rit != task_times.rend(); ++rit) {
     (*mock_exec_order)[mock_idx--] = std::make_pair(rit->task->cnode(), std::make_tuple('n', 0, 0, 0));
     size_t local_event_count = 0;
     for (auto task : rit->task->recv_events()) {
-      (*mock_exec_order)[mock_idx - rit->task->recv_events().size() * 2 + 1 + local_event_count] =
+      (*mock_exec_order)[mock_idx - rit->task->recv_events().size() * kSendRecv + 1 + local_event_count] =
         std::make_pair(nullptr, std::make_tuple('s', task.lock()->gpto_type(), rit->task->gpto_type(), event_id));
       (*mock_exec_order)[mock_idx - local_event_count] =
         std::make_pair(nullptr, std::make_tuple('r', task.lock()->gpto_type(), rit->task->gpto_type(), event_id));
       event_id++;
       local_event_count++;
     }
-    mock_idx -= rit->task->recv_events().size() * 2;
+    mock_idx -= rit->task->recv_events().size() * kSendRecv;
   }
 }
 

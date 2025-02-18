@@ -174,10 +174,9 @@ if(ENABLE_CPU)
     COMPONENT mindspore
   )
   install(
-      TARGETS mindspore_ops_host LIBRARY
-      DESTINATION ${INSTALL_PLUGIN_DIR}
-      COMPONENT mindspore
-      NAMELINK_SKIP
+    TARGETS mindspore_ops_host
+    DESTINATION ${INSTALL_PLUGIN_DIR}
+    COMPONENT mindspore
   )
 endif()
 

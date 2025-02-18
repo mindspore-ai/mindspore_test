@@ -1,0 +1,5 @@
+ge:
+  description: |
+    ge(input, other) -> Tensor
+
+    Alias for :func:`mindspore.mint.greater_equal`.

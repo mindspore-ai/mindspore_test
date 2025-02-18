@@ -97,7 +97,7 @@ deprecated_tensor_method_map = {
     # 39 greater
 
     # 40 greater_equal
-
+    "greater_equal": "deprecated_tensor_greater_equal",
     # 41 gt
 
     # 42 half
@@ -350,6 +350,8 @@ deprecated_tensor_method_map = {
 
     # 157
     "logaddexp": "deprecated_tensor_logaddexp",
+
+    "logaddexp2": "deprecated_tensor_logaddexp2",
 
     "xlogy": "tensor_xlogy",
 

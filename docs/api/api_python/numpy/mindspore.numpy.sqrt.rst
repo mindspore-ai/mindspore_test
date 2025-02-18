@@ -5,7 +5,7 @@ mindspore.numpy.sqrt
 
     逐元素返回数组的非负平方根。
 
-    .. note:: 
+    .. note::
         不支持NumPy参数 `out` 、 `where` 、 `casting` 、 `order` 、 `subok` 、 `signature` 、 `extobj` 。在 GPU 上，支持的 dtype 为 np.float16 和 np.float32。
 
     参数：

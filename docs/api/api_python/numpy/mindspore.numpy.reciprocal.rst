@@ -7,7 +7,7 @@ mindspore.numpy.reciprocal
 
     计算 `1/x` 。
 
-    .. note:: 
+    .. note::
         不支持NumPy参数 `casting` 、 `order` 、 `subok` 、 `signature` 、 `extobj` 。 当使用 `where` 时， `out` 必须具有Tensor值。 `out` 不支持存储结果，但可以与 `where` 结合使用，在 `where` 设置为 `False` 的索引处设定值。
 
     参数：

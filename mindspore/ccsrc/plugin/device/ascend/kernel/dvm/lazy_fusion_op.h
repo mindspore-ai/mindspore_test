@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_OPS_KERNEL_ASCEND_PYBOOST_DVM_H_
-#define MINDSPORE_OPS_KERNEL_ASCEND_PYBOOST_DVM_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_DVM_LAZY_FUSION_OP_H
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_DVM_LAZY_FUSION_OP_H
 
 #include <utility>
 #include <tuple>
-#include "runtime/pynative/lazy_fusion_kernel.h"
+#include "plugin/device/ascend/kernel/dvm/lazy_fusion_kernel.h"
 #include "kernel/ascend/pyboost/auto_generate/abs.h"
 #include "kernel/ascend/pyboost/auto_generate/add.h"
 #include "kernel/ascend/pyboost/auto_generate/cast.h"
@@ -67,8 +67,6 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void LazyFusionAscendInit();
-
 class CastAscendDvm : public CastAscend {
  public:
   CastAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
@@ -417,6 +415,7 @@ class MatMulAscendDvm : public MatMulAscend {
   tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &mat2_tensor,
                              const BoolImmPtr &transpose_a, const BoolImmPtr &transpose_b) override;
 };
+
 class BatchMatMulAscendDvm : public pyboost::BatchMatMulAscend {
  public:
   BatchMatMulAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
@@ -429,4 +428,4 @@ class BatchMatMulAscendDvm : public pyboost::BatchMatMulAscend {
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_OPS_KERNEL_ASCEND_PYBOOST_DVM_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_DVM_LAZY_FUSION_OP_H

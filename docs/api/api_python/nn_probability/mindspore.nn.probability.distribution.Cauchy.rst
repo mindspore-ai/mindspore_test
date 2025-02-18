@@ -18,7 +18,7 @@ mindspore.nn.probability.distribution.Cauchy
         - **dtype** (mindspore.dtype) - 事件样例的类型。默认值： ``mstype.float32`` 。
         - **name** (str) - 分布的名称。默认值： ``'Cauchy'`` 。
 
-    .. note:: 
+    .. note::
         - `scale` 中的元素必须大于零。
         - `dtype` 必须是float，因为柯西分布是连续的。
         - GPU后端不支持柯西分布。

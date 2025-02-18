@@ -18,7 +18,7 @@ mindspore.nn.probability.distribution.Normal
         - **dtype** (mindspore.dtype) - 事件样例的类型。默认值： ``mstype.float32`` 。
         - **name** (str) - 分布的名称。默认值： ``'Normal'`` 。
 
-    .. note:: 
+    .. note::
         - `sd` 必须大于零。
         - `dtype` 必须是float，因为正态分布是连续的。
 

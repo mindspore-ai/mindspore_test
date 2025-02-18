@@ -33,6 +33,8 @@
 #include "runtime/collective/collective_communication_lib.h"
 #include "runtime/collective/collective_comm_lib_loader.h"
 #include "runtime/device/auto_mem_offload.h"
+#include "runtime/device/gsm/swap_manager.h"
+#include "runtime/device/memory_manager.h"
 #include "runtime/device/res_manager/utils/visible.h"
 #include "runtime/device/res_manager/utils/utils.h"
 
@@ -230,6 +232,8 @@ class RES_EXPORT HalResBase {
   virtual CollectiveCommunicationLib *collective_comm_lib() { return nullptr; }
 
   virtual std::shared_ptr<MemoryManager> mem_manager() { return nullptr; }
+
+  virtual std::shared_ptr<SwapManager> swap_manager() const { return nullptr; }
 
   virtual std::pair<vector<size_t>, vector<size_t>> AllocDeviceMemoryForTensorList(
     const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {

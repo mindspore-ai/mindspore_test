@@ -13,6 +13,7 @@ MatMulExt: 'aclnnMatmul'
 GroupedMatmul: 'aclnnGroupedMatmulV3'
 MaskedFill: 'aclnnInplaceMaskedFillTensor'
 GreaterEqual: 'aclnnGeTensor'
+GreaterEqualScalar: 'aclnnGeScalar'
 UniformExt: 'aclnnInplaceUniform'
 InplaceScatterAdd: 'aclnnScatterAdd'
 MoeTokenUnpermuteGrad: 'aclnnMoeTokenUnpermuteGrad'
@@ -99,7 +100,8 @@ IndexFillTensor: 'aclnnIndexFillTensor'
 # 4
 CumminExt: 'aclnnCummin'
 # 5
-
+AvgPool3DExt: 'aclnnAvgPool3d'
+AvgPool3DGradExt: 'aclnnAvgPool3dBackward'
 # 6
 CumsumExt: 'aclnnCumsum'
 # 7

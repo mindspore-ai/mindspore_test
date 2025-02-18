@@ -30,8 +30,8 @@ sub:
     
     Raises:
         TypeError: If the type of `other` or `alpha` is not one of the following: Tensor, number.Number, bool.
-        TypeError: If `alpha` is of type float but `self` and `other` are not of type float.
-        TypeError: If `alpha` is of type bool but `self` and `other` are not of type bool.
+        TypeError: If `alpha` is of type float but `input` and `other` are not of type float.
+        TypeError: If `alpha` is of type bool but `input` and `other` are not of type bool.
     
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

@@ -42,8 +42,8 @@ void DropoutGenMaskExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *>
   MS_LOG(DEBUG) << primitive_->name() << " got a (" + TypeIdToString(inputs[kIndex1]->dtype_id()) + ")p = " << p_value_;
 
   shape_ = device::ascend::ConvertKernelTensor<ShapeVector>(inputs[kIndex0]);
-  seed_value_ = inputs[kIndex2]->GetValueWithCheck<int64_t>();
-  offset_value_ = inputs[kIndex3]->GetValueWithCheck<int64_t>();
+  seed_value_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
+  offset_value_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
   dtype_value_ = static_cast<TypeId>(inputs[kIndex4]->GetValueWithCheck<int64_t>());
 
   GetWorkspaceForResize(shape_, p_value_, seed_value_, offset_value_, dtype_value_, outputs[kIndex0]);

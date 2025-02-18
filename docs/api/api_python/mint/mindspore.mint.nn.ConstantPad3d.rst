@@ -3,7 +3,7 @@ mindspore.mint.nn.ConstantPad3d
 
 .. py:class:: mindspore.mint.nn.ConstantPad3d(padding, value)
 
-    根据参数 `padding` 以及 `value` 对输入 `input` 最后3维进行填充。
+    根据参数 `padding` 以及 `value` ，对输入 `input` 最后3维进行填充。
 
     更多参考详见 :func:`mindspore.mint.nn.functional.pad`。
 
@@ -15,13 +15,13 @@ mindspore.mint.nn.ConstantPad3d
         - **value** (Union[int, float]) - 指定填充值。
 
     输入：
-        - **input** (Tensor) - 输入Tensor，shape为 :math:`(N, *)`，其中 :math:`*` 表示任意维度。
+        - **input** (Tensor) - 输入Tensor。shape为 :math:`(N, *)`，其中 :math:`*` 表示任意维度。
 
     输出：
         Tensor，填充后的Tensor。
 
     异常：
-        - **TypeError** - `padding` 不是一个integer或包含6个int的tuple或者list。
+        - **TypeError** - `padding` 不是一个int，或包含6个int的tuple，或list。
         - **TypeError** - `input` 不是Tensor。
         - **TypeError** - `value` 既不是int，也不是float。
         - **ValueError** - `padding` 含有负数。

@@ -35,9 +35,9 @@ mindspore.mint.nn.Conv2d
     参数：
         - **in_channels** (int) - Conv2d层输入Tensor的空间维度。
         - **out_channels** (int) - Conv2d层输出Tensor的空间维度。
-        - **kernel_size** (Union[int, tuple[int], list[int]]) - 指定二维卷积核的高度和宽度。数据类型为整型或两个整型的tuple。一个整数表示卷积核的高度和宽度均为该值。两个整数的tuple分别表示卷积核的高度和宽度。
-        - **stride** (Union[int, tuple[int], list[int]]，可选) - 二维卷积核的移动步长。数据类型为整型或者长度为2的整型tuple。一个整数表示在高度和宽度方向的移动步长均为该值。两个整数的tuple分别表示在高度和宽度方向的移动步长。默认值： ``1`` 。
-        - **padding** (Union[int, tuple[int], list[int], str]，可选) - 输入的高度和宽度方向上填充的数量。数据类型为int或包含2个整数的tuple或string { ``"valid"`` ，  ``"same"`` } 。如果 `padding` 是一个整数，那么 `padding_{H}` 和 `padding_{W}` 的填充都等于 `padding` 。如果 `padding` 是一个有2个整数的tuple，那么 `padding_{H}` 和 `padding_{W}` 的填充分别等于 `padding[0]` 和 `padding[1]` 。值应该要大于等于0。默认值： ``0`` 。
+        - **kernel_size** (Union[int, tuple[int], list[int]]) - 指定二维卷积核的高度和宽度。数据类型为int或两个int的tuple。一个int表示卷积核的高度和宽度均为该值。两个int的tuple分别表示卷积核的高度和宽度。
+        - **stride** (Union[int, tuple[int], list[int]]，可选) - 二维卷积核的移动步长。数据类型为int或者长度为2的int的tuple。一个int表示在高度和宽度方向的移动步长均为该值。两个int的tuple分别表示在高度和宽度方向的移动步长。默认值： ``1`` 。
+        - **padding** (Union[int, tuple[int], list[int], str]，可选) - 输入的高度和宽度方向上填充的数量。数据类型为int或包含2个int的tuple或string { ``"valid"`` ，  ``"same"`` } 。如果 `padding` 是一个int，那么 `padding_{H}` 和 `padding_{W}` 的填充都等于 `padding` 。如果 `padding` 是一个有2个int的tuple，那么 `padding_{H}` 和 `padding_{W}` 的填充分别等于 `padding[0]` 和 `padding[1]` 。值应该要大于等于0。默认值： ``0`` 。
         
           - ``"same"``：在输入的四周填充，使得当 `stride` 为 ``1`` 时，输入和输出的shape一致。待填充的量由算子内部计算，若为偶数，则均匀地填充在四周，若为奇数，多余的填充量将补充在底部/右侧。若设置该模式，`stride` 的值必须为1。
           - ``"valid"``：不对输入进行填充，返回输出可能的最大高度和宽度，不能构成一个完整stride的额外的像素将被丢弃。
@@ -94,7 +94,7 @@ mindspore.mint.nn.Conv2d
     异常：
         - **ValueError** - 输入特征图的大小与参数应满足输出公式，以确保输出特征图大小为正，否则会报错。
         - **RuntimeError** - Ascend上受不同型号NPU芯片上L1缓存大小限制，用例尺寸或Kernel Size过大。
-        - **TypeError** - 如果 `in_channels` ， `out_channels` 或者 `groups` 不是整数。
+        - **TypeError** - 如果 `in_channels` ， `out_channels` 或者 `groups` 不是int。
         - **TypeError** - 如果 `kernel_size` ， `stride`， 或者 `dilation` 既不是int也不是tuple。
         - **ValueError** - 如果 `in_channels` ， `out_channels`， `kernel_size` ， `stride` 或者 `dilation` 小于1。
         - **ValueError** - 如果 `padding` 小于0。

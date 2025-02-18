@@ -7,7 +7,7 @@ mindspore.numpy.trunc
 
     标量 `x` 的截断值是距离 `x` 最近且趋近0的整数 `i`，即 `x` 的小数部分被舍弃。
 
-    .. note:: 
+    .. note::
         不支持NumPy参数 `out` 、 `where` 、 `casting` 、 `order` 、 `subok` 、 `signature` 、 `extobj` 。
 
     参数：

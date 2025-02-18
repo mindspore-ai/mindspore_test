@@ -168,7 +168,8 @@ from mindspore.ops.function.math_func import norm_ext as norm
 # 57
 from mindspore.ops.functional import broadcast_to
 # 58
-from mindspore.ops.function.math_func import greater_equal
+from mindspore.ops.functional_overload import greater_equal, ge
+
 # 59
 from mindspore.ops.functional import square
 # 60
@@ -417,6 +418,7 @@ from mindspore.ops.auto_generate import log10_ext as log10
 
 # 553
 from mindspore.ops.auto_generate import logaddexp_ext as logaddexp
+from mindspore.ops.auto_generate import logaddexp2
 
 # 557
 from mindspore.ops.auto_generate import logsumexp_ext as logsumexp
@@ -456,6 +458,9 @@ from mindspore.ops.functional_overload import sub
 
 # 739
 from mindspore.ops.function.array_func import hstack
+
+# 826
+from mindspore.ops.functional_overload import floor_divide
 
 # 887
 from mindspore.ops.auto_generate import log2_ext as log2
@@ -2040,6 +2045,7 @@ __all__ = [
 
     # 553
     'logaddexp',
+    'logaddexp2',
 
     # 557
     'logsumexp',
@@ -2076,6 +2082,9 @@ __all__ = [
 
     # 739
     'hstack',
+
+    # 826
+    'floor_divide',
 
     # 887
     'log2',

@@ -1375,12 +1375,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('ger')(self, vec2)
 
-    def ge(self, x):
-        """
-        For details, please refer to :func:`mindspore.ops.ge`.
-        """
-        return tensor_operator_registry.get('ge')(self, x)
-
     def broadcast_to(self, shape):
         """
         For details, please refer to :func:`mindspore.ops.broadcast_to`.
@@ -1446,15 +1440,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('floor_')(self)
 
-    def floor_divide(self, other):
-        """
-        For details, please refer to :func:`mindspore.ops.floor_divide`.
-
-        .. warning::
-            This is an experimental API that is subject to change or deletion.
-        """
-        return tensor_operator_registry.get('floor_divide')(self, other)
-
     # pylint: disable=redefined-builtin
     def norm(self, ord=None, dim=None, keepdim=False, *, dtype=None):
         """
@@ -1490,12 +1475,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             eps = -1.0
         validator.check_value_type('eps', eps, (float,), 'Tensor.logit')
         return tensor_operator_registry.get('logit')(self, eps)
-
-    def logaddexp2(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.logaddexp2`.
-        """
-        return tensor_operator_registry.get('logaddexp2')(self, other)
 
     def logcumsumexp(self, axis):
         r"""

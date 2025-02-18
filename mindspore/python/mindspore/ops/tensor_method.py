@@ -26,6 +26,9 @@ from mindspore.ops.composite.multitype_ops._compile_utils import (
 from mindspore.ops.auto_generate.gen_ops_prim import (
     inplace_scatter_src_op, inplace_scatter_src_reduce_op, inplace_scatter_value_op, inplace_scatter_value_reduce_op
 )
+from mindspore.ops.auto_generate.gen_ops_prim import (
+    floor_div_op, floor_div_scalar_op
+)
 # 1 common import
 
 # 2 common import
@@ -354,7 +357,7 @@ from mindspore.ops.auto_generate import isinf
 # 151 fmod
 from mindspore.ops.function.math_func import fmod
 # 152
-
+from mindspore.ops.auto_generate import logaddexp2
 # 153
 from mindspore.ops.auto_generate import acos_ext, acosh_ext, asin_ext, asinh_ext, atan_ext, dot
 # 154 isneginf
@@ -679,6 +682,10 @@ def tensor_greater(input, other):
 
 # 40 greater_equal
 def tensor_greater_equal(input, other):
+    return greater_equal(input, other)
+
+
+def deprecated_tensor_greater_equal(input, other):
     return greater_equal(input, other)
 
 
@@ -1453,6 +1460,11 @@ def tensor_median_dim(input, dim=-1, keepdim=False):
 
 
 # 156
+def tensor_logaddexp2(input, other):
+    return logaddexp2(input, other)
+
+def deprecated_tensor_logaddexp2(input, other):
+    return F.logaddexp2(input, other)
 
 # 157
 def tensor_empty(*size, dtype=None, device=None):
@@ -1710,6 +1722,14 @@ def matmul_reduce_scatter(
     For details, please refer to :func:`mindspore.ops.matmul_reduce_scatter`.
     """
     raise NotImplementedError('matmul_reduce_scatter only supports Ascend.')
+
+
+def tensor_floor_div(input, other):
+    return floor_div_op(input, other)
+
+
+def tensor_floor_div_scalar(input, other):
+    return floor_div_scalar_op(input, other)
 
 
 # 1029

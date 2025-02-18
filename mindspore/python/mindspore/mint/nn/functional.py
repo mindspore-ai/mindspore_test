@@ -208,7 +208,7 @@ from mindspore.ops.auto_generate import avg_pool1d_ext as avg_pool1d
 # 90
 from mindspore.ops.function.nn_func import avg_pool2d_ext as avg_pool2d
 # 91
-
+from mindspore.ops.function.nn_func import avg_pool3d_ext as avg_pool3d
 # 92
 from mindspore.ops.auto_generate import leaky_relu_ext as leaky_relu
 # 93
@@ -1081,7 +1081,7 @@ def adaptive_max_pool1d(input, output_size, return_indices=False):
         return_indices (bool, optional): Whether to return the index of the maximum value. Default: ``False`` .
 
     Returns:
-        Union(Tensor, tuple(Tensor, Tensor))).
+        Union(Tensor, tuple(Tensor, Tensor)).
 
         - If `return_indices` is False, output is a Tensor, with shape :math:`(N, C, L_{out})`. It has the same data
           type as `input`.
@@ -1295,7 +1295,7 @@ __all__ = [
     # 87
 
     # 88
-
+    'avg_pool3d',
     # 89
     'avg_pool1d',
     # 90

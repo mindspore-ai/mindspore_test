@@ -12,7 +12,7 @@ mindspore.nn.probability.distribution.Bernoulli
         - **dtype** (mindspore.dtype) - 采样结果的数据类型。默认值： ``mstype.int32`` 。
         - **name** (str) - 分布的名称。默认值： ``'Bernoulli'`` 。
 
-    .. note:: 
+    .. note::
         `probs` 中元素必须是合适的概率（0<p<1）。`dist_spec_args` 是 `probs`。
 
     异常：

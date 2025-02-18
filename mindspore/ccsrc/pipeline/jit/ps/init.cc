@@ -59,6 +59,9 @@
 #include "include/common/np_dtype/np_dtypes.h"
 #include "include/common/amp/amp.h"
 #include "pipeline/jit/trace/trace_recorder.h"
+#ifdef _WIN32
+#include "kernel/cpu/utils/cpu_utils.h"
+#endif
 
 namespace py = pybind11;
 using GraphExecutorPy = mindspore::pipeline::GraphExecutorPy;
@@ -231,6 +234,10 @@ void RegModuleHelper(py::module *m) {
 
 // Interface with python
 PYBIND11_MODULE(_c_expression, m) {
+#ifdef _WIN32
+  // Use dummy function to force link to mindspore_ops_host on windows
+  mindspore::kernel::ForceLinkOpsHost();
+#endif
   // The OMP_NUM_THREADS has no effect when set in backend, so set it here in advance.
   mindspore::common::SetOMPThreadNum();
 

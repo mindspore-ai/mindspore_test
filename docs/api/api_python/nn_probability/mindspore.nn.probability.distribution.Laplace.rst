@@ -20,7 +20,7 @@ mindspore.nn.probability.distribution.Laplace
         - **dtype** (mindspore.dtype，可选) - 事件样例的类型。默认值： ``mstype.float32`` 。
         - **name** (str，可选) - 分布的名称。默认值： ``'Laplace'`` 。
 
-    .. note:: 
+    .. note::
         - `sd` 必须大于0。
         - `dtype` 必须是float，因为拉普拉斯分布是连续的。
         - 如果在方法函数调用中传入参数 `mean` 或者 `sd` ，则计算中会使用其传参值，否则就会使用初始化时的参数值。

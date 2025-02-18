@@ -4,6 +4,7 @@ approvers:
 - dayschan
 - anyrenwei
 - zichun_ye
+- looop5
 
 options:
     no_parent_owners: true
