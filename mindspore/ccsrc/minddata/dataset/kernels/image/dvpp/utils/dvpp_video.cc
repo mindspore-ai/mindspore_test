@@ -414,7 +414,7 @@ void DvppVideo::FrameDecodeThreadFunction(void *decoderSelf) {
   videoFrame->data = nullptr;
   videoFrame->size = 0;
   auto ret = thisPtr->dvppVdec_->Process(videoFrame, decoderSelf);
-  if (ret != ACLLITE_ERROR) {
+  if (ret != ACLLITE_OK) {
     MS_LOG(ERROR) << "DvppVdec procesing failed, errorno: " << ret;
   }
 
