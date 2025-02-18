@@ -984,6 +984,16 @@ Status SqueezeInfo::InferAxis(const ValueTuplePtr &value_tuple) {
   }
   Shape input_shape = inputs_shape_.at(0);
   size_t input_size = input_shape.size();
+  // if axis tuple is empty, we should exclude the axis that the corresponding slice shape is 1.
+  if (axis_list.empty()) {
+    for (size_t i = 0; i < input_size; ++i) {
+      if (input_shape[i] == 1) {
+        axis.push_back(i);
+      }
+    }
+    axis_ = MakeValue(axis)->cast<ValueTuplePtr>();
+    return SUCCESS;
+  }
 
   // convert negative axis to positive.
   for (auto &dim : axis_list) {
@@ -1002,22 +1012,10 @@ Status SqueezeInfo::InferAxis(const ValueTuplePtr &value_tuple) {
 Status SqueezeInfo::GetAttrs() {
   auto value = input_value_[kIndex1];
   MS_EXCEPTION_IF_NULL(value);
-  if (input_value_[kIndex1]->isa<None>()) {
-    std::vector<int64_t> dim;
-    Shape input_shape = inputs_shape_.at(0);
-    size_t input_size = input_shape.size();
-    for (size_t i = 0; i < input_size; ++i) {
-      if (input_shape[i] == 1) {
-        dim.push_back(i);
-      }
-    }
-    axis_ = MakeValue(dim)->cast<ValueTuplePtr>();
-  } else {
-    auto value_tuple = value->cast<ValueTuplePtr>();
-    MS_EXCEPTION_IF_NULL(value_tuple);
-    if (InferAxis(value_tuple) != SUCCESS) {
-      return FAILED;
-    }
+  auto value_tuple = value->cast<ValueTuplePtr>();
+  MS_EXCEPTION_IF_NULL(value_tuple);
+  if (InferAxis(value_tuple) != SUCCESS) {
+    return FAILED;
   }
   attrs_[AXIS] = axis_;
   return SUCCESS;
