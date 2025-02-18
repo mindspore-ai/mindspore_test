@@ -146,3 +146,26 @@ def set_cpu_affinity(enable_affinity, affinity_cpu_list=None):
     else:
         RuntimeConf.get_instance().set_thread_bind_core_configured()
         return
+
+
+@args_type_check(thread_num=int, kernel_group_num=int)
+def set_kernel_launch_group(thread_num=2, kernel_group_num=8):
+    """
+    KBK supports operator batch parallel delivery interface, supports enabling
+    parallel delivery, and configures parallel number.
+
+    Args:
+        thread_num (int): The number of concurrent threads, the default value is 2, generally not
+            recommended to increase. The number of threads configured dispatch_threads_num
+            the existing interface mindspore.runtime.is independent of each other.
+        kernel_group_num (int): Total number of operator groups, default 8,
+            kernel_group_num/thread_num groups per thread.
+
+    Examples:
+        >>> import mindspore.runtime as rt
+        >>> rt.set_kernel_launch_group(thread_num=2, kernel_group_num=8)
+    """
+    if RuntimeConf.get_instance().is_kernel_launch_group_configured():
+        raise RuntimeError("The 'kernel_launch_group' can not be set repeatedly.")
+
+    return RuntimeConf.get_instance().set_kernel_launch_group(thread_num, kernel_group_num)

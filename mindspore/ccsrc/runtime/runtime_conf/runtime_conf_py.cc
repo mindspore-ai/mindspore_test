@@ -25,6 +25,9 @@ void RegRuntimeConf(py::module *m) {
     .def("set_dispatch_threads_num", &RuntimeConf::set_dispatch_threads_num, "Set dispatch threads num")
     .def("is_dispatch_threads_num_configured", &RuntimeConf::IsDispatchThreadsNumConfigured,
          "Is dispatch threads num configured")
+    .def("set_kernel_launch_group", &RuntimeConf::set_kernel_launch_group, "Set kernel threads num")
+    .def("is_kernel_launch_group_configured", &RuntimeConf::IsKernelLaunchGroupConfigured,
+         "Is kernel launch group configured")
     .def("set_op_threads_num", &RuntimeConf::set_op_threads_num, "Set op threads num")
     .def("is_op_threads_num_configured", &RuntimeConf::IsOpThreadsNumConfigured, "Is op threads num configured")
     .def("set_memory", &RuntimeConf::set_memory, "Set memory")
