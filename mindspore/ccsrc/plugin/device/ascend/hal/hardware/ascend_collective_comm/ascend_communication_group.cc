@@ -22,11 +22,12 @@
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/hccl_watch_dog_thread.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "utils/ms_context.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/acl_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "include/backend/distributed/cluster/cluster_context.h"
 #include "include/backend/distributed/collective/collect_hccl_init_info.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_err_manager.h"
 
 namespace mindspore {
 namespace device {
@@ -86,12 +87,12 @@ bool AscendCommunicationGroup::Initialize(void *root_info) {
   initialized_ = true;
 
   // Initialize watch dog for global communication group.
-  if (name_ == kHCCLGlobalGroupName && ms_context->get_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG)) {
-    MS_LOG(INFO) << "Start initializing hccl watchdog on device side...";
-    std::map<std::string, HcclComm> world_comm_group = {{kHCCLGlobalGroupName, comm_}};
-    HcclWatchDogManager::GetInstance().AddHandler(
-      std::make_unique<HcclWatchDogHandler>(global_rank_, group_rank, group_size, world_comm_group));
-    (void)HcclWatchDogManager::GetInstance().InitHandler();
+  if (ms_context->get_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG)) {
+    MS_LOG(INFO) << "Start initializing hccl watchdog on device side for group: " << name_
+                 << ", rank: " << global_rank_;
+    HcclWatchDogManager::GetInstance().AddHandler(std::make_unique<HcclWatchDogHandler>(global_rank_, name_, comm_));
+    auto handle_size = HcclWatchDogManager::GetInstance().HandleSize();
+    (void)HcclWatchDogManager::GetInstance().InitHandler(handle_size);
     MS_LOG(INFO) << "hccl watchdog on device side is successfully initialized.";
   }
   (void)CALL_ASCEND_API(aclrtResetDevice, device_id);
@@ -114,6 +115,7 @@ bool AscendCommunicationGroup::Finalize() {
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   (void)CALL_ASCEND_API(aclrtSetDevice, device_id);
+  HcclWatchDogManager::GetInstance().DestroyHandlerByName(name_);
   (void)HcclCommDestroy(comm_);
   (void)CALL_ASCEND_API(aclrtResetDevice, device_id);
   initialized_ = false;

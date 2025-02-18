@@ -121,6 +121,7 @@ def test_nest():
             return out
 
     context.set_context(mode=context.GRAPH_MODE, save_graphs=0, save_graphs_path="./lazy")
+    context.set_context(jit_config={"jit_level": "O0"})
     x = Tensor(10)
     net = Net1()
     net(x)

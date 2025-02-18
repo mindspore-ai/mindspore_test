@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <algorithm>
 #include <queue>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -320,10 +321,6 @@ bool CheckInputOptimizeCondition(const GraphCompilerInfo &graph_compiler_info) {
     return false;
   }
 
-  if (ms_context->IsEnableInferBoost()) {
-    return false;
-  }
-
   const auto &parser = graph_compiler_info.control_node_parser_;
   if (parser != nullptr && (parser->IsInited())) {
     return false;
@@ -538,6 +535,13 @@ KernelWithIndex FetchRealFrontNode(const KernelWithIndex &node_with_index, const
     }
   }
   return front_node_with_idx;
+}
+
+bool NoNeedContinuesOp(const AnfNodePtr &kernel) {
+  bool flag = !common::AnfAlgo::IsCommunicationOp(kernel) ||
+              common::AnfAlgo::GetCNodeName(kernel) == kMatMulAllReduceOpName ||
+              common::AnfAlgo::GetCNodeName(kernel) == kAlltoAllVOpName;
+  return flag;
 }
 }  // namespace
 
@@ -1403,6 +1407,16 @@ ActorSet *GraphScheduler::Fetch(const ActorInfo &actor_info) const {
   }
 }
 
+ActorSet *GraphScheduler::Fetch(uint32_t actor_id) const {
+  auto iter = std::find_if(actors_.begin(), actors_.end(),
+                           [actor_id](const auto &i) { return (i.second->actor_id_ == actor_id); });
+  if (iter != actors_.end()) {
+    return iter->second.get();
+  }
+  MS_LOG(DEBUG) << "Can't find the actors map of " << actor_id;
+  return nullptr;
+}
+
 ActorSetPtr GraphScheduler::Build(const GraphCompilerInfo &graph_compiler_info) {
   auto actor_set = std::make_shared<ActorSet>(graph_compiler_info.name_);
   MS_EXCEPTION_IF_NULL(actor_set);
@@ -1781,8 +1795,7 @@ void GraphScheduler::ProcessContinuousMemoryInfo(const ActorSetPtr &actor_set,
         if (common::AnfAlgo::GetCNodeName(kernel) == kFlattenConcatOpName) {
           graph_compiler_info.exist_flatten_concat_ = true;
         }
-        if (!common::AnfAlgo::IsCommunicationOp(kernel) ||
-            common::AnfAlgo::GetCNodeName(kernel) == kMatMulAllReduceOpName) {
+        if (NoNeedContinuesOp(kernel)) {
           continue;
         }
         auto key =

@@ -19,6 +19,7 @@
 
 #include <limits>
 #include <vector>
+#include "hccl/hccl_types.h"
 #include "plugin/device/ascend/hal/hardware/ascend_device_res_manager.h"
 
 namespace mindspore {
@@ -59,9 +60,9 @@ class DataExchangeInfo {
   static constexpr size_t kDataExchangeInfoHeadSize = 2;
   // free device memory and parameter info
   std::vector<uint64_t> data_;
-  // sum of aligned parater size
+  // sum of aligned parameter size
   uint64_t size_sum_ = 0;
-  // max of aligned parater size
+  // max of aligned parameter size
   uint64_t size_max_ = 0;
 };
 

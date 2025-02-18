@@ -40,8 +40,8 @@ from ..auto_generate import (CeLU, Flatten, LogSoftmax, LogSoftmaxExt, GLU, ReLU
                              ApplyRotaryPosEmb, PagedAttention, PagedAttentionMask, ReshapeAndCache,
                              FlashAttentionScore, PromptFlashAttention, Embedding, UpsampleNearest1D, UpsampleNearest2D,
                              UpsampleNearest3D, UpsampleTrilinear3D,
-                             UpsampleBilinear2D, UpsampleLinear1D,
-                             BinaryCrossEntropy, BCEWithLogitsLoss, SoftShrink,
+                             SoftMarginLoss, UpsampleBilinear2D, UpsampleLinear1D,
+                             BinaryCrossEntropy, BCEWithLogitsLoss, SoftShrink, AdaptiveMaxPool2D,
                              SmoothL1Loss)
 from .manually_defined import BatchNorm
 
@@ -246,78 +246,6 @@ class AdaptiveAvgPool2D(Primitive):
                 validator.check_number(f"output_size[{i}]", size, 0, validator.GE, self.name)
 
         self.output_size = tuple(-1 if val is None else val for val in self.output_size)
-        self.add_prim_attr('output_size', self.output_size)
-
-
-class AdaptiveMaxPool2D(Primitive):
-    r"""
-    Performs 2D adaptive max pooling on a multi-plane input signal.
-
-    Refer to :func:`mindspore.ops.adaptive_max_pool2d` for more details.
-
-    Args:
-        output_size (Union[int, tuple]): The target output size. `output_size` can be a tuple :math:`(H, W)`,
-            or an int H for :math:`(H, H)`. :math:`H` and :math:`W` can be int or None.
-            If it is None, it means the output size is the same as the input size.
-
-    Inputs:
-        - **input_x** (Tensor) - The input of AdaptiveMaxPool2D, which is a 3D or 4D tensor,
-          with float16, float32 or float64 data type.
-
-    Outputs:
-        Tensor, with the same type as the `input_x`.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> # case 1: output_size=(None, 2)
-        >>> input_x = Tensor(np.array([[[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
-        ...                             [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
-        ...                             [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]]]]), mindspore.float32)
-        >>> adaptive_max_pool_2d = ops.AdaptiveMaxPool2D((None, 2))
-        >>> output = adaptive_max_pool_2d(input_x)
-        >>> print(output[0])
-        [[[[2. 3.]
-           [5. 6.]
-           [8. 9.]]
-          [[2. 3.]
-           [5. 6.]
-           [8. 9.]]
-          [[2. 3.]
-           [5. 6.]
-           [8. 9.]]]]
-        >>> # case 2: output_size=2
-        >>> adaptive_max_pool_2d = ops.AdaptiveMaxPool2D(2)
-        >>> output = adaptive_max_pool_2d(input_x)
-        >>> print(output[0])
-        [[[[5. 6.]
-           [8. 9.]]
-          [[5. 6.]
-           [8. 9.]]
-          [[5. 6.]
-           [8. 9.]]]]
-        >>> # case 3: output_size=(1, 2)
-        >>> adaptive_max_pool_2d = ops.AdaptiveMaxPool2D((1, 2))
-        >>> output = adaptive_max_pool_2d(input_x)
-        >>> print(output[0])
-        [[[[8. 9.]]
-          [[8. 9.]]
-          [[8. 9.]]]]
-    """
-
-    @prim_attr_register
-    def __init__(self, output_size):
-        """Initialize AdaptiveMaxPool2D."""
-        validator.check_value_type("output_size", output_size, [int, tuple], self.name)
-        if isinstance(output_size, tuple):
-            validator.check_int(len(output_size), 2, validator.EQ,
-                                'length of output_size', self.name)
-        self.output_size = (output_size, output_size) if isinstance(self.output_size, int) else output_size
-        self.output_size = (-1 if self.output_size[0] is None else self.output_size[0],
-                            -1 if self.output_size[1] is None else self.output_size[1])
-        for size in self.output_size:
-            validator.check_number("output_size", size, -1, validator.GE, None)
         self.add_prim_attr('output_size', self.output_size)
 
 
@@ -2422,63 +2350,6 @@ class MultiMarginLoss(Primitive):
 
     def __call__(self, x, target, weight=None):
         return super().__call__(x, target, weight)
-
-
-class SoftMarginLoss(Primitive):
-    r"""
-    SoftMarginLoss operation.
-
-    Creates a criterion that optimizes a two-class classification
-    logistic loss between input tensor :math:`x` and target tensor :math:`y`
-    (containing 1 or -1).
-
-    .. math::
-        \text{loss}(x, y) = \sum_i \frac{\log(1 + \exp(-y[i]*x[i]))}{\text{x.nelement}()}
-
-    where :math:`x.nelement()` is the number of elements of x.
-
-    Args:
-        reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
-            ``'sum'`` . Default: ``'mean'`` .
-
-            - ``'none'``: no reduction will be applied.
-            - ``'mean'``: compute and return the mean of elements in the output.
-            - ``'sum'``: the output elements will be summed.
-
-    Inputs:
-        - **logits** (Tensor) - Predict data. Data type must be float16 or float32.
-        - **labels** (Tensor) - Ground truth data, with the same type and shape as `logits`.
-
-    Outputs:
-        Tensor or Scalar, if `reduction` is ``"none"``, its shape is the same as `logits`.
-        Otherwise, a scalar value will be returned.
-
-    Raises:
-        TypeError: If `logits` or `labels` is not a Tensor.
-        TypeError: If dtype of `logits` or `labels` is neither float16 nor float32.
-        ValueError: If shape of `logits` is not the same as `labels`.
-        ValueError: If `reduction` is not one of ``"none"`` , ``"mean"`` or ``"sum"`` .
-
-    Supported Platforms:
-        ``Ascend`` ``GPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> loss = ops.SoftMarginLoss()
-        >>> logits = Tensor(np.array([[0.3, 0.7], [0.5, 0.5]]), mindspore.float32)
-        >>> labels = Tensor(np.array([[-1, 1], [1, -1]]), mindspore.float32)
-        >>> output = loss(logits, labels)
-        >>> print(output)
-        0.6764238
-    """
-
-    @prim_attr_register
-    def __init__(self, reduction="mean"):
-        """Initialize SoftMarginLoss"""
-        self.init_prim_io_names(inputs=['predict', 'label'], outputs=['loss'])
-        self.reduction = validator.check_string(reduction, ['none', 'sum', 'mean'], 'reduction', self.name)
 
 
 class L2Loss(Primitive):

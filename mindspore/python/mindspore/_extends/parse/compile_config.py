@@ -160,6 +160,14 @@ Value Range:
 AMP_ENABLE_ALL_FG = ''
 
 """
+Name: DUMP_IR_META_DSL
+Function: Whether to dump IR for meta op.
+Value Range:
+    String. The name of the operator that needs to dump IR.
+"""
+DUMP_IR_META_DSL = ''
+
+"""
 Name: DUMP_IR_CONFIG
 Function: Configuring the generation method of IR graphs.
 Value Range:
@@ -341,6 +349,7 @@ __all__ = [
     "BOOST_PARSE",
     "GREED_PARSE",
     "AMP_ENABLE_ALL_FG",
+    "DUMP_IR_META_DSL",
     "DUMP_IR_CONFIG",
     "TRAVERSE_SUBSTITUTIONS_MODE",
     "PRE_LIFT",

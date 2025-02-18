@@ -29,7 +29,7 @@ class ListTest():
             elem = elem + elem
         return elem
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def test_pi_jit(self):
         elem = None
         for elem in self.list:
@@ -44,7 +44,7 @@ class ListTest():
         self.list.pop()
         return elem
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def test_sideeffect_pi_jit(self, x):
         self.list.append(x)
         elem = None
@@ -86,7 +86,7 @@ class CellListTest(nn.Cell):
             x = cell(x)
         return x
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def test_pi_jit(self, x):
         for cell in self.cell_list:
             x = cell(x)

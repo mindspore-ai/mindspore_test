@@ -19,7 +19,7 @@
 #include <string>
 #include "ir/scalar.h"
 #include "pipeline/pynative/op_function/converter.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "pipeline/pynative/forward/forward_task.h"
 #include "runtime/pynative/op_runner.h"
 #include "runtime/pynative/op_executor.h"
@@ -28,7 +28,7 @@
 #include "op_def/auto_generate/gen_ops_def.h"
 #include "pybind_api/ops/direct_ops.h"
 
-namespace mindspore::kernel::pyboost {
+namespace mindspore::pynative {
 
 py::object EmptyLike(const py::list &args) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp, "EmptyLike",
@@ -111,4 +111,4 @@ py::object EmptyLike(const py::list &args) {
 
   return stub_out.first;
 }
-}  // namespace mindspore::kernel::pyboost
+}  // namespace mindspore::pynative

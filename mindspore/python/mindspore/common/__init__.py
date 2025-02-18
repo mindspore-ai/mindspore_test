@@ -15,7 +15,7 @@
 """Top-level reference to dtype of common module."""
 from __future__ import absolute_import
 from mindspore.common import dtype
-from mindspore.common.api import ms_function, ms_memory_recycle, ms_class, jit, jit_class, _no_grad, \
+from mindspore.common.api import ms_memory_recycle, jit, jit_class, _no_grad, \
     flops_collection, set_recursion_limit
 from mindspore.common.dtype import Type, int8, byte, int16, short, int32, intc, int64, intp, \
     uint8, ubyte, uint16, ushort, uint32, uintc, uint64, uintp, float16, half, \
@@ -39,6 +39,7 @@ from mindspore.common import generator
 from mindspore.common.generator import (
     Generator, default_generator, seed, manual_seed, initial_seed, get_rng_state, set_rng_state)
 from mindspore.ops.function.array_func import is_tensor, from_numpy
+from mindspore.common._grad_function import _Function
 
 # symbols from dtype
 __all__ = [
@@ -70,7 +71,7 @@ __all__ = [
 
 __all__.extend([
     "tensor", "Tensor", "RowTensor", "SparseTensor", "COOTensor", "CSRTensor",  # tensor
-    "ms_function", "ms_class", 'jit', 'jit_class', '_no_grad',  # api
+    'jit', 'jit_class', '_no_grad',  # api
     "Parameter", "ParameterTuple",  # parameter
     "dtype",
     "set_seed", "get_seed", "manual_seed", # random seed
@@ -83,6 +84,6 @@ __all__.extend([
     "no_inline",
     "Symbol",
     "recompute",
-    "is_tensor", "from_numpy",
+    "is_tensor", "from_numpy", "_Function"
 ])
 __all__.extend(generator.__all__)

@@ -12,8 +12,7 @@ mindspore.train.Accuracy
         {\text{true_positive} + \text{true_negative} + \text{false_positive} + \text{false_negative}}
 
     参数：
-        - **eval_type** (str) - 评估的数据集的类型，支持 ``'classification'`` 和 ``'multilabel'`` 。 ``'classification'`` 为单标签分类场景， ``'multilabel'`` 为多标签分类场景。
-          默认值： ``'classification'`` 。
+        - **eval_type** (str) - 评估的数据集的类型，支持 ``'classification'`` 和 ``'multilabel'`` 。 ``'classification'`` 为单标签分类场景， ``'multilabel'`` 为多标签分类场景。默认值： ``'classification'`` 。
 
     .. py:method:: clear()
 
@@ -32,6 +31,7 @@ mindspore.train.Accuracy
     .. py:method:: update(*inputs)
 
         更新局部变量。计算预测值y_pred和标签y的匹配频率。
+        
         对于 ``'classification'`` ，如果预测的最大值的索引匹配真实的标签，预测正确；对于 ``'multilabel'`` ，如果预测值与真实标签匹配，预测正确。
 
         参数：

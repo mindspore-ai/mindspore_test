@@ -23,7 +23,7 @@ from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.ops.operations import _inner_ops as inner
 from mindspore.ops.function.math_func import _check_input_dtype, _check_attr_dtype
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.ops.auto_generate import geqrf
 
 from ..operations import linalg_ops
@@ -328,8 +328,7 @@ def pinv(x, *, atol=None, rtol=None, hermitian=False):
 
     if not hermitian:
         s, u, v = linalg_ops.Svd()(x)
-        max_singular_val = _narrow(s, -1, 0, 1)
-        threshold = ops.Maximum()(atol.expand_dims(-1), rtol.expand_dims(-1) * max_singular_val)
+        threshold = ops.Maximum()(atol.expand_dims(-1), rtol.expand_dims(-1) * _narrow(s, -1, 0, 1))
         condition = s > threshold
         reciprocal_s_before = ops.Reciprocal()(s).broadcast_to(condition.shape)
         zero = F.zeros(condition.shape, s.dtype)

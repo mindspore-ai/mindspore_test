@@ -18,7 +18,6 @@ from __future__ import absolute_import
 import types
 
 from mindspore.common import Tensor
-from mindspore._c_expression import Tensor as Tensor_
 from mindspore.common import dtype as mstype
 from mindspore import ops
 
@@ -129,7 +128,7 @@ def _to_tensor(*args):
     for arg in args:
         if isinstance(arg, (int, float, bool, list, tuple)):
             if isinstance(arg, (list, tuple)) and not arg:
-                arg = Tensor_(arg)
+                arg = Tensor(arg)
             arg = _convert_64_to_32(_type_convert(Tensor, arg))
         elif not isinstance(arg, Tensor):
             _raise_type_error("Expect input to be array like.")

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/identity.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/identity.h"
 #include <memory>
 #include <utility>
-#include "mindspore/ops/kernel/common/pyboost/customize/identity.h"
+#include "mindspore/ccsrc/pyboost/customize/identity.h"
 
 namespace mindspore {
 namespace kernel {

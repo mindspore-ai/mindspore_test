@@ -17,7 +17,7 @@ import os
 import re
 from decimal import Decimal
 from enum import Enum
-from typing import List, Any, Tuple
+from typing import List, Any, Tuple, Optional
 
 import numpy as np
 
@@ -82,7 +82,7 @@ class AscendStepTraceTimeViewer(BaseViewer):
         self._ascend_ms_dir = kwargs.get("ascend_ms_dir")
         ProfilerLogger.init(self._ascend_ms_dir)
         self._logger = ProfilerLogger.get_instance()
-        self.step_trace_time_data = {}
+        self.step_trace_time_data_list = []
         self.trace_container: TraceViewContainer = None
         self.hccl_pool: TimelineEventPool = None
         self.overlap_pool: TimelineEventPool = None
@@ -122,7 +122,8 @@ class AscendStepTraceTimeViewer(BaseViewer):
         Write step trace time data to csv file
         """
         self._logger.info("Write step trace time data start")
-        data = [[str(self.step_trace_time_data.get(header, "")) for header in self.STEP_TRACE_TIME_HEADERS]]
+        data = [[str(item.get(header, "")) for header in self.STEP_TRACE_TIME_HEADERS]
+                for item in self.step_trace_time_data_list]
         FileManager.create_csv_file(
             self._save_path,
             data,
@@ -214,29 +215,121 @@ class AscendStepTraceTimeViewer(BaseViewer):
         """
         Calculate step trace time data
         """
-        self.step_trace_time_data[StepTraceTimeHeaders.STEP.value] = "0"
-        self.step_trace_time_data[StepTraceTimeHeaders.COMPUTING.value] = np.sum(self.computing_np["dur"])
-        self.step_trace_time_data[StepTraceTimeHeaders.COMMUNICATION.value] = np.sum(self.communication_np["dur"])
-        self.step_trace_time_data[StepTraceTimeHeaders.COMMUNICATION_NOT_OVERLAPPED.value] = np.sum(
-            self.communication_not_overlapped_np["dur"]
-        )
-        self.step_trace_time_data[StepTraceTimeHeaders.OVERLAPPED.value] = (
-            self.step_trace_time_data[StepTraceTimeHeaders.COMMUNICATION.value]
-            - self.step_trace_time_data[StepTraceTimeHeaders.COMMUNICATION_NOT_OVERLAPPED.value]
-        )
-        self.step_trace_time_data[StepTraceTimeHeaders.FREE.value] = np.sum(self.free_np["dur"])
-        (
-            self.step_trace_time_data[StepTraceTimeHeaders.STAGE.value],
-            self.step_trace_time_data[StepTraceTimeHeaders.BUBBLE.value],
-        ) = self._calculate_stage_bubble()
+        step_id_to_time_dict = self._init_step_dict()
+        self.generate_step_trace_time_data(step_id_to_time_dict)
 
-        self.step_trace_time_data[StepTraceTimeHeaders.COMMUNICATION_NOT_OVERLAPPED_EXCLUDE_RECEIVE.value] = (
-            self.step_trace_time_data[StepTraceTimeHeaders.COMMUNICATION_NOT_OVERLAPPED.value]
-            - self.step_trace_time_data[StepTraceTimeHeaders.BUBBLE.value]
-        )
-        self.step_trace_time_data[StepTraceTimeHeaders.PREPARING.value] = "0"
+    def _init_step_dict(self):
+        """
+        Init step list.
+        """
+        return self.trace_container.get_step_id_time_dict() or {0: (Decimal('0'), Decimal('Infinity'))}
 
-    def _calculate_stage_bubble(self) -> Tuple[Decimal, Decimal]:
+    def generate_step_trace_time_data(self, step_id_to_time_dict):
+        """
+        Generate step trace time data
+        """
+        for step_id, (start_time, end_time) in step_id_to_time_dict.items():
+            # step id、computing time、communication time、communication not overlapped time、free time
+            computing_time = self._calculate_event_total_time_by_step(self.computing_np, start_time, end_time)
+            communication_time = self._calculate_event_total_time_by_step(self.communication_np, start_time, end_time)
+            communication_not_over_lapped_time = self._calculate_event_total_time_by_step(
+                self.communication_not_overlapped_np, start_time, end_time)
+            free_time = self._calculate_free_event_total_time_by_step(self.free_np, start_time, end_time)
+            step_trace_time_data = {StepTraceTimeHeaders.STEP.value: step_id,
+                                    StepTraceTimeHeaders.COMPUTING.value: computing_time,
+                                    StepTraceTimeHeaders.COMMUNICATION.value: communication_time,
+                                    StepTraceTimeHeaders.COMMUNICATION_NOT_OVERLAPPED.value:
+                                        communication_not_over_lapped_time,
+                                    StepTraceTimeHeaders.FREE.value: free_time}
+            # overlapped time
+            step_trace_time_data[StepTraceTimeHeaders.OVERLAPPED.value] = (
+                step_trace_time_data[StepTraceTimeHeaders.COMMUNICATION.value]
+                - step_trace_time_data[StepTraceTimeHeaders.COMMUNICATION_NOT_OVERLAPPED.value]
+            )
+            # stage time && bubble time
+            (
+                step_trace_time_data[StepTraceTimeHeaders.STAGE.value],
+                step_trace_time_data[StepTraceTimeHeaders.BUBBLE.value],
+            ) = self._calculate_stage_bubble(start_time, end_time)
+            # communication not overlapped time exclude receive
+            step_trace_time_data[StepTraceTimeHeaders.COMMUNICATION_NOT_OVERLAPPED_EXCLUDE_RECEIVE.value] = (
+                step_trace_time_data[StepTraceTimeHeaders.COMMUNICATION_NOT_OVERLAPPED.value]
+                - step_trace_time_data[StepTraceTimeHeaders.BUBBLE.value]
+            )
+            step_trace_time_data[StepTraceTimeHeaders.PREPARING.value] = self._calculate_prepare_time_by_step(
+                self.computing_np, self.communication_np, start_time, step_id
+            )
+            self.step_trace_time_data_list.append(step_trace_time_data)
+
+    def _calculate_event_total_time_by_step(self, times: np.ndarray, ts: Decimal, es: Decimal) -> Decimal:
+        """
+        Calculate event total time by step.
+        """
+
+        ts_values = times['ts']
+
+        mask = (ts_values >= ts) & (ts_values <= es)
+        filtered_times = times[mask]
+
+        return Decimal(str(filtered_times['dur'].sum())).quantize(Decimal('0.000'))
+
+    def _calculate_free_event_total_time_by_step(self, times: np.ndarray, ts: Decimal, es: Decimal) -> Decimal:
+        """
+        Calculate free event total time by step, with clipping of events that exceed the time range.
+        """
+        start_times = times['ts']
+        durations = times['dur']
+        end_times = start_times + durations
+
+        # Clip start times to ts and end times to es
+        clipped_start_times = np.maximum(start_times, ts)
+        clipped_end_times = np.minimum(end_times, es)
+
+        # Calculate the clipped durations
+        clipped_durations = np.maximum(clipped_end_times - clipped_start_times, Decimal('0.000'))
+
+        return Decimal(sum(clipped_durations)).quantize(Decimal('0.000'))
+
+    def _calculate_event_first_time_by_step(self, times: np.ndarray, ts: Decimal) -> Optional[Decimal]:
+        """
+        Calculate event first time by step.
+        """
+
+        idx = np.searchsorted(times['ts'], ts)
+
+        if idx >= len(times):
+            return None
+
+        return Decimal(str(times['ts'][idx])).quantize(Decimal('0.000'))
+
+    def _calculate_prepare_time_by_step(self, computing_np: np.ndarray, communication_np: np.ndarray,
+                                        ts: Decimal, step_id: int) -> Decimal:
+        """
+        calculate prepare time
+        """
+        step_computing_first_time = self._calculate_event_first_time_by_step(computing_np, ts)
+        step_communication_first_time = self._calculate_event_first_time_by_step(communication_np, ts)
+
+        if step_computing_first_time and step_communication_first_time:
+            step_first_device_task_time = min(step_computing_first_time, step_communication_first_time)
+        else:
+            step_first_device_task_time = step_computing_first_time or step_communication_first_time
+
+        if step_first_device_task_time:
+            if ts == Decimal("0"):  # When Profiler.step() is not used
+                fmk_api_events = self.trace_container.get_pool_by_name(
+                    TimelineLayerName.MINDSPORE.value
+                ).get_complete_events()
+                step_host_start_time = min(event.ts for event in fmk_api_events)
+            else:
+                step_host_start_time = ts
+            step_prepare_time = step_first_device_task_time - step_host_start_time
+            return step_prepare_time.quantize(Decimal('0.000'))
+
+        logger.warning(f"Failed to find device task in step {step_id}, set prepare time to 0")
+        return Decimal('0.000')
+
+    def _calculate_stage_bubble(self, ts: Decimal, es: Decimal) -> Tuple[Decimal, Decimal]:
         """
         Calculate stage and bubble time
         """
@@ -244,13 +337,20 @@ class AscendStepTraceTimeViewer(BaseViewer):
             logger.info("HCCL events is empty, skip calculate stage and bubble")
             return Decimal(0), Decimal(0)
 
-        total_hccl_time = self.hccl_events_np["ts"][-1] - self.hccl_events_np["ts"][0]
+        mask = (self.hccl_events_np["ts"] >= ts) & (self.hccl_events_np["ts"] <= es)
+        filtered_hccl_events_np = self.hccl_events_np[mask]
+
+        if filtered_hccl_events_np.size == 0:
+            logger.info("No HCCL events in the given time range, skip calculate stage and bubble")
+            return Decimal(0), Decimal(0)
+
+        total_hccl_time = filtered_hccl_events_np["ts"][-1] - filtered_hccl_events_np["ts"][0]
         bubble_time = np.sum(
-            self.hccl_events_np["dur"][
+            filtered_hccl_events_np["dur"][
                 np.array(
                     [
                         self._is_send_recv_op(name)
-                        for name in self.hccl_events_np["name"]
+                        for name in filtered_hccl_events_np["name"]
                     ]
                 )
             ]

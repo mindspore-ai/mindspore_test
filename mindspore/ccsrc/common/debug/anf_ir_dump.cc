@@ -41,6 +41,7 @@
 #include "frontend/expander/bprop/bprop_meta_func_graph.h"
 #include "frontend/operator/composite/vmap.h"
 #include "frontend/operator/composite/map.h"
+#include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 #include "frontend/operator/composite/functional_overload.h"
 
 using MetaFuncGraph = mindspore::MetaFuncGraph;
@@ -97,7 +98,7 @@ inline bool Skip(const MetaFuncGraphPtr &meta_func_graph) {
          meta_func_graph->isa<prim::StarredUnpack>() || meta_func_graph->isa<prim::StarredUnpackMerge>() ||
          meta_func_graph->isa<prim::IterConverter>() || meta_func_graph->isa<prim::HasNext>() ||
          meta_func_graph->isa<prim::Next>() || meta_func_graph->isa<prim::ForHalfUnrollLess>() ||
-         meta_func_graph->isa<prim::DeprecatedTensorMethod>();
+         meta_func_graph->isa<prim::DeprecatedTensorMethod>() || meta_func_graph->isa<prim::MetaImpl>();
 }
 
 void GetMetaFuncGraphText(const MetaFuncGraphPtr &meta_func_graph, std::ostringstream &oss) {

@@ -27,6 +27,7 @@ from tests.st.ops import (
     test_ops_embedding_feature_mapping,
     test_ops_expm1,
     test_ops_flash_attention_score,
+    test_ops_speed_fusion_attention,
     test_ops_fold,
     test_ops_gcd,
     test_ops_gelu,
@@ -60,6 +61,8 @@ from tests.st.mint import (
     test_multinomial,
     test_nan_to_num,
     test_nn_linear,
+    test_nn_AvgPool3d,
+    test_nn_kldivloss,
 )
 
 ops_group_cases_registry_level0 = [
@@ -103,6 +106,7 @@ ops_group_cases_registry_level0 = [
     [test_ops_expm1.test_ops_expm1_normal, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE),)],
     [test_ops_flash_attention_score.test_ops_flash_attention_score, ("ascend910b",), 36,
      ((ms.GRAPH_MODE, ms.PYNATIVE_MODE), (ms.float16, ms.bfloat16))],
+    [test_ops_speed_fusion_attention.test_speed_fusion_attention_normal, ("ascend910b",), 38, ((ms.PYNATIVE_MODE,),)],
     [test_ops_fold.test_fold, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE),)],
     [test_ops_gcd.test_ops_gcd_binary_cases, ("ascend910b",), 26, (("pynative", "KBK", "GRAPH"),)],
     [test_ops_generate_eod_mask_v2.test_generate_eod_mask_v2, ("ascend910b",), 62, (("GE", "KBK", "PYBOOST"),)],
@@ -150,9 +154,11 @@ ops_group_cases_registry_level0 = [
     [test_multinomial.test_multinomial_std, ("ascend910b",), 4, (('pynative', 'KBK',),)],
     [test_nan_to_num.test_nan_to_num_std, ("ascend910b",), 32, (('pynative', 'KBK', 'GE'),)],
     [test_nn_linear.test_mint_nn_linear_binary_cases_910b, ("ascend910b",), 21, (("pynative", "KBK"),)],
+    [test_nn_AvgPool3d.test_mint_avg_pool3d_binary_cases, ("ascend910b",), 20, (("pynative", "KBK"),)],
     [test_addmv.test_mint_addmv_normal, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE,),)],
     [test_cdist.test_mint_cdist_binary_cases, ("ascend910b",), 4, (("KBK", "GRAPH"),)],
     [test_matmul.test_matmul_binary_cases, ("ascend910b",), 282, (('pynative', 'KBK'),)],
+    [test_nn_kldivloss.test_mint_nn_kldivloss_normal, ("ascend910b",), 4, (('pynative', 'KBK'),)],
 ]
 
 
@@ -173,6 +179,7 @@ ops_group_cases_registry_level1 = [
     [test_func_conv2d.test_conv2d_vmap, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE),)],
     [test_ops_concat.test_concat_binary_cases, ("ascend910b",), 1172, (('pynative', 'kbk'),)],
     [test_ops_gelu.test_ops_gelu_binary_cases, ("ascend910b",), 968, (('pynative', 'kbk', 'ge'),)],
+    [test_nn_kldivloss.test_mint_nn_kldivloss_broadcast, ("ascend910b",), 4, (('pynative', 'KBK'),)],
 ]
 
 

@@ -16,7 +16,7 @@
 #include "kernel/cpu/angle_cpu_kernel.h"
 #include <complex>
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace {
 const size_t kOutputsNum = 1;

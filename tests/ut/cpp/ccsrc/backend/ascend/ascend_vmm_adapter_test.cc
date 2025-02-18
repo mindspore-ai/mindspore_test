@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 #include "common/common_test.h"
-#include "transform/symbol/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #define private public
 #define protected public
-#include "plugin/device/ascend/hal/device/ascend_vmm_adapter.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_vmm_adapter.h"
 #undef private
 #undef protected
 
@@ -30,12 +30,12 @@ class TestAscendVmmAdapter : public UT::Common {
   virtual ~TestAscendVmmAdapter() = default;
 
   void SetUp() override {
-    mindspore::transform::aclrtUnmapMem_ = aclrtUnmapMem;
-    mindspore::transform::aclrtReserveMemAddress_ = aclrtReserveMemAddress;
-    mindspore::transform::aclrtMallocPhysical_ = aclrtMallocPhysical;
-    mindspore::transform::aclrtMapMem_ = aclrtMapMem;
-    mindspore::transform::aclrtFreePhysical_ = aclrtFreePhysical;
-    mindspore::transform::aclrtReleaseMemAddress_ = aclrtReleaseMemAddress;
+    mindspore::device::ascend::aclrtUnmapMem_ = aclrtUnmapMem;
+    mindspore::device::ascend::aclrtReserveMemAddress_ = aclrtReserveMemAddress;
+    mindspore::device::ascend::aclrtMallocPhysical_ = aclrtMallocPhysical;
+    mindspore::device::ascend::aclrtMapMem_ = aclrtMapMem;
+    mindspore::device::ascend::aclrtFreePhysical_ = aclrtFreePhysical;
+    mindspore::device::ascend::aclrtReleaseMemAddress_ = aclrtReleaseMemAddress;
     common::ResetConfig("MS_ALLOC_CONF");
   }
   void TearDown() override {}

@@ -21,7 +21,7 @@ from mindspore import nn, Tensor, ops, context, jit, Model
 from mindspore.nn import Cell
 from mindspore.nn.optim.momentum import Momentum
 from mindspore.nn.loss import SoftmaxCrossEntropyWithLogits
-from mindspore.common.api import _cell_graph_executor, _MindsporeFunctionExecutor
+from mindspore.common.api import _cell_graph_executor, _JitExecutor
 from mindspore.common.parameter import Parameter
 from mindspore import dataset as ds
 from tests.security_utils import security_off_wrap
@@ -216,11 +216,10 @@ def test_code_trace3():
 
     save_graph_path = "test_code_trace3"
     context.set_context(save_graphs=True, save_graphs_path=save_graph_path)
-    _ms_function_executor = _MindsporeFunctionExecutor(
-        func, int(time.time() * 1e9))
+    _jit_executor = _JitExecutor(func, int(time.time() * 1e9))
     x = Tensor(np.arange(10).reshape(10).astype(np.float32))
     y = Tensor(np.array([-1, 0, 1]).astype(np.float32))
-    _ms_function_executor.compile("fn", x, y)
+    _jit_executor.compile("fn", x, y)
 
     analyzer = CodeTraceAnalyzer(func, save_graph_path, "validate")
     accuracy = analyzer.analyze()

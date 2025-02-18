@@ -21,12 +21,12 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 
 #include "kernel/ascend/pyboost/auto_generate/expand_dims.h"
 #include "kernel/ascend/pyboost/auto_generate/avg_pool2d.h"
-#include "kernel/common/pyboost/auto_generate/reshape.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/reshape.h"
 
 #include "utils/profile.h"
 

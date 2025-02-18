@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,11 @@
 #include <queue>
 #include <mutex>
 #include <utility>
-#include "plugin/device/ascend/hal/device/ascend_device_address.h"
+#include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "plugin/device/ascend/kernel/dvm/dvm.h"
 #include "mindspore/core/include/ir/base_tensor.h"
-#include "kernel/common/pyboost/op_runner.h"
-#include "runtime/pynative/lazy_fusion_kernel.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
+#include "runtime/pynative/lazy_fusion.h"
 
 namespace mindspore {
 namespace kernel {
@@ -35,11 +35,55 @@ using ShapeRefPtr = std::shared_ptr<dvm::ShapeRef>;
 using BaseTensorPtr = tensor::BaseTensorPtr;
 using OpRunnerPtr = std::shared_ptr<pyboost::OpRunner>;
 
-class LazyFusionKernelAscend : public LazyFusionKernel {
+class LazyFusionQueue : public runtime::AsyncRQueue {
+ public:
+  LazyFusionQueue(const string &name, runtime::kThreadWaitLevel waitLevel) : AsyncRQueue(name, waitLevel) {}
+
+  void Push(const runtime::AsyncTaskPtr &task) override;
+  void Wait() override;
+};
+
+class LazyFusionKernelAscend;
+class LazyFusionManager {
+ public:
+  LazyFusionManager() = default;
+  ~LazyFusionManager();
+
+  LazyFusionKernelAscend *Get(const device::DeviceContext *context, size_t stream);
+
+  void Flush();
+
+  void FreeKernel(LazyFusionKernelAscend *k) {
+    std::lock_guard<std::mutex> guard(mutex_);
+    pool_.push(k);
+  }
+
+ private:
+  LazyFusionKernelAscend *NewKernel();
+
+  std::queue<LazyFusionKernelAscend *> pool_;
+  LazyFusionKernelAscend *current_{nullptr};
+  std::mutex mutex_;
+  std::atomic<size_t> id_{0};
+};
+
+extern LazyFusionManager g_lazy_fusion_manager;
+
+class LazyFusionKernelAscend : public dvm::Kernel {
  public:
   LazyFusionKernelAscend();
   ~LazyFusionKernelAscend();
-  void Flush() override;
+  void Flush();
+
+  void Reset(const device::DeviceContext *context, size_t stream_id) {
+    device_context_ = context;
+    stream_id_ = stream_id;
+  }
+  const device::DeviceContext *device_context() const { return device_context_; }
+  size_t stream_id() const { return stream_id_; }
+  void set_id(size_t id) { id_ = id; }
+  size_t id() const { return id_; }
+
   dvm::NDObject *Input(const BaseTensorPtr &x, bool enable_cast = true,
                        const std::optional<ShapeVector> &shape = std::nullopt);
   void Output(const BaseTensorPtr &tensor, dvm::NDObject *obj);
@@ -53,7 +97,7 @@ class LazyFusionKernelAscend : public LazyFusionKernel {
   }
 
   ShapeVector GetShape(dvm::NDObject *obj) {
-    auto shape_ref = kernel_.GetShape(obj);
+    auto shape_ref = dvm::Kernel::GetShape(obj);
     return ShapeVector(shape_ref->data, shape_ref->data + shape_ref->size);
   }
 
@@ -87,8 +131,6 @@ class LazyFusionKernelAscend : public LazyFusionKernel {
 
   bool HasTensor(const BaseTensorPtr &x) const;
 
-  dvm::Kernel kernel_;
-
  private:
   void Launch();
 
@@ -101,7 +143,7 @@ class LazyFusionKernelAscend : public LazyFusionKernel {
     outputs_.clear();
     reloc_entry_.clear();
     cached_shape_.clear();
-    kernel_.EagerClear();
+    EagerClear();
     g_lazy_fusion_manager.FreeKernel(this);
   }
 
@@ -130,7 +172,12 @@ class LazyFusionKernelAscend : public LazyFusionKernel {
   std::vector<std::pair<ShapeVector, ShapeRefPtr>> cached_shape_;
   size_t input_used_{0};
   std::stringstream dump_buf_;
+  const device::DeviceContext *device_context_;
+  size_t stream_id_;
+  size_t id_{0};
 };
+
+static inline void FlushLazyFusion() { g_lazy_fusion_manager.Flush(); }
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_DVM_LAZY_FUSION_KERNEL_H

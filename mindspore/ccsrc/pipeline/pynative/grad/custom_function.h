@@ -77,6 +77,25 @@ class CustomBackward : public BackwardNode {
   abstract::AbstractBasePtr out_abstract_;
   bool is_recompute_{false};
 };
+
+class PyBackwardNode : public BackwardNode {
+ public:
+  PyBackwardNode(string name, py::function backward_fn, py::object obj, abstract::AbstractBasePtr out_abstract,
+                 size_t output_size = 1)
+      : BackwardNode(std::move(name), output_size),
+        backward_fn_(std::move(backward_fn)),
+        obj_(std::move(obj)),
+        out_abstract_(std::move(out_abstract)) {}
+  ~PyBackwardNode() override;
+  ValuePtrList CallBackward(const ValuePtrList &grads) override;
+  void Release() override;
+
+ private:
+  py::function backward_fn_;
+  py::object obj_;
+  abstract::AbstractBasePtr out_abstract_;
+};
+
 }  // namespace autograd
 }  // namespace pynative
 }  // namespace mindspore

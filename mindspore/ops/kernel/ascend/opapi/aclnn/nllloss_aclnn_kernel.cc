@@ -17,7 +17,7 @@
 #include <vector>
 #include <unordered_map>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/base/types.h"
 
@@ -25,10 +25,10 @@ namespace mindspore {
 namespace kernel {
 void NLLLossAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
-  auto reduction_imm = static_cast<Reduction>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
-  auto reduction = transform::AclHelper::ConvertMsReductionToGe(reduction_imm);
+  auto reduction_imm = static_cast<Reduction>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
+  auto reduction = device::ascend::AclHelper::ConvertMsReductionToGe(reduction_imm);
 
-  auto ignore_index = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
+  auto ignore_index = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
 
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], reduction, ignore_index, outputs[kIndex0],
                         outputs[kIndex1]);
@@ -38,10 +38,10 @@ bool NLLLossAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &workspace,
                                    const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto reduction_imm = static_cast<Reduction>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
-  auto reduction = transform::AclHelper::ConvertMsReductionToGe(reduction_imm);
+  auto reduction_imm = static_cast<Reduction>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
+  auto reduction = device::ascend::AclHelper::ConvertMsReductionToGe(reduction_imm);
 
-  auto ignore_index = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
+  auto ignore_index = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
 
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], reduction, ignore_index,
         outputs[kIndex0], outputs[kIndex1]);

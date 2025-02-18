@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/dense.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
-#include "kernel/cpu/pyboost/auto_generate/transpose.h"
-#include "kernel/cpu/pyboost/auto_generate/contiguous.h"
-#include "kernel/cpu/pyboost/auto_generate/matmul_ext.h"
-#include "kernel/cpu/pyboost/auto_generate/add.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/dense.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/transpose.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/contiguous.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/matmul_ext.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/add.h"
 
 namespace mindspore {
 namespace kernel {

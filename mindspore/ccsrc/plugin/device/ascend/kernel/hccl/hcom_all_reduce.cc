@@ -19,7 +19,7 @@
 #include <string>
 
 #include "include/backend/distributed/collective/collective_manager.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "runtime/rt.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 

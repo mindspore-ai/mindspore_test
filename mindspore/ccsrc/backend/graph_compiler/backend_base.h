@@ -31,6 +31,7 @@
 #include "backend/graph_compiler/segment_runner.h"
 #include "runtime/graph_scheduler/actor/actor_set.h"
 #include "include/common/profiler.h"
+#include "include/backend/jit_setting.h"
 #include "include/backend/py_execute_utils.h"
 #include "backend/graph_compiler/ge_backend/ge_backend.h"
 
@@ -66,11 +67,14 @@ class BACKEND_EXPORT Backend {
 
   bool is_multi_graph_sink() const { return is_multi_graph_sink_; }
   void set_is_multi_graph_sink(bool flag) { is_multi_graph_sink_ = flag; }
+  session::JitSetting jit_setting() const { return jit_setting_; }
+  void set_jit_setting(const session::JitSetting &jit_setting) { jit_setting_ = jit_setting; }
 
  protected:
   std::string name_;
   LinkFuncType convert_fn_;
   bool is_multi_graph_sink_;
+  session::JitSetting jit_setting_;
 };
 
 BACKEND_EXPORT void set_pydata_converter(const pyexecute::PyDataConverter &pydata_converter);

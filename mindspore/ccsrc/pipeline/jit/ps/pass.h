@@ -61,6 +61,22 @@ FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormaliz
 FuncGraphPtr HighGradBpropGraphPass(const ResourcePtr &resource);
 FuncGraphPtr FinalBpropGraphPass(const ResourcePtr &resource, bool has_control_flow);
 void UpdateArgsSpec(const FuncGraphPtr &func_graph, const ResourcePtr &resource);
+bool RewriterBeforeOptAPass(const ResourcePtr &resource);
+bool ExpandDumpFlagPass(const ResourcePtr &resource);
+bool JitOptPassAGroup(const ResourcePtr &resource);
+bool JitRewriterAfterOptAPass(const ResourcePtr &resource);
+bool JitOptPassBGroup(const ResourcePtr &resource);
+bool LoopUnrollPass(const ResourcePtr &resource);
+bool JitOptPassAfterCconvGroup(const ResourcePtr &resource);
+bool RemoveValueNodeDuplicationsPassForJit(const ResourcePtr &resource);
+bool PartialUnusedArgsEliminatePass(const ResourcePtr &resource);
+bool EnvironConversionPass(const ResourcePtr &resource);
+bool PyInterpretToExecutePass(const ResourcePtr &resource);
+bool ConvertAfterRewriterPass(const ResourcePtr &resource);
+bool OrderPyExecuteAfterRewriterPass(const ResourcePtr &resource);
+bool RewriterAfterOptAPass(const ResourcePtr &resource);
+bool AddRecomputationPass(const ResourcePtr &resource);
+bool OptAfterRecomputeGroup(const ResourcePtr &resource);
 }  // namespace pipeline
 }  // namespace mindspore
 

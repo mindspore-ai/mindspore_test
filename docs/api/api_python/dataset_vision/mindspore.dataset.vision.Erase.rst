@@ -3,7 +3,7 @@ mindspore.dataset.vision.Erase
 
 .. py:class:: mindspore.dataset.vision.Erase(top, left, height, width, value=0, inplace=False)
 
-    使用指定的值擦除输入图像。
+    擦除输入图像中指定的区域，并填充指定像素值 `value` 。
 
     支持 Ascend 硬件加速，需要通过 `.device("Ascend")` 方式开启。
 
@@ -12,9 +12,11 @@ mindspore.dataset.vision.Erase
         - **left** (int) - 擦除区域左上角位置的横坐标。
         - **height** (int) - 擦除区域的高度。
         - **width** (int) - 擦除区域的宽度。
-        - **value** (Union[float, Sequence[float, float, float]]，可选) - 擦除区域的像素填充值。默认值： ``0`` 。
-          若输入float，将以该值填充RGB通道；
-          若输入Sequence[float, float, float]，将分别用于填充R、G、B通道。
+        - **value** (Union[float, Sequence[float, float, float]]，可选) - 擦除区域的像素填充值。默认值： ``0.0`` 。
+
+          - 若输入float，将以该值填充RGB通道。
+          - 若输入Sequence[float, float, float]，将分别用于填充R、G、B通道。
+
         - **inplace** (bool，可选) - 是否直接在原图上执行擦除。默认值： ``False`` 。
 
     异常：
@@ -39,11 +41,11 @@ mindspore.dataset.vision.Erase
 
         指定该变换执行的设备。
 
-        - 当执行设备是 Ascend 时，输入数据支持 `uint8` 或者 `float32` 类型，输入数据的通道仅支持1和3。输入数据的高度限制范围为[4, 8192]、宽度限制范围为[6, 4096]。不支持 `inplace` 参数。
+        当执行设备是 Ascend 时，输入数据支持 `uint8` 或者 `float32` 类型，输入数据的通道仅支持1和3。输入数据的高度限制范围为[4, 8192]，宽度限制范围为[6, 4096]。不支持 `inplace` 参数。
 
         参数：
-            - **device_target** (str, 可选) - 算子将在指定的设备上运行。当前支持 ``CPU`` 和 ``Ascend`` 。默认值： ``CPU`` 。
+            - **device_target** (str, 可选) - 算子将在指定的设备上运行。当前支持 ``"CPU"`` 和 ``"Ascend"`` 。默认值： ``"CPU"`` 。
 
         异常：
             - **TypeError** - 当 `device_target` 的类型不为str。
-            - **ValueError** - 当 `device_target` 的取值不为 ``CPU`` / ``Ascend`` 。
+            - **ValueError** - 当 `device_target` 的取值不为 ``"CPU"`` / ``"Ascend"`` 。

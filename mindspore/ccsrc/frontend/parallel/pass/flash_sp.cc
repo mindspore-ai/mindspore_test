@@ -1794,7 +1794,7 @@ CNodePtr CreateReplaceFlashSPGraph(const FuncGraphManagerPtr &manager,
     }
   }
   acc_attention = CreateDepends(acc_attention, {latest_send_qkv, latest_recv_qkv, latest_send_oml, latest_recv_oml});
-  acc_attention->AddPrimalAttr(RING_ATTENTION_UPDATE_ATTN, MakeValue<int>(fa_index));
+  common::AnfAlgo::SetNodeAttr(RING_ATTENTION_UPDATE_ATTN, MakeValue<int>(fa_index), acc_attention);
   acc_attention = NewCastNode(acc_attention, output_type_id);
   if (input_layout == FASInputLayoutMode::BSH) {
     auto tmp_tup1 = parallel::CreateTuple({0, 2, 1, 3});
@@ -1952,7 +1952,25 @@ void SetFAInputs(const AnfNodePtr &query_node, const AnfNodePtr &key_node, const
   } else if (IsValueNode<None>(attn_node) && !eod_masks.empty()) {  // eod reset attention mask
     actual_mask = eod_masks[pos_index];
   } else {
-    actual_mask = GetActualMask(index, pos, TypeId::kNumberTypeUInt8, shape);
+    if (index == 0) {
+      (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputSparseModeIndex] =
+        CreatInt64Imm(kIndex3);
+      actual_mask = *first_actual_mask;
+    } else {
+      (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputSparseModeIndex] =
+        CreatInt64Imm(kIndex0);
+      actual_mask = (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputPaddingMaskIndex];
+      if (index > pos) {
+        actual_mask = *full_mask;
+        (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputAttnMaskIndex] = actual_mask;
+        (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputSparseModeIndex] =
+          CreatInt64Imm(kIndex4);
+        (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputPreTokensIndex] =
+          CreatInt64Imm(kIndex0);
+        (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputNextTokensIndex] =
+          CreatInt64Imm(kIndex0);
+      }
+    }
   }
   if (actual_mask != nullptr) {
     (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputAttnMaskIndex] = actual_mask;

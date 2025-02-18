@@ -17,10 +17,10 @@
 #include "kernel/gpu/pyboost/customize/masked_select.h"
 #include "ir/scalar.h"
 #include "mindspore/ccsrc/plugin/device/gpu/hal/device/gpu_device_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "runtime/device/device_address_utils.h"
-#include "kernel/common/pyboost/op_runner.h"
-#include "kernel/common/pyboost/customize/op_common.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/runtime_conf/runtime_conf.h"
 

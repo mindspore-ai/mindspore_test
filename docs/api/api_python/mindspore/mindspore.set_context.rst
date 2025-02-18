@@ -122,8 +122,8 @@ mindspore.set_context
           当网络结构复杂时将 `save_graphs` 属性设为 ``2`` 或者 ``3`` 时可能会出现耗时过长的情况。如需要快速定位问题，可先设置 `save_graphs` 属性为 ``1`` 。
 
           当 `save_graphs` 属性设为 ``1`` 、 ``2`` 、 ``3`` 或者 ``True`` 时， `save_graphs_path` 属性用于设置中间编译图的存储路径。默认情况下，计算图保存在当前目录下。
-          此参数将被弃用，将在后续版本中删除，请使用环境变量 `MS_DEV_SAVE_GRAPHS` 替代。
-        - **save_graphs_path** (str) - 表示保存计算图的路径。默认值： ``"."`` 。如果指定的目录不存在，系统将自动创建该目录。在分布式训练中，图形将被保存到 `save_graphs_path/rank_${rank_id}/` 目录下。 `rank_id` 为集群中当前设备的ID。此参数将被弃用，将在后续版本中删除，请使用环境变量 `MS_DEV_SAVE_GRAPHS_PATH` 替代。
+          此参数将被弃用，将在后续版本中删除，请使用环境变量 `MS_DEV_SAVE_GRAPHS` 代替。
+        - **save_graphs_path** (str) - 表示保存计算图的路径。默认值： ``"."`` 。如果指定的目录不存在，系统将自动创建该目录。在分布式训练中，图形将被保存到 `save_graphs_path/rank_${rank_id}/` 目录下。 `rank_id` 为集群中当前设备的ID。此参数将被弃用，将在后续版本中删除，请使用环境变量 `MS_DEV_SAVE_GRAPHS_PATH` 代替。
         - **deterministic** (str) - 表示是否使能算子确定性运行模式。值必须在['ON','OFF']范围内，默认值： ``'OFF'`` 。
 
           - ON：开启算子确定性运行模式。
@@ -134,7 +134,7 @@ mindspore.set_context
           此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.set_deterministic` 代替。
         - **print_file_path** (str) - 此参数将被弃用，将在后续版本中删除。
         - **env_config_path** (str) - 此参数将被弃用，将在后续版本中删除。
-        - **precompile_only** (bool) - 表示是否仅预编译网络。默认值： ``False`` 。设置为 ``True`` 时，仅编译网络，而不执行网络。此参数将被弃用，将在后续版本中删除，请使用环境变量 `MS_DEV_PRECOMPILE_ONLY` 替代。
+        - **precompile_only** (bool) - 表示是否仅预编译网络。默认值： ``False`` 。设置为 ``True`` 时，仅编译网络，而不执行网络。此参数将被弃用，将在后续版本中删除，请使用环境变量 `MS_DEV_PRECOMPILE_ONLY` 代替。
         - **reserve_class_name_in_scope** (bool) - 此参数将被弃用，将在后续版本中删除。
         - **pynative_synchronize** (bool) - 表示是否在PyNative模式下启动设备同步执行。默认值： ``False`` 。设置为 ``False`` 时，将在设备上异步执行算子。当算子执行出错时，将无法定位特定错误脚本代码的位置。当设置为 ``True`` 时，将在设备上同步执行算子。这将降低程序的执行性能。此时，当算子执行出错时，可以根据错误的调用栈来定位错误脚本代码的位置。此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.runtime.launch_blocking` 代替。
         - **mode** (int) - 表示在GRAPH_MODE(0)或PYNATIVE_MODE(1)模式中运行，两种模式都支持所有后端。默认值： ``PYNATIVE_MODE`` 。
@@ -150,10 +150,10 @@ mindspore.set_context
           此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.device_context.ascend.op_tuning.aoe_job_type` 代替。
 
         - **check_bprop** (bool) - 表示是否检查反向传播节点，以确保反向传播节点输出的shape和数据类型与输入参数相同。默认值： ``False`` 。此参数将被弃用，将在后续版本中删除。
-        - **max_call_depth** (int) - 指定函数调用的最大深度。其值必须为正整数。默认值： ``1000`` 。当嵌套Cell太深或子图数量太多时，需要设置 `max_call_depth` 参数。系统最大堆栈深度应随着 `max_call_depth` 的调整而设置为更大的值，否则可能会因为系统堆栈溢出而引发 "core dumped" 异常。此参数将被弃用，将在后续版本中删除，请使用 :func:`mindspore.set_recursion_limit` 接口替代。
+        - **max_call_depth** (int) - 指定函数调用的最大深度。其值必须为正整数。默认值： ``1000`` 。当嵌套Cell太深或子图数量太多时，需要设置 `max_call_depth` 参数。系统最大堆栈深度应随着 `max_call_depth` 的调整而设置为更大的值，否则可能会因为系统堆栈溢出而引发 "core dumped" 异常。此参数将被弃用，将在后续版本中删除，请使用 :func:`mindspore.set_recursion_limit` 接口代替。
         - **grad_for_scalar** (bool) - 表示是否获取标量梯度。默认值： ``False`` 。当 `grad_for_scalar` 设置为True时，则可以导出函数的标量输入。由于后端目前不支持伸缩操作，所以该接口只支持在前端可推演的简单操作。此参数将被弃用，将在后续版本中删除，请使用张量求导的方式。
-        - **enable_compile_cache** (bool) - 表示是否加载或者保存图编译缓存。当 `enable_compile_cache` 被设置为True时，在第一次执行的过程中，一个编译缓存会被生成并且导出为一个MINDIR文件。当该网络被再次执行时，如果 `enable_compile_cache` 仍然为True并且网络脚本没有被更改，那么这个编译缓存会被加载。注意目前只支持有限的Python脚本更改的自动检测，这意味着可能有正确性风险。默认值： ``False`` 。当前不支持编译后大于2G的图。这是一个实验特性，可能会被更改或者删除。此参数将被弃用，将在后续版本中删除，请使用环境变量 `MS_COMPILER_CACHE_ENABLE` 替代。
-        - **compile_cache_path** (str) - 保存编译缓存的路径。默认值： ``"."`` 。如果目录不存在，系统会自动创建这个目录。缓存会被保存到如下目录： `compile_cache_path/rank_${rank_id}/` 。 `rank_id` 是集群上当前设备的ID。此参数将被弃用，将在后续版本中删除，请使用环境变量 `MS_COMPILER_CACHE_PATH` 替代。
+        - **enable_compile_cache** (bool) - 表示是否加载或者保存图编译缓存。当 `enable_compile_cache` 被设置为True时，在第一次执行的过程中，一个编译缓存会被生成并且导出为一个MINDIR文件。当该网络被再次执行时，如果 `enable_compile_cache` 仍然为True并且网络脚本没有被更改，那么这个编译缓存会被加载。注意目前只支持有限的Python脚本更改的自动检测，这意味着可能有正确性风险。默认值： ``False`` 。当前不支持编译后大于2G的图。这是一个实验特性，可能会被更改或者删除。此参数将被弃用，将在后续版本中删除，请使用环境变量 `MS_COMPILER_CACHE_ENABLE` 代替。
+        - **compile_cache_path** (str) - 保存编译缓存的路径。默认值： ``"."`` 。如果目录不存在，系统会自动创建这个目录。缓存会被保存到如下目录： `compile_cache_path/rank_${rank_id}/` 。 `rank_id` 是集群上当前设备的ID。此参数将被弃用，将在后续版本中删除，请使用环境变量 `MS_COMPILER_CACHE_PATH` 代替。
         - **inter_op_parallel_num** (int) - 算子间并行数控制。 默认值为 ``0`` ，表示由框架默认指定。此参数将被弃用，将在后续版本中删除。请使用接口 :func:`mindspore.runtime.dispatch_threads_num` 代替。
         - **runtime_num_threads** (int) - 运行时actor和CPU算子核使用的线程池线程数，必须大于等于 ``0`` 。默认值为 ``30`` ，如果同时运行多个进程，应将该值设置得小一些，以避免线程争用。如果设置为1，则无法使能运行时异步流水能力，可能会影响执行性能。此参数将被弃用，将在后续版本中删除。请使用接口 :func:`mindspore.device_context.cpu.op_tuning.threads_num` 代替。
         - **disable_format_transform** (bool) - 表示是否取消NCHW到NHWC的自动格式转换功能。当fp16的网络性能不如fp32的时，可以设置 `disable_format_transform` 为 ``True`` ，以尝试提高训练性能。默认值： ``False`` 。
@@ -169,6 +169,9 @@ mindspore.set_context
 
           - ON：开启memory offload功能。在Ascend硬件平台，在图编译等级不为O0时本参数不生效；设置memory_optimize_level='O1'时本参数不生效。
           - OFF：关闭memory offload功能。
+
+          此参数将被弃用，将在后续版本中删除，请使用 `mindspore.Parameter` 的 `device` 参数代替。
+
         - **ascend_config** (dict) - 设置Ascend硬件平台专用的参数，默认不设置。
           precision_mode、jit_compile和atomic_clean_policy参数的默认值属于实验性质参数，将来可能会发生变化。
 
@@ -216,8 +219,8 @@ mindspore.set_context
             - **recompute_comm_overlap** (bool): 为 ``True`` 时表示开启反向重计算和通信掩盖。默认值： ``False`` 。
             - **matmul_grad_comm_overlap** (bool): 为 ``True`` 时表示开启反向Matmul和通信掩盖。默认值： ``False`` 。
             - **enable_task_opt** (bool): 为 ``True`` 时表示开启通信融合进行通信算子task数量优化。默认值： ``False`` 。
-            - **enable_grad_comm_opt** (bool): 为 ``True`` 时表示开启梯度dx计算与数据并行梯度通信的掩盖，暂时不支持 `O2 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.JitConfig.html>`_ 编译模式下开启。默认值： ``False`` 。
-            - **enable_opt_shard_comm_opt** (bool): 为 ``True`` 时表示开启正向计算与优化器并行的AllGather通信的掩盖，暂时不支持 `O2 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.JitConfig.html>`_ 编译模式下开启。默认值： ``False`` 。
+            - **enable_grad_comm_opt** (bool): 为 ``True`` 时表示开启梯度dx计算与数据并行梯度通信的掩盖，暂时不支持 `O2 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.JitConfig.html>`_ 编译模式下开启。注意在数据并行梯度通信和计算掩盖良好的情况下，开启该选项后性能不一定有提升，请根据实际场景确定是否开启。默认值： ``False`` 。
+            - **enable_opt_shard_comm_opt** (bool): 为 ``True`` 时表示开启正向计算与优化器并行的AllGather通信的掩盖，暂时不支持 `O2 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.JitConfig.html>`_ 编译模式下开启。注意在权重聚合通信和计算掩盖良好的情况下，开启该选项后性能不一定有提升，请根据实际场景确定是否开启。默认值： ``False`` 。
             - **enable_concat_eliminate_opt** (bool): 为 ``True`` 时表示开启Concat消除优化，当前在开启细粒度双副本优化时有收益。默认值： ``False`` 。
             - **enable_begin_end_inline_opt** (bool): 为 ``True`` 时表示开启首尾micro_batch子图的内联，用于半自动并行子图模式，流水线并行场景，一般需要和其他通信计算掩盖优化一起使用。默认值： ``False`` 。
             - **compute_communicate_fusion_level** (int): 控制通算融合的级别。默认值：``0``。注：此功能需要配套Ascend Training Solution 24.0.RC2以上版本使用。
@@ -319,11 +322,10 @@ mindspore.set_context
             - on: 开启推理模式，推理性能得到较大提升。
             - off: 关闭推理模式，使用前向运算进行推理，性能较差。
 
-        - **exec_order** (str) - 算子执行时的排序方法，GRAPH_MODE(0)下jit_level为O0或者O1时生效。不同的执行顺序会使得网络的执行内存和性能有所差异，当前仅支持三种排序方法：bfs、dfs和gpto，默认方法为bfs。
+        - **exec_order** (str) - 算子执行时的排序方法，GRAPH_MODE(0)下jit_level为O0或者O1时生效。不同的执行顺序会使得网络的执行内存和性能有所差异，当前仅支持两种排序方法：bfs和dfs，默认方法为bfs。
 
           - bfs：默认的排序方法，广度优先排序，具备较好的通信掩盖效果，执行性能相对较好。
           - dfs：可选择的排序方法，深度优先排序，性能相对bfs执行序较差，但内存占用较少，建议在其他执行序OOM的场景下尝试dfs。
-          - gpto：可选择的排序方法，该方法综合多种执行序选择一个性能相对较好的方法，在多副本并行的场景下可能会有一些性能收益。
 
     异常：
         - **ValueError** - 输入key不是上下文中的属性。

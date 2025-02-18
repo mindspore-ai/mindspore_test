@@ -23,10 +23,11 @@
 #include "pybind11/pybind11.h"
 #include "pybind_api/ir/primitive_py.h"
 #include "include/common/utils/convert_utils_py.h"
-#include "pipeline/jit/ps/pipeline.h"
+#include "pipeline/jit/ps/pipeline_jit.h"
 #include "pipeline/jit/pi/utils/utils.h"
 #include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pipeline/jit/pi/utils/opcode_declare.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pijit {
@@ -115,7 +116,7 @@ void OptStrategy::MakeGCStrategy(OptCodeHubPtr hub, int limit_size, int limit_co
       }
     }
     if (limit_size > 0) {
-      auto graph_executor = mindspore::pipeline::GraphExecutorPy::GetInstance();
+      auto graph_executor = pipeline::GetExecutor();
       OptCodeSet toDel;
       if (enable_dynamicshape) {
         ShrinkCodeSet(&set, except);
@@ -149,13 +150,16 @@ constexpr int64_t kMaxCalcDim = 1;
 constexpr int64_t kCompareDim = std::numeric_limits<int64_t>::max();
 
 static OptStrategy::CalcKind TensorComputable(PyObject *obj, ssize_t max_dim) {
-  if (py::isinstance<mindspore::tensor::Tensor>(obj) || py::isinstance<mindspore::tensor::MetaTensor>(obj)) {
-    auto tensor_ptr = py::cast<mindspore::tensor::MetaTensorPtr>(obj);
-    auto shape = tensor_ptr->shape();
-    if (!std::any_of(shape.begin(), shape.end(), [max_dim](const int64_t dim) { return dim > max_dim; })) {
-      return OptStrategy::CalcKind::kCalcValue;
-    }
+  ShapeVector shape;
+  if (tensor::IsTensorPy(obj)) {
+    auto tensorPtr = tensor::ConvertToTensor(obj);
+    shape = tensorPtr->shape();
   }
+
+  if (!std::any_of(shape.begin(), shape.end(), [max_dim](const int64_t dim) { return dim > max_dim; })) {
+    return OptStrategy::CalcKind::kCalcValue;
+  }
+
   return OptStrategy::CalcKind::kCalcShape;
 }
 
@@ -179,7 +183,8 @@ static OptStrategy::CalcKind StubTensorComputable(PyObject *obj, ssize_t max_dim
     obj = PyObject_GetAttrString(obj, "tensor");
     auto pyObj = py::cast<py::object>(obj);
     Py_DECREF(obj);
-    auto tensor_ptr = pyObj.cast<mindspore::tensor::TensorPtr>();
+    auto tensor_ptr = tensor::ConvertToTensor(pyObj);
+    MS_EXCEPTION_IF_NULL(tensor_ptr);
     auto shape = tensor_ptr->shape();
     if (!std::any_of(shape.begin(), shape.end(), [max_dim](const int64_t dim) { return dim > max_dim; })) {
       return OptStrategy::CalcKind::kCalcValue;

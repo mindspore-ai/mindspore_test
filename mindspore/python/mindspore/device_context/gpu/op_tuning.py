@@ -19,9 +19,10 @@ try:
     from mindspore._c_expression import GPUOpTuningConf
 except ImportError:
     pass
-from  .device import _is_supported
+from .device import _is_supported
 
 function_status = {'conv_fprop_algo': False, 'conv_wgrad_algo': False, 'conv_dgrad_algo': False}
+
 
 def conv_fprop_algo(mode):
     """

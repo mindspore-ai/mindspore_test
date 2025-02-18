@@ -64,7 +64,7 @@ def test_subgraph_output_with_load():
     Description: Test the subgraph output is the load node.
     Expectation: Not throw exception.
     """
-    context.set_context(mode=context.GRAPH_MODE)
+    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
     x = Tensor(np.ones([32, 10])).astype(np.float32)
     net1 = NetSubGraphOutputWithLoad()
     output1 = net1(x)

@@ -18,7 +18,7 @@
 
 #include <memory>
 #include <string>
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "plugin/device/ascend/kernel/hccl/hcom_util.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 #include "kernel/ascend/pyboost/customize/comm_common.h"

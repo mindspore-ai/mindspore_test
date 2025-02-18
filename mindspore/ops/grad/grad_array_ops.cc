@@ -774,9 +774,8 @@ std::pair<std::vector<bool>, std::vector<std::vector<int64_t>>> DynBroadcastGrad
                                 x_size < i ? 1 : shape[kIndex1][x_size - i],
                                 y_size < i ? 1 : shape[kIndex2][y_size - i]};
     const int64_t reduce_idx = SizeToLong(n - i);
-    bool is_dynamic = false;
     if (dim_value[kIndex1] == dim_value[kIndex0] && dim_value[kIndex2] == dim_value[kIndex0]) {
-      if (dim_value[kIndex0] == -1) {
+      if (dim_value[kIndex0] == abstract::TensorShape::kShapeDimAny) {
         need_shapecalc[kIndex0] = need_shapecalc[kIndex1] = need_shapecalc[kIndex2] = true;
         break;
       }
@@ -784,12 +783,7 @@ std::pair<std::vector<bool>, std::vector<std::vector<int64_t>>> DynBroadcastGrad
       for (size_t j = 0; j < kDim3; j++) {
         if (dim_value[j] == 1) {
           (void)reduce_axis[j].emplace_back(reduce_idx);
-        } else if (dim_value[j] > 0) {
-          is_dynamic = true;
-        }
-      }
-      for (size_t j = 0; j < kDim3; j++) {
-        if (is_dynamic && dim_value[j] == -1) {
+        } else if (dim_value[j] == abstract::TensorShape::kShapeDimAny) {
           need_shapecalc[j] = true;
           (void)reduce_axis[j].emplace_back(reduce_idx);
         }
@@ -1099,6 +1093,32 @@ REG_BPROP_BUILDER("Identity").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   return {dout};
 });
 
+REG_BPROP_BUILDER("MoeTokenUnpermute").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
+  auto permuted_tokens = ib->GetInput(kIndex0);
+  auto sorted_indices = ib->GetInput(kIndex1);
+  auto probs = ib->GetInput(kIndex2);
+  auto padded_mode = ib->GetInput(kIndex3);
+  auto restore_shape = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex6);
+
+  ShapeVector restore_shape_val = {1, 1};
+  auto padded_mode_type = padded_mode->abstract()->BuildType();
+  NodePtr res_grad;
+  if (padded_mode_type->isa<TypeNone>()) {
+    res_grad = ib->Emit("MoeTokenUnpermuteGrad", {permuted_tokens, dout, sorted_indices, probs, ib->Value<bool>(false),
+                                                  ib->EmitValue(MakeValue(restore_shape_val))});
+  } else {
+    res_grad = ib->Emit("MoeTokenUnpermuteGrad", {permuted_tokens, dout, sorted_indices, probs, padded_mode,
+                                                  ib->EmitValue(MakeValue(restore_shape_val))});
+  }
+
+  auto dpermuted_tokens =
+    permuted_tokens->need_compute_grad_out() ? ib->TupleGetItem(res_grad, kIndex0) : ib->OutZeros(permuted_tokens);
+  auto dprobs = probs->need_compute_grad_out() ? ib->TupleGetItem(res_grad, kIndex1) : ib->OutZeros(probs);
+  return {dpermuted_tokens, ib->OutZeros(sorted_indices), dprobs, ib->OutZeros(padded_mode),
+          ib->OutZeros(restore_shape)};
+});
+
 REG_BPROP_BUILDER("Clone").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(kIndex2);
   return {dout};
@@ -1322,15 +1342,18 @@ REG_BPROP_BUILDER("ScatterNd").SetUnusedInputs({i1, i2, i3}).SetBody(BODYFUNC(ib
   return {ib->OutZeros(indices), ib->GatherNd(dout, indices), ib->OutZeros(shape)};
 });
 
-REG_BPROP_BUILDER("Scatter").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Scatter").FreeUselessValues_IO({i0, i3}, {}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
   auto dim = ib->GetInput(kIndex1);
   auto index = ib->GetInput(kIndex2);
   auto src = ib->GetInput(kIndex3);
   auto reduce = ib->GetInput(kIndex4);
   auto dout = ib->GetInput(kIndex6);
-  auto input_grad = ib->Emit("ScatterValue", {dout, dim, index, ib->EmitValue(MakeValue<float>(0)), reduce});
+  auto input_grad = input->need_compute_grad_out()
+                      ? ib->Emit("ScatterValue", {dout, dim, index, ib->EmitValue(MakeValue<float>(0)), reduce})
+                      : ib->OutZeros(input);
   auto idx_shape = ib->GetShape(index);
-  if (IsShapeNone(idx_shape)) {
+  if (IsShapeNone(idx_shape) || !src->need_compute_grad_out()) {
     return {input_grad, ib->OutZeros(dim), ib->OutZeros(index), ib->OutZeros(src), ib->OutZeros(reduce)};
   }
   auto src_grad = ib->GatherD(dout, dim, index);
@@ -1357,7 +1380,8 @@ REG_BPROP_BUILDER("InplaceScatterSrc").FreeUselessValues_IO({i0, i3}, {}).SetBod
 // Grad of inplace scatter with reduce is not supported, returns zeros of self / dim / index / src / reduce
 REG_BPROP_BUILDER("InplaceScatterSrcReduce").FreeUselessValues_IO({}, {}).SetBody(ReturnZeros);
 
-REG_BPROP_BUILDER("ScatterValue").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("ScatterValue").FreeUselessValues_IO({i0, i3}, {}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
   auto dim = ib->GetInput(kIndex1);
   auto index = ib->GetInput(kIndex2);
   auto src = ib->GetInput(kIndex3);
@@ -2654,7 +2678,7 @@ REG_BPROP_BUILDER("MaskedFill").FreeUselessValues_IO({i0, i2}, {}).SetBody(BODYF
   NodePtr dvalue = value->need_compute_grad_out() ? ib->Mul(dout, mask) : nullptr;
   auto bout = BinopGradCommon(ib, input_data, mask, dinput, dvalue);
 
-  dinput = input_data->need_compute_grad_out() ? ib->Cast(bout[0], ib->GetDtype(input_data)) : ib->OutZeros(dinput);
+  dinput = input_data->need_compute_grad_out() ? ib->Cast(bout[0], ib->GetDtype(input_data)) : ib->OutZeros(input_data);
   if (value->need_compute_grad_out()) {
     auto dvalue_shape = dvalue->shape();
     if (IsDynamicRank(dvalue_shape)) {

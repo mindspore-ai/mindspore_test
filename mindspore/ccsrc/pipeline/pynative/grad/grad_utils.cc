@@ -38,10 +38,11 @@
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "include/common/pynative/abstract_converter.h"
-#include "mindspore/ops/kernel/common/pyboost/auto_generate/clone.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/clone.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "pipeline/pynative/pynative_utils.h"
-#include "mindspore/ops/kernel/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
 
 namespace mindspore {
 namespace pynative {
@@ -51,7 +52,8 @@ const mindspore::HashSet<std::string> kGradBlackList{kMakeTupleOpName,         k
                                                      kTupleGetItemOpName,      kStopGradientOpName,
                                                      kUpdateStateOpName,       kNPUAllocFloatStatusOpName,
                                                      kNPUGetFloatStatusOpName, kNPUClearFloatStatusOpName,
-                                                     kZerosLikeExtOpName,      kOnesLikeExtOpName};
+                                                     kZerosLikeExtOpName,      kOnesLikeExtOpName,
+                                                     kInplaceStopGradientName};
 mindspore::HashMap<std::string, pipeline::ResourcePtr> jit_call_graph_compile_cache_;
 
 // for simply infer (simple infer will push abs in bprop queue)
@@ -809,7 +811,8 @@ void AutoGradUtil::CheckAndCloneInplaceInput(const kernel::pyboost::OpPtr &inpla
   auto input_tensor = inputs[0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   ValuePtr val = nullptr;
-  if (!BpropExpander::IsCloneInplaceInput(BpropCallback(prim, &inputs, &val))) {
+  if (!kernel::pyboost::OpRunStatus::Get().RequireGrad() ||
+      !BpropExpander::IsCloneInplaceInput(BpropCallback(prim, &inputs, &val))) {
     return;
   }
   MS_LOG(DEBUG) << "Begin clone src value for op " << prim->name();

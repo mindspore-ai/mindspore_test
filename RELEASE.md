@@ -2,6 +2,227 @@
 
 [查看中文](./RELEASE_CN.md)
 
+## MindSpore 2.5.0 Release Notes
+
+### Major Features and Improvements
+
+#### Distributed Startup Component msrun
+
+- [STABLE] msrun supports passing in the hostname of the node (e.g. localhost) as `-master_addr`, which improves the ease of use of msrun.
+- [STABLE] msrun supports printing training logs to standard output. Users can control which ranks to print with the `-tail_worker_log` parameter.
+- [STABLE] After setting `export VLOG_v=12500`, the `scheduler` log can output cluster information, which helps users to quickly count cluster data.
+- [STABLE] msrun supports formatting the log file name with the `--worker_log_name` parameter to help users quickly locate the problem node.
+
+For details, refer to [msrun Launching](https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html).
+
+#### Profiler
+
+- [STABLE] New interfaces [mindspore.profiler.schedule](https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.profiler.schedule.html) and [mindspore.profiler.tensor_board_trace_handler](https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.profiler.tensor_board_trace_handler.html) are added to support the acquisition and rendering of PyNative scenarios by step, which improves the ease of use of PyNative scenarios.
+- [STABLE] Dynamic Profiling supports customized for loops to enhance the ease of use of dynamic graphical scenarios.
+- [STABLE] Profiler initialization parameters and deliverables directory structure aligned to PTA to reduce user migration difficulty.
+- [STABLE] A new lightweight interface, [mindspore.profiler.mstx](https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.profiler.mstx.html), has been added to provide users with a low-overhead performance data collection method.
+- [STABLE] Timeline supports displaying hardware utilization data to help users locate downclocking issues.
+
+For details, refer to [Ascend Performance Tuning](https://www.mindspore.cn/docs/en/master/model_train/optimize/profiler.html).
+
+#### PyNative
+
+- [Beta] PyNative mode supports the inplace operator process, introduces the inplace operators. Taking the [mindspore.mint.nn.functional.relu](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.nn.functional.relu.html) as an example, if you want to use the inplace updated version of the relu operator, you can call the [mindspore.mint.nn.functional.relu_](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.nn.functional.relu_.html).
+- [STABLE] Enable the environment variable MS_SIMULATION_LEVEL=1 to enable the PyNative dryrun, the multi-device process can be simulated without occupying the device, and the display memory usage can be viewed in logs. For details, refer to [Environment Variables](https://www.mindspore.cn/docs/en/master/api_python/env_var_list.html?highlight=ms_simulation_level#%E5%88%86%E5%B8%83%E5%BC%8F%E5%B9%B6%E8%A1%8C)。
+
+#### FrontEnd
+
+- [STABLE] Added [mindspore.nn.utils.no_init_parameters](https://www.mindspore.cn/docs/en/master/api_python/nn/mindspore.nn.utils.no_init_parameters.html) API, which supports delayed initialization of network parameters and reduces model startup time in inference scenarios.
+
+### API Change
+
+#### New APIs
+
+- [DEMO] [mindspore.mint](https://www.mindspore.cn/docs/en/master/api_python/mindspore.mint.html) API provides more functional, nn interfaces. The mint interface is currently an experimental interface and performs better than ops in O0/O1 and pynative mode. Currently, the O2 compilation mode (graph sinking mode) and CPU/GPU backend are not supported, and it will be gradually improved in the future.
+
+  | mindspore.mint              |                           |                                   |                            |
+  | :-------------------------- | :------------------------ | :-------------------------------- | :------------------------- |
+  | mindspore.mint.bernoulli    | mindspore.mint.bincount   | mindspore.mint.clone              | mindspore.mint.einsum      |
+  | mindspore.mint.empty        | mindspore.mint.empty_like | mindspore.mint.full_like          | mindspore.mint.randint     |
+  | mindspore.mint.randint_like | mindspore.mint.randn      | mindspore.mint.randn_like         | mindspore.mint.randperm    |
+  | mindspore.mint.chunk        | mindspore.mint.concat     | mindspore.mint.count_nonzero      | mindspore.mint.scatter     |
+  | mindspore.mint.select       | mindspore.mint.squeeze    | mindspore.mint.swapaxes           | mindspore.mint.transpose   |
+  | mindspore.mint.triu         | mindspore.mint.unbind     | mindspore.mint.unique_consecutive | mindspore.mint.multinomial |
+  | mindspore.mint.addmv        | mindspore.mint.diff       | mindspore.mint.exp2               | mindspore.mint.float_power |
+  | mindspore.mint.fix          | mindspore.mint.fmod       | mindspore.mint.frac               | mindspore.mint.lerp        |
+  | mindspore.mint.log2         | mindspore.mint.log10      | mindspore.mint.logaddexp          | mindspore.mint.mv          |
+  | mindspore.mint.nansum       | mindspore.mint.nan_to_num | mindspore.mint.polar              | mindspore.mint.ravel       |
+  | mindspore.mint.outer        | mindspore.mint.softmax    | mindspore.mint.t                  | mindspore.mint.cdist       |
+  | mindspore.mint.amax         | mindspore.mint.amin       | mindspore.mint.cumprod            | mindspore.mint.histc       |
+  | mindspore.mint.logsumexp    | mindspore.mint.norm       | mindspore.mint.std                | mindspore.mint.std_mean    |
+  | mindspore.mint.var          | mindspore.mint.var_mean   | mindspore.mint.allclose           | mindspore.mint.argsort     |
+  | mindspore.mint.equal        | mindspore.mint.isinf      | mindspore.mint.isneginf           | mindspore.mint.not_equal   |
+  | mindspore.mint.addbmm       | mindspore.mint.addmm      | mindspore.mint.baddbmm            | mindspore.mint.dot         |
+  | mindspore.mint.meshgrid     | mindspore.mint.mm         |             |                            |
+
+  | mindspore.mint.nn                   |                                    |
+  | :---------------------------------- | ---------------------------------- |
+  | mindspore.mint.nn.Conv3d            | mindspore.mint.nn.ConstantPad1d    |
+  | mindspore.mint.nn.ConvTranspose2d   | mindspore.mint.nn.ConstantPad2d    |
+  | mindspore.mint.nn.BatchNorm1d       | mindspore.mint.nn.ConstantPad3d    |
+  | mindspore.mint.nn.BatchNorm2d       | mindspore.mint.nn.ReflectionPad1d  |
+  | mindspore.mint.nn.BatchNorm3d       | mindspore.mint.nn.ReflectionPad2d  |
+  | mindspore.mint.nn.LayerNorm         | mindspore.mint.nn.ReflectionPad3d  |
+  | mindspore.mint.nn.SyncBatchNorm     | mindspore.mint.nn.ReplicationPad1d |
+  | mindspore.mint.nn.ELU               | mindspore.mint.nn.ZeroPad1d        |
+  | mindspore.mint.nn.GELU              | mindspore.mint.nn.ZeroPad2d        |
+  | mindspore.mint.nn.LogSigmoid        | mindspore.mint.nn.ZeroPad3d        |
+  | mindspore.mint.nn.ReLU6             | mindspore.mint.nn.BCELoss          |
+  | mindspore.mint.nn.SiLU              | mindspore.mint.nn.CrossEntropyLoss |
+  | mindspore.mint.nn.Tanh              | mindspore.mint.nn.NLLLoss          |
+  | mindspore.mint.nn.Embedding         | mindspore.mint.nn.SmoothL1Loss     |
+  | mindspore.mint.nn.Dropout2d         | mindspore.mint.nn.Upsample         |
+  | mindspore.mint.nn.AdaptiveAvgPool1d | mindspore.mint.nn.MaxUnpool2d      |
+  | mindspore.mint.nn.AdaptiveAvgPool2d |                                    |
+
+  | mindspore.mint.nn.functional                     |
+  | :----------------------------------------------- |
+  | mindspore.mint.nn.functional.adaptive_avg_pool1d |
+  | mindspore.mint.nn.functional.adaptive_avg_pool2d |
+  | mindspore.mint.nn.functional.avg_pool1d          |
+  | mindspore.mint.nn.functional.max_unpool2d        |
+  | mindspore.mint.nn.functional.logsigmoid          |
+  | mindspore.mint.nn.functional.relu6               |
+  | mindspore.mint.nn.functional.relu_               |
+  | mindspore.mint.nn.functional.normalize           |
+  | mindspore.mint.nn.functional.dropout2d           |
+  | mindspore.mint.nn.functional.nll_loss            |
+  | mindspore.mint.nn.functional.smooth_l1_loss      |
+  | mindspore.mint.nn.functional.interpolate         |
+  | mindspore.mint.nn.functional.conv3d              |
+
+  | mindspore.mint.distributed                        |                                                    |
+  | ------------------------------------------------- | -------------------------------------------------- |
+  | mindspore.mint.distributed.all_gather             | mindspore.mint.distributed.get_global_rank         |
+  | mindspore.mint.distributed.all_gather_into_tensor | mindspore.mint.distributed.get_group_rank          |
+  | mindspore.mint.distributed.all_gather_object      | mindspore.mint.distributed.get_process_group_ranks |
+  | mindspore.mint.distributed.all_reduce             | mindspore.mint.distributed.init_process_group      |
+  | mindspore.mint.distributed.all_to_all             | mindspore.mint.distributed.irecv                   |
+  | mindspore.mint.distributed.all_to_all_single      | mindspore.mint.distributed.isend                   |
+  | mindspore.mint.distributed.barrier                | mindspore.mint.distributed.new_group               |
+  | mindspore.mint.distributed.batch_isend_irecv      | mindspore.mint.distributed.P2POp                   |
+  | mindspore.mint.distributed.broadcast              | mindspore.mint.distributed.recv                    |
+  | mindspore.mint.distributed.broadcast_object_list  | mindspore.mint.distributed.reduce                  |
+  | mindspore.mint.distributed.gather                 | mindspore.mint.distributed.reduce_scatter          |
+  | mindspore.mint.distributed.gather_object          | mindspore.mint.distributed.reduce_scatter_tensor   |
+  | mindspore.mint.distributed.get_backend            | mindspore.mint.distributed.scatter                 |
+  | mindspore.mint.distributed.scatter_object_list    | mindspore.mint.distributed.send                    |
+
+  | others                            |
+  | --------------------------------- |
+  | mindspore.mint.optim.Adam         |
+  | mindspore.mint.linalg.matrix_norm |
+  | mindspore.mint.linalg.norm        |
+  | mindspore.mint.linalg.vector_norm |
+  | mindspore.mint.special.exp2       |
+
+- [STABLE] Two inference API [mindspore.ops.incre_flash_attention](https://www.mindspore.cn/docs/en/master/api_python/ops/mindspore.ops.incre_flash_attention.html) and [mindspore.ops.prompt_flash_attention](https://www.mindspore.cn/docs/en/master/api_python/ops/mindspore.ops.prompt_flash_attention.html) are added. Currently, only Ascend backend is supported.
+- [STABLE] [mindspore.runtime](https://www.mindspore.cn/docs/en/master/api_python/mindspore.runtime.html) replaces the original mindspore.hal interfaces and provides interfaces related to runtime resources such as stream, memory, and event.
+- [STABLE] [mindspore.device_context](https://www.mindspore.cn/docs/en/master/api_python/mindspore.device_context.html) replaces some parameters of the original set_context interface and provides setting interfaces related to hardware platform.
+- [DEMO] [mindspore.Tensor](https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.Tensor.html#mindspore.Tensor) API provides more Tensor methods. Currently the Tensor interfaces are still the experimental interfaces, and do not support the graph sink mode and CPU, GPU back-end, will be gradually improved. In addition, a large number of existing Tensor methods, including operators like +=, -=, *= and /=, have been adapted with Aclnn kernels on the Ascend backend through overloading. Details can be found in [API list](https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.Tensor.html#mindspore.Tensor) in official website.
+
+#### Backwards Incompatible Change
+
+- For API [mindspore.Tensor.new_ones](https://gitee.com/link?target=https://www.mindspore.cn/docs/en/master/api_python/mindspore/Tensor/mindspore.Tensor.new_zeros.html), the input argument "size" no longer supports the data type of Tensor.
+- mindspore.Profiler removes timeline_limit, rank_id, analyze_only, env_enable parameters.
+
+- Interface name: mindspore.Profiler
+
+  Changes: profile_communication is deprecated and the communication matrix data is collected by setting profiler_level=ProfilerLevel.Level1 or profiler_level=ProfilerLevel.Level2.
+
+  Clarification: The default value of profiler_level is ProfilerLevel.Level0.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> original interface  </td> <td style="text-align:center"> v2.5.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  Profiler(profile_communication=True)
+  </pre>
+  </td>
+  <td><pre>
+  Profiler(profiler_level=ProfilerLevel.Level1) or Profiler(profiler_level=ProfilerLevel.Level2)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- Interface name: mindspore.Profiler
+
+  Changes: op_time is deprecated, set to collect NPU-side operator performance data by setting activaties=[mindspore.profiler.ProfilerActivity.NPU].
+
+  Clarification: The activaties parameter is of type list, and as long as it contains the mindspore.profiler.ProfilerActivity.NPU parameter, it means that the collection of NPU-side operator performance data is enabled, and the collection is turned on by default.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> original interface </td> <td style="text-align:center"> v2.5.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  Profiler(op_time=True)
+  </pre>
+  </td>
+  <td><pre>
+  Profiler(activaties=[mindspore.profiler.ProfilerActivity.NPU])
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- Interface name: mindspore.Profiler
+
+  Changes: The type of aicore_metrics changed from int to mindspore.profiler.AicoreMetrics enum value.
+
+  Clarification: The default value of aicore_metrics is mindspore.profiler.AicoreMetric.AiCoreNone.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> original interface </td> <td style="text-align:center"> v2.5.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  Profiler(aicore_metrics=0)
+  </pre>
+  </td>
+  <td><pre>
+  Profiler(aicore_metrics=mindspore.profiler.AicoreMetric.AiCoreNone)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- Interface name: mindspore.Profiler
+
+  Changes: profile_framework is deprecated and the frame measurements are collected by setting activaties=[mindspore.profiler.ProfilerActivity.CPU].
+
+  Clarification: activaties parameter type is list, as long as it contains mindspore.profiler.ProfilerActivity.CPU parameter means enable to collect the framework performance data, the default on the collection.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> original interface </td> <td style="text-align:center"> v2.5.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  Profiler(profile_framework="all")
+  </pre>
+  </td>
+  <td><pre>
+  Profiler(activaties=[mindspore.profiler.ProfilerActivity.CPU])
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+### Contributors
+
+baishanyang ,bantao ,Bellatan ,biangelin ,BigSkySea ,caifubi ,candanzg ,candyhong ,Carey ,cccc1111 ,chaijinwei ,changzherui ,chengbin ,chengfeng27 ,chengxb7532 ,chujinjin ,coder2237 ,czrz ,dairenjie ,DavidFFFan ,DeshiChen ,dingjinshan ,ehaleva ,Erpim ,fary86 ,fengyixing ,ffmh ,fuchao ,fuhouyu ,gaoyong10 ,geyuhong ,guoyuzhe ,GuoZhibin ,guozhijian ,halo ,hangq ,haozhang ,hedongdong ,hehongzhe ,hhz886 ,HighCloud ,huangbingjian ,HuangLe02 ,huangziling ,huda ,Huilan Li ,hujiahui8 ,jiahaochen666 ,jiangchao_j ,jiangchenglin3 ,jiangshanfeng ,jiaorui ,jiaxueyu ,jizewei ,jjfeing ,JoeyLin ,jshawjc ,kakyo82 ,kingxian ,kisnwang ,leida ,liangchenghui ,lianghongrui ,LiangZhibo ,lichen ,limingqi107 ,LINH ,linux ,lionelchang ,lishanni ,liubuyu ,liujunzhu ,liuluobin ,liuxu ,liuyanwei ,liyan2022 ,LLLRT ,looop5 ,luochao60 ,luoxuewei ,luoyang ,lyk ,machenggui ,maoyuanpeng1 ,Margaret_wangrui ,master,mengxian ,MengXiangyu ,mengyuanli ,Mrtutu ,mylinchi ,NaCN ,Nikanuo ,niujunhao ,panzhihui ,pengqi ,PingqiLi ,pipecat ,qiuleilei ,qiuyufeng ,qiuzhongya ,r1chardf1d0 ,shaoshengqi ,shen_haochen ,shenhaojing ,shenwei41 ,shilishan ,shiro-zzz ,shuqian0 ,St.Universe ,stavewu ,superxf ,suteng ,TAJh ,tanghuikang ,tangmengcheng ,tan-wei-cheng ,tianxiaodong ,TuDouNi ,TYWZ22259 ,user_0145 ,VectorSL ,vincen45 ,wang_ziqi ,wangshaocong ,wangwensheng4 ,weiyang ,wtcheng ,wtobill ,wujiangming ,wujueying ,wuweikang ,wwwbby ,XianglongZeng ,xiaopeng ,xiaotianci ,xiaoyao ,xiedejin1 ,XinDu ,xuxinglei ,yang guodong ,yangben ,yanghaoran ,yanglong ,yanx ,Yanzhi_YI ,yao_yf ,yefeng ,Yi_zhang95 ,yide12 ,yihangchen ,YijieChen ,YingtongHu ,ylw ,yonibaehr ,yuanqi ,yuchaojie ,yuezenglin ,YuJianfeng ,yyuse ,Zhang QR ,zhangbuxue ,zhangdanyang ,zhanghaibo ,zhangminli ,zhangyinxia ,ZhangZGC ,zhangzhen ,zhengzuohe ,zhouyaqiang0 ,zhuguodong ,zichun_ye ,zlq2020 ,zong_shuai ,ZPaC ,zyli2020 ,陈一 ,程超 ,冯一航 ,胡彬 ,宦晓玲 ,黄勇 ,简云超 ,康伟 ,李栋 ,李良灿 ,李林杰 ,李寅杰,刘崇鸣 ,刘力力 ,刘思铭 ,刘涛Liu ,刘勇琪 ,刘子涵 ,吕浩宇 ,吕凯盟 ,梅飞要 ,倪轩 ,任新 ,十一雷 ,孙昊辰 ,王禹程 ,王振邦 ,熊攀 ,俞涵 ,虞良斌 ,张栩浩 ,赵文璇 ,周莉莉 ,周一航 ,邹文祥
+
 ## MindSpore 2.4.1 Release Notes
 
 ### Major Features and Improvements
@@ -52,7 +273,6 @@ bantao;caifubi;candanzg;chaijinwei;changzherui;chengbin;chujinjin;DeshiChen;ding
 - [STABLE] Support kernel packet fusion optimization in O1 mode to improve the performance of dynamic shape network execution, enabled by default.
 - [BETA] Epilogue fusion between the MatMul and Elementwise operator is supported in O1 mode. Enable via `mindspore.set_context(graph_kernel_flags="--enable_cluster_ops=MatMul")`.
 - [BETA] O1 mode supports user-controlled graph fusion optimization scope, user can control to turn on or off the corresponding fusion operator via the enable_pass/disable_pass option of graph_kernel_flags.
-- [BETA] The GPTO execution order optimization module is supported in O0 mode and is enabled through mindspore.set_context(exec_order="gpto").
 
 #### PyNative
 

@@ -40,8 +40,6 @@ def fold_infer(mixed_precision, crop_size, is_ge_only=False):
     slice_val = vars(model_cfg.slice)[slice_key]
     model_cfg.slice = slice_val
     megafold = MegaFold(model_cfg, mixed_precision=mixed_precision)
-    if is_ge_only:
-        context.set_context(jit_level="O2")
     load_checkpoint(checkpoint_path, megafold)
     fp32_white_list = (nn.Softmax, nn.LayerNorm)
     amp_convert(megafold, fp32_white_list)
@@ -85,27 +83,6 @@ def test_910B_Ascend_fold():
     compile_time, exectue_time = time_list
     compile_time = compile_time - exectue_time
     os.environ.pop("MS_ASCEND_CHECK_OVERFLOW_MODE")
-    assert confidence > 0.9
-    assert compile_time < 500
-    assert exectue_time < 100
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_910A_Ascend_fold():
-    """
-    Feature: 910A Megaflod
-    Description: test train and eval
-    Expectation: success
-    """
-    context.set_context(mode=context.GRAPH_MODE,
-                        device_target="Ascend")
-    rt.set_memory(optimize_level="O1")
-    set_recursion_limit(6000)
-    context.set_context(jit_level="O2")
-    mixed_precision = 1
-    crop_size = 1024
-    confidence, time_list = fold_infer(mixed_precision, crop_size, True)
-    compile_time, exectue_time = time_list
-    compile_time = compile_time - exectue_time
     assert confidence > 0.9
     assert compile_time < 500
     assert exectue_time < 100

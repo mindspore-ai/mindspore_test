@@ -70,9 +70,9 @@ def test_ops_binary_cross_entropy_with_logits_forward(mode, reduction):
         out_bw = binary_cross_entropy_with_logits_backward_func(inputx, target, weight, pos_weight, reduction)
     elif mode == "KBK":
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        op = ms.jit(binary_cross_entropy_with_logits_forward_func, jit_config=ms.JitConfig(jit_level="O0"))
+        op = ms.jit(binary_cross_entropy_with_logits_forward_func, jit_level="O0")
         out_fw = op(inputx, target, weight, pos_weight, reduction)
-        op2 = ms.jit(binary_cross_entropy_with_logits_backward_func, jit_config=ms.JitConfig(jit_level="O0"))
+        op2 = ms.jit(binary_cross_entropy_with_logits_backward_func, jit_level="O0")
         out_bw = op2(inputx, target, weight, pos_weight, reduction)
     else:
         ms.context.set_context(mode=ms.GRAPH_MODE)
@@ -145,13 +145,13 @@ def test_ops_bce_with_logits_loss_forward(mode, reduction):
         def func(inputx, target):
             return net(inputx, target)
 
-        op = ms.jit(func, jit_config=ms.JitConfig(jit_level="O0"))
+        op = ms.jit(func, jit_level="O0")
         out_fw = op(inputx, target)
         opx = BCEWithLogitsLoss(weight, reduction, pos_weight)
 
         def func2(inputx, target):
             return ms.grad(opx, (0, 1))(inputx, target)
-        op2 = ms.jit(func2, jit_config=ms.JitConfig(jit_level="O0"))
+        op2 = ms.jit(func2, jit_level="O0")
         out_bw = op2(inputx, target)
     else:
         ms.context.set_context(mode=ms.GRAPH_MODE)

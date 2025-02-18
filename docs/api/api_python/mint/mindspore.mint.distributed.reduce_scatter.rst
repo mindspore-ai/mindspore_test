@@ -3,7 +3,7 @@ mindspore.mint.distributed.reduce_scatter
 
 .. py:function:: mindspore.mint.distributed.reduce_scatter(output, input_list, op=ReduceOp.SUM, group=None, async_op=False)
 
-    规约并且分发指定通信组中的张量，返回分发后的张量。
+    规约并且分发指定通信组中的Tensor，返回分发后的Tensor。
 
     .. note::
         在集合的所有过程中，输入列表中的Tensor必须具有相同的shape和格式。

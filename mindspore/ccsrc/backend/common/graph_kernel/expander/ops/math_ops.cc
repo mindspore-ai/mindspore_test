@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <optional>
+
 #include "backend/common/graph_kernel/expander/base/ir_builder.h"
 #include "backend/common/graph_kernel/expander/base/utils.h"
 #include "mindspore/ops/op_def/op_enum.h"
@@ -216,7 +218,23 @@ REG_EXPANDER_FUNC("DivMod").SetBody(BODYFUNC(ib) {
   return {result};
 });
 
-REG_EXPANDER_FUNC("MeanExt").SetBody(BODYFUNC(ib) {
+enum ReduceType { kSum = 0, kMean };
+
+std::optional<std::vector<int64_t>> GetAxis(const NodePtr &axis) {
+  std::vector<int64_t> res;
+  if (axis->GetDtype()->type_id() != kMetaTypeNone) {
+    auto axis_value = axis->GetValue();
+    bool is_valid_axis =
+      axis_value->isa<ValueSequence>() || axis_value->isa<tensor::BaseTensor>() || axis_value->isa<Scalar>();
+    if (!is_valid_axis) {
+      return std::nullopt;
+    }
+    res = GetAxisList(axis->GetValue());
+  }
+  return res;
+}
+
+NodePtrList ReduceExtCommon(const DefaultIrBuilder *ib, ReduceType reduce_type) {
   auto input = ib->input(kIndex0);
   auto input_type = input->GetDtype()->type_id();
   if (input_type != kNumberTypeFloat32 && input_type != kNumberTypeFloat16 && input_type != kNumberTypeBFloat16) {
@@ -233,10 +251,14 @@ REG_EXPANDER_FUNC("MeanExt").SetBody(BODYFUNC(ib) {
   input = input_type == kNumberTypeFloat32 ? input : ib->Cast(input, kNumberTypeFloat32);
   auto x_shape = input->GetShape();
   if (x_shape.empty() || IsDynamicRank(x_shape)) {
-    MS_LOG(DEBUG) << "Skip empty shape or dynamic rank, shape is: " << x_shape;
+    MS_LOG(DEBUG) << "Skip expanding node, bucause shape of this node is empty or dynamic rank, shape is: " << x_shape;
     return {};
   }
-  auto axis_ = GetAxisList(axis->GetValue());
+  auto axis_opt = GetAxis(axis);
+  if (!axis_opt.has_value()) {
+    return {};
+  }
+  std::vector<int64_t> axis_ = axis_opt.value();
   auto rank = SizeToLong(x_shape.size());
   (void)std::for_each(axis_.begin(), axis_.end(), [rank](auto &a) { a = a < 0 ? a + rank : a; });
   if (axis_.empty()) {
@@ -256,11 +278,17 @@ REG_EXPANDER_FUNC("MeanExt").SetBody(BODYFUNC(ib) {
       sz *= x_shape[i];
     }
   }
-  auto sum_x = ib->ReduceSum(input, axis_, GetValue<bool>(keep_dims->GetValue()));
-  auto result = ib->Div(sum_x, sz);
-  result = out_type == kNumberTypeFloat32 ? result : ib->Cast(result, out_type);
-  return {result};
-});
+  auto res = ib->ReduceSum(input, axis_, GetValue<bool>(keep_dims->GetValue()));
+  if (reduce_type == ReduceType::kMean) {
+    res = ib->Div(res, sz);
+  }
+  res = out_type == kNumberTypeFloat32 ? res : ib->Cast(res, out_type);
+  return {res};
+}
+
+REG_EXPANDER_FUNC("SumExt").SetBody(BODYFUNC(ib) { return ReduceExtCommon(ib, ReduceType::kSum); });
+
+REG_EXPANDER_FUNC("MeanExt").SetBody(BODYFUNC(ib) { return ReduceExtCommon(ib, ReduceType::kMean); });
 
 REG_EXPANDER_FUNC("AcoshExt").SetBody(BODYFUNC(ib) {
   auto input = ib->input(kIndex0);

@@ -67,7 +67,7 @@ TEST_F(TestViewSqueeze, View) {
   inputs_squeeze_empty_axis.push_back(input_tensor);
   inputs_squeeze_empty_axis.push_back(input_axis);
   storage_info = SqueezeCalc(prim, inputs_squeeze_empty_axis);
-  std::vector<int64_t> expect_shape_2({2, 5});
+  std::vector<int64_t> expect_shape_2({2, 1, 1, 5});
   ASSERT_TRUE(storage_info[0]->shape == expect_shape_2);
 }
 

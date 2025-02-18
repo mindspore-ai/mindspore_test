@@ -35,6 +35,7 @@
 #include "pipeline/jit/pi/external.h"
 #include "pipeline/jit/pi/utils/opcode_declare.h"
 #include "pipeline/jit/pi/python_adapter/pydef.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pijit {
@@ -310,8 +311,7 @@ RootTrace::RootTrace(PyObject *pObj, TraceType tt, int index, std::string name, 
   if (pObj == nullptr) {
     return;
   }
-  if (py::isinstance<mindspore::tensor::MetaTensor>(pObj) || py::isinstance<mindspore::tensor::Tensor>(pObj) ||
-      IsStubTensor(py::cast<py::object>(pObj))) {
+  if (mindspore::tensor::IsTensorPy(py::cast<py::object>(pObj)) || IsStubTensor(py::cast<py::object>(pObj))) {
     is_specialized_ = false;
   }
 }
@@ -1148,7 +1148,7 @@ static PyObject *DoCall(const std::vector<PyObject *> &params, int op, const std
 using PyObjectArray = std::vector<PyObject *>;
 
 static PyObject *CheckAndDoBinary(int op, const PyObjectArray &objs, binaryfunc pyfunc) {
-  if (py::isinstance<mindspore::tensor::Tensor>(objs[0])) {
+  if (mindspore::tensor::IsTensorPy(objs[0])) {
     auto arg0 = py::reinterpret_borrow<py::object>(objs[0]);
     auto arg1 = py::reinterpret_borrow<py::object>(objs[1]);
     auto res = pijit::AbstractTensor::Binary(op, arg0, arg1);
@@ -1492,24 +1492,26 @@ static std::unordered_map<int, PythonBytecodeFuncSet> kBytecodeExecuter = {
     }}},
   {INPLACE_AND,
    {ByteCodeTest(INPLACE_AND),
-    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject * {
-      if (ByteCodeCheck(INPLACE_AND, opargs, objs)) {
-        return PyNumber_InPlaceAnd(objs[0], objs[1]);
-      } else {
-        Py_INCREF(objs[0]);
-        return objs[0];
-      }
-    }}},
+    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject
+                                                                   * {
+                                                                     if (ByteCodeCheck(INPLACE_AND, opargs, objs)) {
+                                                                       return PyNumber_InPlaceAnd(objs[0], objs[1]);
+                                                                     } else {
+                                                                       Py_INCREF(objs[0]);
+                                                                       return objs[0];
+                                                                     }
+                                                                   }}},
   {INPLACE_XOR,
    {ByteCodeTest(INPLACE_XOR),
-    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject * {
-      if (ByteCodeCheck(INPLACE_XOR, opargs, objs)) {
-        return PyNumber_InPlaceXor(objs[0], objs[1]);
-      } else {
-        Py_INCREF(objs[0]);
-        return objs[0];
-      }
-    }}},
+    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject
+                                                                   * {
+                                                                     if (ByteCodeCheck(INPLACE_XOR, opargs, objs)) {
+                                                                       return PyNumber_InPlaceXor(objs[0], objs[1]);
+                                                                     } else {
+                                                                       Py_INCREF(objs[0]);
+                                                                       return objs[0];
+                                                                     }
+                                                                   }}},
   {INPLACE_OR,
    {ByteCodeTest(INPLACE_OR),
     [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject
@@ -1881,8 +1883,8 @@ PyObject *OpTrace::Retrieve(PTraceContext context, bool perf) {
     if (param == nullptr) {
       return true;
     }
-    if (py::isinstance<mindspore::tensor::Tensor>(param)) {
-      mindspore::tensor::TensorPtr tensor_ptr = py::cast<mindspore::tensor::TensorPtr>(param);
+    if (mindspore::tensor::IsTensorPy(py::cast<py::object>(param))) {
+      mindspore::tensor::TensorPtr tensor_ptr = mindspore::tensor::ConvertToTensor(py::cast<py::object>(param));
       if (OptStrategy::MakeCalcStrategyByShape(tensor_ptr->shape()) == OptStrategy::CalcKind::kCalcValue) {
         tensor_ptr->data_sync(true);
       }

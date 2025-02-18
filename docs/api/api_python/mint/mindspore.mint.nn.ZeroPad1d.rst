@@ -3,7 +3,7 @@ mindspore.mint.nn.ZeroPad1d
 
 .. py:class:: mindspore.mint.nn.ZeroPad1d(padding)
 
-    根据参数 `padding` 对输入 `input` 最后1维填充零。
+    根据参数 `padding` ，对输入 `input` 最后1维填充零。
 
     更多参考详见 :func:`mindspore.mint.nn.functional.pad`。
 
@@ -20,7 +20,7 @@ mindspore.mint.nn.ZeroPad1d
         Tensor，填充后的Tensor。
 
     异常：
-        - **TypeError** - `padding` 不是一个integer或包含2个int的tuple或者list。
+        - **TypeError** - `padding` 不是一个integer，或包含2个int的tuple，或list。
         - **TypeError** - `input` 不是Tensor。
         - **ValueError** - `padding` 含有负数。
         - **ValueError** - `padding` 是tuple或list，且长度和Tensor的维度不匹配。

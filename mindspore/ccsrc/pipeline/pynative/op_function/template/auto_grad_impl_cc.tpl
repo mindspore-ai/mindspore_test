@@ -15,10 +15,10 @@
  */
 
 #include "op_def/auto_generate/gen_ops_def.h"
-#include "mindspore/ops/kernel/functions/auto_grad_reg.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_grad_reg.h"
 #include "pipeline/pynative/pynative_utils.h"
-#include "mindspore/ops/kernel/common/pyboost/op_runner.h"
-#include "mindspore/ops/kernel/functions/auto_grad_guard.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "pipeline/pynative/grad/grad_utils.h"
 #include "pipeline/pynative/op_function/auto_grad_register.h"

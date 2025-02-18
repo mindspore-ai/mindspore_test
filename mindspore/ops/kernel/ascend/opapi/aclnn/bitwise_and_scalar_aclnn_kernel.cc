@@ -20,7 +20,7 @@ namespace kernel {
 
 void BitwiseAndScalarAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &outputs) {
-  other_ = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
+  other_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
   GetWorkspaceForResize(inputs[kIndex0], other_, outputs[kIndex0]);
 }
 

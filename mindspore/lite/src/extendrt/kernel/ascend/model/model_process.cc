@@ -25,11 +25,11 @@
 #include "src/common/log_util.h"
 #include "src/litert/kernel/ascend/src/acl_mem_manager.h"
 #include "src/extendrt/kernel/ascend/model/acl_allocator.h"
-#include "transform/symbol/acl_base_symbol.h"
-#include "transform/symbol/acl_mdl_symbol.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/acl_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_mdl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore::kernel {
 namespace acl {

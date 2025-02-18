@@ -22,6 +22,7 @@
 #include "pipeline/pynative/op_function/converter.h"
 #include "pipeline/pynative/pynative_utils.h"
 #include "ir/tensor.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pynative {
@@ -40,7 +41,7 @@ TEST_F(PyBoostConverterTest, ToTensorTest1) {
   converter.Parse(list);
 
   auto t = converter.ToTensor(list, kIndex0);
-  ASSERT_EQ(t, tensor_py.cast<TensorPtr>());
+  ASSERT_EQ(t, tensor::ConvertToTensor(tensor_py));
 }
 
 /// Feature: Test Pyboost Converter.

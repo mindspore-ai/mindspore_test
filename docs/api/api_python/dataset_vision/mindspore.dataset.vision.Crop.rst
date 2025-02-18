@@ -10,8 +10,10 @@ mindspore.dataset.vision.Crop
     参数：
         - **coordinates**  (sequence) - 裁剪区域的起始左上角坐标。必须是两个值的序列，形式为(上，左)。
         - **size**  (Union[int, sequence]) - 裁剪区域的尺寸大小。
-          如果 `size` 是整数，则返回一个裁剪尺寸大小为 (size, size) 的正方形。
-          如果 `size` 是一个长度为 2 的序列，则以2个元素分别为高和宽放缩至(高度, 宽度)大小。
+          
+          - 如果 `size` 是整数，则返回一个裁剪尺寸大小为 (size, size) 的正方形。
+          - 如果 `size` 是一个长度为 2 的序列，则返回一个裁剪尺寸大小为 (高度, 宽度) 的长方形。
+          
           值必须大于 0。
 
     异常：
@@ -29,11 +31,11 @@ mindspore.dataset.vision.Crop
 
         指定该变换执行的设备。
 
-        - 当执行设备是 Ascend 时，输入/输出数据的维度限制为[4, 6]和[32768, 32768]之间。
+        当执行设备是 Ascend 时，输入/输出数据的维度限制在[4, 6]和[32768, 32768]范围内。
 
         参数：
-            - **device_target** (str, 可选) - 算子将在指定的设备上运行。当前支持 ``CPU`` 和 ``Ascend`` 。默认值： ``CPU`` 。
+            - **device_target** (str, 可选) - 算子将在指定的设备上运行。当前支持 ``"CPU"`` 和 ``"Ascend"`` 。默认值： ``"CPU"`` 。
 
         异常：
             - **TypeError** - 当 `device_target` 的类型不为str。
-            - **ValueError** - 当 `device_target` 的取值不为 ``CPU`` / ``Ascend`` 。
+            - **ValueError** - 当 `device_target` 的取值不为 ``"CPU"`` / ``"Ascend"`` 。

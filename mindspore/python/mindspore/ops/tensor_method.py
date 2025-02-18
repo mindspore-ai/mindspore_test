@@ -21,7 +21,7 @@ from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.ops.composite.multitype_ops import _compile_utils as utils
 from mindspore.ops.composite.multitype_ops._compile_utils import (
-    sequence_to_tensor, _tensor_sub, _tensor_pow, _tensor_div
+    sequence_to_tensor, _tensor_sub, _tensor_pow, _tensor_div, _tensor_floordiv
 )
 from mindspore.ops.auto_generate.gen_ops_prim import (
     inplace_scatter_src_op, inplace_scatter_src_reduce_op, inplace_scatter_value_op, inplace_scatter_value_reduce_op
@@ -34,6 +34,7 @@ from mindspore import Tensor
 from mindspore.common import dtype as mstype
 # 4 common import
 from mindspore.common import COOTensor
+
 # 5 common import
 
 # 6 common import
@@ -51,6 +52,7 @@ from mindspore.ops.auto_generate import abs
 
 # 5 add
 from mindspore.ops.auto_generate import add_ext, add
+
 # 6 all
 from mindspore.ops.auto_generate import all
 # 7 allclose
@@ -312,7 +314,7 @@ from mindspore.ops.function.array_func import where as where_func
 # 132 absolute
 
 # 133 bincount
-from mindspore.ops.function.math_func import bincount
+from mindspore.ops.function.math_func import bincount, roll
 
 # 134 diff
 
@@ -352,7 +354,7 @@ from mindspore.ops.auto_generate import isinf
 # 151 fmod
 from mindspore.ops.function.math_func import fmod
 # 152
-
+from mindspore.ops.auto_generate import logaddexp2
 # 153
 from mindspore.ops.auto_generate import acos_ext, acosh_ext, asin_ext, asinh_ext, atan_ext, dot
 # 154 isneginf
@@ -364,7 +366,9 @@ from mindspore.ops.function.math_func import median
 # 156
 
 # 157
+from mindspore._c_expression import pyboost_empty
 
+from mindspore.ops.auto_generate import xlogy_op
 # 158
 
 # 159 histc
@@ -375,6 +379,8 @@ from mindspore.ops.function.math_func import frac
 
 # 161 bitwise_not
 from mindspore.ops.auto_generate.gen_ops_prim import bitwise_not_op
+from mindspore.ops.function.math_func import bitwise_or, bitwise_and, bitwise_xor
+from mindspore.ops.auto_generate import logical_xor_op
 
 # 162 log10
 from mindspore.ops.function.math_func import log10
@@ -408,6 +414,9 @@ from mindspore.ops.auto_generate import log1p
 from mindspore.ops.function.math_func import addbmm
 # 502
 from mindspore.ops.function.math_func import addmm
+# 846
+from mindspore.ops.function.math_func import count_nonzero
+
 # 880
 from mindspore.ops.auto_generate import lerp, lerp_scalar
 
@@ -416,6 +425,9 @@ from mindspore.ops.function.math_func import addmv
 
 # 1028
 from mindspore.ops.function.math_func import var_ext
+
+# 1029 exp_
+from mindspore.ops.auto_generate.gen_ops_prim import inplace_exp_op
 
 
 ########################################functions########################################
@@ -593,6 +605,13 @@ def tensor_div(input, value, *, rounding_mode=None):
     return div(input, value, rounding_mode=rounding_mode)
 
 
+def tensor_div_deal_sequence(input, other, *, rounding_mode=None):
+    if isinstance(input, (tuple, list)):
+        input = sequence_to_tensor(input, F.dtype(other))
+    if isinstance(other, (tuple, list)):
+        other = sequence_to_tensor(other, F.dtype(input))
+    return div(input, other, rounding_mode=rounding_mode)
+
 # 28 divide
 
 # 29 eq
@@ -660,6 +679,10 @@ def tensor_greater(input, other):
 
 # 40 greater_equal
 def tensor_greater_equal(input, other):
+    return greater_equal(input, other)
+
+
+def deprecated_tensor_greater_equal(input, other):
     return greater_equal(input, other)
 
 
@@ -1060,6 +1083,16 @@ def deprecated_tensor_sub(input, y):
     return sub(input, y)
 
 
+def deprecated_tensor_sub_(input, y):
+    if isinstance(y, COOTensor):
+        return F.tensor_scatter_sub(input, y.indices, y.values)
+    if isinstance(input, (tuple, list)):
+        input = sequence_to_tensor(input, F.dtype(y))
+    if isinstance(y, (tuple, list)):
+        y = sequence_to_tensor(y, F.dtype(input))
+    return sub(input, y)
+
+
 # 104 sum
 def tensor_sum_ext(input, dim=None, keepdim=False, *, dtype=None):
     return sum(input, dim, keepdim, dtype=dtype)
@@ -1232,6 +1265,8 @@ def tensor_inplace_masked_fill_tensor_empty(input, masked, value):
 
 
 # 127 mul_
+def tensor_inplace_mul(input, other):
+    return F.mul(input, other)
 
 # 128 normal_
 
@@ -1247,6 +1282,8 @@ def tensor_inplace_masked_fill_tensor_empty(input, masked, value):
 def tensor_bincount(input, weights=None, minlength=0):
     return bincount(input, weights, minlength)
 
+def tensor_roll(input, shifts, dims=None):
+    return roll(input, shifts, dims)
 
 # 134 diff
 
@@ -1397,6 +1434,10 @@ def deprecated_tensor_dot(input, other):
     return F.dot(input, other)
 
 
+def deprecated_tensor_logsumexp(input, dim, keepdim=False):
+    return F.logsumexp(input, dim, keepdim)
+
+
 # 154
 def tensor_isneginf(input):
     return isneginf_ext(input)
@@ -1416,8 +1457,21 @@ def tensor_median_dim(input, dim=-1, keepdim=False):
 
 
 # 156
+def tensor_logaddexp2(input, other):
+    return logaddexp2(input, other)
+
+def deprecated_tensor_logaddexp2(input, other):
+    return F.logaddexp2(input, other)
 
 # 157
+def tensor_empty(*size, dtype=None, device=None):
+    return pyboost_empty(size, dtype, device)
+
+def deprecated_tensor_logaddexp(input, other):
+    return F.logaddexp(input, other)
+
+def tensor_xlogy(input, other):
+    return xlogy_op(input, other)
 
 # 158
 
@@ -1430,11 +1484,24 @@ def tensor_histc(input, bins=100, min=0, max=0):
 def tensor_frac(input):
     return frac(input)
 
+# 161 bitwise_not baddbmm bitwise_or bitwise_and bitwise_xor logical_xor
+def deprecated_baddbmm(input, batch1, batch2, *, beta=1, alpha=1):
+    return F.baddbmm(input, batch1, batch2, beta=beta, alpha=alpha)
 
-# 161 bitwise_not
 def tensor_bitwise_not(input):
     return bitwise_not_op(input)
 
+def deprecated_bitwise_or(input, other):
+    return bitwise_or(input, other)
+
+def deprecated_bitwise_and(input, other):
+    return bitwise_and(input, other)
+
+def deprecated_bitwise_xor(input, other):
+    return bitwise_xor(input, other)
+
+def tensor_logical_xor(input, other):
+    return logical_xor_op(input, other)
 
 # 162
 def tensor_log10(input):
@@ -1475,6 +1542,19 @@ def deprecated_tensor_addmv(input, mat, vec, *, beta=1, alpha=1):
     For details, please refer to :func:`mindspore.ops.addmv`.
     """
     return addmv(input, mat, vec, beta=beta, alpha=alpha)
+
+
+# 846
+def deprecated_tensor_count_nonzero(input,
+                                    axis=(),
+                                    keep_dims=False,
+                                    dtype=None):
+    if dtype is None:
+        return count_nonzero(input,
+                             axis=axis,
+                             keep_dims=keep_dims,
+                             dtype=mstype.int32)
+    return count_nonzero(input, axis=axis, keep_dims=keep_dims, dtype=dtype)
 
 
 def tensor_clone(input):
@@ -1582,6 +1662,12 @@ def tensor_sub_empty_(input, other, alpha=1):
     raise ValueError("should not come here for sub_ method.")
 
 
+def tensor_inplace_sub(input, other, *, alpha=1):
+    if alpha == 1:
+        return sub(input, other)
+    return sub_ext(input, other, alpha=alpha)
+
+
 def tensor_div_empty_(input, other, rounding_mode=None):
     raise ValueError("should not come here for div_ method.")
 
@@ -1613,6 +1699,10 @@ def all_gather_matmul(
     raise NotImplementedError('all_gather_matmul only supports Ascend.')
 
 
+def tensor_floor_divide_(input, other):
+    return _tensor_floordiv(input, other)
+
+
 def matmul_reduce_scatter(
         input,
         x2,
@@ -1629,3 +1719,8 @@ def matmul_reduce_scatter(
     For details, please refer to :func:`mindspore.ops.matmul_reduce_scatter`.
     """
     raise NotImplementedError('matmul_reduce_scatter only supports Ascend.')
+
+
+# 1029
+def tensor_exp_(input):
+    return inplace_exp_op(input)

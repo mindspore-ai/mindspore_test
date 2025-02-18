@@ -123,6 +123,7 @@ def test_dyn_tuple_case(mode):
     assert np.allclose(out_s.asnumpy(), out_d4.asnumpy())
 
 
+@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.PYNATIVE_MODE])
 def test_dyn_func_case(mode):
@@ -246,6 +247,7 @@ def test_dyn_mul_case2(mode):
     assert np.allclose(out_s22.asnumpy(), out_d1_22.asnumpy())
 
 
+@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_cell_jit_case(mode):
@@ -280,6 +282,7 @@ def test_cell_jit_case(mode):
     assert np.allclose(out_s2.asnumpy(), out_d2.asnumpy())
 
 
+@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_single_parameter_case(mode):

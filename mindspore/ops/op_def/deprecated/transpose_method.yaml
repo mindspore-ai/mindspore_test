@@ -6,7 +6,7 @@ transpose:
     axes:
       dtype: tuple[int]
       type_cast: int, list[int]
-      default: ()
+      default: None
   returns:
     output:
       dtype: tensor

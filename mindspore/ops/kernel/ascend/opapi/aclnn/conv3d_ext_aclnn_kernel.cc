@@ -20,7 +20,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -80,13 +80,13 @@ void Conv3DExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs
                                        const std::vector<KernelTensor *> &outputs) {
   const auto &weight_shape = inputs[kIndex1]->GetShapeVector();
   auto spatial_len = weight_shape.size() - kIndex2;
-  stride_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex3]);
+  stride_ = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex3]);
   ExpandParamIfNeeded(&stride_, spatial_len);
-  padding_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex4]);
+  padding_ = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex4]);
   ExpandParamIfNeeded(&padding_, spatial_len);
-  dilation_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex5]);
+  dilation_ = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex5]);
   ExpandParamIfNeeded(&dilation_, spatial_len);
-  groups_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex6]);
+  groups_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex6]);
 
   auto in_shape = inputs[kIndex0]->GetShapeVector();
   _is_batchify = (in_shape.size() == weight_shape.size());

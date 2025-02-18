@@ -207,6 +207,10 @@ REG_STRING_TO_ENUM_COMMON(driver_name, StrToEnumMap{{"GELS", DriverName::GELS},
 REG_STRING_TO_ENUM_COMMON(kv_cache_quant_mode, StrToEnumMap{{"DEFAULT", PagedAttentionKVCacheQuantMode::DEFAULT},
                                                             {"PERTOKEN", PagedAttentionKVCacheQuantMode::PERTOKEN}})
 
+// PagedAttentionMaskMode
+REG_STRING_TO_ENUM_COMMON(mask_mode, StrToEnumMap{{"MASK_DEFAULT", PagedAttentionMaskMode::MASK_DEFAULT},
+                                                  {"TRAPEZOIDAL", PagedAttentionMaskMode::TRAPEZOIDAL}})
+
 // ErrorMode
 REG_STRING_TO_ENUM_SPECIAL(error_mode, StrToEnumMap{{"CYCLE", ErrorMode::CYCLE}, {"SPECIFIC", ErrorMode::SPECIFIC}});
 
@@ -215,6 +219,11 @@ REG_STRING_TO_ENUM_SPECIAL(flip_mode, StrToEnumMap{{"BITFLIP", FlipMode::BITFLIP
                                                    {"BITFLIP_DESIGNED", FlipMode::BITFLIP_DESIGNED},
                                                    {"MULTIPLY", FlipMode::MULTIPLY},
                                                    {"MULTIPLY_MAX", FlipMode::MULTIPLY_MAX}});
+
+// LinalgQrMode
+REG_STRING_TO_ENUM_SPECIAL(mode, StrToEnumMap{{"REDUCED", LinalgQrMode::REDUCED},
+                                              {"COMPLETE", LinalgQrMode::COMPLETE},
+                                              {"R", LinalgQrMode::R}});
 }  // namespace
 
 int64_t StringToEnumImpl(const std::string &op_name, const std::string &arg_name, const std::string &enum_string) {

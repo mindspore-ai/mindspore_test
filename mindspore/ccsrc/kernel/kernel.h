@@ -99,7 +99,8 @@ class PointerRefCount {
   std::string PrintInfo() const {
     std::ostringstream ofs;
     ofs << this << " ptr:" << ptr_ << " from mem pool:" << from_mem_pool_ << " origin ref count:" << original_ref_count_
-        << " ref count:" << ref_count_ << " dynamic ref count:" << dynamic_ref_count_;
+        << " ref count:" << ref_count_ << " dynamic ref count:" << dynamic_ref_count_
+        << " new ref count:" << new_ref_count_;
     return ofs.str();
   }
 
@@ -195,6 +196,24 @@ class PointerRefCount {
   bool is_ptr_persisted() const { return is_ptr_persisted_; }
   void set_is_ptr_persisted(bool is_ptr_persisted) { is_ptr_persisted_ = is_ptr_persisted; }
 
+  // New ref count interface.
+  void IncreaseNewRefCount(size_t i = 1) {
+    if (new_ref_count_ < SIZE_MAX) {
+      new_ref_count_ += i;
+    }
+  }
+  size_t DecreaseNewRefCount() {
+    if (new_ref_count_ == 0) {
+      MS_LOG(EXCEPTION) << "Failed to decrease ref count:" << this;
+    }
+    if (new_ref_count_ == SIZE_MAX) {
+      return SIZE_MAX;
+    }
+    return --new_ref_count_;
+  }
+  void set_new_ref_count(size_t new_ref_count) { new_ref_count_ = new_ref_count; }
+  size_t new_ref_count() const { return new_ref_count_.load(); }
+
  private:
   void *ptr_{nullptr};
 
@@ -206,6 +225,8 @@ class PointerRefCount {
   // The current reference count value, it will be decreased in the running, and reset by original_ref_count_ when it is
   // zero.
   std::atomic<size_t> ref_count_{1};
+
+  std::atomic<size_t> new_ref_count_{0};
 
   // The dynamic reference count, the value can be calculated at compile phase.
   std::atomic_int32_t dynamic_ref_count_{INT32_MAX};
@@ -352,7 +373,11 @@ struct AddressCommon {
 
   std::string PrintInfo() const {
     std::ostringstream ofs;
-    ofs << "size:" << size_ << " format:" << format_ << " dtype:" << dtype_id_ << " device id:" << device_id_
+    ofs << "size:" << size_ << " tensor storage info:" << tensor_storage_info_;
+    if (tensor_storage_info_ != nullptr) {
+      ofs << tensor_storage_info_->ToString();
+    }
+    ofs << " format:" << format_ << " dtype:" << dtype_id_ << " device id:" << device_id_
         << " device name:" << device_name_ << " shape vector:{";
     std::for_each(shape_vector_.begin(), shape_vector_.end(), [&ofs](ShapeValueDType axis) { ofs << axis << " "; });
     ofs << "} point ref count:";
@@ -436,10 +461,12 @@ class BACKEND_EXPORT KernelTensor : public AbstractBase {
   MS_DECLARE_PARENT(KernelTensor, AbstractBase);
 
   std::string PrintInfo() const {
+    std::stringstream ofs;
+    ofs << "user data:" << user_data_;
     if (address_common_ == nullptr) {
-      return "address common:0";
+      return ofs.str() + " address common:0";
     }
-    return "address common:" + address_common_->PrintInfo();
+    return ofs.str() + " address common:" + address_common_->PrintInfo();
   }
 
   // Get the base shape for Tensor/Sequence/Scalar.

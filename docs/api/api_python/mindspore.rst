@@ -109,7 +109,6 @@ mindspore
     mindspore.load_segmented_checkpoints
     mindspore.merge_pipeline_strategys
     mindspore.merge_sliced_parameter
-    mindspore.obfuscate_model
     mindspore.parse_print
     mindspore.rank_list_for_transform
     mindspore.restore_group_info_list
@@ -168,8 +167,6 @@ mindspore
     mindspore.JitConfig
     mindspore.jit
     mindspore.jit_class
-    mindspore.ms_class
-    mindspore.ms_function
     mindspore.ms_memory_recycle
     mindspore.mutable
     mindspore.constexpr

@@ -36,7 +36,7 @@ from mindspore.common.initializer import initializer
 from mindspore.common.tensor import Tensor
 from mindspore import _checkparam as Validator
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.parallel._tensor import _get_slice_index
 from mindspore.parallel._auto_parallel_context import auto_parallel_context
 from mindspore.parallel._ps_context import _is_role_worker, _is_role_pserver, _is_role_sched, _clone_hash_table, \
@@ -217,7 +217,7 @@ class Parameter(Tensor_):
             broadcast and gradients communication would not be applied to the `Parameter`. Default: ``False`` .
         parallel_optimizer (bool): It is used to filter the weight shard operation in `SEMI_AUTO_PARALLEL` or
             `AUTO_PARALLEL` mode. It works only when enable parallel optimizer in
-            `mindspore.set_auto_parallel_context()`. Default: ``True`` .
+            :func:`mindspore.set_auto_parallel_context`. Default: ``True`` .
         storage_format (str): Only Ascend device target is supported. It is used to specify the format of the weight
             loaded to the device. By default, the format is not changed. The optional values are ``"FRACTAL_NZ"`` ,
             ``"NC1HWC0"`` , ``"FRACTAL_Z"`` , etc. Default: ``""`` .
@@ -225,7 +225,8 @@ class Parameter(Tensor_):
             stored. By default, the parameter will be stored on NPU while computing. When the device is specified as
             ``"CPU"``, the parameter will be loaded into the device when it needs to be used, and unloaded to the CPU
             after use. It takes effext only when `memory_offload` is ``"ON"``, `jit_level` is not ``"O2"`` and
-            `memory_optimize_level` is ``O0`` in `mindspore.set_context()`. Less device memory is needed when device is
+            `memory_optimize_level` is ``O0`` in :func:`mindspore.set_context`.
+            Less device memory is needed when device is
             specified as ``"CPU"``.
 
     Examples:
@@ -316,14 +317,14 @@ class Parameter(Tensor_):
                 self.param_info.use_persistent_storage = True
                 self.param_info.origin_shape = default_input.shape
                 self.slice_num = slice_num_of_persistent_data
-                Tensor_.__init__(self, default_input.dtype, tuple(data_shape))
+                Tensor_.__init__(self, dtype=default_input.dtype, shape=tuple(data_shape))
             else:
-                Tensor_.__init__(self, default_input.dtype, default_input.shape)
+                Tensor_.__init__(self, dtype=default_input.dtype, shape=default_input.shape)
 
         elif isinstance(default_input, int):
-            Tensor_.__init__(self, mstype.int64, ())
+            Tensor_.__init__(self, dtype=mstype.int64, shape=())
         elif isinstance(default_input, float):
-            Tensor_.__init__(self, mstype.float32, ())
+            Tensor_.__init__(self, dtype=mstype.float32, shape=())
         elif isinstance(default_input, (np.ndarray, list)):
             Tensor_.__init__(self, default_input)
         else:
@@ -693,7 +694,7 @@ class Parameter(Tensor_):
         Get the optimizer parallel status(bool) of the parameter.
 
         It is used to filter the weight shard operation in `AUTO_PARALLEL` and `SEMI_AUTO_PARALLEL` mode. It works only
-        when enable parallel optimizer in `mindspore.set_auto_parallel_context()`.
+        when enable parallel optimizer in :func:`mindspore.set_auto_parallel_context`.
 
         Examples:
             >>> from mindspore import Tensor, Parameter

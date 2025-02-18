@@ -539,10 +539,6 @@ void OutputActor::UpdateOutputDeviceAddress() {
     auto device_context = device_contexts_[i];
     MS_EXCEPTION_IF_NULL(device_context);
     MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-    const auto &swap_manager = device_context->device_res_manager_->swap_manager();
-    if (swap_manager != nullptr) {
-      swap_manager->AddSwappableTensor(tensor_device_address);
-    }
     // If the output node whose output address ptr can't be changed, then alloc the new device memory and copy the data:
     if (IsOutputAddressPersisted(device_tensor, output_nodes_[i])) {
       device::DynamicMemAllocatorDebugInfo::SetDebugInfo(GetAID().Name(), device::AllocatorType::kOther);

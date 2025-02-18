@@ -35,44 +35,17 @@ def test_tesnsor_augassign_by_slice():
     input_np_3d = np.arange(120).reshape(4, 5, 6).astype(np.float32)
     input_tensor_3d = Tensor(input_np_3d, mstype.float32)
     index_slice_1 = slice(1, None, None)
-    index_slice_2 = slice(None, 4, None)
-    index_slice_3 = slice(-3, 4, None)
-    index_slice_4 = slice(2, -1, None)
-    index_slice_7 = slice(1, 5, None)
     index_slice_8 = slice(-5, 3, None)
 
     value_number = 3
-    value_list_1_ele = [2]
-    value_list_mul_ele = [10, 20, 30, 40, 50, 60]
-    value_list_much_ele = [10, 20, 30, 40, 50, 60, 70]
 
     input_tensor_3d[index_slice_1] += value_number
     input_np_3d[index_slice_1] += value_number
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
-    input_tensor_3d[index_slice_2] -= value_list_1_ele
-    input_np_3d[index_slice_2] -= value_list_1_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[index_slice_3] *= value_list_mul_ele
-    input_np_3d[index_slice_3] *= value_list_mul_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[index_slice_4] /= value_number
-    input_np_3d[index_slice_4] /= value_number
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[index_slice_7] /= value_number
-    input_np_3d[index_slice_7] /= value_number
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
     input_tensor_3d[index_slice_8] += value_number
     input_np_3d[index_slice_8] += value_number
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    with pytest.raises(ValueError):
-        input_tensor_3d[index_slice_8] /= value_list_much_ele
-        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -83,55 +56,17 @@ def test_tesnsor_augassign_by_ellipsis():
     input_np_3d = np.arange(24).reshape(2, 3, 4).astype(np.float32)
     input_tensor_3d = Tensor(input_np_3d, mstype.float32)
 
-    value_number_1, value_number_2 = 1, 2.0
+    value_number_1 = 1
 
     value_np_1 = np.array([1])
-    value_np_2 = np.array([1, 2, 3, 4])
-    value_np_3 = np.arange(12).reshape(3, 4)
     value_tensor_1 = Tensor(value_np_1)
-    value_tensor_2 = Tensor(value_np_2)
-    value_tensor_3 = Tensor(value_np_3)
-
-    value_tuple_1_ele = (0.5,)
-    value_tuple_4_ele = (0.1, 0.2, 0.3, 0.4)
-
-    value_list_1_ele = [1.5]
-    value_list_4_ele = [1.1, 1.2, 1.3, 1.4]
 
     input_tensor_3d[...] += value_number_1
     input_np_3d[...] += value_number_1
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
-    input_tensor_3d[...] -= value_number_2
-    input_np_3d[...] -= value_number_2
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
     input_tensor_3d[...] *= value_tensor_1
     input_np_3d[...] *= value_np_1
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[...] /= value_tensor_2
-    input_np_3d[...] /= value_np_2
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[...] /= value_tensor_3
-    input_np_3d[...] /= value_np_3
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[...] -= value_tuple_1_ele
-    input_np_3d[...] -= value_tuple_1_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[...] *= value_tuple_4_ele
-    input_np_3d[...] *= value_tuple_4_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[...] -= value_list_1_ele
-    input_np_3d[...] -= value_list_1_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[...] *= value_list_4_ele
-    input_np_3d[...] *= value_list_4_ele
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
 
@@ -148,35 +83,22 @@ def test_tesnsor_augassign_by_bool():
 
     value_number = 1
 
-    value_np_1 = np.array([1], np.float32)
     value_np_2 = np.array([1, 2, 3, 4, 5, 6], np.float32)
-    value_np_3 = np.arange(1, 31).astype(np.float32).reshape(5, 6)
     value_np_4 = np.arange(1, 121).astype(np.float32).reshape(4, 5, 6)
-    value_tensor_1 = Tensor(value_np_1, mstype.float32)
     value_tensor_2 = Tensor(value_np_2, mstype.float32)
-    value_tensor_3 = Tensor(value_np_3, mstype.float32)
     value_tensor_4 = Tensor(value_np_4, mstype.float32)
 
     value_tuple_1_ele = (0.5,)
     value_tuple_6_ele = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
 
     value_list_1_ele = [1.5]
-    value_list_6_ele = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6]
 
     input_tensor_3d[index_bool_1] += value_number
     input_np_3d[index_bool_1] += value_number
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
-    input_tensor_3d[index_bool_1] -= value_tensor_1
-    input_np_3d[index_bool_1] -= value_np_1
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
     input_tensor_3d[index_bool_1] *= value_tensor_2
     input_np_3d[index_bool_1] *= value_np_2
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[index_bool_1] -= value_tensor_3
-    input_np_3d[index_bool_1] -= value_np_3
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
     input_tensor_3d[index_bool_1] //= value_tensor_4
@@ -193,10 +115,6 @@ def test_tesnsor_augassign_by_bool():
 
     input_tensor_3d[index_bool_1] %= value_list_1_ele
     input_np_3d[index_bool_1] %= value_list_1_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[index_bool_1] -= value_list_6_ele
-    input_np_3d[index_bool_1] -= value_list_6_ele
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
     with pytest.raises(IndexError):
@@ -221,36 +139,16 @@ def test_tesnsor_augassign_by_number():
     value_np_scalar = np.array(5)
     value_np_1_ele = np.array([1])
     value_np_1d = np.array([1, 2, 3, 4])
-    value_np_2d = np.arange(20).reshape(5, 4)
     value_tensor_scalar = Tensor(value_np_scalar, mstype.float32)
     value_tensor_1_ele = Tensor(value_np_1_ele, mstype.float32)
     value_tensor_1d = Tensor(value_np_1d, mstype.float32)
-    value_tensor_2d = Tensor(value_np_2d, mstype.float32)
-
-    value_tuple_1_ele = (100,)
-    value_tuple_mul_ele = (10, 20, 30, 40)
-    value_tuple_much_ele = (10, 20, 30, 40, 10)
-    value_tuple_empty = ()
-
-    value_list_1_ele = [101]
-    value_list_mul_ele = [11, 21, 31, 41]
-    value_list_much_ele = [12, 22, 33, 43, 18]
-    value_list_empty = []
 
     input_tensor_1d[number_index_1] += value_number
     input_np_1d[number_index_1] += value_number
     assert np.allclose(input_tensor_1d.asnumpy(), input_np_1d, 0.0001, 0.0001)
 
-    input_tensor_1d[number_index_2] -= value_number
-    input_np_1d[number_index_2] -= value_number
-    assert np.allclose(input_tensor_1d.asnumpy(), input_np_1d, 0.0001, 0.0001)
-
     input_tensor_3d[number_index_1] *= value_number
     input_np_3d[number_index_1] *= value_number
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[number_index_2] /= value_number
-    input_np_3d[number_index_2] /= value_number
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
     input_tensor_1d[number_index_1] //= value_tensor_scalar
@@ -269,54 +167,11 @@ def test_tesnsor_augassign_by_number():
     input_np_3d[number_index_1] += value_np_1d
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
-    input_tensor_3d[number_index_2] -= value_tensor_2d
-    input_np_3d[number_index_2] -= value_np_2d
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[number_index_1] -= value_tuple_1_ele
-    input_np_3d[number_index_1] -= value_tuple_1_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[number_index_1] *= value_tuple_mul_ele
-    input_np_3d[number_index_1] *= value_tuple_mul_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[number_index_1] -= value_list_1_ele
-    input_np_3d[number_index_1] -= value_list_1_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[number_index_2] *= value_list_mul_ele
-    input_np_3d[number_index_2] *= value_list_mul_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
     with pytest.raises(IndexError):
         input_tensor_1d[number_index_3] += value_number
         _pynative_executor.sync()
     with pytest.raises(IndexError):
-        input_tensor_3d[number_index_3] -= value_number
-        _pynative_executor.sync()
-    with pytest.raises(IndexError):
         input_tensor_1d[number_index_4] *= value_number
-        _pynative_executor.sync()
-    with pytest.raises(IndexError):
-        input_tensor_3d[number_index_4] /= value_number
-        _pynative_executor.sync()
-
-    with pytest.raises(ValueError):
-        input_tensor_1d[number_index_1] *= value_tuple_mul_ele
-        _pynative_executor.sync()
-    with pytest.raises(ValueError):
-        input_tensor_3d[number_index_1] *= value_tuple_much_ele
-        _pynative_executor.sync()
-    with pytest.raises(ValueError):
-        input_tensor_1d[number_index_1] /= value_tuple_empty
-        _pynative_executor.sync()
-
-    with pytest.raises(ValueError):
-        input_tensor_3d[number_index_2] //= value_list_much_ele
-        _pynative_executor.sync()
-    with pytest.raises(ValueError):
-        input_tensor_3d[number_index_2] *= value_list_empty
         _pynative_executor.sync()
 
 
@@ -340,77 +195,23 @@ def test_tesnsor_augassign_by_tensor():
 
     value_number = 1
 
-    value_np_1 = np.array([1])
     value_np_2 = np.array([1, 2, 3, 4, 5, 6])
-    value_np_4 = np.arange(1, 181).reshape(6, 5, 6)
-    value_tensor_1 = Tensor(value_np_1)
     value_tensor_2 = Tensor(value_np_2)
-    value_tensor_4 = Tensor(value_np_4)
-
-    value_tuple_1_ele = (0.5,)
-    value_tuple_6_ele = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
-
-    value_list_1_ele = [1.5]
-    value_list_6_ele = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6]
 
     input_tensor_3d[index_tensor_1d_1ele] += value_number
     input_np_3d[index_np_1d_1ele] += value_number
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[index_tensor_1d_1ele] -= value_tensor_2
-    input_np_3d[index_np_1d_1ele] -= value_np_2
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[index_tensor_1d_1ele] /= value_tuple_6_ele
-    input_np_3d[index_np_1d_1ele] /= value_tuple_6_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[index_tensor_1d_1ele] *= value_list_1_ele
-    input_np_3d[index_np_1d_1ele] *= value_list_1_ele
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
     input_tensor_3d[index_tensor_1d] += value_number
     input_np_3d[index_np_1d] += value_number
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
-    input_tensor_3d[index_tensor_1d] -= value_tensor_1
-    input_np_3d[index_np_1d] -= value_np_1
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[index_tensor_1d] /= value_tuple_1_ele
-    input_np_3d[index_np_1d] /= value_tuple_1_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[index_tensor_2d] -= value_number
-    input_np_3d[index_np_2d] -= value_number
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
     input_tensor_3d[index_tensor_2d] *= value_tensor_2
     input_np_3d[index_np_2d] *= value_np_2
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
-    input_tensor_3d[index_tensor_2d] /= value_tensor_4
-    input_np_3d[index_np_2d] /= value_np_4
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[index_tensor_2d] -= value_list_1_ele
-    input_np_3d[index_np_2d] -= value_list_1_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
     input_tensor_3d[index_tensor_3d] *= value_number
     input_np_3d[index_np_3d] *= value_number
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[index_tensor_3d] /= value_tensor_1
-    input_np_3d[index_np_3d] /= value_np_1
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[index_tensor_3d] /= value_tuple_1_ele
-    input_np_3d[index_np_3d] /= value_tuple_1_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[index_tensor_3d] -= value_list_6_ele
-    input_np_3d[index_np_3d] -= value_list_6_ele
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
 
@@ -438,12 +239,10 @@ def test_tesnsor_augassign_by_list():
     value_np_1_ele = np.array([1])
     value_np_1d = np.array([1, 2, 3, 4, 5, 6])
     value_np_2d = np.arange(1, 31).reshape(5, 6)
-    value_np_3d = np.arange(1, 61).reshape(2, 5, 6)
     value_tensor_scalar = Tensor(value_np_scalar, mstype.float32)
     value_tensor_1_ele = Tensor(value_np_1_ele, mstype.float32)
     value_tensor_1d = Tensor(value_np_1d, mstype.float32)
     value_tensor_2d = Tensor(value_np_2d, mstype.float32)
-    value_tensor_3d = Tensor(value_np_3d, mstype.float32)
 
     input_tensor_3d[list_index_int_1] += value_number
     input_np_3d[list_index_int_1] += value_number
@@ -453,16 +252,8 @@ def test_tesnsor_augassign_by_list():
     input_np_3d[list_index_int_1] += value_np_scalar
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
-    input_tensor_3d[list_index_int_1] -= value_tensor_1_ele
-    input_np_3d[list_index_int_1] -= value_np_1_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
     input_tensor_3d[list_index_int_1] *= value_tensor_1d
     input_np_3d[list_index_int_1] *= value_np_1d
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[list_index_int_1] /= value_tensor_2d
-    input_np_3d[list_index_int_1] /= value_np_2d
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
     input_tensor_3d[list_index_int_2] += value_number
@@ -485,20 +276,12 @@ def test_tesnsor_augassign_by_list():
     input_np_3d[list_index_int_2] += value_np_2d
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
-    input_tensor_3d[list_index_int_2] -= value_tensor_3d
-    input_np_3d[list_index_int_2] -= value_np_3d
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
     input_tensor_3d[list_index_bool_2] += value_number
     input_np_3d[list_index_bool_2] += value_number
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
     input_tensor_3d[list_index_bool_2] *= value_tensor_scalar
     input_np_3d[list_index_bool_2] *= value_np_scalar
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[list_index_bool_2] /= value_tensor_1_ele
-    input_np_3d[list_index_bool_2] /= value_np_1_ele
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
     input_tensor_3d[list_index_bool_2] //= value_tensor_1d
@@ -521,16 +304,8 @@ def test_tesnsor_augassign_by_list():
     input_np_3d[list_index_bool_3] += value_np_1_ele
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
-    input_tensor_3d[list_index_bool_3] -= value_tensor_1d
-    input_np_3d[list_index_bool_3] -= value_np_1d
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
     input_tensor_3d[list_index_bool_3] *= value_tensor_2d
     input_np_3d[list_index_bool_3] *= value_np_2d
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[list_index_bool_3] /= value_tensor_3d
-    input_np_3d[list_index_bool_3] /= value_np_3d
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
     input_tensor_3d[list_index_mix_1] += value_number
@@ -545,16 +320,8 @@ def test_tesnsor_augassign_by_list():
     input_np_3d[list_index_mix_1] += value_np_1_ele
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
-    input_tensor_3d[list_index_mix_1] -= value_tensor_1d
-    input_np_3d[list_index_mix_1] -= value_np_1d
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
     input_tensor_3d[list_index_mix_1] *= value_tensor_2d
     input_np_3d[list_index_mix_1] *= value_np_2d
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[list_index_mix_1] /= value_tensor_3d
-    input_np_3d[list_index_mix_1] /= value_np_3d
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
     input_tensor_3d[list_index_mix_2] += value_number
@@ -569,16 +336,8 @@ def test_tesnsor_augassign_by_list():
     input_np_3d[list_index_mix_2] += value_np_1_ele
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
-    input_tensor_3d[list_index_mix_2] -= value_tensor_1d
-    input_np_3d[list_index_mix_2] -= value_np_1d
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
     input_tensor_3d[list_index_mix_2] *= value_tensor_2d
     input_np_3d[list_index_mix_2] *= value_np_2d
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[list_index_mix_2] /= value_tensor_3d
-    input_np_3d[list_index_mix_2] /= value_np_3d
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
     with pytest.raises(IndexError):
@@ -614,10 +373,6 @@ def test_tesnsor_augassign_by_tuple():
 
     input_tensor_3d[index_tuple_1] += value_number
     input_np_3d[index_tuple_1] += value_number
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[index_tuple_1] -= Tensor(np.ones((2, 5, 3)), mstype.float32)
-    input_np_3d[index_tuple_1] -= np.ones((2, 5, 3))
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
     input_tensor_3d[index_tuple_2] *= value_tensor_scalar

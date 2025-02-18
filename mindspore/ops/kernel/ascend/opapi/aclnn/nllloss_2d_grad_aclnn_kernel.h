@@ -19,11 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "plugin/device/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
-using TensorParams = transform::TensorParams;
+using TensorParams = device::ascend::TensorParams;
 
 class NLLLoss2dGradAclnnKernelMod : public AclnnKernelMod {
  public:

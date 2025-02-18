@@ -7,7 +7,7 @@ mindspore.numpy.var
 
     默认情况下，返回计算展平数组的方差，否则沿指定轴计算方差。
 
-    .. note:: 
+    .. note::
         不支持NumPy参数 `dtype` 、 `out` 、 `where` 。
 
     参数：

@@ -44,7 +44,7 @@ mindspore.train.Metric
         给定(label0, label1, logits)作为 `update` 的输入，将 `indexes` 设置为[2, 1]，则最终使用(logits, label1)作为 `update` 的真实输入。
 
         .. note::
-            在继承该类自定义评估函数时，需要用装饰器 `mindspore.train.rearrange_inputs` 修饰 `update` 方法，否则配置的 `indexes` 值不生效。
+            在继承该类自定义评估函数时，需要用装饰器 :func:`mindspore.train.rearrange_inputs` 修饰 `update` 方法，否则配置的 `indexes` 值不生效。
 
         参数：
             - **indexes** (List(int)) - logits和标签的目标顺序。

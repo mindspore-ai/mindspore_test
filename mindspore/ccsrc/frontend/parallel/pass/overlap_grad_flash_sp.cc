@@ -122,18 +122,21 @@ void FindFAGradInputNode(const CNodePtr &node, std::map<int64_t, AnfNodePtr> *do
       dout_map->insert({flash_index, node});
     }
 
-    if (node->HasPrimalAttr(RING_ATTENTION_UPDATE_MAX) && !node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
-      auto flash_index = GetValue<int>(node->GetPrimalAttr(RING_ATTENTION_UPDATE_MAX));
+    if (common::AnfAlgo::HasNodeAttr(RING_ATTENTION_UPDATE_MAX, node) &&
+        !node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
+      auto flash_index = common::AnfAlgo::GetNodeAttr<int>(node, RING_ATTENTION_UPDATE_MAX);
       softmax_max_map->insert({flash_index, node});
     }
 
-    if (node->HasPrimalAttr(RING_ATTENTION_UPDATE_SUM) && !node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
-      auto flash_index = GetValue<int>(node->GetPrimalAttr(RING_ATTENTION_UPDATE_SUM));
+    if (common::AnfAlgo::HasNodeAttr(RING_ATTENTION_UPDATE_SUM, node) &&
+        !node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
+      auto flash_index = common::AnfAlgo::GetNodeAttr<int>(node, RING_ATTENTION_UPDATE_SUM);
       softmax_sum_map->insert({flash_index, node});
     }
 
-    if (node->HasPrimalAttr(RING_ATTENTION_UPDATE_ATTN) && !node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
-      auto flash_index = GetValue<int>(node->GetPrimalAttr(RING_ATTENTION_UPDATE_ATTN));
+    if (common::AnfAlgo::HasNodeAttr(RING_ATTENTION_UPDATE_ATTN, node) &&
+        !node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
+      auto flash_index = common::AnfAlgo::GetNodeAttr<int>(node, RING_ATTENTION_UPDATE_ATTN);
       attention_out_map->insert({flash_index, node});
     }
   }
@@ -177,6 +180,9 @@ void FindTargetNode(std::vector<AnfNodePtr> *origin_nodes_topological, std::map<
                     std::map<int64_t, AnfNodePtr> *dout_map, std::map<int64_t, AnfNodePtr> *softmax_max_map,
                     std::map<int64_t, AnfNodePtr> *softmax_sum_map, std::map<int64_t, AnfNodePtr> *attention_out_map) {
   for (auto &anf_node : *origin_nodes_topological) {
+    if (!anf_node->isa<CNode>()) {
+      continue;
+    }
     CNodePtr node = anf_node->cast<CNodePtr>();
     if (node != nullptr && node->HasPrimalAttr(FLASH_LOSS_NODE)) {
       (*loss_node) = node;

@@ -17,7 +17,7 @@
 #include <vector>
 #include <unordered_map>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/base/types.h"
 
@@ -25,7 +25,7 @@ namespace mindspore {
 namespace kernel {
 void BinaryCrossEntropyAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                         const std::vector<KernelTensor *> &outputs) {
-  auto reduction_imm = static_cast<Reduction>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
+  auto reduction_imm = static_cast<Reduction>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
   // transform reduction enum value to corresponding value
   std::unordered_map<Reduction, int64_t> reduction_map = {
     {Reduction::REDUCTION_SUM, 2}, {Reduction::MEAN, 1}, {Reduction::NONE, 0}};

@@ -24,19 +24,19 @@ namespace ops {
 int32_t RollFuncImpl::CheckValidation(const PrimitivePtr &primitive,
                                       const std::vector<AbstractBasePtr> &input_args) const {
   MS_EXCEPTION_IF_NULL(primitive);
-  const auto &axis_opt = GetArrayValue<int64_t>(input_args[kIndex1]);
-  if (MS_UNLIKELY(!axis_opt.has_value())) {
+  const auto &dims_opt = GetArrayValue<int64_t>(input_args[kIndex1]);
+  if (MS_UNLIKELY(!dims_opt.has_value())) {
     return OP_CHECK_RETRY;
   }
-  const auto &shift_opt = GetArrayValue<int64_t>(input_args[kIndex2]);
-  if (MS_UNLIKELY(!shift_opt.has_value())) {
+  const auto &shifts_opt = GetArrayValue<int64_t>(input_args[kIndex2]);
+  if (MS_UNLIKELY(!shifts_opt.has_value())) {
     return OP_CHECK_RETRY;
   }
-  const auto &axis_array = axis_opt.value();
-  const auto &shift_array = shift_opt.value();
-  if (axis_array.size() != shift_array.size() || axis_array.size() == 0) {
+  const auto &dims_array = dims_opt.value();
+  const auto &shifts_array = shifts_opt.value();
+  if (dims_array.size() != shifts_array.size() || dims_array.size() == 0) {
     MS_EXCEPTION(ValueError) << "For '" << primitive->name()
-                             << "', 'axis' and 'shift' must be not empty and have same size.";
+                             << "', 'dims' and 'shifts' must be not empty and have same size.";
   }
   return OP_CHECK_SUCCESS;
 }

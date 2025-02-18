@@ -89,7 +89,9 @@ py::object ${func_name}(const py::args &args) {
   const auto &prim = PyNativeAlgo::PyBoost::ConvertPrimitive(args[0]);
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
                                      prim->name(), false, true);
-  return ${func_name}_Base(prim, args[1]);
+  auto res = ${func_name}_Base(prim, args[1]);
+  trace::Capture(args, &res);
+  return res;
 }
 
 class ${class_name}PrimAdapter: public PrimitiveFunctionAdapter {
@@ -100,7 +102,9 @@ class ${class_name}PrimAdapter: public PrimitiveFunctionAdapter {
    py::object Call(const py::list &args) {
      runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
                                         "${class_name}", false, true);
-     return ${func_name}_Base(prim::kPrim${class_name}, args);
+     auto res = ${func_name}_Base(prim::kPrim${class_name}, args);
+     trace::Capture(args, &res, "${class_name}");
+     return res;
    }
 };
 

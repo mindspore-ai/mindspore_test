@@ -67,6 +67,7 @@
 
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/distributed/collective/collect_hccl_init_info.h"
+#include "include/common/utils/parallel_context.h"
 namespace mindspore {
 namespace compile {
 bool Backend::GetCond(const BaseRef &c, bool *value) {
@@ -1006,10 +1007,20 @@ bool ExportCompileCacheKBK(const FuncGraphPtr &func_graph, const device::DeviceT
   return true;
 }
 
-void CheckRunMode(device::RunMode run_mode) {
-  if (run_mode == device::RunMode::kGraphMode || run_mode == device::RunMode::kHybridMode) {
-    MS_LOG(WARNING) << "The subgraph sink and heterogeneous in Jit_level = O2 will be deprecated and removed in a "
-                       "future version, please set jit_level to O0 or O1 and try again.";
+void CheckRunMode(device::RunMode run_mode, const FuncGraphPtr &graph) {
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  // for some graph is hybrid, and some graph is graph_mode but not MS_CTX_IS_MULTI_GRAPH_SINK(AllReduce)
+  static bool is_hybrid_mode = false;
+  if (!is_hybrid_mode && context->get_param<bool>(MS_CTX_ENABLE_HYBRID_MODE)) {
+    is_hybrid_mode = true;
+  }
+  if (run_mode != device::RunMode::kGraphMode) {
+    return;
+  }
+  if (graph->exist_multi_target() || !is_hybrid_mode) {
+    MS_LOG(EXCEPTION)
+      << "The GE backend does not support subgraph sink and heterogeneous scenarios, please use the ms backend.";
   }
 }
 }  // namespace
@@ -1112,14 +1123,14 @@ const ActorInfo MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph)
     PROF_START(CompileSubGraph);
     if (all_support && run_mode == device::RunMode::kGraphMode &&
         pynative::GraphAdapter::PyNativeEnableTaskSink(func_graph)) {
-      auto actor_info = ge_backend_->CompileGraph(func_graph, device_context);
+      auto actor_info = ge_backend_->CompileGraph(func_graph, device_context, jit_setting_);
       is_ge_backend_ = true;
       MS_LOG(INFO) << "Status record: end compile function graph: " << func_graph->ToString();
       PROF_END(CompileSubGraph);
       PROF_END(compile_backend_graph);
       return actor_info;
     }
-    CheckRunMode(run_mode);
+    CheckRunMode(run_mode, func_graph);
 
     if (NeedCheckMultiTarget(func_graph, ms_execution_mode_)) {
       ProcessNotSupportCnode(func_graph, device_context->GetDeviceType(), mindspore::device::DeviceType::kCPU);
@@ -1524,8 +1535,8 @@ void MindRTBackendBase::CompileGraph(const FuncGraphPtr &func_graph, device::Run
     }
   } else {
     auto kernel_graph = func_graph->cast<KernelGraphPtr>();
-    AddGraphDynamicShapeAttr(kernel_graph);
     MS_EXCEPTION_IF_NULL(kernel_graph);
+    AddGraphDynamicShapeAttr(kernel_graph);
     const auto &session = graph_compiler_->session_ptr();
     MS_EXCEPTION_IF_NULL(session);
     session->SetKernelGraphId(kernel_graph);
@@ -1585,10 +1596,10 @@ void MindRTBackendBase::CompileGraphFromSegment(const GraphSegmentPtr &segment, 
 
     GraphId graph_id;
     if (root_graph_->has_flag(kFlagEnableRunGraphBySingleOp)) {
-      graph_id = graph_compiler_->CompileDynamicGraph(segment, outputs, device_context);
+      graph_id = graph_compiler_->CompileDynamicGraph(segment, outputs, device_context, jit_setting_);
     } else {
-      graph_id = graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), device_context, seg_run_mode,
-                                               ms_execution_mode_ == kPynativeMode);
+      graph_id = graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), device_context, jit_setting_,
+                                               seg_run_mode, ms_execution_mode_ == kPynativeMode);
       auto new_fg = graph_compiler_->Fetch(graph_id);
       MS_EXCEPTION_IF_NULL(new_fg);
       if (new_fg->has_flag(kFlagEnableRunGraphBySingleOp)) {
@@ -2309,10 +2320,10 @@ std::shared_ptr<GraphCompilerInfo> MindRTBackendBase::ConstructGraphCompilerInfo
       context_ptr->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
     strategy = runtime::GraphExecutionStrategy::kPipelineWithExecutionOrder;
   }
-  auto compile_func = [graph_compiler = this->graph_compiler_](
+  auto compile_func = [graph_compiler = this->graph_compiler_, jit_setting = this->jit_setting_](
                         const GraphSegmentPtr &segment, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
                         const DeviceContext *device_context, device::RunMode run_mode) -> KernelGraphPtr {
-    auto graph_id = graph_compiler->CompileGraph(segment, io_nodes, device_context, run_mode, false);
+    auto graph_id = graph_compiler->CompileGraph(segment, io_nodes, device_context, jit_setting, run_mode, false);
     return graph_compiler->Fetch(graph_id);
   };
 

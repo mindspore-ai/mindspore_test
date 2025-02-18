@@ -15,15 +15,46 @@
  */
 
 #include "pipeline/pynative/grad/custom_function.h"
+#include "pipeline/pynative/grad/function_py.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pipeline/pynative/grad/function/func_builder.h"
 #include "pipeline/pynative/pynative_execute.h"
 #include "include/common/utils/python_adapter.h"
+#include "include/common/utils/convert_utils_py.h"
+#include "include/common/utils/tensor_py.h"
 #include "pipeline/pynative/pynative_utils.h"
 
 namespace mindspore {
 namespace pynative {
 namespace autograd {
+namespace {
+// The arguments of backward function are ctx and gradients correspongding to outputs of forward function.
+py::tuple ConstructBackwardArgs(const py::object &ctx, const py::object &py_tensor_grad) {
+  auto num_args = py::isinstance<py::tuple>(py_tensor_grad) ? 1 + py::cast<py::tuple>(py_tensor_grad).size() : 2;
+  py::tuple res(num_args);
+  res[0] = ctx;
+  if (py::isinstance<py::tuple>(py_tensor_grad)) {
+    py::tuple grad_tuple = py::cast<py::tuple>(py_tensor_grad);
+    for (size_t i = 0; i < grad_tuple.size(); i++) {
+      res[i + 1] = grad_tuple[i];
+    }
+  } else {
+    res[1] = py_tensor_grad;
+  }
+  return res;
+}
+
+ValuePtr ValueListToValue(const ValuePtrList &list) {
+  if (list.size() == kSizeZero) {
+    MS_LOG(EXCEPTION) << "Value ptr list should not be empty";
+  }
+  if (list.size() == kSizeOne) {
+    return list[kIndex0];
+  }
+  return std::make_shared<ValueTuple>(list);
+}
+}  // namespace
+
 CustomBackward::~CustomBackward() {
   py::gil_scoped_acquire gil_acquire;
   bprop_fn_ = py::object();
@@ -86,6 +117,77 @@ void CustomBackward::Release() {
   bprop_fn_ = py::none();
   bprop_inputs_ = py::none();
 }
+
+PyBackwardNode::~PyBackwardNode() {
+  py::gil_scoped_acquire gil_acquire;
+  backward_fn_ = py::object();
+  obj_ = py::object();
+}
+
+ValuePtrList PyBackwardNode::CallBackward(const ValuePtrList &grads) {
+  runtime::Pipeline::Get().WaitFrontend();
+  MS_LOG(DEBUG) << "Begin PyBackwardNode CallBackward";
+  // Construct input for backward function.
+  py::gil_scoped_acquire gil_acquire;
+  auto gradients = ValueListToValue(grads);
+  auto ctx = py::cast<FunctionPtr>(obj_);
+  MS_EXCEPTION_IF_NULL(ctx);
+  py::object py_tensor_grad;
+  if (ctx->materialize_grads()) {
+    const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    // Python grad func can not process None, we need to convert None to zero tensor.
+    auto func_builder = FuncBuilder(name_, device_target, nullptr);
+    auto filled_zeros_grad = func_builder.FillZeros(gradients, out_abstract_);
+    py_tensor_grad = CTensorToPyStubNodes(filled_zeros_grad);
+  } else {
+    py_tensor_grad = CTensorToPyStubNodes(gradients);
+  }
+  MS_LOG(DEBUG) << "Args info, grad is tuple " << py::isinstance<py::tuple>(py_tensor_grad) << ", is tensor input size "
+                << ctx->is_tensor_input().size() << "materialize_grads " << ctx->materialize_grads();
+
+  py::tuple fn_args = ConstructBackwardArgs(obj_, py_tensor_grad);
+  // Call python backward function.
+  py::object grads_obj = backward_fn_(*fn_args);
+
+  (void)ensure_obj_tuple(&grads_obj);
+  size_t num_backward_out = (py::cast<py::tuple>(grads_obj)).size();
+  size_t num_forward_in = ctx->is_tensor_input().size();
+  if (num_backward_out != num_forward_in) {
+    MS_LOG(EXCEPTION) << "Function backward return a wrong number of gradients, expect: " << num_forward_in
+                      << "but: " << num_backward_out;
+  }
+
+  for (size_t i = 0; i < num_backward_out; i++) {
+    bool is_tensor = (ctx->is_tensor_input())[i];
+    py::object output = (py::cast<py::tuple>(grads_obj))[i];
+    // The gradient of Input that is not tensor should be none.
+    if (!is_tensor && !py::isinstance<py::none>(output)) {
+      MS_LOG(EXCEPTION) << "Input is not tensor, but gradient is not none, position: " << i
+                        << " type: " << output.get_type();
+    }
+    // The gradient should be either none or tensor.
+    if (!py::isinstance<py::none>(output) && !tensor::IsTensorPy(output) && !IsStubTensor(output)) {
+      MS_LOG(EXCEPTION) << "Gradient should be none or tensor, position: " << i << " type: " << output.get_type();
+    }
+  }
+
+  // Convert python object to tensor.
+  ValuePtrList gradient_values;
+  ConvertPyObjectToCTensor(grads_obj, &gradient_values, true);
+  if (gradient_values.empty()) {
+    MS_LOG(EXCEPTION) << "Custom backward function output is empty!";
+  }
+  auto gradient_tensors = PostProcess(gradient_values);
+  runtime::Pipeline::Get().WaitFrontend();
+  MS_LOG(DEBUG) << "End PyBackwardNode CallBackward";
+  return gradient_tensors;
+}
+
+void PyBackwardNode::Release() {
+  py::gil_scoped_acquire gil_acquire;
+  backward_fn_ = py::object();
+}
+
 }  // namespace autograd
 }  // namespace pynative
 }  // namespace mindspore

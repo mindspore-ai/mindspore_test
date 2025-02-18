@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,9 @@
  */
 
 #include "plugin/device/ascend/kernel/dvm/lazy_fusion_kernel.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/device/ascend/kernel/dvm/lazy_fusion_flags.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "include/backend/debug/profiler/profiling.h"
 #include "runtime/pipeline/pipeline.h"
 #include "utils/file_utils.h"
 
@@ -28,7 +30,59 @@ void *WsAllocCallback(uint64_t size, void *user_data) {
 }
 }  // namespace
 
-LazyFusionKernelAscend::LazyFusionKernelAscend() { kernel_.EagerReset(WsAllocCallback, this); }
+void LazyFusionQueue::Push(const runtime::AsyncTaskPtr &task) {
+  FlushLazyFusion();
+  AsyncRQueue::Push(task);
+}
+
+void LazyFusionQueue::Wait() {
+  FlushLazyFusion();
+  AsyncRQueue::Wait();
+}
+
+LazyFusionManager g_lazy_fusion_manager;
+
+LazyFusionManager::~LazyFusionManager() {
+  while (!pool_.empty()) {
+    auto top = pool_.front();
+    delete top;
+    pool_.pop();
+  }
+}
+
+LazyFusionKernelAscend *LazyFusionManager::Get(const device::DeviceContext *context, size_t stream) {
+  if (current_ != nullptr) {
+    if (current_->stream_id() == stream) {
+      return current_;
+    }
+    current_->Flush();
+  }
+  current_ = NewKernel();
+  current_->Reset(context, stream);
+  current_->set_id(id_.fetch_add(1, std::memory_order_relaxed));
+  return current_;
+}
+
+void LazyFusionManager::Flush() {
+  if (current_ != nullptr) {
+    current_->Flush();
+    current_ = nullptr;
+  }
+}
+
+LazyFusionKernelAscend *LazyFusionManager::NewKernel() {
+  {
+    std::lock_guard<std::mutex> guard(mutex_);
+    if (!pool_.empty()) {
+      auto k = pool_.front();
+      pool_.pop();
+      return k;
+    }
+  }
+  return new LazyFusionKernelAscend();
+}
+
+LazyFusionKernelAscend::LazyFusionKernelAscend() { EagerReset(WsAllocCallback, this); }
 
 LazyFusionKernelAscend::~LazyFusionKernelAscend() {
   for (auto load : inputs_) {
@@ -85,15 +139,15 @@ dvm::NDObject *LazyFusionKernelAscend::Input(const BaseTensorPtr &x, bool enable
       auto &item = cached_shape_.emplace_back(shape.value(), nullptr);
       load->shape = item.first;
     }
-    auto load_op = kernel_.Load(nullptr, &(load->shape), input_type);
-    auto op = cast_to_fp32 ? kernel_.Cast(load_op, dvm::DType::kFloat32) : load_op;
+    auto load_op = dvm::Kernel::Load(nullptr, &(load->shape), input_type);
+    auto op = cast_to_fp32 ? Cast(load_op, dvm::DType::kFloat32) : load_op;
     load->op = load_op;
     load->tensor = x;
     ops_map_[xp] = op;
     return op;
   }
   auto op = iter->second;
-  op = cast_to_fp32 ? kernel_.Cast(op, dvm::DType::kFloat32) : op;
+  op = cast_to_fp32 ? Cast(op, dvm::DType::kFloat32) : op;
   return op;
 }
 
@@ -117,9 +171,9 @@ void LazyFusionKernelAscend::Launch() {
   device_context_->device_res_manager_->BindDeviceToCurrentThread(false);
   auto stream_ptr = device_context_->device_res_manager_->GetStream(stream_id_);
   if (profiler::Profiler::GetInstance(kAscendDevice)->GetEnableFlag()) {
-    kernel_.EagerMsProfLaunch(stream_ptr);
+    EagerMsProfLaunch(stream_ptr);
   } else {
-    kernel_.EagerLaunch(stream_ptr);
+    EagerLaunch(stream_ptr);
   }
   if (LazyFusionFlags::GetInstance().synchronize && !device::ascend::AscendStreamMng::GetInstance().SyncAllStreams()) {
     MS_LOG(EXCEPTION) << "SyncStream failed for dvm kernel";
@@ -141,7 +195,7 @@ void LazyFusionKernelAscend::Flush() {
     return;
   }
   // Async
-  auto task = std::make_shared<runtime::DvmDeviceTask>([this]() {
+  auto task = std::make_shared<runtime::PyBoostDeviceTask>([this]() {
     MS_LOG(INFO) << "Run device task dvm kernel start, kernel id is " << id();
     {
       runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyBoostDeviceTask,
@@ -183,8 +237,8 @@ void LazyFusionKernelAscend::Flush() {
                         : storage_info->storage_offset * GetTypeByte(TypeIdToType(device_address->type_id()));
         auto dev_mem = device_address->GetMutablePtr();
         auto dst_type = TransType(device_address->type_id());
-        kernel_.Store(static_cast<void *>(static_cast<uint8_t *>(dev_mem) + offset),
-                      dst_type != kernel_.GetDType(out.op) ? kernel_.Cast(out.op, dst_type) : out.op);
+        dvm::Kernel::Store(static_cast<void *>(static_cast<uint8_t *>(dev_mem) + offset),
+                           dst_type != GetDType(out.op) ? Cast(out.op, dst_type) : out.op);
         has_store = true;
       }
       if (!has_store) {
@@ -202,15 +256,15 @@ void LazyFusionKernelAscend::Flush() {
         if (LazyFusionFlags::GetInstance().dump_as_text) {
           dump_buf_ << "[lazy_fusion before split] "
                     << "kernel id : " << id() << "\n";
-          dump_buf_ << kernel_.Dump() << "\n";
-          kernel_.EagerCodeGen(reloc_entry_.data(), reloc_entry_.size());
+          dump_buf_ << Dump() << "\n";
+          EagerCodeGen(reloc_entry_.data(), reloc_entry_.size());
           dump_buf_ << "[lazy_fusion after split] "
                     << "kernel id : " << id() << "\n";
-          dump_buf_ << kernel_.Dump() << "\n";
-          dump_buf_ << kernel_.Das() << "\n";
+          dump_buf_ << Dump() << "\n";
+          dump_buf_ << Das() << "\n";
           DumpToFile();
         } else {
-          kernel_.EagerCodeGen(reloc_entry_.data(), reloc_entry_.size());
+          EagerCodeGen(reloc_entry_.data(), reloc_entry_.size());
         }
       }
       // Launch
@@ -219,9 +273,7 @@ void LazyFusionKernelAscend::Flush() {
     MS_LOG(INFO) << "Run device task dvm kernel end, kernel id is " << id();
   });
   runtime::ProfilerAnalyzer::GetInstance().RecordFlowData(task->task_id());
-  runtime::OpExecutor::GetInstance().PushOpRunTask(task);
+  runtime::Pipeline::Get().backend_stage()->runtime::AsyncRQueue::Push(task);  // No flush here
 }
-
-MS_REGISTER_LAZY_FUSION_KERNEL(kAscendDevice, LazyFusionKernelAscend);
 }  // namespace kernel
 }  // namespace mindspore

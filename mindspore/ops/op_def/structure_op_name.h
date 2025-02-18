@@ -49,6 +49,7 @@ constexpr auto kStackInitOpName = "StackInit";
 constexpr auto kStackPopOpName = "StackPop";
 constexpr auto kStackPushOpName = "StackPush";
 constexpr auto kStopGradientOpName = "StopGradient";
+constexpr auto kInplaceStopGradientName = "InplaceStopGradient";
 constexpr auto kMakeSliceOpName = "make_slice";
 constexpr auto kJoinedStrOpName = "JoinedStr";
 }  // namespace mindspore

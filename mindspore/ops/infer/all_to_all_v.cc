@@ -41,6 +41,9 @@
 
 namespace mindspore {
 namespace ops {
+namespace {
+static constexpr size_t kInputNum3 = 3;
+}  // namespace
 MIND_API_OPERATOR_IMPL(AlltoAllV, BaseOperator);
 class AlltoAllVInfer : public abstract::OpInferBase {
  public:
@@ -48,13 +51,24 @@ class AlltoAllVInfer : public abstract::OpInferBase {
                           const std::vector<AbstractBasePtr> &input_args) const override {
     MS_EXCEPTION_IF_NULL(primitive);
     const auto prim_name = primitive->name();
-    (void)CheckAndConvertUtils::CheckInteger("input numbers", SizeToLong(input_args.size()), kEqual, 1, prim_name);
-    MS_EXCEPTION_IF_NULL(input_args[0]);
-    if (!(input_args[0]->isa<abstract::AbstractTensor>())) {
-      MS_LOG(EXCEPTION) << "AlltoAllV input must be tensor.";
+    BaseShapePtr shape;
+    std::vector<int64_t> recv_numel_list;
+    if (input_args.size() == kInputNum3) {
+      (void)CheckAndConvertUtils::CheckInteger("input numbers", SizeToLong(input_args.size()), kEqual, kInputNum3,
+                                               prim_name);
+      auto value = GetArrayValue<int64_t>(input_args[kIndex2]);
+      if (!value.has_value()) {
+        return std::make_shared<abstract::TensorShape>(ShapeVector{abstract::Shape::kShapeDimAny});
+      }
+      if (value.value().HasUnknownValue()) {
+        MS_EXCEPTION(ValueError)
+          << "For primitive[" << prim_name
+          << "], there are unknown values in input2, please handle this case before calling this function.";
+      }
+      recv_numel_list = value.value().ToVector();
+    } else {
+      MS_LOG(EXCEPTION) << "AlltoAllV input numbers must be 3.";
     }
-
-    auto recv_numel_list = GetValue<std::vector<int64_t>>(primitive->GetAttr("recv_numel_list"));
     int64_t output_numel = 0;
     for (size_t i = 0; i < recv_numel_list.size(); i++) {
       if (recv_numel_list[i] < 0) {
@@ -74,16 +88,17 @@ class AlltoAllVInfer : public abstract::OpInferBase {
     const auto prim_name = prim->name();
     auto context_ptr = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context_ptr);
+    MS_EXCEPTION_IF_NULL(input_args[0]);
+    auto x_type = input_args[0]->GetType();
 
+    MS_EXCEPTION_IF_NULL(x_type);
+    if (!x_type->isa<TensorType>()) {
+      MS_EXCEPTION(TypeError) << "For '" << prim_name << "', input0 must be a Tensor, but got: " << x_type->ToString()
+                              << ".";
+    }
     // flag to check different valid types on ascend
     auto is_ascend = (context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice);
 
-    MS_EXCEPTION_IF_NULL(input_args[0]);
-    if (!(input_args[0]->isa<abstract::AbstractTensor>())) {
-      MS_LOG(EXCEPTION) << "AlltoAllV input must be tensor.";
-    }
-
-    auto x_type = input_args[0]->GetType();
     if (!is_ascend) {
       (void)CheckAndConvertUtils::CheckTypeValid("x", x_type, common_valid_types, prim_name);
     } else {
@@ -96,12 +111,17 @@ class AlltoAllVInfer : public abstract::OpInferBase {
                                     const std::vector<AbstractBasePtr> &input_args) const override {
     MS_EXCEPTION_IF_NULL(primitive);
     const auto prim_name = primitive->name();
-    (void)CheckAndConvertUtils::CheckInteger("input numbers", SizeToLong(input_args.size()), kEqual, 1, prim_name);
-
+    if (input_args.size() == kInputNum3) {
+      (void)CheckAndConvertUtils::CheckInteger("input numbers", SizeToLong(input_args.size()), kEqual, kInputNum3,
+                                               prim_name);
+    } else {
+      MS_LOG(EXCEPTION) << "AlltoAllV input numbers must be 3.";
+    }
     auto type = InferType(primitive, input_args);
     auto shape = InferShape(primitive, input_args);
     return abstract::MakeAbstract(shape, type);
   }
+  std::set<int64_t> GetValueDependArgIndices() const override { return {1, 2}; }
 };
 REGISTER_PRIMITIVE_OP_INFER_IMPL(AlltoAllV, prim::kPrimAlltoAllV, AlltoAllVInfer, false);
 }  // namespace ops

@@ -23,7 +23,11 @@
 #include "include/common/debug/dump_proto.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/debug/profiler/profiling.h"
+#include "include/common/utils/parallel_context.h"
 #include "backend/common/pass/erase_visit_attr.h"
+#include "backend/common/pass/communication_op_fusion.h"
+#include "backend/common/pass/concat_outputs_for_all_gather.h"
+#include "backend/common/pass/split_inputs_for_reduce_scatter.h"
 #include "plugin/device/ascend/optimizer/ir_fission/cdist_fission.h"
 #include "plugin/device/ascend/optimizer/ir_fission/tensor_scatter_fission.h"
 #include "plugin/device/ascend/optimizer/ir_fission/adam_weight_decay_fission.h"
@@ -74,26 +78,20 @@
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_elemwise_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/remove_fa_tensor_to_tuple_ops.h"
 #include "utils/phase.h"
-#include "backend/common/graph_kernel/core/graph_kernel_pass_manager.h"
-#include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/batchmatmul_reducescatter_alltoall_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/alltoall_allgather_batch_matmul_fusion.h"
 
 namespace mindspore {
 namespace opt {
-void GetBackendCommonUnifyMindIRPassManager(PassManagerPtr *unify_mindir_pm) {
-  MS_EXCEPTION_IF_NULL(unify_mindir_pm);
-  (*unify_mindir_pm)->AddPass(std::make_shared<RenormSplit>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::ReduceAxisUpdate>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::ClipByNormFission>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::SpaceToBatchNDAttrUpdate>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::BatchToSpaceNDAttrUpdate>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AdamWeightDecayUnifyMindIR>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddDependForAdamW>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<CdistFission>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<CdistGradFission>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::BatchMatMulReduceScatterAllToAllFusion>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::AllToAllAllGatherBatchMatMulFusion>());
+PassManagerPtr GetBackendCommonUnifyMindIRPassManager() {
+  auto pm = std::make_shared<opt::PassManager>("unify_mindir");
+  MS_EXCEPTION_IF_NULL(pm);
+  pm->AddPass(std::make_shared<RenormSplit>());
+  pm->AddPass(std::make_shared<opt::ReduceAxisUpdate>());
+  pm->AddPass(std::make_shared<opt::SpaceToBatchNDAttrUpdate>());
+  pm->AddPass(std::make_shared<opt::BatchToSpaceNDAttrUpdate>());
+  pm->AddPass(std::make_shared<opt::AdamWeightDecayUnifyMindIR>());
+  pm->AddPass(std::make_shared<opt::AddDependForAdamW>());
 
   // Since the SparseSoftmaxCrossEntropyWithLogits operator can only use AICPU and has poor execution performance,
   // it does not take effect for the time being.
@@ -101,78 +99,109 @@ void GetBackendCommonUnifyMindIRPassManager(PassManagerPtr *unify_mindir_pm) {
   MS_EXCEPTION_IF_NULL(ms_context);
   bool graph_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode;
   if (graph_mode) {
-    (*unify_mindir_pm)->AddPass(std::make_shared<opt::GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR>());
-    (*unify_mindir_pm)->AddPass(std::make_shared<opt::GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIRV2>());
-    (*unify_mindir_pm)->AddPass(std::make_shared<opt::SparseSoftmaxCrossEntropyWithLogitsUnifyMindIR>());
+    pm->AddPass(std::make_shared<opt::GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR>());
+    pm->AddPass(std::make_shared<opt::GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIRV2>());
+    pm->AddPass(std::make_shared<opt::SparseSoftmaxCrossEntropyWithLogitsUnifyMindIR>());
   } else {
     // Add PynativeGradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR pass first to avoid the backward loss function
     // from the python frontend matching the pattern defined in
     // PynativeSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR.
     // TODO(hbhu_bin): In mindspore, SparseSoftmaxCrossEntropyWithLogits has different outputs based on the "is_grad"
     // attribute, but it has two outputs in CANN. These pass cann be removed when convert "is_grad" attribute to input.
-    (*unify_mindir_pm)->AddPass(std::make_shared<opt::PynativeGradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIRV2>());
-    (*unify_mindir_pm)->AddPass(std::make_shared<opt::PynativeGradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR>());
-    (*unify_mindir_pm)->AddPass(std::make_shared<opt::PynativeSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR>());
+    pm->AddPass(std::make_shared<opt::PynativeGradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIRV2>());
+    pm->AddPass(std::make_shared<opt::PynativeGradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR>());
+    pm->AddPass(std::make_shared<opt::PynativeSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR>());
   }
 
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::DropoutExtUnifyMindIR1>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::DropoutGradExtUnifyMindIR>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::DropoutUnifyMindIR1>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::DropoutGradUnifyMindIR>());
+  pm->AddPass(std::make_shared<opt::DropoutExtUnifyMindIR1>());
+  pm->AddPass(std::make_shared<opt::DropoutGradExtUnifyMindIR>());
+  pm->AddPass(std::make_shared<opt::DropoutUnifyMindIR1>());
+  pm->AddPass(std::make_shared<opt::DropoutGradUnifyMindIR>());
   // AllToAll & AlltoAllV
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::NeighborExchangeUnifyMindIR>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::NeighborExchangeV2UnifyMindIR>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::NeighborExchangeV2GradUnifyMindIR>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AllToAllUnifyMindIR>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AlltoAllVUnifyMindIR>());
+  pm->AddPass(std::make_shared<opt::NeighborExchangeUnifyMindIR>());
+  pm->AddPass(std::make_shared<opt::NeighborExchangeV2UnifyMindIR>());
+  pm->AddPass(std::make_shared<opt::NeighborExchangeV2GradUnifyMindIR>());
+  pm->AddPass(std::make_shared<opt::AllToAllUnifyMindIR>());
+  pm->AddPass(std::make_shared<opt::AlltoAllVUnifyMindIR>());
   // batchnorm
-  (*unify_mindir_pm)->AddPass(std::make_shared<BnSplit>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::BatchNormGradUnifyMindIR>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<BnGradSplit>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<BatchNormGrad2BNInferGrad>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<BatchNormGradInferFission>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<BatchNorm2BNInfer>());
+  pm->AddPass(std::make_shared<BnSplit>());
+  pm->AddPass(std::make_shared<opt::BatchNormGradUnifyMindIR>());
+  pm->AddPass(std::make_shared<BnGradSplit>());
+  pm->AddPass(std::make_shared<BatchNormGrad2BNInferGrad>());
+  pm->AddPass(std::make_shared<BatchNorm2BNInfer>());
 
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::LambFissionGe>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AdjustPrintForGe>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::GetNextForGE>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::SyncBnSplit>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::SyncBnGradSplit>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::AdaptiveMaxPool2DGeFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AvgPoolGradForGE>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::MatmulReduceScatterFusion>());
-  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::AllGatherMatmulFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddAttrToDump>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AscendMindIROpAdapter>());
+  pm->AddPass(std::make_shared<opt::AdjustPrintForGe>());
+  pm->AddPass(std::make_shared<opt::GetNextForGE>());
+  pm->AddPass(std::make_shared<opt::SyncBnSplit>());
+  pm->AddPass(std::make_shared<opt::SyncBnGradSplit>());
+  pm->AddPass(std::make_shared<opt::AvgPoolGradForGE>());
+  pm->AddPass(std::make_shared<opt::AddAttrToDump>());
+  pm->AddPass(std::make_shared<opt::AscendMindIROpAdapter>());
+  return pm;
 }
 
 PassManagerPtr GetBackendFusionGroupPassManager() {
-  auto pm = std::make_shared<PassManager>("unify_mindir_2");
+  auto pm = std::make_shared<PassManager>("backend_fusion");
+  MS_EXCEPTION_IF_NULL(pm);
+  pm->AddFusionPass(std::make_shared<opt::ClipByNormFission>());
+  pm->AddFusionPass(std::make_shared<CdistFission>());
+  pm->AddFusionPass(std::make_shared<CdistGradFission>());
+  pm->AddFusionPass(std::make_shared<opt::BatchMatMulReduceScatterAllToAllFusion>());
+  pm->AddFusionPass(std::make_shared<opt::AllToAllAllGatherBatchMatMulFusion>());
+  pm->AddFusionPass(std::make_shared<BatchNormGradInferFission>());
+  pm->AddFusionPass(std::make_shared<opt::LambFissionGe>());
+  pm->AddFusionPass(std::make_shared<opt::AdaptiveMaxPool2DGeFusion>());
+  pm->AddFusionPass(std::make_shared<opt::MatmulReduceScatterFusion>());
+  pm->AddFusionPass(std::make_shared<opt::AllGatherMatmulFusion>());
   pm->AddFusionPass(std::make_shared<opt::FlashAttentionFusionV1>());
   pm->AddFusionPass(std::make_shared<opt::FlashAttentionFusionV2>());
   pm->AddFusionPass(std::make_shared<opt::QuantBatchMatmulAllReduceFusion>());
   pm->AddFusionPass(std::make_shared<opt::MatMulAllReduceFusion>());
-  pm->AddFusionPass(std::make_shared<opt::MatMulAllReduceAddRmsNormFusion>());
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (ms_context->IsEnableInferBoost()) {
+    pm->AddFusionPass(std::make_shared<opt::MatMulAllReduceAddRmsNormFusion>());
 
 #ifdef ENABLE_INTERNAL_KERNELS
-  pm->AddFusionPass(std::make_shared<opt::AddLayernormFusion>());
-  pm->AddFusionPass(std::make_shared<opt::AddLayernormV3Fusion>());
-  pm->AddFusionPass(std::make_shared<opt::AddLayernormExtFusion>());
-  pm->AddFusionPass(std::make_shared<opt::QbmmAddFusion>());
-  pm->AddFusionPass(std::make_shared<opt::InferenceSwiGLUFusion>());
-  pm->AddFusionPass(std::make_shared<opt::InferenceMatmulSplitFusion>());
-  pm->AddFusionPass(std::make_shared<opt::AddRmsNormDynamicQuantFusion>());
-  pm->AddFusionPass(std::make_shared<opt::ShapeReshapeFusion>());
-  pm->AddFusionPass(std::make_shared<opt::AddRmsNormQuantFusion>());
-  pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastQuantFusion>());
-  pm->AddFusionPass(std::make_shared<opt::RmsNormQuantFusion>());
-  pm->AddFusionPass(std::make_shared<opt::AddRmsNormFusion>());
-  pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastFusion>());
-  pm->AddFusionPass(std::make_shared<opt::SplitConcatFusion>());
-  pm->AddFusionPass(std::make_shared<opt::MatmulElemFusion>());
-  pm->AddFusionPass(std::make_shared<opt::QbmmAllReduceAddFusion>());
-  pm->AddFusionPass(std::make_shared<opt::RemoveFATensorToTupleOps>());
+    pm->AddFusionPass(std::make_shared<opt::AddLayernormFusion>());
+    pm->AddFusionPass(std::make_shared<opt::AddLayernormV3Fusion>());
+    pm->AddFusionPass(std::make_shared<opt::AddLayernormExtFusion>());
+    pm->AddFusionPass(std::make_shared<opt::QbmmAddFusion>());
+    pm->AddFusionPass(std::make_shared<opt::InferenceSwiGLUFusion>());
+    pm->AddFusionPass(std::make_shared<opt::InferenceMatmulSplitFusion>());
+    pm->AddFusionPass(std::make_shared<opt::AddRmsNormDynamicQuantFusion>());
+    pm->AddFusionPass(std::make_shared<opt::ShapeReshapeFusion>());
+    pm->AddFusionPass(std::make_shared<opt::AddRmsNormQuantFusion>());
+    pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastQuantFusion>());
+    pm->AddFusionPass(std::make_shared<opt::RmsNormQuantFusion>());
+    pm->AddFusionPass(std::make_shared<opt::AddRmsNormFusion>());
+    pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastFusion>());
+    pm->AddFusionPass(std::make_shared<opt::SplitConcatFusion>());
+    pm->AddFusionPass(std::make_shared<opt::MatmulElemFusion>());
+    pm->AddFusionPass(std::make_shared<opt::QbmmAllReduceAddFusion>());
+    pm->AddFusionPass(std::make_shared<opt::RemoveFATensorToTupleOps>());
 #endif  // ENABLE_INTERNAL_KERNELS
+  }
+
+  if (ms_context->IsKByKExecutorMode()) {
+    // Do communication op fusion before InsertTensorMoveForCommunication pass.
+    // So these passes are before kernel select process, no need to generate kernel build info in them.
+    if (parallel::ParallelContext::GetInstance()->enable_all_reduce_fusion()) {
+      MS_LOG(INFO) << "Parallel comm_fusion of AllReduce is enabled.";
+      pm->AddFusionPass(std::make_shared<opt::AllReduceFusion>());
+    }
+    if (parallel::ParallelContext::GetInstance()->enable_all_gather_fusion()) {
+      MS_LOG(INFO) << "Parallel comm_fusion of AllGather is enabled.";
+      pm->AddFusionPass(std::make_shared<opt::AllGatherFusion>());
+      pm->AddFusionPass(std::make_shared<opt::ConcatOutputsForAllGather>());
+    }
+    if (parallel::ParallelContext::GetInstance()->enable_reduce_scatter_fusion()) {
+      MS_LOG(INFO) << "Parallel comm_fusion of ReduceScatter is enabled.";
+      pm->AddFusionPass(std::make_shared<opt::ReduceScatterFusion>());
+      pm->AddFusionPass(std::make_shared<opt::SplitInputsForReduceScatter>());
+    }
+  }
   return pm;
 }
 

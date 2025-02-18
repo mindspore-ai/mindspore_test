@@ -106,7 +106,7 @@ class BaseModel:
             _inputs.append(element._tensor)
         if outputs is not None:
             if not isinstance(outputs, list):
-                raise TypeError("inputs must be list, but got {}.".format(type(inputs)))
+                raise TypeError("outputs must be list, but got {}.".format(type(outputs)))
             for i, element in enumerate(outputs):
                 if not isinstance(element, Tensor):
                     raise TypeError(f"outputs element must be Tensor, but got "

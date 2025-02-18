@@ -300,6 +300,19 @@ class PrimInstanceEvaluator : public TransitionPrimEvaluator {
   AnfNodeWeakPtr instance_node_;
 };
 
+class PrimitiveToMetaEvaluator : public TransitionPrimEvaluator {
+ public:
+  explicit PrimitiveToMetaEvaluator(const PrimitivePtr primitive)
+      : TransitionPrimEvaluator("PrimitiveToMetaEvaluator"), prim_(primitive) {}
+  ~PrimitiveToMetaEvaluator() override = default;
+  MS_DECLARE_PARENT(PrimitiveToMetaEvaluator, TransitionPrimEvaluator)
+  EvalResultPtr EvalPrim(const AnalysisEnginePtr &, const AbstractBasePtrList &args_abs_list, const ConfigPtr &,
+                         const AnfNodeConfigPtr &out_conf) override;
+
+ private:
+  PrimitivePtr prim_;
+};
+
 class FunctionalEvaluator : public TransitionPrimEvaluator {
  public:
   explicit FunctionalEvaluator(const std::string &name, bool is_method)

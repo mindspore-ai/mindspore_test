@@ -18,6 +18,7 @@ import numpy as np
 
 import mindspore as ms
 from mindspore import nn
+from mindspore import dtype as mstype
 from mindspore import Tensor, mutable, jit, ops
 from mindspore.ops import composite as C
 from mindspore.ops import functional as F
@@ -1161,3 +1162,29 @@ def test_fallback_setitem_meta_dict():
     net = InnerClass(input_dict)
     ret = net()
     assert ret == {'Name': 'a', 'Age': 7, 'country': 'china'}
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='unessential')
+def test_pow_error_tuple_input():
+    """
+    Feature: power
+    Description: test pow with tuple
+    Expectation: throw RuntimeError
+    """
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.relu = nn.ReLU()
+
+        def construct(self, input_x):
+            input_x[:, ..., :, [0, 1, 2, 3, 4], True] **= (2, 2, 2, 2, 2)
+            out = self.relu(input_x)
+            return out
+
+    net = Net()
+    input_tensor = Tensor(np.arange(2 * 3 * 4 * 5).reshape(2, 3, 4, 5), mstype.float16)
+    with pytest.raises(TypeError) as err:
+        net(input_tensor)
+    assert "Failed calling pow with" in str(err.value)

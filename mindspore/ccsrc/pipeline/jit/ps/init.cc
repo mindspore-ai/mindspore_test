@@ -20,6 +20,7 @@
 #include <string>
 #include "kernel/oplib/oplib.h"
 #include "pipeline/jit/ps/pipeline.h"
+#include "pipeline/jit/ps/pipeline_jit.h"
 #include "frontend/operator/composite/composite.h"
 #include "frontend/operator/composite/functional_overload.h"
 #include "pipeline/pynative/pynative_execute.h"
@@ -57,9 +58,14 @@
 #include "pipeline/jit/pi/external.h"
 #include "include/common/np_dtype/np_dtypes.h"
 #include "include/common/amp/amp.h"
+#include "pipeline/jit/trace/trace_recorder.h"
+#ifdef _WIN32
+#include "kernel/cpu/utils/cpu_utils.h"
+#endif
 
 namespace py = pybind11;
 using GraphExecutorPy = mindspore::pipeline::GraphExecutorPy;
+using JitExecutorPy = mindspore::pipeline::JitExecutorPy;
 using Pipeline = mindspore::pipeline::Pipeline;
 using PrimitivePy = mindspore::PrimitivePy;
 using MetaFuncGraph = mindspore::MetaFuncGraph;
@@ -163,6 +169,7 @@ void RegModule(py::module *m) {
   RegCell(m);
   RegMetaFuncGraph(m);
   RegFuncGraph(m);
+  mindspore::trace::RegTraceRecorderPy(m);
   RegUpdateFuncGraphHyperParams(m);
   RegParamInfo(m);
   RegPrimitive(m);
@@ -170,11 +177,13 @@ void RegModule(py::module *m) {
   RegFunctional(m);
   RegSignatureEnumRW(m);
   RegRandomSeededGenerator(m);
+  RegPreJit(m);
   mindspore::tensor::RegMetaTensor(m);
   mindspore::tensor::RegCSRTensor(m);
   mindspore::tensor::RegCOOTensor(m);
   mindspore::tensor::RegRowTensor(m);
   mindspore::tensor::RegMapTensor(m);
+  mindspore::tensor::RegTensorPy(m);
   RegValues(m);
   mindspore::initializer::RegRandomNormal(m);
   RegMsContext(m);
@@ -185,6 +194,7 @@ void RegModule(py::module *m) {
   RegAmpModule(m);
   RegStress(m);
   RegSendRecv(m);
+  RegResetParams(m);
   RegCleanTdtChannel(m);
   mindspore::dump::RegDumpControl(m);
   RegTFT(m);
@@ -200,7 +210,7 @@ void RegModule(py::module *m) {
   mindspore::pynative::RegisterPyBoostFunction(m);
   mindspore::pynative::RegisterCustomizeFunction(m);
   mindspore::pynative::RegisterFunctional(m);
-  mindspore::kernel::pyboost::RegDirectOps(m);
+  mindspore::pynative::RegDirectOps(m);
   mindspore::pijit::RegPIJitInterface(m);
   mindspore::prim::RegCompositeOpsGroup(m);
   mindspore::profiler::RegProfilerManager(m);
@@ -224,6 +234,10 @@ void RegModuleHelper(py::module *m) {
 
 // Interface with python
 PYBIND11_MODULE(_c_expression, m) {
+#ifdef _WIN32
+  // Use dummy function to force link to mindspore_ops_host on windows
+  mindspore::kernel::ForceLinkOpsHost();
+#endif
   // The OMP_NUM_THREADS has no effect when set in backend, so set it here in advance.
   mindspore::common::SetOMPThreadNum();
 
@@ -243,14 +257,11 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("get_func_graph_proto", &GraphExecutorPy::GetFuncGraphProto, py::arg("phase") = py::str(""),
          py::arg("type") = py::str("onnx_ir"), py::arg("incremental") = py::bool_(false),
          "Get graph proto string by specifying ir type.")
-    .def("get_obfuscate_func_graph_proto", &GraphExecutorPy::GetObfuscateFuncGraphProto, py::arg("phase") = py::str(""),
-         py::arg("incremental") = py::bool_(false), py::arg("obf_ratio") = py::float_(1.0),
-         py::arg("branch_control_input") = py::int_(0), "Get graph proto of dynamic-obfuscated model.")
     .def("get_params", &GraphExecutorPy::GetParams, py::arg("phase") = py::str(""), "Get Parameters from graph")
     .def("get_random_status", &GraphExecutorPy::GetRandomStatus, py::arg("phase") = py::str(""),
          "Get random status from graph")
     .def("compile", &GraphExecutorPy::Compile, py::arg("obj"), py::arg("args"), py::arg("kwargs"),
-         py::arg("phase") = py::str(""), py::arg("use_vm") = py::bool_(false), "Compile obj by executor.")
+         py::arg("phase") = py::str(""), "Compile obj by executor.")
     .def("updata_param_node_default_input", &GraphExecutorPy::UpdataParamNodeDefaultInput, py::arg("phase"),
          py::arg("params"), "Fetch the inputs of Conv or Matmul for quant export.")
     .def("get_parameter_layout", &GraphExecutorPy::GetParameterLayout, py::arg("phase") = py::str("train"),
@@ -302,6 +313,38 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("set_max_call_depth", &GraphExecutorPy::set_max_call_depth, py::arg("max_call_depth") = py::int_(1000),
          "Get the running passes.");
 
+  MS_LOG(INFO) << "Start JitExecutorPy...";
+  (void)py::class_<JitExecutorPy, std::shared_ptr<JitExecutorPy>>(m, "JitExecutor_")
+    .def_static("get_instance", &JitExecutorPy::GetInstance, "Executor get_instance.")
+    .def("__call__", &JitExecutorPy::Run, py::arg("args"), py::arg("phase") = py::str(""), "Executor run function.")
+    .def("del_net_res", &JitExecutorPy::DelNetRes, py::arg("obj"), py::arg("network_id") = py::set(),
+         "Delete network resource.")
+    .def("compile", &JitExecutorPy::Compile, py::arg("obj"), py::arg("args"), py::arg("kwargs"),
+         py::arg("phase") = py::str(""), "Compile obj by executor.")
+    .def("has_compiled", &JitExecutorPy::HasCompiled, py::arg("phase") = py::str(""),
+         "Get if the cell or function has been compiled.")
+    .def("set_enable_tuple_broaden", &JitExecutorPy::set_enable_tuple_broaden,
+         py::arg("enable_tuple_broaden") = py::bool_(false), "Set tuple broaden enable.")
+    .def("generate_arguments_key", &JitExecutorPy::GenerateArgumentsKey, "Generate unique key of argument.")
+    .def("clear_compile_arguments_resource", &JitExecutorPy::ClearCompileArgumentsResource,
+         "Clear resource when phase cached.")
+    .def("get_params", &JitExecutorPy::GetParams, py::arg("phase") = py::str(""), "Get Parameters from graph")
+    .def("set_jit_config", &JitExecutorPy::SetJitConfig, py::arg("jit_config") = py::dict(), "Set the jit config.")
+    .def("set_queue_name", &JitExecutorPy::set_queue_name, py::arg("queue_name") = py::str(""),
+         "Set queue name for the graph loaded from compile cache.")
+    .def("get_queue_name", &JitExecutorPy::get_queue_name,
+         "Get cached queue name for the graph loaded from compile cache.")
+    .def("set_compile_cache_dep_files", &JitExecutorPy::set_compile_cache_dep_files,
+         py::arg("compile_cache_dep_files") = py::list(), "Set the compilation cache dependent files.")
+    .def("set_weights_values", &JitExecutorPy::set_weights_values, py::arg("weights") = py::dict(),
+         "Set values of weights.")
+    .def("check_argument_consistency", &JitExecutorPy::CheckArgumentsConsistency, "Check equal of arguments.")
+    .def("get_func_graph_proto", &JitExecutorPy::GetFuncGraphProto, py::arg("phase") = py::str(""),
+         py::arg("type") = py::str("onnx_ir"), py::arg("incremental") = py::bool_(false),
+         "Get graph proto string by specifying ir type.");
+
+  (void)m.def("disable_multi_thread", &mindspore::runtime::Pipeline::DisableMultiThreadAfterFork,
+              "Disable multi thread");
   (void)m.def("reset_op_id", &mindspore::pipeline::ResetOpId, "Reset Operator Id");
   (void)m.def("reset_op_id_with_offset", &mindspore::pipeline::ResetOpIdWithOffset, "Reset Operator Id With Offset");
   (void)m.def("init_hccl", &mindspore::pipeline::InitHccl, "Init Hccl");
@@ -316,16 +359,12 @@ PYBIND11_MODULE(_c_expression, m) {
   (void)m.def("init_pipeline", &mindspore::pipeline::InitPipeline, "Init Pipeline.");
   (void)m.def("load_mindir", &mindspore::pipeline::LoadMindIR, py::arg("file_name"), py::arg("dec_key") = nullptr,
               py::arg("key_len") = py::int_(0), py::arg("dec_mode") = py::str("AES-GCM"),
-              py::arg("decrypt") = py::none(), py::arg("obfuscated") = py::bool_(false), "Load model as Graph.");
+              py::arg("decrypt") = py::none(), "Load model as Graph.");
   (void)m.def("split_mindir", &mindspore::pipeline::SplitMindIR, py::arg("file_name"),
               "Split single mindir to distributed mindir");
   (void)m.def("split_dynamic_mindir", &mindspore::pipeline::SplitDynamicMindIR, py::arg("file_name"),
               py::arg("device_num") = py::int_(8), py::arg("rank_id") = py::int_(0), py::arg("sapp") = py::bool_(true),
               "Split single mindir to distributed mindir");
-  (void)m.def("dynamic_obfuscate_mindir", &mindspore::pipeline::DynamicObfuscateMindIR, py::arg("file_name"),
-              py::arg("obf_ratio"), py::arg("branch_control_input") = py::int_(0), py::arg("dec_key") = nullptr,
-              py::arg("key_len") = py::int_(0), py::arg("dec_mode") = py::str("AES-GCM"),
-              "Obfuscate a mindir model by dynamic obfuscation.");
   (void)m.def("init_cluster", &mindspore::distributed::Initialize, "Init Cluster");
   (void)m.def("set_cluster_exit_with_exception", &mindspore::distributed::set_cluster_exit_with_exception,
               "Set this process exits with exception.");

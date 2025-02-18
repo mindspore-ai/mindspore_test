@@ -47,7 +47,7 @@ ShapeArray AdaptiveAvgPool1DFuncImpl::InferShape(const PrimitivePtr &primitive,
   }
 
   auto &output_size_info_ptr = input_infos[kInputIndex1];
-  auto output_size_opt = output_size_info_ptr->GetScalarValue<int64_t>();
+  auto output_size_opt = output_size_info_ptr->GetArrayValue<int64_t>();
   const int64_t input_num_dims = SizeToLong(x_shape.size());
   if (!output_size_opt.has_value()) {
     if (input_num_dims == kInputNumDims2) {
@@ -58,8 +58,15 @@ ShapeArray AdaptiveAvgPool1DFuncImpl::InferShape(const PrimitivePtr &primitive,
       return {dyn_output};
     }
   }
-
-  x_shape[input_num_dims - 1] = output_size_opt.value();
+  auto output_size_array_value = output_size_opt.value();
+  if (output_size_array_value.IsValueUnknown(kIndex0)) {
+    return {x_shape};
+  }
+  if (output_size_array_value.size() != 1) {
+    MS_EXCEPTION(ValueError) << "For Primitive[AdaptiveAvgPool1d], the length of 'output_size' must be 1, but got"
+                             << output_size_array_value.size() << "!";
+  }
+  x_shape[input_num_dims - 1] = static_cast<int64_t>(output_size_array_value[kIndex0]);
   return {x_shape};
 }
 

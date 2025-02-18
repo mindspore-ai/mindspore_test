@@ -26,7 +26,7 @@ mindspore.mint.sub
           `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ 的Tensor。
 
     关键字参数：
-        - **alpha** (number.Number) - 应用于 `other` 的缩放因子，默认值为 ``1``。
+        - **alpha** (number.Number，可选) - 应用于 `other` 的缩放因子，默认值为 ``1``。
 
     返回：
         Tensor，其shape与输入 `input`、 `other` 广播后的shape相同，

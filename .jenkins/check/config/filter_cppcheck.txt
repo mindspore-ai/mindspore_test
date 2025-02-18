@@ -82,6 +82,15 @@
 "mindspore/mindspore/ops/kernel/cpu/arithmetic_self_cpu_kernel.cc"                        "duplicateExpression"
 "mindspore/mindspore/ccsrc/pybind_api/np_dtype/np_dtypes.cc"                                              "knownConditionTrueFalse"
 "mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/debug_actor.cc"                              "unreadVariable"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_base_symbol.cc"  "unknownMacro"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_mdl_symbol.cc"  "unknownMacro"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_op_symbol.cc"  "unknownMacro"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_prof_symbol.cc"  "unknownMacro"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_rt_allocator_symbol.cc"  "unknownMacro"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.cc"  "unknownMacro"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_tdt_symbol.cc"  "unknownMacro"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/symbol_utils.cc"  "unknownMacro"
+"mindspore/ccsrc/plugin/res_manager/ascend/op_adapter/op_declare/image_ops_declare.cc"  "unknownMacro"
 
 # MindData
 "mindspore/mindspore/ccsrc/minddata/dataset/engine/dataset_iterator.cc"                               "useStlAlgorithm"

@@ -19,7 +19,7 @@
 namespace mindspore {
 namespace tensor {
 
-void RegTensorFunc(py::class_<Tensor, BaseTensor, std::shared_ptr<Tensor>> *tensor_class) {
+void RegTensorFunc(py::class_<TensorPy, std::shared_ptr<TensorPy>> *tensor_class) {
     ${func_def_body}
 }
 }  // namespace tensor

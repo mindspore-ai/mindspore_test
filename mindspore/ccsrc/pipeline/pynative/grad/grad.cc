@@ -30,7 +30,7 @@
 #include "pipeline/pynative/grad/ir/ir_grad.h"
 #include "pipeline/pynative/pynative_utils.h"
 #include "pipeline/pynative/grad/grad_utils.h"
-#include "pipeline/jit/ps/pipeline.h"
+#include "pipeline/jit/ps/pipeline_jit.h"
 #include "ir/cell.h"
 #include "ir/func_graph_cloner.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
@@ -42,12 +42,15 @@
 #include "pipeline/jit/ps/pass.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "frontend/optimizer/fallback_rewriter.h"
-#include "runtime/pynative/op_function/pyboost_grad_functions.h"
+#include "mindspore/ccsrc/pyboost/grad_functions/pyboost_grad_functions.h"
 #include "runtime/pynative/op_executor.h"
 #include "pipeline/pynative/grad/custom_function.h"
 #include "availability/silent_check/silent_check.h"
 #include "utils/log_adapter.h"
-#include "runtime/pynative/op_function/value_converter.h"
+#include "include/common/utils/tensor_py.h"
+#include "backend/graph_compiler/backend.h"
+#include "mindspore/ccsrc/pyboost/grad_functions/value_converter.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 
 namespace mindspore {
 namespace pynative {
@@ -399,10 +402,10 @@ void SetCustomBpropInputs(const py::object &obj, autograd::CustomContext *contex
       auto weights_tuple = py::cast<py::tuple>(weights);
       context->weight_size = weights_tuple.size();
       for (size_t i = 0; i < weights_tuple.size(); ++i) {
-        if (!py::isinstance<tensor::Tensor>(weights_tuple[i])) {
+        if (!tensor::IsTensorPy(weights_tuple[i])) {
           MS_LOG(EXCEPTION) << "For cell bprop, element of internal params should be tensor type!";
         }
-        auto tensor = weights_tuple[i].cast<tensor::TensorPtr>();
+        auto tensor = tensor::ConvertToTensor(weights_tuple[i]);
         (void)context->inputs.emplace_back(tensor);
         (void)context->input_value_grad_type.emplace_back(
           PyNativeAlgo::AutoGradUtil::SetValueGradInfo(tensor, InputType::kConstant));
@@ -518,6 +521,16 @@ void GradExecutor::Init() {
 #endif
   init_ = true;
   config_no_graph_ = (common::GetEnv("MS_PYNATIVE_CONFIG_STATIC_SHAPE") != "1");
+
+  compile::PyBoostAdapter::SetIsPyBoostRegistered([](const std::string &device_target, const std::string &op_name) {
+    return runtime::PyBoostOpExecute::GetInstance().IsPyBoostOpRegistered(op_name) &&
+           (kernel::pyboost::PyBoostUtils::IsKernelModRegistered(device_target, op_name) ||
+            kernel::pyboost::PyBoostUtils::IsPyBoostCustomRegistered(device_target, op_name));
+  });
+
+  compile::PyBoostAdapter::SetRunPyBoostCallFunc([](runtime::OpRunnerInfo *op_runner_info, VectorRef *op_outputs) {
+    runtime::PyBoostOpExecute::GetInstance().RunPyBoostCall(op_runner_info, op_outputs);
+  });
 }
 
 TopCellInfoPtr GradExecutor::PopTopCellStack() {
@@ -2322,7 +2335,7 @@ void GradExecutor::SetBpropGraphJitLevel(const py::object &obj) const {
     MS_LOG(EXCEPTION) << "JitConfig only support dict!";
   }
   auto jit_config_dict = jit_config.cast<py::dict>();
-  auto graph_executor = pipeline::GraphExecutorPy::GetInstance();
+  pipeline::ExecutorPyPtr graph_executor = pipeline::GetExecutor();
   MS_EXCEPTION_IF_NULL(graph_executor);
   graph_executor->SetJitConfig(jit_config_dict);
 }

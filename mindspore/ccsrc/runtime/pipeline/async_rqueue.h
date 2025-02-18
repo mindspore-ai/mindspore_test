@@ -56,12 +56,12 @@ class BACKEND_EXPORT AsyncRQueue {
   virtual ~AsyncRQueue();
 
   // Add task to the end of the queue.
-  void Push(const AsyncTaskPtr &task);
+  virtual void Push(const AsyncTaskPtr &task);
 
   bool CanPush() const;
 
   // Wait for all async task finish executing.
-  void Wait();
+  virtual void Wait();
 
   // Check if the queue is empty.
   bool Empty();
@@ -85,6 +85,8 @@ class BACKEND_EXPORT AsyncRQueue {
 
   void SetSpin(bool spin);
 
+  void DisableMultiThread() { disable_multi_thread_ = true; }
+
  protected:
   void WorkerLoop();
   void SetThreadName() const;
@@ -101,6 +103,8 @@ class BACKEND_EXPORT AsyncRQueue {
   void BindCoreForThread();
 
   RingQueue<AsyncTaskPtr, kQueueCapacity> tasks_queue_;
+
+  bool disable_multi_thread_{false};
 
   std::map<std::string, int> thread_to_core_idx = {
     {"frontend_queue", 0}, {"backend_queue", 1}, {"launch_queue", 2}, {"bprop_queue", 3}};

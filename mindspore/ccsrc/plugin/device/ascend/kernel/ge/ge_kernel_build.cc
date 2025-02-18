@@ -45,7 +45,7 @@ KernelModPtr GeOpBuild(const AnfNodePtr &anf_node) {
   const auto &device_context =
     device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
   MS_EXCEPTION_IF_NULL(device_context);
-  auto graph_executor = dynamic_cast<device::ascend::GeGraphExecutor *>(device_context->graph_executor_.get());
+  auto graph_executor = dynamic_cast<backend::ge_backend::GeGraphExecutor *>(device_context->graph_executor_.get());
   MS_EXCEPTION_IF_NULL(graph_executor);
 
   if (!common::AnfAlgo::CheckPrimitiveType(anf_node, prim::kPrimGEGraphOp)) {

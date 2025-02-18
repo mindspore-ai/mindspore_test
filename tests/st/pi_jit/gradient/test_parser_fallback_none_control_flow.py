@@ -28,7 +28,7 @@ class NoneNet(nn.Cell):
         super().__init__()
         self.add = ops.Add()
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def func(self, z):
         if z == 0:
             out = None

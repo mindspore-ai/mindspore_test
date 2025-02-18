@@ -220,7 +220,7 @@ void BaseFuncGraphEvaluator::EnterStackFrame(const AnalysisEnginePtr &engine, co
   // Don't check it if the user set no_recursive flag.
   IncreaseFunctionCallDepth();
   IncreaseStackFrameDepth();
-  const auto &top_graph = parse::Parser::GetTopFuncGraph();
+  const auto &top_graph = engine->top_func_graph();
   bool no_recursive = (top_graph == nullptr ? false : top_graph->has_flag(FUNC_GRAPH_FLAG_NO_RECURSIVE));
   const uint32_t max_depth = GetMaxCallDepth();
   if (!no_recursive && FunctionCallDepth() > max_depth) {
@@ -383,7 +383,7 @@ EvalResultPtr BaseFuncGraphEvaluator::Eval(AnalysisEnginePtr engine, const Abstr
   // Increase & Check the func graph call depth.
   // Don't check it if the user set no_recursive flag.
   IncreaseFunctionCallDepth();
-  const auto &top_graph = parse::Parser::GetTopFuncGraph();
+  const auto &top_graph = engine->top_func_graph();
   bool no_recursive = (top_graph == nullptr ? false : top_graph->has_flag(FUNC_GRAPH_FLAG_NO_RECURSIVE));
   const uint32_t max_depth = GetMaxCallDepth();
   if (!no_recursive && FunctionCallDepth() > max_depth) {
@@ -578,8 +578,9 @@ FuncGraphPtr FuncGraphEvaluator::GetFuncGraph(AnalysisEnginePtr engine, const Ab
   }
 
   // For the top graph, if it is replaced by generated graph, update the top graph to the new one.
-  if (parse::Parser::GetTopFuncGraph() == func_graph()) {
+  if (engine->top_func_graph() == func_graph()) {
     if (res != func_graph()) {
+      engine->set_top_func_graph(res);
       parse::Parser::UpdateTopFuncGraph(res);
     }
   }

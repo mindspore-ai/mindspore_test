@@ -32,46 +32,6 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
-class ErrorManagerAdapter {
- public:
-  ErrorManagerAdapter() = default;
-  ~ErrorManagerAdapter() = default;
-  static bool Init();
-  static std::string GetErrorMessage(bool add_title = false);
-
- private:
-  static void MessageHandler(std::ostringstream *oss);
-
- private:
-  static std::mutex initialized_mutex_;
-  static bool initialized_;
-};
-
-std::string GetErrorMsg(uint32_t rt_error_code);
-
-void *callback_thread_func(void *data);
-
-// Callback thread for ascend streams.
-struct CallbackThread {
-  ~CallbackThread() { cancel(); }
-
-  // pthread_cancel may cause bug now, so just set flag to false.
-  void cancel() {
-    if (flag_.load()) {
-      flag_.store(false);
-    }
-  }
-
-  int create() {
-    flag_.store(true);
-    return pthread_create(&thread_, nullptr, &callback_thread_func, this);
-  }
-
-  pthread_t thread_;
-  std::atomic_bool flag_{true};
-  int32_t default_timeout_{500};
-};
-using CallbackThreadPtr = std::shared_ptr<CallbackThread>;
 
 bool EnableLccl();
 

@@ -148,6 +148,7 @@ Tensor
     mindspore.mint.log2
     mindspore.mint.log10
     mindspore.mint.logaddexp
+    mindspore.mint.logaddexp2
     mindspore.mint.logical_and
     mindspore.mint.logical_not
     mindspore.mint.logical_or
@@ -279,6 +280,7 @@ BLAS和LAPACK运算
     mindspore.mint.repeat_interleave
     mindspore.mint.searchsorted
     mindspore.mint.tril
+    mindspore.mint.triangular_solve
 
 mindspore.mint.nn
 ------------------
@@ -387,7 +389,9 @@ Dropout层
     mindspore.mint.nn.AdaptiveAvgPool1d
     mindspore.mint.nn.AdaptiveAvgPool2d
     mindspore.mint.nn.AdaptiveAvgPool3d
+    mindspore.mint.nn.AdaptiveMaxPool1d
     mindspore.mint.nn.AvgPool2d
+    mindspore.mint.nn.AvgPool3d
     mindspore.mint.nn.MaxUnpool2d
 
 填充层
@@ -473,8 +477,10 @@ mindspore.mint.nn.functional
 
     mindspore.mint.nn.functional.adaptive_avg_pool1d
     mindspore.mint.nn.functional.adaptive_avg_pool2d
+    mindspore.mint.nn.functional.adaptive_max_pool1d
     mindspore.mint.nn.functional.avg_pool1d
     mindspore.mint.nn.functional.avg_pool2d
+    mindspore.mint.nn.functional.avg_pool3d
     mindspore.mint.nn.functional.max_pool2d
     mindspore.mint.nn.functional.max_unpool2d
 
@@ -488,6 +494,7 @@ mindspore.mint.nn.functional
 
     mindspore.mint.nn.functional.batch_norm
     mindspore.mint.nn.functional.elu
+    mindspore.mint.nn.functional.elu_
     mindspore.mint.nn.functional.gelu
     mindspore.mint.nn.functional.group_norm
     mindspore.mint.nn.functional.hardshrink
@@ -605,6 +612,7 @@ mindspore.mint.linalg
     mindspore.mint.linalg.matrix_norm
     mindspore.mint.linalg.norm
     mindspore.mint.linalg.vector_norm
+    mindspore.mint.linalg.qr
 
 mindspore.mint.special
 ----------------------
@@ -655,6 +663,8 @@ mindspore.mint.distributed
     mindspore.mint.distributed.init_process_group
     mindspore.mint.distributed.irecv
     mindspore.mint.distributed.isend
+    mindspore.mint.distributed.is_available
+    mindspore.mint.distributed.is_initialized
     mindspore.mint.distributed.new_group
     mindspore.mint.distributed.P2POp
     mindspore.mint.distributed.recv

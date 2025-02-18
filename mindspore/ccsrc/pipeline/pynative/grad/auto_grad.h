@@ -26,6 +26,7 @@
 #include "pipeline/pynative/base.h"
 #include "pipeline/pynative/grad/ir/ir_bprop.h"
 #include "pipeline/pynative/grad/custom_function.h"
+#include "pipeline/pynative/grad/function_py.h"
 
 namespace mindspore::pynative::autograd {
 using MetaGradInfoList = OrderedMap<tensor::BaseTensorPtr, AutoGradMetaDataPtr>;
@@ -50,6 +51,10 @@ class AutoGrad {
 
   // Call custom bprop procedure
   virtual void CallCustomBprop(const CustomContext &context) {}
+
+  // Call custom function procedure
+  virtual void CallCustomFunction(const std::shared_ptr<FunctionContext> &context) {}
+
   virtual VariablePtr SafeGetVariableImpl(const tensor::BaseTensorPtr &tensor) { return nullptr; }
 
   // Store grad meta grad info

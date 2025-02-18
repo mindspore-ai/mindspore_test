@@ -33,7 +33,8 @@ namespace server {
 constexpr uint32_t kCollectiveCommTimeout = 30;
 // The max timeout for server collective communication, used in disaster recovery to prevent networking flapping.
 constexpr uint32_t kCollectiveCommMaxTimeout = 300;
-
+// comm op timeout env
+const char kEnvCommOpTimeOut[] = "MS_NODE_TIMEOUT";
 // The collective communication groups which are composed of multiple processes. Refer to MPI_Group.
 struct CommunicationGroupInfo {
   // This group's rank size.
@@ -89,7 +90,12 @@ class CollectiveOpsImpl {
         server_num_(0),
         node_(nullptr),
         node_role_(ps::core::NodeRole::WORKER),
-        rank_size_(0) {}
+        rank_size_(0) {
+    std::string env_op_timeout = common::GetEnv(kEnvCommOpTimeOut);
+    int comm_op_timeout = env_op_timeout.empty() ? kCollectiveCommTimeout : std::stoi(env_op_timeout);
+    comm_op_timeout_ = (comm_op_timeout < 0) ? UINT64_MAX : comm_op_timeout;
+    MS_LOG(INFO) << "cpu comm op exec timeout bave been set " << comm_op_timeout_ << " seconds.";
+  }
   ~CollectiveOpsImpl() = default;
   CollectiveOpsImpl(const CollectiveOpsImpl &) = delete;
   CollectiveOpsImpl &operator=(const CollectiveOpsImpl &) = delete;
@@ -128,6 +134,7 @@ class CollectiveOpsImpl {
   std::shared_ptr<ps::core::ServerNode> server_node_;
   uint32_t rank_id_;
   uint32_t server_num_;
+  size_t comm_op_timeout_;
 
   // The mutex to ensure that collective communication is threadsafe.
   std::mutex mtx_;

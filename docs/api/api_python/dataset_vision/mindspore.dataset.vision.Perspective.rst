@@ -12,6 +12,7 @@ mindspore.dataset.vision.Perspective
         - **end_points** (Sequence[Sequence[int, int]]) - 目标点坐标序列，包含四个两元素子序列，分别对应目标图中四边形的 [左上、右上、右下、左下]。
         - **interpolation** (:class:`~.vision.Inter`，可选) - 图像插值方法。可选值详见 :class:`mindspore.dataset.vision.Inter` 。
           默认值： ``Inter.BILINEAR``。
+
           - **Ascend模式**：通过 `.device("Ascend")` 设定执行设备为 Ascend 时，只支持 `Inter.LINEAR` 、 `Inter.NEAREST` 差值方法。
 
     异常：
@@ -28,14 +29,13 @@ mindspore.dataset.vision.Perspective
 
         指定该变换执行的设备。
 
-        - 当执行设备是 Ascend 时，输入数据的维度限制为[6, 10]和[8192, 4096]之间。
-
+        - 当执行设备是 Ascend 时，输入数据的维度限制在[6, 10]和[8192, 4096]范围内。
         - 当执行设备是 CPU 时，输入数据支持 `uint8` 、 `float32` 或者 `float64` 类型。
         - 当执行设备是 Ascend 时，输入数据支持 `uint8` 和 `float32` 类型，输入数据的通道仅支持 1/3。输入数据的高度限制范围为[6, 8192]、宽度限制范围为[10, 4096]。
 
         参数：
-            - **device_target** (str, 可选) - 算子将在指定的设备上运行。当前支持 ``CPU`` 和 ``Ascend`` 。默认值： ``CPU`` 。
+            - **device_target** (str, 可选) - 算子将在指定的设备上运行。当前支持 ``"CPU"`` 和 ``"Ascend"`` 。默认值： ``"CPU"`` 。
 
         异常：
             - **TypeError** - 当 `device_target` 的类型不为str。
-            - **ValueError** - 当 `device_target` 的取值不为 ``CPU`` / ``Ascend`` 。
+            - **ValueError** - 当 `device_target` 的取值不为 ``"CPU"`` / ``"Ascend"`` 。

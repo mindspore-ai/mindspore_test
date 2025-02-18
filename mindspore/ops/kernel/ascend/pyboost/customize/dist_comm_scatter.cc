@@ -18,12 +18,12 @@
 
 #include <memory>
 #include <string>
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "plugin/device/ascend/kernel/hccl/hcom_util.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 #include "kernel/ascend/pyboost/customize/comm_common.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -55,7 +55,7 @@ void DistCommScatterAscendCustomize(const std::shared_ptr<OpRunner> &op, const B
     const auto &op_name = op->primitive()->name();
     auto input_data_ptr = GetDevicePtrFromTensor(op_name, input_tensor);
     auto output_data_ptr = GetDevicePtrFromTensor(op_name, op->output(0));
-    auto size = scatter_tensors[0]->Size();
+    auto size = other_tensor->Size();
     auto launch_func = [input_data_ptr, output_data_ptr, hccl_count, hccl_data_type, src_rank, local_rank, size,
                         scatter_tensors, op_name, rank_size_imm](const HcclComm &hccl_comm, void *comm_stream_ptr) {
       if (local_rank == src_rank) {

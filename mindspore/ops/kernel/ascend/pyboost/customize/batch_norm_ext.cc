@@ -17,8 +17,8 @@
 #include "kernel/ascend/pyboost/customize/batch_norm_ext.h"
 #include <memory>
 #include <functional>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
@@ -27,8 +27,8 @@ namespace pyboost {
 void BatchNormExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
                                  const BaseTensorPtr &weight_tensor, const BaseTensorPtr &bias_tensor,
                                  const std::optional<BaseTensorPtr> &mean_tensor,
-                                 const std::optional<BaseTensorPtr> &variance_tensor,
-                                 const BoolImmPtr &training, const FP32ImmPtr &momentum, const FP32ImmPtr &epsilon) {
+                                 const std::optional<BaseTensorPtr> &variance_tensor, const BoolImmPtr &training,
+                                 const FP32ImmPtr &momentum, const FP32ImmPtr &epsilon) {
   MS_LOG(DEBUG) << "Call aclnnBatchNorm start";
   // Convert ValuePtr to c++ scalar
   OpRunner::InferOpOutput(op, input_tensor, weight_tensor, bias_tensor, mean_tensor, variance_tensor, training,

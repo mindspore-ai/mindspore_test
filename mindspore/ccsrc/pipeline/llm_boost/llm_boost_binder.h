@@ -24,6 +24,7 @@
 #include "include/common/visible.h"
 #include "backend/operator/boost_base_builder.h"
 #include "include/common/utils/python_adapter.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -33,7 +34,7 @@ class ME_EXPORT LlmBoostBinder {
   ~LlmBoostBinder() = default;
 
   int64_t Init(const std::string &param);
-  std::vector<tensor::TensorPtr> Forward(const py::list &py_inputs, const std::string &param);
+  std::vector<tensor::TensorPyPtr> Forward(const py::list &py_inputs, const std::string &param);
   int64_t SetKVCache(const py::list &py_kcache, const py::list &py_vcache);
   int64_t SetWeight(const py::list &py_weights);
   int64_t AddFlags(const bool &is_first_iteration);

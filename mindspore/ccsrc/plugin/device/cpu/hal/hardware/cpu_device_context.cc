@@ -26,10 +26,10 @@
 #include "plugin/device/cpu/hal/hardware/cpu_somas.h"
 #include "plugin/device/cpu/hal/device/cpu_hash_table_util.h"
 #ifdef ENABLE_AKG
-#include "kernel/cpu/akg/akg_cpu_kernel_build.h"
+#include "plugin/device/cpu/kernel/akg/akg_cpu_kernel_build.h"
 #endif
 #include "include/common/factory/ms_factory.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "kernel/kernel_build_info.h"
 #include "kernel/framework_utils.h"
 #include "plugin/device/cpu/hal/device/kernel_select_cpu.h"

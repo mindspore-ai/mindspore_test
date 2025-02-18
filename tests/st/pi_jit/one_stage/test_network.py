@@ -20,7 +20,7 @@ import mindspore.nn as nn
 from mindspore.common.initializer import Normal
 from mindspore import context, Tensor, jit
 from mindspore import numpy as np
-from ..share.utils import match_array
+from ..share.utils import match_array, pi_jit_with_config
 from tests.mark_utils import arg_mark
 
 @pytest.fixture(autouse=True)  
@@ -52,7 +52,7 @@ class BaseLeNet5(nn.Cell):
             self.fc2 = nn.Dense(120, 84, weight_init=Normal(0.02))
             self.fc3 = nn.Dense(84, num_class, weight_init=Normal(0.02))
 
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def forward(self, x):
         x = self.conv1(x)
         x = self.relu(x)

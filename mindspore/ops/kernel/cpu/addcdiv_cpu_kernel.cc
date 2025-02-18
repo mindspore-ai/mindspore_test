@@ -23,7 +23,7 @@
 
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
 #include "kernel/cpu/arithmetic_cpu_kernel.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "kernel/cpu/nnacl/arithmetic_parameter.h"
 #include "kernel/cpu/nnacl/fp32/mul_fp32.h"
 #include "kernel/cpu/nnacl/fp32/power_fp32.h"

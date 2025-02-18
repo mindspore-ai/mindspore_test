@@ -21,12 +21,11 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/acl_adapter_info.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/acl_adapter_info.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "mindspore/ccsrc/include/transform/graph_ir/utils.h"
 #include "runtime/device/ms_device_shape_transfer.h"
 
 namespace mindspore {
@@ -52,12 +51,12 @@ void SetParamsDataTypeIfComplexInput(const PrimitivePtr &prim, std::vector<Tenso
     return;
   }
 
-  auto info = transform::GeAdapterManager::GetInstance().GetInfo(prim->name(), true);
+  auto info = device::ascend::GeAdapterManager::GetInstance().GetInfo(prim->name(), true);
   MS_EXCEPTION_IF_NULL(info);
-  if (!transform::AclAdapterManager::GetInstance().CheckAclAdapter(info->op_type())) {
+  if (!device::ascend::AclAdapterManager::GetInstance().CheckAclAdapter(info->op_type())) {
     return;
   }
-  auto acl_info = transform::AclAdapterManager::GetInstance().GetOpInfo(info->op_type());
+  auto acl_info = device::ascend::AclAdapterManager::GetInstance().GetOpInfo(info->op_type());
   if (!acl_info.is_complex_parallel_concerned()) {
     return;
   }
@@ -76,9 +75,9 @@ void SetParamsDataTypeIfComplexInput(const PrimitivePtr &prim, std::vector<Tenso
 }
 
 bool AclKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-  converter_ = std::make_shared<transform::AclConverter>();
+  converter_ = std::make_shared<device::ascend::AclConverter>();
   converter_->ConvertToAclOpType(kernel_name_);
-  if (transform::AclHelper::IsPrintDebugString()) {
+  if (device::ascend::AclHelper::IsPrintDebugString()) {
     ms_attr_str_.clear();
     converter_->ConvertToAclAttr(primitive_->attrs(), kernel_name_, &ms_attr_str_);
   } else {
@@ -93,14 +92,15 @@ void AclKernelMod::PackageInput(const size_t idx, const std::string &format, Sha
   auto &params = input_params_[idx];
   if (!format.empty()) {
     params.ori_format = format;
-    transform::AclHelper::PaddingOriShape(kernel_name_, idx, format, shape);
+    device::ascend::AclHelper::PaddingOriShape(kernel_name_, idx, format, shape);
   } else {
-    params.ori_format = transform::AclHelper::ConvertOriginShapeAndFormat(kernel_name_, idx, params.dev_format, shape);
+    params.ori_format =
+      device::ascend::AclHelper::ConvertOriginShapeAndFormat(kernel_name_, idx, params.dev_format, shape);
   }
 
   params.ori_shape = *shape;
   if (!params.is_default) {
-    auto groups = transform::AclHelper::GetFracZGroupFromAttr(primitive_);
+    auto groups = device::ascend::AclHelper::GetFracZGroupFromAttr(primitive_);
     params.dev_shape = trans::TransShapeToDevice(*shape, params.dev_format, params.data_type, groups);
   } else {
     params.dev_shape = *shape;
@@ -116,7 +116,7 @@ void AclKernelMod::PackageOutput(const size_t idx, const ShapeVector &shape) {
   params.ori_format = shape.size() == kDim4 ? kOpFormat_NCHW : kOpFormat_DEFAULT;
   ShapeVector dev_shape;
   if (!params.is_default) {
-    auto groups = transform::AclHelper::GetFracZGroupFromAttr(primitive_);
+    auto groups = device::ascend::AclHelper::GetFracZGroupFromAttr(primitive_);
     dev_shape = trans::TransShapeToDevice(shape, params.dev_format, params.data_type, groups);
   } else {
     dev_shape = shape;
@@ -139,7 +139,7 @@ void AclKernelMod::GetInputInfo(const std::vector<KernelTensor *> &inputs) {
                  << " - input's size:" << inputs.size();
   }
 
-  std::string format = transform::AclHelper::GetFormatFromAttr(primitive_);
+  std::string format = device::ascend::AclHelper::GetFormatFromAttr(primitive_);
   if (format.empty()) {
     format = converter_->GetFormatFromInputAttrMap(inputs, kernel_name_);
   }
@@ -194,7 +194,7 @@ int AclKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::v
 }
 
 std::string AclKernelMod::DebugString() const {
-  if (!transform::AclHelper::IsPrintDebugString()) {
+  if (!device::ascend::AclHelper::IsPrintDebugString()) {
     return "";
   }
   std::stringstream ss;
@@ -216,7 +216,7 @@ std::string AclKernelMod::DebugString() const {
 }
 
 void AclKernelMod::SetValueDependArgs(const std::set<int64_t> &indices) {
-  auto info = transform::GeAdapterManager::GetInstance().GetInfo(kernel_name_, true);
+  auto info = device::ascend::GeAdapterManager::GetInstance().GetInfo(kernel_name_, true);
   MS_EXCEPTION_IF_NULL(info);
 
   value_depend_args_.clear();
@@ -298,25 +298,25 @@ void AclKernelMod::SetDeviceInfo(const std::vector<std::string> &input_device_fo
   }
 
   auto in_def_flag =
-    primitive_ == nullptr ? true : transform::AclHelper::GetDefaultFormatFlagFromAttr(primitive_, true);
+    primitive_ == nullptr ? true : device::ascend::AclHelper::GetDefaultFormatFlagFromAttr(primitive_, true);
   input_params_.resize(input_device_formats.size());
   for (size_t i = 0; i < input_device_formats.size(); i++) {
     input_params_[i].data_type = input_device_types[i];
     input_params_[i].dev_format = input_device_formats[i];
     input_params_[i].is_default =
-      in_def_flag && transform::AclHelper::CheckDefaultSupportFormat(input_device_formats[i]);
+      in_def_flag && device::ascend::AclHelper::CheckDefaultSupportFormat(input_device_formats[i]);
     input_params_[i].type_size = GetTypeByte(TypeIdToType(input_params_[i].data_type));
   }
   input_size_list_.resize(input_device_formats.size(), 0);
 
   auto out_def_flag =
-    primitive_ == nullptr ? true : transform::AclHelper::GetDefaultFormatFlagFromAttr(primitive_, false);
+    primitive_ == nullptr ? true : device::ascend::AclHelper::GetDefaultFormatFlagFromAttr(primitive_, false);
   output_params_.resize(output_device_formats.size());
   for (size_t i = 0; i < output_device_formats.size(); i++) {
     output_params_[i].data_type = output_device_types[i];
     output_params_[i].dev_format = output_device_formats[i];
     output_params_[i].is_default =
-      out_def_flag && transform::AclHelper::CheckDefaultSupportFormat(output_device_formats[i]);
+      out_def_flag && device::ascend::AclHelper::CheckDefaultSupportFormat(output_device_formats[i]);
     output_params_[i].type_size = GetTypeByte(TypeIdToType(output_params_[i].data_type));
   }
   output_size_list_.resize(output_device_formats.size(), 0);

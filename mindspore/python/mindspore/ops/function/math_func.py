@@ -38,11 +38,13 @@ from mindspore.ops.auto_generate import Cummin, BatchMatMul, BernoulliExt, lin_s
 from mindspore.ops import auto_generate
 from mindspore.ops.operations.math_ops import STFT
 from mindspore.ops.operations.math_ops import LuUnpack
-from mindspore.ops.auto_generate.pyboost_inner_prim import roll_impl, cross_impl
+from mindspore.ops.auto_generate.pyboost_inner_prim import cross_impl
 from mindspore.ops.auto_generate.pyboost_inner_prim import reduce_max_impl, reduce_min_impl
 from mindspore.ops.operations.math_ops import Ormqr
 from mindspore.ops.operations.math_ops import DivMod
+from mindspore.ops.auto_generate import multi_scale_deformable_attn_op
 from mindspore.ops.operations.array_ops import MatrixSetDiagV3, Transpose
+# 1
 from mindspore.ops.auto_generate import (minimum, maximum, mul, muls, sin, sinc, sinh, cummax, real, conj, add, sub, cos,
                                          cosh, nan_to_num, norm_op, lp_norm_v2_op, linalg_vector_norm_op, std_op,
                                          matrix_exp, sqrt, rsqrt, square, trace, nextafter, abs, acos, acosh, angle,
@@ -51,11 +53,47 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, muls, sin, sinc,
                                          log, log1p, neg, not_equal, round_op, isfinite, argmax_ext, mean_ext_op,
                                          sum_ext_op, prod_ext_op, all, matrix_inverse_ext, atan2_ext, sign, acos_ext,
                                          acosh_ext, asin_ext, asinh_ext, atan_ext, tan, median_ext_op, median_dim_op,
-                                         xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext,
+                                         xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext, roll,
                                          bincount_ext, rotated_iou_op, cat, narrow, var_op, pow, pow_scalar_tensor_op,
                                          frac_ext, pow_tensor_scalar_op, not_equal_op, isinf, addmv_op, cdist,
                                          addbmm_op, addmm_op, grouped_matmul_v2, transpose_ext, grouped_matmul_v4)
+# 2
 
+# 3
+
+# 4
+
+# 5
+
+# 6
+
+# 7
+
+# 8
+
+# 9
+
+# 10
+
+# 11
+
+# 12
+
+# 13
+
+# 14
+
+# 15
+
+# 16
+
+# 17
+
+# 18
+
+# 19
+
+# 20
 
 from mindspore.ops.auto_generate.gen_ops_def import add_ext, sub_ext, bmm_ext
 from mindspore.ops.auto_generate import tanh, tanh_
@@ -102,7 +140,7 @@ from mindspore.ops.operations.math_ops import (
 )
 from mindspore.common.tensor import Tensor
 from mindspore.ops._primitive_cache import _get_cache_prim
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 import mindspore.ops.function as F
 from mindspore.ops.operations._sequence_ops import TupleToTensor
 
@@ -449,7 +487,7 @@ def bincount(input, weights=None, minlength=0):
     if weights is not None:
         if input.shape != weights.shape:
             raise ValueError('for bincount `input` and `weights` must have the same length')
-        idx_mapping *= weights
+        idx_mapping = weights * idx_mapping
     return reduce_sum_(idx_mapping.astype(mstype.float32), 1).ravel()
 
 def bucketize(input, boundaries, *, right=False):
@@ -1710,57 +1748,6 @@ def xlogy(input, other):
     return xlogy_(input, other)
 
 
-def xlogy_ext(input, other):
-    r"""
-    Computes the first input multiplied by the logarithm of second input element-wise.
-    Returns zero when `input` is zero.
-
-    .. math::
-
-        out_i = input_{i} * \log({other_{i}})
-
-    Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types consistent.
-    The inputs must be two tensors or one tensor and one scalar.
-    When the inputs are two tensors, the shapes of them could be broadcast.
-
-    Args:
-        input (Union[Tensor, numbers.Number, bool]): The first input is a numbers.Number or
-            a bool or a tensor whose data type is
-            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
-        other (Union[Tensor, numbers.Number, bool]): The second input is a numbers.Number or
-            a bool or a tensor whose data type is number or bool when the first input is a tensor.
-            When the first input is Scalar, the second input must be a Tensor whose data type is number or bool.
-
-    Returns:
-        Tensor, the shape is the same as the one after broadcasting,
-        and the data type is the one with higher precision or higher digits among the two inputs.
-
-    Raises:
-        TypeError: If `input` and `other` is not a numbers.Number or a bool or a Tensor.
-        ValueError: If `input` could not be broadcast to a tensor with shape of `other`.
-
-    Supported Platforms:
-        ``Ascend``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([-5, 0, 4]), mindspore.float32)
-        >>> other = Tensor(np.array([2, 2, 2]), mindspore.float32)
-        >>> output = ops.xlogy_ext(input, other)
-        >>> print(output)
-        [-3.465736   0.        2.7725887]
-    """
-    if isinstance(input, Tensor) and isinstance(other, Tensor):
-        return xlogy_op(input, other)
-    if isinstance(input, Tensor) and isinstance(other, (float, int, bool)):
-        return xlogy_scalar_other_op(input, other)
-    if isinstance(input, (float, int, bool)) and isinstance(other, Tensor):
-        return xlogy_scalar_self_op(input, other)
-    raise TypeError(f"For 'xlogy', at least one of input and other should be Tensor.")
-
 def arccosh(input):
     r"""
     Alias for :func:`mindspore.ops.acosh`.
@@ -2199,6 +2186,9 @@ def bitwise_xor(input, other):
     make the data types consistent.
     If they have different data types, the lower priority data type will be converted to
     the relatively highest priority data type.
+
+    .. warning::
+        This API has poor performance on CPU and it is recommended to run it on the Ascend/GPU.
 
     Args:
         input (Tensor): The first input tensor with shape :math:`(N, *)` where :math:`*` means
@@ -2875,8 +2865,7 @@ def erfinv_(input):
 
 def linspace(start, end, steps):
     r"""
-    Returns a Tensor whose value is `steps` evenly spaced in the interval `start` and `end` (including `start` and
-    `end`), and the length of the output Tensor is `steps`.
+    Generate `steps` evenly spaced numbers over interval [start, end].
 
     .. math::
         \begin{aligned}
@@ -2885,35 +2874,27 @@ def linspace(start, end, steps):
         \end{aligned}
 
     Args:
-        start (Union[Tensor, int, float]): Start value of interval. The tensor data type must be float32 or float64
-            and with shape of 0-D.
-        end (Union[Tensor, int, float]): Last value of interval. The tensor data type must be float32 or float64
-            and with shape of 0-D.
-        steps (Union[Tensor, int]): Number of ticks in the interval, inclusive of start and end.
-            Must be positive int number or 0D int32/int64 Tensor.
+        start (Union[Tensor, int, float]): Start value of interval.
+        end (Union[Tensor, int, float]): Last value of interval.
+        steps (Union[Tensor, int]): Number of elements.
 
     Returns:
-        Tensor, has the same dtype as `start`, and the shape of :math:`(steps,)`.
-
-    Raises:
-        TypeError: If `start` or `end` is not a Tensor.
-        TypeError: If dtype of `start` or dtype of `end` is not float32 or float64.
-        ValueError: If shape of `start` or shape of `end` is not 0-D.
-        TypeError: If `steps` is not int or 0D int32/int64 Tensor.
-        ValueError: If `steps` is not positive int number.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> start = Tensor(1, mindspore.float32)
-        >>> end = Tensor(10, mindspore.float32)
-        >>> steps = 5
-        >>> output = ops.linspace(start, end, steps)
+        >>> output = mindspore.ops.linspace(3, 10, 5)
         >>> print(output)
-        [ 1.    3.25  5.5   7.75 10.  ]
+        [ 3.    4.75  6.5   8.25 10.  ]
+        >>> output = mindspore.ops.linspace(-10, 10, 5)
+        >>> print(output)
+        [-10.  -5.   0.   5.  10.]
+        >>> output = mindspore.ops.linspace(-10, 10, 1)
+        >>> print(output)
+        [-10.]
     """
     if not isinstance(start, Tensor):
         start = Tensor(start, mstype.float32)
@@ -5207,8 +5188,8 @@ def addbmm_ext(input, batch1, batch2, *, beta=1, alpha=1):
     r"""
     Applies batch matrix multiplication to `batch1` and `batch2`, with a reduced add step and add `input` to the result.
 
-    The optional values `alpha` and `beta` are the matrix-matrix product between `batch1` and `batch2` and the scale
-    factor for the added tensor `input` respectively. If `beta` is 0, then `input` will be ignored.
+    The optional value `alpha` is the matrix-matrix product between `batch1` and `batch2`, and `beta` is the scale
+    factor for the added tensor `input`. If `beta` is 0, then `input` will be ignored.
 
     .. math::
         output = \beta input + \alpha (\sum_{i=0}^{b-1} {batch1_i @ batch2_i})
@@ -7234,7 +7215,7 @@ def logcumsumexp(input, axis):
     return cumulative_logsumexp_(input, Tensor(axis))
 
 
-def logsumexp(input, axis, keep_dims=False):
+def logsumexp(input, dim, keepdim=False):
     r"""
     Reduces a dimension of a tensor by calculating exponential for all elements in the dimension,
     then calculate logarithm of the sum.
@@ -7245,19 +7226,19 @@ def logsumexp(input, axis, keep_dims=False):
 
     Args:
         input (Tensor): The input tensor. With float16 or float32 data type.
-        axis (Union[int, tuple(int), list(int)]): The dimensions to reduce. Only constant value is allowed.
-        keep_dims (bool, optional): If True, keep these reduced dimensions and the length is 1.
+        dim (Union[int, tuple(int), list(int)]): The dimensions to reduce. Only constant value is allowed.
+        keepdim (bool, optional): If True, keep these reduced dimensions and the length is 1.
             If ``False`` , don't keep these dimensions.
             Default : ``False`` .
 
     Returns:
         Tensor, has the same dtype as the `input`.
 
-        - If axis is (), and keep_dims is False,
+        - If dim is (), and keepdim is False,
           the output is a 0-D tensor representing the sum of all elements in the input tensor.
-        - If axis is int, set as 2, and keep_dims is False,
+        - If dim is int, set as 2, and keepdim is False,
           the shape of output is :math:`(input_1, input_3, ..., input_R)`.
-        - If axis is tuple(int), set as (2, 3), and keep_dims is False,
+        - If dim is tuple(int), set as (2, 3), and keepdim is False,
           the shape of output is :math:`(input_1, input_4, ..., input_R)`.
 
     Supported Platforms:
@@ -7267,18 +7248,16 @@ def logsumexp(input, axis, keep_dims=False):
         >>> import numpy as np
         >>> from mindspore import Tensor, ops
         >>> x = Tensor(np.random.randn(3, 4, 5, 6).astype(np.float32))
-        >>> output = ops.logsumexp(x, 1, keep_dims=True)
+        >>> output = ops.logsumexp(x, 1, keepdim=True)
         >>> print(output.shape)
         (3, 1, 5, 6)
     """
-    _reduce_sum = _get_cache_prim(P.ReduceSum)(keep_dims)
-
-    input_max = ops.ReduceMax(keep_dims=True)(input, axis)
+    input_max = ops.ReduceMax(keep_dims=True)(input, dim)
     input_exp = tensor_exp(input - input_max)
-    input_sumexp = _reduce_sum(input_exp, axis)
+    input_sumexp = ops.sum(input_exp, dim, keepdim)
     input_logsumexp = log_(input_sumexp)
-    if not keep_dims:
-        input_max = input_max.squeeze(axis=axis)
+    if not keepdim:
+        input_max = input_max.squeeze(dim)
     return input_logsumexp + input_max
 
 
@@ -8432,13 +8411,13 @@ def matrix_norm_ext(A, ord='fro', dim=(-2, -1), keepdim=False, *, dtype=None):
     Examples:
         >>> import mindspore as ms
         >>> A = ms.ops.arange(0, 12, dtype=ms.float32).reshape(3, 4)
-        >>> print(ms.ops.matrix_norm_ext(x, ord='fro'))
+        >>> print(ms.ops.matrix_norm_ext(A, ord='fro'))
         22.494444
-        >>> print(ms.ops.matrix_norm_ext(x, ord='nuc'))
+        >>> print(ms.ops.matrix_norm_ext(A, ord='nuc'))
         24.364643
-        >>> print(ms.ops.matrix_norm_ext(x, ord=float('inf')))
+        >>> print(ms.ops.matrix_norm_ext(A, ord=float('inf')))
         38.0
-        >>> print(ms.ops.matrix_norm_ext(x, ord=float('-inf')))
+        >>> print(ms.ops.matrix_norm_ext(A, ord=float('-inf')))
         6.0
     """
     ndim = A.ndim
@@ -8562,8 +8541,10 @@ def linalg_norm(A, ord=None, dim=None, keepdim=False, *, dtype=None):
         >>> n = ops.arange(27, dtype=ms.float32).reshape(3, 3, 3)
         >>> print(ops.function.math_func.linalg_norm(n, dim=(1, 2)))
         [14.282857 39.76179  66.45299 ]
-        >>> print(ops.function.math_func.linalg_norm(n[0, :, :]), ops.function.math_func.linalg_norm(n[1, :, :]))
-        14.282857 39.76179
+        >>> print(ops.function.math_func.linalg_norm(n[0, :, :]))
+        14.282857
+        >>> print(ops.function.math_func.linalg_norm(n[1, :, :]))
+        39.76179
     """
     dim, immediate = _check_linalg_norm_input(dim, ord, A.ndim)
     if immediate:
@@ -8809,21 +8790,21 @@ def matrix_norm(A, ord='fro', axis=(-2, -1), keepdims=False, *, dtype=None):
     Examples:
         >>> import mindspore as ms
         >>> A = ms.ops.arange(0, 12, dtype=ms.float32).reshape(3, 4)
-        >>> print(ms.ops.matrix_norm(x, ord='fro'))
+        >>> print(ms.ops.matrix_norm(A, ord='fro'))
         22.494444
-        >>> print(ms.ops.matrix_norm(x, ord='nuc'))
+        >>> print(ms.ops.matrix_norm(A, ord='nuc'))
         24.364643
-        >>> print(ms.ops.matrix_norm(x, ord=float('inf')))
+        >>> print(ms.ops.matrix_norm(A, ord=float('inf')))
         38.0
-        >>> print(ms.ops.matrix_norm(x, ord=float('-inf')))
+        >>> print(ms.ops.matrix_norm(A, ord=float('-inf')))
         6.0
-        >>> print(ms.ops.vector_norm(x, ord=1))
+        >>> print(ms.ops.vector_norm(A, ord=1))
         21.0
-        >>> print(ms.ops.vector_norm(x, ord=-1))
+        >>> print(ms.ops.vector_norm(A, ord=-1))
         12.0
-        >>> print(ms.ops.vector_norm(x, ord=2))
+        >>> print(ms.ops.vector_norm(A, ord=2))
         22.409302
-        >>> print(ms.ops.vector_norm(x, ord=-2))
+        >>> print(ms.ops.vector_norm(A, ord=-2))
         1.672928e-07
     """
     ndim = A.ndim
@@ -9874,42 +9855,6 @@ def rot90(input, k, dims):
     return out
 
 
-def roll(input, shifts, dims=None):
-    """
-    Rolls the elements of a tensor along an axis.
-
-    Args:
-        input (Tensor): Input tensor.
-        shifts (Union[list(int), tuple(int), int]): Specifies the number of places by which elements are shifted
-            positively (towards larger indices) along the specified dimension. Negative shifts will roll the elements
-            in the opposite direction.
-        dims (Union[list(int), tuple(int), int], optional): Specifies the dimension indexes of shape to be rolled.
-            Default: ``None``. If dims is None, the Tensor will be flattened before rolling and then restored to the
-            original shape.
-
-    Returns:
-        Tensor, has the same shape and type as `input`.
-
-    Raises:
-        TypeError: If `shifts` is not an int, a tuple or a list.
-        TypeError: If `dims` is not an int, a tuple or a list.
-
-    Supported Platforms:
-        ``GPU``
-
-    Examples:
-        >>> import numpy as np
-        >>> import mindspore as ms
-        >>> from mindspore import ops
-        >>> from mindspore import Tensor
-        >>> input = Tensor(np.array([0, 1, 2, 3, 4]).astype(np.float32))
-        >>> output = ops.roll(input, shifts=2, dims=0)
-        >>> print(output)
-        [3. 4. 0. 1. 2.]
-    """
-    return roll_impl(input, shifts, dims)
-
-
 def xdivy(x, y):
     """
     Divides the first input tensor by the second input tensor element-wise. Returns zero when `x` is zero.
@@ -10089,60 +10034,40 @@ def _check_is_tensor(param_name, input, cls_name):
 
 def any(input, axis=None, keep_dims=False):
     r"""
-    Reduces a dimension of `input` by the "logical OR" of all elements in the dimension, by default. And also can
-    reduce a dimension of `input` along the `axis`. Determine whether the dimensions of the output and input are the
-    same by controlling `keep_dims`.
-
-    Note:
-        The `axis` with tensor type is only used for compatibility with older versions and is not recommended.
+    Tests if any element in input evaluates to True along the given axes.
 
     Args:
-        input (Tensor): Input Tensor(bool),has the shape :math:`(N, *)` where :math:`*` means,
-            any number of additional dimensions.
-        axis (Union[int, tuple(int), list(int), Tensor], optional): The dimensions to reduce.
-            Suppose the rank of `input` is r, `axis` must be in the range [-rank(input), rank(input)).
-            Default: ``None`` , all dimensions are reduced.
-        keep_dims (bool, optional): If ``True`` , keep these reduced dimensions and the length is 1.
-            If ``False`` , don't keep these dimensions. Default : ``False`` .
+        input (Tensor): Input Tensor.
+        axis (Union[int, tuple(int), list(int), Tensor], optional): The dimensions to reduce. Default: ``None`` , all
+            dimensions are reduced.
+        keep_dims (bool, optional): whether the output tensor has dim retained or not. Default : ``False`` .
 
     Returns:
-        Tensor, the dtype is bool.
-
-        - If `axis` is ``None`` , and `keep_dims` is ``False`` ,
-          the output is a 0-D Tensor representing the "logical OR" of all elements in the input Tensor.
-        - If `axis` is int, such as 2, and `keep_dims` is ``False`` ,
-          the shape of output is :math:`(input_1, input_3, ..., input_R)`.
-        - If `axis` is tuple(int), such as (2, 3), and `keep_dims` is ``False`` ,
-          the shape of output is :math:`(input_1, input_4, ..., input_R)`.
-        - If `axis` is 1-D Tensor, such as [2, 3], and `keep_dims` is ``False`` ,
-          the shape of output is :math:`(input_1, input_4, ..., input_R)`.
-
-    Raises:
-        TypeError: If `keep_dims` is not a bool.
-        TypeError: If `input` is not a Tensor(bool).
-        TypeError: If `axis` is not one of the following: int, tuple, list or Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([[True, False], [True, True]]))
-        >>> # case 1: Reduces a dimension by the "logical OR" of all elements in the dimension.
-        >>> output = ops.any(x, keep_dims=True)
-        >>> print(output)
-        [[ True]]
-        >>> print(output.shape)
-        (1, 1)
-        >>> # case 2: Reduces a dimension along axis 0.
-        >>> output = ops.any(x, axis=0)
-        >>> print(output)
-        [ True True]
-        >>> # case 3: Reduces a dimension along axis 1.
-        >>> output = ops.any(x, axis=1)
-        >>> print(output)
-        [ True True]
+        >>> import mindspore
+        >>> input = mindspore.tensor([[True, False], [True, True]])
+        >>>
+        >>> # case 1:  By default, mindspore.ops.any tests along all the axes.
+        >>> mindspore.ops.any(input)
+        Tensor(shape=[], dtype=Bool, value= True)
+        >>>
+        >>> # case 2: Reduces a dimension along axis 2, with keep_dims False.
+        >>> mindspore.ops.any(input, axis=1)
+        Tensor(shape=[2], dtype=Bool, value= [ True,  True])
+        >>>
+        >>> # case 3: Reduces a dimension along axis (2, 3), with keep_dims False.
+        >>> mindspore.ops.any(input, axis=(0,1))
+        Tensor(shape=[], dtype=Bool, value= True)
+        >>>
+        >>> # case 4: Reduces a dimension along axis [2, 3], with keep_dims True.
+        >>> mindspore.ops.any(input, axis=[0,1], keep_dims=True)
+        Tensor(shape=[1, 1], dtype=Bool, value=
+        [[ True]])
     """
     if axis is None:
         axis = ()
@@ -10852,6 +10777,486 @@ def einsum(equation, *operands):
         equation = equ_tmp
         operands = tuple(operands_tmp)
     return _get_cache_prim(P.Einsum)(equation)(operands)
+
+
+def _einsum_convert_sublist_to_label(num, ell_num=False):
+    """Convert sublist to label."""
+    if num == Ellipsis or ell_num and num == 52:
+        return '...'
+    if 0 <= num < 26:
+        return chr(num + ord('A'))
+    if 26 <= num < 52:
+        return chr(num + ord('a') - 26)
+    raise ValueError(
+        f'For einsum, the number in sublist must be in range [0, 52), but got {num}')
+
+
+def _einsum_convert_label_to_index(label):
+    """Convert label to index."""
+    label_num = ord(label)
+    if ord('A') <= label_num <= ord('Z'):
+        return label_num - ord('A')
+    if ord('a') <= label_num <= ord('z'):
+        return label_num - ord('a') + 26
+    if label_num == ord('.'):
+        return 52
+    raise ValueError(
+        f'For einsum, the label in equation must be in [a-zA-Z] or ., but got {label}')
+
+
+def _einsum_convert_sublist(equation, *operands):
+    """Convert the sublist to an equation operand if the received input is a sublist format."""
+    if isinstance(equation, Tensor):
+        equation_tmp = ''
+        for i, lst in enumerate(operands):
+            if i % 2 == 0:
+                for _, num in enumerate(lst):
+                    equation_tmp += _einsum_convert_sublist_to_label(num)
+                if i in (len(operands) - 1, len(operands) - 2):
+                    continue
+                equation_tmp += ','
+        if len(operands) % 2 == 0:
+            equation_tmp += '->'
+            for _, num in enumerate(operands[-1]):
+                equation_tmp += _einsum_convert_sublist_to_label(num)
+            operands_tmp = list([equation]) + list(operands[1:-1:2])
+        else:
+            operands_tmp = list([equation]) + list(operands[1::2])
+        equation = equation_tmp
+        operands = tuple(operands_tmp)
+    if len(operands) == 0:  # pylint: disable=len-as-condition
+        raise ValueError(
+            "For einsum, the 'operands' must have at least one operand.")
+    return equation, operands
+
+
+def _einsum_check_inputargs(equation, operands):
+    """Check equation and operands."""
+    if not isinstance(equation, str):
+        raise TypeError(
+            f"For einsum, 'equation' must be a str, but got {type(equation)}.")
+    for operand in operands:
+        if not isinstance(operand, Tensor):
+            raise TypeError(
+                f"For einsum, members of 'operands' must be Tensor, but got {type(operand)}.")
+
+
+@constexpr
+def _einsum_parse_equation(equation):
+    """Parse equation."""
+    l_equation = ''
+    r_equation = ''
+    equation = equation.replace(' ', '')
+
+    if '->' in equation:
+        l_equation, r_equation = equation.split('->', 1)
+        if l_equation == '':
+            raise ValueError(
+                'For einsum, equation must contain characters to the left fo the arrow.')
+    else:
+        l_equation = equation
+
+    if ',' in l_equation:
+        l_equationlst = l_equation.split(",")
+    else:
+        l_equationlst = [l_equation]
+
+    l_equationlst = []
+
+    for subequation in l_equation.split(','):
+        if '.' in subequation and ('...' not in subequation or subequation.count('.') != 3):
+            raise ValueError(f"For einsum, an ellipsis in the equation must include three continuous \'.\', "
+                             f"and can only be found once.")
+        subequation_lst = [_einsum_convert_label_to_index(label) for label in subequation.replace('...', '.')]
+        l_equationlst.append(subequation_lst)
+
+    if "." in r_equation and ('...' not in r_equation or r_equation.count('.') != 3):
+        raise ValueError(f"For einsum, an ellipsis in the equation must include three continuous \'.\', "
+                         f"and can only be found once.")
+    r_equationlst = [_einsum_convert_label_to_index(label) for label in r_equation.replace('...', '.')]
+
+    return l_equationlst, r_equationlst, ('->' in equation)
+
+
+def _einsum_parse_labels(l_equationlst, operands):
+    """Parse left script of equation."""
+    align_rank = 0
+    max_labels = 53
+    ellipsis_dimnum = 0
+    labels_count = [0] * max_labels
+
+    if len(operands) != len(l_equationlst):
+        raise ValueError(f"For einsum, 'operands' is not equal to specified in the 'equation', "
+                         f"but got {len(operands)} and {len(l_equationlst)}.")
+
+    for idx, sub_equ in enumerate(l_equationlst):
+        start_dim = 0
+        label_num = 0
+        operand_shape = list(operands[idx].shape)
+        for label in sub_equ:
+            dim_num = 1
+            label_num += 1
+            end_dim = start_dim + 1
+
+            # Label is ellipsis
+            if label == 52:
+                end_dim = len(operand_shape) - len(sub_equ) + label_num
+                dim_num = end_dim - start_dim
+                if ellipsis_dimnum != 0 and ellipsis_dimnum != dim_num:
+                    raise ValueError(f"For einsum, an ellipsis in 'equation' can only represent the same numbers of "
+                                     f"dimensions in 'operands'.")
+                ellipsis_dimnum = dim_num
+            if labels_count[label] == 0:
+                align_rank += dim_num
+            labels_count[label] += 1
+            start_dim += dim_num
+        if label_num != len(sub_equ) or start_dim != len(operand_shape):
+            raise ValueError(f"For einsum, the numbers of labels specified in the 'equation' does not match "
+                             f"'operands[{idx}]'.")
+    return ellipsis_dimnum, labels_count, align_rank
+
+
+def _einsum_infer_output(r_equationlst, arrow_exist, ellipsis_dimnum, labels_count):
+    """Parse right script of equation and infer output shape."""
+    idx = 0
+    idle_idx = -1
+    output_rank = 0
+    labels_perm_idx = [idle_idx] * 53
+
+    if arrow_exist:
+        for label in r_equationlst:
+            if labels_count[label] != 0:
+                if labels_perm_idx[label] != idle_idx:
+                    raise ValueError(f"For einsum, '{_einsum_convert_sublist_to_label(label, True)}' or {label} in "
+                                     f"sublist format has appears more than once in output subscript.")
+                dimnum = 1
+                if label == 52:
+                    dimnum = ellipsis_dimnum
+                labels_perm_idx[label] = idx
+                output_rank += dimnum
+                idx += dimnum
+            else:
+                raise ValueError(f"For einsum, the label to the right of arrow in the 'equation' must appear on "
+                                 f"left, but '{_einsum_convert_sublist_to_label(label, True)}' does not.")
+    else:
+        if labels_count[52] != 0:
+            output_rank += ellipsis_dimnum
+            labels_perm_idx[52] = idx
+            idx += ellipsis_dimnum
+        for label, count in enumerate(labels_count):
+            if count == 1:
+                output_rank += 1
+                labels_perm_idx[label] = idx
+                idx += 1
+
+    for label, count in enumerate(labels_count):
+        if count != 0 and labels_perm_idx[label] == idle_idx:
+            labels_perm_idx[label] = idx
+            idx += 1
+
+    return output_rank, labels_perm_idx
+
+
+def _einsum_adjust_operands(operands, l_equationlst, ellipsis_dimnum, labels_perm_idx, align_rank):
+    """Align operands to output as possible."""
+    # Unsqueeze miss dimensions to make all operands has same rank, compute diagonal if operand has same label.
+    # Then use _labels_perm_idx to transpose all operands to align dimensions with output.
+    adjust_operands = []
+    for idx, operand in enumerate(operands):
+        idle_dim = -1
+        align_axis = [idle_dim] * align_rank
+        label_dims = [idle_dim] * 53
+        dim = 0
+
+        for label in l_equationlst[idx]:
+            if label_dims[label] != idle_dim:
+                operand = ops.diagonal(operand, 0, label_dims[label], dim)
+                diag_perm = []
+                diag_dim = 0
+                for i in range(len(operand.shape)):
+                    if i == label_dims[label]:
+                        diag_perm.append(len(operand.shape) - 1)
+                    else:
+                        diag_perm.append(diag_dim)
+                        diag_dim += 1
+                operand = permute(operand, tuple(diag_perm))
+            else:
+                label_dims[label] = dim
+                if label == 52:
+                    for ell_idx in range(ellipsis_dimnum):
+                        align_axis[labels_perm_idx[label] + ell_idx] = dim
+                        dim += 1
+                else:
+                    align_axis[labels_perm_idx[label]] = dim
+                    dim += 1
+        if len(operand.shape) < align_rank:
+            for i, axis in enumerate(align_axis):
+                if axis == idle_dim:
+                    align_axis[i] = dim
+                    dim += 1
+            missing_dims = [1] * (align_rank - len(operand.shape))
+            operand_shape = list(operand.shape) + missing_dims
+            operand = ops.reshape(operand, operand_shape)
+        operand = permute(operand, tuple(align_axis))
+        adjust_operands.append(operand)
+    return adjust_operands
+
+
+def _einsum_find_dimlastop(align_rank, operands, adjust_operands):
+    """Find dim last operand."""
+    dim_last_op = [0] * align_rank
+    has_zero_dim = False
+    for dim in range(align_rank):
+        broadcast_dim = adjust_operands[0].shape[dim]
+        for idx in range(1, len(adjust_operands)):
+            other_dim = adjust_operands[idx].shape[dim]
+            if broadcast_dim != other_dim and broadcast_dim != 1 and other_dim != 1:
+                err_msg = "For einsum, operands do not broadcast after align to output [shapes :origin -> adjust]:"
+                for i in range(len(operands)):
+                    err_msg += f" {operands[i].shape} -> {adjust_operands[i].shape}"
+                raise ValueError(err_msg)
+            if other_dim != 1:
+                dim_last_op[dim] = idx
+                broadcast_dim = other_dim
+        has_zero_dim = has_zero_dim or broadcast_dim == 0
+    return dim_last_op, has_zero_dim
+
+
+def _einsum_multiplication(sum_dims, l_tensor, r_tensor):
+    """Compute bmm for einsum."""
+    batch_dims = []
+    lonly_dims = []
+    ronly_dims = []
+    batch_size = 1
+    lonly_size = 1
+    ronly_size = 1
+    sum_size = 1
+
+    l_shape = l_tensor.shape
+    r_shape = r_tensor.shape
+
+    # Compute sum if dim is in sum_dims and get shapes for bmm
+    for i in range(len(l_shape)):
+        sum_l = l_shape[i] > 1
+        sum_r = r_shape[i] > 1
+        if i in sum_dims:
+            if sum_l and sum_r:
+                sum_size *= l_shape[i]
+            elif sum_l:
+                l_tensor = ops.auto_generate.sum_ext(l_tensor, i, True)
+            elif sum_r:
+                r_tensor = ops.auto_generate.sum_ext(r_tensor, i, True)
+        elif sum_l and sum_r:
+            batch_dims.append(i)
+            batch_size *= l_shape[i]
+        elif sum_l:
+            lonly_dims.append(i)
+            lonly_size *= l_shape[i]
+        else:
+            ronly_dims.append(i)
+            ronly_size *= r_shape[i]
+
+    # Compute the einsum bmm operators pipeline.
+    # The whole operators pipeline is transpose(in) -> reshape(in) -> bmm(in) -> reshape(out) -> transpose(out).
+    l_reshape_shape = (batch_size, lonly_size, sum_size)
+    r_reshape_shape = (batch_size, sum_size, ronly_size)
+
+    out_reshape_shape = [l_shape[dim] for dim in batch_dims]
+    out_reshape_shape += [l_shape[dim] for dim in lonly_dims]
+    out_reshape_shape += [1 for _ in sum_dims]
+    out_reshape_shape += [r_shape[dim] for dim in ronly_dims]
+
+    l_perm_axis = batch_dims + lonly_dims + sum_dims + ronly_dims
+    r_perm_axis = batch_dims + sum_dims + ronly_dims + lonly_dims
+    out_perm_axis = [-1] * len(out_reshape_shape)
+
+    out_dim = 0
+    for idx in range(len(l_perm_axis)):
+        out_perm_axis[l_perm_axis[idx]] = out_dim
+        out_dim += 1
+
+    l_tensor = permute(l_tensor, tuple(l_perm_axis))
+    l_tensor = ops.reshape(l_tensor, l_reshape_shape)
+
+    r_tensor = permute(r_tensor, tuple(r_perm_axis))
+    r_tensor = ops.reshape(r_tensor, r_reshape_shape)
+
+    output = bmm_ext(l_tensor, r_tensor)
+    output = ops.reshape(output, out_reshape_shape)
+    output = permute(output, tuple(out_perm_axis))
+
+    output_origin_shape = output.shape
+    output_squeeze_shape = []
+    for dim in range(len(output_origin_shape)):
+        if dim not in sum_dims:
+            output_squeeze_shape.append(output_origin_shape[dim])
+
+    return ops.reshape(output, output_squeeze_shape)
+
+
+def _einsum(equation, operands):
+    '''Einsum main process'''
+    _l_equationlst, _r_equationlst, _arrow_exist = _einsum_parse_equation(
+        equation)
+    _ellipsis_dimnum, _labels_count, _align_rank = _einsum_parse_labels(
+        _l_equationlst, operands)
+    _output_rank, _labels_perm_idx = _einsum_infer_output(
+        _r_equationlst, _arrow_exist, _ellipsis_dimnum, _labels_count)
+    _adjust_operands = _einsum_adjust_operands(operands, _l_equationlst, _ellipsis_dimnum, _labels_perm_idx,
+                                               _align_rank)
+    _dim_last_op, _has_zero_dim = _einsum_find_dimlastop(
+        _align_rank, operands, _adjust_operands)
+    _result = _adjust_operands[0]
+
+    # Fast path if operands has zero dim.
+    if _has_zero_dim:
+        output_shape = []
+        for dim in range(_output_rank):
+            output_shape.append(_adjust_operands[_dim_last_op[dim]].shape[dim])
+        return ops.auto_generate.zeros(output_shape, dtype=_result.dtype)
+
+    # Sum or squeeze dimensions that is 1 for all rest operands.
+    _reduce_dim = _output_rank
+    for dim in range(_output_rank, _align_rank):
+        if _dim_last_op[dim] == 0:
+            if _result.shape[_reduce_dim] == 1:
+                _result = ops.auto_generate.pyboost_inner_prim.squeeze_impl(_result, _reduce_dim)
+            else:
+                _result = ops.auto_generate.sum_ext(_result, _reduce_dim)
+        else:
+            _reduce_dim += 1
+
+    # Compute multiplication if operands are more than two.
+    for i in range(1, len(_adjust_operands)):
+        operand = _adjust_operands[i]
+        dim = _output_rank
+        sum_dims = []
+        for j in range(_output_rank, _align_rank):
+            if _dim_last_op[j] < i:
+                operand = ops.auto_generate.pyboost_inner_prim.squeeze_impl(operand, dim)
+            elif _dim_last_op[j] == i:
+                if _result.shape[dim] == 1:
+                    operand = ops.auto_generate.sum_ext(operand, dim)
+                    _result = ops.auto_generate.pyboost_inner_prim.squeeze_impl(_result, dim)
+                else:
+                    sum_dims.append(dim)
+                    dim += 1
+            else:
+                dim += 1
+
+        if sum_dims == []:
+            _result = mul_ext(_result, operand)
+        elif len(sum_dims) == len(_result.shape):
+            _result = ops.auto_generate.dot(ops.auto_generate.flatten_ext(_result),
+                                            ops.auto_generate.flatten_ext(operand))
+        else:
+            _result = _einsum_multiplication(sum_dims, _result, operand)
+
+    return _result
+
+
+def einsum_ext(equation, *operands):
+    r"""
+    According to the Einstein summation Convention (Einsum),
+    the product of the input tensor elements is summed along the specified dimension.
+    You can use this operator to perform diagonal, reducesum, transpose, matmul, mul, inner product operations, etc.
+
+    Note:
+        The sublist format is also supported. For example, einsum_ext(op1, sublist1, op2, sublist2, ..., sublist_out).
+        In this format, equation can be derived by the sublists which are made up of Python's Ellipsis and list of
+        integers in [0, 52). Each operand is followed by a sublist and an output sublist is at the end.
+        Dynamic shape, dynamic rank input is not supported in `graph mode (mode=mindspore.GRAPH_MODE)
+        <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        equation (str): Notation based on the Einstein summation convention, represent the operation you want to do.
+            the value can contain only letters, commas, ellipsis and arrow. The letters(must be in [a-zA-Z]) represent
+            input tensor dimension, commas(,) represent separate tensors, ellipsis indicates the tensor dimension that
+            you do not care about, the left of the arrow indicates the input tensors, and the right of it indicates the
+            desired output dimension. If there are no arrows in the equation, the letters that appear exactly once in
+            the equation will be part of the output, sorted in increasing alphabetical order. The output is computed by
+            multiplying the input operands element-wise, with their dimensions aligned based on the letters, and then
+            summing out the dimensions whose letters are not part of the output. If there is one arrow in the equation,
+            the output letters must appear at least once for some input operand and at most once for the output.
+        operands (Tensor): Input tensor used for calculation. The dtype of the tensor must be the same.
+
+    Returns:
+        Tensor, the shape of it can be obtained from the `equation` , and the dtype is the same as input tensors.
+
+    Raises:
+        TypeError: If `equation` is invalid, or the `equation` does not match the input tensor.
+        ValueError: If the number in sublist is not in [0, 52) in sublist format.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> x = Tensor(np.array([1.0, 2.0, 4.0]), mindspore.float32)
+        >>> equation = "i->"
+        >>> output = ops.einsum_ext(equation, x)
+        >>> print(output)
+        [7.]
+        >>> x = Tensor(np.array([1.0, 2.0, 4.0]), mindspore.float32)
+        >>> y = Tensor(np.array([2.0, 4.0, 3.0]), mindspore.float32)
+        >>> equation = "i,i->i"
+        >>> output = ops.einsum_ext(equation, x, y)
+        >>> print(output)
+        [ 2. 8. 12.]
+        >>> x = Tensor(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), mindspore.float32)
+        >>> y = Tensor(np.array([[2.0, 3.0], [1.0, 2.0], [4.0, 5.0]]), mindspore.float32)
+        >>> equation = "ij,jk->ik"
+        >>> output = ops.einsum_ext(equation, x, y)
+        >>> print(output)
+        [[16. 22.]
+         [37. 52.]]
+        >>> x = Tensor(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), mindspore.float32)
+        >>> equation = "ij->ji"
+        >>> output = ops.einsum_ext(equation, x)
+        >>> print(output)
+        [[1. 4.]
+         [2. 5.]
+         [3. 6.]]
+        >>> x = Tensor(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), mindspore.float32)
+        >>> equation = "ij->j"
+        >>> output = ops.einsum_ext(equation, x)
+        >>> print(output)
+        [5. 7. 9.]
+        >>> x = Tensor(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), mindspore.float32)
+        >>> equation = "...->"
+        >>> output = ops.einsum_ext(equation, x)
+        >>> print(output)
+        [21.]
+        >>> x = Tensor(np.array([1.0, 2.0, 3.0]), mindspore.float32)
+        >>> y = Tensor(np.array([2.0, 4.0, 1.0]), mindspore.float32)
+        >>> equation = "j,i->ji"
+        >>> output = ops.einsum_ext(equation, x, y)
+        >>> print(output)
+        [[ 2. 4. 1.]
+         [ 4. 8. 2.]
+         [ 6. 12. 3.]]
+        >>> x = mindspore.Tensor([1, 2, 3, 4], mindspore.float32)
+        >>> y = mindspore.Tensor([1, 2], mindspore.float32)
+        >>> output = ops.einsum_ext(x, [..., 1], y, [..., 2], [..., 1, 2])
+        >>> print(output)
+        [[1. 2.]
+         [2. 4.]
+         [3. 6.]
+         [4. 8.]]
+    """
+    _equation, _operands = _einsum_convert_sublist(equation, *operands)
+    _einsum_check_inputargs(_equation, _operands)
+
+    for operand in _operands:
+        if ops.is_sequence_shape_unknown(operand.shape) or ops.is_sequence_value_unknown(operand.shape):
+            raise ValueError(f"For einsum, the element of 'operands' can't be dynamic shape or dynamic rank.")
+
+    return _einsum(_equation, _operands)
 
 
 def cumprod(input, dim, dtype=None):
@@ -12240,6 +12645,7 @@ def count_nonzero(x, axis=(), keep_dims=False, dtype=mstype.int32):
         dtype (Union[Number, mindspore.bool\_], optional): The data type of the output tensor.
             Default: ``mstype.int32`` .
 
+
     Returns:
           Tensor, number of nonzero element across axis specified by `axis`.
           The data type is specified by `dtype`.
@@ -12447,34 +12853,18 @@ def _calc_new_shape(shape, axes, position=0):
 
 def tensor_dot(x1, x2, axes):
     """
-    Computation of Tensor contraction on arbitrary axes between tensors `a` and `b`.
-
-    Contraction allows for the summation of products of elements of `a` and `b` on specified axes.
-    The same number of axes must be specified for both x1 and x2, and values must be within range
-    of number of dims of both `a` and `b`.
-
-    Selected dims in both inputs must also match.
-
-    axes = 0 leads to outer product.
-    axes = 1 leads to normal matrix multiplication when inputs both 2D.
-    axes = 1 is the same as axes = ((1,),(0,)) where both `a` and `b` are 2D.
-    axes = 2 is the same as axes = ((1,2),(0,1)) where both `a` and `b` are 3D.
+    Compute the tensor dot product along the specified axes.
 
     Args:
-        x1 (Tensor): First tensor in tensor_dot with datatype float16 or float32
-        x2 (Tensor): Second tensor in tensor_dot with datatype float16 or float32
-        axes (Union[int, tuple(int), tuple(tuple(int)), list(list(int))]): Single value or
-            tuple/list of length 2 with dimensions specified for `a` and `b` each. If single value `N` passed,
-            automatically picks up last N dims from `a` input shape and first N dims from `b` input shape in order
-            as axes for each respectively.
+        x1 (Tensor): Input tensor.
+        x2 (Tensor): Input tensor.
+        axes (Union[int, tuple(int), tuple(tuple(int)), list(list(int))]): The number of dimensions to sum over. If an
+            integer `k` is provided, then sum over the last `k` axes of `x1` and the first `k` axes of `x2`, in order.
+            If a tuple or list is provided, then `axes[0]` specifies the axes of `x1` and `axes[1]` specifies the axes
+            of `x2`.
 
     Returns:
-        Tensor, the shape of the output tensor is :math:`(N + M)`, where :math:`N` and :math:`M` are the free axes not
-        contracted in both inputs.
-
-    Raises:
-        TypeError: If `x1` or `x2` is not a Tensor.
-        TypeError: If `axes` is not one of the following: int, tuple, list.
+        Tensor.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -13022,9 +13412,70 @@ def isnan_ext(tensor):
     return not_equal_op(tensor, tensor)
 
 
+def multi_scale_deformable_attn_function(value, shape, offset, locations, weight):
+    r"""
+    The multi-scale deformable attention mechanism fuses the feature maps of multiple perspectives.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    .. note::
+        Atlas training series products are not supported.
+
+    Args:
+        value (Tensor): Feature tensor, the data type supports float32 and float16.
+            The shape is :math:`(bs, num\_keys, num\_heads, embed\_dims)`. Among them, bs is the batch size,
+            num_keys is the size of the feature map, num_heads is the number of heads, embed_dims is the
+            dimension of the fearure map, where embed_dims needs to be a multiple of ``8``.
+        shape (Tensor): Shape of feature, the data type supports int32 and int64. The shape is :math:`(num\_levels, 2)`.
+            Among them, num_levels is the number of feature maps, and 2 represents H and W respectively.
+        offset (Tensor): Offset tensor, the data type supports int32 and int64. The shape is :math:`(num\_levels)`.
+        locations (Tensor): Location tensor, the data type supports float32 and float16.
+            The shape is :math:`(bs, num\_queries, num\_heads, num\_levels, num\_points, 2)`. Among them,
+            bs is the batch size, num_queries is the number of queries, num_heads is the number of heads,
+            num_levels is the number of feature maps, num_points is the number of sampling points,
+            and ``2`` represents x and y respectively.
+        weight (Tensor): Weight tensor, the data type supports float32 and float16. The shape is
+            :math:`(bs, num\_queries, num\_heads, num\_levels, num\_points)`. Among them, bs is the batch size,
+            num_queries is the number of queries, num_heads is the number of heads, num_levels is the number
+            of feature maps, num_points is the number of sampling points.
+
+    Returns:
+        Tensor, The fused feature tensor, the data type is float32 or float16.
+        The shape is :math:`(bs, num\_queries, num\_heads*embed\_dims)`.
+
+    Raises:
+        RuntimeError: If the data type of `value` is neither float32 nor float16.
+        RuntimeError: If the data type of `shape` is neither int32 nor int64.
+        RuntimeError: If the data type of `offset` is neither int32 nor int64.
+        RuntimeError: If the data type of `locations` is neither float32 nor float16.
+        RuntimeError: If the data type of `weight` is neither float32 nor float16.
+        RuntimeError: `embed_dims` is not the multiples of ``8``.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> import numpy as np
+        >>> value = Tensor(np.random.randn(2, 3, 4, 8), dtype=ms.float32)
+        >>> data = [[1, 2], [3, 4], [5, 6]]
+        >>> shape = ms.Tensor(data, dtype=ms.int32)
+        >>> data1 = [1, 2, 3]
+        >>> shape = ms.Tensor(data1, dtype=ms.int32)
+        >>> locations = ms.Tensor(np.random.randn(2, 3, 4, 3, 2, 2), dtype=ms.float32)
+        >>> weight = ms.Tensor(np.random.randn(2, 3, 4, 3, 2), dtype=ms.float32)
+        >>> out = ms.ops.multi_scale_deformable_attn_function(value, shape, offset, locations, weight)
+    """
+    return multi_scale_deformable_attn_op(value, shape, offset, locations, weight)
+
+
 def rotated_iou(boxes, query_boxes, trans=False, mode=0, is_cross=True, v_threshold=0.0, e_threshold=0.0):
     r"""
     Calculate the overlap area between rotated rectangles.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     .. note::
         The input data types supported by the Ascend platform include
@@ -13566,6 +14017,7 @@ __all__ = [
     'cov',
     'cross',
     'einsum',
+    'einsum_ext',
     'erfinv',
     'less_equal',
     'cumprod',
@@ -13608,5 +14060,6 @@ __all__ = [
     'dot',
     'batch_dot',
     'eps',
+    'multi_scale_deformable_attn_function',
 ]
 __all__.sort()

@@ -14,6 +14,7 @@ if(MSLITE_ENABLE_CONVERTER)
     set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../src)
     set(TOOLS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../tools)
     set(CCSRC_SRC
+            ${CCSRC_DIR}/backend/common/session/jit_setting.cc
             ${CCSRC_DIR}/backend/common/optimizer/pattern_engine.cc
             ${CCSRC_DIR}/backend/common/optimizer/visitor.cc
             ${CCSRC_DIR}/backend/common/optimizer/graph_optimizer.cc
@@ -30,7 +31,7 @@ if(MSLITE_ENABLE_CONVERTER)
                 ${CCSRC_DIR}/common/thread_pool.cc
                 ${CCSRC_DIR}/common/profiler.cc
                 ${CCSRC_DIR}/common/pynative/abstract_converter.cc
-                ${OPS_DIR}/kernel/cpu/cpu_kernel.cc
+                ${CCSRC_DIR}/plugin/device/cpu/kernel/cpu_kernel.cc
                 ${CCSRC_DIR}/distributed/cluster/dummy_cluster_context.cc
                 ${CCSRC_DIR}/kernel/ops_utils.cc
                 ${CCSRC_DIR}/kernel/common_utils.cc

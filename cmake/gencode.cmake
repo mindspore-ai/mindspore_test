@@ -17,8 +17,6 @@ endif()
 
 add_custom_target(generated_code DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/../../mindspore/python/mindspore/ops/auto_generate/gen_ops_def.py"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../mindspore/python/mindspore/ops/auto_generate/gen_arg_handler.py"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../mindspore/python/mindspore/ops/auto_generate/gen_arg_dtype_cast.py"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../mindspore/python/mindspore/ops/auto_generate/cpp_create_prim_instance_helper.py"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../mindspore/ops/op_def/auto_generate/gen_deprecated_ops_def.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../mindspore/ops/op_def/auto_generate/gen_lite_ops.cc"

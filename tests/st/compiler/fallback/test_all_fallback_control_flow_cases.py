@@ -13,8 +13,8 @@
 # limitations under the License.
 # ============================================================================
 from tests.st.compiler.fallback.cases_register import case_register
-from mindspore import context
 from tests.mark_utils import arg_mark
+from mindspore import context
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -24,7 +24,7 @@ def test_level0_ascend_cases():
     Description: Execute all test cases with level0 and with device_target Ascend in one process.
     Expectation: All cases passed.
     """
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0"})
     case_register.check_and_run("Ascend", 0)
 
 
@@ -57,7 +57,7 @@ def test_level1_ascend_cases():
     Description: Execute all test cases with level1 and with device_target Ascend in one process.
     Expectation: All cases passed.
     """
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0"})
     case_register.check_and_run("Ascend", 1)
 
 

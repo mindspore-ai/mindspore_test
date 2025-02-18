@@ -21,7 +21,7 @@ from mindspore import Tensor as ms_Tensor
 from mindspore.common import dtype as mstype
 from mindspore.common._stub_tensor import StubTensor
 from mindspore.common.initializer import Zero
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 
 
 _dtypeDict = {

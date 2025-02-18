@@ -178,6 +178,9 @@ void Parser::UpdateTopFuncGraph(const FuncGraphPtr &func_graph) { top_func_graph
 void Parser::InitParserEnvironment(const py::object &obj) {
   Parser::top_func_graph_ = FuncGraphWeakPtr();
   ScopeManager::GetInstance().ClearScope();
+  if (obj.ptr() == nullptr) {
+    return;
+  }
   (void)python_adapter::CallPyFn(PYTHON_MOD_PARSE_MODULE, PYTHON_PARSE_GENERATE_SCOPE, obj);
   // CellList need convert to FuncGraph in Parse, add flag for input from top graph.
   if (py::hasattr(obj, PYTHON_CELL_AS_LIST)) {
@@ -5058,6 +5061,76 @@ bool Parser::IsSubscriptReferenceType(const py::object &obj) {
   auto node_type = ast_->GetNodeType(slice_node);
   auto node_name = node_type->node_name();
   return node_name != "Slice";
+}
+
+void AttachIsolatedNodes(const FuncGraphPtr &func_graph, const OrderedSet<AnfNodePtr> &isolated_nodes) {
+  if (isolated_nodes.empty()) {
+    return;
+  }
+  std::vector<AnfNodePtr> states;
+  (void)states.emplace_back(NewValueNode(prim::kPrimMakeTuple));
+  constexpr int recursive_level = 2;
+  for (const auto &node : isolated_nodes) {
+    MS_EXCEPTION_IF_NULL(node);
+    MS_LOG(DEBUG) << "Adding dependency, node: " << node->DebugString(recursive_level) << " in "
+                  << func_graph->ToString();
+    if (node->func_graph() == func_graph) {
+      (void)states.emplace_back(node);
+    } else {
+      MS_LOG(INFO) << "Ignored FV dependency, node: " << node->DebugString(recursive_level) << " in "
+                   << func_graph->ToString();
+    }
+  }
+
+  AnfNodePtr state = nullptr;
+  constexpr size_t no_state_size = 1;
+  constexpr size_t only_one_state_size = 2;
+  if (states.size() == no_state_size) {
+    // Only MakeTuple, no state left.
+    return;
+  } else if (states.size() == only_one_state_size) {
+    // If there are only MakeTuple and another node in states(the states size is 2),
+    // do not need to MakeTuple, just use the node.
+    state = states[1];
+  } else {
+    state = func_graph->NewCNode(std::move(states));
+    if (state != nullptr && state->debug_info() != nullptr) {
+      state->debug_info()->set_location(nullptr);
+    }
+  }
+
+  AnfNodePtr old_output = nullptr;
+  auto return_node = func_graph->get_return();
+  if (return_node != nullptr) {
+    const size_t return_input_size = 2;
+    if (return_node->size() < return_input_size) {
+      MS_LOG(INTERNAL_EXCEPTION) << "Length of inputs of output node is less than 2";
+    }
+    old_output = return_node->input(1);
+  } else {
+    old_output = NewValueNode(kNone);
+  }
+  AnfNodePtr stop_grad_node = func_graph->NewCNode({NewValueNode(prim::kPrimStopGradient), state});
+  CNodePtr depend_node = func_graph->NewCNode({NewValueNode(prim::kPrimDepend), old_output, stop_grad_node});
+  if (stop_grad_node->debug_info() != nullptr) {
+    stop_grad_node->debug_info()->set_location(nullptr);
+  }
+  if (old_output->debug_info() != nullptr && depend_node->debug_info() != nullptr) {
+    depend_node->debug_info()->set_location(old_output->debug_info()->location());
+  }
+  // We add this attribute for @constexpr use scene, since we must infer them before other nodes.
+  // That means isolated nodes will be evaluated first. It's not complete, but works in most scenes.
+  depend_node->AddAttr(kAttrTopoSortRhsFirst, MakeValue(true));
+  MS_EXCEPTION_IF_NULL(state);
+  MS_LOG(INFO) << "Attached for side-effect nodes, depend_node: " << depend_node->DebugString()
+               << ", state: " << state->DebugString(recursive_level);
+  func_graph->set_output(depend_node, true);
+  // Update new return node's debug_info with old one.
+  if (return_node != nullptr && return_node->debug_info() != nullptr) {
+    auto new_return = func_graph->get_return();
+    MS_EXCEPTION_IF_NULL(new_return);
+    new_return->set_debug_info(return_node->debug_info());
+  }
 }
 
 struct CompileConfigCollectRegister {

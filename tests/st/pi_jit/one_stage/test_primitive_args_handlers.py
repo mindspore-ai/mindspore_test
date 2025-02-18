@@ -20,8 +20,7 @@ import mindspore as ms
 from mindspore import Tensor
 from mindspore import context
 from mindspore import ops
-from mindspore.common.api import jit
-from ..share.utils import match_array, assert_executed_by_graph_mode
+from ..share.utils import match_array, assert_executed_by_graph_mode, pi_jit_with_config
 from tests.mark_utils import arg_mark
 
 @pytest.fixture(autouse=True)  
@@ -46,7 +45,7 @@ def test_add_fp16_and_fp32():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def fn(x, y):
         return ops.add(x, y)
 
@@ -66,7 +65,7 @@ def test_add_fp32_and_int32():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def fn(x, y):
         return ops.add(x, y)
 
@@ -86,7 +85,7 @@ def test_add_fp32_and_int_scalar():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def fn(x, y):
         return ops.add(x, y)
 
@@ -106,7 +105,7 @@ def test_add_fp16_and_int_scalar():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def fn(x, y):
         return ops.add(x, y)
 
@@ -126,7 +125,7 @@ def test_mul_fp16_and_fp32():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def fn(x, y):
         return ops.mul(x, y)
 
@@ -146,7 +145,7 @@ def test_mul_fp32_and_int32():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def fn(x, y):
         return ops.mul(x, y)
 
@@ -166,7 +165,7 @@ def test_mul_fp32_and_int_scalar():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def fn(x, y):
         return ops.mul(x, y)
 
@@ -186,7 +185,7 @@ def test_mul_fp16_and_int_scalar():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def fn(x, y):
         return ops.mul(x, y)
 
@@ -206,7 +205,7 @@ def test_pow_fp16_and_fp32():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def fn(x, y):
         return ops.pow(x, y)
 
@@ -226,7 +225,7 @@ def test_pow_fp32_and_int_scalar():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def fn(x, y):
         return ops.pow(x, y)
 
@@ -246,7 +245,7 @@ def test_div_fp16_and_fp32():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def fn(x, y):
         return ops.div(x, y)
 
@@ -266,7 +265,7 @@ def test_div_fp32_and_int_scalar():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def fn(x, y):
         return ops.div(x, y)
 
@@ -289,7 +288,7 @@ def test_zeros_dtype_arg_handler_dtype_to_type_id():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def fn(shape, dtype):
         return ops.zeros(shape, dtype)
 
@@ -307,7 +306,7 @@ def test_div_rounding_mode_arg_handler_str_to_enum():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def fn(x, y, mode):
         return ops.div(x, y, rounding_mode=mode)
 
@@ -334,7 +333,7 @@ def test_less_type_cast_from_number_bool_to_tensor():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def fn(x, y):
         return ops.less(x, y)
 
@@ -353,7 +352,7 @@ def test_reshape_type_cast_from_list_tensor_to_tuple():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def fn(x, shape):
         return ops.reshape(x, shape)
 
@@ -379,7 +378,7 @@ def test_concat_axis_using_default_value():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def fn(tensors):
         return ops.cat(tensors)
 
@@ -398,7 +397,7 @@ def test_concat_axis_using_custom_value():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def fn(tensors, axis):
         return ops.cat(tensors, axis=axis)
 
@@ -417,7 +416,7 @@ def test_pad_mode_default_value():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def fn(x, padding, mode=None):
         return ops.pad(x, padding, mode=mode) if mode is not None else ops.pad(x, padding)
 
@@ -450,7 +449,7 @@ def test_MutMul_with_no_init_args():
     context.set_context(mode=context.PYNATIVE_MODE)
     a = Tensor([[1, 2, 3], [1, 2, 3]], dtype=ms.float32)
     b = Tensor([[1], [2], [3]], dtype=ms.float32)
-    ret = jit(fn, mode="PIJit", jit_config=cfg)(a, b)
+    ret = pi_jit_with_config(fn, jit_config=cfg)(a, b)
 
     match_array(ret.asnumpy(), np.array([[14], [14]]).astype(np.float32))
     assert_executed_by_graph_mode(fn)
@@ -469,7 +468,7 @@ def test_MutMul_with_two_init_args():
     context.set_context(mode=context.PYNATIVE_MODE)
     a = Tensor([[1, 1], [2, 2], [3, 3]], dtype=ms.float32)
     b = Tensor([[1, 2, 3]], dtype=ms.float32)
-    ret = jit(fn, mode="PIJit", jit_config=cfg)(a, b, transpose_a=True, transpose_b=True)
+    ret = pi_jit_with_config(fn, jit_config=cfg)(a, b, transpose_a=True, transpose_b=True)
 
     match_array(ret.asnumpy(), np.array([[14], [14]]).astype(np.float32))
     assert_executed_by_graph_mode(fn)
@@ -489,7 +488,7 @@ def test_MutMul_with_one_init_arg_transpose_a():
     context.set_context(mode=context.PYNATIVE_MODE)
     a = Tensor([[1, 1], [2, 2], [3, 3]], dtype=ms.float32)
     b = Tensor([[1], [2], [3]], dtype=ms.float32)
-    ret = jit(fn, mode="PIJit", jit_config=cfg)(a, b, transpose_a=True)
+    ret = pi_jit_with_config(fn, jit_config=cfg)(a, b, transpose_a=True)
 
     match_array(ret.asnumpy(), np.array([[14], [14]]).astype(np.float32))
     assert_executed_by_graph_mode(fn)
@@ -509,7 +508,7 @@ def test_MutMul_with_one_init_arg_transpose_b():
     context.set_context(mode=context.PYNATIVE_MODE)
     a = Tensor([[1, 2, 3], [1, 2, 3]], dtype=ms.float32)
     b = Tensor([[1, 2, 3]], dtype=ms.float32)
-    ret = jit(fn, mode="PIJit", jit_config=cfg)(a, b, transpose_b=True)
+    ret = pi_jit_with_config(fn, jit_config=cfg)(a, b, transpose_b=True)
 
     match_array(ret.asnumpy(), np.array([[14], [14]]).astype(np.float32))
     assert_executed_by_graph_mode(fn)
@@ -529,7 +528,7 @@ def test_BiasAdd_with_no_init_args():
     context.set_context(mode=context.PYNATIVE_MODE)
     a = Tensor([[1, 2, 3], [2, 3, 4]], dtype=ms.float32)
     b = Tensor([1, 1, 1], dtype=ms.float32)
-    ret = jit(fn, mode="PIJit", jit_config=cfg)(a, b)
+    ret = pi_jit_with_config(fn, jit_config=cfg)(a, b)
 
     match_array(ret.asnumpy(), np.array([[2, 3, 4], [3, 4, 5]]).astype(np.float32))
     assert_executed_by_graph_mode(fn)
@@ -549,7 +548,7 @@ def test_BiasAdd_with_one_init_args():
     context.set_context(mode=context.PYNATIVE_MODE)
     a = Tensor([[1, 2, 3], [2, 3, 4]], dtype=ms.float32)
     b = Tensor([1, 1, 1], dtype=ms.float32)
-    ret = jit(fn, mode="PIJit", jit_config=cfg)(a, b)
+    ret = pi_jit_with_config(fn, jit_config=cfg)(a, b)
 
     match_array(ret.asnumpy(), np.array([[2, 3, 4], [3, 4, 5]]).astype(np.float32))
     assert_executed_by_graph_mode(fn)

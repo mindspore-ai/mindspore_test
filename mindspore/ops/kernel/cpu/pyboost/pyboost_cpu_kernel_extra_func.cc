@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/pyboost_cpu_kernel_extra_func.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "mindspore/ops/kernel/cpu/pyboost/pyboost_cpu_kernel_extra_func.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
-#include "kernel/cpu/pyboost/pyboost_cpu_custom_kernel_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ops/kernel/cpu/pyboost/pyboost_cpu_custom_kernel_register.h"
 
 namespace mindspore {
 namespace kernel {

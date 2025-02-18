@@ -18,7 +18,7 @@ class Net(Cell):
         self.w = Parameter(Tensor([(- 1)], dtype.float32), name='weight')
         self.b = Parameter(Tensor([(- 5)], dtype.float32), name='bias')
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x, y):
         if y == x:
             for a in range(2):

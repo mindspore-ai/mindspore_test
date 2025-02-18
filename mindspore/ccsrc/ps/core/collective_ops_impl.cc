@@ -46,9 +46,9 @@ bool CollectiveOpsImpl::RingAllReduce(const std::string &data_name, const void *
   if (recvbuff != sendbuff) {
     size_t src_size = count * sizeof(T);
     size_t dst_size = count * sizeof(T);
-    auto ret = memcpy_s(recvbuff, dst_size, sendbuff, src_size);
+    auto ret = Memcpy(recvbuff, dst_size, sendbuff, src_size);
     if (ret != EOK) {
-      MS_LOG(ERROR) << "memcpy_s error, errorno(" << ret << ")";
+      MS_LOG(ERROR) << "Memcpy error, errorno(" << ret << ")";
       return false;
     }
   }
@@ -127,7 +127,7 @@ bool CollectiveOpsImpl::RunRingAllReduce(const std::string &data_name, uint32_t 
 
     std::shared_ptr<std::vector<uint8_t>> recv_str;
     auto expect_size = recv_chunk_count * sizeof(T);
-    if (!server_node_->FlCollectiveWait(recv_meta, expect_size, &recv_str, kCollectiveCommTimeout)) {
+    if (!server_node_->FlCollectiveWait(recv_meta, expect_size, &recv_str, comm_op_timeout_)) {
       MS_LOG(ERROR) << "FlCollectiveWait failed, send rank id: " << recv_meta.send_rank_id();
       return false;
     }
@@ -137,7 +137,7 @@ bool CollectiveOpsImpl::RunRingAllReduce(const std::string &data_name, uint32_t 
       recv_chunk[j] += tmp_recv_chunk[j];
     }
     // Step 4: Wait until send is done.
-    if (!server_node_->Wait(send_req_id, kCollectiveCommTimeout)) {
+    if (!server_node_->Wait(send_req_id, comm_op_timeout_)) {
       MS_LOG(ERROR) << "Wait response of rank " << send_req_id << " failed.";
       return false;
     }
@@ -168,17 +168,17 @@ bool CollectiveOpsImpl::RunRingAllReduce(const std::string &data_name, uint32_t 
 
     std::shared_ptr<std::vector<unsigned char>> recv_str;
     auto expect_size = recv_chunk_count * sizeof(T);
-    if (!server_node_->FlCollectiveWait(recv_meta, expect_size, &recv_str, kCollectiveCommTimeout)) {
+    if (!server_node_->FlCollectiveWait(recv_meta, expect_size, &recv_str, comm_op_timeout_)) {
       MS_LOG(ERROR) << "FlCollectiveWait failed, send rank id: " << recv_meta.send_rank_id();
       return false;
     }
-    auto ret = memcpy_s(recv_chunk, expect_size, recv_str->data(), recv_str->size());
+    auto ret = Memcpy(recv_chunk, expect_size, recv_str->data(), recv_str->size());
     if (ret != EOK) {
-      MS_LOG(ERROR) << "memcpy_s error, errorno(" << ret << ")"
+      MS_LOG(ERROR) << "Memcpy error, errorno(" << ret << ")"
                     << ", dest size is " << recv_chunk_count * sizeof(T) << ", src size is " << recv_str->size();
       return false;
     }
-    if (!server_node_->Wait(send_req_id, kCollectiveCommTimeout)) {
+    if (!server_node_->Wait(send_req_id, comm_op_timeout_)) {
       MS_LOG(ERROR) << "Wait response of rank " << send_req_id << " failed.";
       return false;
     }
@@ -199,9 +199,9 @@ bool CollectiveOpsImpl::ReduceBroadcastAllReduce(const std::string &data_name, c
 
   size_t src_size = count * sizeof(T);
   size_t dst_size = count * sizeof(T);
-  int ret = memcpy_s(recvbuff, dst_size, sendbuff, src_size);
+  int ret = Memcpy(recvbuff, dst_size, sendbuff, src_size);
   if (ret != EOK) {
-    MS_LOG(ERROR) << "memcpy_s error, errorno(" << ret << ")"
+    MS_LOG(ERROR) << "Memcpy error, errorno(" << ret << ")"
                   << ", dest size is " << dst_size << ", src size is " << src_size;
     return false;
   }
@@ -231,7 +231,7 @@ bool CollectiveOpsImpl::ReduceBroadcastAllReduce(const std::string &data_name, c
       MS_LOG(DEBUG) << "Reduce rank 0 receive from rank " << i;
       recv_meta.set_send_rank_id(i);
       auto expect_size = count * sizeof(T);
-      if (!server_node_->FlCollectiveWait(recv_meta, expect_size, &recv_str, kCollectiveCommTimeout)) {
+      if (!server_node_->FlCollectiveWait(recv_meta, expect_size, &recv_str, comm_op_timeout_)) {
         MS_LOG(ERROR) << "FlCollectiveWait failed, send rank id: " << recv_meta.send_rank_id();
         return false;
       }
@@ -244,7 +244,7 @@ bool CollectiveOpsImpl::ReduceBroadcastAllReduce(const std::string &data_name, c
     MS_LOG(DEBUG) << "Reduce send data to rank 0 process.";
     send_meta.set_recv_rank_id(0);
     auto send_req_id1 = server_node_->FlCollectiveSendAsync(send_meta, sendbuff, count * sizeof(T));
-    if (!server_node_->Wait(send_req_id1, kCollectiveCommTimeout)) {
+    if (!server_node_->Wait(send_req_id1, comm_op_timeout_)) {
       MS_LOG(ERROR) << "Wait response of rank " << send_req_id1 << " failed.";
       return false;
     }
@@ -260,7 +260,7 @@ bool CollectiveOpsImpl::ReduceBroadcastAllReduce(const std::string &data_name, c
       MS_LOG(DEBUG) << "Broadcast data to process " << i;
       send_meta.set_recv_rank_id(i);
       auto send_req_id2 = server_node_->FlCollectiveSendAsync(send_meta, output_buff, count * sizeof(T));
-      if (!server_node_->Wait(send_req_id2, kCollectiveCommTimeout)) {
+      if (!server_node_->Wait(send_req_id2, comm_op_timeout_)) {
         MS_LOG(ERROR) << "Wait response of rank " << send_req_id2 << " failed.";
         return false;
       }
@@ -270,13 +270,13 @@ bool CollectiveOpsImpl::ReduceBroadcastAllReduce(const std::string &data_name, c
     recv_meta.set_send_rank_id(0);
     std::shared_ptr<std::vector<unsigned char>> recv_str;
     auto expect_size = count * sizeof(T);
-    if (!server_node_->FlCollectiveWait(recv_meta, expect_size, &recv_str, kCollectiveCommTimeout)) {
+    if (!server_node_->FlCollectiveWait(recv_meta, expect_size, &recv_str, comm_op_timeout_)) {
       MS_LOG(ERROR) << "FlCollectiveWait failed, send rank id: " << recv_meta.send_rank_id();
       return false;
     }
-    ret = memcpy_s(output_buff, expect_size, recv_str->data(), recv_str->size());
+    ret = Memcpy(output_buff, expect_size, recv_str->data(), recv_str->size());
     if (ret != EOK) {
-      MS_LOG(ERROR) << "memcpy_s error, errorno(" << ret << ")"
+      MS_LOG(ERROR) << "Memcpy error, errorno(" << ret << ")"
                     << ", dest size is " << expect_size << ", src size is " << recv_str->size();
       return false;
     }
@@ -296,9 +296,9 @@ bool CollectiveOpsImpl::RingAllGather(const void *sendbuff, void *recvbuff, size
   std::vector<size_t> chunk_sizes(rank_size_, chunk_size);
 
   if (rank_size_ == 1) {
-    int ret = memcpy_s(recvbuff, chunk_size * sizeof(T), sendbuff, chunk_size * sizeof(T));
+    int ret = Memcpy(recvbuff, chunk_size * sizeof(T), sendbuff, chunk_size * sizeof(T));
     if (ret != EOK) {
-      MS_LOG(ERROR) << "memcpy_s error, errorno(" << ret << ")"
+      MS_LOG(ERROR) << "Memcpy error, errorno(" << ret << ")"
                     << ", dest size is " << (chunk_size * sizeof(T));
       return false;
     }
@@ -331,9 +331,9 @@ bool CollectiveOpsImpl::RingAllGather(const void *sendbuff, void *recvbuff, size
   T *output_buff = reinterpret_cast<T *>(recvbuff);
   size_t src_size = send_count * sizeof(T);
   size_t dst_size = send_count * sizeof(T);
-  int ret = memcpy_s(output_buff + chunk_offset[group_rank], dst_size, sendbuff, src_size);
+  int ret = Memcpy(output_buff + chunk_offset[group_rank], dst_size, sendbuff, src_size);
   if (ret != EOK) {
-    MS_LOG(ERROR) << "memcpy_s error, errorno(" << ret << ")"
+    MS_LOG(ERROR) << "Memcpy error, errorno(" << ret << ")"
                   << ", dest size is " << dst_size << ", src size is " << src_size;
     return false;
   }
@@ -342,7 +342,7 @@ bool CollectiveOpsImpl::RingAllGather(const void *sendbuff, void *recvbuff, size
   MS_EXCEPTION_IF_NULL(context_ptr);
   // If enable recovery, set timeout 300s to prevent networking flapping.
   uint32_t collective_comm_timeout =
-    context_ptr->get_param<bool>(MS_CTX_ENABLE_RECOVERY) ? kCollectiveCommMaxTimeout : kCollectiveCommTimeout;
+    context_ptr->get_param<bool>(MS_CTX_ENABLE_RECOVERY) ? kCollectiveCommMaxTimeout : comm_op_timeout_;
 
   // Ring AllGather.
   for (size_t i = 0; i < group_rank_size - 1; i++) {
@@ -363,9 +363,9 @@ bool CollectiveOpsImpl::RingAllGather(const void *sendbuff, void *recvbuff, size
       MS_LOG(ERROR) << "CollectiveWait " << recv_req_id << " failed.";
       return false;
     }
-    ret = memcpy_s(recv_chunk, chunk_sizes[recv_chunk_index] * sizeof(T), recv_str->data(), recv_str->size());
+    ret = Memcpy(recv_chunk, chunk_sizes[recv_chunk_index] * sizeof(T), recv_str->data(), recv_str->size());
     if (ret != EOK) {
-      MS_LOG(ERROR) << "memcpy_s error, errorno(" << ret << ")"
+      MS_LOG(ERROR) << "Memcpy error, errorno(" << ret << ")"
                     << ", dest size is " << (chunk_sizes[recv_chunk_index] * sizeof(T)) << ", src size is "
                     << recv_str->size();
       return false;
@@ -399,9 +399,9 @@ bool CollectiveOpsImpl::Broadcast(const void *sendbuff, void *recvbuff, size_t c
   if (rank_id_ == global_root_rank) {
     for (uint32_t i = 0; i < group_rank_size; i++) {
       if (i == root) {
-        int ret = memcpy_s(recvbuff, count * sizeof(T), sendbuff, count * sizeof(T));
+        int ret = Memcpy(recvbuff, count * sizeof(T), sendbuff, count * sizeof(T));
         if (ret != EOK) {
-          MS_LOG(ERROR) << "memcpy_s error, errorno(" << ret << ")"
+          MS_LOG(ERROR) << "Memcpy error, errorno(" << ret << ")"
                         << ", broadcast size is " << (count * sizeof(T));
           return false;
         }
@@ -409,7 +409,7 @@ bool CollectiveOpsImpl::Broadcast(const void *sendbuff, void *recvbuff, size_t c
         uint32_t dst_rank = group_to_global_ranks[i];
         MS_LOG(DEBUG) << "Broadcast data to process " << dst_rank;
         auto send_req_id = node_->CollectiveSendAsync(node_role_, dst_rank, sendbuff, count * sizeof(T));
-        if (!node_->Wait(send_req_id, kCollectiveCommTimeout)) {
+        if (!node_->Wait(send_req_id, comm_op_timeout_)) {
           MS_LOG(ERROR) << "CollectiveWait " << send_req_id << " failed.";
           return false;
         }
@@ -419,13 +419,13 @@ bool CollectiveOpsImpl::Broadcast(const void *sendbuff, void *recvbuff, size_t c
     MS_LOG(DEBUG) << "Broadcast receive from rank " << global_root_rank;
     std::shared_ptr<std::vector<unsigned char>> recv_str;
     auto recv_req_id = node_->CollectiveReceiveAsync(node_role_, global_root_rank, &recv_str);
-    if (!node_->CollectiveWait(recv_req_id, kCollectiveCommTimeout)) {
+    if (!node_->CollectiveWait(recv_req_id, comm_op_timeout_)) {
       MS_LOG(ERROR) << "CollectiveWait " << recv_req_id << " failed.";
       return false;
     }
-    int ret = memcpy_s(recvbuff, count * sizeof(T), recv_str->data(), recv_str->size());
+    int ret = Memcpy(recvbuff, count * sizeof(T), recv_str->data(), recv_str->size());
     if (ret != EOK) {
-      MS_LOG(ERROR) << "memcpy_s error, errorno(" << ret << ")"
+      MS_LOG(ERROR) << "Memcpy error, errorno(" << ret << ")"
                     << ", dest size is " << (count * sizeof(T)) << ", src size is " << recv_str->size();
       return false;
     }
@@ -457,9 +457,9 @@ bool CollectiveOpsImpl::Gather(const void *sendbuff, void *recvbuff, size_t coun
     for (uint32_t i = 0; i < group_rank_size; i++) {
       T *recv_chunk = output_buff + i * count;
       if (i == group_rank) {
-        int ret = memcpy_s(recv_chunk, count * sizeof(T), sendbuff, count * sizeof(T));
+        int ret = Memcpy(recv_chunk, count * sizeof(T), sendbuff, count * sizeof(T));
         if (ret != EOK) {
-          MS_LOG(ERROR) << "memcpy_s error, errorno(" << ret << ")"
+          MS_LOG(ERROR) << "Memcpy error, errorno(" << ret << ")"
                         << ", Gather size is " << (count * sizeof(T));
           return false;
         }
@@ -468,13 +468,13 @@ bool CollectiveOpsImpl::Gather(const void *sendbuff, void *recvbuff, size_t coun
         uint32_t dst_rank = group_to_global_ranks[i];
         std::shared_ptr<std::vector<unsigned char>> recv_str;
         auto recv_req_id = node_->CollectiveReceiveAsync(node_role_, dst_rank, &recv_str);
-        if (!node_->CollectiveWait(recv_req_id, kCollectiveCommTimeout)) {
+        if (!node_->CollectiveWait(recv_req_id, comm_op_timeout_)) {
           MS_LOG(ERROR) << "CollectiveWait " << recv_req_id << " failed.";
           return false;
         }
-        int ret = memcpy_s(recv_chunk, count * sizeof(T), recv_str->data(), recv_str->size());
+        int ret = Memcpy(recv_chunk, count * sizeof(T), recv_str->data(), recv_str->size());
         if (ret != EOK) {
-          MS_LOG(ERROR) << "memcpy_s error, errorno(" << ret << ")"
+          MS_LOG(ERROR) << "Memcpy error, errorno(" << ret << ")"
                         << ", dest size is " << (count * sizeof(T)) << ", src size is " << recv_str->size();
           return false;
         }
@@ -483,7 +483,7 @@ bool CollectiveOpsImpl::Gather(const void *sendbuff, void *recvbuff, size_t coun
   } else {
     MS_LOG(DEBUG) << "Gather data to process " << global_root_rank;
     auto send_req_id = node_->CollectiveSendAsync(node_role_, global_root_rank, sendbuff, count * sizeof(T));
-    if (!node_->Wait(send_req_id, kCollectiveCommTimeout)) {
+    if (!node_->Wait(send_req_id, comm_op_timeout_)) {
       MS_LOG(ERROR) << "CollectiveWait " << send_req_id << " failed.";
       return false;
     }
@@ -516,17 +516,17 @@ bool CollectiveOpsImpl::Scatter(const void *sendbuff, void *recvbuff, size_t cou
     for (size_t i = 0; i < group_rank_size; i++) {
       T *send_chunk = in_buff + i * count;
       if (i == group_rank) {
-        int ret = memcpy_s(recvbuff, count * sizeof(T), send_chunk, count * sizeof(T));
+        int ret = Memcpy(recvbuff, count * sizeof(T), send_chunk, count * sizeof(T));
         if (ret != EOK) {
-          MS_LOG(ERROR) << "memcpy_s error, errorno(" << ret << ")"
+          MS_LOG(ERROR) << "Memcpy error, errorno(" << ret << ")"
                         << ", Scatter size is " << (count * sizeof(T));
           return false;
         }
       } else {
         uint32_t dst_rank = group_to_global_ranks[i];
-        MS_LOG(DEBUG) << "Scatter data to process " << dst_rank;
+        MS_LOG(DEBUG) << "Scatter data to process " << dst_rank << ",count is " << count;
         auto send_req_id = node_->CollectiveSendAsync(node_role_, dst_rank, send_chunk, count * sizeof(T));
-        if (!node_->Wait(send_req_id, kCollectiveCommTimeout)) {
+        if (!node_->Wait(send_req_id, comm_op_timeout_)) {
           MS_LOG(ERROR) << "CollectiveWait " << send_req_id << " failed.";
           return false;
         }
@@ -536,13 +536,13 @@ bool CollectiveOpsImpl::Scatter(const void *sendbuff, void *recvbuff, size_t cou
     MS_LOG(DEBUG) << "Scatter receive from rank " << global_root_rank;
     std::shared_ptr<std::vector<unsigned char>> recv_str;
     auto recv_req_id = node_->CollectiveReceiveAsync(node_role_, global_root_rank, &recv_str);
-    if (!node_->CollectiveWait(recv_req_id, kCollectiveCommTimeout)) {
+    if (!node_->CollectiveWait(recv_req_id, comm_op_timeout_)) {
       MS_LOG(ERROR) << "CollectiveWait " << recv_req_id << " failed.";
       return false;
     }
-    int ret = memcpy_s(recvbuff, count * sizeof(T), recv_str->data(), recv_str->size());
+    int ret = Memcpy(recvbuff, count * sizeof(T), recv_str->data(), recv_str->size());
     if (ret != EOK) {
-      MS_LOG(ERROR) << "memcpy_s error, errorno(" << ret << ")"
+      MS_LOG(ERROR) << "Memcpy error, errorno(" << ret << ")"
                     << ", dest size is " << (count * sizeof(T)) << ", src size is " << recv_str->size();
       return false;
     }

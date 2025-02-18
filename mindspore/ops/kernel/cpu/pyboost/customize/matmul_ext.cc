@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/matmul_ext.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/matmul_ext.h"
 #include <string>
 #include <memory>
 #include <utility>
 #include <algorithm>
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
-#include "kernel/cpu/pyboost/auto_generate/matmul.h"
-#include "kernel/cpu/pyboost/auto_generate/batch_mat_mul.h"
-#include "kernel/cpu/pyboost/auto_generate/reshape.h"
-#include "kernel/cpu/pyboost/auto_generate/broadcast_to.h"
-#include "kernel/cpu/pyboost/auto_generate/contiguous.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/matmul.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/batch_mat_mul.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/reshape.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/broadcast_to.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/contiguous.h"
 #include "infer/ops_func_impl/matmul_ext.h"
 
 namespace mindspore {

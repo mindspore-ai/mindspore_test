@@ -20,7 +20,7 @@ from mindspore.common._register_for_tensor import tensor_operator_registry
 from mindspore.ops import _constants
 from mindspore.ops.function import *
 from mindspore.ops.function.array_func import chunk_ext, zero_
-from mindspore.ops.function.math_func import all, argmax_ext, float_power_ext, erfinv_, tanh_
+from mindspore.ops.function.math_func import all, argmax_ext, float_power_ext, erfinv_, tanh_, bernoulli_ext
 from mindspore.ops.function.random_func import random_, uniform_ext, uniform_, normal_
 from mindspore.ops import operations as P
 from mindspore.ops.operations import array_ops
@@ -36,10 +36,10 @@ from mindspore.ops.function.math_func import dot
 from mindspore.ops.function.array_func import new_empty
 from mindspore.ops import auto_generate
 from mindspore.ops.auto_generate import cast
-from mindspore.ops_generate.gen_ops_inner_prim import DtypeToEnum
+from mindspore.ops._utils.arg_dtype_cast import DtypeToEnum
 from mindspore.ops.operations.manually_defined.ops_def import scalar_div, scalar_mod, scalar_add, scalar_mul, \
     scalar_sub, scalar_gt, scalar_ge, scalar_le, scalar_lt, scalar_eq, scalar_floordiv, scalar_log, scalar_pow, \
-    scalar_uadd, scalar_usub, flash_attention_score
+    scalar_uadd, scalar_usub
 
 typeof = Primitive('typeof')
 hastype = Primitive('hastype')
@@ -395,7 +395,7 @@ setattr(tensor_operator_registry, 'tensor_scatter_add', tensor_scatter_add)
 setattr(tensor_operator_registry, 'inplace_scatter_add', auto_generate.inplace_scatter_add)
 setattr(tensor_operator_registry, 'slice_scatter', slice_scatter)
 setattr(tensor_operator_registry, 'select_scatter', select_scatter)
-setattr(tensor_operator_registry, 'bernoulli', bernoulli)
+setattr(tensor_operator_registry, 'bernoulli', bernoulli_ext)
 setattr(tensor_operator_registry, 'poisson', P.Poisson)
 setattr(tensor_operator_registry, 'randperm', P.Randperm)
 setattr(tensor_operator_registry, 'multinomial', multinomial)

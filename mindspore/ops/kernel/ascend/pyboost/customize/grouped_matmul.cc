@@ -17,8 +17,8 @@
 #include "kernel/ascend/pyboost/customize/grouped_matmul.h"
 #include <memory>
 #include <functional>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
@@ -40,7 +40,8 @@ void GroupedMatmulAscendCustomize(const std::shared_ptr<OpRunner> &op, const Val
                                   const std::optional<ValueTuplePtr> &antiquant_scale_tensor_list,
                                   const std::optional<ValueTuplePtr> &antiquant_offset_tensor_list,
                                   const std::optional<BaseTensorPtr> &group_list_tensor, const Int64ImmPtr &split_item,
-                                  const Int64ImmPtr &group_type) {
+                                  const Int64ImmPtr &group_type, const mindspore::BoolImmPtr &transpose_a,
+                                  const mindspore::BoolImmPtr &transpose_b) {
   MS_LOG(DEBUG) << "Call GroupedMatmul start";
   // Convert ValuePtr to c++ scalar
   OpRunner::InferOpOutput(op, x_tensor_list, weight_tensor_list, bias_tensor_list, scale_tensor_list,

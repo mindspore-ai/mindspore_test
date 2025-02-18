@@ -69,7 +69,6 @@ set_property(SOURCE ${GPU_SRC_LIST} ${AKG_GPU_SRC_LIST}
 
 if(ENABLE_GPU)
     add_library(mindspore_ops_gpu STATIC ${GPU_SRC_LIST} ${AKG_GPU_SRC_LIST})
-    add_dependencies(mindspore_ops_gpu proto_input)
     if(CMAKE_SYSTEM_NAME MATCHES "Windows")
         target_compile_definitions(mindspore_ops_gpu PRIVATE BUILDING_GPU_DLL)
     endif()

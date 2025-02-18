@@ -16,7 +16,7 @@
 #include "kernel/ascend/opapi/aclnn/stack_ext_aclnn_kernel.h"
 #include <algorithm>
 #include <utility>
-#include "transform/acl_ir/acl_convert.h"
+#include "plugin/device/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
@@ -32,7 +32,7 @@ std::vector<KernelTensor *> StackExtAscend::GetStackRealInputs(const std::vector
   auto last_element = inputs.end() - 1;
   std::vector<KernelTensor *> tensors(inputs.begin(), last_element);
   if (inputs.size() == kStackMinNum) {
-    tuple_tensors_ = transform::ConvertKernelTensor<std::vector<KernelTensorPtr>>(inputs[kIndex0]);
+    tuple_tensors_ = device::ascend::ConvertKernelTensor<std::vector<KernelTensorPtr>>(inputs[kIndex0]);
     tensors.clear();
     std::transform(tuple_tensors_.begin(), tuple_tensors_.end(), std::back_inserter(tensors),
                    [](const KernelTensorPtr &tensor) -> KernelTensor * { return tensor.get(); });

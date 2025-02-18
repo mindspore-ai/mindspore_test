@@ -42,7 +42,7 @@
 #include "pipeline/jit/pi/graph_guard/strategy.h"
 #include "pipeline/jit/pi/graph_guard/shape_ctx.h"
 #include "pipeline/jit/pi/capture_context.h"
-#include "pipeline/jit/ps/pipeline.h"
+#include "pipeline/jit/ps/pipeline_jit.h"
 #include "pipeline/pynative/pynative_utils.h"
 #include "runtime/pynative/op_executor.h"
 #include "include/common/debug/anf_ir_dump.h"
@@ -50,6 +50,7 @@
 #include "pipeline/jit/pi/graph_capture/bytecode_inliner.h"
 #include "utils/convert_utils_base.h"
 #include "pipeline/jit/pi/eval_frame_hook.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pijit {
@@ -702,7 +703,7 @@ static std::string CallGraphCompiler(JitCompileResults *jcr, PyFunctionObject *f
   ReleaseFunc rFunc = nullptr;
   if (jcr->conf()->GetBoolConfig(GraphJitConfig::kAutoCleanCache)) {
     rFunc = [phase]() {
-      auto graph_executor = mindspore::pipeline::GraphExecutorPy::GetInstance();
+      auto graph_executor = pipeline::GetExecutor();
       if (graph_executor->HasCompiled(phase)) {
         py::str p(phase);
         py::set s;
@@ -766,7 +767,7 @@ static void GraphCompile(JitCompileResults *jcr, const PyFrameWrapper &frame) {
   }
 
   if (jcr->conf()->GetBoolConfig(GraphJitConfig::kReuseGraph)) {
-    auto graph_executor = mindspore::pipeline::GraphExecutorPy::GetInstance();
+    auto graph_executor = pipeline::GetExecutor();
     FuncGraphPtr ms_func_graph = graph_executor->GetFuncGraph(phase);
     std::string key = GraphToString(ms_func_graph);
     auto pcode = OptCodeHub::Filter(key, [jcr, graph_executor, ms_func_graph](OptCodePtr code) {
@@ -962,11 +963,10 @@ static bool CheckTensorInContainer(py::object args) {
       }
     }
   }
-  if (IsStubTensor(args) || py::isinstance<mindspore::tensor::Tensor>(args.ptr())) {
+  if (IsStubTensor(args) || tensor::IsTensorPy(args)) {
     return true;
-  } else {
-    return false;
   }
+  return false;
 }
 
 static bool CheckAbstract(abstract::AbstractBasePtr abs, bool incontainer);
@@ -1033,7 +1033,7 @@ static bool CheckAbstract(abstract::AbstractBasePtr abs, bool incontainer) {
 }
 
 static bool CheckValidReturn(const JitCompileResults *c) {
-  auto graph_executor = mindspore::pipeline::GraphExecutorPy::GetInstance();
+  auto graph_executor = pipeline::GetExecutor();
   FuncGraphPtr ms_func_graph = graph_executor->GetFuncGraph(c->code()->GetPhase());
   auto abs = ms_func_graph->output()->abstract();
   return CheckAbstract(abs, false);

@@ -43,7 +43,7 @@ def test_parser_list_mul_index_001():
             super().__init__()
             MetaFactory.__init__(self)
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self):
             list_x = [[1], [2, 3], [4, 5, 6]]
             list_x[2][2] = 9
@@ -77,7 +77,7 @@ def test_parser_list_mul_index_009():
             self.list_x = list_x
             self.input_x = input_x
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self):
             list_x = self.list_x
             list_x[2][1] = self.input_x
@@ -120,7 +120,7 @@ def test_parser_list_mul_index_012():
             self.list_x = list_x
             self.input_x = input_x
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self):
             list_x = self.list_x
             list_x[-1][1][-2] = self.input_x
@@ -159,7 +159,7 @@ def test_parser_list_minus_index_001():
             self.input_5 = input_5
             self.input_6 = input_6
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self):
             list_x = self.list_x
             list_x[-3] = self.input_1
@@ -213,7 +213,7 @@ def test_parser_list_minus_index_003():
             self.input_5 = input_5
             self.input_6 = input_6
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, input_x):
             list_x = input_x
             list_x[-3] = self.input_1

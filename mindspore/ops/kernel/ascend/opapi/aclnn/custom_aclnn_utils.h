@@ -21,7 +21,7 @@
 #include <memory>
 #include <map>
 #include "ops/base_operator.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "plugin/device/ascend/acl_ir/acl_convert.h"
 #include "kernel/ascend/opapi/aclnn/custom_aclnn_kernel.h"
 #include "mindspore/core/include/ir/base_tensor.h"
 #include "kernel/ascend/pyboost/customize/custom_kernel.h"

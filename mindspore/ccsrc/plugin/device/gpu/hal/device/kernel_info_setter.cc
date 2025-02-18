@@ -43,7 +43,7 @@
 #include "utils/ms_utils.h"
 #include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/op_name.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore {
 namespace device {
@@ -504,7 +504,7 @@ void FormatTransformChecker::CheckSupportFormatTransform(const std::shared_ptr<s
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<bool>(MS_CTX_DISABLE_FORMAT_TRANSFORM)) {
+  if (AnfAlgo::GetDisableFormatTransform(kernel_graph)) {
     MS_LOG(INFO) << "Disable the automatic format transform function.";
     format_transform_ = false;
     return;

@@ -352,6 +352,7 @@ void Cloner::SetFuncGraphInfo(const FuncGraphPtr &func_graph, const FuncGraphPtr
   target_func_graph->set_python_obj(func_graph->python_obj());
   target_func_graph->set_has_side_effect_node(func_graph->has_side_effect_node());
   target_func_graph->set_amp_strategy(func_graph->amp_strategy());
+  target_func_graph->set_is_tensor_condition_branch(func_graph->is_tensor_condition_branch());
 }
 
 void Cloner::CloneParameters(const FuncGraphPtr &func_graph, const FuncGraphPtr &target_func_graph) {

@@ -19,7 +19,7 @@
 from __future__ import absolute_import
 from mindspore import Tensor, CSRTensor, COOTensor, Parameter
 from mindspore import dtype as mstype
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.common import mutable
 from mindspore.common.generator import default_generator
 import mindspore.common._monad as monad
@@ -1274,12 +1274,12 @@ def logcumsumexp(input, axis):
     return F.logcumsumexp(input, axis)
 
 
-def logsumexp(input, axis, keepdims=False):
+def logsumexp(input, dim, keepdim=False):
     """
     Reduces a dimension of a tensor by calculating exponential for all elements in the dimension,
     then calculate logarithm of the sum.
     """
-    return F.logsumexp(input, axis, keepdims)
+    return F.logsumexp(input, dim, keepdim)
 
 
 def round_(x):
@@ -1289,12 +1289,11 @@ def round_(x):
     return F.round(x)
 
 
-def roll(x, shifts, dims):
+def roll(x, shifts, dims=None):
     """
     Rolls the elements of a tensor along an axis.
     """
-    dims = dims if dims is not None else 0
-    return F.Roll(shifts, dims)(x)
+    return F.roll(x, shifts, dims)
 
 
 def rot90(x, k, dims):
@@ -1362,11 +1361,11 @@ def remainder(input, divisor):
     return F.remainder(input, divisor)
 
 
-def unique_consecutive(input, return_idx=False, return_counts=False, axis=None):
+def unique_consecutive(input, return_inverse=False, return_counts=False, dim=None):
     """
     Returns the elements that are unique in each consecutive group of equivalent elements in the input tensor.
     """
-    return F.unique_consecutive(input, return_idx, return_counts, axis)
+    return F.unique_consecutive(input, return_inverse, return_counts, dim)
 
 
 def unique_with_pad(x, pad_num):
@@ -2395,7 +2394,7 @@ def bool_func(*data):
 def cast_to_int(*data):
     target = data[0]
     if isinstance(target, (Tensor, Tensor_)):
-        target = Tensor(target, internal=True)
+        target = Tensor(target)
     if len(data) == 1:
         return int(target)
     return int(target, data[1])
@@ -2433,7 +2432,7 @@ def int_func(*data):
 @constexpr
 def cast_to_float(data):
     if isinstance(data, (Tensor, Tensor_)):
-        data = Tensor(data, internal=True)
+        data = Tensor(data)
     return float(data)
 
 
@@ -3214,7 +3213,7 @@ def random_categorical(x, num_sample, seed=0, dtype=mstype.int64):
 @constexpr
 def empty_tensor(dtype):
     """Return empty tensor"""
-    return Tensor_([], dtype)
+    return Tensor([], dtype)
 
 
 @constexpr
@@ -3291,7 +3290,7 @@ check_bool = constexpr(validator.check_bool)
 @constexpr
 def empty_compile(dtype, shape):
     """Returns an empty Tensor."""
-    return Tensor_(dtype, shape)
+    return Tensor(dtype=dtype, shape=shape)
 
 
 def tensor_bool(x):
@@ -3414,8 +3413,8 @@ def normal_(input, mean=0, std=1, *, generator=None):
     """
     if generator is None:
         generator = default_generator
-    seed, offset = generator._step(  # pylint: disable=protected-access
-        generator_step_)
+
+    seed, offset = generator._step(generator_step_)
     return inplace_normal_op(input, mean, std, seed, offset)
 
 
@@ -3698,11 +3697,11 @@ def sparse_ndim_(x):
     return F.tuple_len(x.shape)
 
 
-def bernoulli(input, p=0.5, seed=None):
+def bernoulli(input, *, generator=None):
     """
     Randomly draws binary numbers from a Bernoulli distribution.
     """
-    return F.bernoulli(input, p, seed)
+    return F.bernoulli_ext(input, generator=generator)
 
 
 def gather_nd(input_x, indices):
@@ -3935,7 +3934,7 @@ def atanh(x):
     return F.atanh(x)
 
 
-def baddbmm(x, batch1, batch2, beta=1, alpha=1):
+def baddbmm(x, batch1, batch2, *, beta=1, alpha=1):
     r"""
     For details, please refer to :func:`mindspore.ops.baddbmm`.
     """

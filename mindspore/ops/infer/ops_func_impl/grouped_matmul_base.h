@@ -43,6 +43,8 @@ class OPS_API GroupedMatmulBaseFuncImpl : public OpFuncImpl {
     size_t group_list = 8;
     size_t split_item = 12;
     size_t group_type = 13;
+    size_t transpose_a = 10;
+    size_t transpose_b = 11;
   } idxes_;
 
   virtual void FetchGroupInfo(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
@@ -61,15 +63,18 @@ class OPS_API GroupedMatmulBaseFuncImpl : public OpFuncImpl {
     return OP_CHECK_SUCCESS;
   }
 
+  virtual bool GetTransposeValue(const InferInfoPtrList &input_infos, size_t transpose_index) const { return false; }
+
  private:
   std::pair<ShapeArray, ShapeArray> FetchInputAndWeightShapes(const PrimitivePtr &primitive,
                                                               const InferInfoPtrList &input_infos) const;
 
   void CheckInputAndWeightShapeForSingleOutput(const PrimitivePtr &primitive, const ShapeVector &x_shape,
-                                               const ShapeVector &w_shape, int64_t group_type) const;
+                                               const ShapeVector &w_shape, int64_t group_type, bool transpose_b) const;
 
   ShapeArray InferShapeForSingleOutput(const PrimitivePtr &primitive, const ShapeArray &x_shapes,
-                                       const ShapeArray &w_shapes, int64_t group_list_size, int64_t group_type) const;
+                                       const ShapeArray &w_shapes, int64_t group_list_size, int64_t group_type,
+                                       bool transpose_b) const;
 
   void CheckInputAndWeightShapeForMultiOutput(const PrimitivePtr &primitive, const ShapeVector &x_shape,
                                               const ShapeVector &w_shape, size_t i) const;

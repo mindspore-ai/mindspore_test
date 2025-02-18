@@ -20,7 +20,7 @@
 #include <future>
 #include <memory>
 #include <utility>
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/pipeline/pipeline.h"
 
@@ -36,7 +36,7 @@ void StressDetectTask::Run() {
 int LaunchAclnnWithNoInput(const std::string &aclnn_name, const device::DeviceContext *device_context) {
   runtime::ProfilerRecorder aclnn_profiler(runtime::ProfilerModule::kPynative,
                                            runtime::ProfilerEvent::kPyBoostLaunchAclnn, aclnn_name, false);
-  uint64_t workspace_size = 2;
+  uint64_t workspace_size = 10;
   constexpr uint64_t kSize = 1024;
   workspace_size = workspace_size * kSize * kSize * kSize;
   void *workspace_addr = nullptr;
@@ -47,9 +47,9 @@ int LaunchAclnnWithNoInput(const std::string &aclnn_name, const device::DeviceCo
     return 0;
   }
   workspace_addr = workspace_device_address->GetMutablePtr();
-  const auto op_api_func = transform::GetOpApiFunc(aclnn_name.c_str());
+  const auto op_api_func = device::ascend::GetOpApiFunc(aclnn_name.c_str());
   if (op_api_func == nullptr) {
-    MS_LOG(EXCEPTION) << aclnn_name << " not in " << transform::GetOpApiLibName() << ", please check!";
+    MS_LOG(EXCEPTION) << aclnn_name << " not in " << device::ascend::GetOpApiLibName() << ", please check!";
   }
   auto run_api_func = reinterpret_cast<int (*)(int32_t, void *, uint64_t)>(op_api_func);
   std::promise<int> p;

@@ -27,9 +27,9 @@ if(ENABLE_CPU)
 
     if(NOT BUILD_LITE)
         file(GLOB_RECURSE PYBOOST_CPU_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-                "pyboost/*.cc"
-                "pyboost/auto_generate/*.cc"
-                )
+            "pyboost/*.cc"
+            "pyboost/auto_generate/*.cc"
+            )
         list(APPEND CPU_SRC_LIST "${PYBOOST_CPU_SRC_LIST}")
     endif()
 
@@ -52,7 +52,6 @@ if(BUILD_LITE)
     string(REPLACE "-Wall" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
     list(REMOVE_ITEM CPU_SRC_LIST "pyexecute/py_execute_cpu_kernel.cc")
     list(REMOVE_ITEM CPU_SRC_LIST "pyfunc/py_func_cpu_kernel.cc")
-    list(REMOVE_ITEM CPU_SRC_LIST "opaque_predicate_kernel.cc")
 endif()
 
 if(NOT ENABLE_CPU OR WIN32)

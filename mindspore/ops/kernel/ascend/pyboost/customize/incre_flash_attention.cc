@@ -17,11 +17,12 @@
 #include "kernel/ascend/pyboost/customize/incre_flash_attention.h"
 #include <memory>
 #include <string>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include <utility>
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "transform/graph_ir/op_adapter_base.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 
 namespace mindspore {
 namespace kernel {
@@ -81,7 +82,7 @@ tensor::BaseTensorPtr IncreFlashAttentionAscendCustomize(
   // Convert ValuePtr to c++ scalar
   auto num_heads_imm = GetValue<int64_t>(num_heads);
   auto input_layout_imm = GetValue<int64_t>(input_layout);
-  auto input_layout_str = transform::FASInputLayoutMode::ConvertEnumToString(input_layout_imm);
+  auto input_layout_str = device::ascend::FASInputLayoutMode::ConvertEnumToString(input_layout_imm);
   auto scale_value_imm = GetValue<float>(scale_value);
   double scale_value_imm_d = static_cast<double>(scale_value_imm);
   auto num_key_value_heads_imm = GetValue<int64_t>(num_key_value_heads);

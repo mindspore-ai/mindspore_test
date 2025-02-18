@@ -19,7 +19,7 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
 #include "mindspore/ops/infer/stft.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {

@@ -22,11 +22,11 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -52,8 +52,8 @@ void UniformExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &input
                                         const std::vector<KernelTensor *> &outputs) {
   a_ = GetDoubleFromTensor(inputs[kIndex1]);
   b_ = GetDoubleFromTensor(inputs[kIndex2]);
-  seed_ = static_cast<uint64_t>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
-  offset_ = static_cast<uint64_t>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]));
+  seed_ = static_cast<uint64_t>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
+  offset_ = static_cast<uint64_t>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]));
 
   GetWorkspaceForResize(outputs[kIndex0], a_, b_, seed_, offset_);
 }

@@ -19,7 +19,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -27,7 +27,11 @@ namespace kernel {
 
 void EluExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
-  alpha_ = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
+  TypeId data_type = inputs[kIndex0]->dtype_id();
+  if (data_type == kNumberTypeFloat64) {
+    MS_LOG(EXCEPTION) << "Unsupported input dtype: float64, because aclnnEluBackward does not support dtype: float64";
+  }
+  alpha_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
   MAKE_SCALAR(1.f, inputs[kIndex0]->dtype_id(), scale_);
   MAKE_SCALAR(1.f, inputs[kIndex0]->dtype_id(), input_scale_);
   GetWorkspaceForResize(inputs[kIndex0], alpha_, scale_, input_scale_, outputs[kIndex0]);

@@ -6,7 +6,8 @@ mindspore.Tensor
     张量，即存储多维数组（n-dimensional array）的数据结构。
 
     .. note::
-        当使用 `init` 参数来初始化 `Tensor` 时，通常需要使用 `Tensor.init_data` 来加载 `Tensor` 的数据。
+        - 当使用 `init` 参数来初始化 `Tensor` 时，通常需要使用 `Tensor.init_data` 来加载 `Tensor` 的数据。
+        - CPU、GPU的所有模式，以及Atlas训练系列产品的 `图模式(mode=mindspore.GRAPH_MODE) <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html>`_ 尚不支持in-place操作。
 
     .. warning::
         当转换 `Tensor` 类型时，推荐使用 `Tensor.astype()` 而非 `Tensor(sourceTensor, dtype=newDtype)` 。
@@ -134,6 +135,7 @@ mindspore.Tensor
     mindspore.Tensor.erfc
     mindspore.Tensor.erfinv
     mindspore.Tensor.exp
+    mindspore.Tensor.exp_
     mindspore.Tensor.expand
     mindspore.Tensor.expand_as
     mindspore.Tensor.expand_dims
@@ -149,6 +151,7 @@ mindspore.Tensor
     mindspore.Tensor.floor
     mindspore.Tensor.floor_
     mindspore.Tensor.floor_divide
+    mindspore.Tensor.floor_divide_
     mindspore.Tensor.flush_from_cache
     mindspore.Tensor.fmax
     mindspore.Tensor.fmod
@@ -248,6 +251,7 @@ mindspore.Tensor
     mindspore.Tensor.msort
     mindspore.Tensor.mT
     mindspore.Tensor.mul
+    mindspore.Tensor.mul_
     mindspore.Tensor.multinomial
     mindspore.Tensor.multiply
     mindspore.Tensor.mvlgamma
@@ -357,6 +361,7 @@ mindspore.Tensor
     mindspore.Tensor.topk
     mindspore.Tensor.trace
     mindspore.Tensor.transpose
+    mindspore.Tensor.triangular_solve
     mindspore.Tensor.tril
     mindspore.Tensor.triu
     mindspore.Tensor.true_divide

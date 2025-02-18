@@ -22,7 +22,7 @@
 #include "ir/tensor.h"
 #include "kernel/kernel.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -35,6 +35,10 @@ constexpr size_t kInputScaleIdx = 3;
 constexpr size_t kInputOffsetIdx = 4;
 constexpr size_t kInputAntiquantScaleIdx = 5;
 constexpr size_t kInputAntiquantOffsetIdx = 6;
+// param idx
+constexpr size_t kInputParamGroupList = 0;
+constexpr size_t kInputParamSplitItem = 1;
+constexpr size_t kInputParamGroupType = 2;
 
 std::vector<std::vector<KernelTensor *>> DealWithGroupedMatmulListTensors(const std::vector<int64_t> &group_info,
                                                                           const std::vector<int64_t> &start_idxs,
@@ -64,13 +68,13 @@ void GroupedMatmulAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &in
   }
 
   auto list_inputs = DealWithGroupedMatmulListTensors(group_info_, start_idxs_, inputs);
-  auto group_list_tensor = inputs.at(inputs.size() - kIndex3);
+  auto group_list_tensor = *(inputs.begin() + start_idxs_[kInputAntiquantOffsetIdx] + kInputParamGroupList);
 
-  auto split_item_tensor = inputs.at(inputs.size() - kIndex2);
+  auto split_item_tensor = *(inputs.begin() + start_idxs_[kInputAntiquantOffsetIdx] + kInputParamSplitItem);
   MS_EXCEPTION_IF_NULL(split_item_tensor);
   split_item_ = split_item_tensor->GetValueWithCheck<int64_t>();
 
-  auto group_type_tensor = inputs.at(inputs.size() - kIndex1);
+  auto group_type_tensor = *(inputs.begin() + start_idxs_[kInputAntiquantOffsetIdx] + kInputParamGroupType);
   MS_EXCEPTION_IF_NULL(group_type_tensor);
   group_type_ = group_type_tensor->GetValueWithCheck<int64_t>();
 
@@ -84,7 +88,7 @@ bool GroupedMatmulAscend::Launch(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
   auto list_inputs = DealWithGroupedMatmulListTensors(group_info_, start_idxs_, inputs);
-  auto group_list_tensor = inputs.at(inputs.size() - kIndex3);
+  auto group_list_tensor = *(inputs.begin() + start_idxs_[kInputAntiquantOffsetIdx] + kInputParamGroupList);
   RunOp(stream_ptr, workspace, list_inputs[kInputXIdx], list_inputs[kInputWeightIdx], list_inputs[kInputBiasIdx],
         list_inputs[kInputScaleIdx], list_inputs[kInputOffsetIdx], list_inputs[kInputAntiquantScaleIdx],
         list_inputs[kInputAntiquantOffsetIdx], group_list_tensor, split_item_, group_type_, outputs);

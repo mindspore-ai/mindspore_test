@@ -490,8 +490,8 @@ class COMMON_EXPORT Emitter {
     return Emit("DropoutGradExt", {input, mask, p});
   }
   virtual NodePtr EluExt(const NodePtr &input, const NodePtr &alpha) { return Emit("EluExt", {input, alpha}); }
-  virtual NodePtr EluGradExt(const NodePtr &dout, const NodePtr &x, const NodePtr &alpha) {
-    return Emit("EluGradExt", {dout, x, alpha});
+  virtual NodePtr EluGradExt(const NodePtr &dout, const NodePtr &x, const NodePtr &alpha, const NodePtr &is_result) {
+    return Emit("EluGradExt", {dout, x, alpha, is_result});
   }
   virtual NodePtr EmbeddingDenseBackward(const NodePtr &grad, const NodePtr &indices, const NodePtr &num_weights,
                                          const NodePtr &padding_idx, const NodePtr &scale_grad_by_freq) {
@@ -890,9 +890,10 @@ class COMMON_EXPORT Emitter {
   }
   virtual NodePtr GroupedMatmul(const NodePtr &x, const NodePtr &weight, const NodePtr &bias, const NodePtr &scale,
                                 const NodePtr &offset, const NodePtr &antiquant_scale, const NodePtr &antiquant_offset,
-                                const NodePtr &group_list, const NodePtr &split_item, const NodePtr &group_type) {
+                                const NodePtr &group_list, const NodePtr &split_item, const NodePtr &group_type,
+                                const NodePtr &transpose_a, const NodePtr &transpose_b) {
     return Emit("GroupedMatmul", {x, weight, bias, scale, offset, antiquant_scale, antiquant_offset, group_list,
-                                  split_item, group_type});
+                                  split_item, group_type, transpose_a, transpose_b});
   }
   virtual NodePtr MoeFinalizeRouting(const NodePtr &expanded_x, const NodePtr &x1, const NodePtr &x2,
                                      const NodePtr &bias, const NodePtr &scales, const NodePtr &expanded_row_idx,

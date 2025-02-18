@@ -57,8 +57,8 @@ def test_acos_std(mode):
         output = acos_forward_func(ms.Tensor(x))
         output_grad = acos_backward_func(ms.Tensor(x))
     else:
-        output = (jit(acos_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
-        output_grad = (jit(acos_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
+        output = (jit(acos_forward_func, jit_level="O0"))(ms.Tensor(x))
+        output_grad = (jit(acos_backward_func, jit_level="O0"))(ms.Tensor(x))
 
     assert np.allclose(output.asnumpy(), expect, rtol=1e-4, equal_nan=True)
     assert np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-4, equal_nan=True)
@@ -95,8 +95,8 @@ def test_acos_bfloat16(mode):
         output = acos_forward_func(ms.Tensor(x, dtype=ms.bfloat16))
         output_grad = acos_backward_func(ms.Tensor(x, dtype=ms.bfloat16))
     else:
-        output = (jit(acos_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x, dtype=ms.bfloat16))
-        output_grad = (jit(acos_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x, dtype=ms.bfloat16))
+        output = (jit(acos_forward_func, jit_level="O0"))(ms.Tensor(x, dtype=ms.bfloat16))
+        output_grad = (jit(acos_backward_func, jit_level="O0"))(ms.Tensor(x, dtype=ms.bfloat16))
 
     assert np.allclose(output.float().asnumpy(), expect, 0.004, 0.004, equal_nan=True)
     assert np.allclose(output_grad.float().asnumpy(), expect_grad, 0.004, 0.004, equal_nan=True)

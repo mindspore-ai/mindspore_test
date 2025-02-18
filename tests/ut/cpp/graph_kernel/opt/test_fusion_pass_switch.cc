@@ -55,6 +55,7 @@ class TestPassSwitch : public GraphKernelCommonTestSuite, public testing::WithPa
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     context->set_param<std::string>(MS_CTX_DEVICE_TARGET, kAscendDevice);
+    context->SetMsInternalEnableCustomKernelList();
 
     if (switch_off) {
       std::map<std::string, std::string> gk_jit_config;
@@ -65,10 +66,6 @@ class TestPassSwitch : public GraphKernelCommonTestSuite, public testing::WithPa
       gk_jit_config["graph_kernel_flags"] = "";
       graphkernel::GraphKernelFlags::SaveJitConfig(gk_jit_config);
     }
-
-    std::map<std::string, std::string> ms_jit_config;
-    ms_jit_config["infer_boost"] = "on";
-    PhaseManager::GetInstance().set_jit_config(ms_jit_config);
   }
 };
 

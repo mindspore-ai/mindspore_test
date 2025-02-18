@@ -226,7 +226,7 @@ class AscendMemoryViewer(BaseViewer):
             self._framework_path,
             f"cpu_ms_memory_record_{self._rank_id}.txt",
         )
-        data = FileManager.read_txt_file(memory_record_file)
+        data = FileManager.read_csv_file(memory_record_file)
         if len(data) > 1:
             self._ms_memory_record.extend(data[1:])
 

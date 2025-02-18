@@ -20,7 +20,7 @@ class DynamicFactory:
 
     def forward_cmp(self, inputs):
         context.set_context(mode=context.PYNATIVE_MODE)
-        jit(fn=self.ps_net.construct, mode="PIJit")(inputs)
+        jit(function=self.ps_net.construct, capture_mode="bytecode")(inputs)
         self.ps_net(inputs)
 
 class Net7(Cell):

@@ -24,10 +24,10 @@
 #include "utils/convert_utils_base.h"
 #include "include/api/data_type.h"
 #include "utils/log_adapter.h"
-#include "transform/symbol/acl_base_symbol.h"
-#include "transform/symbol/acl_mdl_symbol.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_mdl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 static DataType TransToApiType(aclDataType data_type) {

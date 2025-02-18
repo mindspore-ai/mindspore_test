@@ -42,7 +42,6 @@
 #include "include/backend/device_type.h"
 #endif
 #include "runtime/pipeline/pipeline.h"
-#include "kernel/common/pyboost/auto_generate/contiguous.h"
 
 namespace mindspore {
 using tensor::TensorPtr;
@@ -105,7 +104,7 @@ void SetHeteInfoForParamDeviceAddress(const ParameterPtr &parameter, const Kerne
   if (meta_tensor == nullptr) {
     return;
   }
-  const auto &user_data = meta_tensor->user_data<tensor::TensorPy::TensorPyUserData>(kParamterDiskUserDataName);
+  const auto &user_data = meta_tensor->user_data<tensor::TensorPybind::TensorPyUserData>(kParamterDiskUserDataName);
   if (user_data == nullptr) {
     return;
   }
@@ -566,10 +565,11 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(kernel));
       MS_LOG(DEBUG) << "Kernel tensor created without set stream id, but set after device address created.";
       if (is_move_to) {
-        kernel_tensor->set_heterogeneous_info(std::make_shared<kernel::HeterogeneousInfo>());
         if (move_to == kToCpu) {
+          kernel_tensor->set_heterogeneous_info(std::make_shared<kernel::HeterogeneousInfo>());
           kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = kernel::NeedAllocateHeteRes::NeedHostMem;
         } else if (move_to == kToDisk) {
+          kernel_tensor->set_heterogeneous_info(std::make_shared<kernel::HeterogeneousInfo>());
           kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = kernel::NeedAllocateHeteRes::NeedDiskFile;
         }
       }
@@ -1341,20 +1341,7 @@ device::DeviceAddressPtr DeviceAddressUtils::CreateWorkspaceAddress(const Device
   return device_address;
 }
 
-tensor::BaseTensorPtr DeviceAddressUtils::TensorContiguous(const tensor::BaseTensorPtr &tensor) {
-  if (tensor == nullptr || tensor->storage_info() == nullptr) {
-    return tensor;
-  }
-  const auto &old_device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
-  MS_EXCEPTION_IF_NULL(old_device_address);
-
-  const DeviceContext *device_context = runtime::OpRunner::GetDeviceContext(old_device_address->device_name());
-  MS_EXCEPTION_IF_NULL(device_context);
-  GilReleaseWithCheck release_gil;
-  auto contiguous_op = CREATE_PYBOOST_OP(Contiguous, device_context->device_context_key().device_name_);
-  const auto &contiguous_tensor = contiguous_op->Call(tensor);
-  return contiguous_tensor;
-}
+tensor::BaseTensorPtr DeviceAddressUtils::TensorContiguous(const tensor::BaseTensorPtr &tensor) { return nullptr; }
 
 void DeviceAddressUtils::ConvertContiguousTensorSync(const tensor::BaseTensorPtr &tensor) {
   if (tensor == nullptr || tensor->storage_info() == nullptr) {
@@ -1380,7 +1367,9 @@ device::DeviceAddressPtr DeviceAddressUtils::ConvertContiguousDeviceAddress(
 
   GilReleaseWithCheck release_gil;
   const auto &old_storage_info = old_device_address->GetTensorStorageInfo();
-  MS_EXCEPTION_IF_NULL(old_storage_info);
+  if (old_storage_info == nullptr) {
+    return old_device_address;
+  }
 
   auto address_size = GetTypeByte(TypeIdToType(old_device_address->type_id())) * SizeOf(old_storage_info->shape);
   auto kernel_tensor = std::make_shared<kernel::KernelTensor>(

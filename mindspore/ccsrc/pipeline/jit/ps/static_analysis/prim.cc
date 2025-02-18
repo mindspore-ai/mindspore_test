@@ -34,6 +34,7 @@
 #include "frontend/operator/composite/do_signature.h"
 #include "frontend/operator/ops.h"
 #include "frontend/operator/ops_front_infer_function.h"
+#include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 #include "frontend/operator/composite/unpack_call.h"
 #include "frontend/operator/composite/functional_overload.h"
 #include "include/common/fallback.h"
@@ -64,6 +65,7 @@
 #include "pipeline/jit/ps/static_analysis/builtin_prim.h"
 #include "pipeline/jit/ps/static_analysis/prim_to_function.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
+#include "pipeline/jit/trace/trace_recorder.h"
 #include "utils/check_convert_utils.h"
 #include "utils/hash_set.h"
 #include "utils/log_adapter.h"
@@ -188,7 +190,7 @@ CNodePtr GetInputsAfterUnpackCall(const CNodePtr &source_node, const AnalysisEng
 
 AbstractBasePtr ConvertTensorToRef(const AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
-  if (abs->isa<abstract::AbstractRefTensor>()) {
+  if (abs->isa<abstract::AbstractRefTensor>() || abs->isa<abstract::AbstractNone>()) {
     return abs;
   }
   auto tensor_abs = dyn_cast<abstract::AbstractTensor>(abs);
@@ -1950,7 +1952,10 @@ EvalResultPtr GetEvaluatedValueForNameSpaceString(const AbstractBasePtrList &arg
   MS_EXCEPTION_IF_NULL(out_node);
   FuncGraphPtr func_graph = out_node->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
-  auto new_node = parse::ResolveSymbol(func_graph->manager(), name_space, symbol, out_node);
+  AnalysisEnginePtr eng = out_conf->engine();
+  MS_EXCEPTION_IF_NULL(eng);
+  parse::Resolver resolver(eng->top_func_graph());
+  auto new_node = resolver.ResolveSymbol(func_graph->manager(), name_space, symbol, out_node);
   if (new_node == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "Resolve node failed";
   }
@@ -1971,8 +1976,6 @@ EvalResultPtr GetEvaluatedValueForNameSpaceString(const AbstractBasePtrList &arg
     MS_EXCEPTION_IF_NULL(out_cnode);
     constexpr auto default_index = 3;
     auto default_node = out_cnode->input(default_index);
-    auto eng = out_conf->engine();
-    MS_EXCEPTION_IF_NULL(eng);
     auto fn_conf = eng->MakeConfig(default_node, out_conf->context(), out_conf->func_graph());
     return eng->ForwardConfig(out_conf, fn_conf);
   }
@@ -1986,8 +1989,6 @@ EvalResultPtr GetEvaluatedValueForNameSpaceString(const AbstractBasePtrList &arg
     }
   }
 
-  AnalysisEnginePtr eng = out_conf->engine();
-  MS_EXCEPTION_IF_NULL(eng);
   AnfNodeConfigPtr fn_conf = eng->MakeConfig(new_node, out_conf->context(), out_conf->func_graph());
   return eng->ForwardConfig(out_conf, fn_conf);
 }
@@ -2461,8 +2462,8 @@ bool CheckHasOverriddenMethod(AnfNodePtr node, ValuePtr item_value) {
 }
 
 bool CheckFunctionalMethod(const TypeId &type_id, const ValuePtr &method_value) {
-  // O2 does not support tensor method overloading.
-  auto ge_mode = MsContext::GetInstance()->GetJitLevel() == kAttrJitLevelO2;
+  // ge does not support tensor method overloading.
+  auto ge_mode = common::AnfAlgo::IsBackendGe();
   if (ge_mode) {
     return false;
   }
@@ -2872,12 +2873,16 @@ CNodePtr CheckAndConvertPrimitiveArgs(const PrimitivePtr &prim, const FuncGraphP
     // Process arg_handler.
     for (size_t i = 0; i < op_init_args.size(); ++i) {
       auto abs_node = eval_func(init_nodes[i]);
-      init_nodes[i] = GetNodeAfterArgHandler(init_nodes[i], prim_name, op_init_args[i], abs_node, graph);
+      if (!prim->HasAttr("Converted")) {
+        init_nodes[i] = GetNodeAfterArgHandler(init_nodes[i], prim_name, op_init_args[i], abs_node, graph);
+      }
     }
   }
   for (size_t i = 0; i < op_call_args.size(); ++i) {
     auto abs_node = eval_func(call_nodes[i]);
-    call_nodes[i] = GetNodeAfterArgHandler(call_nodes[i], prim_name, op_call_args[i], abs_node, graph);
+    if (!prim->HasAttr("Converted")) {
+      call_nodes[i] = GetNodeAfterArgHandler(call_nodes[i], prim_name, op_call_args[i], abs_node, graph);
+    }
   }
 
   // Check args type and do type conversion.
@@ -3028,6 +3033,35 @@ AnfNodePtr ConvertWeakNode(const AnfNodeWeakPtr &weak_node) {
   return node;
 }
 }  // namespace
+
+EvalResultPtr PrimitiveToMetaEvaluator::EvalPrim(const AnalysisEnginePtr &engine,
+                                                 const AbstractBasePtrList &args_abs_list, const ConfigPtr &,
+                                                 const AnfNodeConfigPtr &out_conf) {
+  // Convert Primitive to MetaImpl.
+  MS_EXCEPTION_IF_NULL(out_conf);
+  MS_EXCEPTION_IF_NULL(out_conf->node());
+  auto cnode = out_conf->node()->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  ScopeGuard scope_guard(cnode->scope());
+  TraceGuard trace_guard(MakeTraceInfo<TraceResolve>(cnode->debug_info()));
+  const auto &fg = cnode->func_graph();
+  MS_EXCEPTION_IF_NULL(fg);
+
+  const auto &op_name = prim_->name();
+  const auto &meta_op = prim::CreateMetaImpl(op_name);
+  meta_op->set_prim(prim_);
+  MS_EXCEPTION_IF_NULL(meta_op);
+  AnfNodePtrList op_inputs{NewValueNode(meta_op)};
+  constexpr size_t index_data = 1;
+  (void)std::transform(cnode->weak_inputs().begin() + index_data, cnode->weak_inputs().end(),
+                       std::back_inserter(op_inputs), ConvertWeakNode);
+  AnfNodePtr new_cnode = fg->NewCNodeInOrder(op_inputs);
+  new_cnode->set_debug_info(cnode->debug_info());
+  auto new_conf = engine->MakeConfig(new_cnode, out_conf->context(), out_conf->func_graph());
+  MS_LOG(DEBUG) << "Convert Primitive [" << op_name << "] to MetaImpl. Old node: " << cnode->DebugString()
+                << "], new node: " << new_cnode->DebugString();
+  return engine->ForwardConfig(out_conf, new_conf);
+}
 
 EvalResultPtr DoTransPrimitiveFunctionEvaluator::EvalPrim(const AnalysisEnginePtr &engine,
                                                           const AbstractBasePtrList &args_abs_list, const ConfigPtr &,
@@ -5458,6 +5492,63 @@ class DoUnpackCallEvaluator : public TransitionPrimEvaluator {
   }
 };
 
+class TraceGraphEvaluator : public TransitionPrimEvaluator {
+ public:
+  TraceGraphEvaluator() : TransitionPrimEvaluator("TraceGraphEvaluator") {}
+  ~TraceGraphEvaluator() override = default;
+  MS_DECLARE_PARENT(TraceGraphEvaluator, TransitionPrimEvaluator);
+  EvalResultPtr EvalPrim(const AnalysisEnginePtr &engine, const AbstractBasePtrList &args_abs_list, const ConfigPtr &,
+                         const AnfNodeConfigPtr &out_conf) override {
+    const auto &node = out_conf->node();
+    MS_EXCEPTION_IF_NULL(node);
+    const auto &cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    const auto &fg = cnode->func_graph();
+    MS_EXCEPTION_IF_NULL(fg);
+    const auto &trace_recorder = trace::TraceRecorder::GetInstance();
+    const auto &trace_top_graph = trace_recorder->InitTopGraph(node->debug_info());
+    py::tuple py_inputs(args_abs_list.size());
+    for (size_t i = 0; i < args_abs_list.size(); ++i) {
+      const auto &param = trace_top_graph->add_parameter();
+      param->set_abstract(args_abs_list[i]);
+      py_inputs[i] = trace_recorder->InitTraceGraphInputs(args_abs_list[i], param);
+    }
+    const auto &trace_prim_node = cnode->input(0);
+    const auto &trace_prim_cnode = trace_prim_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(trace_prim_cnode);
+    constexpr auto obj_index = 3;
+    const auto &obj_node = trace_prim_cnode->input(obj_index);
+    if (!obj_node->isa<ValueNode>()) {
+      MS_LOG(EXCEPTION) << "Trace node missing function object.";
+    }
+    const auto &obj_value_node = obj_node->cast<ValueNodePtr>();
+    const auto &obj_value = GetValueNode<parse::InterpretedObjectPtr>(obj_value_node);
+    MS_EXCEPTION_IF_NULL(obj_value);
+    const py::object &func_obj = obj_value->obj();
+    py::tuple output;
+    try {
+      output = python_adapter::CallPyFn("mindspore.common.jit_trace", "nested_run", func_obj, *py_inputs);
+    } catch (const std::exception &e) {
+      MS_LOG(EXCEPTION) << "Encounter error: " << e.what() << " When compiling nested trace graph.";
+    }
+    const py::list &file_names = output[0];
+    const py::list &linenos = output[1];
+    const py::tuple &output_args = output[2];
+    const auto &func_graph = trace_recorder->BuildEndGraph(file_names, linenos, py::args(output_args), true);
+    MS_EXCEPTION_IF_NULL(out_conf);
+    auto eng = out_conf->engine();
+    AddToManager(eng, trace_top_graph);
+    AnfNodePtrList new_inputs{NewValueNode(trace_top_graph)};
+    const auto &origin_inputs = cnode->inputs();
+    for (size_t i = 1; i < origin_inputs.size(); ++i) {
+      (void)new_inputs.emplace_back(origin_inputs[i]);
+    }
+    const auto &new_node = fg->NewCNodeInOrder(new_inputs);
+    AnfNodeConfigPtr fn_conf = engine->MakeConfig(new_node, out_conf->context(), out_conf->func_graph());
+    return engine->ForwardConfig(out_conf, fn_conf);
+  }
+};
+
 struct PrimitiveImplInferValue {
   PrimitiveImpl impl_;        // implement function of primitive
   bool eval_value_;           // whether evaluate value
@@ -5524,6 +5615,7 @@ void InitPrimEvaluatorConstructors() {
   constructor[prim::kPrimWhileLoop] = std::make_shared<WhileLoopEvaluator>();
   constructor[prim::kPrimScan] = std::make_shared<ScanEvaluator>();
   constructor[prim::kPrimForiLoop] = std::make_shared<ForiLoopEvaluator>();
+  constructor[prim::kPrimTraceGraph] = std::make_shared<TraceGraphEvaluator>();
 }
 
 void InitBuiltinPrimEvaluatorConstructors() {

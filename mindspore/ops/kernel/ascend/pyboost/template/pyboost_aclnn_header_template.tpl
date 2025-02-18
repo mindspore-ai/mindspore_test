@@ -17,7 +17,7 @@
 #ifndef MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_${op_name_upper}_ASCEND_H_
 #define MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_${op_name_upper}_ASCEND_H_
 
-#include "kernel/common/pyboost/auto_generate/${operator_name}.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/${operator_name}.h"
 #include "ir/tensor.h"
 #include "ir/scalar.h"
 #include "mindspore/ops/ops_utils/memory_overlap.h"

@@ -63,12 +63,14 @@ void MatMulCpuKernelFunc::ProcessTranspose(const std::vector<KernelTensor *> &in
   }
 }
 int MatMulCpuKernelFunc::Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
+  with_relu_ = false;
   if (prim_->GetAttr(kAttrWithRelu) != nullptr) {
     with_relu_ = GetValue<bool>(prim_->GetAttr(kAttrWithRelu));
   }
   MatMulCpuKernelFunc::ProcessTranspose(inputs);
   auto a_shape = inputs[kIndex0]->GetShapeVector();
   auto b_shape = inputs[kIndex1]->GetShapeVector();
+  with_bias_add_ = false;
   if (prim_->GetAttr(kAttrWithBiasAdd) != nullptr) {
     with_bias_add_ = GetValue<bool>(prim_->GetAttr(kAttrWithBiasAdd));
   }

@@ -68,7 +68,7 @@ class _NormBase(Cell):
                                           requires_grad=False, name="running_mean")
             self.running_var = Parameter(Tensor(np.ones(num_features), dtype=self.dtype),
                                          requires_grad=False, name="running_var")
-            self.num_batches_tracked = Parameter(Tensor(0, dtype=ms.float32),
+            self.num_batches_tracked = Parameter(Tensor(0, dtype=ms.int64),
                                                  requires_grad=False, name="num_batches_tracked")
         else:
             self.running_mean = None
@@ -84,7 +84,7 @@ class _NormBase(Cell):
                 np.zeros(self.num_features), dtype=self.dtype)
             one_running_var = Tensor(
                 np.ones(self.num_features), dtype=self.dtype)
-            zero_num_batches_tracked = Tensor(0, dtype=ms.float32)
+            zero_num_batches_tracked = Tensor(0, dtype=ms.int64)
 
             ops.assign(self.running_mean, zero_running_mean)
             ops.assign(self.running_var, one_running_var)
@@ -136,11 +136,11 @@ class _BatchNorm(_NormBase):
 
         if self.training and self.track_running_stats:
             if self.num_batches_tracked is not None:
-                num_batches_tracked_one = Tensor(1, dtype=ms.float32)
+                num_batches_tracked_one = Tensor(1, dtype=ms.int64)
                 ops.assign_add(self.num_batches_tracked,
                                num_batches_tracked_one)
                 if self.momentum is None:
-                    exponential_average_factor = float(1.0 / self.num_batches_tracked)
+                    exponential_average_factor = 1.0 / float(self.num_batches_tracked)
                 else:
                     exponential_average_factor = self.momentum
 
@@ -403,7 +403,7 @@ class GroupNorm(Cell):
           additional dimensions.
 
     Outputs:
-        Tensor, the normalized and scaled offset tensor, has the same shape and data type as the `x`.
+        Tensor, the normalized and scaled offset tensor, has the same shape and data type as the `input`.
 
     Raises:
         TypeError: If `num_groups` or `num_channels` is not an int.
@@ -594,10 +594,10 @@ class SyncBatchNorm(_BatchNorm):
             exponential_average_factor = self.momentum
 
         if self.training and self.track_running_stats:
-            one_tensor = Tensor(1, dtype=ms.float32)
+            one_tensor = Tensor(1, dtype=ms.int64)
             ops.assign_add(self.num_batches_tracked, one_tensor)
             if self.momentum is None:  # use cumulative moving average
-                exponential_average_factor = 1.0 / self.num_batches_tracked.value()
+                exponential_average_factor = 1.0 / float(self.num_batches_tracked.value())
             else:  # use exponential moving average
                 exponential_average_factor = self.momentum
 

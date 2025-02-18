@@ -16,9 +16,9 @@
 
 #include "kernel/ascend/pyboost/customize/unique2.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/pipeline/pipeline.h"
 
@@ -52,7 +52,7 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> 
     LAUNCH_ACLNN_SYNC(aclnnUnique2, device_context, stream_id, input_tensor, sorted_imm, return_inverse_imm,
                       return_counts_imm, outputs[kIndex0], outputs[kIndex1], outputs[kIndex2]);
   const auto &cache_func_ptr = std::get<kIndex2>(return_value);
-  auto all_acl_tensor = cache_func_ptr(transform::ProcessCacheType::kGetOutputShape, {});
+  auto all_acl_tensor = cache_func_ptr(device::ascend::ProcessCacheType::kGetOutputShape, {});
 
   // update shape
   auto output_real_shape0 = all_acl_tensor[kIndex4];

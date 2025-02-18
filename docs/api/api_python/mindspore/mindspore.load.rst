@@ -18,12 +18,11 @@ mindspore.load
 
             - 关于使用自定义解密加载的详情，请查看 `教程 <https://www.mindspore.cn/mindarmour/docs/zh-CN/master/model_encrypt_protection.html>`_。
 
-          - **obf_func** (function) - 导入混淆模型所需要的函数，可以参考 `obfuscate_model() <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.obfuscate_model.html>`_ 了解详情。
-
     返回：
         GraphCell，一个可以由 `GraphCell` 构成的可执行的编译图。
 
     异常：
+        - **NotImplementedError** - 动态结构混淆已不再支持。
         - **ValueError** - MindIR文件名不存在或 `file_name` 不是string类型。
         - **RuntimeError** - 解析MindIR文件失败。
 

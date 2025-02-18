@@ -233,7 +233,7 @@ class MaxUnpool2d(Cell):
           and output_size must belong to
           :math:`[(N, C, H_{out} - stride[0], W_{out} - stride[1]), (N, C, H_{out} + stride[0], W_{out} + stride[1])]`.
 
-    Returns:
+    Outputs:
         Tensor, with shape :math:`(N, C, H_{out}, W_{out})` or :math:`(C, H_{out}, W_{out})`,
         with the same data type with `input`.
 
@@ -241,7 +241,7 @@ class MaxUnpool2d(Cell):
         TypeError: If data type of `input` or `indices` is not supported.
         TypeError: If `kernel_size`, `stride` or `padding` is neither an int nor a tuple.
         ValueError: If numbers in `stride`, `padding` or `kernel_size` is not positive.
-        ValueError: If the shape of `input` and `indices` are not equal.
+        ValueError: If the shapes of `input` and `indices` are not equal.
         ValueError: If `input` whose length is not 3 or 4.
         ValueError: If `output_size` whose type is not tuple.
         ValueError: If `output_size` is not close to output size computed by attr `kernel_size`, `stride`, `padding`.
@@ -272,9 +272,74 @@ class MaxUnpool2d(Cell):
                                                self.kernel_size, self.stride,
                                                self.padding, output_size)
 
+
+class _AdaptiveMaxPoolNd(Cell):
+    """Common base of AdaptiveMaxPool1d"""
+
+    def __init__(self, output_size, return_indices=False) -> None:
+        super(_AdaptiveMaxPoolNd, self).__init__()
+        self.output_size = output_size
+        self.return_indices = return_indices
+
+    def extend_repr(self):
+        return 'output_size={}, return_indices={}'.format(self.output_size, self.return_indices)
+
+
+class AdaptiveMaxPool1d(_AdaptiveMaxPoolNd):
+    r"""
+    Applies a 1D adaptive max pooling over an input signal composed of several input planes.
+
+    The output is of size :math:`L_{out}` , for any input size.
+    The number of output features is equal to the number of input planes.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        output_size (Union[int, tuple]): the target output size :math:`L_{out}` .
+        return_indices (bool, optional): Whether to return the index of the maximum value. Default: ``False`` .
+
+    Inputs:
+        - **input** (Tensor) - The input with shape :math:`(N, C, L_{in})` or :math:`(C, L_{in})` .
+
+    Outputs:
+        Union(Tensor, tuple(Tensor, Tensor)).
+
+        - If `return_indices` is False, output is a Tensor, with shape :math:`(N, C, L_{out})`. It has the same data
+          type as `x`.
+        - If `return_indices` is True, output is a Tuple of 2 Tensors, representing the result and where the max
+          values are generated.
+
+    Raises:
+        TypeError: If `input` is not a tensor.
+        TypeError: If dtype of `input` is not float16, float32 or float64.
+        TypeError: If `output_size` is not int or tuple.
+        TypeError: If `return_indices` is not a bool.
+        ValueError: If `output_size` is a tuple and the length of `output_size` is not 1.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> import numpy as np
+        >>> input = Tensor(np.array([[[2, 1, 2], [2, 3, 5]]]), mindspore.float16)
+        >>> net = mint.nn.AdaptiveMaxPool1d(3)
+        >>> output = net(input)
+        >>> print(output)
+        [[[2. 1. 2.]
+          [2. 3. 5.]]]
+    """
+
+    def construct(self, input):
+        return mint.nn.functional.adaptive_max_pool1d(input, self.output_size, self.return_indices)
+
+
 __all__ = [
     'AdaptiveAvgPool3d',
     'AdaptiveAvgPool2d',
     'AdaptiveAvgPool1d',
+    'AdaptiveMaxPool1d',
     'MaxUnpool2d',
 ]

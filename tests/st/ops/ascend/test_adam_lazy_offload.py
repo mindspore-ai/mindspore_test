@@ -9,7 +9,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 
 import mindspore.context as context
 import mindspore.nn as nn
@@ -103,7 +102,7 @@ def test_adam_offload_acc():
     Description: Verify if the loss is the same as the original AdamOffload
     Expectation: success
     """
-    context.set_context(mode=context.GRAPH_MODE)
+    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
     epoch = 3
     net = NetAdam()
     optimizer = Adam(filter(lambda x: x.requires_grad, net.get_parameters()), learning_rate=0.01, use_offload=True)

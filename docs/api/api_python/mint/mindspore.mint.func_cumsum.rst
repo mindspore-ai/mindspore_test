@@ -11,7 +11,7 @@ mindspore.mint.cumsum
     参数：
         - **input** (Tensor) - 输入Tensor。
         - **dim** (int) - 累积和计算的轴。
-        - **dtype** (:class:`mindspore.dtype`, 可选) - 输出数据类型。如果不为None，则输入会转化为 `dtype`。这有利于防止数值溢出。如果为None，则输出和输入的数据类型一致。默认值： ``None`` 。
+        - **dtype** (:class:`mindspore.dtype`, 可选) - 输出的数据类型。如果不为None，则输入会转化为 `dtype`，防止数值溢出；如果为None，则输出和输入的数据类型一致。默认值： ``None`` 。
 
     返回：
         Tensor，和输入Tensor的shape相同。

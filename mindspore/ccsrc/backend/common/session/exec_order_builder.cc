@@ -48,11 +48,21 @@ bool NeedOptimize(const AnfNodePtr &node, const std::string &optimized_comm_grou
   }
   return false;
 }
+
+std::string GetExecOrderAlgo(KernelGraph *graph) {
+  std::string ret = graph->jit_setting().exec_order;
+  if (ret.empty()) {
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    ret = context->get_param<std::string>(MS_CTX_EXEC_ORDER);
+  }
+  return ret;
+}
 }  // namespace
 
 ExecOrderBuilder::~ExecOrderBuilder() {}
 
-void ExecOrderBuilder::Build(FuncGraph *graph, std::vector<CNodePtr> *execution_order, NodeUser *node_user) {
+void ExecOrderBuilder::Build(KernelGraph *graph, std::vector<CNodePtr> *execution_order, NodeUser *node_user) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(execution_order);
   MS_EXCEPTION_IF_NULL(node_user);
@@ -65,9 +75,7 @@ void ExecOrderBuilder::Build(FuncGraph *graph, std::vector<CNodePtr> *execution_
   ClearLinkInfo();
   BuildLinkInfo();
   FindIndependentNodes();
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  auto exec_order = context->get_param<std::string>(MS_CTX_EXEC_ORDER);
+  auto exec_order = GetExecOrderAlgo(graph);
   if (exec_order == "dfs") {
     MS_LOG(INFO) << "exec order build by dfs";
     BuildByDFS();

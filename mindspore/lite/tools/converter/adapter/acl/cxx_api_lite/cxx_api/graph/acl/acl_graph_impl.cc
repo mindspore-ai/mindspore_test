@@ -19,9 +19,9 @@
 #include "utils/log_adapter.h"
 #include "utils/convert_utils_base.h"
 #include "cxx_api/acl_utils.h"
-#include "transform/symbol/acl_mdl_symbol.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_mdl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 API_GRAPH_REG(Ascend310, AclGraphImpl);

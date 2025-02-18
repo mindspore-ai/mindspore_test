@@ -20,14 +20,14 @@ mindspore.nn.SoftMarginLoss
           - ``"sum"``：计算输出元素的总和。
 
     输入：
-        - **logits** (Tensor) - 预测值，数据类型为float16或float32。
-        - **labels** (Tensor) - 目标值，数据类型和shape与 `logits` 的相同。
+        - **logits** (Tensor) - 预测值，数据类型为float16、float32、bfloat16（Atlas训练系列产品不支持）。
+        - **labels** (Tensor) - 目标值，shape与 `logits` 的相同。
 
     输出：
         Tensor或Scalar，如果 `reduction` 为"none"，其shape与 `logits` 相同。否则，将返回Scalar。
 
     异常：
         - **TypeError** - `logits` 或 `labels` 不是Tensor。
-        - **TypeError** - `logits` 或 `labels` 的数据类型既不是float16也不是float32。
+        - **TypeError** - `logits` 或 `labels` 的数据类型不是float16、float32、bfloat16（Atlas训练系列产品不支持）。
         - **ValueError** - `logits` 的shape与 `labels` 不同。
         - **ValueError** - `reduction` 不为"mean"，"sum"，或"none"。

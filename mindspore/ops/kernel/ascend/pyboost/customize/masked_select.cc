@@ -16,9 +16,9 @@
 
 #include "kernel/ascend/pyboost/customize/masked_select.h"
 
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
@@ -42,7 +42,7 @@ tensor::BaseTensorPtr MaskedSelectAscendCustomize(const std::shared_ptr<OpRunner
   auto return_value =
     LAUNCH_ACLNN_SYNC(aclnnMaskedSelect, device_context, op->stream_id(), input_tensor, mask_tensor, outputs[0]);
   const auto &cache_func_ptr = std::get<kIndex2>(return_value);
-  auto all_acl_tensor = cache_func_ptr(transform::ProcessCacheType::kGetOutputShape, {});
+  auto all_acl_tensor = cache_func_ptr(device::ascend::ProcessCacheType::kGetOutputShape, {});
 
   auto output_real_shape = all_acl_tensor[kIndex2];
   auto simple_infer_ptr = op->output_value_simple_info();

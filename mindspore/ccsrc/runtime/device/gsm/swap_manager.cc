@@ -27,120 +27,11 @@
 
 namespace mindspore {
 namespace device {
-
 constexpr char kSwapFileSuffix[] = ".data";
 constexpr char kLinuxAioLibName[] = "libaio_plugin.so";
 constexpr char kLinuxAioInstanceFuncName[] = "get_aio_instance";
-constexpr size_t kFirstSizeLevel = 0xFFFFFFFFFFFFFFFF << 24;  // 16M
 constexpr size_t kSizeLevelNum = 8;
 constexpr size_t kSwapMemAlignSize = 512;
-
-SwappableTensorCandidates::CandidateIter::CandidateIter(mindspore::device::SwappableTensorCandidates *candidates)
-    : swappable_tensors_(candidates->swappable_tensors_),
-      null_index_(candidates->null_index_),
-      all_swappable_tensors_(candidates->all_swappable_tensors_) {
-  if (!swappable_tensors_.empty()) {
-    current_size_level_ = swappable_tensors_.size() - 1;
-    Next();
-  }
-}
-
-bool SwappableTensorCandidates::CandidateIter::IsEnd() {
-  return current_size_level_ == 0 && (current_candidate_idx_ >= swappable_tensors_.at(current_size_level_).size());
-}
-
-void SwappableTensorCandidates::CandidateIter::Next() {
-  const auto &next_idx = [&]() {
-    ++current_candidate_idx_;
-    if (current_candidate_idx_ < swappable_tensors_.at(current_size_level_).size()) {
-      return true;
-    }
-    if (current_size_level_ == 0) {
-      return false;
-    }
-    do {
-      --current_size_level_;
-    } while (swappable_tensors_.at(current_size_level_).empty() && current_size_level_ != 0);
-    current_candidate_idx_ = 0;
-    return !(swappable_tensors_.at(current_size_level_).empty());
-  };
-  CandidateItem current_candidate;
-  bool valid_idx = next_idx();
-  while (valid_idx) {
-    current_candidate = swappable_tensors_.at(current_size_level_).at(current_candidate_idx_);
-    if (current_candidate.second == nullptr) {
-      valid_idx = next_idx();
-      continue;
-    }
-    if (current_candidate.first.lock() == nullptr) {
-      (void)all_swappable_tensors_.erase(current_candidate.second);
-      current_candidate.second = nullptr;
-      null_index_.at(current_size_level_).push(current_candidate_idx_);
-      valid_idx = next_idx();
-      continue;
-    }
-    return;
-  }
-}
-
-DeviceAddressPtr SwappableTensorCandidates::CandidateIter::Get() {
-  if (IsEnd()) {
-    return nullptr;
-  }
-  return swappable_tensors_.at(current_size_level_).at(current_candidate_idx_).first.lock();
-}
-
-void SwappableTensorCandidates::Init(size_t size_level_num) {
-  size_level_num_ = size_level_num;
-  swappable_tensors_.resize(size_level_num);
-  null_index_.resize(size_level_num);
-}
-
-size_t SwappableTensorCandidates::GetSizeLevel(size_t size) const {
-  size_t mask = kFirstSizeLevel;
-  for (size_t i = 0; i < size_level_num_; i += 1) {
-    if ((size & mask) == 0) {
-      return i;
-    }
-    mask = mask << 1;
-  }
-  return size_level_num_ == 0 ? 0 : size_level_num_ - 1;
-}
-
-SwappableTensorCandidates::CandidateIter SwappableTensorCandidates::Begin() { return CandidateIter(this); }
-
-DeviceAddressPtr SwappableTensorCandidates::GetLowerBoundCandidate(size_t size) {
-  const auto size_level = GetSizeLevel(size);
-  auto &candidates = swappable_tensors_[size_level];
-  for (size_t idx = 0; idx < candidates.size(); ++idx) {
-    auto candidate_lock = candidates[idx].first.lock();
-    if (candidate_lock == nullptr) {
-      all_swappable_tensors_.erase(candidates[idx].second);
-      candidates[idx].second = nullptr;
-      null_index_.at(size_level).push(idx);
-      continue;
-    }
-    if (candidate_lock->GetSize() >= size) {
-      return candidate_lock;
-    }
-  }
-  return nullptr;
-}
-
-void SwappableTensorCandidates::Add(const DeviceAddressPtr &candidate) {
-  if (candidate == nullptr) {
-    return;
-  }
-  (void)all_swappable_tensors_.insert(candidate.get());
-  const auto size_level = GetSizeLevel(candidate->GetSize());
-  if (null_index_[size_level].empty()) {
-    (void)swappable_tensors_[size_level].emplace_back(std::make_pair(candidate, candidate.get()));
-    return;
-  }
-  const auto idx = null_index_[size_level].front();
-  null_index_[size_level].pop();
-  swappable_tensors_[size_level][idx] = std::make_pair(candidate, candidate.get());
-}
 
 SwapManager::SwapManager(size_t stream_id, mindspore::device::DynamicMemPool *device_memory_pool,
                          PinMemPool *pin_mem_pool)
@@ -156,7 +47,6 @@ SwapManager::SwapManager(size_t stream_id, mindspore::device::DynamicMemPool *de
     }
     max_file_size_ = offload_context->offload_disk_size();
   }
-  candidates_.Init(size_level_num_);
   MS_EXCEPTION_IF_NULL(offload_context);
   (void)FileUtils::CreateNotExistDirs(offload_context->offload_path(), true);
 }
@@ -186,41 +76,6 @@ bool SwapManager::TryAllocate(std::queue<const DeviceAddress *> queue, const Inp
   return false;
 }
 
-template <class Input, class Output>
-bool SwapManager::SwapOutTemp(const std::pair<DeviceAddressStatus, StorageType> &swap_type, size_t total_size,
-                              const Input &input, uint32_t stream_id,
-                              Output (mindspore::device::SwapManager::*allocate_func)(const Input &, uint32_t),
-                              const std::function<bool(Output)> &success, Output *output) {
-  MS_EXCEPTION_IF_NULL(allocate_func);
-  MS_EXCEPTION_IF_NULL(output);
-  const auto target_device_address_status = swap_type.first;
-  const auto swap_out_to = swap_type.second;
-  const auto swap_temp_func = [&](const DeviceAddressPtr &candidate) -> bool {
-    if (!candidate->swappable() || candidate->status() != target_device_address_status) {
-      return false;
-    }
-    if (candidate->status() == DeviceAddressStatus::kInDevice && candidate->GetPtr() == nullptr) {
-      return false;
-    }
-    if (!candidate->MoveTo(swap_out_to, false, stream_id)) {
-      return false;
-    }
-    (*output) = (this->*allocate_func)(input, stream_id);
-    return success(*output);
-  };
-  auto lower_bound_candidate = candidates_.GetLowerBoundCandidate(total_size);
-  if (lower_bound_candidate != nullptr && swap_temp_func(lower_bound_candidate)) {
-    return true;
-  }
-  for (auto iter = candidates_.Begin(); !iter.IsEnd(); iter.Next()) {
-    const auto &candidate = iter.Get();
-    if (swap_temp_func(candidate)) {
-      return true;
-    }
-  }
-  return false;
-}
-
 void *SwapManager::AllocDeviceMemorySimply(const size_t &size, uint32_t stream_id) {
   MS_EXCEPTION_IF_NULL(device_memory_pool_);
   return device_memory_pool_->AllocTensorMem(size + kSwapMemAlignSize, false, false, stream_id);
@@ -231,9 +86,7 @@ void *SwapManager::AllocDeviceMemory(size_t size, uint32_t stream_id) {
   void *(SwapManager::*allocate_func)(const size_t &, uint32_t) = &SwapManager::AllocDeviceMemorySimply;
   std::function<bool(void *)> success = [](void *ptr) { return ptr != nullptr; };
   std::lock_guard<std::mutex> lock(swapping_tensors_device_mutex_);
-  if (!TryAllocate(swapping_tensors_device_, size, stream_id, allocate_func, success, &ret) &&
-      !SwapOutTemp(std::make_pair(DeviceAddressStatus::kInDevice, StorageType::kHost), size, size, stream_id,
-                   allocate_func, success, &ret)) {
+  if (!TryAllocate(swapping_tensors_device_, size, stream_id, allocate_func, success, &ret)) {
     MS_LOG(WARNING) << "Allocate device memory failed, size: " << size;
   }
   return ret;
@@ -252,11 +105,7 @@ std::vector<void *> SwapManager::AllocDeviceContinuousMem(const std::vector<size
   std::function<bool(std::vector<void *>)> success = [](const std::vector<void *> &ptrs) { return !ptrs.empty(); };
   std::lock_guard<std::mutex> lock(swapping_tensors_device_mutex_);
   if (!TryAllocate(swapping_tensors_device_, size_list, stream_id, allocate_func, success, &ret)) {
-    const size_t total_size = std::accumulate(size_list.begin(), size_list.end(), size_t(1), std::multiplies<>());
-    if (!SwapOutTemp(std::make_pair(DeviceAddressStatus::kInDevice, StorageType::kHost), total_size, size_list,
-                     stream_id, allocate_func, success, &ret)) {
-      MS_LOG(WARNING) << "Allocate continuous device mem failed, size list: " << size_list;
-    }
+    MS_LOG(WARNING) << "Allocate continuous device mem failed, size list: " << size_list;
   }
   return ret;
 }
@@ -276,9 +125,7 @@ void *SwapManager::AllocHostMemory(size_t size) {
   void *(SwapManager::*allocate_func)(const size_t &, uint32_t) = &SwapManager::AllocHostMemorySimply;
   std::function<bool(void *)> success = [](void *ptr) { return ptr != nullptr; };
   std::lock_guard<std::mutex> lock(swapping_tensors_host_mutex_);
-  if (!TryAllocate(swapping_tensors_host_, size, kDefaultStreamIndex, allocate_func, success, &ret) &&
-      !SwapOutTemp(std::make_pair(DeviceAddressStatus::kInHost, StorageType::kFile), size, size, kDefaultStreamIndex,
-                   allocate_func, success, &ret)) {
+  if (!TryAllocate(swapping_tensors_host_, size, kDefaultStreamIndex, allocate_func, success, &ret)) {
     MS_LOG(WARNING) << "Allocate host memory failed, size: " << size;
   }
   return ret;
@@ -365,11 +212,6 @@ std::string SwapManager::GetSwapFileName(uint32_t device_id) const {
          std::to_string(Common::GetTimeStamp()) + kSwapFileSuffix;
 }
 
-void SwapManager::AddSwappableTensor(const DeviceAddressPtr &device_address) {
-  candidates_.Add(device_address);
-  device_address->set_swappable(true);
-}
-
 void SwapManager::AddSwappingTensor(const mindspore::device::DeviceAddress *device_address) {
   if (device_address == nullptr) {
     return;
@@ -383,44 +225,6 @@ void SwapManager::AddSwappingTensor(const mindspore::device::DeviceAddress *devi
   } else {
     std::lock_guard<std::mutex> lock(swapping_tensors_host_mutex_);
     (void)swapping_tensors_host_.push(device_address);
-  }
-}
-
-void SwapManager::SetSwappableBeforeMemAllocate(const std::vector<DeviceAddress *> &inputs,
-                                                const std::vector<DeviceAddress *> &outputs) const {
-  for (const auto &device_address : inputs) {
-    if (device_address == nullptr) {
-      continue;
-    }
-    device_address->set_swappable(false);
-  }
-  for (const auto &device_address : outputs) {
-    if (device_address == nullptr) {
-      continue;
-    }
-    device_address->set_swappable(false);
-  }
-}
-
-void SwapManager::SetSwappableBeforeMemFree(const std::vector<DeviceAddress *> &inputs,
-                                            const std::vector<DeviceAddress *> &outputs,
-                                            const mindspore::device::KernelInfo *kernel_info) const {
-  for (const auto &device_address : inputs) {
-    if (device_address == nullptr) {
-      continue;
-    }
-    device_address->set_swappable(true);
-  }
-  for (const auto &device_address : outputs) {
-    if (device_address == nullptr) {
-      continue;
-    }
-    device_address->set_swappable(true);
-  }
-  for (const auto &out_in : kernel_info->out_in_ref_map()) {
-    if (inputs[out_in.second] != outputs[out_in.first]) {
-      outputs[out_in.first]->set_swappable(false);
-    }
   }
 }
 }  // namespace device

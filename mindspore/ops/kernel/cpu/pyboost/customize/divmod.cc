@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/cpu/pyboost/customize/divmod.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/divmod.h"
 #include <memory>
 #include <utility>
-#include "mindspore/ops/kernel/common/pyboost/customize/divmod.h"
+#include "mindspore/ccsrc/pyboost/customize/divmod.h"
 
 namespace mindspore {
 namespace kernel {

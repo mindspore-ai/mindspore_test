@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,14 +53,18 @@ namespace ops {
 namespace {
 template <typename T>
 void CheckSegmentIDDataMean(const std::vector<T> &segment_ids_data) {
+  if (segment_ids_data.empty()) {
+    // segment_ids shape may be (0,)
+    MS_EXCEPTION(ValueError) << "For 'SegmentOp', segment_ids input cannot be empty.";
+  }
   if (segment_ids_data[0] < 0) {
-    MS_EXCEPTION(ValueError) << "For 'SegmentMean', the values of segment_ids must be nonnegative. but got "
+    MS_EXCEPTION(ValueError) << "For 'SegmentOp', the values of segment_ids must be nonnegative, but got "
                              << segment_ids_data[0] << ".";
   }
   for (size_t i = 0; i < segment_ids_data.size() - 1; ++i) {
     if (segment_ids_data[i] > segment_ids_data[i + 1]) {
       MS_EXCEPTION(ValueError)
-        << "For 'SegmentMean', segment_ids must be a tensor with element values sorted in ascending order.";
+        << "For 'SegmentOp', segment_ids must be a tensor with element values sorted in ascending order.";
     }
   }
 }

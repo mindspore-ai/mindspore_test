@@ -17,18 +17,20 @@ import sys
 import pytest 
 from mindspore import Tensor, jit, context
 from tests.mark_utils import arg_mark
+from tests.st.pi_jit.share.utils import pi_jit_with_config
+
 
 @pytest.fixture(autouse=True)  
 def skip_if_python_version_too_high():  
     if sys.version_info >= (3, 11):  
         pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
-@jit(mode="PIJit", jit_config={"perf_statistics": True})
+@pi_jit_with_config(jit_config={"perf_statistics": True})
 def perf_statistic_simple(a, b):
     return a + b
 
 
-@jit(mode="PIJit", jit_config={"perf_statistics": True, "PERF_STATISTICS_SCALE_10000X": -9900})
+@pi_jit_with_config(jit_config={"perf_statistics": True, "PERF_STATISTICS_SCALE_10000X": -9900})
 def perf_statistic_complex(a, b):
     a = a + b
     b = a - b
@@ -53,12 +55,12 @@ def perf_statistic_complex(a, b):
     return a
 
 
-@jit(mode="PIJit", jit_config={"STATIC_GRAPH_BYTECODE_MIN": 8})
+@pi_jit_with_config(jit_config={"STATIC_GRAPH_BYTECODE_MIN": 8})
 def perf_bytecode_simple(a, b):
     return a + b
 
 
-@jit(mode="PIJit", jit_config={"STATIC_GRAPH_BYTECODE_MIN": 8})
+@pi_jit_with_config(jit_config={"STATIC_GRAPH_BYTECODE_MIN": 8})
 def perf_bytecode_complex(a, b):
     a = a + b
     b = a - b

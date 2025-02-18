@@ -40,7 +40,7 @@ def test_mutable_with_scalar():
     mutable(1)
     mutable([Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32), (2,)])
     mutable({'a': Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32), 'b': (2,)})
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def net():
         x = mutable(2)
         return x

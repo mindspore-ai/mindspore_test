@@ -20,7 +20,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -28,7 +28,7 @@ namespace kernel {
 
 void LayerNormExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &outputs) {
-  normalized_shape_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex1]);
+  normalized_shape_ = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex1]);
   eps_dtype_id_ = inputs[kIndex4]->dtype_id();
   eps_ = (eps_dtype_id_ == kNumberTypeFloat32) ? static_cast<double>(inputs[kIndex4]->GetValueWithCheck<float>())
                                                : inputs[kIndex4]->GetValueWithCheck<double>();

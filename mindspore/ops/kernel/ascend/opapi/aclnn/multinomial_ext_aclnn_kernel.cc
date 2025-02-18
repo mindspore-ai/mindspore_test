@@ -20,7 +20,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -28,10 +28,10 @@ namespace kernel {
 
 void MultinomialExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &outputs) {
-  num_samples_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
-  replacement_ = transform::ConvertKernelTensor<bool>(inputs[kIndex2]);
-  seed_ = static_cast<int64_t>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
-  offset_ = static_cast<int64_t>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]));
+  num_samples_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
+  replacement_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex2]);
+  seed_ = static_cast<int64_t>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
+  offset_ = static_cast<int64_t>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]));
   GetWorkspaceForResize(inputs[kIndex0], num_samples_, replacement_, seed_, offset_, outputs[kIndex0]);
 }
 

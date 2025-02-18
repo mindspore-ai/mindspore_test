@@ -15,13 +15,14 @@
 
 """Op debug interfaces."""
 from mindspore._checkparam import args_type_check
-from  .device import _is_supported
+from .device import _is_supported
 try:
     from mindspore._c_expression import AscendOpDebugConf
 except ImportError:
     pass
 
 function_status = {'execute_timeout': False, 'debug_option': False}
+
 
 @args_type_check(op_timeout=int)
 def execute_timeout(op_timeout):

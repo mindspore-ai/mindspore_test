@@ -17,14 +17,14 @@
 #include "kernel/ascend/pyboost/customize/quant_v2.h"
 #include <string>
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "transform/graph_ir/op_adapter_base.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 
 namespace mindspore {
-using mindspore::transform::AscendQuantRoundMode;
+using mindspore::device::ascend::AscendQuantRoundMode;
 namespace kernel {
 namespace pyboost {
 void QuantV2AscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor,

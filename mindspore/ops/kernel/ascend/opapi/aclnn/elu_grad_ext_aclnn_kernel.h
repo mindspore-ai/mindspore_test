@@ -19,7 +19,7 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "plugin/device/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
@@ -37,6 +37,7 @@ class EluGradExtAscend : public AclnnKernelMod {
   ScalarPtr alpha_ = nullptr;
   ScalarPtr scale_ = nullptr;
   ScalarPtr input_scale_ = nullptr;
+  bool is_result_ = false;
 };
 }  // namespace kernel
 }  // namespace mindspore

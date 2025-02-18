@@ -43,10 +43,12 @@ void RegForkUtils(py::module *m);
 void RegRandomSeededGenerator(py::module *m);
 void RegStress(py::module *m);
 void RegSendRecv(py::module *m);
+void RegResetParams(py::module *m);
 void RegCleanTdtChannel(py::module *m);
 void RegTFT(py::module *m);
 void RegTensorDoc(py::module *m);
 void RegReuseDataPtr(py::module *m);
+void RegPreJit(py::module *m);
 
 namespace hal {
 void RegStream(py::module *m);
@@ -68,10 +70,8 @@ void RegPyNativeExecutor(const py::module *m);
 void RegisterPyBoostFunction(py::module *m);
 void RegisterCustomizeFunction(py::module *m);
 void RegisterFunctional(py::module *m);
-}  // namespace pynative
-namespace kernel::pyboost {
 void RegDirectOps(py::module *m);
-}
+}  // namespace pynative
 
 namespace pijit {
 void RegPIJitInterface(py::module *m);
@@ -83,6 +83,7 @@ void RegCSRTensor(const py::module *m);
 void RegCOOTensor(const py::module *m);
 void RegRowTensor(const py::module *m);
 void RegMapTensor(const py::module *m);
+void RegTensorPy(const py::module *m);
 }  // namespace tensor
 
 namespace profiler {

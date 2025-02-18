@@ -95,6 +95,7 @@ void CheckFlashAttentionScoreAttnMaskShape(const AbstractBasePtr &attn_mask, con
     CheckFlashAttentionScoreInputShape(attn_mask,
                                        {{batch_size, q_head_num, q_seq_len, kv_seq_len},
                                         {batch_size, 1, q_seq_len, kv_seq_len},
+                                        {1, 1, q_seq_len, kv_seq_len},
                                         {q_seq_len, kv_seq_len}},
                                        op_name, "attn_mask", is_attn_mask_optional);
   }

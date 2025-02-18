@@ -20,8 +20,8 @@
 #include <map>
 #include <nlohmann/json.hpp>
 #include "src/common/file_utils.h"
-#include "transform/symbol/acl_prof_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_prof_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore::kernel {
 namespace acl {

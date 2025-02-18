@@ -254,9 +254,9 @@ class _Context:
 
     def set_exec_order(self, exec_order):
         """
-        The execution order mode, support "bfs", "dfs", "gpto".
+        The execution order mode, support "bfs", "dfs".
         """
-        exec_order_modes = ["bfs", "dfs", "gpto"]
+        exec_order_modes = ["bfs", "dfs"]
         if exec_order not in exec_order_modes:
             raise ValueError(f"For 'context.set_context', the argument 'exec_order' must be one of "
                              f"{exec_order_modes}, but got {exec_order}.")
@@ -1000,7 +1000,8 @@ def set_auto_parallel_context(**kwargs):
                        dataset_strategy="data_parallel" is equal to full_batch=False, dataset_strategy="full_batch" is
                        equal to full_batch=True. For execution mode is 'GRAPH_MODE' and dataset load into net by model
                        parallel strategy likes ds_stra ((1, 8), (1, 8)), it requires using
-                       set_auto_parallel_context(dataset_strategy=ds_stra).
+                       set_auto_parallel_context(dataset_strategy=ds_stra). The dataset sharding strategy is not
+                       affected by the currently configured parallel mode.
         enable_parallel_optimizer (bool): This is a developing feature, which shards the weight update computation for
                        data parallel training in the benefit of time and memory saving. Currently, auto and semi auto
                        parallel mode support all optimizers in both Ascend and GPU. Data parallel mode only supports
@@ -1195,7 +1196,8 @@ def reset_auto_parallel_context():
 @args_type_check(offload_config=dict)
 def set_offload_context(offload_config):
     r"""
-    Configure heterogeneous training detailed parameters to adjust the offload strategy.
+    Configure heterogeneous training detailed parameters to adjust the offload strategy. This function is deprecated and
+    will be removed in future versions.
 
     Note:
         The offload configuration is only used if the memory offload feature is enabled
@@ -1236,7 +1238,8 @@ def set_offload_context(offload_config):
 def get_offload_context():
     """
     Gets the offload configuration parameters. Configure through interface mindspore.set_offload_context().
-    If the user is not set, the default configuration is obtained.
+    If the user is not set, the default configuration is obtained. This function is deprecated and will be removed in
+    future versions.
 
     Returns:
         Dict, heterogeneous training offload detailed configuration parameters.
@@ -1323,7 +1326,8 @@ def _check_context_deprecated(key):
                                                      mindspore.device_context.gpu.op_precision.conv_fprop_algo(),
                                                      mindspore.device_context.gpu.op_precision.conv_wgrad_algo(),
                                                      mindspore.device_context.gpu.op_precision.conv_dgrad_algo()''',
-                               'runtime_num_threads': 'api mindspore.device_context.cpu.op_tuning.threads_num()'}
+                               'runtime_num_threads': 'api mindspore.device_context.cpu.op_tuning.threads_num()',
+                               'memory_offload': "`device` parameter of `mindspore.Parameter`"}
     if key in deprecated_context_dict:
         log = f"For 'context.set_context', the parameter '{key}' will be deprecated and removed in a future version."
         if deprecated_context_dict.get(key) != '':
@@ -1621,6 +1625,10 @@ def set_context(**kwargs):
               when the graph compilation level is not 'O0'; This parameter does not take effect when
               memory_optimize_level is set 'O1'.
             - OFF: Turn off the memory Offload function.
+
+            This parameter is deprecated and will be removed in future versions. Please use the `device` parameter
+            of `mindspore.Parameter` instead.
+
         ascend_config (dict): Set the parameters specific to Ascend hardware platform. It is not set by default.
             The default value of `precision_mode`, `jit_compile` and
             `atomic_clean_policy` are experimental parameters, may change in the future.
@@ -1717,11 +1725,15 @@ def set_context(**kwargs):
               - enable_grad_comm_opt (bool): Enable overlap between dx ops and data parallel communication ops if True.
                 Currently, do not support
                 `O2 <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.JitConfig.html>`_
-                Default: False.
+                Caution when parallel gradient communication and calculation are well overlapped, the performance
+                may not be improved after this option is enabled. Determine whether to enable this option based on the
+                actual scenario. Default: False.
               - enable_opt_shard_comm_opt (bool): Enable overlap between forward ops
                 and optimizer parallel allgather communication if True. Currently, do not support
                 `O2 <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.JitConfig.html>`_
-                Default: False.
+                Caution if the weight aggregation communication and calculation are well overlapped, the performance
+                may not be improved after this option is enabled. Determine whether to enable this option based on the
+                actual scenario Default: False.
               - compute_communicate_fusion_level (int): Enable the fusion between compute and communicate.
                 Default: ``0``. Note: This function must be used with Ascend Training Solution 24.0.RC2 or later.
 
@@ -1887,17 +1899,14 @@ def set_context(**kwargs):
               - ``"on"``: Enable infer mode, get better infer performance.
               - ``"off"``: Disable infer mode, use forward to infer, performance is not good.
 
-        exec_order (str): Set the sorting method for operator execution in GRAPH_MODE Currently, only three sorting
-            methods are supported: bfs and gpto, and the default method is bfs.
+        exec_order (str): Set the sorting method for operator execution in GRAPH_MODE Currently, only two sorting
+            methods are supported: bfs and dfs, and the default method is bfs.
 
             - ``"bfs"``: The default sorting method, breadth priority, good communication masking, relatively good
               performance.
             - ``"dfs"``: An optional sorting method, depth-first sorting. The performance is relatively worse than that
               of bfs execution order, but it occupies less memory. It is recommended to try dfs in scenarios where other
               execution orders run out of memory (OOM).
-            - ``"gpto"``: An optional sorting method. This method combines multiple execution orders and selects a
-              method with relatively good performance. There may be some performance gains in scenarios with multiple
-              replicas running in parallel.
 
     Raises:
         ValueError: If input key is not an attribute in context.
@@ -1939,7 +1948,7 @@ def set_context(**kwargs):
         >>> ms.set_context(gpu_config={"conv_fprop_algo": "performance", "conv_allow_tf32": True,
         ...                "matmul_allow_tf32": True})
         >>> ms.set_context(jit_config={"jit_level": "O0"})
-        >>> ms.set_context(exec_order="gpto")
+        >>> ms.set_context(exec_order="bfs")
     """
     ctx = _context()
     # set device target first

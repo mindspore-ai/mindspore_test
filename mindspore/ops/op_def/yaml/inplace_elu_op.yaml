@@ -1,0 +1,19 @@
+#operator inplace_elu
+inplace_elu:
+  args:
+    input:
+      dtype: tensor
+    alpha:
+      dtype: float
+      default: 1.0
+  args_signature:
+    rw_write: input
+  returns:
+    output:
+      dtype: tensor
+      inplace: input
+  labels:
+    side_effect_mem: True
+  dispatch:
+    enable: True
+    Ascend: InplaceEluAscend

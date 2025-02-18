@@ -1,0 +1,27 @@
+bitwise_xor:
+    description: |
+        bitwise_xor(other) ->Tensor
+
+        Returns bitwise `xor` of two tensors element-wise.
+
+        Note:
+            `self` and `other` comply with the type conversion rules to make the data types consistent.
+
+        Args:
+            other (Tensor, Number.number): The shape is the same as the `self` or can be broadcast to the shape of `self`.
+
+        Returns:
+            Tensor, has the same type as the `self` and has the same shape as after broadcasting.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor
+            >>> input = Tensor(np.array([0, 0, 1, -1, 1, 1, 1]), mindspore.int16)
+            >>> other = Tensor(np.array([0, 1, 1, -1, -1, 2, 3]), mindspore.int16)
+            >>> output = input.bitwise_xor(other)
+            >>> print(output)
+            [ 0  1  0  0 -2  3  2]

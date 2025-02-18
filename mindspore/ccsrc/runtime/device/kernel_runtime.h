@@ -78,10 +78,9 @@ class BACKEND_EXPORT KernelRuntime {
   virtual bool MemcpyAsync(void *dst, const void *src, uint64_t size, int32_t kind, void *stream) = 0;
   virtual void ClearGlobalIdleMem() {}
   virtual void CreateContext() {}
-  virtual void SetContext() {}
-  virtual void SetContextForce() {}
+  // virtual void SetContext() {}
+  // virtual void SetContextForce() {}
   virtual void ResetStreamAndCtx() {}
-  virtual const void *context() const { return nullptr; }
   uint8_t *MallocMem(MemType type, size_t size, const DeviceAddressPtr &address) {
     return mem_manager_->MallocMem(type, size, address);
   }

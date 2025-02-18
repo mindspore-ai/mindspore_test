@@ -19,15 +19,94 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <utility>
 #include <unordered_map>
 #include "ir/primitive.h"
 #include "kernel/kernel.h"
 #include "include/internal.h"
 #include "plugin/device/ascend/kernel/internal/tiling_mem_mgr.h"
-#include "transform/acl_ir/op_api_cache.h"
 
 namespace mindspore {
 namespace kernel {
+constexpr int g_hash_buf_size = 8192;
+constexpr int g_hash_buf_max_size = g_hash_buf_size + 1024;
+extern BACKEND_EXPORT thread_local char g_hash_buf[g_hash_buf_size];
+extern BACKEND_EXPORT thread_local int g_hash_offset;
+
+inline void MemcpyToBuf(const void *data_expression, size_t size_expression) {
+  if (size_expression == 0) {
+    return;
+  }
+  if (g_hash_offset + size_expression >= g_hash_buf_size) {
+    g_hash_offset = g_hash_buf_max_size;
+    return;
+  }
+  auto ret = memcpy_sp(g_hash_buf + g_hash_offset, g_hash_buf_size - g_hash_offset, data_expression, size_expression);
+  if (ret != EOK) {
+    MS_LOG(EXCEPTION) << "Failed to memcpy!";
+  }
+  g_hash_offset += size_expression;
+}
+
+template <typename T>
+BACKEND_EXPORT void GatherInfo(const T &value) {
+  MemcpyToBuf(&value, sizeof(T));
+}
+
+template <typename T>
+BACKEND_EXPORT void GatherInfo(std::optional<T> value) {
+  if (value.has_value()) {
+    GatherInfo(value.value());
+  }
+}
+
+BACKEND_EXPORT void GatherInfo(const string &);
+BACKEND_EXPORT void GatherInfo(const std::optional<string> &);
+
+BACKEND_EXPORT void GatherInfo(const ScalarPtr &);
+BACKEND_EXPORT void GatherInfo(const std::optional<ScalarPtr> &);
+
+BACKEND_EXPORT void GatherInfo(const TypePtr &);
+BACKEND_EXPORT void GatherInfo(const std::optional<TypePtr> &);
+
+template <typename T>
+BACKEND_EXPORT void GatherInfo(const std::vector<T> &values) {
+  MemcpyToBuf(values.data(), values.size() * sizeof(T));
+}
+
+BACKEND_EXPORT inline void GatherInfo(TypeId type_id) { MemcpyToBuf(&type_id, sizeof(int)); }
+
+BACKEND_EXPORT void GatherInfo();
+
+BACKEND_EXPORT uint64_t calc_hash_id();
+BACKEND_EXPORT uint64_t gen_hash(const void *key, const int len, const uint32_t seed = 0xdeadb0d7);
+
+// New cache hash for kbk and pyboost.
+BACKEND_EXPORT void GatherHash(mindspore::kernel::KernelTensor *);
+BACKEND_EXPORT void GatherHash(const std::pair<mindspore::kernel::KernelTensor *, bool> &);
+BACKEND_EXPORT void GatherHash(const std::vector<mindspore::kernel::KernelTensor *> &);
+
+BACKEND_EXPORT void GatherHash(const device::DeviceAddressPtr &);
+BACKEND_EXPORT void GatherHash(const mindspore::tensor::BaseTensorPtr &);
+BACKEND_EXPORT void GatherHash(const std::optional<tensor::BaseTensorPtr> &);
+BACKEND_EXPORT void GatherHash(const std::vector<tensor::BaseTensorPtr> &);
+BACKEND_EXPORT void GatherHash(const mindspore::tensor::TensorPtr &);
+BACKEND_EXPORT void GatherHash(const std::optional<tensor::TensorPtr> &);
+BACKEND_EXPORT void GatherHash(const std::vector<tensor::TensorPtr> &);
+
+template <typename T>
+BACKEND_EXPORT void GatherHash(const T &value) {
+  GatherInfo(value);
+}
+
+BACKEND_EXPORT void GatherHash();
+
+template <typename T, typename... Args>
+void GatherHash(const T &arg, const Args &... args) {
+  GatherHash(arg);
+  GatherHash(args...);
+}
+
 struct TilingCacheItem {
   std::atomic<int64_t> ref_count_{0};
   internal::TilingInfoPtr tiling_info_;
@@ -41,7 +120,7 @@ using TilingCacheItemPtr = std::shared_ptr<TilingCacheItem>;
 
 template <typename T>
 inline void GatherSingleInfo(const std::string &, const T &input) {
-  transform::GatherHash(input);
+  GatherHash(input);
 }
 
 template <>
@@ -49,34 +128,34 @@ inline void GatherSingleInfo(const std::string &kernel_name, const std::vector<K
   for (auto &input : inputs) {
     auto type = input->type_id();
     if (type == kObjectTypeTensorType) {
-      transform::GatherHash(input);
-      transform::GatherHash(input->format());
+      GatherHash(input);
+      GatherHash(input->format());
     } else if (type == kObjectTypeNumber) {
       auto data_type = input->dtype_id();
       switch (data_type) {
         case kNumberTypeBool: {
           auto value = input->GetValueWithCheck<bool>();
-          transform::GatherHash(value);
+          GatherHash(value);
           break;
         }
         case kNumberTypeInt32: {
           auto value = input->GetValueWithCheck<int32_t>();
-          transform::GatherHash(value);
+          GatherHash(value);
           break;
         }
         case kNumberTypeInt64: {
           auto value = input->GetValueWithCheck<int64_t>();
-          transform::GatherHash(value);
+          GatherHash(value);
           break;
         }
         case kNumberTypeFloat32: {
           auto value = input->GetValueWithCheck<float>();
-          transform::GatherHash(value);
+          GatherHash(value);
           break;
         }
         case kNumberTypeFloat64: {
           auto value = input->GetValueWithCheck<double>();
-          transform::GatherHash(value);
+          GatherHash(value);
           break;
         }
         default:
@@ -87,12 +166,12 @@ inline void GatherSingleInfo(const std::string &kernel_name, const std::vector<K
       switch (data_type) {
         case kNumberTypeInt32: {
           auto value = input->GetValueWithCheck<std::vector<int32_t>>();
-          transform::GatherHash(value);
+          GatherHash(value);
           break;
         }
         case kNumberTypeInt64: {
           auto value = input->GetValueWithCheck<std::vector<int64_t>>();
-          transform::GatherHash(value);
+          GatherHash(value);
           break;
         }
         default:
@@ -132,11 +211,11 @@ class InternalTilingCache {
   template <typename... Args>
   static inline uint64_t GenerateKey(const std::string &kernel_name, const std::vector<KernelTensor *> &inputs,
                                      Args... args) {
-    transform::g_hash_offset = 0;
-    transform::GatherHash(kernel_name);
+    g_hash_offset = 0;
+    GatherHash(kernel_name);
 
     GatherHashsForKey(kernel_name, inputs, args...);
-    auto hash_id = transform::calc_hash_id();
+    auto hash_id = calc_hash_id();
     return hash_id;
   }
 

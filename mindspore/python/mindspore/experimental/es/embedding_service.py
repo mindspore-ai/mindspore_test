@@ -241,24 +241,25 @@ class EmbeddingService:
             name (str): The embedding table name.
             init_vocabulary_size (int): The size of embedding table.
             embedding_dim (int): The embedding dim of data in embedding table.
-            max_feature_count (int): The count of keys when look up for PS.
-            initializer (Initializer): The initialization strategy for the PS embedding, default is ``Uniform``.
-            embedding_type (str): The embedding type, configurable parameters ["PS", "data_parallel"],
+            max_feature_count (int, optional): The count of keys when look up for PS.
+            initializer (Initializer, optional): The initialization strategy for the PS embedding, default is
+                ``Uniform``.
+            embedding_type (str, optional): The embedding type, configurable parameters ["PS", "data_parallel"],
                 ``"PS"`` means initializing PS embedding, ``"data_parallel"`` means initializing data_parallel
                 embedding, and default is ``"PS"``.
-            ev_option (EmbeddingVariableOption): Properties of the PS embedding,
+            ev_option (EmbeddingVariableOption, optional): Properties of the PS embedding,
                 is a EmbeddingVariableOption obj which returned by embedding_variable_option function.
                 Default is ``None``.
-            multihot_lens (int): The param only use when allow_merge is enabled, and not support now.
+            multihot_lens (int, optional): The param only use when allow_merge is enabled, and not support now.
                 Default is ``None``.
-            optimizer (str): The type of optimizer in the train mode for PS embedding,
+            optimizer (str, optional): The type of optimizer in the train mode for PS embedding,
                 cannot be shared among each PS embedding, and currently only ``"Adam"``, ``"Ftrl"``, ``"SGD"`` and
                 ``"RMSProp"`` are supported, and default is ``None``.
-            allow_merge (bool): Whether to enable merge data_parallel embeddings, currently only be False,
+            allow_merge (bool, optional): Whether to enable merge data_parallel embeddings, currently only be False,
                 and default is ``False``.
-            optimizer_param (float): The "initialize accumulator value" param of optimizer which configured by user,
-                representing the init value of moment accumulator, and default is ``None``.
-            mode (str): Run mode, configurable parameters ["train", "predict", "export"],
+            optimizer_param (float, optional): The "initialize accumulator value" param of optimizer
+                which configured by user, representing the init value of moment accumulator, and default is ``None``.
+            mode (str, optional): Run mode, configurable parameters ["train", "predict", "export"],
                 ``"train"`` means train mode, ``"predict"`` means predict mode, ``"export"`` mean export mode,
                 and default is ``"train"``.
 
@@ -345,8 +346,9 @@ class EmbeddingService:
 
         Args:
             padding_key (int): The value for padding key, must be a genuine and legal hash key.
-            mask (bool): Whether to update padding key. If set to false, it will not be updated. Default is ``True``.
-            mask_zero (bool): Whether to update padding key when key is 0. Default is ``False``.
+            mask (bool, optional): Whether to update padding key. If set to false, it will not be updated.
+                Default is ``True``.
+            mask_zero (bool, optional): Whether to update padding key when key is 0. Default is ``False``.
 
         Returns:
             PaddingParamsOption object.
@@ -368,7 +370,7 @@ class EmbeddingService:
 
         Args:
             completion_key (int): The value for completion key.
-            mask (bool): Whether to update completion key. If set to false, it will not be updated,
+            mask (bool, optional): Whether to update completion key. If set to false, it will not be updated,
                 and default is ``True``.
 
         Returns:
@@ -396,9 +398,9 @@ class EmbeddingService:
 
         Args:
             filter_freq (int): The frequency threshold value for feature admission.
-            default_key (int): The key that number of occurrences does not reach the threshold,
+            default_key (int, optional): The key that number of occurrences does not reach the threshold,
                 return value of default key as the corresponding value when look up embedding, and default is ``None``.
-            default_value (int/float): The key that number of occurrences does not reach the threshold,
+            default_value (int/float, optional): The key that number of occurrences does not reach the threshold,
                 return default value which length value is embedding dim, and default is ``None``.
 
         Returns:
@@ -460,13 +462,13 @@ class EmbeddingService:
         Set variable option for PS embedding.
 
         Args:
-            filter_option (CounterFilter): The option of counter filter. Default is ``None``.
-            padding_option (PaddingParamsOption): The option of padding key. Default is ``None``.
-            evict_option (EvictOption): The option evict. Default is ``None``.
-            completion_option (CompletionKeyOption): The option of completion key. Default is ``None``.
-            storage_option (None): Reserved option, currently not supported. Default is ``None``.
-            feature_freezing_option (None): Reserved option, currently not supported. Default is ``None``.
-            communication_option (None): Reserved option, currently not supported. Default is ``None``.
+            filter_option (CounterFilter, optional): The option of counter filter. Default is ``None``.
+            padding_option (PaddingParamsOption, optional): The option of padding key. Default is ``None``.
+            evict_option (EvictOption, optional): The option evict. Default is ``None``.
+            completion_option (CompletionKeyOption, optional): The option of completion key. Default is ``None``.
+            storage_option (None, optional): Reserved option, currently not supported. Default is ``None``.
+            feature_freezing_option (None, optional): Reserved option, currently not supported. Default is ``None``.
+            communication_option (None, optional): Reserved option, currently not supported. Default is ``None``.
 
         Returns:
             EmbeddingVariableOption object, used as the ev_option parameter for embedding_init.

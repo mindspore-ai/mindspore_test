@@ -18,7 +18,7 @@
 #include <unordered_map>
 #include <memory>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/base/types.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
@@ -37,7 +37,7 @@ void MSELossGradExtAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTens
                                                     const std::vector<KernelTensor *> &outputs) {
   ClearOpsWorkSpaceList();
   expand_indices_.clear();
-  auto reduction_imm = static_cast<Reduction>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
+  auto reduction_imm = static_cast<Reduction>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
   // transform reduction enum value to corresponding value
   reduction_value_ = ops::ConvertReductionForAclnn(reduction_imm);
 

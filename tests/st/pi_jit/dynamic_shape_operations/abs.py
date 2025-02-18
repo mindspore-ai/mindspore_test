@@ -60,22 +60,22 @@ class AbsDynamicShapeMock():
 
     def forward_cmp(self):
         ps_net = DynamicShapeAbs()
-        jit(ps_net.construct, mode="PSJit")(self.input_ms, self.indices_ms)
+        jit(ps_net.construct, capture_mode="ast")(self.input_ms, self.indices_ms)
         context.set_context(mode=context.GRAPH_MODE)
         out_ps = self.forward_mindspore_impl(ps_net)
         pi_net = DynamicShapeAbs()
-        jit(pi_net.construct, mode="PIJit")(self.input_ms, self.indices_ms)
+        jit(pi_net.construct, capture_mode="bytecode")(self.input_ms, self.indices_ms)
         context.set_context(mode=context.PYNATIVE_MODE)
         out_pi = self.forward_mindspore_impl(pi_net)
         allclose_nparray(out_pi.asnumpy(), out_ps.asnumpy(), self.loss, self.loss)
 
     def grad_cmp(self):
         ps_net = DynamicShapeAbs()
-        jit(ps_net.construct, mode="PSJit")(self.input_ms, self.indices_ms)
+        jit(ps_net.construct, capture_mode="ast")(self.input_ms, self.indices_ms)
         context.set_context(mode=context.GRAPH_MODE)
         out_ps = self.grad_mindspore_impl(ps_net)
         pi_net = DynamicShapeAbs()
-        jit(pi_net.construct, mode="PSJit")(self.input_ms, self.indices_ms)
+        jit(pi_net.construct, capture_mode="ast")(self.input_ms, self.indices_ms)
         context.set_context(mode=context.PYNATIVE_MODE)
         out_pi = self.grad_mindspore_impl(pi_net)
         allclose_nparray(out_pi.asnumpy(), out_ps.asnumpy(), self.loss, self.loss)

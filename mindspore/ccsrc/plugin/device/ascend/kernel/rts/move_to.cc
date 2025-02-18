@@ -26,8 +26,8 @@
 #include "runtime/device/gsm/swap_manager.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/log_adapter.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "kernel/framework_utils.h"
 
 namespace mindspore {

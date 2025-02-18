@@ -25,7 +25,7 @@
 #include "include/common/utils/parallel_context.h"
 #include "proto/topology.pb.h"
 #include "kernel/framework_utils.h"
-#include "kernel/cpu/rpc/rpc_recv_kernel.h"
+#include "plugin/device/cpu/kernel/rpc/rpc_recv_kernel.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/distributed/rpc/tcp/constants.h"
 #include "include/backend/distributed/collective/collective_manager.h"

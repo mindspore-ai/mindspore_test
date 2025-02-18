@@ -19,7 +19,7 @@
 
 #include <map>
 #include <vector>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore::kernel {
 class TensorShapeCpuKernelMod : public NativeCpuKernelMod {

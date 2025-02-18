@@ -239,8 +239,8 @@ class AdjustContrast(ImageTensorOperation, PyTensorOperation):
 
     Args:
         contrast_factor (float): How much to adjust the contrast, must be non negative.
-            ``0`` gives a solid gray image, ``1`` gives the original image,
-            while ``2`` increases the contrast by a factor of 2.
+            ``0.0`` gives a solid gray image, ``1.0`` gives the original image,
+            while ``2.0`` increases the contrast by a factor of 2.
 
     Raises:
         TypeError: If `contrast_factor` is not of type float.

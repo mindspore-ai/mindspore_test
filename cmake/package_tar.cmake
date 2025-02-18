@@ -22,12 +22,27 @@ set(INSTALL_PLUGIN_DIR "${INSTALL_LIB_DIR}/plugin")
 
 # set package files
 install(
-        TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend
+        TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend mindspore_pyboost
+            mindspore_backend_manager mindspore_res_manager
         DESTINATION ${INSTALL_LIB_DIR}
         COMPONENT mindspore
 )
 
+if(ENABLE_CPU)
+    install(
+        TARGETS mindspore_ops_host LIBRARY
+        DESTINATION ${INSTALL_PLUGIN_DIR}
+        COMPONENT mindspore
+        NAMELINK_SKIP
+    )
+endif()
+
 if(ENABLE_D)
+    install(
+        TARGETS mindspore_ge_backend
+        DESTINATION ${INSTALL_LIB_DIR}
+        COMPONENT mindspore
+    )
     install(
         TARGETS mindspore_ascend
         DESTINATION ${INSTALL_PLUGIN_DIR}

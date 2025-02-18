@@ -25,8 +25,8 @@
 
 namespace mindspore {
 namespace kernel {
-class BACKEND_EXPORT FusedSparseFtrlCpuKernelMod : public SparseOptimizerCpuKernelMod,
-                                                   public MatchKernelHelper<FusedSparseFtrlCpuKernelMod> {
+class FusedSparseFtrlCpuKernelMod : public SparseOptimizerCpuKernelMod,
+                                    public MatchKernelHelper<FusedSparseFtrlCpuKernelMod> {
  public:
   FusedSparseFtrlCpuKernelMod() = default;
   ~FusedSparseFtrlCpuKernelMod() override = default;
@@ -62,8 +62,8 @@ class BACKEND_EXPORT FusedSparseFtrlCpuKernelMod : public SparseOptimizerCpuKern
                     const std::vector<kernel::KernelTensor *> &) const;
 };
 
-class BACKEND_EXPORT SparseApplyFtrlCpuKernelMod : public SparseOptimizerCpuKernelMod,
-                                                   public MatchKernelHelper<SparseApplyFtrlCpuKernelMod> {
+class SparseApplyFtrlCpuKernelMod : public SparseOptimizerCpuKernelMod,
+                                    public MatchKernelHelper<SparseApplyFtrlCpuKernelMod> {
  public:
   SparseApplyFtrlCpuKernelMod() = default;
   ~SparseApplyFtrlCpuKernelMod() override = default;

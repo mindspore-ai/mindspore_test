@@ -16,13 +16,13 @@
 import numpy as np
 import pytest
 from mindspore.common import mutable
-from mindspore.common.api import _CellGraphExecutor, _MindsporeFunctionExecutor
+from mindspore.common.api import _CellGraphExecutor, _JitExecutor
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 import mindspore.nn as nn
 import mindspore.common.dtype as mstype
 from mindspore import Tensor
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore import Parameter
 from mindspore import jit
 
@@ -74,7 +74,7 @@ def compare_compile_phase(net, args1, args2, const_arg=True):
         assert phase1 == phase2
 
     fn = net.construct
-    _mindspore_function_executor = _MindsporeFunctionExecutor(fn, 0)
+    _mindspore_function_executor = _JitExecutor(fn, 0)
     fn_name = fn.__name__
     phase1 = _mindspore_function_executor.compile(fn_name, *args1)
     phase2 = _mindspore_function_executor.compile(fn_name, *args2)

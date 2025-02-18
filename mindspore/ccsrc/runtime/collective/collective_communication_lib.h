@@ -24,6 +24,7 @@
 #include <string>
 #include "ir/dtype/type_id.h"
 #include "runtime/collective/communication_group.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace device {
@@ -43,7 +44,7 @@ enum CollectiveOpReduceType : int64_t {
 // For collective communication on the device side like GPU, the entry is NvidiaCollectiveCommLib which calls NCCL.
 // For collective communication on the host side, the entry is MPICollectiveCommLib which call OpenMPI, or
 // MsCollectiveCommLib which uses the host-side communication library developed by MindSpore.
-class CollectiveCommunicationLib {
+class BACKEND_EXPORT CollectiveCommunicationLib {
  public:
   CollectiveCommunicationLib()
       : initialized_(false), finalized_(false), global_rank_id_(0), local_rank_id_(0), global_rank_size_(0) {}
@@ -56,10 +57,6 @@ class CollectiveCommunicationLib {
   // method. But collective communication libraries on device side needs these inputs passed by the caller.
   virtual bool Initialize(uint32_t global_rank = UINT32_MAX, uint32_t global_rank_size = UINT32_MAX,
                           uint32_t local_rank_id = UINT32_MAX) = 0;
-  virtual bool InitializeWatchDog(uint32_t global_rank_id = UINT32_MAX, uint32_t global_rank_size = UINT32_MAX,
-                                  uint32_t local_rank_id = UINT32_MAX) {
-    return true;
-  }
 
   // Finalize collecitve communication library.
   virtual bool Finalize();

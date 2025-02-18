@@ -3,6 +3,7 @@ include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/include)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/mindrt)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/mindrt/include)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops)
+include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/device/res_manager)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_BINARY_DIR})
 
@@ -41,6 +42,7 @@ set(SUB_COMP
         frontend/expander
         pipeline/jit/ps
         pipeline/jit/pi
+        pipeline/jit/trace
         pipeline/pynative
         pipeline/llm_boost
         pybind_api
@@ -112,8 +114,10 @@ set(BACKEND_SUB_COMP
         backend/common/somas
         backend/common/graph_kernel
         backend/common/expander
+        backend/ms_backend
         backend/graph_compiler
         backend/operator
+        memory/mem_pool
         runtime/collective
         runtime/device
         runtime/graph_scheduler
@@ -126,6 +130,7 @@ set(BACKEND_SUB_COMP
         plugin/device/cpu/hal/hardware
         plugin/device/cpu/hal/profiler
         plugin/device/cpu/optimizer
+        plugin/device/cpu/kernel
         )
 
 foreach(_comp ${BACKEND_SUB_COMP})
@@ -140,7 +145,7 @@ foreach(_comp ${BACKEND_SUB_COMP})
     endif()
 endforeach()
 
-list(APPEND BACKEND_SUB_OBJECTS_SRC ${OPS_HOST_OBJECTS})
+
 set_property(SOURCE ${BACKEND_SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_ME)
 add_library(mindspore_backend SHARED ${BACKEND_SUB_OBJECTS_SRC})
 
@@ -149,8 +154,9 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
 endif()
 
 target_link_libraries(mindspore_backend PRIVATE mindspore_core mindspore_ops
-        mindspore_common proto_input)
+        mindspore_common mindspore_backend_manager proto_input mindspore_res_manager)
 target_link_libraries(mindspore_backend PRIVATE securec)
+
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set_target_properties(mindspore_backend PROPERTIES MACOSX_RPATH ON)
@@ -221,25 +227,35 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     if(NOT MSVC)
         target_link_libraries(_c_expression PRIVATE -Wl,--whole-archive mindspore mindspore_ops_grad
                 -Wl,--no-whole-archive mindspore_core
-                mindspore_ops mindspore_common mindspore_backend)
+                mindspore_ops mindspore_common mindspore_backend mindspore_pyboost mindspore_backend_manager
+                mindspore_res_manager)
+        target_link_libraries(_c_expression PRIVATE -Wl,--no-as-needed mindspore_ops_host -Wl,--as-needed)
     else()
         target_link_libraries(_c_expression PRIVATE mindspore_core mindspore_ops
-                mindspore_common mindspore_backend mindspore mindspore_ops_grad)
+                mindspore_common mindspore_backend mindspore mindspore_ops_grad mindspore_pyboost
+                mindspore_backend_manager mindspore_res_manager mindspore_ops_host)
         target_link_options(_c_expression PRIVATE "/WHOLEARCHIVE:mindspore_ops_grad.lib")
     endif()
 elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(mindspore PUBLIC proto_input mindspore::protobuf mindspore::eigen mindspore::json)
     target_link_libraries(_c_expression PRIVATE -Wl,-all_load mindspore mindspore_ops_grad proto_input -Wl,-noall_load
-        mindspore_core mindspore_ops mindspore_common mindspore_backend)
+        mindspore_core mindspore_ops mindspore_common mindspore_backend mindspore_pyboost mindspore_backend_manager
+        mindspore_res_manager)
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 else()
     if(ENABLE_CPU AND NOT WIN32)
         target_link_libraries(mindspore PUBLIC proto_input mindspore::protobuf mindspore::eigen mindspore::json)
     endif()
     target_link_libraries(_c_expression PRIVATE -Wl,--whole-archive mindspore mindspore_ops_grad
-            proto_input -Wl,--no-whole-archive mindspore_core mindspore_ops mindspore_common mindspore_backend)
+            proto_input -Wl,--no-whole-archive mindspore_core mindspore_ops mindspore_common mindspore_backend
+            mindspore_pyboost mindspore_backend_manager mindspore_res_manager)
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 endif()
+
+if(ENABLE_D OR ENABLE_ACL)
+    target_link_libraries(_c_expression PRIVATE -Wl,--no-whole-archive mindspore_ge_backend)
+endif()
+
 
 target_link_libraries(_c_expression PRIVATE mindspore::glog)
 set_target_properties(_c_expression PROPERTIES INSTALL_RPATH ${ORIGIN_PATH}/lib:${ORIGIN_PATH}/lib/plugin)
@@ -257,6 +273,11 @@ endif()
 if(ENABLE_CPU)
     target_link_libraries(_c_expression PRIVATE mindspore::dnnl mindspore::mkldnn nnacl)
 endif()
+
+add_subdirectory(pyboost)
+add_subdirectory(backend/backend_manager)
+add_subdirectory(runtime/device/res_manager)
+add_subdirectory(backend/ge_backend)
 
 if(ENABLE_MINDDATA)
     add_subdirectory(minddata/mindrecord)

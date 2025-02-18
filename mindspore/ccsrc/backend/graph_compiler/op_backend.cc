@@ -546,20 +546,8 @@ tensor::BaseTensorPtr PostRunOp::CreateOutputTensorDynamicImpl(const OpCompilerI
 }
 
 void ViewBackend::ContiguousInputByRunInfo(const BackendOpRunInfoPtr &op_run_info) {
-  auto &inputs = op_run_info->base_op_run_info.expanded_input_values;
-  for (size_t i = 0; i < inputs.size(); ++i) {
-    const auto &input = inputs[i];
-    if (!input->isa<tensor::BaseTensor>()) {
-      continue;
-    }
-    auto tensor = input->cast<tensor::BaseTensorPtr>();
-    if (tensor->storage_info() == nullptr) {
-      continue;
-    }
-
-    auto contiguous_tensor = runtime::DeviceAddressUtils::TensorContiguous(tensor);
-    inputs[i] = contiguous_tensor;
-  }
+  MS_EXCEPTION_IF_NULL(contiguous_func_);
+  contiguous_func_(op_run_info);
 }
 
 void ViewBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_info,

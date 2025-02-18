@@ -94,6 +94,7 @@ endif()
 
 if((MODE_ASCEND_ACL) AND NOT BUILD_LITE)
     list(APPEND MSLIB_SRC
+        "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/backend/common/session/jit_setting.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/backend/common/optimizer/pattern_engine.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/backend/common/optimizer/helper.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/backend/common/optimizer/node_pass.cc"
@@ -137,12 +138,13 @@ else()
     add_library(mindspore_shared_lib SHARED $<TARGET_OBJECTS:common_shared_lib_obj> ${MSLIB_SRC_DEPEND})
 endif()
 if(BUILD_LITE)
-    target_link_libraries(mslite_shared_lib PRIVATE $<TARGET_OBJECTS:_mindspore_transform_graph_ir_obj>
-    $<TARGET_OBJECTS:_mindspore_transform_symbol_obj>)
-    add_dependencies(mslite_shared_lib _mindspore_transform_graph_ir_obj _mindspore_transform_symbol_obj)
+    target_link_libraries(mslite_shared_lib PRIVATE $<TARGET_OBJECTS:_mindspore_ascend_op_adapter_obj>
+        $<TARGET_OBJECTS:_mindspore_transform_graph_ir_obj> $<TARGET_OBJECTS:_mindspore_ascend_symbol_obj>)
+    add_dependencies(mslite_shared_lib _mindspore_ascend_op_adapter_obj
+        _mindspore_transform_graph_ir_obj _mindspore_ascend_symbol_obj)
 elseif(MODE_ASCEND_ACL)
-    target_link_libraries(mindspore_shared_lib PRIVATE _mindspore_transform_graph_ir_obj
-            _mindspore_transform_symbol_obj
+    target_link_libraries(mindspore_shared_lib PRIVATE _mindspore_ascend_op_adapter_obj
+        _mindspore_transform_graph_ir_obj _mindspore_ascend_symbol_obj
             _mindspore_backend_graph_compiler_obj _mindspore_debug_obj mindspore_backend_static)
     if(MS_BUILD_GRPC)
         target_link_libraries(mindspore_shared_lib PRIVATE mindspore::grpc++)

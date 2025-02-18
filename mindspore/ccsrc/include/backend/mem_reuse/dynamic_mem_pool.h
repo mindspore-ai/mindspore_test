@@ -235,8 +235,6 @@ class BACKEND_EXPORT DynamicMemPool {
 
   virtual void SetEnableVmm(bool enable_vmm) {}
 
-  virtual void WaitPipeline() {}
-
   virtual const bool SyncAllStreams() { return false; }
 
   virtual size_t AllocDeviceMemByEagerFree(size_t size, DeviceMemPtr *addr) { return 0; }
@@ -250,6 +248,25 @@ class BACKEND_EXPORT DynamicMemPool {
   virtual bool IsEnableTimeEvent() { return false; }
 
   virtual void SetEnableTimeEvent(bool enable_time_event) {}
+
+  // Use set method to avoid performance decrease.
+  void SetMemoryProfilerCallback(const std::function<void()> &memory_profiler_callback) {
+    memory_profiler_callback_ = memory_profiler_callback;
+  }
+
+  // Set rank id getter for memory pool to generate dump path.
+  void SetRankIdGetter(const std::function<size_t()> &rank_id_getter) {
+    if (rank_id_getter != nullptr) {
+      rank_id_getter_ = rank_id_getter;
+    }
+  }
+
+  void SetPipelineCallback(const std::function<void()> &pipeline_callback) { pipeline_callback_ = pipeline_callback; }
+
+ protected:
+  std::function<void()> memory_profiler_callback_{nullptr};
+  std::function<size_t()> rank_id_getter_ = []() { return SIZE_MAX; };
+  std::function<void()> pipeline_callback_{nullptr};
 };
 
 // Recording information for debugging the memory allocator.

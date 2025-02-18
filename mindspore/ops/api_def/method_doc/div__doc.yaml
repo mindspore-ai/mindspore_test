@@ -2,4 +2,4 @@ div_:
     description: |
         div_(other, *, rounding_mode=None) -> Tensor
 
-        For details, please refer to :func:`mindspore.mint.div`.
+        In-place version of :func:`mindspore.Tensor.div`.

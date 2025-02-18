@@ -40,7 +40,8 @@ using mindspore::profiler::ProfilerManager;
 #include "runtime/device/device_address_utils.h"
 #include "runtime/runtime_conf/runtime_conf.h"
 #include "pipeline/pynative/grad/grad_utils.h"
-#include "kernel/functions/auto_grad_reg.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_grad_reg.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/contiguous.h"
 
 namespace mindspore {
 namespace pynative {
@@ -318,6 +319,38 @@ bool GetMixprecisionTypeFromStrategy(const FrontendOpRunInfoPtr &op_run_info) {
   op_run_info->mix_precision_type = op_cast_strategy_info.dtype;
   return true;
 }
+
+tensor::BaseTensorPtr TensorContiguous(const tensor::BaseTensorPtr &tensor) {
+  if (tensor == nullptr || tensor->storage_info() == nullptr) {
+    return tensor;
+  }
+  const auto &old_device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
+  MS_EXCEPTION_IF_NULL(old_device_address);
+
+  const DeviceContext *device_context = runtime::OpRunner::GetDeviceContext(old_device_address->device_name());
+  MS_EXCEPTION_IF_NULL(device_context);
+  GilReleaseWithCheck release_gil;
+  auto contiguous_op = CREATE_PYBOOST_OP(Contiguous, device_context->device_context_key().device_name_);
+  const auto &contiguous_tensor = contiguous_op->Call(tensor);
+  return contiguous_tensor;
+}
+
+void ContiguousInputByRunInfo(const BackendOpRunInfoPtr &op_run_info) {
+  auto &inputs = op_run_info->base_op_run_info.expanded_input_values;
+  for (size_t i = 0; i < inputs.size(); ++i) {
+    const auto &input = inputs[i];
+    if (!input->isa<tensor::BaseTensor>()) {
+      continue;
+    }
+    auto tensor = input->cast<tensor::BaseTensorPtr>();
+    if (tensor->storage_info() == nullptr) {
+      continue;
+    }
+
+    auto contiguous_tensor = TensorContiguous(tensor);
+    inputs[i] = contiguous_tensor;
+  }
+}
 }  // namespace
 
 void ForwardExecutor::WaitForwardTask() {
@@ -366,6 +399,8 @@ void ForwardExecutor::Init() {
   tensor::Tensor::RegisterLazyCallback([]() { runtime::Pipeline::Get().WaitAll(); });
   runtime::OpExecutor::GetInstance().RegisterCallbackForMemoryPool();
   op_backend_ = std::make_unique<compile::OpBackend>();
+  compile::ViewBackend::SetContiguousFunc(
+    [](const BackendOpRunInfoPtr &op_run_info) { ContiguousInputByRunInfo(op_run_info); });
 }
 
 void ForwardExecutor::RefreshForwardCallback() {

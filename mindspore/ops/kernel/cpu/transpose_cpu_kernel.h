@@ -23,7 +23,7 @@
 #include <unordered_map>
 #include <memory>
 #include <string>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "nnacl/transpose_parameter.h"
 
 namespace mindspore {

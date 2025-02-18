@@ -58,7 +58,8 @@ install(
 )
 
 install(
-  TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend
+  TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend mindspore_pyboost mindspore_backend_manager
+    mindspore_res_manager
   DESTINATION ${INSTALL_LIB_DIR}
   COMPONENT mindspore
 )
@@ -72,7 +73,9 @@ if(MSVC AND DEBUG_MODE)
 
   install(
     FILES  $<TARGET_PDB_FILE:mindspore_core> $<TARGET_PDB_FILE:mindspore_ops>
-    $<TARGET_PDB_FILE:mindspore_common> $<TARGET_PDB_FILE:mindspore_backend>
+    $<TARGET_PDB_FILE:mindspore_common> $<TARGET_PDB_FILE:mindspore_backend> $<TARGET_PDB_FILE:mindspore_pyboost>
+    $<TARGET_PDB_FILE:mindspore_backend_manager>
+    $<TARGET_PDB_FILE:mindspore_res_manager>
     DESTINATION ${INSTALL_LIB_DIR}
     COMPONENT mindspore
   )
@@ -170,6 +173,11 @@ if(ENABLE_CPU)
     DESTINATION ${INSTALL_LIB_DIR}
     COMPONENT mindspore
   )
+  install(
+    TARGETS mindspore_ops_host
+    DESTINATION ${INSTALL_PLUGIN_DIR}
+    COMPONENT mindspore
+  )
 endif()
 
 if(ENABLE_MPI)
@@ -242,6 +250,7 @@ install(
   DIRECTORY
   ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/nn
   ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/_extends
+  ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/_deprecated
   ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/parallel
   ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/mindrecord
   ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/numpy

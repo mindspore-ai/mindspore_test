@@ -32,10 +32,10 @@
 #include "plugin/device/ascend/kernel/host/host_kernel_metadata.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
 #include "kernel/kernel_build_info.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_util.h"
-#include "transform/acl_ir/op_api_exec.h"
-#include "transform/acl_ir/ge_adapter_info.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/op_api_util.h"
+#include "plugin/device/ascend/acl_ir/op_api_exec.h"
+#include "plugin/device/ascend/acl_ir/ge_adapter_info.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/backend/debug/data_dump/overflow_dumper.h"
 #include "include/backend/debug/profiler/profiling.h"
@@ -235,30 +235,30 @@ std::string TryBackoffCpu(const KernelGraphPtr &graph, const CNodePtr &node,
 
 std::pair<std::string, ExceptionType> CollectNotMatchMessage(
   const CNodePtr &node, const std::vector<kernel::KernelBuildInfoPtr> &kernel_info_list,
-  const transform::ErrorAclType acl_err_type) {
+  const device::ascend::ErrorAclType acl_err_type) {
   std::stringstream ss;
   ExceptionType etype;
   MS_EXCEPTION_IF_NULL(node);
 
   switch (acl_err_type) {
-    case transform::kUnknownOp: {
+    case device::ascend::kUnknownOp: {
       ss << "The current operator needs to be supplemented with an adapter, please check in `transform` directory."
          << " node is " << node->fullname_with_scope() << trace::DumpSourceLines(node) << std::endl;
       etype = NotSupportError;
       break;
     }
-    case transform::kInValidType: {
+    case device::ascend::kInValidType: {
       ss << "The supported input and output data types for the current operator are: node is "
          << node->fullname_with_scope() << trace::DumpSourceLines(node) << std::endl;
       std::string name = GetCNodeFuncName(node);
-      const auto &info = transform::GeAdapterManager::GetInstance().GetInfo(name, true);
+      const auto &info = device::ascend::GeAdapterManager::GetInstance().GetInfo(name, true);
       const auto &input_supported_dtypes = info->input_supported_dtypes();
       for (auto [index, dtypes] : input_supported_dtypes) {
         ss << "InputDesc [" << index << "] support {";
         for (auto dtype : dtypes) {
-          std::string dtype_str = transform::ge_dtype_str_map.find(dtype) == transform::ge_dtype_str_map.end()
+          std::string dtype_str = device::ascend::ge_dtype_str_map.find(dtype) == device::ascend::ge_dtype_str_map.end()
                                     ? ""
-                                    : transform::ge_dtype_str_map[dtype];
+                                    : device::ascend::ge_dtype_str_map[dtype];
           ss << dtype_str << ",";
         }
         ss << "}" << std::endl;
@@ -267,9 +267,9 @@ std::pair<std::string, ExceptionType> CollectNotMatchMessage(
       for (auto [index, dtypes] : output_supported_dtypes) {
         ss << "OutputDesc [" << index << "] support {";
         for (auto dtype : dtypes) {
-          std::string dtype_str = transform::ge_dtype_str_map.find(dtype) == transform::ge_dtype_str_map.end()
+          std::string dtype_str = device::ascend::ge_dtype_str_map.find(dtype) == device::ascend::ge_dtype_str_map.end()
                                     ? ""
-                                    : transform::ge_dtype_str_map[dtype];
+                                    : device::ascend::ge_dtype_str_map[dtype];
           ss << dtype_str << ",";
         }
         ss << "}" << std::endl;
@@ -289,13 +289,13 @@ std::pair<std::string, ExceptionType> CollectNotMatchMessage(
       etype = TypeError;
       break;
     }
-    case transform::kSpecialOp: {
+    case device::ascend::kSpecialOp: {
       ss << "The current operator is specified not to select ACL. Please contact the relevant engineer for help."
          << "node is " << node->fullname_with_scope() << trace::DumpSourceLines(node) << std::endl;
       etype = NotSupportError;
       break;
     }
-    case transform::kInvalidBuildInfo: {
+    case device::ascend::kInvalidBuildInfo: {
       auto kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());
       MS_EXCEPTION_IF_NULL(kernel_info);
       auto build_info = kernel_info->select_kernel_build_info();
@@ -317,7 +317,7 @@ std::pair<std::string, ExceptionType> CollectNotMatchMessage(
 }
 
 bool SetMatchKernelInfo(const CNodePtr &kernel_node, const std::vector<kernel::KernelBuildInfoPtr> &kernel_info_list,
-                        const KernelType &kernel_type, transform::ErrorAclType *err_type) {
+                        const KernelType &kernel_type, device::ascend::ErrorAclType *err_type) {
   MS_EXCEPTION_IF_NULL(kernel_node);
   if (kernel_info_list.empty()) {
     return false;
@@ -333,7 +333,7 @@ bool SetMatchKernelInfo(const CNodePtr &kernel_node, const std::vector<kernel::K
                                   return item->IsSimilarityKernelBuildInfo(*build_info);
                                 });
   if (!find_valid) {
-    *err_type = transform::ErrorAclType::kInvalidBuildInfo;
+    *err_type = device::ascend::ErrorAclType::kInvalidBuildInfo;
   }
   return find_valid;
 }
@@ -472,19 +472,19 @@ void GenerateKernelBuildInfo(const CNodePtr &kernel, const KernelType &kernel_ty
     }
   };
   if (kernel_type == ACL_KERNEL) {
-    transform::AclHelper::GetValidKernelBuildInfo(kernel, &input_formats, &output_formats, &input_reshape_types,
-                                                  &output_reshape_types);
+    device::ascend::AclHelper::GetValidKernelBuildInfo(kernel, &input_formats, &output_formats, &input_reshape_types,
+                                                       &output_reshape_types);
     // NOTE: acl default output objecttype is tensor, here are 2 special case:
     // case 1: when cnode output is tuple, and ge ops prototype output num is 1, the real output objecttype is tuple;
     // case 2: when cnode output is scalar, the real output objecttype is scalar
     // others: output objecttype is tensor
     std::string name = GetCNodeFuncName(kernel);
-    const auto &info = transform::GeAdapterManager::GetInstance().GetInfo(name, true);
+    const auto &info = device::ascend::GeAdapterManager::GetInstance().GetInfo(name, true);
     auto adapter_output_num = info->GetNumStaticOutputsOfMsOpProto();
     process_tuple_output(kernel, true, adapter_output_num);
   } else {
-    transform::OpApiUtil::GetValidKernelBuildInfo(kernel, &input_formats, &output_formats, &input_reshape_types,
-                                                  &output_reshape_types, kernel_type);
+    device::ascend::OpApiUtil::GetValidKernelBuildInfo(kernel, &input_formats, &output_formats, &input_reshape_types,
+                                                       &output_reshape_types, kernel_type);
     process_tuple_output(kernel, false, 1);
   }
 
@@ -589,18 +589,6 @@ void HandleKernelSelectFailure(const KernelGraphPtr &graph, const CNodePtr &node
   }
 }
 
-std::vector<std::string> SplitString(const std::string &str, char delim) {
-  std::stringstream ss(str);
-  std::string item;
-  std::vector<std::string> elems;
-  while (std::getline(ss, item, delim)) {
-    if (!item.empty()) {
-      elems.emplace_back(item);
-    }
-  }
-  return elems;
-}
-
 void CollectOpSelectedType(std::string op_name, SelectedKernelType op_type, std::vector<size_t> *op_selected_num,
                            std::vector<std::set<std::string>> *op_selected_type) {
   MS_EXCEPTION_IF_NULL(op_selected_type);
@@ -621,7 +609,7 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(node);
   static std::vector<std::set<std::string>> op_selected_type(kOpTypeNumber);
-  transform::ErrorAclType acl_err_type = transform::ErrorAclType::kNormalOp;
+  device::ascend::ErrorAclType acl_err_type = device::ascend::ErrorAclType::kNormalOp;
   std::tuple<bool, std::string, ExceptionType> result = std::make_tuple(true, "", NoExceptionType);
   std::string op_name = common::AnfAlgo::GetCNodeName(node);
 
@@ -631,7 +619,7 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
     return result;
   }
 
-  if (IsEnableInternalNode(node)) {
+  if (kernel::IsEnableInternalNode(node)) {
     GenerateKernelBuildInfo(node, KernelType::INTERNAL_KERNEL);
     CollectOpSelectedType(op_name, SelectedKernelType::INTERNAL_KERNEL, op_selected_num, &op_selected_type);
     return result;
@@ -664,7 +652,7 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
     return result;
   }
 
-  auto kernel_type = transform::AclHelper::GetKernelInfoFromGe(node, &acl_err_type);
+  auto kernel_type = device::ascend::AclHelper::GetKernelInfoFromGe(node, &acl_err_type);
   if (kernel_type == KernelType::ACL_KERNEL) {
     GenerateKernelBuildInfo(node, kernel_type);
     CollectOpSelectedType(op_name, SelectedKernelType::ACLOP_KERNEL, op_selected_num, &op_selected_type);
@@ -699,7 +687,7 @@ bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node) {
     auto primitive = GetCNodePrimitive(node);
     auto op_type = GetValue<std::string>(primitive->GetAttr("reg_op_name"));
     op_type = kernel::AddPrefixForCustomNode(op_type, primitive->GetAttr("custom_aclop") != nullptr);
-    auto op_api_func = transform::GetOpApiFunc(op_type.c_str());
+    auto op_api_func = device::ascend::GetOpApiFunc(op_type.c_str());
     if (op_api_func != nullptr) {
       MS_LOG(INFO) << "Kernel of custom op " << node->fullname_with_scope() << "is selected AclNN.";
       return true;
@@ -742,37 +730,6 @@ bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node) {
   bool ret = ReadAclnnEnableEnv(op_name);
   kIsEnableAclnnMap.insert({op_name, ret});
   return ret;
-}
-
-bool IsEnableInternalNode(const AnfNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  auto enable_internal = false;
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  if (context_ptr->IsEnableInferBoost()) {
-    enable_internal = true;
-  }
-
-  std::string op_name = common::AnfAlgo::GetCNodeName(node);
-  if (op_name == "ReshapeExt") {
-    enable_internal = true;
-  }
-
-  if (op_name == "QuantBatchMatmul") {
-    auto cnode = node->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(cnode);
-    if (!IsValueNode<None>(cnode->input(kIndex6))) {
-      enable_internal = false;
-    }
-  }
-  std::string disable_name_list = common::GetEnv("MS_DISABLE_INTERNAL_KERNELS_LIST");
-  std::vector<std::string> op_name_vec = SplitString(disable_name_list, ',');
-  if (std::any_of(op_name_vec.begin(), op_name_vec.end(),
-                  [&op_name](const std::string &name) { return name == op_name; })) {
-    enable_internal = false;
-  }
-
-  return enable_internal && kernel::IsRegisteredInternalKernel(node);
 }
 
 void SetKernelInfoBeforeCreateKernel(const std::vector<CNodePtr> &nodes) {

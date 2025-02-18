@@ -22,7 +22,7 @@
 #include <memory>
 #include <string>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "include/common/factory/ms_factory.h"
 #include "mindspore/ops/infer/ops_func_impl/bias_add_grad.h"
 

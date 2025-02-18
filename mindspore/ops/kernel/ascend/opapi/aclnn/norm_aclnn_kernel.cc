@@ -20,7 +20,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -46,7 +46,7 @@ void NormAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
   } else {
     dim_ = std::vector<int64_t>{};
   }
-  keepdim_ = transform::ConvertKernelTensor<bool>(inputs[kIndex3]);
+  keepdim_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex3]);
 
   GetWorkspaceForResize(inputs[kIndex0], p_scalar_, dim_, keepdim_, outputs[kIndex0]);
 }

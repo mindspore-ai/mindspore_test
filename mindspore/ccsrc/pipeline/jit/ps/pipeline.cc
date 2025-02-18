@@ -31,6 +31,7 @@
 #include "ir/param_info.h"
 #include "pipeline/jit/ps/action.h"
 #include "pipeline/jit/ps/pass.h"
+#include "pipeline/jit/ps/pipeline_jit.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pipeline/jit/ps/static_analysis/async_eval_result.h"
 #include "pipeline/jit/ps/compile_cache_manager.h"
@@ -78,6 +79,7 @@
 #include "backend/graph_compiler/segment_runner.h"
 #include "backend/common/session/executor_manager.h"
 #include "backend/common/session/session_factory.h"
+#include "backend/backend_manager/backend_manager.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/device/kernel_runtime_manager.h"
 #include "runtime/pynative/op_executor.h"
@@ -86,9 +88,7 @@
 #include "include/common/profiler.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
-#include "include/common/utils/dynamic_obfuscation/dynamic_obfuscation.h"
-#include "include/common/utils/dynamic_obfuscation/registry_opaque_predicate.h"
-#include "mindspore/ops/kernel/cpu/pyexecute/py_execute_cpu_kernel.h"
+#include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
 #include "include/backend/distributed/init.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "include/backend/debug/tft_adapter/tft_wait_sem.h"
@@ -123,6 +123,7 @@
 #include "pybind_api/ir/py_execute_py.h"   // Only include one-time in the whole project.
 #include "pybind_api/ir/tensor_register/auto_generate/tensor_func_utils.h"
 #include "include/common/utils/compile_cache_context.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 // namespace to support intermediate representation definition
@@ -152,14 +153,6 @@ std::unordered_map<PyObject *, abstract::AbstractBasePtrList> kCellArgsMap;
 
 namespace {
 constexpr size_t kPhaseSavePrefixLen = 5;
-#ifdef ENABLE_DUMP_IR
-std::string GetBaseNameForIR(int64_t stage_idx, const std::string &action_name) {
-  std::ostringstream oss;
-  int spaces = 2;
-  oss << std::setfill('0') << std::setw(spaces) << stage_idx << "_" << action_name;
-  return oss.str();
-}
-#endif
 
 bool CheckAllTensor(const ValueTuplePtr &value_tuple) {
   auto elements = value_tuple->value();
@@ -218,21 +211,6 @@ bool GradForScalar(const ValuePtr &value) {
          value->isa<Scalar>();
 }
 
-AbstractBasePtr ArgsToAbstract(const py::object &arg, const ValuePtr &value, bool enable_tuple_broaden = false) {
-  bool broaden = TensorArgMutable(arg, value) || Mutable(arg, value) || value->isa<MetaSparseTensor>() ||
-                 EnableTupleBroaden(value, enable_tuple_broaden) || GradForScalar(value);
-  auto ret = abstract::ToAbstract(value, nullptr, nullptr);
-  if (broaden) {
-    ret = AbstractBroaden(ret);
-  }
-  auto is_dynamic_len = CheckAndConvertToVariableLenSequence(arg, ret);
-  if (fallback::EnableFallbackListDictInplace() && !broaden && !is_dynamic_len) {
-    // Attach corresponding list python object for constant list input.
-    fallback::AttachPyObjToAbs(ret, arg, false);
-  }
-  return ret;
-}
-
 bool CheckArgValid(const py::handle &arg) {
   if (py::isinstance<py::list>(arg) || py::isinstance<py::tuple>(arg)) {
     auto vector_arg = py::cast<py::list>(arg);
@@ -244,8 +222,8 @@ bool CheckArgValid(const py::handle &arg) {
     return std::all_of(dict_arg.begin(), dict_arg.end(), [](const auto &pair) { return CheckArgValid(pair.second); });
   }
 
-  if (py::isinstance<Tensor>(arg) || IsStubTensor(arg)) {
-    auto tensor = IsStubTensor(arg) ? ConvertStubTensor(arg) : py::cast<TensorPtr>(arg);
+  if (tensor::IsTensorPy(arg) || IsStubTensor(arg)) {
+    auto tensor = IsStubTensor(arg) ? ConvertStubTensor(arg) : tensor::ConvertToTensor(arg);
     if (tensor->data_type() == kNumberTypeBool) {
       MS_LOG(INFO) << "It is not recommended to use a tensor of bool data type as network input, which may cause "
                    << "operator compilation failure. For more details, please refer to the FAQ at "
@@ -255,32 +233,13 @@ bool CheckArgValid(const py::handle &arg) {
 
   return IsStubTensor(arg) || py::isinstance<py::int_>(arg) || py::isinstance<py::float_>(arg) ||
          py::isinstance<py::none>(arg) || py::isinstance<Number>(arg) || py::isinstance<py::str>(arg) ||
-         py::isinstance<Tensor>(arg) || py::isinstance<CSRTensor>(arg) || py::isinstance<COOTensor>(arg);
+         tensor::IsTensorPy(arg) || py::isinstance<CSRTensor>(arg) || py::isinstance<COOTensor>(arg);
 }
 
 std::string GetCompileExceptionInfo() {
   std::ostringstream oss;
   trace::GetTraceStackInfo(oss);
   return oss.str();
-}
-
-void SetLoopCount(const ResourcePtr &resource) {
-  MS_EXCEPTION_IF_NULL(resource);
-  auto func_graph = resource->func_graph();
-  if (func_graph != nullptr && func_graph->manager() != nullptr) {
-    auto manager = func_graph->manager();
-    size_t graph_nums = manager->func_graphs().size();
-    int64_t loop_size = ConfigManager::GetInstance().iter_num();
-    const auto context_ptr = MsContext::GetInstance();
-    bool enable_mind_rt = context_ptr->get_param<bool>(MS_CTX_ENABLE_MINDRT);
-    if (context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice) {
-      resource->set_vm_loop(!(context_ptr->get_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK) || enable_mind_rt), loop_size);
-    } else if (context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kGPUDevice) {
-      bool run_with_mind_rt = graph_nums == 1 || enable_mind_rt;
-      resource->set_vm_loop(!run_with_mind_rt, loop_size);
-    }
-    MS_LOG(INFO) << "Change vm_loop_flag to " << resource->vm_loop_flag() << ", set loop_size to " << loop_size;
-  }
 }
 
 std::map<string, string> GenerateJitConfigMap(const py::dict &jit_config) {
@@ -321,8 +280,8 @@ kernel::PyExecuteOutputUserDataPtr GetUserDataFromAddress(const py::object &res)
     return nullptr;
   }
 
-  if (py::isinstance<tensor::Tensor>(res) || IsStubTensor(res)) {
-    auto res_tensor = IsStubTensor(res) ? ConvertStubTensor(res) : res.cast<tensor::TensorPtr>();
+  if (tensor::IsTensorPy(res) || IsStubTensor(res)) {
+    auto res_tensor = IsStubTensor(res) ? ConvertStubTensor(res) : tensor::ConvertToTensor(res);
     MS_EXCEPTION_IF_NULL(res_tensor);
     if (res_tensor->device_address() != nullptr) {
       auto tensor_address = std::dynamic_pointer_cast<DeviceTensor>(res_tensor->device_address());
@@ -392,41 +351,6 @@ void AddManager(const FuncGraphManagerPtr &manager, const ValuePtr &value) {
   if (value->isa<ValueDictionary>()) {
     for (const auto &elem : value->cast<ValueDictionaryPtr>()->value()) {
       AddManager(manager, elem.second);
-    }
-  }
-}
-
-void AddManagerForFuncGraphArgs(const ResourcePtr &resource, const ValuePtrList &arguments) {
-  auto manager = resource->manager();
-  MS_EXCEPTION_IF_NULL(manager);
-  for (const auto &arg : arguments) {
-    AddManager(manager, arg);
-  }
-}
-
-void ResetId(const ResourcePtr &resource) {
-  MS_EXCEPTION_IF_NULL(resource);
-#ifdef ENABLE_DUMP_IR
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  auto need_dump = common::GetCompileConfig("DUMP_VALIDATE_BEFORE_RESET_ID");
-  if (context->CanDump(kIntroductory) && need_dump == "1") {
-    FuncGraphPtr graph = resource->func_graph();
-    MS_EXCEPTION_IF_NULL(graph);
-    DumpIR("validate_before_reset_id.ir", graph, true, kWholeStack);
-  }
-#endif
-  mindspore::id_generator::reset_id();
-  const auto &all_nodes = TopoSort(resource->func_graph()->get_return(), SuccDeeperSimple);
-  auto ge_mode = MsContext::GetInstance()->GetJitLevel() == kAttrJitLevelO2;
-  for (const auto &node : all_nodes) {
-    if (node != nullptr && node->isa<CNode>()) {
-      const auto &cnode = node->cast<CNodePtr>();
-      MS_EXCEPTION_IF_NULL(cnode);
-      cnode->set_fullname_with_scope("");
-      if (!ge_mode) {
-        (void)cnode->fullname_with_scope();
-      }
     }
   }
 }
@@ -532,18 +456,6 @@ void CheckAbstractConsistency(const AbstractBasePtrList &compile_abstracts, cons
   }
 }
 
-class JitCompilingScope {
- public:
-  JitCompilingScope() { MsContext::GetInstance()->set_jit_status(kJitCompiling); }
-  ~JitCompilingScope() { MsContext::GetInstance()->set_jit_status(kNotJit); }
-};
-
-class JitRunningScope {
- public:
-  JitRunningScope() { MsContext::GetInstance()->set_jit_status(kJitRunning); }
-  ~JitRunningScope() { MsContext::GetInstance()->set_jit_status(kNotJit); }
-};
-
 inline pid_t GetCurrentPID() {
 #if defined(_WIN32) || defined(_WIN64)
   return GetCurrentProcessId();
@@ -551,7 +463,91 @@ inline pid_t GetCurrentPID() {
   return getpid();
 #endif
 }
+
+py::object GetSelfFromArgs(const py::object &args) {
+  if (!py::isinstance<py::tuple>(args)) {
+    return py::object();
+  }
+  auto args_tuple = py::cast<py::tuple>(args);
+  if (args_tuple.size() == 0) {
+    return py::object();
+  }
+  py::object first_arg = args_tuple[0];
+  if (!py::isinstance<Cell>(first_arg)) {
+    return py::object();
+  }
+  return first_arg;
+}
 }  // namespace
+
+void AddManagerForFuncGraphArgs(const ResourcePtr &resource, const ValuePtrList &arguments) {
+  auto manager = resource->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  for (const auto &arg : arguments) {
+    AddManager(manager, arg);
+  }
+}
+
+AbstractBasePtr ArgsToAbstract(const py::object &arg, const ValuePtr &value, bool enable_tuple_broaden) {
+  bool broaden = TensorArgMutable(arg, value) || Mutable(arg, value) || value->isa<MetaSparseTensor>() ||
+                 EnableTupleBroaden(value, enable_tuple_broaden) || GradForScalar(value);
+  auto ret = abstract::ToAbstract(value, nullptr, nullptr);
+  if (broaden) {
+    ret = AbstractBroaden(ret);
+  }
+  auto is_dynamic_len = CheckAndConvertToVariableLenSequence(arg, ret);
+  if (fallback::EnableFallbackListDictInplace() && !broaden && !is_dynamic_len) {
+    // Attach corresponding list python object for constant list input.
+    fallback::AttachPyObjToAbs(ret, arg, false);
+  }
+  return ret;
+}
+
+void SetLoopCount(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  auto func_graph = resource->func_graph();
+  if (func_graph != nullptr && func_graph->manager() != nullptr) {
+    auto manager = func_graph->manager();
+    size_t graph_nums = manager->func_graphs().size();
+    int64_t loop_size = ConfigManager::GetInstance().iter_num();
+    const auto context_ptr = MsContext::GetInstance();
+    bool enable_mind_rt = context_ptr->get_param<bool>(MS_CTX_ENABLE_MINDRT);
+    if (context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice) {
+      resource->set_vm_loop(!(context_ptr->get_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK) || enable_mind_rt), loop_size);
+    } else if (context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kGPUDevice) {
+      bool run_with_mind_rt = graph_nums == 1 || enable_mind_rt;
+      resource->set_vm_loop(!run_with_mind_rt, loop_size);
+    }
+    MS_LOG(INFO) << "Change vm_loop_flag to " << resource->vm_loop_flag() << ", set loop_size to " << loop_size;
+  }
+}
+
+void ResetId(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+#ifdef ENABLE_DUMP_IR
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  auto need_dump = common::GetCompileConfig("DUMP_VALIDATE_BEFORE_RESET_ID");
+  if (context->CanDump(kIntroductory) && need_dump == "1") {
+    FuncGraphPtr graph = resource->func_graph();
+    MS_EXCEPTION_IF_NULL(graph);
+    DumpIR("validate_before_reset_id.ir", graph, true, kWholeStack);
+  }
+#endif
+  mindspore::id_generator::reset_id();
+  const auto &all_nodes = TopoSort(resource->func_graph()->get_return(), SuccDeeperSimple);
+  auto ge_mode = common::AnfAlgo::IsBackendGe();
+  for (const auto &node : all_nodes) {
+    if (node != nullptr && node->isa<CNode>()) {
+      const auto &cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
+      cnode->set_fullname_with_scope("");
+      if (!ge_mode) {
+        (void)cnode->fullname_with_scope();
+      }
+    }
+  }
+}
 
 std::string GetObjDesc(const py::object &source) {
   std::string obj_desc;
@@ -585,8 +581,8 @@ void CheckArgsValid(const py::object &source, const py::tuple &args) {
   }
 }
 
-void GraphExecutorPy::CheckArgumentsConsistency(const py::tuple &compile_args, const py::tuple &args_list,
-                                                const py::object &target) {
+void ExecutorPy::CheckArgumentsConsistency(const py::tuple &compile_args, const py::tuple &args_list,
+                                           const py::object &target) {
   if ((!py::isinstance<py::str>(target))) {
     MS_EXCEPTION(TypeError) << "The `target` must be string!";
   }
@@ -620,8 +616,8 @@ void GraphExecutorPy::CheckArgumentsConsistency(const py::tuple &compile_args, c
   CheckAbstractConsistency(compile_abstracts, args_abstracts, target_str, false);
 }
 
-py::object GraphExecutorPy::GenerateArgumentsKey(const py::object &obj, const py::tuple &args, const py::dict &kwargs,
-                                                 bool enable_tuple_broaden) {
+py::object ExecutorPy::GenerateArgumentsKey(const py::object &obj, const py::tuple &args, const py::dict &kwargs,
+                                            bool enable_tuple_broaden) {
   MS_LOG(DEBUG) << "GenerateArgumentsKey, args size: " << args.size()
                 << ", enable_tuple_broaden: " << enable_tuple_broaden;
   abstract::AbstractBasePtrList args_abs;
@@ -663,8 +659,9 @@ py::object GraphExecutorPy::GenerateArgumentsKey(const py::object &obj, const py
 
   static uint64_t key_counter = 0;
   kArgsCache[args_abs] = key_counter;
-  kCellArgsMap[obj.ptr()] = args_abs;
-
+  if (!py::isinstance<py::none>(obj)) {
+    kCellArgsMap[obj.ptr()] = args_abs;
+  }
   MS_LOG(INFO) << "Generate a new compile key for new args, key: " << key_counter;
   if (IS_OUTPUT_ON(mindspore::kInfo)) {
     std::ostringstream buffer;
@@ -678,7 +675,7 @@ py::object GraphExecutorPy::GenerateArgumentsKey(const py::object &obj, const py
   return py::int_(key_counter++);
 }
 
-void GraphExecutorPy::ClearCompileArgumentsResource() {
+void ExecutorPy::ClearCompileArgumentsResource() {
   // Clear global converted args saved in GenerateArgumentsKey.
   ClearCurConvertInput();
 }
@@ -694,7 +691,7 @@ void ClearArgCache(const py::object &obj) {
   }
 }
 
-void GraphExecutorPy::ClearCurConvertInput() { cur_convert_input_.clear(); }
+void ExecutorPy::ClearCurConvertInput() { cur_convert_input_.clear(); }
 
 void GraphExecutorPy::ParentBeforeFork() {
   MS_LOG(DEBUG) << "GraphExecutorPy prepare before fork.";
@@ -728,8 +725,8 @@ py::bool_ VerifyInputSignature(const py::list &input_signature, const py::tuple 
   for (auto arg_obj : inputs) {
     std::shared_ptr<Tensor> m_tensor = nullptr;
     bool is_tensor = false;
-    if (py::isinstance<Tensor>(arg_obj)) {
-      m_tensor = arg_obj.cast<std::shared_ptr<Tensor>>();
+    if (tensor::IsTensorPy(arg_obj)) {
+      m_tensor = tensor::ConvertToTensor(arg_obj);
       is_tensor = true;
     } else if (IsStubTensor(arg_obj)) {
       m_tensor = ConvertStubTensor(arg_obj);
@@ -742,7 +739,7 @@ py::bool_ VerifyInputSignature(const py::list &input_signature, const py::tuple 
 
     if (m_tensor != nullptr) {
       MS_LOG(DEBUG) << "Verify Tensor";
-      auto sig = input_signature[count].cast<std::shared_ptr<MetaTensor>>();
+      auto sig = tensor::ConvertToTensor(input_signature[count]);
       ShapeVector sig_shape = sig->shape();
       TypePtr sig_type = sig->Dtype();
 
@@ -764,7 +761,7 @@ py::bool_ VerifyInputSignature(const py::list &input_signature, const py::tuple 
   return true;
 }
 
-ResourcePtr GraphExecutorPy::GetResource(const std::string &phase) {
+ResourcePtr ExecutorPy::GetResource(const std::string &phase) {
   MS_LOG(DEBUG) << "Phase size:" << info_.size();
   if (info_.count(phase) == 0) {
     return nullptr;
@@ -772,7 +769,7 @@ ResourcePtr GraphExecutorPy::GetResource(const std::string &phase) {
   return info_[phase]->resource;
 }
 
-FuncGraphPtr GraphExecutorPy::GetFuncGraph(const std::string &phase) {
+FuncGraphPtr ExecutorPy::GetFuncGraph(const std::string &phase) {
   const auto it = info_.find(phase);
   if (it == info_.end()) {
     MS_LOG(INFO) << "No executor info. found for phase: " << phase;
@@ -781,7 +778,7 @@ FuncGraphPtr GraphExecutorPy::GetFuncGraph(const std::string &phase) {
   return it->second->func_graph;
 }
 
-void GraphExecutorPy::SetJitPrimalFuncGraph(const FuncGraphPtr &primal_func_graph, const std::string &phase) {
+void ExecutorPy::SetJitPrimalFuncGraph(const FuncGraphPtr &primal_func_graph, const std::string &phase) {
   const auto it = info_.find(phase);
   if (it == info_.end()) {
     MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, primal_func_graph->return_node())
@@ -792,7 +789,7 @@ void GraphExecutorPy::SetJitPrimalFuncGraph(const FuncGraphPtr &primal_func_grap
   it->second->jit_primal_func_graph = primal_func_graph;
 }
 
-FuncGraphPtr GraphExecutorPy::GetJitPrimalFuncGraph(const std::string &phase) {
+FuncGraphPtr ExecutorPy::GetJitPrimalFuncGraph(const std::string &phase) {
   const auto it = info_.find(phase);
   if (it == info_.end()) {
     MS_LOG(INFO) << "No executor info. found for phase: " << phase;
@@ -801,7 +798,7 @@ FuncGraphPtr GraphExecutorPy::GetJitPrimalFuncGraph(const std::string &phase) {
   return it->second->jit_primal_func_graph;
 }
 
-FuncGraphPtr GraphExecutorPy::GetJitGradGraph(const std::string &phase) {
+FuncGraphPtr ExecutorPy::GetJitGradGraph(const std::string &phase) {
   const auto it = info_.find(phase);
   if (it == info_.end()) {
     MS_LOG(INFO) << "No executor info. found for phase: " << phase;
@@ -810,7 +807,7 @@ FuncGraphPtr GraphExecutorPy::GetJitGradGraph(const std::string &phase) {
   return it->second->jit_grad_graph;
 }
 
-void GraphExecutorPy::SetJitGradGraph(const FuncGraphPtr &grad_graph, const std::string &phase) {
+void ExecutorPy::SetJitGradGraph(const FuncGraphPtr &grad_graph, const std::string &phase) {
   const auto it = info_.find(phase);
   if (it == info_.end()) {
     MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, grad_graph->return_node()) << "No executor info. found for phase: " << phase;
@@ -823,7 +820,7 @@ void GraphExecutorPy::SetJitGradGraph(const FuncGraphPtr &grad_graph, const std:
   it->second->jit_grad_graph = grad_graph;
 }
 
-compile::VmEvalFuncPtr GraphExecutorPy::GetVmEvalFunc(const std::string &phase, const std::string &kind) {
+compile::VmEvalFuncPtr ExecutorPy::GetVmEvalFunc(const std::string &phase, const std::string &kind) {
   ResourcePtr res = GetResource(phase);
   MS_EXCEPTION_IF_NULL(res);
   if (res->HasResult(kind) && res->GetResult(kind).is<compile::VmEvalFuncPtr>()) {
@@ -833,10 +830,9 @@ compile::VmEvalFuncPtr GraphExecutorPy::GetVmEvalFunc(const std::string &phase, 
   return nullptr;
 }
 
-bool GraphExecutorPy::HasCompiled(const std::string &phase) const { return info_.count(phase) != 0; }
+bool ExecutorPy::HasCompiled(const std::string &phase) const { return info_.count(phase) != 0; }
 
-py::bytes GraphExecutorPy::GetFuncGraphProto(const std::string &phase, const std::string &ir_type,
-                                             const bool &incremental) {
+py::bytes ExecutorPy::GetFuncGraphProto(const std::string &phase, const std::string &ir_type, const bool &incremental) {
   FuncGraphPtr fg_ptr = GetFuncGraph(phase);
   if (fg_ptr == nullptr) {
     for (const auto &item : info_) {
@@ -862,7 +858,6 @@ py::bytes GraphExecutorPy::GetFuncGraphProto(const std::string &phase, const std
   }
 
   if (ir_type == IR_TYPE_MINDIR) {
-    // obfuscate model
     std::string proto_str = GetBinaryProtoString(fg_ptr, incremental);
     if (proto_str.empty()) {
       MS_LOG(EXCEPTION) << "Export MINDIR format model failed.";
@@ -871,24 +866,6 @@ py::bytes GraphExecutorPy::GetFuncGraphProto(const std::string &phase, const std
   }
 
   MS_LOG(INTERNAL_EXCEPTION) << "Unknown ir type: " << ir_type;
-}
-
-py::bytes GraphExecutorPy::GetObfuscateFuncGraphProto(const std::string &phase, const bool &incremental,
-                                                      const float obf_ratio, const int branch_control_input) {
-  FuncGraphPtr fg_ptr = GetFuncGraph(phase);
-  // obfuscate model
-  if (branch_control_input == 0) {
-    (void)mindspore::kernel::CustomizedOpaquePredicate::GetInstance().set_func_names();
-    MS_LOG(DEBUG) << "[GetObfuscateFuncGraphProto] set customized function names finished";
-  }
-  mindspore::DynamicObfuscator dynamic_obfuscator(obf_ratio, branch_control_input);
-  mindspore::FuncGraphPtr obfuscated_graph = dynamic_obfuscator.ObfuscateMindIR(fg_ptr);
-
-  std::string proto_str = GetBinaryProtoString(obfuscated_graph, incremental);
-  if (proto_str.empty()) {
-    MS_LOG(EXCEPTION) << "GetBinaryProtoString failed.";
-  }
-  return proto_str;
 }
 
 py::bytes GraphExecutorPy::GetOptimizeGraphProto(const std::string &phase) {
@@ -907,7 +884,7 @@ py::bytes GraphExecutorPy::GetOptimizeGraphProto(const std::string &phase) {
   return proto_str;
 }
 
-void GraphExecutorPy::SetJitConfig(const py::dict &config) {
+void ExecutorPy::SetJitConfig(const py::dict &config) {
   auto jit_config = GenerateJitConfigMap(config);
   PhaseManager::GetInstance().set_jit_config(jit_config);
 }
@@ -977,7 +954,7 @@ py::dict GraphExecutorPy::GetAllreduceFusion(const std::string &phase) {
 
 // Not support multi thread, not support nested call too.
 // Here using nested_called flg to avoid nested call.
-void GraphExecutorPy::DelNetRes(const py::object &source, const py::set &id) {
+void ExecutorPy::DelNetRes(const py::object &source, const py::set &id) {
   // no need to del net res by gc in independent dataset process which is a subprocess forked by main process
   if (process_id_ != GetCurrentPID()) {
     return;
@@ -1017,11 +994,11 @@ void GraphExecutorPy::DelOneNetRes(const py::handle &py_phase) {
 }
 
 void GraphExecutorPy::ClearRes() {
-  MS_LOG(INFO) << "Clean executor resource!";
+  MS_LOG(INFO) << "Clean Graph executor resource!";
   executor_ = nullptr;
 }
 
-void GraphExecutorPy::ClearInfo() {
+void ExecutorPy::ClearInfo() {
   MS_LOG(INFO) << "Clean graph resource!";
   for (auto &item : info_) {
     if (item.second && item.second->resource) {
@@ -1030,9 +1007,9 @@ void GraphExecutorPy::ClearInfo() {
   }
 }
 
-void GraphExecutorPy::set_process_id() { process_id_ = GetCurrentPID(); }
+void ExecutorPy::set_process_id() { process_id_ = GetCurrentPID(); }
 
-std::string GraphExecutorPy::get_queue_name(const std::string &dataset_phase) {
+std::string ExecutorPy::get_queue_name(const std::string &dataset_phase) {
   return CompileCacheManager::GetCachedDataQueueName(dataset_phase);
 }
 
@@ -1066,15 +1043,6 @@ void GraphExecutorPy::SaveCompiledGraph(const std::string &phase) {
   MS_LOG(INFO) << "End save compiled func graph!";
 }
 
-void GraphExecutorPy::GetGeBackendPolicy() const {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  std::string backend = ms_context->backend_policy();
-  if (backend != "ge") {
-    MS_LOG(EXCEPTION) << backend << " backend policy is not supported under ge backend!";
-  }
-}
-
 bool IsPhaseExportAir(const std::string &phase) {
   auto phase_to_export = "export.air";
   return phase.rfind(phase_to_export) != std::string::npos;
@@ -1095,14 +1063,14 @@ bool IsPhaseLoadFromMindIR(const std::string &phase) {
   return phase.rfind(mindir_graph) != std::string::npos;
 }
 
-std::vector<ActionItem> GetActions(const ResourcePtr &resource, const std::string &phase, bool use_vm,
-                                   bool trace_flag = false, bool erase_parse = false) {
+std::vector<ActionItem> GetActions(const ResourcePtr &resource, const std::string &phase, bool trace_flag = false,
+                                   bool erase_parse = false) {
   MS_EXCEPTION_IF_NULL(resource);
   compile::SetMindRTEnable();
   return VmPipeline(resource, trace_flag, erase_parse);
 }
 
-void GraphExecutorPy::InitCompileCacheInfo(const ResourcePtr &resource, const std::string &phase) {
+void ExecutorPy::InitCompileCacheInfo(const ResourcePtr &resource, const std::string &phase) {
   // The compilation cache only support for training cell or functions decorated with 'jit' currently.
   // If enable compilation cache, it will get a non-empty dependent files list from python.
   if (!CompileCacheEnable()) {
@@ -1123,6 +1091,15 @@ void GraphExecutorPy::InitCompileCacheInfo(const ResourcePtr &resource, const st
       ResetId(resource);
     }
   }
+}
+
+void ExecutorPy::InitCompileCacheResource(const ResourcePtr &resource, const std::string &phase) {
+  InitCompileCacheInfo(resource, phase);
+  bool enable_compile_cache = resource->EnableCompileCache();
+  bool use_compile_cache = enable_compile_cache && resource->func_graph();
+  auto &compile_cache_context = CompileCacheContext::GetInstance();
+  compile_cache_context.SetUseCompileCache(use_compile_cache);
+  ConfigManager::GetInstance().ResetQueue(queue_name_);
 }
 
 void GraphExecutorPy::ParallelPostProcess(const std::string &phase, bool use_compile_cache) {
@@ -1177,7 +1154,7 @@ void GraphExecutorPy::CleanCompileRes(const ResourcePtr &resource) {
 }
 
 bool GraphExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &args, const py::dict &kwargs,
-                                   const std::string &phase, bool use_vm, bool trace_flag) {
+                                   const std::string &phase, bool trace_flag) {
   JitCompilingScope jit_compiling_scope;
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -1188,12 +1165,10 @@ bool GraphExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &a
   ExecutorInfoPtr executor_info = std::make_shared<ExecutorInfo>();
   ResourcePtr resource = std::make_shared<Resource>();
   resource->set_func_graph(graph);
-  InitCompileCacheInfo(resource, phase);
-  bool use_compile_cache = resource->EnableCompileCache() && resource->func_graph();
-  ConfigManager::GetInstance().ResetQueue(queue_name_);
+  InitCompileCacheResource(resource, phase_);
 
   bool erase_parse = true;
-  auto actions = GetActions(resource, phase, use_vm, trace_flag, erase_parse);
+  auto actions = GetActions(resource, phase, trace_flag, erase_parse);
   std::shared_ptr<Pipeline> pip = std::make_shared<Pipeline>(resource, actions);
 
   if (pip->NeedCreateBackend()) {
@@ -1227,6 +1202,7 @@ bool GraphExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &a
   // Save the compiled graph to MsPipeLine.
   SaveCompiledGraph(phase);
   if (is_auto_parallel) {
+    bool use_compile_cache = resource->EnableCompileCache() && resource->func_graph();
     ParallelPostProcess(phase, use_compile_cache);
   }
 #ifdef ENABLE_DUMP_IR
@@ -1239,7 +1215,7 @@ bool GraphExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &a
 }
 
 bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &args, const py::dict &kwargs,
-                                   const py::object &phase, bool use_vm) {
+                                   const py::object &phase) {
   JitCompilingScope jit_compiling_scope;
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -1275,14 +1251,9 @@ bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &ar
 
   ExecutorInfoPtr executor_info = std::make_shared<ExecutorInfo>();
   ResourcePtr resource = std::make_shared<Resource>(source);
-  InitCompileCacheInfo(resource, phase_);
-  bool enable_compile_cache = resource->EnableCompileCache();
-  bool use_compile_cache = enable_compile_cache && resource->func_graph();
-  ConfigManager::GetInstance().ResetQueue(queue_name_);
-  auto &compile_cache_context = CompileCacheContext::GetInstance();
-  compile_cache_context.SetUseCompileCache(use_compile_cache);
+  InitCompileCacheResource(resource, phase_);
 
-  auto actions = GetActions(resource, phase_, use_vm, false, false);
+  auto actions = GetActions(resource, phase_, false, false);
   std::shared_ptr<Pipeline> pip = std::make_shared<Pipeline>(resource, actions);
 
   uint64_t start_time = profiler::GetClockSyscnt();
@@ -1322,6 +1293,7 @@ bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &ar
   SaveCompiledGraph(phase_);
   PROF_START(ParallelPostProcess);
   if (is_parallel_mode) {
+    bool use_compile_cache = resource->EnableCompileCache() && resource->func_graph();
     ParallelPostProcess(phase_, use_compile_cache);
   }
   PROF_END(ParallelPostProcess);
@@ -1338,10 +1310,9 @@ bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &ar
   return true;
 }
 
-namespace {
 void SetHookForArgAbstract(const py::object &arg, abstract::AbstractBasePtr abs) {
-  if (py::isinstance<Tensor>(arg)) {
-    auto tensor = arg.cast<std::shared_ptr<Tensor>>();
+  if (tensor::IsTensorPy(arg)) {
+    auto tensor = tensor::ConvertToTensor(arg);
     if (tensor->has_user_data("backward_hook") && !abs->has_user_data("backward_hook")) {
       MS_LOG(DEBUG) << "set hooks for arg: " << py::str(arg) << ", abs(" << abs.get() << "): " << abs << ".";
       auto hook_map = tensor->user_data<std::map<uint64_t, py::function>>("backward_hook");
@@ -1355,7 +1326,6 @@ void SetHookForArgAbstract(const py::object &arg, abstract::AbstractBasePtr abs)
     MS_LOG(DEBUG) << "arg: " << py::str(arg) << " is not a Tensor, we only support arg of type Tensor now.";
   }
 }
-}  // namespace
 
 void GraphExecutorPy::ConvertArgs(const py::tuple &args, const py::dict &kwargs, bool is_auto_parallel,
                                   abstract::AbstractBasePtrList *args_abs, std::vector<ValuePtr> *arguments) {
@@ -1437,7 +1407,8 @@ void GraphExecutorPy::ConvertSymbolicShape(const py::tuple &args, AbstractBasePt
       has_dyn_shape = true;
     }
     constexpr char symbolic_shape_attr[] = "symbolic_shape";
-    if (!py::hasattr(args[i], symbolic_shape_attr)) {
+    if (!py::hasattr(args[i], symbolic_shape_attr) ||
+        !py::isinstance<py::list>(py::getattr(args[i], symbolic_shape_attr))) {
       if (is_parallel && digital_shape->isa<abstract::TensorShape>()) {
         info_list.resize(digital_shape->GetShapeVector().size());
       }
@@ -1488,7 +1459,7 @@ void GraphExecutorPy::ConvertSymbolicShape(const py::tuple &args, AbstractBasePt
   }
 }
 
-void GraphExecutorPy::ReleaseResourceOnException(const py::object &phase) {
+void ExecutorPy::ReleaseResourceOnException(const py::object &phase) {
   bool clear = false;
   // Be sure the pointer res destroyed before do DelOneNetRes.
   {
@@ -1504,21 +1475,30 @@ void GraphExecutorPy::ReleaseResourceOnException(const py::object &phase) {
   }
 }
 
-bool GraphExecutorPy::Compile(const py::object &source, const py::tuple &args, const py::dict &kwargs,
-                              const py::object &phase, bool use_vm) {
+bool ExecutorPy::Compile(const py::object &source, const py::tuple &args, const py::dict &kwargs,
+                         const py::object &phase) {
   bool res = false;
   HandleExceptionRethrow(
-    [this, &res, &source, &args, &kwargs, &phase, use_vm]() {
-      if (executor_running_) {
+    [this, &res, &source, &args, &kwargs, &phase]() {
+      bool executor_running = false;
+      std::string running_obj_desc;
+      if (GraphExecutorPy::GetInstance()->executor_running()) {
+        executor_running = true;
+        running_obj_desc = GraphExecutorPy::GetInstance()->obj_desc();
+      } else if (JitExecutorPy::GetInstance()->executor_running()) {
+        executor_running = true;
+        running_obj_desc = JitExecutorPy::GetInstance()->obj_desc();
+      }
+      if (executor_running) {
         MS_LOG(EXCEPTION) << "Nested execution during JIT execution for " << GetObjDesc(source) << " is not supported "
-                          << "when " << obj_desc_ << " compile and execute. For more details, please refer to "
+                          << "when " << running_obj_desc << " compile and execute. For more details, please refer to "
                           << "https://www.mindspore.cn/search?inputValue=Nested%20execution";
       }
       ProcessStatus::GetInstance().RecordStart(kCompiler);
       std::map<std::string, std::string> custom_info;
       custom_info["phase"] = py::cast<std::string>(phase);
       uint64_t start_time = profiler::GetClockSyscnt();
-      res = CompileInner(source, args, kwargs, phase, use_vm);
+      res = CompileInner(source, args, kwargs, phase);
       (void)profiler::CollectHostInfo(kCompiler, kCompiler, kCompiler, start_time, profiler::GetClockSyscnt(), 1,
                                       custom_info);
       ProcessStatus::GetInstance().RecordEnd();
@@ -1644,6 +1624,13 @@ void RDRRecordGraph(const size_t action_index, const size_t action_size, const s
 #endif
 
 #ifdef ENABLE_DUMP_IR
+std::string GetBaseNameForIR(int64_t stage_idx, const std::string &action_name) {
+  std::ostringstream oss;
+  int spaces = 2;
+  oss << std::setfill('0') << std::setw(spaces) << stage_idx << "_" << action_name;
+  return oss.str();
+}
+
 void RecordIR(const size_t action_index, const size_t action_size, const std::string &action_name,
               const FuncGraphPtr &graph, FuncGraphPtr *user_graph) {
   auto context = MsContext::GetInstance();
@@ -1834,7 +1821,7 @@ void ProcessVmArgInner(const py::tuple &args, const ResourcePtr &res, VectorRef 
   }
 }
 
-void GraphExecutorPy::ProcessVmArg(const py::tuple &args, const std::string &phase, VectorRef *const arg_list) {
+void ExecutorPy::ProcessVmArg(const py::tuple &args, const std::string &phase, VectorRef *const arg_list) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kGraphExecutorPy, runtime::ProfilerEvent::kInputProcess,
                                      phase);
   ProcessVmArgInner(args, GetResource(phase), arg_list);
@@ -1850,7 +1837,7 @@ void GraphExecutorPy::TerminateDebugger() {
 }
 #endif
 
-py::object GraphExecutorPy::Run(const py::tuple &args, const py::object &phase) {
+py::object ExecutorPy::Run(const py::tuple &args, const py::object &phase) {
   py::object res;
   HandleExceptionRethrow(
     [this, &res, &args, &phase]() {
@@ -1868,7 +1855,7 @@ py::object GraphExecutorPy::Run(const py::tuple &args, const py::object &phase) 
   return res;
 }
 
-void GraphExecutorPy::ClearRunArgumentsResource(size_t input_arg_size, VectorRef *arg_list) {
+void ExecutorPy::ClearRunArgumentsResource(size_t input_arg_size, VectorRef *arg_list) {
   for (std::size_t i = 0; i < input_arg_size; ++i) {
     (*arg_list)[i] = nullptr;
   }
@@ -1880,8 +1867,6 @@ py::object GraphExecutorPy::RunInner(const py::tuple &args, const py::object &ph
     py::int_ ret = 0;
     return ret;
   }
-  // Init for dynamic-obfuscated model infer
-  (void)mindspore::kernel::CustomizedOpaquePredicate::GetInstance().init_calling_count();
   // Mindspore debugger notify main thread to exit after one step, and will not run next step
 #ifdef ENABLE_DEBUGGER
   TerminateDebugger();
@@ -1962,9 +1947,9 @@ py::object GraphExecutorPy::RunInner(const py::tuple &args, const py::object &ph
   PhaseManager::GetInstance().ClearPhase();
   MS_LOG(DEBUG) << "Run end";
   return res;
-}  // namespace pipeline
+}
 
-FuncGraphPtr GraphExecutorPy::BuildGraph(const py::dict &init_params, const std::string &phase) const {
+void GraphExecutorPy::BuildGraph(const py::dict &init_params, const std::string &phase) const {
   MS_LOG(INFO) << "Start build df graph, phase = " << phase;
   if (info_.count(phase) == 0) {
     MS_LOG(INTERNAL_EXCEPTION) << "No phase in executor: " << GetPhasePrefix(phase);
@@ -1974,39 +1959,33 @@ FuncGraphPtr GraphExecutorPy::BuildGraph(const py::dict &init_params, const std:
   auto target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   if (target != kAscendDevice) {
     MS_LOG(INFO) << "Only Support ascend.";
-    return nullptr;
+    return;
   }
 
   auto iter = info_.find(phase);
   if (iter == info_.end()) {
     MS_LOG(INTERNAL_EXCEPTION) << "Phase " << phase << " must compile.";
   }
+
+  std::map<std::string, std::shared_ptr<Tensor>> init_tensors{};
+  ConvertObjectToTensors(init_params, &init_tensors, info_.at(phase)->func_graph);
+  std::string new_backend_env = common::GetEnv("MS_NEW_BACKEND");
+  if (!new_backend_env.empty()) {
+    backend::BackendManager::GetInstance().ConvertIR(info_.at(phase)->func_graph, init_tensors,
+                                                     backend::IRFormat::kAir);
+    return;
+  }
+
   auto backend = compile::CreateBackend();
   MS_EXCEPTION_IF_NULL(backend);
   const auto &mindrt_backend = std::dynamic_pointer_cast<compile::MindRTBackend>(backend);
   MS_EXCEPTION_IF_NULL(mindrt_backend);
-  std::map<std::string, std::shared_ptr<Tensor>> init_tensors{};
-  ConvertObjectToTensors(mindrt_backend, init_params, &init_tensors, info_.at(phase)->func_graph);
-  return mindrt_backend->BuildDFGraph(info_.at(phase)->func_graph, init_tensors);
+  (void)mindrt_backend->BuildDFGraph(info_.at(phase)->func_graph, init_tensors);
 }
 
-void GraphExecutorPy::ConvertObjectToTensors(const std::shared_ptr<compile::MindRTBackend> &backend,
-                                             const py::dict &dict,
+void GraphExecutorPy::ConvertObjectToTensors(const py::dict &dict,
                                              std::map<std::string, std::shared_ptr<Tensor>> *const tensors,
                                              const FuncGraphPtr &anf_graph) const {
-  const auto &infer_need_update_parameter_names = backend->GetInferParameterNames();
-  bool infer = false;
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  bool enable_ge = context_ptr->backend_policy() == "ge";
-  bool is_train = false;
-  if (anf_graph->has_attr("phase")) {
-    std::string phase = anf_graph->get_attr("phase")->ToString();
-    is_train = phase == "train";
-  }
-  if (enable_ge && !is_train) {
-    infer = true;
-  }
   for (auto item : dict) {
     if ((!py::isinstance<py::str>(item.first))) {
       MS_LOG(WARNING) << "Type of key of py_dict is not string, ignore it.";
@@ -2015,10 +1994,6 @@ void GraphExecutorPy::ConvertObjectToTensors(const std::shared_ptr<compile::Mind
     std::shared_ptr<Tensor> tensor;
     std::string name = py::cast<std::string>(item.first);
 
-    if (infer && infer_need_update_parameter_names.find(name) == infer_need_update_parameter_names.end() &&
-        !IsEnableRefMode()) {
-      continue;
-    }
     if (py::isinstance<py::float_>(item.second.attr("data"))) {
       // convert float to tensor with shape([1])
       tensor = std::make_shared<Tensor>(kNumberTypeFloat32, std::vector<int64_t>({1}));
@@ -2027,9 +2002,9 @@ void GraphExecutorPy::ConvertObjectToTensors(const std::shared_ptr<compile::Mind
       // convert int64_t to tensor with shape([1])
       tensor = std::make_shared<Tensor>(kNumberTypeInt32, std::vector<int64_t>({1}));
       *(static_cast<float *>(tensor->data_c())) = py::cast<float>(item.second.attr("data"));
-    } else if (py::isinstance<Tensor>(item.second.attr("data"))) {
+    } else if (tensor::IsTensorPy(item.second.attr("data"))) {
       // cast tensor
-      tensor = py::cast<std::shared_ptr<Tensor>>(item.second.attr("data"));
+      tensor = tensor::ConvertToTensor(item.second.attr("data"));
     } else if (IsStubTensor(item.second.attr("data"))) {
       // cast stub_tensor
       tensor = ConvertStubTensor(item.second.attr("data"));
@@ -2043,7 +2018,7 @@ void GraphExecutorPy::ConvertObjectToTensors(const std::shared_ptr<compile::Mind
 }
 
 void GraphExecutorPy::UpdataParamNodeDefaultInput(
-  const std::string &phase, const std::unordered_map<std::string, tensor::TensorPtr> &params_value) {
+  const std::string &phase, const std::unordered_map<std::string, tensor::TensorPyPtr> &params_value) {
   FuncGraphPtr func_graph = info_[phase]->resource->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_LOG(DEBUG) << "UpdataParamNodeDefaultInput for func graph(" << func_graph->ToString() << ") phase(" << phase
@@ -2055,12 +2030,13 @@ void GraphExecutorPy::UpdataParamNodeDefaultInput(
     MS_EXCEPTION_IF_NULL(param_cast);
     auto iter = params_value.find(param_cast->name());
     if (iter != params_value.end()) {
-      param_cast->set_default_param(iter->second);
+      auto value_ptr = iter->second->GetTensor();
+      param_cast->set_default_param(value_ptr);
     }
   }
 }
 
-py::dict GraphExecutorPy::GetParams(const std::string &phase) {
+py::dict ExecutorPy::GetParams(const std::string &phase) {
   FuncGraphPtr func_graph = info_[phase]->resource->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
   py::dict parameter_dict;
@@ -2351,7 +2327,15 @@ void GraphExecutorPy::ExportGraph(const std::string &file_name, const std::strin
   FuncGraphPtr func_graph = info_[phase]->func_graph;
   MS_EXCEPTION_IF_NULL(func_graph);
 
-  string save_str = mindrt_backend->ExportDFGraph(file_name, func_graph, is_save_to_file);
+  string save_str;
+  std::string new_backend_env = common::GetEnv("MS_NEW_BACKEND");
+  if (!new_backend_env.empty()) {
+    save_str =
+      backend::BackendManager::GetInstance().ExportIR(func_graph, file_name, is_save_to_file, backend::IRFormat::kAir);
+  } else {
+    save_str = mindrt_backend->ExportDFGraph(file_name, func_graph, is_save_to_file);
+  }
+
   if (is_save_to_file) {
     return;
   }
@@ -2376,12 +2360,7 @@ void GraphExecutorPy::ExportGraph(const std::string &file_name, const std::strin
 }
 
 FuncGraphPtr LoadMindIR(const std::string &file_name, const char *dec_key, const size_t key_len,
-                        const std::string &dec_mode, const py::object decrypt, const bool obfuscated) {
-  if (obfuscated) {
-    MS_LOG(DEBUG) << "[LoadMindIR] Set customized function.";
-    (void)mindspore::kernel::CustomizedOpaquePredicate::GetInstance().set_func_names();
-    (void)mindspore::kernel::CustomizedOpaquePredicate::GetInstance().init_calling_count();
-  }
+                        const std::string &dec_mode, const py::object decrypt) {
   FuncGraphPtr func_graph = nullptr;
   if (dec_mode == "Customized") {
     py::bytes key_bytes(dec_key);
@@ -2562,34 +2541,6 @@ FuncGraphPtr SplitDynamicMindIR(const std::string &file_name, size_t device_num,
   return func_graph;
 }
 
-FuncGraphPtr DynamicObfuscateMindIR(const std::string &file_name, float obf_ratio, int branch_control_input,
-                                    char *dec_key, const size_t key_len, const std::string &dec_mode) {
-  if (branch_control_input == 0) {
-    (void)mindspore::kernel::CustomizedOpaquePredicate::GetInstance().set_func_names();
-    MS_LOG(DEBUG) << "[DynamicObfuscateMindIR] set function names finished.";
-  }
-  mindspore::DynamicObfuscator dynamic_obfuscator(obf_ratio, branch_control_input);
-  MindIRLoader mindir_loader(false, reinterpret_cast<unsigned char *>(dec_key), key_len, dec_mode, false);
-  FuncGraphPtr func_graph = mindir_loader.LoadMindIR(file_name);
-  if (func_graph == nullptr) {
-    MS_LOG(EXCEPTION) << "[DynamicObfuscateMindIR] load mindir failed, please check the mindir file.";
-    return nullptr;
-  }
-  ModifyGraphs(func_graph);
-  auto manager = func_graph->manager();
-  if (manager == nullptr) {
-    manager = MakeManager();
-    manager->AddFuncGraph(func_graph, true);
-  }
-  InferFuncGraphLoaded(func_graph);
-  mindspore::FuncGraphPtr obfuscated_graph = dynamic_obfuscator.ObfuscateMindIR(func_graph);
-  if (obfuscated_graph == nullptr) {
-    MS_LOG(ERROR) << "[DynamicObfuscateMindIR] obfuscate model failed.";
-    return nullptr;
-  }
-  return obfuscated_graph;
-}
-
 void CloseTsd(bool force) {
 #ifdef WITH_BACKEND
   auto context_ptr = MsContext::GetInstance();
@@ -2612,23 +2563,14 @@ void InitPipeline() {
   MS_EXCEPTION_IF_NULL(ms_context);
   CompileConfigManager::GetInstance().CollectCompileConfig();
 #ifdef WITH_BACKEND
-  auto backend = ms_context->backend_policy();
-  auto device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  if (backend == "ge") {
-    const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device_name, ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
-    MS_EXCEPTION_IF_NULL(device_context);
-    device_context->Initialize();
-  }
-  if (!common::UseDynamicCluster()) {
-    if (device_name == kAscendDevice) {
+  if (UseSimulationApi()) {
+    auto backend = ms_context->backend_policy();
+    auto device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    if (backend == "ge") {
       const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
         {device_name, ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
       MS_EXCEPTION_IF_NULL(device_context);
-      MS_EXCEPTION_IF_NULL(device_context->GetDeprecatedInterface());
-      if (!device_context->GetDeprecatedInterface()->OpenTsd(ms_context)) {
-        MS_LOG(EXCEPTION) << "Open tsd failed";
-      }
+      device_context->Initialize();
     }
   }
 #endif
@@ -2674,6 +2616,7 @@ void ClearResPart1() {
   mindspore::RDR::Snapshot();
   mindspore::RDR::ResetRecorder();
 #endif
+  backend::BackendManager::GetInstance().Clear();
   runtime::GraphScheduler::GetInstance().Clear();
   runtime::ProfilerAnalyzer::GetInstance().Clear();
   opt::PassConfigure::Instance().Clear();
@@ -2691,8 +2634,10 @@ void ClearResPart1() {
   pipeline::GetAttrMap().clear();
 #ifdef WITH_BACKEND
   pipeline::GraphExecutorPy::GetInstance()->ClearInfo();
+  pipeline::JitExecutorPy::GetInstance()->ClearInfo();
 #endif
   pipeline::GraphExecutorPy::ClearRes();
+  pipeline::JitExecutorPy::ClearRes();
   pipeline::ReclaimOptimizer();
 }
 
@@ -2869,9 +2814,9 @@ void FinalizeCluster() {
 #endif
 }
 
-void SwapCache(const tensor::TensorPtr &host, const tensor::TensorPtr &device, const tensor::TensorPtr &block_mapping,
-               const bool &is_device_to_host) {
-  auto block_mapping_shape = block_mapping->shape();
+void SwapCache(const tensor::TensorPyPtr &host, const tensor::TensorPyPtr &device,
+               const tensor::TensorPyPtr &block_mapping, const bool &is_device_to_host) {
+  auto block_mapping_shape = block_mapping->GetShape();
   const size_t num_two = 2;
   if (block_mapping_shape.size() != num_two) {
     MS_LOG_EXCEPTION << "The shape size of Cache input mapping tensor should be 2, but got: "
@@ -2882,19 +2827,19 @@ void SwapCache(const tensor::TensorPtr &host, const tensor::TensorPtr &device, c
                      << block_mapping_shape[0];
   }
 
-  auto in_shape = device->shape();
-  auto type_byte = GetTypeByte(TypeIdToType(host->data_type()));
+  auto in_shape = device->GetShape();
+  auto type_byte = GetTypeByte(TypeIdToType(host->GetDataType()));
   size_t block_size_in_bytes = LongToSize(
     std::accumulate(in_shape.begin() + kIndex1, in_shape.end(), SizeToLong(type_byte), std::multiplies<int64_t>()));
 
-  uint8_t *host_ptr = reinterpret_cast<uint8_t *>(host->data_c());
+  uint8_t *host_ptr = reinterpret_cast<uint8_t *>(host->GetTensorDataObject());
   MS_EXCEPTION_IF_NULL(host_ptr);
-  auto device_addr = std::dynamic_pointer_cast<device::DeviceAddress>(device->device_address());
+  auto device_addr = std::dynamic_pointer_cast<device::DeviceAddress>(device->GetDeviceAddress());
   MS_EXCEPTION_IF_NULL(device_addr);
   uint8_t *device_ptr = reinterpret_cast<uint8_t *>(const_cast<void *>(device_addr->GetPtr()));
   MS_EXCEPTION_IF_NULL(device_ptr);
 
-  auto block_mapping_data = reinterpret_cast<int64_t *>(block_mapping->data_c());
+  auto block_mapping_data = reinterpret_cast<int64_t *>(block_mapping->GetTensorDataObject());
   for (size_t i = 0; i < LongToSize(block_mapping_shape[0]); i++) {
     int64_t src_block_num = block_mapping_data[num_two * i];
     int64_t dst_block_num = block_mapping_data[num_two * i + kIndex1];
@@ -2931,6 +2876,11 @@ py::object BaseRefToPyDataWithUserData(const BaseRef &value, const AbstractBaseP
     return GetVectorRefPyData(vec_ref, abs);
   }
   return BaseRefToPyData(value, abs);
+}
+
+void PreJit(const py::object &args, const py::object &kwargs) {
+  const auto &self = GetSelfFromArgs(args);
+  parse::Parser::InitParserEnvironment(self);
 }
 }  // namespace pipeline
 }  // namespace mindspore

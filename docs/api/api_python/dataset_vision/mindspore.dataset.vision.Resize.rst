@@ -16,7 +16,7 @@ mindspore.dataset.vision.Resize
         - **interpolation** (:class:`~.vision.Inter`, 可选) - 图像插值方法。可选值详见 :class:`mindspore.dataset.vision.Inter` 。
           默认值： ``Inter.LINEAR``。
 
-          - **Ascend模式**：通过 `.device("Ascend")` 设定执行设备为 Ascend 时， `Inter.ANTIALIAS` 、 `Inter.AREA` 、 `Inter.PILCUBIC` 差值方法不支持。
+          - **Ascend模式**：通过 `.device("Ascend")` 设定执行设备为 Ascend 时， `Inter.ANTIALIAS` 、 `Inter.AREA` 、 `Inter.PILCUBIC` 插值方法不支持。
 
     异常：
         - **TypeError** - 当 `size` 的类型不为int或Sequence[int]。
@@ -32,11 +32,11 @@ mindspore.dataset.vision.Resize
 
         指定该变换执行的设备。
 
-        - 当执行设备是 Ascend 时，输入/输出数据的维度限制为[4, 6]和[32768, 32768]之间。
+        当执行设备是 Ascend 时，输入/输出数据的维度限制在[4, 6]和[32768, 32768]范围内。
 
         参数：
-            - **device_target** (str, 可选) - 算子将在指定的设备上运行。当前支持 ``CPU`` 和 ``Ascend`` 。默认值： ``CPU`` 。
+            - **device_target** (str, 可选) - 算子将在指定的设备上运行。当前支持 ``"CPU"`` 和 ``"Ascend"`` 。默认值： ``"CPU"`` 。
 
         异常：
             - **TypeError** - 当 `device_target` 的类型不为str。
-            - **ValueError** - 当 `device_target` 的取值不为 ``CPU`` / ``Ascend`` 。
+            - **ValueError** - 当 `device_target` 的取值不为 ``"CPU"`` / ``"Ascend"`` 。

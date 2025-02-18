@@ -26,7 +26,7 @@ from mindspore import log as logger
 from mindspore.nn import Cell
 from mindspore import context
 from mindspore._c_expression import security
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.common import dtype as mstype
 from mindspore.common.tensor import Tensor
 from mindspore import _checkparam as Validator
@@ -393,8 +393,7 @@ class SummaryRecord:
             bool, whether the record process is successful or not.
 
         Raises:
-            TypeError: `step` is not int, or `train_network` is not `mindspore.nn.Cell
-                <https://www.mindspore.cn/docs/en/master/api_python/nn/mindspore.nn.Cell.html#mindspore-nn-cell>`_ .
+            TypeError: `step` is not int, or `train_network` is not :class:`mindspore.nn.Cell`.
 
         Examples:
             >>> import mindspore as ms

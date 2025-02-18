@@ -19,10 +19,11 @@
 #include <vector>
 #include <string>
 #include "include/backend/optimizer/optimizer.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace opt {
-class ResizeBilinearAddAttr : public PatternProcessPass {
+class BACKEND_EXPORT ResizeBilinearAddAttr : public PatternProcessPass {
  public:
   explicit ResizeBilinearAddAttr(bool multigraph = true) : PatternProcessPass("resize_bilinear_add_attr", multigraph) {}
   ~ResizeBilinearAddAttr() override = default;

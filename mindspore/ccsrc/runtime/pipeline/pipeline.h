@@ -16,6 +16,7 @@
 #ifndef MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PIPELINE_PIPELINE_H_
 #define MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PIPELINE_PIPELINE_H_
 
+#include <utility>
 #include "utils/ms_utils.h"
 #include "include/backend/visible.h"
 #include "runtime/pipeline/async_rqueue.h"
@@ -32,6 +33,9 @@ class BACKEND_EXPORT Pipeline {
   const AsyncRQueuePtr &backend_stage() const { return backend_stage_; }
   const AsyncRQueuePtr &launch_stage() const { return launch_stage_; }
   const AsyncRQueuePtr &stress_detect() const { return stress_detect_; }
+
+  void UpdateBackendStage(AsyncRQueuePtr backend_stage) { backend_stage_ = std::move(backend_stage); }
+
   void SetSpin(bool spin);
 
   void WaitAll();
@@ -43,6 +47,10 @@ class BACKEND_EXPORT Pipeline {
   void WaitBpropStage();
 
   void ChildAfterFork();
+
+  void DisablePipeline();
+
+  static void DisableMultiThreadAfterFork();
 
  private:
   Pipeline();

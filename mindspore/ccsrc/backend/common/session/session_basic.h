@@ -137,6 +137,10 @@ class BACKEND_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_sh
   virtual void ReportWarningMessage() {}
   virtual void ReportErrorMessage() {}
   virtual void SetThreadContext() {}
+  void DumpGraphs(const std::vector<KernelGraphPtr> &graphs) const;
+  void RecurseSetSummaryNodesForAllGraphs(KernelGraph *graph);
+  void Summary(KernelGraph *graph);
+
 #ifdef ENABLE_DEBUGGER
   // set debugger
   void SetDebugger() {
@@ -217,7 +221,6 @@ class BACKEND_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_sh
   void ProcessInputTensorsForHeterogeneous(const std::string &cur_target,
                                            const std::vector<tensor::TensorPtr> &input_tensors) const;
   virtual void SetSummaryNodes(KernelGraph *graph);
-  void RecurseSetSummaryNodesForAllGraphs(KernelGraph *graph);
 
   void LoadInputs(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &inputs_const) const {
     MS_LOG(INFO) << "Status record: start load input. graph id: " << graph_id;
@@ -239,7 +242,6 @@ class BACKEND_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_sh
   void UpdateOutputs(const std::shared_ptr<KernelGraph> &kernel_graph, VectorRef *const outputs,
                      const std::vector<tensor::TensorPtr> &input_tensors,
                      std::map<tensor::TensorPtr, session::KernelWithIndex> *tensor_to_node) const;
-  void Summary(KernelGraph *graph);
   // create graph output for RunOp
   void CreateOutputNode(const CNodePtr &cnode, const std::shared_ptr<KernelGraph> &graph) const;
 
@@ -267,7 +269,6 @@ class BACKEND_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_sh
   AnfNodePtr FindPullNode(const AnfNodePtr &push_node, const std::vector<AnfNodePtr> &node_list) const;
   std::vector<uint32_t> GetAllReduceSplitIndex();
   virtual std::string GetCommWorldGroup() { return std::string(); }
-  void DumpGraphs(const std::vector<KernelGraphPtr> &graphs) const;
   void GetConstValueDepend(const CNodePtr &cnode, std::set<int64_t> *const_input_attr_index) const;
   mindspore::HashMap<GraphInfo, std::shared_ptr<KernelGraph>> run_op_graphs_;
   std::shared_ptr<Context> context_;

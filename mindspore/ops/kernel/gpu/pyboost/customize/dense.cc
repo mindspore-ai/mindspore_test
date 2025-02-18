@@ -15,7 +15,7 @@
  */
 
 #include "kernel/gpu/pyboost/customize/dense.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/gpu/pyboost/auto_generate/transpose.h"
 #include "kernel/gpu/pyboost/auto_generate/contiguous.h"
 #include "kernel/gpu/pyboost/auto_generate/matmul_ext.h"

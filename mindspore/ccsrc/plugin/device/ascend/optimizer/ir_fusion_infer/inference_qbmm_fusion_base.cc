@@ -72,9 +72,6 @@ void QbmmFusionBase::SetNodes(const EquivPtr &equiv) const {
 bool QbmmFusionBase::PassEnable(const std::string &op_name) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (!ms_context->IsEnableInferBoost()) {
-    return false;
-  }
   auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
   auto enable_fusion = (std::find(enable_op_list.begin(), enable_op_list.end(), op_name) != enable_op_list.end());
   if (!enable_fusion) {

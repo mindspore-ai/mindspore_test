@@ -1,0 +1,36 @@
+empty:
+  description: |
+    empty(*size, dtype=None, device=None) -> Tensor
+  
+    Creates a tensor with uninitialized data, whose shape, dtype and device are described by the argument `size`,
+    `dtype` and `device` respectively.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        size (Union[tuple[int], list[int], int]): The specified shape of output tensor. Can be variable numbers of
+            positive integers or tupled or list containing positive integers.
+
+    Keyword Args:
+        dtype (:class:`mindspore.dtype`, optional): The specified type of output tensor. If `dtype` is ``None`` ,
+            `mindspore.float32` will be used. Default: ``None`` .
+        device (string, optional): The specified device of the output tensor. Support ``CPU`` and ``Ascend``. If
+            `device = None`, `mindspore.context.device_target` will be used. Default ``None``.
+
+    Returns:
+        Tensor, whose dtype and size are defined by input.
+
+    Raises:
+        TypeError:  If `size` is neither an int nor a tuple or list of int.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import ops
+        >>> output = ops.empty((2, 3), dtype=mindspore.float32)
+        >>> print(output)
+        [[0. 0. 0.]
+         [0. 0. 0.]]

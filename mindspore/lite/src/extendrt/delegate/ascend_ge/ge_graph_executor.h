@@ -25,10 +25,10 @@
 
 #include "include/api/context.h"
 #include "include/model.h"
-#include "include/transform/graph_ir/types.h"
+#include "backend/ge_backend/graph_ir/types.h"
 #include "extendrt/session/lite_graph_executor.h"
 #include "common/config_infos.h"
-#include "include/transform/graph_ir/utils.h"
+#include "backend/ge_backend/graph_ir/utils.h"
 #include "extendrt/delegate/ascend_ge/ge_device_context.h"
 #include "extendrt/delegate/ascend_ge/ge_memory_manager.h"
 #include "extendrt/delegate/ascend_ge/ge_context_manager.h"
@@ -115,7 +115,7 @@ class GeGraphExecutor : public LiteGraphExecutor {
   int64_t session_id_ = -1;
   std::vector<uint32_t> init_graph_id_list_;
   std::vector<uint32_t> compute_graph_id_list_;
-  transform::RefModeFlag ref_mode_flag_ = transform::RefModeFlag::kRefModeNone;
+  backend::ge_backend::RefModeFlag ref_mode_flag_ = backend::ge_backend::RefModeFlag::kRefModeNone;
   std::string cache_mode_;
   std::vector<RefDataInfo> ref_data_infos_;
   std::vector<InOutBufferInfo> inputs_buffer_infos_;
@@ -144,12 +144,12 @@ class GeGraphExecutor : public LiteGraphExecutor {
                                             std::map<std::string, std::string> *ge_options_ptr);
   bool CreateSession(const std::map<std::string, std::string> &extra_options);
   int64_t GetSessionId();
-  void GetParams(const FuncGraphPtr &anf_graph, transform::TensorOrderMap *param_tensors);
+  void GetParams(const FuncGraphPtr &anf_graph, backend::ge_backend::TensorOrderMap *param_tensors);
 
-  bool AddGraph(const transform::DfGraphPtr &graph, const std::map<std::string, std::string> &options,
+  bool AddGraph(const backend::ge_backend::DfGraphPtr &graph, const std::map<std::string, std::string> &options,
                 uint32_t *graph_id);
   bool RunGeInitGraph(uint32_t init_graph_id, const std::vector<std::string> &init_data_names,
-                      const transform::TensorOrderMap &params_vals);
+                      const backend::ge_backend::TensorOrderMap &params_vals);
   tensor::TensorPtr ConvertGeTensorNoCopy(::ge::Tensor *ge_tensor_ptr, uint32_t graph_id, size_t idx);
 
   bool RunGraphWithStreamAsync(uint32_t graph_id, void *stream, const std::vector<GeTensor> &inputs,
@@ -182,12 +182,12 @@ class GeGraphExecutor : public LiteGraphExecutor {
   bool RunDataFlowGraphAsync(uint32_t graph_id, const std::vector<::ge::Tensor> &inputs,
                              std::vector<::ge::Tensor> *outputs);
 
-  transform::DfGraphPtr CompileGraphCommon(const FuncGraphPtr &graph,
-                                           std::map<std::string, std::string> *ge_options_ptr);
+  backend::ge_backend::DfGraphPtr CompileGraphCommon(const FuncGraphPtr &graph,
+                                                     std::map<std::string, std::string> *ge_options_ptr);
 
-  transform::DfGraphPtr CreateGeGraphOnline(const FuncGraphPtr &anf_graph,
-                                            std::map<std::string, std::string> *ge_options_ptr);
-  transform::DfGraphPtr CreateFakeGraph(const std::map<std::string, std::string> &ge_options);
+  backend::ge_backend::DfGraphPtr CreateGeGraphOnline(const FuncGraphPtr &anf_graph,
+                                                      std::map<std::string, std::string> *ge_options_ptr);
+  backend::ge_backend::DfGraphPtr CreateFakeGraph(const std::map<std::string, std::string> &ge_options);
 
   void SetOptionsIntoOfflineModel(const std::map<std::string, std::string> &graph_options,
                                   std::map<std::string, ValuePtr> *attr_map);

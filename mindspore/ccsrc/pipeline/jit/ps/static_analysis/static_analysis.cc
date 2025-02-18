@@ -45,6 +45,7 @@
 #include "include/common/utils/python_adapter.h"
 #include "pipeline/jit/ps/static_analysis/async_eval_result.h"
 #include "frontend/operator/ops_front_infer_function.h"
+#include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 #include "frontend/operator/composite/composite.h"
 #include "ops/op_def.h"
 
@@ -601,6 +602,9 @@ AnalysisResult AnalysisEngine::Run(const FuncGraphPtr &func_graph, const Abstrac
     MS_EXCEPTION_IF_NULL(func_graph_manager_);
     func_graph_manager_->AddFuncGraph(func_graph);
     root_func_graph_ = func_graph;
+    if (top_func_graph_.lock() == nullptr) {
+      top_func_graph_ = func_graph;
+    }
 
     // Running the analyzer.
     ResetFunctionCallDepth();
@@ -1222,6 +1226,9 @@ EvaluatorPtr GetPrimEvaluator(const PrimitivePtr &prim, const AnalysisEnginePtr 
   if (mindspore::ops::IsPrimitiveFunction(prim->name())) {
     if (prim->isa<PrimitivePy>()) {
       return std::make_shared<PrimitiveArgsToInputsEvaluator>(prim);
+    }
+    if (prim::IsMetaImpl(prim->name())) {
+      return std::make_shared<PrimitiveToMetaEvaluator>(prim);
     }
     return std::make_shared<PrimitiveFunctionEvaluator>(prim);
   }
@@ -1978,27 +1985,6 @@ EvalResultPtr EvalOnePrim(const PrimitivePtr &primitive, const AbstractBasePtrLi
   MS_LOG(ERROR) << "The primitive '" << primitive->ToString() << "' should be built as a TrivialPrimEvaluator, but "
                 << evaluator->ToString();
   return nullptr;
-}
-
-AbstractBasePtr EvalFunctionValue(const ValuePtr &func, const AbstractBasePtrList &args_spec) {
-  auto func_abs = func->ToAbstract();
-  if (!func_abs->isa<AbstractFunction>()) {
-    MS_LOG(EXCEPTION) << "The value : " << func->ToString() << " is not a callable object.";
-  }
-  if (func->isa<Primitive>() && !func->isa<prim::DoSignaturePrimitive>()) {
-    return EvalOnePrim(func->cast<PrimitivePtr>(), args_spec)->abstract();
-  } else {
-    auto infer_graph = std::make_shared<FuncGraph>();
-    std::vector<AnfNodePtr> inputs = {std::make_shared<ValueNode>(func)};
-    (void)std::transform(args_spec.begin(), args_spec.end(), std::back_inserter(inputs),
-                         [infer_graph](const AbstractBasePtr &) -> AnfNodePtr { return infer_graph->add_parameter(); });
-    auto infer_node = infer_graph->NewCNode(inputs);
-    infer_graph->set_return(infer_node);
-    auto manager = Manage(infer_graph, true);
-    auto engine = std::make_shared<abstract::AnalysisEngine>(abstract::GetPrimEvaluatorConstructors(), manager);
-    auto res = engine->Run(infer_graph, args_spec);
-    return res.eval_result->abstract();
-  }
 }
 
 AnalysisContextPtr NewContext(const AnalysisContextPtr &current_context, const FuncGraphPtr &fg,

@@ -23,6 +23,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/optimizer/anf_visitor.h"
+#include "pipeline/jit/ps/resource.h"
 
 namespace mindspore::opt::irpass {
 const PrimitiveSet dump_skipped_prim_set = {prim::kPrimReturn,       prim::kPrimDepend,      prim::kPrimMakeTuple,
@@ -35,6 +36,18 @@ class ExpandDumpFlag {
   bool operator()(const FuncGraphPtr &, const OptimizerPtr &optimizer) const {
     MS_EXCEPTION_IF_NULL(optimizer);
     auto manager = optimizer->manager();
+    Solve(manager);
+    return false;
+  }
+
+  void operator()(const pipeline::ResourcePtr &resource) const {
+    MS_EXCEPTION_IF_NULL(resource);
+    auto manager = resource->manager();
+    Solve(manager);
+  }
+
+ private:
+  static void Solve(const FuncGraphManagerPtr &manager) {
     MS_EXCEPTION_IF_NULL(manager);
     std::set<FuncGraphPtr> seen;
     auto graph_filter = [&seen](const FuncGraphPtr &graph) {
@@ -73,7 +86,6 @@ class ExpandDumpFlag {
       }
       seen.insert(traverse_graphs.cbegin(), traverse_graphs.cend());
     }
-    return false;
   }
 };
 }  // namespace mindspore::opt::irpass

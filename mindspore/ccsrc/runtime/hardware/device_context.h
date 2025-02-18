@@ -180,6 +180,9 @@ class BACKEND_EXPORT DeviceResManager {
   // Initialize the device resource manager.
   virtual void Initialize() {}
 
+  // Set the deterministic mode.
+  virtual void SetDeterministic() {}
+
   // Destroy device resource manager and release device resource.
   virtual void Destroy() {}
 
@@ -339,9 +342,15 @@ class BACKEND_EXPORT DeviceResManager {
 
   // Detect stress.
   virtual int StressDetect() const { MS_LOG(EXCEPTION) << "Stress detection is not supported."; }
+
   // Send and receive parameters.
   virtual int SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) const {
     MS_LOG(EXCEPTION) << "Send and receive parameters is not supported.";
+  }
+
+  // Reset parameters.
+  virtual int ResetParams(const std::vector<tensor::TensorPtr> &params) const {
+    MS_LOG(EXCEPTION) << "Reset parameters is not supported.";
   }
 
   // Clean tdt channel
@@ -352,11 +361,11 @@ class BACKEND_EXPORT DeviceResManager {
   virtual bool LoadCollectiveCommLib() { return true; }
 
   // Return collective communication object for caller to access
-  CollectiveCommunicationLib *collective_comm_lib() const { return collective_comm_lib_; }
+  virtual CollectiveCommunicationLib *collective_comm_lib() const { return collective_comm_lib_; }
 
-  std::shared_ptr<SwapManager> swap_manager() const;
+  virtual std::shared_ptr<SwapManager> swap_manager() const;
 
-  std::shared_ptr<MemoryManager> mem_manager() const { return mem_manager_; }
+  virtual std::shared_ptr<MemoryManager> mem_manager() const { return mem_manager_; }
 
   virtual std::pair<vector<size_t>, vector<size_t>> AllocDeviceMemoryForTensorList(
     const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {

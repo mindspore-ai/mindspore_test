@@ -59,6 +59,10 @@ BaseShapePtr LayerNormExtFuncImpl::InferShape(const PrimitivePtr &primitive,
   }
   const auto norm_dim = gamma_shape.size();
   const auto input_dim = x_shape.size();
+  MS_CHECK_VALUE(input_dim >= norm_dim,
+                 CheckAndConvertUtils::FormatCommMsg(
+                   "For 'LayerNorm', gamma or beta shape must match input shape, but got input shape: ", x_shape,
+                   ", gamma shape: ", gamma_shape, ", beta shape: ", beta_shape, "."));
   const auto begin_axis = input_dim - norm_dim;
   for (size_t i = begin_axis; i < input_dim; ++i) {
     size_t gamma_beta_shape_dim = i - begin_axis;
@@ -127,8 +131,11 @@ ShapeArray LayerNormExtFuncImpl::InferShape(const PrimitivePtr &primitive, const
 
   const auto norm_dim = gamma_shape.size();
   const auto input_dim = x_shape.size();
+  MS_CHECK_VALUE(input_dim >= norm_dim,
+                 CheckAndConvertUtils::FormatCommMsg(
+                   "For 'LayerNorm', gamma or beta shape must match input shape, but got input shape: ", x_shape,
+                   ", gamma shape: ", gamma_shape, ", beta shape: ", beta_shape, "."));
   const auto begin_axis = input_dim - norm_dim;
-
   for (size_t i = begin_axis; i < input_dim; ++i) {
     size_t gamma_beta_shape_dim = i - begin_axis;
     MS_CHECK_VALUE(x_shape[i] <= 0 || ((gamma_shape[gamma_beta_shape_dim] == x_shape[i]) &&

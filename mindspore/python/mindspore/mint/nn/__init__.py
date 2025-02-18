@@ -21,6 +21,8 @@ from __future__ import absolute_import
 import mindspore.ops as ops
 from mindspore.mint.nn import functional as F
 from mindspore.nn.cell import Cell
+from mindspore.nn import AdaptiveMaxPool2d
+from mindspore.nn import SoftMarginLoss
 from mindspore.nn import EmbeddingExt as Embedding, MaxPool2dExt as MaxPool2d, LayerNormExt as LayerNorm, Linear
 import mindspore.nn as nn
 
@@ -60,8 +62,7 @@ from mindspore.nn.layer import ReLU
 # 14
 from mindspore.nn.layer.basic import DropoutExt as Dropout
 # 15
-from mindspore.mint.nn.layer.conv import Conv2d, ConvTranspose2d
-from mindspore.mint.nn.layer.conv import Conv3d
+from mindspore.mint.nn.layer.conv import Conv1d, Conv2d, Conv3d, ConvTranspose2d
 # 16
 from mindspore.nn.layer import LogSoftmaxExt as LogSoftmax
 # 17
@@ -224,7 +225,7 @@ from mindspore.mint.nn.layer.activation import SiLU, LogSigmoid
 # 94
 
 # 95
-
+from mindspore.nn.layer import AvgPool3dExt as AvgPool3d
 # 96
 
 # 97
@@ -251,6 +252,9 @@ from mindspore.nn.loss import L1LossExt as L1Loss
 # 254
 from mindspore.mint.nn.layer.pooling import MaxUnpool2d
 
+# 256
+from mindspore.mint.nn.layer.activation import Threshold
+
 # 257
 
 # 258
@@ -270,6 +274,8 @@ from mindspore.mint.nn.layer.activation import Tanh
 
 # 536
 from mindspore.mint.nn.layer.activation import GLU
+# 548
+from mindspore.ops.function.nn_func import kl_div_ext
 
 # 674
 from mindspore.mint.nn.layer.normalization import BatchNorm1d
@@ -280,6 +286,8 @@ from mindspore.mint.nn.layer.normalization import BatchNorm2d
 # 676
 from mindspore.mint.nn.layer.normalization import BatchNorm3d
 
+from mindspore.mint.nn.layer.pooling import AdaptiveMaxPool1d
+
 from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool1d
 
 from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool2d
@@ -288,6 +296,7 @@ from mindspore.ops.function.nn_func import cross_entropy_ext as cross_entropy
 
 from mindspore.ops.function.nn_func import _nllloss_nd as nllloss
 
+from mindspore.ops.auto_generate import upsample_nearest2d_op, upsample_bilinear2d_op
 
 class NLLLoss(Cell):
     r"""
@@ -950,6 +959,219 @@ class BCELoss(Cell):
         return self.bce_loss(input, target)
 
 
+class KLDivLoss(Cell):
+    r"""
+    Computes the Kullback-Leibler divergence between the `input` and the `target`.
+
+    For tensors of the same shape :math:`x` and :math:`y`,
+    the updating formulas of KLDivLoss algorithm are as follows,
+
+    .. math::
+        L(x, y) = y \cdot (\log y - x)
+
+    Then,
+
+    .. math::
+        \ell(x, y) = \begin{cases}
+        L(x, y), & \text{if reduction} = \text{'none';}\\
+        \operatorname{mean}(L(x, y)), & \text{if reduction} = \text{'mean';}\\
+        \operatorname{sum}(L(x, y)) / x.\operatorname{shape}[0], & \text{if reduction} = \text{'batchmean';}\\
+        \operatorname{sum}(L(x, y)),  & \text{if reduction} = \text{'sum'.}
+        \end{cases}
+
+    where :math:`x` represents `input`, :math:`y` represents `target`, and :math:`\ell(x, y)` represents the output.
+
+    Note:
+        - Currently it does not support inputs that require `input` to broadcast to `target`.
+        - The output aligns with the mathematical definition of Kullback-Leibler divergence
+          only when `reduction` is set to ``'batchmean'``.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        reduction (str, optional): Specifies the reduction to be applied to the output. Default: ``'mean'``.
+        log_target (bool, optional): Specifies whether `target` is passed in the log space. Default: ``False``.
+
+    Inputs:
+        - **input** (Tensor) - The input Tensor. The data type must be float16, float32 or bfloat16(only supported by
+          Atlas A2 training series products).
+        - **target** (Tensor) - The target Tensor which has the same type as `input`. The shape of `target` must be
+          broadcastable to the shape of `input`.
+
+    Outputs:
+        Tensor, has the same dtype as `input`. If `reduction` is ``'none'``, then output has the shape as broadcast
+        result of the `input` and `target`. Otherwise, it is a scalar Tensor.
+
+    Raises:
+        TypeError: If neither `input` nor `target` is a Tensor.
+        TypeError: If dtype of `input` or `target` is not float16, float32 or bfloat16.
+        TypeError: If dtype of `target` is not the same as `input`.
+        ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``, ``'batchmean'``.
+        ValueError: If shape of `target` can not be broadcast to the shape of `input`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> from mindspore import nn
+        >>> import numpy as np
+        >>> input = ms.Tensor(np.array([[0.5, 0.5], [0.4, 0.6]]), ms.float32)
+        >>> target = ms.Tensor(np.array([[0., 1.], [1., 0.]]), ms.float32)
+        >>> loss = nn.KLDivLoss(reduction='mean', log_target=False)
+        >>> output = loss(input, target)
+        >>> print(output)
+        -0.225
+    """
+
+    def __init__(self, reduction='mean', log_target=False):
+        super(KLDivLoss, self).__init__()
+        self.reduction = reduction
+        self.log_target = log_target
+
+    def construct(self, input, target):
+        return kl_div_ext(input, target, self.reduction, self.log_target)
+
+
+class UpsamplingNearest2d(Cell):
+    r"""
+    Performs nearest neighbor upsampling operation.
+
+    This operator scale up the volumetric input with specified `size` or `scale_factor` factors, using nearest
+    neighbor algorithm.
+
+    .. note::
+        One of `size` or `scale_factor` must be given, and an error will be reported if both are specified.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        size (Union[tuple[int], list[int]], optional): A tuple or list of int specifying the output volumetric size.
+            Default: ``None``.
+        scale_factor (Union[tuple[float], list[float]], optional): A tuple or list of float specifying the upsampling
+            factors. Default: ``None``.
+
+    Inputs:
+        - **input** (Tensor) - 4D tensor of shape :math:`(N, C, H_{in}, W_{in})`.
+          Supporting types: [uint8, float16, float32, float64].
+
+    Outputs:
+        Upsampled output with the same type as `input` , whose shape is :math:`(N, C, H_{out}, W_{out})`.
+
+    Raises:
+        TypeError: When `size` is not ``None`` and `size` is not list[int] or tuple[int].
+        TypeError: When `scale_factor` is not ``None`` and `scale_factor` is not list[float] or tuple[float].
+        TypeError: If dtype of `input` is not in [uint8, float16, float32, float64].
+        ValueError: If any value of `size` is negative or zero when `size` is not ``None``.
+        ValueError: If any value of `scale_factor` is negative or zero when `scale_factor` is not ``None``.
+        ValueError: If shape of `input` is not 4D.
+        ValueError: If both `scale_factor` and `size` are specified or neither `scale_factor` nor `size` is specified.
+        ValueError: If size of `scale_factor` is not equal to 2 when `scale_factor` is specified.
+        ValueError: If size of `size` is not equal to 2 when `size` is specified.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, nn
+        >>> from mindspore import dtype as mstype
+        >>> inut = Tensor(np.arange(12).astype(np.float32).reshape(1, 2, 2, 3))
+        >>> size = [4, 4]
+        >>> net = nn.UpsamplingNearest2d(size, None)
+        >>> output = net(inut)
+        >>> print(output)
+        [[[[0., 0., 1., 2.],
+            [0., 0., 1., 2.],
+            [3., 3., 4., 5.],
+            [3., 3., 4., 5.]],
+            [[6., 6., 7., 8.],
+            [6., 6., 7., 8.],
+            [9., 9., 10., 10.],
+            [9., 9., 10., 10.]]]]
+    """
+
+    def __init__(self, size=None, scale_factor=None):
+        """Initialize UpsamplingNearest2d."""
+        super(UpsamplingNearest2d, self).__init__()
+        self.size = size
+        self.scale_factor = scale_factor
+
+    def construct(self, input):
+        return upsample_nearest2d_op(input, self.size, self.scale_factor)
+
+
+class UpsamplingBilinear2d(Cell):
+    r"""
+    Performs upsampling with trilinear interpolation across 2dims for 4dim input Tensor.
+
+    This operator scale up the volumetric input with specified `size` or `scale_factor` factors,
+    using trilinear upscaling algorithm.
+
+    Note:
+        One of `scale_factor` and `size` must be specified. And it is an error if both are specified.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        size (Union[tuple[int], list[int]], optional): A tuple or list of int specifying the output volumetric size.
+            Default: ``None``.
+        scale_factor (Union[tuple[float], list[float]], optional): A tuple or list of float specifying the upsampling
+            factors. Default: ``None``.
+
+    Inputs:
+        - **input** (Tensor) - 4D tensor of shape :math:`(N, C, H_{in}, W_{in})`.
+          Supporting types: [float16, float32, float64].
+
+    Outputs:
+        Upsampled output with the same type as `input` , whose shape is :math:`(N, C, H_{out}, W_{out})`.
+
+    Raises:
+        TypeError: When `size` is not ``None`` and `size` is not list[int] or tuple[int].
+        TypeError: When `scale_factor` is not ``None`` and `scale_factor` is not list[float] or tuple[float].
+        TypeError: If dtype of `input` is not in [float16, float32, float64].
+        ValueError: If any value of `size` is negative or zero when `size` is not ``None``.
+        ValueError: If any value of `scale_factor` is negative or zero when `size` is not ``None``.
+        ValueError: If shape of `input` is not 4D.
+        ValueError: If both `scale_factor` and `size` are specified or neither `scale_factor` nor `size` is specified.
+        ValueError: If size of `size` is not equal to 2 when `size` is specified.
+        ValueError: If size of `scale_factor` is not equal to 2 when `scale_factor` is specified.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, nn
+        >>> size=[4, 5]
+        >>> net = nn.UpsampleTrilinear2d(size, None)
+        >>> in_x = Tensor(np.array([[[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]],
+        >>>                          [[0.7, 0.8, 0.9], [1.0, 1.1, 1.2]]]]).astype(np.float32))
+        >>> out = net(in_x)
+        >>> print(out)
+        [[[[0.1000, 0.1500, 0.2000, 0.2500, 0.3000],
+            [0.2000, 0.2500, 0.3000, 0.3500, 0.4000],
+            [0.3000, 0.3500, 0.4000, 0.4500, 0.5000],
+            [0.4000, 0.4500, 0.5000, 0.5500, 0.6000]],
+            [[0.7000, 0.7500, 0.8000, 0.8500, 0.9000],
+            [0.8000, 0.8500, 0.9000, 0.9500, 1.0000],
+            [0.9000, 0.9500, 1.0000, 1.0500, 1.1000],
+            [1.0000, 1.0500, 1.1000, 1.1500, 1.2000]]]]
+    """
+
+    def __init__(self, size=None, scale_factor=None):
+        """Initialize UpsamplingBilinear2d."""
+        super(UpsamplingBilinear2d, self).__init__()
+        self.size = size
+        self.scale_factor = scale_factor
+
+    def construct(self, input):
+        return upsample_bilinear2d_op(input, self.size, self.scale_factor, True)
+
+
 __all__ = [
     # 1
     'BCEWithLogitsLoss',
@@ -993,7 +1215,9 @@ __all__ = [
     # 14
 
     # 15
+    'Conv1d',
     'Conv2d',
+    'Conv3d',
     # 16
     'LogSoftmax',
     # 17
@@ -1001,7 +1225,7 @@ __all__ = [
     # 18
     'PReLU',
     # 19
-    'Conv3d',
+
     # 20
 
     # 21
@@ -1061,7 +1285,7 @@ __all__ = [
     # 47
 
     # 48
-
+    'SoftMarginLoss',
     # 49
 
     # 50
@@ -1153,9 +1377,9 @@ __all__ = [
     # 93
 
     # 94
-
+    'AdaptiveMaxPool1d',
     # 95
-
+    'AvgPool3d',
     # 96
     'AdaptiveAvgPool1d',
 
@@ -1182,6 +1406,8 @@ __all__ = [
     'L1Loss',
     # 254
     'MaxUnpool2d',
+    # 256
+    'Threshold',
     # 267
     'Mish',
     # 258
@@ -1190,6 +1416,9 @@ __all__ = [
 
     # 294
     'SmoothL1Loss',
+
+    # 388
+    'AdaptiveMaxPool2d',
 
     # 393
     'Dropout2d',
@@ -1204,7 +1433,8 @@ __all__ = [
     'BCELoss',
     # 421
     'Tanh',
-
+    # 548
+    'KLDivLoss',
     # 556
     'LogSigmoid',
     # 674
@@ -1213,4 +1443,6 @@ __all__ = [
     'BatchNorm2d',
     # 676
     'BatchNorm3d',
+    'UpsamplingNearest2d',
+    'UpsamplingBilinear2d',
 ]

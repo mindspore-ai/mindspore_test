@@ -1,0 +1,13 @@
+#deprecated greater_equal
+greater_equal:
+  args:
+    input:
+      dtype: tensor
+      type_cast: number
+    other:
+      dtype: tensor
+      type_cast: number
+  returns:
+    output:
+      dtype: tensor
+      type_cast: bool

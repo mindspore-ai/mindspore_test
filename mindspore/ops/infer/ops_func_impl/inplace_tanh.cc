@@ -27,13 +27,7 @@ ShapeArray InplaceTanhFuncImpl::InferShape(const PrimitivePtr &primitive, const 
 
 std::vector<TypeId> InplaceTanhFuncImpl::InferType(const PrimitivePtr &primitive,
                                                    const InferInfoPtrList &input_infos) const {
-  auto input_type = input_infos[kInputIndex0]->GetType();
-  static const std::unordered_set<TypeId> int_or_bool_set = {kNumberTypeUInt8, kNumberTypeInt8,  kNumberTypeInt16,
-                                                             kNumberTypeInt32, kNumberTypeInt64, kNumberTypeBool};
-  if (int_or_bool_set.find(input_type) != int_or_bool_set.end()) {
-    return {kNumberTypeFloat32};
-  }
-  return {input_type};
+  return {input_infos[kInputIndex0]->GetType()};
 }
 }  // namespace ops
 }  // namespace mindspore

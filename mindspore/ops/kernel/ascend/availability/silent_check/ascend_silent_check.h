@@ -29,7 +29,7 @@
 #include "ir/value.h"
 #include "kernel/kernel.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "availability/silent_check/silent_check.h"
 
 namespace mindspore {

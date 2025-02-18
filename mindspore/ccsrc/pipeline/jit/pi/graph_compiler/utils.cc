@@ -38,6 +38,7 @@
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pijit {
@@ -88,7 +89,7 @@ bool GraphUtils::IsTupleCanBroaden(const py::object &obj) {
   py::tuple tuple = py::cast<py::tuple>(obj);
   for (auto item : tuple) {
     auto elem = py::cast<py::object>(item);
-    if (!py::isinstance<mindspore::tensor::Tensor>(elem) && !IsTupleCanBroaden(elem)) {
+    if (!mindspore::tensor::IsTensorPy(elem) && !IsTupleCanBroaden(elem)) {
       return false;
     }
   }
@@ -102,7 +103,7 @@ bool GraphUtils::IsGradForScalar(const py::object &obj) {
 }
 
 bool GraphUtils::IsTensor(const py::object &obj) {
-  return py::isinstance<mindspore::tensor::Tensor>(obj) || py::isinstance<mindspore::tensor::CSRTensor>(obj) ||
+  return mindspore::tensor::IsTensorPy(obj) || py::isinstance<mindspore::tensor::CSRTensor>(obj) ||
          py::isinstance<mindspore::tensor::COOTensor>(obj) || py::isinstance<mindspore::tensor::RowTensor>(obj);
 }
 

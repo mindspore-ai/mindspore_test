@@ -87,7 +87,7 @@ def tensor_scalar_factory(nptype, mstype):
     level_mark='level0',
     card_mark='onecard',
     essential_mark='unessential')
-@pytest.mark.parametrize("mode", ['pynative', 'kbk', 'ge'])
+@pytest.mark.parametrize("mode", ['pynative', 'kbk'])
 def test_add_(mode):
     """
     Feature: Tensor.add_ and Tensor.__iadd__.

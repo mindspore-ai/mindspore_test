@@ -23,14 +23,14 @@
 #include <utility>
 #include <vector>
 #include <set>
-#include "runtime/pynative/op_function/pyboost_grad_functions.h"
+#include "mindspore/ccsrc/pyboost/grad_functions/pyboost_grad_functions.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/optimizer/op_adaptation_info_factory.h"
 #include "pipeline/pynative/pynative_utils.h"
 #include "utils/core_op_utils.h"
 #include "pipeline/pynative/grad/grad_utils.h"
 #include "frontend/operator/cc_implementations.h"
-#include "kernel/common/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
 #include "pipeline/pynative/grad/function/auto_generate/pyboost_native_grad_functions.h"
 
 namespace mindspore::pynative::autograd {
@@ -625,8 +625,8 @@ NodePtr FuncBuilder::DropoutGradExt(const NodePtr &input, const NodePtr &mask, c
 
 NodePtr FuncBuilder::EluExt(const NodePtr &input, const NodePtr &alpha) { return NativeFunc::EluExt(input, alpha); }
 
-NodePtr FuncBuilder::EluGradExt(const NodePtr &dout, const NodePtr &x, const NodePtr &alpha) {
-  return NativeFunc::EluGradExt(dout, x, alpha);
+NodePtr FuncBuilder::EluGradExt(const NodePtr &dout, const NodePtr &x, const NodePtr &alpha, const NodePtr &is_result) {
+  return NativeFunc::EluGradExt(dout, x, alpha, is_result);
 }
 
 NodePtr FuncBuilder::EmbeddingDenseBackward(const NodePtr &grad, const NodePtr &indices, const NodePtr &num_weights,
@@ -1170,9 +1170,10 @@ NodePtr FuncBuilder::DynamicQuantExt(const NodePtr &x, const NodePtr &smooth_sca
 NodePtr FuncBuilder::GroupedMatmul(const NodePtr &x, const NodePtr &weight, const NodePtr &bias, const NodePtr &scale,
                                    const NodePtr &offset, const NodePtr &antiquant_scale,
                                    const NodePtr &antiquant_offset, const NodePtr &group_list,
-                                   const NodePtr &split_item, const NodePtr &group_type) {
+                                   const NodePtr &split_item, const NodePtr &group_type, const NodePtr &transpose_a,
+                                   const NodePtr &transpose_b) {
   return NativeFunc::GroupedMatmul(x, weight, bias, scale, offset, antiquant_scale, antiquant_offset, group_list,
-                                   split_item, group_type);
+                                   split_item, group_type, transpose_a, transpose_b);
 }
 
 NodePtr FuncBuilder::MoeFinalizeRouting(const NodePtr &expanded_x, const NodePtr &x1, const NodePtr &x2,

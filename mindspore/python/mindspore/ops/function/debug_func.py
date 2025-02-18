@@ -164,7 +164,10 @@ def tensordump(file_name, tensor, mode='out'):
         >>> b = Tensor(0.1 * np.random.randn(64, 64).astype(np.float32))
         >>> out = net(x, y, b)
         >>> print(f"out shape is: {out.shape}")
-        >>> matmul1_output_slice = np.load('mul1_mul2_float32_0.npy')                       # load matmul1's output slice
+        >>> # out shape is (64, 64)
+        >>> matmul1_output_slice = np.load('dumps/rank_0/mul1_mul2_float32_0.npy')      # load matmul1's output slice
+        >>> print(f"matmul1_output_slice is loaded, shape is: {matmul1_output_slice.shape}")
+        >>> # matmul1_output_slice is loaded, shape is: (64, 64)
     """
 
     if not isinstance(file_name, str):

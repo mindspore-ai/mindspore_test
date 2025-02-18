@@ -84,14 +84,17 @@ ControlActor *GetCtrlActor(const ControlNodeParserPtr &parser, const KernelGraph
 std::map<size_t, size_t> GetActionTensors(const std::shared_ptr<device::SwapAction> &swap_action,
                                           const std::shared_ptr<device::SwapStrategy> &swap_strategy,
                                           const HashMap<AnfNodePtr, size_t> &real_parameters,
+                                          const KernelGraphPtr &graph,
                                           std::vector<DeviceTensor *> *fixed_device_address,
-                                          std::vector<size_t> *real_parameter_index) {
+                                          std::vector<size_t> *real_parameter_index,
+                                          std::vector<AnfNodePtr> *store_key) {
   MS_EXCEPTION_IF_NULL(swap_action);
   MS_EXCEPTION_IF_NULL(swap_strategy);
   MS_EXCEPTION_IF_NULL(fixed_device_address);
   MS_EXCEPTION_IF_NULL(real_parameter_index);
-  std::map<size_t, size_t> tensor_indexes;
-  std::set<size_t> is_real_parameter;
+  MS_EXCEPTION_IF_NULL(store_key);
+  std::map<size_t, size_t> tensor_indexes_map;
+  vector<vector<size_t>> tensor_ids_group(3, vector<size_t>());
   for (const auto &tensor_action : swap_action->actions_) {
     MS_EXCEPTION_IF_NULL(tensor_action);
     if (tensor_action->tensor_id_ >= swap_strategy->tensor_infos_.size()) {
@@ -106,7 +109,7 @@ std::map<size_t, size_t> GetActionTensors(const std::shared_ptr<device::SwapActi
       real_tensor_ids = tensor_info->fused_tensor_ids_;
     }
     for (const auto real_tensor_id : real_tensor_ids) {
-      if (tensor_indexes.find(real_tensor_id) != tensor_indexes.end()) {
+      if (tensor_indexes_map.find(real_tensor_id) != tensor_indexes_map.end()) {
         continue;
       }
       if (real_tensor_id >= swap_strategy->tensor_infos_.size()) {
@@ -117,22 +120,34 @@ std::map<size_t, size_t> GetActionTensors(const std::shared_ptr<device::SwapActi
       const auto &node = real_tensor_info->node_;
       const auto &real_parameter_iter = real_parameters.find(node);
       if (real_parameter_iter == real_parameters.end()) {
-        const auto &output_addr = AnfAlgo::GetMutableOutputAddr(node, real_tensor_info->index_, false);
-        tensor_indexes[real_tensor_id] = {fixed_device_address->size()};
-        (void)fixed_device_address->emplace_back(output_addr.get());
+        if (node->isa<Parameter>() && common::AnfAlgo::IsParameterWeight(node->cast<ParameterPtr>())) {
+          auto front_node = GetFrontNodeByKernelGraph(node, graph.get());
+          if (!front_node.first->isa<Parameter>() || front_node.second != 0) {
+            MS_LOG(WARNING) << "Parameter " << node->DebugString()
+                            << "'s front node is not a parameter: " << front_node.first->DebugString()
+                            << ", index: " << front_node.second;
+          } else {
+            tensor_ids_group[2].emplace_back(real_tensor_id);
+            store_key->emplace_back(front_node.first);
+          }
+        } else {
+          const auto &output_addr = AnfAlgo::GetMutableOutputAddr(node, real_tensor_info->index_, false);
+          tensor_ids_group[0].emplace_back(real_tensor_id);
+          (void)fixed_device_address->emplace_back(output_addr.get());
+        }
       } else {
-        tensor_indexes[real_tensor_id] = {real_parameter_index->size()};
+        tensor_ids_group[1].emplace_back(real_tensor_id);
         (void)real_parameter_index->emplace_back(real_parameter_iter->second);
-        (void)is_real_parameter.insert(real_tensor_id);
       }
     }
   }
-  for (auto &tensor_index : tensor_indexes) {
-    if (is_real_parameter.find(tensor_index.first) != is_real_parameter.end()) {
-      tensor_index.second += fixed_device_address->size();
+  size_t input_idx = 0;
+  for (const auto &tensor_ids : tensor_ids_group) {
+    for (auto tensor_id : tensor_ids) {
+      tensor_indexes_map[tensor_id] = input_idx++;
     }
   }
-  return tensor_indexes;
+  return tensor_indexes_map;
 }
 
 void GenActionIndexList(const std::map<size_t, size_t> &tensors_id_index_map,
@@ -230,72 +245,6 @@ void MemSwapScheduler::GetRealParameters(const KernelGraphPtr &graph, const Cont
   real_parameters_[graph->graph_id()].swap(real_parameters);
 }
 
-void MemSwapScheduler::AddSwappableRootParameter(
-  const mindspore::runtime::GraphCompilerInfo &graph_compiler_info) const {
-  DeviceContext *device_context = nullptr;
-  std::shared_ptr<device::SwapManager> swap_manager = nullptr;
-  for (const auto &context : graph_compiler_info.device_contexts_) {
-    if (context == nullptr) {
-      continue;
-    }
-    if (context->device_res_manager_ == nullptr) {
-      continue;
-    }
-    swap_manager = context->device_res_manager_->swap_manager();
-    if (swap_manager != nullptr) {
-      device_context = context;
-      break;
-    }
-  }
-  if (swap_manager == nullptr) {
-    return;
-  }
-  MS_EXCEPTION_IF_NULL(device_context);
-  for (const auto &parameter : graph_compiler_info.origin_parameters_order_) {
-    const auto &device_tensors = DeviceTensorStore::GetInstance().Fetch(parameter.get());
-    if (device_tensors.empty()) {
-      MS_LOG(INFO) << "Device tensor store is empty for parameter " << parameter->DebugString();
-      continue;
-    }
-    for (const auto &device_tensor : device_tensors) {
-      if (device_tensor != nullptr && device_tensor->GetDeviceType() == device_context->GetDeviceType()) {
-        swap_manager->AddSwappableTensor(device_tensor);
-      }
-    }
-  }
-}
-
-void MemSwapScheduler::AddSwappableTensors(const mindspore::device::DeviceContext *device_context,
-                                           const std::shared_ptr<device::SwapStrategy> &strategy,
-                                           const KernelGraphPtr &graph) const {
-  MS_EXCEPTION_IF_NULL(device_context);
-  MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-  const auto &swap_manager = device_context->device_res_manager_->swap_manager();
-  MS_EXCEPTION_IF_NULL(swap_manager);
-  MS_EXCEPTION_IF_NULL(strategy);
-  MS_EXCEPTION_IF_NULL(graph);
-  const auto &tensor_infos = strategy->tensor_infos_;
-  const auto &ref_map = graph->GetRefMap();
-  for (const auto &tensor_info : tensor_infos) {
-    MS_EXCEPTION_IF_NULL(tensor_info);
-    if (tensor_info->is_workspace_ || tensor_info->node_ == nullptr) {
-      continue;
-    }
-    // Continuous memory are not swappable.
-    if (tensor_info->is_fused_ || !tensor_info->fused_tensor_ids_.empty()) {
-      continue;
-    }
-    const auto &anf_with_out_index = std::make_pair(tensor_info->node_, tensor_info->index_);
-    const auto &device_address = AnfAlgo::GetMutableOutputAddr(tensor_info->node_, tensor_info->index_, false);
-    MS_EXCEPTION_IF_NULL(device_address);
-    if (ref_map.find(anf_with_out_index) != ref_map.end()) {
-      device_address->set_swappable(false);
-    } else {
-      swap_manager->AddSwappableTensor(device_address);
-    }
-  }
-}
-
 void MemSwapScheduler::BuildSwapActorForGraph(const KernelGraphPtr &graph, const ControlNodeParserPtr &parser,
                                               const DeviceContext *device_context,
                                               std::vector<MemSwapActorPtr> *actors) {
@@ -312,7 +261,6 @@ void MemSwapScheduler::BuildSwapActorForGraph(const KernelGraphPtr &graph, const
   MS_EXCEPTION_IF_NULL(swap_strategy);
   MS_LOG(INFO) << "Graph " << graph->graph_id() << ": " << swap_strategy->GetStatisticInfo();
   graph_strategy_map_[graph->graph_id()] = swap_strategy;
-  AddSwappableTensors(device_context, swap_strategy, graph);
 
   if (swap_strategy->actions_.empty()) {
     return;
@@ -326,8 +274,10 @@ void MemSwapScheduler::BuildSwapActorForGraph(const KernelGraphPtr &graph, const
     std::vector<DeviceTensor *> fixed_device_address;
     // Output index of EntranceActor or StackActor for real parameter whose DeviceAddress is not fixed.
     std::vector<size_t> real_parameter_index;
-    auto tensors_id_index_map = GetActionTensors(iter.second, swap_strategy, real_parameters_[graph->graph_id()],
-                                                 &fixed_device_address, &real_parameter_index);
+    std::vector<AnfNodePtr> store_key;
+    // tensor_id - input_index
+    auto tensors_id_index_map = GetActionTensors(iter.second, swap_strategy, real_parameters_[graph->graph_id()], graph,
+                                                 &fixed_device_address, &real_parameter_index, &store_key);
 
     // SwapActionType - index of target DeviceAddress(fixed or changeable) in MemorySwapActor.
     std::vector<std::pair<device::SwapActionType, vector<size_t>>> actor_actions;
@@ -336,6 +286,16 @@ void MemSwapScheduler::BuildSwapActorForGraph(const KernelGraphPtr &graph, const
     const string swap_actor_name = kMemSwapActorNamePrefix + std::to_string(swap_actor_num++);
     auto swap_actor = std::make_shared<MemorySwapActor>(swap_actor_name, recorder_aid_, kDefaultStreamIndex,
                                                         fixed_device_address, device_context, actor_actions);
+
+    size_t start_pos = real_parameter_index.size() + fixed_device_address.size();
+    std::vector<std::pair<size_t, AnfNodePtr>> device_tensor_store_keys;
+    for (auto key : store_key) {
+      MS_LOG(INFO) << "Using device tensor store key: " << key->DebugString() << " for " << swap_actor_name << ":"
+                   << start_pos;
+      device_tensor_store_keys.emplace_back(std::make_pair(start_pos++, key));
+    }
+    swap_actor->set_device_tensor_store_keys(device_tensor_store_keys);
+
     (void)actors->emplace_back(swap_actor);
     // Link data arrow from EntranceActor to MemorySwapActor later in Link
     data_dependency_[graph_id][swap_actor].swap(real_parameter_index);
@@ -369,7 +329,6 @@ std::vector<std::vector<MemSwapActorPtr>> MemSwapScheduler::Build(const GraphCom
     BuildSwapActorForGraph(graph, graph_compiler_info.control_node_parser_, device_context, &actors);
     swap_actors.emplace_back(actors);
   }
-  AddSwappableRootParameter(graph_compiler_info);
   return swap_actors;
 }
 

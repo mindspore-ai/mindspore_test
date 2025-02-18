@@ -18,7 +18,7 @@ import numpy as onp
 from mindspore import Tensor, jit, context
 from mindspore.nn import Cell
 import mindspore.nn as nn
-from ..share.utils import match_array
+from ..share.utils import match_array, pi_jit_with_config
 from tests.mark_utils import arg_mark
 
 @pytest.fixture(autouse=True)  
@@ -36,32 +36,32 @@ cfg = {
 }
 
 
-@jit(mode="PIJit", jit_config=cfg)
+@pi_jit_with_config(jit_config=cfg)
 def sum_args(a, b=1):
     return a + b
 
 
-@jit(mode="PIJit", jit_config=cfg)
+@pi_jit_with_config(jit_config=cfg)
 def sum_args_vargs(a, *args, b=1):
     return a + b + args[0]
 
 
-@jit(mode="PIJit", jit_config=cfg)
+@pi_jit_with_config(jit_config=cfg)
 def sum_args_vargs_kwargs(a, *args, b=1, **kwargs):
     return a + b + args[0] + kwargs["s"]
 
 
-@jit(mode="PIJit", jit_config=cfg)
+@pi_jit_with_config(jit_config=cfg)
 def default_scalar_arg(a, b=1):
     return a, b
 
 
-@jit(mode="PIJit", jit_config=cfg)
+@pi_jit_with_config(jit_config=cfg)
 def default_tuple_arg(a, b=(1, 2)):
     return a, b
 
 
-@jit(mode="PIJit", jit_config=cfg)
+@pi_jit_with_config(jit_config=cfg)
 def default_scalar_arg_relu(a, b=1):
     relu = nn.ReLU()
     a = relu(a)
@@ -69,12 +69,12 @@ def default_scalar_arg_relu(a, b=1):
     return a, b
 
 
-@jit(mode="PIJit", jit_config=cfg)
+@pi_jit_with_config(jit_config=cfg)
 def default_none_arg(a, b=None):
     return a, b
 
 
-@jit(mode="PIJit", jit_config=cfg)
+@pi_jit_with_config(jit_config=cfg)
 def parser_key_value_unsed(a, **kwargs):
     return a
 
@@ -85,7 +85,7 @@ def parser_one_default_arg_scalar_in_subnet():
             super().__init__()
             self.relu = nn.ReLU()
 
-        @jit(mode="PIJit", jit_config=cfg)
+        @pi_jit_with_config(jit_config=cfg)
         def construct(self, x, x1=4):
             if x1 == 4:
                 x = self.relu(x)
@@ -114,7 +114,7 @@ def parser_one_default_arg_scalar_use():
             super().__init__()
             self.relu = nn.ReLU()
 
-        @jit(mode="PIJit", jit_config=cfg)
+        @pi_jit_with_config(jit_config=cfg)
         def construct(self, x, x1=4):
             if x1 == 4:
                 x = self.relu(x)
@@ -135,7 +135,7 @@ def parser_one_default_arg_tensor_tuple():
             super().__init__()
             self.relu = nn.ReLU()
 
-        @jit(mode="PIJit", jit_config=cfg)
+        @pi_jit_with_config(jit_config=cfg)
         def construct(self, x=(Tensor(onp.full((2, 3), 2).astype(onp.float32)),
                                Tensor(onp.full((3, 2), 4).astype(onp.float32)))):
             x = self.relu(x[0])
@@ -165,7 +165,7 @@ def parser_three_default_mixed_args_subnet():
             super().__init__()
             self.relu = nn.ReLU()
 
-        @jit(mode="PIJit", jit_config=cfg)
+        @pi_jit_with_config(jit_config=cfg)
         def construct(self, y, x=3, x1=None, x2=(1, 2)):
             if x == 3:
                 if x1 is None:
@@ -196,7 +196,7 @@ def parser_three_default_mixed_args_subnet():
 def parser_key_value_not_tensor():
     class NetKeyValueArg(Cell):
 
-        @jit(mode="PIJit", jit_config=cfg)
+        @pi_jit_with_config(jit_config=cfg)
         def construct(self, y, **x):
             if x["a"] == 5:
                 y = y+y
@@ -221,7 +221,7 @@ def parser_key_value_not_tensor():
 
 def parser_args_var_kwargs_empty():
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
+        @pi_jit_with_config(jit_config=cfg)
         def construct(self, **kwargs):
             return kwargs
 
@@ -230,7 +230,7 @@ def parser_args_var_kwargs_empty():
 
 def parser_args_var_kwargs_add():
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
+        @pi_jit_with_config(jit_config=cfg)
         def construct(self, **kwargs):
             return kwargs["a"] + kwargs.get("b")
 
@@ -243,7 +243,7 @@ def parser_args_var_mixed_001():
     def return_x(*, x, **y):
         return x + y["c"]
 
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def func(a=3, **kwargs):
         x = return_x(x=Tensor([1]), c=a)
         return kwargs["b"] + x
@@ -258,7 +258,7 @@ def parser_args_var_mixed_002():
             return x - y
 
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
+        @pi_jit_with_config(jit_config=cfg)
         def construct(self, a, *args, **kwargs):
             if args[0] >= 0:
                 out1 = a + len(args) + kwargs["d"] + 1

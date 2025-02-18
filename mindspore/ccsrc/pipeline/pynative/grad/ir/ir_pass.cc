@@ -24,7 +24,7 @@
 #include "op_def/nn_ops.h"
 #include "ops_utils/op_utils.h"
 #include "include/backend/optimizer/helper.h"
-#include "runtime/pynative/op_function/pyboost_grad_functions.h"
+#include "mindspore/ccsrc/pyboost/grad_functions/pyboost_grad_functions.h"
 
 namespace mindspore {
 namespace pynative {

@@ -10,9 +10,11 @@ baddbmm:
     beta:
       dtype: number
       type_cast: tensor
+      default: 1
     alpha:
       dtype: number
       type_cast: tensor
+      default: 1
   returns:
     output:
       dtype: tensor

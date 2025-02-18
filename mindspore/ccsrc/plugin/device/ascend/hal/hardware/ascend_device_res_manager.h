@@ -23,30 +23,14 @@
 #include <unordered_map>
 #include <utility>
 #include "ir/tensor.h"
-#include "runtime/hardware/device_context.h"
 #include "utils/ms_context.h"
-#include "include/backend/mem_reuse/dynamic_mem_pool.h"
-#include "include/transform/graph_ir/types.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ccool_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/multi_ascend_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/dummy_ascend_collective_comm_lib.h"
-#ifdef ENABLE_INTERNAL_KERNELS
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/lowlatency_collective_comm_lib.h"
-#endif
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "runtime/device/kernel_runtime_manager.h"
+#include "plugin/device/ascend/hal/device/ascend_kernel_runtime.h"
+#include "plugin/res_manager/ascend/ascend_res_manager.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
 std::string GetCurrentDir();
-struct MemUceInfo {
-  int device_id = 0;
-  std::vector<aclrtMemUceInfo> info;
-  size_t retSize = 0;
-};
-
 class AscendDeviceResManager : public DeviceResManager {
  public:
   AscendDeviceResManager() {}
@@ -55,6 +39,8 @@ class AscendDeviceResManager : public DeviceResManager {
   void Initialize() override;
 
   void Destroy() override;
+
+  void SetDeterministic() override;
 
   std::vector<void *> AllocateContinuousMemory(const std::vector<size_t> &size_list,
                                                uint32_t stream_id = kDefaultStreamIndex) const override;
@@ -68,14 +54,17 @@ class AscendDeviceResManager : public DeviceResManager {
               bool blocking, bool *return_self) override;
 
   bool LoadCollectiveCommLib() override;
+  CollectiveCommunicationLib *collective_comm_lib() const override;
+  std::shared_ptr<MemoryManager> mem_manager() const override;
+  std::shared_ptr<SwapManager> swap_manager() const override;
+  bool DestroyEvent(const DeviceEventPtr &event) override;
+  bool DestroyAllEvents() override;
+
   bool IsEnableVmm() const override;
 
   void ResetStreamAndCtx() override;
   bool BindDeviceToCurrentThread(bool force_bind) const override;
-  void *GetStream() const override {
-    MS_EXCEPTION_IF_NULL(runtime_instance_);
-    return runtime_instance_->compute_stream();
-  }
+  void *GetStream() const { return ascend_res_manager_->GetStream(); }
   void *GetCopyDataStream() const;
 
   // Relevant function to allocate and free device memory of raw ptr.
@@ -134,6 +123,7 @@ class AscendDeviceResManager : public DeviceResManager {
   int StressDetect() const override;
 
   int SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) const override;
+  int ResetParams(const std::vector<tensor::TensorPtr> &params) const override;
   int CleanTdtChannel() const override;
 
   DeviceEventPtr CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait);
@@ -141,8 +131,6 @@ class AscendDeviceResManager : public DeviceResManager {
 
   bool single_op_multi_stream_enable() const override;
   void set_single_op_multi_stream_enable(bool single_op_multi_stream_enable) override;
-  // Only used in graph_mode with MS_DISABLE_REF_MODE, delete it when delete MS_DISABLE_REF_MODEF
-  void SetCPUMemManager();
 
   bool GetMemUceInfo(int32_t device_id) override;
   void UceMemRepair(int32_t device_id) override;
@@ -150,11 +138,11 @@ class AscendDeviceResManager : public DeviceResManager {
   std::vector<std::pair<device::DeviceMemPtr, size_t>> GetMemUceAddr() override;
 
  private:
+  bool AllocateForHete(DeviceAddress *const &address, mindspore::kernel::HeterogeneousInfoPtr hete_info) const;
+  void FreeForHete(mindspore::kernel::HeterogeneousInfoPtr hete_info) const;
+
   KernelRuntime *runtime_instance_ = nullptr;
-  // Only used in graph_mode with MS_DISABLE_REF_MODE, delete it when delete MS_DISABLE_REF_MODE
-  bool is_use_cpu_memory_ = false;
-  MemUceInfo mem_uce_info_;
-  std::mutex mem_uce_info_mutex_;
+  std::shared_ptr<AscendResManager> ascend_res_manager_ = nullptr;
   bool initialized_ = false;
 };
 }  // namespace ascend

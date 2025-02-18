@@ -9,8 +9,8 @@ file(GLOB LLM_ENGINE_PLUGIN_SRC
     ${CCSRC_DIR}/utils/config_manager.cc
     ${CCSRC_DIR}/plugin/device/ascend/hal/common/ascend_utils.cc
     )
-list(APPEND LLM_ENGINE_PLUGIN_SRC $<TARGET_OBJECTS:_mindspore_transform_graph_ir_obj>
-    $<TARGET_OBJECTS:_mindspore_transform_symbol_obj>)
+list(APPEND LLM_ENGINE_PLUGIN_SRC $<TARGET_OBJECTS:_mindspore_ascend_op_adapter_obj>
+    $<TARGET_OBJECTS:_mindspore_transform_graph_ir_obj> $<TARGET_OBJECTS:_mindspore_ascend_symbol_obj>)
 
 add_library(llm_engine_plugin SHARED ${LLM_ENGINE_PLUGIN_SRC})
 

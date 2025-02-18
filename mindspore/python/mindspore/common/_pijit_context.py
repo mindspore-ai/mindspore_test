@@ -21,6 +21,7 @@ import importlib.util
 import mindspore
 from mindspore import log as logger
 from mindspore.common.jit_config import JitConfig
+from mindspore._c_expression import PreJit
 from mindspore._c_expression import GraphExecutor_, jit_mode_pi_enable, jit_mode_pi_disable, pi_jit_set_context
 
 
@@ -70,6 +71,7 @@ class PIJitCaptureContext:
 
     def _wrapper(self):
         def _fn(*args, **kwds):
+            PreJit(args, kwds)
             with self:
                 self.ret = self.fn(*args, **kwds)
                 return self.ret

@@ -37,6 +37,7 @@ set(INSTALL_BASE_DIR ".")
 set(INSTALL_BIN_DIR "bin")
 set(INSTALL_CFG_DIR "config")
 set(INSTALL_LIB_DIR "lib")
+set(INSTALL_PLUGIN_DIR "${INSTALL_LIB_DIR}/plugin")
 # set package files
 install(
     TARGETS _c_expression
@@ -45,7 +46,8 @@ install(
 )
 
 install(
-    TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend
+    TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend mindspore_pyboost mindspore_backend_manager
+        mindspore_res_manager
     DESTINATION ${INSTALL_LIB_DIR}
     COMPONENT mindspore
 )
@@ -60,6 +62,12 @@ if(ENABLE_CPU AND NOT WIN32)
         TARGETS ps_cache
         DESTINATION ${INSTALL_LIB_DIR}
         COMPONENT mindspore
+    )
+    install(
+        TARGETS mindspore_ops_host LIBRARY
+        DESTINATION ${INSTALL_PLUGIN_DIR}
+        COMPONENT mindspore
+        NAMELINK_SKIP
     )
 endif()
 
@@ -89,8 +97,8 @@ if(ENABLE_MINDDATA)
         DESTINATION ${INSTALL_LIB_DIR} RENAME libopencv_imgcodecs.4.5.dylib COMPONENT mindspore)
     install(FILES ${opencv_LIBPATH}/libopencv_imgproc.4.5.2.dylib
         DESTINATION ${INSTALL_LIB_DIR} RENAME libopencv_imgproc.4.5.dylib COMPONENT mindspore)
-    install(FILES ${tinyxml2_LIBPATH}/libtinyxml2.8.0.0.dylib
-        DESTINATION ${INSTALL_LIB_DIR} RENAME libtinyxml2.8.dylib COMPONENT mindspore)
+    install(FILES ${tinyxml2_LIBPATH}/libtinyxml2.10.0.0.dylib
+        DESTINATION ${INSTALL_LIB_DIR} RENAME libtinyxml2.10.dylib COMPONENT mindspore)
 
     install(FILES ${icu4c_LIBPATH}/libicuuc.69.1.dylib
         DESTINATION ${INSTALL_LIB_DIR} RENAME libicuuc.69.dylib COMPONENT mindspore)
@@ -158,6 +166,7 @@ install(
     DIRECTORY
     ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/nn
     ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/_extends
+    ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/_deprecated
     ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/parallel
     ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/mindrecord
     ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/numpy

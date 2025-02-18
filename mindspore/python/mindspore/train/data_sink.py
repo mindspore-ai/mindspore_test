@@ -98,6 +98,29 @@ def _get_next_op(dataset, ori_next_op, is_info_queue):
     return next_op, (key, dataset_shapes, dataset_types)
 
 
+def _get_jit_func(sink_fun, jit_config):
+    """
+    Get the jit function.
+    """
+    jit_config_dict = jit_config.jit_config_dict
+    jit_level = jit_config_dict['jit_level']
+    if jit_level == "":
+        jit_level = "O0"
+    backend = ""
+    if jit_level == "O2":
+        jit_level = "O0"
+        backend = "GE"
+    if "backend" in jit_config_dict:
+        backend = jit_config_dict["backend"]
+    fullgraph = False
+    if jit_config_dict['jit_syntax_level'] == "STRICT":
+        fullgraph = True
+    exc_mode = jit_config_dict['exc_mode']
+    infer_boost = jit_config_dict['infer_boost']
+    return jit(sink_fun, jit_level=jit_level, backend=backend, fullgraph=fullgraph, exc_mode=exc_mode,
+               infer_boost=infer_boost)
+
+
 def _get_sink_fun(sink_fun, key_info, is_info_queue, dataset, jit_config):
     """
     get the sink function.
@@ -107,7 +130,7 @@ def _get_sink_fun(sink_fun, key_info, is_info_queue, dataset, jit_config):
             if jit_config is None:
                 dst_sink_fun = sink_fun
             else:
-                dst_sink_fun = jit(sink_fun, jit_config=jit_config)
+                dst_sink_fun = _get_jit_func(sink_fun, jit_config)
             dataset.__sink_fun__ = dst_sink_fun
 
         return dataset.__sink_fun__
@@ -119,7 +142,7 @@ def _get_sink_fun(sink_fun, key_info, is_info_queue, dataset, jit_config):
         if jit_config is None:
             dst_sink_fun = sink_fun
         else:
-            dst_sink_fun = jit(sink_fun, jit_config=jit_config)
+            dst_sink_fun = _get_jit_func(sink_fun, jit_config)
         dataset.__sink_aux__.sink_funcs[key] = dst_sink_fun
 
     return dst_sink_fun

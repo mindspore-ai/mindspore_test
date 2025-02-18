@@ -42,7 +42,7 @@ def test_tensor_in_list():
     """
     net = Net()
     context.set_context(mode=context.PYNATIVE_MODE)
-    jit(net.construct, mode="PIJit")
+    jit(net.construct, capture_mode="bytecode")
 
     output = net(Tensor([1], mstype.int32))
     expect = Tensor([2], mstype.int32)

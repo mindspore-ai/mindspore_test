@@ -17,10 +17,13 @@ import os
 import re
 from collections import defaultdict
 
-from mindspore import log as logger
 from mindspore.profiler.analysis.viewer.base_viewer import BaseViewer
 from mindspore.profiler.common.file_manager import FileManager
 from mindspore.profiler.common.log import ProfilerLogger
+
+from mindspore import log as logger
+from mindspore.profiler.common.constant import JitLevel
+from mindspore.profiler.analysis.parser.timeline_assembly_factory.trace_view_container import TraceViewContainer
 
 
 class AscendCommunicationViewer(BaseViewer):
@@ -51,12 +54,14 @@ class AscendCommunicationViewer(BaseViewer):
 
     def __init__(self, **kwargs):
         super().__init__()
-        self.step_list = [{"step_id": None, "start_ts": 0, "end_ts": float('inf'), "comm_ops": {}}]
+        self.step_list = []
         self.output_communication = {}
         self.output_matrix_data = {}
         self._output_path = kwargs.get("ascend_profiler_output_path")
         self._msprof_analyze_output_path = kwargs.get("msprof_analyze_output_path")
         self._ascend_ms_dir = kwargs.get("ascend_ms_dir")
+        self._is_set_schedule = kwargs.get("is_set_schedule")
+        self._jit_level = kwargs.get("jit_level")
         ProfilerLogger.init(self._ascend_ms_dir)
         self._logger = ProfilerLogger.get_instance()
         self._communication_input_path = os.path.join(
@@ -82,12 +87,45 @@ class AscendCommunicationViewer(BaseViewer):
         """
         self._logger.info("AscendCommunicationViewer start")
         try:
+            self._init_step_list(data)
             self._generate_communication()
             self._generate_matrix()
             self._save_analyze_data()
         except Exception as e:  # pylint: disable=W0703
             self._logger.error("Failed to save ascend communication data, error: %s", e, exc_info=True)
         self._logger.info("AscendCommunicationViewer end")
+
+    def _init_step_list(self, data):
+        """
+        Init step list.
+        """
+        trace_container = data.get("trace_view_container", None)
+        if trace_container is None:
+            raise ValueError("trace view container is None")
+        if not self._is_set_schedule or self._jit_level == JitLevel.GRAPH_LEVEL:
+            self._set_default_step_list()
+        else:
+            self._update_step_list(trace_container)
+
+    def _set_default_step_list(self):
+        """
+        Set default step list.
+        """
+        self.step_list = [{"step_id": "0", "start_ts": 0, "end_ts": float('inf'), "comm_ops": {}}]
+
+    def _update_step_list(self, trace_container: TraceViewContainer):
+        """
+        Dynamic graph scene update step list.
+        """
+        step_id_to_time_dict = trace_container.get_step_id_time_dict()
+        for step_id, (start_time, end_time) in step_id_to_time_dict.items():
+            step_dict = {
+                "step_id": step_id,
+                "start_ts": start_time,
+                "end_ts": end_time,
+                "comm_ops": {}
+            }
+            self.step_list.append(step_dict)
 
     def _save_analyze_data(self):
         """

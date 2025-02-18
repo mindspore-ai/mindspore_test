@@ -673,6 +673,9 @@ void SuperKernelActor::FetchParameterInput(const KernelActorPtr &kernel_actor, O
     for (const auto &input_pair : iter->second) {
       auto actor_input_idx = input_pair.first;
       auto graph_input_idx = input_pair.second;
+      if (memory_free_lists_.empty()) {
+        memory_free_lists_.push({});
+      }
       CorrectRefCountByCondition(graph_input_idx, kernel_actor->input_device_tensors_[actor_input_idx],
                                  &memory_free_lists_.back());
       MS_LOG(DEBUG) << "Correct ref count for actor" << kernel_actor->GetAID().Name()

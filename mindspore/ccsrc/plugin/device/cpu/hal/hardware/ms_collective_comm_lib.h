@@ -28,6 +28,7 @@
 #include "plugin/device/cpu/hal/hardware/ms_collective_node.h"
 #include "plugin/device/cpu/hal/hardware/allreduce_impl.h"
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace device {
@@ -45,7 +46,7 @@ constexpr uint32_t kWaitDuration = 5;
 constexpr uint32_t kMSCollectiveRetryTime = 200;
 
 // The collective communication library for MindSpore self developed communication framework.
-class MsCollectiveCommLib : public CollectiveCommunicationLib {
+class BACKEND_EXPORT MsCollectiveCommLib : public CollectiveCommunicationLib {
  public:
   static MsCollectiveCommLib &GetInstance() {
     static MsCollectiveCommLib instance;

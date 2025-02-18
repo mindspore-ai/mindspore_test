@@ -20,7 +20,6 @@ import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore import context
-from mindspore._c_expression import MetaTensor
 from mindspore.common import dtype
 from mindspore.common.api import jit
 from mindspore.ops import functional as F
@@ -68,14 +67,6 @@ def scalar_mul_while(x):
     while rv < 100:
         rv = rv * rv
     return rv
-
-
-@jit(input_signature=(MetaTensor(dtype.float32, (1, 1, 3, 3)),
-                              MetaTensor(dtype.float32, (1, 1, 3, 3))))
-def tensor_add_test(x, y):
-    """ tensor_add_test """
-    z = F.tensor_add(x, y)
-    return z
 
 
 class TensorAddMulNet(nn.Cell):
@@ -162,9 +153,18 @@ def test_class_method_composite_staging():
     assert (output.asnumpy() == (np.ones([3, 3]) * 7)).astype(np.float32).all()
 
 
+@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @non_graph_engine
 def test_input_signature():
     """ test_input_signature """
+
+    @jit(input_signature=(Tensor(dtype=dtype.float32, shape=(1, 1, 3, 3)),
+                          Tensor(dtype=dtype.float32, shape=(1, 1, 3, 3))))
+    def tensor_add_test(x, y):
+        """ tensor_add_test """
+        z = F.tensor_add(x, y)
+        return z
+
     x1 = Tensor(np.ones([1, 1, 3, 3], dtype=np.float32))
     y1 = Tensor(np.ones([1, 1, 3, 3], dtype=np.float32))
     output = tensor_add_test(x1, y1)

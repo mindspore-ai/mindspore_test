@@ -29,11 +29,11 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/factory/ms_factory.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "kernel/framework_utils.h"
 #include "op_def/math_op_name.h"
 #include "op_def/nn_op_name.h"
 #include "acl/acl_base.h"
-#include "transform/acl_ir/acl_helper.h"
 #include "utils/phase.h"
 #include "utils/ms_context.h"
 
@@ -43,10 +43,19 @@ constexpr auto kPhaseNameDecode = "decode";
 constexpr auto kPhaseNameIncrement = "increment";
 constexpr auto kQuantLinearSparseName = "QuantLinearSparse";
 constexpr auto kQuantBatchMatmulName = "QuantBatchMatmul";
+constexpr auto kGroupedMatmulName = "GroupedMatmul";
 constexpr auto CONST_2 = 2;
 constexpr auto Align16 = 16;
 constexpr auto kQuantLinearSparseBiasIdx = 5;  // primitive input weight deq_scale compress_idx bias
 constexpr auto kMatMulWeightIdx = 2;           // primitive input weight ...
+constexpr auto kSingleTensor = 3;              // split_item mode
+
+static const std::unordered_map<mindspore::internal::LogLevel, mindspore::MsLogLevel> kLogLevelMap = {
+  {mindspore::internal::LogLevel::DEBUG, mindspore::MsLogLevel::kDebug},
+  {mindspore::internal::LogLevel::INFO, mindspore::MsLogLevel::kInfo},
+  {mindspore::internal::LogLevel::WARNING, mindspore::MsLogLevel::kWarning},
+  {mindspore::internal::LogLevel::ERROR, mindspore::MsLogLevel::kError},
+  {mindspore::internal::LogLevel::EXCEPTION, mindspore::MsLogLevel::kException}};
 
 // unordered_map vector<vector<vector<size_t>>> represents:
 // list[op_name][0] for phase prefill, list[op_name][1] for phase increment;
@@ -57,7 +66,8 @@ static std::unordered_map<std::string, std::vector<std::vector<std::vector<size_
   {kQuantBatchMatmulName, {{{0, 1}, {}}, {{1}, {}}}},
   {kPagedAttentionOpName, {{{0, 1, 2, 7}, {0}}, {{0, 1, 2, 7}, {0}}}},
   {kFlashAttentionScoreOpName, {{{0, 1, 2, 6}, {3}}, {{0, 1, 2, 6}, {3}}}},
-  {kReshapeAndCacheOpName, {{{2, 3}, {}}, {{2, 3}, {}}}}};
+  {kReshapeAndCacheOpName, {{{2, 3}, {}}, {{2, 3}, {}}}},
+  {kGroupedMatmulName, {{{1}, {}}, {{1}, {}}}}};
 
 // unordered_map mean:
 // key is input_idx, value is special_format value
@@ -110,7 +120,7 @@ bool IsNeedInsertTransDataForGraphOut(const AnfNodePtr &node, const std::vector<
   // output is graph output & format is nz
   if (IsKernelGraphOutput(node) &&
       std::any_of(output_formats.begin(), output_formats.end(),
-                  [](const std::string &format) { return !transform::AclHelper::CheckDefaultSupportFormat(format); })) {
+                  [](const std::string &format) { return !CheckDefaultSupportFormat(format); })) {
     return true;
   }
   return false;
@@ -119,9 +129,8 @@ bool IsNeedInsertTransDataForGraphOut(const AnfNodePtr &node, const std::vector<
 bool NeedSetParameterFormat(const AnfNodePtr &input_node, const std::string &new_format,
                             const std::string &input_format) {
   std::string old_format = input_format;
-  if (transform::AclHelper::CheckDefaultSupportFormat(old_format) &&
-      !transform::AclHelper::CheckDefaultSupportFormat(new_format)) {
-    transform::SetParameterFormat(input_node, new_format, &old_format);
+  if (CheckDefaultSupportFormat(old_format) && !CheckDefaultSupportFormat(new_format)) {
+    SetParameterFormat(input_node, new_format, &old_format);
     if (old_format != input_format) {
       return true;
     }
@@ -156,7 +165,7 @@ void UpdateNzFormatOpsList(const AnfNodePtr &node) {
     if (!dyn_input_sizes.empty()) {
       auto weight_num = static_cast<size_t>(dyn_input_sizes[0]);
       std::vector<size_t> input_idx;
-      for (size_t i = weight_num; i < weight_num * 2; ++i) {
+      for (size_t i = weight_num; i < weight_num * CONST_2; ++i) {
         input_idx.emplace_back(i);
       }
       kNzFormatOpsList[prim::kPrimGroupedMatmul->name()] = {{input_idx, {}}, {input_idx, {}}};
@@ -210,6 +219,20 @@ bool InternalKernelPlugin::IsRegisteredKernel(const AnfNodePtr &anf_node) {
   GetMsTypesList(cnode, &ms_in_dtypes, &ms_out_dtypes);
   if (Factory<InternalKernelMod>::Instance().IsRegistered(opname)) {
     auto internal_op_name = TransInternalOpName(opname);
+    if (opname == kGroupedMatmulName) {
+      // current internal GroupedMatmul only support specific type
+      auto &inputs = cnode->inputs();
+      auto split_item_node = inputs[kIndex8 + 1]->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(split_item_node);
+      auto group_type_node = inputs[kIndex9 + 1]->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(group_type_node);
+      auto split_item = GetValue<int64_t>(split_item_node->value());
+      auto group_type = GetValue<int64_t>(group_type_node->value());
+      // split_item mode is SingleTensor
+      if (!(split_item == kSingleTensor && group_type == 0)) {
+        return false;
+      }
+    }
     auto internal_in_dtypes = InternalKernelModInOutMap::GetInstance()->MapInternalInputDtypes(opname, ms_in_dtypes);
     auto internal_out_dtypes = InternalKernelModInOutMap::GetInstance()->MapInternalOutputDtypes(opname, ms_out_dtypes);
     return internal::IsInternalKernelDtypesSupported(internal_op_name, internal_in_dtypes, internal_out_dtypes);
@@ -305,8 +328,7 @@ void InternalKernelPlugin::GetValidKernelBuildInfoWithInternalFormat(const AnfNo
     if (AnfUtils::GetCNodeName(node) == kReshapeExtOpName && i == 1) {
       continue;
     }
-    if ((!transform::AclHelper::CheckDefaultSupportFormat(input_format) ||
-         !transform::AclHelper::CheckDefaultSupportFormat(input_formats->at(i))) &&
+    if ((!CheckDefaultSupportFormat(input_format) || !CheckDefaultSupportFormat(input_formats->at(i))) &&
         input_format != input_formats->at(i)) {
       (void)special_inputs.emplace_back(i);
       (void)special_format_inputs.emplace_back(GetSpecialFormat(node, kernel_with_index.first, i));

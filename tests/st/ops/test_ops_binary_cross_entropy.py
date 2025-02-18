@@ -110,9 +110,9 @@ def test_ops_binary_cross_entropy_normal(mode, reduction):
 
     elif mode == "KBK":
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        op_froward = ms.jit(binary_cross_entropy_forward_func, jit_config=ms.JitConfig(jit_level="O0"))
+        op_froward = ms.jit(binary_cross_entropy_forward_func, jit_level="O0")
         output_forward = op_froward(inputx, target, weight, reduction)
-        op_backward = ms.jit(binary_cross_entropy_backward_func, jit_config=ms.JitConfig(jit_level="O0"))
+        op_backward = ms.jit(binary_cross_entropy_backward_func, jit_level="O0")
         output_backward = op_backward(inputx, target, weight, reduction)
     else:
         ms.context.set_context(mode=ms.GRAPH_MODE)
@@ -144,9 +144,9 @@ def test_ops_binary_cross_entropy_weight_none(mode, reduction):
 
     elif mode == "KBK":
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        op_froward = ms.jit(binary_cross_entropy_forward_func, jit_config=ms.JitConfig(jit_level="O0"))
+        op_froward = ms.jit(binary_cross_entropy_forward_func, jit_level="O0")
         output_forward = op_froward(inputx, target, weight, reduction)
-        op_backward = ms.jit(binary_cross_entropy_backward_func, jit_config=ms.JitConfig(jit_level="O0"))
+        op_backward = ms.jit(binary_cross_entropy_backward_func, jit_level="O0")
         output_backward = op_backward(inputx, target, weight, reduction)
     else:
         ms.context.set_context(mode=ms.GRAPH_MODE)

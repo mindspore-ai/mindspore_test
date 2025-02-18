@@ -1201,7 +1201,7 @@ class SideEffectFinder {
     MS_EXCEPTION_IF_NULL(switch_node);
     auto fg = switch_node->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
-    auto manager = fg->manager();
+    auto manager = Manage(fg, false);
     MS_EXCEPTION_IF_NULL(manager);
     const auto &node_users = manager->node_users();
     auto found = node_users.find(switch_node);
@@ -1415,7 +1415,7 @@ class AutoMonadConverter {
   bool CheckNoEliminateNodeHasUsers(const CNodePtr &cnode) {
     auto fg = cnode->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
-    auto manager = fg->manager();
+    auto manager = Manage(fg, false);
     MS_EXCEPTION_IF_NULL(manager);
     const auto &node_users = manager->node_users();
     auto found = node_users.find(cnode);
@@ -1474,7 +1474,7 @@ class AutoMonadConverter {
   bool CheckHasUpdateStateUsers(const CNodePtr &cnode) const {
     auto fg = cnode->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
-    auto manager = fg->manager();
+    auto manager = Manage(fg, false);
     MS_EXCEPTION_IF_NULL(manager);
     const auto &node_users = manager->node_users();
     auto found = node_users.find(cnode);
@@ -1503,7 +1503,7 @@ class AutoMonadConverter {
   bool CheckHasOtherUsers(const CNodePtr &cnode) const {
     auto fg = cnode->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
-    auto manager = fg->manager();
+    auto manager = Manage(fg, false);
     MS_EXCEPTION_IF_NULL(manager);
     const auto &node_users = manager->node_users();
     auto found = node_users.find(cnode);
@@ -1663,17 +1663,16 @@ class AutoMonadConverter {
   // params = (param1, param2, ..., value)
   // addn(params, xxx)  non-effect-node need insert load for params.
   void InsertLoadForSequenceRef(const CNodePtr &cnode, bool update_state) {
-    abstract::AbstractBasePtrList new_seq_abstracts;
     for (size_t index = 1; index < cnode->size(); ++index) {
       const auto &input = cnode->input(index);
       const auto &input_abs = input->abstract();
       MS_EXCEPTION_IF_NULL(input_abs);
       if (!input_abs->isa<abstract::AbstractTuple>() && !input_abs->isa<abstract::AbstractList>()) {
-        (void)new_seq_abstracts.emplace_back(input_abs);
         continue;
       }
       // Handle the input which is sequence.
       std::vector<AnfNodePtr> new_sequence_inputs;
+      abstract::AbstractBasePtrList new_sequence_abstracts;
       if (input_abs->isa<abstract::AbstractTuple>()) {
         (void)new_sequence_inputs.emplace_back(NewValueNode(prim::kPrimMakeTuple));
       } else if (input_abs->isa<abstract::AbstractList>()) {
@@ -1686,15 +1685,15 @@ class AutoMonadConverter {
         const auto &item_abs = elements[item_index];
         auto item = NewItemNode(input, input_abs, item_abs, item_index);
         (void)new_sequence_inputs.emplace_back(item);
-        (void)new_seq_abstracts.emplace_back(item->abstract());
+        (void)new_sequence_abstracts.emplace_back(item->abstract());
       }
       auto new_seq = func_graph_->NewCNode(std::move(new_sequence_inputs));
       MS_LOG(DEBUG) << "Replace the input of non-effect-node:" << cnode->DebugString()
                     << " with:" << new_seq->DebugString();
       if (input_abs->isa<abstract::AbstractTuple>()) {
-        new_seq->set_abstract(std::make_shared<abstract::AbstractTuple>(new_seq_abstracts));
+        new_seq->set_abstract(std::make_shared<abstract::AbstractTuple>(new_sequence_abstracts));
       } else if (input_abs->isa<abstract::AbstractList>()) {
-        new_seq->set_abstract(std::make_shared<abstract::AbstractList>(new_seq_abstracts));
+        new_seq->set_abstract(std::make_shared<abstract::AbstractList>(new_sequence_abstracts));
       }
       manager_->SetEdge(cnode, SizeToInt(index), new_seq);
       if (update_state) {

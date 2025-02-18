@@ -797,11 +797,12 @@ class LayerNormExt(Cell):
         normalized_shape (Union(tuple[int], list[int], int)): The normalized shape of `x` for LayerNorm.
         eps (float, optional): A value added to the denominator for numerical stability( :math:`\epsilon` ).
             Default: ``1e-5`` .
-        elementwise_affine (bool): Whether affine transformation is required. When this parameter is set to ``True``,
+        elementwise_affine (bool, optional): Whether affine transformation is required.
+            When this parameter is set to ``True``,
             the weight parameter is initialized to 1 and the offset is initialized to 0. Default: ``True``.
-        bias (bool): If set to ``False``, the layer will not learn an additive bias (only relevant if
+        bias (bool, optional): If set to ``False``, the layer will not learn an additive bias (only relevant if
              `elementwise_affine` is ``True``). Default: ``True``.
-        dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``None`` .
+        dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``None`` .
 
     Inputs:
         - **x** (Tensor) - The shape is :math:`(N, *)`, where :math:`*` is equal to normalized_shape.

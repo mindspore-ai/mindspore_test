@@ -76,8 +76,8 @@ def test_elu_grad_ext_dynamic_shape_testop():
     y2 = generate_random_input((3, 7, 8, 3), np.float32)
     dy2 = generate_random_input((3, 7, 8, 3), np.float32)
 
-    TEST_OP(elu_grad_ext, [[ms.Tensor(dy1), ms.Tensor(y1), alpha1],
-                           [ms.Tensor(dy2), ms.Tensor(y2), alpha2]],
+    TEST_OP(elu_grad_ext, [[ms.Tensor(dy1), ms.Tensor(y1), alpha1, False],
+                           [ms.Tensor(dy2), ms.Tensor(y2), alpha2, False]],
             'elu_grad_ext', disable_grad=True, disable_input_check=True)
 
 

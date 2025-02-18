@@ -99,7 +99,7 @@ def test_print(mode):
         out = net(input_x, input_y)
         np.testing.assert_array_equal(out.asnumpy(), input_x.asnumpy())
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = ['input_x:', 'Tensor(shape=[], dtype=Int32, value=3)',
                 'input_y:', 'Tensor(shape=[], dtype=Int32, value=4)']
@@ -137,7 +137,7 @@ def test_print_addn(mode):
         out = net(input_x, input_y)
         np.testing.assert_array_equal(out.asnumpy(), np.array([7], dtype=np.int32))
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = ['addn output:', 'Tensor(shape=[], dtype=Int32, value=']
     check_output(cap.output, patterns)
@@ -174,7 +174,7 @@ class GradNetAllInputs(nn.Cell):
 
 
 @security_off_wrap
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_side_effect_bprop_one_input():
     """
     Feature: Test side effect bprop with one input.
@@ -191,7 +191,7 @@ def test_side_effect_bprop_one_input():
         grads = grad_net(input1, grad_ys)
         assert grads[0].asnumpy().shape == (2, 2)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(0.5)
 
     patterns = ['x1:',
                 'Tensor(shape=[2, 2], dtype=Float32, value=',
@@ -230,7 +230,7 @@ def test_run_op_print():
         out = net(input_x)
         np.testing.assert_array_equal(out.asnumpy(), np.array([1, 2, 3], dtype=np.int32))
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = ['TensorStart',
                 'Tensor(shape=[3], dtype=Int64, value=[1 2 3])',
@@ -271,7 +271,7 @@ def test_print_none(mode):
         out2 = net("None")
         assert out2 == "None"
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = ['y is', 'None',
                 'y:', 'None']
@@ -304,7 +304,7 @@ def test_print_to_file():
         net = Net()
         x = Tensor(np.ones([2, 2], dtype=np.float32))
         net(x)
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     assert os.path.exists(print_file)
     os.system(f'rm -rf {print_path}')
@@ -340,7 +340,7 @@ def test_kbk_control_flow_print_string():
         _, out = net(input_x, Tensor([1]))
         assert out.asnumpy() == 1
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = ['network_with_CONTrolZ_flow_0.npy']
     check_output(cap.output, patterns)

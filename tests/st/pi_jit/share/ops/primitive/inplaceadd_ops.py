@@ -37,11 +37,11 @@ class InplaceAddFactory():
 
     def forward_cmp(self):
         ps_net = InplaceAdd(self.indices)
-        jit(ps_net.construct, mode="PSJit")(self.input_x_me, self.input_v_me)
+        jit(ps_net.construct, capture_mode="ast")(self.input_x_me, self.input_v_me)
         context.set_context(mode=context.GRAPH_MODE)
         out_psjit = self.forward_mindspore_impl(ps_net)
         pi_net = InplaceAdd(self.indices)
-        jit(pi_net.construct, mode="PIJit")(self.input_x_me, self.input_v_me)
+        jit(pi_net.construct, capture_mode="bytecode")(self.input_x_me, self.input_v_me)
         context.set_context(mode=context.PYNATIVE_MODE)
         out_pijit = self.forward_mindspore_impl(pi_net)
 

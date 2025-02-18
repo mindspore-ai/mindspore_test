@@ -16,10 +16,10 @@
 
 #include <string>
 #include "utils/ms_utils.h"
-#include "mindspore/ops/kernel/functions/base.h"
-#include "mindspore/ops/kernel/functions/auto_grad_reg.h"
-#include "mindspore/ops/kernel/functions/auto_grad_guard.h"
-#include "mindspore/ops/kernel/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/pyboost/functions/base.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_grad_reg.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "op_def/auto_generate/gen_ops_def.h"
 ${pyboost_op_header_include}

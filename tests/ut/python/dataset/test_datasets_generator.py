@@ -1467,11 +1467,11 @@ def test_generator_single_input_6():
 
     def generator_nested_np():
         for i in range(64):
-            yield np.array([[i, i + 1], [i, i + 1, i + 2]])
+            yield np.array([[i, i + 1, None], [i, i + 1, i + 2]])
 
     class RandomAccessDatasetInner:
         def __init__(self):
-            self.__data = [np.array([[i, i + 1], [i, i + 1, i + 2]]) for i in range(64)]
+            self.__data = [np.array([[i, i + 1, None], [i, i + 1, i + 2]]) for i in range(64)]
 
         def __getitem__(self, item):
             return self.__data[item]
@@ -1481,7 +1481,7 @@ def test_generator_single_input_6():
 
     class SequentialAccessDatasetInner:
         def __init__(self):
-            self.__data = [np.array([[i, i + 1], [i, i + 1, i + 2]]) for i in range(64)]
+            self.__data = [np.array([[i, i + 1, None], [i, i + 1, i + 2]]) for i in range(64)]
             self.__index = 0
 
         def __next__(self):
@@ -3214,6 +3214,27 @@ def test_generator_dataset_with_parallel_convert_exception():
     ds.config.set_iterator_mode(parallel_convert=False)
 
 
+def test_generator_dataset_debug_mode():
+    """
+    Feature: GeneratorDataset random access
+    Description: Test GeneratorDataset on debug_mode
+    Expectation: SUCCESS
+    """
+    small_dataset = DatasetGeneratorSmall()
+    origin_seed = ds.config.get_seed()
+
+    ds.config.set_debug_mode(True)
+    ds.config.set_seed(200)
+    dataset = ds.GeneratorDataset(small_dataset, column_names=["col1"], shuffle=False, num_samples=None,
+                                  num_shards=4, shard_id=3)
+    index = 0
+    for item in dataset.create_tuple_iterator(num_epochs=1, output_numpy=True):
+        assert item == dataset[index]
+        index += 1
+    ds.config.set_seed(origin_seed)
+    ds.config.set_debug_mode(False)
+
+
 if __name__ == "__main__":
     test_generator_0()
     test_generator_1()
@@ -3298,3 +3319,4 @@ if __name__ == "__main__":
     test_generator_dataset_with_parallel_convert()
     test_generator_dataset_with_parallel_convert_break()
     test_generator_dataset_with_parallel_convert_exception()
+    test_generator_dataset_debug_mode()

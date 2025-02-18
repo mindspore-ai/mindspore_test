@@ -67,8 +67,8 @@ struct HalfPixelFunc {
   }
 };
 
-void ComputeInterpolationWeights(const size_t out_size, const size_t in_size, const float scale,
-                                 CachedInterpolation *interpolation, bool half_pixel_centers);
+void BACKEND_EXPORT ComputeInterpolationWeights(const size_t out_size, const size_t in_size, const float scale,
+                                                CachedInterpolation *interpolation, bool half_pixel_centers);
 
 template <typename T>
 inline T ComputeLerp(T top_left, T top_right, T bottom_left, T bottom_right, T x_lerp, T y_lerp) {

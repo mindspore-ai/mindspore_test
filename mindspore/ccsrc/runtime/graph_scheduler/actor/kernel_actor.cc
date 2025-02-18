@@ -550,8 +550,6 @@ void KernelActor::TraceDynamicMemory() {
 
 void KernelActor::SendMemoryAllocReq(OpContext<DeviceTensor> *const context) {
   if (device_contexts_[0]->device_res_manager_->swap_manager() != nullptr) {
-    device_contexts_[0]->device_res_manager_->swap_manager()->SetSwappableBeforeMemAllocate(input_device_tensors_,
-                                                                                            output_device_tensors_);
     MS_EXCEPTION_IF_NULL(kernel_info_);
     for (const auto &out_in : kernel_info_->out_in_ref_map()) {
       MS_EXCEPTION_IF_NULL(input_device_tensors_[out_in.second]);
@@ -578,10 +576,6 @@ void KernelActor::SendMemoryAllocReq(OpContext<DeviceTensor> *const context) {
 }
 
 void KernelActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context) {
-  if (device_contexts_[0]->device_res_manager_->swap_manager() != nullptr) {
-    device_contexts_[0]->device_res_manager_->swap_manager()->SetSwappableBeforeMemFree(
-      input_device_tensors_, output_device_tensors_, kernel_info_);
-  }
   if (depend_shape_input_list_.empty()) {
     MemoryManagerActor::GetInstance()->FreeMemory(&memory_free_list_, device_contexts_[0], context, GetAID());
   } else {

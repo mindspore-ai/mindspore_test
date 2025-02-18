@@ -33,9 +33,9 @@ class AddLayernormFusionUT : public UT::Common {
 /// Description: Convert LayerNorm(Add) to AddLayernorm
 /// Expectation: After optimize, match AddLayernorm.
 TEST_F(AddLayernormFusionUT, AddLayernormFusionTest) {
-  std::map<std::string, std::string> jit_config;
-  jit_config["infer_boost"] = "on";
-  PhaseManager::GetInstance().set_jit_config(jit_config);
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  context->SetMsInternalEnableCustomKernelList();
   test::ConstructGraph c;
   auto input_0 = c.NewTensorInput("input_0", kFloat16, {1, 1024, 11264});
   auto input_1 = c.NewTensorInput("input_1", kFloat16, {1, 1024, 11264});
@@ -58,9 +58,9 @@ TEST_F(AddLayernormFusionUT, AddLayernormFusionTest) {
 /// Description: Convert LayerNormV3(Add) to AddLayernorm
 /// Expectation: After optimize, match AddLayernorm.
 TEST_F(AddLayernormFusionUT, AddLayernormV3FusionTest) {
-  std::map<std::string, std::string> jit_config;
-  jit_config["infer_boost"] = "on";
-  PhaseManager::GetInstance().set_jit_config(jit_config);
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  context->SetMsInternalEnableCustomKernelList();
   test::ConstructGraph c;
   auto input_0 = c.NewTensorInput("input_0", kFloat16, {1, 1024, 11264});
   auto input_1 = c.NewTensorInput("input_1", kFloat16, {1, 1024, 11264});
@@ -84,9 +84,9 @@ TEST_F(AddLayernormFusionUT, AddLayernormV3FusionTest) {
 /// Description: Convert LayerNormExt(Add) to AddLayernorm
 /// Expectation: After optimize, match AddLayernorm.
 TEST_F(AddLayernormFusionUT, AddLayernormExtFusionTest) {
-  std::map<std::string, std::string> jit_config;
-  jit_config["infer_boost"] = "on";
-  PhaseManager::GetInstance().set_jit_config(jit_config);
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  context->SetMsInternalEnableCustomKernelList();
   test::ConstructGraph c;
   auto input_0 = c.NewTensorInput("input_0", kFloat16, {1, 1024, 11264});
   auto input_1 = c.NewTensorInput("input_1", kFloat16, {1, 1024, 11264});

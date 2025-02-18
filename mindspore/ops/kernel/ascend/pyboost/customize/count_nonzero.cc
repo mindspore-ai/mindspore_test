@@ -16,8 +16,8 @@
 
 #include "kernel/ascend/pyboost/customize/count_nonzero.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "kernel/ascend/pyboost/auto_generate/sum_ext.h"
 #include "kernel/ascend/pyboost/auto_generate/ne_scalar.h"

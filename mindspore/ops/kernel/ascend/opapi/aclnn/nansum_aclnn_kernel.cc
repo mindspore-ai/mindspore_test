@@ -20,8 +20,8 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -34,7 +34,7 @@ void NansumAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
   } else {
     dim_ = std::vector<int64_t>{};
   }
-  keep_dim_ = transform::ConvertKernelTensor<bool>(inputs[kIndex2]);
+  keep_dim_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex2]);
   // Infer function has confirmed the actual dtype of output
   dtype_ = outputs[kIndex0]->dtype_id();
   GetWorkspaceForResize(inputs[kIndex0], dim_, keep_dim_, dtype_, outputs[kIndex0]);

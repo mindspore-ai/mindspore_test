@@ -17,7 +17,7 @@
 #include <vector>
 #include <string>
 #include "ir/tensor.h"
-#include "transform/graph_ir/op_adapter_base.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 #include "runtime/device/kernel_runtime.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "kernel/ascend/opapi/aclnn/matmul_allreduce_add_rmsnorm_aclnn_kernel.h"
@@ -32,7 +32,7 @@ void MatmulAllReduceAddRmsNormAscend::InitInputAttributes(const std::vector<Kern
   auto group = inputs[kIndex6]->GetValueWithCheck<std::string>();
   comm_name_ = device::ascend::AscendCollectiveCommLib::GetInstance().HcclInnerCommName(group);
   auto reduction_enum = inputs[kIndex7]->GetValueWithCheck<int64_t>();
-  reduce_op_ = transform::GEReduction::ConvertEnumToString(reduction_enum);
+  reduce_op_ = device::ascend::GEReduction::ConvertEnumToString(reduction_enum);
   comm_turn_ = inputs[kIndex8]->GetValueWithCheck<int64_t>();
   stream_mode_ = inputs[kIndex9]->GetValueWithCheck<int64_t>();
 

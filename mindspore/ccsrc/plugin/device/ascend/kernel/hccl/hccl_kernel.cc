@@ -31,7 +31,7 @@
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/multi_ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/device/ascend_memory_manager.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_memory_manager.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 
 using AscendCollectiveCommLib = mindspore::device::ascend::AscendCollectiveCommLib;

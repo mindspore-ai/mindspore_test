@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <cmath>
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
@@ -22,6 +23,10 @@
 #include "ops/test_ops.h"
 #include "ops/test_ops_dyn_cases.h"
 #include "ops/test_ops_cmp_utils.h"
+#include "ops/test_value_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "abstract/abstract_value.h"
+#include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace ops {
@@ -58,5 +63,69 @@ auto SqrtOpTypeCases = testing::ValuesIn({
 }
 
 INSTANTIATE_TEST_CASE_P(TestSqrtGroup, TestSqrt, testing::Combine(EltwiseDynShapeTestCases, SqrtOpTypeCases));
+
+struct SqrtInferValueParams {
+  tensor::TensorPtr input;
+  tensor::TensorPtr out;
+};
+
+class TestSqrtInferValue : public TestOps, public testing::WithParamInterface<SqrtInferValueParams> {};
+
+TEST_P(TestSqrtInferValue, dyn_shape_infer_value) {
+  const auto &param = GetParam();
+  ASSERT_NE(param.input, nullptr);
+  auto input = param.input->ToAbstract();
+  ASSERT_NE(input, nullptr);
+
+  auto input_args = abstract::AbstractBasePtrList{input};
+  auto value_opt = abstract::InferValueByFuncImpl(prim::kPrimSqrt, input_args);
+  if (!value_opt.has_value()) {
+    MS_LOG(ERROR) << "Sqrt have no infer value implement!";
+    ASSERT_TRUE(false);
+  }
+  auto infer_out = value_opt.value();
+  if (infer_out == nullptr) {
+    MS_LOG(ERROR) << "Sqrt can not infer value with inputs: " << input_args;
+    ASSERT_TRUE(false);
+  }
+  auto infer_tensor = infer_out->cast<tensor::TensorPtr>();
+  ASSERT_NE(infer_tensor, nullptr);
+  ASSERT_TRUE(infer_tensor->ValueEqual(*param.out));
+}
+
+#define SQRT_FP32(x) static_cast<float>(std::sqrt(static_cast<double>(x)))
+
+tensor::TensorPtr CreateSqrtBoolTensor() {
+  bool value[4] = {true, true, true, true};
+  void *data_ptr = &value[0];
+  auto tensor = std::make_shared<tensor::Tensor>(kNumberTypeBool, ShapeVector{2, 2}, data_ptr, kNumberTypeBool);
+  return tensor;
+}
+
+INSTANTIATE_TEST_CASE_P(
+  TestSqrtInferValue, TestSqrtInferValue,
+  testing::Values(
+    SqrtInferValueParams{CreateSqrtBoolTensor(),
+                         CreateTensor<float>(kNumberTypeFloat32, ShapeVector{2, 2},
+                                             std::vector<float>{SQRT_FP32(1), SQRT_FP32(1), SQRT_FP32(1), SQRT_FP32(1)})},
+    SqrtInferValueParams{CreateTensor<uint8_t>(kNumberTypeUInt8, ShapeVector{2, 2}, std::vector<uint8_t>{2, 2, 2, 2}),
+                         CreateTensor<float>(kNumberTypeFloat32, ShapeVector{2, 2},
+                                             std::vector<float>{SQRT_FP32(2), SQRT_FP32(2), SQRT_FP32(2), SQRT_FP32(2)})},
+    SqrtInferValueParams{CreateTensor<int8_t>(kNumberTypeInt8, ShapeVector{2, 2}, std::vector<int8_t>{3, 3, 3, 3}),
+                         CreateTensor<float>(kNumberTypeFloat32, ShapeVector{2, 2},
+                                             std::vector<float>{SQRT_FP32(3), SQRT_FP32(3), SQRT_FP32(3), SQRT_FP32(3)})},
+    SqrtInferValueParams{CreateTensor<int16_t>(kNumberTypeInt16, ShapeVector{2, 2}, std::vector<int16_t>{4, 4, 4, 4}),
+                         CreateTensor<float>(kNumberTypeFloat32, ShapeVector{2, 2},
+                                             std::vector<float>{SQRT_FP32(4), SQRT_FP32(4), SQRT_FP32(4), SQRT_FP32(4)})},
+    SqrtInferValueParams{CreateTensor<int32_t>(kNumberTypeInt32, ShapeVector{2, 2}, std::vector<int32_t>{5, 5, 5, 5}),
+                         CreateTensor<float>(kNumberTypeFloat32, ShapeVector{2, 2},
+                                             std::vector<float>{SQRT_FP32(5), SQRT_FP32(5), SQRT_FP32(5), SQRT_FP32(5)})},
+    SqrtInferValueParams{CreateTensor<int64_t>(kNumberTypeInt64, ShapeVector{2, 2}, std::vector<int64_t>{6, 6, 6, 6}),
+                         CreateTensor<float>(kNumberTypeFloat32, ShapeVector{2, 2},
+                                             std::vector<float>{SQRT_FP32(6), SQRT_FP32(6), SQRT_FP32(6), SQRT_FP32(6)})},
+    SqrtInferValueParams{
+      CreateTensor<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{7, 7, 7, 7}),
+      CreateTensor<float>(kNumberTypeFloat32, ShapeVector{2, 2},
+                              std::vector<float>{SQRT_FP32(7), SQRT_FP32(7), SQRT_FP32(7), SQRT_FP32(7)})}));
 }  // namespace ops
 }  // namespace mindspore

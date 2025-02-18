@@ -49,6 +49,8 @@ MindSpore中 `mindspore.ops` 接口与上一版本相比，新增、删除和支
     mindspore.ops.flatten
     mindspore.ops.fold
     mindspore.ops.fractional_max_pool3d
+    mindspore.ops.fused_infer_attention_score
+    mindspore.ops.speed_fusion_attention
     mindspore.ops.group_norm
     mindspore.ops.layer_norm
     mindspore.ops.lp_pool1d
@@ -59,8 +61,10 @@ MindSpore中 `mindspore.ops` 接口与上一版本相比，新增、删除和支
     mindspore.ops.max_unpool1d
     mindspore.ops.max_unpool2d
     mindspore.ops.max_unpool3d
+    mindspore.ops.moe_token_unpermute
     mindspore.ops.incre_flash_attention
     mindspore.ops.prompt_flash_attention
+    mindspore.ops.flash_attention_score
     mindspore.ops.rms_norm
     mindspore.ops.unfold
 
@@ -126,6 +130,7 @@ MindSpore中 `mindspore.ops` 接口与上一版本相比，新增、删除和支
     mindspore.ops.softmin
     mindspore.ops.softshrink
     mindspore.ops.softsign
+    mindspore.ops.swiglu
     mindspore.ops.tanh
     mindspore.ops.threshold
 
@@ -175,6 +180,8 @@ MindSpore中 `mindspore.ops` 接口与上一版本相比，新增、删除和支
     mindspore.ops.padding
     mindspore.ops.pixel_shuffle
     mindspore.ops.pixel_unshuffle
+    mindspore.ops.rotary_position_embedding
+    mindspore.ops.rotated_iou
     mindspore.ops.upsample
 
 数学运算函数

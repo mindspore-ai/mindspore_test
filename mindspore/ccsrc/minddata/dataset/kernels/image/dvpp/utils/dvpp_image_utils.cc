@@ -41,8 +41,8 @@
 #include "minddata/dataset/kernels/image/sharpness_op.h"
 #include "minddata/dataset/kernels/image/solarize_op.h"
 #include "minddata/dataset/kernels/data/data_utils.h"
-#include "transform/symbol/symbol_utils.h"
-#include "transform/symbol/acl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
 
 #include "acldvppop/acldvpp_adjust_brightness.h"
 #include "acldvppop/acldvpp_adjust_contrast.h"
@@ -68,7 +68,7 @@
 #include "acldvppop/acldvpp_vertical_flip.h"
 #include "acldvppop/acldvpp_warp_affine.h"
 #include "acldvppop/acldvpp_warp_perspective.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace dataset {

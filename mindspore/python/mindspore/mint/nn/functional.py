@@ -56,6 +56,7 @@ from mindspore.ops.function.nn_func import relu_
 # 14
 from mindspore.ops.function.nn_func import dropout_ext as dropout
 # 15
+from mindspore.ops.function.nn_func import conv1d_ext as conv1d
 from mindspore.ops.function.nn_func import conv2d_ext as conv2d
 # 16
 from mindspore.ops.function.nn_func import log_softmax_ext as log_softmax
@@ -113,7 +114,7 @@ from mindspore.ops.functional import group_norm
 # 43
 
 # 44
-
+from mindspore.ops.auto_generate import soft_margin_loss
 # 45
 
 # 46
@@ -175,7 +176,7 @@ from mindspore.ops.functional import embedding
 # 74
 
 # 75
-
+from mindspore.ops.function.nn_func import adaptive_max_pool2d
 # 76
 
 # 77
@@ -207,7 +208,7 @@ from mindspore.ops.auto_generate import avg_pool1d_ext as avg_pool1d
 # 90
 from mindspore.ops.function.nn_func import avg_pool2d_ext as avg_pool2d
 # 91
-
+from mindspore.ops.function.nn_func import avg_pool3d_ext as avg_pool3d
 # 92
 from mindspore.ops.auto_generate import leaky_relu_ext as leaky_relu
 # 93
@@ -242,6 +243,9 @@ from mindspore.ops.auto_generate import l1_loss_ext as l1_loss  # pylint: disabl
 #254
 from mindspore.ops.auto_generate import max_unpool2d_ext as max_unpool2d
 
+# 256
+from mindspore.ops.auto_generate import inplace_threshold as threshold_
+from mindspore.ops.auto_generate import threshold as threshold_op
 # 257
 
 # 258
@@ -251,7 +255,8 @@ from mindspore.ops.function.nn_func import mse_loss_ext as mse_loss
 # 323
 
 # 324
-from mindspore.ops.auto_generate import elu_ext as elu
+from mindspore.ops.auto_generate import elu_ext
+from mindspore.ops.auto_generate import inplace_elu
 
 # 421
 from mindspore.ops.auto_generate import flatten_ext as flatten
@@ -267,6 +272,8 @@ from mindspore.ops.function.nn_func import glu_ext as glu
 # 537
 from mindspore.ops.auto_generate import hardtanh as hardtanh_op
 from mindspore.ops.auto_generate import inplace_hardtanh as hardtanh_
+# 548
+from mindspore.ops.function.nn_func import kl_div_ext as kl_div
 # 556
 from mindspore.ops.function.nn_func import logsigmoid_ext as logsigmoid
 
@@ -277,53 +284,157 @@ from mindspore.ops.function.nn_func import cross_entropy_ext as cross_entropy
 from mindspore.ops.function.nn_func import nll_loss_ext as nll_loss
 
 
+def elu(input, alpha=1.0, inplace=False):
+    r"""
+    Exponential Linear Unit activation function
+
+    Applies the exponential linear unit function element-wise. The activation function is defined as:
+
+    .. math::
+        ELU_{i} =
+        \begin{cases}
+        x_i, &\text{if } x_i \geq 0; \cr
+        \alpha * (\exp(x_i) - 1), &\text{otherwise.}
+        \end{cases}
+
+    where :math:`x_i` represents the element of the input and :math:`\alpha` represents the `alpha` parameter, and
+    `alpha` represents the smoothness of the ELU.
+
+    ELU Activation Function Graph:
+
+    .. image:: ../images/ELU.png
+        :align: center
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input of ELU is a Tensor of any dimension.
+        alpha (float, optional): The alpha value of ELU, the data type is float. Default: ``1.0``.
+        inplace (bool, optional): Whether to use inplace mode, the data type is bool. Default: ``False``.
+
+    Returns:
+        Tensor, with the same shape and type as the `input`.
+
+    Raises:
+        RuntimeError: If the dtype of `input` is not float16, float32 or bfloat16.
+        TypeError: If the dtype of `alpha` is not float.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> import numpy as np
+        >>> input = Tensor(np.array([-1, -2, 0, 2, 1]), mindspore.float32)
+        >>> output = mint.nn.functional.elu(input)
+        >>> print(output)
+        [-0.63212055  -0.86466473  0.  2.  1.]
+    """
+    if inplace:
+        return inplace_elu(input, alpha)
+    return elu_ext(input, alpha)
+
+
+def elu_(input, alpha=1.0):
+    r"""
+    Exponential Linear Unit activation function
+
+    Applies the exponential linear unit function inplace element-wise. The activation function is defined as:
+
+    .. math::
+        ELU_{i} =
+        \begin{cases}
+        x_i, &\text{if } x_i \geq 0; \cr
+        \alpha * (\exp(x_i) - 1), &\text{otherwise.}
+        \end{cases}
+
+    where :math:`x_i` represents the element of the input and :math:`\alpha` represents the `alpha` parameter, and
+    `alpha` represents the smoothness of the ELU.
+
+    ELU Activation Function Graph:
+
+    .. image:: ../images/ELU.png
+        :align: center
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input of ELU is a Tensor of any dimension.
+        alpha (float, optional): The alpha value of ELU, the data type is float and `alpha` should be
+            greater than 0. Default: ``1.0``.
+
+    Returns:
+        Tensor, with the same shape and type as the `input`.
+
+    Raises:
+        RuntimeError: If the dtype of `input` is not float16, float32 or bfloat16.
+        TypeError: If the dtype of `alpha` is not float.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> import numpy as np
+        >>> input = Tensor(np.array([-1, -2, 0, 2, 1]), mindspore.float32)
+        >>> mint.nn.functional.elu_(input)
+        >>> print(input)
+        [-0.63212055  -0.86466473  0.  2.  1.]
+    """
+    return inplace_elu(input, alpha)
+
+
 def hardtanh(input, min_val=-1.0, max_val=1.0, inplace=False):
     r"""
-     Applies the hardtanh activation function element-wise. The activation function is defined as:
+    Applies the hardtanh activation function element-wise. The activation function is defined as:
 
-     .. math::
-         \text{hardtanh}(input) = \begin{cases}
-             max\_val, & \text{ if } input > max\_val \\
-             min\_val, & \text{ if } input < min\_val \\
-             input, & \text{ otherwise. }
-         \end{cases}
+    .. math::
+        \text{hardtanh}(input) = \begin{cases}
+            max\_val, & \text{ if } input > max\_val \\
+            min\_val, & \text{ if } input < min\_val \\
+            input, & \text{ otherwise. }
+        \end{cases}
 
-     Linear region range :math:`[min\_val, max\_val]` can be adjusted using `min_val` and `max_val`.
+    Linear region range :math:`[min\_val, max\_val]` can be adjusted using `min_val` and `max_val`.
 
-     Hardtanh Activation Function Graph:
+    Hardtanh Activation Function Graph:
 
-     .. image:: ../images/Hardtanh.png
-         :align: center
+    .. image:: ../images/Hardtanh.png
+        :align: center
 
     .. warning::
         This is an experimental optimizer API that is subject to change.
 
-     Args:
-         input (Tensor): Input Tensor.
-         min_val (Union[bool, int, float], optional): Minimum value of the linear region range. Default: ``-1.0`` .
-         max_val (Union[bool, int, float], optional): Maximum value of the linear region range. Default: ``1.0`` .
-         inplace (bool, optional): Whether to apply erasing inplace. Default: ``False``.
+    Args:
+        input (Tensor): Input Tensor.
+        min_val (Union[bool, int, float], optional): Minimum value of the linear region range. Default: ``-1.0`` .
+        max_val (Union[bool, int, float], optional): Maximum value of the linear region range. Default: ``1.0`` .
+        inplace (bool, optional): Whether to apply erasing inplace. Default: ``False``.
 
-     Returns:
-         Tensor, with the same dtype and shape as `input`.
+    Returns:
+        Tensor, with the same dtype and shape as `input`.
 
-     Raises:
-         TypeError: If `input` is not a Tensor.
-         TypeError: If dtype of `input` is not one of: int8, int16, int32, int64, uint8, float16, float32, bfloat16.
-         TypeError: If dtype of `min_val` is neither float nor int.
-         TypeError: If dtype of `max_val` is neither float nor int.
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If dtype of `input` is not one of: int8, int16, int32, int64, uint8, float16, float32, bfloat16.
+        TypeError: If dtype of `min_val` is neither float nor int.
+        TypeError: If dtype of `max_val` is neither float nor int.
 
-     Supported Platforms:
-         ``Ascend``
+    Supported Platforms:
+        ``Ascend``
 
-     Examples:
-         >>> import mindspore
-         >>> from mindspore import Tensor, mint
-         >>> x = Tensor([-1, -2, 0, 2, 1], mindspore.float16)
-         >>> output = mint.nn.functional.hardtanh(x, min_val=-1.0, max_val=1.0, inplace=False)
-         >>> print(output)
-         [-1. -1.  0.  1.  1.]
-     """
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> x = Tensor([-1, -2, 0, 2, 1], mindspore.float16)
+        >>> output = mint.nn.functional.hardtanh(x, min_val=-1.0, max_val=1.0, inplace=False)
+        >>> print(output)
+        [-1. -1.  0.  1.  1.]
+    """
     if inplace:
         return hardtanh_(input, min_val, max_val)
     return hardtanh_op(input, min_val, max_val)
@@ -450,7 +561,7 @@ def binary_cross_entropy_with_logits(input, target, weight=None, reduction='mean
     r"""
     Adds sigmoid activation function to `input` as logits, and uses this logits to compute binary cross entropy
     between the logits and the target.
-    Consistent with the function of `mindspore.ops.binary_cross_entropy_with_logits` .
+    Consistent with the function of :func:`mindspore.ops.binary_cross_entropy_with_logits` .
 
     Sets input `input` as :math:`X`, input `target` as :math:`Y`, input `weight` as :math:`W`, output as :math:`L`.
     Then,
@@ -831,6 +942,52 @@ def upsample(input, size=None, scale_factor=None, mode="nearest", align_corners=
     return interpolate(input, size, scale_factor, mode, align_corners)
 
 
+def threshold(input, threshold, value, inplace=False):  # pylint: disable=W0621
+    r"""
+    Compute the Threshold activation function element-wise.
+
+    The Threshold is defined as:
+
+    .. math::
+        y =
+        \begin{cases}
+        x, &\text{ if } x > \text{threshold} \\
+        \text{value}, &\text{ otherwise }
+        \end{cases}
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input Tensor.
+        threshold (Union[int, float]): The value of the threshold.
+        value (Union[int, float]): The value to replace with when element is less than threshold.
+        inplace (bool, optional): Whether to apply erasing inplace. Default: ``False``.
+
+    Returns:
+        Tensor, the same shape and data type as the input.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `threshold` is not a float or an int.
+        TypeError: If `value` is not a float or an int.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> inputs = mindspore.Tensor([0.0, 2, 3], mindspore.float32)
+        >>> outputs = mint.nn.functional.threshold(inputs, 1, 100)
+        >>> print(outputs)
+        [100.   2.   3.]
+    """
+    if inplace is True:
+        return threshold_(input, threshold, value)
+    return threshold_op(input, threshold, value)
+
+
 def adaptive_avg_pool3d(input, output_size):
     r"""
     Performs 3D adaptive average pooling on a multi-plane input signal.
@@ -908,6 +1065,53 @@ def adaptive_avg_pool3d(input, output_size):
     return adaptive_avg_pool3d_ext(input, output_size)
 
 
+def adaptive_max_pool1d(input, output_size, return_indices=False):
+    r"""
+    Performs 1D adaptive max pooling on a multi-plane input signal.
+    That is, for any input size, the size of the specified output is L.
+    The number of output features is equal to the number of input features.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input of adaptive_max_pool1d, which is a 2D or 3D tensor,
+            with float16, float32 or float64 data type.
+        output_size (int): The target output feature size. `output_size` is an integer.
+        return_indices (bool, optional): Whether to return the index of the maximum value. Default: ``False`` .
+
+    Returns:
+        Union(Tensor, tuple(Tensor, Tensor)).
+
+        - If `return_indices` is False, output is a Tensor, with shape :math:`(N, C, L_{out})`. It has the same data
+          type as `input`.
+        - If `return_indices` is True, output is a Tuple of 2 Tensors, representing the result and where the max
+          values are generated.
+
+    Raises:
+        TypeError: If `input` is not a tensor.
+        TypeError: If dtype of `input` is not float16, float32 or float64.
+        TypeError: If `output_size` is not int or tuple.
+        TypeError: If `return_indices` is not a bool.
+        ValueError: If `output_size` is a tuple and the length of `output_size` is not 1.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> input = Tensor([[2,3],[3,4]],dtype=mindspore.float16)
+        >>> output = mint.nn.functional.adaptive_max_pool1d(input, 3)
+        >>> print(output)
+        [[2.  3.  3. ]
+         [3.  4.  4. ]]
+    """
+    if return_indices:
+        return ops.auto_generate.gen_ops_prim.adaptive_max_pool1d_op(input, output_size)
+    return ops.auto_generate.gen_ops_prim.adaptive_max_pool1d_op(input, output_size)[0]
+
+
 __all__ = [
     'conv_transpose2d',
     'max_pool2d',
@@ -943,6 +1147,7 @@ __all__ = [
     # 14
     'dropout',
     # 15
+    'conv1d',
     'conv2d',
     # 16
     'log_softmax',
@@ -1002,7 +1207,7 @@ __all__ = [
     # 43
 
     # 44
-
+    'soft_margin_loss',
     # 45
 
     # 46
@@ -1090,7 +1295,7 @@ __all__ = [
     # 87
 
     # 88
-
+    'avg_pool3d',
     # 89
     'avg_pool1d',
     # 90
@@ -1119,6 +1324,12 @@ __all__ = [
     'adaptive_avg_pool3d',
     # 254
     'max_unpool2d',
+    # 256
+    'threshold',
+    'threshold_',
+
+    # 288
+    'adaptive_max_pool2d',
 
     # 312
     'normalize',
@@ -1127,13 +1338,14 @@ __all__ = [
 
     # 324
     'elu',
+    'elu_',
     # 325
 
     #556
     'logsigmoid',
 
     # 257
-
+    'adaptive_max_pool1d',
     # 258
     'mse_loss',
     # 259
@@ -1141,6 +1353,10 @@ __all__ = [
     'adaptive_avg_pool1d',
 
     'adaptive_avg_pool2d',
+
+    # 350
+    'conv1d',
+
     # 393
     'dropout2d',
     # 421
@@ -1151,4 +1367,6 @@ __all__ = [
     'hardtanh',
     'hardtanh_',
     'relu6',
+    # 548
+    'kl_div',
 ]

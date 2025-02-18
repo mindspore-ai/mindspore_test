@@ -21,7 +21,7 @@
 #include <memory>
 #include <string>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "kernel/common_utils.h"
 
 namespace mindspore {
@@ -52,6 +52,7 @@ class MatMulCpuKernelMod : public NativeCpuKernelMod {
  private:
   std::shared_ptr<CpuKernelFunc> func_obj_;
   std::string kernel_type_{kUnkown};
+  size_t kernel_func_idx_{0};
 
   bool is_empty_tensor_{false};
   LaunchEmptyTensorFunc launch_empty_tensor_func_;

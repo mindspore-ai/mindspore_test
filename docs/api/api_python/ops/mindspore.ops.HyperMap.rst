@@ -5,7 +5,7 @@ mindspore.ops.HyperMap
 
     对输入序列做集合运算。
    
-    对序列的每个元素或嵌套序列进行运算。与 `mindspore.ops.Map` 不同，`HyperMap` 能够用于嵌套结构。
+    对序列的每个元素或嵌套序列进行运算。与 :class:`mindspore.ops.Map` 不同，`HyperMap` 能够用于嵌套结构。
 
     参数：
         - **ops** (Union[MultitypeFuncGraph, None]，可选) -  `ops` 是指定运算操作。如果 `ops` 为 ``None`` ，则运算应该作为 `HyperMap` 实例的第一个入参。默认值为 ``None`` 。

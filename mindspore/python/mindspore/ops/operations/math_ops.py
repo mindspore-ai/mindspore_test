@@ -28,7 +28,7 @@ from mindspore.common import dtype as mstype
 from mindspore.common.tensor import Tensor
 from mindspore.ops._utils import get_broadcast_shape
 from mindspore.ops.primitive import Primitive, PrimitiveWithInfer, PrimitiveWithCheck, prim_attr_register, _run_op
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from ..auto_generate import (Add, Addcdiv, Addcmul, ReduceMean, ReduceSum, ReduceAll, ReduceAny,
                              ReduceMax, ReduceMin, ReduceProd, Betainc, Neg, MatMul, BatchMatMul,
                              Mul, Square, Rsqrt, Sqrt, Reciprocal, Pow, Exp, Cdist,
@@ -819,6 +819,7 @@ class InplaceIndexAdd(Primitive):
         """Initialize InplaceIndexAdd"""
         self.init_prim_io_names(inputs=['var', 'indices', 'updates'], outputs=['var'])
         self.axis = axis
+        self.add_prim_attr('side_effect_mem', True)
         validator.check_value_type('axis', axis, [int], self.name)
 
 
@@ -1914,7 +1915,7 @@ class NPUAllocFloatStatus(Primitive):
 
 class NPUGetFloatStatus(Primitive):
     """
-    `mindspore.ops.NPUGetFloatStatus` updates the flag which is
+    :class:`mindspore.ops.NPUGetFloatStatus` updates the flag which is
     the output tensor of :class:`mindspore.ops.NPUAllocFloatStatus` with the latest overflow status.
 
 
@@ -2441,6 +2442,9 @@ class BitwiseOr(_BitwiseBinaryOp):
 class BitwiseXor(_BitwiseBinaryOp):
     r"""
     Returns bitwise `xor` of two tensors element-wise.
+
+    .. warning::
+        This API has poor performance on CPU and it is recommended to run it on the Ascend/GPU.
 
     Refer to :func:`mindspore.ops.bitwise_xor` for more details.
 

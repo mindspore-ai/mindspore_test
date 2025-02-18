@@ -23,7 +23,7 @@
 
 #include "op_def/array_ops.h"
 #include "kernel/oplib/oplib.h"
-#include "transform/graph_ir/transform_util.h"
+#include "plugin/res_manager/ascend/op_adapter/transform_util.h"
 #include "kernel/ascend/aicpu/aicpu_util.h"
 
 namespace mindspore {
@@ -148,7 +148,8 @@ void SetNodeInputs(const PrimitivePtr &primitive, const std::vector<KernelTensor
     MS_EXCEPTION_IF_NULL(tensor_shape);
     // todo: delete when tansdata in libcpu_kernel.so is fixed
     if (IsPrimitiveEquals(primitive, prim::kPrimTransData)) {
-      auto fmt = transform::TransformUtil::ConvertFormat(inputs[input_index]->GetStringFormat(), input_shape.size());
+      auto fmt =
+        device::ascend::TransformUtil::ConvertFormat(inputs[input_index]->GetStringFormat(), input_shape.size());
       tensor_shape->set_data_format(static_cast<::google::protobuf::int32>(fmt));
     }
     for (auto item : input_shape) {
@@ -178,8 +179,8 @@ void SetNodeOutputs(const PrimitivePtr &primitive, const std::vector<KernelTenso
     MS_EXCEPTION_IF_NULL(tensor_shape);
     // todo: delete when tansdata in libcpu_kernel.so is fixed
     if (IsPrimitiveEquals(primitive, prim::kPrimTransData)) {
-      auto fmt = transform::TransformUtil::ConvertFormat(outputs[output_index]->GetStringFormat(),
-                                                         outputs[output_index]->GetDeviceShapeVector().size());
+      auto fmt = device::ascend::TransformUtil::ConvertFormat(outputs[output_index]->GetStringFormat(),
+                                                              outputs[output_index]->GetDeviceShapeVector().size());
       tensor_shape->set_data_format(static_cast<::google::protobuf::int32>(fmt));
     }
     for (auto item : outputs[output_index]->GetDeviceShapeVector()) {

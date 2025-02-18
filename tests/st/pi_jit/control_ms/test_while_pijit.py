@@ -24,7 +24,7 @@ def skip_if_python_version_too_high():
     if sys.version_info >= (3, 11):  
         pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
-#@jit(mode="PIJit")
+#@jit(capture_mode="bytecode")
 #TODO: fix CODEHOOK
 @jit
 def t1_while(x, y):
@@ -35,7 +35,7 @@ def t1_while(x, y):
     return x
 
 
-#@jit(mode="PIJit")
+#@jit(capture_mode="bytecode")
 #TODO: fix CODEHOOK
 @jit
 def const_branch(y):

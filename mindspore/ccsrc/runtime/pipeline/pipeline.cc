@@ -16,7 +16,6 @@
 #include "runtime/pipeline/pipeline.h"
 #include <memory>
 #include "runtime/pipeline/async_rqueue.h"
-#include "runtime/pynative/lazy_fusion_kernel.h"
 #include "pybind_api/gil_scoped_long_running.h"
 
 namespace mindspore {
@@ -37,7 +36,6 @@ void Pipeline::WaitAll() {
   GilReleaseWithCheck gil_release;
   frontend_stage_->Wait();
   bprop_stage_->Wait();
-  FlushLazyFusion();
   backend_stage_->Wait();
   launch_stage_->Wait();
 }
@@ -75,5 +73,16 @@ void Pipeline::ChildAfterFork() {
   launch_stage_->ChildAfterFork();
   MS_LOG(DEBUG) << "Pipeline reinitialize after fork end.";
 }
+
+void Pipeline::DisablePipeline() {
+  auto disable_pipeline = [](const AsyncRQueuePtr &stage) { stage->DisableMultiThread(); };
+  disable_pipeline(frontend_stage_);
+  disable_pipeline(bprop_stage_);
+  disable_pipeline(backend_stage_);
+  disable_pipeline(launch_stage_);
+  disable_pipeline(stress_detect_);
+}
+
+void Pipeline::DisableMultiThreadAfterFork() { Pipeline::Get().DisablePipeline(); }
 }  // namespace runtime
 }  // namespace mindspore

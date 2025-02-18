@@ -36,7 +36,7 @@
 #include "mindspore/ccsrc/include/backend/optimizer/helper.h"
 #include "mindspore/ccsrc/pipeline/jit/ps/parse/data_converter.h"
 #include "mindspore/ccsrc/pybind_api/ir/tensor_py.h"
-#include "mindspore/ops/kernel/cpu/pyexecute/py_execute_cpu_kernel.h"
+#include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
 #include "mindspore/ccsrc/pipeline/jit/ps/parse/resolve.h"
 
 namespace py = pybind11;
@@ -290,8 +290,8 @@ class PyExecuteInitializer {
       }
       MS_LOG(DEBUG) << "Python output type: " << py::str(output.get_type()) << ", output: " << output;
       primitive->set_attr(kAttrPyExecuteOutput, std::make_shared<parse::PyObjectWrapper>(output, "graph python obj"));
-      if (py::isinstance<tensor::Tensor>(output) || IsStubTensor(output)) {
-        const auto &tensor = IsStubTensor(output) ? ConvertStubTensor(output) : output.cast<tensor::TensorPtr>();
+      if (tensor::IsTensorPy(output) || IsStubTensor(output)) {
+        const auto &tensor = IsStubTensor(output) ? ConvertStubTensor(output) : tensor::ConvertToTensor(output);
         const auto &infer_shape = std::make_shared<abstract::Shape>(tensor->shape());
         return tensor->ToAbstract();
       } else if (py::isinstance<py::bool_>(output)) {

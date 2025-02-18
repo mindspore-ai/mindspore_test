@@ -22,9 +22,6 @@
 #include <string>
 
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
-#include "runtime/runtime_conf/runtime_conf.h"
-#include "utils/convert_utils_base.h"
-#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace device {
@@ -33,20 +30,7 @@ class BACKEND_EXPORT CPUMemoryPool : public DynamicMemPoolBestFit {
  public:
   ~CPUMemoryPool() override = default;
 
-  static CPUMemoryPool &GetInstance() {
-    static CPUMemoryPool instance;
-    static std::once_flag flag;
-    std::call_once(flag, [&]() {
-      float init_size = runtime::RuntimeConf::GetInstance()->mem_init_size();
-      size_t init_size_byte = FloatToSize(init_size * kGBToByte);
-      float increase_size = runtime::RuntimeConf::GetInstance()->mem_block_increase_size();
-      size_t increase_size_byte = FloatToSize(increase_size * kGBToByte);
-      float max_size = runtime::RuntimeConf::GetInstance()->mem_max_size();
-      size_t max_size_byte = FloatToSize(max_size * kGBToByte);
-      instance.Initialize(init_size_byte, increase_size_byte, max_size_byte);
-    });
-    return instance;
-  }
+  static CPUMemoryPool &GetInstance();
 
   size_t AllocDeviceMem(size_t size, DeviceMemPtr *addr) override;
   bool FreeDeviceMem(const DeviceMemPtr &addr) override;

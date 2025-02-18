@@ -20,7 +20,7 @@
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "plugin/device/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
@@ -36,7 +36,7 @@ void InnerInplaceIndexPutAscend::GetWorkSpaceInfo(const std::vector<KernelTensor
   }
   auto last_kernel_tensor = *(inputs.end() - kIndex1);
   MS_EXCEPTION_IF_NULL(last_kernel_tensor);
-  accumulate_ = transform::ConvertKernelTensor<bool>(last_kernel_tensor);
+  accumulate_ = device::ascend::ConvertKernelTensor<bool>(last_kernel_tensor);
   auto value_tensor = *(inputs.end() - kIndex2);
   MS_EXCEPTION_IF_NULL(value_tensor);
   std::vector<KernelTensor *> indices(inputs.begin() + kIndex1, inputs.end() - kIndex2);

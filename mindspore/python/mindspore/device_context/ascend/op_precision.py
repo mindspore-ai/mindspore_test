@@ -16,7 +16,7 @@
 """Op precision interfaces."""
 import os
 from mindspore._checkparam import args_type_check
-from  .device import _is_supported
+from .device import _is_supported
 
 try:
     from mindspore._c_expression import AscendOpPrecisionConf
@@ -25,6 +25,7 @@ except ImportError:
 
 function_status = {'precision_mode': False, 'op_precision_mode': False,
                    'matmul_allow_hf32': False, 'conv_allow_hf32': False}
+
 
 def precision_mode(mode):
     """

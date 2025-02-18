@@ -167,6 +167,10 @@ class DeviceAddress : public mindspore::DeviceSync {
   }
 
   virtual ~DeviceAddress() {
+    if (address_common_ != nullptr && address_common_->pointer_ref_count_ != nullptr &&
+        address_common_->pointer_ref_count_->new_ref_count() != SIZE_MAX && GetPtr() != nullptr) {
+      MS_LOG(DEBUG) << "Maybe memory leak detect in device address:" << PrintInfo();
+    }
     if (!from_mem_pool() && deleter_ && GetDevicePtr() != nullptr) {
       deleter_(static_cast<uint8_t *>(GetDevicePtr()));
       SetDevicePtr(nullptr);
@@ -271,7 +275,6 @@ class DeviceAddress : public mindspore::DeviceSync {
   void set_from_persistent_mem(bool from_persistent_mem) { from_persistent_mem_ = from_persistent_mem; }
   bool need_recycle() const { return need_recycle_; }
   void set_need_recycle(bool need_recycle) { need_recycle_ = need_recycle; }
-  virtual bool mem_offloaded() const { return false; }
   void set_status(DeviceAddressStatus status) { status_ = status; }
   DeviceAddressStatus status() const { return status_; }
   virtual DeviceType GetDeviceType() const { return DeviceType::kUnknown; }
@@ -311,6 +314,20 @@ class DeviceAddress : public mindspore::DeviceSync {
 
   size_t IncreaseCounter() { return address_common_->pointer_ref_count_->IncreaseCounter(); }
   size_t DecreaseCounter() { return address_common_->pointer_ref_count_->DecreaseCounter(); }
+
+  void IncreaseNewRefCount(size_t i = 1) {
+    address_common_->pointer_ref_count_->IncreaseNewRefCount(i);
+    MS_LOG(DEBUG) << "Increase new ref count for device address:" << PrintInfo();
+  }
+  size_t DecreaseNewRefCount() {
+    size_t ref_count = address_common_->pointer_ref_count_->DecreaseNewRefCount();
+    MS_LOG(DEBUG) << "Decrease new ref count for device address:" << PrintInfo();
+    return ref_count;
+  }
+  void set_new_ref_count(size_t new_ref_count) const {
+    address_common_->pointer_ref_count_->set_new_ref_count(new_ref_count);
+  }
+  size_t new_ref_count() const { return address_common_->pointer_ref_count_->new_ref_count(); }
 
   // The related interface of reference count operation.
   void set_original_ref_count(size_t original_ref_count) const override {
@@ -352,17 +369,10 @@ class DeviceAddress : public mindspore::DeviceSync {
     return address_common_->pointer_ref_count_->DecreaseDynamicRefCount(op_object);
   }
 
-  virtual bool DumpMemToFile(const std::string &filepath, const std::string &host_fmt, const ShapeVector &host_shape,
-                             TypeId host_type, bool trans_flag) const {
-    return true;
+  virtual mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
+                                                     TypeId host_type, bool trans_flag, bool async_copy = true) const {
+    return nullptr;
   }
-#ifdef ENABLE_DEBUGGER
-  virtual bool LoadMemToHost(const std::string &tensor_name, int execution_order, const std::string &host_fmt,
-                             const ShapeVector &host_shape, TypeId host_type, size_t slot, bool keep_prev,
-                             uint32_t root_graph_id, bool force_update, bool trans_flag, bool async_copy = true) const {
-    return true;
-  }
-#endif
 
   // Return whether DeviceAddress has a valid ptr.
   virtual bool IsPtrValid() const {

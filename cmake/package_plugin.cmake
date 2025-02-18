@@ -30,6 +30,16 @@ set(INSTALL_LIB_DIR ${CMAKE_INSTALL_LIBDIR} CACHE PATH "Installation directory f
 set(INSTALL_BASE_DIR ".")
 set(INSTALL_LIB_DIR "lib")
 set(INSTALL_PLUGIN_DIR "${INSTALL_LIB_DIR}/plugin")
+set(CUSTOM_ASCENDC_PREBUILD_DIR "${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/ascend/ascendc/prebuild")
+
+if(ENABLE_CPU)
+    install(
+        TARGETS mindspore_ops_host LIBRARY
+        DESTINATION ${INSTALL_PLUGIN_DIR}
+        COMPONENT mindspore
+        NAMELINK_SKIP
+    )
+endif()
 
 if(ENABLE_D)
     install(
@@ -76,8 +86,8 @@ if(ENABLE_D)
     install(
             DIRECTORY
             ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/custom_compiler
-            ${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/ascend/ascendc/custom_ascendc_910
-            ${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/ascend/ascendc/custom_ascendc_910b
+            ${CUSTOM_ASCENDC_PREBUILD_DIR}/${CMAKE_SYSTEM_PROCESSOR}/custom_ascendc_ops/custom_ascendc_910
+            ${CUSTOM_ASCENDC_PREBUILD_DIR}/${CMAKE_SYSTEM_PROCESSOR}/custom_ascendc_ops/custom_ascendc_910b
             DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
             COMPONENT mindspore
     )

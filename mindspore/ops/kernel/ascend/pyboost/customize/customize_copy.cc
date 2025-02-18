@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 #include "kernel/ascend/pyboost/customize/customize_copy.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/pipeline/pipeline.h"
 
@@ -57,10 +57,10 @@ void CustomizeCopyAscend(device::DeviceContext *device_context, const device::De
 
   if (runtime::Pipeline::Get().backend_stage()->CanPush()) {
     MS_LOG(DEBUG) << "Dispatch inplacecopy to backend queue";
-    PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([device_context, input_addr, output_addr,
-                                                                               stream_id]() {
-      CustomizeCopyAscendInner(device_context, input_addr, output_addr, stream_id);
-    }));
+    PyBoostUtils::DispatchRun(
+      std::make_shared<runtime::PyBoostDeviceTask>([device_context, input_addr, output_addr, stream_id]() {
+        CustomizeCopyAscendInner(device_context, input_addr, output_addr, stream_id);
+      }));
     return;
   }
 

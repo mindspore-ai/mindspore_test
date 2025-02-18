@@ -15,12 +15,12 @@
  */
 
 #include "kernel/ascend/pyboost/customize/comm_common.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/comm_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/comm_utils.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/runtime_conf/runtime_conf.h"
 #include "utils/ms_utils.h"

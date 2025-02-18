@@ -26,7 +26,6 @@ from packaging import version
 import numpy as np
 from mindspore import log as logger
 from mindspore.log import vlog_print
-from mindspore._c_expression import MSContext, ms_ctx_param
 from ..version import __version__
 
 
@@ -276,6 +275,7 @@ class AscendEnvChecker(EnvChecker):
         self.python_path_check = "opp/built-in/op_impl/ai_core/tbe"
         self.ld_lib_path_check_fwk = "/lib64"
         self.ascend_opp_path_check = "/op"
+        self.ascend_opp_kernel_path_check = "/opp_kernel"
         self.v = ""
 
     @staticmethod
@@ -342,26 +342,30 @@ class AscendEnvChecker(EnvChecker):
                 logger.warning(f"MindSpore version {mindspore_version} and \"te\" wheel package version {v} does not "
                                "match. For details, refer to the installation guidelines: "
                                "https://www.mindspore.cn/install")
-            from hccl import sys_version as hccl_version
-            v = '.'.join(hccl_version.__sys_version__.split('.')[0:2])
-            if v not in supported_version:
-                attention_warning = True
-                logger.warning(f"MindSpore version {mindspore_version} and \"hccl\" wheel package version {v} does not "
-                               "match. For details, refer to the installation guidelines: "
-                               "https://www.mindspore.cn/install")
         # DO NOT modify exception type to any other, you DO NOT know what kind of exceptions the te will throw.
         # pylint: disable=broad-except
         except Exception as e:
             logger.error(f"CheckFailed: {e}")
-            logger.error("MindSpore relies on whl packages of \"te\" and \"hccl\" in the \"latest\" "
-                         "folder of the Ascend AI software package (Ascend Data Center Solution). Please check whether"
-                         " they are installed correctly or not, refer to the match info on: "
-                         "https://www.mindspore.cn/install")
+            logger.critical("MindSpore relies on whl packages of \"te\" in the \"latest\" folder of the "
+                            "Ascend AI software package (Ascend Data Center Solution). Please check whether they are "
+                            "installed correctly or not, refer to the match info on: https://www.mindspore.cn/install")
         if attention_warning:
             warning_countdown = 3
             for i in range(warning_countdown, 0, -1):
                 logger.warning(f"Please pay attention to the above warning, countdown: {i}")
                 time.sleep(1)
+
+    def check_opp_kernel(self):
+        """
+            opp kernel install check
+        """
+
+        opp_kernel_path = self.ascend_opp_path.replace("opp", "opp_kernel")
+        if not os.path.exists(opp_kernel_path):
+            logger.critical("MindSpore relies on \"Ascend opp_kernel\" folder of the Ascend AI software package ("
+                            "Ascend Data Center Solution). Please check whether they are installed correctly or not, "
+                            "refer to the match info on: https://www.mindspore.cn/install")
+            raise Exception("Ascend opp_kernel is not installed")
 
     def set_env(self):
         curr_path = os.path.realpath(os.path.dirname(__file__))
@@ -390,6 +394,8 @@ class AscendEnvChecker(EnvChecker):
 
         # check te version after set te env
         self.check_deps_version()
+
+        self.check_opp_kernel()
 
     def _check_env(self):
         """ascend dependence path check"""
@@ -467,6 +473,7 @@ def check_version_and_env_config():
             logger.warning("Pre-Load Library libgomp.so.1 failed, which might cause TLS memory allocation failure. If "
                            "the failure occurs, please refer to the FAQ for a solution: "
                            "https://www.mindspore.cn/docs/en/master/faq/installation.html.")
+        from mindspore._c_expression import MSContext, ms_ctx_param
         MSContext.get_instance().register_check_env_callback(check_env)
         MSContext.get_instance().register_set_env_callback(set_env)
         MSContext.get_instance().set_device_target_inner(MSContext.get_instance().get_param(ms_ctx_param.device_target))

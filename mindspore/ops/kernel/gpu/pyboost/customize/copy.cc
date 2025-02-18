@@ -15,7 +15,7 @@
  */
 
 #include "kernel/gpu/pyboost/customize/copy.h"
-#include "kernel/common/pyboost/customize/op_common.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
 
 namespace mindspore {
 namespace kernel {

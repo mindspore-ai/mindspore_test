@@ -17,7 +17,7 @@
 #include <vector>
 #include <unordered_map>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/base/types.h"
 
@@ -25,7 +25,7 @@ namespace mindspore {
 namespace kernel {
 void BinaryCrossEntropyWithLogitsAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                                   const std::vector<KernelTensor *> &outputs) {
-  auto reduction_imm = static_cast<Reduction>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]));
+  auto reduction_imm = static_cast<Reduction>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]));
   // transform reduction enum value to corresponding value
   std::unordered_map<Reduction, int64_t> reduction_map = {
     {Reduction::REDUCTION_SUM, 2}, {Reduction::MEAN, 1}, {Reduction::NONE, 0}};
@@ -43,7 +43,7 @@ bool BinaryCrossEntropyWithLogitsAclnnKernelMod::Launch(const std::vector<Kernel
                                                         const std::vector<KernelTensor *> &workspace,
                                                         const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto reduction_imm = static_cast<Reduction>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]));
+  auto reduction_imm = static_cast<Reduction>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]));
   // transform reduction enum value to corresponding value
   std::unordered_map<Reduction, int64_t> reduction_map = {
     {Reduction::REDUCTION_SUM, 2}, {Reduction::MEAN, 1}, {Reduction::NONE, 0}};

@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/dist_comm_all_gather.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/dist_comm_all_gather.h"
 #include <memory>
 #include <utility>
 #include <string>
-#include "kernel/common/pyboost/customize/op_common.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "runtime/hardware/device_context_manager.h"
 
 #if defined(__linux__) && defined(WITH_BACKEND)
@@ -70,10 +70,10 @@ void DistCommAllGatherCPUCustomize(const std::shared_ptr<OpRunner> &op, const Va
       auto gather_addr = (gather_address_info.first)[r]->device_ptr();
       auto output_addr = out_addr[0]->device_ptr();
       auto offset = static_cast<size_t>(r * data_size);
-      auto mem_ret = memcpy_s(reinterpret_cast<char *>(gather_addr), data_size,
-                              reinterpret_cast<char *>(output_addr) + offset, data_size);
+      auto mem_ret = Memcpy(reinterpret_cast<char *>(gather_addr), data_size,
+                            reinterpret_cast<char *>(output_addr) + offset, data_size);
       if (mem_ret != EOK) {
-        MS_LOG(EXCEPTION) << "memcpy_s failed.";
+        MS_LOG(EXCEPTION) << "Memcpy failed. ret is " << mem_ret;
       }
     }
   };

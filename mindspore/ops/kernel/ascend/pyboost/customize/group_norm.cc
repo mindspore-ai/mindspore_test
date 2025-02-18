@@ -17,10 +17,10 @@
 #include "kernel/ascend/pyboost/customize/group_norm.h"
 #include <memory>
 #include <functional>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "kernel/common/pyboost/auto_generate/contiguous.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/contiguous.h"
 
 namespace mindspore {
 namespace kernel {

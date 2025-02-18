@@ -33,6 +33,7 @@
 #include "ir/anf.h"
 #include "frontend/operator/composite/unpack_call.h"
 #include "pipeline/pynative/op_function/auto_generate/functional_map.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace {
@@ -79,9 +80,7 @@ bool Mutable(const py::object &obj, const ValuePtr &value = nullptr) {
   return py::hasattr(obj, mutable_attr) && py::cast<bool>(py::getattr(obj, mutable_attr));
 }
 
-bool IsParameter(const py::object &obj) {
-  return py::hasattr(obj, "__parameter__") && py::isinstance<tensor::MetaTensor>(obj);
-}
+bool IsParameter(const py::object &obj) { return py::hasattr(obj, "__parameter__") && tensor::IsTensorPy(obj); }
 
 bool TensorArgMutable(const py::object &obj, const ValuePtr &value) {
   if (!value->isa<tensor::MetaTensor>()) {
@@ -167,12 +166,13 @@ AnfNodePtr FuncGraphBuilder::ConvertParameterTupleToNode(const py::object &input
   auto tuple_obj = input_obj.cast<py::tuple>();
   std::vector<AnfNodePtr> inputs = {NewValueNode(prim::kPrimMakeTuple)};
   std::vector<AbstractBasePtr> inputs_abs;
+  parse::Resolver resolver(parse::Parser::GetTopFuncGraph());
   for (const auto &obj : tuple_obj) {
     if (!IsParameter(py::cast<py::object>(obj))) {
       MS_LOG(INFO) << "Encounter non parameter object in parameter tuple object: " << py::str(obj);
       return nullptr;
     }
-    auto cur_node = parse::ResolveParameterObj(graph_, py::cast<py::object>(obj));
+    auto cur_node = resolver.ResolveParameterObj(graph_, py::cast<py::object>(obj));
     if (cur_node == nullptr) {
       return nullptr;
     }
@@ -194,7 +194,8 @@ AnfNodePtr FuncGraphBuilder::ConvertParameterTupleToNode(const py::object &input
 AnfNodePtr FuncGraphBuilder::ConvertObjToNode(const py::object &input_obj) {
   if (IsParameter(input_obj)) {
     // Add the fv parameter and set its abstract.
-    return parse::ResolveParameterObj(graph_, input_obj);
+    parse::Resolver resolver(parse::Parser::GetTopFuncGraph());
+    return resolver.ResolveParameterObj(graph_, input_obj);
   }
   auto parameter_tuple_object = ConvertParameterTupleToNode(input_obj);
   if (parameter_tuple_object != nullptr) {

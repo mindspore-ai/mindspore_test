@@ -19,7 +19,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -27,16 +27,18 @@ namespace kernel {
 
 void EluGradExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &outputs) {
-  alpha_ = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex2]);
+  alpha_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex2]);
+  is_result_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex3]);
   MAKE_SCALAR(1.f, inputs[kIndex0]->dtype_id(), scale_);
   MAKE_SCALAR(1.f, inputs[kIndex0]->dtype_id(), input_scale_);
-  GetWorkspaceForResize(inputs[kIndex0], alpha_, scale_, input_scale_, false, inputs[kIndex1], outputs[kIndex0]);
+  GetWorkspaceForResize(inputs[kIndex0], alpha_, scale_, input_scale_, is_result_, inputs[kIndex1], outputs[kIndex0]);
 }
 
 bool EluGradExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                               const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  RunOp(stream_ptr, workspace, inputs[kIndex0], alpha_, scale_, input_scale_, false, inputs[kIndex1], outputs[kIndex0]);
+  RunOp(stream_ptr, workspace, inputs[kIndex0], alpha_, scale_, input_scale_, is_result_, inputs[kIndex1],
+        outputs[kIndex0]);
   return true;
 }
 

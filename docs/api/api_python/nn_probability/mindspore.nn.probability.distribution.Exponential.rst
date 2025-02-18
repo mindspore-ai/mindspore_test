@@ -9,36 +9,36 @@ mindspore.nn.probability.distribution.Exponential
     .. math::
         f(x, \lambda) = \lambda \exp(-\lambda x)
 
-    其中 :math:`\lambda` 为分别为指数分布的率参数。
+    其中 :math:`\lambda` 为指数分布的率参数。
 
     参数：
-        - **rate** (int, float, list, numpy.ndarray, Tensor) - 率参数。默认值： ``None`` 。
-        - **seed** (int) - 采样时使用的种子。如果为None，则使用全局种子。默认值：None。
-        - **dtype** (mindspore.dtype) - 事件样例的类型。默认值：mstype.float32。
-        - **name** (str) - 分布的名称。默认值： ``'Exponential'`` 。
+        - **rate** (int, float, list, numpy.ndarray, Tensor) - 率参数。公式中的 :math:`\lambda`。默认值： ``None``。
+        - **seed** (int) - 采样时使用的种子。如果为 ``None``，则使用全局种子。默认值： ``None``。
+        - **dtype** (mindspore.dtype) - 事件样例的类型。默认值： ``mstype.float32``。
+        - **name** (str) - 分布的名称。默认值： ``'Exponential'``。
 
-    .. note:: 
+    .. note::
         - `rate` 中的元素必须大于0。
         - `dtype` 必须是float，因为指数分布是连续的。
 
     异常：
         - **ValueError** - `rate` 中元素小于0。
-        - **TypeError** - `dtype` 不是float的子类。
+        - **TypeError** - `dtype` 不是float或float的子类。
 
     .. py:method:: rate
         :property:
 
-        返回 `rate` 。
+        返回指数分布的率参数 `rate` 。
 
         返回：
             Tensor，率参数的值。
 
     .. py:method:: cdf(value, rate)
 
-        在给定值下计算累积分布函数（Cumulatuve Distribution Function, CDF）。
+        基于给定值计算累积分布函数（Cumulatuve Distribution Function, CDF）。
 
         参数：
-            - **value** (Tensor) - 要计算的值。
+            - **value** (Tensor) - 待计算的值。
             - **rate** (Tensor) - 分布的率参数。默认值： ``None`` 。
 
         返回：
@@ -50,8 +50,8 @@ mindspore.nn.probability.distribution.Exponential
 
         参数：
             - **dist** (str) - 分布的类型。
-            - **rate_b** (Tensor) - 对比分布的率参数。
-            - **rate** (Tensor) - 分布的率参数。默认值： ``None`` 。
+            - **rate_b** (Tensor) - 对比分布b的率参数。
+            - **rate** (Tensor) - 分布a的率参数。默认值： ``None`` 。
 
         返回：
             Tensor，交叉熵的值。
@@ -68,22 +68,22 @@ mindspore.nn.probability.distribution.Exponential
 
     .. py:method:: kl_loss(dist, rate_b, rate)
 
-        计算KL散度，即KL(a||b)。
+        计算分布a和分布b之间的KL散度，即KL(a||b)。
 
         参数：
             - **dist** (str) - 分布的类型。
-            - **rate_b** (Tensor) - 对比分布的率参数。
-            - **rate** (Tensor) - 分布的率参数。默认值： ``None`` 。
+            - **rate_b** (Tensor) - 对比分布b的率参数。
+            - **rate** (Tensor) - 分布a的率参数。默认值： ``None`` 。
 
         返回：
             Tensor，KL散度。
 
     .. py:method:: log_cdf(value, rate)
 
-        计算给定值对于的累积分布函数的对数。
+        计算给定值对应的累积分布函数的对数。
 
         参数：
-            - **value** (Tensor) - 要计算的值。
+            - **value** (Tensor) - 待计算的值。
             - **rate** (Tensor) - 分布的率参数。默认值： ``None`` 。
 
         返回：
@@ -94,7 +94,7 @@ mindspore.nn.probability.distribution.Exponential
         计算给定值对应的概率的对数。
 
         参数：
-            - **value** (Tensor) - 要计算的值。
+            - **value** (Tensor) - 待计算的值。
             - **rate** (Tensor) - 分布的率参数。默认值： ``None`` 。
 
         返回：
@@ -105,7 +105,7 @@ mindspore.nn.probability.distribution.Exponential
         计算给定值对应的生存函数的对数。
 
         参数：
-            - **value** (Tensor) - 要计算的值。
+            - **value** (Tensor) - 待计算的值。
             - **rate** (Tensor) - 分布的率参数。默认值： ``None`` 。
 
         返回：
@@ -133,10 +133,10 @@ mindspore.nn.probability.distribution.Exponential
 
     .. py:method:: prob(value, rate)
 
-        计算给定值下的概率。对于连续是计算概率密度函数（Probability Density Function）。
+        计算给定值下的概率。对于连续随机分布是计算概率密度函数（Probability Density Function）。
 
         参数：
-            - **value** (Tensor) - 要计算的值。
+            - **value** (Tensor) - 待计算的值。
             - **rate** (Tensor) - 分布的率参数。默认值： ``None`` 。
 
         返回：
@@ -144,10 +144,10 @@ mindspore.nn.probability.distribution.Exponential
 
     .. py:method:: sample(shape, rate)
 
-        采样函数。
+        计算采样函数。
 
         参数：
-            - **shape** (tuple) - 样本的shape。
+            - **shape** (tuple) - 期望得到的样本shape。
             - **rate** (Tensor) - 分布的率参数。默认值： ``None`` 。
 
         返回：
@@ -168,7 +168,7 @@ mindspore.nn.probability.distribution.Exponential
         计算给定值对应的生存函数。
 
         参数：
-            - **value** (Tensor) - 要计算的值。
+            - **value** (Tensor) - 待计算的值。
             - **rate** (Tensor) - 分布的率参数。默认值： ``None`` 。
 
         返回：
@@ -179,7 +179,7 @@ mindspore.nn.probability.distribution.Exponential
         计算方差。
 
         参数：
-            - **rate** (Tensor) - 分布的率参数。默认值：None。
+            - **rate** (Tensor) - 分布的率参数。默认值： ``None``。
 
         返回：
             Tensor，概率分布的方差。

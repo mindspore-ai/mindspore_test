@@ -25,6 +25,7 @@
 #include "pipeline/pynative/pynative_utils.h"
 #include "pipeline/pynative/grad/jit/jit_dfunctor.h"
 #include "pipeline/jit/ps/pipeline.h"
+#include "pipeline/jit/ps/pipeline_jit.h"
 #include "ir/func_graph_cloner.h"
 #include "frontend/expander/bprop/bprop.h"
 
@@ -69,6 +70,10 @@ FrontendOpRunInfoPtr GetOpRunInfo(const py::args &args, const std::string &graph
   PyNativeAlgo::PyParser::ParseOpInputByPythonObj(op_run_info, new_args);
   // Set input abs
   const auto &original_params = jit_forward_graph->parameters();
+  if (op_run_info->input_size > original_params.size()) {
+    MS_LOG(EXCEPTION) << "The number of inputs: " << op_run_info->input_size
+                      << " should not greater than the number of parameters,which is : " << original_params.size();
+  }
   for (size_t i = 0; i < op_run_info->input_size; ++i) {
     op_run_info->op_grad_info->input_abs[i] = original_params[i]->abstract();
   }
@@ -579,7 +584,7 @@ void Jit::GradJitInner(const FrontendOpRunInfoPtr &op_run_info, const GradExecut
 }
 
 bool Jit::GetJitGradGraph(const pipeline::ResourcePtr &resource) {
-  auto graph_executor = pipeline::GraphExecutorPy::GetInstance();
+  pipeline::ExecutorPyPtr graph_executor = pipeline::GetExecutor();
   MS_EXCEPTION_IF_NULL(graph_executor);
   graph_phase_ = graph_executor->phase();
   MS_LOG(DEBUG) << "The phase of current pipeline graph is: " << graph_phase_;
@@ -639,7 +644,7 @@ py::object Jit::GradJit(const py::args &args) {
     MS_LOG(EXCEPTION) << "The graph phase is empty, can not obtain jit func graph.";
   }
   MS_LOG(DEBUG) << "jit func graph phase: " << graph_phase_;
-  auto executor = pipeline::GraphExecutorPy::GetInstance();
+  pipeline::ExecutorPyPtr executor = pipeline::GetExecutor();
   MS_EXCEPTION_IF_NULL(executor);
   const auto &grad_executor = mindspore::pynative::PyNativeExecutor::grad_executor();
   // For no grad function, execute forward graph directly

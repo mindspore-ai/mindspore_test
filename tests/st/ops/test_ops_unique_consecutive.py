@@ -73,7 +73,7 @@ def forward_expect_func(inputx, return_inverse=False, return_counts=False, dim=N
 
 @test_utils.run_with_cell
 def unique_consecutive_forward_func(inputx, return_inverse=False, return_counts=False, dim=None):
-    return unique_consecutive(inputx, return_inverse, return_counts, dim)
+    return unique_consecutive(inputx, return_inverse=return_inverse, return_counts=return_counts, dim=dim)
 
 @test_utils.run_with_cell
 def unique_consecutive_forward_func_dynamic(inputx, dim=1):
@@ -110,7 +110,7 @@ def test_ops_unique_consecutive_forward(mode):
         out6, inverse6, counts6 = unique_consecutive_forward_func(inputx, True, True, 0)
     elif mode == "KBK":
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        op = ms.jit(unique_consecutive_forward_func, jit_config=ms.JitConfig(jit_level="O0"))
+        op = ms.jit(unique_consecutive_forward_func, jit_level="O0")
         out1 = op(inputx)
         out2, inverse2 = op(inputx, True, False, None)
         out3, counts3 = op(inputx, False, True, None)
@@ -119,7 +119,7 @@ def test_ops_unique_consecutive_forward(mode):
         out6, inverse6, counts6 = op(inputx, True, True, 0)
     else:
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        op = ms.jit(unique_consecutive_forward_func, jit_config=ms.JitConfig(jit_level="O2"))
+        op = ms.jit(unique_consecutive_forward_func, backend="GE")
         out1 = unique_consecutive_forward_func(inputx)
         out2, inverse2 = unique_consecutive_forward_func(inputx, True, False, None)
         out3, counts3 = unique_consecutive_forward_func(inputx, False, True, None)

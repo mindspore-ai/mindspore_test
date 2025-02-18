@@ -20,15 +20,15 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
 void BatchNormGatherStatsWithCountsAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                             const std::vector<KernelTensor *> &outputs) {
-  auto momentum = transform::ConvertKernelTensor<float>(inputs[kIndex5]);
-  auto eps = transform::ConvertKernelTensor<float>(inputs[kIndex6]);
+  auto momentum = device::ascend::ConvertKernelTensor<float>(inputs[kIndex5]);
+  auto eps = device::ascend::ConvertKernelTensor<float>(inputs[kIndex6]);
   double momentum_d = static_cast<double>(momentum);
   double eps_d = static_cast<double>(eps);
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4], momentum_d,
@@ -39,8 +39,8 @@ bool BatchNormGatherStatsWithCountsAscend::Launch(const std::vector<KernelTensor
                                                   const std::vector<KernelTensor *> &workspace,
                                                   const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto momentum = transform::ConvertKernelTensor<float>(inputs[kIndex5]);
-  auto eps = transform::ConvertKernelTensor<float>(inputs[kIndex6]);
+  auto momentum = device::ascend::ConvertKernelTensor<float>(inputs[kIndex5]);
+  auto eps = device::ascend::ConvertKernelTensor<float>(inputs[kIndex6]);
   double momentum_d = static_cast<double>(momentum);
   double eps_d = static_cast<double>(eps);
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4],

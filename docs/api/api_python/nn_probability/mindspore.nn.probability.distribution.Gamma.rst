@@ -18,7 +18,7 @@ mindspore.nn.probability.distribution.Gamma
         - **dtype** (mindspore.dtype) - 事件样例的类型。默认值：mstype.float32。
         - **name** (str) - 分布的名称。默认值： ``'Gamma'`` 。
 
-    .. note:: 
+    .. note::
         - `concentration` 和 `rate` 中的元素必须大于零。
         - `dtype` 必须是float，因为伽马分布是连续的。
 

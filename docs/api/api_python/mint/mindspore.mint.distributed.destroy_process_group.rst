@@ -11,7 +11,7 @@ mindspore.mint.distributed.destroy_process_group
         - 此方法应该在 :func:`mindspore.mint.distributed.init_process_group` 方法之后使用。
 
     参数：
-        - **group** (str，可选) - 通信组名称，通常由 `mindspore.mint.distributed.new_group` 方法创建，如果为 ``None`` ， Ascend平台表示为 ``"hccl_world_group"`` 。 默认值： ``None`` 。
+        - **group** (str，可选) - 通信组名称，通常由 :func:`mindspore.mint.distributed.new_group` 方法创建，如果为 ``None`` ， Ascend平台表示为 ``"hccl_world_group"`` 。 默认值： ``None`` 。
 
     异常：
         - **TypeError** - 在参数 `group` 不是字符串时抛出。

@@ -26,6 +26,7 @@
 
 #include "utils/hash_map.h"
 #include "include/common/utils/contract.h"
+#include "base/base_ref.h"
 #include "ir/anf.h"
 #include "backend/graph_compiler/backend_base.h"
 #include "backend/graph_compiler/segment_runner.h"
@@ -38,6 +39,7 @@
 #include "runtime/pipeline/task/device_task.h"
 #include "runtime/pynative/op_compiler.h"
 #include "runtime/pynative/graph_adapter.h"
+#include "runtime/pynative/op_runner.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {
@@ -115,6 +117,31 @@ class BACKEND_EXPORT MindRTBackend : public MindRTBackendBase {
   pynative::GraphAdapter graph_adapter_;
 
   bool first_step_{true};
+};
+
+class BACKEND_EXPORT PyBoostAdapter {
+ public:
+  PyBoostAdapter() = default;
+  ~PyBoostAdapter() = default;
+
+  using IsPyBoostRegisteredFunc = std::function<bool(const std::string &device_target, const std::string &op_name)>;
+  using RunPyBoostCallFunc = std::function<void(runtime::OpRunnerInfo *, VectorRef *)>;
+
+  static bool IsPyBoostRegistered(const std::string &device_target, const std::string &op_name) {
+    MS_EXCEPTION_IF_NULL(is_pyboost_registered_func_);
+    return is_pyboost_registered_func_(device_target, op_name);
+  }
+  static void RunPyBoostCall(runtime::OpRunnerInfo *op_runner_info, VectorRef *op_outputs) {
+    MS_EXCEPTION_IF_NULL(run_pyboost_call_func_);
+    run_pyboost_call_func_(op_runner_info, op_outputs);
+  }
+
+  static void SetIsPyBoostRegistered(const IsPyBoostRegisteredFunc &func) { is_pyboost_registered_func_ = func; }
+  static void SetRunPyBoostCallFunc(const RunPyBoostCallFunc &func) { run_pyboost_call_func_ = func; }
+
+ private:
+  inline static IsPyBoostRegisteredFunc is_pyboost_registered_func_;
+  inline static RunPyBoostCallFunc run_pyboost_call_func_;
 };
 using MindRTBackendPtr = std::shared_ptr<compile::MindRTBackend>;
 }  // namespace compile

@@ -25,7 +25,7 @@
 #include "utils/ms_utils.h"
 #include "kernel/kernel.h"
 #include "runtime/collective/collective_communication_lib.h"
-#include "plugin/device/ascend/hal/device/ascend_event.h"
+#include "plugin/res_manager/ascend/event/ascend_event.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ccool_communication_group.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_communication_group.h"

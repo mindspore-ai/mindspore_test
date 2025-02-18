@@ -47,9 +47,9 @@
 
         - **requires_grad** (bool) - 是否需要微分求梯度。默认值： ``True`` 。
         - **layerwise_parallel** (bool) - 在数据/混合并行模式下， `layerwise_parallel` 配置为 ``True`` 时，参数广播和梯度聚合时会过滤掉该 `Parameter` 。默认值： ``False`` 。
-        - **parallel_optimizer** (bool) - 用于在 `SEMI_AUTO_PARALLEL` 或 `AUTO_PARALLEL` 并行模式下区分该参数是否进行优化器切分。仅在 `mindspore.set_auto_parallel_context()` 并行配置模块中设置 `enable_parallel_optimizer` 启用优化器并行时有效。默认值： ``True`` 。
+        - **parallel_optimizer** (bool) - 用于在 `SEMI_AUTO_PARALLEL` 或 `AUTO_PARALLEL` 并行模式下区分该参数是否进行优化器切分。仅在 :func:`mindspore.set_auto_parallel_context` 并行配置模块中设置 `enable_parallel_optimizer` 启用优化器并行时有效。默认值： ``True`` 。
         - **storage_format** (str) - 仅限Ascend，用于指定权重加载到设备的格式。默认不改变格式，可选值为： ``"FRACTAL_NZ"`` 、 ``"NC1HWC0"`` 、 ``"FRACTAL_Z"`` 等。默认值： ``""`` 。
-        - **device** (str) - 仅限Ascend，用于指定存储Parameter的设备。默认情况下，Parameter将在计算时存储在设备上。当device被指定为 ``"CPU"`` 时，Parameter将在需要使用时加载到设备上，并在使用后卸载至CPU。仅当 `mindspore.set_context` 中的 `memory_offload` 配置为 ``"ON"`` ， `jit_level` 配置为非 ``"O2"`` ， `memory_optimize_level` 配置为 ``"O0"`` 时生效。可以通过指定device为 ``"CPU"`` 节省显存。
+        - **device** (str) - 仅限Ascend，用于指定存储Parameter的设备。默认情况下，Parameter将在计算时存储在设备上。当device被指定为 ``"CPU"`` 时，Parameter将在需要使用时加载到设备上，并在使用后卸载至CPU。仅当 :func:`mindspore.set_context` 中的 `memory_offload` 配置为 ``"ON"`` ， `jit_level` 配置为非 ``"O2"`` ， `memory_optimize_level` 配置为 ``"O0"`` 时生效。可以通过指定device为 ``"CPU"`` 节省显存。
 
     .. py:method:: add_pipeline_stage(stage)
 
@@ -153,7 +153,7 @@
 
         获取此参数的优化器并行状态（bool）。
 
-        用于在 `AUTO_PARALLEL` 和 `SEMI_AUTO_PARALLEL` 模式下过滤权重切分操作。当在 `mindspore.set_auto_parallel_context()` 中启用优化器并行时，它才有效。
+        用于在 `AUTO_PARALLEL` 和 `SEMI_AUTO_PARALLEL` 模式下过滤权重切分操作。当在 :func:`mindspore.set_auto_parallel_context` 中启用优化器并行时，它才有效。
 
     .. py:method:: parallel_optimizer_comm_recompute
         :property:
@@ -190,7 +190,7 @@
 
         表示可训练参数是否由参数服务器更新，以及可训练参数是否在服务器上初始化。
 
-        .. note:: 
+        .. note::
             仅当运行的任务处于参数服务器模式下有效。
             只支持在图模式下调用。
 

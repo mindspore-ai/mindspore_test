@@ -20,6 +20,8 @@
 #include <utility>
 #include <unordered_map>
 #include <algorithm>
+
+#include "include/common/utils/tensor_py.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/ps/pipeline.h"
@@ -46,6 +48,7 @@ struct PyDataToValueRegister {
   }
 } callback_register;
 }  // namespace
+
 using Tensor = mindspore::tensor::Tensor;
 using TensorPtr = mindspore::tensor::TensorPtr;
 using BaseTensor = mindspore::tensor::BaseTensor;
@@ -487,9 +490,11 @@ ValuePtr ConvertSlice(const py::object &obj) {
       auto value = py::cast<int64_t>(py_attr);
       return MakeValue(value);
     }
-    if (py::isinstance<Tensor>(py_attr)) {
-      return py::cast<TensorPtr>(py_attr);
+
+    if (tensor::IsTensorPy(py_attr)) {
+      return tensor::ConvertToTensor(py_attr);
     }
+
     if (IsStubTensor(py_attr)) {
       return ConvertStubTensor(py_attr);
     }
@@ -657,6 +662,12 @@ void ConvertBackwardHookToFuncGraph(const py::object &obj) {
 }
 
 ValuePtr ConvertCellObjToFuncGraph(const py::object &obj, const ValuePtrList &args_value_list) {
+  if (py::hasattr(obj, "construct")) {
+    const auto &construct_obj = py::getattr(obj, "construct");
+    if (py::hasattr(construct_obj, "__trace_func__")) {
+      return prim::kPrimTraceGraph;
+    }
+  }
   FuncGraphPtr func_graph = ConvertToFuncGraph(obj, args_value_list);
   if (func_graph == nullptr) {
     MS_LOG(ERROR) << "Parse resolve function error.";
@@ -768,6 +779,9 @@ ValuePtr ConvertOtherObj(const py::object &obj, bool forbid_reuse = false) {
         MS_LOG(DEBUG) << "Converting the function from third-party library: " << py::str(obj);
         return std::make_shared<InterpretedObject>(obj);
       }
+    }
+    if (py::hasattr(obj, "__trace_func__")) {
+      return prim::kPrimTraceGraph;
     }
     MS_LOG(DEBUG) << "Convert the obj to func graph, type is " << obj_type;
     FuncGraphPtr func_graph = ConvertToFuncGraph(obj, {}, PYTHON_MOD_GET_PARSE_METHOD, forbid_reuse);
@@ -900,9 +914,8 @@ static const std::vector<DataConvertFuncPtr> &GetDataConvertFuncs() {
     // AdapterTensor needs to be processed before Tensor because it inherits from Tensor.
     std::make_shared<ByFuncDataConvertFunc>(IsStubTensor, ConvertStubTensor),
     std::make_shared<ByFuncDataConvertFunc>(IsNamedTuple, ConvertNamedTuple),
-    std::make_shared<ByTypeDataConvertFunc<Tensor>>(ConvertTensorAndSyncCompiling),
+    std::make_shared<ByFuncDataConvertFunc>(tensor::IsTensorPy, ConvertTensorAndSyncCompiling),
     std::make_shared<ByAttrDataConvertFunc>(ConvertMsClass, PYTHON_MS_CLASS),
-    std::make_shared<ByTypeDataConvertFunc<BaseTensor>>(ObjCast<BaseTensorPtr>),
     std::make_shared<ByTypeDataConvertFunc<stub::TensorNode>>(ConvertTensorNode),
     std::make_shared<ByTypeDataConvertFunc<py::tuple>>(ConvertTuple),
     std::make_shared<ByTypeDataConvertFunc<py::list>>(ConvertList),
@@ -911,7 +924,6 @@ static const std::vector<DataConvertFuncPtr> &GetDataConvertFuncs() {
     std::make_shared<ByTypeDataConvertFunc<py::float_>>(ConvertFloatWithType),
     std::make_shared<ByTypeDataConvertFunc<py::str>>(PyCast<StringImm, string>),
     std::make_shared<ByTypeDataConvertFunc<py::none>>(kNone),
-    std::make_shared<ByTypeDataConvertFunc<MetaTensor>>(ObjCast<MetaTensorPtr>),
     std::make_shared<ByTypeDataConvertFunc<CSRTensor>>(ObjCast<CSRTensorPtr>),
     std::make_shared<ByTypeDataConvertFunc<COOTensor>>(ObjCast<COOTensorPtr>),
     std::make_shared<ByTypeDataConvertFunc<MapTensor>>(ObjCast<MapTensorPtr>),
@@ -1063,8 +1075,9 @@ FuncGraphPtr ProcessLazyInline(const py::object &obj, const ValuePtrList &args_v
     }
     PyObjectWrapperPtr python_obj = std::make_shared<PyObjectWrapper>(obj, "graph python obj");
     base_graph->set_python_obj(python_obj);
-    MS_LOG(DEBUG) << "Parse reusing function: " << reusing_graph->ToString();
     reusing_graph = MakeReusingGraph(base_graph);
+    MS_EXCEPTION_IF_NULL(reusing_graph);
+    MS_LOG(DEBUG) << "Parse reusing function: " << reusing_graph->ToString();
     data_converter::CacheObjectValue(obj_key, reusing_graph);
   }
   // Let the original cell graph call the reusable graph.
@@ -1363,11 +1376,11 @@ ValuePtr ConvertTensor(const py::object &obj) {
     return PyStubNodeCast(obj);
   }
 
-  if (!py::isinstance<mindspore::tensor::Tensor>(obj)) {
-    return nullptr;
+  if (tensor::IsTensorPy(obj)) {
+    return tensor::ConvertToTensor(obj);
   }
 
-  return ObjCast<TensorPtr>(obj);
+  return nullptr;
 }
 
 TensorPtr ConvertTensorValue(const py::object &obj) {
@@ -1377,7 +1390,7 @@ TensorPtr ConvertTensorValue(const py::object &obj) {
     auto py_stub = py::getattr(obj, stub::PY_ATTR_STUB);
     auto stub = py_stub.cast<stub::StubNodePtr>();
     if (stub == nullptr) {
-      return py::getattr(obj, stub::PY_ATTR_TENSOR).cast<tensor::TensorPtr>();
+      return tensor::ConvertToTensor(py::getattr(obj, stub::PY_ATTR_TENSOR));
     }
     auto value = stub->WaitValue();
     auto tensor = value->cast<TensorPtr>();
@@ -1390,10 +1403,12 @@ TensorPtr ConvertTensorValue(const py::object &obj) {
     }
     return tensor;
   }
-  if (!py::isinstance<mindspore::tensor::Tensor>(obj)) {
-    return nullptr;
+
+  if (tensor::IsTensorPy(obj)) {
+    return tensor::ConvertToTensor(obj);
   }
-  return obj.cast<TensorPtr>();
+
+  return nullptr;
 }
 
 static inline void *GetTensorDataPtr(const tensor::TensorPtr &tensor) {

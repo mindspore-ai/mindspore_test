@@ -23,10 +23,11 @@
 #include <set>
 #include <map>
 #include <utility>
+#include <tuple>
 #include "runtime/hardware/device_context.h"
 #include "runtime/device/memory_manager.h"
 #include "runtime/device/kernel_runtime.h"
-#include "plugin/device/ascend/hal/device/ascend_device_address.h"
+#include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 
 namespace mindspore {
 namespace device {
@@ -91,8 +92,9 @@ class GeKernelExecutor : public KernelExecutor {
 
  private:
   static void DoSomas(const FuncGraphPtr &graph);
-  void DoStreamAssign(const KernelGraphPtr &kernel_graph,
-                      const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events) const;
+  void DoStreamAssign(
+    const KernelGraphPtr &kernel_graph,
+    const std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> &mock_exec_order) const;
   // launch
   bool MemoryCopyAsync(const CNodePtr &node, const vector<KernelTensor *> &inputs,
                        const vector<KernelTensor *> &outputs) const;

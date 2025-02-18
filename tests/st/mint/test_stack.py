@@ -70,8 +70,8 @@ def test_stack_forward_backward(mode):
         output = stack_forward_func(tensor_inputs[0], tensor_inputs[1])
         outputs = stack_backward_func(tensor_inputs[0], tensor_inputs[1])
     else:
-        output = (jit(stack_forward_func, jit_config=JitConfig(jit_level="O0")))(tensor_inputs[0], tensor_inputs[1])
-        outputs = (jit(stack_backward_func, jit_config=JitConfig(jit_level="O0")))(tensor_inputs[0], tensor_inputs[1])
+        output = (jit(stack_forward_func, jit_level="O0"))(tensor_inputs[0], tensor_inputs[1])
+        outputs = (jit(stack_backward_func, jit_level="O0"))(tensor_inputs[0], tensor_inputs[1])
     assert np.allclose(output.asnumpy(), expect)
     for output, expect in zip(outputs, expects):
         assert np.allclose(output.asnumpy(), expect)

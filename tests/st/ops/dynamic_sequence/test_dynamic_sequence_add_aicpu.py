@@ -28,7 +28,7 @@ from mindspore.ops._op_impl.aicpu.sequence_add_offset import _sequence_add_offse
 from mindspore.ops._op_impl.aicpu.sequence_add import _sequence_add_aicpu
 
 context.set_context(mode=context.GRAPH_MODE)
-context.set_context(jit_level='O2')
+context.set_context(jit_config={"jit_level": "O0"})
 
 
 class NetAdd(nn.Cell):

@@ -22,7 +22,7 @@
 #include <string>
 #include "ir/tensor.h"
 #include "ir/value.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "hccl/hccl.h"
 
 namespace mindspore {

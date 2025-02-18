@@ -20,7 +20,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -34,27 +34,27 @@ void IndexFillScalarAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &
   auto alpha_dtype_id = inputs[kIndex2]->dtype_id();
   switch (alpha_dtype_id) {
     case kNumberTypeInt64: {
-      auto index = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex2]);
+      auto index = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex2]);
       convertedIndex.assign(index.begin(), index.end());
       break;
     }
     case kNumberTypeInt32: {
-      auto index = transform::ConvertKernelTensor<std::vector<int32_t>>(inputs[kIndex2]);
+      auto index = device::ascend::ConvertKernelTensor<std::vector<int32_t>>(inputs[kIndex2]);
       convertedIndex.assign(index.begin(), index.end());
       break;
     }
     case kNumberTypeInt16: {
-      auto index = transform::ConvertKernelTensor<std::vector<int16_t>>(inputs[kIndex2]);
+      auto index = device::ascend::ConvertKernelTensor<std::vector<int16_t>>(inputs[kIndex2]);
       convertedIndex.assign(index.begin(), index.end());
       break;
     }
     case kNumberTypeInt8: {
-      auto index = transform::ConvertKernelTensor<std::vector<int8_t>>(inputs[kIndex2]);
+      auto index = device::ascend::ConvertKernelTensor<std::vector<int8_t>>(inputs[kIndex2]);
       convertedIndex.assign(index.begin(), index.end());
       break;
     }
     case kNumberTypeUInt8: {
-      auto index = transform::ConvertKernelTensor<std::vector<uint8_t>>(inputs[kIndex2]);
+      auto index = device::ascend::ConvertKernelTensor<std::vector<uint8_t>>(inputs[kIndex2]);
       convertedIndex.assign(index.begin(), index.end());
       break;
     }
@@ -74,27 +74,27 @@ bool IndexFillScalarAscend::Launch(const std::vector<KernelTensor *> &inputs,
   std::vector<int64_t> convertedIndex;
   switch (alpha_dtype_id) {
     case kNumberTypeInt64: {
-      auto index = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex2]);
+      auto index = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex2]);
       convertedIndex.assign(index.begin(), index.end());
       break;
     }
     case kNumberTypeInt32: {
-      auto index = transform::ConvertKernelTensor<std::vector<int32_t>>(inputs[kIndex2]);
+      auto index = device::ascend::ConvertKernelTensor<std::vector<int32_t>>(inputs[kIndex2]);
       convertedIndex.assign(index.begin(), index.end());
       break;
     }
     case kNumberTypeInt16: {
-      auto index = transform::ConvertKernelTensor<std::vector<int16_t>>(inputs[kIndex2]);
+      auto index = device::ascend::ConvertKernelTensor<std::vector<int16_t>>(inputs[kIndex2]);
       convertedIndex.assign(index.begin(), index.end());
       break;
     }
     case kNumberTypeInt8: {
-      auto index = transform::ConvertKernelTensor<std::vector<int8_t>>(inputs[kIndex2]);
+      auto index = device::ascend::ConvertKernelTensor<std::vector<int8_t>>(inputs[kIndex2]);
       convertedIndex.assign(index.begin(), index.end());
       break;
     }
     case kNumberTypeUInt8: {
-      auto index = transform::ConvertKernelTensor<std::vector<uint8_t>>(inputs[kIndex2]);
+      auto index = device::ascend::ConvertKernelTensor<std::vector<uint8_t>>(inputs[kIndex2]);
       convertedIndex.assign(index.begin(), index.end());
       break;
     }

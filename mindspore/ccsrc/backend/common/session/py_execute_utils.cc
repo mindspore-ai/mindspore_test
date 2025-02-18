@@ -20,9 +20,10 @@
 #include "include/common/utils/stub_tensor.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/cpu/pyexecute/py_execute_cpu_kernel.h"
+#include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/convert_utils_py.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore::pyexecute {
 PyDataConverter py_data_convert_handler{nullptr};
@@ -99,8 +100,8 @@ bool CheckSequenceToMemory(const py::sequence &obj) {
     return CheckSequenceElementSame<py::int_>(obj);
   } else if (py::isinstance<py::float_>(first_obj)) {
     return CheckSequenceElementSame<py::float_>(obj);
-  } else if (py::isinstance<tensor::Tensor>(first_obj)) {
-    return CheckSequenceElementSame<tensor::Tensor>(obj);
+  } else if (tensor::IsTensorPy(first_obj)) {
+    return CheckSequenceElementSame<tensor::TensorPy>(obj);
   }
   return false;
 }
@@ -114,8 +115,8 @@ tensor::TensorPtr SequenceToValue(const py::sequence &obj) {
   std::vector<ValuePtr> values;
   for (size_t i = 0; i < obj_len; ++i) {
     auto element_obj = obj[i];
-    if (py::isinstance<tensor::Tensor>(element_obj)) {
-      values.emplace_back(element_obj.cast<tensor::TensorPtr>());
+    if (tensor::IsTensorPy(element_obj)) {
+      values.emplace_back(tensor::ConvertToTensor(element_obj));
     } else {
       values.emplace_back(ScalarToValue(element_obj));
     }
@@ -125,7 +126,7 @@ tensor::TensorPtr SequenceToValue(const py::sequence &obj) {
 
 bool IsValidObj(const py::object &obj) {
   py::gil_scoped_acquire gil_acquire;
-  return py::isinstance<tensor::Tensor>(obj) ||
+  return tensor::IsTensorPy(obj) ||
          ((py::isinstance<py::list>(obj) || py::isinstance<py::tuple>(obj)) &&
           CheckSequenceToMemory(py::sequence(obj))) ||
          py::isinstance<py::bool_>(obj) || py::isinstance<py::int_>(obj) || py::isinstance<py::float_>(obj);
@@ -228,8 +229,8 @@ size_t GetSizeForAbstract(const abstract::AbstractBasePtr &abstract) {
 }
 
 ValuePtr ConvertPyObjectToValue(const py::object &obj) {
-  if (py::isinstance<tensor::Tensor>(obj)) {
-    return obj.cast<tensor::TensorPtr>();
+  if (tensor::IsTensorPy(obj)) {
+    return tensor::ConvertToTensor(obj);
   } else if (py::isinstance<py::list>(obj) || py::isinstance<py::tuple>(obj)) {
     if (!CheckSequenceToMemory(py::sequence(obj))) {
       return nullptr;
@@ -257,8 +258,8 @@ ValuePtr ConvertPyObjectToValue(const py::object &obj) {
 
 tensor::TensorPtr GetValueByPyObj(const py::object &obj) {
   py::gil_scoped_acquire gil_acquire;
-  if (py::isinstance<tensor::Tensor>(obj)) {
-    return obj.cast<tensor::TensorPtr>();
+  if (tensor::IsTensorPy(obj)) {
+    return tensor::ConvertToTensor(obj);
   } else if (py::isinstance<py::list>(obj) || py::isinstance<py::tuple>(obj)) {
     return SequenceToValue(py::sequence(obj));
   } else if (py::isinstance<py::bool_>(obj) || py::isinstance<py::int_>(obj) || py::isinstance<py::float_>(obj)) {
@@ -270,8 +271,8 @@ tensor::TensorPtr GetValueByPyObj(const py::object &obj) {
 abstract::AbstractBasePtr GenerateAbstractFromPyObject(const py::object &obj) {
   // This function will be moved to runtime compile pass later.
   py::gil_scoped_acquire gil_acquire;
-  if (py::isinstance<tensor::Tensor>(obj) || IsStubTensor(obj)) {
-    const auto &tensor = IsStubTensor(obj) ? ConvertStubTensor(obj) : obj.cast<tensor::TensorPtr>();
+  if (tensor::IsTensorPy(obj) || IsStubTensor(obj)) {
+    const auto &tensor = IsStubTensor(obj) ? ConvertStubTensor(obj) : tensor::ConvertToTensor(obj);
     MS_EXCEPTION_IF_NULL(tensor);
     MS_LOG(DEBUG) << "tensor:" << tensor->ToString() << " is stub tensor:" << IsStubTensor(obj);
     return tensor->ToAbstract();

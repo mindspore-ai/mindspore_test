@@ -32,11 +32,50 @@ from mindspore.ops.operations._inner_ops import DynamicBroadcastTo
 from mindspore.ops.operations._sequence_ops import TupleToTensor
 from mindspore.ops.composite.multitype_ops import _constexpr_utils as const_utils
 from mindspore.ops.operations._sequence_ops import TensorToList
+# 1
 from mindspore.ops.auto_generate import OnesLikeExt, ZerosLikeExt, FillScalar, FillTensor, Arange, Chunk, UniqueDim, \
     Unique2, SortExt, NonZero, NonZeroExt, Scatter, ScatterValue, NewOnes, NewZeros
+# 2
+
+# 3
+
+# 4
+
+# 5
+
+# 6
+
+# 7
+
+# 8
+
+# 9
+
+# 10
+
+# 11
+
+# 12
+
+# 13
+
+# 14
+
+# 15
+
+# 16
+
+# 17
+
+# 18
+
+# 19
+
+# 20
+
 from mindspore.ops.auto_generate.gen_ops_prim import SplitTensor, Meshgrid
 from mindspore.ops.auto_generate.gen_ops_prim import SplitWithSize, RepeatInterleaveInt, RepeatInterleaveTensor
-from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostSearchSortedPrim, meshgrid_impl, \
+from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostSearchSortedPrim, meshgrid_impl, concat_impl, \
     unique_consecutive_impl
 from mindspore.ops.operations.array_ops import (
     MatrixDiagV3,
@@ -367,57 +406,32 @@ def concat(tensors, axis=0):
 
 def eye(n, m=None, dtype=None):
     """
-    Creates a tensor with ones on the diagonal and zeros in the rest.
-
-    Note:
-        The data type of returned tensor can be float16, float32, int8, int16, int32, int64, uint8
-        or bool on Ascend platforms.
+    Returns a tensor with ones on the diagonal and zeros in the rest.
 
     Args:
-        n (int): The number of rows of returned tensor. Constant value only.
-        m (int, optional): The number of columns of returned tensor. Constant value only.
-            Default: ``None`` , if ``None`` , the number of columns is as the same as n.
-        dtype (mindspore.dtype, optional): MindSpore's dtype, the data type of the returned tensor.
-            The data type can be bool or Number.
-            Default: ``None`` , the data type of the returned tensor is mindspore.float32.
+        n (int): The number of rows returned.
+        m (int, optional): The number of columns returned. If ``None`` , the number of columns is as the same as n.
+        dtype (mindspore.dtype, optional): The data type returned.
 
     Returns:
-        Tensor, a tensor with ones on the diagonal and the rest of elements are zero. The shape of `output` depends on
-        the user's Inputs `n` and `m`. And the data type depends on Inputs `dtype`.
-
-    Raises:
-        TypeError: If `m` or `n` is not an int.
-        ValueError: If `m` or `n` is less than 0.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import ops
-        >>> output = ops.eye(2, 2, mindspore.int32)
+        >>> output = mindspore.ops.eye(3)
         >>> print(output)
-        [[1 0]
-         [0 1]]
-        >>> print(output.dtype)
-        Int32
-        >>> output = ops.eye(1, 2, mindspore.float32)
+        [[1. 0. 0.]
+         [0. 1. 0.]
+         [0. 0. 1.]]
+        >>>
+        >>> output = mindspore.ops.eye(3, 4)
         >>> print(output)
-        [[1. 0.]]
-        >>> print(output.dtype)
-        Float32
-        >>> output = ops.eye(2, dtype=mindspore.int32)
-        >>> print(output)
-        [[1 0]
-         [0 1]]
-        >>> print(output.dtype)
-        Int32
-        >>> output = ops.eye(2)
-        >>> print(output)
-        [[1. 0.]
-         [0. 1.]]
-        >>> print(output.dtype)
-        Float32
+        [[1. 0. 0. 0.]
+         [0. 1. 0. 0.]
+         [0. 0. 1. 0.]]
     """
     if m is None:
         m = n
@@ -534,7 +548,7 @@ def reverse(x, axis):
     return flip(x, axis)
 
 
-def empty(size, *, dtype=None, device=None):
+def empty(*size, dtype=None, device=None):
     r"""
     Creates a tensor with uninitialized data, whose shape, dtype and device are described by the argument `size`,
     `dtype` and `device` respectively.
@@ -550,7 +564,7 @@ def empty(size, *, dtype=None, device=None):
         dtype (:class:`mindspore.dtype`, optional): The specified type of output tensor. If `dtype` is ``None`` ,
             `mindspore.float32` will be used. Default: ``None`` .
         device (string, optional): The specified device of the output tensor. Support ``CPU`` and ``Ascend``. If
-            `device = None`, the value set by `mindspore.set_device` will be used. Default ``None``.
+            `device = None`, the value set by :func:`mindspore.set_device` will be used. Default ``None``.
 
     Returns:
         Tensor, whose dtype and size are defined by input.
@@ -588,7 +602,7 @@ def empty_like(input, *, dtype=None, device=None):
             tensor will have the same dtype as input `input`. Default ``None``.
         device (string, optional): The specified device of the output tensor. Support ``CPU`` and ``Ascend``. If
             `device = None`, the tensor will have the same device as input `input` and if the device of the input
-            tensor is not defined, the value set by `mindspore.set_device` will be used. Default ``None``.
+            tensor is not defined, the value set by :func:`mindspore.set_device` will be used. Default ``None``.
 
     Returns:
         Tensor, has the same shape, type and device as `input` but with uninitialized data (May be a random value).
@@ -1447,7 +1461,7 @@ def unique_ext(input, sorted=True, return_inverse=False, return_counts=False, di
     when `return_inverse=True`, also return a tensor containing the index of each value of input
     tensor corresponding to the output unique tensor.
     when `return_counts=True`, also return a tensor containing the number of occurrences for each
-    unique value or tensor
+    unique value or tensor.
 
     Args:
         input (Tensor): The input tensor.
@@ -1567,21 +1581,21 @@ def unique_with_pad(x, pad_num):
     return _get_cache_prim(P.UniqueWithPad)()(x, pad_num)
 
 
-def unique_consecutive(input, return_idx=False, return_counts=False, axis=None):
+def unique_consecutive(input, return_inverse=False, return_counts=False, dim=None):
     """
     Returns the elements that are unique in each consecutive group of equivalent elements in the input tensor.
 
     Args:
         input (Tensor): The input tensor.
-        return_idx (bool, optional): Whether to return the index of where the element in the original input
+        return_inverse (bool, optional): Whether to return the index of where the element in the original input
             maps to the position in the output. Default: ``False`` .
         return_counts (bool, optional): Whether to return the counts of each unique element. Default: ``False`` .
-        axis (int, optional): The dimension to apply unique. If ``None`` , the unique of the flattened input is
+        dim (int, optional): The dimension to apply unique. If ``None`` , the unique of the flattened input is
             returned. If specified, it must be int32 or int64. Default: ``None`` .
 
     Returns:
         A tensor or a tuple of tensors containing tensor objects (`output`, `idx`, `counts`). `output` has the
-        same type as `input` and is used to represent the output list of unique scalar elements. If `return_idx` is
+        same type as `input` and is used to represent the output list of unique scalar elements. If `return_inverse` is
         True, there will be an additional returned tensor, `idx`, which has the same shape as `input` and represents
         the index of where the element in the original input maps to the position in the output. If `return_counts`
         is True, there will be an additional returned tensor, `counts`, which represents the number of occurrences
@@ -1590,10 +1604,10 @@ def unique_consecutive(input, return_idx=False, return_counts=False, axis=None):
     Raises:
         TypeError: If `input` is not a Tensor.
         TypeError: If dtype of `input` is not supported.
-        TypeError: If `return_idx` is not a bool.
+        TypeError: If `return_inverse` is not a bool.
         TypeError: If `return_counts` is not a bool.
-        TypeError: If `axis` is not an int.
-        ValueError: If `axis` is not in the range of :math:`[-ndim, ndim-1]`.
+        TypeError: If `dim` is not an int.
+        ValueError: If `dim` is not in the range of :math:`[-ndim, ndim-1]`.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -1612,13 +1626,13 @@ def unique_consecutive(input, return_idx=False, return_counts=False, axis=None):
         [2 2 1 2 1]
     """
 
-    if not F.isconstant(return_idx) or not F.isconstant(return_counts):
+    if not F.isconstant(return_inverse) or not F.isconstant(return_counts):
         raise ValueError(
             f"For 'unique_consecutive', 'return_inverse' and 'return_counts' cannot be mutable")
-    output, idx, counts = unique_consecutive_impl(input, return_idx, return_counts, axis)
-    if return_idx and return_counts:
+    output, idx, counts = unique_consecutive_impl(input, return_inverse, return_counts, dim)
+    if return_inverse and return_counts:
         return output, idx, counts
-    if return_idx:
+    if return_inverse:
         return output, idx
     if return_counts:
         return output, counts
@@ -3183,7 +3197,7 @@ def sort_ext(input, *, dim=-1, descending=False, stable=False):
         TypeError: If `descending` is not a bool.
         TypeError: If `input` not in float16, float32, uint8, int8, int16, int32, int64, bfloat16
         TypeError: If `stable` is not a bool.
-        ValueError: If `dim` is not in range of [-len(input_x.shape), len(input_x.shape)).
+        ValueError: If `dim` is not in range of [-len(input.shape), len(input.shape)).
 
     Supported Platforms:
         ``Ascend``
@@ -5059,35 +5073,42 @@ def tuple_to_array(input_x):
 
 def diagflat(input, offset=0):
     r"""
-    Create a 2-D Tensor which diagonal is the flattened `input` .
+    If `input` is a vector (1-D tensor), then returns a 2-D square tensor with the elements of `input` as the diagonal,
+    If `input` is a tensor with more than one dimension, then returns a 2-D tensor with diagonal elements equal to a
+    flattened `input`.
 
     Args:
-        input (Tensor): Input Tensor, which is flattened and set as the diagonal of the output.
-        offset (int, optional): `offset` controls which diagonal to choose. Default: ``0`` .
+        input (Tensor): Input Tensor.
+        offset (int, optional): Diagonal offset. Default: ``0`` .
 
-            - When `offset` is zero, the diagonal chosen is the main diagonal.
-            - When `offset` is a positive integer, the diagonal chosen is up the main diagonal.
-            - When `offset` is a negative integer, the diagonal chosen is down the main diagonal.
+            - When `offset` is a positive integer, shift the diagonal upward.
+            - When `offset` is a negative integer, shift the diagonal downward.
 
     Returns:
-        The 2-D Tensor, whose diagonal is the flattened `input`.
-
-    Raises:
-        TypeError: If `input` is not a tensor.
-        TypeError: If `offset` is not an integer.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor([1, 2], mindspore.float32)
-        >>> output = ops.diagflat(x, 1)
-        >>> print(output)
-        [[0. 1. 0.]
-         [0. 0. 2.]
-         [0. 0. 0.]]
+        >>> mindspore.ops.diagflat(mindspore.tensor([1, 2, 3]))
+        Tensor(shape=[3, 3], dtype=Int64, value=
+        [[1, 0, 0],
+         [0, 2, 0],
+         [0, 0, 3]])
+        >>> mindspore.ops.diagflat(mindspore.tensor([1, 2, 3]), 1)
+        Tensor(shape=[4, 4], dtype=Int64, value=
+        [[0, 1, 0, 0],
+         [0, 0, 2, 0],
+         [0, 0, 0, 3],
+         [0, 0, 0, 0]])
+        >>> mindspore.ops.diagflat(mindspore.tensor([[1, 2], [3, 4]]))
+        Tensor(shape=[4, 4], dtype=Int64, value=
+        [[1, 0, 0, 0],
+         [0, 2, 0, 0],
+         [0, 0, 3, 0],
+         [0, 0, 0, 4]])
     """
     if not isinstance(input, Tensor):
         raise TypeError(
@@ -6571,7 +6592,7 @@ def nonzero(input, *, as_tuple=False):
     Args:
         input (Tensor): The input Tensor.
 
-            - Ascend: its rank can be equal to 0.
+            - Ascend: its rank can be equal to 0 except O2 mode.
             - CPU/GPU: its rank should be greater than or eaqual to 1.
 
     Keyword Args:
@@ -6590,7 +6611,7 @@ def nonzero(input, *, as_tuple=False):
     Raises:
         TypeError: If `input` is not Tensor.
         TypeError: If `as_tuple` is not bool.
-        RuntimeError: On GPU and CPU, if dim of `input` equals to 0.
+        RuntimeError: On GPU or CPU or Ascend O2 mode, if dim of `input` equals to 0.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -6716,6 +6737,10 @@ def hstack(tensors):
     This is equivalent to concatenation along the second axis, except for 1-D tensors
     where it concatenates along the first axis.
 
+    .. note::
+        Dynamic rank input of 8-D tensors with type float64 is not supported in `graph mode (mode=mindspore.GRAPH_MODE)
+        <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_.
+
     Args:
         tensors (Union[tuple[Tensor], list[Tensor]]): A sequence of tensors. The
             tensors must have the same shape along all but the second axis, except
@@ -6755,11 +6780,8 @@ def hstack(tensors):
     if not tuple_of_tensor:
         raise ValueError(
             "For hstack, the input must have at least 1 tensor, but got 0.")
-    if tuple_of_tensor[0].ndim <= 1:
-        _concat = _get_cache_prim(P.Concat)(0)
-        return _concat(tuple_of_tensor)
-    _concat = _get_cache_prim(P.Concat)(1)
-    return _concat(tuple_of_tensor)
+    axis = 0 if tuple_of_tensor[0].ndim == 1 else 1
+    return concat_impl(tuple_of_tensor, axis)
 
 
 @constexpr

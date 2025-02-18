@@ -18,7 +18,7 @@ import pytest
 
 import mindspore as ms
 import mindspore.mint.nn as nn
-from mindspore import Tensor, jit, JitConfig
+from mindspore import Tensor, jit
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -72,15 +72,11 @@ def test_batchnorm1d(mode):
         output = forward_batch_norm_1d_net(x, num_features)
         out_grad = grad_batch_norm_1d_net(x, num_features)
     elif mode == 'KBK':
-        output = (jit(forward_batch_norm_1d_net, jit_config=JitConfig(
-            jit_level="O0")))(x, num_features)
-        out_grad = (jit(grad_batch_norm_1d_net, jit_config=JitConfig(jit_level="O0")))(
-            x, num_features)
+        output = (jit(forward_batch_norm_1d_net, jit_level="O0"))(x, num_features)
+        out_grad = (jit(grad_batch_norm_1d_net, jit_level="O0"))(x, num_features)
     else:
-        output = (jit(forward_batch_norm_1d_net, jit_config=JitConfig(
-            jit_level="O2")))(x, num_features)
-        out_grad = (jit(grad_batch_norm_1d_net, jit_config=JitConfig(jit_level="O2")))(
-            x, num_features)
+        output = (jit(forward_batch_norm_1d_net, backend="GE"))(x, num_features)
+        out_grad = (jit(grad_batch_norm_1d_net, backend="GE"))(x, num_features)
 
     assert np.allclose(expect_output_shape, output.shape)
     np.testing.assert_allclose(

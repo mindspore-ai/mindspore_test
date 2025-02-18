@@ -32,23 +32,23 @@
 #include "ir/primal_attr.h"
 #include "ir/scalar.h"
 #include "ir/value.h"
-#include "kernel/common/pyboost/auto_generate/max.h"
-#include "kernel/common/pyboost/auto_generate/inplace_copy.h"
-#include "kernel/common/pyboost/auto_generate/norm.h"
-#include "kernel/common/pyboost/auto_generate/silent_check_v2.h"
-#include "kernel/common/pyboost/auto_generate/silent_check_v3.h"
-#include "kernel/common/pyboost/auto_generate/square.h"
-#include "kernel/common/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/max.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/inplace_copy.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/norm.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/silent_check_v2.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/silent_check_v3.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/square.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
 #include "kernel/kernel.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/base/type_id.h"
 #include "op_def/auto_generate/gen_ops_name.h"
 #include "op_def/op_name.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "mindapi/base/types.h"
-#include "transform/graph_ir/op_adapter_map.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
@@ -65,10 +65,10 @@ using mindspore::kernel::pyboost::PyBoostUtils;
 using mindspore::kernel::pyboost::SilentCheckV2;
 using mindspore::kernel::pyboost::Square;
 
-using transform::_aclCreateTensor;
-using transform::aclOpExecutor;
-using transform::aclTensor;
-using transform::GetOpApiFunc;
+using device::ascend::_aclCreateTensor;
+using device::ascend::aclOpExecutor;
+using device::ascend::aclTensor;
+using device::ascend::GetOpApiFunc;
 
 namespace {
 constexpr char kNpuAsdEnable[] = "NPU_ASD_ENABLE";
@@ -164,7 +164,7 @@ int GetNpuAsdDetectValue() {
 
 bool HasApiSilentCheckV3() {
   static bool has_silent_check_v3 = []() {
-    auto silent_check_v3 = transform::GetOpApiFunc(kNameSilentCheckV3);
+    auto silent_check_v3 = device::ascend::GetOpApiFunc(kNameSilentCheckV3);
     bool has_v3_api = (silent_check_v3 != nullptr);
     if (!has_v3_api) {
       MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Do not has " << kNameSilentCheckV3 << " api, use " << kNameSilentCheckV2
@@ -190,6 +190,11 @@ bool IsAsdEnable() {
     return enable_check;
   }();
   return is_npu_asd_enable;
+}
+
+bool IsCheckTypeSupported(const BaseTensorPtr &input_tensor) {
+  auto data_type = input_tensor->data_type();
+  return (data_type == kNumberTypeBFloat16) || (data_type == kNumberTypeFloat32) || (data_type == kNumberTypeFloat16);
 }
 }  // namespace
 
@@ -417,8 +422,11 @@ void DynamicSilentChecker::DoSilentCheck(const std::string &op_name, const std::
   if (!is_back_prop_) {
     return;
   }
+  if (!IsCheckTypeSupported(input_grad)) {
+    return;
+  }
   // receive op just provide a buffer to store data, so no need to check the data in buffer
-  if (op_name == transform::kNameReceive) {
+  if (op_name == ops::kNameDistCommBarrier || op_name == ops::kNameDistCommIrecv) {
     return;
   }
   auto state_key = op_name + comm_group;

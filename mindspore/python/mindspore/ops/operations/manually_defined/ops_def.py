@@ -23,20 +23,21 @@ import numpy as np
 from mindspore.ops import signature as sig
 from mindspore.ops.primitive import Primitive, prim_attr_register, prim_arg_register, PrimitiveWithInfer
 from mindspore.ops._primitive_cache import _get_cache_prim
-from mindspore.ops.auto_generate import gen_arg_handler as handler
+from mindspore.ops._utils import arg_handler as handler
+from mindspore.ops._utils.arg_dtype_cast import DtypeToEnum
 from mindspore.common import Tensor, CSRTensor, COOTensor
 from mindspore.common._stub_tensor import _convert_stub
 from mindspore._c_expression import typing
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore._c_expression import pyboost_cast, pyboost_tile, pyboost_zeros, pyboost_ones, pyboost_type_as
 from mindspore.common import dtype as mstype
 from mindspore.common._utils import is_shape_unknown
 from mindspore import _checkparam as validator
 from mindspore.ops.operations.manually_defined._inner import ScalarCast
-from mindspore.ops_generate.gen_ops_inner_prim import DtypeToEnum
 from mindspore.common.initializer import Zero
 from mindspore.common.parameter import Parameter
-from mindspore.ops.auto_generate.gen_ops_prim import FlashAttentionScore
+from mindspore.ops.auto_generate.gen_ops_prim import FlashAttentionScore, FusedInferAttentionScore
+from mindspore.common.jit_context import jit_context
 
 
 dtype_to_type_id = DtypeToEnum()
@@ -999,7 +1000,16 @@ class Tile(Primitive):
         """Initialize."""
 
     def __call__(self, input, dims):
-        return _convert_stub(pyboost_tile(self, [input, dims]))
+        # Add for jit context.
+        if jit_context() and jit_context().compiled:
+            return None
+        res = _convert_stub(pyboost_tile(self, [input, dims]))
+        # Add for jit context.
+        if jit_context():
+            if validator.is_stub_tensor(res):
+                res = res.stub_sync()
+            return jit_context().run_op(self, res, input, dims)
+        return res
 
     # pylint: disable=missing-docstring
     def check_elim(self, *args):
@@ -1176,10 +1186,19 @@ class Cast(Primitive):
         return (False, None)
 
     def __call__(self, input_x, dtype):
+        # Add for jit context.
+        if jit_context() and jit_context().compiled:
+            return None
         should_elim, output = self.check_elim(input_x, dtype)
         if should_elim:
             return output
-        return _convert_stub(pyboost_cast(self, [input_x, dtype_to_type_id('Cast', 'dtype', dtype)]))
+        res = _convert_stub(pyboost_cast(self, [input_x, dtype_to_type_id('Cast', 'dtype', dtype)]))
+        # Add for jit context.
+        if jit_context():
+            if validator.is_stub_tensor(res):
+                res = res.stub_sync()
+            return jit_context().run_op(self, res, input_x, dtype)
+        return res
 
 
 class TypeAs(Primitive):
@@ -1561,6 +1580,54 @@ def infer_value_for_Concat(tensors, axis):
     return Tensor(np.concatenate(tensor_to_concat, axis), dtype=tensors[0].dtype)
 
 
+def infer_value_for_SliceExt(input, dim, start, end, step):
+    """Infer value for SliceExt op."""
+    if input is None or dim is None or start is None or end is None or step is None:
+        return None
+
+    input_np = input.asnumpy()
+    condition = np.zeros(input_np.shape[dim])
+    if start < 0:
+        start += input_np.shape[dim]
+    condition[start:end:step] = 1
+    output = np.compress(condition, input_np, axis=dim)
+    return Tensor(output, dtype=input.dtype)
+
+
+def infer_value_for_GatherD(input, dim, index):
+    """Infer value for GatherD op."""
+    if input is None or dim is None or index is None:
+        return None
+
+    input_np = input.asnumpy()
+    index_np = index.asnumpy()
+
+    index_shape = index_np.shape
+    multi_index = [np.indices(index_shape)[i] for i in range(len(index_shape))]
+    multi_index[dim] = index_np
+
+    output = input_np[tuple(multi_index)]
+    return Tensor(output, dtype=input.dtype)
+
+
+def infer_value_for_TransposeExt(input, dim0, dim1):
+    """Infer value for TransposeExt op."""
+    if input is None or dim0 is None or dim1 is None:
+        return None
+
+    return Tensor(input.asnumpy().swapaxes(dim0, dim1), dtype=input.dtype)
+
+
+def infer_value_for_Softmax(input, axis):
+    """Infer value for Softmax op."""
+    if input is None or axis is None:
+        return None
+
+    e_input = np.exp(input.asnumpy())
+    output = e_input / np.sum(e_input, axis=axis, keepdims=True)
+    return Tensor(output, dtype=input.dtype)
+
+
 def infer_value_for_ReduceSum(input_x, axis, keep_dims, skip_mode):
     """Infer value for ReduceSum op."""
     value = None
@@ -1867,13 +1934,23 @@ class Ones(Primitive):
         pass
 
     def __call__(self, size, type=None):
-        return _convert_stub(pyboost_ones(self, [size, type if type is None \
+        # Add for jit context.
+        if jit_context() and jit_context().compiled:
+            return None
+        res = _convert_stub(pyboost_ones(self, [size, type if type is None \
             else handler.dtype_to_type_id('Ones', 'type', type)]))
+        # Add for jit context.
+        if jit_context():
+            if validator.is_stub_tensor(res):
+                res = res.stub_sync()
+            return jit_context().run_op(self, res, size, type if type is None \
+                else handler.dtype_to_type_id('Ones', 'type', type))
+        return res
 
 
 class Zeros(Primitive):
     r"""
-    Zeros will be deprecated in the future. Please use class `mindspore.ops.zeros` instead.
+    Zeros will be deprecated in the future. Please use class :func:`mindspore.ops.zeros` instead.
 
     Creates a tensor filled with value zeros.
 
@@ -1917,8 +1994,18 @@ class Zeros(Primitive):
         pass
 
     def __call__(self, size, type=None):
-        return _convert_stub(pyboost_zeros(self, [size, type if type is None else \
+        # Add for jit context.
+        if jit_context() and jit_context().compiled:
+            return None
+        res = _convert_stub(pyboost_zeros(self, [size, type if type is None else \
             handler.dtype_to_type_id('Zeros', 'type', type)]))
+        # Add for jit context.
+        if jit_context():
+            if validator.is_stub_tensor(res):
+                res = res.stub_sync()
+            return jit_context().run_op(self, res, size, type if type is None else \
+                handler.dtype_to_type_id('Zeros', 'type', type))
+        return res
 
 
 def flash_attention_score(query, key, value, head_num, real_shift=None, drop_mask=None, padding_mask=None,
@@ -1926,116 +2013,132 @@ def flash_attention_score(query, key, value, head_num, real_shift=None, drop_mas
                           scalar_value=1.0, pre_tokens=2147483647, next_tokens=2147483647, inner_precise=0,
                           input_layout='BSH', sparse_mode=0):
     r"""
-    The interface is not open to the public, just for internal use,
+    Implement self-attention calculations in training scenarios.
+
+    - B: Batch size. Value range 1 to 2k.
+    - S1: Sequence length of `query`. Value range 1 to 512k.
+    - S2: Sequence length of `key` and `value`. Value range 1 to 512k.
+    - N1: Num heads of `query`. Value range 1 to 256.
+    - N2: Num heads of `key` and `value`, and N2 must be a factor of N1.
+    - D: Head size. The value ranges is a multiple of 16, with the max value of 512.
+    - H1: Hidden size of `query`, which equals to N1 * D.
+    - H2: Hidden size of `key` and `value`, which equals to N2 * D.
+
+    The self attention calculation formula is defined as:
 
     .. math::
         \begin{array}{ll} \\
-            y = Dropout(Softmax(Mask(scale_value \mul (real_shift + query * key), attn_mask), -1), keep\_prob) \\
-            \mul value \\
+            \text { attention_out }=\operatorname{Dropout}\left(\operatorname{Softmax}\left(\text
+            { Mask(scale } *\left(\text { query } * \mathrm{key}^{\top}\right)+\text { pse }\right)\text
+            {, atten_mask), keep_prob) } *\right. \text { value }
         \end{array}
 
-    B -- Batch size. Value range 1 to 2k.
-    S1 -- Sequence length of query. Value range 1 to 512k.
-    S2 -- Sequence length of key and value. Value range 1 to 512k.
-    N1 -- Num heads of query. Value range 1 to 256.
-    N2 -- Num heads of key and value, and N2 must be a factor of N1.
-    D -- Head size. The value ranges is a multiple of 16, with the max value of 512.
-    H1 -- Hidden size of query, which equals to N1 * D.
-    H2 -- Hidden size of key and value, which equals to N2 * D.
-
     .. warning::
-        This is an experimental API that is subject to change or deletion. Only support on Atlas A2 training series.
+        - This is an experimental API that is subject to change or deletion.
+        - Only support on Atlas A2 training series.
 
     Args:
-        query (Tensor[float16, bfloat16]): The query tensor. Input tensor of shape :math:`(B, S1, H1)`,
-            `(B, N1, S1, D)`, `(S1, B, H1)`, `(B, S1, N1, D)` or `(T1, N1, D)`.
-        key (Tensor[float16, bfloat16]): The key tensor. Input tensor of shape :math:`(B, S2, H2)`,
-            `(B, N2, S2, D)`, `(S2, B, H2)`, `(B, S2, N2, D)` or `(T2, N2, D)`.
-        value (Tensor[float16, bfloat16]): The value tensor. Input tensor of shape :math:`(B, S2, H2)`,
-            `(B, N2, S2, D)`, `(S2, B, H2)`, `(B, S2, N2, D)` or `(T2, N2, D)`. The key and value have the same shape.
-        head_num (int): The head num of query, equal to N1.
-        real_shift (Union[Tensor[float16, bfloat16], None]): Also known as pse. The position embedding code. If S
-            is greater than 1024 and the mask of the lower triangle is used, enter only the inverse 1024 lines of
-            the lower triangle for memory optimization. Input tensor of shape :math:`(B, N1, S1, S2)`,
-            `(1, N1, S1, S2)`, `(B, N1, 1024, S2)`, `(1, N1, 1024, S2)`.
+        query (Tensor): The query tensor. Input tensor of shape :math:`(B, S1, H1)`,
+            :math:`(B, N1, S1, D)`, :math:`(S1, B, H1)`, :math:`(B, S1, N1, D)` or :math:`(T1, N1, D)`.
+            The supported dtype is float16 and bfloat16.
+        key (Tensor): The key tensor with the same dtype as `query`. Supported shape: :math:`(B, S2, H2)`,
+            :math:`(B, N2, S2, D)`, :math:`(S2, B, H2)`, :math:`(B, S2, N2, D)` or :math:`(T2, N2, D)`.
+        value (Tensor): The value tensor with the same dtype and shape as `key`.
+        head_num (int): The head num of `query`, equal to N1.
+        real_shift (Tensor, optional): The position embedding code which is also known as pse, it has the same
+            dtype as `query`.
+            Default: ``None``.
+            If S is greater than 1024 and the mask of the lower triangle is used, only the inverse 1024 lines of
+            the lower triangle is used for memory optimization. Input tensor of shape :math:`(B, N1, S1, S2)`,
+            :math:`(1, N1, S1, S2)`, :math:`(B, N1, 1024, S2)`, :math:`(1, N1, 1024, S2)`.
 
-            - ALiBi scenario: real_shift must meet the ALiBi rule, and sparse_mode is 2 or 3 for the lower triangle.
-              In this scenario, real_shift is `(B, N1, 1024, S2)`, `(1, N1, 1024, S2)`.
-            - Non-ALiBi scenario: real_shift is `(B, N1, S1, S2)`, `(1, N1, S1, S2)`.
+            - ALiBi scenario: `real_shift` must meet the ALiBi rule, and sparse_mode is 2 or 3 for the lower triangle.
+              In this scenario, `real_shift` is :math:`(B, N1, 1024, S2)`, :math:`(1, N1, 1024, S2)`.
+            - Non-ALiBi scenario: `real_shift` is :math:`(B, N1, S1, S2)`, :math:`(1, N1, S1, S2)`.
+            - input_layout is TND: shape should be :math:`(B, N1, 1024, S2)` and :math:`(1, N1, 1024, S2)`.
 
-            The shape of `real_shift` should be `(B, N1, 1024, S2)` and `(1, N1, 1024, S2)` when input_layout is
-            `TND`.
-        drop_mask (Union[Tensor[uint8], None]): The dropout mask tensor. Input tensor of shape :math:
-            `(B, N1, S1, S2 // 8) or None`. S2 is a multiple of 8 when not None.
-        padding_mask (None): Reserved parameter. Not implemented yet.
-        attn_mask (Union[Tensor[uint8], Tensor[bool], None]): The attention mask tensor. For each element, 0
-            indicates retention and 1 indicates discard. Input tensor of shape :math:`(B, N1, S1, S2)`,
-            `(B, 1, S1, S2)`, `(S1, S2)` or `(2048, 2048)`. In compression scenario, sparse_mode is 2, 3, or 4,
-            attn_mask must be `(2048, 2048)`. When sparse_mode is 5, attn_mask must be `(B, N1, S1, S2)`,
-            `(B, 1, S1, S2)`. When sparse_mode is 0 and 1, attn_mask should be `(B, N1, S1, S2)`, `(B, 1, S1, S2)`,
-            `(S1, S2)`.
-        prefix (Union[List[int64], Tuple[int64] None]): N value of each Batch in the prefix sparse calculation
-            scenario. Input tensor of shape :math:`(B,)`. B max value 32. Not none only when sparse_mode is 5.
+        drop_mask (Tensor, optional): The dropout mask tensor of uint8. Input tensor of shape
+            :math:`(B, N1, S1, S2 // 8) or None`. `S2` is a multiple of 8 when not None. Default: ``None``.
+        padding_mask (Tensor, optional): Reserved parameter. Not implemented yet. Default: ``None``.
+        attn_mask (Tensor, optional): The attention mask tensor of bool or uint8. For each element, 0/False
+            indicates retention and 1/True indicates discard. Input tensor of shape :math:`(B, N1, S1, S2)`,
+            :math:`(B, 1, S1, S2)`, :math:`(S1, S2)` or :math:`(2048, 2048)`.
+            Default: ``None``.
+
+            - In compression scenario, `sparse_mode` is 2, 3, or 4, `attn_mask` must be :math:`(2048, 2048)`.
+            - When `sparse_mode` is 5, `attn_mask` should be :math:`(B, N1, S1, S2)`, :math:`(B, 1, S1, S2)`.
+            - When `sparse_mode` is 0 and 1, `attn_mask` should be :math:`(B, N1, S1, S2)`, :math:`(B, 1, S1, S2)`,
+              :math:`(S1, S2)`.
+
+        prefix (Union[Tensor, tuple[int], list[int]], optional): N value of each Batch in the prefix sparse calculation
+            scenario. Input tensor of shape :math:`(B,)`. B max value 32. Not none only when `sparse_mode` is 5.
+            Default: ``None``.
             If S1 > S2, N ranges from 0 to S2. If S1 <= S2, N ranges from S2 - S1 to S2.
-        actual_seq_qlen (Union[List[int64], Tuple[int64], None]): Size of query corresponding to each batch, array
-            with increasing values and the last value equal to T1.
-        actual_seq_kvlen (Union[List[int64], Tuple[int64], None]): Size of key and value corresponding to each batch,
-            array with increasing values and the last value equal to T2.
-        keep_prob (float): The keep probability of dropout. Value range is (0.0, 1.0]. Default: 1.0. when keep_prob
-            is 1.0, drop_mask should be none.
-        scale_value (float): The scale factor of score. Generally, the value is 1.0 / (D ** 0.5). Default: 1.0.
-        pre_tokens (int): Parameter for sparse computation, represents how many tokens are counted forward.
-            When sparse_mode is set to 1, 2, 3, or 5, this parameter does not take effect. Default: 2147483647.
-        next_tokens (int): Parameter for sparse computation, represents how many tokens are counted backward.
-            When sparse_mode is set to 1, 2, 3, or 5, this parameter does not take effect. Default: 2147483647.
-            The value of pre_tokens corresponds to S1, and the value of next_tokens corresponds to S2. They define the
-            valid area on the attn_mask matrix. It must ensure that the band is not empty.
+        actual_seq_qlen (Union[Tensor, tuple[int], list[int]], optional): Size of query corresponding to each batch,
+            array with increasing values and the last value equal to T1.
+            Default: ``None``.
+        actual_seq_kvlen (Union[Tensor, tuple[int], list[int]], optional): Size of key and value corresponding
+            to each batch, array with increasing values and the last value equal to T2.
+            Default: ``None``.
+        keep_prob (double, optional): The keep probability of dropout. Value range is (0.0, 1.0]. When `keep_prob`
+            is 1.0, `drop_mask` should be None.
+            Default: ``1.0``.
+        scale_value (double, optional): The scale factor of score. Generally, the value is 1.0 / (D ** 0.5).
+            Default: ``1.0``.
+        pre_tokens (int, optional): Parameter for sparse computation, represents how many tokens are counted forward.
+            When `sparse_mode` is set to 1, 2, 3, or 5, this parameter does not take effect.
+            Default: ``2147483647``.
+        next_tokens (int, optional): Parameter for sparse computation, represents how many tokens are counted backward.
+            When `sparse_mode` is set to 1, 2, 3, or 5, this parameter does not take effect. Default: ``2147483647``.
+            The value of `pre_tokens` corresponds to S1, and the value of `next_tokens` corresponds to S2.
+            They define the valid area on the `attn_mask` matrix. It must ensure that the band is not empty.
             The following values are not allowed:
 
             - pre_tokens < 0 and next_tokens < 0.
             - (pre_tokens < 0 and next_tokens >= 0) and (next_tokens < abs(pre_tokens) or abs(pre_tokens) >= S2).
             - (pre_tokens >= 0 and next_tokens < 0) and (abs(next_tokens) > pre_tokens or abs(next_tokens) >= S1).
 
-        inner_precise (int): The parameter is reserved and not implemented yet. Default: 0.
-        input_layout (str): Specifies the layout of input `query`, key and value. The value can be "BSH", "BNSD",
-            "SBH", "BSND" or "TND". "TND" is an experimental format. Default: "BSH".
+        inner_precise (int, optional): The parameter is reserved and not implemented yet. Default:``0``.
+        input_layout (str, optional): Specifies the layout of input `query`, `key` and `value`. The value can be
+            "BSH", "BNSD", "SBH", "BSND" or "TND". "TND" is an experimental format. Default: ``"BSH"``.
             When input_layout is "TND", the following restrictions must be met.
-            There are two lists that represent the length of the input sequence: list_seq_q and list_seq_k. Each
+            Assume there are two lists that represent the length of the input sequence: list_seq_q and list_seq_k. Each
             value in the list indicates the length of the sequence in the batch. For example, list_seq_q = [4, 2, 6],
             list_seq_k = [10, 3, 9]. The element of list indicate S. T1 is sum(list_seq_q) = 12, T2 is
             sum(list_seq_k) = 22.
             max_seqlen_q = max(list_seq_q), max_seqlen_k = max(list_seq_k).
             qk_pointer = sum(list_seq_q * list_seq_k), which is the sum of the element multiplication.
 
-            - The lengths of two lists are the same, and size of list is batch. batch is less than or equal to 1024.
-            - When input_layout is "TND", actual_seq_qlen and actual_seq_kvlen must be not none.
+            - The lengths of two lists must be the same, and size of list is batch. batch is less than or equal to
+              1024.
+            - When `input_layout` is "TND", `actual_seq_qlen` and `actual_seq_kvlen` must be not none.
               Otherwise, they are none.
-            - The actual_seq_qlen and actual_seq_kvlen are the cumulative sum of sequence of key/value, so they must
+            - The `actual_seq_qlen` and `actual_seq_kvlen` are the cumulative sum of sequence of key/value, so they must
               be non-decreasing.
-            - If real_shift is not none, list_seq_q and list_seq_k must be same. The maximum value of list_seq_q and
-              list_seq_k is greater than 1024. Real_shift should be `(B, N1, 1024, S2)` and `(1, N1, 1024, S2)`, and
-              S2 is equal to max_seqlen_k.
-            - Attn mask must be a lower trianglar matrix, so sparse_mode should be 2 or 3. The shape of attn_mask
-              should be `(2048, 2048)`.
-            - The shape of drop_mask is (qk_pointer * N1 // 8,).
-            - Prefix is none.
-            - Next_tokens is 0, and pre_tokens is not less than max_seqlen_q.
-            - When sparse_mode is 3, S1 of each batch should be less than or equal to S2.
+            - If `real_shift` is not none, list_seq_q and list_seq_k must be same. The maximum value of list_seq_q and
+              list_seq_k is greater than 1024. `real_shift` should be :math:`(B, N1, 1024, S2)` and
+              :math:`(1, N1, 1024, S2)`, and S2 is equal to max_seqlen_k.
+            - `attn_mask` must be a lower trianglar matrix, so `sparse_mode` should be 2 or 3. The shape of `attn_mask`
+              should be :math:`(2048, 2048)`.
+            - The shape of `drop_mask` is :math:`(qk\_pointer * N1 // 8,)`.
+            - `prefix` is none.
+            - `next_tokens` is 0, and `pre_tokens` is not less than max_seqlen_q.
+            - When `sparse_mode` is 3, S1 of each batch should be less than or equal to S2.
             - 0 should not exist in list_seq_k.
 
-        sparse_mode (int): Indicates sparse mode. Default 0.
+        sparse_mode (int, optional): Indicates sparse mode. Default: ``0``.
 
-            - 0: Indicates the defaultMask mode. If attn_mask is not passed, the mask operation is not performed,
-              and preTokens and nextTokens(internally assigned as INT_MAX) are ignored. If passed in, the full
-              attn_mask matrix (S1 * S2) needs to be passed in, indicating that the part between preTokens and
-              nextTokens needs to be calculated.
-            - 1: Represents allMask, that is, passing in the complete attn_mask matrix.
+            - 0: Indicates the defaultMask mode. If `attn_mask` is not passed, the mask operation is not performed,
+              `next_tokens` and `pre_tokens` (internally assigned as INT_MAX) are ignored. If passed in, the full
+              `attn_mask` matrix (S1 * S2) needs to be passed in, indicating that the part between `next_tokens` and
+              `pre_tokens` needs to be calculated.
+            - 1: Represents allMask, that is, passing in the complete `attn_mask` matrix.
             - 2: Representing the leftUpCausal mode corresponds to the lower triangle scenario divided by the left
-              vertex, and the optimized attn_mask matrix (2048*2048) is required.
+              vertex, and the optimized `attn_mask` matrix (2048*2048) is required.
             - 3: Representing the rightDownCausal model corresponds to the lower triangle scene divided by the lower
-              right vertex, and the optimized attn_mask matrix (2048*2048) is required.
-            - 4: Represents the band scenario, that is, the part between counting preTokens and nextTokens, and the
-              optimized attn_mask matrix (2048*2048) is required.
+              right vertex, and the optimized `attn_mask` matrix (2048*2048) is required.
+            - 4: Represents the band scenario, that is, the part between counting `next_tokens` and `pre_tokens`,
+              and the optimized `attn_mask` matrix (2048*2048) is required.
             - 5: Represents the prefix scenario, that is, on the basis of rightDownCasual, a matrix with length S1 and
               width N is added to the left side. The value of N is obtained by the new input prefix, and the N value
               of each Batch axis is different, not implemented yet.
@@ -2044,8 +2147,27 @@ def flash_attention_score(query, key, value, head_num, real_shift=None, drop_mas
             - 8: Represents the block_local scenario, not implemented yet.
 
     Returns:
-        attention_out (Tensor[float16, bfloat16]), The output of attention, its shape, and data type are the same
-        as the query.
+        attention_out (Tensor) - The output of attention, it has the same shape and dtype as `query`.
+
+    Raises:
+        TypeError: Dtype of `query` is not float16 or bfloat16.
+        TypeError: `query`, `key` and `value` don't have the same dtype.
+        TypeError: Dtype of `attn_mask` is not bool or uint8.
+        TypeError: Dtype of `real_shift` has a different dtype as `query`.
+        TypeError: `scale_value` or `keep_prob` is not a double number.
+        TypeError: `input_layout` is not a string.
+        TypeError: `num_key_value_heads` is not an int.
+        TypeError: `sparse_mode` is not an int.
+        TypeError: `real_shift` is not Tensor type.
+        TypeError: `drop_mask` is not Tensor type.
+        TypeError: `padding_mask` is not Tensor type.
+        TypeError: `attn_mask` is not Tensor type.
+        ValueError: `input_layout` is a string but not valid.
+        RuntimeError: `head_num` is not divisible by `N2`.
+        RuntimeError: `head_num` is not greater than 0.
+        RuntimeError: `attn_mask` shape is not valid.
+        RuntimeError: The specified value of `sparse_mode` is invalid.
+        RuntimeError: D-axis of `query`, `key` and `value` is not the same.
 
     Supported Platforms:
         ``Ascend``
@@ -2067,6 +2189,452 @@ def flash_attention_score(query, key, value, head_num, real_shift=None, drop_mas
                                                    inner_precise, input_layout, sparse_mode)
     return rank_op(query, key, value, real_shift, drop_mask, padding_mask, attn_mask, prefix, actual_seq_qlen,
                    actual_seq_kvlen)[3]
+
+
+def fused_infer_attention_score(query, key, value, *, pse_shift=None, atten_mask=None, actual_seq_lengths=None,
+                                actual_seq_lengths_kv=None, dequant_scale1=None, quant_scale1=None, dequant_scale2=None,
+                                quant_scale2=None, quant_offset2=None, antiquant_scale=None, antiquant_offset=None,
+                                key_antiquant_scale=None, key_antiquant_offset=None, value_antiquant_scale=None,
+                                value_antiquant_offset=None, block_table=None, query_padding_size=None,
+                                kv_padding_size=None, key_shared_prefix=None, value_shared_prefix=None,
+                                actual_shared_prefix_len=None, num_heads=1, scale=1.0, pre_tokens=2147483647,
+                                next_tokens=2147483647, input_layout='BSH', num_key_value_heads=0, sparse_mode=0,
+                                inner_precise=1, block_size=0, antiquant_mode=0, key_antiquant_mode=0,
+                                value_antiquant_mode=0, softmax_lse_flag=False):
+    r"""
+    This is a FlashAttention function designed for both incremental and full inference scenarios. It supports full
+    inference scenarios (PromptFlashAttention) as well as incremental inference scenarios (IncreFlashAttention).
+    When the S dimension of the query tensor (Q_S) equals 1, it enters the IncreFlashAttention branch; otherwise,
+    it enters the PromptFlashAttention branch.
+
+    .. math::
+
+        Attention(Q,K,V) = Softmax(\frac{QK^{T}}{\sqrt{d}})V
+
+    .. warning::
+        - This is an experimental API that is subject to change or deletion.
+        - For Ascend, only the Atlas A2 training series products and Atlas 800I A2 inference products are currently
+          supported.
+
+    Note:
+        - The data layout formats of query, key and value can be interpreted from multiple dimensions, as shown below:
+
+          - B, Batch size. Represents the batch size of the input samples.
+          - S, Sequence length. Represents the sequence length of the input samples. S1 represents the sequence length
+            of the query, and S2 represents the sequence length of the key/value.
+          - H, Head size. Represents the size of the hidden layer.
+          - N, Head nums. Represents the number of attention heads.
+          - D, Head dims. Represents the smallest unit size of the hidden layer, satisfying :math:`D = H / N`.
+
+    Args:
+        query (Tensor): The query input of the attention structure, with data type of float16, bfloat16 or int8.
+            Input tensor of shape :math:`(B, S, H)`, :math:`(B, N, S, D)`, or :math:`(B, S, N, D)`.
+        key (Union[Tensor, tuple[Tensor], list[Tensor]]): The key input of the attention structure, with data type
+            of float16, bfloat16 or int8. Input tensor of shape :math:`(B, S, H)`, :math:`(B, N, S, D)`, or
+            :math:`(B, S, N, D)`.
+        value (Union[Tensor, tuple[Tensor], list[Tensor]]): The value input of the attention structure, with data
+            type of float16, bfloat16 or int8. Input tensor of shape :math:`(B, S, H)`, :math:`(B, N, S, D)`, or
+            :math:`(B, S, N, D)`.
+
+    Keyword Args:
+        pse_shift (Tensor, optional): The padding mask tensor with data type of float16 or bfloat16.
+            Default: ``None``.
+
+            - When Q_S is not 1, if pse_shift is of type float16, the query must be of type float16 or int8.
+              If pse_shift is of type bfloat16, the query must also be of type bfloat16. The input shape
+              must be either :math:`(B, N, Q\_S, KV\_S)` or :math:`(1, N, Q\_S, KV\_S)`, where Q_S corresponds to the
+              S dimension of the query shape, and KV_S corresponds to the S dimension of the key and value shapes.
+              For scenarios where the KV_S of pse_shift is not 32-aligned, it is recommended to pad it
+              to 32 bytes to improve performance. The padding values for the extra portions are not restricted.
+            - When Q_S is 1, if pse_shift is of type float16, the query must also be of type float16.
+              If pse_shift is of type bfloat16, the query must be of type bfloat16. The input shape must be
+              :math:`(B, N, 1, KV\_S)` or :math:`(1, N, 1, KV\_S)`, where KV_S corresponds to the S dimension of the
+              key/value shapes. For scenarios where the KV\_S of pse_shift is not 32-aligned, it is recommended
+              to pad it to 32 bytes to improve performance. The padding values for the extra portions are not
+              restricted.
+
+        atten_mask (Tensor, optional): The attention mask tensor for the result of query*key with data type of int8,
+            uint8 or bool. For each element, 0 indicates retention and 1 indicates discard.
+            Default: ``None``.
+
+            - When Q_S is not 1, the recommended input shapes are Q_S,KV_S; B,Q_S,KV_S; 1,Q_S,KV_S; B,1,Q_S,KV_S
+              or 1,1,Q_S,KV_S.
+            - When Q_S is 1, the recommended input shapes are B,KV_S; B,1,KV_S or B,1,1,KV_S.
+
+        actual_seq_lengths (Union[tuple[int], list[int], Tensor], optional): Describe actual sequence length of the
+            query with data type of int64. If this parameter is not specified, it can be set to None, indicating that
+            it matches the S dimension of the query shape. Constraint: The effective sequence length for each batch in
+            this parameter should not exceed the corresponding batch's sequence length in the query. When Q_S is 1, this
+            parameter is ignored.
+            Default: ``None``.
+        actual_seq_lengths_kv (Union[tuple[int], list[int], Tensor], optional): Describe actual sequence length of the
+            key and value with data type of int64. If this parameter is not specified, it can be set to None,
+            indicating that it matches the S dimension of the key and value shape. Constraint: The effective sequence
+            length for each batch in this parameter should not exceed the corresponding batch's sequence length in the
+            key and value.
+            Default: ``None``.
+        dequant_scale1 (Tensor, optional): Quantization factors for inverse quantization after BMM1 with data type of
+            uint64. Supports per-tensor mode. If not used, set it to None.
+            Default: ``None``.
+        quant_scale1 (Tensor, optional): Quantization factors for quantization before BMM2 with data type of float32.
+            Supports per-tensor mode. If not used, set it to None.
+            Default: ``None``.
+        dequant_scale2 (Tensor, optional): Quantization factors for inverse quantization after BMM2 with data type of
+            uint64. Supports per-tensor mode. If not used, set it to None.
+            Default: ``None``.
+        quant_scale2 (Tensor, optional): Quantization factors for output quantization with data type of float32,
+            bfloat16. Supports per-tensor and per-channel modes. If not used, set it to None.
+            Default: ``None``.
+        quant_offset2 (Tensor, optional): Quantization offset for output quantization with data type of float32,
+            bfloat16. Supports per-tensor and per-channel modes. If not used, set it to None.
+            Default: ``None``.
+
+            For scenarios where the input is int8 and the output is int8: the parameters dequant_scale1, quant_scale1,
+            dequant_scale2, and quant_scale2 must all be provided. The parameter quant_offset2 is optional and defaults
+            to 0 if not specified.
+
+            - When the output is int8 and quant_scale2 and quant_offset2 are per-channel, left padding, Ring Attention,
+              or D-axis misalignment (not 32-aligned) scenarios are not supported.
+            - When the output is int8, scenarios with sparse_mode as band and pre_tokens/next_tokens being negative are
+              not supported.
+            - When the output is int8, if quant_offset2 is not None and empty tensor, and the sparse_mode, pre_tokens,
+              and next_tokens meet the following conditions, certain rows of the matrix may not participate in
+              calculations, leading to errors. This scenario will be intercepted (solution: if this scenario should
+              not be intercepted, quantization should be performed outside the FIA interface, not enabled inside the
+              FIA interface):
+
+              - sparse_mode = 0, if atten_mask is a not None and each batch's
+                actual_seq_lengths - actual_seq_lengths_kv - pre_tokens > 0 or next_tokens < 0, it will meet the
+                interception condition.
+              - sparse_mode = 1 or 2, no interception condition will occur.
+              - sparse_mode = 3, if each batch's actual_seq_lengths - actual_seq_lengths_kv < 0, it will meet the
+                interception condition.
+              - sparse_mode = 4, if pre_tokens < 0 or each batch's
+                next_tokens + actual_seq_lengths - actual_seq_lengths_kv < 0, it will meet the interception
+                condition.
+
+            For scenarios where the input is int8 and the output is float16: the parameters dequant_scale1,
+            quant_scale1, and dequant_scale2 must all be provided.
+
+            For scenarios where the input is entirely float16 or bfloat16 and the output is int8: the parameter
+            quant_scale2 must be provided. The parameter quant_offset2 is optional and defaults to 0 if not specified.
+
+            The parameters quant_scale2 and quant_offset2 support both per-tensor and per-channel modes and two data
+            types: float32 and bfloat16. If quant_offset2 is provided, its type and shape must match those of
+            quant_scale2. When the input is bfloat16, both float32 and bfloat16 are supported; otherwise, only float32
+            is supported. For per-channel mode: When the output layout is BSH, the product of all dimensions in
+            quant_scale2 must equal H. For other layouts, the product must equal N * D. When the output layout is BSH,
+            it is recommended to set the shape of quant_scale2 as :math:`(1, 1, H)` or :math:`(H)`. When the output
+            layout is BNSD, it is recommended to set the shape as :math:`(1, N, 1, D)` or :math:`(N, D)`. When the
+            output layout is BSND, it is recommended to set the shape as :math:`(1, 1, N, D)` or :math:`(N, D)`.
+
+        antiquant_scale (Tensor, optional): Inverse quantization factors with data type of float16, float32 or bfloat16.
+            Only support float16 when Q_S > 1. Supports per-tensor, per-channel and per-token modes.
+            Default: ``None``.
+        antiquant_offset (Tensor, optional): Inverse quantization offset with data type of float16, float32 or bfloat16.
+            Only support float16 when Q_S > 1. Supports per-tensor, per-channel and per-token modes.
+            Default: ``None``.
+
+            Constraints for antiquant_scale and antiquant_offset parameters:
+
+            - Supports three modes: per-channel, per-tensor, and per-token:
+
+              - Per-channel mode: The shape of both parameters in the BNSD layout is :math:`(2, N, 1, D)`, the shape
+                in the BSND layout is :math:`(2, N, D)`, and the shape in the BSH layout is :math:`(2, H)`, where 2
+                corresponds to the key and value, and N represents num_key_value_heads. The parameter data type is
+                the same as the query data type, and antiquant_mode should be set to 0.
+              - Per-tensor mode: The shape of both parameters is :math:`(2)`, the data type is the same as the query
+                data type, and antiquant_mode should be set to 0.
+              - Per-token mode: The shape of both parameters is :math:`(2, B, S)`, the data type is fixed to float32,
+                and antiquant_mode should be set to 1.
+
+            - Supports both symmetric and asymmetric quantization:
+
+              - Asymmetric quantization mode: Both antiquant_scale and antiquant_offset must be provided.
+              - Symmetric quantization mode: antiquant_offset can be empty (``None``). If antiquant_offset is empty,
+                symmetric quantization is performed. If antiquant_offset is provided, asymmetric quantization is
+                performed.
+
+        key_antiquant_scale (Tensor, optional): Inverse quantization factors for the key, with data type of float16,
+            float32 or bfloat16, when the KV fake quantization parameters are separated.
+            Supports per-tensor, per-channel and per-token modes.
+            Default: ``None``. Invalid when Q_S > 1.
+        key_antiquant_offset (Tensor, optional): Inverse quantization offset for the key, with data type of float16,
+            float32 or bfloat16, when the KV fake quantization parameters are separated.
+            Supports per-tensor, per-channel and per-token modes.
+            Default: ``None``. Invalid when Q_S > 1.
+        value_antiquant_scale (Tensor, optional): Inverse quantization factors for the value, with data type of
+            float16, float32 or bfloat16, when the KV fake quantization parameters are separated.
+            Supports per-tensor, per-channel and per-token modes.
+            Default: ``None``. Invalid when Q_S > 1.
+        value_antiquant_offset (Tensor, optional): Inverse quantization offset for the value, with data type of
+            float16, float32 or bfloat16, when the KV fake quantization parameters are separated.
+            Supports per-tensor, per-channel and per-token modes.
+            Default: ``None``. Invalid when Q_S > 1.
+        block_table (Tensor, optional): Block mapping table in KV cache for PageAttention, with data type of int32.
+            If not used, set it to None.
+            Default: ``None``. Invalid when Q_S > 1.
+        query_padding_size (Tensor, optional): The query padding size with data type of int64. Indicates whether the
+            data in each batch of the query is right-aligned, and how many elements are right-aligned.
+            Default: ``None``. Invalid when Q_S is 1.
+        kv_padding_size (Tensor, optional): The key and value padding size with data type of int64. Indicates whether
+            the data in each batch of the key and value is right-aligned, and how many elements are right-aligned.
+            Default: ``None``. Invalid when Q_S is 1.
+        key_shared_prefix (Tensor, optional): Shared prefix of the key. This is a reserved parameter and is not yet
+            enabled. Default: ``None``.
+        value_shared_prefix (Tensor, optional): Shared prefix of the value. This is a reserved parameter and is not yet
+            enabled. Default: ``None``.
+        actual_shared_prefix_len (Union[tuple[int], list[int], Tensor], optional): Describe the actual length of shared
+            prefix. This is a reserved parameter and is not yet enabled.
+            Default: ``None``.
+        num_heads (int, optional): The number of heads in the query, equal to N when input_layout is BNSD.
+            Default: ``1``.
+        scale (double, optional): The scale value indicating the scale coefficient, which serves as the scalar value for
+            the Muls in the calculation. Generally, the value is :math:`1.0 / \sqrt{d}`. Default: ``1.0``.
+        pre_tokens (int, optional): Parameter for sparse computation, represents how many tokens are counted forward.
+            Default: ``2147483647``. Invalid when Q_S is 1.
+        next_tokens (int, optional): Parameter for sparse computation, represents how many tokens are counted backward.
+            Default: ``2147483647``. Invalid when Q_S is 1.
+        input_layout (str, optional): Specifies the layout of input query, key and value. BSH, BNSD, BSND or
+            BNSD_BSND is supported. When the layout is BNSD_BSND, it means the input is in the BNSD format and
+            the output is in the BSND format, this is only supported when Q_S > 1.
+            Default: ``BSH``.
+        num_key_value_heads (int, optional): Head numbers of key/value which are used in GQA (Grouped-Query Attention)
+            scenario. Default: ``0``. A value of 0 means it is equal to the number of key/value heads. The num_heads
+            must be divisible by num_key_value_heads, and the ratio of num_heads to num_key_value_heads must not be
+            greater than 64. When the layout is BNSD, the num_key_value_heads must also equals to the N dimension of
+            the key/value shapes, otherwise, an execution error will occur.
+        sparse_mode (int, optional): Indicates sparse mode. Default ``0``. Invalid when Q_S is 1.
+
+            - 0: Indicates the defaultMask mode. If atten_mask is not passed, the mask operation is not performed,
+              and pre_tokens and next_tokens(internally assigned as INT_MAX) are ignored. If passed in, the complete
+              atten_mask matrix (S1 * S2) also must be passed in, indicating that the part between pre_tokens and
+              next_tokens needs to be calculated.
+            - 1: Represents allMask. The complete atten_mask matrix (S1 * S2) is required.
+            - 2: Represents the mask in leftUpCausal mode. The optimized atten_mask matrix (2048*2048) is required.
+            - 3: Represents the mask in rightDownCausal mode, corresponding to the lower triangular scenario divided by
+              the right vertex. The optimized atten_mask matrix (2048*2048) is required.
+            - 4: Represents the mask in band mode, that is, the part between counting pre_tokens and next_tokens. The
+              optimized atten_mask matrix (2048*2048) is required.
+            - 5: Represents the prefix scenario, not implemented yet.
+            - 6: Represents the global scenario, not implemented yet.
+            - 7: Represents the dilated scenario, not implemented yet.
+            - 8: Represents the block_local scenario, not implemented yet.
+
+        inner_precise (int, optional): There are four modes: 0, 1, 2, and 3, represented by 2 bits: bit 0 (bit0)
+            represents the choice for high precision or high performance, and bit 1 (bit1) indicates whether row-wise
+            invalidity correction is applied.
+
+            - 0: Enable high-precise mode, without row-wise invalidity correction.
+            - 1: High-performance mode, without row-wise invalidity correction.
+            - 2: Enable high-precise mode, with row-wise invalidity correction.
+            - 3: High-performance mode, with row-wise invalidity correction.
+
+            When Q_S > 1, if sparse_mode is 0 or 1 and a user-defined mask is provided, it is recommended to enable
+            row-wise invalidity correction. Only support 0 and 1 when Q_S is 1. Default: ``1``.
+
+            High-precise and high-performance are only effective for float16 inputs; Row invalidity correction
+            is effective for float16, bfloat16, and int8 inputs.
+            Currently, 0 and 1 are reserved configuration values. If there is a situation where an entire row in the
+            "mask portion involved in computation" is all 1s, precision may degrade. In such cases, you can try
+            setting this parameter to 2 or 3 to enable row invalidity correction for improved precision. However,
+            this configuration will result in decreased performance.
+            If the function can detect the presence of invalid row scenarios, e.g. in cases where sparse_mode is 3
+            and S_q > S_kv, it will automatically enable row invalidity computation.
+
+        block_size (int, optional): Maximum number of tokens per block in the KV cache block for PageAttention.
+            Default: ``0``. Invalid when Q_S > 1.
+        antiquant_mode (int, optional): Fake-quantization mode, 0: per-channel (per-channel includes per-tensor),
+            1: per-token. The per-channel and per-tensor modes can be distinguished by the dimension of the input
+            shape. When the dimension is 1, it runs in per-tensor mode; otherwise, it runs in per-channel mode.
+            Default: ``0``. Invalid when Q_S > 1.
+        key_antiquant_mode (int, optional): Fake-quantization mode for the key. 0: per-channel (per-channel includes
+            per-tensor), 1: per-token. Default: ``0``. Invalid when Q_S > 1.
+        value_antiquant_mode (int, optional): Fake-quantization mode for the value. 0: per-channel (per-channel includes
+            per-tensor), 1: per-token. Default: ``0``. Invalid when Q_S > 1.
+        softmax_lse_flag (bool, optional): Whether to output softmax_lse. Default: ``False``.
+
+    Returns:
+        attention_out (Tensor), the attention score with data type of float16, bfloat16 or int8. When the input_layout
+        is BNSD_BSND, the shape is :math:`(B, S, N, D)`. In all other cases, the shape is consistent with the
+        input query shape.
+
+        softmax_lse (Tensor), the softmax_lse with data type of float32, obtained by taking the lse (log, sum and exp)
+        of the result of query*key. Specifically, the Ring Attention algorithm first takes the max of the result of
+        query*key, obtaining softmax_max. The result of query*key is then subtracted by softmax_max, followed by
+        taking exp, and then the sum is computed to obtain softmax_sum. Finally, the log of softmax_sum is taken,
+        and softmax_max is added to obtain softmax_lse. The softmax_lse is only calculated when softmax_lse_flag
+        is True, and the shape would be :math:`(B, N, Q\_S, 1)`. If softmax_lse_flag is False, then a tensor with
+        shape :math:`(1)` filled with zeros would be returned. In graph mode with JitConfig set to O2, please ensure
+        that the softmax_lse_flag is enabled before using softmax_lse; otherwise, an exception will occur.
+
+    Constraints:
+        - Full Inference Scenario (Q_S > 1):
+
+          - Query, key, and value inputs functional usage restrictions:
+
+            - The B axis supports values less than or equal to 65535. If the input type includes int8, or
+              if the input type is float16 or bfloat16 and the D axis is not 16-aligned, the B axis is only
+              supported up to 128.
+            - The N axis supports values less than or equal to 256, and the D axis supports values less than
+              or equal to 512.
+            - The S axis supports values less than or equal to 20,971,520 (20M). In some long sequence
+              scenarios, if the computation load is too large, it may cause a timeout in the PFA operator
+              (AICore error type with errorStr: "timeout or trap error"). In this case, it is recommended to
+              perform an S split. Note: The computational load is affected by B, S, N, D, etc.; the larger the
+              values, the greater the computational load. Typical long sequence timeout scenarios (where the
+              product of B, S, N, and D is large) include, but are not limited to:
+
+              1. B=1, Q_N=20, Q_S=2097152, D=256, KV_N=1, KV_S=2097152;
+              2. B=1, Q_N=2, Q_S=20971520, D=256, KV_N=2, KV_S=20971520;
+              3. B=20, Q_N=1, Q_S=2097152, D=256, KV_N=1, KV_S=2097152;
+              4. B=1, Q_N=10, Q_S=2097152, D=512, KV_N=1, KV_S=2097152.
+
+            - When the query, key, value, or attention_out type includes int8, the D axis must be 32-aligned.
+              If all types are float16 or bfloat16, the D axis must be 16-aligned.
+
+          - The sparse_mode parameter currently only supports values 0, 1, 2, 3, and 4. Using any other values
+            will result in an error.
+
+            - When sparse_mode = 0, if the atten_mask is None, or if the atten_mask is provided in the left
+              padding scenario, the input parameters pre_tokens and next_tokens are ignored.
+            - When sparse_mode = 2, 3, or 4, the shape of the atten_mask must be S,S or 1,S,S or 1,1,S,S, where
+              S must be fixed at 2048, and the user must ensure the atten_mask is a lower triangular matrix. If
+              no atten_mask is provided or if the shape is incorrect, an error will occur.
+            - In sparse_mode = 1, 2, 3 scenarios, the pre_tokens and next_tokens inputs are ignored and assigned
+              according to the relevant rules.
+
+          - The KV cache de-quantization only supports queries of type float16, where int8 keys and values are
+            de-quantized to float16. The data range of the input key/value and the antiquant_scale must have a
+            product within the range of (-1, 1). High-performance mode can guarantee precision; otherwise,
+            high-precision mode should be enabled to ensure accuracy.
+
+          - Query left padding scenario:
+
+            - In the query left padding scenario, the formula for calculating the starting point of the query
+              transport is: Q_S - query_padding_size - actual_seq_lengths. The formula for the
+              ending point of the query transport is: Q_S - query_padding_size. The query transport
+              starting point must not be less than 0, and the ending point must not exceed Q_S; otherwise,
+              the results will be incorrect.
+            - If the kv_padding_size in the query left padding scenario is less than 0, it will be set to 0.
+            - The query left padding scenario must be enabled together with the actual_seq_lengths parameter,
+              otherwise, the default is the query right padding scenario.
+            - The query left padding scenario does not support PageAttention and cannot be enabled together with
+              the block_table parameter.
+
+          - KV left padding scenario:
+
+            - In the KV left padding scenario, the formula for calculating the starting point of the key and
+              value transport is: KV_S - kv_padding_size - actual_seq_lengths_kv. The formula
+              for the ending point of the key and value transport is: KV_S - kv_padding_size. The
+              key and value transport starting point must not be less than 0, and the ending point must not
+              exceed KV_S; otherwise, the results will be incorrect.
+            - If the kv_padding_size in the KV left padding scenario is less than 0, it will be set to 0.
+            - The KV left padding scenario must be enabled together with the actual_seq_lengths_kv parameter,
+              otherwise, the default is the KV right padding scenario.
+            - The KV left padding scenario does not support PageAttention and cannot be enabled together with
+              the block_table parameter.
+
+          - pse_shift functional usage restrictions:
+
+            - This function is supported when the query data type is float16, bfloat16, or int8.
+            - If the query data type is float16 and pse_shift is enabled, it will force high-precision mode,
+              inheriting the limitations of high-precision mode.
+            - Q_S must be greater than or equal to the length of the query S, and KV_S must be greater than
+              or equal to the length of the key S.
+
+          - KV fake quantization parameter separation is not currently supported.
+
+        - Incremental Inference Scenario (Q_S is 1):
+
+          - Query, key, and value inputs functional usage restrictions:
+
+            - The B axis supports values less than or equal to 65,536.
+            - The N axis supports values less than or equal to 256.
+            - The D axis supports values less than or equal to 512.
+            - Scenarios where the input types of query, key, and value are all int8 are not supported.
+
+          - Page attention scenario:
+
+            - The necessary condition to enable page attention is that the block_table exists and is valid.
+              The key and value are arranged in contiguous memory according to the indices in the block_table.
+              The key and value dtypes supported are float16, bfloat16, and int8. In this scenario, the
+              input_layout parameter for key and value is invalid.
+            - block_size is a user-defined parameter, and its value will affect the performance of page
+              attention. When enabling page attention, a non-zero value for block_size must be provided, and
+              the maximum value for block_size is 512.
+            - If the input types of key and value are float16 or bfloat16, they must be 16-aligned. If the
+              input types are int8, they must be 32-aligned, with 128 being recommended. In general, page
+              attention can increase throughput but may lead to a performance decrease.
+            - In the page attention enabled scenario, when the KV cache layout is (blocknum, block_size, H) and
+              num_key_value_heads * D exceeds 64K, an error will be reported due to hardware
+              instruction constraints. This can be resolved by enabling GQA (reducing num_key_value_heads) or
+              adjusting the KV cache layout to (blocknum, num_key_value_heads, block_size, D).
+            - The product of all dimensions of the shape of the key and value tensors in the page attention
+              scenario must not exceed the representable range of int32.
+
+          - In the page attention enabled scenario, the input S must be greater than or equal to
+            max_block_num_per_seq * block_size.
+
+            - Enabling attention mask (e.g., mask shape = (B, 1, 1, S))
+            - Enabling pse_shift (e.g., pse_shift shape = (B, N, 1, S))
+            - Enabling fake quantization in per-token mode (e.g., antiquant_scale and antiquant_offset shapes =
+              (2, B, S)) are also supported.
+
+          - KV left padding scenario:
+
+            - In the KV left padding scenario, the formula for calculating the starting point of the KV cache
+              transport is: KV_S - kv_padding_size - actual_seq_lengths. The formula for the endpoint of the
+              KV cache transport is: KV_S - kv_padding_size. If the starting point or endpoint of the KV cache
+              is less than 0, the returned data result will be all zeros.
+            - If kv_padding_size is less than 0 in the KV left padding scenario, it will be set to 0.
+            - The KV left padding scenario must be enabled together with the actual_seq_lengths parameter,
+              otherwise, it defaults to the KV right padding scenario.
+            - The KV left padding scenario must be enabled together with the atten_mask parameter, and the
+              atten_mask must be correctly applied to hide invalid data. Otherwise, accuracy issues may arise.
+
+          - pse_shift functional usage restrictions:
+
+            - The data type of pse_shift must match the data type of the query.
+            - Only the D axis alignment is supported, meaning the D axis must be divisible by 16.
+
+          - KV fake quantization parameter separation:
+
+            - key_antiquant_mode and value_antiquant_mode must be consistent.
+            - key_antiquant_scale and value_antiquant_scale must either both be empty or both non-empty.
+            - key_antiquant_offset and value_antiquant_offset must either both be empty or both non-empty.
+            - When both key_antiquant_scale and value_antiquant_scale are non-empty, their shapes must be
+              consistent.
+            - When both key_antiquant_offset and value_antiquant_offset are non-empty, their shapes must be
+              consistent.
+
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> from mindspore import ops
+        >>> from mindspore import Tensor
+        >>> import numpy as np
+        >>> B, N, S, D = 1, 8, 1024, 128
+        >>> query = Tensor(np.random.rand(B, N, S, D).astype(np.float16))
+        >>> key = Tensor(np.random.rand(B, N, S, D).astype(np.float16))
+        >>> value = Tensor(np.random.rand(B, N, S, D).astype(np.float16))
+        >>> out = ops.fused_infer_attention_score(query, key, value, num_heads=N, input_layout='BNSD')
+        >>> print(out[0].shape)
+        (1, 8, 1024, 128)
+    """
+    fias_op = _get_cache_prim(FusedInferAttentionScore)(num_heads, scale, pre_tokens, next_tokens, input_layout,
+                                                        num_key_value_heads, sparse_mode, inner_precise, block_size,
+                                                        antiquant_mode, softmax_lse_flag, key_antiquant_mode,
+                                                        value_antiquant_mode)
+    key_list = key if isinstance(key, (tuple, list)) else [key]
+    value_list = value if isinstance(value, (tuple, list)) else [value]
+    return fias_op(query, key_list, value_list, pse_shift, atten_mask, actual_seq_lengths, actual_seq_lengths_kv,
+                   dequant_scale1, quant_scale1, dequant_scale2, quant_scale2, quant_offset2, antiquant_scale,
+                   antiquant_offset, block_table, query_padding_size, kv_padding_size, key_antiquant_scale,
+                   key_antiquant_offset, value_antiquant_scale, value_antiquant_offset, key_shared_prefix,
+                   value_shared_prefix, actual_shared_prefix_len)
 
 
 class WhileLoop(Primitive):

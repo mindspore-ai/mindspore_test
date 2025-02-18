@@ -15,21 +15,21 @@
  */
 #include <string>
 #include "kernel/ascend/opapi/aclnn/ffn_ext_aclnn_kernel.h"
-#include "transform/graph_ir/op_adapter_base.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 namespace mindspore {
-using mindspore::transform::FFNActivationMode;
+using mindspore::device::ascend::FFNActivationMode;
 namespace kernel {
 void FFNExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
   std::string activation_string = "fastgelu";
-  auto activation_imm = transform::ConvertKernelTensor<int64_t>(inputs[kIndex14]);
+  auto activation_imm = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex14]);
   activation_string = FFNActivationMode::ConvertEnumToString(activation_imm);
   auto expertTokens = inputs[kIndex3];
   MS_EXCEPTION_IF_NULL(expertTokens);
   if (expertTokens->type_id() != kMetaTypeNone) {
     expertTokens_array = expertTokens->GetValueWithCheck<std::vector<int64_t>>();
   }
-  innerPrecise_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex15]);
+  innerPrecise_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex15]);
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], expertTokens_array, inputs[kIndex4],
                         inputs[kIndex5], inputs[kIndex6], inputs[kIndex7], inputs[kIndex8], inputs[kIndex9],
                         inputs[kIndex10], inputs[kIndex11], inputs[kIndex12], inputs[kIndex13], activation_string,
@@ -40,7 +40,7 @@ bool FFNExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::
                           const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
   std::string activation_string = "fastgelu";
-  auto activation_imm = transform::ConvertKernelTensor<int64_t>(inputs[kIndex14]);
+  auto activation_imm = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex14]);
   activation_string = FFNActivationMode::ConvertEnumToString(activation_imm);
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], expertTokens_array, inputs[kIndex4],
         inputs[kIndex5], inputs[kIndex6], inputs[kIndex7], inputs[kIndex8], inputs[kIndex9], inputs[kIndex10],

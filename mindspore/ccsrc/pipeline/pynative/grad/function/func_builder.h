@@ -136,7 +136,7 @@ class FuncBuilder : public BpropBuilder {
                             const NodePtr &dtype) override;
   NodePtr DropoutGradExt(const NodePtr &input, const NodePtr &mask, const NodePtr &p) override;
   NodePtr EluExt(const NodePtr &input, const NodePtr &alpha) override;
-  NodePtr EluGradExt(const NodePtr &dout, const NodePtr &x, const NodePtr &alpha) override;
+  NodePtr EluGradExt(const NodePtr &dout, const NodePtr &x, const NodePtr &alpha, const NodePtr &is_result) override;
   NodePtr EmbeddingDenseBackward(const NodePtr &grad, const NodePtr &indices, const NodePtr &num_weights,
                                  const NodePtr &padding_idx, const NodePtr &scale_grad_by_freq) override;
   NodePtr Embedding(const NodePtr &input, const NodePtr &weight, const NodePtr &padding_idx, const NodePtr &max_norm,
@@ -337,7 +337,8 @@ class FuncBuilder : public BpropBuilder {
   NodePtr DynamicQuantExt(const NodePtr &x, const NodePtr &smooth_scales) override;
   NodePtr GroupedMatmul(const NodePtr &x, const NodePtr &weight, const NodePtr &bias, const NodePtr &scale,
                         const NodePtr &offset, const NodePtr &antiquant_scale, const NodePtr &antiquant_offset,
-                        const NodePtr &group_list, const NodePtr &split_item, const NodePtr &group_type) override;
+                        const NodePtr &group_list, const NodePtr &split_item, const NodePtr &group_type,
+                        const NodePtr &transpose_a, const NodePtr &transpose_b) override;
   NodePtr MoeFinalizeRouting(const NodePtr &expanded_x, const NodePtr &x1, const NodePtr &x2, const NodePtr &bias,
                              const NodePtr &scales, const NodePtr &expanded_row_idx,
                              const NodePtr &expanded_expert_idx) override;

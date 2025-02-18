@@ -17,12 +17,12 @@
 #include "kernel/ascend/pyboost/customize/nllloss_2d.h"
 #include <memory>
 #include <unordered_map>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "mindapi/base/types.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
 
 namespace mindspore {
 namespace kernel {
@@ -34,7 +34,7 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> NLLLoss2dAscendCustomiz
   OpRunner::InferOpOutput(op, logits_tensor, label_tensor, weight_tensor, reduction, ignore_index);
 
   auto reduction_imm = static_cast<Reduction>(GetValue<int64_t>(reduction));
-  auto reduction_value = transform::AclHelper::ConvertMsReductionToGe(reduction_imm);
+  auto reduction_value = device::ascend::AclHelper::ConvertMsReductionToGe(reduction_imm);
 
   auto ignore_index_imm = GetValue<int64_t>(ignore_index);
 

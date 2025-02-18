@@ -19,12 +19,13 @@ from pathlib import Path
 import numpy as np
 from mindspore import log as logger
 from mindspore._c_expression import security, HookType
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore._c_expression import _tensordump_process_file
 from mindspore import _checkparam as validator
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
+from mindspore.common.jit_context import jit_context
 from mindspore.ops.primitive import prim_attr_register, Primitive, PrimitiveWithInfer
 from mindspore._checkparam import check_hook_fn
 from mindspore.ops import operations as P
@@ -600,6 +601,9 @@ class Print(Primitive):
         self.add_prim_attr("side_effect_io", True)
 
     def __call__(self, *args):
+        # Add for jit context.
+        if jit_context() and jit_context().compiled:
+            return
         for arg in args:
             if isinstance(arg, Parameter):
                 print(Tensor_.__repr__(arg))
@@ -607,6 +611,9 @@ class Print(Primitive):
                 print(arg.__repr__())
             else:
                 print(arg)
+        # Add for jit context.
+        if jit_context():
+            jit_context().run_op(self, None, *args)
 
 
 class Assert(PrimitiveWithInfer):

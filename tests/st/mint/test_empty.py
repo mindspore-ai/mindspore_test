@@ -62,7 +62,7 @@ def test_empty_normal3():
     input_size = (1, 2, 3)
     dtype = mstype.float64
 
-    y = mint.empty(input_size, device="Ascend", dtype=dtype)
+    y = mint.empty(input_size, dtype=dtype, device="Ascend")
     np.testing.assert_equal(y.shape, input_size)
     np.testing.assert_equal(y.dtype, dtype)
 
@@ -79,6 +79,20 @@ def test_empty_normal4():
 
     y = mint.empty(input_size, dtype=dtype)
     np.testing.assert_equal(y.shape, input_size)
+    np.testing.assert_equal(y.dtype, dtype)
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_empty_normal5():
+    """
+    Feature: Ops.
+    Description: test empty.
+    Expectation: expect correct result.
+    """
+    ms.context.set_context(mode=ms.PYNATIVE_MODE)
+    dtype = mstype.float32
+
+    y = mint.empty(1, 2, 3)
+    np.testing.assert_equal(y.shape, (1, 2, 3))
     np.testing.assert_equal(y.dtype, dtype)
 
 def empty_forward_func_dyn_test(input_size, dtype=None):

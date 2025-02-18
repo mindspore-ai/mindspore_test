@@ -21,7 +21,7 @@
 #include <map>
 #include <vector>
 #include <string>
-#include "include/transform/graph_ir/types.h"
+#include "backend/ge_backend/graph_ir/types.h"
 #include "include/api/status.h"
 #include "cxx_api/model/acl/acl_model_options.h"
 #include "ge/ge_api.h"
@@ -30,7 +30,7 @@ namespace mindspore {
 using ConfigInfos = std::map<std::string, std::map<std::string, std::string>>;
 class AoeApiTuning {
  public:
-  Status AoeTurningGraph(const std::shared_ptr<ge::Session> &session, const transform::DfGraphPtr &graph,
+  Status AoeTurningGraph(const std::shared_ptr<ge::Session> &session, const backend::ge_backend::DfGraphPtr &graph,
                          const std::vector<ge::Tensor> &inputs, const std::shared_ptr<Context> &context,
                          const ConfigInfos &config_infos);
 
@@ -41,7 +41,7 @@ class AoeApiTuning {
                                                          const ConfigInfos &config_infos);
   std::vector<std::string> GetAoeJobType(const std::shared_ptr<Context> &context, const ConfigInfos &config_infos);
 
-  Status ExecuteAoe(const std::shared_ptr<ge::Session> &session, const transform::DfGraphPtr &graph,
+  Status ExecuteAoe(const std::shared_ptr<ge::Session> &session, const backend::ge_backend::DfGraphPtr &graph,
                     const std::vector<ge::Tensor> &inputs, const std::vector<std::string> &job_types,
                     const std::map<std::string, std::string> &global_options,
                     const std::map<std::string, std::string> &tuning_options);

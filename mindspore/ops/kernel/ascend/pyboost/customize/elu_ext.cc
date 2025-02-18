@@ -16,9 +16,9 @@
 
 #include "kernel/ascend/pyboost/customize/elu_ext.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
@@ -26,6 +26,11 @@ namespace kernel {
 namespace pyboost {
 tensor::BaseTensorPtr EluExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
                                             const ScalarPtr &alpha) {
+  MS_LOG(DEBUG) << "Call EluExt start";
+  TypeId data_type = input->data_type();
+  if (data_type == kNumberTypeFloat64) {
+    MS_LOG(EXCEPTION) << "Unsupported input dtype: float64, because aclnnEluBackward does not support dtype: float64";
+  }
   OpRunner::InferOpOutput(op, input, alpha);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input);

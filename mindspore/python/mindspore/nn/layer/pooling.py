@@ -32,7 +32,7 @@ from mindspore.ops.auto_generate import avg_pool1d_ext
 __all__ = ['AvgPool3d', 'MaxPool3d', 'AvgPool2d', 'MaxPool2d', 'AvgPool1d', 'MaxPool1d', 'FractionalMaxPool2d',
            'FractionalMaxPool3d', 'AdaptiveAvgPool1d', 'AdaptiveMaxPool1d', 'AdaptiveMaxPool2d', 'AdaptiveMaxPool3d',
            'AdaptiveAvgPool2d', 'AdaptiveAvgPool3d', 'MaxUnpool1d', 'MaxUnpool2d', 'MaxUnpool3d', 'LPPool1d',
-           'LPPool2d', 'AvgPool2dExt', 'MaxPool2dExt', 'AvgPool1dExt']
+           'LPPool2d', 'AvgPool2dExt', 'AvgPool3dExt', 'MaxPool2dExt', 'AvgPool1dExt']
 
 
 class _PoolNd(Cell):
@@ -1021,6 +1021,47 @@ class AvgPool3d(_PoolNd):
         return out
 
 
+class AvgPool3dExt(Cell):
+    r"""
+    Applies a 3D average pooling over an input Tensor which can be regarded as
+    a composition of 3D input planes.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    For details, please refer to :func:`mindspore.mint.nn.functional.avg_pool3d`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> pool = ms.nn.AvgPool3dExt(kernel_size=3, stride=1)
+        >>> x = ms.ops.randn(1, 2, 4, 4, 5).astype(ms.float32)
+        >>> output = pool(x)
+        >>> print(output.shape)
+        (1, 2, 2, 2, 3)
+        >>> x1 = ms.ops.randn(6, 5, 7, 7, 5).astype(ms.float32)
+        >>> pool2 = ms.nn.AvgPool3dExt(4, stride=2, padding=(2, 2, 1), divisor_override=10)
+        >>> output2 = pool2(x1)
+        >>> print(output2.shape)
+        (6, 5, 4, 4, 2)
+    """
+    def __init__(self, kernel_size, stride=None, padding=0, ceil_mode=False,
+                 count_include_pad=True, divisor_override=None):
+        super(AvgPool3dExt, self).__init__()
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+        self.ceil_mode = ceil_mode
+        self.count_include_pad = count_include_pad
+        self.divisor_override = divisor_override
+
+    def construct(self, input):
+        return ops.function.nn_func.avg_pool3d_ext(input, self.kernel_size, self.stride, self.padding,
+                                                   self.ceil_mode, self.count_include_pad, self.divisor_override)
+
+
 class AvgPool1dExt(Cell):
     r"""
     Applies a 1D average pooling over an input Tensor which can be regarded as
@@ -1270,8 +1311,8 @@ class AvgPool1d(_PoolNd):
         This interface currently does not support Atlas A2 training series products.
 
     Args:
-        kernel_size (int): The size of kernel window used to take the average value, Default: ``1`` .
-        stride (int): The distance of kernel moving, an int number that represents
+        kernel_size (int, optional): The size of kernel window used to take the average value, Default: ``1`` .
+        stride (int, optional): The distance of kernel moving, an int number that represents
             the width of movement is strides, Default: ``1`` .
         pad_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
             ``"same"`` , ``"valid"`` or ``"pad"`` . Default: ``"valid"`` .
@@ -1282,17 +1323,20 @@ class AvgPool1d(_PoolNd):
               uniformly distributed around the input, if it is odd, the excess padding is goes to the right side.
               If this mode is set, `padding` must be 0.
             - ``"valid"``: No padding is applied to the input, and the output returns the maximum
-              possible length. Extra pixels that could not complete a full stride will
-              be discarded. If this mode is set, `padding` must be 0.
+              possible length. If a full stride cannot be formed, the extra pixels will be discarded.
+              If this mode is set, `padding` must be 0.
             - ``"pad"``: Pad the input with a specified amount. In this mode, the amount of padding
               at the begin and end is determined by the `padding` parameter.
               If this mode is set, `padding` must be greater than or equal to 0.
 
-        padding (Union(int, tuple[int], list[int])): Pooling padding value, only ``"pad"`` mode can be set to non-zero.
+        padding (Union(int, tuple[int], list[int]), optional): Pooling padding value,
+            only ``"pad"`` mode can be set to non-zero.
             Default: ``0`` . padding can only be an integer or a tuple/list containing a single integer, in which case
             padding times or padding[0] times are padded on both sides of the input.
-        ceil_mode (bool): If ``True`` , use ceil to compute the output shape instead of floor. Default: ``False`` .
-        count_include_pad (bool): If ``True`` , averaging calculation will include the zero-padding. Default: ``True`` .
+        ceil_mode (bool, optional): If ``True`` , use ceil to compute the output shape instead of floor.
+            Default: ``False`` .
+        count_include_pad (bool, optional): If ``True`` , averaging calculation will include the zero-padding.
+            Default: ``True`` .
 
     Inputs:
         - **x** (Tensor) - Tensor of shape :math:`(N, C_{in}, L_{in})` or :math:`(C_{in}, L_{in})`.
@@ -1728,13 +1772,13 @@ class AdaptiveMaxPool2d(Cell):
         \end{align}
 
     Note:
-        Ascend platform only supports float16 type for input.
+        In KBK mode, `output_size` does not support mutable.
 
     Args:
         output_size (Union[int, tuple]): The target output size. `output_size` can be a tuple :math:`(H, W)`,
             or an int H for :math:`(H, H)`. :math:`H` and :math:`W` can be int or None.
             If it is None, it means the output size is the same as the input size.
-        return_indices (bool): If `return_indices` is ``True`` , the indices of max value would be output.
+        return_indices (bool, optional): If `return_indices` is ``True`` , the indices of max value would be output.
             Default: ``False`` .
 
     Inputs:
@@ -1797,15 +1841,11 @@ class AdaptiveMaxPool2d(Cell):
     def __init__(self, output_size, return_indices=False):
         """Initialize AdaptiveMaxPool2d."""
         super(AdaptiveMaxPool2d, self).__init__()
-        validator.check_value_type('return_indices', return_indices, [bool], self.cls_name)
-        self.adaptive_max_pool2d = ops.AdaptiveMaxPool2D(output_size)
+        self.output_size = output_size
         self.return_indices = return_indices
 
     def construct(self, input):
-        output = self.adaptive_max_pool2d(input)
-        if self.return_indices:
-            return output
-        return output[0]
+        return ops.adaptive_max_pool2d(input, self.output_size, self.return_indices)
 
 
 class AdaptiveMaxPool3d(Cell):

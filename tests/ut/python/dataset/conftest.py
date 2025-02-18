@@ -16,8 +16,11 @@
 @File   : conftest.py
 @Desc   : common fixtures for pytest dataset
 """
+import glob
+import os
 
 import pytest
+
 from mindspore.dataset.engine.iterators import _cleanup, _unset_iterator_cleanup
 
 
@@ -27,3 +30,20 @@ def close_iterators():
     # Note: code after `yield` is teardown code
     _cleanup()
     _unset_iterator_cleanup()
+
+
+@pytest.fixture(scope="function")
+def cleanup_tmp_file(request):
+    file_paths = request.param
+    if not isinstance(file_paths, (str, list)):
+        raise TypeError("Input file path is not in type of str or list[str], but got: {}".format(type(file_paths)))
+    if isinstance(file_paths, str):
+        file_paths = [file_paths]
+
+    def search_and_remove_file():
+        for file_path in file_paths:
+            for file in glob.glob(file_path):
+                if os.path.exists(file):
+                    os.remove(file)
+
+    request.addfinalizer(search_and_remove_file)

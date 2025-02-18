@@ -20,7 +20,7 @@
 #include <memory>
 #include "ir/tensor.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 namespace mindspore {
 namespace kernel {
 namespace pyboost {

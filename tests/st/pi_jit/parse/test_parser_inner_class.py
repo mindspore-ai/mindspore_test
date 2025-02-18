@@ -30,7 +30,7 @@ def test_pijit_bytecode_build_inner_class():
         def __init__(self):
             super().__init__()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             class MyClass:
                 p = 2

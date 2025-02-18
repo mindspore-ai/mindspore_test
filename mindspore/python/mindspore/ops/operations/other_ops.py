@@ -584,7 +584,7 @@ class StopGradient(Primitive):
         pass
 
 
-stop_gradient_ = StopGradient()
+stop_gradient_op = StopGradient()
 
 
 class ConfusionMatrix(PrimitiveWithInfer):

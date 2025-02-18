@@ -358,16 +358,14 @@ class GradOperation(GradOperation_):
         #   In PYNATIVE_MODE calling Grad from functions decorated with 'jit', use the out layer after_grad do
         #   grad in GRAPH_MODE.
         if context.get_context("mode") == context.GRAPH_MODE:
-            dynamic_shape_inputs = None
             if isinstance(fn, ms.nn.Cell):
-                dynamic_shape_inputs = fn.get_inputs()
                 fn.grad_ops_label = True
             if self.get_by_list:
-                @jit(input_signature=dynamic_shape_inputs)
+                @jit
                 def after_grad(*args, **kwargs):
                     return grad_(fn, weights)(*args, **kwargs)
             else:
-                @jit(input_signature=dynamic_shape_inputs)
+                @jit
                 def after_grad(*args, **kwargs):
                     return grad_(fn)(*args, **kwargs)
         elif self.pynative_:
@@ -592,20 +590,17 @@ class _Grad(GradOperation_):
         #   In PYNATIVE_MODE calling Grad from functions decorated with 'jit', use the out layer after_grad do
         #   grad in GRAPH_MODE.
         if context.get_context("mode") == context.GRAPH_MODE:
-            dynamic_shape_inputs = None
-            if isinstance(fn, ms.nn.Cell):
-                dynamic_shape_inputs = fn.get_inputs()
             if self.get_by_position:
-                @jit(input_signature=dynamic_shape_inputs)
+                @jit
                 def after_grad(*args):
                     return grad_(fn, weights, grad_position)(*args)
             else:
                 if self.get_by_list:
-                    @jit(input_signature=dynamic_shape_inputs)
+                    @jit
                     def after_grad(*args):
                         return grad_(fn, weights)(*args)
                 else:
-                    @jit(input_signature=dynamic_shape_inputs)
+                    @jit
                     def after_grad(*args):
                         return grad_(fn)(*args)
         elif self.pynative_:
@@ -843,7 +838,7 @@ class HyperMap(HyperMap_):
     HyperMap will apply the set operation to input sequences.
 
     Apply the operations to every element of the sequence or nested sequence. Different
-    from `mindspore.ops.Map`, the `HyperMap` supports to apply on nested structure. The
+    from :class:`mindspore.ops.Map`, the `HyperMap` supports to apply on nested structure. The
     `HyperMap` also supports dynamic sequences as input, but it does not extend this
     support to nested dynamic sequences.
 

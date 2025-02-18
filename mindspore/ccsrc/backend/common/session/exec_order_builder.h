@@ -22,9 +22,9 @@
 #include <deque>
 #include <set>
 #include "ir/anf.h"
-#include "ir/func_graph.h"
 #include "utils/hash_map.h"
 #include "utils/hash_set.h"
+#include "include/backend/kernel_graph.h"
 
 namespace mindspore::session {
 
@@ -35,7 +35,7 @@ class ExecOrderBuilder {
 
   ~ExecOrderBuilder();
 
-  void Build(FuncGraph *graph, std::vector<CNodePtr> *execution_order, NodeUser *node_user);
+  void Build(KernelGraph *graph, std::vector<CNodePtr> *execution_order, NodeUser *node_user);
 
  private:
   void ClearLinkInfo();
@@ -64,7 +64,7 @@ class ExecOrderBuilder {
   // If PyNative graph has is_pynative_kernel_graph_ true, means no control flow and no loop need to be checked
   bool is_pynative_kernel_graph_{false};
   std::vector<CNodePtr> *execution_order_{nullptr};
-  FuncGraph *graph_{nullptr};
+  KernelGraph *graph_{nullptr};
   std::stack<AnfNodePtr> independent_nodes_;
   mindspore::HashMap<AnfNodePtr, size_t> node_input_num_;
   mindspore::HashMap<AnfNodePtr, size_t> node_output_num_;

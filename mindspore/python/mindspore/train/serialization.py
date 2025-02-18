@@ -54,13 +54,12 @@ from mindspore._checkparam import check_input_data, check_input_dataset
 from mindspore import _checkparam as Validator
 from mindspore.common import dtype as mstype
 from mindspore.common.api import _cell_graph_executor as _executor
-from mindspore.common.api import _MindsporeFunctionExecutor
+from mindspore.common.api import _JitExecutor
 from mindspore.common.api import _get_parameter_layout
-from mindspore.common.api import _generate_branch_control_input
 from mindspore.common.initializer import initializer, One
 from mindspore.common.parameter import Parameter, _offload_if_config
 from mindspore.common.tensor import Tensor
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.common._utils import is_shape_unknown
 from mindspore.common.file_system import FileSystem, _register_basic_file_system, _register_mindio_file_system
 from mindspore.communication.management import get_rank, get_group_size
@@ -80,10 +79,9 @@ from mindspore.parallel.checkpoint_transform import sync_pipeline_shared_paramet
 from mindspore.parallel.transform_safetensors import _load_parallel_checkpoint, _get_device_num_from_strategy, \
     _extract_pipeline_stage_num
 from mindspore.train._utils import read_proto, get_parameter_redundancy, _progress_bar, _load_and_transform
-from mindspore._c_expression import load_mindir, _encrypt, _decrypt, _is_cipher_file, dynamic_obfuscate_mindir, \
+from mindspore._c_expression import load_mindir, _encrypt, _decrypt, _is_cipher_file, \
     split_mindir, split_dynamic_mindir
 from mindspore.common.generator import Generator
-from ..ops.operations._opaque_predicate_registry import add_opaque_predicate, clean_funcs
 
 tensor_to_ms_type = {"Int8": mstype.int8, "UInt8": mstype.uint8, "Int16": mstype.int16, "UInt16": mstype.uint16,
                      "Int32": mstype.int32, "UInt32": mstype.uint32, "Int64": mstype.int64, "UInt64": mstype.uint64,
@@ -365,7 +363,7 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                 os.chmod(tmp_name, stat.S_IWUSR)
                 os.remove(tmp_name)
             if format == "ckpt":
-                ckpt_save_time_start = time.time()
+                ckpt_total_io_time = 0
                 with _ckpt_fs.create(tmp_name, *_ckpt_fs.create_args) as f:
                     plain_data = None
                     if enc_key is not None:
@@ -382,20 +380,26 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                         if value[0] == "offload_parameter":
                             new_value = value[1:]
                             new_value[2] = value[3]
-                            _write_parameter_bytes_data(name, new_value, f, enc_key, plain_data)
+                            _write_parameter_bytes_data(name, new_value, f, enc_key, plain_data, ckpt_total_io_time)
                             _offload_if_config(value[3])
                             continue
                         if value[1] == "str":
-                            crc_num = _write_parameter_data(name, value, f, enc_key, plain_data, crc_num, crc_check)
+                            crc_num, ckpt_total_io_time = _write_parameter_data(name, value, f, enc_key, plain_data,
+                                                                                crc_num, crc_check,
+                                                                                ckpt_total_io_time)
                             continue
                         if isinstance(value[2], np.ndarray):
-                            crc_num = _write_parameter_data(name, value, f, enc_key, plain_data, crc_num, crc_check)
+                            crc_num, ckpt_total_io_time = _write_parameter_data(name, value, f, enc_key, plain_data,
+                                                                                crc_num, crc_check,
+                                                                                ckpt_total_io_time)
                             continue
                         if isinstance(value[2], Tensor) and hasattr(value[2], "slice_num") and value[2].slice_num > 1:
                             _write_hugeparameter(name, value, f)
                             continue
 
-                        crc_num = _write_parameter_bytes_data(name, value, f, enc_key, plain_data, crc_num, crc_check)
+                        crc_num, ckpt_total_io_time = _write_parameter_bytes_data(name, value, f, enc_key, plain_data,
+                                                                                  crc_num, crc_check,
+                                                                                  ckpt_total_io_time)
 
                     if enc_key is not None:
                         plain_data.seek(0)
@@ -406,9 +410,9 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                             block_data = plain_data.read(max_block_size)
                     if crc_check:
                         f.write('crc_num'.encode() + crc_num.to_bytes(10, byteorder='big'))
-                ckpt_save_time_end = time.time()
-                cost_time = ckpt_save_time_end - ckpt_save_time_start
-                vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save ckpt cost time:{cost_time}.")
+                vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
+                           f"Save ckpt io cost time:{ckpt_total_io_time}.")
+
             elif format == "safetensors":
                 save_dict = {}
                 crc_num = 0
@@ -428,7 +432,7 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                     save_file(save_dict, tmp_name)
                 safetensors_save_time_end = time.time()
                 cost_time = safetensors_save_time_end - safetensors_save_time_start
-                vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save safetensors cost time:{cost_time}.")
+                vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save safetensors io cost time:{cost_time}.")
             if not os.path.exists(tmp_name):
                 logger.warning(f"Rename failed, can't find {tmp_name}, it is possible that multiple processes have "
                                f"simultaneously modified a file.")
@@ -453,7 +457,7 @@ def _write_random_seed(name, value, f):
     f.write(checkpoint_list.SerializeToString())
 
 
-def _write_parameter_data(name, value, f, enc_key, plain_data, crc_num=0, crc_check=False):
+def _write_parameter_data(name, value, f, enc_key, plain_data, crc_num=0, crc_check=False, ckpt_total_io_time=0):
     """Write parameter data into protobuf file."""
     data_size = value[2].nbytes / 1024
     if data_size > SLICE_SIZE:
@@ -475,14 +479,18 @@ def _write_parameter_data(name, value, f, enc_key, plain_data, crc_num=0, crc_ch
             output_data = checkpoint_list.SerializeToString()
             if crc_check:
                 crc_num = binascii.crc32(output_data, crc_num)
+            io_start_time = time.time()
             f.write(output_data)
+            io_end_time = time.time()
+            io_cost_time = io_end_time - io_start_time
+            ckpt_total_io_time += io_cost_time
         else:
             plain_data.write(checkpoint_list.SerializeToString())
 
-    return crc_num
+    return crc_num, ckpt_total_io_time
 
 
-def _write_parameter_bytes_data(name, value, f, enc_key, plain_data, crc_num=0, crc_check=False):
+def _write_parameter_bytes_data(name, value, f, enc_key, plain_data, crc_num=0, crc_check=False, ckpt_total_io_time=0):
     """Write parameter bytes data into protobuf file."""
     bytes_value = value[2].get_bytes()
     chunk_size = 1024 * SLICE_SIZE
@@ -500,11 +508,15 @@ def _write_parameter_bytes_data(name, value, f, enc_key, plain_data, crc_num=0, 
             output_data = checkpoint_list.SerializeToString()
             if crc_check:
                 crc_num = binascii.crc32(output_data, crc_num)
+            io_start_time = time.time()
             f.write(output_data)
+            io_end_time = time.time()
+            io_cost_time = io_end_time - io_start_time
+            ckpt_total_io_time += io_cost_time
         else:
             plain_data.write(checkpoint_list.SerializeToString())
 
-    return crc_num
+    return crc_num, ckpt_total_io_time
 
 
 def _write_mapparameter(name, value, f, map_param_inc=False):
@@ -636,7 +648,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
             list, or dict. If a list, it can be the returned value of `Cell.trainable_params()`, or a list of dict
             elements(each element is a dictionary, like [{"name": param_name, "data": param_data},...], the type of
             `param_name` must be string, and the type of `param_data` must be parameter or Tensor); If dict,
-            it can be the returned value of `mindspore.load_checkpoint()`.
+            it can be the returned value of :func:`mindspore.load_checkpoint`.
         ckpt_file_name (str): Checkpoint file name. If the file name already exists, it will be overwritten.
         integrated_save (bool): Whether to integrated save in automatic model parallel scene. Default: ``True`` .
         async_save (Union[bool, str]): Whether to use asynchronous saving of the checkpoint file, if True,
@@ -693,6 +705,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
         - `Saving and Loading the Model - Saving and Loading the Model Weight
           <https://mindspore.cn/tutorials/en/master/beginner/save_load.html#saving-and-loading-the-model-weight>`_
     """
+    start_save_time = time.time()
     ckpt_file_name = _check_save_obj_and_ckpt_file_name(save_obj, ckpt_file_name, format)
     integrated_save = Validator.check_bool(integrated_save)
     async_save = _check_async_save(async_save)
@@ -820,6 +833,9 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
         _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format)
 
     logger.info("Saving checkpoint process is finished.")
+    end_save_time = time.time()
+    save_checkpoint_cost_time = end_save_time - start_save_time
+    vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save checkpoint cost time {save_checkpoint_cost_time}.")
 
 
 def _convert_list_to_param_list(save_obj, choice_func):
@@ -985,15 +1001,6 @@ def _check_append_dict(append_dict):
     return append_dict
 
 
-def _check_load_obfuscate(**kwargs):
-    if 'obf_func' in kwargs.keys():
-        customized_func = _check_customized_func(kwargs.get('obf_func'))
-        clean_funcs()
-        add_opaque_predicate(customized_func.__name__, customized_func)
-        return True
-    return False
-
-
 def load(file_name, **kwargs):
     """
     Load MindIR.
@@ -1012,14 +1019,11 @@ def load(file_name, **kwargs):
               - For details of using the customized decryption, please check the `tutorial
                 <https://mindspore.cn/mindarmour/docs/en/master/model_encrypt_protection.html>`_.
 
-            - obf_func (function): A python function used for loading obfuscated MindIR model, which can refer to
-              `obfuscate_model()
-              <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.obfuscate_model.html>`_.
-
     Returns:
         GraphCell, a compiled graph that can executed by `GraphCell`.
 
     Raises:
+        NotImplementedError: Dynamic model structure obfuscation is no longer supported.
         ValueError: MindIR file does not exist or `file_name` is not a string.
         RuntimeError: Failed to parse MindIR file.
 
@@ -1046,6 +1050,8 @@ def load(file_name, **kwargs):
         - `Saving and Loading the Model - Saving and Loading MindIR
           <https://mindspore.cn/tutorials/en/master/beginner/save_load.html#saving-and-loading-mindir>`_
     """
+    if 'obf_func' in kwargs.keys():
+        raise NotImplementedError("Dynamic model structure obfuscation is no longer supported.")
     if not isinstance(file_name, str):
         raise ValueError("For 'load', the argument 'file_name' must be string, but "
                          "got {}.".format(type(file_name)))
@@ -1056,9 +1062,6 @@ def load(file_name, **kwargs):
         raise ValueError("For 'load', the argument 'file_name'(MindIR file) does not exist, "
                          "please check whether the 'file_name' is correct.")
     file_name = os.path.realpath(file_name)
-
-    # set customized functions for dynamic obfuscation
-    obfuscated = _check_load_obfuscate(**kwargs)
 
     logger.info("Execute the process of loading mindir.")
     if 'dec_key' in kwargs.keys():
@@ -1072,9 +1075,9 @@ def load(file_name, **kwargs):
             else:
                 dec_mode = Validator.check_isinstance('dec_mode', kwargs.get('dec_mode'), str)
         graph = load_mindir(file_name, dec_key=dec_key, key_len=len(dec_key), dec_mode=dec_mode,
-                            decrypt=dec_func, obfuscated=obfuscated)
+                            decrypt=dec_func)
     else:
-        graph = load_mindir(file_name, obfuscated=obfuscated)
+        graph = load_mindir(file_name)
 
     if graph is None:
         if _is_cipher_file(file_name):
@@ -1141,179 +1144,10 @@ def _check_param_type(param_config, key, target_type, requested):
     if key in param_config:
         if not isinstance(param_config[key], target_type):
             raise TypeError("The type of {} must be {}, but got {}.".format(key, target_type, type(param_config[key])))
-        if key == 'obf_random_seed':
-            if param_config[key] > INT_64_MAX or param_config[key] <= 0:
-                raise ValueError(
-                    "'obf_random_seed' must be in (0, INT_64_MAX({})], but got {}.".format(INT_64_MAX,
-                                                                                           param_config[key]))
         return param_config[key]
     if requested:
         raise ValueError("The parameter {} is requested, but not got.".format(key))
-    if key == "obf_random_seed":
-        return 0
     return None
-
-
-def _check_customized_func(customized_func):
-    """ check customized function of dynamic obfuscation """
-    if not callable(customized_func):
-        raise TypeError(
-            "'customized_func' must be a function, but not got {}.".format(type(customized_func)))
-    # test customized_func
-    try:
-        func_result = customized_func(1.0, 1.0)
-    except Exception as ex:
-        raise TypeError("customized_func must be a function with two inputs, but got exception: {}".format(ex))
-    else:
-        if not isinstance(func_result, bool):
-            raise TypeError("Return value of customized_func must be boolean, but got: {}".format(type(func_result)))
-    return customized_func
-
-
-def _check_obfuscate_params(obf_config):
-    """Check obfuscation parameters, including obf_random_seed, obf_ratio, customized_func"""
-    if 'obf_random_seed' not in obf_config.keys() and 'customized_func' not in obf_config.keys():
-        raise ValueError(
-            "At least one of 'obf_random_seed' or 'customized_func' must be set in obf_config, but got None of them.")
-    obfuscate_type = _check_param_type(obf_config, "type", str, False)
-    if obfuscate_type not in (None, "dynamic"):
-        raise ValueError("Only 'dynamic' type is supported by now, but got {}.".format(obfuscate_type))
-    if ('obf_ratio' in obf_config) and isinstance(obf_config['obf_ratio'], str):
-        if obf_config['obf_ratio'] not in ["small", "medium", "large"]:
-            raise ValueError("'obf_ratio' can only be 'small', 'medium', 'large' or float, but got {}.".format(
-                obf_config['obf_ratio']))
-        ratio_dict = {"small": 0.1, "medium": 0.3, "large": 0.6}
-        obf_config['obf_ratio'] = ratio_dict.get(obf_config['obf_ratio'])
-    obf_ratio = _check_param_type(obf_config, "obf_ratio", float, True)
-    if (obf_ratio <= 0) or (obf_ratio > 1):
-        raise ValueError("'obf_ratio' must be in (0, 1] if it is a float, but got {}.".format(obf_config['obf_ratio']))
-    customized_funcs = []
-    if 'customized_func' in obf_config.keys():
-        device_target = context.get_context('device_target')
-        if device_target in ["GPU", "Ascend"]:
-            raise ValueError(
-                "Customized func mode only support 'device_target'='CPU, but got {}.".format(device_target))
-        customized_funcs.append(_check_customized_func(obf_config['customized_func']))
-    obf_random_seed = _check_param_type(obf_config, "obf_random_seed", int, False)
-    return obf_ratio, customized_funcs, obf_random_seed
-
-
-def obfuscate_model(obf_config, **kwargs):
-    """
-    Obfuscate a model of MindIR format. Obfuscation means changing the struct of a network without affecting its
-    predict correctness. The obfuscated model can prevent attackers from stealing the model.
-
-    Args:
-        obf_config (dict): obfuscation config.
-
-            - type (str): The type of obfuscation, only 'dynamic' is supported until now.
-            - original_model_path (str): The path of MindIR format model that need to be obfuscated. If the original
-              model is encrypted, then enc_key and enc_mode should be provided.
-            - save_model_path (str): The path to save the obfuscated model.
-            - model_inputs (list(Tensor)): The inputs of the original model, the values of Tensor can be random, which
-              is the same as using :func:`mindspore.export`.
-            - obf_ratio (Union(float, str)): The ratio of nodes in original model that would be obfuscated. `obf_ratio`
-              should be in range of (0, 1] or in ["small", "medium", "large"]. "small", "medium" and "large" are
-              correspond to 0.1, 0.3, and 0.6 respectively.
-            - customized_func (function): A python function used for customized function mode, which used for control
-              the switch branch of obfuscation structure. The outputs of customized_func should be boolean and const (
-              Reference to 'my_func()' in
-              `tutorials <https://www.mindspore.cn/mindarmour/docs/en/master/dynamic_obfuscation_protection.html>`_).
-              This function needs to ensure that its result is constant for any input. Users can refer to opaque
-              predicates. If customized_func is set, then it should be passed to :func:`mindspore.load` interface
-              when loading obfuscated model.
-            - obf_random_seed (int): Obfuscation random seed, which should be in (0, 9223372036854775807]. The
-              structure of obfuscated models corresponding to different random seeds is different. If
-              `obf_random_seed` is set, then it should be passed to :class:`mindspore.nn.GraphCell`
-              interface when loading
-              obfuscated model. It should be noted that at least one of `customized_func` or `obf_random_seed` should
-              be set, and the latter mode would be applied if both of them are set.
-
-        kwargs (dict): Configuration options dictionary.
-
-            - enc_key (bytes): Byte type key used for encryption. The valid length is 16, 24, or 32.
-            - enc_mode (str): Specifies the encryption mode, to take effect when dec_key is set.
-              Options: ``'AES-GCM'`` | ``'AES-CBC'`` | ``'SM4-CBC'``. Default: ``'AES-GCM'``.
-
-    Raises:
-        TypeError: If `obf_config` is not a dict.
-        ValueError: If `enc_key` is passed and `enc_mode` is not in ["AES-GCM", "AES-CBC", "SM4-CBC"].
-        ValueError: If `original_model_path` is not provided in `obf_config`.
-        ValueError: If the model saved in `original_model_path` has been obfuscated.
-        ValueError: If `save_model_path` is not provided in `obf_config`.
-        ValueError: If `obf_ratio` is not provided in `obf_config`.
-        ValueError: If both `customized_func` and `obf_random_seed` are not provided in `obf_config`.
-        ValueError: If `obf_random_seed` is not in (0, 9223372036854775807].
-        ValueError: If `original_model_path` does not exist or `original_model_path` does not end with '.mindir'.
-
-    Examples:
-        >>> import mindspore as ms
-        >>> import mindspore.nn as nn
-        >>> import numpy as np
-        >>> # Download ori_net.mindir
-        >>> # https://gitee.com/mindspore/mindspore/blob/master/tests/ut/python/mindir/ori_net.mindir
-        >>> input1 = ms.Tensor(np.ones((1, 1, 32, 32)).astype(np.float32))
-        >>> obf_config = {'original_model_path': "./net.mindir",
-        ...          'save_model_path': "./obf_net",
-        ...          'model_inputs': [input1, ],
-        ...          'obf_ratio': 0.1, 'obf_random_seed': 173262358423}
-        >>> ms.obfuscate_model(obf_config)
-        >>> obf_func = ms.load("obf_net.mindir")
-        >>> obf_net = nn.GraphCell(obf_func, obf_random_seed=173262358423)
-        >>> print(obf_net(input1).asnumpy())
-    """
-    if not isinstance(obf_config, dict):
-        raise TypeError("'obf_config' must be a dict, but got {}.".format(type(obf_config)))
-    file_path = _check_param_type(obf_config, "original_model_path", str, True)
-    if not file_path.endswith(".mindir"):
-        raise ValueError("For 'obfuscate_model', the argument 'file_path'(MindIR file) should end with '.mindir', "
-                         "please input the correct 'file_path'.")
-    if not os.path.exists(file_path):
-        raise ValueError("For 'obfuscate_model', the argument 'file_path'(MindIR file) does not exist, "
-                         "please check whether the 'file_path' is correct.")
-    saved_path = _check_param_type(obf_config, "save_model_path", str, True)
-    model_inputs = _check_param_type(obf_config, "model_inputs", list, True)
-    for item in model_inputs:
-        if not isinstance(item, Tensor):
-            raise TypeError("The item in 'model_inputs' must be Tensor, but got {}.".format(type(item)))
-        if -1 in item.shape:
-            raise ValueError(
-                "Dynamic shape input is not supported now, but got the shape of inputs: {}.".format(item.shape))
-    obf_ratio, customized_funcs, obf_random_seed = _check_obfuscate_params(obf_config)
-    if customized_funcs and obf_random_seed > 0:
-        logger.warning("Although 'customized_func' and 'obf_random_seed' are set, the 'obf_random_seed' mode would be"
-                       " applied, remember to set 'obf_random_seed' when loading obfuscated model.")
-
-    if obf_random_seed == 0:  # apply customized_func mode
-        clean_funcs()
-        for func in customized_funcs:
-            add_opaque_predicate(func.__name__, func)
-        branch_control_input = 0
-    else:  # apply password mode
-        branch_control_input = _generate_branch_control_input(obf_random_seed)
-
-    if 'enc_key' in kwargs.keys():
-        enc_key = Validator.check_isinstance('enc_key', kwargs.get('enc_key'), bytes)
-        enc_mode = "AES-GCM"
-        if 'enc_mode' in kwargs.keys():
-            enc_mode = Validator.check_isinstance('enc_mode', kwargs.get('enc_mode'), str)
-            if enc_mode not in ["AES-GCM", "AES-CBC", "SM4-CBC"]:
-                raise ValueError(
-                    "Only MindIR files that encrypted with 'AES-GCM', 'AES-CBC' or 'SM4-CBC' is supported for"
-                    "obfuscate_model(), but got {}.".format(enc_mode))
-        obf_graph = dynamic_obfuscate_mindir(file_name=file_path, obf_ratio=obf_ratio,
-                                             branch_control_input=branch_control_input, dec_key=enc_key,
-                                             key_len=len(enc_key),
-                                             dec_mode=enc_mode)
-    else:
-        obf_graph = dynamic_obfuscate_mindir(file_name=file_path, obf_ratio=obf_ratio,
-                                             branch_control_input=branch_control_input)
-
-    obf_net = nn.GraphCell(obf_graph)
-    if obf_random_seed != 0:
-        append_y_tensor = Tensor(np.ones((1, 1)).astype(np.int32))
-        model_inputs += [append_y_tensor]
-    export(obf_net, *model_inputs, file_name=saved_path, file_format="MINDIR", **kwargs)
 
 
 def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter_prefix, choice_func, dec_key,
@@ -1323,17 +1157,22 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
     if format == "safetensors":
         with safe_open(ckpt_file_name, framework='np') as f:
             cal_crc_num = 0
-            sf_load_time_start = time.time()
+            total_io_cost_time = 0
             for k in sorted(f.keys()):
                 if crc_check:
                     cal_crc_num = binascii.crc32(bytes(k, encoding='utf-8'), cal_crc_num)
                     cal_crc_num = binascii.crc32(bytes(f.get_tensor(k)), cal_crc_num)
                 if choice_func is not None and not choice_func(k):
                     continue
-                parameter_dict[k] = Parameter(Tensor.from_numpy(f.get_tensor(k)))
-            sf_load_time_end = time.time()
-            cost_time = sf_load_time_end - sf_load_time_start
-            vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Load safetensors cost time:{cost_time}.")
+                io_start_time = time.time()
+                value = f.get_tensor(k)
+                io_end_time = time.time()
+                io_cost_time = io_end_time - io_start_time
+                total_io_cost_time += io_cost_time
+                parameter_dict[k] = Parameter(Tensor.from_numpy(value))
+
+            vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
+                       f"Load safetensors io cost time:{total_io_cost_time}.")
             if crc_check:
                 if f.metadata() is None or f.metadata().get("crc_num") is None:
                     logger.warning(
@@ -1487,6 +1326,7 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
         - `Saving and Loading the Model - Saving and Loading the Model Weight
           <https://mindspore.cn/tutorials/en/master/beginner/save_load.html#saving-and-loading-the-model-weight>`_
     """
+    start_load_time = time.time()
     vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Begin load checkpoint.")
     specify_prefix = _check_prefix(specify_prefix)
     filter_prefix = _check_prefix(filter_prefix)
@@ -1535,6 +1375,9 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
         _warm_up_host_cache_post_process(is_worker, net_dict, warm_up_dict)
 
     vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Load checkpoint is finished.")
+    end_load_time = time.time()
+    load_checkpoint_cost_time = end_load_time - start_load_time
+    vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Load checkpoint cost time {load_checkpoint_cost_time}.")
     return parameter_dict
 
 
@@ -1703,7 +1546,7 @@ def _parse_ckpt_proto(ckpt_file_name, dec_key, dec_mode, crc_check):
                 pb_content = f.read()
                 ckpt_load_time_end = time.time()
                 cost_time = ckpt_load_time_end - ckpt_load_time_start
-                vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Load ckpt cost time:{cost_time}.")
+                vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Load ckpt io cost time:{cost_time}.")
 
         else:
             pb_content = _decrypt(ckpt_file_name, dec_key, len(dec_key), dec_mode)
@@ -2106,27 +1949,6 @@ def export(net, *inputs, file_name, file_format, **kwargs):
 
             - dataset (Dataset): Specifies the preprocessing method of the dataset, which is used to import the
               preprocessing of the dataset into MindIR.
-
-            - obf_config (dict): obfuscation config.
-
-              - type (str): The type of obfuscation, only 'dynamic' is supported until now.
-              - obf_ratio (float, str): The ratio of nodes in original model that would be obfuscated. `obf_ratio`
-                should be in range of (0, 1] or in ["small", "medium", "large"]. "small", "medium" and "large" are
-                correspond to 0.1, 0.3, and 0.6 respectively.
-              - customized_func (function): A python function used for customized function mode, which used for control
-                the switch branch of obfuscation structure. The outputs of customized_func should be boolean and const (
-                Reference to 'my_func()' in
-                `tutorials <https://www.mindspore.cn/mindarmour/docs/en/master/dynamic_obfuscation_protection.html>`_).
-                This function needs to ensure that its result is constant for any input. Users can refer to opaque
-                predicates. If customized_func is set, then it should be passed to `load()` interface when loading
-                obfuscated model.
-              - obf_random_seed (int): Obfuscation random seed, which should be in (0, 9223372036854775807]. The
-                structure of obfuscated models corresponding to different random seeds is different. If
-                `obf_random_seed` is set, then it should be passed
-                to :class:`mindspore.nn.GraphCell` interface when loading
-                obfuscated model. It should be noted that at least one of `customized_func` or `obf_random_seed` should
-                be set, and the latter mode would be applied if both of them are set.
-
             - incremental (bool): export MindIR incrementally.
 
             - custom_func (function): Functions for custom defined export policies. This function will be used to
@@ -2160,6 +1982,8 @@ def export(net, *inputs, file_name, file_format, **kwargs):
         - `Saving and Loading the Model - Saving and Loading MindIR
           <https://mindspore.cn/tutorials/en/master/beginner/save_load.html#saving-and-loading-mindir>`_
     """
+    if 'obf_func' in kwargs.keys():
+        raise NotImplementedError("Dynamic model structure obfuscation is no longer supported.")
     old_ms_jit_value = context.get_context("jit_syntax_level")
     context.set_context(jit_syntax_level=mindspore.STRICT)
 
@@ -2241,8 +2065,6 @@ def _export(net, file_name, file_format, *inputs, **kwargs):
     It is an internal conversion function. Export the MindSpore prediction model to a file in the specified format.
     """
     logger.info("exporting model file:%s format:%s.", file_name, file_format)
-    if "obf_config" in kwargs and file_format != "MINDIR":
-        raise ValueError(f"Dynamic obfuscation only support for MindIR format, but got {file_format} format.")
     if "custom_func" in kwargs and file_format != "MINDIR" and kwargs["custom_func"] is not None:
         raise ValueError(f"Currently only support custom_func for MindIR format, but got {file_format} format.")
     if file_format == 'AIR':
@@ -2456,14 +2278,13 @@ def _split_save(net_dict, model, file_name, is_encrypt, **kwargs):
         os.chmod(data_file_name, stat.S_IRUSR)
 
 
-def _msfunc_info(net, *inputs):
+def _msfunc_info(net, jit_executor, *inputs):
     """Get mindir stream and parameter dict of ms_function"""
     # pylint: disable=protected-access
     net_dict = OrderedDict()
-    _ms_func_executor = _MindsporeFunctionExecutor(net, time.time() * 1e9)
-    graph_id = _ms_func_executor.compile(net.__name__, *inputs)
-    mindir_stream = _executor._get_func_graph_proto(net, graph_id, 'mind_ir')
-    params = _ms_func_executor._graph_executor.get_params(graph_id)
+    graph_id = jit_executor.compile(net.__name__, *inputs)
+    mindir_stream = jit_executor._get_func_graph_proto(net, graph_id, 'mind_ir')
+    params = jit_executor._graph_executor.get_params(graph_id)
     for name, value in params.items():
         net_dict[name] = Parameter(value, name=name)
     return mindir_stream, net_dict
@@ -2475,53 +2296,21 @@ def _cell_info(net, incremental, *inputs):
     graph_id, _ = _executor.compile(net, *inputs, phase=phase_name, do_convert=False)
     # pylint: disable=protected-access
     mindir_stream = _executor._get_func_graph_proto(net, graph_id, 'mind_ir', incremental=incremental)
-    # clean obfuscation config to prevent the next call
-    _executor.obfuscate_config = None
-
     net_dict = net.parameters_dict()
     return mindir_stream, net_dict
 
 
-def _set_obfuscate_config(**kwargs):
-    """Set obfuscation config for executor."""
-    logger.warning("Obfuscate model.")
-    if 'enc_mode' in kwargs.keys():
-        enc_mode = Validator.check_isinstance('enc_mode', kwargs.get('enc_mode'), str)
-        if enc_mode not in ["AES-GCM", "AES-CBC", "SM4-CBC"]:
-            raise ValueError(
-                "Only MindIR files that encrypted with 'AES-GCM', 'AES-CBC' or 'SM4-CBC' is supported for"
-                "obfuscation, but got {}.".format(enc_mode))
-    obf_ratio, customized_funcs, obf_random_seed = _check_obfuscate_params(kwargs.get('obf_config'))
-    if customized_funcs and obf_random_seed > 0:
-        logger.warning("Although 'customized_func' and 'obf_random_seed' are set, the 'obf_random_seed' mode would be"
-                       " applied, remember to set 'obf_random_seed' when loading obfuscated model.")
-
-    if obf_random_seed == 0:  # apply customized_func mode
-        device_target = context.get_context('device_target')
-        if device_target in ["GPU", "Ascend"]:
-            raise ValueError(
-                "Customized func mode only support 'device_target'='CPU, but got {}.".format(device_target))
-        clean_funcs()
-        for func in customized_funcs:
-            add_opaque_predicate(func.__name__, func)
-    _executor.obfuscate_config = {'obf_ratio': obf_ratio, 'obf_random_seed': obf_random_seed}
-
-
 def _save_mindir(net, file_name, *inputs, **kwargs):
     """Save MindIR format file."""
-    # set obfuscate configs
-    if 'obf_config' in kwargs.keys():
-        _set_obfuscate_config(**kwargs)
-        for item in inputs:
-            if -1 in item.shape:
-                raise ValueError(
-                    "Dynamic shape input is not supported now, but got the shape of inputs: {}.".format(item.shape))
+    executor = _executor
+    if not isinstance(net, nn.Cell):
+        executor = _JitExecutor(net, time.time() * 1e9)
 
     incremental = kwargs.get('incremental', False)
 
     model = mindir_model()
     if not isinstance(net, nn.Cell):
-        mindir_stream, net_dict = _msfunc_info(net, *inputs)
+        mindir_stream, net_dict = _msfunc_info(net, executor, *inputs)
     else:
         mindir_stream, net_dict = _cell_info(net, incremental, *inputs)
     model.ParseFromString(mindir_stream)

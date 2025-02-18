@@ -55,6 +55,8 @@ def test_offset_inc(mode):
     Expectation: success
     """
     ms.set_context(mode=mode)
+    if mode == ms.GRAPH_MODE:
+        ms.set_context(jit_config={"jit_level": "O0"})
     generator = Generator()
     generator.manual_seed(1)
     seed, offset, seed2, offset2 = run_twice(generator)
@@ -75,6 +77,8 @@ def test_restore_state(mode):
     Expectation: success
     """
     ms.set_context(mode=mode)
+    if mode == ms.GRAPH_MODE:
+        ms.set_context(jit_config={"jit_level": "O0"})
     generator1 = Generator()
     generator1.manual_seed(5)
     run_twice(generator1)

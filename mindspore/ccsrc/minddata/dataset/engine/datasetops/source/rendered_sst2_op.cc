@@ -153,8 +153,12 @@ Status RenderedSST2Op::PrescanWorkerEntry(int32_t worker_id) {
   TaskManager::FindMe()->Post();
   std::string folder_;
   uint32_t current_class_id;
-  RETURN_IF_NOT_OK(folder_path_queue_->PopFront(&folder_));
-  RETURN_IF_NOT_OK(folder_classId_queue_->PopFront(&current_class_id));
+  {
+    // since 2 queues are shared by all workers, use lock to keep samples fetched in sequence.
+    std::unique_lock<std::mutex> lock(access_mutex_);
+    RETURN_IF_NOT_OK(folder_path_queue_->PopFront(&folder_));
+    RETURN_IF_NOT_OK(folder_classId_queue_->PopFront(&current_class_id));
+  }
   while (!folder_.empty()) {
     Path folder(folder_);
     std::shared_ptr<Path::DirIterator> dirItr = Path::DirIterator::OpenDirectory(&folder);
@@ -178,8 +182,12 @@ Status RenderedSST2Op::PrescanWorkerEntry(int32_t worker_id) {
       p->second.push(std::make_shared<std::pair<std::string, uint32_t>>(img, current_class_id));
     }
     RETURN_IF_NOT_OK(image_name_queue_->EmplaceBack(p));
-    RETURN_IF_NOT_OK(folder_path_queue_->PopFront(&folder_));
-    RETURN_IF_NOT_OK(folder_classId_queue_->PopFront(&current_class_id));
+    {
+      // since 2 queues are shared by all workers, use lock to keep samples fetched in sequence.
+      std::unique_lock<std::mutex> lock(access_mutex_);
+      RETURN_IF_NOT_OK(folder_path_queue_->PopFront(&folder_));
+      RETURN_IF_NOT_OK(folder_classId_queue_->PopFront(&current_class_id));
+    }
   }
   RETURN_IF_NOT_OK(image_name_queue_->EmplaceBack(nullptr));  // end signal
   return Status::OK();

@@ -17,10 +17,11 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_PASS_ERASE_INVALID_MICRO_DEPEND_H_
 #include <string>
 #include "include/backend/optimizer/pass.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace opt {
-class EraseInvalidMicroDepend : public Pass {
+class BACKEND_EXPORT EraseInvalidMicroDepend : public Pass {
  public:
   explicit EraseInvalidMicroDepend(const std::string &name = "erase_invalid_micro_depend") : Pass(name) {}
   ~EraseInvalidMicroDepend() override = default;

@@ -20,7 +20,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -36,7 +36,7 @@ void LinalgVectorNormAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> 
   if (dim_opt.has_value()) {
     dim_ = dim_opt.value();
   }
-  keepdim_ = transform::ConvertKernelTensor<bool>(inputs[kIndex3]);
+  keepdim_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex3]);
   dtype_ = outputs[kIndex0]->dtype_id();
 
   GetWorkspaceForResize(inputs[kIndex0], ord_scalar_, dim_, keepdim_, dtype_, outputs[kIndex0]);

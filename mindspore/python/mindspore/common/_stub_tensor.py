@@ -19,7 +19,7 @@ from functools import reduce
 from mindspore.common.tensor import Tensor
 from mindspore.common.dtype import type_size_in_bytes
 from mindspore._c_expression import TensorNode, SequenceNode, NoneTypeNode, AnyTypeNode
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.common.api import _convert_python_data
 from mindspore.common._tensor_cpp_method import tensor_cpp_methods
 
@@ -177,7 +177,7 @@ class StubTensor:
         """sync real tensor."""
         if self.stub:
             val = self.stub.get_value()
-            self.tensor = Tensor(val, internal=True)
+            self.tensor = Tensor(val)
             if hasattr(self, "member_cache"):
                 for k, v in self.member_cache.items():
                     setattr(self.tensor, k, v)
@@ -193,7 +193,7 @@ class StubTensor:
     def __setstate__(self, state):
         value = state.pop("value")
         self.stub = None
-        self.tensor = Tensor(value, internal=True)
+        self.tensor = Tensor(value)
 
 no_stub_sync_cpp_api = ["set_cast_dtype", "storage_offset", "is_contiguous", "_need_contiguous"]
 

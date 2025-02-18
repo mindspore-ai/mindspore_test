@@ -24,6 +24,7 @@
 #include "pipeline/jit/pi/utils/opcode_util.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "pipeline/jit/pi/utils/opcode_declare.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pijit {
@@ -311,10 +312,9 @@ bool CheckContainer(PyObject *obj) {
 }
 
 bool IsTensorPyObject(PyObject *obj) {
-  return py::isinstance<mindspore::tensor::MapTensor>(obj) || py::isinstance<mindspore::tensor::Tensor>(obj) ||
-         py::isinstance<mindspore::tensor::MetaTensor>(obj) || py::isinstance<mindspore::tensor::CSRTensor>(obj) ||
-         py::isinstance<mindspore::tensor::RowTensor>(obj) || py::isinstance<mindspore::tensor::COOTensor>(obj) ||
-         py::isinstance<mindspore::tensor::TensorData>(obj);
+  return py::isinstance<mindspore::tensor::MapTensor>(obj) || mindspore::tensor::IsTensorPy(obj) ||
+         py::isinstance<mindspore::tensor::CSRTensor>(obj) || py::isinstance<mindspore::tensor::RowTensor>(obj) ||
+         py::isinstance<mindspore::tensor::COOTensor>(obj) || py::isinstance<mindspore::tensor::TensorData>(obj);
 }
 
 bool IsMsClass(PyObject *obj) {

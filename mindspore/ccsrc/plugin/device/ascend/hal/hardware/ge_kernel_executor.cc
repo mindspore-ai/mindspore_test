@@ -26,9 +26,9 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "backend/common/session/kernel_graph_mgr.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
-#include "plugin/device/ascend/device_context_conf/op_debug_conf.h"
-#include "plugin/device/ascend/device_context_conf/op_precision_conf.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
+#include "plugin/res_manager/ascend/device_context_conf/op_precision_conf.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "plugin/device/ascend/hal/hardware/ge_graph_optimization.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/hal/hardware/acl_somas.h"
@@ -37,6 +37,7 @@
 #include "plugin/device/ascend/kernel/rts/rt_kernel_build.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_metadata.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_build.h"
+#include "plugin/device/ascend/kernel/simu/simu_kernel_build.h"
 #include "mindspore/ops/kernel/ascend/pyboost/customize/customize_copy.h"
 #include "plugin/device/ascend/kernel/ge/ge_kernel_build.h"
 #include "plugin/device/ascend/kernel/ge/ge_kernel_mod.h"
@@ -58,13 +59,13 @@
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
 #include "include/common/factory/ms_factory.h"
 #include "kernel/kernel_build_info.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_util.h"
-#include "transform/acl_ir/ge_adapter_info.h"
-#include "transform/symbol/acl_compiler_symbol.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/acl_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/op_api_util.h"
+#include "plugin/device/ascend/acl_ir/ge_adapter_info.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_compiler_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/backend/debug/data_dump/overflow_dumper.h"
 #include "include/backend/debug/profiler/profiling.h"
@@ -138,7 +139,8 @@ void RegisterSilentCheckForNode(const CNodePtr &kernel, const kernel::KernelModP
   silentcheck::ascend::SilentChecker::GetInstance().RegisterCheck(kernel_mod_ptr, input_kernel_tensors[0]);
 }
 
-bool GenerateKernelMod(const std::vector<CNodePtr> &kernels, GeGraphExecutor *graph_executor = nullptr) {
+bool GenerateKernelMod(const std::vector<CNodePtr> &kernels,
+                       backend::ge_backend::GeGraphExecutor *graph_executor = nullptr) {
   for (const auto &kernel : kernels) {
     MS_EXCEPTION_IF_NULL(kernel);
     if (AnfAlgo::GetKernelMod(kernel)) {
@@ -155,7 +157,11 @@ bool GenerateKernelMod(const std::vector<CNodePtr> &kernels, GeGraphExecutor *gr
     } else if (kernel_type == KernelType::HOST_KERNEL) {
       kernel_mod_ptr = kernel::HostOpBuild(kernel);
     } else if (kernel_type == KernelType::HCCL_KERNEL) {
-      kernel_mod_ptr = kernel::HcclOpBuild(kernel);
+      if (common::IsExecuteSimulation()) {
+        kernel_mod_ptr = kernel::SimuOpBuild(kernel);
+      } else {
+        kernel_mod_ptr = kernel::HcclOpBuild(kernel);
+      }
     } else if (kernel_type == KernelType::OPAPI_KERNEL) {
       kernel_mod_ptr = kernel::AclnnOpBuild(kernel);
     } else if (kernel_type == KernelType::AKG_KERNEL) {
@@ -238,7 +244,8 @@ void SetAclOpPrecisionMode() {
 
   auto precision_mode = op_precision_conf->precision_mode();
   if (precision_mode.empty()) {
-    precision_mode = (transform::AclUtil::KeepOriginDType() == 1) ? "must_keep_origin_dtype" : "allow_fp32_to_fp16";
+    precision_mode =
+      (device::ascend::AclUtil::KeepOriginDType() == 1) ? "must_keep_origin_dtype" : "allow_fp32_to_fp16";
   }
   MS_LOG(INFO) << "Set aclop PRECISION_MODE: " << precision_mode;
   auto ret = CALL_ASCEND_API(aclSetCompileopt, aclCompileOpt::ACL_PRECISION_MODE, precision_mode.c_str());
@@ -935,7 +942,7 @@ void GeKernelExecutor::Initialize() {
   SetAclDebugKernel();
   // not check graph executor, may use in ascend device context
   SetAclOpPrecisionMode();
-  transform::AclUtil::SetDeterministic();
+  res_manager_->SetDeterministic();
   initialized_ = true;
 }
 
@@ -1024,12 +1031,13 @@ kernel::KernelModPtr GeKernelExecutor::CreateKernelMod(const std::string &op_nam
     MS_LOG(WARNING) << "aclnn can't find Kernel[" << op_name << "]";
     return nullptr;
   }
-  transform::AclnnInit();
+  device::ascend::AclnnInit();
   return kernel_ptr;
 }
 
-void GeKernelExecutor::DoStreamAssign(const KernelGraphPtr &kernel_graph,
-                                      const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events) const {
+void GeKernelExecutor::DoStreamAssign(
+  const KernelGraphPtr &kernel_graph,
+  const std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> &mock_exec_order) const {
   MS_LOG(DEBUG) << "Status record: start stream assign.";
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -1043,7 +1051,7 @@ void GeKernelExecutor::DoStreamAssign(const KernelGraphPtr &kernel_graph,
   if (common::IsDisableRuntimeConfig(common::kRuntimeMultiStream)) {
     MS_LOG(INFO) << "Force single stream.";
   } else {
-    AclStreamAssign::GetInstance().AssignStream(NOT_NULL(kernel_graph), sched_events, res_manager_);
+    AclStreamAssign::GetInstance().AssignStream(NOT_NULL(kernel_graph), mock_exec_order, res_manager_);
   }
 #ifdef ENABLE_DUMP_IR
   auto context_ptr = MsContext::GetInstance();
@@ -1127,6 +1135,32 @@ void CreateEventKernelMod(const KernelGraphPtr &kernel_graph) {
 }
 }  // namespace
 
+void ResetNodeIds(const KernelGraphPtr &kernel_graph) {
+  if (!kernel_graph->memory_managed_by_ge()) {
+    MS_LOG(INFO) << "Start reset node id";
+    mindspore::HashMap<std::string, int> node_ids;
+    const auto &all_nodes = mindspore::TopoSort(kernel_graph->get_return(), SuccDeeperSimple);
+    for (const auto &node : all_nodes) {
+      if (node != nullptr && node->isa<CNode>()) {
+        const auto &cnode = node->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(cnode);
+        const auto &fullname = cnode->fullname_with_scope();
+        auto op_index = fullname.rfind("-op");
+        if (op_index != string::npos) {
+          auto scope_prefix = fullname.substr(0, op_index);
+          if (node_ids.find(scope_prefix) == node_ids.end()) {
+            node_ids[scope_prefix] = 0;
+          } else {
+            node_ids[scope_prefix]++;
+          }
+          cnode->set_fullname_with_scope(scope_prefix + "-op" + std::to_string(node_ids[scope_prefix]));
+        }
+      }
+    }
+    MS_LOG(INFO) << "End reset node id";
+  }
+}
+
 void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
   MS_EXCEPTION_IF_NULL(graph);
   uint64_t start_time = profiler::GetClockSyscnt();
@@ -1147,7 +1181,8 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
       return;
     }
     MS_EXCEPTION_IF_NULL(device_context_->graph_executor_);
-    dynamic_cast<GeGraphExecutor *>(device_context_->graph_executor_.get())->CompileGraph(graph, {});
+    dynamic_cast<backend::ge_backend::GeGraphExecutor *>(device_context_->graph_executor_.get())
+      ->CompileGraph(graph, {});
     (void)profiler::CollectHostInfo("Ascend", "PreprocessBeforeRun", "GePreprocess", start_time,
                                     profiler::GetClockSyscnt(), 1);
     return;
@@ -1163,24 +1198,20 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
       MS_EXCEPTION_IF_NULL(kernel_mod);
       is_host_reshape_op = kernel_mod->GetKernelModType() == kernel::KernelModType::HostKernelMod;
     }
-    bool is_nop_op = transform::AclHelper::IsNopNode(node);
+    bool is_nop_op = device::ascend::AclHelper::IsNopNode(node);
     bool is_transpose_nop = (op_name == prim::kPrimTranspose->name() || op_name == prim::kPrimTransposeD->name()) &&
                             common::AnfAlgo::HasNodeAttr(kAttrNopOp, node);
     if (is_transpose_nop || (is_nop_op && !is_host_reshape_op)) {
       nop_op_to_memcpy_.insert(node);
     }
   }
-
-  std::vector<std::pair<CNodePtr, CNodePtr>> sched_events;
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto ms_context_exec_order = ms_context->get_param<std::string>(MS_CTX_EXEC_ORDER);
-  MS_LOG(INFO) << "Current Exec Order Algo in MS Context is " << ms_context_exec_order;
-  const std::string kExecOrderGpto = "gpto";
-  if (ms_context_exec_order == kExecOrderGpto) {
-    mindspore::gpto::GPTO(kernel_graph, &sched_events);
+  ResetNodeIds({kernel_graph});
+  std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> mock_exec_order;
+  if (common::GetEnv("MS_ENABLE_GPTO") == "1") {
+    MS_LOG(INFO) << "Current Exec Order Algo in MS Context is GPTO";
+    mindspore::gpto::GPTO(res_manager_, kernel_graph, &mock_exec_order);
   }
-  DoStreamAssign(kernel_graph, sched_events);
+  DoStreamAssign(kernel_graph, mock_exec_order);
   CreateEventKernelMod(kernel_graph);
   InitGeMemory(kernel_graph);
   kernel_graph->PrintGraphExecuteOrder();

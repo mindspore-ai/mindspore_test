@@ -19,10 +19,11 @@ import copy
 import os
 
 import numpy as np
+import yaml
 import mindspore as ms
 from mindspore import Tensor, context, nn, ops, Parameter
 from mindspore.common import mutable, JitConfig
-from mindspore.ops_generate.gen_utils import safe_load_yaml
+
 
 IR_LEVEL = 2
 INT = 0
@@ -253,7 +254,10 @@ def compare_result(expect, actual, stage='', index=None, ignore_output_index=Non
             compare_result(exp, act, stage, i)
     else:
         if isinstance(expect, Tensor):
-            result = np.allclose(expect.asnumpy(), actual.asnumpy(), rtol=1e-03, atol=1e-03, equal_nan=True)
+            if expect.dtype == ms.bfloat16:
+                result = np.allclose(expect.float().asnumpy(), actual.float().asnumpy(), rtol=1e-03, atol=1e-03, equal_nan=True)
+            else:
+                result = np.allclose(expect.asnumpy(), actual.asnumpy(), rtol=1e-03, atol=1e-03, equal_nan=True)
             debug_log_args(expect, tag=f"compare_result Tensor expect")
             debug_log_args(actual, tag=f"compare_result Tensor actual")
         else:
@@ -332,7 +336,8 @@ def check_inputs_with_yaml(inputs_seq, yaml_name, disable_yaml_check):
     if not os.path.exists(ops_yaml_path):
         warning_log(ops_yaml_path, " is not found.")
         return
-    ops_yaml_data = safe_load_yaml(ops_yaml_path)
+    with open(ops_yaml_path, 'r') as f:
+        ops_yaml_data = yaml.safe_load(f)
     debug_log("ops yaml file path: ", ops_yaml_path)
     if yaml_name not in ops_yaml_data.keys():
         raise RuntimeError(f"yaml check failed, yaml_name: '{yaml_name}' you provided is not found in " \
@@ -819,7 +824,7 @@ def TEST_OP(op, inputs_seq, yaml_name, *, disable_input_check=False, disable_yam
                 continue
             JIT_CONFIG = JitConfig(jit_level="O0")
         elif mode_name == 'GRAPH_MODE':
-            JIT_CONFIG = JitConfig(jit_level="O2")
+            JIT_CONFIG = JitConfig(backend="GE")
             os.environ['MS_ALLOC_CONF'] = "enable_vmm:False"
         else:
             JIT_CONFIG = None

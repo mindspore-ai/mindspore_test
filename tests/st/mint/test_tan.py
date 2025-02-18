@@ -59,8 +59,8 @@ def test_tan_std(mode):
         output = tan_forward_func(ms.Tensor(x))
         output_grad = tan_backward_func(ms.Tensor(x))
     else:
-        output = (jit(tan_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
-        output_grad = (jit(tan_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
+        output = (jit(tan_forward_func, jit_level="O0"))(ms.Tensor(x))
+        output_grad = (jit(tan_backward_func, jit_level="O0"))(ms.Tensor(x))
 
     np.allclose(output.asnumpy(), expect, rtol=1e-5, equal_nan=True)
     np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-5, equal_nan=True)
@@ -98,8 +98,8 @@ def test_tan_bfloat16(mode):
         output = tan_forward_func(ms.Tensor(x, dtype=ms.bfloat16))
         output_grad = tan_backward_func(ms.Tensor(x, dtype=ms.bfloat16))
     else:
-        output = (jit(tan_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x, dtype=ms.bfloat16))
-        output_grad = (jit(tan_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x, dtype=ms.bfloat16))
+        output = (jit(tan_forward_func, jit_level="O0"))(ms.Tensor(x, dtype=ms.bfloat16))
+        output_grad = (jit(tan_backward_func, jit_level="O0"))(ms.Tensor(x, dtype=ms.bfloat16))
 
     np.allclose(output.float().asnumpy(), expect, 0.004, 0.004, equal_nan=True)
     np.allclose(output_grad.float().asnumpy(), expect_grad, 0.004, 0.004, equal_nan=True)

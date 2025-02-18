@@ -6,7 +6,7 @@ import mindspore.nn as nn
 from mindspore.common.initializer import Normal
 from mindspore import context, Tensor, jit
 from mindspore import numpy as np
-from ..share.utils import match_array
+from ..share.utils import match_array, pi_jit_with_config
 from tests.mark_utils import arg_mark
 
 
@@ -66,7 +66,7 @@ class LeNet5Jit(BaseLeNet5):
 
 
 class LeNet5GraphJit(BaseLeNet5):
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def construct(self, x):
         return self.forward(x)
 
@@ -77,7 +77,7 @@ def method_lenet(x):
     return res
 
 
-@jit(mode="PIJit", jit_config=cfg)
+@pi_jit_with_config(jit_config=cfg)
 def func_lenet(x):
     net = LeNet5()
     res = net(x)

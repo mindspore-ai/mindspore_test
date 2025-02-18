@@ -62,8 +62,8 @@ def test_clone_std(mode):
         output = clone_forward_func(ms.Tensor(x))
         output_grad = clone_backward_func(ms.Tensor(x))
     else:
-        output = (jit(clone_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
-        output_grad = (jit(clone_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
+        output = (jit(clone_forward_func, jit_level="O0"))(ms.Tensor(x))
+        output_grad = (jit(clone_backward_func, jit_level="O0"))(ms.Tensor(x))
 
     np.allclose(output.asnumpy(), expect, rtol=1e-5, equal_nan=True)
     np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-5, equal_nan=True)

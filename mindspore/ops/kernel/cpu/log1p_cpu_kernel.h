@@ -19,7 +19,7 @@
 
 #include <complex>
 #include <vector>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "include/common/factory/ms_factory.h"
 
 using complex64 = std::complex<float>;

@@ -21,7 +21,7 @@ from mindspore.ops import operations as P
 
 from tests.mark_utils import arg_mark
 
-context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0"})
 
 
 class Net1(nn.Cell):

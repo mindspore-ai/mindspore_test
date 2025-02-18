@@ -36,14 +36,14 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/parallel_context.h"
+#include "include/common/fallback.h"
 #include "abstract/abstract_value.h"
 #include "frontend/operator/composite/composite.h"
 #include "frontend/parallel/step_auto_parallel.h"
 #include "frontend/parallel/graph_util/graph_splitter.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/shard/shard.h"
-#include "pipeline/jit/ps/pipeline.h"
-#include "pipeline/jit/ps/pass.h"
+#include "pipeline/jit/ps/pipeline_jit.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pipeline/jit/ps/static_analysis/auto_monad.h"
@@ -79,6 +79,7 @@
 #include "common/debug/profiler/profiling_framework_data.h"
 #include "include/common/profiler.h"
 #include "availability/silent_check/silent_check.h"
+#include "backend/backend_manager/backend_manager.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -369,6 +370,7 @@ abstract::AnalysisResult AbstractAnalyze(const ValuePtr &func, const abstract::A
   auto infer_graph = func->isa<FuncGraph>() ? func->cast<FuncGraphPtr>() : ConstructGraphForEval(func, args_abs);
   auto manager = Manage(infer_graph, true);
   auto engine = std::make_shared<abstract::AnalysisEngine>(abstract::GetPrimEvaluatorConstructors(), manager);
+  engine->set_top_func_graph(parse::Parser::GetTopFuncGraph());
   return AbstractAnalyze(engine, infer_graph, args_abs, false, clear);
 }
 
@@ -380,9 +382,10 @@ abstract::AnalysisResult AbstractAnalyzeWithResourceClean(const ValuePtr &func,
   resource->set_func_graph(infer_graph);
 
   auto engine = resource->engine();
+  engine->set_top_func_graph(parse::Parser::GetTopFuncGraph());
   auto res = AbstractAnalyze(engine, infer_graph, args_abs, false, true);
 
-  GraphExecutorPy::GetInstance()->CleanCompileRes(resource);
+  JitExecutorPy::GetInstance()->CleanCompileRes(resource);
   return res;
 }
 
@@ -405,13 +408,11 @@ void SetMindIRLoadFlag(const ResourcePtr &resource) {
   auto manager = resource->manager();
   MS_EXCEPTION_IF_NULL(manager);
   FuncGraphPtr loaded_graph = nullptr;
-  size_t loaded_graph_num = 0;
   const auto &all_graphs = manager->func_graphs();
   for (auto &graph : all_graphs) {
     MS_EXCEPTION_IF_NULL(graph);
     if (graph->has_attr("is_load")) {
       loaded_graph = graph;
-      loaded_graph_num += 1;
       resource->set_is_load(true);
       return;
     }
@@ -423,6 +424,7 @@ FuncGraphPtr Renormalize(const ResourcePtr &resource, const FuncGraphPtr &func_g
   MS_EXCEPTION_IF_NULL(resource);
   MS_LOG(DEBUG) << "Renormalize start";
   auto engine = resource->engine();
+  engine->set_top_func_graph(resource->func_graph());
 
   abstract::AnalysisResult result;
   {
@@ -437,29 +439,6 @@ FuncGraphPtr Renormalize(const ResourcePtr &resource, const FuncGraphPtr &func_g
   }
 
   MS_LOG(DEBUG) << "Renormalize end";
-  return res;
-}
-
-FuncGraphPtr Renormalize(const ValuePtr &func, const abstract::AbstractBasePtrList &args_abs) {
-  auto func_abs = func->ToAbstract();
-  if (!func_abs->isa<abstract::AbstractFunction>()) {
-    MS_LOG(EXCEPTION) << "The value: " << func->ToString() << " is not a callable object.";
-  }
-  auto func_graph = ConstructGraphForEval(func, args_abs);
-  auto manager = Manage(func_graph, true);
-  auto engine = std::make_shared<abstract::AnalysisEngine>(abstract::GetPrimEvaluatorConstructors(), manager);
-
-  abstract::AnalysisResult result;
-  {
-    MsProfileStatGuard stat_guard("renormalize.infer");
-    result = AbstractAnalyze(engine, func_graph, args_abs, false);
-  }
-  FuncGraphPtr res;
-  {
-    MsProfileStatGuard stat_guard("renormalize.specialize");
-    res = ProgramSpecialize(engine, func_graph, result.context);
-  }
-
   return res;
 }
 
@@ -1245,7 +1224,7 @@ bool TypeInferenceAction(const ResourcePtr &resource) {
   AnalysisResult result;
   {
     MsProfileStatGuard stat_guard("type_inference.infer");
-    result = AbstractAnalyze(resource->engine(), resource->func_graph(), GetArgsAbs(resource), resource->is_load());
+    result = AbstractAnalyze(engine, resource->func_graph(), GetArgsAbs(resource), resource->is_load());
   }
   (void)profiler::CollectHostInfo(kCompiler, kTypeInference, kAbstractAnalyze, start_time, profiler::GetClockSyscnt(),
                                   0);
@@ -1398,6 +1377,10 @@ bool GetJitBpropGraph(const ResourcePtr &resource) {
 bool RewriterAfterOptAPassAfterJitBprop(const ResourcePtr &resource) {
   // This function is only used to convert unsupported syntax into PyExecute nodes through Fallback,
   // when the forward graph is decorated with 'jit', and is derivative in pynative mode.
+  const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
+  if (!allow_fallback_runtime) {
+    return true;
+  }
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   if (context->not_convert_jit()) {
@@ -1634,8 +1617,8 @@ void ProcessCanNotInline(const FuncGraphPtr &func_graph, const std::shared_ptr<M
       return;
     }
     MS_LOG(INFO) << "Cell reuse micro num: " << micro_num;
-    auto jit_level = context_ptr->GetJitLevel();
-    if (micro_num > kLazyInlineThershold && jit_level != kAttrJitLevelO2) {
+    auto not_ge = !common::AnfAlgo::IsBackendGe();
+    if (micro_num > kLazyInlineThershold && not_ge) {
       MS_LOG(INFO) << "Set no inline because cell reuse micro num is greater than " << kLazyInlineThershold
                    << ", micro num: " << micro_num;
       context_ptr->SetCellReuseLevel(CellReuseLevel::kNoInline);
@@ -1655,10 +1638,10 @@ void SetRunMode(const FuncGraphPtr &func_graph, compile::Backend *backend_ptr, s
     backend_ptr->set_is_multi_graph_sink(is_multi_graph_sink);
   };
   ProcessCanNotInline(func_graph, context_ptr);
-  auto jit_level = pipeline::GetJitLevel();
+  auto jit_level = context_ptr->GetJitLevel();
   func_graph->set_attr(kAttrJitLevel, MakeValue<std::string>(jit_level));
   auto jit_config = PhaseManager::GetInstance().jit_config();
-  jit_config[kAttrJitLevel] = context_ptr->GetJitLevel();
+  jit_config[kAttrJitLevel] = jit_level;
   graphkernel::GraphKernelFlags::SaveJitConfig(jit_config);
 
   const bool pynative_mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode;
@@ -1794,6 +1777,19 @@ bool TaskEmitAction(const ResourcePtr &resource) {
     return true;
   }
 
+  // The env MS_NEW_BACKEND and old backend will delete when new backend switch.
+  std::string new_backend_env = common::GetEnv("MS_NEW_BACKEND");
+  if (!new_backend_env.empty()) {
+    // In pyexecute kernel, the input data would be stored in user data which is a python object, this converter
+    // is used to convert user data to device ptr in device address.
+    compile::set_pydata_converter(
+      [](const py::object &obj, ValuePtr *value) { return parse::ConvertData(obj, value); });
+    auto backend_ret = backend::BackendManager::GetInstance().Build(resource->func_graph());
+    resource->SetResult(kBuildBackenkType, backend_ret.first);
+    resource->SetResult(kBuildBackenkOutput, backend_ret.second);
+    return true;
+  }
+
   // In PyNative mode, multi target will generate in -1 shape in jit. But, jit in -1 shape will run as a call graph;
   // control flow not has flag kFlagJitCallGraph
   bool is_control_flow = !func_graph->func_graphs_used_total().empty();
@@ -1836,6 +1832,32 @@ bool ExecuteAction(const ResourcePtr &resource) {
       CheckGraphOutputConstOrParameter(resource->func_graph())) {
     return true;
   }
+
+  // The env MS_NEW_BACKEND and old backend will delete when new backend switch.
+  std::string new_backend_env = common::GetEnv("MS_NEW_BACKEND");
+  if (!new_backend_env.empty()) {
+    if (!resource->HasResult(kBuildBackenkType) || !resource->HasResult(kBuildBackenkOutput)) {
+      MS_LOG(INTERNAL_EXCEPTION) << "Execute args error";
+    }
+    auto backend_type = resource->GetResult(kBuildBackenkType).cast<backend::BackendType>();
+    auto backend_graph_id = resource->GetResult(kBuildBackenkOutput).cast<backend::BackendGraphId>();
+    // Construct the graph run function ptr.
+    compile::VmEvalFuncPtr run =
+      std::make_shared<compile::VmEvalFunc>([backend_type, backend_graph_id](const VectorRef &args) -> BaseRef {
+        MS_LOG(DEBUG) << "Execute args size " << args.size();
+        VectorRef outputs;
+        backend::BackendManager::GetInstance().Run(backend_type, backend_graph_id, args, &outputs);
+        MS_LOG(DEBUG) << "out size " << outputs.size();
+        if (outputs.empty()) {
+          return VectorRef();
+        } else {
+          return outputs[0];
+        }
+      });
+    resource->SetResult(kOutput, run);
+    return true;
+  }
+
   if (!resource->HasResult(kOutput)) {
     MS_LOG(INTERNAL_EXCEPTION) << "Execute args error";
   }

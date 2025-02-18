@@ -32,7 +32,7 @@ from mindspore._checkparam import _check_3d_int_or_tuple
 from mindspore.common import dtype as mstype
 from mindspore.common._decorator import deprecated
 from mindspore.common import Tensor, CSRTensor, COOTensor
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore._c_expression import CSRTensor as CSRTensor_
 from mindspore._c_expression import COOTensor as COOTensor_
 from ..auto_generate import (
@@ -4068,7 +4068,7 @@ class TensorScatterUpdate(_TensorScatterOp):
     r"""
     Creates a new tensor by updating the positions in `input_x` indicated by
     `indices`, with values from `update`. This operation is almost equivalent to using
-    `mindspore.ops.ScatterNdUpdate` , except that the updates are applied on `input_x` instead of a zero tensor.
+    :class:`mindspore.ops.ScatterNdUpdate` , except that the updates are applied on `input_x` instead of a zero tensor.
 
     `indices` must have rank at least 2, the last axis is the depth of each index
     vectors. For each index vector, there must be a corresponding value in `update`. If

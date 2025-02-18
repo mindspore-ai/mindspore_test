@@ -18,10 +18,11 @@
 
 #include <string>
 #include "include/backend/optimizer/optimizer.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace opt {
-class AscendConvertTupleInputToDynamicInput : public PatternProcessPass {
+class BACKEND_EXPORT AscendConvertTupleInputToDynamicInput : public PatternProcessPass {
  public:
   explicit AscendConvertTupleInputToDynamicInput(bool multigraph = true, bool is_ge = false)
       : PatternProcessPass("ascend_convert_tuple_input_to_dynamic_input", multigraph), is_ge_(is_ge) {}

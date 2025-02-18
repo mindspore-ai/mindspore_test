@@ -1,7 +1,7 @@
 mindspore.ops.logsumexp
 =======================
 
-.. py:function:: mindspore.ops.logsumexp(input, axis, keep_dims=False)
+.. py:function:: mindspore.ops.logsumexp(input, dim, keepdim=False)
 
     求Tensor的对数指数和。
 
@@ -11,12 +11,12 @@ mindspore.ops.logsumexp
 
     参数：
         - **input** (Tensor) - 任意维度的输入Tensor。数据类型为float16或float32。
-        - **axis** (Union[int, tuple(int), list(int)]) - 需要归约的维度，输入为 ``()`` 时归约所有维度。
-        - **keep_dims** (bool，可选) - 是否保留归约的维度。若设为 ``True`` ，则计算后指定的axis的长度为1，否则不保留该维度。默认值： ``False`` 。
+        - **dim** (Union[int, tuple(int), list(int)]) - 需要归约的维度，输入为 ``()`` 时归约所有维度。
+        - **keepdim** (bool，可选) - 是否保留归约的维度。若设为 ``True`` ，则计算后指定的dim的长度为1，否则不保留该维度。默认值： ``False`` 。
 
     返回：
         Tensor，具有与 `input` 相同的数据类型。
 
-        - 若axis为()，且 `keep_dims` 设为False，则输出为零维Tensor。
-        - 若axis为int类型，假设为2，且 `keep_dims` 设为False，则输出的shape为 :math:`(input_1, input_3, ..., input_R)` 。
-        - 若axis为tuple(int)，假设为(2, 3)，且 `keep_dims` 为False，则输出shape为 :math:`(input_1, input_4, ..., input_R)` 。
+        - 若dim为()，且 `keepdim` 设为False，则输出为零维Tensor。
+        - 若dim为int类型，假设为2，且 `keepdim` 设为False，则输出的shape为 :math:`(input_1, input_3, ..., input_R)` 。
+        - 若dim为tuple(int)，假设为(2, 3)，且 `keepdim` 为False，则输出shape为 :math:`(input_1, input_4, ..., input_R)` 。

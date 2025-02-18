@@ -22,11 +22,13 @@
 #include <algorithm>
 #include <complex>
 
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "base/float16.h"
+#include "kernel/cpu/utils/visible.h"
 
 namespace mindspore {
 namespace kernel {
+OPS_HOST_API void ForceLinkOpsHost();
 template <typename S, typename T>
 void Cast(const S *in, T *out, size_t size) {
   auto task = [&in, &out](size_t start, size_t end) {

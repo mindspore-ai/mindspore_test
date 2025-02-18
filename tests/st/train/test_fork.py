@@ -137,6 +137,8 @@ def test_fork_subgraphs(mode):
     if platform.system() != 'Linux':
         return
     ms.set_context(mode=mode)
+    if mode == ms.GRAPH_MODE:
+        ms.set_context(jit_config={"jit_level": "O0"})
     x = np.array([-1], np.float32)
     y = np.array([2], np.float32)
     net = Net()

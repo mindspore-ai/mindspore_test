@@ -84,11 +84,18 @@ foreach(number RANGE 1 ${OPS_OBJECT_COUNT})
     if(CMAKE_SYSTEM_NAME MATCHES "Windows")
         target_compile_definitions(ops_obj_${number} PRIVATE OPS_DLL)
     endif()
+    if((${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "aarch64") AND (${CMAKE_BUILD_TYPE} MATCHES "Debug"))
+        target_compile_options(ops_obj_${number} PRIVATE -mlong-calls)
+    endif()
 endforeach()
 
 set(OPS_OBJECT_COUNT "${OPS_OBJECT_COUNT}" PARENT_SCOPE)
 add_library(mindspore_ops SHARED ${OPS_OBJECT_LIST})
 add_dependencies(mindspore_ops generated_code)
+
+if((${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "aarch64") AND (${CMAKE_BUILD_TYPE} MATCHES "Debug"))
+    target_compile_options(mindspore_ops PRIVATE -mlong-calls)
+endif()
 
 # ------------------ LINK, SET_PROPERTY ---------------
 

@@ -234,32 +234,33 @@ static const std::map<ProfilerEvent, std::string> kProfilerEventString = {
   {ProfilerEvent::kNativeFunc, "NativeFunc"},
 };
 
-#define PROFILER_START(start_time)                                          \
-  do {                                                                      \
-    if (runtime::ProfilerAnalyzer::GetInstance().profiler_enable()) {       \
-      start_time = runtime::ProfilerAnalyzer::GetInstance().GetTimeStamp(); \
-    }                                                                       \
+#define PROFILER_START(start_time)                                                     \
+  do {                                                                                 \
+    if (mindspore::runtime::ProfilerAnalyzer::GetInstance().profiler_enable()) {       \
+      start_time = mindspore::runtime::ProfilerAnalyzer::GetInstance().GetTimeStamp(); \
+    }                                                                                  \
   } while (0);
 
 // Match PROFILER_START to use.
-#define PROFILER_END(start_time, module, event, op_name, is_inner_event)                           \
-  do {                                                                                             \
-    if (runtime::ProfilerAnalyzer::GetInstance().profiler_enable()) {                              \
-      auto end_time = runtime::ProfilerAnalyzer::GetInstance().GetTimeStamp();                     \
-      auto brief_name = runtime::ProfilerAnalyzer::GetInstance().GetBriefName(op_name);            \
-      runtime::ProfilerAnalyzer::GetInstance().RecordData(std::make_shared<runtime::ProfilerData>( \
-        module, event, op_name, brief_name, is_inner_event, start_time, end_time));                \
-    }                                                                                              \
+#define PROFILER_END(start_time, module, event, op_name, is_inner_event)                                       \
+  do {                                                                                                         \
+    if (mindspore::runtime::ProfilerAnalyzer::GetInstance().profiler_enable()) {                               \
+      auto end_time = mindspore::runtime::ProfilerAnalyzer::GetInstance().GetTimeStamp();                      \
+      auto brief_name = mindspore::runtime::ProfilerAnalyzer::GetInstance().GetBriefName(op_name);             \
+      mindspore::runtime::ProfilerAnalyzer::GetInstance().RecordData(                                          \
+        std::make_shared<mindspore::runtime::ProfilerData>(module, event, op_name, brief_name, is_inner_event, \
+                                                           start_time, end_time));                             \
+    }                                                                                                          \
   } while (0);
 
 // Match PROFILER_START to use.
-#define PROFILER_STAGE_END(start_time, stage)                                  \
-  do {                                                                         \
-    if (runtime::ProfilerAnalyzer::GetInstance().profiler_enable()) {          \
-      auto end_time = runtime::ProfilerAnalyzer::GetInstance().GetTimeStamp(); \
-      runtime::ProfilerAnalyzer::GetInstance().RecordData(                     \
-        std::make_shared<runtime::ProfilerData>(stage, start_time, end_time)); \
-    }                                                                          \
+#define PROFILER_STAGE_END(start_time, stage)                                             \
+  do {                                                                                    \
+    if (mindspore::runtime::ProfilerAnalyzer::GetInstance().profiler_enable()) {          \
+      auto end_time = mindspore::runtime::ProfilerAnalyzer::GetInstance().GetTimeStamp(); \
+      mindspore::runtime::ProfilerAnalyzer::GetInstance().RecordData(                     \
+        std::make_shared<mindspore::runtime::ProfilerData>(stage, start_time, end_time)); \
+    }                                                                                     \
   } while (0);
 
 // Record the profiler data by the constructor and destructor of this class.

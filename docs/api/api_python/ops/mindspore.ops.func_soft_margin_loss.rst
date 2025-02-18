@@ -16,19 +16,19 @@ mindspore.ops.soft_margin_loss
         这是一个实验性API，后续可能修改或删除。
 
     参数：
-        - **input** (Tensor) - 预测值。数据类型必须为float16或float32。
-        - **target** (Tensor) - 真实标签，数据类型和shape与 `input` 相同。
+        - **input** (Tensor) - 预测值。数据类型必须为float16、float32、bfloat16（Atlas训练系列产品不支持）。
+        - **target** (Tensor) - 真实标签，shape与 `input` 相同。
         - **reduction** (str，可选) - 指定应用于输出结果的规约计算方式，可选 ``'none'`` 、 ``'mean'`` 、 ``'sum'`` ，默认值： ``'mean'`` 。
 
           - ``"none"``：不应用规约方法。
           - ``"mean"``：计算输出元素的平均值。
           - ``"sum"``：计算输出元素的总和。
 
-    输出：
+    返回：
         Tensor或Scalar。如果 `reduction` 为 ``'none'`` ，其shape与 `input` 相同。否则，将返回Scalar。
 
     异常：
         - **TypeError** - 如果 `input` 或 `target` 不是Tensor。
-        - **TypeError** - 如果 `input` 或 `target` 的数据类型既不是float16也不是float32。
+        - **TypeError** - 如果 `input` 或 `target` 的数据类型不是float16、float32、bfloat16（Atlas训练系列产品不支持）。
         - **ValueError** - 如果 `input` 与 `target` 的shape不相同。
         - **ValueError** - 如果 `reduction` 不是 ``'none'`` 、 ``'mean'`` 或 ``'sum'`` 。

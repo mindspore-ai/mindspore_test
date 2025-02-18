@@ -18,12 +18,12 @@
 #include <string>
 #include <unordered_map>
 #include "kernel/ascend/pyboost/customize/matmul_reduce_scatter.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "kernel/ascend/pyboost/auto_generate/transpose.h"
-#include "mindspore/ccsrc/transform/acl_ir/op_api_util.h"
+#include "plugin/device/ascend/acl_ir/op_api_util.h"
 
 namespace mindspore {
 namespace kernel {
@@ -53,7 +53,7 @@ tensor::BaseTensorPtr MatmulReduceScatterAscendCustomize(
   auto trans_input_imm = GetValue<bool>(trans_input);
   auto trans_x2_imm = GetValue<bool>(trans_x2);
 
-  auto hccl_inner_comm_name_imm = mindspore::transform::OpApiUtil::GetCommName(group_imm);
+  auto hccl_inner_comm_name_imm = mindspore::device::ascend::OpApiUtil::GetCommName(group_imm);
   std::unordered_map<Reduction, std::string> reduction_map = {{Reduction::REDUCTION_SUM, "sum"}};
   auto iter = reduction_map.find(reduction_imm);
   if (iter == reduction_map.end()) {

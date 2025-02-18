@@ -160,6 +160,21 @@ void SplitModel::InitGraph(const LiteGraphPtr &litegraph) {
 }
 
 void SplitModel::AddPattern(const std::shared_ptr<FusePattern> &pn, bool enable) {
+  auto &flags = GraphKernelFlags::GetInstance();
+  if (!flags.enable_fusion_pattern_only.empty()) {
+    if (std::none_of(flags.enable_fusion_pattern_only.begin(), flags.enable_fusion_pattern_only.end(),
+                     [&pn](std::string only) { return pn->name().find(only) != std::string::npos; })) {
+      enable = false;
+      MS_LOG(INFO) << "Disable pattern by only flag: " << pn->name();
+    }
+  } else if (std::any_of(flags.disable_fusion_pattern.begin(), flags.disable_fusion_pattern.end(),
+                         [&pn](std::string dis) { return pn->name().find(dis) != std::string::npos; })) {
+    enable = false;
+    MS_LOG(INFO) << "Disable pattern by disable flag: " << pn->name();
+  }
+  if (enable) {
+    MS_LOG(INFO) << "Enable pattern: " << pn->name();
+  }
   (void)patterns_.emplace_back(std::make_pair(pn, enable));
   patterns_.back().first->SetCircleChecker(reach_table_);
 }
@@ -260,8 +275,8 @@ void SplitModel::UpdateAreaOutput(const AreaPtr &area) const {
   auto &area_outputs = area->area_outputs();
   area_outputs.clear();
   for (auto &ops : area->ops()) {
-    for (auto &[user, _] : ops->users()) {
-      auto iter = node_area_map_.find(user->shared_from_this());
+    for (auto &users : ops->users()) {
+      auto iter = node_area_map_.find(users.first->shared_from_this());
       if (iter == node_area_map_.end() || iter->second.get() != area.get()) {
         (void)area_outputs.emplace_back(ops);
         break;

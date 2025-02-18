@@ -210,8 +210,9 @@ class AoePlugin {
   void *handle_ = nullptr;
 };
 
-Status AoeApiTuning::ExecuteAoe(const std::shared_ptr<ge::Session> &session, const transform::DfGraphPtr &graph,
-                                const std::vector<ge::Tensor> &inputs, const std::vector<std::string> &job_types,
+Status AoeApiTuning::ExecuteAoe(const std::shared_ptr<ge::Session> &session,
+                                const backend::ge_backend::DfGraphPtr &graph, const std::vector<ge::Tensor> &inputs,
+                                const std::vector<std::string> &job_types,
                                 const std::map<std::string, std::string> &global_options,
                                 const std::map<std::string, std::string> &tuning_options) {
   MS_LOG(INFO) << "Start to aoe.";
@@ -459,7 +460,8 @@ std::vector<std::string> AoeApiTuning::GetAoeJobType(const std::shared_ptr<Conte
   return job_types;
 }
 
-Status AoeApiTuning::AoeTurningGraph(const std::shared_ptr<ge::Session> &session, const transform::DfGraphPtr &graph,
+Status AoeApiTuning::AoeTurningGraph(const std::shared_ptr<ge::Session> &session,
+                                     const backend::ge_backend::DfGraphPtr &graph,
                                      const std::vector<ge::Tensor> &inputs, const std::shared_ptr<Context> &context,
                                      const ConfigInfos &config_infos) {
   auto global_options = GetAoeGlobalOptions(context, config_infos);

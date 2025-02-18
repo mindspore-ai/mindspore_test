@@ -17,7 +17,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore.common import dtype as mstype
-from mindspore import ops, mint, Tensor, jit, JitConfig, context, nn
+from mindspore import ops, mint, Tensor, jit, context, nn
 from mindspore.common.api import _pynative_executor
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
@@ -72,9 +72,9 @@ def test_full_forward_backward(mode):
         ms.context.set_context(mode=ms.PYNATIVE_MODE)
         y = full_forward_func(size, value, dtype)
     elif mode == 'KBK':
-        y = (jit(full_forward_func, jit_config=JitConfig(jit_level="O0")))(size, value, dtype)
+        y = (jit(full_forward_func, jit_level="O0"))(size, value, dtype)
     else:
-        y = (jit(full_forward_func, jit_config=JitConfig(jit_level="O2")))(size, value, dtype)
+        y = (jit(full_forward_func, backend="GE"))(size, value, dtype)
     np.testing.assert_allclose(y.asnumpy(), expect_y, rtol=1e-5)
 
     value = Tensor(6)
@@ -85,11 +85,11 @@ def test_full_forward_backward(mode):
         y = full_forward_func(size, value, dtype)
         value_grad = full_backward_func(size, value, dtype)
     elif mode == 'KBK':
-        y = (jit(full_forward_func, jit_config=JitConfig(jit_level="O0")))(size, value, dtype)
-        value_grad = (jit(full_backward_func, jit_config=JitConfig(jit_level="O0")))(size, value, dtype)
+        y = (jit(full_forward_func, jit_level="O0"))(size, value, dtype)
+        value_grad = (jit(full_backward_func, jit_level="O0"))(size, value, dtype)
     else:
-        y = (jit(full_forward_func, jit_config=JitConfig(jit_level="O2")))(size, value, dtype)
-        value_grad = (jit(full_backward_func, jit_config=JitConfig(jit_level="O2")))(size, value, dtype)
+        y = (jit(full_forward_func, backend="GE"))(size, value, dtype)
+        value_grad = (jit(full_backward_func, backend="GE"))(size, value, dtype)
     np.testing.assert_allclose(y.asnumpy(), expect_y, rtol=1e-5)
     np.testing.assert_allclose(value_grad.asnumpy(), expect_value_grad, rtol=1e-5)
     assert value_grad.shape == ()

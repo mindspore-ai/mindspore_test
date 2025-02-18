@@ -31,6 +31,7 @@ def set_device(device_target, device_id=None):
 
     Note:
         - The `device_target` must be set in the ["CPU", "GPU", "Ascend"], there is no default value.
+        - Suggest setting `device_target` and `device_id` before calling :func:`mindspore.communication.init`.
 
     Args:
         device_target (str): The target device to run, only support "Ascend", "GPU", and "CPU".
@@ -72,7 +73,8 @@ def set_device(device_target, device_id=None):
 
     device_context = DeviceContextManager.get_instance().get_device_context(device_target)
     if device_context is not None and device_context.initialized():
-        raise RuntimeError("The runtime has been initialized, please set it before the kernel is executed."
+        raise RuntimeError("The runtime has been initialized, please set it before the kernel is executed, "
+                           "or before calling 'mindspore.communication.init()'. "
                            "Suggest setting it as early as possible.")
     DeviceManagerConf.get_instance().set_device(device_target, device_id, is_default)
 

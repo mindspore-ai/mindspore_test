@@ -18,26 +18,37 @@
 #include <vector>
 #include <utility>
 #include <memory>
+#include <string>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "plugin/device/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
 
-class AdaptiveAvgPool1DAscend : public AclnnKernelMod {
+class AdaptivePool1DAscend : public AclnnKernelMod {
  public:
-  AdaptiveAvgPool1DAscend() : AclnnKernelMod(std::move("aclnnAdaptiveAvgPool2d")) {}
+  explicit AdaptivePool1DAscend(std::string &&op_type) : AclnnKernelMod(std::move(op_type)) {}
+  ~AdaptivePool1DAscend() = default;
+  void SetParaForPool2D(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
+  void RestoreOutputShape(const std::vector<KernelTensor *> &outputs);
+
+ protected:
+  std::vector<int64_t> output_size_for_2d_;
+  ShapeVector out_shape_ori;
+  std::shared_ptr<KernelTensor> input_kernel_tensor_;
+  DEFINE_GET_WORKSPACE_FOR_RESIZE()
+};
+
+class AdaptiveAvgPool1DAscend : public AdaptivePool1DAscend {
+ public:
+  AdaptiveAvgPool1DAscend() : AdaptivePool1DAscend(std::move("aclnnAdaptiveAvgPool2d")) {}
   ~AdaptiveAvgPool1DAscend() = default;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
-
- private:
-  std::vector<int64_t> output_size_for_2d_;
-  std::shared_ptr<KernelTensor> input_kernel_tensor_;
-  DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+
 }  // namespace kernel
 }  // namespace mindspore
 

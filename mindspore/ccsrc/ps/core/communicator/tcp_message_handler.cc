@@ -20,6 +20,7 @@
 #include <iostream>
 #include <utility>
 #include <memory>
+#include "include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ps {
@@ -74,11 +75,11 @@ void TcpMessageHandler::ReceiveMessage(const void *buffer, size_t num) {
 
       size_t dest_size = message_buffer_.size() - last_copy_len_;
       size_t src_size = copy_len;
-      auto ret = memcpy_s(message_buffer_.data() + last_copy_len_, dest_size, buffer_data, src_size);
+      auto ret = Memcpy(message_buffer_.data() + last_copy_len_, dest_size, buffer_data, src_size);
       last_copy_len_ += copy_len;
       buffer_data += copy_len;
       if (ret != EOK) {
-        MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
+        MS_LOG(EXCEPTION) << "The Memcpy error, errorno(" << ret << ")";
       }
 
       if (remaining_length_ == 0) {

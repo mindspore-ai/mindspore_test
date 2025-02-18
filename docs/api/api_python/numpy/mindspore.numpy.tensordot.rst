@@ -15,7 +15,7 @@ mindspore.numpy.tensordot
     对于多个轴进行求和且它们不是 `a(b)` 的最后(b的第一个)轴时，参数 `axes` 应由两个相同长度的序列组成，第一个序列应用于 `a` ，第二个序列应用于 `b` ，依此类推。
     结果的shape由第一个Tensor的未缩并轴以及第二个Tensor的未缩并轴组成。
 
-    .. note:: 
+    .. note::
         在 CPU 上，支持的dtype是 np.float16 和 np.float32。在 GPU 上，支持的dtype是 np.float16 和 np.float32。
 
     参数：

@@ -32,7 +32,7 @@ class SaveLossCallback(Callback):
         super(SaveLossCallback, self).__init__()
         self.loss = []
 
-    def step_end(self, run_context):
+    def on_train_step_end(self, run_context):
         """
         Save losses into a list at each step end.
         """
@@ -154,7 +154,6 @@ class TestBreakpointTraining:
             for index, loss in enumerate(retrain_loss):
                 np.testing.assert_array_equal(np.array(loss), expected_loss[index + skip_loss_count])
 
-
     @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
     @pytest.mark.parametrize("mode", (context.GRAPH_MODE, context.PYNATIVE_MODE))
     @pytest.mark.parametrize("sink_mode", (False, True))
@@ -168,7 +167,6 @@ class TestBreakpointTraining:
         init_step = 10
         dataset_size = 10
         self.validate_retrain_loss_equal_to_normal_train(mode, "CPU", sink_mode, dataset_size, init_step)
-
 
     @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0',
               card_mark='onecard', essential_mark='essential')
@@ -186,7 +184,6 @@ class TestBreakpointTraining:
         sink_mode, sink_size = sink_mode_and_size
         self.validate_retrain_loss_equal_to_normal_train(mode, "DEVICE", sink_mode, dataset_size, init_step, sink_size)
 
-
     @arg_mark(plat_marks=['cpu_linux'], level_mark='level0',
               card_mark='onecard', essential_mark='essential')
     @pytest.mark.parametrize("mode", (context.GRAPH_MODE, context.PYNATIVE_MODE))
@@ -202,7 +199,6 @@ class TestBreakpointTraining:
         init_step = 15
         dataset_size = 10
         self.validate_retrain_loss_equal_to_normal_train(mode, "CPU", sink_mode, dataset_size, init_step)
-
 
     @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0',
               card_mark='onecard', essential_mark='essential')

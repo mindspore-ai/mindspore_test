@@ -60,8 +60,8 @@ enum ParseTargetType {
 const char PYTHON_MOD_MODULE[] = "mindspore";
 const char PYTHON_MOD_PARSE_MODULE[] = "mindspore._extends.parse";
 const char PYTHON_MOD_OPS_TENSOR_METHOD_MODULE[] = "mindspore.ops.tensor_method";
-const char PYTHON_MOD_PRIMITIVE_ARG_HANDLER_MODULE[] = "mindspore.ops.auto_generate.gen_arg_handler";
-const char PYTHON_MOD_PRIMITIVE_ARG_DTYPE_CAST_MODULE[] = "mindspore.ops.auto_generate.gen_arg_dtype_cast";
+const char PYTHON_MOD_PRIMITIVE_ARG_HANDLER_MODULE[] = "mindspore.ops._utils.arg_handler";
+const char PYTHON_MOD_PRIMITIVE_ARG_DTYPE_CAST_MODULE[] = "mindspore.ops._utils.arg_dtype_cast";
 const char PYTHON_MOD_PRIMITIVE_OP_CREATE_INSTANCE_HELPER_MODULE[] =
   "mindspore.ops.auto_generate.cpp_create_prim_instance_helper";
 const char PYTHON_MOD_PRIMITIVE_OP_TYPE_CAST[] = "do_type_cast";
@@ -271,6 +271,8 @@ ValuePtr GetArgDefaultValue(const std::string &prim_name, const std::string &arg
 AnfNodePtr TransPropertyToFunc(const FuncGraphPtr &fg, const AnfNodePtr &node, const py::object &property_net_obj,
                                std::string attr_str);
 void CleanParameterNameCache();
+
+void AttachIsolatedNodes(const FuncGraphPtr &func_graph, const OrderedSet<AnfNodePtr> &isolated_nodes);
 }  // namespace parse
 }  // namespace mindspore
 

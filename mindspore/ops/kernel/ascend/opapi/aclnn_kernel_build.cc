@@ -63,7 +63,7 @@ KernelModPtr AclnnOpBuild(const AnfNodePtr &anf_node) {
   } else {
     kernel_ptr->SetDynamic(true);
   }
-  transform::AclnnInit();
+  device::ascend::AclnnInit();
   return kernel_ptr;
 }
 

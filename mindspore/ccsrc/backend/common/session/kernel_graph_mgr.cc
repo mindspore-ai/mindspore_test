@@ -773,6 +773,7 @@ nlohmann::json GenKernelGraphJson(const KernelGraphPtr &kg, const std::vector<An
   kg_json[kIsLoopCountSink] = kg->is_loop_count_sink();
   kg_json[kIsDynamicShape] = kg->is_dynamic_shape();
   kg_json[kDeviceTarget] = kg->device_target();
+  kg_json[kJitSetting] = kg->jit_setting().to_json();
   kg_json[kRootGraphId] = kg->root_graph_id();
   kg_json[kExecutable] = kg->executable();
   kg_json[kHasRecursiveCall] = kg->recursive_call();
@@ -1390,7 +1391,7 @@ AnfNodePtr KernelGraphMgr::GetChildGraph(KernelGraph *graph, const AnfNodePtr &c
   FuncGraphPtr child_graph = common::AnfAlgo::GetValueNodeFuncGraph(child_func_graph);
   MS_EXCEPTION_IF_NULL(child_graph);
   if (front_backend_graph_map_.find(child_graph.get()) == front_backend_graph_map_.end()) {
-    (void)ConstructKernelGraph(child_graph, &all_graphs, graph->device_target());
+    (void)ConstructKernelGraph(child_graph, &all_graphs, graph->device_target(), graph->jit_setting());
   }
   auto new_value_node = graph->GetBackendAnfByFrontAnf(child_func_graph);
   if (new_value_node != nullptr) {
@@ -2210,8 +2211,8 @@ void KernelGraphMgr::SetReturnNode(const AnfNodePtr &node, KernelGraph *graph) {
 }
 
 KernelGraphPtr KernelGraphMgr::ConstructKernelGraph(const AnfNodePtrList &lst, const AnfNodePtrList &outputs,
-                                                    DeviceType device_target, bool common_opt,
-                                                    bool is_enable_zero_copy) {
+                                                    DeviceType device_target, const JitSetting &jit_setting,
+                                                    bool common_opt, bool is_enable_zero_copy) {
   mindspore::HashMap<AnfNodePtr, AnfNodePtr> other_graph_cnode;
   std::vector<std::weak_ptr<KernelGraph>> child_graph_order;
   auto graph = NewKernelGraph();
@@ -2226,6 +2227,7 @@ KernelGraphPtr KernelGraphMgr::ConstructKernelGraph(const AnfNodePtrList &lst, c
   }
   MS_LOG(INFO) << "Create graph: " << graph->graph_id();
   graph->set_device_target(device_target);
+  graph->set_jit_setting(jit_setting);
   for (const auto &node : lst) {
     MS_EXCEPTION_IF_NULL(node);
     MS_LOG(DEBUG) << "Start create new cnode, node = " << node->DebugString();
@@ -2293,24 +2295,26 @@ KernelGraphPtr KernelGraphMgr::ConstructKernelGraph(const AnfNodePtrList &lst, c
 
 std::shared_ptr<KernelGraph> KernelGraphMgr::ConstructKernelGraph(const FuncGraphPtr &func_graph,
                                                                   std::vector<KernelGraphPtr> *all_out_graph,
-                                                                  DeviceType device_target) {
+                                                                  DeviceType device_target,
+                                                                  const JitSetting &jit_setting) {
   auto graph = NewKernelGraph();
   front_backend_graph_map_[func_graph.get()] = graph;
-  ConstructKernelGraphInner(func_graph, all_out_graph, device_target, graph);
+  ConstructKernelGraphInner(func_graph, all_out_graph, device_target, jit_setting, graph);
   return graph;
 }
 
 std::shared_ptr<KernelGraph> KernelGraphMgr::ConstructPackKernelGraph(const FuncGraphPtr &func_graph,
                                                                       std::vector<KernelGraphPtr> *all_out_graph,
-                                                                      DeviceType device_target) {
+                                                                      DeviceType device_target,
+                                                                      const JitSetting &jit_setting) {
   auto graph = NewPynativeKernelGraph();
-  ConstructKernelGraphInner(func_graph, all_out_graph, device_target, graph);
+  ConstructKernelGraphInner(func_graph, all_out_graph, device_target, jit_setting, graph);
   return graph;
 }
 
 void KernelGraphMgr::ConstructKernelGraphInner(const FuncGraphPtr &func_graph,
                                                std::vector<KernelGraphPtr> *all_out_graph, DeviceType device_target,
-                                               const KernelGraphPtr &graph) {
+                                               const JitSetting &jit_setting, const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(all_out_graph);
   auto node_list = TopoSort(func_graph->get_return());
@@ -2323,6 +2327,7 @@ void KernelGraphMgr::ConstructKernelGraphInner(const FuncGraphPtr &func_graph,
   }
   MS_LOG(INFO) << "Create graph: " << graph->graph_id();
   graph->set_device_target(device_target);
+  graph->set_jit_setting(jit_setting);
   // Create parameter
   for (const auto &node : func_graph->parameters()) {
     MS_EXCEPTION_IF_NULL(node);
@@ -2356,7 +2361,7 @@ void KernelGraphMgr::ConstructKernelGraphInner(const FuncGraphPtr &func_graph,
       // Create child kernel graph according ValueNode<FuncGraph>
       FuncGraphPtr child_graph = common::AnfAlgo::GetValueNodeFuncGraph(node);
       auto child_kernel_graph = front_backend_graph_map_.find(child_graph.get()) == front_backend_graph_map_.end()
-                                  ? ConstructKernelGraph(child_graph, all_out_graph, device_target)
+                                  ? ConstructKernelGraph(child_graph, all_out_graph, device_target, jit_setting)
                                   : front_backend_graph_map_[child_graph.get()];
       (void)child_kernel_graphs.emplace_back(std::weak_ptr<KernelGraph>(child_kernel_graph));
       (void)CreateValueNodeKernelGraph(node, graph.get());
@@ -2461,6 +2466,11 @@ void HandleGraphSimpleAttr(const nlohmann::json &graph_json, KernelGraph *graph)
   }
   // set summary_node of graph
   graph->set_summary_node_exist(graph_json[kSummaryNodeExist]);
+  if (graph_json.contains(kJitSetting)) {
+    JitSetting jit_setting;
+    jit_setting.from_json(graph_json[kJitSetting]);
+    graph->set_jit_setting(jit_setting);
+  }
   if (graph_json.contains(kStartLabel)) {
     auto start_label = context.FindBackNodeByBackName(graph_json[kStartLabel]);
     if (start_label) {
@@ -2926,7 +2936,7 @@ std::vector<KernelGraphPtr> KernelGraphMgr::ConstructMultiKernelGraphByCache(
       kernel_graph = kernel_graph_iter->second;
       MS_EXCEPTION_IF_NULL(kernel_graph);
     }
-    ++graph_sum_;
+    graph_sum_ = std::max(graph_sum_, static_cast<uint32_t>(graph_json[kGraphId]) + 1);
     graphs_[graph_json[kGraphId]] = kernel_graph;
     all_out_graph.push_back(kernel_graph);
 
