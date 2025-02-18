@@ -48,6 +48,8 @@ namespace {
 constexpr size_t kDefaultStreamId = 0;
 constexpr char kHcclWorldGroup[] = "hccl_world_group";
 constexpr size_t kMegaByte = 1024 * 1024;
+constexpr size_t kUceParamsMaxMemThresh = 512 * kMegaByte;       // 512MB
+constexpr size_t kUceDeviceFreeMemTresh = 8 * 1024 * kMegaByte;  // 8GB
 
 uint64_t AlignSize(uint64_t num) {
   constexpr uint64_t align_value = 64;
@@ -64,6 +66,10 @@ uint64_t GetExchangeBufferSize(const DataExchangeInfo &local_info, const DataExc
   }
 
   return std::min({min_free_mem_size, local_info.GetSizeSum()});
+}
+
+bool UceCanUseBatchCopy(size_t params_size_in_bytes, size_t device_free_mem_size) {
+  return params_size_in_bytes < kUceParamsMaxMemThresh && device_free_mem_size > kUceDeviceFreeMemTresh;
 }
 }  // namespace
 
@@ -235,6 +241,7 @@ int ParamReplication::CopyParamsOneByOne(const std::vector<tensor::TensorPtr> &p
     if (tensor->device_address() == nullptr || tensor->device_address()->GetMutablePtr() == nullptr) {
       MS_LOG(INFO) << "Device address is nullptr, skip copying parameter index = " << index << "/" << params.size()
                    << " " << (rank_id_ == src_rank ? " send" : " recv");
+      continue;
     }
     MS_LOG(INFO) << "Copy parameter begin, index = " << index << "/" << params.size() << " "
                  << (rank_id_ == src_rank ? " send" : " recv");
@@ -285,7 +292,8 @@ int ParamReplication::SendRecv(const std::vector<tensor::TensorPtr> &params, int
 
   size_t xchg_buf_size = GetExchangeBufferSize(local_info, remote_info);
   void *xchg_buf_addr = nullptr;
-  if (xchg_buf_size != DataExchangeInfo::kInvalidParamSize) {
+  if (xchg_buf_size != DataExchangeInfo::kInvalidParamSize &&
+      UceCanUseBatchCopy(xchg_buf_size, local_info.GetFreeDevMem())) {
     xchg_buf_addr = res_mgr_->AllocateMemory(xchg_buf_size, stream_id_);
   }
 
