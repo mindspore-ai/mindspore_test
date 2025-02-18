@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
 import numpy as np
 
 import mindspore as ms
@@ -393,6 +394,19 @@ def test_virtual_dataset_model_parallel_semi_auto_parallel_with_layout_2():
     validator = ParallelValidator(net, phase)
     assert validator.check_node_inputs_has('MatMul-0', ['Reshape-2', 'StridedSlice-1'])
 
+
+def test_virtual_dataset_model_parallel_semi_auto_parallel_with_layout_3():
+    """
+    Feature: distribute operator virtual_dataset in auto parallel.
+    Description: virtual_dataset/model_parallel/fully shard/repeat in left.
+    Expectation: compile done without error.
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+    context.set_auto_parallel_context(device_num=8, global_rank=0)
+    layout = Layout((2, 2, 2, 2), ("dp", "mp", "sp", "interleaved_parallel"))
+    strategy0 = (layout(("dp", "mp"), "sp"), layout(("dp", "mp"), "sp"), layout(("mp", "dp"), "sp"))
+    with pytest.raises(ValueError):
+        context.set_auto_parallel_context(dataset_strategy=strategy0)
 
 if __name__ == '__main__':
     context.reset_auto_parallel_context()

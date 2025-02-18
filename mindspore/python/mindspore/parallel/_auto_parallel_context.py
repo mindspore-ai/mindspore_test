@@ -619,6 +619,8 @@ class _AutoParallelContext:
             layout_to_dict = ele.to_dict()
             dataset_devmat.append(layout_to_dict["device_matrix"])
             dataset_alias_name.append(layout_to_dict["alias_name"])
+            if layout_to_dict["interleaved_parallel"]:
+                raise ValueError("For dataset_strategy, layout does not support interleaved_parallel")
             tensor_map = []
             for value in layout_to_dict["tensor_map"]:
                 if isinstance(value, tuple):
