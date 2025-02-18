@@ -9539,12 +9539,12 @@ def speed_fusion_attention(query, key, value, head_num, input_layout, *, pse=Non
             - (pre_tokens >= 0 and next_tokens < 0) and (abs(next_tokens) > pre_tokens or abs(next_tokens) >= S1).
 
         inner_precise (int, optional): The parameter is reserved and not implemented yet. Default: ``0`` .
-        prefix (Union[tuple[int]], list[int], optional): N value of each Batch in the prefix sparse calculation
+        prefix (Union[tuple[int], list[int]], optional): N value of each Batch in the prefix sparse calculation
             scenario. Input tensor of shape :math:`(B,)`. B max value 32. Not none only when sparse_mode is 5.
             If S1 > S2, N ranges from 0 to S2. If S1 <= S2, N ranges from S2 - S1 to S2. Default: ``None`` .
-        actual_seq_qlen (Union[tuple[int]], list[int], optional): Size of query corresponding to each batch, array
+        actual_seq_qlen (Union[tuple[int], list[int]], optional): Size of query corresponding to each batch, array
             with increasing values and the last value equal to T1. Default: ``None`` .
-        actual_seq_kvlen (Union[tuple[int]], list[int], optional): Size of key and value corresponding to each batch,
+        actual_seq_kvlen (Union[tuple[int], list[int]], optional): Size of key and value corresponding to each batch,
             array with increasing values and the last value equal to T2. Default: ``None`` .
         sparse_mode (int, optional): Indicates sparse mode. Default ``0`` .
 
