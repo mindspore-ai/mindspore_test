@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/lowlatency_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/lowlatency_collective_comm_lib.h"
 
 namespace mindspore {
 namespace device {

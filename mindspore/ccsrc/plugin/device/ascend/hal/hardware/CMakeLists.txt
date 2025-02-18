@@ -2,8 +2,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-delete-abstract-non-virtual-dtor")
 endif()
 
-add_subdirectory(ascend_collective_comm)
-
 file(GLOB_RECURSE MS_HARDWARE_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "ascend_deprecated_interface.cc"
         "ge_device_context.cc"

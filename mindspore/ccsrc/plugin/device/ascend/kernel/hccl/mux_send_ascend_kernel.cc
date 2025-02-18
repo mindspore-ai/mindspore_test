@@ -15,7 +15,7 @@
  */
 #include "plugin/device/ascend/kernel/hccl/mux_send_ascend_kernel.h"
 #include "include/common/utils/anfalgo.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 
 using AscendCollectiveCommLib = mindspore::device::ascend::AscendCollectiveCommLib;

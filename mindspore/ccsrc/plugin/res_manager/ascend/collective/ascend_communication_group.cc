@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_communication_group.h"
+#include "plugin/res_manager/ascend/collective/ascend_communication_group.h"
 #include <map>
 #include <algorithm>
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/hccl_watch_dog_thread.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/hccl_watch_dog_thread.h"
+#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "utils/ms_context.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"

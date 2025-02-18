@@ -25,7 +25,6 @@
 
 #include "common/debug/profiler/profiling_data_dumper.h"
 #include "include/backend/debug/profiler/profiling.h"
-#include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/utils/comm_manager.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_vmm_adapter.h"
@@ -39,6 +38,7 @@
 #include "utils/ms_utils.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/runtime_conf/runtime_conf.h"
+#include "utils/distributed_meta.h"
 
 namespace mindspore {
 namespace device {
@@ -117,7 +117,7 @@ static uint64_t GetPid() {
 int32_t GetDeviceId() {
   int32_t device_id = 0;
 #if !defined(BUILD_LITE)
-  device_id = static_cast<int32_t>(distributed::collective::CollectiveManager::instance()->local_rank_id());
+  device_id = static_cast<int32_t>(DistributedMeta::GetInstance()->local_rank_id());
 #endif
   return device_id;
 }
@@ -511,11 +511,9 @@ AbstractAscendMemoryPoolSupport &AscendMemoryPool::GetInstance() {
 
     instance_->SetRankIdGetter([]() {
       size_t rank_id = SIZE_MAX;
-#if !defined(BUILD_LITE)
-      if (distributed::collective::CollectiveManager::instance()->initialized()) {
-        rank_id = CommManager::GetInstance().GetRank();
+      if (DistributedMeta::GetInstance()->initialized()) {
+        rank_id = DistributedMeta::GetInstance()->global_rank_id();
       }
-#endif
       return rank_id;
     });
     instance_->SetPipelineCallback([]() { runtime::Pipeline::Get().launch_stage()->Wait(); });
