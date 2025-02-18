@@ -55,18 +55,6 @@ bool Overlap(const Time &start1, const Time &end1, const Time &start2, const Tim
          (start2 >= start1 && start2 < end1);  // if equal start and end for two intervals, then no overlap
 }
 
-std::pair<bool, std::string> GetDebugConfig() {
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  auto enable_save_graphs =
-    (context_ptr->CanDump(kIntroductory)) || (common::GetEnv("MS_ENABLE_GPTO_VERIFICATION") == "1");
-  auto save_graphs_path = context_ptr->GetSaveGraphsPath();
-  if (save_graphs_path.empty()) {
-    save_graphs_path = ".";
-  }
-  return std::make_pair(enable_save_graphs, save_graphs_path);
-}
-
 size_t ScheduleToEvents(const SchedulingOutput &schedule) {
   size_t count = 0;
 
@@ -357,11 +345,11 @@ std::map<GptoTaskType, int32_t> GetPEs([[maybe_unused]] std::map<std::string, si
     new_pem[kVec] = 1;
   } else if (gpto_mode == kCompComm) {
     new_pem[kVec] = 1;
-    new_pem[kComm] = 1;
+    new_pem[kCommTrue] = 1;
   } else if (gpto_mode == kCompCubeComm) {
     new_pem[kVec] = 1;
     new_pem[kCube] = 1;
-    new_pem[kComm] = 1;
+    new_pem[kCommGroup] = 1;
   } else if (gpto_mode == kCompCommGroup) {
     new_pem[kVec] = 1;
     for (auto &group : *group_to_id) {
@@ -471,7 +459,7 @@ void ComputePredComm(const std::vector<GptoTaskPtr> &tasks) {
   for (auto &task : tasks) {
     task->set_pred_comm(0);
     for (auto &predecessor : task->parents()) {
-      if (predecessor.lock()->gpto_type() >= kComm) {
+      if (predecessor.lock()->gpto_type() >= kCommTrue) {
         task->set_pred_comm(task->pred_comm() + 1);
       }
     }
@@ -626,8 +614,7 @@ SchedulingOutput MemAwareScheduler(const SchedulingInput &input,
   output.task_times.reserve(input.tasks.size());
 
   // Optional: verify input task graph is a DAG
-  auto can_debug = GetDebugConfig();
-  if (can_debug.first) {
+  if (IsGptoDebug()) {
     if (VerifyDAG(*tasks)) {
       MS_LOG(INFO) << "Verification of DAG: SUCCESS";
     } else {
@@ -778,7 +765,7 @@ void InitializeProcessingElements(const std::map<GptoTaskType, int32_t> &type_to
   MS_EXCEPTION_IF_NULL(PEs_load);
   MS_EXCEPTION_IF_NULL(PEs_start);
 
-  size_t count = 1;
+  size_t count = 0;
   for (const auto &type_to_num : type_to_num_cores_map) {
     const auto &type = type_to_num.first;
     const auto &num_cores = type_to_num.second;
@@ -793,6 +780,7 @@ void InitializeProcessingElements(const std::map<GptoTaskType, int32_t> &type_to
       } else {
         (*PEs_start)[type].push_back(new_pe);
       }
+      MS_LOG(DEBUG) << "Initialized PE " << new_pe.id << " of type " << new_pe.gpto_type;
     }
     count += num_cores;
   }
@@ -1304,8 +1292,7 @@ SchedulingOutput MemAwareSchedulerCore(const std::vector<GptoTaskPtr> &tasks,
   MS_LOG(INFO) << "Peak mem is " << output.memory_peak;
 
   // Verification of scheduling solution (optional)
-  auto can_debug = GetDebugConfig();
-  if (can_debug.first) {
+  if (IsGptoDebug()) {
     if (VerifyScheduling(tasks)) {
       MS_LOG(INFO) << "Verification of Scheduling: SUCCESS";
     } else {
@@ -1680,8 +1667,7 @@ bool VerifyMemory(const std::vector<GptoTaskPtr> &tasks, std::map<Time, Memory> 
 void LogSchedulingOutput(const SchedulingInput &scheduling_input, const SchedulingOutput &output,
                          const std::unordered_map<CNodePtr, GptoTaskPtr> &cnode_to_task,
                          const KernelGraphPtr &kernel_graph, const std::set<GptoTensorPtr, GptoTensorIdSort> &tensors,
-                         const Memory memory_lower_bound, [[maybe_unused]] std::map<std::string, size_t> *group_to_id,
-                         const std::string &path) {
+                         const Memory memory_lower_bound, [[maybe_unused]] std::map<std::string, size_t> *group_to_id) {
   auto lower_makespan =
     std::max(LowerBoundBottomLevel(scheduling_input.tasks), LowerBoundPEs(scheduling_input.tasks, GetPEs(group_to_id)));
   const size_t graph_id = kernel_graph->graph_id();
@@ -1689,8 +1675,8 @@ void LogSchedulingOutput(const SchedulingInput &scheduling_input, const Scheduli
   std::ostringstream oss;
   std::string filename;
   ss << kernel_graph;
-  filename = path + std::string("/") + std::string("gpto_out_") + std::to_string(graph_id) + std::string("_") +
-             ss.str() + std::string(".log");
+  filename = GetSaveGraphsPathName(std::string("/") + std::string("gpto_out_") + std::to_string(graph_id) +
+                                   std::string("_") + ss.str() + std::string(".log"));
   // Print info for tasks
   const auto &intervals = output.task_times;
   for (const auto &interval : intervals) {
@@ -1844,10 +1830,10 @@ GptoTaskType GetType(mindspore::device::DeviceResManager *device_res_manager, co
   if (gpto_mode == kComp) {
     return kVec;
   } else if (gpto_mode == kCompComm) {
-    return common::AnfAlgo::IsCommunicationOp(cnode) ? kComm : kVec;
+    return common::AnfAlgo::IsCommunicationOp(cnode) ? kCommTrue : kVec;
   } else if (gpto_mode == kCompCubeComm) {
     if (common::AnfAlgo::IsCommunicationOp(cnode)) {
-      return kComm;
+      return kCommGroup;
     } else {
       return IsCubeKernel(cnode) ? kCube : kVec;
     }
@@ -1877,7 +1863,7 @@ GptoTaskType GetType(mindspore::device::DeviceResManager *device_res_manager, co
 
 GptoTaskType GetRealType(const CNodePtr cnode) {
   if (common::AnfAlgo::IsCommunicationOp(cnode)) {
-    return kComm;
+    return kCommTrue;
   } else if (IsCubeKernel(cnode)) {
     return kCube;
   } else {
@@ -2225,8 +2211,10 @@ size_t CalculateCommCost(const CNodePtr &cnode) {
   return cost;
 }
 
+bool IsGptoDebug() { return common::GetEnv("MS_ENABLE_GPTO_VERIFICATION") == "1"; }
+
 std::pair<Time, Memory> LogBaseline(std::unordered_map<CNodePtr, GptoTaskPtr> *cnode_to_task_gpto_map_ptr,
-                                    const KernelGraphPtr &kernel_graph, const std::string &path, bool print_log_file) {
+                                    const KernelGraphPtr &kernel_graph, bool print_log_file) {
   MS_EXCEPTION_IF_NULL(cnode_to_task_gpto_map_ptr);
 
   const size_t graph_id = kernel_graph->graph_id();
@@ -2236,8 +2224,8 @@ std::pair<Time, Memory> LogBaseline(std::unordered_map<CNodePtr, GptoTaskPtr> *c
   if (print_log_file) {
     std::stringstream ss;
     ss << kernel_graph;
-    filename = path + std::string("/") + std::string("gpto_baseline_") + std::to_string(graph_id) + std::string("_") +
-               ss.str() + std::string(".log");
+    filename = GetSaveGraphsPathName(std::string("/") + std::string("gpto_baseline_") + std::to_string(graph_id) +
+                                     std::string("_") + ss.str() + std::string(".log"));
   }
 
   std::unordered_map<GptoTaskId, Time> taskid_to_end_value;
@@ -2476,6 +2464,9 @@ void UpdateTasksInlineCondition(std::unordered_map<CNodePtr, GptoTaskPtr> *cnode
         for (const auto switch_parent : selected_task_switch->parents()) {
           PushTasksToVisit(&tasks_to_visit, &unprocessed_children, switch_parent, switch_task, count_condition);
         }
+      } else if (selected_task->parents().size() == 0) {
+        selected_task->AddParent(switch_task);
+        switch_task->AddChild(selected_task);
       } else {
         for (const auto &parent : selected_task->parents()) {
           PushTasksToVisit(&tasks_to_visit, &unprocessed_children, parent, switch_task, count_condition);
@@ -2943,7 +2934,7 @@ std::vector<std::vector<GptoTensorPtr>> CommunicationNodeProcess(
   for (const auto &cnode_task : cnode_to_task_map) {
     const auto &task = cnode_task.second;
     MS_EXCEPTION_IF_NULL(task);
-    if (task->gpto_type() < kComm || task->name().find(kMatMulAllReduceOpName) != std::string::npos) {
+    if (task->gpto_type() < kCommTrue || task->name().find(kMatMulAllReduceOpName) != std::string::npos) {
       continue;
     }
 
@@ -3167,8 +3158,7 @@ void GPTO(mindspore::device::DeviceResManager *device_res_manager, const KernelG
 
   Memory memory_lower_bound = 0;
   std::set<GptoTensorPtr, GptoTensorIdSort> tensors;
-  auto can_debug = GetDebugConfig();
-  if (can_debug.first) {
+  if (IsGptoDebug()) {
     // Memory lower bound (optional: for analysis only)
     std::vector<mindspore::somas::DynamicBitSet> nodes_dependency;
 
@@ -3183,7 +3173,7 @@ void GPTO(mindspore::device::DeviceResManager *device_res_manager, const KernelG
 
     // Baseline log
     MS_LOG(INFO) << "Start Baseline Greedy Scheduling";
-    baseline = LogBaseline(&cnode_to_task, kernel_graph, can_debug.second, true);
+    baseline = LogBaseline(&cnode_to_task, kernel_graph, true);
     MS_LOG(INFO) << "End Baseline Greedy Scheduling";
 
     const size_t kPrecision = 5;
@@ -3194,10 +3184,10 @@ void GPTO(mindspore::device::DeviceResManager *device_res_manager, const KernelG
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   if (context->CellReuseLevel() == CellReuseLevel::kNoInline) {
-    if (can_debug.first) {
+    if (IsGptoDebug()) {
       MEMORY_LIMIT = baseline.second;
     } else {
-      MEMORY_LIMIT = LogBaseline(&cnode_to_task, kernel_graph, can_debug.second, false).second;
+      MEMORY_LIMIT = LogBaseline(&cnode_to_task, kernel_graph, false).second;
     }
     const float memory_relax_no_inline = 1.02;
     MEMORY_LIMIT = static_cast<Memory>(memory_relax_no_inline * MEMORY_LIMIT + PARAMETER_SIZE);
@@ -3207,7 +3197,7 @@ void GPTO(mindspore::device::DeviceResManager *device_res_manager, const KernelG
     } else {
       const float memory_safety = 0.98;
       MEMORY_LIMIT =
-        static_cast<Memory>(context->get_param<float>(MS_CTX_MAX_DEVICE_MEMORY) * kGBToByte * memory_safety);
+        static_cast<Memory>(runtime::RuntimeConf::GetInstance()->mem_max_size() * kGBToByte * memory_safety);
     }
   }
   MS_LOG(INFO) << "Memory Limit value: " << MEMORY_LIMIT;
@@ -3237,17 +3227,11 @@ void GPTO(mindspore::device::DeviceResManager *device_res_manager, const KernelG
     }
   }
 
-  if (can_debug.first) {
-    if (common::GetEnv("MS_ENABLE_OFFLINE_GPTO") != "1") {
-      MS_LOG(INFO) << "Start GPTO PrintGraphExecuteOrder";
-      kernel_graph->PrintGraphExecuteOrder();
-      MS_LOG(INFO) << "End GPTO PrintGraphExecuteOrder";
-    }
-
+  if (IsGptoDebug()) {
     // GPTO log
     MS_LOG(INFO) << "Start printing output log file";
     LogSchedulingOutput(scheduling_input, scheduling_output, cnode_to_task, kernel_graph, tensors, memory_lower_bound,
-                        &group_to_id, can_debug.second);
+                        &group_to_id);
     MS_LOG(INFO) << "End printing output log file";
   }
 }
