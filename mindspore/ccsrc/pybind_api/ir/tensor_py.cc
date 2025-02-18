@@ -868,10 +868,15 @@ const TypePtr TensorPyImpl::GetDtypeFromPython(const py::dict &input) {
 
 const ShapeVector TensorPyImpl::GetShapeFromPython(const py::dict &input) {
   ShapeVector shape;
-  if (!input.contains("shape") || !py::isinstance<ShapeVector>(input["shape"])) {
+  if (!input.contains("shape")) {
     return shape;
   }
-  shape = input["shape"].cast<ShapeVector>();
+  py::object obj = input["shape"];
+  if (!py::isinstance<ShapeVector>(obj)) {
+    MS_EXCEPTION(TypeError) << "For 'Tensor', the 'shape' should be one of [list, tuple], but got '" << obj.get_type()
+                            << "'.";
+  }
+  shape = obj.cast<ShapeVector>();
   return shape;
 }
 
