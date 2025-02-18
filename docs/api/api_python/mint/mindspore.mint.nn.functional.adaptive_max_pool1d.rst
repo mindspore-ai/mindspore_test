@@ -23,5 +23,6 @@ mindspore.mint.nn.functional.adaptive_max_pool1d
     异常：
         - **TypeError** - `input` 不是Tensor。
         - **TypeError** - `input` 中的数据不是float16、float32、float64。
-        - **TypeError** - `output_size` 不是int。
+        - **TypeError** - `output_size` 不是int或者tuple。
         - **TypeError** - `return_indices` 不是bool。
+        - **ValueError** - `output_size` 是tuple，但大小不是1。
