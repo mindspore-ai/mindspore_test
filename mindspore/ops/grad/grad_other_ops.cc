@@ -95,8 +95,8 @@ REG_BPROP_BUILDER("_DynamicLossScale").SetUnusedInputs({i0, i2}).SetBody(BODYFUN
   return {res, ib->OutZeros(loss_scale)};
 });
 
-REG_BPROP_BUILDER("MoveTo").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
-  auto dout = ib->GetInput(kIndex2);
+REG_BPROP_BUILDER("MoveTo").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
+  auto dout = ib->GetInput(kIndex4);
   return {dout};
 });
 
