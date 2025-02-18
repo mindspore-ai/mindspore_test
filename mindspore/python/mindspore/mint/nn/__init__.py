@@ -259,7 +259,8 @@ from mindspore.mint.nn.layer.activation import Threshold
 
 # 258
 from mindspore.ops.function.nn_func import mse_loss_ext
-
+# 343
+from mindspore.ops.auto_generate import channel_shuffle
 # 393
 from mindspore.mint.nn.layer.basic import Dropout2d
 
@@ -1041,6 +1042,71 @@ class KLDivLoss(Cell):
         return kl_div_ext(input, target, self.reduction, self.log_target)
 
 
+class ChannelShuffle(Cell):
+    r"""
+    Divide the channels in a tensor of shape :math:`(*, C, H, W)` into :math:`g` group and
+    rearrange them as :math:`(*, \frac{C}{g}, g, H*W)`, while retaining the original tensor
+    shape in the final output.
+
+    .. note::
+        C is always the second dimension of input.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        groups (int): Number of groups to divide channels.
+
+    Inputs:
+        - **input** (Tensor) - The input tensor, shape :math:`(*, C, H, W)` .
+
+    Outputs:
+        Tensor, with the same type and shape as the `input`.
+
+    Raises:
+        TypeError: If `groups` is not an int.
+        ValueError: If `groups` is less than 1.
+        ValueError: If dimension of `input` is less than 3.
+        ValueError: If the number of channels of `input` can not be divided by `groups`.
+
+    Supported Platforms:
+        ``Ascend`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> channel_shuffle = mint.nn.ChannelShuffle(2)
+        >>> input = ms.Tensor(np.arange(16).astype(np.int32).reshape(1, 4, 2, 2))
+        >>> print(input)
+        [[[[ 0  1]
+           [ 2  3]]
+          [[ 4  5]
+           [ 6  7]]
+          [[ 8  9]
+           [10 11]]
+          [[12 13]
+           [14 15]]]]
+        >>> output = channel_shuffle(input)
+        >>> print(output)
+        [[[[ 0  1]
+           [ 2  3]]
+          [[ 8  9]
+           [10 11]]
+          [[ 4  5]
+           [ 6  7]]
+          [[12 13]
+           [14 15]]]]
+    """
+
+    def __init__(self, groups):
+        """Initialize ChannelShuffle."""
+        super(ChannelShuffle, self).__init__()
+        self.groups = groups
+
+    def construct(self, input):
+        return channel_shuffle(input, self.groups)
+
+
 class UpsamplingNearest2d(Cell):
     r"""
     Performs nearest neighbor upsampling operation.
@@ -1423,7 +1489,8 @@ __all__ = [
 
     # 294
     'SmoothL1Loss',
-
+    # 343
+    'ChannelShuffle',
     # 388
     'AdaptiveMaxPool2d',
 

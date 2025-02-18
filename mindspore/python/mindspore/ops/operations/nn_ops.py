@@ -39,7 +39,7 @@ from ..auto_generate import (CeLU, Flatten, LogSoftmax, LogSoftmaxExt, GLU, ReLU
                              GridSampler3D, GridSampler2D, LayerNorm, LayerNormExt, HShrink, AdamWeightDecay, Dropout,
                              ApplyRotaryPosEmb, GroupTopk, PagedAttention, PagedAttentionMask, ReshapeAndCache,
                              FlashAttentionScore, PromptFlashAttention, Embedding, UpsampleNearest1D, UpsampleNearest2D,
-                             UpsampleNearest3D, UpsampleTrilinear3D,
+                             UpsampleNearest3D, UpsampleTrilinear3D, ChannelShuffle,
                              SoftMarginLoss, UpsampleBilinear2D, UpsampleLinear1D,
                              BinaryCrossEntropy, BCEWithLogitsLoss, SoftShrink, AdaptiveMaxPool2D,
                              SmoothL1Loss)
@@ -9058,56 +9058,6 @@ class FractionalMaxPoolWithFixedKsize(Primitive):
         self.add_prim_attr("output_shape", self.output_shape)
         self.data_format = validator.check_string(data_format, ['NCHW'], 'data_format', self.name)
         self.init_prim_io_names(inputs=['input_x', 'random_samples'], outputs=['y', 'argmax'])
-
-
-class ChannelShuffle(Primitive):
-    r"""
-    Divide the channels in a tensor of shape :math:`(*, C, H, W)` into :math:`g` group and
-    rearrange them as :math:`(*, \frac{C}{g}, g, H*W)`, while retaining the original tensor
-    shape in the final output.
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
-    Refer to :func:`mindspore.ops.channel_shuffle` for more detail.
-
-    Args:
-        group (int): Number of group to divide channels in.
-
-    Inputs:
-        - **x** (Tensor) - Tensor to be divided, it has shape :math:`(*, C, H, W)`,
-          with float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64 data type.
-
-    Outputs:
-        A Tensor, has the same type as the `x`, and has the shape :math:`(*, C, H, W)`.
-
-    Supported Platforms:
-        ``Ascend`` ``CPU``
-
-    Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> group = 2
-        >>> x = Tensor(np.arange(1 * 4 * 2 * 2).reshape(1, 4, 2, 2).astype(np.int16))
-        >>> channel_shuffle_func = ops.ChannelShuffle(group)
-        >>> y = channel_shuffle_func(x)
-        >>> print(y)
-        [[[[ 0  1]
-           [ 2  3]]
-           [[ 8  9]
-           [10 11]]
-           [[ 4  5]
-           [ 6  7]]
-           [[12 13]
-           [14 15]]]]
-    """
-
-    @prim_attr_register
-    def __init__(self, group):
-        """Initialize ChannelShuffle"""
-        if not isinstance(group, int):
-            raise ValueError(f"For '{self.name}', attr 'group' must be an positive int number")
-        self.init_prim_io_names(inputs=['x'], outputs=['y'])
 
 
 class MaxPoolWithArgmaxV2(Primitive):

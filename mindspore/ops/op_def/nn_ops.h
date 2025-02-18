@@ -160,7 +160,6 @@ GVAR_DEF(PrimitivePtr, kPrimMish, std::make_shared<Primitive>(kMishOpName));
 GVAR_DEF(PrimitivePtr, kPrimBiasDropoutAdd, std::make_shared<Primitive>("BiasDropoutAdd"));
 GVAR_DEF(PrimitivePtr, kPrimNthElement, std::make_shared<Primitive>("NthElement"));
 GVAR_DEF(PrimitivePtr, kPrimIFMR, std::make_shared<Primitive>(kIFMROpName));
-GVAR_DEF(PrimitivePtr, kPrimChannelShuffle, std::make_shared<Primitive>(kChannelShuffleOpName));
 GVAR_DEF(PrimitivePtr, kPrimRNNTLoss, std::make_shared<Primitive>(kRNNTLossOpName));
 GVAR_DEF(PrimitivePtr, kPrimEmbeddingTableExport, std::make_shared<Primitive>("EmbeddingTableExport"));
 GVAR_DEF(PrimitivePtr, kPrimEmbeddingTableImport, std::make_shared<Primitive>("EmbeddingTableImport"));

@@ -1,0 +1,16 @@
+#operator channel_shuffle
+channel_shuffle:
+  args:
+    input:
+      dtype: tensor
+    group:
+      dtype: int
+      prim_init: True
+  returns:
+    output:
+      dtype: tensor
+  class:
+    name: ChannelShuffle
+  dispatch:
+    enable: True
+    Ascend: ChannelShuffleAscend
