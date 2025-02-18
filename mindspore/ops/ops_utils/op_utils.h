@@ -200,6 +200,10 @@ constexpr auto kIsCSR = "is_csr";
 constexpr auto kCSRDenseShape = "dense_shape";
 constexpr auto kCSRAxis = "axis";
 constexpr auto kHasDynamicValue = "has_dynamic_value";
+constexpr int64_t kModeValid = 2;
+constexpr int64_t kModeSame = 1;
+constexpr int64_t kModePad = 0;
+constexpr int64_t kModeCalculated = 0;
 
 inline int64_t get_batch_rank(const PrimitivePtr &prim) {
   if (prim->HasAttr(kBatchRank)) {
@@ -213,13 +217,13 @@ inline int64_t PadModeStringToInt(const std::string &pad) {
   std::string pad_mode = pad;
   (void)std::transform(pad_mode.begin(), pad_mode.end(), pad_mode.begin(), toupper);
   if (pad_mode == "VALID") {
-    return static_cast<int64_t>(2);
+    return kModeValid;
   } else if (pad_mode == "SAME") {
-    return static_cast<int64_t>(1);
+    return kModeSame;
   } else if (pad_mode == "PAD") {
-    return static_cast<int64_t>(0);
+    return kModePad;
   } else if (pad_mode == "CALCULATED") {
-    return static_cast<int64_t>(0);
+    return kModeCalculated;
   } else {
     MS_LOG(EXCEPTION) << "Got an invalid pad_mode string: " << pad_mode << ".";
   }
