@@ -132,6 +132,14 @@ class SumExtInfo : public ReduceBaseMethod {
  protected:
   std::vector<int64_t> reduce_dim() override;
   Status GetAttrs() override;
+  std::vector<StrategyPtr> GenerateOpStrategies(int64_t stage_id) override;
+  Status CheckInputLayout() override;
+  Status InferOutputTensorInfo() override;
+  Status CheckOutputLayout() override;
+  Status InferForwardCommunicationByLayout() override;
+
+ private:
+  bool is_infer_out_layout_ = false;
 };
 }  // namespace parallel
 }  // namespace mindspore

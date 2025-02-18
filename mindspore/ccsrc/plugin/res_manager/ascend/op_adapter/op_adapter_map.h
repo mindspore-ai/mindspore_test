@@ -46,6 +46,7 @@ constexpr const char kNameCollectiveScatter[] = "CollectiveScatter";
 constexpr const char kNameCollectiveGather[] = "CollectiveGather";
 constexpr const char kNameReduceScatter[] = "ReduceScatter";
 constexpr const char kNameReduceSum[] = "ReduceSum";
+constexpr const char kNameSum[] = "SumExt";
 constexpr const char kNameIsFinite[] = "IsFinite";
 constexpr const char kNameReciprocal[] = "Reciprocal";
 constexpr const char kNameRsqrt[] = "Rsqrt";
