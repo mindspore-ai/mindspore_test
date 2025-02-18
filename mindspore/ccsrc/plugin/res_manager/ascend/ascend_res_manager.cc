@@ -186,6 +186,7 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
   const auto &hete_info =
     address->kernel_tensor() == nullptr ? nullptr : address->kernel_tensor()->heterogeneous_info();
   if (hete_info != nullptr) {
+    address->IncreaseNewRefCount();
     return AllocateForHete(address, hete_info);
   }
   device_ptr = mem_manager_->MallocMemFromMemPool(address->GetSize(), address->from_persistent_mem(),

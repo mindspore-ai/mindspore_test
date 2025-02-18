@@ -42,6 +42,7 @@ class MoveTo : public RtKernel {
   // Init
   bool GetToFromValue(const ValuePtr &value);
   bool GetToValue(const AnfNodePtr &anf_node, size_t to_input_index);
+  bool GetBlockingValue(const AnfNodePtr &anf_node, size_t block_input_index);
   bool UpdateSizeList(const AnfNodePtr &anf_node);
 
   static int64_t GetTensorDevice(const KernelTensor *tensor);
@@ -74,6 +75,7 @@ class MoveTo : public RtKernel {
  private:
   static std::map<std::pair<int64_t, int64_t>, MoveFunc> func_map_;
   int64_t to_{0};
+  bool blocking_{false};
 };
 MS_REG_RTKERNEL(moveto, MoveTo);
 }  // namespace kernel
