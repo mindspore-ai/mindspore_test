@@ -127,6 +127,49 @@ The running result is as follows, with the output log path `log/1/rank.0`:
 [[0.]]
 ```
 
+## Reduce
+
+![image](../../../api_python/samples/ops/images/reduce.png)
+
+The `Reduce` operation first performs the specified reduction operation on the input of each card, and then send the output results to the specified cards. Taking op = ReduceOp.SUM as an example: First, sum the input tensors of each card, and then distribute the results to the specified cards. As shown in the figure above, the input of each card is a 1x4 Tensor. `ReduceScatter` first sums the input to obtain a Tensor of [0, 4, 8, 12], and then sends the result to the specified card (for example, card 1). The output result corresponding to card 1 is [0., 4., 8., 12.], and the output results of the other cards are [0.].
+
+The sample code is as follows: We initialize the values of the input of the Reduce operator in each process. For each card, we apply for a 1x4-sized Tensor input with values [0, 1, 2, 3]. Then we call the Reduce operator to perform communication within the communication domain of cards `0-1-2-3` (the communication range of all cards, i.e., nccl_world_group), and print the output results.
+
+```python
+import mindspore as ms
+from mindspore.communication import init
+import mindspore.nn as nn
+import mindspore.ops as ops
+import numpy as np
+
+ms.set_context(mode=ms.GRAPH_MODE)
+init()
+class Net(nn.Cell):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.reduce = ops.Reduce(1, ops.ReduceOp.SUM)
+
+    def construct(self, x):
+        return self.reduce(x)
+
+input_x = ms.Tensor(np.array([0, 1, 2, 3]).astype(np.float32))
+net = Net()
+output = net(input_x)
+print(output)
+```
+
+The running result is as follows, with the output log path `log/1/rank.1`:
+
+```text
+[0., 4., 8., 12.]
+```
+
+The output of the other cards is:
+
+```text
+[0.]
+```
+
 ## Broadcast
 
 ![image](../../../api_python/samples/ops/images/broadcast.png)
