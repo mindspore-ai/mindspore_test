@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-#include "infer/ops_func_impl/floor_div.h"
+#include "infer/ops_func_impl/floor_div_scalar.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "ops_utils/op_constants.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {
-ShapeArray FloorDivFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
-  auto prim_name = primitive->name();
-  auto input_shape = input_infos[kInputIndex0]->GetShape();
-  auto other_shape = input_infos[kInputIndex1]->GetShape();
-  auto output_shape = CalBroadCastShape(input_shape, other_shape, prim_name, "input", "other");
-  return {output_shape};
+ShapeArray FloorDivScalarFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                              const InferInfoPtrList &input_infos) const {
+  return {input_infos[kInputIndex0]->GetShape()};
 }
 
-std::vector<TypeId> FloorDivFuncImpl::InferType(const PrimitivePtr &primitive,
-                                                const InferInfoPtrList &input_infos) const {
+std::vector<TypeId> FloorDivScalarFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                      const InferInfoPtrList &input_infos) const {
   const auto input_type = input_infos[kInputIndex0]->GetType();
   const auto other_type = input_infos[kInputIndex1]->GetType();
   return {PromoteType(input_type, other_type, primitive->name())};

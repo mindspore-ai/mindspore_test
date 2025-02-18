@@ -1,0 +1,14 @@
+floor_divide:
+  - op_yaml: floor_div_scalar_op.yaml
+    py_method: tensor_floor_div_scalar
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor, function
+
+  - op_yaml: floor_div_op.yaml
+    py_method: tensor_floor_div
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor, function

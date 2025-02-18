@@ -1,0 +1,15 @@
+#operator floor_div_scalar
+floor_div_scalar:
+    args:
+        input:
+            dtype: tensor
+        other:
+            dtype: number
+    returns:
+        output:
+            dtype: tensor
+    function:
+        name: floor_div_scalar
+    dispatch:
+        enable: True
+        Ascend: FloorDivScalarAscend

@@ -1,0 +1,49 @@
+floor_divide:
+  description: |
+    floor_divide(other) -> Tensor
+
+    Divides the self tensor by the other input tensor element-wise and round down to the closest integer.
+
+    `self` and `other` comply with the implicit type conversion rules to make the data types consistent.
+    When the `self` and `other` are two tensors,
+    dtypes of them cannot be bool at the same time, and the shapes of them could be broadcast.
+    When the `self` and `other` are one tensor and one scalar,
+    the scalar could only be a constant.
+
+    .. math::
+        out_{i} = \text{floor}( \frac{self_i}{other_i})
+
+    where the :math:`floor` indicates the Floor operator. For more details,
+    please refer to the :class:`mindspore.mint.Floor` operator.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        other (Union[Tensor, Number, bool]): The other input is a number or
+            a bool or a tensor whose data type is number or bool.
+
+    Returns:
+        Tensor, the shape is the same as the one after broadcasting,
+        and the data type is the one with higher precision or higher digits between `self` and `other`.
+
+    Raises:
+        TypeError: If `self` and `other` are not the following: Tensor, number.Number or bool.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor
+        >>> import numpy as np
+        >>> input = Tensor(np.array([2, 4, -1]), mindspore.int32)
+        >>> other = Tensor(np.array([3, 3, 3]), mindspore.int32)
+        >>> output = input.floor_divide(other)
+        >>> print(output)
+        [ 0  1 -1]
+        >>> input = Tensor(2.0, mindspore.float32)
+        >>> other = Tensor(2.0, mindspore.float32)
+        >>> output = input.floor_divide(other)
+        >>> print(output)
+        1.0

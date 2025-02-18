@@ -1440,15 +1440,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('floor_')(self)
 
-    def floor_divide(self, other):
-        """
-        For details, please refer to :func:`mindspore.ops.floor_divide`.
-
-        .. warning::
-            This is an experimental API that is subject to change or deletion.
-        """
-        return tensor_operator_registry.get('floor_divide')(self, other)
-
     # pylint: disable=redefined-builtin
     def norm(self, ord=None, dim=None, keepdim=False, *, dtype=None):
         """
