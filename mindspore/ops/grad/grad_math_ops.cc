@@ -1227,7 +1227,9 @@ REG_BPROP_BUILDER("InplaceAddExt").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUN
   }
 
   std::vector<NodePtr> ret = BinopGradCommon(ib, x, y, dx, dy);
-  return {ret[0], ib->Cast(ret[1], ib->GetDtype(y)), ib->OutZeros(alpha)};
+  auto input_cast = x->need_compute_grad_out() ? ib->Cast(ret[0], ib->GetDtype(x)) : ib->OutZeros(x);
+  auto other_cast = y->need_compute_grad_out() ? ib->Cast(ret[1], ib->GetDtype(y)) : ib->OutZeros(y);
+  return {input_cast, other_cast, ib->OutZeros(alpha)};
 });
 
 REG_BPROP_BUILDER("InplaceMul")
