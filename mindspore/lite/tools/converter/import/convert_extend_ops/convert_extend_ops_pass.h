@@ -45,12 +45,16 @@ class ConvertExtendOpsPass : public MultiplePatternProcessPass {
   VectorRef DefineMaxPattern() const;
   VectorRef DefineMinPattern() const;
   VectorRef DefineDensePattern() const;
+  VectorRef DefineOnesPattern() const;
+  VectorRef DefineZerosPattern() const;
 };
 
 AnfNodePtr ConvertSumExtPass(const FuncGraphPtr &func_graph, const mindspore::AnfNodePtr &node);
 AnfNodePtr ConvertMatMulExtPass(const FuncGraphPtr &func_graph, const mindspore::AnfNodePtr &node);
 AnfNodePtr ConvertMaxMinPass(const FuncGraphPtr &func_graph, const mindspore::AnfNodePtr &node);
 AnfNodePtr ConvertDensePass(const FuncGraphPtr &func_graph, const mindspore::AnfNodePtr &node);
+AnfNodePtr ConvertOnesPass(const FuncGraphPtr &func_graph, const mindspore::AnfNodePtr &node);
+AnfNodePtr ConvertZerosPass(const FuncGraphPtr &func_graph, const mindspore::AnfNodePtr &node);
 }  // namespace opt
 }  // namespace mindspore
 #endif  // MINDSPORE_LITE_TOOLS_CONVERTER_IMPORT_CONVERT_EXTEND_OPS_CONVERT_EXTEND_OPS_PASS_H_
