@@ -275,6 +275,7 @@ BLAS和LAPACK运算
     mindspore.mint.cummax
     mindspore.mint.cummin
     mindspore.mint.cumsum
+    mindspore.mint.diag
     mindspore.mint.flatten
     mindspore.mint.flip
     mindspore.mint.repeat_interleave

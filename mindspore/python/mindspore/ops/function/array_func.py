@@ -106,7 +106,7 @@ from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked
     broadcast_to, strided_slice, ones, zeros, max_, min_, select, zero_, view_as, \
     expand_as, unstack_ext_op, full_like_op, \
     index_fill_scalar, index_fill_tensor
-from mindspore.ops.auto_generate import tensor_scatter_elements as tensor_scatter_elements_ext
+from mindspore.ops.auto_generate import take, tensor_scatter_elements as tensor_scatter_elements_ext
 from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, gather_d_op, slice_op
 from mindspore.ops.operations.manually_defined import tile, rank, scalar_cast
 from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostOneHotExtPrim, tril_ext_impl
@@ -7462,6 +7462,7 @@ def from_numpy(array):
     return Tensor.from_numpy(array)
 
 
+
 def type_as(input, other):
     r"""
     Returns input cast to the type of the with the other.
@@ -7516,6 +7517,7 @@ __all__ = [
     'fill',
     'fills',
     'tile',
+    'take',
     'size',
     'ger',
     'ones',

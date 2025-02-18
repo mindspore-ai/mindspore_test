@@ -432,7 +432,9 @@ from mindspore.ops.function.math_func import var_ext
 # 1029 exp_
 from mindspore.ops.auto_generate.gen_ops_prim import inplace_exp_op
 
-
+from .._checkparam import check_axis_in_range
+from ..ops.composite.multitype_ops import _constexpr_utils as const_utils
+from ..ops.composite.multitype_ops import _compile_utils as compile_utils
 ########################################functions########################################
 def place_holder():
     logger.error(
@@ -441,7 +443,8 @@ def place_holder():
 
 unique_dim_ = UniqueDim()
 unique2_ = Unique2()
-
+tuple_slice = validator.tuple_slice
+expanded_shape = validator.expanded_shape
 
 # 1 to
 def tensor_to(input, dtype):
@@ -1256,6 +1259,10 @@ def tensor_inplace_fill_tensor_empty(input, value):
     raise ValueError("should not come here for fill_tensor method.")
 
 
+def tensor_inplace_fill_diagonal(input, fill_value, wrap=False):
+    raise ValueError("should not come here for fill_diagonal method.")
+
+
 # 125 floor_
 
 # 126 masked_fill_
@@ -1535,6 +1542,11 @@ def deprecated_tensor_addmm(input, mat1, mat2, *, beta=1, alpha=1):
     return addmm(input, mat1, mat2, beta=beta, alpha=alpha)
 
 
+# 543
+def tensor_put_(input, index, source, accumulate=False):
+    raise RuntimeError(f"There is no branch to go function tensor_put_!")
+
+
 # 790
 def tensor_addmv(input, mat, vec, *, beta=1, alpha=1):
     return addmv(input, mat, vec, beta=beta, alpha=alpha)
@@ -1558,6 +1570,44 @@ def deprecated_tensor_count_nonzero(input,
                              keep_dims=keep_dims,
                              dtype=mstype.int32)
     return count_nonzero(input, axis=axis, keep_dims=keep_dims, dtype=dtype)
+
+
+# 732
+def tensor_take(input, index):
+    return deprecated_tensor_take(input, index)
+
+
+def deprecated_tensor_take(x, indices, axis=None, mode='clip'):
+    """
+    Takes elements from a tensor along an axis.
+    """
+    if mode not in ('raise', 'wrap', 'clip'):
+        const_utils.raise_value_error(
+            'raise should be one of "raise", "wrap", or "clip"')
+    if axis is None:
+        a = x.ravel()
+        axis = 0
+    else:
+        a = x
+    ndim = a.ndim
+    axis = check_axis_in_range(axis, ndim)
+
+    shape_a = a.shape
+    shape_indices = indices.shape
+    size_indices = indices.size
+    indices = compile_utils.check_indices(shape_a[axis], indices, mode)
+
+    # reshapes indices to shape (Ni..., Nj..., Nk)
+    shape_ni = tuple_slice(shape_a, None, axis)
+    shape_nk = tuple_slice(shape_a, axis + 1, None)
+    shape_out = shape_ni + shape_indices + shape_nk
+    shape_indices = expanded_shape(ndim, size_indices, axis)
+    indices = indices.reshape(shape_indices)
+    shape_indices = shape_ni + (indices.size,) + shape_nk
+    indices = F.broadcast_to(indices, shape_indices)
+
+    res = F.gather_d(a, axis, indices)
+    return res.reshape(shape_out)
 
 
 def tensor_clone(input):
@@ -1625,6 +1675,13 @@ def deprecated_tensor_nansum(input, axis=(), keepdims=False, *, dtype=None):
 def tensor_log1p(input):
     return log1p(input)
 
+
+def tensor_diag(input, diagonal=0):
+    return F.diag(input)
+
+
+def deprecated_tensor_diag(input):
+    return F.diag(input)
 
 # 1028
 def tensor_var(input, dim=None, *, correction=1, keepdim=False):

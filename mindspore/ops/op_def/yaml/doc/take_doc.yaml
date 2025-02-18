@@ -1,0 +1,27 @@
+take:
+    description: |
+        Select the input element at the given index.
+
+        .. warning::
+
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            input (Tensor): Input tensor.
+            index (LongTensor): The index tensor of input tensor.
+
+        Returns:
+            Tensor, has the same data type as index tensor.
+
+        Raises:
+            TypeError: If `input` is not tensor.
+            TypeError: If the dtype of `index` is not long type.
+
+        Examples:
+            >>> import mindspore as ms
+            >>> from mindspore import ops, Tensor        
+            >>> input = Tensor([[4, 3, 5],[6, 7, 8]], ms.float32)
+            >>> index = Tensor([0, 2, 5], ms.int64)
+            >>> output = ops.take(input, index)
+            >>> print(output)
+            [4, 5, 8]

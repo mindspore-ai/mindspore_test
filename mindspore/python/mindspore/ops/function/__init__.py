@@ -70,6 +70,7 @@ from .array_func import (
     select_scatter,
     scalar_to_array,
     scalar_to_tensor,
+    take,
     tuple_to_array,
     expand_dims,
     squeeze,

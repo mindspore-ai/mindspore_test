@@ -1,0 +1,65 @@
+take:
+  description: |
+    take(indices, axis=None, mode='clip') -> Tensor
+
+    Takes elements from a tensor along an axis.
+
+    Args:
+        indices (Tensor): The indices with shape :math:`(Nj...)` of the values to extract.
+        axis (int, optional): The axis over which to select values. By default,
+            the flattened input tensor is used. Default: ``None`` .
+        mode (str, optional): Support ``'raise'``, ``'wrap'``, ``'clip'``.
+
+            - ``raise``: Raises an error;
+
+            - ``wrap``: Wraps around;
+
+            - ``clip``: Clips to the range. ``'clip'`` mode means that all indices that are
+              too large are replaced by the index that addresses the last element
+              along that axis. Note that this disables indexing with negative numbers.
+
+            Default: ``'clip'`` .
+
+    Returns:
+        Tensor, the indexed result.
+
+    Raises:
+        ValueError: If `axis` is out of range, or `mode` has values other than ('raise', 'wrap', 'clip').
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> a = Tensor(np.array([4, 3, 5, 7, 6, 8]))
+        >>> indices = Tensor(np.array([0, 1, 4]))
+        >>> output = a.take(indices)
+        >>> print(output)
+        [4 3 6]
+
+    .. method:: Tensor.take(index) -> Tensor
+        :noindex:
+
+    Select the self element at the given index.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        index (LongTensor): The index tensor of self tensor.
+
+    Returns:
+        Tensor, has the same data type as index tensor.
+
+    Raises:
+        TypeError: If the dtype of `index` is not long type.
+
+    Examples:
+        >>> import mindspore as ms
+        >>> from mindspore import Tensor
+        >>> input = Tensor([[4, 3, 5],[6, 7, 8]], ms.float32)
+        >>> index = Tensor([0, 2, 5], ms.int64)
+        >>> output = input.take(index)
+        >>> print(output)
+        [4, 5, 8]

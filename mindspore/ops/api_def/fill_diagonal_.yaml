@@ -1,0 +1,7 @@
+fill_diagonal_:
+  - op_yaml: inplace_fill_diagonal_op.yaml
+    py_method: tensor_inplace_fill_diagonal
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

@@ -1,0 +1,24 @@
+#operator inplace_fill_diagonal
+inplace_fill_diagonal:
+    args:
+        input:
+            dtype: tensor
+        fill_value:
+            dtype: number
+            type_cast: tensor
+        wrap:
+            dtype: bool
+            default: False
+    args_signature:
+        rw_write: input
+    returns:
+        out:
+            dtype: tensor
+            inplace: input
+    labels:
+        side_effect_mem: True
+    function:
+        name: fill_diagonal_
+    dispatch:
+        enable: True
+        Ascend: InplaceFillDiagonalAscend

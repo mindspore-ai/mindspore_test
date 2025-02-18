@@ -541,6 +541,17 @@ NodePtr LogSumExpGrad(Emitter *ib, const NodePtr &input, const NodePtr &dim, boo
   return ib->Mul(ib->Exp(ib->Sub(input, unsqueeze_result[0])), unsqueeze_result[1]);
 }
 
+NodePtr InplacePutGrad(Emitter *ib, const NodePtr &index, const NodePtr &source, bool accumulate, const NodePtr &dout,
+                       const NodePtr &type) {
+  if (accumulate) {
+    return dout;
+  }
+  auto clone_grad = ib->Emit("Clone", {dout});
+  auto grad =
+    ib->Emit("InplacePut", {clone_grad, index, ib->Emit("ZerosLikeExt", {source, type}), ib->Value<bool>(false)});
+  return grad;
+}
+
 inline NodePtr DynamicRankVarImpl(Emitter *ib, const NodePtr &x, const NodePtr &dout, const NodePtr &grad,
                                   const NodePtr &correction, const NodePtr &mean) {
   const float dof_scale = 2.0;

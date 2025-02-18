@@ -265,6 +265,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"max", std::string("max")},                                        // P.reduce_max()
        {"min", std::string("min")},                                        // P.reduce_min()
        {"pow", std::string("pow")},                                        // P.Pow()
+       {"put_", std::string("put_")},                                      // P.InplacePut()
        {"log", std::string("log")},                                        // P.Log()
        {"nelement", std::string("numel")},                                 // numel()
        {"numel", std::string("numel")},                                    // numel()

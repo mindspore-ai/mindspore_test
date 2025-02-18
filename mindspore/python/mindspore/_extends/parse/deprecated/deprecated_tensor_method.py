@@ -372,7 +372,8 @@ deprecated_tensor_method_map = {
 
     # 162 log10
     "log10": "tensor_log10",
-
+    # 732
+    "take": "deprecated_tensor_take",
     # 501
     "addbmm": "deprecated_tensor_addbmm",
     # 931
@@ -385,5 +386,4 @@ deprecated_tensor_method_map = {
     "count_nonzero": "deprecated_tensor_count_nonzero",
     # 1028
     "var": "deprecated_tensor_var",
-
 }

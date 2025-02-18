@@ -2452,73 +2452,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('tracev2')(self, offset, axis1, axis2, dtype)
 
-    def take(self, indices, axis=None, mode='clip'):
-        """
-        Takes elements from a tensor along an axis.
-
-        Args:
-            indices (Tensor): The indices with shape :math:`(Nj...)` of the values to extract.
-            axis (int, optional): The axis over which to select values. By default,
-                the flattened input tensor is used. Default: ``None`` .
-            mode (str, optional): Support ``'raise'``, ``'wrap'``, ``'clip'``.
-
-                - ``raise``: Raises an error;
-
-                - ``wrap``: Wraps around;
-
-                - ``clip``: Clips to the range. ``'clip'`` mode means that all indices that are
-                  too large are replaced by the index that addresses the last element
-                  along that axis. Note that this disables indexing with negative numbers.
-
-                Default: ``'clip'`` .
-
-        Returns:
-            Tensor, the indexed result.
-
-        Raises:
-            ValueError: If `axis` is out of range, or `mode` has values other than ('raise', 'wrap', 'clip')
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> a = Tensor(np.array([4, 3, 5, 7, 6, 8]))
-            >>> indices = Tensor(np.array([0, 1, 4]))
-            >>> output = a.take(indices)
-            >>> print(output)
-            [4 3 6]
-        """
-        if mode not in ('raise', 'wrap', 'clip'):
-            raise ValueError(f"For 'Tensor.take', the argument 'mode' should be one of in ['raise', 'wrap', 'clip'],"
-                             f" but got {mode}.")
-        if axis is None:
-            a = self.ravel()
-            axis = 0
-        else:
-            a = self
-        ndim = a.ndim
-        validator.check_axis_in_range(axis, ndim)
-        axis = axis + ndim if axis < 0 else axis
-
-        shape_a = a.shape
-        shape_indices = indices.shape
-        size_indices = indices.size
-        indices = tensor_operator_registry.get('check_indices')(shape_a[axis], indices, mode)
-
-        # reshapes indices to shape (Ni..., Nj..., Nk)
-        shape_ni = shape_a[:axis]
-        shape_nk = shape_a[axis + 1:]
-        shape_out = shape_ni + shape_indices + shape_nk
-        shape_indices = tuple(size_indices if i == axis else 1 for i in range(ndim))
-        indices = indices.reshape(shape_indices)
-        shape_indices = shape_ni + (indices.size,) + shape_nk
-        indices = tensor_operator_registry.get('broadcast_to')(indices, shape_indices)
-
-        res = tensor_operator_registry.get('gather_d')(a, axis, indices)
-        return res.reshape(shape_out)
-
     def choose(self, choices, mode='clip'):
         """
         Construct a tensor from an index tensor and a list of tensors to choose from.
@@ -3145,12 +3078,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.unique_with_pad`.
         """
         return tensor_operator_registry.get("unique_with_pad")(self, pad_num)
-
-    def diag(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.diag`.
-        """
-        return tensor_operator_registry.get('diag')(self)
 
     def diagflat(self, offset=0):
         r"""

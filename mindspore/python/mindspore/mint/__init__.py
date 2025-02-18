@@ -329,6 +329,9 @@ from mindspore.ops.function.math_func import round
 # 182
 from mindspore.ops.function.math_func import bernoulli_ext as bernoulli
 
+# 201
+from mindspore.ops.auto_generate import diag_ext as diag
+
 # 204
 from mindspore.ops.auto_generate import erfc
 # 207
@@ -425,6 +428,9 @@ from mindspore.ops.auto_generate import logsumexp_ext as logsumexp
 
 # 582
 from mindspore.ops.function.math_func import std_mean_ext as std_mean
+
+# 584
+from mindspore.ops.function.array_func import take
 
 # 588
 from mindspore.ops.function.math_func import var_mean_ext as var_mean
@@ -1956,7 +1962,8 @@ __all__ = [
 
     # 182
     'bernoulli',
-
+    # 201
+    'diag',
     # 207
     'expm1',
     # 204
@@ -2052,6 +2059,9 @@ __all__ = [
 
     # 582
     'std_mean',
+
+    # 584
+    'take',
 
     # 588
     'var_mean',
