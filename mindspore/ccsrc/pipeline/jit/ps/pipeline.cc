@@ -1202,8 +1202,7 @@ bool GraphExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &a
   // Save the compiled graph to MsPipeLine.
   SaveCompiledGraph(phase);
   if (is_auto_parallel) {
-    bool use_compile_cache = resource->EnableCompileCache() && resource->func_graph();
-    ParallelPostProcess(phase, use_compile_cache);
+    ParallelPostProcess(phase, CompileCacheContext::GetInstance().UseCompileCache());
   }
 #ifdef ENABLE_DUMP_IR
   mindspore::RDR::Snapshot();
@@ -1293,8 +1292,7 @@ bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &ar
   SaveCompiledGraph(phase_);
   PROF_START(ParallelPostProcess);
   if (is_parallel_mode) {
-    bool use_compile_cache = resource->EnableCompileCache() && resource->func_graph();
-    ParallelPostProcess(phase_, use_compile_cache);
+    ParallelPostProcess(phase_, CompileCacheContext::GetInstance().UseCompileCache());
   }
   PROF_END(ParallelPostProcess);
 #ifdef ENABLE_DUMP_IR
