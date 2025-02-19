@@ -69,7 +69,7 @@ bool ReduceAxisUpdate::IsReduce(const BaseRef &ref) {
     }
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
-    if (ms_context->GetJitLevel() == kAttrJitLevelO2 &&
+    if (common::AnfAlgo::IsBackendGe() &&
         (IsPrimitive(node, prim::kPrimMeanExt) || IsPrimitive(node, prim::kPrimSumExt) ||
          IsPrimitive(node, prim::kPrimProdExt))) {
       return true;
