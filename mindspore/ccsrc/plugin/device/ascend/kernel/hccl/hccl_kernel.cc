@@ -29,8 +29,8 @@
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "utils/ms_context.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/multi_ascend_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_manager.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 

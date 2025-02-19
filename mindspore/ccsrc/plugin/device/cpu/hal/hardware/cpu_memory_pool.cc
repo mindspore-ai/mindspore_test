@@ -17,7 +17,6 @@
 #include "plugin/device/cpu/hal/hardware/cpu_memory_pool.h"
 #include "utils/log_adapter.h"
 
-#include "include/backend/distributed/collective/collective_manager.h"
 #include "include/common/utils/comm_manager.h"
 #include "include/common/utils/utils.h"
 #ifdef ENABLE_DEBUGGER
@@ -26,6 +25,7 @@
 #include "runtime/runtime_conf/runtime_conf.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_utils.h"
+#include "utils/distributed_meta.h"
 
 namespace mindspore {
 namespace device {
@@ -59,11 +59,9 @@ CPUMemoryPool &CPUMemoryPool::GetInstance() {
 
     instance.SetRankIdGetter([]() {
       size_t rank_id = SIZE_MAX;
-#if !defined(BUILD_LITE)
-      if (distributed::collective::CollectiveManager::instance()->initialized()) {
-        rank_id = CommManager::GetInstance().GetRank();
+      if (DistributedMeta::GetInstance()->initialized()) {
+        rank_id = DistributedMeta::GetInstance()->global_rank_id();
       }
-#endif
       return rank_id;
     });
   });

@@ -31,7 +31,7 @@
 #include "utils/ms_utils.h"
 #include "runtime/collective/collective_comm_lib_loader.h"
 #ifdef ENABLE_INTERNAL_KERNELS
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/lowlatency_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/lowlatency_collective_comm_lib.h"
 #endif
 
 namespace mindspore {

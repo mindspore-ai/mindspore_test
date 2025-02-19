@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "include/common/utils/utils.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
@@ -22,7 +22,7 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_context.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/hccl_watch_dog_thread.h"
+#include "plugin/res_manager/ascend/collective/hccl_watch_dog_thread.h"
 
 constexpr size_t kPathMax = 4096;
 namespace mindspore {

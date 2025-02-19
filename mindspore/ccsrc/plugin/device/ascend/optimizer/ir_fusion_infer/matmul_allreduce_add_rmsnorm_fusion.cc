@@ -18,7 +18,7 @@
 #include <vector>
 #include <string>
 
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/multi_ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"

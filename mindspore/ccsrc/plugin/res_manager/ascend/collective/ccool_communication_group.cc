@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ccool_communication_group.h"
+#include "plugin/res_manager/ascend/collective/ccool_communication_group.h"
 
 constexpr uint16_t kBeginBasePort = 21234;
 constexpr uint16_t kConnMaxPort = 65535;

@@ -22,7 +22,7 @@
 #include <vector>
 #include <string>
 #include "runtime/collective/collective_communication_lib.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_communication_group.h"
+#include "plugin/res_manager/ascend/collective/ascend_communication_group.h"
 
 #ifndef EXPORT_WRAPPER
 #define EXPORT_WRAPPER __attribute__((visibility("default")))
