@@ -578,7 +578,7 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
       if (is_from_persistent_mem) {
         device_address->set_from_persistent_mem(true);
       }
-      MS_LOG(DEBUG) << "Create addr for node:" << common::AnfAlgo::GetNodeDebugString(kernel)
+      MS_LOG(DEBUG) << "Create addr for node:" << kernel->fullname_with_scope() << " index:" << i
                     << " addr:" << device_address << " type:" << device_address->type_id()
                     << ", kernel tensor addr:" << kernel_tensor.get()
                     << ", kernel tensor: " << kernel_tensor->ToString() << " addr size:" << address_size
@@ -868,8 +868,7 @@ void DeviceAddressUtils::UpdateDeviceAddressForRefNode(const KernelGraphPtr &gra
     const auto &out_pair = ref_pair.first;
     const auto &origin_pair = ref_pair.second;
     const auto &recursive_origin_pair = graph->GetRefNodeRecursive(out_pair);
-    UpdateDeviceAddress(out_pair, recursive_origin_pair);
-    // Update ref map in kernel info which will be used in kernel actor on swap scenario.
+    //  Update ref map in kernel info which will be used in kernel actor on swap scenario.
     for (size_t input_index = 0; input_index < common::AnfAlgo::GetInputTensorNum(out_pair.first); ++input_index) {
       const auto &prev_node_output = common::AnfAlgo::GetPrevNodeOutput(out_pair.first, input_index, false);
       if (prev_node_output == origin_pair) {
@@ -940,6 +939,7 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
   MS_EXCEPTION_IF_NULL(device_address);
   device_address->set_from_persistent_mem(tensor->is_parameter());
   tensor->set_device_address(device_address);
+  device_address->set_new_ref_count(SIZE_MAX);
   MS_LOG(DEBUG) << "Create input tensor device address " << device_address << " for " << index
                 << "th input, Shape: " << tensor->shape() << ", Type: " << TypeIdToType(tensor->data_type())->ToString()
                 << ", Size:" << tensor_size;
@@ -1244,6 +1244,7 @@ void DeviceAddressUtils::CreateOutputTensorAddress(const DeviceContext *device_c
     }
     MS_EXCEPTION_IF_NULL(device_address);
     tensor->set_device_address(device_address);
+    device_address->set_new_ref_count(SIZE_MAX);
     MS_LOG(DEBUG) << "Create output tensor device address " << device_address << " for " << i
                   << "th output, Shape: " << tensor->shape()
                   << ", Type: " << TypeIdToType(tensor->data_type())->ToString() << ", Size:" << tensor_size;
@@ -1386,6 +1387,7 @@ device::DeviceAddressPtr DeviceAddressUtils::ConvertContiguousDeviceAddress(
   auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
   new_device_address->set_device_shape(old_storage_info->shape);
   new_device_address->set_original_ref_count(SIZE_MAX);
+  new_device_address->set_new_ref_count(SIZE_MAX);
   new_device_address->ResetRefCount();
 
   if (is_sync) {

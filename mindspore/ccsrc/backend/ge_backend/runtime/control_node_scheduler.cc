@@ -54,14 +54,14 @@ std::string GetStackActorNameByExitName(const std::string &exit_name) {
 bool is_need_copy_device_tensor(const AnfNodePtr &backend_node, size_t index) {
   MS_EXCEPTION_IF_NULL(backend_node);
   // Skip the parameter and Load node.
-  const auto &real_backend_node = common::AnfAlgo::VisitKernelWithReturnType(backend_node, index, false).first;
-  if (real_backend_node != nullptr && (!real_backend_node->isa<CNode>())) {
+  const auto &real_backend_node = common::AnfAlgo::VisitKernelWithReturnType(backend_node, index, false);
+  if (real_backend_node.first != nullptr && (!real_backend_node.first->isa<CNode>())) {
     return false;
   }
   auto kernel_graph = AnfAlgo::FetchKernelGraph(backend_node.get());
   MS_EXCEPTION_IF_NULL(kernel_graph);
-  if (kernel_graph->IsInRefOutputMap({backend_node, index})) {
-    const auto &origin_node = kernel_graph->GetRefNodeRecursive({backend_node, index}).first;
+  if (kernel_graph->IsInRefOutputMap(real_backend_node)) {
+    const auto &origin_node = kernel_graph->GetRefNodeRecursive(real_backend_node).first;
     MS_EXCEPTION_IF_NULL(origin_node);
     if (origin_node->isa<ValueNode>() || origin_node->isa<Parameter>()) {
       return false;

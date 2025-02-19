@@ -116,6 +116,7 @@ class BACKEND_EXPORT DeviceAddressUtils {
     auto kernel_tensor = std::make_shared<kernel::KernelTensor>(shape, type, value);
     auto device_address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
     device_address->set_from_persistent_mem(true);
+    device_address->set_new_ref_count(SIZE_MAX);
 
     if (device_address->GetPtr() == nullptr) {
       CopyNoneTensorDataToDevice(device_context, device_address);

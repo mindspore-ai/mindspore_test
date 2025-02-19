@@ -225,6 +225,27 @@ class PyExecuteInitializer {
     return std::make_shared<ValueTuple>(values);
   }
 
+  static abstract::AbstractBasePtr GenerateAbstract(const py::object &output) {
+    if (tensor::IsTensorPy(output) || IsStubTensor(output)) {
+      const auto &tensor = IsStubTensor(output) ? ConvertStubTensor(output) : tensor::ConvertToTensor(output);
+      const auto &infer_shape = std::make_shared<abstract::Shape>(tensor->shape());
+      return tensor->ToAbstract();
+    } else if (py::isinstance<py::bool_>(output)) {
+      return std::make_shared<tensor::Tensor>(py::cast<bool>(output))->ToAbstract();
+    } else if (py::isinstance<py::int_>(output)) {
+      return std::make_shared<tensor::Tensor>(py::cast<int64_t>(output))->ToAbstract();
+    } else if (py::isinstance<py::float_>(output)) {
+      return std::make_shared<tensor::Tensor>(py::cast<float>(output))->ToAbstract();
+    } else if (py::isinstance<py::list>(output) || py::isinstance<py::tuple>(output)) {
+      ValuePtr converted_res = nullptr;
+      if (parse::ConvertData(output, &converted_res)) {
+        auto ret_list = converted_res->ToAbstract();
+        return fallback::GenerateAbstractSequence(ret_list->BuildShape(), ret_list->BuildType(), false);
+      }
+    }
+    return nullptr;
+  }
+
   static abstract::AbstractBasePtr PyExecuteInferPy(const PrimitivePtr &primitive, const ValuePtr &input_value) {
     MS_EXCEPTION_IF_NULL(input_value);
     if (!input_value->isa<ValueSequence>()) {
@@ -290,16 +311,9 @@ class PyExecuteInitializer {
       }
       MS_LOG(DEBUG) << "Python output type: " << py::str(output.get_type()) << ", output: " << output;
       primitive->set_attr(kAttrPyExecuteOutput, std::make_shared<parse::PyObjectWrapper>(output, "graph python obj"));
-      if (tensor::IsTensorPy(output) || IsStubTensor(output)) {
-        const auto &tensor = IsStubTensor(output) ? ConvertStubTensor(output) : tensor::ConvertToTensor(output);
-        const auto &infer_shape = std::make_shared<abstract::Shape>(tensor->shape());
-        return tensor->ToAbstract();
-      } else if (py::isinstance<py::bool_>(output)) {
-        return std::make_shared<tensor::Tensor>(py::cast<bool>(output))->ToAbstract();
-      } else if (py::isinstance<py::int_>(output)) {
-        return std::make_shared<tensor::Tensor>(py::cast<int64_t>(output))->ToAbstract();
-      } else if (py::isinstance<py::float_>(output)) {
-        return std::make_shared<tensor::Tensor>(py::cast<float>(output))->ToAbstract();
+      const auto &abstract = GenerateAbstract(output);
+      if (abstract != nullptr) {
+        return abstract;
       }
     } catch (const py::error_already_set &e) {
       auto error_type_name = py::cast<std::string>(python_adapter::GetPyObjAttr(e.type(), "__name__"));

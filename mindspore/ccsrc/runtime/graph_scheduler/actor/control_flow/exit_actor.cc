@@ -45,6 +45,31 @@ void ExitActor::Init() {
   if (device_contexts_.size() != input_device_tensors_.size()) {
     MS_LOG(EXCEPTION) << "The device contexts number is wrong.";
   }
+  MS_LOG(DEBUG) << "Exit actor:" << GetAID() << " init, is need copy:" << is_need_copy_device_tensors_
+                << " is dynamic check:" << is_need_dynamic_checks_;
+}
+
+void ClearDeviceTensorCopyStore(const std::map<KernelWithIndex, KernelWithIndex> &ref_out_in_map,
+                                const std::string &actor_name) {
+  for (const auto &pair : ref_out_in_map) {
+    if (pair.first.first == nullptr || pair.second.first == nullptr) {
+      continue;
+    }
+    if (pair.first.first->isa<CNode>() && AnfAlgo::OutputAddrExist(pair.first.first, pair.first.second, false)) {
+      DeviceTensorCopyStore::GetInstance().Clear(
+        AnfAlgo::GetMutableOutputAddr(pair.first.first, pair.first.second, false).get());
+      MS_LOG(DEBUG) << "Device tensor copy store clear device address:"
+                    << AnfAlgo::GetMutableOutputAddr(pair.first.first, pair.first.second, false)
+                    << " node:" << pair.first.first->fullname_with_scope() << " in actor:" << actor_name;
+    }
+    if (pair.second.first->isa<CNode>() && AnfAlgo::OutputAddrExist(pair.second.first, pair.second.second, false)) {
+      DeviceTensorCopyStore::GetInstance().Clear(
+        AnfAlgo::GetMutableOutputAddr(pair.second.first, pair.second.second, false).get());
+      MS_LOG(DEBUG) << "Device tensor copy store clear device address:"
+                    << AnfAlgo::GetMutableOutputAddr(pair.second.first, pair.second.second, false)
+                    << " node:" << pair.second.first->fullname_with_scope() << " in actor:" << actor_name;
+    }
+  }
 }
 
 void ExitActor::FetchInput(OpContext<DeviceTensor> *const context) {
@@ -57,6 +82,7 @@ void ExitActor::FetchInput(OpContext<DeviceTensor> *const context) {
 
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
   CopyDeviceAddress(context);
+  ClearDeviceTensorCopyStore(ref_out_in_map_, GetAID().Name());
   if (output_branch_dynamic_len_index_.find(output_branch_id_) == output_branch_dynamic_len_index_.end()) {
     auto data_iter = output_branch_data_.find(output_branch_id_);
     if (data_iter != output_branch_data_.end()) {
@@ -178,6 +204,52 @@ void ExitActor::IncreaseDynamicRefCounts(OpContext<DeviceTensor> *const context)
   for (size_t i = 0; i < input_device_tensors_.size(); ++i) {
     if ((input_device_tensors_[i] != nullptr) && (input_device_tensors_[i]->dynamic_ref_count() == 0) &&
         (device_contexts_[i] != nullptr)) {
+      MS_LOG(INFO) << GetAID().Name() << " input index:" << i << " has no user and free the memory.";
+      // Update the real used device context by the input data.
+      if (device_contexts_[i]->GetDeviceType() != input_device_tensors_[i]->GetDeviceType()) {
+        device_contexts_[i] = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+          {input_device_tensors_[i]->device_name(), input_device_tensors_[i]->device_id()});
+        MS_LOG(INFO) << "Update device context type to:" << device_contexts_[i]->GetDeviceType();
+      }
+      device_contexts_[i]->device_res_manager_->FreeMemory(input_device_tensors_[i]);
+    }
+  }
+}
+
+void ExitActor::IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) {
+  MS_EXCEPTION_IF_NULL(context);
+  ControlActor::IncreaseNewRefCounts(context);
+
+  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
+  // Increase dynamic ref count by the output data in output branch.
+  if (output_branch_data_.count(output_branch_id_) > 0) {
+    for (auto &output_data : output_branch_data_[output_branch_id_]) {
+      MS_EXCEPTION_IF_NULL(output_data.second);
+      IncreaseNewRefCount(output_data.second.get());
+    }
+  }
+
+  // Increase dynamic ref count by the output partial in output branch.
+  if (output_branch_partial_arrows_.count(output_branch_id_) > 0) {
+    for (const auto &partial_arrow : output_branch_partial_arrows_[output_branch_id_]) {
+      MS_EXCEPTION_IF_NULL(partial_arrow);
+      if (IntToSize(partial_arrow->from_output_index_) >= input_partials_.size()) {
+        std::string error_info = "Invalid partial input:" + std::to_string(partial_arrow->from_output_index_) +
+                                 " current:" + std::to_string(input_partials_.size()) + " for actor:" + GetAID().Name();
+        SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
+      }
+      auto output_partial = input_partials_[IntToSize(partial_arrow->from_output_index_)];
+      IncreaseNewRefCountForPartial(output_partial);
+    }
+  }
+  if (input_device_tensors_.size() != device_contexts_.size()) {
+    MS_LOG(ERROR) << "Input device tensor size:" << input_device_tensors_.size()
+                  << " is not equal to context size:" << device_contexts_.size() << " for actor:" << GetAID();
+  }
+  // The input device tensor may not have users and needs to free the memory.
+  for (size_t i = 0; i < input_device_tensors_.size(); ++i) {
+    if ((input_device_tensors_[i] != nullptr) && input_device_tensors_[i]->GetPtr() != nullptr &&
+        input_device_tensors_[i]->new_ref_count() == 0 && (device_contexts_[i] != nullptr)) {
       MS_LOG(INFO) << GetAID().Name() << " input index:" << i << " has no user and free the memory.";
       // Update the real used device context by the input data.
       if (device_contexts_[i]->GetDeviceType() != input_device_tensors_[i]->GetDeviceType()) {
@@ -385,12 +457,15 @@ void ExitActor::CopyDeviceAddress(OpContext<DeviceTensor> *const context) {
         SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, *device_context,
                                                     GetAID().Name(), new_device_tensor->GetSize());
       }
+      MS_LOG(DEBUG) << "Sync device address from:" << input_device_tensor->PrintInfo()
+                    << " to:" << new_device_tensor->PrintInfo() << " in actor:" << GetAID();
       if (!new_device_tensor->SyncDeviceToDevice(input_device_tensor)) {
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Sync device to device failed.");
       }
     } else {
       // Move the device ptr from input_device_tensor to new_device_tensor.
       input_device_tensor->Swap(new_device_tensor.get());
+      DeviceTensorCopyStore::GetInstance().Replace(input_device_tensor, new_device_tensor.get());
       if (new_device_tensor->deleter() == nullptr) {
         new_device_tensor->set_from_mem_pool(true);
       }

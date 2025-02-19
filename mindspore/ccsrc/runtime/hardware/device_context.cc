@@ -41,6 +41,7 @@ bool DeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
   }
   address->set_ptr(device_ptr);
   address->set_from_mem_pool(true);
+  address->IncreaseNewRefCount();
   return true;
 }
 
