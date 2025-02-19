@@ -202,12 +202,11 @@ class FuseMatMul : public FusePattern {
 
   bool Match(const AreaPtr &dom) override {
     constexpr size_t MAX_FUSE_NUM = 5;
-    constexpr int64_t MAX_FUSION_SIZE = UINT32_MAX;
     size_t current_size = 0;
     auto output_shape = dom->ops().back()->shape;
     int64_t matmul_output_size =
       std::accumulate(output_shape.begin(), output_shape.end(), 1, std::multiplies<int64_t>());
-    if (matmul_output_size > MAX_FUSION_SIZE || output_shape.back() == 1) {
+    if (output_shape.back() == 1) {
       return false;
     }
     auto dom_users = dom->users();
@@ -216,6 +215,9 @@ class FuseMatMul : public FusePattern {
     for (auto &a : dom_users) {
       if (current_size + a->area_outputs().size() > MAX_FUSE_NUM) {
         break;
+      }
+      if (a->size() == 1 && a->dom()->op() == kReshapeOpName) {
+        continue;
       }
       bool fuse_flag = (dom->dom()->op() == kMatMulOpName && a->pattern() <= NodePattern::BROADCAST) ||
                        (dom->dom()->op() == kBatchMatMulOpName && a->pattern() < NodePattern::BROADCAST);

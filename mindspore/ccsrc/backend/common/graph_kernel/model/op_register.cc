@@ -110,7 +110,7 @@ OP_REGISTER("LayoutTransform", LayoutTransformOp);
 OP_REGISTER("MatMul", MatMulOp);
 OP_REGISTER("PadAkg", PadAkgOp);
 OP_REGISTER("UnPadAkg", UnPadAkgOp);
-OP_REGISTER("BatchMatMul", OpaqueOp);
+OP_REGISTER("BatchMatMul", MatMulOp);
 OP_REGISTER("CumSum", OpaqueOp);
 OP_REGISTER("OneHot", OpaqueOp);
 OP_REGISTER("StridedSlice", StridedSliceOp);

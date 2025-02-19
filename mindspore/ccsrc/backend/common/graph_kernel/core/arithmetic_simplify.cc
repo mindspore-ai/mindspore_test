@@ -968,6 +968,30 @@ class TransposeCombinePatternTree : public PatternTree {
   }
 };
 
+class MatMulAddPatternTree : public PatternTree {
+ public:
+  explicit MatMulAddPatternTree(const std::string &pattern_str) : PatternTree(pattern_str) {}
+  ~MatMulAddPatternTree() override = default;
+
+ protected:
+  bool CheckInputsAndAttrs(const inner::NodePtr &origin_root) const override {
+    if (graphkernel::GraphKernelFlags::GetInstance().disable_matmul_post_fusion) {
+      return false;
+    }
+    auto add_node = origin_root->input(1);
+    MS_EXCEPTION_IF_NULL(add_node);
+    return add_node->shape.size() == kDim1;
+  }
+
+  mindspore::HashMap<PatternNodePtr, inner::DAttrs> SetAttributes(const inner::NodePtr &origin_root) override {
+    auto attrs_map = PatternTree::SetAttributes(origin_root);
+    auto matmul_root = origin_root->input(0);
+    attrs_map[this->rhs_root()] = {{kTransposeA, matmul_root->attrs().find(kTransposeA)->second},
+                                   {kTransposeB, matmul_root->attrs().find(kTransposeB)->second}};
+    return attrs_map;
+  }
+};
+
 class FloatCheckPatternTree : public PatternTree {
  public:
   explicit FloatCheckPatternTree(const std::string &pattern_str) : PatternTree(pattern_str) {}
@@ -1112,6 +1136,8 @@ static std::vector<Expression> expressions = {
   {"Cast(A)=A", EXPR_PATTERN(CastPatternTree)},
   // transpose
   {"Transpose(Transpose(A,B),C)=Transpose(A,D)", EXPR_PATTERN(TransposeCombinePatternTree)},
+  {"Add(MatMul(A,B),C)=MatMul(A,B,C)", EXPR_PATTERN(MatMulAddPatternTree)},
+  {"Add(BatchMatMul(A,B),C)=BatchMatMul(A,B,C)", EXPR_PATTERN(MatMulAddPatternTree)},
 };
 
 mindspore::HashMap<std::string, std::vector<PatternTreePtr>> GetExpressions() {

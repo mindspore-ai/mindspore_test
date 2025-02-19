@@ -25,10 +25,11 @@ class Net(nn.Cell):
         super(Net, self).__init__()
         self.mm = ops.MatMul(transpose_a=True)
         self.cast = ops.Cast()
+        self.add = ops.BiasAdd()
 
     def construct(self, x, y, z):
-        o = self.mm(x, y)
-        return self.cast(o, mstype.float32) + z
+        o = self.add(self.mm(x, y), z)
+        return self.cast(o, mstype.float32)
 
 
 def get_output(net, x, y, z, enable_graph_kernel=False):
@@ -44,16 +45,17 @@ def get_output(net, x, y, z, enable_graph_kernel=False):
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("shape1, shape2", [((4096, 1024), (4096, 2048)), ((4000, 1000), (4000, 3000))])
-def test_dvm_matmul_fusion(shape1, shape2):
+@pytest.mark.parametrize("dtype", [mstype.float16, mstype.bfloat16])
+def test_dvm_matmul_fusion(shape1, shape2, dtype):
     """
     Feature: test matmul case for graph_kernel in Ascend.
     Description: ascend test case, use graph_kernel execute ops.
     Expectation: the result match with close graph_kernel result
     """
     context.set_context(mode=context.GRAPH_MODE)
-    x = Tensor(np.random.uniform(1, 2, shape1).astype(np.float16))
-    y = Tensor(np.random.uniform(1, 2, shape2).astype(np.float16))
-    z = Tensor(np.random.uniform(1, 2, [shape2[1]]).astype(np.float32))
+    x = Tensor(np.random.normal(1, 0.01, shape1).astype(np.float32), dtype=dtype)
+    y = Tensor(np.random.normal(1, 0.01, shape2).astype(np.float32), dtype=dtype)
+    z = Tensor(np.random.normal(1, 0.01, [shape2[1]]).astype(np.float32), dtype=dtype)
     expect = get_output(Net, x, y, z, False)
     output = get_output(Net, x, y, z, True)
     assert np.allclose(expect.asnumpy(), output.asnumpy(), 2e-3, 2e-3)
