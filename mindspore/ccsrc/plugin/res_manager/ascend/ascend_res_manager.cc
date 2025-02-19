@@ -772,9 +772,9 @@ DeviceEventPtr AscendResManager::CreateRuntimeEvent(bool enable_blocking, bool e
   return std::make_shared<AscendEvent>(flag);
 }
 
-DeviceEventPtr AscendResManager::CreateEventWithFlag(bool enable_timing, bool blocking) {
+DeviceEventPtr AscendResManager::CreateEventWithFlag(bool enable_timing, bool blocking, bool use_extensional_api) {
   auto flag = enable_timing ? (ACL_EVENT_TIME_LINE | ACL_EVENT_SYNC) : ACL_EVENT_SYNC;
-  auto event = std::make_shared<AscendEvent>(flag);
+  auto event = std::make_shared<AscendEvent>(flag, use_extensional_api);
   MS_EXCEPTION_IF_NULL(event);
   std::lock_guard<std::mutex> lock(device_events_mutex_);
   device_events_.push_back(event);
