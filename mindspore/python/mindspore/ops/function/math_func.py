@@ -9756,7 +9756,7 @@ def log2(input):
         >>> print(output)
         [1. 2. 3.]
     """
-    if input.dtype == mstype.bool_:
+    if isinstance(input, Tensor) and input.dtype == mstype.bool_:
         input = input.astype(mstype.int64)
     x_dtype = dtype_(input)
     denominator = log_(_make_tensor(2, x_dtype))
