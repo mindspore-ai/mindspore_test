@@ -424,6 +424,7 @@ Loss Functions
     mindspore.mint.nn.BCELoss
     mindspore.mint.nn.BCEWithLogitsLoss
     mindspore.mint.nn.CrossEntropyLoss
+    mindspore.mint.nn.KLDivLoss
     mindspore.mint.nn.MSELoss
     mindspore.mint.nn.NLLLoss
     mindspore.mint.nn.SmoothL1Loss
@@ -565,6 +566,7 @@ Loss Functions
 
     mindspore.mint.nn.functional.binary_cross_entropy
     mindspore.mint.nn.functional.binary_cross_entropy_with_logits
+    mindspore.mint.nn.functional.kl_div
     mindspore.mint.nn.functional.l1_loss
     mindspore.mint.nn.functional.mse_loss
     mindspore.mint.nn.functional.nll_loss
