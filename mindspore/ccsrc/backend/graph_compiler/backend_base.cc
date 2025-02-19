@@ -623,6 +623,14 @@ void BuildSymbolEngine(const FuncGraphPtr &func_graph, device::RunMode run_mode)
   MS_LOG(INFO) << "Status record: start build symbol engine for function graph: " << func_graph->ToString();
   (void)symshape::SymbolEngineImpl::Build(func_graph);
   MS_LOG(INFO) << "Status record: end build symbol engine for function graph: " << func_graph->ToString();
+#ifdef ENABLE_DUMP_IR
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name = "root_graph_with_symbol_engine.ir";
+    DumpIR(file_name, func_graph, true, kWholeStack);
+  }
+#endif
 }
 
 std::string GetUniqueNodeId(const AnfNodePtr &node, bool must_have_unique_name = true) {
