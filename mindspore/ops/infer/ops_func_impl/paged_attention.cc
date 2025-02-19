@@ -114,9 +114,6 @@ TypePtr PagedAttentionFuncImpl::InferType(const PrimitivePtr &primitive,
   auto block_tables_type = input_args[kPagedAttentionInputBlockTablesIndex]->GetType();
   (void)CheckAndConvertUtils::CheckTensorTypeValid("block_tables", block_tables_type, {kInt32, kInt64, kUInt64},
                                                    op_name);
-  auto context_lens_type = input_args[kPagedAttentionInputContextLensIndex]->GetType();
-  (void)CheckAndConvertUtils::CheckTensorTypeValid("context_lens", context_lens_type, {kInt32, kInt64, kUInt64},
-                                                   op_name);
   return output_dtype;  // attention_out dtype
 }
 }  // namespace ops
