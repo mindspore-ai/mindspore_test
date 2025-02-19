@@ -5,7 +5,7 @@ mindspore.nn.DistributedGradReducer
 
     分布式优化器。
 
-    用于数据并行模式中，对所有卡的梯度利用AllReduce进行聚合。
+    用于数据并行模式中，利用AllReduce对所有卡的梯度进行聚合。
 
     参数：
         - **parameters** (list) - 需要更新的参数。
