@@ -1243,8 +1243,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             - The following constraints must be met under graph mode:
 
               - The `hook` must satisfy the syntax constraints of the graph mode.
-              - Registering `hook` for `Parameter` is not supported in the graph (i.e., function `Cell.construct` or
-                function decorated by `@jit`).
               - It is not supported to delete `hook` inside graph.
 
               - Register `hook` in the graph will return then `Tensor` it self.

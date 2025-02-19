@@ -16,6 +16,7 @@
 import os
 import subprocess
 import shutil
+import pytest
 import numpy as np
 import mindspore as ms
 import mindspore.context as context
@@ -101,6 +102,23 @@ class HookPrintNet(nn.Cell):
     def construct(self, x):
         x = x * self.weight0
         x.register_hook(hook_print)
+        out = x * self.weight1
+        return out
+
+class HookInJITNet(nn.Cell):
+    def __init__(self):
+        super(HookInJITNet, self).__init__()
+        self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")
+        self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
+
+    @ms.jit
+    def hook(self, x):
+        x.register_hook(hook_double)
+        return x
+
+    def construct(self, x):
+        x = x * self.weight0
+        x = self.hook(x)
         out = x * self.weight1
         return out
 
@@ -252,6 +270,31 @@ def test_need_reorder_hook_stmt_net():
     expected_x_grad = hook_mul_5(hook_triple(hook_double(ground_output[0][0]))).asnumpy()
     expected_weight0_grad = hook_mul_5(hook_triple(ground_output[1][0])).asnumpy()
     expected_weight1_grad = hook_mul_5(ground_output[1][1]).asnumpy()
+
+    assert np.allclose(output_x_grad, expected_x_grad)
+    assert np.allclose(output_weight0_grad, expected_weight0_grad)
+    assert np.allclose(output_weight1_grad, expected_weight1_grad)
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', [context.PYNATIVE_MODE, context.GRAPH_MODE])
+def test_hook_in_jit(mode):
+    """
+    Feature: Tensor.register_hook(hook_fn) inside graph.
+    Description: Test register hook inside jit wrapper
+    Expectation: The grad of tensor is changed by hook.
+    """
+    context.set_context(mode=mode, device_target="CPU")
+    input_x = Tensor(np_input_x, ms.float32)
+    net = HookInJITNet()
+    grad_op = ops.GradOperation(get_all=True, get_by_list=True)
+    grad_net = grad_op(net, net.trainable_params())
+    output = grad_net(input_x)
+    output_x_grad = output[0][0].asnumpy()
+    output_weight0_grad = output[1][0].asnumpy()
+    output_weight1_grad = output[1][1].asnumpy()
+    expected_x_grad = hook_double(ground_output[0][0]).asnumpy()
+    expected_weight0_grad = hook_double(ground_output[1][0]).asnumpy()
+    expected_weight1_grad = ground_output[1][1].asnumpy()
 
     assert np.allclose(output_x_grad, expected_x_grad)
     assert np.allclose(output_weight0_grad, expected_weight0_grad)
