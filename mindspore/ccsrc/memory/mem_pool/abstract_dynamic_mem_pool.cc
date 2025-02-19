@@ -22,8 +22,9 @@
 #include <atomic>
 #include <chrono>
 #include <fstream>
+#include <numeric>
 
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/backend/mem_reuse/mem_pool_util.h"
 #include "include/common/utils/utils.h"
 #include "utils/log_adapter.h"
 
@@ -469,7 +470,7 @@ std::pair<MemBuf *, MemBufAllocator *> AbstractDynamicMemPool::AllocMemBuf(size_
 std::vector<DeviceMemPtr> AbstractDynamicMemPool::AllocContinuousTensorMem(const std::vector<size_t> &size_list,
                                                                            uint32_t stream_id) {
   std::vector<DeviceMemPtr> device_addr_list;
-  size_t total_size = std::accumulate(size_list.begin(), size_list.end(), IntToSize(0));
+  size_t total_size = std::accumulate(size_list.begin(), size_list.end(), static_cast<size_t>(0));
   // Pre-alloc the one whole piece memory.
   auto device_addr = AbstractDynamicMemPool::AllocTensorMem(total_size, false, false, stream_id);
   if (!device_addr) {

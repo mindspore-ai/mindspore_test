@@ -18,4 +18,11 @@ endif()
 set_property(SOURCE ${_PREACTIVATE_SRC_LIST} PROPERTY COMPILE_DEFINITIONS
   SUBMODULE_ID=mindspore::SubModuleId::SM_PRE_ACT)
 
-add_library(_mindspore_memory_mem_pool_obj OBJECT ${_PREACTIVATE_SRC_LIST})
+add_library(mindspore_memory_pool SHARED ${_PREACTIVATE_SRC_LIST})
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    target_compile_definitions(mindspore_memory_pool PRIVATE BACKEND_DLL)
+endif()
+set_target_properties(mindspore_memory_pool PROPERTIES INSTALL_RPATH $ORIGIN)
+
+target_link_libraries(mindspore_memory_pool PRIVATE mindspore_core mindspore_common mindspore_ops_kernel_common)

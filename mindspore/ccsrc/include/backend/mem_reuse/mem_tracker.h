@@ -105,7 +105,7 @@ struct MemInfo {
   // mem info
   MemType type;
   size_t size;
-  KernelTensorPtr kernel_tensor;
+  const void *kernel_tensor;
   // producer and user
   std::vector<TaskInfoPtr> user_tasks;
   TaskInfoPtr producer_task;
@@ -232,11 +232,11 @@ class BACKEND_EXPORT MemoryTrackerEnabled : public MemTracker {
   MemoryTrackerEnabled() = default;
   ~MemoryTrackerEnabled() override = default;
 
-  MemInfoPtr NewMemInfo(const std::string &task_name, MemType type, size_t size, KernelTensorPtr kernel_tensor,
+  MemInfoPtr NewMemInfo(const std::string &task_name, MemType type, size_t size, const void *kernel_tensor,
                         const std::string &file_name, size_t line_num);
   std::map<DeviceMemPtr, MemBlockInfoPtr>::iterator FindMemBlock(DeviceMemPtr device_ptr, const std::string &file_name,
                                                                  size_t line_num);
-  void AddMemInfoForKernelTensor(const std::string &task_name, MemType type, size_t size, KernelTensorPtr kernel_tensor,
+  void AddMemInfoForKernelTensor(const std::string &task_name, MemType type, size_t size, const void *kernel_tensor,
                                  const std::string &file_name, size_t line_num);
   std::mutex mutex_;
   int64_t time_stamp_ = 0;
@@ -253,7 +253,7 @@ class BACKEND_EXPORT MemoryTrackerEnabled : public MemTracker {
   // actor name -> task info
   std::map<std::string, TaskInfoPtr> task_map_;
   // kernel tensor -> mem info
-  std::map<KernelTensorPtr, MemInfoPtr> kernel_tensor_mem_map;
+  std::map<const void *, MemInfoPtr> kernel_tensor_mem_map;
   // device address -> mem info
   std::map<DeviceAddress *, MemInfoPtr> device_address_mem_map;
   // device addr -> mem block info

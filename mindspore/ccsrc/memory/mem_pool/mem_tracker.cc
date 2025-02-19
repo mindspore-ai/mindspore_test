@@ -204,7 +204,6 @@ void MultiStreamDependency::WaitEvent(size_t stream_id, const std::string &event
 
 void GraphTracker::Dump(const std::string &graph_path) {
   MS_LOG(WARNING) << "Dump graph to file: " << graph_path;
-  ChangeFileMode(graph_path, S_IWUSR | S_IRUSR);
   std::ofstream graph_file(graph_path);
   InitStreamSize();
   // dump operators
@@ -461,8 +460,7 @@ void MemoryTrackerEnabled::MarkTensorAsOutput(const std::string &task_name, cons
 }
 
 MemInfoPtr MemoryTrackerEnabled::NewMemInfo(const std::string &task_name, MemType type, size_t size,
-                                            KernelTensorPtr kernel_tensor, const std::string &file_name,
-                                            size_t line_num) {
+                                            const void *kernel_tensor, const std::string &file_name, size_t line_num) {
   auto mem_info = std::make_shared<MemInfo>();
   MS_EXCEPTION_IF_NULL(mem_info);
   mem_info->type = type;
@@ -486,7 +484,7 @@ MemInfoPtr MemoryTrackerEnabled::NewMemInfo(const std::string &task_name, MemTyp
 }
 
 void MemoryTrackerEnabled::AddMemInfoForKernelTensor(const std::string &task_name, MemType type, size_t size,
-                                                     KernelTensorPtr kernel_tensor, const std::string &file_name,
+                                                     const void *kernel_tensor, const std::string &file_name,
                                                      size_t line_num) {
   auto mem_info = NewMemInfo(task_name, type, size, kernel_tensor, file_name, line_num);
   if (mem_info != nullptr) {
@@ -896,17 +894,9 @@ void MemoryTrackerEnabled::UpdateProfilingPos() {
 
 void MemoryTrackerEnabled::DumpProfilingMemInfo(size_t rank_id, const std::string &path, const std::string &file_name) {
   std::lock_guard<std::mutex> lock(mutex_);
-
-  auto csv_path = path + "/" + file_name + "_" + std::to_string(rank_id) + ".csv";
-  auto csv_path_opt = Common::CreatePrefixPath(csv_path);
-  if (!csv_path_opt.has_value()) {
-    MS_LOG(ERROR) << "Get realpath failed, csv_path:" << csv_path;
-    return;
-  }
-
+  std::string csv_path = memory::mem_pool::GeneratePath(rank_id, file_name, "csv");
   MS_LOG(INFO) << "MemoryTracker DumpProfilingMemInfo start, last_profiling_pos:" << last_profiling_pos_;
-  ChangeFileMode(csv_path_opt.value(), S_IWUSR | S_IRUSR);
-  std::ofstream block_file(csv_path_opt.value());
+  std::ofstream block_file(csv_path);
   auto old_file_flags = block_file.flags();
   auto old_precision = block_file.precision();
   block_file.unsetf(std::ios_base::floatfield);
@@ -942,7 +932,6 @@ void MemoryTrackerEnabled::DumpProfilingMemInfo(size_t rank_id, const std::strin
   block_file.flags(old_file_flags);
   block_file.precision(old_precision);
   block_file.close();
-  ChangeFileMode(csv_path_opt.value(), S_IWUSR | S_IRUSR);
 
   // record the last time stamp
   last_profiling_pos_ = mem_block_list_.size();

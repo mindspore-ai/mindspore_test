@@ -29,7 +29,6 @@
 #include "utils/ms_context.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_utils.h"
-#include "include/common/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace device {
@@ -151,14 +150,13 @@ const DeviceState MemStatusManager::DumpMemBlockDebugInfo(const std::string &mem
   return device_state;
 }
 
-std::function<void()> DynamicMemPoolBestFit::wait_callback_;
 DynamicMemPoolBestFit::~DynamicMemPoolBestFit() {
   persistent_mem_->Clear();
   common_mem_->Clear();
   stream_pair_addresses_.clear();
 }
 
-void DynamicMemPoolBestFit::Initialize(size_t init_size, size_t /*increase_size*/, size_t /*max_size*/) {
+void DynamicMemPoolBestFit::Initialize(size_t init_size, size_t increase_size, size_t /*max_size*/) {
   if (init_size == 0) {
     MS_LOG(INFO) << "Skip initialization of memory pool since init size is not configured.";
     return;
@@ -189,6 +187,7 @@ void DynamicMemPoolBestFit::Initialize(size_t init_size, size_t /*increase_size*
   };
   mem_initializer(persistent_mem_, real_init_size, kDefaultStreamIndex);
   mem_initializer(common_mem_, real_init_size, kDefaultStreamIndex);
+  increase_size_ = increase_size;
 }
 
 DeviceMemPtr DynamicMemPoolBestFit::AllocTensorMem(size_t size, bool from_persistent_mem, bool need_recycle,
@@ -474,24 +473,11 @@ void *DynamicMemPoolBestFit::GetMinUsingMemoryAddr() const {
 }
 
 void DynamicMemPoolBestFit::SetMemPoolBlockSize(size_t available_device_mem_size) {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  float mem_block_size = runtime::RuntimeConf::GetInstance()->mem_block_increase_size();
-  if (std::fabs(mem_block_size - kDefaultMempoolBlockSize) <= std::numeric_limits<float>::epsilon()) {
-    return;
-  }
-
-  size_t config_size = FloatToSize(mem_block_size * kGBToByte);
-  if (config_size > available_device_mem_size) {
-    MS_LOG(WARNING) << "Memory pool block size " << config_size << " is bigger than currently available maximum memory "
-                    << available_device_mem_size << ", and the actual effective value will be "
-                    << available_device_mem_size;
-  }
   // Reserve 1G for persistent_mem
   if (available_device_mem_size > kGBToByte) {
     available_device_mem_size -= kGBToByte;
   }
-  size_t real_block_size = std::min(config_size, available_device_mem_size);
+  size_t real_block_size = std::min(increase_size_, available_device_mem_size);
   SetMemAllocUintSize(real_block_size);
 }
 
@@ -1386,10 +1372,7 @@ bool DynamicMemPoolBestFit::WaitEvent(int64_t task_id_on_stream, uint32_t memory
 }
 
 void DynamicMemPoolBestFit::WaitPipelineWithCallback() {
-  if (wait_callback_ != nullptr) {
-    MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Wait for Pipeline";
-    wait_callback_();
-  }
+  // Not worked currently.
 }
 
 bool DynamicMemPoolBestFit::SyncAllEvents() {

@@ -57,7 +57,7 @@ const char kCommonMemPoolType[] = "common_mem_pool";
 const char kPersistentMemPoolType[] = "persistent_mem_pool";
 
 // The status of memory buf.
-enum class DynamicMemBufStatus : int { kMemBufIdle, kMemBufUsed, kMemBufEagerFree, kMemBufUsedByEvent };
+enum class BACKEND_EXPORT DynamicMemBufStatus : int { kMemBufIdle, kMemBufUsed, kMemBufEagerFree, kMemBufUsedByEvent };
 BACKEND_EXPORT const std::string &DynamicMemBufStatusToString(DynamicMemBufStatus status);
 
 // The Comparator of device address from small to large.
@@ -67,19 +67,19 @@ struct DeviceAddrCmp {
 };
 
 // The AllocatorDebugInfo wrapper which is the local thread for the dynamic memory pool.
-class DynamicMemAllocatorDebugInfo;
+class BACKEND_EXPORT DynamicMemAllocatorDebugInfo;
 // Memory buf is the smallest operation object of dynamic memory pool.
-struct DynamicMemBuf;
+struct BACKEND_EXPORT DynamicMemBuf;
 using DynamicMemBufPtr = std::shared_ptr<DynamicMemBuf>;
 // Multimap key is the tensor size, for finding the idle memory buf by tensor size.
 using SizeMapMemBuf = std::multimap<size_t, DynamicMemBufPtr>;
 // Map key is the device address, for finding the used memory buf in memory block by device address.
 using DeviceAddrMapMemBuf = std::map<DeviceMemPtr, DynamicMemBufPtr, DeviceAddrCmp>;
 // Memory block is composed of memory buf.
-class DynamicMemBlock;
+class BACKEND_EXPORT DynamicMemBlock;
 using DynamicMemBlockPtr = std::shared_ptr<DynamicMemBlock>;
 
-struct MemStatusManager;
+struct BACKEND_EXPORT MemStatusManager;
 using MemStatusManagerPtr = std::shared_ptr<MemStatusManager>;
 
 // Help class for unordered_map, pair has no hash method, need override it.
@@ -93,7 +93,7 @@ struct pair_hash {
   }
 };
 
-struct MemBuf;
+struct BACKEND_EXPORT MemBuf;
 
 // Interface of dynamic memory pool.
 class BACKEND_EXPORT DynamicMemPool {
@@ -307,7 +307,7 @@ struct BACKEND_EXPORT EventBase {
   std::shared_ptr<std::unordered_map<uint32_t, std::shared_ptr<std::list<TaskIdOnStreamEvent>>>> events_{nullptr};
 };
 
-struct JsonBuilder {
+struct BACKEND_EXPORT JsonBuilder {
   JsonBuilder() { buffer_ << "{"; }
 
   template <typename T>
