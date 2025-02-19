@@ -1,47 +1,36 @@
 cummax:
     description: |
-        Returns a tuple (values,indices) where 'values' is the cumulative maximum value of input Tensor `input`
-        along the dimension `axis`, and `indices` is the index location of each maximum value.
-    
+        Return the cumulative maximum values and their indices along the given axis of the tensor.
+
         .. math::
             \begin{array}{ll} \\
                 y_{i} = \max(x_{1}, x_{2}, ... , x_{i})
             \end{array}
     
         Args:
-            input (Tensor): The input Tensor, rank of `input` > 0.
-            axis (int): The dimension to do the operation over. The value of `axis` must be in the range
-                `[-input.ndim, input.ndim - 1]`.
+            input (Tensor): The input tensor.
+            axis (int): Specify the axis for computation.
     
         Returns:
-            tuple [Tensor], tuple of 2 Tensors, containing the cumulative maximum of elements and the index.
-            The shape of each output tensor is the same as input `input`.
-    
-        Raises:
-            TypeError: If `input` is not a Tensor.
-            TypeError: If `axis` is not an int.
-            ValueError: If `axis` is out the range of `[-input.ndim, input.ndim - 1]`.
-
-        .. note::
-            O2 mode is not supported in Ascend.
+            Tuple(max, max_indices) of 2 tensors.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
 
         Examples:
             >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> from mindspore import ops
-            >>> x = Tensor(np.array([[3, 4, 6, 10], [1, 6, 7, 9], [4, 3, 8, 7], [1, 3, 7, 9]]).astype(np.float32))
-            >>> output = ops.cummax(x, axis=0)
-            >>> print(output[0])
-            [[ 3.  4.  6. 10.]
-             [ 3.  6.  7. 10.]
-             [ 4.  6.  8. 10.]
-             [ 4.  6.  8. 10.]]
-            >>> print(output[1])
-            [[0 0 0 0]
-             [0 1 1 0]
-             [2 1 2 0]
-             [2 1 2 0]]
+            >>> input = mindspore.tensor([[3, 4, 6, 10], 
+            ...                           [1, 6, 7, 9], 
+            ...                           [4, 3, 8, 7], 
+            ...                           [1, 3, 7, 9]])
+            >>> mindspore.ops.cummax(x, axis=0)
+            (Tensor(shape=[4, 4], dtype=Int64, value=
+             [[ 3,  4,  6, 10],
+              [ 3,  6,  7, 10],
+              [ 4,  6,  8, 10],
+              [ 4,  6,  8, 10]]),
+             Tensor(shape=[4, 4], dtype=Int64, value=
+             [[0, 0, 0, 0],
+              [0, 1, 1, 0],
+              [2, 1, 2, 0],
+              [2, 1, 2, 0]]))
