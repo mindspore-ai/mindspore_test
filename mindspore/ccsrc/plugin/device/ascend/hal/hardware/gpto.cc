@@ -3207,7 +3207,7 @@ void GPTO(mindspore::device::DeviceResManager *device_res_manager, const KernelG
     } else {
       const float memory_safety = 0.98;
       MEMORY_LIMIT =
-        static_cast<Memory>(context->get_param<float>(MS_CTX_MAX_DEVICE_MEMORY) * kGBToByte * memory_safety);
+        static_cast<Memory>(runtime::RuntimeConf::GetInstance()->mem_max_size() * kGBToByte * memory_safety);
     }
   }
   MS_LOG(INFO) << "Memory Limit value: " << MEMORY_LIMIT;
