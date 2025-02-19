@@ -63,6 +63,7 @@
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_rms_norm_quant_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_cast_rms_norm_cast_quant_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_cast_rms_norm_cast_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/transpose_batch_matmul_transpose_fusion.h"
 #include "plugin/device/ascend/optimizer/ge/avg_pool_grad_for_ge.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/mc2_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/insert_depend_for_all_gather.h"
@@ -183,6 +184,7 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->AddFusionPass(std::make_shared<opt::QbmmAllReduceConvertBias>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::QbmmAllReduceAddFusion>());
   pm->AddFusionPass(std::make_shared<opt::RemoveFATensorToTupleOps>(), infer_boost);
+  pm->AddFusionPass(std::make_shared<opt::TransposeBatchMatmulTranspose>(), infer_boost);
 #endif  // ENABLE_INTERNAL_KERNELS
 
   if (ms_context->IsKByKExecutorMode()) {
