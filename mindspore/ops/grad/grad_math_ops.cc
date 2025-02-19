@@ -1073,7 +1073,7 @@ REG_BPROP_BUILDER("Mm").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return {dx, dw};
 });
 
-REG_BPROP_BUILDER("GroupedMatmul").SetUnusedInputs({i2, i10}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("GroupedMatmul").SetUnusedInputs({i2, i12}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto weight = ib->GetInput(kIndex1);
   auto bias = ib->GetInput(kIndex2);
@@ -1086,7 +1086,11 @@ REG_BPROP_BUILDER("GroupedMatmul").SetUnusedInputs({i2, i10}).SetBody(BODYFUNC(i
   auto antiquant_offset = ib->GetInput(kIndex6);
 
   auto split_item = ib->GetInput(kIndex8);
-  auto dout = ib->GetInput(kIndex11);
+
+  auto transpose_a = ib->GetInput(kIndex10);
+  auto transpose_b = ib->GetInput(kIndex11);
+
+  auto dout = ib->GetInput(kIndex13);
   auto [num_x, num_w] = GroupedMatmulBackwardParamsCheck(x, weight, split_item, scale, offset, antiquant_scale,
                                                          antiquant_offset, group_type);
 
@@ -1098,15 +1102,17 @@ REG_BPROP_BUILDER("GroupedMatmul").SetUnusedInputs({i2, i10}).SetBody(BODYFUNC(i
   NodePtr dx{nullptr};
   if (x->need_compute_grad_out()) {
     dx = ib->Emit("GroupedMatmul", {dout, wt, none_node, scale, offset, antiquant_scale, antiquant_offset, group_list,
-                                    split_item, ib->Value<int64_t>(0)});
+                                    split_item, ib->Value<int64_t>(0), ib->Value<bool>(false), ib->Value<bool>(false)});
   } else {
     dx = ForEachOutZeros(ib, x);
   }
 
   NodePtr dw{nullptr};
   if (weight->need_compute_grad_out()) {
-    auto dw_tmp = ib->Emit("GroupedMatmul", {xt, dout, none_node, scale, offset, antiquant_scale, antiquant_offset,
-                                             group_list, split_item, ib->Value<int64_t>(2)});
+    constexpr const int64_t group_type_value = 2;
+    auto dw_tmp = ib->Emit(
+      "GroupedMatmul", {xt, dout, none_node, scale, offset, antiquant_scale, antiquant_offset, group_list, split_item,
+                        ib->Value<int64_t>(group_type_value), ib->Value<bool>(false), ib->Value<bool>(false)});
     std::vector<NodePtr> dw_nodes;
     for (size_t i = 0; i < num_w; i++) {
       auto weight_i = ib->TupleGetItem(weight, i);
@@ -1141,7 +1147,9 @@ REG_BPROP_BUILDER("GroupedMatmul").SetUnusedInputs({i2, i10}).SetBody(BODYFUNC(i
           ib->OutZeros(antiquant_offset),
           ib->OutZeros(group_list),
           ib->OutZeros(split_item),
-          ib->OutZeros(group_type)};
+          ib->OutZeros(group_type),
+          ib->OutZeros(transpose_a),
+          ib->OutZeros(transpose_b)};
 });
 
 REG_BPROP_BUILDER("Add").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {

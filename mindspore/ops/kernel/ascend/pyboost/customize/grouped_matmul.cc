@@ -46,7 +46,7 @@ void GroupedMatmulAscendCustomize(const std::shared_ptr<OpRunner> &op, const Val
   // Convert ValuePtr to c++ scalar
   OpRunner::InferOpOutput(op, x_tensor_list, weight_tensor_list, bias_tensor_list, scale_tensor_list,
                           offset_tensor_list, antiquant_scale_tensor_list, antiquant_offset_tensor_list,
-                          group_list_tensor, split_item, group_type);
+                          group_list_tensor, split_item, group_type, transpose_a, transpose_b);
 
   std::vector<BaseTensorPtr> x_tensor_list_vector = ConvertValueTupleToVector<BaseTensorPtr>(x_tensor_list);
   std::vector<BaseTensorPtr> weight_tensor_list_vector = ConvertValueTupleToVector<BaseTensorPtr>(weight_tensor_list);
