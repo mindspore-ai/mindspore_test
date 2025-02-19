@@ -253,7 +253,9 @@ else()
 endif()
 
 if(ENABLE_D OR ENABLE_ACL)
-    target_link_libraries(_c_expression PRIVATE -Wl,--no-whole-archive mindspore_ge_backend)
+    target_link_libraries(_c_expression PRIVATE -Wl,--no-whole-archive mindspore_ge_backend
+        mindspore_ascend_res_manager)
+    target_link_libraries(mindspore_backend PRIVATE mindspore_ascend_res_manager)
 endif()
 
 

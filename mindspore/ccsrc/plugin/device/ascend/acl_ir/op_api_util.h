@@ -23,8 +23,8 @@
 #include "acl/acl_rt.h"
 #include "hccl/hccl.h"
 #include "acl/acl_op_compiler.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
-
+#include "kernel/kernel.h"
+#include "ir/anf.h"
 namespace mindspore::device::ascend {
 typedef enum : int8_t {
   KEEP_DTYPE = 0,

@@ -30,8 +30,7 @@
 #include "acl/acl_base.h"
 #include "ir/tensor.h"
 #include "plugin/device/ascend/acl_ir/acl_convert.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
-#include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
+#include "include/backend/device_address.h"
 #include "plugin/device/ascend/acl_ir/acl_helper.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 

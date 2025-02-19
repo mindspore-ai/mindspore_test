@@ -19,9 +19,10 @@
 
 #include <memory>
 #include "plugin/res_manager/ascend/op_adapter/op_adapter.h"
+#include "plugin/res_manager/ascend/visible.h"
 
 namespace mindspore::device::ascend {
-class OpAdapterDesc {
+class ASCEND_RES_MANAGER_EXPORT OpAdapterDesc {
  public:
   OpAdapterDesc() : train_(nullptr), infer_(nullptr) {}
 

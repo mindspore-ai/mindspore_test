@@ -23,17 +23,12 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_mdl_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
 
 namespace mindspore {
 namespace datadump {
 class AclDataDumper : public DataDumper {
  public:
   void Initialize() override {
-    // NOTE: function `aclmdlInitDump` must be called after `aclInit` to take effect, MindSpore never call `aclInit`
-    // before, so here call it once
-    mindspore::device::ascend::InitializeAcl();
-
     if (CALL_ASCEND_API(aclmdlInitDump) != ACL_ERROR_NONE) {
       MS_LOG(INFO) << "Call aclmdlInitDump failed, acl data dump function will be unusable.";
     }

@@ -30,7 +30,6 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_compiler_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_precision_conf.h"
-#include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/collective/dummy_ascend_collective_comm_lib.h"
 
@@ -136,15 +135,6 @@ void OpApiUtil::GetValidKernelBuildInfo(const AnfNodePtr &node, std::vector<std:
 
   input_reshape_types->assign(input_num, "");
   output_reshape_types->assign(output_num, "");
-
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  if (context_ptr->IsEnableInferBoost() && context_ptr->ascend_soc_version() == "ascend310p" &&
-      (kernel_type == INTERNAL_KERNEL ||
-       IsOneOfPrimitiveCNode(node, {prim::kPrimReshapeExt, prim::kPrimReshape, prim::kPrimGroupedMatmul}))) {
-    kernel::GetValidKernelBuildInfoWithInternalFormat(node, input_formats, output_formats);
-    return;
-  }
 
   std::vector<size_t> special_inputs;
   for (size_t i = 0; i < input_num; ++i) {

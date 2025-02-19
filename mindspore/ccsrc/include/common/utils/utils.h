@@ -375,6 +375,8 @@ COMMON_EXPORT bool IsJit();
 COMMON_EXPORT bool JitCompiling();
 // Return whether it is running in jit compilation.
 COMMON_EXPORT bool JitRunning();
+// Return format mode.
+COMMON_EXPORT std::string GetFormatMode();
 
 // The map between kernel's output and input ref relationship.
 // Key is the output index while the value is input index which will be used as the reference of output.

@@ -20,11 +20,12 @@
 #include <string>
 #include <mutex>
 #include "acl/acl_rt.h"
+#include "plugin/res_manager/ascend/visible.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
-class ErrorManagerAdapter {
+class ASCEND_RES_MANAGER_EXPORT ErrorManagerAdapter {
  public:
   ErrorManagerAdapter() = default;
   ~ErrorManagerAdapter() = default;

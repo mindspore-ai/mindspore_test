@@ -19,6 +19,7 @@
 #include <string>
 #include "ir/anf.h"
 #include "utils/hash_map.h"
+#include "plugin/res_manager/ascend/visible.h"
 
 namespace mindspore::device::ascend {
 class IOFormatMap {
@@ -29,6 +30,6 @@ class IOFormatMap {
   static mindspore::HashMap<std::string, std::string> io_format_map_;
 };
 
-std::string GetOpIOFormat(const AnfNodePtr &node);
+ASCEND_RES_MANAGER_EXPORT std::string GetOpIOFormat(const AnfNodePtr &node);
 }  // namespace mindspore::device::ascend
 #endif  // MINDSPORE_CCSRC_TRANSFORM_GRAPH_IR_IO_FORMAT_MAP_H_

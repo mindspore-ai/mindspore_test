@@ -19,14 +19,15 @@
 
 #include <memory>
 #include <string>
-#include "runtime/hardware/device_context_manager.h"
+#include "include/common/pybind_api/api_register.h"
+#include "plugin/res_manager/ascend/visible.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
 const uint32_t kOpTimeout = 900;
-class OpDebugConf {
+class ASCEND_RES_MANAGER_EXPORT OpDebugConf {
  public:
   OpDebugConf() = default;
   ~OpDebugConf() = default;
@@ -47,7 +48,7 @@ class OpDebugConf {
   std::string debug_option_{};
 };
 
-void RegOpDebugConf(py::module *m);
+ASCEND_RES_MANAGER_EXPORT void RegOpDebugConf(py::module *m);
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore

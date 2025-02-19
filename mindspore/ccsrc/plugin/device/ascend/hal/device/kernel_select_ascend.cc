@@ -471,7 +471,10 @@ void GenerateKernelBuildInfo(const CNodePtr &kernel, const KernelType &kernel_ty
       output_object_type = cnode_output_object_type;
     }
   };
-  if (kernel_type == ACL_KERNEL) {
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+
+  if (kernel_type == KernelType::ACL_KERNEL) {
     device::ascend::AclHelper::GetValidKernelBuildInfo(kernel, &input_formats, &output_formats, &input_reshape_types,
                                                        &output_reshape_types);
     // NOTE: acl default output objecttype is tensor, here are 2 special case:
@@ -482,6 +485,19 @@ void GenerateKernelBuildInfo(const CNodePtr &kernel, const KernelType &kernel_ty
     const auto &info = device::ascend::GeAdapterManager::GetInstance().GetInfo(name, true);
     auto adapter_output_num = info->GetNumStaticOutputsOfMsOpProto();
     process_tuple_output(kernel, true, adapter_output_num);
+  } else if (context_ptr->IsEnableInferBoost() && context_ptr->ascend_soc_version() == "ascend310p" &&
+             (kernel_type == KernelType::INTERNAL_KERNEL ||
+              IsOneOfPrimitiveCNode(kernel, {prim::kPrimReshapeExt, prim::kPrimReshape, prim::kPrimGroupedMatmul}))) {
+    input_formats.clear();
+    output_formats.clear();
+    input_reshape_types.clear();
+    output_reshape_types.clear();
+    input_formats.assign(input_num, kOpFormat_DEFAULT);
+    output_formats.assign(output_num, kOpFormat_DEFAULT);
+    input_reshape_types.assign(input_num, "");
+    output_reshape_types.assign(output_num, "");
+
+    kernel::GetValidKernelBuildInfoWithInternalFormat(kernel, &input_formats, &output_formats);
   } else {
     device::ascend::OpApiUtil::GetValidKernelBuildInfo(kernel, &input_formats, &output_formats, &input_reshape_types,
                                                        &output_reshape_types, kernel_type);

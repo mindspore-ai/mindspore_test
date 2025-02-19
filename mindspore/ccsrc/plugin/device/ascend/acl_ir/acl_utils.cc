@@ -98,10 +98,6 @@ class AclDumper {
       return;
     }
 
-    // NOTE: function `aclmdlInitDump` must be called after `aclInit` to take effect, MindSpore never call `aclInit`
-    // before, so here call it once
-    mindspore::device::ascend::InitializeAcl();
-
     if (CALL_ASCEND_API(aclmdlInitDump) != ACL_ERROR_NONE) {
       acl_dump_config_ = "";
       MS_LOG(WARNING) << "Call aclmdlInitDump failed, , acl data dump function will be unusable.";

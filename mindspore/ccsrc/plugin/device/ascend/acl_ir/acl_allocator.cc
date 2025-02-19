@@ -18,6 +18,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_allocator_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore::device::ascend {
@@ -27,9 +28,12 @@ void *AclAllocator::AllocFunc(void *obj, size_t size) {
   MS_EXCEPTION_IF_NULL(allocator);
   auto stream_ptr = allocator->stream();
   auto stream_id = device::ascend::AscendStreamMng::GetInstance().GetStreamId(stream_ptr);
-  MS_EXCEPTION_IF_NULL(allocator->device_context_);
-  MS_EXCEPTION_IF_NULL(allocator->device_context_->device_res_manager_);
-  auto block = allocator->device_context_->device_res_manager_->AllocateMemory(size, stream_id);
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  auto ascend_res_manager = HalResManager::GetInstance().GetOrCreateResManager({DeviceTargetType::kAscend, device_id});
+  MS_EXCEPTION_IF_NULL(ascend_res_manager);
+  auto block = ascend_res_manager->AllocateMemory(size, stream_id);
   if (block == nullptr) {
     MS_LOG(EXCEPTION) << "Malloc Mem From Mem Pool failed, size:" << size;
   }
@@ -48,11 +52,12 @@ void *AclAllocator::AllocAdviseFunc(void *obj, size_t size, void *addr) {
 
 void AclAllocator::FreeFunc(void *obj, void *block) {
   MS_EXCEPTION_IF_NULL(obj);
-  auto allocator = static_cast<AclAllocator *>(obj);
-  MS_EXCEPTION_IF_NULL(allocator);
-  MS_EXCEPTION_IF_NULL(allocator->device_context_);
-  MS_EXCEPTION_IF_NULL(allocator->device_context_->device_res_manager_);
-  allocator->device_context_->device_res_manager_->FreeMemory(block);
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  auto ascend_res_manager = HalResManager::GetInstance().GetOrCreateResManager({DeviceTargetType::kAscend, device_id});
+  MS_EXCEPTION_IF_NULL(ascend_res_manager);
+  ascend_res_manager->FreeMemory(block);
 }
 
 void *AclAllocator::GetAddrFromBlock(void *block) {

@@ -22,6 +22,7 @@
 
 #include "utils/hash_map.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter.h"
+#include "plugin/res_manager/ascend/visible.h"
 
 namespace mindspore::device::ascend {
 constexpr const char kNameApplyRotaryPosEmb[] = "ApplyRotaryPosEmb";
@@ -571,12 +572,12 @@ constexpr const char kNameBatchMatMulReduceScatterAlltoAll[] = "BatchMatMulReduc
 
 class OpAdapterDesc;
 
-class OpAdapterMap {
+class ASCEND_RES_MANAGER_EXPORT OpAdapterMap {
  public:
   static mindspore::HashMap<std::string, std::shared_ptr<OpAdapterDesc>> &get();
 };
 
-OpAdapterPtr FindAdapter(const std::string &op_name, bool train = false);
-OpAdapterPtr FindAdapter(AnfNodePtr node, bool train = false);
+ASCEND_RES_MANAGER_EXPORT OpAdapterPtr FindAdapter(const std::string &op_name, bool train = false);
+ASCEND_RES_MANAGER_EXPORT OpAdapterPtr FindAdapter(AnfNodePtr node, bool train = false);
 }  // namespace mindspore::device::ascend
 #endif  // MINDSPORE_CCSRC_INCLUDE_TRANSFORM_GRAPH_IR_OP_ADAPTER_MAP_H_

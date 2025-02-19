@@ -20,20 +20,12 @@
 #include <memory>
 #include <string>
 #include "utils/hash_map.h"
-#include "runtime/hardware/device_context_manager.h"
 #include "acl/acl_rt_allocator.h"
 
 namespace mindspore::device::ascend {
 class AclAllocator {
  public:
-  explicit AclAllocator(void *stream) : stream_(stream) {
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    auto device_target = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-    device_context_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_target, device_id});
-    MS_EXCEPTION_IF_NULL(device_context_);
-  }
+  explicit AclAllocator(void *stream) : stream_(stream) {}
   ~AclAllocator() = default;
 
   // Acl register func.
@@ -48,7 +40,6 @@ class AclAllocator {
 
  private:
   void *stream_{nullptr};
-  device::DeviceContext *device_context_{nullptr};
   aclrtAllocatorDesc allocator_desc_{nullptr};
 };
 using AclAllocatorPtr = std::shared_ptr<AclAllocator>;
