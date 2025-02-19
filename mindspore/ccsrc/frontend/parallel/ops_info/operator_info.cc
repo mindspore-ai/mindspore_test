@@ -1597,6 +1597,8 @@ Status OperatorInfo::InitWithTensorLayout(const std::vector<std::shared_ptr<Tens
     MS_LOG(ERROR) << name_ << ": InferVirtualDivOps failed.";
     return FAILED;
   }
+
+  InferReplaceOps();
   return SUCCESS;
 }
 
@@ -1676,6 +1678,8 @@ Status OperatorInfo::InitWithTensorLayoutForNewShape(const std::vector<TensorLay
     MS_LOG(ERROR) << name_ << ": InferVirtualDivOps failed.";
     return FAILED;
   }
+
+  InferReplaceOps();
   return SUCCESS;
 }
 
