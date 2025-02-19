@@ -145,6 +145,8 @@ class AbstractActor : public OpActor<DeviceTensor> {
 
   // Reset state for UCE.
   virtual void ResetState() { MS_LOG(INFO) << "Actor " << GetAID().Name() << " no need to reset state."; }
+  virtual void IncreaseNewRefCounts(OpContext<DeviceTensor> *const context);
+  virtual void IncreaseNewRefCount(const OpData<DeviceTensor> *op_data) const;
 
  protected:
   friend class GraphScheduler;

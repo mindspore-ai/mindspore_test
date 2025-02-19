@@ -342,19 +342,7 @@ void InlineSubGraph(const KernelGraphPtr &graph, const KernelGraphPtr &sub_graph
   // Inline graph boundary: MakeTuple---->Depend---->Tensormove
   // Avoid long link times at runtime
   if (last_call != nullptr) {
-    auto value_node = graph->NewValueNode(MakeValue(std::make_shared<tensor::Tensor>(1)));
-    MS_EXCEPTION_IF_NULL(value_node);
-    auto depend = graph->NewCNode({NewValueNode(prim::kPrimDepend), value_node, out});
-    MS_EXCEPTION_IF_NULL(depend);
-    depend->set_abstract(value_node->abstract());
-    auto tensor_move =
-      graph->NewCNode({NewValueNode(std::make_shared<Primitive>(prim::kPrimTensorMove->name())), depend});
-    MS_EXCEPTION_IF_NULL(tensor_move);
-    tensor_move->set_abstract(value_node->abstract());
-    common::AnfAlgo::SetNodeAttr(kAttrKernelGraphBoundary, MakeValue(sub_graph->ToString()), tensor_move);
-    // select kernel
-    SelectKernelInfo(graph, tensor_move);
-    (*last_call) = tensor_move;
+    (*last_call) = out;
   }
 }
 
@@ -534,8 +522,6 @@ CNodePtr ProcessSwitchNode(const KernelGraphPtr &graph, const CNodePtr &kernel_c
   reverse(branch_graph_names.begin(), branch_graph_names.end());
   cond_gather_node->AddAttr(kAttrBranchGraphName, std::make_shared<ValueTuple>(branch_graph_names));
   graph->AddConditionGatherSwitchPair(cond_gather_node, cond_switch_node);
-  // Note: Kbk sub graph mode doesn't support 'SwitchInline' feature currently.
-  graph->set_enable_kbk_sub_graph_execute(false);
   MS_LOG(DEBUG) << "Add new condition gather node:" << cond_gather_node->fullname_with_scope()
                 << " and condition switch actor:" << cond_switch_node->fullname_with_scope()
                 << " for graph:" << graph->ToString();

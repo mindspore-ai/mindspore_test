@@ -1261,13 +1261,13 @@ void ControlNodeScheduler::OptimizeDynamicRefCountForEntranceActor(const ActorSe
         if (!super_kernel_actor->enable_kbk_sub_graph_execute()) {
           continue;
         }
-        const auto &shape_depend = super_kernel_actor->input_param_static_use_cnt();
+        const auto &shape_depend = super_kernel_actor->is_input_used();
         if (to_index >= shape_depend.size()) {
           MS_LOG(WARNING) << "Invalid shape depend vector:" << shape_depend << " to index:" << to_index
                           << " from actor:" << control_actor->GetAID() << " to actor:" << to_aid;
           continue;
         }
-        if (shape_depend[to_index] == 0) {
+        if (!shape_depend[to_index]) {
           control_actor->output_need_disable_dynamic_ref_counts_[i] = true;
           MS_LOG(INFO) << "Set invalid dynamic ref count for actor:" << control_actor->GetAID()
                        << " from index:" << from_index << " to actor:" << to_aid << " to index:" << to_index;
@@ -1308,11 +1308,9 @@ void ControlNodeScheduler::Optimize(const ActorSetPtr &actor_set, const GraphCom
     return;
   }
   OptimizeBranchIdArrow(actor_set, graph_compiler_info);
-  if (!common::IsDisableRuntimeConfig(common::kRuntimeControlFlowOptimize)) {
-    OptimizeDynamicRefCountForEntranceActor(actor_set);
-    OptimizeDynamicRefCountForStackActor(actor_set);
-    OptimizeDynamicRefCountForGatherActor(actor_set, graph_compiler_info);
-  }
+  OptimizeDynamicRefCountForEntranceActor(actor_set);
+  OptimizeDynamicRefCountForStackActor(actor_set);
+  OptimizeDynamicRefCountForGatherActor(actor_set, graph_compiler_info);
 }
 
 void ControlNodeScheduler::LinkArrowForControlActor(ControlActorSet *const control_actor_set,

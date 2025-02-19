@@ -983,6 +983,11 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
   for (const auto device_tensor : device_tensors) {
     // Update dynamic shape and size.
     MS_EXCEPTION_IF_NULL(device_tensor);
+    if (graph_parameter_store->GetUserCnt(outer_index, inner_index, device_tensor->GetDeviceType()) == 0) {
+      MS_LOG(DEBUG) << "Skip sync host to device for device tensor:" << device_tensor->PrintInfo()
+                    << " outer index:" << outer_index << " inner index:" << inner_index << " for user count:0.";
+      continue;
+    }
     UpdateDynamicShapeAndSize(tensor, device_tensor, outer_index, inner_index);
     graph_parameter_store->ResetAddrRefCount(outer_index, inner_index, device_tensor->GetDeviceType());
     if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
@@ -992,6 +997,9 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
       continue;
     }
     if (device_tensor->GetSize() == 0) {
+      // The device tensor will not allocate a valid ptr, but it would be send to actor to decrease the ref count,
+      // so the ref count should be add.
+      device_tensor->IncreaseNewRefCount();
       MS_LOG(DEBUG) << from_aid.Name() << " input size is 0, outer index" << outer_index
                     << ", inner index: " << inner_index << ", address: " << device_tensor << ".";
       continue;
@@ -1112,6 +1120,8 @@ DeviceTensorPtr PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size
   if (front_node.first->isa<Parameter>() &&
       common::AnfAlgo::IsParameterWeight(front_node.first->cast<ParameterPtr>())) {
     tensor->set_device_address(device_tensor);
+    device_tensor->set_new_ref_count(SIZE_MAX);
+    MS_LOG(DEBUG) << "Set new ref count to max for device address:" << device_tensor;
   }
   graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
   return device_tensor;
@@ -1154,7 +1164,7 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
         DeviceAddressUtils::CreateKernelTensor(tensor_address, tensor);
       }
       if (tensor_address->GetPtr() == nullptr) {
-        MS_LOG(EXCEPTION) << "Tensor address is not null, but got device ptr null.";
+        MS_LOG(EXCEPTION) << "Tensor address:" << tensor_address << " is not null, but got device ptr null.";
       }
       if (IsNeedSync(tensor)) {
         if (!tensor_address->AsyncHostToDevice(LongToSize(tensor->data().nbytes()), tensor->data_type(),
@@ -1164,6 +1174,8 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
       }
 
       UpdateRefCount(tensor_address.get(), true);
+      tensor_address->set_new_ref_count(SIZE_MAX);
+      MS_LOG(DEBUG) << "Set new ref count to max for device address:" << tensor_address;
       graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
       if (tensor_address == device_tensor) {
         return tensor_address.get();
