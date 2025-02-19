@@ -59,6 +59,10 @@ int AdaptiveMaxPool3DCpuKernelMod::Resize(const std::vector<KernelTensor *> &inp
     return KRET_RESIZE_FAILED;
   }
   auto output_size_shape = inputs[kIndex1]->GetShapeVector();
+  if (CHECK_SHAPE_NULL(input_shape_, kernel_name_, "input") ||
+      CHECK_SHAPE_NULL(output_size_shape, kernel_name_, "output")) {
+    return KRET_RESIZE_FAILED;
+  }
   if (output_size_shape.size() != 1) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', output size dimensions should be equal to 1, but got "
                   << output_size_shape.size() << ".";
