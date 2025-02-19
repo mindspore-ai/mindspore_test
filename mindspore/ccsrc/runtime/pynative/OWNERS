@@ -1,14 +1,7 @@
 approvers:
 - chujinjin #
-- kisnwang
 - hwcaifubi
-- baochong
 - luochao60
-
-reviewers:
-- wangch1009
-- luochao60
-- nomindcarry
 
 options:
     no_parent_owners: true
