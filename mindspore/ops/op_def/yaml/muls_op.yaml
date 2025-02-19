@@ -11,5 +11,3 @@ muls:
     dispatch:
         enable: True
         Ascend: MulsAscend
-
-

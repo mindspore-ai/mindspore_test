@@ -23,6 +23,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <limits>
 #include <functional>
 
 #include "abstract/dshape.h"
@@ -50,6 +51,21 @@
 
 namespace mindspore {
 namespace ops {
+namespace {
+double GetDoubleValueFromScalar(const FP32ImmPtr &scalar) {
+  MS_EXCEPTION_IF_NULL(scalar);
+  constexpr double eps = 1e-6;
+  auto float_value = scalar->value();
+  auto doubel_value = scalar->prim_value();
+  // If double value is default value 0, don't use double value.
+  if (std::abs(doubel_value) > std::numeric_limits<double>::epsilon() && std::abs(float_value - doubel_value) < eps) {
+    MS_LOG(DEBUG) << "Use the real double float value in FP32Imm, which is inherited from python float object.";
+    return doubel_value;
+  }
+  return static_cast<double>(float_value);
+}
+}  // namespace
+
 std::vector<int64_t> CalBroadCastShape(const std::vector<int64_t> &x_shape, const std::vector<int64_t> &y_shape,
                                        const std::string &op_name, const std::string &op_x_name,
                                        const std::string &op_y_name) {
@@ -1066,6 +1082,16 @@ size_t CalOutputSize(const std::vector<int64_t> &output_shape, const size_t &typ
   }
   output_size *= type_size;
   return output_size;
+}
+
+ScalarPtr FetchRealScalar(const ScalarPtr &scalar) {
+  MS_EXCEPTION_IF_NULL(scalar);
+  auto real_scalar = scalar;
+  if (scalar->isa<FP32Imm>()) {
+    auto fp32imm_ptr = scalar->cast<FP32ImmPtr>();
+    real_scalar = std::make_shared<FP64Imm>(GetDoubleValueFromScalar(fp32imm_ptr));
+  }
+  return real_scalar;
 }
 
 ValueTuplePtr ConvertShapeVectorToValueTuple(const ShapeVector &shape_vector) {

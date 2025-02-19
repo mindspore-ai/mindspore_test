@@ -12,3 +12,4 @@ divs:
         disable: False
     dispatch:
         enable: True
+        Ascend: DivsAscend

@@ -16,3 +16,4 @@ add_scalar:
     name: AddScalar
   dispatch:
     enable: True
+    Ascend: AddScalarAscend
