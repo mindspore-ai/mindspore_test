@@ -806,7 +806,7 @@ bool AscendDeviceAddress::AsyncDeviceToDevice(const ShapeVector & /* shape */, s
   bool ret = MemcpyAsync(GetDevicePtr(), src_ptr, size, static_cast<int32_t>(ACL_MEMCPY_DEVICE_TO_DEVICE),
                          AscendStreamMng::GetInstance().default_stream());
   if (!ret) {
-    MS_LOG(ERROR) << "MemcpyAsync failed!";
+    MS_LOG(ERROR) << "MemcpyAsync failed, dst device address:" << PrintInfo();
     return false;
   }
   return ret;
@@ -963,7 +963,9 @@ void AscendDeviceAddress::CopyDeviceToHost(void *dst, uint64_t size) const {
     }
     SyncMemory(dst, hete_info->host_ptr_, size, ACL_MEMCPY_HOST_TO_HOST);
   } else {
-    MS_EXCEPTION_IF_NULL(GetDevicePtr());
+    if (GetDevicePtr() == nullptr) {
+      MS_LOG(EXCEPTION) << "Invalid device ptr for device address:" << this;
+    }
     SyncMemory(dst, GetDevicePtr(), size, ACL_MEMCPY_DEVICE_TO_HOST);
   }
 }

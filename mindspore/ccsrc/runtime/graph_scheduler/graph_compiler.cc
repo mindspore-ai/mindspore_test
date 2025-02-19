@@ -82,6 +82,10 @@ void SetSummaryNodesRefCount(const KernelGraph *graph) {
     auto device_address = AnfAlgo::GetMutableOutputAddr(node, index, false);
     MS_EXCEPTION_IF_NULL(device_address);
     device_address->set_original_ref_count(SIZE_MAX);
+    MS_LOG(DEBUG) << "Set new ref count to max for summary node:" << node->fullname_with_scope()
+                  << " debug string:" << node->DebugString() << " output index:" << index
+                  << " device address:" << device_address;
+    device_address->set_new_ref_count(SIZE_MAX);
     device_address->ResetRefCount();
   }
 }
@@ -229,6 +233,14 @@ void OptimizeNopNode(KernelGraph *graph) {
     MS_LOG(INFO) << "The reference relation of nopnode " << ref_node->fullname_with_scope() << ", index: " << 0
                  << " to input " << origin_pair.first->fullname_with_scope() << ", index: " << origin_pair.second;
     graph->AddRefCorrespondPairs(std::make_pair(ref_node, 0), origin_pair);
+    if (ref_node->kernel_info() != nullptr) {
+      auto kernel_info = dynamic_cast<KernelInfo *>(ref_node->kernel_info());
+      MS_EXCEPTION_IF_NULL(kernel_info);
+      kernel_info->AddRefMap(0, origin_pair.second);
+      MS_LOG(DEBUG) << "Add ref pair: [0, " << origin_pair.second << "] for node:" << ref_node->fullname_with_scope();
+    } else {
+      MS_LOG(DEBUG) << "No kernel info for nopnode:" << ref_node->fullname_with_scope();
+    }
   }
 }
 

@@ -266,6 +266,10 @@ class BACKEND_EXPORT GraphParameterStore {
     return parameter_device_tensors_;
   }
 
+  const std::vector<std::vector<std::pair<DeviceTensorPtr, size_t>>> &GetAllHeter() const {
+    return heter_device_tensors_;
+  }
+
   void FillBuffer(size_t idx, const std::vector<TensorPtr> &tensors);
 
   std::pair<TypePtr, KernelWithIndex> GetReleasePositionInfo(const std::pair<size_t, size_t> &position,

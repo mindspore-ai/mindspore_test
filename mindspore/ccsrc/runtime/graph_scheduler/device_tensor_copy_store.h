@@ -41,57 +41,82 @@ class DeviceTensorCopyStore {
   void Insert(DeviceTensor *const key, DeviceTensor *const value) {
     MS_EXCEPTION_IF_NULL(key);
     MS_EXCEPTION_IF_NULL(value);
+    if (key->pointer_ref_count() == nullptr || value->pointer_ref_count() == nullptr ||
+        key->pointer_ref_count() == value->pointer_ref_count()) {
+      return;
+    }
     std::unique_lock<std::shared_mutex> lock(map_mutex_);
-    auto key_iter = copy_device_tensors_.find(key);
-    auto value_iter = copy_device_tensors_.find(value);
+    auto key_iter = copy_device_tensors_.find(key->pointer_ref_count());
+    auto value_iter = copy_device_tensors_.find(value->pointer_ref_count());
     if (key_iter == copy_device_tensors_.end() && value_iter == copy_device_tensors_.end()) {
       auto container = std::make_shared<std::set<DeviceTensor *>>();
       container->emplace(key);
       container->emplace(value);
-      copy_device_tensors_[key] = container;
-      copy_device_tensors_[value] = container;
+      copy_device_tensors_[key->pointer_ref_count()] = container;
+      copy_device_tensors_[value->pointer_ref_count()] = container;
     } else if (key_iter != copy_device_tensors_.end() && value_iter == copy_device_tensors_.end()) {
       MS_EXCEPTION_IF_NULL(key_iter->second);
       key_iter->second->emplace(value);
-      auto total_tensors = copy_device_tensors_[key];
-      copy_device_tensors_[value] = total_tensors;
+      auto total_tensors = copy_device_tensors_[key->pointer_ref_count()];
+      copy_device_tensors_[value->pointer_ref_count()] = total_tensors;
     } else if (key_iter == copy_device_tensors_.end() && value_iter != copy_device_tensors_.end()) {
       MS_EXCEPTION_IF_NULL(value_iter->second);
       value_iter->second->emplace(key);
-      auto total_tensors = copy_device_tensors_[value];
-      copy_device_tensors_[key] = total_tensors;
+      auto total_tensors = copy_device_tensors_[value->pointer_ref_count()];
+      copy_device_tensors_[key->pointer_ref_count()] = total_tensors;
     } else if (key_iter->second != value_iter->second) {
       MS_EXCEPTION_IF_NULL(key_iter->second);
       MS_EXCEPTION_IF_NULL(value_iter->second);
       for (const auto &sub_value : *(value_iter->second)) {
         key_iter->second->emplace(sub_value);
-        copy_device_tensors_[sub_value] = key_iter->second;
+        copy_device_tensors_[sub_value->pointer_ref_count()] = key_iter->second;
       }
     }
 
-    for (const auto &pair : copy_device_tensors_) {
-      if (pair.second == nullptr) {
-        MS_LOG(WARNING) << "Invalid copy store key:" << pair.first;
-        continue;
-      }
-      for (const auto &value : *(pair.second)) {
-        MS_LOG(DEBUG) << "After insert print copy store:" << this << " print key:" << pair.first << " value:" << value;
+    if (IS_OUTPUT_ON(mindspore::kDebug)) {
+      for (const auto &pair : copy_device_tensors_) {
+        if (pair.second == nullptr) {
+          MS_LOG(WARNING) << "Invalid copy store key pointer ref count:" << pair.first;
+          continue;
+        }
+        for (const auto &value : *(pair.second)) {
+          MS_LOG(DEBUG) << "After insert print copy store:" << this << " print key pointer ref count:" << pair.first
+                        << " value device address:" << value
+                        << " value pointer ref count:" << (value == nullptr ? nullptr : value->pointer_ref_count());
+        }
       }
     }
   }
 
-  std::set<DeviceTensor *> Fetch(DeviceTensor *const key) const {
+  std::shared_ptr<std::set<DeviceTensor *>> Fetch(DeviceTensor *const key) const {
     MS_EXCEPTION_IF_NULL(key);
     std::shared_lock<std::shared_mutex> lock(map_mutex_);
-    const auto &iter = copy_device_tensors_.find(key);
+    const auto &iter = copy_device_tensors_.find(key->pointer_ref_count());
     if (iter != copy_device_tensors_.end() && iter->second != nullptr) {
-      return *(iter->second);
+      return iter->second;
     } else {
-      return {};
+      return nullptr;
     }
   }
 
   void Clear() { copy_device_tensors_.clear(); }
+
+  void Clear(DeviceTensor *const addr) {
+    std::shared_lock<std::shared_mutex> lock(map_mutex_);
+    if (copy_device_tensors_.find(addr->pointer_ref_count()) == copy_device_tensors_.end()) {
+      return;
+    }
+    copy_device_tensors_[addr->pointer_ref_count()]->erase(addr);
+    copy_device_tensors_.erase(addr->pointer_ref_count());
+  }
+
+  void Replace(DeviceTensor *const old_addr, DeviceTensor *const new_addr) {
+    if (copy_device_tensors_.find(old_addr->pointer_ref_count()) == copy_device_tensors_.end()) {
+      return;
+    }
+    Insert(old_addr, new_addr);
+    Clear(old_addr);
+  }
 
  private:
   DeviceTensorCopyStore() = default;
@@ -101,7 +126,7 @@ class DeviceTensorCopyStore {
   // The data storage of device tensor which need be back refreshed dynamically.
   // It is created and removed dynamically in the running.
   // Key is the dest device tensor, value is the source device tensors which provide copy data to dest device tensor.
-  mindspore::HashMap<DeviceTensor *, std::shared_ptr<std::set<DeviceTensor *>>> copy_device_tensors_;
+  mindspore::HashMap<PointerRefCountPtr, std::shared_ptr<std::set<DeviceTensor *>>> copy_device_tensors_;
   // Read/Write lock for map.
   mutable std::shared_mutex map_mutex_;
 };

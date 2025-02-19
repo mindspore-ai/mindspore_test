@@ -93,6 +93,7 @@ bool MemoryManagerActor::AllocateContinuousMemory(const DeviceTensor *device_ten
       const auto &device_address = (*(continuous_device_addresses))[i].lock();
       device_address->set_ptr(device_addresses[i]);
       device_address->set_from_mem_pool(true);
+      device_address->IncreaseNewRefCount();
       if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
         device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(),
                                                        memory::mem_pool::MemType::kContinuousMemory,
@@ -390,7 +391,6 @@ void MemoryManagerActor::FreeSomasMemory(SomasInfo *const somas_info, const Devi
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), memory::mem_pool::MemType::kSomasOutput,
                                                    output_address->GetSize(), output_address);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, output_address, output_address->GetPtr());
-    FreeMemoryByRefCount(output_address, device_context, from_aid.Name());
   }
 
   PROFILER_END(start_time, ProfilerModule::kRuntime, ProfilerEvent::kMemoryFree, from_aid.Name(), false);
@@ -407,26 +407,17 @@ void MemoryManagerActor::FreeMemoryByRefCount(DeviceTensor *const device_tensor,
   if (device_tensor == nullptr) {
     return;
   }
-  if (device_tensor->original_ref_count() != SIZE_MAX) {
-    // The static reference count is decremented to zero to free memory, and reset to the original count.
-    size_t ref_count = device_tensor->DecreaseRefCount();
-    if (ref_count == 0) {
-      device_tensor->ResetRefCount();
-      device_tensor->ClearUserData();
-      if (device_tensor->GetPtr() != nullptr) {
-        auto held_by_nodes = device_tensor->held_by_nodes();
-        if (held_by_nodes.empty()) {
-          FreeMemoryByDeviceContext(device_tensor, device_context);
-        } else {
-          FreeMemoryByValueNode(held_by_nodes, device_tensor);
-        }
-      }
+  if (device_tensor->new_ref_count() != SIZE_MAX) {
+    if (device_tensor->new_ref_count() == 0) {
+      MS_LOG(EXCEPTION) << "Invalid new ref count:0 for decrease for device address:" << device_tensor
+                        << " actor:" << op_name;
     }
-  } else if (device_tensor->dynamic_ref_count() != INT32_MAX) {
-    // The dynamic reference count is decremented to zero to free memory.
-    if ((device_tensor->DecreaseDynamicRefCount(op_name) == 0) && device_tensor->IsPtrValid()) {
+
+    MS_LOG(DEBUG) << "Op:" << op_name << " decrease new ref count for:" << device_tensor->PrintInfo();
+    if ((device_tensor->DecreaseNewRefCount() == 0) && device_tensor->IsPtrValid()) {
       device_tensor->ClearUserData();
-      MS_LOG(DEBUG) << "Free memory by the dynamic reference count, device address" << device_tensor->GetPtr() << ".";
+      MS_LOG(DEBUG) << "Op:" << op_name
+                    << " free memory by the new reference count, device address:" << device_tensor->GetPtr() << ".";
       if (device_tensor->deleter() != nullptr) {
         MS_LOG(DEBUG) << "Free ptr:" << device_tensor->GetPtr() << " for device address:" << device_tensor;
         device_tensor->deleter()(static_cast<uint8_t *>(device_tensor->GetMutablePtr()));
@@ -434,7 +425,12 @@ void MemoryManagerActor::FreeMemoryByRefCount(DeviceTensor *const device_tensor,
         device_tensor->set_ptr(nullptr);
         return;
       }
-      FreeMemoryByDeviceContext(device_tensor, device_context);
+      auto held_by_nodes = device_tensor->held_by_nodes();
+      if (held_by_nodes.empty()) {
+        FreeMemoryByDeviceContext(device_tensor, device_context);
+      } else {
+        FreeMemoryByValueNode(held_by_nodes, device_tensor);
+      }
     }
   }
 }
