@@ -5,7 +5,7 @@ mindspore.Tensor.eq
 
     逐元素比较两个输入Tensor是否相等。
 
-    第二个参数可以是一个shape可以广播成第一个参数的Number或Tensor，反之亦然。
+    第二个参数可以是一个shape，也可以广播成第一个参数的Number或Tensor，反之亦然。
 
     .. math::
         out_{i} =\begin{cases}
