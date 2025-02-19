@@ -20,7 +20,46 @@ from tests.mark_utils import arg_mark
 
 import mindspore as ms
 from mindspore import Tensor, context
-from mindspore import mint
+from mindspore import mint, nn
+
+
+class DivModsNetTensorTensor(nn.Cell):
+    def __init__(self):
+        super(DivModsNetTensorTensor, self).__init__()
+        self.x = Tensor([2, -3, 2.4, 4], dtype=ms.float16)
+        self.y = Tensor([1, 2, 2, 4], dtype=ms.float16)
+
+    def construct(self):
+        return mint.div(self.x, self.y, rounding_mode='trunc')
+
+class DivModsNetTensorTensor2(nn.Cell):
+    def __init__(self):
+        super(DivModsNetTensorTensor2, self).__init__()
+        self.x = Tensor([2, -3, 2.4, 4], dtype=ms.float16)
+        self.y = Tensor([1, 2, 2, 4], dtype=ms.float16)
+
+    def construct(self):
+        return mint.div(self.x, self.y, rounding_mode='floor')
+
+
+class DivModsNetTensorScalar(nn.Cell):
+    def __init__(self):
+        super(DivModsNetTensorScalar, self).__init__()
+        self.x = Tensor([2, -3, 2.4, 4], dtype=ms.float16)
+        self.y = 2
+
+    def construct(self):
+        return mint.div(self.x, self.y, rounding_mode='trunc')
+
+
+class DivModsNetTensorScalar2(nn.Cell):
+    def __init__(self):
+        super(DivModsNetTensorScalar2, self).__init__()
+        self.x = Tensor([2, -3, 2.4, 4], dtype=ms.float16)
+        self.y = 2
+
+    def construct(self):
+        return mint.div(self.x, self.y, rounding_mode='floor')
 
 
 @test_utils.run_with_cell
@@ -67,6 +106,33 @@ def compare_result(actual, expected):
     diff = abs(actual.asnumpy() - expected)
     error = np.ones(shape=expected.shape) * 1.0e-4
     assert np.all(diff < error)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("mode", ["KBK"])
+def test_divmods_infer_value(mode):
+    """
+    Feature: Divmods for infer value
+    Description: test ops divs
+    Expectation: expect correct result.
+    """
+    set_mode(mode)
+
+    net1 = DivModsNetTensorTensor()
+    out1 = net1()
+    np.allclose(out1.asnumpy(), np.array([2, -1, 1, 1]), 0.0001, 0.0001)
+
+    net2 = DivModsNetTensorTensor2()
+    out2 = net2()
+    np.allclose(out2.asnumpy(), np.array([2, -1, 1, 1]), 0.0001, 0.0001)
+
+    net3 = DivModsNetTensorScalar()
+    out3 = net3()
+    np.allclose(out3.asnumpy(), np.array([1, -1, 1, 2]), 0.0001, 0.0001)
+
+    net4 = DivModsNetTensorScalar2()
+    out4 = net4()
+    np.allclose(out4.asnumpy(), np.array([1, -2, 1, 2]), 0.0001, 0.0001)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
