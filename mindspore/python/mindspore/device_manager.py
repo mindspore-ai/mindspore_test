@@ -21,8 +21,23 @@ from mindspore._c_expression import DeviceManagerConf, DeviceContextManager, MSC
 from mindspore._checkparam import args_type_check
 from mindspore.parallel._ps_context import _need_reset_device_target_for_ps
 
-__all__ = ['set_device', 'set_deterministic']
 
+__all__ = ['set_device', 'set_deterministic', 'get_current_device']
+
+class DeviceInfo(tuple):
+    """
+    DeviceInfo class. Store the current device target and the corresponding device id.
+    """
+    def __new__(cls, device_target, device_id):
+        return super().__new__(cls, (device_target, device_id))
+
+    @property
+    def device_target(self):
+        return self[0]
+
+    @property
+    def device_id(self):
+        return self[1]
 
 @args_type_check(device_target=str, device_id=int)
 def set_device(device_target, device_id=None):
@@ -77,6 +92,25 @@ def set_device(device_target, device_id=None):
                            "or before calling 'mindspore.communication.init()'. "
                            "Suggest setting it as early as possible.")
     DeviceManagerConf.get_instance().set_device(device_target, device_id, is_default)
+
+
+def get_current_device():
+    """
+    Get device target and device id in the current running environment.
+
+    Examples:
+        >>> import mindspore as ms
+        >>> ms.set_device("Ascend", 1)
+        >>> ms.get_current_device()
+        ('Ascend', 1)
+        >>> ms.get_current_device().device_target
+        'Ascend'
+        >>> ms.get_current_device().device_id
+        1
+    """
+    device_target = DeviceManagerConf.get_instance().get_device_target()
+    device_id = DeviceManagerConf.get_instance().get_device_id()
+    return DeviceInfo(device_target, device_id)
 
 
 @args_type_check(deterministic=bool)
