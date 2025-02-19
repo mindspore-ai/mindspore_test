@@ -36,7 +36,7 @@ class Recall(EvaluationBase):
         In the multi-label cases, the elements of :math:`y` and :math:`y_{pred}` must be 0 or 1.
 
     Args:
-        eval_type (str): ``'classification'`` or ``'multilabel'`` are supported. Default: ``'classification'`` .
+        eval_type (str): ``'classification'`` or ``'multilabel'`` is supported. Default: ``'classification'`` .
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -87,7 +87,6 @@ class Recall(EvaluationBase):
                 For 'multilabel' evaluation type, `y_pred` and `y` can only be one-hot encoding with
                 values 0 or 1. Indices with 1 indicate positive category. The shape of `y_pred` and `y`
                 are both :math:`(N, C)`.
-
 
         Raises:
             ValueError: If the number of inputs is not 2.

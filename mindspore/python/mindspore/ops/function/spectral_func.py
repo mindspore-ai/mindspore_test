@@ -93,6 +93,8 @@ def bartlett_window(window_length, periodic=True, *, dtype=None):
     window and prepares to be a periodic window with functions. Therefore, if attr `periodic` is true,
     the :math:`N` in formula is :math:`window\_length + 1`.
 
+    The formula is as follows:
+
     .. math::
 
         w[n] = 1 - \left| \frac{2n}{N-1} - 1 \right| = \begin{cases}

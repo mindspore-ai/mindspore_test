@@ -4626,7 +4626,7 @@ def l1_loss(input, target, reduction='mean'):
 
     where :math:`N` is the batch size.
 
-    If `reduction` is ``'mean'`` or ``'sum'`` , then:
+    If `reduction` is set to ``'mean'`` or ``'sum'`` , then:
 
     .. math::
         \ell(x, y) =
