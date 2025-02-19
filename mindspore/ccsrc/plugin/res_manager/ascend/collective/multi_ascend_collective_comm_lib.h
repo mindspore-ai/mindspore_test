@@ -31,6 +31,7 @@
 #include "runtime/collective/communication_group.h"
 #include "plugin/res_manager/ascend/collective/multi_ascend_communication_group.h"
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/dvm_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "utils/dlopen_macro.h"
 
@@ -77,6 +78,8 @@ class EXPORT_WRAPPER MultiAscendCollectiveCommLib : public CollectiveCommunicati
 
   std::unordered_set<std::string> GetLcclEnabledGroups();
 
+  std::unordered_set<std::string> GetDvmCommEnabledGroups();
+
   std::string CommName(const std::string &group_name) override;
 
   bool ResumeHcclComm() override;
@@ -102,7 +105,9 @@ class EXPORT_WRAPPER MultiAscendCollectiveCommLib : public CollectiveCommunicati
  private:
   CollectiveCommunicationLib *ascend_collective_comm_lib_;
   CollectiveCommunicationLib *lowlatency_collective_comm_lib_;
+  CollectiveCommunicationLib *dvm_collective_comm_lib_;
   std::unordered_set<std::string> lccl_enabled_groups;
+  std::unordered_set<std::string> dvm_comm_enabled_groups;
   MultiAscendCollectiveCommLib();
   ~MultiAscendCollectiveCommLib() override = default;
 };

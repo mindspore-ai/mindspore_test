@@ -47,11 +47,13 @@ class MultiAscendCommunicationGroup : public CommunicationGroup {
 #ifdef ENABLE_INTERNAL_KERNELS
   void SetLcclGroup(CommunicationGroupPtr lccl_group) { lccl_group_ = lccl_group; }
 #endif
+  void SetDvmCommGroup(CommunicationGroupPtr dvm_group) { dvm_group_ = dvm_group; }
 
  protected:
   //   MultiRootInfo root_info_;
   CommunicationGroupPtr hccl_group_;
   CommunicationGroupPtr lccl_group_;
+  CommunicationGroupPtr dvm_group_;
 };
 using MultiAscendCommunicationGroupPtr = std::shared_ptr<MultiAscendCommunicationGroup>;
 }  // namespace ascend

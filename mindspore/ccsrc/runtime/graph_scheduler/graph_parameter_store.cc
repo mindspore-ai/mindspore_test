@@ -55,7 +55,7 @@ void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_ind
     device_tensor->ResetRefCount();
     if (user_cnt > 0) {
       // When allocate memory, the ref count would be increase, so it should be decrease here.
-      device_tensor->set_new_ref_count(user_cnt == SIZE_MAX ? SIZE_MAX : user_cnt - 1);
+      device_tensor->IncreaseNewRefCount(user_cnt - 1);
       MS_LOG(DEBUG) << "Parameter store set new ref count:" << user_cnt - 1
                     << " for device address:" << device_tensor->PrintInfo();
     } else {
@@ -73,7 +73,7 @@ void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_ind
     heter_device_tensor->ResetRefCount();
     if (user_cnt > 0) {
       // When allocate memory, the ref count would be increase, so it should be decrease here.
-      heter_device_tensor->set_new_ref_count(user_cnt == SIZE_MAX ? SIZE_MAX : user_cnt - 1);
+      heter_device_tensor->IncreaseNewRefCount(user_cnt - 1);
       MS_LOG(DEBUG) << "Parameter store set new ref count:" << user_cnt - 1
                     << " for device address:" << heter_device_tensor->PrintInfo();
     } else {

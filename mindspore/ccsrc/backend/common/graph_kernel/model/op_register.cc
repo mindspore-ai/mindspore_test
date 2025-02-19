@@ -126,6 +126,9 @@ OP_REGISTER("Conv2D", Conv2dOp);
 OP_REGISTER("TransData", OpaqueOp);
 OP_REGISTER("ElemAny", ElemAnyOp);
 OP_REGISTER("Pool2D", Pool2DOp);
+OP_REGISTER("AllReduce", OpaqueOp);
+OP_REGISTER("AllGather", OpaqueOp);
+OP_REGISTER("ReduceScatter", OpaqueOp);
 // virtual ops
 OP_REGISTER("Assign", VirtualOp);
 OP_REGISTER("TupleGetItem", TupleGetItemOp);
