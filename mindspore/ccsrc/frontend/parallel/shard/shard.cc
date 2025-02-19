@@ -288,6 +288,80 @@ static void CheckInputStrategy(const std::vector<std::vector<int64_t>> &input_st
   }
 }
 
+static AnfNodePtr FindCellLastNode(const FuncGraphPtr &func_graph) {
+  auto ret = func_graph->get_return();
+  auto input_ret = ret->input(1);
+  MS_EXCEPTION_IF_NULL(input_ret);
+  auto cnode_input_ret = input_ret->cast<CNodePtr>();
+  auto filter_func = [&](const CNodePtr &cnode) {
+    bool filter = IsPrimitiveCNode(cnode, prim::kPrimDepend);
+    return std::make_pair(filter, 1);
+  };
+  auto real_input = GetInputNodeWithFilter(cnode_input_ret, filter_func);
+  MS_EXCEPTION_IF_NULL(real_input);
+  auto cnode_real_input = real_input->cast<CNodePtr>();
+  if (utils::isa<CNodePtr>(cnode_real_input)) {
+    auto input0 = cnode_real_input->input(0);
+    auto input0_cnode = input0->cast<CNodePtr>();
+    if (input0_cnode != nullptr && input0_cnode->size() > 1) {
+      auto input1 = input0_cnode->input(1);
+      if (AnfAlgo::NodeValueIsFuncGraph(input1)) {
+        return nullptr;
+      }
+    }
+    return cnode_real_input;
+  }
+  return nullptr;
+}
+
+static void SetOutputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &out_strategy, const int64_t device_num) {
+  auto out_strategy_tuple = out_strategy->cast<ValueNodePtr>();
+  bool need_default_strategy = false;
+  size_t out_strategy_size = 0;
+  PreCheckStrategy(out_strategy_tuple, &need_default_strategy, &out_strategy_size);
+
+  if (out_strategy_size != 1) {
+    MS_LOG_WITH_NODE(EXCEPTION, out_strategy) << "Numbers of out strategy should be 1.";
+  }
+
+  // Get strategy in ValueTuple.
+  std::vector<ValuePtr> layout_value_vector;
+  auto &out_strategy_value = out_strategy_tuple->value();
+  if (!out_strategy_value->isa<ValueTuple>()) {
+    MS_LOG_WITH_NODE(EXCEPTION, out_strategy)
+      << "Parse out_strategy to ValueType failed. Please check out_strategy format.";
+  }
+  layout_value_vector = out_strategy_value->cast<ValueTuplePtr>()->value();
+
+  // Check strategy type, it can only be "tuple" or "layout".
+  std::string strategy_type = TUPLE;
+  if (!need_default_strategy) {
+    updateStrategyType(layout_value_vector, &strategy_type);
+  }
+
+  auto cell_last_node = FindCellLastNode(func_graph);
+  if (cell_last_node == nullptr) {
+    MS_LOG(WARNING) << "Out strategy set failed.";
+    return;
+  }
+  // Get strategy either in input_strategy (given tuple) or input_layout (given layout).
+  std::vector<std::vector<int64_t>> output_strategy;
+  std::vector<ValuePtr> output_layout;
+  if (strategy_type == TUPLE) {
+    output_strategy = GetValue<std::vector<std::vector<int64_t>>>(out_strategy_tuple->value());
+    if (!CheckDeviceNum(output_strategy, device_num)) {
+      MS_LOG_WITH_NODE(EXCEPTION, out_strategy) << "check device number failed";
+    }
+    common::AnfAlgo::SetNodeAttr(parallel::OUT_STRATEGY, out_strategy_value, cell_last_node);
+  }
+  if (strategy_type == LAYOUT) {
+    GetInputLayout(&output_layout, layout_value_vector);
+    auto current_layout = std::make_shared<ValueTuple>(std::vector<ValuePtr>(output_layout));
+    common::AnfAlgo::SetNodeAttr(parallel::OUT_LAYOUT, current_layout, cell_last_node);
+  }
+  common::AnfAlgo::SetNodeAttr(parallel::CELL_SHARD_OP, MakeValue(True), cell_last_node);
+}
+
 static void SetInputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &in_strategy, const int64_t device_num) {
   auto in_strategy_tuple = in_strategy->cast<ValueNodePtr>();
   bool need_default_strategy = false;
@@ -472,6 +546,7 @@ static bool SetStrategyForShard(const FuncGraphPtr &root, const std::vector<AnfN
                                 const int64_t device_num) {
   constexpr size_t kShardFnIndex = 1;
   constexpr size_t kShardInStrategyIndex = 2;
+  constexpr size_t kShardOutStrategyIndex = 3;
   auto set_success = false;
   auto execution_mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE);
   for (auto &node : all_nodes) {
@@ -482,6 +557,7 @@ static bool SetStrategyForShard(const FuncGraphPtr &root, const std::vector<AnfN
       auto cnode = node->cast<CNodePtr>();
       auto vnode = cnode->input(kShardFnIndex)->cast<ValueNodePtr>();
       auto in_strategy = cnode->input(kShardInStrategyIndex);
+      auto out_strategy = cnode->input(kShardOutStrategyIndex);
       ScopeGuard scope_guard(vnode->scope());
       auto func_graph = GetValueNode<FuncGraphPtr>(vnode);
       MS_EXCEPTION_IF_NULL(func_graph);
@@ -493,12 +569,14 @@ static bool SetStrategyForShard(const FuncGraphPtr &root, const std::vector<AnfN
                                            << "PyNative mode currently, | FuncGraph: " << func_graph->ToString();
       }
       // get input nodes
-      std::vector<AnfNodePtr> input_nodes;
-      GetInputNodes(func_graph, &input_nodes);
       if (HasNestedMetaFg(func_graph)) {
         return set_success;
       }
       SetInputLayout(func_graph, in_strategy, device_num);
+      auto output_value = out_strategy->cast<ValueNodePtr>()->value();
+      if (!output_value->isa<None>()) {
+        SetOutputLayout(func_graph, out_strategy, device_num);
+      }
       func_graph->set_flag(kSharded, true);
       set_success = true;
     }

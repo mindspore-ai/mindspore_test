@@ -368,12 +368,7 @@ void SetLayoutToOperator(const OperatorInfoPtr &operator_info, const mindspore::
   in_strategy_ptr = NewStrategy(0, in_strategy);
 
   if (OutLayoutFound(attrs)) {
-    Strategies out_strategy;
-    (void)std::transform(out_tensor_layouts.begin(), out_tensor_layouts.end(), std::back_inserter(out_strategy),
-                         [](const auto &layout) { return layout->get_out_layout_strategy(); });
-    MS_LOG(INFO) << "Converted strategies from out_tensor_layouts: " << out_strategy;
-    out_strategy_ptr = NewStrategy(0, out_strategy);
-    operator_info->set_out_strategy(out_strategy_ptr);
+    out_strategy_ptr = operator_info->out_strategy();
   }
   // Set cost for this configured strategy
   if (operator_info->SetCostUnderLayout(in_strategy_ptr, out_strategy_ptr, in_tensor_layouts, out_tensor_layouts) !=
@@ -382,6 +377,28 @@ void SetLayoutToOperator(const OperatorInfoPtr &operator_info, const mindspore::
   }
   (void)configured_stra_ops_.emplace(operator_info, in_strategy_ptr);
   operator_info->set_config_by_layout(true);
+}
+
+void SetOutLayoutToOperater(const OperatorInfoPtr &operator_info,
+                            const mindspore::HashMap<std::string, ValuePtr> attrs) {
+  auto cnode = operator_info->cnode();
+  auto is_new_shape_base_node = IsSupportNewShapeBaseNode(cnode);
+  if (is_new_shape_base_node) {
+    return;
+  }
+  std::vector<std::shared_ptr<TensorLayout>> in_tensor_layouts;
+  std::vector<std::shared_ptr<TensorLayout>> out_tensor_layouts;
+  if (ExtractUserConfigLayout(attrs, operator_info->inputs_shape(), operator_info->outputs_shape(), &in_tensor_layouts,
+                              &out_tensor_layouts) != SUCCESS) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure:operator " << operator_info->name()
+                                       << " extract configured layout failed";
+  }
+  Strategies out_strategy;
+  (void)std::transform(out_tensor_layouts.begin(), out_tensor_layouts.end(), std::back_inserter(out_strategy),
+                       [](const auto &layout) { return layout->get_out_layout_strategy(); });
+  MS_LOG(INFO) << "Converted strategies from out_tensor_layouts: " << out_strategy;
+  StrategyPtr out_strategy_ptr = NewStrategy(0, out_strategy);
+  operator_info->set_out_strategy(out_strategy_ptr);
 }
 
 void SetOutStrategyToOperator(const OperatorInfoPtr &operator_info, mindspore::HashMap<std::string, ValuePtr> attrs) {
@@ -424,6 +441,36 @@ void SetStrategyToOperator(const OperatorInfoPtr &operator_info, const Primitive
   (void)configured_stra_ops_.emplace(operator_info, strategyPtr);
 }
 
+OperatorInfoPtr SetStrategiesToOperator(const PrimitivePtr &prim, const OperatorInfoPtr &operator_info,
+                                        const CNodePtr &cnode, bool is_last_nodes, StrategyMap *stra_map) {
+  // key of strategy map
+  std::string strategy_key_name;
+  auto param_names = NodeParameterName(cnode, -1, 0);
+  if (!param_names.empty()) {
+    strategy_key_name = prim->name() + "_" + param_names[0].first;
+  }
+  bool load_strategy_from_ckpt =
+    StrategyCheckpoint::GetInstance().LoadCheckPointOn() && stra_map->find(strategy_key_name) != stra_map->end();
+  auto attrs = prim->attrs();
+  // If the user input layout (mindspore.Layout instance), convert layout to strategy, then set to the operator_info.
+  if (OutLayoutFound(attrs)) {
+    SetOutLayoutToOperater(operator_info, attrs);
+  }
+  if (LayoutFound(attrs)) {
+    SetLayoutToOperator(operator_info, attrs);
+    return operator_info;
+  }
+  // If the user input strategy (tuple-like), set the strategy to the operator_info.
+  if (OutStrategyFound(attrs)) {
+    SetOutStrategyToOperator(operator_info, attrs);
+  }
+  if ((StrategyFound(attrs) && prim->name() != CAST) || load_strategy_from_ckpt) {
+    SetStrategyToOperator(operator_info, prim, attrs, is_last_nodes, stra_map, strategy_key_name);
+    return operator_info;
+  }
+  return nullptr;
+}
+
 void ApplyApproximationForNode(const OperatorInfoPtr &operator_info) {
   auto approximation = CostModelContext::GetInstance()->dp_algo_enable_approxi();
   if (approximation) {
@@ -452,7 +499,9 @@ bool GenerateStrategiesByOperatorInfoPtr(const OperatorInfoPtr &operator_info) {
     operator_info->addAttr(IN_STRATEGY, attrs[GEN_STRATEGY]);  // for d-rec
   } else {
     MS_LOG(INFO) << "auto-searching strategy...";
+    operator_info->LayoutPropagationBegin();
     retGenStra = operator_info->GenerateStrategies(0);
+    operator_info->LayoutPropagationEnd();
   }
   if (retGenStra != SUCCESS) {
     MS_LOG(ERROR) << "Strategy search for Operator " << operator_info->name() << " failed.";
@@ -499,31 +548,14 @@ OperatorInfoPtr CreateTheOperatorInfo(const PrimitivePtr &prim, const CNodePtr &
   operator_info->set_auto_parallel(true);
 
   AddOperatorToIgnoreCandidates(prim, operator_info);
-  // key of strategy map
-  std::string strategy_key_name;
-  auto param_names = NodeParameterName(cnode, -1, 0);
-  if (!param_names.empty()) {
-    strategy_key_name = prim->name() + "_" + param_names[0].first;
-  }
-  bool load_strategy_from_ckpt =
-    StrategyCheckpoint::GetInstance().LoadCheckPointOn() && stra_map->find(strategy_key_name) != stra_map->end();
+
   // If no strategy has been configured for this operator, then candidate strategies are generated for
   // auto-strategy searching; if this primitive is CAST, we ignore the user-specified strategy.
   // if strategy is set to load from checkpoint, it is prefer to load strategy from checkpoint .
-  auto attrs = prim->attrs();
   if (ParallelContext::GetInstance()->strategy_search_mode() != kRecursiveProgramming) {
-    // If the user input layout (mindspore.Layout instance), convert layout to strategy, then set to the operator_info.
-    if (LayoutFound(attrs)) {
-      SetLayoutToOperator(operator_info, attrs);
-      return operator_info;
-    }
-    // If the user input strategy (tuple-like), set the strategy to the operator_info.
-    if (OutStrategyFound(attrs)) {
-      SetOutStrategyToOperator(operator_info, attrs);
-    }
-    if ((StrategyFound(attrs) && prim->name() != CAST) || load_strategy_from_ckpt) {
-      SetStrategyToOperator(operator_info, prim, attrs, is_last_nodes, stra_map, strategy_key_name);
-      return operator_info;
+    auto operator_info_with_strategies = SetStrategiesToOperator(prim, operator_info, cnode, is_last_nodes, stra_map);
+    if (operator_info_with_strategies != nullptr) {
+      return operator_info_with_strategies;
     }
   }
   // Compute split_flag_list_, indicating which input has batch dimension. This is ONLY used for preparation for

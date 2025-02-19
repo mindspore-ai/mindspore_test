@@ -339,6 +339,12 @@ Status MatMul::CheckOutputStrategy(const StrategyPtr &out_strategy) {
   int64_t out_shard_a_or_ab = output_strategy[0];
   int64_t out_shard_c = output_strategy[1];
   if (out_shard_c != in_shard_c) {
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << name_ << ": The input strategy is (" << x_strategy << ", " << w_strategy << ")"
+                      << ", the second dimension of output strategy must be " << in_shard_c << ", but got "
+                      << out_shard_c;
+      return FAILED;
+    }
     MS_LOG(ERROR) << name_ << ": The input strategy is (" << x_strategy << ", " << w_strategy << ")"
                   << ", the second dimension of output strategy must be " << in_shard_c << ", but got " << out_shard_c;
     return FAILED;
@@ -349,6 +355,12 @@ Status MatMul::CheckOutputStrategy(const StrategyPtr &out_strategy) {
   } else if (out_shard_a_or_ab == in_shard_a * in_shard_b) {
     forward_reduce_scatter_ = true;
   } else {
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << name_ << ": The input strategy is (" << x_strategy << ", " << w_strategy << ")"
+                      << ", the first dimension of output strategy must be " << in_shard_a << " or "
+                      << in_shard_a * in_shard_b << ", but got " << out_shard_a_or_ab;
+      return FAILED;
+    }
     MS_LOG(ERROR) << name_ << ": The input strategy is (" << x_strategy << ", " << w_strategy << ")"
                   << ", the first dimension of output strategy must be " << in_shard_a << " or "
                   << in_shard_a * in_shard_b << ", but got " << out_shard_a_or_ab;
@@ -691,6 +703,10 @@ Status MatMul::CheckOutputLayout() {
                                                  output_extended_tensor_map,
                                                  output_infer_tensor_layout_.tensor_shape_before().array());
   if (reduce_scatter_out_layout != out_layout) {
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << name_ << ": The user configured output layout dose not match the inferred output layout";
+      return FAILED;
+    }
     MS_LOG(ERROR) << "The user configured output layout { device_matrix:"
                   << out_layout.device_arrangement_origin().array() << ", tensor_map:" << out_layout.tensor_map_before()
                   << ", tensor_shape:" << out_layout.tensor_shape_before().array()
