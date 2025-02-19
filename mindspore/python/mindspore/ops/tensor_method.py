@@ -26,9 +26,6 @@ from mindspore.ops.composite.multitype_ops._compile_utils import (
 from mindspore.ops.auto_generate.gen_ops_prim import (
     inplace_scatter_src_op, inplace_scatter_src_reduce_op, inplace_scatter_value_op, inplace_scatter_value_reduce_op
 )
-from mindspore.ops.auto_generate.gen_ops_prim import (
-    floor_div_op, floor_div_scalar_op
-)
 # 1 common import
 
 # 2 common import
@@ -1779,14 +1776,6 @@ def matmul_reduce_scatter(
     For details, please refer to :func:`mindspore.ops.matmul_reduce_scatter`.
     """
     raise NotImplementedError('matmul_reduce_scatter only supports Ascend.')
-
-
-def tensor_floor_div(input, other):
-    return floor_div_op(input, other)
-
-
-def tensor_floor_div_scalar(input, other):
-    return floor_div_scalar_op(input, other)
 
 
 # 1029

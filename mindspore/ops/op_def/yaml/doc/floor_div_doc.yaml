@@ -12,7 +12,7 @@ floor_div:
         out_{i} = \text{floor}( \frac{input_i}{other_i})
 
     where the :math:`floor` indicates the Floor operator, for more details,
-    please refer to the :class:`mindspore.mint.Floor` operator.
+    please refer to the :class:`mindspore.ops.Floor` operator.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
@@ -22,7 +22,7 @@ floor_div:
             a bool or a tensor whose data type is number or bool.
         other (Union[Tensor, Number, bool]): The second input is a number or
             a bool or a tensor whose data type is number or bool.
-
+    
     Returns:
         Tensor, the shape is the same as the one after broadcasting,
         and the data type is the one with higher precision or higher digits among the two inputs.
@@ -35,15 +35,15 @@ floor_div:
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, mint
+        >>> from mindspore import Tensor, ops
         >>> import numpy as np
         >>> input = Tensor(np.array([2, 4, -1]), mindspore.int32)
         >>> other = Tensor(np.array([3, 3, 3]), mindspore.int32)
-        >>> output = mint.floor_divide(input, other)
+        >>> output = ops.floor_divide(input, other)
         >>> print(output)
         [ 0  1 -1]
         >>> input = Tensor(2.0, mindspore.float32)
         >>> other = Tensor(2.0, mindspore.float32)
-        >>> output = mint.floor_divide(input, other)
+        >>> output = ops.floor_divide(input, other)
         >>> print(output)
         1.0

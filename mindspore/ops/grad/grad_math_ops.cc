@@ -2668,8 +2668,6 @@ REG_BPROP_BUILDER("Xdivy").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 
 REG_BPROP_BUILDER("FloorDiv").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
-REG_BPROP_BUILDER("FloorDivScalar").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
-
 REG_BPROP_BUILDER("InplaceFloorDivide").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("InplaceFloorDivides").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
