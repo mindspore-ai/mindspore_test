@@ -224,4 +224,5 @@ def test_flatten_if_with_and():
     stree = SymbolTreeApi.create(net)
     codes = stree.get_code()
     assert codes.count("isinstance_var = isinstance(y, ms.Tensor)") == 1
-    assert codes.count("and_var = (isinstance_var and (y.shape == (2, 2)))") == 1
+    assert codes.count("and_var = (isinstance_var and (y.shape == (2, 2)))") == 1 or \
+           codes.count("and_var = isinstance_var and y.shape == (2, 2)") == 1
