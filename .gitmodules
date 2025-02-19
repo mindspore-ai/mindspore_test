@@ -1,36 +1,47 @@
 [submodule "akg"]
 	path = akg
 	url = https://gitee.com/mindspore/akg.git
+	shallow = true
 [submodule "graphengine"]
 	path = graphengine
 	url = https://gitee.com/mindspore/graphengine.git
+	shallow = true
 [submodule "tests/models"]
 	path = tests/models
 	url = https://gitee.com/mindspore/models.git
+	shallow = true
 [submodule "mindspore/lite/src/litert/kernel/cpu/bolt/bolt"]
 	path = mindspore/lite/src/litert/kernel/cpu/bolt/bolt
 	url = https://gitee.com/mindspore/bolt.git
+	shallow = true
 [submodule "tests/st/networks/mindcv"]
 	path = tests/st/networks/mindcv
 	url = https://gitee.com/mindspore-lab/mindcv.git
+	shallow = true
 [submodule "tests/st/networks/mindocr"]
 	path = tests/st/networks/mindocr
 	url = https://gitee.com/mindspore-lab/mindocr.git
 	branch = overfit
+	shallow = true
 [submodule "tests/st/networks/mindone"]
 	path = tests/st/networks/mindone
 	url = https://gitee.com/mindspore-lab/mindone.git
 	branch = ms2.3
+	shallow = true
 [submodule "tests/st/networks/mindformers"]
 	path = tests/st/networks/mindformers
 	url = https://gitee.com/mindspore/mindformers.git
+	shallow = true
 [submodule "tests/st/networks/golden-stick"]
 	path = tests/st/networks/golden-stick
 	url = https://gitee.com/mindspore/golden-stick.git
+	shallow = true
 [submodule "mstt"]
 	path = mstt
 	url = https://gitee.com/ascend/mstt.git
 	branch = master
+	shallow = true
 [submodule "tests/st/networks/llm_parallel_feature/mindformers"]
 	path = tests/st/networks/llm_parallel_feature/mindformers
 	url = https://gitee.com/mindspore/mindformers.git
+	shallow = true
