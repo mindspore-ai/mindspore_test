@@ -117,15 +117,17 @@ class AscendCommunicationViewer(BaseViewer):
         """
         Dynamic graph scene update step list.
         """
-        step_id_to_time_dict = trace_container.get_step_id_time_dict()
-        for step_id, (start_time, end_time) in step_id_to_time_dict.items():
-            step_dict = {
-                "step_id": step_id,
-                "start_ts": start_time,
-                "end_ts": end_time,
-                "comm_ops": {}
-            }
-            self.step_list.append(step_dict)
+        if trace_container.get_step_id_time_dict():
+            for step_id, (start_time, end_time) in trace_container.get_step_id_time_dict().items():
+                step_dict = {
+                    "step_id": step_id,
+                    "start_ts": start_time,
+                    "end_ts": end_time,
+                    "comm_ops": {}
+                }
+                self.step_list.append(step_dict)
+        else:
+            self._set_default_step_list()
 
     def _save_analyze_data(self):
         """

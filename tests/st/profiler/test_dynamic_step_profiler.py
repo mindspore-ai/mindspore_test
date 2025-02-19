@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """test dynamic step profiler"""
+import glob
 import os
 import tempfile
 import numpy as np
@@ -21,7 +22,7 @@ import pandas as pd
 import mindspore as ms
 import mindspore.profiler as prof
 import mindspore.dataset as ds
-from mindspore.profiler import Profiler, ProfilerLevel
+from mindspore.profiler import Profiler, ProfilerLevel, ProfilerActivity
 from mindspore import Tensor, context, nn
 from mindspore.profiler.profiler_interface import ProfilerInterface
 
@@ -255,6 +256,156 @@ def test_dynamic_step_single_active_py_native_profiler():
             [
                 "*ProfilerStep#6"  # check profiler step
             ],
+            fuzzy_match=True
+        )
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_dynamic_step_npu_py_native_profiler():
+    """
+    Feature: Dynamic Step Profiler
+    Description: This test case verifies that the profiler can correctly profile the network at CPU device.
+    Expectation: The profiler should profile the network without any exceptions and
+    generate the expected profiling data.
+    """
+    step_num = 8
+    with tempfile.TemporaryDirectory(suffix="_step_profiler_cpu") as tmpdir:
+        schedule = ms.profiler.schedule(wait=1, warmup=1, active=1, repeat=1, skip_first=1)
+        net = Net()
+        context.set_context(mode=ms.PYNATIVE_MODE, device_target="Ascend")
+        profiler = Profiler(activities=[ProfilerActivity.NPU],
+                            output_path=tmpdir,
+                            schedule=schedule,
+                            on_trace_ready=prof.tensor_board_trace_handler)
+        for _ in range(step_num):
+            train_net(net)
+            profiler.step()
+        # Check kernel_details.csv
+        kernel_details_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                        f"ASCEND_PROFILER_OUTPUT/kernel_details.csv")[0]
+        FileChecker.assert_csv_no_header(kernel_details_path, "Step ID")
+        FileChecker.check_csv_items(kernel_details_path, {"Name": ["*BiasAdd*", "*MatMul*"]})
+        # Check trace_view.json
+        trace_view_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                    f"ASCEND_PROFILER_OUTPUT/trace_view.json")[0]
+        FileChecker.check_timeline_values(
+            trace_view_path,
+            "name",
+            ["*MatMul*",
+             "*Add*"
+             ],
+            fuzzy_match=True
+        )
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_dynamic_step_cpu_py_native_profiler():
+    """
+    Feature: Dynamic Step Profiler
+    Description: This test case verifies that the profiler can correctly profile the network at CPU device.
+    Expectation: The profiler should profile the network without any exceptions and
+    generate the expected profiling data.
+    """
+    step_num = 8
+    with tempfile.TemporaryDirectory(suffix="_step_profiler_cpu") as tmpdir:
+        schedule = ms.profiler.schedule(wait=1, warmup=1, active=1, repeat=1, skip_first=1)
+        net = Net()
+        context.set_context(mode=ms.PYNATIVE_MODE, device_target="Ascend")
+        profiler = Profiler(activities=[ProfilerActivity.CPU],
+                            output_path=tmpdir,
+                            schedule=schedule,
+                            on_trace_ready=prof.tensor_board_trace_handler)
+        for _ in range(step_num):
+            train_net(net)
+            profiler.step()
+        # Check kernel_details.csv
+        kernel_details_files = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                         f"ASCEND_PROFILER_OUTPUT/kernel_details.csv")
+        assert not kernel_details_files, "kernel_details.csv is exit."
+        # Check trace_view.json
+        trace_view_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                    f"ASCEND_PROFILER_OUTPUT/trace_view.json")[0]
+        FileChecker.check_timeline_values(
+            trace_view_path,
+            "name",
+            ["*ProfilerStep#3"
+             ],
+            fuzzy_match=True
+        )
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_dynamic_step_npu_graph_profiler():
+    """
+    Feature: Dynamic Step Profiler
+    Description: This test case verifies that the profiler can correctly profile the network at CPU device.
+    Expectation: The profiler should profile the network without any exceptions and
+    generate the expected profiling data.
+    """
+    step_num = 8
+    with tempfile.TemporaryDirectory(suffix="_step_profiler_cpu") as tmpdir:
+        schedule = ms.profiler.schedule(wait=1, warmup=1, active=1, repeat=1, skip_first=1)
+        net = Net()
+        context.set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
+        context.set_context(jit_config={"jit_level": "O0"})
+        profiler = Profiler(activities=[ProfilerActivity.NPU],
+                            output_path=tmpdir,
+                            schedule=schedule,
+                            on_trace_ready=prof.tensor_board_trace_handler)
+        for _ in range(step_num):
+            train_net(net)
+            profiler.step()
+        # Check kernel_details.csv
+        kernel_details_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                        f"ASCEND_PROFILER_OUTPUT/kernel_details.csv")[0]
+        FileChecker.assert_csv_no_header(kernel_details_path, "Step ID")
+        FileChecker.check_csv_items(kernel_details_path, {"Name": ["*BiasAdd*", "*MatMul*"]})
+        # Check trace_view.json
+        trace_view_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                    f"ASCEND_PROFILER_OUTPUT/trace_view.json")[0]
+        FileChecker.check_timeline_values(
+            trace_view_path,
+            "name",
+            ["*MatMul*",
+             "*Add*"
+             ],
+            fuzzy_match=True
+        )
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_dynamic_step_cpu_graph_profiler():
+    """
+    Feature: Dynamic Step Profiler
+    Description: This test case verifies that the profiler can correctly profile the network at CPU device.
+    Expectation: The profiler should profile the network without any exceptions and
+    generate the expected profiling data.
+    """
+    step_num = 8
+    with tempfile.TemporaryDirectory(suffix="_step_profiler_cpu") as tmpdir:
+        schedule = ms.profiler.schedule(wait=1, warmup=1, active=1, repeat=1, skip_first=1)
+        net = Net()
+        context.set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
+        context.set_context(jit_config={"jit_level": "O0"})
+        profiler = Profiler(activities=[ProfilerActivity.CPU],
+                            output_path=tmpdir,
+                            schedule=schedule,
+                            on_trace_ready=prof.tensor_board_trace_handler)
+        for _ in range(step_num):
+            train_net(net)
+            profiler.step()
+        # Check kernel_details.csv
+        kernel_details_files = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                         f"ASCEND_PROFILER_OUTPUT/kernel_details.csv")
+        assert not kernel_details_files, "kernel_details.csv is exit."
+        # Check trace_view.json
+        trace_view_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                    f"ASCEND_PROFILER_OUTPUT/trace_view.json")[0]
+        FileChecker.check_timeline_values(
+            trace_view_path,
+            "name",
+            ["*ProfilerStep#3"
+             ],
             fuzzy_match=True
         )
 
