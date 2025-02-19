@@ -21,7 +21,6 @@ import mindspore.nn as nn
 from mindspore import context, ops
 from mindspore.common import Tensor
 from mindspore.common.api import jit
-import mindspore.mint.nn.functional as Func
 from mindspore.common.parameter import Parameter, ParameterTuple
 from mindspore.ops import operations as P
 from mindspore.ops import composite as C
@@ -682,7 +681,7 @@ def test_kwargs_with_no_sens():
     """
     inputs = Tensor([1., 2., 3.])
     kwargs = {"approximate": "tanh"}
-    grad_fn = GradOperation(get_all=True, sens_param=False)(Func.gelu)
+    grad_fn = GradOperation(get_all=True, sens_param=False)(ops.gelu)
     grad_fn(inputs, **kwargs)
 
 
@@ -699,7 +698,7 @@ def test_kwargs_with_sens_not_in_kwargs():
     inputs = Tensor([1., 2., 3.])
     gradiente_inputs = Tensor([1., 2., 3.])
     kwargs = {"approximate": "tanh"}
-    grad_fn = GradOperation(get_all=True, sens_param=True)(Func.gelu)
+    grad_fn = GradOperation(get_all=True, sens_param=True)(ops.gelu)
     grad_fn(inputs, gradiente_inputs, **kwargs)
 
 
@@ -715,7 +714,7 @@ def test_kwargs_with_sens_in_kwargs():
     """
     inputs = Tensor([1., 2., 3.])
     kwargs = {'sens': Tensor([1., 2., 3.]), "approximate": "tanh"}
-    grad_fn = GradOperation(get_all=True, sens_param=True)(Func.gelu)
+    grad_fn = GradOperation(get_all=True, sens_param=True)(ops.gelu)
     grad_fn(inputs, **kwargs)
 
 

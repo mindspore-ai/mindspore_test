@@ -98,7 +98,7 @@ from mindspore.ops.function.nn_func import batch_norm_ext as batch_norm
 # 35
 
 # 36
-from mindspore.ops.functional import gelu
+from mindspore.ops.functional_overload import gelu
 # 37
 
 # 38

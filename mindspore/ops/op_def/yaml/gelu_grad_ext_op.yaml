@@ -1,0 +1,19 @@
+#operator gelu_grad_ext
+gelu_grad_ext:
+    args:
+        grad:
+            dtype: tensor
+        input:
+            dtype: tensor
+        approximate:
+            dtype: int
+            default: "'none'"
+            arg_handler: str_to_enum
+    returns:
+        dinput:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        Ascend: GeluGradExtAscend

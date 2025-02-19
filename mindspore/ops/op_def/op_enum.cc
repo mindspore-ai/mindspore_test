@@ -16,11 +16,14 @@
 #include "mindspore/ops/op_def/op_enum.h"
 
 #include <algorithm>
+#include <cctype>
+#include <string>
 #include <utility>
 
 #include "mindapi/base/types.h"
 #include "utils/check_convert_utils.h"
 #include "mindapi/base/format.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace ops {
@@ -224,6 +227,9 @@ REG_STRING_TO_ENUM_SPECIAL(flip_mode, StrToEnumMap{{"BITFLIP", FlipMode::BITFLIP
 REG_STRING_TO_ENUM_SPECIAL(mode, StrToEnumMap{{"REDUCED", LinalgQrMode::REDUCED},
                                               {"COMPLETE", LinalgQrMode::COMPLETE},
                                               {"R", LinalgQrMode::R}});
+
+// FlipMode
+REG_STRING_TO_ENUM_SPECIAL(approximate, StrToEnumMap{{"NONE", Approximate::NONE}, {"TANH", Approximate::TANH}});
 }  // namespace
 
 int64_t StringToEnumImpl(const std::string &op_name, const std::string &arg_name, const std::string &enum_string) {

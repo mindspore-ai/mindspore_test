@@ -16,6 +16,7 @@
 
 #ifndef MINDSPORE_CORE_OPS_OP_ENUM_H_
 #define MINDSPORE_CORE_OPS_OP_ENUM_H_
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <memory>
@@ -71,6 +72,8 @@ enum ErrorMode : int64_t { CYCLE = 0, SPECIFIC = 1 };
 enum FlipMode : int64_t { BITFLIP = 0, BITFLIP_DESIGNED = 1, MULTIPLY = 2, MULTIPLY_MAX = 3 };
 
 enum LinalgQrMode : int64_t { REDUCED = 0, COMPLETE = 1, R = 2 };
+
+enum Approximate : int64_t { NONE = 0, TANH = 1 };
 }  // namespace ops
 }  // namespace mindspore
 #endif  //  MINDSPORE_CORE_OPS_ENUM_H_

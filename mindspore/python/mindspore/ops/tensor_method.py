@@ -36,7 +36,7 @@ from mindspore.common import dtype as mstype
 from mindspore.common import COOTensor
 
 # 5 common import
-
+from mindspore.ops.function.nn_func import gelu
 # 6 common import
 
 # 7 common import
@@ -1783,3 +1783,6 @@ def matmul_reduce_scatter(
 # 1029
 def tensor_exp_(input):
     return inplace_exp_op(input)
+
+def tensor_gelu(input, *, approximate):
+    return gelu(input, approximate)

@@ -116,7 +116,7 @@ PReLUGrad: 'aclnnPreluBackward'
 # 10
 ArgSort: 'aclnnArgsort'
 # 11
-
+GeluExt: 'aclnnGeluV2'
 # 12
 
 # 13
