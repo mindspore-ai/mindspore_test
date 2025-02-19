@@ -275,7 +275,9 @@ class TupleListSetitemEliminator : public AnfVisitor {
         AbstractBasePtrList abs_list;
         for (size_t i = 1; i < args_.size(); ++i) {
           auto abs = args_[i]->abstract();
-          MS_EXCEPTION_IF_NULL(abs);
+          if (abs == nullptr) {
+            return nullptr;
+          }
           (void)abs_list.emplace_back(abs->Broaden());
         }
         make_tuple->set_abstract(std::make_shared<abstract::AbstractTuple>(abs_list));
