@@ -25,7 +25,7 @@ from mindspore.common.parameter import Parameter
 SHAPE_DIM_ANY = -1
 SHAPE_RANK_ANY = -2
 
-auto_dynamic_shepe_dict = {}
+auto_dynamic_shape_dict = {}
 
 
 class _AutoDynamicShapeManager:
@@ -198,21 +198,18 @@ class _AutoIdentifyDynamicShape:
     """
     Represents a function auto identify dynamic shape.
     """
-    def __init__(self):
+    def __init__(self, auto_dynamic=False):
         self.all_shape_cache = {}
         self.is_sink_mode = False
-        self.is_enable_auto_dynamic_shape = True
+        self.is_enable_auto_dynamic_shape = auto_dynamic or os.getenv('MS_AUTO_DYNAMIC_SHAPE_ENABLE') == '1'
         self.save_cache_number = 3
-        self.enable_auto_identify = os.getenv('MS_AUTO_DYNAMIC_SHAPE_ENABLE')
         self.auto_dynamic_shape_manager = _AutoDynamicShapeManager()
-
 
     def __del__(self):
         self.all_shape_cache = {}
         self.is_sink_mode = False
         self.is_enable_auto_dynamic_shape = True
         self.save_cache_number = 3
-
 
     def _check_input_args_number(self, args_list):
         """check input arg number"""
@@ -221,7 +218,6 @@ class _AutoIdentifyDynamicShape:
             if len(first_real_cache) != len(args_list):
                 return False
         return True
-
 
     def _check_input_tensor_type(self, args_list, cache_list):
         """check input args type"""
@@ -247,7 +243,6 @@ class _AutoIdentifyDynamicShape:
                 return False
         return True
 
-
     def _check_input_number_and_type(self, args_list):
         """check input number and type"""
         res = self._check_input_args_number(args_list)
@@ -261,18 +256,10 @@ class _AutoIdentifyDynamicShape:
                 return False
         return True
 
-
     def _is_enable_auto_dynamic_shape(self, args_list, is_sink_mode):
         """is enable auto identify shape"""
         if not is_sink_mode and not args_list:
             return False
-
-        if not self.enable_auto_identify:
-            self.enable_auto_identify = "0"
-
-        if self.enable_auto_identify == "0":
-            return False
-
         for elem in args_list:
             if elem is None:
                 continue
@@ -283,7 +270,6 @@ class _AutoIdentifyDynamicShape:
             if not is_sink_mode and isinstance(elem, (list, tuple)):
                 return self._is_enable_auto_dynamic_shape(elem, is_sink_mode)
         return True
-
 
     @staticmethod
     def _do_generalize_in_sink(input_arg, cache, input_index, cache_index, cache_type):
@@ -339,8 +325,9 @@ class _AutoIdentifyDynamicShape:
 
     def auto_dynamic_generate_compile_args(self, args_list, is_sink_mode):
         """generate compile args in auto dynamic shape"""
-        if not self._check_input_number_and_type(args_list) or \
-            not self._is_enable_auto_dynamic_shape(args_list, is_sink_mode):
+        if not self.is_enable_auto_dynamic_shape or \
+            not self._is_enable_auto_dynamic_shape(args_list, is_sink_mode) or \
+            not self._check_input_number_and_type(args_list):
             self.is_enable_auto_dynamic_shape = False
             return args_list
         self.is_sink_mode = is_sink_mode
@@ -414,11 +401,12 @@ class _AutoIdentifyDynamicShape:
             return Tensor(shape=shape_tuple, dtype=arg.dtype)
 
         def generalize_sequence(arg, cache, i):
+            if not hasattr(arg, "__ms_mutable__"):
+                return arg, False
             if is_sink_mode:
                 # when is_sink_mode=True, input must be the shape of Tensor.
                 res = self._do_generalize_in_sink(arg, cache, i, index, cache_type)
                 return res
-
             res = self._do_generalize_one_input_shape(arg, cache, cache_type, index, is_sink_mode)
             return res
 
@@ -436,8 +424,12 @@ class _AutoIdentifyDynamicShape:
                 res = generalize_tensor(arg, cache, i)
                 generalize_one_shape.append(res)
             elif isinstance(arg, (tuple, list)) and isinstance(cache, (tuple, list)):
-                res = generalize_sequence(arg, cache, i)
-                generalize_one_shape.append(res)
+                gen_seq_shape, can_generalize = generalize_sequence(arg, cache, i)
+                if not can_generalize:
+                    return input_args, False
+                if isinstance(arg, tuple):
+                    gen_seq_shape = tuple(gen_seq_shape)
+                generalize_one_shape.append(gen_seq_shape)
             elif isinstance(arg, int) and isinstance(cache, int):
                 # when is_sink_mode=False, the input must may be scalar, or the value of list/tuple.
                 # is_sink_mode can not be True
@@ -478,29 +470,30 @@ class _AutoIdentifyDynamicShape:
 _auto_dynamic_shape = _AutoIdentifyDynamicShape()
 
 
-def get_auto_dynamic_shape_args(compile_args, key_id):
+def get_auto_dynamic_shape_args(compile_args, key_id, enable_auto_dynamic=False):
     """get auto dynamic shape args."""
-    if key_id not in auto_dynamic_shepe_dict:
-        auto_dynamic_shepe_dict[key_id] = _AutoIdentifyDynamicShape()
-    compile_args = auto_dynamic_shepe_dict[key_id].auto_dynamic_generate_compile_args(compile_args, False)
+    if key_id not in auto_dynamic_shape_dict:
+        auto_dynamic_shape_dict[key_id] = _AutoIdentifyDynamicShape(enable_auto_dynamic)
+    compile_args = auto_dynamic_shape_dict[key_id].auto_dynamic_generate_compile_args(compile_args, False)
     return compile_args
 
 
 def update_auto_dynamic_shape_phase(compile_args, key_id, phase):
     """update auto dynamic shape phase."""
-    if key_id in auto_dynamic_shepe_dict:
-        auto_dynamic_shepe_dict[key_id].update_phase_and_compile_args(compile_args, phase, False)
+    if key_id in auto_dynamic_shape_dict:
+        auto_dynamic_shape_dict[key_id].update_phase_and_compile_args(compile_args, phase, False)
 
 
-def get_auto_dynamic_shape_args_with_check_input_signature(compile_args, key_id, input_signature):
+def get_auto_dynamic_shape_args_with_check_input_signature(compile_args, key_id, input_signature,
+                                                           enable_auto_dynamic=False):
     """get auto dynamic shape args."""
     if input_signature is None:
-        return get_auto_dynamic_shape_args(compile_args, key_id)
+        return get_auto_dynamic_shape_args(compile_args, key_id, enable_auto_dynamic)
     return compile_args
 
 
 def update_auto_dynamic_shape_phase_with_check_input_signature(compile_args, key_id, phase, input_signature):
     """update auto dynamic shape phase."""
     if input_signature is None:
-        if key_id in auto_dynamic_shepe_dict:
-            auto_dynamic_shepe_dict[key_id].update_phase_and_compile_args(compile_args, phase, False)
+        if key_id in auto_dynamic_shape_dict:
+            auto_dynamic_shape_dict[key_id].update_phase_and_compile_args(compile_args, phase, False)

@@ -24,8 +24,8 @@ class DynamicShapeNet1(nn.Cell):
         self.num = 2
 
     @jit(dynamic=1)
-    def construct(self, x):
-        return self.num * x
+    def construct(self, value):
+        return self.num * value
 
 x = Tensor(np.random.rand(2, 3), mstype.float32)
 y = Tensor(np.random.rand(2, 4), mstype.float32)

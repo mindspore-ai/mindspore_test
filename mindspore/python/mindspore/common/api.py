@@ -598,7 +598,7 @@ class _JitExecutor:
         The result of pipeline running in graph mode.
     """
 
-    def __init__(self, fn, ms_create_time, input_signature=None, obj=None, jit_config=None):
+    def __init__(self, fn, ms_create_time, input_signature=None, obj=None, jit_config=None, dynamic=0):
         init_pipeline()
         if not isinstance(fn, (types.FunctionType, types.MethodType)):
             raise RuntimeError('fn {} is not function or method'.format(fn))
@@ -616,6 +616,7 @@ class _JitExecutor:
             self._graph_executor = GraphExecutor_.get_instance()
         self._create_time = ms_create_time
         self._compile_args = None
+        self._enable_auto_dynamic = dynamic == 1
         self.jit_config_dict = jit_config.jit_config_dict if jit_config else None
 
     @_wrap_func
@@ -664,7 +665,8 @@ class _JitExecutor:
         compile_args = self._generate_compile_args(args)
         key_id = self._get_key_id()
         compile_args = get_auto_dynamic_shape_args_with_check_input_signature(compile_args, key_id,
-                                                                              self.input_signature)
+                                                                              self.input_signature,
+                                                                              self._enable_auto_dynamic)
 
         # Add mutable for compile_args for two scene:
         # 1) Origin args is mutable.
@@ -1009,7 +1011,7 @@ def jit(
         *,
         capture_mode: str = "ast",
         jit_level: str = "O0",
-        dynamic: bool = False,
+        dynamic: int = 0,
         fullgraph: bool = False,
         backend: str = "",
         **options):
@@ -1047,8 +1049,12 @@ def jit(
             - `O1`: Using commonly used optimizations and automatic operator fusion optimizations. This optimization
               level is experimental and is being improved.
 
-        dynamic (bool, optional): Whether dynamic shape compilation should be performed. Currently, it is a
-            reserved parameter, so it does not work. Default: ``False``.
+        dynamic (int, optional): Whether dynamic shape compilation should be performed. Default: ``0``. The value range
+            is as follows:
+
+            - `0`: Do not perform dynamic shape compilation.
+            - `1`: Enable dynamic shape compilation and automatically detect shape changes.
+
         fullgraph (bool, optional): Whether to capture the entire function into graph. If False, jit attempts to
             be compatible with all Python syntax in the function as much as possible. If True, we require that the
             entire function can be captured into graph. If this is not possible (that is, if there is Python syntax
@@ -1148,6 +1154,7 @@ def jit(
 
     capture_mode = Validator.check_string(capture_mode, ["ast", "bytecode", "trace"], "capture_mode", "jit")
     jit_level = Validator.check_string(jit_level, ["O0", "O1"], "jit_level", "jit")
+    dynamic = Validator.check_int_range(dynamic, 0, 1, Validator.INC_BOTH, "dynamic", "jit")
     fullgraph = Validator.check_bool(fullgraph, "fullgraph", "jit")
     if backend != "":
         backend = Validator.check_string(backend, ["ms_backend", "GE"], "backend", "jit")
@@ -1181,7 +1188,7 @@ def jit(
                 else:
                     setattr(func, "amp_strategy", get_curr_amp_strategy())
 
-            ms_function_executor = _JitExecutor(func, hash_obj, None, process_obj, jit_config)
+            ms_function_executor = _JitExecutor(func, hash_obj, None, process_obj, jit_config, dynamic)
             out = ms_function_executor(*args, **kwargs)
             return out
 

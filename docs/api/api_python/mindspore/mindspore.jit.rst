@@ -1,7 +1,7 @@
 mindspore.jit
 =============
 
-.. py:function:: mindspore.jit(function: Optional[Callable] = None, *, capture_mode: str = "ast", jit_level: str = "O0", dynamic: bool = False, fullgraph: bool = False, backend: str = "", **options)
+.. py:function:: mindspore.jit(function: Optional[Callable] = None, *, capture_mode: str = "ast", jit_level: str = "O0", dynamic: int = 0, fullgraph: bool = False, backend: str = "", **options)
 
     将Python函数编译为一张可调用的MindSpore图。
 
@@ -26,7 +26,11 @@ mindspore.jit
           - O0: 除必要影响功能的优化外，其他优化均关闭。
           - O1: 使能常用优化和自动算子融合优化。
 
-        - **dynamic** (bool, 可选) - 是否需要进行动态shape编译。当前为预留参数，暂不起作用。默认值： ``False``。
+        - **dynamic** (int, 可选) - 是否需要进行动态shape编译。默认值： ``0``。其值范围如下：
+
+          - 0: 不进行动态shape编译。
+          - 1: 使能动态shape编译，自动检测shape的变化。
+
         - **fullgraph** (bool, 可选) - 是否捕获整个函数来编译成图。如果为False，jit会尽可能地尝试兼容函数中的所有Python语法。如果为True，则需要整个函数都可以被捕获成图，否则（即有不支持的Python语法），会抛出一个异常。当前只对capture_mode为 ``"ast"`` 时生效。默认值： ``False``。
         - **backend** (str, 可选) - 使用的编译后端。如果该参数未被设置，框架默认Atlas训练系列产品为 ``GE`` 后端 ，默认其他产品包括Atlas A2训练系列产品为 ``ms_backend`` 后端。
 
