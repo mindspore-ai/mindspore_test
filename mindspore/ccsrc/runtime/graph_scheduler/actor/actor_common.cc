@@ -26,6 +26,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/distributed/ps/ps_context.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 #ifndef BUILD_LITE
 #include "runtime/graph_scheduler/parameter_store.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
@@ -392,8 +393,9 @@ bool EnableRuntimePipeline() {
 }
 
 bool EnableParallelDispatchKernel() {
-  static const char kParallelDispatchKernel[] = "parallel_dispatch_kernel";
-  static bool enable_parallel_dispatch_kernel = common::IsEnableRuntimeConfig(kParallelDispatchKernel);
+  auto runtime_conf_instance = runtime::RuntimeConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(runtime_conf_instance);
+  static bool enable_parallel_dispatch_kernel = runtime_conf_instance->IsKernelLaunchGroupConfigured();
   return enable_parallel_dispatch_kernel;
 }
 

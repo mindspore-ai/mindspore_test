@@ -24,6 +24,7 @@
 #include "runtime/graph_scheduler/actor/debug_actor.h"
 #include "runtime/device/multi_stream_controller.h"
 #include "runtime/pipeline/task/batch_launch_kernel_task.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 #include "async/async.h"
 #include "utils/phase.h"
 #include "utils/llm_manager.h"
@@ -1051,6 +1052,7 @@ void SuperKernelActor::DispatchSerialLaunchKernels(OpContext<DeviceTensor> *cons
 }
 
 void SuperKernelActor::ParallelDispatchKernels(OpContext<DeviceTensor> *const context) {
+  MS_LOG(INFO) << "Begin parallel dispatch kernels for graph: " << graph_->ToString();
   device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
   // Record a event to default stream to notify parallel launch kernels execute on other stream.
   events_.front()->RecordEvent(0);
@@ -1084,6 +1086,7 @@ void SuperKernelActor::ParallelDispatchKernels(OpContext<DeviceTensor> *const co
       }
     }
   }
+  MS_LOG(INFO) << "End parallel dispatch kernels for graph: " << graph_->ToString();
 }
 
 void SuperKernelActor::RunGraphKernelByKernel(OpContext<DeviceTensor> *const context) {
@@ -1438,21 +1441,25 @@ void SuperKernelActor::BuildAndLinkKernelActors() {
 }
 
 void SuperKernelActor::PartitionParallelDispatchKernels() {
-  static const char kParallelDispatchNum[] = "MS_PARALLEL_DISPATCH_NUM";
-  static const std::string parallel_dispatch_num_env = common::GetEnv(kParallelDispatchNum);
-  if (!parallel_dispatch_num_env.empty()) {
-    parallel_dispatch_num_ = std::stoul(parallel_dispatch_num_env);
-  }
+  auto runtime_conf_instance = RuntimeConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(runtime_conf_instance);
+  parallel_dispatch_num_ = runtime_conf_instance->group_launch_thread_num();
   if (parallel_dispatch_num_ < 1) {
-    MS_LOG(EXCEPTION) << "Invalid parallel dispatch num: " << parallel_dispatch_num_;
+    MS_LOG(EXCEPTION) << "Invalid thread num: " << parallel_dispatch_num_
+                      << " for kernel launch group, please check the `thread_num` value of function: "
+                         "runtime.set_kernel_launch_group(thread_num, kernel_group_num)";
   }
-  MS_LOG(INFO) << "The parallel dispatch number: " << parallel_dispatch_num_;
+  MS_LOG(INFO) << "The parallel dispatch thread number: " << parallel_dispatch_num_;
 
-  static const std::string parallel_slice_num_env = common::GetEnv("MS_INNER_PARALLEL_DISPATCH_NUM");
-  if (!parallel_slice_num_env.empty()) {
-    parallel_slice_num_ = std::stoul(parallel_slice_num_env);
+  auto total_kernel_group_num = runtime_conf_instance->kernel_group_num();
+  parallel_slice_num_ = total_kernel_group_num / parallel_dispatch_num_;
+  if (parallel_slice_num_ < 1) {
+    MS_LOG(EXCEPTION) << "Invalid kernel group num: " << total_kernel_group_num
+                      << ", kernel group num must be greater than or equal to thread num: " << parallel_dispatch_num_
+                      << ", please check the parameter value of function: "
+                         "runtime.set_kernel_launch_group(thread_num, kernel_group_num)";
   }
-  MS_LOG(INFO) << "The parallel slice num: " << parallel_slice_num_;
+  MS_LOG(INFO) << "The kernel group per thread: " << parallel_slice_num_;
 
   // Get parallel launch kernels slice/group.
   parallel_launch_kernels_.resize(parallel_dispatch_num_ * parallel_slice_num_);
@@ -1469,7 +1476,7 @@ void SuperKernelActor::PartitionParallelDispatchKernels() {
       parallel_launch_kernels_[i] =
         std::vector<KernelActorPtr>(begin_iter + i * kernel_num_per_dispatcher, kernel_actors_.end());
     }
-    MS_LOG(INFO) << "The slice[" << i << "] kernel num: " << parallel_launch_kernels_[i].size();
+    MS_LOG(INFO) << "The kernel group[" << i << "] kernel num: " << parallel_launch_kernels_[i].size();
   }
 
   // Get serial launch kernels.
