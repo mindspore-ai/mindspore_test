@@ -353,6 +353,11 @@ class DefaultAscendMemoryPoolImpl : public DefaultAscendMemoryPool {
   void ResetIdleMemBuf() const override { reset_idle_mem_buf_++; }
 
   std::string GetMemoryPoolType() const override { return "DefaultAscendMemoryPoolImpl"; }
+
+  size_t gen_set_rank_id_getter_{0};
+  void SetRankIdGetter(const std::function<size_t()> &rank_id_getter) override {
+    gen_set_rank_id_getter_++;
+  }
 };
 using DefaultAscendMemoryPoolImplPtr = std::shared_ptr<DefaultAscendMemoryPoolImpl>;
 
@@ -549,6 +554,10 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
   EXPECT_EQ(pool->reset_idle_mem_buf_.Get(), 1);
 
   EXPECT_EQ(enhanced_pool->GetMemoryPoolType(), "DefaultEnhancedAscendMemoryPool");
+
+  EXPECT_EQ(pool->gen_set_rank_id_getter_, 0);
+  enhanced_pool->SetRankIdGetter([]() { return 0L; });
+  EXPECT_EQ(pool->gen_set_rank_id_getter_, 1);
 }
 }  // namespace ascend
 }  // namespace device
