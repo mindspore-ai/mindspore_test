@@ -50,11 +50,9 @@ internal::InternalOpPtr InternalPagedAttention::CreateKernel(const internal::Inp
   has_attn_mask_ = (!(ms_inputs[kIndex7]->GetType()->isa<TypeNone>()));
   has_alibi_mask_ = (!(ms_inputs[kIndex9]->GetType()->isa<TypeNone>()));
 
-  (void)GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"q_seq_lens"}, &param_.q_seq_len);
-  (void)GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"batch_valid_length"}, &param_.kv_seq_len);
-
+  (void)ConvertSeqLenToVectorAndCheckUpadate(ms_inputs[kIndex8], &param_.q_seq_len);
+  (void)ConvertSeqLenToVectorAndCheckUpadate(ms_inputs[kIndex4], &param_.kv_seq_len);
   CheckMask();
-
   created_flag_ = true;
   return internal::CreatePagedAttentionOp(inputs_ii, outputs_ii, param_, internal::kInternalPagedAttentionOpName);
 }
@@ -67,8 +65,8 @@ bool InternalPagedAttention::UpdateParam(const std::vector<KernelTensor *> &inpu
     return true;
   }
 
-  bool q_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"q_seq_lens"}, &param_.q_seq_len);
-  bool kv_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"batch_valid_length"}, &param_.kv_seq_len);
+  bool q_need_recreate = ConvertSeqLenToVectorAndCheckUpadate(inputs[kIndex8], &param_.q_seq_len);
+  bool kv_need_recreate = ConvertSeqLenToVectorAndCheckUpadate(inputs[kIndex4], &param_.kv_seq_len);
   if (q_need_recreate || kv_need_recreate) {
     CheckMask();
     auto ret = internal_op_->UpdateParam(&param_);
