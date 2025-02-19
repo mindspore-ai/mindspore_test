@@ -616,6 +616,7 @@ Parameter操作算子
     mindspore.ops.AllGather
     mindspore.ops.AllReduce
     mindspore.ops.AlltoAll
+    mindspore.ops.AlltoAllV
     mindspore.ops.Barrier
     mindspore.ops.Broadcast
     mindspore.ops.CollectiveGather
