@@ -221,6 +221,9 @@ class BACKEND_EXPORT DefaultEnhancedAscendMemoryPool : public DefaultAscendMemor
     return instance_->GenFreeMemoryTimeEvent(addr);
   }
 
+ protected:
+  void SetRankIdGetter(const std::function<size_t()> &rank_id_getter) override;
+
  private:
   DefaultAscendMemoryPoolPtr instance_;
   size_t last_vmm_used_size_{0};

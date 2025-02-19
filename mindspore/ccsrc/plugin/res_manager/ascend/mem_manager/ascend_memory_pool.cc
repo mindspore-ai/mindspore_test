@@ -453,6 +453,13 @@ bool DefaultEnhancedAscendMemoryPool::SyncAllEvents() {
   return true;
 }
 
+void DefaultEnhancedAscendMemoryPool::SetRankIdGetter(const std::function<size_t()> &rank_id_getter) {
+  instance_->SetRankIdGetter(rank_id_getter);
+  if (rank_id_getter != nullptr) {
+    rank_id_getter_ = rank_id_getter;
+  }
+}
+
 BestFitAscendMemoryPool::BestFitAscendMemoryPool() {
   MS_LOG(INFO) << "BestFitAscendMemoryPool constructed, older memory allocator is enabled.";
   SetEnableVmm(AscendVmmAdapter::GetInstance().IsEnabled());
@@ -482,12 +489,9 @@ AbstractAscendMemoryPoolSupport &AscendMemoryPool::GetInstance() {
       instance_ = std::make_shared<BestFitAscendMemoryPool>();
       enhanced_instance_ = instance_;
     } else {
-      auto pool = std::make_shared<DefaultAscendMemoryPool>();
-      instance_ = pool;
-      enhanced_instance_ = std::make_shared<DefaultEnhancedAscendMemoryPool>(pool);
-      if (UseEnhancedMemoryPool()) {
-        instance_ = enhanced_instance_;
-      }
+      const auto &memory_pool = std::make_shared<DefaultAscendMemoryPool>();
+      instance_ = memory_pool;
+      enhanced_instance_ = std::make_shared<DefaultEnhancedAscendMemoryPool>(memory_pool);
     }
     // Initialize instance and set ptr.
     float init_size = runtime::RuntimeConf::GetInstance()->mem_init_size();
@@ -502,6 +506,7 @@ AbstractAscendMemoryPoolSupport &AscendMemoryPool::GetInstance() {
     instance_->SetMemoryProfilerCallback([&]() {
       static auto profiler_inst = profiler::Profiler::GetInstance(kCPUDevice);
       MS_EXCEPTION_IF_NULL(profiler_inst);
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Start report memory pool info.";
       if (profiler_inst->GetEnableFlag() && profiler_inst->GetProfileMemoryFlag()) {
         profiler_inst->RecordMemoryPoolInfo(instance_->TotalUsedMemStatistics(), instance_->TotalMemStatistics(),
                                             instance_->TotalUsedByEventMemStatistics());
@@ -509,7 +514,7 @@ AbstractAscendMemoryPoolSupport &AscendMemoryPool::GetInstance() {
     });
 #endif
 
-    instance_->SetRankIdGetter([]() {
+    enhanced_instance_->SetRankIdGetter([]() {
       size_t rank_id = SIZE_MAX;
       if (DistributedMeta::GetInstance()->initialized()) {
         rank_id = DistributedMeta::GetInstance()->global_rank_id();
@@ -517,7 +522,7 @@ AbstractAscendMemoryPoolSupport &AscendMemoryPool::GetInstance() {
       return rank_id;
     });
     instance_->SetPipelineCallback([]() { runtime::Pipeline::Get().launch_stage()->Wait(); });
-    pool_ = instance_;
+    pool_ = !UseEnhancedMemoryPool() ? instance_ : enhanced_instance_;
   });
   return *pool_;
 }
