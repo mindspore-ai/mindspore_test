@@ -23,6 +23,7 @@
 #include "frontend/optimizer/ad/prim_bprop_optimizer.h"
 #include "utils/phase.h"
 #include "include/common/fallback.h"
+#include "include/common/utils/compile_cache_context.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -413,6 +414,7 @@ void JitExecutorPy::CleanCompileRes(const ResourcePtr &resource) {
   ReclaimOptimizer();
   resource->Clean();
   FuncGraphLoopBreaker::Inst().CleanMetaFuncGraphs();
+  CompileCacheContext::GetInstance().Clear();
   parse::Parser::CleanParserResource();
   MS_LOG(INFO) << "Clean compile resource end";
 }
