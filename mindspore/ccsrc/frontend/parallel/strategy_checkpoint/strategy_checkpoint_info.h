@@ -33,9 +33,11 @@ namespace parallel {
 using StrategyMap = mindspore::HashMap<std::string, StrategyPtr>;
 using TensorLayoutPtr = std::shared_ptr<TensorLayout>;
 using TensorInfoMap = mindspore::HashMap<std::string, TensorLayoutPtr>;
+using TensorLayoutMap = mindspore::HashMap<std::string, std::vector<TensorLayoutPtr>>;
 using ParameterMap = std::vector<std::pair<std::string, ParameterPtr>>;
 using ManualShapeMap = mindspore::HashMap<std::string, std::vector<std::pair<int64_t, int64_t>>>;
 using GroupInfoMap = std::vector<std::pair<std::string, std::vector<uint32_t>>>;
+using TensorLayoutValueMap = mindspore::HashMap<std::string, ValueTuplePtr>;
 
 class StrategyCheckpointInfo {
  public:
@@ -58,10 +60,21 @@ class StrategyCheckpointInfo {
   ManualShapeMap manual_shape_map() const { return manual_shape_map_; }
   void set_manual_shape_map(const ManualShapeMap &manual_shape_map);
   int64_t current_stage() const { return current_stage_; }
+  TensorLayoutValueMap tensor_layout_map() const { return tensor_layout_map_; }
+  void set_tensor_layout_map(const TensorLayoutValueMap &tensor_layout_map);
+  TensorLayoutValueMap out_tensor_layout_map() const { return out_tensor_layout_map_; }
+  void set_out_tensor_layout_map(const TensorLayoutValueMap &out_tensor_layout_map);
+  TensorLayoutValueMap tensor_layout_newshape_map() const { return tensor_layout_newshape_map_; }
+  void set_tensor_layout_newshape_map(const TensorLayoutValueMap &tensor_layout_newshape_map);
+  TensorLayoutValueMap out_tensor_layout_newshape_map() const { return out_tensor_layout_newshape_map_; }
+  void set_out_tensor_layout_newshape_map(const TensorLayoutValueMap &out_tensor_layout_newshape_map_);
 
   virtual void FromJson(const nlohmann::json &stra_ckpt_info_j);
   nlohmann::json to_json() const;
-
+  nlohmann::json to_json_strategy_item(const StrategyPtr &stra_pair) const;
+  nlohmann::json to_json_tensorinfo_item(const std::string &parameter_name, const TensorLayoutPtr &layout) const;
+  nlohmann::json to_json_layout_value_tuple_item(const std::string &node_name,
+                                                 const ValueTuplePtr &layout_value_tuple) const;
   void from_protobuf(const straspb::ParallelStrategyMap &parallel_strategy_map);
   straspb::ParallelStrategyMap to_protobuf() const;
 
@@ -70,21 +83,36 @@ class StrategyCheckpointInfo {
   StrategyMap out_strategy_map_;
   int64_t current_stage_;
   TensorInfoMap tensor_info_map_;
+  TensorInfoMap out_tensor_info_map_;
   ManualShapeMap manual_shape_map_;
+  TensorLayoutValueMap tensor_layout_map_;
+  TensorLayoutValueMap out_tensor_layout_map_;
+  TensorLayoutValueMap tensor_layout_newshape_map_;
+  TensorLayoutValueMap out_tensor_layout_newshape_map_;
 };
 
 class StrategyJsonInfo : public StrategyCheckpointInfo {
  public:
   StrategyJsonInfo() : StrategyCheckpointInfo() {}
   ~StrategyJsonInfo() override = default;
-  void Init(const StrategyMap &strategy_map, const StrategyMap &out_strategy_map, int64_t current_stage) {
+  void Init(const StrategyMap &strategy_map, const StrategyMap &out_strategy_map,
+            const TensorLayoutValueMap &tensor_layout_map, const TensorLayoutValueMap &out_tensor_layout_map,
+            const TensorLayoutValueMap &tensor_layout_newshape_map,
+            const TensorLayoutValueMap &out_tensor_layout_newshape_map, int64_t current_stage) {
     strategy_map_ = strategy_map;
     out_strategy_map_ = out_strategy_map;
+    tensor_layout_map_ = tensor_layout_map;
+    out_tensor_layout_map_ = out_tensor_layout_map;
+    tensor_layout_newshape_map_ = tensor_layout_newshape_map;
+    out_tensor_layout_newshape_map_ = out_tensor_layout_newshape_map;
     tensor_info_map_ = TensorInfoMap();
     manual_shape_map_ = ManualShapeMap();
     current_stage_ = current_stage;
   }
   void FromJson(const nlohmann::json &stra_json_info_j) override;
+  void StrategyFromJson(const nlohmann::json &stra_json_info_j);
+  void LayoutFromJson(const nlohmann::json &stra_json_info_j);
+  void NewShapeLayoutFromJson(const nlohmann::json &stra_json_info_j);
 };
 }  // namespace parallel
 }  // namespace mindspore
