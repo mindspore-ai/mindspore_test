@@ -94,6 +94,9 @@ class BACKEND_EXPORT CollectiveManager {
   // Destroy the communication group.
   bool DestroyCommunicationGroup(const std::string &group_name);
 
+  // Get the inner comm name of the specified group.
+  std::string GetCommName(const std::string &group_name);
+
   // Get the rank id of this process in the specified group.
   uint32_t GetRankId(const std::string &group_name);
 

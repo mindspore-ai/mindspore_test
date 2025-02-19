@@ -77,6 +77,8 @@ class EXPORT_WRAPPER MultiAscendCollectiveCommLib : public CollectiveCommunicati
 
   std::unordered_set<std::string> GetLcclEnabledGroups();
 
+  std::string CommName(const std::string &group_name) override;
+
   bool ResumeHcclComm() override;
 
   bool AllGather(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type,

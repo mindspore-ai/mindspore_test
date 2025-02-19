@@ -81,6 +81,9 @@ class BACKEND_EXPORT CollectiveCommunicationLib {
   // Destroy the communication group.
   virtual bool DestroyCommunicationGroup(const std::string &group_name);
 
+  // Get the inner communicator name of the specified group.
+  virtual std::string CommName(const std::string &group_name) { return ""; }
+
   // Get the rank id of this process in the specified group.
   virtual uint32_t GetRankId(const std::string &group_name);
 

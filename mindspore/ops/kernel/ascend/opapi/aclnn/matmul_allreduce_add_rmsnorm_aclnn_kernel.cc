@@ -30,7 +30,7 @@ void MatmulAllReduceAddRmsNormAscend::InitInputAttributes(const std::vector<Kern
   eps_ = (eps_dtype_id == kNumberTypeFloat32) ? static_cast<double>(inputs[kIndex5]->GetValueWithCheck<float>())
                                               : inputs[kIndex5]->GetValueWithCheck<double>();
   auto group = inputs[kIndex6]->GetValueWithCheck<std::string>();
-  comm_name_ = device::ascend::AscendCollectiveCommLib::GetInstance().HcclInnerCommName(group);
+  comm_name_ = device::ascend::AscendCollectiveCommLib::GetInstance().CommName(group);
   auto reduction_enum = inputs[kIndex7]->GetValueWithCheck<int64_t>();
   reduce_op_ = device::ascend::GEReduction::ConvertEnumToString(reduction_enum);
   comm_turn_ = inputs[kIndex8]->GetValueWithCheck<int64_t>();

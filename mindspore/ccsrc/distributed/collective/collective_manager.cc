@@ -417,6 +417,16 @@ bool CollectiveManager::DestroyCommunicationGroup(const std::string &group_name)
   return true;
 }
 
+std::string CollectiveManager::GetCommName(const std::string &group_name) {
+  if (!common::GetEnv(kSimulationLevel).empty()) {
+    MS_EXCEPTION_IF_NULL(dummy_comm_lib_instance_);
+    return dummy_comm_lib_instance_->CommName(group_name);
+  } else {
+    MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
+    return device_comm_lib_instance_->CommName(group_name);
+  }
+}
+
 uint32_t CollectiveManager::GetRankId(const std::string &group_name) {
   BY_PASS_SCHED_RANK_ID;
   MS_EXCEPTION_IF_NULL(comm_lib_instance_);

@@ -163,9 +163,9 @@ void OpApiUtil::GetValidKernelBuildInfo(const AnfNodePtr &node, std::vector<std:
 
 std::string OpApiUtil::GetCommName(const std::string &group) {
   if (!common::GetEnv(kSimulationLevel).empty()) {
-    return device::DummyAscendCollectiveCommLib::GetInstance().HcclInnerCommName(group);
+    return device::DummyAscendCollectiveCommLib::GetInstance().CommName(group);
   }
-  return device::ascend::AscendCollectiveCommLib::GetInstance().HcclInnerCommName(group);
+  return device::ascend::AscendCollectiveCommLib::GetInstance().CommName(group);
 }
 
 uint8_t AclUtil::KeepOriginDType() {

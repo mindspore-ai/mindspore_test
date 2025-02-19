@@ -37,7 +37,7 @@ void MatmulAllReduceAddRmsNormAscendCustomize(const std::shared_ptr<OpRunner> &o
   // Convert ValuePtr to c++ scalar
   auto epsilon_imm = static_cast<double>(GetValue<float>(epsilon));
   auto group_str = GetValue<std::string>(group);
-  std::string group_imm = device::ascend::AscendCollectiveCommLib::GetInstance().HcclInnerCommName(group_str);
+  std::string group_imm = device::ascend::AscendCollectiveCommLib::GetInstance().CommName(group_str);
   auto comm_turn_imm = GetValue<int64_t>(comm_turn);
   auto stream_mode_imm = GetValue<int64_t>(stream_mode);
 
