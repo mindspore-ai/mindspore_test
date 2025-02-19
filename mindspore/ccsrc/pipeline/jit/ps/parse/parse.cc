@@ -1587,11 +1587,21 @@ bool Parser::CompareNotEqual(const FunctionBlockPtr &block, const py::object &le
 
 bool Parser::CompareGreater(const FunctionBlockPtr &, const py::object &left_obj, const py::object &comparator_obj,
                             bool *bool_res) const {
-  auto comparator_type_name = ast_->GetNodeType(comparator_obj)->node_name();
-  if (comparator_type_name != "Num" || (!py::isinstance<py::int_>(left_obj) && !py::isinstance<py::float_>(left_obj))) {
+  if (!py::isinstance<py::int_>(left_obj) && !py::isinstance<py::float_>(left_obj)) {
+    MS_LOG(DEBUG) << "left_obj is not int or float.";
     return false;
   }
-  py::object num_value = python_adapter::GetPyObjAttr(comparator_obj, "n");
+  py::object num_value;
+  auto comparator_type_name = ast_->GetNodeType(comparator_obj)->node_name();
+  if (comparator_type_name == "Num") {
+    num_value = python_adapter::GetPyObjAttr(comparator_obj, "n");
+  } else if (comparator_type_name == "Constant") {
+    // The type_name is "Constant" in py3.9.
+    num_value = python_adapter::GetPyObjAttr(comparator_obj, "value");
+  } else {
+    MS_LOG(DEBUG) << "comparator_type_name is not Num or Constant.";
+    return false;
+  }
   MS_LOG(DEBUG) << "num_value: " << py::str(num_value);
 
   if (!py::isinstance<py::int_>(num_value) && !py::isinstance<py::float_>(num_value)) {
