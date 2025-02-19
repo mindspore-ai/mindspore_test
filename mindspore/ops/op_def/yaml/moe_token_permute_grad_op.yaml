@@ -1,0 +1,20 @@
+#operator moe_token_permute_grad
+moe_token_permute_grad:
+  args:
+    permuted_tokens_grad:
+      dtype: tensor
+    sorted_indices:
+      dtype: tensor
+    num_topk:
+      dtype: int
+      default: 1
+    padded_mode:
+      dtype: bool
+      default: False
+  returns:
+    out:
+      dtype: tensor
+  class:
+      name: MoeTokenPermuteGrad
+  dispatch:
+    enable: True
