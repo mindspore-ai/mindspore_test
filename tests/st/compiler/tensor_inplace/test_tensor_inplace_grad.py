@@ -17,7 +17,7 @@ import pytest
 import numpy as np
 import torch
 import mindspore as ms
-from mindspore import Tensor, nn, context, Parameter, ParameterTuple
+from mindspore import Tensor, nn, context, Parameter, ParameterTuple, mint
 from mindspore import dtype as mstype
 from mindspore import ops
 from mindspore.ops import operations as P
@@ -296,3 +296,64 @@ def test_tensor_inplace_scatter_grad():
     # only self has grad
     grad_np[:, :3] = 0
     assert np.allclose(grads[0].asnumpy().astype(np.float32), grad_np)
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
+          card_mark='onecard', essential_mark='unessential')
+def test_inplace_backward_clone_input():
+    """
+    Feature: Support inplace backward need clone input in graph mode.
+    Description: Support inplace backward need clone input in graph mode.
+    Expectation: Run success.
+    """
+    class Hardtanh_(ms.nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.op = mint.nn.functional.hardtanh_
+
+        def construct(self, x, min_val=-1.0, max_val=1.0):
+            return self.op(x, min_val=min_val, max_val=max_val)
+
+    @ms.jit
+    def hardtanh_backward_func(x, min_val, max_val):
+        return ms.ops.grad(Hardtanh_(), (0))(x, min_val, max_val)
+
+    def get_expect_grad(x, min_val, max_val):
+        return np.where(((min_val < x) & (x < max_val)), 1., 0.)
+
+    context.set_context(mode=0, jit_level='O2')
+    x_np = np.random.randn(2, 3).astype(np.float32)
+    x = ms.Tensor(x_np, dtype=ms.float32)
+    values = [[0.1, 0.9], [-1, 1]]
+    for value in values:
+        grad1 = hardtanh_backward_func(x, value[0], value[1])
+        grad2 = get_expect_grad(x_np, value[0], value[1])
+        assert np.allclose(grad1.asnumpy(), grad2)
+
+
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
+def test_inplace_backward_with_control_flow():
+    """
+    Feature: Support inplace backward with control flow in graph mode.
+    Description: Support inplace backward with control flow in graph mode.
+    Expectation: Run success.
+    """
+    class Net(ms.nn.Cell):
+        def construct(self, x, y):
+            if x < y:
+                a = x*y
+            else:
+                a = x/y
+            P.AssignAdd()(x, y)
+            return a
+
+    @ms.jit
+    def func(x, y, net):
+        return ms.grad(net, grad_position=1)(x, y)
+
+    ms.set_context(mode=0)
+    x = ms.Tensor([1])
+    y = ms.Tensor([4])
+    net = Net()
+    grads = func(x, y, net)
+    assert grads == 1
