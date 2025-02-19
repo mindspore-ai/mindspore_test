@@ -1741,6 +1741,10 @@ def xlogy(input, other):
         >>> print(output)
         [-3.465736   0.        2.7725887]
     """
+    if isinstance(input, (float, int, bool)):
+        input = scalar_to_tensor_(input)
+    if isinstance(other, (float, int, bool)):
+        other = scalar_to_tensor_(other)
     if isinstance(input, Tensor) and isinstance(other, Tensor) and input.dtype == mstype.bool_ \
             and other.dtype == mstype.bool_:
         input = input.astype(mstype.float32)
