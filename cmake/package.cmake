@@ -411,6 +411,7 @@ install(
     DIRECTORY ${CMAKE_SOURCE_DIR}/include
     DESTINATION ${INSTALL_BASE_DIR}
     COMPONENT mindspore
+    PATTERN "OWNERS" EXCLUDE
 )
 
 ## Public header files for minddata
@@ -432,8 +433,53 @@ install(
         ${CMAKE_SOURCE_DIR}/mindspore/core/include/mindapi/base/format.h
         ${CMAKE_SOURCE_DIR}/mindspore/core/include/mindapi/base/type_id.h
         ${CMAKE_SOURCE_DIR}/mindspore/core/include/mindapi/base/types.h
+        ${CMAKE_SOURCE_DIR}/mindspore/core/include/mindapi/base/shape_vector.h
     DESTINATION ${INSTALL_BASE_DIR}/include/mindapi/base
     COMPONENT mindspore)
+
+## ms header files
+install(
+    DIRECTORY ${CMAKE_SOURCE_DIR}/mindspore/core
+    DESTINATION ${INSTALL_BASE_DIR}/include/mindspore
+    COMPONENT mindspore
+    FILES_MATCHING
+    PATTERN "*.h"
+    PATTERN "*.hpp"
+)
+install(
+    DIRECTORY ${CMAKE_SOURCE_DIR}/mindspore/ops
+    DESTINATION ${INSTALL_BASE_DIR}/include/mindspore
+    COMPONENT mindspore
+    FILES_MATCHING PATTERN "*.h"
+)
+install(
+    DIRECTORY ${CMAKE_SOURCE_DIR}/mindspore/ccsrc
+    DESTINATION ${INSTALL_BASE_DIR}/include/mindspore
+    COMPONENT mindspore
+    FILES_MATCHING PATTERN "*.h"
+)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/third_party/securec
+    DESTINATION ${INSTALL_BASE_DIR}/include/third_party
+    COMPONENT mindspore
+    FILES_MATCHING PATTERN "*.h")
+
+## msextension for custom ops
+install(FILES ${CMAKE_SOURCE_DIR}/mindspore/ops/ops_utils/ms_extension.h
+    DESTINATION ${INSTALL_BASE_DIR}/include
+    COMPONENT mindspore)
+
+## third-party header files
+install(DIRECTORY ${pybind11_INC}/pybind11
+    DESTINATION ${INSTALL_BASE_DIR}/include/third_party
+    COMPONENT mindspore)
+install(DIRECTORY ${robin_hood_hashing_INC}/include
+    DESTINATION ${INSTALL_BASE_DIR}/include/third_party/robin_hood_hashing
+    COMPONENT mindspore)
+if (NOT ENABLE_NATIVE_JSON)
+    install(DIRECTORY ${nlohmann_json3101_INC}/nlohmann
+        DESTINATION ${INSTALL_BASE_DIR}/include/third_party
+        COMPONENT mindspore)
+endif()
 
 ## config files
 install(

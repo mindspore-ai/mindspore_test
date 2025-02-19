@@ -24,6 +24,7 @@
 #include "ops_utils/op_utils.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/common/pynative/common_utils.h"
+#include "pynative/grad/function/func_builder.h"
 
 namespace mindspore {
 namespace pynative {

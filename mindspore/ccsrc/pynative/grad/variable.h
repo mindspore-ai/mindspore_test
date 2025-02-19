@@ -23,11 +23,19 @@
 #include <memory>
 #include <map>
 #include "ir/anf.h"
+#include "ir/meta_grad_data.h"
+#include "ir/base_tensor.h"
 #include "include/common/utils/hook.h"
-#include "pynative/grad/function/func_builder.h"
-#include "debug/profiler/profiler.h"
+
+namespace mindspore {
+namespace session {
+class KernelGraph;
+}
+using KernelGraphPtr = std::shared_ptr<session::KernelGraph>;
+}  // namespace mindspore
 
 namespace mindspore::pynative::autograd {
+class FuncBuilder;
 struct GradAttr {
   GradAttr(bool get_all, bool get_by_list, bool sens_param, bool get_by_position, bool weight_param_is_tuple)
       : grad_all_inputs(get_all),
@@ -100,7 +108,7 @@ class AutoGradMetaData : public AutoGradMetaInterface {
 };
 using AutoGradMetaDataPtr = std::shared_ptr<AutoGradMetaData>;
 
-class BaseTensor;
+using BaseTensor = tensor::BaseTensor;
 using BaseTensorPtr = std::shared_ptr<tensor::BaseTensor>;
 
 class ViewInfo {
@@ -162,13 +170,13 @@ struct Edge {
   size_t input_index;
 };
 
-class BackwardNode {
+class PYNATIVE_EXPORT BackwardNode {
  public:
   /// \brief Constructor.
   ///
   /// \param[in] name The name represents op name.
   /// \param[in] output_size The output_size is output size for op.
-  explicit BackwardNode(string name, size_t output_size = 1) : name_(std::move(name)), output_size_(output_size) {}
+  explicit BackwardNode(std::string name, size_t output_size = 1) : name_(std::move(name)), output_size_(output_size) {}
 
   /// \brief Destructor.
   virtual ~BackwardNode() = default;
@@ -370,14 +378,7 @@ class Variable {
   /// \brief Release input and output tensors
   ///
   /// \return void
-  void Release() {
-    runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kReleaseResource,
-                                       runtime::ProfilerRecorder::kNoName, false);
-    MS_EXCEPTION_IF_NULL(func_node_);
-    func_node_->set_check_func(nullptr);
-    func_node_->set_op_output(nullptr);
-    func_node_->Release();
-  }
+  void Release();
 
  private:
   // If node has not bprop, we record its prim name

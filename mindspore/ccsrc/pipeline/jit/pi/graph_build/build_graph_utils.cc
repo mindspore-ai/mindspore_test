@@ -21,6 +21,7 @@
 #include "utils/flags.h"
 #include "utils/ms_context.h"
 #include "ir/meta_func_graph.h"
+#include "mindspore/ops/ops_utils/op_constants.h"
 #include "include/common/utils/tensor_py.h"
 #include "include/common/pynative/common_utils.h"
 #include "pipeline/jit/ps/parse/parse_base.h"

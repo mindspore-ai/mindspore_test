@@ -21,7 +21,9 @@
 #include "runtime/device/device_address_utils.h"
 #include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
 #include "include/common/runtime_conf/runtime_conf.h"
+#include "runtime/pynative/op_runner.h"
 #include "mindspore/ops/kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
+#include "mindspore/ops/kernel/ascend/pyboost/customize/custom_launch_aclnn.h"
 
 namespace mindspore::kernel::pyboost {
 
@@ -93,4 +95,48 @@ std::vector<tensor::BaseTensorPtr> CustomExtAscendCustomize(const std::shared_pt
     }));
   return op->outputs();
 }
+
+class CustomAclnnOp : public OpRunner {
+ public:
+  using OpRunner::OpRunner;
+  ~CustomAclnnOp() = default;
+};
+
+void CustomLaunchAclnnImpl(const std::string &aclnn_name, const ValuePtrList &inputs,
+                           const tensor::BaseTensorPtrList &outputs) {
+  auto p = std::make_shared<Primitive>("CustomLaunchAclnn");
+  auto op = std::make_shared<CustomAclnnOp>(p, runtime::OpRunner::GetDeviceContext("Ascend"));
+  op->set_stream_id(PyBoostUtils::cur_stream_id());
+
+  tensor::BaseTensorPtrList input_tensors;
+  input_tensors.reserve(inputs.size());
+  for (auto &inp : inputs) {
+    if (inp->isa<tensor::BaseTensor>()) {
+      (void)input_tensors.emplace_back(inp->cast<tensor::BaseTensorPtr>());
+    }
+  }
+  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensors);
+
+  for (auto &out : outputs) {
+    // this is set in CreateTensor called by PyBoostUtils::InferOpOutput.
+    out->set_need_pipeline_sync(true);
+  }
+  op->set_outputs(outputs);
+  PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), outputs);
+
+  // Async
+  PyBoostUtils::DispatchRun(
+    std::make_shared<runtime::PyBoostDeviceTask>([op, inputs, input_tensors, outputs, aclnn_name]() {
+      PyBoostUtils::MallocOpInputs(op->device_context(), input_tensors);
+      PyBoostUtils::MallocOpOutputs(op->device_context(), outputs);
+      LaunchCustomAclnn(aclnn_name, op, inputs, outputs);
+    }));
+}
 }  // namespace mindspore::kernel::pyboost
+
+namespace mindspore::custom {
+void CustomLaunchAclnn(const std::string &aclnn_name, const ValuePtrList &inputs,
+                       const tensor::BaseTensorPtrList &outputs) {
+  return mindspore::kernel::pyboost::CustomLaunchAclnnImpl(aclnn_name, inputs, outputs);
+}
+}  // namespace mindspore::custom

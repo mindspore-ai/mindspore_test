@@ -26,11 +26,12 @@
 #include <utility>
 #include <unordered_map>
 #include <unordered_set>
+#include "abstract/abstract_value.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
-#include "pipeline/pynative/grad/variable.h"
+#include "pynative/grad/variable.h"
 
 namespace mindspore::pynative::autograd {
-
+using BaseTensorPtr = tensor::BaseTensorPtr;
 using BaseTensorPtrList = std::vector<BaseTensorPtr>;
 
 inline BaseTensorPtrList ToTensorList(const BaseTensorPtr &tensor) { return BaseTensorPtrList{tensor}; }
@@ -57,7 +58,7 @@ inline std::string GetFunctionTypeName(const char *name) {
 #endif
 }
 
-void PrepareForForward();
+PYNATIVE_EXPORT void PrepareForForward();
 
 template <typename X, typename... Args>
 using forward_t = decltype(X::Forward(nullptr, std::declval<Args>()...));
@@ -68,23 +69,84 @@ struct Function {
   static auto Apply(Args &&... args) -> std::enable_if_t<std::is_same_v<X, T>, forward_t<X, Args...>>;
 };
 
-struct CppFunctionContext {
-  CppFunctionContext() = default;
+struct PYNATIVE_EXPORT AutogradContext {
+  AutogradContext() = default;
 
-  void SaveForBackward(BaseTensorPtrList to_save) { to_save_ = std::move(to_save); }
-  BaseTensorPtrList GetSavedTensors() { return to_save_; }
+  /// \brief Save tensors for backward computation.
+  ///
+  /// This function saves a list of tensors that will be used later in the
+  /// backward pass. These tensors will be retained in memory until the backward
+  /// computation is finished.
+  ///
+  /// \param to_save A list of tensors to save.
+  void SaveForBackward(const BaseTensorPtrList &to_save) { to_save_ = std::move(to_save); }
+
+  /// \brief Retrieve the tensors saved for backward computation.
+  ///
+  /// This function retrieves the list of tensors that were saved in the
+  /// `SaveForBackward` method. These tensors can be used in the backward pass.
+  ///
+  /// \return The list of saved tensors.
+  const BaseTensorPtrList &GetSavedTensors() { return to_save_; }
+
+  /// \brief Mark input tensors as "dirty".
+  ///
+  /// Marking a tensor as "dirty" means that the forward computation has modified
+  /// the contents of the tensor in-place. This informs the autograd engine that
+  /// it should not rely on the original value of the tensor for gradient computation.
+  ///
+  /// \param inputs A list of tensors that are modified in-place.
   void MarkDirty(const BaseTensorPtrList &inputs);
+
+  /// \brief Mark output tensors as "non-differentiable".
+  ///
+  /// This function marks certain output tensors as not requiring gradients.
+  /// This is useful for outputs that are detached from the computation graph.
+  ///
+  /// \param outputs A list of tensors that are non-differentiable.
   void MarkNonDifferentiable(const BaseTensorPtrList &outputs);
+
+  /// \brief Set whether to materialize gradients.
+  ///
+  /// When set to `false`, the autograd engine will not create zero-filled
+  /// gradient tensors for inputs that do not require gradients. This can save
+  /// memory in cases where gradients are not needed.
+  ///
+  /// \param value A boolean flag indicating whether to materialize gradients.
   void SetMaterializeGrads(bool value) { materialize_grads_ = value; }
-  // for backward
-  bool NeedsInputGrad(size_t output_edge_index) const;
-  // for forward
+
+  /// \brief Check if an input gradient is needed for a given output edge.
+  ///
+  /// This function determines whether the gradient for a specific tensor input
+  /// is required by inspecting the backward graph. Only tensor inputs are
+  /// considered, and the index corresponds to the position of tensors among
+  /// all inputs (ignoring non-tensor inputs such as integers or other data types).
+  /// For example, if the inputs are `[Tensor, int, Tensor]`, the valid indices
+  /// for this function are 0 and 1 (corresponding to the two tensors).
+  ///
+  /// \param tensor_index The index of the tensor input (relative to tensors only).
+  /// \return True if the gradient for the input tensor is required, false otherwise.
+  bool NeedsInputGrad(size_t tensor_index) const;
+
+  /// \brief Check if a tensor requires gradients.
+  ///
+  /// This function can be used in both the forward and backward passes to check
+  /// whether a given tensor needs to be tracked for gradient computation.
+  ///
+  /// \param tensor A pointer to the tensor to check.
+  /// \return True if the tensor requires gradients, false otherwise.
   bool NeedGrad(const BaseTensorPtr &tensor);
 
+  /// \brief A key-value store for saving arbitrary data during the forward pass.
+  ///
+  /// This map allows you to save custom data (e.g., scalars, configurations)
+  /// during the forward computation that can be accessed during the backward
+  /// computation. The data is stored as key-value pairs.
   std::unordered_map<std::string, ValuePtr> saved_data;
 
   // NOLINTNEXTLINE(runtime/references)
-  friend void CppFunctionDoGrad(CppFunctionContext *context, BaseTensorPtrList &inputs, BaseTensorPtrList &outputs);
+  friend PYNATIVE_EXPORT void CppFunctionDoGrad(AutogradContext *context, const BaseTensorPtrList &inputs,
+                                                BaseTensorPtrList *outputs);
 
  private:
   BaseTensorPtrList to_save_;
@@ -105,7 +167,7 @@ struct CppFunctionNode : public BackwardNode {
   void Release() override;
   void SetContextBackwardNode(const BackwardNodePtr &node) { context_.node_ = node; }
   void SetOutputSize(size_t output_size) { output_size_ = output_size; }
-  CppFunctionContext context_;
+  AutogradContext context_;
   std::vector<bool> is_tensor_input_;
   abstract::AbstractBasePtrList outputs_abstract_;
 };
@@ -158,15 +220,15 @@ auto Function<T>::Apply(Args &&... args) -> std::enable_if_t<std::is_same_v<X, T
   node_ptr->SetOutputSize(output_list.size());
 
   // set autograd
-  CppFunctionDoGrad(&(node_ptr->context_), input_vars, output_list);
+  CppFunctionDoGrad(&(node_ptr->context_), input_vars, &output_list);
   return ToOutputType<forward_return_t>(output_list);
 }
 
-BaseTensorPtrList GradPreProcess(const ValuePtrList &grads, const AbstractBasePtrList &outputs_abstract,
-                                 bool materialize_grads, const std::string &function_name);
+PYNATIVE_EXPORT BaseTensorPtrList GradPreProcess(const ValuePtrList &grads, const AbstractBasePtrList &outputs_abstract,
+                                                 bool materialize_grads, const std::string &function_name);
 
-ValuePtrList GradPostProcess(const BaseTensorPtrList &outputs, std::vector<bool> is_tensor_input,
-                             const std::string &function_name);
+PYNATIVE_EXPORT ValuePtrList GradPostProcess(const BaseTensorPtrList &outputs, std::vector<bool> is_tensor_input,
+                                             const std::string &function_name);
 
 template <class T>
 ValuePtrList CppFunctionNode<T>::CallBackward(const ValuePtrList &grads) {
@@ -185,7 +247,7 @@ void CppFunctionNode<T>::Release() {
 
 namespace pybind11::detail {
 template <>
-struct type_caster<mindspore::tensor::BaseTensorPtr> {
+struct PYNATIVE_EXPORT type_caster<mindspore::tensor::BaseTensorPtr> {
   PYBIND11_TYPE_CASTER(mindspore::tensor::BaseTensorPtr, _("Tensor"));
   bool load(handle src, bool);
   static handle cast(const mindspore::tensor::BaseTensorPtr &src, return_value_policy, handle);

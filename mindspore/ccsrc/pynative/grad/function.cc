@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
+#include "pynative/grad/function.h"
 #include <algorithm>
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/tensor_py.h"
-#include "pipeline/pynative/pynative_execute.h"
-#include "pipeline/pynative/pynative_utils.h"
-#include "pipeline/pynative/grad/function.h"
-#include "pipeline/pynative/grad/grad_utils.h"
+#include "pynative/pynative_execute.h"
+#include "pynative/pynative_utils.h"
+#include "pynative/grad/grad_utils.h"
 
 namespace mindspore::pynative::autograd {
 void PrepareForForward() {
@@ -33,7 +33,7 @@ void PrepareForForward() {
   kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
 }
 
-void CppFunctionContext::MarkDirty(const BaseTensorPtrList &inputs) {
+void AutogradContext::MarkDirty(const BaseTensorPtrList &inputs) {
   dirty_inputs_.clear();
   dirty_inputs_.reserve(inputs.size());
   for (const auto &input : inputs) {
@@ -41,7 +41,7 @@ void CppFunctionContext::MarkDirty(const BaseTensorPtrList &inputs) {
   }
 }
 
-void CppFunctionContext::MarkNonDifferentiable(const BaseTensorPtrList &outputs) {
+void AutogradContext::MarkNonDifferentiable(const BaseTensorPtrList &outputs) {
   non_differentiable_.clear();
   non_differentiable_.reserve(outputs.size());
   for (const auto &output : outputs) {
@@ -49,29 +49,29 @@ void CppFunctionContext::MarkNonDifferentiable(const BaseTensorPtrList &outputs)
   }
 }
 
-bool CppFunctionContext::NeedsInputGrad(size_t output_edge_index) const {
+bool AutogradContext::NeedsInputGrad(size_t tensor_index) const {
   const auto &node = node_.lock();
   MS_EXCEPTION_IF_NULL(node);
   const auto &edge_list = node->next_edges();
-  MS_EXCEPTION_IF_CHECK_FAIL(output_edge_index < edge_list.size(), "output edge index out of range");
-  const auto &edge = edge_list[output_edge_index];
+  MS_EXCEPTION_IF_CHECK_FAIL(tensor_index < edge_list.size(), "tensor index out of range");
+  const auto &edge = edge_list[tensor_index];
   return edge.is_defined() ? edge.variable->is_need_grad() : false;
 }
 
-bool CppFunctionContext::NeedGrad(const BaseTensorPtr &tensor) {
+bool AutogradContext::NeedGrad(const BaseTensorPtr &tensor) {
   runtime::Pipeline::Get().WaitBpropStage();
   return PyNativeAlgo::AutoGradUtil::NeedGrad(tensor);
 }
 
 // NOLINTNEXTLINE(runtime/references)
-void CppFunctionDoGrad(CppFunctionContext *context, BaseTensorPtrList &inputs, BaseTensorPtrList &outputs) {
+void CppFunctionDoGrad(AutogradContext *context, const BaseTensorPtrList &inputs, BaseTensorPtrList *outputs) {
   auto node = context->node_.lock();
   MS_EXCEPTION_IF_NULL(node);
   const auto &function_name = node->name();
   const auto &pynative_executor = PyNativeExecutor::GetInstance();
   const auto &grad_executor = pynative_executor->grad_executor();
   MS_EXCEPTION_IF_NULL(pynative_executor);
-  if (grad_executor->RequiresGrad()) {
+  if (GradState::Get().RequiresGrad()) {
     MS_LOG(DEBUG) << function_name << " Begin build grad graph";
 
     // process input
@@ -90,8 +90,8 @@ void CppFunctionDoGrad(CppFunctionContext *context, BaseTensorPtrList &inputs, B
 
     // process no diff
     ValuePtrList flatten_outputs_value;
-    flatten_outputs_value.reserve(outputs.size());
-    for (auto &output_tensor : outputs) {
+    flatten_outputs_value.reserve(outputs->size());
+    for (auto &output_tensor : *outputs) {
       const bool is_diff = context->non_differentiable_.count(output_tensor) == 0;
       const bool is_input = input_tensor_set.count(output_tensor);
       if (!is_diff && is_input) {

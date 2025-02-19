@@ -19,13 +19,15 @@
 
 #include <string>
 #include <utility>
+#include <memory>
 #include "utils/ms_utils.h"
 #include "include/backend/visible.h"
-#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
+class OpRunner;
+using OpPtr = std::shared_ptr<OpRunner>;
 struct PYBOOST_API OpStatus {
   OpStatus() = default;
   OpStatus(bool _disable_mix_precision, bool _is_jit_compiling, size_t _custom_bprop_cell_count,
