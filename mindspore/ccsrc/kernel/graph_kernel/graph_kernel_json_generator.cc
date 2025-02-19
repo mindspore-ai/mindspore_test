@@ -17,6 +17,7 @@
 #include "kernel/graph_kernel/graph_kernel_json_generator.h"
 
 #include <set>
+#include <tuple>
 #include <functional>
 #include <algorithm>
 #include "abstract/dshape.h"
@@ -27,7 +28,6 @@
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
-#include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "kernel/graph_kernel/graph_kernel_json_flags.h"
 #include "include/common/symbol_engine/symbol_engine_impl.h"
@@ -1245,11 +1245,18 @@ bool GraphKernelJsonGenerator::CollectFusedJson(const std::vector<AnfNodePtr> &a
   return CollectFusedJson(anf_nodes, input_list, output_list, &kernel_json_, use_akg_cce_lib);
 }
 
-bool GraphKernelJsonGenerator::CollectFusedJsonWithSingleKernel(const CNodePtr &c_node) {
+bool GraphKernelJsonGenerator::CollectFusedJsonWithSingleKernel(
+  const CNodePtr &c_node,
+  std::function<std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList>(const AnfNodePtrList &)> build_func) {
   kernel_json_ = nlohmann::json();
   std::vector<AnfNodePtr> node_list, input_list, output_list;
-  FuncGraphPtr fg = std::get<0>(BuildGraphFromNodes({c_node}));
-  FuncGraphManagerPtr mng = GkUtils::GetFuncGraphManager(fg);
+  FuncGraphPtr fg = std::get<0>(build_func({c_node}));
+  MS_EXCEPTION_IF_NULL(fg);
+  FuncGraphManagerPtr mng = fg->manager();
+  if (mng == nullptr) {
+    mng = Manage(fg, true);
+    fg->set_manager(mng);
+  }
   auto out_cnode = fg->output()->cast<CNodePtr>();
   if (out_cnode == nullptr) {
     MS_LOG(ERROR) << "Wrong graph generated for kernel [" << c_node->fullname_with_scope()
@@ -1290,7 +1297,8 @@ bool GraphKernelJsonGenerator::CollectFusedJsonWithSingleKernel(const CNodePtr &
     }
   }
   if (changed) {
-    GkUtils::UpdateFuncGraphManager(mng, fg);
+    mng->RemoveRoots();
+    mng->KeepRoots({fg});
   }
 
   node_list.push_back(out_cnode);

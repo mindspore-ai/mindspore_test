@@ -26,11 +26,12 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "kernel/graph_kernel/graph_kernel_json_generator.h"
+#include "backend/common/graph_kernel/core/graph_builder.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "kernel/graph_kernel/graph_kernel_builder_manager.h"
-#include "backend/common/graph_kernel/symbol_engine/multi_symbol_engine.h"
+#include "kernel/graph_kernel/symbol_engine/multi_symbol_engine.h"
 
 namespace mindspore::graphkernel {
 namespace {
@@ -122,6 +123,7 @@ void GraphKernelBuild::Init() {
   auto device_type = Callback::Instance()->GetTargetFromContext();
   bool is_akg_v2 = (GraphKernelFlags::GetInstance().kernel_generator == "AKG_V2");
   kernel_builder_ = kernel::GraphKernelBuildManager::Instance().GetGraphKernelBuilder(device_type, is_akg_v2);
+  kernel_builder_->build_func_ = BuildGraphFromNodes;
   if (kernel_builder_ == nullptr) {
     MS_EXCEPTION(UnknownError) << "Can't find corresponding kernel builder for device: " << device_type
                                << ", and kernel_generator flag to be: "

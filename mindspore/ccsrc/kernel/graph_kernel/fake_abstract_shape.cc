@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "backend/common/graph_kernel/adapter/fake_abstract_shape.h"
+#include "kernel/graph_kernel/fake_abstract_shape.h"
 #include <sstream>
 #include "include/common/utils/utils.h"
 

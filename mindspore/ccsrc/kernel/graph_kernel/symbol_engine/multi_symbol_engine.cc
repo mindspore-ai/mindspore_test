@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "backend/common/graph_kernel/symbol_engine/multi_symbol_engine.h"
+#include "kernel/graph_kernel/symbol_engine/multi_symbol_engine.h"
 #include <utility>
 #include "symbolic_shape/utils.h"
 #include "symbolic_shape/int_symbol.h"

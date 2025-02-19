@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "backend/common/graph_kernel/kernel_packet/kernel_packet_engine.h"
+#include "kernel/graph_kernel/kernel_packet/kernel_packet_engine.h"
 #include "include/common/utils/utils.h"
 namespace mindspore {
 namespace graphkernel {

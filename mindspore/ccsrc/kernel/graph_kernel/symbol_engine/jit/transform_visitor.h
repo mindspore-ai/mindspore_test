@@ -24,8 +24,8 @@
 #include <vector>
 
 #include "symbolic_shape/symbol_visitor.h"
-#include "backend/common/graph_kernel/symbol_engine/jit/syntax.h"
-#include "backend/common/graph_kernel/symbol_engine/multi_symbol_engine.h"
+#include "kernel/graph_kernel/symbol_engine/jit/syntax.h"
+#include "kernel/graph_kernel/symbol_engine/multi_symbol_engine.h"
 
 namespace mindspore::graphkernel::symshape {
 using mindspore::symshape::Operation;

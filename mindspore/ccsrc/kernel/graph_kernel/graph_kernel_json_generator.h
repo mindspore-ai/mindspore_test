@@ -18,6 +18,7 @@
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_GRAPH_KERNEL_GRAPH_KERNEL_JSON_GENERATOR_H_
 #include <map>
 #include <memory>
+#include <tuple>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -75,7 +76,9 @@ class GraphKernelJsonGenerator {
   bool CollectJson(const AnfNodePtr &anf_node);
   bool CollectFusedJson(const std::vector<AnfNodePtr> &anf_nodes, const std::vector<AnfNodePtr> &input_list,
                         const std::vector<AnfNodePtr> &output_list, const bool is_akg_cc = false);
-  bool CollectFusedJsonWithSingleKernel(const CNodePtr &c_node);
+  bool CollectFusedJsonWithSingleKernel(
+    const CNodePtr &c_node,
+    std::function<std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList>(const AnfNodePtrList &)> build_func);
 
   std::string kernel_name() const { return kernel_name_; }
   nlohmann::json kernel_json() const { return kernel_json_; }

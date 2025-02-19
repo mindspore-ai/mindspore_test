@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "backend/common/graph_kernel/set_infershape_functor.h"
+#include "kernel/graph_kernel/set_infershape_functor.h"
 
 #include <algorithm>
 #include <memory>
@@ -23,10 +23,9 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/anf.h"
-#include "backend/common/graph_kernel/symbol_engine/jit/transform_visitor.h"
-#include "backend/common/graph_kernel/symbol_engine/multi_symbol_engine.h"
-#include "backend/common/graph_kernel/symbol_engine/jit/cpp_visitor.h"
-#include "backend/common/graph_kernel/core/graph_kernel_utils.h"
+#include "kernel/graph_kernel/symbol_engine/jit/transform_visitor.h"
+#include "kernel/graph_kernel/symbol_engine/multi_symbol_engine.h"
+#include "kernel/graph_kernel/symbol_engine/jit/cpp_visitor.h"
 
 namespace mindspore::graphkernel {
 BaseShapePtr SymbolEngineInfer::InferShape(const AbstractBasePtrList &args) {
@@ -132,7 +131,7 @@ bool Process(const AnfNodePtrList &cnodes, bool use_jit) {
                                                 func_graph->output()->abstract()),
             cnode);
         }
-        cnode->cast<CNodePtr>()->AddAttr(kAttrToPrim, MakeValue(prim::kPrimGraphKernel->name()));
+        cnode->cast<CNodePtr>()->AddAttr("to_prim", MakeValue(prim::kPrimGraphKernel->name()));
         changed = true;
       }
     }

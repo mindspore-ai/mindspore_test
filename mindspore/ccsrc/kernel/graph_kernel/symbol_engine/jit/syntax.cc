@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "backend/common/graph_kernel/symbol_engine/jit/syntax.h"
+#include "kernel/graph_kernel/symbol_engine/jit/syntax.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore::graphkernel::symshape::ast {

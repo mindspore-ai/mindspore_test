@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "backend/common/graph_kernel/value_graph_binder.h"
+#include "backend/common/pass/value_graph_binder.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/kernel_graph.h"
-namespace mindspore::graphkernel {
+namespace mindspore::opt {
 bool BindValueToGraph::Run(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
   auto todos = TopoSort(func_graph->get_return());
@@ -50,4 +50,4 @@ bool BindValueToGraph::Run(const FuncGraphPtr &func_graph) {
 
   return changed;
 }
-}  // namespace mindspore::graphkernel
+}  // namespace mindspore::opt

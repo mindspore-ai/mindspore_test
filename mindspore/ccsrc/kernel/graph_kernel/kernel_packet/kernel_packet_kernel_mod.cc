@@ -30,7 +30,7 @@
 #include "symbolic_shape/symbol_engine.h"
 #include "abstract/abstract_value.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
-#include "backend/common/graph_kernel/kernel_packet/kernel_packet_engine.h"
+#include "kernel/graph_kernel/kernel_packet/kernel_packet_engine.h"
 
 namespace mindspore::kernel {
 bool KernelPacketInitializer::InitKernel(const CNodePtr &real_node, const KernelModPtr &real_kernel_mod,

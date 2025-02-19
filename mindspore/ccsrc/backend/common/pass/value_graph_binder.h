@@ -20,7 +20,7 @@
 #include "include/backend/visible.h"
 #include "include/backend/optimizer/pass.h"
 
-namespace mindspore::graphkernel {
+namespace mindspore::opt {
 class BACKEND_EXPORT BindValueToGraph : public opt::Pass {
  public:
   BindValueToGraph() : Pass("bind_value_to_graph") {}
@@ -28,5 +28,5 @@ class BACKEND_EXPORT BindValueToGraph : public opt::Pass {
   bool Run(const FuncGraphPtr &func_graph) override;
 };
 using BindValueToGraphPtr = std::shared_ptr<BindValueToGraph>;
-}  // namespace mindspore::graphkernel
+}  // namespace mindspore::opt
 #endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_VALUE_GRAPH_BINDER_H_

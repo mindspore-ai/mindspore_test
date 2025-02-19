@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "backend/common/graph_kernel/symbol_engine/jit/cpp_visitor.h"
+#include "kernel/graph_kernel/symbol_engine/jit/cpp_visitor.h"
 
 #if !(defined(_WIN32) || defined(_WIN64) || defined(_MSC_VER))
 #include <dlfcn.h>

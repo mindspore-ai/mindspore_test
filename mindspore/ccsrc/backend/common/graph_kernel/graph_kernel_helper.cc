@@ -21,7 +21,6 @@
 #include <tuple>
 #include <utility>
 
-#include "backend/common/graph_kernel/adapter/fake_abstract_shape.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "base/base.h"
@@ -34,10 +33,10 @@
 #include "ir/func_graph_cloner.h"
 #include "kernel/framework_utils.h"
 #include "kernel/graph_kernel/akg/akg_kernel_json_decoder.h"
+#include "kernel/graph_kernel/fake_abstract_shape.h"
 #include "kernel/graph_kernel/graph_kernel_json_generator.h"
 #include "kernel/kernel.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "pipeline/jit/ps/action.h"
 #include "utils/hash_set.h"
 #include "utils/check_convert_utils.h"
 
