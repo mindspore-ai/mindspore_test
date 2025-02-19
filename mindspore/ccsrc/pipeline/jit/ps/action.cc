@@ -1371,7 +1371,8 @@ bool GetJitBpropGraph(const ResourcePtr &resource) {
   if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode) {
     return true;
   }
-  return pynative::PyNativeExecutor::GetInstance()->grad_executor()->jit()->GetJitGradGraph(resource);
+  return pynative::PyNativeExecutor::GetInstance()->grad_executor()->jit()->GetJitGradGraph(
+    resource, PhaseManager::GetInstance().phase());
 }
 
 bool RewriterAfterOptAPassAfterJitBprop(const ResourcePtr &resource) {

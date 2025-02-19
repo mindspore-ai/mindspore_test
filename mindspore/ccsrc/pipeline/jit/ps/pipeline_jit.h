@@ -61,7 +61,7 @@ class JitExecutorPy : public ExecutorPy {
 };
 using JitExecutorPyPtr = std::shared_ptr<JitExecutorPy>;
 
-pipeline::ExecutorPyPtr GetExecutor();
+pipeline::ExecutorPyPtr GetExecutor(const std::string &phase = "");
 }  // namespace pipeline
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PIPELINE_JIT_PS_PIPELINE_JIT_H_

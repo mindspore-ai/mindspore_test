@@ -609,7 +609,7 @@ class _JitExecutor:
             self.obj = obj
         self.shard_parent_obj = obj
         self.enable_tuple_broaden = False
-        if os.getenv('MS_DEV_JIT_PIPELINE') == '0':
+        if os.getenv('MS_DEV_JIT_PIPELINE') == '0' or fn.__name__ == _PYNATIVE_PARALLEL_FUNC_NAME:
             self._graph_executor = GraphExecutor_.get_instance()
         else:
             self._graph_executor = JitExecutor_.get_instance()

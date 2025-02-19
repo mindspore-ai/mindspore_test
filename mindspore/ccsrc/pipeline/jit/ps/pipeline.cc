@@ -905,6 +905,10 @@ py::dict GraphExecutorPy::GetParameterLayout(const std::string &phase) {
   std::string layout_graph = phase + kStepParallelGraph;
   auto graph = GetFuncGraph(layout_graph);
   if (graph == nullptr) {
+    if (info_.find(phase) == info_.end()) {
+      MS_LOG(INFO) << "Not found in GraphExecutor info for phase: " << phase;
+      return {};
+    }
     auto resource = info_[phase]->resource;
     return mindspore::parallel::GetParameterLayoutFromResource(resource);
   }
