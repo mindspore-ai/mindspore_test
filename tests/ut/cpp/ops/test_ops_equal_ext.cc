@@ -15,6 +15,12 @@
  */
 
 #include "ops/utils/general_infer_utils.h"
+#include <memory>
+#include "common/common_test.h"
+#include "ops/test_ops.h"
+#include "ops/test_ops_cmp_utils.h"
+#include "ops/test_value_utils.h"
+#include "infer/ops_func_impl/equal_ext.h"
 
 namespace mindspore::ops {
 namespace {
@@ -59,6 +65,52 @@ std::vector<GeneralInferParam> prepare_params() {
   return generator.Generate();
 }
 }  // namespace
+
+struct EqualExtInferValueParams {
+  ShapeVector x_shape;
+  TypeId x_type;
+  std::vector<float> x_data;
+  ShapeVector y_shape;
+  TypeId y_type;
+  std::vector<float> y_data;
+  std::vector<bool> out_data;
+};
+
+class TestEqualExtInferValue : public TestOps, public testing::WithParamInterface<EqualExtInferValueParams> {};
+
+TEST_P(TestEqualExtInferValue, dyn_shape_infer_value) {
+  auto &param = GetParam();
+  auto x_tensor = std::make_shared<tensor::Tensor>(param.x_type, param.x_shape, (void *)&param.x_data[0], param.x_type);
+  auto x = x_tensor->ToAbstract();
+  ASSERT_NE(x, nullptr);
+  auto y_tensor = std::make_shared<tensor::Tensor>(param.y_type, param.y_shape, (void *)&param.y_data[0], param.y_type);
+  auto y = y_tensor->ToAbstract();
+  ASSERT_NE(y, nullptr);
+  std::vector<abstract::AbstractBasePtr> input_args{std::move(x), std::move(y)};
+  auto value_op = abstract::InferValueByFuncImpl(prim::kPrimEqualExt, input_args);
+  ASSERT_TRUE(value_op.has_value());
+  auto value = value_op.value();
+  ASSERT_NE(value, nullptr);
+  auto value_tensor = value->cast<tensor::TensorPtr>();
+  ASSERT_NE(value_tensor, nullptr);
+
+  auto out = static_cast<bool *>(value_tensor->data_c());
+  for (int i = 0; i < param.out_data.size(); i++) {
+    ASSERT_TRUE(param.out_data[i] == out[i]);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(
+  TestEqualExtInferValue, TestEqualExtInferValue,
+  testing::Values(EqualExtInferValueParams{ShapeVector{2, 2},
+                                           kNumberTypeFloat32,
+                                           {2, 2, 3, 3},
+                                           ShapeVector{2, 2},
+                                           kNumberTypeFloat32,
+                                           {3, 3, 2, 2},
+                                           {false}},
+                  EqualExtInferValueParams{
+                    ShapeVector{1}, kNumberTypeFloat32, {2}, ShapeVector{1}, kNumberTypeFloat32, {2}, {true}}));
 
 INSTANTIATE_TEST_CASE_P(EqualExt, GeneralInferTest, testing::ValuesIn(prepare_params()));
 }  // namespace mindspore::ops
