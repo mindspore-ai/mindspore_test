@@ -125,12 +125,12 @@ class AdjustBrightness(ImageTensorOperation, PyTensorOperation):
 
     Args:
         brightness_factor (float): How much to adjust the brightness, must be non negative.
-            ``0`` gives a black image, ``1`` gives the original image,
-            while ``2`` increases the brightness by a factor of 2.
+            ``0.0`` gives a black image, ``1.0`` gives the original image,
+            while ``2.0`` increases the brightness by a factor of 2.
 
     Raises:
         TypeError: If `brightness_factor` is not of type float.
-        ValueError: If `brightness_factor` is less than 0.
+        ValueError: If `brightness_factor` is less than ``0.0``.
         RuntimeError: If shape of the input image is not <H, W, C>.
 
     Supported Platforms:
@@ -173,15 +173,15 @@ class AdjustBrightness(ImageTensorOperation, PyTensorOperation):
         """
         Set the device for the current operator execution.
 
-        - When the device is Ascend, input shape should be limited from [4, 6] to [8192, 4096].
+        When the device is Ascend, input shape should be limited from [4, 6] to [8192, 4096].
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                ``CPU`` and ``Ascend`` . Default: ``CPU`` .
+                `"`CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
-            ValueError: If `device_target` is not within the valid set of ['CPU', 'Ascend'].
+            ValueError: If `device_target` is not within the valid set of ["CPU", "Ascend"].
 
         Supported Platforms:
             ``CPU`` ``Ascend``
@@ -244,7 +244,7 @@ class AdjustContrast(ImageTensorOperation, PyTensorOperation):
 
     Raises:
         TypeError: If `contrast_factor` is not of type float.
-        ValueError: If `contrast_factor` is less than 0.
+        ValueError: If `contrast_factor` is less than ``0.0``.
         RuntimeError: If shape of the input image is not <H, W, C>.
 
     Supported Platforms:
@@ -286,15 +286,15 @@ class AdjustContrast(ImageTensorOperation, PyTensorOperation):
         """
         Set the device for the current operator execution.
 
-        - When the device is Ascend, input shape should be limited from [4, 6] to [8192, 4096].
+        When the device is Ascend, input shape should be limited from [4, 6] to [8192, 4096].
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                ``CPU`` and ``Ascend`` . Default: ``CPU`` .
+                ``"CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
-            ValueError: If `device_target` is not within the valid set of ['CPU', 'Ascend'].
+            ValueError: If `device_target` is not within the valid set of ["CPU", "Ascend"].
 
         Supported Platforms:
             ``CPU`` ``Ascend``
@@ -357,14 +357,14 @@ class AdjustGamma(ImageTensorOperation, PyTensorOperation):
     Args:
         gamma (float): Non negative real number.
             The output image pixel value is exponentially related to the input image pixel value.
-            gamma larger than 1 make the shadows darker,
-            while gamma smaller than 1 make dark regions lighter.
+            gamma larger than ``1.0`` make the shadows darker,
+            while gamma smaller than ``1.0`` make dark regions lighter.
         gain (float, optional): The constant multiplier. Default: ``1.0``.
 
     Raises:
         TypeError: If `gain` is not of type float.
         TypeError: If `gamma` is not of type float.
-        ValueError: If `gamma` is less than 0.
+        ValueError: If `gamma` is less than ``0.0``.
         RuntimeError: If given tensor shape is not <H, W> or <..., H, W, C>.
 
     Supported Platforms:
@@ -473,15 +473,15 @@ class AdjustHue(ImageTensorOperation, PyTensorOperation):
         """
         Set the device for the current operator execution.
 
-        - When the device is Ascend, input shape should be limited from [4, 6] to [8192, 4096].
+        When the device is Ascend, input shape should be limited from [4, 6] to [8192, 4096].
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                ``CPU`` and ``Ascend`` . Default: ``CPU`` .
+                ``"CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
-            ValueError: If `device_target` is not within the valid set of ['CPU', 'Ascend'].
+            ValueError: If `device_target` is not within the valid set of ["CPU", "Ascend"].
 
         Supported Platforms:
             ``CPU`` ``Ascend``
@@ -538,12 +538,12 @@ class AdjustSaturation(ImageTensorOperation, PyTensorOperation):
 
     Args:
         saturation_factor (float): How much to adjust the saturation, must be non negative.
-            ``0`` gives a black image, ``1`` gives the original image
-            while ``2`` increases the saturation by a factor of 2.
+            ``0.0`` gives a black image, ``1.0`` gives the original image
+            while ``2.0`` increases the saturation by a factor of 2.
 
     Raises:
         TypeError: If `saturation_factor` is not of type float.
-        ValueError: If `saturation_factor` is less than 0.
+        ValueError: If `saturation_factor` is less than ``0.0``.
         RuntimeError: If shape of the input image is not <H, W, C>.
         RuntimeError: If channel of the input image is not 3.
 
@@ -586,15 +586,15 @@ class AdjustSaturation(ImageTensorOperation, PyTensorOperation):
         """
         Set the device for the current operator execution.
 
-        - When the device is Ascend, input shape should be limited from [4, 6] to [8192, 4096].
+        When the device is Ascend, input shape should be limited from [4, 6] to [8192, 4096].
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                ``CPU`` and ``Ascend`` . Default: ``CPU`` .
+                ``"CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
-            ValueError: If `device_target` is not within the valid set of ['CPU', 'Ascend'].
+            ValueError: If `device_target` is not within the valid set of ["CPU", "Ascend"].
 
         Supported Platforms:
             ``CPU`` ``Ascend``
@@ -651,12 +651,12 @@ class AdjustSharpness(ImageTensorOperation):
 
     Args:
         sharpness_factor (float): How much to adjust the sharpness, must be
-            non negative. ``0`` gives a blurred image, ``1`` gives the
-            original image while ``2`` increases the sharpness by a factor of 2.
+            non negative. ``0.0`` gives a blurred image, ``1.0`` gives the
+            original image while ``2.0`` increases the sharpness by a factor of 2.
 
     Raises:
         TypeError: If `sharpness_factor` is not of type float.
-        ValueError: If `sharpness_factor` is less than 0.
+        ValueError: If `sharpness_factor` is less than ``0.0``.
         RuntimeError: If shape of the input image is not <H, W> or <H, W, C>.
 
     Supported Platforms:
@@ -700,16 +700,16 @@ class AdjustSharpness(ImageTensorOperation):
         """
         Set the device for the current operator execution.
 
-        - When the device is Ascend, input type supports `uint8` or `float32` , input channel supports 1 and 3.
-          The input data has a height limit of [4, 8192] and a width limit of [6, 4096].
+        When the device is Ascend, input type supports `uint8` or `float32` , input channel supports 1 and 3.
+        The input data has a height limit of [4, 8192] and a width limit of [6, 4096].
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                ``CPU`` and ``Ascend`` . Default: ``CPU`` .
+                ``"CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
-            ValueError: If `device_target` is not within the valid set of ['CPU', 'Ascend'].
+            ValueError: If `device_target` is not within the valid set of ["CPU", "Ascend"].
 
         Supported Platforms:
             ``CPU`` ``Ascend``
@@ -754,13 +754,15 @@ class Affine(ImageTensorOperation):
     Supports Ascend hardware acceleration and can be enabled through the `.device("Ascend")` method.
 
     Args:
-        degrees (float): Rotation angle in degrees between -180 and 180, clockwise direction.
+        degrees (float): Rotation angle in degrees between ``-180`` and ``180``, clockwise direction.
         translate (Sequence[float, float]): The horizontal and vertical translations, must be a sequence of size 2
-            and value between -1 and 1.
+            and value between ``-1.0`` and ``1.0``.
         scale (float): Scaling factor, which must be positive.
-        shear (Union[float, Sequence[float, float]]): Shear angle value in degrees between -180 to 180.
-            If float is provided, shear along the x axis with this value, without shearing along the y axis;
-            If Sequence[float, float] is provided, shear along the x axis and y axis with these two values separately.
+        shear (Union[float, Sequence[float, float]]): Shear angle value in degrees between ``-180`` to ``180``.
+
+            - If float is provided, shear along the x axis with this value, without shearing along the y axis;
+            - If Sequence[float, float] is provided, shear along the x axis and y axis with these two values separately.
+
         resample (Inter, optional): Image interpolation method defined by :class:`~.vision.Inter` .
             Default: ``Inter.NEAREST``.
         fill_value (Union[int, tuple[int, int, int]], optional): Optional `fill_value` to fill the area
@@ -832,15 +834,15 @@ class Affine(ImageTensorOperation):
         """
         Set the device for the current operator execution.
 
-        - When the device is Ascend, input shape should be limited from [4, 6] to [32768, 32768].
+        When the device is Ascend, input shape should be limited from [4, 6] to [32768, 32768].
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                ``CPU`` and ``Ascend`` . Default: ``CPU`` .
+                ``"CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
-            ValueError: If `device_target` is not within the valid set of ['CPU', 'Ascend'].
+            ValueError: If `device_target` is not within the valid set of ["CPU", "Ascend"].
 
         Supported Platforms:
             ``CPU`` ``Ascend``
@@ -904,9 +906,10 @@ class AutoAugment(ImageTensorOperation):
         interpolation (Inter, optional): Image interpolation method defined by :class:`~.vision.Inter` .
             Default: ``Inter.NEAREST``.
         fill_value (Union[int, tuple[int]], optional): Pixel fill value for the area outside the transformed image.
-            It can be an int or a 3-tuple. If it is a 3-tuple, it is used to fill R, G, B channels respectively.
-            If it is an integer, it is used for all RGB channels. The fill_value values must be in range [0, 255].
-            Default: ``0``.
+            It can be an int or a 3-tuple. Default: ``0``.
+            
+            - If it is a 3-tuple, it is used to fill R, G, B channels respectively.
+            - If it is an integer, it is used for all RGB channels. The fill_value values must be in range [0, 255].
 
     Raises:
         TypeError: If `policy` is not of type :class:`mindspore.dataset.vision.AutoAugmentPolicy` .
@@ -963,7 +966,8 @@ class AutoAugment(ImageTensorOperation):
 
 class AutoContrast(ImageTensorOperation, PyTensorOperation):
     """
-    Apply automatic contrast on input image. This operation calculates histogram of image, reassign cutoff percent
+    Automatically adjusts the contrast on the input image. This operation calculates histogram of image,
+    reassign cutoff percent
     of the lightest pixels from histogram to 255, and reassign cutoff percent of the darkest pixels from histogram to 0.
 
     Supports Ascend hardware acceleration and can be enabled through the `.device("Ascend")` method.
@@ -977,7 +981,7 @@ class AutoContrast(ImageTensorOperation, PyTensorOperation):
     Raises:
         TypeError: If `cutoff` is not of type float.
         TypeError: If `ignore` is not of type int or sequence.
-        ValueError: If `cutoff` is not in range [0, 50.0).
+        ValueError: If `cutoff` is not in range [0.0, 50.0).
         ValueError: If `ignore` is not in range [0, 255].
         RuntimeError: If given tensor shape is not <H, W> or <H, W, C>.
 
@@ -1026,17 +1030,17 @@ class AutoContrast(ImageTensorOperation, PyTensorOperation):
         """
         Set the device for the current operator execution.
 
-        - When the device is Ascend, input type supports `uint8` or `float32` , input channel supports 1 and 3.
-          If the data type is float32, the expected input value is in the range [0, 1].
-          The input data has a height limit of [4, 8192] and a width limit of [6, 4096].
+        When the device is Ascend, input type supports `uint8` or `float32` , input channel supports 1 and 3.
+        If the data type is float32, the expected input value is in the range [0, 1].
+        The input data has a height limit of [4, 8192] and a width limit of [6, 4096].
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                ``CPU`` and ``Ascend`` . Default: ``CPU`` .
+                ``"CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
-            ValueError: If `device_target` is not within the valid set of ['CPU', 'Ascend'].
+            ValueError: If `device_target` is not within the valid set of ["CPU", "Ascend"].
 
         Supported Platforms:
             ``CPU`` ``Ascend``
@@ -1343,16 +1347,16 @@ class ConvertColor(ImageTensorOperation):
         """
         Set the device for the current operator execution.
 
-        - When the device is Ascend, input type only supports `uint8` , input channel supports 1 and 3.
-          The input data has a height limit of [4, 8192] and a width limit of [6, 4096].
+        When the device is Ascend, input type only supports `uint8` , input channel supports 1 and 3.
+        The input data has a height limit of [4, 8192] and a width limit of [6, 4096].
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                ``CPU`` and ``Ascend`` . Default: ``CPU`` .
+                ``"CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
-            ValueError: If `device_target` is not within the valid set of ['CPU', 'Ascend'].
+            ValueError: If `device_target` is not within the valid set of ["CPU", "Ascend"].
 
         Supported Platforms:
             ``CPU`` ``Ascend``
@@ -1454,15 +1458,15 @@ class Crop(ImageTensorOperation):
         """
         Set the device for the current operator execution.
 
-        - When the device is Ascend, input/output shape should be limited from [4, 6] to [32768, 32768].
+        When the device is Ascend, input/output shape should be limited from [4, 6] to [32768, 32768].
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                ``CPU`` and ``Ascend`` . Default: ``CPU`` .
+                ``"CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
-            ValueError: If `device_target` is not within the valid set of ['CPU', 'Ascend'].
+            ValueError: If `device_target` is not within the valid set of ["CPU", "Ascend"].
 
         Supported Platforms:
             ``CPU`` ``Ascend``
@@ -1735,13 +1739,15 @@ class Decode(ImageTensorOperation, PyTensorOperation):
         """
         Set the device for the current operator execution.
 
+        When the device is Ascend, input type only supports `uint8`. 
+
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                ``CPU`` and ``Ascend`` . Default: ``CPU`` .
+                ``"CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
-            ValueError: If `device_target` is not within the valid set of ['CPU', 'Ascend'].
+            ValueError: If `device_target` is not within the valid set of ["CPU", "Ascend"].
 
         Supported Platforms:
             ``CPU`` ``Ascend``
@@ -1918,16 +1924,16 @@ class Equalize(ImageTensorOperation, PyTensorOperation):
         """
         Set the device for the current operator execution.
 
-        - When the device is Ascend, input type only supports `uint8` , input channel supports 1 and 3.
-          The input data has a height limit of [4, 8192] and a width limit of [6, 4096].
+        When the device is Ascend, input type only supports `uint8` , input channel supports 1 and 3.
+        The input data has a height limit of [4, 8192] and a width limit of [6, 4096].
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                ``CPU`` and ``Ascend`` . Default: ``CPU`` .
+                ``"CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
-            ValueError: If `device_target` is not within the valid set of ['CPU', 'Ascend'].
+            ValueError: If `device_target` is not within the valid set of ["CPU", "Ascend"].
 
         Supported Platforms:
             ``CPU`` ``Ascend``
@@ -1979,7 +1985,7 @@ class Equalize(ImageTensorOperation, PyTensorOperation):
 
 class Erase(ImageTensorOperation):
     """
-    Erase the input image with given value.
+    Erase a specified area of the input image and fills it with the specified pixel value `value`.
 
     Supports Ascend hardware acceleration and can be enabled through the `.device("Ascend")` method.
 
@@ -1989,8 +1995,11 @@ class Erase(ImageTensorOperation):
         height (int): Height of erased region.
         width (int): Width of erased region.
         value (Union[float, Sequence[float, float, float]], optional): Pixel value used to pad the erased area.
-            Default: ``0``. If float is provided, it will be used for all RGB channels.
-            If Sequence[float, float, float] is provided, it will be used for R, G, B channels respectively.
+            Default: ``0.0``.
+
+            - If float is provided, it will be used for all RGB channels.
+            - If Sequence[float, float, float] is provided, it will be used for R, G, B channels respectively.
+
         inplace (bool, optional): Whether to apply erasing inplace. Default: ``False``.
 
     Raises:
@@ -2053,17 +2062,17 @@ class Erase(ImageTensorOperation):
         """
         Set the device for the current operator execution.
 
-        - When the device is Ascend, input type supports `uint8` or `float32` , input channel supports 1 and 3.
-          The input data has a height limit of [4, 8192] and a width limit of [6, 4096].
-          The inplace parameter is not supported.
+        When the device is Ascend, input type supports `uint8` or `float32` , input channel supports 1 and 3.
+        The input data has a height limit of [4, 8192] and a width limit of [6, 4096].
+        The inplace parameter is not supported.
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                ``CPU`` and ``Ascend`` . Default: ``CPU`` .
+                ``"CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
-            ValueError: If `device_target` is not within the valid set of ['CPU', 'Ascend'].
+            ValueError: If `device_target` is not within the valid set of ["CPU", "Ascend"].
 
         Supported Platforms:
             ``CPU`` ``Ascend``
@@ -2269,16 +2278,16 @@ class GaussianBlur(ImageTensorOperation):
         """
         Set the device for the current operator execution.
 
-        - When the device is Ascend, the parameter `kernel_size` only supports values 1, 3, and 5.
-          input shape should be limited from [4, 6] to [8192, 4096].
+        When the device is Ascend, the parameter `kernel_size` only supports values 1, 3, and 5.
+        input shape should be limited from [4, 6] to [8192, 4096].
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                ``CPU`` and ``Ascend`` . Default: ``CPU`` .
+                ``"CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
-            ValueError: If `device_target` is not within the valid set of ['CPU', 'Ascend'].
+            ValueError: If `device_target` is not within the valid set of ["CPU", "Ascend"].
 
         Supported Platforms:
             ``CPU`` ``Ascend``
@@ -2456,17 +2465,17 @@ class HorizontalFlip(ImageTensorOperation):
         """
         Set the device for the current operator execution.
 
-        - When the device is Ascend, input type supports  `uint8` and `float32`,
-          input channel supports 1 and 3. The input data has a height limit of [4, 8192]
-          and a width limit of [6, 4096].
+        When the device is Ascend, input type supports  `uint8` and `float32`,
+        input channel supports 1 and 3. The input data has a height limit of [4, 8192]
+        and a width limit of [6, 4096].
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                ``CPU`` and ``Ascend`` . Default: ``CPU`` .
+                ``"CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
-            ValueError: If `device_target` is not within the valid set of ['CPU', 'Ascend'].
+            ValueError: If `device_target` is not within the valid set of ["CPU", "Ascend"].
 
         Supported Platforms:
             ``CPU`` ``Ascend``
@@ -2670,9 +2679,8 @@ class Invert(ImageTensorOperation, PyTensorOperation):
         """
         Set the device for the current operator execution.
 
-        - When the device is CPU, input type only support `uint8` , input channel support 1/2/3.
-        - When the device is Ascend, input type supports  `uint8`/`float32`, input channel supports 1/3.
-          input shape should be limited from [4, 6] to [8192, 4096].
+        When the device is Ascend, input type supports  `uint8`/`float32`, input channel supports 1/3.
+        input shape should be limited from [4, 6] to [8192, 4096].
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
@@ -3057,11 +3065,11 @@ class Normalize(ImageTensorOperation):
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                ``CPU`` and ``Ascend`` . Default: ``CPU`` .
+                ``"CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
-            ValueError: If `device_target` is not within the valid set of ['CPU', 'Ascend'].
+            ValueError: If `device_target` is not within the valid set of ["CPU", "Ascend"].
 
         Supported Platforms:
             ``CPU`` ``Ascend``
@@ -3250,15 +3258,15 @@ class Pad(ImageTensorOperation, PyTensorOperation):
         """
         Set the device for the current operator execution.
 
-        - When the device is Ascend, input/output shape should be limited from [4, 6] to [32768, 32768].
+        When the device is Ascend, input/output shape should be limited from [4, 6] to [32768, 32768].
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                ``CPU`` and ``Ascend`` . Default: ``CPU`` .
+                ``"CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
-            ValueError: If `device_target` is not within the valid set of ['CPU', 'Ascend'].
+            ValueError: If `device_target` is not within the valid set of ["CPU", "Ascend"].
 
         Supported Platforms:
             ``CPU`` ``Ascend``
@@ -3461,17 +3469,17 @@ class Perspective(ImageTensorOperation, PyTensorOperation):
         """
         Set the device for the current operator execution.
 
-        - When the device is Ascend, input type supports `uint8` and `float32`,
-          input channel supports 1 and 3. The input data has a height limit of [6, 8192]
-          and a width limit of [10, 4096].
+        When the device is Ascend, input type supports `uint8` and `float32`,
+        input channel supports 1 and 3. The input data has a height limit of [6, 8192]
+        and a width limit of [10, 4096].
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                ``CPU`` and ``Ascend`` . Default: ``CPU`` .
+                ``"CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
-            ValueError: If `device_target` is not within the valid set of ['CPU', 'Ascend'].
+            ValueError: If `device_target` is not within the valid set of ["CPU", "Ascend"].
 
         Supported Platforms:
             ``CPU`` ``Ascend``
@@ -3585,16 +3593,16 @@ class Posterize(ImageTensorOperation):
         """
         Set the device for the current operator execution.
 
-        - When the device is Ascend, input type supports  `uint8`/`float32`, input channel supports 1 and 3.
-          The input data has a height limit of [4, 8192] and a width limit of [6, 4096].
+        When the device is Ascend, input type supports  `uint8`/`float32`, input channel supports 1 and 3.
+        The input data has a height limit of [4, 8192] and a width limit of [6, 4096].
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                ``CPU`` and ``Ascend`` . Default: ``CPU`` .
+                ``"CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
-            ValueError: If `device_target` is not within the valid set of ['CPU', 'Ascend'].
+            ValueError: If `device_target` is not within the valid set of ["CPU", "Ascend"].
 
         Supported Platforms:
             ``CPU`` ``Ascend``
@@ -6055,15 +6063,15 @@ class Resize(ImageTensorOperation, PyTensorOperation):
         """
         Set the device for the current operator execution.
 
-        - When the device is Ascend, input/output shape should be limited from [4, 6] to [32768, 32768].
+        When the device is Ascend, input/output shape should be limited from [4, 6] to [32768, 32768].
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                ``CPU`` and ``Ascend`` . Default: ``CPU`` .
+                ``"CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
-            ValueError: If `device_target` is not within the valid set of ['CPU', 'Ascend'].
+            ValueError: If `device_target` is not within the valid set of ["CPU", "Ascend"].
 
         Supported Platforms:
             ``CPU`` ``Ascend``
@@ -6132,9 +6140,11 @@ class ResizedCrop(ImageTensorOperation):
         height (int): Height of the crop region.
         width (int): Width of the cropp region.
         size (Union[int, Sequence[int, int]]): The size of the output image.
-            If int is provided, the smaller edge of the image will be resized to this value,
-            keeping the image aspect ratio the same.
-            If Sequence[int, int] is provided, it should be (height, width).
+
+            - If int is provided, the smaller edge of the image will be resized to this value,
+              keeping the image aspect ratio the same.
+            - If Sequence[int, int] is provided, it should be (height, width).
+
         interpolation (Inter, optional): Image interpolation method defined by :class:`~.vision.Inter` .
             Default: ``Inter.BILINEAR``.
 
@@ -6201,17 +6211,17 @@ class ResizedCrop(ImageTensorOperation):
         """
         Set the device for the current operator execution.
 
-        - When the device is Ascend, input type supports `uint8` and `float32`,
-          input channel supports 1 and 3. The input data has a height limit of [4, 32768]
-          and a width limit of [6, 32768].
+        When the device is Ascend, input type supports `uint8` and `float32`,
+        input channel supports 1 and 3. The input data has a height limit of [4, 32768]
+        and a width limit of [6, 32768].
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                ``CPU`` and ``Ascend`` . Default: ``CPU`` .
+                ``"CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
-            ValueError: If `device_target` is not within the valid set of ['CPU', 'Ascend'].
+            ValueError: If `device_target` is not within the valid set of ["CPU", "Ascend"].
 
         Supported Platforms:
             ``CPU`` ``Ascend``
@@ -6478,11 +6488,11 @@ class Rotate(ImageTensorOperation):
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                ``CPU`` and ``Ascend`` . Default: ``CPU`` .
+                ``"CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
-            ValueError: If `device_target` is not within the valid set of ['CPU', 'Ascend'].
+            ValueError: If `device_target` is not within the valid set of ["CPU", "Ascend"].
 
         Supported Platforms:
             ``CPU`` ``Ascend``
