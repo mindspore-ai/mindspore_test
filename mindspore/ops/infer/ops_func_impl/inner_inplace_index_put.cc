@@ -19,7 +19,6 @@
 #include <utility>
 #include "infer/ops_func_impl/inner_inplace_index_put.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "ops/ops_func_impl/simple_infer.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 #include "utils/check_convert_utils.h"
 
@@ -41,23 +40,34 @@ ShapeArray InnerInplaceIndexPutFuncImpl::InferShape(const PrimitivePtr &primitiv
   }
   auto x_shape = x_tensor->GetShape();
   auto &indices = input_infos[kIndex1];
-  ShapeVector output_shape = {};
+  ShapeArray shapes = {};
   if (indices->IsSequence()) {
     if (indices->IsDynamicSequence()) {
       MS_EXCEPTION(ValueError) << "For `" << op_name << "` op, 'indices' shape can not DynamicSequenceShape.";
     } else {
       auto elements = indices->GetSequenceElements();
-      ShapeArray shapes;
+      for (size_t i = 0; i < elements.size(); i++) {
+        const auto &element_type = elements[i]->GetType();
+        // If the element type of the index is bool, this alarm is not required.
+        if (element_type == kNumberTypeBool) {
+          return {input_infos[kIndex0]->GetShape()};
+        }
+      }
       std::transform(elements.begin(), elements.end(), std::back_inserter(shapes),
                      [](const InferInfoPtr &info) { return info->GetShape(); });
-      output_shape = CheckAndCalOutputShapeInTupleCase(x_shape, shapes);
     }
   } else {
-    ShapeArray shapes;
+    for (size_t i = 1; i < input_infos.size() - 1; i++) {
+      const auto &element_type = input_infos[i]->GetType();
+      // If the element type of the index is bool, this alarm is not required.
+      if (element_type == kNumberTypeBool) {
+        return {input_infos[kIndex0]->GetShape()};
+      }
+    }
     std::transform(input_infos.begin() + kIndex1, input_infos.end() - kIndex2, std::back_inserter(shapes),
                    [](const InferInfoPtr &info) { return info->GetShape(); });
-    output_shape = CheckAndCalOutputShapeInTupleCase(x_shape, shapes);
   }
+  ShapeVector output_shape = CheckAndCalOutputShapeInTupleCase(x_shape, shapes);
   auto infos_size = input_infos.size();
   if (infos_size < kInnerInplaceIndexPutMinNum) {
     MS_LOG(EXCEPTION) << "For 'InnerInplaceIndexPut', inputs should be " << kInnerInplaceIndexPutMinNum
@@ -67,8 +77,9 @@ ShapeArray InnerInplaceIndexPutFuncImpl::InferShape(const PrimitivePtr &primitiv
   auto value_shape = value->GetShape();
   if (!IsDynamic(value_shape) && !IsDynamic(output_shape)) {
     MS_CHECK_VALUE(IsExpandableTo(value_shape, output_shape),
-                   "For 'InplaceIndexPut', shape mismatch: value tensor of shape [" + ShapeVectorToString(value_shape) +
-                     "] cannot be broadcast to indexing result of shape [" + ShapeVectorToString(output_shape) + "].");
+                   "For 'InnerInplaceIndexPut', shape mismatch: value tensor of shape [" +
+                     ShapeVectorToString(value_shape) + "] cannot be broadcast to indexing result of shape [" +
+                     ShapeVectorToString(output_shape) + "].");
   }
   return {input_infos[kIndex0]->GetShape()};
 }
@@ -93,8 +104,8 @@ ShapeVector InnerInplaceIndexPutFuncImpl::CheckAndCalOutputShapeInTupleCase(cons
                                                                             const ShapeArray &indices_shapes) const {
   // 1. Get the expanded index shape.
   if (x_shape.size() < indices_shapes.size()) {
-    MS_EXCEPTION(ValueError) << "For 'Index', too many indices for tensor of dimension " << x_shape.size() << " (got "
-                             << indices_shapes.size() << ")";
+    MS_EXCEPTION(ValueError) << "For 'InnerInplaceIndexPut', too many indices for tensor of dimension "
+                             << x_shape.size() << " (got " << indices_shapes.size() << ")";
   }
   auto expand_index_shapes = ExpandIndexShape(indices_shapes);
   if (expand_index_shapes.size() == 1 && IsDynamicRank(expand_index_shapes[kIndex0])) {
@@ -139,7 +150,7 @@ ShapeVector InnerInplaceIndexPutFuncImpl::CheckAndCalOutputShapeInTupleCase(cons
   // 4. If the input tensor has shape 0 but the index tensor does not, report error.
   if (std::find(indexed_sizes.begin(), indexed_sizes.end(), 0) != indexed_sizes.end() &&
       std::find(replacement_shape.begin(), replacement_shape.end(), 0) == replacement_shape.end()) {
-    MS_EXCEPTION(ValueError) << "For 'Index', if the input tensor of dimension with size 0"
+    MS_EXCEPTION(ValueError) << "For 'InnerInplaceIndexPut', if the input tensor of dimension with size 0"
                              << ", the index tensor should same"
                              << ", but index is out of bounds for dimension with size 0";
   }
@@ -209,7 +220,7 @@ ShapeArray InnerInplaceIndexPutFuncImpl::ExpandIndexShape(const ShapeArray &to_e
       tmp_shape = elem_shape;
       first = false;
     } else {
-      tmp_shape = CalBroadCastShape(tmp_shape, elem_shape, "InnerIndex", "indices_x", "indices_y");
+      tmp_shape = CalBroadCastShape(tmp_shape, elem_shape, "InnerInplaceIndexPut", "indices_x", "indices_y");
     }
     if (IsDynamicRank(tmp_shape)) {
       return {{abstract::TensorShape::kShapeRankAny}};
@@ -218,8 +229,6 @@ ShapeArray InnerInplaceIndexPutFuncImpl::ExpandIndexShape(const ShapeArray &to_e
   }
   return expanded_shapes;
 }
-
-REGISTER_SIMPLE_INFER(kNameInnerInplaceIndexPut, InnerInplaceIndexPutFuncImpl)
 
 }  // namespace ops
 }  // namespace mindspore
