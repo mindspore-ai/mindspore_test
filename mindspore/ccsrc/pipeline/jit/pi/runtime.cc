@@ -533,6 +533,8 @@ void AddGuardForParam(const PyFrameWrapper &wrapper, OptGuardPtr guard, bool det
     // change it to a TypeGuard.
     if (fast_index == 0 && jcr->is_for_loop_body_wrapper() && CheckScalar(value)) {
       guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GType, false);
+    } else if (value != nullptr && PyList_Check(value)) {
+      guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GEqual, true);
     } else {
       guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GDeduce, false);
     }
