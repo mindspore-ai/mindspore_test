@@ -27,6 +27,29 @@ def test_single_if():
     Description: Inline switch node into kernel graph.
     Expectation: Not throw exception.
     """
+
+    @jit
+    def foo(x, y):
+        if x > y:
+            z = x + 1
+        else:
+            z = y * 3
+        return x - 3, z / x
+
+    x = Tensor(5, mstype.int32)
+    y = Tensor(7, mstype.int32)
+    ret1 = foo(x, y)
+    ret2 = foo(y, x)
+    assert ret1 == (Tensor(2, mstype.int32), Tensor(4, mstype.int32))
+    assert ret2 == (Tensor(4, mstype.int32), Tensor(1, mstype.int32))
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_single_if_return_parameter():
+    """
+    Feature: Contrtol flow inline.
+    Description: Inline switch node into kernel graph.
+    Expectation: Not throw exception.
+    """
     param_a = Parameter(Tensor(5, mstype.int32), name='a')
     param_b = Parameter(Tensor(4, mstype.int32), name='b')
 

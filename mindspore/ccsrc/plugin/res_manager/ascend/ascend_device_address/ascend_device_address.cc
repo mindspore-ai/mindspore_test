@@ -940,7 +940,9 @@ void AscendDeviceAddress::CopyDeviceToHost(void *dst, uint64_t size) const {
     }
     SyncMemory(dst, hete_info->host_ptr_, size, ACL_MEMCPY_HOST_TO_HOST);
   } else {
-    MS_EXCEPTION_IF_NULL(GetDevicePtr());
+    if (GetDevicePtr() == nullptr) {
+      MS_LOG(EXCEPTION) << "Invalid device ptr for device address:" << this;
+    }
     SyncMemory(dst, GetDevicePtr(), size, ACL_MEMCPY_DEVICE_TO_HOST);
   }
 }

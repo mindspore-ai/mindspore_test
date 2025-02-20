@@ -106,7 +106,8 @@ class SchedulerHelper {
                                 const KernelGraphPtr &from_graph);
   static void AddSomasInfo(AbstractActor *const actor);
   static void AddSomasInfoForGraphOutput(AbstractActor *const output_actor, size_t output_index, size_t graph_id);
-
+  static void GetUnusedRefCount(AbstractActor *const from_actor, AbstractActor *const to_actor, size_t from_input_index,
+                                size_t to_input_index, const DeviceTensorPtr &device_tensor);
   // Check whether the actor set is valid.
   static void CheckActorValid(const ActorSet *actor_set);
 

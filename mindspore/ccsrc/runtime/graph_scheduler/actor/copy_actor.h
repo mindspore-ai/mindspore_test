@@ -59,6 +59,7 @@ class CopyActor : public MemoryAwareActor {
   void Run(OpContext<DeviceTensor> *const context) override;
   void UpdateOutputData(OpData<DeviceTensor> *const output_data, const DataArrowPtr &data_arrow,
                         const AnfNodePtr &output_node, OpContext<DeviceTensor> *const context) override;
+  void IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) override;
 
  private:
   friend class GraphScheduler;
@@ -80,6 +81,9 @@ class CopyActor : public MemoryAwareActor {
   std::vector<DeviceTensor *> output_device_tensor_;
 
   DeviceTensorPtr output_;
+  // If to actor does not need the output the address, such as "only shape depend" of kernel actor or "is not used" of
+  // super kernel actor, the output ref count needs to be released when sending output.
+  size_t output_free_size_{0};
   // The output size needs to be updated in the dynamic shape scene.
   bool is_need_update_output_size_;
   // The ref internal parameter device address of the copy actor output.
