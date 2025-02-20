@@ -440,9 +440,9 @@ void IrGrad::CallCustomBprop(const CustomContext &context) {
 }
 
 FuncGraphPtr IrGrad::Finish(const tensor::BaseTensorPtrList &weights, const std::vector<size_t> &grad_position,
-                            const GradAttr &grad_attr) {
+                            const GradAttr &grad_attr, bool has_aux) {
   // Set sens node and weights node
-  SetSensAndWeights(weights, grad_attr.has_sens);
+  SetSensAndWeights(weights, grad_attr.has_sens, has_aux);
 
   // BackPropagate sensitivity, except when the last node is a valuenode which may be obtained by constant folding;
   if (ad_param()->last_variable_->is_need_grad() && !ad_param()->last_variable_->is_leaf()) {
@@ -651,8 +651,8 @@ ParameterPtr IrGrad::ExtractParameter(const tensor::BaseTensorPtr &tensor) const
   return nullptr;
 }
 
-void IrGrad::SetSensAndWeights(const tensor::BaseTensorPtrList &weights, bool has_sens_arg) {
-  const auto &sens_abstract = ir_bprop_->BuildForwardLastNode();
+void IrGrad::SetSensAndWeights(const tensor::BaseTensorPtrList &weights, bool has_sens_arg, bool has_aux) {
+  const auto &sens_abstract = ir_bprop_->BuildForwardLastNode(has_aux);
   ParameterPtr sens_param = nullptr;
   if (has_sens_arg) {
     sens_param = ad_param()->tape_->add_parameter();

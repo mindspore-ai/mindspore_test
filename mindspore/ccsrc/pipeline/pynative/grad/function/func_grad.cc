@@ -705,17 +705,31 @@ bool FuncGrad::KPynativeOp(const GradParamPtr &grad_param) {
 void FuncGrad::UpdateOutputNodeOfTopCell(const ValuePtr &sens_out) {
   MS_LOG(DEBUG) << "Real output of top cell is " << PyNativeAlgo::Common::GetIdByValue(sens_out)
                 << ", output: " << sens_out->ToString();
+  sens_out_ = sens_out;
   flatten_sens_out_ = PyNativeAlgo::DataConvert::FlattenOnlyTensor(sens_out);
   ConstructParameterNodes(flatten_sens_out_);
 }
 
-void FuncGrad::BuildForwardLastNode(const ValuePtr &sens_gradient) {
+void FuncGrad::BuildForwardLastNode(const ValuePtr &sens_gradient, bool has_aux) {
+  auto root = std::make_shared<GraphRoot>("GraphRoot");
+  if (has_aux) {
+    if (!sens_out_->isa<ValueSequence>()) {
+      MS_LOG(EXCEPTION)
+        << "If you set has aux for grad or value_and_grad, that forward function should be multi output, but got "
+        << sens_out_->ToString();
+    }
+    auto aux_out = sens_out_->cast<ValueSequencePtr>()->value()[0];
+    flatten_sens_out_ = PyNativeAlgo::DataConvert::FlattenOnlyTensor(aux_out);
+  }
   if (sens_gradient == nullptr) {
     root_gradients_ = OnsLike(flatten_sens_out_);
   } else {
     root_gradients_ = PyNativeAlgo::DataConvert::FlattenOnlyTensor(sens_gradient);
   }
-  auto root = std::make_shared<GraphRoot>("GraphRoot");
+  if (root_gradients_.size() != flatten_sens_out_.size()) {
+    MS_LOG(EXCEPTION) << "Sens size should be same as out, but got " << root_gradients_.size() << " vs "
+                      << flatten_sens_out_.size();
+  }
   UpdateNextEdges(root, flatten_sens_out_);
   auto sens_variable = std::make_shared<FuncVariable>(root, false);
   if (root_gradients_.empty()) {
@@ -1448,10 +1462,10 @@ void FuncGrad::PruningWeights(const tensor::BaseTensorPtrList &weights, const Gr
 }
 
 ValuePtr FuncGrad::Finish(const tensor::BaseTensorPtrList &weights, const std::vector<size_t> &grad_position,
-                          const GradAttr &grad_attr, const ValuePtr &sens) {
+                          const GradAttr &grad_attr, bool has_aux, const ValuePtr &sens) {
   CheckSensShapeAndType(sens);
   GilReleaseWithCheck gil_release;
-  BuildForwardLastNode(sens);
+  BuildForwardLastNode(sens, has_aux);
   PruningGradGraph(weights, grad_attr, grad_position);
   MS_LOG(DEBUG) << "FuncGrad finish" << last_variable_->is_need_grad();
   if (last_variable_->is_need_grad()) {

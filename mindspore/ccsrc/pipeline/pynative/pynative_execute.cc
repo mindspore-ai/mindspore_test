@@ -254,9 +254,9 @@ void PyNativeExecutor::EndGraph(const py::object &obj, const py::object &out, co
 
 py::object PyNativeExecutor::RunGrad(const prim::GradOperationPtr &grad, const py::object &cell,
                                      const py::object &weights, const py::object &grad_position,
-                                     const py::args &args) const {
+                                     const py::object &has_aux, const py::args &args) const {
   runtime::ProfilerStageRecorder recorder(runtime::ProfilerStage::kRunGrad);
-  return PyNativeExecutorTry(grad_executor()->Run, grad, cell, weights, grad_position, args);
+  return PyNativeExecutorTry(grad_executor()->Run, grad, cell, weights, grad_position, has_aux, args);
 }
 
 py::object PyNativeExecutor::GradJit(const py::args &args) const {

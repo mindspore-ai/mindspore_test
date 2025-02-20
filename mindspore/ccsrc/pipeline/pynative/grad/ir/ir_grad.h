@@ -49,7 +49,7 @@ class IrGrad : public AutoGrad {
   void UpdateOutputNodeOfTopCell(const ValuePtr &sens_out) override;
   void CallCustomBprop(const CustomContext &context) override;
   FuncGraphPtr Finish(const tensor::BaseTensorPtrList &weights, const std::vector<size_t> &grad_position,
-                      const GradAttr &grad_attr);
+                      const GradAttr &grad_attr, bool has_aux);
 
   // Grad for function graph
   inline AdParamPtr ad_param() const {
@@ -77,7 +77,7 @@ class IrGrad : public AutoGrad {
   void DoParameterReplaceByManager(bool has_sens_arg);
   void DoParameterReplaceByUser(bool has_sens_arg, expander::bprop::UserType *user);
   // Set sens and weights parameter nodes by user input info
-  void SetSensAndWeights(const tensor::BaseTensorPtrList &weights, bool has_sens_arg);
+  void SetSensAndWeights(const tensor::BaseTensorPtrList &weights, bool has_sens_arg, bool has_aux);
 
   // Set return node according to grad flag
   void SetOutput(const tensor::BaseTensorPtrList &weights, const std::vector<size_t> &grad_position,

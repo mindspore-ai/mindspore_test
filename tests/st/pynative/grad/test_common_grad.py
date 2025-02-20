@@ -977,3 +977,28 @@ def test_auto_grad_stop_gradient_inplace_view_error():
     grad_op = ops.GradOperation(get_all=True)
     with pytest.raises(RuntimeError, match="Cannot stop_gradient view inplace"):
         grad_op(net)(x)
+
+
+class AuxNet(nn.Cell):
+    def construct(self, x):
+        y = x * x
+        z = y + y
+        h = x * x
+        return y, z, h
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_value_and_grad_has_aux():
+    """
+    Feature: Test hax aux.
+    Description: Test value_and_grad has aux.
+    Expectation: Success.
+    """
+    x = Tensor([2.0], ms.float32)
+    net = AuxNet()
+    grad_op = ops.value_and_grad(net, 0, None, True)
+    _, grads = grad_op(x)
+    assert np.allclose(grads.asnumpy(), np.array([4.0], dtype=np.float32), 0.00001, 0.00001)

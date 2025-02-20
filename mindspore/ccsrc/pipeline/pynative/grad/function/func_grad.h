@@ -158,14 +158,14 @@ class FuncGrad : public AutoGrad {
   VariablePtr SafeGetVariableImpl(const tensor::BaseTensorPtr &tensor) override;
 
   ValuePtr Finish(const tensor::BaseTensorPtrList &weights, const std::vector<size_t> &grad_position,
-                  const GradAttr &grad_attr, const ValuePtr &sens = nullptr);
+                  const GradAttr &grad_attr, bool has_aux, const ValuePtr &sens = nullptr);
 
  private:
   void RebaseVariable(const OpGradInfoPtr &op_grad_info, const VariablePtr &variable, const BaseTensorPtr &input_tensor,
                       size_t output_index);
   void UpdateNextEdges(const BackwardNodePtr &grad_node, const ValuePtrList &inputs);
   void BackPropagate();
-  void BuildForwardLastNode(const ValuePtr &sens_gradient);
+  void BuildForwardLastNode(const ValuePtr &sens_gradient, bool has_aux);
   void WeightNodeNotInGradButHasTensorHook(const FuncVariablePtr &variable, const BackwardNodePtr &fn) const;
   OrderedSet<FuncVariablePtr>::reverse_iterator GetLastNodeReverseIter();
   void ConstructParameterNodes(const ValuePtrList &inputs);
@@ -202,6 +202,7 @@ class FuncGrad : public AutoGrad {
   std::vector<std::pair<ValuePtr, FuncVariablePtr>> cell_inputs_;
   std::vector<tensor::BaseTensorPtr> weights_used_in_graph_;
   ValuePtrList flatten_sens_out_{};
+  ValuePtr sens_out_;
   FuncVariablePtr last_variable_{nullptr};
   ValuePtrList root_gradients_;
 };

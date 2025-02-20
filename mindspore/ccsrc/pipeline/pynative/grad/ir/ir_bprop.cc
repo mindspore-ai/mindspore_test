@@ -353,7 +353,15 @@ OrderedSet<IrVariablePtr>::reverse_iterator IrBprop::GetLastNodeReverseIter() co
   return ad_param_->variable_adjoint_set_.rend();
 }
 
-AbstractBasePtr IrBprop::BuildForwardLastNode() {
+AbstractBasePtr IrBprop::BuildForwardLastNode(bool has_aux) {
+  if (has_aux) {
+    if (!ad_param_->sens_value_->isa<ValueSequence>()) {
+      MS_LOG(EXCEPTION)
+        << "If you set has aux for grad or value_and_grad, that forward function should be multi output, but got "
+        << ad_param_->sens_value_->ToString();
+    }
+    ad_param_->sens_value_ = ad_param_->sens_value_->cast<ValueSequencePtr>()->value()[0];
+  }
   MS_LOG(DEBUG) << "Process last node info " << PyNativeAlgo::Common::GetIdByValue(ad_param_->sens_value_);
   auto zeros_like_node = PyNativeAlgo::AutoGradUtil::BuildSpecialNode(ad_param_->tape_, ad_param_->sens_value_, nullptr,
                                                                       SpecialType::kZerosLikeType);

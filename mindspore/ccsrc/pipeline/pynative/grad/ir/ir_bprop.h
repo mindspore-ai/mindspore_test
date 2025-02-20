@@ -88,7 +88,7 @@ class IrBprop {
   void BackPropagate();
 
   // Get lase node variable
-  AbstractBasePtr BuildForwardLastNode();
+  AbstractBasePtr BuildForwardLastNode(bool has_aux);
 
   // Replace for true dout
   void Replace(const AnfNodePtr &old_node, const AnfNodePtr &new_node, expander::bprop::UserType *user,

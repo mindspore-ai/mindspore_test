@@ -35,7 +35,6 @@ from mindspore._c_expression import GradOperation_, HyperMap_, Map_, MultitypeFu
 from mindspore.common import dtype as mstype
 from mindspore.common.api import jit, _pynative_executor, _wrap_func
 from mindspore.common.api import _add_flags, _core
-from mindspore.ops.primitive import Primitive
 from mindspore.ops import signature as sig
 
 __all__ = [TupleAdd_, ListAdd_, UnpackCall_, TupleGetItemTensor_, SequenceSliceGetItem_,
@@ -576,11 +575,7 @@ class _Grad(GradOperation_):
             outputs = fn(*args, **kwargs)
             if not isinstance(outputs, tuple) or len(outputs) < 2:
                 raise ValueError("When has_aux is True, origin fn requires more than one outputs.")
-            res = (outputs[0],)
-            stop_gradient = Primitive("StopGradient")
-            for item in outputs[1:]:
-                res += (stop_gradient(item),)
-            return res
+            return outputs
 
         grad_ = _Grad(self.get_all, self.get_by_list, self.sens_param, self.get_by_position, self.has_aux,
                       self.get_value, self.return_ids, self.merge_forward)
@@ -610,7 +605,10 @@ class _Grad(GradOperation_):
             @_wrap_func
             def after_grad(*args, **kwargs):
                 run_args, res = self._pynative_forward_run(fn, grad_, weights, *args, **kwargs)
-                out = _pynative_executor.grad(fn, grad_, weights, grad_position, *run_args)
+                if self.has_aux:
+                    out = _pynative_executor.grad_aux(fn, grad_, weights, grad_position, *run_args)
+                else:
+                    out = _pynative_executor.grad(fn, grad_, weights, grad_position, *run_args)
                 out = _grads_divided_by_device_num_if_recomputation(out)
                 if self.return_ids and out:
                     out = _combine_with_ids(grad_position, weights, out)
