@@ -74,6 +74,9 @@ class BACKEND_EXPORT RuntimeConf {
     mem_max_size_ = mem_max_size;
     mem_optimize_level_ = mem_optimize_level;
     conf_status_[kMemoryConf] = true;
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    ms_context->set_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL, mem_optimize_level);
   }
   bool IsMemoryConfigured() { return conf_status_.count(kMemoryConf); }
   float mem_init_size() { return IsMemoryConfigured() ? mem_init_size_ : 0; }
