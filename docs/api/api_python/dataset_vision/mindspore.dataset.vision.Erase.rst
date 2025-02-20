@@ -1,7 +1,7 @@
 mindspore.dataset.vision.Erase
 ==============================
 
-.. py:class:: mindspore.dataset.vision.Erase(top, left, height, width, value=0, inplace=False)
+.. py:class:: mindspore.dataset.vision.Erase(top, left, height, width, value=0.0, inplace=False)
 
     擦除输入图像中指定的区域，并填充指定像素值 `value` 。
 
