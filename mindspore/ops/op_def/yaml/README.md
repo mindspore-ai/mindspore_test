@@ -113,5 +113,5 @@ The auto generated operator pyboost code files are in path:
 
 4. 'mindspore/ops/kernel/cpu/pyboost/auto_generate'.
 
-5. 'mindspore/ccsrc/pipeline/pynative/op_function/auto_generate'.
+5. 'mindspore/ccsrc/pynative/op_function/auto_generate'.
 

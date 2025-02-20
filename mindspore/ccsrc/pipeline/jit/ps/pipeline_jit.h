@@ -62,7 +62,7 @@ class FRONTEND_EXPORT JitExecutorPy : public ExecutorPy {
 };
 using JitExecutorPyPtr = std::shared_ptr<JitExecutorPy>;
 
-pipeline::ExecutorPyPtr GetExecutor(const std::string &phase = "");
+FRONTEND_EXPORT pipeline::ExecutorPyPtr GetExecutor(const std::string &phase = "");
 }  // namespace pipeline
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PIPELINE_JIT_PS_PIPELINE_JIT_H_

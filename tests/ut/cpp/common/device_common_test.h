@@ -132,7 +132,7 @@ class TestKernelExecutor : public device::KernelExecutor {
     auto kernel_graph = graph->cast<KernelGraphPtr>();
     MS_EXCEPTION_IF_NULL(kernel_graph);
     auto &nodes = kernel_graph->execution_order();
-    for (const auto node : nodes) {
+    for (const auto &node : nodes) {
       MS_EXCEPTION_IF_NULL(node);
       SetKernelInfo(node);
     }
@@ -145,7 +145,7 @@ class TestKernelExecutor : public device::KernelExecutor {
   }
 
   virtual void CreateKernel(const std::vector<CNodePtr> &nodes) const {
-    for (const auto node : nodes) {
+    for (const auto &node : nodes) {
       MS_EXCEPTION_IF_NULL(node);
       SetKernelInfo(node);
 

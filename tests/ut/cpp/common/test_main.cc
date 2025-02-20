@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "gtest/gtest.h"
-#include "pipeline/jit/ps/pipeline.h"
+#include "pybind_api/resource/manager.h"
 
 extern "C" {
 void common_log_init(void);
@@ -25,6 +25,6 @@ __attribute__((section(".init_array"), used)) static auto *init = common_log_ini
 GTEST_API_ int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   int ret = RUN_ALL_TESTS();
-  mindspore::pipeline::ClearResAtexit();
+  mindspore::ClearResAtexit();
   return ret;
 }

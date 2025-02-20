@@ -1425,7 +1425,7 @@ AObject *AbstractDict::GetItem(AObject *k) {
     res->AddUser(this);
     return res;
   }
-  for (const auto [key, value] : key_values_) {
+  for (const auto &[key, value] : key_values_) {
     if (key == k) {
       return value;
     }

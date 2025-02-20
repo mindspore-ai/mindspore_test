@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 #include "pybind_api/hal/utils_py.h"
-#include <utility>
 #include <string>
-#include "runtime/pynative/op_executor.h"
+#include "runtime/pipeline/pipeline.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/ms_context.h"
 #include "include/common/pybind_api/api_register.h"
+#include "include/backend/mem_reuse/mem_tracker.h"
 #include "runtime/device/multi_stream_controller.h"
-#include "pipeline/pynative/pynative_utils.h"
 #include "include/common/utils/convert_utils_py.h"
+#include "runtime/hardware/device_context.h"
 
 namespace mindspore {
 namespace hal {
@@ -67,7 +67,7 @@ std::vector<size_t> PyListToVectorSize(const py::object &py_list) {
 }
 }  // namespace
 
-DeviceContext *GetDeviceCtx() {
+device::DeviceContext *GetDeviceCtx() {
   const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   auto device_ctx = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
     {device_name, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});

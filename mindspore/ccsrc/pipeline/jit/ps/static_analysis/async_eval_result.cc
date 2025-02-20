@@ -27,7 +27,10 @@ namespace abstract {
 namespace {
 constexpr auto kStateStop = "Stop";
 }  // namespace
-thread_local std::string AnalysisSchedule::thread_id_ = "m";
+thread_local std::string thread_id_ = "m";
+
+void AnalysisSchedule::set_thread_id(const std::string &thread_id) { thread_id_ = thread_id; }
+std::string &AnalysisSchedule::thread_id() { return thread_id_; }
 
 void AnalysisSchedule::Schedule() {
   const auto checkPeriod = std::chrono::seconds(3);
@@ -324,6 +327,11 @@ std::string AsyncAbstractFuncAtom::ToString() const {
   buffer << ")";
 
   return buffer.str();
+}
+
+AnalysisResultCacheMgr &AnalysisResultCacheMgr::GetInstance() {
+  static AnalysisResultCacheMgr instance;
+  return instance;
 }
 
 void AnalysisResultCacheMgr::Clear() {

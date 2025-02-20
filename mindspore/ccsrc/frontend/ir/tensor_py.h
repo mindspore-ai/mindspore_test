@@ -110,7 +110,7 @@ namespace mindspore {
 namespace tensor {
 
 // Tensor python wrapper and adapter class.
-class TensorPybind {
+class FRONTEND_EXPORT TensorPybind {
  public:
   /// \brief Create Tensor from a numpy array object.
   ///
@@ -189,7 +189,7 @@ class TensorPybind {
 };
 
 // CSRTensor python wrapper and adapter class.
-class CSRTensorPy {
+class FRONTEND_EXPORT CSRTensorPy {
  public:
   static py::tuple GetPyTupleShape(const CSRTensor &csr_tensor);
   static TensorPyPtr GetIndptr(const CSRTensorPtr &csr_tensor);
@@ -198,7 +198,7 @@ class CSRTensorPy {
 };
 
 // COOTensor python wrapper and adapter class.
-class COOTensorPy {
+class FRONTEND_EXPORT COOTensorPy {
  public:
   static py::tuple GetPyTupleShape(const COOTensor &coo_tensor);
   static TensorPyPtr GetIndices(const COOTensorPtr &coo_tensor);
@@ -206,14 +206,14 @@ class COOTensorPy {
 };
 
 // RowTensor python wrapper and adapter class.
-class RowTensorPy {
+class FRONTEND_EXPORT RowTensorPy {
  public:
   static py::tuple GetPyTupleShape(const RowTensor &row_tensor);
   static TensorPyPtr GetIndices(const RowTensorPtr &row_tensor);
   static TensorPyPtr GetValues(const RowTensorPtr &row_tensor);
 };
 
-class TensorPyImpl {
+class FRONTEND_EXPORT TensorPyImpl {
  public:
   /// \brief Create a C++ Tensor.
   ///
@@ -332,13 +332,13 @@ class TensorPyImpl {
   static void RemoveTensorBackwardHook(uint64_t handle_id);
   static py::list GetHooks(const TensorPyPtr &tensorpy);
   static uintptr_t DataPtr(const TensorPyPtr &tensorpy);
+  static ShapeVector GetShapeFromTuple(const py::tuple &tuple);
 
   /// \brief Get a python Tensor.
   ///
   /// \return A python Tensor.
   static py::object GetPythonTensor();
 };
-
 }  // namespace tensor
 }  // namespace mindspore
 

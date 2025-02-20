@@ -255,7 +255,7 @@ class MemoryTraceManager {
 };
 
 // Encapsulate the actor APIs associated with execution.
-class ActorDispatcher {
+class BACKEND_EXPORT ActorDispatcher {
  public:
   template <typename T, typename Arg0, typename Arg1>
   static void Send(const AID &aid, void (T::*method)(Arg0), Arg1 &&arg) {

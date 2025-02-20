@@ -40,7 +40,7 @@
 #include "pipeline/jit/ps/action.h"
 #include "pipeline/jit/pi/graph_build/func_graph_builder.h"
 #include "include/common/utils/tensor_py.h"
-#include "pipeline/pynative/forward/cast_base.h"
+#include "include/common/pynative/common_utils.h"
 
 namespace mindspore {
 namespace parse {
@@ -979,10 +979,9 @@ bool PromotePrimitiveInputsType(const ValuePtr &primitive, AbstractBasePtrList *
     }
     auto build_value = (*inputs_abs_list)[i]->BuildValue();
     if (build_value->isa<Scalar>()) {
-      (*inputs_abs_list)[i] = pynative::CastBaseOperation::ScalarToDstDtypeValue(build_value, it->second)->ToAbstract();
+      (*inputs_abs_list)[i] = pynative::CastUtils::ScalarToDstDtypeValue(build_value, it->second)->ToAbstract();
     } else if (build_value->isa<tensor::BaseTensor>() && it->second.second) {  // is tensor
-      (*inputs_abs_list)[i] =
-        pynative::CastBaseOperation::TensorToDstDtypeValue(build_value, it->second.first)->ToAbstract();
+      (*inputs_abs_list)[i] = pynative::CastUtils::TensorToDstDtypeValue(build_value, it->second.first)->ToAbstract();
     }
   }
   return true;

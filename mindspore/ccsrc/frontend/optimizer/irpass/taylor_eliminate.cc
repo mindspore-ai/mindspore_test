@@ -21,7 +21,6 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/func_graph_cloner.h"
-#include "pipeline/pynative/pynative_execute.h"
 
 namespace mindspore {
 namespace opt {

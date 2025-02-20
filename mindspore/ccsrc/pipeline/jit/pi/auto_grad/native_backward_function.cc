@@ -16,9 +16,10 @@
 #include "pipeline/jit/pi/auto_grad/native_backward_function.h"
 #include <algorithm>
 #include <vector>
+#include <utility>
 #include "include/common/expander/core/node.h"
-#include "pipeline/pynative/pynative_utils.h"
-#include "runtime/pynative/op_function/pyboost_grad_functions.h"
+#include "pyboost/grad_functions/pyboost_grad_functions.h"
+#include "include/common/pynative/common_utils.h"
 
 namespace mindspore {
 namespace pijit {
@@ -89,7 +90,7 @@ ValuePtrList NativeBackwardFunc::Run(const ValuePtrList &inputs, const ValuePtr 
                          }
                          return node->Value();
                        });
-  return PostProcess(pynative::PyNativeAlgo::DataConvert::FlattenTensorSeqInValueSeq(cal_grads_values));
+  return PostProcess(pynative::CommonUtils::FlattenTensorSeqInValueSeq(cal_grads_values));
 }
 
 ValuePtrList NativeBackwardFunc::PostProcess(const ValuePtrList &gradient_value) {
@@ -110,7 +111,7 @@ InputType GetInputType(const ValuePtr &input) {
 }
 
 NodePtrList NativeBackwardFunc::PreProcess(const ValuePtrList &inputs, const ValuePtr &out,
-                                                     const ValuePtr &dout) const {
+                                           const ValuePtr &dout) const {
   NodePtrList node_inputs;
   (void)std::transform(inputs.begin(), inputs.end(), std::back_inserter(node_inputs), [this](const auto &input) {
     if (input == nullptr) {

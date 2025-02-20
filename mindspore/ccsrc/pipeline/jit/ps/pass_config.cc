@@ -177,6 +177,11 @@ void PassConfigure::SetOptimizeConfig(const py::list &optimize_cfg) {
   SetPasses(pass_items);
 }
 
+PassConfigure &PassConfigure::Instance() {
+  static PassConfigure instance;
+  return instance;
+}
+
 std::string PassConfigure::GetOptimizeConfig() {
   std::stringstream out;
   out << std::endl << "Opt graph functions:" << std::endl;

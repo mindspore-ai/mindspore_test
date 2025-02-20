@@ -17,16 +17,18 @@
 #ifndef PYBIND_API_EXPORT_FLAGS_H_
 #define PYBIND_API_EXPORT_FLAGS_H_
 
+#include "include/common/visible.h"
+
 namespace mindspore {
-extern const char PYTHON_PRIMITIVE_FLAG[];
-extern const char PYTHON_PRIMITIVE_FUNCTION_FLAG[];
-extern const char PYTHON_CELL_AS_DICT[];
-extern const char PYTHON_CELL_AS_LIST[];
-extern const char PYTHON_MS_CLASS[];
-extern const char PYTHON_JIT_FORBIDDEN[];
-extern const char PYTHON_CLASS_MEMBER_NAMESPACE[];
-extern const char PYTHON_FUNCTION_FORBID_REUSE[];
-extern const char PYTHON_CELL_LIST_FROM_TOP[];
+FRONTEND_EXPORT extern const char PYTHON_PRIMITIVE_FLAG[];
+FRONTEND_EXPORT extern const char PYTHON_PRIMITIVE_FUNCTION_FLAG[];
+FRONTEND_EXPORT extern const char PYTHON_CELL_AS_DICT[];
+FRONTEND_EXPORT extern const char PYTHON_CELL_AS_LIST[];
+FRONTEND_EXPORT extern const char PYTHON_MS_CLASS[];
+FRONTEND_EXPORT extern const char PYTHON_JIT_FORBIDDEN[];
+FRONTEND_EXPORT extern const char PYTHON_CLASS_MEMBER_NAMESPACE[];
+FRONTEND_EXPORT extern const char PYTHON_FUNCTION_FORBID_REUSE[];
+FRONTEND_EXPORT extern const char PYTHON_CELL_LIST_FROM_TOP[];
 }  // namespace mindspore
 
 #endif  // PYBIND_API_EXPORT_FLAGS_H_

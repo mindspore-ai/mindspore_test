@@ -23,7 +23,7 @@
 #include "pipeline/jit/ps/pipeline_jit.h"
 #include "frontend/operator/composite/composite.h"
 #include "frontend/operator/composite/functional_overload.h"
-#include "pipeline/pynative/pynative_execute.h"
+#include "pynative/pynative_execute.h"
 #include "utils/symbolic.h"
 #include "include/common/pybind_api/api_register.h"
 #include "include/common/utils/python_adapter.h"
@@ -51,7 +51,7 @@
 #include "pipeline/llm_boost/utils.h"
 #include "pipeline/llm_boost/llm_boost_binder.h"
 #include "pybind_api/gil_scoped_long_running.h"
-
+#include "pybind_api/resource/manager.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "include/common/profiler.h"
 
@@ -668,7 +668,7 @@ PYBIND11_MODULE(_c_expression, m) {
 
     // only in case that c++ calling python interface, ClearResAtexit should be called.
     if (mindspore::python_adapter::IsPythonEnv()) {
-      mindspore::pipeline::ClearResAtexit();
+      mindspore::ClearResAtexit();
     }
   }});
 
@@ -789,7 +789,7 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("initialized", &DeviceContext::initialized, "Return whether this device backend is successfully initialized.");
   DeviceContextManager::GetInstance().RegisterDeviceStatelessFunc(&m);
 
-  (void)m.def("_ms_memory_recycle", &mindspore::pipeline::MemoryRecycle, "Recycle memory used by mindspore.");
+  (void)m.def("_ms_memory_recycle", &mindspore::MemoryRecycle, "Recycle memory used by mindspore.");
   (void)m.def("_bind_device_ctx", &mindspore::pipeline::BindDeviceCtx, "Bind device context to current thread");
   (void)m.def("swap_cache", &mindspore::pipeline::SwapCache, py::arg("host"), py::arg("device"),
               py::arg("block_mapping"), py::arg("is_device_to_host"), "Swap Cache for PageAttention.");

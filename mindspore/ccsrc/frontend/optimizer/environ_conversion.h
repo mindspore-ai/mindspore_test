@@ -22,7 +22,7 @@
 namespace mindspore {
 /* namespace to support opt */
 namespace opt {
-bool EnvironConversion(const pipeline::ResourcePtr &resource);
+FRONTEND_EXPORT bool EnvironConversion(const pipeline::ResourcePtr &resource);
 }  // namespace opt
 }  // namespace mindspore
 

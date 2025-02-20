@@ -43,7 +43,7 @@ class AsyncAbstract;
 class AsyncAbstractFuncAtom;
 using AsyncInferTaskPtr = std::shared_ptr<AsyncInferTask>;
 using AsyncAbstractPtr = std::shared_ptr<AsyncAbstract>;
-class AnalysisSchedule {
+class FRONTEND_EXPORT AnalysisSchedule {
  public:
   ~AnalysisSchedule() = default;
   AnalysisSchedule(const AnalysisSchedule &) = delete;
@@ -52,8 +52,8 @@ class AnalysisSchedule {
     static AnalysisSchedule instance;
     return instance;
   }
-  static void set_thread_id(const std::string &thread_id) { thread_id_ = thread_id; }
-  static std::string &thread_id() { return thread_id_; }
+  static void set_thread_id(const std::string &thread_id);
+  static std::string &thread_id();
   void HandleException(const std::exception &ex);
   void Stop();
   void Wait();
@@ -112,7 +112,6 @@ class AnalysisSchedule {
   std::condition_variable activate_thread_cv_;
   std::list<AsyncInferTaskPtr> schedule_list_;
   std::set<std::string> activate_threads_;
-  static thread_local std::string thread_id_;
   std::shared_ptr<std::thread> dispatcher_;
 };
 
@@ -435,7 +434,7 @@ class EvaluatorCacheMgr {
 };
 
 // AnalysisCache
-class AnalysisResultCacheMgr {
+class FRONTEND_EXPORT AnalysisResultCacheMgr {
  public:
   using AnalysisConfigResultMap =
     mindspore::HashMap<AnfNodeConfigPtr, EvalResultPtr, AnfNodeConfigHasher, AnfNodeConfigEqual>;
@@ -445,10 +444,7 @@ class AnalysisResultCacheMgr {
   ~AnalysisResultCacheMgr() = default;
   AnalysisResultCacheMgr(const AnalysisResultCacheMgr &) = delete;
   AnalysisResultCacheMgr &operator=(const AnalysisResultCacheMgr &) = delete;
-  static AnalysisResultCacheMgr &GetInstance() {
-    static AnalysisResultCacheMgr instance;
-    return instance;
-  }
+  static AnalysisResultCacheMgr &GetInstance();
   void Clear();
   const AnalysisConfigResultCache &GetCache() const { return cache_; }
   inline void SetValue(const AnfNodeConfigPtr &conf, const EvalResultPtr &arg) { cache_.set(conf, arg); }

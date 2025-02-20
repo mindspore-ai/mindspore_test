@@ -29,16 +29,13 @@
 #include "utils/ms_context.h"
 #include "include/common/utils/primitive_utils.h"
 #include "utils/check_convert_utils.h"
-#include "pipeline/pynative/pynative_execute.h"
 #include "include/common/profiler.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "include/common/utils/tensor_py.h"
+#include "utils/flags.h"
 
 namespace mindspore {
 namespace {
-constexpr auto kCellIDAttrName = "cell_id";
-constexpr auto kCustomOpNameAttrName = "custom_op_name";
-constexpr auto kIsRecomputeAttr = "is_recompute";
 
 static uint64_t MakeId() {
   // Use atomic to make id generator thread safe.
@@ -66,23 +63,6 @@ void SyncData(const py::object &arg) {
   }
 }
 
-struct RunPrimitivePyHookFunctionRegister {
-  RunPrimitivePyHookFunctionRegister() {
-    python_adapter::PyAdapterCallback::SetRunPrimitivePyHookFunctionHandler(
-      [](const PrimitivePtr &prim, const VectorRef &args) -> BaseRef {
-        auto py_prim = prim->cast<PrimitivePyPtr>();
-        MS_EXCEPTION_IF_NULL(py_prim);
-        return py_prim->RunHookFunction(args);
-      });
-  }
-} callback_register;
-struct ProcessUnPairedCellHookRegister {
-  ProcessUnPairedCellHookRegister() {
-    python_adapter::PyAdapterCallback::SetProcessUnPairedCellHookHandler(
-      [](bool execute_hook_fn) -> void { PrimitivePy::ProcessUnPairedCellHook(execute_hook_fn); });
-  }
-} cell_hook_callback_register;
-
 std::map<HookType, std::string> hook_type_with_str = {
   {HookType::kCustomOpBprop, "CustomOpBprop"},
   {HookType::kCellCustomBprop, "CellCustomBprop"},
@@ -92,15 +72,6 @@ std::map<HookType, std::string> hook_type_with_str = {
   {HookType::kBackwardHook, "BackwardHook"},
   {HookType::kUnknown, "Unknown"},
 };
-
-py::tuple UnfoldPyArgs(const py::tuple &py_args) {
-  auto input0 = py::cast<py::tuple>(py_args[0]);
-  py::list list = py::cast<py::list>(input0);
-  for (size_t i = 1; i < py_args.size(); i++) {
-    list.append(py_args[i]);
-  }
-  return py::cast<py::tuple>(list);
-}
 }  // namespace
 
 mindspore::OrderedMap<std::string, py::function> PrimitivePy::unpair_backward_hook_grad_{};
@@ -254,192 +225,6 @@ void PrimitivePy::CheckHookConsistency(const py::object &grad_out, const py::obj
                                << actual_out_tensor->GetShapeAndDataTypeInfo();
     }
   }
-}
-
-BaseRef PrimitivePy::RunCellCustomBpropFunction(const py::tuple &py_args) const {
-  py::tuple converted_args = ConvertCTensorToPyTensor(py_args);
-  MS_LOG(DEBUG) << "Get convert args size " << converted_args.size() << ", args are "
-                << ConvertPyObjToString(converted_args);
-  // If recompute, just discard dout; Otherwise, discat out and dout
-  bool is_recompute = HasAttr(kIsRecomputeAttr);
-  size_t non_inp_args_size = is_recompute ? kSizeOne : kSizeTwo;
-
-  auto inp_args_size = py_args.size() - non_inp_args_size;
-  py::tuple input_args(inp_args_size);
-  for (size_t i = 0; i < inp_args_size; ++i) {
-    input_args[i] = py_args[i];
-  }
-  MS_LOG(DEBUG) << "Get cell input arg size " << inp_args_size;
-  // Run bprop function.
-  const auto &inst = pynative::PyNativeExecutor::GetInstance();
-  MS_EXCEPTION_IF_NULL(inst);
-  try {
-    MS_LOG(DEBUG) << "Run cell custom bprop function start.";
-    py::tuple grads;
-    if (inst->grad_flag()) {
-      inst->NewGraph(hook_fn_, input_args.cast<py::args>());
-    }
-    py::object grads_obj = hook_fn_(*converted_args);
-    MS_LOG(DEBUG) << "Get cell hook output " << ConvertPyObjToString(grads_obj);
-    grads = CheckBpropOut(grads_obj, py_args, bprop_cls_name_);
-    py::object out = grads_obj;
-    // If grads.size() > inp_args_size, that means exist weights.
-    if (grads.size() > inp_args_size) {
-      MS_LOG(DEBUG) << "Get grads size " << grads.size();
-      out = py::cast<py::tuple>(grads_obj)[0];
-    }
-    if (inst->grad_flag()) {
-      inst->EndGraph(hook_fn_, out, input_args.cast<py::args>());
-    }
-    MS_LOG(DEBUG) << "Run cell custom bprop function end.";
-    return std::make_shared<PyObjectRef>(grads);
-  } catch (std::exception &bt) {
-    inst->ClearRes();
-    std::rethrow_exception(std::current_exception());
-  }
-}
-
-BaseRef PrimitivePy::RunCustomOpBpropFunction(const py::tuple &ori_py_args) const {
-  auto is_custom_aot_node = this->HasAttr(kCustomOpNameAttrName) &&
-                            GetValue<std::string>(this->GetAttr(kCustomOpNameAttrName)) == kCustomExtOpName;
-  MS_LOG(DEBUG) << "Custom op:" << name() << ", is custom aot node: " << is_custom_aot_node;
-  py::tuple py_args = is_custom_aot_node ? UnfoldPyArgs(ori_py_args) : ori_py_args;
-  py::tuple converted_args = ConvertCTensorToPyTensor(py_args);
-  MS_LOG(DEBUG) << "Get convert args size " << converted_args.size() << ", args are "
-                << ConvertPyObjToString(converted_args);
-  try {
-    MS_LOG(DEBUG) << "Run custom op bprop start";
-    py::object grads_obj = hook_fn_(*converted_args);
-    auto grads = CheckBpropOut(grads_obj, py_args, bprop_cls_name_);
-    MS_LOG(DEBUG) << "Run custom op bprop end";
-    return std::make_shared<PyObjectRef>(grads);
-  } catch (std::exception &bt) {
-    std::rethrow_exception(std::current_exception());
-  }
-}
-
-BaseRef PrimitivePy::RunCellHookFunction(const py::tuple &py_args) const {
-  const auto args_size = py_args.size();
-  // Get the din passed to current bprop cut op.
-  py::object grad_output = py_args[args_size - 1];
-  grad_output = ConvertCTensorToPyTensor(grad_output);
-  if (!py::isinstance<py::tuple>(grad_output)) {
-    grad_output = py::make_tuple(grad_output);
-  }
-  try {
-    MS_LOG(DEBUG) << "Get cell dout " << ConvertPyObjToString(grad_output);
-    if (hook_type_ == HookType::kBackwardPreHook) {
-      MS_LOG(DEBUG) << "Run cell backward pre hook function start.";
-      py::object ret = hook_fn_(grad_output);
-      if (!py::isinstance<py::none>(ret)) {
-        MS_LOG(DEBUG) << "Get cell backward pre hook new grad output " << ConvertPyObjToString(ret);
-        const auto &code_obj = py::getattr(hook_fn_, "__code__");
-        py::object co_name = py::getattr(code_obj, "co_name");
-        CheckHookConsistency(UnpackRetValueOfCellHook(ret), py_args[args_size - 1], co_name);
-        grad_output = ret;
-      }
-      MS_LOG(DEBUG) << "Run cell backward pre hook function end.";
-      return std::make_shared<PyObjectRef>(grad_output);
-    }
-    if (hook_type_ == HookType::kBackwardHook) {
-      MS_LOG(DEBUG) << "Run cell backward hook function start.";
-      py::object ret = hook_fn_(grad_output);
-      if (py::isinstance<py::str>(ret)) {
-        MS_LOG(DEBUG) << "Run cell " << ret.cast<std::string>() << " backward hook function the first time";
-        unpair_backward_hook_grad_.emplace(ret.cast<std::string>(), hook_fn_);
-        return std::make_shared<PyObjectRef>(grad_output);
-      }
-      if (py::isinstance<py::none>(ret)) {
-        MS_LOG(DEBUG) << "Run cell backward hook function the second time with return None.";
-      } else {
-        MS_LOG(DEBUG) << "Get cell backward hook new grad input " << ConvertPyObjToString(ret);
-        const auto &code_obj = py::getattr(hook_fn_, "__code__");
-        py::object co_name = py::getattr(code_obj, "co_name");
-        CheckHookConsistency(UnpackRetValueOfCellHook(ret), py_args[args_size - 1], co_name);
-        grad_output = ret;
-      }
-      unpair_backward_hook_grad_.erase(GetValue<std::string>(this->GetAttr(kCellIDAttrName)));
-      MS_LOG(DEBUG) << "Run cell backward hook function end.";
-      return std::make_shared<PyObjectRef>(grad_output);
-    }
-    MS_LOG(EXCEPTION) << "Get unsupported hook function type";
-  } catch (std::exception &bt) {
-    unpair_backward_hook_grad_.clear();
-    auto inst = pynative::PyNativeExecutor::GetInstance();
-    inst->ClearRes();
-    std::rethrow_exception(std::current_exception());
-  }
-}
-
-BaseRef PrimitivePy::RunVariableHookFunction(const py::tuple &py_args) const {
-  constexpr size_t grad_output_index = 0;
-  if (py_args.size() != kSizeOne) {
-    MS_LOG(EXCEPTION) << "Bprop cut run must in the following format: dout";
-  }
-  py::object grad_output = py_args[grad_output_index];
-  grad_output = ConvertCTensorToPyTensor(grad_output);
-  MS_LOG(DEBUG) << "Get grad output " << ConvertPyObjToString(grad_output);
-  try {
-    if (hook_type_ == HookType::kUnknown) {
-      MS_LOG(EXCEPTION) << "Get unsupported hook type Unknown";
-    }
-    if (hook_type_ == HookType::kTensorHook) {
-      MS_LOG(DEBUG) << "Run tensor hook function begin";
-    } else {
-      // Op maybe have multi outputs, so wrap to tuple for unitary.
-      // Tensor hook just work on tensor, so keep origin input style
-      if (!py::isinstance<py::tuple>(grad_output)) {
-        grad_output = py::make_tuple(grad_output);
-      }
-      MS_LOG(DEBUG) << "Run HookBackward op function begin";
-    }
-    auto ret = hook_fn_(grad_output);
-    if (!py::isinstance<py::none>(ret)) {
-      MS_LOG(DEBUG) << "Get hook output " << ConvertPyObjToString(ret);
-      grad_output = ret;
-    }
-
-    if (hook_type_ != HookType::kTensorHook) {
-      const auto &code_obj = py::getattr(hook_fn_, "__code__");
-      py::object co_name = py::getattr(code_obj, "co_name");
-      CheckHookConsistency(UnpackRetValueOfCellHook(grad_output), py_args[grad_output_index], co_name);
-    }
-    MS_LOG(DEBUG) << (hook_type_ == HookType::kTensorHook ? "Run tensor hook function end"
-                                                          : "Run HookBackward op function end");
-    if (!py::isinstance<py::tuple>(grad_output)) {
-      grad_output = py::make_tuple(grad_output);
-    }
-    return std::make_shared<PyObjectRef>(grad_output);
-  } catch (std::exception &bt) {
-    auto inst = pynative::PyNativeExecutor::GetInstance();
-    inst->ClearRes();
-    std::rethrow_exception(std::current_exception());
-  }
-}
-
-BaseRef PrimitivePy::RunHookFunction(const VectorRef &args) const {
-  py::tuple py_args = ConvertDatatoPyTuple(args);
-  MS_LOG(DEBUG) << "Get input args size " << py_args.size() << ", args are " << ConvertPyObjToString(py_args);
-  // For cell has custom bprop function
-  if (hook_type_ == HookType::kCellCustomBprop) {
-    MS_LOG(DEBUG) << "Run cell custom bprop";
-    return RunCellCustomBpropFunction(py_args);
-  }
-
-  // For cell register hook
-  if (hook_type_ == HookType::kBackwardPreHook || hook_type_ == HookType::kBackwardHook) {
-    MS_LOG(DEBUG) << "Run cell backward hook";
-    return RunCellHookFunction(py_args);
-  }
-
-  // For custom op, which define custrcut and bprop
-  if (hook_type_ == HookType::kCustomOpBprop) {
-    MS_LOG(DEBUG) << "Run custom op";
-    return RunCustomOpBpropFunction(py_args);
-  }
-
-  // For hook use, include hook op and tensor register hook
-  return RunVariableHookFunction(py_args);
 }
 
 py::function PrimitivePy::GetComputeFunction() const {
@@ -777,47 +562,5 @@ py::object PrimitiveFunctionAdapter::clone() {
   prim_func_adapter_obj.cast<PrimitiveFunctionAdapterPtr>()->set_attached_primitive_function(
     attached_primitive_function_->Clone());
   return prim_func_adapter_obj;
-}
-
-void RegPrimitive(const py::module *m) {
-  (void)py::enum_<HookType>(*m, "HookType", py::arithmetic())
-    .value("CustomOpBprop", HookType::kCustomOpBprop)
-    .value("CellCustomBprop", HookType::kCellCustomBprop)
-    .value("HookBackward", HookType::kHookBackwardOp)
-    .value("TensorHook", HookType::kTensorHook)
-    .value("BackwardPreHook", HookType::kBackwardPreHook)
-    .value("BackwardHook", HookType::kBackwardHook);
-  (void)py::enum_<PrimType>(*m, "prim_type", py::arithmetic())
-    .value("unknown", PrimType::kPrimTypeUnknown)
-    .value("builtin", PrimType::kPrimTypeBuiltIn)
-    .value("py_infer_shape", PrimType::kPrimTypePyInfer)
-    .value("user_custom", PrimType::kPrimTypeUserCustom)
-    .value("py_infer_check", PrimType::kPrimTypePyCheck);
-  (void)py::class_<PrimitivePyAdapter, std::shared_ptr<PrimitivePyAdapter>>(*m, "Primitive_")
-    .def_readonly(PYTHON_PRIMITIVE_FLAG, &PrimitivePyAdapter::parse_info_)
-    .def(py::init<py::str &>())
-    .def("add_attr", &PrimitivePyAdapter::AddPyAttr, "add primitive attr")
-    .def("del_attr", &PrimitivePyAdapter::DelPyAttr, "del primitive attr")
-    .def("get_attr_dict", &PrimitivePyAdapter::GetAttrDict, "get primitive attr")
-    .def("set_prim_type", &PrimitivePyAdapter::set_prim_type, "Set primitive type.")
-    .def("set_const_prim", &PrimitivePyAdapter::set_const_prim, "Set primitive is const.")
-    .def("set_inplace_prim", &PrimitivePyAdapter::set_inplace_prim, "Set primitive is inplace primitive.")
-    .def("set_const_input_indexes", &PrimitivePyAdapter::set_const_input_indexes, "Set primitive const input indexes.")
-    .def("set_signatures", &PrimitivePyAdapter::set_signatures, "Set primitive inputs signature.")
-    .def("set_hook_fn", &PrimitivePyAdapter::SetHookFn, "Add primitive hook function.")
-    .def("set_instance_name", &PrimitivePyAdapter::set_instance_name, "Set primitive instance name.")
-    .def("set_user_data", &PrimitivePyAdapter::SetUserData, "Set primitive user data.")
-    .def("get_user_data", &PrimitivePyAdapter::GetUserData, "Get primitive user data.");
-}
-
-void RegPrimitiveFunction(const py::module *m) {
-  (void)py::class_<PrimitiveFunctionAdapter, std::shared_ptr<PrimitiveFunctionAdapter>>(*m, "PrimitiveFunction_")
-    .def_readonly(PYTHON_PRIMITIVE_FUNCTION_FLAG, &PrimitiveFunctionAdapter::parse_info_)
-    .def(py::init<>())
-    .def_property_readonly("name", &PrimitiveFunctionAdapter::name, "Get function name.")
-    .def("has_label", &PrimitiveFunctionAdapter::has_label, "Has function attr.")
-    .def("set_label", &PrimitiveFunctionAdapter::set_label, "Set function attr.")
-    .def("get_label", &PrimitiveFunctionAdapter::get_label, "Get function attr.")
-    .def("clone", &PrimitiveFunctionAdapter::clone, "Clone a Primitive and create a PrimitiveFunctionAdapter.");
 }
 }  // namespace mindspore

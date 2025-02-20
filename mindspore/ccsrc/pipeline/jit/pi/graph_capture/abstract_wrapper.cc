@@ -28,7 +28,7 @@
 #include "pipeline/jit/pi/pi_jit_config.h"
 #include "pipeline/jit/pi/external.h"
 #include "include/common/utils/tensor_py.h"
-#include "pybind_api/ir/primitive_py.h"
+#include "frontend/ir/primitive_py.h"
 #include "frontend/operator/composite/composite.h"
 
 namespace mindspore {

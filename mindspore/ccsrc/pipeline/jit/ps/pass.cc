@@ -97,7 +97,7 @@
 #include "utils/log_adapter.h"
 #include "utils/compile_config.h"
 #include "pipeline/jit/ps/pipeline_split.h"
-#include "pipeline/pynative/pynative_execute.h"
+#include "pynative/pynative_execute.h"
 #include "pipeline/jit/ps/static_analysis/auto_monad.h"
 #include "pipeline/jit/ps/static_analysis/inplace_validation.h"
 #include "frontend/optimizer/irpass/branch_culling.h"

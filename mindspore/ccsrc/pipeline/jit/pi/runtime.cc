@@ -41,13 +41,14 @@
 #include "pipeline/jit/pi/graph_guard/strategy.h"
 #include "pipeline/jit/pi/graph_guard/shape_ctx.h"
 #include "pipeline/jit/pi/capture_context.h"
-#include "pipeline/pynative/pynative_utils.h"
-#include "runtime/pynative/op_executor.h"
+#include "pipeline/jit/ps/pipeline_jit.h"
+#include "runtime/pipeline/pipeline.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "pipeline/jit/pi/graph_capture/code_generator.h"
 #include "utils/convert_utils_base.h"
 #include "pipeline/jit/pi/eval_frame_hook.h"
 #include "include/common/utils/tensor_py.h"
+#include "include/common/pynative/grad_state.h"
 
 namespace mindspore {
 namespace pijit {
@@ -75,7 +76,7 @@ class RunEnvironment {
     task_sink_ = ms_context->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
 
     auto jit_level = jcr->conf()->getJitLevel();
-    auto grad_flag = pynative::PyNativeExecutor::GetInstance()->grad_flag();
+    auto grad_flag = pynative::GradState::Get().grad_flag();
     auto run_mode = jit_level == "O2" && !grad_flag ? kGraphMode : kPynativeMode;
     auto task_sink = jit_level == "O2" && !grad_flag;
     ms_context->set_param(MS_CTX_EXECUTION_MODE, run_mode);
@@ -612,15 +613,11 @@ void AddGuardForGlobals(const PyFrameWrapper &wrapper, OptGuardPtr guard, bool d
 }
 
 static void AddGradFlagForParam(const OptGuardPtr &guard, bool detach) {
-  bool grad_flag = pynative::PyNativeExecutor::GetInstance()->RequiresGrad();
+  bool grad_flag = pynative::GradState::Get().RequiresGrad();
   CustomizedTracePtr ptr = std::make_shared<CustomizedTrace>(
     grad_flag ? Py_True : Py_False,
     [](PTraceContext context) -> PyObject * {
-      static pynative::PyNativeExecutor *pynative_exec = nullptr;
-      if (pynative_exec == nullptr) {
-        pynative_exec = pynative::PyNativeExecutor::GetInstance().get();
-      }
-      PyObject *ret = pynative_exec->RequiresGrad() ? Py_True : Py_False;
+      PyObject *ret = pynative::GradState::Get().RequiresGrad() ? Py_True : Py_False;
       Py_INCREF(ret);
       return ret;
     },

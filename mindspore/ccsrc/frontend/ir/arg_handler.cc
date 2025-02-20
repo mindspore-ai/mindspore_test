@@ -19,7 +19,7 @@
 #include <tuple>
 #include <string>
 #include "frontend/ir/arg_handler.h"
-#include "pipeline/pynative/pynative_utils.h"
+#include "ops/op_def.h"
 #include "mindspore/ops/op_def/op_enum.h"
 
 namespace mindspore {

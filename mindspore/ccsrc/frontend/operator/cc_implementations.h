@@ -22,6 +22,7 @@
 #include "ir/anf.h"
 #include "ir/value.h"
 #include "utils/any.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 // namespace to support primitive operators definition
@@ -42,7 +43,7 @@ ValuePtr ScalarFloorDiv(const ValuePtrList &list);
 ValuePtr ScalarUAdd(const ValuePtrList &list);
 ValuePtr ScalarUSub(const ValuePtrList &list);
 ValuePtr ScalarLog(const ValuePtrList &list);
-ValuePtr ScalarEq(const ValuePtrList &list);
+FRONTEND_EXPORT ValuePtr ScalarEq(const ValuePtrList &list);
 ValuePtr ScalarLt(const ValuePtrList &list);
 ValuePtr ScalarGt(const ValuePtrList &list);
 ValuePtr ScalarNe(const ValuePtrList &list);

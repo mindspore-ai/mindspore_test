@@ -230,7 +230,7 @@ std::string GetJitLevel();
 
 std::string GetObjDesc(const py::object &source);
 bool IsPhaseLoadFromMindIR(const std::string &phase);
-void CheckArgsValid(const py::object &source, const py::tuple &args);
+FRONTEND_EXPORT void CheckArgsValid(const py::object &source, const py::tuple &args);
 FRONTEND_EXPORT py::bool_ VerifyInputSignature(const py::list &input_signature, const py::tuple &inputs);
 
 bool InitDistribute(const std::map<std::string, std::string> &options);
@@ -243,9 +243,8 @@ FRONTEND_EXPORT uint32_t GetHcclRankId();
 FRONTEND_EXPORT uint32_t GetHcclRankSize();
 FRONTEND_EXPORT void InitPipeline();
 void FinalizeBackend();
-void ME_EXPORT ClearResAtexit();
+
 void CloseTsd(bool force = false);
-FRONTEND_EXPORT void MemoryRecycle();
 FRONTEND_EXPORT void BindDeviceCtx();
 
 FRONTEND_EXPORT FuncGraphPtr LoadMindIR(const std::string &file_name, const char *dec_key, const size_t key_len,
@@ -293,6 +292,7 @@ void CheckInterpretNodeLineInfos();
 void SetHookForArgAbstract(const py::object &arg, abstract::AbstractBasePtr abs);
 bool RunJitPipeline();
 FRONTEND_EXPORT void PreJit(const py::object &args, const py::object &kwargs);
+FRONTEND_EXPORT void CleanCache();
 }  // namespace pipeline
 }  // namespace mindspore
 

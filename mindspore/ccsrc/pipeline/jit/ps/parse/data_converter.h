@@ -53,12 +53,13 @@ bool IsMsClassInstance(const py::object &obj);
 bool IsJITForbiddenAPI(const py::object &obj);
 bool IsClassType(const py::object &obj);
 py::object CreatePythonObject(const py::object &type, const py::tuple &args_kwargs);
-py::object CallPythonScript(const py::object &script, const py::tuple &args_kwargs);
+FRONTEND_EXPORT py::object CallPythonScript(const py::object &script, const py::tuple &args_kwargs);
 py::set GetPythonScriptIdAttrs(const py::object &script);
 void MakeProperNameToFuncGraph(const FuncGraphPtr &func_graph, std::string name);
 FRONTEND_EXPORT ValuePtr PyDataToValue(const py::object &obj);
 ValuePtr PyDataToStubNode(const py::object &obj);
-void ClearObjectCache();
+FRONTEND_EXPORT void ClearObjectCache();
+FRONTEND_EXPORT ValuePtr PyObjToValue(const py::object &obj, bool stub = false);
 }  // namespace data_converter
 
 class DataConverter {
@@ -88,11 +89,25 @@ inline int32_t CombineTypesForTypeCast(const mindspore::ops::OP_DTYPE &src, cons
 }
 // using OpDefConvertFunc = std::function<ValuePtr(const py::object &obj)>;
 typedef ValuePtr (*OpDefConvertFunc)(const py::object &);
-OpDefConvertFunc GetConverterByType(int32_t dtype);
-ValuePtr ConvertTensor(const py::object &obj);
+FRONTEND_EXPORT OpDefConvertFunc GetConverterByType(int32_t dtype);
+FRONTEND_EXPORT ValuePtr ConvertTensor(const py::object &obj);
 template <typename TS, typename TD, OpDefConvertFunc func>
-ValuePtr ConvertSequence(const py::object &obj);
-tensor::TensorPtr ConvertTensorValue(const py::object &obj);
+ValuePtr ConvertSequence(const py::object &obj) {
+  if (!py::isinstance<TS>(obj)) {
+    return nullptr;
+  }
+  auto seq = obj.cast<TS>();
+  std::vector<ValuePtr> value_list;
+  for (size_t it = 0; it < seq.size(); ++it) {
+    auto out = func(seq[it]);
+    if (out == nullptr) {
+      return nullptr;
+    }
+    value_list.emplace_back(out);
+  }
+  return std::make_shared<TD>(value_list);
+}
+FRONTEND_EXPORT tensor::TensorPtr ConvertTensorValue(const py::object &obj);
 }  // namespace parse
 }  // namespace mindspore
 

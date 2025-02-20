@@ -29,7 +29,7 @@
 
 namespace mindspore {
 namespace opt {
-class PassConfigure {
+class FRONTEND_EXPORT PassConfigure {
  public:
   void Clear() {
     opt_func_map_.clear();
@@ -76,10 +76,7 @@ class PassConfigure {
 
   std::vector<PassItem> GetPasses() { return passes_; }
 
-  static PassConfigure &Instance() {
-    static PassConfigure instance;
-    return instance;
-  }
+  static PassConfigure &Instance();
 
   std::string GetOptimizeConfig();
   py::list GetRunningPasses();

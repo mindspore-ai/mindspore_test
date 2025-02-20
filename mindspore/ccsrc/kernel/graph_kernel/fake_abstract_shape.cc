@@ -16,6 +16,7 @@
 #include "kernel/graph_kernel/fake_abstract_shape.h"
 #include <sstream>
 #include "include/common/utils/utils.h"
+#include "include/backend/visible.h"
 
 namespace mindspore::graphkernel {
 namespace {

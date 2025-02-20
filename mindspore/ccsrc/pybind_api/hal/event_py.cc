@@ -20,8 +20,8 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/ms_context.h"
 #include "include/common/pybind_api/api_register.h"
-#include "pipeline/pynative/forward/forward_task.h"
-#include "pipeline/pynative/pynative_utils.h"
+#include "pynative/forward/forward_task.h"
+#include "pynative/pynative_utils.h"
 #include "runtime/device/multi_stream_controller.h"
 
 namespace mindspore {

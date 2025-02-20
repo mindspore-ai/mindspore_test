@@ -79,11 +79,6 @@ class ME_EXPORT PrimitivePy : public Primitive {
   void CopyHookFunction(const PrimitivePyPtr &primitive_py);
   void AddBpropCutPrim(const PrimitivePyPtr &bprop_cut_prim);
   void SetHookFn(const py::function &hook_fn, HookType hook_type);
-  BaseRef RunHookFunction(const VectorRef &args) const;
-  BaseRef RunCellCustomBpropFunction(const py::tuple &py_args) const;
-  BaseRef RunCustomOpBpropFunction(const py::tuple &ori_py_args) const;
-  BaseRef RunCellHookFunction(const py::tuple &py_args) const;
-  BaseRef RunVariableHookFunction(const py::tuple &py_args) const;
   BaseRef RunComputeFunction(const VectorRef &args) const override;
   py::object RunPyComputeFunction(const py::tuple &py_args) const;
   bool HasComputeFunction() const;
@@ -96,15 +91,23 @@ class ME_EXPORT PrimitivePy : public Primitive {
   PrimitivePtr Clone() override;
   PrimitivePyAdapterPtr adapter() const { return adapter_; }
   void set_bprop_cls_name(const std::string &name) { bprop_cls_name_ = name; }
+  const std::string &bprop_cls_name() const { return bprop_cls_name_; }
   static void ProcessUnPairedCellHook(bool execute_hook_fn);
   static void ClearHookRes();
   bool IsPythonPrim() override { return true; }
-
- private:
-  py::function GetComputeFunction() const;
   py::object UnpackRetValueOfCellHook(const py::object &grad_out) const;
   void CheckHookConsistency(const py::object &grad_out, const py::object &expected_grad_out,
                             const py::object &co_name) const;
+  void EmplaceUnpairBackwardHookGrad(const std::string &ret, const py::function &hook_fn) {
+    unpair_backward_hook_grad_.emplace(ret, hook_fn);
+  }
+
+  void EraseUnpairBackwardHookGrad(const std::string &name) { unpair_backward_hook_grad_.erase(name); }
+
+  void ClearUnpairBackwardHookGrad() { unpair_backward_hook_grad_.clear(); }
+
+ private:
+  py::function GetComputeFunction() const;
   py::object python_obj_;
   std::string bprop_cls_name_;
   PrimitivePyAdapterPtr adapter_;
@@ -117,7 +120,7 @@ class ME_EXPORT PrimitivePy : public Primitive {
   static mindspore::OrderedMap<std::string, py::function> unpair_backward_hook_grad_;
 };
 
-class PrimitivePyAdapter {
+class FRONTEND_EXPORT PrimitivePyAdapter {
  public:
   explicit PrimitivePyAdapter(const py::str &name);
   PrimitivePyAdapter(const PrimitivePyAdapter &adapter);
@@ -218,7 +221,7 @@ class OpPrimPyRegister {
   HashMap<std::string, ValuePtr> primpy_map_;  // op_name, primpy
 };
 
-class PrimitiveFunctionAdapter {
+class FRONTEND_EXPORT PrimitiveFunctionAdapter {
  public:
   PrimitiveFunctionAdapter() = default;
   virtual ~PrimitiveFunctionAdapter() = default;

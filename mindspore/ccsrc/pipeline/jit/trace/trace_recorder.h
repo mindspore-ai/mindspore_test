@@ -31,8 +31,8 @@
 
 namespace mindspore {
 namespace trace {
-void Capture(const py::args &args, py::object *res);
-void Capture(const py::list &args, py::object *res, std::string class_name);
+FRONTEND_EXPORT void Capture(const py::args &args, py::object *res);
+FRONTEND_EXPORT void Capture(const py::list &args, py::object *res, std::string class_name);
 py::object CaptureRun(const py::args &args, const py::object &res, const py::object &prim_py);
 bool IsTracing();
 class TraceRecorder {

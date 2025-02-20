@@ -20,6 +20,7 @@
 #include <utility>
 #include <unordered_map>
 #include <algorithm>
+#include <map>
 
 #include "include/common/utils/tensor_py.h"
 #include "mindspore/ops/op_def/structure_ops.h"
@@ -1309,6 +1310,19 @@ void ClearObjectCache() {
   object_map_.clear();
   object_graphs_map_.clear();
 }
+
+ValuePtr PyObjToValue(const py::object &obj, bool stub) {
+  ValuePtr converted_ret;
+  if (stub) {
+    converted_ret = parse::data_converter::PyDataToStubNode(obj);
+  } else {
+    converted_ret = parse::data_converter::PyDataToValue(obj);
+  }
+  if (converted_ret == nullptr) {
+    MS_LOG(EXCEPTION) << "Attribute convert error with type: " << ConvertPyObjToString(obj);
+  }
+  return converted_ret;
+}
 }  // namespace data_converter
 
 ValuePtr DataConverter::ConvertData(const py::object &obj) {
@@ -1435,23 +1449,6 @@ ValuePtr ConvertDtype(const py::object &obj) {
     MS_LOG(EXCEPTION) << "Get arg is not mindspore type " << py::str(obj);
   }
   return obj.cast<TypePtr>();
-}
-
-template <typename TS, typename TD, OpDefConvertFunc func>
-ValuePtr ConvertSequence(const py::object &obj) {
-  if (!py::isinstance<TS>(obj)) {
-    return nullptr;
-  }
-  auto seq = obj.cast<TS>();
-  std::vector<ValuePtr> value_list;
-  for (size_t it = 0; it < seq.size(); ++it) {
-    auto out = func(seq[it]);
-    if (out == nullptr) {
-      return nullptr;
-    }
-    value_list.emplace_back(out);
-  }
-  return std::make_shared<TD>(value_list);
 }
 
 template <typename T, OpDefConvertFunc func>

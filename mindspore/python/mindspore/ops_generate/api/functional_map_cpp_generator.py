@@ -101,7 +101,7 @@ class FunctionalMapCppGenerator(BaseGenerator):
                                                     mint_varargs_map=mint_varargs_map_list,
                                                     tensor_method_sigs_map=funcs_sig_map_list,
                                                     mint_sigs_map=funcs_mint_sigs_map))
-        save_path = os.path.join(work_path, K.PIPELINE_PYBOOST_FUNC_GEN_PATH)
+        save_path = os.path.join(work_path, K.FUNCTIONAL_OVERLOAD_GEN_PATH)
         save_file(save_path, "functional_map.cc", functional_map_cc_code)
         save_file(save_path, "functional_map.h", self.FUNCTIONAL_MAP_H_TEMPLATE.replace())
 

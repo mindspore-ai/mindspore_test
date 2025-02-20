@@ -29,7 +29,7 @@
 namespace mindspore {
 namespace expander {
 namespace bprop {
-bool HasBpropExpander(const std::string &prim_name);
+FRONTEND_EXPORT bool HasBpropExpander(const std::string &prim_name);
 void ClearBpropOpGraphMap();
 using UserType = std::unordered_map<AnfNodePtr, std::vector<std::pair<std::weak_ptr<CNode>, int>>>;
 struct UserMap {
@@ -37,7 +37,7 @@ struct UserMap {
   UserType tuple_getitem_user_;
 };
 
-class BpropExpander {
+class FRONTEND_EXPORT BpropExpander {
  public:
   BpropExpander(CNodePtrList *outputs, UserMap *users) : outputs_(outputs), users_(users) {}
   ~BpropExpander() = default;
@@ -85,7 +85,7 @@ class OpEnvManager {
   }
 };
 #ifdef _MSC_VER
-class WinBpropRegister {
+class FRONTEND_EXPORT WinBpropRegister {
  public:
   WinBpropRegister();
   ~WinBpropRegister() {}

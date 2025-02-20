@@ -64,6 +64,8 @@ class AutoGradMetaInterface {
   virtual void set_output_index(size_t output_index) = 0;
   virtual void Reset() = 0;
   virtual ~AutoGradMetaInterface() = default;
+  virtual const std::map<uint64_t, TensorBackwardHookPtr> &backward_hooks() = 0;
+  virtual bool is_register_hook() const = 0;
 };
 using AutoGradMetaInterfacePtr = std::shared_ptr<AutoGradMetaInterface>;
 }  // namespace mindspore

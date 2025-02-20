@@ -22,11 +22,11 @@
 #include "utils/ms_context.h"
 #include "ir/meta_func_graph.h"
 #include "include/common/utils/tensor_py.h"
+#include "include/common/pynative/common_utils.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
-#include "pybind_api/ir/primitive_py.h"
-#include "pipeline/pynative/grad/variable.h"
-#include "pipeline/pynative/op_function/auto_generate/functional_map.h"
+#include "frontend//ir/primitive_py.h"
+#include "frontend/operator/composite/auto_generate/functional_map.h"
 
 namespace mindspore {
 namespace pijit {
@@ -103,7 +103,7 @@ bool IsPyCapsuleTensorOverloadMethod(const py::object &obj) {
 }
 
 bool IsPyCapsuleOverload(const py::object &obj) {
-  auto ge_mode = (MsContext::GetInstance()->GetJitLevel() == kAttrJitLevelO2);
+  auto ge_mode = (MsContext::GetInstance()->GetJitLevel() == "O2");
   if (ge_mode) {
     return false;
   }
@@ -115,36 +115,9 @@ bool IsMsTensorMethod(const py::object &obj) {
   return py::cast<bool>(python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_IS_MS_TENSOR_METHOD, obj));
 }
 
-bool HasRegisterHook(const py::object &obj) {
-  if (!tensor::IsTensorPy(obj)) {
-    return false;
-  }
-  auto tensor = tensor::ConvertToTensor(obj);
-  const auto &grad_meta_data = pynative::autograd::impl::get_autograd_meta_impl(tensor);
-  if (grad_meta_data == nullptr || !grad_meta_data->is_register_hook()) {
-    return false;
-  }
-  return !grad_meta_data->backward_hooks().empty();
-}
+bool HasRegisterHook(const py::object &obj) { return HookUtils::HasRegisterHook(obj); }
 
-py::list GetRegisterHookList(const py::object &obj) {
-  if (!HasRegisterHook(obj)) {
-    return py::list();
-  }
-  py::list hook_fn_list;
-  auto tensor = tensor::ConvertToTensor(obj);
-  const auto &grad_meta_data = pynative::autograd::impl::get_autograd_meta_impl(tensor);
-  const auto &backward_hooks = grad_meta_data->backward_hooks();
-  for (const auto &[id, hook] : backward_hooks) {
-    auto fn = hook->hook_;
-    if (py::isinstance<py::none>(fn)) {
-      MS_LOG(DEBUG) << "Hook of Tensor[" << id << "] is None.";
-      continue;
-    }
-    hook_fn_list.append(fn);
-  }
-  return hook_fn_list;
-}
+py::list GetRegisterHookList(const py::object &obj) { return HookUtils::GetRegisterHookList(obj); }
 
 void SaveTensorRegisterHook(const py::object &obj, const AnfNodePtr &node) {
   if (node->abstract() == nullptr) {

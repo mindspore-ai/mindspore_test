@@ -17,8 +17,8 @@
 #include <algorithm>
 
 #include "frontend/optimizer/irpass/gradient_eliminate.h"
-#include "pipeline/pynative/pynative_execute.h"
 #include "ir/func_graph_cloner.h"
+#include "include/common/pynative/adapter.h"
 
 namespace mindspore {
 namespace opt {
@@ -78,8 +78,8 @@ bool ExpandJPrim::operator()(const FuncGraphPtr &func_graph, const OptimizerPtr 
   // Check whether need to eliminate forward cnodes in pynative mode.
   if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode &&
       common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") == "1") {
-    const auto &jit = pynative::PyNativeExecutor::GetInstance()->grad_executor()->jit();
-    jit->set_eliminate_forward(jit->eliminate_forward() && prim_nodes_.empty());
+    pynative::PyNativeAdapter::SetEliminateForward(pynative::PyNativeAdapter::GetEliminateForward() &&
+                                                   prim_nodes_.empty());
   }
 
   // Expand j nodes that don't have embed j nodes.

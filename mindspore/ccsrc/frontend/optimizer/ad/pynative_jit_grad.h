@@ -23,7 +23,7 @@
 #include <utility>
 #include "ir/anf.h"
 #include "ir/tensor.h"
-#include "pipeline/pynative/base.h"
+#include "pynative/base.h"
 
 namespace mindspore {
 namespace ad {
@@ -60,8 +60,8 @@ class BpropGenerator {
 };
 using BpropGeneratorPtr = std::shared_ptr<BpropGenerator>;
 
-std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_param);
-void ClearGradCache();
+FRONTEND_EXPORT std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_param);
+FRONTEND_EXPORT void ClearGradCache();
 }  // namespace ad
 }  // namespace mindspore
 

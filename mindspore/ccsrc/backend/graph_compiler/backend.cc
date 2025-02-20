@@ -31,7 +31,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "pipeline/jit/ps/action.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
-#include "pipeline/pynative/grad/jit/jit_call_graph.h"
+#include "backend/common/session/jit_call_graph.h"
 #include "ir/anf.h"
 #include "frontend/ir/base_ref_py.h"
 #include "pybind_api/pybind_patch.h"
