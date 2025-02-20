@@ -34,12 +34,6 @@ enum ReshapeAndCacheInputIndex : size_t {
   kReshapeAndCacheInputKeyCacheIndex,
   kReshapeAndCacheInputValueCacheIndex,
   kReshapeAndCacheInputSlotMappingIndex,
-  kReshapeAndCacheInputKeyScaleIndex,
-  kReshapeAndCacheInputValueScaleIndex,
-  kReshapeAndCacheInputBatchVaildLengthIndex,
-  kReshapeAndCacheInputKeyValueScaleCacheIndex,
-  kReshapeAndCacheInputIsPreFillIndex,
-  kReshapeAndCacheInputCacheConfigIndex,
   kReshapeAndCacheInputsNum
 };
 
