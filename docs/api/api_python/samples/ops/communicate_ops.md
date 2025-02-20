@@ -147,7 +147,7 @@ init()
 class Net(nn.Cell):
     def __init__(self):
         super(Net, self).__init__()
-        self.reduce = ops.Reduce(ops.ReduceOp.SUM)
+        self.reduce = ops.Reduce(1, ops.ReduceOp.SUM)
 
     def construct(self, x):
         return self.reduce(x)
