@@ -16,8 +16,9 @@
 
 #include "plugin/device/ascend/acl_ir/acl_adapter_info.h"
 #include <algorithm>
+#include "utils/ms_context.h"
 #include "include/common/utils/utils.h"
-#include "runtime/pynative/op_compiler.h"
+#include "include/common/pynative/acl_adapter.h"
 
 namespace mindspore::device::ascend {
 std::string AclAdapterInfo::SelectFormatFromIndex(size_t index, const std::vector<std::string> &input_formats) const {
@@ -71,8 +72,8 @@ const AclAdapterInfo &AclAdapterManager::GetOpInfo(const std::string &op_type) c
   return op_cache_.at(op_type);
 }
 namespace {
-std::string GetGraphInfoForAscendSpecial(const pynative::BaseOpRunInfo &op_info, const PrimitivePtr &op_prim,
-                                         const std::string &graph_info) {
+std::string GetGraphInfoForAscendSpecial(const std::vector<ValuePtr> &expanded_input_values,
+                                         const PrimitivePtr &op_prim, const std::string &graph_info) {
   std::string ascend_special_info = graph_info;
   MS_EXCEPTION_IF_NULL(op_prim);
   auto op_name = op_prim->name();
@@ -82,13 +83,13 @@ std::string GetGraphInfoForAscendSpecial(const pynative::BaseOpRunInfo &op_info,
       device::ascend::AclAdapterManager::GetInstance().CheckAclAdapter(op_name)) {
     auto acl_info = device::ascend::AclAdapterManager::GetInstance().GetOpInfo(op_name);
     if (!acl_info.input_selector().empty() || acl_info.output_selector() != nullptr) {
-      if (op_info.expanded_input_values.empty()) {
+      if (expanded_input_values.empty()) {
         return ascend_special_info;
       }
       TypeId first_dtype = TypeId::kTypeUnknown;
       std::vector<ShapeVector> input_shapes;
-      (void)std::transform(op_info.expanded_input_values.begin(), op_info.expanded_input_values.end(),
-                           std::back_inserter(input_shapes), [&first_dtype](const ValuePtr &value) -> ShapeVector {
+      (void)std::transform(expanded_input_values.begin(), expanded_input_values.end(), std::back_inserter(input_shapes),
+                           [&first_dtype](const ValuePtr &value) -> ShapeVector {
                              auto tensor = value->cast<tensor::BaseTensorPtr>();
                              if (tensor != nullptr) {
                                if (first_dtype == TypeId::kTypeUnknown) {
@@ -102,20 +103,20 @@ std::string GetGraphInfoForAscendSpecial(const pynative::BaseOpRunInfo &op_info,
       auto in_func_map = acl_info.input_selector();
       for (auto [index, in_func] : in_func_map) {
         MS_EXCEPTION_IF_NULL(in_func);
-        auto tensor = op_info.expanded_input_values[index]->cast<tensor::BaseTensorPtr>();
+        auto tensor = expanded_input_values[index]->cast<tensor::BaseTensorPtr>();
         MS_EXCEPTION_IF_NULL(tensor);
         ascend_special_info += in_func(tensor->data_type(), input_shapes);
       }
 
       auto out_func = acl_info.output_selector();
       if (out_func != nullptr) {
-        auto tensor = op_info.expanded_input_values[0]->cast<tensor::BaseTensorPtr>();
+        auto tensor = expanded_input_values[0]->cast<tensor::BaseTensorPtr>();
         MS_EXCEPTION_IF_NULL(tensor);
         auto out_format = out_func(tensor->data_type(), input_shapes);
         ascend_special_info += out_format;
       }
       MS_EXCEPTION_IF_NULL(out_func);
-      auto tensor = op_info.expanded_input_values[0]->cast<tensor::BaseTensorPtr>();
+      auto tensor = expanded_input_values[0]->cast<tensor::BaseTensorPtr>();
       MS_EXCEPTION_IF_NULL(tensor);
       auto out_format = out_func(tensor->data_type(), input_shapes);
       ascend_special_info += out_format;
@@ -124,14 +125,14 @@ std::string GetGraphInfoForAscendSpecial(const pynative::BaseOpRunInfo &op_info,
   return ascend_special_info;
 }
 
-class RegGetGraphInfoFunc {
- public:
-  RegGetGraphInfoFunc() {
-    MS_LOG(INFO) << "Reg get graph info in ascend.";
-    pynative::OpCompiler::GetInstance().set_get_graph_info_func(GetGraphInfoForAscendSpecial);
+struct AclAdapterCallbackRegister {
+  AclAdapterCallbackRegister() {
+    acl_adapter::AclAdapterCallback::SetGetAclGraphInfoFuncHandler(
+      [](const std::vector<ValuePtr> &expanded_input_values, const PrimitivePtr &op_prim,
+         const std::string &graph_info) -> std::string {
+        return GetGraphInfoForAscendSpecial(expanded_input_values, op_prim, graph_info);
+      });
   }
-  ~RegGetGraphInfoFunc() = default;
-};
-static RegGetGraphInfoFunc reg_graph_graph_info_func{};
+} acl_adapter_callback_register;
 }  // namespace
 }  // namespace  mindspore::device::ascend
