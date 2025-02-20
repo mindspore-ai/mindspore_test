@@ -27,9 +27,11 @@ from tests.mark_utils import arg_mark
 g_block_num = 50
 steps = 50
 
-os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
-ms.runtime.set_kernel_launch_group()
+ascend_home_path = os.getenv('ASCEND_HOME_PATH')
+if not ascend_home_path:
+    os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
 
+ms.runtime.set_kernel_launch_group()
 context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0", "infer_boost": "on"}, max_call_depth=6000)
 
 class Net(nn.Cell):
