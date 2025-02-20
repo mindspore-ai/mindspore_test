@@ -29,7 +29,6 @@ from mindspore.profiler.schedule import _default_schedule_fn, ProfilerAction
 from mindspore.profiler.common.record_function import RecordFunction
 from mindspore.profiler.common.path_manager import PathManager
 from mindspore.profiler.common.file_manager import FileManager
-from mindspore.profiler.common.profiler_path_manager import ProfilerPathManager
 
 
 def tensor_board_trace_handler():
@@ -77,8 +76,6 @@ def tensor_board_trace_handler():
 
     try:
         NPUProfilerAnalysis.online_analyse()
-        if ProfilerContext().data_simplification:
-            ProfilerPathManager().simplify_data()
     except Exception as e:  # pylint: disable=W0703
         logger.error("Call tensorboard_trace_handler failed. Exception: %s", str(e))
 

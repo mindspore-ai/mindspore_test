@@ -21,7 +21,6 @@ from mindspore.profiler.profiler import Profiler
 from mindspore.profiler.schedule import ProfilerAction
 from mindspore.profiler.profiler import tensor_board_trace_handler
 from mindspore.profiler.profiler_interface import ProfilerInterface
-from mindspore.profiler.common.profiler_path_manager import ProfilerPathManager
 
 
 # pylint: disable=protected-access
@@ -44,20 +43,15 @@ class TestProfiler(unittest.TestCase):
         """
         # Normal execution path with data simplification
         Profiler(start_profile=False)
-        ProfilerPathManager()
-        ProfilerPathManager().simplify_data = unittest.mock.Mock()
         tensor_board_trace_handler()
         mock_npu_profiler_analysis_online_analyse.assert_called_once()
-        ProfilerPathManager().simplify_data.assert_called_once()
         mock_logger_error.assert_not_called()
 
         # Normal execution path without data simplification
         mock_npu_profiler_analysis_online_analyse.reset_mock()
-        ProfilerPathManager().simplify_data.reset_mock()
         Profiler(start_profile=False, data_simplification=False)
         tensor_board_trace_handler()
         mock_npu_profiler_analysis_online_analyse.assert_called_once()
-        ProfilerPathManager().simplify_data.assert_not_called()
         mock_logger_error.assert_not_called()
 
         # Error handling when an exception occurs
@@ -65,17 +59,15 @@ class TestProfiler(unittest.TestCase):
         mock_npu_profiler_analysis_online_analyse.side_effect = Exception("Test error")
         tensor_board_trace_handler()
         mock_npu_profiler_analysis_online_analyse.assert_called_once()
-        ProfilerPathManager().simplify_data.assert_not_called()
         mock_logger_error.assert_called_once_with(
             "Call tensorboard_trace_handler failed. Exception: %s", "Test error")
-
 
     @patch("mindspore.profiler.profiler.tensor_board_trace_handler")
     def test_should_tensor_board_trace_handler_correct_when_called(self, mock_tensor_board_trace_handler):
         """
             Verify the behavior when tensor_board_trace_handler is called
         """
-        #Correct registration of trace handler as callback
+        # Correct registration of trace handler as callback
         profiler = Profiler(start_profile=False, on_trace_ready=mock_tensor_board_trace_handler)
         prof_action_controller = profiler.action_controller
         self.assertEqual(
@@ -90,7 +82,7 @@ class TestProfiler(unittest.TestCase):
         prof_action_controller._trace_ready()
         mock_tensor_board_trace_handler.assert_called_once()
 
-        #Error handling when the callback is not callable
+        # Error handling when the callback is not callable
         test_cases = [
             (None, "None value"),
             (1, "numeric value"),

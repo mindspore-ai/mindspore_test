@@ -248,7 +248,7 @@ class NPUProfilerAnalysis:
         task_mgr = cls._construct_task_mgr(**kwargs)
         task_mgr.run()
         ProfilerLogger.get_instance().info(json.dumps(task_mgr.cost_time, indent=4))
-        if kwargs.get("data_simplification"):
+        if kwargs.get("data_simplification") and ProfilerActivity.NPU.value in kwargs.get("activities"):
             ProfilerPathManager().simplify_data()
 
     @classmethod

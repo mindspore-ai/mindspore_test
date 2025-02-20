@@ -87,7 +87,12 @@ class TraceViewContainer:
     def get_step_id_time_dict(self) -> Dict:
         """Get step id to time dict."""
         # Retrieve all events from the trace container for the Mindspore timeline layer
-        events = self.get_pool_by_name(TimelineLayerName.MINDSPORE.value).get_all_events()
+
+        mindspore_pool = self.get_pool_by_name(TimelineLayerName.MINDSPORE.value)
+        if not mindspore_pool:
+            return {}
+
+        events = mindspore_pool.get_all_events()
 
         # Filter events that contain "ProfilerStep" and create a dictionary mapping (start_ts, end_ts) to step ID
         step_id_to_time_dict = dict(sorted(

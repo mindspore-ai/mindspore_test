@@ -78,7 +78,7 @@ class AscendKernelDetailsViewer(BaseViewer):
             if self._profiler_level == ProfilerLevel.LevelNone.value:
                 return
             self._check_input_data(data)
-            self._update_kernel_name()
+            self._update_kernel()
             self._update_headers()
             self._write_data()
             self._logger.info("Kernel details saved done")
@@ -131,21 +131,33 @@ class AscendKernelDetailsViewer(BaseViewer):
                 if header not in self.LEVEL0_EXCLUDE_HEADERS
             ]
 
-        if not self._is_set_schedule or self._jit_level == JitLevel.GRAPH_LEVEL:
+        if (not self._is_set_schedule or self._jit_level == JitLevel.GRAPH_LEVEL or
+                not self.trace_container.get_step_id_time_dict()):
             self.op_summary_headers.remove(OpSummaryHeaders.STEP_ID.value)
+
         # rename headers
         self.kernel_details_headers = [
             self.RENAME_HEADERS.get(header, header)
             for header in self.op_summary_headers
         ]
 
-    def _update_kernel_name(self):
+    def _update_kernel(self):
         """
-        Update op summary op name to framework launch op name.
+        Update kernel op name to framework launch op name.
         """
         self._logger.info("Update kernel name start")
-        step_id_to_time_dict = self.trace_container.get_step_id_time_dict()
+
         dev_kernels = self.trace_container.hardware_op_event
+        step_id_to_time_dict = self.trace_container.get_step_id_time_dict()
+
+        if step_id_to_time_dict:
+            # activities parameter NPU+CPU、CPU
+            self._update_kernel_contain_cpu(dev_kernels, step_id_to_time_dict)
+
+    def _update_kernel_contain_cpu(self, dev_kernels, step_id_to_time_dict):
+        """
+        Update op summary op name and step id in NPU+CPU、CPU scenes.
+        """
         _generate_hardware_op_event_step_id(dev_kernels, step_id_to_time_dict)
 
         if not dev_kernels:
