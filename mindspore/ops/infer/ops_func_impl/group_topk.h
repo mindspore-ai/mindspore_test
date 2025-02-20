@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2023 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,30 +14,31 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_RESHAPE_AND_CACHE_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_RESHAPE_AND_CACHE_H_
-#include <algorithm>
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GROUP_TOPK_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GROUP_TOPK_H_
 #include <map>
-#include <memory>
-#include <set>
-#include <string>
 #include <vector>
-#include "mindapi/base/types.h"
+#include <memory>
+
 #include "ops/base_operator.h"
+#include "mindapi/base/types.h"
+#include "ops/primitive_c.h"
+#include "abstract/abstract_value.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
 namespace ops {
-enum ReshapeAndCacheInputIndex : size_t {
-  kReshapeAndCacheInputKeyIndex = 0,
-  kReshapeAndCacheInputValueIndex,
-  kReshapeAndCacheInputKeyCacheIndex,
-  kReshapeAndCacheInputValueCacheIndex,
-  kReshapeAndCacheInputSlotMappingIndex,
-  kReshapeAndCacheInputsNum
+enum GroupTopkInputIndex : size_t {
+  kGroupTopkTokenIndex = 0,
+  kGroupTopkIdxArrIndex,
+  kGroupTopkGroupNumIndex,
+  kGroupTopkKIndex,
+  kGroupTopkKInnerIndex,
+  kGroupTopkInputsNum,
 };
 
-class OPS_API ReshapeAndCacheFuncImpl : public OpFuncImpl {
+class OPS_API GroupTopkFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
@@ -45,4 +46,4 @@ class OPS_API ReshapeAndCacheFuncImpl : public OpFuncImpl {
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_RESHAPE_AND_CACHE_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GROUP_TOPK_H_
