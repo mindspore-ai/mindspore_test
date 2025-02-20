@@ -74,7 +74,7 @@ bool MetaServerNode::Initialize() {
   RETURN_IF_FALSE_WITH_LOG(InitTCPServer(), "Failed to create the TCP server.");
 
   // The meta server node is restarted and the metadata of cluster needs to be recovered.
-  if (recovery::IsEnableRecovery()) {
+  if (recovery::IsEnableGpuRecovery()) {
     RETURN_IF_FALSE_WITH_LOG(Recovery(), "Failed to recover from configuration.");
   }
 
@@ -540,7 +540,7 @@ bool MetaServerNode::TransitionToInitialized() {
     }
 
     // Persist the cluster metadata into storage through configuration.
-    if (recovery::IsEnableRecovery() && configuration_ != nullptr && configuration_->Empty()) {
+    if (recovery::IsEnableGpuRecovery() && configuration_ != nullptr && configuration_->Empty()) {
       if (!Persist()) {
         MS_LOG(EXCEPTION) << "Failed to persist the metadata of the cluster.";
       }

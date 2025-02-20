@@ -1,4 +1,4 @@
-# Copyright 2020 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ from mindspore.common.tensor import Tensor
 from mindspore.nn import TrainOneStepCell, WithLossCell
 from mindspore.nn.optim import Momentum
 from mindspore.train import ModelCheckpoint, RunContext, LossMonitor, Callback, CheckpointConfig, \
-    LambdaCallback, History, TFTRegister, OnRequestExit
+    LambdaCallback, History, TrainFaultTolerance, OnRequestExit
 from mindspore.train.callback import _InternalCallbackParam, _CallbackManager, _checkpoint_cb_for_save_op, _set_cur_net
 from mindspore.train.callback._checkpoint import _chg_ckpt_file_name_if_same_exist
 
@@ -640,53 +640,69 @@ def test_mindio_ttp_adapter():
     Description: Test tft register callback.
     Expectation: run success.
     """
+    import sys
+    from unittest.mock import MagicMock
+    # create a temp module for 'mindio_ttp'
+    mindio_ttp = type('module', (), {})()
+    mindio_ttp.framework_ttp = type('module', (), {'tft_init_processor': MagicMock(return_value=None),
+                                                   'tft_start_processor': MagicMock(return_value=None),
+                                                   "tft_is_reboot_node": MagicMock(return_value=False),
+                                                   "tft_register_save_ckpt_handler": MagicMock(return_value=None),
+                                                   "tft_register_rename_handler": MagicMock(return_value=None),
+                                                   "tft_register_exit_handler": MagicMock(return_value=None),
+                                                   "tft_register_stop_handler": MagicMock(return_value=None),
+                                                   "tft_register_clean_handler": MagicMock(return_value=None),
+                                                   "tft_register_repair_handler": MagicMock(return_value=None),
+                                                   "tft_register_rebuild_group_handler": MagicMock(return_value=None),
+                                                   "tft_set_step_args": MagicMock(return_value=None),
+                                                   "tft_init_controller": MagicMock(return_value=None),
+                                                   "tft_start_controller": MagicMock(return_value=None)
+                                                   }
+                                    )()
+
+    mindio_ttp.controller_ttp = type('module', (), {'tft_register_mindx_callback': MagicMock(return_value=None),
+                                                    'tft_notify_controller_stop_train': MagicMock(return_value=None),
+                                                    'tft_notify_controller_on_global_rank': MagicMock(
+                                                        return_value=None),
+                                                    'tft_notify_controller_change_strategy': MagicMock(
+                                                        return_value=None)
+                                                    }
+                                     )()
+
+    sys.modules['mindio_ttp'] = mindio_ttp
+    sys.modules['mindio_ttp.framework_ttp'] = mindio_ttp.framework_ttp
+    sys.modules['mindio_ttp.controller_ttp'] = mindio_ttp.controller_ttp
+
     with mock.patch("mindspore.hal.Stream", return_value={"test": 1}):
         # case1: not set MS_ENABLE_TFT, raise ERROR
         with pytest.raises(ValueError):
-            mindio_cb = TFTRegister(
-                ctrl_rank_id=0,
-                ctrl_ip="192.168.0.1",
-                ctrl_port=8080,
-                ckpt_save_path='./ckpt'
-            )
-        os.environ["MS_ENABLE_TFT"] = '{TFT:1,UCE:1}'
-        # case2: not in Ascend GE, raise ERROR
-        with pytest.raises(ValueError):
-            mindio_cb = TFTRegister(
-                ctrl_rank_id=0,
-                ctrl_ip="192.168.0.1",
-                ctrl_port=8080,
-                ckpt_save_path='./ckpt'
-            )
-        context.set_context(mode=context.GRAPH_MODE, device_target='Ascend')
-        #case 3: not have TFT package, raise ERROR
-        with pytest.raises(ModuleNotFoundError):
-            mindio_cb = TFTRegister(
-                ctrl_rank_id=0,
-                ctrl_ip="192.168.0.1",
-                ctrl_port=8080,
-                ckpt_save_path='./ckpt'
-            )
-        _mock = mock.Mock()
-        modules = {"mindio_ttp": _mock, "mindio_ttp.framework_ttp": _mock.module}
-        with mock.patch.dict("sys.modules", modules):
-            def new_init_tft(cls):
-                pass
+            mindio_cb = TrainFaultTolerance(ckpt_save_path='./ckpt')
 
-            with mock.patch.object(TFTRegister, "_init_tft", new=new_init_tft):
-                mindio_cb = TFTRegister(
-                    ctrl_rank_id=0,
-                    ctrl_ip="192.168.0.1",
-                    ctrl_port=8080,
-                    ckpt_save_path='./ckpt'
-                )
-                cb_params = _InternalCallbackParam()
-                cb_params.cur_epoch_num = 4
-                cb_params.epoch_num = 4
-                cb_params.cur_step_num = 2
-                cb_params.dataset_sink_mode = True
-                cb_params.sink_size = 2
-                run_context = RunContext(cb_params)
-                # case4: if sink_size > 1, raise error
-                with pytest.raises(ValueError):
-                    mindio_cb.on_train_begin(run_context)
+        # case 2: must init advance when using ARF
+        context.set_context(mode=context.GRAPH_MODE, device_target='Ascend')
+        os.environ["MS_ENABLE_TFT"] = '{TFT:1,UCE:1,ARF:1}'
+        with pytest.raises(ValueError):
+            mindio_cb = TrainFaultTolerance(ckpt_save_path='./ckpt')
+
+        # case 3: disable hccl watchdog when using ARF
+        from mindspore.utils import _tft_handler
+        os.environ["MS_TFT_PORT"] = str(8000)
+        os.environ["MS_TFT_IP"] = "127.0.0.1"
+        os.environ["MS_WORKER_NUM"] = "8"
+        os.environ["MS_NODE_ID"] = "0"
+        key_value = {"any": 0}
+        _tft_handler.init(config=key_value)
+        assert context.get_context("hccl_watchdog") is False
+
+        # case 4: if sink_size > 1, raise error
+        os.environ["MS_ENABLE_TFT"] = '{TFT:1,UCE:1}'
+        cb_params = _InternalCallbackParam()
+        cb_params.cur_epoch_num = 4
+        cb_params.epoch_num = 4
+        cb_params.cur_step_num = 2
+        cb_params.dataset_sink_mode = True
+        cb_params.sink_size = 2
+        run_context = RunContext(cb_params)
+        mindio_cb = TrainFaultTolerance(ckpt_save_path='./ckpt')
+        with pytest.raises(ValueError):
+            mindio_cb.on_train_begin(run_context)

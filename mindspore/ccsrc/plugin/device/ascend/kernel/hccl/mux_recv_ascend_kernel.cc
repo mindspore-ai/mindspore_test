@@ -49,6 +49,10 @@ bool MuxRecvAscendKernel::Launch(const std::vector<KernelTensor *> &, const std:
   }
   MS_EXCEPTION_IF_NULL(outputs[0]);
   MS_EXCEPTION_IF_NULL(stream_ptr);
+  if (NeedReGetHcom(group_, hccl_inner_comm_name_)) {
+    MS_LOG(WARNING) << "Hccl inner name had changed, need re-get hcom";
+    comm_ = AscendCollectiveCommLib::GetInstance().GetHcomByGroup(group_);
+  }
   auto hccl_result = hccl::HcclAdapter::GetInstance().HcclRecv(outputs[0]->device_ptr(), hccl_count_,
                                                                hccl_data_type_list_[0], src_rank_, stream_ptr, comm_);
   if (hccl_result != HCCL_SUCCESS) {

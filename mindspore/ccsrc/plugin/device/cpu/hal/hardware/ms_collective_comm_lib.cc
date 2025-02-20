@@ -187,6 +187,14 @@ bool MsCollectiveCommLib::BroadcastUniqueID(const std::string &group_name, size_
   return true;
 }
 
+void MsCollectiveCommLib::ClearUniqueID(const std::string &group_name) const {
+  CHECK_IF_NULL(cgn_);
+  // clear unique id after broadcast success.
+  std::string node_role_prefix = cgn_->role() + "_";
+  std::string group_info_key = node_role_prefix + kGroupInfoPrefix + group_name;
+  (void)cgn_->DeleteMetadata(group_info_key);
+}
+
 bool MsCollectiveCommLib::SendUniqueID(const std::string &group_name, size_t root_info_size,
                                        const void *root_info) const {
   CHECK_IF_NULL(root_info);

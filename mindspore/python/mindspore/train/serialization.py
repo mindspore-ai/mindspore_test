@@ -160,13 +160,24 @@ def _get_cur_rank_dp(parameter_layout_dict):
         parameter_layout_dict, initial_rank)
     value_len = sys.maxsize
     min_value = ()
+    min_value_set = set()
     for key, value in parameter_redundancy_dict.items():
-        if "accu_grads" in key or "inputs" in key:
+        if key.startswith("accu_grads") or key.startswith("inputs"):
             continue
         for item in value:
-            if len(item) < value_len and global_rank in item:
+            if global_rank not in item:
+                continue
+            # if item is subset of min_value_set, update min_value_set and min_value
+            if len(item) < value_len:
+                if min_value_set and not set(item).issubset(min_value_set):
+                    return (global_rank,)
                 value_len = len(item)
+                min_value_set = set(item)
                 min_value = item
+            # if value is not smaller than len of min_value len,
+            # check if min_value_set is subset of current item
+            elif not min_value_set.issubset(set(item)):
+                return (global_rank,)
     return min_value
 
 
@@ -201,6 +212,9 @@ def get_ckpt_path_with_strategy(cur_ckpt_path, cur_strategy_path):
         >>> ckpt_file_new = get_ckpt_path_with_strategy(ckpt_file, strategy_file)
         >>> print(ckpt_file_new)
     """
+    cur_rank = get_rank()
+    if f"rank_{str(cur_rank)}" in cur_ckpt_path and os.path.isfile(cur_ckpt_path):
+        return cur_ckpt_path
     dp = _get_cur_rank_dp(cur_strategy_path)
     pattern = r'rank_\d+'
     for i in dp:
@@ -722,6 +736,9 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
         s1 = mindspore.hal.Stream()
         with mindspore.hal.StreamCtx(s1):
             save_obj = _convert_save_obj_to_param_list(save_obj, integrated_save, append_dict, choice_func)
+            for k_name, value in append_dict.items():
+                if isinstance(value, (Tensor, Parameter)):
+                    append_dict[k_name] = Tensor(Tensor_.move_to(value, "CPU", False))
         s1.synchronize()
     else:
         save_obj = _convert_save_obj_to_param_list(save_obj, integrated_save, append_dict, choice_func)

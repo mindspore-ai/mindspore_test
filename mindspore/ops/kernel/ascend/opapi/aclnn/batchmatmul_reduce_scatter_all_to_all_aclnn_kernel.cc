@@ -59,6 +59,11 @@ bool BatchMatMulReduceScatterAlltoAllAscend::Launch(const std::vector<KernelTens
                                                     const std::vector<KernelTensor *> &workspace,
                                                     const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
+  if (mindspore::device::ascend::OpApiUtil::NeedRebuildWorkspaceSize(group_ep_, hccl_inner_comm_ep_name_) ||
+      mindspore::device::ascend::OpApiUtil::NeedRebuildWorkspaceSize(group_tp_, hccl_inner_comm_tp_name_)) {
+    MS_LOG(WARNING) << "Hccl inner name had changed, need rebuild workspace size";
+    GetWorkSpaceInfo(inputs, outputs);
+  }
 
   input_x_.first = inputs[kIndex0];
   input_weight_.first = inputs[kIndex1];

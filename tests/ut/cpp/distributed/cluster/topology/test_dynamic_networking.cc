@@ -201,6 +201,7 @@ TEST_F(TestDynamicNetworking, MetaServerNodeRecovery) {
   if (storage::FileIOUtils::IsFileOrDirExist(full_file_path)) {
     remove(full_file_path.c_str());
   }
+  MsContext::GetInstance()->set_param<std::string>(MS_CTX_DEVICE_TARGET, "GPU");
   EXPECT_TRUE(!storage::FileIOUtils::IsFileOrDirExist(full_file_path));
   common::SetEnv(recovery::kEnvEnableRecovery, "1");
   common::SetEnv(recovery::kEnvRecoveryPath, path.c_str());
@@ -409,6 +410,7 @@ TEST_F(TestDynamicNetworking, ReconnectToMetaServerDuringUnreg) {
   if (storage::FileIOUtils::IsFileOrDirExist(full_file_path)) {
     remove(full_file_path.c_str());
   }
+  MsContext::GetInstance()->set_param<std::string>(MS_CTX_DEVICE_TARGET, "GPU");
   EXPECT_TRUE(!storage::FileIOUtils::IsFileOrDirExist(full_file_path));
   common::SetEnv(recovery::kEnvEnableRecovery, "1");
   common::SetEnv(recovery::kEnvRecoveryPath, path.c_str());

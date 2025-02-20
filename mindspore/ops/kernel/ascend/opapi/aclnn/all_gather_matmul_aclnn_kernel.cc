@@ -49,6 +49,10 @@ bool AllGatherMatmulAscend::Launch(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &workspace,
                                    const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
+  if (mindspore::device::ascend::OpApiUtil::NeedRebuildWorkspaceSize(group_, hccl_inner_comm_name_)) {
+    MS_LOG(WARNING) << "Hccl inner name had changed, need rebuild workspace size";
+    GetWorkSpaceInfo(inputs, outputs);
+  }
   // The following two lines are nessisary; deleting them will cause an error: "Sync default stream failed."
   input_.first = inputs[mindspore::ops::kAllGatherMatmulInputInputIndex];
   x2_.first = inputs[mindspore::ops::kAllGatherMatmulInputX2Index];

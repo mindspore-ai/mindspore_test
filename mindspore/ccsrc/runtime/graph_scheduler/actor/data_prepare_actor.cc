@@ -287,7 +287,7 @@ void UpdateDeviceAddressByRefInputNode(const std::vector<KernelGraphPtr> &graphs
 }
 
 bool IsNeedSync(const TensorPtr &tensor, bool *is_sub_data) {
-  if (RecoveryContext::GetInstance()->enable_recovery() &&
+  if (RecoveryContext::GetInstance()->enable_gpu_recovery() &&
       RecoveryContext::GetInstance()->need_sync_weight_to_device()) {
     return true;
   }
@@ -790,13 +790,20 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
     UCEException::GetInstance().set_uce_flag(false);
   }
 
-  if (RecoveryContext::GetInstance()->enable_recovery() &&
+  if (RecoveryContext::GetInstance()->enable_gpu_recovery() &&
       RecoveryContext::GetInstance()->need_sync_weight_to_device()) {
     RecoveryContext::GetInstance()->set_need_sync_weight_to_device(false);
   }
 
   std::vector<TensorPtr> control_input = input_tensors.empty() ? std::vector<TensorPtr>() : input_tensors.back();
   PrepareDeviceTensorStoreForControlNode(parser, control_input, args, context);
+  RaiseARFError(args);
+}
+
+void DataPrepareActor::RaiseARFError(const VectorRef &args) {
+  if (UCEException::GetInstance().enable_arf() && UCEException::GetInstance().is_reboot_node() && !args.empty()) {
+    MS_LOG(EXCEPTION) << "ARF FINISH !";
+  }
 }
 
 void DataPrepareActor::PrepareDataForHostTensorQueue(const std::vector<std::vector<TensorPtr>> &input_tensors,

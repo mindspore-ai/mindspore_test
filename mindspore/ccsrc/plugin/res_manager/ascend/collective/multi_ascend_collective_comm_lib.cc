@@ -100,6 +100,7 @@ bool MultiAscendCollectiveCommLib::DestroyCommunicationGroup(const std::string &
   RETURN_IF_FALSE_WITH_LOG(ascend_collective_comm_lib_->DestroyCommunicationGroup(group_name),
                            "Failed to destroy HCCL communication group " + group_name);
   MS_LOG(INFO) << "Successfully destroy HCCL communication group " << group_name;
+  (void)groups_.erase(group_name);
   return true;
 }
 
@@ -112,6 +113,10 @@ bool MultiAscendCollectiveCommLib::CreateDeviceCommunicationGroup(const std::str
 bool MultiAscendCollectiveCommLib::CreateCommunicationGroup(const std::string &group_name,
                                                             const std::vector<uint32_t> &group_ranks,
                                                             uint32_t local_group_rank, uint32_t local_group_size) {
+  if (groups_.count(group_name) != 0) {
+    MS_LOG(WARNING) << "the group:" << group_name << "already existed";
+    return true;
+  }
   MultiAscendCommunicationGroupPtr group = std::make_shared<MultiAscendCommunicationGroup>(
     group_name, group_ranks, global_rank_id_, local_group_rank, local_group_size);
   MS_EXCEPTION_IF_NULL(group);

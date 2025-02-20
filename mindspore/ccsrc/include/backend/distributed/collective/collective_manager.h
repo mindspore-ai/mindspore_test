@@ -94,6 +94,9 @@ class BACKEND_EXPORT CollectiveManager {
   // Destroy the communication group.
   bool DestroyCommunicationGroup(const std::string &group_name);
 
+  // Destroy device communication group for resume training.
+  bool DestroyDeviceSideCommunicationGroup(const std::string &group_name);
+
   // Get the rank id of this process in the specified group.
   uint32_t GetRankId(const std::string &group_name);
 
@@ -132,6 +135,7 @@ class BACKEND_EXPORT CollectiveManager {
   // Return collective manager is initialized.
   bool initialized() const { return inited_.load(); }
   std::unordered_map<std::string, std::vector<uint32_t>> get_group_map() { return group_map_; }
+  std::vector<std::pair<std::string, std::vector<uint32_t>>> get_group_info() { return group_infos_; }
 
   CollectiveCommunicationLib *device_comm_lib() { return device_comm_lib_instance_; }
 
@@ -267,6 +271,7 @@ class BACKEND_EXPORT CollectiveManager {
   mutable std::mutex init_result_mutex_;
   std::condition_variable result_blocker_;
   GroupToResultMap group_name_to_result_;
+  std::vector<std::pair<std::string, std::vector<uint32_t>>> group_infos_;
 };
 
 // For scheduler node, CollectiveManager is not initialized. Return 0 as rank id.

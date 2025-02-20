@@ -30,12 +30,14 @@
 #include "hccl/hccl_types.h"
 #include "utils/ms_utils.h"
 #include "runtime/collective/collective_comm_lib_loader.h"
+#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #ifdef ENABLE_INTERNAL_KERNELS
 #include "plugin/res_manager/ascend/collective/lowlatency_collective_comm_lib.h"
 #endif
 
 namespace mindspore {
 namespace kernel {
+using AscendCollectiveCommLib = mindspore::device::ascend::AscendCollectiveCommLib;
 using CollectiveCommunicationLib = mindspore::device::CollectiveCommunicationLib;
 using CollectiveCommLibLoader = mindspore::device::CollectiveCommLibLoader;
 class HcclKernel : public KernelMod {
@@ -57,6 +59,8 @@ class HcclKernel : public KernelMod {
   std::vector<KernelAttr> GetOpSupport() override {
     MS_LOG(EXCEPTION) << "This interface is not support in hccl kernel module.";
   }
+
+  bool NeedReGetHcom(const std::string &group, const std::string &inner_name);
 
  protected:
   virtual HcclDataType GetHcclDataType() const;
@@ -80,6 +84,7 @@ class HcclKernel : public KernelMod {
   ulong loop_size_{0};
   bool is_graph_mode_{false};
   bool use_lccl_;
+  std::string hccl_inner_comm_name_;
 
 #ifdef ENABLE_INTERNAL_KERNELS
   // The LCCL collective communication library.

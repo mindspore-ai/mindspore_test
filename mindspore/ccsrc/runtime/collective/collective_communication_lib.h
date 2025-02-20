@@ -107,6 +107,8 @@ class BACKEND_EXPORT CollectiveCommunicationLib {
   // Broadcast the device root information to all nodes on host side, used to initialize collective communication.
   virtual bool BroadcastUniqueID(const std::string &group_name, size_t root_info_size, void *root_info) { return true; }
 
+  virtual void ClearUniqueID(const std::string &group_name) const {}
+
   // Primitive of collective operations.
   virtual bool AllGather(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type,
                          const std::string &group_name, void *stream = nullptr) {

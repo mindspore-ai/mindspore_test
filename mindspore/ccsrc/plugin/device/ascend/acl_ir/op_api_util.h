@@ -45,6 +45,7 @@ class OpApiUtil {
                                       std::vector<std::string> *output_reshape_types, const KernelType &kernel_type);
 
   static std::string GetCommName(const std::string &group);
+  static bool NeedRebuildWorkspaceSize(const std::string &group, const std::string &inner_name);
 };
 
 class AclUtil {

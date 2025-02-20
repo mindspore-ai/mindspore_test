@@ -89,7 +89,7 @@ void LoopCountActor::IncreaseLoopCount(OpContext<DeviceTensor> *const context) {
       (void)sync_stream_device_contexts.insert(device_context);
 
       // Trigger disaster recovery and exit loop early.
-      if (RecoveryContext::GetInstance()->enable_recovery() && CollectiveManager::instance()->need_reinit()) {
+      if (RecoveryContext::GetInstance()->enable_gpu_recovery() && CollectiveManager::instance()->need_reinit()) {
         current_count_ = loop_count_;
       }
     }

@@ -87,6 +87,11 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
   }
   // D2H copy, src_device_ptr: GPU/ASCEND; dst_device_ptr: CPU.
   if (to == "CPU") {
+    if (src_device_ptr == nullptr) {
+      MS_LOG(INFO) << "Src tensor device ptr is null, means tensor on: " << to << ", no need move again!";
+      *return_self = true;
+      return;
+    }
     if (!MoveToD2H(src_tensor, src_device_ptr, dst_tensor, blocking)) {
       MS_LOG(EXCEPTION) << "Move tensor to " << to << "failed.";
     }

@@ -71,7 +71,7 @@ AscendCollectiveCommLib::AscendCollectiveCommLib() { global_group_name_ = kHCCLG
 
 bool AscendCollectiveCommLib::InitializeHccl() {
   if (initialized_) {
-    return false;
+    return true;
   }
   auto ms_context = MsContext::GetInstance();
   ms_context->set_param<bool>(MS_CTX_ENABLE_HCCL, true);
@@ -125,7 +125,7 @@ bool AscendCollectiveCommLib::InitializeHccl() {
 
 bool AscendCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t global_rank_size, uint32_t local_rank_id) {
   if (initialized_) {
-    return false;
+    return true;
   }
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -178,7 +178,7 @@ bool AscendCollectiveCommLib::DestroyHcclComm() {
   groups_.clear();
   bool res = hccl::HcclAdapter::GetInstance().FinalizeHccl();
   if (!res) {
-    MS_LOG(ERROR) << "Hccl finalize failed";
+    MS_LOG(WARNING) << "Hccl finalize failed";
     return false;
   }
   return true;
@@ -201,7 +201,12 @@ bool AscendCollectiveCommLib::DestroyCommunicationGroup(const std::string &group
   CHECK_RET((groups_.count(group_name) != 0), true, "The HCCL group " + group_name + " does not exist.");
 
   if (!groups_[group_name]->Finalize()) {
+    MS_LOG(WARNING) << "group finalize failed";
     return false;
+  }
+  (void)groups_.erase(group_name);
+  if (group_hccl_comm_map_.count(group_name)) {
+    (void)group_hccl_comm_map_.erase(group_name);
   }
   return true;
 }

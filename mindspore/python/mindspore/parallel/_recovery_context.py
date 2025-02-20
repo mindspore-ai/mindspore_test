@@ -33,9 +33,12 @@ def recovery_context():
         RECOVERY_CONTEXT = RecoveryContext.get_instance()
     return RECOVERY_CONTEXT
 
+
 _set_recovery_context_func_map = {
     "ckpt_path": recovery_context().set_ckpt_path,
-    "need_reset": recovery_context().set_need_reset
+    "need_reset": recovery_context().set_need_reset,
+    "is_reboot_node": recovery_context().set_is_reboot_node,
+    "is_arf": recovery_context().set_is_arf
 }
 
 _get_recovery_context_func_map = {

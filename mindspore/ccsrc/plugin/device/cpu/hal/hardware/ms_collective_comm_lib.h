@@ -83,6 +83,8 @@ class BACKEND_EXPORT MsCollectiveCommLib : public CollectiveCommunicationLib {
   bool CheckIfVal(const void *send_buff, void *recv_buff, const std::string &group_name,
                   CommunicationGroupInfo *group_info);
 
+  void ClearUniqueID(const std::string &group_name) const override;
+
  private:
   MsCollectiveCommLib();
   ~MsCollectiveCommLib() override = default;

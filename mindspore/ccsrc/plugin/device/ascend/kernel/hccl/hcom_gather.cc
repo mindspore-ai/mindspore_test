@@ -94,6 +94,10 @@ bool HcomGatherKernel::LaunchKernel(const std::vector<KernelTensor *> &inputs,
           return false;
         }
       } else {
+        if (NeedReGetHcom(group_, hccl_inner_comm_name_)) {
+          MS_LOG(WARNING) << "Hccl inner name had changed, need re-get hcom";
+          comm_ = AscendCollectiveCommLib::GetInstance().GetHcomByGroup(group_);
+        }
         auto hccl_result = hccl::HcclAdapter::GetInstance().HcclRecv(output_device_ptr + offset, hccl_count_,
                                                                      hccl_data_type_list_[0], r, stream_ptr, comm_);
         if (hccl_result != HCCL_SUCCESS) {
@@ -103,6 +107,10 @@ bool HcomGatherKernel::LaunchKernel(const std::vector<KernelTensor *> &inputs,
       }
     }
   } else {
+    if (NeedReGetHcom(group_, hccl_inner_comm_name_)) {
+      MS_LOG(WARNING) << "Hccl inner name had changed, need re-get hcom";
+      comm_ = AscendCollectiveCommLib::GetInstance().GetHcomByGroup(group_);
+    }
     auto hccl_result = hccl::HcclAdapter::GetInstance().HcclSend(
       inputs[0]->device_ptr(), hccl_count_, hccl_data_type_list_[0], dest_rank_, stream_ptr, comm_);
     if (hccl_result != HCCL_SUCCESS) {

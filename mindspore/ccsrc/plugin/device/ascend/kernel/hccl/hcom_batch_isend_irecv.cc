@@ -97,6 +97,10 @@ bool HcomBatchISendIRecvKernel::Launch(const std::vector<KernelTensor *> &inputs
     info[i] = HcclSendRecvItem{hccl_type, buf, numel, hccl_dtype, rank};
   }
 
+  if (NeedReGetHcom(group_, hccl_inner_comm_name_)) {
+    MS_LOG(WARNING) << "Hccl inner name had changed, need re-get hcom";
+    comm_ = AscendCollectiveCommLib::GetInstance().GetHcomByGroup(group_);
+  }
   auto hccl_result = hccl::HcclAdapter::GetInstance().HcclBatchISendIRecv(info, kItem, comm_, stream_ptr);
   if (hccl_result != HCCL_SUCCESS) {
     MS_LOG(ERROR) << "HcclBatchISendIRecv failed, ret:" << hccl_result;

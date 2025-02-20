@@ -152,6 +152,16 @@ void ErrorManagerAdapter::TaskExceptionCallback(aclrtExceptionInfo *task_fail_in
       }
     }
   }
+  if (UCEException::GetInstance().enable_arf()) {
+    if (aclrt_get_last_error != nullptr) {
+      auto rt_error = aclrt_get_last_error(thread_level);
+      MS_LOG(ERROR) << "Run task failed, error rt code [" << rt_error << "].";
+      if (rt_error == ACL_ERROR_RT_DEVICE_TASK_ABORT) {
+        UCEException::GetInstance().set_force_stop_flag(true);
+        MS_LOG(ERROR) << "ForceStopError occurs, wait to catch.";
+      }
+    }
+  }
   MS_LOG(ERROR) << "Run Task failed, task_id: " << task_id << ", stream_id: " << stream_id << ", tid: " << tid
                 << ", device_id: " << device_id << ", retcode: " << error_code << " ("
                 << GetErrorMsgFromErrorCode(error_code) << ")";

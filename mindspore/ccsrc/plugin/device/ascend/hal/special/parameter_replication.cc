@@ -293,14 +293,16 @@ int ParamReplication::SendRecv(const std::vector<tensor::TensorPtr> &params, int
   size_t xchg_buf_size = GetExchangeBufferSize(local_info, remote_info);
   void *xchg_buf_addr = nullptr;
   if (xchg_buf_size != DataExchangeInfo::kInvalidParamSize &&
-      UceCanUseBatchCopy(xchg_buf_size, local_info.GetFreeDevMem())) {
+      UceCanUseBatchCopy(xchg_buf_size, local_info.GetFreeDevMem()) && !UCEException::GetInstance().is_arf()) {
     xchg_buf_addr = res_mgr_->AllocateMemory(xchg_buf_size, stream_id_);
   }
 
   int ret_value = 0;
   if (xchg_buf_addr == nullptr) {
+    MS_LOG(INFO) << "Copy parameters one by one.";
     ret_value = CopyParamsOneByOne(params, src_rank, dst_rank);
   } else {
+    MS_LOG(INFO) << "Copy parameters on batches.";
     ret_value = CopyParamsInBatches(params, src_rank, dst_rank, xchg_buf_addr, xchg_buf_size);
     res_mgr_->FreeMemory(xchg_buf_addr);
   }

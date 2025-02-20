@@ -15,24 +15,27 @@
 """Checkpoint related classes and functions."""
 
 import os
+from mindspore.utils import _tft_handler
 from mindspore.train.serialization import save_checkpoint
-from mindspore.parallel._utils import _get_device_num
-from mindspore import _checkparam as Validator
 from mindspore.train.callback._callback import Callback
-from mindspore import context
+from mindspore import context, ops
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
 from mindspore.communication import get_rank, get_group_size
 from mindspore import log as logger
 from mindspore.train.serialization import _get_cur_rank_dp
 from mindspore._c_expression import _repair_device, _stop_device, _tft_sem_post, _tft_sem_enable
+from mindspore._c_expression import _rebuild_world_group, _rebuild_sub_group, _finalize_comm
 from mindspore._c_expression import clean_tdt_channel
 from mindspore._c_expression import send_recv, reset_params
 from mindspore._c_expression import CollectiveManager
 from mindspore._c_expression import _get_uce_process_strategy, _get_uce_mem_info
 from mindspore._c_expression import TensorPy as Tensor_
+from mindspore.ops.operations.manually_defined._inner import TensorReport
 import mindspore
 import mindspore.common.dtype as mstype
+from mindspore.parallel._recovery_context import _set_recovery_context
+
 
 def _get_ckpt_dir(step, ckpt_save_path, is_tmp_file):
     """ Common func to generate ckpt dir name."""
@@ -40,30 +43,38 @@ def _get_ckpt_dir(step, ckpt_save_path, is_tmp_file):
     mid_dir = f"tft_saved_checkpoints-step_{str(step)}{tmp}"
     return os.path.join(ckpt_save_path, mid_dir)
 
+
 def _save_checkpoint_on_failure(step, save_info, args, cb_ctx):
     """ Callback used for TFT save ckpt function when errors occur."""
     logger.info("Enter _save_checkpoint_on_failure function")
-    if not cb_ctx._is_params_consistent():    # pylint: disable=W0212
+    if not cb_ctx._is_params_consistent():  # pylint: disable=W0212
         raise RuntimeError("Can't save parameters, because they are left in inconsistent state!")
-
-    ckpt_save_path = cb_ctx.ckpt_save_path
     cb_params = args
-    cur_rank = get_rank()
-    cur_step_num = cb_params.cur_step_num
-    cur_epoch_num = cb_params.cur_epoch_num
-    batch_num = cb_params.batch_num
-    if cur_step_num > step:
-        cur_epoch_num = (step - 1) // batch_num + 1
-    step_num_in_epoch = int((step - 1) % batch_num + 1)
-
+    # we record the current step and epoch num in on_train_step_end, so we can just reset it here
+    cb_params.cur_step_num = cb_ctx.cur_step_num
+    cb_params.cur_epoch_num = cb_ctx.cur_epoch_num
+    if cb_params.optimizer is not None:
+        cb_params.optimizer.global_step = cb_ctx.global_step
+    if hasattr(cb_params.network, 'optimizer') and cb_params.network.optimizer is not None:
+        cb_params.network.optimizer.global_step = cb_ctx.global_step
     append_dict = {}
-    append_dict["epoch_num"] = cur_epoch_num
-    append_dict["step_num"] = step
-    append_dict["cur_rank"] = cur_rank
-    append_dict["batch_num"] = batch_num
     append_dict["__exception_save__"] = True
+    # if user has provided a custom save callback, use it
+    if cb_ctx.save_cb:
+        cb_ctx.save_cb(cb_params, append_dict)
+        logger.info("Finish _save_checkpoint_on_failure function")
+        return
 
-    append_dict["global_step"] = Parameter([cb_ctx.global_step])
+    # if user has not provided a custom save callback, use default save logic
+    ckpt_save_path = cb_ctx.ckpt_save_path
+    cur_rank = get_rank()
+    step_num_in_epoch = int((cb_params.cur_step_num - 1) % cb_params.batch_num + 1)
+    cur_epoch_num = cb_params.cur_epoch_num
+    append_dict["epoch_num"] = cur_epoch_num
+    append_dict["step_num"] = cb_params.cur_step_num
+    append_dict["cur_rank"] = cur_rank
+    append_dict["batch_num"] = cb_params.batch_num
+    append_dict["global_step"] = cb_ctx.global_step
     outputs = cb_params.net_outputs
     if isinstance(outputs, (tuple, list)) and len(outputs) >= 3:
         append_dict["loss_scale"] = outputs[2]
@@ -76,49 +87,64 @@ def _save_checkpoint_on_failure(step, save_info, args, cb_ctx):
                     integrated_save=False, append_dict=append_dict)
     logger.info("Finish _save_checkpoint_on_failure function")
 
+
 def _rename_save_result(step, cb_ctx):
     """ Callback used for TFT rename function after ckpt save callback was finished and successful."""
     logger.info("Enter _rename_save_result function")
+    if cb_ctx.save_cb:
+        logger.info("User's save callback is provided, skip rename")
+        return
     tmp_dir = _get_ckpt_dir(step, cb_ctx.ckpt_save_path, True)
     fin_dir = _get_ckpt_dir(step, cb_ctx.ckpt_save_path, False)
 
     os.rename(tmp_dir, fin_dir)
     logger.info("Finish _rename_save_result function")
 
+
 def _tft_exit_cb(ctx):
     logger.error("Enter mindio ttp exit process, which means other ranks occur exception, check other ranks' logs!")
     _tft_sem_post()
-    os._exit(1)   # pylint: disable=W0212
+    os._exit(1)  # pylint: disable=W0212
 
 
 def _tft_repair_callback(step, need_rebuild, error_ranks, repair_info, args, cb_ctx):
     """ Callback used for TFT repair function."""
-    logger.info("Enter _tft_repair_callback repair type: {}".format(repair_info["repair_type"]))
-    if(repair_info["repair_type"] == cb_ctx.tft.RepairType.RT_UCE_HIGHLEVEL.value\
-or repair_info["repair_type"] == cb_ctx.tft.RepairType.RT_UCE_LOWLEVEL.value):
-        logger.info("Enter _tft_repair_callback uce REPARI_DEVICE device_id : {}".format(cb_ctx.device_id))
+    logger.warning("Enter _tft_repair_callback repair type: {}".format(repair_info["repair_type"]))
+    if (repair_info["repair_type"] in (cb_ctx.tft.RepairType.RT_UCE_HIGHLEVEL.value,
+                                       cb_ctx.tft.RepairType.RT_UCE_LOWLEVEL.value)):
+        logger.warning("Enter _tft_repair_callback uce REPARI_DEVICE device_id : {}".format(cb_ctx.device_id))
         _repair_device(cb_ctx.device_id)
 
-    if(repair_info["repair_type"] == cb_ctx.tft.RepairType.RT_UCE_HIGHLEVEL.value\
-       or repair_info["repair_type"] == cb_ctx.tft.RepairType.RT_SEND.value):
-        logger.info("Enter _tft_repair_callback SEND_RECV repair type: \
-{}, src_rank:{}, dst_rank: {}".format(repair_info["repair_type"], repair_info["src"], repair_info["dst"]))
+    if (repair_info["repair_type"] in (cb_ctx.tft.RepairType.RT_UCE_HIGHLEVEL.value,
+                                       cb_ctx.tft.RepairType.RT_SEND.value,
+                                       cb_ctx.tft.RepairType.RT_RECV_REPAIR.value)):
+        logger.warning("Enter _tft_repair_callback SEND_RECV repair type:{}, src_rank:{}, dst_rank: {}".format(
+            repair_info["repair_type"], repair_info["src"], repair_info["dst"]))
         cb_params = args
-        src_rank = repair_info["src"][0]
-        dst_rank = repair_info["dst"][0]
-        if send_recv(cb_params.train_network.trainable_params(), src_rank, dst_rank) != 0:
-            raise ValueError("Call send_recv failed.")
-    logger.info("Finish _tft_repair_callback")
+        if repair_info["repair_type"] == cb_ctx.tft.RepairType.RT_SEND.value:
+            for i in range(len(repair_info["src"])):
+                src_rank = repair_info["src"][i]
+                dst_rank = repair_info["dst"][i]
+                if send_recv(cb_params.train_network.trainable_params(), src_rank, dst_rank) != 0:
+                    raise ValueError("Call send_recv failed.")
+        else:
+            src_rank = repair_info["src"][0]
+            dst_rank = repair_info["dst"][0]
+            if send_recv(cb_params.train_network.trainable_params(), src_rank, dst_rank) != 0:
+                raise ValueError("Call send_recv failed.")
+    # reset arf flag after weights send recv
+    _set_recovery_context(is_arf=False)
+    logger.warning("Finish _tft_repair_callback")
 
 
 def _tft_clean_callback(is_uce_error, args, ctx):
     """ Callback used for TFT clean function."""
-    logger.info("Enter _tft_clean_callback")
+    logger.warning("Enter _tft_clean_callback")
     ret = 0
     if is_uce_error:
         _get_uce_mem_info(ctx.device_id)
         err_strategy = _get_uce_process_strategy()
-        logger.info("_tft_clean_callback err_strategy: {}".format(err_strategy))
+        logger.warning("_tft_clean_callback err_strategy: {}".format(err_strategy))
         if err_strategy == "RS_UCE_HIGHLEVEL":
             ret = 0
         elif err_strategy == "RS_UCE_LOWLEVEL":
@@ -126,23 +152,32 @@ def _tft_clean_callback(is_uce_error, args, ctx):
         else:
             ret = 1
     clean_tdt_channel()
-    logger.info("Enter _tft_clean_callback resume_hccl_comm")
+    logger.warning("Enter _tft_clean_callback resume_hccl_comm")
     CollectiveManager.get_instance().resume_hccl_comm()
-    logger.info("Finish _tft_clean_callback, ret: {}".format(ret))
+    logger.warning("Finish _tft_clean_callback, ret: {}".format(ret))
     return ret
 
 
 def _tft_stop_callback(args, cb_ctx):
     """ Callback used for TFT stop function."""
-    logger.info("Enter _tft_stop_callback device_id: {}".format(cb_ctx.device_id))
+    logger.warning("Enter _tft_stop_callback device_id: {}".format(cb_ctx.device_id))
     _stop_device(cb_ctx.device_id)
-    if (not cb_ctx.is_uce_rank) and (not cb_ctx._is_params_consistent()):    # pylint: disable=W0212
+    if (not cb_ctx.is_uce_rank) and (not cb_ctx._is_params_consistent()):  # pylint: disable=W0212
         raise RuntimeError("Can't stop device, because training parameters are left in inconsistent state!")
     cb_ctx.is_uce_rank = False
     logger.info("Finish _tft_stop_callback")
 
 
-class TFTRegister(Callback):
+def _tft_rebuild_sub_groups(fault_ranks, args, ctx):
+    logger.warning(f"Enter _tft_rebuild_sub_groups, device id: ".format(ctx.device_id))
+    _finalize_comm()
+    _rebuild_world_group()
+    _rebuild_sub_group()
+    _set_recovery_context(is_arf=True)
+    logger.warning("Enter _tft_rebuild_sub_groups ok ")
+
+
+class TrainFaultTolerance(Callback):
     """
     This callback is used to enable the TFT feature
     `MindIO TFT <https://www.hiascend.com/document/detail/zh/mindx-dl/60rc2/mindio/mindiottp/mindiottp001.html>`_.
@@ -181,7 +216,7 @@ class TFTRegister(Callback):
         >>> from mindspore import nn, ops, Parameter, train
         >>> from mindspore.communication import init, get_rank
         >>> from mindspore.common.initializer import initializer, HeUniform
-        >>> from mindspore.train import Model, TFTRegister
+        >>> from mindspore.train import Model, TrainFaultTolerance
         >>> from mindspore import dataset as ds
         >>> ms.set_context(mode=ms.GRAPH_MODE, jit_level='O2')
         >>> ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL, pipeline_stages=2)
@@ -255,40 +290,49 @@ class TFTRegister(Callback):
         >>> net_with_loss = nn.PipelineCell(nn.WithLossCell(net, loss_fn), 4)
         >>> net_with_loss.set_train()
         >>> model = Model(net_with_loss, optimizer=optimizer_wrapper)
-        >>> tft_cb = TFTRegister(0, "192.168.0.1", 2000, "./tft_checkpoint/")
+        >>> tft_cb = TrainFaultTolerance(0, "192.168.0.1", 2000, "./tft_checkpoint/")
         >>> loss_cb = train.LossMonitor(1)
         >>> model.train(1, dataset, callbacks=[tft_cb, loss_cb])
     """
 
-    def __init__(self, ctrl_rank_id, ctrl_ip, ctrl_port, ckpt_save_path):
-        super(TFTRegister, self).__init__()
-
-        tft_env = os.getenv("MS_ENABLE_TFT", "")
-        if ("TTP:1" not in tft_env) and ("UCE:1" not in tft_env):
-            raise ValueError("MindIO TFT regitster need custom switch on[MS_ENABLE_TFT='{TTP:1,UCE:1}']!")
-        mode = context.get_context("mode")
-        device_target = context.get_context("device_target")
-        if device_target != "Ascend" or mode != context.GRAPH_MODE:
-            raise ValueError("MindIO adataper only support on Ascend device with GRAPH Mode!")
-
-        # let it raise errors if not install mindio_tft package
-        from mindio_ttp import framework_ttp as tft
-        self.tft = tft
-        self.global_step = 0
-        Validator.check_non_negative_int(ctrl_port)
+    def __init__(self, ckpt_save_path=None, **kwargs):
+        super(TrainFaultTolerance, self).__init__()
+        self.save_cb = kwargs.get("ckpt_save_fn", None)
+        self.ckpt_save_path = ckpt_save_path
+        if self.save_cb is None and self.ckpt_save_path is None:
+            raise ValueError("TrainFaultTolerance construct need to set ckpt_save_fn or ckpt_save_path!")
+        self.tft = _tft_handler.get_tft()
+        self._check_init()
+        self.global_step = None
+        self.learning_rate = None
         self.has_init_replica = False
         self.is_uce_rank = False
-        self._controller_ip = ctrl_ip
-        self._controller_rank_id = ctrl_rank_id
-        self._controller_port = ctrl_port
         self.cb_params = None
+        self.initial_step = kwargs.get("initial_step", 0)
         self.device_id = context.get_context("device_id")
-        self._init_tft()
-        self.ckpt_save_path = ckpt_save_path
         self.assign = mindspore.ops.Assign()
         self.g_one = Parameter(Tensor([1], dtype=mstype.int32))
         self.s1 = mindspore.hal.Stream()
+        self.cur_step_num = 0
+        self.cur_epoch_num = 0
         _tft_sem_enable()
+        self.tft_register()
+
+    def _check_init(self):
+        """Check if the mindio-ttp had inited"""
+        if self.tft is None:
+            tft_env = os.getenv("MS_ENABLE_TFT", "")
+            if "ARF:1" in tft_env:
+                raise ValueError("Must init by _tft_handler.init(config=params) if use ARF.")
+            logger.warning(f"TFT handle not init, try to init")
+            _tft_handler.init(config=None)
+            self.tft = _tft_handler.get_tft()
+            logger.warning(f"TFT handle init ok.")
+        mode = context.get_context("mode")
+        device_target = context.get_context("device_target")
+        if device_target != "Ascend" or mode != context.GRAPH_MODE:
+            raise ValueError(f"MindIO adataper only support on Ascend device with GRAPH Mode!"
+                             f"device:{device_target}, run mode: {mode}")
 
     def _is_params_consistent(self):
         for key, param in self.cb_params.train_network.parameters_and_names():
@@ -322,33 +366,46 @@ class TFTRegister(Callback):
         ]
         self.tft.tft_set_optimizer_replica(cur_rank, replica_info)
 
-    def _init_tft(self):
-        """ Init Mindio TFT, used internal. """
-        logger.info("Begin to init tft.")
+    @classmethod
+    def get_optimizer_wrapper(cls, origin_opt_cls):
+        """
+        optimizer wrapper func when using tft.
+
+        Args:
+            origin_opt_cls: origin optimizer class
+        """
+
+        class TFTOptSubCls(origin_opt_cls):
+            """
+            Optimizer wrapper class when using tft
+            """
+
+            def __init__(self, *args, **kwargs):
+                super(TFTOptSubCls, self).__init__(*args, **kwargs)
+                self.report = TensorReport()
+                self.depend = ops.Depend()
+                self.allreduce_sum = ops.AllReduce()
+                self.allreduce_sum.add_prim_attr("tft_report_before", True)
+                self.tft_g_one_flag = Parameter(Tensor([1], dtype=mstype.int32))
+
+            def construct(self, gradients, **kwargs):
+                tft_g_one_flag = self.depend(self.tft_g_one_flag, gradients)
+                self.tft_g_one_flag = self.allreduce_sum(tft_g_one_flag)
+                grads = self.depend(gradients, self.report("tft_report", self.tft_g_one_flag))
+                opt_ret = super(TFTOptSubCls, self).construct(grads, **kwargs)
+                return opt_ret
+
+        return TFTOptSubCls
+
+    def tft_register(self):
+        """register callback functions"""
         self.tft.tft_register_save_ckpt_handler(_save_checkpoint_on_failure, self)
         self.tft.tft_register_rename_handler(_rename_save_result, self)
         self.tft.tft_register_exit_handler(_tft_exit_cb, self)
         self.tft.tft_register_stop_handler(_tft_stop_callback, self)
         self.tft.tft_register_clean_handler(_tft_clean_callback, self)
         self.tft.tft_register_repair_handler(_tft_repair_callback, self)
-
-        world_size = _get_device_num()
-        cur_rank = get_rank()
-        enable_local_copy = False
-        enable_arf = False
-        enable_tls = False
-        tls_key_dir = ""
-
-        if cur_rank == self._controller_rank_id:
-            logger.info(f"Begin to start tft controller on rank_id:{cur_rank}")
-            self.tft.tft_init_controller(cur_rank, world_size, enable_local_copy, enable_arf)
-            self.tft.tft_start_controller(self._controller_ip, self._controller_port, enable_tls, tls_key_dir)
-            logger.info("Finish start tft controller.")
-
-        logger.info("Begin to start tft processor.")
-        self.tft.tft_init_processor(cur_rank, world_size, enable_local_copy, enable_tls, tls_key_dir)
-        self.tft.tft_start_processor(self._controller_ip, self._controller_port)
-        logger.info("Finished start tft processor.")
+        self.tft.tft_register_rebuild_group_handler(_tft_rebuild_sub_groups, self)
 
     def _reset_acc_grads(self):
         accu_grad_params = map(lambda e: e[1],
@@ -371,15 +428,18 @@ class TFTRegister(Callback):
             self._set_tft_optimizer_replica(run_context)
         cb_params = run_context.original_args()
         logger.info("START Set optimizer finish step status to TFT. step: {}".format(cb_params.cur_step_num))
+        self.cur_step_num = cb_params.cur_step_num
+        self.cur_epoch_num = cb_params.cur_epoch_num
         if cb_params.optimizer is not None:
-            self.global_step = int(cb_params.optimizer.global_step.data)
+            self.global_step = cb_params.optimizer.global_step.clone()
             self.assign(cb_params.optimizer.tft_g_one_flag, self.g_one)
-        else:
-            self.global_step = int(cb_params.network.optimizer.global_step.data)
+        elif hasattr(cb_params.network, 'optimizer') and cb_params.network.optimizer is not None:
+            self.global_step = cb_params.network.optimizer.global_step.clone()
             self.assign(cb_params.network.optimizer.tft_g_one_flag, self.g_one)
-        self.tft.tft_end_updating_os(cb_params.cur_step_num)
+        else:
+            raise ValueError("TFT feature need optimizer or network's optimizer!")
+        self.tft.tft_end_updating_os(cb_params.cur_step_num + self.initial_step)
         logger.info("END Set optimizer finish step status to TFT.")
-
 
     def on_train_begin(self, run_context):
         cb_params = run_context.original_args()
@@ -391,7 +451,5 @@ class TFTRegister(Callback):
         self.cb_params = cb_params
 
     def end(self, run_context):
-        cur_rank = get_rank()
-        if cur_rank == self._controller_rank_id:
-            self.tft.tft_destroy_controller()
-        self.tft.tft_destroy_processor()
+        """train end"""
+        _tft_handler.unregister_tft()

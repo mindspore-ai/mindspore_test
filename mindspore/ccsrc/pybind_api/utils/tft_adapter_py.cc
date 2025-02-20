@@ -19,6 +19,7 @@
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/graph_scheduler/device_tensor_store.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 
 namespace mindspore {
 using DeviceContext = mindspore::device::DeviceContext;
@@ -138,7 +139,62 @@ void UceMemRepair(int32_t device_id) {
 
 void StopDevice(int32_t device_id) {
   auto device_ctx = GetDeviceCtx();
+  MS_LOG(WARNING) << "Try to stop device: " << device_id;
   device_ctx->device_res_manager_->StopDevice(device_id);
+  MS_LOG(WARNING) << "stop device: " << device_id << " end;";
+}
+
+void FinalizeCommunication() {
+  MS_LOG(WARNING) << "Try to finalize communication";
+  // Finalize HCCL_WORLD_GROUP
+  auto ret =
+    distributed::collective::CollectiveManager::instance()->DestroyDeviceSideCommunicationGroup(kHcclWorldGroup);
+  if (!ret) {
+    MS_LOG(EXCEPTION) << "Destroy group:" << kHcclWorldGroup << " failed.";
+  }
+  // Finalize sub communication group
+  MS_LOG(WARNING) << "Finalize sub communication";
+  auto group_info = distributed::collective::CollectiveManager::instance()->get_group_info();
+  for (const auto &item : group_info) {
+    if (item.first == kHcclWorldGroup) {
+      continue;
+    }
+    MS_LOG(WARNING) << "Destroy sub-group, group name: " << item.first << ", ranks: " << item.second;
+    if (!distributed::collective::CollectiveManager::instance()->DestroyDeviceSideCommunicationGroup(item.first)) {
+      MS_LOG(EXCEPTION) << "Destroy group:" << item.first << " failed, ranks: " << item.second;
+    }
+    MS_LOG(WARNING) << "Destroy sub-group, group name: " << item.first << " ok";
+  }
+  MS_LOG(WARNING) << "Finalize communication end";
+}
+
+void RebuildHcclWorldGroup() {
+  MS_LOG(WARNING) << "Try to rebuild hccl world group communication";
+  auto ranks = distributed::collective::CollectiveManager::instance()->GetGroupRanks(kHcclWorldGroup);
+  auto ret = distributed::collective::CollectiveManager::instance()->CreateCommunicationGroup(kHcclWorldGroup, ranks);
+  if (!ret) {
+    MS_LOG(EXCEPTION) << "Rebuild group:" << kHcclWorldGroup << " failed, ranks: " << ranks;
+  }
+  MS_LOG(WARNING) << "Try to rebuild hccl world group communication ok";
+}
+
+void RebuildSubCommunication() {
+  // rebuild sub comm
+  MS_LOG(WARNING) << "Try to rebuild sub communication";
+  auto group_info = distributed::collective::CollectiveManager::instance()->get_group_info();
+  for (const auto &item : group_info) {
+    if (item.first == kHcclWorldGroup) {
+      continue;
+    }
+    MS_LOG(WARNING) << "Rebuild sub-group, group name: " << item.first << ", ranks: " << item.second;
+    if (!distributed::collective::CollectiveManager::instance()->CreateCommunicationGroup(item.first, item.second)) {
+      MS_LOG(EXCEPTION) << "Rebuild group:" << item.first << " failed, ranks: " << item.second;
+    }
+    MS_LOG(WARNING) << "Rebuild sub-group, group name: " << item.first << " ok";
+  }
+  UCEException::GetInstance().set_force_stop_flag(false);
+  UCEException::GetInstance().set_uce_flag(false);
+  MS_LOG(WARNING) << "Rebuild communication end";
 }
 
 void RegTFT(py::module *m) {
@@ -150,5 +206,8 @@ void RegTFT(py::module *m) {
     "_tft_sem_post", []() { mindspore::debug::tft::TFTWaitSem::GetInstance().Post(); }, "TFT sem start post");
   (void)m->def(
     "_tft_sem_enable", []() { mindspore::debug::tft::TFTWaitSem::Enable(); }, "TFT enable sem feature");
+  (void)m->def("_finalize_comm", &FinalizeCommunication, "Finalize comm.");
+  (void)m->def("_rebuild_sub_group", &RebuildSubCommunication, "Rebuild comm.");
+  (void)m->def("_rebuild_world_group", &RebuildHcclWorldGroup, "Rebuild comm.");
 }
 }  // namespace mindspore

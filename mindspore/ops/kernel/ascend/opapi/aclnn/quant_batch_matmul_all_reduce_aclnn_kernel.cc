@@ -46,6 +46,10 @@ bool QuantBatchMatmulAllReduceAscend::Launch(const std::vector<KernelTensor *> &
                                              const std::vector<KernelTensor *> &workspace,
                                              const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
+  if (mindspore::device::ascend::OpApiUtil::NeedRebuildWorkspaceSize(group_, hccl_inner_comm_name_)) {
+    MS_LOG(WARNING) << "Hccl inner name had changed, need rebuild workspace size";
+    GetWorkSpaceInfo(inputs, outputs);
+  }
 
   input_a_.first = inputs[kIndex0];
   input_b_.first = inputs[kIndex1];
