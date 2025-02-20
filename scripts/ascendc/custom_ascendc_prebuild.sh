@@ -19,20 +19,20 @@ if [[ "$(uname)" != Linux || ("$(arch)" != x86_64 && "$(arch)" != aarch64) ]]; t
   return
 fi
 file_path=${BASEPATH}/mindspore/ops/kernel/ascend/ascendc/prebuild/$(arch)
-ascendc_file_name=${file_path}/custom_ascendc_ops.tar.gz
+ascendc_file_name=${file_path}/custom_ascendc.tar.gz
 if [[ ! -f "${ascendc_file_name}" ]]; then
   echo "[WARNING] The file ${ascendc_file_name}  does NOT EXIST."
   return
 fi
 ascendc_file_lines=$(cat "${ascendc_file_name}" | wc -l)
 if [[ ${ascendc_file_lines} -eq 3 ]]; then
-  echo "[WARNING] The file custom_ascendc_ops.tar.gz is not pulled. Please ensure git-lfs is installed by"
+  echo "[WARNING] The file custom_ascendc.tar.gz is not pulled. Please ensure git-lfs is installed by"
   echo "[WARNING] 'git lfs install' and retry downloading using 'git lfs pull'."
   return
 fi
 tar --warning=no-unknown-keyword -zxf ${ascendc_file_name} -C ${file_path}
 if [[ $? -ne 0 ]]; then
-  echo "[WARNING] Unzip custom_ascendc_ops.tar.gz FAILED!"
+  echo "[WARNING] Unzip custom_ascendc.tar.gz FAILED!"
   return
 fi
-echo "Unzip custom_ascendc_ops.tar.gz SUCCESS!"
+echo "Unzip custom_ascendc.tar.gz SUCCESS!"
