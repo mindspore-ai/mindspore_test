@@ -1,0 +1,26 @@
+#operator group_topk
+group_topk:
+    args:
+        token:
+            dtype: tensor
+        idx_arr:
+            dtype: tensor
+        group_num:
+            dtype: int
+        k:
+            dtype: int
+        k_inner:
+            dtype: int
+            default: 1
+    args_signature:
+        rw_write: token
+    labels:
+        side_effect_mem: True
+    returns:
+        output:
+            dtype: tensor
+            inplace: token
+    class:
+        name: GroupTopk 
+    function:
+        name: group_topk
