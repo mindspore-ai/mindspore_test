@@ -15,6 +15,7 @@
 
 import os
 import numpy as np
+import mindspore as ms
 import mindspore.nn as nn
 import mindspore.ops as P
 from mindspore import Tensor
@@ -27,7 +28,7 @@ g_block_num = 50
 steps = 50
 
 os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
-os.environ['MS_DEV_RUNTIME_CONF'] = "parallel_dispatch_kernel:True"
+ms.runtime.set_kernel_launch_group()
 
 context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0", "infer_boost": "on"}, max_call_depth=6000)
 
