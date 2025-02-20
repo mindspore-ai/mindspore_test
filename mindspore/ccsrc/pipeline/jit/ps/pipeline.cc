@@ -121,6 +121,7 @@
 #include "frontend/ir/py_execute_py.h"   // Only include one-time in the whole project.
 #include "include/common/utils/compile_cache_context.h"
 #include "include/common/utils/tensor_py.h"
+#include "backend/common/somas/somas.h"
 
 namespace mindspore {
 // namespace to support intermediate representation definition
@@ -1886,22 +1887,7 @@ py::object GraphExecutorPy::RunInner(const py::tuple &args, const py::object &ph
   if (enable_infer_boost) {
     PhaseManager::GetInstance().set_phase(phase);
   }
-#ifdef WITH_BACKEND
-  if (ms_context->backend_policy() == "ge") {
-    if (phase_prefix == "save") {
-      phase.erase(0, kPhaseSavePrefixLen);
-      compile::VmEvalFuncPtr run = GetVmEvalFunc("train." + phase, kCkptOutput);
-      if (run == nullptr) {
-        MS_LOG(INTERNAL_EXCEPTION) << "Can't find run graph func for " << phase;
-      }
 
-      VectorRef ckpt_args;
-      (void)(*run)(ckpt_args);
-      ConfigManager::GetInstance().ResetConfig();
-      return py::none();
-    }
-  }
-#endif
   auto ret_val = std::make_shared<py::object>();
   if (info_.count(phase) != 0 && info_[phase]->func_graph != nullptr) {
     if (IsGraphOutputValueNodeOrParameter(info_[phase]->func_graph->output(), args, ret_val)) {

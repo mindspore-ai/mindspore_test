@@ -54,17 +54,6 @@ bool IsTaskReady(const std::shared_ptr<RunGraphTask> &task) {
 }
 }  // namespace
 
-void CompileNodesTask::Run() {
-  MS_EXCEPTION_IF_NULL(session_);
-  MS_EXCEPTION_IF_NULL(segment_);
-  graph_id_ = session_->CompileGraphImpl(segment_->nodes_, output_nodes_);
-}
-
-void CompileGraphTask::Run() {
-  MS_EXCEPTION_IF_NULL(session_);
-  graph_id_ = session_->CompileGraphImpl(NOT_NULL(func_graph_));
-}
-
 void BuildGraphTask::Run() {
   MS_EXCEPTION_IF_NULL(session_);
   session_->BuildGraphImpl(graph_id_);
@@ -258,24 +247,6 @@ void Executor::RunTask(const std::shared_ptr<Task> &task, bool sync, bool long_r
   }
   ClearDoneTasks();
   MsException::Instance().CheckException();
-}
-
-GraphId Executor::CompileGraph(const SessionPtr &session, const GraphSegmentPtr &segment,
-                               const AnfNodePtrList &outputs) {
-  auto task = std::make_shared<CompileNodesTask>();
-  task->session_ = session;
-  task->segment_ = segment;
-  task->output_nodes_ = outputs;
-  RunTask(task, true);
-  return task->graph_id_;
-}
-
-GraphId Executor::CompileGraph(const SessionPtr &session, NotNull<FuncGraphPtr> func_graph) {
-  auto task = std::make_shared<CompileGraphTask>();
-  task->session_ = session;
-  task->func_graph_ = func_graph.get();
-  RunTask(task, true);
-  return task->graph_id_;
 }
 
 void Executor::BuildGraph(const SessionPtr &session, GraphId graphId) {

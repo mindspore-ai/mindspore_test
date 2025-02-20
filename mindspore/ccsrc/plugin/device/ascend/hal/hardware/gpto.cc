@@ -46,7 +46,7 @@
 #include "include/common/utils/utils.h"
 #include "include/common/debug/common.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_adapter.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace gpto {

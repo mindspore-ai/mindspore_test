@@ -62,8 +62,8 @@
 #include "include/common/utils/compile_cache_context.h"
 #include "include/common/debug/common.h"
 #include "include/common/utils/stub_tensor.h"
-#include "runtime/runtime_conf/runtime_conf.h"
-#include "runtime/runtime_conf/thread_bind_core.h"
+#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/thread_bind_core.h"
 
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/distributed/collective/collect_hccl_init_info.h"

@@ -28,7 +28,7 @@
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/convert_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
-#include "backend/common/optimizer/common_backend_optimization.h"
+#include "backend/ge_backend/pass/ge_backend_optimization.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
 #include "kernel/framework_utils.h"
@@ -50,9 +50,7 @@
 #include "utils/phase.h"
 #include "pipeline/jit/ps/base.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "runtime/runtime_conf/runtime_conf.h"
-#include "backend/ge_backend/pass/ge_backend_optimization.h"
-#include "plugin/device/ascend/hal/hardware/ge_graph_optimization.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 #include "backend/ge_backend/executor/ge_graph_executor.h"
 
 namespace mindspore {
@@ -192,8 +190,8 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
     kernel_graph->set_manager(manager);
   }
 
-  opt::OptimizationWithoutBackend(kernel_graph);
-  device::ascend::GEGraphOptimization::GetInstance().GEMindIRPass(kernel_graph);
+  backend::ge_backend::opt::OptimizationWithoutBackend(kernel_graph);
+  backend::ge_backend::opt::GEUnifyMindIR(kernel_graph);
 
   kernel_graph->SetInputNodes();
   kernel_graph->SetExecOrderByDefault();

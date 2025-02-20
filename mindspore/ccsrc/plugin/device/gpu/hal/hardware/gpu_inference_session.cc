@@ -60,40 +60,6 @@ void GpuInferenceSession::LoadInputData(const std::shared_ptr<KernelGraph> &kern
   }
 }
 
-GraphId GpuInferenceSession::CompileGraphImpl(NotNull<FuncGraphPtr> func_graph) {
-  auto graph_id = GPUSession::CompileGraphImpl(func_graph);
-  auto kernel_graph = GetGraph(graph_id);
-  MS_EXCEPTION_IF_NULL(kernel_graph);
-  // load weight data to device
-  auto input_nodes = kernel_graph->inputs();
-  for (size_t i = 0; i < input_nodes.size(); ++i) {
-    if (!input_nodes[i]->isa<Parameter>() || !AnfAlgo::OutputAddrExist(input_nodes[i], 0)) {
-      MS_LOG(INFO) << "Kernel graph inputs is not Parameter or without user.";
-      continue;
-    }
-    auto pk_node = input_nodes[i]->cast<ParameterPtr>();
-    MS_EXCEPTION_IF_NULL(pk_node);
-    if (!pk_node->IsUsedByRealKernelInGraph(kernel_graph->graph_id())) {
-      MS_LOG(INFO) << "Kernel graph inputs have anfnode which has no user.";
-      continue;
-    }
-    auto device_address = AnfAlgo::GetMutableOutputAddr(pk_node, 0);
-    MS_EXCEPTION_IF_NULL(device_address);
-    if (common::AnfAlgo::IsParameterWeight(pk_node)) {
-      const auto &param_value = pk_node->default_param();
-      MS_EXCEPTION_IF_NULL(param_value);
-      auto tensor = std::dynamic_pointer_cast<tensor::Tensor>(param_value);
-      MS_EXCEPTION_IF_NULL(tensor);
-      if (!device_address->SyncHostToDevice(AnfAlgo::GetRuntimePaddingShape(pk_node, 0),
-                                            LongToSize(tensor->data().nbytes()), tensor->data_type(),
-                                            tensor->data_c())) {
-        MS_LOG(EXCEPTION) << "SyncHostToDevice failed.";
-      }
-    }
-  }
-  return graph_id;
-}
-
 bool GpuInferenceSession::CheckModelInputs(uint32_t graph_id, const std::vector<tensor::TensorPtr> &inputs,
                                            std::string *error_msg) const {
   MS_LOG(INFO) << "Start check client inputs, graph id : " << graph_id;
@@ -101,7 +67,7 @@ bool GpuInferenceSession::CheckModelInputs(uint32_t graph_id, const std::vector<
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto kernel_graph_inputs = kernel_graph->inputs();
   size_t no_weight_input = 0;
-  vector<ParameterPtr> paras;
+  std::vector<ParameterPtr> paras;
   // find parameters of graph inputs
   for (size_t i = 0; i < kernel_graph_inputs.size(); ++i) {
     if (!kernel_graph_inputs[i]->isa<Parameter>()) {
@@ -154,10 +120,10 @@ bool GpuInferenceSession::CompareInput(const tensor::TensorPtr &input, const Par
 
   // compare shape
   auto input_shape = input->shape();
-  vector<int64_t> trans_input;
+  std::vector<int64_t> trans_input;
   (void)std::transform(input_shape.begin(), input_shape.end(), std::back_inserter(trans_input),
                        [](const int64_t dim) { return static_cast<size_t>(dim); });
-  auto is_scalar_shape = [](const vector<int64_t> &shape) {
+  auto is_scalar_shape = [](const std::vector<int64_t> &shape) {
     return shape.empty() || (shape.size() == 1 && shape[0] == 1);
   };
   if ((!is_scalar_shape(trans_input) || !is_scalar_shape(parameter_shape)) && (trans_input != parameter_shape)) {

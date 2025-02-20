@@ -31,6 +31,11 @@ void BACKEND_EXPORT UnifyMindIRPass(const FuncGraphPtr &graph);
 void GEBackendOptimization(const KernelGraphPtr &kernel_graph);
 void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph);
 void BACKEND_EXPORT OptimizeGEGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *const memo);
+void BACKEND_EXPORT GEUnifyMindIR(const KernelGraphPtr &kernel_graph);
+BACKEND_EXPORT void OptimizationWithoutBackend(const KernelGraphPtr &kernel_graph);
+void EliminateIllegalDataTypePass(const KernelGraphPtr &kernel_graph);
+void BackendCommonOptimization(const KernelGraphPtr &kernel_graph);
+void CommonUnifyMindIR(const KernelGraphPtr &kernel_graph);
 }  // namespace opt
 }  // namespace ge_backend
 }  // namespace backend

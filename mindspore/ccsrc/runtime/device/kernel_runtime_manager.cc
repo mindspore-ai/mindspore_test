@@ -16,6 +16,7 @@
 
 #include "runtime/device/kernel_runtime_manager.h"
 #include "utils/log_adapter.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace device {

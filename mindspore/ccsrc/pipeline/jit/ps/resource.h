@@ -54,7 +54,6 @@ const char kOutput[] = "output";
 const char kBuildBackendType[] = "backend_type";
 const char kBuildBackendOutput[] = "backend_output";
 const char kNoBackend[] = "no_backend";
-const char kCkptOutput[] = "checkpoint_output";
 const char kPynativeGraphId[] = "graph_id";
 const char kActorInfo[] = "actor_info";
 const char kCompiler[] = "Compiler";

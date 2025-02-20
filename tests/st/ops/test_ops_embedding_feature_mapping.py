@@ -99,7 +99,6 @@ def test_embedding_feature_mapping_test():
     """
     context.set_context(mode=context.GRAPH_MODE,
                         device_target="Ascend", jit_config={"jit_level": 'O2'})
-    os.environ['MS_DISABLE_REF_MODE'] = "1"
 
     embedding_feature_mapping_v2_forward_func = EmbeddingFeatueMappingV2Net()
     feature_id = Tensor([1], ms.int64)

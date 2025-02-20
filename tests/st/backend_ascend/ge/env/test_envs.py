@@ -29,21 +29,6 @@ def test_ms_format_mode():
                                      "GE option: ge.exec.formatMode, value: 1")
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_ms_disable_ref_mode():
-    """
-    Feature: for MS_DISABLE_REF_MODE
-    Description: add net
-    Expectation: the result is correct or the check log is not exist
-    """
-    utils.run_testcase_and_check_log("test_ms_disable_ref_mode", "test_ms_disable_ref_mode_0_graph_mode",
-                                     "GE run graph start in ref mode, graph:")
-    utils.run_testcase_and_check_log("test_ms_disable_ref_mode", "test_ms_disable_ref_mode_1_graph_mode",
-                                     "GE run graph start, graph: ")
-    utils.run_testcase("test_ms_disable_ref_mode", "test_ms_disable_ref_mode_0_pynative_mode")
-    utils.run_testcase("test_ms_disable_ref_mode", "test_ms_disable_ref_mode_1_pynative_mode")
-
-
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ms_ascend_check_overflow_mode():
     """

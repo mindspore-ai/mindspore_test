@@ -269,17 +269,6 @@ void ExecuteActionForMindRT(const ResourcePtr &resource) {
       }
     });
   resource->SetResult(kOutput, run);
-  if (MsContext::GetInstance()->backend_policy() == "ge") {
-    compile::VmEvalFuncPtr ckpt_run =
-      std::make_shared<compile::VmEvalFunc>([mindrt_bc_ptr, actor_info](const VectorRef &args) -> BaseRef {
-        MS_LOG(DEBUG) << "Execute args size " << args.size();
-        auto ckpt_actor_info = "save." + actor_info;
-        VectorRef outputs;
-        mindrt_bc_ptr->RunGraph(ckpt_actor_info, args, &outputs);
-        return VectorRef();
-      });
-    resource->SetResult(kCkptOutput, ckpt_run);
-  }
 }
 
 FuncGraphPtr ConstructGraphForEval(const ValuePtr &func, const abstract::AbstractBasePtrList &args_abs) {
@@ -1884,23 +1873,6 @@ bool ExecuteAction(const ResourcePtr &resource) {
   // The graph running of mindRT.
   if ((backend == kMsConvert || backend == kGeVm) && MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
     ExecuteActionForMindRT(resource);
-    return true;
-  }
-
-  // The graph running of control sink.
-  if (IsCtrlSink() && (backend == kMsConvert || backend == kGeVm)) {
-    auto graph_id = resource->GetResult(kOutput).cast<GraphId>();
-    auto bc_ptr = resource->GetBackend();
-    compile::MsBackend *msbc_ptr = std::dynamic_pointer_cast<compile::MsBackend>(bc_ptr).get();
-    MS_EXCEPTION_IF_NULL(msbc_ptr);
-    compile::VmEvalFuncPtr run =
-      std::make_shared<compile::VmEvalFunc>([msbc_ptr, graph_id](const VectorRef &args) -> BaseRef {
-        MS_LOG(INFO) << "Execute args size " << args.size();
-        auto outs = msbc_ptr->RunGraph(graph_id, args);
-        MS_LOG(DEBUG) << "out size " << outs.size();
-        return outs[0];
-      });
-    resource->SetResult(kOutput, run);
     return true;
   }
 

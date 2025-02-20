@@ -648,7 +648,7 @@ size_t DeviceAddressUtils::GetTensorDeviceSize(const DeviceContext *device_conte
   return tensor_size;
 }
 
-vector<device::DeviceAddressPtr> DeviceAddressUtils::CreateGraphOutputDeviceAddress(
+std::vector<device::DeviceAddressPtr> DeviceAddressUtils::CreateGraphOutputDeviceAddress(
   const OpCompilerInfoPtr &op_compiler_info, const abstract::AbstractBasePtr &out_abstract, size_t stream_id) {
   MS_EXCEPTION_IF_NULL(op_compiler_info);
   auto device_context = op_compiler_info->device_context_;

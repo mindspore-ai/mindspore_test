@@ -30,7 +30,7 @@
 #include "mindapi/base/type_id.h"
 #include "mindspore/ccsrc/include/common/debug/common.h"
 #include "utils/anf_utils.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace kernel {

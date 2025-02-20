@@ -52,9 +52,8 @@ class BACKEND_EXPORT DeviceAddressUtils {
   static void CreateKernelOutputDeviceAddress(const DeviceContext *device_context, const KernelGraphPtr &graph,
                                               bool is_gradient_out);
 
-  static vector<device::DeviceAddressPtr> CreateGraphOutputDeviceAddress(const OpCompilerInfoPtr &op_compiler_info,
-                                                                         const abstract::AbstractBasePtr &out_abstract,
-                                                                         size_t stream_id);
+  static std::vector<device::DeviceAddressPtr> CreateGraphOutputDeviceAddress(
+    const OpCompilerInfoPtr &op_compiler_info, const abstract::AbstractBasePtr &out_abstract, size_t stream_id);
 
   static void CreateKernelWorkspaceDeviceAddress(const DeviceContext *device_context, const KernelGraphPtr &graph);
   static void CreateDeviceAddressByMapTensorNode(const DeviceContext *device_context, const AnfNodePtr &node,

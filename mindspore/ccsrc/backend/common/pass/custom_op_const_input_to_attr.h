@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace opt {
-class CustomOpConstInputToAttr : public PatternProcessPass {
+class BACKEND_EXPORT CustomOpConstInputToAttr : public PatternProcessPass {
  public:
   explicit CustomOpConstInputToAttr(bool multigraph = true)
       : PatternProcessPass("custom_op_const_input_to_attr", multigraph) {}

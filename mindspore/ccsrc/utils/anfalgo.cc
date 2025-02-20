@@ -2760,7 +2760,7 @@ bool AnfAlgo::HasIncorporateCallNode(const CNodePtr &cnode) {
     auto input0 = cnode->input(0);
     if (IsPrimitiveCNode(input0, prim::kPrimSwitch) || IsPrimitiveCNode(input0, prim::kPrimSwitchLayer) ||
         IsValueNode<FuncGraph>(input0)) {
-      if (IsCellReuse(input0) && IsEnableRefMode()) {
+      if (IsCellReuse(input0)) {
         MS_LOG(INFO) << "Use cell reuse when enable ge mode: " << cnode->DebugString();
         return true;
       }

@@ -20,7 +20,7 @@
 #include <set>
 #include <utility>
 #include <queue>
-#include "backend/common/optimizer/common_backend_optimization.h"
+#include "backend/ge_backend/pass/ge_backend_optimization.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "ir/manager.h"
 #include "runtime/device/device_address_utils.h"
@@ -38,7 +38,6 @@
 #endif
 #include "debug/summary/summary.h"
 #include "include/common/utils/callbacks.h"
-#include "backend/ge_backend/pass/ge_backend_optimization.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/distributed/collective/collect_hccl_init_info.h"
@@ -54,7 +53,7 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "backend/ge_backend/runtime/graph_scheduler.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 #include "backend/ge_backend/runtime/control_node_parser.h"
 #include "include/common/utils/parallel_context.h"
 
@@ -750,7 +749,7 @@ BackendGraphId GEBackend::CompileWholeGraph(const FuncGraphPtr &func_graph,
     graph->set_run_mode(device::RunMode::kGraphMode);
     graph->set_is_loop_count_sink(true);
     graph->set_attrs(func_graph->attrs());
-    mindspore::opt::OptimizationWithoutBackend(graph);
+    opt::OptimizationWithoutBackend(graph);
   }
 
   auto context_ptr = MsContext::GetInstance();
@@ -1115,41 +1114,6 @@ void GEBackend::SetTensorUpdateCallback(const tensor::TensorPtr &update_tensor) 
   }
 }
 
-void GEBackend::ConstructInputsUnRefMode(const KernelGraphPtr &func_graph, const VectorRef &args,
-                                         std::vector<tensor::TensorPtr> *inputs_tensor) {
-  MS_EXCEPTION_IF_NULL(func_graph);
-  auto inputs = func_graph->inputs();
-  MS_EXCEPTION_IF_CHECK_FAIL(inputs.size() == args.size(), "The args size is not equal to graph inputs size.");
-  for (size_t i = 0; i < inputs.size(); ++i) {
-    MS_EXCEPTION_IF_NULL(inputs[i]);
-    std::vector<tensor::TensorPtr> flatten_tensors;
-    auto params = common::AnfAlgo::GetAllOutput(inputs[i]);
-    for (size_t j = 0; j < params.size(); ++j) {
-      auto device_tensor = AnfAlgo::GetMutableOutputAddr(params[j], 0, false);
-      MS_EXCEPTION_IF_NULL(device_tensor);
-      // skip const input
-      if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagIgnoreDevicePtr)) {
-        MS_LOG(INFO) << "The input[" << i << "] is convert to const op, skip.";
-        continue;
-      }
-      // for unrefmode, param init in a dependent graph, and no need to put it into inputs
-      if (common::AnfAlgo::IsParameterWeight(params[j]->cast<ParameterPtr>())) {
-        continue;
-      }
-      // get host tensor
-      if (flatten_tensors.empty()) {
-        const auto &front_node = AnfAlgo::FetchFrontNodeByBackendNode(inputs[i], *func_graph);
-        AnfAlgo::FlattenInputArg(args[i], front_node, &flatten_tensors);
-        if (flatten_tensors.size() != params.size()) {
-          MS_LOG(EXCEPTION) << "The args[" << i << "] tensor number is not equal to inputs[" << i << "] number.";
-        }
-      }
-      // unrefmode, just the host input tensor exclude weight
-      inputs_tensor->emplace_back(flatten_tensors[j]);
-    }
-  }
-}
-
 void GEBackend::UpdateInputsShapeAndSize(const ParameterPtr &input_node,
                                          const mindspore::device::DeviceAddressPtr &device_tensor,
                                          const tensor::TensorPtr &input_tensor,
@@ -1313,11 +1277,7 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
 void GEBackend::ConstructInputs(const KernelGraphPtr &func_graph, const VectorRef &args,
                                 std::vector<tensor::TensorPtr> *inputs_tensor,
                                 const device::DeviceContext *device_context) {
-  if (IsEnableRefMode()) {
-    ConstructInputsRefMode(func_graph, args, inputs_tensor, device_context);
-  } else {
-    ConstructInputsUnRefMode(func_graph, args, inputs_tensor);
-  }
+  ConstructInputsRefMode(func_graph, args, inputs_tensor, device_context);
 }
 
 bool GEBackend::Copy(const mindspore::device::DeviceAddress *dst_device_tensor,
@@ -1504,15 +1464,13 @@ void GEBackend::RunWholeGraph(BackendGraphId graph_id, const VectorRef &inputs, 
   // for profiling
   bool profile_started = ProfilerOnStepBegin(func_graph, device_context);
 
-  if (IsEnableRefMode()) {
-    // alloc input(static), output device memory; dynamic input will alloc later
-    device_context->graph_executor_->AllocGEInputOutputMemory(func_graph);
-    // alloc fixed feature memory when enable gekernel, once | const memory alloc in compilegraph
-    device_context->graph_executor_->AllocGEFixMemory();
-    // alloc refreshable feature memory
-    device_context->graph_executor_->AllocGERefreshableFeatureMemory(func_graph);
-    // const alloc in compile graph
-  }
+  // alloc input(static), output device memory; dynamic input will alloc later
+  device_context->graph_executor_->AllocGEInputOutputMemory(func_graph);
+  // alloc fixed feature memory when enable gekernel, once | const memory alloc in compilegraph
+  device_context->graph_executor_->AllocGEFixMemory();
+  // alloc refreshable feature memory
+  device_context->graph_executor_->AllocGERefreshableFeatureMemory(func_graph);
+  // const alloc in compile graph
 
   // input, weight from host(inputs) to device(device_address in graph)
   std::vector<tensor::TensorPtr> inputs_tensor;
@@ -1556,10 +1514,8 @@ void GEBackend::RunWholeGraph(BackendGraphId graph_id, const VectorRef &inputs, 
   ProfilerOnStepEnd(device_context, profile_started);
 
   // free resource
-  if (IsEnableRefMode()) {
-    device_context->graph_executor_->FreeGERefreshableFeatureMemory(func_graph);
-    device_context->graph_executor_->FreeInputOutputMemory(func_graph);
-  }
+  device_context->graph_executor_->FreeGERefreshableFeatureMemory(func_graph);
+  device_context->graph_executor_->FreeInputOutputMemory(func_graph);
 
   graph_run_iter_[func_graph]++;
   MS_LOG(INFO) << "Status record: end run graph: " << graph_id;
@@ -1718,20 +1674,6 @@ void GEBackend::ConvertIR(const FuncGraphPtr &func_graph,
   MS_EXCEPTION_IF_NULL(device_context->graph_executor_);
   std::map<std::string, std::shared_ptr<tensor::Tensor>> real_init_tensors{};
   const auto &infer_need_update_parameter_names = device_context->graph_executor_->GetInferParameterNames();
-
-  bool infer = false;
-  if (func_graph->has_attr("phase")) {
-    std::string phase = func_graph->get_attr("phase")->ToString();
-    infer = phase != "train";
-  }
-
-  if (infer && !IsEnableRefMode()) {
-    for (auto iter = init_tensors.begin(); iter != init_tensors.end(); ++iter) {
-      if (infer_need_update_parameter_names.find(iter->first) != infer_need_update_parameter_names.end()) {
-        real_init_tensors.emplace(*iter);
-      }
-    }
-  }
 
   device_context->graph_executor_->BuildDFGraph(func_graph, real_init_tensors, true);
 }

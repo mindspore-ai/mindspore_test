@@ -30,7 +30,7 @@
 #include "runtime/device/memory_offload_strategy.h"
 #include "runtime/graph_scheduler/scheduler_helper.h"
 #include "runtime/graph_scheduler/control_node_parser.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace runtime {
@@ -94,7 +94,7 @@ std::map<size_t, size_t> GetActionTensors(const std::shared_ptr<device::SwapActi
   MS_EXCEPTION_IF_NULL(real_parameter_index);
   MS_EXCEPTION_IF_NULL(store_key);
   std::map<size_t, size_t> tensor_indexes_map;
-  vector<vector<size_t>> tensor_ids_group(3, vector<size_t>());
+  std::vector<std::vector<size_t>> tensor_ids_group(3, std::vector<size_t>());
   for (const auto &tensor_action : swap_action->actions_) {
     MS_EXCEPTION_IF_NULL(tensor_action);
     if (tensor_action->tensor_id_ >= swap_strategy->tensor_infos_.size()) {
@@ -153,12 +153,12 @@ std::map<size_t, size_t> GetActionTensors(const std::shared_ptr<device::SwapActi
 void GenActionIndexList(const std::map<size_t, size_t> &tensors_id_index_map,
                         const std::shared_ptr<device::SwapAction> &swap_action,
                         const std::shared_ptr<device::SwapStrategy> &swap_strategy,
-                        std::vector<std::pair<device::SwapActionType, vector<size_t>>> *actor_actions) {
+                        std::vector<std::pair<device::SwapActionType, std::vector<size_t>>> *actor_actions) {
   MS_EXCEPTION_IF_NULL(swap_action);
   MS_EXCEPTION_IF_NULL(swap_strategy);
   MS_EXCEPTION_IF_NULL(actor_actions);
-  std::vector<vector<size_t>> alloc_action_map;
-  std::map<device::SwapActionType, vector<size_t>> move_action_map;
+  std::vector<std::vector<size_t>> alloc_action_map;
+  std::map<device::SwapActionType, std::vector<size_t>> move_action_map;
   const auto &actions = swap_action->actions_;
   for (const auto &tensor_action : actions) {
     MS_EXCEPTION_IF_NULL(tensor_action);
@@ -185,7 +185,7 @@ void GenActionIndexList(const std::map<size_t, size_t> &tensors_id_index_map,
                          return std::make_pair(device::SwapActionType::kAllocHBM, tensor_idxes);
                        });
   (void)std::transform(move_action_map.begin(), move_action_map.end(), std::back_inserter(*actor_actions),
-                       [](const std::pair<device::SwapActionType, vector<size_t>> &action) {
+                       [](const std::pair<device::SwapActionType, std::vector<size_t>> &action) {
                          return std::make_pair(action.first, action.second);
                        });
 }
@@ -280,7 +280,7 @@ void MemSwapScheduler::BuildSwapActorForGraph(const KernelGraphPtr &graph, const
                                                  &fixed_device_address, &real_parameter_index, &store_key);
 
     // SwapActionType - index of target DeviceAddress(fixed or changeable) in MemorySwapActor.
-    std::vector<std::pair<device::SwapActionType, vector<size_t>>> actor_actions;
+    std::vector<std::pair<device::SwapActionType, std::vector<size_t>>> actor_actions;
     GenActionIndexList(tensors_id_index_map, iter.second, swap_strategy, &actor_actions);
 
     const string swap_actor_name = kMemSwapActorNamePrefix + std::to_string(swap_actor_num++);

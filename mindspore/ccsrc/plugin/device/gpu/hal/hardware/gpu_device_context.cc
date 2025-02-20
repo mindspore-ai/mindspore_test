@@ -78,7 +78,7 @@
 #include "include/common/utils/parallel_context.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "runtime/device/tensor_array.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace device {

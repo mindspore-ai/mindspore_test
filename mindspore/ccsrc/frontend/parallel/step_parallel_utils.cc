@@ -59,7 +59,7 @@
 #include "utils/symbolic.h"
 #include "utils/trace_base.h"
 #include "symbolic_shape/int_symbol.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace parallel {

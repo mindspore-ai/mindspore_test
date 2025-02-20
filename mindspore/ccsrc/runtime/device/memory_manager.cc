@@ -31,24 +31,6 @@ size_t MemoryManager::GetCommunicationAlignSize(size_t input_size) {
   return ((input_size + kMemAlignSize - 1) / kMemAlignSize) * kMemAlignSize + kTwiceMemAlignSize;
 }
 
-void MemoryManager::MallocSomasDynamicMem(const session::KernelGraph &graph) {
-  SomasAllocatorPtr somas_allocator_ptr = std::make_shared<device::CommonSomasAllocator>();
-  MS_EXCEPTION_IF_NULL(somas_allocator_ptr);
-  somas_allocator_ptr_ = somas_allocator_ptr;
-
-  if (!(device::CommonSomasAllocator::Assign(graph))) {
-    MS_LOG(EXCEPTION) << "Somas Allocate Failed.";
-  }
-  size_t total_allocated_size = graph.somas_whole_block_size();
-  MS_LOG(INFO) << "Graph " << graph.graph_id() << ": TotalSomasReuseDynamicSize [" << total_allocated_size << "]";
-  if (total_allocated_size > 0) {
-    auto base_ptr = MallocDynamicMem(total_allocated_size, false);
-    MS_LOG(INFO) << "Somas Reuse Memory Base Address [" << static_cast<void *>(base_ptr) << "], End Address ["
-                 << static_cast<void *>(base_ptr + total_allocated_size) << "]";
-    somas_allocator_ptr->set_mem_base_addr(base_ptr);
-  }
-}
-
 uint8_t *MemoryManager::MallocOutputMem(const AnfNodePtr &node, size_t index, MemType type, size_t size,
                                         const DeviceAddressPtr &address, bool comm_mem) {
   MS_EXCEPTION_IF_NULL(node);
@@ -67,9 +49,6 @@ uint8_t *MemoryManager::MallocOutputMem(const AnfNodePtr &node, size_t index, Me
       if (communication_mem) {
         address->set_communication_ptr(ptr - kMemAlignSize);
       }
-    } else if (type == kSomasReuseDynamicMem) {
-      MS_EXCEPTION_IF_NULL(somas_allocator_ptr_);
-      ptr = somas_allocator_ptr_->GetNodeOutputPtr(node, index);
     } else {
       ptr = MallocDynamicMem(size, communication_mem);
     }
@@ -82,19 +61,12 @@ uint8_t *MemoryManager::MallocOutputMem(const AnfNodePtr &node, size_t index, Me
     address->set_from_mem_pool(true);
   } else if (type == kDynamicMem) {
     ptr = MallocDynamicMem(size, false);
-  } else if (type == kSomasReuseDynamicMem) {
-    MS_EXCEPTION_IF_NULL(somas_allocator_ptr_);
-    ptr = somas_allocator_ptr_->GetNodeOutputPtr(node, index);
   }
   address->SetDevicePtr(ptr);
   return ptr;
 }
 
 uint8_t *MemoryManager::MallocWorkSpaceMem(const AnfNodePtr &node, size_t index, MemType type, size_t size) {
-  if (type == kSomasReuseDynamicMem) {
-    MS_EXCEPTION_IF_NULL(somas_allocator_ptr_);
-    return somas_allocator_ptr_->GetNodeWorkSpacePtr(node, index);
-  }
   return MallocDynamicMem(size, false);
 }
 

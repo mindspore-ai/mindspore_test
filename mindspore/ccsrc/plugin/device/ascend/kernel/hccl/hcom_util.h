@@ -81,11 +81,11 @@ class HcomUtil {
  public:
   static ::HcclDataType ConvertHcclType(TypeId type_id);
   static bool GetHcomDataType(const std::string &kernel_name, const std::vector<KernelTensor *> &inputs,
-                              const std::vector<KernelTensor *> &outputs, vector<HcclDataType> *data_type_list);
+                              const std::vector<KernelTensor *> &outputs, std::vector<HcclDataType> *data_type_list);
   static bool GetHcclOpSize(const HcclDataType &data_type, const ShapeVector &shape, size_t *size);
   static bool GetHcomTypeSize(const HcclDataType &data_type, uint32_t *size);
-  static bool GetHcomCount(const PrimitivePtr &primitive, const vector<HcclDataType> &data_type_list,
-                           const vector<ShapeVector> &shape_list, const size_t input_tensor_num,
+  static bool GetHcomCount(const PrimitivePtr &primitive, const std::vector<HcclDataType> &data_type_list,
+                           const std::vector<ShapeVector> &shape_list, const size_t input_tensor_num,
                            const std::optional<int64_t> rank_size_opt, uint64_t *total_count);
 
   static std::pair<uint64_t, ::HcclDataType> GetHcclCountAndTypeFromTensor(

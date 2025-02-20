@@ -43,9 +43,6 @@ class GpuInferenceSession : public gpu::GPUSession {
   template <typename T>
   std::string PrintInputShape(std::vector<T> shape) const;
   std::string InputsInfo(const std::vector<ParameterPtr> &paras, const std::vector<tensor::TensorPtr> &inputs) const;
-
- protected:
-  GraphId CompileGraphImpl(NotNull<FuncGraphPtr> func_graph) override;
 };
 MS_REG_SESSION(kGpuInferenceDevice, GpuInferenceSession);
 }  // namespace session

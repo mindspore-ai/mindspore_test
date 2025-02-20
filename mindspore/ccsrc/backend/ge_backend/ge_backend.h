@@ -90,8 +90,6 @@ class BACKEND_EXPORT GEBackend : public BackendBase {
   // inputs
   void ConstructInputs(const KernelGraphPtr &func_graph, const VectorRef &args,
                        std::vector<tensor::TensorPtr> *inputs_tensor, const device::DeviceContext *device_context);
-  void ConstructInputsUnRefMode(const KernelGraphPtr &func_graph, const VectorRef &args,
-                                std::vector<tensor::TensorPtr> *inputs_tensor);
   void ConstructInputsRefMode(const KernelGraphPtr &func_graph, const VectorRef &args,
                               std::vector<tensor::TensorPtr> *inputs_tensor,
                               const device::DeviceContext *device_context);

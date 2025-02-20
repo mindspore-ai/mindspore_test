@@ -104,7 +104,7 @@ class DfGraphConvertor {
         offline_convert_(offline_convert) {
     MS_EXCEPTION_IF_NULL(anf_graph);
     if (ref_mode_type == RefModeFlag::kRefModeEnv) {
-      ref_mode_ = IsEnableRefMode();
+      ref_mode_ = true;
       ref_mode_type_ = IsTwoPhaseInfer() ? RefModeFlag::kRefModeVariable : RefModeFlag::kRefModeAll;
     } else {
       ref_mode_ = (ref_mode_type != RefModeFlag::kRefModeNone);

@@ -66,7 +66,7 @@ std::vector<void *> CPUResManager::AllocateContinuousMemory(const std::vector<si
   return mem_manager_->MallocContinuousMemFromMemPool(size_list, stream_id);
 }
 
-std::pair<vector<size_t>, vector<size_t>> CPUResManager::AllocDeviceMemoryForTensorList(
+std::pair<std::vector<size_t>, std::vector<size_t>> CPUResManager::AllocDeviceMemoryForTensorList(
   const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   std::vector<size_t> before_padding_sizes = GetUniqueTensorListSize(tensor_list);

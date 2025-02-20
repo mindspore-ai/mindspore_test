@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace opt {
-class ConvTransposeToConvBackpropInputPass : public PatternToPatternPass {
+class BACKEND_EXPORT ConvTransposeToConvBackpropInputPass : public PatternToPatternPass {
  public:
   ConvTransposeToConvBackpropInputPass() : PatternToPatternPass("conv_transpose_to_conv_backprop_input", true) {}
   ~ConvTransposeToConvBackpropInputPass() override = default;

@@ -58,7 +58,7 @@
 #include "utils/phase.h"
 #include "pipeline/jit/ps/base.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace runtime {
@@ -645,7 +645,7 @@ GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
   MS_EXCEPTION_IF_NULL(context_ptr);
   if (!IsDisableGeKernel()) {
     if (context_ptr->backend_policy() == "ge" && device_context->GetDeviceType() == device::DeviceType::kAscend &&
-        !run_in_pynative && (actual_run_mode == device::RunMode::kGraphMode) && IsEnableRefMode()) {
+        !run_in_pynative && (actual_run_mode == device::RunMode::kGraphMode)) {
       kernel_graph->set_run_mode(actual_run_mode);
 
       if (!AnfAlgo::IsNoRealKernelGraph(kernel_graph)) {  // no real node graph can skip
@@ -725,18 +725,6 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
   auto context_ptr = MsContext::GetInstance();
   session_->SetInputNodeUsage(kernel_graph, manager);
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (context_ptr->backend_policy() == "ge" && device_context->GetDeviceType() == device::DeviceType::kAscend &&
-      kernel_graph->is_graph_run_mode() && !IsEnableRefMode()) {
-    MS_EXCEPTION_IF_NULL(device_context->graph_executor_);
-    device_context->GetKernelExecutor(false)->OptimizeGraph(kernel_graph);
-    if (!device_context->graph_executor_->CompileGraph(kernel_graph, {})) {
-      MS_LOG(EXCEPTION) << "Compile kernel_graph failed: " << kernel_graph->graph_id();
-    }
-    kernel_graph->UpdateInternalParameter();
-    kernel_graph->CacheGraphOutputToFrontNodeWithIndex({kernel_graph->output()}, outputs);
-    kernel_graph->set_front_outputs(outputs);
-    return kernel_graph->graph_id();
-  }
   kernel_graph->SetOptimizerFlag();
 
   GraphId graph_id = 0;

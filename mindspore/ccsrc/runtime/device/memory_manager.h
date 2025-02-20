@@ -24,16 +24,16 @@
 #include <string>
 #include <unordered_map>
 #include "include/backend/mem_reuse/dynamic_mem_pool.h"
-#include "runtime/device/common_somas_allocator.h"
+#include "ir/anf.h"
+#include "include/backend/device_address.h"
+#include "include/backend/kernel_info.h"
 
 namespace mindspore {
 namespace device {
-enum MemType { kStaticMem, kDynamicMem, kSomasReuseDynamicMem };
+enum MemType { kStaticMem, kDynamicMem };
 constexpr int kGetAllOuts = -1;
 constexpr uint64_t kMemAlignSize = 512;
 constexpr uint64_t kTwiceMemAlignSize = kMemAlignSize << 1;
-using SomasAllocatorPtr = mindspore::device::CommonSomasAllocatorPtr;
-
 class BACKEND_EXPORT MemoryManager {
  public:
   MemoryManager() = default;
@@ -44,7 +44,6 @@ class BACKEND_EXPORT MemoryManager {
   virtual void ResetDynamicMemory() {}
   virtual void ClearGlobalIdleMem() {}
 
-  virtual void MallocSomasDynamicMem(const session::KernelGraph &graph);
   uint8_t *MallocOutputMem(const AnfNodePtr &node, size_t index, MemType type, size_t size,
                            const DeviceAddressPtr &address, bool comm_mem);
   uint8_t *MallocWorkSpaceMem(const AnfNodePtr &node, size_t index, MemType type, size_t size);
@@ -139,7 +138,6 @@ class BACKEND_EXPORT MemoryManager {
     return MallocStaticMem(size, communication_mem, kInvalidGraphId);
   }
   virtual uint8_t *MallocDynamicMem(size_t size, bool communication_mem);
-  SomasAllocatorPtr somas_allocator_ptr_{nullptr};
 
   // Hold memory pool for common operations on memory.
   DynamicMemPool *memory_pool_{nullptr};

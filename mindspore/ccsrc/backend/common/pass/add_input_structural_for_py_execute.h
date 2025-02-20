@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace opt {
-class AddInputStructuralForPyExecute : public PatternProcessPass {
+class BACKEND_EXPORT AddInputStructuralForPyExecute : public PatternProcessPass {
  public:
   explicit AddInputStructuralForPyExecute(bool multigraph = true)
       : PatternProcessPass("inset_input_structural_for_py_execute", multigraph) {}

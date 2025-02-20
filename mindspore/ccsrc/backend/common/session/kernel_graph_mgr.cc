@@ -3115,7 +3115,7 @@ std::vector<KernelGraphPtr> KernelGraphMgr::ConstructSingleKernelGraphByCache(
   return {all_out_graph->front()};
 }
 
-int LoadGraphForCompileCache(std::vector<vector<KernelGraphPtr>> *graph_ids_for_root) {
+int LoadGraphForCompileCache(std::vector<std::vector<KernelGraphPtr>> *graph_ids_for_root) {
   MS_LOG(INFO) << "Use compile cache to load kernel graph ids from backinfo json.";
   auto &context = CompileCacheContext::GetInstance();
   auto func_graph = context.FrontGraph();
@@ -3191,7 +3191,7 @@ std::vector<KernelGraphPtr> KernelGraphMgr::ConstructKernelGraph(std::vector<Ker
   auto cache_path = context.GetBackendGraphCachePath(frontend_graph);
   std::string json_path = cache_path + kJsonSuffix;
   std::map<GraphId, mindspore::HashMap<std::string, AnfNodePtr>> graph_ids_node_name;
-  std::vector<vector<KernelGraphPtr>> root_sub_graphs;
+  std::vector<std::vector<KernelGraphPtr>> root_sub_graphs;
   nlohmann::json model_json;
   if (common::IsDisableRuntimeConfig(common::kRuntimeThreadLoadCache)) {
     MS_LOG(INFO) << "Disable thread load by backend config. Start to load mindir by compile "

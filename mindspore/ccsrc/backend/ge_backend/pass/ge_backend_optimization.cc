@@ -75,6 +75,54 @@
 #include "plugin/device/ascend/optimizer/ge/expander_fallback.h"
 #include "plugin/device/ascend/optimizer/ge/convert_pad_v3_paddings.h"
 #include "plugin/device/ascend/optimizer/ge/convert_embedding_dense_grad_padding.h"
+#include "plugin/device/ascend/optimizer/mindir/renorm_split.h"
+#include "plugin/device/ascend/optimizer/mindir/reduce_axis_update.h"
+#include "plugin/device/ascend/optimizer/mindir/clip_by_norm_fission.h"
+#include "plugin/device/ascend/optimizer/mindir/space_batch_nd_attr_update.h"
+#include "plugin/device/ascend/optimizer/mindir/adam_weight_decay_unify_mindir.h"
+#include "plugin/device/ascend/optimizer/mindir/add_depend_for_adamw.h"
+#include "plugin/device/ascend/optimizer/ir_fission/cdist_fission.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/batchmatmul_reducescatter_alltoall_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/alltoall_allgather_batch_matmul_fusion.h"
+#include "plugin/device/ascend/optimizer/mindir/sparse_softmax_cross_entropy_with_logits_unify_mindir.h"
+#include "plugin/device/ascend/optimizer/mindir/dropout_unify_mindir.h"
+#include "plugin/device/ascend/optimizer/mindir/all_to_all_unify_mindir.h"
+#include "plugin/device/ascend/optimizer/mindir/neighbor_exchange_v2_unify_mindir.h"
+#include "plugin/device/ascend/optimizer/mindir/all_to_all_v_unify_mindir.h"
+#include "plugin/device/ascend/optimizer/ir_fission/bn_split.h"
+#include "plugin/device/ascend/optimizer/mindir/bn_grad_unify_mindir.h"
+#include "plugin/device/ascend/optimizer/ir_fission/bn_grad_split.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/batchnormgrad_to_bninfergrad.h"
+#include "plugin/device/ascend/optimizer/ir_fission/batch_norm_grad_infer_fission.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/batchnorm_to_bninfer.h"
+#include "plugin/device/ascend/optimizer/ge/lamb_fission.h"
+#include "plugin/device/ascend/optimizer/ge/adjust_print_for_ge.h"
+#include "plugin/device/ascend/optimizer/ge/getnext_for_ge.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/adaptive_max_pool2d_fusion.h"
+#include "plugin/device/ascend/optimizer/ge/avg_pool_grad_for_ge.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/mc2_fusion.h"
+#include "plugin/device/ascend/optimizer/ge/add_attr_to_dump.h"
+#include "plugin/device/ascend/optimizer/mindir/ascend_mindir_op_adapter.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/flash_attention_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_allreduce_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_allreduce_add_rmsnorm_fusion.h"
+#include "backend/common/pass/convert_list_to_tuple.h"
+#include "backend/common/pass/eliminate_func_data_type.h"
+#include "backend/common/pass/conv_transpose_to_conv_bp.h"
+#include "backend/common/pass/custom_op_reg_info_to_attr.h"
+#include "backend/common/pass/inplace_assign_for_custom_op.h"
+#include "backend/common/pass/convert_attr_to_unify_mindir.h"
+#include "backend/common/pass/convert_dynamic_broadcast_to.h"
+#include "backend/common/pass/convert_const_input_to_attr.h"
+#include "backend/common/pass/custom_op_const_input_to_attr.h"
+#include "backend/common/pass/convert_const_input_to_tensor_input.h"
+#include "backend/common/pass/convert_tuple_output_to_maketuple.h"
+#include "backend/common/pass/convert_unused_tuple_para_to_make_tuple.h"
+#include "backend/common/pass/flatten_concat_fission.h"
+#include "backend/common/pass/add_input_structural_for_py_execute.h"
+#include "backend/common/pass/broadcast_to_fusion.h"
+#include "backend/common/pass/add_attr_to_node/add_attr_to_node.h"
+#include "backend/common/pass/replace_addn_fusion.h"
 
 namespace mindspore {
 namespace backend {
@@ -131,6 +179,69 @@ void MarkRefGraph(const KernelGraphPtr &kernel_graph) {
     }
   }
 }
+
+mindspore::opt::PassManagerPtr GetBackendCommonUnifyMindIRPassManager() {
+  auto unify_mindir_pm = std::make_shared<mindspore::opt::PassManager>("unify_mindir");
+  MS_EXCEPTION_IF_NULL(unify_mindir_pm);
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::RenormSplit>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::ReduceAxisUpdate>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::SpaceToBatchNDAttrUpdate>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::BatchToSpaceNDAttrUpdate>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::AdamWeightDecayUnifyMindIR>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::AddDependForAdamW>());
+  // Since the SparseSoftmaxCrossEntropyWithLogits operator can only use AICPU and has poor execution performance,
+  // it does not take effect for the time being.
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIRV2>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::SparseSoftmaxCrossEntropyWithLogitsUnifyMindIR>());
+
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::DropoutExtUnifyMindIR1>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::DropoutGradExtUnifyMindIR>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::DropoutUnifyMindIR1>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::DropoutGradUnifyMindIR>());
+  // AllToAll & AlltoAllV
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::NeighborExchangeUnifyMindIR>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::NeighborExchangeV2UnifyMindIR>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::NeighborExchangeV2GradUnifyMindIR>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::AllToAllUnifyMindIR>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::AlltoAllVUnifyMindIR>());
+  // batchnorm
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::BnSplit>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::BatchNormGradUnifyMindIR>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::BnGradSplit>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::BatchNormGrad2BNInferGrad>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::BatchNormGradInferFission>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::BatchNorm2BNInfer>());
+
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::AdjustPrintForGe>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::GetNextForGE>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::SyncBnSplit>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::SyncBnGradSplit>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::AvgPoolGradForGE>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::AddAttrToDump>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::AscendMindIROpAdapter>());
+  return unify_mindir_pm;
+}
+
+mindspore::opt::PassManagerPtr GetBackendFusionGroupPassManager() {
+  auto pm = std::make_shared<mindspore::opt::PassManager>("backend_fusion");
+  pm->AddFusionPass(std::make_shared<mindspore::opt::ClipByNormFission>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::CdistFission>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::CdistGradFission>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::BatchMatMulReduceScatterAllToAllFusion>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::AllToAllAllGatherBatchMatMulFusion>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::LambFissionGe>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::AdaptiveMaxPool2DGeFusion>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::MatmulReduceScatterFusion>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::AllGatherMatmulFusion>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::FlashAttentionFusionV1>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::FlashAttentionFusionV2>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::QuantBatchMatmulAllReduceFusion>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::MatMulAllReduceFusion>());
+  // pm->AddFusionPass(std::make_shared<mindspore::opt::MatMulAllReduceAddRmsNormFusion>());
+  return pm;
+}
+
 }  // namespace
 
 void UnifyMindIRPass(const FuncGraphPtr &func_graph) {
@@ -319,6 +430,159 @@ void OptimizeGEGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *cons
   PROF_END(OptimizeGEGraph);
   MS_LOG(DEBUG) << "Status record: end optimize ge graph. graph id: " << graph->graph_id();
 }
+
+void GEUnifyMindIR(const KernelGraphPtr &kernel_graph) {
+  uint64_t start_time = profiler::GetClockSyscnt();
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  PROF_START(GEUnifyMindIR);
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+#ifdef ENABLE_DUMP_IR
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name = "hwopt_d_before_unify_mindir_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph);
+    DumpIRProto(kernel_graph, "before_unify_mindir_hwopt_" + std::to_string(kernel_graph->graph_id()));
+  }
+#endif
+  auto optimizer = std::make_shared<mindspore::opt::GraphOptimizer>();
+  optimizer->AddPassManager(GetBackendCommonUnifyMindIRPassManager());
+  optimizer->AddPassManager(GetBackendFusionGroupPassManager());
+  (void)optimizer->Optimize(kernel_graph);
+  PROF_END(GEUnifyMindIR);
+#ifdef ENABLE_DUMP_IR
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name = "hwopt_d_after_unify_mindir_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph);
+  }
+#endif
+  (void)profiler::CollectHostInfo("GE", "Graph Optimization", "BackendOptimization_UnifyMindIR", start_time,
+                                  profiler::GetClockSyscnt(), 0);
+}
+
+void OptimizationWithoutBackend(const KernelGraphPtr &kernel_graph) {
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  PROF_START(OptimizationWithoutBackend);
+  MS_LOG(DEBUG) << "Start OptimizationWithoutBackend for kernel graph id:" << kernel_graph->graph_id();
+#ifdef ENABLE_DUMP_IR
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name =
+      "hwopt_d_before_optimization_without_backend_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph);
+  }
+#endif
+  EliminateIllegalDataTypePass(kernel_graph);
+  CommonUnifyMindIR(kernel_graph);
+  BackendCommonOptimization(kernel_graph);
+  MS_LOG(DEBUG) << "End OptimizationWithoutBackend for kernel graph id:" << kernel_graph->graph_id();
+  PROF_END(OptimizationWithoutBackend);
+#ifdef ENABLE_DUMP_IR
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name =
+      "hwopt_d_after_optimization_without_backend_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph);
+  }
+#endif
+}
+
+void EliminateIllegalDataTypePass(const KernelGraphPtr &kernel_graph) {
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  PROF_START(EliminateIllegalDataTypePass);
+  MS_LOG(INFO) << "Start eliminate illegal data type for kernel graph id:" << kernel_graph->graph_id();
+#ifdef ENABLE_DUMP_IR
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name =
+      "hwopt_common_eliminate_illegal_data_type_before_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph);
+  }
+#endif
+  auto opt = std::make_shared<mindspore::opt::GraphOptimizer>();
+  auto pm = std::make_shared<mindspore::opt::PassManager>("common_eliminate_illegal_data_type_pm");
+  pm->AddPass(std::make_shared<mindspore::opt::ConvertListToTuple>("convert_list_to_tuple"));
+  pm->AddPass(std::make_shared<mindspore::opt::EliminateFuncDataType>());
+  opt->AddPassManager(pm);
+  (void)opt->Optimize(kernel_graph);
+  PROF_END(EliminateIllegalDataTypePass);
+#ifdef ENABLE_DUMP_IR
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name =
+      "hwopt_common_eliminate_illegal_data_type_after_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph);
+  }
+#endif
+}
+
+void CommonUnifyMindIR(const KernelGraphPtr &kernel_graph) {
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  PROF_START(CommonUnifyMindIR);
+  MS_LOG(INFO) << "start common unify mindir opt graph:" << kernel_graph->graph_id();
+#ifdef ENABLE_DUMP_IR
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name =
+      "hwopt_common_unify_mindir_before_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph);
+  }
+#endif
+  auto opt = std::make_shared<mindspore::opt::GraphOptimizer>();
+  auto pm = std::make_shared<mindspore::opt::PassManager>("common_unify_mindir_pm");
+  pm->AddPass(std::make_shared<mindspore::opt::ConvTransposeToConvBackpropInputPass>());
+  pm->AddPass(std::make_shared<mindspore::opt::CustomOpRegInfoToAttr>());
+  pm->AddPass(std::make_shared<mindspore::opt::InplaceAssignForCustomOp>());
+  pm->AddPass(std::make_shared<mindspore::opt::ConvertAttrToUnifyMindIR>());
+  opt->AddPassManager(pm);
+  (void)opt->Optimize(kernel_graph);
+  PROF_END(CommonUnifyMindIR);
+#ifdef ENABLE_DUMP_IR
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name = "hwopt_common_unify_mindir_after_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph);
+  }
+#endif
+}
+
+void BackendCommonOptimization(const KernelGraphPtr &kernel_graph) {
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  PROF_START(BackendCommonOptimization);
+  MS_LOG(INFO) << "Status record: start common optimization. graph id: " << kernel_graph->graph_id();
+#ifdef ENABLE_DUMP_IR
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name = "hwopt_common_before_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph);
+  }
+#endif
+  auto common_pm = std::make_shared<mindspore::opt::PassManager>("common_pm");
+  common_pm->AddPass(std::make_shared<mindspore::opt::ConvertDynamicBroadcastTo>());
+  common_pm->AddPass(std::make_shared<mindspore::opt::ConvertConstInputToAttr>());
+  common_pm->AddPass(std::make_shared<mindspore::opt::CustomOpConstInputToAttr>());
+  common_pm->AddPass(std::make_shared<mindspore::opt::ConvertConstInputToTensorInputForPrint>());
+  common_pm->AddPass(std::make_shared<mindspore::opt::ConvertTupleOutputToMaketuple>());
+  common_pm->AddPass(std::make_shared<mindspore::opt::ConvertUnusedTupleParaToMakeTuple>());
+  common_pm->AddFusionPass(std::make_shared<mindspore::opt::FlattenConcatFission>());
+  common_pm->AddPass(std::make_shared<mindspore::opt::AddInputStructuralForPyExecute>());
+  common_pm->AddFusionPass(std::make_shared<mindspore::opt::BroadcastToFusion>());
+  common_pm->AddPass(std::make_shared<mindspore::opt::AddAttrToNode>());
+  common_pm->AddFusionPass(std::make_shared<mindspore::opt::ReplaceAddNFusion>());
+
+  auto optimizer = std::make_shared<mindspore::opt::GraphOptimizer>();
+  optimizer->AddPassManager(common_pm);
+  (void)optimizer->Optimize(kernel_graph);
+  PROF_END(BackendCommonOptimization);
+#ifdef ENABLE_DUMP_IR
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name = "hwopt_common_after_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph);
+  }
+#endif
+  MS_LOG(INFO) << "Status record: end common optimization. graph id: " << kernel_graph->graph_id();
+}
+
 }  // namespace opt
 }  // namespace ge_backend
 }  // namespace backend

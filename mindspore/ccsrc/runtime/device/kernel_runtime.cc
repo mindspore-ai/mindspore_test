@@ -165,22 +165,6 @@ bool KernelRuntime::NodeOutputDeviceAddressExist(const AnfNodePtr &kernel, size_
   return false;
 }
 
-void KernelRuntime::AssignMemory(const session::KernelGraph &graph) {
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  if (UseMemScheduler()) {
-    AssignStaticMemoryValueNode(graph);
-    ResetNodeAddress(graph);
-    AddCommunicationMemInfo(graph);
-  } else {
-    MS_EXCEPTION_IF_NULL(mem_manager_);
-    mem_manager_->ResetDynamicMemory();
-    AssignStaticMemory(graph);
-    AssignDynamicMemory(graph);
-  }
-  UpdateRefNodeOutputMem(graph);
-}
-
 void KernelRuntime::GetCommunicationInputInfo(const AnfNodePtr &node, size_t *total_size,
                                               DeviceAddressPtrList *address_list,
                                               std::vector<size_t> *align_size_list) const {
@@ -802,14 +786,6 @@ void KernelRuntime::AssignCommunicationNodeOutputMem(MemType type, const AnfNode
     return;
   }
 
-  if (type == kSomasReuseDynamicMem) {
-    bool not_reuse = KernelMemNotReuse(node);
-    if (not_reuse) {
-      type = kDynamicMem;
-      MS_LOG(INFO) << "Disable Memory Reuse for " << node->fullname_with_scope() << "'s output.";
-    }
-  }
-
   uint8_t *output_ptr = nullptr;
   int64_t valid_reuse_index = -1;
   auto cnode = node->cast<CNodePtr>();
@@ -891,13 +867,7 @@ void KernelRuntime::AssignCommunicationNodeInputMem(MemType type, const AnfNodeP
   if (addr_size.empty()) {
     return;
   }
-  if (type == kSomasReuseDynamicMem) {
-    bool not_reuse = KernelMemNotReuse(node);
-    if (not_reuse) {
-      type = kDynamicMem;
-      MS_LOG(INFO) << "Disable Memory Reuse for " << node->fullname_with_scope() << "'s input.";
-    }
-  }
+
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
   if (cnode->size() < kMinInputSize) {
@@ -939,14 +909,6 @@ void KernelRuntime::AssignNodeOutputMem(MemType type, const AnfNodePtr &node, in
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(mem_manager_);
 
-  if (type == kSomasReuseDynamicMem) {
-    bool not_reuse = KernelMemNotReuse(node);
-    if (not_reuse) {
-      type = kDynamicMem;
-      MS_LOG(INFO) << "Disable Memory Reuse for " << node->fullname_with_scope() << "'s output.";
-    }
-  }
-
   auto kernel_mod = AnfAlgo::GetKernelMod(node);
   MS_EXCEPTION_IF_NULL(kernel_mod);
   auto output_sizes = kernel_mod->GetOutputSizeList();
@@ -974,12 +936,7 @@ void KernelRuntime::AssignNodeOutputMem(MemType type, const AnfNodePtr &node, in
     // In subgraph sink mode, graph output should not allocate memory.
     if (IsNeedAllocMem(node, i)) {
       uint8_t *ptr = mem_manager_->MallocOutputMem(node, i, type, output_sizes[i], device_address, false);
-      if (ptr == nullptr && type == kSomasReuseDynamicMem) {
-        MS_LOG(INFO) << "node: " << node->fullname_with_scope() << " could be a RefNode, please check it"
-                     << " output index: " << i << " memory type: " << type;
-      } else {
-        MS_EXCEPTION_IF_NULL(ptr);
-      }
+      MS_EXCEPTION_IF_NULL(ptr);
     } else {
       MS_LOG(DEBUG) << "Skip mem alloc for device address:" << device_address << " node:" << node->DebugString();
     }
@@ -1193,45 +1150,6 @@ bool KernelRuntime::MemSchedulerPostCompute(const session::KernelGraph &graph, c
     return false;
   }
   return true;
-}
-
-void KernelRuntime::AssignDynamicMemory(const session::KernelGraph &graph) {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  bool is_enable_mem_reuse = EnvConfigParser::GetInstance().GetSysMemreuse();
-  auto mem_type = kDynamicMem;
-  auto &dump_json_parser = DumpJsonParser::GetInstance();
-  if (dump_json_parser.e2e_dump_enabled() && dump_json_parser.dump_mode() == 0) {
-    mindspore::EnvConfigParser::GetInstance().SetSysMemreuse(false);
-    is_enable_mem_reuse = false;
-    MS_LOG(INFO) << "Disable Memory Reuse when e2e dump is enable and dump mode is set to dump all kernels";
-  }
-
-  if (is_enable_mem_reuse) {
-    MS_LOG(INFO) << "Memory Reuse is enable...";
-    mem_manager_->MallocSomasDynamicMem(graph);
-    mem_type = kSomasReuseDynamicMem;
-  } else {
-    MS_LOG(INFO) << "Memory Reuse is disable...";
-  }
-  auto &execution_nodes = graph.execution_order();
-  std::vector<CNodePtr> compute_nodes;
-  // communication nodes first
-  for (auto &node : execution_nodes) {
-    if (common::AnfAlgo::IsCommunicationOp(node)) {
-      // skip if the memory is already allocated
-      AssignCommunicationNodeMem(mem_type, node);
-    } else {
-      (void)compute_nodes.emplace_back(node);
-    }
-  }
-
-  // then compute nodes
-  for (auto &node : compute_nodes) {
-    AssignNodeOutputMem(mem_type, node, kGetAllOuts);
-    AssignWorkSpaceMem(mem_type, node);
-  }
 }
 
 void KernelRuntime::AssignWorkSpaceMem(MemType type, const AnfNodePtr &node) {

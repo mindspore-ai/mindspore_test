@@ -17,7 +17,7 @@
 #include "kernel/gpu/pyboost/customize/sum_ext.h"
 #include "kernel/gpu/pyboost/auto_generate/cast.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 #include "plugin/device/gpu/hal/device/gpu_device_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 

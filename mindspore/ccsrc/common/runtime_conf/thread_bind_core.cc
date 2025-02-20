@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/runtime_conf/thread_bind_core.h"
+#include "include/common/runtime_conf/thread_bind_core.h"
 
 #ifdef __linux__
 #define BIND_CORE
@@ -31,7 +31,7 @@
 #include "utils/ms_context.h"
 #include "utils/log_adapter.h"
 #include "utils/file_utils.h"
-#include "include/backend/distributed/collective/collective_manager.h"
+#include "utils/distributed_meta.h"
 
 namespace mindspore {
 namespace runtime {
@@ -98,8 +98,8 @@ bool ThreadBindCore::parse_thread_bind_core_policy(const kBindCoreModule &module
   }
   // When automatically enable bind core, device_target CPU and GPU won't bind core based on device to numa affinity.
   if (!is_enable_with_policy) {
-    uint32_t local_rank_size = distributed::collective::CollectiveManager::instance()->local_rank_size();
-    uint32_t local_rank_id = distributed::collective::CollectiveManager::instance()->local_rank_id();
+    uint32_t local_rank_size = DistributedMeta::GetInstance()->local_rank_size();
+    uint32_t local_rank_id = DistributedMeta::GetInstance()->local_rank_id();
     uint32_t core_per_process = cpu_bind_core_policy_.size() / local_rank_size;
     if (core_per_process < kMinimumCorePerProcess) {
       MS_LOG(WARNING)

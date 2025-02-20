@@ -29,7 +29,7 @@
 #include "utils/ms_context.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_utils.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace device {

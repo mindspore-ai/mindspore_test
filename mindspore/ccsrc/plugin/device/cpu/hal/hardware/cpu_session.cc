@@ -121,36 +121,6 @@ void CPUSession::GraphKernelOptimize(const std::shared_ptr<KernelGraph> &kernel_
   kernel_graph->SetExecOrderByDefault();
 }
 
-GraphId CPUSession::CompileGraphImpl(const AnfNodePtrList &lst, const AnfNodePtrList &outputs) {
-  auto graph_id = graph_sum_;
-  auto graph = ConstructKernelGraph(lst, outputs, DeviceType::kCPU);
-  MS_EXCEPTION_IF_NULL(graph);
-  opt::AddDynamicShapeAttrPass(graph);
-  MS_LOG(INFO) << "Set kernel info";
-  SetKernelInfo(graph.get());
-  MS_LOG(INFO) << "Set kernel info end";
-  Optimize(graph);
-  FinalOptimize(graph);
-  GraphKernelOptimize(graph);
-  MS_LOG(INFO) << "Build kernel";
-  BuildKernel(graph.get());
-  // Remove reorder after PS feature finish adapting push/pull in auto_monad.
-  auto execution_order = graph->execution_order();
-  Reorder(&execution_order);
-  graph->set_execution_order(execution_order);
-  // runtime init
-  if (!runtime_.Init()) {
-    MS_LOG(EXCEPTION) << "Kernel runtime init error.";
-  }
-  MS_LOG(INFO) << "Assign kernel graph address";
-  runtime_.AssignKernelGraphAddress(graph.get());
-  // set summary node
-  SetSummaryNodes(graph.get());
-  runtime_.IncreaseSummaryRefCount(graph->summary_nodes());
-  DumpGraphs({graph});
-  return graph_id;
-}
-
 void CPUSession::CreateOutputTensors(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &input_tensors,
                                      VectorRef *outputs,
                                      std::map<tensor::TensorPtr, session::KernelWithIndex> *tensor_to_node,

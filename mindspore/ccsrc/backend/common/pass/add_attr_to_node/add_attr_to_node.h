@@ -20,7 +20,7 @@
 
 namespace mindspore {
 namespace opt {
-class AddAttrToNode : public PatternProcessPass {
+class BACKEND_EXPORT AddAttrToNode : public PatternProcessPass {
  public:
   explicit AddAttrToNode(bool multigraph = true) : PatternProcessPass("add_attr_to_node", multigraph) {}
   ~AddAttrToNode() override = default;

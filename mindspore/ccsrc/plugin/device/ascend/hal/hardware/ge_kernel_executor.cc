@@ -72,7 +72,7 @@
 #include "include/backend/debug/data_dump/overflow_dumper.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "utils/anf_utils.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 #include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
 #include "plugin/device/ascend/hal/hardware/ascend_device_res_manager.h"
 
@@ -1000,12 +1000,12 @@ void GeKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
   auto func_graph = nodes[0]->func_graph();
   auto kernel_graph = std::dynamic_pointer_cast<session::KernelGraph>(func_graph);
   MS_EXCEPTION_IF_NULL(kernel_graph);
-  if (IsEnableRefMode()) {
-    // Not create kernel when use GE
-    if (!kernel_graph->is_from_single_op() && kernel_graph->is_graph_run_mode()) {
-      return;
-    }
+
+  // Not create kernel when use GE
+  if (!kernel_graph->is_from_single_op() && kernel_graph->is_graph_run_mode()) {
+    return;
   }
+
   // build kernel mod
   MS_LOG(DEBUG) << "Status record: start create kernel.";
   uint64_t start_time = profiler::GetClockSyscnt();
@@ -1178,7 +1178,7 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
   }
 
   // use GE, delete when delete disable_ge_kernel
-  if (kernel_graph->is_graph_run_mode() && IsEnableRefMode()) {
+  if (kernel_graph->is_graph_run_mode()) {
     if (AnfAlgo::IsNoRealKernelGraph(kernel_graph)) {
       return;
     }
@@ -1226,8 +1226,8 @@ void GeKernelExecutor::CreateEventForCache(const KernelGraphPtr &kernel_graph) c
   AclStreamAssign::GetInstance().CreateEvent(NOT_NULL(kernel_graph));
 }
 
-bool GeKernelExecutor::MemoryCopyAsync(const CNodePtr &node, const vector<KernelTensor *> &inputs,
-                                       const vector<KernelTensor *> &outputs) const {
+bool GeKernelExecutor::MemoryCopyAsync(const CNodePtr &node, const std::vector<KernelTensor *> &inputs,
+                                       const std::vector<KernelTensor *> &outputs) const {
   MS_EXCEPTION_IF_NULL(node);
   MS_LOG(DEBUG) << "Launch MemoryCopyAsync instead for kernel " << node->fullname_with_scope();
   if (inputs.size() != 1 || outputs.size() != 1) {
@@ -1283,9 +1283,10 @@ void GeKernelExecutor::DoAsyncCkpt(const CNodePtr &kernel) const {
   }
 }
 
-bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const vector<KernelTensor *> &inputs,
-                                    const vector<KernelTensor *> &workspace, const vector<KernelTensor *> &outputs,
-                                    KernelMod *kernel_mod, void *stream) const {
+bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
+                                    const std::vector<KernelTensor *> &workspace,
+                                    const std::vector<KernelTensor *> &outputs, KernelMod *kernel_mod,
+                                    void *stream) const {
   // launch kernel
   uint64_t start_time = 0;
   PROFILER_START(start_time);

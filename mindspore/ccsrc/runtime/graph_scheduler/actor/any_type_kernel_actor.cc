@@ -415,7 +415,7 @@ void AnyTypeKernelActor::RunForGraphInput(OpContext<DeviceTensor> *const context
   FetchInputDeviceTensor(context);
   current_data_type_ = GenerateIDForGraph(input_device_tensors_, any_type_parameter_indexes_);
   MS_LOG(DEBUG) << "Current data type:" << current_data_type_ << " for actor:" << GetAID();
-  vector<AbstractActorPtr> actors;
+  std::vector<AbstractActorPtr> actors;
   if (real_graphs_.find(current_data_type_) == real_graphs_.end()) {
     try {
       std::lock_guard<std::mutex> lock(instance_lock_);

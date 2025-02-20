@@ -18,7 +18,7 @@
 #include <utility>
 #include "mindspore/ccsrc/pyboost/customize/divmod.h"
 #include "mindspore/ccsrc/plugin/device/gpu/hal/device/gpu_device_manager.h"
-#include "mindspore/ccsrc/runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace kernel {

@@ -31,7 +31,7 @@
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/cast.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace kernel {

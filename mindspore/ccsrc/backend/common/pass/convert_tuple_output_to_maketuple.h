@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace opt {
-class ConvertTupleOutputToMaketuple : public PatternProcessPass {
+class BACKEND_EXPORT ConvertTupleOutputToMaketuple : public PatternProcessPass {
  public:
   explicit ConvertTupleOutputToMaketuple(bool multigraph = true)
       : PatternProcessPass("convert_tuple_output_to_maketuple", multigraph) {}

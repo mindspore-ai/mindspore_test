@@ -52,7 +52,7 @@ void HcomUtil::AdjustShapeByDataType(TypeId type_id, ShapeVector *shape) {
 }
 
 bool HcomUtil::GetHcomDataType(const std::string &kernel_name, const std::vector<KernelTensor *> &inputs,
-                               const std::vector<KernelTensor *> &outputs, vector<HcclDataType> *data_type_list) {
+                               const std::vector<KernelTensor *> &outputs, std::vector<HcclDataType> *data_type_list) {
   MS_EXCEPTION_IF_NULL(data_type_list);
 
   data_type_list->clear();
@@ -101,8 +101,8 @@ bool HcomUtil::GetHcomTypeSize(const HcclDataType &data_type, uint32_t *size) {
   return true;
 }
 
-bool HcomUtil::GetHcomCount(const PrimitivePtr &primitive, const vector<HcclDataType> &data_type_list,
-                            const vector<ShapeVector> &shape_list, const size_t input_tensor_num,
+bool HcomUtil::GetHcomCount(const PrimitivePtr &primitive, const std::vector<HcclDataType> &data_type_list,
+                            const std::vector<ShapeVector> &shape_list, const size_t input_tensor_num,
                             const std::optional<int64_t> rank_size_opt, uint64_t *total_count) {
   MS_EXCEPTION_IF_NULL(primitive);
   MS_EXCEPTION_IF_NULL(total_count);

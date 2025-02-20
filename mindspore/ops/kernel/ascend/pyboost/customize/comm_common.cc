@@ -22,7 +22,7 @@
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/comm_utils.h"
 #include "runtime/pipeline/pipeline.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 #include "utils/ms_utils.h"
 #include "availability/silent_check/silent_check.h"
 

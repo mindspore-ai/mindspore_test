@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_THREAD_BIND_CORE_H_
-#define MINDSPORE_CCSRC_RUNTIME_THREAD_BIND_CORE_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_COMMON_RUNTIME_CONF_THREAD_BIND_CORE_H_
+#define MINDSPORE_CCSRC_INCLUDE_COMMON_RUNTIME_CONF_THREAD_BIND_CORE_H_
 
 #include <string>
 #include <memory>
@@ -26,13 +26,14 @@
 
 #include "mindapi/base/macros.h"
 #include "utils/log_adapter.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 namespace runtime {
 using BindCorePolicy = std::map<int, std::map<std::string, std::vector<int>>>;
 enum kBindCoreModule : int { kMAIN = 0, kRUNTIME, kPYNATIVE, kMINDDATA };
 
-class ThreadBindCore {
+class COMMON_EXPORT ThreadBindCore {
  public:
   static ThreadBindCore &GetInstance() {
     static ThreadBindCore instance;
@@ -58,4 +59,4 @@ class ThreadBindCore {
 }  // namespace runtime
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_RUNTIME_THREAD_BIND_CORE_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_RUNTIME_CONF_THREAD_BIND_CORE_H_

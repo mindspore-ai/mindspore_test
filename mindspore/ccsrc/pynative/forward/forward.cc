@@ -38,7 +38,7 @@ using mindspore::profiler::ProfilerManager;
 #include "frontend/operator/ops_front_infer_function.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/device/device_address_utils.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 #include "pynative/grad/grad_utils.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_reg.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/contiguous.h"

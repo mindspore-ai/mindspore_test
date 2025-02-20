@@ -115,7 +115,7 @@ class AscendResManager : public HalResBase {
   bool SyncAllStreams() const override;
   bool SyncNotDefaultStreams() const override;
   size_t DefaultStream() const override;
-  std::pair<vector<size_t>, vector<size_t>> AllocDeviceMemoryForTensorList(
+  std::pair<std::vector<size_t>, std::vector<size_t>> AllocDeviceMemoryForTensorList(
     const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) override;
   TensorPtr GetSliceByTensorListIndexHandle(const std::vector<tensor::TensorPtr> &tensor_list,
                                             const std::vector<size_t> &before_padding_size,
