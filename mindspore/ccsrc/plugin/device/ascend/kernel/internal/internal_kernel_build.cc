@@ -97,13 +97,6 @@ bool IsEnableInternalNode(const AnfNodePtr &node) {
     if (!IsValueNode<None>(cnode->input(kIndex6))) {
       return false;
     }
-  } else if (op_name == "Concat") {
-    auto cnode = node->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(cnode);
-    static const auto kConcatInputNum = 3;
-    if (cnode->inputs().size() != kConcatInputNum) {
-      return false;
-    }
   } else if (op_name == "SplitWithSize") {
     static const auto kSplitOutNum2 = 2;
     static const auto kSplitOutNum3 = 3;
