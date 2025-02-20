@@ -80,7 +80,8 @@ def _tensor_mod_list(x, y):
     return F.tensor_mod(x, y)
 
 
-@mod.register_default()
+# pylint: disable=protected-access
+@mod._register_default()
 def default_mod(x, y):
     """Default function for mod."""
     return x % y

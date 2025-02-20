@@ -93,6 +93,7 @@ class SideEffect {
     kSetGlobal,
     kBuiltinFunction,
     kBuiltinMethod,
+    kTensorOptMethod,  // optimize side effect restore. Now only for tensor, extend this flag later
   };
 
   struct CacheResult {
@@ -131,7 +132,7 @@ class SideEffect {
   // reset the record if record not find in final nodes set
   void ResetRecord(const std::set<ValueNode *> &traced_nodes);
 
-  // return the original node(source) if it's replaced, else return the node
+  // return the original node(source, oldest version) if it's replaced, else return the node
   ValueNode *GetSource(ValueNode *node) const;
 
   // optimize the side-effect data, remove modify operations of dead local variable
@@ -167,6 +168,8 @@ class SideEffect {
 
   // restore list, dict, or other specialized object function call
   void RestoreBuiltinMethod(CodeGenerator *cg, const Entry &) const;
+
+  void MergeTensorOperations();
 
   // shared from other side-effect recorder
   std::shared_ptr<SideEffectData> data_;

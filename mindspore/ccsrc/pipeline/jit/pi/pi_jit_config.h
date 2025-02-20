@@ -44,9 +44,6 @@ class GraphJitConfig {
     kGuardSpecializeTensor,
     kGuardDetachObject,
     kPrintGuard,
-    kReuseGraph,
-    kPrintReuseGraph,
-    kAutoCleanCache,
     kPruneCase,
     kLoopUnrolling,
     kInferOnly,
@@ -57,17 +54,19 @@ class GraphJitConfig {
     kLogPerf,
     kLogGuardPerf,
     kTestGraphIR,
-    kEnableOptimizeForAttrItem,
     kEnableEliminateUnusedOperation,
     kEnableGeneratorExpressionToTuple,
     kFeatureBreakAtInlinedFunction,
     kEnableDynamicShape,
     kEnableMsApiInfer,
-    kTraceFlag,
     kSkipException,
     kPIJitContextMode,
+    kExpandGraphInput,
+    kExpandGraphOutput,
+    kReCaptureLoopBody,
     /* ------------------------------ */
     kIntConf,
+    kSymbolic,
     kMaxInlineDepth,
     kMaxTraceDepth,
     kMaxPruneCase,
@@ -97,6 +96,7 @@ class GraphJitConfig {
   bool AddJitRelaxGuard(PyObject *list);
   bool AddJitConstexpr(PyObject *callable_list);
   bool AddJitForbidden(PyObject *callable_list);
+
   bool AddAllowedInlineModules(PyObject *str_list);
   std::string getJitLevel() const;
   bool AddJitLevel(PyObject *str);

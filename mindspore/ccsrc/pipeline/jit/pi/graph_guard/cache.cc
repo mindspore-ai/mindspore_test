@@ -15,6 +15,7 @@
  */
 #include "pipeline/jit/pi/graph_guard/cache.h"
 #include <algorithm>
+#include <utility>
 #include "pipeline/jit/ps/pipeline.h"
 
 namespace mindspore {
@@ -128,13 +129,9 @@ OptCodePtr OptCodeHub::AddOptTarget(OptOptionPtr option) {
   return ret;
 }
 
-OptCodeSet OptCodeHub::GetOptTarget(OptOptionPtr option) {
-  for (auto &item : codeMap_) {
-    if (*(item.first.get()) == *(option.get())) {
-      return item.second;
-    }
-  }
-  return {};
+const OptCodeSet &OptCodeHub::GetOptTarget(const OptOptionPtr &option, const OptCodeSet &defaults) {
+  auto iter = codeMap_.find(option);
+  return iter != codeMap_.end() ? iter->second : defaults;
 }
 
 void OptCodeHub::UpdateOptTarget(OptOptionPtr option, OptCodePtr code) {
@@ -207,5 +204,77 @@ OptCodePtr OptCodeHub::Filter(std::string key, OptCodeFilterFunc filter) {
   }
   return nullptr;
 }
+
+CodeCache::CodeCache(void *jcr)
+    : jcr_(OptOption::CreateOptionByPoint(jcr)), code_hub_(std::make_shared<OptCodeHub>()) {}
+
+void CodeCache::CollectFailGuard() {
+  auto iter = code_hub_->codeMap_.find(jcr_);
+  if (iter == code_hub_->codeMap_.end()) {
+    return;
+  }
+  GuardItemSet set;
+  for (const auto &i : iter->second) {
+    for (const auto &j : i->GetGuard()->guard_list()) {
+      if (j->fail_count() != 0) {
+        set.emplace(j);
+        j->set_faile_count(0);
+      }
+    }
+  }
+  for (const auto &i : set) {
+    fail_guard_[i].count_++;
+  }
+}
+
+static bool MatchTracePath(const TracePtr &left, const TracePtr &right) {
+  if (left == right) {
+    return true;
+  }
+  std::vector<std::pair<TracePtr, TracePtr>> stack;
+  stack.emplace_back(left, right);
+  while (!stack.empty()) {
+    auto cmp = std::move(stack.back());
+    stack.pop_back();
+    if (cmp.first->GetTraceType() != cmp.second->GetTraceType()) {
+      return false;
+    }
+    if (RootTrace::Support(cmp.first->GetTraceType()) || cmp.first->Info().Id() == cmp.second->Info().Id()) {
+      continue;
+    }
+    if (cmp.first->GetTraceType() == TraceType::Operation) {
+      OpTrace *first = static_cast<OpTrace *>(cmp.first.get());
+      OpTrace *second = static_cast<OpTrace *>(cmp.second.get());
+      if (first->GetParamCount() != second->GetParamCount() || first->GetOpCode() != second->GetOpCode() ||
+          first->GetName() != second->GetName()) {
+        return false;
+      }
+      for (size_t i = 0, end = first->GetParamCount(); i != end; ++i) {
+        stack.emplace_back(first->GetParam(i), second->GetParam(i));
+      }
+      continue;
+    }
+    MS_LOG(INFO) << "unsupported trace match: " << cmp.first->ToString();
+    return false;
+  }
+  return true;
+}
+
+bool CodeCache::GuardItemKey::operator==(const GuardItemKey &o) const noexcept {
+  return ptr_->GetType() == o.ptr_->GetType() && MatchTracePath(ptr_->GetTrace(), o.ptr_->GetTrace());
+}
+
+CodeCache::FailInfo CodeCache::FindFailInfo(const GuardItemPtr &p) const {
+  // guard type equal, trace operations equal
+  auto iter = fail_guard().find(GuardItemKey(p));
+  return iter == fail_guard().end() ? FailInfo{0} : iter->second;
+}
+
+void CodeCache::Clear() {
+  code_ = nullptr;
+  code_hub_->codeMap_[jcr_].clear();
+  fail_guard_.clear();
+}
+
 }  // namespace pijit
 }  // namespace mindspore

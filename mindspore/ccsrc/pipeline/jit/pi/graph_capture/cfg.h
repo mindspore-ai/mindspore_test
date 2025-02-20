@@ -119,7 +119,20 @@ class Block {
   std::set<Block *, BBIdCmp> &pred_bbs() { return pred_bbs_; }
   const std::set<Block *, BBIdCmp> &succ_bbs() const { return succ_bbs_; }
   std::set<Block *, BBIdCmp> &succ_bbs() { return succ_bbs_; }
-  void set_is_loop_head(bool flag) { is_loop_head_ = flag; }
+  void set_is_loop_head(bool flag) {
+    is_loop_head_ = flag;
+    if (flag) {
+      loop_body_bbs_.insert(this);
+      loop_head_bb_ = this;
+    }
+  }
+  void add_loop_body(Block *block) {
+    loop_body_bbs_.insert(block);
+    block->set_loop_head_bb(this);
+  }
+  const std::set<Block *> &loop_body_bbs() const { return loop_body_bbs_; }
+  Block *loop_head_bb() const { return loop_head_bb_; }
+  void set_loop_head_bb(Block *block) { loop_head_bb_ = block; }
   bool is_loop_head() const { return is_loop_head_; }
   void set_is_loop_body(bool flag) { is_loop_body_ = flag; }
   bool is_loop_body() const { return is_loop_body_; }
@@ -153,12 +166,16 @@ class Block {
 
   Block *Clone(CFG *cfg);
 
+  void set_loop_head(Block *pBlock);
+
  private:
   uint32_t id_;  // start from 0
   int begin_;
   int end_;
   std::set<Block *, BBIdCmp> pred_bbs_;
   std::set<Block *, BBIdCmp> succ_bbs_;  // include fall_bb_ and jump_bb_
+  std::set<Block *> loop_body_bbs_;      // if curr bb is loop head, loop_body_bbs_ will include all loop body bbs
+  Block *loop_head_bb_ = nullptr;
   Block *fall_bb_ = nullptr;
   Block *jump_bb_ = nullptr;
 

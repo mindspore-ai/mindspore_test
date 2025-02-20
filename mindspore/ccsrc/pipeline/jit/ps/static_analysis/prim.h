@@ -401,6 +401,8 @@ void GetKeywordArgsMap(const AbstractBasePtr &input_abs, const std::vector<ops::
 CNodePtr GeneratePrimitiveCNode(const PrimitivePtr &primitive, const ops::OpDef *op_def, const FuncGraphPtr &graph,
                                 const AnfNodePtrList &init_args_nodes, const AnfNodePtrList &call_args_nodes,
                                 const std::function<AbstractBasePtr(const AnfNodePtr &)> &eval_func);
+
+std::shared_ptr<Functional> BuildMethodFunctional(const std::string &name);
 }  // namespace abstract
 }  // namespace mindspore
 

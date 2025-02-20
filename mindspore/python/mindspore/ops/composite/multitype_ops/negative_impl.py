@@ -73,7 +73,8 @@ def _negative_cootensor(x):
     return COOTensor(x.indices, F.neg(x.values), x.shape)
 
 
-@negative.register_default()
+# pylint: disable=protected-access
+@negative._register_default()
 def default_negative(x):
     """Default function for negative."""
     return -x

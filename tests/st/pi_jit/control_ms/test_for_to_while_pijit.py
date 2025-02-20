@@ -1,5 +1,3 @@
-import sys  
-import pytest 
 from mindspore import context
 from mindspore import Tensor, nn
 from mindspore.ops import composite as C
@@ -7,11 +5,6 @@ from mindspore.ops import operations as P
 from mindspore.common import dtype as mstype
 from mindspore import jit
 from tests.mark_utils import arg_mark
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 grad_all = C.GradOperation(get_all=True)
 

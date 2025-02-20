@@ -1588,6 +1588,9 @@ ValuePtr AbstractNamedTuple::RealBuildValue() const {
     MS_EXCEPTION_IF_NULL(element);
     auto element_value = element->BuildValue();
     MS_EXCEPTION_IF_NULL(element_value);
+    if (element_value->isa<ValueAny>()) {
+      return kValueAny;
+    }
     element_value_list.push_back(element_value);
   }
   std::vector<ValuePtr> key_value_list;
@@ -1595,6 +1598,9 @@ ValuePtr AbstractNamedTuple::RealBuildValue() const {
     MS_EXCEPTION_IF_NULL(key);
     auto key_value = key->BuildValue();
     MS_EXCEPTION_IF_NULL(key_value);
+    if (key_value->isa<ValueAny>()) {
+      return kValueAny;
+    }
     key_value_list.push_back(key_value);
   }
   return std::make_shared<ValueNamedTuple>(sub_class_name_, key_value_list, element_value_list);

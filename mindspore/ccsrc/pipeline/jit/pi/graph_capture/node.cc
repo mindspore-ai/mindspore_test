@@ -31,6 +31,15 @@ bool IsNonLocalValue(ValueNode *i) {
 }
 
 void ValueNode::SetVobj(AObject *object_info) {
+  if (object_info == this->vobj_) {
+    MS_LOG(INFO) << "Try to overwrite vobj with itself.";
+    return;
+  }
+  if (this->vobj_ != nullptr && this->vobj_->GetType() != AObject::kTypeAnyValue && object_info != nullptr) {
+    MS_LOG(INFO) << "Try to overwrite vobj with a new one, detail refer to the info log.";
+    MS_LOG(INFO) << "Try to overwrite " << this->vobj_->ToString() << " with " << object_info->ToString() << " for "
+                 << ToString();
+  }
   auto replaced = this->vobj_;
   this->vobj_ = object_info;
   if (this->GetGraph() == nullptr) {
@@ -46,17 +55,17 @@ void ValueNode::SetVobj(AObject *object_info) {
 }
 
 AObject *ValueNode::get_attr(const std::string &nam) {
-  if (vobj_) {
-    return vobj_->GetAttr(nam);
+  if (vobj_ == nullptr) {
+    return AObject::MakeAObject(AObject::kTypeAnyValue);
   }
-  return AObject::MakeAObject(AObject::kTypeAnyValue);
+  return GetVobj()->GetAttr(nam);
 }
 
 AObject *ValueNode::binary_subscr(ValueNode *sub) {
-  if (vobj_) {
-    return vobj_->GetItem(sub->GetVobj());
+  if (vobj_ == nullptr) {
+    return AObject::MakeAObject(AObject::kTypeAnyValue);
   }
-  return AObject::MakeAObject(AObject::kTypeAnyValue);
+  return GetVobj()->GetItem(sub->GetVobj());
 }
 
 bool ValueNode::IsConstantValue() const {

@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """run dynamic shape test"""
-import sys
 import pytest
 import mindspore as ms
 import mindspore.nn as nn
@@ -23,10 +22,6 @@ from mindspore._c_expression import get_code_extra
 from .share.utils import match_array
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)
-def skip_if_python_version_too_high():
-    if sys.version_info >= (3, 11):
-        pytest.skip("Skipping tests on Python 3.11 and higher.")
 s=Symbol(max=10,min=1)
 g_relu=nn.ReLU()
 
@@ -61,7 +56,24 @@ def test_dynamic_shape_case():
     expect = Tensor([3, 3, 3])
     c = dynamic_shape_test(a, b)
     assert all(c == expect)
-
+    a = Tensor([1, 1, 1, 1])
+    b = Tensor([2, 2, 2, 2])
+    expect = Tensor([3, 3, 3, 3])
+    c = dynamic_shape_test(a, b)
+    assert all(c == expect)
+    a = Tensor([1, 1, 1, 1, 1])
+    b = Tensor([2, 2, 2, 2, 2])
+    expect = Tensor([3, 3, 3, 3, 3])
+    c = dynamic_shape_test(a, b)
+    assert all(c == expect)
+    a = Tensor([1, 1, 1, 1, 1, 1])
+    b = Tensor([2, 2, 2, 2, 2, 2])
+    expect = Tensor([3, 3, 3, 3, 3, 3])
+    c = dynamic_shape_test(a, b)
+    assert all(c == expect)
+    jcr = get_code_extra(dynamic_shape_test.__wrapped__)
+    # when cnt=2>limit_graph_count=1, trigger gc and compile_count_ is 1(dynamic_shape) + 2 = 3
+    assert jcr["compile_count_"] == 3
 
 @pytest.mark.skip(reason="adapter later")
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',

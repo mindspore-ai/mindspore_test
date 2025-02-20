@@ -71,7 +71,9 @@ class GraphUtils {
  private:
   // object has the attr and the value of attr is true
   static bool IsAttrEnabled(const py::object &obj, const std::string &attr) {
-    return py::hasattr(obj, common::SafeCStr(attr)) && py::cast<bool>(py::getattr(obj, common::SafeCStr(attr)));
+    return py::hasattr(obj, common::SafeCStr(attr)) &&
+           py::isinstance<py::bool_>(py::getattr(obj, common::SafeCStr(attr))) &&
+           py::cast<bool>(py::getattr(obj, common::SafeCStr(attr)));
   }
 };
 }  // namespace pijit

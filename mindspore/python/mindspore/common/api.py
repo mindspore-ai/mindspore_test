@@ -770,7 +770,7 @@ class _JitExecutor:
         else:
             key_id = str(id(self.obj)) + str(self._create_time)
 
-        if _pynative_executor.grad_flag():
+        if _pynative_executor.requires_grad():
             key_id = key_id + ".grad"
         return key_id
 
@@ -780,7 +780,7 @@ class _JitExecutor:
             self.fn.__code__.co_firstlineno)
         echo_function_name = "function \"" + self.fn.__name__ + "\" at the file \"" + self.fn.__code__.co_filename \
                              + "\", line " + str(self.fn.__code__.co_firstlineno)
-        if _pynative_executor.grad_flag():
+        if _pynative_executor.requires_grad():
             generate_name = generate_name + ".grad"
         if _is_pynative_parallel():
             generate_name = generate_name[:generate_name.rfind(str(id(self.fn)))] + str(id(self.shard_parent_obj))

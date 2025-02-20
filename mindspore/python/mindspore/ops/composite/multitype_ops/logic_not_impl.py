@@ -107,7 +107,8 @@ def _logical_not_list(x):
     return x.__len__() == 0
 
 
-@logical_not.register_default()
+# pylint: disable=protected-access
+@logical_not._register_default()
 def default_logical_not(x):
     """Default function for logical not."""
     return not x

@@ -1165,7 +1165,9 @@ bool GraphExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &a
   ExecutorInfoPtr executor_info = std::make_shared<ExecutorInfo>();
   ResourcePtr resource = std::make_shared<Resource>();
   resource->set_func_graph(graph);
-  InitCompileCacheResource(resource, phase_);
+  if (CompileCacheEnable()) {
+    MS_LOG(EXCEPTION) << "Compile cache is not enabled in PIJit.";
+  }
 
   bool erase_parse = true;
   auto actions = GetActions(resource, phase, trace_flag, erase_parse);
@@ -1358,6 +1360,7 @@ void GraphExecutorPy::ConvertArgs(const py::tuple &args, const py::dict &kwargs,
     if (is_auto_parallel) {
       (void)parallel::ExtendInputArgsAbstractShape(args_abstract_item, i);
     }
+    args_abstract_item->set_user_data<size_t>("param_index", std::make_shared<size_t>(i));
     (void)args_abs->emplace_back(args_abstract_item);
     SetHookForArgAbstract(args[i], args_abstract_item);
   }

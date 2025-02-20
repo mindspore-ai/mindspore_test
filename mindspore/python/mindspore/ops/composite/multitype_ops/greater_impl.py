@@ -104,7 +104,8 @@ def _greater_than_list(x, y):
     return list_greater_than()(x, y)
 
 
-@greater.register_default()
+# pylint: disable=protected-access
+@greater._register_default()
 def default_greater(x, y):
     """Default function for greater."""
     return x > y

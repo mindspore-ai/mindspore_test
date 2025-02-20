@@ -18,8 +18,10 @@
 
 #include <set>
 #include <vector>
+#include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include "pipeline/jit/pi/graph_capture/cfg.h"
 #include "pipeline/jit/pi/graph_capture/abstract_object.h"
 #include "pipeline/jit/pi/graph_capture/graph_build.h"
@@ -32,9 +34,7 @@ class AbstractNode;
 class ValueNode;
 class CallNode;
 class GraphAnalyzer;
-class MindGraphAnalyzer;
 using GraphAnalyzerPtr = std::shared_ptr<GraphAnalyzer>;
-using MindGraphAnalyzerPtr = std::shared_ptr<MindGraphAnalyzer>;
 
 class GraphAnalyzer {
  public:
@@ -79,8 +79,11 @@ class GraphAnalyzer {
      */
     Info outputs_optimize_;
 
+    // a map of reconstruct alive node
+    std::map<ValueNode *, ValueNode *> replaced_nodes_;
+
     /**
-     * for interpret inputs, it's ordered and same as original function.
+     * for interpret inputs, it's ordered and same as original function arguments.
      * if not break graph, outputs is return value, else outputs is ordered by stack values and alive locals.
      */
     Info interpret_;
@@ -97,66 +100,55 @@ class GraphAnalyzer {
     std::string ToString();
   };
 
-  explicit GraphAnalyzer(Graph *g) : graph_(g) {}
-  static GraphAnalyzerPtr Creator(const GraphBuilderPtr &g) {
-    return g->trace_flag() ? std::static_pointer_cast<GraphAnalyzer>(std::make_shared<MindGraphAnalyzer>(g))
-                           : std::make_shared<GraphAnalyzer>(g->GetGraph());
-  }
+ public:
+  explicit GraphAnalyzer(const GraphBuilderPtr &graph_builder)
+      : graph_(graph_builder->GetGraph()), graph_builder_(graph_builder), info_() {}
+
+  void Analyze();
+
   auto &GetCaptureInfo() { return info_; }
   const auto &GetCaptureInfo() const { return info_; }
-  virtual void Analyze();
-  bool HasTensorOperation() const;
-  virtual bool NeedInterpret() const { return need_interpret_; }
+
+  bool NeedInterpret() const { return need_interpret_; }
 
   const auto &alive_locals() const { return alive_locals_; }
 
- protected:
+ private:
+  // Collect top-graph closure side-effect nodes.
+  void CollectClosureSideEffect();
   // optimize
   void OptimizeSideEffectRecord() const;
-
   // rollback
-  virtual void ResetSideEffectRecord() const;
+  void ResetSideEffectRecord() const;
 
-  void AddToEscaped(ValueNode *value);
   // UD analyze
-  virtual void UseDefAnalyze();
+  void UseDefAnalyze();
+
   std::vector<ValueNode *> GetAliveLocals(Graph *g);
-  virtual bool AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes);
-  virtual void CollectCapturedInputs();
-  virtual void CollectCapturedAndInterpret();
-  virtual void CollectGraphInputs();
-  bool ProduceInterpretValue(ValueNode *v);
 
-  bool need_interpret_;
-  Graph *graph_;
-  CapturedInfo info_;
-  std::vector<int> alive_locals_;
+  bool AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes);
 
- private:
-  bool AnalyzeRecursive(Graph *g);
-  bool AnalyzeCall(CallNode *);
-  bool TryToCapture(AbstractNode *value);
-  bool HandleSideEffectNodeForCapture(AbstractNode *capture_node);
-  bool AddToCaptured(ValueNode *value);
-  bool HandleCallableToGraph(AObject *f);
-  void CleanCapturedValue();
-};
-
-class MindGraphAnalyzer : public GraphAnalyzer {
- public:
-  explicit MindGraphAnalyzer(const GraphBuilderPtr &g) : GraphAnalyzer(g->GetGraph()), graph_builder_(g) {}
-  void Analyze() override;
-
- protected:
-  // UD analyze
-  void UseDefAnalyze() override;
-  void CollectCapturedInputs() override;
-  void CollectGraphInputs() override;
   void UpdateCapturedOrder();
-  void CollectCapturedAndInterpret() override;
-  bool AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) override;
-  void ResetSideEffectRecord() const override;
-  GraphBuilderPtr graph_builder_ = nullptr;
+
+  void CollectCapturedAndInterpret();
+
+  void ExpandGraphOutput();
+  void UpdateUseDefNode();
+
+  bool NeedSkipAddGraphOutput(ValueNode *node);
+
+  ValueNode *MutateSequenceNode(ValueNode *node);
+  ValueNode *MutateNamedtupleNode(ValueNode *tuple_node, ValueNode *namedtuple_node);
+  std::pair<ValueNode *, ValueNode *> MutateDictNode(ValueNode *node);
+  // find or insert
+  ValueNode *GetBuiltinMethodNode(std::vector<ValueNode *> *operations, const std::string &method,
+                                  const std::string &cls_method = "");
+
+  Graph *graph_;
+  GraphBuilderPtr graph_builder_;
+  CapturedInfo info_;
+  bool need_interpret_{false};
+  std::vector<int> alive_locals_{};
 };
 }  // namespace pijit
 }  // namespace mindspore

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import sys  
 import pytest 
 import numpy as onp
 from mindspore import Tensor, jit, context
@@ -21,15 +20,10 @@ import mindspore.nn as nn
 from ..share.utils import match_array, pi_jit_with_config
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 cfg = {
     "replace_nncell_by_construct": True,
     "print_after_all": False,
-    "compile_by_trace": True,
     "print_bb": False,
     "MAX_INLINE_DEPTH": 10,
     "allowed_inline_modules": ["mindspore"],  # buildsubgraph
