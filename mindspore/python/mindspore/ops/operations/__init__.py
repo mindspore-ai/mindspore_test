@@ -21,7 +21,8 @@ A collection of operators to build neural networks or to compute functions.
 
 from ._embedding_cache_ops import (CacheSwapTable, UpdateCache, MapCacheIdx, SubAndFilter,
                                    MapUniform, DynamicAssign, PadAndShift)
-from ._inner_ops import (MatmulDDS, DSDMatmul, Cummin, ExtractImagePatches, SelectView, CopyWithSlice)
+from ._inner_ops import (MatmulDDS, DSDMatmul, Cummin,
+                         ExtractImagePatches, SelectView, CopyWithSlice)
 from ._ms_kernel import (ms_kernel, kernel)
 from ._quant_ops import *
 from ._thor_ops import (CusBatchMatMul, CusCholeskyTrsm, CusFusedAbsMax1, CusImg2Col, CusMatMulCubeDenseLeft,
@@ -117,7 +118,7 @@ from .nn_ops import (LSTM, SGD, Adam, AdamWeightDecay, FusedSparseAdam, FusedSpa
                      FractionalMaxPool, FractionalMaxPool3DWithFixedKsize, FractionalMaxPoolWithFixedKsize,
                      GridSampler2D, TripletMarginLoss, UpsampleNearest3D, UpsampleTrilinear3D, PadV3, ChannelShuffle,
                      GLU, MaxUnpool3D, Pdist, RmsNorm, PagedAttention, PagedAttentionMask, ReshapeAndCache,
-                     ApplyRotaryPosEmb)
+                     ApplyRotaryPosEmb, GroupTopk)
 from .other_ops import (Assign, IOU, BoundingBoxDecode, BoundingBoxEncode,
                         ConfusionMatrix, UpdateState, Load, StopGradient, Reusing,
                         CheckValid, Partial, Depend, Push, Pull, PyExecute, PyFunc, _DynamicLossScale,
@@ -707,7 +708,8 @@ __all__ = [
     "PagedAttention",
     "PagedAttentionMask",
     "ReshapeAndCache",
-    "ApplyRotaryPosEmb",
+    "   ",
+    "GroupTopk",
     "RmsNorm",
     "Reshard",
 ]
