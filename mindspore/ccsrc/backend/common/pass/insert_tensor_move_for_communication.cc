@@ -19,6 +19,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_context.h"
 #include "include/common/runtime_conf/runtime_conf.h"
+#include "mindspore/ops/op_def/other_ops.h"
 
 namespace mindspore {
 namespace opt {
@@ -29,8 +30,9 @@ bool IsNeedInsertForInput(const AnfNodePtr &communication_op, const AnfNodePtr &
   MS_EXCEPTION_IF_NULL(input_node);
   MS_EXCEPTION_IF_NULL(kernel_graph);
 
-  // Skip UMonad op.
-  if (HasAbstractMonad(input_node)) {
+  // 1. Skip UMonad op.
+  // 2. AlltoAllV op cannot insert tensor move op for the cpu inputs.
+  if (HasAbstractMonad(input_node) || common::AnfAlgo::CheckPrimitiveType(communication_op, prim::kPrimAlltoAllV)) {
     return false;
   }
 
