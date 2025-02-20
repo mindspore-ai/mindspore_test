@@ -338,6 +338,7 @@ deprecated_tensor_method_map = {
     "atan": "deprecated_tensor_atan",
     "arctan": "deprecated_tensor_arctan",
     "dot": "deprecated_tensor_dot",
+    "copy_": "deprecated_tensor_copy_",
 
     # 153
     "logsumexp": "deprecated_tensor_logsumexp",

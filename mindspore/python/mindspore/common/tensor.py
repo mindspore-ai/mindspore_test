@@ -1931,37 +1931,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         x = x.astype(origin_dtype)
         return x
 
-    def copy_(self, src, non_blocking=False):
-        """
-        Copies the elements from src into self tensor and returns self.
-
-        .. warning::
-            This is an experimental API that is subject to change or deletion.
-            The `src` tensor must be broadcastable with the `self` tensor. It may be of a different data type.
-
-        Args:
-            src (Tensor): the source tensor to copy from.
-            non_blocking (bool): no effect currently.
-
-        Returns:
-            Return self Tensor.
-
-        Supported Platforms:
-            ``Ascend``
-
-        Examples:
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> a = Tensor(np.ones((3,3)).astype("float32"))
-            >>> b = Tensor(np.zeros((3,3)).astype("float32"))
-            >>> a.copy_(b)
-            >>> print(a)
-            [[0. 0. 0.]
-            [0. 0. 0.]
-            [0. 0. 0.]]
-        """
-        return tensor_operator_registry.get("copy_")(self, src)
-
     def scatter_add_(self, dim, index, src):
         """
         Add all elements in `src` to the index specified by `index` to `self` along dimension specified by `dim`,

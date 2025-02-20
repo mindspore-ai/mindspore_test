@@ -24,7 +24,8 @@ from mindspore.ops.composite.multitype_ops._compile_utils import (
     sequence_to_tensor, _tensor_sub, _tensor_pow, _tensor_div, _tensor_floordiv
 )
 from mindspore.ops.auto_generate.gen_ops_prim import (
-    inplace_scatter_src_op, inplace_scatter_src_reduce_op, inplace_scatter_value_op, inplace_scatter_value_reduce_op
+    inplace_scatter_src_op, inplace_scatter_src_reduce_op, inplace_scatter_value_op, inplace_scatter_value_reduce_op,
+    inplace_copy_op
 )
 # 1 common import
 
@@ -1427,6 +1428,14 @@ def deprecated_tensor_atan(input):
 
 def tensor_atanh(input):
     return F.atanh(input)
+
+
+def tensor_copy_(input, src):
+    raise ValueError("should not come here for copy_ method")
+
+
+def deprecated_tensor_copy_(input, src, non_blocking=False):
+    return inplace_copy_op(input, src)
 
 
 def tensor_tan(input):

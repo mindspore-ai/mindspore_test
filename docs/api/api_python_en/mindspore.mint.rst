@@ -601,6 +601,7 @@ mindspore.mint.optim
 
     mindspore.mint.optim.Adam
     mindspore.mint.optim.AdamW
+    mindspore.mint.optim.SGD
 
 mindspore.mint.linalg
 ----------------------
