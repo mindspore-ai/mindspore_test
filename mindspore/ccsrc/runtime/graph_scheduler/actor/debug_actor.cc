@@ -29,6 +29,7 @@
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #include "debug/debugger/debugger_utils.h"
+#include "debug/data_dump/device_statistic/check_overflow.h"
 #endif
 #include "debug/data_dump/data_dumper.h"
 #include "include/common/debug/common.h"
@@ -360,6 +361,12 @@ void DebugActor::DebugOnStepEnd(OpContext<DeviceTensor> *const, const AID *, int
 #endif
 #endif
 }
-void DebugActor::Finalize() { DumpJsonParser::GetInstance().PrintUnusedKernel(); }
+
+void DebugActor::Finalize() {
+  DumpJsonParser::GetInstance().PrintUnusedKernel();
+#ifdef ENABLE_DEBUGGER
+  datadump::CheckOverflowKernel::ClearMemoryCache();
+#endif
+}
 }  // namespace runtime
 }  // namespace mindspore

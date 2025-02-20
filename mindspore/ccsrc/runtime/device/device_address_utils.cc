@@ -1332,6 +1332,9 @@ device::DeviceAddressPtr DeviceAddressUtils::CreateWorkspaceAddress(const Device
 
   auto device_address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
   MS_EXCEPTION_IF_NULL(device_address);
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "Dump", "WorkspaceAddress", "");
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "Dump", device::tracker::MemType::kWorkSpace,
+                                                 device_address->GetSize(), device_address.get());
   if (device_address->GetPtr() == nullptr &&
       !device_context->device_res_manager_->AllocateMemory(device_address.get())) {
     MS_LOG(EXCEPTION) << "Allocate dynamic workspace memory failed";
