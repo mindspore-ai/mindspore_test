@@ -737,6 +737,11 @@ void LaunchDeviceStatCallback(std::vector<TensorInfoForDump> *tensor_info_vec_pt
                               uint32_t stream_id, const TensorInfoCommForDump &tensor_info_comm) {
   const std::vector<std::string> &stat_name_list = DumpJsonParser::GetInstance().statistic_category();
   std::vector<TensorInfoForDump> &tensor_info_vec = *tensor_info_vec_ptr;
+  auto enable_stream_control = DumpJsonParser::GetInstance().IsDeviceStatHighPrecisionMode();
+  auto multi_stream_controller = device::MultiStreamController::GetInstance();
+  if (enable_stream_control && stream_id != kDefaultStreamIndex) {
+    multi_stream_controller->DispatchRecordWaitEvent(device_context, stream_id, kDefaultStreamIndex);
+  }
   // launch statistic kernel
   for (auto &tensor_info : tensor_info_vec) {
     auto kernel_tensor = tensor_info.device_tensor->kernel_tensor().get();
@@ -751,11 +756,6 @@ void LaunchDeviceStatCallback(std::vector<TensorInfoForDump> *tensor_info_vec_pt
       Write2File(tensor_info, stream_id, tensor_info_comm);
     }
   };
-  auto enable_stream_control = DumpJsonParser::GetInstance().IsDeviceStatHighPrecisionMode();
-  auto multi_stream_controller = device::MultiStreamController::GetInstance();
-  if (enable_stream_control && stream_id != kDefaultStreamIndex) {
-    multi_stream_controller->DispatchRecordWaitEvent(device_context, stream_id, kDefaultStreamIndex);
-  }
   auto callback_ret = device_context->GetKernelExecutor(false)->LaunchCallback(callback_func, stream_id);
   if (!callback_ret) {
     MS_LOG(ERROR) << "Async device statistic dump callback launch fail.";
