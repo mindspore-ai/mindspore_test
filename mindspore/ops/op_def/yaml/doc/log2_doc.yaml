@@ -14,10 +14,8 @@ log2:
             input (Tensor): Input Tensor of any dimension. The value must be greater than 0.
 
         Returns:
-            Tensor, has the same shape as the `input`, and the dtype changes according to the `input.dtype`.
-            
-            - if `input.dtype` is in [float16, float32, float64, bfloat16], the output dtype is the same as the `input.dtype`.
-            - if `input.dtype` is integer or boolean type, the output dtype is float32.
+            Tensor, has the same shape as the `input`. If `input.dtype` is of integer or boolean type, the output dtype
+            will be float32. Otherwise, the output dtype will be the same as `input.dtype`.
 
         Raises:
             TypeError: If `input` is not a Tensor.
