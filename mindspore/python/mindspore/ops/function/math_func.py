@@ -56,7 +56,8 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, muls, sin, sinc,
                                          xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext, roll,
                                          bincount_ext, rotated_iou_op, cat, narrow, var_op, pow, pow_scalar_tensor_op,
                                          frac_ext, pow_tensor_scalar_op, not_equal_op, isinf, addmv_op, cdist,
-                                         addbmm_op, addmm_op, grouped_matmul_v2, transpose_ext, grouped_matmul_v4)
+                                         addbmm_op, addmm_op, grouped_matmul_v2, transpose_ext, grouped_matmul_v4,
+                                         inplace_erfinv_op)
 # 2
 
 # 3
@@ -229,7 +230,6 @@ eps_ = P.Eps()
 erf_ = P.Erf()
 erfc_ = P.Erfc()
 erfinv_ext_ = P.Erfinv()
-inplace_erfinv_ = InplaceErfinv()
 exp2_ = P.Pow()
 expand_dims_ = P.ExpandDims()
 fill_v2_ = P.FillV2()
@@ -2864,7 +2864,7 @@ def erfinv_(input):
         >>> print(output)
         [ 0.          0.47693613 -1.1630869 ]
     """
-    return inplace_erfinv_(input)
+    return inplace_erfinv_op(input)
 
 
 def linspace(start, end, steps):

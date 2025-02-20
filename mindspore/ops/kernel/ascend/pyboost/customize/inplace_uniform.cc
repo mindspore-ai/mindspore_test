@@ -49,7 +49,6 @@ tensor::BaseTensorPtr InplaceUniformAscendCustomize(const std::shared_ptr<OpRunn
                                                     const ScalarPtr &to, const BaseTensorPtr &seed,
                                                     const BaseTensorPtr &offset) {
   MS_LOG(DEBUG) << "aclnnInplaceUniform call start";
-  OpRunner::InferOpOutput(op, input_tensor, from, to, seed, offset);
 
   // Convert ValuePtr to c++ scalar
   double from_imm = GetScalarValue(from, "from");
