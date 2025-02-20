@@ -3,8 +3,8 @@ gelu:
         Gaussian Error Linear Units activation function.
 
         GeLU is described in the paper `Gaussian Error Linear Units (GELUs) <https://arxiv.org/abs/1606.08415>`_.
-        And also please refer to `BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding
-        <https://arxiv.org/abs/1810.04805>`_.
+        Or refer to `BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding
+        <https://arxiv.org/abs/1810.04805>`_ for more details.
 
         GeLU is defined as follows:
 
