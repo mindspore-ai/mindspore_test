@@ -250,12 +250,14 @@ void SideEffect::ResetRecord(const std::set<ValueNode *> &nodes_set) {
     data_->ClearCache();
     return;
   }
+  MS_LOG(DEBUG) << "Start reset side-effect record";
   // remove if record not find in final node set
   auto size = nodes_.size();
   for (auto iter = nodes_.begin(), end = nodes_.end(); iter != end;) {
     iter = nodes_set.find(iter->first) == nodes_set.end() ? nodes_.erase(iter) : (++iter);
   }
   if (size == nodes_.size()) {
+    MS_LOG(DEBUG) << "The nodes_set is same with before, so no need to reset";
     return;
   }
   // sort
@@ -274,6 +276,7 @@ void SideEffect::ResetRecord(const std::set<ValueNode *> &nodes_set) {
 
 void SideEffect::Restore(CodeGenerator *cg) const {
   if (nodes_.empty()) {
+    MS_LOG(DEBUG) << "No side-effect nodes, so no need to restore";
     return;
   }
   std::map<int, Entry const *> ordered_nodes;
@@ -281,14 +284,15 @@ void SideEffect::Restore(CodeGenerator *cg) const {
     ordered_nodes[i.second.order_] = &i.second;
   }
   for (const auto &pair : ordered_nodes) {
-    const auto &name = pair.second->method_name_;
-    const auto &type = pair.second->type_;
-    bool attr_access = type == kBuiltinFunction && (name == kSetAttr || name == kDelAttr);
-    if (!attr_access && type != SideEffect::kSetGlobal) {
-      RestoreEntry(cg, *pair.second);
+    const Entry &entry = *pair.second;
+    const std::string &name = entry.method_name_;
+    Type type = entry.type_;
+    if (type == kBuiltinFunction && (name == kSetAttr || name == kDelAttr)) {
+      RestoreAttr(cg, entry);
+    } else if (type != SideEffect::kSetGlobal) {
+      RestoreEntry(cg, entry);
     }
   }
-  RestoreAttrs(cg);
   RestoreGlobal(cg);
 }
 
@@ -343,15 +347,39 @@ static void MakeModuleAttrModify(CodeGenerator *cg, const std::string &name, con
   cg->AddInstr(std::move(instr));
 }
 
-void SideEffect::RestoreAttrs(CodeGenerator *cg) const {
-  if (data()->attr_cache().modified_attrs_.empty()) {
-    return;
+void SideEffect::RestoreAttr(CodeGenerator *cg, const Entry &e) const {
+  const std::string &method_name = e.method_name_;
+  ValueNode *node = e.node_;
+  int opcode = node->GetOpcode();
+  ValueNode *src_node = nullptr;
+  ValueNode *attr_node = nullptr;
+  std::string attr_name;
+
+  if (opcode == STORE_ATTR || opcode == DELETE_ATTR) {
+    src_node = method_name == kDelAttr ? node->input(0) : node->input(1);
+    attr_node = method_name == kDelAttr ? nullptr : node->input(0);
+    attr_name = node->GetName();
+  } else if (Opcode(opcode).IsCall()) {  // setattr(obj, "name", value), delattr(obj, "name")
+    constexpr int obj_index = 1, name_index = 2, value_index = 3;
+    src_node = node->input(obj_index);
+    py::object name = node->input(name_index)->GetVobj()->GetPyObject();
+    MS_EXCEPTION_IF_NULL(name.ptr());
+    attr_name = PyUnicode_AsUTF8(name.ptr());
+    attr_node = node->getInputs().size() > IntToSize(value_index) ? node->input(value_index) : nullptr;
+  } else {
+    MS_EXCEPTION_IF_CHECK_FAIL(false, "Illegal node! " + ToString(node));
   }
-  for (const auto &map : data()->attr_cache().modified_attrs_) {
-    const auto &src_node = GetSource(map.first);
-    for (const auto &pair : map.second) {
-      MakeAttrModify(cg, pair.first, src_node, GetSource(pair.second));
-    }
+  const auto &modified_attrs_map = data()->attr_cache().modified_attrs_;
+  auto it = modified_attrs_map.find(src_node);
+  MS_EXCEPTION_IF_CHECK_FAIL(it != modified_attrs_map.end(), "Cannot find node! " + ToString(src_node));
+  const auto &attr_map = it->second;
+  MS_EXCEPTION_IF_CHECK_FAIL(attr_map.find(attr_name) != attr_map.end(), "Cannot find attr: " + attr_name);
+
+  if (attr_map.at(attr_name) == attr_node) {
+    MS_LOG(DEBUG) << "Restore attr modification: " << ToString(node);
+    MakeAttrModify(cg, attr_name, GetSource(src_node), GetSource(attr_node));
+  } else {
+    MS_LOG(DEBUG) << "Is overwritten by subsequent operations, no need to restore it: " << ToString(node);
   }
 }
 

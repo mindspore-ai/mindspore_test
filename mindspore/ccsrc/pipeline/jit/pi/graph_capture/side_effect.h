@@ -165,7 +165,7 @@ class SideEffect {
   void RestoreEntry(CodeGenerator *cg, const Entry &) const;
 
   // restore attribute
-  void RestoreAttrs(CodeGenerator *cg) const;
+  void RestoreAttr(CodeGenerator *cg, const Entry &) const;
 
   // restore global
   void RestoreGlobal(CodeGenerator *cg) const;
