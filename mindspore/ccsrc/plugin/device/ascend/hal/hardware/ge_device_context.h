@@ -48,6 +48,8 @@ class GeDeviceContext : public DeviceInterface<GeGraphExecutor, GeKernelExecutor
 
   void Initialize() override;
 
+  void GeInitialize() const;
+
   void Destroy() override;
 
   bool PartitionGraph(const FuncGraphPtr &func_graph) const override;
@@ -70,6 +72,7 @@ class GeDeviceContext : public DeviceInterface<GeGraphExecutor, GeKernelExecutor
   void FinalizeDump() const;
 
   std::unique_ptr<AscendDeprecatedInterface> deprecated_interface_;
+  mutable bool ge_initialized_{false};
 };
 }  // namespace ascend
 }  // namespace device
