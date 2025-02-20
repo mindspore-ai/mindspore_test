@@ -6,7 +6,7 @@ mindspore.mint.nn.functional.gelu
     高斯误差线性单元激活函数。
 
     GeLU的描述可以在 `Gaussian Error Linear Units (GELUs) <https://arxiv.org/abs/1606.08415>`_ 这篇文章中找到。
-    也可以去查询 `BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding <https://arxiv.org/abs/1810.04805>`_ 。
+    详情可查询 `BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding <https://arxiv.org/abs/1810.04805>`_ 。
 
     当 `approximate` 为 `none` ，GELU的定义如下：
 
