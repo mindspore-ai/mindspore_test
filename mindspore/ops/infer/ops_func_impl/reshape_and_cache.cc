@@ -59,33 +59,16 @@ TypePtr ReshapeAndCacheFuncImpl::InferType(const PrimitivePtr &primitive,
   (void)key_types.emplace("key", input_args[kReshapeAndCacheInputKeyIndex]->GetType());
   (void)key_types.emplace("key_cache", input_args[kReshapeAndCacheInputKeyCacheIndex]->GetType());
   auto type = CheckAndConvertUtils::CheckTensorTypeSame(key_types, valid_types, op_name);
-  if (input_args[kReshapeAndCacheInputValueIndex]->GetType()->type_id() != kMetaTypeNone &&
+  if (input_args[kReshapeAndCacheInputValueIndex]->GetType()->type_id() != kMetaTypeNone ||
       input_args[kReshapeAndCacheInputValueCacheIndex]->GetType()->type_id() != kMetaTypeNone) {
     std::map<std::string, TypePtr> value_types;
     (void)value_types.emplace("value", input_args[kReshapeAndCacheInputValueIndex]->GetType());
     (void)value_types.emplace("value_cache", input_args[kReshapeAndCacheInputValueCacheIndex]->GetType());
     (void)CheckAndConvertUtils::CheckTensorTypeSame(value_types, valid_types, op_name);
   }
-  if (input_args[kReshapeAndCacheInputKeyScaleIndex]->GetType()->type_id() != kMetaTypeNone ||
-      input_args[kReshapeAndCacheInputKeyValueScaleCacheIndex]->GetType()->type_id() != kMetaTypeNone) {
-    const std::set scale_valid_types = {kFloat32};
-    std::map<std::string, TypePtr> scale_types;
-    (void)scale_types.emplace("key_scale", input_args[kReshapeAndCacheInputKeyScaleIndex]->GetType());
-    (void)scale_types.emplace("value_scale", input_args[kReshapeAndCacheInputValueScaleIndex]->GetType());
-    (void)CheckAndConvertUtils::CheckTensorTypeSame(scale_types, scale_valid_types, op_name);
-
-    const std::set scale_cache_valid_types = {kFloat16, kInt32, kInt64};
-    std::map<std::string, TypePtr> scale_cache_types;
-    (void)scale_cache_types.emplace("key_value_scale_cache",
-                                    input_args[kReshapeAndCacheInputKeyValueScaleCacheIndex]->GetType());
-    (void)CheckAndConvertUtils::CheckTensorTypeSame(scale_cache_types, scale_cache_valid_types, op_name);
-
-    const std::set int32_valid_types = {kInt32};
-    std::map<std::string, TypePtr> int32_types;
-    (void)int32_types.emplace("slot_mapping", input_args[kReshapeAndCacheInputSlotMappingIndex]->GetType());
-    (void)int32_types.emplace("batch_valid_length", input_args[kReshapeAndCacheInputBatchVaildLengthIndex]->GetType());
-    (void)CheckAndConvertUtils::CheckTensorTypeSame(int32_types, int32_valid_types, op_name);
-  }
+  auto slot_mapping_type = input_args[kReshapeAndCacheInputSlotMappingIndex]->GetType();
+  const std::set<TypePtr> slot_mapping_valid_types = {kInt32, kInt64, kUInt32, kUInt64};
+  (void)CheckAndConvertUtils::CheckTypeValid("slot_mapping", slot_mapping_type, slot_mapping_valid_types, op_name);
   return type;  // output type
 }
 }  // namespace ops
