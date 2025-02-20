@@ -58,8 +58,7 @@ def _check_positive_int_or_tuple(arg_name, arg_value, prim_name, allow_four=Fals
 
     def _get_return_value():
         if isinstance(arg_value, int):
-            ret = (1, 1, arg_value, arg_value) if ret_four else (
-                arg_value, arg_value)
+            ret = (1, 1, arg_value, arg_value) if ret_four else (arg_value, arg_value)
         elif len(arg_value) == 2:
             ret = (1, 1, arg_value[0], arg_value[1]) if ret_four else arg_value
         elif len(arg_value) == 4:
@@ -157,19 +156,14 @@ class AdaptiveAvgPool3D(Primitive):
 
     @prim_attr_register
     def __init__(self, output_size):
-        validator.check_value_type("output_size", output_size, [
-                                   int, tuple], self.name)
-        self.output_size = (
-            output_size,) * 3 if isinstance(self.output_size, int) else output_size
+        validator.check_value_type("output_size", output_size, [int, tuple], self.name)
+        self.output_size = (output_size,) * 3 if isinstance(self.output_size, int) else output_size
         for i, size in enumerate(self.output_size):
-            validator.check_value_type(f"output_size[{i}]", size, [
-                                       int, type(None)], self.name)
+            validator.check_value_type(f"output_size[{i}]", size, [int, type(None)], self.name)
             if size is not None:
-                validator.check_number(
-                    f"output_size[{i}]", size, 0, validator.GE, self.name)
+                validator.check_number(f"output_size[{i}]", size, 0, validator.GE, self.name)
 
-        self.output_size = tuple(
-            -1 if val is None else val for val in self.output_size)
+        self.output_size = tuple(-1 if val is None else val for val in self.output_size)
 
         self.add_prim_attr('output_size', self.output_size)
         self.init_prim_io_names(inputs=['x'], outputs=['y'])
@@ -242,22 +236,16 @@ class AdaptiveAvgPool2D(Primitive):
     def __init__(self, output_size):
         """Initialize AdaptiveAvgPool2D."""
         self.init_prim_io_names(inputs=['x'], outputs=['y'])
-        validator.check_value_type("output_size", output_size, [
-                                   int, tuple], self.name)
+        validator.check_value_type("output_size", output_size, [int, tuple], self.name)
         if isinstance(output_size, tuple):
-            validator.check_int(len(output_size), 2, validator.EQ,
-                                'length of output_size', self.name)
-        self.output_size = (output_size, output_size) if isinstance(
-            self.output_size, int) else output_size
+            validator.check_int(len(output_size), 2, validator.EQ, 'length of output_size', self.name)
+        self.output_size = (output_size, output_size) if isinstance(self.output_size, int) else output_size
         for i, size in enumerate(self.output_size):
-            validator.check_value_type(f"output_size[{i}]", size, [
-                                       int, type(None)], self.name)
+            validator.check_value_type(f"output_size[{i}]", size, [int, type(None)], self.name)
             if size is not None:
-                validator.check_number(
-                    f"output_size[{i}]", size, 0, validator.GE, self.name)
+                validator.check_number(f"output_size[{i}]", size, 0, validator.GE, self.name)
 
-        self.output_size = tuple(
-            -1 if val is None else val for val in self.output_size)
+        self.output_size = tuple(-1 if val is None else val for val in self.output_size)
         self.add_prim_attr('output_size', self.output_size)
 
 
@@ -301,8 +289,7 @@ class AdaptiveMaxPool3D(Primitive):
 
     @prim_attr_register
     def __init__(self):
-        self.init_prim_io_names(
-            inputs=['x', 'output_size'], outputs=['y', 'argmax'])
+        self.init_prim_io_names(inputs=['x', 'output_size'], outputs=['y', 'argmax'])
 
 
 class Softplus(Primitive):
@@ -520,8 +507,7 @@ class FusedBatchNorm(Primitive):
     """
 
     def __init__(self, mode=0, epsilon=1e-5, momentum=0.1):
-        raise TypeError(
-            "The FusedBatchNorm interface is deprecated, please use the BatchNorm interface.")
+        raise TypeError("The FusedBatchNorm interface is deprecated, please use the BatchNorm interface.")
 
 
 class FusedBatchNormEx(PrimitiveWithCheck):
@@ -530,8 +516,7 @@ class FusedBatchNormEx(PrimitiveWithCheck):
     """
 
     def __init__(self, mode=0, epsilon=1e-5, momentum=0.1, data_format="NCHW"):
-        raise TypeError(
-            "FusedBatchnormEx interface is deprecated, please use BatchNorm interface.")
+        raise TypeError("FusedBatchnormEx interface is deprecated, please use BatchNorm interface.")
 
 
 class InstanceNorm(PrimitiveWithInfer):
@@ -617,10 +602,8 @@ class InstanceNorm(PrimitiveWithInfer):
         """Initialize InstanceNorm."""
         self.init_prim_io_names(inputs=['x', 'gamma', 'beta', 'mean', 'variance'],
                                 outputs=['y', 'save_mean', 'save_variance'])
-        self.epsilon = validator.check_float_range(
-            epsilon, 0, 1, validator.INC_RIGHT, 'epsilon', self.name)
-        self.momentum = validator.check_float_range(
-            momentum, 0, 1, validator.INC_BOTH, 'momentum', self.name)
+        self.epsilon = validator.check_float_range(epsilon, 0, 1, validator.INC_RIGHT, 'epsilon', self.name)
+        self.momentum = validator.check_float_range(momentum, 0, 1, validator.INC_BOTH, 'momentum', self.name)
         self._update_parameter = True
         self.add_prim_attr('side_effect_mem', True)
 
@@ -724,10 +707,8 @@ class InstanceNormV2(Primitive):
                                 outputs=['y', 'batch_mean', 'batch_variance'])
         validator.check_is_float(epsilon, 'epsilon', self.name)
         validator.check_is_float(momentum, 'momentum', self.name)
-        validator.check_float_range(
-            epsilon, 0, 1, validator.INC_RIGHT, 'epsilon', self.name)
-        validator.check_float_range(
-            momentum, 0, 1, validator.INC_BOTH, 'momentum', self.name)
+        validator.check_float_range(epsilon, 0, 1, validator.INC_RIGHT, 'epsilon', self.name)
+        validator.check_float_range(momentum, 0, 1, validator.INC_BOTH, 'momentum', self.name)
         validator.check_bool(is_training, "is_training", self.name)
 
 
@@ -914,13 +895,10 @@ class Conv2D(Primitive):
                  data_format="NCHW"):
         """Initialize Conv2D"""
         self.init_prim_io_names(inputs=['x', 'w'], outputs=['output'])
-        self.kernel_size = _check_positive_int_or_tuple(
-            'kernel_size', kernel_size, self.name)
-        self.stride = _check_positive_int_or_tuple(
-            'stride', stride, self.name, allow_four=True, ret_four=True)
+        self.kernel_size = _check_positive_int_or_tuple('kernel_size', kernel_size, self.name)
+        self.stride = _check_positive_int_or_tuple('stride', stride, self.name, allow_four=True, ret_four=True)
         self.add_prim_attr('stride', self.stride)
-        self.dilation = _check_positive_int_or_tuple(
-            'dilation', dilation, self.name, allow_four=True, ret_four=True)
+        self.dilation = _check_positive_int_or_tuple('dilation', dilation, self.name, allow_four=True, ret_four=True)
         self.add_prim_attr('dilation', self.dilation)
         validator.check_value_type('pad', pad, (int, tuple), self.name)
         validator.check_value_type('pad_mode', pad_mode, [str], self.name)
@@ -928,8 +906,7 @@ class Conv2D(Primitive):
             pad = (pad,) * 4
         else:
             validator.check_equal_int(len(pad), 4, 'pad size', self.name)
-        self.pad_mode = validator.check_string(
-            pad_mode, ['valid', 'same', 'pad'], 'pad_mode', self.name)
+        self.pad_mode = validator.check_string(pad_mode, ['valid', 'same', 'pad'], 'pad_mode', self.name)
 
         if pad_mode != 'pad' and pad != (0, 0, 0, 0):
             raise ValueError(f"For '{self.name}', the 'pad' must be zero when 'pad_mode' is not 'pad', "
@@ -941,15 +918,13 @@ class Conv2D(Primitive):
                 validator.check_non_negative_int(item, 'pad item', self.name)
 
         self.mode = validator.check_equal_int(mode, 1, 'mode', self.name)
-        self.format = validator.check_string(
-            data_format, ['NCHW', 'NHWC'], 'format', self.name)
+        self.format = validator.check_string(data_format, ['NCHW', 'NHWC'], 'format', self.name)
         if context.get_context("device_target") != "GPU" and self.format == "NHWC":
             raise ValueError(f"For '{self.name}', the 'NHWC' format is only supported in GPU target, "
                              f"but got the 'data_format' is {self.format} "
                              f"and platform is {context.get_context('device_target')}.")
         self.add_prim_attr('data_format', self.format)
-        self.out_channel = validator.check_positive_int(
-            out_channel, 'out_channel', self.name)
+        self.out_channel = validator.check_positive_int(out_channel, 'out_channel', self.name)
         self.group = validator.check_positive_int(group, 'group', self.name)
         self.add_prim_attr('groups', self.group)
 
@@ -999,10 +974,8 @@ class DataFormatVecPermute(Primitive):
     def __init__(self, src_format='NHWC', dst_format='NCHW'):
         """Initialize DataFormatVecPermute."""
         valid_values = ['NHWC', 'NCHW']
-        self.src_format = validator.check_string(
-            src_format, valid_values, "src_format", self.name)
-        self.dst_format = validator.check_string(
-            dst_format, valid_values, "dst_format", self.name)
+        self.src_format = validator.check_string(src_format, valid_values, "src_format", self.name)
+        self.dst_format = validator.check_string(dst_format, valid_values, "dst_format", self.name)
         self.init_prim_io_names(inputs=['input_x'], outputs=['output'])
 
 
@@ -1028,29 +1001,25 @@ class DepthwiseConv2dNative(PrimitiveWithInfer):
         logger.warning("WARN_DEPRECATED: The usage of DepthwiseConv2dNative is deprecated."
                        " Please use nn.Conv2D.")
         self.init_prim_io_names(inputs=['x', 'w'], outputs=['output'])
-        self.kernel_size = _check_positive_int_or_tuple(
-            'kernel_size', kernel_size, self.name)
+        self.kernel_size = _check_positive_int_or_tuple('kernel_size', kernel_size, self.name)
         self.stride = _check_positive_int_or_tuple('stride', stride, self.name)
         if self.stride[0] != self.stride[1]:
             raise ValueError("The height and width of 'stride' must be equal,"
                              f"but got height:{self.stride[0]},  width:{self.stride[1]}")
         self.add_prim_attr('stride', (1, 1, self.stride[0], self.stride[1]))
 
-        self.dilation = _check_positive_int_or_tuple(
-            'dilation', dilation, self.name)
+        self.dilation = _check_positive_int_or_tuple('dilation', dilation, self.name)
         if self.dilation[0] != self.dilation[1]:
             raise ValueError("The height and width of 'dilation' must be equal,"
                              f"but got height:{self.dilation[0]},  width:{self.dilation[1]}")
-        self.add_prim_attr(
-            'dilation', (1, 1, self.dilation[0], self.dilation[1]))
+        self.add_prim_attr('dilation', (1, 1, self.dilation[0], self.dilation[1]))
         validator.check_value_type('pad', pad, (int, tuple), self.name)
         validator.check_value_type('pad_mode', pad_mode, [str], self.name)
         if isinstance(pad, int):
             pad = (pad,) * 4
         else:
             validator.check_equal_int(len(pad), 4, 'pad size', self.name)
-        self.pad_mode = validator.check_string(
-            pad_mode.lower(), ['valid', 'same', 'pad'], 'pad_mode', self.name)
+        self.pad_mode = validator.check_string(pad_mode.lower(), ['valid', 'same', 'pad'], 'pad_mode', self.name)
         if pad_mode != 'pad' and pad != (0, 0, 0, 0):
             raise ValueError(f"For '{self.name}', the 'pad' must be zero or (0, 0, 0, 0) when 'pad_mode' "
                              f"is not \"pad\", but got 'pad' is {self.pad} and 'pad_mode' is {pad_mode}.")
@@ -1061,51 +1030,43 @@ class DepthwiseConv2dNative(PrimitiveWithInfer):
                 validator.check_non_negative_int(item, 'pad item', self.name)
         self.mode = validator.check_equal_int(mode, 3, "mode", self.name)
         self.add_prim_attr('data_format', "NCHW")
-        self.channel_multiplier = validator.check_positive_int(
-            channel_multiplier, "channel_multiplier", self.name)
+        self.channel_multiplier = validator.check_positive_int(channel_multiplier, "channel_multiplier", self.name)
         self.group = validator.check_positive_int(group, "group", self.name)
         self.add_prim_attr('offset_a', 0)
 
     def infer_shape(self, x_shape, w_shape, b_shape=None):
         validator.check_equal_int(len(w_shape), 4, "weight rank", self.name)
         validator.check_equal_int(len(x_shape), 4, "x rank", self.name)
-        validator.check("x_shape[1]", x_shape[1], "w_shape[1]",
-                        w_shape[1], validator.EQ, self.name)
-        validator.check('kernel_size', self.kernel_size, 'w_shape[2:4]', tuple(
-            w_shape[2:4]), validator.EQ, self.name)
+        validator.check("x_shape[1]", x_shape[1], "w_shape[1]", w_shape[1], validator.EQ, self.name)
+        validator.check('kernel_size', self.kernel_size, 'w_shape[2:4]', tuple(w_shape[2:4]), validator.EQ, self.name)
 
         kernel_size_n, _, kernel_size_h, kernel_size_w = w_shape
         _, _, stride_h, stride_w = self.stride
         _, _, dilation_h, dilation_w = self.dilation
         if kernel_size_n != 1:
-            raise ValueError(
-                f"For '{self.name}', the batch of 'weight' must be 1, but got {kernel_size_n}")
+            raise ValueError(f"For '{self.name}', the batch of 'weight' must be 1, but got {kernel_size_n}")
         if self.pad_mode == "valid":
-            h_out = math.ceil(
-                (x_shape[2] - dilation_h * (kernel_size_h - 1)) / stride_h)
-            w_out = math.ceil(
-                (x_shape[3] - dilation_w * (kernel_size_w - 1)) / stride_w)
+            h_out = math.ceil((x_shape[2] - dilation_h * (kernel_size_h - 1)) / stride_h)
+            w_out = math.ceil((x_shape[3] - dilation_w * (kernel_size_w - 1)) / stride_w)
             pad_top, pad_bottom, pad_left, pad_right = 0, 0, 0, 0
         elif self.pad_mode == "same":
             h_out = math.ceil(x_shape[2] / stride_h)
             w_out = math.ceil(x_shape[3] / stride_w)
 
-            pad_needed_h = max(0, (h_out - 1) * stride_h +
-                               dilation_h * (kernel_size_h - 1) + 1 - x_shape[2])
+            pad_needed_h = max(0, (h_out - 1) * stride_h + dilation_h * (kernel_size_h - 1) + 1 - x_shape[2])
             pad_top = math.floor(pad_needed_h / 2)
             pad_bottom = pad_needed_h - pad_top
 
-            pad_needed_w = max(0, (w_out - 1) * stride_w +
-                               dilation_w * (kernel_size_w - 1) + 1 - x_shape[3])
+            pad_needed_w = max(0, (w_out - 1) * stride_w + dilation_w * (kernel_size_w - 1) + 1 - x_shape[3])
             pad_left = math.floor(pad_needed_w / 2)
             pad_right = pad_needed_w - pad_left
         elif self.pad_mode == 'pad':
             pad_top, pad_bottom, pad_left, pad_right = self.padding
 
             h_out = 1 + (x_shape[2] + pad_top + pad_bottom - kernel_size_h - (kernel_size_h - 1) * (dilation_h - 1)) \
-                / stride_h
+                    / stride_h
             w_out = 1 + (x_shape[3] + pad_left + pad_right - kernel_size_w - (kernel_size_w - 1) * (dilation_w - 1)) \
-                / stride_w
+                    / stride_w
             h_out = math.floor(h_out)
             w_out = math.floor(w_out)
 
@@ -1118,8 +1079,7 @@ class DepthwiseConv2dNative(PrimitiveWithInfer):
 
     def infer_dtype(self, x_dtype, w_dtype, b_dtype=None):
         args = {'x': x_dtype, 'w': w_dtype}
-        validator.check_tensors_dtypes_same_and_valid(
-            args, mstype.number_type, self.name)
+        validator.check_tensors_dtypes_same_and_valid(args, mstype.number_type, self.name)
         if x_dtype.element_type() == mstype.int8:
             return mstype.TensorType(mstype.int32)
         return x_dtype
@@ -1144,16 +1104,13 @@ class _Pool(PrimitiveWithInfer):
     def __init__(self, kernel_size=1, strides=1, pad_mode="valid", data_format="NCHW"):
         """Initialize _Pool."""
         self.init_prim_io_names(inputs=['x'], outputs=['output'])
-        validator.check_value_type('kernel_size', kernel_size, [
-                                   int, tuple], self.name)
+        validator.check_value_type('kernel_size', kernel_size, [int, tuple], self.name)
         validator.check_value_type('strides', strides, [int, tuple], self.name)
         validator.check_value_type('pad_mode', pad_mode, [str], self.name)
-        self.pad_mode = validator.check_string(
-            pad_mode.upper(), ['VALID', 'SAME'], 'pad_mode', self.name)
+        self.pad_mode = validator.check_string(pad_mode.upper(), ['VALID', 'SAME'], 'pad_mode', self.name)
         self.add_prim_attr("pad_mode", self.pad_mode)
         self.is_maxpoolwithargmax = (self.name == "MaxPoolWithArgmax")
-        self.format = validator.check_string(
-            data_format, ['NCHW', 'NHWC'], 'format', self.name)
+        self.format = validator.check_string(data_format, ['NCHW', 'NHWC'], 'format', self.name)
         if context.get_context("device_target") != "GPU" and self.format == "NHWC":
             raise ValueError(f"For '{self.name}', the 'NHWC' format is only supported in GPU target, "
                              f"but got the 'data_format' is {self.format} and "
@@ -1164,19 +1121,16 @@ class _Pool(PrimitiveWithInfer):
         self.kernel_size = _check_positive_int_or_tuple(
             "kernel_size", kernel_size, self.name, allow_four=False, ret_four=True)
         if self.is_maxpoolwithargmax:
-            self.kernel_size = (
-                1, self.kernel_size[-2], self.kernel_size[-1], 1)
+            self.kernel_size = (1, self.kernel_size[-2], self.kernel_size[-1], 1)
         self.add_prim_attr("kernel_size", self.kernel_size)
 
-        self.strides = _check_positive_int_or_tuple(
-            "strides", strides, self.name, allow_four=False, ret_four=True)
+        self.strides = _check_positive_int_or_tuple("strides", strides, self.name, allow_four=False, ret_four=True)
         if self.is_maxpoolwithargmax:
             self.strides = (1, self.strides[-2], self.strides[-1], 1)
         self.add_prim_attr("strides", self.strides)
 
     def infer_shape(self, x_shape):
-        x_shape_norm = x_shape if self.format == "NCHW" else [
-            x_shape[0], x_shape[3], x_shape[1], x_shape[2]]
+        x_shape_norm = x_shape if self.format == "NCHW" else [x_shape[0], x_shape[3], x_shape[1], x_shape[2]]
         validator.check_equal_int(len(x_shape_norm), 4, "x rank", self.name)
         batch, channel, input_h, input_w = x_shape_norm
         if self.is_maxpoolwithargmax:
@@ -1204,8 +1158,7 @@ class _Pool(PrimitiveWithInfer):
                 out_w = -1
             else:
                 out_w = math.ceil(input_w / stride_w)
-        out_shape = [batch, channel, out_h, out_w] if self.format == "NCHW" else [
-            batch, out_h, out_w, channel]
+        out_shape = [batch, channel, out_h, out_w] if self.format == "NCHW" else [batch, out_h, out_w, channel]
 
         is_dynamic_shape = False
         for in_shape_val in x_shape_norm:
@@ -1222,8 +1175,7 @@ class _Pool(PrimitiveWithInfer):
         return out_shape
 
     def infer_dtype(self, x_dtype):
-        validator.check_subclass(
-            "input", x_dtype, mstype.tensor_type, self.name)
+        validator.check_subclass("input", x_dtype, mstype.tensor_type, self.name)
         return x_dtype
 
 
@@ -1301,8 +1253,7 @@ class MaxPool(_Pool):
     @prim_attr_register
     def __init__(self, kernel_size=1, strides=1, pad_mode="valid", data_format="NCHW"):
         """Initialize MaxPool."""
-        super(MaxPool, self).__init__(
-            kernel_size, strides, pad_mode, data_format)
+        super(MaxPool, self).__init__(kernel_size, strides, pad_mode, data_format)
 
 
 class MaxPoolV1(Primitive):
@@ -1373,8 +1324,7 @@ class MaxPoolV1(Primitive):
     def __init__(self, kernel_size=1, strides=1, pad_mode="valid", data_format="NCHW"):
         """Initialize MaxPoolV1."""
         self.init_prim_io_names(inputs=['x'], outputs=['output'])
-        validator.check_value_type('kernel_size', kernel_size, [
-                                   int, tuple], self.name)
+        validator.check_value_type('kernel_size', kernel_size, [int, tuple], self.name)
         validator.check_value_type('strides', strides, [int, tuple], self.name)
         validator.check_value_type('pad_mode', pad_mode, [str], self.name)
         self.pad_mode = validator.check_string(
@@ -1483,41 +1433,32 @@ class MaxPool3D(Primitive):
     def __init__(self, kernel_size=1, strides=1, pad_mode="VALID", pad_list=0, ceil_mode=None, data_format="NCDHW"):
         """Initialize MaxPool3D."""
         self.init_prim_io_names(inputs=['x'], outputs=['output'])
-        validator.check_value_type('kernel_size', kernel_size, [
-                                   int, tuple], self.name)
+        validator.check_value_type('kernel_size', kernel_size, [int, tuple], self.name)
         validator.check_value_type('strides', strides, [int, tuple], self.name)
         validator.check_value_type('pad_mode', pad_mode, [str], self.name)
-        self.pad_mode = validator.check_string(
-            pad_mode.upper(), ['VALID', 'SAME', 'PAD'], 'pad_mode', self.name)
+        self.pad_mode = validator.check_string(pad_mode.upper(), ['VALID', 'SAME', 'PAD'], 'pad_mode', self.name)
         if pad_mode.upper() == "PAD":
             self.pad_mode = "CALCULATED"
         self.add_prim_attr("pad_mode", self.pad_mode)
-        self.data_format = validator.check_string(
-            data_format, ['NCDHW'], 'data_format', self.name)
-        self.kernel_size = _check_3d_int_or_tuple(
-            "kernel_size", kernel_size, self.name, ret_five=True)
+        self.data_format = validator.check_string(data_format, ['NCDHW'], 'data_format', self.name)
+        self.kernel_size = _check_3d_int_or_tuple("kernel_size", kernel_size, self.name, ret_five=True)
         self.add_prim_attr("kernel_size", self.kernel_size)
-        self.strides = _check_3d_int_or_tuple(
-            "strides", strides, self.name, ret_five=True)
+        self.strides = _check_3d_int_or_tuple("strides", strides, self.name, ret_five=True)
         self.add_prim_attr("strides", self.strides)
         if ceil_mode is None:
             self.ceil_mode = False
         else:
-            self.ceil_mode = validator.check_value_type(
-                'ceil_mode', ceil_mode, [bool], self.name)
+            self.ceil_mode = validator.check_value_type('ceil_mode', ceil_mode, [bool], self.name)
             if self.pad_mode != "CALCULATED":
-                raise ValueError(
-                    "When the 'pad_mode' is 'same' or 'valid', the 'ceil_mode' only supports 'None'.")
+                raise ValueError("When the 'pad_mode' is 'same' or 'valid', the 'ceil_mode' only supports 'None'.")
         self.add_prim_attr("ceil_mode", int(self.ceil_mode))
 
-        validator.check_value_type(
-            'pad_list', pad_list, (int, tuple), self.name)
+        validator.check_value_type('pad_list', pad_list, (int, tuple), self.name)
         self.pad_list = pad_list
         if isinstance(self.pad_list, int):
             self.pad_list = (self.pad_list,) * 6
         if len(self.pad_list) == 3:
-            self.pad_list = (
-                pad_list[0], pad_list[0], pad_list[1], pad_list[1], pad_list[2], pad_list[2])
+            self.pad_list = (pad_list[0], pad_list[0], pad_list[1], pad_list[1], pad_list[2], pad_list[2])
         if len(self.pad_list) != 3 and len(self.pad_list) != 6:
             raise ValueError(f"For '{self.name}', attr 'pad_list' must be an positive int number or a tuple of "
                              f"three or six positive int numbers, but got {len(self.pad_list)} numbers.")
@@ -1526,8 +1467,7 @@ class MaxPool3D(Primitive):
                              f"is not \"pad\", but got 'pad_list' is {pad_list} and 'pad_mode' is {pad_mode}.")
         if self.pad_mode == 'CALCULATED':
             for item in self.pad_list:
-                validator.check_non_negative_int(
-                    item, 'pad_list item', self.name)
+                validator.check_non_negative_int(item, 'pad_list item', self.name)
         self.add_prim_attr("pad_list", self.pad_list)
 
 
@@ -1618,31 +1558,23 @@ class MaxUnpool2D(Primitive):
     def __init__(self, ksize, strides=0, pads=0, output_shape=(), data_format="NCHW"):
         """Initialize MaxUnpool2D."""
         self.init_prim_io_names(inputs=['x', 'argmax'], outputs=['y'])
-        self.ksize = _check_positive_int_or_tuple(
-            'ksize', ksize, self.name, ret_four=True)
+        self.ksize = _check_positive_int_or_tuple('ksize', ksize, self.name, ret_four=True)
         if strides in (0, (0, 0)):
             strides = ksize
-        self.strides = _check_positive_int_or_tuple(
-            'strides', strides, self.name, ret_four=True)
-        self.pads = _check_positive_int_or_tuple(
-            'pads', pads, self.name, ret_four=True, strict_positive=False)
-        self.data_format = validator.check_string(
-            data_format, ['NCHW', 'NHWC'], 'data_format', self.name)
+        self.strides = _check_positive_int_or_tuple('strides', strides, self.name, ret_four=True)
+        self.pads = _check_positive_int_or_tuple('pads', pads, self.name, ret_four=True, strict_positive=False)
+        self.data_format = validator.check_string(data_format, ['NCHW', 'NHWC'], 'data_format', self.name)
 
         if data_format == "NHWC":
-            self.ksize = (self.ksize[0], self.ksize[2],
-                          self.ksize[3], self.ksize[1])
-            self.strides = (
-                self.strides[0], self.strides[2], self.strides[3], self.strides[1])
-            self.pads = (self.pads[0], self.pads[2],
-                         self.pads[3], self.pads[1])
+            self.ksize = (self.ksize[0], self.ksize[2], self.ksize[3], self.ksize[1])
+            self.strides = (self.strides[0], self.strides[2], self.strides[3], self.strides[1])
+            self.pads = (self.pads[0], self.pads[2], self.pads[3], self.pads[1])
 
         self.add_prim_attr('ksize', self.ksize)
         self.add_prim_attr('strides', self.strides)
         self.add_prim_attr('pads', self.pads)
 
-        validator.check_value_type(
-            "output_shape", output_shape, [tuple], self.name)
+        validator.check_value_type("output_shape", output_shape, [tuple], self.name)
         self.output_shape = output_shape
 
 
@@ -1730,30 +1662,22 @@ class MaxUnpool3D(Primitive):
     def __init__(self, ksize, strides=0, pads=0, output_shape=(), data_format="NCDHW"):
         """Initialize MaxUnpool3D."""
         self.init_prim_io_names(inputs=['x', 'argmax'], outputs=['y'])
-        self.ksize = _check_3d_int_or_tuple(
-            'ksize', ksize, self.name, ret_five=True)
+        self.ksize = _check_3d_int_or_tuple('ksize', ksize, self.name, ret_five=True)
         if strides in (0, (0, 0, 0)):
             strides = ksize
-        self.strides = _check_3d_int_or_tuple(
-            'strides', strides, self.name, ret_five=True)
-        self.pads = _check_3d_int_or_tuple(
-            'pads', pads, self.name, ret_five=True, greater_zero=False)
-        self.data_format = validator.check_string(
-            data_format, ['NCDHW', 'NDHWC'], 'data_format', self.name)
+        self.strides = _check_3d_int_or_tuple('strides', strides, self.name, ret_five=True)
+        self.pads = _check_3d_int_or_tuple('pads', pads, self.name, ret_five=True, greater_zero=False)
+        self.data_format = validator.check_string(data_format, ['NCDHW', 'NDHWC'], 'data_format', self.name)
         if data_format == "NDHWC":
-            self.ksize = (self.ksize[0], self.ksize[2],
-                          self.ksize[3], self.ksize[4], self.ksize[1])
-            self.strides = (self.strides[0], self.strides[2],
-                            self.strides[3], self.strides[4], self.strides[1])
-            self.pads = (self.pads[0], self.pads[2],
-                         self.pads[3], self.pads[4], self.pads[1])
+            self.ksize = (self.ksize[0], self.ksize[2], self.ksize[3], self.ksize[4], self.ksize[1])
+            self.strides = (self.strides[0], self.strides[2], self.strides[3], self.strides[4], self.strides[1])
+            self.pads = (self.pads[0], self.pads[2], self.pads[3], self.pads[4], self.pads[1])
 
         self.add_prim_attr('ksize', self.ksize)
         self.add_prim_attr('strides', self.strides)
         self.add_prim_attr('pads', self.pads)
 
-        validator.check_value_type(
-            "output_shape", output_shape, [tuple], self.name)
+        validator.check_value_type("output_shape", output_shape, [tuple], self.name)
         self.output_shape = output_shape
 
 
@@ -1830,8 +1754,7 @@ class AvgPoolV1(Primitive):
     def __init__(self, kernel_size=1, strides=1, pad_mode="valid", data_format="NCHW"):
         """Initialize AvgPoolV1."""
         self.init_prim_io_names(inputs=['x'], outputs=['output'])
-        validator.check_value_type('kernel_size', kernel_size, [
-                                   int, tuple], self.name)
+        validator.check_value_type('kernel_size', kernel_size, [int, tuple], self.name)
         validator.check_value_type('strides', strides, [int, tuple], self.name)
         validator.check_value_type('pad_mode', pad_mode, [str], self.name)
         self.pad_mode = validator.check_string(
@@ -1881,26 +1804,20 @@ class Conv2DBackpropInput(Primitive):
                  group=1,
                  data_format="NCHW"):
         """Initialize Conv2DBackpropInput"""
-        self.init_prim_io_names(
-            inputs=['out_backprop', 'filter', 'input_sizes'], outputs=['output'])
-        self.out_channel = validator.check_positive_int(
-            out_channel, 'out_channel', self.name)
-        self.kernel_size = _check_positive_int_or_tuple(
-            'kernel_size', kernel_size, self.name)
+        self.init_prim_io_names(inputs=['out_backprop', 'filter', 'input_sizes'], outputs=['output'])
+        self.out_channel = validator.check_positive_int(out_channel, 'out_channel', self.name)
+        self.kernel_size = _check_positive_int_or_tuple('kernel_size', kernel_size, self.name)
         self.add_prim_attr('kernel_size', self.kernel_size)
-        self.format = validator.check_string(
-            data_format, ['NCHW', 'NHWC'], 'format', self.name)
+        self.format = validator.check_string(data_format, ['NCHW', 'NHWC'], 'format', self.name)
         if context.get_context("device_target") != "GPU" and self.format == "NHWC":
             raise ValueError(f"For '{self.name}', the 'NHWC' format is only supported in GPU target, "
                              f"but got the 'data_format' is {self.format} and "
                              f"the platform is {context.get_context('device_target')}.")
         self.add_prim_attr('data_format', self.format)
-        self.stride = _check_positive_int_or_tuple(
-            'stride', stride, self.name, allow_four=True, ret_four=True)
+        self.stride = _check_positive_int_or_tuple('stride', stride, self.name, allow_four=True, ret_four=True)
         self.stride = _update_attr_by_format(self.stride, self.format)
         self.add_prim_attr('stride', self.stride)
-        self.dilation = _check_positive_int_or_tuple(
-            'dilation', dilation, self.name, allow_four=True, ret_four=True)
+        self.dilation = _check_positive_int_or_tuple('dilation', dilation, self.name, allow_four=True, ret_four=True)
         self.dilation = _update_attr_by_format(self.dilation, self.format)
         self.add_prim_attr('dilation', self.dilation)
         validator.check_value_type('pad', pad, (int, tuple), self.name)
@@ -1909,8 +1826,7 @@ class Conv2DBackpropInput(Primitive):
             pad = (pad,) * 4
         else:
             validator.check_equal_int(len(pad), 4, 'pad size', self.name)
-        self.pad_mode = validator.check_string(
-            pad_mode.lower(), ['valid', 'same', 'pad'], 'pad_mode', self.name)
+        self.pad_mode = validator.check_string(pad_mode.lower(), ['valid', 'same', 'pad'], 'pad_mode', self.name)
         if pad_mode != 'pad' and pad != (0, 0, 0, 0):
             raise ValueError(f"For '{self.name}', the 'pad' must be zero or (0, 0, 0, 0) when 'pad_mode' "
                              f"is not \"pad\", but got 'pad' is {self.pad} and 'pad_mode' is {pad_mode}.")
@@ -1928,8 +1844,7 @@ class Conv2DBackpropInput(Primitive):
         if pad_list:
             for x in pad_list:
                 if x != -1:
-                    validator.check_non_negative_int(
-                        x, 'element of pad_list', self.name)
+                    validator.check_non_negative_int(x, 'element of pad_list', self.name)
             self.pad_list = pad_list
 
 
@@ -2020,8 +1935,7 @@ class MaxPool3DWithArgmax(Primitive):
         self.init_prim_io_names(inputs=['x'], outputs=['y', 'argmax'])
         validator.check_value_type('ceil_mode', ceil_mode, bool, self.name)
         validator.check_value_type('data_format', data_format, str, self.name)
-        validator.check_value_type("argmax_type", argmax_type, [
-                                   mstype.Type], self.name)
+        validator.check_value_type("argmax_type", argmax_type, [mstype.Type], self.name)
         argmax_type_valid_values = (mstype.int32, mstype.int64)
         validator.check_type_name(
             "argmax_type", argmax_type, argmax_type_valid_values, self.name)
@@ -2034,17 +1948,13 @@ class MaxPool3DWithArgmax(Primitive):
         else:
             raise ValueError(f"For '{self.name}', the 'argmax_type' must be mstype.int32 or mstype.int64, "
                              f"but got {self.argmax_type}.")
-        self.ksize = _check_3d_int_or_tuple(
-            "ksize", ksize, self.name, ret_five=False)
+        self.ksize = _check_3d_int_or_tuple("ksize", ksize, self.name, ret_five=False)
         self.add_prim_attr('ksize', self.ksize)
-        self.strides = _check_3d_int_or_tuple(
-            "strides", strides, self.name, ret_five=False)
+        self.strides = _check_3d_int_or_tuple("strides", strides, self.name, ret_five=False)
         self.add_prim_attr('strides', self.strides)
-        self.pads = _check_3d_int_or_tuple(
-            "pads", pads, self.name, greater_zero=False, ret_five=False)
+        self.pads = _check_3d_int_or_tuple("pads", pads, self.name, greater_zero=False, ret_five=False)
         self.add_prim_attr('pads', self.pads)
-        self.dilation = _check_3d_int_or_tuple(
-            "dilation", dilation, self.name, allow_five=True, ret_five=False)
+        self.dilation = _check_3d_int_or_tuple("dilation", dilation, self.name, allow_five=True, ret_five=False)
         self.add_prim_attr('dilation', self.dilation)
 
 
@@ -2236,8 +2146,7 @@ class SparseSoftmaxCrossEntropyWithLogits(Primitive):
     def __init__(self, is_grad=False):
         """Initialize SparseSoftmaxCrossEntropyWithLogits."""
         validator.check_value_type('is_grad', is_grad, [bool], self.name)
-        self.init_prim_io_names(
-            inputs=['features', 'labels'], outputs=['output'])
+        self.init_prim_io_names(inputs=['features', 'labels'], outputs=['output'])
         self.is_grad = is_grad
         self.add_prim_attr('sens', 1.0)
 
@@ -2286,8 +2195,7 @@ class SparseSoftmaxCrossEntropyWithLogitsV2(Primitive):
     @prim_attr_register
     def __init__(self):
         """Initialize SparseSoftmaxCrossEntropyWithLogitsV2."""
-        self.init_prim_io_names(
-            inputs=['features', 'labels'], outputs=['loss', 'backprop'])
+        self.init_prim_io_names(inputs=['features', 'labels'], outputs=['loss', 'backprop'])
 
 
 class ApplyMomentum(Primitive):
@@ -2361,8 +2269,7 @@ class ApplyMomentum(Primitive):
     """
     __mindspore_signature__ = (
         sig.make_sig('variable', sig.sig_rw.RW_WRITE, dtype=sig.sig_dtype.T),
-        sig.make_sig('accumulation', sig.sig_rw.RW_WRITE,
-                     dtype=sig.sig_dtype.T),
+        sig.make_sig('accumulation', sig.sig_rw.RW_WRITE, dtype=sig.sig_dtype.T),
         sig.make_sig('learning_rate', dtype=sig.sig_dtype.T1),
         sig.make_sig('gradient', dtype=sig.sig_dtype.T),
         sig.make_sig('momentum', dtype=sig.sig_dtype.T2)
@@ -2371,12 +2278,9 @@ class ApplyMomentum(Primitive):
     @prim_attr_register
     def __init__(self, use_nesterov=False, use_locking=False, gradient_scale=1.0):
         """Initialize ApplyMomentum."""
-        self.use_nesterov = validator.check_bool(
-            use_nesterov, "use_nesterov", self.name)
-        self.use_locking = validator.check_bool(
-            use_locking, "use_locking", self.name)
-        validator.check_value_type(
-            'gradient_scale', gradient_scale, [float], self.name)
+        self.use_nesterov = validator.check_bool(use_nesterov, "use_nesterov", self.name)
+        self.use_locking = validator.check_bool(use_locking, "use_locking", self.name)
+        validator.check_value_type('gradient_scale', gradient_scale, [float], self.name)
         self.init_prim_io_names(inputs=['variable', 'accumulation', 'learning_rate', 'gradient', 'momentum'],
                                 outputs=['output'])
         self.add_prim_attr('side_effect_mem', True)
@@ -2441,12 +2345,9 @@ class MultiMarginLoss(Primitive):
         """Initialize MultiMarginLoss"""
         self.p = validator.check_value_type('p', p, [int], self.name)
         validator.check_int(p, {1, 2}, validator.IN, 'p', self.name)
-        self.margin = validator.check_value_type(
-            'margin', margin, [float], self.name)
-        self.reduction = validator.check_string(
-            reduction, ['none', 'sum', 'mean'], 'reduction', self.name)
-        self.init_prim_io_names(
-            inputs=['x', 'target', 'weight'], outputs=['y'])
+        self.margin = validator.check_value_type('margin', margin, [float], self.name)
+        self.reduction = validator.check_string(reduction, ['none', 'sum', 'mean'], 'reduction', self.name)
+        self.init_prim_io_names(inputs=['x', 'target', 'weight'], outputs=['y'])
 
     def __call__(self, x, target, weight=None):
         return super().__call__(x, target, weight)
@@ -2529,10 +2430,8 @@ class DataFormatDimMap(Primitive):
     def __init__(self, src_format='NHWC', dst_format='NCHW'):
         """Initialize DataFormatDimMap."""
         valid_values = ['NHWC', 'NCHW']
-        self.src_format = validator.check_string(
-            src_format, valid_values, "src_format", self.name)
-        self.dst_format = validator.check_string(
-            dst_format, valid_values, "dst_format", self.name)
+        self.src_format = validator.check_string(src_format, valid_values, "src_format", self.name)
+        self.dst_format = validator.check_string(dst_format, valid_values, "dst_format", self.name)
         self.init_prim_io_names(inputs=['input_x'], outputs=['output'])
 
 
@@ -2583,21 +2482,16 @@ class RNNTLoss(PrimitiveWithInfer):
     @prim_attr_register
     def __init__(self, blank_label=0):
         """Initialize RNNTLoss."""
-        validator.check_value_type(
-            'blank_label', blank_label, [int], self.name)
+        validator.check_value_type('blank_label', blank_label, [int], self.name)
         self.init_prim_io_names(inputs=['acts', 'labels', 'input_length', 'label_length'],
                                 outputs=['costs', 'grads'])
 
     def infer_shape(self, acts_shape, labels_shape, input_length_shape, label_length_shape):
         validator.check_equal_int(len(acts_shape), 4, 'acts_rank', self.name)
-        validator.check_equal_int(
-            len(labels_shape), 2, 'labels_rank', self.name)
-        validator.check_equal_int(
-            len(input_length_shape), 1, 'input_length_rank', self.name)
-        validator.check_equal_int(
-            len(label_length_shape), 1, 'label_length_rank', self.name)
-        validator.check('labels shape[0]', labels_shape[0],
-                        'acts shape[0]', acts_shape[0], validator.EQ, self.name)
+        validator.check_equal_int(len(labels_shape), 2, 'labels_rank', self.name)
+        validator.check_equal_int(len(input_length_shape), 1, 'input_length_rank', self.name)
+        validator.check_equal_int(len(label_length_shape), 1, 'label_length_rank', self.name)
+        validator.check('labels shape[0]', labels_shape[0], 'acts shape[0]', acts_shape[0], validator.EQ, self.name)
         validator.check('labels shape[1]', labels_shape[1], 'acts shape[2]-1',
                         acts_shape[2] - 1, validator.EQ, self.name)
         validator.check('input_length size', input_length_shape[0], 'acts shape[0]',
@@ -2608,8 +2502,7 @@ class RNNTLoss(PrimitiveWithInfer):
         return costs_shape, acts_shape
 
     def infer_dtype(self, acts_type, labels_type, input_length_type, label_length_type):
-        validator.check_tensor_dtype_valid(
-            "acts_type", acts_type, [mstype.float32, mstype.float16], self.name)
+        validator.check_tensor_dtype_valid("acts_type", acts_type, [mstype.float32, mstype.float16], self.name)
         tuple(map(partial(validator.check_tensor_dtype_valid,
                           valid_dtypes=(mstype.int32,), prim_name=self.name),
                   ("labels", "input_length", "label_length"),
@@ -2688,21 +2581,16 @@ class SGD(PrimitiveWithCheck):
 
     def check_shape(self, parameters_shape, gradient_shape, learning_rate_shape,
                     accum_shape, momentum_shape, stat_shape):
-        validator.check_int(len(gradient_shape), 0,
-                            validator.GE, f'gradient rank', self.name)
-        validator.check_int(len(learning_rate_shape), 0,
-                            validator.GE, f'learning rate rank', self.name)
-        validator.check_int(len(momentum_shape), 0,
-                            validator.GE, f'momentum rank', self.name)
-        validator.check_int(len(stat_shape), 0, validator.GE,
-                            f'stat rank', self.name)
+        validator.check_int(len(gradient_shape), 0, validator.GE, f'gradient rank', self.name)
+        validator.check_int(len(learning_rate_shape), 0, validator.GE, f'learning rate rank', self.name)
+        validator.check_int(len(momentum_shape), 0, validator.GE, f'momentum rank', self.name)
+        validator.check_int(len(stat_shape), 0, validator.GE, f'stat rank', self.name)
 
     def check_dtype(self, parameters_dtype, gradient_dtype, learning_rate_dtype,
                     accum_dtype, momentum_dtype, stat_dtype):
         tuple(map(partial(validator.check_tensor_dtype_valid,
                           valid_dtypes=(mstype.float16, mstype.float32), prim_name=self.name),
-                  ("parameters", "gradient", "learning_rate",
-                   "accum", "momentum", "stat"),
+                  ("parameters", "gradient", "learning_rate", "accum", "momentum", "stat"),
                   (parameters_dtype, gradient_dtype, learning_rate_dtype, accum_dtype, momentum_dtype, stat_dtype)))
 
 
@@ -2787,8 +2675,7 @@ class ApplyRMSProp(PrimitiveWithInfer):
     @prim_attr_register
     def __init__(self, use_locking=False):
         """Initialize ApplyRMSProp."""
-        self.use_locking = validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
+        self.use_locking = validator.check_value_type("use_locking", use_locking, [bool], self.name)
         self.init_prim_io_names(inputs=['var', 'mean_square', 'moment', 'learning_rate', 'grad',
                                         'rho', 'momentum', 'epsilon'], outputs=['output'])
         self.add_prim_attr('side_effect_mem', True)
@@ -2886,8 +2773,7 @@ class ApplyCenteredRMSProp(Primitive):
     @prim_attr_register
     def __init__(self, use_locking=False):
         """Initialize ApplyCenteredRMSProp."""
-        self.use_locking = validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
+        self.use_locking = validator.check_value_type("use_locking", use_locking, [bool], self.name)
         self.add_prim_attr('side_effect_mem', True)
 
 
@@ -3004,8 +2890,7 @@ class GetNext(Primitive):
         """Initialize GetNext."""
         validator.check_value_type("types", types, [list, tuple], self.name)
         validator.check_value_type("shapes", shapes, [list, tuple], self.name)
-        validator.check("types length", len(types),
-                        "shapes length", len(shapes), validator.EQ, self.name)
+        validator.check("types length", len(types), "shapes length", len(shapes), validator.EQ, self.name)
         validator.check_value_type("output_num", output_num, [int], self.name)
 
 
@@ -3086,22 +2971,15 @@ class LSTM(Primitive):
     @prim_attr_register
     def __init__(self, input_size, hidden_size, num_layers, has_bias, bidirectional, dropout, proj_size=0):
         """Initialize LSTM."""
-        self.input_size = validator.check_positive_int(
-            input_size, "input_size", self.name)
-        self.hidden_size = validator.check_positive_int(
-            hidden_size, "hidden_size", self.name)
+        self.input_size = validator.check_positive_int(input_size, "input_size", self.name)
+        self.hidden_size = validator.check_positive_int(hidden_size, "hidden_size", self.name)
         self.proj_size = validator.check_int_range(proj_size, 0, hidden_size, validator.INC_LEFT,
                                                    'proj_size', self.name)
-        self.num_layers = validator.check_positive_int(
-            num_layers, "num_layers", self.name)
-        self.has_bias = validator.check_value_type(
-            "has_bias", has_bias, (bool,), self.name)
-        self.bidirectional = validator.check_value_type(
-            "bidirectional", bidirectional, (bool,), self.name)
-        self.dropout = validator.check_value_type(
-            "dropout", dropout, [float], self.name)
-        self.dropout = validator.check_float_range(
-            dropout, 0, 1, validator.INC_BOTH, 'dropout', self.name)
+        self.num_layers = validator.check_positive_int(num_layers, "num_layers", self.name)
+        self.has_bias = validator.check_value_type("has_bias", has_bias, (bool,), self.name)
+        self.bidirectional = validator.check_value_type("bidirectional", bidirectional, (bool,), self.name)
+        self.dropout = validator.check_value_type("dropout", dropout, [float], self.name)
+        self.dropout = validator.check_float_range(dropout, 0, 1, validator.INC_BOTH, 'dropout', self.name)
 
         if bidirectional:
             self.num_directions = 2
@@ -3299,12 +3177,9 @@ class PadV3(Primitive):
     @prim_attr_register
     def __init__(self, mode='constant', paddings_contiguous=True):
         """Initialize PadV3"""
-        self.init_prim_io_names(
-            inputs=['x', 'paddings', 'constant_value'], outputs=['y'])
-        validator.check_string(
-            mode, ['constant', 'reflect', 'edge', 'circular'], 'mode', self.name)
-        validator.check_bool(paddings_contiguous,
-                             "paddings_contiguous", self.name)
+        self.init_prim_io_names(inputs=['x', 'paddings', 'constant_value'], outputs=['y'])
+        validator.check_string(mode, ['constant', 'reflect', 'edge', 'circular'], 'mode', self.name)
+        validator.check_bool(paddings_contiguous, "paddings_contiguous", self.name)
         self.mode = mode
         self.paddings_contiguous = paddings_contiguous
 
@@ -3390,8 +3265,7 @@ class MirrorPad(Primitive):
     def __init__(self, mode='REFLECT'):
         """Initialize Pad"""
         self.init_prim_io_names(inputs=['x', 'paddings'], outputs=['y'])
-        validator.check_string(
-            mode, ['REFLECT', 'SYMMETRIC'], 'mode', self.name)
+        validator.check_string(mode, ['REFLECT', 'SYMMETRIC'], 'mode', self.name)
         self.mode = mode
 
 
@@ -3450,8 +3324,7 @@ class ComputeAccidentalHits(Primitive):
         self.init_prim_io_names(inputs=['true_classes', 'sampled_candidates'],
                                 outputs=['indices', 'ids', 'weights'])
         validator.check_value_type("num_true", num_true, [int], self.name)
-        validator.check_number("num_true", num_true, 1,
-                               validator.GE, self.name)
+        validator.check_number("num_true", num_true, 1, validator.GE, self.name)
         self.num_true = num_true
 
 
@@ -3511,17 +3384,12 @@ class ROIAlign(Primitive):
     @prim_attr_register
     def __init__(self, pooled_height, pooled_width, spatial_scale, sample_num=2, roi_end_mode=1):
         """Initialize ROIAlign"""
-        validator.check_value_type(
-            "pooled_height", pooled_height, [int], self.name)
-        validator.check_value_type(
-            "pooled_width", pooled_width, [int], self.name)
-        validator.check_value_type(
-            "spatial_scale", spatial_scale, [float], self.name)
+        validator.check_value_type("pooled_height", pooled_height, [int], self.name)
+        validator.check_value_type("pooled_width", pooled_width, [int], self.name)
+        validator.check_value_type("spatial_scale", spatial_scale, [float], self.name)
         validator.check_value_type("sample_num", sample_num, [int], self.name)
-        validator.check_value_type(
-            "roi_end_mode", roi_end_mode, [int], self.name)
-        validator.check_int_range(
-            roi_end_mode, 0, 1, validator.INC_BOTH, "roi_end_mode", self.name)
+        validator.check_value_type("roi_end_mode", roi_end_mode, [int], self.name)
+        validator.check_int_range(roi_end_mode, 0, 1, validator.INC_BOTH, "roi_end_mode", self.name)
         self.pooled_height = pooled_height
         self.pooled_width = pooled_width
         self.spatial_scale = spatial_scale
@@ -3639,10 +3507,8 @@ class Adam(Primitive):
     @prim_attr_register
     def __init__(self, use_locking=False, use_nesterov=False):
         """Initialize Adam."""
-        validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
-        validator.check_value_type(
-            "use_nesterov", use_nesterov, [bool], self.name)
+        validator.check_value_type("use_locking", use_locking, [bool], self.name)
+        validator.check_value_type("use_nesterov", use_nesterov, [bool], self.name)
         self.add_prim_attr('side_effect_mem', True)
 
 
@@ -3739,10 +3605,8 @@ class AdamNoUpdateParam(Primitive):
     def __init__(self, use_locking=False, use_nesterov=False):
         """Initialize AdamNoUpdateParam."""
         self.add_prim_attr('side_effect_mem', True)
-        validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
-        validator.check_value_type(
-            "use_nesterov", use_nesterov, [bool], self.name)
+        validator.check_value_type("use_locking", use_locking, [bool], self.name)
+        validator.check_value_type("use_nesterov", use_nesterov, [bool], self.name)
 
 
 class FusedSparseAdam(Primitive):
@@ -3864,10 +3728,8 @@ class FusedSparseAdam(Primitive):
     @prim_attr_register
     def __init__(self, use_locking=False, use_nesterov=False):
         """Initialize FusedSparseAdam."""
-        validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
-        validator.check_value_type(
-            "use_nesterov", use_nesterov, [bool], self.name)
+        validator.check_value_type("use_locking", use_locking, [bool], self.name)
+        validator.check_value_type("use_nesterov", use_nesterov, [bool], self.name)
         self.init_prim_io_names(inputs=['var', 'm', 'v', 'beta1_power', 'beta2_power', 'lr', 'beta1', 'beta2',
                                         'epsilon', 'grad', 'indices'],
                                 outputs=['var', 'm', 'v'])
@@ -3995,10 +3857,8 @@ class FusedSparseLazyAdam(Primitive):
     @prim_attr_register
     def __init__(self, use_locking=False, use_nesterov=False):
         """Initialize FusedSparseLazyAdam."""
-        validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
-        validator.check_value_type(
-            "use_nesterov", use_nesterov, [bool], self.name)
+        validator.check_value_type("use_locking", use_locking, [bool], self.name)
+        validator.check_value_type("use_nesterov", use_nesterov, [bool], self.name)
         self.init_prim_io_names(inputs=['var', 'm', 'v', 'beta1_power', 'beta2_power', 'lr', 'beta1', 'beta2',
                                         'epsilon', 'grad', 'indices'],
                                 outputs=['var', 'm', 'v'])
@@ -4095,10 +3955,8 @@ class FusedSparseFtrl(Primitive):
         self.lr = validator.check_positive_float(lr, "lr", self.name)
         self.l1 = validator.check_non_negative_float(l1, "l1", self.name)
         self.l2 = validator.check_non_negative_float(l2, "l2", self.name)
-        self.lr_power = validator.check_number(
-            "lr_power", lr_power, 0, validator.LE, self.name)
-        self.use_locking = validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
+        self.lr_power = validator.check_number("lr_power", lr_power, 0, validator.LE, self.name)
+        self.use_locking = validator.check_value_type("use_locking", use_locking, [bool], self.name)
 
 
 class FusedSparseProximalAdagrad(Primitive):
@@ -4189,8 +4047,7 @@ class FusedSparseProximalAdagrad(Primitive):
         self.init_prim_io_names(inputs=['var', 'accum', 'lr', 'l1', 'l2', 'grad', 'indices'],
                                 outputs=['output'])
         self.add_prim_attr('side_effect_mem', True)
-        self.use_locking = validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
+        self.use_locking = validator.check_value_type("use_locking", use_locking, [bool], self.name)
 
 
 class KLDivLoss(Primitive):
@@ -4284,11 +4141,9 @@ class KLDivLoss(Primitive):
         elif device_target == "Ascend":
             support_mode = ['none', 'batchmean', 'sum', 'mean']
         else:
-            raise ValueError(
-                f"'{self.name}' unknown device target: '{device_target}'")
+            raise ValueError(f"'{self.name}' unknown device target: '{device_target}'")
 
-        self.reduction = validator.check_string(
-            reduction, support_mode, 'reduction', self.name)
+        self.reduction = validator.check_string(reduction, support_mode, 'reduction', self.name)
 
 
 class ApplyAdaMax(Primitive):
@@ -4497,8 +4352,7 @@ class ApplyAdadelta(Primitive):
     __mindspore_signature__ = (
         sig.make_sig('var', sig.sig_rw.RW_WRITE, dtype=sig.sig_dtype.T),
         sig.make_sig('accum', sig.sig_rw.RW_WRITE, dtype=sig.sig_dtype.T),
-        sig.make_sig('accum_update', sig.sig_rw.RW_WRITE,
-                     dtype=sig.sig_dtype.T),
+        sig.make_sig('accum_update', sig.sig_rw.RW_WRITE, dtype=sig.sig_dtype.T),
         sig.make_sig('lr', dtype=sig.sig_dtype.T1),
         sig.make_sig('rho', dtype=sig.sig_dtype.T2),
         sig.make_sig('epsilon', dtype=sig.sig_dtype.T3),
@@ -4593,8 +4447,7 @@ class ApplyAdagrad(Primitive):
     @prim_attr_register
     def __init__(self, update_slots=True):
         """Initialize ApplyAdagrad."""
-        validator.check_value_type(
-            "update_slots", update_slots, [bool], self.name)
+        validator.check_value_type("update_slots", update_slots, [bool], self.name)
         self.add_prim_attr('side_effect_mem', True)
 
 
@@ -4683,8 +4536,7 @@ class ApplyAdagradV2(Primitive):
     def __init__(self, epsilon, update_slots=True):
         """Initialize ApplyAdagradV2."""
         validator.check_value_type("epsilon", epsilon, [float], self.name)
-        validator.check_value_type(
-            "update_slots", update_slots, [bool], self.name)
+        validator.check_value_type("update_slots", update_slots, [bool], self.name)
         self.add_prim_attr('side_effect_mem', True)
 
 
@@ -4705,10 +4557,8 @@ class SparseApplyAdagrad(Primitive):
     def __init__(self, lr, update_slots=True, use_locking=False):
         """Initialize SparseApplyAdagrad."""
         validator.check_is_float(lr, "lr", self.name)
-        validator.check_value_type(
-            "update_slots", update_slots, [bool], self.name)
-        validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
+        validator.check_value_type("update_slots", update_slots, [bool], self.name)
+        validator.check_value_type("use_locking", use_locking, [bool], self.name)
         self.add_prim_attr('side_effect_mem', True)
 
 
@@ -4798,12 +4648,9 @@ class SparseApplyAdagradV2(Primitive):
     def __init__(self, lr, epsilon, use_locking=False, update_slots=True):
         """Initialize SparseApplyAdagradV2."""
         self.lr = validator.check_value_type("lr", lr, [float], self.name)
-        self.epsilon = validator.check_value_type(
-            "epsilon", epsilon, [float], self.name)
-        self.use_locking = validator.check_value_type(
-            "update_slots", update_slots, [bool], self.name)
-        self.update_slots = validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
+        self.epsilon = validator.check_value_type("epsilon", epsilon, [float], self.name)
+        self.use_locking = validator.check_value_type("update_slots", update_slots, [bool], self.name)
+        self.update_slots = validator.check_value_type("use_locking", use_locking, [bool], self.name)
         self.add_prim_attr('side_effect_mem', True)
 
 
@@ -4902,8 +4749,7 @@ class ApplyProximalAdagrad(Primitive):
         self.init_prim_io_names(inputs=['var', 'accum', 'lr', 'l1', 'l2', 'grad'],
                                 outputs=['var', 'accum'])
         self.add_prim_attr('side_effect_mem', True)
-        self.use_locking = validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
+        self.use_locking = validator.check_value_type("use_locking", use_locking, [bool], self.name)
 
 
 class SparseApplyProximalAdagrad(Primitive):
@@ -5005,8 +4851,7 @@ class SparseApplyProximalAdagrad(Primitive):
         self.init_prim_io_names(inputs=['var', 'accum', 'lr', 'l1', 'l2', 'grad', 'indices'],
                                 outputs=['var', 'accum'])
         self.add_prim_attr('side_effect_mem', True)
-        self.use_locking = validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
+        self.use_locking = validator.check_value_type("use_locking", use_locking, [bool], self.name)
 
 
 class ApplyAddSign(Primitive):
@@ -5514,8 +5359,7 @@ class ApplyFtrl(Primitive):
         self.init_prim_io_names(inputs=['var', 'accum', 'linear', 'grad', 'lr', 'l1', 'l2', 'lr_power'],
                                 outputs=['output'])
         self.add_prim_attr('side_effect_mem', True)
-        self.use_locking = validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
+        self.use_locking = validator.check_value_type("use_locking", use_locking, [bool], self.name)
 
 
 class SparseApplyFtrl(Primitive):
@@ -5606,10 +5450,8 @@ class SparseApplyFtrl(Primitive):
         self.lr = validator.check_positive_float(lr, "lr", self.name)
         self.l1 = validator.check_non_negative_float(l1, "l1", self.name)
         self.l2 = validator.check_non_negative_float(l2, "l2", self.name)
-        self.lr_power = validator.check_number(
-            "lr_power", lr_power, 0, validator.LE, self.name)
-        self.use_locking = validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
+        self.lr_power = validator.check_number("lr_power", lr_power, 0, validator.LE, self.name)
+        self.use_locking = validator.check_value_type("use_locking", use_locking, [bool], self.name)
         self.init_prim_io_names(inputs=['var', 'accum', 'linear', 'grad', 'indices'],
                                 outputs=['var', 'accum', 'linear'])
         self.add_prim_attr('side_effect_mem', True)
@@ -5642,35 +5484,25 @@ class SparseApplyFtrlV2(PrimitiveWithInfer):
         self.lr = validator.check_positive_float(lr, "lr", self.name)
         self.l1 = validator.check_non_negative_float(l1, "l1", self.name)
         self.l2 = validator.check_non_negative_float(l2, "l2", self.name)
-        self.lr_power = validator.check_number(
-            "lr_power", lr_power, 0, validator.LE, self.name)
-        self.l2_shrinkage = validator.check_value_type(
-            "l2_shrinkage", l2_shrinkage, [float], self.name)
-        self.use_locking = validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
+        self.lr_power = validator.check_number("lr_power", lr_power, 0, validator.LE, self.name)
+        self.l2_shrinkage = validator.check_value_type("l2_shrinkage", l2_shrinkage, [float], self.name)
+        self.use_locking = validator.check_value_type("use_locking", use_locking, [bool], self.name)
         self.add_prim_attr('side_effect_mem', True)
 
     def infer_shape(self, var_shape, accum_shape, linear_shape, grad_shape, indices_shape):
-        validator.check('var shape', var_shape, 'accum shape',
-                        accum_shape, validator.EQ, self.name)
-        validator.check('var shape', var_shape, 'linear shape',
-                        linear_shape, validator.EQ, self.name)
+        validator.check('var shape', var_shape, 'accum shape', accum_shape, validator.EQ, self.name)
+        validator.check('var shape', var_shape, 'linear shape', linear_shape, validator.EQ, self.name)
         if len(var_shape) > 1:
-            validator.check('var_shape[1:]', var_shape[1:],
-                            'grad_shape[1:]', grad_shape[1:], validator.EQ, self.name)
-        validator.check_int(len(indices_shape), 1,
-                            validator.EQ, "indices rank", self.name)
-        validator.check('grad_shape[0]', grad_shape[0], 'indices_shape[0]',
-                        indices_shape[0], validator.EQ, self.name)
+            validator.check('var_shape[1:]', var_shape[1:], 'grad_shape[1:]', grad_shape[1:], validator.EQ, self.name)
+        validator.check_int(len(indices_shape), 1, validator.EQ, "indices rank", self.name)
+        validator.check('grad_shape[0]', grad_shape[0], 'indices_shape[0]', indices_shape[0], validator.EQ, self.name)
         return var_shape, accum_shape, linear_shape
 
     def infer_dtype(self, var_dtype, accum_dtype, linear_dtype, grad_dtype, indices_dtype):
         args = {"var_dtype": var_dtype, "accum_dtype": accum_dtype,
                 "linear_dtype": linear_dtype, "grad_dtype": grad_dtype}
-        validator.check_tensors_dtypes_same_and_valid(
-            args, [mstype.float16, mstype.float32], self.name)
-        validator.check_tensor_dtype_valid(
-            "indicese", indices_dtype, [mstype.int32], self.name)
+        validator.check_tensors_dtypes_same_and_valid(args, [mstype.float16, mstype.float32], self.name)
+        validator.check_tensor_dtype_valid("indicese", indices_dtype, [mstype.int32], self.name)
         return var_dtype, accum_dtype, linear_dtype
 
 
@@ -5722,10 +5554,8 @@ class Dropout2D(PrimitiveWithInfer):
     def __init__(self, keep_prob=0.5):
         """Initialize Dropout2D."""
         super().__init__("Dropout2D")
-        self.keep_prob = validator.check_value_type(
-            "keep_prob", keep_prob, [float], self.name)
-        self.keep_prob = validator.check_float_range(
-            keep_prob, 0.0, 1.0, validator.INC_BOTH, "keep_prob", self.name)
+        self.keep_prob = validator.check_value_type("keep_prob", keep_prob, [float], self.name)
+        self.keep_prob = validator.check_float_range(keep_prob, 0.0, 1.0, validator.INC_BOTH, "keep_prob", self.name)
 
 
 class Dropout3D(PrimitiveWithInfer):
@@ -5775,10 +5605,8 @@ class Dropout3D(PrimitiveWithInfer):
     def __init__(self, keep_prob=0.5):
         """Initialize Dropout3D."""
         super().__init__("Dropout3D")
-        self.keep_prob = validator.check_value_type(
-            "keep_prob", keep_prob, [float], self.name)
-        self.keep_prob = validator.check_float_range(
-            keep_prob, 0.0, 1.0, validator.INC_BOTH, "keep_prob", self.name)
+        self.keep_prob = validator.check_value_type("keep_prob", keep_prob, [float], self.name)
+        self.keep_prob = validator.check_float_range(keep_prob, 0.0, 1.0, validator.INC_BOTH, "keep_prob", self.name)
 
 
 class CTCLoss(Primitive):
@@ -5861,8 +5689,7 @@ class CTCLoss(Primitive):
         """Initialize CTCLoss."""
         self.init_prim_io_names(inputs=["inputs", "labels_indices", "labels_values", "sequence_length"],
                                 outputs=["loss", "gradient"])
-        validator.check_value_type(
-            "preprocess_collapse_repeated", preprocess_collapse_repeated, [bool], self.name)
+        validator.check_value_type("preprocess_collapse_repeated", preprocess_collapse_repeated, [bool], self.name)
         self.preprocess_collapse_repeated_ = preprocess_collapse_repeated
         self.ctc_merge_repeated_ = validator.check_value_type("ctc_merge_repeated", ctc_merge_repeated,
                                                               [bool], self.name)
@@ -5929,8 +5756,7 @@ class CTCGreedyDecoder(Primitive):
     @prim_attr_register
     def __init__(self, merge_repeated=True):
         """Initialize CTCGreedyDecoder."""
-        self.merge_repeated = validator.check_value_type(
-            "merge_repeated", merge_repeated, [bool], self.name)
+        self.merge_repeated = validator.check_value_type("merge_repeated", merge_repeated, [bool], self.name)
 
 
 class BasicLSTMCell(PrimitiveWithInfer):
@@ -5945,16 +5771,11 @@ class BasicLSTMCell(PrimitiveWithInfer):
     @prim_attr_register
     def __init__(self, keep_prob=1.0, forget_bias=1.0, state_is_tuple=True, activation='tanh'):
         """Initialize BasicLSTMCell."""
-        self.keep_prob = validator.check_value_type(
-            "keep_prob", keep_prob, [float], self.name)
-        self.keep_prob = validator.check_float_range(
-            keep_prob, 0.0, 1.0, validator.INC_BOTH, "keep_prob", self.name)
-        self.forget_bias = validator.check_value_type(
-            "forget_bias", forget_bias, [float], self.name)
-        self.state_is_tuple = validator.check_value_type(
-            "state_is_tuple", state_is_tuple, [bool], self.name)
-        self.activation = validator.check_string(
-            activation, ['tanh'], "activation", self.name)
+        self.keep_prob = validator.check_value_type("keep_prob", keep_prob, [float], self.name)
+        self.keep_prob = validator.check_float_range(keep_prob, 0.0, 1.0, validator.INC_BOTH, "keep_prob", self.name)
+        self.forget_bias = validator.check_value_type("forget_bias", forget_bias, [float], self.name)
+        self.state_is_tuple = validator.check_value_type("state_is_tuple", state_is_tuple, [bool], self.name)
+        self.activation = validator.check_string(activation, ['tanh'], "activation", self.name)
 
     def infer_shape(self, x_shape, h_shape, c_shape, w_shape, b_shape):
         validator.check_int(len(x_shape), 2, validator.EQ, "x rank", self.name)
@@ -5962,18 +5783,13 @@ class BasicLSTMCell(PrimitiveWithInfer):
         validator.check_int(len(c_shape), 2, validator.EQ, "c rank", self.name)
         validator.check_int(len(w_shape), 2, validator.EQ, "w rank", self.name)
         validator.check_int(len(b_shape), 1, validator.EQ, "b rank", self.name)
-        validator.check("x_shape[0]", x_shape[0], "h_shape[0]",
-                        h_shape[0], validator.EQ, self.name)
-        validator.check("c_shape[0]", c_shape[0], "h_shape[0]",
-                        h_shape[0], validator.EQ, self.name)
-        validator.check("c_shape[1]", c_shape[1], "h_shape[1]",
-                        h_shape[1], validator.EQ, self.name)
-        validator.check("w_shape[1]", w_shape[1], "4*h_shape[1]",
-                        4 * h_shape[1], validator.EQ, self.name)
+        validator.check("x_shape[0]", x_shape[0], "h_shape[0]", h_shape[0], validator.EQ, self.name)
+        validator.check("c_shape[0]", c_shape[0], "h_shape[0]", h_shape[0], validator.EQ, self.name)
+        validator.check("c_shape[1]", c_shape[1], "h_shape[1]", h_shape[1], validator.EQ, self.name)
+        validator.check("w_shape[1]", w_shape[1], "4*h_shape[1]", 4 * h_shape[1], validator.EQ, self.name)
         validator.check("w_shape[0]", w_shape[0], "x_shape[1]+h_shape[1]", x_shape[1] + h_shape[1],
                         validator.EQ, self.name)
-        validator.check("b_shape[0]", b_shape[0], "4*h_shape[1]",
-                        4 * h_shape[1], validator.EQ, self.name)
+        validator.check("b_shape[0]", b_shape[0], "4*h_shape[1]", 4 * h_shape[1], validator.EQ, self.name)
         ct_shape = c_shape
         ht_shape = c_shape
         it_shape = c_shape
@@ -5990,8 +5806,7 @@ class BasicLSTMCell(PrimitiveWithInfer):
                   ("x_dtype", "h_dtype", "w_dtype"),
                   (x_dtype, h_dtype, w_dtype)))
         args = {"c_dtype": c_dtype, "b_dtype": b_dtype}
-        validator.check_tensors_dtypes_same_and_valid(
-            args, [mstype.float16, mstype.float32], self.name)
+        validator.check_tensors_dtypes_same_and_valid(args, [mstype.float16, mstype.float32], self.name)
         return c_dtype, mstype.float16, c_dtype, c_dtype, c_dtype, c_dtype, c_dtype
 
 
@@ -6108,37 +5923,23 @@ class DynamicRNN(Primitive):
                  forget_bias=0.0,
                  is_training=True):
         """Initialize DynamicRNN."""
-        self.forget_bias = validator.check_value_type(
-            "forget_bias", forget_bias, [float], self.name)
-        self.cell_depth = validator.check_value_type(
-            "cell_depth", cell_depth, [int], self.name)
-        self.keep_prob = validator.check_value_type(
-            "keep_prob", keep_prob, [float], self.name)
-        validator.check_number_range(
-            keep_prob, 0.0, 1.0, validator.INC_BOTH, float, "keep_prob")
-        self.cell_clip = validator.check_value_type(
-            "cell_clip", cell_clip, [float], self.name)
-        self.num_proj = validator.check_non_negative_int(
-            num_proj, "num_proj", self.name)
-        self.forget_bias = validator.check_value_type(
-            "forget_bias", forget_bias, [float], self.name)
-        self.use_peephole = validator.check_value_type(
-            "use_peephole", use_peephole, [bool], self.name)
-        self.time_major = validator.check_value_type(
-            "time_major", time_major, [bool], self.name)
-        validator.check("time_major", time_major,
-                        "the supported value", True, validator.EQ, self.name)
-        self.is_training = validator.check_value_type(
-            "is_training", is_training, [bool], self.name)
+        self.forget_bias = validator.check_value_type("forget_bias", forget_bias, [float], self.name)
+        self.cell_depth = validator.check_value_type("cell_depth", cell_depth, [int], self.name)
+        self.keep_prob = validator.check_value_type("keep_prob", keep_prob, [float], self.name)
+        validator.check_number_range(keep_prob, 0.0, 1.0, validator.INC_BOTH, float, "keep_prob")
+        self.cell_clip = validator.check_value_type("cell_clip", cell_clip, [float], self.name)
+        self.num_proj = validator.check_non_negative_int(num_proj, "num_proj", self.name)
+        self.forget_bias = validator.check_value_type("forget_bias", forget_bias, [float], self.name)
+        self.use_peephole = validator.check_value_type("use_peephole", use_peephole, [bool], self.name)
+        self.time_major = validator.check_value_type("time_major", time_major, [bool], self.name)
+        validator.check("time_major", time_major, "the supported value", True, validator.EQ, self.name)
+        self.is_training = validator.check_value_type("is_training", is_training, [bool], self.name)
         validator.check_value_type("cell_type", cell_type, [str], self.name)
-        self.cell_type = validator.check_string(
-            cell_type, ['LSTM'], "cell_type", self.name)
+        self.cell_type = validator.check_string(cell_type, ['LSTM'], "cell_type", self.name)
         validator.check_value_type("direction", direction, [str], self.name)
-        self.direction = validator.check_string(
-            direction, ['UNIDIRECTIONAL'], "direction", self.name)
+        self.direction = validator.check_string(direction, ['UNIDIRECTIONAL'], "direction", self.name)
         validator.check_value_type("activation", activation, [str], self.name)
-        self.activation = validator.check_string(
-            activation, ['tanh'], "activation", self.name)
+        self.activation = validator.check_string(activation, ['tanh'], "activation", self.name)
 
 
 class DynamicGRUV2(Primitive):
@@ -6265,26 +6066,16 @@ class DynamicGRUV2(Primitive):
                  reset_after=True,
                  is_training=True):
         """Initialize DynamicGRUV2."""
-        self.cell_depth = validator.check_value_type(
-            "cell_depth", cell_depth, [int], self.name)
-        self.keep_prob = validator.check_value_type(
-            "keep_prob", keep_prob, [float], self.name)
-        self.cell_clip = validator.check_value_type(
-            "cell_clip", cell_clip, [float], self.name)
-        self.num_proj = validator.check_non_negative_int(
-            num_proj, "num_proj", self.name)
-        self.time_major = validator.check_value_type(
-            "time_major", time_major, [bool], self.name)
-        self.is_training = validator.check_value_type(
-            "is_training", is_training, [bool], self.name)
-        self.direction = validator.check_string(
-            direction, ['UNIDIRECTIONAL'], "direction", self.name)
-        self.activation = validator.check_string(
-            activation, ['tanh'], "activation", self.name)
-        self.gate_order = validator.check_string(
-            gate_order, ['zrh', 'rzh'], "gate_order", self.name)
-        self.reset_after = validator.check_value_type(
-            "reset_after", reset_after, [bool], self.name)
+        self.cell_depth = validator.check_value_type("cell_depth", cell_depth, [int], self.name)
+        self.keep_prob = validator.check_value_type("keep_prob", keep_prob, [float], self.name)
+        self.cell_clip = validator.check_value_type("cell_clip", cell_clip, [float], self.name)
+        self.num_proj = validator.check_non_negative_int(num_proj, "num_proj", self.name)
+        self.time_major = validator.check_value_type("time_major", time_major, [bool], self.name)
+        self.is_training = validator.check_value_type("is_training", is_training, [bool], self.name)
+        self.direction = validator.check_string(direction, ['UNIDIRECTIONAL'], "direction", self.name)
+        self.activation = validator.check_string(activation, ['tanh'], "activation", self.name)
+        self.gate_order = validator.check_string(gate_order, ['zrh', 'rzh'], "gate_order", self.name)
+        self.reset_after = validator.check_value_type("reset_after", reset_after, [bool], self.name)
         self.init_prim_io_names(
             inputs=[
                 "x", "weight_input", "weight_hidden", "bias_input",
@@ -6396,17 +6187,13 @@ class LRN(Primitive):
         """Initialize LRN"""
         super().__init__("LRN")
         self.init_prim_io_names(inputs=['x'], outputs=['y'])
-        validator.check_value_type(
-            "depth_radius", depth_radius, [int], self.name)
+        validator.check_value_type("depth_radius", depth_radius, [int], self.name)
         validator.check_value_type("bias", bias, [float], self.name)
         validator.check_value_type("alpha", alpha, [float], self.name)
         validator.check_value_type("beta", beta, [float], self.name)
-        validator.check_value_type(
-            "norm_region", norm_region, [str], self.name)
-        validator.check_string(
-            norm_region, ['ACROSS_CHANNELS'], 'norm_region', self.name)
-        validator.check_non_negative_int(
-            depth_radius, "depth_radius", self.name)
+        validator.check_value_type("norm_region", norm_region, [str], self.name)
+        validator.check_string(norm_region, ['ACROSS_CHANNELS'], 'norm_region', self.name)
+        validator.check_non_negative_int(depth_radius, "depth_radius", self.name)
 
 
 class AvgPool3D(Primitive):
@@ -6503,11 +6290,9 @@ class AvgPool3D(Primitive):
                  count_include_pad=True, divisor_override=0, data_format="NCDHW"):
         """Initialize AvgPool3D"""
         self.init_prim_io_names(inputs=['input'], outputs=['output'])
-        self.kernel_size = _check_3d_int_or_tuple(
-            'kernel_size', kernel_size, self.name, ret_five=True)
+        self.kernel_size = _check_3d_int_or_tuple('kernel_size', kernel_size, self.name, ret_five=True)
         self.add_prim_attr('kernel_size', self.kernel_size)
-        self.strides = _check_3d_int_or_tuple(
-            'strides', strides, self.name, ret_five=True)
+        self.strides = _check_3d_int_or_tuple('strides', strides, self.name, ret_five=True)
         self.add_prim_attr('strides', self.strides)
         validator.check_value_type('pad', pad, (int, tuple, list), self.name)
         if isinstance(pad, int):
@@ -6518,8 +6303,7 @@ class AvgPool3D(Primitive):
         self.pad_list = pad
         self.add_prim_attr('pad_list', self.pad_list)
         validator.check_value_type('pad_mode', pad_mode, [str], self.name)
-        self.pad_mode = validator.check_string(
-            pad_mode.upper(), ['VALID', 'SAME', 'PAD'], 'pad_mode', self.name)
+        self.pad_mode = validator.check_string(pad_mode.upper(), ['VALID', 'SAME', 'PAD'], 'pad_mode', self.name)
         self.add_prim_attr('pad_mode', self.pad_mode)
 
         if self.pad_mode != 'PAD' and pad != (0, 0, 0, 0, 0, 0):
@@ -6527,16 +6311,11 @@ class AvgPool3D(Primitive):
                              f"is not \"PAD\", but got 'pad' is {self.pad} and 'pad_mode' is {pad_mode}.")
         if self.pad_mode == 'PAD':
             for item in pad:
-                validator.check_non_negative_int(
-                    item, 'pad or item of pad', self.name)
-        self.ceil_mode = validator.check_value_type(
-            'ceil_mode', ceil_mode, bool, self.name)
-        self.count_include_pad = validator.check_value_type(
-            'count_include_pad', count_include_pad, bool, self.name)
-        self.divisor_override = validator.check_non_negative_int(
-            divisor_override, 'divisor_override', self.name)
-        self.format = validator.check_string(
-            data_format, ['NCDHW'], 'format', self.name)
+                validator.check_non_negative_int(item, 'pad or item of pad', self.name)
+        self.ceil_mode = validator.check_value_type('ceil_mode', ceil_mode, bool, self.name)
+        self.count_include_pad = validator.check_value_type('count_include_pad', count_include_pad, bool, self.name)
+        self.divisor_override = validator.check_non_negative_int(divisor_override, 'divisor_override', self.name)
+        self.format = validator.check_string(data_format, ['NCDHW'], 'format', self.name)
 
 
 class Conv3D(Primitive):
@@ -6768,13 +6547,11 @@ class Conv3D(Primitive):
                  data_format="NCDHW"):
         """Initialize Conv3D"""
         self.init_prim_io_names(inputs=['x', 'w'], outputs=['output'])
-        self.kernel_size = _check_3d_int_or_tuple(
-            'kernel_size', kernel_size, self.name)
+        self.kernel_size = _check_3d_int_or_tuple('kernel_size', kernel_size, self.name)
         if isinstance(kernel_size, int):
             self.kernel_size = (kernel_size,) * 3
         self.add_prim_attr('kernel_size', self.kernel_size)
-        self.stride = _check_3d_int_or_tuple(
-            'stride', stride, self.name, allow_five=False, ret_five=True)
+        self.stride = _check_3d_int_or_tuple('stride', stride, self.name, allow_five=False, ret_five=True)
         self.add_prim_attr('strides', self.stride)
         target = context.get_context("device_target")
         if target.lower() == "ascend":
@@ -6791,8 +6568,7 @@ class Conv3D(Primitive):
             raise ValueError(f"For '{self.name}', attr 'pad' must be an positive int number or a tuple of "
                              f"six positive int numbers, but got {self.pad}.")
         validator.check_value_type('pad_mode', pad_mode, [str], self.name)
-        self.pad_mode = validator.check_string(
-            pad_mode.lower(), ['valid', 'same', 'pad'], 'pad_mode', self.name)
+        self.pad_mode = validator.check_string(pad_mode.lower(), ['valid', 'same', 'pad'], 'pad_mode', self.name)
         self.add_prim_attr('pad_mode', self.pad_mode)
 
         if self.pad_mode != 'pad' and pad != (0, 0, 0, 0, 0, 0):
@@ -6806,21 +6582,16 @@ class Conv3D(Primitive):
 
         self.mode = validator.check_equal_int(mode, 1, 'mode', self.name)
         self.add_prim_attr('mode', self.mode)
-        self.format = validator.check_string(
-            data_format, ['NCDHW'], 'data_format', self.name)
+        self.format = validator.check_string(data_format, ['NCDHW'], 'data_format', self.name)
         self.add_prim_attr('data_format', self.format)
-        self.out_channel = validator.check_positive_int(
-            out_channel, 'out_channel', self.name)
+        self.out_channel = validator.check_positive_int(out_channel, 'out_channel', self.name)
         validator.check_value_type("group", group, (int,), self.name)
-        validator.check_int_range(
-            group, 1, out_channel, validator.INC_BOTH, "group", self.name)
+        validator.check_int_range(group, 1, out_channel, validator.INC_BOTH, "group", self.name)
         device_target = context.get_context("device_target")
         if self.out_channel % group != 0:
-            raise ValueError(
-                "The argument 'group' should be divisible by 'out_channel'")
+            raise ValueError("The argument 'group' should be divisible by 'out_channel'")
         if device_target == "Ascend" and group != 1:
-            raise ValueError(
-                "On Ascend platform, group = 1 must be satisfied.")
+            raise ValueError("On Ascend platform, group = 1 must be satisfied.")
 
         self.group = group
         self.add_prim_attr('groups', self.group)
@@ -6911,17 +6682,12 @@ class Conv3DBackpropInput(Primitive):
                  group=1,
                  data_format="NCDHW"):
         """Initialize Conv3DBackpropInput"""
-        self.init_prim_io_names(
-            inputs=['filter', 'out_backprop', 'input_size'], outputs=['y'])
-        self.out_channel = validator.check_positive_int(
-            out_channel, 'out_channel', self.name)
-        self.kernel_size = _check_3d_int_or_tuple(
-            'kernel_size', kernel_size, self.name)
-        self.stride = _check_3d_int_or_tuple(
-            'stride', stride, self.name, allow_five=True, ret_five=True)
+        self.init_prim_io_names(inputs=['filter', 'out_backprop', 'input_size'], outputs=['y'])
+        self.out_channel = validator.check_positive_int(out_channel, 'out_channel', self.name)
+        self.kernel_size = _check_3d_int_or_tuple('kernel_size', kernel_size, self.name)
+        self.stride = _check_3d_int_or_tuple('stride', stride, self.name, allow_five=True, ret_five=True)
         self.add_prim_attr('strides', self.stride)
-        self.dilation = _check_3d_int_or_tuple(
-            'dilation', dilation, self.name, allow_five=True, ret_five=True)
+        self.dilation = _check_3d_int_or_tuple('dilation', dilation, self.name, allow_five=True, ret_five=True)
         self.add_prim_attr('dilations', self.dilation)
         validator.check_value_type('pad', pad, (int, tuple), self.name)
         validator.check_value_type('pad_mode', pad_mode, [str], self.name)
@@ -6931,8 +6697,7 @@ class Conv3DBackpropInput(Primitive):
         self.add_prim_attr("pad", pad)
         self.pad_list = pad
 
-        self.pad_mode = validator.check_string(
-            pad_mode.lower(), ['valid', 'same', 'pad'], 'pad_mode', self.name)
+        self.pad_mode = validator.check_string(pad_mode.lower(), ['valid', 'same', 'pad'], 'pad_mode', self.name)
         if self.pad_mode != 'pad' and self.pad_list != (0, 0, 0, 0, 0, 0):
             raise ValueError(f"For '{self.name}', the 'pad' must be (0, 0, 0, 0, 0, 0) "
                              f"when 'pad_mode' is not \"pad\", "
@@ -6946,8 +6711,7 @@ class Conv3DBackpropInput(Primitive):
         self.add_prim_attr('mode', self.mode)
         self.group = validator.check_positive_int(group, 'group', self.name)
         self.add_prim_attr('groups', self.group)
-        self.format = validator.check_string(
-            data_format, ['NCDHW'], 'format', self.name)
+        self.format = validator.check_string(data_format, ['NCDHW'], 'format', self.name)
         self.add_prim_attr('data_format', self.format)
 
 
@@ -7054,8 +6818,7 @@ class SparseApplyAdadelta(Primitive):
     __mindspore_signature__ = (
         sig.make_sig('var', sig.sig_rw.RW_WRITE, dtype=sig.sig_dtype.T),
         sig.make_sig('accum', sig.sig_rw.RW_WRITE, dtype=sig.sig_dtype.T),
-        sig.make_sig('accum_updata', sig.sig_rw.RW_WRITE,
-                     dtype=sig.sig_dtype.T),
+        sig.make_sig('accum_updata', sig.sig_rw.RW_WRITE, dtype=sig.sig_dtype.T),
         sig.make_sig('lr', dtype=sig.sig_dtype.T1),
         sig.make_sig('rho', dtype=sig.sig_dtype.T1),
         sig.make_sig('grad', dtype=sig.sig_dtype.T),
@@ -7066,10 +6829,8 @@ class SparseApplyAdadelta(Primitive):
     def __init__(self, epsilon, use_locking=False):
         """Initialize SparseApplyAdadelta"""
         validator.check_value_type("epsilon", epsilon, [float], self.name)
-        validator.check_number("epsilon", epsilon, 0.0,
-                               validator.GE, self.name)
-        validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
+        validator.check_number("epsilon", epsilon, 0.0, validator.GE, self.name)
+        validator.check_value_type("use_locking", use_locking, [bool], self.name)
 
 
 class CTCLossV2(Primitive):
@@ -7149,11 +6910,9 @@ class CTCLossV2(Primitive):
         self.add_prim_attr("blank", blank)
         validator.check_value_type("reduction", reduction, [str], self.name)
         self.reduction = reduction.lower()
-        validator.check_string(
-            self.reduction, ['none'], 'reduction', self.name)
+        validator.check_string(self.reduction, ['none'], 'reduction', self.name)
         self.add_prim_attr("reduction", self.reduction)
-        validator.check_value_type(
-            "zero_infinity", zero_infinity, [bool], self.name)
+        validator.check_value_type("zero_infinity", zero_infinity, [bool], self.name)
         self.add_prim_attr("zero_infinity", zero_infinity)
 
 
@@ -7210,8 +6969,7 @@ class CTCLossV2Grad(Primitive):
         self.add_prim_attr("blank", blank)
         validator.check_value_type("reduction", reduction, [str], self.name)
         self.add_prim_attr("reduction", reduction)
-        validator.check_value_type(
-            "zero_infinity", zero_infinity, [bool], self.name)
+        validator.check_value_type("zero_infinity", zero_infinity, [bool], self.name)
         self.add_prim_attr("zero_infinity", zero_infinity)
 
 
@@ -7341,14 +7099,11 @@ class Conv3DTranspose(Primitive):
                  data_format="NCDHW"):
         """Initialize Conv3DTranspose"""
         self.init_prim_io_names(inputs=['x', 'filter'], outputs=['output'])
-        self.in_channel = validator.check_positive_int(
-            in_channel, 'in_channel', self.name)
+        self.in_channel = validator.check_positive_int(in_channel, 'in_channel', self.name)
         self.add_prim_attr('in_channel', self.in_channel)
-        self.out_channel = validator.check_positive_int(
-            out_channel, 'out_channel', self.name)
+        self.out_channel = validator.check_positive_int(out_channel, 'out_channel', self.name)
         self.add_prim_attr('out_channel', self.out_channel)
-        self.kernel_size = _check_3d_int_or_tuple(
-            'kernel_size', kernel_size, self.name)
+        self.kernel_size = _check_3d_int_or_tuple('kernel_size', kernel_size, self.name)
         if isinstance(kernel_size, int):
             self.kernel_size = (kernel_size,) * 3
         self.add_prim_attr('kernel_size', self.kernel_size)
@@ -7367,8 +7122,7 @@ class Conv3DTranspose(Primitive):
                              f"six positive int numbers, but got {self.pad}.")
         self.pad_list = pad
         validator.check_value_type('pad_mode', pad_mode, [str], self.name)
-        self.pad_mode = validator.check_string(
-            pad_mode.lower(), ['valid', 'same', 'pad'], 'pad_mode', self.name)
+        self.pad_mode = validator.check_string(pad_mode.lower(), ['valid', 'same', 'pad'], 'pad_mode', self.name)
         self.add_prim_attr('pad_mode', self.pad_mode)
 
         if self.pad_mode != 'pad' and pad != (0, 0, 0, 0, 0, 0):
@@ -7382,26 +7136,21 @@ class Conv3DTranspose(Primitive):
         self.mode = validator.check_equal_int(mode, 1, 'mode', self.name)
         self.add_prim_attr('mode', self.mode)
         validator.check_value_type("group", group, (int,), self.name)
-        validator.check_int_range(
-            group, 1, out_channel, validator.INC_BOTH, "group", self.name)
+        validator.check_int_range(group, 1, out_channel, validator.INC_BOTH, "group", self.name)
         if self.out_channel % group != 0:
-            raise ValueError(
-                "The argument 'group' should be divisible by 'out_channel'")
+            raise ValueError("The argument 'group' should be divisible by 'out_channel'")
         device_target = context.get_context("device_target")
         if device_target == "Ascend" and group != 1:
-            raise ValueError(
-                "On Ascend platform, group = 1 must be satisfied.")
+            raise ValueError("On Ascend platform, group = 1 must be satisfied.")
         self.group = group
         self.add_prim_attr('groups', self.group)
 
-        self.format = validator.check_string(
-            data_format, ['NCDHW'], 'format', self.name)
+        self.format = validator.check_string(data_format, ['NCDHW'], 'format', self.name)
         self.add_prim_attr('data_format', self.format)
 
         self.output_padding = _check_3d_int_or_tuple('output_padding', output_padding, self.name,
                                                      allow_five=False, ret_five=True, greater_zero=False)
-        output_padding_ = (
-            self.output_padding[2], self.output_padding[3], self.output_padding[4])
+        output_padding_ = (self.output_padding[2], self.output_padding[3], self.output_padding[4])
         if self.pad_mode != 'pad' and output_padding_ != (0, 0, 0):
             raise ValueError(f"For '{self.name}', the 'output_padding' must be zero or (0, 0, 0) "
                              f"when 'pad_mode' is not \"pad\", but got 'output_padding' is "
@@ -7507,11 +7256,9 @@ class Dilation2D(Primitive):
         self.init_prim_io_names(inputs=['x', 'filter'], outputs=['y'])
 
         def _check_format_stride_or_dilation(arg_name, arg_value, prim_name, data_format):
-            validator.check_value_type(
-                arg_name, arg_value, (int, tuple), prim_name)
+            validator.check_value_type(arg_name, arg_value, (int, tuple), prim_name)
             if isinstance(arg_value, int):
-                ret_value = (1, arg_value, arg_value, 1) if data_format == "NHWC" else (
-                    1, 1, arg_value, arg_value)
+                ret_value = (1, arg_value, arg_value, 1) if data_format == "NHWC" else (1, 1, arg_value, arg_value)
             elif len(arg_value) == 2:
                 ret_value = (1, arg_value[0], arg_value[1], 1) if data_format == "NHWC" else \
                     (1, 1, arg_value[0], arg_value[1])
@@ -7538,16 +7285,12 @@ class Dilation2D(Primitive):
             return ret_value
 
         if data_format == 'NHWC':
-            raise ValueError(
-                f"For '{self.name}', NHWC format is not supported at present.")
-        self.data_format = validator.check_string(
-            data_format, ['NCHW', 'NHWC'], 'data_format', self.name)
+            raise ValueError(f"For '{self.name}', NHWC format is not supported at present.")
+        self.data_format = validator.check_string(data_format, ['NCHW', 'NHWC'], 'data_format', self.name)
         self.add_prim_attr('data_format', self.data_format)
-        self.pad_mode = validator.check_string(
-            pad_mode, ['VALID', 'SAME', 'valid', 'same'], 'pad_mode', self.name)
+        self.pad_mode = validator.check_string(pad_mode, ['VALID', 'SAME', 'valid', 'same'], 'pad_mode', self.name)
         self.add_prim_attr('pad_mode', self.pad_mode.upper())
-        self.stride = _check_format_stride_or_dilation(
-            "stride", stride, self.name, self.data_format)
+        self.stride = _check_format_stride_or_dilation("stride", stride, self.name, self.data_format)
 
         def is_in_range(x):
             return 1 <= x <= 255
@@ -7557,8 +7300,7 @@ class Dilation2D(Primitive):
                              f'stride should be in the range of [1, 255], '
                              f'but got stride_h: `{self.stride[2]}`, stride_w: `{self.stride[3]}`.')
         self.add_prim_attr('stride', self.stride)
-        self.dilation = _check_format_stride_or_dilation(
-            "dilation", dilation, self.name, self.data_format)
+        self.dilation = _check_format_stride_or_dilation("dilation", dilation, self.name, self.data_format)
         self.add_prim_attr('dilation', self.dilation)
 
 
@@ -7664,10 +7406,8 @@ class ApplyAdagradDA(Primitive):
 
     __mindspore_signature__ = (
         sig.make_sig('var', sig.sig_rw.RW_WRITE, dtype=sig.sig_dtype.T),
-        sig.make_sig('gradient_accumulator',
-                     sig.sig_rw.RW_WRITE, dtype=sig.sig_dtype.T),
-        sig.make_sig('gradient_squared_accumulator',
-                     sig.sig_rw.RW_WRITE, dtype=sig.sig_dtype.T),
+        sig.make_sig('gradient_accumulator', sig.sig_rw.RW_WRITE, dtype=sig.sig_dtype.T),
+        sig.make_sig('gradient_squared_accumulator', sig.sig_rw.RW_WRITE, dtype=sig.sig_dtype.T),
         sig.make_sig('grad', dtype=sig.sig_dtype.T),
         sig.make_sig('lr', dtype=sig.sig_dtype.T1),
         sig.make_sig('l1', dtype=sig.sig_dtype.T2),
@@ -7678,8 +7418,7 @@ class ApplyAdagradDA(Primitive):
     @prim_attr_register
     def __init__(self, use_locking=False):
         """Initialize ApplyAdagradDA"""
-        validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
+        validator.check_value_type("use_locking", use_locking, [bool], self.name)
         self.add_prim_attr('side_effect_mem', True)
 
 
@@ -7792,14 +7531,10 @@ class SparseApplyRMSProp(Primitive):
         validator.check_value_type("rho", rho, [float], self.name)
         validator.check_value_type("momentum", momentum, [float], self.name)
         validator.check_value_type("epsilon", epsilon, [float], self.name)
-        validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
-        self.epsilon = validator.check_number(
-            "epsilon", epsilon, 0.0, validator.GT, self.name)
-        self.momentum = validator.check_number(
-            "momentum", momentum, 0.0, validator.GE, self.name)
-        self.rho = validator.check_float_range(
-            rho, 0.0, 1.0, validator.INC_BOTH, "rho", self.name)
+        validator.check_value_type("use_locking", use_locking, [bool], self.name)
+        self.epsilon = validator.check_number("epsilon", epsilon, 0.0, validator.GT, self.name)
+        self.momentum = validator.check_number("momentum", momentum, 0.0, validator.GE, self.name)
+        self.rho = validator.check_float_range(rho, 0.0, 1.0, validator.INC_BOTH, "rho", self.name)
 
 
 class SparseApplyCenteredRMSProp(Primitive):
@@ -7906,8 +7641,7 @@ class SparseApplyCenteredRMSProp(Primitive):
         self.init_prim_io_names(inputs=['var', 'mg', 'ms', 'mom', 'lr', 'rho', 'momentum',
                                         'epsilon', 'grad', 'indices'],
                                 outputs=['var'])
-        validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
+        validator.check_value_type("use_locking", use_locking, [bool], self.name)
 
 
 class ApplyKerasMomentum(Primitive):
@@ -8002,10 +7736,8 @@ class ApplyKerasMomentum(Primitive):
     @prim_attr_register
     def __init__(self, use_locking=False, use_nesterov=False):
         """Initialize ApplyKerasMomentum"""
-        validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
-        validator.check_value_type(
-            "use_nesterov", use_nesterov, [bool], self.name)
+        validator.check_value_type("use_locking", use_locking, [bool], self.name)
+        validator.check_value_type("use_nesterov", use_nesterov, [bool], self.name)
 
 
 class MultilabelMarginLoss(Primitive):
@@ -8056,10 +7788,8 @@ class MultilabelMarginLoss(Primitive):
     @prim_attr_register
     def __init__(self, reduction='mean'):
         """Initialize MultilabelMarginLoss"""
-        self.init_prim_io_names(
-            inputs=['x', 'target'], outputs=['y', 'is_target'])
-        self.reduction = validator.check_string(
-            reduction, ['none', 'sum', 'mean'], 'reduction', self.name)
+        self.init_prim_io_names(inputs=['x', 'target'], outputs=['y', 'is_target'])
+        self.reduction = validator.check_string(reduction, ['none', 'sum', 'mean'], 'reduction', self.name)
 
 
 class ApplyAdamWithAmsgrad(Primitive):
@@ -8169,8 +7899,7 @@ class ApplyAdamWithAmsgrad(Primitive):
         validator.check_value_type("beta1", beta1, [float], self.name)
         validator.check_value_type("beta2", beta2, [float], self.name)
         validator.check_value_type("epsilon", epsilon, [float], self.name)
-        validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
+        validator.check_value_type("use_locking", use_locking, [bool], self.name)
         self.add_prim_attr("side_effect_mem", True)
 
 
@@ -8292,8 +8021,7 @@ class ApplyAdamWithAmsgradV2(Primitive):
     @prim_attr_register
     def __init__(self, use_locking=False):
         """Initialize ApplyAdamWithAmsgradv2"""
-        validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
+        validator.check_value_type("use_locking", use_locking, [bool], self.name)
         self.add_prim_attr("side_effect_mem", True)
 
 
@@ -8374,19 +8102,13 @@ class FractionalMaxPool(Primitive):
     @prim_attr_register
     def __init__(self, pooling_ratio, pseudo_random=False, overlapping=False, deterministic=False, seed=0, seed2=0):
         """Initialize FractionalMaxPool."""
-        self.init_prim_io_names(inputs=["x"], outputs=[
-                                "y", "row_pooling_sequence", "col_pooling_sequence"])
-        validator.check_value_type(
-            'pooling_ratio', pooling_ratio, [list], self.name)
+        self.init_prim_io_names(inputs=["x"], outputs=["y", "row_pooling_sequence", "col_pooling_sequence"])
+        validator.check_value_type('pooling_ratio', pooling_ratio, [list], self.name)
         for item in pooling_ratio:
-            validator.check_value_type(
-                "pooling_ratio_item", item, float, self.name)
-        validator.check_value_type(
-            "pseudo_random", pseudo_random, [bool], self.name)
-        validator.check_value_type(
-            "overlapping", overlapping, [bool], self.name)
-        validator.check_value_type(
-            "deterministic", deterministic, [bool], self.name)
+            validator.check_value_type("pooling_ratio_item", item, float, self.name)
+        validator.check_value_type("pseudo_random", pseudo_random, [bool], self.name)
+        validator.check_value_type("overlapping", overlapping, [bool], self.name)
+        validator.check_value_type("deterministic", deterministic, [bool], self.name)
         validator.check_value_type("seed", seed, [int], self.name)
         validator.check_value_type("seed2", seed2, [int], self.name)
 
@@ -8467,8 +8189,7 @@ class FractionalMaxPool3DWithFixedKsize(Primitive):
     @prim_attr_register
     def __init__(self, ksize, output_shape, data_format="NCDHW"):
         """Initialize FractionalMaxPool3DWithFixedKsize."""
-        self.init_prim_io_names(
-            inputs=["x", "random_samples"], outputs=["y", "argmax"])
+        self.init_prim_io_names(inputs=["x", "random_samples"], outputs=["y", "argmax"])
         validator.check_value_type("ksize", ksize, [int, tuple], self.name)
         self.ksize = ksize
         if isinstance(self.ksize, int):
@@ -8478,10 +8199,8 @@ class FractionalMaxPool3DWithFixedKsize(Primitive):
                              f"three positive int numbers, but got {len(self.ksize)} numbers.")
         for item in self.ksize:
             validator.check_positive_int(item, 'ksize item', self.name)
-        self.output_shape = validator.check_value_type(
-            "output_shape", output_shape, [int, tuple], self.name)
-        self.data_format = validator.check_string(
-            data_format, ['NCDHW', 'NDHWC'], 'data_format', self.name)
+        self.output_shape = validator.check_value_type("output_shape", output_shape, [int, tuple], self.name)
+        self.data_format = validator.check_string(data_format, ['NCDHW', 'NDHWC'], 'data_format', self.name)
         self.output_shape = _check_3d_int_or_tuple("output_shape", output_shape,
                                                    self.name, allow_five=False, ret_five=False)
         self.add_prim_attr("ksize", self.ksize)
@@ -8564,19 +8283,13 @@ class FractionalAvgPool(Primitive):
     @prim_attr_register
     def __init__(self, pooling_ratio, pseudo_random=False, overlapping=False, deterministic=False, seed=0, seed2=0):
         """Initialize FractionalAvgPool."""
-        self.init_prim_io_names(inputs=["x"], outputs=[
-                                "y", "row_pooling_sequence", "col_pooling_sequence"])
-        validator.check_value_type(
-            'pooling_ratio', pooling_ratio, [list], self.name)
+        self.init_prim_io_names(inputs=["x"], outputs=["y", "row_pooling_sequence", "col_pooling_sequence"])
+        validator.check_value_type('pooling_ratio', pooling_ratio, [list], self.name)
         for item in pooling_ratio:
-            validator.check_value_type(
-                "pooling_ratio_item", item, float, self.name)
-        validator.check_value_type(
-            "pseudo_random", pseudo_random, [bool], self.name)
-        validator.check_value_type(
-            "overlapping", overlapping, [bool], self.name)
-        validator.check_value_type(
-            "deterministic", deterministic, [bool], self.name)
+            validator.check_value_type("pooling_ratio_item", item, float, self.name)
+        validator.check_value_type("pseudo_random", pseudo_random, [bool], self.name)
+        validator.check_value_type("overlapping", overlapping, [bool], self.name)
+        validator.check_value_type("deterministic", deterministic, [bool], self.name)
         validator.check_value_type("seed", seed, [int], self.name)
         validator.check_value_type("seed2", seed2, [int], self.name)
 
@@ -8625,8 +8338,7 @@ class NthElement(Primitive):
     @prim_attr_register
     def __init__(self, reverse=False):
         """Initialize NthElement."""
-        self.reverse = validator.check_value_type(
-            "reverse", reverse, [bool], self.name)
+        self.reverse = validator.check_value_type("reverse", reverse, [bool], self.name)
         self.add_prim_attr("reverse", self.reverse)
         self.init_prim_io_names(inputs=['input', 'n'],
                                 outputs=['output'])
@@ -8708,8 +8420,7 @@ class PSROIPooling(Primitive):
     @prim_attr_register
     def __init__(self, spatial_scale, group_size, output_dim):
         """Initialize PSROIPooling"""
-        validator.check_positive_float(
-            spatial_scale, "spatial_scale", self.name)
+        validator.check_positive_float(spatial_scale, "spatial_scale", self.name)
         validator.check_positive_int(group_size, "group_size", self.name)
         validator.check_positive_int(output_dim, "output_dim", self.name)
         self.spatial_scale = spatial_scale
@@ -8806,13 +8517,11 @@ class TripletMarginLoss(Primitive):
     @prim_attr_register
     def __init__(self, p=2, swap=False, eps=1e-6, reduction="mean"):
         """Initialize TripletMarginLoss"""
-        self.init_prim_io_names(
-            inputs=['x', 'positive', 'negative', 'margin'], outputs=['y'])
+        self.init_prim_io_names(inputs=['x', 'positive', 'negative', 'margin'], outputs=['y'])
         validator.check_value_type("p", p, [int], self.name)
         validator.check_value_type("swap", swap, [bool], self.name)
         validator.check_value_type("eps", eps, [float], self.name)
-        self.reduction = validator.check_string(
-            reduction, ['none', 'sum', 'mean'], 'reduction', self.name)
+        self.reduction = validator.check_string(reduction, ['none', 'sum', 'mean'], 'reduction', self.name)
 
 
 class DeformableOffsets(Primitive):
@@ -8837,44 +8546,34 @@ class DeformableOffsets(Primitive):
         """Initialize DeformableOffsets"""
         self.init_prim_io_names(inputs=['x', 'offsets'], outputs=['y'])
 
-        self.format = validator.check_string(
-            data_format, ['NCHW', 'NHWC'], 'data_format', self.name)
+        self.format = validator.check_string(data_format, ['NCHW', 'NHWC'], 'data_format', self.name)
         pos_c = 1
         if self.format == "NHWC":
             pos_c = 3
         self.add_prim_attr('format', self.format)
 
-        validator.check_size_and_element_type_of_tuple(
-            'strides', strides, 4, int, self.name)
+        validator.check_size_and_element_type_of_tuple('strides', strides, 4, int, self.name)
         if strides[0] != 1 or strides[pos_c] != 1:
-            raise ValueError(
-                f"For '{self.name}', The N and C dimensions of 'strides' must be set to 1.")
+            raise ValueError(f"For '{self.name}', The N and C dimensions of 'strides' must be set to 1.")
         self.add_prim_attr('strides', strides)
 
-        validator.check_size_and_element_type_of_tuple(
-            'pads', pads, 4, int, self.name)
+        validator.check_size_and_element_type_of_tuple('pads', pads, 4, int, self.name)
         self.add_prim_attr('pads', pads)
 
-        validator.check_size_and_element_type_of_tuple(
-            'kernel_size', ksize, 2, int, self.name)
+        validator.check_size_and_element_type_of_tuple('kernel_size', ksize, 2, int, self.name)
         self.add_prim_attr('ksize', ksize)
 
-        validator.check_size_and_element_type_of_tuple(
-            'dilations', dilations, 4, int, self.name)
+        validator.check_size_and_element_type_of_tuple('dilations', dilations, 4, int, self.name)
         if dilations[0] != 1 or dilations[pos_c] != 1:
-            raise ValueError(
-                f"For '{self.name}', The N and C dimensions of 'dilations' must be set to 1.")
+            raise ValueError(f"For '{self.name}', The N and C dimensions of 'dilations' must be set to 1.")
         self.add_prim_attr('dilations', dilations)
 
-        self.deformable_groups = validator.check_positive_int(
-            deformable_groups, 'deformable_groups', self.name)
+        self.deformable_groups = validator.check_positive_int(deformable_groups, 'deformable_groups', self.name)
         self.add_prim_attr('deformable_groups', self.deformable_groups)
 
-        self.modulated = validator.check_bool(
-            modulated, 'modulated', self.name)
+        self.modulated = validator.check_bool(modulated, 'modulated', self.name)
         if self.modulated is not True:
-            raise ValueError(
-                f"For '{self.name}', The modulated must be set to True.")
+            raise ValueError(f"For '{self.name}', The modulated must be set to True.")
         self.add_prim_attr('modulated', self.modulated)
 
 
@@ -8915,8 +8614,7 @@ class Pdist(Primitive):
         """Initialize Pdist"""
         validator.check_value_type("p", p, [float], self.name)
         if p < 0:
-            raise ValueError(
-                'Pdist p must be a non-negative value, but got `{}`.'.format(p))
+            raise ValueError('Pdist p must be a non-negative value, but got `{}`.'.format(p))
         self.init_prim_io_names(inputs=['x'], outputs=['y'])
 
 
@@ -9003,8 +8701,7 @@ class SparseApplyAdagradDA(Primitive):
     __mindspore_signature__ = (
         sig.make_sig('var', sig.sig_rw.RW_WRITE, dtype=sig.sig_dtype.T),
         sig.make_sig('grad_accum', sig.sig_rw.RW_WRITE, dtype=sig.sig_dtype.T),
-        sig.make_sig('grad_square_accum', sig.sig_rw.RW_WRITE,
-                     dtype=sig.sig_dtype.T),
+        sig.make_sig('grad_square_accum', sig.sig_rw.RW_WRITE, dtype=sig.sig_dtype.T),
         sig.make_sig('grad', dtype=sig.sig_dtype.T),
         sig.make_sig('indices', dtype=sig.sig_dtype.T1),
         sig.make_sig('lr', dtype=sig.sig_dtype.T),
@@ -9019,8 +8716,7 @@ class SparseApplyAdagradDA(Primitive):
         self.init_prim_io_names(inputs=['var', 'grad_accum', 'grad_square_accum',
                                         'grad', 'indices', 'lr', 'l1', 'l2', 'global_step'],
                                 outputs=['var'])
-        validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
+        validator.check_value_type("use_locking", use_locking, [bool], self.name)
 
 
 class SparseApplyMomentum(Primitive):
@@ -9106,10 +8802,8 @@ class SparseApplyMomentum(Primitive):
         """Initialize SparseApplyMomentum"""
         self.init_prim_io_names(inputs=['var', 'accum', 'lr', 'grad', 'indices', 'momentum'],
                                 outputs=['var'])
-        validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
-        validator.check_value_type(
-            "use_nesterov", use_nesterov, [bool], self.name)
+        validator.check_value_type("use_locking", use_locking, [bool], self.name)
+        validator.check_value_type("use_nesterov", use_nesterov, [bool], self.name)
 
 
 class SparseApplyProximalGradientDescent(Primitive):
@@ -9192,8 +8886,7 @@ class SparseApplyProximalGradientDescent(Primitive):
         """Initialize SparseApplyProximalGradientDescent."""
         self.init_prim_io_names(inputs=['var', 'alpha', 'l1', 'l2', 'grad', 'indices'],
                                 outputs=['var'])
-        validator.check_value_type(
-            "use_locking", use_locking, [bool], self.name)
+        validator.check_value_type("use_locking", use_locking, [bool], self.name)
 
 
 class NuclearNorm(Primitive):
@@ -9274,11 +8967,9 @@ class NuclearNorm(Primitive):
     @prim_attr_register
     def __init__(self, dim=None, keepdim=False):
         """Initialize NuclearNorm."""
-        validator.check_value_type(
-            "dim", dim, [list, tuple, type(None)], self.name)
+        validator.check_value_type("dim", dim, [list, tuple, type(None)], self.name)
         if dim is not None:
-            validator.check_int(len(dim), 2, validator.EQ,
-                                'length of dim_size', self.name)
+            validator.check_int(len(dim), 2, validator.EQ, 'length of dim_size', self.name)
             validator.check_is_int(dim[0], "dim[0]", self.name)
             validator.check_is_int(dim[1], "dim[1]", self.name)
         else:
@@ -9358,15 +9049,12 @@ class FractionalMaxPoolWithFixedKsize(Primitive):
         self.ksize = _check_positive_int_or_tuple(
             "ksize", ksize, self.name, allow_four=False, ret_four=False)
         self.add_prim_attr("ksize", self.ksize)
-        validator.check_value_type('output_shape', output_shape, [
-                                   int, tuple], self.name)
+        validator.check_value_type('output_shape', output_shape, [int, tuple], self.name)
         self.output_shape = _check_positive_int_or_tuple(
             "output_shape", output_shape, self.name, allow_four=False, ret_four=False)
         self.add_prim_attr("output_shape", self.output_shape)
-        self.data_format = validator.check_string(
-            data_format, ['NCHW'], 'data_format', self.name)
-        self.init_prim_io_names(
-            inputs=['input_x', 'random_samples'], outputs=['y', 'argmax'])
+        self.data_format = validator.check_string(data_format, ['NCHW'], 'data_format', self.name)
+        self.init_prim_io_names(inputs=['input_x', 'random_samples'], outputs=['y', 'argmax'])
 
 
 class ChannelShuffle(Primitive):
@@ -9415,8 +9103,7 @@ class ChannelShuffle(Primitive):
     def __init__(self, group):
         """Initialize ChannelShuffle"""
         if not isinstance(group, int):
-            raise ValueError(
-                f"For '{self.name}', attr 'group' must be an positive int number")
+            raise ValueError(f"For '{self.name}', attr 'group' must be an positive int number")
         self.init_prim_io_names(inputs=['x'], outputs=['y'])
 
 
@@ -9506,11 +9193,9 @@ class MaxPoolWithArgmaxV2(Primitive):
         self.init_prim_io_names(inputs=["x"], outputs=["output", "argmax"])
         validator.check_value_type("ceil_mode", ceil_mode, bool, self.name)
         self.ceil_mode = ceil_mode
-        validator.check_value_type("argmax_type", argmax_type, [
-                                   mstype.Type], self.name)
+        validator.check_value_type("argmax_type", argmax_type, [mstype.Type], self.name)
         argmax_type_valid_values = (mstype.int32, mstype.int64)
-        validator.check_type_name(
-            "argmax_type", argmax_type, argmax_type_valid_values, self.name)
+        validator.check_type_name("argmax_type", argmax_type, argmax_type_valid_values, self.name)
         if argmax_type == mstype.int32:
             self.add_prim_attr("argmax_type", 3)
         elif argmax_type == mstype.int64:
@@ -9518,16 +9203,12 @@ class MaxPoolWithArgmaxV2(Primitive):
         else:
             raise ValueError(
                 f"For '{self.name}', the 'argmax_type' must be mstype.int32 or mstype.int64, but got {argmax_type}.")
-        self.kernel_size = _check_positive_int_or_tuple(
-            "kernel_size", kernel_size, self.name, ret_four=True)
+        self.kernel_size = _check_positive_int_or_tuple("kernel_size", kernel_size, self.name, ret_four=True)
         if strides is None:
             strides = kernel_size
-        self.strides = _check_positive_int_or_tuple(
-            "strides", strides, self.name, ret_four=True)
-        self.pads = _check_positive_int_or_tuple(
-            "pads", pads, self.name, ret_four=True, strict_positive=False)
-        self.dilation = _check_positive_int_or_tuple(
-            "dilation", dilation, self.name, ret_four=True)
+        self.strides = _check_positive_int_or_tuple("strides", strides, self.name, ret_four=True)
+        self.pads = _check_positive_int_or_tuple("pads", pads, self.name, ret_four=True, strict_positive=False)
+        self.dilation = _check_positive_int_or_tuple("dilation", dilation, self.name, ret_four=True)
         self.add_prim_attr("kernel_size", self.kernel_size)
         self.add_prim_attr("strides", self.strides)
         self.add_prim_attr("pads", self.pads)
