@@ -42,7 +42,8 @@ class PagedAttentionNet(Cell):
             antiquant_scale=None,
             antiquant_offset=None,
             attn_mask=None,
-            q_seq_lens=None):
+            q_seq_lens=None,
+            alibi_mask=None):
         return self.net(
             query,
             key_cache,
@@ -52,7 +53,8 @@ class PagedAttentionNet(Cell):
             antiquant_scale,
             antiquant_offset,
             attn_mask,
-            q_seq_lens)
+            q_seq_lens,
+            alibi_mask)
 
 
 def to_pad_fp32(arr, dim=2):
@@ -79,9 +81,6 @@ class PagedAttentionTest(PagedAttentionBase):
         self.npu_init(PagedAttentionNet)
 
         self.i_test = self.i_test_dict[self.names[0]]
-        if self.i_test["is_alibi"]:
-            raise Exception(
-                "[Error] alibi_mask can only be in PagedAttentionMaskTest")
         if self.i_test["layout"] == "TH":
             raise Exception("[Error] layout 'TH' can only be in Asdop kernel")
         self.set_inputs()
@@ -119,7 +118,8 @@ class PagedAttentionTest(PagedAttentionBase):
             "antiquant_scale": None,
             "antiquant_offset": None,
             "attn_mask": None,
-            "q_seq_lens": None
+            "q_seq_lens": None,
+            "alibi_mask": None
         }
 
         # query
@@ -198,7 +198,8 @@ class PagedAttentionTest(PagedAttentionBase):
             "antiquant_scale": None,
             "antiquant_offset": None,
             "attn_mask": None,
-            "q_seq_lens": None
+            "q_seq_lens": None,
+            "alibi_mask": None
         }
 
         if self.mode == "load":
@@ -935,5 +936,95 @@ def test_paged_attention_quant_pertoken_antiquant_scale_int64_to_fp32_small():
         "quant_method": QuantMethod.INT_CUBE,
         "antiquant_scale_int64_to_fp32": True,
         "msprof": 0
+    }
+    PagedAttentionTest(i_test)
+
+
+@pytest.mark.skip
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.env_onecard
+def test_paged_attention_alibi_bsh_256():
+    """
+    Feature: test PagedAttention op in kbk enabling infer_boost
+    Description: test PagedAttention op in BSH layout with alibi and head_dim 256.
+    Expectation: the result is correct
+    """
+    i_test = {
+        "type": "float16",
+        "layout": "BSH",
+        "b": 2,
+        "sq": 11,
+        "skv": "rand-1",
+        "max_skv": 1024,
+        "nq": 9,
+        "nkv": 3,
+        "d": 256,
+        "blk_sz": 16,
+        "drop_prop": 0.0,
+        "quant_mode": 0,
+        "is_alibi": True,
+        "is_amask": False,
+        "blk_sparse": 0,
+        "msprof": 0,
+    }
+    PagedAttentionTest(i_test)
+
+
+@pytest.mark.skip
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.env_onecard
+def test_paged_attention_alibi_rand1():
+    """
+    Feature: test PagedAttention op in kbk enabling infer_boost
+    Description: test PagedAttention op with alibi and random sequence.
+    Expectation: the result is correct
+    """
+    i_test = {
+        "type": "float32",
+        "layout": "BSH",
+        "b": 2,
+        "sq": 17,
+        "skv": "rand-1",
+        "max_skv": 8192,
+        "nq": 9,
+        "nkv": 3,
+        "d": 128,
+        "blk_sz": 32,
+        "drop_prop": 0.0,
+        "quant_mode": 0,
+        "is_alibi": True,
+        "is_amask": False,
+        "blk_sparse": 0,
+        "msprof": 0,
+    }
+    PagedAttentionTest(i_test)
+
+
+@pytest.mark.skip
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.env_onecard
+def test_paged_attention_alibi_fd_bsh_64():
+    """
+    Feature: test PagedAttention op in kbk enabling infer_boost
+    Description: test PagedAttention op with alibi mask and head_dim 64.
+    Expectation: the result is correct
+    """
+    i_test = {
+        "type": "float16",
+        "layout": "BSH",
+        "b": 2,
+        "sq": 5,
+        "skv": "max",
+        "max_skv": 6144,
+        "nq": 9,
+        "nkv": 3,
+        "d": 64,
+        "blk_sz": 64,
+        "drop_prop": 0.0,
+        "quant_mode": 0,
+        "is_alibi": True,
+        "is_amask": False,
+        "blk_sparse": 0,
+        "msprof": 0,
     }
     PagedAttentionTest(i_test)

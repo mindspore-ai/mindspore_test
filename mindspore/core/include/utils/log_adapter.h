@@ -200,6 +200,7 @@ enum SubModuleId : int {
   SM_GRAPH_KERNEL,       // graph kernel fusion
   SM_LLM_BOOST,          // llm boost
   SM_TRACE,              // JIT trace
+  SM_INTERNAL_KERNEL,    // internal kernel
   NUM_SUBMODUES,         // number of submodules
 };
 

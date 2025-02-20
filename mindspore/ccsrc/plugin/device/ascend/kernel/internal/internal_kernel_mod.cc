@@ -28,7 +28,6 @@ namespace kernel {
 bool InternalKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   internal_to_ms_input_indices_mapper_.clear();
   internal_to_ms_output_indices_mapper_.clear();
-
   bool input_mutable = false;
   auto in_idx_list = InternalKernelModInOutMap::GetInstance()->GetKernelInMap(kernel_name_, &input_mutable);
   if (input_mutable) {
@@ -286,12 +285,10 @@ int InternalKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
     }
     internal_outputs_shape_[i] = std::move(shape);
   }
-
   if (!UpdateParam(inputs, outputs)) {
     MS_LOG(ERROR) << "UpdateParam failed, kernel_name: " << kernel_name_;
     return KRET_RESIZE_FAILED;
   }
-
   auto internal_ret = internal_op_->UpdateShape(internal_inputs_shape_, internal_outputs_shape_);
   if (internal_ret != internal::kInternalOk) {
     MS_LOG(ERROR) << "InternalKernel UpdateShape failed, kernel_name: " << kernel_name_;
