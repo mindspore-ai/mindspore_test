@@ -2,9 +2,6 @@ trace_ext:
   description: |
     Returns a new tensor that is the sum of the `input` main trace.
 
-    Note:
-        Input must be tensor.
-
     Args:
         input (Tensor): 2-D Tensor.
 
