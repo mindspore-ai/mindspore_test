@@ -80,6 +80,7 @@ class Opcode {
   bool IsCall() const { return class_ == Class::kCall; }
   bool IsBinaryMath() const { return class_ == Class::kBinaryMath; }
   bool IsUnaryMath() const { return class_ == Class::kUnaryMath; }
+  bool IsBuildOp() const { return class_ == Class::kContainerBuild; }
   bool IsCellAccess() const { return class_ == Class::kCell; }
   bool IsLocalAccess() const { return class_ == Class::kLocal; }
 

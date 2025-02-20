@@ -154,8 +154,7 @@ bool CastBaseOperation::GetSignatureType(const std::vector<Signature> &signature
   return has_sig_dtype;
 }
 
-tensor::BaseTensorPtr CastBaseOperation::TensorToDstDtypeValue(const ValuePtr &src_value,
-                                                               const TypeId &dst_type_id) const {
+tensor::BaseTensorPtr CastBaseOperation::TensorToDstDtypeValue(const ValuePtr &src_value, const TypeId &dst_type_id) {
   MS_EXCEPTION_IF_NULL(src_value);
   auto src_tensor = src_value->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(src_tensor);
@@ -166,8 +165,7 @@ tensor::BaseTensorPtr CastBaseOperation::TensorToDstDtypeValue(const ValuePtr &s
 // This function is used to convert scalar value to another scalar value with destination data type.
 // The scope of scalar type includes common data types, such as `FP64`, `FP32`, `FP16, `Int64`, `Int32`, ...
 // The following sort is based on the hot spots of the data type.
-ValuePtr CastBaseOperation::ScalarToDstDtypeValue(const ValuePtr &src_value,
-                                                  const std::pair<TypeId, bool> &dst_type) const {
+ValuePtr CastBaseOperation::ScalarToDstDtypeValue(const ValuePtr &src_value, const std::pair<TypeId, bool> &dst_type) {
   MS_EXCEPTION_IF_NULL(src_value);
   // Tensor not do scalar cast
   if (src_value->isa<tensor::BaseTensor>()) {

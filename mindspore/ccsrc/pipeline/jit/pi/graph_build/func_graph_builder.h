@@ -20,6 +20,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <utility>
 #include "ir/value.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
@@ -27,6 +28,7 @@
 #include "pipeline/jit/pi/graph_capture/abstract_wrapper.h"
 
 namespace mindspore {
+namespace pijit {
 class FuncGraphBuilder;
 using FuncGraphBuilderPtr = std::shared_ptr<FuncGraphBuilder>;
 class AbstractWrapper;
@@ -52,7 +54,10 @@ class FuncGraphBuilder {
 
   FuncGraphManagerPtr manager() const { return mng_; }
 
-  void set_manager(const FuncGraphManagerPtr &mng) { mng_ = mng; }
+  void set_manager(const FuncGraphManagerPtr &mng) {
+    mng_ = mng;
+    graph_->set_manager(mng_);
+  }
 
   /// \brief Add a cnode to the graph.
   ///
@@ -69,6 +74,42 @@ class FuncGraphBuilder {
   ///
   /// \return The abstract wrapper of the infer result.
   AbstractWrapperPtr AddNode(const ValuePtr &callable_value, const AbstractWrapperPtrList &inputs_abstract_wrapper);
+
+  /// \brief Add a cnode to the graph with graph is parsed in ast and byte code is CallFunctionEx.
+  ///
+  /// \param[in] callable_obj The callable python object.
+  /// \param[in] inputs_obj The input python objects.
+  ///
+  /// \return The abstract wrapper of the infer result.
+  AbstractWrapperPtr AddNodeCallFunctionEx(const py::object &callable_obj,
+                                           const AbstractWrapperPtrList &inputs_abstract_wrapper);
+
+  /// \brief Add a cnode to the graph with graph is parsed in ast and byte code is CallFunctionEx.
+  ///
+  /// \param[in] callable_value The callable value.
+  /// \param[in] inputs_obj The input python objects.
+  ///
+  /// \return The abstract wrapper of the infer result.
+  AbstractWrapperPtr AddNodeCallFunctionEx(const ValuePtr &callable_value,
+                                           const AbstractWrapperPtrList &inputs_abstract_wrapper);
+
+  /// \brief Add a cnode to the graph with graph is parsed in ast and byte code is CallFunctionKw.
+  ///
+  /// \param[in] callable_obj The callable python object.
+  /// \param[in] inputs_obj The input python objects.
+  ///
+  /// \return The abstract wrapper of the infer result.
+  AbstractWrapperPtr AddNodeCallFunctionKw(const py::object &callable_obj,
+                                           const AbstractWrapperPtrList &inputs_abstract_wrapper);
+
+  /// \brief Add a cnode to the graph with graph is parsed in ast and byte code is CallFunctionKw.
+  ///
+  /// \param[in] callable_value The callable value.
+  /// \param[in] inputs_obj The input python objects.
+  ///
+  /// \return The abstract wrapper of the infer result.
+  AbstractWrapperPtr AddNodeCallFunctionKw(const ValuePtr &callable_value,
+                                           const AbstractWrapperPtrList &inputs_abstract_wrapper);
 
   /// \brief Add a python object to graph.
   ///
@@ -96,6 +137,8 @@ class FuncGraphBuilder {
   /// \brief Clear all output node of the graph.
   void ClearOutputNodes() { output_nodes_.clear(); }
 
+  size_t GetOutputSize() const { return output_nodes_.size(); }
+
   /// \brief Get the callable python primitive or function.
   ///
   /// \param[in] obj The method of a python object.
@@ -109,13 +152,6 @@ class FuncGraphBuilder {
   ///
   /// \return Return the corresponding primitive of function of the func.
   static py::object ConvertFunction(const py::object &obj);
-
-  /// \brief Check if the python object can be converted to a cnode directly.
-  ///
-  /// \param[in] obj A python object.
-  ///
-  /// \return Return true if the python object can be converted to a cnode directly.
-  static bool CheckCallable(const py::object &obj);
 
   /// \brief Check if the python object is a function which can be constantly folded.
   ///
@@ -133,8 +169,10 @@ class FuncGraphBuilder {
 
   /// \brief Set the final outputs and get the graph.
   ///
+  /// \param[in] force Allows getting the graph when the outputs have not yet been added.
+  ///
   /// \return The graph constructed.
-  FuncGraphPtr graph();
+  FuncGraphPtr graph(bool force = false);
 
   /// \brief Clear abstract for nodes.
   void ClearNodeAbstract();
@@ -144,7 +182,7 @@ class FuncGraphBuilder {
   /// \param[in] name The func_graph name to set.
   void SetGraphName(const std::string &name);
 
-  static AbstractBasePtr EvalValue(const ValuePtr &value, const AbstractBasePtrList &inputs_abs_list);
+  static std::pair<AbstractBasePtr, bool> EvalValue(const ValuePtr &value, const AbstractBasePtrList &inputs_abs_list);
 
   static bool IsParameterSequence(const py::object &object);
 
@@ -152,15 +190,30 @@ class FuncGraphBuilder {
 
   const std::vector<FuncGraphBuilder *> &prev_builders() const { return prev_builders_; }
 
+  void UpdateNodesMap(const AbstractWrapperPtr &key, const AnfNodePtr &node) {
+    (void)key_to_node_.insert_or_assign(key, node);
+  }
+
   AnfNodePtr ReadLocalVariable(const AbstractWrapperPtr &abstract_wrapper);
 
   AbstractWrapperPtr AddLocalVariable(const py::object &obj);
+
+  /// \brief Add a custom node to the graph.
+  ///
+  /// \param[in] wrapper The abstract wrapper corresponding to the node.
+  /// \param[in] node The node will be added.
+  ///
+  /// \note Nodes created during the conversion of Dict nodes need to be added to the graph using this method.
+  void AddLocalVariableNode(const AbstractWrapperPtr &wrapper, const AnfNodePtr &node);
 
   AbstractWrapperPtr BuildGradNetNode(const ValuePtr &callable_value, const py::object &callable_obj,
                                       const AbstractWrapperPtrList &inputs_abstract_wrapper);
 
   AbstractWrapperPtr BuildGradNode(const AbstractWrapperPtr &key, const FuncGraphPtr &forward_fg,
-                                   const AbstractWrapperPtrList &inputs, bool need_unpack);
+                                   const AbstractWrapperPtrList &inputs);
+
+  static FuncGraphPtr BuildCallForwardGraphForGrad(const FuncGraphPtr &fg, const std::vector<size_t> &arg_len,
+                                                   bool is_cell);
 
   AbstractWrapperPtr AddTopGraphArgInput(const py::object &object);
 
@@ -168,7 +221,17 @@ class FuncGraphBuilder {
 
   AbstractWrapperPtr AddTopGraphKwargsInputs(const py::object &vargs);
 
+  AnfNodePtr FindNodeByWrapper(const AbstractWrapperPtr &abstract_wrapper);
+
   AnfNodePtr GetNodeByWrapper(const AbstractWrapperPtr &abstract_wrapper);
+
+  AbstractWrapperPtr AddAttributeInput(const py::object &object);
+
+  size_t origin_top_input_num() const { return origin_top_input_num_; }
+
+  // filter FakeNodeKey
+  static bool IsValidScalar(const AbstractBasePtr &abs);
+  static bool IsValidTensor(const AbstractBasePtr &abs);
 
  private:
   static bool CheckCallable(const ValuePtr &value, const AbstractBasePtr &abs);
@@ -176,8 +239,9 @@ class FuncGraphBuilder {
   static bool CheckGraphOutput(const AbstractBasePtr &abs);
 
   AnfNodePtr ConvertObjToNode(const py::object &input_obj);
-
   AnfNodePtr ConvertParameterTupleToNode(const py::object &input_obj);
+  AnfNodePtr ConvertPyTupleListToNode(const py::object &obj);
+  AnfNodePtr ConvertPyDictToNode(const py::dict &dict);
 
   AbstractWrapperPtr AddNodeWithAbstract(const ValuePtr &value, const AbstractWrapperPtrList &inputs_abstract_wrapper,
                                          const AbstractBasePtr &abstract);
@@ -186,8 +250,8 @@ class FuncGraphBuilder {
                                  std::vector<AnfNodePtr> *input_node_list,
                                  std::vector<AbstractBasePtr> *input_abs_list);
 
-  static AbstractBasePtr DoInferAndCheck(const ValuePtr &callable_value,
-                                         const std::vector<AbstractBasePtr> &input_abs_list);
+  static std::pair<AbstractBasePtr, bool> DoInferAndCheck(const ValuePtr &callable_value,
+                                                          const std::vector<AbstractBasePtr> &input_abs_list);
 
   CNodePtr DoPrimitiveInferAndCheck(const PrimitivePtr &primitive, const AnfNodePtrList &input_node_list,
                                     const AbstractBasePtrList &args_abs_list);
@@ -202,21 +266,42 @@ class FuncGraphBuilder {
   static bool CheckInvalidCellListDictMethod(const py::object &obj);
 
   AbstractWrapperPtr HandleGrad(const AbstractWrapperPtr &key, const FuncGraphPtr &forward_fg,
-                                const AbstractWrapperPtrList &inputs, bool need_unpack);
+                                const AbstractWrapperPtrList &inputs);
 
   static AbstractBasePtr BuildAbstractForInputObject(const py::object &object);
 
+  static void PrintConstantAbstract(const AbstractBasePtr &abs);
+
   AbstractBasePtr FetchFuncGraphOutputAbstract(const ValuePtr &value) const;
+
+  void UpdateParameterFuncGraph(const AnfNodePtr &node);
+
+  static ParameterPtr AddParameter(const FuncGraphPtr &fg);
+
+  static void SetParameterName(const ParameterPtr &param);
+
+  void MarkNodeIsolated(const AnfNodePtr &node, bool force);
+
+  void EraseCandidateIsolatedNode(const AnfNodePtr &node);
+
+  AnfNodePtr GenerateOutputNode();
+
+  AnfNodePtr AttachIsolatedNode(const AnfNodePtr &node) const;
 
   FuncGraphPtr graph_{nullptr};
   bool has_set_output_{false};
   HashMap<AbstractWrapperPtr, AnfNodePtr> key_to_node_;
   std::vector<AnfNodePtr> output_nodes_;
 
+  // Store all isolated nodes for graph which should be appended to the output of graph.
+  std::vector<AnfNodePtr> isolated_nodes_;
+
   // Store all previous builders for subgraph call and control flow.
   std::vector<FuncGraphBuilder *> prev_builders_;
 
   FuncGraphManagerPtr mng_;
+  size_t origin_top_input_num_ = 0;
 };
+}  // namespace pijit
 }  // namespace mindspore
 #endif  // MINDSPORE_PI_JIT_GRAPH_BUILD_FUNC_GRAPH_BUILDER_H_

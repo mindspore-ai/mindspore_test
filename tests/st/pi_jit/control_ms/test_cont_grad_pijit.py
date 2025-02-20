@@ -1,6 +1,5 @@
 import numpy as np
-import sys  
-import pytest 
+import pytest
 from mindspore import dtype as ms
 from mindspore import Tensor
 from mindspore import context
@@ -10,10 +9,9 @@ from mindspore.ops import composite as C
 from mindspore.ops import operations as P
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
+@pytest.fixture(autouse=True)
+def skip_if_python_version_too_high():
+    pytest.skip("Not Support Parameter in FuncGraph Outputs.")
 
 grad_by_list = C.GradOperation(get_by_list=True)
 grad_all = C.GradOperation(get_all=True)

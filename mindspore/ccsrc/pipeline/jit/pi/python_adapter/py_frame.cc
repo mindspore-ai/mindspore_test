@@ -219,6 +219,7 @@ py::tuple PyFrameWrapper::PackArgs() const {
   PyTuple_SET_ITEM(ret, 1, Py_XNewRef(value));
   value = has_kw_va ? fast[argc++] : Py_None;
   PyTuple_SET_ITEM(ret, kTwo, Py_XNewRef(value));
+  argc = argc - has_va - has_kw_va;
 
 #if !IS_PYTHON_3_11_PLUS
   Py_ssize_t ncells = PyTuple_GET_SIZE(co->co_cellvars);

@@ -111,7 +111,22 @@ bool GraphUtils::IsEmptyContainer(const py::object &obj) {
   if (!py::isinstance<py::tuple>(obj) && !py::isinstance<py::list>(obj) && !py::isinstance<py::dict>(obj)) {
     return false;
   }
-  return py::len(obj) == 0;
+  if (py::len(obj) == 0) {
+    return true;
+  }
+  // Need to check nested scene, such as ([], []), is also empty container, can not be broaden in graph.
+  if (py::isinstance<py::list>(obj)) {
+    auto list_obj = py::cast<py::list>(obj);
+    return std::all_of(list_obj.begin(), list_obj.end(),
+                       [](const auto &e) { return IsEmptyContainer(py::cast<py::object>(e)); });
+  } else if (py::isinstance<py::tuple>(obj)) {
+    auto tuple_obj = py::cast<py::tuple>(obj);
+    return std::all_of(tuple_obj.begin(), tuple_obj.end(),
+                       [](const auto &e) { return IsEmptyContainer(py::cast<py::object>(e)); });
+  }
+  auto dict_obj = py::cast<py::dict>(obj);
+  return std::all_of(dict_obj.begin(), dict_obj.end(),
+                     [](const auto &e) { return IsEmptyContainer(py::cast<py::object>(e.second)); });
 }
 
 AbstractBasePtr GraphUtils::ArgsToAbstract(const py::object &arg, const ValuePtr &value, bool enable_tuple_broaden) {
@@ -151,6 +166,7 @@ PrimitivePtr GraphUtils::GetPrimitive(int op_code) {
 std::string GraphUtils::OpCodeToGraphName(int op_code) {
   static std::map<int, std::string> op_code_2_graph_name = {{UNARY_NEGATIVE, "negative"},
                                                             {UNARY_NOT, "logical_not"},
+                                                            {UNARY_INVERT, "invert"},
                                                             {BINARY_POWER, "pow_"},
                                                             {BINARY_MULTIPLY, "mul"},
                                                             {BINARY_MODULO, "mod"},
@@ -159,6 +175,7 @@ std::string GraphUtils::OpCodeToGraphName(int op_code) {
                                                             {BINARY_SUBSCR, "getitem"},
                                                             {BINARY_FLOOR_DIVIDE, "floordiv"},
                                                             {BINARY_TRUE_DIVIDE, "div"},
+                                                            {BINARY_MATRIX_MULTIPLY, "matmul"},
                                                             {INPLACE_FLOOR_DIVIDE, "floordiv"},
                                                             {INPLACE_TRUE_DIVIDE, "div"},
                                                             {INPLACE_ADD, "add"},

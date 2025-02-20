@@ -92,25 +92,60 @@ class Utils {
   // alias python 'print(func); import dis; dis.dis(func)'
   static void DisFuncObject(PyObject *);
   // alias python 'print(...)'
-  static void PyBuiltinPrint(PyObject *);
+  static void PyBuiltinPrint(PyObject *, bool flush = false);
 
   static PyObject *MixedPrecisionTypeToDType(MixedPrecisionType mixedPrecisionType);
+
+  /// \brief Convert index and slice to {start, step, len, is_slice}
+  ///
+  /// \param subscr the index or slice
+  /// \param size the size of the object being accessed
+  ///
+  /// \return Format : {start, step, len, is_slice}, if the subscript is valid
+  ///                  {}, if the subscript is invalid
+  static std::vector<Py_ssize_t> FormatSubscript(const py::object &subscr, Py_ssize_t size);
 };
 
-#define GRAPH_JIT_LOG_F PY_PRINT_F
+/* use python format pattern */
+template <typename... Args>
+py::str PyStringFormat(std::string fmt, Args &&... args) {
+  if (fmt.back() == '\n') {
+    fmt.back() = ' ';
+  }
+  PyObject *py_format = PyUnicode_FromFormat(fmt.c_str(), std::forward<Args>(args)...);
+  if (py_format != nullptr) {
+    return py::reinterpret_steal<py::str>(py_format);
+  }
+  throw py::error_already_set();
+}
 
-#define PY_PRINT_F(fmt, ...)                                       \
-  do {                                                             \
-    PyObject *_pystr;                                              \
-    if (fmt[strlen(fmt) - 1] == '\n') {                            \
-      std::string _fstr = fmt;                                     \
-      _fstr[_fstr.size() - 1] = ' ';                               \
-      _pystr = PyUnicode_FromFormat(_fstr.c_str(), ##__VA_ARGS__); \
-    } else {                                                       \
-      _pystr = PyUnicode_FromFormat(fmt, ##__VA_ARGS__);           \
-    }                                                              \
-    Utils::PyBuiltinPrint(_pystr);                                 \
-    Py_DECREF(_pystr);                                             \
+/**
+ * if the log string size is greater than logger size, print it to stderr
+ * if MS_LOG(WARNING) is disable, print all to stderr, default logger size is 20000
+ * MS_LOG is limit log string size
+ */
+size_t PIJitLogMinSize();
+#define GRAPH_JIT_LOG_F(fmt, ...)                                                                                      \
+  do {                                                                                                                 \
+    if (PIJitLogMinSize() != 0) {                                                                                      \
+      std::string logger_helper;                                                                                       \
+      MS_LOG(WARNING) << std::endl                                                                                     \
+                      << ((logger_helper = std::string(PyStringFormat(fmt, ##__VA_ARGS__))).size() < PIJitLogMinSize() \
+                            ? logger_helper                                                                            \
+                            : (((void)operator<<(std::cout, logger_helper).operator<<(std::endl)), ""));               \
+    } else {                                                                                                           \
+      std::cerr << std::string(PyStringFormat(fmt, ##__VA_ARGS__)) << std::endl;                                       \
+    }                                                                                                                  \
+  } while (0)
+
+#define PY_PRINTF(fmt, ...)                                          \
+  do {                                                               \
+    Utils::PyBuiltinPrint(PyStringFormat(fmt, ##__VA_ARGS__).ptr()); \
+  } while (0)
+
+#define PY_PRINTF_WITH_FLUSH(fmt, ...)                                     \
+  do {                                                                     \
+    Utils::PyBuiltinPrint(PyStringFormat(fmt, ##__VA_ARGS__).ptr(), true); \
   } while (0)
 
 #define REPLACE_PY_MEMBER(member, o)     \
@@ -121,21 +156,6 @@ class Utils {
     Py_XDECREF(py_replace_tmp);          \
   } while (0)
 
-#ifdef DEBUG
-#define PRINT_IF_HAS_USER_DEFINED_HOOK(op, hook)                                         \
-  do {                                                                                   \
-    static const char *slot_key_##hook = #hook;                                          \
-    PyObject *attr_##hook = PyObject_GetAttrString(op, slot_key_##hook);                 \
-    if (attr_##hook && (PyMethod_Check(attr_##hook) || PyFunction_Check(attr_##hook))) { \
-      PY_PRINT_F("%A has hook " #hook, PyType_Check(op) ? op : (PyObject *)Py_TYPE(op)); \
-    } else {                                                                             \
-      PyErr_Clear();                                                                     \
-    }                                                                                    \
-    Py_XDECREF(attr_##hook);                                                             \
-  } while (0)
-#else
-#define PRINT_IF_HAS_USER_DEFINED_HOOK(op, hook)
-#endif
 class ReprRecursionScope {
  public:
   explicit ReprRecursionScope(PyObject *v) : v_(v), stat_(v == nullptr ? -1 : Py_ReprEnter(v)) {}
@@ -153,6 +173,19 @@ class ReprRecursionScope {
   int stat_;
 };
 
+/// \brief Change the jit-syntax-level to strict mode, and revert it back after the scope ends.
+class JitSyntaxLevelScope {
+ public:
+  JitSyntaxLevelScope() {
+    origin_jit_syntax_level_ = common::GetEnv("MS_DEV_JIT_SYNTAX_LEVEL");
+    common::SetEnv("MS_DEV_JIT_SYNTAX_LEVEL", "0");
+  }
+  ~JitSyntaxLevelScope() { common::SetEnv("MS_DEV_JIT_SYNTAX_LEVEL", origin_jit_syntax_level_.c_str()); }
+
+ private:
+  std::string origin_jit_syntax_level_;
+};
+
 bool HasMutableOrConstAttr(PyObject *obj);
 bool IsMutableObj(const py::object &obj);
 bool CheckMutableOrNonConstAttr(PyObject *obj);
@@ -161,8 +194,10 @@ bool CheckDynamicLength(PyObject *obj);
 bool CheckScalar(PyObject *obj);
 bool CheckContainer(PyObject *obj);
 bool IsTensorPyObject(PyObject *obj);
+bool IsCTensorPyObject(PyObject *obj);
 bool IsMsClass(PyObject *obj);
 bool IsNumpyObject(PyObject *obj);
+bool IsZipPyObject(PyTypeObject *obj);
 bool IsNoGradEnterFunc(const py::object &handle);
 bool IsNoGradExitFunc(const py::object &handle);
 bool IsPartialFunc(const py::object &handle);
@@ -171,6 +206,7 @@ const char *GetFuncName(const py::object &handle);
 bool CheckAdapterTensor(const py::object &tensor);
 py::object ConvertToMsTensor(const py::object &tensor);
 py::object ConvertToAdapterTensor(const py::object &tensor);
+py::object ConvertCppTensorToMsTensor(const py::object &tensor);
 
 std::string GetTopModule(const py::object &o);
 py::object GetPyCodeObject(const py::object &any, bool exact_func = false);

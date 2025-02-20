@@ -271,12 +271,36 @@ void OptGuard::UpdateGuardList(GuardItemPtr item) {
   }
 }
 
+static std::string GuardCheckFailInfo(const GuardItemPtr &item, const py::handle &object) {
+  std::stringstream s;
+  auto print_tensor = [&s](const py::handle &tensor) {
+    constexpr int limit_print_size = 256;
+    if (tensor.attr("_size").cast<int>() <= limit_print_size) {
+      s << py::str(tensor);
+    } else {
+      s << Py_TYPE(tensor.ptr())->tp_name << "(shape=" << py::str(tensor.attr("shape").ptr())
+        << ", dtype=" << py::str(tensor.attr("dtype").ptr()) << ")";
+    }
+  };
+  const char *type = object.ptr() != nullptr ? Py_TYPE(object.ptr())->tp_name : "";
+  s << "Guard check fail: " << item->ToString() << " v.s. " << type << "(" << object.ptr() << "): ";
+  if (object.ptr() == nullptr) {
+    s << "<nullptr>";
+  } else if (IsTensorPyObject(object.ptr())) {
+    print_tensor(object);
+  } else {
+    s << py::str(object);
+  }
+  return s.str();
+}
+
 bool OptGuard::Check(const EvalFrameObject *frame, bool print, std::map<size_t, PyObject *> *cache,
                      std::map<size_t, bool> *success, std::map<size_t, bool> *fail, bool perf) {
   // filter failure case
   if (fail != nullptr) {
-    for (auto item : guardMap_) {
+    for (const auto &item : guardMap_) {
       if (fail->find(item.first) != fail->end()) {
+        MS_LOG(DEBUG) << "Found in failure cache, no need to check this guard: " << item.second->ToString();
         return false;
       }
     }
@@ -285,11 +309,8 @@ bool OptGuard::Check(const EvalFrameObject *frame, bool print, std::map<size_t, 
   list.reserve(guardList_.size());
   // filter success case
   if (success != nullptr) {
-    for (auto item : guardList_) {
-      if (success->find(item->Info().Id()) == success->end()) {
-        list.push_back(item);
-      }
-    }
+    std::copy_if(guardList_.begin(), guardList_.end(), std::back_inserter(list),
+                 [success](const GuardItemPtr &guard) { return success->find(guard->Info().Id()) == success->end(); });
   } else {
     list = guardList_;
   }
@@ -304,18 +325,17 @@ bool OptGuard::Check(const EvalFrameObject *frame, bool print, std::map<size_t, 
       g_guard_perf.LogGuardPerfEnd(item.get(), result);
     }
     if (!result) {
+      item->set_faile_count(item->fail_count() + 1);
       UpdateGuardList(item);
       if (fail != nullptr) {
         fail->operator[](item->Info().Id()) = false;
       }
+      MS_LOG(DEBUG) << "Guard check fail:" << item->ToString();
       if (print) {
         auto trace = item->GetTrace();
         auto obj = GetObjectFromTrace(frame, trace);
-        GRAPH_JIT_LOG_F("Guard check fail: %s v.s. %s\n", item->ToString().c_str(),
-                        std::string(py::str(py::cast<py::object>(obj))).c_str());
+        GRAPH_JIT_LOG_F("%s\n", GuardCheckFailInfo(item, obj).c_str());
         Py_XDECREF(obj);
-      } else if (IS_OUTPUT_ON(mindspore::kDebug)) {
-        MS_LOG(DEBUG) << "Guard check fail:" << item->ToString();
       }
       return false;
     } else if (success != nullptr) {
@@ -356,13 +376,38 @@ bool OptGuard::GuardOn(TracePtr var, GuardLevel tp, bool needSpecialize, int rec
   if (item != nullptr) {
     size_t szItem = item->Info().Id();
     if (guardMap_.find(szItem) == guardMap_.end()) {
-      guardList_.push_back(item);
-      guardMap_[szItem] = item;
+      if (traceMap_.find(var->Info().Id()) == traceMap_.end()) {
+        guardList_.push_back(item);
+        guardMap_[szItem] = item;
+        traceMap_[var->Info().Id()] = item;
+      } else {
+        auto old_item = traceMap_[var->Info().Id()];
+        if (old_item->GetType() < item->GetType()) {
+          guardMap_[szItem] = item;
+          traceMap_[var->Info().Id()] = item;
+          auto iter = std::find(guardList_.begin(), guardList_.end(), old_item);
+          if (iter != guardList_.end()) {
+            *iter = item;
+          }
+        }
+      }
     }
     return true;
   } else {
     return false;
   }
+}
+
+bool OptGuard::Erase(const GuardItemPtr &last) {
+  auto iter = std::find(guardList_.rbegin(), guardList_.rend(), last);
+  if (iter == guardList_.rend()) {
+    return false;
+  }
+  guardList_.erase(guardList_.begin() + std::distance(iter, guardList_.rend()) - 1);
+  auto m_iter = guardMap_.find(last->Info().Id());
+  MS_EXCEPTION_IF_CHECK_FAIL(m_iter != guardMap_.end() && m_iter->second == last, "id conflict !");
+  guardMap_.erase(m_iter);
+  return true;
 }
 
 const InfoPack &OptGuard::Info() {
@@ -407,7 +452,7 @@ static GuardItemPtr GuardOnGDeduce(TracePtr var, PyObject *obj, const std::map<s
       item = GuardRepr(var);
     }
   } else if (py::isinstance<mindspore::Cell>(obj)) {
-    item = GuardRepr(var);
+    item = GuardEqual(var, false, 0);
   } else if (py::isinstance<mindspore::ParamInfo>(obj)) {
     item = GuardEqual(var, true, INT_MAX);
   } else {
@@ -571,12 +616,13 @@ void OptGuard::UpdateConfig(const std::map<std::string, bool> &bool_config,
   }
 }
 
-void OptGuard::Backup() { guardStack_.push(std::make_pair(guardList_, guardMap_)); }
+void OptGuard::Backup() { guardStack_.push(std::make_tuple(guardList_, guardMap_, traceMap_)); }
 
 void OptGuard::Rollback() {
   GuardCheckPoint point = guardStack_.top();
-  guardList_.swap(point.first);
-  guardMap_.swap(point.second);
+  guardList_.swap(std::get<0>(point));
+  guardMap_.swap(std::get<1>(point));
+  traceMap_.swap(std::get<2>(point));
   guardStack_.pop();
 }
 
@@ -751,6 +797,18 @@ OptGuardPtr OptGuard::Optimize() {
     return shared_from_this();
   } else {
     return nullptr;
+  }
+}
+
+void OptGuard::FilterConstItem() {
+  for (size_t i = 0; i < guardList_.size();) {
+    auto item = guardList_[i];
+    if (item->GetTrace()->IsConst()) {
+      guardList_.erase(guardList_.begin() + i);
+      guardMap_.erase(item->Info().Id());
+    } else {
+      i++;
+    }
   }
 }
 

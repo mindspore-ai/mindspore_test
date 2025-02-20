@@ -368,9 +368,16 @@ abstract::AnalysisResult AbstractAnalyze(const abstract::AnalysisEnginePtr &engi
 abstract::AnalysisResult AbstractAnalyze(const ValuePtr &func, const abstract::AbstractBasePtrList &args_abs,
                                          bool clear) {
   auto infer_graph = func->isa<FuncGraph>() ? func->cast<FuncGraphPtr>() : ConstructGraphForEval(func, args_abs);
-  auto manager = Manage(infer_graph, true);
+
+  auto top_graph = parse::Parser::GetTopFuncGraph();
+  MS_EXCEPTION_IF_NULL(top_graph);
+  auto manager = top_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  manager->AddFuncGraph(infer_graph);
+
   auto engine = std::make_shared<abstract::AnalysisEngine>(abstract::GetPrimEvaluatorConstructors(), manager);
   engine->set_top_func_graph(parse::Parser::GetTopFuncGraph());
+  engine->set_check_side_effect(true);
   return AbstractAnalyze(engine, infer_graph, args_abs, false, clear);
 }
 

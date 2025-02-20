@@ -1272,7 +1272,7 @@ void GradOperation::GradByParameter(const FuncGraphPtr &k_child, const AnfNodePt
   if (sens_param_) {
     bprop_arg = k_child->add_parameter();
   } else {
-    auto ones_like = prim::GetPythonOps("ones_like");
+    auto ones_like = prim::GetPythonOps("_ones_like_for_grad");
     bprop_arg = k_child->NewCNodeInOrder({NewValueNode(ones_like), f_app});
   }
   AnfNodePtr b_app = k_child->NewCNodeInOrder({bprop, bprop_arg});
@@ -1780,8 +1780,7 @@ FuncGraphPtr TupleAdd::GenerateFuncGraph(const AbstractBasePtrList &args_abs_lis
                          });
     auto stub = GenerateStubFunc(types);
     if (stub != nullptr) {
-      MS_LOG(DEBUG) << "GenerateStubFunc for TupleAdd "
-                    << ", function: " << stub->ToString();
+      MS_LOG(DEBUG) << "GenerateStubFunc for TupleAdd, function: " << stub->ToString();
       return stub;
     }
     MS_LOG(EXCEPTION) << "The type of argument in TupleAdd operator should be tuple, but the first argument is "
@@ -1827,8 +1826,7 @@ FuncGraphPtr ListAdd::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list
                          });
     auto stub = GenerateStubFunc(types);
     if (stub != nullptr) {
-      MS_LOG(DEBUG) << "GenerateStubFunc for ListAdd "
-                    << ", function: " << stub->ToString();
+      MS_LOG(DEBUG) << "GenerateStubFunc for ListAdd, function: " << stub->ToString();
       return stub;
     }
     MS_LOG(EXCEPTION) << "The type of argument in ListAdd operator should be list, but the first argument is "
@@ -2406,6 +2404,39 @@ FuncGraphPtr ListFunc::GenerateFuncGraph(const AbstractBasePtrList &args_abs_lis
   const std::string func_name = "list_func";
   py::function fn = python_adapter::GetPyFn(module, func_name);
   auto prim_func = parse::ParsePythonCode(fn);
+  auto ret = fg->NewCNode({NewValueNode(prim_func), input});
+  fg->set_output(ret);
+  return fg;
+}
+
+FuncGraphPtr DictFunc::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
+  // dict has three constructors: dict(**kwargs), dict(mapping, **kwargs), dict(iterable, **kwargs)
+  // However, kwargs are not currently supported, so the number of input args is limited to either 0 or 1.
+  // Refer to: https://docs.python.org/3/library/stdtypes.html#dict
+  if (args_abs_list.size() > 1) {
+    MS_LOG(EXCEPTION) << "For 'DictFunc', the number of input should be 0 or 1, but got " << args_abs_list.size();
+  }
+  auto fg = std::make_shared<FuncGraph>();
+  fg->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  if (args_abs_list.empty()) {
+    std::vector<AnfNodePtr> keys{NewValueNode(prim::kPrimMakeTuple)};
+    std::vector<AnfNodePtr> values{NewValueNode(prim::kPrimMakeTuple)};
+    auto ret = fg->NewCNode({NewValueNode(prim::kPrimMakeDict), fg->NewCNode(keys), fg->NewCNode(values)});
+    fg->set_output(ret);
+    return fg;
+  }
+
+  const AbstractBasePtr &input_abs = args_abs_list[0];
+  MS_EXCEPTION_IF_NULL(input_abs);
+  ParameterPtr input = fg->add_parameter();
+  if (input_abs->isa<abstract::AbstractDictionary>()) {
+    fg->set_output(input);
+    return fg;
+  }
+  const std::string module = "mindspore._extends.parse.standard_method";
+  const std::string func_name = "dict_func";
+  py::function fn = python_adapter::GetPyFn(module, func_name);
+  FuncGraphPtr prim_func = parse::ParsePythonCode(fn);
   auto ret = fg->NewCNode({NewValueNode(prim_func), input});
   fg->set_output(ret);
   return fg;

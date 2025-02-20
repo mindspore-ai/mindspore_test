@@ -13,21 +13,11 @@
 # limitations under the License.
 # ============================================================================
 """Test call class to create instance"""
-import sys  
-import pytest 
-from mindspore import Tensor
+import mindspore as ms
+from mindspore import Tensor, jit
 from mindspore import context
-from ..share.utils import match_array, assert_executed_by_graph_mode, pi_jit_with_config
+from ..share.utils import match_array, assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
-        
-cfg = {
-    "compile_by_trace": True,
-}
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -44,8 +34,7 @@ def test_create_tensor():
     context.set_context(mode=context.PYNATIVE_MODE)
 
     expect = fn()
-    actual = pi_jit_with_config(fn, jit_config=cfg)()
-
+    actual = jit(fn, capture_mode="bytecode")()
     match_array(actual.asnumpy(), expect.asnumpy())
     assert_executed_by_graph_mode(fn)
 
@@ -65,10 +54,30 @@ def test_create_tensor_list():
     context.set_context(mode=context.PYNATIVE_MODE)
 
     expect = fn()
-    actual = pi_jit_with_config(fn, jit_config=cfg)()
+    actual = jit(fn, capture_mode="bytecode")()
 
     assert isinstance(actual, list)
     assert len(actual) == 2
     match_array(actual[0].asnumpy(), expect[0].asnumpy())
     match_array(actual[1].asnumpy(), expect[1].asnumpy())
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_create_tensor_by_ms_api():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    def fn():
+        a = ms.tensor([1, 2, 3])
+        return a + 1
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    expect = fn()
+
+    fn = jit(fn, capture_mode="bytecode")
+    actual = fn()
+
+    match_array(actual.asnumpy(), expect.asnumpy())
     assert_executed_by_graph_mode(fn)

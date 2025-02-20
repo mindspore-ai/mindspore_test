@@ -257,6 +257,10 @@ OptStrategy::CalcKind MakeCalcStrategyByCompare(int bytecode, int opargs, const 
   }
 }
 
+OptStrategy::CalcKind MakeCalcStrategyByGetItem(int bytecode, int opargs, const PyObjectArray &objs) {
+  return IsTensorPyObject(objs[0]) ? OptStrategy::CalcKind::kCalcUnsupported : OptStrategy::CalcKind::kCalcValue;
+}
+
 static std::map<int, CheckPyObjectFunc> kBytecodeStrategy = {
   {UNARY_POSITIVE, MakeCalcStrategyByObject},
   {UNARY_NEGATIVE, MakeCalcStrategyByObject},
@@ -288,8 +292,7 @@ static std::map<int, CheckPyObjectFunc> kBytecodeStrategy = {
   {INPLACE_MODULO, MakeInplaceCalcStrategyByObject},
   {BINARY_MATRIX_MULTIPLY, MakeCalcStrategyByMatMul},
   {INPLACE_MATRIX_MULTIPLY, MakeInplaceCalcStrategyByObject},
-  {BINARY_SUBSCR,
-   [](int bytecode, int opargs, const PyObjectArray &objs) { return OptStrategy::CalcKind::kCalcValue; }},
+  {BINARY_SUBSCR, MakeCalcStrategyByGetItem},
   {COMPARE_OP, MakeCalcStrategyByCompare},
 };
 

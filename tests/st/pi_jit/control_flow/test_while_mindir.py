@@ -13,20 +13,13 @@
 # limitations under the License.
 import os
 import numpy as np
+import pytest
 
 import mindspore.nn as nn
 from mindspore import context, jit
 from mindspore.common.tensor import Tensor
 from mindspore.train.serialization import export, load
 from tests.mark_utils import arg_mark
-import sys  
-import pytest 
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
-
 
 class SingleWhileNet(nn.Cell):
     def construct(self, x, y):
@@ -60,7 +53,7 @@ def test_jit_function_while():
     loaded_net = nn.GraphCell(graph)
     context.set_context(mode=context.PYNATIVE_MODE)
 
-    @jit(capture_mode="bytecode", jit_config={"compile_by_trace": False}) # One-stage will fix it later
+    @jit(capture_mode="bytecode") # One-stage will fix it later
     def run_graph(x, y):
         outputs = loaded_net(x, y)
         return outputs

@@ -80,7 +80,8 @@ def _tensor_floordiv_list(x, y):
     return F.tensor_floordiv(x, y)
 
 
-@floordiv.register_default()
+# pylint: disable=protected-access
+@floordiv._register_default()
 def default_floordiv(x, y):
     """Default function for floordiv."""
     if y == 0:

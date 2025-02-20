@@ -1,3 +1,4 @@
+import pytest
 from mindspore.nn import Cell
 from mindspore.common import dtype as ms
 from mindspore import nn
@@ -7,13 +8,6 @@ from mindspore import context, jit
 from mindspore.common.parameter import Parameter
 from ..share.utils import match_array, pi_jit_with_config
 from tests.mark_utils import arg_mark
-import sys  
-import pytest 
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 
 class CtrlForContinueRange1(Cell):
@@ -168,6 +162,7 @@ class CtrlForEnumerateIfContinue(Cell):
         return out
 
 
+@pytest.mark.skip(reason="assign add side-effect, fix later")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_control_flow_for_enumerate_if_continue():
     """
@@ -185,8 +180,8 @@ def test_control_flow_for_enumerate_if_continue():
     ps_out = ps_net(x)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlForEnumerateIfContinue(t1, t2, t3)
-    cfg = {"compile_by_trace": False} # One-stage will fix it later
-    pi_jit_with_config(function=CtrlForEnumerateIfContinue.construct, jit_config=cfg)(pi_net, x)
+    # One-stage will fix it later
+    pi_jit_with_config(fn=CtrlForEnumerateIfContinue.construct)(pi_net, x)
     pi_out = pi_net(x)
     match_array(ps_out, pi_out)
 

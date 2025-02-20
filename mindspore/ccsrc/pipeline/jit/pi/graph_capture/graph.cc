@@ -20,6 +20,7 @@
 #include <string>
 #include <regex>
 #include <utility>
+#include "pipeline/jit/pi/graph_build/func_graph_builder.h"
 #include "pipeline/jit/pi/runtime.h"
 
 namespace mindspore {
@@ -31,7 +32,8 @@ Graph::Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf)
       f_globals_(py::cast<py::object>(globals)),
       conf_(conf),
       guard_(nullptr),
-      prune_branch_count_(0) {
+      prune_branch_count_(0),
+      func_graph_builder_(nullptr) {
   stop_trace_info_ = {-1, StopTraceReason::kNonStopTrace};
   if (!co) {
     frame_states_[0] = std::make_unique<FrameStates>();  // emplace empty frame
@@ -55,11 +57,90 @@ Graph::Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf)
     module_name_ = "";
     PyErr_Clear();
   }
+}
 
-  if (conf_.GetBoolConfig(GraphJitConfig::kLoopUnrolling)) {
-    LoopFinder loop_finder(this);
-    loop_finder.FormSimpleLoopInfo();
+bool Graph::NeedSymbolic(ValueNode *node) {
+  if (node->IsConstantValue()) {
+    // such as LOAD_CONST,
+    MS_LOG(DEBUG) << "The node already marked the constant";
+    return false;
   }
+  AObject::Type real_type = node->GetVobj()->GetType();
+  // now, only support these types
+  // for mutable tuple and list ... not implement
+  const auto valid_type = {AObject::kTypeInt, AObject::kTypeFloat, AObject::kTypeBool, AObject::kTypeTensor};
+  if (valid_type.end() == std::find(valid_type.begin(), valid_type.end(), real_type)) {
+    return false;
+  }
+  JitCompileResults *jcr = GetJitCompileResults(GetCodeObj());
+  if (jcr->cache().fail_guard().empty()) {
+    return false;
+  }
+  const auto size = guard_->GetGuard()->guard_list().size();
+  if (!this->GuardValueNode(node)) {
+    return false;
+  }
+  if (size + 1 != guard_->GetGuard()->guard_list().size()) {
+    MS_LOG(INFO) << "more than one guard, not implement";
+    return false;
+  }
+  GuardItemPtr except = guard_->GetGuard()->guard_list().back();
+  auto item = jcr->cache().FindFailInfo(except);
+  if (item.count_ == 0) {
+    return false;
+  }
+  const int symbolic_scalar = Config().getIntConfig(GraphJitConfig::kSymbolic) + 1;
+  const int symbolic_tensor = Config().getIntConfig(GraphJitConfig::kSymbolic);
+  const int guard_strategy_symbol = 1;
+  int guard_strategy = item.count_ > (real_type == AObject::kTypeTensor ? symbolic_tensor : symbolic_scalar);
+  MS_LOG(DEBUG) << "find failed item: !! " << except->GetTrace()->ToString() << " fail count: " << item.count_
+                << " except > " << (real_type == AObject::kTypeTensor ? symbolic_tensor : symbolic_scalar) << std::endl;
+  bool is_mutable = guard_strategy == guard_strategy_symbol;
+  if (is_mutable) {
+    node->SetConstantValue(false);
+    bool succ = guard_->GetGuard()->Erase(except);
+    MS_EXCEPTION_IF_CHECK_FAIL(succ, "just create guard item, but can't find it in guard map");
+    // clear compile cache for this fail item ...
+    // erase fail item from cache ...
+  }
+  return is_mutable;
+}
+
+bool Graph::PrepareParameter(ValueNode *node) {
+  using PrepareHelper = bool (*)(ValueNode *, std::vector<ValueNode *> *);
+  static PrepareHelper prepare_oper = [](ValueNode *node, std::vector<ValueNode *> *oper) {
+    int opcode = node->GetOpcode();
+    if (opcode == LOAD_CONST || opcode == LOAD_GLOBAL || opcode == LOAD_DEREF || node->GetType() == ValueNode::Param ||
+        oper->end() != std::find(oper->begin(), oper->end(), node)) {
+      return true;
+    }
+    while (node->GetType() == ValueNode::Call) {
+      auto g = static_cast<CallNode *>(node)->GetSubGraph();
+      if (g == nullptr || g->GetRetVal() == nullptr) {
+        return false;
+      }
+      node = g->GetRetVal();
+    }
+    if (opcode != LOAD_ATTR && opcode != BINARY_SUBSCR) {
+      return false;
+    }
+    for (const auto &in : node->getInputs()) {
+      if (!prepare_oper(in, oper)) {
+        return false;
+      }
+    }
+    oper->push_back(node);
+    return true;
+  };
+
+  prepare_.inputs_.push_back(node);
+  size_t backup = prepare_.operations_.size();
+  if (prepare_oper(node, &prepare_.operations_)) {
+    return true;
+  }
+  prepare_.operations_.resize(backup);
+  prepare_.inputs_.pop_back();
+  return false;
 }
 
 const std::shared_ptr<SideEffect> &Graph::GetSideEffect() const { return side_effect_; }
@@ -68,15 +149,18 @@ void Graph::SetSideEffect(const std::shared_ptr<SideEffect> &handler) { side_eff
 static void SetNodeInfo(Graph *graph, ValueNode *node, AObject *obj_info, const std::string &name) {
   node->SetName(name);
   node->SetGraph(graph);
+  auto new_object = obj_info ? obj_info->GetPyObject().ptr() : nullptr;
+  if (new_object != nullptr && !CheckConstPyObject(new_object)) {  // literal not need track
+    graph->GetSideEffect()->data()->Track(new_object, node);
+  }
+  if (node->GetType() == ValueNode::Param) {
+    return;
+  }
   ConstantInfo::CollectConstantInfo(node);
   if (node->IsConstantValue() && obj_info && CheckConstPyObject(obj_info->GetPyObject().ptr())) {
     node->SetOpcode(LOAD_CONST);
     node->SetOparg(-1);
     node->ClearInputs();
-  }
-  auto new_object = obj_info ? obj_info->GetPyObject().ptr() : nullptr;
-  if (new_object != nullptr && !CheckConstPyObject(new_object)) {  // literal not need track
-    graph->GetSideEffect()->data()->Track(new_object, node);
   }
 }
 
@@ -106,6 +190,12 @@ CellVarNode *Graph::NewCellNode(AObject *obj_info, int op, int arg, const std::v
   node->SetOpcode(op);
   node->SetOparg(arg);
   node->SetVobj(obj_info);
+  return node;
+}
+
+ParamNode *Graph::NewParamNode(AObject *obj_info, int index, const std::string &name) {
+  ParamNode *node = this->allocator().NewNode<ParamNode>(obj_info, index);
+  SetNodeInfo(this, node, obj_info, name);
   return node;
 }
 
@@ -187,11 +277,12 @@ static bool PrepareTraceParam(ValueNode *node, TraceVector *tv, int depth, int m
                               bool strict, bool print) {
   const std::vector<ValueNode *> &inputs = node->getInputs();
   for (auto it : inputs) {
+    if (it->GetTrace() != nullptr) {
+      tv->push_back(it->GetTrace());
+      continue;
+    }
     auto t = GetTrace(it, strict, print, depth + 1, max_depth);
     if (t == nullptr) {
-      if (it->GetTrace() != nullptr) {
-        tv->push_back(it->GetTrace());
-      }
       return false;
     } else if (t->GetTraceType() == TraceType::Unsupported) {
       *has_unsupported = true;
@@ -245,7 +336,8 @@ TracePtr GetTrace(ValueNode *node, bool strict, bool print, int depth, int max_d
     }
   }
 
-  PyObject *obj = node->GetVobj() ? node->GetVobj()->GetPyObject().ptr() : nullptr;
+  auto vobj = node->GetVobj() ? node->GetVobj()->GetBaseVersion() : nullptr;
+  PyObject *obj = vobj ? vobj->GetPyObject().ptr() : nullptr;
   int opcode = node->GetOpcode();
   int oparg = node->GetOparg();
   const std::string &name = node->GetName();
@@ -499,8 +591,9 @@ bool Graph::GuardSequenceNodeLength(ValueNode *sequence_node, Py_ssize_t sequenc
   PyObject *builtin_len = PyDict_GetItemString(PyEval_GetBuiltins(), "len");
   MS_EXCEPTION_IF_NULL(builtin_len);
   TracePtr len_func = CreateOpTrace(builtin_len, LOAD_CONST, -1, {}, "", "", strict);
-  TracePtr len_trace = CreateOpTrace(py::int_(sequence_size).ptr(), CALL_FUNCTION, 1, {len_func, tr}, "", "", strict);
-  guard->GuardOn(len_trace, GuardLevel::GEqual, false);
+  TracePtr len_trace =
+    CreateOpTrace(py::int_(sequence_size).ptr(), CALL_FUNCTION, 1, {len_func, tr}, "", "len", strict);
+  guard->GuardOn(len_trace, GuardLevel::GEqual, true);
 
   sequence_node->MakeConstantInfo()->set_len(sequence_size);
   return true;
@@ -527,40 +620,27 @@ bool Graph::GuardType(ValueNode *node) {
   return ret;
 }
 
-static bool SkipGuardInlinedFunc(ValueNode *func_node) {
+static bool SkipGuardInlinedFunc(CallNode *node) {
+  ValueNode *func_node = node->input(0);
   if (func_node->IsConstantValue()) {
     return true;
   }
-  AObject::Type value_type = func_node->GetVobj()->GetType();
-  if (func_node->GetOpcode() == LOAD_ATTR) {
-    AObject *src_info = func_node->input(0)->GetVobj();
-    if (src_info->GetType() == AObject::kTypeTensor && value_type == AObject::kTypeBoundMethod) {
-      // function from Tensor
-      return true;
-    }
+  // Now only guard specialized function and cell
+  if (func_node->GetVobj()->GetType() == AObject::kTypeCell) {
+    return false;
   }
-  return false;
+  return node->GetInlineReason() != InlineReason::kInlineFuncSpecialize;
 }
 
 bool Graph::GuardInlinedFunc(CallNode *call_node) {
-  if (SkipGuardInlinedFunc(call_node->input(0))) {
+  MS_LOG(INFO) << "guard inlined function (sub-graph) " << call_node->input(0)->ToString();
+  if (SkipGuardInlinedFunc(call_node)) {
+    MS_LOG(INFO) << "skip guard function (sub-graph) " << call_node->input(0)->ToString();
     return true;
   }
   TracePtr tr = this->TraceValueNode(call_node->input(0));
   if (tr == nullptr) {
-    if (this->GuardValueNodeClosure(call_node->input(0))) {
-      AObject *callable_info = call_node->input(0)->GetVobj();
-      AObject::Type func_type = callable_info->GetType();
-      if (func_type == AObject::kTypeBoundMethod) {
-      } else if (func_type == AObject::kTypeCell || func_type == AObject::kTypeAnyValue) {
-        call_node->input(0)->MakeConstantInfo()->set_type(callable_info->GetTypeObject());
-      } else if (func_type == AObject::kTypeFunction) {
-        call_node->input(0)->SetConstantValue(true);
-      } else {
-        return false;
-      }
-      return true;
-    }
+    // unknown source function. Maybe dynamic call-site, do nothing
     return false;
   }
   const auto &guard = this->GetGuard()->GetGuard();
@@ -573,7 +653,10 @@ bool Graph::GuardInlinedFunc(CallNode *call_node) {
     PyObject *func = PyMethod_GET_FUNCTION(callable);
     tr = CreateOpTrace(func, LOAD_ATTR, 0, {tr}, "", "__func__", strict);
     guard->GuardOn(tr, GuardLevel::GId);
-  } else if (func_type == AObject::kTypeCell || func_type == AObject::kTypeAnyValue) {
+  } else if (func_type == AObject::kTypeCell) {
+    MS_LOG(DEBUG) << "guard inlined cell " << py::str(callable_info->GetPyObject().ptr());
+    guard->GuardOn(tr, GuardLevel::GDeduce, false);
+  } else if (func_type == AObject::kTypeAnyValue) {
     guard->GuardOn(tr, GuardLevel::GType, false);
     call_node->input(0)->MakeConstantInfo()->set_type(callable_info->GetTypeObject());
   } else if (func_type == AObject::kTypeFunction) {
@@ -585,50 +668,37 @@ bool Graph::GuardInlinedFunc(CallNode *call_node) {
   return true;
 }
 
-static std::string TraceInferFailed(ValueNode *node, int depth = 0) {
-  std::string prefix(IntToSize(depth) << 1, ' ');
-  std::stringstream s;
-  s << prefix << node << " ";
-  switch (node->GetType()) {
-    case AbstractNode::Call:
-    case AbstractNode::Value: {
-      s << "bci " << node->bci() << " " << Opcode(node->GetOpcode()).name() << " " << node->GetOparg();
-      if (Opcode(node->GetOpcode()).HasName()) {
-        s << " " << node->GetName();
-      }
-      break;
-    }
-    case AbstractNode::Param: {
-      s << "Parameter " << node->GetOparg();
-      break;
-    }
-    case AbstractNode::CellVar:
-    case AbstractNode::FreeVar: {
-      s << "Closure " << node->GetOparg();
-      break;
-    }
-    case AbstractNode::kUnbound: {
-      s << "(kUnboundLocal)";
-      break;
-    }
-    default: {
-      break;
-    }
-  }
-  s << " object is ";
-  PyObject *op = node->GetVobj() ? node->GetVobj()->GetPyObject().ptr() : nullptr;
-  if (op != nullptr) {
-    s << AObject::ToString(op);
-    return s.str();
-  }
-  s << "<NULL>:" << std::endl;
-  for (size_t i = 0; i < node->getInputs().size(); ++i) {
-    s << prefix << " " << TraceInferFailed(node->input(i), depth + 1) << std::endl;
-  }
-  return s.str();
+static void PrintAnfNode(std::ostream *out, mindspore::AnfNode *anf_node, const std::string &prefix) {
+  auto &s = *out;
+  std::string str;
+  str += anf_node->DebugString(1) + " ";
+  str += anf_node->abstract() == nullptr ? "<NULL>" : anf_node->abstract()->ToString();
+  std::replace(str.begin(), str.end(), '\n', ' ');
+  s << " AnfNode(" << anf_node << ") [" << str << "]";
 }
 
-static void PrintCallNode(std::ostream *os, CallNode *node, int depth) {
+static void PrintValueNode(std::ostream *out, FuncGraphBuilder *fg, ValueNode *node, const std::string &prefix) {
+  auto &s = *out;
+  s << prefix << node->ToString();
+  if (fg == nullptr) {
+    s << "<FuncGraphBuilder is nullptr>" << std::endl;
+    return;
+  }
+  auto anf_node = fg->FindNodeByWrapper(node->abstract_wrapper());
+  if (anf_node != nullptr) {
+    bool is_any = (*mindspore::kValueAny == *anf_node->abstract()->mindspore::abstract::AbstractBase::BuildValue());
+    bool is_cnst = node->IsConstantValue();
+    PrintAnfNode(out, anf_node.get(), prefix);
+    s << " is_constant " << (is_cnst == is_any ? "==" : "!=") << " is_any";
+  } else if (node->IsConstantValue()) {
+    s << " Is Constant";
+  } else {
+    s << " Not find AnfNode";
+  }
+  s << std::endl;
+}
+
+static void PrintCallNode(std::ostream *os, FuncGraphBuilder *fg, CallNode *node, int depth) {
   std::string prefix(depth * kTwo, ' ');
   auto &s = *os;
   s << prefix << "{ inline stat " << GetInlineReasonDesc(node->GetInlineReason());
@@ -636,6 +706,7 @@ static void PrintCallNode(std::ostream *os, CallNode *node, int depth) {
     s << ", has extra operations to handle parameters:" << std::endl;
     for (const auto &ex : node->GetParams()) {
       s << prefix << "  " << ex->ToString() << std::endl;
+      PrintValueNode(&s, fg, ex, prefix);
     }
   }
   s << std::endl;
@@ -645,48 +716,96 @@ static void PrintCallNode(std::ostream *os, CallNode *node, int depth) {
   s << prefix << "}" << std::endl;
 }
 
+void Graph::PrintFrame(std::ostream *out, const std::string &prefix) const {
+  auto &s = *out;
+  const auto &f = GetFrame(0);
+  auto *fg = func_graph_builder_.get();
+  s << "locals:" << std::endl;
+  for (const auto &node : f.GetLocals()) {
+    if (node != &ValueNode::kUnboundLocal) {
+      PrintValueNode(&s, fg, node, prefix);
+    }
+  }
+  s << "stacks:" << std::endl;
+  for (auto iter = f.GetStacks().rbegin(), end = f.GetStacks().rend(); iter != end; ++iter) {
+    PrintValueNode(&s, fg, *iter, prefix);
+  }
+  s << "cell free:" << std::endl;
+  for (const auto &node : f.GetClosures()) {
+    PrintValueNode(&s, fg, node, prefix);
+  }
+}
+
 std::string Graph::ToString(int depth) const {
   std::stringstream s;
   std::string prefix(depth << 1, ' ');
   std::string code_name = co_.ptr() != nullptr ? std::string(py::str(co_.ptr())) : "<no code>";
 
-  s << prefix << "*** Trace Nodes [" << code_name << "] ***\n";
+  s << prefix << "*** Trace Nodes [" << code_name << "] ***" << std::endl;
   if (depth == 0) {
-    s << prefix << "Frame:\n" << GetFrame(0).ToString();
+    PrintFrame(&s, prefix);
+    s << std::endl;
   }
 
-  s << prefix << "Graph " << this << " Nodes:\n";
+  s << prefix << "Graph " << this << " Nodes:" << std::endl;
   for (auto i : GetTracedNodes()) {
-    s << prefix << i->ToString() << "\n";
-    if (i->GetType() != AbstractNode::Call) {
-      continue;
+    PrintValueNode(&s, func_graph_builder().get(), i, prefix);
+    if (i->GetType() == AbstractNode::Call) {
+      PrintCallNode(&s, func_graph_builder().get(), static_cast<CallNode *>(i), depth);
     }
-    PrintCallNode(&s, static_cast<CallNode *>(i), depth);
   }
   if (GetRetVal()) {
-    s << prefix << "Return the Node " << GetRetVal() << "\n";
+    s << prefix << "Return the Node " << GetRetVal() << std::endl;
   }
-  s << prefix << GetStopTraceReasonDesc(GetStopTraceReason()) << "\n";
-  s << prefix << "break bci: " << GetStopTraceBci() << "\n\n";
+  s << prefix << GetStopTraceReasonDesc(GetStopTraceReason()) << std::endl;
+  s << prefix << "break bci: " << GetStopTraceBci();
+  if (GetStopTraceBci() != -1) {
+    const auto &instr = cfg_->instr_pool()[GetStopTraceBci()];
+    s << " " << instr->ToString() << " line " << instr->line() << " at " << PyUnicode_AsUTF8(GetCodeObj()->co_filename);
+  }
+  s << std::endl << std::endl;
 
   if (depth == 0) {
-    std::string break_info;
-    if (GetRetVal()) {
-      PyObject *op = GetRetVal()->GetVobj() ? GetRetVal()->GetVobj()->GetPyObject().ptr() : nullptr;
-      if (op == nullptr) {
-        break_info = TraceInferFailed(GetRetVal());
-      }
-    } else {
-      break_info = this->DumpBreakInfo();
-    }
-    if (!break_info.empty()) {
-      s << prefix << std::regex_replace(break_info, std::regex("\n"), "\n" + prefix) << "\n";
-    }
+    this->DumpBreakInfo(&s);
   }
   return s.str();
 }
 
-void DumpUnsupportedByteCodeInfo(std::stringstream &s, Opcode op, int arg) {
+static void TraceInferFailed(std::ostream *out, ValueNode *node, int depth = 0) {
+  auto &s = *out;
+  std::string prefix(IntToSize(depth) << 1, ' ');
+  s << prefix << node << " ";
+  switch (node->GetType()) {
+    case AbstractNode::Call:
+    case AbstractNode::Value:
+      s << "ValueNode " << node;
+      break;
+    case AbstractNode::Param:
+      s << "Parameter (" << node->GetOparg() << ")" << node;
+      break;
+    case AbstractNode::CellVar:
+    case AbstractNode::FreeVar:
+      s << "Closure (" << node->GetOparg() << ")" << node;
+      break;
+    case AbstractNode::kUnbound:
+      s << "(kUnboundLocal)";
+      break;
+    default:
+      break;
+  }
+  s << " object is ";
+  PyObject *op = node->GetVobj() ? node->GetVobj()->GetPyObject().ptr() : nullptr;
+  if (op != nullptr) {
+    s << AObject::ToString(op);
+    return;
+  }
+  s << "<NULL>:" << std::endl;
+  for (size_t i = 0; i < node->getInputs().size(); ++i) {
+    TraceInferFailed(out, node->input(i), depth + 1);
+  }
+}
+
+void DumpUnsupportedByteCodeInfo(std::ostream &s, Opcode op, int arg) {
   if (op == SETUP_WITH || op == SETUP_FINALLY) {
     s << op.name() << " " << arg << " is skipped in break_graph or a exception happened.\n";
   } else {
@@ -694,17 +813,20 @@ void DumpUnsupportedByteCodeInfo(std::stringstream &s, Opcode op, int arg) {
   }
 }
 
-std::string Graph::DumpBreakInfo() const {
-  if (GetStopTraceBci() == -1) {
-    return std::string();
+void Graph::DumpBreakInfo(std::ostream *out) const {
+  auto &s = *out;
+  if (GetRetVal()) {
+    TraceInferFailed(out, GetRetVal());
   }
-  std::stringstream s;
+  if (GetStopTraceBci() == -1) {
+    return;
+  }
   const auto &f = GetFrame(GetStopTraceBci());
   const auto &nodes = GetTracedNodes();
   const auto &instrs = cfg_->instr_pool();
   int break_bci = GetStopTraceBci();
 
-  s << "graph break at: " << break_bci << ":\n";
+  s << "graph break at: " << break_bci << " " << instrs[break_bci]->ToString() << std::endl;
   std::vector<ValueNode *> parameters;
   if (nodes.size() == 0 || nodes.back()->bci() < break_bci) {
     // break at unsupported bytecode
@@ -713,24 +835,16 @@ std::string Graph::DumpBreakInfo() const {
     DumpUnsupportedByteCodeInfo(s, op, arg);
     if (op == POP_JUMP_IF_FALSE || op == POP_JUMP_IF_TRUE || op == JUMP_IF_FALSE_OR_POP || op == JUMP_IF_TRUE_OR_POP ||
         op == FOR_ITER || op == UNPACK_SEQUENCE || op == UNPACK_EX) {
-      parameters.push_back(f.Peek(0));
+      arg = 0;
     } else if (op == CALL_FUNCTION_EX) {
       arg = (arg & 0x01) + 1;
     } else if (op == CALL_FUNCTION_KW) {
       arg++;
     } else {
-      return s.str();
+      return;
     }
-    if (op.IsCall()) {
-      for (int i = arg; i >= 0; --i) {
-        parameters.push_back(f.Peek(i));
-        AObject *v = f.Peek(i)->GetVobj();
-        // just print the first infer failed value
-        if (v == nullptr || v->GetPyObject().ptr() == nullptr) {
-          parameters = {f.Peek(i)};
-          break;
-        }
-      }
+    for (int i = arg; i >= 0; --i) {
+      parameters.push_back(f.Peek(i));
     }
   } else {
     auto iter = std::find_if(nodes.begin(), nodes.end(), [break_bci](ValueNode *n) { return n->bci() == break_bci; });
@@ -739,9 +853,8 @@ std::string Graph::DumpBreakInfo() const {
   }
   // print traced value
   for (auto node : parameters) {
-    s << TraceInferFailed(node) << "\n";
+    TraceInferFailed(out, node);
   }
-  return s.str();
 }
 
 std::string FrameStates::ToString() const {

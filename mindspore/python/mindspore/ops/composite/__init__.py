@@ -25,7 +25,7 @@ from mindspore.ops.composite.base import GradOperation, _Grad, HyperMap, Map, Mu
 from mindspore.ops.composite.env_ops import env_get
 from mindspore.ops.function.clip_func import clip_by_global_norm
 from mindspore.ops.composite.multitype_ops.add_impl import hyper_add
-from mindspore.ops.composite.multitype_ops.ones_like_impl import ones_like
+from mindspore.ops.composite.multitype_ops.ones_like_impl import ones_like, _ones_like_for_grad
 from mindspore.ops.composite.multitype_ops.zeros_like_impl import zeros_like
 from mindspore.ops.function.random_func import normal, laplace, uniform, gamma, poisson, multinomial
 from mindspore.ops.composite.math_ops import matmul, cummin, mm
@@ -46,6 +46,7 @@ __all__ = [
     'hyper_add',
     'zeros_like',
     'ones_like',
+    '_ones_like_for_grad',
     'zip_operation',
     'normal',
     'laplace',

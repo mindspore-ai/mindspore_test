@@ -600,7 +600,8 @@ def _dict_add_dict(x, y):
 hyper_add = base.HyperMap(_add_backward)
 
 
-@add.register_default()
+# pylint: disable=protected-access
+@add._register_default()
 def default_add(x, y):
     """Default function for add."""
     return x + y

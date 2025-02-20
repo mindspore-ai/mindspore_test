@@ -133,6 +133,32 @@ def test_grad_operation_default_single_input(mode):
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_grad_operation_with_invalid_ones_like_output(mode):
+    """
+    Features: ops.GradOperation.
+    Description: Test ops.GradOperation with default args in graph mode.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self, w, b):
+            super(Net, self).__init__()
+            self.w = Parameter(w, name='w')
+            self.b = Parameter(b, name='b')
+
+        def construct(self, x):
+            return self.w * x + self.b, "a", None, slice(x, 1, 2)
+
+    ms.set_context(mode=mode)
+    x = Tensor([10], mstype.int32)
+    w = Tensor([6], mstype.int32)
+    b = Tensor([2], mstype.int32)
+    expect = Tensor([6], mstype.int32)
+    out = GradOperationNet(Net(w, b))(x)
+    check_grad_result(out, expect)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_grad_operation_default_multiple_inputs(mode):
     """
     Features: ops.GradOperation.

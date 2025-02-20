@@ -288,7 +288,8 @@ def _tensor_mul_cootensor(x, y):
     return COOTensor(y.indices, y.values * other_values, y.shape)
 
 
-@mul.register_default()
+# pylint: disable=protected-access
+@mul._register_default()
 def default_mul(x, y):
     """Default function for mul."""
     return x * y

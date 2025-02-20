@@ -91,7 +91,7 @@ SideEffect::CacheResult SideEffect::LoadAttr(ValueNode *src, const std::string &
   PyObject *src_object = src->GetVobj() ? src->GetVobj()->GetPyObject().ptr() : nullptr;
   if (src_object == nullptr) {
     Find(src);
-  } else {
+  } else if (!CheckConstPyObject(src_object)) {
     auto iter = data()->id_map().find(src_object);
     MS_EXCEPTION_IF_CHECK_FAIL(iter != data()->id_map().end(), "missing track for node " + src->ToString());
     (void)std::find_if(iter->second.begin(), iter->second.end(), Find);
@@ -133,6 +133,30 @@ bool SideEffect::NeedTrack(ValueNode *node) {
   return false;
 }
 
+static bool IsTensorOpt(SideEffect::Type type, ValueNode *oper, const std::string &method_name) {
+  ValueNode *tensor;
+  if (type == SideEffect::Type::kBuiltinMethod) {
+    tensor = GetSelfFromKnownMethod(oper);
+  } else {
+    return false;
+  }
+  // must be tensor api
+  if (tensor->GetVobj()->GetType() != AObject::kTypeTensor) {
+    return false;
+  }
+  // must be return a tensor
+  if (oper->GetVobj()->GetType() != AObject::kTypeTensor) {
+    return false;
+  }
+  // must be computed by graph, but graph can't apply side effect to tensor
+  if (method_name == kSetItem) {
+    return true;
+  }
+  // function Tensor.assign_value can't run in graph
+  // primitive ops.assign only effect for Parameter in graph
+  return false;
+}
+
 bool SideEffect::Record(ValueNode *node, Type type, std::string name) {
   int opcode = node->GetOpcode();
   if (opcode == STORE_ATTR || opcode == DELETE_ATTR) {
@@ -154,12 +178,17 @@ bool SideEffect::Record(ValueNode *node, Type type, std::string name) {
     type = kDefault;
     name = opcode == STORE_SUBSCR ? kSetItem : kDelItem;
   } else if (Opcode(opcode).IsCall() && CheckCallRecord(node, type, name)) {
+  } else if (opcode == STORE_DEREF) {
+    // No action needed
   } else {
     MS_LOG(INFO) << "unimplemented side-effect " << node->ToString();
     return false;
   }
   size_t order_index = nodes_.size();
   Entry entry{node, type, order_index, std::move(name)};
+  if (IsTensorOpt(entry.type_, entry.node_, entry.method_name_)) {
+    entry.type_ = kTensorOptMethod;
+  }
   AddKeepAlive(GetKeepAlive(entry));
   nodes_[node] = std::move(entry);
   return true;
@@ -192,14 +221,15 @@ std::vector<ValueNode *> SideEffect::GetKeepAlive(const Entry &e) const {
   if (Opcode(opcode).IsCall() && type >= kBuiltinMethod) {
     alive[0] = GetSelfFromKnownMethod(node);  // replace function
   }
-  auto erase_iter = alive.begin();
-  for (auto iter = erase_iter; iter != alive.end(); ++iter) {
-    if (!IsNonLocalValue(*iter)) {
-      *erase_iter = GetSource(*iter);
-      ++erase_iter;
-    }
+  if (type == kTensorOptMethod) {
+    alive = {alive[0]};  // the oldest version of modified object
   }
-  alive.erase(erase_iter, alive.end());
+  for (auto iter = alive.begin(); iter != alive.end(); ++iter) {
+    *iter = GetSource(*iter);
+  }
+  if (type == kTensorOptMethod) {
+    alive.push_back(node);  // the latest version of modified object
+  }
   return alive;
 }
 
@@ -230,9 +260,9 @@ void SideEffect::Restore(CodeGenerator *cg) const {
   if (nodes_.empty()) {
     return;
   }
-  std::vector<std::pair<ValueNode *, const Entry *>> ordered_nodes(nodes_.size());
+  std::map<int, Entry const *> ordered_nodes;
   for (const auto &i : nodes_) {
-    ordered_nodes[i.second.order_] = {i.first, &i.second};
+    ordered_nodes[i.second.order_] = &i.second;
   }
   for (const auto &pair : ordered_nodes) {
     const auto &name = pair.second->method_name_;
@@ -251,6 +281,15 @@ void SideEffect::RestoreEntry(CodeGenerator *cg, const Entry &e) const {
   Type type = e.type_;
   if (type == kBuiltinMethod) {
     RestoreBuiltinMethod(cg, e);
+    return;
+  }
+  if (type == kTensorOptMethod) {
+    cg->LoadValue(e.node_);                                  // the latest version
+    cg->LoadValue(GetSource(GetSelfFromKnownMethod(node)));  // the oldest version
+    cg->LoadConst(py::none());
+    cg->LoadConst(py::none());
+    cg->NewInstr(BUILD_SLICE, 2);
+    cg->NewInstr(STORE_SUBSCR);
     return;
   }
   int opcode = node->GetOpcode();
@@ -359,6 +398,48 @@ void SideEffect::Optimize(const std::vector<ValueNode *> &alive_locals) {
   // not implement
   // merge dict, list modify operations
   // not implement
+
+  // merge tensor setitem
+  MergeTensorOperations();
+}
+
+void SideEffect::MergeTensorOperations() {
+  std::map<ValueNode *, Entry const *> latest;  // the latest modify operations for each tensor
+  std::vector<Entry const *> erased;            // other modify operations for each tensor
+  // find tensor entry
+  for (const auto &pair : nodes()) {
+    const auto &entry = pair.second;
+    if (entry.type_ != kTensorOptMethod) {
+      continue;
+    }
+    ValueNode *self = GetSelfFromKnownMethod(entry.node_);
+    Entry const **record = &latest[GetSource(self)];
+    if (*record == nullptr) {
+      *record = &entry;
+    } else if ((*record)->order_ < entry.order_) {
+      erased.push_back(*record);
+      *record = &entry;
+    } else {
+      erased.push_back(&entry);
+    }
+  }
+  if (latest.empty() /* no tensor is modified */ || erased.empty() /* no tensor is modified multiple times */) {
+    return;
+  }
+  // update alive
+  std::vector<ValueNode *> alive;
+  for (const auto &pair : latest) {
+    alive.push_back(pair.first);          // oldest version
+    alive.push_back(pair.second->node_);  // latest version
+  }
+  latest.clear();
+  for (const auto &e : erased) {
+    auto required = GetKeepAlive(*e);
+    std::for_each(required.begin(), required.end(), [this](ValueNode *i) { keep_alive_.erase(i); });
+    nodes_.erase(e->node_);
+  }
+  erased.clear();
+  AddKeepAlive(alive);
 }
 
 }  // namespace pijit

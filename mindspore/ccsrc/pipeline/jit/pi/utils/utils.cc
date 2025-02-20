@@ -75,14 +75,26 @@ std::string Utils::GetPyName(PyObject *obj) {
   return str != nullptr ? std::string(str) : "";
 }
 
-void Utils::PyBuiltinPrint(PyObject *str) {
+void Utils::PyBuiltinPrint(PyObject *str, bool flush) {
   static _PyCFunctionFastWithKeywords pyprint = nullptr;
   if (!pyprint) {
     PyObject *p = PyDict_GetItemString(PyEval_GetBuiltins(), "print");
     MS_EXCEPTION_IF_CHECK_FAIL(p && PyCFunction_Check(p), "can't get python 'print' function");
     pyprint = (_PyCFunctionFastWithKeywords)PyCFunction_GET_FUNCTION(p);
   }
-  pyprint(nullptr, &str, 1, nullptr);
+  // The arguments of _PyCFunctionFastWithKeywords, refer to: https://docs.python.org/3/c-api/structures.html
+  // This api has four arguments:
+  // - PyObject *self, the `self` object of bounded method, or the module object.
+  // - PyObject *const *args, an array of positional-args and keyword-args.
+  // - Py_ssize_t nargs, the num of positional-args (not include keyword-args).
+  // - PyObject *kwnames, a tuple of keyword-args names.
+  if (flush) {
+    PyObject *args[2]{str, Py_True};
+    py::tuple kwnames = py::make_tuple("flush");
+    pyprint(nullptr, args, 1, kwnames.ptr());
+  } else {
+    pyprint(nullptr, &str, 1, nullptr);
+  }
   if (PyErr_Occurred()) {
     PyErr_Print();
     PyErr_Clear();
@@ -95,14 +107,16 @@ void Utils::DisFuncObject(PyObject *func) {
     return;
   }
   auto dis = py::module::import("dis").attr("dis");
-  // py::print("*** Dump ByteCode After CodeGen on [", py::cast<py::object>(func), "] ***");
-  PY_PRINT_F("*** Dump ByteCode After CodeGen on [%A] ***", func);
+  PY_PRINTF("*** Dump ByteCode After CodeGen on [%A] ***", func);
   auto args = PyTuple_Pack(1, func);
-  Py_XDECREF(PyObject_Call(dis.ptr(), args, NULL));
+  Py_XDECREF(PyObject_Call(dis.ptr(), args, nullptr));
   Py_DECREF(args);
   if (PyErr_Occurred()) {
     PyErr_Print();
   }
+  // By adding `print("", flush=True)`, the output of `dis` can be immediately printed out without being truncated
+  // by `MS_LOG`.
+  PyBuiltinPrint(py::str("").ptr(), true);
 }
 
 py::object Utils::GetModuleAttr(const std::string &mod_name, const std::string &attr_name, bool _import, bool _throw) {
@@ -270,6 +284,29 @@ PyObject *Utils::MixedPrecisionTypeToDType(MixedPrecisionType mixed_type) {
   return dst_dtype;
 }
 
+std::vector<Py_ssize_t> Utils::FormatSubscript(const py::object &subscr, Py_ssize_t size) {
+  if (subscr.ptr() == nullptr || subscr.is_none()) {
+    return {};
+  }
+  if (PyIndex_Check(subscr.ptr())) {
+    Py_ssize_t index = PyNumber_AsSsize_t(subscr.ptr(), NULL);
+    if (index >= -size && index < size) {
+      return {(index + size) % size, 1, 1, 0};
+    }
+  }
+  if (PySlice_Check(subscr.ptr())) {
+    Py_ssize_t start = 0;
+    Py_ssize_t stop = 0;
+    Py_ssize_t step = 0;
+    if (PySlice_Unpack(subscr.ptr(), &start, &stop, &step) == 0) {
+      auto len = PySlice_AdjustIndices(size, &start, &stop, step);
+      return {start, step, (len < 0 ? 0 : len), 1};
+    }
+  }
+  PyErr_Clear();
+  return {};
+}
+
 bool HasMutableOrConstAttr(PyObject *obj) {
   auto pyObj = py::cast<py::object>(obj);
   return py::hasattr(pyObj, kMutableAttr) || py::hasattr(pyObj, kConstArgAttr);
@@ -317,6 +354,18 @@ bool IsTensorPyObject(PyObject *obj) {
          py::isinstance<mindspore::tensor::COOTensor>(obj) || py::isinstance<mindspore::tensor::TensorData>(obj);
 }
 
+bool IsCTensorPyObject(PyObject *obj) {
+  if (obj == nullptr) {
+    return false;
+  }
+  py::handle mapped_type = py::detail::get_type_handle(typeid(mindspore::tensor::Tensor), false);
+  PyTypeObject *tar = reinterpret_cast<PyTypeObject *>(mapped_type.ptr());
+  if (tar == nullptr) {
+    return false;
+  }
+  return Py_TYPE(obj) == tar;
+}
+
 bool IsMsClass(PyObject *obj) {
   if (obj == nullptr) {
     return false;
@@ -332,6 +381,13 @@ bool IsNumpyObject(PyObject *op) {
   PyTypeObject *tp = Py_TYPE(op);
   constexpr const char numpy[] = "numpy";
   return tp->tp_name ? strncmp(tp->tp_name, numpy, sizeof(numpy) - 1) == 0 : false;
+}
+
+bool IsZipPyObject(PyTypeObject *obj) {
+  if (obj == nullptr) {
+    return false;
+  }
+  return obj == &PyZip_Type;
 }
 
 bool IsNoGradEnterFunc(const py::object &handle) {
@@ -465,6 +521,39 @@ py::object ConvertToMsTensor(const py::object &tensor) {
   return Py_TYPE(tensor.ptr()) == tp ? tensor : common_tensor_type(tensor);
 }
 
+PyObject *GetMsTensorType();
+py::object ConvertCppTensorToMsTensor(const py::object &any) {
+  PyObject *op = any.ptr();
+  py::handle mapped_type = py::detail::get_type_handle(typeid(mindspore::tensor::Tensor), false);
+  PyTypeObject *cpp_tensor_type = reinterpret_cast<PyTypeObject *>(mapped_type.ptr());
+
+  if (Py_IS_TYPE(op, cpp_tensor_type)) {
+    py::object tp = py::reinterpret_borrow<py::object>(GetMsTensorType());
+    return tp(any);
+  }
+
+  if (PyTuple_Check(op) || PyList_Check(op)) {
+    for (Py_ssize_t i = 0; i < Py_SIZE(op); ++i) {
+      PyObject **item = PyTuple_Check(op) ? &PyTuple_GET_ITEM(op, i) : &PyList_GET_ITEM(op, i);
+      PyObject *new_item = ConvertCppTensorToMsTensor(py::cast<py::object>(*item)).inc_ref().ptr();
+      Py_SETREF(*item, new_item);
+    }
+    return any;
+  }
+
+  if (PyDict_Check(op)) {
+    Py_ssize_t pos = 0;
+    PyObject *key;
+    PyObject *value;
+    while (PyDict_Next(op, &pos, &key, &value)) {
+      py::object new_value = ConvertCppTensorToMsTensor(py::cast<py::object>(value));
+      PyDict_SetItem(op, key, new_value.ptr());
+    }
+    return any;
+  }
+  return any;
+}
+
 size_t DeviceAvailableMemSize() {
   const auto &context = MsContext::GetInstance();
   uint32_t device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
@@ -574,6 +663,19 @@ std::string TimeRecorder::TimeData::ToString() {
   }
   s << "========================================" << std::endl;
   return s.str();
+}
+
+static size_t GetPIJitLogMinSize() {
+  if (!(IS_OUTPUT_ON(mindspore::kWarning))) {
+    // if MS_LOG is disable, print all to stderr
+    return 0;
+  }
+  return 20000;
+}
+
+size_t PIJitLogMinSize() {
+  static size_t s = GetPIJitLogMinSize();
+  return s;
 }
 
 }  // namespace pijit

@@ -22,7 +22,6 @@
 #include <utility>
 #include <vector>
 #include "pipeline/jit/pi/graph_capture/cfg.h"
-#include "pipeline/jit/pi/graph_capture/loop.h"
 #include "pipeline/jit/pi/graph_capture/node.h"
 #include "pipeline/jit/pi/utils/allocator.h"
 #include "pipeline/jit/pi/graph_guard/trace.h"
@@ -35,6 +34,7 @@ namespace pijit {
 
 class OptCode;
 class GraphJitConfig;
+class FuncGraphBuilder;
 
 class FrameStates {
  public:
@@ -144,9 +144,8 @@ class Graph {
   CellVarNode *NewCellNode(AObject *, int op, int arg, const std::vector<ValueNode *> &inputs = {},
                            const std::string &name = "");
 
+  ParamNode *NewParamNode(AObject *, int index, const std::string &name = "");
   CallNode *NewCallNode(int op, int arg, const std::vector<ValueNode *> &);
-  const std::vector<LoopInfo *> &loops() const { return loops_; }
-  void AddLoop(LoopInfo *loop) { loops_.emplace_back(loop); }
 
   // only func name
   std::string GetCodeName() const {
@@ -177,8 +176,6 @@ class Graph {
 
   std::string ToString(int depth = 0) const;
 
-  std::string DumpBreakInfo() const;
-
   void SetParent(Graph *parent) { parent_ = parent; }
   Graph *GetParent() const { return parent_; }
 
@@ -192,9 +189,20 @@ class Graph {
   static std::vector<ValueNode *> CollectAliveNode(const FrameStates &, BitMap *, std::vector<int> * = nullptr);
   void FoundInnerClass() { found_inner_class = true; }
 
+  const auto &prepare() const { return prepare_; }
+  bool PrepareParameter(ValueNode *node);
+
+  // return true if has fail guard matched
+  bool NeedSymbolic(ValueNode *node);
+
+  void set_func_graph_builder(const std::shared_ptr<FuncGraphBuilder> &ptr) { func_graph_builder_ = ptr; }
+  const auto &func_graph_builder() const { return func_graph_builder_; }
+
  private:
+  void DumpBreakInfo(std::ostream *out) const;
+  void PrintFrame(std::ostream *out, const std::string &prefix) const;
+
   std::unique_ptr<CFG> cfg_;
-  std::vector<LoopInfo *> loops_;
 
   // frame status
   std::map<int, std::unique_ptr<FrameStates>> frame_states_;
@@ -228,6 +236,13 @@ class Graph {
   Graph *parent_{nullptr};
   std::shared_ptr<SideEffect> side_effect_;
   bool found_inner_class = false;
+
+  struct PrepareInfo {
+    std::vector<ValueNode *> inputs_;
+    std::vector<ValueNode *> operations_;
+  } prepare_;
+
+  std::shared_ptr<FuncGraphBuilder> func_graph_builder_;
 };
 }  // namespace pijit
 }  // namespace mindspore

@@ -54,6 +54,7 @@ from mindspore.train.serialization import _exec_save, load, export_split_mindir,
     _load_into_param_dict
 from mindspore.parallel import _cost_model_context
 from mindspore.parallel._offload_context import offload_context
+from mindspore.parallel._utils import _is_in_data_parallel_mode
 from mindspore.run_check._check_version import check_version_and_env_config
 from mindspore.dataset.callback.ds_callback import DSCallback, WaitedDSCallback
 from mindspore.dataset.transforms.c_transforms import TensorOperation as CTensorOperation, OneHot as COneHot, \
@@ -360,6 +361,7 @@ FUNC_KEY_DICT_ITEMS = 22  # dict.items
 FUNC_KEY_PRIMITIVE_ASSIGN = 23  # mindspore.ops.assign, Primitive("Assign")
 FUNC_KEY_TENSOR_SETITEM = 24  # Tensor.__setitem__
 FUNC_KEY_TENSOR_ASSIGN_VALUE = 25  # Tensor.assign_value
+FUNC_KEY_TENSOR_IS_CONTIGUOUS = 26  # Tensor.is_contiguous
 
 # Initialized only once. This map will initialize by c++ when start pijit.
 # key is customer if fuzzy match. (Primitive, constexpr, primexpr, MetaFuncGraph)
@@ -376,19 +378,19 @@ _func_map = {
     constexpr_key: FUNC_KEY_CONSTEXPR,
     primexpr_key: FUNC_KEY_PRIMEXPR,
     meta_func_graph_key: FUNC_KEY_META_FUNCG_RAPH,
-    id(GraphCell.__call__): FUNC_KEY_GRAPH_CELL,
+    function_id(GraphCell.__call__): FUNC_KEY_GRAPH_CELL,
     id(psjit_code): FUNC_KEY_PSJIT_CODE,
-    id(_get_cache_prim): FUNC_KEY_GET_CACHE_PRIM,
-    id(Registry.get): FUNC_KEY_REGISTRY_GET,
+    function_id(_get_cache_prim): FUNC_KEY_GET_CACHE_PRIM,
+    function_id(Registry.get): FUNC_KEY_REGISTRY_GET,
 
     # tensor side-effect
     primitive_assign_key: FUNC_KEY_PRIMITIVE_ASSIGN,
-    id(F.assign): FUNC_KEY_PRIMITIVE_ASSIGN,
-    id(Tensor.assign_value): FUNC_KEY_TENSOR_ASSIGN_VALUE,
-    id(Tensor.__setitem__): FUNC_KEY_TENSOR_SETITEM,
+    function_id(F.assign): FUNC_KEY_PRIMITIVE_ASSIGN,
+    function_id(Tensor.assign_value): FUNC_KEY_TENSOR_ASSIGN_VALUE,
+    function_id(Tensor.__setitem__): FUNC_KEY_TENSOR_SETITEM,
 
     # Tensor method
-    id(Tensor.astype): FUNC_KEY_TENSOR_ASTYPE,
+    function_id(Tensor.astype): FUNC_KEY_TENSOR_ASTYPE,
 
     # types.BuiltinFunctionType
     function_id(isinstance): FUNC_KEY_BUILTIN_FUNC,
@@ -448,6 +450,7 @@ _func_map = {
     function_id(str.isalnum): FUNC_KEY_BUILTIN_FUNC,
     function_id(str.isidentifier): FUNC_KEY_BUILTIN_FUNC,
     function_id(str.isprintable): FUNC_KEY_BUILTIN_FUNC,
+    function_id(str.replace): FUNC_KEY_BUILTIN_FUNC,
     function_id(str.format): FUNC_KEY_BUILTIN_FUNC,
     function_id(str.format_map): FUNC_KEY_BUILTIN_FUNC,
     function_id(str.__format__): FUNC_KEY_BUILTIN_FUNC,
@@ -472,7 +475,7 @@ _func_map = {
     function_id(Tensor_.getitem_index_info): FUNC_KEY_BUILTIN_FUNC,
     function_id(Tensor_.get_bytes): FUNC_KEY_BUILTIN_FUNC,
     function_id(Tensor_.is_init): FUNC_KEY_BUILTIN_FUNC,
-    function_id(Tensor_.is_contiguous): FUNC_KEY_BUILTIN_FUNC,
+    function_id(Tensor_.is_contiguous): FUNC_KEY_TENSOR_IS_CONTIGUOUS,
     function_id(Tensor_.stride): FUNC_KEY_BUILTIN_FUNC,
     # Tensor_.asnumpy need real tensor value
 
@@ -488,6 +491,7 @@ _func_map = {
     function_id(validator.check_number_range): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(validator.check_is_int): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(validator.check_is_number): FUNC_KEY_PIJIT_CONSTEXPR,
+    function_id(validator.check_positive_int_sequence): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(np_version_valid): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(_is_initialized): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(_set_elegant_exit_handle): FUNC_KEY_PIJIT_CONSTEXPR,
@@ -496,7 +500,9 @@ _func_map = {
     function_id(get_rank_size): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(get_rank_id): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(offload_context): FUNC_KEY_PIJIT_CONSTEXPR,
+    function_id(_is_in_data_parallel_mode): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(check_version_and_env_config): FUNC_KEY_PIJIT_CONSTEXPR,
+    function_id(Tensor.tolist): FUNC_KEY_PIJIT_CONSTEXPR,
 
     # inner function
     function_id(type_size_in_bytes): FUNC_KEY_BUILTIN_FUNC,

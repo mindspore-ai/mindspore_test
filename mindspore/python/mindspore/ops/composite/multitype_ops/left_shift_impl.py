@@ -31,7 +31,8 @@ def _left_shift_scalar(x, y):
     return inner.bit_left_shift(x, y)
 
 
-@left_shift.register_default()
+# pylint: disable=protected-access
+@left_shift._register_default()
 def default_left_shift(x, y):
     """Default function for left shift."""
     return x << y

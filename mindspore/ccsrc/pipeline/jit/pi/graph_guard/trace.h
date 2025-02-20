@@ -66,7 +66,7 @@ class Trace : public std::enable_shared_from_this<Trace> {
   /// \brief Get the borrow reference for the object and call Py_INCREF/Py_DECREF by yourself.
   /// \param[out] borrow reference for PyObject
   virtual PyObject *GetObject();
-  virtual TraceType GetTraceType();
+  virtual TraceType GetTraceType() const;
   virtual TraceType GetOriginType();
   virtual void Replace(std::shared_ptr<Trace> dst, std::shared_ptr<Trace> src);
   virtual bool operator==(const Trace &trace);

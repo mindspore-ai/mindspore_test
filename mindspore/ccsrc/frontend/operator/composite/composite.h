@@ -421,6 +421,16 @@ class ListFunc : public MetaFuncGraph {
 };
 using ListFuncPtr = std::shared_ptr<ListFunc>;
 
+class DictFunc : public MetaFuncGraph {
+ public:
+  explicit DictFunc(const std::string &name) : MetaFuncGraph(name) {}
+  ~DictFunc() override = default;
+  MS_DECLARE_PARENT(DictFunc, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+  friend bool operator==(const DictFunc &lhs, const DictFunc &rhs) { return lhs.name_ == rhs.name_; }
+};
+using DictFuncPtr = std::shared_ptr<DictFunc>;
+
 class ForHalfUnrollLess : public MetaFuncGraph {
  public:
   ForHalfUnrollLess() : MetaFuncGraph("ForHalfUnrollLess") {}

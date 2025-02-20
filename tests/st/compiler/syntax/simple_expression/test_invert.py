@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Huawei Technologies Co., Ltd
+# Copyright 2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,34 +12,103 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-""" test syntax for logic expression """
+""" test syntax for invert expression """
 
 import pytest
+import mindspore as ms
 import mindspore.nn as nn
-from mindspore import context
+from mindspore import Tensor, context
+from mindspore.common.api import jit
 from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE)
 
-
-class Net(nn.Cell):
-    def __init__(self):
-        super(Net, self).__init__()
-        self.m = 1
-
-    def construct(self, x):
-        return ~x
-
-
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_invert():
+def test_invert_operation_int():
     """
     Feature: simple expression
     Description: test invert operator.
-    Expectation: No exception
+    Expectation: No exception.
     """
+    class InvertNet(nn.Cell):
+        @jit
+        def construct(self, x):
+            return ~x
+    invert = InvertNet()
+    x = 1
+    jit_x = invert(x)
+    assert jit_x == -2
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_invert_operation_bool():
+    """
+    Feature: simple expression
+    Description: test invert operator.
+    Expectation: No exception.
+    """
+    class InvertNet(nn.Cell):
+        @jit
+        def construct(self, x):
+            return ~x
+    invert = InvertNet()
+    x = True
+    y = False
+    jit_x = invert(x)
+    jit_y = invert(y)
+    assert jit_x == -2
+    assert jit_y == -1
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_invert_operation_tensor():
+    """
+    Feature: simple expression
+    Description: test invert operator.
+    Expectation: No exception.
+    """
+    class InvertNet(nn.Cell):
+        @jit
+        def construct(self, x):
+            return ~x
+    invert = InvertNet()
+    x = Tensor([1, 2, 3, 4])
+    jit_x = invert(x)
+    ret = Tensor([False, False, False, False])
+    ret = ret == jit_x
+    assert ms.ops.all(ret).item()
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_invert_operation_tensor_bool():
+    """
+    Feature: simple expression
+    Description: test invert operator.
+    Expectation: No exception.
+    """
+    class InvertNet(nn.Cell):
+        @jit
+        def construct(self, x):
+            return ~x
+    invert = InvertNet()
+    x = Tensor([True, False])
+    jit_x = invert(x)
+    ret = Tensor([False, True])
+    ret = ret == jit_x
+    assert ms.ops.all(ret).item()
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_invert_operation_float():
+    """
+    Feature: simple expression
+    Description: test invert operator.
+    Expectation: No exception.
+    """
+    class InvertNet(nn.Cell):
+        @jit
+        def construct(self, x):
+            return ~x
+    invert = InvertNet()
+    x = 1.1
     with pytest.raises(TypeError) as err:
-        net = Net()
-        ret = net(1)
-        print(ret)
-    assert "Failed calling LogicalNot with" in str(err.value)
+        invert(x)
+    assert "bad operand type for unary ~:" in str(err)

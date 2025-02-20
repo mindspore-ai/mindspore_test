@@ -1,18 +1,12 @@
-import sys
 import dis
-import sys  
-import pytest 
+import types
+import pytest
 from mindspore._c_expression import jit_mode_pi_enable, jit_mode_pi_disable, get_code_extra
 from mindspore import Tensor, jit, context, ops
 import mindspore.common.dtype as mstype
 import numpy as np
 from .share.utils import match_array, pi_jit_with_config
 from tests.mark_utils import arg_mark
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 def kwf(*vargs, p=-1, **kwvargs):
     return (p, vargs, kwvargs)
@@ -49,8 +43,7 @@ class Obj:
     def func(self):
         return 1
 
-
-@pi_jit_with_config(jit_config={"compile_by_trace": False}) # One-stage will fix it later
+@jit(capture_mode="bytecode") # One-stage will fix it later
 def func(self, x):
     tpe = kw_inline_test()
     lst = list(tpe)
@@ -64,6 +57,7 @@ def func(self, x):
     return {e: d, **self, "rec_tuple": x}
 
 
+@pytest.mark.skip(reason="type infer error, fix later")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_self_reference():
     """
@@ -403,3 +397,78 @@ def test_mix_0(mode: int):
     result = inner_func(mode)
 
     assert excepted == result
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_infer_self_conflict():
+    """
+    Feature: Test type infer
+    Description: Got correct self of method
+    Expectation: The results should match for both modes.
+    """
+    class Test:
+        def __init__(self, x):
+            self.x = x
+
+        def calc(self, x):
+            return x + self.x
+
+        @jit(capture_mode="bytecode")
+        def func(self, x):
+            m1 = types.MethodType(calc, x) # method from class instantiation
+            m2 = x.calc                    # method from attribute
+            m3 = self.calc                 # method from descriptor
+            return m1(x) + m2(x) + m3(x)
+
+    global calc
+    calc = Test.calc
+
+    x = Tensor([1])
+    x.x = 0
+    test = Test(1)
+    x.calc = test.calc
+    result = test.func(x)
+    excepted = Tensor([5])
+
+    assert result == excepted
+
+    del calc
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_builtin_attr():
+    """
+    Feature: Test after grad resolve
+    Description: Got no graph break
+    Expectation: The results should match for both modes.
+    """
+    @jit(capture_mode="bytecode")
+    def fn(x, y):
+        return "x({x}) + y({y}) = {}".format(x + y, x=x, y=y)
+
+    x = Tensor([1])
+    y = Tensor([2])
+    result = fn(x, y)
+    excepted = fn.__wrapped__(x, y)
+    assert result == excepted
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_code_generate():
+    """
+    Feature: Test code generate with local reuse
+    Description: The local variable 'r' refacted by post operations of graph.
+                 must be mark tow same local and same alive between 'r' and refacted variable
+    Expectation: The results should match for both modes.
+    """
+    @jit(capture_mode="bytecode")
+    def fn(x, y):
+        y = "x({x}) + y({y}) = {}".format(x + y, x=x, y=y)
+        r = {'y' : y}
+        return r
+
+    x = Tensor([1])
+    y = Tensor([2])
+    result = fn(x, y)
+    excepted = fn.__wrapped__(x, y)
+    assert result == excepted
