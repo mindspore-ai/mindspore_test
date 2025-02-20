@@ -18,11 +18,46 @@
 #include <vector>
 #include "include/common/expander/core/node.h"
 #include "pipeline/pynative/pynative_utils.h"
+#include "runtime/pynative/op_function/pyboost_grad_functions.h"
 
 namespace mindspore {
 namespace pijit {
 namespace grad {
-using FuncBuilder = pynative::autograd::FuncBuilder;
+void FuncBuilder::SetInputs(std::string instance_name, const std::vector<NodePtr> *inputs,
+                            mindspore::HashMap<std::string, ValuePtr> *attrs_ptr) {
+  instance_name_ = std::move(instance_name);
+  inputs_ptr_ = inputs;
+  attrs_ptr_ = attrs_ptr;
+}
+
+ValuePtr FuncBuilder::EmitOp(const PrimitivePtr &prim, const ValuePtrList &inputs) const {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kEmitOp, prim->name(),
+                                     false);
+  MS_EXCEPTION_IF_NULL(prim);
+  MS_LOG(DEBUG) << "Emit op " << prim->name();
+  abstract::AbstractBasePtrList input_abs;
+  input_abs.reserve(inputs.size());
+  std::vector<InputType> input_mask;
+  input_mask.reserve(inputs.size());
+  for (const auto &input : inputs) {
+    auto abs = input->ToAbstract();
+    (void)input_abs.emplace_back(abs);
+    (void)input_mask.emplace_back(InputType::kInput);
+  }
+  VectorRef outputs;
+  runtime::OpRunnerInfo op_runner_info{prim, device_target_, inputs, input_abs, input_mask, nullptr};
+  runtime::PyBoostOpExecute::GetInstance().Execute(&op_runner_info, &outputs);
+  auto real_outputs = common::AnfAlgo::TransformVectorRefToMultiValue(outputs);
+  if (op_runner_info.output_value_simple_info != nullptr) {
+    // Get output abstract
+    op_runner_info.output_abs = TransformValueSimpleInfoToAbstract(*op_runner_info.output_value_simple_info);
+  }
+  MS_EXCEPTION_IF_NULL(op_runner_info.output_abs);
+  if (real_outputs.size() == kSizeOne && !op_runner_info.output_abs->isa<abstract::AbstractSequence>()) {
+    return real_outputs[kIndex0];
+  }
+  return std::make_shared<ValueTuple>(std::move(real_outputs));
+}
 
 NativeBackwardFuncPtr NativeBackwardFunc::GetInstance(const PrimitivePtr &prim) {
   if (prim == nullptr) {
@@ -32,8 +67,7 @@ NativeBackwardFuncPtr NativeBackwardFunc::GetInstance(const PrimitivePtr &prim) 
   if (handle == nullptr) {
     return nullptr;
   }
-  const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  const FuncBuilderPtr &ir_builder = std::make_shared<FuncBuilder>(prim->name(), device_target);
+  const FuncBuilderPtr &ir_builder = std::make_shared<FuncBuilder>(prim->name());
   return std::make_shared<NativeBackwardFunc>(prim, ir_builder, handle);
 }
 
@@ -42,14 +76,14 @@ ValuePtrList NativeBackwardFunc::Run(const ValuePtrList &inputs, const ValuePtr 
     return ValuePtrList(GetGradientIndexes().size(), kNone);
   }
   mindspore::HashMap<std::string, ValuePtr> attrs = prim_->attrs();
-  expander::NodePtrList node_inputs = PreProcess(inputs, out, dout);
+  NodePtrList node_inputs = PreProcess(inputs, out, dout);
   ir_builder_->SetInputs(GetName(), &node_inputs, &attrs);
-  const std::vector<expander::NodePtr> cal_grads_node = handle_->func(ir_builder_.get());
+  const std::vector<NodePtr> cal_grads_node = handle_->func(ir_builder_.get());
   ValuePtrList cal_grads_values;
   cal_grads_values.reserve(cal_grads_node.size());
   // Binary op grad result may be nulllptr, we need convert to kNone.
   (void)std::transform(cal_grads_node.begin(), cal_grads_node.end(), std::back_inserter(cal_grads_values),
-                       [](const expander::NodePtr &node) -> ValuePtr {
+                       [](const NodePtr &node) -> ValuePtr {
                          if (node == nullptr) {
                            return kNone;
                          }
@@ -75,9 +109,9 @@ InputType GetInputType(const ValuePtr &input) {
   return InputType::kInput;
 }
 
-expander::NodePtrList NativeBackwardFunc::PreProcess(const ValuePtrList &inputs, const ValuePtr &out,
+NodePtrList NativeBackwardFunc::PreProcess(const ValuePtrList &inputs, const ValuePtr &out,
                                                      const ValuePtr &dout) const {
-  expander::NodePtrList node_inputs;
+  NodePtrList node_inputs;
   (void)std::transform(inputs.begin(), inputs.end(), std::back_inserter(node_inputs), [this](const auto &input) {
     if (input == nullptr) {
       return ir_builder_->NewFuncNode(kNone, kNone->ToAbstract(), InputType::kConstant);
