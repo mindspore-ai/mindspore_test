@@ -4649,55 +4649,62 @@ def std_ext(input, dim=None, *, correction=1, keepdim=False):
 
 def var(input, axis=None, ddof=0, keepdims=False):
     r"""
-    Returns the variance of each row of the input Tensor by default, or it can calculate them
-    in specified dimension `axis`. If `axis` is a list of dimensions, reduce over all of them.
-
-    Note:
-        If ddof is 0, 1, True or False, the supported device is only Ascend and CPU. In other cases,
-        the supported device is Ascend, GPU and CPU.
+    Compute the variance of the tensor along a specified axis.
 
     Args:
-        input (Tensor[Number]): Input Tensor with a dtype of number.Number, its shape should be :math:`(N, *)`
-            where :math:`*` means any number of additional dims.
-        axis (Union[int, tuple(int)], optional): The dimensions to reduce. Only constant value is allowed.
-            Must be in the range [-rank(`input`), rank(`input`)). Default: ``None`` , reduce all dimensions.
-        ddof (Union[int, bool], optional): Means Delta Degrees of Freedom.
-            If ddof is an integer, the divisor used in calculations is :math:`N - ddof`,
-            where :math:`N` represents the number of elements.
-            If ddof is True, will use the Bessel correction unbiased estimation.
-            If ddof is False, will through the biased estimation to calculate variance.
-            Default: ``0`` .
-        keepdims (bool, optional): Whether the output Tensor has dim retained or not.
-            If ``true`` , keep these reduced dimensions and the length is 1.
-            If false, don't keep these dimensions. Default: ``False`` .
+        input (Tensor[Number]): The input tensor.
+        axis (Union[int, tuple(int)], optional): Specify the axis for computation. If ``None`` , compute all elements
+            in the `input` . Default ``None`` .
+        ddof (Union[int, bool], optional): Means Delta Degrees of Freedom. Default ``0`` .
+
+          - If ddof is an integer, the divisor used in calculations is :math:`N - ddof`, where :math:`N` represents
+            the number of elements.
+          - If ddof is a boolean, ``True`` and ``False`` correspond to when ddof is an integer ``1`` and ``0``
+            respectively.
+          - If ddof is 0, 1, True or False, the supported device is only Ascend and CPU. In other cases,
+            the supported device is Ascend, GPU and CPU.
+        keepdims (bool, optional): Whether the output tensor has dim retained. Default ``False`` .
 
     Returns:
-        Tensor, the variance.
-        Suppose the shape of `input` is :math:`(x_0, x_1, ..., x_R)`:
-
-        - If `axis` is () and `keepdims` is set to ``False`` , returns a 0-D Tensor, indicating
-          the standard deviation of all elements in `input`.
-        - If `axis` is int 1 and `keepdims` is set to ``False`` , then the returned Tensor
-          has shape :math:`(x_0, x_2, ..., x_R)`.
-        - If `axis` is tuple(int) or list(int), e.g. (1, 2) and `keepdims` is set to ``False`` ,
-          then the returned Tensor has shape :math:`(x_0, x_2, ..., x_R)`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `axis` is not one of the following: None, int, tuple.
-        TypeError: If `keepdims` is not a bool.
-        ValueError: If `axis` is out of range.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> input = ms.Tensor([[1, 2, 3, 4], [-1, 1, 4, -10]], ms.float32)
-        >>> output = ms.ops.var(input, 1, 2, True)
+        >>> import mindspore
+        >>> input = mindspore.tensor([[1., 3, 4, 2],
+        ...                           [4, 2, 5, 3],
+        ...                           [5, 4, 2, 3]])
+        >>> # case 1: By default, compute the variance of all elements.
+        >>> output = mindspore.ops.var(input)
         >>> print(output)
-        [[ 2.5]
-         [54.5]]
+        1.4722221
+        >>>
+        >>> # case 2: Compute the variance along axis 0.
+        >>> output = mindspore.ops.var(input, axis=0)
+        >>> print(output)
+        [2.8888888 0.6666667 1.5555557 0.2222222]
+        >>>
+        >>> # case 3: If keepdims=True, the output shape will be same of that of the input.
+        >>> output = mindspore.ops.var(input, axis=0, keepdims=True)
+        >>> print(output)
+        [[2.8888888 0.6666667 1.5555557 0.2222222]]
+        >>>
+        >>> # case 4: If ddof=1:
+        >>> output = mindspore.ops.var(input, axis=0, keepdims=True, ddof=1)
+        >>> print(output)
+        [[4.3333335 1.        2.3333335 0.3333333]]
+        >>>
+        >>> # case 5: If ddof=True, same as ddof=1:
+        >>> output = mindspore.ops.var(input, axis=0, keepdims=True, ddof=True)
+        >>> print(output)
+        [[4.3333335 1.        2.3333335 0.3333333]]
+        >>>
+        >>> # case 6: If ddof=False, same as ddof=0:
+        >>> output = mindspore.ops.var(input, axis=0, keepdims=True, ddof=False)
+        >>> print(output)
+        [[2.8888888 0.6666667 1.5555557 0.2222222]]
     """
     axis = _check_var_std_input(input, ddof, keepdims, axis, "var")
     output = var_mean(input, axis, ddof, keepdims)
@@ -4706,59 +4713,70 @@ def var(input, axis=None, ddof=0, keepdims=False):
 
 def var_mean(input, axis=None, ddof=0, keepdims=False):
     r"""
-    Returns the variance and mean of each row of the input Tensor by default,
-    or it can calculate them in specified dimension `axis`.
-    If `axis` is a list of dimensions, reduce over all of them.
-
-    Note:
-        If ddof is 0, 1, True or False, the supported device is only Ascend and CPU. In other cases,
-        the supported device is Ascend, GPU and CPU.
+    Compute the variance and the mean of the tensor along a specified axis.
 
     Args:
-        input (Tensor[Number]): Input Tensor with a dtype of number.Number, its shape should be :math:`(N, *)`
-            where :math:`*` means any number of additional dims.
-        axis (Union[int, tuple(int)], optional): The dimensions to reduce. Only constant value is allowed.
-            Must be in the range [-rank(`input`), rank(`input`)). Default: ``None`` , reduce all dimensions.
-        ddof (Union[int, bool], optional): Means Delta Degrees of Freedom.
-            If ddof is an integer, the divisor used in calculations is :math:`N - ddof`,
-            where :math:`N` represents the number of elements.
-            If ddof is True, will use the Bessel correction unbiased estimation.
-            If ddof is False, will through the biased estimation to calculate the variance.
-            Default: ``0`` .
-        keepdims (bool, optional): Whether the output Tensor has dim retained or not.
-            If true, keep these reduced dimensions and the length is 1.
-            If false, don't keep these dimensions. Default: ``False`` .
+        input (Tensor[Number]): The input tensor.
+        axis (Union[int, tuple(int)], optional): Specify the axis for computation. If ``None`` , compute all
+            elements in the `input` . Default ``None`` .
+        ddof (Union[int, bool], optional): Means Delta Degrees of Freedom. Default ``0`` .
+
+          - If ddof is an integer, the divisor used in calculations is :math:`N - ddof`, where :math:`N` represents
+            the number of elements.
+          - If ddof is a boolean, ``True`` and ``False`` correspond to when ddof is an integer ``1`` and ``0``
+            respectively.
+          - If ddof is 0, 1, True or False, the supported device is only Ascend and CPU. In other cases,
+            the supported device is Ascend, GPU and CPU.
+        keepdims (bool, optional): Whether the output tensor has dim retained. Default ``False`` .
 
     Returns:
-        A tuple containing the variance and mean.
-        Suppose the shape of `input` is :math:`(x_0, x_1, ..., x_R)`:
-
-        - If `axis` is () and `keepdims` is set to ``False`` , returns a 0-D Tensor, indicating
-          the standard deviation of all elements in `input`.
-        - If `axis` is int 1 and `keepdims` is set to ``False`` , then the returned Tensor
-          has shape :math:`(x_0, x_2, ..., x_R)`.
-        - If `axis` is tuple(int) or list(int), e.g. (1, 2) and `keepdims` is set to ``False`` ,
-          then the returned Tensor has shape :math:`(x_0, x_2, ..., x_R)`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `axis` is not one of the following: None, int, tuple.
-        TypeError: If `keepdims` is not a bool.
-        ValueError: If `axis` is out of range.
+        Tuple(var, mean) of 2 tensors.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> input = ms.Tensor([[1, 2, 3, 4], [-1, 1, 4, -10]], ms.float32)
-        >>> output_var, output_mean = ms.ops.var_mean(input, 1, 2, True)
-        >>> print(output_var)
-        [[ 2.5]
-         [54.5]]
-        >>> print(output_mean)
-        [[ 2.5]
-         [-1.5]]
+        >>> import mindspore
+        >>> x = mindspore.tensor([[1., 3, 4, 2],
+        >>>                       [4, 2, 5, 3],
+        >>>                       [5, 4, 2, 3]])
+        >>> # case 1: By default, compute the variance and mean of all elements.
+        >>> mindspore.ops.var_mean(x)
+        (Tensor(shape=[], dtype=Float32, value= 1.47222),
+         Tensor(shape=[], dtype=Float32, value= 3.16667))
+        >>>
+        >>> # case 2: Compute the variance and mean along axis 0.
+        >>> output = mindspore.ops.var_mean(x, axis=0)
+        (Tensor(shape=[4], dtype=Float32, value= [ 2.88888884e+00,  6.66666687e-01,  1.55555570e+00,  2.22222194e-01]),
+         Tensor(shape=[4], dtype=Float32, value= [ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]))
+        >>>
+        >>> # case 3: If keepdims=True, the output shape will be same of that of the input.
+        >>> output = mindspore.ops.var_mean(x, axis=0, keepdims=True)
+        (Tensor(shape=[1, 4], dtype=Float32, value=
+         [[ 2.88888884e+00,  6.66666687e-01,  1.55555570e+00,  2.22222194e-01]]),
+         Tensor(shape=[1, 4], dtype=Float32, value=
+         [[ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]]))
+        >>>
+        >>> # case 4: If ddof=1:
+        >>> output = mindspore.ops.var_mean(x, axis=0, keepdims=True, ddof=1)
+        (Tensor(shape=[1, 4], dtype=Float32, value=
+         [[ 4.33333349e+00,  1.00000000e+00,  2.33333349e+00,  3.33333313e-01]]),
+         Tensor(shape=[1, 4], dtype=Float32, value=
+         [[ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]]))
+        >>>
+        >>> # case 5: If ddof=True, same as ddof=1:
+        >>> output = mindspore.ops.var_mean(x, axis=0, keepdims=True, ddof=True)
+        (Tensor(shape=[1, 4], dtype=Float32, value=
+         [[ 4.33333349e+00,  1.00000000e+00,  2.33333349e+00,  3.33333313e-01]]),
+         Tensor(shape=[1, 4], dtype=Float32, value=
+         [[ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]]))
+        >>>
+        >>> # case 6: If ddof=False, same as ddof=0:
+        >>> output = mindspore.ops.var_mean(x, axis=0, keepdims=True, ddof=False)
+        (Tensor(shape=[1, 4], dtype=Float32, value=
+         [[ 2.88888884e+00,  6.66666687e-01,  1.55555570e+00,  2.22222194e-01]]),
+         Tensor(shape=[1, 4], dtype=Float32, value=
+         [[ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]]))
     """
     axis = _check_var_std_input(input, ddof, keepdims, axis, "var_mean")
     if ddof in (0, 1):
@@ -4780,55 +4798,62 @@ def var_mean(input, axis=None, ddof=0, keepdims=False):
 
 def std(input, axis=None, ddof=0, keepdims=False):
     r"""
-    Returns the standard-deviation of each row of the input Tensor by default, or it can calculate them
-    in specified dimension `axis`. If `axis` is a list of dimensions, reduce over all of them.
-
-    Note:
-        If ddof is 0, 1, True or False, the supported device is only Ascend and CPU. In other cases,
-        the supported device is Ascend, GPU and CPU.
+    Compute the standard deviation of the tensor along a specified axis.
 
     Args:
-        input (Tensor[Number]): Input Tensor with a dtype of number.Number, its shape should be :math:`(N, *)`
-            where :math:`*` means any number of additional dims.
-        axis (Union[int, tuple(int)], optional): The dimensions to reduce. Only constant value is allowed.
-            Must be in the range [-rank(`input`), rank(`input`)). Default: ``None`` , reduce all dimensions.
-        ddof (Union[int, bool], optional): Means Delta Degrees of Freedom.
-            If ddof is an integer, the divisor used in calculations is :math:`N - ddof`,
-            where :math:`N` represents the number of elements.
-            If ddof is True, will use the Bessel correction unbiased estimation.
-            If ddof is False, will through the biased estimation to calculate the standard deviation.
-            Default: ``0`` .
-        keepdims (bool, optional): Whether the output Tensor has dim retained or not.
-            If true, keep these reduced dimensions and the length is 1.
-            If false, don't keep these dimensions. Default: ``False`` .
+        input (Tensor[Number]): The input tensor.
+        axis (Union[int, tuple(int)], optional): Specify the axis for computation. If ``None`` , compute all elements
+            in the `input` . Default ``None`` .
+        ddof (Union[int, bool], optional): Means Delta Degrees of Freedom. Default ``0`` .
+
+          - If ddof is an integer, the divisor used in calculations is :math:`N - ddof`, where :math:`N` represents
+            the number of elements.
+          - If ddof is a boolean, ``True`` and ``False`` correspond to when ddof is an integer ``1`` and ``0``
+            respectively.
+          - If ddof is 0, 1, True or False, the supported device is only Ascend and CPU. In other cases,
+            the supported device is Ascend, GPU and CPU.
+        keepdims (bool, optional): Whether the output tensor has dim retained. Default ``False`` .
 
     Returns:
-        Tensor, the standard deviation.
-        Suppose the shape of `input` is :math:`(x_0, x_1, ..., x_R)`:
-
-        - If `axis` is () and `keepdims` is set to False, returns a 0-D Tensor, indicating
-          the standard deviation of all elements in `input`.
-        - If `axis` is int 1 and `keepdims` is set to False, then the returned Tensor
-          has shape :math:`(x_0, x_2, ..., x_R)`.
-        - If `axis` is tuple(int) or list(int), e.g. (1, 2) and `keepdims` is set to False,
-          then the returned Tensor has shape :math:`(x_0, x_2, ..., x_R)`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `axis` is not one of the following: None, int, tuple.
-        TypeError: If `keepdims` is not a bool.
-        ValueError: If `axis` is out of range.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> input = ms.Tensor([[1, 2, 3, 4], [-1, 1, 4, -10]], ms.float32)
-        >>> output = ms.ops.std(input, 1, 2, True)
+        >>> import mindspore
+        >>> input = mindspore.tensor([[1., 3, 4, 2],
+        ...                           [4, 2, 5, 3],
+        ...                           [5, 4, 2, 3]])
+        >>> # case 1: By default, compute the standard deviation of all elements.
+        >>> output = mindspore.ops.std(input)
         >>> print(output)
-        [[1.5811388]
-         [7.3824115]]
+        1.2133516
+        >>>
+        >>> # case 2: Compute the standard deviation along axis 0.
+        >>> output = mindspore.ops.std(input, axis=0)
+        >>> print(output)
+        [1.6996732 0.8164966 1.2472192 0.4714045]
+        >>>
+        >>> # case 3: If keepdims=True, the output shape will be same of that of the input.
+        >>> output = mindspore.ops.std(input, axis=0, keepdims=True)
+        >>> print(output)
+        [[1.6996732 0.8164966 1.2472192 0.4714045]]
+        >>>
+        >>> # case 4: If ddof=1:
+        >>> output = mindspore.ops.std(input, axis=0, keepdims=True, ddof=1)
+        >>> print(output)
+        [[2.081666   1.         1.5275253  0.57735026]]
+        >>>
+        >>> # case 5: If ddof=True, same as ddof=1:
+        >>> output = mindspore.ops.std(input, axis=0, keepdims=True, ddof=True)
+        >>> print(output)
+        [[2.081666   1.         1.5275253  0.57735026]]
+        >>>
+        >>> # case 6: If ddof=False, same as ddof=0:
+        >>> output = mindspore.ops.std(input, axis=0, keepdims=True, ddof=False)
+        >>> print(output)
+        [[1.6996732 0.8164966 1.2472192 0.4714045]]
     """
     axis = _check_var_std_input(input, ddof, keepdims, axis, "std")
     output = std_mean(input, axis, ddof, keepdims)
@@ -4837,60 +4862,70 @@ def std(input, axis=None, ddof=0, keepdims=False):
 
 def std_mean(input, axis=None, ddof=0, keepdims=False):
     r"""
-    Returns the standard-deviation and mean of each row of the input Tensor by default,
-    or it can calculate them in specified dimension `axis`.
-    If `axis` is a list of dimensions, reduce over all of them.
-
-    Note:
-        If ddof is 0, 1, True or False, the supported device is only Ascend and CPU. In other cases,
-        the supported device is Ascend, GPU and CPU.
+    Compute the standard deviation and the mean of the tensor along a specified axis.
 
     Args:
-        input (Tensor[Number]): Input Tensor with a dtype of number.Number, its shape should be :math:`(N, *)`
-            where :math:`*` means any number of additional dims.
-        axis (Union[int, tuple(int)], optional): Specifies the dimensions from which to calculate the standard
-            deviation and mean. Only constant value is allowed. Must be in the range [-rank(`input`), rank(`input`)).
-            Default: ``None`` , reduce all dimensions.
-        ddof (Union[int, bool], optional): Means Delta Degrees of Freedom.
-            If ddof is an integer, the divisor used in calculations is :math:`N - ddof`,
-            where :math:`N` represents the number of elements.
-            If ddof is True, will use the Bessel correction unbiased estimation.
-            If ddof is False, will through the biased estimation to calculate the standard deviation.
-            Default: ``0`` .
-        keepdims (bool, optional): Whether the output Tensor has dim retained or not.
-            If true, keep these reduced dimensions and the length is 1.
-            If false, don't keep these dimensions. Default: ``False`` .
+        input (Tensor[Number]): The input tensor.
+        axis (Union[int, tuple(int)], optional): Specify the axis for computation. If ``None`` , compute all
+            elements in the `input` . Default ``None`` .
+        ddof (Union[int, bool], optional): Means Delta Degrees of Freedom. Default ``0`` .
+
+          - If ddof is an integer, the divisor used in calculations is :math:`N - ddof`, where :math:`N` represents
+            the number of elements.
+          - If ddof is a boolean, ``True`` and ``False`` correspond to when ddof is an integer ``1`` and ``0``
+            respectively.
+          - If ddof is 0, 1, True or False, the supported device is only Ascend and CPU. In other cases,
+            the supported device is Ascend, GPU and CPU.
+        keepdims (bool, optional): Whether the output tensor has dim retained. Default ``False`` .
 
     Returns:
-        A tuple containing the standard deviation and mean.
-        Suppose the shape of `input` is :math:`(x_0, x_1, ..., x_R)`:
-
-        - If `axis` is () and `keepdims` is set to ``False`` , returns a 0-D Tensor, indicating
-          the standard deviation of all elements in `input`.
-        - If `axis` is int 1 and `keepdims` is set to ``False`` , then the returned Tensor
-          has shape :math:`(x_0, x_2, ..., x_R)`.
-        - If `axis` is tuple(int) or list(int), e.g. (1, 2) and `keepdims` is set to ``False`` ,
-          then the returned Tensor has shape :math:`(x_0, x_2, ..., x_R)`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `axis` is not one of the following: None, int, tuple.
-        TypeError: If `keepdims` is not a bool.
-        ValueError: If `axis` is out of range.
+        Tuple(std, mean) of 2 tensors.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> input = ms.Tensor([[1, 2, 3, 4], [-1, 1, 4, -10]], ms.float32)
-        >>> output_std, output_mean = ms.ops.std_mean(input, 1, 2, True)
-        >>> print(output_std)
-        [[1.5811388]
-         [7.3824115]]
-        >>> print(output_mean)
-        [[ 2.5]
-         [-1.5]]
+        >>> import mindspore
+        >>> x = mindspore.tensor([[1., 3, 4, 2],
+        >>>                       [4, 2, 5, 3],
+        >>>                       [5, 4, 2, 3]])
+        >>> # case 1: By default, compute the standard deviation and mean of all elements.
+        >>> mindspore.ops.std(x)
+        (Tensor(shape=[], dtype=Float32, value= 1.21335),
+         Tensor(shape=[], dtype=Float32, value= 3.16667))
+        >>>
+        >>> # case 2: Compute the standard deviation and mean along axis 0.
+        >>> output = mindspore.ops.std(x, axis=0)
+        (Tensor(shape=[4], dtype=Float32, value= [ 1.69967318e+00,  8.16496611e-01,  1.24721920e+00,  4.71404493e-01]),
+         Tensor(shape=[4], dtype=Float32, value= [ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]))
+        >>>
+        >>> # case 3: If keepdims=True, the output shape will be same of that of the input.
+        >>> output = mindspore.ops.std(x, axis=0, keepdims=True)
+        (Tensor(shape=[1, 4], dtype=Float32, value=
+         [[ 1.69967318e+00,  8.16496611e-01,  1.24721920e+00,  4.71404493e-01]]),
+         Tensor(shape=[1, 4], dtype=Float32, value=
+         [[ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]]))
+        >>>
+        >>> # case 4: If ddof=1:
+        >>> output = mindspore.ops.std(x, axis=0, keepdims=True, ddof=1)
+        (Tensor(shape=[1, 4], dtype=Float32, value=
+         [[ 2.08166599e+00,  1.00000000e+00,  1.52752531e+00,  5.77350259e-01]]),
+         Tensor(shape=[1, 4], dtype=Float32, value=
+         [[ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]]))
+        >>>
+        >>> # case 5: If ddof=True, same as ddof=1:
+        >>> output = mindspore.ops.std(x, axis=0, keepdims=True, ddof=True)
+        (Tensor(shape=[1, 4], dtype=Float32, value=
+         [[ 2.08166599e+00,  1.00000000e+00,  1.52752531e+00,  5.77350259e-01]]),
+         Tensor(shape=[1, 4], dtype=Float32, value=
+         [[ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]]))
+        >>>
+        >>> # case 6: If ddof=False, same as ddof=0:
+        >>> output = mindspore.ops.std(x, axis=0, keepdims=True, ddof=False)
+        (Tensor(shape=[1, 4], dtype=Float32, value=
+         [[ 1.69967318e+00,  8.16496611e-01,  1.24721920e+00,  4.71404493e-01]]),
+         Tensor(shape=[1, 4], dtype=Float32, value=
+         [[ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]]))
     """
     axis = _check_var_std_input(input, ddof, keepdims, axis, "std_mean")
     if ddof in (0, 1):
@@ -7172,38 +7207,39 @@ def _type_convert(force, obj):
 
 def logcumsumexp(input, axis):
     """
-    Compute the cumulative log-sum-exp of the input tensor `input` along `axis` .
-    For example, if `input` is a tensor [a, b, c] and `axis` is 0, the output will be [a, log(exp(a) + exp(b)),
-    log(exp(a) + exp(b) + exp(c))].
+    Calculate the log of cumulative summed exponentials of the tensor along a specified dimension.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        input (Tensor) - The input tensor. Must be one of the following types: float16, float32, float64.
-        axis (int) - Describing the dimension to compute the cumulative product.
-            Must be in the range [-rank(input), rank(input)).
+        input (Tensor): The input tensor.
+        axis (int): Specify the axis for computation.
 
     Returns:
-        Tensor, has the same dtype and shape as the `input`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If dtype of `input` is not in [float16, float32, float64].
-        TypeError: If dtype of `axis` is not int.
-        ValueError: If `axis` is out of range [-rank(input), rank(input)).
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``CPU`` ``GPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import ops
-        >>> import numpy as np
-        >>> x = ms.Tensor(np.array([1.0, 2.0, 3.0]).astype(np.float32))
-        >>> output = ops.logcumsumexp(x, 0)
+        >>> import mindspore
+        >>> input = mindspore.tensor([[9., 3, 4, 5],
+        ...                           [5, 2, 7, 4],
+        ...                           [8, 1, 3, 6]])
+        >>> # case 1: Compute the log of cumulative summed exponential along dim 0.
+        >>> output = mindspore.ops.logcumsumexp(input, 0)
         >>> print(output)
-        [1.        2.3132617 3.407606 ]
+        [[9.        3.        4.        5.       ]
+         [9.01815   3.3132617 7.0485873 5.3132615]
+         [9.326563  3.407606  7.065884  6.407606 ]]
+        >>>
+        >>> # case 2: Compute the log of cumulative summed exponential along dim 1.
+        >>> output = mindspore.ops.logcumsumexp(input, 1)
+        >>> print(output)
+        [[9.        9.002476  9.009174  9.02716  ]
+         [5.        5.0485873 7.1328454 7.175515 ]
+         [8.        8.000912  8.007621  8.133643 ]]
     """
     if not isinstance(axis, int):
         raise TypeError(
@@ -7214,40 +7250,45 @@ def logcumsumexp(input, axis):
 
 def logsumexp(input, dim, keepdim=False):
     r"""
-    Reduces a dimension of a tensor by calculating exponential for all elements in the dimension,
-    then calculate logarithm of the sum.
+    Calculate the log of summed exponentials of the tensor along a specified dimension.
 
     .. math::
 
         logsumexp(input) = \log(\sum(e^{input-input_{max}})) + input_{max}
 
     Args:
-        input (Tensor): The input tensor. With float16 or float32 data type.
-        dim (Union[int, tuple(int), list(int)]): The dimensions to reduce. Only constant value is allowed.
-        keepdim (bool, optional): If True, keep these reduced dimensions and the length is 1.
-            If ``False`` , don't keep these dimensions.
-            Default : ``False`` .
+        input (Tensor): The input tensor.
+        dim (Union[int, tuple(int), list(int)]): Specify the dimension for computation. If ``()`` , compute all
+            elements in the `input` .
+        keepdim (bool, optional): Whether the output tensor has dim retained. Default ``False`` .
 
     Returns:
-        Tensor, has the same dtype as the `input`.
-
-        - If dim is (), and keepdim is False,
-          the output is a 0-D tensor representing the sum of all elements in the input tensor.
-        - If dim is int, set as 2, and keepdim is False,
-          the shape of output is :math:`(input_1, input_3, ..., input_R)`.
-        - If dim is tuple(int), set as (2, 3), and keepdim is False,
-          the shape of output is :math:`(input_1, input_4, ..., input_R)`.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.random.randn(3, 4, 5, 6).astype(np.float32))
-        >>> output = ops.logsumexp(x, 1, keepdim=True)
-        >>> print(output.shape)
-        (3, 1, 5, 6)
+        >>> import mindspore
+        >>> input = mindspore.tensor([[9., 3, 4, 5],
+        ...                           [5, 2, 7, 4],
+        ...                           [8, 1, 3, 6]])
+        >>> # case 1: By default, compute the log of summed exponential of all elements.
+        >>> output = mindspore.ops.logsumexp(input, ())
+        >>> print(output)
+        9.475807
+        >>>
+        >>> # case 2: Compute the log of summed exponential along dim 0.
+        >>> output = mindspore.ops.logsumexp(input, 0)
+        >>> print(output)
+        [9.326562  3.4076054 7.065884  6.4076056]
+        >>>
+        >>> # case 3: If keepdim=True, the output shape will be same of that of the input.
+        >>> output = mindspore.ops.logsumexp(input, 1, True)
+        >>> print(output)
+        [[9.02716 ]
+         [7.175515]
+         [8.133643]]
     """
     input_max = ops.ReduceMax(keep_dims=True)(input, dim)
     input_exp = tensor_exp(input - input_max)
@@ -7997,7 +8038,7 @@ def _complex_square(A):
 
 def norm(A, ord=None, dim=None, keepdim=False, *, dtype=None):
     r"""
-    Returns the matrix norm or vector norm of a given tensor.
+    Compute the matrix norm or vector norm of the tensor along a specified dimension.
 
     `ord` is the calculation mode of norm. The following norm modes are supported.
 
@@ -8018,38 +8059,27 @@ def norm(A, ord=None, dim=None, keepdim=False, *, dtype=None):
     ====================== ================================ ==========================================
 
     Args:
-        A (Tensor): Tensor of shape :math:`(*, n)` or :math:`(*, m, n)` where * is zero or more batch dimensions.
-        ord (Union[int, float, inf, -inf, 'fro', 'nuc'], optional): norm's mode. refer to the table above for
-            behavior. Default: ``None`` .
-        dim (Union[int, Tuple(int)], optional): calculate the dimension of vector norm or matrix norm.
-            Default: ``None`` .
+        A (Tensor): The input tensor.
+        ord (Union[int, float, inf, -inf, 'fro', 'nuc'], optional): Specify the kind of norm to take. Default
+            ``None`` .
+        dim (Union[int, Tuple(int)], optional): Specify the dimension for computation. Default ``None`` .
 
-            - When `dim` is int, it will be calculated by vector norm.
+            - If `dim` is int, calculate the vector norm.
 
-            - When `dim` is a 2-tuple, it will be calculated by matrix norm.
+            - if `dim` is a 2-tuple, calculate the matrix norm.
 
-            - If `dim` is None and `ord` is None, `A` will be flattened to 1D and the 2-norm
-              of the vector will be calculated.
+            - If `dim` is None and `ord` is ``None`` , flattened `A` to 1D and calculate 2-norm of the vector.
 
-            - If `dim` is None and `ord` is not None, `A` must be 1D or 2D.
+            - If `dim` is None and `ord` is not ``None``, `A` must be 1D or 2D.
 
-        keepdim (bool): whether the output Tensor retains the original dimension. Default: ``False`` .
+        keepdim (bool): Whether the output tensor has dim retained. Default ``False`` .
 
     Keyword Args:
-        dtype (:class:`mindspore.dtype`, optional): When set, `A` will be converted to the specified type,
-            `dtype`, before execution, and dtype of returned Tensor will also be `dtype`. Default: ``None`` .
+        dtype (:class:`mindspore.dtype`, optional): The data type returned. The data type returned. When set, `A` will
+            be converted to the specified data type, before calculaing. Default ``None`` .
 
     Returns:
-        Tensor, the result of norm calculation on the specified dimension, `dim`, has the same dtype as `A`.
-
-    Raises:
-        ValueError: If `dim` is out of range.
-        TypeError: If `dim` is neither an int nor a tuple of int.
-        TypeError: If `A` is a vector and `ord` is a str.
-        ValueError: If `A` is a matrices and `ord` is not in valid mode.
-        ValueError: If `A` is a matrices and `ord` is an integer but not in [1, -1, 2, -2].
-        ValueError: If two elements of `dim` is same after normalize.
-        ValueError: If any elements of `dim` is out of range.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -8058,66 +8088,29 @@ def norm(A, ord=None, dim=None, keepdim=False, *, dtype=None):
         Currently, complex numbers are not supported.
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import ops
-        >>> data_range = ops.arange(-13, 13, dtype=ms.float32)
-        >>> # Exclude 0 from original data for 0 is invalid input when `ord` is negative.
-        >>> x = data_range[data_range != 0]
-        >>> y = x.reshape(5, 5)
-        >>> print(ops.norm(x))
-        38.327538
-        >>> print(ops.norm(x, float('inf')))
-        13.0
-        >>> print(ops.norm(x, float('-inf')))
-        1.0
-        >>> print(ops.norm(x, 0))
-        25.0
-        >>> print(ops.norm(x, 1))
-        169.0
-        >>> print(ops.norm(x, -1))
-        0.15915091
-        >>> print(ops.norm(x, 2))
-        38.327538
-        >>> print(ops.norm(x, -2))
-        0.5647041
-        >>> print(ops.norm(x, 3))
-        24.309084
-        >>> print(ops.norm(x, -3))
-        0.74708974
-        >>> print(ops.norm(y))
-        38.327538
-        >>> print(ops.norm(y, 'fro'))
-        38.327538
-        >>> print(ops.norm(y, 'nuc'))
-        45.56681
-        >>> print(ops.norm(y, float('inf')))
-        55.0
-        >>> print(ops.norm(y, float('-inf')))
-        9.0
-        >>> print(ops.norm(y, 1))
-        35.0
-        >>> print(ops.norm(y, -1))
-        33.0
-        >>> print(ops.norm(y, 2))
-        37.57774
-        >>> print(ops.norm(y, -2))
-        1.590545e-07
-        >>> m = ms.Tensor([[1., -1., 2.], [-2., 3., -4.]])
-        >>> print(ops.norm(m, dim=0))
-        [2.236068  3.1622777 4.472136 ]
-        >>> print(ops.norm(m, dim=1))
-        [2.4494898 5.3851647]
-        >>> print(ops.norm(m, ord=1, dim=1))
-        [4. 9.]
-        >>> print(ops.norm(m, ord=-2, dim=0))
-        [0.8944272  0.94868326 1.7888544 ]
-        >>> print(ops.norm(m, ord=2, dim=1))
-        [2.4494898 5.3851647]
-        >>> n = ops.arange(27, dtype=ms.float32).reshape(3, 3, 3)
-        >>> print(ops.norm(n, dim=(1, 2)))
-        [14.282857 39.76179  66.45299 ]
-        >>> print(ops.norm(n[0, :, :]), ops.norm(n[1, :, :]), ops.norm(n[2, :, :]))
-        14.282857 39.76179 66.45299
+        >>> import mindspore
+        >>> # Vector norms:
+        >>> A = mindspore.tensor([3., 4., 12.])
+        >>> mindspore.ops.norm(A)
+        Tensor(shape=[], dtype=Float32, value= 13)
+        >>> mindspore.ops.norm(A, ord=1)
+        Tensor(shape=[], dtype=Float32, value= 19)
+        >>> mindspore.ops.norm(A, ord=0)
+        Tensor(shape=[], dtype=Float32, value= 3)
+        >>>
+        >>> # Matrix norms:
+        >>> A = mindspore.tensor([[1., 2., 3.],
+        ...                       [4., 5., 7.]])
+        >>> mindspore.ops.norm(A)  # Frobenius norm
+        Tensor(shape=[], dtype=Float32, value= 10.198)
+        >>> mindspore.ops.norm(A, ord='nuc')  # nuclear norm
+        Tensor(shape=[], dtype=Float32, value= 10.7625)
+        >>> mindspore.ops.norm(A, ord=1)  # 1-norm
+        Tensor(shape=[], dtype=Float32, value= 10)
+        >>>
+        >>> # Batched vector norm:
+        >>> mindspore.ops.norm(A, dim=1)
+        Tensor(shape=[2], dtype=Float32, value= [ 3.74165726e+00,  9.48683262e+00])
     """
     ndim = A.ndim
     dim, immediate = _check_axis(dim, ord, ndim)
