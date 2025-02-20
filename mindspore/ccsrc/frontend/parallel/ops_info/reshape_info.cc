@@ -724,7 +724,6 @@ void ReshapeInfo::SetCostForReshapeWithParameter() {
 
 void ReshapeInfo::SetCostForReshape(const mindspore::parallel::StrategyPtr &strategy) {
   MS_EXCEPTION_IF_NULL(strategy);
-  int64_t stage_id = strategy->GetInputStage();
   TensorLayout from_ = inputs_tensor_info_[0].tensor_layout();
   TensorLayout to_ = outputs_tensor_info_[0].tensor_layout();
 
@@ -732,20 +731,7 @@ void ReshapeInfo::SetCostForReshape(const mindspore::parallel::StrategyPtr &stra
   if (entire_costgraph->FindReshapeCostInCache(from_, to_, &result)) {
     MS_LOG(INFO) << "Find the same cost in cache, skip calculation.";
   } else {
-    double computation_cost =
-      operator_cost()->GetForwardComputationCost(inputs_tensor_info_, outputs_tensor_info_, stage_id);
-    double communication_cost = operator_cost()->GetCommCost(inputs_tensor_info_, outputs_tensor_info_, stage_id);
-    const auto gamma = CostModelContext::GetInstance()->costmodel_gamma();
-    result = std::make_shared<Cost>(computation_cost, communication_cost);
-    result->communication_without_parameter_ =
-      operator_cost()->GetForwardCommCost(inputs_tensor_info_, outputs_tensor_info_, stage_id);
-    result->communication_with_partial_para_ = result->communication_without_parameter_ +
-                                               gamma * (communication_cost - result->communication_without_parameter_);
-
-    // Breaking ties for preferring data parallelization
-    BreakingTiesForPreferringDataParallel(strategy, result);
-    // refine communication cost calculation for practice
-    RefineForPracticalCost(result, false);
+    result = ComputeCost(strategy);
     entire_costgraph->SaveReshapeCostToCache(from_, to_, result);
   }
 

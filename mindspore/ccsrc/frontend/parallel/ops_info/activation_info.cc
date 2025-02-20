@@ -84,13 +84,19 @@ Status ActivationBase::CheckOutputLayout() {
     return FAILED;
   }
   if (output_infer_tensor_layout_.tensor_shape_before().array().empty()) {
-    MS_LOG(ERROR) << "Parameter of output tensor layout for " << name_ << " is not allowed to be set by users.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "Parameter of output tensor layout for " << name_ << " is not allowed to be set by users.";
+    } else {
+      MS_LOG(ERROR) << "Parameter of output tensor layout for " << name_ << " is not allowed to be set by users.";
+    }
     return FAILED;
   }
   MS_LOG(INFO) << name_ << ": Using output tensor layout infer by input tensor layout.";
   UpdateOutputTensorInfoForInterleaved();
   return SUCCESS;
 }
+
+Status AShardIdentityInfo::CheckOutputLayout() { return SUCCESS; }
 
 Status ActivationBase::InferOutputTensorInfo() {
   output_infer_tensor_layout_ = inputs_tensor_info_[kIndex0].tensor_layout();

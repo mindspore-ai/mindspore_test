@@ -330,7 +330,10 @@ class OperatorInfo {
   // This is a common method for setting operator cost for a given strategy, in which the validity of this strategy
   // is checked
   Status SetCostUnderStrategyBase(const StrategyPtr &strategy);
-  CostPtrList GetCostByStrategyPtr(const StrategyPtr &strategy);
+  Status SetCostUnderLayout(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy,
+                            const std::vector<std::shared_ptr<TensorLayout>> &in_tensor_layouts,
+                            const std::vector<std::shared_ptr<TensorLayout>> &out_tensor_layouts);
+  Status SetCostUnderStrategyWithCost(const std::shared_ptr<StrategyWithCost> &swc);
   std::vector<std::shared_ptr<StrategyWithCost>> GetStrategyCost() { return strategy_cost_; }
   void SetStrategyCost(const std::vector<std::shared_ptr<StrategyWithCost>> &stra_cost);
   // In the training phase, when the input of a operator contains WEIGHT or a output from other operators involving
@@ -360,7 +363,6 @@ class OperatorInfo {
   }
   std::vector<TensorInfo> outputs_tensor_info() const { return outputs_tensor_info_; }
   std::vector<TensorInfoBasePtr> outputs_tensor_info_new() const { return outputs_tensor_info_new_; }
-  std::vector<std::shared_ptr<StrategyWithCost>> strategy_cost() const { return strategy_cost_; }
   const std::string &name() const { return name_; }
   void set_name(const std::string &name) { name_ = name; }
   void set_mirror_ops(const MirrorOps &mirror_ops) { mirror_ops_ = mirror_ops; }
@@ -389,6 +391,11 @@ class OperatorInfo {
   TensorLayout GetOutputLayoutFromSWCByStrategy(const StrategyPtr &stra, size_t output_index);
   StrategyPtr GetStrategyFromSWCByInputLayout(const TensorLayout &input_layout, size_t input_index);
   StrategyPtr GetStrategyFromSWCByOutputLayout(const TensorLayout &output_layout, size_t output_index);
+
+  std::vector<std::shared_ptr<StrategyWithCost>> GetSwcByInputLayout(const TensorLayout &input_layout,
+                                                                     size_t input_index);
+  std::vector<std::shared_ptr<StrategyWithCost>> GetSwcByOutputLayout(const TensorLayout &output_layout,
+                                                                      size_t output_index);
   bool IsReshape() const;
   bool IsVirtualOutput() const;
   bool IsConcat() const;
@@ -460,6 +467,9 @@ class OperatorInfo {
   void set_assigned_parallel(bool is_assigned_parallel) { is_assigned_parallel_ = is_assigned_parallel; }
   bool repeated_num_in_dev_matrix_right() const { return repeated_num_in_dev_matrix_right_; }
   void set_repeated_num_in_dev_matrix_right(bool is_right) { repeated_num_in_dev_matrix_right_ = is_right; }
+
+  void LayoutPropagationBegin() { is_in_layout_propagation_ = true; }
+  void LayoutPropagationEnd() { is_in_layout_propagation_ = false; }
 
   TensorRedistributionPtr CreateTensorRedistribution(bool construct_op_flag = true, bool keep_reshape = false) {
     if (this->tensor_redistribution_ != nullptr) {
@@ -550,6 +560,7 @@ class OperatorInfo {
   bool IsDynamicShape();
   bool IsDynamicRank();
   bool IsSelfDefineShard();
+  CostPtr ComputeCost(const StrategyPtr &strategy);
 
   // Calculate the number of repeated calculations for the output by the number of devices and the output tensor map.
   // The tensor map of Outputs[0] is used by default. If there are multiple outputs, need to identify which output
@@ -662,6 +673,9 @@ class OperatorInfo {
   bool self_define_shard_;
   bool use_shape_base_ = false;
 
+  // for strategy propagation in auto parallel
+  bool is_in_layout_propagation_ = false;
+
  private:
   OperatorCostPtr operator_cost_;
   std::vector<TypePtr> outputs_type_;
@@ -669,6 +683,10 @@ class OperatorInfo {
   Status GetLayoutConfig();
   Status GetRepeatedNumInDevMatrixRight();
   Status CheckLayoutConfigBase();
+
+  Status SetDevMatrixShapeByLayout();
+  Status SetTensorMapByLayout();
+  Status SetOutTensorMapByLayout();
 };
 
 Shape GetSliceShape(const Shape &tensor_shape, const Dimensions &strategy);
