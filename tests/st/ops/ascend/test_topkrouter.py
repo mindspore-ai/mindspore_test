@@ -39,6 +39,14 @@ class TopKRouterNet1(nn.Cell):
     def construct(self, x_data, capacity_data, expert_num_data):
         return self.topkrouter(x_data, capacity_data, expert_num_data)
 
+class thresholdRouterNet(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.thresholdrouter = TopKRouter()
+
+    def construct(self, x_data, capacity_data, expert_num_data, drop_type, threshold, prob):
+        return self.thresholdrouter(x_data, capacity_data, expert_num_data, drop_type, threshold, prob)
+
 
 x = ms.Tensor([[[0, 1], [1, 3],
                 [3, 2], [2, 2],
@@ -148,3 +156,39 @@ def test_topkrouter_dynamic_shape_kdrop(mode):
     dispatch_idx, combine_idx = ms_net(x, capacity_dyn, expert_num, 1)
     np.testing.assert_allclose(dispatch_idx.asnumpy(), truth_dispatch_idx_k)
     np.testing.assert_allclose(combine_idx.asnumpy(), truth_combine_idx_k)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.PYNATIVE_MODE, context.GRAPH_MODE])
+def test_thresholdrouter_kdrop(mode):
+    """
+    Feature: thresholdrouter test in ascend.
+    Description: The input shape is static.
+    Expectation: expect correct forward result.
+    """
+    context.set_context(mode=mode, device_target="Ascend")
+    ms_net = TopKRouterNet()
+    dispatch_idx_truth, combine_idx_truth = ms_net(x, capacity, expert_num, 1)
+    top_net = thresholdRouterNet()
+    prob = ms.ops.cast(ms.ops.zeros_like(x), ms.float32)
+    dispatch_idx, combine_idx = top_net(x, capacity, expert_num, 1, 1.0, prob)
+    np.testing.assert_allclose(dispatch_idx.asnumpy(), dispatch_idx_truth.asnumpy())
+    np.testing.assert_allclose(combine_idx.asnumpy(), combine_idx_truth.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.PYNATIVE_MODE, context.GRAPH_MODE])
+def test_thresholdrouter_sdrop(mode):
+    """
+    Feature: thresholdrouter test in ascend.
+    Description: The input shape is static.
+    Expectation: expect correct forward result.
+    """
+    context.set_context(mode=mode, device_target="Ascend")
+    ms_net = TopKRouterNet()
+    dispatch_idx_truth, combine_idx_truth = ms_net(x, capacity, expert_num, 0)
+    top_net = thresholdRouterNet()
+    prob = ms.ops.cast(ms.ops.zeros_like(x), ms.float32)
+    dispatch_idx, combine_idx = top_net(x, capacity, expert_num, 0, 1.0, prob)
+    np.testing.assert_allclose(dispatch_idx.asnumpy(), dispatch_idx_truth.asnumpy())
+    np.testing.assert_allclose(combine_idx.asnumpy(), combine_idx_truth.asnumpy())
