@@ -1974,7 +1974,7 @@ void GraphExecutorPy::BuildGraph(const py::dict &init_params, const std::string 
 
   std::map<std::string, std::shared_ptr<Tensor>> init_tensors{};
   ConvertObjectToTensors(init_params, &init_tensors, info_.at(phase)->func_graph);
-  std::string new_backend_env = common::GetEnv("MS_NEW_BACKEND");
+  const std::string &new_backend_env = common::GetEnv("MS_NEW_BACKEND");
   if (!new_backend_env.empty()) {
     backend::BackendManager::GetInstance().ConvertIR(info_.at(phase)->func_graph, init_tensors,
                                                      backend::IRFormat::kAir);
@@ -2333,7 +2333,7 @@ void GraphExecutorPy::ExportGraph(const std::string &file_name, const std::strin
   MS_EXCEPTION_IF_NULL(func_graph);
 
   string save_str;
-  std::string new_backend_env = common::GetEnv("MS_NEW_BACKEND");
+  const std::string &new_backend_env = common::GetEnv("MS_NEW_BACKEND");
   if (!new_backend_env.empty()) {
     save_str =
       backend::BackendManager::GetInstance().ExportIR(func_graph, file_name, is_save_to_file, backend::IRFormat::kAir);

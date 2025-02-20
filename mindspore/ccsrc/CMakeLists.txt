@@ -277,7 +277,6 @@ endif()
 add_subdirectory(pyboost)
 add_subdirectory(backend/backend_manager)
 add_subdirectory(runtime/device/res_manager)
-add_subdirectory(backend/ge_backend)
 
 if(ENABLE_MINDDATA)
     add_subdirectory(minddata/mindrecord)
