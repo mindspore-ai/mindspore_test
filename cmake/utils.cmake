@@ -177,6 +177,7 @@ function(__find_pkg_then_add_target pkg_name pkg_exe lib_path)
         list(APPEND ${pkg_name}_LIBS ${pkg_name}::${_LIB_NAME})
         message("found ${${_LIB_NAME}_LIB}")
         STRING(REGEX REPLACE "(.+)/(.+)" "\\1" LIBPATH ${${_LIB_NAME}_LIB})
+        unset(${pkg_name}_LIBPATH CACHE)
         set(${pkg_name}_LIBPATH ${LIBPATH} CACHE STRING INTERNAL)
     endforeach()
 
