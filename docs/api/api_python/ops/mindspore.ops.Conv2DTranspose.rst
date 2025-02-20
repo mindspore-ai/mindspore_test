@@ -15,13 +15,13 @@ mindspore.ops.Conv2DTranspose
           - ``"pad"``：对输入填充指定的量。在这种模式下，在输入的高度和宽度方向上填充的量由 `pad` 参数指定。如果设置此模式， `pad` 必须大于或等于0。
             请参考 :class:`mindspore.nn.Conv2dTranspose` 了解更多 `pad_mode` 的使用规则。
 
-        - **pad** (Union[int, tuple[int]]) - 指定要填充的填充值。默认值： ``0`` 。如果 `pad` 是整数，则顶部、底部、左侧和右侧的填充都等于 `pad` 。如果 `pad` 是四个整数的tuple，则顶部、底部、左侧和右侧的填充分别等于pad[0]、pad[1]、pad[2]和pad[3]。
-        - **pad_list** (Union[str, None]) - 卷积填充方式，如（顶部、底部、左、右）。默认值： ``None`` ，表示不使用此参数。
-        - **mode** (int) - 指定不同的卷积模式。当前未使用该值。默认值： ``1`` 。
-        - **stride** (Union[int, tuple[int]]) - 卷积核移动的步长。默认值： ``1`` 。
-        - **dilation** (Union[int, tuple[int]]) - 卷积核膨胀尺寸。默认值： ``1`` 。
-        - **group** (int) - 将过滤器拆分为组。默认值： ``1`` 。
-        - **data_format** (str) - 输入和输出的数据格式。它应该是 ``'NHWC'`` 或 ``'NCHW'`` ，默认值是 ``'NCHW'`` 。
+        - **pad** (Union[int, tuple[int]]，可选) - 指定要填充的填充值。默认值： ``0`` 。如果 `pad` 是整数，则顶部、底部、左侧和右侧的填充都等于 `pad` 。如果 `pad` 是四个整数的tuple，则顶部、底部、左侧和右侧的填充分别等于pad[0]、pad[1]、pad[2]和pad[3]。
+        - **pad_list** (Union[str, None]，可选) - 卷积填充方式，如（顶部、底部、左侧、右侧）。默认值： ``None`` ，表示不使用此参数。
+        - **mode** (int，可选) - 指定不同的卷积模式。当前未使用该值。默认值： ``1`` 。
+        - **stride** (Union[int, tuple[int]]，可选) - 卷积核移动的步长。默认值： ``1`` 。
+        - **dilation** (Union[int, tuple[int]]，可选) - 卷积核膨胀尺寸。默认值： ``1`` 。
+        - **group** (int，可选) - 将过滤器拆分为组。默认值： ``1`` 。
+        - **data_format** (str，可选) - 输入和输出的数据格式。它应该是 ``"NHWC"`` 或 ``"NCHW"`` ，默认值是 ``"NCHW"`` 。
 
     输入：
         - **dout** (Tensor) - 卷积操作的输出的梯度Tensor。shape： :math:`(N, C_{out}, H_{out}, W_{out})` 。
@@ -32,10 +32,10 @@ mindspore.ops.Conv2DTranspose
         Tensor，卷积操作的输入的梯度Tensor。它的shape与输入相同。
 
     异常：
-        - **TypeError** - 如果 `kernel_size` 、 `stride` 、 `pad` 或 `diation` 既不是int也不是tuple。
+        - **TypeError** - 如果 `kernel_size` 、 `stride` 、 `pad` 或 `dilation` 既不是int也不是tuple。
         - **TypeError** - 如果 `out_channel` 或 `group` 不是int。
         - **ValueError** - 如果 `kernel_size` 、 `stride` 或 `dlation` 小于1。
-        - **ValueError** - 如果 `pad_mode` 不是'same'、'valid'或'pad'。
+        - **ValueError** - 如果 `pad_mode` 不是 ``"same"`` 、 ``"valid"`` 或 ``"pad"`` 。
         - **ValueError** - 如果 `padding` 是长度不等于4的tuple。
-        - **ValueError** - 如果 `pad_mode` 不等于'pad'，`pad` 不等于（0,0,0,0）。
-        - **ValueError** - 如果 `data_format` 既不是'NCHW'也不是'NHWC'。
+        - **ValueError** - 如果 `pad_mode` 不等于 ``"pad"`` ，`pad` 不等于（0,0,0,0）。
+        - **ValueError** - 如果 `data_format` 既不是 ``"NCHW"`` 也不是 ``"NHWC"`` 。

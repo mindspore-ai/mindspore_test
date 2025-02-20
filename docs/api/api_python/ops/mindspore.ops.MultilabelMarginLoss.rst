@@ -11,9 +11,9 @@ mindspore.ops.MultilabelMarginLoss
     参数：
         - **reduction** (str，可选) - 指定应用于输出结果的规约计算方式，可选 ``'none'`` 、 ``'mean'`` 、 ``'sum'`` ，默认值： ``'mean'`` 。
 
-          - ``"none"``：不应用规约方法。
-          - ``"mean"``：计算输出元素的平均值。
-          - ``"sum"``：计算输出元素的总和。
+          - ``'none'``：不应用规约方法。
+          - ``'mean'``：计算输出元素的平均值。
+          - ``'sum'``：计算输出元素的总和。
 
     输入：
         - **x** (Tensor) - 预测值。shape为 :math:`(C)` 或 :math:`(N, C)`，其中 :math:`N`

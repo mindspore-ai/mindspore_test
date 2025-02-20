@@ -13,7 +13,7 @@ mindspore.ops.WhileLoop
                 init_val = loop_func(init_val)
             return init_val
 
-    当前WhileLoop算子存在以下语法限制:
+    当前WhileLoop算子存在以下语法限制：
 
     - 暂不支持 `loop_func` 为副作用函数，如：对Parameter、全局变量的修改等操作。
     - 暂不支持 `loop_func` 的返回值与初始值 `init_val` 的类型或形状不同。
