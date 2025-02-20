@@ -10,7 +10,7 @@ mindspore.Tensor.clamp
     .. math::
         out_i= \left\{
         \begin{array}{align}
-            max & \text{ if } self_i\ge max \\
+            max & \text{ if } self_i \ge max \\
             self_i & \text{ if } min \lt self_i \lt max \\
             min & \text{ if } self_i \le min \\
         \end{array}\right.
