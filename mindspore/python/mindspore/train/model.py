@@ -56,6 +56,7 @@ from mindspore.dataset.core.config import get_debug_mode
 from mindspore.dataset.engine.datasets import _set_training_dataset, _reset_training_dataset
 from mindspore.train import amp
 from mindspore._c_expression import _framework_profiler_step_start, _framework_profiler_step_end
+from mindspore._c_expression import _get_optimzer_timestamps
 
 
 def _transfer_tensor_to_tuple(inputs):
@@ -135,6 +136,19 @@ def _handle_exception_info(obj, uce_env, tft, e):
     if "UCEError" in e_str:
         logger.info("uce wrapper report UCEError")
         obj.is_uce_rank = True
+        # if error is HBM_MULTI_BIT_ECC_ERROR
+        if "error_code=507054" in e_str:
+            hbm_error_time, optimize_start, optimizer_end = _get_optimzer_timestamps()
+            can_repair = tft.tft_can_do_uce_repair(hbm_error_time, optimize_start, optimizer_end)
+            logger.info(f"UCEError of type HBM_MULTI_BIT_ECC_ERROR occurs, \
+                        hbm_error_time={hbm_error_time}, optimize_start={optimize_start}, \
+                        optimizer_end={optimizer_end}, can_repair={can_repair}")
+            if not can_repair:
+                logger.error(f"Caught UCEError of type HBM_MULTI_BIT_ECC_ERROR but can not repair, "
+                             f"hbm_error_time={hbm_error_time}, optimize_start={optimize_start}, "
+                             f"optimizer_end={optimizer_end}", exc_info=True)
+                tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
+                raise e
         tft.tft_report_error(tft.ReportState.RS_UCE.value)
     elif "ForceStopError" in e_str:
         logger.warning("uce wrapper caught RuntimeError ForceStopError")

@@ -18,6 +18,7 @@
 #include "symbol_utils.h"
 
 int (*aclrt_get_last_error)(int) = nullptr;
+const char *(*acl_get_recent_err_msg)() = nullptr;
 namespace mindspore::device::ascend {
 aclrtCreateContextFunObj aclrtCreateContext_ = nullptr;
 aclrtCreateEventFunObj aclrtCreateEvent_ = nullptr;
@@ -76,6 +77,7 @@ aclrtCtxSetSysParamOptFunObj aclrtCtxSetSysParamOpt_ = nullptr;
 aclrtGetMemUceInfoFunObj aclrtGetMemUceInfo_ = nullptr;
 aclrtDeviceTaskAbortFunObj aclrtDeviceTaskAbort_ = nullptr;
 aclrtMemUceRepairFunObj aclrtMemUceRepair_ = nullptr;
+aclrtEventGetTimestampFunObj aclrtEventGetTimestamp_ = nullptr;
 
 void LoadAclRtApiSymbol(const std::string &ascend_path) {
   std::string aclrt_plugin_path = ascend_path + "lib64/libascendcl.so";
@@ -141,7 +143,9 @@ void LoadAclRtApiSymbol(const std::string &ascend_path) {
   aclrtGetMemUceInfo_ = DlsymAscendFuncObj(aclrtGetMemUceInfo, handler);
   aclrtDeviceTaskAbort_ = DlsymAscendFuncObj(aclrtDeviceTaskAbort, handler);
   aclrtMemUceRepair_ = DlsymAscendFuncObj(aclrtMemUceRepair, handler);
+  aclrtEventGetTimestamp_ = DlsymAscendFuncObj(aclrtEventGetTimestamp, handler);
   aclrt_get_last_error = reinterpret_cast<int (*)(int)>(dlsym(handler, "aclrtGetLastError"));
+  acl_get_recent_err_msg = reinterpret_cast<const char *(*)()>(dlsym(handler, "aclGetRecentErrMsg"));
   MS_LOG(INFO) << "Load acl rt api success!";
 }
 

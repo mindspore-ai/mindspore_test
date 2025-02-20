@@ -383,6 +383,9 @@ class BACKEND_EXPORT DeviceResManager {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
   virtual bool GetMemUceInfo(int32_t device_id) { return false; }
+  virtual std::vector<uint64_t> GetOptimizerTimestamps() {
+    MS_LOG(EXCEPTION) << "Get optimizer timestamps not support.";
+  }
   virtual void UceMemRepair(int32_t device_id) { MS_LOG(EXCEPTION) << "Uce repair device is not supported."; }
   virtual void StopDevice(int32_t device_id) { MS_LOG(EXCEPTION) << "Uce stop device is not supported."; }
   virtual std::vector<std::pair<device::DeviceMemPtr, size_t>> GetMemUceAddr() { return {}; };

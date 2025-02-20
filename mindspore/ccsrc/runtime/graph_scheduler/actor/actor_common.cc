@@ -59,19 +59,19 @@ bool IsSuperKernelActor(const AnfNodePtr &node, const KernelGraphPtr &kernel_gra
 }
 
 bool IsRunningFailed(const OpContext<DeviceTensor> *context) {
-  if (UCEException::GetInstance().enable_uce() || UCEException::GetInstance().enable_arf()) {
+  if (UCEException::IsEnableUCE() || UCEException::GetInstance().enable_arf()) {
     if (UCEException::GetInstance().get_force_stop_flag() && !UCEException::GetInstance().get_has_throw_error()) {
       if (context->error_info_.empty()) {
         const_cast<OpContext<DeviceTensor> *>(context)->error_info_ =
-          std::string("ForceStopError error occurs when execute.");
-        MS_LOG(EXCEPTION) << "ForceStopError error occurs when execute.";
+          std::string(UCEException::GetInstance().GetForceStopErrorMsg());
+        MS_LOG(EXCEPTION) << UCEException::GetInstance().GetForceStopErrorMsg();
       }
     }
     if (UCEException::GetInstance().get_uce_flag() && !UCEException::GetInstance().get_has_throw_error()) {
       if (context->error_info_.empty()) {
         const_cast<OpContext<DeviceTensor> *>(context)->error_info_ =
-          std::string("UCEError error occurs when execute.");
-        MS_LOG(EXCEPTION) << "UCEError error occurs when execute.";
+          std::string(UCEException::GetInstance().GetUceErrorMsg());
+        MS_LOG(EXCEPTION) << UCEException::GetInstance().GetUceErrorMsg();
       }
     }
   }
@@ -354,7 +354,7 @@ bool EnableInputOptimize() {
     return false;
   }
 
-  if (UCEException::GetInstance().enable_uce() || UCEException::GetInstance().enable_arf()) {
+  if (UCEException::IsEnableUCE() || UCEException::GetInstance().enable_arf()) {
     return false;
   }
 

@@ -787,7 +787,7 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
 
   if (UCEException::GetInstance().get_uce_flag()) {
     MS_LOG(INFO) << "Clear UCE state.";
-    UCEException::GetInstance().set_uce_flag(false);
+    UCEException::GetInstance().clear_uce_error();
   }
 
   if (RecoveryContext::GetInstance()->enable_gpu_recovery() &&

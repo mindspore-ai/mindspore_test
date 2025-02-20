@@ -34,12 +34,12 @@ class TestUCEException : public UT::Common {
 /// Expectation: The return value of the normal interface is as expected, and the exception branch is expected to catch
 /// the exception.
 TEST_F(TestUCEException, test_interface) {
-  EXPECT_EQ(UCEException::GetInstance().enable_uce(), false);
+  EXPECT_EQ(UCEException::IsEnableUCE(), false);
 
   const auto kTftEnv = "MS_ENABLE_TFT";
   common::SetEnv(kTftEnv, "{TTP:1,UCE:1,ARF:1}");
   EXPECT_NO_THROW(UCEException::GetInstance().CheckUceARFEnv());
-  EXPECT_EQ(UCEException::GetInstance().enable_uce(), true);
+  EXPECT_EQ(UCEException::IsEnableUCE(), false);
   EXPECT_EQ(UCEException::GetInstance().get_has_throw_error(), false);
   EXPECT_EQ(UCEException::GetInstance().get_force_stop_flag(), false);
   EXPECT_EQ(UCEException::GetInstance().get_uce_flag(), false);

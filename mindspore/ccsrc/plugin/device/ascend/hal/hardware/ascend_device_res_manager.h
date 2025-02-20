@@ -133,6 +133,7 @@ class AscendDeviceResManager : public DeviceResManager {
   void set_single_op_multi_stream_enable(bool single_op_multi_stream_enable) override;
 
   bool GetMemUceInfo(int32_t device_id) override;
+  std::vector<uint64_t> GetOptimizerTimestamps() override;
   void UceMemRepair(int32_t device_id) override;
   void StopDevice(int32_t device_id) override;
   std::vector<std::pair<device::DeviceMemPtr, size_t>> GetMemUceAddr() override;
