@@ -128,6 +128,7 @@ PassManagerPtr GetBackendCommonUnifyMindIRPassManager() {
   pm->AddPass(std::make_shared<opt::BatchNormGradUnifyMindIR>());
   pm->AddPass(std::make_shared<BnGradSplit>());
   pm->AddPass(std::make_shared<BatchNormGrad2BNInferGrad>());
+  pm->AddPass(std::make_shared<BatchNormGradInferFission>());
   pm->AddPass(std::make_shared<BatchNorm2BNInfer>());
 
   pm->AddPass(std::make_shared<opt::AdjustPrintForGe>());
@@ -148,7 +149,6 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->AddFusionPass(std::make_shared<CdistGradFission>());
   pm->AddFusionPass(std::make_shared<opt::BatchMatMulReduceScatterAllToAllFusion>());
   pm->AddFusionPass(std::make_shared<opt::AllToAllAllGatherBatchMatMulFusion>());
-  pm->AddFusionPass(std::make_shared<BatchNormGradInferFission>());
   pm->AddFusionPass(std::make_shared<opt::LambFissionGe>());
   pm->AddFusionPass(std::make_shared<opt::AdaptiveMaxPool2DGeFusion>());
   pm->AddFusionPass(std::make_shared<opt::MatmulReduceScatterFusion>());
