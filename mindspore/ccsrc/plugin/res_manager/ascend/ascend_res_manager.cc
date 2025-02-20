@@ -473,14 +473,22 @@ bool AscendResManager::BindDeviceToCurrentThread(bool force_bind) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+
+  static thread_local std::once_flag is_set;
+  std::call_once(is_set, [this, device_id]() {
+    auto ret = CALL_ASCEND_API(aclrtSetDevice, static_cast<int32_t>(device_id));
+    if (ret != ACL_ERROR_NONE) {
+      MS_LOG(EXCEPTION) << "Device " << device_id << " call aclrtSetDevice failed, ret:" << static_cast<int>(ret);
+    }
+    SetDeterministic();
+  });
+
   if (force_bind) {
     AscendHalManager::GetInstance().SetContextForce(device_id);
   } else {
     AscendHalManager::GetInstance().SetContext(device_id);
   }
 
-  static thread_local std::once_flag is_set;
-  std::call_once(is_set, [this]() { SetDeterministic(); });
   return true;
 }
 
