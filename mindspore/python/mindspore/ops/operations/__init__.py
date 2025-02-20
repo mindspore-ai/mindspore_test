@@ -708,7 +708,7 @@ __all__ = [
     "PagedAttention",
     "PagedAttentionMask",
     "ReshapeAndCache",
-    "   ",
+    "ApplyRotaryPosEmb",
     "GroupTopk",
     "RmsNorm",
     "Reshard",
