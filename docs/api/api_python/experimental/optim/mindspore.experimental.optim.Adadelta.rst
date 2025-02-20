@@ -8,7 +8,7 @@ mindspore.experimental.optim.Adadelta
     更新公式如下：
 
     .. math::
-       \begin{aligned}
+        \begin{aligned}
             &\rule{150mm}{0.4pt}                                                                 \\
             &\textbf{input}      : \gamma \text{ (lr)}, \: \theta_0 \text{ (params)},
                 \: f(\theta) \text{ (objective)}, \: \rho \text{ (decay)},
@@ -29,7 +29,7 @@ mindspore.experimental.optim.Adadelta
             &\rule{110mm}{0.4pt}                                                          \\[-1.ex]
             &\bf{return} \:  \theta_t                                                     \\[-1.ex]
             &\rule{110mm}{0.4pt}                                                          \\[-1.ex]
-       \end{aligned}
+        \end{aligned}
 
     .. warning::
         这是一个实验性的优化器接口，需要和 `LRScheduler <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.experimental.html#lrscheduler%E7%B1%BB>`_ 下的动态学习率接口配合使用。
