@@ -196,7 +196,7 @@ def empty_cache():
 
     Note:
         Currently, the MindSpore memory pool does not have the function of releasing memory fragments.
-        This interface is reserved but implemented as an empty method and prompted in log mode.
+        This interface is reserved but implemented as an empty method and prompted in log mode when using.
     """
     logger.warning(f"The empty_cache operation is currently not supported.")
 

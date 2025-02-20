@@ -36,7 +36,8 @@ class OcclusionSensitivity(Metric):
     most important for a network's classification.
 
     Occlusion sensitivity refers to how the predicted probability changes with the change of the occluded
-    part of an image. The higher the value in the output image is, the greater the decline of certainty, indicating
+    part of an image. The higher the value in the output image is, the greater the certainty decline
+    of the category after masking, indicating
     that the occluded area is more important in the decision-making process.
 
     Args:

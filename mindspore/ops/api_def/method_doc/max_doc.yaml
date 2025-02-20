@@ -27,7 +27,7 @@ max:
 
     Args:
         dim (int): The dimension to reduce.
-        keepdim (bool, optional): Whether to reduce dimension, if ``True`` the output will keep the same dimension as the
+        keepdim (bool, optional): Whether to keep dimension, if ``True`` the output will keep the same dimension as the
             `self` , the output will reduce dimension if ``false``. Default: ``False``.
 
     Returns:

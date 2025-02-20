@@ -1403,8 +1403,10 @@ class Crop(ImageTensorOperation):
         coordinates(sequence): Coordinates of the upper left corner of the cropping image. Must be a sequence of two
             values, in the form of (top, left).
         size (Union[int, sequence]): The output size of the cropped image.
-            If size is an integer, a square crop of size (size, size) is returned.
-            If size is a sequence of length 2, it should be (height, width).
+
+            - If size is an integer, a square crop of size (size, size) is returned.
+            - If size is a sequence of length 2, it should be (height, width).
+
             The size value(s) must be larger than 0.
 
     Raises:
@@ -2212,15 +2214,19 @@ class GaussianBlur(ImageTensorOperation):
 
     Args:
         kernel_size (Union[int, Sequence[int, int]]): The size of the Gaussian kernel. Must be positive and odd.
-            If the input type is int, the value will be used as both the width and height of the Gaussian kernel.
-            If the input type is Sequence[int, int], the two elements will be used as the width and height of the
-            Gaussian kernel respectively.
+
+            - If the input type is int, the value will be used as both the width and height of the Gaussian kernel.
+            - If the input type is Sequence[int, int], the two elements will be used as the width and height of the
+              Gaussian kernel respectively.
+
         sigma (Union[float, Sequence[float, float]], optional): The standard deviation of the Gaussian kernel.
             Must be positive.
-            If the input type is float, the value will be used as the standard deviation of both the width and
-            height of the Gaussian kernel.
-            If the input type is Sequence[float, float], the two elements will be used as the standard deviation
-            of the width and height of the Gaussian kernel respectively.
+
+            - If the input type is float, the value will be used as the standard deviation of both the width and
+              height of the Gaussian kernel.
+            - If the input type is Sequence[float, float], the two elements will be used as the standard deviation
+              of the width and height of the Gaussian kernel respectively.
+
             Default: ``None`` , the standard deviation of the Gaussian kernel will be obtained by the
             formula :math:`((kernel\_size - 1) * 0.5 - 1) * 0.3 + 0.8` .
 
@@ -3183,14 +3189,20 @@ class Pad(ImageTensorOperation, PyTensorOperation):
     Args:
         padding (Union[int, Sequence[int, int], Sequence[int, int, int, int]]): The number of pixels
             to pad each border of the image.
-            If a single number is provided, it pads all borders with this value.
-            If a tuple or lists of 2 values are provided, it pads the (left and right)
-            with the first value and (top and bottom) with the second value.
-            If 4 values are provided as a list or tuple, it pads the left, top, right and bottom respectively.
+
+            - If a single number is provided, it pads all borders with this value.
+            - If a tuple or lists of 2 values are provided, it pads the (left and right)
+              with the first value and (top and bottom) with the second value.
+            - If 4 values are provided as a list or tuple, it pads the left, top, right and bottom respectively.
+
             The pad values must be non-negative.
+
         fill_value (Union[int, tuple[int]], optional): The pixel intensity of the borders, only valid for
-            `padding_mode` ``Border.CONSTANT``. If it is a 3-tuple, it is used to fill R, G, B channels respectively.
-            If it is an integer, it is used for all RGB channels.
+            `padding_mode` ``Border.CONSTANT``.
+            
+            - If it is a 3-tuple, it is used to fill R, G, B channels respectively.
+            - If it is an integer, it is used for all RGB channels.
+
             The fill_value values must be in range [0, 255]. Default: ``0``.
         padding_mode (Border, optional): The method of padding. Default: ``Border.CONSTANT``. Can be
             ``Border.CONSTANT``, ``Border.EDGE``, ``Border.REFLECT``, ``Border.SYMMETRIC``.

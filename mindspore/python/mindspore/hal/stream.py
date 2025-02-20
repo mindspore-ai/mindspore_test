@@ -278,8 +278,8 @@ def synchronize():
 
 def set_cur_stream(stream):
     r"""
-    Sets the current stream.This is a wrapper API to set the stream.
-    Usage of this function is discouraged in favor of the ``stream`` context manager.
+    Sets the current stream. This is a wrapper API to set the stream.
+    It is recommended to use the `StreamCtx` context manager, instead of using this function directly.
 
     Note:
         - The api will be deprecated, please use the api :func:`mindspore.runtime.set_cur_stream` instead.
