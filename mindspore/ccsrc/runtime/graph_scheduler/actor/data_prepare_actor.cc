@@ -588,12 +588,12 @@ void DataPrepareActor::PrepareData(const std::vector<std::vector<TensorPtr>> &in
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
   }
 
+  MS_LOG(DEBUG) << "Data prepare actor(" << GetAID().Name() << ") prepares data.";
   if (enable_input_optimize_) {
     PrepareDataBeforeInputOptimize(input_tensors, args, context, start_time);
     return;
   }
 
-  MS_LOG(DEBUG) << "Data prepare actor(" << GetAID().Name() << ") prepares data.";
   real_strategy_ = real_strategy;
   // Convert actor running data from input tensors.
   if (!input_tensors.empty()) {

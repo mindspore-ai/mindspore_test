@@ -1191,6 +1191,7 @@ void RefreshGraphParameterStore(ActorSet *const actor_set, const VectorRef &args
   ParameterStore::GetInstance().SetChosenGraphName(actor_set->name_);
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   MS_EXCEPTION_IF_NULL(graph_parameter_store);
+  MS_LOG(INFO) << "Input args size: " << args.size();
   graph_parameter_store->SetInputArgs(args);
   UpdateInputOptimizeForCurActorSet(actor_set);
 }
