@@ -45,7 +45,7 @@ mindspore.nn.probability.distribution.LogNormal
 
     .. py:method:: cdf(value, loc, scale)
 
-        在给定值下计算累积分布函数（Cumulatuve Distribution Function, CDF）。
+        计算给定值的累积分布函数（Cumulatuve Distribution Function, CDF）。
 
         参数：
             - **value** (Tensor) - 要计算的值。
@@ -96,7 +96,7 @@ mindspore.nn.probability.distribution.LogNormal
 
     .. py:method:: log_cdf(value, loc, scale)
 
-        计算给定值对于的累积分布函数的对数。
+        计算给定值对应的累积分布函数的对数。
 
         参数：
             - **value** (Tensor) - 要计算的值。
@@ -154,7 +154,7 @@ mindspore.nn.probability.distribution.LogNormal
 
     .. py:method:: prob(value, loc, scale)
 
-        计算给定值下的概率。对于连续是计算概率密度函数（Probability Density Function）。
+        计算给定值下的概率。对于连续分布是计算概率密度函数（Probability Density Function）。
 
         参数：
             - **value** (Tensor) - 要计算的值。

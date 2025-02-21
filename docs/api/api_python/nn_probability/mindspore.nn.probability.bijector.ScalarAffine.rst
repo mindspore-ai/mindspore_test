@@ -9,12 +9,12 @@ mindspore.nn.probability.bijector.ScalarAffine
     .. math::
         Y = a * X + b
 
-    其中a是比例因子，b是移位因子。
+    其中 :math:`a` 是比例因子， :math:`b` 是移位因子。
 
     参数：
-        - **scale** (float, list, numpy.ndarray, Tensor) - 比例因子。默认值： ``1.0`` 。
-        - **shift** (float, list, numpy.ndarray, Tensor) - 移位因子。默认值： ``0.0`` 。
-        - **name** (str) - Bijector名称。默认值：``'ScalarAffine'`` 。
+        - **scale** (float, list, numpy.ndarray, Tensor) - 比例因子，公式中的 :math:`a`。默认值： ``1.0`` 。
+        - **shift** (float, list, numpy.ndarray, Tensor) - 移位因子，公式中的 :math:`b`。默认值： ``0.0`` 。
+        - **name** (str) - Bijector名称。默认值： ``'ScalarAffine'`` 。
 
     .. note::
         `shift` 和 `scale` 中元素的数据类型必须为float。如果 `shift` 、 `scale` 作为numpy.ndarray或Tensor传入，则它们必须具有相同的数据类型，否则将引发错误。
@@ -46,7 +46,7 @@ mindspore.nn.probability.bijector.ScalarAffine
             - **value** (Tensor) - 输入随机变量的值。
 
         返回：
-            Tensor，输入随机变量的值。
+            Tensor，输入随机变量经过映射后的值。
 
     .. py:method:: forward_log_jacobian(value)
 
@@ -66,7 +66,7 @@ mindspore.nn.probability.bijector.ScalarAffine
             - **value** (Tensor) - 输出随机变量的值。
 
         返回：
-            Tensor，输出随机变量的值。
+            Tensor，输入随机变量的值。
 
     .. py:method:: inverse_log_jacobian(value)
 

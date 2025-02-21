@@ -13,21 +13,21 @@ mindspore.nn.probability.bijector.Bijector
         - **param** (dict) - 用于初始化Bijector的参数。默认值： ``None`` 。
 
     .. note::
-        Bijector的 `dtype` 为None时，输入值必须是float类型，除此之外没有其他强制要求。
+        - Bijector的 `dtype` 为None时，输入值必须是float类型，除此之外没有其他强制要求。
 
-        在初始化过程中，当 `dtype` 为None时，对参数的数据类型没有强制要求。
+        - 在初始化过程中，当 `dtype` 为None时，对参数的数据类型没有强制要求。但所有参数都应具有相同的float类型，否则将引发TypeError。
 
-        但所有参数都应具有相同的float类型，否则将引发TypeError。
+            参数类型跟随输入值的数据类型，具体来说：
 
-        具体来说，参数类型跟随输入值的数据类型。即当 `dtype` 为None时，Bijector的参数将被强制转换为与输入值相同的类型。
+            - 当 `dtype` 为None时，Bijector的参数将被强制转换为与输入值相同的类型。
 
-        当指定了 `dtype` 时，参数和输入值的 `dtype` 必须相同。
+            - 当指定了 `dtype` 时，参数和输入值的 `dtype` 必须相同，否则将引发TypeError。
 
-        当参数类型或输入值类型与 `dtype` 不相同时，将引发TypeError。只能使用mindspore.float_type数据类型来指定Bijector的 `dtype` 。
+        - 只能使用mindspore.float_type数据类型来指定Bijector的 `dtype` 。
 
     .. py:method:: cast_param_by_value(value, para)
 
-        将输入中的 `para` 的数据类型转换为与 `value` 相同的类型，一般由Bijector的子类用于基于输入对自身参数进行数据类型变化。
+        将输入中的 `para` 的数据类型转换为与 `value` 相同的类型。一般用于Bijector的子类对自身参数进行数据类型转换。
 
         参数：
             - **value** (Tensor) - 输入数据。
@@ -61,7 +61,7 @@ mindspore.nn.probability.bijector.Bijector
             - **kwargs** (dict) - 函数所需的关键字参数字典。
 
         返回：
-            Tensor，输出随机变量的值。
+            Tensor，输出随机变量经过映射后的值。
         
     .. py:method:: forward_log_jacobian(value, *args, **kwargs)
 
