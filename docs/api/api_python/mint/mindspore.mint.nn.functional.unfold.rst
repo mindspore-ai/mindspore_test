@@ -6,10 +6,10 @@ mindspore.mint.nn.functional.unfold
     从一个batch的输入Tensor中提取滑动局部块。
 
     考虑一个batch的输入Tensor，其shape为 :math:`(N, C, *)` ，其中 :math:`N` 是batch维度，
-    :math:`C` 是channel维度， :math:`*` 表示任意的空间维度。此操作将展平输入 `x` 空间维度内每个滑动的
-    `kernel_size` 大小的滑块为输出的3-D Tensor中的一列(如，最后一维)，输出Tensor的shape为 :math:`(N, C \times \prod(\text{kernel_size}), L)` ，
-    其中 :math:`C \times \prod(\text{kernel_size})` 为每个滑块内值的总数量(一个滑块有 :math:`\prod(\text{kernel_size})` 个空间位置，
-    每个位置都包含一个 `C` 通道的向量)，共有 :math:`L` 个这样的滑块：
+    :math:`C` 是channel维度， :math:`*` 表示任意的空间维度。此操作将输入空间维度中每个大小为
+    `kernel_size` 的滑块展平为3-D输出Tensor的一列（如最后一维），输出Tensor的shape为 :math:`(N, C \times \prod(\text{kernel_size}), L)` ，
+    其中 :math:`C \times \prod(\text{kernel_size})` 为每个滑块内值的总数量（一个滑块有 :math:`\prod(\text{kernel_size})` 个空间位置，
+    每个位置都包含一个 `C` 通道的向量），共有 :math:`L` 个这样的滑块：
 
     .. math::
         L = \prod_d \left\lfloor\frac{\text{spatial_size}[d] + 2 \times \text{padding}[d] %
@@ -17,7 +17,7 @@ mindspore.mint.nn.functional.unfold
 
     其中， :math:`\text{spatial_size}` 由 `input` 的空间维度(上面的 :math:`*` )决定， :math:`d` 遍历所有的空间维度。
 
-    因此，在最后一个维度(列维度)上 `output` 包含特定块内的所有值。
+    因此，在最后一个维度（列维度）上 `output` 包含特定块内的所有值。
 
     `dilation`， `padding` 和 `stride` 决定了滑块如何被取出。
 

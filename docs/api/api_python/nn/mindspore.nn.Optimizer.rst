@@ -60,7 +60,7 @@ mindspore.nn.Optimizer
 
     .. py:method:: flatten_gradients(gradients)
 
-        如果网络参数已经使用了连续内存，则将梯度也按数据类型分组使用连续内存。
+        如果网络参数已经使用了连续内存，则梯度也将按数据类型分组使用连续内存。
 
         一种网络参数和梯度都使用连续内存的性能优化方法。继承 :class:`mindspore.nn.Optimizer` 自定义优化器时，需调用该接口使能连续内存优化。
 

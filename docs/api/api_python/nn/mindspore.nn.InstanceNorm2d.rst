@@ -43,4 +43,4 @@ mindspore.nn.InstanceNorm2d
         - **ValueError** - `num_features` 小于1。
         - **ValueError** - `momentum` 不在范围[0, 1]内。
         - **ValueError** - `gamma_init` / `beta_init` 的shape不为 :math:`(C)` 。
-        - **KeyError** - `gamma_init` / `beta_init` 中的任何一个是str，并且不存在继承自 `Initializer` 的同义类。
+        - **KeyError** - `gamma_init` / `beta_init` 中的任何一个是str，并且不存在继承自 `Initializer` 的同名类。
