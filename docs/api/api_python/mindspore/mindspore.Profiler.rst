@@ -23,7 +23,7 @@ mindspore.Profiler
         - **schedule** (schedule, 可选) - 设置采集的动作策略，由schedule类定义，需要配合step接口使用，默认值： ``None`` 。
         - **on_trace_ready** (Callable, 可选) - 设置当性能数据采集完成时，执行的回调函数。默认值： ``None`` 。
         - **profile_memory** (bool, 可选) -（仅限Ascend）表示是否收集Tensor内存数据。当值为 ``True`` 时，收集这些数据。使用此参数时， `activities` 必须设置为 ``[ProfilerActivity.CPU, ProfilerActivity.NPU]`` 。在图编译等级为O2时收集算子内存数据，需要从第一个step开始采集。默认值： ``False`` ，此参数目前采集的算子名称不完整。将在后续版本修复，建议使用环境变量 ``MS_ALLOC_CONF`` 代替。
-        - **aicore_metrics** (AicoreMetrics, 可选) -（仅限Ascend）收集的AICORE性能数据类型，使用此参数时， `activities` 必须包含 ``ProfilerActivity.NPU`` ，且值必须包含在AicoreMetrics枚举值中，默认值： ``AicoreMetrics.AiCoreNone`` ，每种类型包含的数据项如下：
+        - **aicore_metrics** (AicoreMetrics, 可选) -（仅限Ascend）收集的AICORE性能数据类型，使用此参数时， `activities` 必须包含 ``ProfilerActivity.NPU`` ，且值必须包含在AicoreMetrics枚举值中。当 `profiler_level` 为 ``ProfilerLevel.Level0`` 时，默认值为 ``AicoreMetrics.AiCoreNone``；当 `profiler_level` 为 ``ProfilerLevel.Level1`` 或 ``ProfilerLevel.Level2`` 时，默认值为 ``AicoreMetrics.PipeUtilization``，每种类型包含的数据项如下：
 
           - AicoreMetrics.AiCoreNone：不收集任何AICORE数据。
           - AicoreMetrics.ArithmeticUtilization：包含mac_fp16/int8_ratio、vec_fp32/fp16/int32_ratio、vec_misc_ratio等。
