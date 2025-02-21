@@ -6,6 +6,7 @@ mindspore.train.Metric
     用于计算评估指标的基类。
 
     在计算评估指标时需要调用 `clear` 、 `update` 和 `eval` 三个方法，在继承该类自定义评估指标时，也需要实现这三个方法。其中，`update` 用于计算中间过程的内部结果，`eval` 用于计算最终评估结果，`clear` 用于重置中间结果。
+    
     请勿直接使用该类，需使用子类如 :class:`mindspore.train.MAE` 、 :class:`mindspore.train.Recall` 等。
 
     .. py:method:: clear()
@@ -53,7 +54,7 @@ mindspore.train.Metric
             :class:`.Metric` ，类实例本身。
 
         异常：
-            - **ValueError** - 如果输入的index类型不是list或其元素类型不全为int。
+            - **ValueError** - 如果输入的index类型不是list，或其元素类型不全为int。
 
     .. py:method:: update(*inputs)
         :abstractmethod:
