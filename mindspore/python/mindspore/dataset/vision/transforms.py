@@ -2048,7 +2048,7 @@ class Erase(ImageTensorOperation):
     """
 
     @check_erase
-    def __init__(self, top, left, height, width, value=0, inplace=False):
+    def __init__(self, top, left, height, width, value=0.0, inplace=False):
         super().__init__()
         self.top = top
         self.left = left
