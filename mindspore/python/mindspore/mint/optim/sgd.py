@@ -78,10 +78,10 @@ class SGD(Optimizer):
 
     To be noticed, for the first step, :math:`v_{t+1} = gradient`.
 
-    Here : where p, v and u denote the parameters, accum, and momentum respectively.
+    Here : p, v and u denote the parameters, accum, and momentum respectively.
 
     .. warning::
-        This is an experimental optimizer API that is subject to change.
+        This is an experimental optimizer API, which may be modified or removed in the future.
         This module must be used with lr scheduler module in `LRScheduler Class
         <https://www.mindspore.cn/docs/en/master/api_python/mindspore.experimental.html#lrscheduler-class>`_ .
 
@@ -90,9 +90,11 @@ class SGD(Optimizer):
             parameter groups.
         lr (Union[bool, int, float, Tensor]): learning rate.
         momentum (Union[bool, int, float], optional): momentum factor. Default: ``0``.
-        weight_decay (Union[bool, int, float], optional): weight decay (L2 penalty). Default: ``0.``.
+        weight_decay (Union[bool, int, float], optional): weight decay (L2 penalty). Must be greater than or equal to 0.
+            Default: ``0.``.
         dampening (Union[bool, int, float], optional): dampening for momentum. Default: ``0``.
-        nesterov (bool, optional): enables Nesterov momentum. Default: ``False``.
+        nesterov (bool, optional): enable Nesterov momentum. If Nesterov is utilized, the momentum must be positive,
+            and the damping must be equal to 0. Default: ``False``.
 
     Keyword Args:
         maximize (bool, optional): maximize the params based on the objective, instead of minimizing.
@@ -106,8 +108,8 @@ class SGD(Optimizer):
         ValueError: If the learning rate is less than 0.
         ValueError: If the `momentum` or `weight_decay` value is less than 0.0.
         ValueError: If the `momentum`, `dampening` or `weight_decay` value is not bool, int or float.
-        ValueError: If the `nesterov` and `maximize` is not bool.
-        ValueError: If the `nesterov` is true, `momentum` is not positive or `dampening` is not 0.0.
+        ValueError: If the `nesterov` and `maximize` are not bool.
+        ValueError: If the `nesterov` is true, `momentum` is not positive or `dampening` is not 0.
 
     Supported Platforms:
         ``Ascend``
