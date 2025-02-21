@@ -39,6 +39,24 @@ def get_tensordump_node_num(validator):
                 res += 1
     return res
 
+def get_tensordump_node_infos(graph_validator):
+    d = graph_validator.graph_info_dict
+    tensordump_node_infos = []
+    for _, nodes in d.items():
+        for node, node_info in nodes.items():
+            if node.startswith('TensorDump'):
+                tensordump_node_infos.append(node_info)
+    return tensordump_node_infos
+
+def check_dump_path(info_list, expect_dump_path):
+    for td_info in info_list:
+        # info format: {'inputs': [], 'attrs' {}}
+        node_dump_path = td_info['inputs'][0]
+        if node_dump_path == expect_dump_path:
+            return True
+    return False
+
+
 class MatMulCell(nn.Cell):
     def __init__(self, hidden_size_config=(128, 128), strategy1=((1, 1), (1, 1))):
         super(MatMulCell, self).__init__()
@@ -609,3 +627,58 @@ def test_cell_level_dump_in_with_certain_cell():
     validator = ParallelValidator(net, phase)
     tensordump_num = get_tensordump_node_num(validator)
     assert tensordump_num == 1
+
+
+def test_cell_level_dump_in_with_certain_cell_no_side_effect_tensordump():
+    """
+    Feature: test no_side_effect tensordump only in SoftmaxCell.
+    test tensordump op behavior in scenario of dump single cell input
+    Description: Test dump SoftmaxCell input
+    Expectation: compile success
+    """
+    class SoftmaxCellWrapper(nn.Cell):
+        def __init__(self):
+            super(SoftmaxCellWrapper, self).__init__()
+            self.softmax = SoftmaxCell()
+            self.no_side_effect_td = ops.TensorDump('in')
+            self.no_side_effect_td.add_prim_attr("side_effect_io", False)
+        def construct(self, x):
+            depended = ops.depend(x, self.no_side_effect_td("softmax_input_dump.npy", x))
+            out = self.softmax(depended)
+            return out
+
+    class SoftmaxCellTensorDumpNet(nn.Cell):
+        def __init__(self, input_dim, hidden_size1, hidden_size2, strategies):
+            super(SoftmaxCellTensorDumpNet, self).__init__()
+            self.input_dim = input_dim
+            self.hz1 = hidden_size1
+            self.hz2 = hidden_size2
+            self.softmax = SoftmaxCellWrapper()
+            st1, st2, st3 = strategies
+            self.matmul1 = MatMulCell((self.input_dim, self.hz1), st1)
+            self.matmul2 = MatMulCell((self.hz1, self.hz2), st2)
+            self.matmul3 = MatMulCell((self.hz1, self.hz2), st3)
+            self.add = P.Add()
+
+        def construct(self, x):
+            x = self.matmul1(x)
+            sft = self.softmax(x)
+            out1 = self.matmul2(x)
+            result = self.add(sft, out1)
+            result = self.matmul3(result)
+            return result
+
+    context.set_auto_parallel_context(parallel_mode='semi_auto_parallel')
+    context.set_auto_parallel_context(device_num=8, global_rank=0, gradients_mean=True)
+    strategy1 = ((4, 2), (2, 1))
+    strategy2 = ((2, 4), (4, 1))
+    strategy3 = ((2, 2), (2, 2))
+    input_x = Tensor(np.ones([128, 32]), dtype=ms.float32)
+    strategy_list = [strategy1, strategy2, strategy3]
+    net = GradWrap(NetWithLoss(SoftmaxCellTensorDumpNet(input_x.shape[1], 32, 32, strategy_list)))
+    phase = compile_net(net, input_x)
+    validator = ParallelValidator(net, phase)
+    tensordump_num = get_tensordump_node_num(validator)
+    tensordump_node_infos = get_tensordump_node_infos(validator)
+    assert tensordump_num == 1
+    assert check_dump_path(tensordump_node_infos, "softmax_input_dump_in.npy")
