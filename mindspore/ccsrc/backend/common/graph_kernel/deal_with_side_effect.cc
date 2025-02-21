@@ -38,7 +38,7 @@ void DealWithSideEffect::MarkSideEffect(const FuncGraphPtr &sub_graph) {
     }
   }
   if (has_side_effect_mem) {
-    sub_graph->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(int64_t(1)));
+    sub_graph->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(true));
   }
 }
 
