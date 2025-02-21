@@ -9,6 +9,7 @@ mindspore.ops.moe_token_permute
         - 仅支持 Atlas A2 训练系列产品。
         - 当前版本下，输入 `tokens` 仅支持bfloat16类型。
         - 这是一个实验性API，后续可能修改或删除。
+        - `indices` 为二维的时候，第二维的size需要小于等于512。
 
     参数：
         - **tokens** (Tensor) - 输入的 token Tensor，将被进行排列。数据类型是bfloat16。shape为 :math:`(num\_tokens, hidden\_size)`，其中num_tokens和hidden_size是正整数。
