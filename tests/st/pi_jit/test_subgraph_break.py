@@ -21,7 +21,7 @@ import mindspore as ms
 from mindspore import Tensor, jit, context, ops, nn
 from mindspore._c_expression import get_code_extra
 
-from tests.st.pi_jit.share.utils import match_array, assert_has_graph_break, assert_equal
+from tests.st.pi_jit.share.utils import match_array, assert_has_graph_break, assert_equal,pi_jit_with_config
 from tests.mark_utils import arg_mark
 
 SKIP_PY37 = pytest.mark.skipif(sys.version_info[:2] == (3,7), reason="Not support py37 setup loop bytecode")
@@ -52,7 +52,7 @@ def test_call_function_graph_break_two_layers_v1():
     x = Tensor([1, 2, 3])
     o1 = f1(x)
 
-    f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     x = Tensor([1, 2, 3])
     o2 = f1(x)
 
@@ -82,7 +82,7 @@ def test_call_function_graph_break_two_layers_v2():
     x = Tensor([1, 2, 3])
     o1 = f1(x)
 
-    f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     x = Tensor([1, 2, 3])
     o2 = f1(x)
 
@@ -113,7 +113,7 @@ def test_call_function_graph_break_two_layers_v3():
     x = Tensor([1, 2, 3])
     o1 = f1(x)
 
-    f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     x = Tensor([1, 2, 3])
     o2 = f1(x)
 
@@ -145,7 +145,7 @@ def test_call_function_graph_break_two_layers_v4():
     x = Tensor([1, 2, 3])
     o1 = f1(x)
 
-    f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     x = Tensor([1, 2, 3])
     o2 = f1(x)
 
@@ -183,7 +183,7 @@ def test_call_function_graph_break_three_layers_v1():
     x = Tensor([1, 2, 3])
     o1 = f1(x)
 
-    f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     x = Tensor([1, 2, 3])
     o2 = f1(x)
 
@@ -223,7 +223,7 @@ def test_call_function_graph_break_three_layers_v2():
     x = Tensor([1, 2, 3])
     o1 = f1(x)
 
-    f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     x = Tensor([1, 2, 3])
     o2 = f1(x)
 
@@ -262,7 +262,7 @@ def test_call_function_graph_break_four_layers_v1():
     x = Tensor([1, 2, 3])
     o1 = f1(x)
 
-    f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     x = Tensor([1, 2, 3])
     o2 = f1(x)
 
@@ -295,7 +295,7 @@ def test_call_function_graph_break_in_loop_v1():
     x = Tensor([1, 2, 3])
     o1 = f1(x)
 
-    f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     x = Tensor([1, 2, 3])
     o2 = f1(x)
 
@@ -331,7 +331,7 @@ def test_call_function_graph_break_in_loop_v2():
     x = ops.randn(3, 3)
     o1 = f1(x)
 
-    compiled_f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     o2 = compiled_f1(x)
 
     match_array(o1, o2, error=7)
@@ -371,7 +371,7 @@ def test_call_function_graph_break_in_loop_v3():
     num_loops = 5
     o1 = f1(x, num_loops)
 
-    compiled_f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     o2 = compiled_f1(x, num_loops)
 
     match_array(o1, o2, error=7)
@@ -419,7 +419,7 @@ def test_call_function_graph_break_in_loop_v4():
     x = ops.randn(3, 4)
     o1 = f1(x)
 
-    compiled_f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     o2 = compiled_f1(x)
 
     match_array(o1, o2, error=7)
@@ -464,7 +464,7 @@ def test_call_function_graph_break_in_loop_v5():
     x = ops.randn(3, 4)
     o1 = f1(x)
 
-    compiled_f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     o2 = compiled_f1(x)
 
     match_array(o1, o2, error=7)
@@ -505,7 +505,7 @@ def test_call_function_graph_break_in_loop_v6():
     params = {'factor': 3, 'offset': 1.5}
     o1 = f1(x, params)
 
-    compiled_f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     o2 = compiled_f1(x, params)
 
     match_array(o1, o2, error=7)
@@ -540,7 +540,7 @@ def test_call_function_graph_break_in_loop_v7():
     y = Tensor([4, 5, 6])
     o1 = f1(x, y)
 
-    compiled_f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     o2 = compiled_f1(x, y)
 
     match_array(o1, o2, error=7)
@@ -577,7 +577,7 @@ def test_call_function_graph_break_in_loop_v8():
     x = Tensor([1, 2, 3])
     o1 = f1(x)
 
-    compiled_f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     o2 = compiled_f1(x)
 
     match_array(o1, o2, error=7)
@@ -615,7 +615,7 @@ def test_call_function_graph_break_in_loop_v9():
     y = Tensor([4., 5., 6.])
     o1 = f1(x, y)
 
-    compiled_f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     o2 = compiled_f1(x, y)
 
     match_array(o1, o2, error=7)
@@ -654,7 +654,7 @@ def test_call_function_graph_break_in_loop_v10():
     y = ops.randn(2, 4)
     o1 = f1(x, y)
 
-    compiled_f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     o2 = compiled_f1(x, y)
 
     match_array(o1, o2, error=7)
@@ -689,7 +689,7 @@ def test_call_function_graph_break_in_loop_v11():
     y = ops.randn(2, 4)
     o1 = f1(x, y)
 
-    compiled_f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     o2 = compiled_f1(x, y)
 
     match_array(o1, o2, error=7)
@@ -722,7 +722,7 @@ def test_call_function_graph_break_in_loop_v12():
     y = ops.randn(2, 4)
     o1 = f1(x, y)
 
-    compiled_f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     o2 = compiled_f1(x, y)
 
     match_array(o1, o2, error=7)
@@ -759,7 +759,7 @@ def test_call_function_graph_break_in_loop_v13():
     }
     o1 = f1(x, params)
 
-    compiled_f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     o2 = compiled_f1(x, params)
 
     match_array(o1, o2, error=7)
@@ -791,7 +791,7 @@ def test_call_function_graph_break_in_recursion():
     x = Tensor([1, 2, 3])
     o1 = f1(x)
 
-    f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     x = Tensor([1, 2, 3])
     o2 = f1(x)
 
@@ -823,7 +823,7 @@ def test_break_at_first_statement():
     y = Tensor([1, 1, 1])
     o1 = f1(x, y)
 
-    f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     o2 = f1(x, y)
 
     match_array(o1, o2)
@@ -853,7 +853,7 @@ def test_param_is_dict_and_is_alive_local_v1():
     y = Tensor([1, 1, 1])
     o1 = f1(x, y)
 
-    f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     o2 = f1(x, y)
 
     match_array(o1, o2)
@@ -884,7 +884,7 @@ def test_param_is_dict_and_is_alive_local_v2():
     x = Tensor([1, 2, 3])
     o1 = f1(x)
 
-    f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     o2 = f1(x)
 
     match_array(o1, o2)
@@ -925,7 +925,7 @@ def test_function_output_type_unsupported_v1():
     y = (2, 3)
     o1 = f1(x, y)
 
-    compiled_f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     o2 = compiled_f1(x, y)
 
     match_array(o1, o2, error=7)
@@ -965,7 +965,7 @@ def test_function_output_type_unsupported_v2():
     y = (2, 3)
     o1 = f1(x, y)
 
-    compiled_f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     o2 = compiled_f1(x, y)
 
     match_array(o1, o2, error=7)
@@ -1004,7 +1004,7 @@ def test_function_output_type_unsupported_v3():
     y = (2, 3)
     o1 = f1(x, y)
 
-    compiled_f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     o2 = compiled_f1(x, y)
 
     match_array(o1, o2, error=7)
@@ -1044,7 +1044,7 @@ def test_function_output_type_unsupported_v4():
     y = (2, 3)
     o1 = f1(x, y)
 
-    compiled_f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     o2 = compiled_f1(x, y)
 
     match_array(o1, o2, error=7)
@@ -1148,7 +1148,7 @@ def test_many_params_and_many_alive_locals_and_free_vars():
 
     o1 = f1(x, y, batch_size, shape, config, tensor_array)
 
-    compiled_f1 = jit(f1, mode='PIJit', jit_config=jit_cfg)
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
     o2 = compiled_f1(x, y, batch_size, shape, config, tensor_array)
 
     match_array(o1, o2, error=7)
@@ -1205,7 +1205,7 @@ def test_setattr_side_effect_v1():
     o1 = net1(x)
 
     net2 = SetattrNetV1()
-    net2.construct = jit(net2.construct, mode='PIJit', jit_config=jit_cfg)
+    net2.construct = pi_jit_with_config(net2.construct, jit_config=jit_cfg)
     o2 = net2(x)
 
     match_array(o1, o2, error=7)

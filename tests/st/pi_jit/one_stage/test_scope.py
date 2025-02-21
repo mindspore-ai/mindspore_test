@@ -40,7 +40,7 @@ def test_scope_with_single_net():
     """
 
     class Net(Cell):
-        @jit(mode="PIJit", jit_config={"compile_with_try": False})
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             ret = x + y
             return ret
@@ -69,7 +69,7 @@ def test_scope_with_nested_net():
             super(Net, self).__init__()
             self.inner_net = InnerNet()
 
-        @jit(mode="PIJit", jit_config={"compile_with_try": False})
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             ret = x + y
             ret = ret + self.inner_net(x, y)
@@ -91,7 +91,7 @@ def test_scope_with_single_net_with_break():
     """
 
     class Net(Cell):
-        @jit(mode="PIJit", jit_config={"compile_with_try": False})
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             ret = x + y
             print("aaaaa", flush=True)  # break here
@@ -123,7 +123,7 @@ def test_scope_with_nest_net_with_break():
             super(Net, self).__init__()
             self.inner_net = InnerNet()
 
-        @jit(mode="PIJit", jit_config={"compile_with_try": False})
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             ret = x + y
             print("aaaaa", flush=True)  # break here
