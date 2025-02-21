@@ -37,7 +37,7 @@ class OnRequestExit(Callback):
 
     Register OnRequestExit Callback before training, when the user want to exit the training process
     and save the training data, could send the registered exit signal 'sig' to the training process or modify the
-    'GracefulExit' that a key in the json file specified by the 'config_file' to '1'.
+    'GracefulExit' that a key in the JSON file specified by the 'config_file' to '1'.
     After the training process executes the current step, saves the current training status,
     including checkpoint and mindir, and then exit the training process.
 
@@ -58,7 +58,7 @@ class OnRequestExit(Callback):
         ValueError: If the 'save_mindir' is not a bool.
         ValueError: If the 'file_name' is not a str.
         ValueError: If the 'directory' is not a str.
-        ValueError: If the 'sig' is not an int or the 'sig' is signal.SIGKILL.
+        ValueError: If the 'sig' is not an int or the 'sig' is ``signal.SIGTERM``.
 
     Examples:
         >>> from mindspore import nn

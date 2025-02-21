@@ -79,14 +79,15 @@ class Recall(EvaluationBase):
 
         Args:
             inputs: Input `y_pred` and `y`. `y_pred` and `y` are a `Tensor`, a list or an array.
-                For 'classification' evaluation type, `y_pred` is in most cases (not strictly) a list
-                of floating numbers in range :math:`[0, 1]`
-                and the shape is :math:`(N, C)`, where :math:`N` is the number of cases and :math:`C`
-                is the number of categories. Shape of `y` can be :math:`(N, C)` with values 0 and 1 if one-hot
-                encoding is used or the shape is :math:`(N,)` with integer values if index of category is used.
-                For 'multilabel' evaluation type, `y_pred` and `y` can only be one-hot encoding with
-                values 0 or 1. Indices with 1 indicate positive category. The shape of `y_pred` and `y`
-                are both :math:`(N, C)`.
+
+                - For 'classification' scenario, `y_pred` is in most cases (not strictly) a list
+                  of floating numbers in range :math:`[0, 1]`
+                  and the shape is :math:`(N, C)`, where :math:`N` is the number of cases and :math:`C`
+                  is the number of categories. Shape of `y` can be :math:`(N, C)` with values 0 and 1 if one-hot
+                  encoding is used or the shape is :math:`(N,)` with integer values if index of category is used.
+                - For 'multilabel' scenario, `y_pred` and `y` can only be one-hot encoding with
+                  values 0 or 1. Indices with 1 indicate positive category. The shape of `y_pred` and `y`
+                  are both :math:`(N, C)`.
 
 
         Raises:

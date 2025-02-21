@@ -5,10 +5,10 @@ mindspore.train.ModelCheckpoint
 
     checkpoint的回调函数。
 
-    在训练过程中调用该方法可以保存网络参数。
+    在训练过程中，调用该方法可以保存网络参数。
 
     .. note::
-        在分布式训练场景下，请为每个训练进程指定不同的目录来保存checkpoint文件。否则，可能会训练失败。如果在 `model` 方法中使用此回调函数，默认会把优化器中的参数保存到checkpoint文件中。
+        在分布式训练场景下，请为每个训练进程指定不同的目录，来保存checkpoint文件。否则，可能会训练失败。如果在 `model` 方法中使用此回调函数，默认会把优化器中的参数保存到checkpoint文件中。
 
     参数：
         - **prefix** (Union[str, callable object]) - checkpoint文件的前缀名称，或者用来生成名称的可调用对象。默认值：``'CKP'`` 。

@@ -16,7 +16,7 @@ mindspore.train.FlopsUtilizationCollector
 
         - **full_flops** (bool) - 表示是否统计完整的模型信息。如果设置为True，会统计完整的模型信息；如果设置为False，将会统计对应每张卡的分片模型信息。默认值： ``True`` 。
 
-        - **enable_ma_collector** (bool) - 表示是否是否将flops写日志，提供给云上任务进行采集。默认值： ``False`` 。
+        - **enable_ma_collector** (bool) - 表示是否将flops写日志，提供给云上任务进行采集。默认值： ``False`` 。
 
     异常：
         - **TypeError** - `data_size` 不是正整数。
