@@ -409,10 +409,13 @@ struct CompareSwcCost {
  public:
   CompareSwcCost() {}
 
-  bool operator()(const std::pair<std::shared_ptr<StrategyWithCost>, double> &a,
-                  const std::pair<std::shared_ptr<StrategyWithCost>, double> &b) const {
-    if (!common::IsDoubleEqual(a.second, b.second)) {
-      return a.second < b.second;
+  bool operator()(const std::pair<std::shared_ptr<StrategyWithCost>, CostPtr> &a,
+                  const std::pair<std::shared_ptr<StrategyWithCost>, CostPtr> &b) const {
+    if (!common::IsDoubleEqual(a.second->communication_cost_, b.second->communication_cost_)) {
+      return a.second->communication_cost_ < b.second->communication_cost_;
+    }
+    if (!common::IsDoubleEqual(a.second->computation_cost_, b.second->computation_cost_)) {
+      return a.second->computation_cost_ < b.second->computation_cost_;
     }
     if (!common::IsDoubleEqual(a.first->cost_list[0]->communication_without_parameter_,
                                b.first->cost_list[0]->communication_without_parameter_)) {
@@ -424,80 +427,54 @@ struct CompareSwcCost {
 };
 
 std::shared_ptr<StrategyWithCost> Edge::GetNextOpSwcByPrevOpStrategyWithMiniComm(const StrategyPtr &prev_op_stra) {
-  std::vector<std::pair<TensorLayout, double>> next_op_layouts;
-  std::vector<std::pair<TensorLayout, double>> next_op_layouts_with_zero_comm;
+  std::vector<std::pair<TensorLayout, CostPtr>> next_op_layouts;
   // First, try to find the strategy with zero communication cost.
   for (const auto &key_value : cost_map_) {
     const CostPtr &candidate_cost = key_value.second[0];
-    (void)next_op_layouts.emplace_back(key_value.first.second, candidate_cost->communication_cost_);
-    if (candidate_cost->communication_cost_ < EPS) {
-      (void)next_op_layouts_with_zero_comm.emplace_back(key_value.first.second, candidate_cost->computation_cost_);
-    }
+    (void)next_op_layouts.emplace_back(key_value.first.second, candidate_cost);
   }
-  std::vector<std::pair<std::shared_ptr<StrategyWithCost>, double>> candidate_swcs;
-  if (next_op_layouts_with_zero_comm.empty()) {
-    // Second, if there is not strategy with zero communication cost, find the one with minimum communication cost.
+  std::vector<std::pair<std::shared_ptr<StrategyWithCost>, CostPtr>> candidate_swcs;
 
-    if (next_op_layouts.empty()) {
-      MS_LOG(ERROR) << "There are no available strategy for edge: " << edge_name_;
-      return nullptr;
-    }
-    MS_LOG(WARNING) << "Inconsistency occurred at edge: " << edge_name_;
-    for (const auto &layout : next_op_layouts) {
-      auto swcs = next_op_->GetSwcByInputLayout(layout.first, next_op_input_index_);
-      std::transform(swcs.begin(), swcs.end(), std::back_inserter(candidate_swcs),
-                     [&](const auto &swc) { return std::make_pair(swc, layout.second); });
-    }
-  } else {
-    if (next_op_layouts_with_zero_comm.size() > 1) {
-      MS_LOG(INFO) << "There are multiple strategies for edge: " << edge_name_
-                   << " with zero communication cost, choose the one with minimum computation costs.";
-    }
-    for (const auto &layout : next_op_layouts_with_zero_comm) {
-      auto swcs = next_op_->GetSwcByInputLayout(layout.first, next_op_input_index_);
-      std::transform(swcs.begin(), swcs.end(), std::back_inserter(candidate_swcs),
-                     [&](const auto &swc) { return std::make_pair(swc, layout.second); });
-    }
+  if (next_op_layouts.empty()) {
+    MS_LOG(ERROR) << "There are no available layout for edge: " << edge_name_;
+    return nullptr;
   }
+  if (next_op_layouts.size() > 1) {
+    MS_LOG(INFO) << "There are multiple layouts for edge: " << edge_name_;
+  }
+  for (const auto &layout : next_op_layouts) {
+    auto swcs = next_op_->GetSwcByInputLayout(layout.first, next_op_input_index_);
+    std::transform(swcs.begin(), swcs.end(), std::back_inserter(candidate_swcs),
+                   [&](const auto &swc) { return std::make_pair(swc, layout.second); });
+  }
+  MS_LOG(INFO) << "There are " << candidate_swcs.size() << " candidate swcs for edge: " << edge_name_
+               << ", choose the one with minimum costs.";
   auto min_swc = std::min_element(candidate_swcs.begin(), candidate_swcs.end(), CompareSwcCost());
   return min_swc->first;
 }
 
 std::shared_ptr<StrategyWithCost> Edge::GetPrevOpSwcByNextOpStrategyWithMiniComm(const StrategyPtr &next_op_stra) {
-  std::vector<std::pair<TensorLayout, double>> prev_op_layouts;
-  std::vector<std::pair<TensorLayout, double>> prev_op_layouts_with_zero_comm;
+  std::vector<std::pair<TensorLayout, CostPtr>> prev_op_layouts;
   // First, try to find the strategy with zero communication cost.
   for (const auto &key_value : cost_map_) {
     const auto &candidate_cost = key_value.second[0];
-    (void)prev_op_layouts.emplace_back(key_value.first.first, candidate_cost->communication_cost_);
-    if (candidate_cost->communication_cost_ < EPS) {
-      (void)prev_op_layouts_with_zero_comm.emplace_back(key_value.first.first, candidate_cost->computation_cost_);
-    }
+    (void)prev_op_layouts.emplace_back(key_value.first.first, candidate_cost);
   }
-  std::vector<std::pair<std::shared_ptr<StrategyWithCost>, double>> candidate_swcs;
-  if (prev_op_layouts_with_zero_comm.empty()) {
-    // Second, if there is no strategy with zero communication cost, find the one with minimum communication cost.
-    if (prev_op_layouts.empty()) {
-      MS_LOG(ERROR) << "There are no available strategy for edge: " << edge_name_;
-      return nullptr;
-    }
-    MS_LOG(WARNING) << "Inconsistency occurred at edge: " << edge_name_;
-    for (const auto &layout : prev_op_layouts) {
-      auto swcs = prev_op_->GetSwcByOutputLayout(layout.first, prev_op_output_index_);
-      std::transform(swcs.begin(), swcs.end(), std::back_inserter(candidate_swcs),
-                     [&](const auto &swc) { return std::make_pair(swc, layout.second); });
-    }
-  } else {
-    if (prev_op_layouts_with_zero_comm.size() > 1) {
-      MS_LOG(INFO) << "There are multiple strategies for edge: " << edge_name_
-                   << " with zero communication costs, choose the one with minimum computation costs.";
-    }
-    for (const auto &layout : prev_op_layouts_with_zero_comm) {
-      auto swcs = prev_op_->GetSwcByOutputLayout(layout.first, prev_op_output_index_);
-      std::transform(swcs.begin(), swcs.end(), std::back_inserter(candidate_swcs),
-                     [&](const auto &swc) { return std::make_pair(swc, layout.second); });
-    }
+  std::vector<std::pair<std::shared_ptr<StrategyWithCost>, CostPtr>> candidate_swcs;
+  if (prev_op_layouts.empty()) {
+    MS_LOG(ERROR) << "There are no available layout for edge: " << edge_name_;
+    return nullptr;
   }
+  if (prev_op_layouts.size() > 1) {
+    MS_LOG(INFO) << "There are multiple layouts for edge: " << edge_name_;
+  }
+  for (const auto &layout : prev_op_layouts) {
+    auto swcs = prev_op_->GetSwcByOutputLayout(layout.first, prev_op_output_index_);
+    std::transform(swcs.begin(), swcs.end(), std::back_inserter(candidate_swcs),
+                   [&](const auto &swc) { return std::make_pair(swc, layout.second); });
+  }
+  MS_LOG(INFO) << "There are " << candidate_swcs.size() << " candidate swcs for edge: " << edge_name_
+               << ", choose the one with minimum costs.";
   auto min_swc = std::min_element(candidate_swcs.begin(), candidate_swcs.end(), CompareSwcCost());
   return min_swc->first;
 }

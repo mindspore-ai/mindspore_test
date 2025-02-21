@@ -93,6 +93,76 @@ struct OutStrategyValueRegister {
     });
   }
 } out_regist;
+
+struct InLayoutValueRegister {
+  InLayoutValueRegister() noexcept {
+    AnfDumpHandler::SetInLayoutValueHandler([](const std::shared_ptr<AnfNode> &node) -> ValueTuplePtr {
+      auto operator_info = node->user_data<parallel::OperatorInfo>();
+      if (operator_info == nullptr) {
+        return nullptr;
+      }
+
+      auto tensor_infos = operator_info->inputs_tensor_info();
+      if (tensor_infos.empty()) {
+        return nullptr;
+      }
+
+      std::vector<ValuePtr> result;
+      for (const TensorInfo &tensor_info : tensor_infos) {
+        std::vector<std::pair<ValuePtr, ValuePtr>> key_values;
+        auto tensor_layout = tensor_info.tensor_layout();
+
+        Arrangement device_mat = tensor_layout.device_arrangement_origin();
+        ValuePtr device_matrix_key = MakeValue<std::string>(DEVICE_MATRIX);
+        ValuePtr device_matrix_value = MakeValue<Shape>(device_mat.array());
+        key_values.emplace_back(device_matrix_key, device_matrix_value);
+
+        Map tensor_map = tensor_layout.origin_tensor_map();
+        ValuePtr tensor_map_key = MakeValue<std::string>(TENSOR_MAP);
+        ValuePtr tensor_map_value = MakeValue<Shape>(tensor_map.array());
+        key_values.emplace_back(tensor_map_key, tensor_map_value);
+
+        result.push_back(std::make_shared<ValueDictionary>(key_values));
+      }
+      return std::make_shared<ValueTuple>(result);
+    });
+  }
+} in_layout_regist;
+
+struct OutLayoutValueRegister {
+  OutLayoutValueRegister() noexcept {
+    AnfDumpHandler::SetOutLayoutValueHandler([](const std::shared_ptr<AnfNode> &node) -> ValueTuplePtr {
+      auto operator_info = node->user_data<parallel::OperatorInfo>();
+      if (operator_info == nullptr) {
+        return nullptr;
+      }
+
+      auto tensor_infos = operator_info->outputs_tensor_info();
+      if (tensor_infos.empty()) {
+        return nullptr;
+      }
+
+      std::vector<ValuePtr> result;
+      for (const TensorInfo &tensor_info : tensor_infos) {
+        std::vector<std::pair<ValuePtr, ValuePtr>> key_values;
+        auto tensor_layout = tensor_info.tensor_layout();
+
+        Arrangement device_mat = tensor_layout.device_arrangement_origin();
+        ValuePtr device_matrix_key = MakeValue<std::string>(DEVICE_MATRIX);
+        ValuePtr device_matrix_value = MakeValue<Shape>(device_mat.array());
+        key_values.emplace_back(device_matrix_key, device_matrix_value);
+
+        Map tensor_map = tensor_layout.origin_tensor_map();
+        ValuePtr tensor_map_key = MakeValue<std::string>(TENSOR_MAP);
+        ValuePtr tensor_map_value = MakeValue<Shape>(tensor_map.array());
+        key_values.emplace_back(tensor_map_key, tensor_map_value);
+
+        result.push_back(std::make_shared<ValueDictionary>(key_values));
+      }
+      return std::make_shared<ValueTuple>(result);
+    });
+  }
+} out_layout_regist;
 }  // namespace
 
 std::string StrategyToString(const Strategies &strategy) {
@@ -2365,6 +2435,24 @@ Status OperatorInfo::SetCostUnderLayout(const StrategyPtr &in_strategy, const St
   swc->cost_list.push_back(result);
   (void)strategy_cost_.emplace_back(swc);
 
+  if (SetDevMatrixShapeByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": SetDevMatrixShapeByLayout failed.";
+  }
+  if (SetTensorMapByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": SetTensorMapByLayout failed.";
+  }
+  if (SetTensorMapBeforeByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": SetTensorMapBeforeByLayout failed.";
+  }
+  if (SetOutDevMatrixShapeByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": SetOutDevMatrixShapeByLayout failed.";
+  }
+  if (SetOutTensorMapByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": SetOutTensorMapByLayout failed.";
+  }
+  if (SetOutTensorMapBeforeByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": SetOutTensorMapBeforeByLayout failed.";
+  }
   return SUCCESS;
 }
 
@@ -2409,8 +2497,17 @@ Status OperatorInfo::SetCostUnderStrategyWithCost(const std::shared_ptr<Strategy
   if (SetTensorMapByLayout() != SUCCESS) {
     MS_LOG(WARNING) << name_ << ": SetTensorMapByLayout failed.";
   }
+  if (SetTensorMapBeforeByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": SetTensorMapBeforeByLayout failed.";
+  }
+  if (SetOutDevMatrixShapeByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": SetOutDevMatrixShapeByLayout failed.";
+  }
   if (SetOutTensorMapByLayout() != SUCCESS) {
     MS_LOG(WARNING) << name_ << ": SetOutTensorMapByLayout failed.";
+  }
+  if (SetOutTensorMapBeforeByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": SetOutTensorMapBeforeByLayout failed.";
   }
 
   if (CheckOutputLayout() != SUCCESS) {
@@ -2456,11 +2553,41 @@ Status OperatorInfo::SetTensorMapByLayout() {
   return SUCCESS;
 }
 
+Status OperatorInfo::SetTensorMapBeforeByLayout() {
+  inputs_tensor_map_before_.clear();
+  (void)std::transform(inputs_tensor_info_.begin(), inputs_tensor_info_.end(),
+                       std::back_inserter(inputs_tensor_map_before_),
+                       [&](const TensorInfo &tensor_info) { return tensor_info.tensor_layout().tensor_map_before(); });
+  return SUCCESS;
+}
+
+Status OperatorInfo::SetOutDevMatrixShapeByLayout() {
+  out_dev_matrix_shape_.clear();
+  for (const auto &tensor_info : outputs_tensor_info_) {
+    TensorLayout layout = tensor_info.tensor_layout();
+    Arrangement device_arrangement = layout.device_arrangement_origin();
+    if (!out_dev_matrix_shape_.empty() && out_dev_matrix_shape_ != device_arrangement.array()) {
+      MS_LOG(ERROR) << "Not support different device matrix now.";
+      return FAILED;
+    }
+    out_dev_matrix_shape_ = device_arrangement.array();
+  }
+  return SUCCESS;
+}
+
 Status OperatorInfo::SetOutTensorMapByLayout() {
   outputs_tensor_map_.clear();
   (void)std::transform(
     outputs_tensor_info_.begin(), outputs_tensor_info_.end(), std::back_inserter(outputs_tensor_map_),
     [&](const TensorInfo &tensor_info) { return tensor_info.tensor_layout().origin_tensor_map().array(); });
+  return SUCCESS;
+}
+
+Status OperatorInfo::SetOutTensorMapBeforeByLayout() {
+  outputs_tensor_map_before_.clear();
+  (void)std::transform(outputs_tensor_info_.begin(), outputs_tensor_info_.end(),
+                       std::back_inserter(outputs_tensor_map_before_),
+                       [&](const TensorInfo &tensor_info) { return tensor_info.tensor_layout().tensor_map_before(); });
   return SUCCESS;
 }
 
@@ -3158,6 +3285,101 @@ std::vector<int64_t> GetTensorValue(const ValuePtr &ori_value) {
     value.push_back(data[i]);
   }
   return value;
+}
+
+Dimensions ConvertLayoutToDemensions(const Shape &dev_matrix, const std::vector<Shape> &tensor_map) {
+  Dimensions dimens;
+  for (size_t i = 0; i < tensor_map.size(); ++i) {
+    int64_t accu_shp = 1;
+    for (size_t j = 0; j < tensor_map[i].size(); ++j) {
+      if (tensor_map[i][j] == -1) {
+        continue;
+      }
+      size_t tensor_index = dev_matrix.size() - 1 - static_cast<size_t>(tensor_map[i][j]);
+      auto shard_size = dev_matrix[tensor_index];
+      accu_shp *= shard_size;
+    }
+    dimens.push_back(accu_shp);
+  }
+  return dimens;
+}
+
+Status OperatorInfo::AddSwcUnderPrevOpDevMatrix(const Shape &prev_op_dev_matrix,
+                                                const std::vector<Shape> &prev_op_tensor_map, size_t layout_index) {
+  if (prev_op_dev_matrix.empty()) {
+    MS_LOG(WARNING) << "Layout propagation prev_op_dev_matrix is empty";
+    return FAILED;
+  }
+  if (inputs_shape_.size() <= layout_index) {
+    MS_LOG(WARNING) << "layout_index is illegal:" << layout_index
+                    << " while inputs_shape_ size:" << inputs_shape_.size();
+    return FAILED;
+  }
+  if (inputs_shape_[layout_index].size() != prev_op_tensor_map.size()) {
+    MS_LOG(WARNING) << "prev_op_tensor_map is illegal";
+    return FAILED;
+  }
+  if (dev_matrix_shape_ == prev_op_dev_matrix) {
+    return SUCCESS;
+  }
+  if (strategy_cost_.empty()) {
+    return SUCCESS;
+  }
+
+  dev_matrix_shape_ = prev_op_dev_matrix;
+  std::vector<StrategyPtr> strategy_ptrs;
+  (void)std::transform(strategy_cost_.begin(), strategy_cost_.end(), std::back_inserter(strategy_ptrs),
+                       [](const auto &swc) { return swc->strategy_ptr; });
+  size_t add_cnt = 0;
+  for (const auto &strategy_ptr : strategy_ptrs) {
+    if (strategy_ptr->GetInputDim()[layout_index] !=
+        ConvertLayoutToDemensions(prev_op_dev_matrix, prev_op_tensor_map)) {
+      continue;
+    }
+    std::vector<std::shared_ptr<TensorLayout>> in_tensor_layouts =
+      InferLayoutsByStrategy(strategy_ptr, prev_op_tensor_map, layout_index);
+    if (in_tensor_layouts.empty()) {
+      continue;
+    }
+    auto out_tensor_layouts = std::vector<std::shared_ptr<TensorLayout>>();
+    if (SetCostUnderLayout(strategy_ptr, nullptr, in_tensor_layouts, out_tensor_layouts) != SUCCESS) {
+      MS_LOG(WARNING) << "Failure: operator " << name_ << " SetCostUnderLayout failed";
+      return FAILED;
+    }
+    add_cnt++;
+  }
+  MS_LOG(INFO) << name_ << " add " << add_cnt << " swcs.";
+  return SUCCESS;
+}
+
+std::vector<std::shared_ptr<TensorLayout>> OperatorInfo::InferLayoutsByStrategy(
+  const StrategyPtr &strategy_ptr, const std::vector<Shape> &prev_op_tensor_map, size_t layout_index) {
+  std::vector<std::shared_ptr<TensorLayout>> in_layouts;
+  Strategies inputs = strategy_ptr->GetInputDim();
+  for (size_t i = 0; i < inputs.size(); i++) {
+    auto in_layout = std::make_shared<TensorLayout>();
+    if (i == layout_index) {
+      MS_LOG(ERROR) << "Begin InitFromExtendVector";
+      if (in_layout->InitFromExtendVector(dev_matrix_shape_, prev_op_tensor_map, inputs_shape_[i]) != SUCCESS) {
+        MS_LOG(ERROR) << "InferLayoutsByStrategy failed.";
+        return std::vector<std::shared_ptr<TensorLayout>>();
+      }
+      in_layouts.push_back(in_layout);
+      MS_LOG(ERROR) << "in_layout:" << in_layout->ToString();
+      continue;
+    }
+    std::vector<Shape> empty_tensor_map;
+    if (!inputs[i].empty()) {
+      MS_LOG(WARNING) << "Not Support Multiple inputs operator";
+      return std::vector<std::shared_ptr<TensorLayout>>();
+    }
+    if (in_layout->InitFromExtendVector(dev_matrix_shape_, empty_tensor_map, inputs_shape_[i]) != SUCCESS) {
+      MS_LOG(ERROR) << "InferLayoutsByStrategy failed.";
+      return std::vector<std::shared_ptr<TensorLayout>>();
+    }
+    in_layouts.push_back(in_layout);
+  }
+  return in_layouts;
 }
 }  // namespace parallel
 }  // namespace mindspore

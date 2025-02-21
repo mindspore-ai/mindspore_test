@@ -162,7 +162,7 @@ void GetMetaFuncGraphText(const MetaFuncGraphPtr &meta_func_graph, std::ostrings
 void GetPrimitiveText(const PrimitivePtr &prim, std::ostringstream &oss) {
   if (!prim->instance_name().empty()) {
     oss << " {";
-    oss << "instance name" << ": ";
+    oss << "instance name: ";
     oss << prim->instance_name();
     oss << "}";
   }
@@ -705,6 +705,18 @@ void DumpParallelInfo(const CNodePtr &node, const std::shared_ptr<SubGraphIRInfo
     gsub->buffer << out_tmp->ToString();
   }
 
+  ValueTuplePtr in_layout_tmp = AnfDumpHandler::InLayoutValue(node);
+  if (in_layout_tmp != nullptr) {
+    gsub->buffer << ", in_layout: ";
+    gsub->buffer << in_layout_tmp->ToString();
+  }
+
+  ValueTuplePtr out_layout_tmp = AnfDumpHandler::OutLayoutValue(node);
+  if (out_layout_tmp != nullptr) {
+    gsub->buffer << ", out_layout: ";
+    gsub->buffer << out_layout_tmp->ToString();
+  }
+
   gsub->buffer << "}";
 }
 
@@ -740,7 +752,7 @@ void DumpOperateAttrs(const AnfNodePtr &op, const std::shared_ptr<SubGraphIRInfo
     PrimitivePtr primitive = GetValueNode<PrimitivePtr>(op);
     if (!primitive->instance_name().empty()) {
       gsub->buffer << " {";
-      gsub->buffer << "instance name" << ": ";
+      gsub->buffer << "instance name: ";
       gsub->buffer << primitive->instance_name();
       gsub->buffer << "}";
     }
@@ -980,7 +992,7 @@ void DumpCNode(const CNodePtr &node, const FuncGraphPtr &sub_graph, const Ordere
 
   // Print node's name.
   if (node != sub_graph->get_return()) {
-    gsub->buffer << "  %" << gsub->local_var << "(" << node->ToString() << ")" << " = ";
+    gsub->buffer << "  %" << gsub->local_var << "(" << node->ToString() << ") = ";
     gsub->local_var_map[node] = gsub->local_var++;
   } else {
     gsub->buffer << "  ";

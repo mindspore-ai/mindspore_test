@@ -47,6 +47,7 @@ using MirrorOps = std::vector<OperatorVector>;
 using Ops = std::vector<OperatorVector>;
 using VirtualDivOp = OperatorVector;
 using TensorMaps = std::vector<Shape>;
+using TensorMapBefores = std::vector<std::vector<Shape>>;
 using TensorLayouts = std::vector<TensorLayout>;
 using different_type = std::vector<int64_t>::difference_type;
 using PrimitiveAttrs = mindspore::HashMap<std::string, ValuePtr>;
@@ -473,6 +474,12 @@ class OperatorInfo {
   void LayoutPropagationBegin() { is_in_layout_propagation_ = true; }
   void LayoutPropagationEnd() { is_in_layout_propagation_ = false; }
 
+  Status AddSwcUnderPrevOpDevMatrix(const Shape &prev_op_dev_matrix, const std::vector<Shape> &prev_op_tensor_map,
+                                    size_t layout_index);
+  std::vector<std::shared_ptr<TensorLayout>> InferLayoutsByStrategy(const StrategyPtr &strategy_ptr,
+                                                                    const std::vector<Shape> &prev_op_tensor_map,
+                                                                    size_t layout_index);
+
   TensorRedistributionPtr CreateTensorRedistribution(bool construct_op_flag = true, bool keep_reshape = false) {
     if (this->tensor_redistribution_ != nullptr) {
       MS_LOG(DEBUG) << "TensorRedistribution re-created.";
@@ -510,6 +517,8 @@ class OperatorInfo {
   TensorMaps outputs_tensor_map() const { return outputs_tensor_map_; }
   NewTensorMaps inputs_tensor_map_new() const { return inputs_tensor_map_new_; }
   NewTensorMaps outputs_tensor_map_new() const { return outputs_tensor_map_new_; }
+  TensorMapBefores inputs_tensor_map_before() const { return inputs_tensor_map_before_; }
+  TensorMapBefores outputs_tensor_map_before() const { return outputs_tensor_map_before_; }
 
  protected:
   // needed by rec_parser
@@ -611,6 +620,8 @@ class OperatorInfo {
   int64_t as_loss_divisor_ = 1;
   TensorMaps inputs_tensor_map_;
   TensorMaps outputs_tensor_map_;
+  TensorMapBefores inputs_tensor_map_before_;
+  TensorMapBefores outputs_tensor_map_before_;
   NewTensorMaps inputs_tensor_map_new_;
   NewTensorMaps outputs_tensor_map_new_;
   ForwardOp forward_op_;
@@ -683,13 +694,17 @@ class OperatorInfo {
   OperatorCostPtr operator_cost_;
   std::vector<TypePtr> outputs_type_;
   int64_t swc_index_ = -1;
+  std::map<int64_t, std::vector<Shape>> tensor_map_possibility;
   Status GetLayoutConfig();
   Status GetRepeatedNumInDevMatrixRight();
   Status CheckLayoutConfigBase();
 
   Status SetDevMatrixShapeByLayout();
   Status SetTensorMapByLayout();
+  Status SetTensorMapBeforeByLayout();
+  Status SetOutDevMatrixShapeByLayout();
   Status SetOutTensorMapByLayout();
+  Status SetOutTensorMapBeforeByLayout();
 };
 
 Shape GetSliceShape(const Shape &tensor_shape, const Dimensions &strategy);

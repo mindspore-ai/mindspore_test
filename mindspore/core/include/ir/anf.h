@@ -63,6 +63,9 @@ class Value;
 using ValuePtr = std::shared_ptr<Value>;
 using ValuePtrList = std::vector<ValuePtr>;
 
+class ValueTuple;
+using ValueTuplePtr = std::shared_ptr<ValueTuple>;
+
 class ValueNode;
 using ValueNodePtr = std::shared_ptr<ValueNode>;
 
