@@ -31,10 +31,12 @@ function ConfigAscend() {
 
     echo "Copy file success"
     # source ascend env
-    export ASCEND_HOME=/usr/local/Ascend/latest
-    ls /usr/local/Ascend/latest/bin/
-    export PATH=${ASCEND_HOME}/compiler/ccec_compiler/bin:${PATH}
-    source ${ASCEND_HOME}/aarch64-linux/bin/setenv.bash
+    export ASCEND_PATH=/usr/local/Ascend
+    if [ -d "${ASCEND_PATH}/ascend-toolkit" ]; then
+        source ${ASCEND_PATH}/ascend-toolkit/set_env.sh
+    else
+        source ${ASCEND_PATH}/latest/bin/setenv.bash
+    fi
 }
 
 function run_infer_parallel() {
