@@ -616,6 +616,7 @@ def test_nlp_minddataset_reader_basic_padded_samples_check_whole_reshuffle_resul
         by checking whole result_per_epoch to ensure there is no reshuffling
     Expectation: Output is equal to the expected output
     """
+    os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"] = "true"
     original_seed = ds.config.get_seed()
     ds.config.set_seed(0)
     assert ds.config.get_seed() == 0
@@ -678,6 +679,7 @@ def test_nlp_minddataset_reader_basic_padded_samples_check_whole_reshuffle_resul
 
     # Restore config setting
     ds.config.set_seed(original_seed)
+    del os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"]
 
 
 def get_data(dir_name):

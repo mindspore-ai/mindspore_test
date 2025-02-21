@@ -45,7 +45,7 @@ PYBIND_REGISTER(ShardDistributedSample, 1, ([](const py::module *m) {
                   (void)py::class_<mindrecord::ShardDistributedSample, mindrecord::ShardSample,
                                    std::shared_ptr<mindrecord::ShardDistributedSample>>(*m,
                                                                                         "MindrecordDistributedSampler")
-                    .def(py::init<int64_t, int64_t, bool, uint32_t, int64_t, int64_t>());
+                    .def(py::init<int64_t, int64_t, dataset::ShuffleMode, uint32_t, int64_t, int64_t>());
                 }));
 
 PYBIND_REGISTER(
@@ -83,8 +83,9 @@ PYBIND_REGISTER(
   ShardShuffle, 1, ([](const py::module *m) {
     (void)py::class_<mindrecord::ShardShuffle, mindrecord::ShardOperator, std::shared_ptr<mindrecord::ShardShuffle>>(
       *m, "MindrecordRandomSampler")
-      .def(py::init([](int64_t num_samples, bool replacement, bool reshuffle_each_epoch) {
-        return std::make_shared<mindrecord::ShardShuffle>(GetSeed(), num_samples, replacement, reshuffle_each_epoch);
+      .def(py::init([](int64_t num_samples, bool replacement, bool reshuffle_each_epoch, ShuffleMode shuffle_mode) {
+        return std::make_shared<mindrecord::ShardShuffle>(GetSeed(), num_samples, replacement, reshuffle_each_epoch,
+                                                          mindrecord::ShuffleType::kShuffleSample, shuffle_mode);
       }));
   }));
 
@@ -94,6 +95,8 @@ PYBIND_REGISTER(ShuffleMode, 1, ([](const py::module *m) {
                     .value("FILES", ShuffleMode::kFiles)
                     .value("GLOBAL", ShuffleMode::kGlobal)
                     .value("INFILE", ShuffleMode::kInfile)
+                    .value("ADAPTIVE", ShuffleMode::kAdaptive)
+                    .value("PARTIAL", ShuffleMode::kPartial)
                     .export_values();
                 }));
 }  // namespace dataset

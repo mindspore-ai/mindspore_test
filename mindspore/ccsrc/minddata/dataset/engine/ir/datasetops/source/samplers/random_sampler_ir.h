@@ -34,7 +34,8 @@ class SamplerRT;
 
 class RandomSamplerObj : public SamplerObj {
  public:
-  RandomSamplerObj(bool replacement, int64_t num_samples, bool reshuffle_each_epoch = true);
+  RandomSamplerObj(bool replacement, int64_t num_samples, bool reshuffle_each_epoch = true,
+                   dataset::ShuffleMode shuffle_mode = dataset::ShuffleMode::kGlobal);
 
   ~RandomSamplerObj() override;
 
@@ -66,6 +67,7 @@ class RandomSamplerObj : public SamplerObj {
   bool replacement_;
   int64_t num_samples_;
   bool reshuffle_each_epoch_;
+  dataset::ShuffleMode shuffle_mode_;
 };
 }  // namespace dataset
 }  // namespace mindspore

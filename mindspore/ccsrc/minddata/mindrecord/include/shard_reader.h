@@ -250,6 +250,9 @@ class MINDRECORD_API ShardReader {
   /// \brief initialize reader
   Status Init(const std::vector<std::string> &file_paths, bool load_dataset);
 
+  /// \brief update loading mode by operators's shuffle mode
+  void UpdateLoadModeByShuffleMode();
+
   /// \brief validate column list
   Status CheckColumnList(const std::vector<std::string> &selected_columns);
 

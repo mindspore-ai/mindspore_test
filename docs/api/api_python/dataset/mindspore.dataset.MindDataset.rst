@@ -9,13 +9,15 @@
         - **dataset_files** (Union[str, list[str]]) - MindRecord文件路径，支持单文件路径字符串、多文件路径字符串列表。如果 `dataset_files` 的类型是字符串，则它代表一组具有相同前缀名的MindRecord文件，同一路径下具有相同前缀名的其他MindRecord文件将会被自动寻找并加载。如果 `dataset_files` 的类型是列表，则它表示所需读取的MindRecord数据文件。
         - **columns_list** (list[str]，可选) - 指定从MindRecord文件中读取的数据列。默认值： ``None`` ，读取所有列。
         - **num_parallel_workers** (int, 可选) - 指定读取数据的工作线程数。默认值： ``None`` ，使用全局默认线程数(8)，也可以通过 :func:`mindspore.dataset.config.set_num_parallel_workers` 配置全局线程数。
-        - **shuffle** (Union[bool, :class:`~.dataset.Shuffle`], 可选) - 每个epoch中数据混洗的模式，支持传入bool类型与枚举类型进行指定。默认值： ``None`` ，采用 ``mindspore.dataset.Shuffle.GLOBAL`` 。
-          如果 `shuffle` 为 ``False`` ，则不混洗，如果 `shuffle` 为 ``True`` ，等同于将 `shuffle` 设置为 ``mindspore.dataset.Shuffle.GLOBAL`` 。
+        - **shuffle** (Union[bool, :class:`~.dataset.Shuffle`], 可选) - 每个epoch中数据混洗的模式，支持传入bool类型与枚举类型进行指定。默认值： ``None`` ，采用 ``mindspore.dataset.Shuffle.ADAPTIVE`` 。
+          如果 `shuffle` 为 ``False`` ，则不混洗，如果 `shuffle` 为 ``True`` ，等同于将 `shuffle` 设置为 ``mindspore.dataset.Shuffle.ADAPTIVE`` 。
           通过传入枚举变量设置数据混洗的模式：
 
-          - ``Shuffle.GLOBAL`` ：混洗文件和文件中的数据。
-          - ``Shuffle.FILES`` ：仅混洗文件，当数据集样本量大于1亿条时不支持。
-          - ``Shuffle.INFILE`` ：保持读入文件的序列，仅混洗每个文件中的数据，当数据集样本量大于1亿条时不支持。
+          - ``Shuffle.ADAPTIVE`` ：当数据集样本小于等于1亿时，采用 ``Shuffle.GLOBAL`` ，当大于1亿时，采用局部 ``Shuffle.PARTIAL`` ，每100万样本混洗一次。
+          - ``Shuffle.GLOBAL`` ：执行全局混洗，一次性混洗数据集中所有样本。占用内存大。
+          - ``Shuffle.PARTIAL`` ：执行局部混洗，每100万个样本混洗一次。占用内存小。
+          - ``Shuffle.FILES`` ：仅混洗文件序列，不混洗文件中的数据。
+          - ``Shuffle.INFILE`` ：保持读入文件的序列，仅混洗每个文件中的数据。
 
         - **num_shards** (int, 可选) - 指定分布式训练时将数据集进行划分的分片数。默认值： ``None`` 。指定此参数后， `num_samples` 表示每个分片的最大样本数。一般在 `数据并行模式训练 <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/data_parallel.html#数据并行模式加载数据集>`_ 的时候使用。
         - **shard_id** (int, 可选) - 指定分布式训练时使用的分片ID号。默认值： ``None`` 。只有当指定了 `num_shards` 时才能指定此参数。
@@ -37,7 +39,7 @@
           <https://www.mindspore.cn/docs/zh-CN/master/api_python/samples/dataset/dataset_gallery.html>`_
 
     .. note::
-        对MindRecord进行分片（配置 `num_shards` 和 `shard_id` ）时，数据的切分逻辑有2种实现策略，此API采用了策略2。
+        对MindRecord进行分片（配置 `num_shards` 和 `shard_id` ）时，数据的切分逻辑有2种实现策略，此API默认采用策略1，可通过设置环境变量 `MS_DEV_MINDRECORD_SHARD_BY_BLOCK=True` 切换回策略2。该环境变量只对 `DistributedSampler` 采样器生效。
 
         .. list-table:: 数据分片的实现策略1
             :widths: 50 50 50 50

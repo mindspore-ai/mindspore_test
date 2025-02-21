@@ -30,7 +30,8 @@ from PIL import Image
 
 import mindspore._c_dataengine as cde
 
-from .datasets import VisionBaseDataset, SourceDataset, MappableDataset, Shuffle, Schema
+from .samplers import Shuffle
+from .datasets import VisionBaseDataset, SourceDataset, MappableDataset, Schema
 from .datasets_user_defined import GeneratorDataset
 from .validators import check_caltech101_dataset, check_caltech256_dataset, check_celebadataset, \
     check_cityscapes_dataset, check_cocodataset, check_div2k_dataset, check_emnist_dataset, check_fake_image_dataset, \
