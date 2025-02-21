@@ -5,7 +5,7 @@ mindspore.train.OnRequestExit
 
     响应用户关闭请求，退出训练或推理进程，保存checkpoint和mindir。
 
-    在训练开始前，注册OnRequestExit回调，当用户想要退出训练进程并保存训练数据时，可通过发送注册的退出信号 `sig` 到训练进程，或者将 `config_file` 参数所指定的json文件中的 `GracefulExit` 字段修改为 1。训练进程执行完当前step后，保存当前训练状态，包括checkpoint和mindir，然后退出训练过程。
+    在训练开始前，注册OnRequestExit回调，当用户想要退出训练进程并保存训练数据时，可通过发送注册的退出信号 `sig` 到训练进程，或者将 `config_file` 参数所指定的JSON文件中的 `GracefulExit` 字段修改为 1。训练进程执行完当前step后，保存当前训练状态，包括checkpoint和mindir，然后退出训练过程。
 
     参数：
         - **save_ckpt** (bool) - 退出训练或推理进程时，是否保存checkpoint。默认值： ``True`` 。
@@ -20,7 +20,7 @@ mindspore.train.OnRequestExit
         - **ValueError** - `save_mindir` 不是bool值。
         - **ValueError** - `file_name` 不是字符串。
         - **ValueError** - `directory` 不是字符串。
-        - **ValueError** - `sig` 不是int值，或者是signal.SIGKILL。
+        - **ValueError** - `sig` 不是int值，或者是 ``signal.SIGTERM``。
 
     .. py:method:: on_eval_begin(run_context)
 

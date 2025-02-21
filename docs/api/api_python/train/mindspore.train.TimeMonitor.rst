@@ -8,7 +8,7 @@ mindspore.train.TimeMonitor
     参数：
         - **data_size** (int) - 表示每隔多少个step打印一次信息。如果程序在训练期间获取到Model的 `batch_num` ，则将 `data_size` 设为 `batch_num` 的值，否则将直接使用 `data_size` 的值。默认值： ``None`` 。
 
-        - **data_time** (bool) - 表示是否打印在Host侧获取数据的时间。请注意在非数据集下沉模式时，数据获取和网络计算是按同步执行的，而在数据集下沉模式时它们是异步执行的。默认值： ``False`` 。
+        - **data_time** (bool) - 表示是否打印在Host侧获取数据的时间。请注意：在非数据集下沉模式时，数据获取和网络计算是按同步执行的，而在数据集下沉模式时，它们是异步执行的。默认值： ``False`` 。
 
     异常：
         - **ValueError** - `data_size` 不是正整数。
