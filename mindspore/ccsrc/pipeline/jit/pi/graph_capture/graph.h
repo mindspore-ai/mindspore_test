@@ -36,6 +36,7 @@ namespace pijit {
 class OptCode;
 class GraphJitConfig;
 class FuncGraphBuilder;
+class GuardBuilder;
 
 class FrameStates {
  public:
@@ -124,7 +125,7 @@ class Graph {
   };
 
   Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf);
-  virtual ~Graph() {}
+  virtual ~Graph();
 
   const BreakInfo &break_info() const { return break_info_; }
   void set_break_info(const BreakInfo &info) { break_info_ = info; }
@@ -169,6 +170,9 @@ class Graph {
     return py::str(c->co_name);
   }
 
+  void GuardParameter(ValueNode *param);
+  void GuardGlobal(ValueNode *global_value);
+  void GuardAttribute(ValueNode *attr_value);
   bool GuardValueNode(ValueNode *, GuardLevel level = GuardLevel::GEqual);
   bool GuardValueNodeClosure(ValueNode *, GuardLevel level = GuardLevel::GDeduce);
   bool GuardType(ValueNode *);
@@ -179,8 +183,8 @@ class Graph {
   std::vector<TracePtr> TraceValueNodeClosure(ValueNode *, bool *ret, int max_trace_depth = -1);
   int GetPruneBranchCount() const { return prune_branch_count_; }
   void SetPruneBranchCount(int count) { prune_branch_count_ = count; }
-  const std::shared_ptr<OptCode> &GetGuard() const { return guard_; }
-  void SetGuard(const std::shared_ptr<OptCode> &guard) { guard_ = guard; }
+  const std::shared_ptr<OptCode> &GetGuardManager() const;
+  void SetGuard(const std::shared_ptr<OptCode> &guard);
 
   // (chaiyouheng): restore graph status at loop begin, clear trace values and operations and guards
   bool RestoreLoopStatus() const { return false; }
@@ -213,6 +217,7 @@ class Graph {
   const auto &func_graph_builder() const { return func_graph_builder_; }
 
  private:
+  void AddNodeInfo(ValueNode *node, AObject *obj_info, const std::string &name);
   void DumpBreakInfo(std::ostream *out) const;
   void PrintFrame(std::ostream *out, const std::string &prefix) const;
 
@@ -242,7 +247,6 @@ class Graph {
 
   const GraphJitConfig &conf_;
 
-  std::shared_ptr<OptCode> guard_;
   int prune_branch_count_;
   Graph *parent_{nullptr};
   std::shared_ptr<SideEffect> side_effect_;
@@ -252,6 +256,7 @@ class Graph {
     std::vector<ValueNode *> inputs_;
     std::vector<ValueNode *> operations_;
   } prepare_;
+  std::unique_ptr<GuardBuilder> guard_builder_;
 
   std::shared_ptr<FuncGraphBuilder> func_graph_builder_;
 };

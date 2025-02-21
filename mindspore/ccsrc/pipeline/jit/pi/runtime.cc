@@ -54,8 +54,6 @@ namespace mindspore {
 namespace pijit {
 
 void AddConfigToGuard(const GraphJitConfig &c, OptGuardPtr guard);
-void AddGuardForParam(const PyFrameWrapper &f, OptGuardPtr guard, bool detach);
-void AddGuardForGlobals(const PyFrameWrapper &f, OptGuardPtr guard, bool detach);
 static void AddGradFlagForParam(const OptGuardPtr &guard, bool detach);
 static void CollectTraceBack(JitCompileResults *c, PyCodeObject *code, bool is_graph_mode);
 
@@ -328,16 +326,10 @@ int Traceback::FindMaxNameLength(const std::list<Element> &tbs) const {
 static void GuardForFrame(const PyFrameWrapper &f, const OptCodePtr &oc, const GraphJitConfig &conf) {
   const char *code_name = f.GetCode().Name();
   AddConfigToGuard(conf, oc->GetGuard());
-  AddGuardForParam(f, oc->GetGuard(), conf.GetBoolConfig(GraphJitConfig::kGuardDetachObject));
+  // parameter guard is delay to graph parameter build
   AddGradFlagForParam(oc->GetGuard(), conf.GetBoolConfig(GraphJitConfig::kGuardDetachObject));
-  if (conf.GetBoolConfig(GraphJitConfig::kPrintGuard)) {
-    GRAPH_JIT_LOG_F("Guard on %s by %s!\n", code_name, oc->GetGuard()->GetDescript().c_str());
-    return;
-  }
-  if (IS_OUTPUT_ON(mindspore::kDebug)) {
-    // It tooks too much time in Guard's GetDescript function when trace depth is too large.
-    MS_LOG(DEBUG) << "Guard on " << code_name << " by " << oc->GetGuard()->GetDescript() << "!" << std::endl;
-  }
+  // It tooks too much time in Guard's GetDescript function when trace depth is too large.
+  MS_LOG(DEBUG) << "Guard on " << code_name << " by " << oc->GetGuard()->GetDescript() << "!" << std::endl;
 }
 
 static void ValidateCompiledResults(const JitCompileResults *c) {
@@ -527,95 +519,6 @@ void AddConfigToGuard(const GraphJitConfig &c, OptGuardPtr guard) {
   guard->UpdateConfig(bool_cfg, int_cfg);
 }
 
-void AddGuardForParam(const PyFrameWrapper &wrapper, OptGuardPtr guard, bool detach) {
-#if IS_PYTHON_3_11_PLUS
-  MS_LOG(ERROR) << "not implement in python3.11";
-#else
-  auto jcr = GetJitCompileResults(wrapper.GetCode().ptr());
-  auto lh = [&guard, &detach, &jcr](PyObject *value, int fast_index) {
-    RootTracePtr ptr = std::make_shared<RootTrace>(value, mindspore::pijit::TraceType::Param, fast_index);
-    // The GDeduce Guard by default generates an EqualGuard for Scalar types; for the loop encapsulation scenario,
-    // change it to a TypeGuard.
-    if (fast_index == 0 && jcr->is_for_loop_body_wrapper() && CheckScalar(value)) {
-      guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GType, false);
-    } else if (value != nullptr && PyList_Check(value)) {
-      guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GEqual, true);
-    } else {
-      guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GDeduce, false);
-    }
-    if (detach) {
-      ptr->Detach();
-    }
-  };
-  auto ch = [&wrapper, &guard, &detach](PyObject *cell_or_local, int fast_index) {
-    bool is_cell = PyCell_Check(cell_or_local);
-    auto value = is_cell ? PyCell_GET(cell_or_local) : cell_or_local;
-    auto type = is_cell ? TraceType::Deref : TraceType::Param;
-#if IS_PYTHON_3_11_PLUS
-    int guard_retrieve_index = fast_index;
-    MS_LOG(ERROR) << "not implement in python3.11, retrieve deref index is error";
-#else
-    int guard_retrieve_index = fast_index - wrapper.GetCode().LocalSize();
-#endif
-    RootTracePtr ptr = std::make_shared<RootTrace>(value, type, guard_retrieve_index);
-    guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GDeduce, false);
-    if (detach) {
-      ptr->Detach();
-    }
-  };
-  wrapper.ForEachFastLocal(lh, ch, ch);
-#endif
-}
-
-void AddGuardForGlobals(const PyFrameWrapper &wrapper, OptGuardPtr guard, bool detach) {
-#if IS_PYTHON_3_11_PLUS
-  MS_LOG(ERROR) << "not implement in python3.11";
-#else
-  EvalFrameObject *f = wrapper.frame();
-  PyCodeObject *co = wrapper.GetCode().ptr();
-  const _Py_CODEUNIT *bytecodes = _PyCode_CODE(co);
-  int size = static_cast<size_t>(_PyCode_NBYTES(co)) / sizeof(_Py_CODEUNIT);
-  unsigned int exarg = 0;
-  for (int bci = 0; bci < size; ++bci) {
-    int opcode = _Py_OPCODE(bytecodes[bci]);
-    int oparg = (exarg << 8) | _Py_OPARG(bytecodes[bci]);
-    exarg = static_cast<unsigned>((opcode == EXTENDED_ARG) ? oparg : 0);
-    if (opcode != LOAD_GLOBAL) {
-      continue;
-    }
-    PyObject *k = PyTuple_GET_ITEM(co->co_names, oparg);
-    PyObject *v = PyDict_GetItem(f->f_globals, k);
-    std::string key = PyUnicode_AsUTF8(k);
-    if (v == nullptr) {
-      PyErr_Clear();
-      continue;
-    }
-
-    TracePtr ptr = std::make_shared<RootTrace>(v, TraceType::Global, -1, key);
-
-    AObject::Type t = AObject::GetPyType(v);
-    GuardLevel level = GuardLevel::GType;
-    if (t == AObject::kTypeCell || t == AObject::kTypePrimitive || t == AObject::kTypeMSDType) {
-      level = GuardLevel::GDeduce;
-    } else if (t == AObject::kTypeFunction) {
-      ptr = std::make_shared<OpTrace>(PyFunction_GET_CODE(v), LOAD_ATTR, -1, std::vector<TracePtr>({ptr}), "__code__");
-      level = GuardLevel::GId;
-    } else if (t == AObject::kTypeTuple || t == AObject::kTypeList || t == AObject::kTypeDict) {
-      /**
-       * graph treat tuple, list, dict as constant variable.
-       * add container guard and check it, check contains Tensor
-       */
-      continue;
-    }
-
-    guard->GuardOn(ptr, level, false);
-    if (detach) {
-      ptr->Detach();
-    }
-  }
-#endif
-}
-
 static void AddGradFlagForParam(const OptGuardPtr &guard, bool detach) {
   bool grad_flag = pynative::GradState::Get().RequiresGrad();
   CustomizedTracePtr ptr = std::make_shared<CustomizedTrace>(
@@ -665,6 +568,8 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
                                 c->conf()->getIntConfig(GraphJitConfig::kLimitGraphCount), enable_dynamicshape,
                                 c->code());
     if (enable_dynamicshape) {
+      // this is dynamic symbolic tensor shape. if shape guard failed, use dynamic shape recompile
+      // move this to graph builder ...
       backup = c->code()->GetGuard()->ApplyDynamicShape(frame.frame());
 #if !IS_PYTHON_3_11_PLUS
       PyFrame_FastToLocals(frame.frame());
@@ -674,12 +579,14 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
     GraphCapture(c);
 
     if (enable_dynamicshape) {
+      // move this to graph builder ...
       c->code()->GetGuard()->RevertDynamicShape(frame.frame(), backup);
 #if !IS_PYTHON_3_11_PLUS
       PyFrame_FastToLocals(frame.frame());
 #endif
     }
-    AddGuardForGlobals(frame, c->code()->GetGuard(), c->conf()->GetBoolConfig(GraphJitConfig::kGuardDetachObject));
+    // global guard is generated while graph build
+    c->code()->guard_status() == nullptr;
     aobject_resource.Release();
   }
   sc.ApplySignature();

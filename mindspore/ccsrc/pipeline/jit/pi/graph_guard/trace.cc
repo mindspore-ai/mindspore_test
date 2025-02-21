@@ -1835,7 +1835,7 @@ static std::unordered_map<int, PythonBytecodeFuncSet> kBytecodeExecuter = {
 };
 
 OpTrace::OpTrace(PyObject *obj, int opcode, int opargs, TraceVector params, std::string name)
-    : Trace(obj, nullptr), opcode_(opcode), opargs_(opargs), params_(params), name_(name) {
+    : Trace(obj, nullptr), opcode_(opcode), opargs_(opargs), params_(params), name_(name), is_fold_(false) {
   curType_ = TraceType::Operation;
   if (opcode_ == CALL_FUNCTION || opcode_ == CALL_FUNCTION_EX || opcode_ == CALL_FUNCTION_KW || opcode_ == LOAD_ATTR) {
     opargs_ = -1;
@@ -2478,7 +2478,7 @@ TracePtr CreateOpTraceByBytecode(PyObject *obj, int opcode, int opargs, TraceVec
       }
     }
   }
-  return std::make_shared<OpTrace>(obj, opcode, opargs, params, name);
+  return std::make_shared<OpTrace>(obj, opcode, opargs, params, name)->Fold();
 }
 
 TracePtr CreateOpTrace(PyObject *obj, int opcode, int opargs, TraceVector params, const std::string &module_name,

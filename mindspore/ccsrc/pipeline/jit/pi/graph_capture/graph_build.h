@@ -313,9 +313,9 @@ class GraphBuilder {
   void FGAddNode(CallNode *call_node, const ValuePtr &callable_value, const AbstractWrapperPtrList &args,
                  StopTraceReason *stop_reason);
   AbstractWrapperPtrList HandleInputArgs(const std::vector<ValueNode *> args);
-  void GuardAttribute(ValueNode *attr_node);
 
   std::vector<ValueNode *> side_effect_outputs() { return side_effect_outputs_; }
+  void AddVarInput(ValueNode *node, bool is_key_word);
   void AddInput(ValueNode *node);
   void ExpandContainerParameters(ValueNode *node);
 

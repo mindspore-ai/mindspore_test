@@ -267,7 +267,7 @@ Graph *GraphBuilder::NewGraph(PyCodeObject *co, PyObject *globals) {
     graphs.back()->GetSideEffect()->set_data(std::make_shared<SideEffectData>());
   } else {
     graphs.push_back(new Graph(co, globals, root_->GetGraph()->Config()));
-    graphs.back()->SetGuard(root_->GetGraph()->GetGuard());
+    graphs.back()->SetGuard(root_->GetGraph()->GetGuardManager());
     graphs.back()->SetSideEffect(root_->GetGraph()->GetSideEffect());
   }
   return graphs.back();
@@ -991,12 +991,12 @@ bool GraphBuilder::Symbolic(ValueNode *node) {
     return false;
   }
   MS_LOG(INFO) << "Try adding node as graph input: [" << node->ToString();
+  // rename 'AddAttributeInput' to 'AddSymbolicParameter', call this only if the guard failed
   auto abstract_wrapper = FGBuilder()->AddAttributeInput(o);
   MS_EXCEPTION_IF_CHECK_FAIL(abstract_wrapper, "Failed to add scalar or Tensor as input: [" + node->ToString());
   node->set_abstract_wrapper(abstract_wrapper);
   // tensor must be guard dtype
-  bool is_tensor = node->GetVobj()->GetType() == AObject::kTypeTensor;
-  graph_->GuardValueNode(node, is_tensor ? GuardLevel::GDeduce : GuardLevel::GType);
+  graph_->GuardParameter(node);
   return true;
 }
 
@@ -1007,14 +1007,11 @@ void GraphBuilder::DoLoadGlobal(const Instr &instr) {
   if (handle.ptr() == nullptr) {
     return;  // name not define
   }
-  if (node->GetVobj()->GetType() == AObject::kTypeTensor) {
-    MS_LOG(WARNING) << "use global tensor in jit, treat as Parameter of graph";
-    // not implement ...
-  }
-  // global guard not implement
+
   // if Symbolic(node) and do something ...
   MS_LOG(INFO) << "constant global " << node->ToString();
   node->set_abstract_wrapper(FGBuilder()->AddLocalVariable(handle));
+  GetGraph()->GuardGlobal(node);
 }
 
 bool GraphBuilder::DoGlobalAccess(const Instr &instr) {
@@ -2008,6 +2005,7 @@ GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
     if (node != &ValueNode::kUnboundLocal && node->abstract_wrapper() == nullptr) {
       MS_LOG(INFO) << "The python argument is Parameter, recompile if it's changed [" << node->ToString();
       node->set_abstract_wrapper(FGBuilder()->AddLocalVariable(node->GetVobj()->GetPyObject()));
+      GetGraph()->GuardValueNode(node, GuardLevel::GDeduce);
     }
   };
   std::for_each(frame_.GetLocals().begin(), frame_.GetLocals().end(), add_local);
@@ -2137,7 +2135,7 @@ bool GraphBuilder::WhiteListFuncCheckAndInfer(CallNode *call_node, const py::obj
 
   call_node->SetInlineReason(InlineReason::kInlineUnknown);
   call_node->SetSubGraph(NewGraph(nullptr, nullptr));
-  call_node->GetSubGraph()->SetGuard(root_->GetGraph()->GetGuard());
+  call_node->GetSubGraph()->SetGuard(root_->GetGraph()->GetGuardManager());
   infer_func(call_node, this);
 
   InlineReason r;
@@ -2682,7 +2680,7 @@ StopTraceReason GraphBuilder::BuildSubGraph(CallNode *call_node, int depth, cons
   sg->FGBuilder()->AddPrevBuilder(FGBuilder());
   sg->FGBuilder()->set_manager(FGBuilder()->manager());
 
-  auto code = sg->GetGraph()->GetGuard();
+  auto code = sg->GetGraph()->GetGuardManager();
   MS_EXCEPTION_IF_NULL(code);
   code->GetGuard()->Backup();
 
@@ -3360,7 +3358,7 @@ bool GuardIterInputs(Graph *graph, ValueNode *seq_node, Py_ssize_t seq_size = -1
     if (tr == nullptr) {
       return graph->GuardValueNodeClosure(input_node);
     }
-    if (!(graph->GetGuard()->GetGuard()->GuardOn(tr, GuardLevel::GEqual))) {
+    if (!(graph->GetGuardManager()->GetGuard()->GuardOn(tr, GuardLevel::GEqual))) {
       MS_LOG(INFO) << "Iterator guard fail: " << seq_node->ToString();
       return false;
     }
@@ -3829,7 +3827,7 @@ bool IsSatisfyPruneLimit(int cond, Graph *graph_, ValueNode *cond_node) {
   } else {
     cond_node->SetConstantValue(true);
   }
-  graph_->GetGuard()->GetGuard()->GuardOn(tr, GuardLevel::GId);
+  graph_->GetGuardManager()->GetGuard()->GuardOn(tr, GuardLevel::GId);
   return true;
 }
 
@@ -3913,9 +3911,6 @@ StopTraceReason GraphBuilder::TraceRun() {
   return graph_->GetStopTraceReason();
 }
 
-extern void AddConfigToGuard(const GraphJitConfig &c, OptGuardPtr guard);
-extern void AddGuardForParam(const PyFrameWrapper &f, OptGuardPtr guard, bool detach);
-
 /**
  * Generate a graph from callable, this function will actually create python frame
  */
@@ -3933,10 +3928,6 @@ static std::unique_ptr<GraphBuilder> GenerateRootGraph(const py::object &callabl
   jcr->set_code(jcr->codehub()->AddOptTarget(OptOption::CreateOptionByPoint(jcr)));
 
   auto res = std::make_unique<GraphBuilder>(ef);
-
-  auto code = res->GetGraph()->GetGuard();
-  AddConfigToGuard(conf, code->GetGuard());
-  AddGuardForParam(ef, code->GetGuard(), conf.GetBoolConfig(GraphJitConfig::kGuardDetachObject));
 
   Py_DECREF(frame);
   return res;
@@ -3959,7 +3950,7 @@ AObject *InferFuncResult(const py::object &callable, const py::object &args, con
   if (clear_guard) {
     Graph *graph = g->GetGraph();
     auto jcr = GetJitCompileResults(graph->GetCodeObj());
-    jcr->codehub()->DelOptTarget(OptOption::CreateOptionByPoint(jcr), graph->GetGuard());
+    jcr->codehub()->DelOptTarget(OptOption::CreateOptionByPoint(jcr), graph->GetGuardManager());
   }
 
   ValueNode *res = g->GetGraph()->GetRetVal();
@@ -4040,12 +4031,27 @@ static void SetGradFuncInfo(CallNode *call_node) {
 
 void GraphBuilder::DumpDFG() { GRAPH_JIT_LOG_F("%s", graph_->ToString().c_str()); }
 
+void GraphBuilder::AddVarInput(ValueNode *cur, bool is_var_keywords) {
+  if (cur == &ValueNode::kUnboundLocal) {
+    return; /* LOAD_DEREF */
+  }
+  auto cur_object = cur->GetVobj()->GetPyObject();
+  auto ret = is_var_keywords ? FGBuilder()->AddTopGraphKwargsInputs(cur_object)
+                             : FGBuilder()->AddTopGraphVargsInputs(cur_object);
+  if (ret == nullptr) {
+    return;
+  }
+  cur->set_abstract_wrapper(ret);
+  root()->GetGraph()->PrepareParameter(cur);
+  GetGraph()->GuardParameter(cur);
+}
+
 void GraphBuilder::AddInput(ValueNode *node) {
   auto obj = node->GetVobj()->GetPyObject();
   // tuple list is expand, this branch always false
   if (IsParameterSequence(obj)) {
     MS_LOG(WARNING) << "Get Parameter as function inputs, recompile if it's id changed";
-    graph_->GuardValueNode(node, GuardLevel::GDeduce);
+    // delay guard
     return;
   }
   auto ret = FGBuilder()->AddTopGraphArgInput(obj);
@@ -4054,11 +4060,12 @@ void GraphBuilder::AddInput(ValueNode *node) {
       MS_LOG(INFO) << "The object can't be a runtime argument of FuncGraph, build value node: " << node->ToString();
       node->set_abstract_wrapper(FGBuilder()->AddLocalVariable(node->GetVobj()->GetPyObject()));
     }
-    graph_->GuardValueNode(node, GuardLevel::GDeduce);
+    // delay guard
     return;
   }
   node->set_abstract_wrapper(ret);
   root()->GetGraph()->PrepareParameter(node);
+  GetGraph()->GuardParameter(node);
 }
 
 namespace {
@@ -4162,19 +4169,6 @@ void GraphBuilder::FGAddTopInputs() {
   if (graph_->Config().GetBoolConfig(GraphJitConfig::kExpandGraphInput)) {
     FGAddTopInputsWithExpander();
   } else {
-    auto add_var_input = [this](ValueNode *cur, bool is_var_keywords) {
-      if (cur == &ValueNode::kUnboundLocal) {
-        return; /* LOAD_DEREF */
-      }
-      auto cur_object = cur->GetVobj()->GetPyObject();
-      auto ret = is_var_keywords ? FGBuilder()->AddTopGraphKwargsInputs(cur_object)
-                                 : FGBuilder()->AddTopGraphVargsInputs(cur_object);
-      if (ret == nullptr) {
-        return;
-      }
-      cur->set_abstract_wrapper(ret);
-      root()->GetGraph()->PrepareParameter(cur);
-    };
     bool has_vargs;
     bool has_kwargs;
     int args_count = PyCodeWrapper(GetGraph()->GetCodeObj()).ArgCount(&has_vargs, &has_kwargs);
@@ -4195,12 +4189,12 @@ void GraphBuilder::FGAddTopInputs() {
     }
     if (has_vargs) {
       auto cur = locals[cur_index];
-      add_var_input(cur, false);
+      AddVarInput(cur, false);
       cur_index++;
     }
     if (has_kwargs) {
       auto cur = locals[cur_index];
-      add_var_input(cur, true);
+      AddVarInput(cur, true);
     }
   }
 }
@@ -4493,7 +4487,7 @@ void GuardRegisterHook(ValueNode *node) {
   }
   auto graph = node->GetGraph();
   MS_EXCEPTION_IF_NULL(graph);
-  const auto &guard = graph->GetGuard()->GetGuard();
+  const auto &guard = graph->GetGuardManager()->GetGuard();
   auto trace = node->GetTrace();
   if (trace == nullptr) {
     trace = graph->TraceValueNode(node);
@@ -5077,7 +5071,9 @@ AbstractWrapperPtr GraphBuilder::HandleGetShapeOfDynamicLengthTensor(const Abstr
   return FGBuilder()->AddNode(prim::kPrimShape, input_abstract_wrapper);
 }
 
-void GraphBuilder::GuardAttribute(ValueNode *attr_node) {
+// Add Guard for getattr node. For scalar/list/tuple/primitive, need to guard value. Otherwise, guard type and shape.
+void Graph::GuardAttribute(ValueNode *attr_node) {
+  Graph *graph = this;
   static constexpr auto const_type = {
     AObject::kTypeInt,   AObject::kTypeFloat, AObject::kTypeBool, AObject::kTypeMSDType,
     AObject::kTypeTuple, AObject::kTypeList,  AObject::kTypeDict,
@@ -5112,13 +5108,13 @@ void GraphBuilder::GuardAttribute(ValueNode *attr_node) {
     MS_LOG(INFO) << "skip guard the attribute '" << name << "' of the builtin " << Py_TYPE(src_object.ptr())->tp_name;
   } else if (attr_type == AObject::kTypeTensor && IsParameterObject(attr_object)) {
     // The mindspore.Parameter must be guard id. FuncGraph reuse the object
-    graph_->GuardValueNode(attr_node, GuardLevel::GId);
+    graph->GuardValueNode(attr_node, GuardLevel::GId);
   } else if (is_const_attr_type || (attr_type == AObject::kTypePrimitive && IsPrimWithAttr(attr_object))) {
     // For primitive, check the attribute that transform to partial arguments
-    graph_->GuardValueNode(attr_node, GuardLevel::GEqual);
+    graph->GuardValueNode(attr_node, GuardLevel::GEqual);
   } else {
     // Anyway, guard the type of attribute
-    graph_->GuardType(attr_node);
+    graph->GuardType(attr_node);
   }
   if (is_const_attr_type) {  // shouldn't set false
     attr_node->SetConstantValue(true);
@@ -5158,9 +5154,7 @@ ValueNode *GraphBuilder::HandleGetattr(ValueNode *target_node, const Instr &inst
   if (abstract_wrapper != nullptr) {
     graph_attr_node->set_abstract_wrapper(abstract_wrapper);
   }
-  // Need to check whether the guard is failed in the future.
-  // Add Guard for getattr node. For scalar/list/tuple/primitive, need to guard value. Otherwise, guard type and shape.
-  GuardAttribute(graph_attr_node);
+  GetGraph()->GuardAttribute(graph_attr_node);
   return graph_attr_node;
 }
 

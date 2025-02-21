@@ -48,7 +48,7 @@ def test_scope_with_single_net():
     input_x = Tensor([1, 2, 3])
     input_y = Tensor([2, 3, 4])
     net = Net()
-    expect_dict = {"Default/Add-op0": 1, "Default/Return-op0": 1}
+    expect_dict = {"Default/Add-op": 1, "Default/Return-op0": 1}
     check_scope_info_no_break(net, (input_x, input_y), expect_dict, "./test_scope_with_single_net")
 
 
@@ -78,7 +78,7 @@ def test_scope_with_nested_net():
     input_x = Tensor([1, 2, 3])
     input_y = Tensor([2, 3, 4])
     net = Net()
-    expect_dict = {"Default/Add-op0": 1, "Default/Add-op1": 1, "Default/inner_net-InnerNet/Sub-op0": 1}
+    expect_dict = {"Default/Add-op": 2, "Default/inner_net-InnerNet/Sub-op0": 1}
     check_scope_info_no_break(net, (input_x, input_y), expect_dict, "./test_scope_with_nested_net")
 
 
@@ -101,7 +101,7 @@ def test_scope_with_single_net_with_break():
     input_x = Tensor([1, 2, 3])
     input_y = Tensor([2, 3, 4])
     net = Net()
-    expect_dict = {"Default/Add-op0": 1, "Default/Sub-op0": 1}
+    expect_dict = {"Default/Add-op": 1, "Default/Sub-op0": 1}
     check_scope_info_with_break(net, (input_x, input_y), expect_dict, 2, "./test_scope_with_single_net_with_break")
 
 
@@ -134,5 +134,5 @@ def test_scope_with_nest_net_with_break():
     input_x = Tensor([1, 2, 3])
     input_y = Tensor([2, 3, 4])
     net = Net()
-    expect_dict = {"Default/Add-op0": 2, "Default/inner_net-InnerNet/Sub-op0": 1}
+    expect_dict = {"Default/Add-op": 2, "Default/inner_net-InnerNet/Sub-op0": 1}
     check_scope_info_with_break(net, (input_x, input_y), expect_dict, 2, "./test_scope_with_nest_net_with_break")

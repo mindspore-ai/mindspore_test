@@ -38,6 +38,7 @@ typedef enum _GuardLevel {
   GType,
   GAttr,
   GEqual,
+  kGuardMatchIDS,
 } GuardLevel;
 
 using GuardItemVector = std::vector<GuardItemPtr>;
@@ -94,6 +95,8 @@ class OptGuard : public std::enable_shared_from_this<OptGuard> {
   virtual void FilterConstItem();
 
  protected:
+  bool GuardIDS(const TracePtr &tr);
+  bool Record(const GuardItemPtr &item);
   void UpdateGuardList(GuardItemPtr item);
   std::vector<GuardItemPtr> guardList_;
   std::map<size_t, GuardItemPtr> guardMap_;

@@ -67,6 +67,12 @@ class OptOption : public std::enable_shared_from_this<OptOption> {
 };
 using OptOptionPtr = std::shared_ptr<OptOption>;
 
+class GuardStatus {
+ public:
+  virtual ~GuardStatus() = default;
+  virtual bool is_definitions_map() const { return false; }
+};
+
 /// \brief optimized code with native function graph and guard based on the compilation option
 class OptCode : public std::enable_shared_from_this<OptCode> {
  public:
@@ -86,6 +92,7 @@ class OptCode : public std::enable_shared_from_this<OptCode> {
   void Copy(std::shared_ptr<OptCode> dst);
   void Inc();
   uint64_t Count();
+  std::shared_ptr<GuardStatus> &guard_status() { return guard_status_; }
 
  protected:
   std::string phase_;
@@ -96,6 +103,7 @@ class OptCode : public std::enable_shared_from_this<OptCode> {
   OptPerfPtr graph_perf_;
   OptPerfPtr pynative_perf_;
   uint64_t call_count_;
+  std::shared_ptr<GuardStatus> guard_status_;
 };
 using OptCodePtr = std::shared_ptr<OptCode>;
 using OptCodeSet = std::vector<OptCodePtr>;

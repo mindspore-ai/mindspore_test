@@ -2967,6 +2967,91 @@ class AttrGuard : public GuardItem {
   std::string nameAttr_;
 };
 
+/* ======================================= MatchIDGuard ======================================= */
+
+class MatchIDGuard : public GuardItem {
+ public:
+  explicit MatchIDGuard(const TracePtr &tr) : GuardItem(tr) {
+    type_ = GIType::kMatchIDS;
+    items_.push_back(tr);
+  }
+  bool Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) override;
+  bool Check(PyObject *obj) override { return false; }
+  std::string ToString() override;
+  const InfoPack &Info() override;
+  bool operator==(const GuardItem &obj) const override;
+  void AddAlias(const TracePtr &i);
+
+ private:
+  std::vector<TracePtr> items_;
+};
+
+bool MatchIDGuard::Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
+  size_t index = 0;
+  size_t items_size = items_.size();
+
+  GuardItemPerfStart(perf, kGuardItemTotalStage);
+  // all items has same object id
+  PyObject *object_p = GetObjectFromTrace(frame, items_[index++], cache, perf);
+  void *expected = object_p;
+  Py_XDECREF(object_p);
+  for (; object_p != nullptr && object_p == expected && index < items_size; ++index) {
+    object_p = GetObjectFromTrace(frame, items_[index], cache, perf);
+    Py_XDECREF(object_p);
+  }
+  GuardItemPerfStage(perf, this, kGuardItemRetrieveStage);
+  bool ret = expected == object_p && index == items_size;
+  GuardItemPerfStage(perf, this, kGuardItemCompareStage);
+  return ret;
+}
+
+std::string MatchIDGuard::ToString() {
+  std::stringstream s;
+  s << "MatchIDGuard: ";
+  for (size_t i = 0, size = items_.size() - 1; i != size; ++i) {
+    s << "[" << items_[i]->ToString() << "] is ";
+  }
+  s << "[" << items_.back()->ToString() << "]";
+  std::string ret = s.str();
+  return ret;
+}
+
+const InfoPack &MatchIDGuard::Info() {
+  if (info_ != nullptr) {
+    return *info_;
+  }
+  info_ = std::make_shared<InfoPack>();
+  ((*info_) << static_cast<uint8_t>(type_)).Begin();
+  (*info_) << static_cast<void *>(items_[0]->GetObject());
+  info_->End().Update();
+  return *info_;
+}
+
+bool MatchIDGuard::operator==(const GuardItem &obj) const {
+  if (type_ != obj.GetType()) {
+    return false;
+  }
+  const MatchIDGuard &other = static_cast<const MatchIDGuard &>(obj);
+  return this->items_.size() == other.items_.size() && GetTrace()->GetObject() == other.GetTrace()->GetObject();
+}
+
+void MatchIDGuard::AddAlias(const TracePtr &i) {
+  if (std::any_of(items_.begin(), items_.end(), [&i](const TracePtr &j) { return i->Info().Id() == j->Info().Id(); })) {
+    return;
+  }
+  items_.push_back(i);
+}
+
+GuardItemPtr GuardIDS(const TracePtr &tr, const GuardItemPtr &reused) {
+  if (reused == nullptr || reused->GetType() != GIType::kMatchIDS) {
+    return std::make_shared<MatchIDGuard>(tr);
+  }
+  static_cast<MatchIDGuard *>(reused.get())->AddAlias(tr);
+  return reused;
+}
+
+/* ============================================================================================= */
+
 GuardItemPtr GuardEqual(TracePtr obj, bool needSpecialize, int recurseDepth) {
   return std::make_shared<EqGuard>(obj, needSpecialize, recurseDepth);
 }

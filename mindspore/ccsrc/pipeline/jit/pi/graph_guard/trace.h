@@ -226,6 +226,7 @@ class OpTrace : public Trace {
   virtual TracePtr Optimize();
   virtual void SetRelaxCount(int cnt);
   static bool Support(TraceType tt);
+  std::shared_ptr<Trace> Fold();
 
  protected:
   virtual void CheckSpecialize();
@@ -251,6 +252,7 @@ class OpTrace : public Trace {
   int opargs_;
   TraceVector params_;
   std::string name_;
+  bool is_fold_;
 };
 using OpTracePtr = std::shared_ptr<OpTrace>;
 TracePtr CreateOpTrace(PyObject *obj, int opcode, int opargs, TraceVector params, const std::string &module_name = "",

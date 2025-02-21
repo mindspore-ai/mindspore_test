@@ -19,21 +19,58 @@
 #include <string>
 #include <regex>
 #include <utility>
+#include <set>
+#include <unordered_map>
 #include "pipeline/jit/pi/graph_build/func_graph_builder.h"
 #include "pipeline/jit/pi/runtime.h"
 #include "pipeline/jit/pi/utils/utils.h"
+#include "pipeline/jit/pi/graph_guard/infer.h"
+#include "pipeline/jit/pi/graph_guard/cache.h"
 
 namespace mindspore {
 namespace pijit {
+
+class DefineMap : public GuardStatus {
+ public:
+  bool is_definitions_map() const override { return true; }
+  std::unordered_map<const AObject *, std::set<ValueNode *>> map_;
+};
+
+class GuardBuilder {
+ public:
+  using DefineMapPtr = std::shared_ptr<DefineMap>;
+  GuardBuilder(bool strict, int max_depth, bool print) : max_depth_(max_depth), strict_(strict), print_(print) {}
+
+  const auto &guard() const { return guard_; }
+  void SetGuard(const std::shared_ptr<OptCode> &g);
+
+  TracePtr GetTrace(ValueNode *node, int depth = 0);
+  TraceVector GetTraceClosure(ValueNode *node, bool *succ, int depth = 0);
+  bool CheckDepthForTrace(TracePtr *ret, ValueNode *node, int depth);
+  bool PrepareTraceParam(ValueNode *node, TraceVector *tv, int depth, bool *has_unsupported);
+  TracePtr CacheTrace(ValueNode *node, TracePtr ret, const TraceVector &tv);
+
+  std::shared_ptr<OptCode> guard_;
+  DefineMapPtr definitions_;
+  int max_depth_;
+  bool strict_;
+  bool print_;
+};
+
+Graph::~Graph() {}
 Graph::Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf)
     : ret_val_(nullptr),
       generator_result_(nullptr),
       co_(py::cast<py::object>(reinterpret_cast<PyObject *>(co))),
       f_globals_(py::cast<py::object>(globals)),
       conf_(conf),
-      guard_(nullptr),
       prune_branch_count_(0),
       func_graph_builder_(nullptr) {
+  guard_builder_ = std::make_unique<GuardBuilder>(
+    // save config
+    Config().GetBoolConfig(GraphJitConfig::kStrictTrace), Config().getIntConfig(GraphJitConfig::kMaxTraceDepth),
+    Config().GetBoolConfig(GraphJitConfig::kPrintGuard));
+
   break_info_.bci_ = -1;
   break_info_.reason_ = StopTraceReason::kNonStopTrace;
   if (!co) {
@@ -60,6 +97,16 @@ Graph::Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf)
   }
 }
 
+const std::shared_ptr<OptCode> &Graph::GetGuardManager() const { return guard_builder_->guard(); }
+void Graph::SetGuard(const std::shared_ptr<OptCode> &g) { guard_builder_->SetGuard(g); }
+void GuardBuilder::SetGuard(const std::shared_ptr<OptCode> &g) {
+  guard_ = g;
+  if (g->guard_status() == nullptr) {
+    g->guard_status() = std::make_shared<DefineMapPtr::element_type>();
+  }
+  definitions_ = std::static_pointer_cast<DefineMapPtr::element_type>(g->guard_status());
+}
+
 bool Graph::NeedSymbolic(ValueNode *node) {
   if (node->IsConstantValue()) {
     // such as LOAD_CONST,
@@ -77,15 +124,15 @@ bool Graph::NeedSymbolic(ValueNode *node) {
   if (jcr->cache().fail_guard().empty()) {
     return false;
   }
-  const auto size = guard_->GetGuard()->guard_list().size();
+  const auto size = GetGuardManager()->GetGuard()->guard_list().size();
   if (!this->GuardValueNode(node)) {
     return false;
   }
-  if (size + 1 != guard_->GetGuard()->guard_list().size()) {
+  if (size + 1 != GetGuardManager()->GetGuard()->guard_list().size()) {
     MS_LOG(INFO) << "more than one guard, not implement";
     return false;
   }
-  GuardItemPtr except = guard_->GetGuard()->guard_list().back();
+  GuardItemPtr except = GetGuardManager()->GetGuard()->guard_list().back();
   auto item = jcr->cache().FindFailInfo(except);
   if (item.count_ == 0) {
     return false;
@@ -99,7 +146,7 @@ bool Graph::NeedSymbolic(ValueNode *node) {
   bool is_mutable = guard_strategy == guard_strategy_symbol;
   if (is_mutable) {
     node->SetConstantValue(false);
-    bool succ = guard_->GetGuard()->Erase(except);
+    bool succ = GetGuardManager()->GetGuard()->Erase(except);
     MS_EXCEPTION_IF_CHECK_FAIL(succ, "just create guard item, but can't find it in guard map");
     // clear compile cache for this fail item ...
     // erase fail item from cache ...
@@ -147,12 +194,25 @@ bool Graph::PrepareParameter(ValueNode *node) {
 const std::shared_ptr<SideEffect> &Graph::GetSideEffect() const { return side_effect_; }
 void Graph::SetSideEffect(const std::shared_ptr<SideEffect> &handler) { side_effect_ = handler; }
 
-static void SetNodeInfo(Graph *graph, ValueNode *node, AObject *obj_info, const std::string &name) {
+void Graph::AddNodeInfo(ValueNode *node, AObject *obj_info, const std::string &name) {
+  Graph *graph = this;
+
   node->SetName(name);
   node->SetGraph(graph);
+
   auto new_object = obj_info ? obj_info->GetPyObject().ptr() : nullptr;
   if (new_object != nullptr && !CheckConstPyObject(new_object)) {  // literal not need track
     graph->GetSideEffect()->data()->Track(new_object, node);
+  }
+  MS_EXCEPTION_IF_CHECK_FAIL(GetGuardManager() != nullptr, "can't find guard");
+  // track definitions
+  auto &defs_set = guard_builder_->definitions_->map_[obj_info];
+  defs_set.insert(node);
+  if (obj_info && obj_info->HasMultiVersion()) {
+    for (auto i : defs_set) {
+      // guard all modified variable define, recompile if changed
+      guard_builder_->guard()->GetGuard()->GuardOn(TraceValueNode(i), GuardLevel::kGuardMatchIDS);
+    }
   }
   if (node->GetType() == ValueNode::Param) {
     return;
@@ -174,17 +234,16 @@ CallNode *Graph::NewCallNode(int op, int arg, const std::vector<ValueNode *> &in
 
 ValueNode *Graph::NewValueNode(AObject *obj_info, int op, int arg, const std::vector<ValueNode *> &inputs,
                                const std::string &name) {
-  // when got a new object, check it's side-effect replaced node ......
   MS_EXCEPTION_IF_CHECK_FAIL(!Opcode(op).IsCall(), "must not be call function opcode");
   ValueNode *node = this->allocator().NewNode<ValueNode>(obj_info, op, arg, inputs);
-  SetNodeInfo(this, node, obj_info, name);
+  AddNodeInfo(node, obj_info, name);
   return node;
 }
 
 CellVarNode *Graph::NewCellNode(AObject *obj_info, int op, int arg, const std::vector<ValueNode *> &inputs,
                                 const std::string &name) {
   CellVarNode *node = this->allocator().NewNode<CellVarNode>(CellVarNode::CellVar);
-  SetNodeInfo(this, node, obj_info, name);
+  AddNodeInfo(node, obj_info, name);
   for (auto i : inputs) {
     node->AddInput(i);
   }
@@ -196,7 +255,7 @@ CellVarNode *Graph::NewCellNode(AObject *obj_info, int op, int arg, const std::v
 
 ParamNode *Graph::NewParamNode(AObject *obj_info, int index, const std::string &name) {
   ParamNode *node = this->allocator().NewNode<ParamNode>(obj_info, index);
-  SetNodeInfo(this, node, obj_info, name);
+  AddNodeInfo(node, obj_info, name);
   return node;
 }
 
@@ -252,16 +311,14 @@ static bool CheckObjPtr(ValueNode *node) {
   return node->GetVobj() == nullptr || node->GetVobj()->GetPyObject().ptr() == nullptr;
 }
 
-TracePtr GetTrace(ValueNode *node, bool strict, bool print, int depth, int max_depth);
-static bool PrepareTraceParam(ValueNode *node, TraceVector *tv, int depth, int max_depth, bool *has_unsupported,
-                              bool strict, bool print) {
+bool GuardBuilder::PrepareTraceParam(ValueNode *node, TraceVector *tv, int depth, bool *has_unsupported) {
   const std::vector<ValueNode *> &inputs = node->getInputs();
   for (auto it : inputs) {
     if (it->GetTrace() != nullptr) {
       tv->push_back(it->GetTrace());
       continue;
     }
-    auto t = GetTrace(it, strict, print, depth + 1, max_depth);
+    auto t = GetTrace(it, depth + 1);
     if (t == nullptr) {
       return false;
     } else if (t->GetTraceType() == TraceType::Unsupported) {
@@ -272,10 +329,9 @@ static bool PrepareTraceParam(ValueNode *node, TraceVector *tv, int depth, int m
   return !CheckObjPtr(node);
 }
 
-static bool CheckDepth(int depth, int max_depth) { return depth < max_depth || max_depth == -1; }
-
-static bool CheckDepthForTrace(TracePtr *ret, ValueNode *node, int depth, int max_depth) {
-  if (!CheckDepth(depth, max_depth)) {
+bool GuardBuilder::CheckDepthForTrace(TracePtr *ret, ValueNode *node, int depth) {
+  int max_depth = max_depth_;
+  if (depth > max_depth && max_depth != -1) {
     MS_LOG(DEBUG) << "too deep trace for guard";
     return false;
   }
@@ -292,27 +348,37 @@ static bool CheckDepthForTrace(TracePtr *ret, ValueNode *node, int depth, int ma
   return true;
 }
 
-static TracePtr CacheTrace(ValueNode *node, TracePtr ret, bool strict, TraceVector tv, int opcode, int oparg,
-                           PyObject *obj) {
-  if (ret == nullptr && !strict) {
+TracePtr GuardBuilder::CacheTrace(ValueNode *node, TracePtr ret, const TraceVector &tv) {
+  auto vobj = node->GetVobj() ? node->GetVobj()->GetBaseVersion() : nullptr;
+  PyObject *obj = vobj ? vobj->GetPyObject().ptr() : nullptr;
+  int opcode = node->GetOpcode();
+  int oparg = node->GetOparg();
+  if (ret == nullptr && !strict_) {
     return std::make_shared<UnsupportedTrace>(obj, tv, opcode, oparg);
-  } else {
-    if (ret != nullptr) {
-      node->SetTrace(ret);
-    }
-    return ret;
   }
+  if (ret == nullptr) {
+    return nullptr;
+  }
+  node->SetTrace(ret);
+  return ret;
 }
 
 TracePtr GetTrace(ValueNode *node, bool strict, bool print, int depth, int max_depth) {
+  Graph *g = node->GetGraph();
+  return g == nullptr ? GuardBuilder(strict, max_depth, print).GetTrace(node) : g->TraceValueNode(node);
+}
+
+TracePtr GuardBuilder::GetTrace(ValueNode *node, int depth) {
+  bool strict = strict_;
+  bool print = print_;
   TracePtr ret = nullptr;
-  if (!CheckDepthForTrace(&ret, node, depth, max_depth)) {
+  if (!CheckDepthForTrace(&ret, node, depth)) {
     return ret;
   }
   if (node->GetType() == AbstractNode::Type::Call) {
     Graph *sub_graph = static_cast<CallNode *>(node)->GetSubGraph();
     if (sub_graph && sub_graph->GetRetVal() != nullptr) {
-      return GetTrace(sub_graph->GetRetVal(), strict, print, depth, max_depth);
+      return GetTrace(sub_graph->GetRetVal(), depth);
     }
   }
 
@@ -325,7 +391,7 @@ TracePtr GetTrace(ValueNode *node, bool strict, bool print, int depth, int max_d
 
   TraceVector tv;
   bool has_unsupported = false;
-  if (!PrepareTraceParam(node, &tv, depth, max_depth, &has_unsupported, strict, print)) {
+  if (!PrepareTraceParam(node, &tv, depth, &has_unsupported)) {
     return strict ? nullptr : std::make_shared<UnsupportedTrace>(nullptr, tv, opcode, oparg);
   }
   switch (node->GetType()) {
@@ -352,7 +418,7 @@ TracePtr GetTrace(ValueNode *node, bool strict, bool print, int depth, int max_d
     default:
       break;
   }
-  return CacheTrace(node, ret, strict, tv, opcode, oparg, obj);
+  return CacheTrace(node, ret, tv);
 }
 
 static bool IsVariableNode(PyObject *obj) {
@@ -390,8 +456,7 @@ static bool IsAttrClosure(ValueNode *node) {
   return false;
 }
 
-static std::vector<TracePtr> GetTraceClosure(ValueNode *node, bool *succ, bool strict, bool print, int depth,
-                                             int max_depth) {
+TraceVector GuardBuilder::GetTraceClosure(ValueNode *node, bool *succ, int depth) {
   std::vector<ValueNode *> todo;
   std::map<ValueNode *, bool> done;
   todo.push_back(node);
@@ -406,7 +471,7 @@ static std::vector<TracePtr> GetTraceClosure(ValueNode *node, bool *succ, bool s
         PyObject *obj = node->GetVobj() ? node->GetVobj()->GetPyObject().ptr() : nullptr;
         if (IsVariableNode(obj)) {
           if (IsAttrClosure(node)) {
-            auto item = GetTrace(node, strict, print, depth, max_depth);
+            auto item = GetTrace(node, depth);
             if (item != nullptr) {
               ret.insert(ret.end(), item);
             } else {
@@ -451,11 +516,33 @@ bool Graph::GuardValueNode(ValueNode *node, GuardLevel level) {
     }
     return retg;
   }
-  bool ret = guard_->GetGuard()->GuardOn(tr, level);
+  bool ret = GetGuardManager()->GetGuard()->GuardOn(tr, level);
   if (level == GuardLevel::GEqual || level == GuardLevel::GId) {
     node->SetConstantValue(ret);
   }
   return ret;
+}
+
+void Graph::GuardParameter(ValueNode *node) {
+  if (node->abstract_wrapper() == nullptr) {
+    GuardType(node);
+    return;
+  }
+  if (node->abstract_wrapper()->IsConstant()) {
+    MS_LOG(WARNING) << "got a constant value as graph parameter. recompile if value changed: " << node->ToString();
+    GuardValueNode(node, GuardLevel::GEqual);
+    return;
+  }
+  GuardValueNode(node, GuardLevel::GDeduce);
+}
+
+void Graph::GuardGlobal(ValueNode *node) {
+  if (node->GetVobj()->GetType() == AObject::kTypeTensor) {
+    MS_LOG(WARNING) << "use global tensor in jit, treat as Parameter of graph";
+    // not implement ...
+  }
+  // How to fast check Module attribute(or global varialbe) changed ?
+  // GuardValueNode(node, GuardLevel::GDeduce);
 }
 
 bool Graph::GuardValueNodeClosure(ValueNode *node, GuardLevel level) {
@@ -466,7 +553,7 @@ bool Graph::GuardValueNodeClosure(ValueNode *node, GuardLevel level) {
     for (auto item : vec) {
       auto id = item->Info().Id();
       if (rep.find(id) == rep.end()) {
-        GetGuard()->GetGuard()->GuardOn(item, level);
+        GetGuardManager()->GetGuard()->GuardOn(item, level);
       }
       rep[id] = item;
     }
@@ -479,24 +566,19 @@ bool Graph::GuardValueNodeClosure(ValueNode *node, GuardLevel level) {
 
 TracePtr Graph::TraceValueNode(ValueNode *node, int max_trace_depth) {
   AObject *vo = node->GetVobj();
-  if (guard_ == nullptr || !vo || vo->GetPyObject().ptr() == nullptr) {
+  if (GetGuardManager() == nullptr || !vo || vo->GetPyObject().ptr() == nullptr) {
     return nullptr;
   }
-  if (max_trace_depth < 0) {
-    max_trace_depth = Config().getIntConfig(GraphJitConfig::GraphJitConfig::kMaxTraceDepth);
-  }
-  return GetTrace(node, Config().GetBoolConfig(GraphJitConfig::kStrictTrace),
-                  Config().GetBoolConfig(GraphJitConfig::kPrintGuard), 0, max_trace_depth);
+  return guard_builder_->GetTrace(node);
 }
 
-std::vector<TracePtr> Graph::TraceValueNodeClosure(ValueNode *node, bool *ret, int max_trace_depth) {
+std::vector<TracePtr> Graph::TraceValueNodeClosure(ValueNode *node, bool *ret, int) {
   AObject *vo = node->GetVobj();
-  if (guard_ == nullptr || !vo || vo->GetPyObject().ptr() == nullptr) {
+  if (GetGuardManager() == nullptr || !vo || vo->GetPyObject().ptr() == nullptr) {
     return {};
   }
   bool succ = true;
-  auto list = GetTraceClosure(node, &succ, Config().GetBoolConfig(GraphJitConfig::kStrictTrace),
-                              Config().GetBoolConfig(GraphJitConfig::kPrintGuard), 0, max_trace_depth);
+  auto list = guard_builder_->GetTraceClosure(node, &succ);
   if (ret != nullptr) {
     *ret = succ;
   }
@@ -561,7 +643,7 @@ bool Graph::GuardSequenceNodeLength(ValueNode *sequence_node, Py_ssize_t sequenc
     }
     return false;
   }
-  const auto &guard = this->GetGuard()->GetGuard();
+  const auto &guard = this->GetGuardManager()->GetGuard();
   bool strict = this->Config().GetBoolConfig(GraphJitConfig::kStrictTrace);
 
   PyObject *builtin_len = PyDict_GetItemString(PyEval_GetBuiltins(), "len");
@@ -591,7 +673,7 @@ bool Graph::GuardType(ValueNode *node) {
     }
     return false;
   }
-  bool ret = guard_->GetGuard()->GuardOn(tr, mindspore::pijit::GuardLevel::GType);
+  bool ret = GetGuardManager()->GetGuard()->GuardOn(tr, mindspore::pijit::GuardLevel::GType);
   node->MakeConstantInfo()->set_type(node->GetVobj()->GetTypeObject());
   return ret;
 }
@@ -602,8 +684,14 @@ static bool SkipGuardInlinedFunc(CallNode *node) {
     return true;
   }
   // Now only guard specialized function and cell
-  if (func_node->GetVobj()->GetType() == AObject::kTypeCell) {
+  AObject::Type func_type = func_node->GetVobj()->GetType();
+  if (func_type == AObject::kTypeCell) {
     return false;
+  }
+  int op = func_node->GetOpcode();
+  if (op == LOAD_ATTR || op == MAKE_FUNCTION) {
+    MS_LOG(INFO) << "skip guard function from attribute";
+    return true;
   }
   return node->GetInlineReason() != InlineReason::kInlineFuncSpecialize;
 }
@@ -619,7 +707,7 @@ bool Graph::GuardInlinedFunc(CallNode *call_node) {
     // unknown source function. Maybe dynamic call-site, do nothing
     return false;
   }
-  const auto &guard = this->GetGuard()->GetGuard();
+  const auto &guard = this->GetGuardManager()->GetGuard();
   bool strict = this->Config().GetBoolConfig(GraphJitConfig::kStrictTrace);
 
   AObject *callable_info = call_node->input(0)->GetVobj();
