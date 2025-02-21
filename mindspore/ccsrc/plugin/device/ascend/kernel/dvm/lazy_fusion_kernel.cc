@@ -185,7 +185,7 @@ void LazyFusionKernelAscend::Launch() {
     ms->RecordEvent(device_context_, task_id_on_stream, stream_id_, cross_stream_addrs_);
     cross_stream_addrs_.clear();
   }
-  Clear();
+  ClearKernel();
   MS_LOG(INFO) << "Run launch task dvm kernel end, kernel id is " << id();
 }
 
@@ -268,6 +268,7 @@ void LazyFusionKernelAscend::Flush() {
         }
       }
       // Launch
+      ClearGraph();
       runtime::OpExecutor::DispatchLaunchTask([this]() { Launch(); });
     }
     MS_LOG(INFO) << "Run device task dvm kernel end, kernel id is " << id();

@@ -126,11 +126,11 @@ std::pair<bool, TypeId> CheckMatMul(const PrimitivePtr prim, const BaseTensorPtr
 
 template <typename F, typename... Args>
 void DvmCall(const std::string &op_name, OpRunner *op, const F &func, const Args &... inputs) {
+  op->ProfileTrackerTask();
   size_t stream = op->stream_id();
   const DeviceContext *context = op->device_context();
   auto k = g_lazy_fusion_manager.Get(context, stream);
   MS_LOG(INFO) << op_name << " call start, kernel id is " << k->id();
-  op->ProfileTrackerTask();
   PyBoostUtils::PrepareOpInputs(context, stream, inputs...);
   auto tensor = func(k);
   tensor->set_need_pipeline_sync(true);
@@ -161,11 +161,11 @@ T TensorToScalar(const tensor::BaseTensorPtr &tensor) {
 
 void BinaryDvmCall(const std::string &op_name, OpRunner *op, dvm::BinaryOpType op_type,
                    const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor, const TypeId dst_type) {
+  op->ProfileTrackerTask();
   size_t stream = op->stream_id();
   const DeviceContext *context = op->device_context();
   auto k = g_lazy_fusion_manager.Get(context, stream);
   MS_LOG(INFO) << op_name << " call start, kernel id is " << k->id();
-  op->ProfileTrackerTask();
   auto type_id = input_tensor->data_type();
   dvm::NDObject *obj = nullptr;
   if (IsScalar(input_tensor)) {
@@ -851,6 +851,7 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> 
   const BaseTensorPtr &max_v_tensor, const BaseTensorPtr &gradient_tensor, const BaseTensorPtr &step_tensor,
   const FP32ImmPtr &lr, const FP32ImmPtr &beta1, const FP32ImmPtr &beta2, const FP32ImmPtr &decay,
   const FP32ImmPtr &eps, const BoolImmPtr &amsgrad, const BoolImmPtr &maximize) {
+  ProfileTrackerTask();
   auto var_type = var_tensor->data_type();
   bool all_contiguous = var_tensor->is_contiguous() && m_tensor->is_contiguous() && v_tensor->is_contiguous() &&
                         max_v_tensor->is_contiguous() && gradient_tensor->is_contiguous() &&
@@ -871,7 +872,6 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> 
   }
   auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
   MS_LOG(INFO) << op_name() << " call start, kernel id is " << k->id();
-  ProfileTrackerTask();
   if (amsgrad_imm) {
     PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, var_tensor, m_tensor, v_tensor, max_v_tensor,
                                   gradient_tensor, step_tensor);
@@ -931,11 +931,11 @@ tensor::BaseTensorPtr InplaceCopyAscendDvm::Call(const BaseTensorPtr &variable_t
   if (!InputCheck(variable_tensor, IsFloatIntType) || !InputCheck(value_tensor, IsFloatIntType)) {
     return InplaceCopyAscend::Call(variable_tensor, value_tensor);
   }
+  ProfileTrackerTask();
   auto addr0 = variable_tensor->device_address();
   auto addr1 = value_tensor->device_address();
   if (addr0 && addr1 && addr0->GetMutablePtr() == addr1->GetMutablePtr() &&
       value_tensor->shape() == variable_tensor->shape()) {
-    ProfileTrackerTask();
     PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, variable_tensor, value_tensor);
     outputs_.push_back(variable_tensor);
     outputs_[0]->set_need_pipeline_sync(true);
@@ -945,7 +945,6 @@ tensor::BaseTensorPtr InplaceCopyAscendDvm::Call(const BaseTensorPtr &variable_t
   }
   auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
   MS_LOG(INFO) << op_name() << " call start, kernel id is " << k->id();
-  ProfileTrackerTask();
   PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, variable_tensor, value_tensor);
   // copy value_tensor to variable_tensor
   auto value_obj = k->Input(value_tensor, false);

@@ -134,7 +134,7 @@ class LazyFusionKernelAscend : public dvm::Kernel {
  private:
   void Launch();
 
-  void Clear() {
+  void ClearGraph() {
     for (size_t i = 0; i < input_used_; i++) {
       inputs_[i]->tensor.reset();
     }
@@ -143,8 +143,16 @@ class LazyFusionKernelAscend : public dvm::Kernel {
     outputs_.clear();
     reloc_entry_.clear();
     cached_shape_.clear();
+  }
+
+  void ClearKernel() {
     EagerClear();
     g_lazy_fusion_manager.FreeKernel(this);
+  }
+
+  void Clear() {
+    ClearGraph();
+    ClearKernel();
   }
 
   struct Load {
