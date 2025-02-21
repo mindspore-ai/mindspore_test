@@ -35,7 +35,9 @@ if [[ ${internal_file_lines} -eq 3 ]]; then
   echo "[WARNING] 'git lfs install' and retry downloading using 'git lfs pull'."
   return
 fi
-tar --warning=no-unknown-keyword -zxf ${internal_file_name} -C ${file_path}
+gzip -d ${internal_file_name}
+tar_name=${file_path}/ms_kernels_internal.tar
+tar --warning=no-unknown-keyword -zxf ${tar_name} -C ${file_path}
 if [[ $? -ne 0 ]]; then
   echo "[WARNING] Unzip ms_kernels_internal.tar.gz FAILED!"
   return
