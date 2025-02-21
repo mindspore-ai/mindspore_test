@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2023 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@
 #include "utils/log_adapter.h"
 #include "runtime/device/ms_device_shape_transfer.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 
 /*
     DropoutGenMask：
@@ -498,6 +499,24 @@ AnfNodePtr BuildDropoutDoMask(const PatternMap &m, const AnfNodePtr &) {
       abs.push_back(mask_abstract);
       auto new_abstract = std::make_shared<abstract::AbstractTuple>(abs);
       tuple_input->set_abstract(new_abstract);
+    }
+  } else if (IsPrimitiveCNode(mask_input, prim::kPrimMoveTo)) {
+    // update abstract
+    auto mask_abstract = mask_input->abstract();
+    MS_EXCEPTION_IF_NULL(mask_abstract);
+    mask_abstract = GetDropoutMaskShapeAbstract(grad_input_shape, nullptr, use_v3);
+    mask_input->set_abstract(mask_abstract);
+    auto move_to_node = mask_input->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(move_to_node);
+    auto move_to_input = move_to_node->input(kIndex1);
+    if (move_to_input->isa<Parameter>()) {
+      move_to_input->set_abstract(mask_abstract);
+      // update kernel info
+      auto kernel_build_info_builder = std::make_shared<kernel::KernelBuildInfo::KernelBuildInfoBuilder>();
+      kernel_build_info_builder->SetOutputsFormat(std::vector<std::string>{kOpFormat_DEFAULT});
+      kernel_build_info_builder->SetOutputsDeviceType(std::vector<TypeId>{kNumberTypeUInt8});
+      kernel_build_info_builder->SetOutputsKernelObjectType({kernel::KernelObjectType::TENSOR});
+      AnfAlgo::SetSelectKernelBuildInfo(kernel_build_info_builder->Build(), move_to_input.get());
     }
   }
 

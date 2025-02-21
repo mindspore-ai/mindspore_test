@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,12 +89,14 @@ class AscendStreamMng {
   std::vector<uint32_t> GetStreamIds() const;
   void SetBusyStreamNum(uint32_t stream_num) { busy_stream_num_ = stream_num; }
   uint32_t GetBusyStreamNum() const { return busy_stream_num_; }
-  void SetCopyStream(aclrtStream stream) { copy_stream_ = stream; }
+  void SetCopyInStream(aclrtStream stream) { copy_in_stream_ = stream; }
+  void SetCopyOutStream(aclrtStream stream) { copy_out_stream_ = stream; }
   void SetForwardSendStream(aclrtStream stream) { forward_send_stream_ = stream; }
   void SetBackwardSendStream(aclrtStream stream) { backward_send_stream_ = stream; }
   void SetForwardRecvStream(aclrtStream stream) { forward_recv_stream_ = stream; }
   void SetBackwardRecvStream(aclrtStream stream) { backward_recv_stream_ = stream; }
-  aclrtStream GetCopyStream() const { return copy_stream_; }
+  aclrtStream GetCopyInStream() const { return copy_in_stream_; }
+  aclrtStream GetCopyOutStream() const { return copy_out_stream_; }
   aclrtStream GetForwardSendStream() const { return forward_send_stream_; }
   aclrtStream GetBackwardSendStream() const { return backward_send_stream_; }
   aclrtStream GetForwardRecvStream() const { return forward_recv_stream_; }
@@ -127,7 +129,8 @@ class AscendStreamMng {
 
   // Ensure the thread safety for creating and destroying stream.
   std::mutex stream_mutex_;
-  aclrtStream copy_stream_{nullptr};
+  aclrtStream copy_in_stream_{nullptr};
+  aclrtStream copy_out_stream_{nullptr};
   aclrtStream forward_send_stream_{nullptr};
   aclrtStream backward_send_stream_{nullptr};
   aclrtStream forward_recv_stream_{nullptr};

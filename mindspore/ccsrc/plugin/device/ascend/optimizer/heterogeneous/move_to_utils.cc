@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,19 +76,16 @@ CNodePtr MoveToUtils::InsertMoveTo(const KernelGraphPtr &kernel_graph, const Mov
   move_to_node->set_abstract(info.data_previous_node_->abstract());
 
   // Set MoveTo as input of data following node.
-  info.data_following_node_->set_input(info.input_index_, move_to_node);
+  auto manager = kernel_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  manager->SetEdge(info.data_following_node_, info.input_index_, move_to_node);
 
   // Create Depend node after MoveTo to control the execution order of MoveTo when the control following node is
   // different from the data following node.
   if (info.control_following_node_ != nullptr && info.control_following_node_ != info.data_following_node_) {
-    auto origin_input = info.control_following_node_->input(kFirstTensorIdx);
-    const std::vector<AnfNodePtr> move_to_depend_input = {
-      NewValueNode(std::make_shared<Primitive>(prim::kPrimDepend->name())), origin_input, move_to_node};
-    auto following_depend_node = kernel_graph->NewCNode(move_to_depend_input);
-    MS_EXCEPTION_IF_NULL(following_depend_node);
-    following_depend_node->set_scope(origin_input->scope());
-    following_depend_node->set_abstract(origin_input->abstract());
-    info.control_following_node_->set_input(kFirstTensorIdx, following_depend_node);
+    if (InsertDependNode(kernel_graph, move_to_node, info.control_following_node_) == nullptr) {
+      MS_LOG(EXCEPTION) << "Insert depend for MoveTo " << move_to_node->DebugString() << " failed.";
+    }
   }
 
   return move_to_node;
@@ -140,17 +137,30 @@ CNodePtr MoveToUtils::InsertMoveAssign(const KernelGraphPtr &kernel_graph, const
 
   // Create Depend node after MoveAssign so that MoveAssign will be executed before the next execution node after user
   // node.
-  auto origin_input = info.control_following_node_->input(kFirstTensorIdx);
-  MS_EXCEPTION_IF_NULL(origin_input);
-  std::vector<AnfNodePtr> output_depend_input = {NewValueNode(std::make_shared<Primitive>(prim::kPrimDepend->name())),
-                                                 origin_input, move_assign_node};
-  auto output_depend_node = kernel_graph->NewCNode(output_depend_input);
-  MS_EXCEPTION_IF_NULL(output_depend_node);
-  output_depend_node->set_scope(info.control_following_node_->scope());
-  output_depend_node->set_abstract(origin_input->abstract());
-  info.control_following_node_->set_input(kFirstTensorIdx, output_depend_node);
+  if (InsertDependNode(kernel_graph, move_assign_node, info.control_following_node_) == nullptr) {
+    MS_LOG(EXCEPTION) << "Insert depend for MoveAssign " << move_assign_node->DebugString() << " failed.";
+  }
   return move_assign_node;
 }
 
+CNodePtr MoveToUtils::InsertDependNode(const KernelGraphPtr &kernel_graph, const CNodePtr &pre_node,
+                                       const CNodePtr &post_node) {
+  if (post_node->inputs().size() <= kFirstTensorIdx) {
+    MS_LOG(WARNING) << "Post node " << post_node->fullname_with_scope() << " has less than one input";
+    return nullptr;
+  }
+  const auto &origin_input = post_node->input(kFirstTensorIdx);
+  MS_EXCEPTION_IF_NULL(origin_input);
+  const std::vector<AnfNodePtr> depend_input = {NewValueNode(std::make_shared<Primitive>(prim::kPrimDepend->name())),
+                                                origin_input, pre_node};
+  auto depend_node = kernel_graph->NewCNode(depend_input);
+  MS_EXCEPTION_IF_NULL(depend_node);
+  depend_node->set_scope(post_node->scope());
+  depend_node->set_abstract(origin_input->abstract());
+  auto manager = kernel_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  manager->SetEdge(post_node, kFirstTensorIdx, depend_node);
+  return depend_node;
+}
 }  // namespace opt
 }  // namespace mindspore

@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2024 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,6 +69,7 @@
 #include "plugin/device/ascend/optimizer/ge/remove_tensor_to_scalar_or_tuple_ops.h"
 #include "plugin/device/ascend/optimizer/ge/scalar_ops_output_unify_mindir.h"
 #include "plugin/device/ascend/optimizer/ge/ge_convert_const_input_to_tensor_input.h"
+#include "plugin/device/ascend/optimizer/heterogeneous/insert_pre_fetch_depend.h"
 #include "plugin/device/ascend/optimizer/ge/convert_pad_v3_paddings.h"
 #include "plugin/device/ascend/optimizer/ge/broadcast_for_select.h"
 #include "plugin/device/ascend/optimizer/ge/fa_alltoallv_parallel.h"
@@ -317,6 +318,7 @@ void GEAfterInlineOptimize(const KernelGraphPtr &kernel_graph) {
   after_inline_pm->AddPass(std::make_shared<CommonSubexpressionElimination>());
   after_inline_pm->AddPass(std::make_shared<EliminateMaketupleGetitem>());
   after_inline_pm->AddPass(std::make_shared<InsertMoveTo>());
+  after_inline_pm->AddPass(std::make_shared<InsertPreFetchDepend>());
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   if (ms_context->get_param<bool>(MS_CTX_ENABLE_GRAD_COMM_OPT)) {

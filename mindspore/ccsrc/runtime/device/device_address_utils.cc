@@ -1,5 +1,6 @@
+
 /**
- * Copyright 2022-2024 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -518,17 +519,7 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
     const bool is_move_to = IsPrimitiveCNode(kernel, prim::kPrimMoveTo);
     std::string move_to;
     if (is_move_to) {
-      const auto &kernel_with_index = common::AnfAlgo::VisitKernelWithReturnType(kernel->input(2), 0, true);
-      const auto &second_input = kernel_with_index.first;
-      MS_EXCEPTION_IF_NULL(second_input);
-      if (!second_input->isa<ValueNode>()) {
-        MS_LOG(EXCEPTION) << "Get to value failed, the second input of MoveTo is not a ValueNode.";
-      }
-      auto to_value_node = second_input->cast<ValueNodePtr>();
-      auto to_value = to_value_node->value();
-      if (to_value->isa<StringImm>()) {
-        move_to = to_value->cast<StringImmPtr>()->value();
-      }
+      move_to = common::AnfAlgo::GetMoveToDstStr(kernel);
     }
     for (size_t i = 0; i < output_size; ++i) {
       if (AnfAlgo::OutputAddrExist(kernel, i)) {
