@@ -25,7 +25,6 @@ from collections import defaultdict
 
 import time
 import multiprocessing as mp
-import psutil
 import numpy as np
 from safetensors.numpy import save_file, load_file
 from safetensors import safe_open
@@ -304,7 +303,7 @@ def _find_remove_redundancy_rank_id(pipe_param_list, single_param_dict, file_dic
                     break
         if open_file_id is not None:
             start_time = time.time()
-            output = file_dict[open_file_id].get_slice(param_name)
+            output = file_dict[open_file_id].get_tensor(param_name)
             end_time = time.time()
             cost_time = end_time - start_time
             io_time += cost_time
@@ -380,7 +379,7 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
                                 # param not in ckpt file, check reason
                                 continue
                             start_time = time.time()
-                            output = f.get_slice(param_name)
+                            output = f.get_tensor(param_name)
                             end_time = time.time()
                             cost_time = end_time - start_time
                             io_time += cost_time
@@ -436,18 +435,16 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
             if _transform_param_list is not None:
                 _transform_param_list.append({save_file_name: transform_param_dict})
             else:
-                if transform_param_dict:
-                    if output_format == "safetensors":
-                        save_file(transform_param_dict, save_file_name)
-                    else:
-                        transform_param_dict = _load_and_transform(transform_param_dict,
-                                                                   None, None, transform_func=
-                                                                   lambda v, name: ms.Parameter(v, name=name))
+                if output_format == "safetensors":
+                    save_file(transform_param_dict, save_file_name)
+                else:
+                    transform_param_dict = _load_and_transform(transform_param_dict, None, None,
+                                                               transform_func=lambda v, name: ms.Parameter(v,
+                                                                                                           name=name))
                     ms.save_checkpoint(transform_param_dict, save_file_name)
             del param_total_dict_keys
         del param_total_dict
     return io_cost_time
-
 
 def _save_final_safetensors(_transform_param_list, output_format):
     """save file with list"""
@@ -615,7 +612,7 @@ def _find_needed_ranks(src_strategy_dict, dst_strategy_dict):
     dst_stage_device_num = _get_device_num_from_strategy(dst_strategy_dict)
     dst_stage_num = _extract_pipeline_stage_num(dst_strategy_dict)
     dst_device_num = dst_stage_device_num * dst_stage_num
-    for rank in range(dst_device_num):
+    for rank in _progress_bar(range(dst_device_num)):
         needed_rank_list = ms.rank_list_for_transform(rank, src_strategy_dict, dst_strategy_dict)
         needed_rank_list_key = "-".join([str(r) for r in needed_rank_list])
         needed_rank_list_map[needed_rank_list_key].append(rank)
@@ -639,10 +636,7 @@ def _transform_parallel_safetensor(rank_id, param_total_dict, param_attr_dict, s
     device_num = -1
     param_total_dict_keys = list(param_total_dict.keys()) if param_total_dict_keys is None else param_total_dict_keys
     for param_name in param_total_dict_keys:
-        if str(type(list(param_total_dict[param_name].values())[0])) == "<class 'builtins.PySafeSlice'>":
-            tensor_shape = list(param_total_dict[param_name].values())[0].get_shape()
-        else:
-            tensor_shape = list(param_total_dict[param_name].values())[0].shape
+        tensor_shape = list(param_total_dict[param_name].values())[0].shape
         from_dev_matrix = [1]
         from_tensor_map = [-1] * len(tensor_shape)
         from_opt_shard_step = 0
@@ -699,8 +693,6 @@ def _transform_parallel_safetensor(rank_id, param_total_dict, param_attr_dict, s
         _apply_tensor_transform_operators(transform_operator_stack, param_total_dict_copy, device_num)
 
         transform_param_dict[param_name] = param_total_dict_copy[rank_id % device_num]
-        if str(type(transform_param_dict[param_name])) == "<class 'builtins.PySafeSlice'>":
-            transform_param_dict[param_name] = transform_param_dict[param_name][:]
 
     # Handle those parameter like learning_rate, global_step which not in strategy_file.
     for param_name in param_total_dict_keys:
@@ -710,109 +702,8 @@ def _transform_parallel_safetensor(rank_id, param_total_dict, param_attr_dict, s
     return transform_param_dict
 
 
-def _cal_param_size(shape, dtype):
-    """cal param size by dtype and shape"""
-    dtype_size = {
-        "BOOL": 1,
-        "U8": 1,
-        "I8": 1,
-        "F8_E5M2": 1,
-        "F8_E4M3": 1,
-        "I16": 2,
-        "U16": 2,
-        "I32": 4,
-        "U32": 4,
-        "I64": 8,
-        "U64": 8,
-        "F16": 2,
-        "BF16": 2,
-        "F32": 4,
-        "F64": 8,
-    }
-    num_elements = math.prod(shape)
-    element_size = dtype_size.get(dtype, 4)
-    total_bytes = num_elements * element_size
-    return total_bytes
-
-
-def _split_weight_dict(weights, num_groups):
-    """split weights by num"""
-    sorted_items = sorted(weights.items(), key=lambda x: -x[1])
-    groups = [[] for _ in range(num_groups)]
-    total_bytes = [0] * num_groups
-    for weight_name, byte_size in sorted_items:
-        min_index = total_bytes.index(min(total_bytes))
-        groups[min_index].append(weight_name)
-        total_bytes[min_index] += byte_size
-
-    return groups
-
-
-def _save_hyper_param(split_dst_file, all_safetensor_files_map, name_list, dst_dir):
-    """save hyper param"""
-    if not split_dst_file or (split_dst_file and split_dst_file[0] == 1):
-        with safe_open(all_safetensor_files_map.get(0), framework="np") as f:
-            all_key = f.keys()
-            hyper_parameter = set(all_key) - set(name_list)
-            if hyper_parameter:
-                hyper_dict = {}
-                for key in hyper_parameter:
-                    hyper_dict[key] = f.get_tensor(key)
-                save_file(hyper_dict, os.path.join(dst_dir, "hyper_param.safetensors"))
-
-
-def _save_parameter_map_json(split_list, choice_func, split_dst_file, dst_dir, param_total_size):
-    """save parameter map json file"""
-    param_name_dict = dict()
-    for index, part_list in enumerate(split_list):
-        for name in part_list:
-            save_param_name = name
-            if choice_func is not None:
-                choice_out = choice_func(name)
-                if isinstance(choice_out, bool):
-                    if not choice_out:
-                        continue
-                elif isinstance(choice_out, str):
-                    save_param_name = choice_out
-            if save_param_name == -1:
-                break
-            param_name_dict[save_param_name] = f"part{index}.safetensors"
-    output_dict = {"metadata": {"total_size": param_total_size}, "weight_map": param_name_dict}
-    if not split_dst_file or (split_dst_file and split_dst_file[0] == 1):
-        json_str = json.dumps(output_dict, indent=4)
-        map_file = os.path.join(dst_dir, "param_name_map.json")
-        with open(map_file, 'w') as f:
-            f.write(json_str)
-
-
-def _get_dst_shape(param_name, param_shape, src_strategy_list):
-    """get dst shape by strategy"""
-    from_dev_matrix = [1]
-    from_tensor_map = [-1] * len(param_shape)
-    from_opt_shard_size = 0
-    if src_strategy_list is not None:
-        from_dev_matrix, from_tensor_map, _, from_opt_shard_size = _extract_layout_item(
-            src_strategy_list.get(param_name))
-    to_dev_matrix_origin = [1]
-    to_tensor_map_origin = [-1] * len(param_shape)
-    to_opt_shard_step = 0
-    to_opt_shard_size = 0
-
-    param_strategy = _get_tensor_strategy(from_dev_matrix, from_tensor_map)
-    origin_tensor_shape = ()
-    for i, item in enumerate(param_shape):
-        if i == 0 and from_opt_shard_size > 0:
-            origin_tensor_shape += (item * param_strategy[i] * from_opt_shard_size,)
-            continue
-        origin_tensor_shape += (item * param_strategy[i],)
-
-    _, _, to_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
-        to_dev_matrix_origin, to_tensor_map_origin, to_opt_shard_step, to_opt_shard_size, origin_tensor_shape)
-    return to_full_tensor_shape
-
-
 def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundancy=True, file_suffix=None,
-                        max_process_num=64, choice_func=None, split_dst_file=()):
+                        max_process_num=64, choice_func=None):
     """
     Merge multiple safetensor files into a unified safetensor file.
 
@@ -827,11 +718,6 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
         max_process_num (int): Maximum number of processes. Default: 64.
         choice_func (callable): A callable function used to filter parameters or modify parameter names.
             The return value of the function must be of type str (string) or bool (boolean). Default: None.
-        split_dst_file (tuple, optional) - A parameter used to manually split a task into multiple subtasks for
-            execution, represented as a tuple containing two elements. The first element indicates the number of
-            the current subtask, and the second element indicates the total number of tasks. This parameter supports
-            splitting and executing tasks multiple times on a single machine, and also supports executing different
-            subtasks on multiple machines respectively. Default: ``()``.
 
     Raises:
         ValueError: If the safetensors file of rank is missing.
@@ -883,51 +769,37 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
         if name.startswith("accu_grads"):
             continue
         name_list.append(name)
+    split_list = _split_list(name_list, split_num)
 
-    split_num = min(split_num, len(name_list))
-    param_size_dict = {}
-    param_total_size = 0
-    for _, file_name in all_safetensor_files_map.items():
-        with safe_open(file_name, framework="np") as f:
-            for k in f.keys():
-                if k in name_list:
-                    py_slice = f.get_slice(k)
-                    param_total_size += _cal_param_size(py_slice.get_shape(), py_slice.get_dtype())
-                    param_dst_shape = _get_dst_shape(k, py_slice.get_shape(), origin_src_strategy_list)
-                    # Convert the shape of np.int32 type to int type to prevent overflow in subsequent calculations.
-                    param_dst_shape = [int(item) for item in param_dst_shape]
-                    if k not in param_size_dict:
-                        param_size_dict[k] = _cal_param_size(param_dst_shape, py_slice.get_dtype())
-                    else:
-                        param_size_dict[k] += _cal_param_size(param_dst_shape, py_slice.get_dtype())
-    split_list = _split_weight_dict(param_size_dict, split_num)
+    with safe_open(all_safetensor_files_map.get(0), framework="np") as f:
+        all_key = f.keys()
+        hyper_parameter = set(all_key) - set(name_list)
+        if hyper_parameter:
+            hyper_dict = {}
+            for key in hyper_parameter:
+                hyper_dict[key] = f.get_tensor(key)
+            save_file(hyper_dict, os.path.join(dst_dir, "hyper_param.safetensors"))
 
-    if split_dst_file:
-        current_machine_num = split_dst_file[0]
-        total_machine_num = split_dst_file[1]
-        n = len(split_list)
-        avg_length = n // total_machine_num
-        remainder = n % total_machine_num
-        start_index = (avg_length * (current_machine_num - 1)) + min(current_machine_num - 1, remainder)
-        end_index = start_index + avg_length + (1 if current_machine_num <= remainder else 0)
-        sub_list = []
-        for i in range(len(split_list)):
-            if start_index <= i < end_index:
-                sub_list.append(split_list[i])
-            else:
-                sub_list.append([-1])
-    else:
-        sub_list = split_list
+    # save parameter map json
+    param_name_dict = dict()
+    for index, part_list in enumerate(split_list):
+        for name in part_list:
+            save_param_name = name
+            if choice_func is not None:
+                choice_out = choice_func(name)
+                if isinstance(choice_out, bool):
+                    if not choice_out:
+                        continue
+                elif isinstance(choice_out, str):
+                    save_param_name = choice_out
+            param_name_dict[save_param_name] = f"part{index}.safetensors"
+    json_str = json.dumps(param_name_dict, indent=4)
+    map_file = os.path.join(dst_dir, "param_name_map.json")
+    with open(map_file, 'w') as f:
+        f.write(json_str)
 
-    _save_hyper_param(split_dst_file, all_safetensor_files_map, name_list, dst_dir)
-    _save_parameter_map_json(split_list, choice_func, split_dst_file, dst_dir, param_total_size)
-
-    if split_dst_file:
-        split_num = end_index - start_index
-        res = list(range(start_index, end_index))
-    else:
-        res = [i for i in range(split_num)]
     max_process = min(split_num, max_process_num)
+    res = [i for i in range(split_num)]
     res = _split_list(res, max_process)
     processes = []
     src_strategy_name = None
@@ -937,7 +809,7 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
         p = mp.Process(target=_transform_safetensors_single_semaphore, args=(
             needed_rank_list_map, all_safetensor_files_map, src_stage_device_num, dst_stage_device_num,
             src_strategy_dict, None, origin_src_strategy_list, origin_dst_strategy_list,
-            "", dst_dir, "safetensors", None, sub_list, res[i], True, src_strategy_name, choice_func))
+            "", dst_dir, "safetensors", None, split_list, res[i], True, src_strategy_name, choice_func))
         p.start()
         processes.append(p)
     for p in processes:
@@ -961,8 +833,6 @@ def _transform_safetensors_single_semaphore(needed_rank_list_map, all_safetensor
                                                      origin_dst_strategy_list, ckpt_prefix, dst_safetensors_dir,
                                                      output_format, _transform_param_list, pipe_param_list[i], i,
                                                      unified_flag, src_strategy_file, choice_func)
-        while psutil.virtual_memory().percent > 50:
-            time.sleep(1)
         total_io_cost_time += io_cost_time
     vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
                f"Unified safetensors io cost time:{total_io_cost_time}.")
@@ -1042,8 +912,6 @@ def _cal_param_name_map_and_param_list(file_list, total_safetensors_dir, json_fi
         param_name_json = os.path.join(total_safetensors_dir, json_files[0])
         with open(param_name_json, 'r') as f:
             param_name_map = json.load(f)
-            if "weight_map" in param_name_map:
-                param_name_map = param_name_map["weight_map"]
 
     if dst_strategy_file is not None:
         _, dst_strategy_list = _extract_src_dst_layout_map(rank_id, None, dst_strategy_file)
@@ -1068,7 +936,7 @@ def _load_parallel_checkpoint(file_info):
                                                                                                    is not None else 1
     local_rank_id = rank_id % dst_stage_device_num
     total_io_cost_time = 0
-    for param_name in _progress_bar(param_list):
+    for param_name in param_list:
         if param_name not in param_name_map:
             continue
         file_name = os.path.join(total_safetensors_dir, param_name_map[param_name])
@@ -1135,9 +1003,7 @@ def _load_parallel_checkpoint(file_info):
     total_param = _process_hyper_params(file_list, total_safetensors_dir, total_param)
     if net is not None:
         if not return_param_dict:
-            print("start load param into net...")
             param_not_load, ckpt_not_load = ms.load_param_into_net(net, total_param)
-            print("load param into net is end...")
             return param_not_load, ckpt_not_load
         return total_param
     _make_dir(os.path.join(dst_safetensors_dir, f"rank_{rank_id}"), "path")

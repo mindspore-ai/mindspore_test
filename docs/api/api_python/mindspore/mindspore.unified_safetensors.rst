@@ -13,7 +13,6 @@ mindspore.unified_safetensors
         - **file_suffix** (str, 可选) - 指定合并safetensors的文件名后缀。默认值是：``None`` ，合并源权重目录下所有的safetensors文件。
         - **max_process_num** (int) - 最大进程数。默认值：64。
         - **choice_func** (callable) - 可调用的函数，用于筛选参数或者修改参数名，函数的返回值必须为str或者bool类型。默认值：``None``。
-        - **split_dst_file** (tuple, 可选) - 用于手动将任务切分为多个子任务执行的参数，以元组形式表示，元组中包含两个元素：第一个元素表示当前子任务编号，第二个元素表示任务的总数量。该参数支持在单台机器上进行多次切分执行任务，也支持在多台机器上分别执行不同的子任务。默认值：``()``。
 
     异常：
         - **ValueError** - 如果某个rank的safetensors文件丢失。

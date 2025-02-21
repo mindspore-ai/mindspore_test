@@ -610,13 +610,9 @@ def _apply_operator(operator_name):
         """
         if not isinstance(numpy_data_list, list):
             raise TypeError("The data_list should be a list.")
-        new_numpy_data_list = []
         for numpy_data in numpy_data_list:
-            if str(type(numpy_data)) == "<class 'builtins.PySafeSlice'>":
-                new_numpy_data_list.append(numpy_data[:])
-            else:
-                new_numpy_data_list.append(numpy_data)
-        numpy_data_list = new_numpy_data_list
+            if not isinstance(numpy_data, np.ndarray):
+                raise TypeError("The data should be a numpy.ndarray.")
         _check_operator(allgather_op)
         concat_group = allgather_op[1][:-1]
         if len(concat_group) != len(numpy_data_list):
