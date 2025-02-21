@@ -353,6 +353,10 @@ void AclStreamAssign::UpdateEventsToExecutionOrder(
         }
       }
     }
+    if (kernel_graph->enable_multi_stream() && IsPrimitiveCNode(kernel, std::make_shared<Primitive>(kSendOpName))) {
+      AddBoundarySendRecvKernel(kernel_graph, process_stream_id, kDefaultStreamIndex, &new_exec_orders,
+                                &no_event_streams, last_kernel, kernel);
+    }
     std::vector<AnfNodePtr> real_inputs;
     ProcessSideEffect(kernel_graph, kernel, process_stream_id, last_kernel, &real_inputs, &side_effect_map,
                       &no_event_streams, &new_exec_orders);
@@ -364,10 +368,6 @@ void AclStreamAssign::UpdateEventsToExecutionOrder(
       if (kv.first != process_stream_id) {
         kv.second.insert(process_stream_id);
       }
-    }
-    if (kernel_graph->enable_multi_stream() && IsPrimitiveCNode(kernel, std::make_shared<Primitive>(kSendOpName))) {
-      AddBoundarySendRecvKernel(kernel_graph, process_stream_id, kDefaultStreamIndex, &new_exec_orders,
-                                &no_event_streams, last_kernel, kernel);
     }
     new_exec_orders.push_back(kernel);
     last_kernel = kernel;
