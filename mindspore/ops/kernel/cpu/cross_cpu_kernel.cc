@@ -145,19 +145,24 @@ bool CrossCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &
                       &output_data_stride, &input1_data_stride, &input2_data_stride, &pos](size_t start, size_t end) {
     const size_t input1_data_dim = input1_shape_.size();
     std::vector<int64_t> position_in_dims(input1_data_dim);
-    int64_t index_in_curr_dim = SizeToLong(start);
-    int64_t input1_data_start = 0;
-    int64_t input2_data_start = 0;
-    int64_t output_data_start = 0;
+    int64_t index_in_curr_dim = SizeToLong(start), input1_data_start = 0, input2_data_start = 0, output_data_start = 0;
     for (int64_t i = 0; i < static_cast<int64_t>(input1_data_dim); i++) {
       if (i == static_cast<int64_t>(dim_)) {
         continue;
       }
-      position_in_dims[LongToSize(i)] = index_in_curr_dim % input1_shape_[LongToSize(i)];
-      input1_data_start += (index_in_curr_dim % input1_shape_[LongToSize(i)]) * SizeToLong(a_stride[LongToSize(i)]);
-      input2_data_start += (index_in_curr_dim % input2_shape_[LongToSize(i)]) * SizeToLong(b_stride[LongToSize(i)]);
-      output_data_start += (index_in_curr_dim % output_shape_[LongToSize(i)]) * SizeToLong(r_stride[LongToSize(i)]);
-      index_in_curr_dim = index_in_curr_dim / input1_shape_[LongToSize(i)];
+      if (input1_shape_[LongToSize(i)] != 0) {
+        position_in_dims[LongToSize(i)] = index_in_curr_dim % input1_shape_[LongToSize(i)];
+        input1_data_start += (index_in_curr_dim % input1_shape_[LongToSize(i)]) * SizeToLong(a_stride[LongToSize(i)]);
+      }
+      if (input2_shape_[LongToSize(i)] != 0) {
+        input2_data_start += (index_in_curr_dim % input2_shape_[LongToSize(i)]) * SizeToLong(b_stride[LongToSize(i)]);
+      }
+      if (output_shape_[LongToSize(i)] != 0) {
+        output_data_start += (index_in_curr_dim % output_shape_[LongToSize(i)]) * SizeToLong(r_stride[LongToSize(i)]);
+      }
+      if (input1_shape_[LongToSize(i)] != 0) {
+        index_in_curr_dim = index_in_curr_dim / input1_shape_[LongToSize(i)];
+      }
     }
     while (start < end) {
       output_data_addr[output_data_start + SizeToLong(kNumber0 * output_data_stride)] =
