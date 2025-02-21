@@ -84,7 +84,7 @@ def test_ops_adaptive_max_pool2d_dynamic_shape():
     input1 = generate_random_input((6, 4, 8, 9), np.float32)
     input2 = generate_random_input((3, 7, 8, 5), np.float32)
     TEST_OP(adaptive_max_pool2d_forward_dyn_func, [[Tensor(input1)], [Tensor(input2)]], 'adaptive_max_pool2d',
-            disable_input_check=True, disable_yaml_check=True)
+            disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')

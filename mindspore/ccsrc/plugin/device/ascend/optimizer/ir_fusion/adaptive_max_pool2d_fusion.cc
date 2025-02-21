@@ -252,7 +252,23 @@ const AnfNodePtr AdaptiveMaxPool2DGeFusion::Process(const FuncGraphPtr &func_gra
   }
 
   if (AnfAlgo::GetOutputElementNum(adaptive_max_pool2d) > 1) {
-    return node;
+    ShapeVector output_size_new = {output_h, output_w};
+    auto output_size_new_node = kernel_graph->NewValueNode(MakeValue<std::vector<int64_t>>(output_size_new));
+    output_size_new_node->set_abstract(output_size_node->abstract());
+
+    auto input_node = adaptive_max_pool2d->input(kIndex1);
+    auto adaptive_max_pool2d_new =
+      func_graph->NewCNode({NewValueNode(prim::kPrimAdaptiveMaxPool2D), input_node, output_size_new_node});
+    MS_EXCEPTION_IF_NULL(adaptive_max_pool2d_new);
+    auto out_shape1 = AnfAlgo::GetOutputDetailShape(adaptive_max_pool2d, kIndex0);
+    auto out_shape2 = AnfAlgo::GetOutputDetailShape(adaptive_max_pool2d, kIndex1);
+    auto out_dtype1 = common::AnfAlgo::GetOutputInferDataType(adaptive_max_pool2d, kIndex0);
+    auto out_dtype2 = common::AnfAlgo::GetOutputInferDataType(adaptive_max_pool2d, kIndex1);
+    adaptive_max_pool2d_new->set_scope(adaptive_max_pool2d->scope());
+
+    common::AnfAlgo::SetOutputTypeAndDetailShape({out_dtype1, out_dtype2}, {out_shape1, out_shape2},
+                                                 adaptive_max_pool2d_new.get());
+    return adaptive_max_pool2d_new;
   }
 
   if (height % output_h != 0 || width % output_w != 0) {
