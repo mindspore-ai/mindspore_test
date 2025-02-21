@@ -359,7 +359,6 @@ from mindspore.ops.auto_generate import logaddexp2
 # 153
 from mindspore.ops.auto_generate import acos_ext, acosh_ext, asin_ext, asinh_ext, atan_ext, dot
 # 154 isneginf
-from mindspore.ops.auto_generate import isneginf_ext
 
 # 155
 from mindspore.ops.function.math_func import median
@@ -1456,7 +1455,9 @@ def deprecated_tensor_logsumexp(input, dim, keepdim=False):
 
 # 154
 def tensor_isneginf(input):
-    return isneginf_ext(input)
+    inf_tensor = isinf(input)
+    neg_tensor = input < 0
+    return logical_and(inf_tensor, neg_tensor)
 
 
 # 155
