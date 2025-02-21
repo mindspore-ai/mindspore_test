@@ -32,7 +32,7 @@ Status LinSpaceInfo::GetAttrs() {
 
 Status LinSpaceInfo::CheckStrategy(const StrategyPtr &strategy) {
   auto strategies = strategy->GetInputDim();
-  if (strategies.size() != 1 && strategies[0].size() != 1) {
+  if (strategies.size() != 1 || strategies[0].size() != 1) {
     MS_LOG(ERROR) << name_ << ": The shape of input_strategy must be [1, 1], but got strategy "
                   << StrategyToString(strategies);
     return FAILED;
