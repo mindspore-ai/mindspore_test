@@ -102,11 +102,11 @@ void AscendStreamMng::CreateStream(size_t *stream_id, int32_t priority) {
 }
 
 void AscendStreamMng::RegCallback(aclrtStream stream) {
-  if (GetStreamId(stream) != 0) {
-    return;
-  }
   MS_LOG(INFO) << "Register callback thread, stream : " << stream << ".";
   (void)callback_cached_streams_.emplace_back(stream);
+  if (callback_cached_streams_.size() > 1 && !is_enable_callback_) {
+    is_enable_callback_ = true;
+  }
   if (!is_enable_callback_) {
     return;
   }
@@ -134,9 +134,6 @@ void AscendStreamMng::RegCallback(aclrtStream stream) {
 }
 
 void AscendStreamMng::UnRegCallback(aclrtStream stream) {
-  if (GetStreamId(stream) != 0) {
-    return;
-  }
   MS_LOG(INFO) << "Unregister callback thread, stream : " << stream << ".";
   if (!is_enable_callback_) {
     return;

@@ -151,7 +151,7 @@ class BACKEND_EXPORT AscendStreamMng {
 
   // Flag of registering callback or not, default value is false.
   // When multi streams are created, or gmem is enabled, this flag would change to ture.
-  bool is_enable_callback_{true};
+  bool is_enable_callback_{false};
   // This vector used for simplify logic of tracing multi stream creates.
   std::vector<aclrtStream> callback_cached_streams_;
   mindspore::HashMap<aclrtStream, CallbackThreadPtr> stream_call_backs_;
