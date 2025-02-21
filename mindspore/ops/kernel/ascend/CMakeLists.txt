@@ -3,9 +3,6 @@ include(${CMAKE_SOURCE_DIR}/cmake/graphengine_variables.cmake)
 # AICPU
 add_subdirectory(aicpu/aicpu_ops)
 
-# Ascendc
-add_subdirectory(ascendc)
-
 # PyBoost & Aclnn
 file(GLOB_RECURSE PYBOOST_SCRS pyboost/*.cc)
 file(GLOB_RECURSE OPAPI_SCRS opapi/*.cc)
