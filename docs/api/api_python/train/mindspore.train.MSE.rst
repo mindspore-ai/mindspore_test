@@ -28,10 +28,10 @@ mindspore.train.MSE
 
     .. py:method:: update(*inputs)
 
-        使用预测值 :math:`y_{pred}` 和真实值 :math:`y` 更新局部变量。
+        使用预测值 :math:`y\_pred` 和真实值 :math:`y` 更新局部变量。
 
         参数：
-            - **inputs** - 输入 `y_pred` 和 `y` 用于计算MSE，其中 `y_pred` 和 `y` shape都为N-D，它们的shape相同。
+            - **inputs** - 输入 :math:`y\_pred` 和 :math:`y` 用于计算MSE。其中 :math:`y\_pred` 和 :math:`y` 的shape都为N-D，它们的shape相同。
 
         异常：
             - **ValueError** - `inputs` 的数量不等于2。
