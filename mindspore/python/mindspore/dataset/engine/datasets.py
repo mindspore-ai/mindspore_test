@@ -2690,11 +2690,6 @@ class BatchDataset(UnionBaseDataset):
         else:
             self.max_rowsize = [max_rowsize[0] * self.batch_size, max_rowsize[1] * self.batch_size]
 
-    def __del__(self):
-        if hasattr(self, "process_pool") and self.process_pool is not None:
-            self.process_pool.terminate()
-            del self.process_pool
-
     def parse(self, children=None):
         return cde.BatchNode(children[0], self.batch_size, self.drop_remainder, False, self.input_columns,
                              self.output_columns, self.batch_size_func, self.per_batch_map, {},
@@ -3824,11 +3819,6 @@ class MapDataset(UnionBaseDataset):
 
     def __deepcopy__(self, memodict):
         return self.__safe_deepcopy__(memodict, exclude=("operations", "callbacks", "__transfer_dataset__"))
-
-    def __del__(self):
-        if hasattr(self, "process_pool") and self.process_pool is not None:
-            self.process_pool.terminate()
-            del self.process_pool
 
     @staticmethod
     def __parse_op_name(op):
