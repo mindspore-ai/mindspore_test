@@ -1196,6 +1196,8 @@ py::object PackNestedFuncCodes(const std::vector<Graph *> &call_stack, int top_a
 }
 }  // namespace
 
+bool CodeBreakGenerator::NeedHandleBreakAtCall() const { return is_break_at_call_ && !call_stack_.empty(); }
+
 // Codegen for subgraph break optimization.
 void CodeBreakGenerator::BreakAtCall(CodeGenerator *cg) const {
   MS_LOG(DEBUG) << "Do codegen for subgraph break optimization";
@@ -1245,8 +1247,7 @@ void CodeBreakGenerator::CallUntrackedCode(CodeGenerator *code_gen) {
   if (break_bci_ == -1) {
     return;
   }
-
-  if (is_break_at_call_ && !call_stack_.empty()) {
+  if (NeedHandleBreakAtCall()) {
     BreakAtCall(code_gen);
     return;
   }
@@ -1297,7 +1298,8 @@ py::object CodeBreakGenerator::MakeDispatchCode() {
 
   CodeGenerator code_gen(&interpret_);
 
-  if (no_graph_) {
+  if (no_graph_ && !NeedHandleBreakAtCall()) {
+    MS_LOG(DEBUG) << "No graph captured";
     interpret_.outputs.resize(interpret_.outputs.size() - side_effect_handler_->GetRequiredNodes().size());
     int stack_count = interpret_.outputs.size() - alive_locals_.size();
     int output_index = 0;

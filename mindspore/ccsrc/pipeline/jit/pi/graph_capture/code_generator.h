@@ -291,6 +291,7 @@ class CodeBreakGenerator {
 
   // generate specialize code if break point is call
   void BreakAtCall(CodeGenerator *code_gen) const;
+  bool NeedHandleBreakAtCall() const;
 
   void RestoreStack(CodeGenerator *code_gen) const;
 
