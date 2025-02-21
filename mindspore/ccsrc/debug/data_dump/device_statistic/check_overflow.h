@@ -37,6 +37,13 @@ class CheckOverflowKernel : public StatisticKernel {
   vector<KernelTensor *> CheckInputs(vector<KernelTensor *> inputs);
   DeviceAddressPtr LaunchKernelAsync(KernelTensor *input, const std::uint32_t stream_id) = delete;
   DeviceAddressPtr LaunchKernelAsync(vector<KernelTensor *> inputs, const std::uint32_t stream_id) override;
+  static void ClearMemoryCache() {
+    if (cache_.empty()) {
+      return;
+    }
+    cache_.clear();
+    MS_LOG(INFO) << "Clear the memory cache of overflow dump.";
+  }
 
  private:
   static std::map<std::uint32_t, DeviceAddressPtr> cache_;

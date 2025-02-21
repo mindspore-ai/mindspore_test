@@ -60,8 +60,7 @@ class StatisticKernel {
   bool CheckDataType(const TypeId &dtype_id) { return supported_dtype_.find(dtype_id) != supported_dtype_.end(); }
 
  protected:
-  DeviceAddressPtr GenerateDeviceAddress(const size_t &mem_size, const TypeId &dtype_id, const ShapeVector &shape,
-                                         const ValuePtr &value = nullptr);
+  DeviceAddressPtr GenerateDeviceAddress(const size_t &mem_size, const TypeId &dtype_id, const ShapeVector &shape);
   DeviceAddressPtr GetWorkSpaceDeviceAddress(const vector<KernelTensor *> &inputs,
                                              const vector<KernelTensor *> &outputs);
   virtual DeviceAddressPtr GetOutputDeviceAddress(TypeId dtype_id);

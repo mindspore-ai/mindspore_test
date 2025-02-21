@@ -21,6 +21,7 @@
 #include <vector>
 #include "debug/debugger/debugger_utils.h"
 #include "include/common/debug/common.h"
+#include "include/backend/mem_reuse/mem_tracker.h"
 
 namespace mindspore {
 
@@ -44,20 +45,22 @@ TensorPtr SyncDeviceToHostTensor(DeviceAddressPtr device_addr) {
 }
 
 DeviceAddressPtr StatisticKernel::GenerateDeviceAddress(const size_t &mem_size, const TypeId &dtype_id,
-                                                        const ShapeVector &shape, const ValuePtr &value) {
-  auto addr = device_context_->device_res_manager_->AllocateMemory(mem_size, kDefaultStreamIndex);
-  MS_EXCEPTION_IF_NULL(addr);
-
-  auto tensor = std::make_shared<kernel::KernelTensor>(addr, mem_size, Format::DEFAULT_FORMAT, dtype_id, shape,
-                                                       device_context_->device_context_key().device_name_,
-                                                       device_context_->device_context_key().device_id_);
+                                                        const ShapeVector &shape) {
+  auto shape_ptr = std::make_shared<abstract::Shape>(shape);
+  auto type = std::make_shared<TensorType>(TypeIdToType(dtype_id));
+  auto tensor = std::make_shared<kernel::KernelTensor>(
+    shape_ptr, type, nullptr, nullptr, mem_size, kernel::GetFormatFromEnumToStr(Format::DEFAULT_FORMAT), dtype_id,
+    shape, device_context_->device_context_key().device_name_, device_context_->device_context_key().device_id_);
   tensor->set_stream_id(kDefaultStreamIndex);
-  tensor->SetType(std::make_shared<TensorType>(TypeIdToType(dtype_id)));
-  tensor->SetShape(std::make_shared<abstract::TensorShape>(shape));
-  if (value) {
-    tensor->SetValue(value);
+  auto device_addr = device_context_->device_res_manager_->CreateDeviceAddress(tensor);
+  MS_EXCEPTION_IF_NULL(device_addr);
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "Dump", "OutputAddress", "");
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "Dump", device::tracker::MemType::kOther,
+                                                 device_addr->GetSize(), device_addr.get());
+  if (!device_context_->device_res_manager_->AllocateMemory(device_addr.get(), kDefaultStreamIndex)) {
+    MS_LOG(EXCEPTION) << "Dump allocate outputs memory failed";
   }
-  return device_context_->device_res_manager_->CreateDeviceAddress(tensor);
+  return device_addr;
 }
 
 DeviceAddressPtr StatisticKernel::GetWorkSpaceDeviceAddress(const vector<KernelTensor *> &inputs,
