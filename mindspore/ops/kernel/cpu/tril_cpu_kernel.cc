@@ -118,7 +118,13 @@ void TrilCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
   using MatrixMap = Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>;
 
   auto matrix_width = input_shape_[input_dims_ - 2];
+  if (matrix_width <= 0) {
+    MS_LOG(EXCEPTION) << "For tril in cpu backend, input matrix width should >= 1, but got: " << matrix_width;
+  }
   auto matrix_height = input_shape_[input_dims_ - 1];
+  if (matrix_height <= 0) {
+    MS_LOG(EXCEPTION) << "For tril in cpu backend, input matrix_height should >= 1, but got: " << matrix_height;
+  }
   auto matrix_size = matrix_width * matrix_height;
   auto matrixs_num = input_size / matrix_size;
 
