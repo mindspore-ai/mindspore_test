@@ -12,4 +12,4 @@ mindspore.get_auto_parallel_context
         根据key返回配置的值。
 
     异常：
-        - **ValueError** - 输入key不在自动并行的配置列表中。
+        - **ValueError** - 输入的key不在自动并行的配置列表中。
