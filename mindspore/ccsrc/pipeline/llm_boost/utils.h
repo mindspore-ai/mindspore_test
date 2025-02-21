@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace pipeline {
-tensor::TensorPtr SetFormat(const py::object &py_tensor, const std::string &format_name);
+py::object SetFormat(const py::object &py_tensor, const std::string &format_name);
 }  // namespace pipeline
 }  // namespace mindspore
 

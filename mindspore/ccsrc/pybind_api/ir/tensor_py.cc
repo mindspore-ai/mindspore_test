@@ -868,10 +868,15 @@ const TypePtr TensorPyImpl::GetDtypeFromPython(const py::dict &input) {
 
 const ShapeVector TensorPyImpl::GetShapeFromPython(const py::dict &input) {
   ShapeVector shape;
-  if (!input.contains("shape") || !py::isinstance<ShapeVector>(input["shape"])) {
+  if (!input.contains("shape")) {
     return shape;
   }
-  shape = input["shape"].cast<ShapeVector>();
+  py::object obj = input["shape"];
+  if (!py::isinstance<ShapeVector>(obj)) {
+    MS_EXCEPTION(TypeError) << "For 'Tensor', the 'shape' should be one of [list, tuple], but got '" << obj.get_type()
+                            << "'.";
+  }
+  shape = obj.cast<ShapeVector>();
   return shape;
 }
 
@@ -1365,14 +1370,15 @@ void RegTensorPy(const py::module *m) {
       PyObject *dtype_;
       PyObject *shape_;
       PyObject *init_;
+      PyObject *internal_;
       PyObject *const_arg_;
       PyObject *device_;
     };
-    static const char *kws[] = {"input_data", "dtype", "shape", "init", "const_arg", "device", nullptr};
-    constexpr const char fmt[] = "|OOOOOO:Tensor";
-    TensorInitialization args = {Py_None, Py_None, Py_None, Py_None, Py_False, Py_None};
+    static const char *kws[] = {"input_data", "dtype", "shape", "init", "internal", "const_arg", "device", nullptr};
+    constexpr const char fmt[] = "|OOOOOOO:Tensor";
+    TensorInitialization args = {Py_None, Py_None, Py_None, Py_None, Py_False, Py_False, Py_None};
     if (!PyArg_ParseTupleAndKeywords(va.ptr(), kw.ptr(), fmt, const_cast<char **>(kws), &args.input_data_, &args.dtype_,
-                                     &args.shape_, &args.init_, &args.const_arg_, &args.device_)) {
+                                     &args.shape_, &args.init_, &args.internal_, &args.const_arg_, &args.device_)) {
       MS_EXCEPTION(TypeError) << "Not support tensor input parameter type!!!";
     }
     auto p = TensorPyImpl::GetPythonTensor().attr("_init")(
@@ -1403,6 +1409,10 @@ py::tuple GetSparseTensorShape(const T &sparse_tensor) {
 
 py::tuple CSRTensorPy::GetPyTupleShape(const CSRTensor &csr_tensor) { return GetSparseTensorShape(csr_tensor); }
 
+TensorPyPtr CSRTensorPy::GetIndptr(const CSRTensorPtr &csr_tensor) {
+  return std::make_shared<TensorPy>(csr_tensor->GetIndptr());
+}
+
 TensorPyPtr CSRTensorPy::GetIndices(const CSRTensorPtr &csr_tensor) {
   return std::make_shared<TensorPy>(csr_tensor->GetIndices());
 }
@@ -1424,7 +1434,7 @@ void RegCSRTensor(const py::module *m) {
          py::arg("input"))
     .def_property_readonly("_shape", CSRTensorPy::GetPyTupleShape)
     .def_property_readonly("_dtype", &CSRTensor::Dtype)
-    .def_property_readonly("_indptr", &CSRTensor::GetIndptr)
+    .def_property_readonly("_indptr", CSRTensorPy::GetIndptr)
     .def_property_readonly("_indices", CSRTensorPy::GetIndices)
     .def_property_readonly("_values", CSRTensorPy::GetValues)
     .def("__str__", &CSRTensor::ToString)
