@@ -5,8 +5,8 @@ squeeze:
       dtype: tensor
     axis:
       dtype: tuple[int]
-      type_cast: int, list[int]
-      default: None
+      type_cast: int
+      default: ()
       prim_init: True
   returns:
     output:
@@ -18,6 +18,3 @@ squeeze:
   view: True
   dispatch:
     enable: True
-    Ascend: SqueezeAscend
-    CPU: SqueezeCPU
-    GPU: SqueezeGPU

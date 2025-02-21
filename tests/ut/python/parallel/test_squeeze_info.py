@@ -26,7 +26,7 @@ def setup_function():
 
 
 class Net(Cell):
-    def __init__(self, strategy1=None, strategy2=None, axis=None):
+    def __init__(self, strategy1=None, strategy2=None, axis=()):
         super().__init__()
         self.squeeze = P.Squeeze(axis=axis).shard(strategy1)
         self.mul = P.Mul().shard(strategy2)
