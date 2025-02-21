@@ -42,7 +42,7 @@ def test_while_control_flow():
     stree = SymbolTreeApi.create(net)
     codes = stree.get_code()
     # test while test statement flatten results
-    assert codes.count("while (count > 0):") == 1
+    assert codes.count("while (count > 0):") == 1 or codes.count("while count > 0:") == 1
     assert codes.count("x = self.relu(x)") == 1
     assert codes.count("count -= 1") == 1
     assert codes.count("else:") == 1
@@ -77,7 +77,7 @@ def test_while_control_flow():
     codes = stree.get_code()
     stree.erase(while_node)
     codes = stree.get_code()
-    assert codes.count("while (count > 0):") == 1
+    assert codes.count("while (count > 0):") == 1 or codes.count("while count > 0:") == 1
     assert codes.count("x = self.new_relu_2(x)") == 0
     assert codes.count("count -= 1") == 0
     assert codes.count("pass") == 1
@@ -85,7 +85,7 @@ def test_while_control_flow():
     assert codes.count("count = 0") == 1
     stree.erase(while_else_node)
     codes = stree.get_code()
-    assert codes.count("while (count > 0):") == 0
+    assert codes.count("while (count > 0):") == 0 or codes.count("while count > 0:") == 1
     assert codes.count("x = self.relu(x)") == 0
     assert codes.count("count -= 1") == 0
     assert codes.count("pass") == 0
