@@ -283,6 +283,9 @@ from mindspore.ops.auto_generate import max_unpool3d_ext as max_unpool3d
 # 768
 from mindspore.ops.auto_generate import softsign_ext as softsign
 
+# 745
+from mindspore.ops.auto_generate import cosine_embedding_loss
+
 from mindspore.ops.auto_generate import adaptive_avg_pool1d
 
 from mindspore.ops.functional import adaptive_avg_pool2d_ext as adaptive_avg_pool2d
@@ -1143,7 +1146,6 @@ __all__ = [
 
     # 11
     'relu',
-
     'relu_',
 
     # 12
@@ -1358,7 +1360,6 @@ __all__ = [
 
     # 259
     'adaptive_avg_pool1d',
-
     'adaptive_avg_pool2d',
 
     # 350
@@ -1378,6 +1379,8 @@ __all__ = [
     'kl_div',
     # 559
     'max_unpool3d',
+    # 745
+    'cosine_embedding_loss',
     # 768
     'softsign',
 ]
