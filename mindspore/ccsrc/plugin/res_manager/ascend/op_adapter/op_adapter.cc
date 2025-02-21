@@ -1027,6 +1027,14 @@ std::map<std::string, ValuePtr> OpAdapterImpl::GetNormalOpAttrList(const Operato
 int OpAdapterImpl::SetNormalOpAttr(const OperatorPtr &op, const PrimitivePtr &prim) {
   MS_EXCEPTION_IF_NULL(prim);
   MS_EXCEPTION_IF_NULL(op);
+  // for "_stream_label"
+  auto stream_label_value = prim->GetAttr("_stream_label");
+  if (stream_label_value != nullptr) {
+    auto stream_label_string = GetValue<std::string>(stream_label_value);
+    MS_LOG(INFO) << "cnode name is : " << op->GetName() << ", stream_label_string is: " << stream_label_string;
+    op->SetAttr("_stream_label", stream_label_string);
+  }
+
   for (auto &it : attr_map_) {
     if (attr_input_map_.count(it.first) != 0) {
       MS_LOG(WARNING) << "Attr: " << it.first << " will convert to input, please del it from ATTR_MAP.";

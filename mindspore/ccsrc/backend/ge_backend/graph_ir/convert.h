@@ -406,6 +406,9 @@ class DfGraphConvertor {
   std::string phase_prefix_;
   bool offline_convert_ = false;
   void AddInputInDataSink(std::vector<Operator> *inputs);
+  void GenBranchToParentNodeMap(const size_t &index, const size_t &branch_call_input_size, const CNodePtr &bnode,
+                                const CNodePtr &cnode, size_t *node_input_index,
+                                ParamIndexMap *branch_to_parent_node_map);
 };
 }  // namespace mindspore::backend::ge_backend
 

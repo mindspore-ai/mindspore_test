@@ -117,6 +117,7 @@ static const char *const kParameterAsRefData = "parameter_as_refdata";
 static const char *const kModelCacheMode = "model_cache_mode";
 static const char *const kVariableWeightsFile = "variable_weights_file";
 static const char *const kMaxWeightBatch = "max_weight_batch";
+static const char *const kStreamLabelFile = "stream_label_file";
 // ge options
 static const char *const kGeSessionOptionsSection = "ge_session_options";
 static const char *const kGeGraphOptionsSection = "ge_graph_options";

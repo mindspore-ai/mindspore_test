@@ -28,6 +28,7 @@
 #include "ops_utils/op_utils.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 
 namespace mindspore {
 namespace {
@@ -653,6 +654,8 @@ bool IsIfNode(const AnfNodePtr &node) {
     switch_node = cnode;
   } else if (!in_kg && IsPrimitiveCNode(cnode->input(0), prim::kPrimSwitch)) {
     switch_node = cnode->input(0)->cast<CNodePtr>();
+  } else if (!in_kg && IsPrimitiveCNode(cnode, prim::kPrimIf)) {
+    switch_node = cnode;
   } else {
     return false;
   }
