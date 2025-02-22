@@ -41,7 +41,7 @@ struct MemUceInfo {
 using DeviceMemInfo = std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>;
 class AscendResManager : public HalResBase {
  public:
-  explicit AscendResManager(const ResKey &res_key) : HalResBase(res_key) {}
+  explicit AscendResManager(const ResKey &res_key) : HalResBase(res_key) { Initialize(); }
   ~AscendResManager() override = default;
 
   void Initialize() override;
