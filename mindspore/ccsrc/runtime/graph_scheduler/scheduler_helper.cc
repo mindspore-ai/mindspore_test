@@ -536,14 +536,15 @@ void SchedulerHelper::InsertParameterIndexsForActor(AbstractActor *const to_acto
   size_t real_outer_idx = cur_graph_parameter_store->GetFrontNodeToIndex(front_node_with_idx.first.get());
   // The index of the font node is flattened
   size_t real_inner_idx = front_node_with_idx.second;
-  auto cur_device_tensor = AnfAlgo::GetMutableOutputAddr(from_kernel_with_output_idx.first, 0, false);
+  auto cur_device_tensor =
+    AnfAlgo::GetMutableOutputAddr(from_kernel_with_output_idx.first, from_kernel_with_output_idx.second, false);
   MS_EXCEPTION_IF_NULL(cur_device_tensor);
   // The superkernel actor is linked by input parameter, maybe the not used parameter.
   if (to_actor->type() != KernelTransformType::kSuperKernelActor) {
     cur_device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
   }
   // Cal ref count
-  auto real_node = common::AnfAlgo::FetchRealNodeSkipMonadControl({from_kernel_with_output_idx.first, 0}).first;
+  auto real_node = common::AnfAlgo::FetchRealNodeSkipMonadControl(from_kernel_with_output_idx).first;
   MS_EXCEPTION_IF_NULL(real_node);
   if (real_node->isa<Parameter>() && common::AnfAlgo::IsParameterWeight(real_node->cast<ParameterPtr>())) {
     cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx, SIZE_MAX, cur_device_tensor->GetDeviceType());
@@ -557,6 +558,9 @@ void SchedulerHelper::InsertParameterIndexsForActor(AbstractActor *const to_acto
                   << " and inner index:" << real_inner_idx;
   } else {
     cur_graph_parameter_store->IncreaseUserCnt(real_outer_idx, real_inner_idx, cur_device_tensor->GetDeviceType());
+  }
+  if (IsControlFlowActor(to_actor->type())) {
+    cur_device_tensor->SetNodeIndex(from_kernel_with_output_idx.first, from_kernel_with_output_idx.second);
   }
   // Save to_actor info into parameter_index
   ParameterInfo cur_param_info{front_node_with_idx, real_outer_idx};

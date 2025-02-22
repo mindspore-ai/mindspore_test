@@ -195,9 +195,7 @@ class AbstractActor : public OpActor<DeviceTensor> {
   bool IsOutputAddressPersisted(const DeviceTensor *output_device_tensor, const KernelWithIndex &output_node);
 
   // Stores info required by to_actor
-  void InsertParameterIndexs(size_t to_kernel_idx, ParameterInfo cur_front_node_info) {
-    parameter_indexs_.push_back({to_kernel_idx, cur_front_node_info});
-  }
+  void InsertParameterIndexs(size_t to_kernel_idx, ParameterInfo cur_front_node_info);
 
   KernelTransformType type_;
 

@@ -359,5 +359,13 @@ bool AbstractActor::IsOutputAddressPersisted(const DeviceTensor *output_device_t
   }
   return false;
 }
+
+void AbstractActor::InsertParameterIndexs(size_t to_kernel_idx, ParameterInfo cur_front_node_info) {
+  MS_LOG(DEBUG) << "Actor: " << GetAID().Name() << ", insert parameter index, to index: " << to_kernel_idx
+                << ", parameter info.first, kernel with index: " << cur_front_node_info.first.first->DebugString()
+                << ", " << cur_front_node_info.first.second
+                << ", parameter info.second: " << cur_front_node_info.second;
+  parameter_indexs_.push_back({to_kernel_idx, cur_front_node_info});
+}
 }  // namespace runtime
 }  // namespace mindspore

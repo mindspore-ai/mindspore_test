@@ -730,12 +730,15 @@ void KernelActor::UpdateDeviceTensorCopyStore(DeviceTensor *const new_device_ten
                   << " type:" << output_device_tensors_[input_index]->GetDeviceType() << " and " << new_device_tensor
                   << " type:" << new_device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
     DeviceTensorCopyStore::GetInstance().Insert(output_device_tensors_[input_index], new_device_tensor);
-    auto prev_output_device_tensor = AnfAlgo::GetPrevNodeMutableOutputAddr(kernel_, input_index);
-    if (prev_output_device_tensor != nullptr) {
-      MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << new_device_tensor
-                    << " type:" << new_device_tensor->GetDeviceType() << " and " << prev_output_device_tensor
-                    << " type:" << prev_output_device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
-      DeviceTensorCopyStore::GetInstance().Insert(prev_output_device_tensor.get(), new_device_tensor);
+    KernelWithIndex kernel_with_index = common::AnfAlgo::GetPrevNodeOutput(kernel_, input_index);
+    if (AnfAlgo::OutputAddrExist(kernel_with_index.first, kernel_with_index.second, true)) {
+      auto prev_output_device_tensor = AnfAlgo::GetPrevNodeMutableOutputAddr(kernel_, input_index);
+      if (prev_output_device_tensor != nullptr) {
+        MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << new_device_tensor
+                      << " type:" << new_device_tensor->GetDeviceType() << " and " << prev_output_device_tensor
+                      << " type:" << prev_output_device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
+        DeviceTensorCopyStore::GetInstance().Insert(prev_output_device_tensor.get(), new_device_tensor);
+      }
     }
   }
 }

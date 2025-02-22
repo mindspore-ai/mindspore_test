@@ -123,20 +123,9 @@ bool IsHostQueueDSActor(const AnfNodePtr &node, const KernelGraphPtr &graph,
 bool IsGraphRootParameter(const AnfNodePtr &node, const KernelGraphPtr &graph,
                           const std::vector<AnfNodePtr> &host_parameters, GraphExecutionStrategy strategy) {
   MS_EXCEPTION_IF_NULL(node);
-  KernelWithIndex front_node_with_idx{nullptr, 0};
-  if (IsInternalParameter(node, graph)) {
-    front_node_with_idx = graph->GetFrontNodeByInternalParameter(node);
-  } else {
-    front_node_with_idx = graph->GetElementInTupleBackendFrontIndexMap(node);
-    if (front_node_with_idx.first == nullptr) {
-      front_node_with_idx = {AnfAlgo::FetchFrontNodeByBackendNode(node, *graph), 0};
-    }
-  }
-  auto front_node = front_node_with_idx.first;
-  MS_EXCEPTION_IF_NULL(front_node);
-  bool is_parameter_data = front_node->isa<Parameter>();
-  if (is_parameter_data) {
-    return true;
+
+  if (!node->isa<Parameter>()) {
+    return false;
   }
   // Need to be updated every step.
   if (node->has_user_data(kForwardOutput)) {
@@ -153,6 +142,7 @@ bool IsGraphRootParameter(const AnfNodePtr &node, const KernelGraphPtr &graph,
   }
 
   // In control flow, only the parameters of the root funcgraph are in the host data source.
+  const auto &front_node = graph->GetFrontAnfByBackendAnf(node);
   bool is_host = ((front_node == nullptr) ||
                   find(host_parameters.begin(), host_parameters.end(), front_node) != host_parameters.end());
 
