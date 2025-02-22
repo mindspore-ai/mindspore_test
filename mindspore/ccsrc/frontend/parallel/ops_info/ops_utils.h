@@ -701,6 +701,7 @@ constexpr char PAD_V3[] = "PadV3";
 constexpr char KLDIV_LOSS[] = "KLDivLoss";
 constexpr char LIN_SPACE[] = "LinSpace";
 constexpr char LIN_SPACE_EXT[] = "LinSpaceExt";
+constexpr char ARANGE[] = "Arange";
 constexpr char SORT[] = "SORT";
 constexpr char FILLV2[] = "FillV2";
 constexpr char WKV[] = "WKV";
