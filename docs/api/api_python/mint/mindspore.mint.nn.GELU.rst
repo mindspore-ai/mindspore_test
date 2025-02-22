@@ -1,7 +1,7 @@
 mindspore.mint.nn.GELU
 ====================================
 
-.. py:class:: mindspore.mint.nn.GELU
+.. py:class:: mindspore.mint.nn.GELU(approximate='none')
 
     高斯误差线性单元激活函数（Gaussian Error Linear Unit）。
 
