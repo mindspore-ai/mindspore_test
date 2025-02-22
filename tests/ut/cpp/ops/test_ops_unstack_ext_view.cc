@@ -20,7 +20,7 @@
 #include "common/common_test.h"
 #include "ir/dtype/type.h"
 #include "ir/primitive.h"
-#include "infer/ops_func_impl/unstack_ext.h"
+#include "infer/ops_func_impl/unstack_ext_view.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_ops.h"
@@ -38,7 +38,7 @@ struct UnstackExtOpParams {
 class TestUnstackExt : public TestOps, public testing::WithParamInterface<UnstackExtOpParams> {};
 
 TEST_P(TestUnstackExt, unstack_ext_dyn_shape) {
-  auto primitive = std::make_shared<Primitive>("UnstackExt");
+  auto primitive = std::make_shared<Primitive>("UnstackExtView");
   ASSERT_NE(primitive, nullptr);
   const auto &param = GetParam();
   auto input = std::make_shared<abstract::AbstractTensor>(param.input_type, param.input_shape);
@@ -64,7 +64,7 @@ TEST_P(TestUnstackExt, unstack_ext_dyn_shape) {
   auto expect_shape = expect_abs->GetShape();
   auto expect_type = expect_abs->GetType();
   // infer
-  auto infer_impl = GetOpFrontendFuncImplPtr("UnstackExt");
+  auto infer_impl = GetOpFrontendFuncImplPtr("UnstackExtView");
   ASSERT_NE(infer_impl, nullptr);
   std::vector<abstract::AbstractBasePtr> input_args{std::move(input), dim};
   auto infer_shape_type = infer_impl->InferAbstract(primitive, input_args);

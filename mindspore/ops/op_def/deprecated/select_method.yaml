@@ -13,4 +13,4 @@ select:
       dtype: tensor
   view: True
   class:
-      name: SelectExt
+      name: SelectExtView

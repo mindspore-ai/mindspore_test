@@ -22,13 +22,13 @@
 #include "utils/ms_context.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "op_def/op_name.h"
-#include "infer/ops_func_impl/select_ext.h"
+#include "infer/ops_func_impl/select_ext_view.h"
 #include "ops/ops_func_impl/simple_infer.h"
 
 namespace mindspore {
 namespace ops {
-BaseShapePtr SelectExtFuncImpl::InferShape(const PrimitivePtr &prim,
-                                           const std::vector<AbstractBasePtr> &input_args) const {
+BaseShapePtr SelectExtViewFuncImpl::InferShape(const PrimitivePtr &prim,
+                                               const std::vector<AbstractBasePtr> &input_args) const {
   auto prim_name = prim->name();
   auto input_x_shape = input_args[0]->GetShape()->GetShapeVector();
   (void)CheckAndConvertUtils::CheckInteger("rank of input_x", SizeToLong(input_x_shape.size()), kGreaterThan, 0,
@@ -55,7 +55,7 @@ BaseShapePtr SelectExtFuncImpl::InferShape(const PrimitivePtr &prim,
   return std::make_shared<abstract::TensorShape>(output_shape);
 }
 
-ShapeArray SelectExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+ShapeArray SelectExtViewFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   auto prim_name = primitive->name();
   const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   auto input_x_shape = x_tensor->shape();
@@ -77,12 +77,13 @@ ShapeArray SelectExtFuncImpl::InferShape(const PrimitivePtr &primitive, const Va
   return {output_shape};
 }
 
-TypePtr SelectExtFuncImpl::InferType(const PrimitivePtr &prim, const std::vector<AbstractBasePtr> &input_args) const {
+TypePtr SelectExtViewFuncImpl::InferType(const PrimitivePtr &prim,
+                                         const std::vector<AbstractBasePtr> &input_args) const {
   auto x_type = input_args[kIndex0]->GetType();
   return x_type;
 }
 
-TypePtrList SelectExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+TypePtrList SelectExtViewFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->Dtype()};

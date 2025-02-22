@@ -1,5 +1,5 @@
-#operator select_ext
-select_ext:
+#operator select_ext_view
+select_ext_view:
     args:
         input:
             dtype: tensor
@@ -15,6 +15,6 @@ select_ext:
     labels:
         side_effect_mem: True
     class:
-        name: SelectExt
+        name: SelectExtView
     dispatch:
         enable: True

@@ -93,5 +93,5 @@ class UnstackExtBaseFrontendFuncImpl : public OpFrontendFuncImpl {
 
 class UnstackExtFrontendFuncImpl : public UnstackExtBaseFrontendFuncImpl {};
 
-REGISTER_PRIMITIVE_FUNCTION_FRONTEND_FUNC_IMPL("UnstackExt", UnstackExtFrontendFuncImpl);
+REGISTER_PRIMITIVE_FUNCTION_FRONTEND_FUNC_IMPL("UnstackExtView", UnstackExtFrontendFuncImpl);
 }  // namespace mindspore::ops

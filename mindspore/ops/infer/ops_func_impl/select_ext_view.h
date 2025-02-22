@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_SELECT_EXT_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_SELECT_EXT_H_
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_SELECT_EXT_VIEW_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_SELECT_EXT_VIEW_H_
 
 #include <map>
 #include <memory>
@@ -27,14 +27,13 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API SelectExtFuncImpl : public OpFuncImpl {
+class OPS_API SelectExtViewFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   ShapeArray InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
   TypePtrList InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
 };
-class OPS_API SelectExtViewFuncImpl : public SelectExtFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_SELECT_EXT_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_SELECT_EXT_VIEW_H_

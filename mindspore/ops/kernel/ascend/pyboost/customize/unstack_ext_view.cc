@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/pyboost/customize/unstack_ext.h"
+#include "kernel/ascend/pyboost/customize/unstack_ext_view.h"
 
-#include "mindspore/ops/view/unstack_ext_strides_calc.h"
+#include "mindspore/ops/view/unstack_ext_view_strides_calc.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
@@ -29,11 +29,12 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::vector<tensor::BaseTensorPtr> UnstackExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                             const BaseTensorPtr &x_tensor, const Int64ImmPtr &dim) {
-  MS_LOG(DEBUG) << "View UnstackExt Call start";
+std::vector<tensor::BaseTensorPtr> UnstackExtViewAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                                 const BaseTensorPtr &x_tensor,
+                                                                 const Int64ImmPtr &dim) {
+  MS_LOG(DEBUG) << "View UnstackExtView Call start";
   auto primitive = op->primitive();
-  auto storage_info_list = ops::UnstackExtCalc(primitive, {x_tensor, dim});
+  auto storage_info_list = ops::UnstackExtViewCalc(primitive, {x_tensor, dim});
   if (!storage_info_list.empty()) {
     std::vector<tensor::BaseTensorPtr> outputs;
     // Create device address for input tensors
@@ -43,15 +44,15 @@ std::vector<tensor::BaseTensorPtr> UnstackExtAscendCustomize(const std::shared_p
     op->set_outputs(outputs);
 
     PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, x_tensor]() {
-      MS_LOG(DEBUG) << "View device task UnstackExt start";
+      MS_LOG(DEBUG) << "View device task UnstackExtView start";
       auto device_context = op->device_context();
       PyBoostUtils::MallocOpInputs(device_context, x_tensor);
-      MS_LOG(DEBUG) << "View device task UnstackExt end";
+      MS_LOG(DEBUG) << "View device task UnstackExtView end";
     }));
   } else {
     MS_LOG_EXCEPTION << "View unsupported:" << primitive->name() << " or input ERROR";
   }
-  MS_LOG(DEBUG) << "View UnstackExt Call end";
+  MS_LOG(DEBUG) << "View UnstackExtView Call end";
   return op->outputs();
 }
 }  // namespace pyboost

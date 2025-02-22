@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "infer/ops_func_impl/unstack_ext.h"
+#include "infer/ops_func_impl/unstack_ext_view.h"
 
 #include <vector>
 #include <memory>
@@ -53,8 +53,8 @@ size_t CheckShapeAndGetNormalizedDimValue(const PrimitivePtr &primitive, const S
   return LongToSize(dim_temp < 0 ? dim_temp + SizeToLong(input_rank) : dim_temp);
 }
 }  // namespace
-BaseShapePtr UnstackExtFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                            const std::vector<AbstractBasePtr> &input_args) const {
+BaseShapePtr UnstackExtViewFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                                const std::vector<AbstractBasePtr> &input_args) const {
   const auto &input_shape = input_args[kInputIndex0]->GetShape()->GetShapeVector();
   auto dim = CheckShapeAndGetNormalizedDimValue(primitive, input_shape, input_args[kInputIndex1]);
 
@@ -78,8 +78,8 @@ BaseShapePtr UnstackExtFuncImpl::InferShape(const PrimitivePtr &primitive,
   return std::make_shared<abstract::TupleShape>(out_shapes);
 }
 
-TypePtr UnstackExtFuncImpl::InferType(const PrimitivePtr &primitive,
-                                      const std::vector<AbstractBasePtr> &input_args) const {
+TypePtr UnstackExtViewFuncImpl::InferType(const PrimitivePtr &primitive,
+                                          const std::vector<AbstractBasePtr> &input_args) const {
   const auto &input_shape = input_args[kInputIndex0]->GetShape()->GetShapeVector();
   auto dim = CheckShapeAndGetNormalizedDimValue(primitive, input_shape, input_args[kInputIndex1]);
   auto element_size = LongToSize(input_shape[dim]);

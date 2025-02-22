@@ -445,7 +445,7 @@ REG_FALLBACK_BUILDER("Chunk").SetBody(BODYFUNC(ib) {
 
 REG_FALLBACK_BUILDER("InsertGemV2InBackward").SetBody(BODYFUNC(ib) { return {ib->GetInput(kIndex0)}; });
 
-REG_FALLBACK_BUILDER("UnstackExt").SetBody(BODYFUNC(ib) {
+REG_FALLBACK_BUILDER("UnstackExtView").SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex1);
   auto input_shape = input->shape();

@@ -16,7 +16,7 @@
 
 #include "kernel/ascend/pyboost/customize/index.h"
 #include "kernel/ascend/pyboost/auto_generate/inner_non_zero.h"
-#include "kernel/ascend/pyboost/auto_generate/select_ext.h"
+#include "kernel/ascend/pyboost/auto_generate/select_ext_view.h"
 #include "kernel/ascend/pyboost/auto_generate/inner_index.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"
@@ -65,7 +65,7 @@ std::vector<BaseTensorPtr> IndexGetNewTensor(const std::shared_ptr<OpRunner> &op
       for (int64_t j = 0; j < rank; j++) {
         const auto dim = std::make_shared<Int64Imm>(kIndex0);
         const auto index = std::make_shared<Int64Imm>(j);
-        auto select_op = CREATE_PYBOOST_OP(SelectExt, device_name);
+        auto select_op = CREATE_PYBOOST_OP(SelectExtView, device_name);
         auto select_tensor = select_op->Call(nonzero_tensor, dim, index);
         result.emplace_back(select_tensor);
       }

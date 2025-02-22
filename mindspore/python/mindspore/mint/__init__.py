@@ -364,7 +364,7 @@ from mindspore.ops.function.array_func import scatter_add_ext as scatter_add
 # 289
 from mindspore.ops.auto_generate import sign
 
-from mindspore.ops.auto_generate import select_ext as select
+from mindspore.ops.auto_generate import select_ext_view as select
 
 # 301
 from mindspore.ops.function.math_func import tan
