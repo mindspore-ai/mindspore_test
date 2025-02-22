@@ -25,6 +25,7 @@
 #include <mutex>
 #include <iostream>
 
+#include "include/backend/visible.h"
 #include "mindapi/base/macros.h"
 #include "utils/log_adapter.h"
 #include "include/common/visible.h"
