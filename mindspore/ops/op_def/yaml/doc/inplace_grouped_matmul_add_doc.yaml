@@ -1,0 +1,27 @@
+inplace_grouped_matmul_add:
+    description: |
+        Fusion Operator of Transpose, GroupedMatmul, and InplaceAdd.
+
+        Args:
+            x (Tensor): Tensor with shape :math:`(m, k)`, whose type should be float16 or bfloat16.
+            weight(Tensor): Tensor with shape :math:`(m, n)`, whose type should be float16 or bfloat16.
+            group_list(Tensor): 1D Tensor, grouping positions for the m-axis of `x` and `weight`, whose type should be int64.
+            out(Tensor): A Tensor acting as both input and output, with type of float32. It's shape should be :math:`group_list.shape[0], k, n` or :math:`group_list.shape[0] * k, n` .
+
+        Returns:
+            Tensor, has the same shape and data type as `out`.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> x = Tensor(np.random.randn(10, 20), mindspore.float16)
+            >>> weight = Tensor(np.random.randn(10, 8), mindspore.float16)
+            >>> group_list = Tensor([2, 6, 8, 10], mindspore.int64)
+            >>> out = Tensor(np.random.randn(4, 20, 8), mindspore.float32)
+            >>> output = ops.auto_generate.grouped_matmul_add_(x, weight, group_list, out)
+            >>> print(output.shape)
+            [4, 20, 8]

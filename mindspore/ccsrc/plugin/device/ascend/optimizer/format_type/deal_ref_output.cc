@@ -67,7 +67,7 @@ std::unordered_map<size_t, size_t> GetRefInfoMaps(const CNodePtr &cnode) {
     }
 
     ref_infos = info->GetRefMappingInfo();
-  } else if (kernel_type == KernelType::OPAPI_KERNEL) {
+  } else if (kernel_type == KernelType::OPAPI_KERNEL || kernel_type == KernelType::ATB_KERNEL) {
     mindspore::ops::OpDefPtr op_def = mindspore::ops::GetOpDef(op_name);
     if (op_def == nullptr) {
       return ref_infos;
