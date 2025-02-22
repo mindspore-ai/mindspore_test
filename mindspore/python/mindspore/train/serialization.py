@@ -854,6 +854,17 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
     save_checkpoint_cost_time = end_save_time - start_save_time
     vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save checkpoint cost time {save_checkpoint_cost_time}.")
 
+def _handle_shared_param_for_pipeline_parallel(save_obj):
+    """ Remove shared param for save_obj """
+    filtered_save_obj = []
+    for param_dict in save_obj:
+        cur_param = param_dict['data']
+        if isinstance(cur_param, Parameter):
+            if not cur_param.param_info.is_pipeline_shared_param:
+                filtered_save_obj.append(param_dict)
+        else:
+            filtered_save_obj.append(param_dict)
+    return filtered_save_obj
 
 def _convert_list_to_param_list(save_obj, choice_func):
     """Convert a list of Parameter to param_list."""
@@ -913,6 +924,8 @@ def _convert_cell_param_and_names_to_dict(save_obj, choice_func):
         is_graph_mode = context.get_context('mode') == context.GRAPH_MODE
         # All parameters are initialized immediately under PyNative mode, skip this judgement.
         judgment = not_sliced or param.has_init
+        if param.param_info.is_pipeline_shared_param:
+            continue
         if is_graph_mode and _is_in_auto_parallel_mode() and judgment:
             continue
         if choice_func is not None and not choice_func(param.name):
@@ -983,11 +996,14 @@ def _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_f
 
 def _convert_save_obj_to_param_list(save_obj, integrated_save, append_dict, choice_func):
     """Convert a save_obj to param_list."""
-    if isinstance(save_obj, list):
-        return _convert_list_to_param_list(save_obj, choice_func)
+    if isinstance(save_obj, (list, dict)):
+        if isinstance(save_obj, list):
+            save_obj = _convert_list_to_param_list(save_obj, choice_func)
 
-    if isinstance(save_obj, dict):
-        return _convert_dict_to_param_dict(save_obj, choice_func)
+        if isinstance(save_obj, dict):
+            save_obj = _convert_dict_to_param_dict(save_obj, choice_func)
+
+        return _handle_shared_param_for_pipeline_parallel(save_obj)
 
     return _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_func)
 
