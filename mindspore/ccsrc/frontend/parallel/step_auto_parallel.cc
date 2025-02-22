@@ -323,24 +323,50 @@ void CheckStrategyUsedDevices(const OperatorInfoPtr &operator_info) {
   }
 }
 
-void SetLayoutToOperater(const OperatorInfoPtr &operator_info, const mindspore::HashMap<std::string, ValuePtr> attrs) {
+void SetLayoutToOperatorForNewShape(const OperatorInfoPtr &operator_info,
+                                    const mindspore::HashMap<std::string, ValuePtr> attrs) {
   auto cnode = operator_info->cnode();
+  std::vector<TensorLayoutBasePtr> in_tensor_layouts_new;
+  std::vector<TensorLayoutBasePtr> out_tensor_layouts_new;
+  if (ExtractUserConfigLayoutForNewShape(attrs, operator_info->inputs_shape_new(), operator_info->outputs_shape_new(),
+                                         &in_tensor_layouts_new, &out_tensor_layouts_new) != SUCCESS) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure:operator " << operator_info->name()
+                                       << " extract configured layout failed";
+  }
+
+  // Only init operator with tensor_layouts_new, new shape operator currently doesn't support propagate strategy,
+  // no need and doesn't support setting cost
+  if (operator_info->Init(nullptr, nullptr, in_tensor_layouts_new, out_tensor_layouts_new) != SUCCESS) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure: operator " << operator_info->name() << " SetCostUnderLayout failed";
+  }
+
+  operator_info->set_is_new_shape_node(true);
+  operator_info->set_config_by_layout(true);
+}
+
+void SetLayoutToOperator(const OperatorInfoPtr &operator_info, const mindspore::HashMap<std::string, ValuePtr> attrs) {
+  auto cnode = operator_info->cnode();
+  auto is_new_shape_base_node = IsSupportNewShapeBaseNode(cnode);
+  if (is_new_shape_base_node) {
+    SetLayoutToOperatorForNewShape(operator_info, attrs);
+    return;
+  }
   std::vector<std::shared_ptr<TensorLayout>> in_tensor_layouts;
   std::vector<std::shared_ptr<TensorLayout>> out_tensor_layouts;
+  StrategyPtr in_strategy_ptr = nullptr;
+  StrategyPtr out_strategy_ptr = nullptr;
   if (ExtractUserConfigLayout(attrs, operator_info->inputs_shape(), operator_info->outputs_shape(), &in_tensor_layouts,
                               &out_tensor_layouts) != SUCCESS) {
     MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure:operator " << operator_info->name()
                                        << " extract configured layout failed";
   }
   CheckStrategyUsedDevices(operator_info);
-  operator_info->set_config_by_layout(true);
-
   Strategies in_strategy;
   (void)std::transform(in_tensor_layouts.begin(), in_tensor_layouts.end(), std::back_inserter(in_strategy),
                        [](const auto &layout) { return layout->get_in_layout_strategy(); });
   MS_LOG(INFO) << "Converted strategies from in_tensor_layouts: " << in_strategy;
-  StrategyPtr in_strategy_ptr = NewStrategy(0, in_strategy);
-  StrategyPtr out_strategy_ptr = nullptr;
+  in_strategy_ptr = NewStrategy(0, in_strategy);
+
   if (OutLayoutFound(attrs)) {
     Strategies out_strategy;
     (void)std::transform(out_tensor_layouts.begin(), out_tensor_layouts.end(), std::back_inserter(out_strategy),
@@ -355,6 +381,7 @@ void SetLayoutToOperater(const OperatorInfoPtr &operator_info, const mindspore::
     MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure: operator " << operator_info->name() << " SetCostUnderLayout failed";
   }
   (void)configured_stra_ops_.emplace(operator_info, in_strategy_ptr);
+  operator_info->set_config_by_layout(true);
 }
 
 void SetOutStrategyToOperator(const OperatorInfoPtr &operator_info, mindspore::HashMap<std::string, ValuePtr> attrs) {
@@ -487,7 +514,7 @@ OperatorInfoPtr CreateTheOperatorInfo(const PrimitivePtr &prim, const CNodePtr &
   if (ParallelContext::GetInstance()->strategy_search_mode() != kRecursiveProgramming) {
     // If the user input layout (mindspore.Layout instance), convert layout to strategy, then set to the operator_info.
     if (LayoutFound(attrs)) {
-      SetLayoutToOperater(operator_info, attrs);
+      SetLayoutToOperator(operator_info, attrs);
       return operator_info;
     }
     // If the user input strategy (tuple-like), set the strategy to the operator_info.

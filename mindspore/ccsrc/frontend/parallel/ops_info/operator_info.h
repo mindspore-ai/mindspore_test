@@ -441,6 +441,8 @@ class OperatorInfo {
   void clear_out_strategy() { out_strategy_ = nullptr; }
   void set_config_by_layout(bool is_config_by_layout) { is_config_by_layout_ = is_config_by_layout; }
   bool is_config_by_layout() { return is_config_by_layout_; }
+  void set_is_new_shape_node(bool is_new_shape_node) { is_new_shape_node_ = is_new_shape_node; }
+  bool is_new_shape_node() { return is_new_shape_node_; }
   void set_refkey_parameter_name(std::string p_name) { refkey_parameter_name_ = std::move(p_name); }
   const std::string &refkey_parameter_name() const { return refkey_parameter_name_; }
   // When the output of a Parameter (require_grad) being used by multiple operators, the Parameter's cost is calculated
@@ -625,6 +627,7 @@ class OperatorInfo {
   bool infer_attrs_completed_ = false;
   bool is_layout_config_ = false;
   bool is_config_by_layout_ = false;
+  bool is_new_shape_node_ = false;
   bool is_dynamic_shape_ = false;
   bool is_dynamic_rank_ = false;
   Shapes strategy_from_layout_;
