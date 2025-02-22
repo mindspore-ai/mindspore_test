@@ -221,24 +221,6 @@ Status PromptFlashAttentionInfo::CheckAttenMaskStrategy(const StrategyPtr &strat
   return SUCCESS;
 }
 
-int64_t LongAdd(int64_t base, int64_t shift) {
-  int64_t result;
-  if (shift > 0) {
-    if (base > INT_MAX - shift) {
-      result = INT_MAX;
-    } else {
-      result = base + shift;
-    }
-  } else {
-    if (base < INT_MIN - shift) {
-      result = INT_MIN;
-    } else {
-      result = base + shift;
-    }
-  }
-  return result;
-}
-
 int64_t PromptFlashAttentionInfo::GetSplitIdAndRank() {
   CheckGlobalDeviceManager();
   int64_t rank = g_device_manager->global_rank();

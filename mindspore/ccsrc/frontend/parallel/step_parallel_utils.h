@@ -216,6 +216,7 @@ TensorLayouts GetLossNodeGradOutputLayout(const LossNodeInfo &node_info);
 LossNodeInfo FindLossCNode(const FuncGraphPtr &func_graph);
 void MarkForwardCNode(const FuncGraphPtr &root);
 void InsertVirtualOutput(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &all_nodes);
+int64_t LongAdd(int64_t base, int64_t shift);
 }  // namespace parallel
 }  // namespace mindspore
 

@@ -758,6 +758,17 @@ T GetInputValueFromCNode(const CNodePtr &cnode, size_t index) {
 }
 
 template <typename T>
+T GetInputValueFromCNodeWithDefaultValue(const CNodePtr &cnode, size_t index, T default_value) {
+  try {
+    return GetInputValueFromCNode<T>(cnode, index);
+  } catch (const std::exception &err) {
+    MS_LOG_WITH_NODE(DEBUG, cnode) << "Get value failed, the exception: " << err.what()
+                                   << " Return default value: " << default_value;
+    return default_value;
+  }
+}
+
+template <typename T>
 void SetValueInputToCNode(const CNodePtr &cnode, size_t index, T value) {
   MS_EXCEPTION_IF_NULL(cnode);
   auto inputs = cnode->inputs();
