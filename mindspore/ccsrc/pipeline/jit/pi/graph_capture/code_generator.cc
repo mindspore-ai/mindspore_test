@@ -834,8 +834,10 @@ py::object CodeBreakGenerator::MakeCapturedCode(std::vector<std::unique_ptr<Inst
 
 void CodeBreakGenerator::CallCapturedCode(CodeGenerator *code_gen) {
   if (captured_.operations.empty()) {
+    MS_LOG(DEBUG) << "No captured operations, no need to generate code";
     return;
   }
+  MS_LOG(DEBUG) << "Do codegen for calling graph";
   GraphParameterBuilder param_info;
   BuildGraphParameters(code_gen->GetLocalsMap(), &param_info);
   int flag = (param_info.vargs_ ? CO_VARARGS : 0) | (param_info.kwargs_ ? CO_VARKEYWORDS : 0);
@@ -857,6 +859,7 @@ void CodeBreakGenerator::CallCapturedCode(CodeGenerator *code_gen) {
 
 void CodeBreakGenerator::FixInterpretOuput(CodeGenerator *code_gen) {
   if (!captured_.outputs.empty()) {
+    MS_LOG(DEBUG) << "Do codegen for graph outputs";
     MS_EXCEPTION_IF_CHECK_FAIL(extra_local_ != -1, "can't find graph output");
     if (captured_.outputs.size() > 1) {
       // fill interpret local map
@@ -877,6 +880,7 @@ void CodeBreakGenerator::FixInterpretOuput(CodeGenerator *code_gen) {
 
 void CodeBreakGenerator::HandleOutputOpt(CodeGenerator *cg) {
   if (replaced_nodes_.empty() && outputs_optimize_.operations.empty()) {
+    MS_LOG(DEBUG) << "No outputs_optimize nodes, no need to do codegen";
     return;
   }
   cg->ClearAlive();
@@ -903,6 +907,7 @@ void CodeBreakGenerator::HandleOutputOpt(CodeGenerator *cg) {
   };
   handle_replaced(true);
   std::swap(interpret_.operations, outputs_optimize_.operations);
+  MS_LOG(DEBUG) << "Do codegen for outputs_optimize";
   cg->Build();
   std::swap(interpret_.operations, outputs_optimize_.operations);
   handle_replaced(false);
@@ -1247,6 +1252,7 @@ void CodeBreakGenerator::CallUntrackedCode(CodeGenerator *code_gen) {
   if (break_bci_ == -1) {
     return;
   }
+  MS_LOG(DEBUG) << "Do codegen for untracked code";
   if (NeedHandleBreakAtCall()) {
     BreakAtCall(code_gen);
     return;

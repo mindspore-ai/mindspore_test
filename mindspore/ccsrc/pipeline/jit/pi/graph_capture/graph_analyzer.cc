@@ -960,16 +960,15 @@ bool CheckNewBreakBci(const Graph *graph, const ValueNode *new_break_point) {
   return true;
 }
 
-ValueNode *MutateFreeVarNode(ValueNode *node, GraphAnalyzer::CapturedInfo *info) {
-  MS_LOG(DEBUG) << "Handle freevar node: " << node->ToString();
-  auto &outputs_opt = info->outputs_optimize_;
-  ADD_NODE(outputs_opt.operations, node);
+ValueNode *MutateFreeVarNode(ValueNode *node, std::vector<ValueNode *> *output_optimize) {
+  MS_LOG(DEBUG) << "Reconstruct freevar node: " << node->ToString();
+  output_optimize->push_back(node);
   MS_EXCEPTION_IF_CHECK_FAIL(node->getInputs().size() == 1, "inputs.size() should be 1");
   ValueNode *binary_subscr = node->getInputs()[0];
-  ADD_NODE(outputs_opt.operations, binary_subscr);
+  output_optimize->push_back(binary_subscr);
   MS_EXCEPTION_IF_CHECK_FAIL(binary_subscr->getInputs().size() == 2, "inputs.size() should be 2");
   ValueNode *load_attr = binary_subscr->getInputs()[0];
-  ADD_NODE(outputs_opt.operations, load_attr);
+  output_optimize->push_back(load_attr);
   MS_EXCEPTION_IF_CHECK_FAIL(node->getInputs().size() == 1, "inputs.size() should be 1");
   return load_attr->getInputs()[0];
 }
@@ -980,6 +979,7 @@ bool GraphAnalyzer::AnalyzeSubGraphAliveNodes(const std::vector<ValueNode *> &al
   auto fg_builder = graph->func_graph_builder();
   MS_EXCEPTION_IF_NULL(fg_builder);
   fg_builder->ClearOutputNodes();
+  std::vector<ValueNode *> output_optimize;
 
   std::list<ValueNode *> nodes(alive_nodes.begin(), alive_nodes.end());
   while (!nodes.empty()) {
@@ -993,7 +993,7 @@ bool GraphAnalyzer::AnalyzeSubGraphAliveNodes(const std::vector<ValueNode *> &al
       continue;
     }
     if (node->GetOpcode() == LOAD_ATTR && node->GetName() == "cell_contents") {  // LOAD_DEREF
-      nodes.push_back(MutateFreeVarNode(node, &info_));
+      nodes.push_back(MutateFreeVarNode(node, &output_optimize));
       continue;
     }
     if (fg_builder->AddOutput(node->abstract_wrapper(), true)) {
@@ -1003,7 +1003,7 @@ bool GraphAnalyzer::AnalyzeSubGraphAliveNodes(const std::vector<ValueNode *> &al
     }
     if (!IsValidOutput(node) && node->GetOpcode() == LOAD_ATTR) {
       MS_LOG(DEBUG) << "Reconstruct subgraph output: " << node->ToString();
-      ADD_NODE(info_.outputs_optimize_.operations, node);
+      output_optimize.push_back(node);
       nodes.insert(nodes.end(), node->getInputs().begin(), node->getInputs().end());
       continue;
     }
@@ -1019,6 +1019,8 @@ bool GraphAnalyzer::AnalyzeSubGraphAliveNodes(const std::vector<ValueNode *> &al
     graph->StopTraceAt(node->bci(), StopTraceReason::kStopTraceUDReset);
     return false;
   }
+  std::for_each(output_optimize.begin(), output_optimize.end(),
+                [this](ValueNode *node) { ADD_NODE(info_.outputs_optimize_.operations, node); });
   return true;
 }
 

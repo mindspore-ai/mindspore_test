@@ -78,7 +78,7 @@ def whitelist_builtin_func2(x, y):
     cc = c.replace('ing', 'val')
     return {cc: x - y}
 
-@pi_jit_with_config(jit_config={"compile_with_try": False, "subgraph_break_opt": False})
+@pi_jit_with_config(jit_config={"compile_with_try": False})
 def whitelist_forbidden_func(x, y):
     """
     Feature: forbidden function should be broken in graph
