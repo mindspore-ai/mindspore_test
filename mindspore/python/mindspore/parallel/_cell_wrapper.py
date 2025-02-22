@@ -147,7 +147,25 @@ def _get_group_name(group_map, group):
     return group_name, is_manual_communication_group
 
 
-def _single_parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
+def _get_param_redundancy_reversed(param_redundancy, cur_rank):
+    """Generate the reverse mapping of parameter redundancy based on the current rank."""
+    param_redundancy_reversed = {}
+    for key, redundancy in param_redundancy.items():
+        for item in redundancy:
+            if len(item) == 1:
+                continue
+            if cur_rank in item:
+                param_redundancy_reversed.setdefault(item, []).append(key)
+    return param_redundancy_reversed
+
+
+def _remove_param_not_load(param_name, param_not_load):
+    """Remove param_name from param_not_load."""
+    if param_not_load is not None and not param_name.startswith("accu_grads.") and param_name in param_not_load:
+        param_not_load.remove(param_name)
+
+
+def _single_parameter_broadcast(net, layout, cur_rank=0, initial_rank=0, param_not_load=None):
     """
     Broadcast single parameter to other rank in data parallel dimension.
     """
@@ -163,13 +181,7 @@ def _single_parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
     single_params = remove_param_redundancy(param_redundancy)
     if not single_params:
         return
-    param_redundancy_reversed = {}
-    for key, redundancy in param_redundancy.items():
-        for item in redundancy:
-            if len(item) == 1:
-                continue
-            if cur_rank in item:
-                param_redundancy_reversed.setdefault(item, []).append(key)
+    param_redundancy_reversed = _get_param_redundancy_reversed(param_redundancy, cur_rank)
     if not param_redundancy_reversed or cur_rank not in single_params:
         return
     net_param_dict = net.parameters_dict()
@@ -182,6 +194,7 @@ def _single_parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
             if param not in net_param_dict:
                 continue
             real_param = net_param_dict[param]
+            _remove_param_not_load(real_param.name, param_not_load)
             if param not in single_params[cur_rank]:
                 real_param.set_data(Tensor(np.zeros(real_param.shape), dtype=real_param.dtype), real_param.sliced)
             allreduce_input.append(real_param)

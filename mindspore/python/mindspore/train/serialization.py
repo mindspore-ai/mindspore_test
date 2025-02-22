@@ -1688,15 +1688,6 @@ def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundanc
     if param_not_load and not strict_load:
         _load_dismatch_prefix_params(net, parameter_dict, param_not_load, strict_load)
 
-    logger.info("Loading parameters into net is finished.")
-    if param_not_load:
-        logger.warning("For 'load_param_into_net', "
-                       "{} parameters in the 'net' are not loaded, because they are not in the "
-                       "'parameter_dict', please check whether the network structure is consistent "
-                       "when training and loading checkpoint. Another possibility is that "
-                       "the redundant loading is not enabled, but the loaded checkpoint is saved with "
-                       "redundancy removed. ".format(len(param_not_load)))
-        logger.warning("{} are not loaded.".format(param_not_load))
     if remove_redundancy:
         parallel_mode = context.get_auto_parallel_context("parallel_mode")
         if parallel_mode == "stand_alone":
@@ -1711,8 +1702,14 @@ def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundanc
         stage_num = _get_auto_parallel_context("pipeline_stages")
         chunk_size = device_num // stage_num
         initial_rank = (rank_id // chunk_size) * chunk_size
-        _single_parameter_broadcast(net, param_layout, rank_id, initial_rank)
-
+        _single_parameter_broadcast(net, param_layout, rank_id, initial_rank, param_not_load)
+    logger.info("Loading parameters into net is finished.")
+    if param_not_load:
+        logger.warning("For 'load_param_into_net', "
+                       "{} parameters in the 'net' are not loaded, because they are not in the "
+                       "'parameter_dict', please check whether the network structure is consistent "
+                       "when training and loading checkpoint.".format(len(param_not_load)))
+        logger.warning("{} are not loaded.".format(param_not_load))
     return param_not_load, ckpt_not_load
 
 
