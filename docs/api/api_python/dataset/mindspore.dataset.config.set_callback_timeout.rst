@@ -10,4 +10,4 @@ mindspore.dataset.config.set_callback_timeout
 
     异常：
         - **TypeError** - `timeout` 不是int类型。
-        - **ValueError** - 如果 `timeout` 不为正数。
+        - **ValueError** - `timeout` 不为正数。
