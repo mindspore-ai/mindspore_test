@@ -50,7 +50,7 @@ internal::InternalOpPtr InternalPagedAttention::CreateKernel(const internal::Inp
   has_attn_mask_ = (!(ms_inputs[kIndex7]->GetType()->isa<TypeNone>()));
   has_alibi_mask_ = (!(ms_inputs[kIndex9]->GetType()->isa<TypeNone>()));
 
-  (void)GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"q_seq_lens"}, &param_.q_seq_len);
+  param_.has_q_seq_lens = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"q_seq_lens"}, &param_.q_seq_len);
   (void)GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"batch_valid_length"}, &param_.kv_seq_len);
 
   CheckMask();
@@ -84,7 +84,7 @@ bool InternalPagedAttention::UpdateParam(const std::vector<KernelTensor *> &inpu
 
 uint64_t InternalPagedAttention::GenerateTilingKey(const std::vector<KernelTensor *> &inputs) {
   // User defined CacheKey, the inputs should include all the factors which will affect tiling result.
-  return InternalTilingCache::GenerateKey(kernel_name_, inputs, param_.q_seq_len, param_.kv_seq_len);
+  return InternalTilingCache::GenerateKey(kernel_name_, inputs, param_.q_seq_len, param_.kv_seq_len, param_.has_q_seq_lens, param_.mla_v_dim);
 }
 
 MS_INTERNAL_KERNEL_FACTORY_REG(PagedAttention, internal::kInternalPagedAttentionOpName, InternalPagedAttention);
