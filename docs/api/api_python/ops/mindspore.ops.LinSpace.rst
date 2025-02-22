@@ -3,14 +3,18 @@ mindspore.ops.LinSpace
 
 .. py:class:: mindspore.ops.LinSpace
 
-    返回一个在区间 `start` 和 `stop` （包括 `start` 和 `stop` ）内均匀分布的，包含 `num` 个值的一维Tensor。
-
-    更多参考详见 :func:`mindspore.ops.linspace`。
+    创建一个steps个元素的，在[start, end]区间内均匀分布的一维tensor。
+    
+    .. math::
+        \begin{aligned}
+        &step = (end - start)/(steps - 1)\\
+        &output = [start, start+step, start+2*step, ... , end]
+        \end{aligned}
 
     输入：
-        - **start** (Tensor) - 区间的起始值。零维Tensor，数据类型为float32或float64。
-        - **stop** (Tensor) - 区间的末尾值。零维Tensor，数据类型为float32或float64。
-        - **num** (Union[int, Tensor]) - 间隔中的包含的数值数量，包括区间端点。必须为正数。当输入为Tensor时，必须是零维Tensor，数据类型为int32或int64。
+        - **start** (Tensor) - 区间的起始值。
+        - **stop** (Tensor) - 区间的末尾值。
+        - **num** (Union[int, Tensor]) - 元素数量。
 
     输出：
-        Tensor，与 `start` 的shape和数据类型相同。
+        Tensor

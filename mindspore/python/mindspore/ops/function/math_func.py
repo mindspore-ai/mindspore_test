@@ -2869,7 +2869,7 @@ def erfinv_(input):
 
 def linspace(start, end, steps):
     r"""
-    Generate `steps` evenly spaced numbers over interval [start, end].
+    Generate a one-dimensional tensor with `steps` elements, evenly distributed in the interval [start, end].
 
     .. math::
         \begin{aligned}
@@ -2909,8 +2909,7 @@ def linspace(start, end, steps):
 
 def linspace_ext(start, end, steps, *, dtype=None):
     r"""
-    Returns a Tensor whose value is `steps` evenly spaced in the interval `start` and `end` (including `start` and
-    `end`), and the length of the output Tensor is `steps`.
+    Generate a one-dimensional tensor with `steps` elements, evenly distributed in the interval [start, end].
 
     .. math::
         \begin{aligned}
@@ -2923,35 +2922,29 @@ def linspace_ext(start, end, steps, *, dtype=None):
 
     Args:
         start (Union[float, int]): Start value of interval.
-            It can be a float or integer.
         end (Union[float, int]): Last value of interval.
-            It can be a float or integer.
-        steps (int): Number of ticks in the interval, inclusive of start and end.
-            Must be positive integer.
+        steps (int): Number of elements.
 
     Keyword Args:
-        dtype (mindspore.dtype, optional): The output Tensor data type. Default: ``None`` ,
-            in which case the data type of output Tensor is float32.
+        dtype (mindspore.dtype, optional): The data type returned.
 
     Returns:
-        Tensor, has the shape of :math:`(steps,)`, with dtype specified by `dtype`.
-
-    Raises:
-        TypeError: If dtype of `start` or dtype of `end` is not supported.
-        ValueError: If `steps` is not positive integer.
+        Tensor
 
     Supported Platforms:
         ``Ascend``
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import ops
-        >>> start = 1
-        >>> end = 10
-        >>> steps = 5
-        >>> output = ops.function.math_func.linspace_ext(start, end, steps, dtype=ms.float32)
+        >>> import mindspore
+        >>> output = mindspore.ops.function.math_func.linspace_ext(3, 10, 5)
         >>> print(output)
-        [ 1.    3.25  5.5   7.75 10.  ]
+        [ 3.    4.75  6.5   8.25 10.  ]
+        >>> output = mindspore.ops.function.math_func.linspace_ext(-10, 10, 5)
+        >>> print(output)
+        [-10.  -5.   0.   5.  10.]
+        >>> output = mindspore.ops.function.math_func.linspace_ext(-10, 10, 1)
+        >>> print(output)
+        [-10.]
     """
     return lin_space_ext_op(start, end, steps, dtype)
 
