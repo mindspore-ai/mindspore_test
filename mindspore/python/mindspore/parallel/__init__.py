@@ -21,10 +21,10 @@ from mindspore.parallel.checkpoint_transform import rank_list_for_transform, tra
     transform_checkpoints, merge_pipeline_strategys, sync_pipeline_shared_parameters, \
     load_segmented_checkpoints, set_op_strategy_config
 from mindspore.parallel.parameter_broadcast import parameter_broadcast
-from mindspore.parallel.shard import shard, Layout
+from mindspore.parallel.shard import shard, Layout, DistributedTensorInfo
 from mindspore.parallel.transform_safetensors import unified_safetensors
 
 __all__ = ["set_algo_parameters", "reset_algo_parameters", "get_algo_parameters", "rank_list_for_transform",
            "transform_checkpoint_by_rank", "transform_checkpoints", "merge_pipeline_strategys", "shard",
-           "sync_pipeline_shared_parameters", "Layout", "parameter_broadcast", "load_segmented_checkpoints",
-           "unified_safetensors", "set_op_strategy_config"]
+           "sync_pipeline_shared_parameters", "Layout", "DistributedTensorInfo", "parameter_broadcast",
+           "load_segmented_checkpoints", "unified_safetensors", "set_op_strategy_config"]

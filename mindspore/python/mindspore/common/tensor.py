@@ -278,6 +278,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         self.virtual_flag = False
         self.init = init
         self.init_finished = True
+        self._dtensor_info = None
 
         # if cur Tensor is a index value of another Tensor,
         # parent_tensor_ set to another Tensor
@@ -525,6 +526,40 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     def _setitem(self, index, value):
         """__setitem__ process, called by TensorPy::TensorSetItem"""
         return tensor_operator_registry.get('_tensor_setitem')(self, index, value)
+
+    @property
+    def dtensor_info(self):
+        """
+        Return the distributed tensor information. For details,
+        please refer to :class:`mindspore.parallel.DistributedTensorInfo`.
+
+        Examples:
+            >>> from mindspore import Tensor
+            >>> import numpy as np
+            >>> x = Tensor(np.array([[1, 2], [3, 4]]))
+            >>> print(x.dtensor_info)
+            None
+        """
+        return self._dtensor_info
+
+    @dtensor_info.setter
+    def dtensor_info(self, input_dtensor_info):
+        """
+        Set the distributed tensor information to current tensor.
+
+        Args:
+            input_dtensor_info (DistributedTensorInfo): The distributed tensor information.
+
+        Examples:
+            >>> from mindspore import Tensor, Layout, DistributedTensorInfo
+            >>> import numpy as np
+            >>> layout = Layout((2, 2), ("dp", "mp"))
+            >>> src_layout = layout("dp", "mp")
+            >>> distributed_info = DistributedTensorInfo(src_layout)
+            >>> x = Tensor(np.array([[1, 2], [3, 4]]))
+            >>> x.dtensor_info = distributed_info
+        """
+        self._dtensor_info = input_dtensor_info
 
     @property
     def shape(self):
@@ -867,6 +902,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         out = tensor_operator_registry.get('cauchy')(list(self.shape), median, sigma)()
         return out.astype(self.dtype)
+
 
     def log_normal(self, mean=1.0, std=2.0):
         r"""
