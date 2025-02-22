@@ -18,6 +18,7 @@
 
 #include <set>
 #include <string>
+#include <utility>
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "utils/check_convert_utils.h"
