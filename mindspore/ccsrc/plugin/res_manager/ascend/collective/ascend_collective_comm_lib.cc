@@ -22,6 +22,7 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_context.h"
+#include "utils/ms_utils.h"
 #include "plugin/res_manager/ascend/collective/hccl_watch_dog_thread.h"
 
 constexpr size_t kPathMax = 4096;
@@ -76,9 +77,9 @@ bool AscendCollectiveCommLib::InitializeHccl() {
   auto ms_context = MsContext::GetInstance();
   ms_context->set_param<bool>(MS_CTX_ENABLE_HCCL, true);
   MS_LOG(INFO) << "Create hccl_world_group with rank table.";
-  auto config_path_str = std::getenv("MINDSPORE_HCCL_CONFIG_PATH");
+  auto config_path_str = common::EnvHelper::GetInstance()->GetEnv("MINDSPORE_HCCL_CONFIG_PATH");
   if (config_path_str == nullptr) {
-    config_path_str = std::getenv("RANK_TABLE_FILE");
+    config_path_str = common::EnvHelper::GetInstance()->GetEnv("RANK_TABLE_FILE");
     if (config_path_str == nullptr) {
       MS_LOG(ERROR) << "The environment variable 'MINDSPORE_HCCL_CONFIG_PATH' or 'RANK_TABLE_FILE' is not set, so get"
                     << " hccl json config failed, please set env 'MINDSPORE_HCCL_CONFIG_PATH' or 'RANK_TABLE_FILE'";

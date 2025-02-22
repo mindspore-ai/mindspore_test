@@ -27,6 +27,7 @@
 #include "utils/system/file_system.h"
 #include "utils/log_adapter.h"
 #include "utils/file_utils.h"
+#include "utils/ms_utils.h"
 #include "include/common/utils/utils.h"
 #include "utils/convert_utils_base.h"
 
@@ -453,17 +454,17 @@ bool Common::CheckIfPrintIrPass(const std::string &pass_name) {
 
 struct GlogLogDirRegister {
   GlogLogDirRegister() {
-    const char *logtostderr = std::getenv("GLOG_logtostderr");
-    const char *log_dir = std::getenv("GLOG_log_dir");
+    const char *logtostderr = common::EnvHelper::GetInstance()->GetEnv("GLOG_logtostderr");
+    const char *log_dir = common::EnvHelper::GetInstance()->GetEnv("GLOG_log_dir");
     if (logtostderr != nullptr && log_dir != nullptr) {
       std::string logtostderr_str = std::string(logtostderr);
       std::string log_dir_str = std::string(log_dir);
       if (logtostderr_str != "0") {
         return;
       }
-      const char *rank_id = std::getenv("RANK_ID");
-      const char *gpu_rank_id = std::getenv("OMPI_COMM_WORLD_RANK");
-      const char *ms_node_id = std::getenv("MS_NODE_ID");
+      const char *rank_id = common::EnvHelper::GetInstance()->GetEnv("RANK_ID");
+      const char *gpu_rank_id = common::EnvHelper::GetInstance()->GetEnv("OMPI_COMM_WORLD_RANK");
+      const char *ms_node_id = common::EnvHelper::GetInstance()->GetEnv("MS_NODE_ID");
       std::string rank = "0";
       if (rank_id != nullptr) {
         rank = std::string(rank_id);
