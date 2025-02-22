@@ -11,9 +11,16 @@ argsort:
                 The Ascend backend only supports sorting the last dimension.
             descending (bool, optional): The sort order. If `descending` is ``True`` then the elements
                 are sorted in descending order by value. Otherwise sort in ascending order. Default: ``False`` .
+            stable (bool, optional): Whether to use stable sorting algorithm. Default: ``False``.
 
         Returns:
             Tensor, the indices of sorted input tensor. Data type is int64.
+
+        Raises:
+            ValueError: If `dim` is out of range.
+            TypeError: If dtype of `dim` is not int32.
+            TypeError: If dtype of `descending` is not bool.
+            TypeError: If dtype of `stable` is not bool.
 
         Supported Platforms:
             ``Ascend``
