@@ -117,6 +117,7 @@ class SuperKernelActor : public DebugAwareActor {
  protected:
   void Init() override;
   void Run(OpContext<DeviceTensor> *const context) override;
+  void Finalize() override;
 
   // The input device tensors for launch.
   std::vector<DeviceTensor *> input_device_tensors_;
@@ -196,6 +197,7 @@ class SuperKernelActor : public DebugAwareActor {
 
   void InitParallelDispatchResource();
   void PartitionParallelDispatchKernels();
+  void ClearParallelDispatchResource();
 
   friend class GraphScheduler;
   KernelGraphPtr graph_;
