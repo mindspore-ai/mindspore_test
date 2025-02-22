@@ -1,6 +1,7 @@
 {
   "CODECHECK": {
     "DIR_ARRAY": [
+      "build.sh",
       ".jenkins",
       ".clang-format",
       "setup.py",
@@ -203,6 +204,7 @@
   },
   "Compile_CPU_X86_MacOS": {
     "DIR_ARRAY": [
+      "build.sh",
       "CMakeLists.txt",
       ".gitignore",
       "third_party",
@@ -304,6 +306,7 @@
   },
   "Compile_Ascend_ARM_CentOS": {
     "DIR_ARRAY": [
+      "build.sh",
       "graphengine",
       "CMakeLists.txt",
       ".gitignore",
@@ -443,6 +446,7 @@
   },
   "Compile_GPU_X86_CentOS_Cuda11.6": {
     "DIR_ARRAY": [
+      "build.sh",
       "CMakeLists.txt",
       ".gitignore",
       "third_party",
@@ -558,6 +562,7 @@
   },
   "Compile_GPU_X86_CentOS_Cuda10": {
     "DIR_ARRAY": [
+      "build.sh",
       "CMakeLists.txt",
       ".gitignore",
       ".gitattributes",
@@ -665,6 +670,7 @@
   },
   "Compile_CPU_X86_CentOS": {
     "DIR_ARRAY": [
+      "build.sh",
       "CMakeLists.txt",
       ".gitignore",
       "third_party",
@@ -775,6 +781,7 @@
   },
   "Compile_UT": {
     "DIR_ARRAY": [
+      "build.sh",
       "graphengine",
       "CMakeLists.txt",
       ".gitignore",
@@ -902,6 +909,7 @@
   },
   "Compile_Lite_X86_CLOUD_FUSION_TRITON": {
     "DIR_ARRAY": [
+      "build.sh",
       "graphengine",
       ".gitignore",
       "cmake",
@@ -999,6 +1007,7 @@
   },
   "Compile_Lite_ARM64_CLOUD_FUSION_TRITON": {
     "DIR_ARRAY": [
+      "build.sh",
       "graphengine",
       ".gitignore",
       "cmake",
@@ -1092,6 +1101,7 @@
   },
   "Compile_Lite_Java": {
     "DIR_ARRAY": [
+      "build.sh",
       ".gitignore",
       "cmake",
       "third_party",
@@ -1128,6 +1138,7 @@
   },
   "Compile_Lite_ARM64": {
     "DIR_ARRAY": [
+      "build.sh",
       ".gitignore",
       "cmake",
       "third_party",
@@ -1174,6 +1185,7 @@
   },
   "Compile_Lite_ARM64_SD3403": {
     "DIR_ARRAY": [
+      "build.sh",
       ".gitignore",
       "cmake",
       "third_party",
@@ -1206,6 +1218,7 @@
   },
   "Compile_Lite_ARM64_CROP": {
     "DIR_ARRAY": [
+      "build.sh",
       ".gitignore",
       "cmake",
       "third_party",
@@ -1244,6 +1257,7 @@
   },
   "Compile_Lite_ARM64_Linux": {
     "DIR_ARRAY": [
+      "build.sh",
       ".gitignore",
       "cmake",
       "third_party",
@@ -1307,6 +1321,7 @@
   },
   "Compile_Lite_X86": {
     "DIR_ARRAY": [
+      "build.sh",
       ".gitignore",
       "cmake",
       "third_party",
@@ -1399,6 +1414,7 @@
   },
   "Compile_Lite_X86_SSE": {
     "DIR_ARRAY": [
+      "build.sh",
       ".gitignore",
       "cmake",
       "third_party",
@@ -1445,6 +1461,7 @@
   },
   "Compile_Lite_X86_AVX": {
     "DIR_ARRAY": [
+      "build.sh",
       ".gitignore",
       "cmake",
       "third_party",
@@ -1524,6 +1541,7 @@
   },
   "Compile_Lite_X86_AVX512": {
     "DIR_ARRAY": [
+      "build.sh",
       ".gitignore",
       "cmake",
       "third_party",
@@ -1567,6 +1585,7 @@
   },
   "Compile_Lite_X86_ASAN": {
     "DIR_ARRAY": [
+      "build.sh",
       ".gitignore",
       "cmake",
       "third_party",
@@ -1631,6 +1650,7 @@
   },
   "Compile_Lite_X86_SD3403": {
     "DIR_ARRAY": [
+      "build.sh",
       ".gitignore",
       "cmake",
       "third_party",
@@ -1697,6 +1717,7 @@
   },
   "Compile_Lite_X86_KERNEL_EXECUTOR": {
     "DIR_ARRAY": [
+      "build.sh",
       ".gitignore",
       "cmake",
       "third_party",
@@ -1758,6 +1779,7 @@
   },
   "Compile_Lite_ARM32_3516D": {
     "DIR_ARRAY": [
+      "build.sh",
       ".gitignore",
       "cmake",
       "third_party",
@@ -1794,6 +1816,7 @@
   },
   "Compile_Lite_X86_3516D": {
     "DIR_ARRAY": [
+      "build.sh",
       ".gitignore",
       "cmake",
       "third_party",
