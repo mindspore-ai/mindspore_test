@@ -157,7 +157,7 @@ class MS_CORE_API UCEException {
   bool enable_arf() { return arf_env_; }
 
   void CheckUceARFEnv() {
-    auto tftEnv = common::GetEnv("MS_ENABLE_TFT");
+    const auto tftEnv = common::GetEnv("MS_ENABLE_TFT");
     constexpr std::string_view optARF = "ARF:1";
     if (!tftEnv.empty() && (tftEnv.find(optARF) != std::string::npos)) {
       arf_env_ = true;
