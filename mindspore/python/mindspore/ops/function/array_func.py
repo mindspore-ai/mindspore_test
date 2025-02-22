@@ -5739,28 +5739,51 @@ def hsplit(input, indices_or_sections):
 
 def dsplit(input, indices_or_sections):
     """
-    Splits a tensor into multiple sub-tensors along the 3rd axis.
+    Splits a tensor along the 3rd axis.
     It is equivalent to `ops.tensor_split` with :math:`axis=2` .
 
     Args:
-        input (Tensor): A Tensor to be divided.
-        indices_or_sections (Union[int, tuple(int), list(int)]): See argument in :func:`mindspore.ops.tensor_split`.
+        input (Tensor): A tensor to be divided.
+        indices_or_sections (Union[int, tuple(int), list(int)]): See `indices_or_sections` argument in
+            :func:`mindspore.ops.tensor_split`.
 
     Returns:
-        A list of sub-tensors.
+        Tuple of tensors.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_x = np.arange(6).reshape((1, 2, 3)).astype('float32')
-        >>> output = ops.dsplit(Tensor(input_x), 3)
+        >>> import mindspore
+        >>> input = mindspore.ops.arange(16.0).reshape(2, 2, 4)
+        >>> print(input)
+        [[[ 0.  1.  2.  3.]
+          [ 4.  5.  6.  7.]]
+         [[ 8.  9. 10. 11.]
+          [12. 13. 14. 15.]]]
+        >>> output = mindspore.ops.dsplit(input, 2)
         >>> print(output)
-        (Tensor(shape=[1, 2, 1], dtype=Float32, value=[[[ 0.00000000e+00], [ 3.00000000e+00]]]),
-         Tensor(shape=[1, 2, 1], dtype=Float32, value=[[[ 1.00000000e+00], [ 4.00000000e+00]]]),
-         Tensor(shape=[1, 2, 1], dtype=Float32, value=[[[ 2.00000000e+00], [ 5.00000000e+00]]]))
+        (Tensor(shape=[2, 2, 2], dtype=Float32, value=
+        [[[ 0.00000000e+00,  1.00000000e+00],
+          [ 4.00000000e+00,  5.00000000e+00]],
+         [[ 8.00000000e+00,  9.00000000e+00],
+          [ 1.20000000e+01,  1.30000000e+01]]]), Tensor(shape=[2, 2, 2], dtype=Float32, value=
+        [[[ 2.00000000e+00,  3.00000000e+00],
+          [ 6.00000000e+00,  7.00000000e+00]],
+         [[ 1.00000000e+01,  1.10000000e+01],
+          [ 1.40000000e+01,  1.50000000e+01]]]))
+        >>> output = mindspore.ops.dsplit(input, [3, 6])
+        >>> print(output)
+        (Tensor(shape=[2, 2, 3], dtype=Float32, value=
+        [[[ 0.00000000e+00,  1.00000000e+00,  2.00000000e+00],
+          [ 4.00000000e+00,  5.00000000e+00,  6.00000000e+00]],
+         [[ 8.00000000e+00,  9.00000000e+00,  1.00000000e+01],
+          [ 1.20000000e+01,  1.30000000e+01,  1.40000000e+01]]]), Tensor(shape=[2, 2, 1], dtype=Float32, value=
+        [[[ 3.00000000e+00],
+          [ 7.00000000e+00]],
+         [[ 1.10000000e+01],
+          [ 1.50000000e+01]]]), Tensor(shape=[2, 2, 0], dtype=Float32, value=
+        ))
     """
     if not isinstance(input, Tensor):
         raise TypeError(f'expect `x` is a Tensor, but got {type(input)}')
