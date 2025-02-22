@@ -106,10 +106,10 @@ def _chg_ckpt_file_name_if_same_exist(directory, prefix, exception=False):
     return prefix
 
 
-def _check_format_and_other_params(format, enc_key, enc_mode, crc_check=False, async_save=False, exception_save=False,
+def _check_format_and_other_params(format, enc_key, enc_mode, crc_check=False, exception_save=False,
                                    map_param_inc=False, global_step_num=None):
-    param_not_default = (enc_key is not None or enc_mode != "AES-GCM" or crc_check or async_save
-                         or exception_save or map_param_inc or global_step_num is not None)
+    param_not_default = (enc_key is not None or enc_mode != "AES-GCM" or crc_check or exception_save or map_param_inc
+                         or global_step_num is not None)
     if format == "safetensors" and param_not_default:
         raise ValueError("For 'save_checkpoint', when format is 'safetensors', other param must be default.")
 
@@ -261,8 +261,7 @@ class CheckpointConfig:
         self.enable_redundance = kwargs.get('enable_redundance', False)
         self.remove_redundancy = Validator.check_isinstance('remove_redundancy', remove_redundancy, bool)
 
-        _check_format_and_other_params(format, enc_key, enc_mode, crc_check, async_save, exception_save,
-                                       self._map_param_inc)
+        _check_format_and_other_params(format, enc_key, enc_mode, crc_check, exception_save, self._map_param_inc)
 
     @property
     def save_checkpoint_steps(self):
