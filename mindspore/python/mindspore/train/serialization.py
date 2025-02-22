@@ -652,8 +652,8 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
             it can be the returned value of :func:`mindspore.load_checkpoint`.
         ckpt_file_name (str): Checkpoint file name. If the file name already exists, it will be overwritten.
         integrated_save (bool): Whether to integrated save in automatic model parallel scene. Default: ``True`` .
-        async_save (Union[bool, str]): Whether to use asynchronous saving of the checkpoint file, if True,
-                                    the asynchronous thread is used by default. If the type is string,
+        async_save (Union[bool, str]): Whether to use asynchronous saving of the checkpoint file or safetensors file,
+                                    if True, the asynchronous thread is used by default. If the type is string,
                                     the method of asynchronous saving, it can be "process" or "thread".
                                     Default: ``False`` .
         append_dict (dict): Additional information that needs to be saved. The key of dict must be str, the value
@@ -1398,7 +1398,7 @@ def load_checkpoint_async(ckpt_file_name, net=None, strict_load=False, filter_pr
           And using either of those two args will override `choice_func` at the same time.
 
     Args:
-        ckpt_file_name (str): Checkpoint file name.
+        ckpt_file_name (str): Checkpoint file name. The file extension must be ``ckpt`` or ``safetensors`` .
         net (Cell, optional): The network where the parameters will be loaded. Default: ``None`` .
         strict_load (bool, optional): Whether to strict load the parameter into net. If ``False`` , it will load
                                       parameter into net when parameter name's suffix in checkpoint file is the

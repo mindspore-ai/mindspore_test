@@ -139,8 +139,8 @@ class CheckpointConfig:
         integrated_save (bool): Whether to merge and save the split Tensor in the automatic parallel scenario.
             Integrated save function is only supported in automatic parallel scene, not supported
             in manual parallel. Default: ``True`` .
-        async_save (Union[bool, str]):Whether to use asynchronous saving of the checkpoint file, if True,
-                                    the asynchronous thread is used by default. If the type is string,
+        async_save (Union[bool, str]):Whether to use asynchronous saving of the checkpoint file or safetensors file,
+                                    if True, the asynchronous thread is used by default. If the type is string,
                                     the method of asynchronous saving, it can be "process" or "thread".
                                     Default: ``False`` .
         saved_network (Cell): Network to be saved in checkpoint file. If the saved_network has no relation
