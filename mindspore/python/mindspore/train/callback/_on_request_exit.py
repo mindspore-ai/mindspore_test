@@ -26,6 +26,7 @@ from mindspore.common.tensor import Tensor
 from mindspore.train._utils import _make_directory
 from mindspore import _checkparam as Validator
 from mindspore.train.serialization import load_checkpoint, save_checkpoint, export
+from mindspore.communication.management import get_group_size
 from mindspore.train.callback._callback import Callback
 from mindspore.parallel._utils import _get_parallel_mode
 from mindspore.context import ParallelMode
@@ -92,10 +93,8 @@ class OnRequestExit(Callback):
         self.key = "GracefulExit"
         self.remote_config_file = config_file  # used config file to save checkpoint and exit training process
         self.use_graceful = os.environ.get("MS_ENABLE_GRACEFUL_EXIT") == "1"
-        self.is_distributed = _get_parallel_mode() != ParallelMode.STAND_ALONE
+        self.is_distributed = get_group_size() > 1
         self.integrated_save = True
-        if self.is_distributed:
-            self.integrated_save = _get_parallel_mode() == ParallelMode.AUTO_PARALLEL
         self.stop_train = False
         self.need_do_step_end = False
         if self.save_ckpt or self.save_mindir:
@@ -250,6 +249,8 @@ class OnRequestExit(Callback):
                         else:
                             global_step = int(call_params.network.optimizer.global_step.data)
                         append_dict["global_step"] = global_step
+                        if self.is_distributed:
+                            self.integrated_save = _get_parallel_mode() == ParallelMode.AUTO_PARALLEL
                         save_checkpoint(net, self.train_name, integrated_save=self.integrated_save,
                                         append_dict=append_dict)
                     if self.save_mindir:

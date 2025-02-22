@@ -659,6 +659,7 @@ class Parameter(Tensor_):
             shape = self.shape if self.slice_num == 1 else self.param_info.origin_shape
             dtype = self.dtype
             x.set_data(initializer(init, shape=shape, dtype=dtype))
+            x.init = True
         device = self._get_user_data("parameter_device")
         if device is not None:
             x._set_user_data("parameter_device", device)
@@ -980,8 +981,6 @@ class Parameter(Tensor_):
             >>> x = Parameter(Tensor(np.array([[1, 2], [3, 4]], dtype=np.float32)), name="param")
             >>> x.init_data()
         """
-        if self.is_default_input_init and self.is_in_parallel != _is_in_auto_parallel_mode():
-            raise RuntimeError("Must set or change parallel mode before any initializer Tensor created.")
         if self.init_mode is None or not self.has_init:
             return self
         if self.inited_param is not None:

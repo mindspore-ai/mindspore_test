@@ -416,25 +416,37 @@ bool CollectiveManager::DestroyCommunicationGroup(const std::string &group_name)
 
 uint32_t CollectiveManager::GetRankId(const std::string &group_name) {
   BY_PASS_SCHED_RANK_ID;
-  MS_EXCEPTION_IF_NULL(comm_lib_instance_);
+  if (comm_lib_instance_ == nullptr) {
+    MS_LOG(DEBUG) << "Distributed module is not initialized, return 0 as rank id.";
+    return kIndex0;
+  }
   return comm_lib_instance_->GetRankId(group_name);
 }
 
 uint32_t CollectiveManager::GetGroupSize(const std::string &group_name) {
   BY_PASS_SCHED_RANK_SIZE;
-  MS_EXCEPTION_IF_NULL(comm_lib_instance_);
+  if (comm_lib_instance_ == nullptr) {
+    MS_LOG(DEBUG) << "Distributed module is not initialized, return 1 as group size.";
+    return kSizeOne;
+  }
   return comm_lib_instance_->GetGroupSize(group_name);
 }
 
 uint32_t CollectiveManager::GetLocalRankId(const std::string &group_name) {
   BY_PASS_SCHED_RANK_ID;
-  MS_EXCEPTION_IF_NULL(comm_lib_instance_);
+  if (comm_lib_instance_ == nullptr) {
+    MS_LOG(DEBUG) << "Distributed module is not initialized, return 0 as local rank id.";
+    return kIndex0;
+  }
   return comm_lib_instance_->GetLocalRankId(group_name);
 }
 
 uint32_t CollectiveManager::GetLocalGroupSize(const std::string &group_name) {
   BY_PASS_SCHED_RANK_SIZE;
-  MS_EXCEPTION_IF_NULL(comm_lib_instance_);
+  if (comm_lib_instance_ == nullptr) {
+    MS_LOG(DEBUG) << "Distributed module is not initialized, return 1 as group size.";
+    return kSizeOne;
+  }
   return comm_lib_instance_->GetLocalGroupSize(group_name);
 }
 
