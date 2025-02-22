@@ -26,5 +26,5 @@ mindspore.ops.SparseTensorDenseMatmul
         如果 `adjoint_st` 为 ``True`` ，则shape为 :math:`(C, M)` 。
 
     异常：
-        - **TypeError** - 如果 `adjoint_st` 或 `adjoint_dt` 的数据类型不是bool，或者 `indices` 、 `values` 、 `dense` 的数据类型不符合参数中所描述支持的数据类型。
-        - **ValueError** - 如果 `sparse_shape` 、 `indices` 、 `values` 和 `dense` 的shape不符合参数中所描述支持的数据类型。
+        - **TypeError** - 如果 `adjoint_st` 或 `adjoint_dt` 的数据类型不是bool，或者 `indices` 、 `values` 、 `dense` 的数据类型不符合参数描述中支持的数据类型。
+        - **ValueError** - 如果 `sparse_shape` 、 `indices` 、 `values` 和 `dense` 的shape不满足参数描述中的约束条件。

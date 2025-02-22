@@ -3,7 +3,7 @@ mindspore.ops.MultitypeFuncGraph
 
 .. py:class:: mindspore.ops.MultitypeFuncGraph(name, read_value=False)
 
-    MultitypeFuncGraph是一个用于生成重载函数的类，使用不同类型作为输入。使用 `name` 去初始化一个MultitypeFuncGraph对象，然后用带有输入类型的 `register` 注册器进行装饰注册类型。这样使该函数可以使用不同的类型作为输入调用，一般与 `HyperMap` 、 `Map` 结合使用。
+    MultitypeFuncGraph是一个用于生成重载函数的类，使用不同类型作为输入。使用 `name` 去初始化一个MultitypeFuncGraph对象，然后用带有输入类型的 `register` 注册器装饰注册类型。这样使该函数可以使用不同的类型作为输入调用，一般与 `HyperMap` 、 `Map` 结合使用。
 
     参数：
         - **name** (str) - 操作名。
