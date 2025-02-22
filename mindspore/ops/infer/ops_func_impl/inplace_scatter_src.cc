@@ -32,7 +32,5 @@ std::vector<TypeId> InplaceScatterSrcFuncImpl::InferType(const PrimitivePtr &pri
                                                          const InferInfoPtrList &input_infos) const {
   return {input_infos[kInputIndex0]->GetType()};
 }
-
-REGISTER_SIMPLE_INFER(kNameInplaceScatterSrc, InplaceScatterSrcFuncImpl)
 }  // namespace ops
 }  // namespace mindspore

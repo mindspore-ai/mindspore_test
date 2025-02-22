@@ -34,26 +34,26 @@ def _assert_equals(result: Tensor, slf: Tensor, exp: Tensor, ms_dtype):
 
 @test_utils.run_with_cell
 def scatter_src(x, dim, index, src, reduce):
-    return ms.Tensor.scatter_(x, dim=dim, index=index, src=src, reduce=reduce)
+    return x.scatter_(dim=dim, index=index, src=src, reduce=reduce)
 
 
 @test_utils.run_with_cell
 def scatter_src_with_grad(x, dim, index, src, reduce='none'):
-    return ms.Tensor.scatter_(
-        x * Tensor(1, dtype=x.dtype), dim=dim, index=index, src=src,
+    return (x * Tensor(1, dtype=x.dtype)).scatter_(
+        dim=dim, index=index, src=src,
         **(dict(reduce=reduce) if reduce != 'none' else {})
     )
 
 
 @test_utils.run_with_cell
 def scatter_val(x, dim, index, value, reduce):
-    return ms.Tensor.scatter_(x, dim=dim, index=index, value=value, reduce=reduce)
+    return x.scatter_(dim=dim, index=index, value=value, reduce=reduce)
 
 
 @test_utils.run_with_cell
 def scatter_val_with_grad(x, dim, index, value, reduce='none'):
-    return ms.Tensor.scatter_(
-        x * Tensor(1, dtype=x.dtype), dim=dim, index=index, value=value,
+    return (x * Tensor(1, dtype=x.dtype)).scatter_(
+        dim=dim, index=index, value=value,
         **(dict(reduce=reduce) if reduce != 'none' else {})
     )
 
@@ -69,7 +69,7 @@ class ScatterGrad(nn.Cell):
         return self.grad_op(self.net)(x, dim, index, src_or_val, reduce, self.grad_wrt_output)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_inplace_scatter_src(mode):
     """
@@ -83,10 +83,10 @@ def test_inplace_scatter_src(mode):
 
     _test_inplace_scatter_src_main(ms.float32)
     _test_forbid_manual_none("Src")
-    if mode != ms.GRAPH_MODE:  # Graph Mode not support inplace backward yet
-        _test_inplace_scatter_src_backward1(ms.float32)
-        _test_inplace_scatter_src_backward2(ms.float32)
-        _test_inplace_scatter_reduce_src_backward()
+
+    _test_inplace_scatter_src_backward1(ms.float32)
+    _test_inplace_scatter_src_backward2(ms.float32)
+    _test_inplace_scatter_reduce_src_backward()
 
 
 def _test_inplace_scatter_src_main(input_type):
@@ -139,7 +139,7 @@ def _test_inplace_scatter_src_backward2(input_type):
     assert np.allclose(grads[0].asnumpy().astype(np.float32), grad_np)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_inplace_scatter_value(mode):
     """
@@ -153,9 +153,9 @@ def test_inplace_scatter_value(mode):
 
     _test_inplace_scatter_value_main(ms.float32)
     _test_forbid_manual_none("Value")
-    if mode != ms.GRAPH_MODE:   # Graph Mode not support inplace backward yet
-        _test_inplace_scatter_value_backward(ms.float32)
-        _test_inplace_scatter_reduce_value_backward()
+
+    _test_inplace_scatter_value_backward(ms.float32)
+    _test_inplace_scatter_reduce_value_backward()
 
 
 def _test_inplace_scatter_value_main(input_type):
@@ -201,9 +201,9 @@ def test_scatter_bfloat16(mode):
 
     _test_inplace_scatter_src_main(ms.bfloat16)
     _test_inplace_scatter_value_main(ms.bfloat16)
-    if mode != ms.GRAPH_MODE:  # Graph Mode not support inplace backward yet
-        _test_inplace_scatter_src_backward1(ms.bfloat16)
-        _test_inplace_scatter_value_backward(ms.bfloat16)
+
+    _test_inplace_scatter_src_backward1(ms.bfloat16)
+    _test_inplace_scatter_value_backward(ms.bfloat16)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -225,12 +225,13 @@ def test_inplace_scatter_dynamic():
     TEST_OP(
         scatter_src,
         [
-            [x1, dim1, index1, src1, "multiply"],
+            [x1, dim1, index1, src1, "add"],
             [x2, dim2, index2, src2, "add"],
         ],
         'scatter_ with src and reduce',
         disable_yaml_check=True,
-        disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'],   # not support yet
+        disable_input_check=True,  # str is not supported in dynamic case
+        disable_mode=['GRAPH_MODE'],   # not support yet
         inplace_update=True,
         disable_grad=True  # reduce not supports grad
     )
@@ -242,18 +243,19 @@ def test_inplace_scatter_dynamic():
         ],
         'scatter_ with src',
         disable_yaml_check=True,
-        disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'],   # not support yet
+        disable_mode=['GRAPH_MODE'],   # not support yet
         inplace_update=True,
     )
     TEST_OP(
         scatter_val,
         [
-            [x1, dim1, index1, 1, "add"],
+            [x1, dim1, index1, 1, "multiply"],
             [x2, dim2, index2, 2, "multiply"],
         ],
         'scatter_ with value and reduce',
         disable_yaml_check=True,
-        disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'],   # not support yet
+        disable_input_check=True,  # str is not supported in dynamic case
+        disable_mode=['GRAPH_MODE'],   # not support yet
         inplace_update=True,
         disable_grad=True  # reduce not supports grad
     )
@@ -265,7 +267,7 @@ def test_inplace_scatter_dynamic():
         ],
         'scatter_ with value',
         disable_yaml_check=True,
-        disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'],   # not support yet
+        disable_mode=['GRAPH_MODE'],   # not support yet
         inplace_update=True,
     )
 
