@@ -9,10 +9,10 @@ mindspore.nn.probability.bijector.Softplus
     .. math::
         Y = \frac{\log(1 + e ^ {kX})}{k}
 
-    其中k是锐度因子。
+    其中 :math:`k` 是锐度因子。
 
     参数：
-        - **sharpness** (float, list, numpy.ndarray, Tensor) - 锐度因子，上述公式中的k。默认值： ``1.0`` 。
+        - **sharpness** (float, list, numpy.ndarray, Tensor) - 锐度因子，上述公式中的 :math:`k`。默认值： ``1.0`` 。
         - **name** (str) - Bijector名称。默认值： ``'Softplus'`` 。
 
     .. note::
@@ -37,7 +37,7 @@ mindspore.nn.probability.bijector.Softplus
             - **value** (Tensor) - 输入随机变量的值。
 
         返回：
-            Tensor，输入随机变量的值。
+            Tensor，输入随机变量经过映射后的值。
 
     .. py:method:: forward_log_jacobian(value)
 
@@ -57,7 +57,7 @@ mindspore.nn.probability.bijector.Softplus
             - **value** (Tensor) - 输出随机变量的值。
 
         返回：
-            Tensor，输出随机变量的值。
+            Tensor，对应的输入随机变量的值。
 
     .. py:method:: inverse_log_jacobian(value)
 

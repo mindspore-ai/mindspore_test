@@ -7,7 +7,7 @@ mindspore.nn.probability.bijector.Exp
     此Bijector对应的映射函数为：
 
     .. math::
-        Y = \exp(x).
+        Y = \exp(X).
 
     参数：
         - **name** (str) - Bijector名称。默认值： ``'Exp'`` 。
@@ -18,10 +18,10 @@ mindspore.nn.probability.bijector.Exp
         正映射，计算输入随机变量经过映射后的值，即 :math:`Y = \exp(X)`。
 
         参数：
-            - **value** (Tensor) - 输入随机变量的值。
+            - **value** (Tensor) - 输入随机变量的值，公式中的 :math:`X`。
 
         返回：
-            Tensor，输出随机变量的值。
+            Tensor，输出随机变量映射后的值。
 
     .. py:method:: forward_log_jacobian(value)
 
@@ -38,7 +38,7 @@ mindspore.nn.probability.bijector.Exp
         正映射，计算输出随机变量对应的输入随机变量的值，即 :math:`X = \log(Y)`。
 
         参数：
-            - **value** (Tensor) - 输出随机变量的值。
+            - **value** (Tensor) - 输出随机变量的值，公式中的 :math:`Y`。
 
         返回：
             Tensor，输入随机变量的值。

@@ -4,16 +4,16 @@ mindspore.nn.probability.distribution.Cauchy
 .. py:class:: mindspore.nn.probability.distribution.Cauchy(loc=None, scale=None, seed=None, dtype=mstype.float32, name='Cauchy')
 
     柯西分布（Cauchy distribution）。
-    连续随机分布，取值范围为所有实数，概率密度函数为
+    连续随机分布，取值范围为所有实数，概率密度函数为：
 
     .. math:: 
         f(x, a, b) = 1 / \pi b(1 - ((x - a)/b)^2)
 
-    其中 :math:`a, b` 为分别为柯西分布的位置参数和比例参数。
+    其中 :math:`a, b` 分别为柯西分布的位置参数和比例参数。
 
     参数：
-        - **loc** (int, float, list, numpy.ndarray, Tensor) - 柯西分布的位置。默认值： ``None`` 。
-        - **scale** (int, float, list, numpy.ndarray, Tensor) - 柯西分布的比例。默认值： ``None`` 。
+        - **loc** (int, float, list, numpy.ndarray, Tensor) - 柯西分布的位置，公式中的 :math:`a`。默认值： ``None`` 。
+        - **scale** (int, float, list, numpy.ndarray, Tensor) - 柯西分布的比例，公式中的 :math:`b`。默认值： ``None`` 。
         - **seed** (int) - 采样时使用的种子。如果为None，则使用全局种子。默认值： ``None`` 。
         - **dtype** (mindspore.dtype) - 事件样例的类型。默认值： ``mstype.float32`` 。
         - **name** (str) - 分布的名称。默认值： ``'Cauchy'`` 。
@@ -24,8 +24,8 @@ mindspore.nn.probability.distribution.Cauchy
         - GPU后端不支持柯西分布。
 
     异常：
-        - **ValueError** - `scale` 中元素小于0。
-        - **TypeError** - `dtype` 不是float的子类。
+        - **ValueError** - `scale` 中元素小于或等于0。
+        - **TypeError** - `dtype` 不是float或float的子类。
 
     .. py:method:: loc
         :property:
@@ -33,7 +33,7 @@ mindspore.nn.probability.distribution.Cauchy
         返回分布位置。
 
         返回：
-            Tensor，分布的位置值。
+            Tensor，分布位置的值。
         
     .. py:method:: scale
         :property:
@@ -41,11 +41,11 @@ mindspore.nn.probability.distribution.Cauchy
         返回分布比例。
 
         返回：
-            Tensor，分布的比例值。
+            Tensor，分布比例的值。
 
     .. py:method:: cdf(value, loc, scale)
 
-        在给定值下计算累积分布函数（Cumulatuve Distribution Function, CDF）。
+        计算给定值的累积分布函数（Cumulatuve Distribution Function, CDF）。
 
         参数：
             - **value** (Tensor) - 要计算的值。
@@ -61,10 +61,10 @@ mindspore.nn.probability.distribution.Cauchy
 
         参数：
             - **dist** (str) - 分布的类型。
-            - **loc_b** (Tensor) - 对比分布位置参数。
-            - **scale_b** (Tensor) - 对比分布比例参数。
-            - **loc** (Tensor) - 分布位置参数。默认值： ``None`` 。
-            - **scale** (Tensor) - 分布比例参数。默认值： ``None`` 。
+            - **loc_b** (Tensor) - 分布b的位置参数。
+            - **scale_b** (Tensor) - 分布b的比例参数。
+            - **loc** (Tensor) - 分布a的位置参数。默认值： ``None`` 。
+            - **scale** (Tensor) - 分布a的比例参数。默认值： ``None`` 。
 
         返回：
             Tensor，交叉熵的值。
@@ -86,17 +86,17 @@ mindspore.nn.probability.distribution.Cauchy
 
         参数：
             - **dist** (str) - 分布的类型。
-            - **loc_b** (Tensor) - 对比分布位置参数。
-            - **scale_b** (Tensor) - 对比分布比例参数。
-            - **loc** (Tensor) - 分布位置参数。默认值： ``None`` 。
-            - **scale** (Tensor) - 分布比例参数。默认值： ``None`` 。
+            - **loc_b** (Tensor) - 分布b的位置参数。
+            - **scale_b** (Tensor) - 分布b的比例参数。
+            - **loc** (Tensor) - 分布a的位置参数。默认值： ``None`` 。
+            - **scale** (Tensor) - 分布a的比例参数。默认值： ``None`` 。
 
         返回：
             Tensor，KL散度。
 
     .. py:method:: log_cdf(value, loc, scale)
 
-        计算给定值对于的累积分布函数的对数。
+        计算给定值的累积分布函数的对数。
 
         参数：
             - **value** (Tensor) - 要计算的值。
@@ -116,7 +116,7 @@ mindspore.nn.probability.distribution.Cauchy
             - **scale** (Tensor) - 分布比例参数。默认值： ``None`` 。
 
         返回：
-            Tensor，累积分布函数的对数。
+            Tensor，概率的对数。
 
     .. py:method:: log_survival(value, loc, scale)
 
@@ -154,7 +154,7 @@ mindspore.nn.probability.distribution.Cauchy
 
     .. py:method:: prob(value, loc, scale)
 
-        计算给定值下的概率。对于连续是计算概率密度函数（Probability Density Function）。
+        计算给定值的概率。对于连续分布是计算概率密度函数（Probability Density Function）。
 
         参数：
             - **value** (Tensor) - 要计算的值。
@@ -166,7 +166,7 @@ mindspore.nn.probability.distribution.Cauchy
 
     .. py:method:: sample(shape, loc, scale)
 
-        采样函数。
+        计算采样函数。
 
         参数：
             - **shape** (tuple) - 样本的shape。

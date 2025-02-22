@@ -19,7 +19,7 @@ mindspore.nn.probability.distribution.Geometric
 
 
     异常：
-        - **ValueError** - `probs` 中元素小于0或者大于1。
+        - **ValueError** - `probs` 中元素小于等于0或者大于等于1。
 
     .. py:method:: probs
         :property:
@@ -31,7 +31,7 @@ mindspore.nn.probability.distribution.Geometric
 
     .. py:method:: cdf(value, probs)
 
-        在给定值下计算累积分布函数（Cumulatuve Distribution Function, CDF）。
+        计算给定值的累积分布函数（Cumulatuve Distribution Function, CDF）。
 
         参数：
             - **value** (Tensor) - 要计算的值。
@@ -46,8 +46,8 @@ mindspore.nn.probability.distribution.Geometric
 
         参数：
             - **dist** (str) - 分布的类型。
-            - **probs_b** (Tensor) - 对比分布的伯努利实验成功的概率。
-            - **probs** (Tensor) - 伯努利实验成功的概率。默认值： ``None`` 。
+            - **probs_b** (Tensor) - 分布b的伯努利实验成功的概率。
+            - **probs** (Tensor) -  分布a的伯努利实验成功的概率。默认值： ``None`` 。
 
         返回：
             Tensor，交叉熵的值。
@@ -68,15 +68,15 @@ mindspore.nn.probability.distribution.Geometric
 
         参数：
             - **dist** (str) - 分布的类型。
-            - **probs_b** (Tensor) - 对比分布的伯努利实验成功的概率。
-            - **probs** (Tensor) - 伯努利实验成功的概率。默认值： ``None`` 。
+            - **probs_b** (Tensor) - 分布b的伯努利实验成功的概率。
+            - **probs** (Tensor) -  分布a的伯努利实验成功的概率。默认值： ``None`` 。
 
         返回：
             Tensor，KL散度。
 
     .. py:method:: log_cdf(value, probs)
 
-        计算给定值对于的累积分布函数的对数。
+        计算给定值对应的累积分布函数的对数。
 
         参数：
             - **value** (Tensor) - 要计算的值。
@@ -94,7 +94,7 @@ mindspore.nn.probability.distribution.Geometric
             - **probs** (Tensor) - 伯努利实验成功的概率。默认值： ``None`` 。
 
         返回：
-            Tensor，累积分布函数的对数。
+            Tensor，概率的对数。
 
     .. py:method:: log_survival(value, probs)
 
@@ -129,7 +129,7 @@ mindspore.nn.probability.distribution.Geometric
 
     .. py:method:: prob(value, probs)
 
-        计算给定值下的概率。对于离散分布是计算概率质量函数（Probability Mass Function）。
+        计算给定值的概率。对于离散分布是计算概率质量函数（Probability Mass Function）。
 
         参数：
             - **value** (Tensor) - 要计算的值。
