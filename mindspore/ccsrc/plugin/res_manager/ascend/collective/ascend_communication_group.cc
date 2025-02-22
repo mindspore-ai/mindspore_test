@@ -17,6 +17,7 @@
 #include "plugin/res_manager/ascend/collective/ascend_communication_group.h"
 #include <map>
 #include <algorithm>
+#include "include/backend/distributed/collective/collective_manager.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 #include "plugin/res_manager/ascend/collective/hccl_watch_dog_thread.h"
@@ -95,6 +96,8 @@ bool AscendCommunicationGroup::Initialize(void *root_info) {
     (void)HcclWatchDogManager::GetInstance().InitHandler(handle_size);
     MS_LOG(INFO) << "hccl watchdog on device side is successfully initialized.";
   }
+  // clear uniqueid
+  distributed::collective::CollectiveManager::instance()->ClearUniqueID(name_);
   (void)CALL_ASCEND_API(aclrtResetDevice, device_id);
   return true;
 }

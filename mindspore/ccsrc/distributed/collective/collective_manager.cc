@@ -803,10 +803,19 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
   if (!ret) {
     MS_LOG(ERROR) << "Failed to create comm group on device side for " << group_name;
   }
-  MS_LOG(INFO) << "Delete unique after build ok.";
-  host_comm_lib_instance_->ClearUniqueID(group_name);
   MS_LOG(WARNING) << "End initialize communication group on the device side: " << group_name;
   return ret;
+}
+
+void CollectiveManager::ClearUniqueID(const std::string &group_name) {
+  UCEException::GetInstance().CheckUceARFEnv();
+  if (!UCEException::GetInstance().enable_arf()) {
+    return;
+  }
+  MS_EXCEPTION_IF_NULL(host_comm_lib_instance_);
+  MS_LOG(INFO) << "Delete unique id after build success.";
+  host_comm_lib_instance_->ClearUniqueID(group_name);
+  MS_LOG(INFO) << "Delete unique id end.";
 }
 
 bool CollectiveManager::IsAsyncInitGlobalComm() {

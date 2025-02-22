@@ -144,6 +144,8 @@ class BACKEND_EXPORT CollectiveManager {
   bool FinalizeDummyCommLib();
 
   bool ResumeHcclComm();
+  // clean unique if after group build success when using ARF
+  void ClearUniqueID(const std::string &group_name);
 
   // Return whether initializing global comm asynchronizely.
   bool IsAsyncInitGlobalComm();
