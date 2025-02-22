@@ -973,6 +973,13 @@ AnfNodePtr PipelinePostProcess::GenerateMainGraphRecv(const AnfNodePtr &fg_node,
     auto param = crecv->user_data<AnfNode>(INPUT_PARAM);
     MS_EXCEPTION_IF_NULL(param);
     new_recv = GenNewNodeFromOld(recv, param, 0, 0);
+    auto param_node = param->cast<ParameterPtr>();
+    if (param_node != nullptr) {
+      const auto &recv_param_info = param_node->param_info();
+      if (recv_param_info != nullptr) {
+        recv_param_info->set_is_pipeline_shared_param(true);
+      }
+    }
   } else {
     auto index = cuser->GetPrimalAttr(INDEX);
     MS_EXCEPTION_IF_NULL(index);
