@@ -606,6 +606,3 @@ class PipelineGradReducer(Cell):
         mode = context.get_context('mode')
         if mode != context.GRAPH_MODE:
             raise RuntimeError(f"PipelineGradReducer only support graph mode, but get {mode}")
-        parallel_mode = context.get_auto_parallel_context('parallel_mode')
-        if parallel_mode not in (context.ParallelMode.SEMI_AUTO_PARALLEL, context.ParallelMode.AUTO_PARALLEL):
-            raise RuntimeError(f"{parallel_mode} can not use PipelineGradReducer in graph mode")

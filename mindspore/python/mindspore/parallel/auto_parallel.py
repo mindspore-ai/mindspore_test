@@ -201,9 +201,31 @@ class AutoParallel(Cell):
         self._dataset_strategy_config = config
 
     def hsdp(self, shard_size=-1, threshold=64, optimizer_level="level1"):
+        r"""
+        Set optimizer parallel configs.
+
+        Args:
+            shard_size: Set the optimizer weight shard group size if you want to specific the
+                        maximum group size across devices when the parallel optimizer is
+                        enabled. The numerical range can be (0, device_num]. Default value
+                        is -1, which means the optimizer weight shard group size will
+                        the data parallel group of each parameter. Default -1.
+            threshold: Set the threshold of parallel optimizer. When parallel optimizer is
+                       enabled, parameters with size smaller than this threshold will not be
+                       sharded across the devices. Parameter size = shape[0] \* ... \*
+                       shape[n] \* size(dtype). Non-negative. Unit: KB. Default: 64.
+            optimizer_level: Set the level of optimizer parallel.
+        """
         self._enable_parallel_optimizer = True
+        if not isinstance(shard_size, int) or (shard_size <= 0 and shard_size != -1):
+            raise ValueError("shard_size must be a positive integer or -1, but got {}.".format(shard_size))
         self._optimizer_weight_shard_size = shard_size
+        if not isinstance(threshold, int) or threshold < 0:
+            raise ValueError("threshold must be a positive integer or 0, but got {}.".format(threshold))
         self._parallel_optimizer_threshold = threshold
+        if optimizer_level not in ["level1", "level2", "level3"]:
+            raise ValueError("Optimizer level should in ['level1', 'level2', 'level3'], but got {}"
+                             .format(optimizer_level))
         self._optimizer_level = optimizer_level
 
     def pipeline(self, pipeline_stages=1, pipeline_result_broadcast=False, pipeline_interleave=False,
