@@ -287,7 +287,7 @@ def _count_redundancy_list(rank_num, param_name, redundancy_dict, device_num):
 
 
 def _find_remove_redundancy_rank_id(pipe_param_list, single_param_dict, file_dict, saftensor_dict, redundancy_dict,
-                                    needed_rank, device_num):
+                                    needed_rank, device_num, choice_func):
     """Find the rank_id under redundant groups."""
     io_time = 0
     for param_name in pipe_param_list:
@@ -307,7 +307,18 @@ def _find_remove_redundancy_rank_id(pipe_param_list, single_param_dict, file_dic
             end_time = time.time()
             cost_time = end_time - start_time
             io_time += cost_time
-            saftensor_dict[param_name] = output
+            save_param_name = param_name
+            if choice_func is not None:
+                choice_out = choice_func(param_name)
+                if isinstance(choice_out, bool):
+                    if not choice_out:
+                        continue
+                elif isinstance(choice_out, str):
+                    save_param_name = choice_out
+                else:
+                    raise ValueError("For 'unified_safetensors', the return value type of the function "
+                                     f"'choice_func' must be bool or str, but got {type(choice_out)}.")
+            saftensor_dict[save_param_name] = output
         else:
             raise ValueError(f"For _transform_safetensors_single, {param_name} should be in "
                              f"{redundancy_ranks}, but in {single_param_dict[param_name]}.")
@@ -363,7 +374,7 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
                 if src_strategy_file is not None:
                     io_time = _find_remove_redundancy_rank_id(pipe_param_list, single_param_dict, file_dict,
                                                               saftensor_dict, redundancy_dict, needed_rank,
-                                                              device_num)
+                                                              device_num, choice_func)
                     io_cost_time += io_time
                 else:
                     with safe_open(all_safetensor_files_map.get(int(needed_rank)), framework="np") as f:
@@ -445,6 +456,7 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
             del param_total_dict_keys
         del param_total_dict
     return io_cost_time
+
 
 def _save_final_safetensors(_transform_param_list, output_format):
     """save file with list"""
