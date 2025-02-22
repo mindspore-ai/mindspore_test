@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "view/unstack_ext_strides_calc.h"
+#include "view/unstack_ext_view_strides_calc.h"
 #include <vector>
 #include <memory>
 #include <set>
@@ -23,7 +23,7 @@
 #include "utils/check_convert_utils.h"
 
 namespace mindspore::ops {
-OPS_API TensorStorageInfoPtrList UnstackExtCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
+OPS_API TensorStorageInfoPtrList UnstackExtViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>()) {
     return {};
   }
@@ -31,7 +31,7 @@ OPS_API TensorStorageInfoPtrList UnstackExtCalc(const PrimitivePtr &prim, const 
   auto tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(tensor);
   auto type = tensor->Dtype();
-  (void)CheckAndConvertUtils::CheckTypeValid("input", type, common_valid_types_with_complex_and_bool, "UnstackExt");
+  (void)CheckAndConvertUtils::CheckTypeValid("input", type, common_valid_types_with_complex_and_bool, "UnstackExtView");
   auto dim_value_ptr = inputs[kInputIndex1];
   MS_EXCEPTION_IF_NULL(dim_value_ptr);
   auto dim = GetValue<int64_t>(dim_value_ptr);
@@ -39,6 +39,6 @@ OPS_API TensorStorageInfoPtrList UnstackExtCalc(const PrimitivePtr &prim, const 
 
   return UnstackStridesCalc(old_tensor_info, dim);
 }
-REG_TUPLE_OUT_VIEW_STRIDES_CALC_FUN(UnstackExt, UnstackExtCalc);
+REG_TUPLE_OUT_VIEW_STRIDES_CALC_FUN(UnstackExtView, UnstackExtViewCalc);
 
 }  // namespace mindspore::ops

@@ -13,26 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef MINDSPORE_CORE_OPS_OP_FUNC_IMPL_UNSTACK_EXT_H
-#define MINDSPORE_CORE_OPS_OP_FUNC_IMPL_UNSTACK_EXT_H
+#ifndef MINDSPORE_CORE_OPS_VIEW_SELECT_EXT_VIEW_STRIDES_CALC_H
+#define MINDSPORE_CORE_OPS_VIEW_SELECT_EXT_VIEW_STRIDES_CALC_H
 
 #include <vector>
-#include "ops/ops_func_impl/op_func_impl.h"
-#include "mindapi/base/macros.h"
+#include "view/view_strides_calculator.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API UnstackExtFuncImpl : public OpFuncImpl {
- public:
-  UnstackExtFuncImpl() = default;
-  ~UnstackExtFuncImpl() = default;
 
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-};
-class OPS_API UnstackExtViewFuncImpl : public UnstackExtFuncImpl {};
+OPS_API TensorStorageInfoPtrList SelectExtViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
+OPS_API TensorStorageInfoPtrList SelectExtStridesCalc(const OldTensorInfoPtr old_tensor_info, const int64_t ori_dim,
+                                                      const int64_t ori_index);
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_OP_FUNC_IMPL_UNSTACK_EXT_H
+#endif  // MINDSPORE_CORE_OPS_VIEW_SELECT_EXT_VIEW_STRIDES_CALC_H

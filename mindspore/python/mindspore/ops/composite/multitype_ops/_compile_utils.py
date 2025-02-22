@@ -35,7 +35,7 @@ from mindspore import ops
 from mindspore.ops.primitive import _primexpr
 from mindspore import _checkparam as validator
 from mindspore.common._stub_tensor import _convert_stub
-from mindspore.ops.auto_generate.gen_ops_prim import select_ext_op, slice_ext_op, inplace_copy_op, \
+from mindspore.ops.auto_generate.gen_ops_prim import select_ext_view_op, slice_ext_op, inplace_copy_op, \
     index_op, inplace_index_put_op
 
 slice_get_item = SliceGetItem()
@@ -266,7 +266,7 @@ def _do_select(self: Tensor, dim: int, index: int, dim_index: int, self_shape: l
     if index >= dim_size or index < -dim_size:
         raise IndexError(f"Index {index} is out of bounds for dimension {dim_index} with size {dim_size}")
     index = index + dim_size if index < 0 else index
-    return select_ext_op(self, dim, index)
+    return select_ext_view_op(self, dim, index)
 
 
 def _do_slice(self: Tensor, dim: int, index: slice, self_shape: list):

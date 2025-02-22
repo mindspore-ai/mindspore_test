@@ -1148,7 +1148,7 @@ REG_BPROP_BUILDER("Unstack").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
-REG_BPROP_BUILDER("UnstackExt").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("UnstackExtView").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   auto dim = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
   auto dx = ib->StackExt(dout, dim);
@@ -1173,7 +1173,7 @@ REG_BPROP_BUILDER("StackExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUN
   if (axis < 0) {
     axis += SizeToLong(input_shape.size());
   }
-  auto ret = ib->Emit("UnstackExt", {dout, ib->Value(axis)});
+  auto ret = ib->Emit("UnstackExtView", {dout, ib->Value(axis)});
   return {ret, ib->OutZeros(axis_node)};
 });
 
@@ -2550,7 +2550,7 @@ DEF_PURE_SHAPE_CALC(g_select_ext)
     return {size, size};
   });
 
-REG_BPROP_BUILDER("SelectExt").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("SelectExtView").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex1);
   auto index = ib->GetInput(kIndex2);

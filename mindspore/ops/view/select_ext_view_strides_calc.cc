@@ -17,7 +17,7 @@
 #include <memory>
 #include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
-#include "view/select_ext_strides_calc.h"
+#include "view/select_ext_view_strides_calc.h"
 
 namespace {
 constexpr size_t kSelectExtInputsNum = 3;
@@ -32,13 +32,13 @@ TensorStorageInfoPtrList SelectExtStridesCalc(const OldTensorInfoPtr old_tensor_
   auto old_storage_offset = old_tensor_info->old_offset;
 
   int dim_size = SizeToLong(old_shape.size());
-  MS_CHECK_VALUE(dim_size > 0, "For Primitive [SelectExt] rank must >= 1");
+  MS_CHECK_VALUE(dim_size > 0, "For Primitive [SelectExtView] rank must >= 1");
 
   auto dim = DynamicDimWrap(ori_dim, dim_size);
   auto dim_value = old_shape[dim];
 
   MS_CHECK_VALUE(ori_index >= -dim_value && ori_index < dim_value,
-                 "For Primitive [SelectExt] start exceed range. start: " + std::to_string(ori_index) +
+                 "For Primitive [SelectExtView] start exceed range. start: " + std::to_string(ori_index) +
                    ", start should be in [" + std::to_string(-dim_value) + ", " + std::to_string(dim_value) + ").");
   auto index = ori_index < 0 ? ori_index + dim_value : ori_index;
 
@@ -54,7 +54,7 @@ TensorStorageInfoPtrList SelectExtStridesCalc(const OldTensorInfoPtr old_tensor_
                                         old_tensor_info->ori_strides, IsContiguous(new_shape, new_strides));
   return {new_storage_info};
 }
-TensorStorageInfoPtrList SelectExtCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
+TensorStorageInfoPtrList SelectExtViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   if (CheckInputsNull(inputs, kSelectExtInputsNum) || !inputs[kInputIndex0]->isa<tensor::BaseTensor>()) {
     MS_LOG(EXCEPTION) << "inputs num is invalid, num:" << inputs.size();
   }
@@ -71,5 +71,5 @@ TensorStorageInfoPtrList SelectExtCalc(const PrimitivePtr &prim, const std::vect
   return SelectExtStridesCalc(old_tensor_info, dim, index);
 }
 
-REG_VIEW_STRIDES_CALC_FUN(SelectExt, SelectExtCalc);
+REG_VIEW_STRIDES_CALC_FUN(SelectExtView, SelectExtViewCalc);
 }  // namespace mindspore::ops

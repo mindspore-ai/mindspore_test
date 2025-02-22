@@ -1,5 +1,5 @@
-#operator unstack_ext
-unstack_ext:
+#operator unstack_ext_view
+unstack_ext_view:
     args:
         input:
             dtype: tensor
@@ -17,6 +17,6 @@ unstack_ext:
         side_effect_mem: True
     dispatch:
         enable: True
-        Ascend: UnstackExtAscend
+        Ascend: UnstackExtViewAscend
         CPU: None
         GPU: None

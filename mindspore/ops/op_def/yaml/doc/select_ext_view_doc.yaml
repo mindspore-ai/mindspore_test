@@ -1,4 +1,4 @@
-select_ext:
+select_ext_view:
     description: |
         Slices the input tensor along the selected dimension at the given index.
 

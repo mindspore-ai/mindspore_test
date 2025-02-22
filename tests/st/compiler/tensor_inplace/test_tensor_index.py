@@ -22,7 +22,7 @@ context.set_context(mode=ms.GRAPH_MODE)
 
 
 @pytest.mark.skip(
-    reason="RuntimeError: Unsupported op [SelectExt] on GPU, \
+    reason="RuntimeError: Unsupported op [SelectExtView] on GPU, \
                   Please confirm whether the device target setting is correct."
 )
 @arg_mark(
@@ -52,7 +52,7 @@ def test_tensor_select_ext_write():
 
 
 @pytest.mark.skip(
-    reason="RuntimeError: Unsupported op [SelectExt] on GPU, \
+    reason="RuntimeError: Unsupported op [SelectExtView] on GPU, \
                   Please confirm whether the device target setting is correct."
 )
 @arg_mark(
@@ -81,7 +81,7 @@ def test_tensor_select_ext_read():
 
 
 @pytest.mark.skip(
-    reason="RuntimeError: Unsupported op [SelectExt] on GPU, \
+    reason="RuntimeError: Unsupported op [SelectExtView] on GPU, \
                   Please confirm whether the device target setting is correct."
 )
 @arg_mark(
@@ -111,7 +111,7 @@ def test_tensor_slice_ext_write():
 
 
 @pytest.mark.skip(
-    reason="RuntimeError: Unsupported op [SelectExt] on GPU, \
+    reason="RuntimeError: Unsupported op [SelectExtView] on GPU, \
                   Please confirm whether the device target setting is correct."
 )
 @arg_mark(
@@ -399,7 +399,7 @@ def test_tensor_bool_tensor_read():
 
 
 @pytest.mark.skip(
-    reason="RuntimeError: Unsupported op [SelectExt] on GPU, \
+    reason="RuntimeError: Unsupported op [SelectExtView] on GPU, \
                   Please confirm whether the device target setting is correct."
 )
 @arg_mark(
@@ -473,7 +473,7 @@ def test_tensor_select_slice_write_3():
 
 
 @pytest.mark.skip(
-    reason="RuntimeError: Unsupported op [SelectExt] on GPU, \
+    reason="RuntimeError: Unsupported op [SelectExtView] on GPU, \
                   Please confirm whether the device target setting is correct."
 )
 @arg_mark(
@@ -611,7 +611,7 @@ def test_tensor_index_tensor_read():
 
 
 @pytest.mark.skip(
-    reason="RuntimeError: Unsupported op [SelectExt] on GPU, \
+    reason="RuntimeError: Unsupported op [SelectExtView] on GPU, \
                   Please confirm whether the device target setting is correct."
 )
 @arg_mark(
@@ -641,7 +641,7 @@ def test_tensor_select_slice_index_write():
 
 
 @pytest.mark.skip(
-    reason="RuntimeError: Unsupported op [SelectExt] on GPU, \
+    reason="RuntimeError: Unsupported op [SelectExtView] on GPU, \
                   Please confirm whether the device target setting is correct."
 )
 @arg_mark(

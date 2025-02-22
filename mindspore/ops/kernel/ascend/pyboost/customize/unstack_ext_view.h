@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_UNSTACKEXT_
-#define MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_UNSTACKEXT_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_UNSTACKEXTVIEW_
+#define MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_UNSTACKEXTVIEW_
 
 #include <vector>
 #include <memory>
@@ -23,14 +23,15 @@
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
-#include "mindspore/ccsrc/pyboost/auto_generate/unstack_ext.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/unstack_ext_view.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::vector<tensor::BaseTensorPtr> UnstackExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                             const BaseTensorPtr &x_tensor, const Int64ImmPtr &axis);
+std::vector<tensor::BaseTensorPtr> UnstackExtViewAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                                 const BaseTensorPtr &x_tensor,
+                                                                 const Int64ImmPtr &axis);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_UNSTACKEXT_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_UNSTACKEXTVIEW_

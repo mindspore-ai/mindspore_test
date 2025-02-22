@@ -237,7 +237,7 @@ from mindspore.ops.function.array_func import scatter
 # 92 scatter_add
 from mindspore.ops.function.array_func import tensor_scatter_add
 # 93 select
-from mindspore.ops.auto_generate import select, select_ext
+from mindspore.ops.auto_generate import select, select_ext_view
 # 94 sigmoid
 from mindspore.ops.auto_generate import sigmoid
 # 95 sin
@@ -998,7 +998,7 @@ def deprecated_tensor_scatter_add(input, indices, updates):
 
 # 93 select
 def tensor_select_ext(input, dim, index):
-    return select_ext(input, dim, index)
+    return select_ext_view(input, dim, index)
 
 
 def deprecated_tensor_select(input, condition, y):
