@@ -32,7 +32,6 @@ internal::InternalOpPtr InternalSplit::CreateKernel(const internal::InputsImmuta
   if (param.split_dim < 0) {
     param.split_dim += static_cast<int32_t>(rank);
   }
-  std::vector<uint32_t> split_sizes;
   for (const auto size : ori_split_sizes) {
     param.split_sizes.emplace_back(static_cast<uint32_t>(size));
   }
