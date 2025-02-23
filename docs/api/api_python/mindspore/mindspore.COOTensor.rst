@@ -3,7 +3,7 @@ mindspore.COOTensor
 
 .. py:class:: mindspore.COOTensor(indices=None, values=None, shape=None, coo_tensor=None)
 
-    用来表示某一Tensor在给定索引上非零元素的集合，其中索引(indices)指示了每一个非零元素的位置。
+    用来表示某一Tensor在给定索引上非零元素的集合，其中索引（indices）指示了每一个非零元素的位置。
 
     对一个稠密Tensor `dense` 来说，它对应的COOTensor(indices, values, shape)，满足 `dense[indices[i]] = values[i]` 。
 
@@ -24,7 +24,7 @@ mindspore.COOTensor
         - 目前COOTensor中相同索引的值不会进行合并。如果索引中包含界外值，则得出未定义结果。
 
     参数：
-        - **indices** (Tensor) - shape为 :math:`(N, ndims)` 的二维整数Tensor，其中N和ndims分别表示稀疏Tensor中 `values` 的数量和COOTensor维度的数量。目前 `ndims` 只能为2。请确保indices的值在所给shape范围内。支持的数据类型为int16， int32和int64。默认值： ``None`` 。
+        - **indices** (Tensor) - shape为 :math:`(N, ndims)` 的二维整数Tensor，其中 :math:`N` 和 :math:`ndims` 分别表示稀疏Tensor中 `values` 的数量和COOTensor维度的数量。目前 :math:`ndims` 只能为2。请确保 `indices` 的值在所给shape范围内。支持的数据类型为int16、int32和int64。默认值： ``None`` 。
         - **values** (Tensor) - shape为 :math:`(N)` 的一维Tensor，用来给 `indices` 中的每个元素提供数值。默认值： ``None`` 。
         - **shape** (tuple(int)) - shape为 :math:`(ndims)` 的整数元组，用来指定稀疏矩阵的稠密shape。默认值： ``None`` 。
         - **coo_tensor** (COOTensor) - COOTensor对象，用来初始化新的COOTensor。默认值： ``None`` 。
@@ -45,25 +45,25 @@ mindspore.COOTensor
 
         参数：
             - **other** (COOTensor) - 另一个操作数，与当前操作数相加。
-            - **thresh** (Tensor) - 零维。用来决定COOTensor.add结果中的indice/value对是否出现的阈值。如果结果中value的数据类型为实数，则 `thresh` 的数据类型应该与它的数据类型一致。如果结果中value小于 `thresh`, 它将会被丢掉。
+            - **thresh** (Tensor) - 零维。用来决定COOTensor.add结果中的indice/value对是否出现的阈值。如果结果中value的数据类型为实数，则 `thresh` 的数据类型应该与它的数据类型一致。如果结果中value小于 `thresh`，它将会被丢掉。
 
         返回：
             COOTensor，为两COOTensor相加后的结果。
 
         异常：
-            - **ValueError** - 如果操作数(本COOTensor/other)的indices的维度不等于2。
-            - **ValueError** - 如果操作数(本COOTensor/other)的values的维度不等于1。
-            - **ValueError** - 如果操作数(本COOTensor/other)的shape的维度不等于1。
+            - **ValueError** - 如果操作数（本COOTensor/other）的indices的维度不等于2。
+            - **ValueError** - 如果操作数（本COOTensor/other）的values的维度不等于1。
+            - **ValueError** - 如果操作数（本COOTensor/other）的shape的维度不等于1。
             - **ValueError** - 如果thresh的维度不等于0。
-            - **TypeError** - 如果操作数(本COOTensor/other)的indices的数据类型不为int64。
-            - **TypeError** - 如果操作数(本COOTensor/other)的shape的数据类型不为int64。
-            - **ValueError** - 如果操作数(本COOTensor/other)的indices的长度不等于它的values的长度。
-            - **TypeError** - 如果操作数(本COOTensor/other)的values的数据类型不为(int8/int16/int32/int64/float32/float64/complex64/complex128)中的任何一个。
-            - **TypeError** - 如果thresh的数据类型不为(int8/int16/int32/int64/float32/float64)中的任何一个。
-            - **TypeError** - 如果操作数(本COOTensor)的indices数据类型不等于other的indices数据类型。
-            - **TypeError** - 如果操作数(本COOTensor)的values数据类型不等于other的values数据类型。
-            - **TypeError** - 如果操作数(本COOTensor)的shape数据类型不等于other的shape数据类型。
-            - **TypeError** - 如果操作数(本COOTensor/other)的values的数据类型与thresh数据类型不匹配。
+            - **TypeError** - 如果操作数（本COOTensor/other）的indices的数据类型不为int64。
+            - **TypeError** - 如果操作数（本COOTensor/other）的shape的数据类型不为int64。
+            - **ValueError** - 如果操作数（本COOTensor/other）的indices的长度不等于它的values的长度。
+            - **TypeError** - 如果操作数（本COOTensor/other）的values的数据类型不为int8/int16/int32/int64/float32/float64/complex64/complex128中的任何一个。
+            - **TypeError** - 如果thresh的数据类型不为int8/int16/int32/int64/float32/float64中的任何一个。
+            - **TypeError** - 如果操作数（本COOTensor）的indices数据类型不等于other的indices数据类型。
+            - **TypeError** - 如果操作数（本COOTensor）的values数据类型不等于other的values数据类型。
+            - **TypeError** - 如果操作数（本COOTensor）的shape数据类型不等于other的shape数据类型。
+            - **TypeError** - 如果操作数（本COOTensor/other）的values的数据类型与thresh数据类型不匹配。
 
     .. py:method:: astype(dtype: mstype)
 
@@ -131,7 +131,7 @@ mindspore.COOTensor
 
     .. py:method:: to_tuple()
 
-        将COOTensor的索引，非零元素，以及shape信息作为tuple返回。
+        将COOTensor的索引、非零元素，以及shape信息作为tuple返回。
 
         返回：
             tuple(Tensor, Tensor, tuple(int))。
