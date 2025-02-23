@@ -81,9 +81,7 @@ std::vector<TypeId> KLDivFuncImpl::InferType(const PrimitivePtr &primitive, cons
   (void)CheckAndConvertUtils::CheckTypeIdValid("target", target_type, valid_types, prim_name);
 
   if (input_type != target_type) {
-    MS_EXCEPTION(TypeError) << "For primitive[" << prim_name << "], the input type and target type must be same"
-                            << ". But got input type: " << TypeIdToString(input_type)
-                            << " and target type: " << TypeIdToString(target_type) << ".";
+    return {kNumberTypeFloat32};
   }
   return {input_type};
 }

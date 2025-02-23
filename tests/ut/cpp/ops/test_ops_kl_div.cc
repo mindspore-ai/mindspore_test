@@ -24,7 +24,13 @@ std::vector<GeneralInferParam> prepare_params() {
                       InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32},                        // target
                       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},    // reduction
                       InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)}})   // log_target
-      .CaseShouldThrow();
+      .FeedExpectedOutput({{}}, {kNumberTypeFloat32});
+    generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat16},
+                      InferInfoParam{ShapeVector{2, 3}, kNumberTypeBFloat16},
+                      InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)},
+                      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(true)}})
+      .FeedExpectedOutput({{}}, {kNumberTypeFloat32});
     generator
       .FeedInputArgs({InferInfoParam{ShapeVector{2, 3, 4}, kNumberTypeFloat32},
                       InferInfoParam{ShapeVector{2, 3, 4}, kNumberTypeFloat32},
