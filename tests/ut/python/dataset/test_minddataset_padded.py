@@ -122,8 +122,9 @@ def test_cv_minddataset_reader_basic_padded_samples():
     padded_sample['file_name'] = 'dummy.jpg'
     num_readers = 4
     file_name = os.environ.get('PYTEST_CURRENT_TEST').split(':')[-1].split(' ')[0]
-    data_set = ds.MindDataset(file_name + "0", columns_list, num_readers, padded_sample=padded_sample, num_padded=5)
-    assert data_set.get_dataset_size() == 15
+    data_set = ds.MindDataset(file_name + "0", columns_list, num_readers, num_shards=4, shard_id=1,
+                              padded_sample=padded_sample, num_padded=2)
+    assert data_set.get_dataset_size() == 3
     num_iter = 0
     num_padded_iter = 0
     for item in data_set.create_dict_iterator(num_epochs=1, output_numpy=True):
@@ -136,8 +137,8 @@ def test_cv_minddataset_reader_basic_padded_samples():
             assert item['label'] == padded_sample['label']
             assert item['data'] == padded_sample['data']
         num_iter += 1
-    assert num_padded_iter == 5
-    assert num_iter == 15
+    assert num_padded_iter == 0
+    assert num_iter == 3
 
 
 @pytest.mark.usefixtures("add_and_remove_cv_file")
@@ -155,8 +156,9 @@ def test_cv_minddataset_reader_basic_padded_samples_type_cast():
     padded_sample['file_name'] = "99999"
     num_readers = 4
     file_name = os.environ.get('PYTEST_CURRENT_TEST').split(':')[-1].split(' ')[0]
-    data_set = ds.MindDataset(file_name + "0", columns_list, num_readers, padded_sample=padded_sample, num_padded=5)
-    assert data_set.get_dataset_size() == 15
+    data_set = ds.MindDataset(file_name + "0", columns_list, num_readers, num_shards=3, shard_id=1,
+                              padded_sample=padded_sample, num_padded=2)
+    assert data_set.get_dataset_size() == 4
     num_iter = 0
     num_padded_iter = 0
     for item in data_set.create_dict_iterator(num_epochs=1, output_numpy=True):
@@ -169,8 +171,8 @@ def test_cv_minddataset_reader_basic_padded_samples_type_cast():
             assert item['label'] == padded_sample['label']
             assert item['data'] == padded_sample['data']
         num_iter += 1
-    assert num_padded_iter == 5
-    assert num_iter == 15
+    assert num_padded_iter == 0
+    assert num_iter == 4
 
 
 @pytest.mark.usefixtures("add_and_remove_cv_file")
@@ -814,13 +816,19 @@ def test_minddataset_padded_samples_exception():
 
         columns_list = ["label", "file_name", "data"]
         padded_sample = {"data": np.array([1, 2, 3]), "file_name": "test_file_name.jpg", "label": -1}
-        data_set = ds.MindDataset(mindrecord_name, columns_list, 1,
-                                  padded_sample=padded_sample, num_padded=1, shuffle=False)
+        data_set = ds.MindDataset(mindrecord_name, columns_list, 1, num_shards=4, shard_id=3,
+                                  padded_sample=padded_sample, num_padded=2, shuffle=False)
         with pytest.raises(RuntimeError) as err:
             for _ in data_set.create_dict_iterator(num_epochs=1, output_numpy=True):
                 pass
         assert "Invalid padded_sample, the value of column: data should be string or number but got: {}, " + \
             "check 'padded_sample'." in str(err.value)
+
+        with pytest.raises(RuntimeError) as e:
+            data_set = ds.MindDataset(mindrecord_name, columns_list, 1,
+                                      padded_sample=padded_sample, num_padded=1, shuffle=False)
+        assert "When the padded sample logic is enabled, the sampler which is specified by " in str(e.value)
+
         if os.path.exists(mindrecord_name):
             os.remove(mindrecord_name)
         if os.path.exists("{}.db".format(mindrecord_name)):

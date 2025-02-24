@@ -11,11 +11,11 @@
         - **num_parallel_workers** (int, 可选) - 指定读取数据的工作线程数。默认值： ``None`` ，使用全局默认线程数(8)，也可以通过 :func:`mindspore.dataset.config.set_num_parallel_workers` 配置全局线程数。
         - **shuffle** (Union[bool, :class:`~.dataset.Shuffle`], 可选) - 每个epoch中数据混洗的模式，支持传入bool类型与枚举类型进行指定。默认值： ``None`` ，采用 ``mindspore.dataset.Shuffle.ADAPTIVE`` 。
           如果 `shuffle` 为 ``False`` ，则不混洗，如果 `shuffle` 为 ``True`` ，等同于将 `shuffle` 设置为 ``mindspore.dataset.Shuffle.ADAPTIVE`` 。
-          通过传入枚举变量设置数据混洗的模式：
+          通过传入枚举变量设置数据混洗的模式，枚举变量参考链接 :class:`mindspore.dataset.Shuffle` ：
 
           - ``Shuffle.ADAPTIVE`` ：当数据集样本小于等于1亿时，采用 ``Shuffle.GLOBAL`` ，当大于1亿时，采用局部 ``Shuffle.PARTIAL`` ，每100万样本混洗一次。
           - ``Shuffle.GLOBAL`` ：执行全局混洗，一次性混洗数据集中所有样本。占用内存大。
-          - ``Shuffle.PARTIAL`` ：执行局部混洗，每100万个样本混洗一次。占用内存小。
+          - ``Shuffle.PARTIAL`` ：执行局部混洗，每100万个样本混洗一次。占用内存小于 ``Shuffle.GLOBAL`` 。
           - ``Shuffle.FILES`` ：仅混洗文件序列，不混洗文件中的数据。
           - ``Shuffle.INFILE`` ：保持读入文件的序列，仅混洗每个文件中的数据。
 
@@ -33,6 +33,7 @@
         - **RuntimeError** - 指定了 `num_shards` 参数，但是未指定 `shard_id` 参数。
         - **RuntimeError** - 指定了 `shard_id` 参数，但是未指定 `num_shards` 参数。
         - **ValueError** - 如果 `shard_id` 取值不在[0, `num_shards` )范围。
+        - **TypeError** - `shuffle` 的类型不是None 或者 bool 或者 Shuffle。
 
     教程样例：
         - `使用数据Pipeline加载 & 处理数据集

@@ -128,16 +128,15 @@ class MindDataset(MappableDataset, UnionBaseDataset):
         num_parallel_workers (int, optional): Number of worker threads to read the data.
             Default: ``None`` , will use global default workers(8), it can be set
             by :func:`mindspore.dataset.config.set_num_parallel_workers` .
-        shuffle (Union[bool, Shuffle], optional): Perform reshuffling of the data every epoch.
-            Default: ``None``, performs `mindspore.dataset.Shuffle.ADAPTIVE`.
-            Bool type and Shuffle enum are both supported to pass in.
+        shuffle (Union[bool, Shuffle], optional): Perform reshuffling of the data every epoch, bool type and ``Shuffle``
+            enum are both supported to pass in. Default: ``None``, performs ``mindspore.dataset.Shuffle.ADAPTIVE`` .
             If `shuffle` is set to ``False`` , no shuffling will be performed.
             If `shuffle` is set to ``True`` , `shuffle` is set to ``mindspore.dataset.Shuffle.ADAPTIVE`` .
             There are several levels of shuffling, desired shuffle enum defined by :class:`mindspore.dataset.Shuffle` .
 
             - ``Shuffle.ADAPTIVE`` : When the number of dataset samples is less than or equal to 100 million,
-              global shuffle is used. When the number of dataset samples is greater than 100
-              million, partial shuffle is used. The shuffle is performed once
+              ``Shuffle.GLOBAL`` is used. When the number of dataset samples is greater than 100
+              million, ``Shuffle.PARTIAL`` is used. The shuffle is performed once
               every 1 million samples.
 
             - ``Shuffle.GLOBAL`` : Global shuffle of all rows of data in dataset. The memory usage is large.
@@ -176,6 +175,7 @@ class MindDataset(MappableDataset, UnionBaseDataset):
         RuntimeError: If `num_shards` is specified but `shard_id` is None.
         RuntimeError: If `shard_id` is specified but `num_shards` is None.
         ValueError: If `shard_id` is not in range of [0, `num_shards` ).
+        TypeError: If `shuffle` is not of type None, bool or Shuffle.
 
     Note:
         - When sharding MindRecord (by configuring `num_shards` and `shard_id`), there are two strategies to implement
@@ -310,6 +310,10 @@ class MindDataset(MappableDataset, UnionBaseDataset):
                     self.new_padded_sample[k] = v.tobytes()
                 else:
                     self.new_padded_sample[k] = v
+
+        if self.num_padded > 0 and not isinstance(self.sampler, samplers.DistributedSampler):
+            raise RuntimeError("When the padded sample logic is enabled, the sampler which is specified by parameter "
+                               "sampler or (num_shards, shard_id) is not distributed sampling.")
 
     def __deepcopy__(self, memodict):
         if id(self) in memodict:

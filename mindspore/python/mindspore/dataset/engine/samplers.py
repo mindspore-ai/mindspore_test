@@ -448,20 +448,19 @@ class DistributedSampler(BuiltinSampler):
     Args:
         num_shards (int): Number of shards to divide the dataset into.
         shard_id (int): Shard ID of the current shard, which should within the range of [0, `num_shards` - 1].
-        shuffle (bool, optional): If True, the indices are shuffled, otherwise it will not be shuffled.
-            Default: ``True``.
         shuffle (Union[bool, Shuffle], optional): Specify the shuffle mode.
-            Default: ``True``, Global shuffle of all rows of data in dataset. If `shuffle` is ``False`` ,
+            Default: ``True``, performs ``mindspore.dataset.Shuffle.GLOBAL`` . If `shuffle` is ``False`` ,
             no shuffling will be performed.
             There are several levels of shuffling, desired shuffle enum defined by :class:`mindspore.dataset.Shuffle` .
 
             - ``Shuffle.ADAPTIVE`` : When the number of dataset samples is less than or equal to 100 million,
-              global shuffle is used. When the number of dataset samples is greater than 100
-              million, partial shuffle is used. The shuffle is performed once every 1 million samples.
+              ``Shuffle.GLOBAL`` is used. When the number of dataset samples is greater than 100
+              million, ``Shuffle.PARTIAL`` is used. The shuffle is performed once every 1 million samples.
 
-            - ``Shuffle.GLOBAL`` : Global shuffle of all rows of data in dataset.
+            - ``Shuffle.GLOBAL`` : Global shuffle of all rows of data in dataset. The memory usage is large.
 
             - ``Shuffle.PARTIAL`` : Partial shuffle of data in dataset for every 1 million samples.
+              The memory usage is less than ``Shuffle.GLOBAL`` .
 
             - ``Shuffle.FILES`` : Shuffle the file sequence but keep the order of data within each file.
 
@@ -723,12 +722,13 @@ class RandomSampler(BuiltinSampler):
             There are several levels of shuffling, desired shuffle enum defined by :class:`mindspore.dataset.Shuffle` .
 
             - ``Shuffle.ADAPTIVE`` : When the number of dataset samples is less than or equal to 100 million,
-              global shuffle is used. When the number of dataset samples is greater than 100
-              million, partial shuffle is used. The shuffle is performed once every 1 million samples.
+              ``Shuffle.GLOBAL`` is used. When the number of dataset samples is greater than 100
+              million, ``Shuffle.PARTIAL`` is used. The shuffle is performed once every 1 million samples.
 
-            - ``Shuffle.GLOBAL`` : Global shuffle of all rows of data in dataset.
+            - ``Shuffle.GLOBAL`` : Global shuffle of all rows of data in dataset. The memory usage is large.
 
             - ``Shuffle.PARTIAL`` : Partial shuffle of data in dataset for every 1 million samples.
+              The memory usage is less than ``Shuffle.GLOBAL`` .
 
             - ``Shuffle.FILES`` : Shuffle the file sequence but keep the order of data within each file.
 
@@ -738,6 +738,7 @@ class RandomSampler(BuiltinSampler):
         TypeError: If `replacement` is not of type bool.
         TypeError: If `num_samples` is not of type int.
         ValueError: If `num_samples` is a negative value.
+        TypeError: If `shuffle` is not of type Shuffle.
 
     Examples:
         >>> import mindspore.dataset as ds
