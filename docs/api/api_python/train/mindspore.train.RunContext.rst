@@ -5,7 +5,7 @@ mindspore.train.RunContext
 
     保存和管理模型的相关信息。
 
-    `RunContext` 主要用于收集训练或推理过程中模型的上下文相关信息并作为入参传入callback对象中来实现信息的共享。
+    `RunContext` 主要用于收集训练或推理过程中模型的上下文相关信息，并作为入参传入callback对象中来实现信息的共享。
 
     Callback的类方法中，调用 `RunContext.original_args()` 可以获取模型当前的上下文信息，用户也可以为此信息添加额外的自定义属性，同时 `request_stop()` 方法可以控制训练过程的停止。具体用法请查看 `回调机制Callback <https://www.mindspore.cn/docs/zh-CN/master/model_train/train_process/model/callback.html>`_。
 
