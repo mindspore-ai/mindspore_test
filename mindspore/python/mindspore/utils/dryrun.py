@@ -84,6 +84,7 @@ def set_simulation():
     StubTensor.flush_from_cache = obj.inject(StubTensor.flush_from_cache)
     Tensor.__str__ = no_inject_traceback_for_print
     StubTensor.__str__ = no_inject_traceback_for_print
+    Tensor.tolist = obj.inject(Tensor.tolist)
 
 
 def mock(mock_val, *args):

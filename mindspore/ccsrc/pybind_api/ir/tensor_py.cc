@@ -17,7 +17,6 @@
 #include "pybind_api/ir/tensor_py.h"
 
 #include <utility>
-#include <complex>
 #include <algorithm>
 #include <map>
 
@@ -579,6 +578,82 @@ TensorPtr TensorPybind::ConvertBytesToTensor(const py::bytes &bytes_obj, const p
   return tensor;
 }
 
+py::object GetItemForToList(void *data, const TypeId &data_type, const int &index) {
+  switch (data_type) {
+    case TypeId::kNumberTypeInt8:
+      return py::int_(py::cast(*(static_cast<int8_t *>(data) + index)));
+    case TypeId::kNumberTypeUInt8:
+      return py::int_(py::cast(*(static_cast<uint8_t *>(data) + index)));
+    case TypeId::kNumberTypeInt16:
+      return py::int_(py::cast(*(static_cast<int16_t *>(data) + index)));
+    case TypeId::kNumberTypeUInt16:
+      return py::int_(py::cast(*(static_cast<uint16_t *>(data) + index)));
+    case TypeId::kNumberTypeInt:
+    case TypeId::kNumberTypeInt32:
+      return py::int_(py::cast(*(static_cast<int *>(data) + index)));
+    case TypeId::kNumberTypeUInt32:
+      return py::int_(py::cast(*(static_cast<uint32_t *>(data) + index)));
+    case TypeId::kNumberTypeInt64:
+      return py::int_(py::cast(*(static_cast<int64_t *>(data) + index)));
+    case TypeId::kNumberTypeUInt64:
+      return py::int_(py::cast(*(static_cast<uint64_t *>(data) + index)));
+    case TypeId::kNumberTypeFloat16:
+      return py::float_(py::cast(*(static_cast<float16 *>(data) + index)));
+    case TypeId::kNumberTypeFloat:
+    case TypeId::kNumberTypeFloat32:
+      return py::float_(py::cast(*(static_cast<float *>(data) + index)));
+    case TypeId::kNumberTypeDouble:
+    case TypeId::kNumberTypeFloat64:
+      return py::float_(py::cast(*(static_cast<double *>(data) + index)));
+    case TypeId::kNumberTypeBFloat16:
+      return py::float_(py::cast(*(static_cast<bfloat16 *>(data) + index)));
+    case TypeId::kNumberTypeBool:
+      return py::bool_(py::cast(*(static_cast<bool *>(data) + index)));
+    case TypeId::kNumberTypeComplex64:
+    case TypeId::kNumberTypeComplex:
+      return py::cast(
+        std::complex<double>{*(static_cast<float *>(data) + index * 2), *(static_cast<float *>(data) + 1 + index * 2)});
+    case TypeId::kNumberTypeComplex128:
+      return py::cast(std::complex<long double>{*(static_cast<double *>(data) + index * 2),
+                                                *(static_cast<double *>(data) + 1 + index * 2)});
+    default:
+      MS_EXCEPTION(TypeError) << "Not support tensor data type: " << data_type << ".";
+      break;
+  }
+  return py::none();
+}
+
+py::object RecursiveToList(void *data, const size_t &size, const std::vector<int64_t> &stride,
+                           const std::vector<int64_t> &shape, const size_t &element_size, const TypeId &data_type,
+                           int cur_dim, int index) {
+  int ndim = shape.size();
+  py::list res_list;
+  if (size == 0 && cur_dim + 1 == ndim) {
+    return res_list;
+  }
+  if (cur_dim == ndim) {
+    return GetItemForToList(data, data_type, index);
+  }
+  for (int i = 0; i < shape[cur_dim]; ++i) {
+    py::object obj = RecursiveToList(data, ndim, stride, shape, element_size, data_type, cur_dim + 1, index);
+    res_list.append(obj);
+    index += stride[cur_dim];
+  }
+  return res_list;
+}
+
+py::object TensorPybind::ToList(const Tensor &tensor) {
+  tensor.data_sync();
+  auto tensor_element_count = tensor.data().size();
+  auto tensor_stride = tensor.stride();
+  auto tensor_shape = tensor.shape();
+  auto element_size = tensor.data().itemsize();
+  auto data = tensor.data_c();
+  auto data_type = tensor.data_type();
+
+  return RecursiveToList(data, tensor_element_count, tensor_stride, tensor_shape, element_size, data_type, 0, 0);
+}
+
 py::object TensorPybind::Item(const Tensor &tensor) {
   auto tensor_element_count = tensor.data().size();
   if (tensor_element_count != 1) {
@@ -993,6 +1068,11 @@ const py::object TensorPyImpl::GetUserData(const TensorPyPtr &tensorpy, const py
   return TensorPybind::GetUserData(*tensor, key);
 }
 
+py::object TensorPyImpl::ToList(const TensorPyPtr &tensorpy) {
+  auto tensor = tensorpy->GetTensor().get();
+  return TensorPybind::ToList(*tensor);
+}
+
 py::object TensorPyImpl::Item(const TensorPyPtr &tensorpy) {
   auto tensor = tensorpy->GetTensor().get();
   return TensorPybind::Item(*tensor);
@@ -1351,9 +1431,23 @@ void RegTensorPyFunction(py::class_<TensorPy, std::shared_ptr<TensorPy>> *tensor
                                 A scalar, type is defined by the dtype of the Tensor.
 
                             Examples:
-                                # index is None:
                                 >>> t = mindspore.Tensor([1])
                                 >>> t.item()
+                                1
+                            )mydelimiter");
+  tensor_class->def("_tolist", TensorPyImpl::ToList, R"mydelimiter(
+                            Convert a Tensor to List. If the input is Tensor scalar, a Python scalar will be returned.
+
+                            Returns:
+                                List or Python scalar.
+
+                            Examples:
+                                >>> x = ms.Tensor([[1, 2, 3], [4, 5, 6]])
+                                >>> out1 = x.tolist()
+                                >>> print(out1)
+                                [[1, 2, 3], [4, 5, 6]]
+                                >>> out2 = x[0][0].tolist()
+                                >>> print(out2)
                                 1
                             )mydelimiter");
   tensor_class->def("_has_auto_grad", &TensorPy::HasAutoGrad);
