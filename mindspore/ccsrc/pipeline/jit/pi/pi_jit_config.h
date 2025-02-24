@@ -35,7 +35,6 @@ class GraphJitConfig {
     kPrintAfterAll,
     kPrintTraceback,
     kPrintBB,
-    kPrintCFG,
     kPrintBytecode,
     kInterpretCapturedCode,
     kCompileWithoutCapture,

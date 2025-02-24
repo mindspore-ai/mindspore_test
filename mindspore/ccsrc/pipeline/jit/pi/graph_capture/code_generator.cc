@@ -1590,7 +1590,10 @@ static int FindLoopEnd(int start, const CFG *cfg) {
 
   const auto &instrs = cfg->instr_pool();
   int loop_exit = loop_begin->begin_ci();
-  int target = loop_begin->GetJumpBB() ? loop_begin->GetJumpBB()->begin_ci() : loop_exit;
+  int target = loop_exit;
+  for (const auto &i : loop_begin->succ_bbs()) {
+    target = std::max(target, i->begin_ci());
+  }
   // find loop last exit
   for (; loop_exit != target; ++loop_exit) {
     Instr *jump = instrs[loop_exit]->extra_jump();
@@ -1958,8 +1961,8 @@ bool LoopBodyReCaptureCodeGenerator::Prepare() {
     MS_LOG(WARNING) << "Failed to find loop head, skip...";
     return false;
   }
-  auto &loopControlInstr = loopHeadBB->instrs().back();
-  is_for_loop_ = loopControlInstr.op() == FOR_ITER;
+  Instr *loopControlInstr = graph_->GetCFG()->GetBlockTail(loopHeadBB);
+  is_for_loop_ = loopControlInstr->op() == FOR_ITER;
   std::vector<Block *> loopBodySortedBBs;
   for (auto bb : loopHeadBB->loop_body_bbs()) {
     if (!bb->is_loop_head() && bb->is_loop_body()) {

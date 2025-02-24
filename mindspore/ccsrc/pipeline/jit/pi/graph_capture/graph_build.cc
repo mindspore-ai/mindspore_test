@@ -1540,7 +1540,6 @@ bool GraphBuilder::DoMakeFunction(const Instr &instr) {
   AObject *f = AObject::MakeFunction(CollectObjects(p), graph_->GetGlobals(), oparg);
   ValueNode *func = NewValueNode(f, instr, p);
   push(func);
-  current_block_->SetTrackResult(Block::kHasGlobalSideEffect);
   return true;
 }
 
@@ -2106,7 +2105,6 @@ bool GraphBuilder::WhiteListFuncCheckAndInfer(CallNode *call_node, const py::obj
 
   AObject::Type vobj_type = call_node->input(0)->GetVobj()->GetType();
   if (vobj_type == AObject::kTypeCell) {
-    current_block_->SetTrackResult(Block::kTrackHasOpsPrimitive);
     std::string module_name = GetTopModule(callable);
     if (!module_name.empty()) {
       kPIJitConfigDefault.AddAllowedInlineModules(module_name);
@@ -2124,7 +2122,6 @@ bool GraphBuilder::WhiteListFuncCheckAndInfer(CallNode *call_node, const py::obj
   if (!infer_primitive && vobj_type == AObject::kTypePrimitive) {
     call_node->SetVobj(AObject::MakeAObject(AObject::kTypeTensor));
     call_node->SetInlineReason(InlineReason::kInlineGraphSupportedByMS);
-    current_block_->SetTrackResult(Block::kTrackHasOpsPrimitive);
     return true;
   }
 

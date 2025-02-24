@@ -47,7 +47,6 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"print_after_all", &GraphJitConfig::SetBool<GraphJitConfig::kPrintAfterAll>},
   {"print_tb", &GraphJitConfig::SetBool<GraphJitConfig::kPrintTraceback>},
   {"print_bb", &GraphJitConfig::SetBool<GraphJitConfig::kPrintBB>},
-  {"print_cfg", &GraphJitConfig::SetBool<GraphJitConfig::kPrintCFG>},
   {"print_bytecode", &GraphJitConfig::SetBool<GraphJitConfig::kPrintBytecode>},
   {"interpret_captured_code", &GraphJitConfig::SetBool<GraphJitConfig::kInterpretCapturedCode>},
   {"compile_without_capture", &GraphJitConfig::SetBool<GraphJitConfig::kCompileWithoutCapture>},
@@ -103,7 +102,6 @@ GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
   bool_conf[kPrintAfterAll - kBoolConf] = false;
   bool_conf[kPrintTraceback - kBoolConf] = false;
   bool_conf[kPrintBB - kBoolConf] = false;
-  bool_conf[kPrintCFG - kBoolConf] = false;
   bool_conf[kPrintBytecode - kBoolConf] = false;
   bool_conf[kInterpretCapturedCode - kBoolConf] = false;
   bool_conf[kCompileWithoutCapture - kBoolConf] = false;

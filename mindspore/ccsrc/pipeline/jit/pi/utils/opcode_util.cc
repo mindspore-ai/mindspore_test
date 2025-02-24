@@ -37,12 +37,14 @@ enum OpcodeFlag {
    * all user-defined operation to call function while graph building
    */
   kMayDel = 1 << 7,
+  kJBak = 1 << 8,
 };
 
 Opcode::Opcode() { *this = k_ILLEGAL_OPCODE; }
 
 bool Opcode::IsJRel() const { return flag_ & kJRel; }
 bool Opcode::IsJAbs() const { return flag_ & kJAbs; }
+bool Opcode::IsJBack() const { return flag_ & kJBak; }
 bool Opcode::IsNotFall() const { return flag_ & kNotFall; }
 bool Opcode::HasName() const { return flag_ & kHasName; }
 bool Opcode::HasFree() const { return flag_ & kHasFree; }
@@ -56,6 +58,47 @@ bool Opcode::IsExcMatch(int oparg) const {
   return false;
 #endif
 }
+
+// see "${PythonInclude}/internal/pycore_opcode.h"
+static uint8_t *GetOpCacheCount() {
+  static uint8_t cache[256] = {0};  // memset to zero
+#if IS_PYTHON_3_13_PLUS
+  // #error "Not implement for python3.13 opcode");
+#elif IS_PYTHON_3_12_PLUS
+  cache[BINARY_SUBSCR] = 1;
+  cache[STORE_SUBSCR] = 1;
+  cache[UNPACK_SEQUENCE] = 1;
+  cache[FOR_ITER] = 1;
+  cache[STORE_ATTR] = 4;
+  cache[LOAD_ATTR] = 9;
+  cache[COMPARE_OP] = 1;
+  cache[LOAD_GLOBAL] = 4;
+  cache[BINARY_OP] = 1;
+  cache[SEND] = 1;
+  cache[LOAD_SUPER_ATTR] = 1;
+  cache[CALL] = 3;
+#elif IS_PYTHON_3_11_PLUS
+  cache[BINARY_SUBSCR] = 4;
+  cache[STORE_SUBSCR] = 1;
+  cache[UNPACK_SEQUENCE] = 1;
+  cache[STORE_ATTR] = 4;
+  cache[LOAD_ATTR] = 4;
+  cache[COMPARE_OP] = 2;
+  cache[LOAD_GLOBAL] = 5;
+  cache[BINARY_OP] = 1;
+  cache[LOAD_METHOD] = 10;
+  cache[PRECALL] = 1;
+  cache[CALL] = 4;
+#endif
+  return cache;
+}
+
+int Opcode::InstrSize(int arg) const {
+  static uint8_t *cache = GetOpCacheCount();
+  int extended_args = (arg > 0xffffff) + (arg > 0xffff) + (arg > 0xff);
+  return extended_args + 1 + cache[code_];
+}
+
 bool Opcode::CheckIsOp(int oparg, bool *invert) const {
 #if (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 9)
   if (invert != nullptr) {
@@ -102,30 +145,36 @@ const Opcode *Opcode::Map() {
 }
 
 int Opcode::JumpTarget(int pc, int off) const {
-#if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION < 10)
-  constexpr int mul = sizeof(_Py_CODEUNIT);
-#else
-  constexpr int mul = 1;
-#endif
+  constexpr int mul = IS_PYTHON_3_10_PLUS ? 1 : 2;
+
   if (IsJRel()) {
-    return pc + 1 + off / mul;
+    if (IsJBack()) {
+      off = -off;
+    }
+    int tar = pc + InstrSize() + off / mul;
+    return tar;
   }
   if (IsJAbs()) {
-    return off / mul;
+    int tar = off;
+    return tar / mul;
   }
   return -1;
 }
+
 int Opcode::JumpOffset(int pc, int tar) const {
-#if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION < 10)
-  constexpr int mul = sizeof(_Py_CODEUNIT);
-#else
-  constexpr int mul = 1;
-#endif
+  constexpr int mul = IS_PYTHON_3_10_PLUS ? 1 : 2;
+
   if (IsJRel()) {
-    return (tar - pc - 1) * mul;
+    int off = (tar - pc - InstrSize()) * mul;
+    if (IsJBack()) {
+      // assert tar < offset
+      off = -off;
+    }
+    return off;
   }
   if (IsJAbs()) {
-    return tar * mul;
+    int off = tar;
+    return off * mul;
   }
   return -1;
 }

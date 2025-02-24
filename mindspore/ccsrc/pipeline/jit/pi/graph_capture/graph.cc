@@ -82,10 +82,7 @@ Graph::Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf)
   cfg_->GenerateCFG();
 
   if (conf_.GetBoolConfig(GraphJitConfig::kPrintBB)) {
-    GRAPH_JIT_LOG_F("%s\n\n", cfg_->DumpBBs().c_str());
-  }
-  if (conf_.GetBoolConfig(GraphJitConfig::kPrintCFG)) {
-    cfg_->DumpCFGGraph();
+    GRAPH_JIT_LOG_F("%s\n\n", cfg_->ToString().c_str());
   }
 
   auto pyname = PyDict_GetItemString(globals, "__name__");

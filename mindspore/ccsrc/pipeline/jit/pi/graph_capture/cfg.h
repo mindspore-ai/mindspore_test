@@ -18,34 +18,28 @@
 
 #include <memory>
 #include <set>
+#include <map>
 #include <string>
-#include <queue>
 #include <vector>
-#include "pipeline/jit/pi/python_adapter/pydef.h"
-#include "pipeline/jit/pi/utils/ptr_list_ref.h"
+#include "pipeline/jit/pi/python_adapter/py_code.h"
 #include "pybind11/pybind11.h"
 #include "pipeline/jit/pi/graph_capture/local_liveness.h"
-#include "pipeline/jit/pi/utils/opcode_declare.h"
 
 namespace mindspore {
 namespace pijit {
 
 namespace py = pybind11;
 
-class AbstractNode;
-class Graph;
-
-class Instr : public PtrListNodeBase<Instr> {
+class CFG;
+class Block;
+class Instr {
  public:
   Instr(const Instr &) = delete;
   Instr &operator=(const Instr &) = delete;
-  Instr(int op, int arg, int bci = -1, int line = -1) : bci_(bci), op_(op), arg_(arg), line_(line) {
-    MS_EXCEPTION_IF_CHECK_FAIL(op != Opcode::k_ILLEGAL_OPCODE, "ILLEGAL OPCODE !!!");
-  }
+  Instr(int op, int arg, int bci = -1, int line = -1) : bci_(bci), op_(op), arg_(arg), line_(line), jump_(nullptr) {}
   Instr(int op, int arg, const std::string &name) : Instr(op, arg) { name_ = name; }
   Instr(int op, int arg, const py::object &cnst) : Instr(op, arg) { cnst_ = cnst; }
   explicit Instr(int op) : Instr(op, 0) {}
-  virtual ~Instr() = default;
 
   int bci() const { return bci_; }
   void set_bci(int i) { bci_ = i; }
@@ -55,21 +49,15 @@ class Instr : public PtrListNodeBase<Instr> {
   void set_arg(int arg) { arg_ = arg; }
   int line() const { return line_; }
   void set_line(int l) { line_ = l; }
-  bool is_fall() const { return is_fall_; }
-  void set_is_fall(int is_fall) { is_fall_ = is_fall; }
-  const std::vector<Instr *> &extra_preds() const { return extra_preds_; }
-  std::vector<Instr *> &extra_preds() { return extra_preds_; }
-  Instr *extra_jump() const { return extra_jump_; }
-  void set_extra_jump(Instr *j) { extra_jump_ = j; }
+  Instr *extra_jump() const { return jump_; }
+  void set_extra_jump(Instr *j) { jump_ = j; }
 
   const std::string &name() const { return name_; }
   void set_name(const std::string &n) { name_ = n; }
   const py::object &cnst() const { return cnst_; }
-  void set_cnst(PyObject *cnst) { cnst_ = py::reinterpret_borrow<py::object>(cnst); }
-  void set_cnst(const py::object &cnst) { cnst_ = cnst; }
+  void set_cnst(const py::handle &cnst) { cnst_ = py::reinterpret_borrow<py::object>(cnst); }
 
-  void AddExtraPred(Instr *instr) { extra_preds_.push_back(instr); }
-  std::string Dump(const std::string &prefix = "") const;
+  int InstrSize() const;
   std::string ToString() const;
 
  private:
@@ -77,48 +65,23 @@ class Instr : public PtrListNodeBase<Instr> {
   int op_;
   int arg_;
   int line_;
+  // these field only one is valid, union this these field like this { const char *, PyObject *, Instr * } ?
   std::string name_;
   py::object cnst_;
-
-  bool is_fall_ = true;
-  std::vector<Instr *> extra_preds_;
-  Instr *extra_jump_ = nullptr;
+  Instr *jump_;
 };
 
-class Block;
-struct BBIdCmp {
-  bool operator()(const Block *lhs, const Block *rhs) const;
-};
-
-struct BBIdGreaterCmp {
-  bool operator()(const Block *lhs, const Block *rhs) const;
-};
-
-using UniqueInstr = std::unique_ptr<Instr>;
-using Instrs = PtrListRef<Instr>;
-class CFG;
 class Block {
  public:
-  enum TrackResult {
-    kNotTrack,
-    kTrackHasTensor,
-    kTrackHasOpsPrimitive,
-    kTrackBreak,
-    kHasGlobalSideEffect,
-    kHasAttrSideEffect,
-    kHasClosureSideEffect,
-  };
-  Block() = default;
-  ~Block() = default;
   uint32_t id() const { return id_; }
   void set_id(uint32_t arg) { id_ = arg; }
-  Instrs &instrs() { return instrs_; }
-  const Instrs &instrs() const { return instrs_; }
-  void AddInstr(Instr *i) { instrs_.push_back(i); }
-  const std::set<Block *, BBIdCmp> &pred_bbs() const { return pred_bbs_; }
-  std::set<Block *, BBIdCmp> &pred_bbs() { return pred_bbs_; }
-  const std::set<Block *, BBIdCmp> &succ_bbs() const { return succ_bbs_; }
-  std::set<Block *, BBIdCmp> &succ_bbs() { return succ_bbs_; }
+  const auto &pred_bbs() const { return pred_bbs_; }
+  const auto &succ_bbs() const { return succ_bbs_; }
+  int begin_ci() const { return begin_; }
+  int end_ci() const { return end_; }
+  void set_begin_ci(int i) { begin_ = i; }
+  void set_end_ci(int i) { end_ = i; }
+
   void set_is_loop_head(bool flag) {
     is_loop_head_ = flag;
     if (flag) {
@@ -140,69 +103,39 @@ class Block {
   void set_is_dead(bool flag) { is_dead_ = flag; }
 
   std::string Dump(bool dump_instr = true) const;
-
-  int begin_ci() const { return begin_; }
-  int end_ci() const { return end_; }
-  void set_begin_ci(int i) { begin_ = i; }
-  void set_end_ci(int i) { end_ = i; }
-  Block *GetFallBB() const { return fall_bb_; }
-  Block *GetJumpBB() const { return jump_bb_; }
-  void SetFallBB(Block *arg);
-  void SetJumpBB(Block *arg);
-  void RemoveInstr(Instr *instr);
-  void RemoveInstrs();
-
-  bool IsTrackBreak() const { return track_result_ & (1 << IntToSize(kTrackBreak)); }
-  bool HasPrimitive() const { return track_result_ & (1 << IntToSize(kTrackHasOpsPrimitive)); }
-  bool HasTensor() const { return track_result_ & (1 << IntToSize(kTrackHasTensor)); }
-  bool HasUnresolvedSideEffect() const { return track_result_ & (1 << IntToSize(kHasGlobalSideEffect)); }
-  bool HasAttrSideEffect() const { return track_result_ & (1 << IntToSize(kHasAttrSideEffect)); }
-  bool HasClosureSideEffect() const { return track_result_ & (1 << IntToSize(kHasClosureSideEffect)); }
-  void SetTrackResult(TrackResult r) { track_result_ = (track_result_ & ~(1 << IntToSize(kNotTrack))) | (1 << r); }
-
   void AddSuccBB(Block *bb);
-  bool RemoveEdge(Block *bb);
-  void ClearOutEdges();
-
-  Block *Clone(CFG *cfg);
-
   void set_loop_head(Block *pBlock);
+  std::string ToString() const { return Dump(false); }
 
  private:
   uint32_t id_;  // start from 0
   int begin_;
   int end_;
-  std::set<Block *, BBIdCmp> pred_bbs_;
-  std::set<Block *, BBIdCmp> succ_bbs_;  // include fall_bb_ and jump_bb_
-  std::set<Block *> loop_body_bbs_;      // if curr bb is loop head, loop_body_bbs_ will include all loop body bbs
+  std::set<Block *> pred_bbs_;
+  std::set<Block *> succ_bbs_;
+  // if curr bb is loop head, loop_body_bbs_ will include all loop body bbs
+  std::set<Block *> loop_body_bbs_;
   Block *loop_head_bb_ = nullptr;
-  Block *fall_bb_ = nullptr;
-  Block *jump_bb_ = nullptr;
 
   bool is_loop_body_ = false;
   bool is_loop_head_ = false;
   bool is_dead_ = true;
-
-  // (chaiyouheng): remove
-  Instrs instrs_;
-  int track_result_ = (1 << kNotTrack);
 };
 
 class CFG {
  public:
-  explicit CFG(PyCodeObject *co) : pycode_(co), nlocals_(0) {}
+  explicit CFG(PyCodeObject *co) : co_(co) {}
 
-  // BFS Iterator
   class BBIterator {
    public:
     BBIterator() = default;
     explicit BBIterator(const CFG *c) : visit_(c->bb_pool().size(), false) {
-      q_.push(c->GetFirstBB());
+      q_.push_back(c->GetFirstBB());
       visit_[c->GetFirstBB()->id()] = true;
     }
 
     BBIterator(const CFG *c, Block *bb) : visit_(c->bb_pool().size(), false) {
-      q_.push(bb);
+      q_.push_back(bb);
       visit_[bb->id()] = true;
     }
 
@@ -211,7 +144,7 @@ class CFG {
     bool operator!=(const BBIterator &end) const { return !q_.empty(); }
     BBIterator &operator++();
 
-    std::queue<Block *> q_;
+    std::vector<Block *> q_;
     std::vector<bool> visit_;
   };
 
@@ -225,45 +158,28 @@ class CFG {
   std::vector<std::unique_ptr<Instr>> &instr_pool() { return instrs_; }
   std::vector<std::unique_ptr<Block>> &bb_pool() { return bb_pool_; }
   std::unique_ptr<Liveness> &liveness() { return liveness_; }
-  PyCodeObject *GetCodeObject() const { return pycode_; }
-  int GetLocalCount() const { return nlocals_; }
-  void SetLocalCount(int n) { nlocals_ = n; }
-  std::string ToString() const { return DumpBBs(); }
+  int GetLocalCount() const { return co_.LocalSize(); }
 
   const Liveness *GetLiveness();
 
   void GenerateCFG();
   void MarkDeadBB();
 
-  // clear dead bb's edges
-  void ClearDeadBBEdges();
-
   Block *GetFirstBB() const { return bb_pool_.size() ? bb_pool_[0].get() : nullptr; }
   Block *GetBlockByBci(int) const;
+  Instr *GetBlockTail(Block *) const;
 
-  std::string DumpBBs(std::string phase = "") const;
-  void DumpCFGGraph();
-  void DumpCFGGraph(std::ofstream &file);
-  void DumpCFGGraphForBB(std::ofstream &file, const Block &bb) const;
-  void DumpCFGGraphForEdge(std::ofstream &file);
-
-  Block *NewBBAppend();
-  Instr *NewInstrNode(int bci, int op, int arg, int line);
-  Instr *NewInstrNode(const Instr &instr);
-  Instr *NewLoadInstrNode(int bci, int arg, int line, PyObject *cnst);
-  std::unique_ptr<CFG> Clone();
+  std::string ToString() const;
 
  private:
-  void BuildInst();
-  void BuildBB();
-  bool BuildCFG();
+  void BuildInst(const uint8_t *begin, const uint8_t *end);
+  std::map<int, Block *> BuildBB(const uint8_t *begin, const uint8_t *end);
+  void BuildCFG(const std::map<int, Block *> &labels);
 
-  PyCodeObject *const pycode_;
+  PyCodeWrapper co_;
   std::vector<std::unique_ptr<Instr>> instrs_;
   std::vector<std::unique_ptr<Block>> bb_pool_;
   std::unique_ptr<Liveness> liveness_;
-  int nlocals_;
-  bool is_generated_ = false;
 };
 }  // namespace pijit
 }  // namespace mindspore

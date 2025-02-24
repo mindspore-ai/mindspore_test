@@ -54,6 +54,10 @@ class PyCodeWrapper {
   int FastLocalSize() const;
   py::tuple FastLocalNames() const;
 
+  std::string ToString() const { return py::str(reinterpret_cast<PyObject *>(ptr())); }
+  py::tuple co_consts() const { return py::reinterpret_borrow<py::tuple>(ptr()->co_consts); }
+  py::tuple co_names() const { return py::reinterpret_borrow<py::tuple>(ptr()->co_names); }
+
   enum LocalKind {
     kCoFastLocal,
     kCoFastCell,
