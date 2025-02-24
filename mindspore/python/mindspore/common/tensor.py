@@ -32,6 +32,7 @@ from mindspore.common.hook_handle import _TensorHookHandle
 from mindspore.common._utils import get_slice_num
 from mindspore.common._register_for_tensor import tensor_operator_registry
 from mindspore._c_expression import TensorPy as TensorPy_
+from mindspore._c_expression import _rmod_instance
 from mindspore import _checkparam as validator
 from mindspore._checkparam import is_stub_tensor, check_hook_fn
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
@@ -426,11 +427,8 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
     def __rtruediv__(self, other):
         return tensor_operator_registry.get('__truediv__')(other, self)
 
-    def __mod__(self, other):
-        return tensor_operator_registry.get('__mod__')(self, other)
-
     def __rmod__(self, other):
-        return tensor_operator_registry.get('__mod__')(other, self)
+        return _rmod_instance(other, self)
 
     def __rpow__(self, other):
         return tensor_operator_registry.get('__rpow__')(self, other)

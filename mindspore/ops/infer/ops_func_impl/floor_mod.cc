@@ -15,6 +15,7 @@
  */
 
 #include "infer/ops_func_impl/floor_mod.h"
+#include <set>
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops_utils/op_constants.h"
@@ -44,6 +45,15 @@ TypePtr FloorModFuncImpl::InferType(const PrimitivePtr &primitive,
   auto op_name = primitive->name();
   auto type_x = input_args[kIndex0]->GetType();
   auto type_y = input_args[kIndex1]->GetType();
+
+  const std::set<TypePtr> invalid_types = {kUInt16, kUInt32, kUInt64};
+  const std::set<TypeId> invalid_type_ids = {kNumberTypeUInt16, kNumberTypeUInt32, kNumberTypeUInt64};
+  auto tensor_type_x = type_x->cast<TensorTypePtr>();
+  MS_EXCEPTION_IF_NULL(tensor_type_x);
+  if (invalid_types.find(tensor_type_x->element()) != invalid_types.end() ||
+      invalid_type_ids.find(tensor_type_x->element()->type_id()) != invalid_type_ids.end()) {
+    MS_EXCEPTION(TypeError) << "For '" << op_name << "', the input type " << type_x->ToString() << " is invalid.";
+  }
 
   if (type_x->isa<Complex>() || type_y->isa<Complex>()) {
     if (type_x->type_id() == kNumberTypeComplex64 && type_y->type_id() == kNumberTypeComplex64) {

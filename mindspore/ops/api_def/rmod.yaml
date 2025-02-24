@@ -1,0 +1,7 @@
+rmod:
+  - op_yaml: remainder_scalar_tensor_op.yaml
+    py_method: deprecated_tensor_mod
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: function

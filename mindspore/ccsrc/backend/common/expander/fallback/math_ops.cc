@@ -25,8 +25,10 @@
 namespace mindspore {
 namespace expander {
 namespace {
-const std::set<TypeId> kIntergralSet = {kNumberTypeBool, kNumberTypeUInt8, kNumberTypeInt8, kNumberTypeInt16,
-                                        kNumberTypeInt32};
+const std::set<TypeId> kIntergralSet = {kNumberTypeBool,  kNumberTypeUInt8, kNumberTypeInt8,
+                                        kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64};
+
+const std::set<TypeId> kFloatSet = {kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeFloat64, kNumberTypeBFloat16};
 
 NodePtr Expand(FallbackIRBuilder *ib, NodePtr tensor, size_t ndim) {
   ShapeVector shape = tensor->shape();
@@ -373,6 +375,50 @@ REG_FALLBACK_BUILDER("DivMod").SetBody(BODYFUNC(ib) {
   } else {
     MS_LOG(EXCEPTION) << "DivMod abstract failed.";
   }
+});
+
+REG_FALLBACK_BUILDER("RemainderTensorTensor").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto other = ib->GetInput(kIndex1);
+  auto promote_type = mindspore::ops::PromoteType(ib->GetDtype(input), ib->GetDtype(other), "RemainderTensorTensor");
+  MS_EXCEPTION_IF_NULL(promote_type);
+  auto input_cast = ib->Cast(input, promote_type);
+  auto other_cast = ib->Cast(other, promote_type);
+  return {ib->Emit("FloorMod", {input_cast, other_cast})};
+});
+
+REG_FALLBACK_BUILDER("RemainderTensorScalar").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto other = ib->GetInput(kIndex1);
+  auto input_type = ib->GetDtype(input);
+  auto promote_type = input_type;
+  if (input_type->type_id() == kNumberTypeBool) {
+    promote_type = other->dtype();
+  } else if (kIntergralSet.find(input_type->type_id()) != kIntergralSet.end() &&
+             kFloatSet.find(other->dtype()->type_id()) != kFloatSet.end()) {
+    promote_type = TypeIdToType(kNumberTypeFloat32);
+  }
+  MS_EXCEPTION_IF_NULL(promote_type);
+  auto input_cast = ib->Cast(input, promote_type);
+  auto other_cast = ib->ScalarToTensor(other, promote_type);
+  return {ib->Emit("FloorMod", {input_cast, other_cast})};
+});
+
+REG_FALLBACK_BUILDER("RemainderScalarTensor").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto other = ib->GetInput(kIndex1);
+  auto other_type = ib->GetDtype(other);
+  auto promote_type = other_type;
+  if (other_type->type_id() == kNumberTypeBool) {
+    promote_type = input->dtype();
+  } else if (kIntergralSet.find(other_type->type_id()) != kIntergralSet.end() &&
+             kFloatSet.find(input->dtype()->type_id()) != kFloatSet.end()) {
+    promote_type = TypeIdToType(kNumberTypeFloat32);
+  }
+  MS_EXCEPTION_IF_NULL(promote_type);
+  auto input_cast = ib->ScalarToTensor(input, promote_type);
+  auto other_cast = ib->Cast(other, promote_type);
+  return {ib->Emit("FloorMod", {input_cast, other_cast})};
 });
 
 REG_FALLBACK_BUILDER("EqualCount").SetBody(BODYFUNC(ib) {
