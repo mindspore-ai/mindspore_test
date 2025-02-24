@@ -144,8 +144,8 @@ void LoadAclRtApiSymbol(const std::string &ascend_path) {
   aclrtDeviceTaskAbort_ = DlsymAscendFuncObj(aclrtDeviceTaskAbort, handler);
   aclrtMemUceRepair_ = DlsymAscendFuncObj(aclrtMemUceRepair, handler);
   aclrtEventGetTimestamp_ = DlsymAscendFuncObj(aclrtEventGetTimestamp, handler);
-  aclrt_get_last_error = reinterpret_cast<int (*)(int)>(dlsym(handler, "aclrtGetLastError"));
-  acl_get_recent_err_msg = reinterpret_cast<const char *(*)()>(dlsym(handler, "aclGetRecentErrMsg"));
+  aclrt_get_last_error = DlsymAscend<int (*)(int)>(handler, "aclrtGetLastError");
+  acl_get_recent_err_msg = DlsymAscend<const char *(*)()>(handler, "aclGetRecentErrMsg");
   MS_LOG(INFO) << "Load acl rt api success!";
 }
 
