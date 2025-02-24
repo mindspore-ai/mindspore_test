@@ -1060,7 +1060,7 @@ class MultiClassDiceLoss(LossBase):
                 dice_loss = self.binarydiceloss(logits[:, i], label[:, i])
                 if self.weights is not None:
                     _check_weights(self.weights.shape[0], label.shape[1], self.cls_name)
-                    dice_loss *= self.weights[i]
+                    dice_loss = dice_loss * self.weights[i]
                 total_loss += dice_loss
 
         return total_loss / label.shape[1]
