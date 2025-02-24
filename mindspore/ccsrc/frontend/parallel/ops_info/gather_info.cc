@@ -1,11 +1,11 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * <url id="" type="url" status="" title="" wc="">http://www.apache.org/licenses/LICENSE-2.0</url>
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -1365,8 +1365,7 @@ Status GatherInfo::CheckOutputStrategy(const StrategyPtr &out_strategy) {
   if (name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos) {
     param_strategy = in_stra[1];
     index_strategy = in_stra[0];
-  }
-  else {
+  } else {
     param_strategy = in_stra[0];
     index_strategy = in_stra[1];
   }
@@ -1376,16 +1375,11 @@ Status GatherInfo::CheckOutputStrategy(const StrategyPtr &out_strategy) {
   (void)allreduce_strategy.insert(allreduce_strategy.end(), param_strategy.begin() + 1, param_strategy.end());
   auto reduce_scatter_strategy = allreduce_strategy;
   reduce_scatter_strategy[0] *= param_strategy[0];
-    MS_LOG(WARNING) << "Gather: allreduce_strategy."<< allreduce_strategy;
-  MS_LOG(WARNING) << "Gather: reduce_scatter_strategy."<< reduce_scatter_strategy;
   auto out_stra = out_strategy->GetInputDim()[0];
-    MS_LOG(WARNING) << "Gather: out_stra."<< out_stra;
   if (out_stra == allreduce_strategy) {
     if (shard_axis_util != nullptr) {
       shard_axis_util->set_axis_split_forward_allreduce(true);
     }
-
-    MS_LOG(INFO) << name_ << ": The output strategy is " << out_stra << ", forward use allreduce";
     return SUCCESS;
   } else if (out_stra == reduce_scatter_strategy) {
     if (gather_util_->gather_mode() != SHARD_AXIS_0_STATIC && gather_util_->gather_mode() != SHARD_BATCH_AND_AXIS &&
