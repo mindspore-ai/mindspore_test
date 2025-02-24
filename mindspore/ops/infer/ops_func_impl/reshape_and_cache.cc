@@ -53,16 +53,22 @@ BaseShapePtr ReshapeAndCacheFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr ReshapeAndCacheFuncImpl::InferType(const PrimitivePtr &primitive,
                                            const std::vector<AbstractBasePtr> &input_args) const {
-  const std::set valid_types = {kFloat16, kBFloat16, kInt8, kUInt8};
   auto op_name = primitive->name();
-  std::map<std::string, TypePtr> types;
-
-  (void)types.emplace("key", input_args[kReshapeAndCacheInputKeyIndex]->GetType());
-  (void)types.emplace("value", input_args[kReshapeAndCacheInputValueIndex]->GetType());
-  (void)types.emplace("key_cache", input_args[kReshapeAndCacheInputKeyCacheIndex]->GetType());
-  (void)types.emplace("value_cache", input_args[kReshapeAndCacheInputValueCacheIndex]->GetType());
-  auto type = CheckAndConvertUtils::CheckTensorTypeSame(types, valid_types, op_name);
-
+  const std::set valid_types = {kFloat16, kBFloat16, kInt8, kUInt8};
+  std::map<std::string, TypePtr> key_types;
+  (void)key_types.emplace("key", input_args[kReshapeAndCacheInputKeyIndex]->GetType());
+  (void)key_types.emplace("key_cache", input_args[kReshapeAndCacheInputKeyCacheIndex]->GetType());
+  auto type = CheckAndConvertUtils::CheckTensorTypeSame(key_types, valid_types, op_name);
+  if (input_args[kReshapeAndCacheInputValueIndex]->GetType()->type_id() != kMetaTypeNone ||
+      input_args[kReshapeAndCacheInputValueCacheIndex]->GetType()->type_id() != kMetaTypeNone) {
+    std::map<std::string, TypePtr> value_types;
+    (void)value_types.emplace("value", input_args[kReshapeAndCacheInputValueIndex]->GetType());
+    (void)value_types.emplace("value_cache", input_args[kReshapeAndCacheInputValueCacheIndex]->GetType());
+    (void)CheckAndConvertUtils::CheckTensorTypeSame(value_types, valid_types, op_name);
+  }
+  auto slot_mapping_type = input_args[kReshapeAndCacheInputSlotMappingIndex]->GetType();
+  const std::set<TypePtr> slot_mapping_valid_types = {kInt32, kInt64, kUInt32, kUInt64};
+  (void)CheckAndConvertUtils::CheckTypeValid("slot_mapping", slot_mapping_type, slot_mapping_valid_types, op_name);
   return type;  // output type
 }
 }  // namespace ops

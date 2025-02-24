@@ -40,7 +40,7 @@ class InternalPagedAttention : public InternalKernelMod {
   uint64_t GenerateTilingKey(const std::vector<KernelTensor *> &inputs) override;
 
  private:
-  inline void CheckLookahead() {
+  inline void CheckMask() {
     param_.mask_type = internal::PagedAttentionParam::MaskType::kMaskTypeNone;
     auto enable_lookahead =
       std::any_of(param_.q_seq_len.begin(), param_.q_seq_len.end(), [](int32_t seq_len) { return seq_len > 1; });
@@ -51,11 +51,20 @@ class InternalPagedAttention : public InternalKernelMod {
     } else {
       param_.q_seq_len.clear();
     }
+
+    if (has_alibi_mask_) {
+      if (param_.mask_type == internal::PagedAttentionParam::MaskType::kMaskTypeLookAhead) {
+        MS_LOG(EXCEPTION) << "For op " << kernel_name_ << ", lookahead cannot be enabled when alibi_mask exists.";
+      } else {
+        param_.mask_type = internal::PagedAttentionParam::MaskType::kMaskTypeAlibi;
+      }
+    }
   }
 
   internal::PagedAttentionParam param_;
   bool created_flag_{false};
   bool has_attn_mask_{false};
+  bool has_alibi_mask_{false};
 };
 }  // namespace kernel
 }  // namespace mindspore

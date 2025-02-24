@@ -18,6 +18,10 @@
 #include "utils/check_convert_utils.h"
 #include "infer/ops_func_impl/common_infer_fns.h"
 #include "utils/ms_context.h"
+#include "utils/convert_utils_base.h"
+#include "utils/log_adapter.h"
+#include "utils/shape_utils.h"
+#include "utils/core_op_utils.h"
 
 namespace mindspore {
 namespace ops {
@@ -26,8 +30,25 @@ BaseShapePtr PagedAttentionFuncImpl::InferShape(const PrimitivePtr &primitive,
   CheckAndConvertUtils::CheckInputArgs(input_args, kEqual, kPagedAttentionInputsNum, primitive->name());
 
   auto query_shape_ptr = input_args[kPagedAttentionInputQueryIndex]->GetShape();
-  auto shape_element = query_shape_ptr->cast<abstract::ShapePtr>();
-  return shape_element;
+  auto res_shape = query_shape_ptr->GetShapeVector();
+  auto key_shape_ptr = input_args[kPagedAttentionInputKeyCacheIndex]->GetShape();
+  auto key_shape = key_shape_ptr->GetShapeVector();
+  auto d_qk = key_shape[key_shape.size() - 1];
+  auto mla_v_dim_value = input_args[kPagedAttentionInputMlaVDimIndex]->GetValue();
+  auto mla_v_dim = GetScalarValue<int64_t>(mla_v_dim_value).value();
+
+  if (mla_v_dim > 0) {
+    res_shape[res_shape.size() - 1] = res_shape[res_shape.size() - 1] / d_qk * mla_v_dim;
+    return std::make_shared<abstract::TensorShape>(res_shape);
+  }
+
+  auto value_shape_ptr = input_args[kPagedAttentionInputValueCacheIndex]->GetShape();
+  auto value_shape = value_shape_ptr->GetShapeVector();
+  // DimV is different with DimQK in MLA
+  auto d_vo = value_shape[value_shape.size() - 1];
+  res_shape[res_shape.size() - 1] = res_shape[res_shape.size() - 1] / d_qk * d_vo;
+
+  return std::make_shared<abstract::TensorShape>(res_shape);
 }
 
 TypePtr PagedAttentionFuncImpl::InferType(const PrimitivePtr &primitive,
@@ -58,8 +79,15 @@ TypePtr PagedAttentionFuncImpl::InferType(const PrimitivePtr &primitive,
     (void)types.emplace("key_cache", key_type);
     (void)types.emplace("value_cache", value_type);
   }
+  //  check alibi_mask dtype equal to other inputs when alibi_mask is NOT None and infer_boost is ON
+  if (!IsOptionalInputNone(input_args[kPagedAttentionInputAlibiMaskIndex])) {
+    if (enable_infer_boost) {
+      (void)types.emplace("alibi_mask", input_args[kPagedAttentionInputAlibiMaskIndex]->GetType());
+    } else {
+      MS_LOG(EXCEPTION) << "alibi_mask is not supported when infer_boost is disabled.";
+    }
+  }
   auto output_dtype = CheckAndConvertUtils::CheckTensorTypeSame(types, valid_types, op_name);
-
   //  check antiquant scale and offset's dtype when they are NOT None
   if (enable_infer_boost && !IsOptionalInputNone(input_args[kPagedAttentionInputAntiquantScaleIndex]) &&
       !IsOptionalInputNone(input_args[kPagedAttentionInputAntiquantOffsetIndex])) {
@@ -86,10 +114,6 @@ TypePtr PagedAttentionFuncImpl::InferType(const PrimitivePtr &primitive,
   auto block_tables_type = input_args[kPagedAttentionInputBlockTablesIndex]->GetType();
   (void)CheckAndConvertUtils::CheckTensorTypeValid("block_tables", block_tables_type, {kInt32, kInt64, kUInt64},
                                                    op_name);
-  auto context_lens_type = input_args[kPagedAttentionInputContextLensIndex]->GetType();
-  (void)CheckAndConvertUtils::CheckTensorTypeValid("context_lens", context_lens_type, {kInt32, kInt64, kUInt64},
-                                                   op_name);
-
   return output_dtype;  // attention_out dtype
 }
 }  // namespace ops
