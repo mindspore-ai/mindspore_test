@@ -188,7 +188,7 @@ def test_all_gather_matmul_precision_with_ms_small_ops() -> None:
 
 @mark_utils.arg_mark(
     plat_marks=['platform_ascend910b'],
-    level_mark='level1',
+    level_mark='level0',
     card_mark='allcards',
     essential_mark='essential',
 )
