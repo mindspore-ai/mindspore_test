@@ -1202,7 +1202,7 @@ REG_BPROP_BUILDER("AddExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(
   return ret;
 });
 
-REG_BPROP_BUILDER("AddScalar").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("AddScalar").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto other = ib->GetInput(kIndex1);
   auto alpha = ib->GetInput(kIndex2);
@@ -1291,7 +1291,7 @@ REG_BPROP_BUILDER("InplaceMuls").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) 
   return {dx, ib->OutZeros(y)};
 });
 
-REG_BPROP_BUILDER("SubScalar").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("SubScalar").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto other = ib->GetInput(kIndex1);
   auto alpha = ib->GetInput(kIndex2);
