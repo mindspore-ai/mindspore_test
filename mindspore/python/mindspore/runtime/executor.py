@@ -168,4 +168,14 @@ def set_kernel_launch_group(thread_num=2, kernel_group_num=8):
     if RuntimeConf.get_instance().is_kernel_launch_group_configured():
         raise RuntimeError("The 'kernel_launch_group' can not be set repeatedly.")
 
+    if thread_num < 1:
+        raise ValueError(f"The value of thread_num should be at least 1, but got {thread_num}")
+
+    if kernel_group_num < 1:
+        raise ValueError(f"The value of kernel_group_num should be at least 1, but got {kernel_group_num}")
+
+    if (kernel_group_num % thread_num) != 0:
+        raise ValueError(f"Invalid parameter value, kernel_group_num: {kernel_group_num} cannot "
+                         f"be evenly divisible by thread_num: {thread_num}")
+
     return RuntimeConf.get_instance().set_kernel_launch_group(thread_num, kernel_group_num)

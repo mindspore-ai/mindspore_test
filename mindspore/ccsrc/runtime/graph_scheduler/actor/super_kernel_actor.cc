@@ -163,7 +163,11 @@ void RecordInputParamsWithoutUser(const KernelGraphPtr &graph,
 }
 }  // namespace
 
-SuperKernelActor::~SuperKernelActor() {
+SuperKernelActor::~SuperKernelActor() { ClearParallelDispatchResource(); }
+
+void SuperKernelActor::Finalize() { ClearParallelDispatchResource(); }
+
+void SuperKernelActor::ClearParallelDispatchResource() {
   if (!queues_.empty()) {
     for (auto &q : queues_) {
       q->WorkerJoin();
@@ -172,6 +176,9 @@ SuperKernelActor::~SuperKernelActor() {
   }
   if (!events_.empty()) {
     events_.clear();
+  }
+  if (!serial_launch_kernels_to_events_.empty()) {
+    serial_launch_kernels_to_events_.clear();
   }
   if (!parallel_launch_kernels_.empty()) {
     parallel_launch_kernels_.clear();
