@@ -14,7 +14,7 @@ mindspore.Layout
 
     参数：
         - **device_matrix** (tuple) - 描述设备排列的形状，其元素类型为int。
-        - **alias_name** (tuple) - device_matrix的每个轴的别名，其元素类型为字符串。使用"interleaved_parallel"作为别名时，会在其对应的切分维度将该算子在单卡内拆分为多个副本。
+        - **alias_name** (tuple) - `device_matrix` 的每个轴的别名，其元素类型为字符串。使用"interleaved_parallel"作为别名时，会在其对应的切分维度将该算子在单卡内拆分为多个副本。
 
     异常：
         - **TypeError** - `device_matrix` 不是元组类型。
@@ -28,4 +28,4 @@ mindspore.Layout
 
     .. py:method:: to_dict
 
-        将Layout转换为词典 。
+        将Layout转换为词典。

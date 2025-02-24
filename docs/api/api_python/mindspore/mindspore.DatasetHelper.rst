@@ -12,13 +12,13 @@ mindspore.DatasetHelper
 
     参数：
         - **dataset** (Dataset) - 训练数据集迭代器。数据集可以由数据集生成器API在 `mindspore.dataset` 模块中生成，例如 :class:`mindspore.dataset.ImageFolderDataset` 。
-        - **dataset_sink_mode** (bool) - 如果值为 ``True`` ，使用 :class:`mindspore.ops.GetNext` 在设备（Device）上通过数据通道中获取数据，否则在主机（Host）直接遍历数据集获取数据。默认值： ``True``。
+        - **dataset_sink_mode** (bool) - 如果值为 ``True`` ，使用 :class:`mindspore.ops.GetNext` 在设备（Device）上通过数据通道中获取数据；否则在主机（Host）直接遍历数据集获取数据。默认值： ``True``。
         - **sink_size** (int) - 控制每个下沉中的数据量。如果 `sink_size` 为-1，则下沉每个epoch的完整数据集。如果 `sink_size` 大于0，则下沉每个epoch的 `sink_size` 数据。默认值： ``-1``。
         - **epoch_num** (int) - 控制待发送的epoch数据量。默认值： ``1``。
 
     .. py:method:: continue_send()
 
-        在epoch开始时继续向设备发送数据。
+        在epoch开始时，继续向设备发送数据。
 
     .. py:method:: release()
 
@@ -34,4 +34,4 @@ mindspore.DatasetHelper
 
     .. py:method:: types_shapes()
 
-        从当前配置中的数据集获取类型和形状(shape)。
+        从当前配置中的数据集获取类型和形状（shape）。
