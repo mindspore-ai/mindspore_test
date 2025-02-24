@@ -28,10 +28,11 @@ OUTPUT_MAP(Ger) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(Ger, kGerOpName, ADPT_DESC(Ger))
 
 // Svd
-INPUT_MAP(Svd) = {{1, INPUT_DESC(x)}};
-ATTR_MAP(Svd) = {{"compute_uv", ATTR_DESC(compute_uv, AnyTraits<bool>())},
-                 {"full_matrices", ATTR_DESC(full_matrices, AnyTraits<bool>())}};
-OUTPUT_MAP(Svd) = {{0, OUTPUT_DESC(sigma)}, {1, OUTPUT_DESC(u)}, {2, OUTPUT_DESC(v)}};
+INPUT_MAP(Svd) = {{kIndex1, INPUT_DESC(x)}};
+ATTR_MAP(Svd) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(Svd) = {{kIndex2, ATTR_DESC(full_matrices, AnyTraits<bool>())},
+                       {kIndex3, ATTR_DESC(compute_uv, AnyTraits<bool>())}};
+OUTPUT_MAP(Svd) = {{kIndex0, OUTPUT_DESC(sigma)}, {kIndex1, OUTPUT_DESC(u)}, {kIndex2, OUTPUT_DESC(v)}};
 REG_ADPT_DESC(Svd, prim::kPrimSvd->name(), ADPT_DESC(Svd))
 
 // LogMatrixDeterminant

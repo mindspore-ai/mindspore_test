@@ -561,20 +561,17 @@ def get_index_add_vmap_rule(prim, axis_size):
 @vmap_rules_getters.register(linalg_ops.Svd)
 def get_svd_vmap_rule(prim, axis_size):
     """VmapRule for 'Svd' operation."""
-    if isinstance(prim, str):
-        prim = Primitive(prim)
-        compute_uv = True
-    else:
-        compute_uv = prim.compute_uv
 
-    def vmap_rule(x_bdim):
+    def vmap_rule(x_bdim, full_matrices_bdim, compute_uv_bdim):
         is_all_none, result = vmap_general_preprocess(prim, x_bdim)
         if is_all_none:
             return result
 
         x, x_dim = x_bdim
+        full_matrices, _ = full_matrices_bdim
+        compute_uv, _ = compute_uv_bdim
         x = _bdim_at_front(x, x_dim, axis_size)
-        s, u, v = prim(x)
+        s, u, v = prim(x, full_matrices, compute_uv)
         if compute_uv:
             return (s, 0), (u, 0), (v, 0)
         return (s, 0), (u, None), (v, None)

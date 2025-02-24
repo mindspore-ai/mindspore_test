@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,7 +118,8 @@ void ContinugousBroadCastTo(T *input, T *output, int64_t broadcast_dim, size_t b
     copy_offsets.emplace_back(std::pair<size_t, size_t>(input_offset, output_offset));
   }
 
-  constexpr size_t kParallelDataLenThreshold = 32768 * sizeof(T);
+  constexpr size_t kGrainSize = 32768;
+  constexpr size_t kParallelDataLenThreshold = kGrainSize * sizeof(T);
   size_t copy_size = block_size * sizeof(T);
   if (copy_offsets.size() * copy_size > kParallelDataLenThreshold) {
     auto copy_task = [&](size_t start, size_t end) {
