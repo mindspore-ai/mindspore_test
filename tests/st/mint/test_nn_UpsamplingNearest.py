@@ -53,7 +53,7 @@ def upsample_nearest_backward_func(x, size=None, scale_factor=None):
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("mode", ["GRAPH_MODE", "PYNATIVE_MODE"])
