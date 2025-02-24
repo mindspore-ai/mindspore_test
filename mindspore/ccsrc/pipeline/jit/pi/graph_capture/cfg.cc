@@ -315,10 +315,7 @@ bool CFG::BuildCFG() {
     Block *bb = bb_pool_[i].get();
     const Instr *instr_tail = &(bb->instrs().back());
     if (instr_tail->is_fall()) {
-      if (i + 1 >= bb_pool_.size()) {
-        MS_EXCEPTION_IF_CHECK_FAIL(false, "Method without return");
-        return false;
-      }
+      MS_EXCEPTION_IF_CHECK_FAIL(i + 1 < bb_pool_.size(), "Error byte code end");
       Block *bb_next = bb_pool_[i + 1].get();
       bb->SetFallBB(bb_next);
     }
