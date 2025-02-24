@@ -18,6 +18,7 @@ import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore.common.api import jit
+from mindspore.common import JitConfig
 
 
 class Net(nn.Cell):
@@ -40,11 +41,12 @@ def test_adaptive_max_pool2d():
     x = np.random.randn(32, 64, 128, 128).astype(np.float32)
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
     adaptive_max_pool2d = Net(64, True)
+    adaptive_max_pool2d.set_jit_config(JitConfig(jit_level="O0"))
     output1, _ = adaptive_max_pool2d(Tensor(x))
 
     context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
-    adaptive_max_pool2d = Net(64, True)
-    output2, _ = adaptive_max_pool2d(Tensor(x))
+    adaptive_max_pool2d1 = Net(64, True)
+    output2, _ = adaptive_max_pool2d1(Tensor(x))
     assert (output1.asnumpy() == output2.asnumpy()).all()
 
 
@@ -58,9 +60,10 @@ def test_adaptive_max_pool2d_to_pooling():
     x = np.random.randn(32, 64, 128, 128).astype(np.float32)
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
     adaptive_max_pool2d = Net(40, False)
+    adaptive_max_pool2d.set_jit_config(JitConfig(jit_level="O0"))
     output1 = adaptive_max_pool2d(Tensor(x))
 
     context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
-    adaptive_max_pool2d = Net(40, False)
-    output2 = adaptive_max_pool2d(Tensor(x))
+    adaptive_max_pool2d1 = Net(40, False)
+    output2 = adaptive_max_pool2d1(Tensor(x))
     assert (output1.asnumpy() == output2.asnumpy()).all()
