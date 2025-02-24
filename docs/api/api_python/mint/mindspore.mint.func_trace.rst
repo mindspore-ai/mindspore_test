@@ -5,9 +5,6 @@ mindspore.mint.trace
 
     返回 `input` 的主对角线方向上的总和。
 
-    .. note::
-        输入必须是Tensor。
-
     参数：
         - **input** (Tensor) - 二维Tensor。
 

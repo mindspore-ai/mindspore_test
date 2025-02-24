@@ -4,8 +4,6 @@ cdist:
 
         Note:
             On Ascend, the supported dtypes are float16 and float32.
-            On CPU, the supported dtypes are float16 and float32.
-            On GPU, the supported dtypes are float32 and float64.
 
         Args:
             x1 (Tensor): Input tensor of shape :math:`(B, P, M)`.

@@ -1881,13 +1881,8 @@ REG_BPROP_BUILDER("InplaceMaskedFillScalar").SetUnusedInputs({i0, i2, i3}).SetBo
   auto input = ib->GetInput(kIndex0);
   auto mask = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex4);
-  NodePtr input_grad = nullptr;
-  if (input->need_compute_grad_out()) {
-    auto dout_clone = ib->Emit("Clone", {dout});
-    input_grad = ib->Emit("InplaceMaskedFillScalar", {dout_clone, mask, ib->Value<float>(0)});
-  } else {
-    input_grad = ib->OutZeros(input);
-  }
+  auto dout_clone = ib->Emit("Clone", {dout});
+  auto input_grad = ib->Emit("InplaceMaskedFillScalar", {dout_clone, mask, ib->Value<float>(0)});
   return {input_grad, ib->OutZeros(ib->GetInput(kIndex1)), ib->OutZeros(ib->GetInput(kIndex2))};
 });
 

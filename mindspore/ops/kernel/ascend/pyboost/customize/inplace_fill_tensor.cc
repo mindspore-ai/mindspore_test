@@ -49,7 +49,7 @@ tensor::BaseTensorPtr InplaceFillTensorAscendCustomize(const std::shared_ptr<OpR
       return;
     }
     // Malloc for input tensors
-    PyBoostUtils::MallocOpInputs(device_context, input);
+    PyBoostUtils::MallocOpInputs(device_context, input, value);
 
     // Inplace output need be front
     MS_LOG(DEBUG) << "Call FillTensor start";
