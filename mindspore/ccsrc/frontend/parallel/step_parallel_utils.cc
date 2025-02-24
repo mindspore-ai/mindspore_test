@@ -3757,5 +3757,13 @@ int64_t LongAdd(int64_t base, int64_t shift) {
   }
   return result;
 }
+
+bool IsCommunicateNode(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  static const PrimitiveSet comm_op_type = {prim::kPrimAllReduce, prim::kPrimReduceScatter, prim::kPrimAllGather,
+                                            prim::kPrimBroadcast, prim::kPrimAlltoAll,      prim::kPrimAlltoAllV,
+                                            prim::kPrimSend,      prim::kPrimReceive};
+  return IsOneOfPrimitiveCNode(node, comm_op_type);
+}
 }  // namespace parallel
 }  // namespace mindspore

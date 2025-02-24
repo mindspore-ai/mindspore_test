@@ -82,8 +82,8 @@ bool IsDwMatMul(const CNodePtr &matmul_node) {
   }
   MS_EXCEPTION_IF_NULL(matmul_node->func_graph());
   auto next_nodes = GetOutputNodesWithFilter(matmul_node, [&](const AnfNodePtr &anode) {
-    return IsPrimitiveCNode(anode, prim::kPrimLoad) || IsPrimitiveCNode(anode, prim::kPrimCast) ||
-           IsPrimitiveCNode(anode, prim::kPrimDepend);
+    return IsOneOfPrimitiveCNode(
+      anode, {prim::kPrimLoad, prim::kPrimCast, prim::kPrimDepend, prim::kPrimReshape, prim::kPrimTupleGetItem});
   });
   for (const auto &next_node : next_nodes) {
     if (IsPrimitiveCNode(next_node.first, prim::kPrimAssignAdd)) {
@@ -97,7 +97,9 @@ void ExtractBackwardMatMul(const std::vector<CNodePtr> &origin_nodes_topological
                            std::unordered_map<CNodePtr, CNodePtr> *backward_matmul_dx_dw_map) {
   std::unordered_map<std::string, std::vector<CNodePtr>> backward_matmul_map;
   for (const auto &node : origin_nodes_topological) {
-    if (IsForwardNode(node) || !IsPrimitiveCNode(node, prim::kPrimMatMul)) {
+    if (IsForwardNode(node) ||
+        !IsOneOfPrimitiveCNode(node, {prim::kPrimMatMul, prim::kPrimBatchMatMul, prim::kPrimMatMulExt,
+                                      prim::kPrimBatchMatMulExt, prim::kPrimGroupedMatmul})) {
       continue;
     }
     auto matmul_cnode = node->cast<CNodePtr>();

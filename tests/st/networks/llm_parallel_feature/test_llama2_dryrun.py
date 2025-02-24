@@ -411,9 +411,9 @@ def test_llama2_cell_dp2mp4pp2_fgi():
     parm_reducescatter_allgather_check_pairs = {'ReduceScatter': '48',
                                                 'AllGather': '48'}
     # 反向掩盖（mp/cp场景都开启）控制边名字个数
-    parm_parallel_speed_up_check_pairs = {'grad_overlap_matmul': '20',
-                                          'matmul_grad_depend2: Bool(1)': '10',
-                                          'matmul_grad_depend3: Bool(1)': '10'}
+    parm_parallel_speed_up_check_pairs = {'grad_overlap_matmul': '22',
+                                          'matmul_grad_depend2: Bool(1)': '11',
+                                          'matmul_grad_depend3: Bool(1)': '11'}
     real_log_path = log_path_preprocess(output_file, rank_list, case_name)
     for log_path in real_log_path:
         check_log(log_path, check_pair)
@@ -598,9 +598,9 @@ def test_llama2_cell_dp2mp2pp2vpp4opcp2_1f1b_grad_accu():
     # virtualassignadd 数量
     parm_virtualassignadd_check_pairs = {'VirtualAssignAdd': '74'}
     # 反向掩盖控制边个数
-    parm_parallel_speed_up_check_pairs = {'grad_overlap_matmul': '40',
-                                          'matmul_grad_depend2: Bool(1)': '4',
-                                          'matmul_grad_depend3: Bool(1)': '4'}
+    parm_parallel_speed_up_check_pairs = {'grad_overlap_matmul': '26',
+                                          'matmul_grad_depend2: Bool(1)': '13',
+                                          'matmul_grad_depend3: Bool(1)': '13'}
     parm_opt_shape_check_pairs = {'_model.layers.0.attention.wq.weight': '(512, 4096)',
                                   '_model.layers.0.attention.wk.weight': '(512, 4096)',
                                   '_model.layers.0.attention.wv.weight': '(512, 4096)',
