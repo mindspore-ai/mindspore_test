@@ -53,6 +53,8 @@ class AclUtil {
 
   static void SetDeterministic();
 
+  static void SetAclDeterministic();
+
   static aclError SetCompileMode(const int64_t is_dyncmic);
 
   static aclError SetPrecisionMode(const std::string &mode);

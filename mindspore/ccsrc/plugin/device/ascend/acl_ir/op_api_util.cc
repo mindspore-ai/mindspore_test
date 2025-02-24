@@ -33,6 +33,7 @@
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/dummy_ascend_collective_comm_lib.h"
+#include "pybind_api/gil_scoped_long_running.h"
 
 namespace mindspore::device::ascend {
 namespace {
@@ -61,7 +62,10 @@ static const std::unordered_map<std::string, bool> kConvEnableHf32 = {{"", true}
 
 std::mutex set_opt_mutex;
 
-aclError SetCompileopt(aclCompileOpt opt, const char *value) { return CALL_ASCEND_API(aclSetCompileopt, opt, value); }
+aclError SetCompileopt(aclCompileOpt opt, const char *value) {
+  GilReleaseWithCheck gil_release;
+  return CALL_ASCEND_API(aclSetCompileopt, opt, value);
+}
 
 void *GetAclFunc(const std::string &lib_path, const std::string &func_name) {
   static auto ascend_path = mindspore::device::ascend::GetAscendPath();
@@ -201,6 +205,22 @@ uint8_t AclUtil::KeepOriginDType() {
   return need_keep_dtype;
 }
 
+void AclUtil::SetAclDeterministic() {
+  std::lock_guard<std::mutex> lock(set_opt_mutex);
+  if (UseSimulationApi()) {
+    return;
+  }
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  bool is_deterministic = ms_context->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON" ? true : false;
+  MS_LOG(INFO) << "Set acl deterministic value: " << (is_deterministic ? "1" : "0");
+  auto ret = SetCompileopt(aclCompileOpt::ACL_OP_DETERMINISTIC, is_deterministic ? "1" : "0");
+  if (ret != ACL_SUCCESS) {
+    MS_LOG(EXCEPTION) << "Acl set deterministic mode failed! mode is " << is_deterministic << " and error flag is "
+                      << ret;
+  }
+}
+
 void AclUtil::SetDeterministic() {
   std::lock_guard<std::mutex> lock(set_opt_mutex);
   if (UseSimulationApi()) {
@@ -210,12 +230,6 @@ void AclUtil::SetDeterministic() {
   MS_EXCEPTION_IF_NULL(ms_context);
   bool is_deterministic = ms_context->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON" ? true : false;
   MS_LOG(INFO) << "Set kernel deterministic value: " << (is_deterministic ? "1" : "0");
-  // Set acl
-  auto ret = SetCompileopt(aclCompileOpt::ACL_OP_DETERMINISTIC, is_deterministic ? "1" : "0");
-  if (ret != ACL_SUCCESS) {
-    MS_LOG(EXCEPTION) << "Acl set deterministic mode failed! mode is " << is_deterministic << " and error flag is "
-                      << ret;
-  }
   // Set acl sys
   const std::string rt_sys_opt_lib = "libacl_op_compiler.so";
   const std::string rt_sys_opt_name = "aclrtCtxSetSysParamOpt";
@@ -224,7 +238,7 @@ void AclUtil::SetDeterministic() {
     MS_LOG(EXCEPTION) << "Get 'aclrtCtxSetSysParamOpt' from " << rt_sys_opt_lib << " failed!";
   }
   auto rt_sys_opt_func = reinterpret_cast<AclrtCtxSetSysParamOpt>(rt_sys_opt);
-  ret = rt_sys_opt_func(aclSysParamOpt::ACL_OPT_DETERMINISTIC, is_deterministic ? 1 : 0);
+  auto ret = rt_sys_opt_func(aclSysParamOpt::ACL_OPT_DETERMINISTIC, is_deterministic ? 1 : 0);
   if (ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "Acl sys set deterministic mode failed! mode is " << is_deterministic << " and error flag is "
                       << ret;

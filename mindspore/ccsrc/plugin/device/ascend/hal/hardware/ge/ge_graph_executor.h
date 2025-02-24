@@ -88,6 +88,7 @@ class GeGraphExecutor : public GraphExecutor {
  public:
   ~GeGraphExecutor() override = default;
   void Initialize() override;
+  void InitializeGe();
   void Finalize() override;
   void OptimizeBeforeCompileGraph(const KernelGraphPtr &graph);
   bool CompileGraph(const FuncGraphPtr &graph, const std::map<string, string> &compile_options) override;

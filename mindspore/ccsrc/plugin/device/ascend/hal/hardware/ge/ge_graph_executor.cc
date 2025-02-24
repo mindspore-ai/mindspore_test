@@ -34,6 +34,7 @@
 #include "runtime/device/ms_device_shape_transfer.h"
 #include "runtime/device/device_address_utils.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
+#include "plugin/device/ascend/hal/hardware/ge_device_context.h"
 #include "plugin/device/ascend/hal/hardware/ge/ge_memory_allocator.h"
 #include "plugin/device/ascend/hal/hardware/ge/ge_utils.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_adapter.h"
@@ -979,6 +980,7 @@ void GeGraphExecutor::AddRefCorrespondPairs(const KernelGraphPtr &graph,
 
 bool GeGraphExecutor::CompileGraph(const FuncGraphPtr &graph, const std::map<string, string> &compile_options) {
   MS_EXCEPTION_IF_NULL(graph);
+  dynamic_cast<GeDeviceContext *>(device_context_)->GeInitialize();
 
   auto graph_name = GetGraphName(graph);
   uint64_t start_time = profiler::GetClockSyscnt();
@@ -1572,10 +1574,7 @@ void GeGraphExecutor::RunInitGraph(const std::string &graph_name) {
   }
 }
 
-void GeGraphExecutor::Initialize() {
-  if (initialized_) {
-    return;
-  }
+void GeGraphExecutor::InitializeGe() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
 
@@ -1587,10 +1586,6 @@ void GeGraphExecutor::Initialize() {
     ms_context->increase_param<uint32_t>(MS_CTX_GE_REF);
     return;
   }
-
-  ge_res_manager_ = std::make_shared<GeDeviceResManager>();
-  ge_res_manager_->Initialize();
-
   std::map<std::string, std::string> ge_options;
   GetGeGlobalOptions(&ge_options);
   SetPassthroughGeOptions("global", &ge_options);
@@ -1617,6 +1612,15 @@ void GeGraphExecutor::Initialize() {
 
   ms_context->increase_param<uint32_t>(MS_CTX_GE_REF);
   MS_LOG(INFO) << "Init ge successful, ge reference = " << ms_context->get_param<uint32_t>(MS_CTX_GE_REF) << ".";
+}
+
+void GeGraphExecutor::Initialize() {
+  if (initialized_) {
+    return;
+  }
+
+  ge_res_manager_ = std::make_shared<GeDeviceResManager>();
+  ge_res_manager_->Initialize();
   initialized_ = true;
   return;
 }
@@ -1630,6 +1634,7 @@ void GeGraphExecutor::CreateSessionAndGraphRunner() const {
     GetGeSessionOptions(&options);
     SetPassthroughGeOptions("session", &options);
     sess = backend::ge_backend::NewSession(options);
+    (void)ge_res_manager_->BindDeviceToCurrentThread(true);
     backend::ge_backend::SetGeSession(sess);
   }
 
