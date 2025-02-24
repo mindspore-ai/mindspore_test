@@ -97,6 +97,7 @@ class BACKEND_EXPORT RecoveryContext {
   void set_global_rank_size(uint32_t global_rank_size) { global_rank_size_ = global_rank_size; }
   void SetIsRebootNode(bool is_reboot);
   void SetIsArf(bool is_arf);
+  bool GetIsArf();
 
   // Obtain the global step corresponding to the global latest checkpoint in each training process. Since there may be
   // some processes that fails to save the checkpoint, it is necessary for AllGather to save the latest step of the

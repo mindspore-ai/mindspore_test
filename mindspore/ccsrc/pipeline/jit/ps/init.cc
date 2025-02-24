@@ -777,6 +777,7 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("ckpt_path", &RecoveryContext::GetCkptPath, "Get the recovery path used to save checkpoint.")
     .def("set_ckpt_path", &RecoveryContext::SetCkptPath, "Set the recovery path used to save checkpoint.")
     .def("set_is_reboot_node", &RecoveryContext::SetIsRebootNode, "Set reboot node flag for arf.")
+    .def("is_arf", &RecoveryContext::GetIsArf, "Get arf flag.")
     .def("set_is_arf", &RecoveryContext::SetIsArf, "Set arf flag.");
 
   (void)py::class_<DeviceContextManager, std::shared_ptr<DeviceContextManager>>(m, "DeviceContextManager")
