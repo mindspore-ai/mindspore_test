@@ -1161,7 +1161,7 @@ void GradExecutor::ErasePipelineTopCell(const std::string &already_run_cell_id, 
 }
 
 py::object GradExecutor::RunGrad(const prim::GradOperationPtr &grad, const py::object &obj, const py::object &weights,
-                                 const py::object &grad_position, const py::args &args) {
+                                 const py::object &grad_position, const py::object &has_aux, const py::args &args) {
   // Wait forward task finish.
   runtime::Pipeline::Get().WaitAll();
 
@@ -1213,11 +1213,12 @@ py::object GradExecutor::RunGrad(const prim::GradOperationPtr &grad, const py::o
   auto p_args = GetGradPositionArgs(grad_position, grad->get_by_position_);
   autograd::GradAttr grad_attr(grad->get_all_, grad->get_by_list_, grad->sens_param_, grad->get_by_position_,
                                weight_param_is_tuple);
+  bool has_aux_val = py::cast<bool>(has_aux);
   if (top_cell_->is_ir_grad() || top_cell_->is_high_order_top_cell()) {
-    GetGradGraph(grad_attr, w_args, p_args);
+    GetGradGraph(grad_attr, w_args, p_args, has_aux_val);
     return RunGradGraph();
   }
-  auto ret = RunGradFunc(grad_attr, w_args, p_args);
+  auto ret = RunGradFunc(grad_attr, w_args, p_args, has_aux_val);
   RegBackpropStageHook(false);
   return ret;
 }
@@ -1301,9 +1302,9 @@ bool GradExecutor::ReplacePipelineTopCellForwardOutput() {
 }
 
 void GradExecutor::GetGradGraph(const autograd::GradAttr &grad_attr, const std::vector<tensor::BaseTensorPtr> &w_args,
-                                const std::vector<size_t> &p_args) {
+                                const std::vector<size_t> &p_args, bool has_aux) {
   // Get bprop graph of top cell
-  auto bprop_graph = GetBpropGraph(grad_attr, w_args, p_args);
+  auto bprop_graph = GetBpropGraph(grad_attr, w_args, p_args, has_aux);
   auto resource = top_cell()->resource();
   MS_EXCEPTION_IF_NULL(resource);
   resource->set_func_graph(bprop_graph);
@@ -1455,7 +1456,7 @@ void GradExecutor::UpdateParamAbsByArgs(const std::vector<ValuePtr> &input_args,
 
 FuncGraphPtr GradExecutor::GetBpropGraph(const autograd::GradAttr &grad_attr,
                                          const std::vector<tensor::BaseTensorPtr> &w_args,
-                                         const std::vector<size_t> &p_args) {
+                                         const std::vector<size_t> &p_args, bool has_aux) {
   MS_EXCEPTION_IF_NULL(top_input_args_info_);
   const auto &auto_grad_cell = std::dynamic_pointer_cast<autograd::IrGrad>(top_cell()->auto_grad_cell_ptr());
   MS_EXCEPTION_IF_NULL(auto_grad_cell);
@@ -1463,7 +1464,7 @@ FuncGraphPtr GradExecutor::GetBpropGraph(const autograd::GradAttr &grad_attr,
   // will not take effect
   auto_grad_cell->set_bprop_graph_run_by_single_op(top_cell()->use_dynamic_shape_process() ||
                                                    top_cell()->has_bprop_cut_op());
-  FuncGraphPtr bprop_graph = auto_grad_cell->Finish(w_args, p_args, grad_attr);
+  FuncGraphPtr bprop_graph = auto_grad_cell->Finish(w_args, p_args, grad_attr, has_aux);
   MS_LOG(DEBUG) << "Top graph input params size " << top_input_args_info_->input_arg_value_vec.size();
   UpdateParamAbsByArgs(top_input_args_info_->input_arg_value_vec, bprop_graph);
   if (top_cell()->need_do_final_opt()) {
@@ -1616,7 +1617,7 @@ py::object GradExecutor::CheckAlreadyRun(const prim::GradOperationPtr &grad, con
 
 py::object GradExecutor::RunGradFunc(const autograd::GradAttr &grad_attr,
                                      const std::vector<tensor::BaseTensorPtr> &w_args,
-                                     const std::vector<size_t> &p_args) {
+                                     const std::vector<size_t> &p_args, bool has_aux) {
   MS_EXCEPTION_IF_NULL(top_input_args_info_);
   ValuePtr sens = nullptr;
   if (grad_attr.has_sens) {
@@ -1631,7 +1632,7 @@ py::object GradExecutor::RunGradFunc(const autograd::GradAttr &grad_attr,
   // To avoid grad_operation_ be used by nested grad func when running grad.
   std::string swap_grad_operation;
   std::swap(grad_operation_, swap_grad_operation);
-  auto grads = auto_grad_cell->Finish(w_args, p_args, grad_attr, sens);
+  auto grads = auto_grad_cell->Finish(w_args, p_args, grad_attr, has_aux, sens);
   std::swap(grad_operation_, swap_grad_operation);
   MS_EXCEPTION_IF_NULL(grads);
   InsertCheckForLastGrad(grads);

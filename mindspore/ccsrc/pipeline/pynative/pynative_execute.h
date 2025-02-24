@@ -70,7 +70,7 @@ class ME_EXPORT PyNativeExecutor : public std::enable_shared_from_this<PyNativeE
   void NewGraph(const py::object &obj, const py::args &args) const;
   void EndGraph(const py::object &obj, const py::object &out, const py::args &args) const;
   py::object RunGrad(const prim::GradOperationPtr &grad, const py::object &cell, const py::object &weights,
-                     const py::object &grad_position, const py::args &args) const;
+                     const py::object &grad_position, const py::object &has_aux, const py::args &args) const;
   py::object GradJit(const py::args &args) const;
   void CallCustomBprop(const py::object &cell_obj, const py::object &out, const py::args &args) const;
   void set_forward_use_dynamic_shape_process(bool flag) const;

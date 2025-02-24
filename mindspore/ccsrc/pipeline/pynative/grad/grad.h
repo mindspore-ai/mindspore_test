@@ -62,11 +62,11 @@ class ME_EXPORT GradExecutor {
     EndGraphInner(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3));
   };
   std::function<py::object(const prim::GradOperationPtr &, const py::object &, const py::object &, const py::object &,
-                           const py::args &)>
-    Run = [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5) {
+                           const py::object &has_aux, const py::args &)>
+    Run = [this](auto &&PH1, auto &&PH2, auto &&PH3, auto &&PH4, auto &&PH5, auto &&PH6) {
       return RunGrad(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2),
                      std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4),
-                     std::forward<decltype(PH5)>(PH5));
+                     std::forward<decltype(PH5)>(PH5), std::forward<decltype(PH6)>(PH6));
     };
   std::function<void(const py::object &, const py::object &, const py::args &)> CallCustomBpropFunc =
     [this](auto &&PH1, auto &&PH2, auto &&PH3) {
@@ -101,9 +101,9 @@ class ME_EXPORT GradExecutor {
   inline size_t custom_bprop_cell_count() const { return custom_bprop_cell_count_; }
   TopCellIdWithTopCell &already_run_top_cell() { return already_run_top_cell_; }
   py::object RunGrad(const prim::GradOperationPtr &grad, const py::object &obj, const py::object &weights,
-                     const py::object &grad_position, const py::args &args);
+                     const py::object &grad_position, const py::object &has_aux, const py::args &args);
   py::object RunGradFunc(const autograd::GradAttr &grad_attr, const std::vector<tensor::BaseTensorPtr> &w_args,
-                         const std::vector<size_t> &p_args);
+                         const std::vector<size_t> &p_args, bool has_aux);
   py::object RunGradGraph();
   CNodePtr ConstructForwardGraph(const OpGradInfoPtr &grad_info, const std::vector<std::string> &input_value_id) const;
   void RecordForwardGraph(const OpGradInfoPtr &grad_info) const;
@@ -222,9 +222,9 @@ class ME_EXPORT GradExecutor {
   void DoGradForCustomBprop(const InputArgsInfoPtr &input_args_info, const std::string &out_id) const;
   void CheckNeedCompileGraph(const InputArgsInfoPtr &input_args_info);
   void GetGradGraph(const autograd::GradAttr &grad_attr, const std::vector<tensor::BaseTensorPtr> &w_args,
-                    const std::vector<size_t> &p_args);
+                    const std::vector<size_t> &p_args, bool has_aux);
   FuncGraphPtr GetBpropGraph(const autograd::GradAttr &grad_attr, const std::vector<tensor::BaseTensorPtr> &w_args,
-                             const std::vector<size_t> &p_args);
+                             const std::vector<size_t> &p_args, bool has_aux);
   std::vector<tensor::BaseTensorPtr> GetWeightsArgs(const py::object &weights, bool *weight_param_is_tuple) const;
   std::vector<tensor::BaseTensorPtr> GetDefaultWeights() const;
   void CheckParamShapeAndType(const ParameterPtr &param_node, const abstract::AbstractBasePtr &input_abs,

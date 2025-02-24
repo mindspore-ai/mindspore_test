@@ -1557,7 +1557,24 @@ class _PyNativeExecutor:
         Return:
             None.
         """
-        return self._executor.grad(grad, obj, weights, grad_position, *args)
+        return self._executor.grad(grad, obj, weights, grad_position, False, *args)
+
+    def grad_aux(self, obj, grad, weights, grad_position, *args):
+        """
+        Run grad graph with aux
+
+        Args:
+            obj (Function/Cell): The function or cell instance.
+            grad (GradOperation): The gradoperation object.
+            weights (ParameterTuple): The weights of cell instance.
+            grad_position (Union(int, tuple[int])): If int, get the gradient with respect to single input.
+              If tuple, get the gradients with respect to selected inputs. 'grad_position' begins with 0. Default: 0.
+            args (tuple): Function or cell input arguments.
+
+        Return:
+            None.
+        """
+        return self._executor.grad(grad, obj, weights, grad_position, True, *args)
 
     def clear_res(self):
         """
