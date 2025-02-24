@@ -120,7 +120,10 @@ class Profiler:
             ``MS_ALLOC_CONF`` instead.
         aicore_metrics (AicoreMetrics, optional): (Ascend only) Types of AICORE performance data collected,
             when using this parameter, `activities` must include ``ProfilerActivity.NPU`` , and the value
-            must be a member of AicoreMetrics. Default: ``AicoreMetrics.AiCoreNone`` .
+            must be a member of AicoreMetrics. When `profiler_level` is ``ProfilerLevel.Level0``, the default value is
+            ``AicoreMetrics.AiCoreNone``; when `profiler_level` is ``ProfilerLevel.Level1`` or ``ProfilerLevel.Level2``,
+            the default value is ``AicoreMetrics.PipeUtilization``.
+
             The data items contained in each metric are as follows:
 
             - AicoreMetrics.AiCoreNone: Does not collect AICORE data.
