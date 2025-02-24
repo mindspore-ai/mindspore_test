@@ -24,7 +24,8 @@ import numpy as np
 from mindspore import log as logger
 from mindspore.profiler.analysis.viewer.base_viewer import BaseViewer
 from mindspore.profiler.common.file_manager import FileManager
-from mindspore.profiler.common.constant import TimelineLayerName, OverlapAnalysisTidName, ProfilerLevel
+from mindspore.profiler.common.constant import TimelineLayerName, OverlapAnalysisTidName, ProfilerLevel, \
+    ProfilerActivity
 from mindspore.profiler.analysis.parser.timeline_event.msprof_event import (
     MsprofCompleteEvent,
 )
@@ -80,6 +81,7 @@ class AscendStepTraceTimeViewer(BaseViewer):
         )
         self._profiler_level = kwargs.get("profiler_level")
         self._ascend_ms_dir = kwargs.get("ascend_ms_dir")
+        self._activities = kwargs.get("activities")
         ProfilerLogger.init(self._ascend_ms_dir)
         self._logger = ProfilerLogger.get_instance()
         self.step_trace_time_data_list = []
@@ -307,6 +309,11 @@ class AscendStepTraceTimeViewer(BaseViewer):
         """
         calculate prepare time
         """
+
+        # No frame work data is collected when no CPU is passed in activities
+        if ProfilerActivity.CPU.value not in self._activities:
+            return Decimal('0.000')
+
         step_computing_first_time = self._calculate_event_first_time_by_step(computing_np, ts)
         step_communication_first_time = self._calculate_event_first_time_by_step(communication_np, ts)
 

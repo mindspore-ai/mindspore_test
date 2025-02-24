@@ -17,13 +17,13 @@ import os
 import re
 from collections import defaultdict
 
+from typing import Dict
 from mindspore.profiler.analysis.viewer.base_viewer import BaseViewer
 from mindspore.profiler.common.file_manager import FileManager
 from mindspore.profiler.common.log import ProfilerLogger
 
 from mindspore import log as logger
 from mindspore.profiler.common.constant import JitLevel
-from mindspore.profiler.analysis.parser.timeline_assembly_factory.trace_view_container import TraceViewContainer
 
 
 class AscendCommunicationViewer(BaseViewer):
@@ -102,32 +102,31 @@ class AscendCommunicationViewer(BaseViewer):
         trace_container = data.get("trace_view_container", None)
         if trace_container is None:
             raise ValueError("trace view container is None")
-        if not self._is_set_schedule or self._jit_level == JitLevel.GRAPH_LEVEL:
-            self._set_default_step_list()
-        else:
-            self._update_step_list(trace_container)
+        step_id_to_time_dict = trace_container.get_step_id_time_dict()
 
-    def _set_default_step_list(self):
+        if not self._is_set_schedule or self._jit_level == JitLevel.GRAPH_LEVEL or not step_id_to_time_dict:
+            self._update_default_step_list()
+        else:
+            self._update_step_list(step_id_to_time_dict)
+
+    def _update_default_step_list(self):
         """
-        Set default step list.
+        When the step dict is empty, it is set to the default value.
         """
         self.step_list = [{"step_id": "0", "start_ts": 0, "end_ts": float('inf'), "comm_ops": {}}]
 
-    def _update_step_list(self, trace_container: TraceViewContainer):
+    def _update_step_list(self, step_id_to_time_dict: Dict):
         """
-        Dynamic graph scene update step list.
+        When the step dict is not empty, set a value that contains the step id.
         """
-        if trace_container.get_step_id_time_dict():
-            for step_id, (start_time, end_time) in trace_container.get_step_id_time_dict().items():
-                step_dict = {
-                    "step_id": step_id,
-                    "start_ts": start_time,
-                    "end_ts": end_time,
-                    "comm_ops": {}
-                }
-                self.step_list.append(step_dict)
-        else:
-            self._set_default_step_list()
+        for step_id, (start_time, end_time) in step_id_to_time_dict.items():
+            step_dict = {
+                "step_id": step_id,
+                "start_ts": start_time,
+                "end_ts": end_time,
+                "comm_ops": {}
+            }
+            self.step_list.append(step_dict)
 
     def _save_analyze_data(self):
         """

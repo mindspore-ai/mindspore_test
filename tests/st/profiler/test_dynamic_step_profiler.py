@@ -120,6 +120,11 @@ def test_dynamic_step_single_active_kbk_profiler():
             ],
             fuzzy_match=True
         )
+        # Check profiler.log
+        profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                       f"logs/profiler_*.log")
+        for profiler_log_path in profiler_log_paths:
+            FileChecker.check_file_for_keyword(profiler_log_path, "error")
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -138,7 +143,7 @@ def test_dynamic_step_multi_active_kbk_profiler():
         # Check whether the number of generated files is the same as the data collected by the step
         ascend_ms_dir_nums = len([d for d in os.listdir(tmpdir) if os.path.isdir(os.path.join(tmpdir, d))])
         assert ascend_ms_dir_nums == 2
-        # Check whether the kernel.csv contains the step id column
+        # Check kernel_details.csv
         kernel_details_path_step_1 = os.path.join(
             tmpdir,
             _sort_directories_by_timestamp(tmpdir)[0],  # The first sorted directory
@@ -184,6 +189,11 @@ def test_dynamic_step_multi_active_kbk_profiler():
             ],
             fuzzy_match=True
         )
+        # Check profiler.log
+        profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                       f"logs/profiler_*.log")
+        for profiler_log_path in profiler_log_paths:
+            FileChecker.check_file_for_keyword(profiler_log_path, "error")
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -211,7 +221,7 @@ def test_dynamic_step_single_active_py_native_profiler():
         # Check whether the number of generated files is the same as the data collected by the step
         ascend_ms_dir_nums = len([d for d in os.listdir(tmpdir) if os.path.isdir(os.path.join(tmpdir, d))])
         assert ascend_ms_dir_nums == 2
-        # Check whether the kernel.csv contains the step id column
+        # Check kernel_details.csv
         kernel_details_path_step_1 = os.path.join(
             tmpdir,
             _sort_directories_by_timestamp(tmpdir)[0],  # The first sorted directory
@@ -224,7 +234,6 @@ def test_dynamic_step_single_active_py_native_profiler():
             "ASCEND_PROFILER_OUTPUT",
             "kernel_details.csv"
         )
-        # Check whether the kernel.csv contains the step id column(to prevent empty steps)
         df1 = pd.read_csv(kernel_details_path_step_1)["Step ID"].tolist()
         df2 = pd.read_csv(kernel_details_path_step_2)["Step ID"].tolist()
         assert all(step_id == 3 for step_id in df1)
@@ -258,6 +267,11 @@ def test_dynamic_step_single_active_py_native_profiler():
             ],
             fuzzy_match=True
         )
+        # Check profiler.log
+        profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                       f"logs/profiler_*.log")
+        for profiler_log_path in profiler_log_paths:
+            FileChecker.check_file_for_keyword(profiler_log_path, "error")
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -269,7 +283,7 @@ def test_dynamic_step_npu_py_native_profiler():
     generate the expected profiling data.
     """
     step_num = 8
-    with tempfile.TemporaryDirectory(suffix="_step_profiler_cpu") as tmpdir:
+    with tempfile.TemporaryDirectory(suffix="_step_profiler_npu") as tmpdir:
         schedule = ms.profiler.schedule(wait=1, warmup=1, active=1, repeat=1, skip_first=1)
         net = Net()
         context.set_context(mode=ms.PYNATIVE_MODE, device_target="Ascend")
@@ -280,22 +294,7 @@ def test_dynamic_step_npu_py_native_profiler():
         for _ in range(step_num):
             train_net(net)
             profiler.step()
-        # Check kernel_details.csv
-        kernel_details_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
-                                        f"ASCEND_PROFILER_OUTPUT/kernel_details.csv")[0]
-        FileChecker.assert_csv_no_header(kernel_details_path, "Step ID")
-        FileChecker.check_csv_items(kernel_details_path, {"Name": ["*BiasAdd*", "*MatMul*"]})
-        # Check trace_view.json
-        trace_view_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
-                                    f"ASCEND_PROFILER_OUTPUT/trace_view.json")[0]
-        FileChecker.check_timeline_values(
-            trace_view_path,
-            "name",
-            ["*MatMul*",
-             "*Add*"
-             ],
-            fuzzy_match=True
-        )
+        _check_npu_profiler_data(tmpdir)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -318,20 +317,7 @@ def test_dynamic_step_cpu_py_native_profiler():
         for _ in range(step_num):
             train_net(net)
             profiler.step()
-        # Check kernel_details.csv
-        kernel_details_files = glob.glob(f"{tmpdir}/*_ascend_ms/"
-                                         f"ASCEND_PROFILER_OUTPUT/kernel_details.csv")
-        assert not kernel_details_files, "kernel_details.csv is exit."
-        # Check trace_view.json
-        trace_view_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
-                                    f"ASCEND_PROFILER_OUTPUT/trace_view.json")[0]
-        FileChecker.check_timeline_values(
-            trace_view_path,
-            "name",
-            ["*ProfilerStep#3"
-             ],
-            fuzzy_match=True
-        )
+        _check_cpu_profiler_data(tmpdir)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -343,7 +329,7 @@ def test_dynamic_step_npu_graph_profiler():
     generate the expected profiling data.
     """
     step_num = 8
-    with tempfile.TemporaryDirectory(suffix="_step_profiler_cpu") as tmpdir:
+    with tempfile.TemporaryDirectory(suffix="_step_profiler_npu") as tmpdir:
         schedule = ms.profiler.schedule(wait=1, warmup=1, active=1, repeat=1, skip_first=1)
         net = Net()
         context.set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
@@ -355,22 +341,7 @@ def test_dynamic_step_npu_graph_profiler():
         for _ in range(step_num):
             train_net(net)
             profiler.step()
-        # Check kernel_details.csv
-        kernel_details_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
-                                        f"ASCEND_PROFILER_OUTPUT/kernel_details.csv")[0]
-        FileChecker.assert_csv_no_header(kernel_details_path, "Step ID")
-        FileChecker.check_csv_items(kernel_details_path, {"Name": ["*BiasAdd*", "*MatMul*"]})
-        # Check trace_view.json
-        trace_view_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
-                                    f"ASCEND_PROFILER_OUTPUT/trace_view.json")[0]
-        FileChecker.check_timeline_values(
-            trace_view_path,
-            "name",
-            ["*MatMul*",
-             "*Add*"
-             ],
-            fuzzy_match=True
-        )
+        _check_npu_profiler_data(tmpdir)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -394,20 +365,7 @@ def test_dynamic_step_cpu_graph_profiler():
         for _ in range(step_num):
             train_net(net)
             profiler.step()
-        # Check kernel_details.csv
-        kernel_details_files = glob.glob(f"{tmpdir}/*_ascend_ms/"
-                                         f"ASCEND_PROFILER_OUTPUT/kernel_details.csv")
-        assert not kernel_details_files, "kernel_details.csv is exit."
-        # Check trace_view.json
-        trace_view_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
-                                    f"ASCEND_PROFILER_OUTPUT/trace_view.json")[0]
-        FileChecker.check_timeline_values(
-            trace_view_path,
-            "name",
-            ["*ProfilerStep#3"
-             ],
-            fuzzy_match=True
-        )
+        _check_cpu_profiler_data(tmpdir)
 
 
 def _dynamic_step_train_profiler(tmpdir, net, step_num, schedule, context_mode, jit_level=None):
@@ -457,3 +415,64 @@ def _sort_directories_by_timestamp(path):
 
     # Returns the sorted list of folder names
     return [name for name, _ in directories_with_timestamp]
+
+
+def _check_npu_profiler_data(tmpdir):
+    """ Check only NPU profiler data."""
+    # Check kernel_details.csv
+    kernel_details_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                    f"ASCEND_PROFILER_OUTPUT/kernel_details.csv")[0]
+    FileChecker.assert_csv_no_header(kernel_details_path, "Step ID")
+    FileChecker.check_csv_items(kernel_details_path, {"Name": ["*BiasAdd*", "*MatMul*"]})
+    # Check trace_view.json
+    trace_view_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                f"ASCEND_PROFILER_OUTPUT/trace_view.json")[0]
+    FileChecker.check_timeline_values(
+        trace_view_path,
+        "name",
+        ["*MatMul*",
+         "*Add*"
+         ],
+        fuzzy_match=True
+    )
+    # Check step_trace_time.csv
+    step_trace_time_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                     f"ASCEND_PROFILER_OUTPUT/step_trace_time.csv")[0]
+    FileChecker.check_csv_data_non_negative(step_trace_time_path, comparison_func=_is_non_negative)
+    # Check api_statistic.csv
+    api_statistic_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                   f"ASCEND_PROFILER_OUTPUT/api_statistic.csv")[0]
+    FileChecker.check_file_exists(api_statistic_path)
+    # Check profiler.log
+    profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                   f"logs/profiler_*.log")
+    for profiler_log_path in profiler_log_paths:
+        FileChecker.check_file_for_keyword(profiler_log_path, "error")
+
+
+def _check_cpu_profiler_data(tmpdir):
+    """ Check only CPU profiler data."""
+    # Check trace_view.json
+    trace_view_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                f"ASCEND_PROFILER_OUTPUT/trace_view.json")[0]
+    FileChecker.check_timeline_values(
+        trace_view_path,
+        "name",
+        ["*ProfilerStep#3"
+         ],
+        fuzzy_match=True
+    )
+    # Check profiler.log
+    profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                   f"logs/profiler_*.log")
+    for profiler_log_path in profiler_log_paths:
+        FileChecker.check_file_for_keyword(profiler_log_path, "error")
+    # Check dataset.csv
+    dataset_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                             f"ASCEND_PROFILER_OUTPUT/dataset.csv")[0]
+    FileChecker.check_file_exists(dataset_path)
+
+
+def _is_non_negative(value):
+    """ Check if a given value is non-negative (i.e., greater than or equal to zero)."""
+    return float(value) >= 0.0

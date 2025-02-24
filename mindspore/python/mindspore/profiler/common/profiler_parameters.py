@@ -190,16 +190,19 @@ class ProfilerParameters:
             warnings.warn("when 'mstx' is disabled, 'profiler_level' cannot be set to 'ProfilerLevel.LevelNone', "
                           "reset to 'ProfilerLevel.Level0'.")
 
-        if self.__dict__.get('profiler_level') == ProfilerLevel.Level0 and \
+        if self.__dict__.get('profiler_level') in (ProfilerLevel.LevelNone, ProfilerLevel.Level0) and \
             self.__dict__.get('aicore_metrics') != AicoreMetrics.AiCoreNone:
             self.aicore_metrics = AicoreMetrics.AiCoreNone
-            warnings.warn("when 'profiler_level' is set to 'ProfilerLevel.Level0', "
-                          "'aicore_metrics' cannot be set to other value except 'AicoreMetrics.AiCoreNone', "
-                          "reset to 'AicoreMetrics.AiCoreNone'.")
+            warnings.warn(f"when 'profiler_level' is set to '{self.__dict__.get('profiler_level')}', "
+                          f"'aicore_metrics' cannot be set to other value except 'AicoreMetrics.AiCoreNone', "
+                          f"reset to 'AicoreMetrics.AiCoreNone'.")
 
-        if self.__dict__.get('profiler_level') != ProfilerLevel.Level0 and \
+        if self.__dict__.get('profiler_level') in (ProfilerLevel.Level1, ProfilerLevel.Level2) and \
             self.__dict__.get('aicore_metrics') == AicoreMetrics.AiCoreNone:
             self.aicore_metrics = AicoreMetrics.PipeUtilization
+            warnings.warn(f"when 'profiler_level' is set to '{self.__dict__.get('profiler_level')}', "
+                          f"'aicore_metrics' cannot be set to 'AicoreMetrics.AiCoreNone', "
+                          f"reset to 'AicoreMetrics.PipeUtilization'.")
 
     def __getattr__(self, name):
         """

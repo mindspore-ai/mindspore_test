@@ -20,6 +20,7 @@ from unittest import mock
 from decimal import Decimal
 
 from mindspore.profiler.analysis.viewer.ascend_step_trace_time_viewer import AscendStepTraceTimeViewer
+from mindspore.profiler.common.constant import ProfilerActivity
 
 
 # pylint: disable=protected-access
@@ -48,6 +49,7 @@ class TestAscendStepTraceTimeViewer(unittest.TestCase):
         self.viewer.communication_np = self.times
         self.viewer.communication_not_overlapped_np = self.times
         self.viewer.free_np = self.times
+        self.viewer._activities = [ProfilerActivity.CPU.value]
 
     def test_calculate_event_total_time_by_step_should_return_total_time_when_input_correct_data(self):
         ts = Decimal('0')

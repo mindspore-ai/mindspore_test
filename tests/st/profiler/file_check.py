@@ -251,3 +251,46 @@ class FileChecker:
                                                         f"CSV file.")
         except (IOError, OSError) as e:
             assert False, f"Failed to read CSV file or file is empty, ERROR: {e}"
+
+    @classmethod
+    def check_file_for_keyword(cls, file_path: str, keyword: str) -> None:
+        """
+        Check if a file contains a specific keyword (case-insensitive).
+
+        Args:
+            file_path (str): Path to the file.
+            keyword (str): The keyword to search for in the file.
+        """
+        try:
+            cls.check_file_exists(file_path)
+            with open(file_path, 'r', encoding='utf-8') as file:
+                content = file.read()
+            if keyword.lower() in content.lower():  # Convert both content and keywords to lowercase and then check
+                assert False, f"file {file_path} contains the keyword '{keyword}'."
+        except (IOError, OSError) as e:
+            assert False, f"Failed to read file, ERROR: {e}"
+
+    @classmethod
+    def check_csv_data_non_negative(cls, file_path: str, comparison_func) -> None:
+        """
+        Check if all data in the CSV file (except the header row) are greater than or equal to the specified threshold.
+
+        Args:
+            file_path (str): Path to the CSV file.
+            comparison_func (callable): A function that takes a value and returns a boolean.
+        """
+        try:
+            cls.check_file_exists(file_path)
+
+            with open(file_path, mode='r', newline='', encoding='utf-8') as csvfile:
+                reader = csv.reader(csvfile)
+                # pylint: disable=unused-variable
+                headers = next(reader)  # Skip head
+
+                for row in reader:
+                    for value in row:
+                        # Check whether the conditions are met
+                        if not comparison_func(value):
+                            raise AssertionError(f"CSV file contains values that do not meet the condition: {value}.")
+        except (IOError, OSError) as e:
+            assert False, f"Failed to read CSV file, ERROR: {e}"
