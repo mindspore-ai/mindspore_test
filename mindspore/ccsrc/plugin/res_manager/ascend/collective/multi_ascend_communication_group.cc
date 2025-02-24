@@ -44,6 +44,12 @@ bool MultiAscendCommunicationGroup::Initialize(void *root_info) {
     }
   }
 #endif
+  if (device::ascend::EnableDvmComm() && dvm_group_ != nullptr) {
+    if (!dvm_group_->Initialize(root_info)) {
+      MS_LOG(ERROR) << "Failed to initialize DVM communication group";
+      return false;
+    }
+  }
   if (!hccl_group_->Initialize(root_info)) {
     MS_LOG(ERROR) << "Failed to initialize HCCL group " << name_;
     return false;
@@ -62,6 +68,12 @@ bool MultiAscendCommunicationGroup::Finalize() {
     MS_LOG(INFO) << "Successfully finalize LCCL group " << name_;
   }
 #endif
+  if (device::ascend::EnableDvmComm() && dvm_group_ != nullptr) {
+    if (!dvm_group_->Finalize()) {
+      MS_LOG(ERROR) << "Failed to finalize DVM communication group";
+      return false;
+    }
+  }
   if (!hccl_group_->Finalize()) {
     MS_LOG(ERROR) << "Failed to finalize HCCL group" << name_;
     return false;

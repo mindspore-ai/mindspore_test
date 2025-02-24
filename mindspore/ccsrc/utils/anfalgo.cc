@@ -1262,6 +1262,9 @@ bool AnfAlgo::IsCommunicationOp(const AnfNodePtr &node) {
   if (!node->isa<CNode>()) {
     return false;
   }
+  if (HasNodeAttr("is_comm_op", node->cast<CNodePtr>())) {
+    return true;
+  }
   auto kernel_name = AnfAlgo::GetCNodeName(node);
   return IsCommunicationOp(kernel_name);
 }
