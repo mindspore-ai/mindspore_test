@@ -542,9 +542,12 @@ std::set<std::pair<AnfNodePtr, int>> FuncNodeUsersSet(const AnfNodePtr &paramete
   std::set<std::pair<AnfNodePtr, int>> all_node_users;
   for (auto &n_pair : node_users) {
     auto users_skip_virtual_nodes =
-      FindNextNode(n_pair, node_users_map,
-                   {prim::kPrimMirrorMicroStep->name(), prim::kPrimMicroStepAllGather->name(), prim::kPrimLoad->name(),
-                    prim::kPrimCast->name()});
+      !ParallelContext::GetInstance()->zero3()
+        ? FindNextNode(n_pair, node_users_map,
+                       {prim::kPrimMirrorMicroStep->name(), prim::kPrimMicroStepAllGather->name(),
+                        prim::kPrimLoad->name(), prim::kPrimCast->name()})
+        : FindNextNode(n_pair, node_users_map,
+                       {prim::kPrimMirrorMicroStep->name(), prim::kPrimLoad->name(), prim::kPrimCast->name()});
     for (const auto &node_pair : users_skip_virtual_nodes) {
       auto func_node_users = FuncGraphNodeUsers(node_pair);
       if (func_node_users.empty()) {
@@ -642,7 +645,10 @@ void AddVirtualAssignAdd(const FuncGraphPtr &root) {
         InsertVirtualAssignAdd(temp_node, root->manager(), accu_parameter, node_users_map);
         continue;
       }
-      auto node_set = FindNextNode(temp_node, node_users_map);
+      auto node_set =
+        !ParallelContext::GetInstance()->zero3()
+          ? FindNextNode(temp_node, node_users_map)
+          : FindNextNode(temp_node, node_users_map, {prim::kPrimMirrorMicroStep->name(), prim::kPrimLoad->name()});
       for (auto &node_user : node_set) {
         InsertVirtualAssignAdd(node_user, root->manager(), accu_parameter, node_users_map);
       }
