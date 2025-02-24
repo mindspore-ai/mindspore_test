@@ -216,6 +216,7 @@ bool JitExecutorPy::CompileInner(const py::object &source, const py::tuple &args
 
   ExecutorInfoPtr executor_info = std::make_shared<ExecutorInfo>();
   ResourcePtr resource = std::make_shared<Resource>(source);
+  resource->set_pipeline_level(pipeline::kLevelJit);
   executor_info->resource = resource;
   InitCompileCacheResource(resource, phase_);
   // Get the parameters items and add the value to args_abs.
@@ -243,6 +244,7 @@ bool JitExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &arg
   ExecutorInfoPtr executor_info = std::make_shared<ExecutorInfo>();
   ResourcePtr resource = std::make_shared<Resource>();
   resource->set_func_graph(graph);
+  resource->set_pipeline_level(pipeline::kLevelJit);
   executor_info->resource = resource;
   InitCompileCacheResource(resource, phase_);
   // Get the parameters items and add the value to args_abs.

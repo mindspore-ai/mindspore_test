@@ -41,12 +41,12 @@ namespace opt {
 namespace irpass {
 class ReplaceApplicator : public AnfVisitor {
  public:
-  AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override {
+  AnfNodePtr operator()(const OptimizerPtr &opt, const AnfNodePtr &node) override {
     if (!IsValueNode<FuncGraph>(node)) {
       return nullptr;
     }
     auto fg = GetValueNode<FuncGraphPtr>(node);
-    if (NoInline(fg)) {
+    if (NoInline(fg, opt)) {
       return nullptr;
     }
 
@@ -82,14 +82,17 @@ class ReplaceApplicator : public AnfVisitor {
     return nullptr;
   }
 
-  bool NoInline(const FuncGraphPtr &fg) const {
+  bool NoInline(const FuncGraphPtr &fg, const OptimizerPtr &opt) const {
     if (fg == nullptr || fg->has_flag(FUNC_GRAPH_FLAG_NO_INLINE) || fg->has_flag(FUNC_GRAPH_FLAG_DEFER_INLINE) ||
         fg->stub() || *(fg->indirect())) {
       return true;
     }
     // Defer inlining in the case of pipeline.
+    MS_EXCEPTION_IF_NULL(opt);
+    auto resource = std::dynamic_pointer_cast<pipeline::Resource>(opt->resource());
+    MS_EXCEPTION_IF_NULL(resource);
     auto stage_num = parallel::ParallelContext::GetInstance()->pipeline_stage_split_num();
-    if (fg->stage() != -1 && stage_num > 1) {
+    if (resource->pipeline_level() != pipeline::kLevelJit && fg->stage() != -1 && stage_num > 1) {
       return true;
     }
     // Defer inlining for:
@@ -135,7 +138,7 @@ class InlinerBase : public AnfVisitor {
     auto &inputs = cnode->inputs();
     // G
     auto fg = GetValueNode<FuncGraphPtr>(inputs[0]);
-    if (!CheckFlag(fg)) {
+    if (!CheckFlag(fg, optimizer)) {
       return nullptr;
     }
 
@@ -194,14 +197,17 @@ class InlinerBase : public AnfVisitor {
     return res;
   }
 
-  bool CheckFlag(const FuncGraphPtr &fg) const {
+  bool CheckFlag(const FuncGraphPtr &fg, const OptimizerPtr &opt) const {
     if (fg == nullptr || fg->has_flag(FUNC_GRAPH_FLAG_NO_INLINE) || fg->has_flag(FUNC_GRAPH_FLAG_DEFER_INLINE) ||
         fg->stub()) {
       return false;
     }
     // Defer inlining in the case of pipeline.
+    MS_EXCEPTION_IF_NULL(opt);
+    auto resource = std::dynamic_pointer_cast<pipeline::Resource>(opt->resource());
+    MS_EXCEPTION_IF_NULL(resource);
     auto stage_num = parallel::ParallelContext::GetInstance()->pipeline_stage_split_num();
-    if (fg->stage() != -1 && stage_num > 1) {
+    if (resource->pipeline_level() != pipeline::kLevelJit && fg->stage() != -1 && stage_num > 1) {
       return false;
     }
     // Defer inlining for:
