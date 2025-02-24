@@ -195,13 +195,13 @@ class Primitive(Primitive_):
             layout_value = ()
             for in_ele in layout:
                 if isinstance(in_ele, Layout):
-                    layout_value += (in_ele.to_dict(),)
+                    layout_value += ({k: v for k, v in in_ele.to_dict().items() if k != 'rank_list'},)
                 elif isinstance(in_ele, tuple):
                     new_layout_list = ()
                     for ele in in_ele:
                         if not isinstance(ele, Layout):
                             raise TypeError(f"The {log_info} item should be a object of class Layout.")
-                        new_layout_list += (ele.to_dict(),)
+                        new_layout_list += ({k: v for k, v in ele.to_dict().items() if k != 'rank_list'},)
                     layout_value += (new_layout_list,)
                 else:
                     raise TypeError(f"The {log_info} item should be a object of class Layout or a tuple.")

@@ -320,7 +320,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
     """
     delta_seed = 0
 
-
     @classmethod
     def __subclasshook__(cls, sub):
         """
@@ -539,6 +538,42 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
     def _setitem(self, index, value):
         """__setitem__ process, called by TensorPy::TensorSetItem"""
         return tensor_operator_registry.get('_tensor_setitem')(self, index, value)
+
+    @property
+    def _dtensor_info(self):
+        """
+        Return the distributed tensor information. For details,
+        please refer to :class:`mindspore.parallel.DistributedTensorInfo`.
+
+        Examples:
+            >>> from mindspore import Tensor
+            >>> import numpy as np
+            >>> x = Tensor(np.array([[1, 2], [3, 4]]))
+            >>> print(x._dtensor_info)
+            None
+        """
+        if not hasattr(self, '_dist_tensor_info'):
+            self._dist_tensor_info = None
+        return self._dist_tensor_info
+
+    @_dtensor_info.setter
+    def _dtensor_info(self, input_dtensor_info):
+        """
+        Set the distributed tensor information to current tensor.
+
+        Args:
+            input_dtensor_info (DistributedTensorInfo): The distributed tensor information.
+
+        Examples:
+            >>> from mindspore import Tensor, Layout, _DistributedTensorInfo
+            >>> import numpy as np
+            >>> layout = Layout((2, 2), ("dp", "mp"))
+            >>> src_layout = layout("dp", "mp")
+            >>> distributed_info = _DistributedTensorInfo(src_layout)
+            >>> x = Tensor(np.array([[1, 2], [3, 4]]))
+            >>> x._dtensor_info = distributed_info
+        """
+        self._dist_tensor_info = input_dtensor_info
 
     @property
     def shape(self):
