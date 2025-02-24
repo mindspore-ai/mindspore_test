@@ -2828,7 +2828,9 @@ REG_BPROP_BUILDER("RsqrtGrad").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 REG_BPROP_BUILDER("Reciprocal").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
-  return {-dout * (out * out)};
+  auto dtype = ib->GetDtypeId(out);
+  bool is_complex = (dtype == kNumberTypeComplex64 || dtype == kNumberTypeComplex128);
+  return {is_complex ? -dout * ib->Conj(out * out) : -dout * (out * out)};
 });
 
 REG_BPROP_BUILDER("Log").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {

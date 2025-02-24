@@ -55,6 +55,7 @@ ShapeArray MoeTokenPermuteFuncImpl::InferShape(const PrimitivePtr &primitive,
       return {output_permuted_tokens_shape, output_sorted_indices_shape};
     } else {
       num_out_tokens = num_out_tokens_opt.value();
+      (void)CheckAndConvertUtils::CheckInteger("num_out_tokens", num_out_tokens, kGreaterEqual, 0, "MoeTokenPermute");
     }
   }
   if (!IsDynamic(tokens_shape)) {

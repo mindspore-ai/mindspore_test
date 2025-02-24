@@ -14,7 +14,7 @@ mindspore.ops.moe_token_permute
     参数：
         - **tokens** (Tensor) - 输入的 token Tensor，将被进行排列。数据类型是bfloat16。shape为 :math:`(num\_tokens, hidden\_size)`，其中num_tokens和hidden_size是正整数。
         - **indices** (Tensor) - 用于排列token的索引Tensor。数据类型是int32或int64。shape为 :math:`(num\_tokens, topk)` 或 :math:`(num\_tokens,)`，其中num_tokens和topk是正整数。如果shape为后者，隐含topk为1。
-        - **num_out_tokens** (int，可选) - 有效的输出token数量，当启用容量因子时，应等于未丢弃的token数量。默认值： ``None`` ，表示不丢弃任何token。
+        - **num_out_tokens** (int，可选) - 有效的输出token数量，当启用容量因子时，应等于未丢弃的token数量，应该大于等于0。默认值： ``None`` ，表示不丢弃任何token。
         - **padded_mode** (bool，可选) - 如果为 ``True`` ，表示索引已填充，用于表示每个专家选择的token。目前只能设置为 ``False`` 。默认值： ``False`` 。
 
     返回：
