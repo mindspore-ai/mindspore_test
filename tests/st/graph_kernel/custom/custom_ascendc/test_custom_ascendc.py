@@ -22,7 +22,7 @@ from compile_utils import compile_custom_run
 
 
 class TestCase():
-    def setup(self):
+    def setup_method(self):
         self.temp_dir = tempfile.mkdtemp()
         compile_custom_run(self.temp_dir)
         self.cus_path = ""

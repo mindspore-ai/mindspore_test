@@ -65,7 +65,7 @@ py::object ME_EXPORT PyboostCustomExtBase(const PrimitivePtr &prim, const py::li
       (void)op->Call(cast_tensors_tensor_list);
 
       // Create output value
-      auto real_out = PyNativeAlgo::AutoGradUtil::MakeOutput(
+      auto real_out = PyNativeAlgo::AutoGradUtil::MakeMultiOutput(
         op_run_info->requires_grad, op,
         op_run_info->requires_grad
           ? PyNativeAlgo::Common::GetPyNativeExecutor()->grad_executor()->top_cell()->op_index()
@@ -75,7 +75,7 @@ py::object ME_EXPORT PyboostCustomExtBase(const PrimitivePtr &prim, const py::li
         op_run_info->op_grad_info->op_prim = op->primitive();
         op_run_info->op_grad_info->input_value = {cast_tensors_tensor_list};
         op_run_info->op_grad_info->out_value = real_out;
-        PyNativeAlgo::AutoGradUtil::SetInferOutputToGrad(op_run_info->op_grad_info, op);
+        PyNativeAlgo::AutoGradUtil::SetInferMultiOutputToGrad(op_run_info->op_grad_info, op);
         PyNativeAlgo::PyBoost::DoGrad(op, op_run_info->op_grad_info, op_run_info->async_status);
       } else if (op_type == OperatorType::kInplaceOp) {
         PyNativeAlgo::PyBoost::BumpVersionAsync(op->outputs()[0]);
