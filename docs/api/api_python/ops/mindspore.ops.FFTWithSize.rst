@@ -48,7 +48,7 @@ mindspore.ops.FFTWithSize
   
         - **norm** (str，可选) - 表示该操作的规范化方式，可选值：[ ``"backward"`` , ``"forward"`` , ``"ortho"`` ]。默认值： ``"backward"`` 。
   
-          - "backward"，正向变换不缩放，逆变换按 :math:`1/n` 缩放，其中 `n` 表示输入 `x` 的元素数量。。
+          - "backward"，正向变换不缩放，逆变换按 :math:`1/n` 缩放，其中 `n` 表示输入 `x` 的元素数量。
           - "ortho"，正向变换与逆变换均按 :math:`1/\sqrt n` 缩放。
           - "forward"，正向变换按 :math:`1/n` 缩放，逆变换不缩放。
   

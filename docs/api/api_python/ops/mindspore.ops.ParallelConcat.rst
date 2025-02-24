@@ -21,5 +21,5 @@ mindspore.ops.ParallelConcat
         - **TypeError** - 如果输入不是Tensor。
         - **TypeError** - 如果 `values` 中各个Tensor的数据类型和shape不相同。
         - **ValueError** - 如果任意一个输入Tensor的shape第一维长度不是1。
-        - **ValueError** - 如果 `values` 中的Tensor的秩小于1。
+        - **ValueError** - 如果 `values` 中的Tensor的rank小于1。
         - **ValueError** - 如果输入各Tensor的shape不一致。
