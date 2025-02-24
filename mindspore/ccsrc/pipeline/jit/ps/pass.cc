@@ -658,7 +658,7 @@ opt::OptPassConfig GetJitOptPassA1(const opt::irpass::OptimizeIRPassLib &irpass)
     // other
     irpass.value_based_eliminate_,
     irpass.print_const_string_wrapper_,
-    irpass.zero_like_fill_zero_,
+    irpass.stack_unstack_eliminate_,
   });
 }
 
@@ -883,6 +883,7 @@ OptPassGroupMap GetSymbolEngineOptPass(const opt::irpass::OptimizeIRPassLib &irp
 
 OptPassGroupMap GetJitOptPassesB(const opt::irpass::OptimizeIRPassLib &irpass) {
   opt::OptPassConfig frontend_op_eliminate = opt::OptPassConfig({
+    irpass.zero_like_fill_zero_,
     irpass.check_bprop_eliminate_,
     irpass.special_op_eliminate_,
     irpass.row_tensor_eliminate_,
@@ -1411,6 +1412,22 @@ bool AutoParallelPass(const ResourcePtr &resource) {
   auto func_graph = resource->func_graph();
   auto opt = opt::Optimizer::MakeEmptyOptimizer(resource);
   return parallel::StepAutoParallel(func_graph, opt);
+}
+
+bool SetTrainingFlagPass(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  auto root = resource->func_graph();
+  MS_EXCEPTION_IF_NULL(root);
+  auto manager = root->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  const auto &graphs = manager->func_graphs();
+  bool is_training =
+    std::any_of(graphs.cbegin(), graphs.cend(), [](auto cur_graph) -> bool { return cur_graph->has_flag(kTraining); });
+  if (is_training) {
+    root->set_flag(kTraining, true);
+  }
+
+  return true;
 }
 
 bool AutoParallelSymbolPassWithReNormalize(const ResourcePtr &resource) {

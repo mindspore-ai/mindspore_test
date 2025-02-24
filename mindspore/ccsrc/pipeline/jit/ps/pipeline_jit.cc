@@ -112,6 +112,7 @@ std::vector<PassItem> GetJitPasses(const ResourcePtr &resource, bool build_top_g
     (void)jit_passes.emplace_back(kTypeInference, TypeInferenceAction);
     (void)jit_passes.emplace_back(kAutoMonad, AutoMonadAction);
     (void)jit_passes.emplace_back(kGraphReusing, GraphReusingAction);
+    (void)jit_passes.emplace_back(kPreAutoParallel, SetTrainingFlagPass);
     (void)jit_passes.emplace_back(kPyInterpretToExecute, PyInterpretToExecutePass);
     (void)jit_passes.emplace_back(kRewriterBeforeOptA, RewriterBeforeOptAPass);
     (void)jit_passes.emplace_back(kExpandDumpFlag, ExpandDumpFlagPass);

@@ -77,6 +77,7 @@ bool OrderPyExecuteAfterRewriterPass(const ResourcePtr &resource);
 bool RewriterAfterOptAPass(const ResourcePtr &resource);
 bool AddRecomputationPass(const ResourcePtr &resource);
 bool OptAfterRecomputeGroup(const ResourcePtr &resource);
+bool SetTrainingFlagPass(const ResourcePtr &resource);
 }  // namespace pipeline
 }  // namespace mindspore
 
