@@ -119,7 +119,7 @@ std::string StrategyToString(const Strategies &strategy) {
 }
 
 Status OperatorInfo::CheckOutputStrategy(const StrategyPtr &out_strategy) {
-  if (out_strategy && name_.find("ShardIdentity") == std::string::npos) {
+  if (out_strategy && name_.find("ShardIdentity") == std::string::npos && !AttrFound(attrs_, CELL_SHARD_OP)) {
     MS_LOG(ERROR) << name_ << ": It does not support to set output strategy now, please modify the shard set";
     return FAILED;
   }
@@ -1421,11 +1421,15 @@ Status OperatorInfo::InitForCostModelWithAutoRepeatCalc(const StrategyPtr &in_st
     }
     strategy_ = in_strategy;
 
+    set_out_strategy(out_strategy);
     if (out_strategy && CheckOutputStrategy(out_strategy) != SUCCESS) {
+      if (is_in_layout_propagation_) {
+        MS_LOG(WARNING) << name_ << ": The output strategy is invalid";
+        return FAILED;
+      }
       MS_LOG(ERROR) << name_ << ": The output strategy is invalid";
       return FAILED;
     }
-    set_out_strategy(out_strategy);
 
     if (InferDevMatrixShape() != SUCCESS) {
       MS_LOG(ERROR) << name_ << ": InferDevMatrixShape failed.";
@@ -2365,6 +2369,7 @@ Status OperatorInfo::SetCostUnderLayout(const StrategyPtr &in_strategy, const St
 }
 
 Status OperatorInfo::SetCostUnderStrategyWithCost(const std::shared_ptr<StrategyWithCost> &swc) {
+  StrategyPtr out_strategy = out_strategy_;
   ResetQueueMember();
 
   if (InferAttrs() != SUCCESS) {
@@ -2373,7 +2378,9 @@ Status OperatorInfo::SetCostUnderStrategyWithCost(const std::shared_ptr<Strategy
   }
 
   strategy_ = swc->strategy_ptr;
+  out_strategy_ = out_strategy;
   inputs_tensor_info_ = swc->inputs_ptr;
+  outputs_tensor_info_ = swc->outputs_ptr;
   strategy_cost_.push_back(swc);
 
   if (CheckInputLayout() != SUCCESS) {
@@ -2381,11 +2388,13 @@ Status OperatorInfo::SetCostUnderStrategyWithCost(const std::shared_ptr<Strategy
     return FAILED;
   }
 
-  outputs_tensor_info_.clear();
-  // Need be override
-  if (InferOutputTensorInfo() != SUCCESS) {
-    MS_LOG(WARNING) << name_ << ": InferOutputTensorLayout failed.";
-    return FAILED;
+  if (outputs_tensor_info_.size() != outputs_shape_.size()) {
+    outputs_tensor_info_.clear();
+    // Need be override
+    if (InferOutputTensorInfo() != SUCCESS) {
+      MS_LOG(WARNING) << name_ << ": InferOutputTensorLayout failed.";
+      return FAILED;
+    }
   }
 
   if (outputs_tensor_info_.size() != outputs_shape_.size()) {

@@ -405,18 +405,18 @@ void CostGraph::BFSNextNode(const std::shared_ptr<Edge> &edge, int64_t curr_dept
   (void)next_level.emplace(std::make_pair(next_op, std::make_pair(next_op_stra, -1)), curr_depth + 1);
   next_op->SetSelectedStrategy(next_op_stra, LongToSize(curr_depth + 1));
   next_op->ClearStrategyCost();
-  if (next_op->SetCostUnderStrategyWithCost(candidate_swc) != SUCCESS) {
-    MS_LOG(WARNING) << "Operator " << next_op->name()
-                    << " not support SetCostUnderStrategyWithCost. Try to SetCostUnderStrategy.";
+  if (next_op->SetCostUnderStrategyWithCost(candidate_swc) == SUCCESS) {
+    next_op->set_config_by_layout(true);
+  } else {
+    MS_LOG(WARNING) << "Current op " << next_op->name()
+                    << " failed to set cost by layout. Try to set cost by strategy tuple.";
     next_op->ClearStrategyCost();
     if (next_op->SetCostUnderStrategy(next_op_stra) != SUCCESS) {
-      MS_LOG(EXCEPTION) << "Operator " << next_op->name() << " SetCostUnderStrategy failed";
+      MS_LOG(EXCEPTION) << "Current op " << next_op->name() << " set cost by strategy tuple failed";
     }
   }
-  next_op->set_config_by_layout(true);
   next_op->LayoutPropagationEnd();
   visited.at(next_op) = true;
-  return;
 }
 
 void CostGraph::BFS(const OperatorInfoPtr &op, const StrategyPtr &op_stra) {
