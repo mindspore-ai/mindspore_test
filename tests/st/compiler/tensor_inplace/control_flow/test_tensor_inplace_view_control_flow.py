@@ -18,6 +18,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import Tensor, nn, ops
 from mindspore.ops.auto_generate.gen_ops_def import select_ext_view_op as select_ext_op
+from mindspore.ops.auto_generate.gen_ops_def import expand_dims_view_op, slice_ext_view_op
 from mindspore.ops.functional import grad
 from tests.mark_utils import arg_mark
 
@@ -509,3 +510,140 @@ def test_view_in_control_flow10():
     out_expect = grad(net)(Tensor([3, 4]), Tensor([1, 2]))
     out_jit = grad(net_jit)(Tensor([3, 4]), Tensor([1, 2]))
     assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
+@pytest.mark.skip(reason="No support")
+def test_view_in_control_flow11():
+    """
+    Feature: view operation in control flow.
+    Description: test view operation in control flow.
+    Expectation: no exception
+    """
+    def foo(x):
+        m = select_ext_op(x, 0, 0)
+        if m > 5:
+            return m
+        return select_ext_op(x, 0, 1)
+
+    class Net(nn.Cell):
+
+        def construct(self, input_tensor1, input_tensor2):
+            input_tensor1_1 = ops.abs(input_tensor1)
+            input_tensor2_1 = ops.abs(input_tensor2)
+            x = select_ext_op(input_tensor1_1, 0, 0)
+            y = select_ext_op(input_tensor1_1, 0, 1)
+            for _ in range(10):
+                if x < 5:
+                    for _ in range(5):
+                        x.add_(y)
+                        if x >= 5:
+                            break
+                    m = foo(input_tensor2_1)
+                    n = foo(input_tensor2_1)
+                else:
+                    for _ in range(5):
+                        x.sub_(y)
+                        if x == 1:
+                            continue
+                    m = foo(input_tensor2_1)
+                    n = foo(input_tensor2_1)
+                m.add_(x)
+                n.add_(y)
+            return input_tensor2
+
+    net = Net()
+    out_expect = grad(net)(Tensor([3, 4]), Tensor([1, 2]))
+    net.construct = ms.jit(net.construct)
+    out_jit = grad(net)(Tensor([3, 4]), Tensor([1, 2]))
+    assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
+@pytest.mark.skip(reason="No support")
+def test_view_in_control_flow12():
+    """
+    Feature: view operation in control flow.
+    Description: test view operation in control flow.
+    Expectation: no exception
+    """
+    def foo(x):
+        m = select_ext_op(x, 0, 0)
+        if m > 5:
+            return m
+        return select_ext_op(x, 0, 1)
+
+    class Net(nn.Cell):
+
+        def construct(self, input_tensor1, input_tensor2):
+            input_tensor1_1 = ops.abs(input_tensor1)
+            input_tensor2_1 = ops.abs(input_tensor2)
+            m = foo(input_tensor1_1)
+            n = foo(input_tensor2_1)
+            while m < 20:
+                m.add_(n)
+                for _ in range(3):
+                    n.add_(m)
+            return input_tensor2_1
+
+    net = Net()
+    out_expect = grad(net)(Tensor([1, 2]), Tensor([1, 2]))
+    net.construct = ms.jit(net.construct)
+    out_jit = grad(net)(Tensor([1, 2]), Tensor([1, 2]))
+    assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
+@pytest.mark.skip(reason="No support")
+def test_view_in_control_flow13():
+    """
+    Feature: view operation in control flow.
+    Description: test view operation in control flow.
+    Expectation: no exception
+    """
+    class Net(nn.Cell):
+
+        def construct(self, x, input_tensor):
+            input_tensor1 = ops.abs(input_tensor)
+            if x < 5:
+                m = expand_dims_view_op(input_tensor1, 0)
+            else:
+                m = expand_dims_view_op(input_tensor1, 1)
+            m.add_(m)
+            return input_tensor1
+
+    net = Net()
+    out_expect = grad(net)(Tensor(0), Tensor([1, 2]))
+    net.construct = ms.jit(net.construct)
+    out_jit = grad(net)(Tensor(0), Tensor([1, 2]))
+    assert out_expect == out_jit
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
+@pytest.mark.skip(reason="No support")
+def test_view_in_control_flow14():
+    """
+    Feature: view operation in control flow.
+    Description: test view operation in control flow.
+    Expectation: no exception
+    """
+    class Net(nn.Cell):
+
+        def construct(self, x, input_tensor):
+            input_tensor1 = ops.abs(input_tensor)
+            if x < 5:
+                m = slice_ext_view_op(input_tensor1, 0, 0, 1, 1)
+            else:
+                m = slice_ext_view_op(input_tensor1, 0, 0, 1, 2)
+            m.add_(m)
+            return input_tensor1
+
+    net = Net()
+    out_expect = grad(net)(Tensor(0), Tensor([1, 2]))
+    net.construct = ms.jit(net.construct)
+    out_jit = grad(net)(Tensor(0), Tensor([1, 2]))
+    assert out_expect == out_jit
