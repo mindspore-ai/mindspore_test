@@ -1,12 +1,12 @@
 #!/bin/bash
 
 function SetUpAscendEnv() {
-    export ASCEND_HOME_PATH=/usr/local/Ascend/latest
-    ls /usr/local/Ascend/
-    . ${ASCEND_HOME_PATH}/bin/setenv.bash
-    export ASCEND_PYTHON_PATH=${ASCEND_HOME}/python/site-packages
-    export TBE_IMPL_PATH=${ASCEND_HOME}/opp/built-in/op_impl/ai_core/tbe
-    export PYTHONPATH=${ASCEND_PYTHON_PATH}:${TBE_IMPL_PATH}:${PYTHONPATH}
+    export ASCEND_PATH=/usr/local/Ascend
+    if [ -d "${ASCEND_PATH}/ascend-toolkit" ]; then
+        source ${ASCEND_PATH}/ascend-toolkit/set_env.sh
+    else
+        source ${ASCEND_PATH}/latest/bin/setenv.bash
+    fi
 }
 
 function TryInstallWhl() {

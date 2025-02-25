@@ -45,7 +45,7 @@ def roll_backward_func(x, shifts, dims, grad):
     #return ops.grad(roll_forward_func, (0, 1, 2))(x, shifts, dims)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ["pynative", "KBK"])
 def test_ops_roll_normal(mode):
