@@ -19,7 +19,7 @@ mindspore.communication.comm_func.broadcast
 
     异常：
         - **TypeError** - src不是int或group不是str。
-        - **RuntimeError** - 如果目标设备无效，或者后端无效，或者分布式初始化失败。
+        - **RuntimeError** - 目标设备无效，或者后端无效，或者分布式初始化失败。
 
     样例：
 
