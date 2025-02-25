@@ -5,6 +5,7 @@ moe_token_unpermute:
         .. warning::
             - It is only supported on Atlas A2 Training Series Products.
             - The inputs `permuted_tokens` and `probs` only support the bfloat16 data type in the current version.
+            - `sorted_indices` must not have duplicate values, otherwise the result is undefined.
             - This is an experimental API that is subject to change or deletion.
 
         Args:
@@ -23,7 +24,7 @@ moe_token_unpermute:
             If `padded_mode` is ``True``, the shape will be specified by `restore_shape`.
 
         Raises:
-            TypeError: If input is not a Tensor.
+            TypeError: If `permuted_tokens` is not a Tensor.
             ValueError: Only supported when `padded_mode` is ``False``.
 
         Supported Platforms:
@@ -31,7 +32,7 @@ moe_token_unpermute:
         
         Examples:
             >>> import mindspore
-            >>> from mindspore import Tensor, mint
+            >>> from mindspore import Tensor, ops
             >>> permuted_token = Tensor([
             ...                          [1, 1, 1],
             ...                          [0, 0, 0],
@@ -42,7 +43,7 @@ moe_token_unpermute:
             ...                          [2, 2, 2],
             ...                          [3, 3, 3]], dtype=mindspore.bfloat16)
             >>> sorted_indices = Tensor([0, 6, 7, 5, 3, 1, 2, 4], dtype=mindspore.int32)
-            >>> out = mint.npu_moe_untoken_unpermute(permuted_token, sorted_indices)
+            >>> out = ops.moe_token_unpermute(permuted_token, sorted_indices)
             >>> out.shape
             (8, 3)
             

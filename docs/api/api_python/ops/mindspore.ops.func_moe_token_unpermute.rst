@@ -8,6 +8,7 @@ mindspore.ops.moe_token_unpermute
     .. warning::
         - 仅支持 Atlas A2 训练系列产品。
         - 当前版本下，输入 `permuted_tokens` 和 `probs` 仅支持bfloat16类型。
+        - `sorted_indices` 必须不存在重复值，否则结果未定义。
         - 这是一个实验性API，后续可能修改或删除。
 
     参数：
@@ -25,5 +26,5 @@ mindspore.ops.moe_token_unpermute
         如果 `padded_mode` 为 ``True``，则shape由 `restore_shape` 指定。
 
     异常：
-        - **TypeError** - `input` 不是Tensor。
+        - **TypeError** - `permuted_tokens` 不是Tensor。
         - **ValueError** - 仅支持 `padded_mode` 为 ``False``。
