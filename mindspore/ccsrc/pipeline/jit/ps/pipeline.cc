@@ -1169,6 +1169,7 @@ bool GraphExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &a
   ExecutorInfoPtr executor_info = std::make_shared<ExecutorInfo>();
   ResourcePtr resource = std::make_shared<Resource>();
   resource->set_func_graph(graph);
+  resource->set_pipeline_level(pipeline::kLevelGraph);
   if (CompileCacheEnable()) {
     MS_LOG(EXCEPTION) << "Compile cache is not enabled in PIJit.";
   }
@@ -1256,6 +1257,7 @@ bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &ar
 
   ExecutorInfoPtr executor_info = std::make_shared<ExecutorInfo>();
   ResourcePtr resource = std::make_shared<Resource>(source);
+  resource->set_pipeline_level(pipeline::kLevelGraph);
   InitCompileCacheResource(resource, phase_);
 
   auto actions = GetActions(resource, phase_, false, false);

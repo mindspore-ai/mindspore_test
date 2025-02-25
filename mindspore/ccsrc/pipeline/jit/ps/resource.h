@@ -112,6 +112,15 @@ BuiltInTypeMap &GetMethodMap();
 
 BuiltInTypeMap &GetAttrMap();
 
+enum PiplineLevel : int {
+  // Not running in jit pipeline or graph pipeline.
+  kLevelNone = 0,
+  // Running in a simple pipeline which contains only the necessary passes and no parallel passes.
+  kLevelJit,
+  // Running in a whole pipeline which contains the necessary passes and all the parallel passes.
+  kLevelGraph,
+};
+
 class Resource : public ResourceBase {
  public:
   explicit Resource(const py::object &obj = py::none());
@@ -175,6 +184,9 @@ class Resource : public ResourceBase {
   // Get the mutex for backend initializing.
   static std::mutex &GetBackendInitMutex() { return backend_init_mutex_; }
 
+  PiplineLevel pipeline_level() const { return pipeline_level_; }
+  void set_pipeline_level(PiplineLevel pipeline_level) { pipeline_level_ = pipeline_level; }
+
  private:
   abstract::AnalysisEnginePtr engine_;
   FuncGraphPtr func_graph_;
@@ -197,6 +209,7 @@ class Resource : public ResourceBase {
   mutable std::future<compile::BackendPtr> backend_future_;
   // Mutex to ensure backend creating task is running exclusively.
   static std::mutex backend_init_mutex_;
+  PiplineLevel pipeline_level_{kLevelNone};
 };
 
 using ResourcePtr = std::shared_ptr<pipeline::Resource>;
