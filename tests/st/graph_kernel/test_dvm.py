@@ -14,6 +14,7 @@
 # ============================================================================
 
 import numpy as np
+import os
 import pytest
 import mindspore.context as context
 from mindspore import Tensor, nn, JitConfig
@@ -120,6 +121,7 @@ def test_dvm_dynamic_shape():
     Description: test dvm dynamic shape
     Expectation: the result match with expect
     """
+    os.environ["GLOG_v"] = "1"
     np.random.seed(1)
     context.set_context(mode=context.GRAPH_MODE)
     x0 = np.random.normal(0, 1, (8, 32)).astype(np.float16)
@@ -132,6 +134,7 @@ def test_dvm_dynamic_shape():
     expect = get_output(Net, args, args_dyn, enable_graph_kernel=False)
     output = get_output(Net, args, args_dyn, enable_graph_kernel=True)
     assert np.allclose(expect[0].asnumpy(), output[0].asnumpy(), 1e-3, 1e-3)
+    del os.environ["GLOG_v"]
 
 
 class NetD(nn.Cell):

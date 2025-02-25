@@ -45,6 +45,8 @@ def test_reshape():
     Description: test kernelpacket with reshape
     Expectation: success
     """
+    os.environ["GLOG_v"] = "1"
+
     class ReshapeNet(nn.Cell):
         def __init__(self):
             super(ReshapeNet, self).__init__()
@@ -63,6 +65,7 @@ def test_reshape():
     x = Tensor(np.random.random([2]), dtype=ms.float32)
     y = Tensor(np.random.random([2, 2]), dtype=ms.float32)
     helper(ReshapeNet, (x_dyn, y_dyn), (x, y))
+    del os.environ["GLOG_v"]
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -72,6 +75,8 @@ def test_reducesum():
     Description: test kernelpacket with ReduceSum
     Expectation: success
     """
+    os.environ["GLOG_v"] = "1"
+
     class ReduceSumNet(nn.Cell):
         def __init__(self):
             super(ReduceSumNet, self).__init__()
@@ -87,6 +92,7 @@ def test_reducesum():
     x_dyn = Tensor(shape=[None, None], dtype=ms.float32)
     x = Tensor(np.array([[2], [1]]), dtype=ms.float32)
     helper(ReduceSumNet, (x_dyn,), (x,))
+    del os.environ["GLOG_v"]
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -97,6 +103,8 @@ def test_fuse_host_ops(data_type):
     Description: test kernelpacket with host-device ops
     Expectation: success
     """
+    os.environ["GLOG_v"] = "1"
+
     class Net(nn.Cell):
         def construct(self, x, y, z):
             # Shape-RealTupleGetItem-ScalarPow-ScalarToTensor-Mul
@@ -110,6 +118,7 @@ def test_fuse_host_ops(data_type):
     y = Tensor(np.random.random([20, 15]), dtype=data_type)
     z = Tensor(np.random.random([16, 16]), dtype=data_type)
     helper(Net, (dyn, dyn, dyn), (x, y, z))
+    del os.environ["GLOG_v"]
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -145,6 +154,8 @@ def test_matmul_only_shape():
     Description: test kernelpacket to fuse the only-shape-depended ops.
     Expectation: success
     """
+    os.environ["GLOG_v"] = "1"
+
     class Net(nn.Cell):
         def construct(self, p1, p2, p3, p4):
             m = ops.matmul(p1, p2)
@@ -157,6 +168,7 @@ def test_matmul_only_shape():
     p4 = Tensor(np.random.random([64, 4]), dtype=ms.float32)
     ms.set_context(graph_kernel_flags="--enable_cluster_ops_only=Add")
     helper(Net, (p_dyn, p_dyn, p_dyn, p_dyn), (p1, p2, p3, p4))
+    del os.environ["GLOG_v"]
 
 
 class GradNet(nn.Cell):
@@ -176,6 +188,8 @@ def test_concat_grad():
     Description: test kernelpacket with slice
     Expectation: success
     """
+    os.environ["GLOG_v"] = "1"
+
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -189,6 +203,7 @@ def test_concat_grad():
     x = ms.Tensor(np.random.rand(1, 3).astype(np.float32))
     y = ms.Tensor(np.random.rand(5, 3).astype(np.float32))
     helper(lambda: GradNet(Net()), (dyn, dyn), (x, y))
+    del os.environ["GLOG_v"]
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
