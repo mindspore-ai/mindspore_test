@@ -341,7 +341,7 @@ class Parameter(Tensor_):
         self.load = other_ops.Load()
 
     def __deepcopy__(self, memodict):
-        new_obj = Parameter(self)
+        new_obj = Parameter(self, requires_grad=self.requires_grad)
         new_obj.name = self.name
         new_obj._inited_param = self._inited_param
         return new_obj
