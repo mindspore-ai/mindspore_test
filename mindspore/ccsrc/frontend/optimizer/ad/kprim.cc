@@ -324,6 +324,24 @@ void SetDumpFlag(const PrimitivePtr &prim, const FuncGraphPtr &bprop_fg) {
   }
 }
 
+FuncGraphPtr AdaptBpropInput(const FuncGraphPtr &bprop_fg) {
+  auto fg = std::make_shared<FuncGraph>();
+  std::vector<AnfNodePtr> res_input = {NewValueNode(bprop_fg)};
+  size_t len = bprop_fg->parameters().size();
+  for (size_t i = 0; i < len; ++i) {
+    auto input = fg->add_parameter();
+    if (i != len - 1) {
+      (void)res_input.emplace_back(input);
+      continue;
+    }
+    auto real_dout = fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), input, NewValueNode(int64_t(0))});
+    (void)res_input.emplace_back(real_dout);
+  }
+  auto res_node = fg->NewCNodeInOrder(res_input);
+  fg->set_output(res_node);
+  return fg;
+}
+
 FuncGraphPtr KPrim::KPrimitive(const CNodePtr &cnode, const ValueNodePtr &value_node,
                                const pipeline::ResourceBasePtr &resources) {
   if (!IsValueNode<Primitive>(value_node)) {
@@ -366,7 +384,8 @@ FuncGraphPtr KPrim::KPrimitive(const CNodePtr &cnode, const ValueNodePtr &value_
     primal_attrs[kPrimalAttrForwardNodeName] = MakeValue(forward_node_primal_attr);
     primal_attrs[kPrimalAttrForwardUniqueId] = MakeValue(cnode->UniqueId());
   }
-  auto expanded_fg = BpropToK(prim, bprop_fg, nullptr, cnode, primal_attrs, primal_debug_infos);
+  auto res = AdaptBpropInput(bprop_fg);
+  auto expanded_fg = BpropToK(prim, res, nullptr, cnode, primal_attrs, primal_debug_infos);
   if (expanded_fg == nullptr) {
     MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode)
       << "Failed convert " << prim->name()
@@ -377,7 +396,6 @@ FuncGraphPtr KPrim::KPrimitive(const CNodePtr &cnode, const ValueNodePtr &value_
     expanded_fg->set_flag(FUNC_GRAPH_FLAG_FORCE_INLINE, true);
     MS_LOG(DEBUG) << "set force_inline for fg: " << expanded_fg->ToString();
   }
-
   return expanded_fg;
 }
 

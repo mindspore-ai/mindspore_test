@@ -455,6 +455,47 @@ class ForHalfUnrollLess : public MetaFuncGraph {
   FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
   friend bool operator==(const ForHalfUnrollLess &lhs, const ForHalfUnrollLess &rhs) { return lhs.name_ == rhs.name_; }
 };
+
+class AccumulateDout : public MetaFuncGraph {
+ public:
+  AccumulateDout(const std::string &name) : MetaFuncGraph(name) {}
+  ~AccumulateDout() override = default;
+  MS_DECLARE_PARENT(AccumulateDout, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+  friend bool operator==(const AccumulateDout &lhs, const AccumulateDout &rhs) { return lhs.name_ == rhs.name_; }
+
+ private:
+  void CheckAccumulateDoutInputAbstract(const AbstractBasePtrList &args_abs_list);
+  bool IsAddDout();
+  std::map<std::string, int64_t> types_;
+};
+
+class GenerateMask : public MetaFuncGraph {
+ public:
+  GenerateMask(const std::string &name) : MetaFuncGraph(name) {}
+  ~GenerateMask() override = default;
+  MS_DECLARE_PARENT(GenerateMask, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+  friend bool operator==(const GenerateMask &lhs, const GenerateMask &rhs) { return lhs.name_ == rhs.name_; }
+};
+
+class GetDout : public MetaFuncGraph {
+ public:
+  GetDout(const std::string &name) : MetaFuncGraph(name) {}
+  ~GetDout() override = default;
+  MS_DECLARE_PARENT(GetDout, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+  friend bool operator==(const GetDout &lhs, const GetDout &rhs) { return lhs.name_ == rhs.name_; }
+};
+
+class GenerateBpropOutTuple : public MetaFuncGraph {
+ public:
+  GenerateBpropOutTuple(const std::string &name) : MetaFuncGraph(name) {}
+  ~GenerateBpropOutTuple() override = default;
+  MS_DECLARE_PARENT(GenerateBpropOutTuple, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+  friend bool operator==(const GenerateBpropOutTuple &lhs, const GenerateBpropOutTuple &rhs) { return lhs.name_ == rhs.name_; }
+};
 }  // namespace prim
 }  // namespace mindspore
 
