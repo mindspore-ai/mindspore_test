@@ -2872,6 +2872,15 @@ py::object BaseRefToPyDataWithUserData(const BaseRef &value, const AbstractBaseP
   return BaseRefToPyData(value, abs);
 }
 
+bool RunJitPipeline() {
+  bool is_auto_parallel = (parallel::ParallelContext::GetInstance()->parallel_mode() == parallel::kSemiAutoParallel ||
+                           parallel::ParallelContext::GetInstance()->parallel_mode() == parallel::kAutoParallel);
+  if (is_auto_parallel || common::GetEnv("MS_DEV_JIT_PIPELINE") == "0") {
+    return false;
+  }
+  return true;
+}
+
 void PreJit(const py::object &args, const py::object &kwargs) {
   const auto &self = GetSelfFromArgs(args);
   parse::Parser::InitParserEnvironment(self);
