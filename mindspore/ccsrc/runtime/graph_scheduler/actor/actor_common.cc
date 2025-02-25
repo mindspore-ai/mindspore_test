@@ -1110,7 +1110,8 @@ DeviceTensorPtr PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size
   auto front_node = parameter_index.first;
   MS_EXCEPTION_IF_NULL(front_node.first);
   if (front_node.first->isa<Parameter>() &&
-      common::AnfAlgo::IsParameterWeight(front_node.first->cast<ParameterPtr>())) {
+      (common::AnfAlgo::IsParameterWeight(front_node.first->cast<ParameterPtr>()) ||
+       common::AnfAlgo::HasAbstractRef(front_node.first))) {
     tensor->set_device_address(device_tensor);
     device_tensor->set_new_ref_count(SIZE_MAX);
     MS_LOG(DEBUG) << "Set new ref count to max for device address:" << device_tensor;

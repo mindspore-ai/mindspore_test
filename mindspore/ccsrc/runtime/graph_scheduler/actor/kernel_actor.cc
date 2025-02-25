@@ -810,7 +810,7 @@ void KernelActor::CopyInputDeviceTensor(DeviceTensor *device_tensor, size_t inpu
   }
   auto &new_device_tensor = copy_input_device_tensors_[input_index];
   MS_EXCEPTION_IF_NULL(new_device_tensor);
-
+  new_device_tensor->set_need_sync_user_data(device_tensor->need_sync_user_data());
   MS_LOG(DEBUG) << "Prev stream id : " << input_device_tensors_[input_index]->stream_id()
                 << " new stream id : " << new_device_tensor->stream_id() << ".";
   // Update the input device tensor.
