@@ -149,15 +149,16 @@ def _get_group_name(group_map, group):
     return group_name, is_manual_communication_group
 
 
-def _single_parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
+def _single_parameter_broadcast(net, layout):
     """
     Broadcast single parameter to other rank in data parallel dimension.
     """
     from mindspore import Tensor
     origin_parallel_mode = context.get_auto_parallel_context("parallel_mode")
     origin_dataset_strategy = context.get_auto_parallel_context("dataset_strategy")
+    cur_rank = get_rank()
     if layout:
-        param_redundancy = get_parameter_redundancy(layout, initial_rank)
+        param_redundancy = get_parameter_redundancy(layout)
     else:
         param_redundancy = get_parameter_redundancy(net)
     if not param_redundancy:

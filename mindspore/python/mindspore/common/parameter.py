@@ -30,7 +30,7 @@ from mindspore.log import _LogActionOnce
 from mindspore._c_expression import ParamInfo
 from mindspore.common import dtype as mstype
 from mindspore import context
-from mindspore.parallel._utils import _get_parallel_mode, _get_global_rank
+from mindspore.parallel._utils import _get_parallel_mode
 from mindspore.common._utils import get_slice_num, get_slice_shape
 from mindspore.common.initializer import initializer
 from mindspore.common.tensor import Tensor
@@ -44,7 +44,7 @@ from mindspore.parallel._ps_context import _is_role_worker, _is_role_pserver, _i
 from mindspore.parallel._ps_context import _reinsert_hash_table_size, _insert_accumu_init_info, _cache_enable
 from mindspore.common._decorator import deprecated
 from mindspore.communication._comm_helper import _is_initialized
-from mindspore.communication import get_group_size
+from mindspore.communication import get_group_size, get_rank
 import mindspore.common._monad as monad
 
 __all__ = ['Parameter', 'ParameterTuple']
@@ -120,7 +120,7 @@ def _gen_offload_file_path(offload_dir):
     offload_dir = os.path.relpath(offload_dir)
     if not os.path.exists(offload_dir):
         os.makedirs(offload_dir, mode=0o700, exist_ok=True)
-    offload_file_path = offload_dir + "/" + str(_get_global_rank()) + "_" + str(
+    offload_file_path = offload_dir + "/" + str(get_rank()) + "_" + str(
         _get_unique_parameter_key()) + "_" + str(time.time()) + ".data"
     return offload_file_path
 

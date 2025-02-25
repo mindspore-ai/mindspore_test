@@ -99,7 +99,8 @@ class AutoParallel(Cell):
         self._save_strategy_file_path = file_path
 
     def disable_strategy_file_only_for_trainable_params(self):
-        """By default, MindSpore only loads and saves trainable parameters. This API enables the loading and saving of non-trainable parameters as well."""
+        """By default, MindSpore only loads and saves trainable parameters. This API enables the loading and saving of
+        non-trainable parameters as well."""
         self._only_trainable_params = False
 
     def load_operator_strategy_file(self, file_path):
@@ -213,10 +214,41 @@ class AutoParallel(Cell):
         self._pipeline_scheduler = pipeline_scheduler
 
     def comm_fusion(self, config):
+        r"""
+        Set fusion method for auto parallel.
+
+        Args:
+            comm_fusion (dict): A dict contains the types and configurations for setting the communication fusion. each
+                communication fusion config has two keys: "mode" and "config".
+                It supports following communication fusion types and configurations:
+
+                - openstate: Whether turn on the communication fusion or not. If `openstate` is ``True`` ,
+                  turn on the communication fusion, otherwise, turn off the communication fusion.
+                  Default: ``True`` .
+                - allreduce: If communication fusion type is `allreduce`. The `mode` contains: `auto`, `size`
+                  and `index`. In `auto` mode, AllReduce fusion is configured by gradients size and the default
+                  fusion threshold is `64` MB. In 'size' mode, AllReduce fusion is configured by gradients size
+                  manually, and the fusion threshold must be larger than `0` MB. In `index` mode, it is same as
+                  `all_reduce_fusion_config`.
+                - allgather: If communication fusion type is `allgather`. The `mode` contains: `auto`, `size`.
+                  In `auto` mode, AllGather fusion is configured by gradients size, and the default fusion
+                  threshold is `64` MB. In 'size' mode, AllGather fusion is configured by gradients size
+                  manually, and the fusion threshold must be larger than `0` MB.
+                - reducescatter: If communication fusion type is `reducescatter`. The `mode` contains: `auto`
+                  and `size`. Config is same as `allgather`.
+
+        Raises:
+            KeyError: If the type of config is not dict.
+        """
+        if config is not None and not isinstance(config, dict):
+            raise TypeError(f"The parameter '{config}' must be {dict}, but got {type(config)}")
         self._comm_fusion_config = config
 
     def enable_fp32_communication(self):
-        """Enable fp32 communication."""
+        """
+        Enable reduce operators (AllReduce, ReduceScatter) are forced to use the fp32 data type for communication
+        during communication.
+        """
         self._force_fp32_communication = True
 
     def set_group_ckpt_save_file(self, file_path):
@@ -234,7 +266,10 @@ class AutoParallel(Cell):
         self._group_ckpt_save_file = file_path
 
     def print_local_norm(self):
-        """Enable local norm printing with console output only (no disk storage)."""
+        """
+        Enable dump local_norm value, when the `parallel_mode` is set to ``semi_auto_parallel``
+        or ``auto_parallel``. Set dump local norm path for auto parallel.
+        """
         self._dump_local_norm = True
 
     def dump_local_norm(self, file_path):
@@ -249,19 +284,99 @@ class AutoParallel(Cell):
         self._dump_device_local_norm = True
 
     def enable_gradients_mean(self):
-        """Enable mean operation following the gradients allreduce."""
+        """
+        This is a developing feature, which shards the weight update computation for data parallel training in the
+        benefit of time and memory saving. Currently, auto and semi auto parallel mode support all optimizers in
+        both Ascend and GPU. Data parallel mode only supports `Lamb` and `AdamWeightDecay` in Ascend.
+        """
         self._gradients_mean = True
 
     def disable_gradient_fp32_sync(self):
-        """Disable FP32 precision for gradient communication."""
+        """Disable convert tensor type from fp16 to fp32 before parameter gradients allreduce."""
         self._gradient_fp32_sync = False
 
     def disable_loss_repeated_mean(self):
-        """When the loss is computed repeatedly across multiple cards, do not divide the backward gradients by the number of repetitions"""
+        """
+        The mean operator is not executed backwards when the calculation is repeated.
+        """
         self._loss_repeated_mean = False
 
-    def transformer_opt(self, file_path):
+    def transformer_opt(self, file_path=None):
+        r"""
+        Check and set speedup config for auto parallel.
+
+        Args:
+            parallel_speed_up_json_path(str): The path to the parallel speed up json file, configuration
+            can refer to `parallel_speed_up.json
+            <https://gitee.com/mindspore/mindspore/blob/master/config/parallel_speed_up.json>`_ .
+            If its value is None or '', it does not take effect. Default None.
+
+             - recomputation_communication_overlap (bool): Enable overlap between recompute ops and communication ops
+               if True.
+               Default: False.
+             - grad_matmul_communication_overlap (bool): Enable overlap between dw matmul and
+               tensor parallel communication ops if True. Default: False.
+             - grad_fa_allgather_overlap (bool): Enable overlap between duplicated allgather by recomputing
+               in sequence parallel and flashattentionscoregrad ops if True. Default: False.
+             - enable_communication_fusion (bool): Enable communication fusion to optimize the number of communication
+               operator tasks if True.
+               Default: False.
+             - grad_computation_allreduce_overlap (bool): Enable overlap between dx ops and data parallel communication
+               ops if True.
+               Currently, do not support
+               `O2 <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.JitConfig.html>`_
+               Default: False.
+             - computation_allgather_overlap (bool): Enable overlap between forward ops
+               and optimizer parallel allgather communication if True. Currently, do not support
+               `O2 <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.JitConfig.html>`_
+               Default: False.
+             - computation_communication_fusion_level (int): Enable the fusion between compute and communicate.
+               Default: ``0``. Note: This function must be used with Ascend Training Solution 24.0.RC2 or later.
+
+               - 0: Disable fusion.
+
+               - 1: Apply fusion to forward nodes.
+
+               - 2: Apply fusion to backward nodes.
+
+               - 3: Apply fusion to all nodes.
+             - dataset_broadcast_opt_level (int): Optimize the scenario that the dataset repeated reading. Only
+               support O0/O1 jit level. It doesn't work in O2 mode. Default: ``0``.
+
+               - 0: Disable this optimize.
+
+               - 1: Optimize dataset reader between pipeline stage.
+
+               - 2: Optimize dataset reader within pipeline stage.
+
+               - 3: Optimize dataset reader with all scenes.
+             - allreduce_and_biasadd_swap (bool): Enable node execution order swap communication operators and add
+               operators if ``True``. Only 1-dimension bias node is supported. Default: ``False``.
+             - enable_allreduce_slice_to_reducescatter (bool): Enable allreduce optimization. In the scenario where
+               the batchmatmul model introduces allreduce in parallel, if the subsequent nodes are stridedslice
+               operator with model parallel, allreduce will be optimized as reducescatter according to the identified
+               patterns. Typical used in MoE module with groupwise alltoall. Default: ``False``.
+             - enable_interleave_split_concat_branch (bool): Enable communication computation parallel optimization
+               for branches formed by split and concat operators with ``enable_interleave`` attribute. It is typical
+               used in MoE parallel scenario. After splitting the input data, each slice of data is processed by the
+               MoE module, and then the branch results are concatenated. When the optimization is enable,
+               communication and computation will be executed in parallel between branches. Default: ``False``.
+             - enable_interleave_parallel_branch (bool): Enable communication computation parallel optimization
+               for parallel branches with ``parallel_branch`` attribute in branches merge node. It is typical
+               used in MoE parallel scenario with routed and shared expert. When the optimization is enable,
+               communication and computation will be executed in parallel between branches. Default: ``False``.
+
+        Examples:
+            >>> net = AutoParallel(net)
+            >>> net.transformer_opt("./parallel_speed_up.json")
+        """
+        # disable pylint too broad Exception
+        # pylint: disable=W0212
+        from mindspore.context import _context
+        ctx = _context()
+        ctx._set_speedup_config_path(file_path)
         self._transformer_opt_config = file_path
+        ctx.ascend_config['parallel_speed_up_json_path'] = file_path
 
     def auto_memory_offload(self, config):
         self._memory_offload_config = config

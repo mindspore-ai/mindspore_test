@@ -31,7 +31,7 @@ from mindspore import context
 from mindspore import log as logger
 from mindspore import _checkparam as Validator
 from mindspore.common.api import _cell_graph_executor
-from mindspore.communication import get_group_size
+from mindspore.communication.management import get_rank, get_group_size
 from mindspore.train.mind_ir_pb2 import ModelProto as mindir_model
 from mindspore.train.checkpoint_pb2 import Checkpoint
 from mindspore.train.node_strategy_pb2 import ParallelStrategyMap as ckpt_strategy
@@ -375,20 +375,40 @@ def _get_parameter_redundancy_without_opt_shard(parameter_layout, param_redundan
         param_redundancy_dict[key] = tuple(redundancy_list)
 
 
-def get_parameter_redundancy(layout_obj, initial_rank=0):
+def _get_initial_rank(parameter_layout):
+    """Get the initial rank of pp."""
+    for k, _ in parameter_layout.items():
+        dev_matrix = parameter_layout[k][0]
+        break
+    dev_num = 1
+    if dev_matrix:
+        for i in dev_matrix:
+            dev_num *= i
+    rank_id = get_rank()
+    initial_rank = (rank_id // dev_num) * dev_num
+    return initial_rank
+
+
+def _get_pp_size_from_redundancy_map(param_redundancy):
+    """Get pp size from redundancy map."""
+    for _, v in param_redundancy.item():
+        return len(v) * len(v[0])
+
+
+def get_parameter_redundancy(layout_obj, initial_rank=None):
     """
     Get parameter redundancy map.
 
     Args:
         layout_obj (Union[str, layout): File name of `strategy.ckpt` or net.parameter_layout_dict.
-        initial_rank (int): Start rank id for each pipeline. Default: 0.
+        initial_rank (int): Start rank id for each pipeline. Default: ``None``.
 
     Returns:
         Dict, dict of parameter redundancy info.
 
     Examples:
         >>> from mindspore.train.utils import get_parameter_redundancy
-        >>> param_redundancy_dict = get_parameter_redundancy("/path/to/strategy.ckpt")
+        >>> param_redundancy_dict = get_parameter_redundancy("/path/to/strategy.ckpt", initial_rank=0)
         {'param1': ((0, 1, 2, 3, 4, 5, 6, 7),),
          'param2': ((0, 4, 8, 12), (1, 5, 9, 13), (2, 6, 10, 14), (3, 7, 11, 15)),
          'param3': ((0, 4, 8, 12), (1, 5, 9, 13), (2, 6, 10, 14), (3, 7, 11, 15)),
@@ -412,6 +432,9 @@ def get_parameter_redundancy(layout_obj, initial_rank=0):
             parameter_layout[k] = v[:2]
 
     param_redundancy_dict = {}
+
+    if initial_rank is None:
+        initial_rank = _get_initial_rank(parameter_layout)
 
     _get_parameter_redundancy_without_opt_shard(parameter_layout, param_redundancy_dict, initial_rank)
 

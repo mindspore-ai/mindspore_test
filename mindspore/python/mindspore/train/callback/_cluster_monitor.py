@@ -24,9 +24,8 @@ from threading import RLock
 from mindspore.train.callback._callback import Callback
 from mindspore.communication.management import get_rank, get_local_rank
 from mindspore import log as logger
-from mindspore.parallel._auto_parallel_context import _get_auto_parallel_context
 from mindspore.parallel._utils import _get_device_num
-from mindspore.train._utils import get_parameter_redundancy
+from mindspore.train._utils import get_parameter_redundancy, _get_pp_size_from_redundancy_map
 
 _perf_mutex = RLock()
 
@@ -42,7 +41,7 @@ def _get_dp_tp_from_redundancy(redundancy_tuple):
     return dp, tp
 
 
-def _get_dp_tp_from_layout(parameter_layout_dict, initial_rank=0):
+def _get_dp_tp_from_layout(parameter_layout_dict, initial_rank=None):
     """From layout dict get dp and tp"""
     tp = []
     dp = []
@@ -132,21 +131,9 @@ class ClusterMonitor(Callback):
         self.full_path = self.log_path + self.log_name
 
         self.write_dp_tp_flag = True
-        self.initial_rank = 0
 
     def begin(self, run_context):
         _remove_pre_log()
-        pp_num = _get_auto_parallel_context("pipeline_stages")
-        device_num = _get_device_num()
-
-        original_list = list(range(device_num))
-        chunk_size = device_num // pp_num
-        split_pp_lists = []
-        for i in range(0, device_num, chunk_size):
-            end_index = i + chunk_size if i + chunk_size <= device_num else device_num
-            split_pp_lists.append(original_list[i:end_index])
-
-        self.initial_rank = (self.global_rank // chunk_size) * chunk_size
         with _perf_mutex:
             dir_path = os.path.dirname(self.full_path)
             if not os.path.exists(dir_path):
@@ -157,8 +144,6 @@ class ClusterMonitor(Callback):
             with open(self.full_path, 'w') as file:
                 log_message = f'UUID:{self.uuid_value}\nFRAMEWORK:{self.frame_work}\nGLOBAL RANKID:{self.global_rank}\n'
                 file.write(log_message)
-                for _, split_pp_list in enumerate(split_pp_lists):
-                    file.write(f'PP:{split_pp_list}\n')
             os.chmod(self.full_path, stat.S_IRUSR)
 
     def step_begin(self, run_context):
@@ -183,10 +168,22 @@ class ClusterMonitor(Callback):
         if self.enabled and self.enabled_dtp_group and self.write_dp_tp_flag:
             cb_params = run_context.original_args()
             param_layout_dict = cb_params.train_network.parameter_layout_dict
-            dp, tp = _get_dp_tp_from_layout(param_layout_dict, self.initial_rank)
+
+            device_num = _get_device_num()
+            original_list = list(range(device_num))
+            param_redundancy_dict = get_parameter_redundancy(param_layout_dict)
+            pp_size = _get_pp_size_from_redundancy_map(param_redundancy_dict)
+            split_pp_lists = []
+            for i in range(0, device_num, pp_size):
+                end_index = i + pp_size if i + pp_size <= device_num else device_num
+                split_pp_lists.append(original_list[i:end_index])
+            dp, tp = _get_dp_tp_from_layout(param_layout_dict)
+
             with _perf_mutex:
                 os.chmod(self.full_path, stat.S_IWUSR)
                 with open(self.full_path, 'a') as file:
+                    for _, split_pp_list in enumerate(split_pp_lists):
+                        file.write(f'PP:{split_pp_list}\n')
                     for dp_value in dp:
                         file.write(f'dp:{dp_value}\n')
                     for tp_value in tp:
