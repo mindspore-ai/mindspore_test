@@ -822,13 +822,48 @@ void MemoryTraceManager::MergeBlocksForSameDeviceContext(
   }
 }
 
-void MemoryTraceManager::Clear() {
+void MemoryTraceManager::ClearExpiredCache() {
   kernel_memory_trace_blocks_->clear();
   merged_memory_trace_blocks_->clear();
   kernel_to_block_->clear();
   if (EnableParallelDispatchKernel()) {
     kernel_tensor_to_kernel_mem_blocks_->clear();
   }
+}
+
+void MemoryTraceManager::ClearAllCache() {
+  for (auto &item : graph_to_kernel_memory_trace_blocks_) {
+    if (item.second) {
+      item.second->clear();
+    }
+  }
+  graph_to_kernel_memory_trace_blocks_.clear();
+
+  for (auto &item : graph_to_merged_memory_trace_blocks_) {
+    if (item.second) {
+      item.second->clear();
+    }
+  }
+  graph_to_merged_memory_trace_blocks_.clear();
+
+  for (auto &item : graph_to_kernel_blocks_) {
+    if (item.second) {
+      item.second->clear();
+    }
+  }
+  graph_to_kernel_blocks_.clear();
+
+  for (auto &item : graph_to_kernel_tensor_with_mem_blocks_) {
+    if (item.second) {
+      item.second->clear();
+    }
+  }
+  graph_to_kernel_tensor_with_mem_blocks_.clear();
+
+  kernel_memory_trace_blocks_ = nullptr;
+  merged_memory_trace_blocks_ = nullptr;
+  kernel_to_block_ = nullptr;
+  kernel_tensor_to_kernel_mem_blocks_ = nullptr;
 }
 
 std::unordered_map<AnfNode *, std::string> actor_ids;

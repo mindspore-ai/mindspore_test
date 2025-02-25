@@ -650,6 +650,9 @@ void GraphScheduler::Clear() {
   // Clear global maps.
   actors_.clear();
   ClearAllActors();
+
+  // Clear all cache memory info before process exits.
+  MemoryTraceManager::GetInstance().ClearAllCache();
 }
 
 void GraphScheduler::ClearActorData(const ActorSet *actor_set) {

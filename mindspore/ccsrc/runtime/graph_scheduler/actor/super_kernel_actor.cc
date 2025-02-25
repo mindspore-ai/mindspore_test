@@ -559,7 +559,7 @@ void SuperKernelActor::UpdateMemoryTraceMangerStatus(OpContext<DeviceTensor> *co
     }
 
     // First step for dynamic shape, need to record memory trace.
-    MemoryTraceManager::GetInstance().Clear();
+    MemoryTraceManager::GetInstance().ClearExpiredCache();
     static const size_t memory_block_size = 3000;
     MemoryTraceManager::GetInstance().ReserveKernelMemoryBlocks(memory_block_size, device_contexts_[0]);
   } else {

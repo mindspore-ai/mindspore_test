@@ -239,7 +239,9 @@ class MemoryTraceManager {
 
   void MergeBlocks();
 
-  void Clear();
+  void ClearExpiredCache();
+
+  void ClearAllCache();
 
  private:
   MemoryTraceManager() = default;
