@@ -23,7 +23,7 @@ mindspore.Tensor.maximum
         - **other** (Union[Tensor, Number, bool]) - 输入可以是Number或bool，也可以是数据类型为Number或bool的Tensor。
 
     返回：
-        Tensor的shape与广播后的shape相同，数据类型为两个输入中精度较高或数字较多的类型。
+        Tensor的shape与广播后的shape相同，数据类型为两个输入中精度较高或数字位数较多的类型。
 
     异常：
         - **TypeError** - `other` 不是以下之一：Tensor、Number、bool。
