@@ -592,6 +592,12 @@ void AclStreamAssign::UpdateGPTOEventsToExecutionOrder(
     const auto &send_rcv = pair.second;
 
     if (cnode_ptr != nullptr) {
+      if (common::AnfAlgo::GetCNodeName(cnode_ptr) == kSendOpName) {
+        std::pair<CNodePtr, CNodePtr> events_pair =
+          CreateSendRecvEventsPair(kernel_graph, AnfAlgo::GetStreamId(cnode_ptr), kDefaultStreamIndex);
+        new_exec_order.push_back(events_pair.first);
+        new_exec_order.push_back(events_pair.second);
+      }
       new_exec_order.push_back(cnode_ptr);
       continue;
     }

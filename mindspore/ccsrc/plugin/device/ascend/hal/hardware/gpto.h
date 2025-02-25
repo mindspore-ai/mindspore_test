@@ -82,7 +82,8 @@ inline GPTO_MODE gpto_mode;
 inline size_t MAX_TENSOR_ID;
 inline GptoTaskType kVec = 0;
 inline GptoTaskType kCube = 1;
-inline GptoTaskType kComm = 2;
+inline GptoTaskType kCommTrue = 1;
+inline GptoTaskType kCommGroup = 2;
 
 // Structs for scheduling
 struct ProcessingElement {
@@ -633,16 +634,16 @@ bool VerifyMemory(const std::vector<GptoTaskPtr> &, std::map<Time, Memory> *);
 [[maybe_unused]] void LogSchedulingOutput(const SchedulingInput &, const SchedulingOutput &,
                                           const std::unordered_map<CNodePtr, GptoTaskPtr> &, const KernelGraphPtr &,
                                           const std::set<GptoTensorPtr, GptoTensorIdSort> &, const Memory,
-                                          [[maybe_unused]] std::map<std::string, size_t> *, const std::string &);
+                                          [[maybe_unused]] std::map<std::string, size_t> *);
 [[maybe_unused]] std::pair<Time, Memory> LogBaseline(std::unordered_map<CNodePtr, GptoTaskPtr> *,
-                                                     const KernelGraphPtr &, const std::string &, bool);
+                                                     const KernelGraphPtr &, bool);
 [[maybe_unused]] Memory MemoryEstimateBaseline(const std::vector<CNodePtr> &,
                                                std::unordered_map<CNodePtr, GptoTaskPtr> *,
                                                std::unordered_map<GptoTaskId, Time> *,
                                                std::unordered_map<GptoTaskId, Time> *);
 
 // Debug context function
-std::pair<bool, std::string> GetDebugConfig();
+bool IsGptoDebug();
 
 // SAM sorting
 void InitializeInTensorsWeight(const GptoTaskPtr &);
