@@ -23,6 +23,7 @@ from abc import ABC
 from mindspore.profiler.parser.ascend_analysis.tlv_decoder import TLVDecoder
 from mindspore.profiler.common.file_manager import FileManager
 from mindspore.profiler.common.log import ProfilerLogger
+from mindspore.profiler.common.constant import ProfilerActivity
 
 
 class OpMemoryIndexEnum(Enum):
@@ -203,6 +204,7 @@ class AscendOpMemoryViewer:
         self._framework_path = kwargs.get("framework_path")
         self._ascend_profiler_output_path = kwargs.get("ascend_profiler_output_path")
         self._ascend_ms_dir = kwargs.get("ascend_ms_dir")
+        self._activities = kwargs.get("activities")
         ProfilerLogger.init(self._ascend_ms_dir)
         self._logger = ProfilerLogger.get_instance()
         self._op_memory_events = None
@@ -214,7 +216,10 @@ class AscendOpMemoryViewer:
         Save step trace time data to csv file
         """
         self._logger.info("AscendOpMemoryViewer start")
-        if not self._enable_profile_memory:
+
+        # No frame work data is collected when no CPU is passed in activities
+        if ProfilerActivity.CPU.value not in self._activities or \
+                not self._enable_profile_memory:
             return
 
         try:

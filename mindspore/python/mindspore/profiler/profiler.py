@@ -97,6 +97,8 @@ class Profiler:
         profiler_level (ProfilerLevel, optional): (Ascend only) The level of profiling.
             Default: ``ProfilerLevel.Level0``.
 
+            - ProfilerLevel.LevelNone: This setting takes effect only when mstx is enabled, indicating that no operator
+              data is collected on the device side.
             - ProfilerLevel.Level0: Leanest level of profiling data collection, collects information about the elapsed
               time of the computational operators on the NPU and communication large operator information.
             - ProfilerLevel.Level1: Collect more CANN layer AscendCL data and AICore performance metrics and

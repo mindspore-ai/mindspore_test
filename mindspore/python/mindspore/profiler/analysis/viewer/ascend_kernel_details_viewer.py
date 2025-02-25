@@ -18,7 +18,7 @@ import os
 from decimal import Decimal
 
 from mindspore.profiler.analysis.viewer.base_viewer import BaseViewer
-from mindspore.profiler.common.constant import JitLevel, ProfilerLevel
+from mindspore.profiler.common.constant import JitLevel, ProfilerLevel, ProfilerActivity
 from mindspore.profiler.common.constant import OpSummaryHeaders
 from mindspore.profiler.common.log import ProfilerLogger
 from mindspore.profiler.common.path_manager import PathManager
@@ -62,6 +62,7 @@ class AscendKernelDetailsViewer(BaseViewer):
         self._is_set_schedule = kwargs.get("is_set_schedule")
         self._jit_level = kwargs.get("jit_level")
         self._profiler_level = kwargs.get("profiler_level")
+        self._activities = kwargs.get("activities")
         self.op_summary_headers = None
         self.op_summary = None
         self.trace_container = None
@@ -78,7 +79,7 @@ class AscendKernelDetailsViewer(BaseViewer):
             if self._profiler_level == ProfilerLevel.LevelNone.value:
                 return
             self._check_input_data(data)
-            self._update_kernel()
+            self._update_kernel_name_and_step_id()
             self._update_headers()
             self._write_data()
             self._logger.info("Kernel details saved done")
@@ -141,20 +142,20 @@ class AscendKernelDetailsViewer(BaseViewer):
             for header in self.op_summary_headers
         ]
 
-    def _update_kernel(self):
+    def _update_kernel_name_and_step_id(self):
         """
-        Update kernel op name to framework launch op name.
+        Update kernel op name to framework launch op name and step id.
         """
         self._logger.info("Update kernel name start")
 
         dev_kernels = self.trace_container.hardware_op_event
         step_id_to_time_dict = self.trace_container.get_step_id_time_dict()
 
-        if step_id_to_time_dict:
-            # activities parameter NPU+CPU、CPU
-            self._update_kernel_contain_cpu(dev_kernels, step_id_to_time_dict)
+        # activities parameter NPU+CPU、CPU
+        if ProfilerActivity.CPU.value in self._activities:
+            self._update_kernel_detail_op_name_and_step_id(dev_kernels, step_id_to_time_dict)
 
-    def _update_kernel_contain_cpu(self, dev_kernels, step_id_to_time_dict):
+    def _update_kernel_detail_op_name_and_step_id(self, dev_kernels, step_id_to_time_dict):
         """
         Update op summary op name and step id in NPU+CPU、CPU scenes.
         """
@@ -214,9 +215,9 @@ class AscendKernelDetailsViewer(BaseViewer):
         self.op_summary[OpSummaryHeaders.OP_NAME.value] = launch_ops
 
         # update op summary step id
-        if self._is_set_schedule:
-            if not self._jit_level == JitLevel.GRAPH_LEVEL:
-                self.op_summary[OpSummaryHeaders.STEP_ID.value] = step_ids
+        if self._is_set_schedule and self._jit_level != JitLevel.GRAPH_LEVEL:
+            self.op_summary[OpSummaryHeaders.STEP_ID.value] = step_ids
+
         self._logger.info("Update kernel name done")
 
 
