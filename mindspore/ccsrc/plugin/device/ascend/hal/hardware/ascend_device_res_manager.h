@@ -143,7 +143,7 @@ class AscendDeviceResManager : public DeviceResManager {
   void FreeForHete(mindspore::kernel::HeterogeneousInfoPtr hete_info) const;
 
   KernelRuntime *runtime_instance_ = nullptr;
-  std::shared_ptr<AscendResManager> ascend_res_manager_ = nullptr;
+  AscendResManager *ascend_res_manager_ = nullptr;
   bool initialized_ = false;
 };
 }  // namespace ascend
