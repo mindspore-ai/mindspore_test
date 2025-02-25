@@ -137,8 +137,7 @@ class _BatchNorm(_NormBase):
         if self.training and self.track_running_stats:
             if self.num_batches_tracked is not None:
                 num_batches_tracked_one = Tensor(1, dtype=ms.int64)
-                ops.assign_add(self.num_batches_tracked,
-                               num_batches_tracked_one)
+                self.num_batches_tracked += num_batches_tracked_one
                 if self.momentum is None:
                     exponential_average_factor = 1.0 / float(self.num_batches_tracked)
                 else:
