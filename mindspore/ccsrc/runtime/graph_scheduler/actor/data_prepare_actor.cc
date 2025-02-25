@@ -279,7 +279,6 @@ void UpdateDeviceAddressByRefInputNode(const std::vector<KernelGraphPtr> &graphs
       MS_EXCEPTION_IF_NULL(input_addr);
       MS_EXCEPTION_IF_CHECK_FAIL((ref_node_output_addr->GetDeviceType() == input_addr->GetDeviceType()),
                                  "The device type of ref node is not equal.");
-      ref_node_output_addr->set_ptr(input_addr->GetMutablePtr());
       ref_node_output_addr->set_original_ref_count(SIZE_MAX);
       ref_node_output_addr->ResetRefCount();
     }
@@ -478,6 +477,7 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
   if (tensor_address == nullptr) {
     return;
   }
+  tensor_address->set_new_ref_count(SIZE_MAX);
 
   auto device_address = AnfAlgo::GetMutableOutputAddr(input_node, 0, false);
   MS_EXCEPTION_IF_NULL(device_address);
@@ -962,6 +962,11 @@ void DataPrepareActor::PrepareDataForHostTensorQueueNew(const VectorRef &args, O
           ActorDispatcher::set_enable_trace_dynamic_memory(true);
         } else {
           ActorDispatcher::set_enable_use_trace_memory(true);
+          ActorDispatcher::set_enable_parallel_dispatch_kernel_for_cur_actor_set(EnableParallelDispatchKernel());
+          if (ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set()) {
+            MS_LOG(INFO) << "Enable parallel dispatch kernel for current actor set: " << graph_compiler_info_->name_
+                         << ", graph phase: " << graph_compiler_info_->graph_phase_;
+          }
         }
       }
     }
@@ -1443,8 +1448,11 @@ void DataPrepareActor::PrepareDeviceTensorStoreForControlNode(const ControlNodeP
     if (enable_input_optimize_) {
       auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
       MS_EXCEPTION_IF_NULL(graph_parameter_store);
-      auto outer_idx = graph_parameter_store->GetFrontNodeToIndex(front_parameter.get());
-      (void)FetchParameter(std::make_pair(control_node_parameters[i], outer_idx), context, nullptr, GetAID());
+      const auto &node_with_index_with_context =
+        control_node_parser->FetchBackendParameterWithContextByFrontParameter(control_node_parameters[i]);
+      const auto &device_context = node_with_index_with_context.second;
+      auto outer_index = graph_parameter_store->GetFrontNodeToIndex(front_parameter.get());
+      (void)FetchParameter({control_node_parameters[i], outer_index}, context, device_context, GetAID());
       continue;
     }
 

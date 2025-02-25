@@ -25,7 +25,8 @@ After declaring the dataset object, you can further apply dataset operations
 """
 import mindspore._c_dataengine as cde
 
-from .datasets import TextBaseDataset, SourceDataset, MappableDataset, Shuffle
+from .samplers import Shuffle
+from .datasets import TextBaseDataset, SourceDataset, MappableDataset
 from .validators import check_imdb_dataset, check_iwslt2016_dataset, check_iwslt2017_dataset, \
     check_penn_treebank_dataset, check_ag_news_dataset, check_amazon_review_dataset, check_udpos_dataset, \
     check_wiki_text_dataset, check_conll2000_dataset, check_cluedataset, \

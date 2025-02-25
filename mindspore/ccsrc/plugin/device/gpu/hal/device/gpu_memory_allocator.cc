@@ -15,7 +15,6 @@
  */
 
 #include <algorithm>
-#include "include/backend/distributed/collective/collective_manager.h"
 #include "include/common/utils/comm_manager.h"
 #ifdef ENABLE_DEBUGGER
 #include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
@@ -26,6 +25,7 @@
 #include "utils/ms_context.h"
 #include "utils/convert_utils_base.h"
 #include "runtime/runtime_conf/runtime_conf.h"
+#include "utils/distributed_meta.h"
 
 namespace mindspore {
 namespace device {
@@ -77,11 +77,9 @@ bool GPUMemoryAllocator::Init() {
 
   SetRankIdGetter([]() {
     size_t rank_id = SIZE_MAX;
-#if !defined(BUILD_LITE)
-    if (distributed::collective::CollectiveManager::instance()->initialized()) {
-      rank_id = CommManager::GetInstance().GetRank();
+    if (DistributedMeta::GetInstance()->initialized()) {
+      rank_id = DistributedMeta::GetInstance()->global_rank_id();
     }
-#endif
     return rank_id;
   });
   return true;

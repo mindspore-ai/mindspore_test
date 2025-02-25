@@ -27,7 +27,10 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"  // collective communication operations
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "plugin/device/ascend/hal/common/ascend_utils.h"
+#include "plugin/res_manager/ascend/collective/dvm_collective_comm_lib.h"
 
 namespace mindspore {
 namespace kernel {
@@ -46,6 +49,7 @@ enum OpType {
   OP_REDUCE,
   OP_SLICE,
   OP_MATMUL,
+  OP_COMM,
 };
 
 ShapeVector GetAxisList(const AnfNodePtr &axis_input) {
@@ -113,6 +117,7 @@ static std::unordered_map<std::string, std::pair<OpType, int>> op_type_map = {
   {"StridedSlice", {OP_SLICE, 1}},
   {ops::kNameMatMul, {OP_MATMUL, 0}},
   {ops::kNameBatchMatMul, {OP_MATMUL, 0}},
+  {"AllReduce", {OP_COMM, 0}},
 };
 
 TypeId GetValueNodeType(const AnfNodePtr &node) {
@@ -230,17 +235,7 @@ class OpBuilder {
         break;
       }
       case OP_ASSIGN: {
-        auto out_type = AnfAlgo::GetOutputDeviceDataType(node, 0);
-        auto input2 = EmitCast(GetInput(node->input(2)), out_type);
-        // store the second input of assign to the output of subgraph
-        // the output addr of subgraph equals to the corresponding parameter addr of subgraph
-        if (outputs_.find(node) != outputs_.end()) {
-          ops_map_[anf_node] = kernel_->Store(nullptr, input2);
-          outputs_[anf_node] = ops_map_[anf_node];
-        } else {
-          MS_LOG_WITH_NODE(EXCEPTION, node)
-            << "AssignOp " << node->fullname_with_scope() << " is not in graph kernel 's outputs.";
-        }
+        HandlerAssignOp(node);
         break;
       }
       case OP_ELEMENY: {
@@ -259,6 +254,10 @@ class OpBuilder {
       }
       case OP_MATMUL: {
         HandlerMatMulOp(node, prim, prim_name);
+        break;
+      }
+      case OP_COMM: {
+        HandlerCollectiveCommOp(node);
         break;
       }
       default:
@@ -319,6 +318,21 @@ class OpBuilder {
   }
 
  private:
+  void HandlerAssignOp(const AnfNodePtr &anf_node) {
+    const CNodePtr &node = anf_node->cast<CNodePtr>();
+    auto out_type = AnfAlgo::GetOutputDeviceDataType(node, kIndex0);
+    auto input2 = EmitCast(GetInput(node->input(kIndex2)), out_type);
+    // store the second input of assign to the output of subgraph
+    // the output addr of subgraph equals to the corresponding parameter addr of subgraph
+    if (outputs_.find(node) != outputs_.end()) {
+      ops_map_[anf_node] = kernel_->Store(nullptr, input2);
+      outputs_[anf_node] = ops_map_[anf_node];
+    } else {
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "AssignOp " << node->fullname_with_scope()
+                                        << " is not in graph kernel 's outputs.";
+    }
+  }
+
   void HandlerReduceOp(const CNodePtr &node, const PrimitivePtr &prim, int op_type) {
     auto keep_dims_attr = prim->GetAttr(kAttrKeepDims);
     MS_EXCEPTION_IF_NULL(keep_dims_attr);
@@ -341,6 +355,14 @@ class OpBuilder {
       auto op = kernel_->Copy(GetInput(input, start_ref, size_ref));
       EmitOp(node, op);
     }
+  }
+
+  void HandlerCollectiveCommOp(const CNodePtr &node) {
+    auto prim = GetCNodePrimitive(node);
+    auto group_name = GetValue<std::string>(prim->GetAttr(kAttrGroup));
+    auto comm_ptr = device::ascend::DvmCollectiveCommLib::GetInstance().GetCommunicator(group_name);
+    auto op = kernel_->AllReduce(GetInput(node->input(kIndex1)), comm_ptr.get());
+    EmitOp(node, op);
   }
 
   void HandlerMatMulOp(const CNodePtr &node, const PrimitivePtr &prim, const std::string &prim_name) {

@@ -91,7 +91,7 @@ class InternalKernelMod : public KernelMod {
   std::vector<size_t> recreate_cared_indices_;
   std::vector<size_t> nz_output_indices_;
   std::string fullname_;
-  SimpleSpinLock lock_;
+  static SimpleSpinLock lock_;
 };
 
 using InternalKernelModPtr = std::shared_ptr<InternalKernelMod>;

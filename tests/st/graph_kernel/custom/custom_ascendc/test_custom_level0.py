@@ -49,7 +49,7 @@ class CustomNet(Cell):
 
 
 class CustomNetAddPrefix(Cell):
-    def __init__(self, func, out_shape, bprop):
+    def __init__(self, func, out_shape, out_dtype, bprop):
         super(CustomNetAddPrefix, self).__init__()
         aclnn_ref_info = CustomRegOp("Mul") \
             .input(0, "x", "required") \
@@ -59,7 +59,7 @@ class CustomNetAddPrefix(Cell):
             .target("Ascend") \
             .get_op_info()
 
-        self.custom_mul = ops.Custom(func, out_shape, lambda x, _: x, func_type="aot", bprop=bprop,
+        self.custom_mul = ops.Custom(func, out_shape, out_dtype, func_type="aot", bprop=bprop,
                                      reg_info=aclnn_ref_info)
         self.add = P.Add()
         self.sub = P.Sub()
@@ -162,7 +162,7 @@ def test_custom_mul_aclnn_add_prefix(context_mode):
     x = np.ones([8, 2048]).astype(np.float16)
     y = np.ones([8, 2048]).astype(np.float16)
     z = np.random.rand(8, 2048).astype(np.float16)
-    net = CustomNetAddPrefix("Mul", lambda x, _: x, None)
+    net = CustomNetAddPrefix("Mul", lambda x, _: x, lambda x, _: x, None)
     expect_out = (x + y) * y - z
     out = net(Tensor(x), Tensor(y), Tensor(z))
     assert np.allclose(out.asnumpy(), expect_out, 0.001, 0.001)
@@ -181,7 +181,26 @@ def test_custom_mul_aclnn_infer_cpp(context_mode):
     x = np.ones([8, 2048]).astype(np.float16)
     y = np.ones([8, 2048]).astype(np.float16)
     z = np.random.rand(8, 2048).astype(np.float16)
-    net = CustomNetAddPrefix("./infer_file/custom_cpp_infer.cc:Mul", None, None)
+    net = CustomNetAddPrefix("./infer_file/custom_cpp_infer.cc:Mul", None, lambda x, _: x, None)
+    expect_out = (x + y) * y - z
+    out = net(Tensor(x), Tensor(y), Tensor(z))
+    assert np.allclose(out.asnumpy(), expect_out, 0.001, 0.001)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_custom_mul_aclnn_infer_type_cpp(context_mode):
+    """
+    Feature: Custom op testcase
+    Description: test case for inferring type by cpp
+    Expectation: the result match with numpy result
+    """
+    context.set_context(mode=context_mode, save_graphs=False, save_graphs_path="./graphs",
+                        jit_config={"jit_level": "O0"})
+    x = np.ones([8, 2048]).astype(np.float16)
+    y = np.ones([8, 2048]).astype(np.float16)
+    z = np.random.rand(8, 2048).astype(np.float16)
+    net = CustomNetAddPrefix("./infer_file/custom_cpp_infer.cc:Mul", None, None, None)
     expect_out = (x + y) * y - z
     out = net(Tensor(x), Tensor(y), Tensor(z))
     assert np.allclose(out.asnumpy(), expect_out, 0.001, 0.001)
@@ -204,7 +223,7 @@ def test_custom_mul_aclnn_bprop(context_mode):
     x = np.ones([8, 2048]).astype(np.float16)
     y = np.ones([8, 2048]).astype(np.float16)
     z = np.random.rand(8, 2048).astype(np.float16)
-    net = CustomNetAddPrefix("Mul", lambda x, _: x, bprop)
+    net = CustomNetAddPrefix("Mul", lambda x, _: x, lambda x, _: x, bprop)
     base_net = BaseNet()
     dx = ops.GradOperation()(net)(Tensor(x), Tensor(y), Tensor(z))
     expect_dx = ops.GradOperation()(base_net)(Tensor(x), Tensor(y), Tensor(z))

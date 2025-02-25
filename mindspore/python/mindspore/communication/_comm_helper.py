@@ -501,6 +501,18 @@ def _destroy_group_helper(group):
         CollectiveManager.get_instance().destroy_group(group)
 
 
+@check_parameter_available
+def _get_comm_name_helper(group):
+    """
+    The Helper to get inner_comm_name.
+
+    Args:
+        group (str): The user communication group.
+
+    """
+    return CollectiveManager.get_instance().get_comm_name(group)
+
+
 def _get_group_map():
     """Get the group map"""
     return CollectiveManager.get_instance().get_group_map()

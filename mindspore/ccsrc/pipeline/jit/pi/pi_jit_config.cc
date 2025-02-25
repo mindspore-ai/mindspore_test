@@ -44,7 +44,6 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"auto_jit_func_filter", &GraphJitConfig::SetAutoJitFilter},
   {"auto_jit_cell", &GraphJitConfig::SetBool<GraphJitConfig::kAutoJitCell>},
   {"auto_grad", &GraphJitConfig::SetBool<GraphJitConfig::kAutoGrad>},
-  {"compile_by_trace", &GraphJitConfig::SetBool<GraphJitConfig::kTraceFlag>},
   {"print_after_all", &GraphJitConfig::SetBool<GraphJitConfig::kPrintAfterAll>},
   {"print_tb", &GraphJitConfig::SetBool<GraphJitConfig::kPrintTraceback>},
   {"print_bb", &GraphJitConfig::SetBool<GraphJitConfig::kPrintBB>},
@@ -57,9 +56,6 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"specialize_tensor", &GraphJitConfig::SetBool<GraphJitConfig::kGuardSpecializeTensor>},
   {"guard_detach_object", &GraphJitConfig::SetBool<GraphJitConfig::kGuardDetachObject>},
   {"print_guard", &GraphJitConfig::SetBool<GraphJitConfig::kPrintGuard>},
-  {"reuse_graph", &GraphJitConfig::SetBool<GraphJitConfig::kReuseGraph>},
-  {"print_reuse_graph", &GraphJitConfig::SetBool<GraphJitConfig::kPrintReuseGraph>},
-  {"auto_clean_cache", &GraphJitConfig::SetBool<GraphJitConfig::kAutoCleanCache>},
   {"prune_case", &GraphJitConfig::SetBool<GraphJitConfig::kPruneCase>},
   {"loop_unrolling", &GraphJitConfig::SetBool<GraphJitConfig::kLoopUnrolling>},
   {"infer_only", &GraphJitConfig::SetBool<GraphJitConfig::kInferOnly>},
@@ -75,7 +71,10 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"kEnableEliminateUnusedOperation", &GraphJitConfig::SetBool<GraphJitConfig::kEnableEliminateUnusedOperation>},
   {"kEnableGeneratorExpressionToTuple", &GraphJitConfig::SetBool<GraphJitConfig::kEnableGeneratorExpressionToTuple>},
   {"pijit_context_mode", &GraphJitConfig::SetBool<GraphJitConfig::kPIJitContextMode>},
+  {"expand_graph_input", &GraphJitConfig::SetBool<GraphJitConfig::kExpandGraphInput>},
+  {"expand_graph_output", &GraphJitConfig::SetBool<GraphJitConfig::kExpandGraphOutput>},
   // kEnableOptimizeForAttrItem
+  {"_symbolic", &GraphJitConfig::SetInt<GraphJitConfig::kSymbolic>},
   {"MAX_INLINE_DEPTH", &GraphJitConfig::SetInt<GraphJitConfig::kMaxInlineDepth>},
   {"MAX_TRACE_DEPTH", &GraphJitConfig::SetInt<GraphJitConfig::kMaxTraceDepth>},
   {"MAX_PRUNE_CASE", &GraphJitConfig::SetInt<GraphJitConfig::kMaxPruneCase>},
@@ -93,13 +92,13 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"pijit_constexpr", &GraphJitConfig::AddJitConstexpr},
   {"relax_guard_func", &GraphJitConfig::AddJitRelaxGuard},
   {"jit_level", &GraphJitConfig::AddJitLevel},
+  {"recapture_loop_body", &GraphJitConfig::SetBool<GraphJitConfig::kReCaptureLoopBody>},
 };
 
 GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
   bool_conf[kAutoJitCell - kBoolConf] = false;
   bool_conf[kAutoGrad - kBoolConf] = false;
   bool_conf[kPrintAfterAll - kBoolConf] = false;
-  bool_conf[kTraceFlag - kBoolConf] = true;
   bool_conf[kPrintTraceback - kBoolConf] = false;
   bool_conf[kPrintBB - kBoolConf] = false;
   bool_conf[kPrintCFG - kBoolConf] = false;
@@ -111,9 +110,6 @@ GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
   bool_conf[kGuardSpecializeTensor - kBoolConf] = false;
   bool_conf[kGuardDetachObject - kBoolConf] = false;
   bool_conf[kPrintGuard - kBoolConf] = false;
-  bool_conf[kReuseGraph - kBoolConf] = false;
-  bool_conf[kPrintReuseGraph - kBoolConf] = false;
-  bool_conf[kAutoCleanCache - kBoolConf] = false;
   bool_conf[kPruneCase - kBoolConf] = true;
   bool_conf[kLoopUnrolling - kBoolConf] = true;
   bool_conf[kSkipException - kBoolConf] = false;
@@ -128,13 +124,12 @@ GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
   bool_conf[kEnableGeneratorExpressionToTuple - kBoolConf] = true;
   bool_conf[kEnableDynamicShape - kBoolConf] = false;
   bool_conf[kEnableMsApiInfer - kBoolConf] = false;
+  bool_conf[kExpandGraphInput - kBoolConf] = true;
+  bool_conf[kExpandGraphOutput - kBoolConf] = true;
 
-  /*'EnableOptimizeForAttrItem' options must be ensure that multiple calls of the
-   *__getattr__, __getitem__ function of the user-defined object do not affect the correctness.
-   */
-  bool_conf[kEnableOptimizeForAttrItem - kBoolConf] = true;
   bool_conf[kEnableEliminateUnusedOperation - kBoolConf] = false;
   bool_conf[kFeatureBreakAtInlinedFunction - kBoolConf] = true;
+  bool_conf[kReCaptureLoopBody - kBoolConf] = false;
 
   int_conf[kMaxInlineDepth - kIntConf] = 8;
   int_conf[kMaxTraceDepth - kIntConf] = kDefaultMaxTraceDepth;
@@ -148,6 +143,7 @@ GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
   int_conf[kLimitGraphSize - kIntConf] = 0;
   int_conf[kLimitGraphCount - kIntConf] = 0;
   int_conf[kGuardRelaxCount - kIntConf] = 0;
+  int_conf[kSymbolic - kIntConf] = 0;
 
   AddAllowedInlineModules("mindspore");
 
@@ -310,7 +306,7 @@ void GraphJitConfig::Update(const py::object &c) {
         continue;
       }
     }
-    MS_LOG(WARNING) << "unknown PIJit options: " << std::string(py::str(key)) << ":" << std::string(py::str(value));
+    MS_LOG(WARNING) << "Unknown PIJit option: " << std::string(py::str(key)) << ":" << std::string(py::str(value));
   }
 }
 

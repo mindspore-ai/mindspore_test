@@ -159,6 +159,16 @@ class BACKEND_EXPORT GraphKernelFlags {
   bool disable_matmul_post_fusion{false};
 
   /**
+   * Enable AllReduce prologue fusion in graph kernel fusion strategy, default is true.
+   */
+  bool enable_allreduce_prologue_fusion{true};
+
+  /**
+   * Enable AllReduce epilogue fusion in graph kernel fusion strategy, default is true.
+   */
+  bool enable_allreduce_epilogue_fusion{true};
+
+  /**
    * Optimization level, value from 0 to 3.
    * 0: Disable GraphKernel
    * 1: Enable GraphKernel with basic features only.

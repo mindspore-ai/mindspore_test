@@ -182,7 +182,7 @@ TracePtr Trace::GetOrigin() {
 
 PyObject *Trace::GetObject() { return obj_; }
 
-TraceType Trace::GetTraceType() { return curType_; }
+TraceType Trace::GetTraceType() const { return curType_; }
 
 TraceType Trace::GetOriginType() { return originType_; }
 
@@ -1837,6 +1837,9 @@ static std::unordered_map<int, PythonBytecodeFuncSet> kBytecodeExecuter = {
 OpTrace::OpTrace(PyObject *obj, int opcode, int opargs, TraceVector params, std::string name)
     : Trace(obj, nullptr), opcode_(opcode), opargs_(opargs), params_(params), name_(name) {
   curType_ = TraceType::Operation;
+  if (opcode_ == CALL_FUNCTION || opcode_ == CALL_FUNCTION_EX || opcode_ == CALL_FUNCTION_KW || opcode_ == LOAD_ATTR) {
+    opargs_ = -1;
+  }
   if (!std::any_of(params.begin(), params.end(), [](const TracePtr &item) { return !item->IsConst(); })) {
     is_const_ = true;
   } else if (name.find(kIsSeqValUnknown) != std::string::npos || name.find(kIsSeqShapeUnknown) != std::string::npos) {

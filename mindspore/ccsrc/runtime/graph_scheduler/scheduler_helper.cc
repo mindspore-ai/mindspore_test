@@ -201,6 +201,7 @@ void SchedulerHelper::AddDeviceTensorStore(const AnfNodePtr &anf_node, const Dev
                     << " node addr:" << anf_node.get() << " device type:" << device_tensor->GetDeviceType()
                     << ", outer idx:" << outer_idx;
       device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
+      device_tensor->set_new_ref_count(SIZE_MAX);
       return;
     }
   }
@@ -439,6 +440,7 @@ void SchedulerHelper::AddDataArrow(AbstractActor *const from_actor, AbstractActo
     UpdateRefCount(device_tensor.get(), true);
   } else {
     UpdateDataArrowRefCount(to_actor, to_input_index, device_tensor);
+    GetUnusedRefCount(from_actor, to_actor, from_output_index, to_input_index, device_tensor);
   }
 
   if (IsControlFlowActor(to_actor->type())) {
@@ -446,25 +448,103 @@ void SchedulerHelper::AddDataArrow(AbstractActor *const from_actor, AbstractActo
   }
 }
 
+void SchedulerHelper::GetUnusedRefCount(AbstractActor *const from_actor, AbstractActor *const to_actor,
+                                        size_t from_input_index, size_t to_input_index,
+                                        const DeviceTensorPtr &device_tensor) {
+  MS_EXCEPTION_IF_NULL(from_actor);
+  MS_EXCEPTION_IF_NULL(to_actor);
+  MS_EXCEPTION_IF_NULL(device_tensor);
+  if (from_actor->type() != KernelTransformType::kKernelActor ||
+      to_actor->type() != KernelTransformType::kKernelActor) {
+    return;
+  }
+  auto from_kernel_actor = dynamic_cast<KernelActor *>(from_actor);
+  MS_EXCEPTION_IF_NULL(from_kernel_actor);
+  auto to_kernel_actor = dynamic_cast<KernelActor *>(to_actor);
+  MS_EXCEPTION_IF_NULL(to_kernel_actor);
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
+  if (enable_infer_boost) {
+    return;
+  }
+  auto to_kernel = to_kernel_actor->kernel();
+  auto cnode = to_kernel->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  const auto &only_depend_shape_attr = common::AnfAlgo::GetCNodePrimitiveAttr(cnode, kAttrOnlyDependShape);
+  if (only_depend_shape_attr == nullptr) {
+    return;
+  }
+  auto only_depend_shape = GetValue<std::vector<bool>>(only_depend_shape_attr);
+  if (to_input_index >= only_depend_shape.size()) {
+    MS_LOG(DEBUG) << "to_input_index : " << to_input_index
+                  << " is out of range, only_depend_shape size : " << only_depend_shape.size();
+    return;
+  }
+  if (only_depend_shape[to_input_index]) {
+    device_tensor->UpdateFlag(device::kDeviceAddressFlagNullptr);
+    from_kernel_actor->output_free_index_.emplace_back(from_input_index);
+    MS_LOG(DEBUG) << "Add output free index:" << from_input_index
+                  << " and null flag to device address:" << device_tensor
+                  << " by only shape depend flag for actor:" << from_actor->GetAID();
+  }
+}
+
+bool IsOnlyShapeDepend(AbstractActor *const to_actor, size_t to_index) {
+  MS_EXCEPTION_IF_NULL(to_actor);
+  if (to_actor->type() != KernelTransformType::kKernelActor) {
+    return false;
+  }
+  auto to_kernel_actor = dynamic_cast<KernelActor *>(to_actor);
+  MS_EXCEPTION_IF_NULL(to_kernel_actor);
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
+  if (enable_infer_boost) {
+    return false;
+  }
+  auto to_kernel = to_kernel_actor->kernel();
+  auto cnode = to_kernel->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  const auto &only_depend_shape_attr = common::AnfAlgo::GetCNodePrimitiveAttr(cnode, kAttrOnlyDependShape);
+  if (only_depend_shape_attr == nullptr) {
+    return false;
+  }
+  auto only_depend_shape = GetValue<std::vector<bool>>(only_depend_shape_attr);
+  if (to_index >= only_depend_shape.size()) {
+    MS_LOG(DEBUG) << "To index : " << to_index
+                  << " is out of range, only_depend_shape size : " << only_depend_shape.size();
+    return false;
+  }
+  return only_depend_shape[to_index];
+}
+
 void SchedulerHelper::InsertParameterIndexsForActor(AbstractActor *const to_actor,
                                                     const KernelWithIndex &front_node_with_idx,
                                                     const KernelWithIndex &from_kernel_with_output_idx,
                                                     const KernelWithIndex &to_kernel_with_input_idx,
                                                     const KernelGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(to_actor);
+  MS_EXCEPTION_IF_NULL(front_node_with_idx.first);
+  MS_LOG(DEBUG) << "Inser parameter index to actor:" << to_actor->GetAID()
+                << " front node:" << front_node_with_idx.first->DebugString()
+                << " index:" << front_node_with_idx.second;
+
   // Obtain the corresponding front node from back node.
   ParameterStore &parameterStore = ParameterStore::GetInstance();
   auto cur_graph_parameter_store = parameterStore.GetGraphParameterStore();
   size_t real_outer_idx = cur_graph_parameter_store->GetFrontNodeToIndex(front_node_with_idx.first.get());
   // The index of the font node is flattened
   size_t real_inner_idx = front_node_with_idx.second;
-  auto cur_device_tensor = AnfAlgo::GetMutableOutputAddr(from_kernel_with_output_idx.first, 0, false);
+  auto cur_device_tensor =
+    AnfAlgo::GetMutableOutputAddr(from_kernel_with_output_idx.first, from_kernel_with_output_idx.second, false);
   MS_EXCEPTION_IF_NULL(cur_device_tensor);
   // The superkernel actor is linked by input parameter, maybe the not used parameter.
   if (to_actor->type() != KernelTransformType::kSuperKernelActor) {
     cur_device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
   }
   // Cal ref count
-  auto real_node = common::AnfAlgo::FetchRealNodeSkipMonadControl({from_kernel_with_output_idx.first, 0}).first;
+  auto real_node = common::AnfAlgo::FetchRealNodeSkipMonadControl(from_kernel_with_output_idx).first;
   MS_EXCEPTION_IF_NULL(real_node);
   if (real_node->isa<Parameter>() && common::AnfAlgo::IsParameterWeight(real_node->cast<ParameterPtr>())) {
     cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx, SIZE_MAX, cur_device_tensor->GetDeviceType());
@@ -472,8 +552,15 @@ void SchedulerHelper::InsertParameterIndexsForActor(AbstractActor *const to_acto
     MS_LOG(INFO) << "Ref input: " << from_kernel_with_output_idx.first->DebugString()
                  << ", index: " << from_kernel_with_output_idx.second;
     cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx, SIZE_MAX, cur_device_tensor->GetDeviceType());
+  } else if (IsOnlyShapeDepend(to_actor, to_kernel_with_input_idx.second)) {
+    MS_LOG(DEBUG) << "Is only shape depend to actor:" << to_actor->GetAID()
+                  << " and skip increase user count for outer index:" << real_outer_idx
+                  << " and inner index:" << real_inner_idx;
   } else {
     cur_graph_parameter_store->IncreaseUserCnt(real_outer_idx, real_inner_idx, cur_device_tensor->GetDeviceType());
+  }
+  if (IsControlFlowActor(to_actor->type())) {
+    cur_device_tensor->SetNodeIndex(from_kernel_with_output_idx.first, from_kernel_with_output_idx.second);
   }
   // Save to_actor info into parameter_index
   ParameterInfo cur_param_info{front_node_with_idx, real_outer_idx};

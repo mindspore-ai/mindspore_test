@@ -125,7 +125,7 @@ class AscendResManager : public HalResBase {
   int ResetParams(const std::vector<tensor::TensorPtr> &params) const;
 
   DeviceEventPtr CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait);
-  DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking) override;
+  DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking, bool use_extensional_api) override;
 
   bool single_op_multi_stream_enable() const override;
   void set_single_op_multi_stream_enable(bool single_op_multi_stream_enable) override;

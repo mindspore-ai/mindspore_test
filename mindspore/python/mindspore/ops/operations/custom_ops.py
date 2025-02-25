@@ -183,10 +183,16 @@ class _CustomExt(ops.PrimitiveWithInfer):
 
         infer_value = None
         if infer_shape is None:
-            logger.warning("'out_shape' is None. Add a placeholder instead. "
-                           "A CPP version of infer shape function is required "
-                           "in this case.")
+            logger.debug("'out_shape' is None. Add a placeholder instead. "
+                         "A CPP version of infer shape function is required "
+                         "in this case.")
             infer_shape = (1,)
+        if infer_dtype is None:
+            logger.debug("'out_dtype' is None. Add a placeholder instead. "
+                         "A CPP version of infer type function is required "
+                         "in this case.")
+            infer_dtype = ms.float16
+
         # after all automatic infer information fulfillment, throw error if infer_shape/infer_dtype is still None
         if not isinstance(infer_shape, (tuple, list)):
             raise TypeError("'out_shape' must be one of [tuple, list, function], but got {}".format(type(infer_shape)))
@@ -299,12 +305,14 @@ class Custom(ops.PrimitiveWithInfer):
                  based on Ascend C and compile them. The complete development and usage process can refer to the
                  tutorial `AOT-Type Custom Operators(Ascend) <https://www.mindspore.cn/docs/en/master/model_train/custom_program/operation/op_custom_ascendc.html>`_.
                  By passing the name of the operator through the input parameter `func`, there are two usage methods
-                 based on the implementation of the infer shape function:
+                 based on the implementation of the infer function:
 
-                 - Python infer: If the operator's infer shape is implemented in Python, that is, the infer shape
-                   function is passed through the `out_shape` parameter, specify `func="CustomName"` .
-                 - C++ infer: If the operator's infer shape is implemented through C++, then pass the path of the
-                   infer shape implementation file in `func` and separate the operator name with `:`,
+                 - Python infer: If the operator's infer function is implemented in Python, that is, the infer shape
+                   function is passed through the `out_shape` parameter, and the infer type is passed throuht the
+                   `out_dtype`, then the `func` should be specified as the operator name, for example,
+                   `func="CustomName"`.
+                 - C++ infer: If the operator's infer function is implemented through C++, then pass the path of the
+                   infer function implementation file in `func` and separate the operator name with `:`,
                    for example: `func="add_custom_infer.cc:AddCustom"` .
 
               2. for "julia":
@@ -425,6 +433,7 @@ class Custom(ops.PrimitiveWithInfer):
         self._func_compile_attrs = {}
         self._is_ms_kernel = False
         self.out_shape = out_shape
+        self.out_dtype = out_dtype
 
         self._check_platform()
         self._check_func()
@@ -442,13 +451,17 @@ class Custom(ops.PrimitiveWithInfer):
 
         if self.out_shape is None and self.func_type == "aot":
             self.add_prim_attr("cpp_infer_shape", True)
-        self.out_dtype = out_dtype
+        if self.out_dtype is None and self.func_type == "aot":
+            self.add_prim_attr("cpp_infer_type", True)
+        self.multi_output = (reg_info is not None and (len(reg_info.get("outputs", [])) > 1))
+        self.add_prim_attr("multi_output", self.multi_output)
+
         self.bprop = bprop
         self.fake_output = False
         self.single_scalar_output = False
-        if not self.out_dtype:
+        if not self.out_dtype and not self.func_type == "pyfunc":
             self.fake_output = True
-        elif not self.out_shape:
+        elif not self.out_shape and self.func_type == "pyfunc":
             self.single_scalar_output = True
         self.add_prim_attr("fake_output", self.fake_output)
         self.add_prim_attr("single_scalar_output", self.single_scalar_output)
@@ -464,10 +477,10 @@ class Custom(ops.PrimitiveWithInfer):
 
         self.add_prim_attr("func_type", self.func_type)
         self._update_attr()
-        self.enable_pyboost = False
-        self.custom_pyboost = _CustomExt(self.func, self.out_shape, self.out_dtype, self.bprop)
-        if context.get_context("device_target") == "Ascend" and self.func_type == "aot":
-            self.enable_pyboost = True
+
+        self.enable_pyboost = (context.get_context("device_target") == "Ascend" and self.func_type == "aot")
+        if self.enable_pyboost:
+            self.custom_pyboost = _CustomExt(self.func, self.out_shape, self.out_dtype, self.bprop)
             for key, value in super().get_attr_dict().items():
                 self.custom_pyboost.add_prim_attr(key, value)
 
@@ -510,10 +523,15 @@ class Custom(ops.PrimitiveWithInfer):
                 infer_dtype = mstype.int32
         if self.func_type == "aot":
             if infer_shape is None:
-                logger.warning("{}, 'out_shape' is None. Add a placeholder instead. "
-                               "A CPP version of infer shape function is required "
-                               "in this case.".format(self.log_prefix))
+                logger.debug("{}, 'out_shape' is None. Add a placeholder instead. "
+                             "A CPP version of infer shape function is required "
+                             "in this case.".format(self.log_prefix))
                 infer_shape = (1,)
+            if infer_dtype is None:
+                logger.debug("{}, 'out_dtype' is None. Add a placeholder instead. "
+                             "A CPP version of infer type function is required "
+                             "in this case.".format(self.log_prefix))
+                infer_dtype = ms.float16
         # after all automatic infer information fulfillment, throw error if infer_shape/infer_dtype is still None
         if not isinstance(infer_shape, (tuple, list)):
             raise TypeError("{}, 'out_shape' must be one of [tuple, list, function], but got {}"
@@ -1079,7 +1097,8 @@ class Custom(ops.PrimitiveWithInfer):
 
     def __call__(self, *args):
         if self.enable_pyboost:
-            return _convert_stub(pyboost_custom_ext(self.custom_pyboost, [args]))
+            res = _convert_stub(pyboost_custom_ext(self.custom_pyboost, [args]))
+            return res if self.multi_output else res[0]
         should_elim, output = self.check_elim(*args)
         if should_elim:
             return output

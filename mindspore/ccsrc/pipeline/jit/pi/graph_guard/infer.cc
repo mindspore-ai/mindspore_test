@@ -19,6 +19,8 @@
 #include <functional>
 #include <unordered_set>
 #include <utility>
+#include <algorithm>
+#include <set>
 #include "base/base.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
@@ -38,12 +40,14 @@
 #include "pipeline/jit/ps/action.h"
 #include "pipeline/jit/pi/graph_build/func_graph_builder.h"
 #include "include/common/utils/tensor_py.h"
+#include "pipeline/pynative/forward/cast_base.h"
 
 namespace mindspore {
 namespace parse {
 extern bool ConvertData(const py::object &obj, mindspore::ValuePtr *data, bool use_signature,
                         const mindspore::TypePtr &dtype, bool forbid_reuse);
-}
+extern bool IsParameterObject(const py::object &);
+}  // namespace parse
 
 namespace abstract {
 extern mindspore::abstract::AbstractBasePtr ToAbstract(const mindspore::ValuePtr &value,
@@ -477,37 +481,6 @@ void GeneratePrimitiveArgs(PrimitivePtr prim, std::vector<PyObject *> *list, PyO
   }
 }
 
-static py::object ConvertCppTensor(const py::object &any) {
-  PyObject *op = any.ptr();
-  PyTypeObject *cpp_tensor_type = GetPybindType<mindspore::tensor::Tensor>();
-
-  if (Py_IS_TYPE(op, cpp_tensor_type)) {
-    py::object tp = py::reinterpret_borrow<py::object>(GetMsTensorType());
-    return tp(any);
-  }
-
-  if (PyTuple_Check(op) || PyList_Check(op)) {
-    for (Py_ssize_t i = 0; i < Py_SIZE(op); ++i) {
-      PyObject **item = PyTuple_Check(op) ? &PyTuple_GET_ITEM(op, i) : &PyList_GET_ITEM(op, i);
-      PyObject *new_item = ConvertCppTensor(py::cast<py::object>(*item)).inc_ref().ptr();
-      Py_SETREF(*item, new_item);
-    }
-    return any;
-  }
-
-  if (PyDict_Check(op)) {
-    Py_ssize_t pos = 0;
-    PyObject *key;
-    PyObject *value;
-    while (PyDict_Next(op, &pos, &key, &value)) {
-      py::object new_value = ConvertCppTensor(py::cast<py::object>(value));
-      PyDict_SetItem(op, key, new_value.ptr());
-    }
-    return any;
-  }
-  return any;
-}
-
 // return new reference
 PyObject *InferEngine::InferPrimitive(PyObject *primitive, const std::vector<PyObject *> &args, bool *is_abstract) {
   if (!SupportInfer(primitive)) {
@@ -546,6 +519,10 @@ PyObject *InferEngine::InferPrimitive(PyObject *primitive, const std::vector<PyO
   GeneratePrimitiveArgs(prim, &arglist, primitive);
   AbstractBasePtrList list = ChangeAbstractArgList(prim, arglist, &has_tensor, &monad_count);
 
+  if (!PromotePrimitiveInputsType(prim, &list)) {
+    return nullptr;
+  }
+
   *is_abstract = false;
   std::optional<AbstractBasePtr> opt_res = mindspore::abstract::TryInferAbstract(prim, list);
   if (opt_res.has_value()) {
@@ -557,7 +534,7 @@ PyObject *InferEngine::InferPrimitive(PyObject *primitive, const std::vector<PyO
         pyObj = MakeObjectFromAbstract(abs->BuildShape(), abs->BuildType(), is_abstract);
       }
       if (pyObj.ptr() != nullptr) {
-        pyObj = ConvertCppTensor(pyObj);
+        pyObj = ConvertCppTensorToMsTensor(pyObj);
       }
     }
     return pyObj.inc_ref().ptr();
@@ -848,6 +825,10 @@ bool IsCellListType<false>(PyTypeObject *tp) {
   return CheckType("mindspore.nn", "CellList", false, tp);
 }
 
+bool IsParameterObject(const py::handle &handle) {
+  return parse::IsParameterObject(py::reinterpret_borrow<py::object>(handle));
+}
+
 bool CheckTensorDataInitialized(const py::object &py_tensor) {
   if (tensor::IsTensorPy(py_tensor)) {
     auto tensor = tensor::ConvertToTensor(py_tensor);
@@ -920,6 +901,93 @@ static std::unique_ptr<AbstractBasePtrList> MakeArgumentsAbstract(py::object cal
   return std::make_unique<AbstractBasePtrList>(std::move(list));
 }
 
+const std::vector<Signature> &GetSignature(const ValuePtr &function) {
+  static const auto empty = std::vector<Signature>();
+  if (function->isa<Primitive>() && function->cast<PrimitivePtr>()->has_signature()) {
+    return function->cast<PrimitivePtr>()->signatures();
+  } else if (function->isa<MetaFuncGraph>()) {
+    return function->cast<MetaFuncGraphPtr>()->signatures();
+  }
+  return empty;
+}
+
+void GetTypeInfo(const std::vector<TypePtr> &input_types, std::vector<TypeId> *args_type_id,
+                 std::vector<bool> *args_has_tensor) {
+  for (const auto &arg_type : input_types) {
+    MS_EXCEPTION_IF_NULL(arg_type);
+    if (arg_type->isa<Number>()) {
+      (void)args_type_id->emplace_back(arg_type->cast<NumberPtr>()->type_id());
+      (void)args_has_tensor->emplace_back(false);
+    } else if (arg_type->isa<TensorType>()) {
+      auto elem_type = arg_type->cast<TensorTypePtr>()->element();
+      MS_EXCEPTION_IF_NULL(elem_type);
+      (void)args_type_id->emplace_back(elem_type->type_id());
+      (void)args_has_tensor->emplace_back(true);
+    } else {
+      (void)args_type_id->emplace_back(kTypeUnknown);
+      (void)args_has_tensor->emplace_back(false);
+    }
+  }
+}
+
+SignatureEnumRW GetSignatureEnumRW(size_t index, const std::vector<Signature> &signature, bool has_var) {
+  SignatureEnumRW sig = SignatureEnumRW::kRWDefault;
+  // If sig_size is 0 use default.
+  std::size_t sig_size = signature.size();
+  if (index < sig_size) {
+    sig = signature[index].rw;
+  } else if (has_var && index >= sig_size) {
+    sig = signature[sig_size - 1].rw;
+  }
+  return sig;
+}
+
+// Promote dtype of primitive's input args as op_def dtype_group
+bool PromotePrimitiveInputsType(const ValuePtr &primitive, AbstractBasePtrList *inputs_abs_list) {
+  auto &signature = GetSignature(primitive);
+  std::size_t sig_size = signature.size();
+  auto has_var = (sig_size > 0 && signature[sig_size - 1].kind == SignatureEnumKind::kKindVarPositional);
+  std::vector<SignatureEnumDType> dtypes;
+  (void)std::transform(signature.begin(), signature.end(), std::back_inserter(dtypes),
+                       [](const Signature &sig) { return sig.dtype; });
+  int64_t empty_dtype_count = std::count(dtypes.begin(), dtypes.end(), SignatureEnumDType::kDTypeEmptyDefaultValue);
+  if (static_cast<int64_t>(dtypes.size()) == empty_dtype_count) {
+    return true;
+  }
+  auto args_size = dtypes.size();
+  if (args_size > inputs_abs_list->size()) {
+    return false;
+  }
+  std::vector<TypePtr> input_types;
+  std::set<size_t> write_indices;
+  for (size_t i = 0; i < inputs_abs_list->size(); ++i) {
+    input_types.push_back((*inputs_abs_list)[i]->BuildType());
+    SignatureEnumRW sig = GetSignatureEnumRW(i, signature, has_var);
+    if (sig == SignatureEnumRW::kRWWrite) {
+      (void)write_indices.insert(i);
+    }
+  }
+  std::vector<TypeId> source_type_id;
+  std::vector<bool> source_is_tensor;
+  GetTypeInfo(input_types, &source_type_id, &source_is_tensor);
+
+  auto sig_type_map = GetSignatureTypeMap(dtypes, source_type_id, source_is_tensor, write_indices);
+  for (size_t i = 0; i < args_size; ++i) {
+    auto it = sig_type_map.find(dtypes[i]);
+    if (it == sig_type_map.end()) {
+      continue;
+    }
+    auto build_value = (*inputs_abs_list)[i]->BuildValue();
+    if (build_value->isa<Scalar>()) {
+      (*inputs_abs_list)[i] = pynative::CastBaseOperation::ScalarToDstDtypeValue(build_value, it->second)->ToAbstract();
+    } else if (build_value->isa<tensor::BaseTensor>() && it->second.second) {  // is tensor
+      (*inputs_abs_list)[i] =
+        pynative::CastBaseOperation::TensorToDstDtypeValue(build_value, it->second.first)->ToAbstract();
+    }
+  }
+  return true;
+}
+
 py::object EvalMSAPIValue(const py::object &ms_api, const py::object &args, const py::object &key_words) {
   py::object callable_object = ms_api;
   ValuePtr func_graph;
@@ -936,6 +1004,9 @@ py::object EvalMSAPIValue(const py::object &ms_api, const py::object &args, cons
   AbstractBasePtrList inputs_abs_list = std::move(*inputs_ptr);
   AbstractBasePtr eval_result;
   if (func_graph->isa<Primitive>()) {
+    if (!PromotePrimitiveInputsType(func_graph, &inputs_abs_list)) {
+      return py::object();
+    }
     auto eval_res = abstract::EvalOnePrim(func_graph->cast<PrimitivePtr>(), inputs_abs_list);
     eval_result = eval_res == nullptr ? nullptr : eval_res->abstract();
   } else if (func_graph->ToAbstract()->isa<abstract::AbstractFunction>()) {
@@ -958,7 +1029,7 @@ py::object EvalMSAPIValue(const py::object &ms_api, const py::object &args, cons
     MS_LOG(ERROR) << "can't convert AbstractBasePtr to PyObject [" << eval_result->ToString() << "]";
     return py::object();
   }
-  return ConvertCppTensor(res);
+  return ConvertCppTensorToMsTensor(res);
 }
 
 }  // namespace pijit

@@ -38,7 +38,9 @@ def test_qwen2_0_5b_predict_standalone():
     Description: Test infer interface for prediction with standalone.
     Expectation: AssertionError
     """
-    os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
+    ascend_home_path = os.getenv('ASCEND_HOME_PATH')
+    if not ascend_home_path:
+        os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
     cur_dir = os.path.dirname(os.path.realpath(__file__))
     config_path = os.path.join(cur_dir, "./qwen/configs/ci_predict_qwen2_0_5b_instruct.yaml")
 

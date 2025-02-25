@@ -145,6 +145,8 @@ class AbstractActor : public OpActor<DeviceTensor> {
 
   // Reset state for UCE.
   virtual void ResetState() { MS_LOG(INFO) << "Actor " << GetAID().Name() << " no need to reset state."; }
+  virtual void IncreaseNewRefCounts(OpContext<DeviceTensor> *const context);
+  virtual void IncreaseNewRefCount(const OpData<DeviceTensor> *op_data) const;
 
  protected:
   friend class GraphScheduler;
@@ -193,9 +195,7 @@ class AbstractActor : public OpActor<DeviceTensor> {
   bool IsOutputAddressPersisted(const DeviceTensor *output_device_tensor, const KernelWithIndex &output_node);
 
   // Stores info required by to_actor
-  void InsertParameterIndexs(size_t to_kernel_idx, ParameterInfo cur_front_node_info) {
-    parameter_indexs_.push_back({to_kernel_idx, cur_front_node_info});
-  }
+  void InsertParameterIndexs(size_t to_kernel_idx, ParameterInfo cur_front_node_info);
 
   KernelTransformType type_;
 

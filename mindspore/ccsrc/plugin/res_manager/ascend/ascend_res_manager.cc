@@ -44,10 +44,13 @@
 #include "runtime/device/tensor_array.h"
 #include "acl/acl_rt.h"
 #include "include/backend/distributed/cluster/cluster_context.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ccool_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/multi_ascend_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/dummy_ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/ccool_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/dummy_ascend_collective_comm_lib.h"
+#ifdef ENABLE_INTERNAL_KERNELS
+#include "plugin/res_manager/ascend/collective/lowlatency_collective_comm_lib.h"
+#endif
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 
@@ -179,6 +182,7 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
 
   address->set_ptr(device_ptr);
   address->set_from_mem_pool(true);
+  address->IncreaseNewRefCount();
   static bool enable_memory_tracker = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
   if (enable_memory_tracker) {
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, address, device_ptr);
@@ -769,9 +773,9 @@ DeviceEventPtr AscendResManager::CreateRuntimeEvent(bool enable_blocking, bool e
   return std::make_shared<AscendEvent>(flag);
 }
 
-DeviceEventPtr AscendResManager::CreateEventWithFlag(bool enable_timing, bool blocking) {
+DeviceEventPtr AscendResManager::CreateEventWithFlag(bool enable_timing, bool blocking, bool use_extensional_api) {
   auto flag = enable_timing ? (ACL_EVENT_TIME_LINE | ACL_EVENT_SYNC) : ACL_EVENT_SYNC;
-  auto event = std::make_shared<AscendEvent>(flag);
+  auto event = std::make_shared<AscendEvent>(flag, use_extensional_api);
   MS_EXCEPTION_IF_NULL(event);
   std::lock_guard<std::mutex> lock(device_events_mutex_);
   device_events_.push_back(event);

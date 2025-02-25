@@ -32,11 +32,11 @@ namespace pijit {
 
 typedef enum _GIType {
   GTUnknown = 0,
-  GTEqual,
   GTType,
-  GTId,
-  GTAttr,
   GTRepr,
+  GTAttr,
+  GTEqual,
+  GTId,
 } GIType;
 
 class GuardItem : public std::enable_shared_from_this<GuardItem> {
@@ -49,19 +49,22 @@ class GuardItem : public std::enable_shared_from_this<GuardItem> {
   virtual std::string ToString() = 0;
   virtual const InfoPack &Info() = 0;
   virtual void Replace(TracePtr dst, TracePtr src);
-  virtual TracePtr GetTrace();
+  virtual TracePtr GetTrace() const;
   virtual bool operator==(const GuardItem &obj) const;
-  virtual GIType GetType() { return type_; }
+  virtual GIType GetType() const { return type_; }
   virtual bool MatchDynamicShape(std::shared_ptr<GuardItem> other) { return false; }
   virtual PyObject *ApplyDynamicShape(PyObject *obj) { return nullptr; }
   virtual std::shared_ptr<GuardItem> Optimize();
   virtual std::shared_ptr<GuardItem> This() { return shared_from_this(); }
+  int fail_count() const { return fail_count_; }
+  void set_faile_count(int c) { fail_count_ = c; }
 
  protected:
   TracePtr var_;
   GIType type_;
   InfoPackPtr info_;
   std::string strGuard_;
+  int fail_count_;  // retrieve_count_ same as call count
 };
 using GuardItemPtr = std::shared_ptr<GuardItem>;
 

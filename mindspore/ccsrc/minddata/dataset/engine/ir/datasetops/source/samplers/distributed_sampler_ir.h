@@ -34,8 +34,8 @@ class SamplerRT;
 
 class DistributedSamplerObj : public SamplerObj {
  public:
-  DistributedSamplerObj(int64_t num_shards, int64_t shard_id, bool shuffle, int64_t num_samples, uint32_t seed,
-                        int64_t offset, bool even_dist);
+  DistributedSamplerObj(int64_t num_shards, int64_t shard_id, dataset::ShuffleMode shuffle_mode, int64_t num_samples,
+                        uint32_t seed, int64_t offset, bool even_dist);
 
   ~DistributedSamplerObj() override;
 
@@ -70,7 +70,7 @@ class DistributedSamplerObj : public SamplerObj {
  private:
   int64_t num_shards_;
   int64_t shard_id_;
-  bool shuffle_;
+  dataset::ShuffleMode shuffle_mode_;
   int64_t num_samples_;
   uint32_t seed_;
   int64_t offset_;

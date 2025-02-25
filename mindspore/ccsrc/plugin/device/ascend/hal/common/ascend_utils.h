@@ -35,6 +35,8 @@ namespace ascend {
 
 bool EnableLccl();
 
+bool EnableDvmComm();
+
 void InitializeAcl();
 
 BACKEND_EXPORT std::string GetFormatMode();

@@ -129,10 +129,13 @@ enum class DATASET_API TensorImpl {
 
 /// \brief The mode for shuffling data.
 enum class DATASET_API ShuffleMode {
-  kFalse = 0,   ///< No shuffling is performed.
-  kFiles = 1,   ///< Shuffle files only.
-  kGlobal = 2,  ///< Shuffle both the files and samples.
-  kInfile = 3   ///< Shuffle data within each file.
+  kFalse = 0,    ///< No shuffling is performed.
+  kFiles = 1,    ///< Shuffle files only.
+  kGlobal = 2,   ///< Shuffle both the files and samples.
+  kInfile = 3,   ///< Shuffle data within each file.
+  kPartial = 4,  ///< Shuffle data with every 1 million samples
+  kAdaptive = 5  ///< When the number of dataset samples is less than or equal to 100 million, global shuffle is used.
+                 ///< When the number of dataset samples is greater than 100 million, partial shuffle is used.
 };
 
 /// \brief Possible scale for input audio.

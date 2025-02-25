@@ -31,7 +31,7 @@
 
 namespace mindspore {
 namespace pijit {
-extern ValueNode *GetBoundSelf(CallNode *call_node);
+extern ValueNode *GetBoundSelfHelper(CallNode *call_node, bool *is_method);
 extern void LogGuardFailed(ValueNode *node, const GraphJitConfig &conf, const std::string &msg);
 extern AObject *InferFuncResult(const py::object &func, const std::vector<AObject *> &stack_args, int opcode,
                                 const GraphJitConfig &conf, bool clear_guard);
@@ -43,8 +43,6 @@ constexpr const char *kFuncMapName = "_func_map";
 constexpr const char *kSlotCallName = "__call__";
 constexpr const size_t kDictPopParamsNum = 2;
 constexpr const size_t BoundMethodInputSize = 2;
-
-static bool CheckConstexpr(const py::object &func);
 
 template <AObject::Type type>
 static bool SetCallResType(CallNode *call_node, GraphBuilder *unused = nullptr) {
@@ -173,55 +171,6 @@ bool GuardConstCallNodeParam(CallNode *call_node, Graph *sub_graph, int max_guar
   return true;
 }
 
-static bool InferConvertMap(CallNode *call_node, GraphBuilder *unused = nullptr) {
-  AObject *func_info = call_node->input(0)->GetVobj();
-  func_info->SetMsFlag(AObject::kMsFlagStandardFunc);
-  py::object func = func_info->GetPyObject();
-  py::object tmp = Utils::GetModuleAttr("mindspore._extends.parse.resources", "convert_object_map");
-  auto dict_obj = py::cast<py::dict>(tmp);
-  auto infer_obj = dict_obj[func];
-  AObject *res = nullptr;
-  call_node->SetSubGraph(nullptr);
-  SetCallResType<AObject::kTypeTensor>(call_node);
-  if (PyFunction_Check(infer_obj.ptr())) {
-    MS_LOG(DEBUG) << "infer function " << std::string(py::str(PyFunction_GET_CODE(infer_obj.ptr())));
-    int op = call_node->GetOpcode();
-    const auto &conf = call_node->GetGraph()->Config();
-    std::vector<AObject *> args;
-    std::transform(call_node->getInputs().begin() + 1, call_node->getInputs().end(), std::back_inserter(args),
-                   [](ValueNode *n) { return n->GetVobj(); });
-    res = InferFuncResult(func, {args.begin() + 1, args.end()}, op, conf, true);
-  } else if (IsPrimitiveType<true>(Py_TYPE(infer_obj.ptr()))) {
-    MS_LOG(DEBUG) << "infer primitive " << std::string(py::str(infer_obj));
-    std::vector<PyObject *> list;
-    bool infer_fail = false;
-    for (size_t i = 1; !infer_fail && i < call_node->getInputs().size(); i++) {
-      AObject *p = call_node->input(i)->GetVobj();
-      PyObject *o = p ? p->GetPyObject().ptr() : nullptr;
-      list.push_back(o);
-      infer_fail = o == nullptr;
-    }
-    if (infer_fail) {
-      return false;
-    }
-    auto inst = mindspore::pijit::InferEngine::GetInstance();
-    bool is_abstract = false;
-    PyObject *ret = inst->InferPrimitive(infer_obj.ptr(), list, &is_abstract);
-    if (ret == nullptr) {
-      return false;
-    }
-    AObject::Type type = AObject::GetPyType(ret);
-    res = is_abstract && type != AObject::kTypeTensor ? AObject::MakeAObject(type) : AObject::Convert(ret);
-    Py_DECREF(ret);
-  } else {
-    return false;
-  }
-  if (res) {
-    call_node->SetVobj(res);
-  }
-  return false;
-}
-
 static bool InferGetCachePrim(CallNode *n, GraphBuilder *unused = nullptr) {
   // just return the first parameter of _get_cache_prim
   Graph *g = n->GetSubGraph();
@@ -239,170 +188,6 @@ static bool InferRegistryGet(CallNode *call_node, GraphBuilder *unused = nullptr
     return CallNodeReturnConst(call_node, g, call_node->GetVobj());
   }
   return false;
-}
-
-static bool InferPrimitive(CallNode *call_node, GraphBuilder *unused = nullptr) {
-  static const std::unordered_map<std::string, AObject::Type> not_ret_tensor_prim = {
-    {"Prim[_get_grad_op]<constexpr_prim=True>", AObject::kTypeMetaFuncGraph},
-    {"Prim[DType]", AObject::kTypeAnyValue},
-    {"Prim[Partial]<side_effect_propagate=1>", AObject::kTypeAnyValue},
-  };
-  Graph *sub_graph = call_node->GetSubGraph();
-  call_node->SetVobj(AObject::MakeAObject(AObject::kTypeTensor));
-  call_node->SetSubGraph(nullptr);
-  PyObject *prim = call_node->input(0)->GetVobj()->GetPyObject().ptr();
-  std::string prim_key = std::string(py::str(prim));
-  if (prim_key == "Prim[_get_grad_op]<constexpr_prim=True>") {
-    py::object grad_class = Utils::GetModuleAttr("mindspore._c_expression", "GradOperation_");
-    AbstractType *type = static_cast<AbstractType *>(AObject::Convert(grad_class));
-    AObject *res = type != nullptr ? type->BuildAbstractInstance({}, CALL_FUNCTION)
-                                   : AObject::MakeAObject(AObject::kTypeMetaFuncGraph);
-    call_node->SetVobj(res);
-    return false;
-  }
-
-  auto iter = not_ret_tensor_prim.find(prim_key);
-  if (iter != not_ret_tensor_prim.end()) {
-    call_node->SetVobj(AObject::MakeAObject(iter->second));
-  } else {
-    call_node->SetVobj(AObject::MakeAObject(AObject::kTypeTensor));
-  }
-
-  std::vector<PyObject *> list;
-  bool infer_fail = false;
-  for (size_t i = 1; !infer_fail && i < call_node->getInputs().size(); i++) {
-    AObject *p = call_node->input(i)->GetVobj();
-    if (p == nullptr) {
-      infer_fail = true;
-      break;
-    }
-    PyObject *o;
-    if (p->GetType() == AObject::kTypeTensor) {
-      o = static_cast<AbstractTensor *>(p)->GetTensor(true).ptr();
-    } else {
-      o = p->GetPyObject().ptr();
-    }
-    list.push_back(o);
-    infer_fail = o == nullptr;
-  }
-  if (infer_fail) {
-    return false;
-  }
-
-  auto inst = mindspore::pijit::InferEngine::GetInstance();
-  bool is_abstract = false;
-  PyObject *ret;
-  try {
-    ret = inst->InferPrimitive(prim, list, &is_abstract);
-  } catch (std::exception &e) {
-    MS_LOG(ERROR) << "infer primitive failed. reason:";
-    MS_LOG(ERROR) << e.what();
-    ret = nullptr;
-  }
-  if (ret == nullptr) {
-    return false;
-  }
-
-  AObject::Type type = AObject::GetPyType(ret);
-  AObject *type_info = is_abstract && type != AObject::kTypeTensor ? AObject::MakeAObject(type) : AObject::Convert(ret);
-  call_node->SetVobj(type_info);
-  Py_DECREF(ret);
-
-  ConstantInfo::CollectPrimitiveConstantInfo(call_node);
-  if (call_node->IsConstantValue()) {
-    return CallNodeReturnConst(call_node, sub_graph, call_node->GetVobj());
-  }
-  return false;
-}
-
-static bool InferGradOperation(CallNode *call_node, AObject::MindsporeFlag f) {
-  call_node->SetSubGraph(nullptr);
-  AObject *grad_func = AObject::MakeAObject(AObject::kTypeFunction);
-  grad_func->SetMsFlag(f);
-  call_node->SetVobj(grad_func);
-  py::object func = GraphBuilder::FindPyFunc(call_node->input(1)->GetVobj());
-  if (func.ptr() == nullptr) {
-    return false;
-  }
-  (void)pi_jit_should_compile(func, py::dict(), py::none());
-  auto jcr = GetJitCompileResults(PyFunction_GET_CODE(func.ptr()));
-  jcr->set_conf(std::make_shared<GraphJitConfig>(call_node->GetGraph()->Config()));
-  return false;
-}
-
-static bool InferMetaFunc(CallNode *call_node, GraphBuilder *unused = nullptr) {
-  call_node->SetSubGraph(nullptr);
-  const auto &vo = call_node->input(0)->GetVobj();
-  MS_EXCEPTION_IF_CHECK_FAIL(vo->GetType() != AObject::kTypeType, "class call is before ");
-  PyTypeObject *tp = vo->GetTypeObject();
-  if (IsGradOperationType<true>(tp)) {
-    // set grad flag
-    return InferGradOperation(call_node, AObject::MindsporeFlag::kMsFlagGradFunc);
-  } else if (IsVmapOperationType<true>(tp)) {
-    // set vmap flag
-    return InferGradOperation(call_node, AObject::MindsporeFlag::kMsFlagVmapFunc);
-  } else if (IsShardType<true>(tp)) {
-    // set shard flag
-    return InferGradOperation(call_node, AObject::MindsporeFlag::kMsFlagShardFunc);
-  }
-  return false;
-}
-
-/**
- * find first free variable in names from function
- */
-static py::object FindClosure(const py::object &o, const std::vector<std::string> &names, TracePtr *trace, bool strict,
-                              bool print) {
-  PyObject *func = o.ptr();
-  if (PyMethod_Check(func)) {
-    func = PyMethod_GET_FUNCTION(func);
-  }
-  if (!PyFunction_Check(func)) {
-    return py::object();
-  }
-  PyCodeWrapper co(PyFunction_GET_CODE(func));
-  PyObject *closure = PyFunction_GET_CLOSURE(func);
-  auto freevar_names = co.FreeVars();
-  Py_ssize_t i = PyTuple_GET_SIZE(freevar_names.ptr()) - 1;
-  bool find = false;
-  for (; i >= 0 && !find; --i) {
-    std::string name = PyUnicode_AsUTF8(PyTuple_GET_ITEM(freevar_names.ptr(), i));
-    find = std::find(names.begin(), names.end(), name) != names.end();
-  }
-  if (!find) {
-    return py::object();
-  }
-  Py_ssize_t idx = i + 1;
-  PyObject *cell = PyTuple_GET_ITEM(closure, idx);
-  PyObject *content = PyCell_GET(cell);
-  if (trace) {
-    TracePtr attr = CreateOpTrace(closure, LOAD_ATTR, 0, {*trace}, "", "__closure__", strict, print);
-    TracePtr cc = CreateOpTrace(cell, BINARY_SUBSCR, 0, {attr, std::make_shared<ConstTrace>(py::int_(idx).ptr(), -1)},
-                                "", "", strict, print);
-    *trace = CreateOpTrace(content, LOAD_ATTR, 0, {cc}, "", "cell_contents", strict, print);
-  }
-  return py::cast<py::object>(content);
-}
-
-/**
- * get decorated function from 'after_grad'
- * \param after_grad _Grad.__call__.<locals>.after_grad
- * \return decorated object
- */
-static py::object GetGradDecorated(const py::object &after_grad, TracePtr *trace, bool strict, bool print) {
-  MS_ASSERT(PyFunction_Check(after_grad.ptr()));
-  py::object decorated = FindClosure(after_grad, {"fn", "fn_"}, trace, strict, print);
-  MS_EXCEPTION_IF_CHECK_FAIL(decorated.ptr() != nullptr, "can't find decorated function 'fn' or 'fn_' from " +
-                                                           std::string(py::str(after_grad.ptr())));
-  if (!PyFunction_Check(decorated.ptr())) {
-    return decorated;
-  }
-  std::string decorated_name = PyUnicode_AsUTF8(reinterpret_cast<PyFunctionObject *>(decorated.ptr())->func_qualname);
-  if (decorated_name == "_Grad.__call__.<locals>.aux_fn") {
-    decorated = FindClosure(decorated, {"fn"}, trace, strict, print);
-    MS_EXCEPTION_IF_CHECK_FAIL(decorated.ptr() != nullptr, "can't find decorated function 'fn' from " + decorated_name);
-  }
-  return decorated;
 }
 
 static py::object DeleteGradSensArgs(const py::object &args, const py::object &kwargs) {
@@ -482,58 +267,6 @@ void HandleGradFuncCall(CallNode *call_node, AObject *decorated, bool sens_param
   call_node->SetInlineReason(InlineReason::kInlineGraphSupportedByMS);
 }
 
-static void HandleGradFunc(CallNode *call_node, const py::object &after_grad, TracePtr *trace) {
-  auto config = call_node->GetGraph()->Config();
-  bool strict = config.GetBoolConfig(GraphJitConfig::kStrictTrace);
-  bool print = config.GetBoolConfig(GraphJitConfig::kPrintGuard);
-  py::object decorated_func = GetGradDecorated(after_grad, trace, strict, print);
-  TracePtr ptr = *trace;
-  py::object grad = FindClosure(after_grad, {"grad_", "self"}, &ptr, strict, print);
-  MS_EXCEPTION_IF_CHECK_FAIL(grad.ptr() != nullptr,
-                             "can't find 'grad_' object from " + std::string(py::str(after_grad.ptr())));
-  bool sens_param = grad.attr("sens_param").ptr() == Py_True;
-  MS_LOG(DEBUG) << "infer function 'after_grad', has sens_param " << (sens_param ? "True" : "False");
-
-  auto guard = call_node->GetGraph()->GetGuard()->GetGuard();
-  guard->GuardOn(*trace, mindspore::pijit::GuardLevel::GEqual);
-  if (config.GetBoolConfig(GraphJitConfig::kGuardDetachObject)) {
-    (*trace)->Detach();
-  }
-  call_node->SetSubGraph(nullptr);
-  HandleGradFuncCall(call_node, AObject::Convert(decorated_func), sens_param, after_grad);
-}
-
-static bool InferGradFunc(CallNode *call_node, GraphBuilder *unused = nullptr) {
-  AObject *vo = call_node->input(0)->GetVobj();
-  vo->SetMsFlag(AObject::kMsFlagGradFunc);
-  py::object after_grad = vo->GetPyObject();
-  TracePtr trace = call_node->GetGraph()->TraceValueNode(call_node->input(0));
-  if (trace == nullptr) {
-    MS_LOG(DEBUG) << "too deep trace for guard";
-    vo->ClearMsFlag(AObject::kMsFlagGradFunc);
-    call_node->SetSubGraph(nullptr);
-    return false;
-  }
-  HandleGradFunc(call_node, after_grad, &trace);
-  return false;
-}
-
-static bool InferMSConstexpr(CallNode *call_node, GraphBuilder *unused = nullptr) {
-  Graph *g = call_node->GetSubGraph();
-  JustCallAndSetRes(call_node);
-
-  py::object cnst = call_node->GetVobj()->GetPyObject();
-  if (cnst.ptr() == nullptr) {
-    return false;
-  }
-  bool is_constexpr = CheckConstexpr(call_node->input(0)->GetVobj()->GetPyObject());
-  constexpr int max_guard_depth = 2;
-  if (is_constexpr || GuardConstCallNodeParam(call_node, g, max_guard_depth)) {
-    return CallNodeReturnConst(call_node, g, call_node->GetVobj());
-  }
-  return false;
-}
-
 static bool GuardBuiltinFunc(CallNode *call_node) {
   auto func_node = call_node->input(0);
   MS_EXCEPTION_IF_NULL(func_node);
@@ -572,14 +305,16 @@ static bool GuardBuiltinFunc(CallNode *call_node) {
     if (cur_input->GetOpcode() == LOAD_CONST) {
       continue;
     }
-    auto cur_input_wrapper = cur_input->abstract_wrapper();
-    if (cur_input_wrapper == nullptr) {
-      MS_LOG(WARNING) << "Failed to guard built-in function since wrapper is nullptr for " << cur_input->ToString();
-      return false;
-    }
-    if (!cur_input_wrapper->IsConstant()) {
-      MS_LOG(INFO) << "Failed to guard built-in function due to variable input " << cur_input->ToString();
-      return false;
+    if (cur_input->GetVobj()->GetType() == AObject::kTypeTensor) {
+      auto cur_input_wrapper = cur_input->abstract_wrapper();
+      if (cur_input_wrapper == nullptr) {
+        MS_LOG(WARNING) << "Failed to guard built-in function since wrapper is nullptr for " << cur_input->ToString();
+        return false;
+      }
+      if (!cur_input_wrapper->IsConstant()) {
+        MS_LOG(INFO) << "Failed to guard built-in function due to variable input " << cur_input->ToString();
+        return false;
+      }
     }
     if (guard_inputs && !graph->GuardValueNode(cur_input)) {
       return false;
@@ -638,8 +373,9 @@ bool InferBuiltinFuncOrMethod(CallNode *call_node, GraphBuilder *unused = nullpt
 }
 
 // dict.items()
-bool InferDictItems(CallNode *call_node, GraphBuilder *unused = nullptr) {
+bool InferDictItems(CallNode *call_node, GraphBuilder *builder) {
   MS_LOG(INFO) << "Start to handle dict items.";
+  MS_EXCEPTION_IF_NULL(builder);
   (void)JustCallAndSetRes(call_node);
   auto func = call_node->input(0);
   if (func->GetOpcode() == LOAD_ATTR) {
@@ -650,9 +386,8 @@ bool InferDictItems(CallNode *call_node, GraphBuilder *unused = nullptr) {
       MS_LOG(INFO) << "Wrapper is NULL for dict node: " << dict_node->ToString() << ", failed to infer dict.items()";
       return false;
     }
-    auto mind_builder = static_cast<MindGraphBuilder *>(unused);
     AbstractWrapperPtrList inputs_wrapper = {wrapper};
-    auto ret = mind_builder->FGBuilder()->AddNode(prim::kPrimDictItems, inputs_wrapper);
+    auto ret = builder->FGBuilder()->AddNode(prim::kPrimDictItems, inputs_wrapper);
     if (ret == nullptr) {
       MS_LOG(INFO) << "Handle dict items failed for node: " << call_node->ToString();
       return false;
@@ -664,61 +399,9 @@ bool InferDictItems(CallNode *call_node, GraphBuilder *unused = nullptr) {
   return false;
 }
 
-static bool InferTensorAsType(CallNode *call_node, GraphBuilder *unused = nullptr) {
-  ValueNode *self_node = GetBoundSelf(call_node);
-  bool is_not_method = call_node->input(0)->GetVobj()->GetType() != AObject::kTypeBoundMethod;
-  ValueNode *dtype_node = call_node->input(1 + is_not_method);
-
-  Graph *sub_graph = call_node->GetSubGraph();
-
-  py::object prim_cast = Utils::GetModuleAttr("mindspore.ops.functional", "_cast", false, true);
-
-  PyTypeObject *tp = Py_TYPE(prim_cast.ptr());
-  std::stringstream s;
-  s << (tp->tp_name ? tp->tp_name : "<unnamed>") << "<" << prim_cast.ptr() << ">";
-
-  ValueNode *prim_node = sub_graph->NewValueNode(AObject::Convert(prim_cast), LOAD_CONST, -1, {});
-
-  if (dtype_node->GetVobj()->GetType() == AObject::kTypeString &&
-      dtype_node->GetVobj()->GetPyObject().ptr() != nullptr) {
-    auto dtypeStr = py::cast<std::string>(dtype_node->GetVobj()->GetPyObject());
-    std::vector<std::string> under_line_dtype = {"bool", "int", "float", "list", "tuple"};
-    if (std::find(under_line_dtype.begin(), under_line_dtype.end(), dtypeStr) != under_line_dtype.end()) {
-      dtypeStr = dtypeStr + "_";
-    }
-    auto dtype_obj = Utils::GetModuleAttr("mindspore.common.dtype", dtypeStr, false, true);
-    if (dtype_obj.ptr() != nullptr) {
-      dtype_node = sub_graph->NewValueNode(AObject::Convert(dtype_obj), LOAD_CONST, -1, {});
-    }
-  }
-
-  std::vector<ValueNode *> cast_args = {prim_node, self_node, dtype_node};
-  CallNode *ret_node = sub_graph->NewCallNode(CALL_FUNCTION, cast_args.size() - 1, cast_args);
-  ret_node->SetGraph(sub_graph);
-  (void)InferPrimitive(ret_node);
-
-  sub_graph->GetTracedNodes().push_back(prim_node);
-  sub_graph->GetTracedNodes().push_back(ret_node);
-  sub_graph->SetRetVal(ret_node);
-
-  call_node->SetSubGraph(sub_graph);
-  call_node->SetVobj(ret_node->GetVobj());
-  call_node->SetInlineReason(InlineReason::kInline);
-  return true;
-}
-
-static void RecordBuiltinMethodSideEffect(Graph *graph, CallNode *call_node, const std::string &method_name,
-                                          bool trace_flag) {
+static void RecordBuiltinMethodSideEffect(Graph *graph, CallNode *call_node, const std::string &method_name) {
   const auto &side_effect = graph->GetSideEffect();
-  ValueNode *side_effect_node;
-  if (trace_flag) {
-    side_effect_node = call_node;
-  } else {
-    side_effect_node = graph->NewCallNode(call_node->GetOpcode(), call_node->GetOparg(), call_node->getInputs());
-    side_effect_node->SetVobj(AObject::MakeAObject(AObject::kTypeAnyValue));
-    graph->GetTracedNodes().push_back(side_effect_node);
-  }
-  side_effect->Record(side_effect_node, SideEffect::kBuiltinMethod, method_name);
+  side_effect->Record(call_node, SideEffect::kBuiltinMethod, method_name);
 }
 
 static bool InferListAppend(CallNode *call_node, GraphBuilder *parent) {
@@ -742,9 +425,11 @@ static bool InferListAppend(CallNode *call_node, GraphBuilder *parent) {
   parent->DoBuildOp({BUILD_LIST, size});
   auto new_node = parent->pop();
   auto old_node = self;
+  old_node->GetVobj()->SetNextVersion(new_node->GetVobj());
 
   // constant fold and set node info
-  auto builder = GraphBuilder::Creator(parent->root(), parent, nullptr, nullptr, parent->trace_flag());
+  // todo: this builder do not need to create.
+  auto builder = std::make_shared<GraphBuilder>(parent->root(), parent, nullptr, nullptr);
   Graph *sub_graph = builder->GetGraph();
   builder->DoLoadConst({LOAD_CONST, 0, py::object(py::none())});
   builder->DoReturn({RETURN_VALUE, 0});
@@ -760,7 +445,7 @@ static bool InferListAppend(CallNode *call_node, GraphBuilder *parent) {
   bool is_new_var = self->GetOpcode() == BUILD_LIST && replace_map.find(self) == replace_map.end();
   if (!is_new_var || is_referenced || self == new_element) {
     parent->GetGraph()->GetSideEffect()->data()->RecordModifiedAndReplacedNode(old_node, new_node);
-    RecordBuiltinMethodSideEffect(parent->GetGraph(), call_node, "append", parent->trace_flag());
+    RecordBuiltinMethodSideEffect(parent->GetGraph(), call_node, "append");
   }
   return true;
 }
@@ -799,13 +484,14 @@ static bool InferListMethodWithSideEffect(CallNode *call_node, GraphBuilder *par
   // update frame status and record side-effect
   auto new_node = parent->pop();
   auto old_node = self;
+  old_node->GetVobj()->SetNextVersion(new_node->GetVobj());
   bool is_referenced = false;
   parent->ReplaceAll(old_node, new_node, &is_referenced);
   const auto &replace_map = parent->GetGraph()->GetSideEffect()->data()->modified_and_replaced_map();
   bool is_new_var = self->GetOpcode() == BUILD_LIST && replace_map.find(self) == replace_map.end();
   if (!is_new_var || is_referenced || !is_safe_replace(call_node, parent)) {
     parent->GetGraph()->GetSideEffect()->data()->RecordModifiedAndReplacedNode(old_node, new_node);
-    RecordBuiltinMethodSideEffect(parent->GetGraph(), call_node, method_name, parent->trace_flag());
+    RecordBuiltinMethodSideEffect(parent->GetGraph(), call_node, method_name);
   }
   return true;
 }
@@ -815,7 +501,8 @@ static bool InferListReverse(CallNode *call_node, GraphBuilder *parent) {
     std::reverse(elements->begin(), elements->end());
   };
   auto return_none = [](CallNode *call_node, GraphBuilder *parent) {
-    auto builder = GraphBuilder::Creator(parent->root(), parent, nullptr, nullptr, parent->trace_flag());
+    // todo: this builder do not need to create.
+    auto builder = std::make_shared<GraphBuilder>(parent->root(), parent, nullptr, nullptr);
     CallNodeReturnConst(call_node, builder->GetGraph(), AObject::Convert(Py_None));
   };
   auto is_safe = [](CallNode *, GraphBuilder *) { return true; };
@@ -850,7 +537,8 @@ static bool InferListPop(CallNode *call_node, GraphBuilder *parent) {
   };
   auto return_element = [&pop_value](CallNode *call_node, GraphBuilder *parent) {
     MS_EXCEPTION_IF_NULL(pop_value);
-    auto builder = GraphBuilder::Creator(parent->root(), parent, nullptr, nullptr, parent->trace_flag());
+    // todo: this builder do not need to create.
+    auto builder = std::make_shared<GraphBuilder>(parent->root(), parent, nullptr, nullptr);
     auto sub_graph = builder->GetGraph();
     sub_graph->SetRetVal(pop_value);
     call_node->SetSubGraph(sub_graph);
@@ -886,7 +574,8 @@ static bool InferListRemove(CallNode *call_node, GraphBuilder *parent) {
     (void)std::remove(elements->begin(), elements->end(), target);
   };
   auto return_none = [](CallNode *call_node, GraphBuilder *parent) {
-    auto builder = GraphBuilder::Creator(parent->root(), parent, nullptr, nullptr, parent->trace_flag());
+    // todo: this builder do not need to create.
+    auto builder = std::make_shared<GraphBuilder>(parent->root(), parent, nullptr, nullptr);
     CallNodeReturnConst(call_node, builder->GetGraph(), AObject::Convert(Py_None));
   };
   auto is_safe = [](CallNode *, GraphBuilder *) { return true; };
@@ -931,7 +620,8 @@ static bool InferDictPop(CallNode *call_node, GraphBuilder *parent) {
   }
 
   // constant fold and set node info
-  auto builder = GraphBuilder::Creator(parent->root(), parent, nullptr, nullptr, parent->trace_flag());
+  // todo: this builder do not need to create.
+  auto builder = std::make_shared<GraphBuilder>(parent->root(), parent, nullptr, nullptr);
   Graph *sub_graph = builder->GetGraph();
   builder->DoLoadConst({LOAD_CONST, 0, value});
   builder->DoReturn({RETURN_VALUE, 0});
@@ -947,7 +637,7 @@ static bool InferDictPop(CallNode *call_node, GraphBuilder *parent) {
   bool is_new_var = self->GetOpcode() == BUILD_MAP && replace_map.find(self) == replace_map.end();
   if (!is_new_var || is_referenced) {
     parent->GetGraph()->GetSideEffect()->data()->RecordModifiedAndReplacedNode(old_node, new_node);
-    RecordBuiltinMethodSideEffect(parent->GetGraph(), call_node, "pop", parent->trace_flag());
+    RecordBuiltinMethodSideEffect(parent->GetGraph(), call_node, "pop");
   }
   return true;
 }
@@ -955,47 +645,6 @@ static bool InferDictPop(CallNode *call_node, GraphBuilder *parent) {
 static bool SetForbiddenFuncInfo(CallNode *call_node, GraphBuilder *unused = nullptr) {
   SetCallResType<AObject::kTypeAnyValue>(call_node);
   call_node->SetInlineReason(InlineReason::kInlineFunc_Type_Unsupported);
-  return false;
-}
-
-template <bool force_ms_api>
-bool InferMsApiFunc(CallNode *call_node, GraphBuilder *unused = nullptr) {
-  Graph *sub_graph = call_node->GetSubGraph();
-  SetCallResType<AObject::kTypeAnyValue>(call_node);
-  if (call_node->input(0)->GetVobj() == nullptr || call_node->input(0)->GetVobj()->GetPyObject().ptr() == nullptr) {
-    return false;
-  }
-
-  py::object callable_object = call_node->input(0)->GetVobj()->GetPyObject();
-  std::vector<py::object> args;
-  std::transform(call_node->getInputs().begin() + 1, call_node->getInputs().end(), std::back_inserter(args),
-                 [](ValueNode *n) { return n->GetVobj() ? n->GetVobj()->GetPyObject() : py::object(); });
-  auto pair = Utils::PackCallStackArgs(args, call_node->GetOpcode());
-  if (pair.first.ptr() == nullptr) {
-    return false;
-  }
-  PyTypeObject *callable_type = Py_TYPE(callable_object.ptr());
-
-  AObject *info;
-
-  bool enable_func_graph_eval = force_ms_api || kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kEnableMsApiInfer);
-  if (enable_func_graph_eval) {
-    py::object res = EvalMSAPIValue(callable_object, pair.first, pair.second);
-    info = AObject::Convert(res);
-  } else if (IsPrimitiveType<true>(callable_type) || IsPrimitiveFunctionType<true>(callable_type)) {
-    call_node->SetSubGraph(sub_graph);
-    return InferPrimitive(call_node);
-  } else {
-    info = InferFuncResult(callable_object, pair.first, pair.second, call_node->GetGraph()->Config(), true);
-  }
-
-  call_node->SetVobj(info);
-  if (info->GetPyObject().ptr() != nullptr) {
-    call_node->input(0)->GetVobj()->SetMsFlag(AObject::kMsFlagStandardFunc);
-  }
-  if (call_node->IsConstantValue()) {
-    return CallNodeReturnConst(call_node, sub_graph, call_node->GetVobj());
-  }
   return false;
 }
 
@@ -1028,6 +677,13 @@ static void TensorAssignValue(CallNode *call_node, GraphBuilder *parent, ValueNo
   bool is_referenced = false;
   parent->ReplaceAll(old_node, new_node, &is_referenced);
   parent->ReplaceAll(call_node, new_node, &is_referenced);
+  is_referenced = IsReferencedVariable(old_value);
+  MS_LOG(INFO) << "check the node is referenced: " << is_referenced << " [" << old_value->ToString();
+  if (!is_referenced) {
+    // a new local variable and it's not referenced, modify operations is not side effect
+    // just replaced old_value by new_value and remove modify operations
+    return;
+  }
   parent->GetGraph()->GetSideEffect()->data()->RecordModifiedAndReplacedNode(old_node, new_node);
   parent->GetGraph()->GetSideEffect()->Record(call_node, type, name);
 }
@@ -1049,11 +705,8 @@ bool InferPrimitiveAssign(CallNode *call_node, GraphBuilder *parent) {
   return true;
 }
 
-bool InferTensorSetItem(CallNode *call_node, GraphBuilder *parent) {
+bool InferTensorSetItem(CallNode *call_node, GraphBuilder *builder) {
   SetForbiddenFuncInfo(call_node);
-  if (!parent->trace_flag()) {
-    return false;
-  }
   bool is_not_method = false;
   ValueNode *self = GetSelfFromKnownMethod(call_node, &is_not_method);
   if (self == nullptr) {
@@ -1064,24 +717,28 @@ bool InferTensorSetItem(CallNode *call_node, GraphBuilder *parent) {
   }
 
   // parser setitem
-  constexpr auto kMeTaModule = "mindspore.ops.composite.multitype_ops";
-  auto meta = py::module::import(kMeTaModule).attr("setitem").cast<mindspore::MetaFuncGraphPtr>();
+  constexpr auto meta_module = "mindspore.ops.composite.multitype_ops";
+  auto meta = py::module::import(meta_module).attr("setitem").cast<mindspore::MetaFuncGraphPtr>();
 
-  auto fg = dynamic_cast<MindGraphBuilder *>(parent);
-  AbstractWrapperPtrList args{self->abstract_wrapper()};
+  std::vector<ValueNode *> args = {self};
   for (size_t i = 1 + is_not_method; i < call_node->getInputs().size(); ++i) {
-    args.push_back(call_node->input(i)->abstract_wrapper());
+    args.push_back(call_node->input(i));
   }
-  auto abs = fg->FGBuilder()->AddNode(meta, args);
+  auto abs = builder->FGBuilder()->AddNode(meta, builder->HandleInputArgs(std::move(args)));
   if (abs == nullptr) {
     return false;
   }
   call_node->set_abstract_wrapper(abs);
   call_node->SetVobj(AObject::Convert(abs));
 
-  TensorAssignValue(call_node, parent, self, call_node, SideEffect::kBuiltinMethod, "__setitem__");
+  TensorAssignValue(call_node, builder, self, call_node, SideEffect::kBuiltinMethod, "__setitem__");
 
   call_node->SetInlineReason(InlineReason::kInlineFuncSpecialize);
+  return true;
+}
+
+bool InferTensorIsContiguous(CallNode *call_node, GraphBuilder *) {
+  CallNodeReturnConst(call_node, call_node->GetSubGraph(), AObject::Convert(Py_False));
   return true;
 }
 
@@ -1112,38 +769,12 @@ enum FuncKey {
   FUNC_KEY_PRIMITIVE_ASSIGN,      // mindspore.ops.assign, Primitive("Assign")
   FUNC_KEY_TENSOR_SETITEM,        // Tensor.__setitem__
   FUNC_KEY_TENSOR_ASSIGN_VALUE,   // Tensor.assign_value
+  FUNC_KEY_TENSOR_IS_CONTIGUOUS,  // Tensor.is_contiguous
   FUNC_KEY_COUNT,
 };
 static FuncKey FindFuncKey(const py::object &callable);
 
 static const std::unordered_map<FuncKey, InferFunc> infer_func_map = {
-  {FUNC_KEY_PIJIT_CONSTEXPR, JustCallAndSetRes},
-  {FUNC_KEY_PIJIT_FORBIDDEN, SetForbiddenFuncInfo},
-  {FUNC_KEY_BUILTIN_FUNC, InferBuiltinFuncOrMethod},
-  {FUNC_KEY_LIST_APPEND, InferListAppend},
-  {FUNC_KEY_LIST_POP, InferListPop},
-  {FUNC_KEY_LIST_REMOVE, InferListRemove},
-  {FUNC_KEY_LIST_REVERSE, InferListReverse},
-  {FUNC_KEY_DICT_POP, InferDictPop},
-  {FUNC_KEY_PRIMITIVE, InferPrimitive},
-  {FUNC_KEY_META_FUNCG_RAPH, InferMetaFunc},
-  {FUNC_KEY_PSJIT_CODE, InferMsApiFunc<true>},
-  {FUNC_KEY_CONSTEXPR, InferMSConstexpr},
-  {FUNC_KEY_PRIMEXPR, InferMSConstexpr},
-  {FUNC_KEY_GET_CACHE_PRIM, InferGetCachePrim},
-  {FUNC_KEY_REGISTRY_GET, InferRegistryGet},
-  {FUNC_KEY_TENSOR_ASTYPE, InferTensorAsType},
-  {FUNC_KEY_GRAD_OPERATIONS_CODE, InferGradFunc},
-  {FUNC_KEY_PSJIT_CONVERTMAP, InferConvertMap},
-  {FUNC_KEY_GRAPH_CELL, SetCallResType<AObject::kTypeTensor>},
-  {FUNC_KEY_MS_API, InferMsApiFunc<false>},
-  {FUNC_KEY_MAPPING_GET, InferMappingGet},
-  {FUNC_KEY_PRIMITIVE_ASSIGN, InferPrimitiveAssign},
-  {FUNC_KEY_TENSOR_SETITEM, InferTensorSetItem},
-  {FUNC_KEY_TENSOR_ASSIGN_VALUE, InferTensorAssignValue},
-};
-
-static const std::unordered_map<FuncKey, InferFunc> mind_infer_func_map = {
   {FUNC_KEY_PIJIT_CONSTEXPR, JustCallAndSetRes},
   {FUNC_KEY_PIJIT_FORBIDDEN, SetForbiddenFuncInfo},
   {FUNC_KEY_LIST_APPEND, InferListAppend},
@@ -1159,13 +790,13 @@ static const std::unordered_map<FuncKey, InferFunc> mind_infer_func_map = {
   {FUNC_KEY_PRIMITIVE_ASSIGN, InferPrimitiveAssign},
   {FUNC_KEY_TENSOR_SETITEM, InferTensorSetItem},
   {FUNC_KEY_TENSOR_ASSIGN_VALUE, InferTensorAssignValue},
+  {FUNC_KEY_TENSOR_IS_CONTIGUOUS, InferTensorIsContiguous},
 };
 
-InferFunc FindInferFunc(const py::object &callable, bool trace_flag) {
+InferFunc FindInferFunc(const py::object &callable) {
   FuncKey k = FindFuncKey(callable);
-  const auto &map = trace_flag ? mind_infer_func_map : infer_func_map;
-  auto iter = map.find(k);
-  if (iter != map.end()) {
+  auto iter = infer_func_map.find(k);
+  if (iter != infer_func_map.end()) {
     return iter->second;
   }
   return nullptr;
@@ -1296,6 +927,16 @@ static FuncKey FindFuncKey(const py::object &callable) {
   return res;
 }
 
+bool IsPSJitFunction(const py::object &callable_info) {
+  if (callable_info.ptr() == nullptr) {
+    return false;
+  }
+  if (FindFuncKey(callable_info) == FUNC_KEY_PSJIT_CODE) {
+    return true;
+  }
+  return false;
+}
+
 bool CheckJitConstexpr(const py::object &func) {
   if (func.ptr() == nullptr) {
     return false;
@@ -1303,8 +944,6 @@ bool CheckJitConstexpr(const py::object &func) {
   FuncKey k = KeyFinderFuncId(func);
   return k == FUNC_KEY_PIJIT_CONSTEXPR;
 }
-
-static bool CheckConstexpr(const py::object &func) { return KeyFinderPrimitive(func) == FUNC_KEY_CONSTEXPR; }
 
 bool CheckMSConstexpr(const py::object &func) {
   if (func.ptr() == nullptr) {
@@ -1320,6 +959,81 @@ bool CheckBuiltinFuncOrMethod(const py::object &func) {
   }
   FuncKey k = KeyFinderFuncId(func);
   return k == FUNC_KEY_BUILTIN_FUNC;
+}
+
+static bool IsNewVariable(ValueNode *node) {
+  Opcode op(node->GetOpcode());
+  if ((op == BINARY_SUBSCR || op.IsBinaryMath()) && node->input(0)->GetVobj()->GetType() == AObject::kTypeTensor) {
+    // specialization of Tensor
+    return true;
+  }
+  if (op.IsBuildOp() || (op.IsBinaryMath() && op.MayDelete()) || op.IsUnaryMath()) {
+    // builtin type create, binary math without inplace, unary math
+    return true;
+  }
+  if (!op.IsCall()) {
+    // unknown source or operations
+    return false;
+  }
+  AObject::Type callable_type = node->input(0)->GetVobj()->GetType();
+  AObject::Type result_type = node->GetVobj() ? node->GetVobj()->GetType() : AObject::kTypeAnyValue;
+  if (callable_type == AObject::kTypeType) {
+    // type call, create a new object
+    return true;
+  }
+  if (node->GetType() != ValueNode::Call) {
+    return false;
+  }
+  CallNode *cn = static_cast<CallNode *>(node);
+  if (cn->GetSubGraph() != nullptr && cn->GetSubGraph()->GetRetVal() != nullptr) {
+    // resusive check function return value
+    return IsNewVariable(cn->GetSubGraph()->GetRetVal());
+  }
+  if (result_type == AObject::kTypeTensor) {
+    // tensor operations always create a new Tensor
+    return true;
+  }
+  return false;
+}
+
+static bool CheckReferenced(Graph *graph, ValueNode *target) {
+  for (auto maybe_ref : graph->GetTracedNodes()) {
+    Opcode op(maybe_ref->GetOpcode());
+    if (op.MayDelete()) {
+      continue;  // only read the variable
+    }
+    const auto &used = maybe_ref->getInputs();
+    if (used.end() == std::find(used.begin(), used.end(), target)) {
+      continue;  // not used target
+    }
+    if (op.IsBuildOp()) {
+      // the target is a elements of container, check container reference and liveness when optimize sideeffect
+      return true;
+    }
+    if (maybe_ref->GetType() == ValueNode::Call) {
+      Graph *sub_graph = static_cast<CallNode *>(maybe_ref)->GetSubGraph();
+      if (sub_graph == nullptr || CheckReferenced(sub_graph, target)) {
+        return true;
+      }
+      continue;
+    }
+    return true;
+  }
+  return false;
+}
+
+bool IsReferencedVariable(ValueNode *target) {
+  if (!IsNewVariable(target)) {
+    return true;
+  }
+  MS_EXCEPTION_IF_NULL(target->GetGraph());
+  const auto &replace_map = target->GetGraph()->GetSideEffect()->data()->modified_and_replaced_map();
+  if (replace_map.find(target) != replace_map.end()) {
+    // object is a temporary node of side effect result. Maybe escaped
+    return true;
+  }
+  // NOTE: it's temporary solution before object reference graph completed
+  return CheckReferenced(target->GetGraph(), target);
 }
 
 }  // namespace pijit

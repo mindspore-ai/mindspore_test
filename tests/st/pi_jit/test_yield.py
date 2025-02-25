@@ -15,16 +15,9 @@
 """test yield bytecode implement"""
 import sys
 import pytest
-import mindspore.context as context
 from tests.mark_utils import arg_mark
-from mindspore import Tensor, jit, JitConfig
-from mindspore._c_expression import update_pijit_default_config, get_code_extra
-
-
-@pytest.fixture(autouse=True)
-def skip_if_python_version_too_high():
-    if sys.version_info >= (3, 11):
-        pytest.skip("Skipping tests on Python 3.11 and higher.")
+from mindspore import jit
+from mindspore._c_expression import get_code_extra
 
 
 @pytest.mark.skipif(sys.version_info[:2] == (3,7), reason="not support py37 setup loop bytecode")

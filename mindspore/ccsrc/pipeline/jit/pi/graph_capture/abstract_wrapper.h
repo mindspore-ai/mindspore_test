@@ -28,9 +28,23 @@
 namespace py = pybind11;
 
 namespace mindspore {
+namespace pijit {
+constexpr auto kPijitNamedtupleType = "pijit_namedtuple_type";
+
 class AbstractWrapper;
 using AbstractWrapperPtr = std::shared_ptr<AbstractWrapper>;
 using AbstractWrapperPtrList = std::vector<AbstractWrapperPtr>;
+
+struct GradInfo {
+  bool get_all_;
+  bool get_by_list_;
+  bool sens_param_;
+  bool get_by_position_;
+  bool has_aux_;
+  bool get_value_;
+  bool return_ids_;
+  bool merge_forward_;
+};
 
 class AbstractWrapper {
  public:
@@ -38,6 +52,19 @@ class AbstractWrapper {
   std::string ToString() const;
   AbstractBasePtr abstract() const { return abstract_; }
   bool IsConstant() const;
+  bool IsDict() const;
+
+  // Throw exception when abstract in wrapper has no size.
+  size_t size() const;
+
+  // return -1 when abstract in wrapper has no size.
+  int TryToGetSize() const;
+
+  std::vector<py::object> GetDictKeysObject() const;
+
+  GradInfo grad_info() const { return grad_info_; }
+  void UpdateGradInfo(const ValuePtr &meta);
+  std::vector<py::object> GetSliceInputsPyObject() const;
 
   static py::object ConvertToPyObject(const AbstractWrapperPtr &wrapper);
   static py::object ConvertToPyObject(const AbstractBasePtr &abstract);
@@ -46,7 +73,9 @@ class AbstractWrapper {
 
  private:
   AbstractBasePtr abstract_;
+  GradInfo grad_info_;
 };
+}  // namespace pijit
 }  // namespace mindspore
 
 #endif  // MINDSPORE_PI_JIT_GRAPH_CAPTURE_ABSTRACT_WRAPPER_H

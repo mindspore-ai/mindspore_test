@@ -80,29 +80,7 @@ class KernelActor : public DebugAwareActor {
               const AID &memory_manager_aid, const AID *debug_aid, const AID *recorder_aid,
               GraphExecutionStrategy strategy, const std::set<size_t> &modifiable_ref_input_indexes,
               const std::set<size_t> &modifiable_ref_output_indexes,
-              const KernelTransformType &type = KernelTransformType::kKernelActor)
-      : DebugAwareActor(name, type, recorder_aid, memory_manager_aid, debug_aid, nullptr),
-        kernel_(kernel),
-        is_dynamic_value_(false),
-        is_dynamic_type_(false),
-        has_dynamic_(false),
-        enable_async_infer_(false),
-        kernel_info_(nullptr),
-        kernel_mod_(nullptr),
-        somas_info_(nullptr),
-        real_input_num_(0),
-        strategy_(strategy),
-        modifiable_ref_input_indexes_(modifiable_ref_input_indexes),
-        modifiable_ref_output_indexes_(modifiable_ref_output_indexes),
-        is_launch_skipped_(false),
-        inputs_continuous_memory_(false) {
-    (void)device_contexts_.emplace_back(device_context);
-    is_dynamic_shape_ = common::AnfAlgo::IsDynamicShape(kernel_) || common::AnfAlgo::IsDynamicSequence(kernel_);
-
-    kernel_async_infer_aid_ = KernelAsyncInferActor::GetInstance()->GetAID();
-    kernel_async_resize_aid_ = KernelAsyncResizeActor::GetInstance()->GetAID();
-    kernel_async_launch_aid_ = KernelAsyncLaunchActor::GetInstance()->GetAID();
-  }
+              const KernelTransformType &type = KernelTransformType::kKernelActor);
 
   ~KernelActor() override = default;
 
@@ -128,11 +106,11 @@ class KernelActor : public DebugAwareActor {
   void set_enable_async_infer(bool enable_async_infer) { enable_async_infer_ = enable_async_infer; }
 
   // Really do infer shape and update kernel tensor shape.
-  void ExecuteInferShapeTask(OpContext<DeviceTensor> *const context);
+  virtual void ExecuteInferShapeTask(OpContext<DeviceTensor> *const context);
   // Really do resize kernel mod and update new size into output and workspace kernel tensors.
-  void ExecuteResizeKernelModTask(OpContext<DeviceTensor> *const context);
+  virtual void ExecuteResizeKernelModTask(OpContext<DeviceTensor> *const context);
   // Really do launch kernel with memory allocate and free.
-  void ExecuteLaunchKernelTask(OpContext<DeviceTensor> *const context);
+  virtual void ExecuteLaunchKernelTask(OpContext<DeviceTensor> *const context);
 
   void set_stream_send_actor(KernelActor *stream_send_actor) { stream_send_actor_ = stream_send_actor; }
 
@@ -155,6 +133,10 @@ class KernelActor : public DebugAwareActor {
   // Reset state for UCE.
   void ResetState() override;
 
+  const std::vector<DeviceTensor *> &workspace_device_tensors() { return workspace_device_tensors_; }
+  const std::vector<DeviceTensor *> &output_device_tensors() { return output_device_tensors_; }
+  const std::vector<DeviceTensor *> &input_device_tensors() { return input_device_tensors_; }
+
  protected:
   void Init() override;
   void Run(OpContext<DeviceTensor> *const context) override;
@@ -166,7 +148,12 @@ class KernelActor : public DebugAwareActor {
   virtual void ProcessMultiStreamBeforeKernelLaunch(OpContext<DeviceTensor> *const context);
   // Execute kernel actor multi stream produre to make sure safety of memory after kernel launch.
   virtual void ProcessMultiStreamAfterKernelLaunch(OpContext<DeviceTensor> *const context);
-
+  // Handle the ref op, set input addr to outpu addr.
+  virtual void UpdateRefDeviceAddress(OpContext<DeviceTensor> *const context, bool increase_ref_count);
+  // Update the output ref count of graph output kernel.
+  virtual void UpdateGraphOutputRefCount(OpContext<DeviceTensor> *const context);
+  // Update the input device tensors to the memory free list.
+  virtual void UpdateMemoryFreeList(OpContext<DeviceTensor> *const context);
   // Execute infer shape, resize and launch kernel by runtime pipeline which executes by KernelAsyncInferActor,
   // KernelAsyncResizeActor and KernelAsyncLaunchActor.
   void RunWithMultiPipeline(OpContext<DeviceTensor> *const context);
@@ -227,6 +214,10 @@ class KernelActor : public DebugAwareActor {
   // scenarios, so it needs to be copied from the input data to real data that kernel launch needs.
   // And if the kernel has a ref input and output, the ptr should be set into the output device addresses.
   std::vector<DeviceTensorPtr> copy_input_device_tensors_;
+  // This vector record the heter input device tensor which is the source of copy input device tensors, and the
+  // size of this vector is same to copy input device tensors. It is used to free memory of input, when the pre
+  // input is not empty, and the input should be free, the pre device tensors should be free too.
+  std::vector<DeviceTensor *> pre_input_device_tensors_;
   std::map<size_t, std::pair<DeviceTensorPtr, std::pair<const DeviceContext *, std::vector<DeviceTensor *>>>>
     copy_output_device_tensors_;
   // Real data info that kernel launch needs, used to check the consistency of received input data.
@@ -237,6 +228,11 @@ class KernelActor : public DebugAwareActor {
   std::vector<DeviceTensor *> memory_alloc_list_;
   // input + output + workspace
   std::vector<DeviceTensor *> memory_free_list_;
+
+  std::vector<size_t> input_free_index_;
+  std::vector<size_t> output_free_index_;
+  std::vector<DeviceTensor *> new_memory_free_list_;
+
   // depend shape input list
   std::vector<bool> depend_shape_input_list_;
   // The device tensor of external reference is not the real data of this kernel, but need add to the
@@ -256,7 +252,7 @@ class KernelActor : public DebugAwareActor {
   // Flag for indicating if current actor is multi-thread safe, which was generate at compile time.
   bool is_multi_stream_safe_{false};
 
- private:
+ protected:
   friend class GraphScheduler;
   friend class ControlNodeScheduler;
   friend class InlineControlFlowScheduler;
@@ -271,7 +267,6 @@ class KernelActor : public DebugAwareActor {
   void InitOutputInfo();
   void InitWorkspaceInfo();
   void InitMultiStreamInfo();
-  void InitShapeDependInfo();
   void InitIsMonadInput();
 
   // Fetch the device tensor for launch.
@@ -293,6 +288,7 @@ class KernelActor : public DebugAwareActor {
 
   // Record mem info, because async send may free device info.
   void SetMemInfoForRdr();
+  void SetShapeDependInfo();
   void DispatchDebugActor(OpContext<DeviceTensor> *const context);
   bool LaunchKernelWithDebug(OpContext<DeviceTensor> *const context);
 
@@ -331,9 +327,13 @@ class KernelActor : public DebugAwareActor {
   // launch this RealMakeTuple.
   bool skip_launch_shape_related_op_{false};
 
-  bool is_output_kernel_{false};
+  // If the kernel is output of kernel graph, the ref count of output user should be add. This element record the output
+  // index to the ref count size.
+  mindspore::HashMap<size_t, size_t> increase_ref_count_size_;
+  std::vector<bool> is_output_kernel_;
   std::vector<bool> is_monad_input_;
   bool is_mc2_kernel_{false};
+  bool *is_enable_{nullptr};
 };
 
 using KernelActorPtr = std::shared_ptr<KernelActor>;

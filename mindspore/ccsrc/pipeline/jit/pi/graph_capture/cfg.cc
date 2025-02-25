@@ -135,6 +135,13 @@ std::string Block::Dump(bool dump_instr) const {
     os << bb->id() << " ";
   }
   os << "}";
+  if (is_loop_head()) {
+    os << ", loop_body={";
+    for (auto bb : loop_body_bbs_) {
+      os << bb->id() << " ";
+    }
+    os << "}";
+  }
   if (IsTrackBreak()) {
     os << " Break";
   }
@@ -170,6 +177,13 @@ Block *Block::Clone(CFG *cfg) {
     new_bb->AddInstr(new_instr);
   }
   return new_bb;
+}
+
+void Block::set_loop_head(Block *block) {
+  if (block && block->is_loop_head()) {
+    block->add_loop_body(this);
+    loop_head_bb_ = block;
+  }
 }
 
 bool BBIdCmp::operator()(const Block *lhs, const Block *rhs) const { return (lhs->id() < rhs->id()); }
@@ -319,12 +333,13 @@ bool CFG::BuildCFG() {
   return true;
 }
 
-static bool VisitBlock(Block *blk, std::vector<bool> *reach, std::vector<bool> *mark, int *loop_count) {
+static bool VisitBlock(Block *blk, std::vector<bool> *reach, std::vector<bool> *mark,
+                       std::vector<Block *> *loop_heads) {
   if (reach->operator[](blk->id())) {
     if (mark->operator[](blk->id()) && !blk->is_loop_head()) {
       blk->set_is_loop_head(true);
       blk->set_is_loop_body(true);
-      (*loop_count)++;
+      loop_heads->emplace_back(blk);
     }
     return blk->is_loop_body();
   }
@@ -335,12 +350,25 @@ static bool VisitBlock(Block *blk, std::vector<bool> *reach, std::vector<bool> *
   mark->operator[](blk->id()) = true;
   auto iter = blk->succ_bbs().begin();
   for (; iter != blk->succ_bbs().end(); ++iter) {
-    loop_body |= VisitBlock(*iter, reach, mark, loop_count);
+    loop_body |= VisitBlock(*iter, reach, mark, loop_heads);
+  }
+  // If the current basic block (BB) is part of the loop body but not the loop header, and among the successor BBs of
+  // the current BB there exists a BB with no successors, then that BB can also be considered part of the loop body.
+  if (loop_body && !blk->is_loop_head()) {
+    iter = blk->succ_bbs().begin();
+    for (; iter != blk->succ_bbs().end(); ++iter) {
+      if ((*iter)->succ_bbs().empty()) {
+        (*iter)->set_is_loop_body(loop_body);
+      }
+    }
   }
   mark->operator[](blk->id()) = false;
   if (blk->is_loop_head()) {
-    (*loop_count)--;
-    return (*loop_count) != 0;
+    loop_heads->pop_back();
+    return !loop_heads->empty();
+  }
+  if (!loop_heads->empty()) {
+    blk->set_loop_head(loop_heads->back());
   }
   blk->set_is_loop_body(loop_body);
   return loop_body;
@@ -352,8 +380,8 @@ void CFG::MarkDeadBB() {
   }
   std::vector<bool> reach(bb_pool_.size());
   std::vector<bool> mark(bb_pool_.size());
-  int loop_count = 0;
-  VisitBlock(bb_pool_[0].get(), &reach, &mark, &loop_count);
+  std::vector<Block *> loop_heads;
+  VisitBlock(bb_pool_[0].get(), &reach, &mark, &loop_heads);
   for (const auto &i : bb_pool_) {
     if (reach[i->id()]) {
       continue;

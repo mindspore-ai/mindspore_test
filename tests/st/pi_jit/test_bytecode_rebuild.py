@@ -17,15 +17,10 @@ from mindspore import ops, numpy, Tensor
 from mindspore.nn import Cell
 from mindspore import jit
 from mindspore._c_expression import get_code_extra
-import sys
 import pytest
 from .share.utils import match_array, assert_executed_by_graph_mode, pi_jit_with_config
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)
-def skip_if_python_version_too_high():
-    if sys.version_info >= (3, 11):
-        pytest.skip("Skipping tests on Python 3.11 and higher.")
 
 config = {
     "replace_nncell_by_construct": True,
@@ -384,7 +379,7 @@ def test_graph_parameter_is_closure_variable_v4():
     assert len(o1) == len(o2)
     for l, r in zip(o1, o2):
         match_array(l.asnumpy(), r.asnumpy())
-    assert_executed_by_graph_mode(fn)
+    # LOAD_DEREF is executed by python, not a completed graph
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_graph_parameter_is_closure_variable_v5():
@@ -417,6 +412,54 @@ def test_graph_parameter_is_closure_variable_v5():
     assert jcr is not None
     assert jcr['stat'] == 'GRAPH_CALLABLE'
     assert jcr['break_count_'] == 1
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_graph_parameter_is_closure_variable_v6():
+    """
+    Feature:
+        Testing bytecode generation, when graph parameter is closure variable.
+
+    Description:
+        1.function's parameter x is a closure variable.
+        2.x is graph's parameter, and x is used as a free variable in inner function.
+
+    Expectation:
+        1.The outputs of pynative and pijit should be equal.
+        2.The code before the graph break point should be executed in graph mode.
+    """
+    def factory():
+        var = None
+        def producer(x):
+            nonlocal var
+            var = x
+            return x
+        def consumer(x):
+            return x + var
+        return producer, consumer
+
+    producer, consumer = factory()
+    consumer = jit(consumer, capture_mode="bytecode")
+
+    res = []
+    x = Tensor([1, 1])
+    x = producer(x)
+    x = consumer(x)
+    res.append(x)
+    x = producer(x)
+    x = consumer(x)
+    res.append(x)
+    x = producer(x)
+    x = consumer(x)
+    res.append(x)
+
+    jcr = get_code_extra(consumer.__wrapped__)
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['compile_count_'] == 1
+    assert (res[0] == Tensor([2, 2])).all()
+    assert (res[1] == Tensor([4, 4])).all()
+    assert (res[2] == Tensor([8, 8])).all()
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')

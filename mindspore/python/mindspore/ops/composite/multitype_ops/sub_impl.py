@@ -110,7 +110,8 @@ def _cootensor_sub_tensor(x, y):
     return F.tensor_scatter_add(-y, x.indices, x.values)
 
 
-@sub.register_default()
+# pylint: disable=protected-access
+@sub._register_default()
 def default_sub(x, y):
     """Default function for sub."""
     return x - y

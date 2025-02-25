@@ -1,4 +1,3 @@
-import sys  
 import pytest     
 import numpy as onp
 from mindspore import Tensor, jit, context
@@ -7,10 +6,6 @@ import mindspore.nn as nn
 from .share.utils import match_array
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 @jit(capture_mode="bytecode")
 def sum_args(a, b=1):

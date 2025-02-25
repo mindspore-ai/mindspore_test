@@ -244,7 +244,8 @@ std::string ValueNamedTuple::ToString() const {
 }
 
 bool ValueNamedTuple::ContainsValueAny() const {
-  return std::any_of(keys_.cbegin(), keys_.cend(), [](const ValuePtr &value) { return value->ContainsValueAny(); });
+  return ValueSequence::ContainsValueAny() ||
+         std::any_of(keys_.cbegin(), keys_.cend(), [](const ValuePtr &value) { return value->ContainsValueAny(); });
 }
 
 std::size_t ValueSlice::hash() const {

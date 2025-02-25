@@ -13,24 +13,15 @@
 # limitations under the License.
 # ============================================================================
 """Test subgraph call with one stage"""
-import sys  
-import pytest 
 import numpy as np
 import mindspore.nn as nn
 from mindspore import Tensor, context
 from tests.mark_utils import arg_mark
 from tests.st.pi_jit.share.utils import pi_jit_with_config
 
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
-        
 cfg = {
     "replace_nncell_by_construct": True,
     "print_after_all": False,
-    "compile_by_trace": True,
     "print_bb": False,
     "MAX_INLINE_DEPTH": 10,
     "allowed_inline_modules": ["mindspore"],  # buildsubgraph

@@ -815,14 +815,15 @@ class MultitypeFuncGraph(MultitypeFuncGraph_):
             self.register_fn(type_names, fn)
             self.entries.append((types, fn))
             return fn
-
         return deco
 
-    def register_default(self):
+    def _register_default(self, convert_to_interpret=True):
         def deco(fn):
-            self.default_func = fn
+            if not convert_to_interpret:
+                self.register_default_fn(fn)
+            else:
+                self.default_func = fn
             return fn
-
         return deco
 
     # pylint: disable=missing-docstring

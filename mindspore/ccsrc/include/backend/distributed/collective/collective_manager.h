@@ -94,6 +94,9 @@ class BACKEND_EXPORT CollectiveManager {
   // Destroy the communication group.
   bool DestroyCommunicationGroup(const std::string &group_name);
 
+  // Get the inner comm name of the specified group.
+  std::string GetCommName(const std::string &group_name);
+
   // Get the rank id of this process in the specified group.
   uint32_t GetRankId(const std::string &group_name);
 
@@ -185,6 +188,10 @@ class BACKEND_EXPORT CollectiveManager {
 
   // This method will consume the tasks in init_comm_task_queue_.
   void RunInitCommTasks();
+
+  // Set distributed meta data to libmindspore_core.so so that low level modules can access distributed meta data while
+  // bypassing CollectiveManager module.
+  void SetDistributedMeta();
 
   std::atomic_bool inited_;
   std::atomic_bool finalized_;

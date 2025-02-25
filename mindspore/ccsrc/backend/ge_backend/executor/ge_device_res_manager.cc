@@ -104,6 +104,7 @@ bool GeDeviceResManager::AllocateMemory(device::DeviceAddress *const &address, u
 
   address->set_ptr(device_ptr);
   address->set_from_mem_pool(true);
+  address->IncreaseNewRefCount();
   if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, address, device_ptr);
   }

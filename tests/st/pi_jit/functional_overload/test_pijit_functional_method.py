@@ -98,7 +98,6 @@ def test_method_clamp_asnumpy():
     def func(x, min, max):
       return x.clamp(min, ms.Tensor(max.asnumpy()))
 
-    ms.set_context(save_graphs=True, save_graphs_path="ir_pijit_method_clamp_asnumpy")
     out = func(ms.Tensor([1, 2, 3, 4, 5]), ms.Tensor(2), ms.Tensor(4))
     assert np.all(out.asnumpy() == ms.Tensor([2, 2, 3, 4, 4]).asnumpy())
 

@@ -209,18 +209,19 @@ Status ValidateMapValue(const std::string &dataset_name, const std::string &str,
   return Status::OK();
 }
 
-std::shared_ptr<SamplerObj> SelectSampler(int64_t num_samples, bool shuffle, int32_t num_shards, int32_t shard_id) {
-  if (shuffle) {
+std::shared_ptr<SamplerObj> SelectSampler(int64_t num_samples, dataset::ShuffleMode shuffle_mode, int32_t num_shards,
+                                          int32_t shard_id) {
+  if (shuffle_mode != dataset::ShuffleMode::kFalse) {
     if (num_shards > 1) {
       // If shuffle enabled, sharding enabled, use distributed random sampler
-      return DistributedSampler(num_shards, shard_id, shuffle, num_samples).Parse();
+      return DistributedSampler(num_shards, shard_id, shuffle_mode, num_samples).Parse();
     }
     // If shuffle enabled, sharding disabled, use random sampler
-    return RandomSampler(num_samples >= 0, num_samples).Parse();
+    return RandomSampler(num_samples >= 0, num_samples, shuffle_mode).Parse();
   }
   if (num_shards > 1) {
     // If shuffle disabled, sharding enabled, use distributed sequential sampler
-    return DistributedSampler(num_shards, shard_id, shuffle, num_samples).Parse();
+    return DistributedSampler(num_shards, shard_id, shuffle_mode, num_samples).Parse();
   }
   // If shuffle disabled, sharding disabled, use sequential sampler
   return SequentialSampler(0, num_samples).Parse();

@@ -53,6 +53,15 @@ void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_ind
     auto user_cnt = device_tensor_with_info.second.first;
     device_tensor->set_original_ref_count(user_cnt);
     device_tensor->ResetRefCount();
+    if (user_cnt > 0) {
+      // When allocate memory, the ref count would be increase, so it should be decrease here.
+      device_tensor->IncreaseNewRefCount(user_cnt - 1);
+      MS_LOG(DEBUG) << "Parameter store set new ref count:" << user_cnt - 1
+                    << " for device address:" << device_tensor->PrintInfo();
+    } else {
+      MS_LOG(DEBUG) << "User count:0 for parameter store outer index:" << outer_index << " inner index:" << inner_index
+                    << " for device address:" << device_tensor;
+    }
     return;
   }
 
@@ -62,6 +71,15 @@ void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_ind
     auto user_cnt = heter_device_tensor_with_info.second;
     heter_device_tensor->set_original_ref_count(user_cnt);
     heter_device_tensor->ResetRefCount();
+    if (user_cnt > 0) {
+      // When allocate memory, the ref count would be increase, so it should be decrease here.
+      heter_device_tensor->IncreaseNewRefCount(user_cnt - 1);
+      MS_LOG(DEBUG) << "Parameter store set new ref count:" << user_cnt - 1
+                    << " for device address:" << heter_device_tensor->PrintInfo();
+    } else {
+      MS_LOG(DEBUG) << "User count:0 for parameter store outer index:" << outer_index << " inner index:" << inner_index
+                    << " for device address:" << heter_device_tensor;
+    }
   }
 }
 
@@ -154,14 +172,12 @@ void GraphParameterStore::Push(size_t outer_index, size_t inner_index, const Dev
     auto &device_tensor_with_info = parameter_device_tensors_[outer_index][inner_index];
     device_tensor_with_info.first = value;
     device_tensor_with_info.second.first = cnt;
-    RefreshRefDeviceTensor({{outer_index, inner_index}, value_type});
     return;
   }
 
   auto &heter_device_tensor_with_info = heter_device_tensors_[outer_index][inner_index];
   heter_device_tensor_with_info.first = value;
   heter_device_tensor_with_info.second = cnt;
-  RefreshRefDeviceTensor({{outer_index, inner_index}, value_type});
 }
 
 Tensor *GraphParameterStore::FetchTensor(size_t args_index, const KernelWithIndex &node) const {
@@ -315,34 +331,6 @@ std::pair<TypePtr, KernelWithIndex> GraphParameterStore::GetReleasePositionInfo(
                       << ", inner index: " << position.second << ", type: " << type;
   }
   return iter->second;
-}
-
-void GraphParameterStore::RefreshRefDeviceTensor(const DeviceTensorPosition &key) {
-  const auto &iter = ref_device_tensors_.find(key);
-  if (iter == ref_device_tensors_.end()) {
-    return;
-  }
-  const auto &ref_input_index = key.first;
-  const auto &ref_input_device_type = key.second;
-  DeviceTensorPtr ref_input_device_tensor = nullptr;
-  CheckIndexValid(ref_input_index.first, ref_input_index.second);
-  const auto &device_tensor_with_info = parameter_device_tensors_[ref_input_index.first][ref_input_index.second];
-  const auto &device_tensor = device_tensor_with_info.first;
-  const auto &heter_device_tensor_with_info = heter_device_tensors_[ref_input_index.first][ref_input_index.second];
-  const auto &heter_device_tensor = heter_device_tensor_with_info.first;
-  if (device_tensor != nullptr && device_tensor->GetDeviceType() == ref_input_device_type) {
-    ref_input_device_tensor = device_tensor;
-  }
-  if (heter_device_tensor != nullptr && heter_device_tensor->GetDeviceType() == ref_input_device_type) {
-    ref_input_device_tensor = heter_device_tensor;
-  }
-  MS_EXCEPTION_IF_NULL(ref_input_device_tensor);
-  for (const auto &ref_output_device_tensor : iter->second) {
-    ref_output_device_tensor->set_pointer_ref_count(ref_input_device_tensor->pointer_ref_count());
-    MS_LOG(DEBUG) << "Refresh ref device tensor, ref output device tensor: " << ref_output_device_tensor
-                  << ", ref input outer idx: " << ref_input_index.first << ", inner idx: " << ref_input_index.second
-                  << ", device tensor: " << ref_input_device_tensor.get();
-  }
 }
 }  // namespace runtime
 }  // namespace mindspore

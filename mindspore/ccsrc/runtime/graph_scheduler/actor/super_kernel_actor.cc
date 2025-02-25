@@ -23,14 +23,24 @@
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/graph_scheduler/actor/debug_actor.h"
 #include "runtime/device/multi_stream_controller.h"
+#include "runtime/pipeline/task/batch_launch_kernel_task.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 #include "async/async.h"
 #include "utils/phase.h"
 #include "utils/llm_manager.h"
 #include "utils/log_adapter.h"
 #include "op_def/framework_ops.h"
+#include "pybind_api/gil_scoped_long_running.h"
 
 namespace mindspore {
 namespace runtime {
+size_t SuperKernelActor::parallel_dispatch_num_ = 2;
+size_t SuperKernelActor::parallel_slice_num_ = 4;
+
+std::vector<std::pair<size_t, void *>> SuperKernelActor::streams_;
+std::vector<DeviceEventPtr> SuperKernelActor::events_;
+std::vector<AsyncRQueuePtr> SuperKernelActor::queues_;
+
 namespace {
 inline void UpdateShape(const AnfNodePtr &input_node, const DeviceTensorPtr &node_device_tensor,
                         DeviceTensor *input_device_tensor, const KernelTransformType &type) {
@@ -132,28 +142,6 @@ void CollectStreamFirstUsedParamKernelActors(
   }
 }
 
-void ParamFirstUsedKernelActorsToMap(
-  const std::vector<std::pair<KernelActorPtr, size_t>> &param_first_used_kernel_actors,
-  mindspore::HashMap<KernelActorPtr, std::vector<std::pair<size_t, size_t>>> *kernel_actor_to_graph_parameters_map) {
-  if (!EnableInputOptimize()) {
-    return;
-  }
-  for (size_t i = 0; i < param_first_used_kernel_actors.size(); ++i) {
-    auto &kernel_actor = param_first_used_kernel_actors[i].first;
-    auto actor_input_idx = param_first_used_kernel_actors[i].second;
-    if (kernel_actor == nullptr) {
-      continue;
-    }
-    const auto &iter = (*kernel_actor_to_graph_parameters_map).find(kernel_actor);
-    if (iter == (*kernel_actor_to_graph_parameters_map).end()) {
-      (*kernel_actor_to_graph_parameters_map)[kernel_actor].emplace_back(actor_input_idx, i);
-    } else {
-      auto &param_map_list = iter->second;
-      param_map_list.push_back({actor_input_idx, i});
-    }
-  }
-}
-
 void RecordInputParamsWithoutUser(const KernelGraphPtr &graph,
                                   const HashMap<size_t, ParameterInfo> &parameter_indexs_map,
                                   const std::vector<size_t> &input_params_use_cnt,
@@ -174,6 +162,32 @@ void RecordInputParamsWithoutUser(const KernelGraphPtr &graph,
   }
 }
 }  // namespace
+
+SuperKernelActor::~SuperKernelActor() { ClearParallelDispatchResource(); }
+
+void SuperKernelActor::Finalize() { ClearParallelDispatchResource(); }
+
+void SuperKernelActor::ClearParallelDispatchResource() {
+  if (!queues_.empty()) {
+    for (auto &q : queues_) {
+      q->WorkerJoin();
+    }
+    queues_.clear();
+  }
+  if (!events_.empty()) {
+    events_.clear();
+  }
+  if (!serial_launch_kernels_to_events_.empty()) {
+    serial_launch_kernels_to_events_.clear();
+  }
+  if (!parallel_launch_kernels_.empty()) {
+    parallel_launch_kernels_.clear();
+  }
+  if (!serial_launch_kernels_.empty()) {
+    serial_launch_kernels_.clear();
+  }
+}
+
 void SuperKernelActor::Init() {
   MS_EXCEPTION_IF_NULL(graph_);
   // Check device contexts number.
@@ -183,6 +197,10 @@ void SuperKernelActor::Init() {
 
   // Set the number of actor running dependent messages.
   running_dependent_msg_num_ = SizeToInt(input_datas_num_ + input_controls_num_);
+
+  if (enable_parallel_dispatch_) {
+    InitParallelDispatchResource();
+  }
 
   // Init the output data.
   InitOutputData();
@@ -259,6 +277,52 @@ void SuperKernelActor::Init() {
   }
 }
 
+void SuperKernelActor::InitParallelDispatchResource() {
+  if (streams_.empty()) {
+    streams_.resize(parallel_dispatch_num_);
+    for (size_t i = 0; i < parallel_dispatch_num_; i++) {
+      if (!device_contexts_[0]->device_res_manager_->CreateStream(&(streams_[i].first))) {
+        MS_LOG(EXCEPTION) << "Create stream failed.";
+      }
+      streams_[i].second = device_contexts_[0]->device_res_manager_->GetStream(streams_[i].first);
+      MS_EXCEPTION_IF_NULL(streams_[i].second);
+    }
+  }
+
+  if (events_.empty()) {
+    // New one more for sync between default stream and last launch stream;
+    for (size_t i = 0; i < parallel_dispatch_num_ * parallel_slice_num_ + 1; i++) {
+      auto event = device_contexts_[0]->device_res_manager_->CreateEventWithFlag(false, false, false);
+      MS_EXCEPTION_IF_NULL(event);
+      events_.push_back(event);
+    }
+  }
+
+  if (queues_.empty()) {
+    for (size_t i = 0; i < parallel_dispatch_num_; i++) {
+      auto queue = std::make_unique<AsyncRQueue>(std::string("batch_launch_") + std::to_string(i),
+                                                 runtime::kThreadWaitLevel::kLevelDevice);
+      MS_EXCEPTION_IF_NULL(queue);
+      queue->SetSpin(true);
+      queues_.push_back(std::move(queue));
+    }
+  }
+
+  const size_t kEventNum = 2;
+  for (auto &kernel_actor : serial_launch_kernels_) {
+    serial_launch_kernels_to_events_[kernel_actor.get()] = std::vector<DeviceEventPtr>(kEventNum, nullptr);
+  }
+
+  for (auto &item : serial_launch_kernels_to_events_) {
+    auto &event_array = item.second;
+    for (size_t i = 0; i < event_array.size(); i++) {
+      auto event = device_contexts_[0]->device_res_manager_->CreateEventWithFlag(false, false, false);
+      MS_EXCEPTION_IF_NULL(event);
+      event_array[i] = event;
+    }
+  }
+}
+
 size_t SuperKernelActor::FetchInputNodePosition(const AnfNodePtr &intput_node) {
   MS_EXCEPTION_IF_NULL(intput_node);
   MS_EXCEPTION_IF_NULL(graph_);
@@ -276,7 +340,7 @@ void SuperKernelActor::CorrectRefCountByCondition(size_t index, DeviceTensor *de
   // There is no memory free action for use trace memory step, need to free input device address of the kernel graph
   // after launch all kernels.
   if (ActorDispatcher::enable_use_trace_memory()) {
-    if (device_tensor->original_ref_count() != SIZE_MAX || device_tensor->dynamic_ref_count() != INT32_MAX) {
+    if ((device_tensor->original_ref_count() != SIZE_MAX || device_tensor->dynamic_ref_count() != INT32_MAX)) {
       (void)(*memory_free_list).emplace_back(device_tensor);
     }
   } else {
@@ -314,16 +378,18 @@ void SuperKernelActor::FetchInputDeviceTensor(OpContext<DeviceTensor> *const con
                         << ", device address addr: " << input_device_tensors_[index]->GetPtr() << ", index: " << index;
       }
 
-      if (!enable_kbk_sub_graph_execute_) {
+      if (!enable_kbk_sub_graph_execute_ || ActorDispatcher::enable_use_trace_memory()) {
         if (input_data->data_->dynamic_ref_count() != INT32_MAX) {
           (void)memory_free_list.emplace_back(input_data->data_);
         }
+
         continue;
       }
-
-      CorrectRefCountByCondition(index, input_data->data_, &memory_free_list);
     }
-    memory_free_lists_.push(memory_free_list);
+    if (!enable_kbk_sub_graph_execute_ || ActorDispatcher::enable_use_trace_memory()) {
+      memory_free_lists_.push(memory_free_list);
+      return;
+    }
   }
 }
 
@@ -482,7 +548,7 @@ void SuperKernelActor::UpdateMemoryTraceMangerStatus(OpContext<DeviceTensor> *co
   }
 }
 
-void SuperKernelActor::SetTraceMemoryForKernel(const KernelActorPtr &kernel_actor) {
+void SuperKernelActor::SetTraceMemoryForKernel(const KernelActorPtr &kernel_actor, bool safe_update) {
   const auto &kernel = kernel_actor->kernel();
   MS_EXCEPTION_IF_NULL(kernel);
 
@@ -504,10 +570,42 @@ void SuperKernelActor::SetTraceMemoryForKernel(const KernelActorPtr &kernel_acto
       void *ptr = merge_blocks.at(block->in_memory_trace_block_index_)->start_ + block->offset_in_memory_trace_block_;
       MS_EXCEPTION_IF_NULL(ptr);
       if (block->mem_type_ == kOutputMem) {
-        kernel_actor->output_kernel_tensors_.at(block->index_)->set_device_ptr(ptr);
+        if (!safe_update) {
+          kernel_actor->output_kernel_tensors_.at(block->index_)->set_device_ptr(ptr);
+        } else {
+          auto &kernel_tensor = kernel_actor->output_kernel_tensors_.at(block->index_);
+          std::lock_guard<SpinLock> lock(block->lock_);
+          if (kernel_tensor->device_ptr() != ptr) {
+            kernel_tensor->set_device_ptr(ptr);
+          }
+        }
       } else {
         kernel_actor->workspace_kernel_tensors_.at(block->index_)->set_device_ptr(ptr);
       }
+    }
+  }
+}
+
+void SuperKernelActor::SetInputTraceMemory(const KernelActorPtr &kernel_actor) const {
+  const auto &merge_blocks_with_device_context = MemoryTraceManager::GetInstance().GetMergeBlocks();
+  MS_EXCEPTION_IF_NULL(merge_blocks_with_device_context);
+  const auto &merge_blocks = merge_blocks_with_device_context->at(kernel_actor->device_contexts_[0]);
+
+  const auto &kernel_tensor_to_kernel_mem_blocks = MemoryTraceManager::GetInstance().GetKernelTensorToMemBlocksInfo();
+  MS_EXCEPTION_IF_NULL(kernel_tensor_to_kernel_mem_blocks);
+
+  for (auto &input_kernel_tensor : kernel_actor->input_kernel_tensors_) {
+    const auto &iter = kernel_tensor_to_kernel_mem_blocks->find(input_kernel_tensor);
+    if (iter == kernel_tensor_to_kernel_mem_blocks->end()) {
+      continue;
+    }
+    auto &kernel_mem_block = iter->second;
+    void *ptr = merge_blocks.at(kernel_mem_block->in_memory_trace_block_index_)->start_ +
+                kernel_mem_block->offset_in_memory_trace_block_;
+
+    std::lock_guard<SpinLock> lock(kernel_mem_block->lock_);
+    if (input_kernel_tensor->device_ptr() != ptr) {
+      input_kernel_tensor->set_device_ptr(ptr);
     }
   }
 }
@@ -560,7 +658,6 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<DeviceTensor> *const co
     const auto &dest_device_address = output_index_to_copy_address.second.first.get();
     const auto &dest_device_context = output_index_to_copy_address.second.second.first;
     const auto &src_device_address = kernel_actor->output_device_tensors_.at(output_index);
-    const auto &src_device_context = kernel_actor->device_contexts_[0];
     const auto &ref_output_device_address = output_index_to_copy_address.second.second.second;
 
     if (kernel_actor->is_dynamic_shape_) {
@@ -581,6 +678,8 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<DeviceTensor> *const co
           << "Memory leak detected in copy output device address for kernel: "
           << kernel_actor->kernel_->fullname_with_scope();
       }
+      MS_LOG(DEBUG) << "Free heter output address:" << dest_device_address->PrintInfo()
+                    << " for actor:" << kernel_actor->GetAID();
       dest_device_context->device_res_manager_->FreeMemory(dest_device_address);
     }
     std::vector<DeviceTensor *> mem_alloc_list = {dest_device_address};
@@ -605,27 +704,17 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<DeviceTensor> *const co
       DeviceTensorCopyStore::GetInstance().Insert(src_device_address, dest_device_address);
       for (const auto &ref_device_address : ref_output_device_address) {
         MS_EXCEPTION_IF_NULL(ref_device_address);
-        if (ref_device_address->GetDeviceType() != dest_device_address->GetDeviceType()) {
-          MS_LOG_WITH_NODE(EXCEPTION, kernel_actor->kernel_)
-            << "Invalid ref device address:" << ref_device_address << " type:" << ref_device_address->GetDeviceType()
-            << " src device address:" << dest_device_address << " type:" << dest_device_address->GetDeviceType()
-            << " for actor:" << GetAID();
-        }
         MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << ref_device_address
                       << " type:" << ref_device_address->GetDeviceType() << " and " << dest_device_address
                       << " type:" << dest_device_address->GetDeviceType() << " for actor:" << GetAID();
         DeviceTensorCopyStore::GetInstance().Insert(ref_device_address, dest_device_address);
-        ref_device_address->set_ptr(dest_device_address->GetMutablePtr());
-        MS_LOG(DEBUG) << "Set ptr:" << dest_device_address->GetMutablePtr()
-                      << " from device address:" << dest_device_address << " to:" << ref_device_address
-                      << " for actor:" << GetAID();
       }
     }
-    // Update ref count.
-    MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(src_device_address, src_device_context, GetAID().Name());
-    MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(dest_device_address, dest_device_context, GetAID().Name());
   }
-
+  if (kernel_actor->new_memory_free_list_.size() > 0) {
+    MS_LOG(DEBUG) << "Free device ptr after heter copy for actor:" << kernel_actor->GetAID();
+    kernel_actor->SendMemoryFreeReq(context);
+  }
   return true;
 }
 
@@ -636,8 +725,11 @@ void SuperKernelActor::UpdateOutputAddress(
     size_t kernel_input_index = pair.first;
     DeviceTensor *real_input = kernel_actor->input_device_tensors_[kernel_input_index];
     MS_EXCEPTION_IF_NULL(real_input);
-
     const std::vector<size_t> &actor_output_indices = pair.second;
+    real_input->IncreaseNewRefCount(actor_output_indices.size());
+    MS_LOG(DEBUG) << "Increase ref count to:" << real_input->new_ref_count()
+                  << " increase size:" << actor_output_indices.size() - 1
+                  << " for device address:" << real_input->PrintInfo() << " in actor:" << GetAID();
     for (auto actor_output_index : actor_output_indices) {
       auto data = output_data_[actor_output_index].first.get();
       MS_EXCEPTION_IF_NULL(data);
@@ -650,40 +742,13 @@ void SuperKernelActor::FetchParameterInput(const KernelActorPtr &kernel_actor, O
   if (!enable_input_optimize_) {
     return;
   }
-  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   for (const auto &parameter_index : kernel_actor->parameter_indexs()) {
     auto device_tensor =
       FetchParameter(parameter_index.second, context, kernel_actor->device_contexts()[0], kernel_actor->GetAID());
     MS_LOG(DEBUG) << "Actor: " << kernel_actor->GetAID().Name() << ", input index: " << parameter_index.first
                   << ", device tensor: " << device_tensor << ", ptr: " << device_tensor->GetPtr()
-                  << ", ref cnt: " << device_tensor->ref_count();
-    // Device tensor in parameter store only keep one in each device, so the ref relation got lost
-    // in multi heters with ref scenario.
-    if (kernel_actor->modifiable_ref_input_indexes_.count(parameter_index.first) > 0) {
-      auto outer_idx = parameter_index.second.second;
-      auto inner_idx = parameter_index.second.first.second;
-      graph_parameter_store->RefreshRefDeviceTensor(
-        {{outer_idx, inner_idx}, kernel_actor->device_contexts()[0]->GetDeviceType()});
-    }
+                  << ", ref cnt: " << device_tensor->ref_count() << " new ref count:" << device_tensor->new_ref_count();
     kernel_actor->SetInputDeviceTensor(device_tensor, parameter_index.first);
-  }
-
-  const auto &iter = kernel_actor_to_graph_parameters_map_.find(kernel_actor);
-  if (iter != kernel_actor_to_graph_parameters_map_.end()) {
-    for (const auto &input_pair : iter->second) {
-      auto actor_input_idx = input_pair.first;
-      auto graph_input_idx = input_pair.second;
-      if (memory_free_lists_.empty()) {
-        memory_free_lists_.push({});
-      }
-      CorrectRefCountByCondition(graph_input_idx, kernel_actor->input_device_tensors_[actor_input_idx],
-                                 &memory_free_lists_.back());
-      MS_LOG(DEBUG) << "Correct ref count for actor" << kernel_actor->GetAID().Name()
-                    << ", actor input: " << actor_input_idx << ", graph input: " << graph_input_idx
-                    << ", device tensor: " << kernel_actor->input_device_tensors_[actor_input_idx]
-                    << ", ptr: " << kernel_actor->input_device_tensors_[actor_input_idx]->GetPtr()
-                    << ", ref cnt: " << kernel_actor->input_device_tensors_[actor_input_idx]->ref_count();
-    }
   }
 
   // Insert record wait pair to ensure first used parameter async copy end before launch.
@@ -701,6 +766,24 @@ void SuperKernelActor::FetchParameterInput(const KernelActorPtr &kernel_actor, O
     }
   }
 
+  const auto &iter = kernel_actor_to_graph_parameters_map_.find(kernel_actor);
+  if (iter != kernel_actor_to_graph_parameters_map_.end()) {
+    for (const auto &input_pair : iter->second) {
+      auto actor_input_idx = input_pair.first;
+      if (memory_free_lists_.empty()) {
+        memory_free_lists_.push({});
+      }
+      if (ActorDispatcher::enable_use_trace_memory()) {
+        if (kernel_actor->input_device_tensors_[actor_input_idx]->new_ref_count() != SIZE_MAX) {
+          memory_free_lists_.back().emplace_back(kernel_actor->input_device_tensors_[actor_input_idx]);
+          MS_LOG(DEBUG) << "Add memory free list for trace:"
+                        << kernel_actor->input_device_tensors_[actor_input_idx]->PrintInfo()
+                        << " in actor:" << GetAID();
+        }
+      }
+    }
+  }
+
   for (const auto &parameter_index : kernel_actor->parameter_indexs()) {
     kernel_actor->memory_free_list_[parameter_index.first] = kernel_actor->input_device_tensors_[parameter_index.first];
     kernel_actor->CopyInputDeviceTensor(kernel_actor->input_device_tensors_[parameter_index.first],
@@ -713,12 +796,43 @@ void SuperKernelActor::FreeInputParamWithoutUser(OpContext<DeviceTensor> *const 
     for (const auto &iter : input_params_no_user_) {
       auto device_tensor = FetchParameter(iter.second, context, device_contexts_[0], GetAID());
       MS_EXCEPTION_IF_NULL(device_tensor);
-      if (device_tensor->original_ref_count() != SIZE_MAX) {
+      if (device_tensor->new_ref_count() != SIZE_MAX) {
         // No user for this input in graph.
         MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor, device_contexts_[0], GetAID().Name());
       }
     }
   }
+}
+
+bool SuperKernelActor::FetchMsgInputAndConstValueForKernel(KernelActor *kernel_actor,
+                                                           OpContext<DeviceTensor> *const context) {
+  MS_EXCEPTION_IF_NULL(kernel_actor);
+  const auto &kernel = kernel_actor->kernel();
+
+  // 1 Prepare received input from other actors.
+  const auto &iter = kernel_input_to_graph_input_indices_.find(kernel.get());
+  if (iter != kernel_input_to_graph_input_indices_.end()) {
+    std::vector<std::pair<size_t, size_t>> &input_to_graph_input_indices = iter->second;
+    for (const auto &item : input_to_graph_input_indices) {
+      MS_LOG(DEBUG) << "kernel:" << iter->first->fullname_with_scope() << " graph input index:" << item.second
+                    << " kernel input index:" << item.first << " for actor:" << GetAID()
+                    << " graph:" << graph_->ToString();
+      kernel_actor->SetInputDeviceTensor(input_device_tensors_[item.second], item.first);
+      kernel_actor->memory_free_list_[item.first] = input_device_tensors_[item.second];
+      kernel_actor->CopyInputDeviceTensor(input_device_tensors_[item.second], item.first, context);
+    }
+  }
+  // 2. Prepare const value.
+  if (!kernel_actor->device_tensor_store_keys_.empty()) {
+    // Collect the inputs from device tensor store.
+    kernel_actor->FetchInputByTensorStore(&kernel_actor->input_device_tensors_, &kernel_actor->input_kernel_tensors_,
+                                          &kernel_actor->input_kernel_tensors_for_infer_,
+                                          &kernel_actor->memory_free_list_, context);
+    if (IsRunningFailed(context)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool SuperKernelActor::LaunchAllKernels(OpContext<DeviceTensor> *const context) {
@@ -728,33 +842,27 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<DeviceTensor> *const context) 
     if (kernel_actor == nullptr) {
       continue;
     }
+    if (enable_inline_control_flow_ && !*(kernel_actor->is_enable_)) {
+      MS_LOG(DEBUG) << "Skip launch kernel for actor:" << kernel_actor->GetAID();
+      continue;
+    }
     const auto &kernel = kernel_actor->kernel();
     if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, kernel_actor->GetAID().Name(),
                                                      kernel->fullname_with_scope(), kernel->func_graph()->ToString());
     }
     // 1. Prepare input data for kernel
-    // 1.1. Prepare parameter input.
+    // 1.1. Prepare top cell parameter input.
     FetchParameterInput(kernel_actor, context);
-    // 1.2. Prepare received input from other actors.
-    const auto &iter = kernel_input_to_graph_input_indices_.find(kernel.get());
-    if (iter != kernel_input_to_graph_input_indices_.end()) {
-      std::vector<std::pair<size_t, size_t>> &input_to_graph_input_indices = iter->second;
-      for (const auto &item : input_to_graph_input_indices) {
-        kernel_actor->SetInputDeviceTensor(input_device_tensors_[item.second], item.first);
-        kernel_actor->memory_free_list_[item.first] = input_device_tensors_[item.second];
-        kernel_actor->CopyInputDeviceTensor(input_device_tensors_[item.second], item.first, context);
-      }
+    // 1.2. Prepare non top cell input, such as internal parameter msg input, control flow msg input and const value.
+    if (!FetchMsgInputAndConstValueForKernel(kernel_actor.get(), context)) {
+      return false;
     }
-    // 1.3. Prepare const value.
-    if (!kernel_actor->device_tensor_store_keys_.empty()) {
-      // Collect the inputs from device tensor store.
-      kernel_actor->FetchInputByTensorStore(&kernel_actor->input_device_tensors_, &kernel_actor->input_kernel_tensors_,
-                                            &kernel_actor->input_kernel_tensors_for_infer_,
-                                            &kernel_actor->memory_free_list_, context);
-      if (IsRunningFailed(context)) {
-        return false;
-      }
+
+    if (!ActorDispatcher::enable_use_trace_memory()) {
+      kernel_actor->UpdateRefDeviceAddress(context, true);
+      kernel_actor->UpdateGraphOutputRefCount(context);
+      kernel_actor->UpdateMemoryFreeList(context);
     }
 
     // Update output device address for Parameter as graph output case.
@@ -795,7 +903,7 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<DeviceTensor> *const context) 
         }
         MS_LOG(DEBUG) << "End wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
       }
-    } else {
+    } else if (ActorDispatcher::enable_async_launch_kernel()) {
       auto &llm_manager = LLMManager::GetInstance();
       if (llm_manager.need_force_resize(kernel_actor->kernel_mod_->kernel_name())) {
         kernel_actor->ResizeKernelMod();
@@ -808,8 +916,23 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<DeviceTensor> *const context) 
       }
 
       Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernel, context, kernel_actor.get());
+    } else {
+      if (!WaitRuntimePipelineFinish(context)) {
+        MS_LOG(INFO) << "Run failed and early stop.";
+        return false;
+      }
+      MS_LOG(DEBUG) << "Sync launch kernel actor:" << kernel_actor->GetAID() << " in actor:" << GetAID();
+      kernel_actor->InferAndUpdateDeviceTensorSize(context);
+      kernel_actor->ExecuteLaunchKernelTask(context);
     }
 
+    if (common::AnfAlgo::CheckPrimitiveType(kernel_actor->kernel_, prim::kPrimConditionSwitch)) {
+      if (!WaitRuntimePipelineFinish(context)) {
+        MS_LOG(INFO) << "Run failed and early stop.";
+        return false;
+      }
+      MS_LOG(DEBUG) << "Condition switch actor:" << kernel_actor->GetAID() << " wait succeed.";
+    }
     // 4. Copy for heterogeneous output device address if need.
     if (kernel_actor->copy_output_device_tensors_.empty()) {
       continue;
@@ -821,6 +944,149 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<DeviceTensor> *const context) 
   }
 
   return true;
+}
+
+void SuperKernelActor::DispatchParallelLaunchKernels(size_t index, OpContext<DeviceTensor> *const context) {
+  if (index >= parallel_dispatch_num_) {
+    MS_LOG(EXCEPTION) << "Invalid index: " << index << ", expected less than: " << parallel_dispatch_num_;
+  }
+  device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
+  size_t real_stream_id = streams_[index].first;
+  void *real_stream = streams_[index].second;
+
+  for (size_t inner_index = 0; inner_index < parallel_slice_num_; inner_index++) {
+    events_[index + inner_index * parallel_dispatch_num_]->WaitEventWithoutReset(real_stream_id);
+
+    const auto &kernel_actors = parallel_launch_kernels_[index + inner_index * parallel_dispatch_num_];
+    for (auto &kernel_actor : kernel_actors) {
+      if (!kernel_actor) {
+        continue;
+      }
+
+      auto commu_iter = serial_launch_kernels_to_events_.find(kernel_actor.get());
+      if (commu_iter != serial_launch_kernels_to_events_.end()) {
+        ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, "RecordWaitEvent");
+        const auto &event_array = commu_iter->second;
+        auto &record_event = event_array[0];
+        auto &wait_event = event_array[1];
+        record_event->RecordEvent(real_stream_id);
+        wait_event->WaitEventWithoutReset(real_stream_id);
+        continue;
+      }
+
+      const auto &kernel = kernel_actor->kernel_;
+      if (!FetchMsgInputAndConstValueForKernel(kernel_actor.get(), context)) {
+        MS_LOG(EXCEPTION) << "Failed to fetch input and const value for kernel: " << kernel->fullname_with_scope();
+      }
+      SetTraceMemoryForKernel(kernel_actor, true);
+      SetInputTraceMemory(kernel_actor);
+      if (!kernel_actor->max_ref_cnt_output_list_.empty()) {
+        // Allocate dynamic memory for graph output.
+        MemoryManagerActor::GetInstance()->AllocateMemory(&(kernel_actor->max_ref_cnt_output_list_),
+                                                          kernel_actor->device_contexts_[0], context,
+                                                          kernel_actor->GetAID());
+      }
+
+      if (!kernel_actor->is_launch_skipped_) {
+        MS_LOG(DEBUG) << "Begin launch kernel: " << kernel_actor->kernel_->fullname_with_scope();
+        auto ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernel(
+          kernel_actor->kernel_, kernel_actor->input_kernel_tensors_, kernel_actor->workspace_kernel_tensors_,
+          kernel_actor->output_kernel_tensors_, kernel_actor->kernel_mod_, real_stream);
+
+        if (!ret) {
+          MS_LOG(EXCEPTION) << "Launch kernel failed, kernel name: " << kernel_actor->kernel_->fullname_with_scope();
+        }
+        MS_LOG(DEBUG) << "End launch kernel: " << kernel_actor->kernel_->fullname_with_scope();
+      }
+    }
+
+    events_[index + inner_index * parallel_dispatch_num_ + 1]->RecordEvent(real_stream_id);
+  }
+}
+
+void SuperKernelActor::DispatchSerialLaunchKernels(OpContext<DeviceTensor> *const context) {
+  auto *default_stream = device_contexts_[0]->device_res_manager_->GetStream(0);
+  for (auto &kernel_actor : serial_launch_kernels_) {
+    MS_EXCEPTION_IF_NULL(kernel_actor);
+    auto comm_iter = serial_launch_kernels_to_events_.find(kernel_actor.get());
+    if (comm_iter == serial_launch_kernels_to_events_.end()) {
+      MS_LOG(EXCEPTION) << "Not find kernel actor : " << kernel_actor->kernel()->fullname_with_scope();
+    }
+
+    const auto &kernel = kernel_actor->kernel_;
+    if (!FetchMsgInputAndConstValueForKernel(kernel_actor.get(), context)) {
+      MS_LOG(EXCEPTION) << "Failed to fetch input and const value for kernel: " << kernel->fullname_with_scope();
+    }
+    SetTraceMemoryForKernel(kernel_actor, true);
+    SetInputTraceMemory(kernel_actor);
+    if (!kernel_actor->max_ref_cnt_output_list_.empty()) {
+      // Allocate dynamic memory for graph output.
+      MemoryManagerActor::GetInstance()->AllocateMemory(
+        &(kernel_actor->max_ref_cnt_output_list_), kernel_actor->device_contexts_[0], context, kernel_actor->GetAID());
+    }
+
+    auto &llm_manager = LLMManager::GetInstance();
+    bool need_force_resize = llm_manager.need_force_resize(kernel_actor->kernel_mod_->kernel_name());
+    if (need_force_resize) {
+      kernel_actor->ResizeKernelMod();
+      kernel_actor->FetchOutputDeviceTensor(nullptr);
+      kernel_actor->FetchWorkspaceDeviceTensor();
+    }
+
+    const auto &event_array = comm_iter->second;
+    auto &wait_event = event_array[0];
+    wait_event->WaitEventWithoutReset(0);
+
+    MS_LOG(DEBUG) << "Begin serial launch kernel: " << kernel_actor->kernel_->fullname_with_scope();
+    auto ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernel(
+      kernel_actor->kernel_, kernel_actor->input_kernel_tensors_, kernel_actor->workspace_kernel_tensors_,
+      kernel_actor->output_kernel_tensors_, kernel_actor->kernel_mod_, default_stream);
+    if (!ret) {
+      MS_LOG(EXCEPTION) << "Launch kernel failed, kernel name: " << kernel_actor->kernel_->fullname_with_scope();
+    }
+    MS_LOG(DEBUG) << "End serial launch kernel: " << kernel_actor->kernel_->fullname_with_scope();
+
+    auto &record_event = event_array[1];
+    record_event->RecordEvent(0);
+  }
+}
+
+void SuperKernelActor::ParallelDispatchKernels(OpContext<DeviceTensor> *const context) {
+  MS_LOG(INFO) << "Begin parallel dispatch kernels for graph: " << graph_->ToString();
+  device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
+  // Record a event to default stream to notify parallel launch kernels execute on other stream.
+  events_.front()->RecordEvent(0);
+
+  // Dispatch kernel which can parallel launch.
+  for (size_t i = 0; i < parallel_dispatch_num_; i++) {
+    const auto &queue = queues_[i];
+    queue->Push(
+      std::make_shared<BatchLaunchKernelTask>([this, i, context]() { DispatchParallelLaunchKernels(i, context); }));
+  }
+
+  // Dispatch serial launch kernels: communication ops and the kernel need force resize.
+  DispatchSerialLaunchKernels(context);
+
+  for (auto &q : queues_) {
+    GilReleaseWithCheck release_gil;
+    q->Wait();
+  }
+
+  // The default stream need wait all parallel launch kernel execute finish.
+  events_.back()->WaitEventWithoutReset(0);
+  // Reset all event for reuse.
+  {
+    ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPostLaunch, "ResetAllEvent");
+    for (auto &e : events_) {
+      e->ResetEvent();
+    }
+    for (auto &item : serial_launch_kernels_to_events_) {
+      for (auto &e : item.second) {
+        e->ResetEvent();
+      }
+    }
+  }
+  MS_LOG(INFO) << "End parallel dispatch kernels for graph: " << graph_->ToString();
 }
 
 void SuperKernelActor::RunGraphKernelByKernel(OpContext<DeviceTensor> *const context) {
@@ -848,6 +1114,7 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<DeviceTensor> *const con
   if ((somas_info_ != nullptr) && (somas_info_->whole_block_size_ != 0)) {
     MemoryManagerActor::GetInstance()->AllocateSomasMemory(somas_info_, device_contexts_[0], context, GetAID());
   }
+
   if (enable_trace_memory_ && graph_->is_dynamic_shape() && (graph_phase_.find("increment") != std::string::npos)) {
     MS_LOG(DEBUG) << "Enable trace memory for increment inference graph: " << graph_->graph_id()
                   << ", phase: " << graph_phase_;
@@ -859,9 +1126,14 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<DeviceTensor> *const con
     }
   }
 
-  // 3. Launch all kernels by execution order in kernel graph.
-  if (!LaunchAllKernels(context)) {
-    MS_INTERNAL_EXCEPTION(RuntimeError) << "Launch kernels by execution order failed for graph: " << graph_->ToString();
+  if (ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set()) {
+    ParallelDispatchKernels(context);
+  } else {
+    // 3. Launch all kernels by execution order in kernel graph.
+    if (!LaunchAllKernels(context)) {
+      MS_INTERNAL_EXCEPTION(RuntimeError)
+        << "Launch kernels by execution order failed for graph: " << graph_->ToString();
+    }
   }
 
   if (((somas_info_ != nullptr) && (somas_info_->whole_block_size_ != 0)) ||
@@ -879,6 +1151,7 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<DeviceTensor> *const con
     ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kMemoryFree, GetAID().Name());
     MemoryTraceManager::GetInstance().MergeBlocks();
   }
+
   if (ActorDispatcher::enable_use_trace_memory()) {
     // Free block memory for use trace memory (run by static shape) step.
     FreeTraceMemory();
@@ -935,11 +1208,13 @@ void SuperKernelActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const contex
     MS_EXCEPTION_IF_NULL(device_contexts_[0]->graph_executor_);
     if (!IsSkippedLaunch(nullptr, graph_)) {
       ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kGraphLaunch, GetAID().Name());
+      MS_LOG(DEBUG) << "Start run graph:" << graph_->ToString();
       auto ret = device_contexts_[0]->graph_executor_->RunGraph(graph_, inputs, &outputs, compile_options);
       if (!ret) {
         std::string error_info = "Launch graph failed, graph id: " + std::to_string(graph_->graph_id());
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
       }
+      MS_LOG(DEBUG) << "End run graph:" << graph_->ToString();
     } else if (IsNeedProfilieMemoryLog()) {
       auto memory_size = device_contexts_[0]->graph_executor_->GetGraphFeatureMemory(graph_);
       MS_LOG(WARNING) << "Need Profile Memory, graph: " << graph_->ToString() << ", feature memory: " << memory_size;
@@ -1094,7 +1369,8 @@ bool SuperKernelActor::CopyInputData(const OpContext<DeviceTensor> *context, con
       copy_device_tensor = copy_input_device_tensors_[i];
     } else {
       if (node_device_tensor->GetPtr() == nullptr) {
-        MS_LOG(INFO) << "The node device tensor, which shared with another graph, has no device memory and will skip "
+        MS_LOG(INFO) << "The node device tensor:" << node_device_tensor
+                     << ", which shared with another graph, has no device memory and will skip "
                         "copy for actor:"
                      << GetAID();
         continue;
@@ -1129,6 +1405,7 @@ void SuperKernelActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context)
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context),
                                                   "Invalid device context for super kernel actor:" + GetAID().Name());
   }
+
   if (memory_free_lists_.size() > 0 && memory_free_lists_.back().size() > 0) {
     if (IsNeedProfilieMemoryLog()) {
       for (auto data : memory_free_lists_.back()) {
@@ -1139,6 +1416,7 @@ void SuperKernelActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context)
       }
     }
 
+    MS_LOG(DEBUG) << "Send memory free size:" << memory_free_lists_.back().size() << " for actor:" << GetAID();
     if (ActorDispatcher::is_memory_free_sync()) {
       ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &(memory_free_lists_.back()),
                                 device_contexts_[0], context, GetAID());
@@ -1156,11 +1434,165 @@ void SuperKernelActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context)
   }
 }
 
+void SuperKernelActor::SetRelationForControlFlow() {
+  MS_EXCEPTION_IF_NULL(graph_);
+  if (graph_->inline_sub_graph_kernels().empty()) {
+    return;
+  }
+  enable_inline_control_flow_ = true;
+  std::map<std::string, KernelActorPtr> name_to_actors;
+  for (const auto &kernel_actor : kernel_actors_) {
+    MS_EXCEPTION_IF_NULL(kernel_actor);
+    name_to_actors[kernel_actor->GetAID().Name()] = kernel_actor;
+  }
+  const auto &gather_to_switch = graph_->condition_gather_to_switch();
+  std::map<std::string, bool *> branch_name_to_flags;
+  for (const auto &kernel_actor : kernel_actors_) {
+    MS_EXCEPTION_IF_NULL(kernel_actor->kernel_);
+    if (common::AnfAlgo::CheckPrimitiveType(kernel_actor->kernel_, prim::kPrimConditionGather)) {
+      const auto &switch_node_iter = gather_to_switch.find(kernel_actor->kernel_);
+      if (switch_node_iter == gather_to_switch.end()) {
+        MS_LOG(EXCEPTION) << " Failed to get switch node for gather:" << kernel_actor->kernel_->fullname_with_scope()
+                          << " in graph:" << graph_->ToString();
+      }
+      MS_EXCEPTION_IF_NULL(switch_node_iter->second);
+      const auto &switch_actor_iter = name_to_actors.find(GetActorIdByKernel(switch_node_iter->second));
+      if (switch_actor_iter == name_to_actors.end()) {
+        MS_LOG(EXCEPTION) << " Failed to get switch actor for node:" << switch_node_iter->second->fullname_with_scope()
+                          << " in graph:" << graph_->ToString();
+      }
+      const auto &actor = switch_actor_iter->second;
+      MS_EXCEPTION_IF_NULL(actor);
+      const auto &switch_actor = dynamic_cast<ConditionSwitchActor *>(actor.get());
+      MS_EXCEPTION_IF_NULL(switch_actor);
+      const auto &gather_actor = dynamic_cast<ConditionGatherActor *>(kernel_actor.get());
+      MS_EXCEPTION_IF_NULL(gather_actor);
+      switch_actor->gather_branch_name_ = &gather_actor->current_branch_name_;
+      MS_EXCEPTION_IF_NULL(switch_actor->branch_flags_);
+      gather_actor->branch_flags_ = switch_actor->branch_flags_;
+    } else if (common::AnfAlgo::CheckPrimitiveType(kernel_actor->kernel_, prim::kPrimConditionSwitch)) {
+      const auto &switch_actor = dynamic_cast<ConditionSwitchActor *>(kernel_actor.get());
+      MS_EXCEPTION_IF_NULL(switch_actor);
+      std::shared_ptr<bool[]> flags(new bool[switch_actor->branch_names_.size()], std::default_delete<bool[]>());
+      switch_actor->branch_flags_ = flags;
+      MS_EXCEPTION_IF_NULL(switch_actor->branch_flags_);
+      for (size_t i = 0; i < switch_actor->branch_names_.size(); ++i) {
+        const auto &branch_name = switch_actor->branch_names_[i];
+        branch_name_to_flags[branch_name] = &(switch_actor->branch_flags_.get()[i]);
+        switch_actor->branch_flags_.get()[i] = false;
+        MS_LOG(INFO) << "Add flag:" << branch_name_to_flags[branch_name] << " for branch:" << branch_name
+                     << " in actor:" << kernel_actor->GetAID() << " graph:" << graph_->ToString();
+      }
+    }
+    const auto &branch_name_iter = graph_->inline_sub_graph_kernels().find(kernel_actor->kernel_);
+    if (branch_name_iter == graph_->inline_sub_graph_kernels().end()) {
+      kernel_actor->is_enable_ = &enable_inline_control_flow_;
+      continue;
+    }
+    auto branch_name = branch_name_iter->second;
+    const auto &flag_iter = branch_name_to_flags.find(branch_name);
+    if (flag_iter == branch_name_to_flags.end()) {
+      MS_LOG(EXCEPTION) << "Failed to get branch flag by branch name:" << branch_name
+                        << " node:" << kernel_actor->kernel_->fullname_with_scope()
+                        << " in graph:" << graph_->ToString();
+    }
+    kernel_actor->is_enable_ = flag_iter->second;
+    MS_LOG(DEBUG) << "Set flag:" << flag_iter->second << " for kernel actor:" << kernel_actor->GetAID()
+                  << " graph:" << graph_->ToString();
+  }
+}
+
 void SuperKernelActor::BuildAndLinkKernelActors() {
+  MS_LOG(DEBUG) << "Build and link for actor:" << GetAID() << " kbk execute:" << enable_kbk_sub_graph_execute_;
   if (enable_kbk_sub_graph_execute_) {
     BuildKernelActors();
     LinkKernelActors();
+    SetRelationForControlFlow();
+    if (enable_parallel_dispatch_) {
+      PartitionParallelDispatchKernels();
+    }
   }
+}
+
+void SuperKernelActor::PartitionParallelDispatchKernels() {
+  auto runtime_conf_instance = RuntimeConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(runtime_conf_instance);
+  parallel_dispatch_num_ = runtime_conf_instance->group_launch_thread_num();
+  if (parallel_dispatch_num_ < 1) {
+    MS_LOG(EXCEPTION) << "Invalid thread num: " << parallel_dispatch_num_
+                      << " for kernel launch group, please check the `thread_num` value of function: "
+                         "runtime.set_kernel_launch_group(thread_num, kernel_group_num)";
+  }
+  MS_LOG(INFO) << "The parallel dispatch thread number: " << parallel_dispatch_num_;
+
+  auto total_kernel_group_num = runtime_conf_instance->kernel_group_num();
+  parallel_slice_num_ = total_kernel_group_num / parallel_dispatch_num_;
+  if (parallel_slice_num_ < 1) {
+    MS_LOG(EXCEPTION) << "Invalid kernel group num: " << total_kernel_group_num
+                      << ", kernel group num must be greater than or equal to thread num: " << parallel_dispatch_num_
+                      << ", please check the parameter value of function: "
+                         "runtime.set_kernel_launch_group(thread_num, kernel_group_num)";
+  }
+  MS_LOG(INFO) << "The kernel group per thread: " << parallel_slice_num_;
+
+  // Get parallel launch kernels slice/group.
+  parallel_launch_kernels_.resize(parallel_dispatch_num_ * parallel_slice_num_);
+  size_t total_kernel_num = kernel_actors_.size();
+  size_t kernel_num_per_dispatcher = total_kernel_num / (parallel_dispatch_num_ * parallel_slice_num_);
+  MS_LOG(INFO) << "Total kernel num: " << kernel_actors_.size();
+  MS_LOG(INFO) << "The kernel num per parallel slice: " << kernel_num_per_dispatcher;
+  auto begin_iter = kernel_actors_.begin();
+  for (size_t i = 0; i < parallel_launch_kernels_.size(); i++) {
+    if (i < parallel_launch_kernels_.size() - 1) {
+      parallel_launch_kernels_[i] = std::vector<KernelActorPtr>(begin_iter + i * kernel_num_per_dispatcher,
+                                                                begin_iter + (i + 1) * kernel_num_per_dispatcher);
+    } else {
+      parallel_launch_kernels_[i] =
+        std::vector<KernelActorPtr>(begin_iter + i * kernel_num_per_dispatcher, kernel_actors_.end());
+    }
+    MS_LOG(INFO) << "The kernel group[" << i << "] kernel num: " << parallel_launch_kernels_[i].size();
+  }
+
+  // Get serial launch kernels.
+  for (auto &kernel_actor : kernel_actors_) {
+    if (!kernel_actor) {
+      continue;
+    }
+    auto &llm_manager = LLMManager::GetInstance();
+    const auto &kernel_name = kernel_actor->kernel_mod_->kernel_name();
+    bool need_force_resize = llm_manager.need_force_resize(kernel_name);
+    if (need_force_resize || (common::AnfAlgo::IsCommunicationOp(kernel_actor->kernel_) ||
+                              kernel_name == "QbmmAllReduceAdd" || kernel_name == "MatmulAllReduceAddRmsNorm")) {
+      serial_launch_kernels_.push_back(kernel_actor);
+    } else if (kernel_name.find(kAllReduceOpName) != std::string::npos ||
+               kernel_name.find(kAllGatherOpName) != std::string::npos ||
+               kernel_name.find(kReduceScatterOpName) != std::string::npos ||
+               kernel_name.find(kAllToAllOpName) != std::string::npos ||
+               kernel_name.find(kAlltoAllOpName) != std::string::npos) {
+      MS_LOG(WARNING) << "Find parallel dispatch communication op: " << kernel_name;
+    }
+  }
+}
+
+KernelActorPtr SuperKernelActor::BuildInnerControlFlowActor(const CNodePtr &kernel, const DeviceContext *device_context,
+                                                            GraphExecutionStrategy strategy,
+                                                            const std::set<size_t> &ref_input_indexes,
+                                                            const std::set<size_t> &ref_output_indexes) {
+  MS_EXCEPTION_IF_NULL(kernel);
+  if (!common::AnfAlgo::CheckPrimitiveType(kernel, prim::kPrimConditionGather) &&
+      !common::AnfAlgo::CheckPrimitiveType(kernel, prim::kPrimConditionSwitch)) {
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, kernel)
+      << "#dmsg#Runtime error info:#dmsg#Kernel " << kernel->fullname_with_scope()
+      << " is not a inner control flow kernel.";
+  }
+  if (common::AnfAlgo::CheckPrimitiveType(kernel, prim::kPrimConditionSwitch)) {
+    return std::make_shared<ConditionSwitchActor>(GenerateActorIdByKernel(kernel), kernel, device_context,
+                                                  memory_manager_aid_, debug_aid_, recorder_aid_, strategy,
+                                                  ref_input_indexes, ref_output_indexes);
+  }
+  return std::make_shared<ConditionGatherActor>(GenerateActorIdByKernel(kernel), kernel, device_context,
+                                                memory_manager_aid_, debug_aid_, recorder_aid_, strategy,
+                                                ref_input_indexes, ref_output_indexes);
 }
 
 void SuperKernelActor::BuildKernelActors() {
@@ -1192,7 +1624,11 @@ void SuperKernelActor::BuildKernelActors() {
     if (IsRpcActor(kernel)) {
       MS_LOG(EXCEPTION) << "Can not launch a sub graph which contains rpc kernel by kbk.";
     } else if (IsInnerControlFlowActor(kernel)) {
-      MS_LOG(EXCEPTION) << "Can not launch a sub graph which contains ConditionSwitch or ConditionSwitch by kbk.";
+      kernel_actors_[i] = BuildInnerControlFlowActor(kernel, real_device_context, GraphExecutionStrategy::kPipeline,
+                                                     ref_input_indexes, ref_output_indexes);
+      SchedulerHelper::AddSomasInfo(kernel_actors_[i].get());
+      cnode_to_kernel_actor_[kernel] = kernel_actors_[i].get();
+      continue;
     }
 
     KernelActorPtr kernel_actor = std::make_shared<KernelActor>(
@@ -1257,18 +1693,330 @@ void SuperKernelActor::BuildKernelActors() {
     }
     const auto &output_actor = iter->second;
     MS_EXCEPTION_IF_NULL(output_actor);
-    output_actor->is_output_kernel_ = true;
     SchedulerHelper::AddSomasInfoForGraphOutput(output_actor, output_index, graph_->graph_id());
   }
 
-  // 3. Initialize all kernel actor.
+  // 3. Set free index for input and output address.
+  // this step must execute before step 4 to get the input and output free index, so that the Init of kernel actor
+  // could get the device address to be free.
+  SetFreePositionForKernelActor();
+
+  const auto &outputs = common::AnfAlgo::GetAllOutputWithIndex(graph_->output());
+  for (const auto &output : outputs) {
+    MS_EXCEPTION_IF_NULL(output.first);
+    const auto &iter = cnode_to_kernel_actor_.find(output.first);
+    if (iter == cnode_to_kernel_actor_.end()) {
+      continue;
+    }
+    const auto &actor = iter->second;
+    MS_EXCEPTION_IF_NULL(actor);
+    if (output.second >= actor->is_output_kernel_.size()) {
+      MS_LOG(EXCEPTION) << "Invalid output index:" << output.second << " size:" << actor->is_output_kernel_.size()
+                        << " for actor:" << actor->GetAID();
+    }
+    actor->is_output_kernel_[output.second] = true;
+  }
+
+  // 4. Initialize all kernel actor.
   // Note: this step must execute before LinkKernelActors, LinkKernelActors will check whether the output ref count is
-  // max or not to optimize free performance for somas case, need not try to free the output which has a max ref count.
+  // max or not to optimize free performance for somas case, need not try to free the output which has a max ref
+  // count.
   for (size_t i = 0; i < kernel_num; i++) {
     const auto &kernel_actor = kernel_actors_[i];
     if (kernel_actor) {
       kernel_actor->Init();
     }
+  }
+}
+SuperKernelActor::SuperKernelActor(const std::string &name, const KernelGraphPtr &graph, const std::string &graph_phase,
+                                   const DeviceContext *device_context, const AID &memory_manager_aid,
+                                   const AID *debug_aid, const AID *recorder_aid, KernelTransformType type)
+    : DebugAwareActor(name, type, recorder_aid, memory_manager_aid, debug_aid, nullptr),
+      graph_(graph),
+      graph_phase_(graph_phase),
+      is_infer_phase_(IsInferPhase(graph_phase)),
+      enable_kbk_sub_graph_execute_(EnableKbkSubGraphExecute()),
+      enable_trace_memory_(EnableTraceMemory()) {
+  (void)device_contexts_.emplace_back(device_context);
+  input_device_tensors_.resize(graph->input_nodes().size());
+  std::vector<bool> is_enable_inputs(graph->input_nodes().size(), true);
+  is_input_used_.swap(is_enable_inputs);
+  kernel_async_infer_aid_ = KernelAsyncInferActor::GetInstance()->GetAID();
+  kernel_async_resize_aid_ = KernelAsyncResizeActor::GetInstance()->GetAID();
+  kernel_async_launch_aid_ = KernelAsyncLaunchActor::GetInstance()->GetAID();
+  somas_info_ = graph_->MutableSomasInfo();
+  enable_parallel_dispatch_ = EnableParallelDispatchKernel() && (graph_phase_.find("increment") != std::string::npos);
+}
+
+void SuperKernelActor::GetRefCountForGraphOutput(const std::vector<AnfNodePtr> &output_data_nodes,
+                                                 const std::vector<DataArrowPtr> &output_data_arrows,
+                                                 const mindspore::HashMap<AnfNodePtr, KernelActor *> &kernel_to_actor,
+                                                 const std::map<uint32_t, std::vector<CNodePtr>> &inplace_groups,
+                                                 const std::string &actor_name) {
+  mindspore::HashMap<KernelActor *, mindspore::HashMap<size_t, size_t>> kernel_actor_to_increase_new_ref_count;
+  if (output_data_nodes.size() != output_data_arrows.size()) {
+    MS_LOG(EXCEPTION) << "Invalid output data node size:" << output_data_nodes.size()
+                      << " and arrow size:" << output_data_arrows.size() << " for actor:" << actor_name;
+  }
+  for (size_t i = 0; i < output_data_nodes.size(); ++i) {
+    MS_EXCEPTION_IF_NULL(output_data_nodes[i]);
+    MS_EXCEPTION_IF_NULL(output_data_arrows[i]);
+    const auto &real_node_with_index = common::AnfAlgo::VisitKernelWithReturnType(
+      output_data_nodes[i], output_data_arrows[i]->from_output_index_, false);
+    MS_EXCEPTION_IF_NULL(real_node_with_index.first);
+    MS_LOG(DEBUG) << "Check output node:" << output_data_nodes[i]->fullname_with_scope()
+                  << " real node:" << real_node_with_index.first->fullname_with_scope()
+                  << " index:" << real_node_with_index.second << " to actor:" << output_data_arrows[i]->to_op_id_
+                  << " to index:" << output_data_arrows[i]->to_input_index_ << " for actor:" << actor_name;
+    if (real_node_with_index.first->isa<CNode>()) {
+      if (!AnfAlgo::OutputAddrExist(real_node_with_index.first, real_node_with_index.second, false)) {
+        MS_LOG(EXCEPTION) << "Failed to get output device address in node:"
+                          << real_node_with_index.first->fullname_with_scope()
+                          << " index:" << real_node_with_index.second << " for actor:" << actor_name;
+      }
+      const auto &device_tensor =
+        AnfAlgo::GetMutableOutputAddr(real_node_with_index.first, real_node_with_index.second, false).get();
+      MS_EXCEPTION_IF_NULL(device_tensor);
+      auto actor_iter = kernel_to_actor.find(real_node_with_index.first);
+      if (actor_iter == kernel_to_actor.end()) {
+        MS_LOG(EXCEPTION) << "Failed to get actor by kernel:" << real_node_with_index.first->fullname_with_scope();
+      }
+      MS_EXCEPTION_IF_NULL(actor_iter->second);
+      actor_iter->second->increase_ref_count_size_[real_node_with_index.second]++;
+      kernel_actor_to_increase_new_ref_count[actor_iter->second][real_node_with_index.second]++;
+    }
+  }
+
+  for (const auto &group : inplace_groups) {
+    if (group.second.size() <= 1) {
+      continue;
+    }
+    MS_EXCEPTION_IF_NULL(group.second[0]);
+    auto actor_iter = kernel_to_actor.find(group.second[0]);
+    if (actor_iter == kernel_to_actor.end()) {
+      MS_LOG(EXCEPTION) << "Failed to get actor by kernel:" << group.second[0]->fullname_with_scope();
+    }
+    MS_EXCEPTION_IF_NULL(actor_iter->second);
+    actor_iter->second->increase_ref_count_size_[0] += group.second.size() - 1;
+    kernel_actor_to_increase_new_ref_count[actor_iter->second][0] += group.second.size() - 1;
+    MS_LOG(DEBUG) << "Add new ref count:" << group.second.size() - 1
+                  << " for inplace group first node:" << group.second[0]->fullname_with_scope();
+  }
+
+  for (const auto &pair : kernel_actor_to_increase_new_ref_count) {
+    for (const auto &sub_pair : pair.second) {
+      MS_LOG(DEBUG) << "Actor:" << pair.first->GetAID() << " output index:" << sub_pair.first
+                    << " should add new ref count size:" << sub_pair.second;
+    }
+  }
+}
+
+void SuperKernelActor::SetInputFreePositionForKernelActor(
+  const KernelActorPtr &kernel_actor,
+  const mindspore::HashMap<AnfNodePtr, device::DeviceContextKey> &kernel_to_context_key,
+  const device::DeviceContextKey &graph_device_context_key,
+  std::set<std::pair<KernelWithIndex, FreeNodeInfo>> *checked_nodes) {
+  MS_EXCEPTION_IF_NULL(kernel_actor);
+  MS_EXCEPTION_IF_NULL(checked_nodes);
+  size_t input_num = common::AnfAlgo::GetInputTensorNum(kernel_actor->kernel_);
+  for (size_t i = 0; i < input_num; ++i) {
+    if (i < kernel_actor->depend_shape_input_list_.size() && kernel_actor->depend_shape_input_list_[i]) {
+      MS_LOG(DEBUG) << "Actor:" << kernel_actor->GetAID() << " skip check free input device tensor index:" << i;
+      continue;
+    }
+    auto input_node_with_index = common::AnfAlgo::GetPrevNodeOutput(kernel_actor->kernel_, i, false);
+    if (IsSkippedKernelActor(input_node_with_index.first)) {
+      input_node_with_index = common::AnfAlgo::GetPrevNodeOutput(input_node_with_index.first, 0, false);
+      if (input_node_with_index.first == nullptr || !input_node_with_index.first->isa<CNode>()) {
+        MS_INTERNAL_EXCEPTION(RuntimeError)
+          << "Invalid skip kernel input " << i << " for kernel:" << kernel_actor->kernel_->fullname_with_scope()
+          << " in super kernel actor:" << GetAID();
+      }
+      MS_LOG(DEBUG) << "Skip input node:" << input_node_with_index.first->fullname_with_scope()
+                    << " index:" << input_node_with_index.second
+                    << " for kernel:" << kernel_actor->kernel_->fullname_with_scope()
+                    << " in super kernel actor:" << GetAID();
+    }
+    const auto &real_input_node_with_index =
+      common::AnfAlgo::VisitKernelWithReturnType(input_node_with_index.first, input_node_with_index.second, false);
+    const auto &input_node = real_input_node_with_index.first;
+    MS_EXCEPTION_IF_NULL(input_node);
+    FreeNodeInfo input_info = {graph_device_context_key, ""};
+    if (input_node->isa<CNode>()) {
+      const auto &output_context_iter = kernel_to_context_key.find(kernel_actor->kernel_);
+      if (output_context_iter != kernel_to_context_key.end()) {
+        input_info.context_key = output_context_iter->second;
+        if (SchedulerHelper::IsIgnoredInputAddress(kernel_actor.get(), i)) {
+          const auto &input_context_iter = kernel_to_context_key.find(input_node);
+          if (input_context_iter != kernel_to_context_key.end()) {
+            input_info.context_key = input_context_iter->second;
+            MS_LOG(DEBUG) << "Heter input kernel:" << input_node->fullname_with_scope()
+                          << " for kernel actor:" << kernel_actor->GetAID() << " in actor:" << GetAID();
+          } else {
+            MS_LOG(DEBUG) << "Failed to get device context key for input node:" << input_node->DebugString()
+                          << " of kernel:" << kernel_actor->kernel_->fullname_with_scope() << " in actor:" << GetAID();
+          }
+        }
+      } else {
+        MS_LOG(WARNING) << "Failed to get device context key for input node:" << input_node->DebugString()
+                        << " of kernel:" << kernel_actor->kernel_->fullname_with_scope() << " in actor:" << GetAID();
+      }
+      if (common::AnfAlgo::CheckPrimitiveType(input_node, prim::kPrimConditionSwitch)) {
+        const auto &iter = graph_->inline_sub_graph_kernels().find(kernel_actor->kernel_);
+        if (iter == graph_->inline_sub_graph_kernels().end()) {
+          MS_LOG(EXCEPTION) << "Failed to get branch info for kernel:" << kernel_actor->kernel_->fullname_with_scope()
+                            << " in actor:" << GetAID();
+        }
+        input_info.branch_name = iter->second;
+      }
+    }
+
+    if (checked_nodes->find({real_input_node_with_index, input_info}) != checked_nodes->end() ||
+        input_node->isa<ValueNode>()) {
+      continue;
+    }
+    checked_nodes->emplace(real_input_node_with_index, input_info);
+    MS_LOG(DEBUG) << "Get real input node:" << real_input_node_with_index.first->DebugString()
+                  << " context key:" << input_info.context_key.ToString()
+                  << " for kernel:" << kernel_actor->kernel_->fullname_with_scope();
+    if (input_node->isa<Parameter>()) {
+      auto iter = std::find(graph_->input_nodes().begin(), graph_->input_nodes().end(), input_node);
+      if (iter == graph_->input_nodes().end()) {
+        MS_LOG(EXCEPTION) << "Failed to find parameter:" << input_node->DebugString()
+                          << " in graph:" << graph_->ToString();
+      }
+      size_t input_position = iter - graph_->input_nodes().begin();
+      is_input_used_[input_position] = true;
+    }
+    kernel_actor->input_free_index_.emplace_back(i);
+    MS_LOG(DEBUG) << "Add free input index:" << i << " for actor:" << kernel_actor->GetAID();
+  }
+}
+
+void SuperKernelActor::SetOutputFreePositionForKernelActor(
+  const KernelActorPtr &kernel_actor,
+  const mindspore::HashMap<AnfNodePtr, device::DeviceContextKey> &kernel_to_context_key,
+  const device::DeviceContextKey &graph_device_context_key,
+  std::set<std::pair<KernelWithIndex, FreeNodeInfo>> *checked_nodes) {
+  MS_EXCEPTION_IF_NULL(kernel_actor);
+  MS_EXCEPTION_IF_NULL(checked_nodes);
+  const auto kernel_info = dynamic_cast<KernelInfo *>(kernel_actor->kernel_->kernel_info());
+  MS_EXCEPTION_IF_NULL(kernel_info);
+  size_t output_num = kernel_info->output_address_list().size();
+  for (size_t i = 0; i < output_num; ++i) {
+    const auto &real_node_with_index = common::AnfAlgo::VisitKernelWithReturnType(kernel_actor->kernel_, i, false);
+    FreeNodeInfo output_info = {graph_device_context_key, ""};
+    const auto &output_context_iter = kernel_to_context_key.find(kernel_actor->kernel_);
+    if (output_context_iter != kernel_to_context_key.end()) {
+      output_info.context_key = output_context_iter->second;
+    } else {
+      MS_LOG(WARNING) << "Failed to get device context key for kernel:" << kernel_actor->kernel_->fullname_with_scope()
+                      << " in actor:" << GetAID();
+    }
+    if (!common::AnfAlgo::CheckPrimitiveType(kernel_actor->kernel_, prim::kPrimConditionSwitch)) {
+      if (checked_nodes->find({real_node_with_index, output_info}) != checked_nodes->end()) {
+        continue;
+      }
+      checked_nodes->emplace(real_node_with_index, output_info);
+      kernel_actor->output_free_index_.emplace_back(i);
+      MS_LOG(DEBUG) << "Add free output index:" << i << " context key:" << output_info.context_key.ToString()
+                    << " for actor:" << kernel_actor->GetAID();
+      continue;
+    }
+    const auto &switch_actor = dynamic_cast<ConditionSwitchActor *>(kernel_actor.get());
+    MS_EXCEPTION_IF_NULL(switch_actor);
+    if (!switch_actor->kernel_->HasAttr(kInlineSubGraphName)) {
+      MS_LOG(EXCEPTION) << "Failed to get branch name by actor:" << switch_actor->GetAID();
+    }
+    const auto &branch_name_value = switch_actor->kernel_->GetAttr(kInlineSubGraphName);
+    MS_EXCEPTION_IF_NULL(branch_name_value);
+    MS_LOG(DEBUG) << "inline branch name:" << branch_name_value->ToString() << " for actor:" << GetAID();
+    if (!branch_name_value->isa<ValueTuple>()) {
+      MS_LOG(EXCEPTION) << "Invalid branch name:" << branch_name_value->ToString() << " for actor:" << GetAID();
+    }
+    const auto &tuple_name = branch_name_value->cast<ValueTuplePtr>();
+    MS_EXCEPTION_IF_NULL(tuple_name);
+    MS_LOG(DEBUG) << "Check output free position for condition switch actor:" << switch_actor->GetAID()
+                  << " branch:" << switch_actor->branch_names_;
+    for (const auto &name_value : tuple_name->value()) {
+      output_info.branch_name = GetValue<std::string>(name_value);
+      MS_LOG(DEBUG) << "Check branch:" << output_info.branch_name << " for actor:" << switch_actor->GetAID();
+      if (checked_nodes->find({real_node_with_index, output_info}) != checked_nodes->end()) {
+        continue;
+      }
+      checked_nodes->emplace(real_node_with_index, output_info);
+      switch_actor->branch_output_free_index_[output_info.branch_name].emplace_back(i);
+      MS_LOG(DEBUG) << "Add free output index:" << i << " for branch:" << output_info.branch_name
+                    << " in actor:" << kernel_actor->GetAID();
+    }
+  }
+}
+
+void SuperKernelActor::SetFreePositionForKernelActor() {
+  mindspore::HashMap<AnfNodePtr, device::DeviceContextKey> kernel_to_context_key;
+  mindspore::HashMap<AnfNodePtr, KernelActor *> kernel_to_actor;
+  std::map<uint32_t, std::vector<CNodePtr>> inplace_groups;
+
+  // 1. Clear free index in actors.
+  std::vector<bool> disable_inputs(graph_->input_nodes().size(), false);
+  is_input_used_.swap(disable_inputs);
+  input_free_index_.clear();
+  output_free_index_.clear();
+
+  for (const auto &kernel_actor : kernel_actors_) {
+    if (kernel_actor == nullptr) {
+      continue;
+    }
+    MS_EXCEPTION_IF_NULL(kernel_actor->kernel());
+    if (common::AnfAlgo::IsInplaceNode(kernel_actor->kernel(), "inplace_algo")) {
+      auto primitive = common::AnfAlgo::GetCNodePrimitive(kernel_actor->kernel());
+      MS_EXCEPTION_IF_NULL(primitive);
+      auto inplace_group_attr = primitive->GetAttr("inplace_group");
+      MS_EXCEPTION_IF_NULL(inplace_group_attr);
+      auto group_id = GetValue<uint32_t>(inplace_group_attr);
+      inplace_groups[group_id].emplace_back(kernel_actor->kernel());
+    }
+
+    kernel_to_actor[kernel_actor->kernel()] = kernel_actor.get();
+    if (kernel_actor->device_contexts().empty() || kernel_actor->device_contexts()[0] == nullptr) {
+      MS_LOG(EXCEPTION) << "Invalid device context, context size:" << kernel_actor->device_contexts().size()
+                        << " for actor:" << kernel_actor->GetAID();
+    }
+    kernel_to_context_key[kernel_actor->kernel()] = kernel_actor->device_contexts()[0]->device_context_key();
+    kernel_actor->input_free_index_.clear();
+    kernel_actor->output_free_index_.clear();
+  }
+  if (device_contexts_.empty() || device_contexts_[0] == nullptr) {
+    MS_LOG(EXCEPTION) << "Invalid graph device context, context size:" << device_contexts_.size()
+                      << " for actor:" << GetAID();
+  }
+  auto graph_device_context_key = device_contexts_[0]->device_context_key();
+
+  // Get ref count by graph output, the ref count should be increased in launch kernel thread.
+  GetRefCountForGraphOutput(output_data_nodes_, output_data_arrows_, kernel_to_actor, inplace_groups, GetAID().Name());
+
+  std::set<std::pair<KernelWithIndex, FreeNodeInfo>> checked_nodes;
+  for (auto kernel_iter = kernel_actors_.rbegin(); kernel_iter != kernel_actors_.rend(); ++kernel_iter) {
+    const auto &kernel_actor = *kernel_iter;
+    if (kernel_actor == nullptr) {
+      continue;
+    }
+    MS_EXCEPTION_IF_NULL(kernel_actor->kernel_);
+    if (kernel_actor->device_contexts().empty() || kernel_actor->device_contexts()[0] == nullptr) {
+      MS_LOG(EXCEPTION) << "Invalid device context, context size:" << kernel_actor->device_contexts().size()
+                        << " for actor:" << kernel_actor->GetAID();
+    }
+    auto kernel_device_context_key = kernel_actor->device_contexts()[0]->device_context_key();
+
+    SetInputFreePositionForKernelActor(kernel_actor, kernel_to_context_key, graph_device_context_key, &checked_nodes);
+    SetOutputFreePositionForKernelActor(kernel_actor, kernel_to_context_key, graph_device_context_key, &checked_nodes);
+  }
+  for (const auto &kernel_actor : kernel_actors_) {
+    if (kernel_actor == nullptr) {
+      continue;
+    }
+    MS_LOG(DEBUG) << "Actor:" << kernel_actor->GetAID() << " input free index:" << kernel_actor->input_free_index_
+                  << " output free index:" << kernel_actor->output_free_index_;
   }
 }
 
@@ -1281,6 +2029,7 @@ void SuperKernelActor::LinkKernelActors() {
   for (size_t i = 0; i < input_num; i++) {
     param_node_to_input_idx_[input_nodes[i].get()] = i;
   }
+
   input_params_use_cnt_.resize(input_num, 0);
 
   // 1. Record input index -> device tensor store key (AnfNodePtr), use to check
@@ -1335,6 +2084,28 @@ void SuperKernelActor::LinkKernelActors() {
       MS_LOG(DEBUG) << "SuperKernelActor: " << GetAID().Name() << " Parameter[" << input_nodes[i]->fullname_with_scope()
                     << "] debug_name: " << input_nodes[i]->DebugString()
                     << " use count is: " << input_params_use_cnt_[i];
+    }
+  }
+}
+
+void ParamFirstUsedKernelActorsToMap(
+  const std::vector<std::pair<KernelActorPtr, size_t>> &param_first_used_kernel_actors,
+  mindspore::HashMap<KernelActorPtr, std::vector<std::pair<size_t, size_t>>> *kernel_actor_to_graph_parameters_map) {
+  if (!EnableInputOptimize()) {
+    return;
+  }
+  for (size_t i = 0; i < param_first_used_kernel_actors.size(); ++i) {
+    auto &kernel_actor = param_first_used_kernel_actors[i].first;
+    auto actor_input_idx = param_first_used_kernel_actors[i].second;
+    if (kernel_actor == nullptr) {
+      continue;
+    }
+    const auto &iter = (*kernel_actor_to_graph_parameters_map).find(kernel_actor);
+    if (iter == (*kernel_actor_to_graph_parameters_map).end()) {
+      (*kernel_actor_to_graph_parameters_map)[kernel_actor].emplace_back(actor_input_idx, i);
+    } else {
+      auto &param_map_list = iter->second;
+      param_map_list.push_back({actor_input_idx, i});
     }
   }
 }
@@ -1417,10 +2188,13 @@ void SuperKernelActor::AnalyseNodesDependence(
         auto output_idx_iter = output_node_to_actor_output_index.find(input_node_with_idx.first);
         if (output_idx_iter != output_node_to_actor_output_index.end()) {
           kernel_input_to_actor_output_indices_[kernel.get()].emplace_back(j, output_idx_iter->second);
+          MS_LOG(DEBUG) << "Add kernel input:" << j << " kernel:" << kernel->fullname_with_scope()
+                        << " for actor:" << GetAID();
         }
       }
     }
   }
+
   CollectStreamFirstUsedParamKernelActors(&param_first_used_actors_on_stream, &kernel_actors_insert_event_);
   ParamFirstUsedKernelActorsToMap(*param_first_used_kernel_actors, &kernel_actor_to_graph_parameters_map_);
   RecordInputParamsWithoutUser(graph_, parameter_indexs_map, input_params_use_cnt_, &input_params_no_user_);
@@ -1466,9 +2240,20 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
   bool need_not_copy_output_device_addr = (device_context->GetDeviceType() == input_device_context->GetDeviceType()) ||
                                           SchedulerHelper::IsIgnoredInputAddress(kernel_actor, input_index);
   MS_LOG(DEBUG) << "Kernel:" << kernel->fullname_with_scope() << " input kernel:" << input_kernel->fullname_with_scope()
+                << " input index:" << input_index << " device context type:" << device_context->GetDeviceType()
+                << " input context type:" << input_device_context->GetDeviceType()
                 << " need copy:" << need_not_copy_output_device_addr << " for actor:" << GetAID();
   if (need_not_copy_output_device_addr) {
     UpdateRefCount(input_device_tensor.get(), false);
+    if (input_index >= kernel_actor->input_device_tensors_.size() ||
+        input_index >= kernel_actor->input_kernel_tensors_for_infer_.size() ||
+        input_index >= kernel_actor->memory_free_list_.size()) {
+      MS_LOG(EXCEPTION) << "Invalid input index:" << input_index
+                        << " for input size:" << kernel_actor->input_device_tensors_.size()
+                        << "  kernel tensor size:" << kernel_actor->input_kernel_tensors_for_infer_.size()
+                        << " memory free list size:" << kernel_actor->memory_free_list_.size()
+                        << " for actor:" << kernel_actor->GetAID();
+    }
     kernel_actor->SetInputDeviceTensor(input_device_tensor.get(), input_index);
     kernel_actor->memory_free_list_[input_index] = input_device_tensor.get();
     return;
@@ -1485,6 +2270,8 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
     input_copy_kernel_tensor->set_device_ptr(nullptr);
 
     auto input_copy_device_address = device_context->device_res_manager_->CreateDeviceAddress(input_copy_kernel_tensor);
+    MS_LOG(DEBUG) << "Create copy device address:" << input_copy_device_address
+                  << " for actor:" << input_kernel_actor->GetAID();
     auto ret_pair = copy_output_device_tensors.emplace(
       output_index,
       std::make_pair(input_copy_device_address, std::make_pair(device_context, std::vector<DeviceTensor *>())));
@@ -1534,6 +2321,15 @@ void SuperKernelActor::TrackInputMemory() {
     }
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(UseMemBlock, GetAID().Name(), device_addr->GetPtr());
   }
+}
+
+void SuperKernelActor::IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) {
+  if (enable_kbk_sub_graph_execute_) {
+    MS_LOG(DEBUG) << "Skip increaase new ref count for actor:" << GetAID();
+    return;
+  }
+  std::for_each(output_data_.begin(), output_data_.end(),
+                [this](const auto &pair) { IncreaseNewRefCount(pair.first.get()); });
 }
 }  // namespace runtime
 }  // namespace mindspore

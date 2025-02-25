@@ -26,6 +26,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/distributed/ps/ps_context.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 #ifndef BUILD_LITE
 #include "runtime/graph_scheduler/parameter_store.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
@@ -51,6 +52,8 @@ bool ActorDispatcher::enable_static_shape_ = false;
 bool ActorDispatcher::enable_trace_dynamic_memory_ = false;
 bool ActorDispatcher::enable_use_trace_memory_ = false;
 bool ActorDispatcher::enable_input_optimize_for_cur_actor_set_ = true;
+bool ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set_ = false;
+bool ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_step_ = false;
 
 bool IsSuperKernelActor(const AnfNodePtr &node, const KernelGraphPtr &kernel_graph) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
@@ -120,20 +123,9 @@ bool IsHostQueueDSActor(const AnfNodePtr &node, const KernelGraphPtr &graph,
 bool IsGraphRootParameter(const AnfNodePtr &node, const KernelGraphPtr &graph,
                           const std::vector<AnfNodePtr> &host_parameters, GraphExecutionStrategy strategy) {
   MS_EXCEPTION_IF_NULL(node);
-  KernelWithIndex front_node_with_idx{nullptr, 0};
-  if (IsInternalParameter(node, graph)) {
-    front_node_with_idx = graph->GetFrontNodeByInternalParameter(node);
-  } else {
-    front_node_with_idx = graph->GetElementInTupleBackendFrontIndexMap(node);
-    if (front_node_with_idx.first == nullptr) {
-      front_node_with_idx = {AnfAlgo::FetchFrontNodeByBackendNode(node, *graph), 0};
-    }
-  }
-  auto front_node = front_node_with_idx.first;
-  MS_EXCEPTION_IF_NULL(front_node);
-  bool is_parameter_data = front_node->isa<Parameter>();
-  if (is_parameter_data) {
-    return true;
+
+  if (!node->isa<Parameter>()) {
+    return false;
   }
   // Need to be updated every step.
   if (node->has_user_data(kForwardOutput)) {
@@ -150,6 +142,7 @@ bool IsGraphRootParameter(const AnfNodePtr &node, const KernelGraphPtr &graph,
   }
 
   // In control flow, only the parameters of the root funcgraph are in the host data source.
+  const auto &front_node = graph->GetFrontAnfByBackendAnf(node);
   bool is_host = ((front_node == nullptr) ||
                   find(host_parameters.begin(), host_parameters.end(), front_node) != host_parameters.end());
 
@@ -317,6 +310,9 @@ void ResetPipelineAndTraceMemoryStatus() {
   ActorDispatcher::set_enable_static_shape(false);
   ActorDispatcher::set_enable_trace_dynamic_memory(false);
   ActorDispatcher::set_enable_use_trace_memory(false);
+
+  ActorDispatcher::set_enable_parallel_dispatch_kernel_for_cur_actor_set(false);
+  ActorDispatcher::set_enable_parallel_dispatch_kernel_for_cur_step(false);
 }
 
 bool EnableKbkSubGraphExecute() {
@@ -384,6 +380,13 @@ bool EnableRuntimePipeline() {
 #endif
 
   return true;
+}
+
+bool EnableParallelDispatchKernel() {
+  auto runtime_conf_instance = runtime::RuntimeConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(runtime_conf_instance);
+  static bool enable_parallel_dispatch_kernel = runtime_conf_instance->IsKernelLaunchGroupConfigured();
+  return enable_parallel_dispatch_kernel;
 }
 
 size_t GetDefragMemoryStepFreq() {
@@ -714,6 +717,13 @@ void MemoryTraceManager::PickMemoryTrackInfoForGraph(uint32_t graph_id) {
   }
   kernel_to_block_ = graph_to_kernel_blocks_[graph_id];
   MS_EXCEPTION_IF_NULL(kernel_to_block_);
+
+  if (graph_to_kernel_tensor_with_mem_blocks_.find(graph_id) == graph_to_kernel_tensor_with_mem_blocks_.end()) {
+    graph_to_kernel_tensor_with_mem_blocks_.emplace(
+      graph_id, std::make_shared<HashMap<kernel::KernelTensor *, KernelMemoryTraceBlockPtr>>());
+  }
+  kernel_tensor_to_kernel_mem_blocks_ = graph_to_kernel_tensor_with_mem_blocks_[graph_id];
+  MS_EXCEPTION_IF_NULL(kernel_tensor_to_kernel_mem_blocks_);
 }
 
 void MemoryTraceManager::AddKernelMemoryTraceBlock(const KernelMemoryTraceBlockPtr &block,
@@ -732,6 +742,11 @@ const std::shared_ptr<std::map<const DeviceContext *, std::vector<MemoryTraceBlo
 const std::shared_ptr<mindspore::HashMap<CNodePtr, std::vector<KernelMemoryTraceBlockPtr>>>
   &MemoryTraceManager::GetAllKernelBlocksnfo() {
   return kernel_to_block_;
+}
+
+const std::shared_ptr<HashMap<kernel::KernelTensor *, KernelMemoryTraceBlockPtr>>
+  &MemoryTraceManager::GetKernelTensorToMemBlocksInfo() const {
+  return kernel_tensor_to_kernel_mem_blocks_;
 }
 
 void MemoryTraceManager::MergeBlocks() {
@@ -791,6 +806,9 @@ void MemoryTraceManager::MergeBlocksForSameDeviceContext(
 
     kernel_mem_block->offset_in_memory_trace_block_ = kernel_mem_block->start_ - mem_block->start_;
     (*kernel_to_block_)[kernel_mem_block->kernel_].emplace_back(kernel_mem_block);
+    if (EnableParallelDispatchKernel() && kernel_mem_block->mem_type_ == kOutputMem) {
+      kernel_tensor_to_kernel_mem_blocks_->emplace(kernel_mem_block->kernel_tensor_, kernel_mem_block);
+    }
   }
 }
 
@@ -798,6 +816,9 @@ void MemoryTraceManager::Clear() {
   kernel_memory_trace_blocks_->clear();
   merged_memory_trace_blocks_->clear();
   kernel_to_block_->clear();
+  if (EnableParallelDispatchKernel()) {
+    kernel_tensor_to_kernel_mem_blocks_->clear();
+  }
 }
 
 std::unordered_map<AnfNode *, std::string> actor_ids;
@@ -954,6 +975,11 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
   for (const auto device_tensor : device_tensors) {
     // Update dynamic shape and size.
     MS_EXCEPTION_IF_NULL(device_tensor);
+    if (graph_parameter_store->GetUserCnt(outer_index, inner_index, device_tensor->GetDeviceType()) == 0) {
+      MS_LOG(DEBUG) << "Skip sync host to device for device tensor:" << device_tensor->PrintInfo()
+                    << " outer index:" << outer_index << " inner index:" << inner_index << " for user count:0.";
+      continue;
+    }
     UpdateDynamicShapeAndSize(tensor, device_tensor, outer_index, inner_index);
     graph_parameter_store->ResetAddrRefCount(outer_index, inner_index, device_tensor->GetDeviceType());
     if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
@@ -963,6 +989,9 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
       continue;
     }
     if (device_tensor->GetSize() == 0) {
+      // The device tensor will not allocate a valid ptr, but it would be send to actor to decrease the ref count,
+      // so the ref count should be add.
+      device_tensor->IncreaseNewRefCount();
       MS_LOG(DEBUG) << from_aid.Name() << " input size is 0, outer index" << outer_index
                     << ", inner index: " << inner_index << ", address: " << device_tensor << ".";
       continue;
@@ -1081,8 +1110,11 @@ DeviceTensorPtr PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size
   auto front_node = parameter_index.first;
   MS_EXCEPTION_IF_NULL(front_node.first);
   if (front_node.first->isa<Parameter>() &&
-      common::AnfAlgo::IsParameterWeight(front_node.first->cast<ParameterPtr>())) {
+      (common::AnfAlgo::IsParameterWeight(front_node.first->cast<ParameterPtr>()) ||
+       common::AnfAlgo::HasAbstractRef(front_node.first))) {
     tensor->set_device_address(device_tensor);
+    device_tensor->set_new_ref_count(SIZE_MAX);
+    MS_LOG(DEBUG) << "Set new ref count to max for device address:" << device_tensor;
   }
   graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
   return device_tensor;
@@ -1125,7 +1157,7 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
         DeviceAddressUtils::CreateKernelTensor(tensor_address, tensor);
       }
       if (tensor_address->GetPtr() == nullptr) {
-        MS_LOG(EXCEPTION) << "Tensor address is not null, but got device ptr null.";
+        MS_LOG(EXCEPTION) << "Tensor address:" << tensor_address << " is not null, but got device ptr null.";
       }
       if (IsNeedSync(tensor)) {
         if (!tensor_address->AsyncHostToDevice(LongToSize(tensor->data().nbytes()), tensor->data_type(),
@@ -1135,6 +1167,8 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
       }
 
       UpdateRefCount(tensor_address.get(), true);
+      tensor_address->set_new_ref_count(SIZE_MAX);
+      MS_LOG(DEBUG) << "Set new ref count to max for device address:" << tensor_address;
       graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
       if (tensor_address == device_tensor) {
         return tensor_address.get();

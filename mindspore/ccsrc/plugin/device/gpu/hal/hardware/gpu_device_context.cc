@@ -299,6 +299,7 @@ bool GPUDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t
 
   address->set_ptr(device_ptr);
   address->set_from_mem_pool(true);
+  address->IncreaseNewRefCount();
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, address, device_ptr);
   return true;
 }
@@ -1160,7 +1161,7 @@ DeviceEventPtr GPUDeviceResManager::CreateRuntimeEvent(bool enable_blocking, boo
   return std::make_shared<GpuEvent>(flag);
 }
 
-DeviceEventPtr GPUDeviceResManager::CreateEventWithFlag(bool enable_timing, bool blocking) {
+DeviceEventPtr GPUDeviceResManager::CreateEventWithFlag(bool enable_timing, bool blocking, bool) {
   uint32_t flag =
     (blocking ? cudaEventBlockingSync : cudaEventDefault) | (enable_timing ? cudaEventDefault : cudaEventDisableTiming);
   auto event = std::make_shared<GpuEvent>(flag);

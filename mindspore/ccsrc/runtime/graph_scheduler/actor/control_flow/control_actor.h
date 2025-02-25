@@ -104,6 +104,9 @@ class ControlActor : public MemoryAwareActor {
   void IncreaseDynamicRefCount(const OpPartialPtr &op_partial);
   void IncreaseDynamicRefCount(const OpRealParameterWithBranchID &op_real_parameter);
 
+  void IncreaseNewRefCountForPartial(const OpPartialPtr &op_partial);
+  void IncreaseNewRefCountForRealParameter(const OpRealParameterWithBranchID &op_real_parameter);
+
   // Get the position of node in the input.
   size_t FetchNodePosition(const KernelWithIndex &node) const;
 
@@ -112,8 +115,6 @@ class ControlActor : public MemoryAwareActor {
   virtual void FetchParameterInput(OpContext<DeviceTensor> *const context);
   void Run(OpContext<DeviceTensor> *const context) override;
   bool CheckRunningCondition(const OpContext<DeviceTensor> *context) const override;
-  void UpdateOutputData(OpData<DeviceTensor> *const output_data, const DataArrowPtr &data_arrow,
-                        const AnfNodePtr &output_node, OpContext<DeviceTensor> *const context) override;
   void CreateHeterDeviceTensor(DeviceTensor *const node_device_tensor, DeviceTensor *const input_device_tensor,
                                DeviceContext *const device_context, size_t index,
                                OpContext<DeviceTensor> *const context, const AnfNodePtr &node);
@@ -122,6 +123,7 @@ class ControlActor : public MemoryAwareActor {
 
   // Increase the dynamic ref count by the outputs. It corresponds to the SendOutput.
   virtual void IncreaseDynamicRefCounts(OpContext<DeviceTensor> *const context);
+  void IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) override;
   void MergeDeviceAddress(OpContext<DeviceTensor> *const context, const std::vector<DeviceTensor *> &addr_list,
                           DeviceTensor **deivce_tensor);
   void MergeEmptyAddressDeviceAddress(OpContext<DeviceTensor> *const context,

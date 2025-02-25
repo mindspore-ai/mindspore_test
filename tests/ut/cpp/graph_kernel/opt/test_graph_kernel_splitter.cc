@@ -53,11 +53,69 @@ FuncGraphPtr ConstructGraph_1() {
   c.SetOutput(op);
   return c.GetGraph();
 }
+
 /// Feature: Test graph kernel splitter pass 
 /// Description: op will expand, then split, check main graph multiple output when no inline.
 /// Expectation: After split pass, the output should be maketuple, and inputs should be gk node.
 TEST_F(TestGraphSplit, no_inline_main_graph_multi_output) {
   SetGraphKernelFlags("--enable_expand_ops=SoftmaxCrossEntropyWithLogits");
+  SetDeviceTarget(kAscendDevice);
+  auto fg = ConstructGraph_1();
+  RunPass(fg, {std::make_shared<graphkernel::GraphKernelExpanderCloud>(),
+                               std::make_shared<graphkernel::StaticShapeCluster>(),
+                               std::make_shared<graphkernel::GraphKernelSplitterWithPy>(false)});
+  auto out = fg->output();
+  ASSERT_EQ(IsPrimitiveCNode(out, prim::kPrimMakeTuple), true);
+  auto cnode = dyn_cast_ptr<CNode>(out);
+  bool pattern_match = std::all_of(cnode->inputs().begin() + 1, cnode->inputs().end(),
+                                   [](const AnfNodePtr &anf_node) { return AnfUtils::IsGraphKernel(anf_node); });
+  ASSERT_EQ(pattern_match, true);
+  ASSERT_EQ(GetAllGKNodes(fg).size(), 5);
+}
+
+/// Feature: Test graph kernel splitter pass with enable_fusion_pattern_only
+/// Description: op will expand, then split, check main graph multiple output when no inline.
+/// Expectation: After split pass, the output should be maketuple, and inputs should be gk node.
+TEST_F(TestGraphSplit, enable_fusion_pattern_only) {
+  SetGraphKernelFlags("--enable_expand_ops=SoftmaxCrossEntropyWithLogits --enable_fusion_pattern_only=elemwise");
+  SetDeviceTarget(kAscendDevice);
+  auto fg = ConstructGraph_1();
+  RunPass(fg, {std::make_shared<graphkernel::GraphKernelExpanderCloud>(),
+                               std::make_shared<graphkernel::StaticShapeCluster>(),
+                               std::make_shared<graphkernel::GraphKernelSplitterWithPy>(false)});
+  auto out = fg->output();
+  ASSERT_EQ(IsPrimitiveCNode(out, prim::kPrimMakeTuple), true);
+  auto cnode = dyn_cast_ptr<CNode>(out);
+  bool pattern_match = std::all_of(cnode->inputs().begin() + 1, cnode->inputs().end(),
+                                   [](const AnfNodePtr &anf_node) { return AnfUtils::IsGraphKernel(anf_node); });
+  ASSERT_EQ(pattern_match, true);
+  ASSERT_EQ(GetAllGKNodes(fg).size(), 8);
+}
+
+/// Feature: Test graph kernel splitter pass with disable_fusion_pattern
+/// Description: op will expand, then split, check main graph multiple output when no inline.
+/// Expectation: After split pass, the output should be maketuple, and inputs should be gk node.
+TEST_F(TestGraphSplit, disable_fusion_pattern) {
+  SetGraphKernelFlags("--enable_expand_ops=SoftmaxCrossEntropyWithLogits --disable_fusion_pattern=reduce");
+  SetDeviceTarget(kAscendDevice);
+  auto fg = ConstructGraph_1();
+  RunPass(fg, {std::make_shared<graphkernel::GraphKernelExpanderCloud>(),
+                               std::make_shared<graphkernel::StaticShapeCluster>(),
+                               std::make_shared<graphkernel::GraphKernelSplitterWithPy>(false)});
+  auto out = fg->output();
+  ASSERT_EQ(IsPrimitiveCNode(out, prim::kPrimMakeTuple), true);
+  auto cnode = dyn_cast_ptr<CNode>(out);
+  bool pattern_match = std::all_of(cnode->inputs().begin() + 1, cnode->inputs().end(),
+                                   [](const AnfNodePtr &anf_node) { return AnfUtils::IsGraphKernel(anf_node); });
+  ASSERT_EQ(pattern_match, true);
+  ASSERT_EQ(GetAllGKNodes(fg).size(), 8);
+}
+
+/// Feature: Test graph kernel splitter pass with json
+/// Description: op will expand, then split, check main graph multiple output when no inline.
+/// Expectation: After split pass, the output should be maketuple, and inputs should be gk node.
+TEST_F(TestGraphSplit, flag_path) {
+  SetGraphKernelFlags("--path=graph_kernel_config/1.json");
   SetDeviceTarget(kAscendDevice);
   auto fg = ConstructGraph_1();
   RunPass(fg, {std::make_shared<graphkernel::GraphKernelExpanderCloud>(),

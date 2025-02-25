@@ -19,6 +19,7 @@
 #include <algorithm>
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/math_op_name.h"
+#include "mindspore/ops/op_def/other_op_name.h"  // collective communication ops
 #include "mindspore/ops/op_def/nn_optimizer_op_name.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 
@@ -227,6 +228,48 @@ class FuseMatMul : public FusePattern {
     return !fused_areas_.empty();
   }
 };
+
+class FuseAllReduceFwd : public FusePattern {
+ public:
+  FuseAllReduceFwd() : FusePattern("allreduce_fwd") { direction_ = FuseDirection::FORWARD; }
+  ~FuseAllReduceFwd() = default;
+
+  bool Check(const AreaPtr &dom) override { return dom->size() == 1 && (dom->dom()->op() == kAllReduceOpName); }
+
+  bool Match(const AreaPtr &dom) override {
+    for (auto &[a, r] : dom->inputs_with_relation()) {
+      if (a->user_num() != 1) {
+        continue;
+      }
+      if (!HasCircle(a, dom) && r == EdgeRelation::INJECTIVE && a->size() == 1 && a->dom()->op() == kMatMulOpName) {
+        (void)fused_areas_.emplace_back(a);
+      }
+    }
+    return !fused_areas_.empty();
+  }
+};
+
+class FuseAllReduceBwd : public FusePattern {
+ public:
+  FuseAllReduceBwd() : FusePattern("allreduce_bwd") { direction_ = FuseDirection::BACKWARD; }
+  ~FuseAllReduceBwd() = default;
+
+  bool Check(const AreaPtr &dom) override {
+    auto ops = dom->ops();
+    return std::any_of(ops.begin(), ops.end(), [](const PrimOpPtr op) { return op->op() == kAllReduceOpName; });
+  }
+
+  bool Match(const AreaPtr &dom) override {
+    const auto &users = dom->users();
+    for (auto &a : users) {
+      if (a->pattern() < NodePattern::BROADCAST && !HasCircle(dom, a)) {
+        (void)fused_areas_.emplace_back(a);
+      }
+    }
+    return !fused_areas_.empty();
+  }
+};
+
 }  // namespace dvm
 
 void SplitModelAscend::InitFusePatterns() {
@@ -245,6 +288,12 @@ void SplitModelAscend::InitFusePatterns() {
     AddPattern(std::make_shared<inner::ascend::FuseSlice>(), true);
     if (!graphkernel::GraphKernelFlags::GetInstance().disable_matmul_post_fusion) {
       AddPattern(std::make_shared<inner::dvm::FuseMatMul>(), true);
+    }
+    if (graphkernel::GraphKernelFlags::GetInstance().enable_allreduce_prologue_fusion) {
+      AddPattern(std::make_shared<inner::dvm::FuseAllReduceFwd>(), true);
+    }
+    if (graphkernel::GraphKernelFlags::GetInstance().enable_allreduce_epilogue_fusion) {
+      AddPattern(std::make_shared<inner::dvm::FuseAllReduceBwd>(), true);
     }
   } else {
     // fuse pattern for akg

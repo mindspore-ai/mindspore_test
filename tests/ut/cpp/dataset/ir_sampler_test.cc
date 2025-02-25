@@ -15,6 +15,7 @@
  */
 #include "common/common.h"
 #include "minddata/dataset/core/tensor.h"
+#include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/engine/datasetops/source/sampler/sampler.h"
 #include "minddata/dataset/engine/ir/datasetops/source/image_folder_node.h"
 #include "minddata/dataset/engine/ir/datasetops/source/samplers/distributed_sampler_ir.h"
@@ -40,7 +41,7 @@ class MindDataTestIrSampler : public UT::DatasetOpTesting {
 /// Expectation: Output is equal to the expected output
 TEST_F(MindDataTestIrSampler, TestCalculateNumSamples) {
   int64_t num_rows = 30;  // dummy variable for number of rows in the dataset
-  std::shared_ptr<SamplerObj> sampl = std::make_shared<DistributedSamplerObj>(2, 1, false, 6, 1, -1, true);
+  std::shared_ptr<SamplerObj> sampl = std::make_shared<DistributedSamplerObj>(2, 1, ShuffleMode::kFalse, 6, 1, -1, true);
   EXPECT_NE(sampl, nullptr);
   std::shared_ptr<SamplerRT> sampler_rt;
   sampl->SamplerBuild(&sampler_rt);

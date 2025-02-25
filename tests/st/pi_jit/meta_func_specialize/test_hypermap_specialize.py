@@ -14,8 +14,6 @@
 # ============================================================================
 """ test_hypermap_partial """
 import numpy as np
-import sys  
-import pytest 
 import mindspore.common.dtype as mstype
 import mindspore.nn as nn
 from mindspore import Tensor, context
@@ -25,10 +23,6 @@ from mindspore.ops import functional as F
 from mindspore.ops import operations as P
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
         
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_hypermap_specialize_param():

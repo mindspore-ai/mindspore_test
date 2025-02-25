@@ -18,6 +18,7 @@ import pytest
 
 import mindspore.dataset as ds
 import mindspore.dataset.vision as vision
+from mindspore.mindrecord import FileWriter
 
 
 def init_dataset_from_step_and_verify_result(dataset, init_step, num_epochs, dataset_size, expected_result=None):
@@ -328,6 +329,44 @@ def test_init_step_with_distributed_sampler():
     ds.config.set_seed(original_seed)
 
 
+@pytest.mark.parametrize("cleanup_tmp_file", ["test_distributed.mindrecord*"], indirect=True)
+def test_init_step_with_minddataset_sharding_sampling_by_slice(cleanup_tmp_file):
+    """
+    Feature: Pipeline resuming
+    Description: Test init step with minddataset sharding sampling by slice
+    Expectation: Pipeline returns data from the specified step
+    """
+    original_mode = ds.config.get_fast_recovery()
+    ds.config.set_fast_recovery(True)
+
+    mindrecord_name = "test_distributed.mindrecord"
+    writer = FileWriter(file_name=mindrecord_name, shard_num=1, overwrite=True)
+    schema_json = {"file_name": {"type": "string"}, "label": {"type": "int32"}, "data": {"type": "float64"}}
+    writer.add_schema(schema_json, "test_schema")
+    indexes = ["file_name", "data"]
+    writer.add_index(indexes)
+    for i in range(13):
+        data = [{"file_name": str(i) + ".jpg", "label": i, "data": float(i)}]
+        writer.write_raw_data(data)
+    writer.commit()
+
+    columns_list = ["label", "file_name", "data"]
+    dataset = ds.MindDataset(mindrecord_name, columns_list, 1, num_shards=3, shard_id=1, shuffle=False)
+
+    dataset = dataset.batch(2)
+    dataset = dataset.repeat(2)
+
+    num_epochs = 2
+    dataset_size = dataset.get_dataset_size()
+    expected_result = get_expected_result(dataset, num_epochs)
+    # test initialize from the beginning, the middle of the first epoch,
+    # the end of the first epoch and the middle of the second epoch
+    for init_step in [0, dataset_size // 2, dataset_size, dataset_size + dataset_size // 2]:
+        init_dataset_from_step_and_verify_result(dataset, init_step, num_epochs, dataset_size, expected_result)
+
+    ds.config.set_fast_recovery(original_mode)
+
+
 @pytest.mark.parametrize("init_step", list(range(8)))
 def test_getter(init_step):
     """
@@ -360,3 +399,4 @@ if __name__ == "__main__":
     test_init_step_with_mappable_generator(fast_recovery_mode=True, shuffle=True)
     test_init_step_with_mind_dataset(fast_recovery_mode=True, shuffle=True)
     test_getter(init_step=0)
+    test_init_step_with_minddataset_sharding_sampling_by_slice(cleanup_tmp_file)

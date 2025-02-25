@@ -14,9 +14,7 @@
 # ============================================================================
 """test cell with bprop in PIJit and pynative mode"""
 import numpy as np
-import sys  
 import pytest 
-
 import mindspore as ms
 import mindspore.common.dtype as mstype
 import mindspore.nn as nn
@@ -30,10 +28,6 @@ from mindspore import ops
 from mindspore._extends import cell_attr_register
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
         
 grad_all = C.GradOperation(get_all=True)
 

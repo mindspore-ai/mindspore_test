@@ -2200,8 +2200,7 @@ EvalResultPtr GetEvaluatedValueForFunctionalMethod(const AnalysisEnginePtr &engi
   MS_EXCEPTION_IF_NULL(out_conf->node());
   FuncGraphPtr func_graph = out_conf->node()->func_graph();
   // Create node: {Partial, Functional(method_name), Tensor}
-  auto functional = std::make_shared<Functional>(method_name);
-  functional->set_is_method(true);
+  const auto &functional = BuildMethodFunctional(method_name);
   auto data_node_conf = dyn_cast_ptr<abstract::AnfNodeConfig>(data_conf);
   MS_EXCEPTION_IF_NULL(data_node_conf);
   auto data_node = data_node_conf->node();
@@ -5376,8 +5375,7 @@ class DoUnpackCallEvaluator : public TransitionPrimEvaluator {
         return nullptr;
       }
       const auto &method_name = partial_fn_abs->cast<FunctionalAbstractClosurePtr>()->name();
-      auto functional = std::make_shared<Functional>(method_name);
-      functional->set_is_method(true);
+      const auto &functional = BuildMethodFunctional(method_name);
       // Get x.
       constexpr auto index_input = 1;
       auto op_node = cnode->input(index_input);
@@ -5814,6 +5812,12 @@ CNodePtr GeneratePrimitiveCNode(const PrimitivePtr &primitive, const ops::OpDef 
 
   MS_LOG(INFO) << "Convert primitive args: " << primitive->name() << ", new node: " << new_cnode->DebugString();
   return new_cnode;
+}
+
+std::shared_ptr<Functional> BuildMethodFunctional(const std::string &name) {
+  auto functional = std::make_shared<Functional>(name);
+  functional->set_is_method(true);
+  return functional;
 }
 }  // namespace abstract
 }  // namespace mindspore

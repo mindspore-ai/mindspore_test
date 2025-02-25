@@ -25,6 +25,7 @@
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pipeline/jit/pi/pi_jit_config.h"
+#include "pipeline/jit/ps/parse/parse.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "pipeline/jit/pi/graph_guard/infer.h"
@@ -34,8 +35,10 @@
 #include "frontend/operator/composite/unpack_call.h"
 #include "pipeline/pynative/op_function/auto_generate/functional_map.h"
 #include "include/common/utils/tensor_py.h"
+#include "pipeline/jit/pi/graph_build/build_graph_utils.h"
 
 namespace mindspore {
+namespace pijit {
 namespace {
 constexpr auto kPiJitPyObjKey = "pi_jit_py_obj";
 constexpr auto kGradFuncPyObject = "grad_func_py_obj";
@@ -43,6 +46,7 @@ constexpr auto kGradNetInputs = "grad_net_inputs";
 constexpr auto kTensorModule = "mindspore.common";
 constexpr auto kAdapterFlag = "adapter_flag";
 constexpr auto kInnerOpsModule = "mindspore.ops.operations._inner_ops";
+constexpr auto kCandidateIsolatedFlag = "candidate_isolated";
 
 bool ShouldFallBackInRuntime(const PrimitivePtr &prim) {
   static HashSet<std::string> prims_should_fallback_in_runtime = {kListInplaceExtendOpName,
@@ -57,17 +61,6 @@ bool ShouldFallBackInRuntime(const PrimitivePtr &prim) {
   return prims_should_fallback_in_runtime.find(prim->name()) != prims_should_fallback_in_runtime.end();
 }
 
-bool IsValidScalar(const AbstractBasePtr &abs) {
-  auto build_type = abs->BuildType();
-  if (build_type->isa<String>()) {
-    auto value = abs->BuildValue()->cast<StringImmPtr>();
-    const auto &str = value->value();
-    const std::string fake_prefix = "FakeNodeKey";
-    return str.substr(0, fake_prefix.size()) != fake_prefix;
-  }
-  return build_type->isa<String>() || build_type->isa<Number>();
-}
-
 bool Mutable(const py::object &obj, const ValuePtr &value = nullptr) {
   // If a tensor has been set const arg, it should not be mutable.
   if (value != nullptr && value->isa<tensor::MetaTensor>()) {
@@ -80,8 +73,6 @@ bool Mutable(const py::object &obj, const ValuePtr &value = nullptr) {
   return py::hasattr(obj, mutable_attr) && py::cast<bool>(py::getattr(obj, mutable_attr));
 }
 
-bool IsParameter(const py::object &obj) { return py::hasattr(obj, "__parameter__") && tensor::IsTensorPy(obj); }
-
 bool TensorArgMutable(const py::object &obj, const ValuePtr &value) {
   if (!value->isa<tensor::MetaTensor>()) {
     return false;
@@ -90,24 +81,56 @@ bool TensorArgMutable(const py::object &obj, const ValuePtr &value) {
   return !py::hasattr(obj, const_arg_attr) || !py::cast<bool>(py::getattr(obj, const_arg_attr));
 }
 
-ValuePtr ConvertPyObjToValue(const py::object &obj) {
-  if (obj.ptr() == nullptr) {
-    return nullptr;
-  }
+ValuePtr ConvertPyObjToValue(const py::handle &handle) {
+  MS_EXCEPTION_IF_NULL(handle.ptr());
+  py::object obj = py::reinterpret_borrow<py::object>(handle);
   ValuePtr ret = nullptr;
   try {
     MS_LOG_TRY_CATCH_SCOPE;
-    if (py::isinstance<Cell>(obj)) {
+
+    PyRecursionScope rec_check(obj);
+    SyncStubTensor(handle);
+    // NOTE: py::function::check_ alias PyCallable_Check. Python class is callable
+    // identify the function if need parse by ast
+    if (py::isinstance<Cell>(handle) || PyCFunction_Check(handle.ptr()) || IsPyCapsuleTensorOverloadMethod(obj)) {
       return std::make_shared<parse::InterpretedObject>(obj);
     }
-    if (!parse::ConvertData(obj, &ret)) {
-      return nullptr;
+    if (py::list::check_(obj) || py::tuple::check_(obj)) {
+      std::vector<ValuePtr> elements;
+      for (const auto &i : obj) {
+        auto v = ConvertPyObjToValue(i);
+        if (v == nullptr) {
+          return nullptr;
+        }
+        elements.push_back(v);
+      }
+      if (py::list::check_(obj)) {
+        return std::make_shared<ValueList>(elements);
+      } else {
+        return std::make_shared<ValueTuple>(elements);
+      }
+    }
+    if (py::dict::check_(obj)) {
+      std::vector<std::pair<ValuePtr, ValuePtr>> elements;
+      for (const auto &i : py::cast<py::dict>(obj)) {
+        auto k = ConvertPyObjToValue(i.first);
+        auto v = ConvertPyObjToValue(i.second);
+        if (k == nullptr || v == nullptr) {
+          return nullptr;
+        }
+        elements.push_back(std::make_pair(k, v));
+      }
+      return std::make_shared<ValueDictionary>(elements);
+    }
+
+    if (parse::ConvertData(obj, &ret)) {
+      return ret;
     }
   } catch (const std::exception &e) {
-    MS_LOG(DEBUG) << "Failed to convert python object << " << py::str(obj) << " to value. The exception:\n" << e.what();
-    return nullptr;
+    MS_LOG(INFO) << e.what();
   }
-  return ret;
+  MS_LOG(INFO) << "Failed to convert python object." << py::str(handle);
+  return nullptr;
 }
 
 bool HasTensorWithGradData(const ValuePtr &val) {
@@ -149,14 +172,6 @@ TypeId GetTypeIdFromClassName(const std::string &class_name) {
   }
   return iter->second;
 }
-
-bool FunctionShouldBeParseInAst(const py::object &obj) {
-  static mindspore::HashSet<std::string> func_names{"cast_to_adapter_tensor", "cast_to_ms_tensor"};
-  if (!py::hasattr(obj, "__name__")) {
-    return false;
-  }
-  return func_names.find(py::cast<std::string>(obj.attr("__name__"))) != func_names.end();
-}
 }  // namespace
 
 AnfNodePtr FuncGraphBuilder::ConvertParameterTupleToNode(const py::object &input_obj) {
@@ -168,7 +183,7 @@ AnfNodePtr FuncGraphBuilder::ConvertParameterTupleToNode(const py::object &input
   std::vector<AbstractBasePtr> inputs_abs;
   parse::Resolver resolver(parse::Parser::GetTopFuncGraph());
   for (const auto &obj : tuple_obj) {
-    if (!IsParameter(py::cast<py::object>(obj))) {
+    if (!parse::IsParameterObject(py::cast<py::object>(obj))) {
       MS_LOG(INFO) << "Encounter non parameter object in parameter tuple object: " << py::str(obj);
       return nullptr;
     }
@@ -176,10 +191,12 @@ AnfNodePtr FuncGraphBuilder::ConvertParameterTupleToNode(const py::object &input
     if (cur_node == nullptr) {
       return nullptr;
     }
+    UpdateParameterFuncGraph(cur_node);
     auto cur_abs = cur_node->abstract();
     if (cur_abs == nullptr) {
       return nullptr;
     }
+    SaveTensorRegisterHook(py::cast<py::object>(obj), cur_node);
     inputs.push_back(cur_node);
     inputs_abs.push_back(cur_abs);
   }
@@ -191,30 +208,106 @@ AnfNodePtr FuncGraphBuilder::ConvertParameterTupleToNode(const py::object &input
   return ret;
 }
 
+void FuncGraphBuilder::UpdateParameterFuncGraph(const AnfNodePtr &node) {
+  if (node == nullptr || !node->isa<Parameter>()) {
+    MS_LOG(INFO) << "Input node is not parameter, failed to update graph.";
+    return;
+  }
+  auto param = dyn_cast<Parameter>(node);
+  auto origin_fg = param->func_graph();
+  auto top_graph = parse::Parser::GetTopFuncGraph();
+  if (top_graph == origin_fg) {
+    return;
+  }
+  param->set_func_graph(top_graph);
+  MS_LOG(INFO) << "Update parameter function graph from " << origin_fg->ToString() << " to " << top_graph->ToString();
+}
+
 AnfNodePtr FuncGraphBuilder::ConvertObjToNode(const py::object &input_obj) {
-  if (IsParameter(input_obj)) {
+  if (input_obj.ptr() == nullptr) {
+    MS_LOG(INFO) << "Failed to convert input object to value, python object is null!";
+    return nullptr;
+  }
+  // avoid core dump if converted failed
+  ValuePtr val = ConvertPyObjToValue(input_obj);
+  if (val == nullptr) {
+    MS_LOG(INFO) << "Failed to convert input object to value: " << py::str(input_obj);
+    return nullptr;
+  }
+  if (!parse::ContainsParameter(input_obj)) {
+    // Constant value input scene, the object should be converted to value node.
+    auto node = NewValueNode(val);
+    node->set_abstract(val->ToAbstract());
+    return node;
+  }
+  if (parse::IsParameterObject(input_obj)) {
     // Add the fv parameter and set its abstract.
     parse::Resolver resolver(parse::Parser::GetTopFuncGraph());
-    return resolver.ResolveParameterObj(graph_, input_obj);
+    auto ret = resolver.ResolveParameterObj(graph_, input_obj);
+    UpdateParameterFuncGraph(ret);
+    return ret;
   }
   auto parameter_tuple_object = ConvertParameterTupleToNode(input_obj);
   if (parameter_tuple_object != nullptr) {
     return parameter_tuple_object;
   }
-  auto val = ConvertPyObjToValue(input_obj);
-  if (val == nullptr) {
-    MS_LOG(INFO) << "The input object " << py::str(input_obj) << " convert to value failed.";
-    return nullptr;
+  if (py::isinstance<py::tuple>(input_obj) || py::isinstance<py::list>(input_obj)) {
+    return ConvertPyTupleListToNode(input_obj);
   }
-  // Constant value input scene, the object should be converted to value node.
-  auto node = NewValueNode(val);
-  node->set_abstract(val->ToAbstract());
+  if (py::isinstance<py::dict>(input_obj)) {
+    auto dict = input_obj.cast<py::dict>();
+    return ConvertPyDictToNode(dict);
+  }
+  MS_LOG(INFO) << "The Parameter in obj '" << py::str(input_obj) << "' with nested structure is not supported."
+               << " Currently only single Parameter, ParameterTuple or Parameters in tuple/list/dict are supported.";
+  return nullptr;
+}
+
+AnfNodePtr FuncGraphBuilder::ConvertPyTupleListToNode(const py::object &obj) {
+  PrimitivePtr prim = py::isinstance<py::tuple>(obj) ? prim::kPrimMakeTuple : prim::kPrimMakeList;
+  std::vector<AnfNodePtr> args{NewValueNode(prim)};
+  std::vector<AbstractBasePtr> args_abs;
+
+  auto tuple = obj.cast<py::tuple>();
+  for (auto &elem : tuple) {
+    AnfNodePtr node = ConvertObjToNode(py::cast<py::object>(elem));
+    if (node == nullptr || node->abstract() == nullptr) {
+      MS_LOG(INFO) << "Failed to convert tuple/list element to node";
+      return nullptr;
+    }
+    args.push_back(node);
+    args_abs.push_back(node->abstract());
+  }
+  auto node = NewCNode(std::move(args), parse::Parser::GetTopFuncGraph());
+  node->set_abstract(std::make_shared<abstract::AbstractTuple>(args_abs));
   return node;
 }
 
-AbstractBasePtr FuncGraphBuilder::EvalValue(const ValuePtr &value, const AbstractBasePtrList &inputs_abs_list) {
+AnfNodePtr FuncGraphBuilder::ConvertPyDictToNode(const py::dict &dict) {
+  std::vector<AnfNodePtr> keys{NewValueNode(prim::kPrimMakeTuple)};
+  std::vector<AnfNodePtr> values{NewValueNode(prim::kPrimMakeTuple)};
+  std::vector<abstract::AbstractElementPair> kv_abs;
+  for (auto &item : dict) {
+    AnfNodePtr key = ConvertObjToNode(py::cast<py::object>(item.first));
+    AnfNodePtr value = ConvertObjToNode(py::cast<py::object>(item.second));
+    if (key == nullptr || value == nullptr || key->abstract() == nullptr || value->abstract() == nullptr) {
+      MS_LOG(INFO) << "Failed to convert dict element to node";
+      return nullptr;
+    }
+    keys.push_back(key);
+    values.push_back(value);
+    (void)kv_abs.emplace_back(std::make_pair(key->abstract(), value->abstract()));
+  }
+  FuncGraphPtr fg = parse::Parser::GetTopFuncGraph();
+  auto node = fg->NewCNode({NewValueNode(prim::kPrimMakeDict), fg->NewCNode(keys), fg->NewCNode(values)});
+  node->set_abstract(std::make_shared<abstract::AbstractDictionary>(kv_abs));
+  return node;
+}
+
+std::pair<AbstractBasePtr, bool> FuncGraphBuilder::EvalValue(const ValuePtr &value,
+                                                             const AbstractBasePtrList &inputs_abs_list) {
   if (value == nullptr) {
-    return nullptr;
+    return std::make_pair(nullptr, false);
   }
   try {
     MS_LOG_TRY_CATCH_SCOPE;
@@ -222,18 +315,18 @@ AbstractBasePtr FuncGraphBuilder::EvalValue(const ValuePtr &value, const Abstrac
       auto prim = value->cast<PrimitivePtr>();
       auto eval_res = abstract::EvalOnePrim(prim, inputs_abs_list);
       if (eval_res != nullptr) {
-        return eval_res->abstract();
+        return std::make_pair(eval_res->abstract(), IsSideEffectPrimitive(prim));
       }
     } else if (value->ToAbstract()->isa<abstract::AbstractFunction>()) {
       auto analyze_res = pipeline::AbstractAnalyze(value, inputs_abs_list);
       if (analyze_res.eval_result != nullptr) {
-        return analyze_res.eval_result->abstract();
+        return std::make_pair(analyze_res.eval_result->abstract(), analyze_res.eval_result->has_side_effect_node());
       }
     }
-    return nullptr;
+    return std::make_pair(nullptr, false);
   } catch (const std::exception &e) {
-    MS_LOG(INFO) << "Failed to EvalValue for value: " << value->ToString();
-    return nullptr;
+    MS_LOG(INFO) << "Failed to EvalValue for value: " << value->ToString() << ". The exception:\n" << e.what();
+    return std::make_pair(nullptr, false);
   }
 }
 
@@ -247,20 +340,43 @@ bool FuncGraphBuilder::CheckCallable(const ValuePtr &value, const AbstractBasePt
   return true;
 }
 
+bool FuncGraphBuilder::IsValidScalar(const AbstractBasePtr &abs) {
+  if (!abs->isa<abstract::AbstractScalar>()) {
+    return false;
+  }
+  auto build_type = abs->BuildType();
+  if (build_type->isa<String>()) {
+    auto value = abs->BuildValue()->cast<StringImmPtr>();
+    const auto &str = value->value();
+    const std::string fake_prefix = "FakeNodeKey";
+    return str.substr(0, fake_prefix.size()) != fake_prefix;
+  }
+  return build_type->isa<String>() || build_type->isa<Number>();
+}
+
+bool FuncGraphBuilder::IsValidTensor(const AbstractBasePtr &abs) {
+  return abs->isa<abstract::AbstractTensor>() || abs->isa<abstract::AbstractRowTensor>() ||
+         abs->isa<abstract::AbstractMapTensor>();
+}
+
 bool FuncGraphBuilder::CheckGraphOutput(const AbstractBasePtr &abs) {
   if (abs == nullptr) {
     return false;
   }
+  if (abs->isa<abstract::AbstractNamedTuple>()) {
+    return false;
+  }
   if (abs->isa<abstract::AbstractSequence>()) {
-    const auto elements = abs->cast<abstract::AbstractSequencePtr>()->elements();
-    return std::all_of(elements.begin(), elements.end(),
-                       [](const AbstractBasePtr &elem) { return CheckGraphOutput(elem); });
+    const auto &elements = abs->cast<abstract::AbstractSequencePtr>()->elements();
+    return std::all_of(elements.begin(), elements.end(), CheckGraphOutput);
   }
-  if (abs->isa<abstract::AbstractScalar>()) {
-    return IsValidScalar(abs);
-  }
-  return abs->isa<abstract::AbstractTensor>() || abs->isa<abstract::AbstractRowTensor>() ||
-         abs->isa<abstract::AbstractMapTensor>();
+  return IsValidScalar(abs) || IsValidTensor(abs);
+}
+
+void FuncGraphBuilder::AddLocalVariableNode(const AbstractWrapperPtr &wrapper, const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(wrapper);
+  MS_EXCEPTION_IF_NULL(node);
+  (void)key_to_node_.emplace(wrapper, node);
 }
 
 AbstractWrapperPtr FuncGraphBuilder::AddLocalVariable(const py::object &obj) {
@@ -288,7 +404,7 @@ AnfNodePtr FuncGraphBuilder::ReadLocalVariable(const AbstractWrapperPtr &abstrac
   return iter->second;
 }
 
-AnfNodePtr FuncGraphBuilder::GetNodeByWrapper(const AbstractWrapperPtr &abstract_wrapper) {
+AnfNodePtr FuncGraphBuilder::FindNodeByWrapper(const AbstractWrapperPtr &abstract_wrapper) {
   // Search the predecessors of the current builder for the local parameter with BFS.
   if (abstract_wrapper == nullptr || abstract_wrapper->abstract() == nullptr) {
     return nullptr;
@@ -313,6 +429,22 @@ AnfNodePtr FuncGraphBuilder::GetNodeByWrapper(const AbstractWrapperPtr &abstract
       }
     }
   }
+  return nullptr;
+}
+
+AnfNodePtr FuncGraphBuilder::GetNodeByWrapper(const AbstractWrapperPtr &abstract_wrapper) {
+  auto res = FindNodeByWrapper(abstract_wrapper);
+  if (res != nullptr) {
+    return res;
+  }
+  if (abstract_wrapper == nullptr || abstract_wrapper->abstract() == nullptr) {
+    return nullptr;
+  }
+  auto abs = abstract_wrapper->abstract();
+  MS_LOG(INFO) << "Can't find the AnfNode by wrapper(" << abstract_wrapper.get() << ") abstract is: (" << abs << ") "
+               << abs->ToString();
+  PrintConstantAbstract(abs);
+
   // Build ValueNode for constant abstract.
   // Need to handle tuple/list/dict with FuncGraphAbstractClosure scene later.
   auto abstract = abstract_wrapper->abstract();
@@ -322,7 +454,7 @@ AnfNodePtr FuncGraphBuilder::GetNodeByWrapper(const AbstractWrapperPtr &abstract
     return NewValueNode(fg);
   }
   auto value = abstract->BuildValue();
-  if (value != kValueAny) {
+  if (!value->ContainsValueAny()) {
     auto ret = NewValueNode(value);
     ret->set_abstract(abstract);
     return ret;
@@ -346,7 +478,7 @@ bool FuncGraphBuilder::IsParameterSequence(const py::object &object) {
     return false;
   }
   if (std::any_of(object_tuple.begin(), object_tuple.end(),
-                  [](const auto &element) { return !IsParameter(py::cast<py::object>(element)); })) {
+                  [](const auto &element) { return !parse::IsParameterObject(py::cast<py::object>(element)); })) {
     return false;
   }
   return true;
@@ -354,7 +486,6 @@ bool FuncGraphBuilder::IsParameterSequence(const py::object &object) {
 
 AbstractBasePtr FuncGraphBuilder::BuildAbstractForInputObject(const py::object &object) {
   if (object.ptr() == nullptr) {
-    MS_LOG(INFO) << "Get top graph arg input failed.";
     return nullptr;
   }
   auto value = ConvertPyObjToValue(object);
@@ -378,9 +509,36 @@ AbstractBasePtr FuncGraphBuilder::BuildAbstractForInputObject(const py::object &
   return abs;
 }
 
+ParameterPtr FuncGraphBuilder::AddParameter(const FuncGraphPtr &fg) {
+  auto param = fg->add_parameter();
+  SetParameterName(param);
+  return param;
+}
+
+void FuncGraphBuilder::SetParameterName(const ParameterPtr &param) {
+  MS_EXCEPTION_IF_NULL(param);
+  if (param->name() != "") {
+    return;
+  }
+  auto fg = param->func_graph();
+  const auto &fg_params = fg->parameters();
+  size_t index;
+  for (index = 0; index < fg_params.size(); ++index) {
+    if (param == fg_params[index]) {
+      break;
+    }
+  }
+  auto name = fg->ToString() + "_input_" + std::to_string(index);
+  param->set_name(name);
+}
+
 AbstractWrapperPtr FuncGraphBuilder::AddTopGraphArgInput(const py::object &object) {
   if (object.ptr() == nullptr) {
     MS_LOG(INFO) << "Get top graph arg input failed.";
+    return nullptr;
+  }
+  if (py::isinstance<Cell>(object) || PyFunction_Check(object.ptr()) || PyMethod_Check(object.ptr()) ||
+      object.ptr() == Py_None) {
     return nullptr;
   }
   auto abs = BuildAbstractForInputObject(object);
@@ -388,12 +546,13 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphArgInput(const py::object &objec
     MS_LOG(INFO) << "Failed to add input for python object: " << std::string(py::str(object)) << "  " << object.ptr();
     return nullptr;
   }
-  auto para = graph_->add_parameter();
+  auto para = AddParameter(graph_);
   para->set_abstract(abs);
   para->set_is_top_graph_param(true);
   para->set_user_data(kPiJitPyObjKey, std::make_shared<py::object>(object));
   AbstractWrapperPtr abstract_wrapper = std::make_shared<AbstractWrapper>(para->abstract());
   (void)key_to_node_.emplace(abstract_wrapper, para);
+  origin_top_input_num_ = origin_top_input_num_ + 1;
   MS_LOG(INFO) << "Add top arg input success, python object: " << py::str(object) << ", node: " << para->DebugString()
                << ", abstract: " << abs->ToString();
   return abstract_wrapper;
@@ -422,7 +581,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphVargsInputs(const py::object &va
     return nullptr;
   }
   std::vector<AbstractBasePtr> new_elements;
-  auto para = graph_->add_parameter();
+  auto para = AddParameter(graph_);
   for (size_t i = 0; i < elements.size(); ++i) {
     auto cur_obj = vargs_tuple[i].cast<py::object>();
     auto cur_abs = BuildAbstractForInputObject(cur_obj);
@@ -440,6 +599,37 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphVargsInputs(const py::object &va
   (void)key_to_node_.emplace(abstract_wrapper, para);
   MS_LOG(INFO) << "Add top vargs input success, python object: " << py::str(vargs) << ", node: " << para->DebugString()
                << ", abstract: " << new_vargs_abs->ToString();
+  origin_top_input_num_ = origin_top_input_num_ + 1;
+  return abstract_wrapper;
+}
+
+AbstractWrapperPtr FuncGraphBuilder::AddAttributeInput(const py::object &object) {
+  if (object.ptr() == nullptr) {
+    return nullptr;
+  }
+  auto value = ConvertPyObjToValue(object);
+  if (value == nullptr) {
+    return nullptr;
+  }
+  AbstractBasePtr abs = abstract::ToAbstract(value, nullptr, nullptr);
+  if (!abs->isa<abstract::AbstractScalar>() && !abs->isa<abstract::AbstractTensor>()) {
+    MS_LOG(ERROR) << "Can not broaden abstract: " << abs->ToString();
+    return nullptr;
+  }
+  abs = AbstractBroaden(abs);
+  if (abs == nullptr) {
+    MS_LOG(INFO) << "Failed to add input for python object: " << std::string(py::str(object)) << "  " << object.ptr();
+    return nullptr;
+  }
+  auto top_graph = parse::Parser::GetTopFuncGraph();
+  auto para = AddParameter(top_graph);
+  para->set_abstract(abs);
+  para->set_is_top_graph_param(true);
+
+  py::object ret_object = python_adapter::CallPyFn(parse::PYTHON_MOD_PARSE_MODULE, "convert_to_mutable", object);
+  para->set_user_data(kPiJitPyObjKey, std::make_shared<py::object>(ret_object));
+  AbstractWrapperPtr abstract_wrapper = std::make_shared<AbstractWrapper>(para->abstract());
+  (void)key_to_node_.emplace(abstract_wrapper, para);
   return abstract_wrapper;
 }
 
@@ -464,7 +654,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphKwargsInputs(const py::object &k
     MS_LOG(INFO) << "Kwargs dict size is " << kwargs_dict.size() << " and corresponding value dict size is "
                  << elements.size() << ". Size not matched.";
   }
-  auto para = graph_->add_parameter();
+  auto para = AddParameter(graph_);
   std::vector<abstract::AbstractElementPair> new_key_values;
   for (size_t i = 0; i < elements.size(); ++i) {
     auto cur_key_val = elements[i].first;
@@ -490,6 +680,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphKwargsInputs(const py::object &k
   (void)key_to_node_.emplace(abstract_wrapper, para);
   MS_LOG(INFO) << "Add top kwargs input success, python object: " << py::str(kwargs)
                << ", node: " << para->DebugString() << ", abstract: " << new_kwargs_abs->ToString();
+  origin_top_input_num_ = origin_top_input_num_ + 1;
   return abstract_wrapper;
 }
 
@@ -500,12 +691,16 @@ AbstractWrapperPtr FuncGraphBuilder::AddSubGraphInput(const AbstractWrapperPtr a
     return nullptr;
   }
   auto node = GetNodeByWrapper(abstract_wrapper);
+  if (node == nullptr) {
+    MS_LOG(INFO) << "Failed to add input for abstract wrapper: " << abstract_wrapper->ToString();
+    return nullptr;
+  }
   AbstractBasePtr para_abs = node->abstract();
   if (para_abs == nullptr) {
     MS_LOG(INFO) << "Failed to add input for abstract wrapper: " << abstract_wrapper->ToString();
     return nullptr;
   }
-  auto para = graph_->add_parameter();
+  auto para = AddParameter(graph_);
   para->set_abstract(para_abs);
   para->set_is_top_graph_param(false);
   AbstractWrapperPtr ret_abstract_wrapper =
@@ -543,11 +738,108 @@ AbstractWrapperPtr FuncGraphBuilder::AddNode(const py::object &callable_obj,
     return BuildGradNetNode(callable_value, callable_obj, inputs_abstract_wrapper);
   }
 
-  if (FunctionShouldBeParseInAst(callable_obj)) {
+  if (IsSpecialCallableObject(callable_obj)) {
     return TryToAddNode(callable_value, inputs_abstract_wrapper);
   }
 
   return AddNode(callable_value, inputs_abstract_wrapper);
+}
+
+AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionKw(const ValuePtr &callable_value,
+                                                           const AbstractWrapperPtrList &inputs_abstract_wrapper) {
+  MS_LOG(INFO) << "Handle CallFunctionKw with callable_value: " << callable_value->ToString();
+  auto key_abstract = inputs_abstract_wrapper.back()->abstract();
+  if (key_abstract == nullptr || !key_abstract->isa<abstract::AbstractTuple>()) {
+    MS_LOG(INFO) << "Key abstract should be tuple but got: " << key_abstract->ToString();
+    return nullptr;
+  }
+  auto key_tuple_abstract = key_abstract->cast<abstract::AbstractTuplePtr>();
+  auto key_tuple_value = key_tuple_abstract->BuildValue();
+  if (key_tuple_value->ContainsValueAny()) {
+    MS_LOG(INFO) << "Key abstract should be constant but got: " << key_abstract->ToString();
+    return nullptr;
+  }
+  size_t dict_len = key_tuple_abstract->size();
+  MS_EXCEPTION_IF_CHECK_FAIL(inputs_abstract_wrapper.size() >= dict_len + 1, "kwargs length check error");
+  size_t arg_len = inputs_abstract_wrapper.size() - dict_len - 1;
+
+  auto fg = std::make_shared<FuncGraph>();
+  std::vector<AnfNodePtr> arg_inputs = {NewValueNode(prim::kPrimMakeTuple)};
+  for (size_t i = 0; i < arg_len; ++i) {
+    auto para = AddParameter(fg);
+    (void)arg_inputs.emplace_back(para);
+  }
+  std::vector<AnfNodePtr> dict_value_inputs = {NewValueNode(prim::kPrimMakeTuple)};
+  for (size_t i = 0; i < dict_len; ++i) {
+    auto para = AddParameter(fg);
+    (void)dict_value_inputs.emplace_back(para);
+  }
+  auto arg_tuple_node = fg->NewCNodeInOrder(arg_inputs);
+  auto dict_value_node = fg->NewCNodeInOrder(dict_value_inputs);
+  auto dict_key_node = NewValueNode(key_tuple_value);
+  auto dict_node_inputs = fg->NewCNode({NewValueNode(prim::kPrimMakeDict), dict_key_node, dict_value_node});
+  auto call_node = fg->NewCNodeInOrder(
+    {NewValueNode(prim::kPrimDoUnpackCall), NewValueNode(callable_value), arg_tuple_node, dict_node_inputs});
+  fg->set_output(call_node);
+
+  AbstractWrapperPtrList new_abstract_wrapper(inputs_abstract_wrapper.begin(), inputs_abstract_wrapper.end() - 1);
+  return AddNode(fg, new_abstract_wrapper);
+}
+
+AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionKw(const py::object &callable_obj,
+                                                           const AbstractWrapperPtrList &inputs_abstract_wrapper) {
+  MS_LOG(INFO) << "Handle CallFunctionKw with callable_object: " << py::str(callable_obj);
+  auto callable_value = ConvertPyObjToValue(callable_obj);
+  if (callable_value == nullptr) {
+    MS_LOG(INFO) << "Convert to value failed for callable_obj: " << py::str(callable_obj);
+    return nullptr;
+  }
+  return AddNodeCallFunctionKw(callable_value, inputs_abstract_wrapper);
+}
+
+AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionEx(const ValuePtr &callable_value,
+                                                           const AbstractWrapperPtrList &inputs_abstract_wrapper) {
+  MS_LOG(INFO) << "Handle CallFunctionKw with callable_value: " << callable_value->ToString();
+  auto fg = std::make_shared<FuncGraph>();
+  std::vector<AnfNodePtr> unpack_call_node_inputs = {NewValueNode(prim::kPrimDoUnpackCall),
+                                                     NewValueNode(callable_value)};
+  auto first_input_abs = inputs_abstract_wrapper[0]->abstract();
+  MS_EXCEPTION_IF_NULL(first_input_abs);
+  // First input may be self, need to put into tuple for unpack.
+  if (!first_input_abs->isa<abstract::AbstractSequence>() && !first_input_abs->isa<abstract::AbstractDictionary>()) {
+    std::vector<AnfNodePtr> self_tuple_node_inputs = {NewValueNode(prim::kPrimMakeTuple)};
+    auto para = AddParameter(fg);
+    (void)self_tuple_node_inputs.emplace_back(para);
+    (void)unpack_call_node_inputs.emplace_back(fg->NewCNodeInOrder(self_tuple_node_inputs));
+  } else {
+    auto para = AddParameter(fg);
+    (void)unpack_call_node_inputs.emplace_back(para);
+  }
+  for (size_t i = 1; i < inputs_abstract_wrapper.size(); ++i) {
+    MS_EXCEPTION_IF_NULL(inputs_abstract_wrapper[i]);
+    auto cur_abstract = inputs_abstract_wrapper[i]->abstract();
+    MS_EXCEPTION_IF_NULL(cur_abstract);
+    if (!cur_abstract->isa<abstract::AbstractSequence>() && !cur_abstract->isa<abstract::AbstractDictionary>()) {
+      MS_LOG(INFO) << "Input abstract should be sequence or dict, but got: " << cur_abstract->ToString();
+      return nullptr;
+    }
+    auto para = AddParameter(fg);
+    (void)unpack_call_node_inputs.emplace_back(para);
+  }
+  auto unpack_call_node = fg->NewCNodeInOrder(unpack_call_node_inputs);
+  fg->set_output(unpack_call_node);
+  return AddNode(fg, inputs_abstract_wrapper);
+}
+
+AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionEx(const py::object &callable_obj,
+                                                           const AbstractWrapperPtrList &inputs_abstract_wrapper) {
+  MS_LOG(INFO) << "Handle CallFunctionEx with callable_object: " << py::str(callable_obj);
+  auto callable_value = ConvertPyObjToValue(callable_obj);
+  if (callable_value == nullptr) {
+    MS_LOG(INFO) << "Convert to value failed for callable_obj: " << py::str(callable_obj);
+    return nullptr;
+  }
+  return AddNodeCallFunctionEx(callable_value, inputs_abstract_wrapper);
 }
 
 AbstractWrapperPtr FuncGraphBuilder::AddAttrPythonObject(const py::object &object) {
@@ -564,6 +856,57 @@ AbstractWrapperPtr FuncGraphBuilder::AddAttrPythonObject(const py::object &objec
   auto abstract_wrapper = std::make_shared<AbstractWrapper>(node->abstract());
   (void)key_to_node_.emplace(abstract_wrapper, node);
   return abstract_wrapper;
+}
+
+void FuncGraphBuilder::MarkNodeIsolated(const AnfNodePtr &node, bool force) {
+  if (!node->isa<CNode>()) {
+    return;
+  }
+  auto cnode = node->cast<CNodePtr>();
+  auto callable_node = cnode->input(0);
+  if (!callable_node->isa<ValueNode>()) {
+    return;
+  }
+  auto callable = callable_node->cast<ValueNodePtr>()->value();
+  if (!callable->isa<Primitive>() && !callable->isa<FuncGraph>()) {
+    return;
+  }
+  if (callable->isa<Primitive>()) {
+    auto prim = callable->cast<PrimitivePtr>();
+    if (force || IsSideEffectPrimitive(prim)) {
+      (void)isolated_nodes_.emplace_back(cnode);
+      cnode->set_has_side_effect_node(true);
+      graph_->set_has_side_effect_node(true);
+      MS_LOG(INFO) << "Mark side effect primitive call node isolated, node: " << node->DebugString();
+    }
+    return;
+  }
+  auto fg = callable->cast<FuncGraphPtr>();
+  if (!force && !fg->has_side_effect_node()) {
+    return;
+  }
+  (void)isolated_nodes_.emplace_back(cnode);
+  node->set_user_data<bool>(kCandidateIsolatedFlag, std::make_shared<bool>(true));
+  cnode->set_has_side_effect_node(true);
+  graph_->set_has_side_effect_node(true);
+  MS_LOG(INFO) << "Mark function graph call node isolated, node: " << node->DebugString();
+}
+
+void FuncGraphBuilder::EraseCandidateIsolatedNode(const AnfNodePtr &node) {
+  if (!(node->has_user_data(kCandidateIsolatedFlag) && *node->user_data<bool>(kCandidateIsolatedFlag))) {
+    return;
+  }
+  if (node->func_graph() != graph_) {
+    MS_LOG(INFO) << "Do not erase isolated flag for free variable node: " << node->DebugString();
+    return;
+  }
+  auto iter = std::find(isolated_nodes_.begin(), isolated_nodes_.end(), node);
+  if (iter == isolated_nodes_.end()) {
+    MS_LOG(EXCEPTION) << "Fail to find node " << node->DebugString() << " from isolated_nodes_";
+  }
+  isolated_nodes_.erase(iter);
+  node->set_user_data<bool>(kCandidateIsolatedFlag, std::make_shared<bool>(false));
+  MS_LOG(INFO) << "Erase node " << node->DebugString() << " from isolated_nodes_";
 }
 
 bool FuncGraphBuilder::GetInputNodesAndAbstracts(const ValuePtr &callable_value,
@@ -583,6 +926,7 @@ bool FuncGraphBuilder::GetInputNodesAndAbstracts(const ValuePtr &callable_value,
     if (node == nullptr) {
       return false;
     }
+    EraseCandidateIsolatedNode(node);
     (void)input_node_list->emplace_back(node);
     (void)input_abs_list->emplace_back(node->abstract());
   }
@@ -674,24 +1018,25 @@ AbstractBasePtr FuncGraphBuilder::GetAbstractOf(const AnfNodePtr &node) {
                      }
                      return node->abstract();
                    });
-    return EvalValue(value, abs_list);
+    return EvalValue(value, abs_list).first;
   }
   MS_LOG(INFO) << "Unsupported Node type for GetAbstractOf() method, node: " << node->DebugString();
   return nullptr;
 }
 
-AbstractBasePtr FuncGraphBuilder::DoInferAndCheck(const ValuePtr &callable_value,
-                                                  const vector<AbstractBasePtr> &input_abs_list) {
-  auto abs = EvalValue(callable_value, input_abs_list);
+std::pair<AbstractBasePtr, bool> FuncGraphBuilder::DoInferAndCheck(const ValuePtr &callable_value,
+                                                                   const vector<AbstractBasePtr> &input_abs_list) {
+  const auto &res = EvalValue(callable_value, input_abs_list);
+  auto abs = res.first;
   if (abs == nullptr) {
     MS_LOG(DEBUG) << "Eval failed for value: " << callable_value->ToString();
-    return nullptr;
+    return std::make_pair(nullptr, false);
   }
   if (!CheckCallable(callable_value, abs)) {
     MS_LOG(DEBUG) << "Check callable failed for value: " << callable_value->ToString() << ", abs: " << abs->ToString();
-    return nullptr;
+    return std::make_pair(nullptr, false);
   }
-  return abs;
+  return res;
 }
 
 AbstractWrapperPtr FuncGraphBuilder::BuildGradNetNode(const ValuePtr &callable_value, const py::object &callable_obj,
@@ -730,11 +1075,11 @@ AbstractWrapperPtr FuncGraphBuilder::BuildGradNetNode(const ValuePtr &callable_v
 }
 
 AbstractWrapperPtr FuncGraphBuilder::BuildGradNode(const AbstractWrapperPtr &key, const FuncGraphPtr &forward_fg,
-                                                   const AbstractWrapperPtrList &inputs, bool need_unpack) {
+                                                   const AbstractWrapperPtrList &inputs) {
   AbstractWrapperPtr ret;
   try {
     MS_LOG_TRY_CATCH_SCOPE;
-    ret = HandleGrad(key, forward_fg, inputs, need_unpack);
+    ret = HandleGrad(key, forward_fg, inputs);
   } catch (const std::exception &e) {
     MS_LOG(INFO) << "Failed to build grad node with key: " << key << ". The exception:\n" << e.what();
   }
@@ -751,7 +1096,7 @@ AbstractWrapperPtr FuncGraphBuilder::BuildGradNode(const AbstractWrapperPtr &key
 //     return grad_result_node
 //   final node for evaluated: fg(other_inputs, forward_inputs)
 AbstractWrapperPtr FuncGraphBuilder::HandleGrad(const AbstractWrapperPtr &key, const FuncGraphPtr &forward_fg,
-                                                const AbstractWrapperPtrList &inputs, bool need_unpack) {
+                                                const AbstractWrapperPtrList &inputs) {
   auto fake_node = ReadLocalVariable(key);
   if (fake_node == nullptr || !fake_node->isa<CNode>()) {
     MS_LOG(INFO) << "Failed to find corresponding fake GradOperation node for key: " << key;
@@ -789,25 +1134,21 @@ AbstractWrapperPtr FuncGraphBuilder::HandleGrad(const AbstractWrapperPtr &key, c
   std::vector<AnfNodePtr> grad_net_node_inputs{meta_node, NewValueNode(forward_fg)};
   FuncGraphPtr fg = std::make_shared<FuncGraph>();
   for (size_t i = 1; i < fake_node_inputs.size(); ++i) {
-    (void)grad_net_node_inputs.emplace_back(fg->add_parameter());
+    auto para = AddParameter(fg);
+    (void)grad_net_node_inputs.emplace_back(para);
   }
   auto grad_net_node = fg->NewCNodeInOrder(grad_net_node_inputs);
   std::vector<AnfNodePtr> grad_result_node_inputs;
-  if (need_unpack) {
-    auto unpack_call_op = NewValueNode(std::make_shared<prim::UnpackCall>(parse::NAMED_METAGRAPH_UNPACKCALL));
-    grad_result_node_inputs.push_back(unpack_call_op);
-    grad_result_node_inputs.push_back(grad_net_node);
-    for (size_t i = 0; i < inputs.size(); ++i) {
-      (void)grad_result_node_inputs.emplace_back(fg->add_parameter());
-    }
-  } else {
-    grad_result_node_inputs.push_back(grad_net_node);
-    for (size_t i = 0; i < inputs.size(); ++i) {
-      (void)grad_result_node_inputs.emplace_back(fg->add_parameter());
-    }
+  grad_result_node_inputs.push_back(grad_net_node);
+  for (size_t i = 0; i < inputs.size(); ++i) {
+    auto para = AddParameter(fg);
+    (void)grad_result_node_inputs.emplace_back(para);
   }
   auto grad_result_node = fg->NewCNodeInOrder(grad_result_node_inputs);
   fg->set_output(grad_result_node);
+  if (MsContext::GetInstance()->get_param<int>(MS_CTX_SAVE_GRAPHS_FLAG)) {
+    DumpIR("pijit_grad_fg.ir", fg);
+  }
   std::vector<AnfNodePtr> final_node_input = {NewValueNode(fg)};
   std::vector<AbstractBasePtr> final_node_abs;
   for (size_t i = 1; i < fake_node_inputs.size(); ++i) {
@@ -840,10 +1181,47 @@ AbstractWrapperPtr FuncGraphBuilder::HandleGrad(const AbstractWrapperPtr &key, c
     // has_aux for GradOperation will change the output of forward fg.
     forward_fg->set_output(origin_forward_fg_output);
   }
-
   auto abstract_wrapper = std::make_shared<AbstractWrapper>(final_node->abstract());
   (void)key_to_node_.emplace(abstract_wrapper, final_node);
+  abstract_wrapper->UpdateGradInfo(meta);
+  MS_LOG(INFO) << "Build final node " << final_node->DebugString() << " with abstract " << final_abs->ToString();
   return abstract_wrapper;
+}
+
+FuncGraphPtr FuncGraphBuilder::BuildCallForwardGraphForGrad(const FuncGraphPtr &fg, const std::vector<size_t> &arg_len,
+                                                            bool is_cell) {
+  MS_LOG(INFO) << "Build outer fg for vargs scene.";
+  auto origin_forward_abs = fg->output()->abstract();
+  MS_EXCEPTION_IF_NULL(origin_forward_abs);
+  MS_LOG(INFO) << "origin forward abs: " << origin_forward_abs->ToString();
+
+  AnfNodePtrList call_forward_inputs = {NewValueNode(fg)};
+  auto outer_fg = std::make_shared<FuncGraph>();
+  constexpr auto args_index = 0;
+  constexpr auto vargs_index = 1;
+  // Eliminate self input for cell when building grad graph.
+  size_t input_offset = is_cell ? 1 : 0;
+  for (size_t i = 0 + input_offset; i < arg_len[args_index]; ++i) {
+    auto para = AddParameter(outer_fg);
+    (void)call_forward_inputs.emplace_back(para);
+  }
+  if (arg_len[vargs_index] != 0) {
+    AnfNodePtrList vargs_tuple = {NewValueNode(prim::kPrimMakeTuple)};
+    for (size_t i = 0; i < arg_len[vargs_index]; ++i) {
+      auto para = AddParameter(outer_fg);
+      (void)vargs_tuple.emplace_back(para);
+    }
+    auto vargs_node = outer_fg->NewCNodeInOrder(vargs_tuple);
+    (void)call_forward_inputs.emplace_back(vargs_node);
+  }
+  // This is a tmp way to fix empty kwargs.
+  if (fg->parameters().size() == call_forward_inputs.size()) {
+    (void)call_forward_inputs.emplace_back(NewValueNode(0));
+  }
+  auto call_forward_node = outer_fg->NewCNodeInOrder(call_forward_inputs);
+  call_forward_node->set_abstract(origin_forward_abs);
+  outer_fg->set_output(call_forward_node);
+  return outer_fg;
 }
 
 AbstractWrapperPtr FuncGraphBuilder::TryToAddNode(const ValuePtr &callable_value,
@@ -855,16 +1233,21 @@ AbstractWrapperPtr FuncGraphBuilder::TryToAddNode(const ValuePtr &callable_value
     return nullptr;
   }
 
-  CNodePtr new_node;
+  AnfNodePtr new_node;
   AbstractBasePtr abs;
+  bool is_side_effect = false;
   if (callable_value->isa<Primitive>()) {
-    new_node = DoPrimitiveInferAndCheck(callable_value->cast<PrimitivePtr>(), input_node_list, input_abs_list);
+    auto prim = callable_value->cast<PrimitivePtr>();
+    new_node = DoPrimitiveInferAndCheck(prim, input_node_list, input_abs_list);
     if (new_node != nullptr) {
       abs = new_node->abstract();
     }
+    is_side_effect = IsSideEffectPrimitive(prim);
   } else {
     // Do infer and check callable.
-    abs = DoInferAndCheck(callable_value, input_abs_list);
+    const auto &ret = DoInferAndCheck(callable_value, input_abs_list);
+    abs = ret.first;
+    is_side_effect = ret.second;
     if (abs != nullptr) {
       new_node = graph_->NewCNodeInOrder(input_node_list);
     }
@@ -873,7 +1256,13 @@ AbstractWrapperPtr FuncGraphBuilder::TryToAddNode(const ValuePtr &callable_value
     return nullptr;
   }
 
+  if (!is_side_effect) {
+    auto value = abs->BuildValue();
+    new_node = value->ContainsValueAny() ? new_node : NewValueNode(value);
+  }
+
   new_node->set_abstract(abs);
+  MarkNodeIsolated(new_node, is_side_effect);
   auto ret_abstract_wrapper = std::make_shared<AbstractWrapper>(new_node->abstract());
   (void)key_to_node_.emplace(ret_abstract_wrapper, new_node);
   MS_LOG(INFO) << "Add node: " << new_node->DebugString()
@@ -884,7 +1273,8 @@ AbstractWrapperPtr FuncGraphBuilder::TryToAddNode(const ValuePtr &callable_value
 AbstractWrapperPtr FuncGraphBuilder::AddNode(const ValuePtr &callable_value,
                                              const AbstractWrapperPtrList &inputs_abstract_wrapper) {
   if (!callable_value->ToAbstract()->isa<abstract::AbstractFunction>()) {
-    MS_LOG(INFO) << "The value " << callable_value->ToString() << " is not callable.";
+    MS_LOG(INFO) << "The value " << callable_value->ToString() << " is not callable. The abstract is "
+                 << callable_value->ToAbstract()->ToString();
     return nullptr;
   }
 
@@ -899,25 +1289,31 @@ AbstractWrapperPtr FuncGraphBuilder::AddMultiNode(const std::string &name,
                                                   const AbstractWrapperPtrList &inputs_abstract_wrapper) {
   const std::string mod_str = "mindspore.ops.composite.multitype_ops";
   py::module mod = py::module::import(mod_str.c_str());
-  if (!py::hasattr(mod, name.c_str())) {
-    MS_LOG(INFO) << "Fail to find multitype function graph for name " << name;
-    return nullptr;
+  py::object fn;
+  if (py::hasattr(mod, name.c_str())) {
+    fn = mod.attr(name.c_str());
+  } else {
+    const std::string math_ops_mod_str = "mindspore.ops.composite.math_ops";
+    py::module math_mod = py::module::import(math_ops_mod_str.c_str());
+    if (!py::hasattr(math_mod, name.c_str())) {
+      MS_LOG(INFO) << "Fail to find multitype function graph for name " << name;
+      return nullptr;
+    }
+    fn = math_mod.attr(name.c_str());
   }
-  py::object fn = mod.attr(name.c_str());
   return AddNode(fn, inputs_abstract_wrapper);
 }
 
 bool FuncGraphBuilder::AddOutput(const AbstractWrapperPtr &abstract_wrapper, bool is_top_graph) {
   if (abstract_wrapper == nullptr) {
+    MS_LOG(INFO) << "Fail to add output, abstract wrapper is NULL";
     return false;
   }
-  auto iter = key_to_node_.find(abstract_wrapper);
-  if (iter == key_to_node_.end()) {
+  AnfNodePtr node = FindNodeByWrapper(abstract_wrapper);
+  if (node == nullptr) {
     MS_LOG(INFO) << "Fail to find correspond anf node for abstract wrapper: " << abstract_wrapper->ToString();
     return false;
   }
-  auto node = iter->second;
-  MS_EXCEPTION_IF_NULL(node);
   auto abs = node->abstract();
   // Only top graph has restriction on return value type.
   if (is_top_graph && !CheckGraphOutput(abs)) {
@@ -925,16 +1321,54 @@ bool FuncGraphBuilder::AddOutput(const AbstractWrapperPtr &abstract_wrapper, boo
                  << (abs == nullptr ? "null" : abs->ToString());
     return false;
   }
+  EraseCandidateIsolatedNode(node);
   (void)output_nodes_.emplace_back(node);
   return true;
 }
 
-FuncGraphPtr FuncGraphBuilder::graph() {
-  if (has_set_output_) {
+AnfNodePtr FuncGraphBuilder::GenerateOutputNode() {
+  if (output_nodes_.size() == 1) {
+    return output_nodes_[0];
+  }
+  output_nodes_.insert(output_nodes_.begin(), NewValueNode(prim::kPrimMakeTuple));
+  AbstractBasePtrList abstract_list;
+  (void)std::transform(output_nodes_.begin() + 1, output_nodes_.end(), std::back_inserter(abstract_list),
+                       [](const AnfNodePtr &node) -> AbstractBasePtr { return node->abstract(); });
+  auto output_node = graph_->NewCNodeInOrder(output_nodes_);
+  auto fg_output_abs = std::make_shared<abstract::AbstractTuple>(abstract_list);
+  output_node->set_abstract(fg_output_abs);
+  return output_node;
+}
+
+AnfNodePtr FuncGraphBuilder::AttachIsolatedNode(const AnfNodePtr &node) const {
+  if (!graph_->has_side_effect_node()) {
+    MS_LOG(DEBUG) << "No side effect node.";
+    return node;
+  }
+  if (isolated_nodes_.empty()) {
+    MS_LOG(INFO) << "No isolated node for graph" << graph_->ToString();
+    return node;
+  }
+  AnfNodePtr isolated_node;
+  if (isolated_nodes_.size() == 1) {
+    isolated_node = isolated_nodes_[0];
+  } else {
+    AnfNodePtrList isolated_node_inputs = {NewValueNode(prim::kPrimMakeTuple)};
+    (void)std::copy(isolated_nodes_.begin(), isolated_nodes_.end(), std::back_inserter(isolated_node_inputs));
+    isolated_node = graph_->NewCNodeInOrder(isolated_node_inputs);
+  }
+  auto stop_gradient_node = graph_->NewCNodeInOrder({NewValueNode(prim::kPrimStopGradient), isolated_node});
+  auto ret = graph_->NewCNodeInOrder({NewValueNode(prim::kPrimDepend), node, stop_gradient_node});
+  ret->set_abstract(node->abstract());
+  return ret;
+}
+
+FuncGraphPtr FuncGraphBuilder::graph(bool force) {
+  if (has_set_output_ || force) {
     return graph_;
   }
   if (output_nodes_.empty()) {
-    MS_LOG(DEBUG) << "The graph " << graph_->ToString() << " has not been set output.";
+    MS_LOG(INFO) << "The graph " << graph_->ToString() << " has not been set output.";
     return nullptr;
   }
   bool all_value_node = std::all_of(output_nodes_.begin(), output_nodes_.end(),
@@ -943,24 +1377,39 @@ FuncGraphPtr FuncGraphBuilder::graph() {
     MS_LOG(INFO) << "All graph output is value node, no need to run graph.";
     return nullptr;
   }
-  // Single output case.
-  if (output_nodes_.size() == 1) {
-    graph_->set_output(output_nodes_[0]);
-    has_set_output_ = true;
-    return graph_;
-  }
-  // multiple output case.
-  output_nodes_.insert(output_nodes_.begin(), NewValueNode(prim::kPrimMakeTuple));
-  AbstractBasePtrList abstract_list;
-  (void)std::transform(output_nodes_.begin() + 1, output_nodes_.end(), std::back_inserter(abstract_list),
-                       [](const AnfNodePtr &node) -> AbstractBasePtr { return node->abstract(); });
-  auto output_node = graph_->NewCNodeInOrder(output_nodes_);
-  auto fg_output_abs = std::make_shared<abstract::AbstractTuple>(abstract_list);
-  output_node->set_abstract(fg_output_abs);
+  AnfNodePtr output_node = GenerateOutputNode();
+  MS_LOG(INFO) << "Output node before attach isolated node: " << output_node->DebugString();
+  output_node = AttachIsolatedNode(output_node);
+  MS_LOG(INFO) << "Output node after attach isolated node: " << output_node->DebugString();
 
   graph_->set_output(output_node);
   has_set_output_ = true;
   return graph_;
+}
+
+void FuncGraphBuilder::PrintConstantAbstract(const AbstractBasePtr &abstract) {
+  if (abstract == nullptr) {
+    return;
+  }
+  if (abstract->isa<abstract::AbstractFunction>()) {
+    return;
+  }
+  if (abstract->isa<abstract::AbstractSequence>()) {
+    const auto &elements = abstract->cast<abstract::AbstractSequencePtr>()->elements();
+    std::for_each(elements.begin(), elements.end(), [](const auto &e) { PrintConstantAbstract(e); });
+  }
+  if (abstract->isa<abstract::AbstractDictionary>()) {
+    const auto &elements = abstract->cast<abstract::AbstractDictionaryPtr>()->elements();
+    std::for_each(elements.begin(), elements.end(), [](const auto &e) { PrintConstantAbstract(e.second); });
+  }
+  if (abstract->isa<abstract::AbstractTensor>()) {
+    if (abstract->isa<abstract::AbstractRefTensor>()) {
+      return;
+    }
+    MS_LOG(WARNING) << "Encounter constant Tensor node with abstract: " << abstract->ToString();
+    return;
+  }
+  MS_LOG(INFO) << "Encounter constant valeu node with abstract: " << abstract->ToString();
 }
 
 void FuncGraphBuilder::ClearNodeAbstract() {
@@ -975,6 +1424,9 @@ void FuncGraphBuilder::ClearNodeAbstract() {
   for (const auto &node : mindspore::TopoSort(top_graph->get_return(), SuccDeeperSimple)) {
     MS_EXCEPTION_IF_NULL(node);
     const AbstractBasePtr &prev_inferred = node->abstract();
+    if (node->isa<ValueNode>()) {
+      PrintConstantAbstract(prev_inferred);
+    }
     auto is_func =
       node->isa<mindspore::ValueNode>() && prev_inferred != nullptr && prev_inferred->isa<abstract::AbstractFunction>();
     // Keep previous inferred value for parameter and ValueNode if the inferred value is not AbstractFunction.
@@ -1004,10 +1456,13 @@ AbstractWrapperPtr FuncGraphBuilder::AddNodeWithAbstract(const ValuePtr &value,
       auto node = GetNodeByWrapper(input_wrapper);
       MS_EXCEPTION_IF_NULL(node);
       (void)input_node_list.emplace_back(node);
+      EraseCandidateIsolatedNode(node);
     }
 
     auto new_node = graph_->NewCNodeInOrder(input_node_list);
     new_node->set_abstract(abstract);
+    MarkNodeIsolated(new_node, false);
+
     ret = std::make_shared<AbstractWrapper>(abstract);
     (void)key_to_node_.emplace(ret, new_node);
   } catch (const std::exception &e) {
@@ -1016,35 +1471,20 @@ AbstractWrapperPtr FuncGraphBuilder::AddNodeWithAbstract(const ValuePtr &value,
   return ret;
 }
 
-bool FuncGraphBuilder::CheckCallable(const py::object &obj) {
-  constexpr auto ms_class_attr = "__ms_class__";
-  return py::isinstance<MetaFuncGraph>(obj) ||
-         (py::hasattr(obj, PYTHON_PRIMITIVE_FLAG) &&
-          parse::data_converter::GetObjType(obj) != parse::RESOLVE_TYPE_CLASS_TYPE) ||
-         py::isinstance<PrimitiveFunctionAdapter>(obj) || FunctionShouldBeParseInAst(obj) ||
-         (py::hasattr(obj, ms_class_attr) && py::cast<bool>(py::getattr(obj, ms_class_attr)));
-}
-
 py::object FuncGraphBuilder::ConvertMethod(const py::object &obj) {
-  py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
-  py::tuple method_info = python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_GET_METHOD_INFO, obj);
+  py::tuple method_info = GetMethodInfo(obj);
   py::object class_name_obj = method_info[0];
   if (py::isinstance<py::none>(class_name_obj)) {
     MS_LOG(INFO) << "Can not get the method info of " << py::str(obj);
     return py::object();
   }
   auto class_name = class_name_obj.cast<std::string>();
-  auto method_name = method_info[1].cast<std::string>();
-  if (class_name == "Tensor" || class_name == "PyCapsule") {
-    bool is_tensor_method =
-      py::cast<bool>(python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_IS_MS_TENSOR_METHOD, obj));
-    if (class_name == "Tensor" && !is_tensor_method) {
-      return py::object();
-    }
-    if (class_name == "PyCapsule" && is_tensor_method &&
-        ops::tensor_method_overload_map.find(method_name) != ops::tensor_method_overload_map.end()) {
-      class_name = "Tensor";
-    }
+  const auto &method_name = method_info[1].cast<std::string>();
+  if (class_name == "Tensor" && !IsMsTensorMethod(obj)) {
+    return py::object();
+  }
+  if (class_name == "PyCapsule" && IsPyCapsuleTensorOverloadMethod(obj)) {
+    class_name = "Tensor";
   }
 
   auto type_id = GetTypeIdFromClassName(class_name);
@@ -1112,15 +1552,14 @@ bool FuncGraphBuilder::ValidateCallableObject(const py::object &obj) {
 }
 
 bool FuncGraphBuilder::CheckInvalidCellListDictMethod(const py::object &obj) {
-  py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
-  py::tuple method_info = python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_GET_METHOD_INFO, obj);
+  py::tuple method_info = GetMethodInfo(obj);
   constexpr size_t class_index = 0;
   constexpr size_t method_index = 1;
   py::object class_name_obj = method_info[class_index];
   if (class_name_obj.ptr() == nullptr || py::isinstance<py::none>(class_name_obj)) {
     return false;
   }
-  auto class_name = class_name_obj.cast<std::string>();
+  const auto &class_name = class_name_obj.cast<std::string>();
   MS_LOG(INFO) << "class name: " << class_name;
   if (class_name != "CellList" && class_name != "CellDict") {
     return false;
@@ -1140,4 +1579,5 @@ bool FuncGraphBuilder::CheckInvalidCellListDictMethod(const py::object &obj) {
   Any require = pipeline::Resource::GetMethodPtr(type_id, method_name);
   return require.empty();
 }
+}  // namespace pijit
 }  // namespace mindspore
