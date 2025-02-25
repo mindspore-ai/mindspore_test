@@ -390,11 +390,14 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         return self._convert_scalar_(data, float, "Only one element tensors can be converted to Python scalars")
 
     def __index__(self):
-        data = self.asnumpy()
-        if data.dtype not in ["int8", "int16", "int32", "int64", "bool"]:
+        try:
+            data = self._item()
+        except ValueError:
             raise ValueError("Only integer tensors of a single element can be converted to an index.")
-        return self._convert_scalar_(data, int,
-                                     "Only integer tensors of a single element can be converted to an index.")
+        else:
+            if not isinstance(data, (int, bool)):
+                raise ValueError("Only integer tensors of a single element can be converted to an index.")
+            return int(data)
 
     def __pos__(self):
         return self
