@@ -17,7 +17,7 @@
 #include "kernel/gpu/pyboost/pyboost_gpu_kernel_extra_func.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "plugin/device/gpu/hal/profiler/gpu_profiling.h"
-#include "plugin/device/gpu/hal/device/gpu_device_manager.h"
+#include "plugin/res_manager/gpu/device/gpu_device_manager.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/gpu/pyboost/pyboost_gpu_custom_kernel_register.h"
 

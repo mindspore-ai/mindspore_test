@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <memory>
 
-#include "plugin/device/gpu/hal/device/gpu_device_address.h"
+#include "plugin/res_manager/gpu/device/gpu_device_address.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/eye_impl.cuh"
 namespace mindspore {

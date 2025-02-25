@@ -19,7 +19,7 @@
 
 #include <memory>
 #include <string>
-#include "plugin/device/gpu/hal/device/cuda_driver.h"
+#include "plugin/res_manager/gpu/device/cuda_driver.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 
 namespace mindspore {

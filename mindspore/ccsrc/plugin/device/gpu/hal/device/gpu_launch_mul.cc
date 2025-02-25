@@ -16,8 +16,8 @@
 
 #include "plugin/device/gpu/hal/device/gpu_launch_mul.h"
 #include "abstract/utils.h"
-#include "plugin/device/gpu/hal/device/gpu_memory_allocator.h"
-#include "plugin/device/gpu/hal/device/gpu_device_manager.h"
+#include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
+#include "plugin/res_manager/gpu/device/gpu_device_manager.h"
 #include "backend/common/session/single_kernel_graph.h"
 #include "include/common/utils/parallel_context.h"
 

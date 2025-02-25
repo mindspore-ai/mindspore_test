@@ -96,6 +96,7 @@ class GPUDeviceResManager : public DeviceResManager {
   DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking) override;
 
   bool LoadCollectiveCommLib() override;
+  mindspore::device::CollectiveCommunicationLib *collective_comm_lib() const override;
 
   bool single_op_multi_stream_enable() const override;
   void set_single_op_multi_stream_enable(bool single_op_multi_stream_enable) override;

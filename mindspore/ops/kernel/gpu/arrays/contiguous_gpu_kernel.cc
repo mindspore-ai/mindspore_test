@@ -16,7 +16,7 @@
 
 #include "kernel/gpu/arrays/contiguous_gpu_kernel.h"
 #include <functional>
-#include "plugin/device/gpu/hal/device/cuda_driver.h"
+#include "plugin/res_manager/gpu/device/cuda_driver.h"
 #include "utils/log_adapter.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/as_strided_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"

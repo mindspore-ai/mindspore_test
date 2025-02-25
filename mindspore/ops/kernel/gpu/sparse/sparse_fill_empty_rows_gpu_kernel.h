@@ -27,7 +27,7 @@
 #include <complex>
 
 #include "mindspore/ops/infer/sparse_fill_empty_rows.h"
-#include "plugin/device/gpu/hal/device/cuda_driver.h"
+#include "plugin/res_manager/gpu/device/cuda_driver.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/sparse_fill_empty_rows.cuh"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"

@@ -18,6 +18,8 @@
 #include <utility>
 #include <vector>
 #include <string>
+#include <unordered_map>
+#include <memory>
 #include "runtime/device/res_manager/hal_res_base.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/device/gsm/swap_manager.h"
@@ -82,6 +84,7 @@ class GPUResManager : public HalResBase {
   DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking) override;
 
   bool LoadCollectiveCommLib() override;
+  mindspore::device::CollectiveCommunicationLib *collective_comm_lib() const override { return collective_comm_lib_; }
 
   bool single_op_multi_stream_enable() const override;
   void set_single_op_multi_stream_enable(bool single_op_multi_stream_enable) override;
@@ -114,7 +117,7 @@ class GPUResManager : public HalResBase {
  private:
   std::shared_ptr<SwapManager> swap_manager_{nullptr};
   std::shared_ptr<GPUMemoryManager> mem_manager_{nullptr};
-  CollectiveCommunicationLib *collective_comm_lib_;
+  mindspore::device::CollectiveCommunicationLib *collective_comm_lib_;
 };
 }  // namespace gpu
 }  // namespace device

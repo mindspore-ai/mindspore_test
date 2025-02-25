@@ -14,68 +14,31 @@
  * limitations under the License.
  */
 #include "plugin/res_manager/gpu/gpu_res_manager.h"
+#include <libgen.h>
+#include <cuda.h>
 #include <utility>
 #include <vector>
 #include <string>
-#include <memory>
-#include <libgen.h>
-#include "plugin/device/gpu/hal/device/gpu_memory_manager.h"
-#include "plugin/device/gpu/device_context_conf/op_precision_conf.h"
-#include "plugin/device/gpu/device_context_conf/op_tuning_conf.h"
-#include "plugin/device/gpu/hal/device/kernel_info_setter.h"
-#include "plugin/device/gpu/hal/device/gpu_kernel_build.h"
-#include "plugin/device/gpu/hal/device/gpu_device_address.h"
-#include "plugin/device/gpu/hal/device/gpu_memory_manager.h"
-#include "plugin/device/gpu/hal/device/gpu_memory_allocator.h"
-#include "plugin/device/gpu/hal/device/gpu_stream_assign.h"
-#include "include/backend/distributed/init.h"
-#include "plugin/device/gpu/hal/device/gpu_device_manager.h"
+#include "plugin/res_manager/gpu/device/gpu_memory_manager.h"
+#include "plugin/res_manager/gpu/device_context_conf/op_precision_conf.h"
+#include "plugin/res_manager/gpu/device_context_conf/op_tuning_conf.h"
+#include "plugin/res_manager/gpu/device/kernel_info_setter.h"
+#include "plugin/res_manager/gpu/device/gpu_device_manager.h"
+#include "plugin/res_manager/gpu/device/gpu_pin_mem_pool.h"
+#include "plugin/res_manager/gpu/device/gpu_device_address.h"
+#include "plugin/res_manager/gpu/device/gpu_device_synchronizer.h"
+#include "plugin/res_manager/gpu/device/gpu_event.h"
+#include "plugin/res_manager/gpu/device/gpu_hash_table_util.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/data_queue/data_queue_mgr.h"
-#include "kernel/common_utils.h"
-#include "plugin/device/gpu/hal/device/gpu_common.h"
+#include "include/backend/mem_reuse/mem_tracker.h"
+#include "runtime/device/tensor_array.h"
+#include "runtime/device/move_to.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_common.h"
-#include "plugin/device/gpu/hal/hardware/optimizer.h"
-#include "include/common/utils/ms_device_shape_transfer.h"
-#include "backend/common/graph_kernel/graph_kernel_flags.h"
-#include "plugin/device/gpu/hal/profiler/gpu_profiling.h"
-#include "plugin/device/gpu/hal/profiler/gpu_profiling_utils.h"
-#include "plugin/device/gpu/optimizer/clip_by_norm_fission.h"
-#include "include/backend/kernel_graph.h"
-#include "kernel/gpu/gpu_kernel.h"
-#include "kernel/gpu/gpu_kernel_factory.h"
-#include "plugin/device/gpu/hal/device/gpu_event.h"
-#include "plugin/device/gpu/hal/device/gpu_kernel_task.h"
-#include "plugin/device/gpu/hal/device/gpu_hash_table_util.h"
-#include "plugin/device/gpu/optimizer/reg_gpu_const_input_to_attr.h"
-#include "backend/common/optimizer/common_backend_optimization.h"
-#include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
-#include "include/common/debug/anf_ir_dump.h"
 #ifdef ENABLE_DUMP_IR
 #include "include/common/debug/rdr/recorder_manager.h"
 #include "debug/rdr/mem_address_recorder.h"
 #endif
-#include "include/common/utils/comm_manager.h"
-#ifdef ENABLE_DEBUGGER
-#include "include/backend/debug/debugger/debugger.h"
-#endif
-#include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "backend/common/pass/optimize_updatestate.h"
-#include "abstract/ops/primitive_infer_map.h"
-#include "backend/common/expander/fallback/expander_fallback.h"
-#include "backend/common/pass/value_graph_binder.h"
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "plugin/device/gpu/hal/device/gpu_pin_mem_pool.h"
-#include "plugin/device/gpu/hal/device/gpu_device_synchronizer.h"
-#include "include/common/profiler.h"
-#include "mindspore/ops/op_def/ascend_op_name.h"
-#include "runtime/device/device_address_utils.h"
-#include "runtime/pipeline/task/kernel_task.h"
-#include "runtime/device/move_to.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
-#include "include/common/utils/parallel_context.h"
-#include "include/backend/debug/profiler/profiling.h"
-#include "runtime/device/tensor_array.h"
-#include "include/common/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace device {

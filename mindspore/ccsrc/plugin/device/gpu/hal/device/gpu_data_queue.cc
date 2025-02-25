@@ -19,7 +19,8 @@
 #include "include/backend/data_queue/data_queue_mgr.h"
 #include "utils/ms_context.h"
 #include "plugin/device/gpu/hal/device/queue_common.h"
-#include "plugin/device/gpu/hal/device/gpu_device_manager.h"
+#include "plugin/res_manager/gpu/device/gpu_device_manager.h"
+#include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
 
 namespace mindspore {
 namespace device {

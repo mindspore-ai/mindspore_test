@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "plugin/device/gpu/hal/device/gpu_pin_mem_pool.h"
-#include "plugin/device/gpu/hal/device/cuda_driver.h"
+#include "plugin/res_manager/gpu/device/gpu_pin_mem_pool.h"
+#include "plugin/res_manager/gpu/device/cuda_driver.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {

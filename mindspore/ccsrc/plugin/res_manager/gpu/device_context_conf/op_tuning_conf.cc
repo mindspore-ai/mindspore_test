@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/gpu/device_context_conf/op_tuning_conf.h"
+#include "plugin/res_manager/gpu/device_context_conf/op_tuning_conf.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 

@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-#include "plugin/device/gpu/hal/device/gpu_device_address.h"
+#include "plugin/res_manager/gpu/device/gpu_device_address.h"
 #include <vector>
 #include <memory>
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
-#include "plugin/device/gpu/hal/device/gpu_device_manager.h"
-#include "plugin/device/gpu/hal/device/gpu_memory_allocator.h"
-#include "plugin/device/gpu/hal/hardware/gpu_device_context.h"
-#include "plugin/device/gpu/hal/device/gpu_hash_table_util.h"
+#include "plugin/res_manager/gpu/device/gpu_device_manager.h"
+#include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
+#include "plugin/res_manager/gpu/device/gpu_hash_table_util.h"
 #include "plugin/device/gpu/hal/device/gpu_common.h"
-#include "plugin/device/gpu/hal/device/gpu_event.h"
+#include "plugin/res_manager/gpu/device/gpu_event.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 #ifdef ENABLE_DUMP_IR
 #include "include/common/debug/rdr/recorder_manager.h"
-#include "plugin/device/gpu/hal/device/gpu_device_synchronizer.h"
+#include "plugin/res_manager/gpu/device/gpu_device_synchronizer.h"
 #endif
 
 namespace mindspore {
@@ -95,10 +95,11 @@ bool GPUDeviceAddress::SyncHostToDevice(size_t size, const void *host_ptr) const
 
   // Bind device by device name and device id on the current thread.
   if (!device_name().empty()) {
-    auto device_context = GetDeviceContext();
-    auto gpu_device_context = dynamic_cast<GPUDeviceContext *>(device_context);
-    MS_EXCEPTION_IF_NULL(gpu_device_context);
-    if (!gpu_device_context->device_res_manager_->BindDeviceToCurrentThread(false)) {
+    auto ms_context = MsContext::GetInstance();
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    auto gpu_res_manager = HalResManager::GetInstance().GetOrCreateResManager({DeviceTargetType::kGPU, device_id});
+    MS_EXCEPTION_IF_NULL(gpu_res_manager);
+    if (!gpu_res_manager->BindDeviceToCurrentThread(false)) {
       MS_LOG(EXCEPTION) << "BindDeviceToCurrentThread failed.";
     }
   }

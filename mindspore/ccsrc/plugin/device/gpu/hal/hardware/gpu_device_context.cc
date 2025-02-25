@@ -22,16 +22,16 @@
 #include <tuple>
 #include <utility>
 #include <unordered_set>
-#include "plugin/device/gpu/device_context_conf/op_precision_conf.h"
-#include "plugin/device/gpu/device_context_conf/op_tuning_conf.h"
-#include "plugin/device/gpu/hal/device/kernel_info_setter.h"
+#include "plugin/res_manager/gpu/device_context_conf/op_precision_conf.h"
+#include "plugin/res_manager/gpu/device_context_conf/op_tuning_conf.h"
+#include "plugin/res_manager/gpu/device/kernel_info_setter.h"
 #include "plugin/device/gpu/hal/device/gpu_kernel_build.h"
-#include "plugin/device/gpu/hal/device/gpu_device_address.h"
-#include "plugin/device/gpu/hal/device/gpu_memory_manager.h"
-#include "plugin/device/gpu/hal/device/gpu_memory_allocator.h"
+#include "plugin/res_manager/gpu/device/gpu_device_synchronizer.h"
+#include "plugin/res_manager/gpu/device/gpu_memory_manager.h"
+#include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
 #include "plugin/device/gpu/hal/device/gpu_stream_assign.h"
 #include "include/backend/distributed/init.h"
-#include "plugin/device/gpu/hal/device/gpu_device_manager.h"
+#include "plugin/res_manager/gpu/device/gpu_device_manager.h"
 #include "plugin/device/gpu/hal/hardware/gpu_somas.h"
 #include "include/backend/data_queue/data_queue_mgr.h"
 #include "kernel/common_utils.h"
@@ -46,9 +46,9 @@
 #include "include/backend/kernel_graph.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
-#include "plugin/device/gpu/hal/device/gpu_event.h"
+#include "plugin/res_manager/gpu/device/gpu_event.h"
 #include "plugin/device/gpu/hal/device/gpu_kernel_task.h"
-#include "plugin/device/gpu/hal/device/gpu_hash_table_util.h"
+#include "plugin/res_manager/gpu/device/gpu_hash_table_util.h"
 #include "plugin/device/gpu/optimizer/reg_gpu_const_input_to_attr.h"
 #include "backend/common/optimizer/common_backend_optimization.h"
 #include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
@@ -67,8 +67,7 @@
 #include "backend/common/expander/fallback/expander_fallback.h"
 #include "backend/common/pass/value_graph_binder.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "plugin/device/gpu/hal/device/gpu_pin_mem_pool.h"
-#include "plugin/device/gpu/hal/device/gpu_device_synchronizer.h"
+#include "plugin/res_manager/gpu/device/gpu_pin_mem_pool.h"
 #include "include/common/profiler.h"
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "runtime/device/device_address_utils.h"
@@ -867,6 +866,9 @@ bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_ty
 }
 
 bool GPUDeviceResManager::LoadCollectiveCommLib() { return gpu_res_manager_->LoadCollectiveCommLib(); }
+mindspore::device::CollectiveCommunicationLib *GPUDeviceResManager::collective_comm_lib() const {
+  return gpu_res_manager_->collective_comm_lib();
+}
 
 bool GPUDeviceResManager::BindDeviceToCurrentThread(bool force_bind) const {
   return gpu_res_manager_->BindDeviceToCurrentThread(force_bind);

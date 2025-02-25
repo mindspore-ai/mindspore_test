@@ -5,7 +5,6 @@ include_directories(${CUDNN_INCLUDE_PATH} ${CUDA_PATH} ${CUDA_INCLUDE_DIRS} ${CU
 
 ########### mindspore_gpu.so #####
 set(GPU_SUB_COMP
-        device_context_conf
         hal/device
         hal/hardware
         hal/profiler
@@ -23,11 +22,14 @@ if(ENABLE_GPU)
             endif()
         endif()
     endforeach()
-endif()
-
-if(ENABLE_GPU)
-    include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc/res_manager/gpu)
-    list(APPEND GPU_SUB_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_plugin_res_manager_gpu_obj>)
+    list(APPEND GPU_SUB_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_plugin_res_manager_gpu_device_obj>)
+    list(APPEND GPU_SUB_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_plugin_res_mananger_gpu_device_context_conf_obj>)
+    list(APPEND GPU_SUB_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_gpu_res_manager_obj>)
+    if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+        target_compile_definitions(_mindspore_plugin_res_manager_gpu_device_obj PRIVATE BUILDING_GPU_DLL)
+        target_compile_definitions(_mindspore_plugin_res_mananger_gpu_device_context_conf_obj PRIVATE BUILDING_GPU_DLL)
+        target_compile_definitions(_mindspore_gpu_res_manager_obj PRIVATE BUILDING_GPU_DLL)
+    endif()
 endif()
 
 ### cxx api need file ###
@@ -37,7 +39,8 @@ set_target_properties(mindspore_gpu PROPERTIES SOVERSION ${CUDA_VERSION})
 if(MSVC)
 target_link_options(mindspore_gpu PRIVATE /FORCE:UNRESOLVED)
 endif()
-target_link_libraries(mindspore_gpu PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common mindspore_res_manager)
+target_link_libraries(mindspore_gpu PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common
+    mindspore_res_manager mindspore_gpu_res_manager)
 target_link_libraries(mindspore_gpu PRIVATE -Wl,--no-as-needed mindspore_pyboost -Wl,--as-needed)
 target_link_libraries(mindspore_gpu PRIVATE -Wl,--whole-archive mindspore_ops_gpu -Wl,--no-whole-archive)
 target_link_libraries(mindspore_gpu PRIVATE securec)

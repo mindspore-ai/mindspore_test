@@ -23,9 +23,9 @@
 #include <memory>
 
 #ifndef ENABLE_ASAN
-#include "plugin/device/gpu/hal/device/gpu_hash_table.h"
+#include "plugin/res_manager/gpu/device/gpu_hash_table.h"
 #else
-#include "plugin/device/gpu/hal/device/gpu_hash_table_dummy.h"
+#include "plugin/res_manager/gpu/device/gpu_hash_table_dummy.h"
 #endif
 
 #include "include/backend/distributed/ps/ps_context.h"

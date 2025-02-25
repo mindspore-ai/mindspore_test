@@ -18,9 +18,9 @@
 
 #include <vector>
 #include <memory>
-#include "plugin/device/gpu/hal/device/gpu_memory_allocator.h"
-#include "plugin/device/gpu/hal/device/gpu_device_manager.h"
-#include "plugin/device/gpu/hal/device/kernel_info_setter.h"
+#include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
+#include "plugin/res_manager/gpu/device/gpu_device_manager.h"
+#include "plugin/res_manager/gpu/device/kernel_info_setter.h"
 #include "plugin/device/gpu/hal/device/gpu_kernel_build.h"
 #include "abstract/utils.h"
 #include "kernel/graph_kernel_info.h"

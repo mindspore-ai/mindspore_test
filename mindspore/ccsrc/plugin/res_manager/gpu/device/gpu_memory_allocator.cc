@@ -19,8 +19,8 @@
 #ifdef ENABLE_DEBUGGER
 #include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
 #endif
-#include "plugin/device/gpu/hal/device/gpu_memory_allocator.h"
-#include "plugin/device/gpu/hal/device/cuda_driver.h"
+#include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
+#include "plugin/res_manager/gpu/device/cuda_driver.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/convert_utils_base.h"

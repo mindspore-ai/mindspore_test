@@ -23,7 +23,7 @@
 #include <utility>
 #include <memory>
 #include "kernel/gpu/gpu_kernel.h"
-#include "plugin/device/gpu/hal/device/kernel_info_setter.h"
+#include "plugin/res_manager/gpu/device/kernel_info_setter.h"
 #include "kernel/kernel_build_info.h"
 #include "kernel/common_utils.h"
 

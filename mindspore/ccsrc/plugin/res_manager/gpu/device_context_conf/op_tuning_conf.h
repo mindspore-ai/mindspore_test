@@ -20,8 +20,10 @@
 #include <memory>
 #include <map>
 #include <string>
-#include "runtime/hardware/device_context_manager.h"
 #include "utils/ms_utils.h"
+#include "pybind11/pybind11.h"
+
+namespace py = pybind11;
 
 namespace mindspore {
 namespace device {

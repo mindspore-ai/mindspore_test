@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include "plugin/device/gpu/hal/device/gpu_memory_manager.h"
-#include "plugin/device/gpu/hal/device/gpu_memory_allocator.h"
+#include "plugin/res_manager/gpu/device/gpu_memory_manager.h"
+#include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/convert_utils.h"
-#include "plugin/device/gpu/hal/device/gpu_device_manager.h"
+#include "plugin/res_manager/gpu/device/gpu_device_manager.h"
 #include "plugin/device/gpu/hal/device/gpu_common.h"
 namespace mindspore {
 namespace device {
