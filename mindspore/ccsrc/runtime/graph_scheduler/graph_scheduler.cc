@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <queue>
+#include <vector>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "runtime/graph_scheduler/scheduler_helper.h"
@@ -1086,33 +1087,23 @@ void CheckUceBeforeGraphRun(ActorSet *const actor_set) {
   }
 }
 
+template <typename T>
+void ResetActorState(const std::vector<T> &actors) {
+  for (auto &actor : actors) {
+    if (actor != nullptr) {
+      actor->ResetState();
+    }
+  }
+}
+
 void ClearControlActorDataForUce(ActorSet *const actor_set) {
   MS_LOG(INFO) << "Start to clean control actors data.";
   if (actor_set->control_actors_ != nullptr) {
-    for (auto &entrance_actor : actor_set->control_actors_->entrance_actors_) {
-      if (entrance_actor == nullptr) {
-        continue;
-      }
-      entrance_actor->ResetState();
-    }
-    for (auto &gather_actor : actor_set->control_actors_->gather_actors_) {
-      if (gather_actor == nullptr) {
-        continue;
-      }
-      gather_actor->ResetState();
-    }
-    for (auto &switch_actor : actor_set->control_actors_->switch_actors_) {
-      if (switch_actor == nullptr) {
-        continue;
-      }
-      switch_actor->ResetState();
-    }
-    for (auto &stack_actor : actor_set->control_actors_->stack_actors_) {
-      if (stack_actor == nullptr) {
-        continue;
-      }
-      stack_actor->ResetState();
-    }
+    ResetActorState(actor_set->control_actors_->entrance_actors_);
+    ResetActorState(actor_set->control_actors_->gather_actors_);
+    ResetActorState(actor_set->control_actors_->switch_actors_);
+    ResetActorState(actor_set->control_actors_->stack_actors_);
+    ResetActorState(actor_set->control_actors_->exit_actors_);
   }
   MS_LOG(INFO) << "End to clean control actors data.";
 }
