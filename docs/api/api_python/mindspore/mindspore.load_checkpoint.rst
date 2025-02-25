@@ -6,9 +6,8 @@ mindspore.load_checkpoint
     加载checkpoint文件。
 
     .. note::
-        - `specify_prefix` 和 `filter_prefix` 的功能相互之间没有影响。
-        - 如果发现没有参数被成功加载，将会报ValueError.
-        - `specify_prefix` 和 `filter_prefix` 参数已被弃用，推荐使用 `choice_func` 代替。并且使用这两个参数中的任何一个都将覆盖 `choice_func` 。
+        - `specify_prefix` 和 `filter_prefix` 参数已被弃用，推荐使用 `choice_func` 代替。`specify_prefix` 和 `filter_prefix` 的功能相互之间没有影响，并且使用这两个参数中的任何一个都将覆盖 `choice_func` 。
+        - 如果没有参数被成功加载，将会报ValueError。
         - 当加载去冗余的checkpoint时，网络应该是编译过的。
 
     参数：
@@ -26,7 +25,7 @@ mindspore.load_checkpoint
 
     返回：
         字典，key是参数名称，value是Parameter类型。当使用 :func:`mindspore.save_checkpoint` 的 `append_dict` 参数和 :class:`mindspore.train.CheckpointConfig` 的 `append_info` 参数保存\
-        checkpoint， `append_dict` 和 `append_info` 是dict类型，且它们的值value是string时，加载checkpoint得到的返回值是string类型，其他情况返回值均是Parameter类型。
+        checkpoint， `append_dict` 和 `append_info` 是dict类型，且它们的值是string时，加载checkpoint得到的返回值是string类型，其他情况返回值均是Parameter类型。
 
     异常：
         - **ValueError** - checkpoint文件格式不正确。

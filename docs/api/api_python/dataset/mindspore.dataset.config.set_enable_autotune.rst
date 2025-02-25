@@ -5,7 +5,7 @@ mindspore.dataset.config.set_enable_autotune
 
     设置是否开启数据处理参数自动调优。
 
-    可用于在训练中根据环境资源的负载，自动调整数据处理流水线中各个操作的参数配置，如并行度、缓冲队列大小，从而提高整体处理速度。
+    在训练中根据环境资源的负载，自动调整数据处理流水线中各个操作的参数配置，如并行度、缓冲队列大小，从而提高整体处理速度。
 
     该功能默认不开启。
 
@@ -13,7 +13,7 @@ mindspore.dataset.config.set_enable_autotune
         - **enable** (bool) - 是否开启自动调优。
         - **filepath_prefix** (str，可选) - 优化后的参数配置的保存路径。仅当 `enable` 为 `True` 时生效。
           各个Device上的参数配置文件将分别保存，最终保存的文件名将为 `filepath_prefix + RANK_ID + ".json"` ，
-          其中 RANK_ID 为该文件对应的Device编号。默认值： ``None`` ，不保存配置文件。
+          其中 RANK_ID 为该文件对应的Device编号。默认值： ``None`` ，表示不保存配置文件。
 
     异常：
         - **TypeError** - 当 `enable` 的类型不为bool。
@@ -24,7 +24,7 @@ mindspore.dataset.config.set_enable_autotune
         - **RuntimeError** - 当 `filepath_prefix` 没有写入权限。
 
     .. note::
-        - 保存的参数配置文件可通过 :func:`mindspore.dataset.deserialize` 接口加载，直接得到配置好最优参数的数据处理流水线对象。
+        - 保存的参数配置文件可通过 :func:`mindspore.dataset.deserialize` 接口加载，返回最优参数的数据处理流水线对象。
         - 可通过开启INFO级别日志，查看参数调优过程。
     
     生成的配置文件内容示例如下，"remark"字段描述是否进行了数据处理参数调优，"summary"字段简要展示了数据处理流水线中\
