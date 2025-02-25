@@ -249,12 +249,16 @@ void BaseTensor::ExecuteLazyTask() const {
   if (lazy_callback_ != nullptr && (need_pipeline_sync_ || device_sync_ != nullptr)) {
     lazy_callback_();
   }
+}
 
+DeviceSyncPtr BaseTensor::CallContiguousCallback() const {
+  DeviceSyncPtr contiguous_device_address = nullptr;
   if (contiguous_callback_ != nullptr && storage_info() != nullptr) {
-    device_sync_ = contiguous_callback_(device_address());
-    device_sync_->set_original_ref_count(SIZE_MAX);
-    device_sync_->ResetRefCount();
+    contiguous_device_address = contiguous_callback_(device_address());
+    contiguous_device_address->set_original_ref_count(SIZE_MAX);
+    contiguous_device_address->ResetRefCount();
   }
+  return contiguous_device_address;
 }
 
 DeviceSyncPtr BaseTensor::device_address() const { return device_sync_; }
@@ -409,6 +413,7 @@ void BaseTensor::data_sync(bool need_wait) const {
     device_sync_ = device_address();
     ExecuteLazyTask();
   }
+
   if (device_sync_ == nullptr) {
     return;
   }
@@ -420,7 +425,11 @@ void BaseTensor::data_sync(bool need_wait) const {
   std::vector<size_t> shape_tmp;
   (void)std::transform(shape().begin(), shape().end(), std::back_inserter(shape_tmp), LongToSize);
   auto size = abstract::ShapeSize(shape_tmp) * abstract::TypeIdSize(data_type());
+  auto contiguous_address = CallContiguousCallback();
   auto address = device_sync_;
+  if (contiguous_address != nullptr) {
+    address = contiguous_address;
+  }
   if (size != 0 && address->GetMutablePtr() != nullptr &&
       !address->SyncDeviceToHost(shape(), size, data_type(), data_c())) {
     MS_LOG(INTERNAL_EXCEPTION) << "SyncDeviceToHost failed.";
