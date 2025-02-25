@@ -14,8 +14,8 @@ add_library(d_collective STATIC ${ASCEND_COLLECTIVE_SRCS})
 target_link_libraries(d_collective PRIVATE ${HCCL})
 
 if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
-    include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/lccl/include)
-    link_directories($ENV{MS_INTERNAL_KERNEL_HOME}/lccl/lib)
+    include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/asdops/include/lcal)
+    link_directories($ENV{MS_INTERNAL_KERNEL_HOME}/asdops/lib)
     set(LOWLATENCY_COLLECTIVE_SRCS "lowlatency_collective_comm_lib.cc"
             "lowlatency_communication_group.cc"
             ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/collective/collective_communication_lib.cc

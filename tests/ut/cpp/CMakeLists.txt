@@ -21,10 +21,10 @@ if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
     include_directories($ENV{MS_INTERNAL_KERNEL_HOME})
     include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/internal_kernel/include)
     include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/asdops/include)
-    include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/lccl/include)
+    include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/asdops/include/lcal)
 
     link_directories($ENV{MS_INTERNAL_KERNEL_HOME}/internal_kernel/lib)
-    link_directories($ENV{MS_INTERNAL_KERNEL_HOME}/lccl/lib)
+    link_directories($ENV{MS_INTERNAL_KERNEL_HOME}/asdops/lib)
 endif()
 
 file(STRINGS "${CMAKE_SOURCE_DIR}/version.txt" MSVERSION)

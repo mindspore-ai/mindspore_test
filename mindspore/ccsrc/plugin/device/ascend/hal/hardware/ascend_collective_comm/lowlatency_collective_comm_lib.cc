@@ -91,7 +91,7 @@ LcocPtr LowlatencyCollectiveCommLib::CreateLcocForOp(const std::string &group_na
   auto group = std::dynamic_pointer_cast<LowlatencyCommunicationGroup>(groups_[group_name]);
   CHECK_IF_NULL(group);
 
-  LcalCommPtr lcal_comm = group->lcal_comm();
+  LcalCommClassPtr lcal_comm = group->lcal_comm();
   CHECK_IF_NULL(lcal_comm);
   LcocPtr lcoc_ptr = std::make_shared<Lcoc>(*(lcal_comm.get()));
   return lcoc_ptr;
