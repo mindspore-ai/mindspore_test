@@ -22,7 +22,7 @@
 #include <memory>
 #include "runtime/device/res_manager/hal_res_base.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
-#include "runtime/device/gsm/swap_manager.h"
+#include "runtime/device/res_manager/swap_manager.h"
 
 namespace mindspore {
 namespace device {

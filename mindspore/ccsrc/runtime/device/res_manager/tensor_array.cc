@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "runtime/device/tensor_array.h"
+#include "runtime/device/res_manager/tensor_array.h"
 #include <unordered_set>
+#include "common/device_address.h"
 
 namespace mindspore {
 namespace device {

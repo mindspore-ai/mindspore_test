@@ -25,7 +25,7 @@
 #include <string>
 #include <vector>
 
-#include "runtime/device/gsm/io_handle.h"
+#include "runtime/device/res_manager/utils/io_handle.h"
 
 #ifndef AIO_EXPORT
 #define AIO_EXPORT __attribute__((visibility("default")))

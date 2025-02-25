@@ -23,7 +23,7 @@
 
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
-#include "runtime/device/gsm/swap_manager.h"
+#include "runtime/device/res_manager/swap_manager.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/log_adapter.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"

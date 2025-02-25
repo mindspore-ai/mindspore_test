@@ -21,7 +21,7 @@
 #include <string>
 #include <memory>
 #include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
-#include "runtime/device/tensor_array.h"
+#include "runtime/device/res_manager/tensor_array.h"
 #include "runtime/device/tensors_queue.h"
 
 namespace mindspore {

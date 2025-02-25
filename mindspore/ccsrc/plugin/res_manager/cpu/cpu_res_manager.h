@@ -21,7 +21,7 @@
 #include <memory>
 #include "runtime/device/res_manager/hal_res_base.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
-#include "runtime/device/gsm/swap_manager.h"
+#include "runtime/device/res_manager/swap_manager.h"
 #include "runtime/collective/collective_communication_lib.h"
 #include "runtime/collective/collective_comm_lib_loader.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_manager.h"

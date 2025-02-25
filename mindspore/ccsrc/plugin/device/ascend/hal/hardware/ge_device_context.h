@@ -21,7 +21,7 @@
 #include <map>
 #include "plugin/device/ascend/hal/hardware/ascend_deprecated_interface.h"
 #include "runtime/hardware/device_context.h"
-#include "runtime/device/memory_manager.h"
+#include "runtime/device/res_manager/memory_manager.h"
 #include "utils/ms_context.h"
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/ge_kernel_executor.h"

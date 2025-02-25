@@ -26,7 +26,11 @@
 #include <unordered_set>
 #include "common/device_type.h"
 #include "common/device_address.h"
+<<<<<<< HEAD
 #include "runtime/device/gsm/swap_manager.h"
+=======
+#include "runtime/device/res_manager/swap_manager.h"
+>>>>>>> 3b56f2d5ddb (ms-decouple loadable device address)
 #include "runtime/collective/collective_communication_lib.h"
 #include "runtime/collective/collective_comm_lib_loader.h"
 #include "include/backend/kernel_graph.h"
@@ -34,7 +38,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "runtime/hardware/deprecated_interface.h"
 #include "runtime/device/auto_mem_offload.h"
-#include "runtime/device/memory_manager.h"
+#include "runtime/device/res_manager/memory_manager.h"
 #include "include/backend/optimizer/graph_optimizer.h"
 #include "runtime/pipeline/task/task.h"
 #include "ir/device_event.h"

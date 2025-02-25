@@ -26,15 +26,16 @@
 #include "include/backend/mem_reuse/dynamic_mem_pool.h"
 #include "ir/anf.h"
 #include "common/device_address.h"
-#include "include/backend/kernel_info.h"
+#include "runtime/device/res_manager/utils/visible.h"
 
 namespace mindspore {
 namespace device {
 enum class MemType { kStaticMem, kDynamicMem, kSomasReuseDynamicMem };
+const uint32_t kInvalidGraphId = UINT32_MAX;
 constexpr int kGetAllOuts = -1;
 constexpr uint64_t kMemAlignSize = 512;
 constexpr uint64_t kTwiceMemAlignSize = kMemAlignSize << 1;
-class BACKEND_EXPORT MemoryManager {
+class RES_EXPORT MemoryManager {
  public:
   MemoryManager() = default;
   virtual ~MemoryManager() = default;

@@ -18,13 +18,13 @@
 
 #include <memory>
 #include <mutex>
-#include "include/backend/visible.h"
+#include "runtime/device/res_manager/utils/visible.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "ir/tensor.h"
 
 namespace mindspore {
 namespace device {
-class BACKEND_EXPORT PinMemPool : public DynamicMemPoolBestFit, public PinnedMemRegister {
+class RES_EXPORT PinMemPool : public DynamicMemPoolBestFit, public PinnedMemRegister {
  public:
   ~PinMemPool() = default;
   virtual void PinnedMemAlloc(DeviceMemPtr *addr, size_t size) = 0;

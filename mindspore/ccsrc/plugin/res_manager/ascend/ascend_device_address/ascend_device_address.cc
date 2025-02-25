@@ -216,7 +216,7 @@ void AscendDeviceAddress::SyncHostMemoryToDeviceWithCopySrc(void *dst, const voi
     MS_LOG(EXCEPTION) << "MemcpyAsync failed!";
   }
 
-  device::CallbackFunc callback_func = [buffer]() {
+  std::function<void(void)> callback_func = [buffer]() {
     // Clear buffer automatically.
     MS_LOG(DEBUG) << "callback_func exec, buffer cnt:" << buffer.use_count();
   };
@@ -267,7 +267,7 @@ void AscendDeviceAddress::SyncHostMemoryToDeviceWithTensorData(void *dst, const 
   if (!ret) {
     MS_LOG(EXCEPTION) << "MemcpyAsync failed!";
   }
-  device::CallbackFunc callback_func = [tensor_data]() {
+  std::function<void(void)> callback_func = [tensor_data]() {
     // Clear tensor_data automatically.
     MS_LOG(DEBUG) << "callback_func exec, tensor_data cnt:" << tensor_data.use_count();
   };

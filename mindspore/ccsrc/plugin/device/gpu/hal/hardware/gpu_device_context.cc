@@ -76,7 +76,7 @@
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/utils/parallel_context.h"
 #include "debug/profiler/profiling.h"
-#include "runtime/device/tensor_array.h"
+#include "runtime/device/res_manager/tensor_array.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 
 namespace mindspore {

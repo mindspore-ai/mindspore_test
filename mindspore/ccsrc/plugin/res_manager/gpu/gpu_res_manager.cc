@@ -31,8 +31,7 @@
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/data_queue/data_queue_mgr.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "runtime/device/tensor_array.h"
-
+#include "runtime/device/res_manager/tensor_array.h"
 namespace mindspore {
 namespace device {
 namespace gpu {

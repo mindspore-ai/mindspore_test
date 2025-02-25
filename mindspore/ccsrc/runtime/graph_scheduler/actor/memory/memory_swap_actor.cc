@@ -18,7 +18,7 @@
 
 #include <map>
 
-#include "runtime/device/loadable_device_address.h"
+#include "runtime/device/res_manager/loadable_device_address.h"
 #include "runtime/graph_scheduler/device_tensor_store.h"
 
 namespace mindspore {

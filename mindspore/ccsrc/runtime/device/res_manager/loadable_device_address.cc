@@ -14,16 +14,27 @@
  * limitations under the License.
  */
 
-#include "runtime/device/loadable_device_address.h"
+#include "runtime/device/res_manager/loadable_device_address.h"
 #include "include/common/debug/common.h"
 #include "include/common/utils/offload_context.h"
 #include "utils/file_utils.h"
+#include "utils/ms_context.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
 namespace device {
 namespace {
 constexpr size_t kFileAlignSize = 512;
 constexpr char kSwapFileSuffix[] = ".data";
+std::shared_ptr<SwapManager> GetSwapManager() {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  auto device_type = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  ResKey res_key{GetDeviceTypeByName(device_type), device_id};
+  auto res_manager = HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  return res_manager->swap_manager();
+}
 }  // namespace
 
 bool LoadableDeviceAddress::MoveTo(mindspore::device::StorageType dst, bool async, size_t stream_id) {
@@ -56,9 +67,7 @@ bool LoadableDeviceAddress::MoveTo(mindspore::device::StorageType dst, bool asyn
 }
 
 bool LoadableDeviceAddress::MoveToHost(bool async, size_t stream_id) const {
-  const auto device_context = GetDeviceContext();
-  MS_EXCEPTION_IF_NULL(device_context);
-  const auto swap_manager = device_context->device_res_manager_->swap_manager();
+  const auto swap_manager = GetSwapManager();
   MS_EXCEPTION_IF_NULL(swap_manager);
   if (loadable_mem_ == nullptr) {
     loadable_mem_ = std::make_unique<LoadableMember>();
@@ -108,9 +117,7 @@ bool LoadableDeviceAddress::MoveToDevice(bool async, size_t stream_id) const {
   if (status_ == DeviceAddressStatus::kInDevice) {
     return true;
   }
-  const auto device_context = GetDeviceContext();
-  MS_EXCEPTION_IF_NULL(device_context);
-  const auto swap_manager = device_context->device_res_manager_->swap_manager();
+  const auto swap_manager = GetSwapManager();
   MS_EXCEPTION_IF_NULL(swap_manager);
   MS_EXCEPTION_IF_NULL(loadable_mem_);
   std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
@@ -166,9 +173,7 @@ bool LoadableDeviceAddress::MoveToFile(bool async, size_t stream_id) const {
   if (status_ == DeviceAddressStatus::kInFile) {
     return true;
   }
-  const auto device_context = GetDeviceContext();
-  MS_EXCEPTION_IF_NULL(device_context);
-  const auto swap_manager = device_context->device_res_manager_->swap_manager();
+  const auto swap_manager = GetSwapManager();
   MS_EXCEPTION_IF_NULL(swap_manager);
   if (loadable_mem_ == nullptr) {
     loadable_mem_ = std::make_unique<LoadableMember>();
@@ -223,9 +228,7 @@ bool LoadableDeviceAddress::MoveToFile(bool async, size_t stream_id) const {
 
 bool LoadableDeviceAddress::CopyHostToFile(const std::string &dst, const void *src, size_t size, bool async) const {
   MS_EXCEPTION_IF_NULL(src);
-  const auto device_context = GetDeviceContext();
-  MS_EXCEPTION_IF_NULL(device_context);
-  const auto swap_manager = device_context->device_res_manager_->swap_manager();
+  const auto swap_manager = GetSwapManager();
   MS_EXCEPTION_IF_NULL(swap_manager);
   AsyncIOToken token;
   bool ret = swap_manager->HostMemoryToFile(dst, src, size, async, &token);
@@ -242,9 +245,7 @@ bool LoadableDeviceAddress::CopyHostToFile(const std::string &dst, const void *s
 
 bool LoadableDeviceAddress::CopyFileToHost(void *dst, const std::string &src, size_t size, bool async) const {
   MS_EXCEPTION_IF_NULL(dst);
-  const auto device_context = GetDeviceContext();
-  MS_EXCEPTION_IF_NULL(device_context);
-  const auto swap_manager = device_context->device_res_manager_->swap_manager();
+  const auto swap_manager = GetSwapManager();
   MS_EXCEPTION_IF_NULL(swap_manager);
   AsyncIOToken token;
   bool ret = swap_manager->FileToHostMemory(dst, src, size, async, &token);
@@ -269,9 +270,7 @@ void LoadableDeviceAddress::ReleaseResource() {
   const bool need_free_host =
     loadable_mem_->storage_info_.host_ptr_ != nullptr && loadable_mem_->storage_info_.host_ptr_mutable_;
   if (need_delete_file || need_free_host) {
-    auto device_context = GetDeviceContext();
-    MS_EXCEPTION_IF_NULL(device_context);
-    const auto swap_manager = device_context->device_res_manager_->swap_manager();
+    const auto swap_manager = GetSwapManager();
     MS_EXCEPTION_IF_NULL(swap_manager);
     if (need_delete_file) {
       (void)swap_manager->DeleteFile(loadable_mem_->storage_info_.file_name_);
@@ -355,9 +354,7 @@ bool LoadableDeviceAddress::Wait() const {
     return true;
   }
   std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
-  const auto device_context = GetDeviceContext();
-  MS_EXCEPTION_IF_NULL(device_context);
-  const auto swap_manager = device_context->device_res_manager_->swap_manager();
+  const auto swap_manager = GetSwapManager();
   MS_EXCEPTION_IF_NULL(swap_manager);
   if (loadable_mem_->swap_event_.device_event_ != nullptr && loadable_mem_->swap_event_.device_event_->NeedWait()) {
     loadable_mem_->swap_event_.device_event_->WaitEvent();
