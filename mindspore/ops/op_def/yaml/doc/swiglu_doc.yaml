@@ -30,6 +30,7 @@ swiglu:
             ``Ascend``
     
         Examples:
+            >>> import mindspore
             >>> from mindspore import Tensor, ops
             >>> input = Tensor([[-0.12, 0.123, 31.122], [2.1223, 4.1212121217, 0.3123]], dtype=mindspore.float32)
             >>> output = ops.swiglu(input, 0)

@@ -22,7 +22,7 @@ std::vector<GeneralInferParam> prepare_params() {
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{3, 10}, kNumberTypeBFloat16},
                     InferInfoParam{ShapeVector{3, 2}, kNumberTypeInt32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(7)},
                     InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)}})
     .FeedExpectedOutput({{6, 10}, {6}}, {kNumberTypeBFloat16, kNumberTypeInt32});
 
@@ -36,7 +36,7 @@ std::vector<GeneralInferParam> prepare_params() {
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{3, -1}, kNumberTypeBFloat16},
                     InferInfoParam{ShapeVector{3, 2}, kNumberTypeInt32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(6)},
                     InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)}})
     .FeedExpectedOutput({{6, -1}, {6}}, {kNumberTypeBFloat16, kNumberTypeInt32});
 
@@ -50,9 +50,9 @@ std::vector<GeneralInferParam> prepare_params() {
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{-1, -1}, kNumberTypeBFloat16},
                     InferInfoParam{ShapeVector{3, 2}, kNumberTypeInt32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(3)},
                     InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)}})
-    .FeedExpectedOutput({{6, -1}, {6}}, {kNumberTypeBFloat16, kNumberTypeInt32});
+    .FeedExpectedOutput({{3, -1}, {6}}, {kNumberTypeBFloat16, kNumberTypeInt32});
 
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{-1, -1}, kNumberTypeBFloat16},
@@ -64,7 +64,7 @@ std::vector<GeneralInferParam> prepare_params() {
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeBFloat16},
                     InferInfoParam{ShapeVector{3, 2}, kNumberTypeInt32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1000)},
                     InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)}})
     .FeedExpectedOutput({{6, -1}, {6}}, {kNumberTypeBFloat16, kNumberTypeInt32});
 
@@ -85,7 +85,7 @@ std::vector<GeneralInferParam> prepare_params() {
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{-1, -1}, kNumberTypeBFloat16},
                     InferInfoParam{ShapeVector{3, -1}, kNumberTypeInt32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(123)},
                     InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)}})
     .FeedExpectedOutput({{-1, -1}, {-1}}, {kNumberTypeBFloat16, kNumberTypeInt32});
 
@@ -99,7 +99,7 @@ std::vector<GeneralInferParam> prepare_params() {
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeBFloat16},
                     InferInfoParam{ShapeVector{-2}, kNumberTypeInt32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(3)},
                     InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)}})
     .FeedExpectedOutput({{-1, -1}, {-1}}, {kNumberTypeBFloat16, kNumberTypeInt32});
 
