@@ -26,7 +26,7 @@ mindspore.ops.DynamicGRUV2
         - **num_proj** (int，可选) - 投影维度。默认值： ``0`` 。
         - **time_major** (bool，可选) - 如为 ``True`` ，则指定输入的第一维度为序列长度 `num_step` ，如为False则第一维度为 `batch_size` 。默认值： ``True`` 。
         - **activation** (str，可选) - 字符串，指定activation类型。默认值：``"tanh"`` 。目前仅支持取值 ``"tanh"`` 。
-        - **gate_order** (str，可选) - 字符串，指定weight和bias中门的排列顺序，可选值为 ``"rzh"`` 或 ``"zrh"`` 。默认值： ``"rzh"`` 。 ``"rzh"`` 代表顺序为：重置门、更新门、隐藏门。 ``"zrh"`` 代表顺序为：更新门，重置门，隐藏门。
+        - **gate_order** (str，可选) - 字符串，指定weight和bias中门的排列顺序，可选值为 ``"rzh"`` 或 ``"zrh"`` 。默认值： ``"rzh"`` 。 ``"rzh"`` 代表顺序为：重置门、更新门、隐藏门。 ``"zrh"`` 代表顺序为：更新门、重置门、隐藏门。
         - **reset_after** (bool，可选) - 是否在矩阵乘法后使用重置门。默认值： ``True`` 。
         - **is_training** (bool，可选) - 是否为训练模式。默认值： ``True`` 。
 
