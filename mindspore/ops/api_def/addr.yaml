@@ -1,0 +1,15 @@
+addr:
+  - op_yaml: addr_op.yaml
+    py_method: tensor_addr
+    kwonlyargs: beta, alpha
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor, function
+
+  - op_yaml: deprecated/addr_method.yaml
+    py_method: deprecated_tensor_addr
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

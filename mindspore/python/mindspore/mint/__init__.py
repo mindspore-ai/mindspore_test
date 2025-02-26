@@ -357,6 +357,8 @@ from mindspore.ops.auto_generate import log1p
 from mindspore.ops.function.random_func import multinomial_ext as multinomial
 # 275
 from mindspore.ops.functional_overload import remainder
+# 279
+from mindspore.ops.functional_overload import addr
 # 285
 from mindspore.ops.function.array_func import scatter_add_ext as scatter_add
 # 289
@@ -1963,6 +1965,8 @@ __all__ = [
     'multinomial',
     # 275
     'remainder',
+    # 279
+    'addr',
     # 285
     'scatter_add',
     # 289

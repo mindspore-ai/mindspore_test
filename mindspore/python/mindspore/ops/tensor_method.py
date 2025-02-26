@@ -410,6 +410,9 @@ from mindspore.ops.auto_generate import expm1
 # 220 hardshrink
 from mindspore.ops.auto_generate import hardshrink
 
+# 279 addr
+from mindspore.ops.function.math_func import addr
+
 # 931
 from mindspore.ops.function.math_func import nansum
 
@@ -1586,6 +1589,15 @@ def deprecated_tensor_addmm(input, mat1, mat2, *, beta=1, alpha=1):
 # 543
 def tensor_put_(input, index, source, accumulate=False):
     raise RuntimeError(f"There is no branch to go function tensor_put_!")
+
+
+# 279
+def tensor_addr(input, vec1, vec2, *, beta=1, alpha=1):
+    return addr(input, vec1, vec2, beta=beta, alpha=alpha)
+
+
+def deprecated_tensor_addr(input, vec1, vec2, beta=1, alpha=1):
+    return addr(input, vec1, vec2, beta=beta, alpha=alpha)
 
 
 # 790

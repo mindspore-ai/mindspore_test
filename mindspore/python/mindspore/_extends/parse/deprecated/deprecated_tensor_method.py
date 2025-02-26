@@ -373,6 +373,8 @@ deprecated_tensor_method_map = {
 
     # 162 log10
     "log10": "tensor_log10",
+    # 279 addr
+    "addr": "deprecated_tensor_addr",
     # 732
     "take": "deprecated_tensor_take",
 
