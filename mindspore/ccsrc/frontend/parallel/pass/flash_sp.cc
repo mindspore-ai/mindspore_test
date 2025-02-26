@@ -2537,6 +2537,149 @@ void AdjustCPDependency(const FuncGraphManagerPtr &manager, const std::vector<An
   manager->SetEdge(*local_fa_node, 1, fa_input);
 }
 
+void UpdateAttentionOutputViaSubgraph(CNodePtr *history_max, CNodePtr *history_sum, CNodePtr *acc_attention,
+                                      const CNodePtr &softmax_max, const CNodePtr &softmax_sum,
+                                      const CNodePtr &attention_output, const FuncGraphPtr &sub_graph, int64_t fa_b,
+                                      int64_t fa_s1, int64_t fa_n1, int64_t fa_h1, int64_t input_layout, int fa_index,
+                                      int index, TypeId output_type_id, bool is_last_update = false,
+                                      bool need_split = false) {
+  CNodePtr split_max_0;
+  CNodePtr split_sum_0;
+  CNodePtr split_attn_0;
+  if (need_split) {
+    auto split_max = NewSplitNode(*history_max, kDim2, kIndex2);
+    *history_max = NewTupleGetItemNode(split_max, kIndex1);
+    auto split_sum = NewSplitNode(*history_sum, kDim2, kIndex2);
+    *history_sum = NewTupleGetItemNode(split_sum, kIndex1);
+    auto axis = input_layout == FASInputLayoutMode::BSH ? kDim1 : kDim2;
+    auto split_attn = NewSplitNode(*acc_attention, axis, kIndex2);
+    *acc_attention = NewTupleGetItemNode(split_attn, kIndex1);
+
+    split_max_0 = NewTupleGetItemNode(split_max, kIndex0);
+    split_sum_0 = NewTupleGetItemNode(split_sum, kIndex0);
+    split_attn_0 = NewTupleGetItemNode(split_attn, kIndex0);
+  }
+  auto temp_max = NewMaxNode(*history_max, softmax_max);
+  auto m_h_sub_temp = NewSubNode(*history_max, temp_max);
+  auto m_i_sub_temp = NewSubNode(softmax_max, temp_max);
+  auto e_m_h_temp = NewExpNode(m_h_sub_temp);
+  auto e_m_i_temp = NewExpNode(m_i_sub_temp);
+  auto e_l_h = NewMulNode(e_m_h_temp, *history_sum);
+  auto e_l_i = NewMulNode(e_m_i_temp, softmax_sum);
+  auto l = NewAddNode(e_l_h, e_l_i);
+
+  std::vector<AnfNodePtr> update_subgraph_inputs = {NewValueNode(sub_graph), e_l_h, l, e_l_i};
+
+  auto func_graph = softmax_max->func_graph();
+  auto call_update_node = func_graph->NewCNode(update_subgraph_inputs);
+
+  auto e_m_i_div_concat = NewTupleGetItemNode(call_update_node, 0);
+  auto e_m_h_div_concat = NewTupleGetItemNode(call_update_node, 1);
+
+  auto weighted_history = NewMulNode(e_m_h_div_concat, *acc_attention);
+  auto weighted_attention = NewMulNode(e_m_i_div_concat, attention_output);
+  (*acc_attention) = NewAddNode(weighted_history, weighted_attention);
+  if (need_split) {
+    auto merge_max = NewMakeTupleNode({split_max_0, temp_max});
+    temp_max = NewConcatNode(merge_max, kIndex2);
+
+    auto merge_sum = NewMakeTupleNode({split_sum_0, l});
+    l = NewConcatNode(merge_sum, kIndex2);
+
+    auto merge_attn = NewMakeTupleNode({split_attn_0, *acc_attention});
+    auto axis = input_layout == FASInputLayoutMode::BSH ? kDim1 : kDim2;
+    *acc_attention = NewConcatNode(merge_attn, axis);
+  }
+  (*history_max) = temp_max;
+  *acc_attention = CreateDepend(*acc_attention, *history_max);
+  (*history_sum) = l;
+  *acc_attention = CreateDepend(*acc_attention, *history_sum);
+  common::AnfAlgo::SetNodeAttr(kAttrAccumulatedAttention, MakeValue(1), *acc_attention);
+  common::AnfAlgo::SetNodeAttr("FLASH_INDEX", MakeValue<std::string>(GetFlashIndexString(fa_index, index)),
+                               *acc_attention);
+  if (is_last_update) {
+    weighted_attention->AddPrimalAttr(RING_ATTENTION_UPDATE_MUL, MakeValue<int>(fa_index));
+    common::AnfAlgo::SetNodeAttr(RING_ATTENTION_UPDATE_MAX, MakeValue<int>(fa_index), *history_max);
+    common::AnfAlgo::SetNodeAttr(RING_ATTENTION_UPDATE_SUM, MakeValue<int>(fa_index), *history_sum);
+  }
+}
+
+FuncGraphPtr CreateUpdateAttentionOutputSubgraphWithSpilt(int64_t fa_b, int64_t fa_s1, int64_t fa_n1, int64_t fa_h1,
+                                                          int64_t input_layout, TypeId output_type_id) {
+  auto sub_graph = std::make_shared<FuncGraph>();
+
+  auto param_e_l_h = sub_graph->add_parameter();
+  auto param_l = sub_graph->add_parameter();
+  auto param_e_l_i = sub_graph->add_parameter();
+
+  auto e_m_h_div = NewDivNode(param_e_l_h, param_l);
+  auto e_m_i_div = NewDivNode(param_e_l_i, param_l);
+  auto e_m_h_div_split = NewSplitNode(e_m_h_div, 3, 8);
+  auto e_m_h_div_item = NewCastNode(NewTupleGetItemNode(e_m_h_div_split, 0), output_type_id);
+  if (input_layout == FASInputLayoutMode::BSH) {
+    e_m_h_div_item = NewTransposeNode(e_m_h_div_item, parallel::CreateTuple({0, 2, 1, 3}));
+  }
+  auto e_m_h_div_concat = NewTileNode(e_m_h_div_item, parallel::CreateTuple({1, 1, 1, fa_h1 / fa_n1}));
+  if (input_layout == FASInputLayoutMode::BSH) {
+    auto real_seq = fa_s1 / kSplitNum;
+    e_m_h_div_concat = NewReshapeNode(e_m_h_div_concat, {fa_b, real_seq, fa_h1});
+  }
+
+  auto e_m_i_div_split = NewSplitNode(e_m_i_div, 3, 8);
+  auto e_m_i_div_item = NewCastNode(NewTupleGetItemNode(e_m_i_div_split, 0), output_type_id);
+  if (input_layout == FASInputLayoutMode::BSH) {
+    e_m_i_div_item = NewTransposeNode(e_m_i_div_item, parallel::CreateTuple({0, 2, 1, 3}));
+  }
+  auto e_m_i_div_concat = NewTileNode(e_m_i_div_item, parallel::CreateTuple({1, 1, 1, fa_h1 / fa_n1}));
+  if (input_layout == FASInputLayoutMode::BSH) {
+    auto real_seq = fa_s1 / kSplitNum;
+    e_m_i_div_concat = NewReshapeNode(e_m_i_div_concat, {fa_b, real_seq, fa_h1});
+  }
+
+  std::vector<AnfNodePtr> output_nodes = {e_m_i_div_concat, e_m_h_div_concat};
+  auto output_node = NewMakeTupleNode(output_nodes);
+  sub_graph->set_output(output_node);
+  return sub_graph;
+}
+
+FuncGraphPtr CreateUpdateAttentionOutputSubgraphWithoutSpilt(int64_t fa_b, int64_t fa_s1, int64_t fa_n1, int64_t fa_h1,
+                                                             int64_t input_layout, TypeId output_type_id) {
+  auto sub_graph = std::make_shared<FuncGraph>();
+
+  auto param_e_l_h = sub_graph->add_parameter();
+  auto param_l = sub_graph->add_parameter();
+  auto param_e_l_i = sub_graph->add_parameter();
+
+  auto e_m_h_div = NewDivNode(param_e_l_h, param_l);
+  auto e_m_i_div = NewDivNode(param_e_l_i, param_l);
+  auto e_m_h_div_split = NewSplitNode(e_m_h_div, 3, 8);
+  auto e_m_h_div_item = NewCastNode(NewTupleGetItemNode(e_m_h_div_split, 0), output_type_id);
+  if (input_layout == FASInputLayoutMode::BSH) {
+    e_m_h_div_item = NewTransposeNode(e_m_h_div_item, parallel::CreateTuple({0, 2, 1, 3}));
+  }
+  auto e_m_h_div_concat = NewTileNode(e_m_h_div_item, parallel::CreateTuple({1, 1, 1, fa_h1 / fa_n1}));
+  if (input_layout == FASInputLayoutMode::BSH) {
+    auto real_seq = fa_s1;
+    e_m_h_div_concat = NewReshapeNode(e_m_h_div_concat, {fa_b, real_seq, fa_h1});
+  }
+
+  auto e_m_i_div_split = NewSplitNode(e_m_i_div, 3, 8);
+  auto e_m_i_div_item = NewCastNode(NewTupleGetItemNode(e_m_i_div_split, 0), output_type_id);
+  if (input_layout == FASInputLayoutMode::BSH) {
+    e_m_i_div_item = NewTransposeNode(e_m_i_div_item, parallel::CreateTuple({0, 2, 1, 3}));
+  }
+  auto e_m_i_div_concat = NewTileNode(e_m_i_div_item, parallel::CreateTuple({1, 1, 1, fa_h1 / fa_n1}));
+  if (input_layout == FASInputLayoutMode::BSH) {
+    auto real_seq = fa_s1;
+    e_m_i_div_concat = NewReshapeNode(e_m_i_div_concat, {fa_b, real_seq, fa_h1});
+  }
+
+  std::vector<AnfNodePtr> output_nodes = {e_m_i_div_concat, e_m_h_div_concat};
+  auto output_node = NewMakeTupleNode(output_nodes);
+  sub_graph->set_output(output_node);
+  return sub_graph;
+}
+
 CNodePtr CreateReplaceRingAttentionCP(const FuncGraphManagerPtr &manager,
                                       const std::vector<CNodePtr> &origin_nodes_topological,
                                       const CNodePtr &fa_score_node, FSPInfo *fsp_info, int fa_index) {
@@ -2562,6 +2705,9 @@ CNodePtr CreateReplaceRingAttentionCP(const FuncGraphManagerPtr &manager,
   CNodePtr last_recv_node;
   CNodePtr send_node;
   CNodePtr recv_node;
+  FuncGraphPtr update_split_required_graph;
+  FuncGraphPtr update_split_excluded_graph;
+
   for (size_t i = 0; i < sp_num; ++i) {
     if (i > 0) {
       last_recv_node = CreateDepends(last_recv_node, {last_fa_node, last_send_node});
@@ -2589,15 +2735,23 @@ CNodePtr CreateReplaceRingAttentionCP(const FuncGraphManagerPtr &manager,
       acc_attention = attention_output->cast<CNodePtr>();
       history_max = softmax_max->cast<CNodePtr>();
       history_sum = softmax_sum->cast<CNodePtr>();
+      update_split_required_graph = CreateUpdateAttentionOutputSubgraphWithSpilt(li.fa_b, li.fa_s1, li.fa_n1, li.fa_h1,
+                                                                                 li.input_layout, li.output_id);
+      update_split_excluded_graph = CreateUpdateAttentionOutputSubgraphWithoutSpilt(
+        li.fa_b, li.fa_s1, li.fa_n1, li.fa_h1, li.input_layout, li.output_id);
+      update_split_required_graph->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, true);
+      update_split_excluded_graph->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, true);
     } else if (static_cast<int>(i) <= pos) {
-      UpdateAttentionOutput(&history_max, &history_sum, &acc_attention, softmax_max, softmax_sum, attention_output,
-                            li.fa_b, li.fa_s1, li.fa_n1, li.fa_h1, li.input_layout, fa_index, static_cast<int>(i),
-                            li.output_id, last_step);
+      UpdateAttentionOutputViaSubgraph(&history_max, &history_sum, &acc_attention, softmax_max, softmax_sum,
+                                       attention_output, update_split_excluded_graph, li.fa_b, li.fa_s1, li.fa_n1,
+                                       li.fa_h1, li.input_layout, fa_index, static_cast<int>(i), li.output_id,
+                                       last_step);
       last_fa_node = acc_attention;
     } else {
-      UpdateAttentionOutput(&history_max, &history_sum, &acc_attention, softmax_max, softmax_sum, attention_output,
-                            li.fa_b, li.fa_s1, li.fa_n1, li.fa_h1, li.input_layout, fa_index, static_cast<int>(i),
-                            li.output_id, last_step, true);
+      UpdateAttentionOutputViaSubgraph(&history_max, &history_sum, &acc_attention, softmax_max, softmax_sum,
+                                       attention_output, update_split_required_graph, li.fa_b, li.fa_s1, li.fa_n1,
+                                       li.fa_h1, li.input_layout, fa_index, static_cast<int>(i), li.output_id,
+                                       last_step, true);
       last_fa_node = acc_attention;
     }
   }
