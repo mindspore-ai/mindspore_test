@@ -375,6 +375,10 @@ deprecated_tensor_method_map = {
     "log10": "tensor_log10",
     # 732
     "take": "deprecated_tensor_take",
+
+    # 186
+    "addcdiv": "deprecated_tensor_addcdiv",
+
     # 501
     "addbmm": "deprecated_tensor_addbmm",
     # 931

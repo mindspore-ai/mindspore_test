@@ -396,6 +396,10 @@ from mindspore.ops.auto_generate import sinc
 from mindspore.ops.auto_generate import sinh
 from mindspore.ops.function.array_func import unsqueeze
 
+# 186
+from mindspore.ops.function.math_func import addcdiv
+from mindspore.ops.auto_generate import addcdiv_ext_op
+
 # 204 erfc
 from mindspore.ops.auto_generate import erfc
 
@@ -1525,6 +1529,12 @@ def tensor_logical_xor(input, other):
 def tensor_log10(input):
     return log10(input)
 
+# 186
+def deprecated_tensor_addcdiv(input, tensor1, tensor2, value=1):
+    return addcdiv(input, tensor1, tensor2, value=value)
+
+def tensor_addcdiv_ext(input, tensor1, tensor2, *, value=1):
+    return addcdiv_ext_op(input, tensor1, tensor2, value=value)
 
 # 501
 def tensor_addbmm(input, batch1, batch2, *, beta=1, alpha=1):

@@ -1275,12 +1275,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         TensorPy_._flush_from_cache(self)
 
-    def addcdiv(self, tensor1, tensor2, value=1):
-        r"""
-        For details, please refer to :func:`mindspore.ops.addcdiv`.
-        """
-        return tensor_operator_registry.get('addcdiv')(self, tensor1, tensor2, value)
-
     def addcmul(self, tensor1, tensor2, value=1):
         r"""
         For details, please refer to :func:`mindspore.ops.addcmul`.

@@ -1,0 +1,15 @@
+addcdiv:
+  - op_yaml: addcdiv_ext_op.yaml
+    py_method: tensor_addcdiv_ext
+    kwonlyargs: value
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor, function
+    
+  - op_yaml: deprecated/addcdiv_method.yaml
+    py_method: deprecated_tensor_addcdiv
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

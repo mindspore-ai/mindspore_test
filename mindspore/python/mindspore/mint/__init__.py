@@ -156,7 +156,7 @@ from mindspore.ops.functional import tile
 # 51
 
 # 52
-
+from mindspore.ops.functional_overload import addcdiv
 # 53
 
 # 54
@@ -1774,7 +1774,7 @@ __all__ = [
     # 51
     'permute',
     # 52
-
+    'addcdiv',
     # 53
 
     # 54
