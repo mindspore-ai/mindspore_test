@@ -5,7 +5,7 @@
 
     获取预测值和目标值之间的负对数似然损失。
 
-    reduction为'none'时，负对数似然损失公式如下：
+    reduction为 ``'none'`` 时，负对数似然损失公式如下：
 
     .. math::
         \ell(x, t)=L=\left\{l_{1}, \ldots, l_{N}\right\}^{\top},

@@ -24,4 +24,4 @@ mindspore.ops.baddbmm
         - **TypeError** - `input` 、 `batch1` 或 `batch2` 数据类型不一致。
         - **TypeError** - 参数 `beta` 和 `alpha` 应该是实数。对于类型为 `FloatTensor` 或 `DoubleTensor` 的输入，参数 `beta` 和 `alpha` 应该是整数。
         - **TypeError** - `beta` 、 `alpha` 不是实数类型。
-        - **ValueError** - `batch1` 或 `batch2` 的不是三维Tensor。
+        - **ValueError** - `batch1` 或 `batch2` 不是三维Tensor。
