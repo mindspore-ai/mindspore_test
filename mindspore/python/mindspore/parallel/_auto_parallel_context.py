@@ -1303,6 +1303,36 @@ class _AutoParallelContext:
             self.set_enable_all_gather_fusion(openstate)
             self.set_enable_reduce_scatter_fusion(openstate)
 
+    def set_auto_parallel_new_interface(self, auto_parallel_new_interface):
+        """
+        Set AutoParallel(cell) new interface flag.
+
+        Args:
+            auto_parallel_new_interface (bool): Mark whether to use the new interface.
+        """
+        self.check_context_handle()
+        self._context_handle.set_auto_parallel_new_interface(auto_parallel_new_interface)
+
+    def get_auto_parallel_new_interface(self):
+        """Get auto_parallel_new_interface."""
+        self.check_context_handle()
+        return self._context_handle.get_auto_parallel_new_interface()
+
+    def set_init_param_in_compile(self, init_param_in_compile):
+        """
+        Set flag marking whether to init parameters in compiling process.
+
+        Args:
+            init_param_in_compile (bool): Mark whether to init parameters in compiling process.
+        """
+        self.check_context_handle()
+        self._context_handle.set_init_param_in_compile(init_param_in_compile)
+
+    def get_init_param_in_compile(self):
+        """Get init_param_in_compile."""
+        self.check_context_handle()
+        return self._context_handle.get_init_param_in_compile()
+
 _AUTO_PARALLEL_CONTEXT = None
 
 
@@ -1353,7 +1383,10 @@ _set_auto_parallel_context_func_map = {
     "comm_fusion": auto_parallel_context().set_comm_fusion,
     "dump_local_norm": auto_parallel_context().set_dump_local_norm,
     "dump_local_norm_path": auto_parallel_context().set_dump_local_norm_path,
-    "dump_device_local_norm": auto_parallel_context().set_dump_device_local_norm}
+    "dump_device_local_norm": auto_parallel_context().set_dump_device_local_norm,
+    "auto_parallel_new_interface": auto_parallel_context().set_auto_parallel_new_interface,
+    "init_param_in_compile": auto_parallel_context().set_init_param_in_compile}
+
 
 _get_auto_parallel_context_func_map = {
     "device_num": auto_parallel_context().get_device_num,
@@ -1388,7 +1421,9 @@ _get_auto_parallel_context_func_map = {
     "full_batch_is_set": auto_parallel_context().get_full_batch_is_set,
     "dump_local_norm": auto_parallel_context().get_dump_local_norm,
     "dump_local_norm_path": auto_parallel_context().get_dump_local_norm_path,
-    "dump_device_local_norm": auto_parallel_context().get_dump_device_local_norm}
+    "dump_device_local_norm": auto_parallel_context().get_dump_device_local_norm,
+    "auto_parallel_new_interface": auto_parallel_context().get_auto_parallel_new_interface,
+    "init_param_in_compile": auto_parallel_context().get_init_param_in_compile}
 
 
 @args_type_check(device_num=int, global_rank=int, gradients_mean=bool, gradient_fp32_sync=bool,

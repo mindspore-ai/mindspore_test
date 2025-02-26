@@ -1,4 +1,4 @@
-# Copyright 2020 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -200,9 +200,9 @@ def train_functional_programming_using_autoparallel_cell(strategy):
 
     with no_init_parameters():
         net = ParallelNetwork(strategy=strategy)
+        optimizer = nn.Momentum(net.trainable_params(),
+                                learning_rate=0.1, momentum=0.9)
     loss_fn = nn.MSELoss(reduction='mean')
-    optimizer = nn.Momentum(net.trainable_params(),
-                            learning_rate=0.1, momentum=0.9)
 
     def forward_fn(data, target):
         logits = net(data)
@@ -210,7 +210,6 @@ def train_functional_programming_using_autoparallel_cell(strategy):
         return loss
     grad_fn = ms.value_and_grad(forward_fn, None, net.trainable_params())
 
-    @ms.jit
     def train_one_step(inputs, targets):
         loss_value, grads = grad_fn(inputs, targets)
         optimizer(grads)
@@ -222,9 +221,6 @@ def train_functional_programming_using_autoparallel_cell(strategy):
     for epoch in range(1, 3):
         step = 1
         for input_x, label in dataset:
-            parallel_net.compile(input_x, label)
-            net.init_parameters_data(auto_parallel_mode=True)
-            optimizer.init_parameters_data(auto_parallel_mode=True)
             loss = parallel_net(input_x, label)
             print("epoch: " + str(epoch) + " step: " +
                   str(step) + " loss: " + str(loss))
@@ -238,18 +234,16 @@ def train_model_programming_using_autoparallel_cell(strategy):
     parallel_ir_path = "model_parallel_ir/parallel_Model_ir_" + str(strategy)
     context.set_context(mode=ms.GRAPH_MODE, device_target='Ascend',
                         save_graphs=True, save_graphs_path=parallel_ir_path)
-    with no_init_parameters():
-        net = ParallelNetwork(strategy=strategy)
-    parallel_net = AutoParallel(net, parallel_mode="semi_auto")
     parallel_dataset = FakeData(size=32, batch_size=8, image_size=(
         4, 4), num_classes=10, fakedata_mode=FakeDataInitMode.UniqueInit)
-    optimizer = nn.Momentum(net.trainable_params(),
-                            learning_rate=0.1, momentum=0.9)
+    with no_init_parameters():
+        net = ParallelNetwork(strategy=strategy)
+        optimizer = nn.Momentum(net.trainable_params(),
+                                learning_rate=0.1, momentum=0.9)
+    parallel_net = AutoParallel(net, parallel_mode="semi_auto")
     loss_fn = nn.MSELoss(reduction='mean')
     loss_monitor = CustomLossMonitor(per_print_times=1)
     model = Model(network=parallel_net, loss_fn=loss_fn, optimizer=optimizer)
-    model.build(epoch=2, train_dataset=parallel_dataset, sink_mode=False)
-    net.init_parameters_data(auto_parallel_mode=True)
     print("the loss when training using AutoParallel(cell) is :")
     model.train(epoch=2, train_dataset=parallel_dataset,
                 dataset_sink_mode=False, callbacks=[loss_monitor])

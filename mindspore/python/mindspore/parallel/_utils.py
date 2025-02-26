@@ -49,6 +49,8 @@ def _init_auto_parallel_context(net):
             search_mode = net._parallel_mode
             parallel_mode = "auto_parallel"
         params = {
+            "auto_parallel_new_interface": True,
+            "init_param_in_compile": net._init_param_in_compile,
             "device_num": net._device_num,
             "global_rank": net._global_rank,
             "parallel_mode": parallel_mode,
@@ -206,29 +208,56 @@ class ParallelParamInitProfCtx:
 
 def _slice_parameter(parameter, phase, layout):
     """Slice python parameter obj according to the layout."""
-    if getattr(parameter, "init_param", False) and parameter.has_init:
-        if layout is None:
-            parameter.sliced = True
-            return
-        if not parameter.sliced:
-            rank = get_rank()
-            new_tensor_shape = _load_tensor_shape_by_layout(parameter, layout, rank)
-            parameter.shape = new_tensor_shape
-            if hasattr(parameter.init_mode, "shape") and parameter.init_mode.shape != parameter.shape:
-                parameter.init_mode.shape = new_tensor_shape
-            parameter.sliced = True
+    new_interface_flag = auto_parallel_context().get_auto_parallel_new_interface()
+    init_param_in_compile = auto_parallel_context().get_init_param_in_compile()
+    if not new_interface_flag:
+        if getattr(parameter, "init_param", False) and parameter.has_init:
+            if layout is None:
+                parameter.sliced = True
+                return
+            if not parameter.sliced:
+                rank = get_rank()
+                new_tensor_shape = _load_tensor_shape_by_layout(parameter, layout, rank)
+                parameter.shape = new_tensor_shape
+                if hasattr(parameter.init_mode, "shape") and parameter.init_mode.shape != parameter.shape:
+                    parameter.init_mode.shape = new_tensor_shape
+                parameter.sliced = True
+        else:
+            graph_executor = GraphExecutor_.get_instance()
+            new_param = parameter.init_data(layout, set_sliced=True)
+            parameter = new_param
+            graph_executor.updata_param_node_default_input(phase, {parameter.name: parameter})
+            if layout is None:
+                parameter.sliced = True
+                return
+            if not parameter.sliced:
+                rank = get_rank()
+                new_tensor = _load_tensor_by_layout(parameter, layout, rank)
+                parameter.set_data(new_tensor, True)
     else:
-        graph_executor = GraphExecutor_.get_instance()
-        new_param = parameter.init_data(layout, set_sliced=True)
-        parameter = new_param
-        graph_executor.updata_param_node_default_input(phase, {parameter.name: parameter})
-        if layout is None:
-            parameter.sliced = True
-            return
-        if not parameter.sliced:
-            rank = get_rank()
-            new_tensor = _load_tensor_by_layout(parameter, layout, rank)
-            parameter.set_data(new_tensor, True)
+        if init_param_in_compile or parameter.has_init is False:
+            graph_executor = GraphExecutor_.get_instance()
+            new_param = parameter.init_data(layout, set_sliced=True)
+            parameter = new_param
+            graph_executor.updata_param_node_default_input(phase, {parameter.name: parameter})
+            if layout is None:
+                parameter.sliced = True
+                return
+            if not parameter.sliced:
+                rank = get_rank()
+                new_tensor = _load_tensor_by_layout(parameter, layout, rank)
+                parameter.set_data(new_tensor, True)
+        else:
+            if layout is None:
+                parameter.sliced = True
+                return
+            if not parameter.sliced:
+                rank = get_rank()
+                new_tensor_shape = _load_tensor_shape_by_layout(parameter, layout, rank)
+                parameter.shape = new_tensor_shape
+                if hasattr(parameter.init_mode, "shape") and parameter.init_mode.shape != parameter.shape:
+                    parameter.init_mode.shape = new_tensor_shape
+                parameter.sliced = True
 
 
 def _slice_tensor(tensor, layout, rank_id):

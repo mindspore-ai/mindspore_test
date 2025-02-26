@@ -32,6 +32,8 @@ class AutoParallel(Cell):
         self._global_rank = get_rank()
         self._device_num = get_group_size()
 
+        self._init_param_in_compile = True
+
         self._load_strategy_file_path = ""
         self._save_strategy_file_path = ""
         self._only_trainable_params = True
@@ -69,6 +71,12 @@ class AutoParallel(Cell):
 
         self._memory_offload_config = dict()
         self._transformer_opt_config = ""
+
+    def no_init_parameters_in_compile(self):
+        """
+        Suppress the parameter initialization process in the compilation procedure.
+        """
+        self._init_param_in_compile = False
 
     def load_param_strategy_file(self, file_path):
         """
