@@ -41,6 +41,6 @@ bool TransposeExtView::Launch(const std::vector<KernelTensor *> &inputs, const s
   return true;
 }
 
-MS_ACLNN_KERNEL_FACTORY_REG(TransposeExtView, TransposeExtView);
+MS_ACLNN_KERNEL_FACTORY_REG(TransposeExt, TransposeExtView);
 }  // namespace kernel
 }  // namespace mindspore

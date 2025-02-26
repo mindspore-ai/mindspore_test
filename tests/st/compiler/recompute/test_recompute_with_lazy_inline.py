@@ -61,7 +61,7 @@ def test_recompute_cell_recompute():
     Description: Each block is set recompute by the cell recompute api.
     Expectation: Run successfully and the memory usage is reduced.
     """
-    run_testcase("test_recompute_block_recompute", 41)
+    run_testcase("test_recompute_block_recompute", 43)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -72,7 +72,7 @@ def test_recompute_op_recompute1():
     Description: Each block is set recompute by the primitive recompute api.
     Expectation: Run successfully and the memory usage is reduced.
     """
-    run_testcase("test_recompute_op_recompute1", 67)
+    run_testcase("test_recompute_op_recompute1", 63)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -82,7 +82,7 @@ def test_recompute_op_recompute2():
     Description: Each block is set recompute by the primitive recompute api.
     Expectation: Run successfully and the memory usage is reduced.
     """
-    run_testcase("test_recompute_op_recompute2", 54)
+    run_testcase("test_recompute_op_recompute2", 50)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -92,7 +92,7 @@ def test_recompute_op_recompute3():
     Description: Each block is set recompute by the primitive recompute api.
     Expectation: Run successfully and the memory usage is reduced.
     """
-    run_testcase("test_recompute_op_recompute3", 140)
+    run_testcase("test_recompute_op_recompute3", 136)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -102,7 +102,7 @@ def test_recompute_cell_and_op_recompute1():
     Description: Each block is set recompute by both the primitive and cell recompute api.
     Expectation: Run successfully and the memory usage is reduced.
     """
-    run_testcase("test_recompute_cell_and_op_recompute1", 67)
+    run_testcase("test_recompute_cell_and_op_recompute1", 63)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -123,7 +123,7 @@ def test_recompute_cell_and_op_recompute_with_tuple_outputs1():
     Description: Each block is set recompute by both the primitive and cell recompute api and return a tuple.
     Expectation: Run successfully and the memory usage is reduced.
     """
-    run_testcase("test_recompute_cell_and_op_recompute_with_tuple_outputs1", 71)
+    run_testcase("test_recompute_cell_and_op_recompute_with_tuple_outputs1", 67)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -133,7 +133,7 @@ def test_recompute_cell_and_op_recompute_with_tuple_outputs2():
     Description: Each block is set recompute by both the primitive and cell recompute api and return a tuple.
     Expectation: Run successfully and the memory usage is reduced.
     """
-    run_testcase("test_recompute_cell_and_op_recompute_with_tuple_outputs2", 71)
+    run_testcase("test_recompute_cell_and_op_recompute_with_tuple_outputs2", 67)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')

@@ -91,9 +91,8 @@ bool GraphViewReplacePass::Run(const FuncGraphPtr &func_graph) {
     }
     MS_LOG(WARNING) << "Process view for " << kernel_name;
 
-    auto ops = kernel_name.append("View");
     auto inputs = cnode->inputs();
-    inputs[0] = NewValueNode(std::make_shared<Primitive>(ops));
+    inputs[0] = NewValueNode(std::make_shared<Primitive>(kernel_name));
     auto view_node = func_graph->NewCNode(inputs);
     // Copy attributes
     common::AnfAlgo::CopyNodeAttrs(node, view_node);

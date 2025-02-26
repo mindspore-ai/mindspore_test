@@ -27,7 +27,6 @@ class OPS_API NarrowFuncImpl : public OpFuncImpl {
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 };
-class OPS_API NarrowViewFuncImpl : public NarrowFuncImpl {};
 }  // namespace mindspore::ops
 
 #endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_NARROW_H_

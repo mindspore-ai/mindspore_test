@@ -82,7 +82,7 @@ def test_llama2_dp4mp4pp1op_recompute():
     validate_name = find_graph_file_name(real_graph_path[0], "validate")
     hwopt_after_inline_name = find_graph_file_name(real_graph_path[0], "hwopt_d_after_inline_graph_0")
     graph_path = real_graph_path[0]
-    attrs_check_pairs = {", recompute: Bool(1)": 235}
+    attrs_check_pairs = {", recompute: Bool(1)": 207}
     check_graph(graph_path, validate_name, attrs_check_pairs)
     param_parallel_speed_up_check_pairs = {'last_grad_comm_compute_depend: Bool(1)': '39',
                                            'grad_comm_dx_depend: Bool(1)': '1'}
@@ -462,7 +462,7 @@ def test_llama2_cell_dp2mp1pp2cp4_fgi_grad_accu_select_recompute():
     # PrimFunc_Gather 的策略
     parm_dpmp_strategy_check_pairs = {'PrimFunc_Gather': {'': '((4, 1), (2, 1))',}}
     # recompute: Bool(1) 数量
-    parm_recompute_graph_check_pairs = {'recompute: Bool(1)': '331'}
+    parm_recompute_graph_check_pairs = {'recompute: Bool(1)': '281'}
     real_log_path = log_path_preprocess(output_file, rank_list, case_name)
     for log_path in real_log_path:
         check_log(log_path, check_pair)
@@ -828,7 +828,7 @@ def test_llama2_dp4mp4pp1op_recompute_2():
     # check_node_dependency_backward_search(graph_path, validate_name, 100, dependency_list)
 
     # recompute
-    attrs_check_pairs = {' recompute: Bool(1)': '234'}
+    attrs_check_pairs = {' recompute: Bool(1)': '206'}
     check_graph(graph_path, validate_name, attrs_check_pairs)
 
     # dp Gather 切分
