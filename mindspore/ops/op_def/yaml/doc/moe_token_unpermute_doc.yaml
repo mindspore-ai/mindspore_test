@@ -13,6 +13,7 @@ moe_token_unpermute:
                 The shape is :math:`[num\_tokens * topk, hidden\_size]` , where `num_tokens`, `topk` and `hidden_size` are positive integers.
             sorted_indices (Tensor): The tensor of sorted indices used to unpermute the tokens.
                 The shape is :math:`[num\_tokens * topk,]`, where `num_tokens` and `topk` are positive integers.
+                It only supports the int32 data type.
             probs (Tensor, optional): The tensor of probabilities corresponding to the permuted tokens.
                 If provided, the unpermuted tokens will be merged with their respective probabilities.
                 The shape is :math:`[num\_tokens, topk]`, where `num_tokens` and `topk` are positive integers. Default: ``None`` .

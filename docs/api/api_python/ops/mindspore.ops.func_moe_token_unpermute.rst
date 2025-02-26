@@ -15,7 +15,7 @@ mindspore.ops.moe_token_unpermute
         - **permuted_tokens** (Tensor) - 要进行反排列的已排列标记的Tensor。
           shape为 :math:`[num\_tokens * topk， hidden\_size]`，其中 `num_tokens`、 `topk` 和 `hidden_size` 都是正整数。
         - **sorted_indices** (Tensor) - 用于反排列标记的排列索引Tensor。shape为 :math:`[num\_tokens * topk，]` ，
-          其中 `num_tokens` 和 `topk` 都是正整数。
+          其中 `num_tokens` 和 `topk` 都是正整数。仅支持int32的数据类型。
         - **probs** (Tensor，可选) - 与已排列标记对应的概率Tensor。如果提供，反排列的标记将与其相应的概率合并。
           shape为 :math:`[num\_tokens， topk]` ，其中 `num_tokens` 和 `topk` 都是正整数。默认值： ``None`` 。
         - **padded_mode** (bool, 可选) - 如果为 ``True``，表示索引被填充，以表示每个专家选择的标记。默认值： ``False``。
