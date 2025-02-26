@@ -199,18 +199,13 @@ bool CPUDumpMemToFile(const device::DeviceAddress &addr, const std::string &file
     MS_LOG(INFO) << "Data size is 0 for file: " << path << ", no need to dump.";
     return true;
   }
-  mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
-  MS_EXCEPTION_IF_NULL(out_tensor);
-  size_t host_size = LongToSize(out_tensor->data().nbytes());
-  ret = addr.SyncDeviceToHost(host_shape, host_size, host_type, out_tensor->data_c());
-  if (!ret) {
-    MS_LOG(ERROR) << "Copy device mem to host failed";
-    return ret;
+  if (addr.GetPtr() == nullptr) {
+    MS_LOG(WARNING) << "Data is nullptr for file: " << path << ", skip it.";
+    return true;
   }
-  ret = DumpJsonParser::DumpToFile(path, out_tensor->data_c(), host_size, host_shape, host_type);
+  ret = DumpJsonParser::DumpToFile(path, addr.GetPtr(), addr.GetSize(), host_shape, host_type);
   if (!ret) {
     MS_LOG(ERROR) << "Dump to file failed";
-    return ret;
   }
   return ret;
 }
