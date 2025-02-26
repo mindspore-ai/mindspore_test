@@ -37,6 +37,11 @@ paged_attention:
       default: "'DEFAULT'"
       prim_init: True
       arg_handler: str_to_enum
+    mask_mode:
+      dtype: int
+      default: "'MASK_DEFAULT'"
+      prim_init: True
+      arg_handler: str_to_enum
 
   returns:
     attention_out:
