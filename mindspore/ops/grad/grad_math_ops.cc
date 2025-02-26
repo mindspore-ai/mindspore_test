@@ -3077,13 +3077,12 @@ REG_BPROP_BUILDER("TraceExt").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Erfinv").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
   auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
-  auto out_type = ib->GetDtype(dout);
-  auto sqrt = ib->Sqrt(ib->Tensor(pi, out_type));
-  auto root_pi_over_two = ib->RealDiv(sqrt, ib->Tensor(2, ib->GetDtype(sqrt)));
-  auto out_square = ib->Square(out);
-  auto dx = ib->Mul((ib->Mul(dout, root_pi_over_two)), (ib->Exp(out_square)));
+  auto x_type = ib->GetDtype(x);
+  auto pow = ib->Exp(ib->PowTensorScalar(out, ib->Value(2)));
+  auto dx = ib->Mul(ib->Mul(ib->Tensor(sqrt(pi) / 2, x_type), pow), dout);
   return {dx};
 });
 

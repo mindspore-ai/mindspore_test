@@ -2022,7 +2022,7 @@ REG_BPROP_BUILDER("BroadcastTo").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(
   auto reduction_axes = broadcast_axes[kIndex1];
   NodePtr reduced_grad = nullptr;
 
-  reduced_grad = ib->ReduceSum(dout, reduction_axes, true, true);
+  reduced_grad = ib->SumExt(dout, reduction_axes, ib->Value(true));
   auto dx = ib->Reshape(reduced_grad, x_shape_node);
 
   return {dx, ib->OutZeros(ib->GetInput(kIndex1))};
@@ -2678,9 +2678,9 @@ REG_BPROP_BUILDER("MaskedFill").FreeUselessValues_IO({i0, i2}, {}).SetBody(BODYF
     if (IsDynamicRank(dvalue_shape)) {
       auto dvalue_rank = ib->Shape(ib->Shape(dvalue, true), true);
       auto axis_node = ib->Range(ib->TensorToScalar(dvalue_rank));
-      dvalue = ib->ReduceSum(bout[1], axis_node);
+      dvalue = ib->SumExt(bout[1], axis_node, ib->Value(false));
     } else {
-      dvalue = ib->ReduceSum(bout[1]);
+      dvalue = ib->SumExt(bout[1], ib->EmitValue(kNone), ib->Value(false));
     }
     dvalue = ib->Cast(dvalue, ib->GetDtype(value));
   } else {
