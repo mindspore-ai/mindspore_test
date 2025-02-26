@@ -84,7 +84,7 @@ class HausdorffDistance(Metric):
     :math:`h(A, B)` is not equal to :math:`h(B, A)`. :math:`H(A, B)` is the two-way Hausdorff distance.
 
     Args:
-        distance_metric (string): Three distance measurement methods are supported:
+        distance_metric (str): Three distance measurement methods are supported:
                     ``"euclidean"`` (Euclidean Distance) ,  ``"chessboard"`` (Chessboard Distance, Chebyshev Distance)
                     or  ``"taxicab"`` (Taxicab Distance, Manhattan Distance). Default: ``"euclidean"`` .
         percentile (float): Floating point numbers between 0 and 100. Specify the percentile parameter to get the

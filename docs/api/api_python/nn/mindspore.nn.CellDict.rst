@@ -34,7 +34,7 @@ mindspore.nn.CellDict
         从CellDict中移除键为 `key` 的Cell，并将这个Cell返回。
 
         参数：
-            - **key** (string) - 从CellDict中移除的Cell的键。
+            - **key** (str) - 从CellDict中移除的Cell的键。
 
         异常：
             - **KeyError** - `key` 对应的Cell在CellDict中不存在。

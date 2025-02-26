@@ -67,7 +67,7 @@ def _set_recovery_context(**kwargs):
             MS_RECOVERY_INTERVAL  # The persistent interval for recovery
 
     Args:
-        ckpt_path (string): Set the recovery path used to save checkpoint. Default: ''.
+        ckpt_path (str): Set the recovery path used to save checkpoint. Default: ''.
         need_reset (bool): Set whether should call reset minddata and load ckpt for disaster recovery.
             Default: ``False``.
 

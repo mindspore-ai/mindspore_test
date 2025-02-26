@@ -2475,7 +2475,7 @@ class FFN(Primitive):
     The FFN computation is similar to Feed-Forward Network, it contains matmul + gelu + matmul.
 
     Args:
-        activation (string): The activation type, set to 'fastgelu' or 'gelu'.
+        activation (str): The activation type, set to 'fastgelu' or 'gelu'.
             Only support 'fastgelu' for now. Default: "fastgelu".
         inner_precise (int): The precise mode, set to 0 for high precision or 1 for high performance.
             Only support 1 for now. Default: 0.

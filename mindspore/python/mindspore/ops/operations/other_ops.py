@@ -377,7 +377,7 @@ class IOU(Primitive):
     Refer to :func:`mindspore.ops.iou` for more details.
 
     Args:
-        mode (string): The mode is used to specify the calculation method,
+        mode (str): The mode is used to specify the calculation method,
                        now supporting ``'iou'`` (intersection over union) or ``'iof'``
                        (intersection over foreground) mode. Default: ``'iou'`` .
 
@@ -650,7 +650,7 @@ class Push(PrimitiveWithInfer):
     Pushes the inputs of the corresponding optimizer to parameter server.
 
     Args:
-        optim_type (string): The optimizer type. Default: ``'ApplyMomentum'`` .
+        optim_type (str): The optimizer type. Default: ``'ApplyMomentum'`` .
         only_shape_indices (list): The indices of input of which only shape
                                    will be pushed to parameter server. Default: ``None`` .
 

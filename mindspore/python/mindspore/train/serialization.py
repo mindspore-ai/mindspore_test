@@ -197,7 +197,7 @@ def get_ckpt_path_with_strategy(cur_ckpt_path, cur_strategy_path):
         cur_strategy_path (str): strategy file path for current rank.
 
     Returns:
-        - new_ckpt_file (String), if found available checkpoint file , return it.
+        - new_ckpt_file (str), if found available checkpoint file , return it.
         - None, if not found available checkpoint, return None.
 
     Examples:

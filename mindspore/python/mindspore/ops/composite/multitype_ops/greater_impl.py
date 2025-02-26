@@ -48,8 +48,8 @@ def _greater_string(x, y):
     Determine whether x is greater than y.
 
     Args:
-       x(String): String.
-       y(String): String.
+       x(str): String.
+       y(str): String.
 
     Returns:
        bool, if x > y return true, x <= y return false.

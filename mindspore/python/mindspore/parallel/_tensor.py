@@ -182,7 +182,7 @@ def _get_slice_index(dev_mat, tensor_map, opt_shard_group):
     Args:
         dev_mat (list): The device matrix of devices.
         tensor_map (list): The split strategy of tensor.
-        opt_shard_group(string): The group of optimizer shard
+        opt_shard_group(str): The group of optimizer shard
 
     Returns:
         Integer, the slice index for slice on this device.

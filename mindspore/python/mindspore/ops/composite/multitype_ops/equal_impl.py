@@ -306,7 +306,7 @@ def _number_equal_string(x, y):
 
     Args:
        x (Number): The first input which is a number.
-       y (String): The second input which is a string.
+       y (str): The second input which is a string.
 
     Returns:
        bool, return false.
@@ -320,7 +320,7 @@ def _string_equal_number(x, y):
     Determine if number equal string.
 
     Args:
-       x (String): The first input which is a string.
+       x (str): The first input which is a string.
        y (Number): The second input which is a number.
 
     Returns:

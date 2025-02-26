@@ -10234,7 +10234,7 @@ def iou(anchor_boxes, gt_boxes, mode='iou'):
         gt_boxes (Tensor): Ground truth boxes, tensor of shape :math:`(M, 4)` . :math:`M` indicates the number
             of ground truth boxes, and the value :math:`4` refers to four boundary coordinates of the truth
             area "x0", "y0", "x1", and "y1". Data type must be either float16, float32 or float64.
-        mode (string): The mode is used to specify the calculation method,
+        mode (str): The mode is used to specify the calculation method,
             now supporting 'iou' (intersection over union) or 'iof' (intersection over foreground) mode.
             Default: ``'iou'`` .
 

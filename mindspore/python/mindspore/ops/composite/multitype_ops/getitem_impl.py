@@ -265,7 +265,7 @@ def _string_getitem_by_number(data, number_index):
     Getting item of string by number index.
 
     Inputs:
-        data (String): A string.
+        data (str): A string.
         number_index (Number): Index in scalar.
 
     Outputs:
