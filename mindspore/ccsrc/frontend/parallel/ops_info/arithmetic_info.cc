@@ -860,6 +860,9 @@ REGISTER(MaskedFillInfo);
 REGISTER(AddExtInfo);
 REGISTER(SubExtInfo);
 REGISTER(DivModInfo);
+REGISTER(PolarInfo);
+REGISTER(IsCloseInfo);
+REGISTER(RemainderTensorTensorInfo);
 REGISTER(OuterInfo);
 }  // namespace parallel
 }  // namespace mindspore

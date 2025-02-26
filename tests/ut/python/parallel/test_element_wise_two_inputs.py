@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,13 +14,17 @@
 
 import re
 import numpy as np
+import pytest
 
 import mindspore as ms
 import mindspore.ops as ops
+import mindspore.nn as nn
 from mindspore import context, Tensor, Parameter
 from mindspore.common.api import _cell_graph_executor
 from mindspore.nn import Cell
 from mindspore.ops import operations as P
+from mindspore.ops.auto_generate.gen_ops_prim import Polar, IsClose, RemainderTensorTensor
+from mindspore.parallel.shard import Layout
 
 
 def setup_function():
@@ -47,6 +51,12 @@ class Net(Cell):
         self.cast = P.Cast()
         self.gcd = P.Gcd()
         self.gcd_weight = Parameter(w1, "w8")
+        self.polar = Polar()
+        self.polar_w = Parameter(w, "w9")
+        self.isclose = IsClose()
+        self.isclose_w = Parameter(w1, "w10")
+        self.remaindertensortensor_op = RemainderTensorTensor()
+        self.remaindertensortensor_w = Parameter(w, "w11")
 
     def construct(self, x):
         out = self.hypot(x, self.hypot_w)
@@ -54,6 +64,8 @@ class Net(Cell):
         out = ops.igammac(out, self.igammac_w)
         out = self.next_after(out, self.next_after_w)
         out = self.zeta(out, self.zeta_w)
+        out = self.polar(out, self.polar_w)
+        out = self.remaindertensortensor_op(out, self.remaindertensortensor_w)
         out = self.cast(out, ms.int32)
         out = self.left_shift(out, self.left_shift_w)
         out = self.right_shift(out, self.right_shift_w)
@@ -85,9 +97,187 @@ def test_element_wise_two_inputs_ops():
             assert v == [[1, 2, 4, 8], [1, 2, 4, 8]]
         elif re.search("Zeta", k) is not None:
             assert v == [[1, 2, 4, 8], [1, 2, 4, 8]]
+        elif re.search("Polar", k) is not None:
+            assert v == [[1, 2, 4, 8], [1, 2, 4, 8]]
+        elif re.search("RemainderTensorTensor", k) is not None:
+            assert v == [[1, 2, 4, 8], [1, 2, 4, 8]]
         elif re.search("LeftShift", k) is not None:
             assert v == [[1, 2, 4, 8], [1, 2, 1, 8]]
         elif re.search("RightShift", k) is not None:
             assert v == [[1, 2, 4, 8], [1, 2, 1, 8]]
         elif re.search("Gcd", k) is not None:
             assert v == [[1, 2, 4, 8], [1, 2, 1, 8]]
+
+class PolarNet(nn.Cell):
+    def __init__(self, strategy=None):
+        super().__init__()
+        if strategy:
+            self.polar_op = Polar().shard(strategy)
+        else:
+            self.polar_op = Polar()
+
+    def construct(self, abs_tensor, angle_tensor):
+        return self.polar_op(abs_tensor, angle_tensor)
+
+def compile_graph(net, abs_tensor, angle_tensor, device_num=8, parallel_mode="semi_auto_parallel"):
+    context.set_auto_parallel_context(device_num=device_num, global_rank=0, parallel_mode=parallel_mode)
+    net.set_train()
+    phase, _ = _cell_graph_executor.compile(net, abs_tensor, angle_tensor)
+    return phase
+
+def test_polar_with_positive_values():
+    """
+    Feature: distribute operator polar with positive values.
+    Description: basic.
+    Expectation: compile done without error.
+    """
+    context.set_context(save_graphs=True)
+    stra = ((1, 4), (1, 4))
+    net = PolarNet(stra)
+    abs_tensor = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    angle_tensor = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    compile_graph(net, abs_tensor, angle_tensor)
+
+def test_polar_with_different_strategies():
+    """
+    Feature: distribute operator polar.
+    Description: the strategies are different.
+    Expectation: raise RuntimeError.
+    """
+    context.set_context(save_graphs=True)
+    stra = ((1, 4), (2, 2))
+    net = PolarNet(stra)
+    abs_tensor = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    angle_tensor = Tensor(np.ones([128, 128]), dtype=ms.float32)
+
+    with pytest.raises(RuntimeError):
+        compile_graph(net, abs_tensor, angle_tensor)
+
+def test_polar_with_different_input_shapes():
+    """
+    Feature: distribute operator polar.
+    Description: the strategies are different.
+    Expectation: raise RuntimeError.
+    """
+    context.set_context(save_graphs=True)
+    stra = ((1, 4), (1, 4))
+    net = PolarNet(stra)
+    abs_tensor = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    angle_tensor = Tensor(np.ones([256, 128]), dtype=ms.float32)
+
+    with pytest.raises(ValueError):  # Assuming the implementation raises an error for negative radius
+        compile_graph(net, abs_tensor, angle_tensor)
+
+def test_polar_layout_extend():
+    """
+    Feature: test polar layout extend
+    Description: layout extend
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
+    layout = Layout((2, 2, 2), ("dp", "cp", "mp"))
+    int_layout = (layout("dp", "cp"), layout("dp", "cp"),)
+    net = PolarNet(int_layout)
+    abs_tensor = Tensor(np.ones([16, 16]), dtype=ms.float32)
+    angle_tensor = Tensor(np.ones([16, 16]), dtype=ms.float32)
+    compile_graph(net, abs_tensor, angle_tensor)
+
+class IsCloseNet(nn.Cell):
+    def __init__(self, strategy=None):
+        super().__init__()
+        if strategy:
+            self.isclose_op = IsClose().shard(strategy)
+        else:
+            self.isclose_op = IsClose()
+
+    def construct(self, input_tensor, other):
+        return self.isclose_op(input_tensor, other)
+
+def test_isclose_with_default_values():
+    """
+    Feature: distribute operator isclose with positive values.
+    Description: basic.
+    Expectation: compile done without error.
+    """
+    context.set_context(save_graphs=True)
+    stra = ((1, 4), (1, 4))
+    net = IsCloseNet(stra)
+    input_tensor = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    other_tensor = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    compile_graph(net, input_tensor, other_tensor)
+
+def test_isclose_shard_strategy_error():
+    """
+    Feature: test parallel error strategy.
+    Description: Invalid shard strategy.
+    Expectation: raise RuntimeError.
+    """
+    context.set_context(save_graphs=True)
+    strategy = ((1, 4), (2, 4))
+    net = IsCloseNet(strategy=strategy)
+    input_tensor = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    other_tensor = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    with pytest.raises(RuntimeError):
+        compile_graph(net, input_tensor, other_tensor)
+
+def test_isclose_auto_parallel():
+    """
+    Features: test isclose auto parallel
+    Description: auto parallel
+    Expectation: compile success
+    """
+    context.set_context(save_graphs=True)
+    net = IsCloseNet()
+    input_tensor = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    other_tensor = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    compile_graph(net, input_tensor, other_tensor, device_num=8, parallel_mode="auto_parallel")
+
+class RemainderTTNet(nn.Cell):
+    def __init__(self, strategy=None):
+        super().__init__()
+        if strategy:
+            self.remainderTT_op = RemainderTensorTensor().shard(strategy)
+        else:
+            self.remainderTT_op = RemainderTensorTensor()
+
+    def construct(self, input_tensor, other):
+        return self.remainderTT_op(input_tensor, other)
+
+def test_remaindertensortensor_with_default_values():
+    """
+    Feature: distribute operator RemainderTensorTensor with default values.
+    Description: basic.
+    Expectation: compile done without error.
+    """
+    context.set_context(save_graphs=True)
+    stra = ((1, 4), (1, 4))
+    net = RemainderTTNet(stra)
+    input_tensor = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    other_tensor = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    compile_graph(net, input_tensor, other_tensor)
+
+def test_remaindertensortensor_shard_strategy_error():
+    """
+    Feature: test parallel error strategy.
+    Description: Invalid shard strategy.
+    Expectation: raise RuntimeError.
+    """
+    context.set_context(save_graphs=True)
+    strategy = ((1, 4), (2, 4))
+    net = RemainderTTNet(strategy=strategy)
+    input_tensor = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    other_tensor = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    with pytest.raises(RuntimeError):
+        compile_graph(net, input_tensor, other_tensor)
+
+def test_remaindertensortensor_auto_parallel():
+    """
+    Features: test RemainderTensorTensor auto parallel
+    Description: auto parallel
+    Expectation: compile success
+    """
+    context.set_context(save_graphs=True)
+    net = RemainderTTNet()
+    input_tensor = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    other_tensor = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    compile_graph(net, input_tensor, other_tensor, device_num=8, parallel_mode="semi_auto_parallel")

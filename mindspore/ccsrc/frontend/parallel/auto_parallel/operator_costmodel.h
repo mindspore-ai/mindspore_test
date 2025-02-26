@@ -255,6 +255,9 @@ using HSigmoidCost = SqrtCost;
 using MishCost = SqrtCost;
 using SeLUCost = SqrtCost;
 using SoftShrinkCost = SqrtCost;
+using NanToNumCost = SqrtCost;
+using ZerosCost = SqrtCost;
+using RemainderCost = SqrtCost;
 
 class ReLU6Cost : public CastCost {
  public:
