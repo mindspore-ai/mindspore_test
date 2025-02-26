@@ -519,12 +519,12 @@ Status FlashAttentionScoreInfo::InitSplittableInputs() {
 }
 
 Status FlashAttentionScoreInfo::InitQKVHeadAndSeqDimFromInputLayout() {
-  if (layoutMap.find(input_layout_) == layoutMap.end()) {
+  if (ops::layoutMap.find(input_layout_) == ops::layoutMap.end()) {
     MS_LOG(ERROR) << name_ << ": Not support layout " << input_layout_ << " in parallel currently.";
     return FAILED;
   }
 
-  auto input_layout_str = layoutMap.at(input_layout_);
+  auto input_layout_str = ops::layoutMap.at(input_layout_);
 
   qkv_seq_dim_ = input_layout_str.find('S');
   if (qkv_seq_dim_ == std::string::npos) {

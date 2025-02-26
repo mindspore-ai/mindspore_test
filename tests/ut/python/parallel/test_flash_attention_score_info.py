@@ -46,39 +46,43 @@ def generate_tensor(shape, dtype):
     return Tensor(np.ones(shape, dtype))
 
 
-def generate_inputs(B, N1, N2, S, D, input_layout, with_real_shift=True, sparse_mode=0):
+def generate_inputs(B, N1, N2, S, D1, D2, input_layout, with_real_shift=True, sparse_mode=0):
     N_Q = N1
     N_KV = N2
+    D_QK = D1
+    D_V = D2
     compressed_mask_mode = [2, 3, 4, 5, 6, 7, 8]
     if input_layout == "BSH":
-        H_Q = N_Q * D
-        H_KV = N_KV * D
+        H_Q = N_Q * D_QK
+        H_K = N_KV * D_QK
+        H_V = N_KV * D_V
         query = generate_tensor((B, S, H_Q), dtype=np.float16)
-        key = generate_tensor((B, S, H_KV), dtype=np.float16)
-        value = generate_tensor((B, S, H_KV), dtype=np.float16)
+        key = generate_tensor((B, S, H_K), dtype=np.float16)
+        value = generate_tensor((B, S, H_V), dtype=np.float16)
     elif input_layout == "SBH":
-        H_Q = N_Q * D
-        H_KV = N_KV * D
+        H_Q = N_Q * D_QK
+        H_K = N_KV * D_QK
+        H_V = N_KV * D_V
         query = generate_tensor((S, B, H_Q), dtype=np.float16)
-        key = generate_tensor((S, B, H_KV), dtype=np.float16)
-        value = generate_tensor((S, B, H_KV), dtype=np.float16)
+        key = generate_tensor((S, B, H_K), dtype=np.float16)
+        value = generate_tensor((S, B, H_V), dtype=np.float16)
     elif input_layout == "BNSD":
-        query = generate_tensor((B, N_Q, S, D), dtype=np.float16)
-        key = generate_tensor((B, N_KV, S, D), dtype=np.float16)
-        value = generate_tensor((B, N_KV, S, D), dtype=np.float16)
+        query = generate_tensor((B, N_Q, S, D_QK), dtype=np.float16)
+        key = generate_tensor((B, N_KV, S, D_QK), dtype=np.float16)
+        value = generate_tensor((B, N_KV, S, D_V), dtype=np.float16)
     elif input_layout == "BSND":
-        query = generate_tensor((B, S, N_Q, D), dtype=np.float16)
-        key = generate_tensor((B, S, N_KV, D), dtype=np.float16)
-        value = generate_tensor((B, S, N_KV, D), dtype=np.float16)
+        query = generate_tensor((B, S, N_Q, D_QK), dtype=np.float16)
+        key = generate_tensor((B, S, N_KV, D_QK), dtype=np.float16)
+        value = generate_tensor((B, S, N_KV, D_V), dtype=np.float16)
     elif input_layout == "TND":
         B_value = B.divisor if isinstance(B, Symbol) else B
         S_value = S.divisor if isinstance(S, Symbol) else S
         T = B_value * S_value
         if isinstance(B, Symbol) or isinstance(S, Symbol):
             T = Symbol(divisor=B_value * S_value)
-        query = generate_tensor((T, N_Q, D), dtype=np.float16)
-        key = generate_tensor((T, N_KV, D), dtype=np.float16)
-        value = generate_tensor((T, N_KV, D), dtype=np.float16)
+        query = generate_tensor((T, N_Q, D_QK), dtype=np.float16)
+        key = generate_tensor((T, N_KV, D_QK), dtype=np.float16)
+        value = generate_tensor((T, N_KV, D_V), dtype=np.float16)
     else:
         raise ValueError(f"input_layout is invalid.")
     real_shift = generate_tensor((B, N_Q, S, S), dtype=np.float16) if with_real_shift else None
@@ -199,7 +203,8 @@ class Net(nn.Cell):
 @pytest.mark.parametrize('keep_prob', [0.9, 1.0])
 @pytest.mark.parametrize('input_layout', ["BSH", "SBH", "BNSD", "BSND"])
 @pytest.mark.parametrize('with_real_shift', [True, False])
-def test_self_attention_standalone(keep_prob, input_layout, with_real_shift):
+@pytest.mark.parametrize('shape', [(8, 16, 1024, 128, 128), (8, 16, 1024, 192, 128)])
+def test_self_attention_standalone(keep_prob, input_layout, with_real_shift, shape):
     """
     Features: test FlashAttentionScoreInfo
     Description: StandAlone
@@ -208,8 +213,8 @@ def test_self_attention_standalone(keep_prob, input_layout, with_real_shift):
     context.reset_auto_parallel_context()
     set_auto_parallel_context(device_num=8, global_rank=0)
     context.set_auto_parallel_context(parallel_mode="stand_alone")
-    B, N, S, D = 8, 16, 1024, 128
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D, input_layout,
+    B, N, S, D1, D2 = shape
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D1, D2, input_layout,
                                                                with_real_shift=with_real_shift)
     net = Net(N, keep_prob, input_layout, with_real_shift=with_real_shift)
     compile_net(net, query, key, value, real_shift, attn_mask)
@@ -217,7 +222,8 @@ def test_self_attention_standalone(keep_prob, input_layout, with_real_shift):
 
 @pytest.mark.parametrize('input_layout', ["BSH", "SBH", "BNSD", "BSND"])
 @pytest.mark.parametrize('sparse_mode', [2, 3, 4])
-def test_self_attention_standalone_with_compressed_mask(input_layout, sparse_mode):
+@pytest.mark.parametrize('shape', [(8, 16, 1024, 128, 128), (8, 16, 1024, 192, 128)])
+def test_self_attention_standalone_with_compressed_mask(input_layout, sparse_mode, shape):
     """
     Features: test FlashAttentionScoreInfo with compressed mask
     Description: StandAlone
@@ -226,8 +232,8 @@ def test_self_attention_standalone_with_compressed_mask(input_layout, sparse_mod
     context.reset_auto_parallel_context()
     set_auto_parallel_context(device_num=8, global_rank=0)
     context.set_auto_parallel_context(parallel_mode="stand_alone")
-    B, N, S, D = 8, 16, 1024, 128
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D, input_layout=input_layout,
+    B, N, S, D1, D2 = shape
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D1, D2, input_layout=input_layout,
                                                                sparse_mode=sparse_mode)
     net = Net(N, input_layout=input_layout, sparse_mode=sparse_mode)
     compile_net(net, query, key, value, real_shift, attn_mask)
@@ -236,7 +242,8 @@ def test_self_attention_standalone_with_compressed_mask(input_layout, sparse_mod
 @pytest.mark.parametrize('input_layout', ["BSH", "SBH", "BNSD", "BSND"])
 @pytest.mark.parametrize('use_mqa', [True, False])
 @pytest.mark.parametrize('with_real_shift', [True, False])
-def test_flash_attention_semi_auto_parallel(input_layout, use_mqa, with_real_shift):
+@pytest.mark.parametrize('shape', [(8, 16, 1024, 128, 128), (8, 16, 1024, 192, 128)])
+def test_flash_attention_semi_auto_parallel(input_layout, use_mqa, with_real_shift, shape):
     """
     Features: test FlashAttentionScoreInfo
     Description: semi_auto_parallel with strategy
@@ -246,8 +253,8 @@ def test_flash_attention_semi_auto_parallel(input_layout, use_mqa, with_real_shi
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
     dp = 2
     mp = 4
-    B, N, S, D = 8, 16, 1024, 128
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, 1 if use_mqa else N, S, D,
+    B, N, S, D1, D2 = shape
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, 1 if use_mqa else N, S, D1, D2,
                                                                input_layout=input_layout,
                                                                with_real_shift=with_real_shift)
     net = Net(N, input_layout=input_layout, use_mqa=use_mqa,
@@ -257,7 +264,8 @@ def test_flash_attention_semi_auto_parallel(input_layout, use_mqa, with_real_shi
 
 @pytest.mark.parametrize('input_layout', ["BSH", "SBH", "BNSD", "BSND"])
 @pytest.mark.parametrize('sparse_mode', [2, 3, 4])
-def test_flash_attention_semi_auto_parallel_with_compressed_mask(input_layout, sparse_mode):
+@pytest.mark.parametrize('shape', [(8, 16, 1024, 128, 128), (8, 16, 1024, 192, 128)])
+def test_flash_attention_semi_auto_parallel_with_compressed_mask(input_layout, sparse_mode, shape):
     """
     Features: test FlashAttentionScoreInfo with compressed mask
     Description: semi_auto_parallel with strategy
@@ -267,8 +275,8 @@ def test_flash_attention_semi_auto_parallel_with_compressed_mask(input_layout, s
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
     dp = 2
     mp = 4
-    B, N, S, D = 8, 16, 1024, 128
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D,
+    B, N, S, D1, D2 = shape
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D1, D2,
                                                                input_layout,
                                                                sparse_mode=sparse_mode)
     net = Net(N, input_layout=input_layout, sparse_mode=sparse_mode, dp=dp, mp=mp)
@@ -278,7 +286,8 @@ def test_flash_attention_semi_auto_parallel_with_compressed_mask(input_layout, s
 @pytest.mark.parametrize('keep_prob', [0.9, 1.0])
 @pytest.mark.parametrize('input_layout', ["BSH", "BNSD"])
 @pytest.mark.parametrize('with_real_shift', [True, False])
-def test_flash_attention_dp(keep_prob, input_layout, with_real_shift):
+@pytest.mark.parametrize('shape', [(8, 16, 1024, 128, 128), (8, 16, 1024, 192, 128)])
+def test_flash_attention_dp(keep_prob, input_layout, with_real_shift, shape):
     """
     Features: test FlashAttentionScore under semi_auto_parallel
     Description: semi_auto_parallel without strategy
@@ -286,8 +295,8 @@ def test_flash_attention_dp(keep_prob, input_layout, with_real_shift):
     """
     set_auto_parallel_context(device_num=8, global_rank=0)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
-    B, N, S, D = 8, 16, 1024, 128
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D, input_layout=input_layout,
+    B, N, S, D1, D2 = shape
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D1, D2, input_layout=input_layout,
                                                                with_real_shift=with_real_shift)
     net = Net(N, keep_prob, input_layout, with_real_shift=with_real_shift)
     compile_net(net, query, key, value, real_shift, attn_mask)
@@ -297,7 +306,8 @@ def test_flash_attention_dp(keep_prob, input_layout, with_real_shift):
 @pytest.mark.parametrize('input_layout', ["BSH", "BNSD"])
 @pytest.mark.parametrize('use_mqa', [True, False])
 @pytest.mark.parametrize('with_real_shift', [True, False])
-def test_flash_attention_auto_parallel(keep_prob, input_layout, use_mqa, with_real_shift):
+@pytest.mark.parametrize('shape', [(8, 16, 1024, 128, 128), (8, 16, 1024, 192, 128)])
+def test_flash_attention_auto_parallel(keep_prob, input_layout, use_mqa, with_real_shift, shape):
     """
     Features: test FlashAttentionScoreInfo
     Description: auto_parallel
@@ -305,8 +315,8 @@ def test_flash_attention_auto_parallel(keep_prob, input_layout, use_mqa, with_re
     """
     set_auto_parallel_context(device_num=8, global_rank=0)
     context.set_auto_parallel_context(parallel_mode="auto_parallel")
-    B, N, S, D = 8, 16, 1024, 128
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, 1 if use_mqa else N, S, D,
+    B, N, S, D1, D2 = shape
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, 1 if use_mqa else N, S, D1, D2,
                                                                input_layout=input_layout,
                                                                with_real_shift=with_real_shift)
     net = Net(N, keep_prob, input_layout, use_mqa=use_mqa, with_real_shift=with_real_shift)
@@ -316,7 +326,8 @@ def test_flash_attention_auto_parallel(keep_prob, input_layout, use_mqa, with_re
 @pytest.mark.parametrize('input_layout', ["BSH", "SBH", "BNSD", "BSND"])
 @pytest.mark.parametrize('use_mqa', [True, False])
 @pytest.mark.parametrize('with_real_shift', [True, False])
-def test_flash_attention_with_seq_parallel(input_layout, use_mqa, with_real_shift):
+@pytest.mark.parametrize('shape', [(8, 16, 1024, 128, 128), (8, 16, 1024, 192, 128)])
+def test_flash_attention_with_seq_parallel(input_layout, use_mqa, with_real_shift, shape):
     """
     Features: test FlashAttentionScoreInfo with sequence parallel, sparse_mode=0
     Description: semi_auto_parallel with strategy, seq_parallel
@@ -327,8 +338,8 @@ def test_flash_attention_with_seq_parallel(input_layout, use_mqa, with_real_shif
     sp = 2
     set_auto_parallel_context(device_num=dp * mp * sp, global_rank=0)
     context.set_auto_parallel_context(parallel_mode='semi_auto_parallel')
-    B, N, S, D = 8, 16, 1024, 128
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, 1 if use_mqa else N, S, D,
+    B, N, S, D1, D2 = shape
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, 1 if use_mqa else N, S, D1, D2,
                                                                input_layout=input_layout,
                                                                with_real_shift=with_real_shift)
     net = Net(N, input_layout=input_layout, use_mqa=use_mqa,
@@ -338,7 +349,8 @@ def test_flash_attention_with_seq_parallel(input_layout, use_mqa, with_real_shif
 
 @pytest.mark.parametrize('input_layout', ["BSH", "SBH", "BNSD", "BSND"])
 @pytest.mark.parametrize('sparse_mode', [2, 3, 4])
-def test_flash_attention_compressed_mask_with_seq_parallel(input_layout, sparse_mode):
+@pytest.mark.parametrize('shape', [(8, 16, 1024, 128, 128), (8, 16, 1024, 192, 128)])
+def test_flash_attention_compressed_mask_with_seq_parallel(input_layout, sparse_mode, shape):
     """
     Features: test FlashAttentionScoreInfo with sequence parallel, sparse_mode=[2, 3, 4]
     Description: semi_auto_parallel with strategy, seq_parallel
@@ -349,8 +361,8 @@ def test_flash_attention_compressed_mask_with_seq_parallel(input_layout, sparse_
     dp = 2
     mp = 2
     sp = 2
-    B, N, S, D = 8, 16, 1024, 128
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D,
+    B, N, S, D1, D2 = shape
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D1, D2,
                                                                input_layout,
                                                                sparse_mode=sparse_mode)
     net = Net(N, input_layout=input_layout, sparse_mode=sparse_mode,
@@ -361,7 +373,8 @@ def test_flash_attention_compressed_mask_with_seq_parallel(input_layout, sparse_
 @pytest.mark.parametrize('input_layout', ["BSH", "SBH", "BNSD", "BSND"])
 @pytest.mark.parametrize('use_mqa', [True, False])
 @pytest.mark.parametrize('with_real_shift', [True, False])
-def test_flash_attention_with_load_balance(input_layout, use_mqa, with_real_shift):
+@pytest.mark.parametrize('shape', [(8, 16, 1024, 128, 128), (8, 16, 1024, 192, 128)])
+def test_flash_attention_with_load_balance(input_layout, use_mqa, with_real_shift, shape):
     """
     Features: test FlashAttentionScoreInfo with sequence parallel load balance, sparse_mode=0
     Description: semi_auto_parallel with strategy, seq_parallel and load_balance
@@ -377,8 +390,8 @@ def test_flash_attention_with_load_balance(input_layout, use_mqa, with_real_shif
     dp = 2
     mp = 2
     sp = 2
-    B, N, S, D = 8, 16, 1024, 128
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, 1 if use_mqa else N, S, D,
+    B, N, S, D1, D2 = shape
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, 1 if use_mqa else N, S, D1, D2,
                                                                input_layout=input_layout,
                                                                with_real_shift=with_real_shift)
     net = Net(N, input_layout=input_layout, use_mqa=use_mqa, with_real_shift=with_real_shift,
@@ -393,7 +406,8 @@ def test_flash_attention_with_load_balance(input_layout, use_mqa, with_real_shif
 
 @pytest.mark.parametrize('input_layout', ["BSH", "SBH", "BNSD", "BSND"])
 @pytest.mark.parametrize('sparse_mode', [2, 3, 4])
-def test_flash_attention_compressed_mask_with_load_balance(input_layout, sparse_mode):
+@pytest.mark.parametrize('shape', [(8, 16, 1024, 128, 128), (8, 16, 1024, 192, 128)])
+def test_flash_attention_compressed_mask_with_load_balance(input_layout, sparse_mode, shape):
     """
     Features: test FlashAttentionScoreInfo with sequence parallel load balance, sparse_mode=[2, 3, 4]
     Description: semi_auto_parallel with strategy, seq_parallel and load_balance
@@ -409,8 +423,8 @@ def test_flash_attention_compressed_mask_with_load_balance(input_layout, sparse_
     dp = 2
     mp = 2
     sp = 2
-    B, N, S, D = 8, 16, 1024, 128
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D,
+    B, N, S, D1, D2 = shape
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D1, D2,
                                                                input_layout,
                                                                sparse_mode=sparse_mode)
     net = Net(N, input_layout=input_layout, sparse_mode=sparse_mode,
@@ -453,7 +467,8 @@ def test_flash_attention_dynamic_shape_constraint(keep_prob):
 @pytest.mark.parametrize('is_actual_tuple', [True, False])
 @pytest.mark.parametrize('dp_sp_mp', [(2, 2, 2), (4, 1, 2), (1, 4, 2)])
 @pytest.mark.parametrize('use_layout', [True, False])
-def test_flash_attention_tnd(is_actual_tuple, dp_sp_mp, use_layout):
+@pytest.mark.parametrize('shape', [(8, 16, 1024, 128, 128), (8, 16, 1024, 192, 128)])
+def test_flash_attention_tnd(is_actual_tuple, dp_sp_mp, use_layout, shape):
     """
     Features: test FlashAttentionScoreInfo FlashAttentionScore
     Description: Test for TND layout
@@ -462,10 +477,10 @@ def test_flash_attention_tnd(is_actual_tuple, dp_sp_mp, use_layout):
     set_auto_parallel_context(device_num=8, global_rank=0)
     context.set_auto_parallel_context(parallel_mode='semi_auto_parallel')
     dp, sp, mp = dp_sp_mp
-    B, N, S, D = 8, 16, 1024, 128
+    B, N, S, D1, D2 = shape
     input_layout = "TND"
     sparse_mode = 3
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D,
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D1, D2,
                                                                input_layout,
                                                                sparse_mode=sparse_mode,
                                                                with_real_shift=False
@@ -488,7 +503,7 @@ def test_flash_attention_tnd(is_actual_tuple, dp_sp_mp, use_layout):
         compile_net(net, query, key, value, real_shift, attn_mask, actual_seq_qlen, actual_seq_kvlen)
 
 
-@pytest.mark.parametrize('shape', [(8, 64, 8, 1024, 128)])
+@pytest.mark.parametrize('shape', [(8, 64, 8, 1024, 128, 128), (8, 64, 8, 1024, 192, 128)])
 def test_flash_attention_bsh_layout_with_gqa(shape):
     """
     Features: test FlashAttentionScoreInfo FlashAttentionScore
@@ -498,10 +513,10 @@ def test_flash_attention_bsh_layout_with_gqa(shape):
     set_auto_parallel_context(device_num=128, global_rank=0)
     context.set_auto_parallel_context(parallel_mode='semi_auto_parallel')
     dp, sp, mp = 2, 8, 8
-    B, N1, N2, S, D = shape
+    B, N1, N2, S, D1, D2 = shape
     input_layout = "BSH"
     sparse_mode = 2
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N1, N2, S, D,
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N1, N2, S, D1, D2,
                                                                input_layout,
                                                                sparse_mode=sparse_mode,
                                                                with_real_shift=False
@@ -521,7 +536,9 @@ def test_flash_attention_bsh_layout_with_gqa(shape):
 @pytest.mark.parametrize('with_real_shift', [True, False])
 @pytest.mark.parametrize('sparse_mode', [0, 1, 2])
 @pytest.mark.parametrize('input_layout', ['BSH', 'BNSD'])
-def test_flash_attention_dynamic_with_strategy(enable_load_balance, with_real_shift, sparse_mode, input_layout):
+@pytest.mark.parametrize('shape', [(Symbol(divisor=2), 16, Symbol(divisor=8), 128, 128),
+                                   (Symbol(divisor=2), 16, Symbol(divisor=8), 192, 128)])
+def test_flash_attention_dynamic_with_strategy(enable_load_balance, with_real_shift, sparse_mode, input_layout, shape):
     """
     Features: test FlashAttentionScoreInfo FlashAttentionScore
     Description: Test for batch dim and seq dim dynamic
@@ -537,8 +554,8 @@ def test_flash_attention_dynamic_with_strategy(enable_load_balance, with_real_sh
             ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_for_fa.json"})
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
     keep_prob = 1.0
-    B, N, S, D = Symbol(divisor=2), 16, Symbol(divisor=8), 128
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D, sparse_mode=sparse_mode,
+    B, N, S, D1, D2 = shape
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D1, D2, sparse_mode=sparse_mode,
                                                                with_real_shift=with_real_shift,
                                                                input_layout=input_layout)
     net = Net(N, input_layout=input_layout, keep_prob=keep_prob, sparse_mode=sparse_mode,
@@ -549,7 +566,8 @@ def test_flash_attention_dynamic_with_strategy(enable_load_balance, with_real_sh
 
 @pytest.mark.parametrize('is_actual_tuple', [True, False])
 @pytest.mark.parametrize('use_layout', [True, False])
-def test_flash_attention_dynamic_tnd(is_actual_tuple, use_layout):
+@pytest.mark.parametrize('shape', [(8, 16, Symbol(divisor=1), 128, 128), (8, 16, Symbol(divisor=1), 192, 128)])
+def test_flash_attention_dynamic_tnd(is_actual_tuple, use_layout, shape):
     """
     Features: test FlashAttentionScoreInfo FlashAttentionScore
     Description: Test for TND layout
@@ -558,10 +576,10 @@ def test_flash_attention_dynamic_tnd(is_actual_tuple, use_layout):
     set_auto_parallel_context(device_num=8, global_rank=0)
     context.set_auto_parallel_context(parallel_mode='semi_auto_parallel')
     dp, sp, mp = 4, 1, 2
-    B, N, S, D = 8, 16, Symbol(divisor=1), 128
+    B, N, S, D1, D2 = shape
     input_layout = "TND"
     sparse_mode = 3
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D,
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D1, D2,
                                                                input_layout,
                                                                sparse_mode=sparse_mode,
                                                                with_real_shift=False
