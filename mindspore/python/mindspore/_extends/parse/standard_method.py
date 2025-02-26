@@ -421,7 +421,7 @@ def hasattr(x, attr):  # pylint: disable=redefined-builtin
 
     Args:
         x (object): Input object.
-        attr (string): The name of attribute
+        attr (str): The name of attribute
 
     Returns:
         Boolean value, indicates whether the object x has attribute attr.

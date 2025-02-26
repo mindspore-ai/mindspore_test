@@ -48,7 +48,7 @@ class RootMeanSquareDistance(Metric):
         \right | + \left | S(B) \right |}}
 
     Args:
-        distance_metric (string): Three measurement methods are supported:
+        distance_metric (str): Three measurement methods are supported:
                 ``"euclidean"`` (Euclidean Distance) ,  ``"chessboard"`` (Chessboard Distance, Chebyshev Distance)
                 or  ``"taxicab"`` (Taxicab Distance, Manhattan Distance). Default: ``"euclidean"`` .
         symmetric (bool):  Whether to calculate the symmetric average root mean square distance between

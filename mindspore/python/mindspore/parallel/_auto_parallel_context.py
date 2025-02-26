@@ -918,7 +918,7 @@ class _AutoParallelContext:
 
             - pipeline_interleave(bool): Setting true enable interleave scheduler for pipeline parallelism. This
                                          scheduler requires more memory but less bubble.
-            - pipeline_scheduler(string): There are two choices, "1f1b" and "gpipe". default is "1f1b"
+            - pipeline_scheduler(str): There are two choices, "1f1b" and "gpipe". default is "1f1b"
 
               - 1f1b: It requires less memory and bubble ratio, for it run backward pass when corresponding forward pass
                       finished.

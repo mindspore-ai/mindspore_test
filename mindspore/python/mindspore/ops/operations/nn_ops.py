@@ -6924,7 +6924,7 @@ class CTCLossV2Grad(Primitive):
 
     Args:
         blank (int): The blank label. Default: ``0`` .
-        reduction (string): Apply specific reduction method to the output. Currently only support 'none'.
+        reduction (str): Apply specific reduction method to the output. Currently only support 'none'.
             Default: ``"none"`` .
         zero_infinity (bool): Whether to set infinite loss and correlation gradient to zero. Default: ``False`` .
 

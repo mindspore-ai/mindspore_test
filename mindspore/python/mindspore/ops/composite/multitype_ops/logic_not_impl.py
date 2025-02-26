@@ -43,7 +43,7 @@ def _logical_not_string(x):
     Return logical not operation result of x.
 
     Args:
-       x(String): String.
+       x(str): String.
 
     Returns:
        bool, Return logical not operation result of x.

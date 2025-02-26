@@ -627,7 +627,7 @@ class Cell(Cell_):
                                                 If the parameter name is incorrect or the corresponding parameter
                                                 has been set, the parameter setting will be ignored.
                                                 Default: ``None`` .
-            device (string): Select a certain device target. It is not in use right now.
+            device (str): Select a certain device target. It is not in use right now.
                              Support [ ``"CPU"`` , ``"GPU"`` , ``"Ascend"`` ]. Default: ``"Ascend"`` .
             level (int): Option for parallel strategy infer algorithm, namely the object function, maximize computation
                          over communication ratio, maximize speed performance, minimize memory usage etc. It is not in

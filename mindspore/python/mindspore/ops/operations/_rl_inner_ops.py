@@ -859,7 +859,7 @@ class TensorsQueueCreate(PrimitiveWithInfer):
         dtype (mindspore.dtype): the data type in the TensorsQueue.
         shapes (tuple(tuple(int))): the shape of each tensor in element.
         size (int): The size of the TensorsQueue.
-        name (string): the name of this TensorsQueue. Default: "Q".
+        name (str): the name of this TensorsQueue. Default: "Q".
 
     Inputs:
         None.

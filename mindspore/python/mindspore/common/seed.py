@@ -193,7 +193,7 @@ def _update_seeds(op_seed, kernel_name):
 
     Args:
         op_seed (int): The op seed to be updated.
-        kernel_name (string): The random op kernel.
+        kernel_name (str): The random op kernel.
     """
     global _KERNEL_SEED
     if op_seed is not None:
@@ -208,7 +208,7 @@ def _get_op_seed(op_seed, kernel_name):
 
     Args:
         op_seed (int): The op seed to be updated.
-        kernel_name (string): The random op kernel.
+        kernel_name (str): The random op kernel.
     """
     if (kernel_name, op_seed) not in _KERNEL_SEED:
         _KERNEL_SEED[(kernel_name, op_seed)] = op_seed
