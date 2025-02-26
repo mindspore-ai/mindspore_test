@@ -343,6 +343,7 @@ PYBIND11_MODULE(_c_expression, m) {
          py::arg("type") = py::str("onnx_ir"), py::arg("incremental") = py::bool_(false),
          "Get graph proto string by specifying ir type.");
 
+  (void)m.def("_run_jit_pipeline", &mindspore::pipeline::RunJitPipeline, "Whether to run the jit pipeline.");
   (void)m.def("disable_multi_thread", &mindspore::runtime::Pipeline::DisableMultiThreadAfterFork,
               "Disable multi thread");
   (void)m.def("reset_op_id", &mindspore::pipeline::ResetOpId, "Reset Operator Id");

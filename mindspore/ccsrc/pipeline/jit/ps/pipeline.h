@@ -160,7 +160,6 @@ class GraphExecutorPy : public ExecutorPy {
   void ConvertSymbolicShape(const py::tuple &args, AbstractBasePtrList *args_abs);
   py::bytes GetOptimizeGraphProto(const std::string &phase);
 
-
   void BuildGraph(const py::dict &init_params, const std::string &phase) const;
   void ExportGraph(const std::string &file_name, const std::string &phase, const py::object encrypt = py::none(),
                    char *key = nullptr);
@@ -288,6 +287,7 @@ AbstractBasePtr ArgsToAbstract(const py::object &arg, const ValuePtr &value, boo
 void AddManagerForFuncGraphArgs(const ResourcePtr &resource, const ValuePtrList &arguments);
 void CheckInterpretNodeLineInfos();
 void SetHookForArgAbstract(const py::object &arg, abstract::AbstractBasePtr abs);
+bool RunJitPipeline();
 void PreJit(const py::object &args, const py::object &kwargs);
 }  // namespace pipeline
 }  // namespace mindspore

@@ -41,7 +41,7 @@ from mindspore.common.sparse_tensor import RowTensor as PythonRowTensor
 from mindspore._c_expression.amp import get_curr_amp_strategy
 from mindspore._c_expression import GraphExecutor_, JitExecutor_, CSRTensor, RowTensor, COOTensor, \
     PyNativeExecutor_, verify_inputs_signature, init_exec_dataset, _set_dataset_mode_config, init_pipeline, \
-    _ms_memory_recycle, _bind_device_ctx, StubNode, TensorPy as Tensor
+    _run_jit_pipeline, _ms_memory_recycle, _bind_device_ctx, StubNode, TensorPy as Tensor
 from mindspore.parallel._ps_context import _is_role_sched
 from mindspore.parallel._utils import _check_full_batch, _get_parameter_broadcast, _is_pynative_parallel, \
     _is_in_auto_parallel_mode, _is_parallel_mode
@@ -609,10 +609,10 @@ class _JitExecutor:
             self.obj = obj
         self.shard_parent_obj = obj
         self.enable_tuple_broaden = False
-        if os.getenv('MS_DEV_JIT_PIPELINE') == '0' or fn.__name__ == _PYNATIVE_PARALLEL_FUNC_NAME:
-            self._graph_executor = GraphExecutor_.get_instance()
-        else:
+        if _run_jit_pipeline():
             self._graph_executor = JitExecutor_.get_instance()
+        else:
+            self._graph_executor = GraphExecutor_.get_instance()
         self._create_time = ms_create_time
         self._compile_args = None
         self.jit_config_dict = jit_config.jit_config_dict if jit_config else None
