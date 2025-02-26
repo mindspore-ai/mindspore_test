@@ -80,7 +80,7 @@ void Adjoint::AccumulateDout(const AnfNodePtr &dout_factor) {
     MS_LOG(DEBUG) << "Update dout " << dout_->ToString() << " with dout_factor " << dout_factor->ToString();
     ScopeGuard scope_guard(std::make_shared<Scope>("Gradients/" + primal()->scope()->name()));
     auto accumulate_dout = std::make_shared<prim::AccumulateDout>("_accumulate_dout");
-    dout_ = caller_->NewCNodeInOrder(NewValueNode(accumulate_dout), dout_, dout_factor);
+    dout_ = caller_->NewCNodeInOrder({NewValueNode(accumulate_dout), dout_, dout_factor});
     return;
   }
   dout_ = dout_factor;

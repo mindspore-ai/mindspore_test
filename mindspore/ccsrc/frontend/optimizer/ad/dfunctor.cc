@@ -130,11 +130,13 @@ DFunctor::DFunctor(const FuncGraphPtr &primal_graph, const pipeline::ResourceBas
   tape_->set_segment(primal_graph->segment());
 
   dout_ = tape_->add_parameter();
-  auto generate_mask = std::make_shared<prim::GenerateMask>("generate_mask");
-  auto dout_mask = tape_->NewCNodeInOrder({NewValueNode(generate_mask), dout_});
-  auto ops_type = NewValueNode(int64_t(0));
-  dout_ = tape_->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), dout_,
-                                  tape_->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), dout_mask, ops_type})});
+  if (is_top_) {
+    auto generate_mask = std::make_shared<prim::GenerateMask>("generate_mask");
+    auto dout_mask = tape_->NewCNodeInOrder({NewValueNode(generate_mask), dout_});
+    auto ops_type = NewValueNode(int64_t(0));
+    dout_ = tape_->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), dout_,
+                                    tape_->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), dout_mask, ops_type})});
+  }
 }
 
 void DFunctor::Init(bool is_top) {
@@ -366,6 +368,12 @@ CNodePtr DFunctor::CalDoutTuple(const CNodePtr &cnode_morph, const CNodePtr &din
   auto ops_type =
     caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), dmask_tuple, NewValueNode(int64_t(1))});
 
+  if (IsPrimitiveCNode(cnode_morph, prim::kPrimDepend)) {
+    auto fg_dmask_tuple =
+      caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), dout_, NewValueNode(int64_t(1))});
+    return caller->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), din, fg_dmask_tuple});
+  }
+
   if (inplace_prim) {
     // For inplace_prim, Change the ops_type when do backpropagate.
     auto iter = std::find(inplace_indexes.begin(), inplace_indexes.end(), (index - 1));
@@ -378,16 +386,17 @@ CNodePtr DFunctor::CalDoutTuple(const CNodePtr &cnode_morph, const CNodePtr &din
     return din_tuple;
   }
 
-  // Get Din/dmask/ops_type from node_adjoint->dout(): (din, (dmask, ops_tye));
-  auto node_dout_tuple = caller->NewCNodeInOrder(
-    {NewValueNode(prim::kPrimTupleGetItem), node_adjoint->real_dout(), NewValueNode(int64_t(1))});
-  auto node_mask =
-    caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), node_dout_tuple, NewValueNode(int64_t(0))});
-  auto node_ops_type =
-    caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), node_dout_tuple, NewValueNode(int64_t(1))});
-
   if (single_tensor_view && index == 1) {
     // For View_ops, Just record the first input.
+
+  // Get Din/dmask/ops_type from node_adjoint->dout(): (din, (dmask, ops_tye));
+    auto node_dout_tuple = caller->NewCNodeInOrder(
+      {NewValueNode(prim::kPrimTupleGetItem), node_adjoint->real_dout(), NewValueNode(int64_t(1))});
+    auto node_mask =
+      caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), node_dout_tuple, NewValueNode(int64_t(0))});
+    auto node_ops_type =
+      caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), node_dout_tuple, NewValueNode(int64_t(1))});
+
     // Firstly, Initialize a dout_mask whose values are all `false`
     auto ori_mask =
       caller->NewCNodeInOrder({NewValueNode(prim::kPrimZerosLikeExt), din, NewValueNode(int64_t(kBool->type_id()))});
