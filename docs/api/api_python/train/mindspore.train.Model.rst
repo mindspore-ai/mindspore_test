@@ -3,7 +3,7 @@
 
 .. py:class:: mindspore.train.Model(network, loss_fn=None, optimizer=None, metrics=None, eval_network=None, eval_indexes=None, amp_level="O0", boost_level="O0", **kwargs)
 
-    模型训练或推理的高阶接口。 `Model` 会根据用户传入的参数封装可训练或推理的实例。
+    模型训练或推理的高阶接口。 `Model` 会根据用户传入的参数，封装可训练或推理的实例。
 
     .. note::
 
@@ -14,12 +14,12 @@
 
     参数：
         - **network** (Cell) - 用于训练或推理的神经网络。
-        - **loss_fn** (Cell) - 损失函数。如果 `loss_fn` 为None，`network` 中需要进行损失函数计算。默认值： ``None`` 。
-        - **optimizer** (Cell) - 用于更新网络权重的优化器。如果 `optimizer` 为None， 那么 `network` 的网络结构里需要包括反向传播和权重更新逻辑。默认值： ``None`` 。
+        - **loss_fn** (Cell) - 损失函数。如果 `loss_fn` 为None，那么 `network` 中需要进行损失函数计算。默认值： ``None`` 。
+        - **optimizer** (Cell) - 用于更新网络权重的优化器。如果 `optimizer` 为None，那么 `network` 的网络结构里需要包括反向传播和权重更新逻辑。默认值： ``None`` 。
         - **metrics** (Union[dict, set]) - 用于模型评估的一组评价函数。例如：{'accuracy', 'recall'}。默认值： ``None`` 。
         - **eval_network** (Cell) - 用于评估的神经网络。未定义情况下，`Model` 会使用 `network` 和 `loss_fn` 封装一个 `eval_network` 。默认值： ``None`` 。
         - **eval_indexes** (list) - 在定义 `eval_network` 的情况下使用。如果 `eval_indexes` 为默认值None，`Model` 会将 `eval_network` 的所有输出传给 `metrics` 。如果配置 `eval_indexes` ，必须包含三个元素，分别为损失值、预测值和标签在 `eval_network` 输出中的位置，此时，损失值将传给损失评价函数，预测值和标签将传给其他评价函数。推荐使用评价函数 :func:`mindspore.train.Metric.set_indexes` 代替 `eval_indexes` 。默认值： ``None`` 。
-        - **amp_level** (str) - `mindspore.amp.build_train_network <https://www.mindspore.cn/docs/zh-CN/master/api_python/amp/mindspore.amp.build_train_network.html>`_ 的可选参数 `level` ， `level` 为混合精度等级，该参数支持["O0", "O1", "O2", "O3", "auto"]。默认值： ``"O0"`` 。
+        - **amp_level** (str) - :func:`mindspore.amp.build_train_network` 的可选参数 `level` ， `level` 为混合精度等级，该参数支持["O0", "O1", "O2", "O3", "auto"]。默认值： ``"O0"`` 。
 
           `amp_level` 的详细配置信息可参考 :func:`mindspore.amp.auto_mixed_precision` 。
 
@@ -35,7 +35,7 @@
 
           为使功能生效，需要同时设置optimizer、eval_network或metric参数。
 
-          注意：当前默认开启的优化仅适用部分网络，并非所有网络都能获得相同收益。建议在Ascend平台的图模式下开启boost模式，同时为了获取更好的加速效果，请参考文档配置boost_config_dict。
+          注意：当前默认开启的优化仅适用部分网络，并非所有网络都能获得相同收益。建议在Ascend平台的图模式下开启boost模式，同时为了获取更好的加速效果，请参考 :class:`mindspore.boost.AutoBoost` 配置boost_config_dict。
 
     .. py:method:: build(train_dataset=None, valid_dataset=None, sink_size=-1, epoch=1)
 

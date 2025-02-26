@@ -439,7 +439,8 @@ class Model:
 
             Notice: The current optimization enabled by default only applies to some networks, and not all networks
             can obtain the same benefits.  It is recommended to enable this function on
-            the Graph mode + Ascend platform, and for better acceleration, refer to the documentation to configure
+            the Graph mode + Ascend platform, and for better acceleration,
+            refer to :class:`mindspore.boost.AutoBoost` to configure
             boost_config_dict.
 
     Examples:

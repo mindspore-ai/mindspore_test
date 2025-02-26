@@ -25,7 +25,7 @@ class MAE(Metric):
     Calculates the mean absolute error(MAE).
 
     Creates a criterion that measures the MAE between each element
-    in the input: :math:`x` and the target: :math:`y`.
+    in the input: :math:`y\_pred` and the target: :math:`y`.
 
     .. math::
         \text{MAE} = \frac{\sum_{i=1}^n \|{y\_pred}_i - y_i\|}{n}

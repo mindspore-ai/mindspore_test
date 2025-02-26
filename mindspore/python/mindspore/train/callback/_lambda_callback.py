@@ -36,8 +36,8 @@ class LambdaCallback(Callback):
         on_train_step_end (Function): called at each train step end. Default: ``None`` .
         on_train_begin (Function): called at the beginning of model train. Default: ``None`` .
         on_train_end (Function): called at the end of model train. Default: ``None`` .
-        on_eval_epoch_begin (Function): called at eval epoch begin. Default: ``None`` .
-        on_eval_epoch_end (Function): called at eval epoch end. Default: ``None`` .
+        on_eval_epoch_begin (Function): called at each eval epoch begin. Default: ``None`` .
+        on_eval_epoch_end (Function): called at each eval epoch end. Default: ``None`` .
         on_eval_step_begin (Function): called at each eval step begin. Default: ``None`` .
         on_eval_step_end (Function): called at each eval step end. Default: ``None`` .
         on_eval_begin (Function): called at the beginning of model eval. Default: ``None`` .
