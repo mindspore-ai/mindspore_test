@@ -24,6 +24,7 @@ namespace ops {
 class OPS_API Range : public InferShapeOp {
  public:
   using InferShapeOp::InferShapeOp;
+  Range(const SymbolPtr &start, const SymbolPtr &end, const SymbolPtr &step) : InferShapeOp({start, end, step}) {}
   ~Range() override = default;
   MS_DECLARE_PARENT(Range, InferShapeOp)
  protected:
@@ -34,16 +35,28 @@ SymbolPtr Range::Eval() {
   auto start = input(kIndex0);
   auto end = input(kIndex1);
   auto step = input(kIndex2);
-  auto maxlen = input(kIndex3);
   DoNotEvalOnRun();
   // range length = (end - start) / step.  (to ceil)
   auto len = Emit(std::make_shared<ScalarSub>(end, start));
   len = Emit(std::make_shared<ScalarCeilDiv>(len, step));
-  len = Emit(std::make_shared<ScalarMin>(len, maxlen));
+  if (input_num() > kIndex3) {
+    len = Emit(std::make_shared<ScalarMin>(len, input(kIndex3)));
+  }
   return GenList({len});
 }
 
 REG_SYMBOL_OP_BUILDER("Range").SetShapeDependN<DependOn::kValue, 4>().SetShapeFuncWith<Range>();
+
+SymbolPtr ArangeInferShape(OperationBuilder *b) {
+  auto start = b->GetInputValue(kIndex0);
+  auto end = b->GetInputValue(kIndex1);
+  auto step = b->GetInputValue(kIndex2);
+  if (start->is<IntSymbol>()) {
+    return b->Emit(std::make_shared<Range>(start, end, step));
+  }
+  return nullptr;
+}
+REG_SYMBOL_OP_BUILDER("Arange").SetShapeDependN<DependOn::kValue, 3>().SetShapeFunc(ArangeInferShape);
 }  // namespace ops
 }  // namespace symshape
 }  // namespace mindspore

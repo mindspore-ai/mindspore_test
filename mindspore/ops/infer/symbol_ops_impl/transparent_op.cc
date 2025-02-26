@@ -41,15 +41,23 @@ REG_SYMBOL_OP_BUILDER("Conv2DBackpropInput")
 REG_SYMBOL_OP_BUILDER("Cos").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("CudnnUniformReal").SetShapeDepend({DependOn::kValue}).SetShapeFunc(TransValueToShape);
 REG_SYMBOL_OP_BUILDER("CumSum").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("CumsumExt").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("DropoutGrad").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("EluExt").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("EluGradExt").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Erf").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Exp").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("FastGeLU").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("FillV2").SetShapeDepend({DependOn::kValue, DependOn::kNone}).SetShapeFunc(TransValueToShape);
 REG_SYMBOL_OP_BUILDER("GeLU").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("GeLUGrad").SetShapeDepend({DependOn::kNone, DependOn::kShape}).SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("Identity").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("InsertGradientOf").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("IsFinite").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("LeakyReLUExt").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("LeakyReLUGradExt")
+  .SetShapeDepend({DependOn::kNone, DependOn::kShape})
+  .SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("LogicalNot").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Log").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("LogSoftmaxGrad")
@@ -57,18 +65,42 @@ REG_SYMBOL_OP_BUILDER("LogSoftmaxGrad")
   .SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("LogSoftmax").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("mutable").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("NanToNum").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Neg").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Ones").SetShapeDepend({DependOn::kValue}).SetShapeFunc(TransValueToShape);
 REG_SYMBOL_OP_BUILDER("OnesLike").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("PagedAttention").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Reciprocal").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("ReflectionPad1DGrad")
+  .SetShapeDepend({DependOn::kNone, DependOn::kShape})
+  .SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("ReflectionPad2DGrad")
+  .SetShapeDepend({DependOn::kNone, DependOn::kShape})
+  .SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("ReflectionPad3DGrad")
+  .SetShapeDepend({DependOn::kNone, DependOn::kShape})
+  .SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("ReluGrad").SetShapeDepend({DependOn::kShape, DependOn::kNone}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("ReLU").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("RemainderScalarTensor")
+  .SetShapeDepend({DependOn::kNone, DependOn::kShape})
+  .SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("RemainderTensorScalar").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("ReplicationPad1DGrad")
+  .SetShapeDepend({DependOn::kNone, DependOn::kShape})
+  .SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("ReplicationPad2DGrad")
+  .SetShapeDepend({DependOn::kNone, DependOn::kShape})
+  .SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("ReplicationPad3DGrad")
+  .SetShapeDepend({DependOn::kNone, DependOn::kShape})
+  .SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("RotaryPositionEmbedding").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Round").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Rsqrt").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("RsqrtGrad").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("ReshapeAndCache").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("Scatter").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("ScatterNd")
   .SetShapeDepend({DependOn::kNone, DependOn::kNone, DependOn::kValue})
   .SetShapeFunc(TransValueToShape);
@@ -78,6 +110,8 @@ REG_SYMBOL_OP_BUILDER("SiLU").SetShapeDepend({DependOn::kShape}).SetShapeFunc(Tr
 REG_SYMBOL_OP_BUILDER("SiLUGrad").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Sin").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("SliceGrad").SetShapeDepend({DependOn::kNone, DependOn::kShape}).SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("SoftplusExt").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("SoftplusGradExt").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Softmax").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("SoftmaxBackward")
   .SetShapeDepend({DependOn::kNone, DependOn::kShape})
@@ -94,11 +128,13 @@ REG_SYMBOL_OP_BUILDER("Tanh").SetShapeDepend({DependOn::kShape}).SetShapeFunc(Tr
 REG_SYMBOL_OP_BUILDER("TanhGrad").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("TensorScatterUpdate").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Tril").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("Triu").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("UniformExt").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("UniformInt").SetShapeDepend({DependOn::kValue}).SetShapeFunc(TransValueToShape);
 REG_SYMBOL_OP_BUILDER("UniformReal").SetShapeDepend({DependOn::kValue}).SetShapeFunc(TransValueToShape);
 REG_SYMBOL_OP_BUILDER("Zeros").SetShapeDepend({DependOn::kValue}).SetShapeFunc(TransValueToShape);
 REG_SYMBOL_OP_BUILDER("ZerosLike").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("ZerosLikeExt").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 
 // infer symbolic value.
 REG_SYMBOL_OP_BUILDER("Shape").SetValueDepend({DependOn::kShape}).SetValueFunc(TransparentInput);

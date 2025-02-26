@@ -29,7 +29,7 @@ namespace symshape {
 /// \brief Operation is the basic class of operators for symbol.
 class MS_CORE_API Operation : public Base {
  public:
-  explicit Operation(SymbolPtrList &&inputs) : inputs_(inputs) {}
+  explicit Operation(SymbolPtrList &&inputs) : inputs_(std::move(inputs)) {}
   virtual ~Operation() = default;
   MS_DECLARE_PARENT(Operation, Base)
 
@@ -125,16 +125,16 @@ class MS_CORE_API Operation : public Base {
 
   SymbolPtr ResultIntList(SymbolPtrList &&result) {
     if (is_building()) {
-      return GenList(result);
+      return GenList(std::move(result));
     }
-    output_as<ListSymbol>()->UpdateList(result);
+    output_as<ListSymbol>()->UpdateList(std::move(result));
     return nullptr;
   }
 
   SymbolPtr GenInt(int64_t v) { return IntSymbol::Make(v, shared_from_this()); }
   SymbolPtr GenVInt() { return IntSymbol::Make(shared_from_this()); }
   SymbolPtr GenList(const SymbolPtrList &list) { return ListSymbol::Make(list, shared_from_this()); }
-  SymbolPtr GenList(SymbolPtrList &&list) { return ListSymbol::Make(list, shared_from_this()); }
+  SymbolPtr GenList(SymbolPtrList &&list) { return ListSymbol::Make(std::move(list), shared_from_this()); }
   SymbolPtr GenList(const std::initializer_list<SymbolPtr> &list) { return ListSymbol::Make(list, shared_from_this()); }
   SymbolPtr GenVList() { return ListSymbol::Make(shared_from_this()); }
 
