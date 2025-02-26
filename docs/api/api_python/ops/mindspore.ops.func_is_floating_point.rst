@@ -3,10 +3,10 @@ mindspore.ops.is_floating_point
 
 .. py:function:: mindspore.ops.is_floating_point(input)
 
-    判断 `input` 的dtype是否是浮点数据类型，包括mindspore.float64、mindspore.float32和mindspore.float16。
+    如果tensor的数据类型是浮点数，则返回True，否则返回False。
 
     参数：
-        - **input** (Tensor) - 输入Tensor。
+        - **input** (Tensor) - 输入tensor。
 
     返回：
-        Bool，如果 `input` 的dtype是浮点数据类型，则返回 ``True`` ，否则返回 ``False`` 。
+        Bool

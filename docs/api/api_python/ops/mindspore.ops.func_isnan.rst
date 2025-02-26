@@ -3,22 +3,10 @@ mindspore.ops.isnan
 
 .. py:function:: mindspore.ops.isnan(input)
 
-    判断输入数据每个位置上的值是否是NaN。
-
-    .. math::
-
-        out_i = \begin{cases}
-          & \ True,\ \text{ if } input_{i} = \text{NaN} \\
-          & \ False,\ \text{ if } input_{i} \ne  \text{NaN}
-        \end{cases}
-
-    其中 :math:`NaN` 表示不是number。
+    返回一个布尔型tensor，指示哪些元素是NaN。
 
     参数：
-        - **input** (Tensor) - 输入Tensor。
+        - **input** (Tensor) - 输入tensor。
 
     返回：
-        Tensor，输出的shape与输入相同，数据类型为bool。
-
-    异常：
-        - **TypeError** - `input` 不是Tensor。
+        Tensor

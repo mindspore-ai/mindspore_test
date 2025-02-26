@@ -1,36 +1,20 @@
 isfinite:
     description: |
-        Determine which elements are finite for each position. If elements are not ``NaN`` , ``-INF`` , ``INF``,
-        they are finite.
+        Return a boolean tensor indicating which elements are finite. 
 
-        .. math::
-
-            out_i = \begin{cases}
-              & \text{ if } x_{i} = \text{Finite},\ \ True \\
-              & \text{ if } x_{i} \ne \text{Finite},\ \ False
-            \end{cases}
+        An element is considered finite if it is not ``NaN`` , ``-INF`` , or ``INF`` .
 
         Args:
           input (Tensor): The input tensor.
 
         Returns:
-            Tensor, has the same shape of input, and the dtype is bool.
-
-        Raises:
-            TypeError: If `input` is not a Tensor.
+            Tensor
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
 
         Examples:
             >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> x = Tensor(np.array([np.log(-1), 1, np.log(0)]), mindspore.float32)
-            >>> output = ops.isfinite(x)
-            >>> print(output)
-            [False True False]
-            >>> x = Tensor(2.1, mindspore.float64)
-            >>> output = ops.isfinite(x)
-            >>> print(output)
-            True
+            >>> input = mindspore.tensor([-1, 3, float("inf"), float("-inf"), float("nan")])
+            >>> mindspore.ops.isfinite(input)
+            Tensor(shape=[5], dtype=Bool, value= [ True,  True, False, False, False])
