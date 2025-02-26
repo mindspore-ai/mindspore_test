@@ -111,6 +111,143 @@ Status TileInfo::CheckStrategy(const StrategyPtr &strategy) {
   return CheckStrategyValue(strategy, multiples);
 }
 
+Status TileInfo::CheckInputLayout() {
+  // Check all device matrix should be the same
+  if (inputs_tensor_info_.size() != kSizeOne) {
+    MS_LOG(ERROR) << "The size of input_tensor_layout for matmul is " << inputs_tensor_info_.size()
+                  << " rather than 1.";
+    return FAILED;
+  }
+  auto in_layout0 = inputs_tensor_info_[kIndex0].tensor_layout();
+  auto input_shape0 = in_layout0.tensor_shape_before().array();
+  auto input_tensor_map = in_layout0.tensor_map_before();
+
+  auto pre_offset = full_multiples_.size() - input_shape0.size();
+
+  // when shape>1 and multiple>1, this dim of the input can't be split：
+  // example, data=AB, multiple=2, when not split: output=ABAB; when split: output=AABB
+  for (size_t i = 0; i < full_multiples_.size(); ++i) {
+    if (full_multiples_[i] > 1 && i >= pre_offset && input_shape0[i - pre_offset] > 1) {
+      int64_t axis_shard = 1;
+      for (const auto &dim : input_tensor_map[i - pre_offset]) {
+        if (dim == -1) {
+          continue;
+        }
+        int64_t divisor = in_layout0.device_arrangement_origin().GetDimByReverseIdx(LongToUlong(dim));
+        axis_shard *= divisor;
+      }
+      MS_EXCEPTION_IF_ZERO("axis_shard", axis_shard);
+      if (axis_shard > 1) {
+        MS_LOG(ERROR) << "The dimension " << i - pre_offset
+                      << " of input should not be split, because the multiple and shape are both greater than 1.";
+        return FAILED;
+      }
+    }
+  }
+  return SUCCESS;
+}
+
+Status TileInfo::CheckOutputLayout() {
+  if (outputs_tensor_info_.size() != kSizeOne) {
+    MS_LOG(ERROR) << "The size of output_tensor_layout for tile is " << outputs_tensor_info_.size()
+                  << " rather than 1.";
+    return FAILED;
+  }
+  auto out_layout = outputs_tensor_info_[kIndex0].tensor_layout();
+  auto out_tensor_map = out_layout.tensor_map_before();
+  auto out_shape = out_layout.tensor_shape_before().array();
+  auto offset = out_shape.size() - full_multiples_.size();
+  if (offset < 0) {
+    MS_LOG(ERROR) << "The size of output shape is " << out_shape.size()
+                  << " rather than greater than or equal to the size of multiples.";
+    return FAILED;
+  }
+
+  // compute slice_multiples_
+  // when shape>1 and multiple>1, this dim of the input can't be split.
+  // then，the slice_multiple of the output should be changed to the multiple/out_axis_shard
+  slice_multiples_ = full_multiples_;
+  for (size_t i = 0; i < full_multiples_.size(); ++i) {
+    if (full_multiples_[i] > 1) {  // split the multiple only when multiple > 1
+      auto shape_index = i + offset;
+      int64_t axis_shard = 1;
+      for (const auto &dim : out_tensor_map[shape_index]) {
+        if (dim == -1) {
+          continue;
+        }
+        int64_t divisor = out_layout.device_arrangement_origin().GetDimByReverseIdx(LongToUlong(dim));
+        axis_shard *= divisor;
+      }
+      MS_EXCEPTION_IF_ZERO("axis_shard", axis_shard);
+      // slice_multiples_[i] should be divided by the axis_shard
+      if (slice_multiples_[i] % axis_shard != 0) {
+        MS_LOG(ERROR) << "The multiple of output dimension " << i << " should be divisible by axis_shard ";
+        return FAILED;
+      }
+      slice_multiples_[i] = slice_multiples_[i] / axis_shard;
+    }
+  }
+  return SUCCESS;
+}
+
+TensorLayout TileInfo::InferOutputLayout() {
+  auto input_layout0 = inputs_tensor_info_[kIndex0].tensor_layout();
+  auto input_shape = input_layout0.tensor_shape_before().array();
+  auto input_tensor_map = input_layout0.tensor_map_before();
+  auto offset = full_multiples_.size() - input_shape.size();
+
+  std::vector<Shape> output_extended_tensor_map;
+  Shape output_tensor_shape;
+  if (offset <= 0) {
+    // input_shape: (1, 1, 2, 4) input_tensor_map: (-1, -1, 0, 1)  full_multiples_:(2, 1, 1)
+    // output_shape: (1, 2, 2, 4) output_tensor_map: (-1, -1, 0, 1)
+    for (size_t i = 0; i < input_shape.size(); ++i) {
+      auto map_dim = input_tensor_map[i];
+      auto shp_dim = input_shape[i];
+      if (i >= -offset && full_multiples_[i + offset] > 1) {
+        shp_dim = shp_dim * full_multiples_[i + offset];
+      }
+      output_extended_tensor_map.push_back(map_dim);
+      output_tensor_shape.push_back(shp_dim);
+    }
+  } else {
+    // input_shape: (1, 2, 4) input_tensor_map: (-1, 0, 1)  full_multiples_:(2, 2, 1, 1)
+    // output_shape: (2, 1, 2, 4) output_tensor_map: (-1, -1, 0, 1)
+    for (size_t i = 0; i < full_multiples_.size(); ++i) {
+      if (i < offset) {
+        auto map_dim = {NO_SPLIT_MAP};
+        auto shp_dim = 1;
+        output_extended_tensor_map.push_back(map_dim);
+        output_tensor_shape.push_back(shp_dim);
+      } else {
+        auto map_dim = input_tensor_map[i - offset];
+        auto shp_dim = input_shape[i - offset];
+        if (full_multiples_[i] > 1) {
+          shp_dim = shp_dim * full_multiples_[i];
+        }
+        output_extended_tensor_map.push_back(map_dim);
+        output_tensor_shape.push_back(shp_dim);
+      }
+    }
+  }
+  TensorLayout output_tensor_layout;
+  output_tensor_layout.InitFromExtendVector(input_layout0.device_arrangement_origin().array(),
+                                            output_extended_tensor_map, output_tensor_shape);
+  return output_tensor_layout;
+}
+
+Status TileInfo::InferOutputTensorInfo() {
+  auto output_infer_tensor_layout = InferOutputLayout();
+  if (output_infer_tensor_layout.tensor_shape_before().array() != outputs_shape_[kIndex0]) {
+    MS_LOG(ERROR) << "The infer output shape " << output_infer_tensor_layout.tensor_shape_before().array()
+                  << " dose not match the output shape " << outputs_shape_[kIndex0];
+    return FAILED;
+  }
+  TensorInfo output_tensor_info(output_infer_tensor_layout);
+  outputs_tensor_info_.push_back(output_tensor_info);
+  return SUCCESS;
+}
+
 Status TileInfo::InferDevMatrixShape() {
   MS_EXCEPTION_IF_NULL(strategy_);
   std::vector<Dimensions> stra = strategy_->GetInputDim();
