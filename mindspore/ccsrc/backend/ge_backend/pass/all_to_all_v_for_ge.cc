@@ -87,10 +87,12 @@ CNodePtr AlltoAllVForGE::CreateAlltoAllVForGENode(const FuncGraphPtr &graph, con
   MS_EXCEPTION_IF_NULL(origin_node);
   auto [send_numel_list, send_offset_list, recv_numel_list, recv_offset_list] = GetAlltoAllVForGEInput(origin_node);
 
-  AnfNodePtrList atav_inputs = {
-    NewValueNode(std::make_shared<Primitive>(kAlltoAllVGEOpName)), common::AnfAlgo::GetInputNode(origin_node, kIndex0),
-    common::AnfAlgo::GetInputNode(origin_node, kIndex1),           CreateShapeValueNode(graph, send_offset_list),
-    common::AnfAlgo::GetInputNode(origin_node, kIndex2),           CreateShapeValueNode(graph, recv_offset_list)};
+  AnfNodePtrList atav_inputs = {NewValueNode(std::make_shared<Primitive>(kAlltoAllVGEOpName)),
+                                common::AnfAlgo::GetInputNode(origin_node, kIndex0),
+                                CreateShapeValueNode(graph, send_numel_list),
+                                CreateShapeValueNode(graph, send_offset_list),
+                                CreateShapeValueNode(graph, recv_numel_list),
+                                CreateShapeValueNode(graph, recv_offset_list)};
   auto atav_node = NewCNode(atav_inputs, graph);
   MS_EXCEPTION_IF_NULL(atav_node);
   atav_node->set_scope(origin_node->scope());
