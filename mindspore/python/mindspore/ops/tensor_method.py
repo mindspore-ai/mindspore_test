@@ -430,7 +430,6 @@ from mindspore.ops.function.math_func import var_ext
 from mindspore.ops.auto_generate.gen_ops_prim import inplace_exp_op
 
 from .._checkparam import check_axis_in_range
-from ..ops.composite.multitype_ops import _constexpr_utils as const_utils
 from ..ops.composite.multitype_ops import _compile_utils as compile_utils
 ########################################functions########################################
 def place_holder():
@@ -1591,8 +1590,8 @@ def deprecated_tensor_take(x, indices, axis=None, mode='clip'):
     Takes elements from a tensor along an axis.
     """
     if mode not in ('raise', 'wrap', 'clip'):
-        const_utils.raise_value_error(
-            'raise should be one of "raise", "wrap", or "clip"')
+        raise ValueError(f"For 'Tensor.take', the argument 'mode' should be one of in ['raise', 'wrap', 'clip'],"
+                         f" but got {mode}.")
     if axis is None:
         a = x.ravel()
         axis = 0
