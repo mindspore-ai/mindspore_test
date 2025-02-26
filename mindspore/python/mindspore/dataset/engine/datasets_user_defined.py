@@ -225,8 +225,6 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
         # Event for end of epoch
         if self.multi_process is True:
             try:
-                # Objects may be incompatible between processes created in different contexts, and locks created using
-                # fork contexts cannot be passed to processes started using the spawn startup method
                 self.eof = multiprocessing.Event()
             except Exception:
                 raise RuntimeError("Init multiprocessing.Event() failed, This might be caused by insufficient shm,"
