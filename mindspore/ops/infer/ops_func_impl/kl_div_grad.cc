@@ -42,7 +42,7 @@ std::vector<TypeId> KLDivGradFuncImpl::InferType(const PrimitivePtr &primitive,
   for (size_t i = 0; i < arg_names.size(); ++i) {
     (void)CheckAndConvertUtils::CheckTypeIdValid(arg_names[i], arg_types[i], valid_types, prim_name);
   }
-  return {arg_types[kInputIndex0]};
+  return {arg_types[kInputIndex1]};
 }
 
 }  // namespace ops
