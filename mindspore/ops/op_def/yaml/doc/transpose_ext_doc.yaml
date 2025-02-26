@@ -1,4 +1,4 @@
-transpose_ext:
+transpose_ext_view:
     description: |
         Interchange two axes of a tensor.
 
@@ -23,10 +23,10 @@ transpose_ext:
 
         Examples:
             >>> import numpy as np
-            >>> from mindspore import mint
+            >>> from mindspore.ops.auto_generate import TransposeExtView
             >>> from mindspore import Tensor
-            >>> input = Tensor(np.ones((2,3,4), dtype=np.float32))
-            >>> output = mint.transpose(input, 0, 2)
+            >>> input = Tensor(np.ones((2, 3, 4), dtype=np.float32))
+            >>> output = TransposeExtView()(input, 0, 2)
             >>> print(output.shape)
             (4, 3, 2)
         

@@ -16,6 +16,7 @@ slice_ext_view:
             dtype: tensor
     function:
         disable: True
+    view: True
     graph_view: True
     labels:
         side_effect_mem: True

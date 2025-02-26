@@ -21,9 +21,10 @@ select_ext_view:
         
         Examples:
             >>> import mindspore
-            >>> from mindspore import Tensor, mint
+            >>> from mindspore import Tensor, ops
+            >>> from mindspore.ops.auto_generate import SelectExtView
             >>> input = Tensor([[2, 3, 4, 5],[3, 2, 4, 5]])
-            >>> y = mint.select(input, 0, 0)
+            >>> y = SelectExtView()(input, 0, 0)
             >>> print(y)
             [2 3 4 5]
             

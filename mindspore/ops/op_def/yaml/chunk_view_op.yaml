@@ -13,6 +13,7 @@ chunk_view:
             dtype: tuple[tensor]
     function:
         disable: True
+    view: True
     graph_view: True
     labels:
         side_effect_mem: True

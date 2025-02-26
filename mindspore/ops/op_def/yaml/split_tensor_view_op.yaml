@@ -11,6 +11,7 @@ split_tensor_view:
   returns:
     output:
       dtype: tuple[tensor]
+  view: True
   graph_view: True
   labels:
     side_effect_mem: True

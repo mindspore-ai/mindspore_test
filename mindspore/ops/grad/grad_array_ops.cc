@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2023 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2018,6 +2018,29 @@ REG_BPROP_BUILDER("BroadcastTo").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(
   return {dx, ib->OutZeros(ib->GetInput(kIndex1))};
 });
 
+REG_BPROP_BUILDER("BroadcastToView").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto dout = ib->GetInput(kIndex3);
+  auto x_shape = ib->GetShape(x);
+  auto dout_shape = ib->GetShape(dout);
+
+  bool input_dynamic = IsDynamic(x_shape) || IsDynamic(dout_shape);
+  if (!input_dynamic && x_shape == dout_shape) {
+    return {dout, ib->OutZeros(ib->GetInput(kIndex1))};
+  }
+
+  auto x_shape_node = ib->Shape(x);
+  auto broadcast_axes = ib->BroadcastGradientArgs(dout, x);
+  MS_EXCEPTION_IF_CHECK_FAIL(!broadcast_axes.empty(), "BroadcastGradientArgs out should not be empty!");
+  auto reduction_axes = broadcast_axes[kIndex1];
+  NodePtr reduced_grad = nullptr;
+
+  reduced_grad = ib->ReduceSum(dout, reduction_axes, true, true);
+  auto dx = ib->Reshape(reduced_grad, x_shape_node);
+
+  return {dx, ib->OutZeros(ib->GetInput(kIndex1))};
+});
+
 REG_BPROP_BUILDER("ExpandAs").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto input_shape = ib->GetShape(input);
@@ -2217,12 +2240,27 @@ REG_BPROP_BUILDER("ExpandDims").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(i
   return {dx, ib->OutZeros(axis)};
 });
 
+<<<<<<< HEAD
 REG_BPROP_BUILDER("View").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto shape = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
   auto dx = ib->Reshape(dout, ib->Shape(input));
   return {dx, ib->OutZeros(shape)};
+});
+
+REG_BPROP_BUILDER("ExpandDimsView").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto axis = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  auto shape_x = ib->GetShape(x);
+  NodePtr dx;
+  if (IsDynamic(shape_x)) {
+    dx = ib->Reshape(dout, ib->Shape(x));
+  } else {
+    dx = ib->Reshape(dout, shape_x);
+  }
+  return {dx, ib->OutZeros(axis)};
 });
 
 REG_BPROP_BUILDER("Squeeze").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
@@ -2271,7 +2309,15 @@ DEF_PURE_SHAPE_CALC(g_transpose)
     }
     return {SizeToLong(x.size())};
   });
+
 REG_BPROP_BUILDER("Transpose").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
+  auto perm = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  auto res_perm = ib->ShapeCalc(g_transpose, {perm}, {0})[0];
+  return {ib->Transpose(dout, res_perm), ib->OutZeros(perm)};
+});
+
+REG_BPROP_BUILDER("TransposeView").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   auto perm = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
   auto res_perm = ib->ShapeCalc(g_transpose, {perm}, {0})[0];
@@ -2324,6 +2370,14 @@ REG_BPROP_BUILDER("SplitTensor").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) 
   return {dx, ib->OutZeros(split_size), ib->OutZeros(dim)};
 });
 
+REG_BPROP_BUILDER("SplitTensorView").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
+  auto dout = ib->GetInput(kIndex4);
+  auto split_size = ib->GetInput(kIndex1);
+  auto dim = ib->GetInput(kIndex2);
+  auto dx = ib->Concat(dout, dim);
+  return {dx, ib->OutZeros(split_size), ib->OutZeros(dim)};
+});
+
 REG_BPROP_BUILDER("SplitWithSize").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(kIndex4);
   auto split_size = ib->GetInput(kIndex1);
@@ -2332,7 +2386,23 @@ REG_BPROP_BUILDER("SplitWithSize").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib
   return {dx, ib->OutZeros(split_size), ib->OutZeros(dim)};
 });
 
+REG_BPROP_BUILDER("SplitWithSizeView").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
+  auto dout = ib->GetInput(kIndex4);
+  auto split_size = ib->GetInput(kIndex1);
+  auto dim = ib->GetInput(kIndex2);
+  auto dx = ib->Concat(dout, dim);
+  return {dx, ib->OutZeros(split_size), ib->OutZeros(dim)};
+});
+
 REG_BPROP_BUILDER("Chunk").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
+  auto chunks = ib->GetInput(kIndex1);
+  auto axis = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+  auto dx = ib->Concat(dout, axis);
+  return {dx, ib->OutZeros(chunks), ib->OutZeros(axis)};
+});
+
+REG_BPROP_BUILDER("ChunkView").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
   auto chunks = ib->GetInput(kIndex1);
   auto axis = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex4);
@@ -2350,6 +2420,19 @@ REG_BPROP_BUILDER("SliceExt").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib
 
   auto dx = ib->Zeros(x);
   (void)ib->InplaceCopy(ib->Emit("SliceExt", {dx, axis, begin, end, step}), dout);
+  return {dx, ib->OutZeros(axis), ib->OutZeros(begin), ib->OutZeros(end), ib->OutZeros(step)};
+});
+
+REG_BPROP_BUILDER("SliceExtView").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto axis = ib->GetInput(kIndex1);
+  auto begin = ib->GetInput(kIndex2);
+  auto end = ib->GetInput(kIndex3);
+  auto step = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex6);
+
+  auto dx = ib->Zeros(x);
+  (void)ib->InplaceCopy(ib->Emit("SliceExtView", {dx, axis, begin, end, step}), dout);
   return {dx, ib->OutZeros(axis), ib->OutZeros(begin), ib->OutZeros(end), ib->OutZeros(step)};
 });
 
@@ -2391,6 +2474,19 @@ DEF_PURE_SHAPE_CALC(g_narrow)
   });
 
 REG_BPROP_BUILDER("Narrow").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto axis = ib->GetInput(kIndex1);
+  auto begin = ib->GetInput(kIndex2);
+  auto length = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+  auto res = ib->ShapeCalc(g_narrow, {x, axis, begin, length}, {1, 2, 3});
+  auto dx = ib->Concat(ib->MakeTuple({ib->Zeros(res[kIndex0], ib->Value<int64_t>(ib->GetDtypeId(dout))), dout,
+                                      ib->Zeros(res[kIndex1], ib->Value<int64_t>(ib->GetDtypeId(dout)))}),
+                       axis);
+  return {dx, ib->OutZeros(axis), ib->OutZeros(begin), ib->OutZeros(length)};
+});
+
+REG_BPROP_BUILDER("NarrowView").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex1);
   auto begin = ib->GetInput(kIndex2);
@@ -2556,7 +2652,7 @@ REG_BPROP_BUILDER("SelectExtView").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib
   auto index = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex4);
   auto res = ib->ShapeCalc(g_select_ext, {x, axis, index}, {1, 2});
-  auto dout_expand = ib->Emit("ExpandDims", {dout, axis});
+  auto dout_expand = ib->Emit("ExpandDimsView", {dout, axis});
   auto dx = ib->Emit(kConcatOpName,
                      {ib->MakeTuple({ib->Emit("Zeros", {res[0], ib->Value<int64_t>(ib->GetDtypeId(dout))}), dout_expand,
                                      ib->Emit("Zeros", {res[1], ib->Value<int64_t>(ib->GetDtypeId(dout))})}),
