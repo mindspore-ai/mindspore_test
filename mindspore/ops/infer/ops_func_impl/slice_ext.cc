@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,7 +98,7 @@ BaseShapePtr SliceExtFuncImpl::InferShape(const PrimitivePtr &primitive,
 TypePtr SliceExtFuncImpl::InferType(const PrimitivePtr &primitive,
                                     const std::vector<AbstractBasePtr> &input_args) const {
   auto input_type = input_args[kIndex0]->GetType();
-  const std::set<TypePtr> valid_type = {kInt8, kInt32, kInt64, kUInt8, kFloat16, kFloat32, kBool, kBFloat16};
+  const std::set<TypePtr> valid_type = {kInt8, kInt32, kInt64, kUInt8, kFloat16, kFloat32, kFloat64, kBool, kBFloat16};
   (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, valid_type, primitive->name());
 
   return input_type->Clone();

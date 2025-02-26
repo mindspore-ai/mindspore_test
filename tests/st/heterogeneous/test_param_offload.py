@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
 import numpy as np
 
 import mindspore as ms
@@ -58,7 +57,6 @@ class TestNet(nn.Cell):
         return x
 
 
-@pytest.mark.skip(reason="view feature not supported level0")
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_param_offload():
     '''

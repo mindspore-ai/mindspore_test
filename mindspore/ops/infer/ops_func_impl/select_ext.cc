@@ -29,12 +29,6 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr SelectExtFuncImpl::InferShape(const PrimitivePtr &prim,
                                            const std::vector<AbstractBasePtr> &input_args) const {
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  int execution_mode = context->get_param<int>(MS_CTX_EXECUTION_MODE);
-  if (execution_mode == kGraphMode) {
-    MS_EXCEPTION(ValueError) << "Unsupported graph mode and KBK mode.";
-  }
   auto prim_name = prim->name();
   auto input_x_shape = input_args[0]->GetShape()->GetShapeVector();
   (void)CheckAndConvertUtils::CheckInteger("rank of input_x", SizeToLong(input_x_shape.size()), kGreaterThan, 0,

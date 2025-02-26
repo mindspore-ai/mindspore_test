@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2024-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
 class Net(nn.Cell):
     def __init__(self, tanspose_a=False, transpose_b=False):
         super(Net, self).__init__()
-        self.transpose = P.Transpose()
+        self.transpose = P.TransposeView()
         self.matmul = P.MatMul(tanspose_a, transpose_b)
 
     def construct(self, x, perm, mat):
@@ -124,7 +124,7 @@ class ViewOut(nn.Cell):
     '''net with view out'''
     def __init__(self):
         super(ViewOut, self).__init__()
-        self.transpose = P.Transpose()
+        self.transpose = P.TransposeView()
 
     @ms.jit
     def construct(self, x):
@@ -153,7 +153,7 @@ def test_graph_view_out():
 def test_pynative_view_to_graph():
     """
     Feature: Runtime view graph mode.
-    Description: view input from pyantive.
+    Description: view input from pynative.
     Expectation: the output is same as pynative
     """
     context.set_context(mode=context.PYNATIVE_MODE)
@@ -170,7 +170,7 @@ class MakeContiguous(nn.Cell):
     '''net with view to aclop'''
     def __init__(self):
         super(MakeContiguous, self).__init__()
-        self.transpose = P.Transpose()
+        self.transpose = P.TransposeView()
 
     @ms.jit
     def construct(self, x):
@@ -184,7 +184,7 @@ class MakeContiguous(nn.Cell):
 def test_graph_view_to_aclop():
     """
     Feature: Runtime view graph mode.
-    Description: view input from pyantive.
+    Description: view input from pynative.
     Expectation: the output is same as pynative
     """
     context.set_context(mode=context.PYNATIVE_MODE)

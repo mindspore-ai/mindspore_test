@@ -32,10 +32,10 @@ class SplitNode : public opt::PatternProcessPass {
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &node, const EquivPtr &) const override;
 };
 
-class SplitUMonad : public SplitNode {
+class SplitAssign : public SplitNode {
  public:
-  explicit SplitUMonad(bool multigraph = true) : SplitNode("split_umonad", multigraph) {}
-  ~SplitUMonad() override = default;
+  explicit SplitAssign(bool multigraph = true) : SplitNode("split_assign", multigraph) {}
+  ~SplitAssign() override = default;
   const BaseRef DefinePattern() const override;
   const bool CanSplit(const AnfNodePtr &node) const override;
 };
