@@ -1240,6 +1240,64 @@ void AddHookNodeForArgs(const ResourcePtr &resource, const FuncGraphPtr &new_fg)
     }
   }
 }
+
+bool IsInplaceOpNode(const AnfNodePtr &node) {
+  if (!node->isa<CNode>()) {
+    return false;
+  }
+  auto cnode = node->cast_ptr<CNode>();
+  auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+  return prim != nullptr && prim->inplace_prim();
+}
+
+bool IsCreatedByViewOp(const AnfNodePtr &node) {
+  if (node->isa<CNode>()) {
+    auto cnode = node->cast_ptr<CNode>();
+    auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+    if (prim != nullptr && prim->graph_view_prim()) {
+      return true;
+    }
+  }
+  auto abstract = node->abstract();
+  if (abstract != nullptr && abstract->isa<abstract::AbstractRefTensor>()) {
+    constexpr auto kViewOp = abstract::AbstractRefTensor::DataType::kViewOp;
+    if (abstract->cast_ptr<abstract::AbstractRefTensor>()->data_type() == kViewOp) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void SetViewInplaceGradFlag(const ResourcePtr &resource) {
+  AnfNodePtr j_node = nullptr;
+  for (const auto &node : resource->manager()->all_nodes()) {
+    if (IsPrimitiveCNode(node, prim::kPrimJ)) {
+      j_node = node;
+      break;
+    }
+  }
+  if (j_node == nullptr) {
+    MS_LOG(DEBUG) << "No J node is found, so no need to scan for view+inplace op";
+    return;
+  }
+
+  auto forward_graph = GetValueNode<FuncGraphPtr>(j_node->cast<CNodePtr>()->input(1));
+  const AnfNodePtrList &all_nodes = mindspore::TopoSort(forward_graph->get_return(), SuccDeeperSimple);
+  for (const auto &node : all_nodes) {
+    MS_EXCEPTION_IF_NULL(node);
+    if (node->isa<CNode>() && IsInplaceOpNode(node)) {
+      auto inplace_node = node->cast_ptr<CNode>();
+      const AnfNodePtrList &input_nodes = inplace_node->inputs();
+      auto it = std::find_if(input_nodes.begin() + 1, input_nodes.end(), IsCreatedByViewOp);
+      if (it != input_nodes.end()) {
+        MS_LOG(DEBUG) << "Found a view+inplace node. Inplace node: " << inplace_node->DebugString()
+                      << ", and one of its input is created by view op: " << (*it)->DebugString();
+        j_node->set_user_data("has_view_inplace_grad", std::make_shared<bool>(true));
+        break;
+      }
+    }
+  }
+}
 }  // namespace
 
 bool TypeInferenceAction(const ResourcePtr &resource) {
@@ -1291,6 +1349,7 @@ bool TypeInferenceAction(const ResourcePtr &resource) {
 
   UpdateFuncGraphParameter(new_fg, resource->arguments());
   SetMindIRLoadFlag(resource);
+  SetViewInplaceGradFlag(resource);
 
   AddHookNodeForArgs(resource, new_fg);
 
