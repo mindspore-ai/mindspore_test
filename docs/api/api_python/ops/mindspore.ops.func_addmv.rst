@@ -3,12 +3,11 @@ mindspore.ops.addmv
 
 .. py:function:: mindspore.ops.addmv(input, mat, vec, *, beta=1, alpha=1)
 
-    `mat` 和 `vec` 相乘，且将输入向量 `input` 加到最终结果中。
+    将 `mat` 和 `vec` 相乘，且将输入向量 `input` 加到最终结果中。
 
-    如果 `mat` 是一个大小为 :math:`(N, M)` Tensor， `vec` 一个大小为 :math:`M` 的一维Tensor，那么 `input` 必须是可广播的，且\
-    带有一个大小为 :math:`N` 的一维Tensor。这种情况下 `out` 是一个大小为 :math:`N` 的一维Tensor。
+    如果 `mat` 是一个大小为 :math:`(N, M)` 的Tensor，且 `vec` 是一个大小为 :math:`M` 的一维Tensor，那么 `input` 必须是可广播的，并且是一个大小为 :math:`N` 的一维Tensor。
 
-    可选值 `bata` 和 `alpha` 分别是 `mat` 和 `vec` 矩阵向量的乘积和附加Tensor `input` 的扩展因子。如果 `beta` 为0，那么 `input` 将被忽略。
+    可选值 `beta` 和 `alpha` 分别是 `mat` 和 `vec` 矩阵向量的乘积和附加Tensor `input` 的扩展因子。如果 `beta` 为0，那么 `input` 将被忽略。
 
     .. math::
         output = β input + α (mat @ vec)

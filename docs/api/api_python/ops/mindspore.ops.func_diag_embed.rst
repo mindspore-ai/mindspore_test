@@ -3,8 +3,8 @@ mindspore.ops.diag_embed
 
 .. py:function:: mindspore.ops.diag_embed(input, offset=0, dim1=-2, dim2=-1)
 
-    生成一个Tensor，其对角线值由 `input` 中的值填充，其余位置置0。如果 `input` 的shape为 :math:`[x_{0}, x_{1}, ..., x_{n-1}, x_{n}]` ，则输出\
-    shape为将 :math:`x_{n}+|offset|` 插入 :math:`[x_{0}, x_{1}, ..., x_{n-1}]` 的 `dim1` 和 `dim2` 维后得到的向量。
+    生成一个Tensor，其对角线值由 `input` 中的值填充，其余位置填充为0。如果 `input` 的shape为 :math:`[x_{0}, x_{1}, ..., x_{n-1}, x_{n}]` ，则输出的\
+    shape是将 :math:`x_{n}+|offset|` 插入 :math:`[x_{0}, x_{1}, ..., x_{n-1}]` 的 `dim1` 和 `dim2` 维后得到的向量。
 
     参数：
         - **input** (Tensor) - 对角线填充值。

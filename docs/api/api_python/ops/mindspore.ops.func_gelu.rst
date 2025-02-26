@@ -5,8 +5,8 @@ mindspore.ops.gelu
 
     高斯误差线性单元激活函数。
 
-    GeLU的描述可以在 `Gaussian Error Linear Units (GELUs) <https://arxiv.org/abs/1606.08415>`_ 这篇文章中找到。
-    也可以去查询 `BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding <https://arxiv.org/abs/1810.04805>`_ 。
+    GeLU的详细描述请参考 `Gaussian Error Linear Units (GELUs) <https://arxiv.org/abs/1606.08415>`_ 。
+    相关应用可参考 `BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding <https://arxiv.org/abs/1810.04805>`_ 。
 
     当 `approximate` 为 `none` ，GELU的定义如下：
 
@@ -26,13 +26,13 @@ mindspore.ops.gelu
         :align: center
 
     参数：
-        - **input** (Tensor) - 用于计算GELU的Tensor。数据类型是float16、float32或float64。
-        - **approximate** (str，可选) - gelu近似算法。有两种：``'none'`` 和 ``'tanh'`` 。默认值： ``'none'`` 。
+        - **input** (Tensor) - 用于计算GELU的Tensor。数据类型为float16、float32或float64。
+        - **approximate** (str，可选) - GELU近似算法。可选值为 ``'none'`` 和 ``'tanh'`` 。默认值： ``'none'`` 。
 
     返回：
         Tensor，具有与 `input` 相同的数据类型和shape。
 
     异常：
-        - **TypeError** - 如果 `input` 的数据类型不是Tensor。
-        - **TypeError** - `input` 的数据类型既不是bfloat16、float16、float32或者float64。
-        - **ValueError** - 如果 `approximate` 的值既不是 `none` 也不是 `tanh`。
+        - **TypeError** - `input` 的数据类型不是Tensor。
+        - **TypeError** - `input` 的数据类型不是bfloat16、float16、float32或float64。
+        - **ValueError** - `approximate` 的值不是 `none` 或 `tanh`。

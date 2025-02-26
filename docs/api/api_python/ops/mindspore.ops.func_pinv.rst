@@ -7,7 +7,7 @@ mindspore.ops.pinv
 
     本函数通过SVD计算。如果 :math:`x=U*S*V^{T}` ，则x的伪逆为 :math:`x^{+}=V*S^{+}*U^{T}` ，:math:`S^{+}` 为对S的对角线上的每个非零元素取倒数，零保留在原位。
 
-    支持批量矩阵，若x是批量矩阵，当atol或rtol为float时，则输出具有相同的批量维度。
+    支持批量矩阵。若x是批量矩阵，当atol或rtol为float时，则输出具有相同的批量维度。
     若atol或rtol为Tensor，则其shape必须可广播到 `x.svd() <https://www.mindspore.cn/docs/zh-CN/master/api_python/ops/mindspore.ops.svd.html>`_ 返回的奇异值的shape。
     若x.shape为 :math:`(B, M, N)` ，atol或rtol的shape为 :math:`(K, B)` ，则输出shape为 :math:`(K, B, N, M)` 。
 

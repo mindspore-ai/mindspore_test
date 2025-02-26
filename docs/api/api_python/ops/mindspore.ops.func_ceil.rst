@@ -19,4 +19,4 @@ mindspore.ops.ceil
 
     异常：
         - **TypeError** - `input` 不是Tensor。
-        - **TypeError** - 如果 `input` 的数据类型不是float16、float32、float64或bfloat16。
+        - **TypeError** - `input` 的数据类型不是float16、float32、float64或bfloat16。
