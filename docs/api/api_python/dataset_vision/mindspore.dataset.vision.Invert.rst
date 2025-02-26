@@ -27,4 +27,4 @@ mindspore.dataset.vision.Invert
 
         异常：
             - **TypeError** - 当 `device_target` 的类型不为str。
-            - **ValueError** - 当 `device_target` 的取值不为 ``"CPU"`` / ``"Ascend"`` 。
+            - **ValueError** - 当 `device_target` 的取值不为[ ``"CPU"`` , ``"Ascend"`` ]。
