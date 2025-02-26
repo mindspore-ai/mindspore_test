@@ -5,10 +5,8 @@
 
     对输入的多维数据进行三维的平均池化运算。
 
-    一般，输入shape为 :math:`(N, C, D_{in}, H_{in}, W_{in})` ，AvgPool3D在 :math:`(D_{in}, H_{in}, W_{in})` 维度上输出区域平均值。给定 `kernel_size` 为 :math:`ks = (d_{ker}, h_{ker}, w_{ker})` 和 `stride` :math:`s = (s_0, s_1, s_2)` ，运算如下：
+    一般情况下，当输入shape为 :math:`(N, C, D_{in}, H_{in}, W_{in})` 时，AvgPool3D会在 :math:`(D_{in}, H_{in}, W_{in})` 维度上输出区域平均值。给定 `kernel_size` 为 :math:`ks = (d_{ker}, h_{ker}, w_{ker})` ，给定 `stride`  为 :math:`s = (s_0, s_1, s_2)` ，运算如下：
 
-    .. warning::
-        "kernel_size"在[1, 255]范围中。"strides"在[1, 63]范围中。
 
     .. math::
         \text{output}(N_i, C_j, d, h, w) =
@@ -19,19 +17,19 @@
         该接口暂不支持Atlas A2 训练系列产品。
 
     参数：
-        - **kernel_size** (Union[int, tuple[int]]) - 指定池化核尺寸大小，是一个整数，对应深度、高度和宽度，或者是含3个分别对应深度、高度和宽度整数的tuple。默认值： ``1`` 。
-        - **strides** (Union[int, tuple[int]]) - 池化操作的移动步长，是一个整数，对应移动深度、高度和宽度，或者是含3个分别表对应移动深度、高度和宽度整数的tuple。默认值： ``1`` 。
+        - **kernel_size** (Union[int, tuple[int]]，可选) - 指定池化核尺寸大小。可以是一个整数，其值同时对应深度、高度和宽度；或者是一个tuple，含3个整数，分别对应深度、高度和宽度。默认值： ``1`` ，取值范围为[1, 255]。
+        - **strides** (Union[int, tuple[int]]，可选) - 池化操作的移动步长。可以是一个整数，其值同时对应移动深度、高度和宽度；或者是一个tuple，含3个整数，分别对应移动深度、高度和宽度。默认值： ``1`` ，取值范围为[1, 63]。
         - **pad_mode** (str，可选) - 指定填充模式，填充值为0。可选值为 ``"same"`` ， ``"valid"`` 或 ``"pad"`` 。默认值： ``"valid"`` 。
 
           - ``"same"``：在输入的深度、高度和宽度维度进行填充，使得当 `stride` 为 ``1`` 时，输入和输出的shape一致。待填充的量由算子内部计算，若为偶数，则均匀地填充在四周，若为奇数，多余的填充量将补充在前方/底部/右侧。如果设置了此模式， `pad` 必须为0。
           - ``"valid"``：不对输入进行填充，返回输出可能的最大深度、高度和宽度，不能构成一个完整stride的额外的像素将被丢弃。如果设置了此模式， `pad` 必须为0。
           - ``"pad"``：对输入填充指定的量。在这种模式下，在输入的深度、高度和宽度方向上填充的量由 `pad` 参数指定。如果设置此模式， `pad` 必须大于或等于0。
 
-        - **pad** (Union(int, tuple[int], list[int])) - 池化填充方式。默认值： ``0`` 。如果 `pad` 是一个整数，则头部、尾部、顶部、底部、左边和右边的填充都是相同的，等于 `pad` 。如果 `pad` 是六个integer的tuple，则头部、尾部、顶部、底部、左边和右边的填充分别等于填充pad[0]、pad[1]、pad[2]、pad[3]、pad[4]和pad[5]。
-        - **ceil_mode** (bool) - 是否使用ceil函数计算输出高度和宽度。默认值： ``False`` 。
-        - **count_include_pad** (bool) - 如果为 ``True`` ，平均计算将包括零填充。默认值： ``True`` 。
-        - **divisor_override** (int) - 如果指定了该值，它将在平均计算中用作除数，否则将使用kernel_size作为除数。默认值： ``0`` 。
-        - **data_format** (str) - 输入和输出的数据格式。目前仅支持'NCDHW'。默认值： ``"NCDHW"`` 。
+        - **pad** (Union(int, tuple[int], list[int])，可选) - 池化填充方式。默认值： ``0`` 。如果 `pad` 是一个整数，则头部、尾部、顶部、底部、左边和右边的填充都是相同的，等于 `pad` 。如果 `pad` 是六个integer的tuple，则头部、尾部、顶部、底部、左边和右边的填充分别等于填充pad[0]、pad[1]、pad[2]、pad[3]、pad[4]和pad[5]。
+        - **ceil_mode** (bool，可选) - 是否使用ceil函数计算输出高度和宽度。默认值： ``False`` 。
+        - **count_include_pad** (bool，可选) - 如果为 ``True`` ，平均计算将包括零填充。默认值： ``True`` 。
+        - **divisor_override** (int，可选) - 如果指定了该值，它将在平均计算中用作除数，否则将使用kernel_size作为除数。默认值： ``0`` 。
+        - **data_format** (str，可选) - 输入和输出的数据格式。目前仅支持'NCDHW'。默认值： ``"NCDHW"`` 。
 
     输入：
         - **x** (Tensor) - shape为 :math:`(N, C, D_{in}, H_{in}, W_{in})` 的Tensor。数据类型为float16、float32和float64。

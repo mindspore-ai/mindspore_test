@@ -7,7 +7,7 @@ mindspore.ops.MaxUnpool2D
 
     由于MaxPool2D会丢失非最大值，因此它不是完全可逆的。MaxUnpool2D将MaxPool2D的输出作为输入，包括最大值的索引，并计算部分逆，其中所有非最大值都被设置为零。
     例如，输入的shape为 :math:`(N, C, H_{in}, W_{in})` ，输出的shape为 :math:`(N, C, H_{out}, W_{out})` ，
-    则该操作如下式所示：
+    则计算过程如下所示：
 
     .. math::
         \begin{array}{ll} \\
@@ -20,17 +20,17 @@ mindspore.ops.MaxUnpool2D
 
     参数：
         - **ksize** (Union[int, tuple[int]]) - 用于取最大值的内核大小，
-          是一个整数，表示内核的高度和宽度，或一个元组包含两个整数，分别表示高度和宽度的整数。
+          是一个整数，表示内核的高度和宽度，或一个元组包含两个整数，分别表示内核的高度和宽度。
         - **strides** (Union[int, tuple[int]]，可选) - 内核移动的步长，如果 `strides` 为0或(0, 0),
           那么 `strides` 等于 `ksize` 。默认值： ``0`` 。
 
-          - 一个整数，则表示移动的高度和宽度都是 `strides` ，
+          - 一个整数，则表示移动的高度和宽度都是 `strides` 。
           - 两个整数的元组，分别表示高度和宽度方向的移动步长。
   
         - **pads** (Union[int, tuple[int]]，可选) - 指定填充量。默认值： ``0`` 。
 
-          - 如果 `pads` 是一个整数，则高度和宽度方向的填充数量相同，都等于 `pads` 。
-          - 如果 `pads` 是含两个整数的元组，高度和宽度方向的填充数量分别等于 `pads[0]` 和 `pads[1]` 。
+          - 如果 `pads` 是一个整数，则高度和宽度方向的填充量相同，都等于 `pads` 。
+          - 如果 `pads` 是含两个整数的元组，高度和宽度方向的填充量分别等于 `pads[0]` 和 `pads[1]` 。
         
         - **output_shape** (tuple[int]，可选) - 一个可选的输入，指定目标输出的尺寸。默认值： ``()`` 。
          

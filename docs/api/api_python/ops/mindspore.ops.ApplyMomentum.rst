@@ -12,12 +12,12 @@
     有关公式和用法的更多详细信息，请参阅 :class:`mindspore.nn.Momentum` 。
 
     参数：    
-        - **use_locking** (bool) - 是否对参数更新加锁保护。默认值： ``False`` 。
-        - **use_nesterov** (bool) - 是否使用nesterov动量。默认值： ``False`` 。
-        - **gradient_scale** (float) - 梯度的缩放比例。默认值： ``1.0`` 。
+        - **use_locking** (bool, 可选) - 是否对参数更新加锁保护。默认值： ``False`` 。
+        - **use_nesterov** (bool, 可选) - 是否使用nesterov动量。默认值： ``False`` 。
+        - **gradient_scale** (float, 可选) - 梯度的缩放比例。默认值： ``1.0`` 。
 
     输入：
-        - **variable** (Union[Parameter, Tensor]) - 要更新的权重。数据类型必须为float。
+        - **variable** (Union[Parameter, Tensor]) - 要更新的权重，数据类型必须为float。
         - **accumulation** (Union[Parameter, Tensor]) - 按动量权重计算的累加梯度值，数据类型与 `variable` 相同。
         - **learning_rate** (Union[Number, Tensor]) - 学习率，必须是float或为float数据类型的Scalar的Tensor。
         - **gradient** (Tensor) - 梯度，数据类型与 `variable` 相同。

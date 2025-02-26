@@ -17,7 +17,7 @@ mindspore.ops.Zeta
         - **q** (Tensor) - Tensor，数据类型与 `x` 一致。
 
     输出：
-        Tensor，数据类型和shape与输入shape相同。
+        Tensor，数据类型和shape与 `x` 相同。
 
     异常：
         - **TypeError** - `x` 或 `q` 不是Tensor。
