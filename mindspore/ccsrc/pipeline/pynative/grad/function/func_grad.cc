@@ -794,6 +794,7 @@ void ProcessPost(const ValuePtrList &flatten_outputs, const BaseTensorPtrSet &di
         if (view_meta) {
           MS_LOG(DEBUG) << "Set creation type kMultiOutput for tensor " << base_tensor->id();
           view_meta->set_creation_type(CreationType::kMultiOutput);
+          view_meta->set_version_attr(base_tensor->version().current_version());
         }
       }
     }
@@ -850,12 +851,14 @@ void FuncGrad::ProcessForwardOutput(const ValuePtrList &flatten_outputs, const B
     } else {
       // For the tensor is input and output, we don't need to make a view for it.
       SetTensorGradMetaData(flatten_outputs[i], variable, i);
+      MS_LOG(DEBUG) << "End update next edge for " << variable->ToString();
     }
 
     auto view_meta = impl::get_view_autograd_meta_impl(base_tensor);
     if (view_meta && !(is_input && is_dirty)) {
       MS_LOG(DEBUG) << "Set creation type kCustomBprop for tensor " << base_tensor->id();
       view_meta->set_creation_type(CreationType::kCustomBprop);
+      view_meta->set_version_attr(base_tensor->version().current_version());
     }
 
     if (is_diff) {
