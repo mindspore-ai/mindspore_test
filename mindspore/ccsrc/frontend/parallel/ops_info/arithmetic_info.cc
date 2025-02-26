@@ -1193,5 +1193,8 @@ REGISTER(SubExtInfo);
 REGISTER(DivModInfo);
 REGISTER(OuterInfo);
 REGISTER(AddcmulExtInfo);
+REGISTER(PolarInfo);
+REGISTER(IsCloseInfo);
+REGISTER(RemainderTensorTensorInfo);
 }  // namespace parallel
 }  // namespace mindspore

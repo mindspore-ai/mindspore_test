@@ -275,6 +275,22 @@ class EluInfo : public ActivationOther {
   ~EluInfo() override = default;
 };
 
+class EluExtInfo : public EluInfo {
+ public:
+  EluExtInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+             const PrimitiveAttrs &attrs)
+      : EluInfo(name, inputs_shape, outputs_shape, attrs) {}
+  ~EluExtInfo() override = default;
+};
+
+class LeakyReLUExtInfo : public EluInfo {
+ public:
+  LeakyReLUExtInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                   const PrimitiveAttrs &attrs)
+      : EluInfo(name, inputs_shape, outputs_shape, attrs) {}
+  ~LeakyReLUExtInfo() override = default;
+};
+
 class ReLUInfo : public ActivationOther {
  public:
   ReLUInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
@@ -299,12 +315,12 @@ class AShardIdentityInfo : public ReLUInfo {
   ~AShardIdentityInfo() override = default;
 };
 
-class identityInfo : public ActivationOther {
+class IdentityInfo : public ActivationOther {
  public:
-  identityInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+  IdentityInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
                const PrimitiveAttrs &attrs)
       : ActivationOther(name, inputs_shape, outputs_shape, attrs, std::make_shared<identityCost>()) {}
-  ~identityInfo() override = default;
+  ~IdentityInfo() override = default;
 };
 
 class RepeatElementsInfo : public ActivationOther {
@@ -337,6 +353,14 @@ class SoftplusInfo : public ActivationOther {
                const PrimitiveAttrs &attrs)
       : ActivationOther(name, inputs_shape, outputs_shape, attrs, std::make_shared<SoftplusCost>()) {}
   ~SoftplusInfo() override = default;
+};
+
+class SoftplusExtInfo : public SoftplusInfo {
+ public:
+  SoftplusExtInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                  const PrimitiveAttrs &attrs)
+      : SoftplusInfo(name, inputs_shape, outputs_shape, attrs) {}
+  ~SoftplusExtInfo() override = default;
 };
 
 class CastInfo : public ActivationOther {
@@ -558,6 +582,30 @@ class PopulationCountInfo : public ActivationOther {
                       const PrimitiveAttrs &attrs)
       : ActivationOther(name, inputs_shape, outputs_shape, attrs, std::make_shared<ReLUCost>()) {}
   ~PopulationCountInfo() = default;
+};
+
+class NanToNumInfo : public ActivationOther {
+ public:
+  NanToNumInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+               const PrimitiveAttrs &attrs)
+      : ActivationOther(name, inputs_shape, outputs_shape, attrs, std::make_shared<NanToNumCost>()) {}
+  ~NanToNumInfo() = default;
+};
+
+class RemainderTensorScalarInfo : public ActivationOther {
+ public:
+  RemainderTensorScalarInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                            const PrimitiveAttrs &attrs)
+      : ActivationOther(name, inputs_shape, outputs_shape, attrs, std::make_shared<RemainderCost>()) {}
+  ~RemainderTensorScalarInfo() = default;
+};
+
+class RemainderScalarTensorInfo : public ActivationOther {
+ public:
+  RemainderScalarTensorInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                            const PrimitiveAttrs &attrs)
+      : ActivationOther(name, inputs_shape, outputs_shape, attrs, std::make_shared<RemainderCost>()) {}
+  ~RemainderScalarTensorInfo() = default;
 };
 }  // namespace parallel
 }  // namespace mindspore

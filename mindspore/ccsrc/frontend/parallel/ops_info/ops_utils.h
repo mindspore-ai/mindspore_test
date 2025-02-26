@@ -601,8 +601,11 @@ constexpr char DIVNONAN[] = "DivNoNan";
 constexpr char LOGICALAND[] = "LogicalAnd";
 constexpr char LOGICALOR[] = "LogicalOr";
 constexpr char ELU[] = "Elu";
+constexpr char ELU_EXT[] = "EluExt";
+constexpr char LEAKYRELU_EXT[] = "LeakyReLUExt";
 constexpr char RELU6[] = "ReLU6";
 constexpr char SOFTPLUS[] = "Softplus";
+constexpr char SOFTPLUS_EXT[] = "SoftplusExt";
 constexpr char SOFTSIGN[] = "Softsign";
 constexpr char GREATEREQUAL[] = "GreaterEqual";
 constexpr char LESSEQUAL[] = "LessEqual";
@@ -745,8 +748,15 @@ constexpr char IDCTN[] = "IDCTN";
 constexpr char SOLVE_TRIANGULAR[] = "SolveTriangular";
 constexpr char TRACEV2[] = "TraceV2";
 constexpr char LSTSQV2[] = "LstsqV2";
+constexpr char NANTONUM[] = "NanToNum";
+constexpr char ISCLOSE[] = "IsClose";
+constexpr char POLAR[] = "Polar";
+constexpr char REMAINDER_TENSOR_TENSOR[] = "RemainderTensorTensor";
+constexpr char REMAINDER_TENSOR_SCALAR[] = "RemainderTensorScalar";
+constexpr char REMAINDER_SCALAR_TENSOR[] = "RemainderScalarTensor";
 constexpr char CUSTOM[] = "Custom";
 constexpr char GENERATOR[] = "Generator";
+constexpr char MEANEXT[] = "MeanExt";
 
 // pipeline
 constexpr size_t PIPELINE_FUSTION_OFFSET = 100;

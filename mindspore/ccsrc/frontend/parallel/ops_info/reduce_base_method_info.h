@@ -61,6 +61,26 @@ class ReduceMeanInfo : public ReduceBaseMethod {
   Status InferForwardCommunication() override;
 };
 
+class MeanExtInfo : public ReduceMeanInfo {
+ public:
+  MeanExtInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+              const PrimitiveAttrs &attrs)
+      : ReduceMeanInfo(name, inputs_shape, outputs_shape, attrs) {}
+
+  ~MeanExtInfo() override = default;
+
+ protected:
+  std::vector<int64_t> reduce_dim() override;
+  Status GetAttrs() override;
+  std::vector<StrategyPtr> GenerateOpStrategies(int64_t stage_id) override;
+  Status CheckInputLayout() override;
+  Status InferOutputTensorInfo() override;
+  Status CheckOutputLayout() override;
+
+ private:
+  bool is_infer_out_layout_ = false;
+};
+
 class ReduceSumInfo : public ReduceBaseMethod {
  public:
   ReduceSumInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
