@@ -149,7 +149,7 @@ def generate_strategy_for_fias(dp, mp, optinal_inputs, input_layout='BSH', spars
     return stra
 
 
-def generate_inputs(B, N, S, D, input_layout, use_mqa=False, with_real_shift=False, sparse_mode=0):
+def generate_inputs(B, N, S, D, input_layout, use_mqa=False, with_real_shift=False, sparse_mode=0, is_eod_pad=False):
     N_Q = N
     N_KV = 1 if use_mqa else N
     if input_layout == "BSH":
@@ -179,6 +179,8 @@ def generate_inputs(B, N, S, D, input_layout, use_mqa=False, with_real_shift=Fal
     attn_mask = None
     sample_num = 4
     actual_seq_qlen = Tensor(tuple(range(S // sample_num, S + 1, S // sample_num)), ms.int64)
+    if is_eod_pad:
+        actual_seq_qlen = Tensor(tuple(range(S // sample_num, S - 2, S // sample_num)), ms.int64)
     actual_seq_kvlen = actual_seq_qlen
     return query, key, value, real_shift, attn_mask, actual_seq_qlen, actual_seq_kvlen
 
@@ -663,6 +665,24 @@ def test_ring_attention_semi_auto_parallel_eod_reset_attn_mask(input_layout):
     net = Net(N, input_layout=input_layout, dp=dp, mp=mp, sp=sp, enable_ring_attention=True, reset_attn_mask=True)
     compile_net(net, query, key, value, real_shift, None, actual_seq_qlen, actual_seq_kvlen)
 
+@pytest.mark.parametrize('input_layout', ["BSH", "BNSD"])
+def test_ring_attention_semi_auto_parallel_eod_reset_pad_attn_mask(input_layout):
+    """
+    Features: test Ring Attention
+    Description: semi_auto_parallel with strategy
+    Expectation: compile success
+    """
+    set_auto_parallel_context(device_num=4, global_rank=0)
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+    context.set_context(save_graphs=False)
+    dp = 1
+    mp = 1
+    sp = 4
+    B, N, S, D = 8, 16, 1024, 128
+    query, key, value, real_shift, _, actual_seq_qlen, actual_seq_kvlen = generate_inputs(B, N, S, D, input_layout,
+                                                                                          is_eod_pad=True)
+    net = Net(N, input_layout=input_layout, dp=dp, mp=mp, sp=sp, enable_ring_attention=True, reset_attn_mask=True)
+    compile_net(net, query, key, value, real_shift, None, actual_seq_qlen, actual_seq_kvlen)
 
 @pytest.mark.parametrize('input_layout', ['BSH', 'BNSD'])
 @pytest.mark.parametrize('strategys', [(1, 2, 4)])

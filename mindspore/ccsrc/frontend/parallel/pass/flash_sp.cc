@@ -163,7 +163,11 @@ CNodePtr NewMakeTupleNode(const std::vector<AnfNodePtr> &input_nodes) {
   for (size_t i = 0; i < input_nodes.size(); ++i) {
     make_tuple_inputs.push_back(input_nodes[i]);
   }
-  auto make_tuple = input_nodes[0]->func_graph()->NewCNode(make_tuple_inputs);
+  auto func_graph = input_nodes[0]->func_graph();
+  if (func_graph == nullptr) {
+    func_graph = input_nodes[1]->func_graph();
+  }
+  auto make_tuple = func_graph->NewCNode(make_tuple_inputs);
   MS_EXCEPTION_IF_NULL(make_tuple);
   make_tuple->set_scope(input_nodes[0]->scope());
   return make_tuple;
@@ -274,7 +278,11 @@ CNodePtr NewFlashAttentionScoreNode(const std::vector<AnfNodePtr> &input_nodes, 
 CNodePtr NewAddNode(const AnfNodePtr &left_node, const AnfNodePtr &right_node) {
   std::vector<AnfNodePtr> add_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimAdd->name())), left_node,
                                         right_node};
-  auto add_node = left_node->func_graph()->NewCNode(add_inputs);
+  auto func_graph = left_node->func_graph();
+  if (func_graph == nullptr) {
+    func_graph = right_node->func_graph();
+  }
+  auto add_node = func_graph->NewCNode(add_inputs);
   MS_EXCEPTION_IF_NULL(add_node);
   add_node->set_scope(left_node->scope());
   return add_node;
@@ -285,7 +293,11 @@ CNodePtr NewSubNode(const AnfNodePtr &left_node, const AnfNodePtr &right_node) {
   MS_EXCEPTION_IF_NULL(right_node);
   std::vector<AnfNodePtr> sub_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimSub->name())), left_node,
                                         right_node};
-  auto sub_node = left_node->func_graph()->NewCNode(sub_inputs);
+  auto func_graph = left_node->func_graph();
+  if (func_graph == nullptr) {
+    func_graph = right_node->func_graph();
+  }
+  auto sub_node = func_graph->NewCNode(sub_inputs);
   MS_EXCEPTION_IF_NULL(sub_node);
   sub_node->set_scope(left_node->scope());
   return sub_node;
@@ -308,6 +320,17 @@ CNodePtr NewScalarMulNode(const AnfNodePtr &left_node, const AnfNodePtr &right_n
   std::vector<AnfNodePtr> div_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimScalarMul->name())),
                                         left_node, right_node};
   auto div_node = left_node->func_graph()->NewCNode(div_inputs);
+  MS_EXCEPTION_IF_NULL(div_node);
+  div_node->set_scope(left_node->scope());
+  return div_node;
+}
+
+CNodePtr NewScalarSubNode(const AnfNodePtr &left_node, const AnfNodePtr &right_node) {
+  MS_EXCEPTION_IF_NULL(left_node);
+  MS_EXCEPTION_IF_NULL(right_node);
+  std::vector<AnfNodePtr> div_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimScalarSub->name())),
+                                        left_node, right_node};
+  auto div_node = right_node->func_graph()->NewCNode(div_inputs);
   MS_EXCEPTION_IF_NULL(div_node);
   div_node->set_scope(left_node->scope());
   return div_node;
@@ -428,6 +451,24 @@ CNodePtr NewZerosNode(const AnfNodePtr &input_node, const TypeId &output_type) {
   return ones_node;
 }
 
+CNodePtr NewOnesNode1(const AnfNodePtr &input_node, const AnfNodePtr &shape, const TypeId &output_type) {
+  MS_EXCEPTION_IF_NULL(input_node);
+  std::vector<AnfNodePtr> dynshape_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimOnes->name())), shape,
+                                             NewValueNode(static_cast<int64_t>(output_type))};
+  auto ones_node = input_node->func_graph()->NewCNode(dynshape_inputs);
+  MS_EXCEPTION_IF_NULL(ones_node);
+  return ones_node;
+}
+
+CNodePtr NewZerosNode1(const AnfNodePtr &input_node, const AnfNodePtr &shape, const TypeId &output_type) {
+  MS_EXCEPTION_IF_NULL(input_node);
+  std::vector<AnfNodePtr> dynshape_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimZeros->name())), shape,
+                                             NewValueNode(static_cast<int64_t>(output_type))};
+  auto ones_node = input_node->func_graph()->NewCNode(dynshape_inputs);
+  MS_EXCEPTION_IF_NULL(ones_node);
+  return ones_node;
+}
+
 CNodePtr NewTriuNode(const AnfNodePtr &tensor, const AnfNodePtr &diag) {
   MS_EXCEPTION_IF_NULL(tensor);
   MS_EXCEPTION_IF_NULL(diag);
@@ -495,17 +536,6 @@ CNodePtr NewRollNode(const AnfNodePtr &actual_seq) {
   return node_roll;
 }
 
-CNodePtr NewRepeatNode(const AnfNodePtr &range, const AnfNodePtr &repeat_nums, int64_t output_size) {
-  MS_EXCEPTION_IF_NULL(range);
-  MS_EXCEPTION_IF_NULL(repeat_nums);
-  std::vector<AnfNodePtr> repeat_inputs = {
-    NewValueNode(std::make_shared<Primitive>(prim::kPrimRepeatInterleaveTensor->name())), range, repeat_nums,
-    NewValueNode<int64_t>(0), NewValueNode<int64_t>(output_size)};
-  auto node_repeat = repeat_nums->func_graph()->NewCNode(repeat_inputs);
-  MS_EXCEPTION_IF_NULL(node_repeat);
-  return node_repeat;
-}
-
 CNodePtr NewDynRepeatNode(const AnfNodePtr &range, const AnfNodePtr &repeat_nums, const AnfNodePtr &output_size) {
   MS_EXCEPTION_IF_NULL(range);
   MS_EXCEPTION_IF_NULL(repeat_nums);
@@ -525,6 +555,40 @@ CNodePtr NewEqualNode(const AnfNodePtr &tensor1, const AnfNodePtr &tensor2) {
   auto node_equal = tensor1->func_graph()->NewCNode(equal_inputs);
   MS_EXCEPTION_IF_NULL(node_equal);
   return node_equal;
+}
+
+CNodePtr NewGatherNode(const AnfNodePtr &input_node, int64_t actual_shape) {
+  MS_EXCEPTION_IF_NULL(input_node);
+  tensor::TensorPtr const_tensor = std::make_shared<mindspore::tensor::Tensor>(TypeId::kNumberTypeInt64, Shape{1});
+  int64_t *int_data = reinterpret_cast<int64_t *>(const_tensor->data_c());
+  int_data[0] = actual_shape - 1;
+  std::vector<AnfNodePtr> gather_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimGather->name())),
+                                           input_node, NewValueNode(MakeValue(const_tensor)), NewValueNode<int64_t>(0),
+                                           NewValueNode<int64_t>(0)};
+  auto node_gather = input_node->func_graph()->NewCNode(gather_inputs);
+  MS_EXCEPTION_IF_NULL(node_gather);
+  return node_gather;
+}
+
+AnfNodePtr NewTupletoTensorNode(const AnfNodePtr &input_node, const TypeId &output_type) {
+  MS_EXCEPTION_IF_NULL(input_node);
+  std::vector<AnfNodePtr> tensorlist_node = {
+    NewValueNode(std::make_shared<Primitive>(prim::kPrimTupleToTensor->name())), input_node,
+    NewValueNode(static_cast<int64_t>(output_type))};
+  MS_EXCEPTION_IF_NULL(input_node->func_graph());
+  auto tensor_node = input_node->func_graph()->NewCNode(tensorlist_node);
+  MS_EXCEPTION_IF_NULL(tensor_node);
+  return tensor_node;
+}
+
+AnfNodePtr NewTensortoTupleNode(const AnfNodePtr &input_node) {
+  MS_EXCEPTION_IF_NULL(input_node);
+  std::vector<AnfNodePtr> tensorlist_node = {
+    NewValueNode(std::make_shared<Primitive>(prim::kPrimTensorToTuple->name())), input_node};
+  MS_EXCEPTION_IF_NULL(input_node->func_graph());
+  auto tensor_node = input_node->func_graph()->NewCNode(tensorlist_node);
+  MS_EXCEPTION_IF_NULL(tensor_node);
+  return tensor_node;
 }
 
 AnfNodePtr NewScalartoTensorNode(const AnfNodePtr &input_node, const TypeId &output_type) {
@@ -551,6 +615,8 @@ void GenerateEodMask(int index, int64_t rank_id, int64_t sp_num, int64_t actual_
     return;
   }
 
+  auto last_eod = NewGatherNode(NewTupletoTensorNode(actual_node, TypeId::kNumberTypeInt64), actual_shape);
+
   auto node_range = NewRangeNode(actual_input->func_graph(), actual_shape);
 
   auto node_roll = NewRollNode(actual_input);
@@ -558,23 +624,44 @@ void GenerateEodMask(int index, int64_t rank_id, int64_t sp_num, int64_t actual_
   auto node_sub = NewSubNode(actual_input, node_roll);
 
   tensor::TensorPtr const_tensor =
-    std::make_shared<mindspore::tensor::Tensor>(TypeId::kNumberTypeInt64, Shape{actual_shape});
+    std::make_shared<mindspore::tensor::Tensor>(TypeId::kNumberTypeInt64, Shape{actual_shape - 1});
   int64_t *int_data = reinterpret_cast<int64_t *>(const_tensor->data_c());
-  int_data[0] = sp_num * s_shape[0];
-  for (int i = 1; i < actual_shape; ++i) {
+
+  for (int i = 0; i < actual_shape - 1; ++i) {
     int_data[i] = 0;
   }
-  auto const_seq = NewValueNode(MakeValue(const_tensor));
+  auto zeros_node = NewValueNode(MakeValue(const_tensor));
+
+  auto const_seq = NewConcatNode(NewMakeTupleNode({last_eod, zeros_node}), 0);
 
   auto node_add = NewAddNode(node_sub, const_seq);
 
-  auto node_repeat = NewRepeatNode(node_range, node_add, sp_num * s_shape[0]);
+  auto node_repeat = NewDynRepeatNode(node_range, node_add, NewTupleGetItemNode(NewTensortoTupleNode(last_eod), 0));
 
-  auto node_split = NewSplitNode(node_repeat, 0, sp_num);
+  tensor::TensorPtr z_tensor = std::make_shared<mindspore::tensor::Tensor>(TypeId::kNumberTypeInt64, Shape{1});
+  int64_t *z_data = reinterpret_cast<int64_t *>(z_tensor->data_c());
+  z_data[0] = sp_num * s_shape[0];
 
-  auto node_get_tuple_w = NewTupleGetItemNode(node_split, index);
+  auto node_repeat_shape = NewDynshapeNode(node_repeat);
+  auto node_repeat_shape0 = NewTupleGetItemNode(node_repeat_shape, kIndex0);
+  auto ones = NewOnesNode1(
+    node_repeat, NewMakeTupleNode({NewScalarSubNode(NewValueNode<int64_t>(sp_num * s_shape[0]), node_repeat_shape0)}),
+    TypeId::kNumberTypeInt64);
 
-  auto node_get_tuple_h = NewTupleGetItemNode(node_split, rank_id);
+  auto zeros = NewZerosNode1(
+    node_repeat, NewMakeTupleNode({NewScalarSubNode(NewValueNode<int64_t>(sp_num * s_shape[0]), node_repeat_shape0)}),
+    TypeId::kNumberTypeInt64);
+
+  auto node_repeat_w = NewConcatNode(NewMakeTupleNode({node_repeat, ones}), 0);
+
+  auto node_repeat_h = NewConcatNode(NewMakeTupleNode({node_repeat, zeros}), 0);
+
+  auto node_split_w = NewSplitNode(node_repeat_w, 0, sp_num);
+  auto node_split_h = NewSplitNode(node_repeat_h, 0, sp_num);
+
+  auto node_get_tuple_w = NewTupleGetItemNode(node_split_w, index);
+
+  auto node_get_tuple_h = NewTupleGetItemNode(node_split_h, rank_id);
 
   auto node_w_tile = NewTileNode(node_get_tuple_w, parallel::CreateTuple({s_shape[0], 1}));
 
