@@ -2,7 +2,7 @@ empty:
   op_yaml: empty_op.yaml
   py_method: tensor_empty
   Ascend: pyboost
-  CPU: py_method
-  GPU: py_method
+  CPU: pyboost
+  GPU: pyboost
   interface: function
   varargs: size
