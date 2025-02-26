@@ -1443,12 +1443,17 @@ using AbstractEllipsisPtr = std::shared_ptr<AbstractEllipsis>;
 /// \brief Class AbstractRefTensor describes a RefTensor's abstract value.
 class MS_CORE_API AbstractRefTensor final : public AbstractTensor {
  public:
+  // The order of these enum values determines the priority in AbstractRefTensor::Join().
+  enum class DataType : char { kParameter = 0, kInplaceOp, kViewOp };
+
+ public:
   /// \brief Constructor of AbstractRef.
   ///
   /// \param[in] ref_value The tensor.
   /// \param[in] ref_key_value The ref key of tensor.
-  /// \param[in] is_parameter Whether it is an nn.Parameter.
-  AbstractRefTensor(const AbstractTensorPtr &ref_value, const ValuePtr &ref_key_value, bool is_parameter = true);
+  /// \param[in] data_type The data source of this tensor.
+  AbstractRefTensor(const AbstractTensorPtr &ref_value, const ValuePtr &ref_key_value,
+                    DataType data_type = DataType::kParameter);
 
   /// \brief Destructor of AbstractEllipsis.
   ~AbstractRefTensor() override = default;
@@ -1485,7 +1490,8 @@ class MS_CORE_API AbstractRefTensor final : public AbstractTensor {
   void set_ref_key_value(const ValuePtr &ref_key_value) { ref_key_value_ = ref_key_value; }
 
   /// \brief Whether it is an nn.Parameter.
-  bool is_parameter() const { return is_parameter_; }
+  bool is_parameter() const { return data_type_ == DataType::kParameter; }
+  DataType data_type() const { return data_type_; }
 
   AbstractBasePtr Broaden() const override;
 
@@ -1497,7 +1503,7 @@ class MS_CORE_API AbstractRefTensor final : public AbstractTensor {
  private:
   // ref_key_value is the reference key of AbstractRef, the value can be a string value or kValueAny
   ValuePtr ref_key_value_;
-  bool is_parameter_;
+  DataType data_type_;
 };
 using AbstractRefPtr = std::shared_ptr<AbstractRefTensor>;
 

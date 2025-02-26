@@ -204,14 +204,14 @@ CNodePtr GetInputsAfterUnpackCall(const CNodePtr &source_node, const AnalysisEng
   return fg->NewCNodeInOrder(new_inputs);
 }
 
-AbstractBasePtr ConvertTensorToRef(const AbstractBasePtr &abs) {
+AbstractBasePtr ConvertTensorToRef(const AbstractBasePtr &abs, AbstractRefTensor::DataType type) {
   MS_EXCEPTION_IF_NULL(abs);
   if (abs->isa<abstract::AbstractRefTensor>() || abs->isa<abstract::AbstractNone>()) {
     return abs;
   }
   auto tensor_abs = dyn_cast<abstract::AbstractTensor>(abs);
   MS_EXCEPTION_IF_NULL(tensor_abs);
-  auto ref_abs = std::make_shared<abstract::AbstractRefTensor>(tensor_abs, std::make_shared<RefKey>("None"), false);
+  auto ref_abs = std::make_shared<abstract::AbstractRefTensor>(tensor_abs, std::make_shared<RefKey>("None"), type);
   std::stringstream ss;
   ss << ref_abs.get();
   ref_abs->set_ref_key_value(std::make_shared<RefKey>(ss.str()));
@@ -224,7 +224,8 @@ AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const Abstra
   // Convert input tensor to ref if this tensor is rw_write.
   for (const auto &index : rw_write_indexes) {
     if (!input_args[index]->isa<AbstractRefTensor>()) {
-      auto ref_tensor = ConvertTensorToRef(input_args[index]);
+      constexpr auto kInplaceOp = AbstractRefTensor::DataType::kInplaceOp;
+      auto ref_tensor = ConvertTensorToRef(input_args[index], kInplaceOp);
       input_args[index]->set_inplace_abstract(ref_tensor);
     }
   }
@@ -1390,16 +1391,17 @@ AbstractBasePtr UpdateViewOpsAbstract(const AbstractBasePtr &res, const Abstract
     MS_LOG(EXCEPTION) << "The abstract of view operation is exception:" << res->ToString();
   }
 
+  constexpr auto kViewOp = abstract::AbstractRefTensor::DataType::kViewOp;
   // Update the abstract of first input of view operation.
   auto arg0_tensor = dyn_cast<abstract::AbstractTensor>(args[0]);
-  auto new_input_arg = ConvertTensorToRef(arg0_tensor);
+  auto new_input_arg = ConvertTensorToRef(arg0_tensor, kViewOp);
   args[0]->set_inplace_abstract(new_input_arg);
 
   // Update the abstract of view operation.
   AbstractBasePtr new_res = res;
   if (res->isa<abstract::AbstractTensor>()) {
     // The output of the view operator shares the same address with the first input of the operator.
-    new_res = ConvertTensorToRef(res);
+    new_res = ConvertTensorToRef(res, kViewOp);
   } else if (res->isa<abstract::AbstractTuple>()) {
     // Update the elements of output.
     AbstractBasePtrList output_list;
@@ -1415,7 +1417,7 @@ AbstractBasePtr UpdateViewOpsAbstract(const AbstractBasePtr &res, const Abstract
         MS_LOG(EXCEPTION) << "The abstract of view operation is exception:" << res->ToString();
       }
       auto ele_abs = dyn_cast<abstract::AbstractTensor>(ele);
-      auto new_ele_abs = ConvertTensorToRef(ele_abs);
+      auto new_ele_abs = ConvertTensorToRef(ele_abs, kViewOp);
       (void)output_list.emplace_back(new_ele_abs);
       ele->set_inplace_abstract(new_ele_abs);
     }
