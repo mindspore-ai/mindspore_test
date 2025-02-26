@@ -69,7 +69,7 @@ mindspore.set_auto_parallel_context
         - **pipeline_config**  (dict) - 用于设置开启pipeline并行后的行为配置。目前支持如下关键字：
 
           - pipeline_interleave(bool)：表示是否开启interleave。
-          - pipeline_scheduler(str)：表示pipeline并行使用的调度策略。当前仅支持 ``gpipe/1f1b/seqpipe``。
+          - pipeline_scheduler(str)：表示pipeline并行使用的调度策略。当前仅支持 ``gpipe/1f1b/seqpipe/seqvpp/seqsmartvpp``。当应用seqsmartvpp时，流水线并行必须是偶数。
         - **parallel_optimizer_config** (dict) - 用于开启优化器并行后的行为配置。仅在enable_parallel_optimizer=True的时候生效。目前支持如下关键字：
 
           - gradient_accumulation_shard(bool)：设置累加梯度变量是否在数据并行维度上进行切分。开启后，将进一步减小模型的显存占用，但是会在反向计算梯度时引入额外的通信算子（ReduceScatter）。此配置仅在流水线并行训练和梯度累加模式下生效。默认值： ``True`` 。
