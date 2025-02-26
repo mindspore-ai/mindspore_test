@@ -3,11 +3,11 @@ mindspore.Tensor.narrow
 
 .. py:method:: mindspore.Tensor.narrow(dim, start, length)
 
-    沿着指定的轴，指定起始位置获取指定长度的Tensor。
+    沿着指定的轴，从指定的起始位置获取指定长度的Tensor。
 
     参数：
         - **dim** (int) - 指定的轴。
-        - **start** (Union[int, Tensor]) - 指定起始位置。
+        - **start** (Union[int, Tensor]) - 指定的起始位置。
         - **length** (int) - 指定长度。
 
     返回：

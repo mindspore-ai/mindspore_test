@@ -13,13 +13,13 @@ mindspore.Tensor.median
         - **keepdims** (bool，可选) - 输出Tensor是否需要保留 `axis` 的维度。默认值： ``False`` 。
 
     返回：
-        - **y** (Tensor) - 返回指定维度上的中值，数据类型与 `input` 相同。
+        - **y** (Tensor) - 返回指定维度上的中值。数据类型与 `input` 相同。
         - **indices** (bool) - 指定中值索引。数据类型为int64。
 
     异常：
         - **TypeError** - `axis` 不是int。
         - **TypeError** - `keepdims` 不是bool。
-        - **ValueError** - `axis` 的范围不在[-dims, dims - 1]，`dims` 表示 `x` 的维度长度。
+        - **ValueError** - `axis` 的范围不在[-dims, dims - 1]， `dims` 表示 `x` 的维度长度。
 
     .. py:method:: mindspore.Tensor.median()
         :noindex:
@@ -42,7 +42,7 @@ mindspore.Tensor.median
         - **y** (Tensor) - 输出中值，数据类型与 ``input`` 相同。
 
           - 如果 ``dim`` 为 ``None`` ， ``y`` 只有一个元素。
-          - 如果 ``keepdim`` 为 ``True`` ， ``y`` 的shape除了在 ``dim`` 维度上为1外与 ``input`` 一致。
+          - 如果 ``keepdim`` 为 ``True`` ， ``y`` 的shape除了在 ``dim`` 维度上为1外，与 ``input`` 一致。
           - 其他情况下， ``y`` 比 ``input`` 缺少 ``dim`` 指定的维度。
           
         - **indices** (Tensor) - 中值的索引。shape与 ``y`` 一致，数据类型为int64。

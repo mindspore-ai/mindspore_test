@@ -15,7 +15,7 @@ mindspore.Tensor.less
             \end{cases}
 
     参数：
-        - **other** (Union[Tensor, Number, bool]) - 数值型，或bool，或数据类型为数值型或bool的Tensor。
+        - **other** (Union[Tensor, Number, bool]) - 待比较的值。支持数值型、bool或Tensor[Number/bool]。
 
     返回：
         Tensor，输出shape与广播后的shape相同，数据类型为bool。

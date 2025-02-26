@@ -3,7 +3,7 @@ mindspore.Tensor.fmod
 
 .. py:method:: mindspore.Tensor.fmod(other)
 
-    计算除法运算 self/other 的浮点余数。
+    计算除法运算self/other的浮点余数。
 
     .. math::
         out = self - n * other
@@ -15,7 +15,7 @@ mindspore.Tensor.fmod
         - **other** (Union[Tensor, Number]) - 除数。
 
     返回：
-        Tensor，输出的shape与广播后的shape相同，数据类型取两个输入中精度较高或数字较高的。
+        Tensor，输出的shape与广播后的shape相同，数据类型取两个输入中精度较高或位数较多的。
 
     异常：
         - **TypeError** - `self` 和 `other` 都不是Tensor。

@@ -19,8 +19,8 @@ mindspore.Tensor.scatter_add\_
 
     参数：
         - **dim** (int) - `self` 执行scatter_add操作的轴。取值范围是[-r, r)，其中r是 `self` 的rank。
-        - **index** (Tensor) - `self` 要进行scatter_add操作的目标索引。数据类型为int32或int64，rank必须和 `self` 一致。除了 `dim` 指定的维度， `index` 的每一维的size都需要小于等于 `self` 对应维度的size。
-        - **src** (Tensor) - 指定与 `self` 进行scatter_add操作的Tensor，其数据类型与 `self` 类型相同，shape中每一维的size必须大于等于 `index` 。
+        - **index** (Tensor) - `self` 要进行scatter_add操作的目标索引。数据类型为int32或int64，rank必须和 `self` 一致。除了 `dim` 指定的维度， `index` 的每一维的size都需要小于或等于 `self` 对应维度的size。
+        - **src** (Tensor) - 指定与 `self` 进行scatter_add操作的Tensor，其数据类型与 `self` 类型相同，shape中每一维的size必须大于或等于 `index` 。
 
     返回：
         Tensor，shape和数据类型与输入 `self` 相同。

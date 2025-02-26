@@ -8,11 +8,11 @@ mindspore.Tensor.argmax_with_value
     .. note::
         - 在auto_parallel和semi_auto_parallel模式下，不能使用第一个输出索引。
         - 如果有多个最大值，则取第一个最大值的索引。
-        - `axis` 的取值范围为[-dims, dims - 1]。`dims` 为输入Tensor的维度长度。
+        - `axis` 的取值范围为[-dims, dims - 1]。 `dims` 为输入Tensor的维度长度。
 
     参数：
         - **axis** (int, 可选) - 指定计算维度。默认值： ``0`` 。
-        - **keep_dims** (bool, 可选) - 表示是否减少维度。如果为 ``True`` ，则输出维度和输入维度相同。如果为 ``False`` ，则减少输出维度。默认值： ``False`` 。
+        - **keep_dims** (bool, 可选) - 表示是否保持维度。如果为 ``True`` ，则输出维度和输入维度相同。如果为 ``False`` ，则减少输出维度。默认值： ``False`` 。
 
     返回：
         tuple (Tensor)，表示2个Tensor组成的tuple，包含对应的索引和输入Tensor的最大值。
