@@ -13,6 +13,7 @@ narrow_view:
     returns:
         output:
             dtype: tensor
+    view: True
     graph_view: True
     labels:
         side_effect_mem: True

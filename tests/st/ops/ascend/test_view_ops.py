@@ -14,11 +14,11 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 import numpy as np
-import pytest
 import mindspore.context as context
 import mindspore as ms
 from mindspore import nn
 from mindspore import Tensor
+from mindspore.ops.auto_generate import BroadcastToView, ExpandDimsView, NarrowView
 import mindspore.ops as P
 
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
@@ -61,10 +61,7 @@ class NetCat(nn.Cell):
         out = out / 2.0
         return out
 
-@pytest.mark.level1
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_transpose_view():
     """
     Feature: Transpose view operation
@@ -81,10 +78,7 @@ def test_transpose_view():
     assert np.allclose(out.asnumpy(), out_np, rtol=10e-4, atol=10e-4)
 
 
-@pytest.mark.level1
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_split_view():
     """
     Feature: Transpose view operation
@@ -100,10 +94,7 @@ def test_split_view():
     out_np = np.matmul(a, b)
     assert np.allclose(out.asnumpy(), out_np, rtol=10e-4, atol=10e-4)
 
-@pytest.mark.level1
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_concat_view():
     """
     Feature: Concat view operation
@@ -196,3 +187,75 @@ def test_graph_view_to_aclop():
     out_pynative = ms.mint.select(x, 1, 2)
     out_pynative = out_pynative[:0]
     assert np.allclose(out_graph.asnumpy(), out_pynative.asnumpy(), rtol=10e-4, atol=10e-4)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_broadcast_to_view():
+    """
+    Feature: Runtime view graph mode.
+    Description: Runtime view graph mode.
+    Expectation: No exception.
+    """
+    class BroadcastToViewNet(nn.Cell):
+        def __init__(self):
+            super(BroadcastToViewNet, self).__init__()
+            self.broadcast_to_view = BroadcastToView((2, 3))
+
+        def construct(self, x):
+            output = self.broadcast_to_view(x)
+            return output
+
+    x = Tensor(np.array([1, 2, 3]).astype(np.float32))
+    net = BroadcastToViewNet()
+    graph_output = net(x)
+
+    pynative_output = BroadcastToView((2, 3))(x)
+    assert (graph_output.asnumpy() == pynative_output.asnumpy()).all()
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_expand_dims_view():
+    """
+    Feature: Runtime view graph mode.
+    Description: Runtime view graph mode.
+    Expectation: No exception.
+    """
+    class ExpandDimsViewNet(nn.Cell):
+        def __init__(self):
+            super(ExpandDimsViewNet, self).__init__()
+            self.expand_dims_view = ExpandDimsView()
+
+        def construct(self, x):
+            output = self.expand_dims_view(x, 0)
+            return output
+
+    x = Tensor(np.array([[2, 2], [2, 2]]), ms.float32)
+    net = ExpandDimsViewNet()
+    graph_output = net(x)
+
+    pynative_output = ExpandDimsView()(x, 0)
+    assert (graph_output.asnumpy() == pynative_output.asnumpy()).all()
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_narrow_view():
+    """
+    Feature: Runtime view graph mode.
+    Description: Runtime view graph mode.
+    Expectation: No exception.
+    """
+    class NarrowViewNet(nn.Cell):
+        def __init__(self):
+            super(NarrowViewNet, self).__init__()
+            self.narrow_view = NarrowView()
+
+        def construct(self, x):
+            output = self.narrow_view(x, 0, 0, 2)
+            return output
+
+    x = Tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], ms.int32)
+    net = NarrowViewNet()
+    graph_output = net(x)
+
+    pynative_output = NarrowView()(x, 0, 0, 2)
+    assert (graph_output.asnumpy() == pynative_output.asnumpy()).all()
