@@ -17,7 +17,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import Tensor, nn, ops
-from mindspore.ops.auto_generate.gen_ops_def import select_ext_op
+from mindspore.ops.auto_generate.gen_ops_def import select_ext_view_op as select_ext_op
 from mindspore.ops.functional import grad
 from tests.mark_utils import arg_mark
 
