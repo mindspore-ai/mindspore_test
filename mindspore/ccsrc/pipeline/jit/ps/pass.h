@@ -37,6 +37,7 @@ using PassItem = std::pair<std::string, std::function<bool(ResourcePtr)>>;
 extern std::vector<PassItem> kVmPasses;
 extern std::vector<PassItem> kInlinePasses;
 extern std::vector<PassItem> kPynativePasses;
+extern std::vector<PassItem> kAddAttrWithInlinePass;
 
 bool OptPassAGroup(const ResourcePtr &resource);
 bool CconvPass(const ResourcePtr &resource);

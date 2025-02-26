@@ -23,6 +23,7 @@
 namespace mindspore {
 namespace parallel {
 bool Shard(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &);
+bool HandleAddAttr(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &);
 }  // namespace parallel
 }  // namespace mindspore
 

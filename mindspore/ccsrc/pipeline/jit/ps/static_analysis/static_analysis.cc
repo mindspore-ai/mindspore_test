@@ -1361,6 +1361,13 @@ EvaluatorPtr AnalysisEngine::_GetEvaluatorFor(const std::shared_ptr<ShardTransfo
   return std::make_shared<ShardEvaluator>(primal_evaluator, primal_func);
 }
 
+EvaluatorPtr AnalysisEngine::_GetEvaluatorFor(const std::shared_ptr<AddAttrTransformedAbstractClosure> &func) {
+  MS_EXCEPTION_IF_NULL(func);
+  const auto &primal_func = func->fn();
+  auto primal_evaluator = GetEvaluatorFor(primal_func);
+  return std::make_shared<AddAttrEvaluator>(primal_evaluator, primal_func);
+}
+
 EvaluatorPtr AnalysisEngine::_GetEvaluatorFor(const std::shared_ptr<VirtualAbstractClosure> &func) {
   MS_EXCEPTION_IF_NULL(func);
   return std::make_shared<VirtualEvaluator>(func->args_abs_list(), func->output());
@@ -1410,6 +1417,9 @@ EvaluatorPtr AnalysisEngine::GetEvaluatorFor(const AbstractFunctionPtr &func) {
   }
   if (func->isa<ShardTransformedAbstractClosure>()) {
     return _GetEvaluatorFor(std::static_pointer_cast<ShardTransformedAbstractClosure>(func));
+  }
+  if (func->isa<AddAttrTransformedAbstractClosure>()) {
+    return _GetEvaluatorFor(std::static_pointer_cast<AddAttrTransformedAbstractClosure>(func));
   }
   if (func->isa<VirtualAbstractClosure>()) {
     return _GetEvaluatorFor(std::static_pointer_cast<VirtualAbstractClosure>(func));

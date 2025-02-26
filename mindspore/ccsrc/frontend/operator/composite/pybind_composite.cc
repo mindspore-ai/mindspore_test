@@ -85,6 +85,10 @@ void RegCompositeOpsGroup(const py::module *m) {
   (void)py::class_<Shard, MetaFuncGraph, std::shared_ptr<Shard>>(*m, "Shard_")
     .def(py::init<const std::string &>(), py::arg("fn"));
 
+  // Reg AddAttr
+  (void)py::class_<AddAttr, MetaFuncGraph, std::shared_ptr<AddAttr>>(*m, "AddAttr_")
+    .def(py::init<const std::string &>(), py::arg("fn"));
+
   // Reg ListAppend
   (void)py::class_<ListAppend, MetaFuncGraph, std::shared_ptr<ListAppend>>(*m, "ListAppend_")
     .def(py::init<std::string &>());

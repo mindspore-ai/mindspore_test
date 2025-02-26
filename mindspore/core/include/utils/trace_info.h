@@ -484,6 +484,14 @@ class TraceShard : public TraceInfo {
   TraceInfoPtr clone() override { return std::make_shared<TraceShard>(*this); }
 };
 
+class TraceAddAttr : public TraceInfo {
+ public:
+  explicit TraceAddAttr(const DebugInfoPtr &info) : TraceInfo(info) {}
+  ~TraceAddAttr() override = default;
+  MS_DECLARE_TRACE_NAME_SYMBOL("addattr_ops", "addattr_");
+  TraceInfoPtr clone() override { return std::make_shared<TraceAddAttr>(*this); }
+};
+
 class TraceAssert : public TraceInfo {
  public:
   explicit TraceAssert(const DebugInfoPtr &info) : TraceInfo(info) {}

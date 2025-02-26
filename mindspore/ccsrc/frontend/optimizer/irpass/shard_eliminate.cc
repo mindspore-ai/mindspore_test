@@ -26,6 +26,13 @@ AnfNodePtr ExpandShard(const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(func_graph);
   return NewValueNode(func_graph);
 }
+
+AnfNodePtr ExpandAddAttr(const CNodePtr &node) {
+  auto vnode = node->input(kIndex1)->cast<ValueNodePtr>();
+  auto func_graph = GetValueNode<FuncGraphPtr>(vnode);
+  MS_EXCEPTION_IF_NULL(func_graph);
+  return NewValueNode(func_graph);
+}
 }  // namespace internal
 
 bool ExpandShardPrim::operator()(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer) {
@@ -39,6 +46,23 @@ bool ExpandShardPrim::operator()(const FuncGraphPtr &func_graph, const Optimizer
   }
   return change;
 }
+
+bool ExpandAddAttrPrim::operator()(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer) {
+  bool change = false;
+  auto manager = optimizer->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  for (auto &node : prim_nodes_) {
+    if (!IsPrimitiveCNode(node, prim::kPrimAddAttr)) {
+      // addattr pass before shard, skip shard.
+      continue;
+    }
+    auto expanded_addattr_node = internal::ExpandAddAttr(node);
+    (void)manager->Replace(node, expanded_addattr_node);
+    change = true;
+  }
+  return change;
+}
+
 }  // namespace irpass
 }  // namespace opt
 }  // namespace mindspore

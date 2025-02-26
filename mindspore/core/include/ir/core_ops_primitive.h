@@ -44,6 +44,7 @@ GVAR_DEF(PrimitivePtr, kPrimStateSetItem, std::make_shared<Primitive>("state_set
 GVAR_DEF(PrimitivePtr, kPrimJ, std::make_shared<Primitive>(kJOpName, kSideEffectPropagate));
 GVAR_DEF(PrimitivePtr, kPrimVmap, std::make_shared<Primitive>(kVmapOpName, kSideEffectPropagate));
 GVAR_DEF(PrimitivePtr, kPrimShard, std::make_shared<Primitive>("Shard", kSideEffectPropagate));
+GVAR_DEF(PrimitivePtr, kPrimAddAttr, std::make_shared<Primitive>("AddAttr", kSideEffectPropagate));
 GVAR_DEF(PrimitivePtr, kPrimTaylor, std::make_shared<Primitive>(kTaylorOpName));
 GVAR_DEF(PrimitivePtr, kPrimEnvironCreate, std::make_shared<Primitive>(kEnvironCreateOpName));
 GVAR_DEF(PrimitivePtr, kPrimLoad, std::make_shared<Primitive>(kLoadOpName));

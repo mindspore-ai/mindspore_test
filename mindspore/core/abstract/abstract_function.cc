@@ -449,6 +449,18 @@ std::size_t ShardTransformedAbstractClosure::hash() const {
   return hash_combine(tid(), PointerHash<AbstractFuncAtomPtr>{}(fn_));
 }
 
+bool AddAttrTransformedAbstractClosure::operator==(const AbstractFunction &other) const {
+  if (!other.isa<AddAttrTransformedAbstractClosure>()) {
+    return false;
+  }
+  const auto &other_transformed = static_cast<const AddAttrTransformedAbstractClosure &>(other);
+  return fn_ == other_transformed.fn_;
+}
+
+std::size_t AddAttrTransformedAbstractClosure::hash() const {
+  return hash_combine(tid(), PointerHash<AbstractFuncAtomPtr>{}(fn_));
+}
+
 bool VmapTransformedAbstractClosure::operator==(const AbstractFunction &other) const {
   if (!other.isa<VmapTransformedAbstractClosure>()) {
     return false;
