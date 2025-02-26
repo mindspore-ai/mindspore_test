@@ -290,7 +290,7 @@ AbstractBasePtr ArgsToAbstract(const py::object &arg, const ValuePtr &value, boo
 void AddManagerForFuncGraphArgs(const ResourcePtr &resource, const ValuePtrList &arguments);
 void CheckInterpretNodeLineInfos();
 void SetHookForArgAbstract(const py::object &arg, abstract::AbstractBasePtr abs);
-bool RunJitPipeline();
+FRONTEND_EXPORT bool RunJitPipeline();
 FRONTEND_EXPORT void PreJit(const py::object &args, const py::object &kwargs);
 FRONTEND_EXPORT void CleanCache();
 }  // namespace pipeline
