@@ -3,7 +3,7 @@ mindspore.experimental.optim.lr_scheduler.CosineAnnealingWarmRestarts
 
 .. py:class:: mindspore.experimental.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0, T_mult=1, eta_min=0, last_epoch=-1)
 
-    使用余弦退火热重启对优化器参数组的学习率进行改变。
+    使用余弦退火热重启，改变优化器参数组的学习率。
 
     .. math::
         \eta_t = \eta_{min} + \frac{1}{2}(\eta_{max} - \eta_{min})\left(1 +
