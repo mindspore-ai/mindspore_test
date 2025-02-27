@@ -25,17 +25,15 @@
 #include "pybind11/pybind11.h"
 
 #include "ir/tensor.h"
+#include "ir/tensor_py_base.h"
 #include "include/common/visible.h"
 
 namespace py = pybind11;
 
 namespace mindspore {
 namespace tensor {
-class COMMON_EXPORT TensorPy;
-using TensorPyPtr = std::shared_ptr<TensorPy>;
-using TensorPyPtrList = std::vector<std::shared_ptr<TensorPy>>;
-
-class COMMON_EXPORT TensorPy {
+// TensorPyBase: An entity class
+class COMMON_EXPORT TensorPy : public TensorPyBase {
  public:
   TensorPy() = default;
 
@@ -165,11 +163,6 @@ class COMMON_EXPORT TensorPy {
   ///
   /// \return The created C++ Tensor.
   const TensorPtr GetTensor() const;
-
-  /// \brief Get the C++ BaseTensor.
-  ///
-  /// \return The created C++ BaseTensor.
-  const BaseTensorPtr GetBaseTensor() const;
 
   /// \brief Get parent Tensor.
   ///
@@ -374,32 +367,34 @@ class COMMON_EXPORT TensorPy {
 
   /// \brief Reset tensors data so that they are using contiguous memory chunks grouped by data type.
   ///
-  /// \param[in] tensorpys [TensorPyPtrList] The tensorpys to be processed.
+  /// \param[in] tensorpys [std::vector<std::shared_ptr<TensorPy>>] The tensorpys to be processed.
   /// \param[in] fusion_size [size_t] Maximum memory chunk size in bytes, 0 for unlimited.
   ///
   /// \return TensorPys that data are pointed to each contiguous memory chunks.
-  static TensorPyPtrList FlattenTensors(const TensorPyPtrList &tensorpys, size_t fusion_size = 0);
+  static std::vector<std::shared_ptr<TensorPy>> FlattenTensors(const std::vector<std::shared_ptr<TensorPy>> &tensorpys,
+                                                               size_t fusion_size = 0);
 
   /// \brief Check if FlattenTensors called for the input tensors.
   ///
-  /// \param[in] tensorpys [TensorPyPtrList] The tensorpys to be checked.
+  /// \param[in] tensorpys [std::vector<std::shared_ptr<TensorPy>>] The tensorpys to be checked.
   ///
   /// \return True if FlattenTensors called for input tensorpys, false otherwise.
-  static bool IsFlattened(const TensorPyPtrList &tensorpys);
+  static bool IsFlattened(const std::vector<std::shared_ptr<TensorPy>> &tensorpys);
 
   /// \brief Get tensorpys for each contiguous memory chunks used by the input tensorpys.
   ///
-  /// \param[in] tensorpys [TensorPyPtrList] The input tensorpys.
+  /// \param[in] tensorpys [std::vector<std::shared_ptr<TensorPy>>] The input tensorpys.
   ///
   /// \return TensorPys that data are pointed to each contiguous memory chunks, empty if failed.
-  static TensorPyPtrList GetFlattenedTensors(const TensorPyPtrList &tensorpys);
+  static std::vector<std::shared_ptr<TensorPy>> GetFlattenedTensors(
+    const std::vector<std::shared_ptr<TensorPy>> &tensorpys);
 
   /// \brief Get the fusion size for the given flat tensorpys.
   ///
-  /// \param[in] flat_tensorpys [TensorPyPtrList] The input flat tensorpys.
+  /// \param[in] flat_tensorpys [std::vector<std::shared_ptr<TensorPy>>] The input flat tensorpys.
   ///
   /// \return Fusion size for the given flat tensorpys.
-  static size_t GetFusionSize(const TensorPyPtrList &flat_tensorpys);
+  static size_t GetFusionSize(const std::vector<std::shared_ptr<TensorPy>> &flat_tensorpys);
 
   /// \brief Check whether the tensor is used in auto grad.
   ///
@@ -471,6 +466,21 @@ class COMMON_EXPORT TensorPy {
   /// \param[in] slice_shape_of_persistent_data [py::object] The slice shape of persistent data.
   void SetSliceShapeOfPersistentData(const py::object &slice_shape_of_persistent_data);
 
+  bool operator==(const Value &other) const override {
+    if (other.isa<TensorPy>()) {
+      auto &other_ = static_cast<const TensorPy &>(other);
+      return *this == other_;
+    }
+    return false;
+  }
+
+  MS_DECLARE_PARENT(TensorPy, TensorPyBase);
+
+  /// \brief Create Abstract for Tensor.
+  ///
+  /// \return Abstract of Tensor.
+  abstract::AbstractBasePtr ToAbstract() override;
+
  private:
   bool init_finished_flag_{false};
   bool const_arg_flag_{false};
@@ -487,12 +497,14 @@ class COMMON_EXPORT TensorPy {
   py::object slice_num_of_persistent_data_;
   py::object slice_shape_of_persistent_data_;
   std::string device_;
-  BaseTensorPtr tensor_{nullptr};
-  TensorPyPtr flatten_tensor_{nullptr};
+  std::shared_ptr<TensorPy> flatten_tensor_{nullptr};
 
-  const TensorPyPtr GetFlattenTensor();
-  void SetFlattenTensor(const TensorPyPtr tensor);
+  const std::shared_ptr<TensorPy> GetFlattenTensor();
+  void SetFlattenTensor(const std::shared_ptr<TensorPy> tensor);
 };
+
+using TensorPyPtr = std::shared_ptr<TensorPy>;
+using TensorPyPtrList = std::vector<std::shared_ptr<TensorPy>>;
 
 /// \brief Check whether the object is TensorPy.
 ///
@@ -514,6 +526,39 @@ COMMON_EXPORT const TensorPyPtr ConvertToTensorPy(const py::handle &obj);
 ///
 /// \return A pointer address of C++ Tensor.
 COMMON_EXPORT const TensorPtr ConvertToTensor(const py::handle &obj);
+
+/// \brief Get the Python Tensor Object.
+///
+/// \return The python Tensor.
+COMMON_EXPORT py::object GetPythonTensor();
+
+/// \brief Make default_parameter of Parameter to BaseTensor.
+///
+/// \param[in] value [ValuePtr] The given input parameter.
+///
+/// \return A BaseTensor.
+COMMON_EXPORT const BaseTensorPtr GetBaseTensorFromValue(const ValuePtr &value);
+
+/// \brief Make default_parameter of Parameter to Tensor.
+///
+/// \param[in] value [ValuePtr] The given input parameter.
+///
+/// \return A Tensor.
+COMMON_EXPORT const TensorPtr GetTensorFromValue(const ValuePtr &value);
+
+/// \brief Make default_parameter of Parameter to TensorPy, and return to Pybind.
+///
+/// \param[in] value [ValuePtr] The given input parameter.
+///
+/// \return A TensorPy.
+COMMON_EXPORT const TensorPyPtr GetTensorPyFromValue(const ValuePtr &value);
+
+/// \brief Make default_parameter of Parameter to MetaTensor.
+///
+/// \param[in] value [ValuePtr] The given input parameter.
+///
+/// \return A MetaTensor.
+COMMON_EXPORT const MetaTensorPtr GetMetaTensorFromValue(const ValuePtr &value);
 
 }  // namespace tensor
 }  // namespace mindspore

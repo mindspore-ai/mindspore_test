@@ -690,13 +690,18 @@ class MS_CORE_API Parameter final : public ANode {
 
   /// \brief Set the default parameter.
   ///
-  /// \param[in] param The default parameter.
+  /// \param[in] param The default parameter. Maybe Tensor/BaseTensor/MetaTensor/TensorPy/MapTensor.
   void set_default_param(const ValuePtr &param);
+
+  /// \brief Get the default parameter ancestor.
+  ///
+  /// \return The default parameter. Maybe Tensor/BaseTensor/MetaTensor/TensorPy/MapTensor.
+  const ValuePtr &default_param_raw() const;
 
   /// \brief Get the default parameter.
   ///
-  /// \return The default parameter.
-  const ValuePtr &default_param() const;
+  /// \return The default parameter. Maybe Tensor/BaseTensor/MetaTensor/MapTensor.
+  ValuePtr default_param() const;
 
   /// \brief Get the parameter information.
   ///

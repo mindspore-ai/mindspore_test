@@ -399,7 +399,7 @@ void RegTensorPy(const py::module *m) {
                                      &args.shape_, &args.init_, &args.internal_, &args.const_arg_, &args.device_)) {
       MS_EXCEPTION(TypeError) << "Not support tensor input parameter type!!!";
     }
-    auto p = TensorPyImpl::GetPythonTensor().attr("_init")(
+    auto p = GetPythonTensor().attr("_init")(
       py::cast<py::object>(py::handle(args.input_data_)), py::cast<py::object>(py::handle(args.dtype_)),
       py::cast<py::object>(py::handle(args.shape_)), py::cast<py::object>(py::handle(args.init_)),
       py::cast<py::object>(py::handle(args.const_arg_)), py::cast<py::object>(py::handle(args.device_)));

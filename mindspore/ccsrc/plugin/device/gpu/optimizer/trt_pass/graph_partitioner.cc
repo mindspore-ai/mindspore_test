@@ -286,7 +286,7 @@ Subgraph GraphPartitioner::CreateNewGraph(const AnfNodePtrList &segment) {
       }
 
       if (common::AnfAlgo::IsParameterWeight(src)) {
-        dst->set_default_param(src->default_param());
+        dst->set_default_param(src->default_param_raw());
       }
     } else {
       dst->set_name(inputs[i]->fullname_with_scope());

@@ -154,7 +154,7 @@ ValuePtr GetParameterValue(const py::object &param_obj) {
     return map_tensor;
   }
 
-  return tensor::ConvertToTensor(param_obj);
+  return tensor::ConvertToTensorPy(param_obj);
 }
 
 namespace {

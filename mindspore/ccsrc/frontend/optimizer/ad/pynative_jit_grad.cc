@@ -200,7 +200,7 @@ AnfNodePtrList ProcessParam(const FuncGraphPtr &source_fg, const abstract::Abstr
     if (param_info) {
       const auto &parameter = param_info->parameter();
       if (parameter && parameter->has_default()) {
-        param->set_default_param(parameter->default_param());
+        param->set_default_param(parameter->default_param_raw());
       }
     }
   }

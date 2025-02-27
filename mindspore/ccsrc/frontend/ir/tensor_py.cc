@@ -765,7 +765,7 @@ void TensorPybind::Offload(const Tensor &tensor, bool release) {
       MS_LOG(EXCEPTION) << "For Offload, this tensor's device_ptr is nullptr, it may have been offloaded or released by"
                         << " the framework.";
     }
-    MS_LOG(INFO) << "Tensor Offload start, the tensor's device_address is : "<< device_address.get()
+    MS_LOG(INFO) << "Tensor Offload start, the tensor's device_address is : " << device_address.get()
                  << ", the tensor's size is : " << device_address->GetSize();
     device_address->SyncDeviceToHost(device_address->GetSize(), tensor.data_c());
     device_address->ClearDeviceMemory();
@@ -798,7 +798,7 @@ void TensorPybind::Load(const Tensor &tensor) {
   // make sure op execute end before data copy
   runtime::Pipeline::Get().WaitForward();
   device_ctx->device_res_manager_->AllocateMemory(device_address.get());
-  MS_LOG(INFO) << "Tensor Load start, the tensor's device_address is : "<< device_address.get()
+  MS_LOG(INFO) << "Tensor Load start, the tensor's device_address is : " << device_address.get()
                << ", the tensor's size is : " << device_address->GetSize();
   device_address->SyncHostToDevice(device_address->GetSize(), tensor.data_c());
 }
@@ -982,37 +982,48 @@ const ShapeVector TensorPyImpl::GetShapeFromPython(const py::dict &input) {
   return shape;
 }
 
+TensorPtr TensorPyImpl::InitTensorByInputDta(const py::dict &input, const TypePtr &dtype) {
+  py::object input_obj = input["input_data"];
+  if (IsTensorPy(input_obj)) {
+    TensorPtr obj = ConvertToTensor(input_obj);
+    TypeId data_type = dtype != nullptr ? dtype->type_id() : kTypeUnknown;
+    if (data_type == kTypeUnknown || obj->data_type() == data_type) {
+      return std::make_shared<Tensor>(*obj);
+    }
+    return std::make_shared<Tensor>(*obj, data_type);
+  }
+
+  if (py::isinstance<py::float_>(input_obj) || py::isinstance<py::int_>(input_obj) ||
+      py::isinstance<py::list>(input_obj) || py::isinstance<py::tuple>(input_obj) ||
+      PyComplex_CheckExact(input_obj.ptr()) || py::isinstance<py::bytes>(input_obj)) {
+    return TensorPybind::MakeTensor(py::array(input_obj), dtype);
+  }
+
+  if (py::isinstance<py::array>(input_obj)) {
+    return TensorPybind::MakeTensor(input_obj, dtype);
+  }
+
+  return nullptr;
+}
+
+TensorPtr TensorPyImpl::InitTensorByShape(const py::dict &input, const TypePtr &dtype) {
+  if (input.contains("shape") &&
+      (py::isinstance<py::list>(input["shape"]) || py::isinstance<py::tuple>(input["shape"]))) {
+    TypeId data_type = dtype != nullptr ? dtype->type_id() : TypeId::kNumberTypeFloat64;
+    return std::make_shared<Tensor>(data_type, GetShapeFromTuple(input["shape"]));
+  }
+  ShapeVector shape = GetShapeFromPython(input);
+  return std::make_shared<Tensor>(dtype->type_id(), shape);
+}
+
 TensorPtr TensorPyImpl::InitTensor(const py::dict &input) {
   TypePtr dtype = GetDtypeFromPython(input);
   TensorPtr output = nullptr;
   if (input.contains("input_data") && (!py::isinstance<py::none>(input["input_data"]))) {
-    py::object input_obj = input["input_data"];
-    if (IsTensorPy(input_obj)) {
-      TensorPtr obj = ConvertToTensor(input_obj);
-      TypeId data_type = dtype != nullptr ? dtype->type_id() : kTypeUnknown;
-      if (data_type == kTypeUnknown || obj->data_type() == data_type) {
-        output = std::make_shared<Tensor>(*obj);
-      } else {
-        output = std::make_shared<Tensor>(*obj, data_type);
-      }
-    } else if (py::isinstance<py::float_>(input_obj) || py::isinstance<py::int_>(input_obj) ||
-               py::isinstance<py::list>(input_obj) || py::isinstance<py::tuple>(input_obj) ||
-               PyComplex_CheckExact(input_obj.ptr()) || py::isinstance<py::bytes>(input_obj)) {
-      output = TensorPybind::MakeTensor(py::array(input_obj), dtype);
-    } else if (py::isinstance<py::array>(input_obj)) {
-      output = TensorPybind::MakeTensor(input_obj, dtype);
-    }
+    output = InitTensorByInputDta(input, dtype);
   } else {
-    if (input.contains("shape") &&
-        (py::isinstance<py::list>(input["shape"]) || py::isinstance<py::tuple>(input["shape"]))) {
-      TypeId data_type = dtype != nullptr ? dtype->type_id() : TypeId::kNumberTypeFloat64;
-      output = std::make_shared<Tensor>(data_type, GetShapeFromTuple(input["shape"]));
-    } else {
-      ShapeVector shape = GetShapeFromPython(input);
-      output = std::make_shared<Tensor>(dtype->type_id(), shape);
-    }
+    output = InitTensorByShape(input, dtype);
   }
-
   MS_EXCEPTION_IF_NULL(output);
   return output;
 }
@@ -1048,37 +1059,37 @@ TensorPyPtr TensorPyImpl::ConvertBytesToTensor(const py::bytes &bytes_obj, const
 }
 
 void TensorPyImpl::SetOffload(const TensorPyPtr &tensorpy, bool release) {
-  auto tensor = tensorpy->GetTensor().get();
+  auto tensor = tensorpy->GetTensor();
   TensorPybind::Offload(*tensor, release);
 }
 
 void TensorPyImpl::SetLoad(const TensorPyPtr &tensorpy) {
-  auto tensor = tensorpy->GetTensor().get();
+  auto tensor = tensorpy->GetTensor();
   TensorPybind::Load(*tensor);
 }
 
 py::bytes TensorPyImpl::GetBytes(const TensorPyPtr &tensorpy) {
-  auto tensor = tensorpy->GetTensor().get();
+  auto tensor = tensorpy->GetTensor();
   return TensorPybind::GetBytes(*tensor);
 }
 
 py::array TensorPyImpl::SyncAsNumpy(const TensorPyPtr &tensorpy) {
-  auto tensor = tensorpy->GetTensor().get();
+  auto tensor = tensorpy->GetTensor();
   return TensorPybind::SyncAsNumpy(*tensor);
 }
 
 void TensorPyImpl::FlushFromCache(const TensorPyPtr &tensorpy) {
-  auto tensor = tensorpy->GetTensor().get();
+  auto tensor = tensorpy->GetTensor();
   return TensorPybind::FlushFromCache(*tensor);
 }
 
 py::array TensorPyImpl::AsNumpyOfSlice(const TensorPyPtr &tensorpy, const int32_t param_key, int slice_index) {
-  auto tensor = tensorpy->GetTensor().get();
+  auto tensor = tensorpy->GetTensor();
   return TensorPybind::AsNumpyOfSlice(*tensor, param_key, slice_index);
 }
 
 TensorPyPtr TensorPyImpl::MoveTo(const TensorPyPtr &tensorpy, const std::string &to, bool blocking) {
-  auto tensor = tensorpy->GetTensor().get();
+  auto tensor = tensorpy->GetTensor();
   auto to_tensor = TensorPybind::MoveTo(*tensor, to, blocking);
   MS_EXCEPTION_IF_NULL(to_tensor);
   return std::make_shared<TensorPy>(to_tensor);
@@ -1086,32 +1097,32 @@ TensorPyPtr TensorPyImpl::MoveTo(const TensorPyPtr &tensorpy, const std::string 
 
 void TensorPyImpl::SetDeviceAddress(const TensorPyPtr &tensorpy, uintptr_t addr, const ShapeVector &shape,
                                     const TypePtr type_ptr) {
-  auto tensor = tensorpy->GetTensor().get();
+  auto tensor = tensorpy->GetTensor();
   TensorPybind::SetDeviceAddress(*tensor, addr, shape, type_ptr);
 }
 
 void TensorPyImpl::SetUserData(const TensorPyPtr &tensorpy, const py::str &key, const py::object &value) {
-  auto tensor = tensorpy->GetTensor().get();
+  auto tensor = tensorpy->GetTensor();
   TensorPybind::SetUserData(*tensor, key, value);
 }
 
 const py::object TensorPyImpl::GetUserData(const TensorPyPtr &tensorpy, const py::str &key) {
-  auto tensor = tensorpy->GetTensor().get();
+  auto tensor = tensorpy->GetTensor();
   return TensorPybind::GetUserData(*tensor, key);
 }
 
 py::object TensorPyImpl::ToList(const TensorPyPtr &tensorpy) {
-  auto tensor = tensorpy->GetTensor().get();
+  auto tensor = tensorpy->GetTensor();
   return TensorPybind::ToList(*tensor);
 }
 
 py::object TensorPyImpl::Item(const TensorPyPtr &tensorpy) {
-  auto tensor = tensorpy->GetTensor().get();
+  auto tensor = tensorpy->GetTensor();
   return TensorPybind::Item(*tensor);
 }
 
 uint64_t TensorPyImpl::RegisterTensorBackwardHook(const TensorPyPtr &tensorpy, const py::function &hook) {
-  auto tensor = tensorpy->GetTensor().get();
+  auto tensor = tensorpy->GetTensor();
   return pynative::HookAdapter::RegisterTensorBackwardHook(*tensor, hook);
 }
 
@@ -1119,24 +1130,13 @@ void TensorPyImpl::RemoveTensorBackwardHook(uint64_t handle_id) {
   pynative::HookAdapter::RemoveTensorBackwardHook(handle_id);
 }
 
-py::object TensorPyImpl::GetPythonTensor() {
-  static PyObject *tensor_module{nullptr};
-  static std::mutex tensor_mutex;
-
-  std::lock_guard<std::mutex> guard(tensor_mutex);
-  if (tensor_module == nullptr) {
-    tensor_module = PyImport_ImportModule("mindspore.common.tensor");
-  }
-  return py::reinterpret_borrow<py::object>(tensor_module);
-}
-
 py::list TensorPyImpl::GetHooks(const TensorPyPtr &tensorpy) {
-  auto tensor = tensorpy->GetTensor().get();
+  auto tensor = tensorpy->GetTensor();
   return pynative::HookAdapter::GetHooks(*tensor);
 }
 
 uintptr_t TensorPyImpl::DataPtr(const TensorPyPtr &tensorpy) {
-  auto tensor = tensorpy->GetTensor().get();
+  auto tensor = tensorpy->GetTensor();
   return TensorPybind::DataPtr(*tensor);
 }
 

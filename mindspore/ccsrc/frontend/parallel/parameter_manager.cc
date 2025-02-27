@@ -512,7 +512,7 @@ void SliceTensorObj(const ParameterPtr &parameter, const TensorLayoutPtr &tensor
   MS_LOG(INFO) << "Success Call Python _slice_parameter Fn to slice python parameter obj";
   auto new_tensor = tensor::ConvertToTensor(new_tensor_py);
   MS_LOG(INFO) << "new p_tensor:" << new_tensor->name() << new_tensor->Size() << new_tensor->shape();
-  parameter->set_default_param(new_tensor);
+  parameter->set_default_param(tensor::ConvertToTensorPy(new_tensor_py));
 }
 
 static void SliceCacheParameterObj(const ParameterPtr &parameter, const py::dict &layout_dict) {

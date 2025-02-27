@@ -2033,7 +2033,7 @@ void GraphExecutorPy::UpdataParamNodeDefaultInput(
     MS_EXCEPTION_IF_NULL(param_cast);
     auto iter = params_value.find(param_cast->name());
     if (iter != params_value.end()) {
-      auto value_ptr = iter->second->GetTensor();
+      auto value_ptr = iter->second;
       param_cast->set_default_param(value_ptr);
     }
   }
@@ -2048,10 +2048,9 @@ py::dict ExecutorPy::GetParams(const std::string &phase) {
     MS_EXCEPTION_IF_NULL(param);
     auto param_ptr = std::static_pointer_cast<Parameter>(param);
     std::string name = param_ptr->name();
-    auto tensor = std::dynamic_pointer_cast<tensor::Tensor>(param_ptr->default_param());
-    if (tensor != nullptr) {
-      auto tensor_py = std::make_shared<tensor::TensorPy>(tensor);
-      parameter_dict[py::str(name)] = *tensor_py;
+    auto tensorpy = tensor::GetTensorPyFromValue(param_ptr->default_param_raw());
+    if (tensorpy != nullptr) {
+      parameter_dict[py::str(name)] = tensorpy;
     }
   }
   return parameter_dict;
