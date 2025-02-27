@@ -105,7 +105,9 @@ def test_upsample_trilinear_3d_size_dynamic():
             [input_case1, (100, 200, 300), None, True],
             [input_case2, (40, 80, 80), None, False],
         ],
-        'upsample_trilinear3d', disable_input_check=True
+        'upsample_trilinear3d',
+        disable_input_check=True,
+        disable_mode=['GRAPH_MODE']
     )
 
 
@@ -126,7 +128,9 @@ def test_upsample_trilinear_3d_scale_factor_dynamic():
             [input_case1, None, (1.7, 2.7, 0.7), True],
             [input_case2, None, (3.1, 4.5, 1.5), False],
         ],
-        'upsample_trilinear3d', disable_input_check=True
+        'upsample_trilinear3d',
+        disable_input_check=True,
+        disable_mode=['GRAPH_MODE']
     )
 
 

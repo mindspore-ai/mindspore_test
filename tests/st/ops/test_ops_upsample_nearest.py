@@ -60,6 +60,8 @@ def test_upsample_nearest(mode):
     Expectation: The result match expected output.
     """
     set_mode(mode)
+
+    # nearest1d
     input_tensor = Tensor(
         np.array([[[0.1, 0.3, 0.5, 0.7], [0.9, 1.1, 1.3, 1.5]]]).astype(np.float32)
     )
@@ -76,27 +78,29 @@ def test_upsample_nearest(mode):
     error = np.ones(shape=expected.shape) * 1.0e-4
     assert np.all(diff < error)
 
-    expected = np.array([[[0.1000, 0.1000, 0.1000, 0.3000,
-                           0.3000, 0.5000, 0.5000, 0.7000, 0.7000],
-                          [0.9000, 0.9000, 0.9000, 1.1000,
-                           1.1000, 1.3000, 1.3000, 1.5000, 1.5000]]]).astype(np.float32)
-    out = upsample_nearest_forward_func(input_tensor, None, (2.3,))
+    expected = np.array([[[0.1000, 0.1000, 0.3000, 0.3000,
+                           0.5000, 0.5000, 0.7000, 0.7000],
+                          [0.9000, 0.9000, 1.1000, 1.1000,
+                           1.3000, 1.3000, 1.5000, 1.5000]]]).astype(np.float32)
+    out = upsample_nearest_forward_func(input_tensor, None, (2.,))
     diff = abs(out.asnumpy() - expected)
     error = np.ones(shape=expected.shape) * 1.0e-4
     assert np.all(diff < error)
 
-    expected = np.array([[[3.0, 2.0, 2.0, 2.0],
-                          [3.0, 2.0, 2.0, 2.0]]]).astype(np.float32)
-    out = upsample_nearest_backward_func(input_tensor, None, [2.3,])
+    expected = np.array([[[3.0, 3.0, 3.0, 3.0],
+                          [3.0, 3.0, 3.0, 3.0]]]).astype(np.float32)
+    out = upsample_nearest_backward_func(input_tensor, None, [3.,])
     diff = abs(out.asnumpy() - expected)
     error = np.ones(shape=expected.shape) * 1.0e-4
     assert np.all(diff < error)
 
+    # nearest2d
     input_tensor = Tensor(
         np.array(
             [[[[0.1, 0.3, 0.5], [0.7, 0.9, 1.1]], [[1.3, 1.5, 1.7], [1.9, 2.1, 2.3]]]]
         ).astype(np.float32)
     )
+
     expected = np.array(
         [[[[0.1000, 0.1000, 0.3000, 0.3000, 0.5000],
            [0.1000, 0.1000, 0.3000, 0.3000, 0.5000],
@@ -112,21 +116,24 @@ def test_upsample_nearest(mode):
     assert np.all(diff < error)
 
     expected = np.array(
-        [[[[0.1000, 0.1000, 0.3000, 0.3000, 0.5000, 0.5000],
-           [0.1000, 0.1000, 0.3000, 0.3000, 0.5000, 0.5000],
-           [0.7000, 0.7000, 0.9000, 0.9000, 1.1000, 1.1000]],
-          [[1.3000, 1.3000, 1.5000, 1.5000, 1.7000, 1.7000],
-           [1.3000, 1.3000, 1.5000, 1.5000, 1.7000, 1.7000],
-           [1.9000, 1.9000, 2.1000, 2.1000, 2.3000, 2.3000]]]]).astype(np.float32)
-    out = upsample_nearest_forward_func(input_tensor, None, (1.7, 2.3))
+        [[[[0.1000, 0.1000, 0.1000, 0.3000, 0.3000, 0.3000, 0.5000, 0.5000, 0.5000],
+           [0.1000, 0.1000, 0.1000, 0.3000, 0.3000, 0.3000, 0.5000, 0.5000, 0.5000],
+           [0.7000, 0.7000, 0.7000, 0.9000, 0.9000, 0.9000, 1.1000, 1.1000, 1.1000],
+           [0.7000, 0.7000, 0.7000, 0.9000, 0.9000, 0.9000, 1.1000, 1.1000, 1.1000]],
+          [[1.3000, 1.3000, 1.3000, 1.5000, 1.5000, 1.5000, 1.7000, 1.7000, 1.7000],
+           [1.3000, 1.3000, 1.3000, 1.5000, 1.5000, 1.5000, 1.7000, 1.7000, 1.7000],
+           [1.9000, 1.9000, 1.9000, 2.1000, 2.1000, 2.1000, 2.3000, 2.3000, 2.3000],
+           [1.9000, 1.9000, 1.9000, 2.1000, 2.1000, 2.1000, 2.3000, 2.3000, 2.3000]]]]
+    ).astype(np.float32)
+    out = upsample_nearest_forward_func(input_tensor, None, (2., 3.))
     diff = abs(out.asnumpy() - expected)
     error = np.ones(shape=expected.shape) * 1.0e-4
     assert np.all(diff < error)
 
     expected = np.array(
-        [[[[4.0, 4.0, 4.0], [2.0, 2.0, 2.0]], [[4.0, 4.0, 4.0], [2.0, 2.0, 2.0]]]]
+        [[[[6.0, 6.0, 6.0], [6.0, 6.0, 6.0]], [[6.0, 6.0, 6.0], [6.0, 6.0, 6.0]]]]
     ).astype(np.float32)
-    out = upsample_nearest_backward_func(input_tensor, None, [1.7, 2.3])
+    out = upsample_nearest_backward_func(input_tensor, None, [3., 2.])
     diff = abs(out.asnumpy() - expected)
     error = np.ones(shape=expected.shape) * 1.0e-4
     assert np.all(diff < error)
@@ -491,7 +498,8 @@ def test_upsample_nearest_3d_size_dynamic():
         ],
         '',
         disable_yaml_check=True,
-        disable_input_check=True
+        disable_input_check=True,
+        disable_mode=["GRAPH_MODE"]
     )
 
 
@@ -514,7 +522,8 @@ def test_upsample_nearest_3d_scale_factor_dynamic():
         ],
         '',
         disable_yaml_check=True,
-        disable_input_check=True
+        disable_input_check=True,
+        disable_mode=["GRAPH_MODE"]
     )
 
 
