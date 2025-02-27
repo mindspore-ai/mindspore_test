@@ -2194,18 +2194,11 @@ bool CheckViewInYaml(const std::string &name) {
 }  // namespace
 
 bool AnfAlgo::IsViewNode(const AnfNodePtr &node) {
-  constexpr size_t view_len = 4;
   CNodePtr cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
   auto node_name = AnfAlgo::GetCNodeName(cnode);
   bool is_view = CheckViewInYaml(node_name);
-  if (is_view) {
-    return true;
-  }
-  if (node_name.length() > view_len) {
-    return CheckViewInYaml(node_name.substr(0, node_name.length() - view_len));
-  }
-  return false;
+  return is_view;
 }
 
 bool AnfAlgo::IsNopNode(const AnfNodePtr &node) {
