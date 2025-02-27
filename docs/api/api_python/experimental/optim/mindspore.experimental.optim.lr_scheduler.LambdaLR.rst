@@ -3,7 +3,7 @@ mindspore.experimental.optim.lr_scheduler.LambdaLR
 
 .. py:class:: mindspore.experimental.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda, last_epoch=-1)
 
-    将每个参数组的学习率设定为初始学习率乘以指定的 `lr_lambda` 函数。当 `last_epoch = -1` 时，将学习率设置成初始学习率。
+    将每个参数组的学习率，设定为初始学习率乘以指定的 `lr_lambda` 函数。当 `last_epoch = -1` 时，将学习率设置成初始学习率。
 
     .. warning::
         这是一个实验性的动态学习率接口，需要和 `mindspore.experimental.optim <https://mindspore.cn/docs/zh-CN/master/api_python/mindspore.experimental.html#%E5%AE%9E%E9%AA%8C%E6%80%A7%E4%BC%98%E5%8C%96%E5%99%A8>`_ 下的接口配合使用。

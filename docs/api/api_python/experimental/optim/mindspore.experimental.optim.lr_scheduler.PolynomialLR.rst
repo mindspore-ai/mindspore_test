@@ -3,7 +3,7 @@ mindspore.experimental.optim.lr_scheduler.PolynomialLR
 
 .. py:class:: mindspore.experimental.optim.lr_scheduler.PolynomialLR(optimizer, total_iters=5, power=1.0, last_epoch=-1)
 
-    每个epoch，学习率通过多项式拟合来调整。当epoch大于等于 `total_iters` 时，学习率设置为 ``0`` 。注意，这种衰减可能与外部对于学习率的改变同时发生。
+    每个epoch通过多项式拟合来调整学习率。当epoch大于等于 `total_iters` 时，学习率设置为 ``0`` 。注意，这种衰减可能与外部对于学习率的改变同时发生。
 
     学习率计算的多项式公式如下：
 

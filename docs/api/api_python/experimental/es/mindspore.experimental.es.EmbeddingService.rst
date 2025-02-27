@@ -3,8 +3,8 @@ mindspore.experimental.es.EmbeddingService
 
 .. py:class:: mindspore.experimental.es.EmbeddingService()
 
-    ES(EmbeddingService)功能可支持大小表Embedding的模型训练和推理，为训练和推理提供统一的Embedding管理，存储和计算的能力。
-    其中大表指vocab_size超过10万的数据量，推荐用户存储在PS(Parameter Server)上的表，小表指vocab_size小于10万的数据量，推荐用户存储在device上的表。
+    ES（EmbeddingService）功能可支持大小表Embedding的模型训练和推理，为训练和推理提供统一的Embedding管理、存储和计算的能力。
+    其中大表指vocab_size超过10万的数据量，推荐用户存储在PS（Parameter Server）上的表；小表指vocab_size小于10万的数据量，推荐用户存储在device上的表。
 
     目前ES特性只能创建一个EmbeddingService对象的实例。
 

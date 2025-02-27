@@ -3,7 +3,7 @@ mindspore.dataset.vision.RandomErasing
 
 .. py:class:: mindspore.dataset.vision.RandomErasing(prob=0.5, scale=(0.02, 0.33), ratio=(0.3, 3.3), value=0, inplace=False, max_attempts=10)
 
-    按照指定的概率擦除输入numpy.ndarray图像上随机矩形区域内的像素。
+    按照指定的概率，擦除输入numpy.ndarray图像上随机矩形区域内的像素。
 
     请参阅论文 `Random Erasing Data Augmentation <https://arxiv.org/pdf/1708.04896.pdf>`_ 。
 
