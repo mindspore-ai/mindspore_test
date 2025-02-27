@@ -78,7 +78,8 @@ class DFunctor : public std::enable_shared_from_this<DFunctor> {
   void MapFreeMorphism();
   void BackPropagateFv(const AnfNodePtr &fv, const AnfNodePtr &din);
   void BackPropagateSwitchLayer(const CNodePtr &cnode_morph, const CNodePtr &env);
-  void BackPropagate(const CNodePtr &cnode_morph, const AdjointPtr &node_adjoint);
+  void BackPropagate(const CNodePtr &cnode_morph, const CNodePtr &k_app, const AdjointPtr &node_adjoint,
+                     bool side_effect_bprop_app_propagate);
   // Get dout_mask for view_ops when do BackPropagate.
   CNodePtr CalDoutTuple(const CNodePtr &cnode_morph, const CNodePtr &din_tuple, const AdjointPtr &node_adjoint,
                         int index);

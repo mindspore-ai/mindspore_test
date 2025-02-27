@@ -2534,20 +2534,22 @@ FuncGraphPtr AccumulateDout::GenerateFuncGraph(const AbstractBasePtrList &args_a
   auto dout = fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), dout_tuple_input, NewValueNode(int64_t(0))});
   auto factor =
     fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), factor_tuple_input, NewValueNode(int64_t(0))});
+  auto factor_inner_tuple =
+    fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), factor_tuple_input, NewValueNode(int64_t(1))});
   if (IsAddDout()) {
     auto cal_dout = fg->NewCNodeInOrder({NewValueNode(prim::GetPythonOps("hyper_add")), dout, factor});
     auto dout_inner_tuple =
       fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), dout_tuple_input, NewValueNode(int64_t(1))});
-    auto cal_res = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), cal_dout, dout_inner_tuple});
+    auto cal_res = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), cal_dout, factor_inner_tuple});
     fg->set_output(cal_res);
     return fg;
   }
   auto dout_mul = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMul), dout, factor});
-  auto factor_inner_tuple =
-    fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), factor_tuple_input, NewValueNode(int64_t(1))});
-  auto factor_mask =
-    fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), factor_inner_tuple, NewValueNode(int64_t(0))});
-  auto cal_dout = fg->NewCNodeInOrder({NewValueNode(prim::kPrimSelect), factor_mask, dout_mul, dout});
+  auto dout_inner_tuple =
+    fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), dout_tuple_input, NewValueNode(int64_t(1))});
+  auto dout_mask =
+    fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), dout_inner_tuple, NewValueNode(int64_t(0))});
+  auto cal_dout = fg->NewCNodeInOrder({NewValueNode(prim::kPrimSelect), dout_mask, dout_mul, factor});
   auto cal_res = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), cal_dout, factor_inner_tuple});
   fg->set_output(cal_res);
   return fg;
@@ -2608,7 +2610,7 @@ void AccumulateDout::CheckAccumulateDoutInputAbstract(const AbstractBasePtrList 
 }
 
 bool AccumulateDout::IsAddDout() {
-  return types_["factor"] == 0;
+  return types_["dout"] == 0;
 }
 
 FuncGraphPtr GenerateMask::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
