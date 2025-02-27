@@ -21,4 +21,4 @@ mindspore.ops.less
         Tensor，输出shape与广播后的shape相同，数据类型为bool。
 
     异常：
-        - **TypeError** - 如果 `input` 和 `other` 不是以下之一：Tensor、数值型、bool。
+        - **TypeError** - 如果 `input` 和 `other` 的类型不是Tensor、数值型或bool。

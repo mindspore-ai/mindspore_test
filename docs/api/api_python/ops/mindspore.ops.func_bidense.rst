@@ -3,7 +3,7 @@ mindspore.ops.bidense
 
 .. py:function:: mindspore.ops.bidense(input1, input2, weight, bias=None)
 
-    对输入 `input1` 和 `input2` 应用双线性全连接操作。双线性全连接函数定义如下，
+    对输入 `input1` 和 `input2` 应用双线性全连接操作。双线性全连接函数定义如下：
 
     .. math::
         output = x_{1}^{T}Ax_{2} + b

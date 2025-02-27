@@ -12,11 +12,11 @@ mindspore.ops.digamma
         这是一个实验性API，后续可能修改或删除。
 
     参数：
-        - **input** (Tensor) - 输入Tensor，数据类型是float16，float32或float64。
+        - **input** (Tensor) - 输入Tensor，数据类型是float16、float32或float64。
 
     返回：
         Tensor，数据类型和 `input` 一样。
 
     异常：
         - **TypeError** - `input` 不是Tensor。
-        - **TypeError** - `input` 的数据类型不是float16，float32或float64。
+        - **TypeError** - `input` 的数据类型不是float16、float32或float64。
