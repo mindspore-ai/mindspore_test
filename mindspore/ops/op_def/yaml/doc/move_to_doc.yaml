@@ -1,25 +1,23 @@
 move_to:
   description: |
-    Copy Tensor to target device synchronously or asynchronously, default synchronously. only support PyNative mode.
+    Copy Tensor to target device synchronously or asynchronously, default synchronously. Only support PyNative mode.
 
     Args:
-        to (str): a string type value, one of ``"Ascend"``, ``"GPU"``, ``"CPU"``.
-        blocking (bool): a bool type value, using synchronous copy or asynchronous copy.
-            Default: ``True`` , synchronous copy.
-
-    Inputs:
         - **src** (Tensor) - The input Tensor to be moved.
+        - to (str): a string type value, one of ``"Ascend"``, ``"CPU"``.
+        - blocking (bool, optional): a bool type value, using synchronous copy or asynchronous copy.
+              Default: ``True`` , synchronous copy.
 
     Returns:
         - **dst** (Tensor) - New Tensor, storged on target device which with the same type and shape as the `src`.
 
     Raises:
         ValueError: If the type of `blocking` is not bool type.
-        ValueError: If the value of `to` is not one of ``"Ascend"``, ``"GPU"``, ``"CPU"``.
+        ValueError: If the value of `to` is not one of ``"Ascend"``, ``"CPU"``.
         ValueError: If the run mode is not PyNative mode.
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``Ascend`` ``CPU``
 
     Examples:
         >>> import mindspore as ms
