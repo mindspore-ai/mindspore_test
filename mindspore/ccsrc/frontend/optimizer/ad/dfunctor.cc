@@ -58,6 +58,15 @@ mindspore::HashMap<AnfNodePtr, AdjointPtr> DFunctor::anfnode_to_adjoin_definitio
 bool lift_fv_before_grad = true;
 
 namespace {
+
+bool UpdateStateUseOnly(const AnfNodePtr &node, const NodeUsersMap &node_user_map) {
+  auto node_users_iter = node_user_map.find(node);
+  if (node_users_iter == node_user_map.end()) {
+    return false;
+  }
+  return std::all_of(node_users_iter->second.begin(), node_users_iter->second.end(),
+                     [](const auto &pair) { return IsPrimitiveCNode(pair.first, prim::kPrimUpdateState); });
+}
 // Handle bprob of op which input dtype is real number and output dtype is complex number.
 // If the dtype of a gradient(din) is complex number and the input of that is real number,
 // only the real part of the gradient make sense in back propagate. We handle it by
@@ -389,7 +398,7 @@ CNodePtr DFunctor::CalDoutTuple(const CNodePtr &cnode_morph, const CNodePtr &din
   if (single_tensor_view && index == 1) {
     // For View_ops, Just record the first input.
 
-  // Get Din/dmask/ops_type from node_adjoint->dout(): (din, (dmask, ops_tye));
+    // Get Din/dmask/ops_type from node_adjoint->dout(): (din, (dmask, ops_tye));
     auto node_dout_tuple = caller->NewCNodeInOrder(
       {NewValueNode(prim::kPrimTupleGetItem), node_adjoint->real_dout(), NewValueNode(int64_t(1))});
     auto node_mask =
@@ -488,6 +497,22 @@ void DFunctor::BackPropagate(const CNodePtr &cnode_morph, const AdjointPtr &node
       MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, input)
         << "The adjoint does not exist input[" << i << "] " << input->ToString()
         << ". primal_graph_: " << primal_graph_->ToString();
+    }
+    auto node_input = cnode_morph->input(i);
+    if (node_input->isa<CNode>()) {
+      auto prim = GetValueNode<PrimitivePtr>(dyn_cast<CNode>(node_input)->input(0));
+      auto node_users_map = resources_->manager()->node_users();
+      if (prim != nullptr && prim->inplace_prim() && UpdateStateUseOnly(node_input, node_users_map)) {
+        // Initialize a dout for the cnode used only by updatestate.
+        auto caller = input_adjoint->second->caller();
+        auto din =
+          caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), din_tuple, NewValueNode(int64_t(0))});
+        auto dmask_tuple =
+          caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), din_tuple, NewValueNode(int64_t(1))});
+        auto din_ones = input_adjoint->second->caller()->NewCNodeInOrder({NewValueNode(prim::kPrimOnesLike), din});
+        auto din_ones_tuple = caller->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), din_ones, dmask_tuple});
+        input_adjoint->second->AccumulateDout(din_ones_tuple);
+      }
     }
     din_tuple = CalDoutTuple(cnode_morph, din_tuple, node_adjoint, i);
     input_adjoint->second->AccumulateDout(din_tuple);
