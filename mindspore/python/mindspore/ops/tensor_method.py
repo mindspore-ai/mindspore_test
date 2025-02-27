@@ -366,9 +366,8 @@ from mindspore.ops.function.math_func import median
 # 156
 
 # 157
-from mindspore._c_expression import pyboost_empty
-
 from mindspore.ops.auto_generate import xlogy_op
+
 # 158
 
 # 159 histc
@@ -1481,7 +1480,8 @@ def deprecated_tensor_logaddexp2(input, other):
 
 # 157
 def tensor_empty(*size, dtype=None, device=None):
-    return pyboost_empty(size, dtype, device)
+    logger.error(
+        "This is a function for empty not should be called. Please check the implementation.")
 
 def deprecated_tensor_logaddexp(input, other):
     return F.logaddexp(input, other)
