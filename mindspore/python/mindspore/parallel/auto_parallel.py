@@ -208,6 +208,45 @@ class AutoParallel(Cell):
 
     def pipeline(self, pipeline_stages=1, pipeline_result_broadcast=False, pipeline_interleave=False,
                  pipeline_scheduler="1f1b"):
+        """
+        Configure the number of pipelin_dages, whether to broadcast the results,
+        whether to enable interleaving scheduling,
+        and configure the type of scheduler when using pipeline parallel.
+        Args:
+            pipeline_stages (int): Set the stage information for pipeline parallelism.
+                This indicates how the devices are individually distributed on the pipeline.
+                All devices will be divided into stages of pipine_dags. Default value: 1.
+            pipeline_result_broadcast (bool): When performing pipeline parallel inference,
+                whether the result of the last stage is broadcasted to the other stages. Default value: False 。
+            pipeline_interleave (bool): Whether to enable interleaving scheduling.
+            pipeline_scheduler(str): The type of scheduler
+        Raises:
+            TypeError: If the type of 'pipeline_stages is not int
+            ValueError: When pipeline_stages <= 0
+            TypeError: If the type of 'pipeline_result_broadcast' is not bool
+            TypeError: If the type of 'pipeline_interleave' is not bool
+            TypeError: If the type of 'pipeline_scheduler' is not str
+            ValueError: If the type of 'pipeline_scheduler' is not supported
+        """
+        if not isinstance(pipeline_stages, int):
+            raise TypeError("For 'AutoParallel.pipeline', the argument 'pipeline_stages' "
+                            "must be int type, but got the type : {}.".format(type(pipeline_stages)))
+        if pipeline_stages <= 0:
+            raise ValueError("For 'AutoParallel.pipeline', the argument 'pipeline_stages' "
+                             "must be larger than zero, but got value: {}.".format(pipeline_stages))
+        if not isinstance(pipeline_result_broadcast, bool):
+            raise TypeError("For 'AutoParallel.pipeline', the argument 'pipeline_stages' "
+                            "must be bool type, but got the type : {}.".format(type(pipeline_result_broadcast)))
+        if not isinstance(pipeline_interleave, bool):
+            raise TypeError("For 'AutoParallel.pipeline', the argument 'pipeline_stages' "
+                            "must be bool type, but got the type : {}.".format(type(pipeline_interleave)))
+        if not isinstance(pipeline_scheduler, str):
+            raise TypeError("For 'AutoParallel.pipeline', the argument 'pipeline_stages' "
+                            "must be str type, but got the type : {}.".format(type(pipeline_scheduler)))
+        if pipeline_scheduler not in ("1f1b", "gpipe"):
+            raise ValueError("For 'AutoParallel.pipeline', the argument "
+                             "'pipeline_scheduler' must be '1f1b' , 'gpipe' , but got the value : {}."
+                             .format(pipeline_scheduler))
         self._pipeline_stages = pipeline_stages
         self._pipeline_result_broadcast = pipeline_result_broadcast
         self._pipeline_interleave = pipeline_interleave
