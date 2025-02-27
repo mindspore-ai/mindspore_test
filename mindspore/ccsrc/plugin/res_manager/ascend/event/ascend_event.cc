@@ -39,8 +39,13 @@ AscendEvent::AscendEvent() {
   }
 }
 
-AscendEvent::AscendEvent(uint32_t flag) {
-  auto ret = CALL_ASCEND_API(aclrtCreateEventExWithFlag, &event_, flag);
+AscendEvent::AscendEvent(uint32_t flag, bool use_extensional_api) {
+  aclError ret;
+  if (use_extensional_api) {
+    ret = CALL_ASCEND_API(aclrtCreateEventExWithFlag, &event_, flag);
+  } else {
+    ret = CALL_ASCEND_API(aclrtCreateEventWithFlag, &event_, flag);
+  }
   if (ret != ACL_ERROR_NONE) {
     MS_LOG(ERROR) << "aclrtCreateEventExWithFlag failed, ret:" << ret;
     event_ = nullptr;
@@ -173,6 +178,34 @@ void AscendEvent::WaitEventWithoutReset() {
     MS_LOG(EXCEPTION) << "aclrtStreamWaitEvent failed, ret:" << ret;
   }
   need_wait_ = false;
+}
+
+void AscendEvent::WaitEventWithoutReset(uint32_t stream_id) {
+  wait_stream_ = AscendStreamMng::GetInstance().GetStream(stream_id);
+  WaitEventWithoutReset();
+}
+
+void AscendEvent::ResetEvent() {
+  MS_EXCEPTION_IF_NULL(event_);
+  MS_EXCEPTION_IF_NULL(wait_stream_);
+  if (tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+    tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "Event", "ResetEvent", "");
+    tracker::CALL_MEMORY_TRACKER(
+      UpdateTask, "Event",
+      {{tracker::kStreamId, std::to_string(AscendStreamMng::GetInstance().GetStreamId(wait_stream_))},
+       {tracker::kEvent, voidPtrToString(event_)}});
+  }
+
+  MS_LOG(DEBUG) << "Reset Event";
+  auto ret = CALL_ASCEND_API(aclrtResetEvent, event_, wait_stream_);
+  if (ret != ACL_ERROR_NONE) {
+    MS_LOG(EXCEPTION) << "aclrtResetEvent failed, ret:" << ret;
+  }
+}
+
+void AscendEvent::ResetEvent(uint32_t stream_id) {
+  wait_stream_ = AscendStreamMng::GetInstance().GetStream(stream_id);
+  ResetEvent();
 }
 
 void AscendEvent::SyncEvent() {

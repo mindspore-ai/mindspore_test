@@ -1160,7 +1160,7 @@ DeviceEventPtr GPUDeviceResManager::CreateRuntimeEvent(bool enable_blocking, boo
   return std::make_shared<GpuEvent>(flag);
 }
 
-DeviceEventPtr GPUDeviceResManager::CreateEventWithFlag(bool enable_timing, bool blocking) {
+DeviceEventPtr GPUDeviceResManager::CreateEventWithFlag(bool enable_timing, bool blocking, bool) {
   uint32_t flag =
     (blocking ? cudaEventBlockingSync : cudaEventDefault) | (enable_timing ? cudaEventDefault : cudaEventDisableTiming);
   auto event = std::make_shared<GpuEvent>(flag);

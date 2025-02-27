@@ -31,6 +31,7 @@
 #include "runtime/graph_scheduler/actor/kernel_async_infer_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_async_resize_actor.h"
 #include "runtime/hardware/device_context.h"
+#include "runtime/pipeline/async_rqueue.h"
 #include "ir/anf.h"
 
 namespace mindspore {
@@ -61,8 +62,10 @@ class SuperKernelActor : public DebugAwareActor {
     kernel_async_resize_aid_ = KernelAsyncResizeActor::GetInstance()->GetAID();
     kernel_async_launch_aid_ = KernelAsyncLaunchActor::GetInstance()->GetAID();
     somas_info_ = graph_->MutableSomasInfo();
+
+    enable_parallel_dispatch_ = EnableParallelDispatchKernel() && (graph_phase_.find("increment") != std::string::npos);
   }
-  ~SuperKernelActor() override = default;
+  ~SuperKernelActor() override;
 
   size_t FetchInputNodePosition(const AnfNodePtr &intput_node);
   virtual void FetchInputDeviceTensor(OpContext<DeviceTensor> *const context);
@@ -87,6 +90,8 @@ class SuperKernelActor : public DebugAwareActor {
  protected:
   void Init() override;
   void Run(OpContext<DeviceTensor> *const context) override;
+  void Finalize() override;
+
   // The input device tensors for launch.
   std::vector<DeviceTensor *> input_device_tensors_;
   // The device tensors of graph input parameter, which used to compare the recv input data.
@@ -127,11 +132,12 @@ class SuperKernelActor : public DebugAwareActor {
   void FetchPersistentDeviceTensor();
 
   void UpdateMemoryTraceMangerStatus(OpContext<DeviceTensor> *const context);
-  void SetTraceMemoryForKernel(const KernelActorPtr &kernel_actor);
+  void SetTraceMemoryForKernel(const KernelActorPtr &kernel_actor, bool safe_update = false);
   // Allocate block memory for use trace memory (run by static shape) step.
   void AllocateTraceMemory(OpContext<DeviceTensor> *const context) const;
   // Free block memory for use trace memory (run by static shape) step.
   void FreeTraceMemory() const;
+  void SetInputTraceMemory(const KernelActorPtr &kernel_actor) const;
 
   // Handle copy output for different device type kernel.
   bool CopyHeterogeneousOutput(OpContext<DeviceTensor> *const context, const KernelActorPtr &kernel_actor) const;
@@ -146,6 +152,19 @@ class SuperKernelActor : public DebugAwareActor {
 
   void FetchParameterInput(const KernelActorPtr &kernel_actor, OpContext<DeviceTensor> *const context);
   void FreeInputParamWithoutUser(OpContext<DeviceTensor> *const context);
+
+  // Prepare non top cell input, such as internal parameter msg input, control flow msg input and const value.
+  bool FetchMsgInputAndConstValueForKernel(KernelActor *kernel_actor, OpContext<DeviceTensor> *const context);
+
+  void ParallelDispatchKernels(OpContext<DeviceTensor> *const context);
+  // Dispatch kernel which can parallel launch.
+  void DispatchParallelLaunchKernels(size_t index, OpContext<DeviceTensor> *const context);
+  // Dispatch serial launch kernels: communication ops and the kernel need force resize.
+  void DispatchSerialLaunchKernels(OpContext<DeviceTensor> *const context);
+
+  void InitParallelDispatchResource();
+  void PartitionParallelDispatchKernels();
+  void ClearParallelDispatchResource();
 
   friend class GraphScheduler;
   KernelGraphPtr graph_;
@@ -197,6 +216,19 @@ class SuperKernelActor : public DebugAwareActor {
   AID kernel_async_launch_aid_;
 
   bool enable_trace_memory_;
+
+  // The variables for parallel dispatch kernel.
+  bool enable_parallel_dispatch_{false};
+  std::vector<std::vector<KernelActorPtr>> parallel_launch_kernels_;
+  std::vector<KernelActorPtr> serial_launch_kernels_;
+  HashMap<KernelActor *, std::vector<DeviceEventPtr>> serial_launch_kernels_to_events_;
+
+  static size_t parallel_dispatch_num_;
+  static size_t parallel_slice_num_;
+
+  static std::vector<std::pair<size_t, void *>> streams_;
+  static std::vector<DeviceEventPtr> events_;
+  static std::vector<AsyncRQueuePtr> queues_;
 };
 
 using SuperKernelActorPtr = std::shared_ptr<SuperKernelActor>;

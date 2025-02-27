@@ -17,7 +17,7 @@
 The runtime interface.
 """
 
-from mindspore.runtime.executor import launch_blocking, dispatch_threads_num, set_cpu_affinity
+from mindspore.runtime.executor import launch_blocking, dispatch_threads_num, set_cpu_affinity, set_kernel_launch_group
 from mindspore.runtime.memory import set_memory, memory_stats, memory_reserved, max_memory_reserved, empty_cache,\
                                  reset_peak_memory_stats, memory_summary, memory_allocated,\
                                  max_memory_allocated, reset_max_memory_reserved, reset_max_memory_allocated
@@ -27,7 +27,7 @@ from mindspore.runtime.event import Event
 from .executor import launch_blocking
 
 __all__ = [
-    "launch_blocking", "dispatch_threads_num", "set_cpu_affinity",
+    "launch_blocking", "dispatch_threads_num", "set_cpu_affinity", "set_kernel_launch_group",
     "Stream", "communication_stream", "synchronize", "set_cur_stream", "current_stream", "default_stream", "StreamCtx",
     "set_memory", "memory_stats", "memory_reserved", "max_memory_reserved", "empty_cache", "reset_peak_memory_stats",
     "memory_summary", "memory_allocated", "max_memory_allocated", "reset_max_memory_reserved",

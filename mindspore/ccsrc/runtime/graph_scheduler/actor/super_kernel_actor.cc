@@ -23,14 +23,24 @@
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/graph_scheduler/actor/debug_actor.h"
 #include "runtime/device/multi_stream_controller.h"
+#include "runtime/pipeline/task/batch_launch_kernel_task.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 #include "async/async.h"
 #include "utils/phase.h"
 #include "utils/llm_manager.h"
 #include "utils/log_adapter.h"
 #include "op_def/framework_ops.h"
+#include "pybind_api/gil_scoped_long_running.h"
 
 namespace mindspore {
 namespace runtime {
+size_t SuperKernelActor::parallel_dispatch_num_ = 2;
+size_t SuperKernelActor::parallel_slice_num_ = 4;
+
+std::vector<std::pair<size_t, void *>> SuperKernelActor::streams_;
+std::vector<DeviceEventPtr> SuperKernelActor::events_;
+std::vector<AsyncRQueuePtr> SuperKernelActor::queues_;
+
 namespace {
 inline void UpdateShape(const AnfNodePtr &input_node, const DeviceTensorPtr &node_device_tensor,
                         DeviceTensor *input_device_tensor, const KernelTransformType &type) {
@@ -174,6 +184,32 @@ void RecordInputParamsWithoutUser(const KernelGraphPtr &graph,
   }
 }
 }  // namespace
+
+SuperKernelActor::~SuperKernelActor() { ClearParallelDispatchResource(); }
+
+void SuperKernelActor::Finalize() { ClearParallelDispatchResource(); }
+
+void SuperKernelActor::ClearParallelDispatchResource() {
+  if (!queues_.empty()) {
+    for (auto &q : queues_) {
+      q->WorkerJoin();
+    }
+    queues_.clear();
+  }
+  if (!events_.empty()) {
+    events_.clear();
+  }
+  if (!serial_launch_kernels_to_events_.empty()) {
+    serial_launch_kernels_to_events_.clear();
+  }
+  if (!parallel_launch_kernels_.empty()) {
+    parallel_launch_kernels_.clear();
+  }
+  if (!serial_launch_kernels_.empty()) {
+    serial_launch_kernels_.clear();
+  }
+}
+
 void SuperKernelActor::Init() {
   MS_EXCEPTION_IF_NULL(graph_);
   // Check device contexts number.
@@ -183,6 +219,10 @@ void SuperKernelActor::Init() {
 
   // Set the number of actor running dependent messages.
   running_dependent_msg_num_ = SizeToInt(input_datas_num_ + input_controls_num_);
+
+  if (enable_parallel_dispatch_) {
+    InitParallelDispatchResource();
+  }
 
   // Init the output data.
   InitOutputData();
@@ -259,6 +299,52 @@ void SuperKernelActor::Init() {
   }
 }
 
+void SuperKernelActor::InitParallelDispatchResource() {
+  if (streams_.empty()) {
+    streams_.resize(parallel_dispatch_num_);
+    for (size_t i = 0; i < parallel_dispatch_num_; i++) {
+      if (!device_contexts_[0]->device_res_manager_->CreateStream(&(streams_[i].first))) {
+        MS_LOG(EXCEPTION) << "Create stream failed.";
+      }
+      streams_[i].second = device_contexts_[0]->device_res_manager_->GetStream(streams_[i].first);
+      MS_EXCEPTION_IF_NULL(streams_[i].second);
+    }
+  }
+
+  if (events_.empty()) {
+    // New one more for sync between default stream and last launch stream;
+    for (size_t i = 0; i < parallel_dispatch_num_ * parallel_slice_num_ + 1; i++) {
+      auto event = device_contexts_[0]->device_res_manager_->CreateEventWithFlag(false, false, false);
+      MS_EXCEPTION_IF_NULL(event);
+      events_.push_back(event);
+    }
+  }
+
+  if (queues_.empty()) {
+    for (size_t i = 0; i < parallel_dispatch_num_; i++) {
+      auto queue = std::make_unique<AsyncRQueue>(std::string("batch_launch_") + std::to_string(i),
+                                                 runtime::kThreadWaitLevel::kLevelDevice);
+      MS_EXCEPTION_IF_NULL(queue);
+      queue->SetSpin(true);
+      queues_.push_back(std::move(queue));
+    }
+  }
+
+  const size_t kEventNum = 2;
+  for (auto &kernel_actor : serial_launch_kernels_) {
+    serial_launch_kernels_to_events_[kernel_actor.get()] = std::vector<DeviceEventPtr>(kEventNum, nullptr);
+  }
+
+  for (auto &item : serial_launch_kernels_to_events_) {
+    auto &event_array = item.second;
+    for (size_t i = 0; i < event_array.size(); i++) {
+      auto event = device_contexts_[0]->device_res_manager_->CreateEventWithFlag(false, false, false);
+      MS_EXCEPTION_IF_NULL(event);
+      event_array[i] = event;
+    }
+  }
+}
+
 size_t SuperKernelActor::FetchInputNodePosition(const AnfNodePtr &intput_node) {
   MS_EXCEPTION_IF_NULL(intput_node);
   MS_EXCEPTION_IF_NULL(graph_);
@@ -276,7 +362,7 @@ void SuperKernelActor::CorrectRefCountByCondition(size_t index, DeviceTensor *de
   // There is no memory free action for use trace memory step, need to free input device address of the kernel graph
   // after launch all kernels.
   if (ActorDispatcher::enable_use_trace_memory()) {
-    if (device_tensor->original_ref_count() != SIZE_MAX || device_tensor->dynamic_ref_count() != INT32_MAX) {
+    if ((device_tensor->original_ref_count() != SIZE_MAX || device_tensor->dynamic_ref_count() != INT32_MAX)) {
       (void)(*memory_free_list).emplace_back(device_tensor);
     }
   } else {
@@ -473,7 +559,7 @@ void SuperKernelActor::UpdateMemoryTraceMangerStatus(OpContext<DeviceTensor> *co
     }
 
     // First step for dynamic shape, need to record memory trace.
-    MemoryTraceManager::GetInstance().Clear();
+    MemoryTraceManager::GetInstance().ClearExpiredCache();
     static const size_t memory_block_size = 3000;
     MemoryTraceManager::GetInstance().ReserveKernelMemoryBlocks(memory_block_size, device_contexts_[0]);
   } else {
@@ -482,7 +568,7 @@ void SuperKernelActor::UpdateMemoryTraceMangerStatus(OpContext<DeviceTensor> *co
   }
 }
 
-void SuperKernelActor::SetTraceMemoryForKernel(const KernelActorPtr &kernel_actor) {
+void SuperKernelActor::SetTraceMemoryForKernel(const KernelActorPtr &kernel_actor, bool safe_update) {
   const auto &kernel = kernel_actor->kernel();
   MS_EXCEPTION_IF_NULL(kernel);
 
@@ -504,10 +590,42 @@ void SuperKernelActor::SetTraceMemoryForKernel(const KernelActorPtr &kernel_acto
       void *ptr = merge_blocks.at(block->in_memory_trace_block_index_)->start_ + block->offset_in_memory_trace_block_;
       MS_EXCEPTION_IF_NULL(ptr);
       if (block->mem_type_ == kOutputMem) {
-        kernel_actor->output_kernel_tensors_.at(block->index_)->set_device_ptr(ptr);
+        if (!safe_update) {
+          kernel_actor->output_kernel_tensors_.at(block->index_)->set_device_ptr(ptr);
+        } else {
+          auto &kernel_tensor = kernel_actor->output_kernel_tensors_.at(block->index_);
+          std::lock_guard<SpinLock> lock(block->lock_);
+          if (kernel_tensor->device_ptr() != ptr) {
+            kernel_tensor->set_device_ptr(ptr);
+          }
+        }
       } else {
         kernel_actor->workspace_kernel_tensors_.at(block->index_)->set_device_ptr(ptr);
       }
+    }
+  }
+}
+
+void SuperKernelActor::SetInputTraceMemory(const KernelActorPtr &kernel_actor) const {
+  const auto &merge_blocks_with_device_context = MemoryTraceManager::GetInstance().GetMergeBlocks();
+  MS_EXCEPTION_IF_NULL(merge_blocks_with_device_context);
+  const auto &merge_blocks = merge_blocks_with_device_context->at(kernel_actor->device_contexts_[0]);
+
+  const auto &kernel_tensor_to_kernel_mem_blocks = MemoryTraceManager::GetInstance().GetKernelTensorToMemBlocksInfo();
+  MS_EXCEPTION_IF_NULL(kernel_tensor_to_kernel_mem_blocks);
+
+  for (auto &input_kernel_tensor : kernel_actor->input_kernel_tensors_) {
+    const auto &iter = kernel_tensor_to_kernel_mem_blocks->find(input_kernel_tensor);
+    if (iter == kernel_tensor_to_kernel_mem_blocks->end()) {
+      continue;
+    }
+    auto &kernel_mem_block = iter->second;
+    void *ptr = merge_blocks.at(kernel_mem_block->in_memory_trace_block_index_)->start_ +
+                kernel_mem_block->offset_in_memory_trace_block_;
+
+    std::lock_guard<SpinLock> lock(kernel_mem_block->lock_);
+    if (input_kernel_tensor->device_ptr() != ptr) {
+      input_kernel_tensor->set_device_ptr(ptr);
     }
   }
 }
@@ -721,6 +839,34 @@ void SuperKernelActor::FreeInputParamWithoutUser(OpContext<DeviceTensor> *const 
   }
 }
 
+bool SuperKernelActor::FetchMsgInputAndConstValueForKernel(KernelActor *kernel_actor,
+                                                           OpContext<DeviceTensor> *const context) {
+  MS_EXCEPTION_IF_NULL(kernel_actor);
+  const auto &kernel = kernel_actor->kernel();
+
+  // 1 Prepare received input from other actors.
+  const auto &iter = kernel_input_to_graph_input_indices_.find(kernel.get());
+  if (iter != kernel_input_to_graph_input_indices_.end()) {
+    std::vector<std::pair<size_t, size_t>> &input_to_graph_input_indices = iter->second;
+    for (const auto &item : input_to_graph_input_indices) {
+      kernel_actor->SetInputDeviceTensor(input_device_tensors_[item.second], item.first);
+      kernel_actor->memory_free_list_[item.first] = input_device_tensors_[item.second];
+      kernel_actor->CopyInputDeviceTensor(input_device_tensors_[item.second], item.first, context);
+    }
+  }
+  // 2. Prepare const value.
+  if (!kernel_actor->device_tensor_store_keys_.empty()) {
+    // Collect the inputs from device tensor store.
+    kernel_actor->FetchInputByTensorStore(&kernel_actor->input_device_tensors_, &kernel_actor->input_kernel_tensors_,
+                                          &kernel_actor->input_kernel_tensors_for_infer_,
+                                          &kernel_actor->memory_free_list_, context);
+    if (IsRunningFailed(context)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool SuperKernelActor::LaunchAllKernels(OpContext<DeviceTensor> *const context) {
   size_t kernel_num = kernel_actors_.size();
   for (size_t i = 0; i < kernel_num; i++) {
@@ -734,27 +880,11 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<DeviceTensor> *const context) 
                                                      kernel->fullname_with_scope(), kernel->func_graph()->ToString());
     }
     // 1. Prepare input data for kernel
-    // 1.1. Prepare parameter input.
+    // 1.1. Prepare top cell parameter input.
     FetchParameterInput(kernel_actor, context);
-    // 1.2. Prepare received input from other actors.
-    const auto &iter = kernel_input_to_graph_input_indices_.find(kernel.get());
-    if (iter != kernel_input_to_graph_input_indices_.end()) {
-      std::vector<std::pair<size_t, size_t>> &input_to_graph_input_indices = iter->second;
-      for (const auto &item : input_to_graph_input_indices) {
-        kernel_actor->SetInputDeviceTensor(input_device_tensors_[item.second], item.first);
-        kernel_actor->memory_free_list_[item.first] = input_device_tensors_[item.second];
-        kernel_actor->CopyInputDeviceTensor(input_device_tensors_[item.second], item.first, context);
-      }
-    }
-    // 1.3. Prepare const value.
-    if (!kernel_actor->device_tensor_store_keys_.empty()) {
-      // Collect the inputs from device tensor store.
-      kernel_actor->FetchInputByTensorStore(&kernel_actor->input_device_tensors_, &kernel_actor->input_kernel_tensors_,
-                                            &kernel_actor->input_kernel_tensors_for_infer_,
-                                            &kernel_actor->memory_free_list_, context);
-      if (IsRunningFailed(context)) {
-        return false;
-      }
+    // 1.2. Prepare non top cell input, such as internal parameter msg input, control flow msg input and const value.
+    if (!FetchMsgInputAndConstValueForKernel(kernel_actor.get(), context)) {
+      return false;
     }
 
     // Update output device address for Parameter as graph output case.
@@ -823,6 +953,149 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<DeviceTensor> *const context) 
   return true;
 }
 
+void SuperKernelActor::DispatchParallelLaunchKernels(size_t index, OpContext<DeviceTensor> *const context) {
+  if (index >= parallel_dispatch_num_) {
+    MS_LOG(EXCEPTION) << "Invalid index: " << index << ", expected less than: " << parallel_dispatch_num_;
+  }
+  device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
+  size_t real_stream_id = streams_[index].first;
+  void *real_stream = streams_[index].second;
+
+  for (size_t inner_index = 0; inner_index < parallel_slice_num_; inner_index++) {
+    events_[index + inner_index * parallel_dispatch_num_]->WaitEventWithoutReset(real_stream_id);
+
+    const auto &kernel_actors = parallel_launch_kernels_[index + inner_index * parallel_dispatch_num_];
+    for (auto &kernel_actor : kernel_actors) {
+      if (!kernel_actor) {
+        continue;
+      }
+
+      auto commu_iter = serial_launch_kernels_to_events_.find(kernel_actor.get());
+      if (commu_iter != serial_launch_kernels_to_events_.end()) {
+        ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, "RecordWaitEvent");
+        const auto &event_array = commu_iter->second;
+        auto &record_event = event_array[0];
+        auto &wait_event = event_array[1];
+        record_event->RecordEvent(real_stream_id);
+        wait_event->WaitEventWithoutReset(real_stream_id);
+        continue;
+      }
+
+      const auto &kernel = kernel_actor->kernel_;
+      if (!FetchMsgInputAndConstValueForKernel(kernel_actor.get(), context)) {
+        MS_LOG(EXCEPTION) << "Failed to fetch input and const value for kernel: " << kernel->fullname_with_scope();
+      }
+      SetTraceMemoryForKernel(kernel_actor, true);
+      SetInputTraceMemory(kernel_actor);
+      if (!kernel_actor->max_ref_cnt_output_list_.empty()) {
+        // Allocate dynamic memory for graph output.
+        MemoryManagerActor::GetInstance()->AllocateMemory(&(kernel_actor->max_ref_cnt_output_list_),
+                                                          kernel_actor->device_contexts_[0], context,
+                                                          kernel_actor->GetAID());
+      }
+
+      if (!kernel_actor->is_launch_skipped_) {
+        MS_LOG(DEBUG) << "Begin launch kernel: " << kernel_actor->kernel_->fullname_with_scope();
+        auto ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernel(
+          kernel_actor->kernel_, kernel_actor->input_kernel_tensors_, kernel_actor->workspace_kernel_tensors_,
+          kernel_actor->output_kernel_tensors_, kernel_actor->kernel_mod_, real_stream);
+
+        if (!ret) {
+          MS_LOG(EXCEPTION) << "Launch kernel failed, kernel name: " << kernel_actor->kernel_->fullname_with_scope();
+        }
+        MS_LOG(DEBUG) << "End launch kernel: " << kernel_actor->kernel_->fullname_with_scope();
+      }
+    }
+
+    events_[index + inner_index * parallel_dispatch_num_ + 1]->RecordEvent(real_stream_id);
+  }
+}
+
+void SuperKernelActor::DispatchSerialLaunchKernels(OpContext<DeviceTensor> *const context) {
+  auto *default_stream = device_contexts_[0]->device_res_manager_->GetStream(0);
+  for (auto &kernel_actor : serial_launch_kernels_) {
+    MS_EXCEPTION_IF_NULL(kernel_actor);
+    auto comm_iter = serial_launch_kernels_to_events_.find(kernel_actor.get());
+    if (comm_iter == serial_launch_kernels_to_events_.end()) {
+      MS_LOG(EXCEPTION) << "Not find kernel actor : " << kernel_actor->kernel()->fullname_with_scope();
+    }
+
+    const auto &kernel = kernel_actor->kernel_;
+    if (!FetchMsgInputAndConstValueForKernel(kernel_actor.get(), context)) {
+      MS_LOG(EXCEPTION) << "Failed to fetch input and const value for kernel: " << kernel->fullname_with_scope();
+    }
+    SetTraceMemoryForKernel(kernel_actor, true);
+    SetInputTraceMemory(kernel_actor);
+    if (!kernel_actor->max_ref_cnt_output_list_.empty()) {
+      // Allocate dynamic memory for graph output.
+      MemoryManagerActor::GetInstance()->AllocateMemory(
+        &(kernel_actor->max_ref_cnt_output_list_), kernel_actor->device_contexts_[0], context, kernel_actor->GetAID());
+    }
+
+    auto &llm_manager = LLMManager::GetInstance();
+    bool need_force_resize = llm_manager.need_force_resize(kernel_actor->kernel_mod_->kernel_name());
+    if (need_force_resize) {
+      kernel_actor->ResizeKernelMod();
+      kernel_actor->FetchOutputDeviceTensor(nullptr);
+      kernel_actor->FetchWorkspaceDeviceTensor();
+    }
+
+    const auto &event_array = comm_iter->second;
+    auto &wait_event = event_array[0];
+    wait_event->WaitEventWithoutReset(0);
+
+    MS_LOG(DEBUG) << "Begin serial launch kernel: " << kernel_actor->kernel_->fullname_with_scope();
+    auto ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernel(
+      kernel_actor->kernel_, kernel_actor->input_kernel_tensors_, kernel_actor->workspace_kernel_tensors_,
+      kernel_actor->output_kernel_tensors_, kernel_actor->kernel_mod_, default_stream);
+    if (!ret) {
+      MS_LOG(EXCEPTION) << "Launch kernel failed, kernel name: " << kernel_actor->kernel_->fullname_with_scope();
+    }
+    MS_LOG(DEBUG) << "End serial launch kernel: " << kernel_actor->kernel_->fullname_with_scope();
+
+    auto &record_event = event_array[1];
+    record_event->RecordEvent(0);
+  }
+}
+
+void SuperKernelActor::ParallelDispatchKernels(OpContext<DeviceTensor> *const context) {
+  MS_LOG(INFO) << "Begin parallel dispatch kernels for graph: " << graph_->ToString();
+  device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
+  // Record a event to default stream to notify parallel launch kernels execute on other stream.
+  events_.front()->RecordEvent(0);
+
+  // Dispatch kernel which can parallel launch.
+  for (size_t i = 0; i < parallel_dispatch_num_; i++) {
+    const auto &queue = queues_[i];
+    queue->Push(
+      std::make_shared<BatchLaunchKernelTask>([this, i, context]() { DispatchParallelLaunchKernels(i, context); }));
+  }
+
+  // Dispatch serial launch kernels: communication ops and the kernel need force resize.
+  DispatchSerialLaunchKernels(context);
+
+  for (auto &q : queues_) {
+    GilReleaseWithCheck release_gil;
+    q->Wait();
+  }
+
+  // The default stream need wait all parallel launch kernel execute finish.
+  events_.back()->WaitEventWithoutReset(0);
+  // Reset all event for reuse.
+  {
+    ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPostLaunch, "ResetAllEvent");
+    for (auto &e : events_) {
+      e->ResetEvent();
+    }
+    for (auto &item : serial_launch_kernels_to_events_) {
+      for (auto &e : item.second) {
+        e->ResetEvent();
+      }
+    }
+  }
+  MS_LOG(INFO) << "End parallel dispatch kernels for graph: " << graph_->ToString();
+}
+
 void SuperKernelActor::RunGraphKernelByKernel(OpContext<DeviceTensor> *const context) {
   // Mode check for dynamic shape, async launch and runtime multi pipeline.
   if (!ActorDispatcher::enable_async_launch_kernel()) {
@@ -848,6 +1121,7 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<DeviceTensor> *const con
   if ((somas_info_ != nullptr) && (somas_info_->whole_block_size_ != 0)) {
     MemoryManagerActor::GetInstance()->AllocateSomasMemory(somas_info_, device_contexts_[0], context, GetAID());
   }
+
   if (enable_trace_memory_ && graph_->is_dynamic_shape() && (graph_phase_.find("increment") != std::string::npos)) {
     MS_LOG(DEBUG) << "Enable trace memory for increment inference graph: " << graph_->graph_id()
                   << ", phase: " << graph_phase_;
@@ -859,9 +1133,14 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<DeviceTensor> *const con
     }
   }
 
-  // 3. Launch all kernels by execution order in kernel graph.
-  if (!LaunchAllKernels(context)) {
-    MS_INTERNAL_EXCEPTION(RuntimeError) << "Launch kernels by execution order failed for graph: " << graph_->ToString();
+  if (ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set()) {
+    ParallelDispatchKernels(context);
+  } else {
+    // 3. Launch all kernels by execution order in kernel graph.
+    if (!LaunchAllKernels(context)) {
+      MS_INTERNAL_EXCEPTION(RuntimeError)
+        << "Launch kernels by execution order failed for graph: " << graph_->ToString();
+    }
   }
 
   if (((somas_info_ != nullptr) && (somas_info_->whole_block_size_ != 0)) ||
@@ -879,6 +1158,7 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<DeviceTensor> *const con
     ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kMemoryFree, GetAID().Name());
     MemoryTraceManager::GetInstance().MergeBlocks();
   }
+
   if (ActorDispatcher::enable_use_trace_memory()) {
     // Free block memory for use trace memory (run by static shape) step.
     FreeTraceMemory();
@@ -1160,6 +1440,70 @@ void SuperKernelActor::BuildAndLinkKernelActors() {
   if (enable_kbk_sub_graph_execute_) {
     BuildKernelActors();
     LinkKernelActors();
+
+    if (enable_parallel_dispatch_) {
+      PartitionParallelDispatchKernels();
+    }
+  }
+}
+
+void SuperKernelActor::PartitionParallelDispatchKernels() {
+  auto runtime_conf_instance = RuntimeConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(runtime_conf_instance);
+  parallel_dispatch_num_ = runtime_conf_instance->group_launch_thread_num();
+  if (parallel_dispatch_num_ < 1) {
+    MS_LOG(EXCEPTION) << "Invalid thread num: " << parallel_dispatch_num_
+                      << " for kernel launch group, please check the `thread_num` value of function: "
+                         "runtime.set_kernel_launch_group(thread_num, kernel_group_num)";
+  }
+  MS_LOG(INFO) << "The parallel dispatch thread number: " << parallel_dispatch_num_;
+
+  auto total_kernel_group_num = runtime_conf_instance->kernel_group_num();
+  parallel_slice_num_ = total_kernel_group_num / parallel_dispatch_num_;
+  if (parallel_slice_num_ < 1) {
+    MS_LOG(EXCEPTION) << "Invalid kernel group num: " << total_kernel_group_num
+                      << ", kernel group num must be greater than or equal to thread num: " << parallel_dispatch_num_
+                      << ", please check the parameter value of function: "
+                         "runtime.set_kernel_launch_group(thread_num, kernel_group_num)";
+  }
+  MS_LOG(INFO) << "The kernel group per thread: " << parallel_slice_num_;
+
+  // Get parallel launch kernels slice/group.
+  parallel_launch_kernels_.resize(parallel_dispatch_num_ * parallel_slice_num_);
+  size_t total_kernel_num = kernel_actors_.size();
+  size_t kernel_num_per_dispatcher = total_kernel_num / (parallel_dispatch_num_ * parallel_slice_num_);
+  MS_LOG(INFO) << "Total kernel num: " << kernel_actors_.size();
+  MS_LOG(INFO) << "The kernel num per parallel slice: " << kernel_num_per_dispatcher;
+  auto begin_iter = kernel_actors_.begin();
+  for (size_t i = 0; i < parallel_launch_kernels_.size(); i++) {
+    if (i < parallel_launch_kernels_.size() - 1) {
+      parallel_launch_kernels_[i] = std::vector<KernelActorPtr>(begin_iter + i * kernel_num_per_dispatcher,
+                                                                begin_iter + (i + 1) * kernel_num_per_dispatcher);
+    } else {
+      parallel_launch_kernels_[i] =
+        std::vector<KernelActorPtr>(begin_iter + i * kernel_num_per_dispatcher, kernel_actors_.end());
+    }
+    MS_LOG(INFO) << "The kernel group[" << i << "] kernel num: " << parallel_launch_kernels_[i].size();
+  }
+
+  // Get serial launch kernels.
+  for (auto &kernel_actor : kernel_actors_) {
+    if (!kernel_actor) {
+      continue;
+    }
+    auto &llm_manager = LLMManager::GetInstance();
+    const auto &kernel_name = kernel_actor->kernel_mod_->kernel_name();
+    bool need_force_resize = llm_manager.need_force_resize(kernel_name);
+    if (need_force_resize || (common::AnfAlgo::IsCommunicationOp(kernel_actor->kernel_) ||
+                              kernel_name == "QbmmAllReduceAdd" || kernel_name == "MatmulAllReduceAddRmsNorm")) {
+      serial_launch_kernels_.push_back(kernel_actor);
+    } else if (kernel_name.find(kAllReduceOpName) != std::string::npos ||
+               kernel_name.find(kAllGatherOpName) != std::string::npos ||
+               kernel_name.find(kReduceScatterOpName) != std::string::npos ||
+               kernel_name.find(kAllToAllOpName) != std::string::npos ||
+               kernel_name.find(kAlltoAllOpName) != std::string::npos) {
+      MS_LOG(WARNING) << "Find parallel dispatch communication op: " << kernel_name;
+    }
   }
 }
 

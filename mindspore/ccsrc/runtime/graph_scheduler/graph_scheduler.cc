@@ -322,6 +322,10 @@ bool CheckInputOptimizeCondition(const GraphCompilerInfo &graph_compiler_info) {
     return false;
   }
 
+  if (EnableParallelDispatchKernel()) {
+    return false;
+  }
+
   const auto &parser = graph_compiler_info.control_node_parser_;
   if (parser != nullptr && (parser->IsInited())) {
     return false;
@@ -646,6 +650,9 @@ void GraphScheduler::Clear() {
   // Clear global maps.
   actors_.clear();
   ClearAllActors();
+
+  // Clear all cache memory info before process exits.
+  MemoryTraceManager::GetInstance().ClearAllCache();
 }
 
 void GraphScheduler::ClearActorData(const ActorSet *actor_set) {
