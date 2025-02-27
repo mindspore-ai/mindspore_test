@@ -276,7 +276,7 @@ PyCodeWrapper PyFrameWrapper::GetCode() const { return PyCodeWrapper(EvalFrameGe
  * Cells and fress is empty at the begin of eval frame.
  * Frame is incomplete and no PyFrameObject until executed the first instruction
  */
-PyObject **PyFrameWrapper::FastLocal() const { return EvalFrameGetFastLocals(frame_); }
+PyObject *const *PyFrameWrapper::FastLocal() const { return EvalFrameGetFastLocals(frame_); }
 
 }  // namespace pijit
 }  // namespace mindspore

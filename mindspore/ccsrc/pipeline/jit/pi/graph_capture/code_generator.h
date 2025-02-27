@@ -63,6 +63,8 @@ class CodeGenerator {
     std::vector<std::string> co_freevars;
     std::string co_name;
     py::object co_filename;
+    py::object co_qualname;
+    py::object co_exceptiontable;
   };
 
   explicit CodeGenerator(const NodeSet *nodes)
@@ -86,6 +88,8 @@ class CodeGenerator {
   void SetFreeVariableNames(const std::vector<std::string> &names) { code_.co_freevars = names; }
   void SetCodeName(const std::string &name) { code_.co_name = name; }
   void SetFileName(const py::object &file) { code_.co_filename = file; }
+  void SetQualName(const py::object &qualname) { code_.co_qualname = qualname; }
+  void SetExceptionTable(const py::object &exceptiontable) { code_.co_exceptiontable = exceptiontable; }
 
   void ClearAlive(ValueNode *node) { nodes_alive_.erase(node); }
   void ClearAlive() { nodes_alive_.clear(); }

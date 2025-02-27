@@ -922,7 +922,7 @@ PyObject *CallCodeHook(PyThreadState *tstate, EvalFrameObject *f, JitCompileResu
   return res.inc_ref().ptr();
 }
 
-py::list CollectGradientArguments(PyCodeObject *co, PyObject **fast_locals) {
+py::list CollectGradientArguments(PyCodeObject *co, PyObject *const *fast_locals) {
   py::list arguments;
   bool has_va;
   bool has_kw_va;
@@ -967,7 +967,7 @@ void AutoGrad(EvalFrameObject *frame, PyObject *ret) {
     return;
   }
   // only record primitive now
-  PyObject **f_localsplus = f.FastLocal();
+  auto f_localsplus = f.FastLocal();
   if (f_localsplus[0] == nullptr) {
     return;
   }

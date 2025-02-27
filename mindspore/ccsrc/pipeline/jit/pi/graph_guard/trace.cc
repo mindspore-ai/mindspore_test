@@ -372,7 +372,7 @@ PyObject *RootTrace::Retrieve(PTraceContext context, bool perf) {
 
 PyObject *RootTrace::RetrieveGlobal(PTraceContext context) {
   MS_EXCEPTION_IF_CHECK_FAIL(name_.size() > 0, "check trace");
-  PyObject *globals = context->f_globals;
+  PyObject *globals = context->f_globals_.ptr();
   if (!module_name_.empty()) {
     PyObject *mn = PyUnicode_FromString(module_name_.c_str());
     PyObject *mm = PyImport_GetModule(mn);  // ensure module is initialized
@@ -387,7 +387,7 @@ PyObject *RootTrace::RetrieveGlobal(PTraceContext context) {
   PyObject *ret = PyObject_GetItem(globals, key);
   if (ret == nullptr) {
     PyErr_Clear();
-    ret = PyObject_GetItem(context->f_builtins, key);
+    ret = PyObject_GetItem(context->f_builtins_.ptr(), key);
     if (ret == nullptr) {
       PyErr_Clear();
     }
@@ -398,27 +398,41 @@ PyObject *RootTrace::RetrieveGlobal(PTraceContext context) {
 
 PyObject *RootTrace::RetrieveDeref(PTraceContext context) {
   PyObject *ret = nullptr;
-  PyObject *cell = context->f_localsplus[context->f_code->co_nlocals + idx_];
-  if (cell != nullptr && cell != Py_None) {
-    ret = reinterpret_cast<PyObject *>(PyCell_GET(cell));
-    Py_XINCREF(ret);
+  int index = context->f_code_.FastLocalIndex(PyCodeWrapper::kCoFastCell, idx_);
+  MS_EXCEPTION_IF_CHECK_FAIL(index >= 0, "Error trace");
+  PyObject *cell = context->frame_.FastLocal()[index];
+  if (cell == nullptr) {
+    return nullptr;
   }
+  if (PyCell_Check(cell)) {
+    ret = PyCell_GET(cell);
+  } else {
+    ret = cell;
+  }
+  Py_XINCREF(ret);
   return ret;
 }
 
 PyObject *RootTrace::RetrieveClosure(PTraceContext context) {
-  PyObject *ret = context->f_localsplus[context->f_code->co_nlocals + idx_];
-  Py_XINCREF(ret);
+  PyObject *ret = nullptr;
+  int index = context->f_code_.FastLocalIndex(PyCodeWrapper::kCoFastCell, idx_);
+  MS_EXCEPTION_IF_CHECK_FAIL(index >= 0, "Error trace");
+  PyObject *cell = context->frame_.FastLocal()[index];
+  if (cell == nullptr || !PyCell_Check(cell)) {
+    ret = PyCell_New(ret);
+  } else {
+    ret = Py_NewRef(ret);
+  }
   return ret;
 }
 
 PyObject *RootTrace::RetrieveBuiltin(PTraceContext context) {
   MS_EXCEPTION_IF_CHECK_FAIL(name_.size() > 0, "check trace");
   PyObject *key = PyUnicode_FromString(name_.c_str());
-  PyObject *ret = PyObject_GetItem(context->f_builtins, key);
+  PyObject *ret = PyObject_GetItem(context->f_builtins_.ptr(), key);
   if (ret == nullptr) {
     PyErr_Clear();
-    ret = PyObject_GetItem(context->f_globals, key);
+    ret = PyObject_GetItem(context->f_globals_.ptr(), key);
     if (ret == nullptr) {
       PyErr_Clear();
     }
@@ -427,59 +441,37 @@ PyObject *RootTrace::RetrieveBuiltin(PTraceContext context) {
   return ret;
 }
 
-PyObject *RootTrace::RetrieveLocal(PTraceContext context) { return context->f_locals; }
+PyObject *RootTrace::RetrieveLocal(PTraceContext context) { return context->f_locals_.ptr(); }
 
-PyObject *RootTrace::RetrieveParam(PTraceContext context) { return context->f_localsplus[idx_]; }
+PyObject *RootTrace::RetrieveParam(PTraceContext context) {
+  int index = context->f_code_.FastLocalIndex(PyCodeWrapper::kCoFastLocal, idx_);
+  return context->frame_.FastLocal()[index];
+}
 
 PyObject *RootTrace::RetrieveName(PTraceContext context) {
   PyObject *ret = nullptr;
-  PyObject *name = PyTuple_GetItem(context->f_code->co_names, idx_);
-  PyObject *locals = context->f_locals;
-  if (PyDict_CheckExact(locals)) {
-    ret = PyDict_GetItem(locals, name);
-    Py_XINCREF(ret);
-  } else {
-    ret = PyObject_GetItem(locals, name);
-  }
+  PyObject *name = PyTuple_GetItem(context->f_code_.ptr()->co_names, idx_);
+  PyObject *locals = context->f_locals_.ptr();
+  ret = PyDict_GetItem(locals, name);
+  Py_XINCREF(ret);
   if (ret == nullptr) {
-    ret = PyDict_GetItem(context->f_globals, name);
+    ret = PyDict_GetItem(context->f_globals_.ptr(), name);
     Py_XINCREF(ret);
   }
   if (ret == nullptr) {
-    if (PyDict_CheckExact(context->f_builtins)) {
-      ret = PyDict_GetItem(context->f_builtins, name);
+    if (PyDict_CheckExact(context->f_builtins_.ptr())) {
+      ret = PyDict_GetItem(context->f_builtins_.ptr(), name);
       Py_XINCREF(ret);
     } else {
-      ret = PyObject_GetItem(context->f_builtins, name);
+      ret = PyObject_GetItem(context->f_builtins_.ptr(), name);
     }
   }
   return ret;
 }
 
 PyObject *RootTrace::RetrieveClassDeref(PTraceContext context) {
-#if IS_PYTHON_3_11_PLUS
-  MS_LOG(ERROR) << "not implement in python3.11";
-  return nullptr;
-#else
-  PyObject *ret = nullptr;
-  Py_ssize_t idx = idx_ - PyTuple_GET_SIZE(context->f_code->co_cellvars);
-  if (idx >= 0 && idx < PyTuple_GET_SIZE(context->f_code->co_freevars)) {
-    PyObject *name = PyTuple_GET_ITEM(context->f_code->co_freevars, idx);
-    if (PyDict_CheckExact(context->f_locals)) {
-      ret = PyDict_GetItem(context->f_locals, name);
-      Py_XINCREF(ret);
-    } else {
-      ret = PyObject_GetItem(context->f_locals, name);
-    }
-    if (!ret) {
-      PyObject *cell = context->f_localsplus[context->f_code->co_nlocals + idx_];
-      ret = PyCell_GET(cell);
-      Py_XINCREF(ret);
-    }
-  }
-
-  return ret;
-#endif
+  // this opcode is removed from python 3.12...
+  return RetrieveDeref(context);
 }
 
 std::string RootTrace::ToString(bool include_param) {
@@ -861,9 +853,10 @@ PyObject *ConstTrace::Retrieve(PTraceContext context, bool perf) {
     Py_INCREF(obj_);
     return obj_;
   }
-  if (index_ >= 0 && index_ < PyTuple_GET_SIZE(context->f_code->co_consts)) {
+  PyObject *co_consts = context->f_code_.ptr()->co_consts;
+  if (index_ >= 0 && index_ < PyTuple_GET_SIZE(co_consts)) {
     TracePerf tp(this, perf, false);
-    ret = PyTuple_GET_ITEM(context->f_code->co_consts, index_);
+    ret = PyTuple_GET_ITEM(co_consts, index_);
     Py_INCREF(ret);
     Cache(context, ret);
   } else {
@@ -1452,20 +1445,7 @@ static std::unordered_map<int, PythonBytecodeFuncSet> kBytecodeExecuter = {
   {GET_ITER,
    {ByteCodeSupported,
     [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject * { return PyObject_GetIter(objs[0]); }}},
-  {GET_YIELD_FROM_ITER,
-   {ByteCodeSupported,
-    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject * {
-      PyObject *iterable = objs[0];
-      if (PyCoro_CheckExact(iterable)) {
-        if (!(ctx->f_code->co_flags & (CO_COROUTINE | CO_ITERABLE_COROUTINE))) {
-          return nullptr;
-        }
-      } else if (!PyGen_CheckExact(iterable)) {
-        return PyObject_GetIter(iterable);
-      }
-      Py_INCREF(iterable);
-      return iterable;
-    }}},
+  {GET_YIELD_FROM_ITER, {ByteCodeSupported, nullptr}},
   {PRINT_EXPR, {ByteCodeUnsupported, nullptr}},
   {LOAD_BUILD_CLASS, {ByteCodeUnsupported, nullptr}},
   {YIELD_FROM, {ByteCodeUnsupported, nullptr}},
@@ -1492,15 +1472,14 @@ static std::unordered_map<int, PythonBytecodeFuncSet> kBytecodeExecuter = {
     }}},
   {INPLACE_AND,
    {ByteCodeTest(INPLACE_AND),
-    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject
-                                                                   * {
-                                                                     if (ByteCodeCheck(INPLACE_AND, opargs, objs)) {
-                                                                       return PyNumber_InPlaceAnd(objs[0], objs[1]);
-                                                                     } else {
-                                                                       Py_INCREF(objs[0]);
-                                                                       return objs[0];
-                                                                     }
-                                                                   }}},
+    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject * {
+      if (ByteCodeCheck(INPLACE_AND, opargs, objs)) {
+        return PyNumber_InPlaceAnd(objs[0], objs[1]);
+      } else {
+        Py_INCREF(objs[0]);
+        return objs[0];
+      }
+    }}},
   {INPLACE_XOR,
    {ByteCodeTest(INPLACE_XOR),
     [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject
@@ -2685,17 +2664,12 @@ bool UnsupportedTrace::Support(TraceType tt) { return tt == TraceType::Unsupport
 
 PyObject *GetObjectFromTrace(const EvalFrameObject *frame, TracePtr trace, std::map<size_t, PyObject *> *cache,
                              bool perf) {
-#if IS_PYTHON_3_11_PLUS
-  MS_LOG(ERROR) << "not implement in python3.11";
-  return nullptr;
-#else
-  TraceContext context = {frame->f_globals,    frame->f_builtins, frame->f_locals,
-                          frame->f_localsplus, frame->f_code,     cache};
+  PyFrameWrapper w(const_cast<EvalFrameObject *>(frame));
+  TraceContext context = {w, w.GetCode(), w.Globals(), w.Builtins(), w.Locals(), cache};
   if (trace != nullptr) {
     return trace->Retrieve(&context, perf);
   }
   return nullptr;
-#endif
 }
 }  // namespace pijit
 }  // namespace mindspore

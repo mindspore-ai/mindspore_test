@@ -21,7 +21,7 @@
 #include <vector>
 #include <map>
 #include <functional>
-#include "pipeline/jit/pi/python_adapter/pydef.h"
+#include "pipeline/jit/pi/python_adapter/py_frame.h"
 #include "pybind11/pybind11.h"
 #include "pipeline/jit/pi/graph_guard/info.h"
 
@@ -50,11 +50,12 @@ typedef enum _TraceType {
 } TraceType;
 
 typedef struct _TraceContext {
-  PyObject *f_globals;
-  PyObject *f_builtins;
-  PyObject *f_locals;
-  PyObject *const *f_localsplus;
-  PyCodeObject *f_code;
+  PyFrameWrapper frame_;
+  // fast access cache
+  PyCodeWrapper f_code_;
+  py::object f_globals_;
+  py::object f_builtins_;
+  py::dict f_locals_;
   std::map<size_t, PyObject *> *cache;
 } TraceContext, *PTraceContext;
 

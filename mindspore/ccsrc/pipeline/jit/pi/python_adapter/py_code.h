@@ -44,6 +44,7 @@ class PyCodeWrapper {
   int PositionOnlyArgCount() const;
   int CellVarsSize() const;
   int FreeVarsSize() const;
+  Py_ssize_t *Cell2Arg();
   py::tuple CellVars();
   py::tuple FreeVars();
   py::tuple VarNames();
@@ -64,6 +65,7 @@ class PyCodeWrapper {
     kCoFastFree,
   };
   LocalKind FastLocalKind(int i) const;
+  int FastLocalIndex(LocalKind kind, int instr_arg);
 
  private:
   PyCodeObject *ptr_;

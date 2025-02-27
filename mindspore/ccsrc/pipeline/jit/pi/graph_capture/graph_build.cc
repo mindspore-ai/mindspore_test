@@ -1074,10 +1074,6 @@ PyObject *SetLocalPyObject(ValueNode *node) {
 }
 
 std::pair<PyObject *, ValueNode *> GraphBuilder::SearchSelfPyObject(PyCodeObject *co) {
-#if IS_PYTHON_3_11_PLUS
-  MS_LOG(ERROR) << "not implement in python3.11";
-  return {nullptr, nullptr};
-#else
   if (co->co_argcount < 1) {
     return {nullptr, nullptr};
   }
@@ -1086,11 +1082,18 @@ std::pair<PyObject *, ValueNode *> GraphBuilder::SearchSelfPyObject(PyCodeObject
   // get self or son class, eg.super(Son, self)
   PyObject *obj = SetLocalPyObject(frame_.Local(0));
   Py_ssize_t i, n;
-  if (obj == NULL && co->co_cell2arg) {
+  PyCodeWrapper co_wrapper(co);
+  if (obj != NULL && co_wrapper.FastLocalKind(0) == PyCodeWrapper::LocalKind::kCoFastCell) {
+    auto valid = _Py_OPCODE(_PyCode_CODE(co)[0]) == MAKE_CELL || _Py_OPCODE(_PyCode_CODE(co)[0]) == COPY_FREE_VARS;
+    MS_EXCEPTION_IF_CHECK_FAIL(valid, "First op is not MAKE_CELL or COPY_FREE_VARS");
+    MS_EXCEPTION_IF_CHECK_FAIL(PyCell_Check(obj), "First arg is not a cell");
+    value = frame_.Closure(0)->GetValue();
+    obj = SetLocalPyObject(frame_.Closure(0));
+  } else if (obj == NULL && co_wrapper.Cell2Arg()) {
     // the first argument might be a cell
-    n = PyTuple_GET_SIZE(co->co_cellvars);
+    n = PyTuple_GET_SIZE(co_wrapper.CellVars().ptr());
     for (i = 0; i < n; i++) {
-      if (co->co_cell2arg[i] == 0) {
+      if (co_wrapper.Cell2Arg()[i] == 0) {
         value = frame_.Closure(i)->GetValue();
         obj = SetLocalPyObject(frame_.Closure(i));
         break;
@@ -1099,7 +1102,6 @@ std::pair<PyObject *, ValueNode *> GraphBuilder::SearchSelfPyObject(PyCodeObject
   }
   obj_value = std::make_pair(obj, value);
   return obj_value;
-#endif
 }
 
 ValueNode *GraphBuilder::DoMixedPrecisionAttrAccess(const Instr &instr, ValueNode *node, ValueNode *attr) {
@@ -1534,7 +1536,7 @@ bool GraphBuilder::DoGetIter(const Instr &instr) {
 bool GraphBuilder::DoMakeFunction(const Instr &instr) {
   int oparg = instr.arg();
   // int cnt = __builtin_popcount(oparg & 0xf) + 2;
-  int cnt = !!(oparg & 0x08) + !!(oparg & 0x04) + !!(oparg & 0x02) + !!(oparg & 0x01) + 2;
+  int cnt = !IS_PYTHON_3_11_PLUS + 1 + !!(oparg & 0x08) + !!(oparg & 0x04) + !!(oparg & 0x02) + !!(oparg & 0x01);
   std::vector<ValueNode *> p(frame_.GetStacks().end() - cnt, frame_.GetStacks().end());
   popn(cnt);
   AObject *f = AObject::MakeFunction(CollectObjects(p), graph_->GetGlobals(), oparg);
@@ -1941,19 +1943,14 @@ GraphBuilder::GraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, P
 
 GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
     : root_(this), parent_(nullptr), graph_(nullptr), current_block_(nullptr), no_grad_(false), side_effect_outputs_() {
-#if IS_PYTHON_3_11_PLUS
-  MS_LOG(ERROR) << "not implement in python3.11";
-#else
   auto co_wrapper = f.GetCode();
   PyCodeObject *co = co_wrapper.ptr();
   int argc = co_wrapper.ArgCount();
-  int nfrees = co_wrapper.FreeVarsSize();
   int nlocals = co->co_nlocals;
   int fast_local_size = co_wrapper.FastLocalSize();
-  int free_offset = fast_local_size - nfrees;
   auto varnames_release_handle = co_wrapper.VarNames();
   PyObject *names = varnames_release_handle.ptr();
-  PyObject **fast_locals = f.FastLocal();
+  auto fast_locals = f.FastLocal();
   graph_ = NewGraph(co, f.Globals().ptr());
   frame_.ResizeLocal(nlocals);
   for (int i = 0; i < argc; i++) {
@@ -1973,15 +1970,10 @@ GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
     }
     int offset = fast_index - nlocals;
     int oparg = IS_PYTHON_3_11_PLUS ? fast_index : offset;
-    AbstractNode::Type t = fast_index < free_offset ? AbstractNode::CellVar : AbstractNode::FreeVar;
     PyObject *cell_contents = PyCell_GET(cell);
     CellVarNode *n = graph_->NewCellNode(AObject::Convert(cell), LOAD_CLOSURE, oparg);
     graph_->GetTracedNodes().push_back(n);
     frame_.SetClosure(offset, n);
-    if (t == AbstractNode::CellVar && co->co_cell2arg != nullptr && co->co_cell2arg[offset] != CO_CELL_NOT_AN_ARG) {
-      MS_EXCEPTION_IF_NULL(cell_contents);
-      n->SetFromParam(co->co_cell2arg[offset]);
-    }
     if (cell_contents == nullptr) {
       n->SetValue(&ValueNode::kUnboundLocal);
     } else {
@@ -2012,7 +2004,6 @@ GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
     add_local(n);
     add_local(n->GetValue());
   }
-#endif
 }
 
 void GraphBuilder::CollectInlineInfo(CallNode *node, int depth) {
@@ -2246,10 +2237,6 @@ bool CheckSupportCreateInstance(CallNode *call_node) {
 }
 
 AObject *GraphBuilder::BuildSuperObject(PyCodeObject *co) {
-#if IS_PYTHON_3_11_PLUS
-  MS_LOG(ERROR) << "not implement in python3.11";
-  return nullptr;
-#else
   AObject *super_obj = nullptr;
   if (co->co_argcount == 0) {
     PyErr_SetString(PyExc_RuntimeError, "super(): no arguments");
@@ -2263,21 +2250,21 @@ AObject *GraphBuilder::BuildSuperObject(PyCodeObject *co) {
     PyErr_SetString(PyExc_RuntimeError, "super(): arg[0] deleted");
     return nullptr;
   }
-
-  if (co->co_freevars == NULL) {
+  PyCodeWrapper co_wrapper(co);
+  if (co_wrapper.FreeVars().ptr() == NULL) {
     n = 0;
   } else {
-    assert(PyTuple_Check(co->co_freevars));
-    n = PyTuple_GET_SIZE(co->co_freevars);
+    assert(PyTuple_Check(co_wrapper.FreeVars().ptr()));
+    n = PyTuple_GET_SIZE(co_wrapper.FreeVars().ptr());
   }
 
   PyTypeObject *type = NULL;
   for (i = 0; i < n; i++) {
-    PyObject *name = PyTuple_GET_ITEM(co->co_freevars, i);
+    PyObject *name = PyTuple_GET_ITEM(co_wrapper.FreeVars().ptr(), i);
     assert(PyUnicode_Check(name));
     // check class id
     if (!strcmp("__class__", PyUnicode_AsUTF8(name))) {
-      Py_ssize_t index = PyTuple_GET_SIZE(co->co_cellvars) + i;
+      Py_ssize_t index = PyTuple_GET_SIZE(co_wrapper.CellVars().ptr()) + i;
       PyObject *cell = SetLocalPyObject(frame_.Closure(index));
       if (cell == NULL || !PyCell_Check(cell)) {
         PyErr_SetString(PyExc_RuntimeError, "super(): bad __class__ cell");
@@ -2309,7 +2296,6 @@ AObject *GraphBuilder::BuildSuperObject(PyCodeObject *co) {
   super_obj = AObject::Convert(ret);
   Py_DECREF(ret);
   return super_obj;
-#endif
 }
 
 bool GraphBuilder::ClassInstantiationFold(CallNode *call_node, AObject::Type type) {
@@ -2990,10 +2976,6 @@ ValueNode *GraphBuilder::GetBoundSelf(CallNode *call_node) {
 
 // todo: Add new class CallParameter handler to move these function out.
 bool GraphBuilder::HandleCallParameters(const py::object &func_info, CallNode *call_node, FrameStates *frame) {
-#if IS_PYTHON_3_11_PLUS
-  MS_LOG(ERROR) << "not implement in python3.11";
-  return false;
-#else
   if (func_info.ptr() == nullptr) {
     MS_LOG(EXCEPTION) << "HandleCallParameters with empty func_info input.";
   }
@@ -3018,8 +3000,9 @@ bool GraphBuilder::HandleCallParameters(const py::object &func_info, CallNode *c
   // python3.10 and lower only
   // after store all params
   // cell2arg
-  const Py_ssize_t ncells = PyCodeWrapper(co).CellVarsSize();
-  const Py_ssize_t *c2a_arr = co->co_cell2arg;
+  PyCodeWrapper co_wrapper(co);
+  const Py_ssize_t ncells = co_wrapper.CellVarsSize();
+  const Py_ssize_t *c2a_arr = reinterpret_cast<const Py_ssize_t *>(co_wrapper.Cell2Arg());
   for (int i = 0; c2a_arr != nullptr && i < ncells; ++i) {
     if (c2a_arr[i] != CO_CELL_NOT_AN_ARG) {
       Py_ssize_t arg_index = c2a_arr[i];
@@ -3045,7 +3028,6 @@ bool GraphBuilder::HandleCallParameters(const py::object &func_info, CallNode *c
     }
   }
   return true;
-#endif
 }
 
 static void SetGradFuncInfo(mindspore::pijit::CallNode *call_node);

@@ -46,7 +46,7 @@ class PyFrameWrapper {
   py::object Builtins() const;
 
   PyCodeWrapper GetCode() const;
-  PyObject **FastLocal() const;
+  PyObject *const *FastLocal() const;
 
   PyObject *EvalNewCode(PyThreadState *, PyCodeObject *) const;
 

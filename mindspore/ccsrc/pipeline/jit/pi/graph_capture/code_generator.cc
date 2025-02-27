@@ -205,6 +205,16 @@ static void SetNamedInstrIndex(const std::unique_ptr<Instr> &i, std::unordered_m
     arg = SizeToInt(co_names->size());
     co_names->insert({i->name(), arg});
   }
+#if IS_PYTHON_3_11_PLUS
+  if (i->op() == LOAD_GLOBAL) {
+    arg = arg << 1;
+  }
+#endif
+#if IS_PYTHON_3_12_PLUS
+  if (i->op() == LOAD_ATTR) {
+    arg = arg << 1;
+  }
+#endif
   i->set_arg(arg);
 }
 
@@ -339,7 +349,6 @@ py::object CodeGenerator::Transform(const Code &ccode) {
   py::object co_freevars = ConvertVector(ccode.co_freevars);
   py::object co_cellvars = ConvertVector(ccode.co_cellvars);
   py::str co_name(AttachCodeID(ccode.co_name));
-#if !IS_PYTHON_3_11_PLUS
   PyCodeObject *new_code = PyCode_New(ccode.co_argcount,        // co_argcount
                                       ccode.co_kwonlyargcount,  // co_kwonlyargcount
                                       ccode.co_nlocals,         // co_nlocals
@@ -353,15 +362,18 @@ py::object CodeGenerator::Transform(const Code &ccode) {
                                       co_cellvars.ptr(),        // co_cellvars
                                       ccode.co_filename.ptr(),  // co_filename
                                       co_name.ptr(),            // co_name
-                                      ccode.co_firstlineno,     // co_firstlineno
-                                      co_lnotab.ptr());         // co_lnotab
-
+#if IS_PYTHON_3_11_PLUS
+                                      ccode.co_qualname.ptr(),         // co_qualname
+                                      ccode.co_firstlineno,            // co_firstlineno
+                                      co_lnotab.ptr(),                 // co_lnotab
+                                      ccode.co_exceptiontable.ptr());  // co_exceptiontable
+#else
+                                      ccode.co_firstlineno,  // co_firstlineno
+                                      co_lnotab.ptr());      // co_lnotab
+#endif
   if (new_code != nullptr) {
     return py::reinterpret_steal<py::object>(reinterpret_cast<PyObject *>(new_code));
   }
-#else
-  MS_LOG(ERROR) << "not implement in python3.11";
-#endif
   throw py::error_already_set();
 }
 
@@ -775,7 +787,9 @@ std::vector<std::unique_ptr<Instr>> MakeFunc(const py::object &code, const std::
     instrs.emplace_back(std::make_unique<Instr>(BUILD_TUPLE, closures));
   }
   instrs.emplace_back(std::make_unique<Instr>(LOAD_CONST, 0, code));
+#if !IS_PYTHON_3_11_PLUS
   instrs.emplace_back(std::make_unique<Instr>(LOAD_CONST, 0, py::str(name)));
+#endif
   instrs.emplace_back(std::make_unique<Instr>(MAKE_FUNCTION, make_oparg));
   return instrs;
 }
@@ -814,6 +828,10 @@ py::object CodeBreakGenerator::MakeCapturedCode(std::vector<std::unique_ptr<Inst
   code_gen.SetFreeVariableNames(GetClosureNames(co_));
   code_gen.SetCodeName(MakeCompiledName(py::str(co_->co_name)));
   code_gen.SetFileName(py::cast<py::object>(co_->co_filename));
+#if IS_PYTHON_3_11_PLUS
+  code_gen.SetQualName(py::cast<py::object>(co_->co_qualname));
+  code_gen.SetExceptionTable(py::cast<py::object>(co_->co_exceptiontable));
+#endif
 
   code_gen.EraseUnusedInstr();
   py::object code = CodeGenerator::Transform(code_gen.GetCode());
@@ -996,6 +1014,10 @@ py::object CodeBreakGenerator::MakeUntrackedCode(int untracked_bci, int untracke
     GetClosureNames(co_),
     MakeBrkName(PyUnicode_AsUTF8(co_->co_name), untracked_bci),
     py::reinterpret_borrow<py::object>(co_->co_filename),
+#if IS_PYTHON_3_11_PLUS
+    py::reinterpret_borrow<py::object>(co_->co_qualname),
+    py::reinterpret_borrow<py::object>(co_->co_exceptiontable),
+#endif
   };
   CodeGenerator::EraseUnusedInstr(&ccode.co_code);
   py::object code = CodeGenerator::Transform(ccode);
@@ -1177,6 +1199,10 @@ py::object PackNestedFuncCodes(const std::vector<Graph *> &call_stack, int top_a
       GetClosureNames(co.ptr()),   // freevars
       std::string() + co.Name() + "_at_" + std::to_string(break_bci + 1),
       py::reinterpret_borrow<py::object>(co.ptr()->co_filename),
+#if IS_PYTHON_3_11_PLUS
+      py::reinterpret_borrow<py::object>(co.ptr()->co_qualname),
+      py::reinterpret_borrow<py::object>(co.ptr()->co_exceptiontable),
+#endif
     };
     code = CodeGenerator::Transform(ccode);
 
@@ -1430,6 +1456,10 @@ void CodeBreakGenerator::ExtendCodeInfo(CodeGenerator *cg, bool merge_kw_only) c
   cg->SetCellVariableNames(py::cast<std::vector<std::string>>(cellvars));
   cg->SetFreeVariableNames(py::cast<std::vector<std::string>>(freevars));
   cg->SetFileName(py::reinterpret_borrow<py::object>(co_->co_filename));
+#if IS_PYTHON_3_11_PLUS
+  cg->SetQualName(py::reinterpret_borrow<py::object>(co_->co_qualname));
+  cg->SetExceptionTable(py::reinterpret_borrow<py::object>(co_->co_exceptiontable));
+#endif
 }
 
 void CodeBreakGenerator::Init(const GraphAnalyzer &analyzer, Graph *graph) {
@@ -1931,6 +1961,10 @@ py::object LoopBodyReCaptureCodeGenerator::MakeLoopBodyCode(int loopBodyStartBci
     GetClosureNames(),
     makeLoopBodyFuncName(loopBodyStartBci, loopBodyEndBci),
     py::reinterpret_borrow<py::object>(co_->co_filename),
+#if IS_PYTHON_3_11_PLUS
+    py::reinterpret_borrow<py::object>(co_->co_qualname),
+    py::reinterpret_borrow<py::object>(co_->co_exceptiontable),
+#endif
   };
   py::object code = CodeGenerator::Transform(ccode);
   auto parent = GetJitCompileResults(co_);
@@ -2078,6 +2112,10 @@ py::object LoopBodyReCaptureCodeGenerator::Build() {
     GetClosureNames(),
     makeFuncName(loopBodyStartBci_, loopBodyEndBci_),
     py::reinterpret_borrow<py::object>(co_->co_filename),
+#if IS_PYTHON_3_11_PLUS
+    py::reinterpret_borrow<py::object>(co_->co_qualname),
+    py::reinterpret_borrow<py::object>(co_->co_exceptiontable),
+#endif
   };
   py::object result = CodeGenerator::Transform(ccode);
   return result;

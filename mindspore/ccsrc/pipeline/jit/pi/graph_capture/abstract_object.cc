@@ -479,7 +479,10 @@ AObject *AbstractObjectBase::MakeFunction(const std::vector<AObject *> &args, co
   std::vector<py::object> pyarg;
   std::transform(args.begin(), args.end(), std::back_inserter(pyarg), [](AObject *i) { return i->GetPyObject(); });
   auto iter = pyarg.end() - 1;
-  PyObject *qualname = (*iter--).ptr();
+  PyObject *qualname = nullptr;
+#if !IS_PYTHON_3_11_PLUS
+  qualname = (*iter--).ptr();
+#endif
   PyObject *code = (*iter--).ptr();
   py::object f_handle = py::reinterpret_steal<py::object>(PyFunction_NewWithQualName(code, globals.ptr(), qualname));
   PyFunctionObject *func = reinterpret_cast<PyFunctionObject *>(f_handle.ptr());

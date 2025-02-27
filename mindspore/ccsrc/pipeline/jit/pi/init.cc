@@ -26,7 +26,7 @@ void RegPIJitInterface(py::module *m) {
 #if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION >= 12)
   // pijit cannot support python>=3.12 for now, but will be adapted very soon.
   (void)m->def("jit_mode_pi_enable", []() {
-    MS_LOG(ERROR) << "not support python3.11 bytecode yet.";
+    MS_LOG(ERROR) << "not support python3.12 bytecode yet.";
     return py::bool_(false);
   });
   (void)m->def("jit_mode_pi_disable", []() { return py::bool_(false); });

@@ -81,6 +81,15 @@ py::tuple PyCodeWrapper::CellVars() {
 #endif
 }
 
+Py_ssize_t *PyCodeWrapper::Cell2Arg() {
+#if IS_PYTHON_3_11_PLUS
+  return nullptr;
+#else
+  PyCodeObject *co = this->ptr_;
+  return co->co_cell2arg;
+#endif
+}
+
 py::tuple PyCodeWrapper::FreeVars() {
   PyCodeObject *co = this->ptr_;
 #if IS_PYTHON_3_11_PLUS
@@ -160,17 +169,37 @@ PyCodeWrapper::LocalKind PyCodeWrapper::FastLocalKind(int i) const {
   return LocalKind::kCoFastFree;
 }
 
+int PyCodeWrapper::FastLocalIndex(PyCodeWrapper::LocalKind kind, int instr_arg) {
+  if (kind == LocalKind::kCoFastLocal) {
+    return instr_arg;
+  }
+  if (kind == LocalKind::kCoFastCell || kind == LocalKind::kCoFastFree) {
+#if IS_PYTHON_3_11_PLUS
+    return instr_arg;
+#else
+    return ptr_->co_nlocals + instr_arg;
+#endif
+  }
+  return -1;
+}
+
 py::object PyCodeWrapper::DeepCopy() {
-#if !IS_PYTHON_3_11_PLUS
   PyCodeObject *co = this->ptr_;
+#if IS_PYTHON_3_11_PLUS
+  PyCodeObject *new_code =
+    PyCode_New(co->co_argcount, co->co_kwonlyargcount, co->co_nlocals, co->co_stacksize, co->co_flags, Code().ptr(),
+               co->co_consts, co->co_names, VarNames().ptr(), FreeVars().ptr(), CellVars().ptr(), co->co_filename,
+               co->co_name, co->co_qualname, co->co_firstlineno, LineTab().ptr(), co->co_exceptiontable);
+#else
   PyCodeObject *new_code =
     PyCode_New(co->co_argcount, co->co_kwonlyargcount, co->co_nlocals, co->co_stacksize, co->co_flags, Code().ptr(),
                co->co_consts, co->co_names, VarNames().ptr(), FreeVars().ptr(), CellVars().ptr(), co->co_filename,
                co->co_name, co->co_firstlineno, LineTab().ptr());
+#endif
   if (new_code != nullptr) {
     return py::reinterpret_steal<py::object>(reinterpret_cast<PyObject *>(new_code));
   }
-#endif
+
   throw py::error_already_set();
 }
 
