@@ -135,6 +135,8 @@ mindspore/ops/kernel/ascend/opapi/aclnn_auto_gen/
 # ascendc compile
 mindspore/ops/kernel/ascend/ascendc/custom_ascendc_910
 mindspore/ops/kernel/ascend/ascendc/custom_ascendc_910b
+mindspore/ops/kernel/ascend/ascendc/prebuild/aarch64/custom_ascendc_ops
+mindspore/ops/kernel/ascend/ascendc/prebuild/x86_64/custom_ascendc_ops
 custom_workspace
 
 # leftover internal kernel files after extraction
