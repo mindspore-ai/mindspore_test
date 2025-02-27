@@ -30,6 +30,7 @@ paged_attention:
             kv_cache_quant_mode (String): The mode of kv cache quant, `DEFAULT` and `PERTOKEN` are supported.
             mask_mode (String): The mode of mask, `MASK_DEFAULT` and `TRAPEZOIDAL` are supported. No need to pass
               a real mask tensor if `TRAPEZOIDAL` is set.
+            mla_v_dim (Int64): V dim of PagedAttention MLA mode, set 0 as default.
 
         Outputs:
             attention output.
