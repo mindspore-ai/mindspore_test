@@ -23,7 +23,8 @@
 #include <utility>
 #include "runtime/hardware/device_context.h"
 #include "runtime/pynative/op_compiler.h"
-#include "runtime/device/multi_stream_controller.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/device/res_manager/multi_stream_controller.h"
 #include "kernel/kernel.h"
 #include "mindapi/base/type_traits.h"
 
@@ -167,13 +168,12 @@ class BACKEND_EXPORT DeviceAddressUtils {
       return;
     }
 
-    device::MultiStreamController::GetInstance()->Refresh(device_context);
-    auto task_id_on_stream =
-      device::MultiStreamController::GetInstance()->LaunchTaskIdOnStream(device_context, op_stream_id);
+    auto &controller = device::HalResManager::GetInstance().GetMultiStreamController(device_context->DeviceName());
+    controller->Refresh();
+    auto task_id_on_stream = controller->LaunchTaskIdOnStream(op_stream_id);
     MS_LOG(DEBUG) << "Launch stream_id:" << op_stream_id << ", task id:" << task_id_on_stream << ", op_name:" << op_name
                   << ", cross_stream_addresses size:" << cross_stream_addresses.size();
-    device::MultiStreamController::GetInstance()->RecordEvent(device_context, task_id_on_stream, op_stream_id,
-                                                              cross_stream_addresses);
+    controller->RecordEvent(task_id_on_stream, op_stream_id, cross_stream_addresses);
   }
 
   template <typename... T>
@@ -186,13 +186,12 @@ class BACKEND_EXPORT DeviceAddressUtils {
       return;
     }
 
-    device::MultiStreamController::GetInstance()->Refresh(device_context);
-    auto task_id_on_stream =
-      device::MultiStreamController::GetInstance()->LaunchTaskIdOnStream(device_context, op_stream_id);
+    auto &controller = device::HalResManager::GetInstance().GetMultiStreamController(device_context->DeviceName());
+    controller->Refresh();
+    auto task_id_on_stream = controller->LaunchTaskIdOnStream(op_stream_id);
     MS_LOG(DEBUG) << "Launch stream_id:" << op_stream_id << ", task id:" << task_id_on_stream << ", op_name:" << op_name
                   << ", cross_stream_addresses size:" << cross_stream_addresses.size();
-    device::MultiStreamController::GetInstance()->RecordEvent(device_context, task_id_on_stream, op_stream_id,
-                                                              cross_stream_addresses, event);
+    (void)controller->RecordEvent(task_id_on_stream, op_stream_id, cross_stream_addresses, event);
   }
 
  private:

@@ -25,11 +25,14 @@ namespace device {
 
 enum class DeviceTargetType { kUnknown = 0, kCPU = 1, kAscend = 2, kGPU = 3 };
 RES_EXPORT std::string DeviceTypeToString(const DeviceTargetType &target);
+RES_EXPORT DeviceTargetType DeviceStringToType(const std::string &device_name);
 
 struct ResKey {
   DeviceTargetType device_name_;
   uint32_t device_id_{0};
   std::string ToString() const { return DeviceTypeToString(device_name_) + "_" + std::to_string(device_id_); }
+
+  std::string DeviceName() const { return DeviceTypeToString(device_name_); }
 };
 }  // namespace device
 }  // namespace mindspore

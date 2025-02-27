@@ -20,7 +20,7 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/ms_context.h"
 #include "include/common/pybind_api/api_register.h"
-#include "runtime/device/multi_stream_controller.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
 namespace {
@@ -37,10 +37,11 @@ DeviceContext *GetDeviceCtx() {
 
 int StressDetect() {
   auto device_ctx = GetDeviceCtx();
-  runtime::Pipeline::Get().WaitAll();
-  device::MultiStreamController::GetInstance()->Refresh(device_ctx);
-  (void)device::MultiStreamController::GetInstance()->SyncAllStreams(device_ctx);
   MS_EXCEPTION_IF_NULL(device_ctx);
+  runtime::Pipeline::Get().WaitAll();
+  auto &controller = device::HalResManager::GetInstance().GetMultiStreamController(device_ctx->DeviceName());
+  controller->Refresh();
+  (void)controller->SyncAllStreams();
   MS_EXCEPTION_IF_NULL(device_ctx->device_res_manager_);
   return device_ctx->device_res_manager_->StressDetect();
 }

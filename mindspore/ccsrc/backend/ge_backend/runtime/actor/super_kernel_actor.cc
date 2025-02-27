@@ -22,7 +22,7 @@
 #include "backend/ge_backend/runtime/actor/output_actor.h"
 #include "backend/ge_backend/runtime/actor/memory_manager_actor.h"
 #include "backend/ge_backend/runtime/actor/debug_actor.h"
-#include "runtime/device/multi_stream_controller.h"
+#include "runtime/device/res_manager/multi_stream_controller.h"
 #include "async/async.h"
 #include "utils/phase.h"
 #include "utils/llm_manager.h"

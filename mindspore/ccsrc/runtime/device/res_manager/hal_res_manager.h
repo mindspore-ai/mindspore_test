@@ -21,8 +21,10 @@
 #include <functional>
 #include <utility>
 #include <memory>
+
 #include "include/backend/visible.h"
 #include "runtime/device/res_manager/hal_res_base.h"
+#include "runtime/device/res_manager/multi_stream_controller.h"
 
 namespace mindspore {
 namespace device {
@@ -36,9 +38,15 @@ class RES_EXPORT HalResManager {
   HalResBase *GetOrCreateResManager(const ResKey &res_key);
   HalResPtr GetResManager(const ResKey &res_key);
 
+  MultiStreamControllerPtr &GetMultiStreamController(const std::string &device_name);
+
  private:
   std::map<DeviceTargetType, HalResManagerCreator> hal_res_manager_creators_;
   std::map<std::string, HalResPtr> res_managers_;
+
+  // Since multi device is not supported currently, here use device target type to improve performance.
+  // Device target type : 0, 1, 2, 3, and real device support : 'GPU' 'Ascend' 'CPU'.
+  std::map<std::string, MultiStreamControllerPtr> multi_stream_controllers_;
 };
 class RES_EXPORT HalResManagerRegister {
  public:

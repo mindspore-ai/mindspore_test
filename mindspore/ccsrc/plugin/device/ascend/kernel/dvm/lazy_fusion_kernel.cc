@@ -179,10 +179,10 @@ void LazyFusionKernelAscend::Launch() {
     MS_LOG(EXCEPTION) << "SyncStream failed for dvm kernel";
   }
   if (!cross_stream_addrs_.empty()) {
-    auto &ms = device::MultiStreamController::GetInstance();
-    ms->Refresh(device_context_);
-    auto task_id_on_stream = ms->LaunchTaskIdOnStream(device_context_, stream_id_);
-    ms->RecordEvent(device_context_, task_id_on_stream, stream_id_, cross_stream_addrs_);
+    auto &ms = device::HalResManager::GetInstance().GetMultiStreamController(device_context_->DeviceName());
+    ms->Refresh();
+    auto task_id_on_stream = ms->LaunchTaskIdOnStream(stream_id_);
+    ms->RecordEvent(task_id_on_stream, stream_id_, cross_stream_addrs_);
     cross_stream_addrs_.clear();
   }
   ClearKernel();

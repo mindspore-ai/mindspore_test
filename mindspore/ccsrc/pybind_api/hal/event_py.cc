@@ -22,7 +22,7 @@
 #include "include/common/pybind_api/api_register.h"
 #include "pynative/forward/forward_task.h"
 #include "pynative/pynative_utils.h"
-#include "runtime/device/multi_stream_controller.h"
+#include "runtime/device/res_manager/multi_stream_controller.h"
 
 namespace mindspore {
 namespace hal {
@@ -61,9 +61,10 @@ void EventPy::DispatchRecordEventTask(const StreamPyPtr &stream) {
   pynative::DispatchOp(std::make_shared<pynative::PassthroughFrontendTask>(
     [stream, event = event_, record_stream_id = record_stream_id_, task_id_on_stream = task_id_on_stream_]() {
       auto record_fn = [stream, event, record_stream_id, task_id_on_stream]() {
-        device::MultiStreamController::GetInstance()->Refresh(stream->device_ctx());
-        auto task_id =
-          device::MultiStreamController::GetInstance()->LaunchTaskIdOnStream(stream->device_ctx(), record_stream_id);
+        auto &multi_stream_controller =
+          device::HalResManager::GetInstance().GetMultiStreamController(stream->device_ctx()->DeviceName());
+        multi_stream_controller->Refresh();
+        auto task_id = multi_stream_controller->LaunchTaskIdOnStream(record_stream_id);
         *task_id_on_stream = task_id;
         auto stream_ptr = stream->stream();
         auto device_ctx = stream->device_ctx();
@@ -117,8 +118,9 @@ void EventPy::DispatchWaitEventTask(const StreamPyPtr &stream) {
 
         // Release cross stream memory event, mark record_stream_id is use stream id, wait stream id is memory stream
         // id.
-        (void)device::MultiStreamController::GetInstance()->WaitEvent(stream->device_ctx(), *task_id_on_stream,
-                                                                      record_stream_id, stream->stream_id());
+        (void)device::HalResManager::GetInstance()
+          .GetMultiStreamController(stream->device_ctx()->DeviceName())
+          ->WaitEvent(*task_id_on_stream, record_stream_id, stream->stream_id());
       };
       if (!runtime::OpExecutor::NeedSync()) {
         runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(
@@ -160,7 +162,9 @@ void EventPy::Synchronize() {
   event_->SyncEvent();
   MS_EXCEPTION_IF_NULL(device_ctx_);
   // Clear cross stream memory event which task id less than task_id_on_stream.
-  (void)device::MultiStreamController::GetInstance()->WaitEvent(device_ctx_, *task_id_on_stream_, record_stream_id_);
+  (void)device::HalResManager::GetInstance()
+    .GetMultiStreamController(device_ctx_->DeviceName())
+    ->WaitEvent(*task_id_on_stream_, record_stream_id_);
 }
 
 float EventPy::ElapsedTime(const EventPyPtr &other_event) {

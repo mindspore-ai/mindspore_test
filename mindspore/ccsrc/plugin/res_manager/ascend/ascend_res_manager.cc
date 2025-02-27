@@ -870,6 +870,22 @@ void *AscendResManager::GetCopyDataStream() const {
   return copy_data_stream;
 }
 
+bool AscendResManager::RecordEvent(int64_t task_id_on_stream, uint32_t user_stream_id,
+                                   const std::vector<std::pair<uint32_t, DeviceMemPtr>> &memory_stream_addresses,
+                                   const DeviceEventPtr &input_event) {
+  return mem_manager_->RecordEvent(task_id_on_stream, user_stream_id, memory_stream_addresses, input_event);
+}
+
+bool AscendResManager::WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id, uint32_t memory_stream_id) {
+  return mem_manager_->WaitEvent(task_id_on_stream, user_stream_id, memory_stream_id);
+}
+
+bool AscendResManager::WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id) {
+  return mem_manager_->WaitEvent(task_id_on_stream, user_stream_id);
+}
+
+bool AscendResManager::SyncAllEvents() { return mem_manager_->SyncAllEvents(); }
+
 MS_REGISTER_HAL_RES_MANAGER(kAscendDevice, DeviceTargetType::kAscend, AscendResManager);
 }  // namespace ascend
 }  // namespace device

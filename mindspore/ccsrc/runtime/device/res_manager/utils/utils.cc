@@ -34,5 +34,17 @@ std::string DeviceTypeToString(const DeviceTargetType &target) {
   return "";
 }
 
+DeviceTargetType DeviceStringToType(const std::string &device_name) {
+  if ("Ascend" == device_name) {
+    return DeviceTargetType::kAscend;
+  } else if ("CPU" == device_name) {
+    return DeviceTargetType::kCPU;
+  } else if ("GPU" == device_name) {
+    return DeviceTargetType::kGPU;
+  } else {
+    return DeviceTargetType::kUnknown;
+  }
+}
+
 }  // namespace device
 }  // namespace mindspore

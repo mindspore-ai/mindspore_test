@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 #include "runtime/device/res_manager/hal_res_manager.h"
+
 #include <memory>
+
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace device {
@@ -41,6 +44,7 @@ HalResBase *HalResManager::GetOrCreateResManager(const ResKey &res_key) {
     res_manager = (creator_iter->second)(res_key);
     MS_EXCEPTION_IF_NULL(res_manager);
     res_managers_[res_key.ToString()] = res_manager;
+    multi_stream_controllers_[res_key.DeviceName()] = std::make_shared<MultiStreamController>(res_manager.get());
   } else {
     MS_LOG(EXCEPTION) << "Create resource manager failed, please make sure target device:" << res_key.ToString()
                       << " is valid.";
@@ -55,5 +59,22 @@ HalResPtr HalResManager::GetResManager(const ResKey &res_key) {
   return res_managers_[res_key.ToString()];
 }
 
+MultiStreamControllerPtr &HalResManager::GetMultiStreamController(const std::string &device_name) {
+  auto &&iter = multi_stream_controllers_.find(device_name);
+  if (iter != multi_stream_controllers_.end()) {
+    return iter->second;
+  }
+  MS_LOG(WARNING) << "Found multi stream controller failed, and try to initialize, device_name : " << device_name
+                  << ".";
+  auto device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  auto res_key = ResKey{DeviceStringToType(device_name), device_id};
+  auto hal_res_base = GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(hal_res_base);
+  auto &&iter_again = multi_stream_controllers_.find(device_name);
+  if (iter_again == multi_stream_controllers_.end()) {
+    MS_LOG(EXCEPTION) << "Get multi stream controller failed, device_name : " << device_name << ".";
+  }
+  return iter_again->second;
+}
 }  // namespace device
 }  // namespace mindspore

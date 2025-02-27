@@ -150,6 +150,8 @@ class DeviceContext {
     return initialized_;
   }
 
+  const std::string &DeviceName() const { return device_context_key_.device_name_; }
+
   DeviceContextKey device_context_key_;
   std::unique_ptr<DeviceResManager> device_res_manager_;
   std::unique_ptr<GraphExecutor> graph_executor_;
