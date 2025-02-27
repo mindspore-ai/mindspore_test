@@ -17,6 +17,7 @@
 """Providing auto dynamic shape interface methods."""
 
 import os
+import math
 from mindspore import log as logger
 from mindspore._c_expression import GraphExecutor_, JitExecutor_, TensorPy as Tensor
 from mindspore.common._utils import is_shape_unknown, is_dim_unknown
@@ -185,8 +186,8 @@ class _AutoDynamicShapeManager:
             if isinstance(arg, Tensor) and isinstance(cache, Tensor):
                 if not self.is_tensor_equal(arg, cache):
                     return False
-            elif isinstance(arg, int) and isinstance(cache, int):
-                if arg != cache:
+            elif isinstance(arg, (int, float)) and isinstance(cache, (int, float)):
+                if not math.isclose(arg, cache):
                     return False
             elif isinstance(arg, (tuple, list)) and isinstance(cache, (tuple, list)):
                 if not self._compare_input_args_and_cache_args(arg, cache):
@@ -219,6 +220,13 @@ class _AutoIdentifyDynamicShape:
                 return False
         return True
 
+    def _check_input_int_float(self, arg, cache):
+        """check arg type is int or float"""
+        if (isinstance(arg, int) and not isinstance(cache, int)) or \
+           (isinstance(arg, float) and not isinstance(cache, float)):
+            return False
+        return math.isclose(arg, cache)
+
     def _check_input_tensor_type(self, args_list, cache_list):
         """check input args type"""
         for (arg, cache) in zip(args_list, cache_list):
@@ -231,13 +239,10 @@ class _AutoIdentifyDynamicShape:
                 res = self._check_input_tensor_type(arg, cache)
                 if not res:
                     return False
-            elif (isinstance(arg, int) and isinstance(cache, int)) or \
-                 (isinstance(arg, float) and isinstance(cache, float)):
-                if arg != cache:
+            elif isinstance(arg, (int, float)):
+                if not self._check_input_int_float(arg, cache):
                     return False
             elif isinstance(arg, Tensor) and not isinstance(cache, Tensor):
-                return False
-            elif isinstance(arg, (int, float)) and not isinstance(cache, (int, float)):
                 return False
             elif isinstance(arg, (tuple, list)) and not isinstance(cache, (tuple, list)):
                 return False
@@ -430,10 +435,10 @@ class _AutoIdentifyDynamicShape:
                 if isinstance(arg, tuple):
                     gen_seq_shape = tuple(gen_seq_shape)
                 generalize_one_shape.append(gen_seq_shape)
-            elif isinstance(arg, int) and isinstance(cache, int):
+            elif isinstance(arg, (int, float)) and isinstance(cache, (int, float)):
                 # when is_sink_mode=False, the input must may be scalar, or the value of list/tuple.
                 # is_sink_mode can not be True
-                if arg == cache:
+                if math.isclose(arg, cache):
                     generalize_one_shape.append(arg)
                 else:
                     logger.info("In auto dynamic shape mode, scalar/tuple/list must be equal, it can not be " \

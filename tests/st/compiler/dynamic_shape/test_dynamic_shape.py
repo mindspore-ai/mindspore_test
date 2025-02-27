@@ -43,7 +43,7 @@ def test_dynamic_shape_with_input_tensor():
     Description: The static shape is automatically converted to a dynamic shape.
     Expectation: The compile number is 3.
     """
-    generate_dyn("dynamic_shape_input_tensor.py", "dynamic_shape_tensor_vlog1.log")
+    generate_dyn("dynamic_shape_input_tensor.py", "dynamic_shape_vlog1.log")
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -53,4 +53,14 @@ def test_dynamic_shape_with_input_tuple_tensor():
     Description: The static shape is automatically converted to a dynamic shape.
     Expectation: The compile number is 3.
     """
-    generate_dyn("dynamic_shape_input_tuple_tensor.py", "dynamic_shape_tensor_vlog2.log")
+    generate_dyn("dynamic_shape_input_tuple_tensor.py", "dynamic_shape_vlog2.log")
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_dynamic_shape_with_input_float_tensor():
+    """
+    Feature: Add dynamic shape feature.
+    Description: The static shape is automatically converted to a dynamic shape.
+    Expectation: The compile number is 3.
+    """
+    generate_dyn("dynamic_shape_input_float.py", "dynamic_shape_vlog3.log")
