@@ -3,7 +3,7 @@ mindspore.ops.sum
 
 .. py:function:: mindspore.ops.sum(input, dim=None, keepdim=False, *, dtype=None)
 
-    计算Tensor指定维度元素的和。
+    计算Tensor在指定维度上元素的和。
 
     .. note::
         Tensor类型的 `dim` 仅用作兼容旧版本，不推荐使用。
@@ -18,10 +18,10 @@ mindspore.ops.sum
         - **dtype** (:class:`mindspore.dtype`, 可选) - 期望输出Tensor的类型。默认值： ``None`` 。
 
     返回：
-        Tensor， `input` 指定维度的和。
+        Tensor，`input` 在指定维度上的和。
 
     异常：
-        - **TypeError** - `input` 不是Tensor类型。
-        - **TypeError** - `dim` 类型不是int，tulpe(int)，list(int)，Tensor或None。
-        - **ValueError** - `dim` 取值不在 :math:`[-input.ndim, input.ndim)` 范围。
+        - **TypeError** - `input` 不是Tensor。
+        - **TypeError** - `dim` 不是int，tulpe(int)，list(int)，Tensor或None。
+        - **ValueError** - `dim` 取值不在 :math:`[-input.ndim, input.ndim)` 范围内。
         - **TypeError** - `keepdim` 不是bool类型。

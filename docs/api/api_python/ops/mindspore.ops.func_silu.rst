@@ -3,7 +3,7 @@ mindspore.ops.silu
 
 .. py:function:: mindspore.ops.silu(input)
 
-    按输入逐元素计算激活函数SiLU（Sigmoid Linear Unit）。有时也被称作Swish函数。该激活函数定义为：
+    按输入逐元素计算激活函数SiLU（Sigmoid Linear Unit），也称为Swish函数。该激活函数定义为：
 
     .. math::
         \text{SiLU}(x) = x * \sigma(x),
@@ -26,4 +26,4 @@ mindspore.ops.silu
         Tensor，数据类型和shape与 `input` 的相同。
 
     异常：
-        - **TypeError** - `input` 的数据类型既不是float16也不是float32。
+        - **TypeError** - `input` 的数据类型不是float16或float32。

@@ -4,7 +4,7 @@ mindspore.ops.trapz
 .. py:function:: mindspore.ops.trapz(y, x=None, *, dx=1.0, dim=-1)
 
     使用梯形法则沿给定轴 `dim` 对 `y(x)` 进行积分。
-    默认情况下，元素之间的 `x` 轴距离将被设定为1，或者它们可以由数组 `x` 或者标量 `dx` 提供。
+    默认情况下，元素之间的 `x` 轴距离将被设定为1，或者由数组 `x` 或标量 `dx` 提供。
 
     .. math::
         \mathop{ \int }\nolimits_{{}}^{{}}{y}{ \left( {x} \right) } \text{d} x

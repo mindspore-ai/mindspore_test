@@ -6,7 +6,7 @@
     生成服从均匀分布的随机数。
 
     .. note::
-        广播后，任意位置上Tensor的最小值都必须小于最大值。
+        广播后，任意位置上Tensor的最小值必须小于最大值。
 
     参数：
         - **shape** (Union[tuple, Tensor]) - 指定输出shape，任意维度的Tensor。
@@ -20,6 +20,6 @@
 
     异常：
         - **TypeError** - `shape` 不是tuple或Tensor。
-        - **TypeError** - `minval` 或 `maxval` 的数据类型既不是int32，也不是float32，并且 `minval` 的数据类型与 `maxval` 的不同。
-        - **TypeError** - `seed` 不是int。
-        - **TypeError** - `dtype` 既不是int32，也不是float32。
+        - **TypeError** - `minval` 或 `maxval` 的数据类型不是int32或float32，并且二者的数据类型不一致。
+        - **TypeError** - `seed` 不是int类型。
+        - **TypeError** - `dtype` 不是int32或float32类型。
