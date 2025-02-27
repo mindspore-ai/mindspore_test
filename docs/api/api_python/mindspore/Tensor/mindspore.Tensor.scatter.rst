@@ -3,7 +3,7 @@ mindspore.Tensor.scatter
 
 .. py:method:: mindspore.Tensor.scatter(dim, index, src)
 
-    根据指定索引将 `src` 中的值更新到 `self` 中返回输出。
+    根据指定索引将 `src` 中的值更新到 `self` 中，并返回输出。
     对于一个3D的Tensor, 输出形式如下所示：
 
     .. code-block::
@@ -15,7 +15,7 @@ mindspore.Tensor.scatter
         output[i][j][index[i][j][k]] = src[i][j][k]  # if dim == 2
 
     .. note::
-        如果src为Tensor，则仅当src的shape和index的shape相同时支持求反向梯度。
+        如果src为Tensor，则仅当src的shape和index的shape相同时，支持求反向梯度。
         输入Tensor `self` 的秩必须至少为1。
 
     参数：
@@ -36,11 +36,11 @@ mindspore.Tensor.scatter
     .. py:method:: mindspore.Tensor.scatter(axis, index, src)
         :noindex:
 
-    根据指定索引将 `src` 中的值更新到 `self` 中返回输出。
+    根据指定索引将 `src` 中的值更新到 `self` 中，并返回输出。
     有关更多详细信息，请参阅 :func:`mindspore.ops.tensor_scatter_elements` 。
 
     .. note::
-        如果src为Tensor，则仅当src的shape和index的shape相同时支持求反向梯度。
+        如果src为Tensor，则仅当src的shape和index的shape相同时，支持求反向梯度。
         输入Tensor `self` 的秩必须至少为1。
 
     参数：

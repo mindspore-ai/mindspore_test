@@ -18,4 +18,4 @@ mindspore.Tensor.atan2
 
     异常：
         - **TypeError** - `other` 不是Tensor或常数。
-        - **RuntimeError** - `self` 与 `other` 之间的数据类型转换不被支持。
+        - **RuntimeError** - `self` 与 `other` 之间的数据类型不支持转换。

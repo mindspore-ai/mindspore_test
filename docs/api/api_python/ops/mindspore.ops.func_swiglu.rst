@@ -12,7 +12,7 @@ mindspore.ops.swiglu
     .. math::
         {SwiGLU}(a, b)= Swish(a) \otimes b
 
-    其中，:math:`a` 表示输入 `input` 拆分后 Tensor的前一半元素，:math:`b` 表示输入拆分Tensor的另一半元素，
+    其中，:math:`a` 表示输入 `input` 拆分后Tensor的前一半元素，:math:`b` 表示输入拆分Tensor的另一半元素，
     Swish(a)=a :math:`\sigma` (a)，:math:`\sigma` 是 :func:`mindspore.ops.sigmoid` 函数， :math:`\otimes` 是Hadamard乘积。
 
     参数：

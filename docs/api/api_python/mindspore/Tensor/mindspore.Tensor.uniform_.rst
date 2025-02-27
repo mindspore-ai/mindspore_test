@@ -3,7 +3,7 @@ mindspore.Tensor.uniform\_
 
 .. py:method:: mindspore.Tensor.uniform_(from_=0, to=1, *, generator=None)
 
-    通过在半开区间 :math:`[from\_, to)` 内生成服从均匀分布的随机数来原地更新输入tensor。
+    通过在半开区间 :math:`[from\_, to)` 内生成服从均匀分布的随机数来原地更新输入Tensor。
 
     .. math::
         P(x)= \frac{1}{to - from\_}

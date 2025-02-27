@@ -23,7 +23,7 @@ mindspore.Tensor.sub
         Tensor。其shape与 `self` 、 `other` 广播后的shape相同，并且数据类型是两个输入和 `alpha` 之间具有更高精度或位数更多的类型。
 
     异常：
-        - **TypeError** - 如果 `other` 或者 `alpha` 的类型不是以下类型：`number.Number`、 `bool`、 `Tensor`。
+        - **TypeError** - 如果 `other` 或者 `alpha` 的类型不是以下类型： `number.Number`、 `bool`、 `Tensor`。
         - **TypeError** - 如果 `alpha` 是浮点类型，但是 `self` 和 `other` 却不是浮点类型。
         - **TypeError** - 如果 `alpha` 是bool类型，但是 `self` 和 `other` 却不是bool类型。
 

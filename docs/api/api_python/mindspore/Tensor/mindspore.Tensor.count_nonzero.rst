@@ -12,7 +12,7 @@ mindspore.Tensor.count_nonzero
         - **dim** (Union[None, int, tuple(int), list(int)], 可选) - 要沿其计算非零值数量的维度。默认值： ``None`` ，计算所有非零元素的个数。
 
     返回：
-        Tensor，指定的轴上非零元素数量。
+        Tensor，指定的轴上非零元素的数量。
 
     异常：
         - **TypeError** - `dim` 类型不是int、tuple(int)、list(int)或None。
@@ -25,11 +25,11 @@ mindspore.Tensor.count_nonzero
 
     参数：
         - **axis** (Union[int, tuple(int), list(int)]，可选) - 要沿其计算非零值数量的维度。默认值： ``()`` ，计算所有非零元素的个数。
-        - **keep_dims** (bool, 可选) - 是否保留 `axis` 指定的维度。如果为 ``True`` ，保留对应维度size为1，如果为 ``False`` ，不保留对应维度。默认值： ``False`` 。
+        - **keep_dims** (bool, 可选) - 是否保留 `axis` 指定的维度。如果为 ``True`` ，保留对应维度size为1；如果为 ``False`` ，不保留对应维度。默认值： ``False`` 。
         - **dtype** (Union[Number, mindspore.bool\_]，可选) - 输出Tensor的数据类型。默认值： ``None`` 。
 
     返回：
-        Tensor， `axis` 指定的轴上非零元素数量。数据类型由 `dtype` 指定。
+        Tensor， `axis` 指定的轴上非零元素的数量。数据类型由 `dtype` 指定。
 
     异常：
         - **TypeError** - `axis` 不是int、tuple或者list。
