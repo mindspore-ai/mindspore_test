@@ -31,7 +31,7 @@ tensor::BaseTensorPtr UpsampleNearest2DGradAscendCall(
   const std::vector<tensor::BaseTensorPtr> &outputs) {
   MS_LOG(DEBUG) << "Call start";
   double scales_h = scales[0];
-  double scales_w = scales[0];
+  double scales_w = scales[1];
   LAUNCH_ACLNN(aclnnUpsampleNearest2dBackward, device_context, op->stream_id(), grad_out, output_size, input_size,
                scales_h, scales_w, outputs[0]);
   MS_LOG(DEBUG) << "Call end";
