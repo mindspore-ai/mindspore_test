@@ -2521,7 +2521,6 @@ FuncGraphPtr ForHalfUnrollLess::GenerateFuncGraph(const AbstractBasePtrList &arg
   return fg;
 }
 
-
 // AccumulateDout has two inputs, indicate two dout to accumulate:
 //  1) dout_tuple: (dout, (dout_mask, dout_type))
 //  2) factor_tuple: (factor, (factor_mask, factor_type))
@@ -2592,8 +2591,8 @@ void AccumulateDout::CheckAccumulateDoutInputAbstract(const AbstractBasePtrList 
     auto inner_abs = abs_tuple_elements[inner_tuple_index];
     MS_EXCEPTION_IF_NULL(inner_abs);
     if (!inner_abs->isa<abstract::AbstractTuple>()) {
-      MS_LOG(INTERNAL_EXCEPTION) << input_name << " index " << inner_tuple_index
-                                 << " input should be tuple but got " << inner_abs->ToString();
+      MS_LOG(INTERNAL_EXCEPTION) << input_name << " index " << inner_tuple_index << " input should be tuple but got "
+                                 << inner_abs->ToString();
     }
     auto inner_tuple_abs = inner_abs->cast<abstract::AbstractTuplePtr>();
     constexpr size_t inner_tuple_size = 2;
@@ -2619,13 +2618,11 @@ void AccumulateDout::CheckAccumulateDoutInputAbstract(const AbstractBasePtrList 
   check_abstract(dout_abs, "dout");
 
   constexpr size_t factor_index = 1;
-  const auto &factor_abs =  args_abs_list[factor_index];
+  const auto &factor_abs = args_abs_list[factor_index];
   check_abstract(factor_abs, "factor");
 }
 
-bool AccumulateDout::IsAddDout() {
-  return types_["dout"] == 0;
-}
+bool AccumulateDout::IsAddDout() { return types_["dout"] == 0; }
 
 FuncGraphPtr GenerateMask::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
   constexpr size_t input_len = 1;
@@ -2687,12 +2684,79 @@ FuncGraphPtr GenerateBpropOutTuple::GenerateFuncGraph(const AbstractBasePtrList 
       fg->NewCNodeInOrder({NewValueNode(std::make_shared<prim::GenerateMask>("generate_bprop_mask")), bprop_output_i});
     auto ops_type = NewValueNode(int64_t(0));
     auto bprop_inner_mask = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), dout_mask, ops_type});
-    auto bprop_with_mask =
-      fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), bprop_output_i, bprop_inner_mask});
+    auto bprop_with_mask = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), bprop_output_i, bprop_inner_mask});
     ret_inputs.push_back(bprop_with_mask);
   }
   auto ret = fg->NewCNodeInOrder(ret_inputs);
   fg->set_output(ret);
+  return fg;
+}
+
+bool IsDoutTupleContainsMask(const AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
+  constexpr size_t expected_size = 2;
+  auto tuple_abs = abs->cast<abstract::AbstractTuplePtr>();
+  if (tuple_abs == nullptr || tuple_abs->dynamic_len() || tuple_abs->elements().size() != expected_size) {
+    return false;
+  }
+  constexpr auto index_first = 1;
+  const auto &mask_abs = tuple_abs->elements().at(index_first);
+  auto mask_tuple_abs = mask_abs->cast<abstract::AbstractTuplePtr>();
+  if (mask_tuple_abs == nullptr || mask_tuple_abs->dynamic_len() ||
+      mask_tuple_abs->elements().size() != expected_size) {
+    return false;
+  }
+  const auto &ops_type_abs = mask_tuple_abs->elements().at(index_first);
+  auto ops_type_scalar_abs = ops_type_abs->cast<abstract::AbstractScalarPtr>();
+  auto ops_type_value = ops_type_scalar_abs->BuildValue();
+  if (!ops_type_value->isa<Int64Imm>()) {
+    return false;
+  }
+  auto value = GetValue<int64_t>(ops_type_value);
+  return value == 0 || value == 1 || value == 2;
+}
+
+AnfNodePtr GenerateRealBpropOutput(const FuncGraphPtr &fg, const AnfNodePtr &node, const AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
+  auto tuple_abs = abs->cast<abstract::AbstractTuplePtr>();
+  if (tuple_abs == nullptr || tuple_abs->dynamic_len()) {
+    return node;
+  }
+  // {env_type, (bprop_output, (dout_mask, ops_type))} -> {env_type, bprop_output}
+  if (IsDoutTupleContainsMask(tuple_abs)) {
+    constexpr int64_t index_real_bprop = 0;
+    return fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), node, NewValueNode(index_real_bprop)});
+  }
+  // It could be {env_type, (bprop_output1, (dout_mask1, ops_type1)), (bprop_output2, (dout_mask2, ops_type2)), ...}
+  bool changed = false;
+  AnfNodePtrList node_inputs_list{NewValueNode(prim::kPrimMakeTuple)};
+  const auto &elems = tuple_abs->elements();
+  for (size_t i = 0; i < elems.size(); ++i) {
+    auto item_abs = elems[i];
+    auto item_node = fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), node, NewValueNode(SizeToLong(i))});
+    auto out_node = GenerateRealBpropOutput(fg, item_node, item_abs);
+    (void)node_inputs_list.emplace_back(out_node);
+    if (out_node != item_node) {
+      changed = true;
+    }
+  }
+  if (!changed) {
+    return node;
+  }
+  return fg->NewCNodeInOrder(node_inputs_list);
+}
+
+FuncGraphPtr GetRealBpropOut::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
+  constexpr size_t required_size = 1;
+  if (args_abs_list.size() != required_size) {
+    MS_LOG(INTERNAL_EXCEPTION) << "For " << name_ << ", the input length should be " << required_size << " but got "
+                               << args_abs_list.size();
+  }
+  auto fg = std::make_shared<FuncGraph>();
+  auto input = fg->add_parameter();
+  constexpr size_t index_input = 0;
+  auto real_bprop_output = GenerateRealBpropOutput(fg, input, args_abs_list[index_input]);
+  fg->set_output(real_bprop_output);
   return fg;
 }
 }  // namespace prim

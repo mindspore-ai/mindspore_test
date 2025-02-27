@@ -496,6 +496,15 @@ class GenerateBpropOutTuple : public MetaFuncGraph {
   FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
   friend bool operator==(const GenerateBpropOutTuple &lhs, const GenerateBpropOutTuple &rhs) { return lhs.name_ == rhs.name_; }
 };
+
+class GetRealBpropOut : public MetaFuncGraph {
+ public:
+  GetRealBpropOut(const std::string &name) : MetaFuncGraph(name) {}
+  ~GetRealBpropOut() override = default;
+  MS_DECLARE_PARENT(GetRealBpropOut, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+  friend bool operator==(const GetRealBpropOut &lhs, const GetRealBpropOut &rhs) { return lhs.name_ == rhs.name_; }
+};
 }  // namespace prim
 }  // namespace mindspore
 

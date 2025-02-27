@@ -20,6 +20,7 @@
 #include <vector>
 #include "frontend/optimizer/ad/dfunctor.h"
 #include "frontend/optimizer/irpass.h"
+#include "frontend/operator/composite/composite.h"
 #include "ir/func_graph_cloner.h"
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
@@ -191,6 +192,11 @@ FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &func_graph, const opt::Optimiz
   tape->set_flag(mindspore::kFuncGraphFlagBackPropEntry, true);
   if (is_top) {
     DFunctor::Clear();
+  }
+  if (is_top && is_view_inplace) {
+    auto get_real_bprop_out = std::make_shared<prim::GetRealBpropOut>("get_real_bprop_out");
+    AnfNodePtr bout = tape->NewCNodeInOrder({NewValueNode(get_real_bprop_out), tape->output()});
+    tape->set_output(bout);
   }
 
   multi_graph_sink(res);
