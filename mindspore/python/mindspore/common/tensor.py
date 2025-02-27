@@ -382,8 +382,14 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         raise ValueError(message)
 
     def __int__(self):
-        data = self.asnumpy()
-        return self._convert_scalar_(data, int, "Only one element tensors can be converted to Python scalars")
+        try:
+            data = self._item()
+        except ValueError:
+            raise ValueError("Only one element tensors can be converted to Python scalars")
+        except TypeError as e:
+            raise TypeError(str(e))
+        else:
+            return int(data)
 
     def __float__(self):
         data = self.asnumpy()
