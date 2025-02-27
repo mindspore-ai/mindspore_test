@@ -34,6 +34,7 @@ const char kDispatchThreadsNumConf[] = "DispatchThreadsNumConf";
 const char kOpThreadsNumConf[] = "OpThreadsNumConf";
 const char kLaunchBlocking[] = "launch_blocking";
 const char kThreadBindCore[] = "thread_bind_core";
+const char kKernelLaunchGroupConf[] = "KernelLaunchGroupConf";
 
 class BACKEND_EXPORT RuntimeConf {
  public:
@@ -60,6 +61,15 @@ class BACKEND_EXPORT RuntimeConf {
   }
   uint32_t dispatch_threads_num() { return dispatch_threads_num_; }
   bool IsDispatchThreadsNumConfigured() { return conf_status_.count(kDispatchThreadsNumConf); }
+
+  void set_kernel_launch_group(uint32_t group_launch_thread_num, uint32_t kernel_group_num) {
+    group_launch_thread_num_ = group_launch_thread_num;
+    kernel_group_num_ = kernel_group_num;
+    conf_status_[kKernelLaunchGroupConf] = true;
+  }
+  bool IsKernelLaunchGroupConfigured() { return conf_status_.count(kKernelLaunchGroupConf); }
+  uint32_t group_launch_thread_num() { return group_launch_thread_num_; }
+  uint32_t kernel_group_num() { return kernel_group_num_; }
 
   void set_op_threads_num(uint32_t threads_num) {
     op_threads_num_ = threads_num;
@@ -117,6 +127,8 @@ class BACKEND_EXPORT RuntimeConf {
   bool launch_blocking_;
   uint32_t dispatch_threads_num_;
   uint32_t op_threads_num_;
+  uint32_t group_launch_thread_num_;
+  uint32_t kernel_group_num_;
 
   float mem_init_size_;
   float mem_block_increase_size_;
