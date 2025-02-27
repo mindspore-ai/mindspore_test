@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,24 @@ bool IsInputsFromView(const CNodePtr &origin_node) {
   return false;
 }
 
+bool TransposePattern(const AnfNodePtr &node, const mindspore::FuncGraphManagerPtr &manager) {
+  auto users = manager->node_users()[node];
+  for (const auto &user : users) {
+    auto out = user.first;
+    if (!out->cast<CNodePtr>()) {
+      return false;
+    }
+    // Out is not aclnn kernel: OPAPI_KERNEL
+    auto out_name = AnfUtils::GetCNodeName(out);
+    std::set<std::string> white_list{ops::kNameMatMul, ops::kNameGroupedMatmul, ops::kNameGroupedMatmulV2,
+                                     ops::kNameGroupedMatmulV4};
+    if (white_list.find(out_name) == white_list.end()) {
+      return false;
+    }
+  }
+  return true;
+}
+
 void MakeRefPairForNode(const CNodePtr &origin_node) {
   auto output_num = AnfUtils::GetOutputTensorNum(origin_node);
   auto kernel_info = dynamic_cast<device::KernelInfo *>(origin_node->kernel_info());
@@ -61,6 +79,33 @@ void MakeRefPairForNode(const CNodePtr &origin_node) {
   for (size_t i = 0; i < output_num; ++i) {
     kernel_info->AddRefMap(i, 0);
   }
+}
+
+void CreateViewNode(const std::string &name, const AnfNodePtr &origin_node,
+                    const mindspore::FuncGraphManagerPtr &manager, const FuncGraphPtr &func_graph) {
+  auto ops = name;
+  if (ops == "Transpose") {
+    if (TransposePattern(origin_node, manager)) {
+      ops = ops.append("View");
+    } else {
+      return;
+    }
+  }
+  auto cnode = origin_node->cast<CNodePtr>();
+  auto inputs = cnode->inputs();
+  inputs[0] = NewValueNode(std::make_shared<Primitive>(ops));
+  auto view_node = func_graph->NewCNode(inputs);
+  // Copy attributes
+  common::AnfAlgo::CopyNodeAttrs(origin_node, view_node);
+  // Set node abstract
+  view_node->set_abstract(origin_node->abstract());
+  view_node->set_kernel_info(origin_node->kernel_info_ptr());
+  const auto &kernel_build_info = AnfAlgo::GetSelectKernelBuildInfo(view_node);
+  kernel_build_info->set_kernel_type(OPAPI_KERNEL);
+  view_node->AddAttr("enable_view", MakeValue(true));
+  MakeRefPairForNode(view_node);
+  // Replace node
+  (void)manager->Replace(cnode, view_node);
 }
 
 bool GraphViewReplacePass::Run(const FuncGraphPtr &func_graph) {
@@ -77,34 +122,17 @@ bool GraphViewReplacePass::Run(const FuncGraphPtr &func_graph) {
     }
     auto cnode = node->cast<CNodePtr>();
     auto kernel_name = AnfUtils::GetCNodeName(node);
-    // Use MS_DEV_VIEW_OP="XXX,XX" to enable some of the view ops.
-    if (!mindspore::common::IsEnableAclnnViewOp(kernel_name)) {
-      continue;
-    }
-    // The view op list defined in yamls
-    if (!common::AnfAlgo::IsViewNode(node)) {
+
+    // The view op list defined in yamls. Spacial case: Transpose + GroupMatmul/Matmul
+    if (!(common::AnfAlgo::IsViewNode(node) || kernel_name == "Transpose")) {
       continue;
     }
     // Skip reshapeview when input is from view. Need to be done when the ref count is ready.
     if (kernel_name == "Reshape" && IsInputsFromView(cnode)) {
       continue;
     }
-    MS_LOG(WARNING) << "Process view for " << kernel_name;
-
-    auto inputs = cnode->inputs();
-    inputs[0] = NewValueNode(std::make_shared<Primitive>(kernel_name));
-    auto view_node = func_graph->NewCNode(inputs);
-    // Copy attributes
-    common::AnfAlgo::CopyNodeAttrs(node, view_node);
-    // Set node abstract
-    view_node->set_abstract(node->abstract());
-    view_node->set_kernel_info(node->kernel_info_ptr());
-    const auto &kernel_build_info = AnfAlgo::GetSelectKernelBuildInfo(view_node);
-    kernel_build_info->set_kernel_type(OPAPI_KERNEL);
-    view_node->AddAttr("enable_view", MakeValue(true));
-    MakeRefPairForNode(view_node);
-    // Replace node
-    (void)manager->Replace(cnode, view_node);
+    MS_LOG(INFO) << "Process view for " << kernel_name;
+    CreateViewNode(kernel_name, node, manager, func_graph);
   }
   return True;
 }
