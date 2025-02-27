@@ -227,6 +227,15 @@ std::vector<StrategyPtr> GetNextInfo::GenerateOpStrategies(int64_t stage_id) {
   return sp_vector;
 }
 
+Status GetNextInfo::CheckOutputLayout() {
+  if (outputs_shape_.size() != outputs_tensor_info_.size()) {
+    MS_LOG(ERROR) << "Output size is " << outputs_shape_.size() << ", output layout size is "
+                  << outputs_tensor_info_.size() << ", they are not equal";
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
 REGISTER(GetNextInfo);
 }  // namespace parallel
 }  // namespace mindspore

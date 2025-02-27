@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2024 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1452,7 +1452,13 @@ std::pair<std::vector<NewShapes>, std::vector<Symbols>> ExtractNewShapeAndSymbol
     Shapes input_shapes;
     Symbols input_symbols;
     AnfNodePtr input = all_inputs[i];
-    MS_LOG(DEBUG) << "The " << i << "th input shape of " << node->DebugString() << " is " << input->Shape()->ToString();
+    if (input->Shape() == nullptr) {
+      MS_LOG(DEBUG) << "The " << i << "th input shape of " << node->DebugString() << " is null";
+      continue;
+    } else {
+      MS_LOG(DEBUG) << "The " << i << "th input shape of " << node->DebugString() << " is "
+                    << input->Shape()->ToString();
+    }
     if (HasAbstractMonad(input)) {
       continue;
     }
@@ -2170,26 +2176,50 @@ ShapeVector ToFullShape(const ShapeVector &input_shape, size_t index) {
     return input_shape;
   }
   MS_EXCEPTION_IF_NULL(ParallelContext::GetInstance());
-  if (ParallelContext::GetInstance()->dataset_strategy().empty()) {
-    auto shape_value = input_shape;
-    if (!parallel::ParallelContext::GetInstance()->full_batch()) {
-      auto comm_info = parallel::GetCommInfo();
-      auto world_rank_size = comm_info.device_num / ParallelContext::GetInstance()->pipeline_stage_split_num();
-      if (shape_value[0] > 0) {
-        shape_value[0] = shape_value[0] * SizeToLong(world_rank_size);  // only for static shape
+  auto has_devmat = !ParallelContext::GetInstance()->dataset_strategy_devmat().empty();
+  auto has_tensor_map = !ParallelContext::GetInstance()->dataset_strategy_tensormap().empty();
+  std::vector<int64_t> dataset_strategy_item;
+  if (has_devmat && has_tensor_map) {
+    MS_LOG(INFO) << "Use layout dataset strategy, device matrix is " << has_devmat << ", tensor map is "
+                 << has_tensor_map;
+    // (2, 2, 2)
+    auto corresponding_devmat = ParallelContext::GetInstance()->dataset_strategy_devmat().at(index);
+    // ((2), (1), (0))
+    auto corresponding_tensormap = ParallelContext::GetInstance()->dataset_strategy_tensormap().at(index);
+    for (const auto &tensormap : corresponding_tensormap) {
+      int64_t stra = 1;
+      for (const auto &value : tensormap) {
+        if (value != -1) {
+          auto dev_mat_idx = corresponding_devmat.size() - value - 1;
+          stra *= corresponding_devmat.at(dev_mat_idx);
+        }
       }
+      dataset_strategy_item.push_back(stra);
     }
-    return shape_value;
+    MS_LOG(INFO) << "The dataset strategy is " << dataset_strategy_item;
+  } else {
+    if (ParallelContext::GetInstance()->dataset_strategy().empty()) {
+      auto shape_value = input_shape;
+      if (!parallel::ParallelContext::GetInstance()->full_batch()) {
+        auto comm_info = parallel::GetCommInfo();
+        auto world_rank_size = comm_info.device_num / ParallelContext::GetInstance()->pipeline_stage_split_num();
+        if (shape_value[0] > 0) {
+          shape_value[0] = shape_value[0] * SizeToLong(world_rank_size);  // only for static shape
+        }
+      }
+      return shape_value;
+    }
+    auto dataset_strategy = ParallelContext::GetInstance()->dataset_strategy();
+    if (index >= dataset_strategy.size()) {
+      MS_LOG(EXCEPTION) << "The input shapes size is not equal to dataset strategy size " << dataset_strategy.size();
+    }
+    dataset_strategy_item = dataset_strategy[index];
+    if (input_shape.size() != dataset_strategy_item.size()) {
+      MS_LOG(EXCEPTION) << "The input_shapes[" << index << "]'s size" << input_shape.size()
+                        << " is not equal to dataset_strategy[" << index << "]'s size " << dataset_strategy_item.size();
+    }
   }
-  auto dataset_strategy = ParallelContext::GetInstance()->dataset_strategy();
-  if (index >= dataset_strategy.size()) {
-    MS_LOG(EXCEPTION) << "The input shapes size is not equal to dataset strategy size " << dataset_strategy.size();
-  }
-  auto dataset_strategy_item = dataset_strategy[index];
-  if (input_shape.size() != dataset_strategy_item.size()) {
-    MS_LOG(EXCEPTION) << "The input_shapes[" << index << "]'s size" << input_shape.size()
-                      << " is not equal to dataset_strategy[" << index << "]'s size " << dataset_strategy_item.size();
-  }
+
   ShapeVector shape_value;
   for (size_t i = 0; i < dataset_strategy_item.size(); ++i) {
     if (input_shape[i] > 0) {
@@ -3623,6 +3653,30 @@ static FuncGraphPtr PynativeParallelGraph(const FuncGraphPtr &root, const std::v
     real_graph = GetValueNode<FuncGraphPtr>(cnode->input(1));
   }
   return real_graph;
+}
+
+Shapes ConvertDatasetLayoutToStrategy() {
+  Shapes dataset_strategy;
+  auto all_tensor_map = ParallelContext::GetInstance()->dataset_strategy_tensormap();
+  auto all_dev_mat = ParallelContext::GetInstance()->dataset_strategy_devmat();
+  for (size_t i = 0; i < all_tensor_map.size(); ++i) {
+    Shape local_stra;
+    auto cur_tensor_map = all_tensor_map.at(i);
+    auto cur_dev_mat = all_dev_mat.at(i);
+    for (size_t j = 0; j < cur_tensor_map.size(); ++j) {
+      size_t shard_size = 1;
+      for (size_t k = 0; k < cur_tensor_map.at(j).size(); ++k) {
+        auto val = cur_tensor_map.at(j).at(k);
+        if (val != -1) {
+          auto real_idx = cur_dev_mat.size() - val - 1;
+          shard_size *= cur_dev_mat.at(real_idx);
+        }
+      }
+      local_stra.push_back(shard_size);
+    }
+    dataset_strategy.push_back(local_stra);
+  }
+  return dataset_strategy;
 }
 
 void InsertVirtualOutput(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &all_nodes) {

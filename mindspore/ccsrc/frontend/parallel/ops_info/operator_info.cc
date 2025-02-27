@@ -1322,7 +1322,7 @@ Shape GetSliceShape(const Shape &tensor_shape, const Dimensions &strategy) {
 Status OperatorInfo::Init(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy,
                           const std::vector<std::shared_ptr<TensorLayout>> &in_tensor_layouts,
                           const std::vector<std::shared_ptr<TensorLayout>> &out_tensor_layouts) {
-  if (!in_tensor_layouts.empty()) {
+  if (!in_tensor_layouts.empty() || !out_tensor_layouts.empty()) {
     return InitWithTensorLayout(in_tensor_layouts, out_tensor_layouts);
   }
 
@@ -1584,6 +1584,8 @@ Status OperatorInfo::InitWithTensorLayout(const std::vector<std::shared_ptr<Tens
     MS_LOG(ERROR) << name_ << ": InferVirtualDivOps failed.";
     return FAILED;
   }
+
+  InferReplaceOps();
   return SUCCESS;
 }
 
@@ -1663,6 +1665,8 @@ Status OperatorInfo::InitWithTensorLayoutForNewShape(const std::vector<TensorLay
     MS_LOG(ERROR) << name_ << ": InferVirtualDivOps failed.";
     return FAILED;
   }
+
+  InferReplaceOps();
   return SUCCESS;
 }
 

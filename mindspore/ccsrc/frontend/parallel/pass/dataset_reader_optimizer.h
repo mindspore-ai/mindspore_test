@@ -41,7 +41,8 @@ class DatasetReaderOptimizer {
 
  private:
   RankList InferReapteDataRankThroughDataStrategy(const Strategies &data_stra);
-  RankList InferRepeatRankListWithinStage();
+  std::vector<RankList> InferRepeatDataRankThroughLayout();
+  std::vector<RankList> InferRepeatRankListWithinStage();
   AnfNodePtr FindDatasetParameter(const AnfNodePtr &node, const NodeUsersMap &node_users_map);
   void FindAllStageIdUsedDataParameter(const AnfNodePtr &node, const NodeUsersMap &node_users_map,
                                        std::set<int64_t> *const data_used_stage);

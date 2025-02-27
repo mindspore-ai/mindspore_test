@@ -758,12 +758,57 @@ py::array TensorPybind::AsNumpy(const Tensor &tensor) {
   return py::array(np_dtype, info.shape, info.strides, info.ptr, owner);
 }
 
-void TensorPybind::Offload(const Tensor &tensor) {
+void TensorPybind::Offload(const Tensor &tensor, bool release) {
   py::gil_scoped_release gil_release;
-  tensor.data_sync();
+  if (release) {
+    const auto &device_sync = tensor.device_address();
+    if (device_sync == nullptr) {
+      return;
+    }
+    const auto &device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
+    if (device_address == nullptr) {
+      return;
+    }
+    if (device_address->GetPtr() == nullptr) {
+      MS_LOG(EXCEPTION) << "For Offload, this tensor's device_ptr is nullptr, it may have been offloaded or released by"
+                        << " the framework.";
+    }
+    MS_LOG(INFO) << "Tensor Offload start, the tensor's device_address is : "<< device_address.get()
+                 << ", the tensor's size is : " << device_address->GetSize();
+    device_address->SyncDeviceToHost(device_address->GetSize(), tensor.data_c());
+    device_address->ClearDeviceMemory();
+  } else {
+    tensor.data_sync();
+    // Release device address of graph output tensor.
+    const_cast<Tensor &>(tensor).set_device_address(nullptr);
+  }
+}
 
-  // Release device address of graph output tensor.
-  const_cast<Tensor &>(tensor).set_device_address(nullptr);
+void TensorPybind::Load(const Tensor &tensor) {
+  py::gil_scoped_release gil_release;
+  const auto &device_sync = tensor.device_address();
+  if (device_sync == nullptr) {
+    MS_LOG(WARNING) << "Tensor has no DeviceSync, can not be loaded.";
+    return;
+  }
+  const auto &device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
+  if (device_address == nullptr) {
+    MS_LOG(WARNING) << "Tensor has no DeviceAddress, can not be loaded.";
+    return;
+  }
+  if (tensor.data_c() == nullptr) {
+    MS_LOG(WARNING) << "Tensor has no cpu data, can not be loaded.";
+    return;
+  }
+  const auto device = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  auto device_ctx = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+    {device, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+  // make sure op execute end before data copy
+  runtime::Pipeline::Get().WaitForward();
+  device_ctx->device_res_manager_->AllocateMemory(device_address.get());
+  MS_LOG(INFO) << "Tensor Load start, the tensor's device_address is : "<< device_address.get()
+               << ", the tensor's size is : " << device_address->GetSize();
+  device_address->SyncHostToDevice(device_address->GetSize(), tensor.data_c());
 }
 
 void TensorPybind::SetDeviceAddress(const Tensor &tensor, uintptr_t addr, const ShapeVector &shape,
@@ -1020,9 +1065,14 @@ TensorPyPtr TensorPyImpl::ConvertBytesToTensor(const py::bytes &bytes_obj, const
   return std::make_shared<TensorPy>(tensor);
 }
 
-void TensorPyImpl::SetOffload(const TensorPyPtr &tensorpy) {
+void TensorPyImpl::SetOffload(const TensorPyPtr &tensorpy, bool release) {
   auto tensor = tensorpy->GetTensor().get();
-  TensorPybind::Offload(*tensor);
+  TensorPybind::Offload(*tensor, release);
+}
+
+void TensorPyImpl::SetLoad(const TensorPyPtr &tensorpy) {
+  auto tensor = tensorpy->GetTensor().get();
+  TensorPybind::Load(*tensor);
 }
 
 py::bytes TensorPyImpl::GetBytes(const TensorPyPtr &tensorpy) {
@@ -1404,7 +1454,8 @@ void RegTensorPyFunction(py::class_<TensorPy, std::shared_ptr<TensorPy>> *tensor
   tensor_class->def("remove_hook", TensorPyImpl::RemoveTensorBackwardHook);
   tensor_class->def("__str__", &TensorPy::ToString);
   tensor_class->def("__repr__", &TensorPy::ToStringRepr);
-  tensor_class->def("_offload", TensorPyImpl::SetOffload);
+  tensor_class->def("_offload", TensorPyImpl::SetOffload, py::arg("release"));
+  tensor_class->def("_load", TensorPyImpl::SetLoad);
   tensor_class->def("set_device_address", TensorPyImpl::SetDeviceAddress, py::arg("addr"), py::arg("shape"),
                     py::arg("type_ptr"));
   tensor_class->def("__getitem__", TensorPybind::TensorGetItem);

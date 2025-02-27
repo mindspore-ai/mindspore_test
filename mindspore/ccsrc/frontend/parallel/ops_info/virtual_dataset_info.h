@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,9 @@ class VirtualDatasetInfo : public OperatorInfo {
               const std::vector<std::shared_ptr<TensorLayout>> &in_tensor_layouts = {},
               const std::vector<std::shared_ptr<TensorLayout>> &out_tensor_layouts = {}) override;
   Status InitForCostModel(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy) override;
+  Status CheckInputLayout() override;
+  Status CheckOutputLayout() override;
+  Status InferOutputTensorInfo() override;
 
   std::vector<StrategyPtr> GenerateOpStrategies(int64_t stage_id) override;
   Status SetCostUnderStrategy(const StrategyPtr &strategy) override;
@@ -52,6 +55,7 @@ class VirtualDatasetInfo : public OperatorInfo {
   Status InferTensorMapNew();
   Status GetAttrs() override;
   Status InferAsLossDivisor() override;
+  Status InferAsLossDivisorByLayout() override;
   size_t max_size_strategy_dim_ = 0;
   int64_t shard_num_ = 1;
 
@@ -60,6 +64,7 @@ class VirtualDatasetInfo : public OperatorInfo {
   Status GetSquashedStrategyAndShape(const StrategyPtr &stra, std::vector<std::vector<int64_t>> *squashed_stra,
                                      std::vector<std::vector<int64_t>> *squashed_shape);
   std::vector<int64_t> max_size_strategy_;
+  bool in_infer_flag_ = false;
 };
 }  // namespace parallel
 }  // namespace mindspore

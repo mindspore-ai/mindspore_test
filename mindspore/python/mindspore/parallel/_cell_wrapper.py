@@ -18,18 +18,20 @@ from __future__ import division
 
 import numpy as np
 
+import mindspore.log as logger
 from mindspore import context
 from mindspore.nn.cell import Cell
 from mindspore.ops import operations as P
 from mindspore.ops.operations.comm_ops import AllGather
-from mindspore.communication import GlobalComm
+from mindspore.communication import GlobalComm, get_rank
 from mindspore.common import jit
-from mindspore.communication import create_group, destroy_group
+from mindspore.communication import create_group, destroy_group, get_group_size
 from mindspore.communication._comm_helper import _get_group_map
 from mindspore.train._utils import get_parameter_redundancy, remove_param_redundancy
+from mindspore.parallel.shard import Layout
 
 _ALLGATHER_CELL = None
-
+ALLREDUCE_GROUP_LIST = []
 
 class AllGatherCell(Cell):
     """
@@ -193,3 +195,91 @@ def _single_parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
         if is_manual_communication_group:
             destroy_group(group_name)
     _restore_parallel_context(origin_parallel_mode, origin_dataset_strategy)
+
+
+def _insert_virtual_pp_dim(layout):
+    """insert virtual pp dim in device matrix and create new layout"""
+    if len(layout.to_dict()["rank_list"]) == get_group_size():
+        return layout
+    remain_pp = get_group_size() // len(layout.to_dict()["rank_list"])
+    layout_info = layout.to_dict()
+    device_matrix = layout_info["device_matrix"]
+    tensor_map = layout_info["tensor_map"]
+    alias_name = layout_info["alias_name"]
+    new_devmat = Layout((remain_pp,) + device_matrix, ("remain_pp",) + alias_name)
+    tensor_map_alias_name = [alias_name[len(device_matrix) - val - 1] if val != -1 else "None" for val in
+                             tensor_map]
+    new_layout = new_devmat(*tensor_map_alias_name)
+    return new_layout
+
+
+class CommTensorDataForPP(Cell):
+    """Communicate tensor data for pipeline parallel scenario."""
+    def __init__(self, tensor_data, src_dtensor_info, dst_dtensor_info):
+        super().__init__()
+        self.zeros = P.Zeros()
+
+        self._current_rank_id = get_rank()
+        self._from_dev_num_in_stage = len(src_dtensor_info.layout.to_dict()["rank_list"])
+        self._from_rank_id = src_dtensor_info.layout.to_dict()["rank_list"]
+        self._current_rank_has_data = self._current_rank_id in src_dtensor_info.layout.to_dict()["rank_list"]
+        self._diff_rank_id = [
+            rank_id for rank_id in dst_dtensor_info.layout.to_dict()["rank_list"] if rank_id not in self._from_rank_id]
+        self.all_reduce = P.AllReduce(group=self._create_all_reduce_group())
+
+        self._tensor_data = tensor_data
+        self._tensor_shape = tensor_data.shape
+        if not self._current_rank_has_data:
+            self._tensor_shape = tuple([self._tensor_shape[i] // src_dtensor_info.sharding_strategy[i]
+                                        for i in range(len(self._tensor_shape))])
+
+    def comm_data(self):
+        """communicate data"""
+        out_tensor = None
+        if self._current_rank_has_data:
+            out_tensor = self.all_reduce(self._tensor_data)
+        else:
+            out_tensor = self.all_reduce(self.zeros(self._tensor_shape, self._tensor_data.dtype))
+        return out_tensor
+
+    def _create_all_reduce_group(self):
+        """create all reduce group"""
+        global ALLREDUCE_GROUP_LIST
+        current_rank_stage_id = self._current_rank_id // self._from_dev_num_in_stage
+        end_stage = self._from_dev_num_in_stage * (current_rank_stage_id + 1)
+        rank_pos_in_stage = [rank_id for rank_id in range(self._from_dev_num_in_stage * current_rank_stage_id,
+                                                          end_stage)].index(self._current_rank_id)
+        all_reduce_rank_list = [self._from_rank_id[rank_pos_in_stage]]
+        while rank_pos_in_stage < len(self._diff_rank_id):
+            all_reduce_rank_list.append(self._diff_rank_id[rank_pos_in_stage])
+            rank_pos_in_stage += self._from_dev_num_in_stage
+        all_reduce_rank_list.sort()
+        str_rank_list = '-'.join([str(rank) for rank in all_reduce_rank_list])
+        all_reduce_group = f"pp_allreduce_group-{str_rank_list}"
+        if all_reduce_group in ALLREDUCE_GROUP_LIST:
+            return all_reduce_group
+        ALLREDUCE_GROUP_LIST.append(all_reduce_group)
+        create_group(all_reduce_group, all_reduce_rank_list)
+        logger.debug(f"Create group {all_reduce_group} for tensor data communication.")
+        return all_reduce_group
+
+
+class RedistributionCell(Cell):
+    """Redistribute src_layout to dst_layout"""
+    def __init__(self, src_layout, dst_layout):
+        super().__init__()
+        if src_layout is None or dst_layout is None:
+            raise ValueError("src_layout and dst_layout should not be None.")
+        self._total_dev_num = get_group_size()
+        src_layout = _insert_virtual_pp_dim(src_layout)
+        dst_layout = _insert_virtual_pp_dim(dst_layout)
+        self.src_identity = P.Identity().shard(in_strategy=(src_layout,), out_strategy=(src_layout,))
+        self.src_identity.add_prim_attr("self_define_shard", True)
+        self.dst_identity = P.Identity().shard(in_strategy=(dst_layout,), out_strategy=(dst_layout,))
+        self.dst_identity.add_prim_attr("self_define_shard", True)
+
+    def construct(self, input_tensor):
+        """run redistribution"""
+        src_tensor = self.src_identity(input_tensor)
+        dst_tensor = self.dst_identity(src_tensor)
+        return dst_tensor

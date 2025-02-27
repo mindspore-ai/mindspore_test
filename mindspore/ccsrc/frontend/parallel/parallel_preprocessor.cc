@@ -1219,6 +1219,7 @@ void ParallelPreprocessor::ExtractInformation(const std::vector<AnfNodePtr> &all
       }
     }
 
+    StrategyUtils::SetGetNextLayout(cnode);
     StrategyUtils::SetVirtualDatasetStrategy(cnode);
     ValueNodePtr prim_anf_node = cnode->input(0)->cast<ValueNodePtr>();
     PrimitivePtr prim = GetValueNode<PrimitivePtr>(prim_anf_node);
