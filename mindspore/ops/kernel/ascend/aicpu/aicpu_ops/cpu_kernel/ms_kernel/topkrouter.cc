@@ -141,10 +141,9 @@ void TopKRouterCpuKernel::DoCompute(const CpuKernelContext &ctx, const int i, co
     expert_counter[bs * expert_num + expert_id] = static_cast<T>(position_in_expert + 1);
   } else {
     combine_index[bs * length * k + i * k + j] = static_cast<T>(expert_id * (capacity + 1));
-    if (threshold > 0) {
-      token_accu_weight[bs * length + i] =
-        token_accu_weight[bs * length + i] + router_prob[bs * length * k + i * k + j];
-    }
+  }
+  if (threshold > 0) {
+    token_accu_weight[bs * length + i] = token_accu_weight[bs * length + i] + router_prob[bs * length * k + i * k + j];
   }
 }
 
