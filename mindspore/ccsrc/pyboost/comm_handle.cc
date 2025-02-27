@@ -17,9 +17,8 @@
 #include "mindspore/ccsrc/pyboost/comm_handle.h"
 #include "mindspore/ccsrc/pyboost/comm_utils.h"
 #include "runtime/pynative/op_executor.h"
-#include "runtime/pipeline/task/device_task.h"
+#include "runtime/pynative/task/device_task.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
-
 namespace mindspore {
 namespace kernel {
 namespace pyboost {

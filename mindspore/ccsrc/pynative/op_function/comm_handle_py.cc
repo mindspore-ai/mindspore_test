@@ -16,7 +16,7 @@
 
 #include "pynative/op_function/comm_handle_py.h"
 #include "runtime/pynative/op_executor.h"
-#include "runtime/pipeline/task/device_task.h"
+#include "runtime/pynative/task/device_task.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/ms_context.h"
 #include "include/common/pybind_api/api_register.h"
