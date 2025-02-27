@@ -56,8 +56,15 @@ class StrategyCheckpoint {
 
   bool LoadAutoOpStrategyOn() const { return load_auto_op_strategy_on_; }
   bool SaveAutoOpStrategyOn() const { return save_auto_op_strategy_on_; }
-  Status LoadAutoOpStrategy(StrategyMap *strategy_map, StrategyMap *out_strategy_map);
-  Status SaveAutoOpStrategy(const StrategyMap &strategy_map, const StrategyMap &out_strategy_map);
+  Status LoadAutoOpStrategy(StrategyMap *strategy_map, StrategyMap *out_strategy_map,
+                            TensorLayoutValueMap *tensor_layout_map, TensorLayoutValueMap *out_tensor_layout_map,
+                            TensorLayoutValueMap *tensor_layout_newshape_map,
+                            TensorLayoutValueMap *out_tensor_layout_newshape_map);
+  Status SaveAutoOpStrategy(const StrategyMap &strategy_map, const StrategyMap &out_strategy_map,
+                            const TensorLayoutValueMap &tensor_layout_map,
+                            const TensorLayoutValueMap &out_tensor_layout_map,
+                            const TensorLayoutValueMap &tensor_layout_newshape_map,
+                            const TensorLayoutValueMap &out_tensor_layout_newshape_map);
 
  private:
   std::string auto_op_strategy_file_;

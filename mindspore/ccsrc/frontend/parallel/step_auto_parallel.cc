@@ -324,7 +324,7 @@ void CheckStrategyUsedDevices(const OperatorInfoPtr &operator_info) {
 }
 
 void SetLayoutToOperatorForNewShape(const OperatorInfoPtr &operator_info,
-                                    const mindspore::HashMap<std::string, ValuePtr> attrs) {
+                                    const mindspore::HashMap<std::string, ValuePtr> &attrs) {
   auto cnode = operator_info->cnode();
   std::vector<TensorLayoutBasePtr> in_tensor_layouts_new;
   std::vector<TensorLayoutBasePtr> out_tensor_layouts_new;
@@ -344,7 +344,7 @@ void SetLayoutToOperatorForNewShape(const OperatorInfoPtr &operator_info,
   operator_info->set_config_by_layout(true);
 }
 
-void SetLayoutToOperator(const OperatorInfoPtr &operator_info, const mindspore::HashMap<std::string, ValuePtr> attrs) {
+void SetLayoutToOperator(const OperatorInfoPtr &operator_info, const mindspore::HashMap<std::string, ValuePtr> &attrs) {
   auto cnode = operator_info->cnode();
   auto is_new_shape_base_node = IsSupportNewShapeBaseNode(cnode);
   if (is_new_shape_base_node) {

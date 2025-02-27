@@ -191,7 +191,11 @@ Status StrategyCheckpoint::SaveGroupInfo(const GroupInfoMap &group_info_map, con
   return SUCCESS;
 }
 
-Status StrategyCheckpoint::LoadAutoOpStrategy(StrategyMap *strategy_map, StrategyMap *out_strategy_map) {
+Status StrategyCheckpoint::LoadAutoOpStrategy(StrategyMap *strategy_map, StrategyMap *out_strategy_map,
+                                              TensorLayoutValueMap *tensor_layout_map,
+                                              TensorLayoutValueMap *out_tensor_layout_map,
+                                              TensorLayoutValueMap *tensor_layout_newshape_map,
+                                              TensorLayoutValueMap *out_tensor_layout_newshape_map) {
   if (strategy_map == nullptr) {
     MS_LOG(WARNING) << "Failure:strategy_map is nullptr";
     return FAILED;
@@ -210,14 +214,23 @@ Status StrategyCheckpoint::LoadAutoOpStrategy(StrategyMap *strategy_map, Strateg
   strategy_json_info_.FromJson(stra_ckpt_info_j);
   *strategy_map = strategy_json_info_.strategy_map();
   *out_strategy_map = strategy_json_info_.out_strategy_map();
+  *tensor_layout_map = strategy_json_info_.tensor_layout_map();
+  *out_tensor_layout_map = strategy_json_info_.out_tensor_layout_map();
+  *tensor_layout_newshape_map = strategy_json_info_.tensor_layout_newshape_map();
+  *out_tensor_layout_newshape_map = strategy_json_info_.out_tensor_layout_newshape_map();
   return SUCCESS;
 }
 
-Status StrategyCheckpoint::SaveAutoOpStrategy(const StrategyMap &strategy_map, const StrategyMap &out_strategy_map) {
+Status StrategyCheckpoint::SaveAutoOpStrategy(const StrategyMap &strategy_map, const StrategyMap &out_strategy_map,
+                                              const TensorLayoutValueMap &tensor_layout_map,
+                                              const TensorLayoutValueMap &out_tensor_layout_map,
+                                              const TensorLayoutValueMap &tensor_layout_newshape_map,
+                                              const TensorLayoutValueMap &out_tensor_layout_newshape_map) {
   if (!CheckPath(auto_op_strategy_file_)) {
     MS_LOG(EXCEPTION) << "CheckPoint file is invalid";
   }
-  strategy_json_info_.Init(strategy_map, out_strategy_map, 0);
+  strategy_json_info_.Init(strategy_map, out_strategy_map, tensor_layout_map, out_tensor_layout_map,
+                           tensor_layout_newshape_map, out_tensor_layout_newshape_map, 0);
   auto stra_ckpt_info_j = strategy_json_info_.to_json();
   std::fstream output(auto_op_strategy_file_, std::ios::out);
   stra_ckpt_info_j >> output;
