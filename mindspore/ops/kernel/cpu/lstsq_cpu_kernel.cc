@@ -50,6 +50,12 @@ int LstsqCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
 
   input_0_shape_ = inputs[kIndex0]->GetDeviceShapeVector();
   input_1_shape_ = inputs[kIndex1]->GetDeviceShapeVector();
+  if (IsShapeNone(input_0_shape_)) {
+    MS_LOG(EXCEPTION) << "For " << kernel_name_ << ", the input can not be a empty tensor, but got: " << input_0_shape_;
+  }
+  if (IsShapeNone(input_1_shape_)) {
+    MS_LOG(EXCEPTION) << "For " << kernel_name_ << ", the input can not be a empty tensor, but got: " << input_1_shape_;
+  }
   if (input_0_shape_.size() != kXDimNum) {
     MS_LOG(ERROR) << "For '" << kernel_name_
                   << "', the input x tensor's rank must be 2 for 'Lstsq' Op, but x tensor's rank is "
