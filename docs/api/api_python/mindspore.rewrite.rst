@@ -1,20 +1,18 @@
 mindspore.rewrite
 =================
-MindSpore的ReWrite模块为用户提供了基于自定义规则，对网络的前向计算过程进行修改的能力，如插入、删除和替换语句。
+MindSpore的ReWrite模块允许用户通过自定义规则，修改网络的前向计算过程，支持插入、删除和替换语句等操作。
 
 如何快速使用ReWrite，请参考 `使用ReWrite修改网络 <https://www.mindspore.cn/docs/zh-CN/master/api_python/samples/rewrite/rewrite_tutorial.html>`_ 。
 
 .. py:class:: mindspore.rewrite.Node(node: NodeImpl)
 
-    节点是表达网络中源码语句的一种数据结构。
-
-    每一个节点通常对应一条前向计算过程展开后的语句。
+    节点（Node）在神经网络的计算图中可以被理解为一个基本的数据结构单元，它代表了网络中的某个操作或计算步骤。每个节点通常对应着源码中的一个语句或表达式，它包含了执行该操作所需的信息，如操作类型、输入数据、输出结果以及与其他节点的连接关系。
 
     节点可以表达前向计算过程的Cell调用语句、Primitive调用语句、算术运算语句、返回语句等。
 
     参数：
-        - **node** (NodeImpl) - `Node` 的内部实现实例。建议调用Node下的指定方法来创建Node，例如 `create_call_cell` ，而不直接\
-          调用Node的构造函数。不需关心NodeImpl是什么，只需作为句柄看待。
+        - **node** (NodeImpl) - `Node` 的内部实现实例。建议调用Node下的指定方法来创建Node，例如 `create_call_cell` ，而不是直接\
+          调用Node的构造函数。用户不需关心NodeImpl是什么，只需作为句柄看待。
 
     .. py:method:: mindspore.rewrite.Node.create_call_cell(cell: Cell, targets: List[Union[ScopedValue, str]], args: List[ScopedValue] = None, kwargs: Dict[str, ScopedValue] = None, name: str = "", is_sub_net: bool = False)
         :staticmethod:
@@ -27,7 +25,7 @@ MindSpore的ReWrite模块为用户提供了基于自定义规则，对网络的�
             - **cell** (Cell) - 该节点对应的前向计算的Cell对象。
             - **targets** (List[Union[ScopedValue, str]]) - 表示输出名称。在源代码中作为节点的输出变量名。
             - **args** (List[ScopedValue]) - 该节点的参数名称。用作源代码中代码语句的参数。默认值： ``None`` ，表示 `cell` 没有参数输入。
-            - **kwargs** (Dict[str, ScopedValue]) - 键的类型必须是str，值的类型必须是ScopedValue。用来说明带有关键字的形参的输入参数名称。输入名称在源代码中作为语句表达式中的 `kwargs`。默认值： ``None`` ，表示 `cell` 没有 `kwargs` 输入。
+            - **kwargs** (Dict[str, ScopedValue]) - 用来说明带有关键字的形参的输入参数名称。输入名称在源代码中作为语句表达式中的 `kwargs`。 `key` 的类型必须是str， `value` 的类型必须是ScopedValue。默认值： ``None`` ，表示 `cell` 没有 `kwargs` 输入。
             - **name** (str) - 表示节点的名称。用作源代码中的字段名称。当未提供名称时，ReWrite将根据 `target` 生成一个默认名称。Rewrite将在插入节点时检查并确保名称的唯一性。默认值： ``""`` 。
             - **is_sub_net** (bool) - 表示 `cell` 是否是一个网络。如果 `is_sub_net` 为 ``True`` ，Rewrite将尝试将 `cell` 解析为TreeNode，否则为CallCell节点。默认值： ``False`` 。
 
@@ -39,12 +37,12 @@ MindSpore的ReWrite模块为用户提供了基于自定义规则，对网络的�
             - **TypeError** - 如果参数 `targets` 不是list类型。
             - **TypeError** - 如果参数 `targets` 的成员不是str或者ScopedValue类型。
             - **TypeError** - 如果参数 `args` 不是ScopedValue类型。
-            - **TypeError** - 如果参数 `kwarg` 的 `key` 不是str类型或者 `value` 不是ScopedValue类型。
+            - **TypeError** - 如果参数 `kwargs` 的 `key` 不是str类型或者 `value` 不是ScopedValue类型。
 
     .. py:method:: mindspore.rewrite.Node.create_call_function(function: FunctionType, targets: List[Union[ScopedValue, str]], args: List[ScopedValue] = None, kwargs: Dict[str, ScopedValue] = None)
         :staticmethod:
 
-        通过该接口可以根据一个函数调用创建一个Node实例。
+        通过该接口可以根据一个函数调用来创建一个Node实例。
 
         .. note::
             函数内部的代码不会被解析。
@@ -53,7 +51,7 @@ MindSpore的ReWrite模块为用户提供了基于自定义规则，对网络的�
             - **function** (FunctionType) - 被调用的函数定义。
             - **targets** (List[Union[ScopedValue, str]]) - 表示输出名称。在源代码中作为节点的输出变量名。
             - **args** (List[ScopedValue]) - 该节点的参数名称。用作源代码中代码语句的参数。默认值： ``None`` ，表示 `function` 没有参数输入。
-            - **kwargs** (Dict[str, ScopedValue]) - 键的类型必须是str，值的类型必须是ScopedValue。用来说明带有关键字的形参的输入参数名称。输入名称在源代码中作为语句表达式中的 `kwargs`。默认值： ``None`` ，表示 `function` 没有 `kwargs` 输入。
+            - **kwargs** (Dict[str, ScopedValue]) - 用来说明带有关键字的形参的输入参数名称。输入名称在源代码中作为语句表达式中的 `kwargs`。 `key` 的类型必须是str， `value` 的类型必须是ScopedValue。默认值： ``None`` ，表示 `function` 没有 `kwargs` 输入。
 
         返回：
             Node实例。
@@ -63,7 +61,7 @@ MindSpore的ReWrite模块为用户提供了基于自定义规则，对网络的�
             - **TypeError** - 如果参数 `targets` 不是list类型。
             - **TypeError** - 如果参数 `targets` 的成员不是str或者ScopedValue类型。
             - **TypeError** - 如果参数 `args` 不是ScopedValue类型。
-            - **TypeError** - 如果参数 `kwarg` 的 `key` 不是str类型或者 `value` 不是ScopedValue类型。
+            - **TypeError** - 如果参数 `kwargs` 的 `key` 不是str类型或者 `value` 不是ScopedValue类型。
 
     .. py:method:: mindspore.rewrite.Node.get_args()
 
@@ -186,7 +184,7 @@ MindSpore的ReWrite模块为用户提供了基于自定义规则，对网络的�
     - **Input**： `Input` 节点代表SymbolTree的输入，对应方法的参数。
     - **Output**： `Output` 节点代表SymbolTree的输出，对应方法的 `return` 语句。
     - **Tree**： `Tree` 节点代表前向计算中调用了别的网络。
-    - **CellContainer**: `CellContainer` 节点代表在前向计算中调用 :class:`mindspore.nn.SequentialCell` 函数。
+    - **CellContainer**： `CellContainer` 节点代表在前向计算中调用 :class:`mindspore.nn.SequentialCell` 函数。
     - **MathOps**： `MathOps` 节点代表在前向计算中的一个运算操作，如加法运算或比较运算。
     - **ControlFlow**： `ControlFlow` 节点代表一个控制流语句，如 `if` 语句。
 
@@ -254,7 +252,7 @@ MindSpore的ReWrite模块为用户提供了基于自定义规则，对网络的�
 
     参数：
         - **handler** (SymbolTreeImpl) - SymbolTree内部实现实例。建议调用SymbolTree下的 `create` 方法来创建SymbolTree，而不直接\
-          调用SymbolTree的构造函数。不需关心SymbolTreeImpl是什么，只需作为句柄看待。
+          调用SymbolTree的构造函数。用户不需关心SymbolTreeImpl是什么，只需作为句柄看待。
 
     .. py:method:: mindspore.rewrite.SymbolTree.after(node: Union[Node, str])
 
@@ -289,13 +287,13 @@ MindSpore的ReWrite模块为用户提供了基于自定义规则，对网络的�
 
         该接口会解析传入的网络实例，将前向计算过程的每一条源码语句展开，并解析为节点，存储在SymbolTree中。具体流程如下：
 
-        1. 获取网络实例对应的源码代码
-        2. 对网络进行AST解析，获取网络里各个语句的AST节点（抽象语法树）
-        3. 将网络前向计算过程里的复杂语句展开为多个简单语句
-        4. 创建SymbolTree对象，每个SymbolTree对应一个网络实例
-        5. 使用rewrite节点存储网络前向计算过程的每条语句，节点记录了语句的输入、输出等信息
-        6. 将rewrite节点保存到SymbolTree里，同时更新和维护节点间的拓扑连接关系
-        7. 返回网络实例对应的SymbolTree对象
+        1. 获取网络实例对应的源码代码。
+        2. 对网络进行AST解析，获取网络里各个语句的AST节点（抽象语法树）。
+        3. 将网络前向计算过程里的复杂语句展开为多个简单语句。
+        4. 创建SymbolTree对象，每个SymbolTree对应一个网络实例。
+        5. 使用rewrite节点存储网络前向计算过程的每条语句，节点记录了语句的输入、输出等信息。
+        6. 将rewrite节点保存到SymbolTree里，同时更新和维护节点间的拓扑连接关系。
+        7. 返回网络实例对应的SymbolTree对象。
 
         如果网络的前向计算过程里调用了类型为 :class:`mindspore.nn.Cell` 的用户自定义网络，rewrite会为对应语句生成类型\
         为 `NodeType.Tree` 的节点，这类节点内部保存了一个新的SymbolTree，这个SymbolTree解析并维护着自定义网络的节点信息。
@@ -304,7 +302,7 @@ MindSpore的ReWrite模块为用户提供了基于自定义规则，对网络的�
 
         - :class:`mindspore.nn.SequentialCell`
         - 函数调用（不包括Python内置函数和三方库函数）
-        - 控制流语句，如 `if` 语句
+        - 控制流语句（如 `if` 语句）
 
         .. note::
             由于网络在rewrite操作期间，控制流的具体执行分支还处于未知状态，因此控制流内部的节点和外部的节点之间不会建立拓扑信息。
