@@ -16,7 +16,7 @@
 #include "kernel/ascend/opapi/aclnn/view/transpose_ext_view.h"
 
 #include "kernel/ascend/opapi/aclnn/view/view_utils.h"
-#include "mindspore/ops/view/transpose_ext_strides_calc.h"
+#include "mindspore/ops/view/transpose_ext_view_strides_calc.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
 #include "runtime/device/kernel_runtime.h"
 
@@ -27,7 +27,7 @@ void TransposeExtView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> 
   ops::OldTensorInfoPtr old_info = GetOldTensorInfo(inputs[kIndex0]);
   const auto &dim0 = inputs[kIndex1]->GetValueWithCheck<int64_t>();
   const auto &dim1 = inputs[kIndex2]->GetValueWithCheck<int64_t>();
-  info_ = ops::TransposeExtStridesCalc(old_info, dim0, dim1);
+  info_ = ops::TransposeExtViewStridesCalc(old_info, dim0, dim1);
   outputs[kIndex0]->set_tensor_storage_info(info_[0]);
 }
 
@@ -41,6 +41,6 @@ bool TransposeExtView::Launch(const std::vector<KernelTensor *> &inputs, const s
   return true;
 }
 
-MS_ACLNN_KERNEL_FACTORY_REG(TransposeExt, TransposeExtView);
+MS_ACLNN_KERNEL_FACTORY_REG(TransposeExtView, TransposeExtView);
 }  // namespace kernel
 }  // namespace mindspore

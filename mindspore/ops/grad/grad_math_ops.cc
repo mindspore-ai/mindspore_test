@@ -4266,19 +4266,20 @@ REG_BPROP_BUILDER("TriangularSolve").FreeUselessValues_O({i1}).SetBody(BODYFUNC(
   if (A->need_compute_grad_out()) {
     if (!transpose_opt.has_value()) {
       auto true_branch = [&](Emitter *e) -> NodePtrList {
-        return {
-          e->MatMulExt(e->Conj(x), e->Emit("TransposeExt", {grad_b, e->Value<int64_t>(-1), e->Value<int64_t>(-2)}))};
+        return {e->MatMulExt(e->Conj(x),
+                             e->Emit("TransposeExtView", {grad_b, e->Value<int64_t>(-1), e->Value<int64_t>(-2)}))};
       };
       auto false_branch = [&](Emitter *e) -> NodePtrList {
-        return {e->MatMulExt(grad_b, e->Emit("TransposeExt", {x, e->Value<int64_t>(-1), e->Value<int64_t>(-2)}))};
+        return {e->MatMulExt(grad_b, e->Emit("TransposeExtView", {x, e->Value<int64_t>(-1), e->Value<int64_t>(-2)}))};
       };
       auto transpose_opt_true = ib->Equal(transpose, ib->Value<bool>(true));
       grad_A = ib->Conditional(transpose_opt_true, true_branch, false_branch);
     } else {
-      grad_A = transpose_opt.value()
-                 ? ib->MatMulExt(ib->Conj(x),
-                                 ib->Emit("TransposeExt", {grad_b, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)}))
-                 : ib->MatMulExt(grad_b, ib->Emit("TransposeExt", {x, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)}));
+      grad_A =
+        transpose_opt.value()
+          ? ib->MatMulExt(ib->Conj(x),
+                          ib->Emit("TransposeExtView", {grad_b, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)}))
+          : ib->MatMulExt(grad_b, ib->Emit("TransposeExtView", {x, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)}));
     }
     grad_A = ib->Neg(grad_A);
     auto unitriangular_opt = mindspore::GetScalarValue<bool>(unitriangular->BuildValue());

@@ -50,7 +50,7 @@ from .array_ops import (ArgMaxWithValue, ArgMinWithValue, Argmax, Argmin, BatchT
                         Col2Im, ConjugateTranspose, FillDiagonal, Fills, ResizeNearestNeighborV2, RightShift,
                         ScatterAddWithAxis, ScatterNdMul, SegmentMean, SegmentProd, SegmentSum, SegmentMax, SegmentMin,
                         Tril, Triu, UniqueConsecutive, UnravelIndex, FillV2, CountNonZero, TensorScatterElements,
-                        IndexPut, MaskedScatter, TypeAs)
+                        IndexPut, MaskedScatter, TypeAs, TransposeExtView)
 from .comm_ops import (AllGather, AllReduce, Reduce, NeighborExchange, NeighborExchangeV2, AlltoAll, _AllSwap,
                        Broadcast, CollectiveGather, CollectiveScatter, Barrier, Send, Receive, BatchISendIRecv,
                        _MirrorOperator, _MirrorMiniStepOperator, _MiniStepAllGather, ReduceOp, _VirtualDataset,
@@ -223,6 +223,7 @@ __all__ = [
     'Squeeze',
     'Transpose',
     'TransposeView',
+    'TransposeExtView',
     'OneHot',
     'GatherV2',
     'Gather',

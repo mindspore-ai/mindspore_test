@@ -98,4 +98,4 @@ def test_ops_transpose_dynamic_shape():
     dim0_1 = 2
     dim1_1 = 3
     TEST_OP(transpose_forward_func, [[ms.Tensor(x1), dim0_0, dim1_0], [ms.Tensor(x2), dim0_1, dim1_1]]
-            , 'transpose_ext', disable_mode=['GRAPH_MODE'])
+            , 'transpose_ext_view', disable_mode=['GRAPH_MODE'])

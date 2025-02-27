@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_TRANSPOSE_EXT_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_TRANSPOSE_EXT_H_
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_TRANSPOSE_VIEW_EXT_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_TRANSPOSE_VIEW_EXT_H_
 
 #include <vector>
 #include <set>
@@ -23,13 +23,12 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API TransposeExtFuncImpl : public OpFuncImpl {
+class OPS_API TransposeExtViewFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 };
-class OPS_API TransposeExtViewFuncImpl : public TransposeExtFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_TRANSPOSE_EXT_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_TRANSPOSE_VIEW_EXT_H_
