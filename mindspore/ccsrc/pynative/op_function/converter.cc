@@ -1066,12 +1066,42 @@ ValuePtr ConvertMutableBool(const py::object &obj) {
   return std::make_shared<BoolImm>(obj_bool);
 }
 
-ValuePtr ConvertStubTensor(const py::object &obj) { return PyStubNodeCast(obj); }
-ValuePtr ConvertSimpleTensor(const py::object &obj) { return tensor::ConvertToTensor(obj); }
+ValuePtr ConvertStubTensor(const py::object &obj) {
+  auto tensor = PyStubNodeCast(obj);
+  if (tensor != nullptr) {
+    if (tensor->isa<tensor::BaseTensor>()) {
+      tensor->cast<tensor::BaseTensorPtr>()->set_need_pipeline_sync(true);
+    }
+    return tensor;
+  }
+  return tensor;
+}
+
+ValuePtr ConvertSimpleTensor(const py::object &obj) {
+  auto tensor = tensor::ConvertToTensor(obj);
+  if (tensor != nullptr) {
+    if (tensor->isa<tensor::BaseTensor>()) {
+      tensor->cast<tensor::BaseTensorPtr>()->set_need_pipeline_sync(true);
+    }
+    return tensor;
+  }
+  return tensor;
+}
+
+ValuePtr ConvertTensorList(const py::object &obj) {
+  auto val_seq = parse::ConvertSequence<py::tuple, ValueTuple, parse::ConvertTensor>(obj);
+  if (val_seq != nullptr && val_seq->isa<ValueTuple>()) {
+    EnablePipelineForTupleTensor(val_seq->cast<ValueTuplePtr>());
+    return val_seq;
+  }
+  return val_seq;
+}
 
 static const std::unordered_map<int32_t, OpDefConvertFunc> kParseConverters = {
   {parse::CombineTypesForTypeCast(mindspore::ops::DT_BEGIN, mindspore::ops::DT_TENSOR), ConvertSimpleTensor},
   {parse::CombineTypesForTypeCast(mindspore::ops::DT_TENSOR, mindspore::ops::DT_TENSOR), ConvertStubTensor},
+  {parse::CombineTypesForTypeCast(mindspore::ops::DT_BEGIN, mindspore::ops::DT_TUPLE_TENSOR), ConvertTensorList},
+  {parse::CombineTypesForTypeCast(mindspore::ops::DT_BEGIN, mindspore::ops::DT_LIST_TENSOR), ConvertTensorList},
   {parse::CombineTypesForTypeCast(mindspore::ops::DT_BOOL, mindspore::ops::DT_BOOL), ConvertMutableBool},
   {parse::CombineTypesForTypeCast(mindspore::ops::DT_BEGIN, mindspore::ops::DT_BOOL), ConvertSimpleBool}};
 
@@ -1083,7 +1113,9 @@ OpDefConvertFunc GetSimpleConverterByType(int32_t dtype) {
   return it->second;
 }
 
-ValuePtr ParserArgs::ConvertByParseDtype(const py::object &input, const ops::OP_DTYPE &src, const ops::OP_DTYPE &dst) {
+ValuePtr ParserArgs::ConvertByParseDtype(size_t index) {
+  auto src = src_types_[index];
+  auto dst = dst_types_[index];
   OpDefConvertFunc convert_func = GetSimpleConverterByType(parse::CombineTypesForTypeCast(src, dst));
   if (convert_func == nullptr) {
     convert_func =
@@ -1092,8 +1124,10 @@ ValuePtr ParserArgs::ConvertByParseDtype(const py::object &input, const ops::OP_
       MS_EXCEPTION(NotImplementedError) << "Can't find convert function for src_dtype[" << src << "] and dst_type"
                                         << dst << "].";
     }
+  } else {
+    src_types_[index] = mindspore::ops::DT_BEGIN;
   }
-  auto value = convert_func(input);
+  auto value = convert_func(arg_list_[index]);
   if (value != nullptr) {
     return value;
   }
@@ -1102,9 +1136,9 @@ ValuePtr ParserArgs::ConvertByParseDtype(const py::object &input, const ops::OP_
 
 ValuePtr UnpackTensor(const py::object &input, const std::string &func_name) {
   if (IsStubTensor(input)) {
-    return PyStubNodeCast(input);
+    return ConvertStubTensor(input);
   } else if (tensor::IsTensorPy(input)) {
-    return tensor::ConvertToTensor(input);
+    return ConvertSimpleTensor(input);
   } else {
     MS_EXCEPTION(TypeError) << "Tensor." << func_name << "() doesn't apply to '"
                             << PyNativeAlgo::PyParser::BuilidPyInputTypeString((input)) << "' object.";
@@ -1177,7 +1211,7 @@ std::vector<std::string> GetInvalidKwargsName(const py::dict &kwargs, const std:
 std::vector<std::string> ParamMatchInfo(const py::list &args, const py::dict &kwargs,
                                         const std::vector<FunctionParameter> &params) {
   size_t argpos = 0;
-  std::string type_info = "    match failed because invalied types: (";
+  std::string type_info = "    match failed because invalid types: (";
   std::string guide_line(type_info.size(), ' ');
   while (argpos < params.size()) {
     bool is_kwd = argpos >= args.size();

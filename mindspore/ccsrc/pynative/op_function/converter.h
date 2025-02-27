@@ -138,7 +138,7 @@ struct PYNATIVE_EXPORT ParserArgs {
     src_types_.resize(signature->params_.size());
     dst_types_.resize(signature->params_.size());
   }
-  ValuePtr ConvertByParseDtype(const py::object &input, const ops::OP_DTYPE &src, const ops::OP_DTYPE &dst);
+  ValuePtr ConvertByParseDtype(size_t index);
   void SetArg(const py::object &arg, const ConvertPair &convert_type, size_t index);
   void ClearArgs();
   const int &GetOvertLoadIndex() { return signature_->index_; }
@@ -149,7 +149,7 @@ struct PYNATIVE_EXPORT ParserArgs {
     if (index >= arg_list_.size()) {
       MS_LOG(EXCEPTION) << "Invalid index" << index << "for argument convert.";
     }
-    auto convert = ConvertByParseDtype(arg_list_[index], src_types_[index], dst_types_[index]);
+    auto convert = ConvertByParseDtype(index);
     if (convert != nullptr && convert->isa<T>()) {
       return convert->cast<std::shared_ptr<T>>();
     }

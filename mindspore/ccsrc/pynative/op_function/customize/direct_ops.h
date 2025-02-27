@@ -17,13 +17,12 @@
 #ifndef MINDSPORE_CCSRC_PIPELINE_PYNATIVE_OP_FUNCTION_CUSTOMIZE_DIRECT_OPS_H
 #define MINDSPORE_CCSRC_PIPELINE_PYNATIVE_OP_FUNCTION_CUSTOMIZE_DIRECT_OPS_H
 
+#include <optional>
+#include <vector>
 #include "pybind11/pybind11.h"
 #include "mindspore/core/include/ir/anf.h"
 #include "include/common/visible.h"
-#include <optional>
-#include <vector>
 #include "mindspore/core/include/ops/op_def.h"
-#include "mindspore/core/include/ir/anf.h"
 #include "mindspore/core/include/ir/value.h"
 
 namespace py = pybind11;
