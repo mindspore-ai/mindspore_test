@@ -429,7 +429,7 @@ inline const std::string &MsContext::get_param<std::string>(MsCtxParam param) co
   MarkReadStatus(param);
   // The configuration of api interface takes priority effect.
   if (param == MS_CTX_DEVICE_TARGET && DeviceManagerConf::GetInstance()->IsDeviceEnable()) {
-    return DeviceManagerConf::GetInstance()->device_target();
+    return DeviceManagerConf::GetInstance()->GetDeviceTarget();
   }
   if (param == MS_CTX_DETERMINISTIC && DeviceManagerConf::GetInstance()->IsDeterministicConfigured()) {
     return DeviceManagerConf::GetInstance()->deterministic();
