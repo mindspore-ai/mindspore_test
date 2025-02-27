@@ -334,8 +334,9 @@ FuncGraphPtr AdaptBpropInput(const FuncGraphPtr &bprop_fg) {
       (void)res_input.emplace_back(input);
       continue;
     }
+    auto get_dout = std::make_shared<prim::GetDout>("get_dout_from_tuple");
     auto real_dout = fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), input, NewValueNode(int64_t(0))});
-    (void)res_input.emplace_back(real_dout);
+    (void)res_input.emplace_back(fg->NewCNodeInOrder({NewValueNode(get_dout), input}));
   }
   auto res_node = fg->NewCNodeInOrder(res_input);
   fg->set_output(res_node);

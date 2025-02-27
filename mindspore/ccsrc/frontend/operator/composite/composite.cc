@@ -2641,7 +2641,7 @@ FuncGraphPtr GetDout::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list
   auto input = fg->add_parameter();
   auto input_abstract = args_abs_list[0];
   MS_EXCEPTION_IF_NULL(input_abstract);
-  if (input_abstract->isa<abstract::AbstractMonad>()) {
+  if (!input_abstract->isa<abstract::AbstractTuple>()) {
     fg->set_output(input);
     return fg;
   }
