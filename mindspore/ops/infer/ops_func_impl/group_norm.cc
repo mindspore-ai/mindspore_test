@@ -66,6 +66,10 @@ BaseShapePtr GroupNormFuncImpl::InferShape(const PrimitivePtr &primitive,
   }
   const int64_t N = x_shape[0];
   const int64_t channel = x_shape[1];
+  if (num_groups <= 0) {
+    MS_EXCEPTION(ValueError) << "For " << primitive->name() << ", the 'num_groups' must be greater than 0, but got "
+                             << num_groups;
+  }
   if (!IsDynamic(x_shape) && (channel % num_groups != 0)) {
     MS_EXCEPTION(ValueError) << "For " << primitive->name() << ", the 'num_channels' must be divided by 'num_groups', "
                              << "but got 'num_channels': " << channel << " ,'num_groups': " << num_groups;
@@ -161,6 +165,10 @@ ShapeArray GroupNormFuncImpl::InferShape(const PrimitivePtr &primitive, const Va
   int64_t num_groups = num_groups_opt.value();
   auto N = x_shape[0];
   const int64_t channel = x_shape[1];
+  if (num_groups <= 0) {
+    MS_EXCEPTION(ValueError) << "For " << primitive->name() << ", the 'num_groups' must be greater than 0, but got "
+                             << num_groups;
+  }
   if (!IsDynamic(x_shape) && (channel % num_groups != 0)) {
     MS_EXCEPTION(ValueError) << "For " << primitive->name() << ", the 'num_channels' must be divided by 'num_groups', "
                              << "but got 'num_channels': " << channel << " ,'num_groups': " << num_groups;
