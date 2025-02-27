@@ -1440,6 +1440,13 @@ bool IsolatedNodeAttach(const FuncGraphPtr &root, const opt::OptimizerPtr &optim
     if (!IsPrimitiveCNode(csub_graph_output->input(1), prim::kPrimReceive)) {
       continue;
     }
+    auto recv = csub_graph_output->input(1)->cast<CNodePtr>();
+    if (recv->HasPrimalAttr(FREEZE)) {
+      auto freeze_v = recv->GetPrimalAttr(FREEZE);
+      if (GetValue<bool>(freeze_v)) {
+        continue;
+      }
+    }
     auto call_node_input = cnode->input(1);
     if (!IsValueNode<tensor::Tensor>(call_node_input)) {
       continue;
