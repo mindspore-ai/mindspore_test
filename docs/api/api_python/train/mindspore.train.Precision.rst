@@ -11,7 +11,7 @@ mindspore.train.Precision
         \text{precision} = \frac{\text{true_positive}}{\text{true_positive} + \text{false_positive}}
 
     参数：
-        - **eval_type** (str) - 支持 ``'classification'`` 和 ``'multilabel'`` 。具体作用见下update方法。默认值： ``'classification'`` 。
+        - **eval_type** (str) - 支持 ``'classification'`` 和 ``'multilabel'`` 。具体作用见下方的update方法。默认值： ``'classification'`` 。
 
     .. py:method:: clear()
 

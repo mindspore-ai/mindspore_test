@@ -5,7 +5,7 @@ mindspore.train.ConfusionMatrixMetric
 
     计算与混淆矩阵相关的度量。
 
-    该计算基于全尺度张量，并收集批处理平均值、类通道数和迭代数。此函数支持计算参数metric_name中描述中列出的所有度量名称。
+    该计算基于全尺度张量，并收集批处理平均值、类通道数和迭代数。此函数支持计算参数metric_name的描述中列出的所有度量名称。
     
     - 如果要使用混淆矩阵计算，如"PPV"、"TPR"、"TNR"，请使用此类。
     - 如果只想计算混淆矩阵，请使用 :class:`mindspore.train.ConfusionMatrix` 。

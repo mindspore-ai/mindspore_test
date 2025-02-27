@@ -23,15 +23,15 @@ from mindspore.train.metrics.metric import Metric, rearrange_inputs
 
 class ConfusionMatrix(Metric):
     """
-    Computes the confusion matrix, which is commonly used to evaluate the performance of classification models,
+    Computes the Confusion Matrix, which is commonly used to evaluate the performance of classification models,
     including binary classification and multiple classification.
 
-    If you only need confusion matrix, use this class. If you want to calculate other metrics, such as 'PPV',
+    If you only need Confusion Matrix, use this class. If you want to calculate other metrics, such as 'PPV',
     'TPR', 'TNR', etc., use class :class:`mindspore.train.ConfusionMatrixMetric` .
 
     Args:
         num_classes (int): Number of classes in the dataset.
-        normalize (str): Normalization mode for confusion matrix. Default: ``"no_norm"`` . Choose from:
+        normalize (str): Normalization mode for Confusion Matrix. Default: ``"no_norm"`` . Choose from:
 
             - ``"no_norm"`` : No Normalization is used. Default: ``None``.
             - ``"target"`` : Normalization based on target value.

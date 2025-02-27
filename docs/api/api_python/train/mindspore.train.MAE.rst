@@ -5,7 +5,7 @@ mindspore.train.MAE
 
     计算平均绝对误差MAE（Mean Absolute Error）。
 
-    计算输入 :math:`x` 和目标 :math:`y` 各元素之间的平均绝对误差。
+    计算输入 :math:`y\_pred` 和目标 :math:`y` 各元素之间的平均绝对误差。
 
     .. math::
         \text{MAE} = \frac{\sum_{i=1}^n \|{y\_pred}_i - y_i\|}{n}
