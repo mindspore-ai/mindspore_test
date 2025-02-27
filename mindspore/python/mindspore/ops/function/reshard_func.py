@@ -14,7 +14,7 @@
 # ============================================================================
 """Defines parameter operators with functional form."""
 import mindspore as ms
-from mindspore import context
+from mindspore import context, ops
 from mindspore import log as logger
 from mindspore.ops import operations as P
 from mindspore.ops._primitive_cache import _get_cache_prim
@@ -184,8 +184,13 @@ def _redistribute(tensor, dst_dtensor_info):
         # rank3 12           04 14
         from mindspore.parallel._cell_wrapper import CommTensorDataForPP
         if get_rank() in dst_dtensor_info.layout.to_dict()["rank_list"]:
-            comm_tensor_data_func = CommTensorDataForPP(tensor_data, tensor._dtensor_info, dst_dtensor_info)
-            tensor_data = comm_tensor_data_func.comm_data()
+            comm_tensor_data_func = CommTensorDataForPP(tensor._dtensor_info, dst_dtensor_info)
+            if not comm_tensor_data_func._current_rank_has_data:
+                new_tensor_shape = tuple([tensor_data.shape[i] // tensor._dtensor_info.sharding_strategy[i]
+                                          for i in range(len(tensor.shape))])
+                tensor_data = comm_tensor_data_func.comm_data(ops.zeros(new_tensor_shape, tensor.dtype))
+            else:
+                tensor_data = comm_tensor_data_func.comm_data(tensor)
             all_reduce_data = True
     ms.communication.comm_func.barrier()
     dataset_strategy = (_insert_virtual_pp_dim(tensor._dtensor_info.layout),)

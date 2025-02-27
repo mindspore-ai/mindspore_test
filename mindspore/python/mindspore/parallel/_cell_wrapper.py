@@ -215,7 +215,8 @@ def _insert_virtual_pp_dim(layout):
 
 class CommTensorDataForPP(Cell):
     """Communicate tensor data for pipeline parallel scenario."""
-    def __init__(self, tensor_data, src_dtensor_info, dst_dtensor_info):
+
+    def __init__(self, src_dtensor_info, dst_dtensor_info):
         super().__init__()
         self.zeros = P.Zeros()
 
@@ -227,19 +228,9 @@ class CommTensorDataForPP(Cell):
             rank_id for rank_id in dst_dtensor_info.layout.to_dict()["rank_list"] if rank_id not in self._from_rank_id]
         self.all_reduce = P.AllReduce(group=self._create_all_reduce_group())
 
-        self._tensor_data = tensor_data
-        self._tensor_shape = tensor_data.shape
-        if not self._current_rank_has_data:
-            self._tensor_shape = tuple([self._tensor_shape[i] // src_dtensor_info.sharding_strategy[i]
-                                        for i in range(len(self._tensor_shape))])
-
-    def comm_data(self):
+    def comm_data(self, comm_data):
         """communicate data"""
-        out_tensor = None
-        if self._current_rank_has_data:
-            out_tensor = self.all_reduce(self._tensor_data)
-        else:
-            out_tensor = self.all_reduce(self.zeros(self._tensor_shape, self._tensor_data.dtype))
+        out_tensor = self.all_reduce(comm_data)
         return out_tensor
 
     def _create_all_reduce_group(self):
