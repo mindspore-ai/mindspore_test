@@ -38,7 +38,8 @@ from mindspore.ops.auto_generate import Cummin, BatchMatMul, BernoulliExt, lin_s
 from mindspore.ops import auto_generate
 from mindspore.ops.operations.math_ops import STFT
 from mindspore.ops.operations.math_ops import LuUnpack
-from mindspore.ops.auto_generate.pyboost_inner_prim import cross_impl
+from mindspore.ops.auto_generate import addcmul_ext_op
+from mindspore.ops.auto_generate.pyboost_inner_prim import roll_impl, cross_impl
 from mindspore.ops.auto_generate.pyboost_inner_prim import reduce_max_impl, reduce_min_impl
 from mindspore.ops.operations.math_ops import Ormqr
 from mindspore.ops.operations.math_ops import DivMod
@@ -423,6 +424,52 @@ def addcmul(input, tensor1, tensor2, value=1):
          [ 4.  7. 10.]]
     """
     return addcuml_(input, tensor1, tensor2, Tensor(value))
+
+
+def addcmul_ext(input, tensor1, tensor2, *, value=1):
+    r"""
+    Performs the element-wise product of tensor tensor1 and tensor tensor2,
+    multiply the result by the scalar value and add it to input data.
+
+    .. math::
+        output[i] = input[i] + value * (tensor1[i] * tensor2[i])
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The tensor to be added.
+        tensor1 (Tensor): The tensor to be multiplied.
+        tensor2 (Tensor): The tensor to be multiplied.
+
+    Keyword Args:
+        value (Number, optional): The multiplier for tensor1*tensor2. Default: ``1`` .
+
+    Returns:
+        Tensor, has the same shape and dtype as tensor1*tensor2.
+
+    Raises:
+        TypeError: If dtype of `tensor1`, `tensor2`, `input` is not Tensor.
+        ValueError: If `tensor1` could not be broadcast to a tensor with shape of `tensor2`.
+        ValueError: If `input` could not be broadcast to tensors with shapes of `tensor1*tensor2`.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> input_data = Tensor(np.array([1, 1, 1]), mindspore.float32)
+        >>> x1 = Tensor(np.array([[1], [2], [3]]), mindspore.float32)
+        >>> x2 = Tensor(np.array([[1, 2, 3]]), mindspore.float32)
+        >>> y = ops.addcmul(input_data, x1, x2, value=1)
+        >>> print(y)
+        [[ 2.  3.  4.]
+         [ 3.  5.  7.]
+         [ 4.  7. 10.]]
+    """
+    return addcmul_ext_op(input, tensor1, tensor2, value=value)
 
 
 def bincount(input, weights=None, minlength=0):

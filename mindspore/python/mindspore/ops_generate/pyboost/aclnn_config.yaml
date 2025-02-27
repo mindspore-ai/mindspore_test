@@ -1,6 +1,7 @@
 AddExt: 'aclnnAdd'
 AddScalar: 'aclnnAdds'
 AddcdivExt: 'aclnnAddcdiv'
+AddcmulExt: 'aclnnAddcmul'
 Bmm: 'aclnnBatchMatMul'
 BatchMatMulExt: 'aclnnBatchMatMul'
 Concat: 'aclnnCat'
