@@ -1,5 +1,5 @@
-#operator transpose_ext
-transpose_ext:
+#operator transpose_ext_view
+transpose_ext_view:
   args:
     input:
       dtype: tensor

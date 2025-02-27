@@ -58,7 +58,7 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, muls, sin, sinc,
                                          xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext, roll,
                                          bincount_ext, rotated_iou_op, cat, narrow, var_op, pow, pow_scalar_tensor_op,
                                          frac_ext, pow_tensor_scalar_op, not_equal_op, isinf, addmv_op, cdist,
-                                         addbmm_op, addmm_op, grouped_matmul_v2, transpose_ext, grouped_matmul_v4,
+                                         addbmm_op, addmm_op, grouped_matmul_v2, transpose_ext_view, grouped_matmul_v4,
                                          inplace_erfinv_op)
 # 2
 
@@ -12469,7 +12469,7 @@ def mul_ext(input, other):
 def _for_each_transpose(inputs):
     inputs_t = []
     for input_i in inputs:
-        input_i_t = transpose_ext(input_i, -1, -2)
+        input_i_t = transpose_ext_view(input_i, -1, -2)
         inputs_t.append(input_i_t)
     return inputs_t
 

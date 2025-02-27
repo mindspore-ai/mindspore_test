@@ -2324,11 +2324,11 @@ REG_BPROP_BUILDER("TransposeView").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib
   return {ib->Transpose(dout, res_perm), ib->OutZeros(perm)};
 });
 
-REG_BPROP_BUILDER("TransposeExt").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("TransposeExtView").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
   auto dim0 = ib->GetInput(kIndex1);
   auto dim1 = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex4);
-  auto dx = ib->Emit("TransposeExt", {dout, dim0, dim1});
+  auto dx = ib->Emit("TransposeExtView", {dout, dim0, dim1});
   return {dx, ib->OutZeros(dim0), ib->OutZeros(dim1)};
 });
 

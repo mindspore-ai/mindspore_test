@@ -56,7 +56,7 @@ bool IsTensorTransposed(const ValueTuplePtr &tuple_tensor) {
 BaseTensorPtr TransposeLastTwoDim(const BaseTensorPtr &tensor) {
   static const auto dim0 = std::make_shared<Int64Imm>(-1);
   static const auto dim1 = std::make_shared<Int64Imm>(-2);
-  return transpose_ext(tensor, dim0, dim1);
+  return transpose_ext_view(tensor, dim0, dim1);
 }
 
 ValueTuplePtr ForEachTranspose(const ValueTuplePtr &tensor_list, bool to_contiguous = false) {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "infer/ops_func_impl/transpose_ext.h"
+#include "infer/ops_func_impl/transpose_ext_view.h"
 
 #include <vector>
 #include <memory>
@@ -32,8 +32,8 @@
 #include "ops_utils/op_constants.h"
 
 namespace mindspore::ops {
-BaseShapePtr TransposeExtFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                              const std::vector<AbstractBasePtr> &input_args) const {
+BaseShapePtr TransposeExtViewFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                                  const std::vector<AbstractBasePtr> &input_args) const {
   auto x_shape = input_args[kInputIndex0]->GetShape()->GetShapeVector();
   if (IsDynamicRank(x_shape)) {
     return std::make_shared<abstract::Shape>(std::vector<int64_t>{abstract::Shape::kShapeRankAny});
@@ -64,7 +64,8 @@ BaseShapePtr TransposeExtFuncImpl::InferShape(const PrimitivePtr &primitive,
   return std::make_shared<abstract::TensorShape>(ret_shape);
 }
 
-TypePtr TransposeExtFuncImpl::InferType(const PrimitivePtr &, const std::vector<AbstractBasePtr> &input_args) const {
+TypePtr TransposeExtViewFuncImpl::InferType(const PrimitivePtr &,
+                                            const std::vector<AbstractBasePtr> &input_args) const {
   return input_args[kInputIndex0]->GetType();
 }
 

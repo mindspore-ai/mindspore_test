@@ -21,6 +21,7 @@ from mindspore import Tensor
 from mindspore.ops.auto_generate import BroadcastToView, ExpandDimsView, NarrowView
 import mindspore.ops as P
 
+
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
 
 class Net(nn.Cell):
@@ -61,7 +62,7 @@ class NetCat(nn.Cell):
         out = out / 2.0
         return out
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_transpose_view():
     """
     Feature: Transpose view operation
@@ -78,7 +79,7 @@ def test_transpose_view():
     assert np.allclose(out.asnumpy(), out_np, rtol=10e-4, atol=10e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_split_view():
     """
     Feature: Transpose view operation
@@ -94,7 +95,7 @@ def test_split_view():
     out_np = np.matmul(a, b)
     assert np.allclose(out.asnumpy(), out_np, rtol=10e-4, atol=10e-4)
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_concat_view():
     """
     Feature: Concat view operation
@@ -124,7 +125,7 @@ class ViewOut(nn.Cell):
         return res
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_graph_view_out():
     """
     Feature: Runtime view graph mode.
@@ -140,7 +141,7 @@ def test_graph_view_out():
     assert np.allclose(out_graph.asnumpy(), out_pynative.asnumpy(), rtol=10e-4, atol=10e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_pynative_view_to_graph():
     """
     Feature: Runtime view graph mode.
@@ -171,7 +172,7 @@ class MakeContiguous(nn.Cell):
         return res
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_graph_view_to_aclop():
     """
     Feature: Runtime view graph mode.
@@ -259,3 +260,26 @@ def test_narrow_view():
 
     pynative_output = NarrowView()(x, 0, 0, 2)
     assert (graph_output.asnumpy() == pynative_output.asnumpy()).all()
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_transpose_ext_view():
+    """
+    Feature: Runtime view graph mode.
+    Description: Runtime view graph mode.
+    Expectation: No exception.
+    """
+    class TransposeExtViewNet(nn.Cell):
+        def __init__(self):
+            super(TransposeExtViewNet, self).__init__()
+            self.transpose_ext_view = P.TransposeExtView()
+
+        def construct(self, x):
+            output = self.transpose_ext_view(x, 0, 2)
+            return output
+
+    context.set_context(jit_config={"jit_level": "O0"})
+    x = Tensor(np.ones((2, 3, 4), dtype=np.float32))
+    net = TransposeExtViewNet()
+    output = net(x)
+    assert output.shape == (4, 3, 2)

@@ -16,7 +16,8 @@
 #include <memory>
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
-#include "infer/ops_func_impl/transpose_ext.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
+#include "infer/ops_func_impl/transpose_ext_view.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
 #include "ir/dtype/tensor_type.h"
@@ -52,8 +53,8 @@ TEST_P(TestTransposeExt, dyn_shape) {
 
   auto expect_shape = std::make_shared<abstract::TensorShape>(param.out_shape);
   auto expect_type = std::make_shared<TensorType>(param.x_type);
-  DoFuncImplInferAndCompare<TransposeExtFuncImpl>(kNameTransposeExt, {x, dim0_abs, dim1_abs}, expect_shape,
-                                                  expect_type);
+  DoFuncImplInferAndCompare<TransposeExtViewFuncImpl>(kNameTransposeExtView, {x, dim0_abs, dim1_abs}, expect_shape,
+                                                      expect_type);
 }
 
 INSTANTIATE_TEST_CASE_P(
