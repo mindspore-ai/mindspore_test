@@ -17,6 +17,7 @@
 #include "plugin/res_manager/ascend/op_adapter/op_declare/nn_norm_ops_declare.h"
 #include <string>
 #include <vector>
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 
@@ -372,6 +373,13 @@ OUTPUT_MAP(RmsNormGrad) = {
   {1, OUTPUT_DESC(dgamma)},
 };
 REG_ADPT_DESC(RmsNormGrad, kRmsNormGradOpName, ADPT_DESC(RmsNormGrad))
+
+// AddRmsNorm
+INPUT_MAP(AddRmsNorm) = {{kIndex1, INPUT_DESC(x1)}, {kIndex2, INPUT_DESC(x2)}, {kIndex3, INPUT_DESC(gamma)}};
+INPUT_ATTR_MAP(AddRmsNorm) = {{kIndex3, ATTR_DESC(epsilon, AnyTraits<float>())}};
+ATTR_MAP(AddRmsNorm) = EMPTY_ATTR_MAP;
+OUTPUT_MAP(AddRmsNorm) = {{0, OUTPUT_DESC(y)}, {1, OUTPUT_DESC(rstd)}, {2, OUTPUT_DESC(x)}};
+REG_ADPT_DESC(AddRmsNorm, ops::kNameAddRmsNorm, ADPT_DESC(AddRmsNorm))
 
 // MultilabelMarginLossGrad
 CUST_INPUT_MAP(MultilabelMarginLossGrad) = {

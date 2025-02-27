@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/optimizer/ir_fusion_infer/add_rms_norm_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/add_rms_norm_fusion.h"
 
 #include <vector>
 #include <string>
@@ -28,6 +28,10 @@
 
 namespace mindspore {
 namespace opt {
+namespace {
+constexpr auto fusion_op_name = "AddRmsNorm";
+}  // namespace
+
 std::vector<std::string> AddRmsNormFusion::MustExistPrimitiveName() const {
   std::vector<std::string> ret{prim::kPrimRmsNorm->name(), prim::kPrimAdd->name()};
   return ret;
@@ -42,12 +46,24 @@ const AnfNodePtr AddRmsNormFusion::Process(const FuncGraphPtr &graph, const AnfN
                                            const EquivPtr &equiv) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  const std::string fusion_op_name = "AddRmsNorm";
-  auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
-  bool enable_add_rmsnorm =
-    (std::find(enable_op_list.begin(), enable_op_list.end(), fusion_op_name) != enable_op_list.end());
-  if (!enable_add_rmsnorm) {
+  if (ms_context->IsEnableInferBoost()) {
+#ifndef ENABLE_INTERNAL_KERNELS
     return nullptr;
+#else
+    auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
+    bool enable_add_rmsnorm =
+      (std::find(enable_op_list.begin(), enable_op_list.end(), fusion_op_name) != enable_op_list.end());
+    if (!enable_add_rmsnorm) {
+      return nullptr;
+    }
+#endif  // ENABLE_INTERNAL_KERNELS
+  } else {
+    // aclnnAddRmsNorm can not support different input types
+    auto x_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 0);
+    auto gamma_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 1);
+    if (x_dtype != gamma_dtype) {
+      return nullptr;
+    }
   }
 
   auto x1 = utils::cast<AnfNodePtr>((*equiv)[x1_]);
@@ -69,7 +85,7 @@ const AnfNodePtr AddRmsNormFusion::Process(const FuncGraphPtr &graph, const AnfN
   add_result_types.push_back(common::AnfAlgo::GetOutputInferDataType(tensor_add, 0));
   add_result_shapes.push_back(AnfAlgo::GetOutputDetailShape(tensor_add, 0));
 
-  auto prim = std::make_shared<Primitive>("AddRmsNorm");
+  auto prim = std::make_shared<Primitive>(fusion_op_name);
   std::vector<AnfNodePtr> inputs = {NewValueNode(prim), x1, x2, gamma, eps};
   auto add_rms_norm = graph->NewCNode(inputs);
   MS_EXCEPTION_IF_NULL(add_rms_norm);
