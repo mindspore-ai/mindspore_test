@@ -13,7 +13,7 @@ mindspore.ops.ScatterNdUpdate
 
     `updates` 表示rank为 `Q-1+P-N` 的Tensor，shape为 :math:`(i_0, i_1, ..., i_{Q-2}, x\_shape_N, ..., x\_shape_{P-1})` 。
 
-    输入的 `input_x` 和 `updates` 遵循隐式类型转换规则，以确保数据类型一致。如果数据类型不同，则低优先级数据类型将转换为相对最高优先级的数据类型。当需要参数的数据类型转换时，会抛出RuntimeError异常。
+    输入的 `input_x` 和 `updates` 遵循隐式类型转换规则，以确保数据类型一致。如果数据类型不同，则低优先级数据类型将转换为相对最高优先级的数据类型。如果无法进行数据类型转换，则会抛出RuntimeError异常。
 
     参数：
         - **use_locking** (bool) - 是否启用锁保护。默认值： ``True`` 。
