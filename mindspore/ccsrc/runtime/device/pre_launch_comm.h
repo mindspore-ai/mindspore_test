@@ -53,7 +53,7 @@ class BACKEND_EXPORT PreLaunchComm {
  public:
   static PreLaunchComm &GetInstance();
 
-  CommKernelInfo GetKenrelInfo(const CNodePtr &);
+  CommKernelInfo GetKernelInfo(const CNodePtr &);
   void SpiltBucket(const std::vector<LaunchCommNode> &, std::vector<LaunchCommNode> *, std::vector<LaunchCommNode> *,
                    std::vector<LaunchCommNode> *, std::vector<LaunchCommNode> *);
   void Launch(std::vector<LaunchCommNode> &, SortedFunc);

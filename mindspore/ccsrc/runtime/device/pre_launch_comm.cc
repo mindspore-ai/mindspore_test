@@ -21,6 +21,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/device_address.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 
@@ -31,7 +32,7 @@ PreLaunchComm &PreLaunchComm::GetInstance() {
   return instance;
 }
 
-CommKernelInfo PreLaunchComm::GetKenrelInfo(const CNodePtr &kernel_node) {
+CommKernelInfo PreLaunchComm::GetKernelInfo(const CNodePtr &kernel_node) {
   CommKernelInfo hccl_kernel_info;
   hccl_kernel_info.name = common::AnfAlgo::GetCNodeName(kernel_node);
   if (common::AnfAlgo::HasNodeAttr(kAttrGroup, kernel_node)) {
@@ -42,7 +43,9 @@ CommKernelInfo PreLaunchComm::GetKenrelInfo(const CNodePtr &kernel_node) {
       ? common::AnfAlgo::GetNodeAttr<std::vector<uint32_t>>(kernel_node, kAttrGroupRankIds)
       : std::vector<uint32_t>();
   if (group_rank_ids.empty()) {
-    MS_LOG(EXCEPTION) << "The group_rank_ids of kernel: " << kernel_node->fullname_with_scope() << " is empty.";
+    MS_LOG(DEBUG) << "The group_rank_ids of kernel: " << kernel_node->fullname_with_scope() << " is empty.";
+    std::string group = common::AnfAlgo::GetNodeAttr<std::string>(kernel_node, kAttrGroup);
+    group_rank_ids = distributed::collective::CollectiveManager::instance()->GetGroupRanks(group);
   }
   if (common::AnfAlgo::HasNodeAttr(kAttrSrcRank, kernel_node)) {
     auto src_rank_id = common::AnfAlgo::GetNodeAttr<int64_t>(kernel_node, kAttrSrcRank);
@@ -175,7 +178,7 @@ void PreLaunchComm::PreLaunchCommKernel(runtime::ActorSet *actor_set) {
     }
     auto kernel = kernel_actor->kernel();
     if (IsOneOfPrimitiveCNode(kernel, prim_set)) {
-      const auto &kernel_info = GetKenrelInfo(kernel);
+      const auto &kernel_info = GetKernelInfo(kernel);
       pre_build_hccl_kernels.push_back(
         std::make_tuple(kernel_actor, kernel, kernel_info, kernel_actor->kernel_launch_info()));
     }
@@ -190,7 +193,7 @@ void PreLaunchComm::PreLaunchCommKernel(runtime::ActorSet *actor_set) {
       }
       auto kernel = kernel_actor->kernel();
       if (IsOneOfPrimitiveCNode(kernel, prim_set)) {
-        const auto &kernel_info = GetKenrelInfo(kernel);
+        const auto &kernel_info = GetKernelInfo(kernel);
         pre_build_hccl_kernels.push_back(
           std::make_tuple(kernel_actor, kernel, kernel_info, kernel_actor->kernel_launch_info()));
       }
