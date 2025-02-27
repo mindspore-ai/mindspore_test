@@ -232,7 +232,7 @@ class BACKEND_EXPORT GraphParameterStore {
   Tensor *FetchTensor(size_t args_index, const KernelWithIndex &node) const;
 
   // Record graph inputs and return whether is dynamic.
-  bool RecordGraphInputsAndIsDyn();
+  bool RecordGraphInputsAndIsDyn(const std::vector<size_t> &input_index, const std::vector<ParameterPtr> &parameters);
 
   // Release input data at the end of run graph.
   void ReleaseData();

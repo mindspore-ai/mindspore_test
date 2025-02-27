@@ -255,6 +255,8 @@ class KernelActor : public DebugAwareActor {
   bool is_stream_recv_actor_{false};
   // Flag for indicating if current actor is multi-thread safe, which was generate at compile time.
   bool is_multi_stream_safe_{false};
+  // Record kernel actor weight input for input optimize.
+  std::vector<bool> is_weight_;
 
  private:
   friend class GraphScheduler;

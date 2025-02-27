@@ -152,6 +152,7 @@ class SuperKernelActor : public DebugAwareActor {
 
   void FetchParameterInput(const KernelActorPtr &kernel_actor, OpContext<DeviceTensor> *const context);
   void FreeInputParamWithoutUser(OpContext<DeviceTensor> *const context);
+  void RecordKernelActorWeight();
 
   // Prepare non top cell input, such as internal parameter msg input, control flow msg input and const value.
   bool FetchMsgInputAndConstValueForKernel(KernelActor *kernel_actor, OpContext<DeviceTensor> *const context);
@@ -229,6 +230,7 @@ class SuperKernelActor : public DebugAwareActor {
   static std::vector<std::pair<size_t, void *>> streams_;
   static std::vector<DeviceEventPtr> events_;
   static std::vector<AsyncRQueuePtr> queues_;
+  bool first_step_for_inference_{true};
 };
 
 using SuperKernelActorPtr = std::shared_ptr<SuperKernelActor>;
