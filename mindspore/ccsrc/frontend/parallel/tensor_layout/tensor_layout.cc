@@ -187,6 +187,7 @@ Status TensorLayout::InitFromExtendVector(const Shape &device_matrix, const std:
     return FAILED;
   }
   tensor_map_before_ = tensor_map;
+  init_from_extend_vector_ = true;
   return SUCCESS;
 }
 

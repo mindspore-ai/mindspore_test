@@ -38,10 +38,17 @@ def _get_tensor_strategy(dev_mat, tensor_map):
     """
     tensor_strategy = []
     for dim in tensor_map:
-        if dim == -1:
-            tensor_strategy.append(1)
+        if isinstance(dim, (tuple, list)):
+            acc_stra = 1
+            for i in dim:
+                if i != -1:
+                    acc_stra *= dev_mat[len(dev_mat) - i - 1]
+            tensor_strategy.append(acc_stra)
         else:
-            tensor_strategy.append(dev_mat[-dim - 1])
+            if dim == -1:
+                tensor_strategy.append(1)
+            else:
+                tensor_strategy.append(dev_mat[-dim - 1])
     return tensor_strategy
 
 
@@ -388,6 +395,114 @@ def _construct_from_to_tensor_layout(from_full_tensor_shape, from_dev_matrix,
     return from_tensor_layout, to_tensor_layout
 
 
+def _expand_layout(dev_matrix, tensor_map, tensor_shape):
+    """
+    expand nested tensor_map and reshape tensor shape according to tensor_map
+    dev_matrix = [4, 2, 2]
+    tensor_map = [[2, 1], 0]
+    tensor_shape = [8, 8]
+    =>
+    expanded_tensor_map = [2, 1, 0]
+    expanded_tensor_map = [4, 8/4, 8]
+    """
+    new_tensor_map = []
+    new_tensor_shape = []
+    for index, dim in enumerate(tensor_map):
+        if isinstance(dim, (tuple, list)):
+            accu_shape = 1
+            for i in range(len(dim) - 1):
+                new_tensor_map.append(dim[i])
+                new_tensor_shape.append(dev_matrix[len(dev_matrix) - 1 - dim[i]])
+                accu_shape *= dev_matrix[len(dev_matrix) - 1 - dim[i]]
+            new_tensor_map.append(dim[-1])
+            new_tensor_shape.append(tensor_shape[index] // accu_shape)
+        else:
+            new_tensor_map.append(dim)
+            new_tensor_shape.append(tensor_shape[index])
+    return dev_matrix, new_tensor_map, new_tensor_shape
+
+
+def _construct_tensor_layout_for_opt_shard_by_layout(dev_matrix, tensor_map, opt_shard_step, opt_shard_size,
+                                                     origin_full_tensor_shape):
+    """
+    Construct tensor layout for optimizer parallel when using layout.
+    For example, For Tensor with shape (4,2)
+    dev_matrix = [2, 2, 2, 2]
+    tensor_map = [[1, 0], -1]
+    opt_shard_size = 2
+    ==>
+    dev_matrix = [2, 2, 2, 2]
+    tensor_map = [[1, 0], 2, -1]
+    the new strategy is [4, 2, 1]
+    the tensor_shape should reshape to (model_parallel_size, -1, xx, xx)
+    first 4 means the model parallel sharding of data_dim
+    second 2 means the opt sharding of data_dim.
+    """
+    if opt_shard_step == 0 or opt_shard_size == 0:
+        return dev_matrix, tensor_map, list(origin_full_tensor_shape)
+    tensor_strategy = _get_tensor_strategy(dev_matrix, tensor_map)
+    repeated_dim = []
+    dev_sharded_index = []
+    dev_matrix, expanded_tensor_map, _ = _expand_layout(dev_matrix, tensor_map, origin_full_tensor_shape)
+    for dim in expanded_tensor_map:
+        if dim != -1:
+            dev_sharded_index.append(len(dev_matrix) - dim - 1)
+    for index, value in enumerate(dev_matrix):
+        if index not in dev_sharded_index and value > 1:
+            repeated_dim.append(index)
+    if not repeated_dim:
+        raise ValueError("The device_matrix {} and tensor_map {} cannot sharding opt_shard".
+                         format(dev_matrix, tensor_map))
+    new_dev_matrix = list(copy.deepcopy(dev_matrix))
+    new_dev_matrix_map = [i for i in range(len(dev_matrix))]
+    opt_shard_dim = []
+    remained_opt_shard_size = opt_shard_size
+    for dim in repeated_dim[::-1]:
+        opt_sharding_size = dev_matrix[dim]
+        if remained_opt_shard_size // opt_sharding_size == 0:
+            if opt_sharding_size % remained_opt_shard_size != 0:
+                raise ValueError("dev_matrix value {} at dim {} cannot be divided by needed opt sharding "
+                                 "size {}".format(dev_matrix[dim], len(dev_matrix) - dim - 1,
+                                                  remained_opt_shard_size))
+            opt_sharding_size = remained_opt_shard_size
+            # update dev_matrix
+            new_dev_matrix[dim] = dev_matrix[dim] // opt_sharding_size
+            new_dev_matrix.insert(dim + 1, opt_sharding_size)
+            for i in range(len(dev_matrix) - dim - 1, len(dev_matrix)):
+                new_dev_matrix_map[i] += 1
+        if remained_opt_shard_size % opt_sharding_size != 0:
+            raise ValueError("Remained opt_shard_size {} cannot be divided by current sharding size {}, "
+                             "the repeat dim is {} with dev_matrix value {}".
+                             format(remained_opt_shard_size, opt_sharding_size,
+                                    len(dev_matrix) - dim - 1, dev_matrix[dim]))
+        remained_opt_shard_size //= opt_sharding_size
+        opt_shard_dim.insert(0, dim)
+        if remained_opt_shard_size == 1:
+            break
+    tensor_map_new = list(copy.deepcopy(tensor_map))
+    if len(new_dev_matrix) != len(dev_matrix):
+        opt_shard_dim = list(map(lambda x: x + 1, opt_shard_dim))
+        for index, item in enumerate(tensor_map_new):
+            if isinstance(item, (tuple, list)):
+                item = list(map(lambda x: new_dev_matrix_map[x] if x >= 0 else x, item))
+                tensor_map_new[index] = item
+            else:
+                if item >= 0:
+                    tensor_map_new[index] = new_dev_matrix_map[item]
+    tensor_shape_new = list(copy.deepcopy(origin_full_tensor_shape))
+    tensor_shape_new[0] = tensor_strategy[0]
+    first_dim_no_sharding_size = origin_full_tensor_shape[0] // tensor_strategy[0]
+    accu_shape = 1
+    for i in range(len(opt_shard_dim) - 1):
+        opt_sharding_size = new_dev_matrix[opt_shard_dim[i]]
+        tensor_shape_new.insert(i + 1, opt_sharding_size)
+        accu_shape = accu_shape * opt_sharding_size
+    tensor_shape_new.insert(len(opt_shard_dim), first_dim_no_sharding_size // accu_shape)
+    for index, r_dim in enumerate(opt_shard_dim):
+        tensor_map_new.insert(index + 1, len(new_dev_matrix) - r_dim - 1)
+    return list(new_dev_matrix), tensor_map_new, tensor_shape_new
+
+
 def _construct_tensor_layout_for_opt_shard(dev_matrix, tensor_map, opt_shard_step, opt_shard_size,
                                            origin_full_tensor_shape):
     """
@@ -404,6 +519,11 @@ def _construct_tensor_layout_for_opt_shard(dev_matrix, tensor_map, opt_shard_ste
     And the model parallel sharding dim is the right of opt sharding dim, so it would be 0-1-2-3 model parallel sharding
     then 0-4 optimizer sharding.
     """
+    has_layout = any(isinstance(i, (list, tuple)) for i in tensor_map)
+    if has_layout:
+        output = _construct_tensor_layout_for_opt_shard_by_layout(dev_matrix, tensor_map, opt_shard_step,
+                                                                  opt_shard_size, origin_full_tensor_shape)
+        return _expand_layout(*output)
 
     if opt_shard_step == 0 or opt_shard_size == 0:
         return dev_matrix, tensor_map, list(origin_full_tensor_shape)
