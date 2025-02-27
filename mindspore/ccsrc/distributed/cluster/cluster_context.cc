@@ -30,6 +30,7 @@
 #include "proto/topology.pb.h"
 #include "utils/ms_context.h"
 #include "utils/file_utils.h"
+#include "utils/distributed_meta.h"
 #include "nlohmann/json.hpp"
 #include "include/backend/distributed/ps/ps_context.h"
 #include "ps/core/comm_util.h"
@@ -373,6 +374,7 @@ void ClusterContext::PostProcess() {
     if (IsEnableCrossCluster()) {
       MS_LOG(WARNING) << "This node enable the cross cluster communication.";
       enable_cross_cluster_ = true;
+      DistributedMeta::GetInstance()->set_enable_cross_cluster(enable_cross_cluster_);
     }
   }
 }
