@@ -346,7 +346,7 @@ deprecated_tensor_method_map = {
     # 154
 
     # 155
-
+    "isneginf": "deprecated_tensor_isneginf",
     # 156
 
     # 157

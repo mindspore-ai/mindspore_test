@@ -1,0 +1,8 @@
+#deprecated isneginf
+isneginf:
+  args:
+    input:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor
