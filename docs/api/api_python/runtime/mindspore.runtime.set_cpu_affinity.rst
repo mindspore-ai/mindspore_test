@@ -3,7 +3,7 @@ mindspore.runtime.set_cpu_affinity
 
 .. py:function:: mindspore.runtime.set_cpu_affinity(enable_affinity, affinity_cpu_list=None)
 
-    使能线程级绑核功能，给MindSpore的主要模块（主线程、pynative、runtime、minddata）分配特定的CPU核，防止MindSpore线程抢占CPU导致的性能不稳定情况。
+    使能线程级绑核功能，给MindSpore的主要模块（主线程、pynative、runtime、minddata）分配特定的CPU核，防止MindSpore线程抢占CPU导致性能不稳定的情况。
 
     .. note::
         - 提供两种绑核模式：
@@ -23,12 +23,12 @@ mindspore.runtime.set_cpu_affinity
         - **affinity_cpu_list** (dict，可选) - 指定自定义的绑核策略。传入字典的key需要为字符串 ``"deviceX"`` 格式，value需要为列表 ``["cpuidX-cpuidY"]`` 格式。默认值： ``None``，即使用依据环境自动化生成的绑核策略。允许传入空字典 ``{}``，这种情况下会依据环境自动化生成的绑核策略。
 
     异常：
-        - **TypeError** - 参数 `enable_affinity` 不是一个 ``bool``。
-        - **TypeError** - 参数 `affinity_cpu_list` 既不是一个字典，也不是一个 ``None``。
-        - **ValueError** - 参数 `affinity_cpu_list` 的key不是一个字符串。
+        - **TypeError** - 参数 `enable_affinity` 不是bool。
+        - **TypeError** - 参数 `affinity_cpu_list` 既不是字典，也不是 ``None``。
+        - **ValueError** - 参数 `affinity_cpu_list` 的key不是字符串。
         - **ValueError** - 参数 `affinity_cpu_list` 的key不符合 ``"deviceX"`` 格式。
-        - **ValueError** - 参数 `affinity_cpu_list` 的value不是一个列表。
-        - **ValueError** - 参数 `affinity_cpu_list` 的value中的元素不是一个字符串。
+        - **ValueError** - 参数 `affinity_cpu_list` 的value不是列表。
+        - **ValueError** - 参数 `affinity_cpu_list` 的value中的元素不是字符串。
         - **ValueError** - 参数 `affinity_cpu_list` 的value中的元素不符合 ``["cpuidX-cpuidY"]`` 格式。
         - **RuntimeError** - 自动化生成绑核策略或者自定义指定绑核策略场景，分配给每个设备的CPU核数量小于7个。
         - **RuntimeError** - 自定义指定绑核策略场景，分配给某个设备的CPU在环境中不可用。
