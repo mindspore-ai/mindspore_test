@@ -31,6 +31,7 @@
 #include "utils/ms_context.h"
 #include "utils/log_adapter.h"
 #include "utils/file_utils.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 
 namespace mindspore {
@@ -96,12 +97,23 @@ bool ThreadBindCore::parse_thread_bind_core_policy(const kBindCoreModule &module
   if (it != thread_bind_core_policy_.end()) {
     return true;
   }
+
+  auto runtime_conf_instance = RuntimeConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(runtime_conf_instance);
+  bool enable_batch_launch_kernel = runtime_conf_instance->IsKernelLaunchGroupConfigured();
+  uint32_t group_launch_thread_num = 0;
+  if (enable_batch_launch_kernel) {
+    group_launch_thread_num = runtime_conf_instance->group_launch_thread_num();
+  }
+  // Record remaining core excluding mian, runtime, pynative module.
+  std::vector<int> remaining_core_list;
+
   // When automatically enable bind core, device_target CPU and GPU won't bind core based on device to numa affinity.
   if (!is_enable_with_policy) {
     uint32_t local_rank_size = distributed::collective::CollectiveManager::instance()->local_rank_size();
     uint32_t local_rank_id = distributed::collective::CollectiveManager::instance()->local_rank_id();
     uint32_t core_per_process = cpu_bind_core_policy_.size() / local_rank_size;
-    if (core_per_process < kMinimumCorePerProcess) {
+    if (core_per_process < IntToUint(kMinimumCorePerProcess) + group_launch_thread_num) {
       MS_LOG(WARNING)
         << "CPU can be assigned to each process is less than 7, thread bind core function is not enabled.";
       return false;
@@ -116,8 +128,8 @@ bool ThreadBindCore::parse_thread_bind_core_policy(const kBindCoreModule &module
       std::vector<int>(available_core.begin() + kRuntimeCoreIdxStart, available_core.begin() + kRuntimeCoreIdxEnd);
     thread_bind_core_policy_[kBindCoreModule::kPYNATIVE] =
       std::vector<int>(available_core.begin() + kPynativeCoreIdxStart, available_core.begin() + kPynativeCoreIdxEnd);
-    thread_bind_core_policy_[kBindCoreModule::kMINDDATA] =
-      std::vector<int>(available_core.begin() + kDataCoreIdxStart, available_core.end());
+
+    remaining_core_list = std::vector<int>(available_core.begin() + kDataCoreIdxStart, available_core.end());
   } else {
     if (process_bind_core_policy_.find(device_id) == process_bind_core_policy_.end()) {
       MS_LOG(WARNING) << "Bind core policy does not include the physical device_id of this process, thread bind core "
@@ -127,8 +139,22 @@ bool ThreadBindCore::parse_thread_bind_core_policy(const kBindCoreModule &module
     thread_bind_core_policy_[kBindCoreModule::kMAIN] = process_bind_core_policy_[device_id][kMainThread];
     thread_bind_core_policy_[kBindCoreModule::kRUNTIME] = process_bind_core_policy_[device_id][kRunTimeThread];
     thread_bind_core_policy_[kBindCoreModule::kPYNATIVE] = process_bind_core_policy_[device_id][kPynativeThread];
-    thread_bind_core_policy_[kBindCoreModule::kMINDDATA] = process_bind_core_policy_[device_id][kDataThread];
+
+    remaining_core_list = process_bind_core_policy_[device_id][kDataThread];
   }
+
+  // Allocate core resource for minddata, runtime batch launch.
+  if (SizeToUint(remaining_core_list.size()) <= group_launch_thread_num) {
+    MS_LOG(WARNING) << "The current process does not have enough thread resources for CPU affinity binding, thread "
+                       "bind core function is not enabled.";
+    thread_bind_core_policy_.clear();
+    return false;
+  }
+  thread_bind_core_policy_[kBindCoreModule::kMINDDATA] =
+    std::vector<int>(remaining_core_list.begin(), remaining_core_list.end() - group_launch_thread_num);
+  thread_bind_core_policy_[kBindCoreModule::kBATCHLAUNCH] =
+    std::vector<int>(remaining_core_list.end() - group_launch_thread_num, remaining_core_list.end());
+
   return true;
 }
 
@@ -137,6 +163,7 @@ std::vector<int> ThreadBindCore::get_thread_bind_core_list(const kBindCoreModule
     MS_LOG(EXCEPTION) << "Cannot get thread bind core list for this module: " << module_name
                       << ", if 'set_cpu_affinity' is turned off.";
   }
+  std::lock_guard<std::mutex> locker(mtx_);
 
   auto status_it = thread_bind_core_status_.find(module_name);
   if (status_it != thread_bind_core_status_.end() && status_it->second) {

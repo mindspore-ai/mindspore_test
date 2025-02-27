@@ -21,6 +21,7 @@
 #include "include/common/utils/signal_util.h"
 #endif
 #include "runtime/runtime_conf/thread_bind_core.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
 #include "include/common/profiler.h"
@@ -50,13 +51,45 @@ void AsyncRQueue::SetThreadName() const {
 void AsyncRQueue::BindCoreForThread() {
   auto &bind_core_manager = ThreadBindCore::GetInstance();
   if (bind_core_manager.is_enable_thread_bind_core_) {
+    // Bind core for pynative pipeline thread.
     const auto &core_list = bind_core_manager.get_thread_bind_core_list(kBindCoreModule::kPYNATIVE);
     if (core_list.empty()) {
       MS_LOG(WARNING) << "Failed to bind thread core as no available core assigned to Pynative threads.";
     } else {
       if (const auto it = thread_to_core_idx.find(name_); it != thread_to_core_idx.end()) {
         bind_core_manager.bind_thread_core({core_list[it->second]});
+        return;
       }
+    }
+
+    // Bind core for runtime batch launch thread.
+    auto runtime_conf_instance = RuntimeConf::GetInstance();
+    MS_EXCEPTION_IF_NULL(runtime_conf_instance);
+    bool enable_batch_launch_kernel = runtime_conf_instance->IsKernelLaunchGroupConfigured();
+    if (!enable_batch_launch_kernel) {
+      return;
+    }
+
+    uint32_t group_launch_thread_num = runtime_conf_instance->group_launch_thread_num();
+    std::map<std::string, int> batch_launch_thread_to_core_idx;
+    const std::string kBatchLaunch = "batch_launch_";
+    for (uint32_t i = 0; i < group_launch_thread_num; i++) {
+      batch_launch_thread_to_core_idx.emplace((kBatchLaunch + std::to_string(i)), i);
+    }
+
+    auto iter = batch_launch_thread_to_core_idx.find(name_);
+    if (iter == batch_launch_thread_to_core_idx.end()) {
+      return;
+    }
+
+    const auto &batch_launch_core_list = bind_core_manager.get_thread_bind_core_list(kBindCoreModule::kBATCHLAUNCH);
+    if (batch_launch_core_list.empty()) {
+      MS_LOG(WARNING) << "Failed to bind thread core as no available core assigned to batch launch threads.";
+    } else {
+      auto bind_code_index = iter->second;
+      std::vector<int> cpu_list = {batch_launch_core_list[bind_code_index]};
+      bind_core_manager.bind_thread_core(cpu_list);
+      MS_LOG(INFO) << "The thread: " << name_ << " bind core : " << cpu_list;
     }
   }
 }
