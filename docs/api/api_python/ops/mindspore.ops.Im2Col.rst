@@ -8,7 +8,7 @@ mindspore.ops.Im2Col
     考虑一个batch的输入Tensor，其shape为 :math:`(N, C, *)` ，其中 :math:`N` 是batch维度，
     :math:`C` 是channel维度， :math:`*` 表示任意的空间维度。此操作将展平输入 `x` 空间维度内每个滑动的
     `ksize` 大小的滑块为输出的4-D Tensor中的一列(如，最后一维)，输出Tensor的shape为 :math:`(N, C, \prod(\text{kernel_size}), L)` ，
-    其中 :math:`C \times \prod(\text{kernel_size})` 为每个滑块内值的总数量（一个滑块有 :math:`\prod(\text{kernel_size})` 个空间位置，
+    其中 :math:`C \times \prod(\text{kernel_size})` 表示每个滑块内的总元素数量（一个滑块有 :math:`\prod(\text{kernel_size})` 个空间位置，
     每个位置都包含一个 `C` 通道的向量），共有 :math:`L` 个这样的滑块：
 
     .. math::
@@ -28,10 +28,10 @@ mindspore.ops.Im2Col
         这是一个实验性API，后续可能修改或删除。
 
     参数：
-        - **ksizes** (Union[int, tuple[int], list[int]]) - 内核的大小，应该是两个整数，分别代表高度和宽度。如果是一个整数，则表示高度等于宽度。必须被指定。
-        - **strides** (Union[int, tuple[int], list[int]]，可选) - 窗口的滑动步幅，应该是高度和宽度两个整数。如果只有一个整数，则表示高度等于宽度。默认值： ``1`` 。
-        - **dilations** (Union[int, tuple[int], list[int]]，可选) - 窗口的扩张系数，应该是高度和宽度两个整数。如果只有一个整数，则表示高度等于宽度。默认值： ``1`` 。
-        - **pads** (Union[int, tuple[int], list[int]]，可选) - 窗口的填充，必须是1个或2个整数来指定高宽和宽度方向的填充。默认值： ``0`` 。
+        - **ksizes** (Union[int, tuple[int], list[int]]) - 内核的大小。若为两个整数，则分别代表高度和宽度；若只有一个整数，则同时代表高度和宽度。该参数必须被指定。
+        - **strides** (Union[int, tuple[int], list[int]]，可选) - 窗口的滑动步幅。若为两个整数，则分别代表高度和宽度；若只有一个整数，则同时代表高度和宽度。默认值： ``1`` 。
+        - **dilations** (Union[int, tuple[int], list[int]]，可选) - 窗口的扩张系数。若为两个整数，则分别代表高度和宽度；若只有一个整数，则同时代表高度和宽度。默认值： ``1`` 。
+        - **pads** (Union[int, tuple[int], list[int]]，可选) - 窗口的填充。必须是一个或两个整数来指定高宽和宽度方向的填充。默认值： ``0`` 。
 
           - 如果是1个整数，则 :math:`pad\_height = pad\_width` 。
           - 如果是2个整数，则 :math:`pad\_height = pads[0]`, :math:`pad\_width = pads[1]` 。
