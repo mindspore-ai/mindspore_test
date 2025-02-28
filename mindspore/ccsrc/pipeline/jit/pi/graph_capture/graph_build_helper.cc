@@ -394,7 +394,19 @@ std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>> GradGraphBuildHelper::
     MS_LOG(DEBUG) << "Start trace bytecodes of forward graph";
     graph_builder->DoCall({CALL_FUNCTION, arg_size});
   }
-  graph_builder->pop();
+  auto forward_call_value_node = graph_builder->pop();
+  // This forward node is only used for abstract, no need to attach on graph.
+  auto cur_graph_builder = graph_builder->FGBuilder();
+  MS_EXCEPTION_IF_NULL(cur_graph_builder);
+  auto forward_call_wrapper = forward_call_value_node->abstract_wrapper();
+  if (forward_call_wrapper == nullptr) {
+    MS_LOG(INFO) << "Failed to get wrapper of forward graph.";
+    return std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>>(nullptr, bind_helper);
+  }
+  auto forward_call_node = cur_graph_builder->ReadLocalVariable(forward_call_wrapper);
+  MS_EXCEPTION_IF_NULL(forward_call_node);
+  cur_graph_builder->EraseCandidateIsolatedNode(forward_call_node);
+
   auto forward_graph_builder = graph_builder->get_prev_call_builder();
   if (forward_graph_builder == nullptr) {
     MS_LOG(INFO) << "Failed to get function graph builder for forward graph.";

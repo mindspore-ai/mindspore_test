@@ -278,6 +278,8 @@ class FuncGraphBuilder {
   /// \note Nodes created during the conversion of Dict nodes need to be added to the graph using this method.
   void AddLocalVariableNode(const AbstractWrapperPtr &wrapper, const AnfNodePtr &node);
 
+  void EraseCandidateIsolatedNode(const AnfNodePtr &node);
+
   AbstractWrapperPtr AddAttributeInput(const py::object &object);
 
  private:
@@ -301,8 +303,6 @@ class FuncGraphBuilder {
                                   const AbstractWrapperPtrList &inputs_abstract_wrapper);
 
   void MarkNodeIsolated(const AnfNodePtr &node, bool force);
-
-  void EraseCandidateIsolatedNode(const AnfNodePtr &node);
 
   AnfNodePtr GenerateOutputNode();
 
