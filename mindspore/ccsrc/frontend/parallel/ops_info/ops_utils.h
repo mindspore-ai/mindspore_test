@@ -662,6 +662,7 @@ constexpr char CROP_AND_RESIZE[] = "CropAndResize";
 constexpr char MASKED_FILL[] = "MaskedFill";
 constexpr char MAX[] = "Max";
 constexpr char MAXDIM[] = "MaxDim";
+constexpr char SUM_EXT[] = "SumExt";
 constexpr char ROI_ALIGN[] = "ROIAlign";
 constexpr char SQUARE_SUM_ALL[] = "SquareSumAll";
 constexpr char IS_FINITE[] = "IsFinite";
