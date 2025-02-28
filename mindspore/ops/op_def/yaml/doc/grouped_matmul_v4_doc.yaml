@@ -21,30 +21,31 @@ grouped_matmul_v4:
     .. math::
              y_i = (x_i\times weight_i + bias_i) * scale_i * per\_token\_scale_i
 
-    Inputs:
-        x (TensorList): TensorList, including 2D-6D Tensors. Supported dtypes: Float16, Float32, Int8.
+    Args:
+        x (TensorList): The input tensor list, include 2D-6D Tensors. Supported dtypes: Float16, Float32, Int8.
                         The shape of the tensor in tensorlist is :math:`(M, N)` or :math:`(..., M, K)`.
-        weight (TensorList): TensorList, include 2D-3D Tensors. Supported dtypes: Float16, Float32, Int8.
+        weight (TensorList): The weight tensor list, include 2D-3D Tensors. Supported dtypes: Float16, Float32, Int8.
                              The shape of the tensor in tensorlist is :math:`(N, K)` or :math:`(E, K, N)`.
-        bias (TensorList, optional): TensorList, include 1D-2D Tensors. Supported dtypes: Float16, Float32, Int32. If not used, None.
+        bias (TensorList, optional): The list of bias tensors in matrix multiplication, include 1D-2D Tensors.
+                                     Supported dtypes: Float16, Float32, Int32. If not used, None.
                                      Length is the same as the weight length. The shape of the tensor is :math:`(N)` or :math:`(E, N)`.
-        scale (TensorList, optional): TensorList, scale factor of quant(A8W8) parameters. Supported dtypes: BFloat16.
+        scale (TensorList, optional): Scale factors of quant(A8W8) parameters. Supported dtypes: BFloat16.
                                       Length is the same as the weight length. The shape of the tensor is :math:`(N)` or :math:`(E, N)`.
-        offset (TensorList, optional): TensorList, offset of quant(A8W8) parameters. Supported dtypes: Float32.
+        offset (TensorList, optional): Offset factors of quant(A8W8) parameters. Supported dtypes: Float32.
                                        Length is the same as the weight length. Currently not supported, use None.
-        antiquant_scale (TensorList, optional): TensorList, scale factor of antiquant(A16W8) parameters. Supported dtypes: Float16.
+        antiquant_scale (TensorList, optional): Scale factors of antiquant(A16W8) parameters. Supported dtypes: Float16.
                                                 Length is the same as the weight length. The shape of the tensor is :math:`(N)` or
                                                 :math:`(E, N)`. Only use in antiquant. If not used, None.
-        antiquant_offset (TensorList, optional): TensorList, offset factor of antiquant(A16W8) parameters. Supported dtypes: Float16.
+        antiquant_offset (TensorList, optional): Offset factors of antiquant(A16W8) parameters. Supported dtypes: Float16.
                                                  Length is the same as the weight length. The shape of the tensor is :math:`(N)` or
                                                  :math:`(E, N)`. Only use in antiquant. If not used, None.
-        pre_token_scale (TensorList, optional): TensorList, including 1D Tensors scale factor of per-token quant parameters.
-                                                Supported dtypes: Float32. Length is the same as the x length. The shape of the tensor
-                                                is :math:`(M)`. Only use in per-token quant. If not used, None.
+        pre_token_scale (TensorList, optional): Per-token quant parameters, include 1D Tensors. Supported dtypes: Float32.
+                                                Length is the same as the x length. The shape of the tensor is :math:`(M)`.
+                                                Only use in per-token quant. If not used, None.
         group_list (Tensor, optional): Grouping positions for the M-axis of input x. Supported dtypes: Int64
-        activation_input (TensorList, optional): TensorList, input of actiation function. Currently not supported, use None.
-        activation_quant_scale (TensorList, optional): Currently not supported, use None.
-        activation_quant_offset (TensorList, optional): Currently not supported, use None.
+        activation_input (TensorList, optional): Inputs of actiation function. Currently not supported, use None.
+        activation_quant_scale (TensorList, optional): Scale factors of activation. Currently not supported, use None.
+        activation_quant_offset (TensorList, optional): Offset factors of activation. Currently not supported, use None.
         split_item (int): Splitting input mode. Only support 0 and 3. 0 represents multiple Tensors, and 3 represents a single Tensor.
         group_type (int): The axis to be split. Only support -1 and 0. If the matrix is multiplied by A[m,k]xB[k,n]=C[m,n].
                           -1: No grouping, 0: Group on the m-axis
@@ -96,8 +97,8 @@ grouped_matmul_v4:
         Int8        Int8       int32      BFloat16   None       None              None               Float32          BFloat16
         =========   =========  =========  =========  =========  ================  =================  ===============  =========
 
-    Outputs:
-        y (TensorList): TensorList, include 2D Tensors. The shape of the tensor is :math:`(M, N)`.
+    Returns:
+        TensorList, include 2D Tensors. The shape of the tensor is :math:`(M, N)`.
 
     Raises:
         TypeError: If `split_item` is not 0 or 3.
