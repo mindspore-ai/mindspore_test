@@ -57,7 +57,7 @@ mindspore.ops.flash_attention_score
         - **actual_seq_kvlen** (Union[Tensor, tuple[int], list[int]]，可选) - 每个batch中key和value序列的大小，用一个递增值数组表示，最后一个值等于T2。默认值为： ``None`` 。
 
         - **keep_prob** (double，可选) - Dropout的保留概率，取值范围为(0.0, 1.0]。当 `keep_prob` 为1.0时， `drop_mask` 应为None。默认值为： ``1.0``。
-        - **scale_value** (double，可选) - 缩放因子。通常，该值为 1.0 / (D ** 0.5)。默认值为： ``1.0``。
+        - **scalar_value** (double，可选) - 缩放因子。通常，该值为 1.0 / (D ** 0.5)。默认值为： ``1.0``。
         - **pre_tokens** (int，可选) - 用于稀疏计算，表示向前计算的token数量。当 `sparse_mode` 设置为 1、2、3 或5时，此参数无效。默认值为： ``2147483647``。
         - **next_tokens** (int，可选) - 稀疏计算的参数，表示向后计算的token数量。当 `sparse_mode` 设置为 1、2、3 或5时，此参数无效。默认值为： ``2147483647``。
           `pre_tokens` 的值对应于S1，而 `next_tokens` 的值对应于S2。它们定义了attn_mask矩阵上的有效区域，并必须确保带宽不为空。以下情况是非法的：
@@ -106,7 +106,7 @@ mindspore.ops.flash_attention_score
         - **TypeError** - `query`、 `key` 和 `value` 的数据类型不同。
         - **TypeError** - `attn_mask` 的数据类型不是bool或uint8。
         - **TypeError** - `real_shift` 的数据类型与 `query` 不一致。
-        - **TypeError** - `scale_value` 或 `keep_prob` 不是double类型。
+        - **TypeError** - `scalar_value` 或 `keep_prob` 不是double类型。
         - **TypeError** - `input_layout` 不是字符串。
         - **TypeError** - `num_key_value_heads` 不是整数。
         - **TypeError** - `sparse_mode` 不是整数。
