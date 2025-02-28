@@ -3770,6 +3770,29 @@ REG_BPROP_BUILDER("Addcdiv").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) { return
 
 REG_BPROP_BUILDER("Addcmul").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) { return BpropAddcCommon(ib, "Addcmul"); });
 
+REG_BPROP_BUILDER("AddcmulExt").SetUnusedInputs({}).SetBody(BODYFUNC(ib) {
+  auto input_data = ib->GetInput(kIndex0);
+  auto x = ib->GetInput(kIndex1);
+  auto y = ib->GetInput(kIndex2);
+  auto value = ib->GetInput(kIndex3);
+  auto inner_out = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex5);
+  auto dinput_data = dout;
+  auto dout_typeptr = ib->GetDtype(dout);
+  if (input_data->need_compute_grad_out()) {
+    dinput_data = BinopGradCommon(ib, inner_out, input_data, dout, dinput_data)[kIndex1];
+  } else {
+    dinput_data = ib->OutZeros(input_data);
+  }
+  auto dx = x->need_compute_grad_out()
+              ? BinopGradCommon(ib, inner_out, x, dout, ib->Mul(dout, ib->Emit("Muls", {y, value})))[kIndex1]
+              : ib->OutZeros(x);
+  auto dy = y->need_compute_grad_out()
+              ? BinopGradCommon(ib, inner_out, y, dout, ib->Mul(dout, ib->Emit("Muls", {x, value})))[kIndex1]
+              : ib->OutZeros(y);
+  return {dinput_data, dx, dy, ib->OutZeros(value)};
+});
+
 REG_BPROP_BUILDER("LpNorm").SetBody(BODYFUNC(ib) {
   auto p = GetValue<int64_t>(ib->GetAttr("p"));
   auto keep_dims = GetValue<bool>(ib->GetAttr("keep_dims"));

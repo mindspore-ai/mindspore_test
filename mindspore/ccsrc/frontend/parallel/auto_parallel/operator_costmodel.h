@@ -702,6 +702,7 @@ using GatherDCost = MulCost;
 using LerpCost = MulCost;
 using SquaredDifferenceCost = MulCost;
 using OuterCost = MulCost;
+using AddcmulExtCost = MulCost;
 
 class DivCost : public SubCost {
  public:
