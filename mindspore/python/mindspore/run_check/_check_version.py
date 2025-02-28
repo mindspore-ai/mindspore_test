@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -359,6 +359,10 @@ class AscendEnvChecker(EnvChecker):
         """
             opp kernel install check
         """
+        from mindspore._c_expression import MSContext
+        soc_version = MSContext.get_instance().get_ascend_soc_version()
+        if soc_version == "ascend310":
+            return
 
         opp_kernel_path = self.ascend_opp_path.replace("opp", "opp_kernel")
         if not os.path.exists(opp_kernel_path):

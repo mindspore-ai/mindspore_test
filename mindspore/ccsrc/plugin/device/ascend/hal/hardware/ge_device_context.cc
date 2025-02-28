@@ -401,7 +401,7 @@ void SetContextSocVersion(MsContext *ctx) {
     {"Ascend910B4", "ascend910b"},      {"Ascend910_9391", "ascend910_93"}, {"Ascend910_9392", "ascend910_93"},
     {"Ascend910_9381", "ascend910_93"}, {"Ascend910_9382", "ascend910_93"}, {"Ascend910_9372", "ascend910_93"},
     {"Ascend910_9361", "ascend910_93"}, {"Ascend310P", "ascend310p"},       {"Ascend310P3", "ascend310p"},
-    {"Ascend310B4", "ascend310b"},      {"Ascend310B1", "ascend310b"}};
+    {"Ascend310B4", "ascend310b"},      {"Ascend310B1", "ascend310b"},      {"Ascend310", "ascend310"}};
   const char *soc_name_c = CALL_ASCEND_API(aclrtGetSocName);
   if (soc_name_c == nullptr) {
     MS_LOG(ERROR) << "Get soc name failed.";
