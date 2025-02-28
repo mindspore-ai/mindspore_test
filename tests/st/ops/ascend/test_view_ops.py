@@ -200,17 +200,17 @@ def test_broadcast_to_view():
     class BroadcastToViewNet(nn.Cell):
         def __init__(self):
             super(BroadcastToViewNet, self).__init__()
-            self.broadcast_to_view = BroadcastToView((2, 3))
+            self.broadcast_to_view = BroadcastToView()
 
         def construct(self, x):
-            output = self.broadcast_to_view(x)
+            output = self.broadcast_to_view(x, (2, 3))
             return output
 
     x = Tensor(np.array([1, 2, 3]).astype(np.float32))
     net = BroadcastToViewNet()
     graph_output = net(x)
 
-    pynative_output = BroadcastToView((2, 3))(x)
+    pynative_output = BroadcastToView()(x, (2, 3))
     assert (graph_output.asnumpy() == pynative_output.asnumpy()).all()
 
 

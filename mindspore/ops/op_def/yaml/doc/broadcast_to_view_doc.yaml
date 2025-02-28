@@ -62,13 +62,13 @@ broadcast_to_view:
             >>> from mindspore.ops.auto_generate import BroadcastToView
             >>> shape = (2, 3)
             >>> x = Tensor(np.array([1, 2, 3]).astype(np.float32))
-            >>> output = BroadcastToView(shape)(x)
+            >>> output = BroadcastToView()(x, shape)
             >>> print(output)
             [[1. 2. 3.]
              [1. 2. 3.]]
             >>> shape = (-1, 2)
             >>> x = Tensor(np.array([[1], [2]]).astype(np.float32))
-            >>> output = BroadcastToView(shape)(x)
+            >>> output = BroadcastToView()(x, shape)
             >>> print(output)
             [[1. 1.]
              [2. 2.]]
