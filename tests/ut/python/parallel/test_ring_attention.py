@@ -646,6 +646,14 @@ def test_ring_attention_semi_auto_parallel_cp(input_layout):
     assert out == "3"
     context.reset_auto_parallel_context()
 
+    file = "./ring_attention_semi_auto_parallel_cp/rank_0/*opt_pass_2_opt_a*.ir"
+    para = "call"
+    output = subprocess.check_output(
+        ["grep -r '%s' %s | wc -l" % (para, file)],
+        shell=True)
+    out = str(output, 'utf-8').strip()
+    assert out == "3"
+    context.reset_auto_parallel_context()
 
 @pytest.mark.parametrize('input_layout', ["BSH", "BNSD"])
 def test_ring_attention_semi_auto_parallel_eod_reset_attn_mask(input_layout):
