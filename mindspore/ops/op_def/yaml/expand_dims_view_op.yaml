@@ -1,9 +1,9 @@
 #operator expand_dims_view
 expand_dims_view:
   args:
-    input_x:
+    input:
       dtype: tensor
-    axis:
+    dim:
       dtype: int
       type_cast: tensor
   returns:

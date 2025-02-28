@@ -5,8 +5,7 @@ broadcast_to_view:
       dtype: tensor
     shape:
       dtype: tuple[int]
-      prim_init: True
-      type_cast: list[int], tensor
+      type_cast: list[int]
   returns:
     output:
       dtype: tensor
