@@ -51,6 +51,9 @@ std::shared_ptr<KernelPlugin> GetKernelPLugin() {
   // create plugin object
   k_internal_kernel_plugin_ptr = Factory<KernelPlugin>::Instance().Create("InternalKernelPlugin");
   k_is_plugin_init = true;
+  if (k_internal_kernel_plugin_ptr != nullptr) {
+    k_internal_kernel_plugin_ptr->InitInternalLog();
+  }
   return k_internal_kernel_plugin_ptr;
 }
 
@@ -92,6 +95,14 @@ bool IsEnableInternalNode(const AnfNodePtr &node) {
     auto cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
     if (!IsValueNode<None>(cnode->input(kIndex6))) {
+      return false;
+    }
+  } else if (op_name == "SplitWithSize") {
+    static const auto kSplitOutNum2 = 2;
+    static const auto kSplitOutNum3 = 3;
+    auto out_num = AnfUtils::GetOutputTensorNum(node);
+    if (out_num != kSplitOutNum2 && out_num != kSplitOutNum3) {
+      MS_LOG(INFO) << "Split only support 2 or 3 outputs, but got: " << out_num;
       return false;
     }
   }

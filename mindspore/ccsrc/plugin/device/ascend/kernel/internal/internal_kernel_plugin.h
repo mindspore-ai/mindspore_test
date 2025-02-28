@@ -31,6 +31,7 @@ class InternalKernelPlugin : public KernelPlugin {
   bool IsRegisteredKernel(const AnfNodePtr &anf_node) override;
   void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node, std::vector<std::string> *input_formats,
                                                  std::vector<std::string> *output_formats) override;
+  void InitInternalLog() override;
 };
 }  // namespace mindspore::kernel
 
