@@ -3,15 +3,15 @@ mindspore.dataset.vision.ResizedCrop
 
 .. py:class:: mindspore.dataset.vision.ResizedCrop(top, left, height, width, size, interpolation=Inter.BILINEAR)
 
-    裁切输入图像的指定区域，并缩放到指定尺寸大小。
+    裁剪输入图像的指定区域，并缩放到指定尺寸大小。
 
     支持 Ascend 硬件加速，需要通过 `.device("Ascend")` 方式开启。
 
     参数：
-        - **top** (int) - 裁切区域左上角位置的纵坐标。
-        - **left** (int) - 裁切区域左上角位置的横坐标。
-        - **height** (int) - 裁切区域的高度。
-        - **width** (int) - 裁切区域的宽度。
+        - **top** (int) - 裁剪区域左上角位置的纵坐标。
+        - **left** (int) - 裁剪区域左上角位置的横坐标。
+        - **height** (int) - 裁剪区域的高度。
+        - **width** (int) - 裁剪区域的宽度。
         - **size** (Union[int, Sequence[int, int]]) - 图像的输出尺寸大小。
 
           - 若输入int，将调整图像的较短边长度为 `size` ，且保持图像的宽高比不变。

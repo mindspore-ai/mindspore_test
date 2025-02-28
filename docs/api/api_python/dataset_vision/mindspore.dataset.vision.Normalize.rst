@@ -3,7 +3,7 @@ mindspore.dataset.vision.Normalize
 
 .. py:class:: mindspore.dataset.vision.Normalize(mean, std, is_hwc=True)
 
-    根据均值和标准差对输入图像进行归一化。
+    根据均值和标准差，对输入图像进行归一化。
 
     此处理将使用以下公式对输入图像进行归一化：output[channel] = (input[channel] - mean[channel]) / std[channel]，其中 channel 代表通道索引，channel >= 1。
 

@@ -3,7 +3,7 @@ mindspore.dataset.vision.Rescale
 
 .. py:class:: mindspore.dataset.vision.Rescale(rescale, shift)
 
-    基于给定的缩放和平移因子调整图像的像素大小。输出图像的像素大小为：output = image * rescale + shift。
+    基于给定的缩放和平移因子，调整图像的像素大小。输出图像的像素大小为：output = image * rescale + shift。
 
     .. note:: 此操作默认通过 CPU 执行，也支持异构加速到 GPU 或 Ascend 上执行。
 

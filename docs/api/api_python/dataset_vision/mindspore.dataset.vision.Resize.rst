@@ -3,7 +3,7 @@ mindspore.dataset.vision.Resize
 
 .. py:class:: mindspore.dataset.vision.Resize(size, interpolation=Inter.LINEAR)
 
-    对输入图像使用给定的 :class:`mindspore.dataset.vision.Inter` 插值方式去调整为给定的尺寸大小。
+    使用给定的 :class:`mindspore.dataset.vision.Inter` 插值方式，将输入图像调整至给定的尺寸大小。
 
     支持 Ascend 硬件加速，需要通过 `.device("Ascend")` 方式开启。
 

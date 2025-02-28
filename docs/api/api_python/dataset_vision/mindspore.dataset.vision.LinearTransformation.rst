@@ -3,7 +3,7 @@ mindspore.dataset.vision.LinearTransformation
 
 .. py:class:: mindspore.dataset.vision.LinearTransformation(transformation_matrix, mean_vector)
 
-    使用指定的变换方阵和均值向量对输入numpy.ndarray图像进行线性变换。
+    使用指定的变换方阵和均值向量，对输入numpy.ndarray图像进行线性变换。
 
     先将输入图像展平为一维，从中减去均值向量，然后计算其与变换方阵的点积，最后再变形回原始shape。
 

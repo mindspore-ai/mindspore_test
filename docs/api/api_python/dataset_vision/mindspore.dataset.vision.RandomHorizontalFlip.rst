@@ -3,7 +3,7 @@ mindspore.dataset.vision.RandomHorizontalFlip
 
 .. py:class:: mindspore.dataset.vision.RandomHorizontalFlip(prob=0.5)
 
-    对输入图像按给定的概率进行水平随机翻转。
+    以给定的概率，对输入图像进行水平随机翻转。
 
     参数：
         - **prob** (float, 可选) - 图像被翻转的概率，取值范围：[0.0, 1.0]。默认值： ``0.5`` 。
