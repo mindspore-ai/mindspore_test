@@ -185,6 +185,7 @@ using CheckStatePtr = std::shared_ptr<CheckState>;
 class SilentChecker {
  public:
   static SilentChecker &GetInstance();
+  static bool IsNpuAsdEnable();
   ~SilentChecker();
   void InitOpExecState(OpExecState *op_exec_state, const std::string &op_name,
                        const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs,
