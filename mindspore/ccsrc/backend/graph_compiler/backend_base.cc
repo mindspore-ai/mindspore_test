@@ -1977,6 +1977,7 @@ void MindRTBackendBase::RunGraph(const ActorInfo &actor_info, const VectorRef &a
   if (!disable_pre_build_comm && !has_pre_build_comm_) {
     PROF_START(PreLaunchCommKernel);
     has_pre_build_comm_ = true;
+    MS_LOG(INFO) << "Pre launch comm kernel.";
     runtime::PreLaunchComm::GetInstance().PreLaunchCommKernel(actor_set);
     PROF_END(PreLaunchCommKernel);
   }
