@@ -177,7 +177,7 @@ class AdjustBrightness(ImageTensorOperation, PyTensorOperation):
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
-                `"`CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
+                ``"CPU"`` and ``"Ascend"`` . Default: ``"CPU"`` .
 
         Raises:
             TypeError: If `device_target` is not of type str.
@@ -3423,6 +3423,9 @@ class Perspective(ImageTensorOperation, PyTensorOperation):
         interpolation (Inter, optional): Image interpolation method defined by :class:`~.vision.Inter` .
             Default: ``Inter.BILINEAR``.
 
+            - Ascend Mode: Only ``Inter.LINEAR`` and ``Inter.NEAREST`` interpolation methods are supported
+              when the device is set to Ascend by `.device("Ascend")` .
+
     Raises:
         TypeError: If `start_points` is not of type Sequence[Sequence[int, int]].
         TypeError: If `end_points` is not of type Sequence[Sequence[int, int]].
@@ -6016,8 +6019,17 @@ class Resize(ImageTensorOperation, PyTensorOperation):
             If size is an integer, the smaller edge of the image will be resized to this value with
             the same image aspect ratio.
             If size is a sequence of length 2, it should be (height, width).
+
+            - CPU mode: If the execution device is CPU by ``.device("CPU")`` , the range of size is [1, 16777216].
+
+            - Ascend mode: set the executing device to Ascend by ``.device("Ascend")`` , the value of size will be in
+              the range of [6, 32768].
+
         interpolation (Inter, optional): Image interpolation method defined by :class:`~.vision.Inter` .
             Default: ``Inter.LINEAR``.
+
+            - Ascend mode: ``Inter.ANTIALIAS`` , ``Inter.AREA`` , ``Inter.PILCUBIC`` interpolation methods are not
+              supported when the execution device is set to Ascend by ``.device("Ascend")`` .
 
     Raises:
         TypeError: If `size` is not of type int or Sequence[int].
@@ -6682,8 +6694,8 @@ class Solarize(ImageTensorOperation):
         """
         Set the device for the current operator execution.
 
-        - When the device is Ascend, input type only supports `uint8` , input channel supports 1 and 3.
-          The input data has a height limit of [4, 8192] and a width limit of [6, 4096].
+        When the device is Ascend, input type only supports `uint8` , input channel supports 1 and 3.
+        The input data has a height limit of [4, 8192] and a width limit of [6, 4096].
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
@@ -7260,9 +7272,9 @@ class VerticalFlip(ImageTensorOperation):
         """
         Set the device for the current operator execution.
 
-        - When the device is Ascend, input type supports `uint8` and `float32`,
-          input channel supports 1 and 3. The input data has a height limit of [4, 8192]
-          and a width limit of [6, 4096].
+        When the device is Ascend, input type supports `uint8` and `float32`,
+        input channel supports 1 and 3. The input data has a height limit of [4, 8192]
+        and a width limit of [6, 4096].
 
         Args:
             device_target (str, optional): The operator will be executed on this device. Currently supports
