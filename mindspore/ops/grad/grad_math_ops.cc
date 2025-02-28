@@ -4321,6 +4321,17 @@ REG_BPROP_BUILDER("Angle").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   return {ib->Neg(ib->Mul(complex_dout, z))};
 });
 
+REG_BPROP_BUILDER("AngleExt").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto dtype_id = ib->GetDtypeId(x);
+
+  if (dtype_id == kNumberTypeComplex64 || dtype_id == kNumberTypeComplex128) {
+    MS_EXCEPTION(TypeError) << "For 'AngleExt', gradient not supported for complex dtype currently.";
+  }
+  auto zeros = ib->ZerosLikeExt(x, ib->EmitValue(kNone));
+  return {zeros};
+});
+
 REG_BPROP_BUILDER("Lgamma").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto dout = ib->GetInput(kIndex2);

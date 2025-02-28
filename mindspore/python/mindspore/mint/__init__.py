@@ -469,6 +469,9 @@ from mindspore.ops.functional_overload import sub
 # 739
 from mindspore.ops.function.array_func import hstack
 
+# 798
+from mindspore.ops.auto_generate import angle_ext as angle
+
 # 826
 from mindspore.ops.functional_overload import floor_divide
 
@@ -2074,6 +2077,9 @@ __all__ = [
 
     # 739
     'hstack',
+
+    # 798
+    'angle',
 
     # 826
     'floor_divide',

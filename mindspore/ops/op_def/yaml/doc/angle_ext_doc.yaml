@@ -1,0 +1,36 @@
+angle_ext:
+    description: |
+        Computes the element-wise angle (in radians) of the given input tensor.
+
+        .. math::
+
+            out_i = angle(input_i)
+
+        .. warning::
+            - This is an experimental API that is subject to change or deletion.
+            - If the data type of `input` is complex, this operator does not support backward derivation.
+
+        Note:
+            Angle returns ``Pi`` degree for negative real numbers, zero for non-negative real numbers.
+
+        Args:
+            input (Tensor): Input tensor.
+
+        Returns:
+            Tensor. If the input type is float16, the return type is also float16. Otherwise, returns float32.
+            The returned shape is the same as the input.
+
+        Raises:
+            TypeError: If `input` is not a Tensor.
+            TypeError: If the dtype of `input` is unsupported, such as float64 or complex128.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+          >>> import mindspore
+          >>> from mindspore import Tensor, ops
+          >>> input = Tensor([-1.5 + 7.8j, 3 + 5.75j], mindspore.complex64)
+          >>> output = ops.auto_generate.angle_ext(input)
+          >>> print(output)
+          [1.7607846 1.0899093]
