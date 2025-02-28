@@ -1,0 +1,135 @@
+grouped_matmul_v4:
+  description: |
+    Group calculation matmul.
+
+    ** Non-Quant: **
+
+    .. math::
+            y_i = x_i\times weight_i + bias_i
+
+    ** Antiquant-Quant: **
+
+    .. math::
+            y_i = x_i\times (weight_i + antiquant\_offset_i) * antiquant\_scale_i + bias_i
+
+    .. note::
+        Only when `bias` , `scale` , `offset` , `antiquant_scale` and `antiquant_offset` are all None, `group_type` is 0,
+        and `split_item` is 3, the reverse derivative is supported.
+        
+    ** Per-Token-Quant **
+    
+    .. math::
+             y_i = (x_i\times weight_i + bias_i) * scale_i * per\_token\_scale_i
+
+    Inputs:
+        x (TensorList): TensorList, including 2D-6D Tensors. Supported dtypes: Float16, Float32, Int8.
+                        The shape of the tensor in tensorlist is :math:`(M, N)` or :math:`(..., M, K)`.
+        weight (TensorList): TensorList, include 2D-3D Tensors. Supported dtypes: Float16, Float32, Int8.
+                             The shape of the tensor in tensorlist is :math:`(N, K)` or :math:`(E, K, N)`.
+        bias (TensorList, optional): TensorList, include 1D-2D Tensors. Supported dtypes: Float16, Float32, Int32. If not used, None.
+                                     Length is the same as the weight length. The shape of the tensor is :math:`(N)` or :math:`(E, N)`.
+        scale (TensorList, optional): TensorList, scale factor of quant(A8W8) parameters. Supported dtypes: BFloat16.
+                                      Length is the same as the weight length. The shape of the tensor is :math:`(N)` or :math:`(E, N)`.
+        offset (TensorList, optional): TensorList, offset of quant(A8W8) parameters. Supported dtypes: Float32.
+                                       Length is the same as the weight length. Currently not supported, use None.
+        antiquant_scale (TensorList, optional): TensorList, scale factor of antiquant(A16W8) parameters. Supported dtypes: Float16.
+                                                Length is the same as the weight length. The shape of the tensor is :math:`(N)` or
+                                                :math:`(E, N)`. Only use in antiquant. If not used, None.
+        antiquant_offset (TensorList, optional): TensorList, offset factor of antiquant(A16W8) parameters. Supported dtypes: Float16.
+                                                 Length is the same as the weight length. The shape of the tensor is :math:`(N)` or
+                                                 :math:`(E, N)`. Only use in antiquant. If not used, None.
+        pre_token_scale (TensorList, optional): TensorList, including 1D Tensors scale factor of per-token quant parameters.
+                                                Supported dtypes: Float32. Length is the same as the x length. The shape of the tensor
+                                                is :math:`(M)`. Only use in per-token quant. If not used, None.
+        group_list (Tensor, optional): Grouping positions for the M-axis of input x. Supported dtypes: Int64
+        activation_input (TensorList, optional): TensorList, input of actiation function. Currently not supported, use None.
+        activation_quant_scale (TensorList, optional): Currently not supported, use None.
+        activation_quant_offset (TensorList, optional): Currently not supported, use None.
+        split_item (int): Splitting input mode. Only support 0 and 3. 0 represents multiple Tensors, and 3 represents a single Tensor.
+        group_type (int): The axis to be split. Only support -1 and 0. If the matrix is multiplied by A[m,k]xB[k,n]=C[m,n].
+                          -1: No grouping, 0: Group on the m-axis
+        group_list_type (int): The format type of grouping positions. Only support 0 and 1. 0 represents the grouping positions
+                               as the cumsum of grouping size in each group, and 1 represents the positions as the grouping size in
+                               each group.
+        act_type (int): Activation function type. Currently not supported.
+
+
+        Parameter limitations 1
+        =========== ============ =========== ====================================================================================================
+        split_item  group_type   group_list  notes
+        =========== ============ =========== ====================================================================================================
+        0           -1           None        The length of x is n, tensor in x must be 2D-6D. The length of weight is n, tensor in weight must be 2D.
+        3           0            1D Tensor   The length of x is 1, tensor in x must be 2D. The length of weight is 1, tensor in weight must be 3D.
+                                             (group_list.shape)[0] must be equal to (weight.shape)[0]
+                                             The last number in group_list needs to be equal to the 0th dimension of the shape with weight
+        =========== ============ =========== ====================================================================================================
+
+        Parameter limitations 2
+        Non-quant type table
+        =========   =========  =========  =========  =========  ================  =================  ===============  =========
+        x           weight     bias       scale      offset     antiquant_scale   antiquant_offset   pre_token_scale  y
+        =========   =========  =========  =========  =========  ================  =================  ===============  =========
+        Float16     Float16    Float16    None       None       None              None               None             Float16
+        =========   =========  =========  =========  =========  ================  =================  ===============  =========
+
+        Parameter limitations 3
+        Only in split_item=3, group_type=0
+        =========   =========  =========  =========  =========  ================  =================  ===============   =========
+        x           weight     bias       scale      offset     antiquant_scale   antiquant_offset   pre_token_scale   y
+        =========   =========  =========  =========  =========  ================  =================  ===============   =========
+        Float32     Float32    Float32    None       None       None              None               None              Float32
+        =========   =========  =========  =========  =========  ================  =================  ===============   =========
+        
+        Parameter limitations 4
+        Anti-quant
+        =========   =========  =========  =========  =========  ================  =================  ===============  =========
+        x           weight     bias       scale      offset     antiquant_scale   antiquant_offset   pre_token_scale  y
+        =========   =========  =========  =========  =========  ================  =================  ===============  =========
+        Float16     Int8       int32      None       None       Float16           Float16            None             Float16
+        =========   =========  =========  =========  =========  ================  =================  ===============  =========
+        
+        Parameter limitations 4
+        Per-token-quant
+        =========   =========  =========  =========  =========  ================  =================  ===============  =========
+        x           weight     bias       scale      offset     antiquant_scale   antiquant_offset   pre_token_scale  y
+        =========   =========  =========  =========  =========  ================  =================  ===============  =========
+        Int8        Int8       int32      BFloat16   None       None              None               Float32          BFloat16
+        =========   =========  =========  =========  =========  ================  =================  ===============  =========
+
+    Outputs:
+        y (TensorList): TensorList, include 2D Tensors. The shape of the tensor is :math:`(M, N)`.
+
+    Raises:
+        TypeError: If `split_item` is not 0 or 3.
+        TypeError: If `group_type` is not -1 or 0.
+        TypeError: If `group_list_type` is not 0 or 1.
+        TypeError: when `split_item` is 0, `group_type` is not -1.
+        TypeError: when `split_item` is 3, `group_type` is not 0.
+        TypeError: when `split_item` is 3, `group_list` is None.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> import numpy as np
+        >>> from mindspore import nn, context
+        >>> from mindspore.ops.auto_generate import grouped_matmul_v4
+        >>> ms.set_device(device_target="Ascend")
+        >>> context.set_context(mode=ms.GRAPH_MODE)
+        >>> x = [ms.Tensor(np.array([[0, 0, 0, 0],
+        ...                          [1, 1, 1, 1],
+        ...                          [2, 2, 2, 2],
+        ...                          [2, 2, 2, 2],
+        ...                          [1, 1, 1, 1],
+        ...                          [1, 1, 1, 1]]), ms.float16)]
+        >>> weight = [ms.Tensor(np.arange(32).reshape((4, 4, 2)), ms.float16)]
+        >>> group_list = ms.Tensor([1, 2, 1, 2], ms.int64)
+        >>> output = grouped_matmul_v4(x, weight, group_list=group_list, split_item=3, group_type=0, group_list_type=1)
+        >>> print(output[0])
+        [[0   0  ]
+         [44  48 ]
+         [88  96 ]
+         [152 160]
+         [108 112]
+         [108 112]]
