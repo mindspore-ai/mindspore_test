@@ -658,8 +658,9 @@ class Parameter(Tensor_):
         if init != 'same':
             shape = self.shape if self.slice_num == 1 else self.param_info.origin_shape
             dtype = self.dtype
-            x.set_data(initializer(init, shape=shape, dtype=dtype))
-            x.init = True
+            tensor = initializer(init, shape=shape, dtype=dtype)
+            x.set_data(tensor)
+            x.init = tensor.init
         device = self._get_user_data("parameter_device")
         if device is not None:
             x._set_user_data("parameter_device", device)
