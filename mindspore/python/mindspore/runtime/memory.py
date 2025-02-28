@@ -16,7 +16,7 @@
 """Memory interfaces."""
 
 from mindspore._c_expression import RuntimeConf, DeviceManagerConf, _memory_stats, \
-    _reset_max_mem_reserved, _reset_max_mem_allocated, DeviceContextManager
+    _reset_max_mem_reserved, _reset_max_mem_allocated, DeviceContextManager, _empty_cache
 from mindspore import _checkparam as Validator
 from mindspore._checkparam import args_type_check
 from mindspore import log as logger
@@ -215,7 +215,12 @@ def empty_cache():
         Currently, the MindSpore memory pool does not have the function of releasing memory fragments.
         This interface is reserved but implemented as an empty method and prompted in log mode when using.
     """
-    logger.warning(f"The empty_cache operation is currently not supported.")
+    logger.info(f"The empty_cache operation is executing.")
+    device_target = ms.context.get_context("device_target")
+    if not _is_initialized(device_target):
+        logger.warning(f"Backend {device_target} is not initialized yet. Return 0.")
+        return 0
+    return _empty_cache(device_target)
 
 
 def reset_peak_memory_stats():
