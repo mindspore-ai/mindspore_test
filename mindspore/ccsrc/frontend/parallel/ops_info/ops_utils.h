@@ -440,6 +440,7 @@ constexpr char SOFTMAX_CROSS_ENTROPY_WITH_LOGITS[] = "SoftmaxCrossEntropyWithLog
 constexpr char SIGMOID_CROSS_ENTROPY_WITH_LOGITS[] = "SigmoidCrossEntropyWithLogits";
 constexpr char MATMUL[] = "MatMul";
 constexpr char MATMUL_EXT[] = "MatMulExt";
+constexpr char OUTER[] = "Outer";
 constexpr char BATCH_MATMUL_EXT[] = "BatchMatMulExt";
 constexpr char GELU[] = "GeLU";
 constexpr char FAST_GELU[] = "FastGeLU";

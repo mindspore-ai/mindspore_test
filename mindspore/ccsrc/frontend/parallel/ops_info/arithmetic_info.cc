@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <utility>
 #include <vector>
+#include <unordered_set>
 
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "frontend/parallel/device_matrix.h"
@@ -462,6 +463,127 @@ std::vector<StrategyPtr> ArithmeticBase::GenerateOpStrategies(int64_t stage_id) 
   return sp_vector;
 }
 
+Status OuterInfo::CheckStrategy(const StrategyPtr &strategy) {
+  if (CheckStrategyValue(strategy, inputs_shape_) != SUCCESS) {
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+Status OuterInfo::InferDevMatrixShape() {
+  MS_EXCEPTION_IF_NULL(strategy_);
+  std::vector<Dimensions> strategies = strategy_->GetInputDim();
+  if (strategies.empty()) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the shard strategies is empty.";
+    return FAILED;
+  }
+  if (strategies.size() != kSizeTwo) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", it has two 1D inputs so the shard strategies.size() "
+                  << "should be 2, but the strategies is " << strategies << " and its size is " << strategies.size()
+                  << ".";
+    return FAILED;
+  }
+  Dimensions input_strategy = strategies.at(kIndex0);
+  Dimensions vec2_strategy = strategies.at(kIndex1);
+  dev_matrix_shape_.push_back(input_strategy[kIndex0]);
+  dev_matrix_shape_.push_back(vec2_strategy[kIndex0]);
+  return SUCCESS;
+}
+
+Status OuterInfo::InferTensorMap() {
+  inputs_tensor_map_.clear();
+  outputs_tensor_map_.clear();
+  // Get dev matrix without repeated calculation
+  Shape dev_matrix = dev_matrix_shape_;
+  if (repeated_calc_num_ > 1) {
+    if (repeated_num_in_dev_matrix_right_) {
+      dev_matrix.pop_back();
+    } else {
+      (void)dev_matrix.erase(dev_matrix.cbegin());
+    }
+  }
+  if (dev_matrix.size() != kSizeTwo) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", it has two 1D inputs so the dev_matrix.size() "
+                  << "before extend should be 2, but the dev_matrix is " << dev_matrix << " and its size is "
+                  << dev_matrix.size() << ".";
+    return FAILED;
+  }
+  inputs_tensor_map_.push_back({1});
+  inputs_tensor_map_.push_back({0});
+  outputs_tensor_map_.push_back({1, 0});  // output
+  return SUCCESS;
+}
+
+bool TensorMapHasRepeatElem(const std::vector<Shape> &input_tensor_map, const std::vector<Shape> &vec2_tensor_map) {
+  std::unordered_set<int64_t> input_tensor_map_set;
+  for (auto sub_map_i : input_tensor_map) {
+    for (auto elem_i : sub_map_i) {
+      input_tensor_map_set.insert(elem_i);
+    }
+  }
+  for (auto sub_map_v : vec2_tensor_map) {
+    for (auto elem_v : sub_map_v) {
+      if (input_tensor_map_set.find(elem_v) != input_tensor_map_set.end()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+Status OuterInfo::CheckInputLayout() {
+  if (inputs_tensor_info_.size() != kSizeTwo) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 2, but got "
+                  << inputs_tensor_info_.size() << ".";
+    return FAILED;
+  }
+  auto input_tensor_layout = inputs_tensor_info_[kIndex0].tensor_layout();
+  auto vec2_tensor_layout = inputs_tensor_info_[kIndex1].tensor_layout();
+  auto input_tensor_map = input_tensor_layout.tensor_map_before();
+  auto vec2_tensor_map = vec2_tensor_layout.tensor_map_before();
+  if (TensorMapHasRepeatElem(input_tensor_map, vec2_tensor_map)) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", there cannot be duplicate elements in input_tensor_map "
+                  << "and vec2_tensor_map.";
+    return FAILED;
+  }
+  dev_matrix_shape_ = input_tensor_layout.device_arrangement_origin().array();
+  return SUCCESS;
+}
+
+Status OuterInfo::InferOutputTensorInfo() {
+  auto input_tensor_layout = inputs_tensor_info_[kIndex0].tensor_layout();
+  auto vec2_tensor_layout = inputs_tensor_info_[kIndex1].tensor_layout();
+  auto input_tensor_map = input_tensor_layout.tensor_map_before();
+  auto vec2_tensor_map = vec2_tensor_layout.tensor_map_before();
+  Shapes outputs_tensor_map = {};
+  outputs_tensor_map.push_back(input_tensor_map[kIndex0]);
+  outputs_tensor_map.push_back(vec2_tensor_map[kIndex0]);
+
+  if ((output_infer_tensor_layout_.InitFromExtendVector(dev_matrix_shape_, outputs_tensor_map,
+                                                        outputs_shape_[kIndex0]) != SUCCESS)) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the output_tensor_layout init failed.";
+    return FAILED;
+  }
+  if (output_infer_tensor_layout_.tensor_shape_before().array() != outputs_shape_[kIndex0]) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the infer output shape "
+                  << output_infer_tensor_layout_.tensor_shape_before().array() << " dose not match the output shape "
+                  << outputs_shape_[kIndex0];
+    return FAILED;
+  }
+  TensorInfo output_tensor_info(output_infer_tensor_layout_);
+  outputs_tensor_info_.push_back(output_tensor_info);  // output
+  return SUCCESS;
+}
+
+ReplaceGraphPtr OuterInfo::replace_graph(const CNodePtr &cnode) {
+  if (inputs_tensor_info_[kIndex0].tensor_layout().IsInterleavedParallel() ||
+      inputs_tensor_info_[kIndex0].tensor_layout().IsInterleavedParallel()) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "For distributed operator " << name_ << " it does not support "
+                                       << "interleaved parallel.";
+  }
+  return replace_graph_;
+}
+
 Status LerpInfo::GetAttrs() {
   inputs_size_ = inputs_shape_.size();
   if (inputs_size_ != 2 && inputs_size_ != 3) {
@@ -738,5 +860,6 @@ REGISTER(MaskedFillInfo);
 REGISTER(AddExtInfo);
 REGISTER(SubExtInfo);
 REGISTER(DivModInfo);
+REGISTER(OuterInfo);
 }  // namespace parallel
 }  // namespace mindspore
