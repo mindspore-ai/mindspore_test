@@ -50,6 +50,7 @@ class ActivationBase : public OperatorInfo {
   void set_output_infer_tensor_layout(const TensorLayout &tensor_layout) {
     output_infer_tensor_layout_ = tensor_layout;
   }
+  size_t outputs_size_ = 1;
 
  private:
   TensorLayout output_infer_tensor_layout_;
@@ -173,6 +174,22 @@ class SortInfo : public Softmax {
   Status InferTensorMap() override;
   Status InferAsLossDivisor() override;
   Status GetAttrs() override;
+};
+
+class SortExtInfo : public SortInfo {
+ public:
+  SortExtInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+              const PrimitiveAttrs &attrs)
+      : SortInfo(name, inputs_shape, outputs_shape, attrs) {
+    outputs_size_ = 2;
+  }
+  ~SortExtInfo() override = default;
+  ReplaceGraphPtr replace_graph(const CNodePtr &cnode) override;
+
+ protected:
+  Status GetAttrs() override;
+  Status InferAsLossDivisorByLayout() override;
+  Status CheckInputLayout() override;
 };
 
 class ReverseV2Info : public Softmax {

@@ -253,6 +253,7 @@ constexpr const char kNameScatterNonAliasingAdd[] = "ScatterNonAliasingAdd";
 constexpr const char kNameSeLU[] = "SeLU";
 constexpr const char kNameSoftsign[] = "Softsign";
 constexpr const char kNameSort[] = "Sort";
+constexpr const char kNameSortExt[] = "SortExt";
 constexpr const char kNameSpaceToBatchNDD[] = "SpaceToBatchNDD";
 constexpr const char kNameSparseApplyFtrlV2[] = "SparseApplyFtrlV2";
 constexpr const char kNameSparseApplyProximalAdagrad[] = "SparseApplyProximalAdagrad";
