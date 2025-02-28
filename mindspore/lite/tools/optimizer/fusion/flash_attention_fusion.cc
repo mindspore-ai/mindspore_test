@@ -71,6 +71,7 @@ constexpr int64_t kNumDValue = 40;
 constexpr int64_t kNumPadSize = 8;
 constexpr int kNumPowerTwo = 2;
 constexpr int kNumSparseMode10 = 10;
+constexpr int kNumInnerPrecise4 = 4;
 constexpr float kNumPowerHalf = 0.5;
 
 bool IsDivNode(const BaseRef &n) {
@@ -2839,6 +2840,13 @@ bool checkBinaryInputValidInt(int checkValue, int v1, int v2) {
   return false;
 }
 
+bool checkRangeInputValidInt(int checkValue, int v1, int v2) {
+  if (checkValue >= v1 && checkValue <= v2) {
+    return true;
+  }
+  return false;
+}
+
 bool checkBinaryInputValidString(string checkValue, string v1, string v2) {
   if (checkValue == v1 || checkValue == v2) {
     return true;
@@ -2876,11 +2884,12 @@ std::shared_ptr<FlashAttentionParm> FlashAttentionFusion::ParseFAParam() const {
         }
       } else if (attr.first == "inner_precise") {
         int inner_precise = std::atoi(attr_value.c_str());
-        if (std::to_string(inner_precise) == attr_value && (checkBinaryInputValidInt(inner_precise, 0, 1))) {
+        if (std::to_string(inner_precise) == attr_value &&
+            checkRangeInputValidInt(inner_precise, 0, kNumInnerPrecise4)) {
           MS_LOG(INFO) << "Use user config, FA inner_precise is: " << attr_value;
           fa_param.inner_precise = inner_precise;
         } else {
-          MS_LOG(WARNING) << "FA inner_precise only supports 0 or 1, but get " << attr_value;
+          MS_LOG(WARNING) << "FA inner_precise only supports range 0-4, but get " << attr_value;
           return nullptr;
         }
       } else if (attr.first == "implement_mode") {
