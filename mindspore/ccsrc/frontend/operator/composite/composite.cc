@@ -2536,6 +2536,12 @@ FuncGraphPtr AccumulateDout::GenerateFuncGraph(const AbstractBasePtrList &args_a
     fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), factor_tuple_input, NewValueNode(int64_t(0))});
   auto factor_inner_tuple =
     fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), factor_tuple_input, NewValueNode(int64_t(1))});
+  auto dout_inner_tuple =
+    fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), dout_tuple_input, NewValueNode(int64_t(1))});
+  auto dout_mask =
+    fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), dout_inner_tuple, NewValueNode(int64_t(0))});
+  auto factor_mask =
+    fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), factor_inner_tuple, NewValueNode(int64_t(0))});
   if (IsAddDout()) {
     auto cal_dout = fg->NewCNodeInOrder({NewValueNode(prim::GetPythonOps("hyper_add")), dout, factor});
     auto dout_inner_tuple =
@@ -2544,11 +2550,19 @@ FuncGraphPtr AccumulateDout::GenerateFuncGraph(const AbstractBasePtrList &args_a
     fg->set_output(cal_res);
     return fg;
   }
+  if (types_["dout"] == 2 && types_["factor"] == 2) {
+    auto dout1 = fg->NewCNodeInOrder({NewValueNode(prim::kPrimSelect), dout_mask, dout,
+                      fg->NewCNodeInOrder({NewValueNode(prim::kPrimOnesLike), dout})});
+    auto factor1 = fg->NewCNodeInOrder({NewValueNode(prim::kPrimSelect), factor_mask, factor,
+                      fg->NewCNodeInOrder({NewValueNode(prim::kPrimOnesLike), factor})});
+    auto cal_dout = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMul), dout1, factor1});
+    auto cal_mask = fg->NewCNodeInOrder({NewValueNode(prim::kPrimLogicalOr), dout_mask, factor_mask});
+    auto cal_res = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), cal_dout,
+          fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), cal_mask, NewValueNode(int64_t(2))})});
+    fg->set_output(cal_res);
+    return fg;
+  }
   auto dout_mul = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMul), dout, factor});
-  auto dout_inner_tuple =
-    fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), dout_tuple_input, NewValueNode(int64_t(1))});
-  auto dout_mask =
-    fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), dout_inner_tuple, NewValueNode(int64_t(0))});
   auto cal_dout = fg->NewCNodeInOrder({NewValueNode(prim::kPrimSelect), dout_mask, dout_mul, factor});
   auto cal_res = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), cal_dout, factor_inner_tuple});
   fg->set_output(cal_res);

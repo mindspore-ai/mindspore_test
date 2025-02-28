@@ -108,6 +108,32 @@ def test_tensor_view_grad():
     expected_res = np.array([[0, 1], [1, 1]]).astype(np.float32)
     assert (grad_res.asnumpy() == expected_res).all()
 
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_view_grad():
+    """
+    Feature: Support tensor inplace view gradient.
+    Description: Support tensor inplace view gradient.
+    Expectation: Run success.
+    """
+
+    class Net(nn.Cell):
+        def construct(self, x):
+            y = ops.abs(x)
+            y_viewed1 = select_ext_op(y, 0, 0)
+            inplace_copy_op(y_viewed1, ms.Tensor(-1, dtype=ms.float32))
+            y_viewed2 = slice_ext_op(y, 0, 1)
+            inplace_copy_op(y_viewed2, ms.Tensor(-1, dtype=ms.float32))
+            return y
+
+    x_np = (np.arange(2 * 2)).reshape((2, 2)).astype(np.float32)
+    x = ms.Tensor(x_np)
+    forward_net = Net()
+    grad_res = GradNet(forward_net)(x)
+    expected_res = np.array([[0, 0], [0, 0]]).astype(np.float32)
+    assert (grad_res.asnumpy() == expected_res).all()
+
+
 @pytest.mark.skip(reason="View Gradient with control flow is not correct yet.")
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_tensor_view_inplace_grad_with_ctr_flow():
@@ -130,6 +156,6 @@ def test_tensor_view_inplace_grad_with_ctr_flow():
     x_np = (np.arange(2 * 2)).reshape((2, 2)).astype(np.float32)
     x = ms.Tensor(x_np)
     forward_net = Net()
-    grad_res = GradNet(forward_net)(x, x, x)
+    grad_res = GradNet1(forward_net)(x, x, x)
     expected_res = np.array([[0, 0], [1, 1]]).astype(np.float32)
     assert (grad_res.asnumpy() == expected_res).all()
