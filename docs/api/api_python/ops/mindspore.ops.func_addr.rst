@@ -25,6 +25,6 @@ mindspore.ops.addr
         Tensor，shape大小为 :math:`(N, M)` ，数据类型与 `x` 相同。
 
     异常：
-        - **TypeError** - `x` 、 `vec1` 、 `vec2` 不是Tensor。
-        - **TypeError** - `vec1` 、 `vec2` 的数据类型不一致。
-        - **ValueError** - 如果 `vec1` ， `vec2` 不是一个一维Tensor。
+        - **TypeError** - `x` 、 `vec1` 或 `vec2` 不是Tensor。
+        - **TypeError** - `vec1` 和 `vec2` 的数据类型不一致。
+        - **ValueError** - `vec1` 或 `vec2` 不是一维Tensor。

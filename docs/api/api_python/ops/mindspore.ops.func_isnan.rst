@@ -12,7 +12,7 @@ mindspore.ops.isnan
           & \ False,\ \text{ if } input_{i} \ne  \text{Nan}
         \end{cases}
 
-    其中 :math:`Nan` 表示的不是number。
+    其中 :math:`Nan` 表示不是number。
 
     参数：
         - **input** (Tensor) - 输入Tensor。
