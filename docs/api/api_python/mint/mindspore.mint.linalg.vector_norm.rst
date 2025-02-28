@@ -21,13 +21,13 @@ mindspore.mint.linalg.vector_norm
         这是一个实验性API，后续可能修改或删除。
 
     参数：
-        - **x** (Tensor) - shape为 :math:`(*)` 的Tensor，其中*是零个或多个batch维度。
-        - **ord** (Union[bool, int, float, inf, -inf], 可选) - 范数的计算模式。行为参考上表。默认值： ``2`` 。
+        - **x** (Tensor) - shape为 :math:`(*)` 的Tensor。其中*是零个或多个batch维度。
+        - **ord** (Union[bool, int, float, inf, -inf], 可选) - 范数的计算模式。行为模式参考上表。默认值： ``2`` 。
         - **dim** (Union[int, List(int), Tuple(int)], 可选) - 计算向量范数的维度。默认值： ``None`` 。
 
-          当 `dim` 是int,list或者tuple时，会在指定的维度上计算范数，而剩余的维度会被作为batch维度。
+          - 当 `dim` 是int、list或者tuple时，会在指定的维度上计算范数，而剩余的维度会被作为batch维度。
 
-          当 `dim` 为None时，在计算范数之前，会将Tensor `x` 展平。
+          - 当 `dim` 为None时，在计算范数之前，会将Tensor `x` 展平。
 
         - **keepdim** (bool) - 输出Tensor是否保留原有的维度。默认值： ``False`` 。
 
