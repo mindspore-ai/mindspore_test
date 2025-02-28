@@ -104,7 +104,7 @@ mindspore.experimental.es.EmbeddingService
             - **init_vocabulary_size** (int) - 初始化表的大小。
             - **embedding_dim** (int) - 表中插入数据的维度大小。
             - **max_feature_count** (int，可选) - 每次查询的keys的数量。默认值为 ``None``。
-            - **initializer** (Initialize，可选) - 表的初始化策略，默认值为 ``Uniform(scale=0.01)``。
+            - **initializer** (Initializer，可选) - 表的初始化策略，默认值为 ``Uniform(scale=0.01)``。
             - **embedding_type** (str，可选) - 生成embedding表的类型，可配置参数["PS", "data_parallel"]， ``"PS"`` 表示初始化大表， ``"data_parallel"`` 表示初始化小表。默认值为 ``"PS"``。
             - **ev_option** (EmbeddingVariableOption，可选) - 大表的一些属性，是 :func:`mindspore.experimental.es.EmbeddingService.embedding_variable_option` 函数的返回值，为EmbeddingVariableOption对象。默认值为 ``None``。
             - **multihot_lens** (int，可选) - 小表的属性，只有 `allow_merge` 使能之后才用，当前不支持。默认值为 ``None``。
@@ -169,7 +169,7 @@ mindspore.experimental.es.EmbeddingService
             - **communication_option** (None，可选) - 预留属性，当前不支持。默认值为 ``None``。
 
         返回：
-            EmbeddingVariableOption对象，作为 :func:`mindspore.mindspore.experimental.es.EmbeddingService.embedding_init` 的 `ev_option` 入参。
+            EmbeddingVariableOption对象，作为 :func:`mindspore.experimental.es.EmbeddingService.embedding_init` 的 `ev_option` 入参。
 
         异常：
             - **TypeError** - 如果 `filter_option` 不是None且类型不是CounterFilter。

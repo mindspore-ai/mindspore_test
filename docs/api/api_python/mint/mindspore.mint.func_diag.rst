@@ -25,9 +25,9 @@ mindspore.mint.diag
     返回：
         Tensor，具有与输入Tensor相同的数据类型，其shape由 `diagonal` 决定:
 
-        - 如果输入 `input` 的shape为 :math: `(x_0)`：输出shape为 :math:`(x_0 + \left | diagonal \right | , x_0 + \left | diagonal \right | )` 的二维张量。
+        - 如果输入 `input` 的shape为 :math:`(x_0)` ：输出shape为 :math:`(x_0 + \left | diagonal \right | , x_0 + \left | diagonal \right | )` 的二维张量。
 
-        - 如果输入 `input` 的shape为 :math: `(x_0, x_1)`：输出shape为主对角线上下平移 :math:`(\left | diagonal \right |)` 个单位后所剩元素的长度的一维张量。
+        - 如果输入 `input` 的shape为 :math:`(x_0, x_1)` ：输出shape为主对角线上下平移 :math:`(\left | diagonal \right |)` 个单位后所剩元素的长度的一维张量。
 
     异常：
         - **TypeError** - `input` 不是Tensor。

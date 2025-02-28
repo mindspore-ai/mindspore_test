@@ -23,7 +23,7 @@ mindspore.Tensor.argsort
     参数：
         - **dim** (int，可选) - 指定排序的轴。默认值： ``-1`` ，表示指定最后一维。当前Ascend后端只支持对最后一维进行排序。
         - **descending** (bool，可选) - 输出顺序。如果 `descending` 为 ``True`` ，按照元素值降序排序，否则升序排序。默认值： ``False`` 。
-        - **stable** (bool， 可选) - 是否使用稳定排序算法。 默认值： ``False`` 。
+        - **stable** (bool，可选) - 是否使用稳定排序算法。 默认值： ``False`` 。
 
     返回：
         Tensor，排序后 `self` 的索引。数据类型为int64。

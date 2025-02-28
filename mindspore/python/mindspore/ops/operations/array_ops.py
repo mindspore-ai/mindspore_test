@@ -2244,7 +2244,7 @@ class ScatterMin(_ScatterOpDynamic):
     when `updates` does not support conversion to the data type required by `input_x`.
 
     Args:
-        use_locking (bool): Whether to protect the assignment by a lock. Default: ``False`` .
+        use_locking (bool, optional): Whether to protect the assignment by a lock. Default: ``False`` .
 
     Inputs:
         - **input_x** (Union[Parameter, Tensor]) - The target tensor, with data type of Parameter or Tensor.
@@ -3587,7 +3587,7 @@ class ReverseSequence(PrimitiveWithInfer):
 
     Args:
         seq_dim (int): The dimension where reversal is performed. Required.
-        batch_dim (int): The input is sliced in this dimension. Default: ``0`` .
+        batch_dim (int, optional): The input is sliced in this dimension. Default: ``0`` .
 
     Inputs:
         - **x** (Tensor) - The input to reverse, supporting all number types including bool.

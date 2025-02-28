@@ -102,6 +102,7 @@ class Layout:
                             When using "interleaved_parallel" as an alias name, the tensor would be split into multiple
                             copies on the corresponding partition dimension on a single card.
         rank_list (list): Data is allocated to the device according to rank_list. Default: None.
+
     Raises:
         TypeError: `device_matrix` is not a tuple type.
         TypeError: `alias_name` is not a tuple type.

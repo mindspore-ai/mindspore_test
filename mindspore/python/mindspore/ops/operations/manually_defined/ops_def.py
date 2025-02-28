@@ -571,13 +571,16 @@ class BatchNorm(Primitive):
         - For Ascend 310, the result accuracy fails to reach 1‰ due to the square root instruction.
 
     Args:
-        is_training (bool): If `is_training` is ``True`` , `mean` and `variance` are computed during training.
+        is_training (bool, optional): If `is_training` is ``True`` ,
+            `mean` and `variance` are computed during training.
             If `is_training` is ``False`` , they're loaded from checkpoint during inference. Default: ``False`` .
-        epsilon (float): A small value added for numerical stability. Default: ``1e-5``, value must be (0, 1] .
-        momentum (float): The hyper parameter to compute moving average for running_mean and running_var
+        epsilon (float, optional): A small value added for numerical stability.
+            Default: ``1e-5``, value must be (0, 1] .
+        momentum (float, optional): The hyper parameter to compute moving average for running_mean and running_var
             (e.g. :math:`new\_running\_mean = (1 - momentum) * running\_mean + momentum * current\_mean`).
             Momentum value must be [0, 1]. Default: ``0.1`` .
-        data_format (str): The optional value for data format, is ``'NHWC'`` or ``'NCHW'``, and the ``'NHWC'`` format
+        data_format (str, optional): The optional value for data format, is ``'NHWC'`` or ``'NCHW'``,
+            and the ``'NHWC'`` format
             is only supported in GPU target. Default: ``"NCHW"`` .
 
     Inputs:

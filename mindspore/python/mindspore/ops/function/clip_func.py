@@ -73,11 +73,12 @@ def clip_by_norm(x, max_norm, norm_type=2.0, error_if_nonfinite=False):
         The interface is suitable for gradient clipping scenarios, and only supports input of type float.
 
     Args:
-          x (Union(Tensor, list[Tensor], tuple[Tensor])): Input that wishes to be clipped.
-          max_norm (Union(float, int)): The upper limit of the norm for this group of network parameters.
-          norm_type (Union(float, int)): Norm type. Default: ``2.0``.
-          error_if_nonfinite (bool): If it is ``True``, an exception is thrown if the total norm from the input
-              is nan, inf or -inf. If it is ``False``, no exception will be thrown.Default: ``False`` .
+        x (Union[Tensor, list[Tensor], tuple[Tensor]]): Input that wishes to be clipped.
+        max_norm (Union[float, int]): The upper limit of the norm for this group of network parameters.
+        norm_type (Union[float, int], optional): Norm type. Default: ``2.0``.
+        error_if_nonfinite (bool, optional): If it is ``True``,
+            an exception is thrown if the total norm from the input
+            is nan, inf or -inf. If it is ``False``, no exception will be thrown.Default: ``False`` .
 
     Returns:
         Tensors, a list or tuple of Tensors, representing clipped Tensors.

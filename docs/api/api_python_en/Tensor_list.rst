@@ -60,6 +60,13 @@
     :exclude-members: infer_value, infer_shape, infer_dtype
     :members:
 
+{% elif fullname=="mindspore.train.TrainFaultTolerance" %}
+{{ fullname | underline }}
+
+.. autoclass:: {{ name }}
+    :exclude-members: end, tft_register
+    :members:
+
 {% elif objname[0].istitle() %}
 {{ fullname | underline }}
 

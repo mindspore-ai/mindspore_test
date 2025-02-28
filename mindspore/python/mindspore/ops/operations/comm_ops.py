@@ -883,7 +883,7 @@ class AlltoAll(PrimitiveWithInfer):
         split_count (int): On each process, divide blocks into split_count number.
         split_dim (int): On each process, split blocks along the split_dim.
         concat_dim (int): On each process, gather the received blocks along the concat_dimension.
-        group (str): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP`` .
+        group (str, optional): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP`` .
 
     Inputs:
         - **input_x** (Tensor) - The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.
@@ -1940,7 +1940,7 @@ class AlltoAllV(PrimitiveWithInfer):
         - **recv_numel_list** (Union[tuple[int], list[int], Tensor]) - split numel to gather from different remote rank.
 
     Outputs:
-        Tensor， flattened and concatenated tensor gather from remote ranks.
+        Tensor, flattened and concatenated tensor gather from remote ranks.
         If gather result is empty, it will return a Tensor with value 0, which has no actual meaning.
 
     Supported Platforms:
