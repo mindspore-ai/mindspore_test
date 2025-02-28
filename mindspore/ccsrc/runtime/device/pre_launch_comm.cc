@@ -84,9 +84,11 @@ void PreLaunchComm::Launch(std::vector<LaunchCommNode> &launch_hccl_nodes, Sorte
     auto &kernel_actor = std::get<kIndex0>(launch_hccl_node);
     MS_EXCEPTION_IF_NULL(kernel_actor);
     auto &kernel = std::get<kIndex1>(launch_hccl_node);
+    auto &hccl_comm_info = std::get<kIndex2>(launch_hccl_node);
     auto &hccl_kernel_launch_info = std::get<kIndex3>(launch_hccl_node);
     auto kernel_mod = AnfAlgo::GetKernelMod(kernel);
     MS_EXCEPTION_IF_NULL(kernel_mod);
+    MS_LOG(INFO) << "Pre launch kernel: " << kernel->fullname_with_scope() << ", group: " << hccl_comm_info.group;
 
     std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(kernel);
     std::vector<KernelTensor *> output_kernel_tensors = AnfAlgo::GetOrCreateAllOutputKernelTensors(kernel);
