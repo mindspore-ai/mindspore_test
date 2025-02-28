@@ -32,9 +32,9 @@
     输出：
         3个Tensor的元组，更新后的数据。
 
-        - **var** (Tensor) - 与 `var` 相同的shape和数据类型。
-        - **accum** (Tensor) - 与 `accum` 相同的shape和数据类型。
-        - **accum_update** (Tensor) - 与 `accum_update` 相同的shape和数据类型。
+        - **var** (Tensor) - shape和数据类型与 `var` 相同。
+        - **accum** (Tensor) - shape和数据类型与 `accum` 相同。
+        - **accum_update** (Tensor) - shape和数据类型与 `accum_update` 相同。
 
     异常：
         - **TypeError** - 如果 `var` 、 `accum` 、 `accum_update` 、 `lr` 、 `rho` 、 `epsilon` 或 `grad` 的数据类型既不是float16也不是float32。
