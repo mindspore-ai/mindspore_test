@@ -1390,7 +1390,7 @@ REGISTER(CumProdInfo);
 REGISTER(EluInfo);
 REGISTER(ReLUInfo);
 REGISTER(SiLUInfo);
-REGISTER(identityInfo);
+REGISTER(IdentityInfo);
 REGISTER(AShardIdentityInfo);
 REGISTER(RepeatElementsInfo);
 REGISTER(ReLU6Info);
@@ -1414,6 +1414,12 @@ REGISTER(SeLUInfo);
 REGISTER(SoftShrinkInfo);
 REGISTER(L2LossInfo);
 REGISTER(ErfinvInfo);
+REGISTER(EluExtInfo);
+REGISTER(LeakyReLUExtInfo);
+REGISTER(NanToNumInfo);
+REGISTER(SoftplusExtInfo);
+REGISTER(RemainderTensorScalarInfo);
+REGISTER(RemainderScalarTensorInfo);
 REGISTER(InvertInfo);           // has not bprop
 REGISTER(PopulationCountInfo);  // has not bprop
 REGISTER(SwigluInfo);

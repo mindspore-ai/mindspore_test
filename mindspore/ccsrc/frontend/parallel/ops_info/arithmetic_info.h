@@ -431,6 +431,30 @@ class MaskedFillInfo : public ArithmeticBase {
  private:
   size_t input_size_ = 0;
 };
+
+class PolarInfo : public XdivyInfo {
+ public:
+  PolarInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+            const PrimitiveAttrs &attrs)
+      : XdivyInfo(name, inputs_shape, outputs_shape, attrs) {}
+  ~PolarInfo() override = default;
+};
+
+class IsCloseInfo : public XdivyInfo {
+ public:
+  IsCloseInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+              const PrimitiveAttrs &attrs)
+      : XdivyInfo(name, inputs_shape, outputs_shape, attrs) {}
+  ~IsCloseInfo() override = default;
+};
+
+class RemainderTensorTensorInfo : public XdivyInfo {
+ public:
+  RemainderTensorTensorInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                            const PrimitiveAttrs &attrs)
+      : XdivyInfo(name, inputs_shape, outputs_shape, attrs) {}
+  ~RemainderTensorTensorInfo() override = default;
+};
 }  // namespace parallel
 }  // namespace mindspore
 

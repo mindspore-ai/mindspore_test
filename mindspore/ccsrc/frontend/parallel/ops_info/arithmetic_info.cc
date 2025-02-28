@@ -1183,6 +1183,9 @@ REGISTER(MaskedFillInfo);
 REGISTER(AddExtInfo);
 REGISTER(SubExtInfo);
 REGISTER(DivModInfo);
+REGISTER(PolarInfo);
+REGISTER(IsCloseInfo);
+REGISTER(RemainderTensorTensorInfo);
 REGISTER(OuterInfo);
 REGISTER(AddcmulExtInfo);
 }  // namespace parallel
