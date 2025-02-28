@@ -74,7 +74,7 @@ bool MetaServerNode::Initialize() {
   RETURN_IF_FALSE_WITH_LOG(InitTCPServer(), "Failed to create the TCP server.");
 
   // The meta server node is restarted and the metadata of cluster needs to be recovered.
-  if (recovery::IsEnableGpuRecovery()) {
+  if (recovery::IsEnableRecovery()) {
     RETURN_IF_FALSE_WITH_LOG(Recovery(), "Failed to recover from configuration.");
   }
 
@@ -94,7 +94,7 @@ bool MetaServerNode::Finalize(bool force) {
     return true;
   }
   if (topo_state_ != TopoState::kFinished && !force &&
-      (recovery::IsEnableRecovery() || (abnormal_node_num_ == 0 && !recovery::IsEnableRecovery()))) {
+      (recovery::IsEnableRepeatRegister() || (abnormal_node_num_ == 0 && !recovery::IsEnableRepeatRegister()))) {
     MS_LOG(WARNING) << "The meta server node can not be finalized because there are still " << nodes_.size()
                     << " alive nodes.";
     return false;
@@ -258,7 +258,7 @@ MessageBase *const MetaServerNode::ProcessRegister(MessageBase *const message) {
                     << ", expected node number: " << total_node_num_;
     return message.release();
   } else {
-    if (!recovery::IsEnableRecovery()) {
+    if (!recovery::IsEnableRepeatRegister()) {
       MS_LOG(WARNING) << "Node " << node_id << " registered repeatedly. It's host ip is " << host_ip
                       << ". Reject this node.";
       RegistrationRespMessage reg_resp_msg;
@@ -513,7 +513,7 @@ void MetaServerNode::UpdateTopoState() {
           }
         }
         abnormal_node_num_ = abnormal_node_num;
-        if (abnormal_node_num_ > 0 && !recovery::IsEnableRecovery()) {
+        if (abnormal_node_num_ > 0 && !recovery::IsEnableRepeatRegister()) {
           MS_LOG(EXCEPTION) << "The total number of timed out node is " << abnormal_node_num_
                             << ". Timed out node list is: " << time_out_node_ids << ", worker " << time_out_node_ids[0]
                             << " is the first one timed out, please check its log.";
@@ -540,7 +540,7 @@ bool MetaServerNode::TransitionToInitialized() {
     }
 
     // Persist the cluster metadata into storage through configuration.
-    if (recovery::IsEnableGpuRecovery() && configuration_ != nullptr && configuration_->Empty()) {
+    if (recovery::IsEnableRecovery() && configuration_ != nullptr && configuration_->Empty()) {
       if (!Persist()) {
         MS_LOG(EXCEPTION) << "Failed to persist the metadata of the cluster.";
       }

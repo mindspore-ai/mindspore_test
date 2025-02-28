@@ -1795,7 +1795,7 @@ void MindRTBackendBase::ConstructOutputs(runtime::ActorSet *actor_set, VectorRef
   MS_EXCEPTION_IF_NULL(actor_set);
   MS_EXCEPTION_IF_NULL(outputs);
   MS_EXCEPTION_IF_NULL(root_graph);
-  bool need_contruct_output = !(distributed::recovery::RecoveryContext::GetInstance()->enable_gpu_recovery() &&
+  bool need_contruct_output = !(distributed::recovery::RecoveryContext::GetInstance()->enable_recovery() &&
                                 distributed::recovery::RecoveryContext::GetInstance()->need_reset());
   bool is_embedding_cache_server = false;
 #if defined(__linux__) && defined(WITH_BACKEND)

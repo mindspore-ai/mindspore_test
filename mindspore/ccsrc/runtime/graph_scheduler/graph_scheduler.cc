@@ -288,7 +288,7 @@ bool QueryFinishTransform(const std::string &actor_set_name) {
 }
 
 void DoDisasterRecovery(const std::string &actor_set_name) {
-  if (RecoveryContext::GetInstance()->enable_gpu_recovery() && CollectiveManager::instance()->need_reinit()) {
+  if (RecoveryContext::GetInstance()->enable_recovery() && CollectiveManager::instance()->need_reinit()) {
     MS_LOG(INFO) << "Begin reinitialize collective communication for recovery.";
     bool ret = false;
     while (!ret) {
@@ -909,7 +909,7 @@ ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info
   MS_LOG(INFO) << "Graph(" << graph_compiler_info.name_ << ") transforms actor end.";
 
 #if defined(__linux__) && defined(WITH_BACKEND)
-  if (ClusterContext::instance()->initialized() && RecoveryContext::GetInstance()->enable_gpu_recovery()) {
+  if (ClusterContext::instance()->initialized() && RecoveryContext::GetInstance()->enable_recovery()) {
     SendFinishTransform(graph_compiler_info.name_);
   }
 #endif

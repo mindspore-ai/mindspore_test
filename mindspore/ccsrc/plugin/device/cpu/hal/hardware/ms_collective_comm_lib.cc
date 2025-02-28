@@ -130,7 +130,7 @@ bool MsCollectiveCommLib::AllGatherHostHashName(size_t host_hash_name, std::vect
   // Retry every random time interval.
   std::random_device rd;
   std::mt19937 gen(rd());
-  size_t retry = RecoveryContext::GetInstance()->enable_recovery() ? SIZE_MAX : retry_count_;
+  size_t retry = RecoveryContext::GetInstance()->enable_repeat_register() ? SIZE_MAX : retry_count_;
   while (!success && --retry > 0) {
     auto hostnames = cgn_->GetHostNames(role);
     if (hostnames.size() < host_hash_names->size()) {
@@ -207,7 +207,7 @@ bool MsCollectiveCommLib::SendUniqueID(const std::string &group_name, size_t roo
   bool success = false;
   // It this is not recovery scenario, retry for 3*200s, which is 10 minutes.
   const size_t interval = 3;
-  size_t retry = RecoveryContext::GetInstance()->enable_recovery() ? SIZE_MAX : retry_count_;
+  size_t retry = RecoveryContext::GetInstance()->enable_repeat_register() ? SIZE_MAX : retry_count_;
   while (!success && --retry > 0) {
     success = cgn_->PutMetadata(group_info_key, root_info, root_info_size);
     if (!success) {
@@ -233,7 +233,7 @@ bool MsCollectiveCommLib::QueryUniqueID(const std::string &group_name, size_t ro
   // Retry every random time interval.
   std::random_device rd;
   std::mt19937 gen(rd());
-  size_t retry = RecoveryContext::GetInstance()->enable_recovery() ? SIZE_MAX : retry_count_;
+  size_t retry = RecoveryContext::GetInstance()->enable_repeat_register() ? SIZE_MAX : retry_count_;
   while (!success && --retry > 0) {
     auto unique_id = cgn_->GetMetadata(group_info_key);
     if (unique_id.length() > 0) {

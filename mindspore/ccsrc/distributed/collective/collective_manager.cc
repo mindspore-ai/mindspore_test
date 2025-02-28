@@ -773,7 +773,7 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
       ret = true;
       // In disaster recovery scenarios, it is necessary to ensure that the unique id obtained from the Scheduler is a
       // newly generated one.
-      if (RecoveryContext::GetInstance()->enable_gpu_recovery()) {
+      if (RecoveryContext::GetInstance()->enable_recovery()) {
         ret = CheckUniqueIDLatest(group_name, root_info_size, root_info);
         if (!ret) {
           // The time interval for querying latest unique id from scheduler: 3 second.
@@ -808,8 +808,7 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
 }
 
 void CollectiveManager::ClearUniqueID(const std::string &group_name) {
-  UCEException::GetInstance().CheckUceARFEnv();
-  if (!UCEException::GetInstance().enable_arf()) {
+  if (!RecoveryContext::GetInstance()->enable_repeat_register()) {
     return;
   }
   MS_EXCEPTION_IF_NULL(host_comm_lib_instance_);

@@ -37,8 +37,8 @@ constexpr char kEnvEnableRecovery[] = "MS_ENABLE_RECOVERY";
 constexpr char kEnvRecoveryPath[] = "MS_RECOVERY_PATH";
 constexpr char kEnvRecoveryInterval[] = "MS_RECOVERY_INTERVAL";
 
+bool IsEnableRepeatRegister();
 bool IsEnableRecovery();
-bool IsEnableGpuRecovery();
 std::string RecoveryPath();
 
 // Used to save disaster recovery-related state quantities and provide disaster recovery-related
@@ -56,8 +56,8 @@ class BACKEND_EXPORT RecoveryContext {
   ~RecoveryContext() = default;
 
   // Get whether enable recovery or not.
+  bool enable_repeat_register() const { return enable_repeat_register_; }
   bool enable_recovery() const { return enable_recovery_; }
-  bool enable_gpu_recovery() const { return enable_gpu_recovery_; }
 
   // Get the persistent directory.
   const std::string &recovery_path() const { return recovery_path_; }
@@ -129,8 +129,8 @@ class BACKEND_EXPORT RecoveryContext {
   void ParseLatestCkptInfo(const std::vector<int> &recv_buffer);
 
   // Whether enable recovery or not, set by environment variable 'MS_ENABLE_RECOVERY'.
+  bool enable_repeat_register_{false};
   bool enable_recovery_{false};
-  bool enable_gpu_recovery_{false};
 
   // The persistent directory, set by environment variable 'MS_RECOVERY_PATH'.
   std::string recovery_path_;

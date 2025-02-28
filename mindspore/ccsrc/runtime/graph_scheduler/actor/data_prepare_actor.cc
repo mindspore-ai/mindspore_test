@@ -287,7 +287,7 @@ void UpdateDeviceAddressByRefInputNode(const std::vector<KernelGraphPtr> &graphs
 }
 
 bool IsNeedSync(const TensorPtr &tensor, bool *is_sub_data) {
-  if (RecoveryContext::GetInstance()->enable_gpu_recovery() &&
+  if (RecoveryContext::GetInstance()->enable_recovery() &&
       RecoveryContext::GetInstance()->need_sync_weight_to_device()) {
     return true;
   }
@@ -790,7 +790,7 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
     UCEException::GetInstance().clear_uce_error();
   }
 
-  if (RecoveryContext::GetInstance()->enable_gpu_recovery() &&
+  if (RecoveryContext::GetInstance()->enable_recovery() &&
       RecoveryContext::GetInstance()->need_sync_weight_to_device()) {
     RecoveryContext::GetInstance()->set_need_sync_weight_to_device(false);
   }
