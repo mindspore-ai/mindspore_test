@@ -2094,7 +2094,7 @@ def flash_attention_score(query, key, value, head_num, real_shift=None, drop_mas
         keep_prob (double, optional): The keep probability of dropout. Value range is (0.0, 1.0]. When `keep_prob`
             is 1.0, `drop_mask` should be None.
             Default: ``1.0``.
-        scale_value (double, optional): The scale factor of score. Generally, the value is 1.0 / (D ** 0.5).
+        scalar_value (double, optional): The scale factor of score. Generally, the value is 1.0 / (D ** 0.5).
             Default: ``1.0``.
         pre_tokens (int, optional): Parameter for sparse computation, represents how many tokens are counted forward.
             When `sparse_mode` is set to 1, 2, 3, or 5, this parameter does not take effect.
@@ -2165,7 +2165,7 @@ def flash_attention_score(query, key, value, head_num, real_shift=None, drop_mas
         TypeError: `query`, `key` and `value` don't have the same dtype.
         TypeError: Dtype of `attn_mask` is not bool or uint8.
         TypeError: Dtype of `real_shift` has a different dtype as `query`.
-        TypeError: `scale_value` or `keep_prob` is not a double number.
+        TypeError: `scalar_value` or `keep_prob` is not a double number.
         TypeError: `input_layout` is not a string.
         TypeError: `num_key_value_heads` is not an int.
         TypeError: `sparse_mode` is not an int.

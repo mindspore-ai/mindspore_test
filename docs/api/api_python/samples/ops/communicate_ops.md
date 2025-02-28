@@ -647,7 +647,7 @@ class SendNet(nn.Cell):
     def __init__(self):
         super(SendNet, self).__init__()
         self.depend = ops.Depend()
-        self.send = ops.Send(st_tag=0, dest_rank=8, group="hccl_world_group")
+        self.send = ops.Send(sr_tag=0, dest_rank=8, group="hccl_world_group")
 
     def construct(self, x):
         out = self.depend(x, self.send(x))
