@@ -23,7 +23,7 @@ endif()
 
 if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
     add_compile_definitions(ENABLE_INTERNAL_KERNELS)
-    include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/asdops/include/lcal)
+    include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/lccl/include)
 endif()
 
 
