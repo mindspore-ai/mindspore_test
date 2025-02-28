@@ -74,6 +74,7 @@
 #include "plugin/device/ascend/optimizer/ge/process_partial_inline.h"
 #include "plugin/device/ascend/optimizer/ge/expander_fallback.h"
 #include "plugin/device/ascend/optimizer/ge/convert_pad_v3_paddings.h"
+#include "plugin/device/ascend/optimizer/ge/convert_embedding_dense_grad_padding.h"
 
 namespace mindspore {
 namespace backend {
@@ -470,6 +471,7 @@ void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph) {
   opt_acl_pm->AddPass(std::make_shared<mindspore::opt::ExpanderFallback>());
   opt_acl_pm->AddPass(std::make_shared<mindspore::opt::ConvertPadV3Paddings>());
   opt_acl_pm->AddPass(std::make_shared<mindspore::opt::ConvertPadV3GradPaddings>());
+  opt_acl_pm->AddPass(std::make_shared<mindspore::opt::ConvertEmbeddingDenseGradPadding>());
   opt_acl_pm->AddPass(std::make_shared<mindspore::opt::ResizeBilinearAddAttr>());
   opt_acl_pm->AddPass(std::make_shared<mindspore::opt::CustomDefinedDepend>(false, kernel_graph->graph_id()));
   optimizer->AddPassManager(opt_acl_pm);
