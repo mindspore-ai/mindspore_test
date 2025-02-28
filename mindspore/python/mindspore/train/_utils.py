@@ -405,7 +405,8 @@ def get_parameter_redundancy(layout_obj, initial_rank=0):
         from mindspore.communication.management import get_process_group_ranks
         groups_ranks = (tuple(get_process_group_ranks()),)
         param_redundancy_dict = {param.name: groups_ranks for _, param in layout_obj.parameters_and_names()}
-        return param_redundancy_dict
+        sorted_param_redundancy_dict = {key: param_redundancy_dict[key] for key in sorted(param_redundancy_dict.keys())}
+        return sorted_param_redundancy_dict
     else:
         parameter_layout = {}
         for k, v in layout_obj.items():
@@ -420,7 +421,8 @@ def get_parameter_redundancy(layout_obj, initial_rank=0):
     else:
         _get_layout_opt_shard(layout_obj, param_redundancy_dict)
 
-    return param_redundancy_dict
+    sorted_param_redundancy_dict = {key: param_redundancy_dict[key] for key in sorted(param_redundancy_dict.keys())}
+    return sorted_param_redundancy_dict
 
 
 def _collect_settings_by_rank(redundancy_map):

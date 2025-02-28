@@ -69,19 +69,9 @@ parameter_layout_dict = {
         ([4, 4], [0, -1], [10000, 2560], 0, True, ''),
     'accu_grads.backbone.blocks.16.attention.projection.weight':
         ([4, 4], [0, -1], [640, 2560], 0, True, '4-11650191013956257822'),
-    'accu_grads.backbone.blocks.16.attention.dense1.weight':
-        ([4, 4], [0, -1], [640, 2560], 0, True, '4-11650191013956257822'),
-    'accu_grads.backbone.blocks.16.attention.dense2.weight':
-        ([4, 4], [0, -1], [640, 2560], 0, True, '4-11650191013956257822'),
-    'accu_grads.backbone.blocks.16.attention.dense3.weight':
-        ([4, 4], [0, -1], [640, 2560], 0, True, '4-11650191013956257822'),
     'accu_grads.backbone.blocks.16.output.mapping.weight':
         ([4, 4], [-1, 0], [2560, 2560], 0, True, '4-11650191013956257822'),
     'accu_grads.backbone.blocks.16.layernorm1.gamma':
-        ([4, 4], [-1], [2560], 0, True, ''),
-    'accu_grads.backbone.blocks.16.layernorm1.beta':
-        ([4, 4], [-1], [2560], 0, True, ''),
-    'accu_grads.backbone.blocks.16.layernorm2.gamma':
         ([4, 4], [-1], [2560], 0, True, ''),
     'accu_grads.backbone.blocks.16.attention.dense1.bias':
         ([4, 4], [0], [640], 0, True, ''),
@@ -218,95 +208,47 @@ def test_remove_redundancy_algorithm(mode):
     """
     param_redundancy_dict = get_parameter_redundancy(parameter_layout_dict)
     single_parameter = remove_param_redundancy(param_redundancy_dict)
-    expect_dict = {
-        0: {'accu_grads.backbone.blocks.16.output.mapping.weight', 'accu_grads.backbone.blocks.16.layernorm1.gamma',
-            'accu_grads.backbone.blocks.16.attention.dense3.weight',
-            'accu_grads.backbone.blocks.16.attention.dense1.weight',
-            'accu_grads.backbone.embedding.word_embedding.embedding_table',
-            'accu_grads.backbone.blocks.16.attention.dense2.weight',
-            'accu_grads.backbone.blocks.16.attention.projection.weight'},
-        4: {'accu_grads.backbone.blocks.16.attention.dense1.bias',
-            'accu_grads.backbone.blocks.16.output.mapping.weight',
-            'accu_grads.backbone.blocks.16.attention.dense1.weight',
-            'accu_grads.backbone.blocks.16.attention.dense3.weight',
-            'accu_grads.backbone.blocks.16.attention.dense2.weight',
-            'accu_grads.backbone.blocks.16.attention.projection.weight'},
-        1: {'accu_grads.backbone.blocks.16.output.mapping.weight', 'accu_grads.backbone.blocks.16.layernorm1.beta',
-            'accu_grads.backbone.blocks.16.attention.dense3.weight',
-            'accu_grads.backbone.blocks.16.attention.dense1.weight',
-            'accu_grads.backbone.embedding.word_embedding.embedding_table',
-            'accu_grads.backbone.blocks.16.attention.dense2.weight',
-            'accu_grads.backbone.blocks.16.attention.projection.weight'},
-        5: {'accu_grads.backbone.blocks.16.attention.dense1.bias',
-            'accu_grads.backbone.blocks.16.output.mapping.weight',
-            'accu_grads.backbone.blocks.16.attention.dense1.weight',
-            'accu_grads.backbone.blocks.16.attention.dense3.weight',
-            'accu_grads.backbone.blocks.16.attention.dense2.weight',
-            'accu_grads.backbone.blocks.16.attention.projection.weight'},
-        2: {'accu_grads.backbone.blocks.16.output.mapping.weight',
-            'accu_grads.backbone.blocks.16.attention.dense3.weight',
-            'accu_grads.backbone.blocks.16.attention.dense1.weight',
-            'accu_grads.backbone.embedding.word_embedding.embedding_table',
-            'accu_grads.backbone.blocks.16.layernorm2.gamma', 'accu_grads.backbone.blocks.16.attention.dense2.weight',
-            'accu_grads.backbone.blocks.16.attention.projection.weight'},
-        6: {'accu_grads.backbone.blocks.16.attention.dense1.bias',
-            'accu_grads.backbone.blocks.16.output.mapping.weight',
-            'accu_grads.backbone.blocks.16.attention.dense1.weight',
-            'accu_grads.backbone.blocks.16.attention.dense3.weight',
-            'accu_grads.backbone.blocks.16.attention.dense2.weight',
-            'accu_grads.backbone.blocks.16.attention.projection.weight'},
-        3: {'accu_grads.backbone.blocks.16.output.mapping.weight',
-            'accu_grads.backbone.blocks.16.attention.dense3.weight',
-            'accu_grads.backbone.blocks.16.attention.dense1.weight',
-            'accu_grads.backbone.embedding.word_embedding.embedding_table',
-            'accu_grads.backbone.blocks.16.attention.dense2.weight',
-            'accu_grads.backbone.blocks.16.attention.projection.weight'},
-        7: {'accu_grads.backbone.blocks.16.attention.dense1.bias',
-            'accu_grads.backbone.blocks.16.output.mapping.weight',
-            'accu_grads.backbone.blocks.16.attention.dense1.weight',
-            'accu_grads.backbone.blocks.16.attention.dense3.weight',
-            'accu_grads.backbone.blocks.16.attention.dense2.weight',
-            'accu_grads.backbone.blocks.16.attention.projection.weight'},
-        8: {'accu_grads.backbone.blocks.16.output.mapping.weight',
-            'accu_grads.backbone.blocks.16.attention.dense1.weight',
-            'accu_grads.backbone.blocks.16.attention.dense3.weight',
-            'accu_grads.backbone.blocks.16.attention.dense2.weight',
-            'accu_grads.backbone.blocks.16.attention.projection.weight'},
-        12: {'accu_grads.backbone.blocks.16.output.mapping.weight',
-             'accu_grads.backbone.blocks.16.attention.dense1.weight',
-             'accu_grads.backbone.blocks.16.attention.dense3.weight',
-             'accu_grads.backbone.blocks.16.attention.dense2.weight',
-             'accu_grads.backbone.blocks.16.attention.projection.weight'},
-        9: {'accu_grads.backbone.blocks.16.output.mapping.weight',
-            'accu_grads.backbone.blocks.16.attention.dense1.weight',
-            'accu_grads.backbone.blocks.16.attention.dense3.weight',
-            'accu_grads.backbone.blocks.16.attention.dense2.weight',
-            'accu_grads.backbone.blocks.16.attention.projection.weight'},
-        13: {'accu_grads.backbone.blocks.16.output.mapping.weight',
-             'accu_grads.backbone.blocks.16.attention.dense1.weight',
-             'accu_grads.backbone.blocks.16.attention.dense3.weight',
-             'accu_grads.backbone.blocks.16.attention.dense2.weight',
-             'accu_grads.backbone.blocks.16.attention.projection.weight'},
-        10: {'accu_grads.backbone.blocks.16.output.mapping.weight',
-             'accu_grads.backbone.blocks.16.attention.dense1.weight',
-             'accu_grads.backbone.blocks.16.attention.dense3.weight',
-             'accu_grads.backbone.blocks.16.attention.dense2.weight',
-             'accu_grads.backbone.blocks.16.attention.projection.weight'},
-        14: {'accu_grads.backbone.blocks.16.output.mapping.weight',
-             'accu_grads.backbone.blocks.16.attention.dense1.weight',
-             'accu_grads.backbone.blocks.16.attention.dense3.weight',
-             'accu_grads.backbone.blocks.16.attention.dense2.weight',
-             'accu_grads.backbone.blocks.16.attention.projection.weight'},
-        11: {'accu_grads.backbone.blocks.16.output.mapping.weight',
-             'accu_grads.backbone.blocks.16.attention.dense1.weight',
-             'accu_grads.backbone.blocks.16.attention.dense3.weight',
-             'accu_grads.backbone.blocks.16.attention.dense2.weight',
-             'accu_grads.backbone.blocks.16.attention.projection.weight'},
-        15: {'accu_grads.backbone.blocks.16.output.mapping.weight',
-             'accu_grads.backbone.blocks.16.attention.dense1.weight',
-             'accu_grads.backbone.blocks.16.attention.dense3.weight',
-             'accu_grads.backbone.blocks.16.attention.dense2.weight',
-             'accu_grads.backbone.blocks.16.attention.projection.weight'}}
+    expect_dict = {0: {'accu_grads.backbone.blocks.16.attention.dense1.bias',
+                       'accu_grads.backbone.blocks.16.attention.projection.weight',
+                       'accu_grads.backbone.blocks.16.output.mapping.weight',
+                       'accu_grads.backbone.blocks.16.layernorm1.gamma'},
+                   4: {'accu_grads.backbone.embedding.word_embedding.embedding_table',
+                       'accu_grads.backbone.blocks.16.attention.projection.weight',
+                       'accu_grads.backbone.blocks.16.output.mapping.weight'},
+                   1: {'accu_grads.backbone.blocks.16.attention.dense1.bias',
+                       'accu_grads.backbone.blocks.16.attention.projection.weight',
+                       'accu_grads.backbone.blocks.16.output.mapping.weight'},
+                   5: {'accu_grads.backbone.embedding.word_embedding.embedding_table',
+                       'accu_grads.backbone.blocks.16.attention.projection.weight',
+                       'accu_grads.backbone.blocks.16.output.mapping.weight'},
+                   2: {'accu_grads.backbone.blocks.16.attention.dense1.bias',
+                       'accu_grads.backbone.blocks.16.attention.projection.weight',
+                       'accu_grads.backbone.blocks.16.output.mapping.weight'},
+                   6: {'accu_grads.backbone.embedding.word_embedding.embedding_table',
+                       'accu_grads.backbone.blocks.16.attention.projection.weight',
+                       'accu_grads.backbone.blocks.16.output.mapping.weight'},
+                   3: {'accu_grads.backbone.blocks.16.attention.dense1.bias',
+                       'accu_grads.backbone.blocks.16.attention.projection.weight',
+                       'accu_grads.backbone.blocks.16.output.mapping.weight'},
+                   7: {'accu_grads.backbone.embedding.word_embedding.embedding_table',
+                       'accu_grads.backbone.blocks.16.attention.projection.weight',
+                       'accu_grads.backbone.blocks.16.output.mapping.weight'},
+                   8: {'accu_grads.backbone.blocks.16.attention.projection.weight',
+                       'accu_grads.backbone.blocks.16.output.mapping.weight'},
+                   12: {'accu_grads.backbone.blocks.16.attention.projection.weight',
+                        'accu_grads.backbone.blocks.16.output.mapping.weight'},
+                   9: {'accu_grads.backbone.blocks.16.attention.projection.weight',
+                       'accu_grads.backbone.blocks.16.output.mapping.weight'},
+                   13: {'accu_grads.backbone.blocks.16.attention.projection.weight',
+                        'accu_grads.backbone.blocks.16.output.mapping.weight'},
+                   10: {'accu_grads.backbone.blocks.16.attention.projection.weight',
+                        'accu_grads.backbone.blocks.16.output.mapping.weight'},
+                   14: {'accu_grads.backbone.blocks.16.attention.projection.weight',
+                        'accu_grads.backbone.blocks.16.output.mapping.weight'},
+                   11: {'accu_grads.backbone.blocks.16.attention.projection.weight',
+                        'accu_grads.backbone.blocks.16.output.mapping.weight'},
+                   15: {'accu_grads.backbone.blocks.16.attention.projection.weight',
+                        'accu_grads.backbone.blocks.16.output.mapping.weight'}}
     assert single_parameter == expect_dict
 
 
@@ -326,3 +268,21 @@ def test_no_init_parameters_without_load_param(mode):
     assert ret == 0
     for i in range(8):
         shutil.rmtree(f"device{i}_no_init_parameters")
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='allcards', essential_mark='essential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE])
+def test_remove_redundancy_1_1_tensor_merge(mode):
+    '''
+    Feature: remove_redundancy save ckpt and load ckpt.
+    Description: Saving and loading checkpoints with redundancy elimination.
+    Expectation: success.
+    '''
+    for i in range(8):
+        os.mkdir(f"device{i}_redundancy11_merge")
+    set_port()
+    ret = os.system("msrun --worker_num=8 --local_worker_num=8 --join=True " \
+                    "pytest -s remove_redundancy.py::test_remove_redundancy_save_True_load_True_tensor_merge")
+    assert ret == 0
+    for i in range(8):
+        shutil.rmtree(f"device{i}_redundancy11_merge")
