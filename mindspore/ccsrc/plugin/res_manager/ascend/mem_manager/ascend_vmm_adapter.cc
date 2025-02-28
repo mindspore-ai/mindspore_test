@@ -263,6 +263,22 @@ size_t AscendVmmAdapter::EagerFreeDeviceMem(const DeviceMemPtr addr, const size_
                 << ", expected free size : " << size << ", real size : " << ret_size << ".";
   return ret_size;
 }
+size_t AscendVmmAdapter::EmptyCache() {
+  size_t empty_size = 0L;
+  while (!cached_handle_sets_.empty()) {
+    auto handle = *cached_handle_sets_.begin();
+    cached_handle_sets_.erase(cached_handle_sets_.begin());
+    physical_handle_size_--;
+    auto ret = CALL_ASCEND_API(aclrtFreePhysical, handle);
+    if (ret != ACL_ERROR_NONE) {
+      MS_LOG(ERROR) << "Free physical memory failed.";
+    } else {
+      empty_size += kDefaultAlignSize;
+    }
+  }
+  MS_LOG(INFO) << "Empty cache size : " << empty_size << ".";
+  return empty_size;
+}
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore

@@ -181,6 +181,15 @@ size_t AbstractAscendMemoryPoolSupport::FreeDeviceMemByEagerFree(const DeviceMem
   }
 }
 
+size_t AbstractAscendMemoryPoolSupport::EmptyCache() {
+  if (IsEnableVmm()) {
+    return AscendVmmAdapter::GetInstance().EmptyCache();
+  } else {
+    MS_LOG(ERROR) << "Empty cache is not support as vmm is not enabled.";
+  }
+  return -1L;
+}
+
 size_t AbstractAscendMemoryPoolSupport::MmapDeviceMem(const size_t size, const DeviceMemPtr addr) {
   return AscendVmmAdapter::GetInstance().MmapDeviceMem(size, addr, total_mem_size());
 }
