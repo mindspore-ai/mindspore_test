@@ -29,13 +29,13 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "common/ms_factory.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "kernel/framework_utils.h"
 #include "op_def/math_op_name.h"
 #include "op_def/nn_op_name.h"
 #include "acl/acl_base.h"
 #include "utils/phase.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 
 namespace mindspore::kernel {
 namespace {

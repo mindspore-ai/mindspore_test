@@ -36,6 +36,7 @@
 #include "include/common/utils/tensor_py.h"
 #include "pipeline/jit/pi/graph_build/build_graph_utils.h"
 #include "pipeline/jit/pi/graph_build/parameter_manager.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace pijit {

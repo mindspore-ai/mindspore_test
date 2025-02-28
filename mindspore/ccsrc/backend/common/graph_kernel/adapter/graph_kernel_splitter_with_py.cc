@@ -33,6 +33,7 @@
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore::graphkernel {
 struct StitchInfo {

@@ -16,6 +16,7 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/call_parameter.h"
 #include "infer/call.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 using mindspore::ops::kNameCall;
 using mindspore::schema::PrimitiveType_Call;
 namespace mindspore {

@@ -20,6 +20,9 @@
 #include "include/common/expander/core/node.h"
 #include "pyboost/grad_functions/pyboost_grad_functions.h"
 #include "include/common/pynative/common_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
 
 namespace mindspore {
 namespace pijit {
@@ -98,6 +101,22 @@ ValuePtrList NativeBackwardFunc::PostProcess(const ValuePtrList &gradient_value)
   (void)std::transform(GetGradientIndexes().begin(), GetGradientIndexes().end(), std::back_inserter(grad_values),
                        [&gradient_value](const auto &index) -> ValuePtr { return gradient_value[index]; });
   return grad_values;
+}
+
+ValuePtr NativeBackwardFunc::Ones(const ValuePtr &value) const {
+  MS_EXCEPTION_IF_NULL(value);
+  return ir_builder_->EmitOp(prim::kPrimOnesLike, {value});
+}
+
+ValuePtr NativeBackwardFunc::Zeros(const ValuePtr &value) const {
+  MS_EXCEPTION_IF_NULL(value);
+  return ir_builder_->EmitOp(prim::kPrimZerosLike, {value});
+}
+
+ValuePtr NativeBackwardFunc::Add(const ValuePtr &input, const ValuePtr &other) const {
+  MS_EXCEPTION_IF_NULL(input);
+  MS_EXCEPTION_IF_NULL(other);
+  return ir_builder_->EmitOp(prim::kPrimAdd, {input, other});
 }
 
 InputType GetInputType(const ValuePtr &input) {

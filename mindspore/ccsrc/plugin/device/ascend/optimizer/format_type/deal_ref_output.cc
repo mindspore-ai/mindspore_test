@@ -24,7 +24,6 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ops/op_def.h"
 #include "plugin/device/ascend/optimizer/format_type/utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "plugin/device/ascend/kernel/ge/ge_kernel_mod.h"
 #include "common/oplib/oplib.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -33,6 +32,12 @@
 #include "include/backend/optimizer/helper.h"
 #include "kernel/ascend/acl_ir/ge_adapter_info.h"
 #include "kernel/ascend/acl/acl_kernel_build.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace opt {

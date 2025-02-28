@@ -16,6 +16,7 @@
 
 #include "src/extendrt/delegate/tensorrt/op/mirror_pad_tensorrt.h"
 #include "infer/mirror_pad.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 namespace mindspore::lite {
 constexpr int SIZE_INDEX = 2;
 int MirrorPadTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

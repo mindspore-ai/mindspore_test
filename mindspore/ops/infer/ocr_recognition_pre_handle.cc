@@ -35,6 +35,7 @@
 #include "utils//symbolic.h"
 #include "mindspore/ops/op_def/image_ops.h"
 #include "ops/base_operator.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
 
 namespace mindspore {
 namespace ops {

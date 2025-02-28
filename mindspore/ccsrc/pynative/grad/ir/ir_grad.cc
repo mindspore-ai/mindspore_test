@@ -37,6 +37,8 @@
 #include "pynative/grad/grad_utils.h"
 #include "utils/info.h"
 #include "utils/profile.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace pynative {

@@ -18,6 +18,7 @@
 #include <vector>
 #include <string>
 #include "infer/cxx_api/flash_attention.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 
 namespace mindspore::device::ascend {
 // KVCacheMgr

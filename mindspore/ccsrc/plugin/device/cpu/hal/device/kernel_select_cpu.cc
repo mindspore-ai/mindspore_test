@@ -33,13 +33,15 @@
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/op_def/random_op_name.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "plugin/device/cpu/kernel/custom/custom_aot_cpu_kernel.h"
 #include "plugin/device/cpu/kernel/custom/custom_julia_cpu_kernel.h"
 #include "plugin/device/cpu/kernel/pyfunc/py_func_cpu_kernel.h"
 #include "common/ms_factory.h"
 #include "utils/trace_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace device {

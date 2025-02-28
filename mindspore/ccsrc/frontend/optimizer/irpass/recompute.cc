@@ -18,6 +18,11 @@
 #include <set>
 #include <unordered_map>
 #include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
 
 namespace mindspore {
 namespace opt {

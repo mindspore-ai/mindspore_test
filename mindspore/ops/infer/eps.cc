@@ -26,6 +26,7 @@
 #include "utils/check_convert_utils.h"
 #include "utils/tensor_construct_utils.h"
 #include "base/float16.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 
 namespace mindspore {
 namespace ops {

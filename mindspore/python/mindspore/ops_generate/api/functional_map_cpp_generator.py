@@ -80,9 +80,10 @@ class FunctionalMapCppGenerator(BaseGenerator):
         Returns:
             None
         """
+        ops_inc_head_set = set()
         dep_method_decl_list = self._get_dep_method_decl_list(tensor_method_protos_data)
-        tensor_method_overload_list = self._get_functional_method_map(tensor_method_protos_data, alias_func_mapping)
-        mint_overload_list = self._get_functional_mint_map(mint_func_protos_data, alias_func_mapping)
+        tensor_method_overload_list, op_inc_1 = self._get_functional_method_map(tensor_method_protos_data, alias_func_mapping)
+        mint_overload_list, op_inc_2 = self._get_functional_mint_map(mint_func_protos_data, alias_func_mapping)
         tensor_method_kw_only_args_list = self._get_tensor_method_kwonlyargs_map(tensor_method_protos_data)
         mint_kw_only_args_list = self._get_mint_kwonlyargs_map(mint_func_protos_data, alias_func_mapping)
         tensor_varargs_map_list = self._get_tensor_varargs_map_list(tensor_method_protos_data)
@@ -91,8 +92,12 @@ class FunctionalMapCppGenerator(BaseGenerator):
             self._get_func_sigs_list(tensor_method_protos_data, alias_func_mapping, is_tensor_method=True))
         funcs_mint_sigs_map = (
             self._get_func_sigs_list(mint_func_protos_data, alias_func_mapping, is_tensor_method=False))
+        merge_op_inc = op_inc_1 | op_inc_2
+        for op_inc in merge_op_inc:
+            ops_inc_head_set.add(template.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_inc[0].lower()))
         functional_map_cc_code = (
-            self.FUNCTIONAL_MAP_CC_TEMPLATE.replace(deprecated_method_decl=dep_method_decl_list,
+            self.FUNCTIONAL_MAP_CC_TEMPLATE.replace(ops_inc=list(sorted(ops_inc_head_set)),
+                                                    deprecated_method_decl=dep_method_decl_list,
                                                     tensor_method_map=tensor_method_overload_list,
                                                     mint_map=mint_overload_list,
                                                     tensor_method_kwonlyargs_map=tensor_method_kw_only_args_list,
@@ -313,6 +318,7 @@ class FunctionalMapCppGenerator(BaseGenerator):
                 list: A list of strings, each representing a functional method map.
         """
 
+        op_inc_set = set()
         def get_sort_func_method_list(func_protos):
             """
             Retrieves a sorted list of operator primitives, prioritizing deprecated operators.
@@ -324,6 +330,7 @@ class FunctionalMapCppGenerator(BaseGenerator):
                     func_method_list.append(k_op_name)
                 else:
                     func_method_list.append(self.k_prim_op_template.replace(camel_op_name=k_op_name))
+                    op_inc_set.add(k_op_name)
 
             func_method_list.sort(key=lambda x: x.startswith("Deprecated"), reverse=True)
             return func_method_list
@@ -341,13 +348,14 @@ class FunctionalMapCppGenerator(BaseGenerator):
                         self.functional_method_map_template.replace(op_name=alias,
                                                                     sort_func_method_list_str=sort_func_method_list))
 
-        return deprecated_method_decl_list
+        return deprecated_method_decl_list, op_inc_set
 
     def _get_functional_mint_map(self, mint_func_protos_data, alias_func_mapping):
         """
         mint_func_protos_data (dict): A dictionary mapping mint API names to their prototype data.
         """
 
+        op_inc_set = set()
         def get_mint_func_list(func_protos):
             """
             Retrieves a sorted list of operator primitives, prioritizing deprecated operators.
@@ -356,6 +364,7 @@ class FunctionalMapCppGenerator(BaseGenerator):
             for func_proto in func_protos:
                 k_op_name = pyboost_utils.get_op_name(func_proto.op_proto.op_name, func_proto.op_proto.op_class.name)
                 func_method_list.append(self.k_prim_op_template.replace(camel_op_name=k_op_name))
+                op_inc_set.add(k_op_name)
 
             return func_method_list
 
@@ -370,7 +379,7 @@ class FunctionalMapCppGenerator(BaseGenerator):
                     mint_func_decl_list.append(
                         self.functional_method_map_template.replace(op_name=alias,
                                                                     sort_func_method_list_str=mint_func_list))
-        return mint_func_decl_list
+        return mint_func_decl_list, op_inc_set
 
     def _get_and_append_single_op_kw_only_args_list(self, func_protos, single_op_kw_only_args_list):
         """

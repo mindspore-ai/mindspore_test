@@ -34,6 +34,15 @@
 #include "frontend/expander/bprop/bprop_meta_func_graph.h"
 #include "frontend/operator/composite/unpack_call.h"
 #include "frontend/optimizer/ad/dfunctor.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace abstract {

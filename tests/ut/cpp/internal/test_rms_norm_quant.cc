@@ -27,7 +27,7 @@
 #include "infer/ops_func_impl/rmsnorm_quant.h"
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_r.h"
 
 namespace mindspore {
 namespace ops {

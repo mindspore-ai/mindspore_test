@@ -22,9 +22,23 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "mindspore/ops/op_def/nn_optimizer_op_name.h"
 #include "mindspore/ops/op_def/array_op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 
 namespace mindspore {
 namespace opt {
+GroupedMatmulAssignaddFusion::GroupedMatmulAssignaddFusion(bool multigraph)
+    : PatternProcessPass("grouped_matmul_assignadd_fusion", multigraph) {
+  x_ = std::make_shared<Var>();
+  weight_ = std::make_shared<Var>();
+  group_list_ = std::make_shared<Var>();
+  split_item_ = std::make_shared<Var>();
+  group_type_ = std::make_shared<Var>();
+  out_ = std::make_shared<Var>();
+  transpose_a_ = std::make_shared<Var>();
+  transpose_b_ = std::make_shared<Var>();
+  grouped_matmul_ = std::make_shared<Var>(prim::kPrimGroupedMatmul);
+}
+
 bool GroupedMatmulAssignaddFusion::CheckFusion(const CNodePtr &grouped_matmul, const EquivPtr &equiv) const {
   // check split_item=3, groupe_type=2
   auto split_item = GetAnfNodeByVar(equiv, split_item_);

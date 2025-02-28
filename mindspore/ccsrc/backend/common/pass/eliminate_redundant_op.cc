@@ -18,15 +18,18 @@
 #include <utility>
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/hash_map.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "include/backend/optimizer/helper.h"
 #include "common/common_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace opt {

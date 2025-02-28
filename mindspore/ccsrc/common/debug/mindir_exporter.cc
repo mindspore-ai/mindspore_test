@@ -27,6 +27,9 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "include/common/utils/compile_cache_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace {
 using mindspore::CNodePtr;

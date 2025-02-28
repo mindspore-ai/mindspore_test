@@ -20,6 +20,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::opt {
 const BaseRef ConvTupleGetItemFusion::DefinePattern() const {

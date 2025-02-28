@@ -32,6 +32,8 @@
 #include "common/common_test.h"
 #include "common/resource.h"
 #include "common/py_func_graph_fetcher.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace memreuse {

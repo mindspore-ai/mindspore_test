@@ -15,6 +15,7 @@
  */
 #include "backend/common/graph_kernel/core/split_schemer.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 namespace mindspore::graphkernel {
 bool SplitSchemer::NeedInline(size_t group_id) const {
   if (group_id >= need_inline_.size()) {

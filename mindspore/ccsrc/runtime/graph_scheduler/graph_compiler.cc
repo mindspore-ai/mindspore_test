@@ -59,6 +59,8 @@
 #include "pipeline/jit/ps/base.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/runtime_conf/runtime_conf.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 
 namespace mindspore {
 namespace runtime {

@@ -30,6 +30,9 @@
 #include "include/common/utils/convert_utils_py.h"
 #include "frontend/parallel/auto_parallel/stage_compute.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 using namespace pybind11::literals;
 

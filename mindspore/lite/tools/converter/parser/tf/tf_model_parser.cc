@@ -49,6 +49,10 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/converter/parser/unused_node_remove_pass.h"
 #include "tools/converter/parser/einsum_adjust.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_w.h"
 
 using mindspore::converter::kFmkTypeTf;
 namespace mindspore {

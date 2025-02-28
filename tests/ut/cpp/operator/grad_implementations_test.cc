@@ -25,7 +25,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "ir/manager.h"
 #include "ir/value.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace prim {

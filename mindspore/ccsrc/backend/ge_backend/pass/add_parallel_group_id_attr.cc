@@ -23,9 +23,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "utils/anf_utils.h"
-#include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
 
 namespace mindspore {
 namespace opt {

@@ -23,6 +23,9 @@
 #include "ir/manager.h"
 #include "tools/common/tensor_util.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 namespace mindspore {
 namespace {
 constexpr float kNumMicrosecondToMillisecond = 1000.0;

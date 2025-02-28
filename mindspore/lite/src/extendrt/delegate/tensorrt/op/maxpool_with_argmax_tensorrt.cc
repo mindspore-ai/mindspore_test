@@ -26,6 +26,7 @@
 #include "NvInferRuntimeCommon.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/maxpool_with_argmax_impl.cuh"
 #include "infer/max_pool_with_argmax.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore::lite {
 int MaxPoolWithArgMaxTensorRT::IsSupport(const BaseOperatorPtr &base_operator,

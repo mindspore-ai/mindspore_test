@@ -28,6 +28,7 @@
 #include "infer/depend.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "tools/common/func_graph_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore::opt {
 namespace {

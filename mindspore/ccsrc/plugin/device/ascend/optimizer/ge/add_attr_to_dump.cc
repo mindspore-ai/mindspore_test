@@ -25,6 +25,11 @@
 #include "include/common/env_vars.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

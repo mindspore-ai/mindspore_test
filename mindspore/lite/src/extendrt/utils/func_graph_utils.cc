@@ -31,6 +31,9 @@
 #include "mindspore/ops/op_def/op_name.h"
 #include "tools/optimizer/format/to_nhwc_format.h"
 #include "tools/optimizer/graph/decrease_transpose_algo.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 const PrimitivePtr kPrimMakeTupleV2 = std::make_shared<Primitive>("make_tuple");

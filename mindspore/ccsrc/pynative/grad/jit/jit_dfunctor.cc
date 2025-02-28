@@ -22,6 +22,8 @@
 
 #include "ir/func_graph_cloner.h"
 #include "pynative/pynative_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace pynative {

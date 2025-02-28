@@ -26,6 +26,8 @@
 #include "include/common/utils/utils.h"
 #include "utils/anf_utils.h"
 #include "utils/symbolic.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 
 namespace mindspore {
 /* namespace to support opt */

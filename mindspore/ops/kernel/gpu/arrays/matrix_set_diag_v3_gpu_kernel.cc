@@ -23,6 +23,7 @@
 #include "common/kernel_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/matrix_set_diag_impl.cuh"
 #include "mindspore/ops/infer/matrix_set_diag_v3.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace kernel {

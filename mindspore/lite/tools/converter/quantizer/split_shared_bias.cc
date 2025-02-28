@@ -22,6 +22,7 @@
 #include "tools/converter/quantizer/quant_params.h"
 #include "tools/converter/quantizer/quantize_util.h"
 #include "tools/lite_exporter/fetch_content.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
 
 namespace mindspore::lite::quant {
 AnfNodePtr SplitSharedBias::CloneParameterNode(const CNodePtr &cnode, size_t index, const FuncGraphPtr &func_graph,

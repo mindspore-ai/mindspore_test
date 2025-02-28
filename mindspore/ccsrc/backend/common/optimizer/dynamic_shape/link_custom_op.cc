@@ -26,6 +26,8 @@
 #include "include/backend/optimizer/helper.h"
 #include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace opt::dynamic_shape {

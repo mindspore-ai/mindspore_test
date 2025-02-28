@@ -29,6 +29,7 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "ops/primitive_c.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
 
 namespace mindspore {
 namespace ops {

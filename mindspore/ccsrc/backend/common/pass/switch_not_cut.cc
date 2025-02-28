@@ -21,6 +21,9 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/anfalgo.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

@@ -37,6 +37,11 @@
 #include "ir/value.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace parallel {

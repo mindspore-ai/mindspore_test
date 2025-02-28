@@ -20,7 +20,8 @@
 #include <vector>
 
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace opt {

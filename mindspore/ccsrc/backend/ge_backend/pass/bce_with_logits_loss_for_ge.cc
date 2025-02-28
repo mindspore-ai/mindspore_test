@@ -16,14 +16,10 @@
 #include "backend/ge_backend/pass/bce_with_logits_loss_for_ge.h"
 #include <vector>
 #include <memory>
-#include <unordered_map>
-#include <unordered_set>
-#include "mindspore/ops/op_def/array_ops.h"
 #include "include/common/utils/anfalgo.h"
 #include "ops_utils/op_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
-#include "include/backend/anf_runtime_algorithm.h"
 #include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 
 namespace mindspore {
 namespace opt {

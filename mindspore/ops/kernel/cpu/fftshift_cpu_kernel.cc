@@ -22,6 +22,7 @@
 #include "ops_utils/op_utils.h"
 #include "common/kernel.h"
 #include "kernel/cpu/fftshift_cpu_kernel.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 
 namespace mindspore {
 namespace kernel {

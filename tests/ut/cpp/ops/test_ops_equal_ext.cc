@@ -21,6 +21,7 @@
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
 #include "infer/ops_func_impl/equal_ext.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 
 namespace mindspore::ops {
 namespace {

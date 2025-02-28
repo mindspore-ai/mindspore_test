@@ -24,6 +24,7 @@
 #include "mindspore/ops/infer/sparse_dense_cwise_mul.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/sparse/sparse_dense_cwise_operation_gpu_kernel.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace kernel {

@@ -27,6 +27,12 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace opt {

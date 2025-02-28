@@ -18,6 +18,7 @@
 #include <memory>
 #include "nnacl/pack.h"
 #include "infer/cxx_api/conv2d_transpose_fusion.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::lite {
 int Deconv3dTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

@@ -56,6 +56,8 @@
 #include "mindspore/lite/tools/optimizer/graph/attr_to_args_pass.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include <nlohmann/json.hpp>
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore {
 namespace {

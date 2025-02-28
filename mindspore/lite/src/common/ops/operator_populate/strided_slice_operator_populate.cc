@@ -16,6 +16,7 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/strided_slice_parameter.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 using mindspore::ops::kNameStridedSlice;
 using mindspore::schema::PrimitiveType_StridedSlice;
 namespace mindspore {

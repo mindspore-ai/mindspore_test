@@ -29,6 +29,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "debug/profiler/profiling.h"
 #include "include/common/debug/dump_proto.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace device {

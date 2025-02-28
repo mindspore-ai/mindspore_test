@@ -30,7 +30,7 @@
 #include "frontend/parallel/ops_info/operator_info.h"
 #include "mindspore/ops/infer/ops_func_impl/flash_attention_score.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 
 namespace mindspore {
 namespace parallel {

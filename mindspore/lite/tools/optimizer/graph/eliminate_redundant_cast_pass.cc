@@ -17,6 +17,7 @@
 #include "tools/optimizer/graph/eliminate_redundant_cast_pass.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "tools/optimizer/graph/infershape_pass.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::opt {
 int EliminateRedundantCastPass::RemoveCastOp(const AnfNodePtr &anf_node, const FuncGraphManagerPtr &manager) {

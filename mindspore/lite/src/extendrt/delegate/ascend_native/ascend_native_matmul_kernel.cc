@@ -18,6 +18,7 @@
 #include "extendrt/delegate/ascend_native/ascend_native_kernel_registry.h"
 #include "extendrt/delegate/ascend_native/ascend_native_impl/gemm.h"
 #include "infer/cxx_api/mat_mul_fusion.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore::kernel {
 using mindspore::ops::kNameMatMulFusion;

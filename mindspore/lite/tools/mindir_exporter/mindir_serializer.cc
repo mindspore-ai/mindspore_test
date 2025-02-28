@@ -34,6 +34,7 @@
 #include "ir/quantization_param.h"
 #include "mindspore/lite/tools/converter/quantizer/quant_params.h"
 #include "mindspore/lite/tools/converter/quantizer/quantize_util.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
 
 namespace mindspore::lite {
 namespace {

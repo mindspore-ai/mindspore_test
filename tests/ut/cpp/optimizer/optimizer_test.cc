@@ -28,6 +28,7 @@
 #include "frontend/optimizer/irpass/gradient_eliminate.h"
 #include "frontend/optimizer/py_interpret_to_execute.h"
 #include "include/common/debug/draw.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore {
 namespace opt {

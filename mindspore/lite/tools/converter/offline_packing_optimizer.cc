@@ -29,6 +29,10 @@
 #include "src/common/file_utils.h"
 #include "nnacl/matmul_parameter.h"
 #include "src/litert/kernel/cpu/int8/matmul_dynamic_base_int8.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 using mindspore::kernel::MatmulDynamicBaseInt8CPUKernel;
 

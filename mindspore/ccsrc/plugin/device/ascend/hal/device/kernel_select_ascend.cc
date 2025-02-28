@@ -26,7 +26,6 @@
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/optimizer/helper.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "kernel/ascend/opapi/aclnn_kernel_build.h"
 #include "kernel/ascend/acl/acl_kernel_build.h"
 #include "plugin/device/ascend/kernel/atb/atb_kernel_build.h"
@@ -46,6 +45,12 @@
 #include "plugin/device/cpu/hal/device/kernel_select_cpu.h"
 #include "utils/anf_utils.h"
 #include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace device {

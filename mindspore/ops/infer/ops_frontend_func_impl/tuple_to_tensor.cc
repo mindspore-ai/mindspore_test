@@ -19,7 +19,6 @@
 #include <utility>
 #include <memory>
 #include "ops/ops_frontend_func_impl.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ops_utils/op_utils.h"
 #include "ir/dtype.h"
 #include "ir/dtype/number.h"

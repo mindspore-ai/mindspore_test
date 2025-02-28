@@ -36,6 +36,7 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/strategy_utils.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace parallel {

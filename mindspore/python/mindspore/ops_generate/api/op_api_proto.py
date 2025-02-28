@@ -217,6 +217,7 @@ def categorize_func_data(func_protos_data):
     single_op_func_data = {}
     overload_op_func_data = {}
     all_op_func_data = {}
+    op_class_name_set = set()
     for func_api_name, func_protos in func_protos_data.items():
         if len(func_protos) == 1:
             func_name = func_protos[0].func_name
@@ -226,5 +227,7 @@ def categorize_func_data(func_protos_data):
         elif len(func_protos) > 1:
             overload_op_func_data[func_api_name] = func_protos
             all_op_func_data[func_api_name] = func_protos
+        for func_proto in func_protos:
+            op_class_name_set.add(func_proto.op_proto.op_class.name)
 
-    return all_op_func_data, single_op_func_data, overload_op_func_data
+    return all_op_func_data, single_op_func_data, overload_op_func_data, op_class_name_set

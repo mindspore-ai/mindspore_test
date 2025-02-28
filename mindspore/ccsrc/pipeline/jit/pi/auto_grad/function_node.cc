@@ -28,6 +28,7 @@
 #include "pipeline/jit/pi/auto_grad/native_backward_function.h"
 #include "utils/ms_utils.h"
 #include "frontend/ir/primitive_py.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore {
 namespace pijit {

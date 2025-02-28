@@ -25,6 +25,7 @@
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
 #include "mindspore/ccsrc/pyboost/functions/base.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/custom_ext.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::pynative {
 py::object PYNATIVE_EXPORT PyboostCustomExtBase(const PrimitivePtr &prim, const py::list &args) {

@@ -30,6 +30,8 @@
 #include "src/common/log_util.h"
 #include "ops_utils/op_utils.h"
 #include "include/registry/converter_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 using mindspore::converter::FmkType;
 namespace mindspore {

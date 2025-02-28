@@ -23,6 +23,7 @@
 #include "utils/trace_base.h"
 #include "plugin/device/ascend/hal/device/lic_manager.h"
 #include "include/common/utils/anfalgo.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace opt {

@@ -25,6 +25,7 @@
 #include "pynative/grad/grad_utils.h"
 #include "pynative/pynative_utils.h"
 #include "mindspore/ccsrc/pyboost/grad_functions/pyboost_grad_functions.h"
+${ops_inc}
 ${include_op_header}
 
 namespace mindspore {

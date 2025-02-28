@@ -25,6 +25,7 @@
 #include "mindspore/ops/infer/dropout_nd.h"
 #include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/dropout_nd_impl.cuh"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {
 namespace kernel {

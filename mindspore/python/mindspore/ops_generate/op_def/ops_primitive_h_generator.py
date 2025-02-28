@@ -28,20 +28,31 @@ from common.base_generator import BaseGenerator
 from pyboost import pyboost_utils
 
 
-OP_PRIM_OP_DEF = """
-#ifndef MINDSPORE_CORE_OPS_GEN_OPS_PRIMITIVE_H_
-#define MINDSPORE_CORE_OPS_GEN_OPS_PRIMITIVE_H_
+OP_PRIM_OP_DEF_H = """
+#ifndef MINDSPORE_CORE_OPS_GEN_OPS_PRIMITIVE_${suffix}_H_
+#define MINDSPORE_CORE_OPS_GEN_OPS_PRIMITIVE_${suffix}_H_
 
-#include <memory>
-#include "ir/anf.h"
 #include "ir/primitive.h"
-#include "$auto_gen_path/gen_ops_name.h"
 #include "mindapi/base/macros.h"
+#include "$auto_gen_path/gen_ops_name_${suffix}.h"
 
 namespace mindspore::prim {
 $ops_prim_gen
 }  // namespace mindspore::prim
-#endif  // MINDSPORE_CORE_OPS_GEN_OPS_PRIMITIVE_H_
+#endif  // MINDSPORE_CORE_OPS_GEN_OPS_PRIMITIVE_${suffix}_H_
+"""
+
+
+OP_PRIM_OP_DEF_CC = """
+
+#include "$auto_gen_path/gen_ops_primitive_${suffix}.h"
+
+#include <memory>
+
+namespace mindspore::prim {
+$ops_prim_gen
+}  // namespace mindspore::prim
+
 """
 
 
@@ -54,12 +65,15 @@ class OpsPrimitiveHGenerator(BaseGenerator):
         """
         Initializes the generator with templates for operator primitive definitions.
         """
-        self.op_prim_op_def_template = template.Template(OP_PRIM_OP_DEF)
+        self.op_prim_op_def_template = template.Template(OP_PRIM_OP_DEF_H)
+        self.op_prim_op_def_cc_template = template.Template(OP_PRIM_OP_DEF_CC)
+        self.op_def_h_template = template.Template(
+            "OPS_API extern const PrimitivePtr kPrim${k_name_op};\n")
         self.op_def_template = template.Template(
-            "GVAR_DEF(PrimitivePtr, kPrim${k_name_op}, std::make_shared<Primitive>(ops::kName${k_name_op}))\n")
+            "const PrimitivePtr kPrim${k_name_op} = std::make_shared<Primitive>(ops::kName${k_name_op});\n")
         self.op_def_rw_template = template.Template(
-            "GVAR_DEF(PrimitivePtr, kPrim${k_name_op}, std::make_shared<Primitive>(ops::kName${k_name_op}, "
-            "true, kPrimTypeBuiltIn, true))\n")
+            "const PrimitivePtr kPrim${k_name_op} = std::make_shared<Primitive>(ops::kName${k_name_op}, "
+            "true, kPrimTypeBuiltIn, true);\n")
 
     def generate(self, work_path, op_protos):
         """
@@ -75,21 +89,37 @@ class OpsPrimitiveHGenerator(BaseGenerator):
         The method generates the content of the header file for each operator primitive
         defined in the 'op_protos' list and saves it to the specified work path.
         """
-        ops_prim_gen_list = []
+        import os
+        import collections
+        ops_prim_gen_dict = collections.defaultdict(list)
+        ops_prim_cc_gen_dict = collections.defaultdict(list)
+
         for op_proto in op_protos:
             k_name_op = pyboost_utils.get_op_name(op_proto.op_name, op_proto.op_class.name)
+            first_char = k_name_op[0].lower()
             if op_proto.op_args_signature:
                 if op_proto.op_args_signature.rw_write:
-                    ops_prim_gen_list.append(self.op_def_rw_template.replace(k_name_op=k_name_op))
+                    ops_prim_gen_dict[first_char].append(self.op_def_h_template.replace(k_name_op=k_name_op))
+                    ops_prim_cc_gen_dict[first_char].append(self.op_def_rw_template.replace(k_name_op=k_name_op))
                     continue
 
-            ops_prim_gen_list.append(self.op_def_template.replace(k_name_op=k_name_op))
+            ops_prim_gen_dict[first_char].append(self.op_def_h_template.replace(k_name_op=k_name_op))
+            ops_prim_cc_gen_dict[first_char].append(self.op_def_template.replace(k_name_op=k_name_op))
 
-        op_prim_op_def = self.op_prim_op_def_template.replace(auto_gen_path=K.MS_OP_DEF_AUTO_GENERATE_PATH,
-                                                              ops_prim_gen=ops_prim_gen_list)
+        for first_char, ops_prim_gen_list in ops_prim_gen_dict.items():
+            op_prim_op_def = self.op_prim_op_def_template.replace(auto_gen_path=K.MS_OP_DEF_AUTO_GENERATE_PATH,
+                                                                  ops_prim_gen=ops_prim_gen_list, suffix=first_char)
+            res_str = template.CC_LICENSE_STR + op_prim_op_def
 
-        res_str = template.CC_LICENSE_STR + op_prim_op_def
+            save_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH)
+            file_name = f"gen_ops_primitive_{first_char}.h"
+            gen_utils.save_file(save_path, file_name, res_str)
 
-        save_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH)
-        file_name = "gen_ops_primitive.h"
-        gen_utils.save_file(save_path, file_name, res_str)
+        for first_char, ops_prim_gen_list in ops_prim_cc_gen_dict.items():
+            op_prim_op_def = self.op_prim_op_def_cc_template.replace(auto_gen_path=K.MS_OP_DEF_AUTO_GENERATE_PATH,
+                                                                     ops_prim_gen=ops_prim_gen_list, suffix=first_char)
+            res_str = template.CC_LICENSE_STR + op_prim_op_def
+
+            save_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH)
+            file_name = f"gen_ops_primitive_{first_char}.cc"
+            gen_utils.save_file(save_path, file_name, res_str)

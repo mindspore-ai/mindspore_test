@@ -33,6 +33,10 @@
 #include "tools/converter/converter_context.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/common/string_util.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace lite {

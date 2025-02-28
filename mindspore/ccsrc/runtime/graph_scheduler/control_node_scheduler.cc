@@ -20,8 +20,13 @@
 #include "runtime/graph_scheduler/control_node_parser.h"
 #include "runtime/graph_scheduler/inline_control_flow_scheduler.h"
 #include "runtime/graph_scheduler/scheduler_helper.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "runtime/graph_scheduler/actor/actor_dump.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace runtime {

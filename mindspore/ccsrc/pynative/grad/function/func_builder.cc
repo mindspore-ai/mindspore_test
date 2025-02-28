@@ -33,6 +33,7 @@
 #include "frontend/operator/cc_implementations.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "pynative/grad/function/auto_generate/pyboost_native_grad_functions.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
 
 namespace mindspore::pynative::autograd {
 namespace {

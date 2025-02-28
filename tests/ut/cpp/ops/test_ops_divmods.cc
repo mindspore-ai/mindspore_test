@@ -20,14 +20,13 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_dyn_cases.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 
 namespace mindspore::ops {

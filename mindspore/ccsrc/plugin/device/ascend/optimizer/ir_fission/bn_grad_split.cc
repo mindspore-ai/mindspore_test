@@ -29,6 +29,9 @@
 #include "plugin/device/ascend/optimizer/ir_fission/bn_split.h"
 #include "plugin/device/ascend/optimizer/get_value_helper.h"
 #include "utils/trace_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace opt {

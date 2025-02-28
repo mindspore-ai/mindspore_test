@@ -18,6 +18,7 @@
 #include <vector>
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore::device::ascend {
 // BNTrainingReduce

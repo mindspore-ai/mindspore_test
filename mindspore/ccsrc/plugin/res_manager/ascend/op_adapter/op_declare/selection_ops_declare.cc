@@ -21,6 +21,13 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore::device::ascend {
 // CumulativeLogsumexp

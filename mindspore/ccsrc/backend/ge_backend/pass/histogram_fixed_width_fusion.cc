@@ -20,6 +20,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/convert_utils.h"
 #include "mindspore/ops/op_def/structure_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
 
 namespace mindspore {
 namespace opt {

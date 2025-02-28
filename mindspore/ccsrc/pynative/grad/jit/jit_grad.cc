@@ -30,6 +30,7 @@
 #include "frontend/expander/bprop/bprop.h"
 #include "include/common/pynative/common_utils.h"
 #include "include/common/pynative/adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace pynative {

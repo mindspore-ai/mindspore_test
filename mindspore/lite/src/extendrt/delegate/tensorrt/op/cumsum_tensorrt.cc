@@ -25,6 +25,7 @@
 #include "NvInferRuntimeCommon.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cumsum_impl.cuh"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::lite {
 int CumsumTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

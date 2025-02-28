@@ -23,6 +23,7 @@
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops/infer_info/infer_info_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace pynative {

@@ -16,6 +16,7 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/infer/audio_spectrogram_infer.h"
 #include "infer/audio_spectrogram.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 using mindspore::ops::kNameAudioSpectrogram;
 using mindspore::schema::PrimitiveType_AudioSpectrogram;
 namespace mindspore {

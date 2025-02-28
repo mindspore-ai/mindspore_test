@@ -25,6 +25,7 @@
 #include "tools/lite_exporter/fetch_content.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "utils/check_convert_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace opt {

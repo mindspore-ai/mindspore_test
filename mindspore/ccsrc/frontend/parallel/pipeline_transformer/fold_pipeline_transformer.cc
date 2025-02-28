@@ -41,6 +41,8 @@
 #include "include/common/utils/comm_manager.h"
 #include "utils/ms_context.h"
 #include "frontend/parallel/parallel_node_check.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace parallel {

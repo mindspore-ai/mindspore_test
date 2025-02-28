@@ -15,8 +15,8 @@
  */
 
 #include "infer/ops_func_impl/max_dim.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace ops {

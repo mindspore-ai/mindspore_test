@@ -19,6 +19,8 @@
 #include <string>
 #include <vector>
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace opt {

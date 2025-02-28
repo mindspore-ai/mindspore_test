@@ -28,6 +28,7 @@
 #include "utils/trace_base.h"
 #include "op_def/framework_ops.h"
 #include "runtime/hardware/device_context_manager.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 
 namespace mindspore {
 namespace kernel {

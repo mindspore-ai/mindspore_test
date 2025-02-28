@@ -25,9 +25,7 @@
 #include "include/common/utils/comm_manager.h"
 #include "include/backend/optimizer/helper.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
-#include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {
 namespace opt {

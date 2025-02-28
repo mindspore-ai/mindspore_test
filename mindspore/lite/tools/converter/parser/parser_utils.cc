@@ -43,6 +43,11 @@
 #include "tools/converter/parser/conv2d_transpose_input_adjust.h"
 #include "tools/converter/parser/einsum_adjust.h"
 #include "tools/converter/import/convert_extend_ops/convert_extend_ops_pass.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::lite {
 namespace {

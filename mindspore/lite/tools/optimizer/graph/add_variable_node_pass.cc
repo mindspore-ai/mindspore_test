@@ -33,6 +33,9 @@
 #include "op_def/conv_pool_ops.h"
 #include "include/errorcode.h"
 #include "tools/optimizer/common/gllo_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace opt {

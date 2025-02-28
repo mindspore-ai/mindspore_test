@@ -23,7 +23,9 @@
 #include "graph/types.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "utils/log_adapter.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 using ge::DT_BF16;
 using ge::DT_BOOL;

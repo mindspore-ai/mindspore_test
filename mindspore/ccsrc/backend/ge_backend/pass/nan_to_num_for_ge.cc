@@ -17,13 +17,10 @@
 #include <limits>
 #include <vector>
 #include <memory>
-#include <unordered_map>
 #include <unordered_set>
-#include "op_def/array_ops.h"
 #include "include/common/utils/anfalgo.h"
 #include "ops_utils/op_utils.h"
-#include "op_def/auto_generate/gen_ops_name.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "op_def/auto_generate/gen_ops_primitive_n.h"
 
 namespace mindspore {
 namespace opt {

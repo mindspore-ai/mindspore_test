@@ -22,6 +22,7 @@
 #include "src/common/log_util.h"
 #include "include/errorcode.h"
 #include "tools/converter/quantizer/fse_encoder.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
 
 namespace mindspore::lite::quant {
 namespace {

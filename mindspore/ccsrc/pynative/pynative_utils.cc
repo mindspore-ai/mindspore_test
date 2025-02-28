@@ -41,12 +41,13 @@
 #include "pynative/predict_out_type_map.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/contiguous.h"
 #include "runtime/pipeline/pipeline.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "include/common/pynative/abstract_converter.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "pynative/grad/grad_utils.h"
 #include "include/common/utils/tensor_py.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace pynative {

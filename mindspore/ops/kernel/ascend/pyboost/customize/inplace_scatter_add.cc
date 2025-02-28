@@ -16,7 +16,6 @@
 
 #include "kernel/ascend/pyboost/customize/inplace_scatter_add.h"
 #include <memory>
-#include "op_def/auto_generate/gen_ops_primitive.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"

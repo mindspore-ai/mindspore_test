@@ -41,6 +41,7 @@
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "ir/kernel_tensor_value.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {
 namespace ops {

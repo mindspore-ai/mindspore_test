@@ -30,6 +30,8 @@
 #include "utils/singleton.h"
 #include "plugin/res_manager/gpu/device/cuda_driver.h"
 #include "plugin/device/gpu/hal/device/trt_loader.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

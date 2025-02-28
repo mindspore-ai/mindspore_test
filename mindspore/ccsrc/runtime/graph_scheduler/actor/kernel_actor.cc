@@ -38,6 +38,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/compile_config.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 namespace mindspore {
 namespace runtime {
 namespace {

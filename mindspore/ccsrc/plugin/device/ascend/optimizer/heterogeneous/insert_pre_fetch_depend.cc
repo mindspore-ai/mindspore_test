@@ -22,7 +22,7 @@
 
 #include "include/common/utils/anfalgo.h"
 #include "plugin/device/ascend/optimizer/heterogeneous/move_to_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace opt {

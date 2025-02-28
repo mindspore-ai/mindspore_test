@@ -31,6 +31,8 @@
 #include "pynative/grad/grad_utils.h"
 #include "frontend/optimizer/ad/pynative_jit_grad.h"
 #include "pynative/grad/primitive_hook.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
 
 namespace mindspore::pynative::autograd {
 namespace {

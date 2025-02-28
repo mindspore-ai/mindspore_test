@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/glu_parameter.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 using mindspore::ops::kAxis;
 using mindspore::ops::kNameGLU;
 using mindspore::schema::PrimitiveType_GLU;

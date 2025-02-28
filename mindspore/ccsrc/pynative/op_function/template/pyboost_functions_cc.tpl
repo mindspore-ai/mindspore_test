@@ -29,6 +29,7 @@
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
+${ops_inc}
 ${include_op_header}
 
 namespace mindspore::pynative {

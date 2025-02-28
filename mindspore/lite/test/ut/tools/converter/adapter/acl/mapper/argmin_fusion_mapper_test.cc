@@ -30,6 +30,7 @@
 #include "mindapi/ir/tensor.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "mindspore/core/include/ir/dtype/number.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore {
 namespace {

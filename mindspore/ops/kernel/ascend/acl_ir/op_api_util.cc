@@ -22,8 +22,6 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
-#include "mindspore/ops/op_def/math_op_name.h"
-#include "mindspore/ops/op_def/nn_op_name.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "utils/ms_context.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
@@ -32,6 +30,7 @@
 #include "plugin/res_manager/ascend/device_context_conf/op_precision_conf.h"
 #include "common/kernel_callback.h"
 #include "pybind_api/gil_scoped_long_running.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore::device::ascend {
 namespace {

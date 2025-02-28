@@ -22,6 +22,7 @@
 #include "infer/grad/einsum_grad.h"
 #include "ops/test_ops_dyn_cases.h"
 #include "include/backend/optimizer/helper.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 
 namespace mindspore {
 namespace ops {

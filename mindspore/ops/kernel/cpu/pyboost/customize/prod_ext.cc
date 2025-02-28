@@ -19,7 +19,7 @@
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/prod_ext.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace kernel {

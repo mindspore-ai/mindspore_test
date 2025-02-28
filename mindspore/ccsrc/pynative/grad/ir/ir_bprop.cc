@@ -29,6 +29,10 @@
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "frontend/optimizer/ad/pynative_jit_grad.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::pynative::autograd {
 namespace {

@@ -29,6 +29,7 @@
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/op_enum.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {

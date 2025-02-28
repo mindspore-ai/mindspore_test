@@ -408,6 +408,41 @@ def merge_strings_by_chunk_size(string_list, chunk_size=50):
     return merged_strings
 
 
+def chunk_list(lst, n):
+    """
+    Divide a list into sublists of length 'n'.
+
+    This function takes a list `lst` and an integer `n`, and returns a new list
+    where each element is a sublist of `lst` containing up to `n` elements.
+    If the length of `lst` is not a multiple of `n`, the last sublist will contain
+    fewer than `n` elements.
+
+    Args:
+        lst (list): The original list to be divided.
+        n (int): The number of elements per sublist.
+
+    Returns:
+        list: A list of sublists, where each sublist has up to `n` elements.
+
+    Raises:
+        ValueError: If `n` is less than or equal to 0.
+
+    Example:
+        >>> my_list = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        >>> chunked_list = chunk_list(my_list, 3)
+        >>> print(chunked_list)
+        [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+
+    Note:
+        This function assumes that `n` is a positive integer. If `n` is not a
+        positive integer, a ValueError is raised.
+    """
+    if n <= 0:
+        raise ValueError("The chunk size 'n' must be a positive integer.")
+
+    return [lst[i:i + n] for i in range(0, len(lst), n)]
+
+
 class AclnnUtils:
     """
     aclnn utils

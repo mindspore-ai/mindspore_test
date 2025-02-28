@@ -25,6 +25,7 @@
 #include "infer/cxx_api/activation.h"
 #include "ops_utils/op_utils.h"
 #include "src/common/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore {
 namespace opt {

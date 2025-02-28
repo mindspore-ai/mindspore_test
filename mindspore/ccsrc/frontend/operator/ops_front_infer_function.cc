@@ -38,9 +38,6 @@
 #include "infer/deprecated_infer/infer_functions.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
-#include "infer/ops_func_impl/greater_equal.h"
-#include "infer/ops_func_impl/greater.h"
 #include "infer/mod.h"
 #include "abstract/abstract_function.h"
 #include "utils/ms_context.h"
@@ -48,6 +45,11 @@
 #ifdef _MSC_VER
 #include "include/common/pybind_api/api_register.h"
 #endif
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace abstract {

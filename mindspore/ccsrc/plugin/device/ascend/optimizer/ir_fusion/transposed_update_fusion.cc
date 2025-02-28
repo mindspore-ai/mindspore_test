@@ -24,6 +24,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "utils/trace_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::opt {
 namespace {

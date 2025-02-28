@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 #include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore::device::ascend {
 // Pad

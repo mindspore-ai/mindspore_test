@@ -52,6 +52,8 @@ const AnfNodePtr AddLayernormFusionBase::Process(const FuncGraphPtr &graph, cons
 #include "include/common/utils/utils.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/optimizer/optimizer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
 namespace mindspore {
 namespace opt {
@@ -169,6 +171,39 @@ const AnfNodePtr AddLayernormFusionBase::Process(const FuncGraphPtr &graph, cons
   (void)manager->Replace(tensor_add, add_result);
 
   return add_layernorm;
+}
+
+const BaseRef AddLayernormFusion::DefinePattern() const {
+  VectorRef add_layer_norm = VectorRef({prim::kPrimLayerNorm, VectorRef({prim::kPrimAdd, x1_, x2_}), gamma_, beta_,
+                                        begin_norm_axis_, begin_params_axis_, eps_});
+  return add_layer_norm;
+}
+
+std::vector<std::string> AddLayernormFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimLayerNorm->name()};
+  return ret;
+}
+
+const BaseRef AddLayernormV3Fusion::DefinePattern() const {
+  VectorRef add_layer_norm = VectorRef({prim::kPrimLayerNormV3, VectorRef({prim::kPrimAdd, x1_, x2_}), gamma_, beta_,
+                                        begin_norm_axis_, begin_params_axis_, eps_});
+  return add_layer_norm;
+}
+
+std::vector<std::string> AddLayernormV3Fusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimLayerNormV3->name()};
+  return ret;
+}
+
+const BaseRef AddLayernormExtFusion::DefinePattern() const {
+  VectorRef add_layer_norm =
+    VectorRef({prim::kPrimLayerNormExt, VectorRef({prim::kPrimAdd, x1_, x2_}), normalize_shape_, gamma_, beta_, eps_});
+  return add_layer_norm;
+}
+
+std::vector<std::string> AddLayernormExtFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimLayerNormExt->name()};
+  return ret;
 }
 }  // namespace opt
 }  // namespace mindspore

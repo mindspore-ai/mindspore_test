@@ -25,6 +25,7 @@
 #include "utils/ms_context.h"
 #include "ops/test_ops.h"
 #include "include/backend/optimizer/helper.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore {
 namespace ops {

@@ -20,10 +20,11 @@
 #include <vector>
 #include "utils/ms_context.h"
 #include "infer/ops_func_impl/matmul_ext.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/converter/import/convert_extend_ops/utils.h"
 #include "tools/converter/import/convert_extend_ops/convert_extend_ops_pass.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore::opt {
 namespace {

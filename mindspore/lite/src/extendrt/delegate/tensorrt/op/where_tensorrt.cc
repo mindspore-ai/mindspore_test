@@ -22,8 +22,9 @@
 #include "NvInferRuntimeCommon.h"
 #include "src/extendrt/delegate/tensorrt/op/where_tensorrt.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/where_impl.cuh"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "infer/where.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_w.h"
 
 namespace mindspore::lite {
 constexpr int INPUT_X_INDEX = 1;

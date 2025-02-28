@@ -23,6 +23,7 @@
 #include "tools/optimizer/graph/padv3_ge_pass.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "utils/anf_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore::opt {
 

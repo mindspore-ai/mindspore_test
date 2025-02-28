@@ -40,6 +40,7 @@
 #include "infer/ops_func_impl/sqrt.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "ops/base_operator.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore {
 namespace ops {

@@ -23,6 +23,7 @@
 #include "plugin/device/ascend/optimizer/ascend_helper.h"
 #include "utils/trace_base.h"
 #include "include/common/runtime_conf/runtime_conf.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

@@ -27,6 +27,8 @@
 #include "pipeline/jit/ps/action.h"
 #include "ir/func_graph.h"
 #include "include/common/debug/anf_ir_dump.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

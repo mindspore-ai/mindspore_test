@@ -114,8 +114,9 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
         """
 
         mint_classes_def_list = []
-
-        _, single_mint_func_data, overload_mint_func_data = op_api_proto.categorize_func_data(mint_func_protos_data)
+        ops_inc_head_set = set()
+        _, single_mint_func_data, overload_mint_func_data, op_class_name_set = op_api_proto.categorize_func_data(
+            mint_func_protos_data)
         single_func_call_body_list, single_cpp_class_name_list = (
             self._get_single_func_call_body_list(single_mint_func_data))
         overload_func_call_body_list, overload_cpp_class_name_list = (
@@ -127,9 +128,11 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
         cpp_class_name_list = single_cpp_class_name_list + overload_cpp_class_name_list
         mint_classes_reg_list = (
             self._get_mint_func_reg_list(single_mint_func_data, overload_mint_func_data, cpp_class_name_list))
-
+        for op_class_name in op_class_name_set:
+            ops_inc_head_set.add(template.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_class_name[0].lower()))
         pyboost_overload_file_str = (
-            self.PYBOOST_OVERLOAD_FUNCTIONS_TEMPLATE.replace(mint_func_classes_def=mint_classes_def_list,
+            self.PYBOOST_OVERLOAD_FUNCTIONS_TEMPLATE.replace(ops_inc=list(sorted(ops_inc_head_set)),
+                                                             mint_func_classes_def=mint_classes_def_list,
                                                              pybind_register_code=mint_classes_reg_list))
         save_path = os.path.join(work_path, K.PIPELINE_PYBOOST_FUNC_GEN_PATH)
         file_name = "pyboost_overload_functions.cc"

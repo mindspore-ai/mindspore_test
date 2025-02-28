@@ -30,6 +30,7 @@
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"
 #include "utils/hashing.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 bool ValueToBool(const ValuePtr &v, bool *value) {

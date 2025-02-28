@@ -18,6 +18,7 @@
 #include <vector>
 #include "runtime/graph_scheduler/scheduler_helper.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace runtime {

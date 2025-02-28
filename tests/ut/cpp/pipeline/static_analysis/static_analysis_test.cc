@@ -33,7 +33,8 @@
 #include "pipeline/static_analysis/helper.h"
 #include "utils/log_adapter.h"
 #include "include/common/debug/anf_ir_dump.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace abstract {

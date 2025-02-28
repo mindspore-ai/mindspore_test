@@ -19,7 +19,6 @@
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/sigmoid.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/mul.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {
 namespace kernel {

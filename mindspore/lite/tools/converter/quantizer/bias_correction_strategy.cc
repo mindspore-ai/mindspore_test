@@ -33,6 +33,7 @@
 #include "tools/common/tensor_util.h"
 #include "tools/converter/quantizer/fixed_bit_weight_quantization.h"
 #include "ir/func_graph.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
 
 namespace mindspore::lite::quant {
 namespace {

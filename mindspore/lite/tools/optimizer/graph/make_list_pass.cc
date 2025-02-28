@@ -23,6 +23,9 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "utils/anf_utils.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::opt {
 // From:

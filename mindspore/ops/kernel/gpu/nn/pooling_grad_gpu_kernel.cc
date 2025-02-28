@@ -18,6 +18,7 @@
 #include <functional>
 #include <memory>
 #include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/conv_pool_op_name.h"
 #include "mindspore/ops/infer/grad/pool_grad.h"
 #include "mindspore/ops/infer/grad/avg_pool_3d_grad.h"
 #include "mindspore/ops/infer/grad/max_pool_3d_grad.h"

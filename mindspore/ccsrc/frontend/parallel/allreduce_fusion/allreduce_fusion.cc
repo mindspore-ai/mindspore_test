@@ -31,6 +31,9 @@
 #include "frontend/parallel/parameter_manager.h"
 #include "frontend/parallel/step_parallel.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
 
 namespace mindspore {
 namespace parallel {

@@ -32,6 +32,9 @@
 #include "include/common/utils/parallel_context.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "include/common/utils/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace parallel {

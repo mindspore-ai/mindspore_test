@@ -34,53 +34,9 @@ namespace irpass {
 // {PrimTile, X, Empty} -> X
 class TileEliminater : public AnfVisitor {
  public:
-  AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override {
-    Reset();
-    AnfVisitor::Match(prim::kPrimTile, {IsNode, IsVNode})(node);
-
-    // check pattern match
-    if (tuple_ == nullptr) {
-      return nullptr;
-    }
-
-    auto value = GetValueNode(tuple_);
-    auto elements = GetValue<std::vector<int64_t>>(value);
-    if (elements.empty()) {
-      return x_;
-    }
-
-    auto fn = [this]() -> size_t {
-      auto x_shape_base = x_->Shape();
-      uint64_t x_size = 0;
-      ShapePtr x_shape;
-      if (x_shape_base && (x_shape = x_shape_base->cast<ShapePtr>())) {
-        x_size = x_shape->shape().size();
-      }
-      return x_size;
-    };
-
-    // Return x_ directly when x.dim >= len(tuple) and all elements of tuple are 1.
-    // if len(tuple) > x.dim need expand x.dim
-    auto cmp = std::all_of(elements.cbegin(), elements.cend(), [](int64_t i) { return i == 1; });
-    if (cmp && fn() >= elements.size()) {
-      return x_;
-    }
-
-    return nullptr;
-  }
-
-  void Visit(const AnfNodePtr &node) override {
-    if (x_ == nullptr) {
-      x_ = node;
-    } else {
-      tuple_ = node;
-    }
-  }
-
-  void Reset() {
-    x_ = nullptr;
-    tuple_ = nullptr;
-  }
+  AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override;
+  void Visit(const AnfNodePtr &node) override;
+  void Reset();
 
  private:
   AnfNodePtr x_{nullptr}, tuple_{nullptr};

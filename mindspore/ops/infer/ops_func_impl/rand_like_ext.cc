@@ -19,8 +19,8 @@
 #include <string>
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
-#include "op_def/auto_generate/gen_ops_name.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace ops {

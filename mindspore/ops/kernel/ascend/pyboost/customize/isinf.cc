@@ -17,7 +17,6 @@
 #include <limits>
 
 #include "kernel/ascend/pyboost/customize/isinf.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/abs.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/equal.h"
 

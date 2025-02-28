@@ -33,6 +33,11 @@
 #include "tools/optimizer/common/helper.h"
 #include "securec/include/securec.h"
 #include "nnacl/op_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_w.h"
 
 namespace mindspore {
 namespace opt {

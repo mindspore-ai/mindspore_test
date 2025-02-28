@@ -21,7 +21,6 @@
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/sigmoid_grad.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/mul.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/add_ext.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {
 namespace kernel {

@@ -17,6 +17,7 @@
 #include "src/extendrt/delegate/tensorrt/op/conv2dbackpropinput_tensorrt.h"
 #include <memory>
 #include "nnacl/pack.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::lite {
 int Conv2dBackpropInputTensorRT::IsSupport(const BaseOperatorPtr &base_operator,

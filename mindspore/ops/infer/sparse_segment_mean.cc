@@ -26,6 +26,7 @@
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {

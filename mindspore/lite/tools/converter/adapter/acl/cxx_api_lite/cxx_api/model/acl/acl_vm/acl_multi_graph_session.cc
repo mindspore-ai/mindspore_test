@@ -29,6 +29,9 @@
 #include "cxx_api/model/acl/acl_model_options.h"
 #include "cxx_api/model/acl/acl_vm/ms_tensor_ref.h"
 #include "cxx_api/graph/graph_data.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore::session {
 void MultiGraphAclSession::Init(uint32_t device_id) { InitExecutor(kDavinciMultiGraphInferenceDevice, device_id); }

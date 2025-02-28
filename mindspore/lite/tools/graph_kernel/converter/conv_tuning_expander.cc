@@ -30,6 +30,8 @@
 #include "utils/file_utils.h"
 #include "utils/hash_set.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore::graphkernel {
 bool IsSameNumberList(const std::vector<int64_t> &vec, int64_t n) {

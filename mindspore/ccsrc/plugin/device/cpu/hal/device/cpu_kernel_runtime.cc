@@ -44,6 +44,7 @@
 #ifdef ENABLE_DUMP_IR
 #include "include/common/debug/rdr/recorder_manager.h"
 #include "debug/rdr/mem_address_recorder.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #endif
 
 namespace mindspore {

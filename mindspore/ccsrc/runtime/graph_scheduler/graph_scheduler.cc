@@ -87,6 +87,11 @@
 #include "runtime/graph_scheduler/embedding_cache_scheduler.h"
 #include "runtime/graph_scheduler/actor/rpc/mux_send_actor.h"
 #include "runtime/graph_scheduler/actor/rpc/mux_recv_actor.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 #endif
 
 namespace mindspore {

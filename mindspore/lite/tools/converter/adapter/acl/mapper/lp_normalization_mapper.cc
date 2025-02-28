@@ -22,6 +22,7 @@
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
 #include "ops_utils/op_utils.h"
 #include "infer/lp_norm.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {
 namespace lite {

@@ -19,9 +19,15 @@
 #include <vector>
 #include "mindspore/ops/op_def/image_ops.h"
 #include "mindspore/ops/op_def/lite_op_name.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "mindspore/ops/op_def/ascend_op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore::device::ascend {
 // ResizeNearestNeighborV2

@@ -32,6 +32,10 @@
 #include "extendrt/delegate/ascend_native/ascend_native_impl/utils.h"
 #include "src/train/opt_allocator.h"
 #include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 Status AscendNativeSession::MoveDataFromHostToDevice(void *sd, bool s_fp16, void *dd, bool d_fp16, size_t elem_num) {

@@ -20,7 +20,7 @@
 #include "frontend/ir/arg_handler.h"
 #include "pynative/op_function/auto_generate/pyboost_functions.h"
 #include "pynative/op_function/customize/direct_ops.h"
-
+${ops_inc}
 
 namespace mindspore::pynative {
 ${mint_func_classes_def}

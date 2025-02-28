@@ -19,15 +19,13 @@
 
 #include <vector>
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
-#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore {
 namespace lite {
-using mindspore::ops::kNameSqueeze;
 
 class SqueezeMapper : public PrimitiveMapper {
  public:
-  SqueezeMapper() : PrimitiveMapper(kNameSqueeze) {}
+  SqueezeMapper();
 
   ~SqueezeMapper() override = default;
 

@@ -18,6 +18,7 @@
 #include <numeric>
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
 #include "infer/fill.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 
 namespace mindspore::lite {
 int FillTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

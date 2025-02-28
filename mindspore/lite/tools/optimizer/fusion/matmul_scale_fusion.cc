@@ -24,6 +24,8 @@
 #include "tools/converter/quantizer/quant_param_holder.h"
 #include "nnacl/op_base.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::opt {
 namespace {

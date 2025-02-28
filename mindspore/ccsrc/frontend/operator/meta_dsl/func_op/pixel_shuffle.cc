@@ -20,7 +20,11 @@
 #include "utils/core_op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::prim {
 void CheckPixelShuffleInputs(const PrimitivePtr &primitive, const AbstractBasePtrList &input_args) {

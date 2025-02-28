@@ -32,6 +32,13 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "frontend/optimizer/fallback_rewriter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
 namespace mindspore {
 namespace ad {
 mindspore::HashMap<std::string, std::pair<FuncGraphPtr, FuncGraphPtr>> pass_grad_graph_param_;

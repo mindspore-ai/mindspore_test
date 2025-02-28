@@ -25,6 +25,9 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "pipeline/jit/ps/fallback.h"
 #include "pipeline/jit/ps/parse/resolve.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace opt {

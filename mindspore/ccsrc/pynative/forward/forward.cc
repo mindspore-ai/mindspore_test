@@ -42,6 +42,7 @@ using mindspore::profiler::ProfilerManager;
 #include "pynative/grad/grad_utils.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_reg.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/contiguous.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace pynative {

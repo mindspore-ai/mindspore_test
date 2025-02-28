@@ -53,6 +53,9 @@
 #include "mindspore/ccsrc/pyboost/grad_functions/value_converter.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "backend/backend_manager/backend_manager.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace pynative {

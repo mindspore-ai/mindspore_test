@@ -29,6 +29,8 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "plugin/device/ascend/optimizer/optimizer_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace opt {

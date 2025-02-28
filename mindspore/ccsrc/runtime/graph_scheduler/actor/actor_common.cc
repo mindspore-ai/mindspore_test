@@ -36,6 +36,7 @@
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/device/device_address_utils.h"
 #endif
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace runtime {

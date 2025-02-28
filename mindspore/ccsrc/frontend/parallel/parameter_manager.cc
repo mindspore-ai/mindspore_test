@@ -42,9 +42,7 @@
 #include "frontend/parallel/graph_util/get_parallel_info.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
 #include "frontend/parallel/node_check.h"
-#include "ir/param_info.h"
 #include "ir/tensor.h"
-#include "utils/trace_base.h"
 #include "include/common/utils/comm_manager.h"
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
@@ -54,6 +52,9 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "include/common/utils/tensor_py.h"
 #include "include/common/utils/tensor_py_wrapper.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace parallel {

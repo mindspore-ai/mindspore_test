@@ -24,6 +24,10 @@
 #include "mindspore/core/include/ir/core_ops_primitive.h"
 #include "frontend/optimizer/utils.h"
 #include "utils/trace_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace pipeline {

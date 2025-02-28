@@ -22,6 +22,7 @@
 #include <memory>
 #include <algorithm>
 #include "include/backend/distributed/collective/collective_manager.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
 namespace mindspore {
 namespace opt {

@@ -23,6 +23,9 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 namespace mindspore::graphkernel {
 bool IsMatMul(const AnfNodePtr &node) {
   return IsPrimitiveCNode(node, prim::kPrimMatMul) || IsPrimitiveCNode(node, prim::kPrimBatchMatMul);

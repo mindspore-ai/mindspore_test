@@ -29,7 +29,6 @@
 #include "infer/ops_func_impl/embedding_table_find_and_init.h"
 #include "infer/ops_func_impl/fake_remote_lookup_uniqued.h"
 #include "utils/check_convert_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "utils/ms_context.h"
 #include "mindapi/base/types.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"

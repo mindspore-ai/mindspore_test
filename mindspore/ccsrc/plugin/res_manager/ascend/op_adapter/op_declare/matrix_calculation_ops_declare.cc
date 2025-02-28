@@ -21,6 +21,9 @@
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/math_op_name.h"
 #include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::device::ascend {
 // TensorScatterUpdate

@@ -29,7 +29,8 @@
 #include "utils/trace_base.h"
 #include "ir/dtype/type.h"
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore {
 ::HcclDataType HcomUtil::ConvertHcclType(TypeId type_id) {

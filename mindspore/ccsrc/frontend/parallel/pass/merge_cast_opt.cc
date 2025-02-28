@@ -28,6 +28,10 @@
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/pass/pass_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace parallel {

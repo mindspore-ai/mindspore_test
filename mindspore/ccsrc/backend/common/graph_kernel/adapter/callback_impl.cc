@@ -29,7 +29,8 @@
 #include "backend/common/graph_kernel/convert_input_and_attr.h"
 #include "kernel/graph_kernel_info.h"
 #include "backend/common/pass/insert_type_transform_op.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore::graphkernel {
 namespace {

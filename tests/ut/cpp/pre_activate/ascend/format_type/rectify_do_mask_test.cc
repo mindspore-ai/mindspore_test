@@ -29,6 +29,7 @@
 #define private public
 #define protected public
 #include "plugin/device/ascend/optimizer/format_type/rectify_do_mask_kernel_info.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #undef private
 #undef protected
 

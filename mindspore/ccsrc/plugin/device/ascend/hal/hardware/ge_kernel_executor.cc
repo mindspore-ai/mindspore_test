@@ -25,7 +25,6 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "backend/common/session/kernel_graph_mgr.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_precision_conf.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
@@ -79,6 +78,14 @@
 #include "plugin/device/ascend/hal/hardware/ascend_device_res_manager.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "plugin/device/ascend/hal/hardware/ge_device_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::device::ascend {
 namespace {

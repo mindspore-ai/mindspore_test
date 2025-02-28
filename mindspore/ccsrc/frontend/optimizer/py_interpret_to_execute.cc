@@ -31,6 +31,8 @@
 #include "utils/symbolic.h"
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/ps/fallback.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore {
 /* namespace to support opt */

@@ -21,6 +21,7 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "infer/cxx_api/conv2d_transpose_fusion.h"
 #include "mindspore/ops/op_def/op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::lite {
 namespace {

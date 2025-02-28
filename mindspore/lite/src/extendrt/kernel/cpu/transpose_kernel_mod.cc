@@ -22,6 +22,7 @@
 #include "include/api/status.h"
 #include "nnacl/errorcode.h"
 #include "src/common/log_util.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::kernel {
 namespace {

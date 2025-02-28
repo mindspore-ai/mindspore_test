@@ -26,6 +26,9 @@
 #include "tools/common/tensor_util.h"
 #include "utils/check_convert_utils.h"
 #include "nnacl/op_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

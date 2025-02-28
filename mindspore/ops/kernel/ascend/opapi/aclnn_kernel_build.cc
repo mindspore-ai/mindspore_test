@@ -28,6 +28,7 @@
 #include "utils/trace_base.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace kernel {

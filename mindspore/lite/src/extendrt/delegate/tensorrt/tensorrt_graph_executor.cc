@@ -34,6 +34,8 @@
 #include "src/extendrt/utils/func_graph_utils.h"
 #include "src/extendrt/delegate/tensorrt/optimizer/tensorrt_optimizer.h"
 #include "infer/custom.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::lite {
 namespace {

@@ -23,7 +23,6 @@
 #include "runtime/device/device_address_utils.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pyboost/customize/op_common.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {

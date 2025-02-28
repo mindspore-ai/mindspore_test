@@ -32,6 +32,7 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/lp_norm.h"
 #include "kernel/cpu/nnacl/op_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
 namespace mindspore {
 namespace kernel {

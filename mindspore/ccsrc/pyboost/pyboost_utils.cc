@@ -32,6 +32,7 @@
 #include "mindspore/ccsrc/pyboost/auto_generate/cast.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "include/common/runtime_conf/runtime_conf.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace kernel {

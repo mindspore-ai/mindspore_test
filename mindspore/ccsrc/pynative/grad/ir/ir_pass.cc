@@ -26,6 +26,9 @@
 #include "include/backend/optimizer/helper.h"
 #include "include/common/pynative/common_utils.h"
 #include "mindspore/ccsrc/pyboost/grad_functions/pyboost_grad_functions.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace pynative {

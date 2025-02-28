@@ -32,6 +32,15 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/operator/composite/vmap.h"
 #include "include/common/utils/convert_utils_py.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
 
 namespace mindspore {
 namespace opt {

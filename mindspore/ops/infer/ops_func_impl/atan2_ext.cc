@@ -25,6 +25,7 @@
 #include "mindspore/ops/op_def/op_name.h"
 #include "utils/check_convert_utils.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore::ops {
 BaseShapePtr Atan2ExtFuncImpl::InferShape(const PrimitivePtr &primitive,

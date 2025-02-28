@@ -26,6 +26,9 @@
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/graph_util/graph_info.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace parallel {

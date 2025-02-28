@@ -21,8 +21,8 @@
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
 #include "infer/ops_func_impl/logaddexp.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ops/test_value_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
 namespace mindspore {
 namespace ops {

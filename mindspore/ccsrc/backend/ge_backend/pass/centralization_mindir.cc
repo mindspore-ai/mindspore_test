@@ -19,7 +19,6 @@
 #include <string>
 #include <memory>
 #include "mindspore/ops/op_def/math_ops.h"
-#include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 

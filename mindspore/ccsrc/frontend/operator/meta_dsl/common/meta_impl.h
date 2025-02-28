@@ -28,6 +28,7 @@
 #include "ops/op_def.h"
 #include "frontend/operator/meta_dsl/common/utils.h"
 #include "frontend/operator/meta_dsl/common/meta_func_builder.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 
 namespace mindspore::prim {
 using NodePtr = AnfNodePtr;

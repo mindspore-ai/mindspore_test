@@ -27,6 +27,7 @@
 #include "include/common/utils/utils.h"
 #include "tools/graph_kernel/common/utils.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore::graphkernel {
 ShapeVector CallbackImpl::GetInputShape(const AnfNodePtr &node, size_t i) { return GetInputInferShape(node, i); }

@@ -40,6 +40,9 @@
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace ops {

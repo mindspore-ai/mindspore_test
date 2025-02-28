@@ -21,9 +21,7 @@
 #include <functional>
 #include <algorithm>
 #include "abstract/dshape.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/array_ops.h"
 #include "ir/func_graph.h"
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"
@@ -39,6 +37,7 @@
 #include "common/oplib/oplib.h"
 #include "runtime/hardware/device_context_manager.h"
 #endif
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::graphkernel {
 using kernel::OpAttr;

@@ -20,6 +20,7 @@
 #include "src/common/log_util.h"
 #include "infer/expand.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_b.h"
 
 namespace mindspore {
 namespace lite {
@@ -27,6 +28,9 @@ namespace {
 constexpr auto kNameInputNums = 3;
 }
 
+using mindspore::ops::kNameBroadcastTo;
+
+BroadcastToMapper::BroadcastToMapper() : PrimitiveMapper(kNameBroadcastTo) {}
 STATUS BroadcastToMapper::Mapper(const CNodePtr &cnode) {
   CHECK_NULL_RETURN(cnode);
   int input_num = cnode->size();

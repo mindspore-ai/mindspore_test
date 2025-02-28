@@ -38,6 +38,8 @@
 #include "tools/optimizer/graph/lite_tensor_extractor.h"
 #include "tools/optimizer/common/helper.h"
 #include "tools/optimizer/const_fold/rsqrt_fp32.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_w.h"
 
 using mindspore::lite::KernelRegistry;
 using mindspore::lite::Tensor;

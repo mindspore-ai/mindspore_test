@@ -21,6 +21,7 @@
 #include "utils/check_convert_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore::ops {
 BaseShapePtr MulFuncImpl::InferShape(const PrimitivePtr &primitive,

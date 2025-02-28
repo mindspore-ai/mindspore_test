@@ -27,6 +27,10 @@
 #include "frontend/operator/cc_implementations.h"
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::prim {
 namespace {

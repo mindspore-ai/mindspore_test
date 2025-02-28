@@ -29,6 +29,9 @@
 #include "nnacl/op_base.h"
 #include "infer/make_tuple.h"
 #include "infer/return.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore::opt {
 constexpr auto kDefaultIndex = 0;

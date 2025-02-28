@@ -18,15 +18,12 @@
 #define MINDSPORE_LITE_TOOLS_CONVERTER_ADAPTER_ACL_MAPPER_SILU_MAPPER_H_
 
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
-#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
-
 namespace mindspore {
 namespace lite {
-using mindspore::ops::kNameSiLU;
 
 class SiLUMapper : public PrimitiveMapper {
  public:
-  SiLUMapper() : PrimitiveMapper(kNameSiLU) {}
+  SiLUMapper();
 
   ~SiLUMapper() override = default;
 

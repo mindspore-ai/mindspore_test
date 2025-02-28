@@ -76,6 +76,7 @@ class PyboostGradFunctionsCppGenerator(BaseGenerator):
         """
         pyboost_func_str = ''
         pyboost_func_include_headers_str = ''
+        ops_inc_head_set = set()
         for op_proto in op_protos:
             if op_proto.op_dispatch is None:
                 continue
@@ -103,9 +104,12 @@ class PyboostGradFunctionsCppGenerator(BaseGenerator):
             pyboost_func_str = pyboost_func_str + template.NEW_LINE
             pyboost_func_include_headers_str += (
                 self.native_include_header_template.replace(operator_name=op_proto.op_name))
+            ops_inc_head_set.add(
+                template.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_proto.op_class.name[0].lower()))
         native_grad_func_file = \
             self.PYBOOST_NATIVE_GRAD_FUNCTIONS_TEMPLATE.replace(include_op_header=pyboost_func_include_headers_str,
-                                                                function_body=pyboost_func_str)
+                                                                function_body=pyboost_func_str,
+                                                                ops_inc=list(sorted(ops_inc_head_set)))
         save_file(os.path.join(work_path, K.PYBOOST_NATIVE_GRAD_FUNC_GEN_PATH),
                   "pyboost_native_grad_functions.cc", native_grad_func_file)
 

@@ -28,6 +28,7 @@
 #include "infer/tensor_to_scalar.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace expander {

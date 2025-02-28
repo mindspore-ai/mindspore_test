@@ -106,20 +106,14 @@ class NativeBackwardFunc : public BackwardFunc {
   /// \param[in] value The input value.
   ///
   /// \return The value filled with one.
-  ValuePtr Ones(const ValuePtr &value) const override {
-    MS_EXCEPTION_IF_NULL(value);
-    return ir_builder_->EmitOp(prim::kPrimOnesLike, {value});
-  }
+  ValuePtr Ones(const ValuePtr &value) const override;
 
   /// \brief Create the value filled with zero, shape like the input.
   ///
   /// \param[in] value The input value.
   ///
   /// \return The value filled with zero.
-  ValuePtr Zeros(const ValuePtr &value) const override {
-    MS_EXCEPTION_IF_NULL(value);
-    return ir_builder_->EmitOp(prim::kPrimZerosLike, {value});
-  }
+  ValuePtr Zeros(const ValuePtr &value) const override;
 
   /// \brief Calculate the sum of inputs.
   ///
@@ -127,11 +121,7 @@ class NativeBackwardFunc : public BackwardFunc {
   /// \param[in] other The second input value.
   ///
   /// \return The sum of inputs.
-  ValuePtr Add(const ValuePtr &input, const ValuePtr &other) const override {
-    MS_EXCEPTION_IF_NULL(input);
-    MS_EXCEPTION_IF_NULL(other);
-    return ir_builder_->EmitOp(prim::kPrimAdd, {input, other});
-  }
+  ValuePtr Add(const ValuePtr &input, const ValuePtr &other) const override;
 
   /// \brief Convert the inputs, output and dout of forward execution into the inputs of function builder.
   ///

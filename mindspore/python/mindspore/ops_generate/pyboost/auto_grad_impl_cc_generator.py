@@ -35,6 +35,7 @@ class AutoGradImplGenerator(BaseGenerator):
         """
         Initialize the AutoGrad implementation generator with templates for code generation.
         """
+        self.OP_DEF_INC_HEAD_TEMPLATE = template.OP_DEF_INC_HEAD_TEMPLATE
         self.AUTO_GRAD_IMPL_CC_TEMPLATE = template.AUTO_GRAD_IMPL_CC_TEMPLATE
         self.DO_GRAD_FUNCTION_BODY_TEMPLATE = template.DO_GRAD_FUNCTION_BODY_TEMPLATE
         self.auto_grad_reg_template = Template("const_cast<kernel::pyboost::${class_name}GradFunc&>(" + \
@@ -55,13 +56,16 @@ class AutoGradImplGenerator(BaseGenerator):
         """
         auto_grad_reg_list = []
         do_grad_op_list = []
+        ops_inc_head_set = set()
         for op_proto in op_protos:
             if op_proto.op_dispatch is None or op_proto.op_dispatch.is_comm_op:
                 continue
             auto_grad_reg_list.append(self.auto_grad_reg_template.replace(class_name=op_proto.op_class.name))
             do_grad_op_list.append(self._get_single_do_grad_op(op_proto))
+            ops_inc_head_set.add(self.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_proto.op_class.name[0].lower()))
         pyboost_func_h_str = self.AUTO_GRAD_IMPL_CC_TEMPLATE.replace(do_grad_op=do_grad_op_list,
-                                                                     auto_grad_reg=auto_grad_reg_list)
+                                                                     auto_grad_reg=auto_grad_reg_list,
+                                                                     ops_inc=list(sorted(ops_inc_head_set)))
         save_path = os.path.join(work_path, K.PYBOOST_AUTO_GRAD_FUNC_GEN_PATH)
         file_name = "auto_grad_impl.cc"
         save_file(save_path, file_name, pyboost_func_h_str)

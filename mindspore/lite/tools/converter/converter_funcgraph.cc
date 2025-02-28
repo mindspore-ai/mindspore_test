@@ -73,6 +73,7 @@
 #include "tools/optimizer/common/pass_manager_extends.h"
 #include "load_mindir/infer_mindir.h"
 #include "tools/optimizer/fusion/matmul_allreduce_fusion.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 
 namespace mindspore {
 namespace lite {

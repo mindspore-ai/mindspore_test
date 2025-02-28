@@ -24,9 +24,9 @@
 #include "ir/tensor.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/base/type_id.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "infer/ops_func_impl/not_equal.h"
 #include "ops/test_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
 
 namespace mindspore {
 namespace ops {

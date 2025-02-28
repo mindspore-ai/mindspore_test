@@ -18,6 +18,7 @@
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "include/errorcode.h"
 #include "tools/optimizer/common/gllo_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace lite {

@@ -40,23 +40,17 @@
 #include "frontend/parallel/ops_info/reshape_info.h"
 #include "frontend/parallel/ops_info/tmp_identity_info.h"
 #include "frontend/parallel/parameter_manager.h"
-#include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/strategy_loader.h"
-#include "frontend/parallel/dynamic_shape/dynamic_shape.h"
 #include "frontend/parallel/strategy_checkpoint/parallel_strategy_checkpoint.h"
 #include "include/common/utils/parallel_context.h"
 #include "ir/anf.h"
 #include "ir/param_info.h"
 #include "ir/tensor.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/conv_pool_ops.h"
-#include "mindspore/ops/op_def/nn_ops.h"
 #include "pipeline/jit/ps/pipeline_split.h"
 #include "utils/hash_map.h"
 #include "utils/hash_set.h"
@@ -64,6 +58,8 @@
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/util.h"
 #endif
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace parallel {

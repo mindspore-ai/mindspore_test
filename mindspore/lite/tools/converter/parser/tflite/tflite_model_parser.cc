@@ -39,6 +39,8 @@
 #include "infer/make_tuple.h"
 #include "infer/return.h"
 #include "infer/tuple_get_item.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_w.h"
 
 using mindspore::converter::kFmkTypeTflite;
 namespace mindspore::lite {

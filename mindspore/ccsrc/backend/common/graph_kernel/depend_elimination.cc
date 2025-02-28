@@ -21,6 +21,10 @@
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/anfalgo.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore::graphkernel {
 bool DependElimination::Run(const FuncGraphPtr &func_graph) {

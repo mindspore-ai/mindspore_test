@@ -22,6 +22,7 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "abstract/abstract_function.h"
 #include "ir/func_graph_cloner.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore {
 namespace parallel {

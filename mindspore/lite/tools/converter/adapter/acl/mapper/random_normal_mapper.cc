@@ -25,6 +25,9 @@
 #include "src/common/log_util.h"
 #include "ops_utils/op_utils.h"
 #include "infer/standard_normal.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace lite {

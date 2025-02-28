@@ -28,6 +28,9 @@
 #include "symbolic_shape/symbol.h"
 #include "symbolic_shape/utils.h"
 #include "include/common/symbol_engine/symbol_engine_impl.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

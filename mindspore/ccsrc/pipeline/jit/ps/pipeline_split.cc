@@ -38,6 +38,8 @@
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/util.h"
 #include "include/backend/distributed/ps/ps_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
 #endif
 
 namespace mindspore {

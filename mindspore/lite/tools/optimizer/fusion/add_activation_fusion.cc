@@ -26,6 +26,7 @@
 #include "nnacl/op_base.h"
 #include "ops_utils/op_utils.h"
 #include "tools/converter/quantizer/quant_param_holder.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore::opt {
 const BaseRef AddActivationFusion::DefinePattern() const {

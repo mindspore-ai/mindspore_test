@@ -31,6 +31,8 @@
 #include "utils/ms_context.h"
 #include "kernel/graph_kernel_info.h"
 #include "mindspore/ops/op_def/op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace opt {

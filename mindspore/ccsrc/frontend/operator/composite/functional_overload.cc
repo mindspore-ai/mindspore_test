@@ -35,6 +35,7 @@
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "pipeline/jit/ps/static_analysis/prim.h"
 #include "frontend/operator/composite/auto_generate/functional_map.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 void RegFunctional(const py::module *m) {

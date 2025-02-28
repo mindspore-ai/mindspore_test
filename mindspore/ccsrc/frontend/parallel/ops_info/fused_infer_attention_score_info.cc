@@ -30,6 +30,7 @@
 #include "mindspore/ops/infer/ops_func_impl/fused_infer_attention_score.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/op_enum.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 using mindspore::ops::FASInputLayoutMode;

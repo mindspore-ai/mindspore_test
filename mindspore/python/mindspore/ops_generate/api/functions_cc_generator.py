@@ -106,14 +106,18 @@ class FunctionsGenerator(BaseGenerator):
         """
         func_include_headers_list = []
         op_call_with_grad_list = []
+        ops_inc_head_set = set()
         for op_proto in op_protos:
             if op_proto.op_dispatch is None or op_proto.op_dispatch.is_comm_op:
                 continue
             func_include_headers_list.append(
                 self.pyboost_func_include_header_template.replace(operator_name=op_proto.op_name))
             op_call_with_grad_list.append(self._get_function_body(op_proto))
+            ops_inc_head_set.add(
+                template.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_proto.op_class.name[0].lower()))
         pyboost_func_h_str = self.FUNCTIONS_CC_TEMPLATE.replace(op_call_with_grad=op_call_with_grad_list,
-                                                                pyboost_op_header_include=func_include_headers_list)
+                                                                pyboost_op_header_include=func_include_headers_list,
+                                                                ops_inc=list(sorted(ops_inc_head_set)))
         save_path = os.path.join(work_path, K.MS_PYBOOST_FUNCTIONS_AUTO_GEN_PATH)
         file_name = "functions.cc"
         save_file(save_path, file_name, pyboost_func_h_str)

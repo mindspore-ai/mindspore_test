@@ -25,6 +25,7 @@
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/check_convert_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {

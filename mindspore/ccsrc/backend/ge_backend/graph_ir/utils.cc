@@ -23,6 +23,7 @@
 #include "plugin/res_manager/ascend/op_adapter/transform_util.h"
 #include "backend/ge_backend/graph_ir/graph_builder.h"
 #include "include/common/utils/anfalgo.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore::backend::ge_backend {
 

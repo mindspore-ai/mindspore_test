@@ -26,6 +26,8 @@
 #include "backend/common/pass/const_input_to_attr.h"
 #include "include/backend/optimizer/helper.h"
 #include "common/common_test.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {
 namespace opt {
