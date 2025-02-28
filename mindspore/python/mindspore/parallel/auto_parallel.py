@@ -228,58 +228,57 @@ class AutoParallel(Cell):
                              .format(optimizer_level))
         self._optimizer_level = optimizer_level
 
-    def pipeline(self, pipeline_stages=1, pipeline_result_broadcast=False, pipeline_interleave=False,
-                 pipeline_scheduler="1f1b"):
+    def pipeline(self, stages=1, output_broadcast=False, interleave=False,
+                 scheduler="1f1b"):
         """
         Configure the number of pipelin_dages, whether to broadcast the results,
-        whether to enable interleaving scheduling,
-        and configure the type of scheduler when using pipeline parallel.
+        whether to enable interleaving scheduling, configure type of scheduler when using pipeline parallel.
         Args:
-            pipeline_stages (int): Set the stage information for pipeline parallelism.
+            stages (int): Set the stage information for pipeline parallelism
                 This indicates how the devices are individually distributed on the pipeline.
                 All devices will be divided into stages of pipine_dags. Default value: 1.
-            pipeline_result_broadcast (bool): When performing pipeline parallel inference,
-                whether the result of the last stage is broadcasted to the other stages. Default value: False 。
-            pipeline_interleave (bool): Whether to enable interleaving scheduling.
-            pipeline_scheduler(str): The type of scheduler
+            output_broadcast (bool): When performing pipeline parallel inference,
+                whether the result of the last stage is broadcasted to the other stages. Default value: False.
+            interleave (bool): Whether to enable interleaving scheduling.
+            scheduler(str): The type of scheduler
         Raises:
-            TypeError: If the type of 'pipeline_stages is not int
-            ValueError: When pipeline_stages <= 0
-            TypeError: If the type of 'pipeline_result_broadcast' is not bool
-            TypeError: If the type of 'pipeline_interleave' is not bool
-            TypeError: If the type of 'pipeline_scheduler' is not str
-            ValueError: If the type of 'pipeline_scheduler' is not supported
+            TypeError: If the type of 'stages is not int
+            ValueError: When stages <= 0
+            TypeError: If the type of 'output_broadcast' is not bool
+            TypeError: If the type of 'interleave' is not bool
+            TypeError: If the type of 'scheduler' is not str
+            ValueError: If the type of 'scheduler' is not supported
         """
-        if not isinstance(pipeline_stages, int):
-            raise TypeError("For 'AutoParallel.pipeline', the argument 'pipeline_stages' "
-                            "must be int type, but got the type : {}.".format(type(pipeline_stages)))
-        if pipeline_stages <= 0:
-            raise ValueError("For 'AutoParallel.pipeline', the argument 'pipeline_stages' "
-                             "must be larger than zero, but got value: {}.".format(pipeline_stages))
-        if not isinstance(pipeline_result_broadcast, bool):
-            raise TypeError("For 'AutoParallel.pipeline', the argument 'pipeline_stages' "
-                            "must be bool type, but got the type : {}.".format(type(pipeline_result_broadcast)))
-        if not isinstance(pipeline_interleave, bool):
-            raise TypeError("For 'AutoParallel.pipeline', the argument 'pipeline_stages' "
-                            "must be bool type, but got the type : {}.".format(type(pipeline_interleave)))
-        if not isinstance(pipeline_scheduler, str):
-            raise TypeError("For 'AutoParallel.pipeline', the argument 'pipeline_stages' "
-                            "must be str type, but got the type : {}.".format(type(pipeline_scheduler)))
-        if pipeline_scheduler not in ("1f1b", "gpipe"):
+        if not isinstance(stages, int):
+            raise TypeError("For 'AutoParallel.pipeline', the argument 'stages' "
+                            "must be int type, but got the type : {}.".format(type(stages)))
+        if stages <= 0:
+            raise ValueError("For 'AutoParallel.pipeline', the argument 'stages' "
+                             "must be larger than zero, but got value: {}.".format(stages))
+        if not isinstance(output_broadcast, bool):
+            raise TypeError("For 'AutoParallel.pipeline', the argument 'stages' "
+                            "must be bool type, but got the type : {}.".format(type(output_broadcast)))
+        if not isinstance(interleave, bool):
+            raise TypeError("For 'AutoParallel.pipeline', the argument 'stages' "
+                            "must be bool type, but got the type : {}.".format(type(interleave)))
+        if not isinstance(scheduler, str):
+            raise TypeError("For 'AutoParallel.pipeline', the argument 'stages' "
+                            "must be str type, but got the type : {}.".format(type(scheduler)))
+        if scheduler not in ("1f1b", "gpipe"):
             raise ValueError("For 'AutoParallel.pipeline', the argument "
-                             "'pipeline_scheduler' must be '1f1b' , 'gpipe' , but got the value : {}."
-                             .format(pipeline_scheduler))
-        self._pipeline_stages = pipeline_stages
-        self._pipeline_result_broadcast = pipeline_result_broadcast
-        self._pipeline_interleave = pipeline_interleave
-        self._pipeline_scheduler = pipeline_scheduler
+                             "'scheduler' must be '1f1b' , 'gpipe' , but got the value : {}."
+                             .format(scheduler))
+        self._pipeline_stages = stages
+        self._pipeline_result_broadcast = output_broadcast
+        self._pipeline_interleave = interleave
+        self._pipeline_scheduler = scheduler
 
     def comm_fusion(self, config):
         r"""
         Set fusion method for auto parallel.
 
         Args:
-            comm_fusion (dict): A dict contains the types and configurations for setting the communication fusion. each
+            config (dict): A dict contains the types and configurations for setting the communication fusion. each
                 communication fusion config has two keys: "mode" and "config".
                 It supports following communication fusion types and configurations:
 
@@ -334,7 +333,15 @@ class AutoParallel(Cell):
         self._dump_local_norm = True
 
     def dump_local_norm(self, file_path):
-        """Enable local norm printing with disk storage only (no console output)."""
+        """
+        Enable local norm printing with disk storage only (no console output).
+
+        Args:
+            file_path (str): The path to save local_norm.
+
+        Raises:
+            TypeError: If the type of 'file_path' is not str
+        """
         if not isinstance(file_path, str):
             raise TypeError("the argument 'file_path' must be str, but got the type : {} .".format(type(file_path)))
         self._dump_local_norm = True
@@ -362,12 +369,12 @@ class AutoParallel(Cell):
         """
         self._loss_repeated_mean = False
 
-    def transformer_opt(self, file_path=None):
+    def transformer_opt(self, path=None):
         r"""
         Check and set speedup config for auto parallel.
 
         Args:
-            parallel_speed_up_json_path(str): The path to the parallel speed up json file, configuration
+            path(str): The path to the parallel speed up json file, configuration
             can refer to `parallel_speed_up.json
             <https://gitee.com/mindspore/mindspore/blob/master/config/parallel_speed_up.json>`_ .
             If its value is None or '', it does not take effect. Default None.
@@ -435,9 +442,9 @@ class AutoParallel(Cell):
         # pylint: disable=W0212
         from mindspore.context import _context
         ctx = _context()
-        ctx._set_speedup_config_path(file_path)
-        self._transformer_opt_config = file_path
-        ctx.ascend_config['parallel_speed_up_json_path'] = file_path
+        ctx._set_speedup_config_path(path)
+        self._transformer_opt_config = path
+        ctx.ascend_config['parallel_speed_up_json_path'] = path
 
     def auto_memory_offload(self, config):
         self._memory_offload_config = config
