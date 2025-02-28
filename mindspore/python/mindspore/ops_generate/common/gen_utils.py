@@ -22,9 +22,12 @@ import pathlib
 import re
 import logging
 import json
+from collections import OrderedDict
+
 import yaml
 
 from . import gen_constants as K
+
 
 def convert_dtype_str(dtype_str):
     """
@@ -188,6 +191,7 @@ def get_assign_str_by_type_it(class_name, arg_info, arg_name, dtype):
 
 gen_file_lists = set()  # list of all generated files
 
+
 def save_file(save_path, file_name, content):
     """
     Save file to path. For existing file, only update the file if the content is different.
@@ -331,3 +335,14 @@ def init_args_signature_rw(args_signature):
             ref_list.extend(args_signature.rw_ref.replace(' ', '').split(","))
 
     return read_list, ref_list, write_list
+
+
+class OrderedSet:
+    def __init__(self):
+        self._dict = OrderedDict()
+
+    def add(self, item):
+        self._dict[item] = None
+
+    def __iter__(self):
+        return iter(self._dict.keys())
