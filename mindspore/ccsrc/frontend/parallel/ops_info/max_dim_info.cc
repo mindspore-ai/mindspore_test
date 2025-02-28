@@ -43,8 +43,8 @@ Status MaxDimInfo::GetAttrs() {
   }
   if (dim_opt >= rank || dim_opt < -rank) {
     MS_LOG(ERROR) << "For distributed operator " << name_ << ", the value of parameter 'dim' is out of range ["
-                  << (-rank) << ", " << (rank - 1) << "], the 'dim' is " << dim_ << " and the input.size() is " << rank
-                  << ".";
+                  << (-rank) << ", " << (rank - 1) << "], the 'dim' is " << dim_opt.value() << " and the input.size() "
+                  << "is " << rank << ".";
     return FAILED;
   }
   auto dim = dim_opt.value() < 0 ? dim_opt.value() + rank : dim_opt.value();

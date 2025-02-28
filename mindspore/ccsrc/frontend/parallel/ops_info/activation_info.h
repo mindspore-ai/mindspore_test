@@ -199,6 +199,7 @@ class CumOpBase : public ActivationBase {
   Status InferMirrorOps() override;
   Status GetAttrs() override;
   int64_t axis_ = -1;
+  bool is_axis_ = true;
 };
 
 class CumSumInfo : public CumOpBase {
@@ -207,6 +208,17 @@ class CumSumInfo : public CumOpBase {
              const PrimitiveAttrs &attrs)
       : CumOpBase(name, inputs_shape, outputs_shape, attrs, std::make_shared<CumSumCost>()) {}
   ~CumSumInfo() override = default;
+};
+
+class CumsumExtInfo : public CumOpBase {
+ public:
+  CumsumExtInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                const PrimitiveAttrs &attrs)
+      : CumOpBase(name, inputs_shape, outputs_shape, attrs, std::make_shared<CumsumExtCost>()) {
+    is_axis_ = False;
+  }
+  ~CumsumExtInfo() override = default;
+  ReplaceGraphPtr replace_graph(const CNodePtr &cnode) override;
 };
 
 class CumProdInfo : public CumOpBase {

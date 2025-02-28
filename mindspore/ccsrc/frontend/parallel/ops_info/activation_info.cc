@@ -385,8 +385,8 @@ Status CumOpBase::GetAttrs() {
                   << ", ops::GetOpInputsNum: " << ops::GetOpInputsNum(op_name);
     return FAILED;
   }
-
-  std::optional<int64_t> axis_opt = GetScalarValueFromInputs<int64_t>(input_value_, op_name, AXIS);
+  auto axis_name = is_axis_ ? AXIS : DIM;
+  std::optional<int64_t> axis_opt = GetScalarValueFromInputs<int64_t>(input_value_, op_name, axis_name);
   if (!axis_opt.has_value()) {
     MS_LOG(ERROR) << name_ << ": The type of axis has no value.";
     return FAILED;
@@ -427,7 +427,8 @@ Status CumOpBase::CheckStrategy(const StrategyPtr &strategy) {
   }
   auto axis_split = input_strategy[LongToSize(axis_)];
   if (axis_split != NO_SPLIT_STRATEGY) {
-    MS_LOG(ERROR) << "Currently, CumSum does not support the sharding strategies which splits axis.";
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the input's dimension 'dim'/'axis' can not be split, "
+                  << "the 'dim'/'axis' is " << axis_ << " and the shard strategy is " << input_strategy << ".";
     return FAILED;
   }
 
@@ -464,6 +465,14 @@ Status CumOpBase::InferMirrorOps() {
   OperatorVector op_for_axis;
   (void)mirror_ops_.emplace_back(std::move(op_for_axis));
   return SUCCESS;
+}
+
+ReplaceGraphPtr CumsumExtInfo::replace_graph(const CNodePtr &cnode) {
+  if (inputs_tensor_info_[kIndex0].tensor_layout().IsInterleavedParallel()) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "For distributed operator " << name_ << " it does not support "
+                                       << "interleaved parallel.";
+  }
+  return replace_graph_;
 }
 
 Status ActivationBase::InferDevMatrixShape() {
@@ -1291,6 +1300,7 @@ REGISTER(SortInfo);
 REGISTER(LogSoftmaxInfo);
 REGISTER(ReverseV2Info);
 REGISTER(CumSumInfo);
+REGISTER(CumsumExtInfo);
 REGISTER(CummaxInfo);
 REGISTER(CumminInfo);
 REGISTER(CumProdInfo);
