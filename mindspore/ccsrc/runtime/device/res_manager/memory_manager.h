@@ -132,6 +132,7 @@ class RES_EXPORT MemoryManager {
   }
   virtual void ResetMaxMemoryReserved() {}
   virtual void ResetMaxMemoryAllocated() {}
+  virtual size_t EmptyCache() { return -1L; }
 
  protected:
   virtual uint8_t *MallocStaticMem(size_t size, bool communication_mem, uint32_t graph_id) = 0;

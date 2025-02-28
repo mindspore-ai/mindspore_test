@@ -76,6 +76,8 @@ class AscendDeviceResManager : public DeviceResManager {
                        const std::vector<size_t> &keep_addr_sizes) const override;
   void DefragMemory() override;
 
+  size_t EmptyCache() override;
+
   size_t GetMaxUsedMemorySize() const override;
 
   // Relevant function to manage memory statistics

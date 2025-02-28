@@ -71,6 +71,14 @@ DefaultAscendMemoryPool::DefaultAscendMemoryPool() {
   SetEnableVmm(AscendVmmAdapter::GetInstance().IsEnabled());
 }
 
+size_t DefaultAscendMemoryPool::EmptyCache() {
+  LockGuard lock(AbstractDynamicMemPool::lock());
+  AbstractEnhancedDynamicMemPool::WaitPipelineHelper();
+  AbstractAscendMemoryPoolSupport::SyncAllStreams();
+  AbstractEnhancedDynamicMemPool::FreeIdleMemsByEagerFree();
+  return AbstractAscendMemoryPoolSupport::EmptyCache();
+}
+
 AscendMemoryTimeEvent::AscendMemoryTimeEvent(int32_t device_id, const MemoryTimeEventPtr &memory_time_event)
     : BaseReportData(device_id, static_cast<uint32_t>(profiler::ascend::ReportFileType::MEMORY_USAGE)),
       memory_time_event_(memory_time_event) {

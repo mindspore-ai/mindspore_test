@@ -238,6 +238,8 @@ class BACKEND_COMMON_EXPORT DeviceResManager {
   virtual void ResetMaxMemoryReserved() {}
   virtual void ResetMaxMemoryAllocated() {}
 
+  virtual size_t EmptyCache() { return -1L; }
+
   // Allocate host memory with raii and ref count
   virtual std::shared_ptr<void> AllocateHostMemory(size_t size) const {
     return std::shared_ptr<void>(::malloc(size), ::free);

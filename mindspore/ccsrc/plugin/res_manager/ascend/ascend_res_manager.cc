@@ -400,6 +400,13 @@ void AscendResManager::ResetMaxMemoryAllocated() {
   memory_pool->ResetMaxMemAllocated();
 }
 
+size_t AscendResManager::EmptyCache() {
+  MS_EXCEPTION_IF_NULL(mem_manager_);
+  auto memory_pool = mem_manager_->GetMemoryPool();
+  MS_EXCEPTION_IF_NULL(memory_pool);
+  return memory_pool->EmptyCache();
+}
+
 void AscendResManager::SwapIn(const void *host_ptr, void *device_ptr, size_t mem_size, void *stream) {
   (void)mem_manager_->SwapIn(host_ptr, device_ptr, mem_size, stream);
 }
