@@ -234,8 +234,8 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
           in-place operations yet.
 
     Warning:
-          To convert dtype of a `Tensor`, it is recommended to use `Tensor.astype()` rather than
-          `Tensor(sourceTensor, dtype=newDtype)`.
+        To convert dtype of a `Tensor`, it is recommended to use `Tensor.astype()` rather than
+        `Tensor(sourceTensor, dtype=newDtype)`.
 
     Args:
         input_data (Union[Tensor, float, int, bool, tuple, list, numpy.ndarray]): The data to be stored. It can be
@@ -251,9 +251,11 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             `init` is used for delayed initialization in parallel mode, when using init, `dtype` and `shape` must be
             set. Default: ``None`` .
         internal (bool): Whether it is created by the framework.
--            ``'True'`` means that the tensor is created by framework.
--            ``'False'`` means that the tensor is created by user.
--            Default: ``False`` .
+
+            - ``'True'`` means that the tensor is created by framework.
+            - ``'False'`` means that the tensor is created by user.
+
+            Default: ``False`` .
         const_arg (bool): Whether the tensor is a constant when it is used for the argument of a network.
             Default: ``False`` .
         device(str): This parameter is reserved and does not need to be configured.

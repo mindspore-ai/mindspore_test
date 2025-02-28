@@ -404,8 +404,8 @@ class EmbeddingService:
             default_key (int, optional): The key that number of occurrences does not reach the threshold,
                 return value of `default_key` as the corresponding value when look up embedding,
                 and default is ``None``.
-            default_value (int/float, optional): The key that number of occurrences does not reach the threshold,
-                return default value which length value is embedding dim, and default is ``None``.
+            default_value (Union[int, float], optional): The key that number of occurrences does not
+                reach the threshold, return default value which length value is embedding dim, and default is ``None``.
 
         Returns:
             CounterFilter object.
@@ -476,7 +476,7 @@ class EmbeddingService:
 
         Returns:
             EmbeddingVariableOption object, used as the ev_option parameter for
-            :func:`mindspore.mindspore.experimental.es.EmbeddingService.embedding_init` .
+            :func:`mindspore.experimental.es.EmbeddingService.embedding_init` .
 
         Raises:
             TypeError: If value of "filter_option" is not None and the type of "filter_option" is not CounterFilter.

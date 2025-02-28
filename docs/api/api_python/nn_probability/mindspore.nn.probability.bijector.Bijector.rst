@@ -17,11 +17,11 @@ mindspore.nn.probability.bijector.Bijector
 
         - 在初始化过程中，当 `dtype` 为None时，对参数的数据类型没有强制要求。但所有参数都应具有相同的float类型，否则将引发TypeError。
 
-            参数类型跟随输入值的数据类型，具体来说：
+          参数类型跟随输入值的数据类型，具体来说：
 
-            - 当 `dtype` 为None时，Bijector的参数将被强制转换为与输入值相同的类型。
+          - 当 `dtype` 为None时，Bijector的参数将被强制转换为与输入值相同的类型。
 
-            - 当指定了 `dtype` 时，参数和输入值的 `dtype` 必须相同，否则将引发TypeError。
+          - 当指定了 `dtype` 时，参数和输入值的 `dtype` 必须相同，否则将引发TypeError。
 
         - 只能使用mindspore.float_type数据类型来指定Bijector的 `dtype` 。
 

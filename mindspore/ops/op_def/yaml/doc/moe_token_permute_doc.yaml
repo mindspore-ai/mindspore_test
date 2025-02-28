@@ -47,7 +47,7 @@ moe_token_permute:
             ...                  [2, 2, 2],
             ...                  [3, 3, 3]], dtype=mindspore.bfloat16)
             >>> indices = Tensor([5, 0, 3, 1, 2, 4], dtype=mindspore.int32)
-            >>> out = ops.moe_untoken_permute(tokens, indices)
+            >>> out = ops.moe_token_permute(tokens, indices)
             >>> print(out)
             (Tensor(shape=[6, 3], dtype=BFloat16, value=
             [[7, 7, 7],

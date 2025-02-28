@@ -1983,17 +1983,18 @@ class Conv2DTranspose(Conv2DBackpropInput):
               If this mode is set, `pad` must be greater than or equal to 0.
 
             Please refer to :class:`mindspore.nn.Conv2dTranspose` for more specifications about `pad_mode`.
-        pad (Union[int, tuple[int]]): The pad value to be filled. Default: ``0`` . If `pad` is an integer, the paddings
-                    of top, bottom, left and right are the same, equal to pad. If `pad` is a tuple of four integers,
-                    the padding of top, bottom, left and right equal to pad[0], pad[1], pad[2], and pad[3]
-                    correspondingly.
-        pad_list (Union[str, None]): The pad list like (top, bottom, left, right). Default: ``None`` .
-        mode (int): Modes for different convolutions. The value is currently not used. Default: ``1`` .
-        stride (Union[int, tuple[int]]): The stride to be applied to the convolution filter. Default: ``1`` .
-        dilation (Union[int, tuple[int]]): Specifies the dilation rate to be used for the dilated convolution.
+        pad (Union[int, tuple[int]], optional): The pad value to be filled. Default: ``0`` .
+            If `pad` is an integer, the paddings
+            of top, bottom, left and right are the same, equal to pad. If `pad` is a tuple of four integers,
+            the padding of top, bottom, left and right equal to pad[0], pad[1], pad[2], and pad[3]
+            correspondingly.
+        pad_list (Union[str, None], optional): The pad list like (top, bottom, left, right). Default: ``None`` .
+        mode (int, optional): Modes for different convolutions. The value is currently not used. Default: ``1`` .
+        stride (Union[int, tuple[int]], optional): The stride to be applied to the convolution filter. Default: ``1`` .
+        dilation (Union[int, tuple[int]], optional): Specifies the dilation rate to be used for the dilated convolution.
             Default: ``1`` .
-        group (int): Splits input into groups. Default: ``1`` .
-        data_format (str): The format of input and output data. It should be ``'NHWC'`` or ``'NCHW'`` .
+        group (int, optional): Splits input into groups. Default: ``1`` .
+        data_format (str, optional): The format of input and output data. It should be ``'NHWC'`` or ``'NCHW'`` .
             Default is ``'NCHW'`` .
 
     Inputs:

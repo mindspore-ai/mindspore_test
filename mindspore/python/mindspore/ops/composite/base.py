@@ -922,9 +922,9 @@ class Map(Map_):
     Apply the operations to every element of the sequence.
 
     Args:
-        ops (Union[MultitypeFuncGraph, None]): `ops` is the operation to apply. If `ops` is `None`,
+        ops (Union[MultitypeFuncGraph, None], optional): `ops` is the operation to apply. If `ops` is `None`,
             the operations should be put in the first input of the instance. Default: ``None`` .
-        reverse (bool): The optimizer needs to be inverted in some scenarios to improve parallel performance,
+        reverse (bool, optional): The optimizer needs to be inverted in some scenarios to improve parallel performance,
             general users please ignore. `Reverse` is the flag to decide if apply the operation reversely.
             Only supported in graph mode. Default is ``False`` .
 
