@@ -816,8 +816,10 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
           `__init__` function. Then read the file content based on the line number of the object with the `__getitem__`
           function.
 
-        - Input `source` accepts user-defined Python functions (PyFuncs), Do not add network computing operators from
-          mindspore.nn and mindspore.ops or others into this `source` .
+        - Input `source` accepts user-defined Python functions (PyFuncs), and sets the multiprocessing start method
+          to `spawn` mode by ds.config.set_multiprocessing_start_method("spawn") with `python_ multiprocessing=True`
+          and `num_parallel_workers>1` supports adding network computing operators from mindspore.nn and mindspore.ops
+          or others into this `source`, otherwise adding to the `source` is not supported.
         - The parameters `num_samples` , `shuffle` , `num_shards` , `shard_id` can be used to control the sampler
           used in the dataset, and their effects when combined with parameter `sampler` are as follows.
 
