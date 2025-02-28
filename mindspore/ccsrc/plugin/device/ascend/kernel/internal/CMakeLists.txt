@@ -13,10 +13,10 @@ if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
     include_directories($ENV{MS_INTERNAL_KERNEL_HOME})
     include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/internal_kernel)
     include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/asdops/include)
-    include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/asdops/include/lcal)
+    include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/lccl/include)
 
     link_directories($ENV{MS_INTERNAL_KERNEL_HOME}/internal_kernel/lib)
-    link_directories($ENV{MS_INTERNAL_KERNEL_HOME}/asdops/lib)
+    link_directories($ENV{MS_INTERNAL_KERNEL_HOME}/lccl/lib)
 
     add_compile_definitions(ENABLE_INTERNAL_KERNELS)
     add_library(mindspore_internal_kernels SHARED ${INTERNAL_SRC_LIST})
@@ -25,5 +25,5 @@ if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
     set_target_properties(mindspore_internal_kernels PROPERTIES INSTALL_RPATH
         ${ORIGIN_PATH}:${ORIGIN_PATH}/ascend/:${ORIGIN_PATH}/../:${ME_KERNELS_INTERNAL_LIB_PATH})
     set_target_properties(lowlatency_collective PROPERTIES INSTALL_RPATH
-                    ${ORIGIN_PATH}/ms_kernels_internal/asdops/lib)
+                    ${ORIGIN_PATH}/ms_kernels_internal/lccl/lib)
 endif()
