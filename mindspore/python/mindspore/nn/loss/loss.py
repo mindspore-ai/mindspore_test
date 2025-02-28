@@ -735,6 +735,7 @@ class SoftMarginLoss(LossBase):
         - **logits** (Tensor) - Predict data. Data type must be float16, float32,
           bfloat16 (Atlas training series products are not supported).
         - **labels** (Tensor) - Ground truth data, with the same shape as `logits`.
+          In GE mode, the data type should be the same as `logits`.
 
     Outputs:
         Tensor or Scalar, if `reduction` is ``"none"``, its shape is the same as `logits`.
