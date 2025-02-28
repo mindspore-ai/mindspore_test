@@ -1080,9 +1080,9 @@ def inplace_update(x, v, indices):
         v (Tensor): A tensor with the same type as `x` and the same dimension size as `x` except
             the first dimension, which must be the same as the size of `indices`.
         indices (Union[int, tuple[int], Tensor]): Determines which rows of `x` to update with `v`,
-            should be several int. It is an int or tuple or tensor with one dimension,
-            whose value is in [-x.shape[0], x.shape[0]).
-            If it is a tuple or Tensor, the size of 'indices' should be the same as the first dimension of 'v'.
+            should be several int. It is an int or tuple or tensor with one dimension.
+            When it is a tuple or Tensor, the size is the same as the first dimension of `v`.
+            Takes values in the range [-N, N), where N is the size of the first dimension of `x`.
 
     Returns:
         Tensor, with the same type and shape as the input `x`.

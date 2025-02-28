@@ -1114,7 +1114,7 @@ class NeighborExchangeV2(Primitive):
 
 class CollectiveScatter(Primitive):
     r"""
-    Scatter tensor evently across the processes in the specified communication group.
+    Scatter input data evently across the processes in the specified communication group.
 
     Note:
         The interface behavior only support Tensor input and scatter evenly.

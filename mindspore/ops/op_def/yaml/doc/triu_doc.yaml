@@ -1,6 +1,6 @@
 triu:
     description: |
-        Returns the upper triangle part of `input` (elements that contain the diagonal and below),
+        Returns the upper triangle part of `input` (elements that contain the diagonal and upper part),
         and set the other elements to zeros.
 
         .. warning::

@@ -315,7 +315,7 @@ class NLLLoss(Cell):
     :math:`N` is the batch size, :math:`c` belonging to :math:`[0, C-1]` is class index,
     where :math:`C` is the number of classes.
 
-    If `reduction` is not ``None`` (default ``'mean'``), then
+    If `reduction` is not ``'None'`` (default ``'mean'``), then
 
     .. math::
 

@@ -66,8 +66,9 @@ def _cal_total_norm(x, norm_type):
 
 def clip_by_norm(x, max_norm, norm_type=2.0, error_if_nonfinite=False):
     r"""
-    Clip norm of a set of input Tensors. This norm is the result of calculating the norm of all elements in the input
-    separately, connecting them into a vector, and then calculating the norm.
+    The input Tensor is cropped based on norm. The computation is done by concatenating the norms of
+    all the input elementsinto a vector and then computing the norm of that vector.
+    The Tensor gradient value corresponding to the `identifier`.
 
     Note:
         The interface is suitable for gradient clipping scenarios, and only supports input of type float.

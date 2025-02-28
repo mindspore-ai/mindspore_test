@@ -104,11 +104,13 @@ def grad(fn, grad_position=0, weights=None, has_aux=False, return_ids=False):
 
     Args:
         fn (Union[Cell, Function]): Function to do GradOperation.
-        grad_position (Union[NoneType, int, tuple[int]]): Index to specify which inputs to be differentiated.
-            If int, get the gradient with respect to single input.
-            If tuple, get the gradients with respect to selected inputs. `grad_position` begins with 0.
-            If None, none derivative of any input will be figured out, and in this case, `weights` is required.
-            Default: ``0`` .
+        grad_position (Union[NoneType, int, tuple[int]]):
+            Index to specify which inputs to be differentiated. Default: ``0`` .
+
+            - If int, get the gradient with respect to single input.
+            - If tuple, get the gradients with respect to selected inputs. `grad_position` begins with 0.
+            - If None, none derivative of any input will be figured out, and in this case, `weights` is required.
+
         weights (Union[ParameterTuple, Parameter, list[Parameter]]): The parameters of the training network that need to
             calculate the gradient. `weights` can be got through `weights = net.trainable_params()` .
             Default: ``None`` .
@@ -379,10 +381,10 @@ def get_grad(gradients, identifier):
             :func:`mindspore.grad`.
 
     Returns:
-        The gradient of the tensor on the position or in the parameter that specified by the `identifier`.
+        The Tensor gradient value corresponding to the `identifier`.
 
     Raises:
-        RuntimeError: If gradient is not found.
+        RuntimeError: If gradient value corresponding to the `identifier` is not found.
         TypeError: If type of Args does not belong to required ones.
 
     Supported Platforms:

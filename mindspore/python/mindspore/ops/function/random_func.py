@@ -1270,7 +1270,7 @@ def rand_ext(*size, generator=None, dtype=None):
     Keyword Args:
         generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
             Default: ``None``, uses the default pseudorandom number generator.
-        dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype. If None,
+        dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype. If ``None``,
             `mindspore.float32` will be applied. Default: ``None`` .
 
     Returns:

@@ -18,5 +18,5 @@ mindspore.get_grad
         `identifier` 所对应的Tensor梯度值。
 
     异常：
-        - **RuntimeError** - 无法找到identifier所对应的梯度值。
+        - **RuntimeError** - 无法找到 `identifier` 所对应的梯度值。
         - **TypeError** - 入参类型不符合要求。

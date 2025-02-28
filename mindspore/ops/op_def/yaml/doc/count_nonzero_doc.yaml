@@ -1,6 +1,6 @@
 count_nonzero:
     description: |
-        Counts the number of non-zero values in the tensor input along the given dim. If no dim is specified then all non-zeros in the tensor are counted.
+        Count the number of non-zero elements in the Tensor `input` on a given dimension `dim`. If no dim is specified then all non-zeros in the tensor are counted.
         
         .. warning::
             This is an experimental API that is subject to change or deletion.
@@ -8,15 +8,17 @@ count_nonzero:
         Args:
             input (Tensor): Input data is used to count non-zero numbers. With shape
                 :math:`(*)` where :math:`*` means, any number of additional dimensions.
-            dim (Union[None, int, tuple(int), list(int)], optional): The dimension to reduce. Default value: ``None``, which indicates that the number of non-zero elements is calculated. If `dim` is ``None``, all elements in the tensor are summed up.
-                
+            dim (Union[None, int, tuple(int), list(int)], optional): Count the dimension of the number of non-zero elements.
+                Default value: ``None``, which indicates that the number of non-zero elements is calculated.
+                If `dim` is ``None``, all elements in the tensor are summed up.
+
         Returns:
             Tensor, number of nonzero element across dim specified by `dim`.
 
         Raises:
             TypeError: If `input` is not tensor.
             TypeError: If `dim` is not int, tuple(int), list(int) or None.
-            ValueError: If any value in `dim` is not in range [-x.ndim, x.ndim).
+            ValueError: If any value in `dim` is not in range :math:`[-input.ndim, input.ndim)`.
 
         Supported Platforms:
             ``Ascend``
