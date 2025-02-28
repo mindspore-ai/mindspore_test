@@ -132,8 +132,6 @@ def _tft_repair_callback(step, need_rebuild, error_ranks, repair_info, args, cb_
             dst_rank = repair_info["dst"][0]
             if send_recv(cb_params.train_network.trainable_params(), src_rank, dst_rank) != 0:
                 raise ValueError("Call send_recv failed.")
-    # reset arf flag after weights send recv
-    _set_recovery_context(is_arf=False)
     logger.warning("Finish _tft_repair_callback")
 
 
@@ -187,11 +185,9 @@ class TrainFaultTolerance(Callback):
         Required for Ascend graph mode only. And sink size must be less than or equal to 1.
 
     Args:
-        ctrl_rank_id (int): TFT controller's running rank_id, used for init TFT controller.
-        ctrl_ip (str): TFT controller's ip address, used for init TFT controller.
-        ctrl_port (int): TFT controller's ip port, used for init TFT controller and processor.
         ckpt_save_path (str): Checkpoint save directory when failure occurs, checkpoint file will save to directory
-           named ttp_saved_checkpoints-step_{cur_step_num} under this directory.
+           named ttp_saved_checkpoints-step_{cur_step_num} under this directory. Default: ``None``.
+        kwargs (dict): Other dictionary type parameters.
 
     Raises:
         Exception: TFT init failed.

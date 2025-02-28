@@ -48,6 +48,7 @@ _get_recovery_context_func_map = {
     "latest_ckpt_step": recovery_context().latest_ckpt_step,
     "need_reset": recovery_context().need_reset,
     "recovery_path": recovery_context().recovery_path,
+    "is_arf": recovery_context().is_arf,
     "ckpt_path": recovery_context().ckpt_path
 }
 

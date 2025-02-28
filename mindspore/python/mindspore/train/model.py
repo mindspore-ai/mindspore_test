@@ -951,6 +951,7 @@ class Model:
         cb_params.last_save_ckpt_step = None
         cb_params.latest_ckpt_file = None
         cb_params.loss_scale_mananger = self._loss_scale_manager
+        cb_params.is_arf = _get_recovery_context("is_arf")
 
         # build callback list
         with _CallbackManager(callbacks) as list_callback:
@@ -1055,6 +1056,9 @@ class Model:
                 need_exec_callback_step_end = not (self.enable_recovery and _get_recovery_context("need_reset"))
                 if need_exec_callback_step_end:
                     list_callback.on_train_step_end(run_context)
+                if cb_params.is_arf:
+                    cb_params.is_arf = False
+                    _set_recovery_context(is_arf=False)
 
                 # Embedding cache server only run one step.
                 if is_embedding_cache_server:
@@ -1266,6 +1270,9 @@ class Model:
                     self._loss_scale_manager.update_loss_scale(overflow)
 
                 list_callback.on_train_step_end(run_context)
+                if cb_params.is_arf:
+                    cb_params.is_arf = False
+                    _set_recovery_context(is_arf=False)
                 # Embedding cache server only run one step.
                 if is_embedding_cache_server:
                     break

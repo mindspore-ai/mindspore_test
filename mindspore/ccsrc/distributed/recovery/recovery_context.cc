@@ -152,9 +152,15 @@ void RecoveryContext::SetIsRebootNode(bool is_reboot) {
 }
 
 void RecoveryContext::SetIsArf(bool is_arf) {
-  MS_LOG(WARNING) << "Set is arf: " << is_arf;
+  MS_LOG(WARNING) << "Set is arf flag: " << is_arf;
   UCEException::GetInstance().set_is_arf(is_arf);
+  if (!is_arf) {
+    // reset reboot node flag when reset arf flag at train step end
+    UCEException::GetInstance().set_reboot_node(false);
+  }
 }
+
+bool RecoveryContext::GetIsArf() { return UCEException::GetInstance().is_arf(); }
 
 void RecoveryContext::ObtainGlobalLatestCkptInfo() {
   // 1. Obtain the step corresponding to the local latest checkpoint.

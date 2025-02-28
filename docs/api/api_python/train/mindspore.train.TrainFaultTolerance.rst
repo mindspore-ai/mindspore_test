@@ -1,7 +1,7 @@
 mindspore.train.TrainFaultTolerance
 ===================================
 
-.. py:class:: mindspore.train.TrainFaultTolerance(ctrl_rank_id, ctrl_ip, ctrl_port, ckpt_save_path)
+.. py:class:: mindspore.train.TrainFaultTolerance(ckpt_save_path=None, **kwargs)
 
     该回调函数用于开启 `MindIO的TTP特性 <https://www.hiascend.com/document/detail/zh/mindx-dl/60rc1/mindio/mindiottp/mindiottp001.html>`_，会嵌入训练的流程，完成TTP的初始化、上报、异常处理等操作。
 
@@ -9,10 +9,8 @@ mindspore.train.TrainFaultTolerance
         该特性仅支持Ascend后端的静态图模式，并且只支持sink_size值小于等于1的场景。
 
     参数：
-        - **ctrl_rank_id** (int) - TTP controller运行的rank_id，该参数用于启动TTP的controller。
-        - **ctrl_ip** (str) - TTP controller的IP地址，该参数用于启动TTP的controller。
-        - **ctrl_port** (int) - TTP controller的IP端口，该参数用于启动TTP的controller和processor。
-        - **ckpt_save_path** (str) -  异常发生时ckpt保存的路径，该路径是一个目录。保存时，会在该目录下创建新的名为‘ttp_saved_checkpoints-step_{cur_step_num}’目录。
+        - **ckpt_save_path** (str) -  异常发生时ckpt保存的路径，该路径是一个目录。保存时，会在该目录下创建新的名为‘ttp_saved_checkpoints-step_{cur_step_num}’目录。默认值为: ``None``。
+        - **kwargs** (dict) - 其他字典类型参数。
 
     异常：
         - **Exception** - TTP初始化失败，会对外抛Exception异常。
