@@ -256,6 +256,8 @@ class BACKEND_EXPORT MemBufAllocator {
   MemBuf *MallocExpandBlock(size_t size);
   const std::pair<size_t, size_t> FreeIdleMemsByEagerFree();
 
+  size_t ReleaseFreeBlocks();
+
   std::string DumpStateInfo() const;
   std::string DumpDebugInfo() const;
 
@@ -393,6 +395,8 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
   }
 
   const std::pair<size_t, size_t> FreeIdleMemsByEagerFree() override;
+
+  size_t ReleaseFreeBlocks() override;
 
   MemStat &mem_stat() { return mem_stat_; }
 

@@ -30,6 +30,7 @@ class AscendTwoPointerMemAdapter : public AscendMemAdapter {
   bool Initialize() override;
   bool DeInitialize() override;
   uint8_t *MallocStaticDevMem(size_t size, const std::string &tag = "") override;
+  bool FreeStaticDevMem(void *addr) override;
   uint8_t *MallocDynamicDevMem(size_t size, const std::string &tag = "") override;
   void ResetDynamicMemory() override;
   void SimulationInitialize() override;

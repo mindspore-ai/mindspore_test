@@ -324,6 +324,12 @@ class DefaultAscendMemoryPoolImpl : public DefaultAscendMemoryPool {
     return {0, 0};
   }
 
+  size_t release_free_blocks_{0};
+  size_t ReleaseFreeBlocks() override {
+    release_free_blocks_++;
+    return 0;
+  }
+
   size_t is_enable_time_event_{0};
   bool IsEnableTimeEvent() {
     is_enable_time_event_++;
@@ -531,6 +537,9 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
 
   enhanced_pool->FreeIdleMemsByEagerFree();
   EXPECT_EQ(pool->free_idle_mems_by_eager_free_.Get(), 1);
+
+  enhanced_pool->ReleaseFreeBlocks();
+  EXPECT_EQ(pool->release_free_blocks_, 1);
 
   EXPECT_EQ(pool->is_enable_time_event_, 3);
   enhanced_pool->IsEnableTimeEvent();

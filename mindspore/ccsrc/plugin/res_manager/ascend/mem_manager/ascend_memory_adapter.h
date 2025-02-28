@@ -54,6 +54,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendMemAdapter {
   virtual bool DeInitialize();
 
   virtual uint8_t *MallocStaticDevMem(size_t size, const std::string &tag = "") = 0;
+  virtual bool FreeStaticDevMem(void *addr) = 0;
   virtual uint8_t *MallocDynamicDevMem(size_t size, const std::string &tag = "") = 0;
   virtual void ResetDynamicMemory() = 0;
   virtual std::string DevMemStatistics() const = 0;

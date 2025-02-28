@@ -199,6 +199,11 @@ void AscendDeviceResManager::ResetMaxMemoryAllocated() {
   return ascend_res_manager_->ResetMaxMemoryAllocated();
 }
 
+size_t AscendDeviceResManager::EmptyCache() {
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->EmptyCache();
+}
+
 void AscendDeviceResManager::SwapIn(const void *host_ptr, void *device_ptr, size_t mem_size, void *stream) {
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
   return ascend_res_manager_->SwapIn(host_ptr, device_ptr, mem_size, stream);

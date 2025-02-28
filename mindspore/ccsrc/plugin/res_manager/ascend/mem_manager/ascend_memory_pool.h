@@ -54,6 +54,8 @@ class ASCEND_RES_MANAGER_EXPORT DefaultAscendMemoryPool : public AbstractAscendM
   }
 
   const bool IsEnableEagerFree() const override { return AbstractAscendMemoryPoolSupport::IsEnableEagerFree(); }
+
+  size_t EmptyCache() override;
 };
 using DefaultAscendMemoryPoolPtr = std::shared_ptr<DefaultAscendMemoryPool>;
 
@@ -95,6 +97,8 @@ class ASCEND_RES_MANAGER_EXPORT DefaultEnhancedAscendMemoryPool : public Default
   void DumpDynamicMemPoolStateInfo() override;
 
   const std::pair<size_t, size_t> FreeIdleMemsByEagerFree() override;
+
+  size_t ReleaseFreeBlocks() override { return instance_->ReleaseFreeBlocks(); }
 
   // Proxy wrapper for AbstractAscendMemoryPoolSupport
   void ResetIdleMemBuf() const override { instance_->ResetIdleMemBuf(); }
@@ -220,6 +224,8 @@ class ASCEND_RES_MANAGER_EXPORT DefaultEnhancedAscendMemoryPool : public Default
     return instance_->GenFreeMemoryTimeEvent(addr);
   }
 
+  size_t EmptyCache() override { return instance_->EmptyCache(); }
+
  protected:
   void SetRankIdGetter(const std::function<size_t()> &rank_id_getter) override;
 
@@ -249,6 +255,8 @@ class ASCEND_RES_MANAGER_EXPORT BestFitAscendMemoryPool : public AbstractAscendM
   std::string GetMemoryPoolType() const override { return "BestFitAscendMemoryPool"; }
 
   void ReportMemoryTimeEvent(const MemoryTimeEventPtr &time_event) override;
+
+  size_t EmptyCache() override;
 };
 
 class ASCEND_RES_MANAGER_EXPORT AscendMemoryPool {

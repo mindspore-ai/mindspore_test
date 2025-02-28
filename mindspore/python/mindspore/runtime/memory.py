@@ -16,7 +16,7 @@
 """Memory interfaces."""
 
 from mindspore._c_expression import RuntimeConf, DeviceManagerConf, _memory_stats, \
-    _reset_max_mem_reserved, _reset_max_mem_allocated, DeviceContextManager
+    _reset_max_mem_reserved, _reset_max_mem_allocated, DeviceContextManager, _empty_cache
 from mindspore import _checkparam as Validator
 from mindspore._checkparam import args_type_check
 from mindspore import log as logger
@@ -212,10 +212,24 @@ def empty_cache():
     will be optimized.
 
     Note:
-        Currently, the MindSpore memory pool does not have the function of releasing memory fragments.
-        This interface is reserved but implemented as an empty method and prompted in log mode when using.
+        Empty cache may help reduce the fragmentation of device memory.
+        However, it may have a negative impact on network performance. Please use it with caution.
+        The api is supported on Ascend only and with limitations:
+          - Not support ``disable ge kernel``.
+
+    Returns:
+        int, in Byte.
+
+    Supported Platforms:
+        ``Ascend``
     """
-    logger.warning(f"The empty_cache operation is currently not supported.")
+    device_target = ms.context.get_context("device_target")
+    if not _is_initialized(device_target):
+        logger.warning(f"Backend {device_target} is not initialized yet. Return 0.")
+        return 0
+    release_size = _empty_cache(device_target)
+    logger.info(f"The empty_cache operation is executed successfully, release size: {release_size}.")
+    return release_size
 
 
 def reset_peak_memory_stats():

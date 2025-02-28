@@ -283,6 +283,38 @@ const std::pair<size_t, size_t> MemBufAllocator::FreeIdleMemsByEagerFree() {
   return std::make_pair(eager_free_size, real_free_size);
 }
 
+size_t MemBufAllocator::ReleaseFreeBlocks() {
+  size_t release_size = 0;
+  for (auto iter = mem_blocks_.begin(); iter != mem_blocks_.end();) {
+    auto mem_block = *iter;
+    MemBuf mem_buf(mem_block->size_, mem_block->addr_, mem_block->stream_id_, mem_block, MemBufStatus::kMemBufIdle);
+    // Judge if mem block in free mem bufs.
+    auto &&it = free_mem_bufs_.find(&mem_buf);
+    if (it == free_mem_bufs_.end()) {
+      iter++;
+      continue;
+    }
+    auto mem_buf_it = *it;
+    if (mem_buf_it->addr_ == mem_block->addr_ && mem_buf_it->size_ == mem_block->size_) {
+      MS_LOG(INFO) << "Release mem block : " << mem_block->ToJson() << ".";
+      bool ret = mem_block_cleaner_(mem_block);
+      if (!ret) {
+        MS_LOG(WARNING) << "Clean mem block : " << mem_block->ToJson() << " failed.";
+        iter++;
+        continue;
+      }
+      free_mem_bufs_.erase(it);
+      delete mem_buf_it;
+      release_size += mem_block->size_;
+      delete mem_block;
+      iter = mem_blocks_.erase(iter);
+    } else {
+      iter++;
+    }
+  }
+  return release_size;
+}
+
 std::string MemBufAllocator::DumpStateInfo() const {
   std::stringstream ss;
   ss << "Dump state info for " << BriefInfo() << "\n";
@@ -1038,6 +1070,11 @@ void AbstractDynamicMemPool::DumpDynamicMemPoolDebugInfo() {
 }
 
 const std::pair<size_t, size_t> AbstractDynamicMemPool::FreeIdleMemsByEagerFree() {
+  if (!IsEnableVmm() && !IsEnableEagerFree()) {
+    MS_LOG(WARNING) << "FreeIdleMemsByEagerFree is not allowed since vmm is not enabled.";
+    return std::make_pair(0L, 0L);
+  }
+
   MS_LOG(INFO) << "Free idle mems by eager free start, allocator size : " << stream_id_allocators_.size() << ".";
   eager_free_count_++;
 
@@ -1061,6 +1098,16 @@ const std::pair<size_t, size_t> AbstractDynamicMemPool::FreeIdleMemsByEagerFree(
 
   mem_stat_.eager_free_size_ += total_eager_free_size;
   return {total_eager_free_size, total_real_free_size};
+}
+
+size_t AbstractDynamicMemPool::ReleaseFreeBlocks() {
+  MS_LOG(INFO) << "Release free blocks start.";
+  size_t release_free_size = 0;
+  for (auto &stream_id_allocator : stream_id_allocators_) {
+    release_free_size += stream_id_allocator.second->ReleaseFreeBlocks();
+  }
+  MS_LOG(INFO) << "Release free blocks size : " << release_free_size << ".";
+  return release_free_size;
 }
 
 // The statistics information.

@@ -39,10 +39,33 @@ uint8_t *AscendDynamicMemAdapter::MallocStaticDevMem(size_t size, const std::str
   auto addr = MallocFromRts(size);
   if (addr != nullptr) {
     has_alloc_size += size;
-    static_memory_block_list_.push_back(std::make_shared<MemoryBlock>(addr, size, tag));
+    (void)static_memory_blocks_.emplace(addr, std::make_shared<MemoryBlock>(addr, size, tag));
     MS_LOG(INFO) << "MallocStaticDevMem success, size:" << size << ", tag:" << tag;
   }
   return addr;
+}
+
+bool AscendDynamicMemAdapter::FreeStaticDevMem(void *addr) {
+  MS_LOG(INFO) << "FreeStaticDevMem addr:" << addr << ".";
+  std::lock_guard<std::mutex> locker(mutex_);
+  if (addr == nullptr) {
+    MS_LOG(ERROR) << "addr is nullptr.";
+    return false;
+  }
+  auto &&iter = static_memory_blocks_.find(addr);
+  if (iter == static_memory_blocks_.end()) {
+    MS_LOG(ERROR) << "addr is not in static memory blocks, addr:" << addr << ".";
+    return false;
+  }
+  auto mem_block = iter->second;
+  auto ret = FreeToRts(mem_block->mem_ptr, mem_block->mem_size);
+  if (!ret) {
+    MS_LOG(ERROR) << "Free memory failed.";
+    return false;
+  }
+  MS_LOG(INFO) << "Free memory success, addr:" << addr << ", size:" << static_memory_blocks_[addr] << ".";
+  static_memory_blocks_.erase(addr);
+  return true;
 }
 
 bool AscendDynamicMemAdapter::Initialize() {
@@ -59,19 +82,19 @@ bool AscendDynamicMemAdapter::Initialize() {
 }
 
 bool AscendDynamicMemAdapter::DeInitialize() {
-  for (const auto &blk : static_memory_block_list_) {
+  for (const auto &[addr, blk] : static_memory_blocks_) {
     if (blk->mem_ptr != nullptr) {
       auto ret = FreeToRts(blk->mem_ptr, blk->mem_size);
       if (!ret) {
         MS_LOG(ERROR) << "Free memory failed.";
         return false;
       }
-      MS_LOG(INFO) << "Free memory success, size:" << blk->mem_size << ", tag:" << blk->mem_tag;
+      MS_LOG(INFO) << "Free memory success, addr:" << addr << ", size:" << blk->mem_size << ", tag:" << blk->mem_tag;
     }
   }
   (void)AscendMemAdapter::DeInitialize();
   has_alloc_size = 0;
-  static_memory_block_list_.clear();
+  static_memory_blocks_.clear();
   initialized_ = false;
   return true;
 }
