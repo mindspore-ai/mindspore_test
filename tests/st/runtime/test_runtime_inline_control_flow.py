@@ -736,7 +736,8 @@ def test_include_dynamic_shape():
         if x < 3:
             y = y * 2
         else:
-            z1 = y / 6
+            z = y / 6
+            z1 = ops.cast(z, y.dtype)
             z2 = y * 2
             z3 = y - Tensor([[6, 12, 18], [24, 30, 36]])
             z4 = y + Tensor([[1, 2, 3], [4, 5, 6]])
