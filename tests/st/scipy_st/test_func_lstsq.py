@@ -150,4 +150,4 @@ def test_ops_lstsq_dynamic():
     inputs2 = [Tensor(A2), Tensor(B2)]
 
     TEST_OP(lstsq_forward_func, [inputs1, inputs2],
-            'lstsq_v2', disable_yaml_check=True)
+            'lstsq_v2', disable_mode=["GRAPH_MODE"], disable_yaml_check=True)

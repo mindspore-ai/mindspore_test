@@ -21,6 +21,7 @@
 #include <string>
 #include <tuple>
 #include <vector>
+#include <set>
 #include "runtime/graph_scheduler/actor/kernel_actor.h"
 #include "runtime/graph_scheduler/actor/actor_set.h"
 
@@ -62,6 +63,8 @@ class BACKEND_EXPORT PreLaunchComm {
  private:
   PreLaunchComm() = default;
   ~PreLaunchComm() = default;
+
+  std::set<std::string> is_pre_launch_comm_;
 };
 
 }  // namespace runtime

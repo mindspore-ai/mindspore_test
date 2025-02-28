@@ -709,6 +709,7 @@ def test_return_nested_dict_with_parameter_constant2():
         def construct(self):
             return self.z
 
+    ms.set_context(jit_config={"jit_level": "O0"})
     net = Net()
     out = net()
     assert out == [{'params': [net.x, net.y], 'a': 1, 'b': False}, {'params': net.x, 'a': 2}]

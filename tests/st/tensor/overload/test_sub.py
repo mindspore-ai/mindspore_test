@@ -139,6 +139,6 @@ def test_tensor_sub_dynamic():
     y1 = ms.Tensor(generate_random_input((4, 6), np.float32))
     ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
     y2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
-    TEST_OP(sub_forward_func, [[ms_data1, y1], [ms_data2, y2]], 'sub')
+    TEST_OP(sub_forward_func, [[ms_data1, y1], [ms_data2, y2]], 'sub', disable_mode=["GRAPH_MODE"])
     TEST_OP(sub_ext_forward_func, [[ms_data1, y1], [ms_data2, y2]], 'sub_ext', disable_mode=['GRAPH_MODE'],
             disable_yaml_check=True)

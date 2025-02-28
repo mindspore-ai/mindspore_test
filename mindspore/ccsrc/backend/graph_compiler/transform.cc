@@ -591,7 +591,7 @@ BackendPtr CreateBackend() {
   } else {
     backend = std::make_shared<Backend>(name);
   }
-  backend->set_jit_setting(session::JitSetting::ParseJitSetting());
+  backend->set_backend_jit_config(backend::BackendJitConfig::ParseBackendJitConfig());
 
   return backend;
 }

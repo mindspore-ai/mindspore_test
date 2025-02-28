@@ -270,10 +270,8 @@ void CreateKernelTensor(const VectorRef &args) {
 }
 
 MSBackend::~MSBackend() {
-  if (enable_graph_pipeline_) {
-    GilReleaseWithCheck gil_release;
-    runtime::Pipeline::Get().frontend_stage()->Wait();
-  }
+  GilReleaseWithCheck gil_release;
+  runtime::Pipeline::Get().frontend_stage()->Wait();
 }
 
 runtime::ActorSet *MSBackend::RealCompileGraphBeforeRunActor(BackendGraphId graph_id,
@@ -291,12 +289,13 @@ runtime::ActorSet *MSBackend::RealCompileGraphBeforeRunActor(BackendGraphId grap
     const auto &graph = graphs[i];
     MS_EXCEPTION_IF_NULL(graph);
     graph->set_flag(kFlagPyNativeRunInGraph, true);
-    graph->set_flag(kFlagIsPynativeBpropGraph, root_graph_->has_flag(kFlagIsPynativeBpropGraph));
+    graph->set_flag(kFlagIsPynativeBpropGraph,
+                    graph_compiler_info.root_func_graph_->has_flag(kFlagIsPynativeBpropGraph));
     if (graph->is_any_type_input()) {
       continue;
     }
     auto input_tensors = GetRunGraphInputs(graph_compiler_info, args);
-    if (enable_graph_pipeline_) {
+    if (graph_compiler_info.enable_graph_pipeline_) {
       for (const auto &tensors : input_tensors) {
         for (const auto &tensor : tensors) {
           if (tensor) {
@@ -316,8 +315,8 @@ runtime::ActorSet *MSBackend::RealCompileGraphBeforeRunActor(BackendGraphId grap
     pynative::GraphAdapter::RemoveUnusedValueNodes(graph);
     // PyNative use kernel graph will result in front node and back node is the same; But in pynative task sink, backend
     // still create new kernel graph
-    if (root_graph_->has_flag(kFlagIsPyNativeBpropKernelGraph) &&
-        !pynative::GraphAdapter::PyNativeEnableTaskSink(root_graph_)) {
+    if (graph_compiler_info.root_func_graph_->has_flag(kFlagIsPyNativeBpropKernelGraph) &&
+        !pynative::GraphAdapter::PyNativeEnableTaskSink(graph_compiler_info.root_func_graph_)) {
       graph->CacheGraphOutputToFrontNodeWithIndex({graph->output()}, {graph->output()});
     } else {
       graph->CacheGraphOutputToFrontNodeWithIndex({graph->output()}, graph->front_outputs());
@@ -329,13 +328,13 @@ runtime::ActorSet *MSBackend::RealCompileGraphBeforeRunActor(BackendGraphId grap
   }
 
   ParseControlNodes(graph_compiler_info);
-  UpdateGraphCompilerInfo(graph_id);
+  UpdateGraphCompilerInfo(graph_compiler_info);
   auto actor_set = runtime::GraphScheduler::GetInstance().Transform(graph_compiler_info);
   MS_EXCEPTION_IF_NULL(actor_set);
   constexpr auto kKernelActorThreshold = 5000;
   // Turning off multithreading may cause stack overflow in control flow scenarios.
   if (no_multi_graph && actor_set->kernel_actors_.size() < kKernelActorThreshold &&
-      root_graph_->has_flag(kFlagIsPynativeBpropGraph)) {
+      graph_compiler_info.root_func_graph_->has_flag(kFlagIsPynativeBpropGraph)) {
     // Multithreading can cause spikes in memory usage and performance fluctuations.
     actor_set->is_multi_thread_execution_ = false;
     MS_LOG(INFO) << "Actor Multithreading is turned off!";
@@ -364,22 +363,19 @@ void MSBackend::RunGraphByActors(BackendGraphId graph_id, const GraphCompilerInf
 
   // KernelByKernel: The size of control_nodes is at least 1 since there is return node in the graph.
   // GraphMode: No control nodes.
-  bool no_multi_graph = control_nodes_.size() <= 1 && graphs.size() == 1;
+  bool no_multi_graph = graph_compiler_info.control_nodes_.size() <= 1 && graphs.size() == 1;
   auto actor_set = runtime::GraphScheduler::GetInstance().Fetch(graph_id);
   if (actor_set == nullptr) {
     actor_set = RealCompileGraphBeforeRunActor(graph_id, graph_compiler_info, args, no_multi_graph);
-    first_step_ = true;
   }
   MS_EXCEPTION_IF_NULL(actor_set);
 
-  if (enable_graph_pipeline_) {
+  if (graph_compiler_info.enable_graph_pipeline_) {
     // 1. Construct stub output.
-    MS_EXCEPTION_IF_NULL(root_graph_);
-    const auto output_node = root_graph_->output();
-    MS_EXCEPTION_IF_NULL(output_node);
+    MS_EXCEPTION_IF_NULL(graph_compiler_info.output_node_);
     runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kOutputProcess,
                                        "MakeStubNode");
-    auto stub_output_pair = stub::MakeStubNode(output_node->abstract());
+    auto stub_output_pair = stub::MakeStubNode(graph_compiler_info.output_node_->abstract());
     if (stub_output_pair.second) {
       MS_LOG(DEBUG) << "Enable pynative graph pipeline for actor set: " << graph_id;
       // 2. Async run graph.
@@ -397,7 +393,7 @@ void MSBackend::RunGraphByActors(BackendGraphId graph_id, const GraphCompilerInf
       runtime::Pipeline::Get().frontend_stage()->Push(run_graph_task);
       return;
     }
-    enable_graph_pipeline_ = false;
+    graph_compiler_info.enable_graph_pipeline_ = false;
     MS_LOG(INFO)
       << "Failed to create Stub output, encountered an unsupported output type for graph: " << graph_id
       << ". Currently, only output types that include: Tensor, Scalar, String, fixed-length Sequence, are "
@@ -410,18 +406,14 @@ void MSBackend::RunGraphByActors(BackendGraphId graph_id, const GraphCompilerInf
 void MSBackend::RunActorSet(BackendGraphId graph_id, runtime::ActorSet *actor_set,
                             const GraphCompilerInfo &graph_compiler_info, const VectorRef &args, bool no_multi_graph,
                             VectorRef *outputs) {
-  if (!first_step_) {
-    WaitTaskFinish();
-    WaitMultiStream(graph_compiler_info);
-    ContiguousArgs(args, graph_compiler_info);
-    WaitTaskFinish();
-  } else {
-    first_step_ = false;
-  }
+  WaitTaskFinish();
+  WaitMultiStream(graph_compiler_info);
+  ContiguousArgs(args, graph_compiler_info);
+  WaitTaskFinish();
 
   auto graphs = graph_compiler_info.graphs_;
   auto &device_contexts = graph_compiler_info.device_contexts_;
-  if (root_graph_->has_flag(kFlagIsPynativeBpropGraph)) {
+  if (graph_compiler_info.root_func_graph_->has_flag(kFlagIsPynativeBpropGraph)) {
     for (size_t i = 0; i < graphs.size(); ++i) {
       graph_adapter_.UpdateForwardOutputInBpropGraph(graphs[i], device_contexts[i], no_multi_graph);
       pynative::GraphAdapter::UpdateDynamicValueNodeAbstract(graphs[i]);
@@ -453,13 +445,13 @@ void MSBackend::RunActorSet(BackendGraphId graph_id, runtime::ActorSet *actor_se
   MS_EXCEPTION_IF_NULL(graph_compiler_);
   graph_compiler_->Summary(graph_compiler_info.graphs_);
 
-  auto output = root_graph_->output();
-  MS_LOG(DEBUG) << "Current out " << output->DebugString();
-  if (root_graph_->has_flag(kFlagIsPyNativeBpropKernelGraph)) {
-    MS_EXCEPTION_IF_NULL(output_node_);
-    root_graph_->set_output(output_node_);
+  MS_LOG(DEBUG) << "Current out " << graph_compiler_info.output_node_->DebugString();
+  if (graph_compiler_info.root_func_graph_->has_flag(kFlagIsPyNativeBpropKernelGraph)) {
+    MS_EXCEPTION_IF_NULL(graph_compiler_info.output_node_);
+    graph_compiler_info.root_func_graph_->set_output(graph_compiler_info.output_node_);
   }
-  ConstructOutputs(actor_set, outputs, root_graph_);
+  ConstructOutputs(actor_set, outputs, graph_compiler_info.root_func_graph_,
+                   graph_compiler_info.enable_graph_pipeline_);
   actor_set->output_actor_->FreeSummaryNodeMem();
   runtime::GraphScheduler::GetInstance().ClearActorData(actor_set);
   // Close abstract_lock for dynamic_shape
@@ -504,16 +496,18 @@ void MSBackend::RunGraphBySingleOp(const GraphCompilerInfo &graph_compiler_info,
       cnode_ref_count = iter->second;
     }
 
-    MS_EXCEPTION_IF_NULL(root_graph_);
-    if (root_graph_->has_flag(kFlagIsPynativeBpropGraph)) {
-      graph_compiler_->CalculateForwardOpOutputCount(graph, inputs[graph_index], &forward_op_output_tensor_id_,
+    MS_EXCEPTION_IF_NULL(graph_compiler_info.root_func_graph_);
+    if (graph_compiler_info.root_func_graph_->has_flag(kFlagIsPynativeBpropGraph)) {
+      // Cache forward op output value node tensor ref count of kernels for back propagation graph in PyNative mode.
+      std::map<std::string, size_t> forward_op_output_tensor_id;
+      graph_compiler_->CalculateForwardOpOutputCount(graph, inputs[graph_index], &forward_op_output_tensor_id,
                                                      parameter_index);
-      op_backend_.set_forward_tensor_ref_count(forward_op_output_tensor_id_);
+      op_backend_.set_forward_tensor_ref_count(forward_op_output_tensor_id);
     }
 
     GilReleaseWithCheck gil_release;
-    auto is_dynamic = root_graph_->has_flag(kFlagPyNativeBpropGraphIsDynamic);
-    bool has_bprop_cut = root_graph_->has_flag(kFlagPyNativeBpropGraphWithBpropCut);
+    auto is_dynamic = graph_compiler_info.root_func_graph_->has_flag(kFlagPyNativeBpropGraphIsDynamic);
+    bool has_bprop_cut = graph_compiler_info.root_func_graph_->has_flag(kFlagPyNativeBpropGraphWithBpropCut);
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
     const std::string &device_target = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
@@ -604,16 +598,6 @@ void MSBackend::SyncStream() {
   if (!ret) {
     MS_LOG(EXCEPTION) << "Sync Stream failed";
   }
-}
-
-void MSBackend::ClearResource() {
-  graph_compiler_ = std::make_shared<GraphCompiler>();
-  graph_id_to_device_context_.clear();
-  func_graph_to_kernel_graph_ids_.clear();
-  graph_info_to_device_context_.clear();
-  control_nodes_.clear();
-  actor_to_graph_compiler_info_.clear();
-  cnode_ref_counts_.clear();
 }
 
 KernelGraphPtr MSBackend::GetGraphById(GraphId graph_id) {

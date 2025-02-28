@@ -246,6 +246,7 @@ def test_dynamic_conv2d():
     Description: Input dim of `H `or `W` is unknown. Conv2d's attr[pad] set to "valid".
     Expectation: Assert that results are consistent with fixed shape.
     """
+    ms.set_context(jit_config={"jit_level": "O0"})
     batch_size = 16
     dynamic_range = range(220, 224)
     data_type = np.float32

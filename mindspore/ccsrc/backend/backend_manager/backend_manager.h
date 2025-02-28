@@ -54,7 +54,9 @@ class BACKEND_MANAGER_EXPORT BackendManager {
 
   // The processing entry of graph building by the given backend.
   // The return value are the selected backend type and the built graph id.
-  std::pair<BackendType, BackendGraphId> Build(const FuncGraphPtr &func_graph, const std::string &backend_name = "");
+  std::pair<BackendType, BackendGraphId> Build(const FuncGraphPtr &func_graph,
+                                               const BackendJitConfig &backend_jit_config,
+                                               const std::string &backend_name = "");
 
   // The processing entry of graph running by the backend_type and graph_id
   // which are generated through the graph Build interface above.
@@ -72,11 +74,19 @@ class BACKEND_MANAGER_EXPORT BackendManager {
   string ExportIR(const FuncGraphPtr &anf_graph, const std::string &file_name, bool is_save_to_file, IRFormat ir_format,
                   const std::string &backend_name = "");
 
+  void SetPyBoostRegistered(const IsPyBoostRegisteredFunc &func, const RunPyBoostCallFunc &call_func) {
+    func_ = func;
+    call_func_ = call_func;
+  }
+
  private:
   BackendManager() = default;
   ~BackendManager() = default;
 
   BackendBase *GetOrCreateBackend(BackendType backend_type);
+
+  IsPyBoostRegisteredFunc func_;
+  RunPyBoostCallFunc call_func_;
 
   // BackendType -> BackendCreator.
   std::map<BackendType, BackendCreator> backend_creators_;

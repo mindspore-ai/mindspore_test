@@ -86,7 +86,8 @@ struct BACKEND_EXPORT GraphCompilerInfo {
                     const KernelMapPosition &origin_outputs_order, size_t outputs_num, size_t inputs_num,
                     const std::string &name, bool need_erase, GraphExecutionStrategy strategy, CompileFunc compile_func,
                     const std::string &graph_phase)
-      : graphs_(graphs),
+      : root_func_graph_(nullptr),
+        graphs_(graphs),
         device_contexts_(device_contexts),
         tensors_mask_(tensors_mask),
         input_tensors_(input_tensors),
@@ -94,15 +95,20 @@ struct BACKEND_EXPORT GraphCompilerInfo {
         control_node_parser_(parser),
         origin_parameters_order_(origin_parameters_order),
         origin_outputs_order_(origin_outputs_order),
+        output_node_(nullptr),
         outputs_num_(outputs_num),
         inputs_num_(inputs_num),
         name_(name),
+        id_(backend_graph_id_++),
         need_erase_(need_erase),
+        enable_graph_pipeline_(false),
         exist_flatten_concat_(false),
         strategy_(strategy),
+        is_pynative_mode_(false),
         compile_func_(std::move(compile_func)),
         graph_phase_(graph_phase) {}
   ~GraphCompilerInfo();
+  FuncGraphPtr root_func_graph_;
   std::vector<KernelGraphPtr> graphs_;
   std::vector<DeviceContext *> device_contexts_;
   std::vector<std::vector<int64_t> *> tensors_mask_;
@@ -112,15 +118,23 @@ struct BACKEND_EXPORT GraphCompilerInfo {
   std::vector<AnfNodePtr> origin_parameters_order_;
   mutable mindspore::HashMap<AnfNodePtr, std::vector<std::pair<KernelWithIndex, KernelWithIndex>>>
     origin_parameters_to_backend_parameters_;
-  KernelMapPosition origin_outputs_order_;
+  mutable KernelMapPosition origin_outputs_order_;
+  AnfNodePtr output_node_;
   size_t outputs_num_;
   size_t inputs_num_;
   std::string name_;
+  uint32_t id_;
   bool need_erase_;
+  // Whether this root_graph can enable single op and graph pipeline or not.
+  mutable bool enable_graph_pipeline_;
   mutable bool exist_flatten_concat_;
   mutable GraphExecutionStrategy strategy_;
+  bool is_pynative_mode_;
   CompileFunc compile_func_;
   std::string graph_phase_;
+  std::map<FuncGraphPtr, std::vector<std::vector<GraphId>>> func_graph_to_kernel_graph_ids_;
+
+  static uint32_t backend_graph_id_;
 };
 
 class GraphCompiler {
@@ -131,7 +145,7 @@ class GraphCompiler {
   // Construct kernel graph from anf nodes list and compile kernel graph in Graph mode,
   // the detailed implementation of compiling graph is in 'CompileGraphImpl'.
   GraphId CompileGraph(const GraphSegmentPtr &segment, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                       const DeviceContext *device_context, const session::JitSetting &jit_setting,
+                       const DeviceContext *device_context, const backend::BackendJitConfig &backend_jit_config,
                        device::RunMode run_mode, bool run_in_pynative = false);
 
   GraphId CompileGraph(const KernelGraphPtr &kernel_graph, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
@@ -139,13 +153,13 @@ class GraphCompiler {
 
   // For Pyantive dynamic shape or dynamic structure
   GraphId CompileDynamicGraph(const GraphSegmentPtr &segment, const AnfNodePtrList &outputs,
-                              const DeviceContext *device_context, const session::JitSetting &jit_setting);
+                              const DeviceContext *device_context, const backend::BackendJitConfig &backend_jit_config);
   GraphId CompileDynamicGraph(const KernelGraphPtr &kernel_graph, const DeviceContext *device_context);
 
   // Construct kernel graph from function graph and compile kernel graph in Graph mode,
   // the detailed implementation of compiling graph is in 'CompileGraphImpl'.
   GraphId CompileWholeGraphForGraphRunMode(const FuncGraphPtr &func_graph, const DeviceContext *device_context,
-                                           const session::JitSetting &jit_setting);
+                                           const backend::BackendJitConfig &backend_jit_config);
 
   // Construct kernel graph from function graph and compile kernel graph in Graph mode,
   // the detailed implementation of compiling graph is in 'CompileGraphImpl'.
@@ -229,7 +243,7 @@ class GraphCompiler {
   void SetGraphDependency(const KernelGraphPtr &graph, const GraphSegmentPtr &segment) const;
   KernelGraphPtr ConstructKernelGraphForGraphRunMode(const FuncGraphPtr &func_graph,
                                                      const DeviceContext *device_context,
-                                                     const session::JitSetting &jit_setting,
+                                                     const backend::BackendJitConfig &backend_jit_config,
                                                      std::vector<KernelGraphPtr> *const all_graphs,
                                                      bool *const need_return_ahead);
   KernelGraphPtr ConvertGraphToGeNode(KernelGraphPtr kernel_graph, device::DeviceType device_target,

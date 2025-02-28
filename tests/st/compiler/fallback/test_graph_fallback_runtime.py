@@ -295,6 +295,7 @@ def test_dynamic_shape_tensor():
     Description: Set PyExecute output type by the annotation from comment.
     Expectation: No error.
     """
+    ms.set_context(jit_config={"jit_level": "O0"})
     net = CreateDynTensor()
     x = Tensor(dtype=ms.int32, input_data=[2, 2])
     out = net(x)
@@ -395,6 +396,7 @@ def test_make_tensor_with_dynamic_shape_dtype():
     Description: Test tensor API, in which the PyExecute output type is set by the annotation from comment.
     Expectation: No error.
     """
+    ms.set_context(jit_config={"jit_level": "O0"})
     net = MakeTensorWithShapeDtype()
     x = Tensor(dtype=ms.int32, input_data=[2, 2])
     out = net(x)
@@ -561,6 +563,7 @@ def test_pyexecute_raise_error_with_dynamic_length_sequence():
             _check_dim_shape_valid(x1, idx2)
             return x1
 
+    ms.set_context(jit_config={"jit_level": "O0"})
     net = InnerNet()
     input_x = Tensor(np.arange(6).reshape(3, 2).astype(np.float32))
     ret = net(input_x)

@@ -134,7 +134,7 @@ std::shared_ptr<session::KernelGraph> BackendCommon::Compile(const FuncGraphPtr 
 
   auto compiler = std::make_shared<compile::GraphCompiler>();
   auto graph_id = compiler->CompileGraph(segment, std::make_pair(inputs, outputs), device_context.get(),
-                                         session::JitSetting(), device::RunMode::kKernelMode, false);
+                                         backend::BackendJitConfig(), device::RunMode::kKernelMode, false);
   return compiler->Fetch(graph_id);
 }
 }  // namespace mindspore

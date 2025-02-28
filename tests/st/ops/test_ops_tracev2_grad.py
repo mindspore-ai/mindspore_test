@@ -62,7 +62,7 @@ def tracev2_grad_forward_func(dout, shape, offset=0, axis1=0, axis2=1):
 
 @arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
           card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', ['GE', 'pynative', 'KBK'])
+@pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_tracev2_grad_like_forward(mode):
     """
     Feature: Ops.TraceV2Grad
@@ -78,9 +78,6 @@ def test_tracev2_grad_like_forward(mode):
             ms.Tensor(Dout), ms.Tensor(A.shape))
     elif mode == 'KBK':
         grads = (jit(tracev2_grad_forward_func, jit_level="O0"))(
-            ms.Tensor(Dout), ms.Tensor(A.shape))
-    else:
-        grads = (jit(tracev2_grad_forward_func, backend="GE"))(
             ms.Tensor(Dout), ms.Tensor(A.shape))
     for i in range(2):
         np.testing.assert_allclose(

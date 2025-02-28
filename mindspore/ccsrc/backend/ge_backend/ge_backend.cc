@@ -288,15 +288,32 @@ bool IsControlFlowGraph(const FuncGraphPtr &func_graph) {
   return false;
 }
 
+void UnifyIR(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
+  static const std::map<std::string, std::string> kOpListToTupleNames = {
+    {mindspore::kMakeListNewOpName, mindspore::kMakeTupleOpName},
+    {mindspore::kListGetItemOpName, mindspore::kTupleGetItemOpName},
+    {mindspore::kListSetItemOpName, mindspore::kTupleSetItemOpName}};
+  // List name --> tuple name.
+  auto &&op_name = common::AnfAlgo::GetCNodeName(cnode);
+  auto iter = kOpListToTupleNames.find(op_name);
+  if (iter != kOpListToTupleNames.end()) {
+    common::AnfAlgo::SetNodeAttr(kAttrOpAdaptationProcessed, MakeValue(true), cnode);
+    cnode->set_input(0, mindspore::NewValueNode(std::make_shared<Primitive>(iter->second)));
+    // Reset full scope name.
+    cnode->set_fullname_with_scope("");
+    MS_LOG(INFO) << "Rename op from " << iter->first << " to " << iter->second << " for op "
+                 << cnode->fullname_with_scope() << ", debug name:" << cnode->DebugString();
+    op_name = iter->second;
+  }
+}
+
 }  // namespace
 mindspore::HashSet<const tensor::Tensor *> GEBackend::weights_need_reprepare_ = {};
 BackendGraphId GEBackend::backend_graph_id_ = 0;
 
 GEBackend::GEBackend() {
   Init();
-  const std::vector<PrimitivePtr> cut_list = {prim::kPrimReturn,    prim::kPrimPartial,  prim::kPrimSwitch,
-                                              prim::kPrimMakeTuple, prim::kPrimBpropCut, prim::kPrimSwitchLayer};
-  graph_partition_ = std::make_shared<compile::GraphPartition>(cut_list, "ge");
   graph_compiler_ = std::make_shared<mindspore::ge_backend::runtime::GraphCompiler>();
   mindspore::ge_backend::runtime::GraphScheduler::GetInstance().Initialize();
 #ifdef ENABLE_DEBUGGER
@@ -321,7 +338,7 @@ void GEBackend::Init() {
   device_context->Initialize();
 }
 
-BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph) {
+BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
   WaitTaskFinish();
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_LOG(INFO) << "Status record: start compile function graph: " << func_graph->ToString();
@@ -359,9 +376,9 @@ BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph) {
   // check if supported in ge_backend, and the compile_type
   auto compile_type = CheckGraph(func_graph);
   if (compile_type == CompileType::WholeGraph) {
-    PROF_START(CompileSubGraph);
-    auto graph_id = CompileWholeGraph(func_graph);
-    PROF_END(CompileSubGraph);
+    PROF_START(CompileWholeGraph);
+    auto graph_id = CompileWholeGraph(func_graph, backend_jit_config);
+    PROF_END(CompileWholeGraph);
     PROF_END(compile_backend_graph);
     (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCompileGraphs, start_time,
                                     profiler::GetClockSyscnt(), 1);
@@ -370,12 +387,18 @@ BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph) {
   }
   if (compile_type == CompileType::SubGraph) {
     PROF_START(CompileSubGraph);
-    auto graph_id = CompileSubGraph(func_graph);
+    auto graph_id = CompileSubGraph(func_graph, backend_jit_config);
     PROF_END(CompileSubGraph);
     PROF_END(compile_backend_graph);
     (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCompileGraphs, start_time,
                                     profiler::GetClockSyscnt(), 1);
     graph_compile_type_[graph_id] = compile_type;
+
+    // Clear the temp members.
+    graph_id_to_device_context_.clear();
+    func_graph_to_kernel_graph_ids_.clear();
+    control_nodes_.clear();
+
     return graph_id;
   }
   MS_LOG(EXCEPTION)
@@ -418,7 +441,7 @@ void GEBackend::UnifyMindIR(const FuncGraphPtr &root_graph) const {
 
       const auto &cnode = node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(cnode);
-      // UnifyIR(cnode);
+      UnifyIR(cnode);
       for (auto &input : cnode->inputs()) {
         MS_EXCEPTION_IF_NULL(input);
         if (input->seen_ == seen || !input->isa<CNode>()) {
@@ -708,7 +731,8 @@ void GEBackend::InitCommGroup(const FuncGraphPtr &root_graph) {
   instance->Clear();
 }
 
-BackendGraphId GEBackend::CompileWholeGraph(const FuncGraphPtr &func_graph) {
+BackendGraphId GEBackend::CompileWholeGraph(const FuncGraphPtr &func_graph,
+                                            const BackendJitConfig &backend_jit_config) {
   MS_EXCEPTION_IF_NULL(func_graph);
 
   MS_LOG(INFO) << "Status record: start compile graph." << func_graph->ToString();
@@ -717,7 +741,7 @@ BackendGraphId GEBackend::CompileWholeGraph(const FuncGraphPtr &func_graph) {
 
   auto kg_mgr = std::make_shared<session::KernelGraphMgr>();
   KernelGraphPtr root_graph =
-    kg_mgr->ConstructKernelGraph(func_graph, &all_graphs, device::DeviceType::kAscend, jit_setting_);
+    kg_mgr->ConstructKernelGraph(func_graph, &all_graphs, device::DeviceType::kAscend, backend_jit_config);
   MS_EXCEPTION_IF_NULL(root_graph);
   for (const auto &graph : all_graphs) {
     MS_EXCEPTION_IF_NULL(graph);
@@ -760,6 +784,7 @@ BackendGraphId GEBackend::CompileWholeGraph(const FuncGraphPtr &func_graph) {
   ++backend_graph_id_;
   graph_map_[cur_backend_graph_id] = root_graph;
   graph_run_iter_[root_graph] = 0;
+  root_graph_map_[cur_backend_graph_id] = func_graph;
   MS_LOG(INFO) << "Status record: end compile graph. backend_graph_id: " << cur_backend_graph_id
                << ", kernel graph id: " << root_graph->graph_id();
   return cur_backend_graph_id;
@@ -1513,13 +1538,12 @@ void GEBackend::RunWholeGraph(BackendGraphId graph_id, const VectorRef &inputs, 
   // output ->std::vector<tensor::TensorPtr> *outputs
   std::vector<tensor::TensorPtr> output_tensors;
   ConstructOutputs(func_graph, &output_tensors, device_context);
-  if (output_tensors.empty()) {
-    return;
+  if (!output_tensors.empty()) {
+    size_t output_position = 0;
+    std::vector<tensor::TensorPtr> tuple_tensors;
+    // std::vector<tensor::TensorPtr> ->VectorRef *outputs
+    ConstructOutputs(root_graph_map_[graph_id]->output(), output_tensors, &output_position, outputs, &tuple_tensors);
   }
-  size_t output_position = 0;
-  std::vector<tensor::TensorPtr> tuple_tensors;
-  // std::vector<tensor::TensorPtr> ->VectorRef *outputs
-  ConstructOutputs(func_graph->output(), output_tensors, &output_position, outputs, &tuple_tensors);
 
 // for data_dump
 #ifndef ENABLE_SECURITY
@@ -1728,12 +1752,12 @@ std::string GEBackend::ExportIR(const FuncGraphPtr &anf_graph, const std::string
   return device_context->graph_executor_->ExportDFGraph(file_name, anf_graph, is_save_to_file);
 }
 
-BackendGraphId GEBackend::CompileSubGraph(const FuncGraphPtr &func_graph) {
+BackendGraphId GEBackend::CompileSubGraph(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_LOG(INFO) << "Status record: start compile graph: " << func_graph->ToString();
   // compile graph
   auto manager = func_graph->manager();
-  CompileGraph(func_graph);
+  CompileGraph(func_graph, backend_jit_config);
   auto mscontext = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(mscontext);
   MS_EXCEPTION_IF_NULL(manager);
@@ -1749,12 +1773,12 @@ BackendGraphId GEBackend::CompileSubGraph(const FuncGraphPtr &func_graph) {
     if (sub_graph != func_graph && sub_graph != nullptr && !sub_graph->has_flag(kFlagJitCallGraph) &&
         !skip_inline_graph) {
       MS_LOG(INFO) << "Compile sub graph " << sub_graph->ToString();
-      CompileGraph(sub_graph);
+      CompileGraph(sub_graph, backend_jit_config);
     }
   }
 
   // Construct the graph compiler info.
-  auto graph_compiler_info = ConstructGraphCompilerInfo(func_graph);
+  auto graph_compiler_info = ConstructGraphCompilerInfo(func_graph, backend_jit_config);
   MS_LOG(INFO) << "Status record: construct the graph compiler info.";
   MS_EXCEPTION_IF_NULL(graph_compiler_info);
   if ((!graph_compiler_info->graphs_.empty()) || graph_compiler_info->control_nodes_.size() > 1) {
@@ -1782,12 +1806,15 @@ BackendGraphId GEBackend::CompileSubGraph(const FuncGraphPtr &func_graph) {
   return cur_graph_id;
 }
 
-void GEBackend::CompileGraph(const FuncGraphPtr &func_graph) {
+void GEBackend::CompileGraph(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
   MS_EXCEPTION_IF_NULL(func_graph);
   uint64_t start_time = profiler::GetClockSyscnt();
   // Split graph to segments.
-  MS_EXCEPTION_IF_NULL(graph_partition_);
-  const auto &segments = graph_partition_->Partition(func_graph);
+  const std::vector<PrimitivePtr> cut_list = {prim::kPrimReturn,    prim::kPrimPartial,  prim::kPrimSwitch,
+                                              prim::kPrimMakeTuple, prim::kPrimBpropCut, prim::kPrimSwitchLayer};
+  auto graph_partition = std::make_shared<compile::GraphPartition>(cut_list, "ge");
+  MS_EXCEPTION_IF_NULL(graph_partition);
+  const auto &segments = graph_partition->Partition(func_graph);
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph,
                                   mindspore::ge_backend::runtime::kStageGraphPartition, start_time,
                                   profiler::GetClockSyscnt(), 1);
@@ -1795,11 +1822,11 @@ void GEBackend::CompileGraph(const FuncGraphPtr &func_graph) {
 
   // Foreach the segments to compile graph.
   for (const auto &segment : segments) {
-    CompileGraphFromSegment(segment);
+    CompileGraphFromSegment(segment, backend_jit_config);
   }
 }
 
-void GEBackend::CompileGraphFromSegment(const GraphSegmentPtr &segment) {
+void GEBackend::CompileGraphFromSegment(const GraphSegmentPtr &segment, const BackendJitConfig &backend_jit_config) {
   MS_EXCEPTION_IF_NULL(segment);
   // Compile the normal nodes, which doesn't contain the cut node.
   if (segment->nodes_.empty()) {
@@ -1826,7 +1853,7 @@ void GEBackend::CompileGraphFromSegment(const GraphSegmentPtr &segment) {
     device_context->Initialize();
 
     GraphId graph_id = graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), device_context,
-                                                     jit_setting_, device::RunMode::kGraphMode, false);
+                                                     backend_jit_config, device::RunMode::kGraphMode, false);
     auto new_fg = graph_compiler_->Fetch(graph_id);
     MS_EXCEPTION_IF_NULL(new_fg);
 
@@ -1855,7 +1882,7 @@ void GEBackend::CompileGraphFromSegment(const GraphSegmentPtr &segment) {
 }
 
 std::shared_ptr<mindspore::ge_backend::runtime::GraphCompilerInfo> GEBackend::ConstructGraphCompilerInfo(
-  const FuncGraphPtr &root_graph) {
+  const FuncGraphPtr &root_graph, const BackendJitConfig &backend_jit_config) {
   MS_EXCEPTION_IF_NULL(root_graph);
   MS_EXCEPTION_IF_NULL(graph_compiler_);
 
@@ -1888,10 +1915,11 @@ std::shared_ptr<mindspore::ge_backend::runtime::GraphCompilerInfo> GEBackend::Co
       context_ptr->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
     strategy = mindspore::ge_backend::runtime::GraphExecutionStrategy::kPipelineWithExecutionOrder;
   }
-  auto compile_func = [graph_compiler = this->graph_compiler_, jit_setting = this->jit_setting_](
+  auto compile_func = [graph_compiler = this->graph_compiler_, backend_jit_config](
                         const GraphSegmentPtr &segment, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
                         const DeviceContext *device_context, device::RunMode run_mode) -> KernelGraphPtr {
-    auto graph_id = graph_compiler->CompileGraph(segment, io_nodes, device_context, jit_setting, run_mode, false);
+    auto graph_id =
+      graph_compiler->CompileGraph(segment, io_nodes, device_context, backend_jit_config, run_mode, false);
     return graph_compiler->Fetch(graph_id);
   };
 

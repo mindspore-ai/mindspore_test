@@ -62,6 +62,8 @@
 
 namespace mindspore {
 namespace runtime {
+uint32_t GraphCompilerInfo::backend_graph_id_ = 0;
+
 namespace {
 void SetSummaryNodesRefCount(const KernelGraph *graph) {
   MS_EXCEPTION_IF_NULL(graph);
@@ -621,8 +623,9 @@ KernelGraphPtr GraphCompiler::ConvertGraphToGeNode(KernelGraphPtr kernel_graph, 
 
 GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
                                     const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                                    const DeviceContext *device_context, const session::JitSetting &jit_setting,
-                                    device::RunMode run_mode, bool run_in_pynative) {
+                                    const DeviceContext *device_context,
+                                    const backend::BackendJitConfig &backend_jit_config, device::RunMode run_mode,
+                                    bool run_in_pynative) {
   MS_EXCEPTION_IF_NULL(segment);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_LOG(INFO) << "Status record: start compile graph.";
@@ -631,7 +634,7 @@ GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
   // Generate kernel graph.
   uint64_t start_time = profiler::GetClockSyscnt();
   PROF_START(ConstructKernelGraph);
-  auto kernel_graph = session_->ConstructKernelGraph(nodes, io_nodes.second, device_target, jit_setting, true,
+  auto kernel_graph = session_->ConstructKernelGraph(nodes, io_nodes.second, device_target, backend_jit_config, true,
                                                      IsEnableZeroCopy(run_in_pynative));
   PROF_END(ConstructKernelGraph);
   auto actual_run_mode = run_mode;
@@ -772,7 +775,7 @@ GraphCompilerInfo::~GraphCompilerInfo() {
 
 GraphId GraphCompiler::CompileDynamicGraph(const GraphSegmentPtr &segment, const AnfNodePtrList &outputs,
                                            const DeviceContext *device_context,
-                                           const session::JitSetting &jit_setting) {
+                                           const backend::BackendJitConfig &backend_jit_config) {
   MS_EXCEPTION_IF_NULL(segment);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_LOG(INFO) << "Status record: start compile graph.";
@@ -782,7 +785,8 @@ GraphId GraphCompiler::CompileDynamicGraph(const GraphSegmentPtr &segment, const
   // Generate kernel graph.
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageConstructKernelGraph,
                                   profiler::GetClockSyscnt(), 0, 1);
-  const auto &kernel_graph = session_->ConstructKernelGraph(nodes, outputs, device_target, jit_setting, true, false);
+  const auto &kernel_graph =
+    session_->ConstructKernelGraph(nodes, outputs, device_target, backend_jit_config, true, false);
   return CompileDynamicGraph(kernel_graph, device_context);
 }
 
@@ -821,14 +825,14 @@ GraphId GraphCompiler::CompileDynamicGraph(const KernelGraphPtr &kernel_graph, c
 
 KernelGraphPtr GraphCompiler::ConstructKernelGraphForGraphRunMode(const FuncGraphPtr &func_graph,
                                                                   const DeviceContext *device_context,
-                                                                  const session::JitSetting &jit_setting,
+                                                                  const backend::BackendJitConfig &backend_jit_config,
                                                                   std::vector<KernelGraphPtr> *const all_graphs,
                                                                   bool *const need_return_ahead) {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(all_graphs);
   auto device_target = device_context->GetDeviceType();
-  KernelGraphPtr root_graph = session_->ConstructKernelGraph(func_graph, all_graphs, device_target, jit_setting);
+  KernelGraphPtr root_graph = session_->ConstructKernelGraph(func_graph, all_graphs, device_target, backend_jit_config);
   MS_EXCEPTION_IF_NULL(root_graph);
   for (const auto &graph : *all_graphs) {
     MS_EXCEPTION_IF_NULL(graph);
@@ -977,7 +981,7 @@ bool GraphCompiler::CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &fun
 
 GraphId GraphCompiler::CompileWholeGraphForGraphRunMode(const FuncGraphPtr &func_graph,
                                                         const DeviceContext *device_context,
-                                                        const session::JitSetting &jit_setting) {
+                                                        const backend::BackendJitConfig &backend_jit_config) {
   MS_EXCEPTION_IF_NULL(session_);
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(device_context);
@@ -995,8 +999,8 @@ GraphId GraphCompiler::CompileWholeGraphForGraphRunMode(const FuncGraphPtr &func
     root_graph = graphs[0];
     use_cache_to_compile_graph_ = true;
   } else {
-    root_graph =
-      ConstructKernelGraphForGraphRunMode(func_graph, device_context, jit_setting, &all_graphs, &need_return_ahead);
+    root_graph = ConstructKernelGraphForGraphRunMode(func_graph, device_context, backend_jit_config, &all_graphs,
+                                                     &need_return_ahead);
   }
   GraphId graph_id = root_graph->graph_id();
   if (need_return_ahead) {

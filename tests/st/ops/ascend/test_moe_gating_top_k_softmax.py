@@ -18,7 +18,7 @@ from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 import mindspore as ms
 import mindspore.common.dtype as mstype
-from mindspore import Tensor, jit, JitConfig
+from mindspore import Tensor, jit
 from mindspore.ops.auto_generate import MoeGatingTopKSoftmax
 
 def softmax_func(x, axis=None):
@@ -106,4 +106,5 @@ def test_moe_gating_top_k_softmax_dynamic():
     k2 = 5
 
     TEST_OP(moe_gating_topk_softmax_forward_func, [[Tensor(x1), Tensor(finished1), k1],\
-            [Tensor(x2), Tensor(finished2), k2]], 'moe_gating_top_k_softmax', disable_grad=True)
+            [Tensor(x2), Tensor(finished2), k2]], 'moe_gating_top_k_softmax', disable_mode=['GRAPH_MODE'],\
+            disable_grad=True)

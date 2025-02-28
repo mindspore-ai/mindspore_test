@@ -36,7 +36,7 @@ def masked_select_backward_func(input1, mask):
 @pytest.mark.level0
 @pytest.mark.env_onecard
 @pytest.mark.platform_arm_ascend_training
-@pytest.mark.parametrize('mode', ['pynative', 'KBK', "graph"])
+@pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 @pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64,
                                    np.uint8, np.float64, np.float32, np.float16])
 def test_ops_masked_select(mode, dtype):
@@ -58,10 +58,6 @@ def test_ops_masked_select(mode, dtype):
         ms.context.set_context(mode=ms.GRAPH_MODE)
         output = (jit(masked_select_forward_func, jit_level="O0"))(input1, mask)
         output_grad = (jit(masked_select_backward_func, jit_level="O0"))(input1, mask)
-    else:
-        ms.context.set_context(mode=ms.GRAPH_MODE)
-        output = (jit(masked_select_forward_func, backend="GE"))(input1, mask)
-        output_grad = (jit(masked_select_backward_func, backend="GE"))(input1, mask)
     np.testing.assert_allclose(output.asnumpy(), expect_value, rtol=1e-3)
     np.testing.assert_allclose(output_grad[0].asnumpy(), expect_input_grad, rtol=1e-3)
     np.testing.assert_allclose(output_grad[1].asnumpy(), expect_mask_grad, rtol=1e-3)

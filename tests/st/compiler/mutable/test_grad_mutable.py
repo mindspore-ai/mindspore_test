@@ -551,7 +551,7 @@ def test_grad_mutable_unused_dict_tensor():
             gradient_function = self.grad_op(self.net)
             return gradient_function(z)
 
-    context.set_context(mode=context.GRAPH_MODE)
+    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
     t = mutable({'x1': Tensor([[4.0, 6.0, 6.0], [4.0, 6.0, 6.0]], dtype=mstype.float32),
                  'x2': Tensor([[2.0, 2.0, 2.0], [2.0, 2.0, 2.0]], dtype=mstype.float32),
                  'x3': Tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]], dtype=mstype.float32)})

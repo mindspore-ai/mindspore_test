@@ -1615,9 +1615,9 @@ void AnfRuntimeAlgorithm::InsertMakeTupleForOutput(const NotNull<KernelGraphPtr>
 std::string AnfAlgo::GetJitLevel(const FuncGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
   if (graph->cast<KernelGraphPtr>()) {
-    const auto &jit_setting = graph->cast<KernelGraphPtr>()->jit_setting();
-    if (!jit_setting.jit_level.empty()) {
-      return jit_setting.jit_level;
+    const auto &backend_jit_config = graph->cast<KernelGraphPtr>()->backend_jit_config();
+    if (!backend_jit_config.jit_level.empty()) {
+      return backend_jit_config.jit_level;
     }
   }
 
@@ -1630,9 +1630,9 @@ std::string AnfAlgo::GetJitLevel(const FuncGraphPtr &graph) {
 std::string AnfAlgo::GetBackend(const FuncGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
   if (graph->cast<KernelGraphPtr>()) {
-    const auto &jit_setting = graph->cast<KernelGraphPtr>()->jit_setting();
-    if (!jit_setting.backend.empty()) {
-      return jit_setting.backend;
+    const auto &backend_jit_config = graph->cast<KernelGraphPtr>()->backend_jit_config();
+    if (!backend_jit_config.backend.empty()) {
+      return backend_jit_config.backend;
     }
   }
 
@@ -1644,8 +1644,8 @@ std::string AnfAlgo::GetBackend(const FuncGraphPtr &graph) {
 
 bool AnfAlgo::GetDisableFormatTransform(const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
-  const auto &jit_setting = graph->jit_setting();
-  auto disable_format_transform = jit_setting.disable_format_transform;
+  const auto &backend_jit_config = graph->backend_jit_config();
+  auto disable_format_transform = backend_jit_config.disable_format_transform;
   if (disable_format_transform == false) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
@@ -1656,8 +1656,8 @@ bool AnfAlgo::GetDisableFormatTransform(const KernelGraphPtr &graph) {
 
 std::string AnfAlgo::GetExecOrderAlgo(const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
-  const auto &jit_setting = graph->jit_setting();
-  auto exec_order = jit_setting.exec_order;
+  const auto &backend_jit_config = graph->backend_jit_config();
+  auto exec_order = backend_jit_config.exec_order;
   if (exec_order.empty()) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
@@ -1668,15 +1668,15 @@ std::string AnfAlgo::GetExecOrderAlgo(const KernelGraphPtr &graph) {
 
 std::map<std::string, std::map<std::string, std::string>> AnfAlgo::GetGeOptions(const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
-  const auto &jit_setting = graph->jit_setting();
-  return jit_setting.ge_options;
+  const auto &backend_jit_config = graph->backend_jit_config();
+  return backend_jit_config.ge_options;
 }
 
 std::map<std::string, std::string> AnfAlgo::GetGeOptions(std::string option_level) {
   std::map<std::string, std::string> ret;
-  const auto &jit_setting = session::JitSetting::ParseJitSetting();
-  if (jit_setting.ge_options.find(option_level) != jit_setting.ge_options.end()) {
-    ret = jit_setting.ge_options.at(option_level);
+  const auto &backend_jit_config = backend::BackendJitConfig::ParseBackendJitConfig();
+  if (backend_jit_config.ge_options.find(option_level) != backend_jit_config.ge_options.end()) {
+    ret = backend_jit_config.ge_options.at(option_level);
   }
 
   if (ret.empty()) {

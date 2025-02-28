@@ -79,7 +79,7 @@ TEST_F(GraphCompilerTest, CompileGraph) {
   DeviceContextKey device_context_key{"CPU", 0};
   auto device_context = std::make_shared<TestDeviceContext>(device_context_key);
   auto graph_id = compiler->CompileGraph(segment, std::make_pair(inputs, outputs), device_context.get(),
-                                         session::JitSetting(), device::RunMode::kKernelMode, false);
+                                         backend::BackendJitConfig(), device::RunMode::kKernelMode, false);
   const auto &kernel_graph = compiler->Fetch(graph_id);
   ASSERT_EQ(3, kernel_graph->execution_order().size());
 }

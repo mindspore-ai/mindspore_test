@@ -1928,6 +1928,12 @@ py::object GraphExecutorPy::RunInner(const py::tuple &args, const py::object &ph
   }
   ProcessVmArg(args, phase, &execute_info->arg_list);
   // Start to run phase.
+  ResourcePtr resource = GetResource(phase);
+  MS_EXCEPTION_IF_NULL(resource);
+  if (resource->HasResult(kNoBackend)) {
+    MS_LOG(INFO) << "No backend.";
+    return py::none();
+  }
   compile::VmEvalFuncPtr run = GetVmEvalFunc(phase);
   if (run == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "Can't find run graph func for " << phase;
@@ -1972,8 +1978,7 @@ void GraphExecutorPy::BuildGraph(const py::dict &init_params, const std::string 
 
   std::map<std::string, std::shared_ptr<Tensor>> init_tensors{};
   ConvertObjectToTensors(init_params, &init_tensors, info_.at(phase)->func_graph);
-  const std::string &new_backend_env = common::GetEnv("MS_NEW_BACKEND");
-  if (!new_backend_env.empty()) {
+  if (UseNewBackend()) {
     backend::BackendManager::GetInstance().ConvertIR(info_.at(phase)->func_graph, init_tensors,
                                                      backend::IRFormat::kAir);
     return;
@@ -2189,14 +2194,26 @@ bool InitExecDatasetVm(const std::string &queue_name, int64_t size, int64_t batc
   MS_EXCEPTION_IF_NULL(backend);
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  // The data set graph compiling and running of mindRT.
-  if (context_ptr->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
 #if defined(__linux__) && defined(WITH_BACKEND)
-    if (ps::PSContext::instance()->is_worker() && ps::PSContext::instance()->cache_enable()) {
-      distributed::DataQueueManager::GetInstance().CreateDataQueue(queue_name, size, 128);
-    }
+  if (ps::PSContext::instance()->is_worker() && ps::PSContext::instance()->cache_enable()) {
+    distributed::DataQueueManager::GetInstance().CreateDataQueue(queue_name, size, 128);
+  }
 #endif
 
+  if (UseNewBackend()) {
+    VectorRef args;
+    if (need_run) {
+      VectorRef outputs;
+      const auto &backend_jit_config = backend::BackendJitConfig::ParseBackendJitConfig();
+      auto backend_ret = backend::BackendManager::GetInstance().Build(func_graph, backend_jit_config);
+      backend::BackendManager::GetInstance().Run(backend_ret.first, backend_ret.second, args, &outputs);
+    }
+    ConfigManager::GetInstance().set_iter_num(queue_name, size);
+    return true;
+  }
+
+  // The data set graph compiling and running of mindRT.
+  if (context_ptr->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
     const auto &mindrt_backend = std::dynamic_pointer_cast<compile::MindRTBackend>(backend);
     MS_EXCEPTION_IF_NULL(mindrt_backend);
     SetRunMode(func_graph, mindrt_backend.get());
@@ -2332,8 +2349,7 @@ void GraphExecutorPy::ExportGraph(const std::string &file_name, const std::strin
   MS_EXCEPTION_IF_NULL(func_graph);
 
   string save_str;
-  const std::string &new_backend_env = common::GetEnv("MS_NEW_BACKEND");
-  if (!new_backend_env.empty()) {
+  if (UseNewBackend()) {
     save_str =
       backend::BackendManager::GetInstance().ExportIR(func_graph, file_name, is_save_to_file, backend::IRFormat::kAir);
   } else {

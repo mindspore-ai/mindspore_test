@@ -80,6 +80,7 @@
 #include "availability/silent_check/silent_check.h"
 #include "backend/backend_manager/backend_manager.h"
 #include "include/common/pynative/adapter.h"
+#include "backend/backend_manager/backend_jit_config.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -1779,21 +1780,9 @@ bool TaskEmitAction(const ResourcePtr &resource) {
   }
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
+  const auto &backend = context_ptr->backend_policy();
   auto mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
   if (mode == kGraphMode && CheckGraphOutputConstOrParameter(func_graph)) {
-    return true;
-  }
-
-  // The env MS_NEW_BACKEND and old backend will delete when new backend switch.
-  std::string new_backend_env = common::GetEnv("MS_NEW_BACKEND");
-  if (!new_backend_env.empty()) {
-    // In pyexecute kernel, the input data would be stored in user data which is a python object, this converter
-    // is used to convert user data to device ptr in device address.
-    compile::set_pydata_converter(
-      [](const py::object &obj, ValuePtr *value) { return parse::ConvertData(obj, value); });
-    auto backend_ret = backend::BackendManager::GetInstance().Build(resource->func_graph());
-    resource->SetResult(kBuildBackenkType, backend_ret.first);
-    resource->SetResult(kBuildBackenkOutput, backend_ret.second);
     return true;
   }
 
@@ -1806,12 +1795,33 @@ bool TaskEmitAction(const ResourcePtr &resource) {
       MS_LOG(WARNING) << "Multi device target is detected, CPU data is dumped in rank_0 directory";
     }
   }
+
+  // New backend
+  if (UseNewBackend()) {
+    if (backend != kMsConvert && backend != kGeVm) {
+      resource->SetResult(kNoBackend, true);
+      MS_LOG(INFO) << "No backend.";
+      return true;
+    }
+    SetRunMode(resource);
+
+    // In pyexecute kernel, the input data would be stored in user data which is a python object, this converter
+    // is used to convert user data to device ptr in device address.
+    compile::set_pydata_converter(
+      [](const py::object &obj, ValuePtr *value) { return parse::ConvertData(obj, value); });
+    const auto &backend_jit_config = backend::BackendJitConfig::ParseBackendJitConfig();
+    MS_LOG(INFO) << "Use the new backend.";
+    auto backend_ret = backend::BackendManager::GetInstance().Build(resource->func_graph(), backend_jit_config);
+    resource->SetResult(kBuildBackendType, backend_ret.first);
+    resource->SetResult(kBuildBackendOutput, backend_ret.second);
+    return true;
+  }
+
   DisableMindRT(resource);
 
   SetRunMode(resource);
   auto bc_ptr = resource->GetBackend();
   MS_EXCEPTION_IF_NULL(bc_ptr);
-  const auto &backend = context_ptr->backend_policy();
   // The graph compiling of mindRT.
   if ((backend == kMsConvert || backend == kGeVm) && context_ptr->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
     TaskEmitActionForMindRT(resource);
@@ -1840,14 +1850,16 @@ bool ExecuteAction(const ResourcePtr &resource) {
     return true;
   }
 
-  // The env MS_NEW_BACKEND and old backend will delete when new backend switch.
-  std::string new_backend_env = common::GetEnv("MS_NEW_BACKEND");
-  if (!new_backend_env.empty()) {
-    if (!resource->HasResult(kBuildBackenkType) || !resource->HasResult(kBuildBackenkOutput)) {
+  if (UseNewBackend()) {
+    if (resource->HasResult(kNoBackend)) {
+      MS_LOG(INFO) << "No backend.";
+      return true;
+    }
+    if (!resource->HasResult(kBuildBackendType) || !resource->HasResult(kBuildBackendOutput)) {
       MS_LOG(INTERNAL_EXCEPTION) << "Execute args error";
     }
-    auto backend_type = resource->GetResult(kBuildBackenkType).cast<backend::BackendType>();
-    auto backend_graph_id = resource->GetResult(kBuildBackenkOutput).cast<backend::BackendGraphId>();
+    auto backend_type = resource->GetResult(kBuildBackendType).cast<backend::BackendType>();
+    auto backend_graph_id = resource->GetResult(kBuildBackendOutput).cast<backend::BackendGraphId>();
     // Construct the graph run function ptr.
     compile::VmEvalFuncPtr run =
       std::make_shared<compile::VmEvalFunc>([backend_type, backend_graph_id](const VectorRef &args) -> BaseRef {
