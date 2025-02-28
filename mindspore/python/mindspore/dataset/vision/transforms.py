@@ -3127,7 +3127,7 @@ class NormalizePad(ImageTensorOperation):
             The standard deviation values must be in range (0.0, 255.0].
         dtype (str, optional): Set the output data type of normalized image. Default: ``"float32"``.
         is_hwc (bool, optional): Specify the format of input image.
-            ``True`` - HW(C) format, ``False`` - CHW format. Default: ``True``.
+            ``True`` - HWC format, ``False`` - CHW format. Default: ``True``.
 
     Raises:
         TypeError: If `mean` is not of type sequence.
@@ -3802,26 +3802,30 @@ class RandomAffine(ImageTensorOperation, PyTensorOperation):
             If `degrees` is a number, the range will be (-degrees, degrees).
             If `degrees` is a sequence, it should be (min, max).
         translate (sequence, optional): Sequence (tx_min, tx_max, ty_min, ty_max) of minimum/maximum translation in
-            x(horizontal) and y(vertical) directions, range [-1.0, 1.0]. Default: ``None``.
+            x(horizontal) and y(vertical) directions, range [-1.0, 1.0].
+            Default: ``None``, which means no translation is applied.
             The horizontal and vertical shift is selected randomly from the range:
             (tx_min*width, tx_max*width) and (ty_min*height, ty_max*height), respectively.
-            If a tuple or list of size 2, then a translate parallel to the X axis in the range of
-            (translate[0], translate[1]) is applied.
-            If a tuple or list of size 4, then a translate parallel to the X axis in the range of
-            (translate[0], translate[1]) and a translate parallel to the Y axis in the range of
-            (translate[2], translate[3]) are applied.
-            If ``None``, no translation is applied.
+
+            - If a tuple or list of size 2, then a translate parallel to the X axis in the range of
+              (translate[0], translate[1]) is applied.
+            - If a tuple or list of size 4, then a translate parallel to the X axis in the range of
+              (translate[0], translate[1]) and a translate parallel to the Y axis in the range of
+              (translate[2], translate[3]) are applied.
+
         scale (sequence, optional): Scaling factor interval, which must be non negative.
             Default: ``None``, original scale is used.
         shear (Union[float, Sequence[float, float], Sequence[float, float, float, float]], optional):
-            Range of shear factor to select from.
-            If float is provided, a shearing parallel to X axis with a factor selected from
-            ( `-shear` , `shear` ) will be applied.
-            If Sequence[float, float] is provided, a shearing parallel to X axis with a factor selected
-            from ( `shear` [0], `shear` [1]) will be applied.
-            If Sequence[float, float, float, float] is provided, a shearing parallel to X axis with a factor selected
-            from ( `shear` [0], `shear` [1]) and a shearing parallel to Y axis with a factor selected from
-            ( `shear` [2], `shear` [3]) will be applied. Default: ``None``, means no shearing.
+            Range of shear factor to select from. Default: ``None``, means no shearing.
+
+            - If float is provided, a shearing parallel to X axis with a factor selected from
+              ( `-shear` , `shear` ) will be applied.
+            - If Sequence[float, float] is provided, a shearing parallel to X axis with a factor selected
+              from ( `shear` [0], `shear` [1]) will be applied.
+            - If Sequence[float, float, float, float] is provided, a shearing parallel to X axis with a factor selected
+              from ( `shear` [0], `shear` [1]) and a shearing parallel to Y axis with a factor selected from
+              ( `shear` [2], `shear` [3]) will be applied.
+
         resample (Inter, optional): Image interpolation method defined by :class:`~.vision.Inter` .
             Default: ``Inter.NEAREST``.
         fill_value (Union[int, tuple[int]], optional): Optional fill_value to fill the area outside the transform
@@ -4195,22 +4199,28 @@ class RandomCrop(ImageTensorOperation, PyTensorOperation):
 
     Args:
         size (Union[int, Sequence[int]]): The output size of the cropped image. The size value(s) must be positive.
-            If size is an integer, a square crop of size (size, size) is returned.
-            If size is a sequence of length 2, an image of size (height, width) will be cropped.
+
+            - If size is an integer, a square crop of size (size, size) is returned.
+            - If size is a sequence of length 2, an image of size (height, width) will be cropped.
+
         padding (Union[int, Sequence[int]], optional): The number of pixels to pad each border of the image.
             The padding value(s) must be non-negative. Default: ``None``.
-            If `padding` is not ``None``, pad image first with padding values.
-            If a single number is provided, pad all borders with this value.
-            If a tuple or lists of 2 values are provided, pad the (left and right)
-            with the first value and (top and bottom) with the second value.
-            If 4 values are provided as a list or tuple,
-            pad the left, top, right and bottom respectively.
+
+            - If `padding` is not ``None``, pad image first with padding values.
+            - If a single number is provided, pad all borders with this value.
+            - If a tuple or lists of 2 values are provided, pad the (left and right)
+              with the first value and (top and bottom) with the second value.
+            - If 4 values are provided as a list or tuple,
+              pad the left, top, right and bottom respectively.
+
         pad_if_needed (bool, optional): Pad the image if either side is smaller than
             the given output size. Default: ``False``.
         fill_value (Union[int, tuple[int]], optional): The pixel intensity of the borders, only valid for
-            padding_mode Border.CONSTANT. If it is a 3-tuple, it is used to fill R, G, B channels respectively.
-            If it is an integer, it is used for all RGB channels.
-            The fill_value values must be in range [0, 255]. Default: ``0``.
+            padding_mode Border.CONSTANT. The fill_value values must be in range [0, 255]. Default: ``0``.
+
+            - If it is a 3-tuple, it is used to fill R, G, B channels respectively.
+            - If it is an integer, it is used for all RGB channels.
+
         padding_mode (Border, optional): The method of padding. Default: ``Border.CONSTANT``. It can be any of
             ``Border.CONSTANT``, ``Border.EDGE``, ``Border.REFLECT``, ``Border.SYMMETRIC``.
 

@@ -8,7 +8,7 @@ mindspore.dataset.vision.AutoContrast
     支持 Ascend 硬件加速，需要通过 `.device("Ascend")` 方式开启。
 
     参数：
-        - **cutoff** (float, 可选) - 输入图像直方图中需要剔除的最亮和最暗像素的百分比。该值必须在 [0.0, 50.0) 范围内。默认值： ``0.0`` 。
+        - **cutoff** (float, 可选) - 输入图像直方图中，需要剔除的最亮和最暗像素的百分比。该值必须在 [0.0, 50.0) 范围内。默认值： ``0.0`` 。
         - **ignore** (Union[int, sequence], 可选) - 要忽略的背景像素值，忽略值必须在 [0, 255] 范围内。默认值： ``None`` 。
 
     异常：

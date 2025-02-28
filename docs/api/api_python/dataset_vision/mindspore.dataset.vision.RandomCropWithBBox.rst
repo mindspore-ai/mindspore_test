@@ -3,7 +3,7 @@ mindspore.dataset.vision.RandomCropWithBBox
 
 .. py:class:: mindspore.dataset.vision.RandomCropWithBBox(size, padding=None, pad_if_needed=False, fill_value=0, padding_mode=Border.CONSTANT)
 
-    在输入图像的随机位置进行裁剪并相应地调整边界框。
+    在输入图像的随机位置进行裁剪，并相应地调整边界框。
 
     参数：
         - **size** (Union[int, Sequence[int]]) - 裁剪图像的输出尺寸大小。大小值必须为正。

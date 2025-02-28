@@ -3,7 +3,7 @@ mindspore.dataset.vision.RandomInvert
 
 .. py:class:: mindspore.dataset.vision.RandomInvert(prob=0.5)
 
-    以给定的概率随机反转图像的颜色。
+    以给定的概率，随机反转图像的颜色。
 
     参数：
         - **prob** (float, 可选) - 图像被反转颜色的概率，取值范围：[0.0, 1.0]。默认值： ``0.5`` 。
