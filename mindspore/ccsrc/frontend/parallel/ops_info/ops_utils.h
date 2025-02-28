@@ -750,6 +750,7 @@ constexpr char TRACEV2[] = "TraceV2";
 constexpr char LSTSQV2[] = "LstsqV2";
 constexpr char CUSTOM[] = "Custom";
 constexpr char GENERATOR[] = "Generator";
+constexpr char MEANEXT[] = "MeanExt";
 
 // pipeline
 constexpr size_t PIPELINE_FUSTION_OFFSET = 100;
