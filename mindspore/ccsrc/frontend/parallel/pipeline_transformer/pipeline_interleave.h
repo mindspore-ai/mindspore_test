@@ -53,7 +53,7 @@ class PipelineInterleave {
   void CreateSendReceiveGroup();
   void RedundancyNode(const AnfNodePtr &node, mindspore::HashMap<CNodePtr, std::vector<AnfNodePtr>> *make_tuple_map);
   bool IsRedundancyParameter(const AnfNodePtr &parameter, const std::vector<AnfNodePtr> &non_cloned_parameters);
-  void InsertSendReceive(const AnfNodePtr &node, const AnfNodePtr &user_node, int64_t order);
+  void InsertSendReceive(const AnfNodePtr &node, const AnfNodePtr &user_node, int64_t order, int64_t index);
   void RemoveMonadNode();
   void BroadCastGraphStage(const FuncGraphPtr &fg);
   std::vector<AnfNodePtr> GetLoadNodeByParam(const AnfNodePtr &param) const;

@@ -38,6 +38,8 @@ class Layout {
   void set_tensor_map(const std::vector<int64_t> &tensor_map) { tensor_map_ = tensor_map; }
   const std::vector<int64_t> &get_slice_shape() const { return slice_shape_; }
   void set_slice_shape(const std::vector<int64_t> &slice_shape) { slice_shape_ = slice_shape; }
+  const std::vector<int64_t> &opt_shard_slice_shape() const { return opt_shard_slice_shape_; }
+  void set_opt_shard_slice_shape(const std::vector<int64_t> &slice_shape) { opt_shard_slice_shape_ = slice_shape; }
   int64_t get_field_size() const { return field_size_; }
   void set_field_size(int64_t field_size) { field_size_ = field_size; }
   bool get_uniform_split() const { return uniform_split_; }
@@ -57,6 +59,7 @@ class Layout {
   std::vector<int64_t> device_arrangement_{};
   std::vector<int64_t> tensor_map_{};
   std::vector<int64_t> slice_shape_{};
+  std::vector<int64_t> opt_shard_slice_shape_{};
   int64_t field_size_ = 0;
   bool uniform_split_ = false;
   std::string opt_shard_group_ = "";

@@ -305,6 +305,7 @@ py::dict GetParameterLayoutFromResource(const pipeline::ResourcePtr &resource) {
     const auto &device_arrangement = layout->get_device_arrangement();
     const auto &tensor_map = layout->get_tensor_map();
     const auto &slice_shape = layout->get_slice_shape();
+    const auto &opt_shard_slice_shape = layout->opt_shard_slice_shape();
     int64_t field_size = layout->get_field_size();
     bool uniform_split = layout->get_uniform_split();
     std::vector<int64_t> before_full_shape;
@@ -314,9 +315,9 @@ py::dict GetParameterLayoutFromResource(const pipeline::ResourcePtr &resource) {
     bool is_send = layout->is_send();
     int64_t peer_rank = layout->peer_rank();
     int64_t sr_tag = layout->sr_tag();
-    py::tuple layout_tuple =
-      py::make_tuple(device_arrangement, tensor_map, slice_shape, field_size, uniform_split, opt_shard_group,
-                     before_full_shape, after_slice_shape, is_pipeline_shared, is_send, peer_rank, sr_tag);
+    py::tuple layout_tuple = py::make_tuple(device_arrangement, tensor_map, slice_shape, field_size, uniform_split,
+                                            opt_shard_group, before_full_shape, after_slice_shape, is_pipeline_shared,
+                                            is_send, peer_rank, sr_tag, opt_shard_slice_shape);
     dict[py::str(name)] = layout_tuple;
   }
   return dict;

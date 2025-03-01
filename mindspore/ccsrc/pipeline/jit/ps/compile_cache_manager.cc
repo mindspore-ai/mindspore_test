@@ -59,13 +59,11 @@ void BuildLayout(const FuncGraphPtr &func_graph, mind_ir::ModelProto *model) {
       // Get all the information for layput
       auto device_arrangement = tensor_layout->device_arrangement().array();
       auto tensor_map = tensor_layout->tensor_map().array();
-      auto slice_shape = tensor_layout->slice_shape().array();
+      auto slice_shape = tensor_layout->base_slice_shape().array();
       int64_t field_size = tensor_layout->get_field_size();
       bool uniform_split = tensor_layout->uniform_split();
       std::string opt_shard_group = tensor_layout->opt_shard_group();
-      if (!opt_shard_group.empty()) {
-        slice_shape = tensor_layout->opt_shard_slice_shape();
-      }
+      auto opt_shard_slice_shape = tensor_layout->opt_shard_slice_shape();
       // Save all information to Layout Proto
       layoutProto->set_name(name);
       for (auto device_arrangement_element : device_arrangement) {
@@ -86,6 +84,9 @@ void BuildLayout(const FuncGraphPtr &func_graph, mind_ir::ModelProto *model) {
         layoutProto->set_is_send(shared_param->is_send());
         layoutProto->set_peer_rank(shared_param->peer_rank());
         layoutProto->set_sr_tag(shared_param->sr_tag());
+      }
+      for (auto slice_shape_element : opt_shard_slice_shape) {
+        layoutProto->add_opt_shard_slice_shape_int(slice_shape_element);
       }
     }
   }

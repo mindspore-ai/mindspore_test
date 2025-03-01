@@ -535,11 +535,31 @@ static void SliceCacheParameterObj(const ParameterPtr &parameter, const py::dict
     return;
   }
   auto layout = layout_dict[py::str(name)];
+  if (py::len(layout) < 13) {
+    MS_LOG(WARNING) << "The length of layout must be larger than 13, but got " << py::len(layout)
+                    << ". Parameter:" << parameter->DebugString();
+    return;
+  }
+  const auto &device_arrangement = layout[py::cast<size_t>(0)];
+  const auto &tensor_map = layout[py::cast<size_t>(1)];
+  auto slice_shape = layout[py::cast<size_t>(2)];
+  auto field_size = layout[py::cast<size_t>(3)];
+  auto uniform_split = layout[py::cast<size_t>(4)];
+  auto opt_shard_group = layout[py::cast<size_t>(5)];
+  auto full_shape = layout[py::cast<size_t>(6)];
+  auto grad_accumulation_shard = ParallelContext::GetInstance()->grad_accumulation_shard();
+  if (!opt_shard_group.cast<std::string>().empty()) {
+    slice_shape = layout[py::cast<size_t>(12)];
+  }
+  py::tuple param_layout =
+    py::make_tuple(device_arrangement, tensor_map, slice_shape, field_size, uniform_split, opt_shard_group, full_shape);
   // Call Python _slice_parameter Fn to slice python parameter obj
-  (void)python_adapter::CallPyFn(SLICE_PARAMETER_FN_PATH, SLICE_PARAMETER_FN_NAME, py_obj, py::str(phase), layout);
+  (void)python_adapter::CallPyFn(SLICE_PARAMETER_FN_PATH, SLICE_PARAMETER_FN_NAME, py_obj, py::str(phase),
+                                 param_layout);
 
   // handle cloned parameter, like accu_grad and optimizer param
   auto cloned_py_obj = GetPyParameterObj(param_info, CLONED_OBJ);
+
   if (!py::isinstance<py::none>(cloned_py_obj)) {
     if (!py::isinstance<py::list>(cloned_py_obj)) {
       MS_LOG_WITH_NODE(EXCEPTION, parameter)
@@ -548,8 +568,16 @@ static void SliceCacheParameterObj(const ParameterPtr &parameter, const py::dict
     auto obj_list = py::cast<py::list>(cloned_py_obj);
     for (size_t i = 0; i < obj_list.size(); ++i) {
       py::object each_cloned_obj = obj_list[i];
+      auto cloned_param_slice_shape = layout[py::cast<size_t>(2)];
+      if (!opt_shard_group.cast<std::string>().empty()) {
+        if (!IsAccuGradObj(each_cloned_obj) || grad_accumulation_shard) {
+          cloned_param_slice_shape = layout[py::cast<size_t>(12)];
+        }
+      }
+      py::tuple cloned_param_layout = py::make_tuple(device_arrangement, tensor_map, cloned_param_slice_shape,
+                                                     field_size, uniform_split, opt_shard_group, full_shape);
       (void)python_adapter::CallPyFn(SLICE_PARAMETER_FN_PATH, SLICE_PARAMETER_FN_NAME, each_cloned_obj, py::str(phase),
-                                     layout);
+                                     cloned_param_layout);
     }
   }
 }
