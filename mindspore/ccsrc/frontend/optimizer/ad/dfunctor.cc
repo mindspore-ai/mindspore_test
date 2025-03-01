@@ -156,11 +156,8 @@ DFunctor::DFunctor(const FuncGraphPtr &primal_graph, const pipeline::ResourceBas
 
   dout_ = tape_->add_parameter();
   if (is_view_inplace && is_top_) {
-    auto generate_mask = std::make_shared<prim::GenerateMask>("generate_mask");
-    auto dout_mask = tape_->NewCNodeInOrder({NewValueNode(generate_mask), dout_});
-    auto ops_type = NewValueNode(int64_t(0));
-    dout_ = tape_->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), dout_,
-                                    tape_->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), dout_mask, ops_type})});
+    auto get_dout_tuple = std::make_shared<prim::GenerateBpropOutTuple>("get_dout_tuple");
+    dout_ = tape_->NewCNodeInOrder({NewValueNode(get_dout_tuple), dout_});
   }
 }
 

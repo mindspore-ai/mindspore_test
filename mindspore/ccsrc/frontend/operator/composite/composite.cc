@@ -2644,25 +2644,6 @@ FuncGraphPtr GenerateMask::GenerateFuncGraph(const AbstractBasePtrList &args_abs
   return fg;
 }
 
-FuncGraphPtr GetDout::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
-  constexpr size_t input_len = 1;
-  if (args_abs_list.size() != input_len) {
-    MS_LOG(INTERNAL_EXCEPTION) << "For " << name_ << ", the input length should be " << input_len << " but got "
-                               << args_abs_list.size();
-  }
-  auto fg = std::make_shared<FuncGraph>();
-  auto input = fg->add_parameter();
-  auto input_abstract = args_abs_list[0];
-  MS_EXCEPTION_IF_NULL(input_abstract);
-  if (!input_abstract->isa<abstract::AbstractTuple>()) {
-    fg->set_output(input);
-    return fg;
-  }
-  auto ret = fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), input, NewValueNode(int64_t(0))});
-  fg->set_output(ret);
-  return fg;
-}
-
 FuncGraphPtr GenerateBpropOutTuple::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
   constexpr size_t input_len = 1;
   if (args_abs_list.size() != input_len) {
@@ -2671,20 +2652,23 @@ FuncGraphPtr GenerateBpropOutTuple::GenerateFuncGraph(const AbstractBasePtrList 
   }
   auto input_abs = args_abs_list[0];
   MS_EXCEPTION_IF_NULL(input_abs);
-  if (!input_abs->isa<abstract::AbstractTuple>()) {
-    MS_LOG(INTERNAL_EXCEPTION) << "For " << name_ << ", first input should be tuple but got " << input_abs->ToString();
-  }
   auto input_tuple_abs = input_abs->cast<abstract::AbstractTuplePtr>();
   auto fg = std::make_shared<FuncGraph>();
   auto input = fg->add_parameter();
+  if (!input_abs->isa<abstract::AbstractTuple>()) {
+    auto generate_bprop_mask = std::make_shared<prim::GenerateMask>("generate_bprop_mask");
+    auto dout_mask = fg->NewCNodeInOrder({NewValueNode(generate_bprop_mask), input});
+    auto ops_type = NewValueNode(int64_t(0));
+    auto bprop_inner_mask = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), dout_mask, ops_type});
+    auto bprop_with_mask = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), input, bprop_inner_mask});
+    fg->set_output(bprop_with_mask);
+    return fg;
+  }
   AnfNodePtrList ret_inputs = {NewValueNode(prim::kPrimMakeTuple)};
   for (int64_t i = 0; i < SizeToLong(input_tuple_abs->size()); ++i) {
     auto bprop_output_i = fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), input, NewValueNode(i)});
-    auto dout_mask =
-      fg->NewCNodeInOrder({NewValueNode(std::make_shared<prim::GenerateMask>("generate_bprop_mask")), bprop_output_i});
-    auto ops_type = NewValueNode(int64_t(0));
-    auto bprop_inner_mask = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), dout_mask, ops_type});
-    auto bprop_with_mask = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), bprop_output_i, bprop_inner_mask});
+    auto generate_dout_tuple = std::make_shared<prim::GenerateBpropOutTuple>("generate_dout_tuple");
+    auto bprop_with_mask = fg->NewCNodeInOrder({NewValueNode(generate_dout_tuple), bprop_output_i});
     ret_inputs.push_back(bprop_with_mask);
   }
   auto ret = fg->NewCNodeInOrder(ret_inputs);

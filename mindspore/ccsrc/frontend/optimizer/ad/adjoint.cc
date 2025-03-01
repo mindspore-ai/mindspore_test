@@ -40,12 +40,8 @@ Adjoint::Adjoint(const AnfNodePtr &primal, const AnfNodePtr &k, const FuncGraphP
     dout_hole_ = caller_->NewCNodeInFront({NewValueNode(prim::GetPythonOps("zeros_like")), k_});
   } else {
     auto dout = caller_->NewCNodeInOrder({NewValueNode(prim::GetPythonOps("zeros_like")), k_});
-    auto generate_mask = std::make_shared<prim::GenerateMask>("generate_mask");
-    auto dout_mask = caller_->NewCNodeInOrder({NewValueNode(generate_mask), dout});
-    auto ops_type = NewValueNode(int64_t(0));
-    dout_hole_ =
-      caller_->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), dout,
-                                caller_->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), dout_mask, ops_type})});
+    auto get_dout_tuple = std::make_shared<prim::GenerateBpropOutTuple>("get_dout_tuple");
+    dout_hole_ = caller_->NewCNodeInOrder({NewValueNode(get_dout_tuple), dout});
   }
   RegisterKUser(dout_hole_->cast<CNodePtr>(), 1);
 }

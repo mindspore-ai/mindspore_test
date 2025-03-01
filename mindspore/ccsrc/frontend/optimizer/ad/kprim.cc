@@ -176,11 +176,8 @@ AnfNodePtr InplaceArgsClone(const FuncGraphPtr &fprop, const FuncGraphPtr &bprop
 }
 
 CNodePtr CalDoutWithMask(const FuncGraphPtr &fg, const AnfNodePtr &dout_node) {
-  auto generate_mask = std::make_shared<prim::GenerateMask>("generate_mask");
-  auto dout_mask = fg->NewCNodeInOrder({NewValueNode(generate_mask), dout_node});
-  auto ops_type = NewValueNode(int64_t(0));
-  return fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), dout_node,
-                              fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), dout_mask, ops_type})});
+  auto get_dout_tuple = std::make_shared<prim::GenerateBpropOutTuple>("get_dout_tuple");
+  return fg->NewCNodeInOrder({NewValueNode(get_dout_tuple), dout_node});
 }
 }  // namespace
 
@@ -342,8 +339,7 @@ FuncGraphPtr AdaptBpropInput(const FuncGraphPtr &bprop_fg) {
       (void)res_input.emplace_back(input);
       continue;
     }
-    auto get_dout = std::make_shared<prim::GetDout>("get_dout_from_tuple");
-    auto real_dout = fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), input, NewValueNode(int64_t(0))});
+    auto get_dout = std::make_shared<prim::GetRealBpropOut>("get_dout_from_tuple");
     (void)res_input.emplace_back(fg->NewCNodeInOrder({NewValueNode(get_dout), input}));
   }
   auto res_node = fg->NewCNodeInOrder(res_input);
