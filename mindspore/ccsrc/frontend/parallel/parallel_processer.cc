@@ -713,8 +713,15 @@ static void DoInsertMirrorOps(const FuncGraphPtr &root, const MirrorOps &mirror_
       // assume Load is inserted next to parameter
       // skip Load moving up and insert mirror next to the parameter
       CNodePtr load_node = SkipTrivialNodesMoveUp(pre_node->cast<CNodePtr>());
-      InsertNode(op, load_node, 1, load_node->input(1), func_graph, mirror_op_name, param_name, root);
-      auto comm_op = load_node->input(1)->cast<CNodePtr>();
+
+      CNodePtr comm_op = nullptr;
+      if (IsPrimitiveCNode(load_node, prim::kPrimMicroStepAllGather)) {
+        InsertNode(op, node, index, pre_node, func_graph, mirror_op_name, param_name, root);
+        comm_op = node->input(index)->cast<CNodePtr>();
+      } else {
+        InsertNode(op, load_node, 1, load_node->input(1), func_graph, mirror_op_name, param_name, root);
+        comm_op = load_node->input(1)->cast<CNodePtr>();
+      }
       // add fusion flag
       auto fusion_id = AddCommOpFusionType(comm_op, param_node_pair.first);
       MS_LOG(INFO) << "Find parameter " << param_name << " for node " << GetPrimName(node->cast<CNodePtr>())

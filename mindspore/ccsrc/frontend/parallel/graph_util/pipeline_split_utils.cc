@@ -409,7 +409,7 @@ bool IsSourceUsedByMirror(const CNodePtr &node, const NodeUsersMap &node_user_ma
     return false;
   }
   auto parameter_node = node->input(1);
-  if (parameter_node->cast<ParameterPtr>()) {
+  if (parameter_node->cast<ParameterPtr>() || IsPrimitiveCNode(parameter_node, prim::kPrimMicroStepAllGather)) {
     for (auto &item : node_user_map.at(parameter_node)) {
       if (IsPrimitiveCNode(item.first, prim::kPrimMirrorMicroStep)) {
         return true;
