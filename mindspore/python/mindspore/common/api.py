@@ -17,6 +17,7 @@
 """Providing interface methods."""
 from __future__ import absolute_import
 
+import gc
 import types
 import sys
 import os
@@ -1932,6 +1933,7 @@ class _CellGraphExecutor:
         else:
             jit_config_dict = JitConfig().jit_config_dict
             self._graph_executor.set_jit_config(jit_config_dict)
+        gc.collect()
         result = self._graph_executor.compile(obj, args, kwargs, phase)
         obj.compile_cache.add(phase)
         if not result:
