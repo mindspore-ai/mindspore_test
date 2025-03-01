@@ -18,7 +18,7 @@
 #include <vector>
 #include <string>
 #include "utils/callback_handler.h"
-#include "pipeline/pynative/base.h"
+#include "pynative/base.h"
 #include "include/common/visible.h"
 
 namespace mindspore {
