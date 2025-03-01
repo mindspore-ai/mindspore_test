@@ -28,7 +28,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "abstract/abstract_value.h"
 #include "include/backend/kernel_graph.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/device/device_address_utils.h"
 #include "backend/ge_backend/executor/ge_memory_manager.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
@@ -130,7 +130,7 @@ device::DeviceAddressPtr CreateOutputDeviceAddress(const KernelGraphPtr &kernel_
   auto real_index = output_node->isa<ValueNode>() ? 0 : output_with_index.second;
   TypeId output_type_id = common::AnfAlgo::GetOutputInferDataType(output_node, real_index);
   size_t type_size = GetTypeByte(TypeIdToType(output_type_id));
-  auto shapes = trans::GetRuntimePaddingShape(output_node, real_index);
+  auto shapes = AnfAlgo::GetRuntimePaddingShape(output_node, real_index);
   auto tensor_size =
     shapes.empty() ? type_size : std::accumulate(shapes.begin(), shapes.end(), type_size, std::multiplies<size_t>());
   // When ValueNode is a graph output, runtime does not manage this memory

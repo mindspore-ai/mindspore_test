@@ -18,7 +18,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/structure_ops.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"
 
@@ -106,7 +106,7 @@ void Summary::SummaryTensor(KernelGraph *graph) {
     if (!address->GetPtr()) {
       continue;
     }
-    if (!address->SyncDeviceToHost(trans::GetRuntimePaddingShape(node, index), LongToSize(tensor->data().nbytes()),
+    if (!address->SyncDeviceToHost(AnfAlgo::GetRuntimePaddingShape(node, index), LongToSize(tensor->data().nbytes()),
                                    tensor->data_type(), tensor->data_c())) {
       MS_LOG(ERROR) << "Failed to sync output from device to host.";
     }

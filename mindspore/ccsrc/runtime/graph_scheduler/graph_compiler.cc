@@ -26,7 +26,7 @@
 #include "runtime/device/device_address_utils.h"
 #include "runtime/pynative/op_executor.h"
 #include "include/backend/device_address.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/pynative/op_runtime_info.h"
 #include "runtime/pynative/op_compiler.h"
 #include "include/common/utils/convert_utils.h"

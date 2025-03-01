@@ -19,13 +19,14 @@
 
 #include <memory>
 #include <string>
-#include "runtime/hardware/device_context_manager.h"
+#include "include/common/pybind_api/api_register.h"
+#include "plugin/res_manager/ascend/visible.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
-class OpTuningConf {
+class ASCEND_RES_MANAGER_EXPORT OpTuningConf {
  public:
   OpTuningConf() = default;
   ~OpTuningConf() = default;
@@ -52,7 +53,7 @@ class OpTuningConf {
   bool is_aoe_job_type_configured_{false};
 };
 
-void RegOpTuningConf(py::module *m);
+ASCEND_RES_MANAGER_EXPORT void RegOpTuningConf(py::module *m);
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore

@@ -20,11 +20,12 @@
 #include <map>
 #include <set>
 #include "acl/acl_rt.h"
+#include "plugin/res_manager/ascend/visible.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
-class AscendHalManager {
+class ASCEND_RES_MANAGER_EXPORT AscendHalManager {
  public:
   static AscendHalManager &GetInstance();
 

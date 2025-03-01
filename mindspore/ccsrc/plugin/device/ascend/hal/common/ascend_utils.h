@@ -37,8 +37,6 @@ bool EnableLccl();
 
 void InitializeAcl();
 
-BACKEND_EXPORT std::string GetFormatMode();
-
 void SavePrevStepWeight(const std::vector<AnfNodePtr> &weights, aclrtStream stream);
 }  // namespace ascend
 }  // namespace device

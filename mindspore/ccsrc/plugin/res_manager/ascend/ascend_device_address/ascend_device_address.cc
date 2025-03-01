@@ -26,12 +26,14 @@
 #include "ir/tensor.h"
 #include "abstract/utils.h"
 #include "include/common/utils/utils.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
+#include "runtime/device/convert_tensor_utils.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace py = pybind11;
 namespace mindspore {
@@ -367,9 +369,11 @@ void AscendDeviceAddress::BindDevice() const {
 
   // Bind device by device name and device id on the current thread.
   if (!device_name().empty()) {
-    auto ascend_device_context = GetDeviceContext();
-    MS_EXCEPTION_IF_NULL(ascend_device_context);
-    if (!ascend_device_context->device_res_manager_->BindDeviceToCurrentThread(false)) {
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    ResKey res_key{DeviceTargetType::kAscend, device_id};
+    auto ascend_res_manager = HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(ascend_res_manager);
+    if (!ascend_res_manager->BindDeviceToCurrentThread(false)) {
       MS_LOG(WARNING) << "Bind device to current thread failed.";
     }
   } else {
@@ -1042,12 +1046,10 @@ bool AscendDeviceAddress::AsyncDeviceToHost(size_t size, void *host_ptr) const {
   }
   BindDevice();
   MS_EXCEPTION_IF_NULL(GetDevicePtr());
-  auto device_context = GetDeviceContext();
-  MS_EXCEPTION_IF_NULL(device_context);
-  auto stream_id = device_context->device_res_manager_->GetCurrentStreamId();
-  auto stream = device_context->device_res_manager_->GetStream(stream_id);
+  auto stream_id = AscendStreamMng::GetInstance().current_stream();
+  auto stream = AscendStreamMng::GetInstance().GetStream(stream_id);
   if (stream == nullptr) {
-    stream = device_context->device_res_manager_->GetStream(kDefaultStreamIndex);
+    stream = AscendStreamMng::GetInstance().GetStream(kDefaultStreamIndex);
   }
   MS_ERROR_IF_NULL(stream);
   auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, host_ptr, size, GetDevicePtr(), size, ACL_MEMCPY_DEVICE_TO_HOST, stream);
@@ -1065,20 +1067,13 @@ bool AscendDeviceAddress::AsyncHostToDevice(size_t size, const void *host_ptr) c
     return true;
   }
   BindDevice();
-  auto device_context = GetDeviceContext();
-  MS_EXCEPTION_IF_NULL(device_context);
-  auto stream_id = device_context->device_res_manager_->GetCurrentStreamId();
-  auto stream = device_context->device_res_manager_->GetStream(stream_id);
+  auto stream_id = AscendStreamMng::GetInstance().current_stream();
+  auto stream = AscendStreamMng::GetInstance().GetStream(stream_id);
   if (stream == nullptr) {
-    stream = device_context->device_res_manager_->GetStream(kDefaultStreamIndex);
+    stream = AscendStreamMng::GetInstance().GetStream(kDefaultStreamIndex);
     stream_id = kDefaultStreamIndex;
   }
   MS_ERROR_IF_NULL(stream);
-  if (GetDevicePtr() == nullptr) {
-    auto ptr = device_context->device_res_manager_->AllocateMemory(size, stream_id);
-    MS_EXCEPTION_IF_NULL(ptr);
-    SetDevicePtr(ptr);
-  }
   SyncHostMemoryToDeviceWithCopySrc(GetDevicePtr(), host_ptr, size, ACL_MEMCPY_HOST_TO_DEVICE);
   return true;
 }

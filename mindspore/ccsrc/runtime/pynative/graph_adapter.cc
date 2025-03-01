@@ -26,7 +26,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "runtime/graph_scheduler/device_tensor_store.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/scheduler_helper.h"
 #include "runtime/device/device_address_utils.h"
@@ -102,7 +102,7 @@ device::DeviceAddressPtr CreateValueNodeAddress(const ValueNodePtr &value_node,
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
   const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
-    {value_node, 0}, nullptr, tensor_size, output_format, data_type, trans::GetRuntimePaddingShape(value_node, 0),
+    {value_node, 0}, nullptr, tensor_size, output_format, data_type, AnfAlgo::GetRuntimePaddingShape(value_node, 0),
     device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
   return device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
 }
@@ -131,7 +131,7 @@ bool CopyTensorData(const tensor::BaseTensorPtr &tensor, const device::DeviceAdd
   // Copy data from host tensor to device.
   auto host_tensor_size = LongToSize(tensor->data().nbytes());
   auto host_tensor_type = tensor->data_type();
-  if (!device_address->SyncHostToDevice(trans::GetRuntimePaddingShape(node, 0), host_tensor_size, host_tensor_type,
+  if (!device_address->SyncHostToDevice(AnfAlgo::GetRuntimePaddingShape(node, 0), host_tensor_size, host_tensor_type,
                                         kOpFormat_DEFAULT, tensor->data_ptr())) {
     std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope() +
                              ", tensor size: " + std::to_string(host_tensor_size) +

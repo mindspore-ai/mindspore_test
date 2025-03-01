@@ -67,7 +67,7 @@ endif()
 
 if(ENABLE_D)
     install(
-        TARGETS mindspore_ge_backend
+        TARGETS mindspore_ge_backend mindspore_ascend_res_manager
         DESTINATION ${INSTALL_LIB_DIR}
         COMPONENT mindspore
     )

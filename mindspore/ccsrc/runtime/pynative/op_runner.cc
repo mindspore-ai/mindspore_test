@@ -30,7 +30,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/device_type.h"
 #include "include/common/utils/convert_utils.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/device/device_address_utils.h"
 #include "runtime/pynative/op_runtime_info.h"
 #include "runtime/pynative/op_executor.h"
@@ -179,7 +179,7 @@ void CopyTensorDataToDevice(const tensor::BaseTensorPtr &tensor, const AnfNodePt
   auto tensor_size = LongToSize(tensor->data().nbytes());
   auto tensor_type = tensor->data_type();
   MS_LOG(DEBUG) << "Copy to device, node:" << common::AnfAlgo::GetNodeDebugString(node);
-  if (!device_address->SyncHostToDevice(trans::GetRuntimePaddingShape(node, 0), tensor_size, tensor_type,
+  if (!device_address->SyncHostToDevice(AnfAlgo::GetRuntimePaddingShape(node, 0), tensor_size, tensor_type,
                                         "DefaultFormat", tensor->data_ptr())) {
     MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
   }
@@ -208,7 +208,7 @@ void CopyValueNodeDataToDevice(const KernelGraphPtr &graph, const device::Device
     if (node_address->GetPtr() != nullptr) {
       continue;
     }
-    auto shape = trans::GetRuntimePaddingShape(value_node, 0);
+    auto shape = AnfAlgo::GetRuntimePaddingShape(value_node, 0);
     runtime::DeviceAddressUtils::CopyNoneTensorDataToDevice(device_context, node_address, shape);
   }
   MS_LOG(DEBUG) << "End";
@@ -1057,7 +1057,7 @@ void DynamicOpRunner::CopyHostToDevice(const OpCompilerInfoPtr &op_compiler_info
                         << ") memory isn't enough and alloc failed, kernel name: " << input_node->DebugString()
                         << ", alloc size: " << device_address->GetSize() << "B.";
     }
-    if (!device_address->SyncHostToDevice(trans::GetRuntimePaddingShape(input_node, 0), device_address->GetSize(),
+    if (!device_address->SyncHostToDevice(AnfAlgo::GetRuntimePaddingShape(input_node, 0), device_address->GetSize(),
                                           device_address->type_id(), "DefaultFormat", input_tensor->data_ptr())) {
       MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
     }

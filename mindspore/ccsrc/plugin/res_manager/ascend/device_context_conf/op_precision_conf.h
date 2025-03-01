@@ -18,13 +18,14 @@
 
 #include <memory>
 #include <string>
-#include "runtime/hardware/device_context_manager.h"
+#include "include/common/pybind_api/api_register.h"
+#include "plugin/res_manager/ascend/visible.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
-class OpPrecisionConf {
+class ASCEND_RES_MANAGER_EXPORT OpPrecisionConf {
  public:
   OpPrecisionConf() = default;
   ~OpPrecisionConf() = default;
@@ -52,7 +53,7 @@ class OpPrecisionConf {
   std::string conv_allow_hf32_{""};
 };
 
-void RegOpPrecisionConf(py::module *m);
+ASCEND_RES_MANAGER_EXPORT void RegOpPrecisionConf(py::module *m);
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore

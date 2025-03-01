@@ -31,7 +31,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "abstract/abstract_value.h"
 #include "include/backend/kernel_graph.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/device/device_address_utils.h"
 #include "backend/ge_backend/executor/ge_memory_allocator.h"
 #include "backend/ge_backend/executor/ge_utils.h"
@@ -485,7 +485,7 @@ void GeGraphExecutor::BuildInputDataGeTensor(const KernelGraphPtr &kernel_graph)
     MS_LOG(INFO) << "Build input ge tensor: " << name << ", kernel graph: " << kernel_graph->graph_id();
     auto output_addr = AnfAlgo::GetMutableOutputAddr(node, 0, false);
     (void)device_addrs.emplace_back(output_addr.get());
-    auto shapes = trans::GetRuntimePaddingShape(node, 0);
+    auto shapes = AnfAlgo::GetRuntimePaddingShape(node, 0);
     auto host_type = common::AnfAlgo::GetOutputInferDataType(node, 0);
     auto ge_tensor_desc = device::ascend::TransformUtil::GetGeTensorDesc(shapes, host_type, kOpFormat_DEFAULT);
     MS_EXCEPTION_IF_NULL(ge_tensor_desc);
@@ -531,7 +531,7 @@ void GeGraphExecutor::BuildOutputDataGeTensor(const KernelGraphPtr &kernel_graph
     auto device_addr =
       kernel_graph->has_flag(kFlagGeKernel) ? nullptr : AnfAlgo::GetMutableOutputAddr(output_node, real_index, false);
     (void)device_addrs.emplace_back(device_addr.get());
-    auto shapes = trans::GetRuntimePaddingShape(output_node, real_index);
+    auto shapes = AnfAlgo::GetRuntimePaddingShape(output_node, real_index);
     auto host_type = common::AnfAlgo::GetOutputInferDataType(output_node, real_index);
     auto ge_tensor_desc = device::ascend::TransformUtil::GetGeTensorDesc(shapes, host_type, kOpFormat_DEFAULT);
     MS_EXCEPTION_IF_NULL(ge_tensor_desc);
@@ -1342,7 +1342,7 @@ bool GeGraphExecutor::RunGraph(const FuncGraphPtr &graph, const std::vector<tens
       for (const auto &input : cur_inputs) {
         MS_EXCEPTION_IF_NULL(input);
         auto output_addr = AnfAlgo::GetMutableOutputAddr(input, 0);
-        auto shapes = trans::GetRuntimePaddingShape(input, 0);
+        auto shapes = AnfAlgo::GetRuntimePaddingShape(input, 0);
         auto host_type = common::AnfAlgo::GetOutputInferDataType(input, 0);
         auto tensor = std::make_shared<tensor::Tensor>(host_type, shapes);
         MS_EXCEPTION_IF_NULL(tensor);

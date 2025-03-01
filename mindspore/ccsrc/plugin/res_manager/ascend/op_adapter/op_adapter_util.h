@@ -24,6 +24,7 @@
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 #include "ir/scalar.h"
 #include "ops_utils/op_utils.h"
+#include "plugin/res_manager/ascend/visible.h"
 
 namespace mindspore {
 class GeDataTypeImm final : public IntegerImm {
@@ -185,13 +186,13 @@ bool IsCustomPrim(const PrimitivePtr &prim);
 bool IsCustomCNode(const AnfNodePtr &node);
 bool IsNoNeedConstantFoldCNode(const PrimitivePtr &prim);
 
-bool IsPartialSuccNode(const AnfNodePtr node);
-bool IsWhileNode(const AnfNodePtr &node);
-bool IsCallNode(const AnfNodePtr &node);
-bool IsIfNode(const AnfNodePtr &node);
-bool IsCaseNode(const AnfNodePtr &node);
-std::string GetCNodeTargetFuncName(const CNodePtr cnode);
-bool IsPartialCNode(const AnfNodePtr node);
+ASCEND_RES_MANAGER_EXPORT bool IsPartialSuccNode(const AnfNodePtr node);
+ASCEND_RES_MANAGER_EXPORT bool IsWhileNode(const AnfNodePtr &node);
+ASCEND_RES_MANAGER_EXPORT bool IsCallNode(const AnfNodePtr &node);
+ASCEND_RES_MANAGER_EXPORT bool IsIfNode(const AnfNodePtr &node);
+ASCEND_RES_MANAGER_EXPORT bool IsCaseNode(const AnfNodePtr &node);
+ASCEND_RES_MANAGER_EXPORT std::string GetCNodeTargetFuncName(const CNodePtr cnode);
+ASCEND_RES_MANAGER_EXPORT bool IsPartialCNode(const AnfNodePtr node);
 }  // namespace device::ascend
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_TRANSFORM_GRAPH_IR_OP_ADAPTER_UTIL_H_

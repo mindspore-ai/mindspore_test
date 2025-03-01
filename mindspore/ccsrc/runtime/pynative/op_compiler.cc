@@ -22,6 +22,7 @@
 #include <unordered_set>
 #include "utils/core_op_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/common/pynative/acl_adapter.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "mindspore/ops/op_def/conv_pool_op_name.h"
 #include "runtime/pynative/op_executor.h"
@@ -368,9 +369,10 @@ std::string OpCompiler::GetSingleOpGraphInfo(const pynative::BaseOpRunInfo &op_i
     (void)graph_info.append("r_").append(std::to_string(op_info.py_prim_id_)).append("_");
   }
 
-  if (get_graph_info_func_) {
+  if (acl_adapter::AclAdapterCallback::GetAclGraphInfoFuncHandlerValid()) {
     MS_LOG(DEBUG) << "Call reg get graph info func.";
-    graph_info = get_graph_info_func_(op_info, op_prim, graph_info);
+    graph_info =
+      acl_adapter::AclAdapterCallback::GetAclGraphInfoFunc(op_info.expanded_input_values, op_prim, graph_info);
   }
   // Special process for avgpoolgrad op, because that ge input 0 needs shape rather than tensor.
   if (op_name == kAvgPoolGradOpName) {

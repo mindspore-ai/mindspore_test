@@ -33,6 +33,7 @@
 #include "graph/tensor.h"
 #include "graph/types.h"
 #include "mindapi/base/format.h"
+#include "plugin/res_manager/ascend/visible.h"
 
 namespace ge {
 class CustomOperator : public Operator {
@@ -201,7 +202,7 @@ struct DynOutputDesc {
   std::vector<enum ::ge::DataType> supported_dtypes;
 };
 
-class BaseOpAdapter {
+class ASCEND_RES_MANAGER_EXPORT BaseOpAdapter {
  public:
   virtual ~BaseOpAdapter() {}
   virtual OperatorPtr generate(const AnfNodePtr &anf) = 0;
@@ -301,7 +302,7 @@ class AscendQuantRoundMode {
   }
 };
 
-class FASInputLayoutMode {
+class ASCEND_RES_MANAGER_EXPORT FASInputLayoutMode {
  public:
   static std::string ConvertEnumToString(int64_t id) {
     static const std::vector<std::string> input_layout_modes = {"BSH", "BNSD", "SBH", "BSND",     "TND",
@@ -314,7 +315,7 @@ class FASInputLayoutMode {
   }
 };
 
-class FFNActivationMode {
+class ASCEND_RES_MANAGER_EXPORT FFNActivationMode {
  public:
   static std::string ConvertEnumToString(int64_t id) {
     static const std::vector<std::string> activation_mode = {
@@ -329,7 +330,7 @@ class FFNActivationMode {
   }
 };
 
-class ScatterReduceMode {
+class ASCEND_RES_MANAGER_EXPORT ScatterReduceMode {
  public:
   static std::string ConvertEnumToString(int64_t id) {
     static const std::vector<std::string> reduce_mode = {"none", "add", "multiply", "update"};
@@ -341,7 +342,7 @@ class ScatterReduceMode {
   }
 };
 
-class GEPadMod {
+class ASCEND_RES_MANAGER_EXPORT GEPadMod {
  public:
   static std::string ConvertEnumToString(int64_t id) {
     static const std::vector<std::string> pad_mods = {"PAD", "SAME", "VALID"};
@@ -353,7 +354,7 @@ class GEPadMod {
   }
 };
 
-class GEReduction {
+class ASCEND_RES_MANAGER_EXPORT GEReduction {
  public:
   static std::string ConvertEnumToString(int64_t id) {
     static const std::vector<std::string> reductions = {"sum", "mean", "none"};
@@ -365,7 +366,7 @@ class GEReduction {
   }
 };
 
-class GECoordinateTransformMode {
+class ASCEND_RES_MANAGER_EXPORT GECoordinateTransformMode {
  public:
   static std::string ConvertEnumToString(int64_t id) {
     static const std::vector<std::string> modes = {"asymmetric", "align_corners", "half_pixel", "crop_and_resize"};
@@ -377,7 +378,7 @@ class GECoordinateTransformMode {
   }
 };
 
-class GERotatedIouMode {
+class ASCEND_RES_MANAGER_EXPORT GERotatedIouMode {
  public:
   static std::string ConvertEnumToString(int64_t id) {
     static const std::vector<std::string> modes = {"iou", "iof"};

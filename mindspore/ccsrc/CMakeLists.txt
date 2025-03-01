@@ -104,7 +104,7 @@ endforeach()
 
 
 add_library(mindspore_common SHARED ${COMMON_SUB_OBJECTS_SRC})
-target_link_libraries(mindspore_common PRIVATE mindspore_core mindspore_ops proto_input)
+target_link_libraries(mindspore_common PRIVATE mindspore_core mindspore_ops proto_input securec)
 set_target_properties(mindspore_common PROPERTIES INSTALL_RPATH $ORIGIN)
 if(CMAKE_SYSTEM_NAME MATCHES "Windows" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(mindspore_common PRIVATE mindspore::pybind11_module)
@@ -269,7 +269,9 @@ else()
 endif()
 
 if(ENABLE_D OR ENABLE_ACL)
-    target_link_libraries(_c_expression PRIVATE -Wl,--no-whole-archive mindspore_ge_backend)
+    target_link_libraries(_c_expression PRIVATE -Wl,--no-whole-archive mindspore_ge_backend
+        mindspore_ascend_res_manager)
+    target_link_libraries(mindspore_backend PRIVATE mindspore_ascend_res_manager)
 endif()
 
 

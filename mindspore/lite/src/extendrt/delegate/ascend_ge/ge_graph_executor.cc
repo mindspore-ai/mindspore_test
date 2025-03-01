@@ -25,7 +25,7 @@
 #include "include/api/status.h"
 #include "backend/ge_backend/graph_ir/utils.h"
 #include "include/backend/device_type.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "src/common/common.h"
 #include "src/common/file_utils.h"
 #include "cxx_api/acl_utils.h"

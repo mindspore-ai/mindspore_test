@@ -26,6 +26,7 @@
     MS_EXCEPTION_IF_NULL(name##_handler_);                                                        \
     return name##_handler_(argss...);                                                             \
   }                                                                                               \
+  static bool name##HandlerValid() { return name##_handler_ != nullptr; }                         \
   using name##Handler = std::function<decltype(name<__VA_ARGS__>)>;                               \
   static void Set##name##Handler(name##Handler handler) { name##_handler_ = std::move(handler); } \
                                                                                                   \

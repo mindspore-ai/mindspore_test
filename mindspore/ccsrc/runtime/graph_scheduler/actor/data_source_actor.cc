@@ -379,7 +379,7 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *cons
         }
       } else {
         if (!device_tensor->SyncHostToDevice(
-              trans::GetRuntimePaddingShape(data_node_with_indexs_[i].first, data_node_with_indexs_[i].second),
+              AnfAlgo::GetRuntimePaddingShape(data_node_with_indexs_[i].first, data_node_with_indexs_[i].second),
               LongToSize(host_tensor->data().nbytes()), host_tensor->data_type(),
               host_tensor->device_info().host_format_, host_tensor->data_ptr())) {
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");

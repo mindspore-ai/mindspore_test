@@ -16,7 +16,7 @@
 
 #include "plugin/device/cpu/kernel/rpc/rpc_send_kernel.h"
 #include <string>
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "proto/rpc.pb.h"
 #include "include/common/factory/ms_factory.h"
 

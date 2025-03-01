@@ -26,7 +26,7 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 
 namespace mindspore {
 namespace kernel {

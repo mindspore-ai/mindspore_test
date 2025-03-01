@@ -29,7 +29,6 @@
 #include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "plugin/device/ascend/acl_ir/op_api_cache.h"
 #include "plugin/device/ascend/acl_ir/op_api_util.h"
-#include "plugin/device/ascend/acl_ir/acl_allocator.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"

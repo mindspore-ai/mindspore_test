@@ -27,9 +27,10 @@
 #include "ir/tensor.h"
 #include "utils/shape_utils.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
+#include "plugin/res_manager/ascend/visible.h"
 
 namespace mindspore::device::ascend {
-class TransformUtil {
+class ASCEND_RES_MANAGER_EXPORT TransformUtil {
  public:
   /*
    * Parameters:

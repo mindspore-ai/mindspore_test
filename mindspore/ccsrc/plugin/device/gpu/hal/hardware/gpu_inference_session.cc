@@ -22,7 +22,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_utils.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/config_manager.h"
 
 namespace mindspore {
@@ -51,7 +51,7 @@ void GpuInferenceSession::LoadInputData(const std::shared_ptr<KernelGraph> &kern
     if (!common::AnfAlgo::IsParameterWeight(pk_node)) {
       tensor = inputs[no_weight_input++];
       MS_EXCEPTION_IF_NULL(tensor);
-      if (!device_address->SyncHostToDevice(trans::GetRuntimePaddingShape(pk_node, 0),
+      if (!device_address->SyncHostToDevice(AnfAlgo::GetRuntimePaddingShape(pk_node, 0),
                                             LongToSize(tensor->data().nbytes()), tensor->data_type(),
                                             tensor->data_c())) {
         MS_LOG(EXCEPTION) << "SyncHostToDevice failed.";
@@ -84,7 +84,7 @@ GraphId GpuInferenceSession::CompileGraphImpl(NotNull<FuncGraphPtr> func_graph) 
       MS_EXCEPTION_IF_NULL(param_value);
       auto tensor = std::dynamic_pointer_cast<tensor::Tensor>(param_value);
       MS_EXCEPTION_IF_NULL(tensor);
-      if (!device_address->SyncHostToDevice(trans::GetRuntimePaddingShape(pk_node, 0),
+      if (!device_address->SyncHostToDevice(AnfAlgo::GetRuntimePaddingShape(pk_node, 0),
                                             LongToSize(tensor->data().nbytes()), tensor->data_type(),
                                             tensor->data_c())) {
         MS_LOG(EXCEPTION) << "SyncHostToDevice failed.";

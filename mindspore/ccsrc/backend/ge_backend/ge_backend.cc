@@ -24,7 +24,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "ir/manager.h"
 #include "runtime/device/device_address_utils.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/config_manager.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "include/common/profiler.h"
@@ -1350,7 +1350,7 @@ void GEBackend::SyncTensorData(const tensor::TensorPtr &host_tensor,
   ShapeVector host_shape = {};
   // GetRuntimePaddingShape doesn't support the value tuple node.
   if (!node->isa<ValueNode>()) {
-    host_shape = trans::GetRuntimePaddingShape(node, 0);
+    host_shape = AnfAlgo::GetRuntimePaddingShape(node, 0);
   }
   auto get_tensor_num = (host_tensor->isa<tensor::MapTensor>() ? kMapTensorNum : kNormalTensorNum);
   for (size_t i = 0; i < get_tensor_num; ++i) {

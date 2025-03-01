@@ -26,14 +26,10 @@
 #include <numeric>
 #include <optional>
 #include <unordered_map>
-#include "kernel/oplib/oplib.h"
-#include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "abstract/utils.h"
-#include "runtime/device/convert_tensor_utils.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/utils.h"
-#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace trans {
@@ -161,7 +157,7 @@ class DataTypeTransfer {
 /**
  * Trans host shape to device shape according to node's format
  * */
-class BACKEND_EXPORT DeviceShapeTransfer {
+class COMMON_EXPORT DeviceShapeTransfer {
  public:
   DeviceShapeTransfer() = default;
   ~DeviceShapeTransfer() = default;
@@ -268,7 +264,7 @@ class FormatTransfer {
 /**
  * Range trans function
  * */
-class BACKEND_EXPORT ShapeRangeTransfer {
+class COMMON_EXPORT ShapeRangeTransfer {
  public:
   ShapeRangeTransfer() = default;
   ~ShapeRangeTransfer() = default;
@@ -300,43 +296,38 @@ static const std::set<std::string> kFormatWithTransFunc = {
 /**
  * Interface of datatype trans
  * */
-BACKEND_EXPORT bool TransDataType(const TypeIdArgs &args, void *result);
+COMMON_EXPORT bool TransDataType(const TypeIdArgs &args, void *result);
 
 /**
  * Interface of data format trans from host to device
  * */
-BACKEND_EXPORT bool TransFormat(const FormatArgs &args, void *result, const AnfNodePtr &node, size_t index);
+COMMON_EXPORT bool TransFormat(const FormatArgs &args, void *result, const AnfNodePtr &node, size_t index);
 
 /**
  * Interface of data format trans from host to device
  * */
-BACKEND_EXPORT bool TransFormatFromDeviceToHost(const FormatArgs &args, void *result, int64_t groups = 1);
+COMMON_EXPORT bool TransFormatFromDeviceToHost(const FormatArgs &args, void *result, int64_t groups = 1);
 
 /**
  * Interface of data format trans from device to host
  * */
-BACKEND_EXPORT bool TransFormatFromDeviceToHost(const FormatArgs &args, void *result, const AnfNodePtr &node,
-                                                size_t index);
+COMMON_EXPORT bool TransFormatFromDeviceToHost(const FormatArgs &args, void *result, const AnfNodePtr &node,
+                                               size_t index);
 
 /**
  * 4D reshape type trans, trans reshape_type from string to int
  * */
-BACKEND_EXPORT void StringToAxisVector4D(const std::string &reshape_type_str, std::vector<Axis> *reshape_type_vec);
+COMMON_EXPORT void StringToAxisVector4D(const std::string &reshape_type_str, std::vector<Axis> *reshape_type_vec);
 
 /**
  * 5D reshape type trans, trans reshape_type from string to int
  * */
-BACKEND_EXPORT void StringToAxisVector5D(const std::string &reshape_type_str, std::vector<Axis5D> *reshape_type_vec);
-
-/**
- * Get shape after padding
- * */
-BACKEND_EXPORT ShapeVector GetRuntimePaddingShape(const AnfNodePtr &node, size_t index);
+COMMON_EXPORT void StringToAxisVector5D(const std::string &reshape_type_str, std::vector<Axis5D> *reshape_type_vec);
 
 /**
  *  If need padding
  * */
-BACKEND_EXPORT bool IsNeedPadding(const std::string &format, const ShapeVector &shape);
+COMMON_EXPORT bool IsNeedPadding(const std::string &format, const ShapeVector &shape);
 
 /**
  * Padding shape to 5D by default mode
@@ -547,7 +538,7 @@ struct FormatInfo {
   bool isPadded = false;
 };
 
-class BACKEND_EXPORT FormatHelper {
+class COMMON_EXPORT FormatHelper {
  public:
   static FormatHelper &GetInstance() noexcept;
   const std::string GetBaseFormat(const std::string &format);

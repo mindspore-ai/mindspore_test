@@ -21,7 +21,7 @@
 #include "plugin/device/ascend/kernel/internal/internal_helper.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
 #include "plugin/device/ascend/kernel/internal/internal_tiling_cache.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 
 namespace mindspore {
 namespace kernel {
