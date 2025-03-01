@@ -11,7 +11,6 @@ paged_attention_mask:
       dtype: tensor
     context_lens:
       dtype: tensor
-      type_cast: list[int], tuple[int]
     antiquant_scale:
       dtype: tensor
       default: None
