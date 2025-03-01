@@ -190,6 +190,7 @@ AbstractWrapperPtr GradGraphBuildHelper::PrepareInner(GraphBuilder *graph_builde
 }
 
 AbstractWrapperPtr GradGraphBuildHelper::Build(GraphBuilder *graph_builder, CallNode *call_node) {
+  MS_LOG(DEBUG) << "Start build graph for grad operation";
   auto grad_net_node = static_cast<CallNode *>(call_node->input(0));
   if (grad_net_node == nullptr) {
     return nullptr;
@@ -352,6 +353,7 @@ AbstractWrapperPtr GradGraphBuildHelper::HandleGrad(const FuncGraphBuilderPtr &f
 
 std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>> GradGraphBuildHelper::BuildForwardGraph(
   GraphBuilder *graph_builder, CallNode *call_node) {
+  MS_LOG(DEBUG) << "Start build forward graph";
   auto grad_net_node = static_cast<CallNode *>(call_node->input(0));
   MS_EXCEPTION_IF_NULL(grad_net_node);
   constexpr size_t grad_operation_index = 0;
@@ -389,6 +391,7 @@ std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>> GradGraphBuildHelper::
     // Use CALL_FUNCTION_KW to build forward node.
     MS_LOG(EXCEPTION) << "Do not handle kwargs yet.";
   } else {
+    MS_LOG(DEBUG) << "Start trace bytecodes of forward graph";
     graph_builder->DoCall({CALL_FUNCTION, arg_size});
   }
   graph_builder->pop();
@@ -510,6 +513,7 @@ void GradGraphBuildHelper::HandleGradForwardSideEffect(GraphBuilder *graph_build
 
 AbstractWrapperPtrList GradGraphBuildHelper::HandleInputsForGrad(GraphBuilder *graph_builder, CallNode *call_node,
                                                                  BindArgumentsHelper<ValueNode *> forward_inputs) {
+  MS_LOG(DEBUG) << "Handle inputs for grad op";
   auto grad_net_node = static_cast<CallNode *>(call_node->input(0));
   MS_EXCEPTION_IF_NULL(grad_net_node);
   constexpr size_t grad_operation_index = 0;
@@ -545,7 +549,7 @@ AbstractWrapperPtrList GradGraphBuildHelper::HandleInputsForGrad(GraphBuilder *g
       continue;
     }
     auto wrapper = forward_input[index]->abstract_wrapper();
-    auto node = graph_builder->FGBuilder()->ReadLocalVariable(wrapper);
+    auto node = graph_builder->FGBuilder()->FindNodeByWrapper(wrapper);
     pijit::SaveTensorRegisterHook(obj, node);
     GuardRegisterHook(forward_input[index]);
   }
