@@ -14,6 +14,7 @@
 # ============================================================================
 """test graph break in call_function"""
 
+import numpy as np
 import sys
 import pytest
 
@@ -161,6 +162,37 @@ def test_call_function_graph_break_two_layers_v4():
     match_array(o1, o2)
     assert_has_graph_break(f1, break_count=1)
     check_ir_num('graph_before_compile', 3)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_call_function_graph_break_two_layers_v5():
+    """
+    Feature: test graph break in call_function.
+    Description: one graph break in f2, break at Tensor.asnumpy().
+    Expectation: The result of PIJit is same as pynative.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    def f2(x: Tensor):
+        x = x - 1  # alive local
+        x = Tensor(x.asnumpy())  # break
+        return x * 2
+
+    def f1(x: Tensor):
+        x = x * 2
+        y = f2(x)
+        return x + y
+
+    a = Tensor(np.random.randn(2, 3).astype(np.float32))
+    o1 = f1(a)
+
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    o2 = f1(a)
+
+    match_array(o1, o2)
+    assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 2)
 
 
 @save_graph_ir(ir_name='graph_before_compile')

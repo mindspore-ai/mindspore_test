@@ -22,6 +22,7 @@
 #include <stack>
 #include <string>
 #include <vector>
+#include "pipeline/jit/pi/capture_context.h"
 #include "pipeline/jit/pi/pi_jit_config.h"
 #include "pipeline/jit/pi/graph_guard/infer.h"
 #include "pipeline/jit/pi/graph_capture/graph.h"
@@ -806,6 +807,11 @@ bool CanCapturePartialGraph(const Graph *graph) {
   }
   if (PyCodeWrapper(graph->GetCodeObj()).CellVarsSize() > 0) {
     MS_LOG(INFO) << "Has cellvar, can not capture graph: " << GetNameAndLocation(graph);
+    return false;
+  }
+  const auto *capture_ctx = CaptureContext::GetInstance();
+  if (capture_ctx->IsSkip(graph->GetCodeObj(), graph->GetGlobals().ptr())) {
+    MS_LOG(INFO) << "Hit skip rules in CaptureContext, can not capture graph: " << GetNameAndLocation(graph);
     return false;
   }
   static const std::unordered_set<int> unsupported_break_op = {
