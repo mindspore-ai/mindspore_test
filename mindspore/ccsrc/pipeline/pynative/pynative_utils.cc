@@ -1619,8 +1619,7 @@ void PyBoost::MarkPyBoostInputs(const OpGradInfoPtr &op_grad_info, const TopCell
 }
 
 void PyBoost::BumpVersionAsync(const tensor::BaseTensorPtr &tensor) {
-  const auto &forward = PyNativeAlgo::Common::GetPyNativeExecutor()->forward_executor();
-  if (forward->enable_async()) {
+  if (!runtime::OpExecutor::NeedSync()) {
     const auto task = [tensor]() { tensor->BumpVersion(); };
     const auto &bprop_queue = runtime::Pipeline::Get().bprop_stage();
     bprop_queue->Push(std::make_shared<BpropTask>(task));
