@@ -484,6 +484,7 @@ Pooling functions
 
     mindspore.mint.nn.functional.adaptive_avg_pool1d
     mindspore.mint.nn.functional.adaptive_avg_pool2d
+    mindspore.mint.nn.functional.adaptive_avg_pool3d
     mindspore.mint.nn.functional.adaptive_max_pool1d
     mindspore.mint.nn.functional.avg_pool1d
     mindspore.mint.nn.functional.avg_pool2d

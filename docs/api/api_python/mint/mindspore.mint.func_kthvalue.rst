@@ -3,7 +3,7 @@ mindspore.mint.kthvalue
 
 .. py:function:: mindspore.mint.kthvalue(input, k, dim=-1, keepdim=False)
 
-    计算输入Tensor沿指定维度 `dim` 的第 `k` 小值，并返回一个由(`values`, `indices`)组成的Tuple，其中 `values` 包含第 `k` 小的元素， `indices` 提供每个对应元素的索引。
+    计算输入Tensor沿指定维度 `dim` 的第 `k` 小值，并返回一个由（ `values`, `indices` ）组成的Tuple，其中 `values` 包含第 `k` 小的元素， `indices` 提供每个对应元素的索引。
 
     参数：
         - **input** (Tensor) - 输入Tensor，可以是任意维度。设输入Tensor的shape为：:math:`(input_1, input_2, ..., input_N)` 。
