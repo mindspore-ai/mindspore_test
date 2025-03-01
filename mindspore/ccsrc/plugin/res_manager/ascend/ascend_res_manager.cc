@@ -39,11 +39,11 @@
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "utils/file_utils.h"
+#include "utils/distributed_meta.h"
 #include "graph/def_types.h"
 #include "runtime/device/move_to.h"
 #include "runtime/device/tensor_array.h"
 #include "acl/acl_rt.h"
-#include "include/backend/distributed/cluster/cluster_context.h"
 #include "plugin/res_manager/ascend/collective/ccool_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
@@ -419,7 +419,7 @@ bool AscendResManager::LoadCollectiveCommLib() {
     collective_comm_lib_ = &DummyAscendCollectiveCommLib::GetInstance();
     return true;
   }
-  if (distributed::cluster::ClusterContext::instance()->enable_cross_cluster()) {
+  if (DistributedMeta::GetInstance()->enable_cross_cluster()) {
     collective_comm_lib_ = &CcoolCollectiveCommLib::GetInstance();
     MS_EXCEPTION_IF_NULL(collective_comm_lib_);
     MS_LOG(INFO) << "Loading CCOOL collective library successfully.";

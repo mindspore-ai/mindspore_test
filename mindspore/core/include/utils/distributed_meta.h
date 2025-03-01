@@ -45,6 +45,11 @@ class MS_CORE_API DistributedMeta {
   void set_local_rank_size(uint32_t rank_size) { local_rank_size_ = rank_size; }
   uint32_t local_rank_size() const { return local_rank_size_; }
 
+  // Set whether enable cross cluster communication.
+  void set_enable_cross_cluster(bool enable_cross_cluster) { enable_cross_cluster_ = enable_cross_cluster; }
+  // Return whether enable cross cluster communication.
+  bool enable_cross_cluster() const { return enable_cross_cluster_; }
+
  private:
   static std::shared_ptr<DistributedMeta> instance_;
   bool inited_{false};
@@ -52,6 +57,8 @@ class MS_CORE_API DistributedMeta {
   uint32_t global_rank_size_{1};
   uint32_t local_rank_id_{0};
   uint32_t local_rank_size_{1};
+  // Indicate whether enable cross cluster communication.
+  bool enable_cross_cluster_{false};
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_INCLUDE_UTILS_DISTRIBUTED_META_H_
