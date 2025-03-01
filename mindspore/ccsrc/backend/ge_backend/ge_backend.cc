@@ -31,7 +31,6 @@
 #include "include/common/profiler.h"
 #include "include/backend/device_address.h"
 #include "utils/file_utils.h"
-#include "debug/data_dump/data_dumper.h"
 #ifndef ENABLE_SECURITY
 #include "backend/ge_backend/dump/hook_debugger.h"
 #endif
