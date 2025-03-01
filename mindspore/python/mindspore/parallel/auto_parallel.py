@@ -21,8 +21,31 @@ from mindspore.communication.management import get_rank, get_group_size
 
 class AutoParallel(Cell):
     """
-    AutoParallel Cell
+    AutoParallel enable auto parallel configuration for neural network cells. This class provides multiple
+    parallel strategies to optimize distributed training across Ascend/GPU/CPU devices.
+
+    Args:
+        network (Cell): Top-level cell or function in the forward network. Defines the core computational graph
+                     structure that will be parallelized. Must be a subclass of `nn.Cell` containing the model
+                     architecture.
+
+        parallel_mode (str, optional): Specifies the parallelization strategy engine. Available modes: ``"semi_auto"``,
+                    ``"sharding_propagation"``, ``"recursive_programming"``. Default: ``"semi_auto"``.
+
+                     - semi_auto: Achieves data and model parallelism by setting parallel strategies.
+
+                     - sharding_propagation:
+                       Automatic strategy propagation mode. Infers sharding strategies for non-annotated operators
+                       based on configured operator strategies.
+
+                     - recursive_programming:
+                       Full automatic parallelization mode. Dynamically generates parallel strategies through
+                       recursive program analysis.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
     """
+
     def __init__(self, network, parallel_mode="semi_auto"):
         super(AutoParallel, self).__init__(auto_prefix=False)
         self.network = network
@@ -177,6 +200,11 @@ class AutoParallel(Cell):
 
         Args:
             config Union[str, tuple(tuple), tuple(Layout)]: The dataset sharding strategy.
+
+        Raises:
+            ValueError: If the type of 'config' is str, but it's value is not 'full_batch' or 'data_parallel'.
+            TypeError: When 'config' is not str type nor tuple type.
+            TypeError: IF 'config' is tuple type, but it's element is not tuple type nor Layout type.
         """
         if config is None:
             raise ValueError("dataset_strategy is none in config!")

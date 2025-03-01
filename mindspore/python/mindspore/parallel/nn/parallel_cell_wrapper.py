@@ -22,7 +22,7 @@ from mindspore.ops import operations as P
 from mindspore.nn.cell import Cell
 from mindspore.nn.wrap.cell_wrapper import _MicroBatch
 
-__all__ = ['PipelineCell', 'MicroBatchInterleaved']
+__all__ = ['PipelineCell', 'Pipeline', 'MicroBatchInterleaved', 'GradAccumulation']
 
 
 class PipelineCell(Cell):
@@ -114,6 +114,28 @@ class PipelineCell(Cell):
                 ret = output
         return ret
 
+class Pipeline(PipelineCell):
+    """
+    Slice MiniBatch into finer-grained MicroBatch for use in pipeline-parallel training.
+
+    Note:
+        micro_size must be greater or equal to pipeline stages.
+
+    Args:
+        network (Cell): The target network to wrap.
+        micro_size (int): MicroBatch size.
+        stage_config (dict): The stage configuration for each cell's execution in pipeline parallel.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU``
+
+    Examples:
+        >>> from mindspore.parallel.nn import Pipeline
+        >>> # Define the network structure of LeNet5. Refer to
+        >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/lenet.py
+        >>> net = LeNet5()
+        >>> net = Pipeline(net, 4)
+    """
 
 class MicroBatchInterleaved(Cell):
     """
@@ -168,3 +190,56 @@ class MicroBatchInterleaved(Cell):
             interleave_input = self.interleave_inputs[i](i, *inputs)
             output = self.add(output, self.network(*interleave_input))
         return output
+
+
+class GradAccumulation(Cell):
+    """
+    Wrap the network with Micro Batch to enable the grad accumulation.
+
+    Args:
+        network (Cell): The target network to wrap.
+        micro_size (int): MicroBatch size.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU``
+
+    Examples:
+        >>> from mindspore.parallel.nn import GradAccumulation
+        >>> # Define the network structure of LeNet5. Refer to
+        >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/lenet.py
+        >>> net = LeNet5()
+        >>> net = GradAccumulation(net, 4)
+    """
+    def __init__(self, network, micro_size):
+        super(GradAccumulation, self).__init__(auto_prefix=False)
+        self.network = network
+        self.micro_inputs = nn.CellList()
+        self.micro_size = micro_size
+        self.add_list = []
+        if not isinstance(network, Cell):
+            raise TypeError("For 'GradAccumulation', the argument 'network' must cell type, "
+                            "but got the type : {}.".format(type(network)))
+        if not isinstance(micro_size, int):
+            raise TypeError("For 'GradAccumulation', the argument 'micro_size' must be integer, "
+                            "but got the type : {}.".format(type(micro_size)))
+        if micro_size <= 0:
+            raise ValueError("For 'GradAccumulation', the argument 'micro_size' must be large than 0, "
+                             "but got {}.".format(micro_size))
+        for i in range(micro_size):
+            micro_input = _MicroBatch(micro_size)
+            micro_input.strided_slice.add_prim_attr("grad_accu_num", micro_size)
+            self.micro_inputs.append(micro_input)
+            self.add = P.Add().add_prim_attr("forward_end", i)
+            self.add_list.append(self.add)
+        self._get_attr_from_cell(network)
+
+    def construct(self, *inputs):
+        ret = None
+        for i in range(self.micro_size):
+            micro_input = self.micro_inputs[i](i, *inputs)
+            output = self.network(*micro_input)
+            if ret is not None:
+                ret = self.add_list[i](ret, output)
+            else:
+                ret = output
+        return ret
