@@ -261,7 +261,7 @@ FuncGraphVector GradMultiFuncGraph(const FuncGraphVector &func_graphs, const opt
 }
 
 FuncGraphPtr Kprim(const ValueNodePtr &value_node, const pipeline::ResourceBasePtr &resources) {
-  auto fg = g_k_prims.KPrimitive(nullptr, value_node, resources);
+  auto fg = g_k_prims.KPrimitive(nullptr, value_node, resources, false);
   if (fg == nullptr) {
     return nullptr;
   }

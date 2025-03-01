@@ -144,11 +144,12 @@ class KPrim {
   ~KPrim() = default;
 
   FuncGraphPtr KPrimitive(const CNodePtr &cnode, const ValueNodePtr &value_node,
-                          const pipeline::ResourceBasePtr &resources);
+                          const pipeline::ResourceBasePtr &resources, bool is_view_inplace);
   MetaFuncGraphPtr KMetaFuncGraph(const PrimitivePtr &prim, const AnfNodePtr &node);
   // bprop_fg and primal_fg in bprop_fg's transforms are FuncGraph just after convert.
   // current_primal_fg is the specialized and AutoMonaded primal_fg.
-  FuncGraphPtr KUserDefinedCellBprop(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg);
+  FuncGraphPtr KUserDefinedCellBprop(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg,
+                                     bool is_view_inplace);
 
   bool CheckCustomVjp(const FuncGraphPtr &bprop_fg) const;
   FuncGraphPtr GetCustomVjpBprop(const FuncGraphPtr &bprop_fg) const;
@@ -169,8 +170,9 @@ class KPrim {
   template <typename T>
   FuncGraphPtr BpropToK(const T &primal, const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg,
                         const CNodePtr &cnode, const mindspore::HashMap<std::string, ValuePtr> &primal_attrs,
-                        const std::vector<NodeDebugInfoPtr> &primal_debug_infos);
-  AnfNodePtr BuildOutput(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg) const;
+                        const std::vector<NodeDebugInfoPtr> &primal_debug_infos, bool is_view_inplace);
+  AnfNodePtr BuildOutput(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg,
+                         bool is_view_inplace) const;
   void TransformArgsForPrimitive(const FuncGraphManagerPtr &mng, const FuncGraphPtr &bprop_fg,
                                  const PrimitivePtr &primitive, const FuncGraphPtr &outer,
                                  std::vector<AnfNodePtr> *const transf_args) const;
@@ -187,7 +189,7 @@ class KPrim {
 template <typename T>
 FuncGraphPtr KPrim::BpropToK(const T &primal, const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg,
                              const CNodePtr &cnode, const mindspore::HashMap<std::string, ValuePtr> &primal_attrs,
-                             const std::vector<NodeDebugInfoPtr> &primal_debug_infos) {
+                             const std::vector<NodeDebugInfoPtr> &primal_debug_infos, bool is_view_inplace) {
   MS_EXCEPTION_IF_NULL(primal);
   MS_EXCEPTION_IF_NULL(bprop_fg);
   CheckBprop(bprop_fg, primal->ToString());
@@ -224,7 +226,7 @@ FuncGraphPtr KPrim::BpropToK(const T &primal, const FuncGraphPtr &bprop_fg, cons
       << cloned_bprop_fg->parameters().size() << ".\n"
       << trace::GetDebugInfoStr(cloned_bprop_fg->debug_info());
   }
-  AnfNodePtr bout = BuildOutput(cloned_bprop_fg, current_primal_fg);
+  AnfNodePtr bout = BuildOutput(cloned_bprop_fg, current_primal_fg, is_view_inplace);
   cloned_bprop_fg->set_output(bout);
 
   FuncGraphPtr outer = nullptr;
