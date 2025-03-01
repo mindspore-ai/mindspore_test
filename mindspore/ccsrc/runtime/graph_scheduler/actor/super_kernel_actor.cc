@@ -325,7 +325,7 @@ void SuperKernelActor::InitParallelDispatchResource() {
       auto queue = std::make_unique<AsyncRQueue>(std::string("batch_launch_") + std::to_string(i),
                                                  runtime::kThreadWaitLevel::kLevelDevice);
       MS_EXCEPTION_IF_NULL(queue);
-      queue->SetSpin(true);
+      queue->SetSpin(false);
       queues_.push_back(std::move(queue));
     }
   }
