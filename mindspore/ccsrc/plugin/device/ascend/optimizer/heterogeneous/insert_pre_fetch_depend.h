@@ -16,6 +16,8 @@
 
 #ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_HETEROGENEOUS_INSERT_PRE_FETCH_DEPEND_H
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_HETEROGENEOUS_INSERT_PRE_FETCH_DEPEND_H
+#include <vector>
+
 #include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {
@@ -36,6 +38,8 @@ class BACKEND_EXPORT InsertPreFetchDepend : public Pass {
   bool CalExecutionOrder(const CNodePtr &move_to_node, int64_t prefetch, size_t *pre_exec_order,
                          size_t *post_exec_order);
   HashMap<CNodePtr, size_t> exec_order_cache_;
+  HashMap<CNodePtr, size_t> exec_order_cache_without_moveto_;
+  std::vector<CNodePtr> exec_order_without_moveto_;
   FuncGraphPtr func_graph_{nullptr};
   KernelGraphPtr kernel_graph_{nullptr};
   FuncGraphManagerPtr manager_{nullptr};
