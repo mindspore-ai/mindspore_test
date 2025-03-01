@@ -1,7 +1,7 @@
 mindspore.Tensor
 ================
 
-.. py:class:: mindspore.Tensor(input_data=None, dtype=None, shape=None, init=None, internal=False, const_arg=False, device=None)
+.. py:class:: mindspore.Tensor(input_data=None, dtype=None, shape=None, init=None, const_arg=False, device=None)
 
     张量，即存储多维数组（n-dimensional array）的数据结构。
 
@@ -17,7 +17,6 @@ mindspore.Tensor
         - **dtype** (:class:`mindspore.dtype`) - 用于定义该Tensor的数据类型，必须是 `mindspore.dtype` 中定义的类型。如果该参数为 ``None`` ，则数据类型与 `input_data` 一致，默认值： ``None`` 。
         - **shape** (Union[tuple, list, int, :class:`mindspore.Symbol`]) - 用于定义该Tensor的形状。如果指定了 `input_data` ，则无需设置该参数。如果 `shape` 中存在 ``None`` 或 `Symbol` 类型数据，表示创建一个动态形状（dynamic shape）的Tensor，此时不需要设置 `input_data` 参数；如果 `shape` 中仅存在整数类型数据，表示创建一个静态形状（static shape）的Tensor，此时必须设置 `input_data` 或 `init` 参数。默认值： ``None`` 。
         - **init** (Initializer) - 用于在并行模式中延迟Tensor的数据的初始化，如果指定该参数，则 `dtype` 和 `shape` 也必须被指定。默认值： ``None`` 。
-        - **internal** (bool) - Tensor是否由框架创建。如果为 ``True`` ，表示Tensor是由框架创建的，如果为 ``False`` ，表示Tensor是由用户创建的。默认值： ``False`` 。
         - **const_arg** (bool) - 指定该Tensor作为网络输入时是否为常量。默认值： ``False`` 。
         - **device** (str) - 该参数为保留参数，不需要用户配置。默认值： ``None`` 。
 

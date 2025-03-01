@@ -765,7 +765,7 @@ void TensorPybind::Offload(const Tensor &tensor, bool release) {
       MS_LOG(EXCEPTION) << "For Offload, this tensor's device_ptr is nullptr, it may have been offloaded or released by"
                         << " the framework.";
     }
-    MS_LOG(INFO) << "Tensor Offload start, the tensor's device_address is : "<< device_address.get()
+    MS_LOG(INFO) << "Tensor Offload start, the tensor's device_address is : " << device_address.get()
                  << ", the tensor's size is : " << device_address->GetSize();
     device_address->SyncDeviceToHost(device_address->GetSize(), tensor.data_c());
     device_address->ClearDeviceMemory();
@@ -798,7 +798,7 @@ void TensorPybind::Load(const Tensor &tensor) {
   // make sure op execute end before data copy
   runtime::Pipeline::Get().WaitForward();
   device_ctx->device_res_manager_->AllocateMemory(device_address.get());
-  MS_LOG(INFO) << "Tensor Load start, the tensor's device_address is : "<< device_address.get()
+  MS_LOG(INFO) << "Tensor Load start, the tensor's device_address is : " << device_address.get()
                << ", the tensor's size is : " << device_address->GetSize();
   device_address->SyncHostToDevice(device_address->GetSize(), tensor.data_c());
 }
