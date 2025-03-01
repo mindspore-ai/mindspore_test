@@ -1890,6 +1890,7 @@ py::object GraphExecutorPy::RunInner(const py::tuple &args, const py::object &ph
   if (enable_infer_boost) {
     PhaseManager::GetInstance().set_phase(phase);
   }
+
 #ifdef WITH_BACKEND
   if (ms_context->backend_policy() == "ge") {
     if (phase_prefix == "save") {

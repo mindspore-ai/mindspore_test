@@ -1,4 +1,4 @@
-# Copyright 2020 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 import os
 from tests.mark_utils import arg_mark
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level3", card_mark="allcards", essential_mark="unessential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="unessential")
 def test_msrun_model_parallel_model_programming():
     """
     Feature: AutoParallel(cell) in model parallel dimension
@@ -28,7 +28,7 @@ def test_msrun_model_parallel_model_programming():
                     "model_parallel.py::test_model_parallel_model_programming")
     assert ret == 0
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level3", card_mark="allcards", essential_mark="unessential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="unessential")
 def test_msrun_model_parallel_functional_programming():
     """
     Feature: AutoParallel(cell) in model parallel dimension
@@ -41,7 +41,7 @@ def test_msrun_model_parallel_functional_programming():
                     "model_parallel.py::test_model_parallel_functional_programming")
     assert ret == 0
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level3", card_mark="allcards", essential_mark="unessential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="unessential")
 def test_msrun_data_parallel_model_programming():
     """
     Feature: AutoParallel(cell) in data parallel dimension
@@ -54,7 +54,7 @@ def test_msrun_data_parallel_model_programming():
                     "model_parallel.py::test_data_parallel_model_programming")
     assert ret == 0
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level3", card_mark="allcards", essential_mark="unessential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="unessential")
 def test_msrun_data_parallel_functional_programming():
     """
     Feature: AutoParallel(cell) in data parallel dimension
