@@ -476,7 +476,6 @@ AnfNodePtr KPrim::BuildOutput(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &
         (void)args.insert(args.cend(), extra_lifted_args.cbegin(), extra_lifted_args.cend());
       }
       (void)args.insert(args.cend(), inputs.cbegin() + 1, inputs.cend());
-
     }
     if (!extra_monad_args.empty()) {
       (void)args.insert(args.cend(), extra_monad_args.cbegin(), extra_monad_args.cend());

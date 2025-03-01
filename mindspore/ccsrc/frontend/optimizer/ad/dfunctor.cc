@@ -131,8 +131,13 @@ void CopyPrimitivePtrForFpropReplace(const FuncGraphPtr &primal_graph, const Fun
 }
 }  // namespace
 
-DFunctor::DFunctor(const FuncGraphPtr &primal_graph, const pipeline::ResourceBasePtr &resources, bool is_top)
-    : primal_graph_(primal_graph), resources_(resources), need_cut_(false), is_top_(is_top) {
+DFunctor::DFunctor(const FuncGraphPtr &primal_graph, const pipeline::ResourceBasePtr &resources, bool is_top,
+                   bool is_view_inplace)
+    : primal_graph_(primal_graph),
+      resources_(resources),
+      need_cut_(false),
+      is_top_(is_top),
+      is_view_inplace_(is_view_inplace) {
   {
     TraceGuard guard(MakeTraceInfo<TraceGradFprop>(primal_graph->debug_info()));
     k_graph_ = std::make_shared<FuncGraph>();
@@ -395,8 +400,8 @@ CNodePtr DFunctor::CalDoutTuple(const CNodePtr &cnode_morph, const CNodePtr &din
     // For View_ops, Just record the first input.
 
     // Get Din/dmask/ops_type from node_adjoint->dout(): (din, (dmask, ops_tye));
-    auto node_dout_tuple = caller->NewCNodeInOrder(
-      {NewValueNode(prim::kPrimTupleGetItem), node_adjoint->dout(), NewValueNode(int64_t(1))});
+    auto node_dout_tuple =
+      caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), node_adjoint->dout(), NewValueNode(int64_t(1))});
     node_adjoint->RegisterDoutUser(node_dout_tuple, 1);
     auto node_mask =
       caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), node_dout_tuple, NewValueNode(int64_t(0))});
@@ -503,8 +508,7 @@ void DFunctor::BackPropagate(const CNodePtr &cnode_morph, const CNodePtr &k_app,
       if (prim != nullptr && prim->inplace_prim() && UpdateStateUseOnly(node_input, node_users_map)) {
         // Initialize a dout for the cnode used only by updatestate.
         auto caller = input_adjoint->second->caller();
-        auto real_din =
-          caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), din, NewValueNode(int64_t(0))});
+        auto real_din = caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), din, NewValueNode(int64_t(0))});
         auto dmask_tuple =
           caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), din, NewValueNode(int64_t(1))});
         auto din_ones = input_adjoint->second->caller()->NewCNodeInOrder({NewValueNode(prim::kPrimOnesLike), real_din});
