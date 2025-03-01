@@ -35,8 +35,6 @@
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pipeline/jit/ps/static_analysis/async_eval_result.h"
 #include "pipeline/jit/ps/compile_cache_manager.h"
-#include "pipeline/pynative/pynative_execute.h"
-#include "pipeline/pynative/op_function/converter.h"
 #include "frontend/optimizer/ad/dfunctor.h"
 #include "frontend/optimizer/ad/prim_bprop_optimizer.h"
 #include "include/common/utils/parallel_context.h"
@@ -119,9 +117,8 @@
 #include "ir/cell.h"
 #endif
 
-#include "pybind_api/ir/log_adapter_py.h"  // Only include one-time in the whole project.
-#include "pybind_api/ir/py_execute_py.h"   // Only include one-time in the whole project.
-#include "pybind_api/ir/tensor_register/auto_generate/tensor_func_utils.h"
+#include "frontend/ir/log_adapter_py.h"  // Only include one-time in the whole project.
+#include "frontend/ir/py_execute_py.h"   // Only include one-time in the whole project.
 #include "include/common/utils/compile_cache_context.h"
 #include "include/common/utils/tensor_py.h"
 
@@ -259,8 +256,6 @@ void RecordInitStatus() {
     printed = true;
   }
 }
-
-void RecordExitStatus() { MS_LOG(INFO) << "Status record: system exit."; }
 
 std::string ToOrdinal(const size_t &i) {
   auto suffix = "th";
@@ -1838,7 +1833,8 @@ void ExecutorPy::ProcessVmArg(const py::tuple &args, const std::string &phase, V
 void GraphExecutorPy::TerminateDebugger() {
   if (Common::GetDebugTerminate()) {
     MS_LOG(INFO) << "Terminate debugger and clear resources!";
-    ClearResAtexit();
+    // TODO(caifubi): remove
+    // ClearResAtexit();
     exit(static_cast<int>(!Common::GetDebugExitSuccess()));
   }
 }
@@ -2574,189 +2570,7 @@ void InitPipeline() {
 
 void FinalizeBackend() { CloseTsd(); }
 
-void MemoryRecycle() {
-#ifdef ENABLE_DUMP_IR
-  mindspore::RDR::ResetRecorder();
-#endif
-  ReclaimOptimizer();
-  session::ExecutorManager::Instance().ClearDoneTasks();
-  ad::g_k_prims.clear();
-  ad::PrimBpropOptimizer::GetPrimBpropOptimizerInst().Clear();
-  abstract::AnalysisResultCacheMgr::GetInstance().Clear();
-  abstract::AnalysisContext::ClearContext();
-  kArgsCache.clear();
-  kCellArgsMap.clear();
-  // clean static variable to prevent from crash. As static variable is released after
-  // Python threads is released.
-  parse::data_converter::ClearObjectCache();
-  parse::Parser::CleanParserResource();
-  trace::ClearTraceStack();
-  pynative::PyNativeExecutor::GetInstance()->ClearRes();
-  ConfigManager::GetInstance().ResetConfig();
-  ScopeManager::GetInstance().ClearScope();
-  FuncGraphLoopBreaker::Inst().CleanMetaFuncGraphs();
-  FuncGraphLoopBreaker::Inst().BreakLoop();
-}
-
 void BindDeviceCtx() { device::DeviceContextManager::GetInstance().BindDeviceCtx(); }
-
-void ClearResPart1() {
-  pynative::PyNativeExecutor::GetInstance()->WorkerJoin();
-  runtime::OpExecutor::GetInstance().WorkerJoin();
-  // When the python process exits, the kernels on the device may not have finished executing.
-  device::KernelRuntimeManager::Instance().WaitTaskFinishOnDevice();
-  device::DeviceContextManager::GetInstance().WaitTaskFinishOnDevice();
-  tensor::StubTensorConverter::GetInstance().Clear();
-  RecordExitStatus();
-#ifdef ENABLE_DUMP_IR
-  mindspore::RDR::Snapshot();
-  mindspore::RDR::ResetRecorder();
-#endif
-  backend::BackendManager::GetInstance().Clear();
-  runtime::GraphScheduler::GetInstance().Clear();
-  runtime::ProfilerAnalyzer::GetInstance().Clear();
-  opt::PassConfigure::Instance().Clear();
-
-  MS_LOG(INFO) << "Start Finalize StreamSynchronizer...";
-  device::StreamSynchronizer::GetInstance()->Finalize();
-  MS_LOG(INFO) << "End Finalize StreamSynchronizer...";
-
-  PrimitivePy::ClearHookRes();
-  ad::g_k_prims.clear();
-  ad::PrimBpropOptimizer::GetPrimBpropOptimizerInst().Clear();
-
-  abstract::ClearPrimEvaluatorMap();
-  pipeline::GetMethodMap().clear();
-  pipeline::GetAttrMap().clear();
-#ifdef WITH_BACKEND
-  pipeline::GraphExecutorPy::GetInstance()->ClearInfo();
-  pipeline::JitExecutorPy::GetInstance()->ClearInfo();
-#endif
-  pipeline::GraphExecutorPy::ClearRes();
-  pipeline::JitExecutorPy::ClearRes();
-  pipeline::ReclaimOptimizer();
-}
-
-void ClearResPart2() {
-  MS_LOG(INFO) << "Start clear PyNativeExecutor...";
-  pynative::PyNativeExecutor::GetInstance()->ClearRes();
-  MS_LOG(INFO) << "End clear PyNativeExecutor.";
-
-  MS_LOG(INFO) << "Start clear ConfigManager...";
-  ConfigManager::GetInstance().ResetIterNum();
-  MS_LOG(INFO) << "End clear ConfigManager.";
-
-  session::ExecutorManager::Instance().Clear();
-
-  MS_LOG(INFO) << "Start clear device context...";
-  device::DeviceContextManager::GetInstance().ClearDeviceContexts();
-  MS_LOG(INFO) << "End clear device context.";
-
-  MS_LOG(INFO) << "Start clear kernel runtime...";
-  device::KernelRuntimeManager::Instance().ClearRuntimeResource();
-  MS_LOG(INFO) << "End clear kernel runtime.";
-
-  MS_LOG(INFO) << "Start clear CollectiveManager...";
-  // for GE, HcclCommDestroy should after RemoveGraph in ClearGraphWrapper in ClearDeviceContexts
-  (void)distributed::collective::CollectiveManager::instance()->Finalize();
-  MS_LOG(INFO) << "End clear CollectiveManager.";
-
-  MS_LOG(INFO) << "Start clear AnalysisResultCacheMgr...";
-  abstract::AnalysisResultCacheMgr::GetInstance().Clear();
-  MS_LOG(INFO) << "End clear AnalysisResultCacheMgr.";
-
-  MS_LOG(INFO) << "Start clear AnalysisContext...";
-  abstract::AnalysisContext::ClearContext();
-  MS_LOG(INFO) << "End clear AnalysisContext...";
-
-  MS_LOG(INFO) << "Start clear AnalysisSchedule...";
-  abstract::AnalysisSchedule::GetInstance().Stop();
-  MS_LOG(INFO) << "End clear AnalysisSchedule...";
-#ifdef ENABLE_DEBUGGER
-  auto debugger = Debugger::GetInstance();
-  MS_EXCEPTION_IF_NULL(debugger);
-  debugger->Reset();
-#endif
-  kArgsCache.clear();
-  kCellArgsMap.clear();
-}
-
-void ClearResPart3() {
-  // clean static variable to prevent from crash. As static variable is released after
-  // Python threads is released.
-  MS_LOG(INFO) << "Start clear ClearObjectCache...";
-  parse::data_converter::ClearObjectCache();
-  MS_LOG(INFO) << "End clear ClearObjectCache...";
-
-  MS_LOG(INFO) << "Start clear Parser...";
-  parse::Parser::CleanParserResource();
-  MS_LOG(INFO) << "End clear Parser...";
-
-  MS_LOG(INFO) << "Start ClearTraceStack...";
-  trace::ClearTraceStack();
-  MS_LOG(INFO) << "End ClearTraceStack...";
-
-  MS_LOG(INFO) << "Start clear InterpretNodeRecorder...";
-  InterpretNodeRecorder::GetInstance().Clear();
-  MS_LOG(INFO) << "End clear InterpretNodeRecorder...";
-
-  MS_LOG(INFO) << "Start clear parallel::entire_costgraph...";
-  parallel::entire_costgraph.reset();
-  MS_LOG(INFO) << "End clear parallel::entire_costgraph...";
-
-  MS_LOG(INFO) << "Start clear ProtobufLibrary...";
-  google::protobuf::ShutdownProtobufLibrary();
-  MS_LOG(INFO) << "End clear ProtobufLibrary...";
-
-  MS_LOG(INFO) << "Start clear ParserDefaultObjects ...";
-  pynative::ParserDefaultObjects::GetInstance().ClearRes();
-  MS_LOG(INFO) << "End clear ParserDefaultObjects...";
-
-  // ResetPythonScope after all py::object is freed.
-  MS_LOG(INFO) << "Start clear python_adapter...";
-  python_adapter::ResetPythonScope();
-  MS_LOG(INFO) << "End clear python_adapter.";
-}
-
-void ClearSingleton() {
-  MS_LOG(INFO) << "Start clear singleton...";
-  profiler::Profiler::Clear();
-  debug::tft::TFTWaitSem::GetInstance().Clear();
-#ifdef ENABLE_AKG
-  kernel::GraphKernelBuildManager::Instance().Clear();
-#endif
-  somas::SomasManager::Instance().Clear();
-  GraphKernelInfoManager::Instance().Clear();
-  device::DataQueueMgr::GetInstance().Clear();
-  session::SessionFactory::Get().Clear();
-  device::KernelRuntimeManager::Instance().Clear();
-  ExecuteOrderTracker::GetInstance().Clear();
-  OpPrimPyRegister::GetInstance().Clear();
-  DumpJsonParser::Finalize();
-  AclDumpJsonWriter::Finalize();
-  CommManager::Clear();
-  expander::ClearAllCache();
-
-  MS_LOG(INFO) << "End clear singleton.";
-}
-
-void ClearResAtexit() {
-  MS_LOG(INFO) << "Pipeline clear all resource";
-  try {
-    MsException::Instance().CheckException();
-  } catch (const std::exception &e) {
-    MS_LOG(ERROR) << "Check exception before process exit: " << e.what();
-  }
-  ClearResPart1();
-  ClearResPart2();
-
-  mindspore::trans::FormatHelper::GetInstance().Clear();
-  ClearResPart3();
-  ClearSingleton();
-  //  The premature unloading of the plugin .so triggers the process to exit during the termination phase. Other
-  //  components' singletons, static variables, and global variables in MindSpore may inadvertently invoke the plugin
-  //  interface, resulting in an undefined coredump.
-}
 
 py::bytes PyEncrypt(char *plain_data, size_t plain_len, char *key, size_t key_len, const std::string &enc_mode) {
   size_t encrypt_len;
@@ -2886,6 +2700,11 @@ bool RunJitPipeline() {
 void PreJit(const py::object &args, const py::object &kwargs) {
   const auto &self = GetSelfFromArgs(args);
   parse::Parser::InitParserEnvironment(self);
+}
+
+void CleanCache() {
+  kArgsCache.clear();
+  kCellArgsMap.clear();
 }
 }  // namespace pipeline
 }  // namespace mindspore

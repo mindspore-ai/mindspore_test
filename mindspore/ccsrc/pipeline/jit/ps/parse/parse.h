@@ -114,7 +114,7 @@ struct ArgsContext {
 };
 
 // Parser to parse python function.
-class Parser {
+class FRONTEND_EXPORT Parser {
  public:
   explicit Parser(const std::shared_ptr<ParseFunctionAst> &ast, ValuePtrList args_value_list);
 

@@ -16,7 +16,7 @@
 
 #include <tuple>
 #include "frontend/expander/bprop/bprop_irbuilder.h"
-#include "frontend/expander/bprop/common_utils.h"
+#include "grad/grad_utils.h"
 #include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/array_op_name.h"

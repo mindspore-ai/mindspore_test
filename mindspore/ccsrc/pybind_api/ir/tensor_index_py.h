@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_UTILS_TENSOR_INDEX_PY_H_
-#define MINDSPORE_CCSRC_UTILS_TENSOR_INDEX_PY_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_INDEX_PY_H_
+#define MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_INDEX_PY_H_
 
 #include <tuple>
 #include <algorithm>
@@ -26,9 +26,9 @@
 #include "pybind11/numpy.h"
 #include "pybind11/pytypes.h"
 #include "ir/map_tensor.h"
-#include "pybind_api/ir/tensor_py.h"
+#include "frontend/ir/tensor_py.h"
 #include "include/common/utils/convert_utils_py.h"
-#include "pipeline/pynative/base.h"
+#include "pynative/base.h"
 
 namespace py = pybind11;
 
@@ -676,4 +676,4 @@ class TensorIndex final {
 };
 }  // namespace tensor
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_UTILS_TENSOR_INDEX_PY_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_INDEX_PY_H_

@@ -19,9 +19,10 @@
 #include <string>
 #include <map>
 #include "utils/shape_utils.h"
+#include "include/backend/visible.h"
 
 namespace mindspore::graphkernel {
 // infer abstract shape by device_shape and data_format
-ShapeVector GetFakeAbstractShape(const ShapeVector &device_shape, const std::string &format);
+BACKEND_EXPORT ShapeVector GetFakeAbstractShape(const ShapeVector &device_shape, const std::string &format);
 }  // namespace mindspore::graphkernel
 #endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_ADAPTER_FAKE_ABSTRACT_SHAPE_H_

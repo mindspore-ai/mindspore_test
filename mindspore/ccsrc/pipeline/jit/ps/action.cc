@@ -55,7 +55,6 @@
 #include "pipeline/jit/ps/remove_value_node_dup.h"
 #include "pipeline/jit/ps/event_message_print.h"
 #include "pipeline/jit/ps/silent_check.h"
-#include "pipeline/pynative/pynative_execute.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/ad/grad.h"
 #include "utils/ms_context.h"
@@ -80,6 +79,7 @@
 #include "include/common/profiler.h"
 #include "availability/silent_check/silent_check.h"
 #include "backend/backend_manager/backend_manager.h"
+#include "include/common/pynative/adapter.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -1378,8 +1378,7 @@ bool GetJitBpropGraph(const ResourcePtr &resource) {
   if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode) {
     return true;
   }
-  return pynative::PyNativeExecutor::GetInstance()->grad_executor()->jit()->GetJitGradGraph(
-    resource, PhaseManager::GetInstance().phase());
+  return pynative::PyNativeAdapter::GetJitBpropGraph(resource, PhaseManager::GetInstance().phase());
 }
 
 bool RewriterAfterOptAPassAfterJitBprop(const ResourcePtr &resource) {

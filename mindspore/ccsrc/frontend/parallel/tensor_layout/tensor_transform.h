@@ -25,6 +25,7 @@
 #include "ir/value.h"
 #include "frontend/parallel/tensor_layout/tensor_layout.h"
 #include "frontend/parallel/tensor_layout/tensor_redistribution.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 namespace parallel {
@@ -32,7 +33,7 @@ using TransformFunc = std::function<std::pair<std::string, std::vector<int64_t>>
 using InferShapeFunc = std::function<Shape(const Shape &, const std::vector<int64_t> &)>;
 using ConstructOpFunc = std::function<Operator(const std::vector<int64_t> &)>;
 using RedisOpPair = std::pair<std::string, std::vector<int64_t>>;
-class TensorTransform {
+class FRONTEND_EXPORT TensorTransform {
  public:
   static std::shared_ptr<TensorTransform> GetInstance();
   ~TensorTransform() = default;

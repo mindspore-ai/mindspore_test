@@ -33,7 +33,7 @@
 #include "ir/tensor.h"
 #include "ir/anf.h"
 #include "frontend/operator/composite/unpack_call.h"
-#include "pipeline/pynative/op_function/auto_generate/functional_map.h"
+#include "frontend/operator/composite/auto_generate/functional_map.h"
 #include "include/common/utils/tensor_py.h"
 #include "pipeline/jit/pi/graph_build/build_graph_utils.h"
 

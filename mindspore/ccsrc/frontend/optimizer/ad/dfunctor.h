@@ -41,7 +41,7 @@ namespace mindspore {
 namespace ad {
 using Registry = std::unordered_map<PrimitivePtr, FuncGraphPtr, PrimitiveHasher, PrimitiveTotalEqual>;
 class KPrim;
-extern KPrim g_k_prims;
+FRONTEND_EXPORT extern KPrim g_k_prims;
 class DFunctor;
 using DFunctorPtr = std::shared_ptr<DFunctor>;
 

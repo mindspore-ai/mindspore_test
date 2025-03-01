@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,18 +19,45 @@
 
 #include <memory>
 #include <string>
+#include <vector>
+#include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "pipeline/jit/pi/auto_grad/backward_function.h"
-#include "pipeline/pynative/grad/function/func_builder.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {
 namespace pijit {
 namespace grad {
-using FuncBuilderPtr = pynative::autograd::FuncBuilderPtr;
+using NodePtr = expander::NodePtr;
+using NodePtrList = expander::NodePtrList;
+using BpropBuilder = expander::bprop::BpropBuilder;
 using BpropHandlePtr = const expander::bprop::BpropHandle *;
 
 class NativeBackwardFunc;
 using NativeBackwardFuncPtr = std::shared_ptr<NativeBackwardFunc>;
+
+class FuncBuilder : public BpropBuilder {
+ public:
+  explicit FuncBuilder(const std::string &name)
+      : BpropBuilder(name, nullptr),
+        device_target_(MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET)) {}
+  ~FuncBuilder() override = default;
+
+  void SetInputs(std::string instance_name, const std::vector<NodePtr> *inputs,
+                 mindspore::HashMap<std::string, ValuePtr> *attrs_ptr);
+
+  /// \brief Get the result of the specified primitive.
+  ///
+  /// \param[in] prim The specified primitive.
+  /// \param[in] inputs The input values.
+  ///
+  /// \return The value filled with one.
+  ValuePtr EmitOp(const PrimitivePtr &prim, const ValuePtrList &inputs) const;
+
+ private:
+  std::string device_target_;
+};
+
+using FuncBuilderPtr = std::shared_ptr<FuncBuilder>;
 
 /// \brief NativeBackwardFunc is a class, which represent a function to calculate the gradient.
 class NativeBackwardFunc : public BackwardFunc {
@@ -80,9 +107,8 @@ class NativeBackwardFunc : public BackwardFunc {
   ///
   /// \return The value filled with one.
   ValuePtr Ones(const ValuePtr &value) const override {
-    auto tensor = value->cast<tensor::BaseTensorPtr>();
-    MS_EXCEPTION_IF_NULL(tensor);
-    return ir_builder_->Ones(tensor);
+    MS_EXCEPTION_IF_NULL(value);
+    return ir_builder_->EmitOp(prim::kPrimOnesLike, {value});
   }
 
   /// \brief Create the value filled with zero, shape like the input.
@@ -91,9 +117,8 @@ class NativeBackwardFunc : public BackwardFunc {
   ///
   /// \return The value filled with zero.
   ValuePtr Zeros(const ValuePtr &value) const override {
-    auto tensor = value->cast<tensor::BaseTensorPtr>();
-    MS_EXCEPTION_IF_NULL(tensor);
-    return ir_builder_->Zeros(tensor);
+    MS_EXCEPTION_IF_NULL(value);
+    return ir_builder_->EmitOp(prim::kPrimZerosLike, {value});
   }
 
   /// \brief Calculate the sum of inputs.
@@ -102,7 +127,11 @@ class NativeBackwardFunc : public BackwardFunc {
   /// \param[in] other The second input value.
   ///
   /// \return The sum of inputs.
-  ValuePtr Add(const ValuePtr &input, const ValuePtr &other) const override { return ir_builder_->Add(input, other); }
+  ValuePtr Add(const ValuePtr &input, const ValuePtr &other) const override {
+    MS_EXCEPTION_IF_NULL(input);
+    MS_EXCEPTION_IF_NULL(other);
+    return ir_builder_->EmitOp(prim::kPrimAdd, {input, other});
+  }
 
   /// \brief Convert the inputs, output and dout of forward execution into the inputs of function builder.
   ///

@@ -20,6 +20,7 @@
 #include <tuple>
 #include <string>
 #include "ir/anf.h"
+#include "include/backend/visible.h"
 
 namespace mindspore::graphkernel {
 using AnfNodePtrToAnfNodePtrMap = std::unordered_map<AnfNodePtr, AnfNodePtr>;
@@ -30,9 +31,10 @@ struct ClusterConfig {
   AnfNodePtr only_output_basenode{nullptr};
 };
 
-std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodesInner(const AnfNodePtrList &nodes,
-                                                                                  const ClusterConfig &config);
-std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodes(const AnfNodePtrList &nodes);
+BACKEND_EXPORT std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodesInner(
+  const AnfNodePtrList &nodes, const ClusterConfig &config);
+BACKEND_EXPORT std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodes(
+  const AnfNodePtrList &nodes);
 std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildSingleGraphFromNodes(
   const AnfNodePtrList &nodes, const ClusterConfig &config = ClusterConfig());
 CNodePtr CreateNewFuseCNode(const FuncGraphPtr &main_fg, const FuncGraphPtr &sub_fg, const AnfNodePtrList &inputs);

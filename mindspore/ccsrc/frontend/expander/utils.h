@@ -18,12 +18,13 @@
 #define MINDSPORE_CCSRC_FRONTEND_EXPANDER_UTILS_H
 
 #include "ir/anf.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 namespace expander {
 bool ConvertPrimToPrimPy(const FuncGraphPtr &graph);
 ValuePtr ConvertPrimToPrimPy(const PrimitivePtr &primc);
-void ClearAllCache();
+FRONTEND_EXPORT void ClearAllCache();
 }  // namespace expander
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_FRONTEND_EXPANDER_UTILS_H

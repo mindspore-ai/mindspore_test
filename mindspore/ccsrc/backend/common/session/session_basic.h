@@ -35,7 +35,7 @@
 #include "include/common/utils/contract.h"
 #include "include/backend/kernel_info.h"
 #include "utils/ms_context.h"
-#include "pipeline/pynative/base.h"
+#include "pynative/base.h"
 
 #if defined(ENABLE_DEBUGGER) && !defined(_WIN32) && !defined(_WIN64)
 #include "include/backend/debug/debugger/debugger.h"

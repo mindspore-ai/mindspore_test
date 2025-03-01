@@ -22,8 +22,8 @@
 #include <vector>
 #include "include/backend/debug/profiler/profiling.h"
 #include "include/common/profiler.h"
-#include "pipeline/pynative/pynative_utils.h"
-#include "pipeline/pynative/forward/forward_task.h"
+#include "pynative/pynative_utils.h"
+#include "pynative/forward/forward_task.h"
 #include "plugin/device/ascend/hal/profiler/mstx/mstx_mgr.h"
 #include "plugin/device/ascend/hal/profiler/mstx/mstx_symbol.h"
 #include "plugin/device/ascend/hal/hccl_adapter/plugin/hccl_plugin.h"

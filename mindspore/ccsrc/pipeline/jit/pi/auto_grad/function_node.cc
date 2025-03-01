@@ -27,6 +27,7 @@
 #include "pipeline/jit/pi/auto_grad/edge.h"
 #include "pipeline/jit/pi/auto_grad/native_backward_function.h"
 #include "utils/ms_utils.h"
+#include "frontend/ir/primitive_py.h"
 
 namespace mindspore {
 namespace pijit {
@@ -44,7 +45,7 @@ void FunctionNode::CleanResource() {
 ValuePtrList ConvertTupleToValueList(const py::list &inputs) {
   ValuePtrList value_list;
   for (const auto input : inputs) {
-    ValuePtr value = Convert::PyObjToValue(py::cast<py::object>(input));
+    ValuePtr value = parse::data_converter::PyObjToValue(py::cast<py::object>(input));
     if (value->template isa<None>()) {
       return value_list;
     }
@@ -69,7 +70,7 @@ ValuePtr ConvertArgByCastDtype(const py::object &arg, const ops::OpInputArg &op_
     }
   }
   if (!py::isinstance<py::none>(arg) && value == nullptr) {
-    value = Convert::PyObjToValue(arg);
+    value = parse::data_converter::PyObjToValue(arg);
   }
   return value;
 }
@@ -211,7 +212,7 @@ void FunctionNode::SyncGradToPyObject() {
     if (node->edges_.empty() || (py::isinstance<py::bool_>(retains_grad) && py::bool_(retains_grad))) {
       auto _grad = python_adapter::GetPyObjAttr(node->tensor_, "grad");
       if (!py::isinstance<py::none>(_grad)) {
-        node->AccumulateGradient(Convert::PyObjToValue(_grad), node->index_);
+        node->AccumulateGradient(parse::data_converter::PyObjToValue(_grad), node->index_);
       } else {
         if (node->GetGrad()[node->index_]->isa<None>()) {
           auto func = node->backward_func_;
@@ -221,7 +222,7 @@ void FunctionNode::SyncGradToPyObject() {
           node->SetGrad(func->Zeros(node->GetOutput()), node->index_);
         }
       }
-      auto value = Convert::ValueToPyObj(node->GetGrad()[node->index_]);
+      auto value = ValueToPyData(node->GetGrad()[node->index_]);
       auto grad = python_adapter::CallPyFn("mindspore.common.api", "_convert_python_data", value);
       py::setattr(node->tensor_, "grad", grad);
     }
@@ -232,7 +233,7 @@ void FunctionNode::SyncGradToPyObject() {
 
 void FunctionNode::Apply(const py::object &grad) {
   UpdateDependence();
-  Notify(shared_from_base<FunctionNode>(), Convert::PyObjToValue(grad));
+  Notify(shared_from_base<FunctionNode>(), parse::data_converter::PyObjToValue(grad));
   SyncGradToPyObject();
   auto release_func = [](const FunctionNodePtr &node) { node->CleanResource(); };
   Visit(shared_from_base<FunctionNode>(), release_func);

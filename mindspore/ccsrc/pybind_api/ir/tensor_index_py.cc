@@ -15,7 +15,6 @@
  */
 
 #include "pybind_api/ir/tensor_index_py.h"
-
 #include <pybind11/stl.h>
 #include <string>
 #include <algorithm>
@@ -27,8 +26,9 @@
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "utils/hash_set.h"
 #include "utils/log_adapter.h"
-#include "pipeline/pynative/pynative_execute.h"
+#include "pynative/pynative_execute.h"
 #include "mindspore/ops/op_def/array_ops.h"
+#include "include/common/pynative/grad_state.h"
 
 namespace mindspore::tensor {
 using tensor::TensorPybind;
@@ -1856,7 +1856,7 @@ bool EnableView(bool is_setitem = false) {
   }
 
   // For setitem, the grad of CopyWithSlice is erroneous. If we are in setitem and requires grad, disable view.
-  if (is_setitem && pynative::PyNativeExecutor::GetInstance()->grad_executor()->RequiresGrad()) return false;
+  if (is_setitem && pynative::GradState::Get().RequiresGrad()) return false;
 
   return true;
 }

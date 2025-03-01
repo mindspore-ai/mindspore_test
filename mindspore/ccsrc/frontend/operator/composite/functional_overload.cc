@@ -23,6 +23,7 @@
 #include <memory>
 #include <utility>
 #include <algorithm>
+#include "include/common/pybind_api/api_register.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "ops/op_def.h"
 #include "ir/core_ops_primitive.h"
@@ -33,7 +34,7 @@
 #include "pipeline/jit/ps/fallback.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "pipeline/jit/ps/static_analysis/prim.h"
-#include "pipeline/pynative/op_function/auto_generate/functional_map.h"
+#include "frontend/operator/composite/auto_generate/functional_map.h"
 
 namespace mindspore {
 void RegFunctional(const py::module *m) {

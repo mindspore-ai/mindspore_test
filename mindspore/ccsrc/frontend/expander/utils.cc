@@ -31,7 +31,7 @@
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "frontend/operator/ops_front_infer_function.h"
 #include "frontend/expander/bprop/bprop.h"
-#include "pybind_api/ir/primitive_py.h"
+#include "frontend/ir/primitive_py.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/utils.h"
 #include "include/common/debug/anf_ir_dump.h"

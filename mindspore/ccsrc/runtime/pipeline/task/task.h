@@ -19,6 +19,7 @@
 
 #include <cstdint>
 #include <exception>
+#include <atomic>
 #include "include/backend/visible.h"
 
 namespace mindspore {
@@ -40,7 +41,7 @@ enum TaskType {
 
 enum class KernelTaskType { kNORMAL_VIEW_TASK = 0, kCONTIGUOUS_TASK, kCOPY_TASK };
 
-class BACKEND_EXPORT AsyncTask {
+class AsyncTask {
  public:
   explicit AsyncTask(TaskType task_type) : task_type_(task_type) {}
   virtual ~AsyncTask() = default;
@@ -51,11 +52,12 @@ class BACKEND_EXPORT AsyncTask {
   TaskType task_type() const { return task_type_; }
   uint64_t task_id() const { return task_id_; }
   void set_task_id(uint64_t task_id) { task_id_ = task_id; }
-  static uint64_t MakeId();
+  static uint64_t MakeId() { return last_id_.fetch_add(1, std::memory_order_relaxed); }
 
  protected:
   TaskType task_type_;
   uint64_t task_id_{MakeId()};
+  inline static std::atomic<uint64_t> last_id_{1};
 };
 
 class ExitTask : public AsyncTask {

@@ -20,10 +20,11 @@
 #include <string>
 #include "ir/tensor.h"
 #include "include/common/utils/python_adapter.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 namespace pipeline {
-py::object SetFormat(const py::object &py_tensor, const std::string &format_name);
+FRONTEND_EXPORT py::object SetFormat(const py::object &py_tensor, const std::string &format_name);
 }  // namespace pipeline
 }  // namespace mindspore
 

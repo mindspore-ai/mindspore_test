@@ -23,9 +23,7 @@
  public:                                                                                          \
   template <typename... Args>                                                                     \
   static return_type name(const Args &... argss) {                                                \
-    if (name##_handler_ == nullptr) {                                                             \
-      return return_type();                                                                       \
-    }                                                                                             \
+    MS_EXCEPTION_IF_NULL(name##_handler_);                                                        \
     return name##_handler_(argss...);                                                             \
   }                                                                                               \
   using name##Handler = std::function<decltype(name<__VA_ARGS__>)>;                               \

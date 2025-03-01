@@ -25,7 +25,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "runtime/device/kernel_runtime_manager.h"
 #include "backend/common/optimizer/common_backend_optimization.h"
-#include "pipeline/pynative/grad/jit/jit_call_graph.h"
+#include "backend/common/session/jit_call_graph.h"
 #include "utils/trace_base.h"
 #include "ir/func_graph_cloner.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"

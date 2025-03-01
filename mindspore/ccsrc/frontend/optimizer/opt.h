@@ -29,6 +29,7 @@
 #include "ir/func_graph.h"
 #include "frontend/optimizer/optimizer_caller.h"
 #include "frontend/operator/ops.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 /* namespace to support opt */
@@ -80,7 +81,7 @@ class SubstitutionList {
       : list_(patterns), is_once_(is_once), global_sensitive_(global_sensitive) {}
   ~SubstitutionList() = default;
 
-  bool operator()(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer) const;
+  FRONTEND_EXPORT bool operator()(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer) const;
 
  private:
   bool ApplyIRToSubstitutions(const OptimizerPtr &optimizer, const FuncGraphPtr &func_graph) const;

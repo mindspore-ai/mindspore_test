@@ -19,6 +19,7 @@
 #include <string>
 #include <memory>
 #include "include/common/symbol_engine/symbol_engine_impl.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace graphkernel {
@@ -26,7 +27,7 @@ namespace packet {
 using mindspore::symshape::SymbolEngineImpl;
 
 /// \brief SymbolEngine for kernel packet graph.
-class KernelPacketEngine : public SymbolEngineImpl {
+class BACKEND_EXPORT KernelPacketEngine : public SymbolEngineImpl {
  public:
   using SymbolEngineImpl::SymbolEngineImpl;
   ~KernelPacketEngine() = default;

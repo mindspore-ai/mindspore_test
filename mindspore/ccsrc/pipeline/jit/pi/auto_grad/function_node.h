@@ -25,14 +25,14 @@
 #include "pipeline/jit/pi/auto_grad/edge.h"
 #include "pipeline/jit/pi/auto_grad/function_context.h"
 #include "pipeline/jit/pi/auto_grad/native_backward_function.h"
-#include "pipeline/pynative/pynative_utils.h"
 #include "utils/tensor_construct_utils.h"
+#include "pybind11/pybind11.h"
+#include "pipeline/jit/ps/parse/data_converter.h"
 
 namespace mindspore {
 namespace pijit {
 namespace grad {
 namespace py = pybind11;
-using Convert = pynative::PyNativeAlgo::DataConvert;
 
 /// \brief FunctionNode is a class, which represent a way to calculate the gradient.
 class FunctionNode : public FunctionContext {
@@ -42,7 +42,8 @@ class FunctionNode : public FunctionContext {
   /// \param[in] tensor The tensor that is asked to calculate the gradient.
   ///
   /// \return The instance of FunctionNode.
-  explicit FunctionNode(const py::object &tensor) : FunctionContext(Convert::PyObjToValue(tensor)), tensor_(tensor) {}
+  explicit FunctionNode(const py::object &tensor)
+      : FunctionContext(parse::data_converter::PyObjToValue(tensor)), tensor_(tensor) {}
 
   /// \brief The constructor of FunctionNode.
   ///
@@ -52,9 +53,10 @@ class FunctionNode : public FunctionContext {
   ///
   /// \return The instance of FunctionNode.
   explicit FunctionNode(const py::object &tensor, const py::object &prim, const py::object &out)
-      : FunctionContext(Convert::PyObjToValue(prim), Convert::PyObjToValue(out)),
+      : FunctionContext(parse::data_converter::PyObjToValue(prim), parse::data_converter::PyObjToValue(out)),
         tensor_(tensor),
-        backward_func_(NativeBackwardFunc::GetInstance(Convert::PyObjToValue(prim)->cast<PrimitivePtr>())) {}
+        backward_func_(
+          NativeBackwardFunc::GetInstance(parse::data_converter::PyObjToValue(prim)->cast<PrimitivePtr>())) {}
 
   /// \brief Destructor.
   virtual ~FunctionNode() = default;

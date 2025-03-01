@@ -143,7 +143,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
 
         save_file(os.path.join(work_path, K.TENSOR_FUNC_REGISTER_PATH),
                   "tensor_func_utils.h", tensor_methods)
-        save_file(os.path.join(work_path, K.TENSOR_FUNC_REGISTER_PATH),
+        save_file(os.path.join(work_path, K.TENSOR_API_PATH),
                   "tensor_func_reg.cc", func_cc_reg)
 
     def _get_op_enum_name_list(self, op_protos):

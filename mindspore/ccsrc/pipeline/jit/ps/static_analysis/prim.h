@@ -374,7 +374,7 @@ PrimEvaluatorMap &GetPrimEvaluatorConstructors();
 // Check whether type x is a subtype of model.
 bool IsSubtype(const AbstractBasePtr x, const TypePtr model);
 
-void ClearPrimEvaluatorMap();
+FRONTEND_EXPORT void ClearPrimEvaluatorMap();
 
 py::dict ConvertAbstractToPython(const AbstractBasePtr &abs_base, bool only_convert_value = false);
 ME_EXPORT py::tuple PreparePyInputs(const AbstractBasePtrList &args);

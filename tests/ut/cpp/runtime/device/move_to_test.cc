@@ -25,7 +25,7 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "securec/include/securec.h"
 #include "ir/tensor.h"
-#include "pybind_api/ir/tensor_py.h"
+#include "frontend/ir/tensor_py.h"
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 

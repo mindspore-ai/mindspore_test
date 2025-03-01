@@ -72,7 +72,8 @@ file(GLOB_RECURSE UT_CORE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./core/abstr
 file(GLOB_RECURSE UT_MINDDATA_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./dataset/*.cc ./mindrecord/*.cc)
 file(GLOB_RECURSE UT_MINDDATA_COMMON_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./dataset/common/*.cc)
 file(GLOB_RECURSE UT_FRONTEND_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./operator/*.cc ./optimizer/*.cc
-        ./parallel/*.cc ./pipeline/*.cc ./pynative/*.cc ./func_graph_builder/*.cc)
+        ./parallel/*.cc ./pipeline/*.cc ./func_graph_builder/*.cc  ./side_effect/*.cc ./utils/*.cc)
+file(GLOB_RECURSE UT_PYNATIVE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./pynative/*.cc)
 file(GLOB_RECURSE UT_OLD_BACKEND_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./device/*.cc ./kernel/*.cc
         ./pre_activate/common/*.cc  ./session/*.cc ./runtime/device/move_to_test.cc
         ./transform/*.cc ./vm/*.cc ./runtime/graph_scheduler/*.cc ./runtime/device/gsm/*.cc)
@@ -92,9 +93,9 @@ file(GLOB_RECURSE UT_SYMBOL_ENGINE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
 file(GLOB_RECURSE UT_PS_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./ps/*.cc ./plugin/device/cpu/hal/*.cc
         ./plugin/device/ascend/hal/hardware/ascend_watch_dog_thread_test.cc)
 file(GLOB_RECURSE UT_CCSRC_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./ccsrc/*.cc)
-file(GLOB_RECURSE UT_OTHERS_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./debug/*.cc ./side_effect/*.cc ./utils/*.cc
-        ./place/*.cc)
-file(GLOB_RECURSE UT_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./stub/*.cc ./common/*.cc ./mock/*.cc)
+file(GLOB_RECURSE UT_OTHERS_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./debug/*.cc ./place/*.cc)
+file(GLOB_RECURSE UT_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./stub/*.cc ./common/*.cc ./mock/*.cc
+        ../../../mindspore/ccsrc/pybind_api/resource/manager.cc)
 
 if(NOT ENABLE_CPU OR WIN32 OR APPLE)
     file(GLOB_RECURSE UT_DISTRIBUTED_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
@@ -122,7 +123,8 @@ list(SUBLIST UT_MINDDATA_SRCS ${UT_MINDDATA0_SRCS_LENS} ${UT_MINDDATA1_SRCS_LENS
 list(APPEND UT_MINDDATA0_SRCS ${UT_MINDDATA_COMMON_SRCS})
 list(APPEND UT_MINDDATA1_SRCS ${UT_MINDDATA_COMMON_SRCS})
 
-set(ALL_UT_COMPS CORE MINDDATA0 MINDDATA1 FRONTEND OLD_BACKEND BACKEND PS CCSRC OTHERS SYMBOL_ENGINE GRAPH_KERNEL)
+set(ALL_UT_COMPS CORE MINDDATA0 MINDDATA1 FRONTEND OLD_BACKEND BACKEND PS CCSRC OTHERS SYMBOL_ENGINE
+        GRAPH_KERNEL)
 set(UT_COMPS CORE FRONTEND OTHERS SYMBOL_ENGINE)
 
 if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
@@ -281,18 +283,24 @@ endforeach()
 include_directories("${CMAKE_BINARY_DIR}/plugin/device/ascend/kernel/aicpu")
 
 add_library(_ut_obj_static STATIC ${UT_SRCS})
-target_link_libraries(_ut_obj_static PRIVATE mindspore_backend mindspore_pyboost mindspore_backend_manager)
+target_link_libraries(_ut_obj_static PRIVATE mindspore_backend mindspore_pyboost
+        mindspore_backend_manager)
 foreach(comp ${ALL_UT_COMPS})
     add_executable(ut_${comp}_tests ${UT_${comp}_SRCS})
+
     # ci envs have no enough memory, so make link target sequentially
     list(FIND UT_COMPS ${comp} comp_index)
     if(${comp_index} LESS 0)
         message("${comp} start link _ut_mindspore_obj")
         target_link_libraries(ut_${comp}_tests PRIVATE -Wl,--start-group _ut_mindspore_ascend_obj _ut_mindspore_obj)
-        target_link_libraries(ut_${comp}_tests PRIVATE _c_mindrecord _c_dataengine)
+        target_link_libraries(ut_${comp}_tests PRIVATE _c_dataengine)
     endif()
-    target_link_libraries(ut_${comp}_tests PRIVATE -Wl,--start-group mindspore _ut_obj_static
-            -Wl,--end-group)
+
+    # ut/cpp needs to link _c_mindrecord because it will call back python and get the graph.
+    target_link_libraries(ut_${comp}_tests PRIVATE _c_mindrecord)
+
+    target_link_libraries(ut_${comp}_tests PRIVATE -Wl,--start-group mindspore_frontend mindspore_pynative
+            _ut_obj_static -Wl,--end-group)
     target_link_libraries(ut_${comp}_tests PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common
             mindspore_backend_manager)
     if(CMAKE_SYSTEM_NAME MATCHES "Linux")

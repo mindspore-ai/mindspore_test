@@ -41,13 +41,14 @@
 #include "pipeline/jit/pi/graph_guard/strategy.h"
 #include "pipeline/jit/pi/graph_guard/shape_ctx.h"
 #include "pipeline/jit/pi/capture_context.h"
-#include "pipeline/pynative/pynative_utils.h"
-#include "runtime/pynative/op_executor.h"
+#include "pipeline/jit/ps/pipeline_jit.h"
+#include "runtime/pipeline/pipeline.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "pipeline/jit/pi/graph_capture/code_generator.h"
 #include "utils/convert_utils_base.h"
 #include "pipeline/jit/pi/eval_frame_hook.h"
 #include "include/common/utils/tensor_py.h"
+#include "include/common/pynative/grad_state.h"
 
 namespace mindspore {
 namespace pijit {
@@ -75,7 +76,7 @@ class RunEnvironment {
     task_sink_ = ms_context->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
 
     auto jit_level = jcr->conf()->getJitLevel();
-    auto grad_flag = pynative::PyNativeExecutor::GetInstance()->grad_flag();
+    auto grad_flag = pynative::GradState::Get().grad_flag();
     auto run_mode = jit_level == "O2" && !grad_flag ? kGraphMode : kPynativeMode;
     auto task_sink = jit_level == "O2" && !grad_flag;
     ms_context->set_param(MS_CTX_EXECUTION_MODE, run_mode);
@@ -612,15 +613,11 @@ void AddGuardForGlobals(const PyFrameWrapper &wrapper, OptGuardPtr guard, bool d
 }
 
 static void AddGradFlagForParam(const OptGuardPtr &guard, bool detach) {
-  bool grad_flag = pynative::PyNativeExecutor::GetInstance()->RequiresGrad();
+  bool grad_flag = pynative::GradState::Get().RequiresGrad();
   CustomizedTracePtr ptr = std::make_shared<CustomizedTrace>(
     grad_flag ? Py_True : Py_False,
     [](PTraceContext context) -> PyObject * {
-      static pynative::PyNativeExecutor *pynative_exec = nullptr;
-      if (pynative_exec == nullptr) {
-        pynative_exec = pynative::PyNativeExecutor::GetInstance().get();
-      }
-      PyObject *ret = pynative_exec->RequiresGrad() ? Py_True : Py_False;
+      PyObject *ret = pynative::GradState::Get().RequiresGrad() ? Py_True : Py_False;
       Py_INCREF(ret);
       return ret;
     },
@@ -1218,14 +1215,38 @@ py::object get_code_extra(const py::object &func) {
   return result;
 }
 
+// op must be PyCFunctionObject
+static void *GetCFunctionId(PyObject *op) {
+  void *result = reinterpret_cast<void *>(PyCFunction_GET_FUNCTION(op));
+  PyObject *self = PyCFunction_GET_SELF(op);
+  if (self == nullptr || !PyCapsule_CheckExact(self)) {
+    return result;
+  }
+  PyObject *m = (reinterpret_cast<PyCFunctionObject *>(op))->m_module;
+  constexpr std::string_view ms_name("mindspore");
+  if (m == nullptr || !PyUnicode_Check(m) ||
+      ms_name.compare(0, ms_name.size(), PyUnicode_AsUTF8(m), 0, ms_name.size()) != 0) {
+    MS_LOG(DEBUG) << "got capsule method which is not mindspore defined: " << py::str(op) << " addr: " << op
+                  << " func_ptr: " << result << " module is: " << (m ? std::string(py::str(m)) : "<NULL>")
+                  << " capsule name: " << (PyCapsule_GetName(self) ? PyCapsule_GetName(self) : "<NULL>");
+    return result;
+  }
+  const char *doc = (reinterpret_cast<PyCFunctionObject *>(op))->m_ml->ml_doc;
+  const char *end = strchr(doc, '\n');
+  MS_LOG(DEBUG) << "got mindspore defined capsule method: " << py::str(op) << " addr: " << op << " func_ptr: " << result
+                << " module is: " << PyUnicode_AsUTF8(m)
+                << " capsule name: " << (PyCapsule_GetName(self) ? PyCapsule_GetName(self) : "<NULL>")
+                << " first line doc is: " << (end ? std::string(doc, end) : "<NULL>");
+
+  // pybind signature regex `function_name(args...) -> return\n`
+  if (!end || !std::regex_match(doc, end, std::regex("^\\w+\\(.*\\) *->[\\( ]*\\w+.*"))) {
+    // cpython use `function_name(args...)\n--\n\n` as `builtin_func.__text_signature__`
+    MS_LOG(DEBUG) << "mindspore function without signature";  // maybe not pybind11 defined
+  }
+  return op;
+}
+
 size_t FunctionId(const py::object &callable) {
-  // filter special cpp function
-  auto py_cfunction_filter = [](PyObject *op) -> void * {
-    // pybind11::cpp_function::dispatcher;
-    static PyCFunction pybind_dispatcher = PyCFunction_GET_FUNCTION(py::cpp_function([]() {}).ptr());
-    PyCFunction result = PyCFunction_GET_FUNCTION(op);
-    return result == pybind_dispatcher ? op : reinterpret_cast<void *>(result);
-  };
   PyObject *op = callable.ptr();
   if (PyMethod_Check(op)) {
     op = PyMethod_GET_FUNCTION(op);
@@ -1236,7 +1257,7 @@ size_t FunctionId(const py::object &callable) {
   void *result = op;
   if (PyCFunction_Check(op)) {
     // types.BuiltinFunctionType = type(len) same as types.BuiltinMethodType = type(list().append)
-    result = py_cfunction_filter(op);
+    result = GetCFunctionId(op);
   } else if (Py_IS_TYPE(op, &PyMethodDescr_Type)) {
     // types.MethodDescriptorType = type(list.append)
     PyCFunction func = reinterpret_cast<PyMethodDescrObject *>(op)->d_method->ml_meth;

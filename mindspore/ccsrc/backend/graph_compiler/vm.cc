@@ -22,8 +22,8 @@
 #include "backend/graph_compiler/vmimpl.h"
 #include "backend/graph_compiler/backend.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
-#include "pybind_api/ir/base_ref_py.h"
-#include "pybind_api/ir/primitive_py.h"
+#include "frontend/ir/base_ref_py.h"
+#include "frontend/ir/primitive_py.h"
 
 namespace mindspore {
 namespace compile {

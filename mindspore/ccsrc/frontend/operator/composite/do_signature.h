@@ -57,8 +57,8 @@ class DoSignatureMetaFuncGraph : public MetaFuncGraph {
 using RWSignaturePtr = std::shared_ptr<DoSignatureMetaFuncGraph>;
 
 // shared with pynative
-std::string ErrorMessageForConvertRefDtype(const ValuePtr &func, const std::string &ref_type,
-                                           const std::string &target_type, size_t index);
+FRONTEND_EXPORT std::string ErrorMessageForConvertRefDtype(const ValuePtr &func, const std::string &ref_type,
+                                                           const std::string &target_type, size_t index);
 bool IfRaiseExceptionForCheckParameter(const std::string &func_name, const ValuePtr &function,
                                        const SignatureEnumRW &sig, const TypePtr &type);
 

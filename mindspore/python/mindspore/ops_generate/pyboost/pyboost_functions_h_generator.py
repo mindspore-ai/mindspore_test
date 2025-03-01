@@ -41,7 +41,7 @@ class PyboostFunctionsHeaderGenerator(BaseGenerator):
         self.PYBOOST_FUNCTION_HEADER_TEMPLATE = template.PYBOOST_FUNCTION_HEADER_TEMPLATE
 
         self.pyboost_func_template = Template(
-            'py::object ME_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py::list &args);'
+            'py::object PYNATIVE_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py::list &args);'
         )
 
     def generate(self, work_path, op_protos):

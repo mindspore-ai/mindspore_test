@@ -29,11 +29,12 @@
 #include "pipeline/jit/ps/pipeline_jit.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
-#include "pipeline/pynative/pynative_execute.h"
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/ps/static_analysis/prim.h"
 #include "frontend/operator/ops_front_infer_function.h"
 #include "include/common/utils/tensor_py.h"
+#include "include/common/pynative/grad_state.h"
+#include "include/common/pynative/adapter.h"
 
 namespace py = pybind11;
 namespace mindspore {
@@ -254,9 +255,8 @@ py::object TraceRecorder::RunGraph(const py::object &phase, const py::tuple &arg
   MS_EXCEPTION_IF_NULL(graph_executor);
   py::object res;
   int mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE);
-  auto executor = pynative::PyNativeExecutor::GetInstance();
-  if (mode == kPynativeMode && executor->RequiresGrad()) {
-    executor->grad_executor()->jit()->set_graph_phase(py::cast<std::string>(phase));
+  if (mode == kPynativeMode && pynative::GradState::Get().RequiresGrad()) {
+    pynative::PyNativeAdapter::SetGraphPhase(py::cast<std::string>(phase));
     FuncGraphPtr jit_fg = graph_executor->GetFuncGraph(py::cast<std::string>(phase));
     MS_EXCEPTION_IF_NULL(jit_fg);
     if (args.size() > jit_fg->parameters().size()) {
@@ -265,7 +265,7 @@ py::object TraceRecorder::RunGraph(const py::object &phase, const py::tuple &arg
                         << jit_fg->parameters().size()
                         << ". Please make sure all of the inputs were used in trace block.";
     }
-    res = executor->GradJit(args);
+    res = pynative::PyNativeAdapter::GradJit(args);
     // Update forward graph with fprop graph.
     FuncGraphPtr grad_jit_fg = graph_executor->GetJitGradGraph(py::cast<std::string>(phase));
     MS_EXCEPTION_IF_NULL(grad_jit_fg);

@@ -32,7 +32,7 @@ namespace mindspore {
 namespace parallel {
 class CostGraph;
 using CostGraphPtr = std::shared_ptr<CostGraph>;
-extern CostGraphPtr entire_costgraph;
+FRONTEND_EXPORT extern CostGraphPtr entire_costgraph;
 
 class CostGraph {
   // 'CostGraph' consists of Operators and edges between them. An edge is created between two Operators if they have

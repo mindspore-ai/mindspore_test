@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_FUNC_REG_H_
-#define MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_FUNC_REG_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_REGISTER_TENSOR_FUNC_REG_H_
+#define MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_REGISTER_TENSOR_FUNC_REG_H_
 
 #include <memory>
 #include "mindspore/core/include/ir/tensor.h"
@@ -31,4 +31,4 @@ namespace tensor {
 void RegTensorFunc(py::class_<TensorPy, std::shared_ptr<TensorPy>> *tensor_class);
 }  // namespace tensor
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_FUNC_REG_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_REGISTER_TENSOR_FUNC_REG_H_

@@ -20,7 +20,7 @@
 #include <cstring>
 #include <memory>
 #include <unordered_map>
-#include "pybind_api/ir/primitive_py.h"
+#include "frontend/ir/primitive_py.h"
 #include "ops/primitive_c.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "src/common/utils.h"

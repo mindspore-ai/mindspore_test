@@ -16,7 +16,7 @@
 #include <unordered_set>
 
 #include "frontend/expander/bprop/bprop_irbuilder.h"
-#include "frontend/expander/bprop/common_utils.h"
+#include "grad/grad_utils.h"
 #include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "ops_utils/op_utils.h"

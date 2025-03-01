@@ -36,8 +36,9 @@
 #include "utils/ms_context.h"
 #include "pipeline/jit/ps/action.h"
 #include "pipeline/jit/ps/parse/resolve.h"
-#include "pipeline/pynative/pynative_execute.h"
 #include "include/common/debug/anf_ir_dump.h"
+#include "include/common/pynative/adapter.h"
+#include "include/common/pynative/grad_state.h"
 
 namespace mindspore {
 namespace ad {
@@ -440,7 +441,7 @@ AdjointPtr DFunctor::MapMorphism(const AnfNodePtr &morph) {
   // Run in pynative mode, when @jit is used.
   if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode &&
       common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") == "1") {
-    pynative::PyNativeExecutor::GetInstance()->grad_executor()->jit()->ProcessCnodeFromAdGrad(k_app, cnode_morph);
+    pynative::PyNativeAdapter::ProcessCnodeFromAdGrad(k_app, cnode_morph);
   }
   for (size_t i = 0; i < param_adjoints.size(); ++i) {
     param_adjoints[i]->RegisterKUser(k_app, i);
@@ -819,8 +820,7 @@ void DFunctor::MapValueObject() {
   // Map ValueNode.
   auto manager = resources_->manager();
   if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    const auto &pynative_grad_executor = pynative::PyNativeExecutor::grad_executor();
-    if (pynative_grad_executor->RequiresGrad() && common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") != "1") {
+    if (pynative::GradState::Get().RequiresGrad() && common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") != "1") {
       CopyPrimitivePtrForFpropReplace(primal_graph_, manager);
     }
   }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,9 +108,9 @@ const char kCseAfterRecomputation[] = "cse_after_recomputation";
 
 using BuiltInTypeMap = mindspore::HashMap<int64_t, mindspore::HashMap<std::string, Any>>;
 
-BuiltInTypeMap &GetMethodMap();
+FRONTEND_EXPORT BuiltInTypeMap &GetMethodMap();
 
-BuiltInTypeMap &GetAttrMap();
+FRONTEND_EXPORT BuiltInTypeMap &GetAttrMap();
 
 enum PiplineLevel : int {
   // Not running in jit pipeline or graph pipeline.
@@ -123,9 +123,9 @@ enum PiplineLevel : int {
 
 class Resource : public ResourceBase {
  public:
-  explicit Resource(const py::object &obj = py::none());
+  FRONTEND_EXPORT explicit Resource(const py::object &obj = py::none());
 
-  ~Resource() override;
+  FRONTEND_EXPORT ~Resource() override;
 
   abstract::AnalysisEnginePtr engine() { return engine_; }
 
@@ -170,7 +170,7 @@ class Resource : public ResourceBase {
   // Reclaim resource and clear the cache.
   // ExecutorPy::Compile() can be called multiple times, so cache
   // should be cleared.
-  void Clean();
+  FRONTEND_EXPORT void Clean();
 
   // Get the backend object. if the backend is being initialized, wait until it completes.
   compile::BackendPtr GetBackend() const;
@@ -179,7 +179,7 @@ class Resource : public ResourceBase {
 
   // Set backend asynchronously, the input function should return a Backend pointer,
   // and it will be called in a background thread.
-  void SetBackendAsync(std::function<compile::BackendPtr()> func);
+  FRONTEND_EXPORT void SetBackendAsync(std::function<compile::BackendPtr()> func);
 
   // Get the mutex for backend initializing.
   static std::mutex &GetBackendInitMutex() { return backend_init_mutex_; }

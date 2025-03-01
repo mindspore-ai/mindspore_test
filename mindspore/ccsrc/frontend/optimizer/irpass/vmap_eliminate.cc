@@ -30,7 +30,6 @@
 #include "base/complex_storage.h"
 #include "frontend/optimizer/irpass/gradient_eliminate.h"
 #include "frontend/parallel/step_parallel_utils.h"
-#include "pipeline/pynative/pynative_execute.h"
 #include "frontend/operator/composite/vmap.h"
 #include "include/common/utils/convert_utils_py.h"
 

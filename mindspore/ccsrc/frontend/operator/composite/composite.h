@@ -183,7 +183,7 @@ class MutableGradient : public MetaFuncGraph {
 };
 using MutableGradientPtr = std::shared_ptr<MutableGradient>;
 
-class GradOperation : public MetaFuncGraph {
+class FRONTEND_EXPORT GradOperation : public MetaFuncGraph {
  public:
   explicit GradOperation(const std::string &name, bool get_all = false, bool get_by_list = false,
                          bool sens_param = false, bool get_by_position = false, bool has_aux = false,

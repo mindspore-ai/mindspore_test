@@ -21,10 +21,11 @@
 #include <memory>
 #include "pipeline/jit/ps/action.h"
 #include "pipeline/jit/ps/pipeline.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 namespace pipeline {
-class JitExecutorPy : public ExecutorPy {
+class FRONTEND_EXPORT JitExecutorPy : public ExecutorPy {
  public:
   static std::shared_ptr<JitExecutorPy> GetInstance() {
     std::lock_guard<std::mutex> i_lock(instance_lock_);
@@ -61,7 +62,7 @@ class JitExecutorPy : public ExecutorPy {
 };
 using JitExecutorPyPtr = std::shared_ptr<JitExecutorPy>;
 
-pipeline::ExecutorPyPtr GetExecutor(const std::string &phase = "");
+FRONTEND_EXPORT pipeline::ExecutorPyPtr GetExecutor(const std::string &phase = "");
 }  // namespace pipeline
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PIPELINE_JIT_PS_PIPELINE_JIT_H_
