@@ -171,12 +171,12 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
     pm->AddFusionPass(std::make_shared<opt::InferenceSwiGLUFusion>());
     pm->AddFusionPass(std::make_shared<opt::InferenceMatmulSplitFusion>());
     pm->AddFusionPass(std::make_shared<opt::AddRmsNormDynamicQuantFusion>());
-    pm->AddFusionPass(std::make_shared<opt::ShapeReshapeFusion>());
     pm->AddFusionPass(std::make_shared<opt::AddRmsNormQuantFusion>());
     pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastQuantFusion>());
     pm->AddFusionPass(std::make_shared<opt::RmsNormQuantFusion>());
     pm->AddFusionPass(std::make_shared<opt::AddRmsNormFusion>());
     pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastFusion>());
+    pm->AddFusionPass(std::make_shared<opt::ShapeReshapeFusion>());
     pm->AddFusionPass(std::make_shared<opt::SplitConcatFusion>());
     pm->AddFusionPass(std::make_shared<opt::MatmulElemFusion>());
     pm->AddFusionPass(std::make_shared<opt::QbmmAllReduceAddFusion>());
