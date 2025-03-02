@@ -41,6 +41,7 @@ class RingQueue {
     buffer_[current_tail] = value;
     tail_.store(next_tail, std::memory_order_release);
 
+    std::unique_lock<std::mutex> lock(mutex_);
     cond_var_.notify_one();
   }
 
