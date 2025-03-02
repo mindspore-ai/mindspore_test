@@ -63,6 +63,7 @@ class ProfilerEvent(Enum):
     KERNEL_LAUNCH = "KernelLaunch"
     KERNEL_LAUNCH_CALLBACK = "KernelLaunckCallback"
     KERNEL_UPDATE = "KernelUpdate"
+    KERNEL_PREPARE_DATA = "KernelPrepareData"
     GRAPH_LAUNCH = "GraphLaunch"
     INPUT_PROCESS = "InputProcess"
     OUTPUT_PROCESS = "OutputProcess"
