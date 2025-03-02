@@ -66,8 +66,8 @@ bool InternalPagedAttentionMask::UpdateParam(const std::vector<KernelTensor *> &
     return true;
   }
 
-  bool q_need_recreate = ConvertSeqLenToVectorAndCheckUpadate(inputs[kIndex8], &param_.q_seq_len);
-  bool kv_need_recreate = ConvertSeqLenToVectorAndCheckUpadate(inputs[kIndex4], &param_.kv_seq_len);
+  bool q_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"q_seq_lens"}, &param_.q_seq_len);
+  bool kv_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"batch_valid_length"}, &param_.kv_seq_len);
   if (q_need_recreate || kv_need_recreate) {
     auto ret = internal_op_->UpdateParam(&param_);
     if (ret != internal::kInternalOk) {
