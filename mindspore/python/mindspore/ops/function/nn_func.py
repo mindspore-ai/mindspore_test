@@ -7726,6 +7726,9 @@ def glu_ext(input, dim=-1):
         dim (int, optional): The dimension to split the input `input`. The value range is `[-r, r)` where `r`
             is the number of dimensions of `input`. Default: ``-1`` , the last dimension in `input`.
 
+    Returns:
+        Tensor, the same dtype as the input `input`. The shape is :math:`(\ast_1, M, \ast_2)` where :math:`M=N/2`.
+
     Raises:
         TypeError: If `input` is not a Tensor or `dim` is not an int.
         IndexError: If the value of `dim` is out of the range of `[-r, r)`, where `r` is the number
@@ -7737,9 +7740,9 @@ def glu_ext(input, dim=-1):
         ``Ascend`` ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor, mint
-        >>> input = Tensor([[0.1,0.2,0.3,0.4],[0.5,0.6,0.7,0.8]])
-        >>> output = mint.nn.functional.glu(input)
+        >>> from mindspore import Tensor, ops
+        >>> input = Tensor([[0.1, 0.2, 0.3, 0.4], [0.5, 0.6, 0.7, 0.8]])
+        >>> output = ops.function.nn_func.glu_ext(input)
         >>> print(output)
         [[0.05744425 0.11973753]
          [0.33409387 0.41398472]]

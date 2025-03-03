@@ -336,6 +336,7 @@ Non-linear Activations (weighted sum, nonlinearity)
 
     mindspore.mint.nn.ELU
     mindspore.mint.nn.GELU
+    mindspore.mint.nn.GLU
     mindspore.mint.nn.Hardshrink
     mindspore.mint.nn.Hardsigmoid
     mindspore.mint.nn.Hardswish
@@ -501,6 +502,7 @@ Non-linear activation functions
     mindspore.mint.nn.functional.elu
     mindspore.mint.nn.functional.elu_
     mindspore.mint.nn.functional.gelu
+    mindspore.mint.nn.functional.glu
     mindspore.mint.nn.functional.group_norm
     mindspore.mint.nn.functional.hardshrink
     mindspore.mint.nn.functional.hardsigmoid
