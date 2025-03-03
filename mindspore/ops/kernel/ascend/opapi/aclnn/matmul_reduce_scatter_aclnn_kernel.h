@@ -37,6 +37,7 @@ class MatmulReduceScatterAscend : public AclnnKernelMod {
   std::pair<KernelTensor *, bool> input_;
   std::pair<KernelTensor *, bool> x2_;
   std::string group_;
+  int64_t world_size_;
   std::string hccl_inner_comm_name_;
   std::string reduce_op_;
   int64_t comm_turn_;

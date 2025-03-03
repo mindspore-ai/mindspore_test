@@ -41,9 +41,6 @@
 #include "mindspore/core/include/ops/infer_info/infer_info.h"
 #include "mindspore/core/include/abstract/dshape.h"
 #include "ops/infer_info/infer_info.h"
-#if (defined(ENABLE_CPU) && !defined(_WIN32) && !defined(__APPLE__))
-#include "mindspore/ccsrc/include/backend/distributed/collective/collective_manager.h"
-#endif
 
 namespace mindspore::ops {
 constexpr auto kBitSize = 64;
@@ -366,18 +363,6 @@ static inline void CheckType(const std::set<TypeId> &valid_types, const TypeId &
   if (valid_types.count(arg_type) == 0) {
     MS_EXCEPTION(TypeError) << "For op [" << op_name << "], the dtype of input " << arg_name << " is invalid.";
   }
-}
-
-static inline void CheckWorldSize(const std::string &group, int64_t world_size, const std::string &op_name) {
-#if (defined(ENABLE_CPU) && !defined(_WIN32) && !defined(__APPLE__))
-  const auto &collective_manager = mindspore::distributed::collective::CollectiveManager::instance();
-  if (collective_manager->initialized()) {
-    auto expected_world_size = collective_manager->GetLocalGroupSize(group);
-    if (world_size != expected_world_size) {
-      MS_LOG(EXCEPTION) << op_name << ": world_size must be " << expected_world_size << ", but got " << world_size;
-    }
-  }
-#endif
 }
 
 #define RETURN_IF_OPTIONAL_HAS_VALUE(opt) \

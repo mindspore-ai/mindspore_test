@@ -35,10 +35,10 @@ class AllGatherMatmulAscend : public AclnnKernelMod {
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
-  void InitializeInputs(const std::vector<KernelTensor *> &inputs);
   std::pair<KernelTensor *, bool> input_;
   std::pair<KernelTensor *, bool> x2_;
   std::string group_;
+  int64_t world_size_;
   std::string hccl_inner_comm_name_;
   int64_t gather_index_;
   int64_t comm_turn_;

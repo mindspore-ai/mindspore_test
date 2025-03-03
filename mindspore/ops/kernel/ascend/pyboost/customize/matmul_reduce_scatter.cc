@@ -48,12 +48,14 @@ tensor::BaseTensorPtr MatmulReduceScatterAscendCustomize(
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
   auto group_imm = GetValue<std::string>(group);
+  auto world_size_imm = GetValue<int64_t>(world_size);
   auto reduction_imm = static_cast<Reduction>(GetValue<int64_t>(reduction));
   auto comm_turn_imm = GetValue<int64_t>(comm_turn);
   auto trans_input_imm = GetValue<bool>(trans_input);
   auto trans_x2_imm = GetValue<bool>(trans_x2);
 
   auto hccl_inner_comm_name_imm = mindspore::device::ascend::OpApiUtil::GetCommName(group_imm);
+  mindspore::device::ascend::OpApiUtil::CheckWorldSize(group_imm, world_size_imm, op->primitive()->name());
   std::unordered_map<Reduction, std::string> reduction_map = {{Reduction::REDUCTION_SUM, "sum"}};
   auto iter = reduction_map.find(reduction_imm);
   if (iter == reduction_map.end()) {

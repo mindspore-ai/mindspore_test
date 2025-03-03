@@ -25,6 +25,10 @@
 #include "acl/acl_op_compiler.h"
 #include "kernel/kernel.h"
 #include "ir/anf.h"
+#if (defined(ENABLE_CPU) && !defined(_WIN32) && !defined(__APPLE__))
+#include "mindspore/ccsrc/include/backend/distributed/collective/collective_manager.h"
+#endif
+
 namespace mindspore::device::ascend {
 typedef enum : int8_t {
   KEEP_DTYPE = 0,
@@ -45,7 +49,19 @@ class OpApiUtil {
                                       std::vector<std::string> *output_reshape_types, const KernelType &kernel_type);
 
   static std::string GetCommName(const std::string &group);
+  static inline void CheckWorldSize(const std::string &group, int64_t world_size, const std::string &op_name) {
+    #if (defined(ENABLE_CPU) && !defined(_WIN32) && !defined(__APPLE__))
+    const auto &collective_manager = mindspore::distributed::collective::CollectiveManager::instance();
+    if (collective_manager->initialized()) {
+        auto expected_world_size = collective_manager->GetLocalGroupSize(group);
+        if (world_size != expected_world_size) {
+        MS_LOG(EXCEPTION) << op_name << ": world_size must be " << expected_world_size << ", but got " << world_size;
+        }
+    }
+    #endif
+  }
   static bool NeedRebuildWorkspaceSize(const std::string &group, const std::string &inner_name);
+
 };
 
 class AclUtil {

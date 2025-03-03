@@ -33,7 +33,6 @@ ShapeArray MatmulReduceScatterFuncImpl::InferShape(const PrimitivePtr &primitive
   auto &x2_tensor = input_infos[kMatmulReduceScatterInputX2Index];
   auto trans_input_optional = input_infos[kMatmulReduceScatterInputTransInputIndex]->GetScalarValue<bool>();
   auto trans_x2_optional = input_infos[kMatmulReduceScatterInputTransX2Index]->GetScalarValue<bool>();
-  auto group_optional = input_infos[kMatmulReduceScatterInputGroupIndex]->GetScalarValue<std::string>();
   auto world_size_optional = input_infos[kMatmulReduceScatterInputWorldSizeIndex]->GetScalarValue<int64_t>();
 
   auto input_shape = input_tensor->GetShape();
@@ -65,9 +64,6 @@ ShapeArray MatmulReduceScatterFuncImpl::InferShape(const PrimitivePtr &primitive
 
   MS_ASSERT(world_size_optional.has_value());
   auto world_size = world_size_optional.value();
-  MS_ASSERT(group_optional.has_value());
-  auto group = group_optional.value();
-  CheckWorldSize(group, world_size, op_name);
   if (input_row_known && input_shape[input_row] % world_size != 0) {
     MS_LOG(EXCEPTION) << op_name << ": world_size must be a divisor of input.shape[" << input_row
                       << "], but world_size is " << world_size << " and input.shape[" << input_row << "] is "
