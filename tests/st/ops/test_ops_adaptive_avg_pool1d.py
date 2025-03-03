@@ -22,7 +22,6 @@ from mindspore import Tensor
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 
 @test_utils.run_with_cell
@@ -39,17 +38,28 @@ def grad_adaptive_avg_pool1d_net(input_x, output_size):
     return ms.grad(net)(input_x, output_size)
 
 
-@ops_binary_cases(OpsBinaryCase(input_info=[((16, 4, 16), np.float16)],
-                                output_info=[((16, 4, 8), np.float16), ((16, 4, 16), np.float16)],
-                                extra_info='adaptive_avg_pool1d'))
 def ops_adpative_avg_pool1d_case1(input_binary_data=None, output_binary_data=None):
-    output = forward_adaptive_avg_pool1d_net(Tensor(input_binary_data[0]), 8)
-    assert np.allclose(output.asnumpy(), output_binary_data[0], 1e-03, 1e-03)
-    output = grad_adaptive_avg_pool1d_net(Tensor(input_binary_data[0]), 8)
-    assert np.allclose(output.asnumpy(), output_binary_data[1], 1e-03, 1e-03)
+    input_np = np.arange(0, 2 * 4 * 4, 1).reshape(2, 4, 4).astype(np.float32)
+    input_ms = ms.Tensor(input_np)
+    expect_out = ms.Tensor([[[0.5000, 2.5000], [4.5000, 6.5000],
+                             [8.5000, 10.5000], [12.5000, 14.5000]],
+                            [[16.5000, 18.5000], [20.5000, 22.5000],
+                             [24.5000, 26.5000], [28.5000, 30.5000]]], dtype=ms.float32)
+    expect_grad = ms.Tensor([[[0.5000, 0.5000, 0.5000, 0.5000],
+                              [0.5000, 0.5000, 0.5000, 0.5000],
+                              [0.5000, 0.5000, 0.5000, 0.5000],
+                              [0.5000, 0.5000, 0.5000, 0.5000]],
+                             [[0.5000, 0.5000, 0.5000, 0.5000],
+                              [0.5000, 0.5000, 0.5000, 0.5000],
+                              [0.5000, 0.5000, 0.5000, 0.5000],
+                              [0.5000, 0.5000, 0.5000, 0.5000]]], dtype=ms.float32)
+    output = forward_adaptive_avg_pool1d_net(input_ms, 2)
+    assert np.allclose(output.asnumpy(), expect_out, 1e-03, 1e-03)
+    output_grad = grad_adaptive_avg_pool1d_net(input_ms, 2)
+    assert np.allclose(output_grad.asnumpy(), expect_grad, 1e-03, 1e-03)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_adaptive_avg_pool1d(mode):
     """
