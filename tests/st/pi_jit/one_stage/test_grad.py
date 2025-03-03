@@ -1146,3 +1146,40 @@ def test_value_and_grad_operation_with_side_effect_2():
     assert ret[0][2] is None
     assert ret[0][3] == "a"
     assert np.all(net.a.asnumpy() == np.array([-1,]))
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_create_grad_operation_and_has_graph_break():
+    """
+    Feature: One stage GradOperation
+    Description: Test One stage GradOperation with graph break
+    Expectation: No exception.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    class Model(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.a = 1
+
+        @jit(capture_mode='bytecode')
+        def construct(self, x: Tensor):
+            y = x + x
+            z = x * x
+            out = ops.div(y, z)
+            return out * self.a
+
+    model = Model()
+
+    def fn(x: Tensor):
+        m = ops.GradOperation(False, False, False)(model)
+        return m(x)
+
+    a = Tensor(np.ones((2, 3), np.float32))
+    o1 = fn(a)
+
+    compiled_fn = jit(fn, capture_mode='bytecode')
+    a = Tensor(np.ones((2, 3), np.float32))
+    o2 = compiled_fn(a)
+
+    match_array(o1, o2)
