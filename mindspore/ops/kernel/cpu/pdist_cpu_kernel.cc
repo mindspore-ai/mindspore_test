@@ -122,6 +122,10 @@ bool PdistCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
       }
     }
   };
+  if (w_ == 0) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', [input] got empty tensor, which is not allowed";
+    return false;
+  }
   ParallelLaunch(task, output_size, GRAIN_SIZE / w_, this);
   return true;
 }
