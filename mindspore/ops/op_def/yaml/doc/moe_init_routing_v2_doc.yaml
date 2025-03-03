@@ -41,14 +41,39 @@ moe_init_routing_v2:
             Supported dtype: int32.
             - **expert_tokens_count_or_cumsum** (Tensor) - A 1D tensor which indicates the statistics on the number of tokens processed by each expert and the accumulated value.
             The value of the tensor is valid only in the non-Drop/Pad scenario which is controlled by the 'expert_tokens_count_or_cumsum_flag'.
-            The shape of the tensor is ('expert_num'). Supported dtype: int32.
+            The shape of the tensor is ('expert_num'). The value of this tensor is dirty data from the memory when it is not required.
+            Supported dtype: int32.
             - **expert_tokens_before_capacity** (Tensor) - A 1D tensor which indicates the statistics on the number of tokens processed by each expert before the drop.
             The value of the tensor is valid only in the Drop/Pad scenario which is controlled by the 'expert_tokens_before_capacity_flag'.
-            The shape of the tensor is ('expert_num'). Supported dtype: int32.
+            The shape of the tensor is ('expert_num'). The value of this tensor is dirty data from the memory when it is not required.
+            Supported dtype: int32.
 
         Raises:
             TypeError: If the data type of input Tensor does not match the description in args.
             ShapeError: If the shape of input Tensor does not match the description in args.
+            ValueError: If the value of the inputs do not match the description in args.
 
         Supported Platforms:
             ``Ascend``
+
+        Examples:
+        >>> import mindspore as ms
+        >>> from mindspore import Tensor
+        >>> from mindspore import ops
+        >>> import numpy as np
+        >>> x = Tensor(np.array([[0.1, 0.2, 0.3], [0.2, 0.7, 0.8], [0.3, 0.3, 0.5]]), ms.float16)
+        >>> expert_idx = Tensor(np.array([[0, 1, 1], [2, 1, 1], [0, 0, 0]]), ms.int32)
+        >>> active_num = 3
+        >>> expert_capacity = 2
+        >>> expert_num = 3
+        >>> drop_pad_mode = 1
+        >>> out1, out2 = ops.moe_init_routing_v2(x, expert_idx, active_num, expert_capacity, expert_num, drop_pad_mode, 0, False)
+        >>> print(out1)
+        [[[0.1  0.2  0.3]
+          [0.3  0.3  0.5]]
+         [[0.1  0.2  0.3]
+          [0.1  0.2  0.3]]
+         [[0.2  0.7  0.8]
+          [0.   0.   0. ]]]
+        >>> print(out2)
+        [ 0  2  3  4 -1 -1  1 -1 -1 ]
