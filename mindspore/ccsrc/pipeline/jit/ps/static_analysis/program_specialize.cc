@@ -1142,26 +1142,20 @@ void FuncGraphSpecializer::ProcessNode(const AnfNodePtr &node) {
     MS_EXCEPTION_IF_NULL(eval_result);
     SyncInplaceAbstractAtJoint(eval_result);
     const AbstractBasePtr &abs = eval_result->abstract();
-    bool ignore_build_value = GetIgnoreBuildValueFlag(node_input);
-    AnfNodePtr replace_node = nullptr;
-    if (!ignore_build_value) {
-      // First try to check if node_input can be replaced by a ValueNode. If cannot, then try to check if
-      // can be replaced by another CNode from anfnode_config_map, otherwise use the replicated node.
-      replace_node = BuildPossibleValueNode(node_input, abs, attrs, node);
-    }
-    if (replace_node == nullptr) {
-      replace_node = BuildReplacedNode(input_conf);
-      MS_EXCEPTION_IF_NULL(replace_node);
-      replace_node->set_abstract(abs);
-      MS_LOG(DEBUG) << "Set replaced input[" << i << "]: " << replace_node->DebugString()
-                    << ", NodeConfig: " << input_conf->ToString() << ", result: " << abs.get() << "/"
-                    << abs->ToString();
-    } else {
-      MS_EXCEPTION_IF_NULL(abs);
-      MS_LOG(DEBUG) << "Build possible value node for node: " << node_input->DebugString()
-                    << ", real_abs: " << abs->ToString() << ", replace_node: " << replace_node->DebugString();
-    }
+    AnfNodePtr replace_node = BuildReplacedNode(input_conf);
     MS_EXCEPTION_IF_NULL(replace_node);
+    replace_node->set_abstract(abs);
+    MS_LOG(DEBUG) << "Set replaced input[" << i << "]: " << replace_node->DebugString()
+                  << ", NodeConfig: " << input_conf->ToString() << ", result: " << abs.get() << "/" << abs->ToString();
+    if (!GetIgnoreBuildValueFlag(replace_node)) {
+      auto replace_value_node = BuildPossibleValueNode(replace_node, abs, attrs, node);
+      if (replace_value_node != nullptr) {
+        MS_LOG(DEBUG) << "Build possible value node for node: " << replace_node->DebugString()
+                      << ", real_abs: " << abs->ToString()
+                      << ", replaced value node: " << replace_value_node->DebugString();
+        replace_node = replace_value_node;
+      }
+    }
     if (enable_eliminate_unused_element) {
       UpdateSequenceNode(replace_node, node_input, abs);
     }
