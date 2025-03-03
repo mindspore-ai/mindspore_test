@@ -196,7 +196,7 @@ def test_parallel_mp_compare_context_autoparallel_pipeline_config():
                                                   "_backbone.cell2": 1})
     pp_net = AutoParallel(pp_net_with_loss, parallel_mode="semi_auto")
     pp_net.full_batch = True
-    pp_net.pipeline(pipeline_stages=2, pipeline_scheduler="1f1b")
+    pp_net.pipeline(stages=2, scheduler="1f1b")
     loss_monitor_pp = LossMonitor(per_print_times=1)
     # train WithLossCell
     model = Model(network=pp_net, optimizer=optimizer)
@@ -264,7 +264,7 @@ def test_parallel_mp_compare_context_auto_pp_config_lazy_init():
                                                   "_backbone.cell2": 1})
     pp_net = AutoParallel(pp_net_with_loss, parallel_mode="semi_auto")
     pp_net.full_batch = True
-    pp_net.pipeline(pipeline_stages=2, pipeline_scheduler="1f1b")
+    pp_net.pipeline(stages=2, scheduler="1f1b")
     loss_monitor_pp = LossMonitor(per_print_times=1)
     # train WithLossCell
     model = Model(network=pp_net, optimizer=optimizer)
@@ -333,7 +333,7 @@ def test_parallel_mp_compare_context_auto_pp_config_lazy_init_dp():
                                                   "_backbone.cell2": 1})
     pp_net = AutoParallel(pp_net_with_loss, parallel_mode="semi_auto")
     pp_net.full_batch = True
-    pp_net.pipeline(pipeline_stages=2, pipeline_scheduler="1f1b")
+    pp_net.pipeline(stages=2, scheduler="1f1b")
     loss_monitor_pp = LossMonitor(per_print_times=1)
     # train WithLossCell
     model = Model(network=pp_net, optimizer=optimizer)
@@ -404,7 +404,7 @@ def test_parallel_mp_compare_context_autoparallel_pipeline_config_with_lazy_init
                                                   "_backbone.cell2": 1})
     pp_net = AutoParallel(pp_net_with_loss, parallel_mode="semi_auto")
     pp_net.full_batch = True
-    pp_net.pipeline(pipeline_stages=2, pipeline_scheduler="1f1b")
+    pp_net.pipeline(stages=2, scheduler="1f1b")
     loss_monitor_pp = LossMonitor(per_print_times=1)
     # train WithLossCell
     model = Model(network=pp_net, optimizer=optimizer)
@@ -476,7 +476,7 @@ def test_parallel_mp_compare_context_auto_pp_cfg_lazy_init_inline_sink():
                                                   "_backbone.cell2": 1})
     pp_net = AutoParallel(pp_net_with_loss, parallel_mode="semi_auto")
     pp_net.full_batch = True
-    pp_net.pipeline(pipeline_stages=2, pipeline_scheduler="1f1b")
+    pp_net.pipeline(stages=2, scheduler="1f1b")
     # train WithLossCell
     model = Model(network=pp_net, optimizer=optimizer)
     model.build(epoch=2, train_dataset=parallel_dataset, sink_mode=True)

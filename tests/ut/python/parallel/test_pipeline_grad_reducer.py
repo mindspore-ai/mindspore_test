@@ -204,7 +204,7 @@ def test_pipeline_functional_shard_stage0_1():
 
     parallel_net = AutoParallel(train_one_step, parallel_mode="semi_auto")
     parallel_net.hsdp()
-    parallel_net.pipeline(pipeline_stages=2)
+    parallel_net.pipeline(stages=2)
 
     dataset = DatasetLenet(data, label, 3)
     for data, label in dataset:

@@ -162,8 +162,8 @@ def set_parallel_mode(net=None, parallel_config=None):
     net = AutoParallel(net)
     if parallel_config.get("dataset_strategy", None) is not None:
         net.set_dataset_strategy(parallel_config["dataset_strategy"])
-    if parallel_config.get("pipeline_stages", None) is not None:
-        net.pipeline(parallel_config["pipeline_stages"])
+    if parallel_config.get("stages", None) is not None:
+        net.pipeline(parallel_config["stages"])
     if parallel_config.get("save_strategy_file", None) is not None:
         net.save_strategy_file(parallel_config["save_strategy_file"])
     if parallel_config.get("load_strategy_file", None) is not None:
@@ -265,7 +265,7 @@ def semi_auto_ckpt_with_redundancy_dp2_mp2_pp2():
     # creat model
     stra_ckpt_file = f"{cur_dir}/train_strategy.ckpt"
     parallel_config = {"parallel_mode": "semi_auto", "data_strategy": "data_parallel",
-                       "pipeline_stages": 2,
+                       "stages": 2,
                        "save_strategy_file": stra_ckpt_file}
     parallel_model = create_train_model(parallel_net, parallel_config)
 
@@ -280,7 +280,7 @@ def semi_auto_ckpt_with_redundancy_dp2_mp2_pp2():
 
     # predict, remove_redundancy=False
     parallel_config = {"parallel_mode": "semi_auto", "data_strategy": "data_parallel",
-                       "pipeline_stages": 2,
+                       "stages": 2,
                        "load_strategy_file": stra_ckpt_file}
     my_predict = load_newest_cpkt_predict(parallel_model, parallel_config, ckpt_path,
                                           remove_redundancy, inputs, label)
@@ -305,7 +305,7 @@ def semi_auto_ckpt_with_redundancy_dp2_mp2_pp2_new_pp():
     # creat model
     stra_ckpt_file = f"{cur_dir}/train_strategy.ckpt"
     parallel_config = {"parallel_mode": "semi_auto", "data_strategy": "data_parallel",
-                       "pipeline_stages": 2,
+                       "stages": 2,
                        "save_strategy_file": stra_ckpt_file,
                        "stage_config": {"_backbone.flatten": 0,
                                         "_backbone.layer1": 0,
@@ -328,7 +328,7 @@ def semi_auto_ckpt_with_redundancy_dp2_mp2_pp2_new_pp():
 
     # predict, remove_redundancy=False
     parallel_config = {"parallel_mode": "semi_auto", "data_strategy": "data_parallel",
-                       "pipeline_stages": 2, "load_strategy_file": stra_ckpt_file}
+                       "stages": 2, "load_strategy_file": stra_ckpt_file}
     my_predict = load_newest_cpkt_predict(parallel_model, parallel_config, ckpt_path,
                                           remove_redundancy, inputs, label)
     print(f"with_redundancy_predict {my_predict}")
@@ -356,7 +356,7 @@ def autoparallel_functional_programming_pp(strategy):
     pp_net = _TrainGradAccuStepCell(pp_net, optimizer).set_train()
 
     parallel_net = AutoParallel(pp_net, parallel_mode="semi_auto")
-    parallel_net.pipeline(pipeline_stages=2, pipeline_scheduler="1f1b")
+    parallel_net.pipeline(stages=2, scheduler="1f1b")
 
     # traverse all the element inside the dataset
     iter_ = 0
