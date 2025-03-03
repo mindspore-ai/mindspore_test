@@ -29,9 +29,9 @@ def test_msrun():
     """
     ms.set_context(jit_level='O0')
     return_code = os.system(
-        "msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 "\
+        "export MSRUN_MODE=AGENT && msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 "\
         "--master_port=10969 --join=True "\
-        "test_msrun.py --device_target=Ascend --dataset_path=/home/workspace/mindspore_dataset/mnist"
+        "test_msrun.py --device_target=CPU --dataset_path=/home/workspace/mindspore_dataset/mnist"
     )
     assert return_code == 0
 

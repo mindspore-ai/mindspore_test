@@ -39,7 +39,7 @@ std::map<std::string, std::function<void()>> gDistributedCallbackMap;
 bool Initialize() {
   // If this process participates in the cluster building, we need to initialize cluster context.
   PROF_START(distributed_cluster_init);
-  if (common::UseDynamicCluster()) {
+  if (common::UseDynamicCluster() && common::GetEnv("MSRUN_MODE") != "AGENT") {
     if (!InitializeCluster()) {
       MS_LOG(EXCEPTION)
         << "Failed to initialize distributed job cluster because some processes in the cluster are not successfully "
@@ -153,6 +153,10 @@ bool FinalizeCluster() { return cluster::ClusterContext::instance()->Finalize();
 bool InitializeCollective() {
   if (collective::CollectiveManager::instance()->initialized()) {
     return true;
+  }
+  MS_LOG(WARNING) << "Initialize collective communciation done. RANK_ID is "<<common::GetEnv("RANK_ID");
+  while (true) {
+    sleep(1);
   }
   if (cluster::ClusterContext::instance()->initialized() &&
       cluster::ClusterContext::instance()->node_role() == kEnvRoleOfScheduler) {

@@ -24,6 +24,7 @@ import mindspore.log as logger
 from ._utils import _generate_cmd_args_list, _generate_cmd_args_list_with_core, _generate_url, \
     _is_local_ip, _convert_addr_to_ip, _send_scale_num, _get_local_ip, _generate_auto_bind_core_strategy, \
     _generate_bind_core_strategy
+from .agent import AgentClient, AgentServer
 
 
 class _Node:
@@ -259,6 +260,43 @@ class _ProcessManager:
             if self.join:
                 logger.warning("Distributed job is spawned. Waiting all processes to exit...")
                 self.join_processes()
+
+    def run_agent(self):
+        os.environ["MSRUN_MODE"] = "AGENT"
+        self.node_rank = 0 if self.node_rank < 0 else self.node_rank
+
+        self.server_agent = None
+        if _is_local_ip(self.master_addr):
+            logger.warning("Start server")
+            self.server_agent = AgentServer(worker_num=self.worker_num, local_worker_num=self.local_worker_num, sched_host=self.master_addr, sched_port=self.master_port, node_rank=self.node_rank)
+
+        from datetime import datetime
+        start_time = datetime.now()
+        client_agent = AgentClient(worker_num=self.worker_num, local_worker_num=self.local_worker_num, sched_host=self.master_addr, sched_port=self.master_port, node_rank=self.node_rank)
+        logger.warning("Client starts to register to server")
+        client_agent.register()
+        logger.warning("Client ends to register to server")
+        
+        end_time1 = datetime.now()
+        time_diff = end_time1 - start_time
+        logger.warning(f"register elapsed time is {time_diff.total_seconds() * 1000:.3f} ms")
+
+        rank_list = client_agent.check_cluster_status()
+        end_time2 = datetime.now()
+        time_diff = end_time2 - start_time
+        logger.warning(f"check cluster elapsed time is {time_diff.total_seconds() * 1000:.3f} ms")
+        self.start_workers(rank_list)
+        
+        if self.join:
+            logger.warning("Distributed job is spawned. Waiting all processes to exit...")
+            self.join_processes()
+        
+        if self.server_agent != None:
+            self.server_agent.join()
+            
+        import time
+        time.sleep(1000000)
+
 
     def start_scheduler(self):
         """
@@ -560,11 +598,15 @@ class _ProcessManager:
                 return 1
         return 0
 
-    def _get_node_id_and_log_path(self, index):
+    def _get_node_id_and_log_path(self, index, rank_list=None):
         """
         Generate node id and log path for corresponding process.
         """
         formatted_log_name = self.format_worker_log_name()
+        if rank_list != None:
+            logger.warning(f"rank list is {rank_list}")
+            return rank_list[index], os.path.join(self.log_dir, formatted_log_name + "_" + str( rank_list[index]) + ".log")
+            
         if self.local_worker_num > self.worker_num:
             raise ValueError(f"Total worker number is {self.worker_num}, "
                              f"but got exceeded local worker number: {self.local_worker_num}.")
