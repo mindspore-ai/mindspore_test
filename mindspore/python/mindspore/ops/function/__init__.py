@@ -771,6 +771,7 @@ from .other_func import (
     depend,
     partial,
     rotary_position_embedding,
+    moe_init_routing_v2
 )
 from .reshard_func import (
     reshard,

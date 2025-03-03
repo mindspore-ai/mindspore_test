@@ -26,6 +26,9 @@ class OPS_API MoeInitRoutingV2FuncImpl : public OpFuncImpl {
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   TypeIdList InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   bool GeneralInferRegistered() const override { return true; }
+
+ private:
+  void CheckInputs(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const;
 };
 }  // namespace ops
 }  // namespace mindspore

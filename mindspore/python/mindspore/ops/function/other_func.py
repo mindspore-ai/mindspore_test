@@ -15,6 +15,7 @@
 """Defines other operators with functional form."""
 from mindspore.ops import operations as P
 from mindspore.ops.auto_generate import rotary_position_embedding
+from mindspore.ops.auto_generate.gen_ops_prim import moe_init_routing_v2_op
 
 partial_ = P.Partial()
 depend_ = P.Depend()
@@ -107,9 +108,123 @@ def depend(value, expr):
     return depend_(value, expr)
 
 
+def moe_init_routing_v2(x, expert_idx, active_num, expert_capacity, expert_num, drop_pad_mode,
+                        expert_tokens_count_or_cumsum_flag, expert_tokens_before_capacity_flag):
+    """
+    Performs routing on the computation result of MoeGatingTopKSoftmaxV2.
+
+    Notes:
+        - NUM_ROWS: The number of rows in 'x', which represents the number of original input tokens.
+        - H: The number of cols in 'x', which denotes for the hiddens of input tokens.
+        - K: The number of experts corresponding to each row of features in the output of MoeGatingTopKSoftmaxV2.
+
+    Args:
+        x (Tensor): A 2D tensor, which contains the input feature tokens. The shape of the tensor
+        is (NUM_ROWS, H). Supported dtypes: Float16, BFloat16, Float32.
+        expert_idx (Tensor): A 2D tensor, representing K experts corresponding to each row of features
+        in the output of MoeGatingTopKSoftmaxV2. The shape of the tensor is (NUM_ROWS, K).
+        Supported dtype: int32. In the Drop/Pad scenario or when the output 'expert_tokens_count_or_cumsum'
+        is required in the non-Drop/Pad scenario, the value range of this tensor is [0, 'expert_num' - 1].
+        In other scenarios, the value must be greater than or equal to 0.
+        active_num (int64): Indicates whether the scenario is Active, this value works only
+        when 'drop_pad_mode' = 0. The value must be greater than or equal to 0 where 0 is the Dropless scenario
+        and others represent the Active scenario.
+        expert_capacity (int64): The number of tokens that each expert can process.
+        The value must be greater than or equal to 0. In the Drop/Pad scenario, the value range is (0, NUM_ROWS].
+        expert_num (int64): The number of experts. The value must be greater than or equal to 0.
+        In the Drop/Pad scenario or when 'expert_tokens_count_or_cumsum_flag' > 0, the value must be greater than 0.
+        drop_pad_mode (int64): Indicates whether the scenario is Drop/Pad. The value must be 0 or 1:
+
+          - 0: non-Drop/Pad scenario.
+          - 1: Drop/Pad scenario.
+        expert_tokens_count_or_cumsum_flag (int64): A flag which controls whether the
+        output 'expert_tokens_count_or_cumsum' is required. The value must be 0, 1 or 2:
+
+          - 0: The output 'expert_tokens_count_or_cumsum' is not required.
+          - 1: The output 'expert_tokens_count_or_cumsum' is required,
+            which represents the accumulated number of tokens processed by each expert.
+          - 2: The output 'expert_tokens_count_or_cumsum' is required,
+            which represents the number of tokens processed by each expert.
+        expert_tokens_before_capacity_flag (bool): A flag which controls whether the
+        output 'expert_tokens_before_capacity' is required.
+
+          - False: The output 'expert_tokens_before_capacity' is not required.
+          - True: The output 'expert_tokens_before_capacity' is required, which represents the
+            number of tokens processed by each expert before the drop.
+
+    Returns:
+        A tuple of tensors.
+        expanded_x (Tensor): A 2D/3D tensor which indicates features extended based on 'expert_idx'.
+        The shape of the tensor depends on scenarios:
+
+          - Dropless scenario: The shape is (NUM_ROWS * K, H).
+          - Active scenario: The shape is (min('active_num', NUM_ROWS * K), H).
+          - Drop/Pad scenario: The shape is ('expert_num', 'expert_capacity', H).
+        Supported dtypes: Float16, BFloat16, Float32.
+        expanded_row_idx (Tensor): A 1D tensor which represents the mapping between 'expanded_x' and 'x'.
+        The shape of the tensor is (NUM_ROWS * K). Supported dtype: int32.
+        expert_tokens_count_or_cumsum (Tensor): A 1D tensor which indicates the statistics on the
+        number of tokens processed by each expert and the accumulated value.
+        The value of the tensor is valid only in the non-Drop/Pad scenario which is controlled by the
+        'expert_tokens_count_or_cumsum_flag'.
+        The value of this tensor is dirty data from the memory when it is not required.
+        The shape of the tensor is ('expert_num'). Supported dtype: int32.
+        expert_tokens_before_capacity (Tensor): A 1D tensor which indicates the statistics on the
+        number of tokens processed by each expert before the drop.
+        The value of the tensor is valid only in the Drop/Pad scenario which is controlled by the
+        'expert_tokens_before_capacity_flag'.
+        The value of this tensor is dirty data from the memory when it is not required.
+        The shape of the tensor is ('expert_num'). Supported dtype: int32.
+
+    Raises:
+        TypeError: If the data type of input Tensor does not match the description in args.
+        ShapeError: If the shape of input Tensor does not match the description in args.
+        ValueError: If the value of the inputs do not match the description in args.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> from mindspore import Tensor
+        >>> from mindspore import ops
+        >>> import numpy as np
+        >>> x = np.random.uniform(-1, 1, size=(3, 3)).astype(np.float16)
+        >>> expert_idx = np.random.randint(0, 3, size=(3, 3)).astype(np.int32)
+        >>> x_tensor = Tensor(x, ms.float16)
+        >>> expert_idx_tensor = Tensor(expert_idx, ms.int32)
+        >>> out1, out2 = ops.moe_init_routing_v2(x_tensor, expert_idx_tensor, 3, 2, 4, 1, 0, False)
+        >>> print(out1)
+        [[[ 0.5264  0.9453  0.4878 ]
+          [ 0.5264  0.9453  0.4778 ]]
+
+         [[-0.6157  0.429   0.2195 ]
+          [-0.1366  0.02672 0.8555 ]]
+
+         [[ 0.5264  0.9453  0.4878 ]
+          [ 0.      0.      0.     ]]
+
+         [[ 0.      0.      0.     ]
+          [ 0.      0.      0.     ]]]
+        >>> print(out2)
+        [ 0  4  1 -1 -1  2  3 -1 -1 ]
+    """
+    expanded_x, expanded_row_idx, \
+    expert_tokens_count_or_cumsum,\
+    expert_tokens_before_capacity = moe_init_routing_v2_op(x, expert_idx, active_num, expert_capacity,
+                                                           expert_num, drop_pad_mode,
+                                                           expert_tokens_count_or_cumsum_flag,
+                                                           expert_tokens_before_capacity_flag)
+    if drop_pad_mode == 1 and expert_tokens_before_capacity_flag:
+        return expanded_x, expanded_row_idx, expert_tokens_before_capacity
+    if drop_pad_mode == 0 and expert_tokens_count_or_cumsum_flag != 0:
+        return expanded_x, expanded_row_idx, expert_tokens_count_or_cumsum
+    return expanded_x, expanded_row_idx
+
 __all__ = [
     'depend',
     'partial',
-    'rotary_position_embedding'
+    'rotary_position_embedding',
+    'moe_init_routing_v2'
 ]
 __all__.sort()
