@@ -22,7 +22,7 @@
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "kernel/ascend/pyboost/auto_generate/transpose.h"
+#include "kernel/ascend/pyboost/auto_generate/transpose_view.h"
 #include "kernel/ascend/acl_ir/op_api_util.h"
 
 namespace mindspore {
@@ -66,7 +66,7 @@ tensor::TensorPtr MatmulReduceScatterAscendCustomize(const std::shared_ptr<OpRun
   TensorPtr input_ = input;
   TensorPtr x2_ = x2;
   const auto &device_name = op->device_context()->device_context_key_.device_name_;
-  auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
+  auto transpose_op = CREATE_PYBOOST_OP(TransposeView, device_name);
   if (trans_input_imm) {
     input_ = transpose_op->Call(input, matmul_reduce_scatter_in::GetTransposePerm(input));
   }

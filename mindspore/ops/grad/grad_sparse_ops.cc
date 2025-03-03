@@ -217,7 +217,7 @@ REG_BPROP_BUILDER("SparseTensorDenseMatmul").SetUnusedInputs({i4}).SetBody(BODYF
                              {{"adjoint_st", MakeValue(!adj_s)}, {"adjoint_dt", MakeValue(false)}});
   ShapeVector perm = {1, 0};
   if (adj_d) {
-    dense_grad = ib->Transpose(dense_grad, perm);
+    dense_grad = ib->TransposeView(dense_grad, perm);
   }
   bool is_half = false;
   auto dense_type = ib->GetDtype(dense);
@@ -242,7 +242,7 @@ REG_BPROP_BUILDER("SparseTensorDenseMatmul").SetUnusedInputs({i4}).SetBody(BODYF
   } else {
     parts_a = ib->Gather(dout, rows, zero);
   }
-  NodePtr tmp1 = adj_d ? ib->Transpose(dense, perm) : dense;
+  NodePtr tmp1 = adj_d ? ib->TransposeView(dense, perm) : dense;
   NodePtr tmp2 = adj_s ? rows : cols;
   auto parts_b = ib->Gather(tmp1, tmp2, zero);
   auto values_grad = ib->ReduceSum(parts_a * parts_b, {axis});

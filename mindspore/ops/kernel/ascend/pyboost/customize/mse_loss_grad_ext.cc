@@ -21,7 +21,7 @@
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "mindapi/base/types.h"
-#include "mindspore/ccsrc/pyboost/auto_generate/broadcast_to.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/broadcast_to_view.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
@@ -45,13 +45,13 @@ tensor::TensorPtr MSELossGradExtAscendCustomize(const std::shared_ptr<OpRunner> 
   const std::vector<int64_t> &input_shape = input_tensor->shape();
   if (input_shape != expand_shape) {
     const auto &broadcast_to_op =
-      CREATE_PYBOOST_OP(BroadcastTo, op->device_context()->device_context_key_.device_name_);
+      CREATE_PYBOOST_OP(BroadcastToView, op->device_context()->device_context_key_.device_name_);
     input_tensor_bd = broadcast_to_op->Call(input_tensor, expand_shape);
   }
   const std::vector<int64_t> &target_shape = target_tensor->shape();
   if (target_shape != expand_shape) {
     const auto &broadcast_to_op =
-      CREATE_PYBOOST_OP(BroadcastTo, op->device_context()->device_context_key_.device_name_);
+      CREATE_PYBOOST_OP(BroadcastToView, op->device_context()->device_context_key_.device_name_);
     target_tensor_bd = broadcast_to_op->Call(target_tensor, expand_shape);
   }
 

@@ -34,6 +34,7 @@
 #include "ops/op_def.h"
 #include "ir/primitive.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
@@ -226,12 +227,16 @@ NodePtr Emitter::BatchMatMul(const NodePtr &a, const NodePtr &b, bool transpose_
   return Emit(prim::kPrimBatchMatMul->name(), {a, b, Value(transpose_a), Value(transpose_b)});
 }
 
-NodePtr Emitter::MatMulExt(const NodePtr &a, const NodePtr &b) {
-  return UnifyDtypeAndEmit(prim::kPrimMatMulExt->name(), a, b, {});
+NodePtr Emitter::ExpandDims(const NodePtr &node, const NodePtr &axis) {
+  return Emit(prim::kPrimExpandDims->name(), {node, axis});
 }
 
-NodePtr Emitter::Transpose(const NodePtr &node, int64_t dim0, int64_t dim1) {
-  return Emit(prim::kPrimTransposeExtView->name(), {node, Value(dim0), Value(dim1)});
+NodePtr Emitter::ExpandDimsView(const NodePtr &node, const NodePtr &dim) {
+  return Emit(prim::kPrimExpandDimsView->name(), {node, dim});
+}
+
+NodePtr Emitter::MatMulExt(const NodePtr &a, const NodePtr &b) {
+  return UnifyDtypeAndEmit(prim::kPrimMatMulExt->name(), a, b, {});
 }
 
 NodePtr Emitter::Transpose(const NodePtr &node, const NodePtr &perm) {
@@ -254,6 +259,30 @@ NodePtr Emitter::Transpose(const NodePtr &node, const NodePtr &perm) {
   return node;
 }
 
+NodePtr Emitter::TransposeView(const NodePtr &node, const NodePtr &perm) {
+  MS_EXCEPTION_IF_NULL(node);
+  MS_EXCEPTION_IF_NULL(perm);
+  auto [success, perm_list] = GetIntList(perm);
+  if (!success) {
+    auto tuple_perm = TensorToTuple(perm);
+    return Emit(prim::kPrimTransposeView->name(), {node, tuple_perm});
+  }
+  // perm like [0, 1, 2, 3] does not need transpose.
+  auto n = SizeToLong(perm_list.size());
+  for (size_t i = 0; i < perm_list.size(); ++i) {
+    // perm value may be negative, e.g. [0, -3, 2, 3] is equal to [0, 1, 2, 3]
+    auto perm_i = perm_list[i] < 0 ? (perm_list[i] + n) : perm_list[i];
+    if (perm_i != static_cast<int64_t>(i)) {
+      return Emit(prim::kPrimTransposeView->name(), {node, perm});
+    }
+  }
+  return node;
+}
+
+NodePtr Emitter::TransposeView(const NodePtr &node, int64_t dim0, int64_t dim1) {
+  return Emit(prim::kPrimTransposeExtView->name(), {node, Value(dim0), Value(dim1)});
+}
+
 NodePtr Emitter::Tile(const NodePtr &node, const NodePtr &dims) {
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(dims);
@@ -274,7 +303,15 @@ NodePtr Emitter::BroadcastTo(const NodePtr &x, const NodePtr &y) {
   if (IsDynamic(x->shape()) || IsDynamic(y->shape())) {
     return Emit("BroadcastTo", {x, Shape(y)});
   }
-  return x->shape() == y->shape() ? x : Emit("BroadcastTo", {x, Shape(y)});
+  return x->shape() == y->shape() ? x : Emit(prim::kPrimBroadcastTo->name(), {x, Shape(y)});
+}
+
+NodePtr Emitter::BroadcastToView(const NodePtr &x, const NodePtr &y) {
+  // y must be NodePtr of Tensor
+  if (IsDynamic(x->shape()) || IsDynamic(y->shape())) {
+    return Emit(prim::kPrimBroadcastToView->name(), {x, Shape(y)});
+  }
+  return x->shape() == y->shape() ? x : Emit(prim::kPrimBroadcastToView->name(), {x, Shape(y)});
 }
 
 NodePtr Emitter::ZerosLike(const NodePtr &node) {

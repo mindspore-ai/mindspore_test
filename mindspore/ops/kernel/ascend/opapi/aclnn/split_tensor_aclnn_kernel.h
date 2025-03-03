@@ -17,6 +17,7 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_SPLIT_TENSOR_ACLNN_KERNEL_MOD_H_
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_SPLIT_TENSOR_ACLNN_KERNEL_MOD_H_
 
+#include <cstdint>
 #include <vector>
 #include <utility>
 #include "ops/base_operator.h"
@@ -37,9 +38,10 @@ class SplitTensorAscend : public AclnnKernelMod {
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
-  std::vector<KernelTensorPtr> converted_output_{};
 
-  int64_t GetDimValue(KernelTensor *axis_ptr) const noexcept;
+  int64_t split_size_{0};
+  int64_t dim_{0};
+  std::vector<KernelTensorPtr> converted_output_{};
 
   bool IsTuple(const KernelTensor *tensor);
 

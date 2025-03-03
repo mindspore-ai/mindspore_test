@@ -31,8 +31,6 @@
 namespace mindspore {
 namespace kernel {
 namespace broadcast_to_cpu {
-constexpr auto kBroadcastTo = "BroadcastTo";
-constexpr auto kDynamicBroadcastTo = "DynamicBroadcastTo";
 constexpr auto kUnknown = "Unknown";
 class BroadcastToCpuKernelMod : public NativeCpuKernelMod {
  public:

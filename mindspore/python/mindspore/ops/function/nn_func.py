@@ -2623,7 +2623,7 @@ def interpolate(input,
             t1 = seq.TupleToTensor()(size[:1], mstype.int32)
             t2 = Tensor([1], mstype.int32)
             size = F.concat([t1, t2])
-            x = x.unsqueeze(-1)
+            x = F.unsqueeze(x, -1)
             x = _get_cache_prim(P.ResizeNearestNeighborV2)()(
                 x, size)
             x = _get_cache_prim(P.Squeeze)(-1)(x)
@@ -2673,7 +2673,7 @@ def interpolate(input,
         if x_rank == 3:
             size = seq.TupleToTensor()((size[0], 1), mstype.int32)
             # For impl of nearest 3D use 4D.
-            x = x.unsqueeze(-1)
+            x = F.unsqueeze(x, -1)
             resize = _get_cache_prim(P.ResizeNearestNeighborV2)(
                 align_corners=False,
                 half_pixel_centers=True)
@@ -5634,7 +5634,7 @@ def gaussian_nll_loss(x, target, var, full=False, eps=1e-6, reduction='mean'):
         but got {reduction}.")
     if not x.shape == var.shape:
         if x.shape[:-1] == var.shape:
-            var = var.unsqueeze(dim=-1)
+            var = F.unsqueeze(var, dim=-1)
 
     maxima = maximum_(var, eps)
     logarithm = log_(maxima)

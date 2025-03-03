@@ -19,8 +19,7 @@ from tests.mark_utils import arg_mark
 
 import mindspore as ms
 import mindspore.nn as nn
-import mindspore.ops as ops
-from mindspore import Tensor
+from mindspore import Tensor, mint, ops
 from mindspore import dtype as mstype
 
 
@@ -36,7 +35,7 @@ def test_contiguous_pynative():
     """
     ms.set_context(mode=ms.PYNATIVE_MODE)
     x = ms.Tensor([[1, 2, 3], [4, 5, 6]], dtype=ms.float32)
-    y = ops.transpose(x, (1, 0))
+    y = mint.permute(x, (1, 0))
     z = y.contiguous()
     assert not y.is_contiguous()
     assert z.is_contiguous()
@@ -45,7 +44,7 @@ def test_contiguous_pynative():
 class ContiguousNet(nn.Cell):
     def construct(self, x, w):
         output = ops.matmul(x, w)
-        output = ops.transpose(output, (2, 1, 0))
+        output = mint.permute(output, (2, 1, 0))
         output = output[..., 1]
         output = output.contiguous()
         output = output * output
@@ -55,7 +54,7 @@ class ContiguousNet(nn.Cell):
 class WithoutContiguousNet(nn.Cell):
     def construct(self, x, w):
         output = ops.matmul(x, w)
-        output = ops.transpose(output, (2, 1, 0))
+        output = mint.permute(output, (2, 1, 0))
         output = output[..., 1]
         output = output * output
         return output

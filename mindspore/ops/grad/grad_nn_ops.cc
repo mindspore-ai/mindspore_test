@@ -617,7 +617,7 @@ REG_BPROP_BUILDER("Conv2DExt").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
       return {x, dout};
     },
     [&](Emitter *e) -> NodePtrList {
-      return {e->ExpandDims(x, kIndex0), e->ExpandDims(dout, kIndex0)};
+      return {e->ExpandDimsView(x, kIndex0), e->ExpandDimsView(dout, kIndex0)};
     });
   nx = ib->TupleGetItem(cond_out_batchfy, kIndex0);
   ndout = ib->TupleGetItem(cond_out_batchfy, kIndex1);
@@ -740,7 +740,7 @@ REG_BPROP_BUILDER("Conv2DPadding").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
       return {x, dout};
     },
     [&](Emitter *e) -> NodePtrList {
-      return {e->ExpandDims(x, 0), e->ExpandDims(dout, 0)};
+      return {e->ExpandDimsView(x, 0), e->ExpandDimsView(dout, 0)};
     });
 
   auto batchfy_x = ib->TupleGetItem(conv_out_batchfy, 0);
@@ -869,7 +869,7 @@ REG_BPROP_BUILDER("Conv3DExt").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
       return {x, dout};
     },
     [&](Emitter *e) -> NodePtrList {
-      return {e->ExpandDims(x, kIndex0), e->ExpandDims(dout, kIndex0)};
+      return {e->ExpandDimsView(x, kIndex0), e->ExpandDimsView(dout, kIndex0)};
     });
   nx = ib->TupleGetItem(cond_out_batchfy, kIndex0);
   ndout = ib->TupleGetItem(cond_out_batchfy, kIndex1);
@@ -1207,7 +1207,7 @@ REG_BPROP_BUILDER("Conv1DPadding").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
       return {x, dout};
     },
     [&](Emitter *e) -> NodePtrList {
-      return {e->ExpandDims(x, kIndex0), e->ExpandDims(dout, kIndex0)};
+      return {e->ExpandDimsView(x, kIndex0), e->ExpandDimsView(dout, kIndex0)};
     });
   b_x = ib->TupleGetItem(cond_out_batchfy, kIndex0);
   b_dout = ib->TupleGetItem(cond_out_batchfy, kIndex1);
@@ -1303,7 +1303,7 @@ REG_BPROP_BUILDER("Conv1DExt").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
       return {x, dout};
     },
     [&](Emitter *e) -> NodePtrList {
-      return {e->ExpandDims(x, kIndex0), e->ExpandDims(dout, kIndex0)};
+      return {e->ExpandDimsView(x, kIndex0), e->ExpandDimsView(dout, kIndex0)};
     });
   nx = ib->TupleGetItem(cond_out_batchfy, kIndex0);
   ndout = ib->TupleGetItem(cond_out_batchfy, kIndex1);
@@ -1518,7 +1518,7 @@ REG_BPROP_BUILDER("Dense").FreeUselessValues_IO({i2}, {}).SetBody(BODYFUNC(ib) {
         dx = ib->OutZeros(x);
       }
       if (w->need_compute_grad_out()) {
-        dw = ib->Emit("MatMulExt", {ib->Transpose(x, ib->Value(ShapeVector{1, 0})), dout});
+        dw = ib->Emit("MatMulExt", {ib->TransposeView(x, ib->Value(ShapeVector{1, 0})), dout});
         if (is_complex) {
           dw = ib->Emit("Conj", {dw});
         }
@@ -1718,13 +1718,13 @@ REG_BPROP_BUILDER("Kthvalue").FreeUselessValues_IO({i1}, {i0}).SetBody(BODYFUNC(
   if (keepdim_opt.has_value()) {
     if (!keepdim_opt.value()) {
       auto dim_value = dim_opt.value();
-      indices = ib->ExpandDims(indices, dim_value);
-      dout0 = ib->ExpandDims(dout0, dim_value);
+      indices = ib->ExpandDimsView(indices, dim_value);
+      dout0 = ib->ExpandDimsView(dout0, dim_value);
     }
   } else {
     auto true_branch = [&indices, &dout0](Emitter *e) -> NodePtrList { return {indices, dout0}; };
     auto false_branch = [&indices, &dout0, &dim](Emitter *e) -> NodePtrList {
-      return {e->Emit("ExpandDims", {indices, dim}), e->Emit("ExpandDims", {dout0, dim})};
+      return {e->ExpandDimsView(indices, dim), e->ExpandDimsView(dout0, dim)};
     };
     auto unsqueezed_outputs = ib->Conditional(keepdim, true_branch, false_branch);
     indices = ib->TupleGetItem(unsqueezed_outputs, 0);
@@ -2186,7 +2186,7 @@ REG_BPROP_BUILDER("SoftmaxCrossEntropyWithLogits").FreeUselessValues_IO({i0, i1}
   auto out = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex3);
   auto grad = ib->TupleGetItem(out, 1);
-  grad = ib->Mul(grad, (ib->ExpandDims(ib->TupleGetItem(dout, 0), -1)));
+  grad = ib->Mul(grad, (ib->ExpandDimsView(ib->TupleGetItem(dout, 0), -1)));
   return {grad, ib->OutZeros(labels)};
 });
 
@@ -2594,7 +2594,7 @@ REG_BPROP_BUILDER("CTCLoss").FreeUselessValues_IO({}, {i0}).SetBody(BODYFUNC(ib)
   auto out = ib->GetInput(kIndex4);
   auto dout = ib->GetInput(kIndex5);
   auto grad_loss = ib->TupleGetItem(out, 1);
-  auto grad = ib->Mul(grad_loss, (ib->ExpandDims(ib->TupleGetItem(dout, 0), -1)));
+  auto grad = ib->Mul(grad_loss, (ib->ExpandDimsView(ib->TupleGetItem(dout, 0), -1)));
   return {grad, ib->OutZeros(labels_indices), ib->OutZeros(labels_values), ib->OutZeros(sequence_length)};
 });
 
@@ -2794,21 +2794,21 @@ REG_BPROP_BUILDER("ExtractImagePatches").SetUnusedInputs({i0, i5}).SetBody(BODYF
       ib->Cast(ib->Range(ib->Value<int64_t>(1), ib->TupleGetItem(res[0], 0), ib->Value<int64_t>(1)), kFloat32);
     x_idx = ib->Reshape(x_idx, res[1]);
     auto x_idx_patch = ib->Cast(ib->Emit("ExtractImagePatches", {x_idx, ksizes, strides, rates, padding}), kInt32);
-    x_idx_patch = ib->Transpose(x_idx_patch, {0, 2, 3, 1});
+    x_idx_patch = ib->TransposeView(x_idx_patch, {0, 2, 3, 1});
     auto out_idx = ib->Cast(ib->Range(ib->TupleGetItem(res[2], 0)), kInt32);
     out_idx = ib->Reshape(out_idx, res[3]);
-    auto idx_tensor = ib->Concat({ib->ExpandDims(x_idx_patch, -1), ib->ExpandDims(out_idx, -1)}, -1);
+    auto idx_tensor = ib->Concat({ib->ExpandDimsView(x_idx_patch, -1), ib->ExpandDimsView(out_idx, -1)}, -1);
     idx_tensor = ib->Reshape(idx_tensor, {-1, 2});
     auto ones = ib->Fill(1.0, res[2], ib->GetDtype(dout)->type_id());
     auto sp_tensor = ib->ScatterNd(idx_tensor, ones, res[4]);
     sp_tensor = ib->Slice(sp_tensor, ib->Value<ShapeVector>({1, 0}), res[5]);
-    auto grad = ib->Transpose(dout, {0, 2, 3, 1});
+    auto grad = ib->TransposeView(dout, {0, 2, 3, 1});
     grad = ib->Reshape(grad, res[6]);
-    grad = ib->Transpose(grad, {1, 2, 3, 4, 0, 5});
+    grad = ib->TransposeView(grad, {1, 2, 3, 4, 0, 5});
     grad = ib->Reshape(grad, res[7]);
     auto jac = ib->MatMul(sp_tensor, grad, false, false);
     auto dx = ib->Reshape(jac, res[8]);
-    dx = ib->Transpose(dx, {2, 3, 0, 1});
+    dx = ib->TransposeView(dx, {2, 3, 0, 1});
     return {dx, ib->OutZeros(ksizes), ib->OutZeros(strides), ib->OutZeros(rates), ib->OutZeros(padding)};
   } else {
     auto x_batch = x_shape[0];
@@ -2819,26 +2819,26 @@ REG_BPROP_BUILDER("ExtractImagePatches").SetUnusedInputs({i0, i5}).SetBody(BODYF
     auto x_idx = ib->Tensor(Range(1, x_indices_num), kFloat32);
     x_idx = ib->Reshape(x_idx, {1, 1, x_row, x_col});
     auto x_idx_patch = ib->Cast(ib->Emit("ExtractImagePatches", {x_idx, ksizes, strides, rates, padding}), kInt32);
-    x_idx_patch = ib->Transpose(x_idx_patch, {0, 2, 3, 1});
+    x_idx_patch = ib->TransposeView(x_idx_patch, {0, 2, 3, 1});
     auto out_row = out_shape[2];
     auto out_col = out_shape[3];
     auto out_indices_num = ((out_row * out_col) * ksizes_row) * ksizes_col;
     auto out_idx = ib->Tensor(Range(out_indices_num), kInt32);
     out_idx = ib->Reshape(out_idx, {1, out_row, out_col, ksizes_row * ksizes_col});
-    auto idx_tensor = ib->Concat({ib->ExpandDims(x_idx_patch, -1), ib->ExpandDims(out_idx, -1)}, -1);
+    auto idx_tensor = ib->Concat({ib->ExpandDimsView(x_idx_patch, -1), ib->ExpandDimsView(out_idx, -1)}, -1);
     idx_tensor = ib->Reshape(idx_tensor, {-1, 2});
     std::vector<int64_t> sp_shape = {x_indices_num, out_indices_num};
     std::vector<int64_t> ones(out_indices_num, 1);
     auto sp_tensor = ib->ScatterNd(idx_tensor, ib->Tensor(ones, ib->GetDtype(dout)), ib->Value<ShapeVector>(sp_shape));
     sp_tensor = ib->Slice(sp_tensor, ib->Value<ShapeVector>({1, 0}),
                           ib->Value<ShapeVector>({x_indices_num - 1, out_indices_num}));
-    auto grad = ib->Transpose(dout, {0, 2, 3, 1});
+    auto grad = ib->TransposeView(dout, {0, 2, 3, 1});
     grad = ib->Reshape(grad, {x_batch, out_row, out_col, ksizes_row, ksizes_col, x_depth});
-    grad = ib->Transpose(grad, {1, 2, 3, 4, 0, 5});
+    grad = ib->TransposeView(grad, {1, 2, 3, 4, 0, 5});
     grad = ib->Reshape(grad, {-1, x_batch * x_depth});
     auto jac = ib->MatMul(sp_tensor, grad, false, false);
     auto dx = ib->Reshape(jac, {x_row, x_col, x_batch, x_depth});
-    dx = ib->Transpose(dx, {2, 3, 0, 1});
+    dx = ib->TransposeView(dx, {2, 3, 0, 1});
     return {dx, ib->OutZeros(ksizes), ib->OutZeros(strides), ib->OutZeros(rates), ib->OutZeros(padding)};
   }
 });
@@ -3366,8 +3366,8 @@ REG_BPROP_BUILDER("DynamicRNN").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   auto dx = ib->TupleGetItem(tmp, kIndex2);
   auto dh_prev = ib->TupleGetItem(tmp, kIndex3);
   auto dc_prev = ib->TupleGetItem(tmp, kIndex4);
-  dh_prev = ib->ExpandDims(dh_prev, 0);
-  dc_prev = ib->ExpandDims(dc_prev, 0);
+  dh_prev = ib->ExpandDimsView(dh_prev, 0);
+  dc_prev = ib->ExpandDimsView(dc_prev, 0);
   constexpr int64_t zero = 0;
   return {dx, dw, db, ib->OutZeros(ib->Tensor(zero)), dh_prev, dc_prev};
 });
@@ -3801,9 +3801,9 @@ REG_BPROP_BUILDER("NthElement").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto n = ib->GetInput(kIndex1);
   auto out = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex3);
-  auto indicators = ib->Equal(ib->ExpandDims(out, -1), input_x, kFloat32);
-  dout = ib->ExpandDims(dout, -1);
-  auto num_select = ib->ExpandDims(ib->ReduceSum(indicators, {-1}), -1);
+  auto indicators = ib->Equal(ib->ExpandDimsView(out, -1), input_x, kFloat32);
+  dout = ib->ExpandDimsView(dout, -1);
+  auto num_select = ib->ExpandDimsView(ib->ReduceSum(indicators, {-1}), -1);
   return {ib->Cast(ib->Mul(ib->Div(indicators, num_select), dout), ib->GetDtype(input_x)), ib->OutZeros(n)};
 });
 
@@ -3873,8 +3873,8 @@ REG_BPROP_BUILDER("AdaptiveAvgPool1D").SetUnusedInputs({i1, i2}).SetBody(BODYFUN
   auto output_size = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
 
-  auto dout_expand_dim = ib->ExpandDims(dout, -2);
-  auto x_expand_dim = ib->ExpandDims(x, -2);
+  auto dout_expand_dim = ib->ExpandDimsView(dout, -2);
+  auto x_expand_dim = ib->ExpandDimsView(x, -2);
   auto dx = ib->Emit("AdaptiveAvgPool2DGradExt", {dout_expand_dim, x_expand_dim});
   auto res_shape = ib->ShapeCalc(g_adaptive_pool1d_squeeze, {dx, output_size}, {1});
   auto dx_squeeze = ib->Reshape(dx, res_shape[0]);
@@ -3897,9 +3897,9 @@ REG_BPROP_BUILDER("AdaptiveMaxPool1D").FreeUselessValues_O({i0}).SetBody(BODYFUN
   auto out_index = ib->TupleGetItem(out, kIndex1);
   auto dy = ib->TupleGetItem(dout, kIndex0);
 
-  auto dy_expand_dim = ib->ExpandDims(dy, -2);
-  auto x_expand_dim = ib->ExpandDims(x, -2);
-  auto out_index_expand_dim = ib->ExpandDims(out_index, -2);
+  auto dy_expand_dim = ib->ExpandDimsView(dy, -2);
+  auto x_expand_dim = ib->ExpandDimsView(x, -2);
+  auto out_index_expand_dim = ib->ExpandDimsView(out_index, -2);
   auto dx = ib->Emit("AdaptiveMaxPool2DGrad", {dy_expand_dim, x_expand_dim, out_index_expand_dim});
   auto res_shape = ib->ShapeCalc(g_adaptive_pool1d_squeeze, {dx, output_size}, {1});
   auto dx_squeeze = ib->Reshape(dx, res_shape[0]);
@@ -4050,12 +4050,12 @@ REG_BPROP_BUILDER("SparseSoftmaxCrossEntropyWithLogitsV2").FreeUselessValues_IO(
   auto softmax_grad = ib->TupleGetItem(out, 1);
   int64_t axis_1 = -1;
   int64_t axis_2 = 2;
-  grad_loss = ib->ExpandDims(grad_loss, axis_1);
+  grad_loss = ib->ExpandDimsView(grad_loss, axis_1);
   auto grad = ib->Mul(grad_loss, softmax_grad);
   if (ib->TupleGetItem(dout, 1) != nullptr) {
     auto softmax = ib->Softmax(logits, ib->Value<ShapeVector>({1}));
-    auto x = ib->ExpandDims(ib->TupleGetItem(dout, 1), 1);
-    auto y = ib->ExpandDims(softmax, axis_2);
+    auto x = ib->ExpandDimsView(ib->TupleGetItem(dout, 1), 1);
+    auto y = ib->ExpandDimsView(softmax, axis_2);
     auto matmul_tmp = ib->BatchMatMul(x, y);
     grad = grad + (ib->TupleGetItem(dout, 1) - ib->Squeeze(matmul_tmp, MakeValue(ShapeVector{1}))) * softmax;
   }
@@ -4459,8 +4459,8 @@ REG_BPROP_BUILDER("AvgPool1D").SetBody((BODYFUNC(ib) {
   auto expanded_padding = ib->MakeTuple(std::vector<NodePtr>{ib->Value<int64_t>(0), ib->TupleGetItem(padding, 0)});
 
   auto dout = ib->GetInput(kIndex7);
-  auto dout_expand_dim = ib->ExpandDims(dout, -2);
-  auto x_expand_dim = ib->ExpandDims(input, -2);
+  auto dout_expand_dim = ib->ExpandDimsView(dout, -2);
+  auto x_expand_dim = ib->ExpandDimsView(input, -2);
 
   auto dx = ib->AvgPool2DGrad(dout_expand_dim, x_expand_dim, expanded_kernel_size, expanded_stride, expanded_padding,
                               ceil_mode, count_include_pad, divisor_override);

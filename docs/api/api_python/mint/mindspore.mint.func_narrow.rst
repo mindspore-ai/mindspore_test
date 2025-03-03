@@ -1,7 +1,7 @@
 mindspore.mint.narrow
 =====================
 
-.. py:function:: mindspore.mint.narrow(input, dim, start, length)
+.. py:function:: mindspore.mint.narrow(input, dim, start, length) -> Tensor
 
     沿着指定的轴，指定起始位置获取指定长度的Tensor。
 
@@ -12,7 +12,7 @@ mindspore.mint.narrow
         - **length** (int) - 指定长度。
 
     返回：
-        Tensor。
+        Tensor，缩小后的Tensor。
 
     异常：
         - **ValueError** - `input` 的秩为0。

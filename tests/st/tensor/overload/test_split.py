@@ -126,7 +126,7 @@ def test_method_split_pyboost(mode):
         with pytest.raises(RuntimeError) as error_info:
             net(x, split_size, dim=0)
             _pynative_executor.sync()
-        assert "Unsupported op [SplitTensor] on" in str(error_info.value)
+        assert "Unsupported op [SplitTensorView] on" in str(error_info.value)
 
     out = net1(x, split_size, dim=0)
     expect = [np.array(np.arange(10).reshape((5, 2)), dtype=np.float32),
@@ -142,7 +142,7 @@ def test_method_split_pyboost(mode):
         with pytest.raises(RuntimeError) as error_info:
             net(x, split_size, dim=0)
             _pynative_executor.sync()
-        assert "Unsupported op [SplitWithSize] on" in str(error_info.value)
+        assert "Unsupported op [SplitWithSizeView] on" in str(error_info.value)
 
     out = net1(x, split_size, dim=0)
     expect = [np.array([[0, 1], [2, 3]], dtype=np.float32),

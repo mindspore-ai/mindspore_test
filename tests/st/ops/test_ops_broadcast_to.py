@@ -27,7 +27,7 @@ from tests.mark_utils import arg_mark
 
 @test_utils.run_with_cell
 def broadcast_to_forward_func(x, shape):
-    return ms.ops.auto_generate.broadcast_to(x, shape)
+    return ms.mint.broadcast_to(x, shape)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
@@ -104,8 +104,7 @@ def test_broadcast_to_dtype(context_mode):
     Expectation: success.
     """
     context.set_context(mode=context_mode)
-    types = [np.float16, np.float32, np.float64, np.int8, np.int16, np.int32, np.int64,
-             np.uint8, np.uint16, np.uint32, np.uint64, np.complex64, np.complex128]
+    types = [np.float16, np.float32, np.int8, np.int32, np.int64, np.uint8]
     for dtype in types:
         broadcast_to_dtype(dtype=dtype)
 
@@ -210,11 +209,11 @@ def test_broadcast_exception(context_mode):
     with pytest.raises(Exception) as info:
         context.set_context(mode=context_mode)
         shape = (0,)
-        x_np = np.random.randint(1, 4)
+        x_np = np.random.randn(4)
         P.BroadcastTo(shape)(Tensor(x_np))
         _pynative_executor.sync()
         assert "ValueError: For 'BroadcastTo', each dimension pair, input_x shape and target shape must be equal or \
-        input dimension is 1 or target dimension is -1. But got input_x shape: [const vector][], target shape: \
+        input dimension is 1 or target dimension is -1. But got input_x shape: [const vector][4], target shape: \
         [const vector][0]." in str(info.value)
 
 

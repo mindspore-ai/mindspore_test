@@ -229,7 +229,7 @@ NodePtr ControlFlowMatrixTranspose(Emitter *e, const NodePtr &x) {
                                e->Value<ShapeVector>(ShapeVector{1}), e->Value<int64_t>(0LL), e->Value<int64_t>(0LL),
                                e->Value<int64_t>(0LL), e->Value<int64_t>(0LL), e->Value<int64_t>(0LL)});
     perm = e->Emit("Concat", {e->MakeTuple({part_1, part_2, part_3}), e->Value<int64_t>(-1LL)});
-    return e->Transpose(x, e->TensorToTuple(perm));
+    return e->TransposeView(x, e->TensorToTuple(perm));
   }
   auto dim = shape.size();
   if (dim < kDim2) {
@@ -240,7 +240,7 @@ NodePtr ControlFlowMatrixTranspose(Emitter *e, const NodePtr &x) {
     perm[i] = static_cast<int64_t>(i);
   }
   std::swap(perm[dim - kIndex2], perm[dim - kIndex1]);
-  return e->Transpose(x, perm);
+  return e->TransposeView(x, perm);
 }
 
 NodePtr ControlFlowAdjoint(Emitter *e, const NodePtr &x) { return ControlFlowMatrixTranspose(e, e->Conj(x)); }
@@ -264,8 +264,8 @@ NodePtr SvdBpropDynamic(BpropBuilder *ib, const NodePtr &a, const NodePtr &out, 
   auto s2 = ib->Square(s);
   constexpr int64_t kMaxLength = 200000000;
   auto f = ib->Emit("MatrixSetDiagV3",
-                    {SafeReciprocal(ib, ib->Sub(ib->ExpandDims(s2, -2), ib->ExpandDims(s2, -1))), ib->ZerosLike(s),
-                     ib->Tensor(0, kInt32)},
+                    {SafeReciprocal(ib, ib->Sub(ib->ExpandDimsView(s2, -2), ib->ExpandDimsView(s2, -1))),
+                     ib->ZerosLike(s), ib->Tensor(0, kInt32)},
                     {{"align", MakeValue("RIGHT_LEFT")}, {"max_length", MakeValue(kMaxLength)}});
   auto s_inv_mat = MatrixDiag(ib, SafeReciprocal(ib, s));
 
@@ -344,8 +344,8 @@ NodePtr SvdBpropStatic(BpropBuilder *ib, const NodePtr &a, const ShapeVector &a_
   auto s2 = ib->Square(s);
   constexpr int64_t max_length = 200000000;
   auto f = ib->Emit("MatrixSetDiagV3",
-                    {SafeReciprocal(ib, ib->Sub(ib->ExpandDims(s2, -2), ib->ExpandDims(s2, -1))), ib->ZerosLike(s),
-                     ib->Tensor(0, kInt32)},
+                    {SafeReciprocal(ib, ib->Sub(ib->ExpandDimsView(s2, -2), ib->ExpandDimsView(s2, -1))),
+                     ib->ZerosLike(s), ib->Tensor(0, kInt32)},
                     {{"align", MakeValue("RIGHT_LEFT")}, {"max_length", MakeValue(max_length)}});
   auto s_inv_mat = MatrixDiag(ib, SafeReciprocal(ib, s));
   std::map<int64_t, std::vector<int64_t>> slices;
@@ -528,8 +528,9 @@ REG_BPROP_BUILDER("LinalgQr").SetBody(BODYFUNC(ib) {
       dx = ib->MatMulExt(q_mat, TrilImInvAdjSkew(ib, ib->Neg(dx)));
 
       // Extract the `m_` columns of the r matrix.
-      auto r_narrow = ib->Emit("Narrow", {r_mat, ib->EmitValue(MakeValue<int64_t>(-1)),
-                                          ib->EmitValue(MakeValue<int64_t>(0)), ib->EmitValue(MakeValue<int64_t>(m_))});
+      auto r_narrow =
+        ib->Emit("NarrowView", {r_mat, ib->EmitValue(MakeValue<int64_t>(-1)), ib->EmitValue(MakeValue<int64_t>(0)),
+                                ib->EmitValue(MakeValue<int64_t>(m_))});
 
       // [x * r_narrow^T = dx] => [r_narrow * x^T = dx^T]
       auto dx_T = ib->TupleGetItem(
@@ -564,9 +565,8 @@ REG_BPROP_BUILDER("LinalgQr").SetBody(BODYFUNC(ib) {
       }
 
       auto dx_T = e->TupleGetItem(
-        e->Emit("TriangularSolve",
-                {e->Emit("TransposeExtView", {ret, e->Value<int64_t>(-1), e->Value<int64_t>(-2)}), r_mat,
-                 e->Value(true), e->Value(false), e->Value(false)}),
+        e->Emit("TriangularSolve", {e->Emit("TransposeExtView", {ret, e->Value<int64_t>(-1), e->Value<int64_t>(-2)}),
+                                    r_mat, e->Value(true), e->Value(false), e->Value(false)}),
         0);
       ret = e->Emit("TransposeExtView", {dx_T, e->Value<int64_t>(-1), e->Value<int64_t>(-2)});
 
@@ -577,7 +577,7 @@ REG_BPROP_BUILDER("LinalgQr").SetBody(BODYFUNC(ib) {
       NodePtr ret = nullptr;
       ret = e->MatMulExt(q_mat, TrilImInvAdjSkew_dyn(e, e->Mul(e->Tensor(-1, dtype), dx)));
       auto r_narrow =
-        e->Emit("Narrow", {r_mat, e->EmitValue(MakeValue<int64_t>(-1)), e->EmitValue(MakeValue<int64_t>(0)), m_});
+        e->Emit("NarrowView", {r_mat, e->EmitValue(MakeValue<int64_t>(-1)), e->EmitValue(MakeValue<int64_t>(0)), m_});
       auto dx_T = e->TupleGetItem(
         e->Emit("TriangularSolve", {e->Emit("TransposeExtView", {ret, e->Value<int64_t>(-1), e->Value<int64_t>(-2)}),
                                     r_narrow, e->Value(true), e->Value(false), e->Value(false)}),

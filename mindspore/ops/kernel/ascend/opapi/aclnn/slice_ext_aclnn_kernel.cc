@@ -62,11 +62,7 @@ void SliceExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
 bool SliceExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                             const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  if (start_ == end_) {
-    auto output_shape = shape_;
-    output_shape[dim_] = 0;
-    outputs[kIndex0]->SetShapeVector(output_shape);
-  } else {
+  if (start_ != end_) {
     RunOp(stream_ptr, workspace, inputs[kIndex0], dim_, start_, end_, step_, outputs[kIndex0]);
   }
   return true;

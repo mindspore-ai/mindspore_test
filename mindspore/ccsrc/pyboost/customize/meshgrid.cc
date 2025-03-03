@@ -20,7 +20,7 @@
 #include <string>
 #include "runtime/device/device_address_utils.h"
 #include "kernel/ascend/pyboost/auto_generate/view.h"
-#include "kernel/ascend/pyboost/auto_generate/broadcast_to.h"
+#include "kernel/ascend/pyboost/auto_generate/broadcast_to_view.h"
 #include "op_def/op_enum.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "utils/core_op_utils.h"
@@ -88,7 +88,7 @@ std::vector<tensor::TensorPtr> MeshgridCustomizeCall(const std::shared_ptr<OpRun
 
   std::vector<tensor::TensorPtr> broadcast_to_outputs;
   for (auto view_tensor : view_outputs) {
-    auto broadcast_to_op = CREATE_PYBOOST_OP(BroadcastTo, device_type);
+    auto broadcast_to_op = CREATE_PYBOOST_OP(BroadcastToView, device_type);
     broadcast_to_op->Call(view_tensor, output_shape_list);
     broadcast_to_outputs.push_back(broadcast_to_op->outputs()[kIndex0]);
   }

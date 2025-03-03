@@ -33,7 +33,7 @@ from mindspore.ops.operations._sequence_ops import TupleToTensor
 from mindspore.ops.composite.multitype_ops import _constexpr_utils as const_utils
 from mindspore.ops.operations._sequence_ops import TensorToList
 # 1
-from mindspore.ops.auto_generate import OnesLikeExt, ZerosLikeExt, FillScalar, FillTensor, Arange, Chunk, UniqueDim, \
+from mindspore.ops.auto_generate import OnesLikeExt, ZerosLikeExt, FillScalar, FillTensor, Arange, UniqueDim, \
     Unique2, SortExt, NonZero, NonZeroExt, Scatter, ScatterValue, NewOnes, NewZeros
 # 2
 
@@ -73,8 +73,8 @@ from mindspore.ops.auto_generate import OnesLikeExt, ZerosLikeExt, FillScalar, F
 
 # 20
 
-from mindspore.ops.auto_generate.gen_ops_prim import SplitTensor, Meshgrid
-from mindspore.ops.auto_generate.gen_ops_prim import SplitWithSize, RepeatInterleaveInt, RepeatInterleaveTensor
+from mindspore.ops.auto_generate.gen_ops_prim import Meshgrid
+from mindspore.ops.auto_generate.gen_ops_prim import RepeatInterleaveInt, RepeatInterleaveTensor
 from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostSearchSortedPrim, meshgrid_impl, concat_impl, \
     unique_consecutive_impl
 from mindspore.ops.operations.array_ops import (
@@ -107,7 +107,8 @@ from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked
     expand_as, unstack_ext_view_op, full_like_op, \
     index_fill_scalar, index_fill_tensor
 from mindspore.ops.auto_generate import take, tensor_scatter_elements as tensor_scatter_elements_ext
-from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, gather_d_op, slice_op, tril_ext_op
+from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, gather_d_op, slice_op, tril_ext_op, \
+    split_tensor_view_op, split_with_size_view_op
 from mindspore.ops.operations.manually_defined import tile, rank, scalar_cast
 from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostOneHotExtPrim
 from mindspore._c_expression import pyboost_empty
@@ -148,8 +149,6 @@ scatter_nd_ = P.ScatterNd()
 scatter_update_ = P.ScatterUpdate()
 search_sorted_ = _PyboostSearchSortedPrim()
 shape_ = P.Shape()
-split_tensor = SplitTensor()
-split_with_size = SplitWithSize()
 size_ = P.Size()
 tensor_scatter_add_ = P.TensorScatterAdd()
 tensor_scatter_div_ = P.TensorScatterDiv()
@@ -183,7 +182,6 @@ sort_ext_ = SortExt()
 scatter_prim = Scatter()
 scatter_value_ = ScatterValue()
 arange_ = Arange()
-chunk_ = Chunk()
 repeat_interleave_int_ = RepeatInterleaveInt()
 repeat_interleave_tensor_ = RepeatInterleaveTensor()
 unique_dim_ = UniqueDim()
@@ -1041,48 +1039,6 @@ def chunk(input, chunks, axis=0):
             res += _get_cache_prim(P.Split)(arr_axis,
                                             1)(tensor_slice(input, start2, size2))
     return res
-
-
-def chunk_ext(input, chunks, dim=0):
-    """
-    Cut the input Tensor into `chunks` sub-tensors along the specified axis.
-
-    Note:
-        This function may return less than the specified number of chunks!
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
-    Args:
-        input (Tensor): A Tensor to be cut.
-        chunks (int): Number of sub-tensors to cut.
-        dim (int, optional): Specify the dimensions that you want to split. Default: ``0`` .
-
-    Returns:
-        A tuple of sub-tensors.
-
-    Raises:
-        TypeError: If argument `input` is not Tensor.
-        TypeError: The sum of `chunks` is not int.
-        TypeError: If argument `dim` is not int.
-        ValueError: If argument `dim` is out of range of :math:`[-input.ndim, input.ndim)` .
-        ValueError: If argument `chunks` is not positive number.
-
-    Supported Platforms:
-        ``Ascend``
-
-    Examples:
-        >>> import numpy as np
-        >>> import mindspore
-        >>> from mindspore import Tensor
-        >>> input_x = np.arange(9).astype("float32")
-        >>> output = mindspore.mint.chunk(Tensor(input_x), 3)
-        >>> print(output)
-        (Tensor(shape=[3], dtype=Float32, value= [ 0.00000000e+00,  1.00000000e+00,  2.00000000e+00]),
-         Tensor(shape=[3], dtype=Float32, value= [ 3.00000000e+00,  4.00000000e+00,  5.00000000e+00]),
-         Tensor(shape=[3], dtype=Float32, value= [ 6.00000000e+00,  7.00000000e+00,  8.00000000e+00]))
-    """
-    return chunk_(input, chunks, dim)
 
 
 def fills(x, value):
@@ -4607,9 +4563,9 @@ def split_ext(tensor, split_size, dim=0):
          Tensor(shape=[3], dtype=Float32, value= [ 6.00000000e+00,  7.00000000e+00,  8.00000000e+00]))
     """
     if isinstance(split_size, int):
-        res = split_tensor(tensor, split_size, dim)
+        res = split_tensor_view_op(tensor, split_size, dim)
     elif isinstance(split_size, (list, tuple)):
-        res = split_with_size(tensor, split_size, dim)
+        res = split_with_size_view_op(tensor, split_size, dim)
     else:
         raise TypeError(f"Type of Argument `split_size` should be integer, tuple(int) or list(int), "
                         f"but got {type(split_size)}")

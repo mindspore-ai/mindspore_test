@@ -16,7 +16,7 @@ import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor
-from mindspore import ops
+from mindspore import ops, mint
 from mindspore.ops.operations import _inner_ops
 from tests.mark_utils import arg_mark
 
@@ -38,7 +38,7 @@ def test_broadcast_to_single_op():
 
     class Net(nn.Cell):
         def construct(self, x):
-            return ops.broadcast_to(x, (2, 2, 2, 3))
+            return mint.broadcast_to(x, (2, 2, 2, 3))
 
     x = Tensor(np.array([[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]]), ms.float32)
     net = Net()
@@ -69,9 +69,9 @@ def test_broadcast_to_multiple_op():
 
     class Net(nn.Cell):
         def construct(self, x):
-            temp = ops.broadcast_to(x, (2, 2, 2, 3))
+            temp = mint.broadcast_to(x, (2, 2, 2, 3))
             temp = (temp + 1) * 2
-            return ops.broadcast_to(temp, (1, 2, 2, 2, 3))
+            return mint.broadcast_to(temp, (1, 2, 2, 2, 3))
 
     x = Tensor(np.array([[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]]), ms.float32)
     net = Net()
@@ -155,7 +155,7 @@ def test_expand_dim_single_op():
 
     class Net(nn.Cell):
         def construct(self, x):
-            return ops.expand_dims(x, 0)
+            return mint.unsqueeze(x, 0)
 
     x = Tensor(np.array([[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]]), ms.float32)
     net = Net()
@@ -186,9 +186,9 @@ def test_expand_dim_multiple_op():
 
     class Net(nn.Cell):
         def construct(self, x):
-            y = ops.expand_dims(x, 0)
+            y = mint.unsqueeze(x, 0)
             temp = (y + 1) * 2
-            return ops.expand_dims(temp, 0)
+            return mint.unsqueeze(temp, 0)
 
     x = Tensor(np.array([[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]]), ms.float32)
     net = Net()
@@ -228,14 +228,14 @@ def test_copy_with_slice():
     # 2.Discontinuous to Contiguous
     input_a = Tensor(np.array([[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]]), ms.float32)
     input_b = Tensor(np.array([[[13, 14], [15, 16], [17, 18]], [[19, 20], [21, 22], [23, 24]]]), ms.float32)
-    dis_ctg_a = ops.transpose(input_a, input_perm)
+    dis_ctg_a = ops.auto_generate.transpose_view(input_a, input_perm)
     copy_with_slice(input_b, dis_ctg_a)
     expect_output = np.array([[[1, 4], [2, 5], [3, 6]], [[7, 10], [8, 11], [9, 12]]]).astype(np.float32)
     np.testing.assert_array_equal(input_b.asnumpy(), expect_output)
 
     # 3.Contiguous to Discontinuous
     input_a = Tensor(np.array([[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]]), ms.float32)
-    dis_ctg_a = ops.transpose(input_a, input_perm)
+    dis_ctg_a = ops.auto_generate.transpose_view(input_a, input_perm)
     input_b = Tensor(np.array([[[13, 14], [15, 16], [17, 18]], [[19, 20], [21, 22], [23, 24]]]), ms.float32)
     copy_with_slice(dis_ctg_a, input_b)
     expect_output = np.array([[[13, 14], [15, 16], [17, 18]], [[19, 20], [21, 22], [23, 24]]]).astype(np.float32)
@@ -244,8 +244,8 @@ def test_copy_with_slice():
     # 4.Discontinuous to Discontinuous
     input_a = Tensor(np.array([[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]]), ms.float32)
     input_b = Tensor(np.array([[[13, 14, 15], [16, 17, 18]], [[19, 20, 21], [22, 23, 24]]]), ms.float32)
-    dis_ctg_a = ops.transpose(input_a, input_perm)
-    dis_ctg_b = ops.transpose(input_b, input_perm)
+    dis_ctg_a = ops.auto_generate.transpose_view(input_a, input_perm)
+    dis_ctg_b = ops.auto_generate.transpose_view(input_b, input_perm)
     copy_with_slice(dis_ctg_a, dis_ctg_b)
     expect_output = np.array([[[13, 16], [14, 17], [15, 18]], [[19, 22], [20, 23], [21, 24]]]).astype(np.float32)
     np.testing.assert_array_equal(dis_ctg_a.asnumpy(), expect_output)
@@ -265,7 +265,7 @@ def test_transpose_single_op():
 
     class Net(nn.Cell):
         def construct(self, x, y):
-            return ops.transpose(x, y)
+            return ops.auto_generate.transpose_view(x, y)
 
     input_x = Tensor(np.array([[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]]), ms.float32)
     input_perm = (0, 2, 1)
@@ -296,9 +296,9 @@ def test_transpose_multiple_op():
 
     class Net(nn.Cell):
         def construct(self, x, y):
-            temp = ops.transpose(x, y)
+            temp = ops.auto_generate.transpose_view(x, y)
             temp = (temp + 1) * 2
-            return ops.transpose(temp, y)
+            return ops.auto_generate.transpose_view(temp, y)
 
     input_x = Tensor(np.array([[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]]), ms.float32)
     input_perm = (0, 2, 1)
@@ -427,7 +427,7 @@ def test_small_conv_tranpose_op():
     class Net(nn.Cell):
         def construct(self, x, weight):
             out = ops.conv2d(x, weight)
-            return ops.transpose(out, (2, 1, 0, 3))
+            return ops.auto_generate.transpose_view(out, (2, 1, 0, 3))
 
     x = Tensor(np.random.randn(2, 4, 4, 4), ms.float32)
     weight = Tensor(np.random.randn(4, 4, 3, 3), ms.float32)
@@ -458,7 +458,7 @@ def test_large_conv_tranpose_op():
     class Net(nn.Cell):
         def construct(self, x, weight):
             out = ops.conv2d(x, weight)
-            return ops.transpose(out, (2, 1, 0, 3))
+            return ops.auto_generate.transpose_view(out, (2, 1, 0, 3))
 
     ms.set_context(mode=ms.GRAPH_MODE)
 

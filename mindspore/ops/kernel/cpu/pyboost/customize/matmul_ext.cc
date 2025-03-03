@@ -23,7 +23,7 @@
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/matmul.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/batch_mat_mul.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/reshape.h"
-#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/broadcast_to.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/broadcast_to_view.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/contiguous.h"
 #include "infer/ops_func_impl/matmul_ext.h"
 
@@ -125,13 +125,13 @@ void MatMulExtCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr 
     ShapeVector shape_cur2(shape2_aligned.begin(), shape2_aligned.end() - kDim2);
 
     if (shape_cur1 != shape_backbone) {
-      auto broadcast_to = CREATE_PYBOOST_OP(BroadcastTo, device_context->device_context_key_.device_name_);
+      auto broadcast_to = CREATE_PYBOOST_OP(BroadcastToView, device_context->device_context_key_.device_name_);
       input =
         contiguous_5->Call(broadcast_to->Call(input, ops::GetMatMulExtBroadcastShape(shape_backbone, shape1_orig)));
     }
 
     if (shape_cur2 != shape_backbone) {
-      auto broadcast_to = CREATE_PYBOOST_OP(BroadcastTo, device_context->device_context_key_.device_name_);
+      auto broadcast_to = CREATE_PYBOOST_OP(BroadcastToView, device_context->device_context_key_.device_name_);
       other =
         contiguous_6->Call(broadcast_to->Call(other, ops::GetMatMulExtBroadcastShape(shape_backbone, shape2_orig)));
     }

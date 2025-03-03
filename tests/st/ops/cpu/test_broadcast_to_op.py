@@ -186,9 +186,9 @@ def test_broadcast_exception():
     """
     with pytest.raises(Exception) as info:
         shape = (0,)
-        x_np = np.random.randint(1, 4)
+        x_np = np.random.randn(4)
         P.BroadcastTo(shape)(Tensor(x_np))
         _pynative_executor.sync()
         assert "ValueError: For 'BroadcastTo', each dimension pair, input_x shape and target shape must be equal or \
-        input dimension is 1 or target dimension is -1. But got input_x shape: [const vector][], target shape: \
+        input dimension is 1 or target dimension is -1. But got input_x shape: [const vector][4], target shape: \
         [const vector][0]." in str(info.value)

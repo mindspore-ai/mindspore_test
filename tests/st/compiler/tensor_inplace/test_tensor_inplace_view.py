@@ -109,7 +109,7 @@ def test_graph_view_out():
 class ViewOut2(nn.Cell):
     def __init__(self):
         super(ViewOut2, self).__init__()
-        self.transpose = P.Transpose()
+        self.transpose = P.TransposeView()
         self.assign = P.Assign()
 
     @ms.jit

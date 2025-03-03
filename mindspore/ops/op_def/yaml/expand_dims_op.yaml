@@ -9,6 +9,3 @@ expand_dims:
   returns:
     output:
       dtype: tensor
-  view: True
-  dispatch:
-    enable: True

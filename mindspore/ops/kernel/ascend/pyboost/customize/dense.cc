@@ -19,7 +19,7 @@
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "kernel/ascend/pyboost/auto_generate/transpose.h"
+#include "kernel/ascend/pyboost/auto_generate/transpose_view.h"
 #include "kernel/ascend/pyboost/auto_generate/matmul_ext.h"
 #include "kernel/ascend/pyboost/auto_generate/matmul.h"
 #include "kernel/ascend/pyboost/auto_generate/addmm.h"
@@ -81,7 +81,7 @@ void DenseAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &
   const auto &device_name = device_context->device_context_key_.device_name_;
 
   auto perm = dense::GetTransposePerm(weight_tensor);
-  auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
+  auto transpose_op = CREATE_PYBOOST_OP(TransposeView, device_name);
   auto weight_transposed = transpose_op->Call(weight_tensor, perm);
 
   auto input_tensor_shape = input_tensor->shape();

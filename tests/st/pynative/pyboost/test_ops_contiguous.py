@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from mindspore import ops
+from mindspore import mint
 from mindspore.ops.auto_generate import contiguous
 from mindspore import Tensor
 import numpy as np
@@ -38,10 +38,10 @@ def test_contiguous_dim2_with_transpose():
     Expectation: success
     """
     x = Tensor(np.random.randn(2, 3).astype(np.float32))
-    y = ops.transpose(x, (1, 0))
+    y = mint.permute(x, (1, 0))
     output = contiguous(y)
 
-    transpose_result = ops.transpose(x, (1, 0))
+    transpose_result = mint.permute(x, (1, 0))
     assert np.allclose(output.asnumpy(), transpose_result.asnumpy())
 
 
@@ -52,10 +52,10 @@ def test_contiguous_dim3_with_transpose():
     Expectation: success
     """
     x = Tensor(np.random.randn(2, 3, 4).astype(np.float32))
-    y = ops.transpose(x, (2, 0, 1))
+    y = mint.permute(x, (2, 0, 1))
     output = contiguous(y)
 
-    transpose_result = ops.transpose(x, (2, 0, 1))
+    transpose_result = mint.permute(x, (2, 0, 1))
     assert np.allclose(output.asnumpy(), transpose_result.asnumpy())
 
 
@@ -66,10 +66,10 @@ def test_contiguous_dim4_with_transpose():
     Expectation: success
     """
     x = Tensor(np.random.randn(2, 3, 4, 5).astype(np.float32))
-    y = ops.transpose(x, (2, 0, 3, 1))
+    y = mint.permute(x, (2, 0, 3, 1))
     output = contiguous(y)
 
-    transpose_result = ops.transpose(x, (2, 0, 3, 1))
+    transpose_result = mint.permute(x, (2, 0, 3, 1))
     assert np.allclose(output.asnumpy(), transpose_result.asnumpy())
 
 

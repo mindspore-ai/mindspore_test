@@ -1308,12 +1308,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('ger')(self, vec2)
 
-    def broadcast_to(self, shape):
-        """
-        For details, please refer to :func:`mindspore.ops.broadcast_to`.
-        """
-        return tensor_operator_registry.get('broadcast_to')(self, shape)
-
     def real(self):
         r"""
         For details, please refer to :func:`mindspore.ops.real`.
@@ -3306,7 +3300,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
     def expand(self, size):
         r"""
-        For details, please refer to :func:`mindspore.ops.broadcast_to`.
+        For details, please refer to :func:`mindspore.mint.broadcast_to`.
         The parameter `size` of the current interface is the same as the parameter `shape` of the reference interface.
         """
         if isinstance(size, Tensor):
