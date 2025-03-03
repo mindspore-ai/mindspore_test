@@ -490,6 +490,8 @@ SilentChecker &SilentChecker::GetInstance() {
   return *inst_ptr;
 }
 
+bool SilentChecker::IsNpuAsdEnable() { return IsAsdEnable(); }
+
 SilentChecker::~SilentChecker() {}
 
 void SilentChecker::RegisterCheck(const kernel::KernelModPtr &kernel_mod, const kernel::KernelTensor *dout) {
@@ -503,6 +505,8 @@ void SilentChecker::RegisterCheck(const kernel::KernelModPtr &kernel_mod, const 
     state->val = GenerateKernelTensor(dout->dtype_id(), ShapeVector{1});
     state->square = GenerateKernelTensor(dout->dtype_id(), dout->GetShapeVector());
     out_square_.max_size = std::max(out_square_.max_size, state->square->size());
+    // NOTE: Consider there are multiple graph instances, it is necessary to reset `out_square_.dev_addr` to nullptr.
+    out_square_.dev_addr = nullptr;
   } else {
     state->sfda = GenerateKernelTensor(kNumberTypeFloat32, ShapeVector{3}, nullptr, true);
     state->val = GenerateKernelTensor(dout->dtype_id(), ShapeVector{});
@@ -559,6 +563,8 @@ void SilentChecker::InitOpExecState(OpExecState *op_exec_state, const std::strin
   auto work_space = kernel_mod->GetWorkspaceSizeList();
   if (!work_space.empty() && work_space[0] != 0) {
     workspace_.max_size = std::max(workspace_.max_size, work_space[0]);
+    // NOTE: Consider there are multiple graph instances, it is necessary to reset `workspace_.dev_addr` to nullptr.
+    workspace_.dev_addr = nullptr;
     op_exec_state->workspace = GenerateKernelTensor(kNumberTypeInt8, ShapeVector{SizeToLong(work_space[0])});
   }
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Resize for op " << op_name << " finish.";

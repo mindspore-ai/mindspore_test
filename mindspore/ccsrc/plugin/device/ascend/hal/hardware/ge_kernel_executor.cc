@@ -1298,7 +1298,8 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const vector<KernelT
   } else {
     MS_EXCEPTION_IF_NULL(kernel_mod);
     MS_EXCEPTION_IF_NULL(stream);
-    if (!silentcheck::ascend::SilentChecker::GetInstance().IsCommOpInputNotSupport() &&
+    if (silentcheck::ascend::SilentChecker::IsNpuAsdEnable() &&
+        !silentcheck::ascend::SilentChecker::GetInstance().IsCommOpInputNotSupport() &&
         kernel->HasPrimalAttr(silentcheck::kAttrSilentCheckOpType)) {
       MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Launch silent check for " << kernel->fullname_with_scope();
       silentcheck::ascend::SilentChecker::GetInstance().ExecuteCheck(kernel_mod, inputs[0], stream);
