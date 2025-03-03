@@ -547,14 +547,23 @@ void RedistributionNextNodeInMakeTuple(
     }
     MS_LOG(DEBUG) << "use_cnode name: " << common::AnfAlgo::GetCNodeName(use_cnode) << " ,node_pos: " << node_pos;
     auto real_node = GetRealKernelNode(use_cnode->input(node_pos), -1, nullptr);
-    if (IsPrimitiveCNode(real_node.first, prim::kPrimMakeTuple)) {
+    if (IsPrimitiveCNode(real_node.first, prim::kPrimMakeTuple) &&
+        std::find_if(next_nodes->begin(), next_nodes->end(), [&](const auto n_pair) {
+          return n_pair.first.first == real_node.first && n_pair.first.second == (*make_tuple_index) + 1 &&
+                 n_pair.second == modified_get_item_idx;
+        }) == next_nodes->end()) {
       next_nodes->push_back(
         std::make_pair(std::make_pair(real_node.first, (*make_tuple_index) + 1), modified_get_item_idx));
       *make_tuple_index = -1;
       return;
     }
   }
-  next_nodes->push_back(std::make_pair(node_pair, modified_get_item_idx));
+  if (std::find_if(next_nodes->begin(), next_nodes->end(), [&](const auto n_pair) {
+        return n_pair.first.first == node_pair.first && n_pair.first.second == node_pair.second &&
+               n_pair.second == modified_get_item_idx;
+      }) == next_nodes->end()) {
+    next_nodes->push_back(std::make_pair(node_pair, modified_get_item_idx));
+  }
 }
 
 void SetAnfNode(const AnfNodePtr &param,
@@ -594,7 +603,11 @@ void FindFuncGraphNextNode(const CNodePtr &use_cnode, const std::pair<AnfNodePtr
   auto fg_parameters = fg->parameters();
   auto param = fg_parameters[IntToSize(node_pair.second - 1)];
   MS_EXCEPTION_IF_NULL(param);
-  if (param->has_user_data<OperatorInfo>()) {
+  if (param->has_user_data<OperatorInfo>() &&
+      std::find_if(next_nodes->begin(), next_nodes->end(), [&](const auto n_pair) {
+        return n_pair.first.first == node_pair.first && n_pair.first.second == node_pair.second &&
+               n_pair.second == RemovePlaceholderIdx(get_item_index);
+      }) == next_nodes->end()) {
     next_nodes->push_back(std::make_pair(node_pair, RemovePlaceholderIdx(get_item_index)));
     return;
   }
