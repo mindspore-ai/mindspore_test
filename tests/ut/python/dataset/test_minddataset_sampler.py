@@ -610,7 +610,7 @@ def test_cv_minddataset_sequential_sampler_offeset(add_and_remove_cv_file):
     data_set = ds.MindDataset(file_name + "0", columns_list, num_readers,
                               sampler=sampler)
     dataset_size = data_set.get_dataset_size()
-    assert dataset_size == 10
+    assert dataset_size == 8
     num_iter = 0
     for item in data_set.create_dict_iterator(num_epochs=1, output_numpy=True):
         logger.info(
@@ -621,9 +621,9 @@ def test_cv_minddataset_sequential_sampler_offeset(add_and_remove_cv_file):
             "-------------- item[file_name]: {} ------------------------".format(item["file_name"]))
         logger.info(
             "-------------- item[label]: {} ----------------------------".format(item["label"]))
-        assert item['file_name'] == np.array(data[(num_iter + 2) % dataset_size]['file_name'])
+        assert item['file_name'] == np.array(data[(num_iter + 2) % 10]['file_name'])
         num_iter += 1
-    assert num_iter == 10
+    assert num_iter == 8
 
 
 def test_cv_minddataset_sequential_sampler_exceed_size(add_and_remove_cv_file):
@@ -641,7 +641,7 @@ def test_cv_minddataset_sequential_sampler_exceed_size(add_and_remove_cv_file):
     data_set = ds.MindDataset(file_name + "0", columns_list, num_readers,
                               sampler=sampler)
     dataset_size = data_set.get_dataset_size()
-    assert dataset_size == 10
+    assert dataset_size == 8
     num_iter = 0
     for item in data_set.create_dict_iterator(num_epochs=1, output_numpy=True):
         logger.info(
@@ -652,9 +652,9 @@ def test_cv_minddataset_sequential_sampler_exceed_size(add_and_remove_cv_file):
             "-------------- item[file_name]: {} ------------------------".format(item["file_name"]))
         logger.info(
             "-------------- item[label]: {} ----------------------------".format(item["label"]))
-        assert item['file_name'] == np.array(data[(num_iter + 2) % dataset_size]['file_name'])
+        assert item['file_name'] == np.array(data[(num_iter + 2) % 10]['file_name'])
         num_iter += 1
-    assert num_iter == 10
+    assert num_iter == 8
 
 
 def test_cv_minddataset_split_basic(add_and_remove_cv_file):
