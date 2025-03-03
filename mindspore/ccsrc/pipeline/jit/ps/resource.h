@@ -185,6 +185,10 @@ class Resource : public ResourceBase {
 
   PiplineLevel pipeline_level() const { return pipeline_level_; }
   void set_pipeline_level(PiplineLevel pipeline_level) { pipeline_level_ = pipeline_level; }
+  void set_is_pynative_grad_view_inplace(bool is_pynative_grad_view_inplace) {
+    is_pynative_grad_view_inplace_ = is_pynative_grad_view_inplace;
+  }
+  bool is_pynative_grad_view_inplace() const { return is_pynative_grad_view_inplace_; }
 
  private:
   abstract::AnalysisEnginePtr engine_;
@@ -205,8 +209,8 @@ class Resource : public ResourceBase {
   CompileCacheManagerPtr compile_cache_manager_{nullptr};
   // The backend related fields for async initializing.
   static std::mutex backend_init_mutex_;
-  bool is_pynative_grad_view_inplace_{false};
   PiplineLevel pipeline_level_{kLevelNone};
+  bool is_pynative_grad_view_inplace_{false};
 };
 
 using ResourcePtr = std::shared_ptr<pipeline::Resource>;

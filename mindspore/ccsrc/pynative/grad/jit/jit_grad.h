@@ -43,6 +43,7 @@ class PYNATIVE_EXPORT Jit {
   ~Jit() = default;
   inline void set_graph_phase(const std::string &graph_phase) { graph_phase_ = graph_phase; }
   py::object GradJit(const py::args &args);
+  static bool RequireJitGrad(const std::string &phase);
   bool GetJitGradGraph(const pipeline::ResourcePtr &resource, const std::string &phase);
   void Clear();
   // Functions for valuenode replacement method
