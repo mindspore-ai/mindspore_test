@@ -3532,49 +3532,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('zero_')(self)
 
-    def new_empty(self, size, *, dtype=None, device=None):
-        r"""
-        Returns an uninitialized Tensor of `size`. Its dtype is specified by `dtype` and its
-        device is specified by `device`.
-
-        .. warning::
-            This is an experimental API that is subject to change or deletion.
-
-        Args:
-            size (Union[tuple[int], list[int], int]): The specified shape of output tensor. Only positive integer or
-                tuple or list containing positive integers are allowed.
-
-        Keyword Args:
-            dtype (:class:`mindspore.dtype`, optional): The specified dtype of the output tensor. If `dtype = None`,
-                the tensor will have the same dtype as `self`. Default ``None``.
-            device (string, optional): The specified device of the output tensor. Support ``CPU`` and ``Ascend``. If
-                `device = None`, the tensor will have the same device as `self` and if the device of `self` is not
-                defined, the value set by :func:`mindspore.set_device` will be used. Default ``None``.
-
-        Returns:
-            Tensor, the shape, dtype and device is defined above but with uninitialized data (May be a random value).
-
-        Raises:
-            TypeError: If `size` is neither an int nor a tuple or list of int.
-
-        Supported Platforms:
-            ``Ascend``
-
-        Examples:
-            >>> import mindspore
-            >>> from mindspore import Tensor
-            >>> x = Tensor([[1, 2, 3], [4, 5, 6]])
-            >>> output1 = x.new_empty((2, 3))
-            >>> print(output1)
-            [[0 0 0]
-             [0 0 0]]
-            >>> output2 = x.new_empty((2, 3), dtype=mindspore.float64)
-            >>> print(output2)
-            [[0. 0. 0.]
-             [0. 0. 0.]]
-        """
-        return tensor_operator_registry.get('new_empty')(self, size, dtype, device)
-
     def sign(self):
         r"""
         For details, please refer to :func:`mindspore.ops.sign`.

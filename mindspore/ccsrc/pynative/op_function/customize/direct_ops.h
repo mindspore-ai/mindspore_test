@@ -26,15 +26,5 @@
 #include "mindspore/core/include/ir/value.h"
 
 namespace py = pybind11;
-namespace mindspore::pynative {
-
-PYNATIVE_EXPORT py::object Empty(const py::list &args);
-PYNATIVE_EXPORT py::object EmptyLike(const py::list &args);
-PYNATIVE_EXPORT py::object NewEmpty(const py::list &args);
-PYNATIVE_EXPORT py::object Pyboost_Empty_Base(const PrimitivePtr &prim, const py::list &args);
-PYNATIVE_EXPORT py::object Pyboost_Empty_OP(const PrimitivePtr &prim,
-                                            const std::vector<mindspore::ops::OP_DTYPE> &source_type,
-                                            const ValueTuplePtr &shape, const std::optional<Int64ImmPtr> &dtype,
-                                            const std::optional<StringImmPtr> &device);
-}  // namespace mindspore::pynative
-#endif  // MINDSPORE_CCSRC_PIPELINE_PYNATIVE_OP_FUNCTION_CUSTOMIZE_DIRECT_OPS_H
+namespace mindspore::pynative {}  // namespace mindspore::pynative
+#endif                            // MINDSPORE_CCSRC_PIPELINE_PYNATIVE_OP_FUNCTION_CUSTOMIZE_DIRECT_OPS_H

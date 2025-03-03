@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,49 +22,81 @@ from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_empty_like_normal1():
+class Net(ms.nn.Cell):
+    def construct(self, x, dtype=None, device=None):
+        return mint.empty_like(x, dtype=dtype, device=device)
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize('mode', ['pynative', 'KBK'])
+def test_empty_like_normal1(mode):
     """
     Feature: Ops.
     Description: test empty_like.
     Expectation: expect correct result.
     """
-    ms.context.set_context(mode=ms.PYNATIVE_MODE)
+    if mode == "pynative":
+        ms.context.set_context(mode=ms.PYNATIVE_MODE)
+    elif mode == "KBK":
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level="O0")
     input_tensor = Tensor(np.arange(6).reshape(1, 2, 3), dtype=mstype.float32)
 
-    y = mint.empty_like(input_tensor)
-    np.testing.assert_equal(y.shape, (1, 2, 3))
+    net = Net()
+    y = net(input_tensor)
+    assert np.allclose(y.shape, (1, 2, 3))
     np.testing.assert_equal(y.dtype, mstype.float32)
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-def test_empty_like_normal2():
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', ['pynative', 'KBK'])
+def test_empty_like_normal2(mode):
     """
     Feature: Ops.
     Description: test empty_like.
     Expectation: expect correct result.
     """
-    ms.context.set_context(mode=ms.PYNATIVE_MODE)
+    if mode == "pynative":
+        ms.context.set_context(mode=ms.PYNATIVE_MODE)
+    elif mode == "KBK":
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level="O0")
     input_tensor = Tensor(np.arange(6).reshape(1, 2, 3), dtype=mstype.float32)
 
-    y = mint.empty_like(input_tensor, dtype=mstype.float64)
-    np.testing.assert_equal(y.shape, (1, 2, 3))
+    net = Net()
+    y = net(input_tensor, dtype=mstype.float64)
+    assert np.allclose(y.shape, (1, 2, 3))
     np.testing.assert_equal(y.dtype, mstype.float64)
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-def test_empty_like_normal3():
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', ['pynative', 'KBK'])
+def test_empty_like_normal3(mode):
     """
     Feature: Ops.
     Description: test empty_like.
     Expectation: expect correct result.
     """
-    ms.context.set_context(mode=ms.PYNATIVE_MODE)
+    if mode == "pynative":
+        ms.context.set_context(mode=ms.PYNATIVE_MODE)
+    elif mode == "KBK":
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level="O0")
     input_tensor = Tensor(np.arange(6).reshape(1, 2, 3), dtype=mstype.float32)
 
-    y = mint.empty_like(input_tensor, dtype=mstype.float64, device="Ascend")
-    np.testing.assert_equal(y.shape, (1, 2, 3))
+    net = Net()
+    y = net(input_tensor, dtype=mstype.float64, device="Ascend")
+    assert np.allclose(y.shape, (1, 2, 3))
     np.testing.assert_equal(y.dtype, mstype.float64)
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
 def test_empty_like_normal4():
     """
     Feature: Ops.
@@ -74,33 +106,45 @@ def test_empty_like_normal4():
     ms.context.set_context(mode=ms.PYNATIVE_MODE)
     input_tensor = Tensor(np.arange(6).reshape(1, 2, 3), dtype=mstype.float32)
 
-    y = mint.empty_like(input_tensor, dtype=mstype.float64, device="CPU")
-    np.testing.assert_equal(y.shape, (1, 2, 3))
+    net = Net()
+    y = net(input_tensor, dtype=mstype.float64, device="CPU")
+    assert np.allclose(y.shape, (1, 2, 3))
     np.testing.assert_equal(y.dtype, mstype.float64)
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-def test_empty_like_normal5():
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', ['pynative', 'KBK'])
+def test_empty_like_normal5(mode):
     """
     Feature: Ops.
     Description: test empty_like.
     Expectation: expect correct result.
     """
-    ms.context.set_context(mode=ms.PYNATIVE_MODE)
+    if mode == "pynative":
+        ms.context.set_context(mode=ms.PYNATIVE_MODE)
+    elif mode == "KBK":
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level="O0")
     input_tensor = mint.ones((1, 2, 3))
 
-    y = mint.empty_like(input_tensor)
-    np.testing.assert_equal(y.shape, (1, 2, 3))
+    net = Net()
+    y = net(input_tensor)
+    assert np.allclose(y.shape, (1, 2, 3))
     np.testing.assert_equal(y.dtype, input_tensor.dtype)
 
 def empty_like_forward_func_dyn_test(input_tensor, dtype=None):
-    y = mint.empty_like(input_tensor, dtype=dtype)
+    y = Net()(input_tensor, dtype=dtype)
     return y.shape
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
 def test_empty_like_dynamic_shape():
     """
-    Feature: Test empty_like with dynamic shape in graph mode.
-    Description: call ops.extend.empty_like with valid input and index.
+    Feature: Test empty_like with dynamic shape.
+    Description: call mint.empty_like with valid input and index.
     Expectation: return the correct value.
     """
     tensor_1 = Tensor(np.arange(6).reshape(2, 3), dtype=mstype.float32)
@@ -108,11 +152,14 @@ def test_empty_like_dynamic_shape():
     tensor_2 = Tensor(np.arange(24).reshape(2, 3, 4), dtype=mstype.float32)
 
     TEST_OP(empty_like_forward_func_dyn_test, [[tensor_1], [tensor_2]], '', disable_yaml_check=True,
-            disable_grad=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+            disable_grad=True, disable_mode=['GRAPH_MODE'])
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize("device_name", ['npu', 'cpu', 'Ascend', 'CPU'])
-def test_empty_like_device(device_name):
+def test_empty_like_device1(device_name):
     """
     Feature: Ops.
     Description: test empty_like.
@@ -121,6 +168,26 @@ def test_empty_like_device(device_name):
     ms.context.set_context(mode=ms.PYNATIVE_MODE)
     input_tensor = Tensor(np.arange(6).reshape(1, 2, 3), dtype=mstype.float32)
 
-    y = mint.empty_like(input_tensor, device=device_name)
-    np.testing.assert_equal(y.shape, (1, 2, 3))
+    net = Net()
+    y = net(input_tensor, device=device_name)
+    assert np.allclose(y.shape, (1, 2, 3))
+    np.testing.assert_equal(y.dtype, mstype.float32)
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize("device_name", ['npu', 'Ascend'])
+def test_empty_like_device2(device_name):
+    """
+    Feature: Ops.
+    Description: test empty_like.
+    Expectation: expect correct result.
+    """
+    ms.context.set_context(mode=ms.GRAPH_MODE, jit_level="O0")
+    input_tensor = Tensor(np.arange(6).reshape(1, 2, 3), dtype=mstype.float32)
+
+    net = Net()
+    y = net(input_tensor, device=device_name)
+    assert np.allclose(y.shape, (1, 2, 3))
     np.testing.assert_equal(y.dtype, mstype.float32)

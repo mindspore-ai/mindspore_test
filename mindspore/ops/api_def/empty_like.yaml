@@ -1,9 +1,8 @@
-empty:
-  op_yaml: empty_op.yaml
-  py_method: tensor_empty
+empty_like:
+  op_yaml: empty_like_op.yaml
+  py_method: tensor_empty_like
   kwonlyargs: dtype, device
   Ascend: pyboost
   CPU: pyboost
   GPU: py_method
   interface: function
-  varargs: size

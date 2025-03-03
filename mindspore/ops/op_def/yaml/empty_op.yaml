@@ -9,10 +9,16 @@ empty:
             arg_handler: dtype_to_type_id
             default: None
         device:
-            dtype: str
+            dtype: int
+            arg_handler: str_to_enum
             default: None
     returns:
         y:
             dtype: tensor
     function:
         disable: True
+    dispatch:
+        enable: True
+        Ascend: EmptyAscend
+        CPU: EmptyCPU
+        GPU: None

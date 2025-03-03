@@ -265,6 +265,7 @@ mindspore.Tensor
     mindspore.Tensor.neg
     mindspore.Tensor.negative
     mindspore.Tensor.nelement
+    mindspore.Tensor.new_empty
     mindspore.Tensor.new_ones
     mindspore.Tensor.new_zeros
     mindspore.Tensor.new_full

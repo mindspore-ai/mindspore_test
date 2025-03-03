@@ -1255,6 +1255,12 @@ REG_BPROP_BUILDER("Select").SetUnusedInputs({i1, i2, i3}).SetBody(BODYFUNC(ib) {
   return {ib->OutZeros(cond), ret[kIndex1], ret[kIndex2]};
 });
 
+REG_BPROP_BUILDER("EmptyLike").SetUnusedInputs({i0, i1, i2, i3, i4}).SetBody(ReturnZeros);
+
+REG_BPROP_BUILDER("Empty").SetUnusedInputs({i0, i1, i2, i3, i4}).SetBody(ReturnZeros);
+
+REG_BPROP_BUILDER("NewEmpty").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).SetBody(ReturnZeros);
+
 REG_BPROP_BUILDER("FullLike").SetUnusedInputs({i0, i1, i2, i3, i4}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("OnesLike").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);

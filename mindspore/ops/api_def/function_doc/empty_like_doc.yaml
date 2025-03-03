@@ -1,0 +1,41 @@
+empty_like:
+  description: |
+    empty_like(input, *, dtype=None, device=None) -> Tensor
+  
+    Returns an uninitialized Tensor with the same shape as the `input`. Its dtype is specified by `dtype` and its
+    device is specified by `device`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): Tensor of any dimension.
+
+    Keyword Args:
+        dtype (:class:`mindspore.dtype`, optional): The specified dtype of the output tensor. If `dtype = None`, the
+            tensor will have the same dtype as input `input`. Default ``None``.
+        device (string, optional): The specified device of the output tensor. In PyNative mode, ``"Ascend"``, ``"npu"``,
+            ``"cpu"`` and ``"CPU"`` are supported. In graph mode O0, ``"Ascend"`` and ``"npu"`` are supported. If `device = None`,
+            the value set by :func:`mindspore.set_device` will be used. Default ``None``.
+
+    Returns:
+        Tensor, has the same shape, type and device as `input` but with uninitialized data (May be a random value).
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import ops, Tensor
+        >>> x = Tensor([[1, 2, 3], [4, 5, 6]])
+        >>> output1 = ops.empty_like(x)
+        >>> print(output1)
+        [[0 0 0]
+         [0 0 0]]
+        >>> output2 = ops.empty_like(x, dtype=mindspore.float64)
+        >>> print(output2)
+        [[0. 0. 0.]
+         [0. 0. 0.]]

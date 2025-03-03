@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import pytest
 from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 import mindspore.common.dtype as mstype
+import mindspore as ms
 from mindspore import nn
 from mindspore import Tensor
 from mindspore import context
@@ -32,17 +33,43 @@ class Net(nn.Cell):
 @arg_mark(plat_marks=['platform_ascend'],
           level_mark='level0',
           card_mark='onecard',
-          essential_mark='unessential')
-@pytest.mark.parametrize('mode', [context.PYNATIVE_MODE])
+          essential_mark='essential')
+@pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 @pytest.mark.parametrize('dtype', [None, mstype.int32])
-@pytest.mark.parametrize('device', [None, "CPU", "Ascend"])
-def test_new_empty(mode, dtype, device):
+@pytest.mark.parametrize('device', [None, "Ascend"])
+def test_new_empty1(mode, dtype, device):
     """
     Feature: tensor.new_empty()
     Description: Verify the result of tensor.new_empty
     Expectation: success
     """
-    context.set_context(mode=mode)
+    if mode == "pynative":
+        context.set_context(mode=ms.PYNATIVE_MODE)
+    elif mode == "KBK":
+        context.set_context(mode=ms.GRAPH_MODE, jit_level="O0")
+    net = Net()
+    size = (3, 3)
+    x = Tensor(np.arange(4).reshape((2, 2)), dtype=mstype.float32)
+    output = net(x, size, dtype, device)
+    if dtype is None:
+        assert output.dtype == mstype.float32
+    else:
+        assert output.dtype == dtype
+    assert output.shape == size
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('dtype', [None, mstype.int32])
+@pytest.mark.parametrize('device', [None, "CPU"])
+def test_new_empty2(dtype, device):
+    """
+    Feature: tensor.new_empty()
+    Description: Verify the result of tensor.new_empty
+    Expectation: success
+    """
+    context.set_context(mode=ms.PYNATIVE_MODE)
     net = Net()
     size = (3, 3)
     x = Tensor(np.arange(4).reshape((2, 2)), dtype=mstype.float32)
@@ -57,7 +84,10 @@ def new_empty_forward_func(x):
     out = Net()(x, (2, 3, 4), None, None)
     return out.shape
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
 def test_new_empty_dynamic_shape():
     """
     Feature: dynamic shape forward features.
@@ -68,4 +98,4 @@ def test_new_empty_dynamic_shape():
     tensor_x2 = Tensor(np.arange(60).reshape(3, 4, 5).astype(np.float32))
 
     TEST_OP(new_empty_forward_func, [[tensor_x1], [tensor_x2]], '', disable_yaml_check=True, disable_grad=True,
-            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+            disable_mode=['GRAPH_MODE'])

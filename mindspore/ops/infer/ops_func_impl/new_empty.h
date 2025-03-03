@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,12 @@
 
 namespace mindspore {
 namespace ops {
-// Don't really use this class, just for op_def
-class OPS_API NewEmptyFuncImpl : public OpFuncImpl {};
+class OPS_API NewEmptyFuncImpl : public OpFuncImpl {
+ public:
+  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  bool GeneralInferRegistered() const override { return true; }
+};
 }  // namespace ops
 }  // namespace mindspore
 

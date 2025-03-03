@@ -1518,6 +1518,15 @@ def tensor_empty(*size, dtype=None, device=None):
         "This is a function for empty not should be called. Please check the implementation.")
 
 
+def tensor_empty_like(input, *, dtype=None, device=None):
+    raise NotImplementedError(
+        "This is a function for empty_like should not be called. Please check the implementation.")
+
+
+def tensor_new_empty(input, size, *, dtype=None, device=None):
+    raise NotImplementedError(
+        "This is a function for new_empty should not be called. Please check the implementation.")
+
 def deprecated_tensor_logaddexp(input, other):
     return F.logaddexp(input, other)
 
