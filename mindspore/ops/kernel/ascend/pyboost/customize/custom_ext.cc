@@ -50,7 +50,9 @@ void LaunchCustomAclnn(const std::string &aclnn_name, const std::shared_ptr<OpRu
   } else {
     std::vector<BaseTensorPtr> input_tensors;
     for (const auto &item : inputs) {
-      (void)input_tensors.emplace_back(item->cast<BaseTensorPtr>());
+      if (item->isa<BaseTensor>()) {
+        (void)input_tensors.emplace_back(item->cast<BaseTensorPtr>());
+      }
     }
     runtime::DeviceAddressUtils::ProcessCrossStreamAddress(aclnn_name, device_context, stream_id, input_tensors,
                                                            output_tensors);
