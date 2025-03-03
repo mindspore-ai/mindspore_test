@@ -3,7 +3,7 @@ mindspore.mint.count_nonzero
 
 .. py:function:: mindspore.mint.count_nonzero(input, dim=None)
 
-    在给定维度 `dim` 上计算 Tensor `input` 中非零元素的数量。如果未指定维度，则计算Tensor中所有非零元素的数量。
+    在给定维度 `dim` 上，计算 Tensor `input` 中非零元素的数量。如果未指定维度，则计算Tensor中所有非零元素的数量。
 
     .. warning::
         这是一个实验性API，后续可能修改或删除。

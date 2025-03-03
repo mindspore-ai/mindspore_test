@@ -49,21 +49,30 @@ def vmap(fn, in_axes=0, out_axes=0):
             argument and returns one or more Tensors or the type of data supported by the MindSpore Tensor. When it is
             a CellList, the model ensembling scenario, please make sure that the structure of each cell is the same
             and the number of cells is consistent with the sizes of the mapped axes (`axis_size`).
-        in_axes (Union[int, list, tuple]): Specifies which dimensions (axes) of the inputs should be mapped over.
-            If `in_axes` is an integer, all arguments of `fn` are mapped over according to this axis index. If `in_axes`
-            is a tuple or list, which only composed of integers or Nones and the length should equal to the number of
-            positional arguments to `fn`, indicates which axis to map for each corresponding positional argument.
-            Note that, axis integers must be in range :math:`[-ndim, ndim)` for each argument, where `ndim` is the
-            number of dimensions of the corresponding argument.  None means not mapping along any axis. Also the
-            mapping axis index of the `in_axes` must have at least one positional parameter not None. The sizes of
-            the mapped axes (`axis_size`) for all arguments must be equal. Default: ``0`` .
+        in_axes (Union[int, list, tuple]): Specifies which dimensions (axes)
+            of the inputs should be mapped over. Default: ``0`` .
+
+            - If `in_axes` is an integer, all arguments of `fn` are mapped over according to this axis index.
+            - If `in_axes` is a tuple or list, which only composed of integers or Nones
+              and the length should equal to the number of
+              positional arguments to `fn`, indicates which axis to map for each corresponding positional argument.
+              Note that, axis integers must be in range :math:`[-ndim, ndim)` for each argument, where `ndim` is the
+              number of dimensions of the corresponding argument.
+            - None means not mapping along any axis. Also the
+              mapping axis index of the `in_axes` must have at least one positional parameter not None. The sizes of
+              the mapped axes (`axis_size`) for all arguments must be equal.
+
         out_axes (Union[int, list, tuple]): Specifies where the mapped dimensions (axes) should appear in the
-            outputs. If `out_axes` is an integer, all outputs of `fn` are specified according to this axis. If
-            `out_axes` is a tuple or list, which only composed of integers or Nones. And its length also should be equal
-            to the number of outputs of `fn`. Note that, axis integers must be in range :math:`[-ndim, ndim)` for each
-            output, where `ndim` is the dimension of the output of the `vmap`-mapped function. All outputs with a
-            non-None mapped axis must specify a non-None `out_axes`, and if outputs with None mapped axis specifies
-            a non-None `out_axes`, the result broadcasts across the mapped axis. Default: ``0`` .
+            outputs. Default: ``0`` .
+
+            - If `out_axes` is an integer, all outputs of `fn` are specified according to this axis.
+            - If `out_axes` is a tuple or list, which only composed of integers or Nones.
+              And its length also should be equal
+              to the number of outputs of `fn`. Note that, axis integers must be in range :math:`[-ndim, ndim)` for each
+              output, where `ndim` is the dimension of the output of the `vmap`-mapped function.
+            - All outputs with a
+              non-None mapped axis must specify a non-None `out_axes`, and if outputs with None mapped axis specifies
+              a non-None `out_axes`, the result broadcasts across the mapped axis.
 
     Returns:
         Function, returns the Vectorized/Batched version function of `fn`. The arguments and outputs of this function

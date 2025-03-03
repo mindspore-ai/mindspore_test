@@ -142,9 +142,10 @@ class BoundingBoxDecode(Primitive):
 
     Args:
         max_shape (tuple): The max size limit for decoding box calculation.
-        means (tuple): The means of deltas calculation. Default: ``(0.0, 0.0, 0.0, 0.0)`` .
-        stds (tuple): The standard deviations of deltas calculation. Default: ``(1.0, 1.0, 1.0, 1.0)`` .
-        wh_ratio_clip (float): The limit of width and height ratio for decoding box calculation. Default: ``0.016`` .
+        means (tuple, optional): The means of deltas calculation. Default: ``(0.0, 0.0, 0.0, 0.0)`` .
+        stds (tuple, optional): The standard deviations of deltas calculation. Default: ``(1.0, 1.0, 1.0, 1.0)`` .
+        wh_ratio_clip (float, optional): The limit of width and height ratio for decoding box calculation.
+            Default: ``0.016`` .
 
     Inputs:
         - **anchor_box** (Tensor) - Anchor boxes. The shape of `anchor_box` must be :math:`(n, 4)`.
@@ -371,7 +372,7 @@ class IOU(Primitive):
     r"""
     Calculates intersection over union for boxes.
 
-    Computes the intersection over union (IOU) or the intersection over foreground (IOF) based on the ground-truth and
+    Computes the intersection over union (IOU) or the intersection over foreground (IOF) based on the truth and
     predicted regions.
 
     Refer to :func:`mindspore.ops.iou` for more details.
@@ -385,7 +386,7 @@ class IOU(Primitive):
         - **anchor_boxes** (Tensor) - Anchor boxes, tensor of shape :math:`(N, 4)`.
           "N" indicates the number of anchor boxes,
           and the value "4" refers to "x0", "y0", "x1", and "y1". Data type must be float16 or float32.
-        - **gt_boxes** (Tensor) - Ground truth boxes, tensor of shape :math:`(M, 4)`. "M" indicates the number of ground
+        - **gt_boxes** (Tensor) - The truth boxes, tensor of shape :math:`(M, 4)`. "M" indicates the number of
           truth boxes, and the value "4" refers to "x0", "y0", "x1", and "y1". Data type must be float16 or float32.
 
     Outputs:

@@ -1129,7 +1129,7 @@ class Histogram(Primitive):
 class HistogramFixedWidth(PrimitiveWithInfer):
     """
     Returns a rank 1 histogram counting the number of entries in values that fall into every bin. The bins are equal
-    width and determined by the inputs `range` and the arguments `nbins`.
+    width and determined by the input `range` and the argument `nbins`.
 
     Args:
         nbins (int): The number of histogram bins, the type is a positive integer.

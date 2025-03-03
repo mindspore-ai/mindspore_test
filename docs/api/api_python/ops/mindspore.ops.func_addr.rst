@@ -7,7 +7,7 @@ mindspore.ops.addr
 
     如果 `vec1` 是一个大小为 :math:`N` 的向量， `vec2` 是一个大小为 :math:`M` 的向量，那么 `x` 必须可以和大小为 :math:`(N, M)` 的矩阵广播。
 
-    可选值 `bata` 和 `alpha` 分别是 `vec1` 和 `vec2` 外积以及附加矩阵 `x` 的扩展因子。如果 `beta` 为0，那么 `x` 将不参与计算。
+    可选值 `beta` 和 `alpha` 分别是 `vec1` 和 `vec2` 外积以及附加矩阵 `x` 的扩展因子。如果 `beta` 为0，那么 `x` 将不参与计算。
 
     .. math::
         output = β x + α (vec1 ⊗ vec2)

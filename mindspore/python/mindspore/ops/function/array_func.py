@@ -6330,7 +6330,7 @@ def unfold(input, kernel_size, dilation=1, padding=0, stride=1):
     tensor of shape :math:`(N, C \times \prod(\text{kernel_size}), L)`, where
     :math:`C \times \prod(\text{kernel_size})` is the total number of values
     within each block (a block has :math:`\prod(\text{kernel_size})` spatial
-    locations each containing a `C`-channeled vector), and :math:`L` is
+    locations, each containing a `C`-channeled vector), and :math:`L` is
     the total number of such blocks:
 
     .. math::

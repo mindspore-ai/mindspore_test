@@ -41,10 +41,11 @@ class LRScheduler:
 
     Args:
         optimizer (:class:`mindspore.experimental.optim.Optimizer`): The optimizer instance.
-        last_epoch (int, optional): The index of the last epoch. Default: ``-1``.
+        last_epoch (int, optional): The number of times the `step()` method of
+            the current learning rate adjustment strategy has been executed. Default: ``-1``.
 
     Raises:
-        TypeError: If `optimizer` is not an Optimizer.
+        TypeError: If `optimizer` does not satisfy the type requirement.
         KeyError: If `last_epoch` != -1 and ``'initial_lr'`` not in param groups.
         ValueError: if `last_epoch` is not int.
         ValueError: If `last_epoch` is not greater than -1.
@@ -700,9 +701,8 @@ class ConstantLR(LRScheduler):
 @jit_class
 class SequentialLR:
     r"""
-    Receives the list of schedulers that is expected to be called sequentially during
-    optimization process and milestone points that provides exact intervals to reflect
-    which scheduler is supposed to be called at a given epoch.
+    Concatenate multiple learning rate adjustment strategies in `schedulers` in sequence,
+    switching to the next learning rate adjustment strategy at `milestone`.
 
     .. warning::
         This is an experimental lr scheduler module that is subject to change.
@@ -713,8 +713,10 @@ class SequentialLR:
         optimizer (:class:`mindspore.experimental.optim.Optimizer`): Wrapped optimizer.
         schedulers (list[:class:`mindspore.experimental.optim.lr_scheduler.LRScheduler`]):
             List of learning rate schedulers.
-        milestones (list): List of integers of milestone points.
-        last_epoch (int, optional): The index of the last epoch. Default: ``-1``.
+        milestones (list): List of integers of milestone points,
+            sets which learning rate adjustment strategy is invoked for each epoch.
+        last_epoch (int, optional): The number of times the `step()` method
+            of the current learning rate adjustment strategy has been executed. Default: ``-1``.
 
     Raises:
         ValueError: The optimizer in `schedulers` is different from the `optimizer` passed in.
@@ -805,9 +807,8 @@ class ReduceLROnPlateau:
     """
     Reduce learning rate when a metric has stopped improving.
     Models often benefit from reducing the learning rate by a factor
-    of 2-10 once learning stagnates. This scheduler reads a metrics
-    quantity and if no improvement is seen for a 'patience' number
-    of epochs, the learning rate is reduced.
+    of 2-10 once learning stagnates. The scheduler reads the metrics `metrics` during execution
+    and adjusts the learning rate via the `step` method if the metrics do not improve within `patience` cycles.
 
     .. warning::
         This is an experimental lr scheduler module that is subject to change.
@@ -816,7 +817,8 @@ class ReduceLROnPlateau:
 
     Args:
         optimizer (:class:`mindspore.experimental.optim.Optimizer`): Wrapped optimizer.
-        mode (str, optional): One of `min`, `max`. In `min` mode, lr will
+        mode (str, optional): Trigger mode that triggers a reduction in learning rate
+            when the monitoring metrics are at their `min` / `max` point. In `min` mode, lr will
             be reduced when the quantity monitored has stopped
             decreasing; in `max` mode it will be reduced when the
             quantity monitored has stopped increasing. Default: ``'min'``.
@@ -830,12 +832,25 @@ class ReduceLROnPlateau:
             Default: ``10``.
         threshold (float, optional): Threshold for measuring the new optimum,
             to only focus on significant changes. Default: ``1e-4``.
-        threshold_mode (str, optional): One of `rel`, `abs`. Given dynamic_threshold is the benchmark to
-            define whether the current metric is improvement,
-            in ``'rel'`` mode, dynamic_threshold = best * ( 1 + threshold ) in ``'max'`` mode
-            or best * ( 1 - threshold ) in ``'min'`` mode.
-            In ``'abs'`` mode, dynamic_threshold = best + threshold in ``'max'`` mode or
-            best - threshold in ``'min'`` mode. Default: ``'rel'``.
+        threshold_mode (str, optional): A mode for measuring indicators of change for the better.
+            One of `rel`, `abs`. Default: ``'rel'``.
+
+            Assume that `best` represents the best value of the current performance metric.
+
+            - In ``'rel'`` mode, the indicator is compared to a `threshold` in proportional form:
+
+              - When `mode` is ``'max'``, the indicator is considered better if it exceeds best * ( 1 + threshold ).
+
+              - When `mode` is ``'min'``, the indicator is considered better
+                if it is lower than best * ( 1 - threshold ).
+
+            - In ``'abs'`` mode, the indicator is compared to `threshold` in absolute value form:
+
+              - When `mode` is ``'max'``, the indicator is considered better if it exceeds best + threshold.
+
+              - When `mode` is ``'min'``, the indicator is considered better
+                if it is lower than best - threshold.
+
         cooldown (int, optional): Number of epochs to wait before resuming
             normal operation after lr has been reduced. Default: ``0``.
         min_lr (Union(float, list), optional): A scalar or a list of scalars. A
@@ -1164,14 +1179,16 @@ class CyclicLR(LRScheduler):
 class CosineAnnealingWarmRestarts(LRScheduler):
     r"""
     Set the learning rate of each parameter group using a cosine annealing warm restarts
-    schedule. Where :math:`\eta_{max}` is set to the initial lr, :math:`\eta_{min}` is the minimum value
-    for learning rate, :math:`\eta_{t}` is the current learning rate, :math:`T_{0}` is the number of iterations for the
-    first restar, :math:`T_{i}` is the current number of iterations between two warm restarts in SGDR,
-    :math:`T_{cur}` is the number of epochs since the last restart in SGDR.
+    schedule.
 
     .. math::
         \eta_t = \eta_{min} + \frac{1}{2}(\eta_{max} - \eta_{min})\left(1 +
         \cos\left(\frac{T_{cur}}{T_{i}}\pi\right)\right)
+
+    Where :math:`\eta_{max}` is set to the initial lr, :math:`\eta_{min}` is the minimum value
+    for learning rate, :math:`\eta_{t}` is the current learning rate, :math:`T_{0}` is the number of iterations for the
+    first restar, :math:`T_{i}` is the current number of iterations between two warm restarts in SGDR,
+    :math:`T_{cur}` is the number of epochs since the last restart in SGDR.
 
     When :math:`T_{cur}=T_{i}`, set :math:`\eta_t = \eta_{min}`.
     When :math:`T_{cur}=0` after restart, set :math:`\eta_t=\eta_{max}`.
@@ -1189,7 +1206,8 @@ class CosineAnnealingWarmRestarts(LRScheduler):
         T_0 (int): Number of iterations for the first restart.
         T_mult (int, optional): A factor increases :math:`T_{i}` after a restart. Default: ``1``.
         eta_min (Union(float, int), optional): Minimum learning rate. Default: ``0``.
-        last_epoch (int, optional): The index of the last epoch. Default: ``-1``.
+        last_epoch (int, optional): The number of times the `step()` method of
+            the current learning rate adjustment strategy has been executed. Default: ``-1``.
 
     Raises:
         ValueError: `T_0` is less than or equal than 0 or not an int.

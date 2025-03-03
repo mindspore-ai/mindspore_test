@@ -1743,7 +1743,7 @@ def dropout2d(input, p=0.5, training=True):
         input (Tensor): A `4D` tensor with shape :math:`(N, C, H, W)`, where `N` is the batch size, `C` is the number
             of channels, `H` is the feature height, and `W` is the feature width. The data type must be int8,
             int16, int32, int64, float16, float32 or float64.
-        p (float): The dropping probability of a channel, between 0 and 1, e.g. `p` = 0.8,
+        p (float): The dropping probability of a channel. The range is [0.0, 1.0], e.g. `p` = 0.8,
             which means dropping out 80% of channels. Default: ``0.5`` .
         training(bool): If `training` is True, applying dropout, otherwise, not applying. Default: ``True`` .
 
@@ -4442,7 +4442,7 @@ def nll_loss_ext(input, target, weight=None, ignore_index=-100, reduction='mean'
     :math:`N` is the batch size, :math:`c` belonging to :math:`[0, C-1]` is class index,
     where :math:`C` is the number of classes.
 
-    If `reduction` is not ``None`` (default ``'mean'``), then
+    If `reduction` is not ``'None'`` (default ``'mean'``), then
 
     .. math::
 
@@ -8402,7 +8402,7 @@ def msort(input):
     r"""
     Sorts the elements in Tensor in ascending order of value along its first dimension.
 
-    ops.msort(t) is equivalent to ops.Sort(axis=0)(t)[0]. See also :class:`mindspore.ops.Sort()`.
+    `ops.msort(t)` is equivalent to `ops.Sort(axis=0)(t)[0]`. See also :class:`mindspore.ops.Sort()` for more details.
 
     .. Note::
         The Ascend backend only supports sorting the 1D input.

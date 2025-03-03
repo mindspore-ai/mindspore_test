@@ -987,8 +987,8 @@ class InstanceNorm1d(_InstanceNorm):
         ValueError: If `num_features` is less than 1.
         ValueError: If `momentum` is not in range [0, 1].
         ValueError: If the shape of `gamma_init` / `beta_init` is not :math:`(C)`.
-        KeyError: If any of `gamma_init`/`beta_init` is str and the homonymous class inheriting from `Initializer` not
-            exists.
+        KeyError: If any of `gamma_init`/`beta_init` is str and
+            there is no homonymous class inheriting from `Initializer`.
 
     Supported Platforms:
         ``GPU``
@@ -1065,8 +1065,8 @@ class InstanceNorm2d(_InstanceNorm):
         ValueError: If `num_features` is less than 1.
         ValueError: If `momentum` is not in range [0, 1].
         ValueError: If the shape of `gamma_init` / `beta_init` is not :math:`(C)`.
-        KeyError: If any of `gamma_init`/`beta_init` is str and the homonymous class inheriting from `Initializer` not
-            exists.
+        KeyError: If any of `gamma_init`/`beta_init` is str and
+            there is no homonymous class inheriting from `Initializer`.
 
     Supported Platforms:
         ``GPU``
@@ -1171,10 +1171,11 @@ class GroupNorm(Cell):
 
     Group Normalization is widely used in recurrent neural networks. It applies
     normalization on a mini-batch of inputs for each single training case as described
-    in the paper `Group Normalization <https://arxiv.org/pdf/1803.08494.pdf>`_. Group Normalization
-    divides the channels into groups and computes within each group the mean and variance for normalization,
-    and it performs very stable over a wide range of batch size. :math:`\gamma` and :math:`\beta` are trainable scale
-    and shift.
+    in the paper `Group Normalization <https://arxiv.org/pdf/1803.08494.pdf>`_.
+    Group Normalization
+    divides the channels into groups and computes within each group the mean and variance for normalization.
+    :math:`\gamma` and :math:`\beta` are scale
+    and shift values obtained by training learning.
     It can be described using the following formula:
 
     .. math::
