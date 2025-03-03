@@ -8,8 +8,8 @@
     如果输入Tensor的shape为 :math:`(x_1, ..., x_N)` ，则输出Tensor的shape为 :math:`(x_1, ..., x_{axis-1}, x_{axis+1}, ..., x_N)` 。
 
     参数：
-        - **axis** (int) - 指定Argmin计算轴。默认值： ``-1`` 。
-        - **output_type** (:class:`mindspore.dtype`) - 指定输出数据类型。可选值： ``mstype.int32`` 、 ``mstype.int64`` 。默认值： ``mstype.int32`` 。
+        - **axis** (int，可选) - 指定Argmin计算轴。默认值： ``-1`` 。
+        - **output_type** (:class:`mindspore.dtype`，可选) - 指定输出数据类型。可选值： ``mstype.int32`` 、 ``mstype.int64`` 。默认值： ``mstype.int32`` 。
 
     输入：
         - **input_x** (Tensor) - Argmin的输入，shape： :math:`(N, *)` ，其中 :math:`*` 表示任意数量的附加维度。

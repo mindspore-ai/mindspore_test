@@ -6,7 +6,7 @@ mindspore.ops.TruncateMod
     逐元素取模。
 
     输入 `x` 和 `y` 应能遵循隐式类型转换规则使数据类型一致。
-    当输入为两个Tensor时，数据类型不能同时为bool类型，支持shape广播。
+    当输入为两个Tensor时，它们必须能够广播到一个共同的shape，且数据类型不能同时为bool类型。
     当输入是一个Tensor和一个标量时，标量只能是一个常数。
 
     .. warning::

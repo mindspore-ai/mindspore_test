@@ -11,7 +11,7 @@
         这是一个实验性API，后续可能修改或删除。
 
     参数：
-        - **output_size** (Union[int, tuple]) - 输出特征图的size。 `output_size` 可以为二元tuple表示 :math:`(H, W)`。或者是单个int表示 :math:`(H, H)` 。 :math:`H` 和 :math:`W` 可以是int或None，如果是None，则意味着输出的size与输入相同。
+        - **output_size** (Union[int, tuple]) - 输出特征图的size。 `output_size` 可以是二元tuple，表示 :math:`(H, W)`；也可以是单个int，表示 :math:`(H, H)` 。 :math:`H` 和 :math:`W` 可以是int或None，如果是None，则意味着输出的size与输入相同。
 
     输入：
         - **input_x** (Tensor) - AdaptiveAvgPool2D的输入，为三维或四维的Tensor，数据类型为float16、float32或者float64。
