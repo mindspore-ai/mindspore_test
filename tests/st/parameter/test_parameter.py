@@ -16,6 +16,7 @@ import pytest
 import numpy as np
 
 import mindspore as ms
+import mindspore.ops.operations as op
 from mindspore.nn import Cell
 from mindspore.common.parameter import Parameter
 from mindspore.common import ParameterTuple
@@ -372,3 +373,36 @@ def test_parameter_argument_grad():
         assert np.array_equal(y.asnumpy(), by.asnumpy())
     assert ("One of the variables needed for gradient computation has been modified by an inplace operation"
             in str(err1.value))
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_parameter_set_in_class_attributes_between_iterations_name_diff():
+    """
+    Feature: Return Parameter argmument itself.
+    Description: Use Parameter as input argmument, and return itself.
+    Expectation: No exception.
+    """
+
+    inputx_1 = np.random.rand(2, 3).astype(np.float32)
+    inputy_1 = np.random.rand(2, 3).astype(np.float32)
+    inputy_2 = np.random.rand(2, 3).astype(np.float16)
+
+    class Net(Cell):
+        def __init__(self, inputx):
+            super().__init__()
+            self.sub = op.Sub()
+            self.inputx = Parameter(inputx, name="weight")
+
+        def construct(self, inputy):
+            self.sub(self.inputx, inputy)
+            return self.inputx
+
+    context.set_context(mode=context.GRAPH_MODE)
+    net = Net(Tensor(inputx_1))
+    net(Tensor(inputy_1))
+    net.inputx.name = "name_changed"
+    output = net(Tensor(inputy_2))
+    assert output.name == "name_changed"

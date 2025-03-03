@@ -1013,7 +1013,8 @@ TensorPtr TensorPyImpl::InitTensorByShape(const py::dict &input, const TypePtr &
     return std::make_shared<Tensor>(data_type, GetShapeFromTuple(input["shape"]));
   }
   ShapeVector shape = GetShapeFromPython(input);
-  return std::make_shared<Tensor>(dtype->type_id(), shape);
+  TypeId data_type = dtype != nullptr ? dtype->type_id() : kTypeUnknown;
+  return std::make_shared<Tensor>(data_type, shape);
 }
 
 TensorPtr TensorPyImpl::InitTensor(const py::dict &input) {
