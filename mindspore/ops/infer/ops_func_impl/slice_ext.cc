@@ -38,13 +38,23 @@ BaseShapePtr SliceExtFuncImpl::InferShape(const PrimitivePtr &primitive,
   auto input_begin_value_opt = GetScalarValue<int64_t>(input_args[kInputIndex2]->GetValue());
   auto input_end_value_opt = GetScalarValue<int64_t>(input_args[kInputIndex3]->GetValue());
   auto input_step_value_opt = GetScalarValue<int64_t>(input_args[kInputIndex4]->GetValue());
-  if (!axis_value_opt.has_value() || !input_begin_value_opt.has_value() || !input_end_value_opt.has_value() ||
-      !input_step_value_opt.has_value()) {
-    return std::make_shared<abstract::TensorShape>(ShapeVector{abstract::TensorShape::kShapeRankAny});
-  }
 
   auto axis_value = axis_value_opt.value();
   auto x_rank = SizeToLong(input_x_shape.size());
+
+  if (!axis_value_opt.has_value()) {
+    auto out_shape = input_x_shape;
+    for (int dim = 0; dim < x_rank; ++dim) {
+      out_shape[dim] = abstract::Shape::kShapeDimAny;
+    }
+    return std::make_shared<abstract::TensorShape>(out_shape);
+  }
+
+  if (!input_begin_value_opt.has_value() || !input_end_value_opt.has_value() || !input_step_value_opt.has_value()) {
+    auto out_shape = input_x_shape;
+    out_shape[axis_value] = abstract::Shape::kShapeDimAny;
+    return std::make_shared<abstract::TensorShape>(out_shape);
+  }
 
   MS_CHECK_VALUE(axis_value >= -x_rank && axis_value < x_rank, "dim value error. dim:" + std::to_string(axis_value) +
                                                                  ", dim should be in [" + std::to_string(-x_rank) +
