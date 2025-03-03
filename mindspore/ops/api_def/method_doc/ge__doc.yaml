@@ -1,0 +1,36 @@
+ge_:
+  description: |
+    ge_(other) -> Tensor
+
+    Computes the value of :math:`self >= other` element-wise.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Note:
+        When `self` and `other` have different shapes, `other` should be able to broadcast to `self`.
+
+    Args:
+        other (Union[Tensor, Number, bool]): The other input is a number or
+            a bool or a tensor whose data type is number or bool.
+
+    Returns:
+        Tensor, the shape is the same as `self` , and the data type is the same as `self` .
+
+    Raises:
+        RuntimeError: If `other` cannot be broadcast to `self`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor
+        >>> import numpy as np
+        >>> x = Tensor(np.array([1, 2, 3]), mindspore.int32)
+        >>> other = Tensor(np.array([2, 2, 2]), mindspore.int32)
+        >>> output = x.ge_(other)
+        >>> print(output)
+        [ 0  1  1]
+        >>> print(x)
+        [ 0  1  1]
