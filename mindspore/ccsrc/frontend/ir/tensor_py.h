@@ -299,6 +299,7 @@ class FRONTEND_EXPORT TensorPyImpl {
   /// \brief Release device address of graph output tensor by TensorPy.
   ///
   /// \param[in] tensorpy [TensorPyPtr] The TensorPy.
+  /// \param[in] release [bool] Is release device address of graph output tensor.
   static void SetOffload(const TensorPyPtr &tensorpy, bool release);
 
   /// \brief Load device address of graph input tensor by TensorPy.
@@ -334,10 +335,9 @@ class FRONTEND_EXPORT TensorPyImpl {
   static uintptr_t DataPtr(const TensorPyPtr &tensorpy);
   static ShapeVector GetShapeFromTuple(const py::tuple &tuple);
 
-  /// \brief Get a python Tensor.
-  ///
-  /// \return A python Tensor.
-  static py::object GetPythonTensor();
+ private:
+  static TensorPtr InitTensorByInputDta(const py::dict &input, const TypePtr &dtype);
+  static TensorPtr InitTensorByShape(const py::dict &input, const TypePtr &dtype);
 };
 }  // namespace tensor
 }  // namespace mindspore

@@ -2817,7 +2817,7 @@ void UpdateDefaultParamForFrontParameter(const KernelGraphPtr &kernel_graph) {
         front_node->cast<ParameterPtr>()->has_default()) {
       continue;
     }
-    front_node->cast<ParameterPtr>()->set_default_param(parameter->cast<ParameterPtr>()->default_param());
+    front_node->cast<ParameterPtr>()->set_default_param(parameter->cast<ParameterPtr>()->default_param_raw());
     MS_LOG(INFO) << "After load parameter:" << parameter->DebugString()
                  << " set default value to front node:" << front_node->DebugString();
   }

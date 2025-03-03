@@ -200,10 +200,20 @@ py::object TensorToPyData(const tensor::BaseTensorPtr &tensor, const AbstractBas
     return scalar_obj;
   }
   auto tensorpy = std::make_shared<tensor::TensorPy>(tensor);
-  py::tuple v(1);
-  v[0] = tensorpy;
-  v[0] = SetAdaptedAttrToTensor(v[0], abs);
-  return v[0];
+  auto py_tensorpy = tensor::GetPythonTensor().attr("Tensor")(tensorpy);
+  py_tensorpy = SetAdaptedAttrToTensor(py_tensorpy, abs);
+  return py_tensorpy;
+}
+
+py::object TensorPyToPyData(const tensor::TensorPyPtr &tensorpy, const AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(tensorpy);
+  auto scalar_obj = CheckAndConvertToScalar(tensorpy->GetBaseTensor(), abs);
+  if (!py::isinstance<py::none>(scalar_obj)) {
+    return scalar_obj;
+  }
+  auto py_tensorpy = tensor::GetPythonTensor().attr("Tensor")(tensorpy);
+  py_tensorpy = SetAdaptedAttrToTensor(py_tensorpy, abs);
+  return py_tensorpy;
 }
 
 py::object ScalarPtrToPyData(const ScalarPtr &value) {
@@ -355,6 +365,12 @@ static ValueNameToConverterVector value_name_to_converter = {
   {Scalar::kTypeId,
    [](const ValuePtr &value, const AbstractBasePtr &) -> py::object {
      return ScalarPtrToPyData(value->cast<ScalarPtr>());
+   }},
+  // TensorPy
+  {tensor::TensorPy::kTypeId,
+   [](const ValuePtr &value, const AbstractBasePtr &abs) -> py::object {
+     auto tensorpy = value->cast<tensor::TensorPyPtr>();
+     return TensorPyToPyData(tensorpy, abs);
    }},
   // Tensor
   {tensor::Tensor::kTypeId,
@@ -776,8 +792,8 @@ bool IsGraphOutputValueNodeOrParameter(const AnfNodePtr &output, const py::tuple
       if (!param->has_default()) {
         MS_LOG(EXCEPTION) << "Can not determine value of Parameter " << index << " (" << param->name() << ")";
       }
-      tensor::TensorPtr tensor = std::dynamic_pointer_cast<tensor::Tensor>(param->default_param());
-      tensor::TensorPyPtr tensorpy = std::make_shared<tensor::TensorPy>(tensor);
+
+      auto tensorpy = tensor::GetTensorPyFromValue(param->default_param_raw());
       *ret_val = py::cast(tensorpy);
     }
     *ret_val = SetAdaptedAttrToTensor(*ret_val, output->abstract());

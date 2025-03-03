@@ -47,6 +47,7 @@
 #include "utils/trace_base.h"
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"
+#include "ir/tensor_py_base.h"
 
 namespace mindspore::session {
 using abstract::AbstractTensor;
@@ -2413,7 +2414,14 @@ void AnfRuntimeAlgorithm::FlattenInputArg(const BaseRef &arg, const AnfNodePtr &
     return;
   }
 
-  if (utils::isa<tensor::Tensor>(arg)) {
+  if (utils::isa<tensor::TensorPyBase>(arg)) {
+    auto base_tensor = utils::cast<tensor::TensorPyBasePtr>(arg)->GetBaseTensor();
+    tensor::TensorPtr tensor = utils::cast<tensor::TensorPtr>(base_tensor);
+    if (tensor == nullptr) {
+      tensor = std::make_shared<tensor::Tensor>(*base_tensor);
+    }
+    (void)flatten_tensors->emplace_back(tensor);
+  } else if (utils::isa<tensor::Tensor>(arg)) {
     (void)flatten_tensors->emplace_back(utils::cast<tensor::TensorPtr>(arg));
   } else if (utils::isa<tensor::BaseTensor>(arg)) {
     (void)flatten_tensors->emplace_back(std::make_shared<tensor::Tensor>(*utils::cast<tensor::BaseTensorPtr>(arg)));

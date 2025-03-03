@@ -610,7 +610,7 @@ class _Grad(GradOperation_):
                 else:
                     out = _pynative_executor.grad(fn, grad_, weights, grad_position, *run_args)
                 out = _grads_divided_by_device_num_if_recomputation(out)
-                if self.return_ids and out:
+                if self.return_ids and out is not None:
                     out = _combine_with_ids(grad_position, weights, out)
                 if self.get_value:
                     return res, out

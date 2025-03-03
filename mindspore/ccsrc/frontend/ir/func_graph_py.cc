@@ -54,7 +54,7 @@ py::dict UpdateFuncGraphHyperParams(const FuncGraphPtr &func_graph, const py::di
         new_param = ParamInit(std::make_shared<tensor::TensorPy>(old_value));
       }
       py::setattr(new_param, "param_info", ParamInfoInit(old_value->param_info()));
-      param_node->set_default_param(tensor::ConvertToTensor(new_param));
+      param_node->set_default_param(tensor::ConvertToTensorPy(new_param));
       hyper_params[param_name] = new_param;
     }
   }

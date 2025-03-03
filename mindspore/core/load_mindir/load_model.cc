@@ -1125,7 +1125,7 @@ bool MSANFModelParser::BuildInputForFuncGraph(const ParameterPtr &node, const mi
           auto ref_key_value = parameter_abs_value->cast<StringImmPtr>();
           if (ref_key_value != nullptr && ref_key_value->value() == tensor_proto.ref_key() &&
               parameter->cast<ParameterPtr>()->default_param() != nullptr) {
-            node->set_default_param(parameter->cast<ParameterPtr>()->default_param());
+            node->set_default_param(parameter->cast<ParameterPtr>()->default_param_raw());
             break;
           }
         }

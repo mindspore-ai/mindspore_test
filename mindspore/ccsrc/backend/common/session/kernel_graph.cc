@@ -452,7 +452,7 @@ ParameterPtr KernelGraph::NewParameter(const ParameterPtr &parameter) {
   if (parameter != nullptr) {
     new_parameter->set_name(parameter->name());
     if (common::AnfAlgo::IsParameterWeight(parameter)) {
-      new_parameter->set_default_param(parameter->default_param());
+      new_parameter->set_default_param(parameter->default_param_raw());
     }
   } else {
     // The created parameter name is empty, so set name to ensure that the parameter name is unique.

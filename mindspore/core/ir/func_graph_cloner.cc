@@ -113,7 +113,7 @@ void Cloner::CloneParameter(const AnfNodePtr &node, const FuncGraphPtr &target, 
   new_param->set_name(old_param->name());
   if (old_param->has_default()) {
     // Default parameter can be shared since it is readonly.
-    new_param->set_default_param(old_param->default_param());
+    new_param->set_default_param(old_param->default_param_raw());
   }
   new_param->set_is_top_graph_param(old_param->is_top_graph_param());
   ScopePtr scope = ((node->scope() == kDefaultScope) && (this->scope() != nullptr)) ? this->scope() : node->scope();
@@ -414,7 +414,7 @@ void Cloner::CloneParameter(const ParameterPtr &param, const AnfNodePtr &node) c
     auto old_param = node->cast_ptr<Parameter>();
     if (old_param->has_default()) {
       // Default parameter can be shared since it is readonly.
-      param->set_default_param(old_param->default_param());
+      param->set_default_param(old_param->default_param_raw());
     }
     param->set_name(old_param->name());
     constexpr char lifted_user_data_key[] = "lifted_from_fv";

@@ -190,9 +190,9 @@ void UpdateFuncGraphParameter(const FuncGraphPtr &func_graph, const std::vector<
 
     // Handle the Parameter from input arguments.
     if (i < arguments.size()) {
-      auto param_value = dyn_cast<tensor::MetaTensor>(arguments[i]);
+      auto param_value = tensor::GetMetaTensorFromValue(arguments[i]);
       if (param_value != nullptr && param_value->is_parameter()) {
-        param_node->set_default_param(param_value);
+        param_node->set_default_param(arguments[i]);
       }
     }
 

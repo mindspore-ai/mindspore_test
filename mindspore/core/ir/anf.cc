@@ -31,6 +31,7 @@
 #include "utils/anf_utils.h"
 #include "utils/compile_config.h"
 #include "ops/op_def.h"
+#include "ir/tensor_py_base.h"
 
 namespace mindspore {
 namespace {
@@ -668,7 +669,15 @@ void Parameter::set_default_param(const ValuePtr &param) {
   has_default_ = true;
 }
 
-const ValuePtr &Parameter::default_param() const { return default_param_; }
+const ValuePtr &Parameter::default_param_raw() const { return default_param_; }
+
+ValuePtr Parameter::default_param() const {
+  if (default_param_ != nullptr && default_param_->isa<tensor::TensorPyBase>()) {
+    auto tensorpy = default_param_->cast<tensor::TensorPyBasePtr>();
+    return tensorpy->GetBaseTensor();
+  }
+  return default_param_;
+}
 
 void Parameter::IncreaseUsedGraphCount() { used_graph_count_++; }
 
