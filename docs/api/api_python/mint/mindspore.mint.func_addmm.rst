@@ -13,16 +13,16 @@ mindspore.mint.addmm
         这是一个实验性API，后续可能修改或删除。
 
     参数：
-        - **input** (Tensor) - 待增加的Tensor。其形状必须可广播与 :math:`batch1 @ batch2` 一致。
+        - **input** (Tensor) - 待增加的Tensor。其形状必须可广播与 :math:`mat1 @ mat2` 一致。
         - **mat1** (Tensor) - 第一个待乘矩阵。必须为2-D的Tensor，类型与 `input` 一致。
         - **mat2** (Tensor) - 第二个待乘矩阵。必须为2-D的Tensor，类型与 `input` 一致。
 
     关键字参数：
         - **beta** (Union[float, int], 可选) - 输入的乘数。默认值： ``1`` 。
-        - **alpha** (Union[float, int]，可选) - :math:`batch1 @ batch2` 的系数，默认值： ``1`` 。
+        - **alpha** (Union[float, int]，可选) - :math:`mat1 @ mat2` 的系数，默认值： ``1`` 。
 
     返回：
-        Tensor，其数据类型与 `input` 相同, 其shape和 :math:`batch1 @ batch2` 相同。
+        Tensor，其数据类型与 `input` 相同，其shape和 :math:`mat1 @ mat2` 相同。
 
     异常：
         - **TypeError** - `input` 、 `mat1` 或 `mat2` 的类型不是Tensor。

@@ -6,7 +6,7 @@ mindspore.load_checkpoint
     加载checkpoint文件。
 
     .. note::
-        - `specify_prefix` 和 `filter_prefix` 参数已被弃用，推荐使用 `choice_func` 代替。`specify_prefix` 和 `filter_prefix` 的功能相互之间没有影响，并且使用这两个参数中的任何一个都将覆盖 `choice_func` 。
+        - `specify_prefix` 和 `filter_prefix` 参数已被弃用，推荐使用 `choice_func` 代替。 `specify_prefix` 和 `filter_prefix` 的功能相互之间没有影响，并且使用这两个参数中的任何一个都将覆盖 `choice_func` 。
         - 如果没有参数被成功加载，将会报ValueError。
         - 当加载去冗余的checkpoint时，网络应该是编译过的。
 

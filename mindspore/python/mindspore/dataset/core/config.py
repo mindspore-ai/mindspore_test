@@ -513,7 +513,7 @@ def set_enable_autotune(enable, filepath_prefix=None):
 
     Note:
         - Saved parameter profiles can be loaded via the :func:`mindspore.dataset.deserialize` interface to
-          directly obtain a data processing pipeline object configured with optimal parameters.
+          return a data processing pipeline object of optimal parameters.
         - The parameter tuning process can be viewed by turning on INFO level logging.
 
     An example of the generated configuration file is as follows, the "remark" field describes whether or not data
@@ -757,8 +757,8 @@ def get_auto_offload():
 
 def set_enable_watchdog(enable):
     """
-    Set the default state of watchdog Python thread as enabled, the default state of watchdog Python thread is enabled.
-    Watchdog is a thread which cleans up hanging subprocesses.
+    Set the default state of watchdog Python thread as enabled. The watchdog Python thread
+    is responsible for cleaning up stuck or hanging subprocesses, and is enabled by default.
 
     Args:
         enable (bool): Whether to launch a watchdog Python thread.

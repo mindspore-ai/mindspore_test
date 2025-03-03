@@ -15,7 +15,7 @@ logaddexp:
             input (Tensor): Input Tensor. The dtype of `input` must be float.
             other (Tensor): Input Tensor. The dtype of `other` must be float.
                 If the shape of `input` is not equal to the shape of `other`,
-                they must be broadcastable to a common shape (which becomes the shape of the output).
+                they must be broadcastable to a common shape.
 
         Returns:
             Tensor, with the same dtype as `input` and `other`.

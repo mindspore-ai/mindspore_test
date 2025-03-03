@@ -1291,11 +1291,10 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
     Load checkpoint info from a specified file.
 
     Note:
-        - `specify_prefix` and `filter_prefix` do not affect each other.
-        - If none of the parameters are loaded from checkpoint file, it will throw ValueError.
         - `specify_prefix` and `filter_prefix` are in the process of being deprecated,
-          `choice_func` is recommended instead.
+          `choice_func` is recommended instead. `specify_prefix` and `filter_prefix` do not affect each other.
           And using either of those two args will override `choice_func` at the same time.
+        - If none of the parameters are loaded from checkpoint file, it will throw ValueError.
         - When loading a checkpoint that has removed redundancy, the network should be compiled.
 
     Args:
