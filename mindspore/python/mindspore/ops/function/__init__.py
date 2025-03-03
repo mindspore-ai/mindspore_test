@@ -27,7 +27,6 @@ from . import (
     linalg_func,
     clip_func,
     fft_func,
-    reshard_func
 )
 from .array_func import (
     unique,
@@ -775,9 +774,6 @@ from .other_func import (
     partial,
     rotary_position_embedding,
 )
-from .reshard_func import (
-    reshard,
-)
 
 from ._add_attr_func import (
     _add_attr,
@@ -802,6 +798,5 @@ __all__.extend(sparse_unary_func.__all__)
 __all__.extend(clip_func.__all__)
 __all__.extend(fft_func.__all__)
 __all__.extend(other_func.__all__)
-__all__.extend(reshard_func.__all__)
 __all__.extend(_add_attr_func.__all__)
 __all__.sort()

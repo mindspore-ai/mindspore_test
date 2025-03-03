@@ -24,7 +24,7 @@ from mindspore.ops import composite as C
 from mindspore.common.tensor import Tensor
 from mindspore.common.parameter import Parameter, ParameterTuple
 from mindspore.common import dtype as mstype
-from mindspore.nn.wrap.grad_reducer import DistributedGradReducer
+from mindspore.nn import DistributedGradReducer
 from mindspore.context import ParallelMode
 from mindspore.communication.management import get_group_size
 from mindspore import context

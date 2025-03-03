@@ -20,7 +20,7 @@ from mindspore import Tensor, ops
 from mindspore.ops import operations as P
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
-from mindspore.nn.wrap.grad_reducer import PipelineGradReducer
+from mindspore.nn import PipelineGradReducer
 
 from mindspore.parallel.auto_parallel import AutoParallel
 from hccl_test.manage.api import Hccl
