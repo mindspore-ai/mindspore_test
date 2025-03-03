@@ -106,6 +106,7 @@ def _init_auto_parallel_context(net):
                 set_op_strategy_config(mode="SAVE", path=net._save_operator_strategy_file)
 
         _set_auto_parallel_context(**params)
+        net.transformer_opt(net._transformer_opt_config)
 
 
 def _clear_auto_parallel_context(net):
@@ -113,6 +114,7 @@ def _clear_auto_parallel_context(net):
         pass
     else:
         _reset_auto_parallel_context()
+        net.transformer_opt(None)
 
 def _get_parallel_mode():
     """Get parallel mode."""

@@ -189,7 +189,7 @@ def merge_sliced_parameter(sliced_parameters, strategy=None):
 def _merge_and_split(sliced_params, train_strategy, predict_strategy):
     """Merge sliced parameter and split it according to the predict strategy."""
     merged_param = merge_sliced_parameter(sliced_params, train_strategy)
-    if predict_strategy is None:
+    if not predict_strategy:
         return merged_param
     param_name = merged_param.name
     tensor_layout = predict_strategy[param_name]

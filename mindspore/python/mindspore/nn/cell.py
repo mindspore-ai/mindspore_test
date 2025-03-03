@@ -2632,12 +2632,9 @@ class Cell(Cell_):
         if 'mp_comm_recompute' in kwargs.keys():
             self._mp_comm_recompute(kwargs.get('mp_comm_recompute', False))
         if 'parallel_optimizer_comm_recompute' in kwargs.keys():
-            if (kwargs.get('parallel_optimizer_comm_recompute', False) and
-                    context.get_auto_parallel_context("pipeline_stages") > 1):
+            if kwargs.get('parallel_optimizer_comm_recompute', False):
                 logger.warning("Currently, the communication operator allgathers introduced by optimizer shard "
-                               "are not support recomputation in pipeline parallel.")
-            elif context.get_auto_parallel_context("pipeline_stages") == 1:
-                self._parallel_optimizer_comm_recompute(kwargs.get('parallel_optimizer_comm_recompute', False))
+                               "is replaced with zero3.")
         if 'recompute_slice_activation' in kwargs:
             self._recompute_slice_activation(kwargs.get('recompute_slice_activation', False))
 
