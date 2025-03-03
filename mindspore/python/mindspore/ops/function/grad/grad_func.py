@@ -678,7 +678,7 @@ def jvp(fn, inputs, v, has_aux=False):
         - **net_output** (Union[Tensor, tuple[Tensor]]) - The output of `fn(inputs)` . Specially, when `has_aux` is set
           ``True`` , `netout` is the first output of `fn(inputs)` .
         - **jvp** (Union[Tensor, tuple[Tensor]]) - The result of jacobian-vector-product.
-        - **aux_value** (Union[Tensor, tuple[Tensor]], optional) - When `has_aux` is ``True`` , `aux_value` will be
+        - **aux_value** (Union[Tensor, tuple[Tensor]], optional) - Only when `has_aux` is ``True`` , `aux_value` will be
           returned. It means the second to last outputs of `fn(inputs)` . Specially, `aux_value` does not contribute to
           gradient.
 

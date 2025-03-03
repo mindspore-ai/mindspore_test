@@ -5244,7 +5244,7 @@ def addmm_ext(input, mat1, mat2, *, beta=1, alpha=1):
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        input (Tensor): matrix to be added, the shape must be broadcastable with mat1 @ mat2.
+        input (Tensor): matrix to be added, the shape must be broadcastable with :math:`mat1 @ mat2`.
         mat1 (Tensor): the first matrix to be matrix multiplied, must be 2-D Tensor, with the same shape of the input.
         mat2 (Tensor): the second matrix to be matrix multiplied, must be 2-D Tensor, with the same shape of the input.
 
@@ -5253,7 +5253,7 @@ def addmm_ext(input, mat1, mat2, *, beta=1, alpha=1):
         alpha (Union[float, int], optional): multiplier for :math:`mat1 @ mat2`. Default: ``1`` .
 
     Returns:
-        Tensor, with the same dtype as `input` and the same shape as mat1 @ mat2.
+        Tensor, with the same dtype as `input` and the same shape as :math:`mat1 @ mat2`.
 
     Raises:
         TypeError: If the type of `input`, `mat1` or `mat2` is not Tensor.

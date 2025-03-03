@@ -1044,7 +1044,8 @@ def set_auto_parallel_context(**kwargs):
 
                         - parallel_optimizer_threshold(int): Set the threshold of parallel optimizer. When parallel
                           optimizer is enabled, parameters with size smaller than this threshold will not be sharded
-                          across the devices. Parameter size = shape[0] \* ... \* shape[n] \* size(dtype). Non-negative.
+                          across the devices. Parameter size is calculated as:
+                          shape[0] \* ... \* shape[n] \* size(dtype). Non-negative.
                           Unit: KB. Default: ``64`` .
 
                         - optimizer_weight_shard_size(int): Set the optimizer weight shard group size, if you want to
