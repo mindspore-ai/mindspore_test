@@ -20,7 +20,7 @@ import os
 
 import common.gen_constants as K
 import common.template as template
-from common.gen_utils import save_file
+from common.gen_utils import save_file, OrderedSet
 from common.base_generator import BaseGenerator
 from pyboost import pyboost_utils
 
@@ -139,7 +139,7 @@ class FunctionalMapCppGenerator(BaseGenerator):
         Returns:
             str: Generated function signatures string.
         """
-        sig_set = set()
+        sig_set = OrderedSet()
         for tensor_proto in func_protos:
             sig_set.add(self._generate_single_signature_str(func_api_name, tensor_proto, is_tensor_method))
         sig_list = list(sig_set)
