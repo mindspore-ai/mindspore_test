@@ -21,6 +21,8 @@
 #include <array>
 #include <cstddef>
 #include <thread>
+#include <mutex>
+#include <condition_variable>
 
 namespace mindspore {
 // A simple ring buffer (or circular queue) with atomic operations for
@@ -34,33 +36,69 @@ class RingQueue {
   void Enqueue(const T &value) {
     std::size_t current_tail = tail_.load(std::memory_order_relaxed);
     std::size_t next_tail = (current_tail + 1) % Capacity;
+    std::size_t spins = 0;
 
-    while (next_tail == head_.load(std::memory_order_acquire)) {
+    while (true) {
+      const std::size_t current_head = head_.load(std::memory_order_acquire);
+      if (next_tail != current_head) {
+        break;
+      }
+
+      if (spins++ < max_spin_count_) {
+        continue;
+      } else {
+        std::unique_lock<std::mutex> lock(mtx_);
+        not_full_.wait(lock, [this, next_tail] { return head_.load(std::memory_order_acquire) != next_tail; });
+        break;
+      }
     }
 
     buffer_[current_tail] = value;
     tail_.store(next_tail, std::memory_order_release);
 
-    cond_var_.notify_one();
+    // Notify consumer (under mutex to avoid missed wakes)
+    std::lock_guard<std::mutex> lock(mtx_);
+    not_empty_.notify_one();
   }
 
   void Dequeue() {
     std::size_t current_head = head_.load(std::memory_order_relaxed);
-    while (current_head == tail_.load(std::memory_order_acquire)) {
+    std::size_t spins = 0;
+
+    while (true) {
+      const std::size_t current_tail = tail_.load(std::memory_order_acquire);
+      if (current_head != current_tail) {
+        break;
+      }
+
+      if (spins++ < max_spin_count_) {
+        continue;
+      } else {
+        std::unique_lock<std::mutex> lock(mtx_);
+        not_empty_.wait(lock, [this, current_head] { return tail_.load(std::memory_order_acquire) != current_head; });
+        break;
+      }
     }
 
-    // Free memory when task is finished.
     buffer_[current_head] = nullptr;
     head_.store((current_head + 1) % Capacity, std::memory_order_release);
+
+    // Notify producer (under mutex to avoid missed wakes)
+    std::lock_guard<std::mutex> lock(mtx_);
+    not_full_.notify_one();
   }
 
   const T &Head() {
     std::size_t current_head = head_.load(std::memory_order_acquire);
+    std::size_t spins = 0;
+
     while (current_head == tail_.load(std::memory_order_acquire)) {
-      // spin_ is always true unless manually set it to false.
-      if (!spin_) {
-        std::unique_lock<std::mutex> lock(mutex_);
-        cond_var_.wait(lock, [this, current_head]() { return current_head != tail_.load(std::memory_order_acquire); });
+      if (spins++ < max_spin_count_) {
+        continue;
+      } else {
+        std::unique_lock<std::mutex> lock(mtx_);
+        not_empty_.wait(lock, [this, current_head] { return tail_.load(std::memory_order_acquire) != current_head; });
+        break;
       }
     }
     return buffer_[current_head];
@@ -68,19 +106,18 @@ class RingQueue {
 
   bool IsEmpty() const { return head_.load(std::memory_order_acquire) == tail_.load(std::memory_order_acquire); }
 
-  bool spin() { return spin_; }
+  bool spin() { return false; }
 
-  void set_spin(bool spin) { spin_ = spin; }
+  void set_spin(bool /*spin*/) {}
 
  private:
   std::array<T, Capacity> buffer_;
-  // CPU cache line size is 64.
-  alignas(64) std::atomic<std::size_t> head_;
-  alignas(64) std::atomic<std::size_t> tail_;
-  // disable spin and wait for activate.
-  bool spin_{true};
-  std::condition_variable cond_var_;
-  std::mutex mutex_;
+  alignas(128) std::atomic<std::size_t> head_;
+  alignas(128) std::atomic<std::size_t> tail_;
+  std::mutex mtx_;
+  std::condition_variable not_full_;
+  std::condition_variable not_empty_;
+  static const std::size_t max_spin_count_{600000};
 };
 }  // namespace mindspore
 
