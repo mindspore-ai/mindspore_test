@@ -19,10 +19,10 @@
 #include <set>
 #include <vector>
 #include <map>
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "kernel/cpu/eigen/eigen_common_utils.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

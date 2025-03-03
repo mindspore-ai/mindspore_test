@@ -23,7 +23,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <array>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "utils/log_adapter.h"
 #include "include/backend/anf_runtime_algorithm.h"

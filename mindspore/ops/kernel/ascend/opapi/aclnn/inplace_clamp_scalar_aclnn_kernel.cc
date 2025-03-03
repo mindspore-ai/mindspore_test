@@ -16,7 +16,7 @@
 #include "kernel/ascend/opapi/aclnn/inplace_clamp_scalar_aclnn_kernel.h"
 #include <vector>
 #include "ir/tensor.h"
-#include "plugin/device/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {

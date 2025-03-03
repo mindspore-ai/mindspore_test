@@ -24,7 +24,7 @@
 #include <vector>
 #include <tuple>
 #include <utility>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "runtime/hardware/device_context.h"
 #include "include/backend/visible.h"
 #include "include/backend/distributed/embedding_cache/embedding_storage/abstract_embedding_storage.h"

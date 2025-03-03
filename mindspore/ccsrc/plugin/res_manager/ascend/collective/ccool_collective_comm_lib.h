@@ -23,7 +23,7 @@
 #include <string>
 #include <fstream>
 #include "utils/ms_utils.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "runtime/collective/collective_communication_lib.h"
 #include "plugin/res_manager/ascend/event/ascend_event.h"
 #include "plugin/res_manager/ascend/collective/ccool_communication_group.h"

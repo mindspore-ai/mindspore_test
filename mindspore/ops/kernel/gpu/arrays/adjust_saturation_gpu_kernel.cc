@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <map>
 #include <utility>
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/gpu/arrays/adjust_saturation_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/adjustsaturation_impl.cuh"
 

@@ -29,7 +29,7 @@
 #include "include/backend/device_address.h"
 #include "common/utils.h"
 #include "common/mutable_tensor_impl.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "src/tensor.h"
 #include "infer/tensor.h"
 #ifdef ENABLE_CLOUD_INFERENCE

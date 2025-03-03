@@ -22,9 +22,9 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/convert_utils.h"
-#include "kernel/common_utils.h"
-#include "kernel/format_utils.h"
-#include "kernel/oplib/oplib.h"
+#include "common/common_utils.h"
+#include "common/format_utils.h"
+#include "common/oplib/oplib.h"
 #include "mindapi/base/type_id.h"
 #include "mindspore/ccsrc/include/common/debug/common.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -162,60 +162,7 @@ inline InOutKernelTensors AbstractInOutFromCNode(const CNodePtr &cnode) {
   }
   return std::make_pair(input_tensors, output_tensors);
 }
-
-bool IsObjectTypeStrictlyMatched(const std::vector<TypeId> &object_types,
-                                 const std::vector<DataType> &kernel_data_types) {
-  if (object_types.size() != kernel_data_types.size()) {
-    return false;
-  }
-
-  for (size_t i = 0; i < object_types.size(); i++) {
-    // For optional input, the real input object type can be a None.
-    if ((object_types[i] != kernel_data_types[i].object_type) &&
-        !(object_types[i] == kMetaTypeNone && kernel_data_types[i].is_optional)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-bool IsObjectTypeWeaklyMatched(const std::vector<TypeId> &object_types, const std::vector<DataType> &kernel_data_types,
-                               bool all_same, size_t element_num) {
-  // 1. The size equal can trigger the kernel object backoff(For example Reshape op).
-  if (object_types.size() == kernel_data_types.size()) {
-    return true;
-  }
-
-  // 2. AllSame is the tupleUnfold type(For example Split/Addn op).
-  if (all_same) {
-    return true;
-  }
-
-  // 3. Multiple outputs are expanded in the kernel attr(For example BatchNorm op).
-  if (kernel_data_types.size() == element_num) {
-    return true;
-  }
-
-  return false;
-}
 }  // namespace
-
-std::pair<std::vector<DataType>, std::vector<DataType>> GetInOutDataTypesFromKernelAttr(const KernelAttr &kernel_attr) {
-  size_t input_attr_size = kernel_attr.GetInputSize();
-  std::vector<DataType> input_data_types;
-  for (size_t i = 0; i < input_attr_size; ++i) {
-    input_data_types.push_back(kernel_attr.GetInputAttr(i));
-  }
-
-  size_t output_attr_size = kernel_attr.GetOutputSize();
-  std::vector<DataType> output_data_types;
-  for (size_t i = 0; i < output_attr_size; ++i) {
-    output_data_types.push_back(kernel_attr.GetOutputAttr(i));
-  }
-
-  return std::make_pair(input_data_types, output_data_types);
-}
 std::string GetCompilerCachePath() { return Common::GetUserDefineCachePath(); }
 
 bool CheckCache(const std::string &kernel_name) {
@@ -784,40 +731,6 @@ bool IsDynamicParamKernel(const std::string &op_name) {
   }
 
   return true;
-}
-
-bool SelectKernelByObjectType(const CNodePtr &kernel_node, const std::vector<KernelAttr> &registered_kernel_attrs,
-                              std::vector<KernelAttr> *selected_kernel_attrs) {
-  MS_EXCEPTION_IF_NULL(kernel_node);
-  MS_EXCEPTION_IF_NULL(selected_kernel_attrs);
-  const auto &inputs_object_types = AnfAlgo::GetAllInputObjectType(kernel_node);
-  const auto &output_object_types = AnfAlgo::GetAllOutputObjectType(kernel_node);
-
-  // 1. Try match all object type firstly.
-  for (auto &cur_kernel_attr : registered_kernel_attrs) {
-    const auto &[input_data_types, output_data_types] = GetInOutDataTypesFromKernelAttr(cur_kernel_attr);
-    if (IsObjectTypeStrictlyMatched(inputs_object_types, input_data_types) &&
-        IsObjectTypeStrictlyMatched(output_object_types, output_data_types)) {
-      (void)selected_kernel_attrs->emplace_back(cur_kernel_attr);
-    }
-  }
-  if (!selected_kernel_attrs->empty()) {
-    return true;
-  }
-
-  // 2. Precise matching failed, try fuzzy one again.
-  auto input_num = common::AnfAlgo::GetInputTensorNum(kernel_node);
-  auto output_num = AnfAlgo::GetOutputElementNum(kernel_node);
-  for (auto &cur_kernel_attr : registered_kernel_attrs) {
-    const auto &[input_data_types, output_data_types] = GetInOutDataTypesFromKernelAttr(cur_kernel_attr);
-    auto all_same = cur_kernel_attr.GetAllSame();
-    if (IsObjectTypeWeaklyMatched(inputs_object_types, input_data_types, all_same, input_num) &&
-        IsObjectTypeWeaklyMatched(output_object_types, output_data_types, all_same, output_num)) {
-      (void)selected_kernel_attrs->emplace_back(cur_kernel_attr);
-    }
-  }
-
-  return (!selected_kernel_attrs->empty());
 }
 
 std::pair<std::string, ExceptionType> KernelObjectTypeNotSupportWarning(const CNodePtr &kernel_node) {

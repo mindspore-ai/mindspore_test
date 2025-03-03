@@ -21,7 +21,7 @@
 #include <string>
 #include <sstream>
 #include <mutex>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "plugin/device/ascend/kernel/dvm/dvm.h"
 #include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
 

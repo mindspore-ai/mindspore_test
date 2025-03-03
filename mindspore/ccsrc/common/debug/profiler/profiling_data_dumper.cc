@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <mutex>
 #include <utility>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "include/backend/debug/profiler/profiling.h"
 
 namespace mindspore {

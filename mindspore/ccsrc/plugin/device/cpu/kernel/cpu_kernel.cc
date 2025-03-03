@@ -22,9 +22,11 @@
 #include <map>
 #include <set>
 #include <numeric>
-#include "kernel/oplib/oplib.h"
+#include "common/oplib/oplib.h"
 #include "utils/profile.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
+
+#include "include/common/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace kernel {
@@ -187,7 +189,7 @@ ActorThreadPool *GetActorMgrInnerThreadPool() {
   if (thread_pool == nullptr) {
     size_t actor_thread_num = 0;
     size_t actor_and_kernel_thread_num = 0;
-    mindspore::ComputeThreadNums(&actor_thread_num, &actor_and_kernel_thread_num);
+    runtime::ComputeThreadNums(&actor_thread_num, &actor_and_kernel_thread_num);
     size_t actor_queue_size = 81920;
     (void)actor_manager->Initialize(true, actor_thread_num, actor_and_kernel_thread_num, actor_queue_size);
     thread_pool = actor_manager->GetActorThreadPool();

@@ -20,7 +20,7 @@
 #include <vector>
 #include <algorithm>
 #include <memory>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.h"
 
 namespace mindspore {

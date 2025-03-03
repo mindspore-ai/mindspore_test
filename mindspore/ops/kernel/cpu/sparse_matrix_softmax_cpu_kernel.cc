@@ -24,7 +24,7 @@
 #include <string>
 #include <functional>
 
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

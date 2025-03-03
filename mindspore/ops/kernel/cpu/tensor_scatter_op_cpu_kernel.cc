@@ -23,7 +23,7 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "include/common/thread_pool.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "utils/profile.h"
 #include "Eigen/Eigen"
 #include "unsupported/Eigen/CXX11/Tensor"

@@ -16,7 +16,7 @@
 
 #include "kernel/cpu/fftnbase_cpu_kernel.h"
 #include "ops_utils/op_utils.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "mindapi/base/types.h"
 #include "utils/fft_helper.h"
 

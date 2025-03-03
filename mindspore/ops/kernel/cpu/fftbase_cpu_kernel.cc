@@ -17,7 +17,7 @@
 #include "kernel/cpu/fftbase_cpu_kernel.h"
 #include "mindapi/base/type_id.h"
 #include "ops_utils/op_utils.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "utils/fft_helper.h"
 
 namespace mindspore {

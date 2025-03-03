@@ -39,7 +39,7 @@
 #include "mindspore/ccsrc/pyboost/auto_generate/silent_check_v3.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/square.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/base/type_id.h"
 #include "op_def/auto_generate/gen_ops_name.h"

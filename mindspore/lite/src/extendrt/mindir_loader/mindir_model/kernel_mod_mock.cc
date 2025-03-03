@@ -17,7 +17,7 @@
 #include <vector>
 #include <map>
 
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 
 namespace mindspore::kernel {
 KernelErrorCode KernelMod::Resize(const std::vector<KernelTensor *> &inputs,

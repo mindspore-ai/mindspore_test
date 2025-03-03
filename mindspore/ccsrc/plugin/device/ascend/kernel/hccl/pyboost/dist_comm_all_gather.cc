@@ -1,0 +1,78 @@
+/**
+ * Copyright 2024 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "plugin/device/ascend/kernel/hccl/pyboost/dist_comm_all_gather.h"
+
+#include <memory>
+#include <string>
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "plugin/device/ascend/kernel/hccl/hcom_util.h"
+#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
+#include "plugin/device/ascend/kernel/hccl/pyboost/comm_common.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+
+namespace mindspore {
+namespace kernel {
+namespace pyboost {
+void DistCommAllGatherAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &gather_list,
+                                      const BaseTensorPtr &input_tensor, const Int64ImmPtr &rank_size,
+                                      const StringImmPtr &group) {
+  OpRunner::InferOpOutput(op, gather_list, input_tensor, rank_size, group);
+
+  std::vector<BaseTensorPtr> gather_tensors = ConvertValueTupleToVector<BaseTensorPtr>(gather_list);
+  PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, gather_tensors, input_tensor);
+  PyBoostUtils::PrepareOpOutputs(op->device_context(), kDefaultStreamIndex, op->outputs());
+  auto rank_size_imm = GetValue<int64_t>(rank_size);
+  auto run_func = [op, gather_tensors, input_tensor, group, rank_size_imm]() {
+    PyBoostUtils::MallocOpInputs(op->device_context(), gather_tensors, input_tensor);
+    PyBoostUtils::MallocOpOutputs(op->device_context(), op->outputs());
+    auto [hccl_count, hccl_data_type] = HcomUtil::GetHcclCountAndTypeFromTensor(op->primitive(), input_tensor);
+
+    const auto &op_name = op->primitive()->name();
+    auto input_data_ptr = GetDevicePtrFromTensor(op_name, input_tensor);
+    auto output_data_ptr = GetDevicePtrFromTensor(op_name, op->output(0));
+    auto size = input_tensor->Size();
+    auto launch_func = [input_data_ptr, output_data_ptr, hccl_count, hccl_data_type, rank_size_imm, size,
+                        gather_tensors, op_name](const HcclComm &hccl_comm, void *comm_stream_ptr) {
+      auto hccl_result = hccl::HcclAdapter::GetInstance().HcclAllGather(input_data_ptr, output_data_ptr, hccl_count,
+                                                                        hccl_data_type, comm_stream_ptr, hccl_comm);
+      if (hccl_result != HCCL_SUCCESS) {
+        MS_LOG(EXCEPTION) << "HcclAllGather failed, ret:" << hccl_result;
+      }
+      for (int r = 0; r < rank_size_imm; r++) {
+        uint64_t offset = (uint64_t)(r * size);
+        auto data_ptr = GetDevicePtrFromTensor(op_name, gather_tensors[r]);
+        auto cp_ret = CALL_ASCEND_API(aclrtMemcpyAsync, data_ptr, size, static_cast<char *>(output_data_ptr) + offset,
+                                      size, ACL_MEMCPY_DEVICE_TO_DEVICE, comm_stream_ptr);
+        if (cp_ret != EOK) {
+          MS_LOG(EXCEPTION) << "aclrtMemcpy failed.";
+        }
+      }
+    };
+    auto post_func = [input_tensor, gather_tensors, op](const DeviceEventPtr &event, size_t comm_stream_id) {
+      runtime::DeviceAddressUtils::ProcessCrossStreamAddressWithEvent(op->primitive()->name(), op->device_context(),
+                                                                      comm_stream_id, event, input_tensor,
+                                                                      op->output(0), gather_tensors);
+    };
+    CommonCommAscendFunc(op, input_tensor, group, launch_func, post_func);
+  };
+  CommonCommRunTask(run_func);
+}
+
+}  // namespace pyboost
+}  // namespace kernel
+}  // namespace mindspore

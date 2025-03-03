@@ -16,7 +16,7 @@
 
 #include "kernel/cpu/pad_v3_cpu_kernel.h"
 #include <utility>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"

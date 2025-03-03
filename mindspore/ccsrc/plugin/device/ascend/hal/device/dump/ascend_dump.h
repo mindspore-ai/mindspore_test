@@ -28,7 +28,7 @@
 #include "include/common/debug/anf_dump_utils.h"
 #include "include/common/utils/config_manager.h"
 #include "include/common/utils/anfalgo.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "plugin/device/ascend/hal/device/dump/dump_data_builder.h"
 #include "runtime/hardware/device_context.h"
 #include "acl/acl_dump.h"

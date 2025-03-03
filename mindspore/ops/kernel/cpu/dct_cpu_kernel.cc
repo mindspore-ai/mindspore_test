@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <functional>
 #include "ops_utils/op_utils.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "utils/fft_helper.h"
 
 namespace mindspore {

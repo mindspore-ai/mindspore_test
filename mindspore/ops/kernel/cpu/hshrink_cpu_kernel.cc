@@ -16,7 +16,7 @@
 
 #include "kernel/cpu/hshrink_cpu_kernel.h"
 #include <algorithm>
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "kernel/cpu/nnacl/errorcode.h"
 #include "kernel/cpu/nnacl/fp32/activation_fp32.h"
 

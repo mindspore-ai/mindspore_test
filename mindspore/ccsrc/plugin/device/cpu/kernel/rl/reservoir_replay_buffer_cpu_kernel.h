@@ -23,7 +23,7 @@
 #include <algorithm>
 #include <random>
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "plugin/device/cpu/kernel/rl/reservoir_replay_buffer.h"
 
 namespace mindspore {

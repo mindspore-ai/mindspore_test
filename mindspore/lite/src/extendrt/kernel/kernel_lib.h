@@ -31,7 +31,7 @@
 #include "src/infer/context.h"
 #include "src/extendrt/kernel/base_kernel.h"
 #include "ops/base_operator.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "src/extendrt/kernel/extendrt_kernel_exec.h"
 #include "src/extendrt/kernel/kernel_spec_infos.h"
 

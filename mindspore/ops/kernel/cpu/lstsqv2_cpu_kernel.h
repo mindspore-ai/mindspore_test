@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "kernel/cpu/nnacl/base/broadcast_to.h"
 #include "kernel/cpu/nnacl/errorcode.h"
 

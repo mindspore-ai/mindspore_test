@@ -25,7 +25,7 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "ir/manager.h"
-#include "kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 #include "kernel/framework_utils.h"
 #include "include/backend/kernel_info.h"
 #include "backend/common/graph_kernel/decrease_transfer_precision.h"

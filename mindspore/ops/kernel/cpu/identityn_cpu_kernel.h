@@ -20,8 +20,8 @@
 #include <set>
 #include <map>
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "kernel/common_utils.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/common_utils.h"
+#include "common/ms_factory.h"
 #include "mindspore/ops/infer/identity_n.h"
 
 namespace mindspore {

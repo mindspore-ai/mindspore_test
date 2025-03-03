@@ -19,7 +19,7 @@
 #include <set>
 #include <cmath>
 #include "ops_utils/op_utils.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 
 namespace mindspore {
 namespace kernel {

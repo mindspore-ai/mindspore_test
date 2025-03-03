@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <iostream>
 #include <limits>
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "mindspore/ops/infer/sparse_apply_r_m_s_prop.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 

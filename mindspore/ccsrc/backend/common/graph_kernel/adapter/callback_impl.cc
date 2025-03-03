@@ -23,7 +23,7 @@
 #include "utils/ms_context.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/graph_kernel/fake_abstract_shape.h"
 #include "kernel/framework_utils.h"
 #include "backend/common/graph_kernel/convert_input_and_attr.h"
@@ -34,6 +34,41 @@
 namespace mindspore::graphkernel {
 namespace {
 constexpr auto kPatternOpaque = "Opaque";
+
+std::string GetProcessorStr(const AnfNodePtr &anf_node) {
+  MS_EXCEPTION_IF_NULL(anf_node);
+  std::string processor = kernel::kProcessorUnknown;
+  auto kernel_info = dynamic_cast<device::KernelInfo *>(anf_node->kernel_info());
+  MS_EXCEPTION_IF_NULL(kernel_info);
+  auto build_info = kernel_info->select_kernel_build_info();
+  // we may call this before kernel select.
+  if (build_info == nullptr) {
+    return processor;
+  }
+  switch (build_info->processor()) {
+    case kernel::Processor::AICORE:
+      processor = kernel::kProcessorAiCore;
+      break;
+
+    case kernel::Processor::AICPU:
+      processor = kernel::kProcessorAiCpu;
+      break;
+
+    case kernel::Processor::CUDA:
+      processor = kernel::kProcessorCuda;
+      break;
+
+    case kernel::Processor::CPU:
+      processor = kernel::kProcessorCpu;
+      break;
+
+    default:
+      MS_LOG(DEBUG) << "Unknown processor type.";
+      break;
+  }
+
+  return processor;
+}
 
 TypeId GetTypeIdForValueSequence(const ValueSequencePtr &value_sequence) {
   MS_EXCEPTION_IF_NULL(value_sequence);
@@ -113,7 +148,7 @@ std::string CallbackImpl::GetOutputFormat(const AnfNodePtr &node, size_t i) {
 }
 
 std::string CallbackImpl::GetProcessor(const AnfNodePtr &node) {
-  auto processor = kernel::GetProcessorStr(node);
+  auto processor = GetProcessorStr(node);
   if (processor == kernel::kProcessorUnknown) {
     // the processor will not be set during the Ascend kernel select, so it should be updated from context
     processor = kernel::GetStrProcessorFromContext();

@@ -26,12 +26,12 @@
 #include <map>
 #include <iostream>
 #include "mindspore/ops/infer/apply_ada_max.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "include/curand.h"
 #include "abstract/utils.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/adamax_impl.cuh"
 
 namespace mindspore {

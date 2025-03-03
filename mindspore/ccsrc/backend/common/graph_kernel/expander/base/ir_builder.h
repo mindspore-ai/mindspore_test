@@ -21,7 +21,7 @@
 #include <functional>
 #include <memory>
 #include "utils/hash_map.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "include/common/utils/utils.h"
 #include "backend/common/graph_kernel/expander/base/node.h"
 #include "backend/common/graph_kernel/expander/base/emitter.h"

@@ -17,7 +17,7 @@
 #include "kernel/cpu/resize_bicubic_grad_cpu_kernel.h"
 #include <limits>
 #include <utility>
-#include "kernel/ops_utils.h"
+#include "common/kernel_utils.h"
 #include "mindspore/ops/infer/ops_func_impl/resize_bicubic_grad.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 

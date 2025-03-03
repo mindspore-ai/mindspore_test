@@ -17,7 +17,7 @@
 #include "kernel/cpu/resize_bilinear_grad_cpu_kernel.h"
 #include <functional>
 #include <utility>
-#include "kernel/ops_utils.h"
+#include "common/kernel_utils.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {

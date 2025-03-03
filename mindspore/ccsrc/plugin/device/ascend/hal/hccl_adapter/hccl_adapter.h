@@ -25,7 +25,7 @@
 #include <mutex>
 #include "ir/anf.h"
 #include "hccl/hccl_types.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 
 using mindspore::kernel::KernelTensor;
 

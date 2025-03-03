@@ -16,7 +16,7 @@
 
 #include "kernel/cpu/ones_like_cpu_kernel.h"
 #include <algorithm>
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

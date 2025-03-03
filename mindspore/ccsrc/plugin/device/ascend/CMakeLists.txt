@@ -66,7 +66,6 @@ foreach(a_comp ${ASCEND_COMMON_SUB})
 endforeach()
 
 list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_transform_graph_ir_obj>)
-list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ascend_acl_ir_obj>)
 list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ascend_device_address_obj>)
 list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ascend_event_obj>)
 list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ascend_mem_manager_obj>)
@@ -83,10 +82,10 @@ set_target_properties(mindspore_ascend PROPERTIES VERSION 2)
 set(MS_KERNELS_INTERNAL_LIB_PATH
     ${ORIGIN_PATH}/ascend/ms_kernels_internal/internal_kernel/lib)
 
-target_link_libraries(mindspore_ascend PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common)
+target_link_libraries(mindspore_ascend PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common
+                      mindspore_ops_kernel_common mindspore_ops_ascend)
 target_link_libraries(mindspore_ascend PRIVATE mindspore_ascend_res_manager)
 target_link_libraries(mindspore_ascend PRIVATE -Wl,--no-as-needed mindspore_pyboost -Wl,--as-needed)
-target_link_libraries(mindspore_ascend PRIVATE -Wl,--whole-archive mindspore_ops_ascend -Wl,--no-whole-archive)
 target_link_libraries(mindspore_ascend PRIVATE proto_input mindspore::protobuf)
 target_link_libraries(mindspore_ascend PRIVATE securec d_collective)
 target_link_libraries(mindspore_ascend PRIVATE multi_ascend_collective)

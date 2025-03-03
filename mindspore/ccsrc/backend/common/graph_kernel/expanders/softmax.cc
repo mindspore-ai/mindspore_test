@@ -18,7 +18,7 @@
 
 #include "backend/common/graph_kernel/expanders/op_desc_registry.h"
 #include "backend/common/graph_kernel/expanders/utils.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 
 namespace mindspore::graphkernel::expanders {
 class Softmax : public OpDesc {

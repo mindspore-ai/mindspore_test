@@ -20,7 +20,7 @@
 #include <set>
 #include <utility>
 #include "abstract/dshape.h"
-#include "include/common/utils/utils.h"
+
 #include "mindapi/base/shape_vector.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"

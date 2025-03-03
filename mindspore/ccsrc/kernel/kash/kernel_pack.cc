@@ -22,7 +22,7 @@
 #include "securec/include/securec.h"
 #include "utils/log_adapter.h"
 #include "utils/system/sha256.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/framework_utils.h"
 #include "kernel/kash/kernel_pack.h"
 

@@ -21,8 +21,8 @@
 #include <utility>
 #include <mutex>
 #include <shared_mutex>
-#include "kernel/kernel.h"
-#include "kernel/common_utils.h"
+#include "common/kernel.h"
+#include "common/common_utils.h"
 #include "kernel/kash/kernel_pack.h"
 #include "plugin/device/cpu/kernel/cpu_kernel_mod.h"
 

@@ -19,7 +19,7 @@
 #include <atomic>
 #include <complex>
 
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "mindspore/ops/infer/scatter_add_with_axis.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 

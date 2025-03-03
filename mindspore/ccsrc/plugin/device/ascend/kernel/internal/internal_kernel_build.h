@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 
 namespace mindspore {
 namespace kernel {

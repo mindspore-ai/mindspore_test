@@ -17,7 +17,7 @@
 #include "kernel/cpu/resize_bilinear_cpu_kernel.h"
 #include <functional>
 #include <map>
-#include "kernel/ops_utils.h"
+#include "common/kernel_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "infer/ops_func_impl/resize_bilinear_v2.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"

@@ -30,7 +30,7 @@
 #include "ops/primitive_c.h"
 #include "ir/manager.h"
 #include "abstract/utils.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "base/base_ref_utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/config_manager.h"
@@ -51,7 +51,7 @@
 #include "utils/file_utils.h"
 #include "utils/trace_base.h"
 #include "include/common/utils/parallel_context.h"
-#include "kernel/oplib/oplib.h"
+#include "common/oplib/oplib.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/ps_cache/ps_data_prefetch.h"
 #include "include/backend/distributed/ps/constants.h"

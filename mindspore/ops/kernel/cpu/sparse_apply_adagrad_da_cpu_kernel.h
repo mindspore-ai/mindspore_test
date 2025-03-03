@@ -22,7 +22,7 @@
 #include <map>
 
 #include "kernel/cpu/sparse_optimizer_cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

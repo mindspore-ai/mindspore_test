@@ -18,7 +18,7 @@
 #include <unordered_map>
 #include <memory>
 #include "ir/tensor.h"
-#include "plugin/device/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/base/types.h"
 #include "abstract/utils.h"

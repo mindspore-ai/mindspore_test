@@ -28,13 +28,13 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "kernel/common_utils.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/common_utils.h"
+#include "common/ms_factory.h"
 #include "kernel/gpu/gpu_kernel.h"
-#include "kernel/kernel.h"
-#include "kernel/kernel_build_info.h"
-#include "kernel/oplib/opinfo.h"
-#include "kernel/oplib/oplib.h"
+#include "common/kernel.h"
+#include "common/kernel_build_info.h"
+#include "common/oplib/opinfo.h"
+#include "common/oplib/oplib.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "kernel/gpu/custom/custom_aot_gpu_kernel.h"
@@ -654,8 +654,8 @@ std::pair<bool, std::pair<std::string, ExceptionType>> GetSelectKernelObjectType
 
     MS_LOG(DEBUG) << "Set kernel object type build info for node:" << kernel_node->DebugString()
                   << " output type:" << output_object_types << " output element type:" << output_element_object_types;
-    kernel::SetKernelObjectTypeBuildInfo(kernel_node, input_object_types, output_object_types,
-                                         output_element_object_types);
+    AnfAlgo::SetKernelObjectTypeBuildInfo(kernel_node, input_object_types, output_object_types,
+                                          output_element_object_types);
     if (!kernel_attrs.empty()) {
       auto kernel_build_info = AnfAlgo::GetSelectKernelBuildInfo(kernel_node);
       kernel_build_info->SetOpType(kernel::OpType::SKIP);
@@ -664,11 +664,11 @@ std::pair<bool, std::pair<std::string, ExceptionType>> GetSelectKernelObjectType
   }
 
   std::vector<kernel::KernelAttr> object_selected_kernel_attrs;
-  if (!kernel::SelectKernelByObjectType(kernel_node, kernel_attrs, &object_selected_kernel_attrs)) {
+  if (!AnfAlgo::SelectKernelByObjectType(kernel_node, kernel_attrs, &object_selected_kernel_attrs)) {
     return {false, kernel::KernelObjectTypeNotSupportWarning(kernel_node)};
   }
 
-  kernel::SetKernelObjectTypeWithSelectedAttr(kernel_node, object_selected_kernel_attrs[0]);
+  AnfAlgo::SetKernelObjectTypeWithSelectedAttr(kernel_node, object_selected_kernel_attrs[0]);
   return {true, {}};
 }
 

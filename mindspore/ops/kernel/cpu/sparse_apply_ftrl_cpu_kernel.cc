@@ -20,7 +20,7 @@
 #include <memory>
 #include <map>
 #include <utility>
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "infer/fused_sparse_ftrl.h"
 #include "infer/sparse_apply_ftrl.h"

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "kernel/gpu/other/dynamic_reshape_gpu_kernel.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "plugin/device/gpu/hal/device/gpu_common.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 

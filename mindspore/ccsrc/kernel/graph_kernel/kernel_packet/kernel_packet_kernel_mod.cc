@@ -23,7 +23,7 @@
 
 #include "include/backend/anf_runtime_algorithm.h"
 #include "ir/anf.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/convert_utils.h"
 #include "symbolic_shape/utils.h"

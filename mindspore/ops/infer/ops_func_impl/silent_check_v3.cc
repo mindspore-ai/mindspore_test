@@ -16,7 +16,7 @@
 
 #include "infer/ops_func_impl/silent_check_v3.h"
 #include <utility>
-#include "include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {

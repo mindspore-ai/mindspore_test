@@ -19,7 +19,7 @@
 #include <string>
 #include <utility>
 
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "mindspore/ops/infer/sparse_matrix_transpose.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/sparse_matrix_transpose_impl.cuh"

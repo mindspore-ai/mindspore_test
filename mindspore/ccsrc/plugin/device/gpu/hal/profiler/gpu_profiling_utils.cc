@@ -15,7 +15,7 @@
  */
 
 #include "plugin/device/gpu/hal/profiler/gpu_profiling_utils.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_utils.h"

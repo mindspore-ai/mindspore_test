@@ -20,7 +20,7 @@
 #include <algorithm>
 #include <functional>
 #include "mindspore/ops/op_def/conv_pool_op_name.h"
-#include "kernel/format_utils.h"
+#include "common/format_utils.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {

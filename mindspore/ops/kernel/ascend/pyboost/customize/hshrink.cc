@@ -20,8 +20,8 @@
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/device/ascend/acl_ir/acl_helper.h"
-#include "plugin/device/ascend/kernel/acl/acl_kernel_mod.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl/acl_kernel_mod.h"
 
 namespace mindspore {
 namespace kernel {

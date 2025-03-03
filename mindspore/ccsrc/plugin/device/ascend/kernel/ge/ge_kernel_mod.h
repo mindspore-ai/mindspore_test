@@ -23,8 +23,8 @@
 #include <unordered_set>
 #include <utility>
 #include "ops/base_operator.h"
-#include "kernel/kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/kernel.h"
+#include "common/ms_factory.h"
 #include "include/common/utils/anfalgo.h"
 #include "backend/ge_backend/executor/ge_graph_executor.h"
 

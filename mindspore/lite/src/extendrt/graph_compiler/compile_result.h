@@ -28,7 +28,7 @@
 #include "ops/base_operator.h"
 #include "utils/hash_map.h"
 #include "include/api/status.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "src/infer/primitive_type.h"
 
 namespace mindspore {

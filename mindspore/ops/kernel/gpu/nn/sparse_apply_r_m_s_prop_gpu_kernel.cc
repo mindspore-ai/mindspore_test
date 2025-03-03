@@ -15,7 +15,7 @@
  */
 #include "kernel/gpu/nn/sparse_apply_r_m_s_prop_gpu_kernel.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "mindspore/ops/infer/sparse_apply_r_m_s_prop.h"
 
 namespace mindspore {

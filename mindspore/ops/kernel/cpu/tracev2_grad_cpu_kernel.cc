@@ -17,7 +17,7 @@
 #include "kernel/cpu/tracev2_grad_cpu_kernel.h"
 #include "ops_utils/op_utils.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

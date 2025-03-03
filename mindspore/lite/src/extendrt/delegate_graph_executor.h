@@ -22,7 +22,7 @@
 #include "ir/anf.h"
 #include "runtime/hardware/device_context.h"
 #include "tools/common/func_graph_subgraph.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 namespace mindspore {
 // Graph sink delegate, the whole FuncGraph as a node to execute.
 class GraphSinkDelegate : public IDelegate<FuncGraph, CNode, kernel::KernelMod> {

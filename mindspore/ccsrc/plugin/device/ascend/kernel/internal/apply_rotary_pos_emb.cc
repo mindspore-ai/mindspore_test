@@ -17,7 +17,7 @@
 #include "plugin/device/ascend/kernel/internal/apply_rotary_pos_emb.h"
 
 #include <memory>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
 
 namespace mindspore {

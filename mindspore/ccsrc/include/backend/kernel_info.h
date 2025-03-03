@@ -21,8 +21,8 @@
 #include <memory>
 #include <utility>
 #include "ir/kernel_info_dev.h"
-#include "kernel/kernel_build_info.h"
-#include "kernel/kernel.h"
+#include "common/kernel_build_info.h"
+#include "common/kernel.h"
 #include "include/backend/device_address.h"
 #include "include/backend/visible.h"
 

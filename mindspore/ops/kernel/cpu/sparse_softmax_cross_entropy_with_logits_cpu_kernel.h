@@ -22,7 +22,7 @@
 #include <map>
 #include <utility>
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "infer/sparse_softmax_cross_entropy_with_logits.h"
 
 namespace mindspore {

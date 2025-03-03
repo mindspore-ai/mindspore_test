@@ -28,7 +28,7 @@
 #include <utility>
 #include <tuple>
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "mindspore/ops/infer/ops_func_impl/grid_sampler_2d_grad.h"
 
 namespace mindspore {

@@ -17,7 +17,7 @@
 #include "plugin/device/ascend/kernel/internal/reduce_sum.h"
 
 #include <memory>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
 
 namespace mindspore {

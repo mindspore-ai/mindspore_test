@@ -18,10 +18,11 @@
 #include <string>
 #include <algorithm>
 #include <functional>
-#include "plugin/device/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "runtime/device/kernel_runtime.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
@@ -134,5 +135,6 @@ bool CustomOpAclKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
   }
   return true;
 }
+MS_KERNEL_FACTORY_REG(AclKernelMod, CustomOp, CustomOpAclKernelMod);
 }  // namespace kernel
 }  // namespace mindspore

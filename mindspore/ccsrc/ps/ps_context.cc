@@ -17,7 +17,7 @@
 #include "include/backend/distributed/ps/ps_context.h"
 
 #include "ir/tensor.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))

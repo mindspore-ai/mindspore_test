@@ -17,7 +17,7 @@
 #include "plugin/device/ascend/kernel/internal/quant_v2.h"
 
 #include <memory>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 
 namespace mindspore {
 namespace kernel {

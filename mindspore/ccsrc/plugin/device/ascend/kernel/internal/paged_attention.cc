@@ -17,7 +17,7 @@
 #include "plugin/device/ascend/kernel/internal/paged_attention.h"
 
 #include <memory>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "utils/llm_manager.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
 

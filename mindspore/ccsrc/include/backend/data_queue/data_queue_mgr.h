@@ -30,7 +30,7 @@
 #include "include/backend/data_queue/data_queue.h"
 #ifndef BUILD_LITE
 #include "ir/anf.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #endif
 
 namespace mindspore {

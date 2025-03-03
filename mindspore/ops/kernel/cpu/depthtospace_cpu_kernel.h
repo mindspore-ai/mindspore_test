@@ -22,7 +22,7 @@
 #include <map>
 #include "mindspore/ops/infer/depth_to_space.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

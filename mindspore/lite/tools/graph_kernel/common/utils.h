@@ -20,7 +20,7 @@
 #include <string>
 #include <memory>
 #include "nnacl/tensor_c.h"
-#include "mindspore/ccsrc/kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 #include "include/backend/kernel_info.h"
 
 constexpr auto kAkgKernelSo = "akgkernels.so";

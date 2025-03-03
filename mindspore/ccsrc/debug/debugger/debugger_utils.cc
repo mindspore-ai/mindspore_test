@@ -36,7 +36,7 @@
 #include "include/common/debug/common.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/config_manager.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "proto/debug_graph.pb.h"
 
 constexpr int kFailure = 1;

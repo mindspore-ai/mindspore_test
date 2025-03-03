@@ -22,7 +22,7 @@
 #include <map>
 #include "mindspore/ops/infer/ops_func_impl/celu.h"
 #include "kernel/gpu/gpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

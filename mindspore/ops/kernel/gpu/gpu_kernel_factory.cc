@@ -20,7 +20,7 @@
 #include "utils/ms_utils.h"
 #include "include/backend/kernel_info.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_common.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

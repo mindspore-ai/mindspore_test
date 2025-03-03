@@ -26,7 +26,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "nnacl/base/unsorted_segment_sum_base.h"
 
 namespace mindspore {

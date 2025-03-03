@@ -26,13 +26,13 @@
 #include "plugin/device/ascend/optimizer/format_type/utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "plugin/device/ascend/kernel/ge/ge_kernel_mod.h"
-#include "kernel/oplib/oplib.h"
+#include "common/oplib/oplib.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/optimizer/helper.h"
-#include "plugin/device/ascend/acl_ir/ge_adapter_info.h"
-#include "plugin/device/ascend/kernel/acl/acl_kernel_build.h"
+#include "kernel/ascend/acl_ir/ge_adapter_info.h"
+#include "kernel/ascend/acl/acl_kernel_build.h"
 
 namespace mindspore {
 namespace opt {

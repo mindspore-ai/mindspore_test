@@ -21,14 +21,16 @@
 #include <memory>
 #include <map>
 #include "ops/base_operator.h"
-#include "plugin/device/ascend/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 #include "kernel/ascend/opapi/aclnn/custom_aclnn_kernel.h"
 #include "mindspore/core/include/ir/base_tensor.h"
 #include "kernel/ascend/pyboost/customize/custom_kernel.h"
+#include "kernel/ascend/visible.h"
+
 namespace mindspore {
 namespace kernel {
 using CustomPyboostKernelMod = pyboost::CustomAclnnPyboostKernelModBase;
-std::string AddPrefixForCustomNode(const std::string &op_type, bool unset = false);
+OPS_ASCEND_API std::string AddPrefixForCustomNode(const std::string &op_type, bool unset = false);
 std::shared_ptr<AclnnKernelMod> GetCustomAclnnKernelMod(const AnfNodePtr &anf_node);
 std::shared_ptr<AclnnKernelMod> GetCustomAclnnKernelMod(const std::string &op_type, size_t arg_num);
 std::shared_ptr<CustomPyboostKernelMod> GetCustomAclnnPyboostKernelMod(const std::string &op_type, size_t arg_num);

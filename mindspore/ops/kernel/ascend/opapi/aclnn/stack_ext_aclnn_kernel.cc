@@ -16,7 +16,7 @@
 #include "kernel/ascend/opapi/aclnn/stack_ext_aclnn_kernel.h"
 #include <algorithm>
 #include <utility>
-#include "plugin/device/ascend/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {

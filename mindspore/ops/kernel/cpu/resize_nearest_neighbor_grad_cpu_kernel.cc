@@ -16,7 +16,7 @@
 
 #include "kernel/cpu/resize_nearest_neighbor_grad_cpu_kernel.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
-#include "kernel/ops_utils.h"
+#include "common/kernel_utils.h"
 
 namespace mindspore {
 namespace kernel {

@@ -22,7 +22,7 @@
 #include <functional>
 #include <map>
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 namespace mindspore {
 namespace kernel {
 class CdistCpuKernelMod : public NativeCpuKernelMod {

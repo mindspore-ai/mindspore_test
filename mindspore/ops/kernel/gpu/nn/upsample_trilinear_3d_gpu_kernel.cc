@@ -23,8 +23,8 @@
 #include <utility>
 #include <vector>
 #include "abstract/utils.h"
-#include "kernel/kernel.h"
-#include "kernel/ops_utils.h"
+#include "common/kernel.h"
+#include "common/kernel_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/upsample_trilinear_3d_impl.cuh"
 
 namespace mindspore {

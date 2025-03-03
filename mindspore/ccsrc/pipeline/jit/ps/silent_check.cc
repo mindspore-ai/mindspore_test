@@ -41,7 +41,7 @@
 #include "ir/scalar.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
-#include "kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 #include "mindapi/base/shape_vector.h"
 #include "op_def/auto_generate/gen_ops_name.h"
 #include "op_def/auto_generate/gen_ops_primitive.h"

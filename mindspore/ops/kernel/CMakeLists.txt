@@ -1,3 +1,4 @@
+include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/include)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc/include)
 include_directories(${CMAKE_BINARY_DIR})
@@ -5,6 +6,10 @@ include_directories(${CMAKE_BINARY_DIR})
 if(ENABLE_DEBUGGER)
     # debugger: compile proto files
     include_directories("${CMAKE_BINARY_DIR}/debug/debugger")
+endif()
+
+if(NOT BUILD_LITE)
+    add_subdirectory(common)
 endif()
 
 # ===== CPU

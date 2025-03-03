@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 #include "include/backend/debug/debugger/debugger.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "runtime/hardware/device_context.h"
 #include "include/backend/visible.h"
 

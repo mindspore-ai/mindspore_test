@@ -17,7 +17,7 @@
 #include "plugin/res_manager/ascend/collective/ccool_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "plugin/res_manager/ascend/collective/leaper_trans.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 namespace mindspore {
 namespace device {
@@ -193,7 +193,7 @@ bool CcoolCollectiveCommLib::LaunchReduceOperations(void *dst_buff, void *src_bu
     } break;
     case CollectiveOpReduceType::Reduce_Sum: {
       MS_LOG(DEBUG) << "Run reduce_op: SUM start:";
-      ops = std::make_shared<kernel::AddAscend>();
+      ops = kernel::Factory<kernel::AclnnKernelMod>::Instance().Create("Add");
     } break;
     default: {
       MS_LOG(EXCEPTION) << "Get unexpected reduce_op: " << reduce_op;

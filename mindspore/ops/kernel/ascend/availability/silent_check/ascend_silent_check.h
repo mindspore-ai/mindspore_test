@@ -27,10 +27,11 @@
 #include "ir/scalar.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "availability/silent_check/silent_check.h"
+#include "kernel/ascend/visible.h"
 
 namespace mindspore {
 namespace silentcheck {
@@ -182,7 +183,7 @@ struct CheckState {
 };
 using CheckStatePtr = std::shared_ptr<CheckState>;
 
-class SilentChecker {
+class OPS_ASCEND_API SilentChecker {
  public:
   static SilentChecker &GetInstance();
   static bool IsNpuAsdEnable();

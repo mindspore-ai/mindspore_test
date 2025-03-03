@@ -17,7 +17,7 @@
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_ACL_CUSTOM_OP_KERNEL_MOD_H_
 #include <vector>
 #include <set>
-#include "plugin/device/ascend/kernel/acl/acl_kernel_mod.h"
+#include "kernel/ascend/acl/acl_kernel_mod.h"
 
 namespace mindspore {
 namespace kernel {

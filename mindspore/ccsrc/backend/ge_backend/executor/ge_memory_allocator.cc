@@ -35,7 +35,7 @@
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 #include "ops/array_ops.h"
 
 namespace mindspore {

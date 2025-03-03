@@ -17,7 +17,7 @@
 #include "plugin/device/ascend/kernel/internal/matmul_elemwise.h"
 
 #include <memory>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 
 namespace mindspore {
 namespace kernel {

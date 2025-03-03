@@ -33,7 +33,7 @@
 #include "ir/func_graph_cloner.h"
 #include "backend/common/graph_kernel/core/value_depend_op_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 
 namespace mindspore::graphkernel {

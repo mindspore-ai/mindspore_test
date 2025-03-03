@@ -22,7 +22,7 @@
 #include <unordered_set>
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/utils.h"
-#include "kernel/oplib/oplib.h"
+#include "common/oplib/oplib.h"
 #include "mindapi/base/type_id.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
@@ -38,7 +38,7 @@
 #include "plugin/device/cpu/kernel/custom/custom_aot_cpu_kernel.h"
 #include "plugin/device/cpu/kernel/custom/custom_julia_cpu_kernel.h"
 #include "plugin/device/cpu/kernel/pyfunc/py_func_cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "utils/trace_base.h"
 
 namespace mindspore {
@@ -325,7 +325,7 @@ void SetKernelBuildInfoWithSelectedAttr(const CNodePtr &kernel_node, const kerne
     MS_EXCEPTION_IF_NULL(kernel_build_info);
     kernel_build_info->SetOpType(kernel::OpType::SKIP);
   }
-  kernel::SetKernelObjectTypeWithSelectedAttr(kernel_node, selected_kernel_attr);
+  AnfAlgo::SetKernelObjectTypeWithSelectedAttr(kernel_node, selected_kernel_attr);
   kernel::UnfoldKernelBuildInfo(kernel_node);
   if (!common::AnfAlgo::HasNodeAttr(kAttrDynInputSizes, kernel_node)) {
     kernel::SetDynamicInputSizeAttr(kernel_node);
@@ -448,7 +448,7 @@ void UpdateDynamicKernelBuildInfo(const CNodePtr &kernel_node) {
 
   auto output_object_types =
     kernel::TypeIdToKernelObjectTypeForTupleUnfold(AnfAlgo::GetAllOutputObjectType(kernel_node));
-  kernel::SetKernelObjectTypeBuildInfo(kernel_node, input_object_types, output_object_types);
+  AnfAlgo::SetKernelObjectTypeBuildInfo(kernel_node, input_object_types, output_object_types);
   kernel::UnfoldKernelBuildInfo(kernel_node);
   if (!common::AnfAlgo::HasNodeAttr(kAttrDynInputSizes, kernel_node)) {
     kernel::SetDynamicInputSizeAttr(kernel_node);
@@ -537,7 +537,7 @@ void UpdateCustomKernelBuildInfo(const CNodePtr &kernel_node, bool is_akg_op) {
   auto input_object_types = kernel::TypeIdToKernelObjectTypeForTupleUnfold(AnfAlgo::GetAllInputObjectType(kernel_node));
   auto output_object_types =
     kernel::TypeIdToKernelObjectTypeForTupleUnfold(AnfAlgo::GetAllOutputObjectType(kernel_node));
-  kernel::SetKernelObjectTypeBuildInfo(kernel_node, input_object_types, output_object_types);
+  AnfAlgo::SetKernelObjectTypeBuildInfo(kernel_node, input_object_types, output_object_types);
 
   // check reg info if kernel_attr is not null
   if (kernel_attr != nullptr) {
@@ -735,7 +735,7 @@ std::pair<std::string, ExceptionType> SetKernelInfoWithMsg(const CNodePtr &kerne
     return KernelNotSupportWarning(kernel_node, false);
   } else if (kernel_attrs[0].GetSkipCheck()) {
     object_selected_kernel_attrs = kernel_attrs;
-  } else if (!kernel::SelectKernelByObjectType(kernel_node, kernel_attrs, &object_selected_kernel_attrs)) {
+  } else if (!AnfAlgo::SelectKernelByObjectType(kernel_node, kernel_attrs, &object_selected_kernel_attrs)) {
     return kernel::KernelObjectTypeNotSupportWarning(kernel_node);
   }
 

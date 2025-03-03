@@ -25,9 +25,9 @@
 #include "ir/dtype/type.h"
 #include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/framework_utils.h"
-#include "kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 #include "kernel/graph_kernel_info.h"
 #include "include/backend/visible.h"
 

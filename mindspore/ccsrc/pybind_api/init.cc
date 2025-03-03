@@ -18,7 +18,7 @@
 #include <stack>
 #include <memory>
 #include <string>
-#include "kernel/oplib/oplib.h"
+#include "common/oplib/oplib.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "pipeline/jit/ps/pipeline_jit.h"
 #include "frontend/operator/composite/composite.h"

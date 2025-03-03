@@ -27,7 +27,7 @@
 #include "include/backend/kernel_graph.h"
 #include "utils/ms_utils.h"
 #include "include/backend/optimizer/pattern_engine.h"
-#include "kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {

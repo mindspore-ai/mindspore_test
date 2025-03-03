@@ -22,7 +22,7 @@
 #include <algorithm>
 #include <functional>
 #include <exception>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "kernel/framework_utils.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"

@@ -24,9 +24,9 @@
 #include "include/backend/kernel_info.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/framework_utils.h"
-#include "kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "ops/op_def.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -1295,7 +1295,7 @@ void KernelGraph::SetKernelObjectTypesForUnrealNodes() const {
     if (output_kernel_object_types.empty() && input_kernel_object_types.empty()) {
       return;
     }
-    kernel::SetKernelObjectTypeBuildInfo(node, input_kernel_object_types, output_kernel_object_types);
+    AnfAlgo::SetKernelObjectTypeBuildInfo(node, input_kernel_object_types, output_kernel_object_types);
   };
 
   auto node_list = TopoSort(get_return());

@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/eigen/eigen_common_utils.h"
 

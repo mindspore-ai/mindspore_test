@@ -17,7 +17,7 @@
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_STACK_EXT_ACLNN_KERNEL_H_
 #include <vector>
 #include <utility>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
 
 namespace mindspore {

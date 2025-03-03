@@ -21,7 +21,7 @@
 #include <string>
 
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 
 namespace mindspore::kernel {
 class LessTestKernelMod : public NativeCpuKernelMod {

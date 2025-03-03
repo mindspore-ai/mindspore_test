@@ -42,7 +42,7 @@
 #include "backend/common/graph_kernel/adapter/callback_impl.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/pass/inplace_assign_for_custom_op.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "utils/ms_context.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "ir/func_graph_cloner.h"

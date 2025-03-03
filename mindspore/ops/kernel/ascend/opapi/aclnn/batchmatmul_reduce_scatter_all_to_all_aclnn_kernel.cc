@@ -20,7 +20,7 @@
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
 #include "kernel/ascend/opapi/aclnn/batchmatmul_reduce_scatter_all_to_all_aclnn_kernel.h"
-#include "plugin/device/ascend/acl_ir/op_api_util.h"
+#include "kernel/ascend/acl_ir/op_api_util.h"
 namespace mindspore {
 namespace kernel {
 void BatchMatMulReduceScatterAlltoAllAscend::InitializeCommunicationAttributes() {

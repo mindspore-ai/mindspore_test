@@ -19,7 +19,7 @@
 #include <limits>
 #include <functional>
 #include <cmath>
-#include "kernel/ops_utils.h"
+#include "common/kernel_utils.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "nnacl/fp32/softmax_fp32.h"
 #include "nnacl/fp32/mul_fp32.h"

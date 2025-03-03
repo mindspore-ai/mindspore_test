@@ -20,7 +20,6 @@
 
 #include "infer/ops_func_impl/moe_init_routing_v2.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

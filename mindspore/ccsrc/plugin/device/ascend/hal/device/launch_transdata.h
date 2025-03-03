@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "include/backend/kernel_graph.h"
 
 namespace mindspore::device::ascend {

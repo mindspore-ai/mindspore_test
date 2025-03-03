@@ -16,7 +16,7 @@
 #include "kernel/gpu/other/dynamic_stitch_gpu_kernel.h"
 #include <functional>
 #include <algorithm>
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/dynamic_stitch_impl.cuh"
 #include "plugin/device/gpu/hal/device/gpu_common.h"
 

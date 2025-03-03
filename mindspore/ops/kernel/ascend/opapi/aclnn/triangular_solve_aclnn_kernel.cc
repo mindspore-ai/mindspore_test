@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "kernel/ascend/opapi/aclnn/triangular_solve_aclnn_kernel.h"
-#include "plugin/device/ascend/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 
 namespace mindspore {
 namespace kernel {

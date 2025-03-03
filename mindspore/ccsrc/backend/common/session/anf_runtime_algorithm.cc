@@ -37,9 +37,9 @@
 #include "include/backend/kernel_info.h"
 #include "include/backend/device_address.h"
 #include "include/backend/optimizer/helper.h"
-#include "kernel/kernel.h"
-#include "kernel/kernel_build_info.h"
-#include "kernel/common_utils.h"
+#include "common/kernel.h"
+#include "common/kernel_build_info.h"
+#include "common/common_utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "abstract/ops/primitive_infer_map.h"
@@ -2702,5 +2702,173 @@ std::string AnfRuntimeAlgorithm::GetValueByDeviceAddress(DeviceAddress *const de
     delete[] buf;
   }
   return result;
+}
+
+void AnfRuntimeAlgorithm::SetKernelObjectTypeBuildInfo(
+  const AnfNodePtr &kernel_node, const std::vector<kernel::KernelObjectType> &input_kernel_object_types,
+  const std::vector<kernel::KernelObjectType> &output_kernel_object_types) {
+  MS_EXCEPTION_IF_NULL(kernel_node);
+  if (kernel_node->kernel_info() == nullptr) {
+    kernel_node->set_kernel_info(std::make_shared<device::KernelInfo>());
+  }
+  if (!kernel_node->kernel_info()->has_build_info()) {
+    AnfAlgo::SetSelectKernelBuildInfo(std::make_shared<kernel::KernelBuildInfo>(), kernel_node.get());
+  }
+
+  MS_LOG(DEBUG) << kernel_node->fullname_with_scope() << " input kernel object type is: " << input_kernel_object_types
+                << ", output kernel object type is: " << output_kernel_object_types;
+  auto kernel_build_info = AnfAlgo::GetSelectKernelBuildInfo(kernel_node);
+  kernel_build_info->SetOutputsKernelObjectType(output_kernel_object_types);
+  kernel_build_info->SetInputsKernelObjectType(input_kernel_object_types);
+}
+
+void AnfRuntimeAlgorithm::SetKernelObjectTypeBuildInfo(
+  const AnfNodePtr &kernel_node, const std::vector<kernel::KernelObjectType> &input_kernel_object_types,
+  const std::vector<kernel::KernelObjectType> &output_kernel_object_types,
+  const std::vector<kernel::KernelObjectType> &output_elements_kernel_object_types) {
+  MS_EXCEPTION_IF_NULL(kernel_node);
+  if (kernel_node->kernel_info() == nullptr) {
+    kernel_node->set_kernel_info(std::make_shared<device::KernelInfo>());
+  }
+  if (!kernel_node->kernel_info()->has_build_info()) {
+    AnfAlgo::SetSelectKernelBuildInfo(std::make_shared<kernel::KernelBuildInfo>(), kernel_node.get());
+  }
+
+  MS_LOG(DEBUG) << kernel_node->fullname_with_scope() << " input kernel object type is: " << input_kernel_object_types
+                << ", output kernel object type is: " << output_kernel_object_types
+                << ", output elements kernel object type is: " << output_elements_kernel_object_types;
+  auto kernel_build_info = AnfAlgo::GetSelectKernelBuildInfo(kernel_node);
+  kernel_build_info->SetOutputsKernelObjectType(output_kernel_object_types);
+  kernel_build_info->SetInputsKernelObjectType(input_kernel_object_types);
+  kernel_build_info->SetOutputElementsKernelObjectType(output_elements_kernel_object_types);
+}
+
+static std::vector<KernelObjectType> CalInputKernelObjectTypes(const AnfNodePtr &kernel_node,
+                                                               const kernel::KernelAttr &selected_kernel_attr) {
+  MS_EXCEPTION_IF_NULL(kernel_node);
+  auto selected_input_object_types = kernel::GetInputObjectTypeListFromKernelAttr(selected_kernel_attr);
+  auto input_object_types = AnfAlgo::GetAllInputObjectType(kernel_node);
+  return kernel::CalKernelObjectTypes(input_object_types, selected_input_object_types,
+                                      selected_kernel_attr.GetAllSame(), selected_kernel_attr.GetSkipCheck());
+}
+
+static bool HasOutputElementsKernelObjectType(const std::vector<kernel::KernelObjectType> &output_kernel_object_types) {
+  return output_kernel_object_types.size() == 1 &&
+         output_kernel_object_types[0] == kernel::KernelObjectType::TUPLE_UNFOLD;
+}
+
+static std::vector<KernelObjectType> CalOutputKernelObjectTypes(const AnfNodePtr &kernel_node,
+                                                                const kernel::KernelAttr &selected_kernel_attr) {
+  MS_EXCEPTION_IF_NULL(kernel_node);
+  auto selected_output_object_types = kernel::GetOutputObjectTypeListFromKernelAttr(selected_kernel_attr);
+  auto output_object_types = AnfAlgo::GetAllOutputObjectType(kernel_node);
+  return kernel::CalKernelObjectTypes(output_object_types, selected_output_object_types,
+                                      selected_kernel_attr.GetAllSame(), selected_kernel_attr.GetSkipCheck());
+}
+
+void AnfRuntimeAlgorithm::SetKernelObjectTypeWithSelectedAttr(const CNodePtr &kernel_node,
+                                                              const kernel::KernelAttr &selected_kernel_attr) {
+  MS_EXCEPTION_IF_NULL(kernel_node);
+  std::vector<kernel::KernelObjectType> input_kernel_object_types;
+  if (common::AnfAlgo::HasNodeAttr(kInputRealTuple, kernel_node)) {
+    input_kernel_object_types = kernel::TypeIdToKernelObjectType(AnfAlgo::GetAllInputObjectType(kernel_node));
+  } else {
+    input_kernel_object_types = CalInputKernelObjectTypes(kernel_node, selected_kernel_attr);
+  }
+
+  std::vector<KernelObjectType> output_kernel_object_types;
+  if (common::AnfAlgo::HasNodeAttr(kOutputRealTuple, kernel_node)) {
+    output_kernel_object_types = kernel::TypeIdToKernelObjectType(AnfAlgo::GetAllOutputObjectType(kernel_node));
+  } else {
+    output_kernel_object_types = CalOutputKernelObjectTypes(kernel_node, selected_kernel_attr);
+  }
+
+  std::vector<KernelObjectType> output_element_object_types;
+  if (HasOutputElementsKernelObjectType(output_kernel_object_types)) {
+    output_element_object_types = CalOutputElementObjectTypes(kernel_node, selected_kernel_attr);
+  }
+  MS_LOG(DEBUG) << "Set kernel object type:" << output_kernel_object_types
+                << " for node:" << kernel_node->fullname_with_scope();
+  SetKernelObjectTypeBuildInfo(kernel_node, input_kernel_object_types, output_kernel_object_types,
+                               output_element_object_types);
+}
+
+static bool IsObjectTypeStrictlyMatched(const std::vector<TypeId> &object_types,
+                                        const std::vector<kernel::DataType> &kernel_data_types) {
+  if (object_types.size() != kernel_data_types.size()) {
+    return false;
+  }
+
+  for (size_t i = 0; i < object_types.size(); i++) {
+    // For optional input, the real input object type can be a None.
+    if ((object_types[i] != kernel_data_types[i].object_type) &&
+        !(object_types[i] == kMetaTypeNone && kernel_data_types[i].is_optional)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+static bool IsObjectTypeWeaklyMatched(const std::vector<TypeId> &object_types,
+                                      const std::vector<kernel::DataType> &kernel_data_types, bool all_same,
+                                      size_t element_num) {
+  // 1. The size equal can trigger the kernel object backoff(For example Reshape op).
+  if (object_types.size() == kernel_data_types.size()) {
+    return true;
+  }
+
+  // 2. AllSame is the tupleUnfold type(For example Split/Addn op).
+  if (all_same) {
+    return true;
+  }
+
+  // 3. Multiple outputs are expanded in the kernel attr(For example BatchNorm op).
+  if (kernel_data_types.size() == element_num) {
+    return true;
+  }
+
+  return false;
+}
+
+bool AnfRuntimeAlgorithm::SelectKernelByObjectType(const CNodePtr &kernel_node,
+                                                   const std::vector<kernel::KernelAttr> &registered_kernel_attrs,
+                                                   std::vector<kernel::KernelAttr> *selected_kernel_attrs) {
+  MS_EXCEPTION_IF_NULL(kernel_node);
+  MS_EXCEPTION_IF_NULL(selected_kernel_attrs);
+  const auto &inputs_object_types = GetAllInputObjectType(kernel_node);
+  const auto &output_object_types = GetAllOutputObjectType(kernel_node);
+
+  // 1. Try match all object type firstly.
+  for (auto &cur_kernel_attr : registered_kernel_attrs) {
+    const auto &[input_data_types, output_data_types] = GetInOutDataTypesFromKernelAttr(cur_kernel_attr);
+    if (IsObjectTypeStrictlyMatched(inputs_object_types, input_data_types) &&
+        IsObjectTypeStrictlyMatched(output_object_types, output_data_types)) {
+      (void)selected_kernel_attrs->emplace_back(cur_kernel_attr);
+    }
+  }
+  if (!selected_kernel_attrs->empty()) {
+    return true;
+  }
+
+  // 2. Precise matching failed, try fuzzy one again.
+  auto input_num = common::AnfAlgo::GetInputTensorNum(kernel_node);
+  auto output_num = GetOutputElementNum(kernel_node);
+  for (auto &cur_kernel_attr : registered_kernel_attrs) {
+    const auto &[input_data_types, output_data_types] = GetInOutDataTypesFromKernelAttr(cur_kernel_attr);
+    auto all_same = cur_kernel_attr.GetAllSame();
+    if (IsObjectTypeWeaklyMatched(inputs_object_types, input_data_types, all_same, input_num) &&
+        IsObjectTypeWeaklyMatched(output_object_types, output_data_types, all_same, output_num)) {
+      (void)selected_kernel_attrs->emplace_back(cur_kernel_attr);
+    }
+  }
+
+  return (!selected_kernel_attrs->empty());
+}
+
+kernel::KernelAttr AnfRuntimeAlgorithm::GetKernelAttrFromNode(const AnfNodePtr &kernel_node) {
+  MS_EXCEPTION_IF_NULL(kernel_node);
+  auto build_info = GetSelectKernelBuildInfo(kernel_node);
+  return GetKernelAttrFromBuildInfo(build_info);
 }
 }  // namespace mindspore::session
