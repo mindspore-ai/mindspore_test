@@ -217,10 +217,6 @@ void ClearResPart3() {
   parallel::entire_costgraph.reset();
   MS_LOG(INFO) << "End clear parallel::entire_costgraph...";
 
-  MS_LOG(INFO) << "Start clear ProtobufLibrary...";
-  google::protobuf::ShutdownProtobufLibrary();
-  MS_LOG(INFO) << "End clear ProtobufLibrary...";
-
   MS_LOG(INFO) << "Start clear ParserDefaultObjects ...";
   pynative::ParserDefaultObjects::GetInstance().ClearRes();
   MS_LOG(INFO) << "End clear ParserDefaultObjects...";

@@ -7,7 +7,6 @@ if(Python3_FOUND)
 endif()
 
 file(GLOB_RECURSE _PYBIND_API_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
-list(REMOVE_ITEM _PYBIND_API_SRC_LIST "np_dtype/np_dtypes.cc")
 set_property(SOURCE ${_PYBIND_API_SRC_LIST} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_COMMON)
 add_library(_mindspore_pybind_api_obj OBJECT ${_PYBIND_API_SRC_LIST})
 

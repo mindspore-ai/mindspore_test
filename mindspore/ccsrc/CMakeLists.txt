@@ -51,6 +51,7 @@ set(SUB_COMP
         frontend/operator
         frontend/expander
         frontend/ir
+        frontend/np_dtypes
         pipeline/jit/ps
         pipeline/jit/pi
         pipeline/jit/trace
@@ -69,19 +70,15 @@ foreach(_comp ${SUB_COMP})
     endif()
 endforeach()
 
-set(PYBIND_SRC
-    pybind_api/np_dtype/np_dtypes.cc
-)
-list(APPEND SUB_OBJECTS_SRC ${PYBIND_SRC})
-
 set_property(SOURCE ${SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_ME)
 add_library(mindspore_frontend SHARED ${SUB_OBJECTS_SRC})
-target_link_libraries(mindspore_frontend PRIVATE mindspore_ms_backend mindspore_core mindspore::pybind11_module
+target_link_libraries(mindspore_frontend PRIVATE mindspore_ms_backend mindspore_core mindspore::pybind11_module securec
                       mindspore_pyboost mindspore_common mindspore_ops mindspore_ops_kernel_common
                       mindspore_backend_manager proto_input mindspore_profiler mindspore_runtime_pipeline
                       mindspore_backend_common)
-# for PYBIND_SRC
-target_compile_definitions(mindspore_frontend PRIVATE FRONTEND_DLL BUILDING_ME_DLL BUILDING_NP_DTYPE_DLL)
+if(NOT WIN32)
+    target_link_libraries(mindspore_frontend PRIVATE dl)
+endif()
 
 
 set(PROFILER_SUB_COMP
@@ -140,11 +137,6 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(mindspore_common PRIVATE mindspore::pybind11_module)
 endif()
 
-target_link_libraries(mindspore_frontend PUBLIC securec mindspore::flatbuffers)
-
-if(NOT WIN32)
-    target_link_libraries(mindspore_frontend PUBLIC dl)
-endif()
 
 
 set(BACKEND_COMMON_SUB_COMP
@@ -259,18 +251,6 @@ elseif(ENABLE_CPU AND NOT WIN32)
             mindspore::event_openssl -Wl,--no-as-needed mindspore::event_core ps_cache)
 endif()
 
-if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-    if(MSVC)
-        target_link_libraries(mindspore_frontend PUBLIC proto_input mindspore::protobuf)
-    else()
-        target_link_libraries(mindspore_frontend PUBLIC -Wl,--start-group proto_input mindspore::protobuf
-                -Wl,--end-group)
-    endif()
-elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    target_link_libraries(mindspore_frontend PUBLIC -Wl proto_input mindspore::protobuf -Wl)
-else()
-    target_link_libraries(mindspore_frontend PUBLIC -Wl,--start-group proto_input mindspore::protobuf -Wl,--end-group)
-endif()
 
 # set c_expression building
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
@@ -292,7 +272,6 @@ else()
 endif()
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-    target_link_libraries(mindspore_frontend PUBLIC mindspore::pybind11_module)
     if(NOT MSVC)
         target_link_libraries(_c_expression PRIVATE -Wl,--whole-archive mindspore_ops_grad -Wl,--no-whole-archive
                 mindspore_core mindspore_frontend mindspore_res_manager mindspore_ops_kernel_common
@@ -308,17 +287,12 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
         target_link_options(_c_expression PRIVATE "/WHOLEARCHIVE:mindspore_ops_grad.lib")
     endif()
 elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    target_link_libraries(mindspore_frontend PUBLIC proto_input mindspore::protobuf mindspore::eigen mindspore::json)
     target_link_libraries(_c_expression PRIVATE -Wl,-all_load mindspore_ops_grad proto_input -Wl,-noall_load
         mindspore_core mindspore_ops mindspore_common mindspore_ms_backend mindspore_pyboost mindspore_backend_manager
         mindspore_ops_kernel_common mindspore_res_manager mindspore_frontend mindspore_pynative mindspore_profiler
         mindspore_runtime_pipeline mindspore_dump)
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 else()
-    if(ENABLE_CPU AND NOT WIN32)
-        target_link_libraries(mindspore_frontend PUBLIC proto_input mindspore::protobuf mindspore::eigen
-                mindspore::json)
-    endif()
     target_link_libraries(_c_expression PRIVATE -Wl,--whole-archive mindspore_ops_grad proto_input
             -Wl,--no-whole-archive mindspore_core mindspore_ops mindspore_common mindspore_ops_kernel_common
             mindspore_ms_backend mindspore_frontend mindspore_runtime_pipeline mindspore_dump
@@ -328,10 +302,6 @@ endif()
 
 target_link_libraries(_c_expression PRIVATE mindspore::glog)
 set_target_properties(_c_expression PROPERTIES INSTALL_RPATH ${ORIGIN_PATH}/lib:${ORIGIN_PATH}/lib/plugin)
-
-#if(USE_GLOG) default is on
-#    target_link_libraries(_c_expression PRIVATE mindspore::glog)
-#endif()
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set(CMAKE_MACOSX_RPATH 1)
