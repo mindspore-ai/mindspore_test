@@ -48,6 +48,12 @@ if(ENABLE_D)
             COMPONENT mindspore
             NAMELINK_SKIP
     )
+    install(
+        TARGETS mindspore_ascend_res_manager LIBRARY
+        DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+        COMPONENT mindspore
+        NAMELINK_SKIP
+    )
     if(ENABLE_MPI)
         install(
                 TARGETS ascend_collective
