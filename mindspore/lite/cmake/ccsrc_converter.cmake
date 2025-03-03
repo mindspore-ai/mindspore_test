@@ -14,7 +14,7 @@ if(MSLITE_ENABLE_CONVERTER)
     set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../src)
     set(TOOLS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../tools)
     set(CCSRC_SRC
-            ${CCSRC_DIR}/backend/common/session/jit_setting.cc
+            ${CCSRC_DIR}/backend/backend_manager/backend_jit_config.cc
             ${CCSRC_DIR}/backend/common/optimizer/pattern_engine.cc
             ${CCSRC_DIR}/backend/common/optimizer/visitor.cc
             ${CCSRC_DIR}/backend/common/optimizer/graph_optimizer.cc
@@ -46,7 +46,7 @@ if(MSLITE_ENABLE_CONVERTER)
                 ${CCSRC_DIR}/runtime/device/kernel_runtime_manager.cc
                 ${CCSRC_DIR}/runtime/hardware/device_context_manager.cc
                 ${CCSRC_DIR}/runtime/device/convert_tensor_utils.cc
-                ${CCSRC_DIR}/runtime/runtime_conf/runtime_conf.cc
+                ${CCSRC_DIR}/common/runtime_conf/runtime_conf.cc
                 ${CCSRC_DIR}/utils/comm_manager.cc
                 ${CCSRC_DIR}/backend/common/session/exec_order_builder.cc
                 ${CCSRC_DIR}/backend/common/session/kernel_graph.cc

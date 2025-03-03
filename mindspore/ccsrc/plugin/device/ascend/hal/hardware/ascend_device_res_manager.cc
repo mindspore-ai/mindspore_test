@@ -363,7 +363,7 @@ size_t AscendDeviceResManager::DefaultStream() const {
   return ascend_res_manager_->DefaultStream();
 }
 
-std::pair<vector<size_t>, vector<size_t>> AscendDeviceResManager::AllocDeviceMemoryForTensorList(
+std::pair<std::vector<size_t>, std::vector<size_t>> AscendDeviceResManager::AllocDeviceMemoryForTensorList(
   const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
   return ascend_res_manager_->AllocDeviceMemoryForTensorList(tensor_list, enable_mem_align);

@@ -33,7 +33,7 @@ class NormStatisticKernel : public MeanStatisticKernel {
       : MeanStatisticKernel(device_context, ops::kNameNorm, norm_supported_dtype) {}
 
  protected:
-  vector<KernelTensorPtr> GetExtraInputsDeviceAddress(KernelTensor *input) override;
+  std::vector<KernelTensorPtr> GetExtraInputsDeviceAddress(KernelTensor *input) override;
 };
 
 }  // namespace datadump

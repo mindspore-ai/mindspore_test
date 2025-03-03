@@ -125,8 +125,6 @@ class BACKEND_EXPORT GeGraphExecutor : public device::GraphExecutor {
                                                bool is_need_alloc_mem) const;
   void AllocInputMemory(const device::DeviceAddressPtr &input_address) const;
 
-  void RunCheckpointGraph(const KernelGraphPtr &graph) override;
-
   std::unordered_set<std::string> GetInferParameterNames() override;
 
  private:

@@ -302,6 +302,7 @@ def test_sequence_compare_with_operation():
         n = ((y, y-1), y+2)
         return m < n, m <= n, m > n, m >= n
 
+    context.set_context(jit_config={"jit_level": "O0"})
     a1, a2, a3, a4 = foo(Tensor([1]), Tensor([3]))
     assert a1
     assert a2
@@ -772,7 +773,7 @@ def test_sequence_getitem_with_slice_2():
         n1 = mutable(0)
         return m[n1:3:2]
 
-
+    context.set_context(jit_config={"jit_level": "O0"})
     ret = foo(Tensor([4, 3, 2, 1]))
     assert isinstance(ret, list)
     assert len(ret) == 2

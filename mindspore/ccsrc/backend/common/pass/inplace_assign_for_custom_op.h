@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace opt {
-class InplaceAssignForCustomOp : public PatternProcessPass {
+class BACKEND_EXPORT InplaceAssignForCustomOp : public PatternProcessPass {
  public:
   explicit InplaceAssignForCustomOp(bool multigraph = true)
       : PatternProcessPass("inplace_assign_for_custom_op", multigraph) {}

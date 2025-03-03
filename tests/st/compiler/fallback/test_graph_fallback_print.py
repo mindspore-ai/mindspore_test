@@ -521,6 +521,7 @@ def test_print_param_value():
                 self.assignadd(self.p1, x)
                 print(self.p1.value())
 
+    ms.set_context(jit_config={"jit_level": "O0"})
     cap = Capture()
     with capture(cap):
         test_net = ParamValueNet()
@@ -587,7 +588,7 @@ def test_dict_all_print():
             x = dict([("one", 1), ("two", 2)])
             print("x: ", x)
             return 0
-
+    ms.set_context(jit_config={"jit_level": "O0"})
     cap = Capture()
     with capture(cap):
         net = Netprint()

@@ -51,7 +51,6 @@ class BACKEND_EXPORT KernelRuntime {
   KernelRuntime() = default;
   virtual ~KernelRuntime();
   virtual bool Init() = 0;
-  virtual void AssignMemory(const session::KernelGraph &graph);
   void RunOpAssignMemory(const std::vector<tensor::TensorPtr> &input_tensors, const session::KernelGraph &graph,
                          bool is_gradient_out,
                          const std::map<tensor::TensorPtr, session::KernelWithIndex> &tensor_to_node = {});
@@ -130,7 +129,6 @@ class BACKEND_EXPORT KernelRuntime {
   // add for MindRT
   std::shared_ptr<MemoryManager> GetMemoryManager() { return mem_manager_; }
   void AssignStaticMemoryOutput(const session::KernelGraph &graph);
-  void AssignDynamicMemory(const session::KernelGraph &graph);
 
   // lock runtime
   static std::lock_guard<std::mutex> LockRuntime(const void *stream);

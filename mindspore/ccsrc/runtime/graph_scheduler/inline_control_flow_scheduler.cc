@@ -375,7 +375,7 @@ void InlineControlFlowScheduler::HandleConditionSwitchActor(const KernelActorPtr
   // Fix ref count.
   size_t output_num = AnfAlgo::GetOutputTensorNum(condition_switch_actor->kernel());
   condition_switch_actor->branch_origin_ref_count_ =
-    std::vector<std::vector<size_t>>(tuple_name->size(), vector<size_t>(output_num, 0));
+    std::vector<std::vector<size_t>>(tuple_name->size(), std::vector<size_t>(output_num, 0));
 
   InitOutputBranchInfoForConditionSwitchActor(condition_switch_actor, kernel_graph);
 }

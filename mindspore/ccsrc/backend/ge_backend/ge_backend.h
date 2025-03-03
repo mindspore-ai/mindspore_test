@@ -22,6 +22,7 @@
 #include <string>
 #include <unordered_set>
 #include "backend/backend_manager/backend_manager.h"
+#include "backend/backend_manager/backend_jit_config.h"
 #include "include/backend/visible.h"
 #include "ir/tensor.h"
 #include "backend/common/session/kernel_graph_mgr.h"
@@ -43,7 +44,7 @@ class BACKEND_EXPORT GEBackend : public BackendBase {
   ~GEBackend() = default;
 
   // The backend graph Build interface, the return value is the built graph id.
-  BackendGraphId Build(const FuncGraphPtr &func_graph) override;
+  BackendGraphId Build(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) override;
 
   // The backend graph Run interface by the graph_id which are generated through the graph Build interface above.
   RunningStatus Run(BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs) override;
@@ -56,34 +57,12 @@ class BACKEND_EXPORT GEBackend : public BackendBase {
                  IRFormat ir_format) override;
 
  private:
-  // map<graph_info, FuncGraphPtr>
-  mindspore::HashMap<BackendGraphId, KernelGraphPtr> graph_map_;
-  // if param init in device, for refmode
-  mindspore::HashMap<ParameterPtr, bool> is_weight_init_;
-  // if weight value update in python, it records the tensor
-  static mindspore::HashSet<const tensor::Tensor *> weights_need_reprepare_;
-  // graph running step
-  mindspore::HashMap<FuncGraphPtr, uint32_t> graph_run_iter_;
-  // <BackendGraphId, compile_type> : comile&run in whole or sub graph
-  mindspore::HashMap<BackendGraphId, CompileType> graph_compile_type_;
-  session::JitSetting jit_setting_;
-
-  // for subgraph
-  std::shared_ptr<mindspore::ge_backend::runtime::GraphCompiler> graph_compiler_;
-  compile::GraphPartitionPtr graph_partition_;
-  std::map<FuncGraphPtr, std::vector<std::vector<GraphId>>> func_graph_to_kernel_graph_ids_;
-  std::map<GraphId, DeviceContext *> graph_id_to_device_context_;
-  mindspore::HashMap<BackendGraphId, std::shared_ptr<mindspore::ge_backend::runtime::GraphCompilerInfo>>
-    graph_id_to_graph_compiler_info_;
-  std::vector<AnfNodePtr> control_nodes_;
-  static BackendGraphId backend_graph_id_;
-
   // for init
   void Init();
 
   // for Build
-  BackendGraphId CompileWholeGraph(const FuncGraphPtr &func_graph);
-  BackendGraphId CompileSubGraph(const FuncGraphPtr &func_graph);
+  BackendGraphId CompileWholeGraph(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config);
+  BackendGraphId CompileSubGraph(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config);
   // 0: not support; 1: subgraph; 2: whole graph
   CompileType CheckGraph(const FuncGraphPtr &func_graph) const;
   FuncGraphPtr WrapPrimitives(const FuncGraphPtr &graph);
@@ -96,10 +75,10 @@ class BACKEND_EXPORT GEBackend : public BackendBase {
   void InitCommGroup(const FuncGraphPtr &root_graph);
   void UnifyMindIR(const FuncGraphPtr &root_graph) const;
   // for compile subgraph
-  void CompileGraph(const FuncGraphPtr &func_graph);
-  void CompileGraphFromSegment(const GraphSegmentPtr &segment);
+  void CompileGraph(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config);
+  void CompileGraphFromSegment(const GraphSegmentPtr &segment, const BackendJitConfig &backend_jit_config);
   std::shared_ptr<mindspore::ge_backend::runtime::GraphCompilerInfo> ConstructGraphCompilerInfo(
-    const FuncGraphPtr &root_graph);
+    const FuncGraphPtr &root_graph, const BackendJitConfig &backend_jit_config);
   void ParseControlNodes(const mindspore::ge_backend::runtime::GraphCompilerInfo &graph_compile_info,
                          const FuncGraphPtr &root_graph);
 
@@ -111,8 +90,6 @@ class BACKEND_EXPORT GEBackend : public BackendBase {
   // inputs
   void ConstructInputs(const KernelGraphPtr &func_graph, const VectorRef &args,
                        std::vector<tensor::TensorPtr> *inputs_tensor, const device::DeviceContext *device_context);
-  void ConstructInputsUnRefMode(const KernelGraphPtr &func_graph, const VectorRef &args,
-                                std::vector<tensor::TensorPtr> *inputs_tensor);
   void ConstructInputsRefMode(const KernelGraphPtr &func_graph, const VectorRef &args,
                               std::vector<tensor::TensorPtr> *inputs_tensor,
                               const device::DeviceContext *device_context);
@@ -145,6 +122,30 @@ class BACKEND_EXPORT GEBackend : public BackendBase {
   // for profiling
   bool ProfilerOnStepBegin(const KernelGraphPtr &graph, const device::DeviceContext *device_context);
   void ProfilerOnStepEnd(const device::DeviceContext *device_context, bool profile_started);
+
+  // The temp members for backend graph building and will be reset at the end of graph building, can't be used in the
+  // backend graph running. Do not allow adding new temporary members.
+  std::map<FuncGraphPtr, std::vector<std::vector<GraphId>>> func_graph_to_kernel_graph_ids_;
+  std::map<GraphId, DeviceContext *> graph_id_to_device_context_;
+  std::vector<AnfNodePtr> control_nodes_;
+
+  // All the backend graphs shared the members and status in the graph building and running. Need clear the object when
+  // the graph destroy.
+  mindspore::HashMap<BackendGraphId, KernelGraphPtr> graph_map_;
+  mindspore::HashMap<BackendGraphId, FuncGraphPtr> root_graph_map_;
+  // if param init in device, for refmode
+  mindspore::HashMap<ParameterPtr, bool> is_weight_init_;
+  // if weight value update in python, it records the tensor
+  static mindspore::HashSet<const tensor::Tensor *> weights_need_reprepare_;
+  // graph running step
+  mindspore::HashMap<FuncGraphPtr, uint32_t> graph_run_iter_;
+  // <BackendGraphId, compile_type> : comile&run in whole or sub graph
+  mindspore::HashMap<BackendGraphId, CompileType> graph_compile_type_;
+  mindspore::HashMap<BackendGraphId, std::shared_ptr<mindspore::ge_backend::runtime::GraphCompilerInfo>>
+    graph_id_to_graph_compiler_info_;
+
+  std::shared_ptr<mindspore::ge_backend::runtime::GraphCompiler> graph_compiler_;
+  static BackendGraphId backend_graph_id_;
 };
 
 using GEBackendPtr = std::shared_ptr<GEBackend>;

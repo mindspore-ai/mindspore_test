@@ -29,7 +29,7 @@ namespace datadump {
 
 std::map<std::uint32_t, DeviceAddressPtr> CheckOverflowKernel::cache_;
 
-vector<KernelTensor *> CheckOverflowKernel::CheckInputs(vector<KernelTensor *> inputs) {
+std::vector<KernelTensor *> CheckOverflowKernel::CheckInputs(std::vector<KernelTensor *> inputs) {
   std::vector<KernelTensor *> check_kernel_tensors;
   static std::set<TypeId> warning_once;
 
@@ -50,9 +50,10 @@ vector<KernelTensor *> CheckOverflowKernel::CheckInputs(vector<KernelTensor *> i
   return check_kernel_tensors;
 }
 
-DeviceAddressPtr CheckOverflowKernel::LaunchKernelAsync(vector<KernelTensor *> inputs, const std::uint32_t stream_id) {
+DeviceAddressPtr CheckOverflowKernel::LaunchKernelAsync(std::vector<KernelTensor *> inputs,
+                                                        const std::uint32_t stream_id) {
   stream_id_ = stream_id;
-  vector<KernelTensor *> selected_inputs = CheckInputs(inputs);
+  std::vector<KernelTensor *> selected_inputs = CheckInputs(inputs);
   if (selected_inputs.empty()) {
     return nullptr;
   }
@@ -61,7 +62,7 @@ DeviceAddressPtr CheckOverflowKernel::LaunchKernelAsync(vector<KernelTensor *> i
     cache_[stream_id] = GetOutputDeviceAddress(kNumberTypeBool);
   }
   auto output_addr = cache_[stream_id];
-  vector<KernelTensor *> outputs{output_addr->kernel_tensor().get()};
+  std::vector<KernelTensor *> outputs{output_addr->kernel_tensor().get()};
 
   MS_EXCEPTION_IF_NULL(output_addr);
   MS_EXCEPTION_IF_NULL(kernel_mod_);

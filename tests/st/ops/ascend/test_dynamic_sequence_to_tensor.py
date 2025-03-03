@@ -40,6 +40,7 @@ def test_seq_to_tensor0():
     Description: inputs is dynamic sequence or scalar; DType=None
     Expectation: the result match with numpy result
     """
+    context.set_context(jit_config={"jit_level": "O0"})
     x0 = mutable((1, 2, 3), True)
     y0 = mutable(3)
     expect_x0 = np.array([1, 2, 3], dtype=np.int64)
@@ -57,6 +58,7 @@ def test_seq_to_tensor1():
     Description: inputs is dynamic sequence or scalar; DType=None
     Expectation: the result match with numpy result
     """
+    context.set_context(jit_config={"jit_level": "O0"})
     x0 = mutable((1.1, 2.1, 3.1), True)
     y0 = mutable(3.1)
     expect_x0 = np.array([1.1, 2.1, 3.1], dtype=np.float32)
@@ -84,6 +86,7 @@ def test_seq_to_tensor2():
     Description: inputs is dynamic sequence or scalar; DType=int64
     Expectation: the result match with numpy result
     """
+    ms.set_context(jit_level="O0")
     x0 = mutable((1, 2, 3), True)
     y0 = mutable(3)
     expect_x0 = np.array([1, 2, 3], dtype=np.int64)

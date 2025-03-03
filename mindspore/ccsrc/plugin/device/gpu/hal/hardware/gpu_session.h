@@ -39,8 +39,6 @@ class GPUSession : public SessionBasic {
 
  protected:
   void UnifyMindIR(const KernelGraphPtr &graph) override { SessionBasic::UnifyMindIR(graph); }
-  GraphId CompileGraphImpl(const AnfNodePtrList &lst, const AnfNodePtrList &outputs) override;
-  GraphId CompileGraphImpl(NotNull<FuncGraphPtr> func_graph) override;
   void PreExecuteGraph(const std::shared_ptr<KernelGraph> &kernel_graph, const std::vector<tensor::TensorPtr> &inputs,
                        VectorRef *const outputs) override;
   void PostExecuteGraph(const std::shared_ptr<KernelGraph> &kernel_graph, const std::vector<tensor::TensorPtr> &inputs,
@@ -72,8 +70,6 @@ class GPUSession : public SessionBasic {
 
   void BuildKernel(const std::shared_ptr<KernelGraph> &kernel_graph) const;
 
-  void AllocateMemory(const KernelGraph *kernel_graph) const;
-
   void RunOpAllocateMemory(const std::vector<tensor::TensorPtr> &input_tensors, const KernelGraph *kernel_graph,
                            bool is_gradient_out) const;
 
@@ -88,8 +84,6 @@ class GPUSession : public SessionBasic {
 
   bool DumpDataEnabledIteration() const;
 #endif
-
-  GraphId CompileGraphImpl(const KernelGraphPtr &kernel_graph);
 };
 using GPUSessionPtr = std::shared_ptr<GPUSession>;
 MS_REG_SESSION(kGPUDevice, GPUSession);

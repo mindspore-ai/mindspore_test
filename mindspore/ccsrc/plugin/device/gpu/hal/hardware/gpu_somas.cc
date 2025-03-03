@@ -20,7 +20,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace device {

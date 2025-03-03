@@ -48,6 +48,7 @@ mindspore/mindspore/ccsrc/pipeline/jit/ps/fallback.cc:mindspore::fallback::GetJi
 mindspore/mindspore/ccsrc/pipeline/jit/ps/pipeline.cc:mindspore::pipeline::GraphExecutorPy::RunInner
 mindspore/mindspore/ccsrc/pipeline/jit/ps/pipeline.cc:mindspore::pipeline::JitExecutorPy::RunInner
 mindspore/mindspore/ccsrc/pipeline/jit/ps/pipeline.cc:mindspore::pipeline::Pipeline::Run
+mindspore/mindspore/ccsrc/pipeline/jit/ps/action.cc:mindspore::pipeline::TaskEmitAction
 mindspore/mindspore/ccsrc/pipeline/jit/ps/debug/anf_ir_utils.cc:mindspore::Skip
 mindspore/mindspore/ccsrc/common/debug/anf_ir_dump.cc:mindspore::Skip
 mindspore/mindspore/python/mindspore/ops/operations/array_ops.py:_compute_slicing_shape

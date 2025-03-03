@@ -64,8 +64,8 @@
 #include "include/common/utils/compile_cache_context.h"
 #include "include/common/debug/common.h"
 #include "include/common/utils/stub_tensor.h"
-#include "runtime/runtime_conf/runtime_conf.h"
-#include "runtime/runtime_conf/thread_bind_core.h"
+#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/thread_bind_core.h"
 
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/distributed/collective/collect_hccl_init_info.h"
@@ -541,8 +541,9 @@ bool IsEnableControlFlowInline(const FuncGraphPtr &graph) {
     return false;
   }
 
-  // Only support kernel by kernel mode and multi-funcgraph.
-  if (!context->IsKByKExecutorMode() || graph->func_graphs_used_total().empty()) {
+  // Only support ascend, kernel by kernel mode and multi-funcgraph.
+  static const bool is_enable_ge = (context->backend_policy() == "ge");
+  if (!is_enable_ge || !context->IsKByKExecutorMode() || graph->func_graphs_used_total().empty()) {
     MS_LOG(INFO) << "Disable switch inline, executor mode:" << context->IsKByKExecutorMode();
     return false;
   }
@@ -1012,7 +1013,8 @@ void MSBackendBase::CacheFuncGraphWithKernelGraphId(const FuncGraphPtr &func_gra
   }
 }
 
-void MSBackendBase::CompileGraphFromSegment(const GraphSegmentPtr &segment) {
+void MSBackendBase::CompileGraphFromSegment(const GraphSegmentPtr &segment,
+                                            const BackendJitConfig &backend_jit_config) {
   MS_EXCEPTION_IF_NULL(segment);
   // Compile the normal nodes, which doesn't contain the cut node.
   if (segment->nodes_.empty()) {
@@ -1037,10 +1039,14 @@ void MSBackendBase::CompileGraphFromSegment(const GraphSegmentPtr &segment) {
 
     GraphId graph_id;
     if (root_graph_->has_flag(kFlagEnableRunGraphBySingleOp)) {
-      graph_id = graph_compiler_->CompileDynamicGraph(segment, outputs, device_context, jit_setting_);
+      graph_id = graph_compiler_->CompileDynamicGraph(segment, outputs, device_context, backend_jit_config);
     } else {
-      graph_id = graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), device_context, jit_setting_,
-                                               device::RunMode::kKernelMode, ms_execution_mode_ == kPynativeMode);
+      auto ms_context = MsContext::GetInstance();
+      MS_EXCEPTION_IF_NULL(ms_context);
+      auto ms_execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
+      graph_id =
+        graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), device_context, backend_jit_config,
+                                      device::RunMode::kKernelMode, ms_execution_mode == kPynativeMode);
       auto new_fg = graph_compiler_->Fetch(graph_id);
       MS_EXCEPTION_IF_NULL(new_fg);
       if (new_fg->has_flag(kFlagEnableRunGraphBySingleOp)) {
@@ -1065,11 +1071,8 @@ void MSBackendBase::CompileGraphFromSegment(const GraphSegmentPtr &segment) {
   }
 }
 
-uint32_t MSBackendBase::backend_graph_id_ = 0;
-
 void MSBackendBase::TransformGraphToActorDAG(const GraphCompilerInfo &graph_compiler_info) {
   const auto &actor_set = runtime::GraphScheduler::GetInstance().Transform(graph_compiler_info);
-  actor_set->actor_id_ = backend_graph_id_;
   runtime::GraphScheduler::GetInstance().Schedule(actor_set);
   runtime::GraphScheduler::GetInstance().RemoveNodeAddr(graph_compiler_info);
 }
@@ -1081,8 +1084,11 @@ void MSBackendBase::CompileKernelGraph(const KernelGraphPtr &kernel_graph,
   if (root_graph_->has_flag(kFlagEnableRunGraphBySingleOp)) {
     graph_id = graph_compiler_->CompileDynamicGraph(kernel_graph, device_context);
   } else {
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto ms_execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
     graph_id = graph_compiler_->CompileGraph(kernel_graph, io_nodes, device_context, device::RunMode::kKernelMode,
-                                             ms_execution_mode_ == kPynativeMode);
+                                             ms_execution_mode == kPynativeMode);
     if (graph_compiler_->Fetch(graph_id)->has_flag(kFlagEnableRunGraphBySingleOp)) {
       MS_LOG(INFO)
         << "Set kFlagEnableRunGraphBySingleOp: require the root_graph and subgraph to have the same markings ";
@@ -1092,20 +1098,26 @@ void MSBackendBase::CompileKernelGraph(const KernelGraphPtr &kernel_graph,
   CacheFuncGraphWithKernelGraphId(kernel_graph, graph_id, device_context);
 }
 
-void MSBackendBase::CompileGraph(const FuncGraphPtr &func_graph) {
+void MSBackendBase::CompileGraph(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
   MS_EXCEPTION_IF_NULL(func_graph);
   if (!func_graph->has_flag(kFlagIsPyNativeBpropKernelGraph)) {
     uint64_t start_time = profiler::GetClockSyscnt();
     // Split graph to segments.
-    MS_EXCEPTION_IF_NULL(graph_partition_);
-    const auto &segments = graph_partition_->Partition(func_graph);
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto backend_name = ms_context->backend_policy();
+    const bool pynative_mode = (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode);
+    auto &cut_list = pynative_mode ? compile::GetControlOps() : compile::GetMsNonlinearOps();
+    auto graph_partition = std::make_shared<GraphPartition>(cut_list, backend_name);
+    MS_EXCEPTION_IF_NULL(graph_partition);
+    const auto &segments = graph_partition->Partition(func_graph);
     (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageGraphPartition, start_time,
                                     profiler::GetClockSyscnt(), 1);
     MS_LOG(INFO) << "Compile graph: " << func_graph->ToString() << ", Split segments size: " << segments.size();
 
     // Foreach the segments to compile graph.
     for (const auto &segment : segments) {
-      CompileGraphFromSegment(segment);
+      CompileGraphFromSegment(segment, backend_jit_config);
     }
   } else {
     auto kernel_graph = func_graph->cast<KernelGraphPtr>();
@@ -1128,14 +1140,14 @@ void MSBackendBase::CompileGraph(const FuncGraphPtr &func_graph) {
   }
 }
 
-void MSBackendBase::CompileSubGraph(const FuncGraphPtr &func_graph) {
+void MSBackendBase::CompileSubGraph(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
   auto root_graph = func_graph;
   if (!func_graph->has_flag(kFlagIsPyNativeBpropKernelGraph)) {
     root_graph = compile::WrapPrimitives(func_graph);
   }
   MS_EXCEPTION_IF_NULL(root_graph);
   auto manager = root_graph->manager();
-  CompileGraph(root_graph);
+  CompileGraph(root_graph, backend_jit_config);
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   MS_EXCEPTION_IF_NULL(manager);
@@ -1151,7 +1163,7 @@ void MSBackendBase::CompileSubGraph(const FuncGraphPtr &func_graph) {
     if (sub_graph != func_graph && sub_graph != nullptr && !sub_graph->has_flag(kFlagJitCallGraph) &&
         !skip_inline_graph) {
       MS_LOG(INFO) << "Compile sub graph " << sub_graph->ToString();
-      CompileGraph(sub_graph);
+      CompileGraph(sub_graph, backend_jit_config);
     }
   }
 }
@@ -1271,12 +1283,8 @@ bool MSBackendBase::DumpBackendInfo() {
   new_data_json[kKernelGraphToDeviceContext] = kernel_graph_to_device_context_json;
   new_data_json[kFuncGraphToKernelGraphIds] = func_graph_to_kernel_graph_ids_json;
   new_data_json[kControlNodeId] = control_node_json;
-  if (output_node_ != nullptr) {
-    new_data_json[kOutputNodeId] = GetUniqueNodeId(output_node_, true);
-  }
   new_data_json[kDeviceName] = device_name_;
   new_data_json[kDeviceId] = device_id_;
-  new_data_json[kMsExcutionMode] = ms_execution_mode_;
   backinfo_json[kControlNodeCache] = new_data_json;
   context.Clear();
   MS_LOG(DEBUG) << "Dump backinfo json to " << backinfo_json_real_path.value() << ".";
@@ -1365,12 +1373,8 @@ bool MSBackendBase::LoadBackendInfo() {
       }
       control_nodes_.emplace_back(control_node);
     }
-    if (!control_node_json[kOutputNodeId].is_null()) {
-      output_node_ = context.FindFrontNodeByFrontName(control_node_json[kOutputNodeId]);
-    }
     device_name_ = control_node_json[kDeviceName];
     device_id_ = control_node_json[kDeviceId].get<uint32_t>();
-    ms_execution_mode_ = control_node_json[kMsExcutionMode].get<int>();
     json_stream.close();
     if (CompileCacheEnable()) {
       context.Clear();
@@ -1408,7 +1412,8 @@ bool MSBackendBase::CacheCompileGraphs() {
   }
 }
 
-std::shared_ptr<GraphCompilerInfo> MSBackendBase::ConstructGraphCompilerInfo(const FuncGraphPtr &root_graph) {
+std::shared_ptr<GraphCompilerInfo> MSBackendBase::ConstructGraphCompilerInfo(
+  const FuncGraphPtr &root_graph, const BackendJitConfig &backend_jit_config) {
   MS_EXCEPTION_IF_NULL(root_graph);
   MS_EXCEPTION_IF_NULL(graph_compiler_);
 
@@ -1441,10 +1446,11 @@ std::shared_ptr<GraphCompilerInfo> MSBackendBase::ConstructGraphCompilerInfo(con
       context_ptr->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
     strategy = runtime::GraphExecutionStrategy::kPipelineWithExecutionOrder;
   }
-  auto compile_func = [graph_compiler = this->graph_compiler_, jit_setting_ = this->jit_setting_](
+  auto compile_func = [graph_compiler = this->graph_compiler_, backend_jit_config](
                         const GraphSegmentPtr &segment, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
                         const DeviceContext *device_context, device::RunMode run_mode) -> KernelGraphPtr {
-    auto graph_id = graph_compiler->CompileGraph(segment, io_nodes, device_context, jit_setting_, run_mode, false);
+    auto graph_id =
+      graph_compiler->CompileGraph(segment, io_nodes, device_context, backend_jit_config, run_mode, false);
     return graph_compiler->Fetch(graph_id);
   };
 
@@ -1459,7 +1465,7 @@ void MSBackendBase::ParseControlNodes(const GraphCompilerInfo &graph_compile_inf
   MS_EXCEPTION_IF_NULL(graph_compile_info.control_node_parser_);
 
   FuncGraphToKernelGraphGroup func_graph_to_kernel_graphs;
-  for (const auto &func_graph_to_kernel_graph_ids : func_graph_to_kernel_graph_ids_) {
+  for (const auto &func_graph_to_kernel_graph_ids : graph_compile_info.func_graph_to_kernel_graph_ids_) {
     const auto &func_graph = func_graph_to_kernel_graph_ids.first;
     for (const auto &sub_kernel_graphs_ids : func_graph_to_kernel_graph_ids.second) {
       std::vector<KernelGraphPtr> kernel_graphs;
@@ -1472,9 +1478,9 @@ void MSBackendBase::ParseControlNodes(const GraphCompilerInfo &graph_compile_inf
     }
   }
 
-  graph_compile_info.control_node_parser_->Parse(control_nodes_, graph_compile_info.graphs_,
-                                                 graph_compile_info.device_contexts_, root_graph_,
-                                                 func_graph_to_kernel_graphs);
+  graph_compile_info.control_node_parser_->Parse(graph_compile_info.control_nodes_, graph_compile_info.graphs_,
+                                                 graph_compile_info.device_contexts_,
+                                                 graph_compile_info.root_func_graph_, func_graph_to_kernel_graphs);
 }
 
 bool MSBackendBase::CheckEnableGraphPipeline(const std::shared_ptr<GraphCompilerInfo> &graph_compiler_info) {
@@ -1485,8 +1491,11 @@ bool MSBackendBase::CheckEnableGraphPipeline(const std::shared_ptr<GraphCompiler
     return false;
   }
 
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto ms_execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
   bool is_pynative_in_kbk_mode =
-    (ms_execution_mode_ == kPynativeMode) && !pynative::GraphAdapter::IsPynativeGeGraphSink(root_graph_);
+    (ms_execution_mode == kPynativeMode) && !pynative::GraphAdapter::IsPynativeGeGraphSink(root_graph_);
   if (!is_pynative_in_kbk_mode) {
     return false;
   }
@@ -1866,11 +1875,12 @@ void MSBackendBase::ConstructOutputs(const AnfNodePtr &output_node,
   }
 }
 
-void MSBackendBase::ConstructOutputs(runtime::ActorSet *actor_set, VectorRef *outputs, const FuncGraphPtr &root_graph) {
+void MSBackendBase::ConstructOutputs(runtime::ActorSet *actor_set, VectorRef *outputs, const FuncGraphPtr &root_graph,
+                                     bool enable_graph_pipeline) {
   MS_EXCEPTION_IF_NULL(actor_set);
   MS_EXCEPTION_IF_NULL(outputs);
   MS_EXCEPTION_IF_NULL(root_graph);
-  bool need_contruct_output = !(distributed::recovery::RecoveryContext::GetInstance()->enable_recovery() &&
+  bool need_contruct_output = !(distributed::recovery::RecoveryContext::GetInstance()->enable_gpu_recovery() &&
                                 distributed::recovery::RecoveryContext::GetInstance()->need_reset());
   if (need_contruct_output) {
     MS_EXCEPTION_IF_NULL(actor_set->output_actor_);
@@ -1886,7 +1896,7 @@ void MSBackendBase::ConstructOutputs(runtime::ActorSet *actor_set, VectorRef *ou
     actor_set->output_actor_->UpdateOutputDeviceAddress();
 #endif
 
-    if (enable_graph_pipeline_) {
+    if (enable_graph_pipeline) {
       MS_LOG(DEBUG) << "Enable pynative graph pipeline for actor set: " << actor_set->name_
                     << ", early stop ConstructOutputs.";
       return;
@@ -1955,16 +1965,9 @@ void MSBackendBase::SetDebuggerInit() const {
 #endif
 
 MSBackendBase::MSBackendBase() {
-  root_graph_ = nullptr;
+  graph_compiler_ = std::make_shared<GraphCompiler>();
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto backend_name = ms_context->backend_policy();
-  const bool pynative_mode = (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode);
-  auto &cut_list = pynative_mode ? compile::GetControlOps() : compile::GetMsNonlinearOps();
-
-  graph_partition_ = std::make_shared<GraphPartition>(cut_list, backend_name);
-  graph_compiler_ = std::make_shared<GraphCompiler>();
-
   device_name_ = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_context =
@@ -1981,7 +1984,7 @@ MSBackendBase::MSBackendBase() {
   runtime::GraphScheduler::GetInstance().Initialize();
 }
 
-BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph) {
+BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
   // TODO(pynative)
   WaitTaskFinish();
   MS_EXCEPTION_IF_NULL(graph_compiler_);
@@ -2013,11 +2016,6 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph) {
     UnifyMindIR(root_graph);
   }
   root_graph_ = root_graph;
-  // TODO(pynative)
-  // Use kernel graph, which output maybe change by backed pass, so backup output
-  if (root_graph_->has_flag(kFlagIsPyNativeBpropKernelGraph)) {
-    output_node_ = root_graph_->output();
-  }
 
   // Register a summary callback function, which is called in the final stages of summary.
   graph_compiler_->RegisterSummaryCallBackFunc(callbacks::SummarySaveCallback);
@@ -2025,14 +2023,10 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph) {
   // TODO(pynative)
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  ms_execution_mode_ = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
-  func_graph->set_flag(kFlagPyNativeRunInGraph, ms_execution_mode_ == kPynativeMode);
+  auto ms_execution_mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
+  func_graph->set_flag(kFlagPyNativeRunInGraph, ms_execution_mode == kPynativeMode);
 
   // Compile root graph.
-  graph_id_to_device_context_.clear();
-  func_graph_to_kernel_graph_ids_.clear();
-  control_nodes_.clear();
-
   bool load_compile_cache = false;
   if (EnableKBKCompileCache(func_graph, device_context->GetDeviceType())) {
     PROF_START(Load_backend_compile_cache);
@@ -2041,11 +2035,11 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph) {
   }
   if (!load_compile_cache) {
     PROF_START(CompileSubGraph);
-    if (NeedCheckMultiTarget(func_graph, ms_execution_mode_)) {
+    if (NeedCheckMultiTarget(func_graph, ms_execution_mode)) {
       ProcessNotSupportCnode(func_graph, device_context->GetDeviceType(), mindspore::device::DeviceType::kCPU);
     }
     BuildSymbolEngine(func_graph);
-    CompileSubGraph(func_graph);
+    CompileSubGraph(func_graph, backend_jit_config);
     PROF_END(CompileSubGraph);
   }
 
@@ -2059,14 +2053,21 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph) {
   }
 
   // Construct the graph compiler info.
-  auto graph_compiler_info = ConstructGraphCompilerInfo(root_graph);
+  auto graph_compiler_info = ConstructGraphCompilerInfo(root_graph, backend_jit_config);
   MS_LOG(INFO) << "Status record: construct the graph compiler info.";
   MS_EXCEPTION_IF_NULL(graph_compiler_info);
-  // TODO(pynative)
-  if ((ms_execution_mode_ == kGraphMode ||
-       (ms_execution_mode_ == kPynativeMode && pynative::GraphAdapter::IsPynativeGeGraphSink(root_graph_))) &&
+  graph_compiler_info->root_func_graph_ = root_graph_;
+  graph_compiler_info->enable_graph_pipeline_ = CheckEnableGraphPipeline(graph_compiler_info);
+  graph_compiler_info->func_graph_to_kernel_graph_ids_ = func_graph_to_kernel_graph_ids_;
+  // Use kernel graph, which output maybe change by backed pass, so backup output
+  graph_compiler_info->output_node_ = root_graph_->output();
+  graph_compiler_info->is_pynative_mode_ = true;
+
+  if ((ms_execution_mode == kGraphMode ||
+       (ms_execution_mode == kPynativeMode && pynative::GraphAdapter::IsPynativeGeGraphSink(root_graph_))) &&
       ((!graph_compiler_info->graphs_.empty()) || graph_compiler_info->control_nodes_.size() > 1)) {
     MS_LOG(DEBUG) << "Start transform";
+    graph_compiler_info->is_pynative_mode_ = false;
     PROF_START(GraphScheduler);
     // Transform graph to actor DAG, and schedule the actor DAG.
     ParseControlNodes(*graph_compiler_info);
@@ -2074,11 +2075,7 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph) {
     PROF_END(GraphScheduler);
   }
 
-  enable_graph_pipeline_ = CheckEnableGraphPipeline(graph_compiler_info);
-  auto cur_backend_graph_id = backend_graph_id_;
-  const ActorInfo &actor_info = graph_compiler_info->name_;
-  (void)actor_to_graph_compiler_info_.emplace(cur_backend_graph_id, std::move(graph_compiler_info));
-  ++backend_graph_id_;
+  (void)actor_to_graph_compiler_info_.emplace(graph_compiler_info->id_, graph_compiler_info);
 
   for (const auto &graph_id_to_context : graph_id_to_device_context_) {
     auto context = graph_id_to_context.second;
@@ -2089,8 +2086,15 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph) {
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCompileGraphs, start_time,
                                   profiler::GetClockSyscnt(), 1);
   MS_LOG(INFO) << "Status record: end compile function graph: " << func_graph->ToString()
-               << ", produce actor: " << actor_info;
-  return cur_backend_graph_id;
+               << ", produce actor: " << graph_compiler_info->name_
+               << ", backend_graph_id: " << graph_compiler_info->id_;
+
+  // Clear the temp members.
+  root_graph_ = nullptr;
+  graph_id_to_device_context_.clear();
+  func_graph_to_kernel_graph_ids_.clear();
+  control_nodes_.clear();
+  return graph_compiler_info->id_;
 }
 
 RunningStatus MSBackendBase::Run(BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs) {
@@ -2099,8 +2103,17 @@ RunningStatus MSBackendBase::Run(BackendGraphId graph_id, const VectorRef &input
   // Main thread bind to core.
   BindCoreForMainThread();
 
-  MS_EXCEPTION_IF_NULL(root_graph_);
-  if (IsGraphOutputValueNodeOrParameter(root_graph_->output(), inputs, outputs)) {
+  // Fetch the graph compiler info.
+  const auto &graph_iter = actor_to_graph_compiler_info_.find(graph_id);
+  if (graph_iter == actor_to_graph_compiler_info_.end()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#Can't find the graph compiler info.";
+  }
+  MS_EXCEPTION_IF_NULL(graph_iter->second);
+  const auto &graph_compiler_info = *(graph_iter->second);
+  auto root_graph = graph_compiler_info.root_func_graph_;
+  MS_EXCEPTION_IF_NULL(root_graph);
+
+  if (IsGraphOutputValueNodeOrParameter(root_graph->output(), inputs, outputs)) {
     return kRunningSuccess;
   }
 
@@ -2114,18 +2127,12 @@ RunningStatus MSBackendBase::Run(BackendGraphId graph_id, const VectorRef &input
   // Open abstract_lock for dynamic_shape
   AnfUtils::OpenAbstractLock();
 
-  // Fetch the graph compiler info.
-  const auto &graph_iter = actor_to_graph_compiler_info_.find(graph_id);
-  if (graph_iter == actor_to_graph_compiler_info_.end()) {
-    MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#Can't find the graph compiler info.";
-  }
-  MS_EXCEPTION_IF_NULL(graph_iter->second);
-  const auto &graph_compiler_info = *(graph_iter->second);
-
   // Run in the pynative mode.
   MS_EXCEPTION_IF_NULL(outputs);
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
   // There will be more than one kernel graph in heterogeneous scenario in a jit of PyNative Mode.
-  if (ms_execution_mode_ == kPynativeMode && !pynative::GraphAdapter::IsPynativeGeGraphSink(root_graph_)) {
+  if (graph_compiler_info.is_pynative_mode_) {
     // The tensor needs to be converted to contiguous before being given to the actors.
     // After the view feature is supported in the graph mode, the following code will be deleted.
     RunGraphByCondition(graph_id, graph_compiler_info, inputs, outputs);
@@ -2155,9 +2162,8 @@ RunningStatus MSBackendBase::Run(BackendGraphId graph_id, const VectorRef &input
   const auto &actor_set = runtime::GraphScheduler::GetInstance().Fetch(graph_id);
   MS_EXCEPTION_IF_NULL(actor_set);
   static auto disable_pre_build_comm = common::IsDisableRuntimeConfig(common::kRuntimePreBuildCommKernel);
-  if (!disable_pre_build_comm && !has_pre_build_comm_) {
+  if (!disable_pre_build_comm) {
     PROF_START(PreLaunchCommKernel);
-    has_pre_build_comm_ = true;
     runtime::PreLaunchComm::GetInstance().PreLaunchCommKernel(actor_set);
     PROF_END(PreLaunchCommKernel);
   }
@@ -2168,11 +2174,9 @@ RunningStatus MSBackendBase::Run(BackendGraphId graph_id, const VectorRef &input
     PROFILER_START(start_time);
     MS_EXCEPTION_IF_NULL(graph_compiler_);
     graph_compiler_->Summary(graph_compiler_info.graphs_);
-    ConstructOutputs(actor_set, outputs, root_graph_);
+    ConstructOutputs(actor_set, outputs, root_graph, graph_compiler_info.enable_graph_pipeline_);
     actor_set->output_actor_->FreeSummaryNodeMem();
     runtime::GraphScheduler::GetInstance().ClearActorData(actor_set);
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
     if (ms_context->IsEnableInferBoost()) {
       auto &llm_manager = LLMManager::GetInstance();
       llm_manager.reset_graph_inputs();
@@ -2188,14 +2192,8 @@ RunningStatus MSBackendBase::Run(BackendGraphId graph_id, const VectorRef &input
   return kRunningSuccess;
 }
 
-void MSBackendBase::UpdateGraphCompilerInfo(BackendGraphId graph_id) {
-  const auto &graph_iter = actor_to_graph_compiler_info_.find(graph_id);
-  if (graph_iter == actor_to_graph_compiler_info_.end()) {
-    return;
-  }
-  MS_EXCEPTION_IF_NULL(graph_iter->second);
-  MS_EXCEPTION_IF_NULL(root_graph_);
-  graph_iter->second->origin_outputs_order_ = FetchOriginOutputOrder(root_graph_->output());
+void MSBackendBase::UpdateGraphCompilerInfo(const GraphCompilerInfo &graph_compile_info) {
+  graph_compile_info.origin_outputs_order_ = FetchOriginOutputOrder(graph_compile_info.output_node_);
 }
 }  // namespace ms_backend
 }  // namespace backend

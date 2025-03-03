@@ -2860,7 +2860,7 @@ FuncGraphPtr MindIRLoader::LoadMindIR(const std::string &file_name,
     MS_LOG(EXCEPTION) << "The length of the file name exceeds the limit.";
   }
   char abs_path_buff[PATH_MAX];
-  vector<string> files;
+  std::vector<string> files;
 
 #ifdef _WIN32
   _fullpath(abs_path_buff, file_name.c_str(), PATH_MAX);

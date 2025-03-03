@@ -317,7 +317,7 @@ CNodePtr NewSendNode(const AnfNodePtr &send_data, int64_t tag, int64_t dest_rank
   common::AnfAlgo::SetNodeAttr(parallel::SHAPE, MakeValue(send_shape), send_node);
   common::AnfAlgo::SetNodeAttr(parallel::DTYPE, TypeIdToType(type_id), send_node);
   auto long_rank_list = parallel::g_device_manager->FindRankListByHashName(group_name);
-  vector<uint32_t> group_rank_ids;
+  std::vector<uint32_t> group_rank_ids;
   std::transform(long_rank_list.begin(), long_rank_list.end(), std::inserter(group_rank_ids, group_rank_ids.begin()),
                  [](int64_t e) -> uint32_t { return static_cast<uint32_t>(e); });
   common::AnfAlgo::SetNodeAttr(kAttrGroupRankIds, MakeValue(group_rank_ids), send_node);
@@ -354,7 +354,7 @@ CNodePtr NewReceiveNode(const AnfNodePtr &parameter, int64_t tag, int64_t src_ra
   common::AnfAlgo::SetNodeAttr(parallel::DTYPE, TypeIdToType(type_id), recv_node);
   common::AnfAlgo::SetNodeAttr("flash_tag", MakeValue("True"), recv_node);
   auto long_rank_list = parallel::g_device_manager->FindRankListByHashName(group_name);
-  vector<uint32_t> group_rank_ids;
+  std::vector<uint32_t> group_rank_ids;
   std::transform(long_rank_list.begin(), long_rank_list.end(), std::inserter(group_rank_ids, group_rank_ids.begin()),
                  [](int64_t e) -> uint32_t { return static_cast<uint32_t>(e); });
   common::AnfAlgo::SetNodeAttr(kAttrGroupRankIds, MakeValue(group_rank_ids), recv_node);
@@ -732,7 +732,7 @@ bool IsRingAttentionCP(const AnfNodePtr &fa_node) {
 }
 
 void CreateParameterWhenLazyInline(const FuncGraphPtr &fwd_graph, const FuncGraphPtr &bck_graph,
-                                   const vector<AnfNodePtr> &inputs, vector<AnfNodePtr> *outputs) {
+                                   const std::vector<AnfNodePtr> &inputs, std::vector<AnfNodePtr> *outputs) {
   auto ret = fwd_graph->get_return();
   auto manager = fwd_graph->manager();
   auto origin_nodes_topological = DeepScopedGraphSearch(ret);
@@ -792,8 +792,8 @@ void ChangeFAGradInput(std::map<std::string, AnfNodePtr, FaGradCompareMethod> *g
     auto fwd_graph = softmax_max_node->func_graph();
     auto bck_graph = cur_grad_fa_node->func_graph();
     if (fwd_graph != bck_graph) {
-      vector<AnfNodePtr> inputs = {softmax_max_node, softmax_sum_node, attention_out_node};
-      vector<AnfNodePtr> outputs;
+      std::vector<AnfNodePtr> inputs = {softmax_max_node, softmax_sum_node, attention_out_node};
+      std::vector<AnfNodePtr> outputs;
       CreateParameterWhenLazyInline(fwd_graph, bck_graph, inputs, &outputs);
       if (outputs.size() != inputs.size()) {
         MS_LOG(EXCEPTION) << "The output size is not equal to input size when enable ring attention.";
@@ -879,7 +879,7 @@ void PrepareFAGradInput(const FuncGraphPtr &graph,
     auto fwd_graph = cur_sum->func_graph();
     auto bck_graph = grad_fa_node->func_graph();
     if (fwd_graph != bck_graph) {
-      vector<AnfNodePtr> outputs;
+      std::vector<AnfNodePtr> outputs;
       CreateParameterWhenLazyInline(fwd_graph, bck_graph, {cur_max, cur_sum, cur_attn_out}, &outputs);
       cur_max = outputs[0];
       cur_sum = outputs[1];
@@ -975,7 +975,7 @@ void CreateCommForFirstStep(const FuncGraphPtr &graph, const std::map<std::strin
   if (fwd_graph == bck_graph) {
     recv_kv = kv_concat;
   } else {
-    vector<AnfNodePtr> outputs;
+    std::vector<AnfNodePtr> outputs;
     CreateParameterWhenLazyInline(fwd_graph, bck_graph, {kv_concat}, &outputs);
     recv_kv = outputs[0];
   }

@@ -579,19 +579,14 @@ BackendPtr CreateBackend() {
   if (name == kMsConvert || name == kGeVm) {
     std::string target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
     uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    // Create MindRTBackend or MsBackend according to whether mindrt is used.
-    if (context_ptr->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
-      backend = std::make_shared<MindRTBackend>(name, target, device_id);
-    } else {
-      backend = std::make_shared<MsBackend>(name, target, device_id);
-    }
+    backend = std::make_shared<MindRTBackend>(name, target, device_id);
     if (target == kAscendDevice && context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
       backend->set_is_multi_graph_sink(false);
     }
   } else {
     backend = std::make_shared<Backend>(name);
   }
-  backend->set_jit_setting(session::JitSetting::ParseJitSetting());
+  backend->set_backend_jit_config(backend::BackendJitConfig::ParseBackendJitConfig());
 
   return backend;
 }

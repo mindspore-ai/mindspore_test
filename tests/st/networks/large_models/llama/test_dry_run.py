@@ -16,47 +16,8 @@
 Test module for parallel training of Llama models using Mindformers at jit_level O2.
 """
 import os
-import shutil
 import subprocess
 from tests.mark_utils import arg_mark
-
-
-def run_command(cmd, log_path, graph_path, graph_check, log_check, loss_check):
-    if os.path.exists(graph_path):
-        shutil.rmtree(graph_path)
-    if os.path.isfile(log_path):
-        os.remove(log_path)
-    os.system(cmd)
-
-    graph_file = f"{graph_path}/hwopt_d_after_stream_assign*.ir"
-    graph_para = "GEGraphOp("
-    graph_output = subprocess.check_output(
-        ["grep -r '%s' %s | wc -l" % (graph_para, graph_file)],
-        shell=True)
-    graph_cnt = str(graph_output, 'utf-8').strip()
-    assert graph_cnt == str(graph_check)
-
-    log_para = "Start compile"
-    log_output = subprocess.check_output(
-        ["grep -r '%s' %s | wc -l" % (log_para, log_path)],
-        shell=True)
-    log_cnt = str(log_output, 'utf-8').strip()
-    assert log_cnt == str(log_check)
-
-    loss_para = "loss:"
-    loss_output = subprocess.check_output(
-        ["grep -r '%s' %s | wc -l" % (loss_para, log_path)],
-        shell=True)
-    loss_cnt = str(loss_output, 'utf-8').strip()
-    assert loss_cnt == str(loss_check)
-
-    print(graph_cnt, log_cnt, loss_cnt, flush=True)
-
-    if os.path.exists(graph_path):
-        shutil.rmtree(graph_path)
-    if os.path.isfile(log_path):
-        os.remove(log_path)
-
 
 def run_command_semi_compile(cmd, log_path, backend_time, compile_time):
     if os.path.isfile(log_path):
@@ -113,27 +74,3 @@ def test_train_auto_compile():
     """
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     run_command_auto_compile(f"bash {sh_path}/dry_compile.sh auto compile", f"{sh_path}/compile_auto.log", 11000)
-
-
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
-def test_train_pipeline():
-    """
-    Feature: Trainer.train()
-    Description: Test context parallel trainer for train.
-    Expectation: AssertionError
-    """
-    sh_path = os.path.split(os.path.realpath(__file__))[0]
-    run_command(f"bash {sh_path}/dry.sh 0 pipeline", f"{sh_path}/pipeline.log",
-                f"{sh_path}/pipeline/rank_0", 5, 3, 10)
-
-
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
-def test_train_grad_accu():
-    """
-    Feature: Trainer.train()
-    Description: Test context parallel trainer for train.
-    Expectation: AssertionError
-    """
-    sh_path = os.path.split(os.path.realpath(__file__))[0]
-    run_command(f"bash {sh_path}/dry.sh 1 grad_accu", f"{sh_path}/grad_accu.log",
-                f"{sh_path}/grad_accu/rank_0", 8, 2, 10)

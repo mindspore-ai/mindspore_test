@@ -29,8 +29,8 @@ TensorPtr CalStatistic(const std::string &stat_name, const DeviceContext *device
   return SyncDeviceToHostTensor(out.back());
 }
 
-vector<DeviceAddressPtr> CalStatisticAsync(const std::string &stat_name, const DeviceContext *device_context,
-                                           KernelTensor *input, const uint32_t stream_id) {
+std::vector<DeviceAddressPtr> CalStatisticAsync(const std::string &stat_name, const DeviceContext *device_context,
+                                                KernelTensor *input, const uint32_t stream_id) {
   MS_EXCEPTION_IF_NULL(input);
   auto dtype = input->dtype_id();
   auto kernel = KernelFactory::Instance().CreateKernel(stat_name, device_context);
@@ -44,7 +44,7 @@ vector<DeviceAddressPtr> CalStatisticAsync(const std::string &stat_name, const D
   }
 }
 
-bool CalCheckOverflow(const DeviceContext *device_context, vector<KernelTensor *> inputs,
+bool CalCheckOverflow(const DeviceContext *device_context, const std::vector<KernelTensor *> &inputs,
                       const std::uint32_t stream_id) {
   auto out = CalCheckOverflowAsync(device_context, inputs, stream_id);
   if (out == nullptr) {
@@ -54,7 +54,7 @@ bool CalCheckOverflow(const DeviceContext *device_context, vector<KernelTensor *
   return overflow_tensor->GetValueWithCheck<bool>();
 }
 
-DeviceAddressPtr CalCheckOverflowAsync(const DeviceContext *device_context, vector<KernelTensor *> inputs,
+DeviceAddressPtr CalCheckOverflowAsync(const DeviceContext *device_context, std::vector<KernelTensor *> inputs,
                                        const uint32_t stream_id) {
   auto kernel = KernelFactory::Instance().CreateKernel(KCheckOverflow, device_context);
   return kernel->LaunchKernelAsync(inputs, stream_id);

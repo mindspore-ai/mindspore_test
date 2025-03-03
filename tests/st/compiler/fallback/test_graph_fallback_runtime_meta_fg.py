@@ -1084,12 +1084,13 @@ def test_multitype_generated_by_inner_method_1():
     Description: test multitype_generated_by_inner_method
     Expectation: throw RuntimeError
     """
-
+    ms.set_context(jit_level="O0")
     class Net(nn.Cell):
         def construct(self, x):
             out = x[::2]
             return out
 
+    ms.set_context(jit_config={"jit_level": "O0"})
     x = [0, 1, 0, 1]
     net = Net()
     res = net(x)
@@ -1135,6 +1136,7 @@ def test_multitype_funcgraph_with_slice_in_tuple():
             res = x[:, (self.a)]
             return res
 
+    ms.set_context(jit_config={"jit_level": "O0"})
     x = Tensor([[0, 1], [1, 0], [2, 0], [2, 2]])
     net = Net()
     res = net(x)

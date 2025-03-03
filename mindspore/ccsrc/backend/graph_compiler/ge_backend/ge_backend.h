@@ -33,7 +33,7 @@ class BACKEND_EXPORT GEBackend {
   GEBackend() = default;
   ~GEBackend() = default;
   std::string CompileGraph(const FuncGraphPtr &func_graph, const device::DeviceContext *device_context,
-                           const session::JitSetting &jit_setting);
+                           const backend::BackendJitConfig &backend_jit_config);
 
   void RunGraph(const std::string &graph_info, const device::DeviceContext *device_context, const VectorRef &args,
                 std::vector<tensor::TensorPtr> *outputs);
@@ -58,8 +58,6 @@ class BACKEND_EXPORT GEBackend {
   // for run graph
   void ConstructInputs(const KernelGraphPtr &func_graph, const VectorRef &args,
                        std::vector<tensor::TensorPtr> *inputs_tensor, const device::DeviceContext *device_context);
-  void ConstructInputsUnRefMode(const KernelGraphPtr &func_graph, const VectorRef &args,
-                                std::vector<tensor::TensorPtr> *inputs_tensor);
   void ConstructInputsRefMode(const KernelGraphPtr &func_graph, const VectorRef &args,
                               std::vector<tensor::TensorPtr> *inputs_tensor,
                               const device::DeviceContext *device_context);

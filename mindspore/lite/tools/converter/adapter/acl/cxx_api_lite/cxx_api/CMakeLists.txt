@@ -94,7 +94,7 @@ endif()
 
 if((MODE_ASCEND_ACL) AND NOT BUILD_LITE)
     list(APPEND MSLIB_SRC
-        "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/backend/common/session/jit_setting.cc"
+        "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/backend/backend_manager/backend_jit_config.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/backend/common/optimizer/pattern_engine.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/backend/common/optimizer/helper.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/backend/common/optimizer/node_pass.cc"

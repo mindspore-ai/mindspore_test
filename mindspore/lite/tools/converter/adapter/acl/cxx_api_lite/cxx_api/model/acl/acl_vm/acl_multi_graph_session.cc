@@ -21,7 +21,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "backend/common/session/session_factory.h"
 #include "include/backend/optimizer/optimizer.h"
-#include "include/backend/jit_setting.h"
+#include "backend/backend_manager/backend_jit_config.h"
 #ifdef ENABLE_D
 #include "runtime/hardware/device_context_manager.h"
 #endif
@@ -53,7 +53,7 @@ GraphId MultiGraphAclSession::CompileGraphImpl(const AnfNodePtrList &lst, const 
   MS_LOG(INFO) << "Start MultiGraph Compile.";
   // construct kernel graph
   auto kernel_graph =
-    SessionBasic::ConstructKernelGraph(lst, outputs, device::DeviceType::kUnknown, JitSetting(), false);
+    SessionBasic::ConstructKernelGraph(lst, outputs, device::DeviceType::kUnknown, backend::BackendJitConfig(), false);
   MS_EXCEPTION_IF_NULL(kernel_graph);
 #ifdef ENABLE_D
   auto ms_context = MsContext::GetInstance();

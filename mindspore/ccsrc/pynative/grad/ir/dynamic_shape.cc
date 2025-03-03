@@ -17,7 +17,7 @@
 #include "pynative/grad/ir/dynamic_shape.h"
 #include <algorithm>
 #include "pynative/pynative_utils.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 #include "include/common/utils/tensor_py.h"
 
 namespace mindspore {

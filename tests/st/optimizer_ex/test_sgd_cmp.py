@@ -175,7 +175,7 @@ def test_sgd_basic(mode):
     Description: Test sgd with default parameter.
     Expectation: success.
     """
-    mindspore.set_context(mode=mode, jit_syntax_level=mindspore.STRICT)
+    mindspore.set_context(mode=mode, jit_level="O0", jit_syntax_level=mindspore.STRICT)
     fact = SGDFactory(False, False)
     fact.result_cmp()
 

@@ -70,7 +70,7 @@ class BACKEND_EXPORT PostRunOp {
   void UpdateOutputAbstract(const VectorRef &outputs, const session::BackendOpRunInfoPtr &op_run_info) const;
 
   void UpdateOutputDynamic(const session::BackendOpRunInfoPtr &op_run_info, const OpCompilerInfoPtr &op_compiler_info,
-                           const vector<device::DeviceAddressPtr> &device_address_list, VectorRef *outputs) const;
+                           const std::vector<device::DeviceAddressPtr> &device_address_list, VectorRef *outputs) const;
 
   void set_forward_tensor_ref_count(const std::map<std::string, size_t> &forward_tensor_ref_count) {
     forward_tensor_ref_count_ = forward_tensor_ref_count;
@@ -126,7 +126,7 @@ class BACKEND_EXPORT OpBackend {
 
   void DispatchOpTaskDynamic(VectorRef *outputs, const OpCompilerInfoPtr &op_compiler_info,
                              const session::BackendOpRunInfoPtr &op_run_info,
-                             const vector<device::DeviceAddressPtr> &device_address_list);
+                             const std::vector<device::DeviceAddressPtr> &device_address_list);
 
   void OpRunCallbackDynamic(const std::shared_ptr<runtime::OpTaskContext> &context);
 

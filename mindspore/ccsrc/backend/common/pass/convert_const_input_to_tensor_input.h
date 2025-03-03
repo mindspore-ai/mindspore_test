@@ -29,7 +29,7 @@ class BACKEND_EXPORT ConvertConstInputToTensorInput : public PatternProcessPass 
   const AnfNodePtr Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node, const EquivPtr &) const override;
 };
 
-class ConvertConstInputToTensorInputForPrint : public PatternProcessPass {
+class BACKEND_EXPORT ConvertConstInputToTensorInputForPrint : public PatternProcessPass {
  public:
   explicit ConvertConstInputToTensorInputForPrint(bool multigraph = true)
       : PatternProcessPass("convert_const_input_to_tensor_input_for_print", multigraph) {}

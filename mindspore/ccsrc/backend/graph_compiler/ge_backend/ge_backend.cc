@@ -47,7 +47,7 @@ constexpr size_t kGraphInfoSavePrefixLen = 5;
 mindspore::HashSet<const tensor::Tensor *> GEBackend::weights_need_reprepare_ = {};
 
 std::string GEBackend::CompileGraph(const FuncGraphPtr &func_graph, const device::DeviceContext *device_context,
-                                    const session::JitSetting &jit_setting) {
+                                    const backend::BackendJitConfig &backend_jit_config) {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_LOG(INFO) << "Status record: start compile graph.";
@@ -56,7 +56,7 @@ std::string GEBackend::CompileGraph(const FuncGraphPtr &func_graph, const device
 
   auto device_target = device_context->GetDeviceType();
   auto kg_mgr = std::make_shared<session::KernelGraphMgr>();
-  KernelGraphPtr root_graph = kg_mgr->ConstructKernelGraph(func_graph, &all_graphs, device_target, jit_setting);
+  KernelGraphPtr root_graph = kg_mgr->ConstructKernelGraph(func_graph, &all_graphs, device_target, backend_jit_config);
   MS_EXCEPTION_IF_NULL(root_graph);
   for (const auto &graph : all_graphs) {
     MS_EXCEPTION_IF_NULL(graph);
@@ -98,41 +98,6 @@ void GEBackend::SetTensorUpdateCallback(const tensor::TensorPtr &update_tensor) 
   if (update_tensor != nullptr && update_tensor->update_value_callback() == nullptr && update_tensor->is_parameter()) {
     static auto callback = [this](const tensor::Tensor *tensor) { weights_need_reprepare_.insert(tensor); };
     update_tensor->set_update_value_callback(callback);
-  }
-}
-
-void GEBackend::ConstructInputsUnRefMode(const KernelGraphPtr &func_graph, const VectorRef &args,
-                                         std::vector<tensor::TensorPtr> *inputs_tensor) {
-  MS_EXCEPTION_IF_NULL(func_graph);
-  auto inputs = func_graph->inputs();
-  MS_EXCEPTION_IF_CHECK_FAIL(inputs.size() == args.size(), "The args size is not equal to graph inputs size.");
-  for (size_t i = 0; i < inputs.size(); ++i) {
-    MS_EXCEPTION_IF_NULL(inputs[i]);
-    std::vector<tensor::TensorPtr> flatten_tensors;
-    auto params = common::AnfAlgo::GetAllOutput(inputs[i]);
-    for (size_t j = 0; j < params.size(); ++j) {
-      auto device_tensor = AnfAlgo::GetMutableOutputAddr(params[j], 0, false);
-      MS_EXCEPTION_IF_NULL(device_tensor);
-      // skip const input
-      if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagIgnoreDevicePtr)) {
-        MS_LOG(INFO) << "The input[" << i << "] is convert to const op, skip.";
-        continue;
-      }
-      // for unrefmode, param init in a dependent graph, and no need to put it into inputs
-      if (common::AnfAlgo::IsParameterWeight(params[j]->cast<ParameterPtr>())) {
-        continue;
-      }
-      // get host tensor
-      if (flatten_tensors.empty()) {
-        const auto &front_node = AnfAlgo::FetchFrontNodeByBackendNode(inputs[i], *func_graph);
-        AnfAlgo::FlattenInputArg(args[i], front_node, &flatten_tensors);
-        if (flatten_tensors.size() != params.size()) {
-          MS_LOG(EXCEPTION) << "The args[" << i << "] tensor number is not equal to inputs[" << i << "] number.";
-        }
-      }
-      // unrefmode, just the host input tensor exclude weight
-      inputs_tensor->emplace_back(flatten_tensors[j]);
-    }
   }
 }
 
@@ -299,11 +264,7 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
 void GEBackend::ConstructInputs(const KernelGraphPtr &func_graph, const VectorRef &args,
                                 std::vector<tensor::TensorPtr> *inputs_tensor,
                                 const device::DeviceContext *device_context) {
-  if (IsEnableRefMode()) {
-    ConstructInputsRefMode(func_graph, args, inputs_tensor, device_context);
-  } else {
-    ConstructInputsUnRefMode(func_graph, args, inputs_tensor);
-  }
+  ConstructInputsRefMode(func_graph, args, inputs_tensor, device_context);
 }
 
 bool GEBackend::Copy(const mindspore::device::DeviceAddress *dst_device_tensor,
@@ -453,19 +414,12 @@ void GEBackend::RunGraph(const std::string &graph_info, const device::DeviceCont
   MS_LOG(INFO) << "Status record: start run graph: " << graph_info;
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(outputs);
-  // is_run_save_graph
-  std::string graph_name = graph_info;
-  bool is_run_save_graph = false;
-  if (graph_info.substr(0, kGraphInfoSavePrefixLen) == "save.") {
-    graph_name.erase(0, kGraphInfoSavePrefixLen);
-    is_run_save_graph = true;
-  }
 
-  if (graph_map_.find(graph_name) == graph_map_.end()) {
-    MS_LOG(EXCEPTION) << "The graph is not found, graph: " << graph_name;
+  if (graph_map_.find(graph_info) == graph_map_.end()) {
+    MS_LOG(EXCEPTION) << "The graph is not found, graph: " << graph_info;
   }
   MS_EXCEPTION_IF_NULL(device_context->graph_executor_);
-  auto func_graph = graph_map_[graph_name];
+  auto func_graph = graph_map_[graph_info];
 
 // for data_dump
 #ifndef ENABLE_SECURITY
@@ -491,20 +445,13 @@ void GEBackend::RunGraph(const std::string &graph_info, const device::DeviceCont
   // for profiling
   bool profile_started = ProfilerOnStepBegin(func_graph, device_context);
 
-  if (is_run_save_graph) {
-    device_context->graph_executor_->RunCheckpointGraph(func_graph);
-    return;
-  }
-
-  if (IsEnableRefMode()) {
-    // alloc input(static), output device memory; dynamic input will alloc later
-    device_context->graph_executor_->AllocGEInputOutputMemory(func_graph);
-    // alloc fixed feature memory when enable gekernel, once | const memory alloc in compilegraph
-    device_context->graph_executor_->AllocGEFixMemory();
-    // alloc refreshable feature memory
-    device_context->graph_executor_->AllocGERefreshableFeatureMemory(func_graph);
-    // const alloc in compile graph
-  }
+  // alloc input(static), output device memory; dynamic input will alloc later
+  device_context->graph_executor_->AllocGEInputOutputMemory(func_graph);
+  // alloc fixed feature memory when enable gekernel, once | const memory alloc in compilegraph
+  device_context->graph_executor_->AllocGEFixMemory();
+  // alloc refreshable feature memory
+  device_context->graph_executor_->AllocGERefreshableFeatureMemory(func_graph);
+  // const alloc in compile graph
 
   // input, weight from host(args) to device(device_address in graph)
   std::vector<tensor::TensorPtr> inputs_tensor;
@@ -541,10 +488,9 @@ void GEBackend::RunGraph(const std::string &graph_info, const device::DeviceCont
   ProfilerOnStepEnd(device_context, profile_started);
 
   // free resource
-  if (IsEnableRefMode()) {
-    device_context->graph_executor_->FreeGERefreshableFeatureMemory(func_graph);
-    device_context->graph_executor_->FreeInputOutputMemory(func_graph);
-  }
+
+  device_context->graph_executor_->FreeGERefreshableFeatureMemory(func_graph);
+  device_context->graph_executor_->FreeInputOutputMemory(func_graph);
 
   graph_run_iter_[func_graph]++;
   MS_LOG(INFO) << "Status record: end run graph: " << graph_info;
@@ -692,19 +638,6 @@ FuncGraphPtr GEBackend::BuildDFGraph(const device::DeviceContext *device_context
   std::map<std::string, std::shared_ptr<tensor::Tensor>> real_init_tensors{};
   const auto &infer_need_update_parameter_names = GetInferParameterNames(device_context);
 
-  bool infer = false;
-  if (func_graph->has_attr("phase")) {
-    std::string phase = func_graph->get_attr("phase")->ToString();
-    infer = phase != "train";
-  }
-
-  if (infer && !IsEnableRefMode()) {
-    for (auto iter = init_tensors.begin(); iter != init_tensors.end(); ++iter) {
-      if (infer_need_update_parameter_names.find(iter->first) != infer_need_update_parameter_names.end()) {
-        real_init_tensors.emplace(*iter);
-      }
-    }
-  }
   return device_context->graph_executor_->BuildDFGraph(func_graph, real_init_tensors, true);
 }
 

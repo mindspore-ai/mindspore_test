@@ -88,6 +88,7 @@ set(COMMON_SUB_COMP
         common/expander
         common/symbol_engine
         common/amp
+        common/runtime_conf
         )
 
 foreach(_comp ${COMMON_SUB_COMP})
@@ -140,7 +141,6 @@ set(BACKEND_SUB_COMP
         runtime/pynative
         runtime/pipeline
         runtime/data_queue
-        runtime/runtime_conf
         plugin/device/cpu/hal/device
         plugin/device/cpu/hal/hardware
         plugin/device/cpu/hal/profiler

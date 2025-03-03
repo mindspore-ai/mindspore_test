@@ -189,6 +189,7 @@ def test_setattr_self_non_param_used_in_operator():
             self.data = Tensor([1, 2, 3, 4])
             return self.data + x
 
+    ms.set_context(jit_config={"jit_level": "O0"})
     test_net = TestNet(1)
     ret = test_net(Tensor([1, 1, 1, 1]))
     assert np.all(ret.asnumpy() == np.array([2, 3, 4, 5]))
@@ -888,6 +889,7 @@ def test_type_of_getattr_after_setattr():
             out = self.proxy_combination
             return out
 
+    ms.set_context(jit_config={"jit_level": "O0"})
     net = Net()
     res = net()
     assert np.all(res.asnumpy() == np.array([[1, 2, 8, 4, 8]]))

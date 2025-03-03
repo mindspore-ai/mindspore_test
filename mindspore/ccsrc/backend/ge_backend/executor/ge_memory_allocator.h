@@ -32,8 +32,6 @@ class GEMemoryAllocator {
  public:
   static void ProcessGraphDeviceAddress(const KernelGraphPtr &kernel_graph, DeviceContext *device_context,
                                         GeDeviceResManagerPtr res_manager);
-  static void AllocInputHostMemory(const KernelGraphPtr &kernel_graph, DeviceContext *device_context);
-  static void AllocOutputHostMemory(const KernelGraphPtr &kernel_graph, DeviceContext *device_context);
   static void AllocGraphMemory(const backend::ge_backend::RunOptions &options, const KernelGraphPtr &graph,
                                const GraphSummary &summary, size_t stream_id, GeDeviceResManagerPtr res_manager);
   static void AllocUnuseInput(const KernelGraphPtr &kernel_graph, const AnfNodePtr &input_node,

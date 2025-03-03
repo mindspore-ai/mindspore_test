@@ -830,4 +830,15 @@ bool UseSimulationApi() {
   static bool use_simu_api = (simu_level == kSimulationLevel0 || (simu_level == kSimulationLevel1 && kbyk));
   return use_simu_api;
 }
+
+bool UseNewBackend() {
+  static auto backend_env = common::GetEnv("MS_NEW_BACKEND");
+  if (!backend_env.empty()) {
+    MS_LOG(INFO) << "Use the new backend.";
+    return true;
+  } else {
+    MS_LOG(INFO) << "Use the old backend.";
+    return false;
+  }
+}
 }  // namespace mindspore

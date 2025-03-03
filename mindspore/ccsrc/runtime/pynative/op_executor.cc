@@ -17,7 +17,7 @@
 #include "runtime/pynative/op_executor.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "runtime/pipeline/pipeline.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 
 namespace mindspore::runtime {

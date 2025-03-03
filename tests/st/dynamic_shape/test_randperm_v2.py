@@ -44,6 +44,8 @@ def test_randperm_v2_forward(mode):
     Expectation: generates random permutation of integers from 0 to n-1 without repeating.
     """
     context.set_context(mode=mode)
+    if mode == ms.GRAPH_MODE:
+        context.set_context(jit_config={"jit_level": "O0"})
     output = randperm_v2_forward_func(Tensor([4], mstype.int64))
     np.testing.assert_equal(output.shape, (4,))
     np.testing.assert_equal(output.dtype, mstype.float16)
@@ -74,6 +76,8 @@ def test_randperm_v2_dynamic(mode):
     Expectation: output the right result.
     """
     ms.context.set_context(mode=mode)
+    if mode == ms.GRAPH_MODE:
+        context.set_context(jit_config={"jit_level": "O0"})
     dyn_n = Tensor(shape=[None], dtype=mstype.int64)
     test_cell = test_utils.to_cell_obj(randperm_v2_forward_func)
     test_cell.set_inputs(dyn_n)

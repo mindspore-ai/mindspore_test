@@ -317,26 +317,6 @@ void GPUKernelRuntime::FetchMemUnitSize(const session::KernelGraph *graph) {
   }
 }
 
-void GPUKernelRuntime::AssignMemory(const session::KernelGraph &graph) {
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  mem_manager_->ResetDynamicMemory();
-  AssignStaticMemoryInput(graph);
-  AssignStaticMemoryValueNode(graph);
-  bool is_enable_dynamic_mem = context_ptr->get_param<bool>(MS_CTX_ENABLE_DYNAMIC_MEM_POOL);
-  if (is_enable_dynamic_mem) {
-    // Use the dynamic memory pool.
-    InitKernelRefCount(&graph);
-    InitMemorySwapInfo(&graph);
-    InitKernelOutputAddress(&graph);
-    InitKernelWorkspaceAddress(&graph);
-    SaveGraphOutputNode(&graph);
-  } else {
-    AssignDynamicMemory(graph);
-  }
-}
-
 bool GPUKernelRuntime::Run(const session::KernelGraph &graph, bool is_task_sink) {
   std::chrono::system_clock::time_point start_time = std::chrono::system_clock::now();
   bool ret = true;

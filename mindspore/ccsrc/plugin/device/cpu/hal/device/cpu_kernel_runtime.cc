@@ -60,30 +60,6 @@ bool CPUKernelRuntime::Init() {
 }
 
 const size_t INIT_NODE_REF = 1;
-void CPUKernelRuntime::AssignKernelGraphAddress(const session::KernelGraph *kernel_graph) {
-  AssignValueNodeAddress(kernel_graph);
-  AssignInputNodeAddress(kernel_graph);
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  bool is_enable_mem_reuse = EnvConfigParser::GetInstance().GetSysMemreuse();
-  if (context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    // disable mem reuse for kPynativeMode
-    is_enable_mem_reuse = false;
-  }
-  if (is_enable_mem_reuse) {
-    MS_EXCEPTION_IF_NULL(mem_manager_);
-    mem_manager_->ResetDynamicMemory();
-    MS_EXCEPTION_IF_NULL(kernel_graph);
-    AssignDynamicMemory(*kernel_graph);
-#ifdef MEM_REUSE_DEBUG
-    // Get normal graph ir for memreuse
-    mindspore::memreuse::MemReuseChecker::GetInstance().CheckNormalIR(kernel_graph);
-#endif
-  } else {
-    AssignKernelOutputAddress(kernel_graph);
-    static_cast<CPUMemoryManager *>(mem_manager_.get())->AssignMemory(kernel_graph);
-  }
-}
 
 void CPUKernelRuntime::AssignValueNodeAddress(const session::KernelGraph *kernel_graph) {
   MS_EXCEPTION_IF_NULL(kernel_graph);

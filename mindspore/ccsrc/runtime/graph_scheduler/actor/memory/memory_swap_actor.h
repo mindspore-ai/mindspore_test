@@ -36,7 +36,7 @@ class MemorySwapActor : public AbstractActor {
         device_tensors_to_swap_(std::move(device_tensors_to_swap)) {}
   MemorySwapActor(const std::string &name, const AID *recorder_aid, size_t stream_id,
                   std::vector<DeviceTensor *> device_tensors_to_swap, const DeviceContext *device_context,
-                  std::vector<std::pair<device::SwapActionType, vector<size_t>>> actions)
+                  std::vector<std::pair<device::SwapActionType, std::vector<size_t>>> actions)
       : AbstractActor(name, KernelTransformType::kMemorySwapActor, recorder_aid),
         stream_id_(stream_id),
         device_tensors_to_swap_(std::move(device_tensors_to_swap)),
@@ -60,7 +60,7 @@ class MemorySwapActor : public AbstractActor {
  protected:
   size_t stream_id_;
   std::vector<DeviceTensor *> device_tensors_to_swap_;
-  std::vector<std::pair<device::SwapActionType, vector<size_t>>> swap_actions_;
+  std::vector<std::pair<device::SwapActionType, std::vector<size_t>>> swap_actions_;
   std::vector<DeviceTensor *> real_parameters_;
   size_t fixed_device_tensor_num_{0};
 };

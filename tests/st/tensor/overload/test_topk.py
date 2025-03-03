@@ -165,7 +165,7 @@ def test_tensor_topk_ext_dynamic():
     sorted2 = True
     TEST_OP(topk_ext_forward_func,
             [[ms_data1, k1, dim1, largest1, sorted1], [ms_data2, k2, dim2, largest2, sorted2]], 'topk_ext',
-            disable_resize=True, disable_tensor_dynamic_type='DYNAMIC_RANK',
+            disable_mode=["GRAPH_MODE"], disable_resize=True, disable_tensor_dynamic_type='DYNAMIC_RANK',
             disable_nontensor_dynamic_type='STATIC_LEN')
 
 
@@ -191,5 +191,5 @@ def test_tensor_topk_dynamic():
     sorted2 = True
     TEST_OP(topk_forward_func,
             [[ms_data1, k1, dim1, largest1, sorted1], [ms_data2, k2, dim2, largest2, sorted2]], 'topk',
-            disable_yaml_check=True, disable_resize=True, disable_tensor_dynamic_type='DYNAMIC_RANK',
-            disable_nontensor_dynamic_type='STATIC_LEN')
+            disable_mode=["GRAPH_MODE"], disable_yaml_check=True, disable_resize=True,
+            disable_tensor_dynamic_type='DYNAMIC_RANK', disable_nontensor_dynamic_type='STATIC_LEN')

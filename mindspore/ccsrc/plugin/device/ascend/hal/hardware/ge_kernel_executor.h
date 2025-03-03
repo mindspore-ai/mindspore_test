@@ -96,8 +96,8 @@ class GeKernelExecutor : public KernelExecutor {
     const KernelGraphPtr &kernel_graph,
     const std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> &mock_exec_order) const;
   // launch
-  bool MemoryCopyAsync(const CNodePtr &node, const vector<KernelTensor *> &inputs,
-                       const vector<KernelTensor *> &outputs) const;
+  bool MemoryCopyAsync(const CNodePtr &node, const std::vector<KernelTensor *> &inputs,
+                       const std::vector<KernelTensor *> &outputs) const;
   void DoAsyncCkpt(const CNodePtr &kernel) const;
   void SetArfError() const;
   void SetUceError() const;

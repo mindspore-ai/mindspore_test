@@ -25,15 +25,6 @@
 namespace mindspore {
 namespace backend {
 namespace ge_backend {
-class GeHostAddress : public device::cpu::CPUDeviceAddress {
- public:
-  GeHostAddress(void *ptr, size_t size, const std::string &format, TypeId type_id, const std::string &device_name,
-                uint32_t device_id)
-      : CPUDeviceAddress(ptr, size, format, type_id, device_name, device_id) {}
-  explicit GeHostAddress(const kernel::KernelTensorPtr &kernel_tensor) : CPUDeviceAddress(kernel_tensor) {}
-  device::DeviceType GetDeviceType() const override { return device::DeviceType::kAscend; }
-};
-
 class GeDeviceResManager {
  public:
   GeDeviceResManager() {}
@@ -61,7 +52,6 @@ class GeDeviceResManager {
   bool initialized_ = false;
   device::KernelRuntime *runtime_instance_ = nullptr;
   std::shared_ptr<device::MemoryManager> mem_manager_{nullptr};
-  bool is_use_cpu_memory_ = false;
 };
 using GeDeviceResManagerPtr = std::shared_ptr<GeDeviceResManager>;
 

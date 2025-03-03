@@ -50,7 +50,7 @@ bool NeedOptimize(const AnfNodePtr &node, const std::string &optimized_comm_grou
 }
 
 std::string GetExecOrderAlgo(KernelGraph *graph) {
-  std::string ret = graph->jit_setting().exec_order;
+  std::string ret = graph->backend_jit_config().exec_order;
   if (ret.empty()) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);

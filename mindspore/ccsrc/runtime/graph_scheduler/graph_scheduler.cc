@@ -37,8 +37,8 @@
 #include "runtime/graph_scheduler/graph_parameter_store.h"
 #include "runtime/graph_scheduler/graph_scheduler.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "runtime/runtime_conf/runtime_conf.h"
-#include "runtime/runtime_conf/thread_bind_core.h"
+#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/thread_bind_core.h"
 #include "runtime/pipeline/pipeline.h"
 #include "include/common/profiler.h"
 #include "actor/actormgr.h"
@@ -1418,6 +1418,7 @@ ActorSetPtr GraphScheduler::Build(const GraphCompilerInfo &graph_compiler_info) 
   auto actor_set = std::make_shared<ActorSet>(graph_compiler_info.name_);
   MS_EXCEPTION_IF_NULL(actor_set);
   actor_set->graph_phase_ = graph_compiler_info.graph_phase_;
+  actor_set->actor_id_ = graph_compiler_info.id_;
   (void)actors_.emplace(actor_set->name_, actor_set);
 
   TryEnableKbkSubGraphExecMode(graph_compiler_info, actor_set.get());

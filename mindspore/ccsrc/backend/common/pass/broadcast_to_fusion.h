@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace opt {
-class BroadcastToFusion : public PatternProcessPass {
+class BACKEND_EXPORT BroadcastToFusion : public PatternProcessPass {
  public:
   explicit BroadcastToFusion(bool multigraph = true) : PatternProcessPass("broadcast_to_fusion", multigraph) {}
   ~BroadcastToFusion() override = default;

@@ -606,7 +606,7 @@ void SilentChecker::LaunchOperator(const OpExecState *op_exec_state, const std::
                                    void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(op_exec_state->kernel);
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Launch op " << op_exec_state->op_name << " start.";
-  vector<KernelTensor *> workspace;
+  std::vector<KernelTensor *> workspace;
 
   if (op_exec_state->output->dev_addr == nullptr) {
     op_exec_state->output->dev_addr = runtime::DeviceAddressUtils::CreateWorkspaceAddress(
@@ -633,37 +633,37 @@ void SilentChecker::LaunchOperator(const OpExecState *op_exec_state, const std::
 }
 
 void SilentChecker::LaunchNormAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr) {
-  vector<KernelTensor *> inputs{const_cast<KernelTensor *>(dout), p_scalar_.get(), dim_.get(), keep_dim_.get()};
-  vector<KernelTensor *> outputs{state->val.get()};
+  std::vector<KernelTensor *> inputs{const_cast<KernelTensor *>(dout), p_scalar_.get(), dim_.get(), keep_dim_.get()};
+  std::vector<KernelTensor *> outputs{state->val.get()};
   LaunchOperator(&state->kernel_norm, inputs, outputs, state->val.get(), stream_ptr);
 }
 
 void SilentChecker::LaunchSquareAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr) {
-  vector<KernelTensor *> inputs{const_cast<KernelTensor *>(dout)};
-  vector<KernelTensor *> outputs{state->square.get()};
+  std::vector<KernelTensor *> inputs{const_cast<KernelTensor *>(dout)};
+  std::vector<KernelTensor *> outputs{state->square.get()};
   LaunchOperator(&state->kernel_square, inputs, outputs, state->square.get(), stream_ptr);
 }
 
 void SilentChecker::LaunchMaxAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr) {
-  vector<KernelTensor *> inputs{state->square.get()};
-  vector<KernelTensor *> outputs{state->val.get()};
+  std::vector<KernelTensor *> inputs{state->square.get()};
+  std::vector<KernelTensor *> outputs{state->val.get()};
   LaunchOperator(&state->kernel_max, inputs, outputs, state->val.get(), stream_ptr);
 }
 
 void SilentChecker::LaunchInplaceCopyAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr) {
-  vector<KernelTensor *> inputs{state->avg.get(), state->val.get()};
-  vector<KernelTensor *> outputs{};
+  std::vector<KernelTensor *> inputs{state->avg.get(), state->val.get()};
+  std::vector<KernelTensor *> outputs{};
   LaunchOperator(&state->kernel_copy, inputs, outputs, nullptr, stream_ptr);
 }
 
 void SilentChecker::LaunchSilentCheckV2Async(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr) {
-  vector<KernelTensor *> inputs{state->val.get(),   const_cast<KernelTensor *>(dout),
-                                state->sfda.get(),  state->step.get(),
-                                c_min_steps_.get(), c_thresh_l1_.get(),
-                                c_coeff_l1_.get(),  c_thresh_l2_.get(),
-                                c_coeff_l2_.get(),  npu_asd_detect_.get()};
-  vector<KernelTensor *> outputs{const_cast<KernelTensor *>(dout), state->sfda.get(), state->step.get(),
-                                 state->result.get()};
+  std::vector<KernelTensor *> inputs{state->val.get(),   const_cast<KernelTensor *>(dout),
+                                     state->sfda.get(),  state->step.get(),
+                                     c_min_steps_.get(), c_thresh_l1_.get(),
+                                     c_coeff_l1_.get(),  c_thresh_l2_.get(),
+                                     c_coeff_l2_.get(),  npu_asd_detect_.get()};
+  std::vector<KernelTensor *> outputs{const_cast<KernelTensor *>(dout), state->sfda.get(), state->step.get(),
+                                      state->result.get()};
   LaunchOperator(&state->kernel_silent_check, inputs, outputs, state->result.get(), stream_ptr);
 }
 
@@ -672,12 +672,12 @@ void SilentChecker::LaunchSilentCheckV3Async(const KernelTensor *dout, const Che
   // args_index: | 0   | 1   | 2   | 3          | 4    | 5           | 6           | 7     | 8              |
   // args_name : | val | max | avg | input_grad | step | c_thresh_l1 | c_thresh_l2 | beta1 | npu_asd_detect |
   // --------------------------------------------------------------------------------------------------------
-  vector<KernelTensor *> inputs{
+  std::vector<KernelTensor *> inputs{
     state->val.get(),     state->val.get(),   state->avg.get(),   const_cast<KernelTensor *>(dout),
     state->step.get(),    c_thresh_l1_.get(), c_thresh_l2_.get(), beta1_.get(),
     npu_asd_detect_.get()};
-  vector<KernelTensor *> outputs{state->val.get(), const_cast<KernelTensor *>(dout), state->step.get(),
-                                 state->result.get()};
+  std::vector<KernelTensor *> outputs{state->val.get(), const_cast<KernelTensor *>(dout), state->step.get(),
+                                      state->result.get()};
   LaunchOperator(&state->kernel_silent_check, inputs, outputs, state->result.get(), stream_ptr);
 }
 

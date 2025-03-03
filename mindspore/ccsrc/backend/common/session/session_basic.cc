@@ -1278,16 +1278,6 @@ AnfNodePtr SessionBasic::FindPullNode(const AnfNodePtr &push_node, const std::ve
   return nullptr;
 }
 
-GraphId SessionBasic::CompileGraph(const GraphSegmentPtr &segment, const AnfNodePtrList &outputs) {
-  MS_EXCEPTION_IF_NULL(executor_);
-  return executor_->CompileGraph(shared_from_this(), segment, outputs);
-}
-
-GraphId SessionBasic::CompileGraph(NotNull<FuncGraphPtr> func_graph) {
-  MS_EXCEPTION_IF_NULL(executor_);
-  return executor_->CompileGraph(shared_from_this(), func_graph);
-}
-
 void SessionBasic::BuildGraph(GraphId graph_id) {
   MS_EXCEPTION_IF_NULL(executor_);
   executor_->BuildGraph(shared_from_this(), graph_id);
@@ -1410,7 +1400,7 @@ void SetGraphBpropAttr(const KernelGraphPtr &graph) {
   }
 }
 
-void CheckSplitIndexValid(const vector<uint32_t> &split_index) {
+void CheckSplitIndexValid(const std::vector<uint32_t> &split_index) {
   uint32_t last = 0;
   for (size_t i = 0; i < split_index.size(); ++i) {
     if (split_index[i] <= last && i != 0) {
@@ -1420,7 +1410,7 @@ void CheckSplitIndexValid(const vector<uint32_t> &split_index) {
   }
 }
 
-void PreProcessOnSplitIndex(const KernelGraphPtr &graph, vector<uint32_t> *split_index) {
+void PreProcessOnSplitIndex(const KernelGraphPtr &graph, std::vector<uint32_t> *split_index) {
   MS_EXCEPTION_IF_NULL(split_index);
   if (split_index->empty()) {
     return;

@@ -596,7 +596,7 @@ void FusedInferAttentionScoreInfo::ReplaceNodeInputOrAttrs() {
 
 void FusedInferAttentionScoreInfo::SplitKVSequenceGraph(const Group &group, GenerateGraph *gen_g,
                                                         AnfNodePtr *fused_attention_score, AnfNodePtr *output) {
-  vector<AnfNodePtr> fias_op_inputs = {gen_g->NewOpInst(FUSED_INFER_ATTENTION_SCORE)};
+  std::vector<AnfNodePtr> fias_op_inputs = {gen_g->NewOpInst(FUSED_INFER_ATTENTION_SCORE)};
   for (size_t i = 0; i < ops::kFusedInferAttentionScoreInputsNum; ++i) {
     fias_op_inputs.emplace_back(gen_g->virtual_input_node());
   }

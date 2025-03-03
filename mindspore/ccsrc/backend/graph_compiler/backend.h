@@ -44,32 +44,6 @@
 
 namespace mindspore {
 namespace compile {
-class BACKEND_EXPORT MsBackend : public Backend {
- public:
-  MsBackend(const std::string &name, const std::string &target, uint32_t device_id);
-  ~MsBackend() override = default;
-
-  LinConvertResult MsConvert(const GraphSegmentPtr &segment, const std::string &target = "");
-  virtual VectorRef MsRunGraph(const GraphId &g, const VectorRef &args, const std::string &target = "");
-
-  VectorRef MsSimuRunGraph(const GraphId &g);
-  GraphId CompileGraph(const NotNull<FuncGraphPtr> &fg) override;
-  VectorRef RunGraph(GraphId graph_id, const VectorRef &args);
-  void ClearSessionGraphs();
-  void CreateOtherSession(const std::string &target);
-
-#ifdef ENABLE_DEBUGGER
-  void SetDebugger() override;
-#endif
-
- protected:
-  session::SessionPtr target_sess_;
-  session::SessionPtr other_sess_;
-  std::string target_device_;
-  std::string other_device_;
-  mindspore::HashMap<GraphId, LinConvertResult> graph_id_map_;
-};
-
 class BACKEND_EXPORT MindRTBackend : public MindRTBackendBase {
  public:
   MindRTBackend(const std::string &backend_name, const std::string &device_name, uint32_t device_id)

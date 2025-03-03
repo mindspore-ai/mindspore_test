@@ -253,7 +253,7 @@ bool InsertAllReduceOps(const std::vector<AnfNodePtr> &all_nodes, const FuncGrap
       if (matmul_stra == nullptr) {
         continue;
       }
-      auto matmul_var = GetValue<vector<Shape>>(matmul_stra);
+      auto matmul_var = GetValue<std::vector<Shape>>(matmul_stra);
       if (matmul_var.size() > 0) {
         Dimensions sub_a_strategy = matmul_var.at(0);
         Dimensions sub_b_strategy = matmul_var.at(1);
@@ -322,7 +322,7 @@ bool InsertAllReduceOpsForFFN(const std::vector<AnfNodePtr> &all_nodes, const Fu
       if (batchmatmul_stra == nullptr) {
         continue;
       }
-      auto batchmatmul_var = GetValue<vector<Shape>>(batchmatmul_stra);
+      auto batchmatmul_var = GetValue<std::vector<Shape>>(batchmatmul_stra);
       if (batchmatmul_var.size() > 0) {
         Dimensions sub_a_strategy = batchmatmul_var.at(0);
         Dimensions sub_b_strategy = batchmatmul_var.at(1);
@@ -418,7 +418,7 @@ bool ModifyReshapeOps(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphP
     if (transpose_stra == nullptr) {
       continue;
     }
-    auto transpose_var = GetValue<vector<Shape>>(transpose_stra);
+    auto transpose_var = GetValue<std::vector<Shape>>(transpose_stra);
     if (transpose_var.size() > 0) {
       Dimensions sub_strategy = transpose_var.at(0);
       bool all_ones = std::all_of(sub_strategy.begin(), sub_strategy.end(), [](int64_t i) { return i == 1; });

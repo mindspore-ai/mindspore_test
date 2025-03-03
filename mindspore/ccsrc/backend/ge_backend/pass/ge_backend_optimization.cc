@@ -75,6 +75,54 @@
 #include "plugin/device/ascend/optimizer/ge/expander_fallback.h"
 #include "plugin/device/ascend/optimizer/ge/convert_pad_v3_paddings.h"
 #include "plugin/device/ascend/optimizer/ge/convert_embedding_dense_grad_padding.h"
+#include "plugin/device/ascend/optimizer/mindir/renorm_split.h"
+#include "plugin/device/ascend/optimizer/mindir/reduce_axis_update.h"
+#include "plugin/device/ascend/optimizer/mindir/clip_by_norm_fission.h"
+#include "plugin/device/ascend/optimizer/mindir/space_batch_nd_attr_update.h"
+#include "plugin/device/ascend/optimizer/mindir/adam_weight_decay_unify_mindir.h"
+#include "plugin/device/ascend/optimizer/mindir/add_depend_for_adamw.h"
+#include "plugin/device/ascend/optimizer/ir_fission/cdist_fission.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/batchmatmul_reducescatter_alltoall_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/alltoall_allgather_batch_matmul_fusion.h"
+#include "plugin/device/ascend/optimizer/mindir/sparse_softmax_cross_entropy_with_logits_unify_mindir.h"
+#include "plugin/device/ascend/optimizer/mindir/dropout_unify_mindir.h"
+#include "plugin/device/ascend/optimizer/mindir/all_to_all_unify_mindir.h"
+#include "plugin/device/ascend/optimizer/mindir/neighbor_exchange_v2_unify_mindir.h"
+#include "plugin/device/ascend/optimizer/mindir/all_to_all_v_unify_mindir.h"
+#include "plugin/device/ascend/optimizer/ir_fission/bn_split.h"
+#include "plugin/device/ascend/optimizer/mindir/bn_grad_unify_mindir.h"
+#include "plugin/device/ascend/optimizer/ir_fission/bn_grad_split.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/batchnormgrad_to_bninfergrad.h"
+#include "plugin/device/ascend/optimizer/ir_fission/batch_norm_grad_infer_fission.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/batchnorm_to_bninfer.h"
+#include "plugin/device/ascend/optimizer/ge/lamb_fission.h"
+#include "plugin/device/ascend/optimizer/ge/adjust_print_for_ge.h"
+#include "plugin/device/ascend/optimizer/ge/getnext_for_ge.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/adaptive_max_pool2d_fusion.h"
+#include "plugin/device/ascend/optimizer/ge/avg_pool_grad_for_ge.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/mc2_fusion.h"
+#include "plugin/device/ascend/optimizer/ge/add_attr_to_dump.h"
+#include "plugin/device/ascend/optimizer/mindir/ascend_mindir_op_adapter.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/flash_attention_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_allreduce_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_allreduce_add_rmsnorm_fusion.h"
+#include "backend/common/pass/convert_list_to_tuple.h"
+#include "backend/common/pass/eliminate_func_data_type.h"
+#include "backend/common/pass/conv_transpose_to_conv_bp.h"
+#include "backend/common/pass/custom_op_reg_info_to_attr.h"
+#include "backend/common/pass/inplace_assign_for_custom_op.h"
+#include "backend/common/pass/convert_attr_to_unify_mindir.h"
+#include "backend/common/pass/convert_dynamic_broadcast_to.h"
+#include "backend/common/pass/convert_const_input_to_attr.h"
+#include "backend/common/pass/custom_op_const_input_to_attr.h"
+#include "backend/common/pass/convert_const_input_to_tensor_input.h"
+#include "backend/common/pass/convert_tuple_output_to_maketuple.h"
+#include "backend/common/pass/convert_unused_tuple_para_to_make_tuple.h"
+#include "backend/common/pass/flatten_concat_fission.h"
+#include "backend/common/pass/add_input_structural_for_py_execute.h"
+#include "backend/common/pass/broadcast_to_fusion.h"
+#include "backend/common/pass/add_attr_to_node/add_attr_to_node.h"
+#include "backend/common/pass/replace_addn_fusion.h"
 
 namespace mindspore {
 namespace backend {
@@ -100,201 +148,6 @@ void DoUnifyMindIRPass(const FuncGraphPtr &graph, const std::shared_ptr<mindspor
     DumpIR(file_name, graph, true, kWholeStack);
   }
 #endif
-}
-
-bool HasSwitchNode(const FuncGraphPtr &func_graph) {
-  if (func_graph == nullptr) {
-    return false;
-  }
-  const auto &nodes = TopoSort(func_graph->get_return());
-  return std::any_of(nodes.begin(), nodes.end(), [](const AnfNodePtr &node) {
-    return node != nullptr && node->isa<CNode>() && common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimSwitch);
-  });
-}
-
-// Check if src_node depends on dst_node.
-bool IsTopoDependNode(const std::set<AnfNodePtr> &checked_calls, const AnfNodePtr &node,
-                      std::set<AnfNodePtr> *checked_node) {
-  MS_EXCEPTION_IF_NULL(node);
-  MS_EXCEPTION_IF_NULL(checked_node);
-  if (checked_calls.find(node) != checked_calls.end()) {
-    return true;
-  }
-  if (!node->isa<CNode>() || checked_node->find(node) != checked_node->end()) {
-    return false;
-  }
-
-  (void)checked_node->emplace(node);
-  const auto &cnode = node->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(cnode);
-  const auto &inputs = cnode->inputs();
-  for (const auto &input : inputs) {
-    MS_EXCEPTION_IF_NULL(input);
-    if (IsTopoDependNode(checked_calls, input, checked_node)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool HasParallelSwitchCall(const FuncGraphPtr &func_graph) {
-  MS_EXCEPTION_IF_NULL(func_graph);
-  std::vector<AnfNodePtr> switch_calls;
-  const auto &nodes = TopoSort(func_graph->get_return());
-  for (const auto &node : nodes) {
-    if (!common::AnfAlgo::IsCallNode(node)) {
-      continue;
-    }
-    const auto &cnode = node->cast<CNodePtr>();
-    if (cnode == nullptr || cnode->size() == 0 || cnode->input(0) == nullptr ||
-        (!common::AnfAlgo::CheckPrimitiveType(cnode->input(0), prim::kPrimSwitch))) {
-      continue;
-    }
-    switch_calls.emplace_back(node);
-  }
-  if (switch_calls.size() <= 1) {
-    return false;
-  }
-  constexpr size_t kMaxSwitchInlineSize = 10;
-  if (switch_calls.size() >= kMaxSwitchInlineSize) {
-    MS_LOG(INFO) << "Disable switch inline for switch node:" << switch_calls.size() << " more than 10.";
-    return true;
-  }
-  std::set<AnfNodePtr> checked_calls{switch_calls.front()};
-  for (size_t i = 1; i < switch_calls.size(); ++i) {
-    std::set<AnfNodePtr> checked_nodes;
-    if (!IsTopoDependNode(checked_calls, switch_calls[i], &checked_nodes)) {
-      MS_LOG(INFO) << "Switch call node:" << switch_calls[i]->DebugString() << " has other parallel call node.";
-      return true;
-    }
-    checked_calls.emplace(switch_calls[i]);
-  }
-  return false;
-}
-
-bool IsFuncGraphSupportSwitchInline(const FuncGraphPtr &graph) {
-  return HasParallelSwitchCall(graph) ||
-         std::any_of(graph->func_graphs_used_total().cbegin(), graph->func_graphs_used_total().cend(),
-                     [](const auto &sub_graph) { return sub_graph != nullptr && HasParallelSwitchCall(sub_graph); });
-}
-
-bool HasAbstractRefOutput(const abstract::AbstractBasePtr &abs) {
-  if (abs == nullptr) {
-    return false;
-  }
-  if (abs->isa<abstract::AbstractSequence>()) {
-    const auto &seq_abs = abs->cast<abstract::AbstractSequencePtr>();
-    MS_EXCEPTION_IF_NULL(seq_abs);
-    if (seq_abs->dynamic_len()) {
-      return false;
-    }
-    if (std::any_of(seq_abs->elements().begin(), seq_abs->elements().end(),
-                    [](const abstract::AbstractBasePtr &sub_abs) { return HasAbstractRefOutput(sub_abs); })) {
-      return true;
-    }
-  }
-  if (abs->isa<abstract::AbstractRefTensor>()) {
-    return true;
-  }
-  return false;
-}
-
-bool IsNodeValid(const AnfNodePtr &node) {
-  if (node == nullptr) {
-    return false;
-  } else if (common::AnfAlgo::IsNodeOutputDynamicShape(node)) {
-    MS_LOG(INFO) << "Disable switch inline for dynamic shape node:" << node->DebugString();
-    return false;
-  } else if (node->isa<CNode>() && common::AnfAlgo::IsTypeTransformOp(common::AnfAlgo::GetCNodeName(node))) {
-    MS_LOG(INFO) << "Disable switch inline for backoff node:" << node->DebugString();
-    return false;
-  } else if (common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimPartial)) {
-    const auto &cnode = node->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(cnode);
-    if (cnode->size() <= 1 || cnode->input(1) == nullptr || !(IsValueNode<FuncGraph>(cnode->input(1)))) {
-      return true;
-    }
-    const auto &func_graph = GetValueNode<FuncGraphPtr>(cnode->input(1));
-    MS_EXCEPTION_IF_NULL(func_graph);
-    if (std::any_of(func_graph->parameters().begin(), func_graph->parameters().end(), [](const AnfNodePtr &para) {
-          return para != nullptr && para->abstract() != nullptr &&
-                 para->abstract()->isa<abstract::AbstractSequence>() &&
-                 (para->abstract()->cast<abstract::AbstractSequencePtr>()->dynamic_len() ||
-                  para->abstract()->cast<abstract::AbstractSequencePtr>()->size() > 1);
-        })) {
-      MS_LOG(INFO) << "Disable switch inline for tuple input in graph:" << func_graph->ToString()
-                   << " for partial node:" << node->DebugString();
-      return false;
-    }
-  } else if (common::AnfAlgo::IsCallNode(node) && HasAbstractRefOutput(node->abstract())) {
-    return false;
-  }
-  return true;
-}
-
-bool IsEnableControlFlowInline(const FuncGraphPtr &graph) {
-  MS_EXCEPTION_IF_NULL(graph);
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  if (std::any_of(
-        graph->func_graphs_used_total().cbegin(), graph->func_graphs_used_total().cend(), [](const auto &sub_graph) {
-          return sub_graph != nullptr && sub_graph->has_flag(FUNC_GRAPH_FLAG_CELL_REUSE) && HasSwitchNode(sub_graph);
-        })) {
-    MS_LOG(INFO) << "Set reuse level from:" << context->CellReuseLevel() << " to:" << CellReuseLevel::kNoInline;
-    context->SetCellReuseLevel(CellReuseLevel::kNoInline);
-  }
-
-  static const auto is_disable_switch_inline = common::IsDisableRuntimeConfig(common::kRuntimeSwitchInline);
-  if (is_disable_switch_inline) {
-    MS_LOG(INFO) << "Disable switch inline by runtime config.";
-    return false;
-  }
-
-  MS_EXCEPTION_IF_NULL(graph);
-  // Not support recursive.
-  if (std::any_of(graph->func_graphs_used_total().cbegin(), graph->func_graphs_used_total().cend(),
-                  [](const auto &sub_graph) { return sub_graph->recursive(); })) {
-    MS_LOG(INFO) << "Disable switch inline for recursive.";
-    return false;
-  }
-
-  if (context->CellReuseLevel() != CellReuseLevel::kLazyInline) {
-    auto is_include_no_switch_call = [](const FuncGraphPtr &graph) {
-      MS_EXCEPTION_IF_NULL(graph);
-      const auto &nodes = TopoSort(graph->get_return());
-      for (const auto &node : nodes) {
-        MS_EXCEPTION_IF_NULL(node);
-        if (common::AnfAlgo::IsCallNode(node)) {
-          const auto &cnode = node->cast<CNodePtr>();
-          MS_EXCEPTION_IF_NULL(cnode);
-          if (!common::AnfAlgo::CheckPrimitiveType(cnode->input(0), prim::kPrimSwitch)) {
-            return true;
-          }
-        }
-      }
-      return false;
-    };
-    if (is_include_no_switch_call(graph)) {
-      MS_LOG(INFO) << "Disable switch inline for unsupported call node.";
-      return false;
-    }
-    if (std::any_of(graph->func_graphs_used_total().begin(), graph->func_graphs_used_total().end(),
-                    is_include_no_switch_call)) {
-      MS_LOG(INFO) << "Disable switch inline for unsupported call node.";
-      return false;
-    }
-  }
-  const auto &all_nodes = TopoSort(graph->get_return(), SuccDeeperSimple);
-  if (std::any_of(all_nodes.begin(), all_nodes.end(), [](const AnfNodePtr &node) { return !IsNodeValid(node); })) {
-    return false;
-  }
-  MS_LOG(INFO) << "Start check parallel switch call.";
-  if (IsFuncGraphSupportSwitchInline(graph)) {
-    MS_LOG(INFO) << "Disable switch inline for parallel switch call node.";
-    return false;
-  }
-  MS_LOG(INFO) << "Enable switch inline.";
-  return true;
 }
 
 void MarkRefGraph(const KernelGraphPtr &kernel_graph) {
@@ -326,6 +179,69 @@ void MarkRefGraph(const KernelGraphPtr &kernel_graph) {
     }
   }
 }
+
+mindspore::opt::PassManagerPtr GetBackendCommonUnifyMindIRPassManager() {
+  auto unify_mindir_pm = std::make_shared<mindspore::opt::PassManager>("unify_mindir");
+  MS_EXCEPTION_IF_NULL(unify_mindir_pm);
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::RenormSplit>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::ReduceAxisUpdate>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::SpaceToBatchNDAttrUpdate>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::BatchToSpaceNDAttrUpdate>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::AdamWeightDecayUnifyMindIR>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::AddDependForAdamW>());
+  // Since the SparseSoftmaxCrossEntropyWithLogits operator can only use AICPU and has poor execution performance,
+  // it does not take effect for the time being.
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIRV2>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::SparseSoftmaxCrossEntropyWithLogitsUnifyMindIR>());
+
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::DropoutExtUnifyMindIR1>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::DropoutGradExtUnifyMindIR>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::DropoutUnifyMindIR1>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::DropoutGradUnifyMindIR>());
+  // AllToAll & AlltoAllV
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::NeighborExchangeUnifyMindIR>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::NeighborExchangeV2UnifyMindIR>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::NeighborExchangeV2GradUnifyMindIR>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::AllToAllUnifyMindIR>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::AlltoAllVUnifyMindIR>());
+  // batchnorm
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::BnSplit>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::BatchNormGradUnifyMindIR>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::BnGradSplit>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::BatchNormGrad2BNInferGrad>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::BatchNormGradInferFission>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::BatchNorm2BNInfer>());
+
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::AdjustPrintForGe>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::GetNextForGE>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::SyncBnSplit>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::SyncBnGradSplit>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::AvgPoolGradForGE>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::AddAttrToDump>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::AscendMindIROpAdapter>());
+  return unify_mindir_pm;
+}
+
+mindspore::opt::PassManagerPtr GetBackendFusionGroupPassManager() {
+  auto pm = std::make_shared<mindspore::opt::PassManager>("backend_fusion");
+  pm->AddFusionPass(std::make_shared<mindspore::opt::ClipByNormFission>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::CdistFission>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::CdistGradFission>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::BatchMatMulReduceScatterAllToAllFusion>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::AllToAllAllGatherBatchMatMulFusion>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::LambFissionGe>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::AdaptiveMaxPool2DGeFusion>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::MatmulReduceScatterFusion>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::AllGatherMatmulFusion>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::FlashAttentionFusionV1>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::FlashAttentionFusionV2>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::QuantBatchMatmulAllReduceFusion>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::MatMulAllReduceFusion>());
+  // pm->AddFusionPass(std::make_shared<mindspore::opt::MatMulAllReduceAddRmsNormFusion>());
+  return pm;
+}
+
 }  // namespace
 
 void UnifyMindIRPass(const FuncGraphPtr &func_graph) {
@@ -336,9 +252,6 @@ void UnifyMindIRPass(const FuncGraphPtr &func_graph) {
   unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::EraseInvalidMicroDepend>());
   if (common::AnfAlgo::IsDynamicGraph(func_graph)) {
     unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::EraseNotCutAttr>());
-  }
-  if (IsEnableControlFlowInline(func_graph)) {
-    unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::SwitchNotCut>());
   }
   optimizer->AddPassManager(unify_mindir_pm);
 
@@ -517,6 +430,159 @@ void OptimizeGEGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *cons
   PROF_END(OptimizeGEGraph);
   MS_LOG(DEBUG) << "Status record: end optimize ge graph. graph id: " << graph->graph_id();
 }
+
+void GEUnifyMindIR(const KernelGraphPtr &kernel_graph) {
+  uint64_t start_time = profiler::GetClockSyscnt();
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  PROF_START(GEUnifyMindIR);
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+#ifdef ENABLE_DUMP_IR
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name = "hwopt_d_before_unify_mindir_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph);
+    DumpIRProto(kernel_graph, "before_unify_mindir_hwopt_" + std::to_string(kernel_graph->graph_id()));
+  }
+#endif
+  auto optimizer = std::make_shared<mindspore::opt::GraphOptimizer>();
+  optimizer->AddPassManager(GetBackendCommonUnifyMindIRPassManager());
+  optimizer->AddPassManager(GetBackendFusionGroupPassManager());
+  (void)optimizer->Optimize(kernel_graph);
+  PROF_END(GEUnifyMindIR);
+#ifdef ENABLE_DUMP_IR
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name = "hwopt_d_after_unify_mindir_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph);
+  }
+#endif
+  (void)profiler::CollectHostInfo("GE", "Graph Optimization", "BackendOptimization_UnifyMindIR", start_time,
+                                  profiler::GetClockSyscnt(), 0);
+}
+
+void OptimizationWithoutBackend(const KernelGraphPtr &kernel_graph) {
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  PROF_START(OptimizationWithoutBackend);
+  MS_LOG(DEBUG) << "Start OptimizationWithoutBackend for kernel graph id:" << kernel_graph->graph_id();
+#ifdef ENABLE_DUMP_IR
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name =
+      "hwopt_d_before_optimization_without_backend_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph);
+  }
+#endif
+  EliminateIllegalDataTypePass(kernel_graph);
+  CommonUnifyMindIR(kernel_graph);
+  BackendCommonOptimization(kernel_graph);
+  MS_LOG(DEBUG) << "End OptimizationWithoutBackend for kernel graph id:" << kernel_graph->graph_id();
+  PROF_END(OptimizationWithoutBackend);
+#ifdef ENABLE_DUMP_IR
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name =
+      "hwopt_d_after_optimization_without_backend_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph);
+  }
+#endif
+}
+
+void EliminateIllegalDataTypePass(const KernelGraphPtr &kernel_graph) {
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  PROF_START(EliminateIllegalDataTypePass);
+  MS_LOG(INFO) << "Start eliminate illegal data type for kernel graph id:" << kernel_graph->graph_id();
+#ifdef ENABLE_DUMP_IR
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name =
+      "hwopt_common_eliminate_illegal_data_type_before_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph);
+  }
+#endif
+  auto opt = std::make_shared<mindspore::opt::GraphOptimizer>();
+  auto pm = std::make_shared<mindspore::opt::PassManager>("common_eliminate_illegal_data_type_pm");
+  pm->AddPass(std::make_shared<mindspore::opt::ConvertListToTuple>("convert_list_to_tuple"));
+  pm->AddPass(std::make_shared<mindspore::opt::EliminateFuncDataType>());
+  opt->AddPassManager(pm);
+  (void)opt->Optimize(kernel_graph);
+  PROF_END(EliminateIllegalDataTypePass);
+#ifdef ENABLE_DUMP_IR
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name =
+      "hwopt_common_eliminate_illegal_data_type_after_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph);
+  }
+#endif
+}
+
+void CommonUnifyMindIR(const KernelGraphPtr &kernel_graph) {
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  PROF_START(CommonUnifyMindIR);
+  MS_LOG(INFO) << "start common unify mindir opt graph:" << kernel_graph->graph_id();
+#ifdef ENABLE_DUMP_IR
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name =
+      "hwopt_common_unify_mindir_before_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph);
+  }
+#endif
+  auto opt = std::make_shared<mindspore::opt::GraphOptimizer>();
+  auto pm = std::make_shared<mindspore::opt::PassManager>("common_unify_mindir_pm");
+  pm->AddPass(std::make_shared<mindspore::opt::ConvTransposeToConvBackpropInputPass>());
+  pm->AddPass(std::make_shared<mindspore::opt::CustomOpRegInfoToAttr>());
+  pm->AddPass(std::make_shared<mindspore::opt::InplaceAssignForCustomOp>());
+  pm->AddPass(std::make_shared<mindspore::opt::ConvertAttrToUnifyMindIR>());
+  opt->AddPassManager(pm);
+  (void)opt->Optimize(kernel_graph);
+  PROF_END(CommonUnifyMindIR);
+#ifdef ENABLE_DUMP_IR
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name = "hwopt_common_unify_mindir_after_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph);
+  }
+#endif
+}
+
+void BackendCommonOptimization(const KernelGraphPtr &kernel_graph) {
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  PROF_START(BackendCommonOptimization);
+  MS_LOG(INFO) << "Status record: start common optimization. graph id: " << kernel_graph->graph_id();
+#ifdef ENABLE_DUMP_IR
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name = "hwopt_common_before_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph);
+  }
+#endif
+  auto common_pm = std::make_shared<mindspore::opt::PassManager>("common_pm");
+  common_pm->AddPass(std::make_shared<mindspore::opt::ConvertDynamicBroadcastTo>());
+  common_pm->AddPass(std::make_shared<mindspore::opt::ConvertConstInputToAttr>());
+  common_pm->AddPass(std::make_shared<mindspore::opt::CustomOpConstInputToAttr>());
+  common_pm->AddPass(std::make_shared<mindspore::opt::ConvertConstInputToTensorInputForPrint>());
+  common_pm->AddPass(std::make_shared<mindspore::opt::ConvertTupleOutputToMaketuple>());
+  common_pm->AddPass(std::make_shared<mindspore::opt::ConvertUnusedTupleParaToMakeTuple>());
+  common_pm->AddFusionPass(std::make_shared<mindspore::opt::FlattenConcatFission>());
+  common_pm->AddPass(std::make_shared<mindspore::opt::AddInputStructuralForPyExecute>());
+  common_pm->AddFusionPass(std::make_shared<mindspore::opt::BroadcastToFusion>());
+  common_pm->AddPass(std::make_shared<mindspore::opt::AddAttrToNode>());
+  common_pm->AddFusionPass(std::make_shared<mindspore::opt::ReplaceAddNFusion>());
+
+  auto optimizer = std::make_shared<mindspore::opt::GraphOptimizer>();
+  optimizer->AddPassManager(common_pm);
+  (void)optimizer->Optimize(kernel_graph);
+  PROF_END(BackendCommonOptimization);
+#ifdef ENABLE_DUMP_IR
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name = "hwopt_common_after_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph);
+  }
+#endif
+  MS_LOG(INFO) << "Status record: end common optimization. graph id: " << kernel_graph->graph_id();
+}
+
 }  // namespace opt
 }  // namespace ge_backend
 }  // namespace backend

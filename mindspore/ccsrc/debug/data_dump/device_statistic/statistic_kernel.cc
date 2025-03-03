@@ -63,8 +63,8 @@ DeviceAddressPtr StatisticKernel::GenerateDeviceAddress(const size_t &mem_size, 
   return device_addr;
 }
 
-DeviceAddressPtr StatisticKernel::GetWorkSpaceDeviceAddress(const vector<KernelTensor *> &inputs,
-                                                            const vector<KernelTensor *> &outputs) {
+DeviceAddressPtr StatisticKernel::GetWorkSpaceDeviceAddress(const std::vector<KernelTensor *> &inputs,
+                                                            const std::vector<KernelTensor *> &outputs) {
   auto ret = kernel_mod_->Resize(inputs, outputs);
   if (ret) {
     MS_LOG(EXCEPTION) << "Call Resize error, error id is " << ret;
@@ -84,20 +84,20 @@ DeviceAddressPtr StatisticKernel::GetOutputDeviceAddress(TypeId dtype_id) {
   return GenerateDeviceAddress(UnitSizeInBytes(dtype_id), dtype_id, shape_vec);
 }
 
-vector<KernelTensorPtr> StatisticKernel::GetExtraInputsDeviceAddress(KernelTensor *) {
-  return vector<KernelTensorPtr>();
+std::vector<KernelTensorPtr> StatisticKernel::GetExtraInputsDeviceAddress(KernelTensor *) {
+  return std::vector<KernelTensorPtr>();
 }
 
-vector<DeviceAddressPtr> StatisticKernel::LaunchKernelAsync(KernelTensor *input, const uint32_t stream_id) {
+std::vector<DeviceAddressPtr> StatisticKernel::LaunchKernelAsync(KernelTensor *input, const uint32_t stream_id) {
   MS_EXCEPTION_IF_NULL(input);
   stream_id_ = stream_id;
-  vector<KernelTensor *> inputs{input};
+  std::vector<KernelTensor *> inputs{input};
   auto extra_inputs = GetExtraInputsDeviceAddress(input);
-  vector<DeviceAddressPtr> res;
+  std::vector<DeviceAddressPtr> res;
   std::transform(extra_inputs.begin(), extra_inputs.end(), std::back_inserter(inputs),
                  [](const auto &extra_input) { return extra_input.get(); });
   auto output_addr = GetOutputDeviceAddress(input->dtype_id());
-  vector<KernelTensor *> outputs{output_addr->kernel_tensor().get()};
+  std::vector<KernelTensor *> outputs{output_addr->kernel_tensor().get()};
 
   MS_EXCEPTION_IF_NULL(output_addr);
   MS_EXCEPTION_IF_NULL(kernel_mod_);
@@ -111,7 +111,7 @@ vector<DeviceAddressPtr> StatisticKernel::LaunchKernelAsync(KernelTensor *input,
     res.emplace_back(workspace_addr);
   }
   res.emplace_back(output_addr);
-  vector<KernelTensor *> workspace;
+  std::vector<KernelTensor *> workspace;
   if (workspace_addr) {
     workspace.emplace_back(workspace_addr->kernel_tensor().get());
   }

@@ -367,7 +367,7 @@ class BACKEND_EXPORT DeviceResManager {
 
   virtual std::shared_ptr<MemoryManager> mem_manager() const { return mem_manager_; }
 
-  virtual std::pair<vector<size_t>, vector<size_t>> AllocDeviceMemoryForTensorList(
+  virtual std::pair<std::vector<size_t>, std::vector<size_t>> AllocDeviceMemoryForTensorList(
     const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
@@ -437,7 +437,6 @@ class GraphExecutor {
   virtual void AllocGEInputOutputMemory(const KernelGraphPtr &graph) const { return; }
   virtual void AllocInputMemory(const DeviceAddressPtr &input_address) const { return; }
   virtual void AllocGEFixMemory() const { return; }
-  virtual void RunCheckpointGraph(const KernelGraphPtr &graph) { return; }
   virtual void AllocGERefreshableFeatureMemory(const KernelGraphPtr &graph) { return; }
   virtual void FreeGERefreshableFeatureMemory(const KernelGraphPtr &graph) { return; }
   virtual FuncGraphPtr BuildDFGraph(const FuncGraphPtr &anf_graph,

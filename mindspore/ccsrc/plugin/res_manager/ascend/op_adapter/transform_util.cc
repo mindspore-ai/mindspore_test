@@ -88,8 +88,8 @@ class TensorRefData : public tensor::TensorData {
   ssize_t ndim_ = 0;
 };
 
-vector<int64_t> TransformUtil::ConvertIntToList(int64_t data, int size) {
-  vector<int64_t> list{};
+std::vector<int64_t> TransformUtil::ConvertIntToList(int64_t data, int size) {
+  std::vector<int64_t> list{};
   if (size <= 0) {
     MS_LOG(WARNING) << "size <= 0";
     return list;
@@ -193,7 +193,7 @@ std::shared_ptr<GeTensorDesc> TransformUtil::GetGeTensorDesc(const ShapeVector &
   // note: if ori_shape and ori_format have been set. the set_shape and set_format will run as device info, otherwise
   // the set_shape and set_format will run as host info.
   bool is_static_shape = !std::any_of(ori_shape.cbegin(), ori_shape.cend(), [](const auto &dim) { return dim < 0; });
-  if (is_static_shape && IsEnableRefMode()) {
+  if (is_static_shape) {
     desc->SetOriginShape(ori_ge_shape);
     desc->SetOriginFormat(ori_ge_format);
   }
@@ -503,7 +503,7 @@ ShapeVector TransformUtil::ConvertGeShape(const GeShape &ge_shape) {
 }
 
 ShapeVector TransformUtil::ConvertGeShape(const GeShape &ge_shape, const ShapeVector &request_dims) {
-  vector<int64_t> ret;
+  std::vector<int64_t> ret;
   if (ge_shape.GetDimNum() == 0) {
     MS_LOG(DEBUG) << "GeTensor's shape is scalar";
     return ret;
@@ -565,7 +565,7 @@ MeTensorPtr TransformUtil::GenerateMeTensor(const GeTensorPtr &ge_tensor, const 
 MeTensorPtr TransformUtil::ConvertGeTensor(const GeTensorPtr &ge_tensor) {
   MS_EXCEPTION_IF_NULL(ge_tensor);
   GeShape ge_shape = ge_tensor->GetTensorDesc().GetShape();
-  vector<int64_t> me_dims = ConvertGeShape(ge_shape);
+  std::vector<int64_t> me_dims = ConvertGeShape(ge_shape);
 
   TypeId type_id = ConvertGeDataType(ge_tensor->GetTensorDesc().GetDataType());
   if (type_id == MeDataType::kTypeUnknown) {
@@ -579,7 +579,7 @@ MeTensorPtr TransformUtil::ConvertGeTensor(const GeTensorPtr &ge_tensor) {
 MeTensorPtr TransformUtil::ConvertGeTensor(const GeTensorPtr &ge_tensor, const TypeId &me_type) {
   MS_EXCEPTION_IF_NULL(ge_tensor);
   GeShape ge_shape = ge_tensor->GetTensorDesc().GetShape();
-  vector<int64_t> me_dims = ConvertGeShape(ge_shape);
+  std::vector<int64_t> me_dims = ConvertGeShape(ge_shape);
 
   if (me_type == MeDataType::kTypeUnknown) {
     MS_LOG(ERROR) << "Unsupported data type: " << static_cast<int>(me_type);
@@ -592,7 +592,7 @@ MeTensorPtr TransformUtil::ConvertGeTensor(const GeTensorPtr &ge_tensor, const T
 MeTensorPtr TransformUtil::ConvertGeTensor(const GeTensorPtr ge_tensor, const ShapeVector &request_dims, bool ref_mem) {
   MS_EXCEPTION_IF_NULL(ge_tensor);
   GeShape ge_shape = ge_tensor->GetTensorDesc().GetShape();
-  vector<int64_t> me_dims = ConvertGeShape(ge_shape, request_dims);
+  std::vector<int64_t> me_dims = ConvertGeShape(ge_shape, request_dims);
   MS_LOG(INFO) << "GE tensor type is " << static_cast<int>(ge_tensor->GetTensorDesc().GetDataType());
   // Create a tensor with wanted data type and shape
   TypeId type_id = ConvertGeDataType(ge_tensor->GetTensorDesc().GetDataType());

@@ -56,7 +56,7 @@ def full_backward_func(size, fill_value, dtype=None):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', ['GE', 'pynative', 'KBK'])
+@pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_full_forward_backward(mode):
     """
     Feature: Ops.
@@ -73,8 +73,6 @@ def test_full_forward_backward(mode):
         y = full_forward_func(size, value, dtype)
     elif mode == 'KBK':
         y = (jit(full_forward_func, jit_level="O0"))(size, value, dtype)
-    else:
-        y = (jit(full_forward_func, backend="GE"))(size, value, dtype)
     np.testing.assert_allclose(y.asnumpy(), expect_y, rtol=1e-5)
 
     value = Tensor(6)

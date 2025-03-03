@@ -23,11 +23,11 @@
 namespace mindspore {
 namespace datadump {
 
-vector<KernelTensorPtr> MeanStatisticKernel::GetExtraInputsDeviceAddress(KernelTensor *input) {
+std::vector<KernelTensorPtr> MeanStatisticKernel::GetExtraInputsDeviceAddress(KernelTensor *input) {
   MS_EXCEPTION_IF_NULL(input);
 
   auto dim = input->GetShapeVector().size();
-  vector<int64_t> axes(dim);
+  std::vector<int64_t> axes(dim);
   std::iota(axes.begin(), axes.end(), 0LL);
   auto axis = std::make_shared<KernelTensor>(
     std::make_shared<abstract::TensorShape>(ShapeVector(static_cast<int64_t>(dim))), kInt64, MakeValue(axes));

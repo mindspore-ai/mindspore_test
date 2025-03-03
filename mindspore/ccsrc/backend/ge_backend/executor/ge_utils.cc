@@ -135,7 +135,7 @@ void GetComputeGraphReuseOptions(const FuncGraphPtr &graph, OptionMap *option) {
   MS_EXCEPTION_IF_NULL(option);
   auto enable_io_reuse = common::GetEnv("MS_ENABLE_IO_REUSE");
   MS_LOG(INFO) << "Enable io reuse: " << enable_io_reuse;
-  if (enable_io_reuse != "1" || !IsEnableRefMode()) {
+  if (enable_io_reuse != "1") {
     return;
   }
   auto outputs = common::AnfAlgo::GetAllOutputWithIndex(graph->output());
@@ -335,20 +335,7 @@ bool IsGeTrain() {
 
 std::string GetGraphName(const FuncGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
-  if (IsEnableRefMode()) {
-    return graph->ToString();
-  } else {
-    KernelGraphPtr kg = std::dynamic_pointer_cast<session::KernelGraph>(graph);
-    std::string name;
-    if (kg == nullptr) {
-      name = graph->ToString();
-    } else {
-      FuncGraphPtr origin_graph = kg->GetFuncGraph();
-      MS_EXCEPTION_IF_NULL(origin_graph);
-      name = origin_graph->ToString();
-    }
-    return name;
-  }
+  return graph->ToString();
 }
 
 void SetPassthroughGeOptions(std::string option_level, OptionMap *options) {
@@ -365,7 +352,6 @@ bool AddFakeGraph(const FuncGraphPtr &anf_graph) {
   backend::ge_backend::GenFakeGraph(anf_graph->ToString(), converter);
   auto graph_name = GetGraphName(anf_graph);
   std::string init_graph = "init_subgraph." + graph_name;
-  std::string checkpoint_name = "save." + graph_name;
   ShapeArray shape_array;
   bool dynamic_shape_inputs = false;
   auto options = GetComputeGraphOptions(shape_array, dynamic_shape_inputs);
@@ -376,13 +362,6 @@ bool AddFakeGraph(const FuncGraphPtr &anf_graph) {
   (void)backend::ge_backend::AddGraph(init_graph, backend::ge_backend::GetInitGraph(converter));
   (void)backend::ge_backend::AddGraph(BROADCAST_GRAPH_NAME, backend::ge_backend::GetBroadcastGraph(converter));
 
-  if (!IsEnableRefMode()) {
-    backend::ge_backend::Status ret =
-      backend::ge_backend::AddGraph(checkpoint_name, backend::ge_backend::GetSaveCheckpointGraph(converter));
-    if (ret == backend::ge_backend::Status::SUCCESS) {
-      backend::ge_backend::SetAnfGraph(checkpoint_name, anf_graph);
-    }
-  }
   return true;
 }
 
@@ -413,28 +392,14 @@ bool AddDFGraph(const FuncGraphPtr &anf_graph, const backend::ge_backend::Tensor
   }
   auto graph_name = GetGraphName(anf_graph);
   std::string init_graph = "init_subgraph." + graph_name;
-  std::string checkpoint_name = "save." + graph_name;
   auto options = GetComputeGraphOptions(converter->input_shapes(), converter->dynamic_shape_inputs());
   GetComputeGraphReuseOptions(anf_graph, &options);
   UpdateTopoOrderOptions(graph_name, &options);
   MS_LOG(INFO) << "Set options of compute graph: " << graph_name << " to " << MapToString(options);
   (void)backend::ge_backend::AddGraph(graph_name, backend::ge_backend::GetComputeGraph(converter),
                                       backend::ge_backend::DfGraphConfig(options, is_cloud, need_aoe, export_air));
-  if (IsEnableRefMode()) {
-    (void)backend::ge_backend::AddGraph(init_graph, converter->GetInitGraph());
-  } else {
-    (void)backend::ge_backend::AddGraph(init_graph, backend::ge_backend::GetInitGraph(converter));
-  }
+  (void)backend::ge_backend::AddGraph(init_graph, converter->GetInitGraph());
   (void)backend::ge_backend::AddGraph(BROADCAST_GRAPH_NAME, backend::ge_backend::GetBroadcastGraph(converter));
-
-  if (!IsEnableRefMode()) {
-    backend::ge_backend::Status ret =
-      backend::ge_backend::AddGraph(checkpoint_name, backend::ge_backend::GetSaveCheckpointGraph(converter));
-    if (ret == backend::ge_backend::Status::SUCCESS) {
-      backend::ge_backend::SetAnfGraph(checkpoint_name, anf_graph);
-    }
-  }
-
   return true;
 }
 

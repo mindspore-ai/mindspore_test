@@ -100,8 +100,8 @@ struct LayoutInfo {
   int64_t fa_h2;
   int64_t fa_n1;
   int64_t input_layout;
-  vector<int64_t> q_shape;
-  vector<int64_t> kv_shape;
+  std::vector<int64_t> q_shape;
+  std::vector<int64_t> kv_shape;
   TypeId output_id;
 };
 
@@ -539,7 +539,7 @@ AnfNodePtr NewScalartoTensorNode(const AnfNodePtr &input_node, const TypeId &out
 }
 
 void GenerateEodMask(int index, int64_t rank_id, int64_t sp_num, int64_t actual_shape, const ShapeVector &s_shape,
-                     const AnfNodePtr &actual_node, vector<AnfNodePtr> *node_masks) {
+                     const AnfNodePtr &actual_node, std::vector<AnfNodePtr> *node_masks) {
   AnfNodePtr actual_input = nullptr;
   auto actual_cnode = actual_node->cast<CNodePtr>();
   if (actual_cnode != nullptr && actual_cnode->inputs().size() > 1) {
@@ -604,7 +604,7 @@ void GenerateEodMask(int index, int64_t rank_id, int64_t sp_num, int64_t actual_
 }
 
 void DynGenerateEodMask(int index, int64_t rank_id, int64_t sp_num, int64_t actual_shape, const AnfNodePtr &fa_s1,
-                        const AnfNodePtr &fa_s2, const AnfNodePtr &actual_node, vector<AnfNodePtr> *node_masks) {
+                        const AnfNodePtr &fa_s2, const AnfNodePtr &actual_node, std::vector<AnfNodePtr> *node_masks) {
   AnfNodePtr actual_input = nullptr;
   auto actual_cnode = actual_node->cast<CNodePtr>();
   if (actual_cnode != nullptr && actual_cnode->inputs().size() > 1) {
@@ -912,8 +912,8 @@ CNodePtr NewStridedSliceNode(const AnfNodePtr &tensor_node, const Shape &begin, 
   return stridedslice_node;
 }
 
-CNodePtr NewDynStridedSliceNode(const AnfNodePtr &tensor_node, const vector<AnfNodePtr> &begin,
-                                const vector<AnfNodePtr> &end, const Shape &strides) {
+CNodePtr NewDynStridedSliceNode(const AnfNodePtr &tensor_node, const std::vector<AnfNodePtr> &begin,
+                                const std::vector<AnfNodePtr> &end, const Shape &strides) {
   MS_EXCEPTION_IF_NULL(tensor_node);
   std::vector<AnfNodePtr> stridedslice_inputs = {
     NewValueNode(std::make_shared<Primitive>(prim::kPrimStridedSlice->name())),
@@ -933,7 +933,7 @@ CNodePtr NewDynStridedSliceNode(const AnfNodePtr &tensor_node, const vector<AnfN
   return stridedslice_node;
 }
 
-CNodePtr NewDynStridedSliceNode1(const AnfNodePtr &tensor_node, const Shape &begin, const vector<AnfNodePtr> &end,
+CNodePtr NewDynStridedSliceNode1(const AnfNodePtr &tensor_node, const Shape &begin, const std::vector<AnfNodePtr> &end,
                                  const Shape &strides) {
   MS_EXCEPTION_IF_NULL(tensor_node);
   std::vector<AnfNodePtr> stridedslice_inputs = {
@@ -1935,8 +1935,9 @@ CNodePtr DynCreateReplaceFlashSPGraph(const FuncGraphManagerPtr &manager,
 
 void SetFAInputs(const AnfNodePtr &query_node, const AnfNodePtr &key_node, const AnfNodePtr &value_node,
                  const AnfNodePtr &attn_node, const std::shared_ptr<OperatorInfo> &operator_info,
-                 const vector<AnfNodePtr> &eod_masks, int64_t sp_num, int64_t index, int64_t pos, const Shape &shape,
-                 std::vector<AnfNodePtr> *fa_inputs, AnfNodePtr *first_actual_mask, AnfNodePtr *full_mask) {
+                 const std::vector<AnfNodePtr> &eod_masks, int64_t sp_num, int64_t index, int64_t pos,
+                 const Shape &shape, std::vector<AnfNodePtr> *fa_inputs, AnfNodePtr *first_actual_mask,
+                 AnfNodePtr *full_mask) {
   AnfNodePtr actual_mask;
   auto pos_index = GetUDMaskIndex(index, pos, sp_num);
   if (query_node != nullptr) {
@@ -1979,7 +1980,7 @@ void SetFAInputs(const AnfNodePtr &query_node, const AnfNodePtr &key_node, const
 
 void DynSetFAInputs(const AnfNodePtr &query_node, const AnfNodePtr &key_node, const AnfNodePtr &value_node,
                     const AnfNodePtr &attn_node, const std::shared_ptr<OperatorInfo> &operator_info,
-                    const vector<AnfNodePtr> &eod_masks, int64_t sp_num, int64_t index, int64_t pos,
+                    const std::vector<AnfNodePtr> &eod_masks, int64_t sp_num, int64_t index, int64_t pos,
                     const AnfNodePtr &fa_s1, const AnfNodePtr &fa_s2, std::vector<AnfNodePtr> *fa_inputs) {
   AnfNodePtr actual_mask;
   auto pos_index = GetUDMaskIndex(index, pos, sp_num);
@@ -2033,7 +2034,7 @@ CNodePtr CreateReplaceRingAttentionGraphByAllToAllv(const FuncGraphManagerPtr &m
   GetBSHFromShape(input_layout, q_shape, kv_shape, &fa_b, &fa_s1, &fa_h1, &fa_s2, &fa_h2, &fa_n1, fa_score_node);
 
   auto pos = GetPosInSpDevice(flash_score_info_ptr, rank_id);
-  vector<AnfNodePtr> eod_masks;
+  std::vector<AnfNodePtr> eod_masks;
   for (int i = 0; i < sp_num; ++i) {
     GenerateEodMask(i, pos, sp_num, actual_shape_size, {fa_s1, fa_s2}, actual_node, &eod_masks);
   }
@@ -2126,7 +2127,7 @@ CNodePtr DynCreateReplaceRingAttentionGraphByAllToAllv(const FuncGraphManagerPtr
                      kv_dynshape_node, fa_score_node);
 
   auto pos = GetPosInSpDevice(flash_score_info_ptr, rank_id);
-  vector<AnfNodePtr> eod_masks;
+  std::vector<AnfNodePtr> eod_masks;
   for (int i = 0; i < sp_num; ++i) {
     DynGenerateEodMask(i, pos, sp_num, actual_shape_size, fa_s1_dyn, fa_s2_dyn, actual_node, &eod_masks);
   }
@@ -2251,7 +2252,7 @@ CNodePtr CreateReplaceRingAttentionGraphBySendRecv(const FuncGraphManagerPtr &ma
   GetBSHFromShape(input_layout, q_shape, kv_shape, &fa_b, &fa_s1, &fa_h1, &fa_s2, &fa_h2, &fa_n1, fa_score_node);
 
   auto pos = GetPosInSpDevice(flash_score_info_ptr, rank_id);
-  vector<AnfNodePtr> eod_masks;
+  std::vector<AnfNodePtr> eod_masks;
   for (int i = 0; i < static_cast<int>(sp_num); ++i) {
     GenerateEodMask(i, pos, static_cast<int>(sp_num), actual_shape_size, {fa_s1, fa_s2}, actual_node, &eod_masks);
   }
@@ -2346,7 +2347,7 @@ CNodePtr DynCreateReplaceRingAttentionGraphBySendRecv(const FuncGraphManagerPtr 
                      kv_dynshape_node, fa_score_node);
 
   auto pos = GetPosInSpDevice(flash_score_info_ptr, rank_id);
-  vector<AnfNodePtr> eod_masks;
+  std::vector<AnfNodePtr> eod_masks;
   for (int i = 0; i < static_cast<int>(sp_num); ++i) {
     DynGenerateEodMask(i, pos, static_cast<int>(sp_num), actual_shape_size, fa_s1_dyn, fa_s2_dyn, actual_node,
                        &eod_masks);
@@ -2429,7 +2430,7 @@ void GetLayoutInfo(LayoutInfo *li, const CNodePtr &fa_score_node) {
   li->output_id = common::AnfAlgo::GetOutputInferDataType(fa_score_node, kIndex3);
 }
 
-void CreateP2PCommunication(const vector<AnfNodePtr> &orig_qkv, const CNodePtr &last_recv_node, int64_t pos,
+void CreateP2PCommunication(const std::vector<AnfNodePtr> &orig_qkv, const CNodePtr &last_recv_node, int64_t pos,
                             int64_t send_rank_id, int64_t recv_rank_id, int fa_index, size_t step, const LayoutInfo &li,
                             CNodePtr *send_node, CNodePtr *recv_node) {
   AnfNodePtr send_data;
@@ -2463,8 +2464,8 @@ void CreateP2PCommunication(const vector<AnfNodePtr> &orig_qkv, const CNodePtr &
   (*recv_node)->AddPrimalAttr(RING_ATTENTION_POS, MakeValue<int64_t>(pos));
 }
 
-void PrepareQKV(const vector<AnfNodePtr> &orig_qkv, const CNodePtr &last_recv_node, size_t i, size_t rank,
-                const LayoutInfo &li, vector<AnfNodePtr> *inputs) {
+void PrepareQKV(const std::vector<AnfNodePtr> &orig_qkv, const CNodePtr &last_recv_node, size_t i, size_t rank,
+                const LayoutInfo &li, std::vector<AnfNodePtr> *inputs) {
   AnfNodePtr cur_q;
   AnfNodePtr cur_k;
   AnfNodePtr cur_v;
@@ -2495,8 +2496,8 @@ void PrepareQKV(const vector<AnfNodePtr> &orig_qkv, const CNodePtr &last_recv_no
   inputs->emplace_back(cur_v);
 }
 
-void CreateFANode(const CNodePtr &fa_score_node, const vector<AnfNodePtr> &cur_qkv, const LayoutInfo &li, size_t step,
-                  int64_t pos, int fa_index, size_t sp_num, CNodePtr *local_fa_node) {
+void CreateFANode(const CNodePtr &fa_score_node, const std::vector<AnfNodePtr> &cur_qkv, const LayoutInfo &li,
+                  size_t step, int64_t pos, int fa_index, size_t sp_num, CNodePtr *local_fa_node) {
   std::vector<AnfNodePtr> fa_inputs;
   for (size_t i = 0; i < ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputsNum; ++i) {
     fa_inputs.push_back(fa_score_node->input(i + 1));
@@ -2518,7 +2519,7 @@ void CreateFANode(const CNodePtr &fa_score_node, const vector<AnfNodePtr> &cur_q
   (*local_fa_node)->set_user_data<parallel::OperatorInfo>(operator_info);
 }
 
-void AdjustCPDependency(const FuncGraphManagerPtr &manager, const vector<AnfNodePtr> &depend_nodes, size_t pos,
+void AdjustCPDependency(const FuncGraphManagerPtr &manager, const std::vector<AnfNodePtr> &depend_nodes, size_t pos,
                         CNodePtr *local_fa_node, CNodePtr *send_node, CNodePtr *recv_node) {
   if (pos % kIndex2 == 0) {
     auto send_input = (*send_node)->input(1);
@@ -2542,7 +2543,7 @@ CNodePtr CreateReplaceRingAttentionCP(const FuncGraphManagerPtr &manager,
   auto query_node = fa_score_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputQueryIndex + 1);
   auto key_node = fa_score_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputKeyIndex + 1);
   auto value_node = fa_score_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputValueIndex + 1);
-  vector<AnfNodePtr> orig_qkv = {query_node, key_node, value_node};
+  std::vector<AnfNodePtr> orig_qkv = {query_node, key_node, value_node};
   size_t sp_num = fsp_info->GetSPNum();
   size_t rank_id = fsp_info->GetRankId();
   int64_t send_rank_id = fsp_info->GetSendRankId();
@@ -2565,7 +2566,7 @@ CNodePtr CreateReplaceRingAttentionCP(const FuncGraphManagerPtr &manager,
     if (i > 0) {
       last_recv_node = CreateDepends(last_recv_node, {last_fa_node, last_send_node});
     }
-    vector<AnfNodePtr> cur_qkv;
+    std::vector<AnfNodePtr> cur_qkv;
     PrepareQKV(orig_qkv, last_recv_node, i, pos, li, &cur_qkv);
     if (i < sp_num - 1) {
       CreateP2PCommunication(cur_qkv, last_recv_node, pos, send_rank_id, recv_rank_id, fa_index, i, li, &send_node,
@@ -2573,7 +2574,7 @@ CNodePtr CreateReplaceRingAttentionCP(const FuncGraphManagerPtr &manager,
     }
     CreateFANode(fa_score_node, cur_qkv, li, i, pos, fa_index, sp_num, &local_fa_node);
     if (i < sp_num - 1) {
-      vector<AnfNodePtr> last_nodes = {last_fa_node, last_send_node, last_recv_node};
+      std::vector<AnfNodePtr> last_nodes = {last_fa_node, last_send_node, last_recv_node};
       AdjustCPDependency(manager, last_nodes, pos, &local_fa_node, &send_node, &recv_node);
     }
     last_fa_node = local_fa_node;

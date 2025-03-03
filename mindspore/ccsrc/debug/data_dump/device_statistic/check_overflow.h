@@ -34,9 +34,9 @@ class CheckOverflowKernel : public StatisticKernel {
   explicit CheckOverflowKernel(const DeviceContext *device_context)
       : StatisticKernel(device_context, kAllFiniteOpName, overflow_supported_dtype) {}
 
-  vector<KernelTensor *> CheckInputs(vector<KernelTensor *> inputs);
+  std::vector<KernelTensor *> CheckInputs(std::vector<KernelTensor *> inputs);
   DeviceAddressPtr LaunchKernelAsync(KernelTensor *input, const std::uint32_t stream_id) = delete;
-  DeviceAddressPtr LaunchKernelAsync(vector<KernelTensor *> inputs, const std::uint32_t stream_id) override;
+  DeviceAddressPtr LaunchKernelAsync(std::vector<KernelTensor *> inputs, const std::uint32_t stream_id) override;
   static void ClearMemoryCache() {
     if (cache_.empty()) {
       return;

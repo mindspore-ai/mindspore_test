@@ -1025,7 +1025,7 @@ AbstractBasePtr FuncGraphBuilder::GetAbstractOf(const AnfNodePtr &node) {
 }
 
 std::pair<AbstractBasePtr, bool> FuncGraphBuilder::DoInferAndCheck(const ValuePtr &callable_value,
-                                                                   const vector<AbstractBasePtr> &input_abs_list) {
+                                                                   const std::vector<AbstractBasePtr> &input_abs_list) {
   const auto &res = EvalValue(callable_value, input_abs_list);
   auto abs = res.first;
   if (abs == nullptr) {

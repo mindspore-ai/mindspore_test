@@ -226,7 +226,7 @@ class PYBOOST_API PyBoostUtils {
     return SelectKernel(input_abs, output_abs, device_context, op_name);
   }
   static ValueTuplePtr ConvertTensorVectorToTuple(const std::vector<BaseTensorPtr> &tensor_list) {
-    vector<ValuePtr> value_vector;
+    std::vector<ValuePtr> value_vector;
     for (const auto &tensor : tensor_list) {
       (void)value_vector.emplace_back(tensor);
     }

@@ -75,7 +75,7 @@
 #include "runtime/device/move_to.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "runtime/device/tensor_array.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
@@ -163,7 +163,7 @@ std::vector<void *> CPUDeviceResManager::AllocateContinuousMemory(const std::vec
   return cpu_res_manager_->AllocateContinuousMemory(size_list, stream_id);
 }
 
-std::pair<vector<size_t>, vector<size_t>> CPUDeviceResManager::AllocDeviceMemoryForTensorList(
+std::pair<std::vector<size_t>, std::vector<size_t>> CPUDeviceResManager::AllocDeviceMemoryForTensorList(
   const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
   return cpu_res_manager_->AllocDeviceMemoryForTensorList(tensor_list, enable_mem_align);
 }

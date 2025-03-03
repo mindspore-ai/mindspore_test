@@ -23,12 +23,12 @@
 namespace mindspore {
 namespace datadump {
 
-vector<KernelTensorPtr> NormStatisticKernel::GetExtraInputsDeviceAddress(KernelTensor *input) {
+std::vector<KernelTensorPtr> NormStatisticKernel::GetExtraInputsDeviceAddress(KernelTensor *input) {
   MS_EXCEPTION_IF_NULL(input);
 
   auto scalar = std::make_shared<KernelTensor>(nullptr, kTypeNone, kNone);
   MS_EXCEPTION_IF_NULL(scalar);
-  vector<KernelTensorPtr> extra_inputs{scalar};
+  std::vector<KernelTensorPtr> extra_inputs{scalar};
 
   auto other_extra_inputs = MeanStatisticKernel::GetExtraInputsDeviceAddress(input);
   extra_inputs.insert(extra_inputs.end(), other_extra_inputs.begin(), other_extra_inputs.end());

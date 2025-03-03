@@ -135,7 +135,7 @@ def test_tensor_isclose_dynamic():
     equal_nan2 = False
     TEST_OP(isclose_forward_func1,
             [[ms_data1, other1, rtol1, atol1, equal_nan1], [ms_data2, other2, rtol2, atol2, equal_nan2]], 'isclose',
-            disable_grad=True)
+            disable_mode=["GRAPH_MODE"], disable_grad=True)
     TEST_OP(isclose_forward_func2,
             [[ms_data1, x2_1, rtol1, atol1, equal_nan1], [ms_data2, x2_2, rtol2, atol2, equal_nan2]], 'isclose',
-            disable_grad=True, disable_yaml_check=True)
+            disable_mode=["GRAPH_MODE"], disable_grad=True, disable_yaml_check=True)

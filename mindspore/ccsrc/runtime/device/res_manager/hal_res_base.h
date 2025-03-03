@@ -235,7 +235,7 @@ class RES_EXPORT HalResBase {
 
   virtual std::shared_ptr<SwapManager> swap_manager() const { return nullptr; }
 
-  virtual std::pair<vector<size_t>, vector<size_t>> AllocDeviceMemoryForTensorList(
+  virtual std::pair<std::vector<size_t>, std::vector<size_t>> AllocDeviceMemoryForTensorList(
     const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }

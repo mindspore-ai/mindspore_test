@@ -106,7 +106,7 @@ Status DfGraphManager::AddGraph(const std::string &name, const DfGraphPtr &graph
   auto init_compile_cache = compile_cache_context.init_compile_cache();
   auto dep_files_hash = compile_cache_context.CompileCacheDepFilesHash();
   if (CompileCacheEnable() && init_compile_cache) {
-    auto ge_graph_key = IsEnableRefMode() ? name : std::to_string(id);
+    auto ge_graph_key = name;
     if (!dep_files_hash.empty()) {
       ge_graph_key = dep_files_hash + "_" + ge_graph_key;
     }

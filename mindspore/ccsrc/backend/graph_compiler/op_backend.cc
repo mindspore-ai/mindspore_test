@@ -22,7 +22,7 @@
 #include "op_def/structure_op_name.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pynative/op_runner.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 #include "runtime/device/device_address_utils.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pybind_api/gil_scoped_long_running.h"
@@ -249,7 +249,7 @@ void OpBackend::OpRunCallback(const std::shared_ptr<runtime::OpTaskContext> &con
 
 void OpBackend::DispatchOpTaskDynamic(VectorRef *outputs, const OpCompilerInfoPtr &op_compiler_info,
                                       const session::BackendOpRunInfoPtr &op_run_info,
-                                      const vector<device::DeviceAddressPtr> &device_address_list) {
+                                      const std::vector<device::DeviceAddressPtr> &device_address_list) {
   MS_EXCEPTION_IF_NULL(op_compiler_info);
   const auto &graph = op_compiler_info->graph_;
   MS_EXCEPTION_IF_NULL(graph);
@@ -475,7 +475,7 @@ void PostRunOp::UpdateOutputAbstract(const VectorRef &outputs, const session::Ba
 
 void PostRunOp::UpdateOutputDynamic(const session::BackendOpRunInfoPtr &op_run_info,
                                     const OpCompilerInfoPtr &op_compiler_info,
-                                    const vector<device::DeviceAddressPtr> &device_address_list,
+                                    const std::vector<device::DeviceAddressPtr> &device_address_list,
                                     VectorRef *outputs) const {
   MS_EXCEPTION_IF_NULL(op_run_info);
   MS_LOG(DEBUG) << "No promise, just create tensor and address, op " << op_run_info->base_op_run_info.op_name;

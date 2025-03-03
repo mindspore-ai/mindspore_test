@@ -384,6 +384,12 @@ py::object JitExecutorPy::RunInner(const py::tuple &args, const py::object &phas
   }
   ProcessVmArg(args, phase, &execute_info->arg_list);
   // Start to run phase.
+  ResourcePtr resource = GetResource(phase);
+  MS_EXCEPTION_IF_NULL(resource);
+  if (resource->HasResult(kNoBackend)) {
+    MS_LOG(INFO) << "No backend.";
+    return py::none();
+  }
   compile::VmEvalFuncPtr run = GetVmEvalFunc(phase);
   if (run == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "Can't find run graph func for " << phase;

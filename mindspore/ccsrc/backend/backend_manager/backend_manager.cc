@@ -40,6 +40,11 @@ std::string GetBackendNameByType(BackendType backend_type) {
 BackendType GetBackendType() {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
+  auto device_target = context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  if (device_target != kAscendDevice) {
+    return kMSBackend;
+  }
+
   if (context->IsKByKExecutorMode()) {
     return kMSBackend;
   } else {
@@ -67,6 +72,7 @@ void BackendManager::Clear() {
 }
 
 std::pair<BackendType, BackendGraphId> BackendManager::Build(const FuncGraphPtr &func_graph,
+                                                             const BackendJitConfig &backend_jit_config,
                                                              const std::string &backend_name) {
   MS_EXCEPTION_IF_NULL(func_graph);
   BackendType backend_type = kInvalidBackend;
@@ -78,7 +84,7 @@ std::pair<BackendType, BackendGraphId> BackendManager::Build(const FuncGraphPtr 
 
   auto backend = GetOrCreateBackend(backend_type);
   MS_EXCEPTION_IF_NULL(backend);
-  auto graph_id = backend->Build(func_graph);
+  auto graph_id = backend->Build(func_graph, backend_jit_config);
   return {backend_type, graph_id};
 }
 
@@ -129,8 +135,10 @@ BackendBase *BackendManager::GetOrCreateBackend(BackendType backend_type) {
                       << " has been registered.";
   }
 
+  MS_LOG(INFO) << "The created backend type: " << backend_type;
   auto backend = (creator_iter->second)();
   MS_EXCEPTION_IF_NULL(backend);
+  backend->SetPyBoostRegistered(func_, call_func_);
   backends_[backend_type] = backend;
   return backend.get();
 }

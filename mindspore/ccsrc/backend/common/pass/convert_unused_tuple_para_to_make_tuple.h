@@ -18,10 +18,11 @@
 #define MINDSPORE_CCSRC_BACKEND_COMMON_PASS_CONVERT_UNUSED_TUPLE_PARA_TO_MAKE_TUPLE_H_
 
 #include "include/backend/optimizer/pass.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace opt {
-class ConvertUnusedTupleParaToMakeTuple : public Pass {
+class BACKEND_EXPORT ConvertUnusedTupleParaToMakeTuple : public Pass {
  public:
   ConvertUnusedTupleParaToMakeTuple() : Pass("convert_unused_tuple_para_to_make_tuple") {}
   ~ConvertUnusedTupleParaToMakeTuple() override = default;

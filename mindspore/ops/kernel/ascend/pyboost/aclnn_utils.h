@@ -27,7 +27,7 @@
 #include <memory>
 #include "runtime/device/device_address_utils.h"
 #include "runtime/pipeline/pipeline.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 #include "plugin/device/ascend/acl_ir/op_api_exec.h"
 #include "plugin/device/ascend/acl_ir/op_api_convert.h"
 

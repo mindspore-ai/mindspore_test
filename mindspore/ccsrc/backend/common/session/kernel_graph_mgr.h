@@ -55,20 +55,20 @@ class BACKEND_EXPORT KernelGraphMgr {
   // The parameter is_enable_zero_copy means if the parameter in graph can avoid copy when it is executed, and it is
   // true in subgraph sink mode, and the device address shared for partial parameters and internal parameters in graph
   // would be disabled.
-  std::shared_ptr<KernelGraph> ConstructKernelGraph(const AnfNodePtrList &lst, const AnfNodePtrList &outputs,
-                                                    DeviceType device_target = DeviceType::kUnknown,
-                                                    const JitSetting &jit_setting = JitSetting(),
-                                                    bool common_opt = true, bool is_enable_zero_copy = false);
+  std::shared_ptr<KernelGraph> ConstructKernelGraph(
+    const AnfNodePtrList &lst, const AnfNodePtrList &outputs, DeviceType device_target = DeviceType::kUnknown,
+    const backend::BackendJitConfig &backend_jit_config = backend::BackendJitConfig(), bool common_opt = true,
+    bool is_enable_zero_copy = false);
 
-  std::shared_ptr<KernelGraph> ConstructKernelGraph(const FuncGraphPtr &func_graph,
-                                                    std::vector<KernelGraphPtr> *all_out_graph,
-                                                    DeviceType device_target,
-                                                    const JitSetting &jit_setting = JitSetting());
+  std::shared_ptr<KernelGraph> ConstructKernelGraph(
+    const FuncGraphPtr &func_graph, std::vector<KernelGraphPtr> *all_out_graph, DeviceType device_target,
+    const backend::BackendJitConfig &backend_jit_config = backend::BackendJitConfig());
 
   std::vector<KernelGraphPtr> ConstructKernelGraph(std::vector<KernelGraphPtr> *all_out_graph);
   std::shared_ptr<KernelGraph> ConstructPackKernelGraph(const FuncGraphPtr &func_graph,
                                                         std::vector<KernelGraphPtr> *all_out_graph,
-                                                        DeviceType device_target, const JitSetting &jit_setting);
+                                                        DeviceType device_target,
+                                                        const backend::BackendJitConfig &backend_jit_config);
 
   void SetInputNodeUsage(const KernelGraphPtr &graph, const FuncGraphManagerPtr &manager) const;
 
@@ -138,7 +138,8 @@ class BACKEND_EXPORT KernelGraphMgr {
 
   void InitInternalOutputParameter(const AnfNodePtr &out_node, const AnfNodePtr &parameter) const;
   void ConstructKernelGraphInner(const FuncGraphPtr &func_graph, std::vector<KernelGraphPtr> *all_out_graph,
-                                 DeviceType device_target, const JitSetting &jit_setting, const KernelGraphPtr &graph);
+                                 DeviceType device_target, const backend::BackendJitConfig &backend_jit_config,
+                                 const KernelGraphPtr &graph);
 
   std::vector<KernelGraphPtr> ConstructMultiKernelGraphByCache(
     const nlohmann::json &model_json, const std::map<GraphId, KernelGraphPtr> &kernel_graphids_for_mindir,

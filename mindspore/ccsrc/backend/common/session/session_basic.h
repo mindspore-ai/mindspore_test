@@ -109,8 +109,6 @@ class BACKEND_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_sh
   virtual void SyncStream() const {}
   virtual ~SessionBasic() { summary_callback_ = nullptr; }
 
-  GraphId CompileGraph(const GraphSegmentPtr &segment, const AnfNodePtrList &outputs);
-  GraphId CompileGraph(NotNull<FuncGraphPtr> func_graph);
   void BuildGraph(GraphId graphId);
   void RunGraph(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &inputs, VectorRef *outputs);
   void RunGraphAsync(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &inputs, VectorRef *outputs);

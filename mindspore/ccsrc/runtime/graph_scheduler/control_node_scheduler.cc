@@ -2628,7 +2628,7 @@ const char kStubActorNameSuffix[] = "_StubActor";
 class StubActor : public AbstractActor {
  public:
   explicit StubActor(const std::string &name, KernelTransformType type, const AID *recorder_aid,
-                     const vector<FuncGraph *> &graphs, const std::string &exit_actor_name)
+                     const std::vector<FuncGraph *> &graphs, const std::string &exit_actor_name)
       : AbstractActor(name, type, recorder_aid), graphs_(graphs), exit_actor_name_(exit_actor_name) {}
   ~StubActor() override = default;
   void AddInputAid(const AID &aid, DataArrow *arrow) {

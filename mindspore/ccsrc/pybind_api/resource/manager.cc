@@ -74,6 +74,7 @@
 
 #include "frontend/ir/py_execute_py.h"  // Only include one-time in the whole project.
 #include "mindspore/ccsrc/pynative/op_function/auto_generate/tensor_func_utils.h"
+#include "backend/common/somas/somas.h"
 
 namespace mindspore {
 void RecordExitStatus() { MS_LOG(INFO) << "Status record: system exit."; }

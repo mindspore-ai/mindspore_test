@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_RUNTIME_CONF_RUNTIME_CONF_H_
-#define MINDSPORE_CCSRC_RUNTIME_RUNTIME_CONF_RUNTIME_CONF_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_COMMON_RUNTIME_CONF_RUNTIME_CONF_H_
+#define MINDSPORE_CCSRC_INCLUDE_COMMON_RUNTIME_CONF_RUNTIME_CONF_H_
 
 #include <memory>
 #include <string>
@@ -23,8 +23,8 @@
 #include <vector>
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
-#include "include/backend/visible.h"
-#include "runtime/runtime_conf/thread_bind_core.h"
+#include "include/common/visible.h"
+#include "include/common/runtime_conf/thread_bind_core.h"
 
 namespace mindspore {
 namespace runtime {
@@ -35,7 +35,7 @@ const char kOpThreadsNumConf[] = "OpThreadsNumConf";
 const char kLaunchBlocking[] = "launch_blocking";
 const char kThreadBindCore[] = "thread_bind_core";
 
-class BACKEND_EXPORT RuntimeConf {
+class COMMON_EXPORT RuntimeConf {
  public:
   RuntimeConf();
   ~RuntimeConf();
@@ -127,4 +127,4 @@ class BACKEND_EXPORT RuntimeConf {
 }  // namespace runtime
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_RUNTIME_RUNTIME_CONF_RUNTIME_CONF_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_RUNTIME_CONF_RUNTIME_CONF_H_

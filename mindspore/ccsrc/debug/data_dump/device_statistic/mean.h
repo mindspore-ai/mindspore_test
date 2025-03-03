@@ -39,7 +39,7 @@ class MeanStatisticKernel : public StatisticKernel {
       : StatisticKernel(device_context, kernel_name, dtype_id) {}
 
  protected:
-  vector<KernelTensorPtr> GetExtraInputsDeviceAddress(KernelTensor *input) override;
+  std::vector<KernelTensorPtr> GetExtraInputsDeviceAddress(KernelTensor *input) override;
   DeviceAddressPtr GetOutputDeviceAddress(TypeId dtype_id) override;
 };
 

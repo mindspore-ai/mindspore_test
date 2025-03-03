@@ -37,19 +37,13 @@ void GeDeviceResManager::Initialize() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
 
-  if (IsEnableRefMode()) {
-    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    runtime_instance_ = device::KernelRuntimeManager::Instance().GetKernelRuntime(kAscendDevice, device_id);
-    MS_EXCEPTION_IF_NULL(runtime_instance_);
-    if (!runtime_instance_->Init()) {
-      MS_LOG(EXCEPTION) << "Kernel runtime init error.";
-    }
-    mem_manager_ = runtime_instance_->GetMemoryManager();
-    is_use_cpu_memory_ = false;
-  } else {
-    mem_manager_ = std::make_shared<device::cpu::CPUMemoryManager>();
-    is_use_cpu_memory_ = true;
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  runtime_instance_ = device::KernelRuntimeManager::Instance().GetKernelRuntime(kAscendDevice, device_id);
+  MS_EXCEPTION_IF_NULL(runtime_instance_);
+  if (!runtime_instance_->Init()) {
+    MS_LOG(EXCEPTION) << "Kernel runtime init error.";
   }
+  mem_manager_ = runtime_instance_->GetMemoryManager();
 
   if (ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
     MS_LOG(WARNING) << "mem offload is not supported in ge.";
@@ -78,7 +72,7 @@ void GeDeviceResManager::Destroy() {
 bool GeDeviceResManager::AllocateMemory(device::DeviceAddress *const &address, uint32_t stream_id) const {
   MS_EXCEPTION_IF_NULL(address);
 
-  if (IsEnableRefMode() && (address->GetDeviceType() != device::DeviceType::kAscend)) {
+  if (address->GetDeviceType() != device::DeviceType::kAscend) {
     MS_LOG(EXCEPTION) << "The device address type is wrong: type name in address:"
                       << GetDeviceNameByType(static_cast<const device::DeviceType>(address->GetDeviceType()))
                       << ", type name in context: Ascend.";
@@ -222,26 +216,17 @@ bool GeDeviceResManager::SyncCopyStream() const {
 
 device::DeviceAddressPtr GeDeviceResManager::CreateDeviceAddress(const kernel::KernelTensorPtr &kernel_tensor) const {
   MS_EXCEPTION_IF_NULL(kernel_tensor);
-  if (!is_use_cpu_memory_) {
-    if (kernel_tensor->device_name().empty()) {
-      kernel_tensor->set_device_name(kAscendDevice);
-      auto context_ptr = MsContext::GetInstance();
-      MS_EXCEPTION_IF_NULL(context_ptr);
-      uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-      kernel_tensor->set_device_id(device_id);
-    }
-    auto device_address = std::make_shared<device::ascend::AscendDeviceAddress>(kernel_tensor);
-    device_address->set_device_synchronizer(std::make_shared<device::ascend::AscendDeviceSynchronizer>());
-    return device_address;
-  } else {
-    if (kernel_tensor->device_name().empty()) {
-      kernel_tensor->set_device_name(kCPUDevice);
-      kernel_tensor->set_device_id(0);
-    }
-    auto device_address = std::make_shared<device::cpu::CPUDeviceAddress>(kernel_tensor);
-    device_address->set_device_synchronizer(std::make_shared<device::cpu::CPUDeviceSynchronizer>());
-    return device_address;
+
+  if (kernel_tensor->device_name().empty()) {
+    kernel_tensor->set_device_name(kAscendDevice);
+    auto context_ptr = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context_ptr);
+    uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    kernel_tensor->set_device_id(device_id);
   }
+  auto device_address = std::make_shared<device::ascend::AscendDeviceAddress>(kernel_tensor);
+  device_address->set_device_synchronizer(std::make_shared<device::ascend::AscendDeviceSynchronizer>());
+  return device_address;
 }
 
 ::ge::MemBlock *GeAllocator::Malloc(size_t size) {

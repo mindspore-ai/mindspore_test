@@ -20,7 +20,7 @@
 
 namespace mindspore {
 namespace opt {
-class CustomOpRegInfoToAttr : public PatternToPatternPass {
+class BACKEND_EXPORT CustomOpRegInfoToAttr : public PatternToPatternPass {
  public:
   CustomOpRegInfoToAttr() : PatternToPatternPass("custom_op_reg_info_to_attr", true) {}
   ~CustomOpRegInfoToAttr() override = default;

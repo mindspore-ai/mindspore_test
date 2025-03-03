@@ -32,11 +32,10 @@ from mindspore.parallel._auto_parallel_context import _get_auto_parallel_context
 from mindspore.parallel._utils import _get_device_num
 from mindspore.communication.management import get_rank
 from mindspore.train._utils import get_parameter_redundancy, remove_param_redundancy
-from mindspore.train.callback._callback import Callback, set_cur_net
+from mindspore.train.callback._callback import Callback
 from mindspore.common.tensor import Tensor
 from mindspore.common.parameter import Parameter
 from mindspore.common.generator import Generator
-from mindspore.common.api import _cell_graph_executor
 from mindspore._c_expression import collect_host_info, get_clock_syscnt
 
 _cur_dir = os.getcwd()
@@ -684,12 +683,6 @@ class ModelCheckpoint(Callback):
             self._last_time_for_keep = time.time()
             self._last_triggered_step = cb_params.cur_step_num
 
-            # TODO(MS_DISABLE_REF_MODE): Delete when remove MS_DISABLE_REF_MODE env.
-            if context.get_context("enable_ge") and os.getenv('MS_DISABLE_REF_MODE') \
-                    and context.get_context("mode") == context.GRAPH_MODE:
-                set_cur_net(cb_params.train_network)
-                cb_params.train_network.add_flags(ge_sync_data=True)
-                _cell_graph_executor(cb_params.train_network, phase='save')
             self._append_dict_content(cb_params.cur_epoch_num, cb_params.cur_step_num)
             network = self._config.saved_network if self._config.saved_network is not None else cb_params.train_network
             if os.getenv("AITURBO") == "1":
