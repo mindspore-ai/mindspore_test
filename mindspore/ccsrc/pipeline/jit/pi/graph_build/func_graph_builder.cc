@@ -1540,6 +1540,7 @@ void FuncGraphBuilder::AddPrevBuilder(const FuncGraphBuilderPtr &builder) { prev
 
 bool FuncGraphBuilder::ValidateCallableObject(const py::object &obj) {
   if (obj.ptr() == nullptr) {
+    MS_LOG(INFO) << "The callable object is null";
     return false;
   }
   // Check if object is invalid method for CellList/CellDict, which should not be converted to graph.

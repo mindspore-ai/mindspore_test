@@ -120,7 +120,7 @@ bool HasRegisterHook(const py::object &obj) { return HookUtils::HasRegisterHook(
 py::list GetRegisterHookList(const py::object &obj) { return HookUtils::GetRegisterHookList(obj); }
 
 void SaveTensorRegisterHook(const py::object &obj, const AnfNodePtr &node) {
-  if (node->abstract() == nullptr) {
+  if (node == nullptr || node->abstract() == nullptr) {
     return;
   }
   auto hook_list = GetRegisterHookList(obj);

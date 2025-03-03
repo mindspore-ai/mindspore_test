@@ -4743,7 +4743,7 @@ AbstractWrapperPtrList GraphBuilder::HandleInputsForGrad(CallNode *call_node,
       continue;
     }
     auto wrapper = forward_input[index]->abstract_wrapper();
-    auto node = FGBuilder()->ReadLocalVariable(wrapper);
+    auto node = FGBuilder()->FindNodeByWrapper(wrapper);
     pijit::SaveTensorRegisterHook(obj, node);
     GuardRegisterHook(forward_input[index]);
   }
