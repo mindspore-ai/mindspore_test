@@ -7,7 +7,9 @@ mindspore.Tensor
 
     .. note::
         - 当使用 `init` 参数来初始化 `Tensor` 时，通常需要使用 `Tensor.init_data` 来加载 `Tensor` 的数据。
-        - CPU、GPU的所有模式，以及Atlas训练系列产品的 `图模式(mode=mindspore.GRAPH_MODE) <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html>`_ 尚不支持in-place操作。
+        - CPU、GPU 的所有模式，以及 Atlas 训练系列产品的 `图模式(mode=mindspore.GRAPH_MODE) <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html>`_ 尚不支持in-place操作。
+        - `input_data` 的默认值 ``None`` 只作为一个占位符，并不意味着可以创建一个 NoneType 的 Tensor 。
+        - 当前对 `shape` 中包含0的 Tensor 支持的不完善。
 
     .. warning::
         当转换 `Tensor` 类型时，推荐使用 `Tensor.astype()` 而非 `Tensor(sourceTensor, dtype=newDtype)` 。
@@ -23,9 +25,56 @@ mindspore.Tensor
     输出：
         Tensor。
 
-    .. note::
-        `input_data` 的默认值 ``None`` 只作为一个占位符，并不意味着可以创建一个NoneType的Tensor。
-        当前对 `shape` 中包含0的Tensor支持的不完善。
+    **样例**：
+
+        >>> import numpy as np
+        >>> import mindspore as ms
+        >>> from mindspore import Tensor
+        >>> from mindspore.common.initializer import One
+        >>> # initialize a tensor with numpy.ndarray
+        >>> t1 = Tensor(np.zeros([1, 2, 3]), ms.float32)
+        >>> print(t1)
+        [[[0. 0. 0.]
+        [0. 0. 0.]]]
+        >>> print(type(t1))
+        <class 'mindspore.common.tensor.Tensor'>
+        >>> print(t1.shape)
+        (1, 2, 3)
+        >>> print(t1.dtype)
+        Float32
+        >>>
+        >>> # initialize a tensor with a float scalar
+        >>> t2 = Tensor(0.1)
+        >>> print(t2)
+        0.1
+        >>> print(type(t2))
+        <class 'mindspore.common.tensor.Tensor'>
+        >>> print(t2.shape)
+        ()
+        >>> print(t2.dtype)
+        Float32
+        >>>
+        >>> # initialize a tensor with a tuple
+        >>> t3 = Tensor((1, 2))
+        >>> print(t3)
+        [1 2]
+        >>> print(type(t3))
+        <class 'mindspore.common.tensor.Tensor'>
+        >>> print(t3.shape)
+        (2,)
+        >>> print(t3.dtype)
+        Int64
+        ...
+        >>> # initialize a tensor with init
+        >>> t4 = Tensor(shape = (1, 3), dtype=ms.float32, init=One())
+        >>> print(t4)
+        [[1. 1. 1.]]
+        >>> print(type(t4))
+        <class 'mindspore.common.tensor.Tensor'>
+        >>> print(t4.shape)
+        (1, 3)
+        >>> print(t4.dtype)
+        Float32
 
 .. mscnautosummary::
     :toctree: Tensor
