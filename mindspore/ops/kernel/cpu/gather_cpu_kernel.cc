@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <utility>
 #include <complex>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "nnacl/errorcode.h"
 #include "nnacl/gather_parameter.h"
 #include "nnacl/base/gather_base.h"

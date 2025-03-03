@@ -19,7 +19,7 @@
 #include <map>
 #include <functional>
 #include <tuple>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/grad/deformable_offsets_grad.h"
 
 namespace mindspore {

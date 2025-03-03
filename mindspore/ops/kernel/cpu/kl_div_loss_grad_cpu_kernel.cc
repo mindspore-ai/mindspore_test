@@ -21,7 +21,7 @@
 #include "include/common/thread_pool.h"
 #include "mindspore/ops/infer/grad/kl_div_loss_grad.h"
 #include "mindspore/ops/op_def/op_name.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/eigen/eigen_common_utils.h"
 #include "kernel/cpu/kl_div_loss_grad_cpu_kernel.h"
 

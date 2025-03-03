@@ -21,7 +21,7 @@
 
 #include "kernel/common_utils.h"
 #include "mindspore/ops/infer/scatter_add_with_axis.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace {
 #define DO_COMPUTE_CASE(DTYPE, TYPE, ITYPE, inputs, outputs) \

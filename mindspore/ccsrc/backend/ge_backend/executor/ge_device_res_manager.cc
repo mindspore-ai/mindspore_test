@@ -16,14 +16,14 @@
 
 #include "backend/ge_backend/executor/ge_device_res_manager.h"
 #include "runtime/device/kernel_runtime_manager.h"
-#include "plugin/device/cpu/hal/device/cpu_memory_manager.h"
+#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_manager.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.h"
-#include "plugin/device/cpu/hal/device/cpu_device_synchronizer.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_synchronizer.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 
 namespace mindspore {

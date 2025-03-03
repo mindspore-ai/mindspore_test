@@ -18,7 +18,7 @@
 #include <memory>
 #include <utility>
 #include <complex>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/fill.h"
 #include "kernel/cpu/fill_cpu_kernel.h"
 #include "include/common/utils/utils.h"

@@ -19,7 +19,7 @@
 
 #include "common/common_test.h"
 #include "distributed/embedding_cache/embedding_storage/dense_embedding_storage.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace distributed {

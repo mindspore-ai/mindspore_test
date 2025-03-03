@@ -29,7 +29,7 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "nnacl/fp32/activation_fp32.h"
 #include "nnacl/fp32/arithmetic_self_fp32.h"
 #include "nnacl/fp32/exp_fp32.h"

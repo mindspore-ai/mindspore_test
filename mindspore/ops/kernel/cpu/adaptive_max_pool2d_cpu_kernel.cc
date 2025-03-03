@@ -22,7 +22,7 @@
 #include <map>
 #include <functional>
 #include "abstract/utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/ops_func_impl/adaptive_max_pool2d.h"
 
 namespace mindspore {

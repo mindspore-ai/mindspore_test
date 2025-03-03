@@ -17,7 +17,7 @@
 #include "kernel/cpu/log1p_cpu_kernel.h"
 #include <cmath>
 #include "mindspore/ops/op_def/math_ops.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

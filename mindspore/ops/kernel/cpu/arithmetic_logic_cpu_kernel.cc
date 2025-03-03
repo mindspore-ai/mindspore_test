@@ -26,7 +26,7 @@
 #include <complex>
 
 #include "mindspore/ops/op_def/comparison_ops.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include <vector>
 #include <memory>
 #include "runtime/device/convert_tensor_utils.h"
-#include "runtime/hardware/device_context_manager.h"
-#include "plugin/device/cpu/hal/hardware/cpu_memory_pool.h"
-#include "plugin/device/cpu/hal/device/cpu_device_synchronizer.h"
+// #include "runtime/hardware/device_context_manager.h"
+#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_synchronizer.h"
 #include "plugin/device/cpu/hal/device/cpu_hash_table_util.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 
@@ -162,6 +162,15 @@ bool CPUDeviceAddress::SyncDeviceToHost(const ShapeVector &, size_t size, TypeId
   return true;
 }
 
+namespace {
+bool CheckSizeZero(size_t size, size_t get_size) {
+  if ((size == 0) || (get_size == 0)) {
+    return true;
+  }
+  return false;
+}
+}  // namespace
+
 bool CPUDeviceAddress::SyncHostToDevice(const ShapeVector &, size_t size, TypeId type, const void *host_ptr,
                                         const std::string &) const {
   if (kernel_tensor() != nullptr && user_data() != nullptr && user_data()->has(kUserDataType)) {
@@ -169,7 +178,7 @@ bool CPUDeviceAddress::SyncHostToDevice(const ShapeVector &, size_t size, TypeId
   }
 
   // The input or output may be empty.
-  if ((size == 0) || (GetSize() == 0)) {
+  if (CheckSizeZero(size, GetSize())) {
     MS_LOG(INFO) << "No need sync, host size: " << size << ", device size: " << GetSize();
     return true;
   }

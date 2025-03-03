@@ -16,7 +16,7 @@
 
 #include "kernel/cpu/mkldnn/gru_cpu_kernel.h"
 #include <string>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "mindspore/ops/infer/gru_v2.h"
 namespace mindspore {

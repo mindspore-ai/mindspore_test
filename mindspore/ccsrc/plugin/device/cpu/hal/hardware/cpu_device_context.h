@@ -24,13 +24,20 @@
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/device/memory_manager.h"
+#include "plugin/res_manager/cpu/cpu_res_manager.h"
 
 namespace mindspore {
 namespace device {
 namespace cpu {
 class CPUDeviceResManager : public DeviceResManager {
  public:
-  CPUDeviceResManager() {}
+  CPUDeviceResManager() {
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    ResKey res_key = {DeviceTargetType::kCPU, device_id};
+    cpu_res_manager_ = static_cast<CPUResManager *>(HalResManager::GetInstance().GetOrCreateResManager(res_key));
+  }
   ~CPUDeviceResManager() override = default;
 
   void Initialize() override;
@@ -55,6 +62,7 @@ class CPUDeviceResManager : public DeviceResManager {
                                                  size_t end) override;
 
   bool LoadCollectiveCommLib() override;
+  CollectiveCommunicationLib *collective_comm_lib() const override;
 
   void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor, const std::string &to,
               bool blocking, bool *return_self) override;
@@ -64,6 +72,9 @@ class CPUDeviceResManager : public DeviceResManager {
   void FreeMemory(void *ptr) const override;
   void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
                        const std::vector<size_t> &keep_addr_sizes) const override;
+
+ private:
+  CPUResManager *cpu_res_manager_{nullptr};
 };
 
 class CPUKernelExecutor : public KernelExecutor {

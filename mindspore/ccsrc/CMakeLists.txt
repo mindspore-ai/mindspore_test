@@ -146,6 +146,9 @@ set(BACKEND_SUB_COMP
         plugin/device/cpu/hal/profiler
         plugin/device/cpu/optimizer
         plugin/device/cpu/kernel
+        plugin/res_manager/cpu
+        plugin/res_manager/cpu/cpu_device_address
+        plugin/res_manager/cpu/cpu_mem_manager
         )
 
 foreach(_comp ${BACKEND_SUB_COMP})

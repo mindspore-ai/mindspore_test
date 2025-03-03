@@ -24,7 +24,7 @@
 #include <utility>
 
 #include "runtime/device/hash_table.h"
-#include "plugin/device/cpu/hal/hardware/cpu_memory_pool.h"
+#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.h"
 #include "include/common/random.h"
 
 namespace mindspore {

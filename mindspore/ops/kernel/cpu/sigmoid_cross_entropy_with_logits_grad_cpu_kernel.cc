@@ -16,7 +16,7 @@
 
 #include "kernel/cpu/sigmoid_cross_entropy_with_logits_grad_cpu_kernel.h"
 #include <map>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

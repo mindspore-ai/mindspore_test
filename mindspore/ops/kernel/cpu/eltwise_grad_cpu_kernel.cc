@@ -25,7 +25,7 @@
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "include/common/thread_pool.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "nnacl/fp32_grad/activation_grad_fp32.h"
 #include "nnacl/fp32_grad/arithmetic_grad.h"
 #include "nnacl/errorcode.h"

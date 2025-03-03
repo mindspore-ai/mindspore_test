@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <functional>
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore::kernel {
 namespace {

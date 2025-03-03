@@ -18,7 +18,7 @@
 #include <utility>
 #include <algorithm>
 #include "kernel/cpu/max_unpool3d_grad_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/grad/max_unpool3d_grad.h"
 
 namespace mindspore {

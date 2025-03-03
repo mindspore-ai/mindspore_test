@@ -17,7 +17,7 @@
 #include "kernel/cpu/unravel_index_cpu_kernel.h"
 #include <algorithm>
 #include <utility>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

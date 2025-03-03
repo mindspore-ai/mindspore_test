@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/cpu/hal/hardware/cpu_memory_pool.h"
+#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.h"
 #include "utils/log_adapter.h"
 
 #include "include/common/utils/comm_manager.h"

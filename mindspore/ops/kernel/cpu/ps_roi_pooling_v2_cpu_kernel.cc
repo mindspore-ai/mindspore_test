@@ -18,7 +18,7 @@
 #include <functional>
 #include <map>
 #include "kernel/cpu/ps_roi_pooling_v2_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "abstract/utils.h"
 #include "mindspore/ops/infer/ps_roi_pooling.h"
 

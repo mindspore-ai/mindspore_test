@@ -17,7 +17,7 @@
 #include "kernel/cpu/prelu_cpu_kernel.h"
 #include <utility>
 #include <algorithm>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

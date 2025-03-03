@@ -17,7 +17,7 @@
 #include "kernel/cpu/logspace_cpu_kernel.h"
 #include <algorithm>
 #include <utility>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/log_space.h"
 
 namespace mindspore {

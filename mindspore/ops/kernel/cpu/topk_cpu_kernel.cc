@@ -17,7 +17,7 @@
 #include "kernel/cpu/topk_cpu_kernel.h"
 #include <algorithm>
 #include <map>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "include/common/thread_pool.h"
 #include "infer/topk.h"
 

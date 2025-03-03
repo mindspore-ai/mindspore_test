@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_HARDWARE_CPU_CPU_MEMORY_POOL_H_
-#define MINDSPORE_CCSRC_RUNTIME_HARDWARE_CPU_CPU_MEMORY_POOL_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_CPU_CPU_MEM_MANAGER_CPU_MEMORY_POOL_H_
+#define MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_CPU_CPU_MEM_MANAGER_CPU_MEMORY_POOL_H_
 
 #include <memory>
 #include <mutex>
@@ -47,4 +47,4 @@ class BACKEND_EXPORT CPUMemoryPool : public DynamicMemPoolBestFit {
 }  // namespace device
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_RUNTIME_HARDWARE_CPU_CPU_MEMORY_POOL_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_CPU_CPU_MEM_MANAGER_CPU_MEMORY_POOL_H_

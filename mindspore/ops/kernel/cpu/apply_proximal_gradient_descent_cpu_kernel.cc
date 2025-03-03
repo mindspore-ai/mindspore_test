@@ -18,7 +18,7 @@
 #include <functional>
 #include "kernel/common_utils.h"
 #include "kernel/cpu/nnacl/op_base.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/nnacl/fp32_grad/apply_proximal_gradient_descent_fp32.h"
 #include "kernel/cpu/nnacl/intrinsics/ms_simd_instructions.h"
 #include "ops_utils/op_utils.h"

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2021 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_CPU_CPU_DEVICE_ADDRESS_H_
-#define MINDSPORE_CCSRC_RUNTIME_DEVICE_CPU_CPU_DEVICE_ADDRESS_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_CPU_CPU_DEVICE_ADDRESS_H_
+#define MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_CPU_CPU_DEVICE_ADDRESS_H_
 
 #include <string>
 #include <vector>
@@ -83,4 +83,4 @@ class BACKEND_EXPORT CPUDeviceAddress : public DeviceAddress {
 }  // namespace device
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_RUNTIME_DEVICE_CPU_CPU_DEVICE_ADDRESS_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_CPU_CPU_DEVICE_ADDRESS_H_

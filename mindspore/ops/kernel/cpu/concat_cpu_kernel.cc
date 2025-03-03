@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <utility>
 #include <map>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "ops_utils/op_utils.h"
 #include "utils/convert_utils_base.h"
 

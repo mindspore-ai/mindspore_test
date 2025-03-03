@@ -16,7 +16,7 @@
 #include "kernel/cpu/adaptive_max_pool_3d_cpu_kernel.h"
 
 #include <functional>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace {
 #define ADAPTIVE_MAX_POOL_3D_COMPUTE_CASE(TYPENUM, DTYPE) \

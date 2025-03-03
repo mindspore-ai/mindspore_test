@@ -20,7 +20,7 @@
 #include <map>
 #include <utility>
 #include "kernel/common_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "infer/fused_sparse_lazy_adam.h"
 
 namespace mindspore {

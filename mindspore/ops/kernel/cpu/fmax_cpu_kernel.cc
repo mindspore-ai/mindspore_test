@@ -20,7 +20,7 @@
 #include <utility>
 
 #include "mindspore/ops/infer/fmax.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/utils/cpu_utils.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 

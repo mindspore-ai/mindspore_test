@@ -19,7 +19,7 @@
 #include "kernel/kernel.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/infer/pad_v3.h"
 #include "utils/log_adapter.h"
