@@ -20,7 +20,7 @@
 #include <unordered_set>
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "mindspore/ops/op_def/framework_ops.h"

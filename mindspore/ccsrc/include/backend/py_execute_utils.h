@@ -17,7 +17,7 @@
 #ifndef MINDSPORE_CCSRC_INCLUDE_BACKEND_PY_EXECUTE_UTILS_H
 #define MINDSPORE_CCSRC_INCLUDE_BACKEND_PY_EXECUTE_UTILS_H
 
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "include/common/utils/python_adapter.h"
 
 namespace mindspore {

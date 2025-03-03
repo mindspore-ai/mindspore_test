@@ -25,7 +25,7 @@
 #include <unordered_set>
 #include "utils/log_adapter.h"
 #include "include/backend/visible.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "ir/device_event.h"
 #include "include/backend/mem_reuse/dynamic_mem_pool.h"
 #include "include/common/utils/anfalgo.h"

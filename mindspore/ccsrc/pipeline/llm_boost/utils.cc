@@ -19,7 +19,7 @@
 #include "mindapi/base/format.h"
 #include "include/common/utils/utils.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/tensor_py.h"
 

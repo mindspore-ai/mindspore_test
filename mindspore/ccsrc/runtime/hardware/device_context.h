@@ -24,8 +24,8 @@
 #include <unordered_map>
 #include <utility>
 #include <unordered_set>
-#include "utils/device_type.h"
-#include "include/backend/device_address.h"
+#include "common/device_type.h"
+#include "common/device_address.h"
 #include "runtime/device/gsm/swap_manager.h"
 #include "runtime/collective/collective_communication_lib.h"
 #include "runtime/collective/collective_comm_lib_loader.h"

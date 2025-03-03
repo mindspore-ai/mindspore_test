@@ -33,7 +33,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"
-#include "utils/device_type.h"
+#include "common/device_type.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {

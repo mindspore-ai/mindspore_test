@@ -26,7 +26,7 @@
 #include "nlohmann/json.hpp"
 #include "ir/anf.h"
 #include "ir/tensor.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "include/backend/kernel_graph.h"
 #include "runtime/hardware/device_context.h"
 

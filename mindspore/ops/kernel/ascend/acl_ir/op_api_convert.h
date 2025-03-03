@@ -31,7 +31,7 @@
 #include "acl/acl_base.h"
 #include "ir/tensor.h"
 #include "kernel/ascend/acl_ir/acl_convert.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 

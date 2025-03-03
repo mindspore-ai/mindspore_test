@@ -25,7 +25,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/tensor.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "include/backend/kernel_info.h"
 #include "include/backend/py_execute_utils.h"
 #include "runtime/device/hash_table.h"
@@ -39,7 +39,7 @@
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "utils/device_type.h"
+#include "common/device_type.h"
 #endif
 #include "runtime/pipeline/pipeline.h"
 

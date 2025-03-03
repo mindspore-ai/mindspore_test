@@ -28,7 +28,7 @@
 #include "common/oplib/opinfo.h"
 #include "kernel/kash/kernel_pack.h"
 #include "common/kernel_build_info.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "ops/base_operator.h"
 #include "common/common_utils.h"
 

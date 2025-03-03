@@ -23,7 +23,7 @@
 #include "utils/hash_map.h"
 #include "utils/ms_utils.h"
 #include "include/backend/visible.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 
 namespace mindspore {
 namespace runtime {

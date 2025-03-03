@@ -20,7 +20,7 @@
 #include <unordered_map>
 #include "ir/tensor_storage_info.h"
 #include "common/kernel.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 
 namespace mindspore {
 namespace kernel {

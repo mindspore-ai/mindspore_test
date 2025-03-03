@@ -20,7 +20,7 @@
 #include <utility>
 #include <vector>
 #include <string>
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "include/backend/kernel_info.h"
 #include "include/backend/kernel_graph.h"
 

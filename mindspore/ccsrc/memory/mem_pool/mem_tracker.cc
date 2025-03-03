@@ -29,7 +29,7 @@
 #include "utils/ms_context.h"
 #include "utils/distributed_meta.h"
 #include "include/common/debug/common.h"
-#include "utils/device_type.h"
+#include "common/device_type.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "include/common/utils/utils.h"
 #include "utils/file_utils.h"

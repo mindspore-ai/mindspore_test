@@ -22,7 +22,7 @@
 #include <map>
 #include <utility>
 #include <unordered_set>
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "ir/tensor.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"

@@ -21,7 +21,7 @@
 #include <memory>
 #include "include/backend/kernel_graph.h"
 #include "backend/common/session/session_basic.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "runtime/device/memory_manager.h"
 #include "plugin/device/cpu/hal/device/cpu_simple_mem_plan.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.h"

@@ -17,7 +17,7 @@
 #include "pynative/grad/ir/bprop_tensor_replace.h"
 #include <memory>
 #include "pynative/pynative_utils.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pybind_api/gil_scoped_long_running.h"
 

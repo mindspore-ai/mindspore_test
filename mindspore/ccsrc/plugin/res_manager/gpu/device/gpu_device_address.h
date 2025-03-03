@@ -19,7 +19,7 @@
 
 #include <string>
 #include <vector>
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "runtime/device/loadable_device_address.h"
 
 using ShapeVecotr = std::vector<int>;
