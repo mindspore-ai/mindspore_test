@@ -1994,7 +1994,7 @@ class AlltoAllV(PrimitiveWithInfer):
     """
 
     @prim_attr_register
-    def __init__(self, group=None):
+    def __init__(self, group=GlobalComm.WORLD_COMM_GROUP):
         self.group = GlobalComm.WORLD_COMM_GROUP if group is None else _get_group(group)
         self.rank_size = get_group_size(self.group)
         self.add_prim_attr('group', self.group)
