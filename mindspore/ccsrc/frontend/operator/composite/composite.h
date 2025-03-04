@@ -467,6 +467,10 @@ class AccumulateDout : public MetaFuncGraph {
  private:
   void CheckAccumulateDoutInputAbstract(const AbstractBasePtrList &args_abs_list);
   bool IsAddDout();
+  bool IsBuildSwitchNode();
+  FuncGraphPtr BuildAddOutputFG(const std::string &name);
+  FuncGraphPtr BuildAccumulateInplaceOutputFG(const std::string &name);
+  FuncGraphPtr BuildSelectOutputFG(const std::string &name);
   std::map<std::string, int64_t> types_;
 };
 

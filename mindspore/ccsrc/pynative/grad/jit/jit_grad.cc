@@ -553,21 +553,12 @@ void Jit::GradJitInner(const FrontendOpRunInfoPtr &op_run_info, const GradExecut
   top_cell->set_jit_out_has_dict(grad_param->jit_out_has_dict);
 }
 
-// Exporting graph in PyNative mode or only running forward process no need to do this action.
-bool Jit::RequireJitGrad(const std::string &phase) {
-  if (phase.find("export") == 0) {
-    return false;
-  }
-  const auto &pynative_grad_executor = PyNativeExecutor::grad_executor();
-  return pynative_grad_executor->RequiresGrad();
-}
-
 bool Jit::GetJitGradGraph(const pipeline::ResourcePtr &resource, const std::string &phase) {
   graph_phase_ = phase;
   pipeline::ExecutorPyPtr graph_executor = pipeline::GetExecutor(graph_phase_);
   MS_EXCEPTION_IF_NULL(graph_executor);
   MS_LOG(DEBUG) << "The phase of current pipeline graph is: " << graph_phase_;
-  if (!RequireJitGrad(graph_phase_)) {
+  if (graph_phase_.find("export") == 0 || !GradState::Get().RequiresGrad()) {
     MS_LOG(DEBUG) << "When exporting graph or only running forward process";
     return true;
   }
