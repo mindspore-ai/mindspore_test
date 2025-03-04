@@ -1035,36 +1035,46 @@ def test_paged_attention_alibi_fd_bsh_64():
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('type', ["float16", "float32"])
+@pytest.mark.parametrize('dtype', ["float16", "float32"])
 @pytest.mark.parametrize('mask_mode', ["MASK_DEFAULT", "TRAPEZOIDAL"])
-def test_paged_attention_trapezoidal(type, mask_mode):
+def test_paged_attention_trapezoidal(dtype, mask_mode):
+    """
+    Feature: test PagedAttention op in kbk enabling infer_boost
+    Description: test PagedAttention op with mask_mode TRAPEZOIDAL.
+    Expectation: the result is correct
+    """
     i_test = {
-    "type": type,
-    "layout": "BSH",
-    "b": 1,
-    "sq": 1001,
-    "skv": "rand-b",
-    "max_skv": 32768,
-    "nq": 4,
-    "nkv": 2,
-    "d": 128,
-    "blk_sz": 128,
-    "drop_prop": 0.0,
-    "quant_mode": 0,
-    "is_alibi": 0,
-    "is_amask": 0,
-    "mask_mode": mask_mode,
-    "msprof": 0
+        "type": dtype,
+        "layout": "BSH",
+        "b": 1,
+        "sq": 1001,
+        "skv": "rand-b",
+        "max_skv": 32768,
+        "nq": 4,
+        "nkv": 2,
+        "d": 128,
+        "blk_sz": 128,
+        "drop_prop": 0.0,
+        "quant_mode": 0,
+        "is_alibi": 0,
+        "is_amask": 0,
+        "mask_mode": mask_mode,
+        "msprof": 0
     }
     PagedAttentionTest(i_test)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('blk_sz', [16, 128])
-@pytest.mark.parametrize('type', ["float16", "float32"])
-def test_paged_attention_mla_combine_cache_norm(blk_sz, type):
+@pytest.mark.parametrize('dtype', ["float16", "float32"])
+def test_paged_attention_mla_combine_cache_norm(blk_sz, dtype):
+    """
+    Feature: test PagedAttention op in kbk enabling infer_boost
+    Description: test PagedAttention op with deepseek mla.
+    Expectation: the result is correct
+    """
     i_test = {
-        "type": type,
+        "type": dtype,
         "layout": "BSH",
         "b": 1,
         "sq": 1,

@@ -35,6 +35,7 @@ get_quant_mode_str = {
     2: "PERTOKEN"  # per token
 }
 
+
 class QuantMethod(Enum):
     """Use different antiquant dtype and method to finish antiquant impls"""
     FP16_VEC = 0
@@ -133,6 +134,7 @@ def sq2multi(data: np.ndarray, axis: int, sq: np.ndarray):
         string[axis] = "%d: %d" % (cnt, cnt + sq[i])
         cnt += sq[i]
         string = "data[" + ", ".join(string) + "]"
+        # pylint: disable=eval-used
         res.append(eval(string))
     return res
 
@@ -147,6 +149,7 @@ def skv2multi(data: np.ndarray, axis: int, skv: np.ndarray):
         string[0] = "i"
         string[axis] = ":%d" % skv[i]
         string = "data[" + ", ".join(string) + "]"
+        # pylint: disable=eval-used
         res.append(eval(string))
     return res
 
@@ -177,7 +180,7 @@ class PagedAttentionBase:
                     continue
                 if self.i_test_dict[self.names[i]][k] != self.i_test_dict[self.names[0]][k]:
                     raise Exception("[Error] %s of %s and %s is not equal in dynamic shape" %
-                        (k, self.names[i], self.names[0]))
+                                    (k, self.names[i], self.names[0]))
 
     def npu_init(self, net_function):
         first_case = self.i_test_dict[self.names[0]]
@@ -187,17 +190,17 @@ class PagedAttentionBase:
             "head_num": first_case["nq"],  # dtype: int
             "scale_value": 1 / math.sqrt(first_case["d"]),  # dtype: float
             "kv_head_num": first_case["nkv"],  # dtype: int
-            "kv_cache_quant_mode": first_case.get("kv_cache_quant_mode", "DEFAULT"),
+            "kv_cache_quant_mode": first_case.get("kv_cache_quant_mode", "DEFAULT")
         }
         if "ASCEND_HOME_PATH" not in os.environ:
             os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
+        context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
         if first_case.get("mask_mode", "MASK_DEFAULT") != "MASK_DEFAULT":
             i_init["mask_mode"] = first_case.get("mask_mode", "MASK_DEFAULT")
         if first_case.get("mla_kvcombined", False):
             i_init["mla_v_dim"] = first_case.get("d_vo", 0)
             if i_init["mla_v_dim"] == 0:
                 raise ValueError("mla_v_dim == 0 when mla_kvcombined is True.")
-        context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", save_graphs=True, save_graphs_path="pa_graph")
         context.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
         self.net = net_function(**i_init)
 
@@ -257,10 +260,10 @@ class PagedAttentionBase:
             sq = np.array(sq, dtype=np.int32)
             if sq.shape != (b,):
                 raise Exception("[Error] sq.shape can only be "
-                    "(b,) but got %s" % sq.shape)
+                                "(b,) but got %s" % sq.shape)
         else:
             raise Exception("[Error] sq can only be "
-                "int/list[int] but got %s" % sq)
+                            "int/list[int] but got %s" % sq)
         max_skv = self.i_test["max_skv"]
         anti_max_sq = self.i_test.get("anti_max_sq", sys.maxsize)
         if anti_max_sq < max_skv:
@@ -279,7 +282,7 @@ class PagedAttentionBase:
             skv = np.array(skv, dtype=np.int32)
             if skv.shape != (b,):
                 raise Exception("[Error] skv.shape can only be "
-                    "(b,) but got %s" % skv.shape)
+                                "(b,) but got %s" % skv.shape)
         elif skv == "rand-1":
             skv = int(np.random.randint(1, max_skv, 1)[0])
         elif skv == "rand-b":
@@ -287,11 +290,11 @@ class PagedAttentionBase:
             skv = np.random.randint(1, max_skv, b).astype(np.int32)
         else:
             raise Exception("[Error] skv can only be "
-                "max/int/list[int]/rand-1/rand-b but got %s" % skv)
+                            "max/int/list[int]/rand-1/rand-b but got %s" % skv)
         quant_mode = self.i_test["quant_mode"]
         if quant_mode not in (0, 1, 2):
             raise Exception("[Error] quant mode can only be quant-off=0 "
-                "per-channel=1 per-token=2 but got %s" % quant_mode)
+                            "per-channel=1 per-token=2 but got %s" % quant_mode)
         gen_id = multi_sq * 2 + multi_skv
         if gen_id == 2:  # go to 3
             skv = np.array([skv] * b, dtype=np.int32)
@@ -312,10 +315,10 @@ class PagedAttentionBase:
                 BLOCK_SIZE_SET, block_size))
         if bs % block_size:
             raise Exception("[Error] bs mod block_size can only be 0, "
-                "but got %d mod %d = %d" % (bs, block_size, bs % block_size))
+                            "but got %d mod %d = %d" % (bs, block_size, bs % block_size))
         if d == 256 and block_size == 128:
             raise Exception("[Error] d == 256 and block_size == 128 are not legal, "
-                "try block_size = 64")
+                            "try block_size = 64")
         drop_prop = self.i_test["drop_prop"]
         assert 0.0 <= drop_prop <= 1.0
         is_dropout = drop_prop > 0.0
@@ -329,7 +332,7 @@ class PagedAttentionBase:
                 INPUT_TYPE_SET, input_type))
         if quant_mode and input_type == "float32" and block_size > 64:
             raise Exception("[Error] quant_mode and float32 and block_size > 64 "
-                "are not legal, try block_size = 64")
+                            "are not legal, try block_size = 64")
 
         np.random.seed(0)
         amask = None
@@ -356,8 +359,7 @@ class PagedAttentionBase:
             # BSH of k and v in pa
             k = np.random.uniform(-1.0, 1.0, size=[b, max_skv, n, 1, d])
             if mla_kvcombined:
-                # v = k[:, :, :, :, :d_vo].copy()
-                v = k[:, :, :, :, :d_vo]
+                v = k[:, :, :, :, :d_vo].copy()
             else:
                 v = np.random.uniform(-1.0, 1.0, size=[b, max_skv, n, 1, d_vo])
             q = q.astype(np.float16).astype(input_type)
@@ -366,7 +368,7 @@ class PagedAttentionBase:
             if quant_mode:
                 if self.i_test.get("quant_method", 0) == QuantMethod.INT_CUBE:
                     kv_range = 4.0
-                    quant_shape = (1, 1, n, 1, d) # "PERCHANNEL"
+                    quant_shape = (1, 1, n, 1, d)  # "PERCHANNEL"
                     if get_quant_mode_str[quant_mode] == "PERTOKEN":
                         quant_shape = (b, max_skv, 1, 1, 1)
                     de_scale1_fp32 = np.random.randint(-4, 5, size=quant_shape).astype(np.float32)
@@ -390,12 +392,16 @@ class PagedAttentionBase:
                 if get_quant_mode_str[quant_mode] == "PERTOKEN":
                     anti_max_batch = self.i_test.get("anti_max_b", b)
                     anti_max_q = self.i_test.get("anti_max_sq", max_skv)
-                    actual_antiquant_scale = np.zeros(shape=(2, anti_max_batch, anti_max_q, 1, 1, 1)).astype(actual_antiquant_scale.dtype)
-                    actual_antiquant_offset = np.zeros(shape=(2, anti_max_batch, anti_max_q, 1, 1, 1)).astype(actual_antiquant_offset.dtype)
+                    actual_antiquant_scale = np.zeros(
+                        shape=(2, anti_max_batch, anti_max_q, 1, 1, 1)).astype(actual_antiquant_scale.dtype)
+                    actual_antiquant_offset = np.zeros(
+                        shape=(2, anti_max_batch, anti_max_q, 1, 1, 1)).astype(actual_antiquant_offset.dtype)
                     min_batch = min(anti_max_batch, b)
                     min_q = min(anti_max_q, max_skv)
-                    actual_antiquant_scale[:, :min_batch, :min_q, 0, 0, 0] = antiquant_scale[:, :min_batch, :min_q, 0, 0, 0]
-                    actual_antiquant_offset[:, :min_batch, :min_q, 0, 0, 0] = antiquant_offset[:, :min_batch, :min_q,  0, 0, 0]
+                    actual_antiquant_scale[:, :min_batch, :min_q, 0, 0,
+                                           0] = antiquant_scale[:, :min_batch, :min_q, 0, 0, 0]
+                    actual_antiquant_offset[:, :min_batch, :min_q, 0, 0,
+                                            0] = antiquant_offset[:, :min_batch, :min_q, 0, 0, 0]
 
             if gen_id in (0, 1):
                 batch_valid_length = np.ones((b,)).astype(np.int32) * skv
@@ -783,4 +789,3 @@ class PagedAttentionBase:
         if err_cnt > expect.shape[0] * err_ratio:
             raise Exception("err_ratio = err_cnt / all = %d / %d > %f" % (
                 err_cnt, expect.shape[0], err_ratio))
-
