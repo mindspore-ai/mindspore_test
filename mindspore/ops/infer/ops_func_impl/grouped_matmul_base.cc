@@ -91,9 +91,9 @@ void GroupedMatmulBaseFuncImpl::CheckInputAndWeightShapeForSingleOutput(const Pr
   auto x_k = x_shape.back();
   ShapeValueDType w_k = 0;
   if (transpose_b) {
-    w_k = w_shape[w_shape.size() - 1];
+    w_k = w_shape[w_shape.size() - kInputIndex1];
   } else {
-    w_k = w_shape[w_shape.size() - 2];
+    w_k = w_shape[w_shape.size() - kInputIndex2];
   }
   if (MS_UNLIKELY(x_k != abstract::Shape::kShapeDimAny && w_k != abstract::Shape::kShapeDimAny && x_k != w_k)) {
     MS_EXCEPTION(ValueError) << "For '" << op_name
@@ -118,7 +118,7 @@ ShapeArray GroupedMatmulBaseFuncImpl::InferShapeForSingleOutput(const PrimitiveP
   auto m = IsDynamicRank(x_shape) ? abstract::Shape::kShapeDimAny : x_shape[x_shape.size() - 2];
   auto n = abstract::Shape::kShapeDimAny;
   if (!IsDynamicRank(w_shape)) {
-    n = transpose_b ? w_shape[w_shape.size() - 2] : w_shape.back();
+    n = transpose_b ? w_shape[w_shape.size() - kInputIndex2] : w_shape.back();
   }
 
   std::vector<int64_t> res_shape;

@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,10 @@ class RmsNormQuantFusion : public PatternProcessPass {
   explicit RmsNormQuantFusion(bool multigraph = true) : PatternProcessPass("rms_norm_quant_fusion", multigraph) {
     x1_ = std::make_shared<Var>();
     gamma_ = std::make_shared<Var>();
-    scale_ = std::make_shared<Var>();
-    offset_ = std::make_shared<Var>();
     eps_ = std::make_shared<Var>();
+    beta0_ = std::make_shared<Var>();
+    scale0_ = std::make_shared<Var>();
+    offset0_ = std::make_shared<Var>();
   }
   ~RmsNormQuantFusion() override = default;
   const BaseRef DefinePattern() const override;
@@ -38,12 +39,17 @@ class RmsNormQuantFusion : public PatternProcessPass {
 
  private:
   std::vector<std::string> MustExistPrimitiveName() const override;
+  const AnfNodePtr RmsNormQuantFuseWithOnePath(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &,
+                                               const AnfNodePtr &shape_node) const;
+  const AnfNodePtr RmsNormQuantFuseWithTwoPath(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &,
+                                               const AnfNodePtr &, const AnfNodePtr &) const;
 
   VarPtr x1_;
   VarPtr gamma_;
-  VarPtr scale_;
-  VarPtr offset_;
   VarPtr eps_;
+  VarPtr beta0_;
+  VarPtr scale0_;
+  VarPtr offset0_;
 };
 }  // namespace opt
 }  // namespace mindspore

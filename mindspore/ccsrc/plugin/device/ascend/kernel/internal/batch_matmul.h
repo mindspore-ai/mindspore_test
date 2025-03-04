@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_GROUPED_MATMUL_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_GROUPED_MATMUL_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_MATMUL_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_MATMUL_H_
 
 #include <string>
 #include <vector>
@@ -25,10 +25,10 @@
 
 namespace mindspore {
 namespace kernel {
-class InternalGroupedMatmul : public InternalKernelMod {
+class InternalBatchMatmul : public InternalKernelMod {
  public:
-  InternalGroupedMatmul() : InternalKernelMod() {}
-  ~InternalGroupedMatmul() = default;
+  InternalBatchMatmul() : InternalKernelMod() {}
+  ~InternalBatchMatmul() = default;
 
  protected:
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
@@ -38,9 +38,8 @@ class InternalGroupedMatmul : public InternalKernelMod {
   uint64_t GenerateTilingKey(const std::vector<KernelTensor *> &inputs) override;
 
  private:
-  internal::MatmulParam param_;
   internal::TensorFormat output_format_;
 };
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_GROUPED_MATMUL_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_MATMUL_H_
