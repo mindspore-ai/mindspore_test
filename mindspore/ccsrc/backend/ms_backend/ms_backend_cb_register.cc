@@ -15,16 +15,19 @@
  */
 
 #include "common/kernel_callback.h"
-#ifndef BUILD_LITE
 #include "runtime/graph_scheduler/actor/kernel_async_infer_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_async_resize_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_async_launch_actor.h"
-#endif
 
 namespace mindspore {
+namespace backend {
+namespace ms_backend {
 namespace {
+// The runtime pipeline: InferShape->ResizeKernelMod->LaunchKernel, the latter cannot wait for the former, otherwise
+// deadlock may occur.
+// 1. infer shape task needs to wait for resize and kernel launch.
+// 2. Internally, the resize task only needs to wait for the kernel launch
 void WaitAsyncResizeAndLaunchFinish() {
-#ifndef BUILD_LITE
   if (runtime::ActorDispatcher::enable_runtime_multi_pipeline()) {
     const auto &cur_thread_id = std::this_thread::get_id();
     if (cur_thread_id != runtime::KernelAsyncResizeActor::GetInstance()->actor_thread_id() &&
@@ -40,8 +43,12 @@ void WaitAsyncResizeAndLaunchFinish() {
   if (runtime::ActorDispatcher::enable_async_launch_kernel()) {
     runtime::KernelAsyncLaunchActor::GetInstance()->Wait();
   }
-#endif
 }
 }  // namespace
+
+// Register a wait callback to kernel::KernelTensor, used to wait runtime async kernel launch task finish when get value
+// from device side.
 REGISTER_KERNEL_CALLBACK(WaitAsyncResizeAndLaunchFinish);
+}  // namespace ms_backend
+}  // namespace backend
 }  // namespace mindspore
