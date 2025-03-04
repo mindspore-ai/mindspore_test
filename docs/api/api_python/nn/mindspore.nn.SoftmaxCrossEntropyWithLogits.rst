@@ -32,13 +32,13 @@ mindspore.nn.SoftmaxCrossEntropyWithLogits
 
     输入：
         - **logits** (Tensor) - shape :math:`(N, C)` 的Tensor。数据类型为float16或float32。
-        - **labels** (Tensor) - shape :math:`(N, )` 的Tensor。如果 `sparse` 为 ``True`` ，则 `labels` 的类型为int32或int64。否则，`labels` 的类型与 `logits` 的类型相同。
+        - **labels** (Tensor) - shape :math:`(N, )` 的Tensor。如果 `sparse` 为 ``True`` ，则 `labels` 的类型为int32或int64。否则， `labels` 的类型与 `logits` 的类型相同。
 
     输出：
         Tensor，一个shape和数据类型与logits相同的Tensor。
 
     异常：
         - **TypeError** - `sparse` 不是bool。
-        - **TypeError** - `sparse` 为True，并且 `labels` 的dtype既不是int32，也不是int64。
-        - **TypeError** - `sparse` 为False，并且 `labels` 的dtype既不是float16，也不是float32。
-        - **ValueError** - `reduction` 不为"mean"、"sum"，或"none"。
+        - **TypeError** - `sparse` 为 ``True`` ，并且 `labels` 的dtype既不是int32，也不是int64。
+        - **TypeError** - `sparse` 为 ``False``，并且 `labels` 的dtype既不是float16，也不是float32。
+        - **ValueError** - `reduction` 不为 ``"mean"``、 ``"sum"`` 或 ``"none"`` 。
