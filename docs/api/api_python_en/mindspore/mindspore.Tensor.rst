@@ -1,9 +1,92 @@
 mindspore.Tensor
 ================
 
-.. currentmodule:: mindspore
+.. py:class:: mindspore.Tensor(input_data=None, dtype=None, shape=None, init=None, const_arg=False, device=None)
 
-.. autoclass:: Tensor
+    Tensor is a data structure that stores an n-dimensional array.
+
+    .. note::
+        - If `init` interface is used to initialize `Tensor`, the `Tensor.init_data` API needs to be called to load the
+          actual data to `Tensor`.
+        - All modes of CPU and GPU, and Atlas training series with `graph mode (mode=mindspore.GRAPH_MODE)
+          <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_  do not supported
+          in-place operations yet.
+        - The default value ``None`` of `input_data` works as a placeholder,
+          it does not mean that we can create a NoneType Tensor.
+        - Tensor with `shape` contains 0 is not fully tested and supported.
+
+    .. warning::
+        To convert dtype of a `Tensor`, it is recommended to use `Tensor.astype()` rather than
+        `Tensor(sourceTensor, dtype=newDtype)`.
+
+    Args:
+        - **input_data** (Union[Tensor, float, int, bool, tuple, list, numpy.ndarray]) - The data to be stored. It can be
+          another Tensor, Python number or NumPy ndarray. Default: ``None`` .
+        - **dtype** (:class:`mindspore.dtype`) - Used to indicate the data type of the output Tensor. The argument should
+          be defined in `mindspore.dtype`. If it is ``None`` , the data type of the output Tensor will be the same
+          as the `input_data`. Default: ``None`` .
+        - **shape** (Union[tuple, list, int, :class:`mindspore.Symbol`]) - Used to indicate the shape of the output Tensor.
+          If `input_data` is available, `shape` doesn't need to be set. If ``None`` or `Symbol` exists in `shape` ,
+          a tensor of dynamic shape is created, `input_data` doesn't need to be set; if only integers exist in
+          `shape`, a tensor of static shape is created, `input_data` or `init` must be set. Default: ``None`` .
+        - **init** (Initializer) - The information of init data.
+          `init` is used for delayed initialization in parallel mode, when using init, `dtype` and `shape` must be set. Default: ``None`` .
+        - **const_arg** (bool) - Whether the tensor is a constant when it is used for the argument of a network. Default: ``False`` .
+        - **device** (str) - This parameter is reserved and does not need to be configured. Default: ``None`` .
+
+    Outputs:
+        Tensor.
+
+    **Examples**:
+
+        >>> import numpy as np
+        >>> import mindspore as ms
+        >>> from mindspore import Tensor
+        >>> from mindspore.common.initializer import One
+        >>> # initialize a tensor with numpy.ndarray
+        >>> t1 = Tensor(np.zeros([1, 2, 3]), ms.float32)
+        >>> print(t1)
+        [[[0. 0. 0.]
+        [0. 0. 0.]]]
+        >>> print(type(t1))
+        <class 'mindspore.common.tensor.Tensor'>
+        >>> print(t1.shape)
+        (1, 2, 3)
+        >>> print(t1.dtype)
+        Float32
+        >>>
+        >>> # initialize a tensor with a float scalar
+        >>> t2 = Tensor(0.1)
+        >>> print(t2)
+        0.1
+        >>> print(type(t2))
+        <class 'mindspore.common.tensor.Tensor'>
+        >>> print(t2.shape)
+        ()
+        >>> print(t2.dtype)
+        Float32
+        >>>
+        >>> # initialize a tensor with a tuple
+        >>> t3 = Tensor((1, 2))
+        >>> print(t3)
+        [1 2]
+        >>> print(type(t3))
+        <class 'mindspore.common.tensor.Tensor'>
+        >>> print(t3.shape)
+        (2,)
+        >>> print(t3.dtype)
+        Int64
+        ...
+        >>> # initialize a tensor with init
+        >>> t4 = Tensor(shape = (1, 3), dtype=ms.float32, init=One())
+        >>> print(t4)
+        [[1. 1. 1.]]
+        >>> print(type(t4))
+        <class 'mindspore.common.tensor.Tensor'>
+        >>> print(t4.shape)
+        (1, 3)
+        >>> print(t4.dtype)
+        Float32
 
 .. autosummary::
     :toctree: Tensor

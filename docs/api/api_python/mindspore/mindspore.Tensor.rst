@@ -1,13 +1,15 @@
 mindspore.Tensor
 ================
 
-.. py:class:: mindspore.Tensor(input_data=None, dtype=None, shape=None, init=None, internal=False, const_arg=False, device=None)
+.. py:class:: mindspore.Tensor(input_data=None, dtype=None, shape=None, init=None, const_arg=False, device=None)
 
     张量，即存储多维数组（n-dimensional array）的数据结构。
 
     .. note::
         - 当使用 `init` 参数来初始化 `Tensor` 时，通常需要使用 `Tensor.init_data` 来加载 `Tensor` 的数据。
-        - CPU、GPU的所有模式，以及Atlas训练系列产品的 `图模式(mode=mindspore.GRAPH_MODE) <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html>`_ 尚不支持in-place操作。
+        - CPU、GPU 的所有模式，以及 Atlas 训练系列产品的 `图模式(mode=mindspore.GRAPH_MODE) <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html>`_ 尚不支持in-place操作。
+        - `input_data` 的默认值 ``None`` 只作为一个占位符，并不意味着可以创建一个 NoneType 的 Tensor 。
+        - 当前对 `shape` 中包含0的 Tensor 支持的不完善。
 
     .. warning::
         当转换 `Tensor` 类型时，推荐使用 `Tensor.astype()` 而非 `Tensor(sourceTensor, dtype=newDtype)` 。
@@ -17,16 +19,62 @@ mindspore.Tensor
         - **dtype** (:class:`mindspore.dtype`) - 用于定义该Tensor的数据类型，必须是 `mindspore.dtype` 中定义的类型。如果该参数为 ``None`` ，则数据类型与 `input_data` 一致，默认值： ``None`` 。
         - **shape** (Union[tuple, list, int, :class:`mindspore.Symbol`]) - 用于定义该Tensor的形状。如果指定了 `input_data` ，则无需设置该参数。如果 `shape` 中存在 ``None`` 或 `Symbol` 类型数据，表示创建一个动态形状（dynamic shape）的Tensor，此时不需要设置 `input_data` 参数；如果 `shape` 中仅存在整数类型数据，表示创建一个静态形状（static shape）的Tensor，此时必须设置 `input_data` 或 `init` 参数。默认值： ``None`` 。
         - **init** (Initializer) - 用于在并行模式中延迟Tensor的数据的初始化，如果指定该参数，则 `dtype` 和 `shape` 也必须被指定。默认值： ``None`` 。
-        - **internal** (bool) - Tensor是否由框架创建。如果为 ``True`` ，表示Tensor是由框架创建的，如果为 ``False`` ，表示Tensor是由用户创建的。默认值： ``False`` 。
         - **const_arg** (bool) - 指定该Tensor作为网络输入时是否为常量。默认值： ``False`` 。
         - **device** (str) - 该参数为保留参数，不需要用户配置。默认值： ``None`` 。
 
     输出：
         Tensor。
 
-    .. note::
-        `input_data` 的默认值 ``None`` 只作为一个占位符，并不意味着可以创建一个NoneType的Tensor。
-        当前对 `shape` 中包含0的Tensor支持的不完善。
+    **样例**：
+
+        >>> import numpy as np
+        >>> import mindspore as ms
+        >>> from mindspore import Tensor
+        >>> from mindspore.common.initializer import One
+        >>> # initialize a tensor with numpy.ndarray
+        >>> t1 = Tensor(np.zeros([1, 2, 3]), ms.float32)
+        >>> print(t1)
+        [[[0. 0. 0.]
+        [0. 0. 0.]]]
+        >>> print(type(t1))
+        <class 'mindspore.common.tensor.Tensor'>
+        >>> print(t1.shape)
+        (1, 2, 3)
+        >>> print(t1.dtype)
+        Float32
+        >>>
+        >>> # initialize a tensor with a float scalar
+        >>> t2 = Tensor(0.1)
+        >>> print(t2)
+        0.1
+        >>> print(type(t2))
+        <class 'mindspore.common.tensor.Tensor'>
+        >>> print(t2.shape)
+        ()
+        >>> print(t2.dtype)
+        Float32
+        >>>
+        >>> # initialize a tensor with a tuple
+        >>> t3 = Tensor((1, 2))
+        >>> print(t3)
+        [1 2]
+        >>> print(type(t3))
+        <class 'mindspore.common.tensor.Tensor'>
+        >>> print(t3.shape)
+        (2,)
+        >>> print(t3.dtype)
+        Int64
+        ...
+        >>> # initialize a tensor with init
+        >>> t4 = Tensor(shape = (1, 3), dtype=ms.float32, init=One())
+        >>> print(t4)
+        [[1. 1. 1.]]
+        >>> print(type(t4))
+        <class 'mindspore.common.tensor.Tensor'>
+        >>> print(t4.shape)
+        (1, 3)
+        >>> print(t4.dtype)
+        Float32
 
 .. mscnautosummary::
     :toctree: Tensor
