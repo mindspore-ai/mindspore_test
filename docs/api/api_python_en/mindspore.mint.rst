@@ -346,6 +346,7 @@ Non-linear Activations (weighted sum, nonlinearity)
     mindspore.mint.nn.ReLU6
     mindspore.mint.nn.SELU
     mindspore.mint.nn.SiLU
+    mindspore.mint.nn.Sigmoid
     mindspore.mint.nn.Softmax
     mindspore.mint.nn.Softshrink
     mindspore.mint.nn.Tanh
