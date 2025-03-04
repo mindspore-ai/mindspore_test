@@ -1,8 +1,14 @@
 isneginf:
-  op_yaml: isneginf_op.yaml
-  py_method: tensor_isneginf # callback to python function "def tensor_isneginf"
-  Ascend: pyboost
-  CPU: py_method
-  GPU: py_method
-  interface: tensor
-  
+  - op_yaml: isneginf_op.yaml
+    py_method: tensor_isneginf # callback to python function "def tensor_isneginf"
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/isneginf_method.yaml
+    py_method: deprecated_tensor_isneginf
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
