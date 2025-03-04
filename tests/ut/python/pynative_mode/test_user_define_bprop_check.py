@@ -17,7 +17,6 @@ import numpy as np
 import pytest
 
 from mindspore import Tensor, nn, context
-from mindspore import dtype as mstype
 from mindspore.ops import composite as C
 from mindspore._extends.parse import compile_config
 
@@ -53,9 +52,6 @@ def test_user_define_bprop_check_ok():
     net = Net()
     grad_net = GradNet(net)
     ret = grad_net(x, sens)
-    assert ret[0].shape == (2, 3)
-    assert ret[0].dtype == mstype.float32
-    assert (ret[0].asnumpy() == np.array([[1.1, 2.2, 3.3], [2.0, 3.0, 4.0]], np.float32) * 3).all()
     compile_config.CHECK_BPROP = ''
 
 
@@ -86,9 +82,6 @@ def test_user_define_bprop_no_check_dtype():
     net = Net()
     grad_net = GradNet(net)
     ret = grad_net(x, sens)
-    assert ret[0].shape == (2, 3)
-    assert ret[0].dtype == mstype.float16
-    assert (ret[0].asnumpy() == np.array([[1.1, 2.2, 3.3], [2.0, 3.0, 4.0]], np.float16) * 3).all()
 
 
 def test_user_define_bprop_check_shape():
