@@ -708,7 +708,6 @@ opt::OptPassConfig GetJitOptPassA1(const opt::irpass::OptimizeIRPassLib &irpass)
     irpass.accumulaten_eliminater_,
 
     // a2
-    irpass.specialize_transform_,
     irpass.merge_addn_,
     irpass.compare_switch_simplify_,
     irpass.addn_check_dump_,
@@ -736,6 +735,7 @@ OptPassGroupMap GetJitOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, c
      {"updatestate_assign_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateAssignEliminater())},
      {"updatestate_loads_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateLoadsEliminater())},
      {"parameter_eliminate", opt::OptPassConfig(opt::irpass::ParameterEliminator())},
+     {"specialize_transform", opt::OptPassConfig({irpass.specialize_transform_})},
      {"updatestate_useless_node_eliminater", opt::OptPassConfig({irpass.updatestate_useless_node_eliminater_})},
      {"accelerated_algorithm", opt::OptPassConfig({irpass.less_batch_normalization_})},
      {"meta_shard_fg_expand", opt::OptPassConfig(opt::irpass::ExpandMetaShardFg())},
