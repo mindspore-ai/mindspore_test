@@ -296,6 +296,23 @@ FuncGraphPtr PrimBpOptPassStep2(const opt::irpass::OptimizeIRPassLib &irpass, co
 
 FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormalize) {
   opt::irpass::OptimizeIRPassLib irpass;
+  OptPassGroupMap map;
+
+  if (need_renormalize) {
+    opt::OptPassConfig after_resolve_pass = opt::OptPassConfig({irpass.replace_old_param_});
+    // Disable after_resolve_pass if Pre-Lift is enabled.
+    static const bool enable_pre_lift = (common::GetCompileConfig("PRE_LIFT") == "1");
+    if (enable_pre_lift) {
+      after_resolve_pass.set_disabled(true);
+    }
+    opt::OptPassConfig a_after_grad =
+      opt::OptPassConfig({irpass.inline_without_move_, irpass.stack_unstack_eliminate_});
+
+    map.emplace_back("after_resolve", after_resolve_pass);
+    map.emplace_back("a_after_grad", a_after_grad);
+    map.emplace_back("renormalize", opt::OptPassConfig::Renormalize());
+  }
+
   opt::OptPassConfig grad_graph_opt = opt::OptPassConfig({
     irpass.inline_,
     irpass.list_to_tuple_eliminator_,
@@ -310,13 +327,10 @@ FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormaliz
     irpass.ad_related_special_op_eliminate_,
   });
   opt::OptPassConfig fill_zeros_like = opt::OptPassConfig{irpass.zero_like_fill_zero_};
-  OptPassGroupMap map({
-    {"grad_graph_opt", grad_graph_opt},
-    {"zeros_like", fill_zeros_like},
-  });
-  if (need_renormalize) {
-    (void)map.emplace_back("renormalize", opt::OptPassConfig::Renormalize());
-  }
+
+  (void)map.emplace_back("grad_graph_opt", grad_graph_opt);
+  (void)map.emplace_back("zeros_like", fill_zeros_like);
+
   MS_EXCEPTION_IF_NULL(resource);
   auto func_graph = resource->func_graph();
   auto graph_opt = opt::Optimizer::MakeOptimizer("jit_bprop_graph_opt", resource, map);

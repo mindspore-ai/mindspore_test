@@ -37,6 +37,10 @@ def hook_mul_5(grad):
 def hook_print(grad):
     print("grad:", grad)
 
+def hook_double_with_print(grad):
+    print("hook_double")
+    return grad * 2
+
 np_weight0 = np.array([1.0, 2.0, 3.0])
 np_weight1 = np.array([4.0, 5.0, 6.0])
 np_input_x = np.array([7.0, 8.0, 9.0])
@@ -113,7 +117,7 @@ class HookInJITNet(nn.Cell):
 
     @ms.jit
     def hook(self, x):
-        x.register_hook(hook_double)
+        x.register_hook(hook_double_with_print)
         return x
 
     def construct(self, x):
