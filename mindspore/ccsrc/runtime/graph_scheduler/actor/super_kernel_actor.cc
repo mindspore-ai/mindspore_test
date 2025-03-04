@@ -31,6 +31,7 @@
 #include "utils/log_adapter.h"
 #include "op_def/framework_ops.h"
 #include "pybind_api/gil_scoped_long_running.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 
 namespace mindspore {
 namespace runtime {
@@ -1487,6 +1488,7 @@ void SuperKernelActor::PartitionParallelDispatchKernels() {
   }
 
   // Get serial launch kernels.
+  static bool enable_multi_comm_group = common::IsEnableRuntimeConfig("communication_launch_group");
   for (auto &kernel_actor : kernel_actors_) {
     if (!kernel_actor) {
       continue;
@@ -1494,15 +1496,109 @@ void SuperKernelActor::PartitionParallelDispatchKernels() {
     auto &llm_manager = LLMManager::GetInstance();
     const auto &kernel_name = kernel_actor->kernel_mod_->kernel_name();
     bool need_force_resize = llm_manager.need_force_resize(kernel_name);
-    if (need_force_resize || (common::AnfAlgo::IsCommunicationOp(kernel_actor->kernel_) ||
-                              kernel_name == "QbmmAllReduceAdd" || kernel_name == "MatmulAllReduceAddRmsNorm")) {
+    if (need_force_resize || (kernel_name == kMatMulAllReduceOpName) || (kernel_name == "QbmmAllReduceAdd") ||
+        (kernel_name == "MatmulAllReduceAddRmsNorm")) {
       serial_launch_kernels_.push_back(kernel_actor);
-    } else if (kernel_name.find(kAllReduceOpName) != std::string::npos ||
-               kernel_name.find(kAllGatherOpName) != std::string::npos ||
-               kernel_name.find(kReduceScatterOpName) != std::string::npos ||
-               kernel_name.find(kAllToAllOpName) != std::string::npos ||
-               kernel_name.find(kAlltoAllOpName) != std::string::npos) {
-      MS_LOG(WARNING) << "Find parallel dispatch communication op: " << kernel_name;
+      continue;
+    }
+    if (common::AnfAlgo::IsCommunicationOp(kernel_actor->kernel_)) {
+      if (!enable_multi_comm_group) {
+        serial_launch_kernels_.push_back(kernel_actor);
+      }
+      continue;
+    }
+
+    if (kernel_name.find(kAllReduceOpName) != std::string::npos ||
+        kernel_name.find(kAllGatherOpName) != std::string::npos ||
+        kernel_name.find(kReduceScatterOpName) != std::string::npos ||
+        kernel_name.find(kAllToAllOpName) != std::string::npos ||
+        kernel_name.find(kAlltoAllOpName) != std::string::npos) {
+      MS_LOG(WARNING) << "Find not support parallel launch communication op: " << kernel_name;
+      serial_launch_kernels_.push_back(kernel_actor);
+    }
+  }
+
+  if (enable_multi_comm_group) {
+    RecreateCommunicationGroup();
+  }
+}
+
+void SuperKernelActor::RecreateCommunicationGroup() {
+  std::vector<std::vector<KernelActorPtr>> parallel_launch_comm_kernels(parallel_dispatch_num_);
+  HashSet<std::string> group_set;
+  // 1. Collect communication ops.
+  for (size_t i = 0; i < parallel_dispatch_num_; i++) {
+    for (size_t j = 0; j < parallel_slice_num_; j++) {
+      auto &kernel_actors = parallel_launch_kernels_[i + j * parallel_dispatch_num_];
+      for (auto &kernel_actor : kernel_actors) {
+        if (!kernel_actor) {
+          continue;
+        }
+
+        const auto &kernel_name = kernel_actor->kernel_mod_->kernel_name();
+        // MC2 kernels do not support multi communication group now.
+        bool is_naive_comm_op = common::AnfAlgo::IsCommunicationOp(kernel_actor->kernel_) &&
+                                (kernel_name != kMatMulAllReduceOpName) && (kernel_name != "QbmmAllReduceAdd") &&
+                                (kernel_name != "MatmulAllReduceAddRmsNorm");
+        if (!is_naive_comm_op) {
+          continue;
+        }
+
+        parallel_launch_comm_kernels[i].push_back(kernel_actor);
+        if (common::AnfAlgo::HasNodeAttr(kAttrGroup, kernel_actor->kernel_)) {
+          auto group_name = common::AnfAlgo::GetNodeAttr<std::string>(kernel_actor->kernel_, kAttrGroup);
+          group_set.insert(group_name);
+        } else {
+          MS_LOG(EXCEPTION) << "Can not get communication group for kernel: "
+                            << kernel_actor->kernel_->fullname_with_scope();
+        }
+      }
+    }
+  }
+
+  if (group_set.size() > 1) {
+    MS_LOG(WARNING) << "Communication ops parallel dispatch doesn't support multi communication group now, enable "
+                       "parallel dispatch for communication ops with risk.";
+  }
+  std::string old_group_name = "";
+  std::vector<uint32_t> group_ranks = {};
+  if (group_set.size() == 1) {
+    old_group_name = *group_set.begin();
+    group_ranks = distributed::collective::CollectiveManager::instance()->GetGroupRanks(old_group_name);
+    MS_LOG(INFO) << "Old group name: " << old_group_name << ", group ranks: " << group_ranks;
+  }
+
+  for (size_t i = 0; i < parallel_launch_comm_kernels.size(); i++) {
+    auto &comm_kernel_actors = parallel_launch_comm_kernels[i];
+    if (comm_kernel_actors.empty()) {
+      continue;
+    }
+    // 2. New communication group.
+    const std::string new_group_name = std::string("parallel_dispatch_group_") + std::to_string(i);
+    distributed::collective::CollectiveManager::instance()->CreateCommunicationGroup(new_group_name, group_ranks);
+
+    // 3. Repalce old communication group and re-init kernel mod for communication ops.
+    for (auto &kernel_actor : comm_kernel_actors) {
+      auto &kernel = kernel_actor->kernel_;
+      MS_EXCEPTION_IF_NULL(kernel_actor);
+      common::AnfAlgo::SetNodeAttr(kAttrGroup, MakeValue<std::string>(new_group_name), kernel);
+
+      std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(kernel);
+      std::vector<KernelTensor *> output_kernel_tensors = AnfAlgo::GetOrCreateAllOutputKernelTensors(kernel);
+
+      MS_LOG(INFO) << "Begin init kernel: " << kernel->fullname_with_scope();
+      if (!kernel_actor->kernel_mod_->Init(common::AnfAlgo::GetCNodePrimitive(kernel), input_kernel_tensors,
+                                           output_kernel_tensors)) {
+        MS_LOG_WITH_NODE(EXCEPTION, kernel)
+          << "#dmsg#Kernel build failed:#dmsg#Initialize kernel op[" << kernel->fullname_with_scope() << "] failed.";
+      }
+      MS_LOG(INFO) << "End init kernel: " << kernel->fullname_with_scope();
+
+      if (kernel::CheckResizeCondition(kernel)) {
+        MS_LOG(INFO) << "Begin Resize kernel: " << kernel->fullname_with_scope();
+        kernel_actor->kernel_mod_->Resize(input_kernel_tensors, output_kernel_tensors);
+        MS_LOG(INFO) << "End Resize kernel: " << kernel->fullname_with_scope();
+      }
     }
   }
 }
