@@ -756,9 +756,9 @@ NodePtr FuncBuilder::Im2ColExt(const NodePtr &input, const NodePtr &kernel_size,
   return NativeFunc::Im2ColExt(input, kernel_size, dilation, padding, stride);
 }
 
-NodePtr FuncBuilder::IndexAddExt(const NodePtr &input, const NodePtr &index, const NodePtr &source, const NodePtr &axis,
+NodePtr FuncBuilder::IndexAddExt(const NodePtr &input, const NodePtr &dim, const NodePtr &index, const NodePtr &source,
                                  const NodePtr &alpha) {
-  return NativeFunc::IndexAddExt(input, index, source, axis, alpha);
+  return NativeFunc::IndexAddExt(input, dim, index, source, alpha);
 }
 
 NodePtr FuncBuilder::IndexSelect(const NodePtr &input, const NodePtr &dim, const NodePtr &index) {

@@ -57,6 +57,7 @@ Indexing, Slicing, Joining, Mutating Operations
     mindspore.mint.concat
     mindspore.mint.count_nonzero
     mindspore.mint.gather
+    mindspore.mint.index_add
     mindspore.mint.index_select
     mindspore.mint.masked_select
     mindspore.mint.permute

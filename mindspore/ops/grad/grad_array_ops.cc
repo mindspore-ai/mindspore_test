@@ -3507,8 +3507,8 @@ REG_BPROP_BUILDER("AsStrided").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(i
   if (output_maybe_overlap) {
     auto output_indices = ib->AsStrided(flatten_full_indices, ib->Value(out_shape), ib->Value(out_strides),
                                         ib->Value(output_effective_offset));
-    storage = ib->IndexAddExt(storage, ib->Reshape(output_indices, {-1}), ib->Reshape(dout, {-1}),
-                              ib->Value<int64_t>(0LL), ib->Value<int64_t>(1LL));
+    storage = ib->IndexAddExt(storage, ib->Value<int64_t>(0LL), ib->Reshape(output_indices, {-1}),
+                              ib->Reshape(dout, {-1}), ib->Value<int64_t>(1LL));
   } else {
     auto view_output =
       ib->AsStrided(storage, ib->Value(out_shape), ib->Value(out_strides), ib->Value(output_effective_offset));
@@ -3525,7 +3525,7 @@ REG_BPROP_BUILDER("AsStrided").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(i
     auto source = ib->BroadcastTo(
       ib->Ones(ib->Value<ShapeVector>(one_shape), ib->Value(static_cast<int64_t>(input->dtype()->type_id()))),
       flatten_input_indices);
-    count = ib->IndexAddExt(count, flatten_input_indices, source, ib->Value<int64_t>(0LL), ib->Value<int64_t>(1LL));
+    count = ib->IndexAddExt(count, ib->Value<int64_t>(0LL), flatten_input_indices, source, ib->Value<int64_t>(1LL));
     storage = ib->Div(storage, count);
   }
   auto input_grad =

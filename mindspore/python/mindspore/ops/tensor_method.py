@@ -422,6 +422,10 @@ from mindspore.ops.auto_generate import lerp, lerp_scalar
 # 790 addmv
 from mindspore.ops.function.math_func import addmv
 
+# 916 index_add
+from mindspore.ops.primitive import constexpr
+from mindspore._checkparam import check_is_number
+
 # 1028
 from mindspore.ops.function.math_func import var_ext
 
@@ -1697,6 +1701,22 @@ def tensor_diag(input, diagonal=0):
 
 def deprecated_tensor_diag(input):
     return F.diag(input)
+
+
+# 916 index_add
+@constexpr
+def _check_index_add_alpha(alpha):
+    check_is_number(alpha, (int, float))
+
+
+def tensor_index_add(input, dim, index, source, *, alpha=1):
+    _check_index_add_alpha(alpha)
+    source = source * alpha
+    return F.index_add(input, indices=index, y=source, axis=dim)
+
+
+def deprecated_tensor_index_add(input, indices, y, axis, use_lock=True, check_index_bound=True):
+    return F.index_add(input, indices, y, axis, use_lock, check_index_bound)
 
 
 # 1028

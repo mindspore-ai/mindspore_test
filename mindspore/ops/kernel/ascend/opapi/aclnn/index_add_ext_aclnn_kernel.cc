@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,41 +22,15 @@ namespace kernel {
 
 void IndexAddExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
-  auto alpha_dtype_id = inputs[kIndex4]->dtype_id();
-  switch (alpha_dtype_id) {
-    case kNumberTypeBool: {
-      auto alpha_value = inputs[kIndex4]->GetValueWithCheck<bool>();
-      MAKE_SCALAR(alpha_value, inputs[0]->dtype_id(), alpha_);
-      break;
-    }
-    case kNumberTypeFloat32: {
-      auto alpha_value = inputs[kIndex4]->GetValueWithCheck<float>();
-      MAKE_SCALAR(alpha_value, inputs[0]->dtype_id(), alpha_);
-      break;
-    }
-    case kNumberTypeFloat64: {
-      auto alpha_value = inputs[kIndex4]->GetValueWithCheck<double>();
-      MAKE_SCALAR(alpha_value, inputs[0]->dtype_id(), alpha_);
-      break;
-    }
-    case kNumberTypeInt64: {
-      auto alpha_value = inputs[kIndex4]->GetValueWithCheck<int64_t>();
-      MAKE_SCALAR(alpha_value, inputs[0]->dtype_id(), alpha_);
-      break;
-    }
-    default:
-      MS_LOG(EXCEPTION) << "IndexAddExt only support bool, float32, float64 and int64, but got "
-                        << TypeIdToString(alpha_dtype_id);
-  }
-  axis_ = inputs[kIndex3]->GetValueWithCheck<int64_t>();
-  GetWorkspaceForResize(inputs[kIndex0], axis_, inputs[kIndex1], inputs[kIndex2], alpha_, outputs[kIndex0]);
+  alpha_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex4]);
+  dim_ = inputs[kIndex1]->GetValueWithCheck<int64_t>();
+  GetWorkspaceForResize(inputs[kIndex0], dim_, inputs[kIndex2], inputs[kIndex3], alpha_, outputs[kIndex0]);
 }
 
 bool IndexAddExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                                const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-
-  RunOp(stream_ptr, workspace, inputs[kIndex0], axis_, inputs[kIndex1], inputs[kIndex2], alpha_, outputs[kIndex0]);
+  RunOp(stream_ptr, workspace, inputs[kIndex0], dim_, inputs[kIndex2], inputs[kIndex3], alpha_, outputs[kIndex0]);
   return true;
 }
 

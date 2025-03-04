@@ -33,7 +33,7 @@ from mindspore.common._utils import get_slice_num
 from mindspore.common._register_for_tensor import tensor_operator_registry
 from mindspore._c_expression import TensorPy as TensorPy_
 from mindspore import _checkparam as validator
-from mindspore._checkparam import check_is_number, is_stub_tensor, check_hook_fn
+from mindspore._checkparam import is_stub_tensor, check_hook_fn
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore.common.symbol import Symbol
 
@@ -3476,16 +3476,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.equal`.
         """
         return tensor_operator_registry.get('equal')(self, other)
-
-    def index_add(self, dim, index, source, *, alpha=1):
-        r"""
-        For details, please refer to :func:`mindspore.ops.index_add`.
-        The corresponding relationships between the parameters of `Tensor.index_add` and :func:`mindspore.ops.index_add`
-        are as follows: `dim` -> `axis`, `index` -> `indices`, `source * alpha` -> `y`.
-        """
-        check_is_number(alpha, (int, float))
-        source = tensor_operator_registry.get('__mul__')(source, alpha)
-        return tensor_operator_registry.get('index_add')(self, indices=index, y=source, axis=dim)
 
     def index_add_(self, dim, index, source, *, alpha=1):
         r"""
