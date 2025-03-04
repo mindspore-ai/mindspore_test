@@ -21,7 +21,7 @@
         - **y** (Union[Tensor]) - 第二个输入是Tensor，其数据类型为int32、int64、float16、float32、float64、complex64、complex128或Scalar。
 
     输出：
-        Tensor，shape与广播后的shape相同，数据类型是两个输入中精度较高的类型。
+        Tensor，shape与输入Tensor广播后的shape相同，数据类型是两个输入Tensor数据类型中精度较高的类型。
 
     异常：
         - **TypeError** - 如果 `x` 和 `y` 都不是Tensor。

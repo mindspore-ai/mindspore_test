@@ -3,7 +3,7 @@ mindspore.ops.Round
 
 .. py:class:: mindspore.ops.Round
 
-    对输入数据进行四舍五入到最接近的整数数值。
+    对输入数据进行四舍五入，得到最接近的整数数值。
 
     .. math::
         out_i \approx input_i
