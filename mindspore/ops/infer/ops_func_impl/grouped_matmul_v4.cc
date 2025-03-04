@@ -79,7 +79,6 @@ int32_t GroupedMatmulV4FuncImpl::PrivateCheckValidation(const PrimitivePtr &prim
     return OP_CHECK_RETRY;
   }
 
-  auto expect_sum = group_type == 0 ? x_shape.front() : x_shape.back();
   const auto &group_list = group_list_opt.value().ToVector();
   auto group_list_type = group_list_type_opt.value();
   if (MS_UNLIKELY(group_list_type != 0 && group_list_type != 1)) {
@@ -98,9 +97,6 @@ int32_t GroupedMatmulV4FuncImpl::PrivateCheckValidation(const PrimitivePtr &prim
         }
       }
     }
-    MS_CHECK_VALUE(group_list.back() == expect_sum,
-                   CheckAndConvertUtils::FormatCheckIntegerMsg("group_list's last element ", group_list.back(), kEqual,
-                                                               expect_sum, primitive));
   } else {
     for (auto &e : group_list) {
       MS_CHECK_VALUE(
@@ -130,8 +126,13 @@ TypeIdList GroupedMatmulV4FuncImpl::InferType(const PrimitivePtr &primitive,
       MS_EXCEPTION(ValueError) << "For '" << primitive->name() << "', the scale cannot be None in per-token quant.";
     }
     const auto &scale_tensors = input_infos[scale_idx_]->GetSequenceElements();
-    std::transform(scale_tensors.begin(), scale_tensors.end(), std::back_inserter(output_types),
-                   [](const InferInfoPtr &info) { return info->GetType(); });
+    for (const InferInfoPtr &info : scale_tensors) {
+      auto scale_type = info->GetType();
+      if (scale_type != kNumberTypeBFloat16) {
+        MS_EXCEPTION(TypeError) << "For '" << primitive->name() << "', the scales must be BFloat16 in per-token quant.";
+      }
+      output_types.emplace_back(scale_type);
+    }
   }
   return output_types;
 }

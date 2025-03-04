@@ -70,7 +70,7 @@ void GroupedMatmulV4Ascend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &
   }
 
   auto list_inputs = DealWithGroupedMatmulListTensors(group_info_, start_idxs_, inputs);
-  auto group_list_tensor = list_inputs[kInputGroupListIdx].at(kIndex0);
+  auto group_list_tensor = *(inputs.begin() + start_idxs_[kInputGroupListIdx]);
 
   auto split_item_tensor = inputs.at(inputs.size() - kIndex4);
   MS_EXCEPTION_IF_NULL(split_item_tensor);
@@ -101,7 +101,7 @@ bool GroupedMatmulV4Ascend::Launch(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
   auto list_inputs = DealWithGroupedMatmulListTensors(group_info_, start_idxs_, inputs);
-  auto group_list_tensor = list_inputs[kInputGroupListIdx].at(kIndex0);
+  auto group_list_tensor = *(inputs.begin() + start_idxs_[kInputGroupListIdx]);
   RunOp(stream_ptr, workspace, list_inputs[kInputXIdx], list_inputs[kInputWeightIdx], list_inputs[kInputBiasIdx],
         list_inputs[kInputScaleIdx], list_inputs[kInputOffsetIdx], list_inputs[kInputAntiquantScaleIdx],
         list_inputs[kInputAntiquantOffsetIdx], list_inputs[kInputPreTokenScaleIdx], group_list_tensor,
