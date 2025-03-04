@@ -113,7 +113,6 @@ int32_t GroupedMatmulFuncImpl::PrivateCheckValidation(const PrimitivePtr &primit
     return OP_CHECK_RETRY;
   }
 
-  auto expect_sum = group_type == 0 ? x_shape.front() : x_shape.back();
   const auto &group_list = group_list_opt.value().ToVector();
   for (size_t i = 0; i < group_list.size(); ++i) {
     if (i == kIndex0) {
@@ -126,9 +125,12 @@ int32_t GroupedMatmulFuncImpl::PrivateCheckValidation(const PrimitivePtr &primit
       }
     }
   }
-  MS_CHECK_VALUE(group_list.back() == expect_sum,
-                 CheckAndConvertUtils::FormatCheckIntegerMsg("group_list's last element ", group_list.back(), kEqual,
-                                                             expect_sum, primitive));
+  if (!enable_infer_boost_310p) {
+    auto expect_sum = group_type == 0 ? x_shape.front() : x_shape.back();
+    MS_CHECK_VALUE(group_list.back() == expect_sum,
+                   CheckAndConvertUtils::FormatCheckIntegerMsg("group_list's last element ", group_list.back(), kEqual,
+                                                               expect_sum, primitive));
+  }
 
   return OP_CHECK_SUCCESS;
 }
