@@ -38,7 +38,7 @@
                 self.param_tuple = (Parameter(Tensor([5], ms.float32), name="name_a"),
                                     Parameter(Tensor([6], ms.float32)))
 
-          - 如果一个 `Parameter` 多次出现在list或tuple中，只检查一次他的名字。例如，以下代码将不会抛出异常。
+          - 如果一个 `Parameter` 多次出现在list或tuple中，只检查一次它的名字。例如，以下代码将不会抛出异常。
 
             .. code-block::
 
