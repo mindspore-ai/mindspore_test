@@ -68,6 +68,7 @@ enum KernelType : int {
   OPAPI_KERNEL,
   INTERNAL_KERNEL,
   GE_KERNEL,
+  ATB_KERNEL,
 };
 
 namespace kernel {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_INTERNAL_INTERNAL_KERNEL_PLUGIN_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_INTERNAL_INTERNAL_KERNEL_PLUGIN_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_ATB_ATB_KERNEL_PLUGIN_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_ATB_ATB_KERNEL_PLUGIN_H_
 
 #include <memory>
 #include <string>
@@ -22,17 +22,14 @@
 #include "plugin/device/ascend/kernel/utils/kernel_plugin.h"
 
 namespace mindspore::kernel {
-class InternalKernelPlugin : public KernelPlugin {
+class AtbKernelPlugin : public KernelPlugin {
  public:
-  InternalKernelPlugin() = default;
-  ~InternalKernelPlugin() = default;
+  AtbKernelPlugin() = default;
+  ~AtbKernelPlugin() = default;
 
   KernelModPtr BuildKernel(const AnfNodePtr &anf_node) override;
   bool IsRegisteredKernel(const AnfNodePtr &anf_node) override;
-  void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node, std::vector<std::string> *input_formats,
-                                                 std::vector<std::string> *output_formats) override;
-  void InitInternalLog() override;
 };
 }  // namespace mindspore::kernel
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_INTERNAL_INTERNAL_KERNEL_PLUGIN_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_ATB_ATB_KERNEL_PLUGIN_H_

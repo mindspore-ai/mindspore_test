@@ -28,6 +28,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "kernel/ascend/opapi/aclnn_kernel_build.h"
 #include "kernel/ascend/acl/acl_kernel_build.h"
+#include "plugin/device/ascend/kernel/atb/atb_kernel_build.h"
 #include "plugin/device/ascend/kernel/host/host_kernel_build.h"
 #include "plugin/device/ascend/kernel/host/host_kernel_metadata.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
@@ -50,9 +51,9 @@ namespace device {
 namespace ascend {
 namespace {
 constexpr uint32_t kFirstItem = 0;
-constexpr size_t kOpTypeNumber = 6;
-constexpr const char *kOpSelectedType[] = {"GE kernel",    "internal kernel", "aclnn kernel",
-                                           "aclop kernel", "hccl kernel",     "host kernel"};
+constexpr size_t kOpTypeNumber = static_cast<size_t>(SelectedKernelType::NUM_KERNLE_TYPE);
+constexpr const char *kOpSelectedType[] = {"GE kernel",  "internal kernel", "aclnn kernel", "aclop kernel",
+                                           "atb kernel", "hccl kernel",     "host kernel"};
 
 std::string KernelSelectDebugString(const kernel::KernelBuildInfo *build_info,
                                     const std::vector<std::shared_ptr<kernel::KernelBuildInfo>> &kernel_info_list) {
@@ -646,6 +647,12 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
   if ((select_host_priorly.count(op_name) != 0) && AnfAlgo::IsNodeSupportKernelSelectBackoff(node, graph)) {
     MS_VLOG(VL_ASCEND_KERNEL_SELECT) << op_name << " select host kernel priorly.";
     return {false, op_name + " select host kernel priorly.", NotSupportError};
+  }
+
+  if (kernel::IsEnableAtb(graph, node)) {
+    GenerateKernelBuildInfo(node, KernelType::ATB_KERNEL);
+    CollectOpSelectedType(op_name, SelectedKernelType::ATB_KERNEL, op_selected_num, &op_selected_type);
+    return result;
   }
 
   if (IsEnableAclnn(graph, node)) {

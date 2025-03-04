@@ -56,6 +56,7 @@
 #include "plugin/device/ascend/hal/device/kernel_select_ascend.h"
 #include "kernel/ascend/opapi/aclnn_kernel_build.h"
 #include "kernel/ascend/acl/acl_kernel_build.h"
+#include "plugin/device/ascend/kernel/atb/atb_kernel_build.h"
 #include "plugin/device/ascend/kernel/host/host_kernel_build.h"
 #include "plugin/device/ascend/kernel/host/host_kernel_metadata.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
@@ -99,6 +100,8 @@ std::string GetKernelTypeStr(const KernelType &kernel_type) {
     type = "akg_kernel";
   } else if (kernel_type == KernelType::RT_KERNEL) {
     type = "rt_kernel";
+  } else if (kernel_type == KernelType::ATB_KERNEL) {
+    type = "atb_kernel";
   }
   return type;
 }
@@ -174,6 +177,8 @@ bool GenerateKernelMod(const std::vector<CNodePtr> &kernels,
       kernel_mod_ptr = kernel::InternalKernelBuild(kernel);
     } else if (kernel_type == KernelType::GE_KERNEL) {
       kernel_mod_ptr = kernel::GeOpBuild(kernel);
+    } else if (kernel_type == KernelType::ATB_KERNEL) {
+      kernel_mod_ptr = kernel::AtbKernelBuild(kernel);
     } else {
       MS_LOG_WITH_NODE(EXCEPTION, kernel)
         << "The kernel: " << kernel->fullname_with_scope()
@@ -303,8 +308,10 @@ void SelectKernel(const KernelGraphPtr &kernel_graph, std::set<KernelGraphPtr> *
 }
 
 inline void PrintOpSelectedNum(const std::vector<size_t> &op_selected_num) {
-  MS_LOG(INFO) << "Number of GE_KERNEL, INTERNAL_KERNEL, OPAPI_KERNEL, ACL_KERNEL, HCCL_KERNEL, HOST_KERNEL:";
-  MS_VLOG(VL_FLOW) << "Number of GE_KERNEL, INTERNAL_KERNEL, OPAPI_KERNEL, ACL_KERNEL, HCCL_KERNEL, HOST_KERNEL:";
+  MS_LOG(INFO)
+    << "Number of GE_KERNEL, INTERNAL_KERNEL, OPAPI_KERNEL, ACL_KERNEL, ATB_KERNEL, HCCL_KERNEL, HOST_KERNEL:";
+  MS_VLOG(VL_FLOW)
+    << "Number of GE_KERNEL, INTERNAL_KERNEL, OPAPI_KERNEL, ACL_KERNEL, ATB_KERNEL, HCCL_KERNEL, HOST_KERNEL:";
   std::stringstream ss;
   for (const auto num : op_selected_num) {
     ss << num << " ";
