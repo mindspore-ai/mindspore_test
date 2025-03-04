@@ -126,7 +126,7 @@ from mindspore.mint.nn.layer.normalization import SyncBatchNorm
 # 45
 
 # 46
-from mindspore.mint.nn.layer.activation import SiLU, LogSigmoid
+from mindspore.mint.nn.layer.activation import SiLU, LogSigmoid, Sigmoid
 
 # 47
 
@@ -1444,6 +1444,7 @@ __all__ = [
     'KLDivLoss',
     # 556
     'LogSigmoid',
+    'Sigmoid',
     # 674
     'BatchNorm1d',
     # 675
