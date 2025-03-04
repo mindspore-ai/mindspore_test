@@ -810,8 +810,7 @@ def TEST_OP(op, inputs_seq, yaml_name, *, disable_input_check=False, disable_yam
     debug_log_args(inputs_seq[1], tag="inputs_seq[1]")
 
     old_mode = context.get_context("mode")
-    running_mode_map = {'GRAPH_MODE': context.GRAPH_MODE, 'PYNATIVE_MODE': context.PYNATIVE_MODE,
-                        'GRAPH_MODE_O0': context.GRAPH_MODE}
+    running_mode_map = {'GRAPH_MODE_O0': context.GRAPH_MODE, 'PYNATIVE_MODE': context.PYNATIVE_MODE}
     for mode_name, mode in running_mode_map.items():
         if disable_mode is not None and mode_name in disable_mode:
             warning_log(f"{mode_name} is skipped.")
@@ -823,9 +822,6 @@ def TEST_OP(op, inputs_seq, yaml_name, *, disable_input_check=False, disable_yam
                 warning_log(f"GRAPH_MODE_O0 is skipped, because device_target is not 'Ascend', but {device_target}")
                 continue
             JIT_CONFIG = JitConfig(jit_level="O0")
-        elif mode_name == 'GRAPH_MODE':
-            JIT_CONFIG = JitConfig(backend="GE")
-            os.environ['MS_ALLOC_CONF'] = "enable_vmm:False"
         else:
             JIT_CONFIG = None
 
@@ -877,8 +873,6 @@ def TEST_OP(op, inputs_seq, yaml_name, *, disable_input_check=False, disable_yam
             run_with_dynamic(op, inputs_seq, mode_name, disable_tensor_dynamic_type, disable_nontensor_dynamic_type,
                              grad, dump_ir, prefix_name, out_expect, out_expect_second, ignore_output_index,
                              inplace_update)
-            if mode_name == 'GRAPH_MODE':
-                del os.environ['MS_ALLOC_CONF']
         except Exception as error:
             error_status_log()
             raise error
