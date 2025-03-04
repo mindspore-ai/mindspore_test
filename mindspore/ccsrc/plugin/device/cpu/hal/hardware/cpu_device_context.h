@@ -35,7 +35,7 @@ class CPUDeviceResManager : public DeviceResManager {
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
     auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    ResKey res_key = {DeviceTargetType::kCPU, device_id};
+    ResKey res_key = {DeviceType::kCPU, device_id};
     cpu_res_manager_ = static_cast<CPUResManager *>(HalResManager::GetInstance().GetOrCreateResManager(res_key));
   }
   ~CPUDeviceResManager() override = default;
@@ -63,9 +63,6 @@ class CPUDeviceResManager : public DeviceResManager {
 
   bool LoadCollectiveCommLib() override;
   CollectiveCommunicationLib *collective_comm_lib() const override;
-
-  void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor, const std::string &to,
-              bool blocking, bool *return_self) override;
 
   // Relevant function to allocate and free device memory of raw ptr.
   void *AllocateMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const override;

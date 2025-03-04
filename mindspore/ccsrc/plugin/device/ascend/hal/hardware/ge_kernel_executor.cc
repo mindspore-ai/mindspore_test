@@ -75,6 +75,7 @@
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
 #include "plugin/device/ascend/hal/hardware/ascend_device_res_manager.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore::device::ascend {
 namespace {
@@ -1348,41 +1349,6 @@ void GeKernelExecutor::SetArfError() const {
       UCEException::GetInstance().set_force_stop_flag(true);
     }
   }
-}
-
-void AclrtLaunchCallback(void *user_data) {
-  CallbackFunc *callback_func = reinterpret_cast<CallbackFunc *>(user_data);
-  (*callback_func)();
-  delete callback_func;
-}
-
-bool GeKernelExecutor::LaunchCallback(CallbackFunc callback_func, size_t stream_id, bool is_block) const {
-  auto stream = AscendStreamMng::GetInstance().GetStream(stream_id);
-  if (stream == nullptr) {
-    stream_id = kDefaultStreamIndex;
-    stream = AscendStreamMng::GetInstance().GetStream(stream_id);
-  }
-  MS_EXCEPTION_IF_NULL(stream);
-  auto block_type =
-    is_block ? aclrtCallbackBlockType::ACL_CALLBACK_BLOCK : aclrtCallbackBlockType::ACL_CALLBACK_NO_BLOCK;
-  auto callback_func_ptr = new CallbackFunc(callback_func);
-  aclError ret = CALL_ASCEND_API(aclrtLaunchCallback, AclrtLaunchCallback, callback_func_ptr, block_type, stream);
-  MS_LOG(DEBUG) << "Launch callback for stream_id : " << stream_id << ", ret : " << ret << ".";
-  if (ret) {
-    delete callback_func_ptr;
-    MS_LOG(ERROR) << "Launch callback for stream_id : " << stream_id << " failed, ret : " << ret << ".";
-    if (res_manager_->SyncStream(stream_id)) {
-      callback_func();
-      return true;
-    }
-    auto arf_env = common::GetEnv("MS_ENABLE_TFT");
-    constexpr std::string_view arf = "ARF:1";
-    if (arf_env.find(arf) == std::string::npos) {
-      res_manager_->ResetStreamAndCtx();
-    }
-    return false;
-  }
-  return true;
 }
 
 bool GeKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,

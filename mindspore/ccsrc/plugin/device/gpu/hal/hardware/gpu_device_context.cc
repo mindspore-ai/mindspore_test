@@ -223,11 +223,6 @@ GPUDeviceResManager::GetPersistentMemBlocksInfoStatistics() const {
 void GPUDeviceResManager::ResetMaxMemoryReserved() { gpu_res_manager_->ResetMaxMemoryReserved(); }
 void GPUDeviceResManager::ResetMaxMemoryAllocated() { gpu_res_manager_->ResetMaxMemoryAllocated(); }
 
-void GPUDeviceResManager::MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor,
-                                 const std::string &to, bool blocking, bool *return_self) {
-  gpu_res_manager_->MoveTo(src_tensor, dst_tensor, to, blocking, return_self);
-}
-
 DeviceAddressPtr GPUDeviceResManager::CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const {
   return gpu_res_manager_->CreateDeviceAddress(kernel_tensor);
 }

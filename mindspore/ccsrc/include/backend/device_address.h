@@ -30,7 +30,7 @@
 #include "utils/shape_utils.h"
 #include "utils/check_convert_utils.h"
 #include "include/common/utils/utils.h"
-#include "include/backend/device_type.h"
+#include "utils/device_type.h"
 #include "common/kernel.h"
 
 namespace mindspore {

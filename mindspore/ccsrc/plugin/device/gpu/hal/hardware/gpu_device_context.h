@@ -39,7 +39,7 @@ class GPUDeviceResManager : public DeviceResManager {
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
     auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    ResKey res_key = {DeviceTargetType::kGPU, device_id};
+    ResKey res_key = {DeviceType::kGPU, device_id};
     gpu_res_manager_ = static_cast<GPUResManager *>(HalResManager::GetInstance().GetOrCreateResManager(res_key));
   }
   ~GPUDeviceResManager() override = default;
@@ -71,9 +71,6 @@ class GPUDeviceResManager : public DeviceResManager {
                                                     size_t end) override;
   tensor::TensorPtr GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start,
                                                  size_t end) override;
-
-  void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor, const std::string &to,
-              bool blocking, bool *return_self) override;
 
   bool CreateStream(size_t *stream_id) const override;
   bool CreateStreamWithPriority(size_t *stream_id, int32_t priority) const override;

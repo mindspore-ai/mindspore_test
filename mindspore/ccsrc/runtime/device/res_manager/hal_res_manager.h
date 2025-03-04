@@ -34,14 +34,14 @@ class RES_EXPORT HalResManager {
  public:
   ~HalResManager() = default;
   static HalResManager &GetInstance();
-  void Register(const DeviceTargetType device, HalResManagerCreator &&hal_res_manager_creator);
+  void Register(const DeviceType device, HalResManagerCreator &&hal_res_manager_creator);
   HalResBase *GetOrCreateResManager(const ResKey &res_key);
   HalResPtr GetResManager(const ResKey &res_key);
 
   MultiStreamControllerPtr &GetMultiStreamController(const std::string &device_name);
 
  private:
-  std::map<DeviceTargetType, HalResManagerCreator> hal_res_manager_creators_;
+  std::map<DeviceType, HalResManagerCreator> hal_res_manager_creators_;
   std::map<std::string, HalResPtr> res_managers_;
 
   // Since multi device is not supported currently, here use device target type to improve performance.
@@ -50,7 +50,7 @@ class RES_EXPORT HalResManager {
 };
 class RES_EXPORT HalResManagerRegister {
  public:
-  HalResManagerRegister(const DeviceTargetType device, HalResManagerCreator &&hal_res_manager_creator) {
+  HalResManagerRegister(const DeviceType device, HalResManagerCreator &&hal_res_manager_creator) {
     HalResManager::GetInstance().Register(device, std::move(hal_res_manager_creator));
   }
   ~HalResManagerRegister() = default;

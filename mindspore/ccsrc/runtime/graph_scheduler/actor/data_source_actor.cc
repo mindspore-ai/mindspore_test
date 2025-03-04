@@ -26,6 +26,7 @@
 #include "common/common_utils.h"
 #include "utils/ms_context.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
 namespace runtime {
@@ -355,10 +356,15 @@ void HostQueueDataSourceActor::AddCopyDataCallBack(
   device::CallbackFunc callback_func = [host_tensors]() {
     // Clear buffer automatically.
   };
-  auto device_context = device_contexts_[0];
-  MS_EXCEPTION_IF_NULL(device_context);
-  auto callback_ret =
-    device_context->GetKernelExecutor(false)->LaunchCallback(callback_func, device_tensors[0]->stream_id());
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  auto callback_ret = res_manager->LaunchCallback(callback_func, device_tensors[0]->stream_id());
   if (!callback_ret) {
     MS_LOG(EXCEPTION) << "Async Copy memory launch callback failed";
   }

@@ -166,9 +166,9 @@ void GPUResManager::FreePartMemorys(const std::vector<void *> &free_addrs, const
 bool GPUResManager::AllocateMemory(DeviceAddress *const &address, uint32_t stream_id) const {
   MS_EXCEPTION_IF_NULL(address);
   auto device_name_in_address = GetDeviceNameByType(static_cast<const DeviceType>(address->GetDeviceType()));
-  if (device_name_in_address != DeviceTypeToString(res_key_.device_name_)) {
+  if (device_name_in_address != GetDeviceNameByType(res_key_.device_name_)) {
     MS_LOG(EXCEPTION) << "The device address type is wrong: type name in address:" << device_name_in_address
-                      << ", type name in context:" << DeviceTypeToString(res_key_.device_name_);
+                      << ", type name in context:" << GetDeviceNameByType(res_key_.device_name_);
   }
 
   if (address->GetPtr() != nullptr) {
@@ -399,15 +399,10 @@ void SetUserData(DeviceAddress *device_address, const UserDataPtr &user_data) {
 }
 }  // namespace
 
-void GPUResManager::MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor,
-                           const std::string &to, bool blocking, bool *return_self) {
-  device::MoveTo(src_tensor, dst_tensor, to, blocking, return_self);
-}
-
 DeviceAddressPtr GPUResManager::CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const {
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   if (kernel_tensor->device_name().empty()) {
-    kernel_tensor->set_device_name(DeviceTypeToString(res_key_.device_name_));
+    kernel_tensor->set_device_name(GetDeviceNameByType(res_key_.device_name_));
     kernel_tensor->set_device_id(res_key_.device_id_);
   }
   auto device_address = std::make_shared<GPUDeviceAddress>(kernel_tensor);
@@ -574,7 +569,7 @@ std::shared_ptr<void> GPUResManager::AllocateHostMemory(size_t size) const {
   });
 }
 
-MS_REGISTER_HAL_RES_MANAGER(kGPUDevice, DeviceTargetType::kGPU, GPUResManager);
+MS_REGISTER_HAL_RES_MANAGER(kGPUDevice, DeviceType::kGPU, GPUResManager);
 }  // namespace gpu
 }  // namespace device
 }  // namespace mindspore

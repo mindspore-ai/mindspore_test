@@ -62,9 +62,6 @@ class AscendResManager : public HalResBase {
                                        TypeId type_id, const std::string &device_name, uint32_t device_id,
                                        uint32_t stream_id) const override;
 
-  void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor, const std::string &to,
-              bool blocking, bool *return_self) override;
-
   bool LoadCollectiveCommLib() override;
   bool IsEnableVmm() const override;
 
@@ -149,6 +146,8 @@ class AscendResManager : public HalResBase {
   bool WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id) override;
 
   bool SyncAllEvents() override;
+
+  bool LaunchCallback(std::function<void(void)> callback_func, size_t stream_id, bool is_block = false) const override;
 
  private:
   bool is_use_cpu_memory_ = false;

@@ -34,6 +34,7 @@
 #include "runtime/pipeline/pipeline.h"
 #include "include/backend/mbuf_device_address.h"
 #include "utils/ordered_set.h"
+#include "runtime/device/move_to.h"
 
 namespace mindspore {
 namespace tensor {
@@ -41,19 +42,6 @@ namespace {
 struct TensorToNumpyRegister {
   TensorToNumpyRegister() { python_adapter::PyAdapterCallback::SetTensorToNumpyHandler(tensor::TensorPybind::AsNumpy); }
 } callback_register;
-
-device::DeviceContext *GetDeviceCtx(const std::string &to) {
-  const auto &device = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  if (to != "CPU" && to != device) {
-    MS_LOG(EXCEPTION) << "The value of 'to' should be same with device, bug got to:" << to << ", device: " << device;
-  }
-  auto device_ctx = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
-  MS_EXCEPTION_IF_NULL(device_ctx);
-
-  device_ctx->Initialize();
-  return device_ctx;
-}
 }  // namespace
 constexpr ssize_t kPyBufItemSize1 = 1;
 constexpr ssize_t kPyBufItemSize2 = 2;
@@ -855,15 +843,12 @@ uintptr_t TensorPybind::DataPtr(const Tensor &tensor) {
 TensorPtr TensorPybind::MoveTo(const Tensor &self, const std::string &to, bool blocking) {
   py::gil_scoped_release gil_release;
   MS_LOG(INFO) << "Try move tensor to " << to;
-  auto context = GetDeviceCtx(to);
-  MS_EXCEPTION_IF_NULL(context);
   auto target_tensor = std::make_shared<tensor::Tensor>(self.data_type(), self.shape());
   target_tensor->set_device_address(nullptr);
   bool return_self = false;
   // make sure op execute end before data copy
   runtime::Pipeline::Get().WaitForward();
-  context->device_res_manager_->MoveTo(std::make_shared<tensor::Tensor>(self), target_tensor, to, blocking,
-                                       &return_self);
+  device::MoveTo(std::make_shared<tensor::Tensor>(self), target_tensor, to, blocking, &return_self);
   if (return_self) {
     return std::make_shared<tensor::Tensor>(self);
   }

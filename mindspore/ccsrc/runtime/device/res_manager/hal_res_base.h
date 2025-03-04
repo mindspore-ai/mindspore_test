@@ -132,10 +132,6 @@ class RES_EXPORT HalResBase {
   virtual DeviceAddressPtr CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
-  virtual void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor, const std::string &to,
-                      bool blocking, bool *return_self) {
-    MS_LOG(EXCEPTION) << "Unimplemented interface.";
-  }
 
   virtual DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
                                                const Format &format, TypeId type_id, const std::string &device_name,

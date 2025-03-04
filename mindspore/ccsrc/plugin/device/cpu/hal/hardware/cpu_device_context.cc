@@ -279,11 +279,6 @@ DeviceAddressPtr CPUDeviceResManager::CreateDeviceAddress(const KernelTensorPtr 
   return cpu_res_manager_->CreateDeviceAddress(kernel_tensor);
 }
 
-void CPUDeviceResManager::MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor,
-                                 const std::string &to, bool blocking, bool *return_self) {
-  cpu_res_manager_->MoveTo(src_tensor, dst_tensor, to, blocking, return_self);
-}
-
 DeviceAddressPtr CPUDeviceResManager::CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
                                                           const Format &format, TypeId type_id,
                                                           const std::string &device_name, uint32_t device_id,

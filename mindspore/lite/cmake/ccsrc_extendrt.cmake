@@ -58,7 +58,6 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
             ${CMAKE_CURRENT_SOURCE_DIR}/mock/segment_runner.cc
             ${CCSRC_DIR}/utils/ms_device_shape_transfer.cc
             ${CCSRC_DIR}/runtime/device/kernel_info.cc
-            ${CCSRC_DIR}/runtime/device/convert_tensor_utils.cc
             ${CCSRC_DIR}/runtime/device/kernel_runtime_manager.cc
             ${CCSRC_DIR}/runtime/device/kernel_runtime.cc
             ${CCSRC_DIR}/runtime/device/memory_scheduler.cc
@@ -69,7 +68,6 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
             ${CCSRC_DIR}/runtime/device/gsm/swap_strategy_builder.cc
             ${CCSRC_DIR}/runtime/device/common_somas_allocator.cc
             ${CCSRC_DIR}/runtime/pynative/op_runtime_info.cc
-            ${CCSRC_DIR}/runtime/hardware/device_type.cc
             ${CCSRC_DIR}/common/runtime_conf/runtime_conf.cc
             ${OPS_DIR}/kernel/common/kernel_build_info.cc
             ${OPS_DIR}/kernel/common/kernel_utils.cc

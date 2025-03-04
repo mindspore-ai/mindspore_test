@@ -61,7 +61,6 @@ class GeKernelExecutor : public KernelExecutor {
   bool LaunchKernel(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
                     const std::vector<KernelTensor *> &workspace, const std::vector<KernelTensor *> &outputs,
                     KernelMod *kernel_mod, void *stream) const override;
-  bool LaunchCallback(CallbackFunc callback_func, size_t stream_id, bool is_block = false) const;
 
   // Unify the MindIR, the default behavior uses the common unified MindIR.
   void UnifyMindIR(const KernelGraphPtr &graph) const override;

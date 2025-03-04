@@ -15,36 +15,8 @@
  */
 #include "runtime/device/res_manager/utils/utils.h"
 
+#include <unordered_set>
+
 namespace mindspore {
-namespace device {
-
-std::string DeviceTypeToString(const DeviceTargetType &target) {
-  switch (target) {
-    case DeviceTargetType::kAscend:
-      return "Ascend";
-    case DeviceTargetType::kCPU:
-      return "CPU";
-    case DeviceTargetType::kGPU:
-      return "GPU";
-    case DeviceTargetType::kUnknown:
-      return "Unknown";
-    default:
-      return "";
-  }
-  return "";
-}
-
-DeviceTargetType DeviceStringToType(const std::string &device_name) {
-  if ("Ascend" == device_name) {
-    return DeviceTargetType::kAscend;
-  } else if ("CPU" == device_name) {
-    return DeviceTargetType::kCPU;
-  } else if ("GPU" == device_name) {
-    return DeviceTargetType::kGPU;
-  } else {
-    return DeviceTargetType::kUnknown;
-  }
-}
-
-}  // namespace device
+namespace device {}  // namespace device
 }  // namespace mindspore
