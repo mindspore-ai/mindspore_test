@@ -10,7 +10,7 @@
 
           - 可随机访问(map-style)数据集：它是一种实现了 `__getitem__()` 和 `__len__()` 方法的数据集对象，记录从索引/键到数据样本的映射。
             例如，使用 `source[idx]` 访问数据集时，可以从磁盘上的文件夹中读取第idx个样本，详情请参阅 `可随机访问数据集样例 <https://www.mindspore.cn/tutorials/zh-CN/master/beginner/dataset.html#可随机访问数据集>`_ 。
-          - 可迭代(iterable-style)数据集：它是一种实现了 `__iter__()` 和 `__next__()` 方法的数据集对象，表示数据样本的可迭代性。这种类型的数据集适用于随机读取成本较高甚至不可能的情况，以及批量大小取决于获取数据的情况。
+          - 可迭代(iterable-style)数据集：它是一种实现了 `__iter__()` 和 `__next__()` 方法的数据集对象，表示数据样本的可迭代性。这种类型的数据集适用于随机读取成本较高甚至不可能的情况，以及适用于批量大小取决于获取数据的情况。
             例如，使用 `iter(source)` 访问数据集时，可以返回从数据库、远程服务器读取的数据流，详情请参阅 `可迭代数据集样例 <https://www.mindspore.cn/tutorials/zh-CN/master/beginner/dataset.html#可迭代数据集>`_ 。
         - **column_names** (Union[str, list[str]]，可选) - 指定数据集生成的列名。默认值： ``None`` ，不指定。用户可以通过此参数或 `schema` 参数指定列名。
         - **column_types** (list[mindspore.dtype]，可选) - 指定生成数据集各个数据列的数据类型。默认值： ``None`` ，不指定。
