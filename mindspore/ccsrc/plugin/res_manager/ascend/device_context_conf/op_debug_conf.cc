@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 #include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
+#include <fstream>
+#include "include/common/debug/common.h"
+#include <nlohmann/json.hpp>
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 
@@ -59,6 +62,35 @@ std::string OpDebugConf::debug_option() const {
   return debug_option;
 }
 
+bool OpDebugConf::GenerateAclInitJson() {
+  std::string file_name = "./aclinit.json";
+  auto realpath = Common::CreatePrefixPath(file_name);
+  // write to file
+  std::string json_file_str = acl_init_json_.dump();
+  std::ofstream json_file(realpath.value());
+  if (!json_file.is_open()) {
+    MS_LOG(WARNING) << "Open file [" << realpath.value() << "] failed!";
+    return false;
+  }
+  json_file << json_file_str;
+  json_file.close();
+  return true;
+}
+
+void OpDebugConf::set_max_opqueue_num(const std::string &opqueue_num) {
+  if (acl_init_json_["max_opqueue_num"] == opqueue_num) {
+    return;
+  }
+  acl_init_json_["max_opqueue_num"] = opqueue_num;
+}
+
+void OpDebugConf::set_err_msg_mode(const std::string &msg_mode) {
+  if (acl_init_json_["err_msg_mode"] == msg_mode) {
+    return;
+  }
+  acl_init_json_["err_msg_mode"] = msg_mode;
+}
+
 void RegOpDebugConf(py::module *m) {
   (void)py::class_<OpDebugConf, std::shared_ptr<OpDebugConf>>(*m, "AscendOpDebugConf")
     .def_static("get_instance", &OpDebugConf::GetInstance, "Get OpDebugConf instance.")
@@ -67,7 +99,10 @@ void RegOpDebugConf(py::module *m) {
     .def("set_debug_option", &OpDebugConf::set_debug_option, "Set Debug Option.")
     .def("debug_option", &OpDebugConf::debug_option, "Get Debug Option.")
     .def("is_execute_timeout_configured", &OpDebugConf::IsExecuteTimeoutConfigured, "Is Execute Timeout Configured.")
-    .def("is_debug_option_configured", &OpDebugConf::IsDebugOptionConfigured, "Is Debug Option Configured.");
+    .def("is_debug_option_configured", &OpDebugConf::IsDebugOptionConfigured, "Is Debug Option Configured.")
+    .def("set_max_opqueue_num", &OpDebugConf::set_max_opqueue_num, "set_max_opqueue_num")
+    .def("set_err_msg_mode", &OpDebugConf::set_err_msg_mode, "set_err_msg_mode")
+    .def("generate_aclinit_json", &OpDebugConf::GenerateAclInitJson, "Generate AclInit Json");
 }
 }  // namespace ascend
 }  // namespace device
