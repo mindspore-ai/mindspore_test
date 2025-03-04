@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 #include <optional>
-
+#include <set>
 #include "backend/common/graph_kernel/expander/base/ir_builder.h"
 #include "backend/common/graph_kernel/expander/base/utils.h"
+#include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "mindspore/ops/op_def/op_enum.h"
+#include "utils/value_utils.h"
 
 namespace mindspore::graphkernel::expander {
 REG_EXPANDER_FUNC("AddN").SetBody(BODYFUNC(ib) {
@@ -373,7 +375,10 @@ NodePtrList BinaryExtCommon(const DefaultIrBuilder *ib, bool is_add) {
   auto x0_type = x0->GetDtype()->type_id();
   auto x1_type = x1->GetDtype()->type_id();
   auto alpha_type = alpha->GetDtype()->type_id();
+  static std::set<TypeId> dvm_supported_types{kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeInt32,
+                                              kNumberTypeBFloat16};
   if (x0_type == kNumberTypeBool) {
+    MS_LOG(DEBUG) << "The data type of first input is not supported: " << TypeIdToString(x0_type);
     return {};
   }
   if (x1_type != x0_type) {
@@ -389,6 +394,14 @@ NodePtrList BinaryExtCommon(const DefaultIrBuilder *ib, bool is_add) {
       x1 = ib->Cast(x1, alpha_type);
     } else {
       alpha = ib->ScalarToTensor(alpha, x0->GetDtype());
+      auto alpha_value = alpha->GetValue();
+      if (GraphKernelFlags::GetInstance().kernel_generator == "DVM" &&
+          (alpha_value == nullptr || !IsValueKnown(alpha_value)) &&
+          dvm_supported_types.find(alpha_type) == dvm_supported_types.end()) {
+        MS_LOG(DEBUG) << "alpha is not const value and the data type of it is not supported: "
+                      << TypeIdToString(alpha_type);
+        return {};
+      }
     }
   }
   x1 = ib->Mul(x1, alpha);
