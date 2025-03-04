@@ -1594,20 +1594,6 @@ def infer_value_for_Concat(tensors, axis):
     return Tensor(np.concatenate(tensor_to_concat, axis), dtype=tensors[0].dtype)
 
 
-def infer_value_for_SliceExt(input, dim, start, end, step):
-    """Infer value for SliceExt op."""
-    if input is None or dim is None or start is None or end is None or step is None:
-        return None
-
-    input_np = input.asnumpy()
-    condition = np.zeros(input_np.shape[dim])
-    if start < 0:
-        start += input_np.shape[dim]
-    condition[start:end:step] = 1
-    output = np.compress(condition, input_np, axis=dim)
-    return Tensor(output, dtype=input.dtype)
-
-
 def infer_value_for_GatherD(input, dim, index):
     """Infer value for GatherD op."""
     if input is None or dim is None or index is None:
@@ -1622,14 +1608,6 @@ def infer_value_for_GatherD(input, dim, index):
 
     output = input_np[tuple(multi_index)]
     return Tensor(output, dtype=input.dtype)
-
-
-def infer_value_for_TransposeExt(input, dim0, dim1):
-    """Infer value for TransposeExt op."""
-    if input is None or dim0 is None or dim1 is None:
-        return None
-
-    return Tensor(input.asnumpy().swapaxes(dim0, dim1), dtype=input.dtype)
 
 
 def infer_value_for_Softmax(input, axis):
