@@ -317,7 +317,8 @@ FuncGraphPtr MultitypeFuncGraph::GenerateFromTypes(const TypePtrList &types) {
     return stub;
   }
 
-  if (default_fn_.ptr() != nullptr) {
+  if (default_fn_.ptr() != nullptr && !CheckContainsAny(types)) {
+    MS_LOG(DEBUG) << "Use default_fn, convert default_fn to FuncGraph";
     FuncGraphPtr func_graph = parse::ParsePythonCode(default_fn_);
     return func_graph;
   }
@@ -327,6 +328,7 @@ FuncGraphPtr MultitypeFuncGraph::GenerateFromTypes(const TypePtrList &types) {
     return type->isa<Dictionary>();
   });
   if (!need_raise_ || !has_dic) {
+    MS_LOG(DEBUG) << "Use jit fallback to execute MultitypeFuncGraph";
     FuncGraphPtr func_graph = std::make_shared<FuncGraph>();
     AnfNodePtrList node_inputs{};
     for (auto type : types) {
