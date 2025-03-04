@@ -73,6 +73,7 @@ Indexing, Slicing, Joining, Mutating Operations
     mindspore.mint.squeeze
     mindspore.mint.stack
     mindspore.mint.swapaxes
+    mindspore.mint.take_along_dim
     mindspore.mint.transpose
     mindspore.mint.triu
     mindspore.mint.unbind
