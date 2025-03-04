@@ -661,7 +661,7 @@ void KernelRuntime::GetDeviceAddress(const AnfNodePtr &item,
         MS_LOG(EXCEPTION) << "Cannot alloc address when flag is: " << kStaticMem << ", tensor size is: " << tensor_size;
       }
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "AllocStaticMemory", item->fullname_with_scope(),
-                                                     graph.ToString());
+                                                     graph.ToString(), false);
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, "AllocStaticMemory", tensor_size, ret_ptr,
                                                      device::tracker::MemType::kWeight);
     }

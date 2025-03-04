@@ -195,7 +195,7 @@ void UpdateFMTracker(size_t feature_memory_size, const std::string &graph_name) 
   device::tracker::CALL_MEMORY_TRACKER(AllocMemBlock, 0, feature_memory_size, "Ascend",
                                        device::ascend::AscendMemAdapter::GetInstance()->GetActualPeakMemory(), 0, 0, 0);
   device::tracker::CALL_MEMORY_TRACKER(FreeMemBlock, 0, 0, 0);
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "RunGeGraph", "RunGeGraph", graph_name);
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "RunGeGraph", "RunGeGraph", graph_name, false);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, "RunGeGraph", feature_memory_size, 0,
                                                  device::tracker::MemType::kGeFixed);
 }
@@ -308,7 +308,7 @@ void SetDynamicOutputsForKernel(const std::vector<GeTensor> &ge_outputs,
 
 void UpdateTracker(const std::string &task_name, const std::string &node_name, const std::string &graph_str,
                    device::tracker::MemType mem_type, device::DeviceAddress *device_tensor) {
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, task_name, node_name, graph_str);
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, task_name, node_name, graph_str, false);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, task_name, mem_type, device_tensor->GetSize(),
                                                  device_tensor);
 }

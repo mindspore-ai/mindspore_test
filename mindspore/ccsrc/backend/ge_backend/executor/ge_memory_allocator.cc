@@ -46,7 +46,7 @@ constexpr size_t kNeedRecycleOutput = 5;
 
 void UpdateTracker(const std::string &task_name, const std::string &node_name, const std::string &graph_str,
                    size_t size, void *device_ptr, device::tracker::MemType mem_type) {
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, task_name, node_name, graph_str);
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, task_name, node_name, graph_str, false);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, task_name, size, device_ptr, mem_type);
 }
 

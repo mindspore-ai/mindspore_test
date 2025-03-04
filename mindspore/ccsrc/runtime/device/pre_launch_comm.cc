@@ -98,7 +98,7 @@ void PreLaunchComm::Launch(std::vector<LaunchCommNode> &launch_hccl_nodes, Sorte
     MS_EXCEPTION_IF_NULL(device_context);
     auto stream_id = device_context->device_res_manager_->GetCurrentStreamId();
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "AllocMemoryForPreLaunchComm", "ConstructInputAndOutput",
-                                                   "");
+                                                   "", false);
     for (const auto &input_kernel_tensor : input_kernel_tensors) {
       MS_EXCEPTION_IF_NULL(input_kernel_tensor);
       auto kernel_tensor = std::make_shared<KernelTensor>(*input_kernel_tensor);

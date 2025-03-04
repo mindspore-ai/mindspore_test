@@ -65,7 +65,7 @@ void MemoryManagerActor::AllocateMemory(const std::vector<DeviceTensor *> *alloc
         success = device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex);
       } else {
         if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
-          device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "ContinuousMemory", "");
+          device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "ContinuousMemory", "", false);
         }
         MS_LOG(DEBUG) << "Allocate continuous memory, device address : " << device_tensor << ".";
         success = AllocateContinuousMemory(device_tensor, device_context, from_aid);
@@ -140,7 +140,7 @@ void MemoryManagerActor::AllocateContinuousMemory(const std::vector<std::vector<
                                       "and device_contexts are not equal.");
   }
 
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "ContinuousMemory", "");
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "ContinuousMemory", "", false);
   for (size_t i = 0; i < (*alloc_list_list).size(); ++i) {
     auto &alloc_list = (*alloc_list_list)[i];
     auto &size_list = (*size_list_list)[i];
@@ -228,7 +228,7 @@ void MemoryManagerActor::AllocateBatchMemory(const std::vector<DeviceTensor *> *
     try {
       // Allocate memory through the device context.
       device::DynamicMemAllocatorDebugInfo::SetDebugInfo(from_aid.Name(), device::AllocatorType::kKernelOutput);
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "BatchMemory", "");
+      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "BatchMemory", "", false);
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
         AddMemInfo, from_aid.Name(), device::tracker::MemType::kBatchMemory, device_tensor->GetSize(), device_tensor);
       if (!device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex)) {
@@ -258,7 +258,7 @@ void MemoryManagerActor::AllocateSomasMemory(SomasInfo *const somas_info, const 
   MS_EXCEPTION_IF_NULL(op_context);
 
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "SomasMemory",
-                                                 "kernel_graph_" + std::to_string(somas_info->graph_id_));
+                                                 "kernel_graph_" + std::to_string(somas_info->graph_id_), false);
 
   // Allocate the whole block memory.
   if (somas_info->base_address_ != nullptr) {
@@ -398,7 +398,7 @@ void MemoryManagerActor::FreeSomasMemory(SomasInfo *const somas_info, const Devi
   }
 
   // Somas decrease the ref count.
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "SomasOutput", "");
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "SomasOutput", "", false);
   for (auto &output_address : somas_info->graph_output_device_addresses_) {
     output_address->set_from_mem_pool(true);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), device::tracker::MemType::kSomasOutput,

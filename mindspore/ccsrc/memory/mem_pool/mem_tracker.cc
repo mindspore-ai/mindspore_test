@@ -230,9 +230,6 @@ void MultiStreamDependency::WaitEvent(size_t stream_id, const std::string &event
 }
 
 void GraphTracker::Dump(const std::string &graph_path) {
-  if (!IsPyNative()) {
-    return;
-  }
   MS_LOG(WARNING) << "Dump graph to file: " << graph_path;
   ChangeFileMode(graph_path, S_IWUSR | S_IRUSR);
   std::ofstream graph_file(graph_path);
@@ -324,6 +321,7 @@ TrackerOperatorPtr GraphTracker::GetOperator(TaskInfoPtr task_info) {
   }
   return iter->second;
 }
+
 }  // namespace graph
 
 std::tuple<std::string, std::string, std::string> MemoryTrackerEnabled::GetPath(size_t rank_id) {
@@ -334,7 +332,8 @@ std::tuple<std::string, std::string, std::string> MemoryTrackerEnabled::GetPath(
 }
 
 void MemoryTrackerEnabled::AddTask(const std::string &task_name, const std::string &node_name,
-                                   const std::string &graph_name, const std::string &file_name, size_t line_num) {
+                                   const std::string &graph_name, const bool to_graph, const std::string &file_name,
+                                   size_t line_num) {
   std::string python_stack;
   if (IsPyNative()) {
     python_stack = GetPythonStackStr();
@@ -349,7 +348,6 @@ void MemoryTrackerEnabled::AddTask(const std::string &task_name, const std::stri
     is_init_enable_hccl_ = true;
   }
 
-  time_stamp_++;
   auto task_info = std::make_shared<TaskInfo>();
   MS_EXCEPTION_IF_NULL(task_info);
   task_info->task_name = task_name;
@@ -361,8 +359,15 @@ void MemoryTrackerEnabled::AddTask(const std::string &task_name, const std::stri
   task_info->python_stack = python_stack;
   task_info->attrs[kStreamId] = "0";
   task_map_[task_name] = task_info;
-  task_list_.push_back(task_info);
-  graph::GraphTracker::getInstance().AddOperator(task_info);
+  if (to_graph) {
+    time_stamp_++;
+    task_list_.push_back(task_info);
+    graph::GraphTracker::getInstance().AddOperator(task_info);
+  }
+}
+void MemoryTrackerEnabled::AddTask(const std::string &task_name, const std::string &node_name,
+                                   const std::string &graph_name, const std::string &file_name, size_t line_num) {
+  AddTask(task_name, node_name, graph_name, true, file_name, line_num);
 }
 
 void MemoryTrackerEnabled::UpdateTask(const std::string &task_name,

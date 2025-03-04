@@ -18,7 +18,8 @@
 
 #include <mutex>
 #include <algorithm>
-
+#include <unordered_map>
+#include <limits>
 #include "runtime/device/multi_stream_controller.h"
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/graph_scheduler/actor/output_actor.h"
@@ -53,6 +54,106 @@ void CheckDryRun(const CNodePtr &kernel_) {
          "shape of these value depend or computing depend kernel. You can only simulate compile graph and not do "
          "InferShape and Resize by `export MS_SIMULATION_LEVEL=0` instead.";
   }
+}
+void TrackInputOutputMemory(const std::vector<DeviceTensor *> &input_device_tensors,
+                            const std::vector<DeviceTensor *> &output_device_tensors, const std::string &actor_name,
+                            const std::vector<bool> &depend_shape_input_list) {
+  for (size_t i = 0, end = input_device_tensors.size(); i < end; i++) {
+    // Skip shape depend inputs.
+    if (i < depend_shape_input_list.size() && depend_shape_input_list[i]) {
+      continue;
+    }
+    auto device_addr = input_device_tensors[i];
+    if (device_addr == nullptr || !device_addr->IsPtrValid()) {
+      continue;
+    }
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsInput, actor_name, device_addr->device_name(),
+                                                   device_addr->GetPtr(), device_addr->type_id(),
+                                                   device_addr->GetShapeVector(), device_addr->GetTensorStorageInfo());
+  }
+  for (size_t i = 0, end = output_device_tensors.size(); i < end; i++) {
+    auto device_addr = output_device_tensors[i];
+    if (device_addr == nullptr || !device_addr->IsPtrValid()) {
+      continue;
+    }
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsOutput, actor_name, device_addr->device_name(),
+                                                   device_addr->GetPtr(), device_addr->type_id(),
+                                                   device_addr->GetShapeVector(), device_addr->GetTensorStorageInfo());
+  }
+}
+void AddNodeToGraphTracker(const CNodePtr cnode, const std::string &actor_name) {
+  auto type = common::AnfAlgo::GetCNodeName(cnode);
+  auto stream_id = std::to_string(AnfAlgo::GetStreamId(cnode));
+  if (type == kStreamSendOpName || type == kStreamRecvOpName) {
+    auto node_name = type == kStreamSendOpName ? "RecordEvent" : "WaitEvent";
+    std::string event_id;
+    if (common::AnfAlgo::HasNodeAttr(kAttrEventId, cnode)) {
+      event_id = std::to_string(common::AnfAlgo::GetNodeAttr<uint32_t>(cnode, kAttrEventId));
+    } else {
+      MS_LOG(EXCEPTION) << "StreamSend or StreamRecv ops does not have attribute kAttrEventId.";
+    }
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, node_name, node_name, "", true);
+    device::tracker::CALL_MEMORY_TRACKER(
+      UpdateTask, node_name, {{device::tracker::kStreamId, stream_id}, {device::tracker::kEvent, event_id}});
+  } else {
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, actor_name, cnode->fullname_with_scope(),
+                                                   cnode->func_graph()->ToString(), true);
+    device::tracker::CALL_MEMORY_TRACKER(UpdateTask, actor_name, {{device::tracker::kStreamId, stream_id}});
+
+    if (!(common::AnfAlgo::IsCommunicationOp(cnode) && common::AnfAlgo::HasNodeAttr(kAttrGroup, cnode))) {
+      return;
+    }
+
+    auto group_name = common::AnfAlgo::GetNodeAttr<std::string>(cnode, kAttrGroup);
+    std::vector<uint32_t> comm_ranks;
+    if (group_name == "hccl_world_group") {
+      uint32_t rank_size = 1;
+#if !defined(BUILD_LITE)
+      rank_size = distributed::collective::CollectiveManager::instance()->global_rank_size();
+#endif
+      comm_ranks.resize(rank_size);
+      std::iota(comm_ranks.begin(), comm_ranks.end(), 0);
+    } else {
+#if !defined(BUILD_LITE)
+      comm_ranks = distributed::collective::CollectiveManager::instance()->GetGroupRanks(group_name);
+#else
+      comm_ranks = {0};
+#endif
+    }
+    std::string comm_ranks_str = std::accumulate(
+      comm_ranks.begin(), comm_ranks.end(), std::string(),
+      [](const std::string &a, uint32_t b) { return a.empty() ? std::to_string(b) : a + " " + std::to_string(b); });
+    std::unordered_map<std::string, std::string> attrs = {{device::tracker::kGroup, group_name},
+                                                          {device::tracker::kCommRank, comm_ranks_str}};
+
+    auto get_rank = [&](const std::string &attr_name) -> uint32_t {
+      uint32_t rank_value = std::numeric_limits<uint32_t>::max();
+      if (common::AnfAlgo::HasNodeAttr(attr_name, cnode)) {
+        int64_t rank_attr = common::AnfAlgo::GetNodeAttr<int64_t>(cnode, attr_name);
+        if (rank_attr >= 0 && static_cast<size_t>(rank_attr) < comm_ranks.size()) {
+          rank_value = comm_ranks[static_cast<size_t>(rank_attr)];
+        } else {
+          MS_LOG(EXCEPTION) << "Invalid rank_attr value: " << rank_attr << ", or out of range for comm_ranks with size "
+                            << comm_ranks.size() << ".";
+        }
+      }
+      return rank_value;
+    };
+    auto src_rank = get_rank(device::tracker::kSrcRank);
+    if (src_rank != std::numeric_limits<uint32_t>::max()) {
+      attrs[device::tracker::kSrcRank] = std::to_string(src_rank);
+    }
+    auto dst_rank = get_rank(device::tracker::kDstRank);
+    if (dst_rank != std::numeric_limits<uint32_t>::max()) {
+      attrs[device::tracker::kDstRank] = std::to_string(dst_rank);
+    }
+    auto root_rank = get_rank(device::tracker::kRootRank);
+    if (root_rank != std::numeric_limits<uint32_t>::max()) {
+      attrs[device::tracker::kRootRank] = std::to_string(root_rank);
+    }
+    device::tracker::CALL_MEMORY_TRACKER(UpdateTask, actor_name, attrs);
+  }
+  return;
 }
 }  // namespace
 
@@ -335,7 +436,7 @@ void KernelActor::Run(OpContext<DeviceTensor> *const context) {
     MS_EXCEPTION_IF_NULL(kernel_->func_graph());
     if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), kernel_->fullname_with_scope(),
-                                                     kernel_->func_graph()->ToString());
+                                                     kernel_->func_graph()->ToString(), false);
     }
     FetchInputDeviceTensor(context);
 
@@ -1057,34 +1158,6 @@ void KernelActor::ResizeKernelMod() {
     MS_LOG_WITH_NODE(EXCEPTION, kernel_) << "Resize failed for kernel: " << kernel_->fullname_with_scope();
   }
 }
-namespace {
-void TrackInputMemory(const std::vector<DeviceTensor *> &input_device_tensors,
-                      const std::vector<DeviceTensor *> &output_device_tensors, const std::string &actor_name,
-                      const std::vector<bool> &depend_shape_input_list) {
-  for (size_t i = 0, end = input_device_tensors.size(); i < end; i++) {
-    // Skip shape depend inputs.
-    if (i < depend_shape_input_list.size() && depend_shape_input_list[i]) {
-      continue;
-    }
-    auto device_addr = input_device_tensors[i];
-    if (device_addr == nullptr || !device_addr->IsPtrValid()) {
-      continue;
-    }
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsInput, actor_name, device_addr->device_name(),
-                                                   device_addr->GetPtr(), device_addr->type_id(),
-                                                   device_addr->GetShapeVector(), device_addr->GetTensorStorageInfo());
-  }
-  for (size_t i = 0, end = output_device_tensors.size(); i < end; i++) {
-    auto device_addr = output_device_tensors[i];
-    if (device_addr == nullptr || !device_addr->IsPtrValid()) {
-      continue;
-    }
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsOutput, actor_name, device_addr->device_name(),
-                                                   device_addr->GetPtr(), device_addr->type_id(),
-                                                   device_addr->GetShapeVector(), device_addr->GetTensorStorageInfo());
-  }
-}
-}  // namespace
 
 void KernelActor::DispatchDebugActor(OpContext<DeviceTensor> *const context) {
   // Debug actor is blocked, must wait debug actor callback message to process continue.
@@ -1094,32 +1167,34 @@ void KernelActor::DispatchDebugActor(OpContext<DeviceTensor> *const context) {
   }
 }
 
-bool KernelActor::LaunchKernelWithDebug(OpContext<DeviceTensor> *const context) {
+bool KernelActor::LaunchKernelWithDebug(OpContext<DeviceTensor> *const context, const bool skip_launch) {
   MS_LOG(DEBUG) << "Begin launch kernel: " << kernel_->fullname_with_scope();
-  auto ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernel(
-    kernel_, input_kernel_tensors_, workspace_kernel_tensors_, output_kernel_tensors_, kernel_mod_, stream_);
+  if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+    AddNodeToGraphTracker(kernel_, GetAID().Name());
+    TrackInputOutputMemory(input_device_tensors_, output_device_tensors_, GetAID().Name(), depend_shape_input_list_);
+  }
+  bool ret = true;
+  if (!skip_launch) {
+    ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernel(
+      kernel_, input_kernel_tensors_, workspace_kernel_tensors_, output_kernel_tensors_, kernel_mod_, stream_);
+  }
   MS_LOG(DEBUG) << "End launch kernel: " << kernel_->fullname_with_scope();
-
   DispatchDebugActor(context);
   return ret;
 }
 
 bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_skip_launch) {
-  if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
-    TrackInputMemory(input_device_tensors_, output_device_tensors_, GetAID().Name(), depend_shape_input_list_);
-  }
-
   if (EnableExecuteOrderDump()) {
     auto &execute_order_tracker = ExecuteOrderTracker::GetInstance();
     execute_order_tracker.ProcessNode(kernel_);
   }
-
-  if (is_skip_launch) {
-    return true;
-  }
   if (skip_launch_shape_related_op_) {
     MS_LOG(DEBUG) << "Skip launch real make tuple kernel: " << kernel_->fullname_with_scope()
                   << " input kernel tensor: " << input_kernel_tensors_;
+    if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+      AddNodeToGraphTracker(kernel_, GetAID().Name());
+      TrackInputOutputMemory(input_device_tensors_, output_device_tensors_, GetAID().Name(), depend_shape_input_list_);
+    }
     return true;
   }
   // Check the skipped launch condition.
@@ -1131,6 +1206,11 @@ bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_s
     if (input_device_tensors_[0]->GetPtr() == output_device_tensors_[0]->GetPtr()) {
       MS_LOG(DEBUG) << "Skipped launch kernel: " << kernel_->fullname_with_scope();
       DispatchDebugActor(context);
+      if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+        AddNodeToGraphTracker(kernel_, GetAID().Name());
+        TrackInputOutputMemory(input_device_tensors_, output_device_tensors_, GetAID().Name(),
+                               depend_shape_input_list_);
+      }
       return true;
     } else {
       MS_LOG(ERROR) << "Input address:" << input_device_tensors_[0]->GetPtr()
@@ -1142,7 +1222,7 @@ bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_s
 
   // Cpu not support stream lock with LaunchKernel.
   if (!ActorDispatcher::enable_multi_stream() || is_multi_stream_process_skipped_) {
-    auto ret = LaunchKernelWithDebug(context);
+    auto ret = LaunchKernelWithDebug(context, is_skip_launch);
     return ret;
   }
 
@@ -1152,11 +1232,11 @@ bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_s
     std::lock_guard<std::mutex> lock(
       multi_stream_controller->GetStreamMutex(device_contexts_[0], kernel_info_->stream_id()));
     ProcessMultiStreamBeforeKernelLaunch(context);
-    ret = LaunchKernelWithDebug(context);
+    ret = LaunchKernelWithDebug(context, is_skip_launch);
     ProcessMultiStreamAfterKernelLaunch(context);
   } else {
     ProcessMultiStreamBeforeKernelLaunch(context);
-    ret = LaunchKernelWithDebug(context);
+    ret = LaunchKernelWithDebug(context, is_skip_launch);
     ProcessMultiStreamAfterKernelLaunch(context);
   }
   return ret;

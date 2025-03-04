@@ -294,7 +294,7 @@ class KernelActor : public DebugAwareActor {
   // Record mem info, because async send may free device info.
   void SetMemInfoForRdr();
   void DispatchDebugActor(OpContext<DeviceTensor> *const context);
-  bool LaunchKernelWithDebug(OpContext<DeviceTensor> *const context);
+  bool LaunchKernelWithDebug(OpContext<DeviceTensor> *const context, const bool skip_launch);
 
   // The real input number of kernel launch.
   size_t real_input_num_;

@@ -1739,7 +1739,7 @@ void MSBackendBase::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor
     // Copy data from origin tensor to the split tensor.
     device::DynamicMemAllocatorDebugInfo::SetDebugInfo("Split tuple outputs", device::AllocatorType::kOther);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "ConstructOutputByTupleTensor",
-                                                   "ConstructOutputByTupleTensor", "");
+                                                   "ConstructOutputByTupleTensor", "", false);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "ConstructOutputByTupleTensor",
                                                    device::tracker::MemType::kOther, split_device_tensor->GetSize(),
                                                    split_device_tensor.get());

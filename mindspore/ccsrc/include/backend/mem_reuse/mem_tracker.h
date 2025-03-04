@@ -38,6 +38,11 @@ namespace tracker {
 // keys
 const char kStreamId[] = "stream_id";
 const char kEvent[] = "event";
+const char kGroup[] = "group";
+const char kCommRank[] = "comm_rank";
+const char kSrcRank[] = "src_rank";
+const char kDstRank[] = "dst_rank";
+const char kRootRank[] = "root_rank";
 
 enum class MemType : int {
   kWeight,
@@ -171,6 +176,8 @@ class BACKEND_EXPORT MemTracker {
  public:
   virtual void AddTask(const std::string &task_name, const std::string &node_name, const std::string &graph_name,
                        const std::string &file_name, size_t line_num) = 0;
+  virtual void AddTask(const std::string &task_name, const std::string &node_name, const std::string &graph_name,
+                       const bool to_graph, const std::string &file_name, size_t line_num) = 0;
   virtual void AddNestedTask(const std::string &task_name, const std::string &node_name, const std::string &graph_name,
                              const std::string &file_name, size_t line_num) = 0;
   virtual void DelNestedTask() = 0;
@@ -208,6 +215,8 @@ class BACKEND_EXPORT MemoryTrackerEnabled : public MemTracker {
  public:
   void AddTask(const std::string &task_name, const std::string &node_name, const std::string &graph_name,
                const std::string &file_name, size_t line_num) override;
+  void AddTask(const std::string &task_name, const std::string &node_name, const std::string &graph_name,
+               const bool to_graph, const std::string &file_name, size_t line_num) override;
   void AddNestedTask(const std::string &task_name, const std::string &node_name, const std::string &graph_name,
                      const std::string &file_name, size_t line_num) override;
   void DelNestedTask() override;
@@ -283,6 +292,8 @@ class BACKEND_EXPORT MemoryTrackerDisabled : public MemTracker {
   // mock
   void AddTask(const std::string &task_name, const std::string &node_name, const std::string &graph_name,
                const std::string &file_name, size_t line_num) override {}
+  void AddTask(const std::string &task_name, const std::string &node_name, const std::string &graph_name,
+               const bool to_graph, const std::string &file_name, size_t line_num) override {}
   void AddNestedTask(const std::string &task_name, const std::string &node_name, const std::string &graph_name,
                      const std::string &file_name, size_t line_num) override {}
   void DelNestedTask() override {}
@@ -352,7 +363,6 @@ struct MultiStreamDependency {
   void RecordEvent(size_t stream_id, const std::string &event_id, size_t time_stamp);
   void WaitEvent(size_t stream_id, const std::string &event_id);
 };
-
 class BACKEND_EXPORT GraphTracker {
  public:
   static GraphTracker &getInstance() {
@@ -393,6 +403,7 @@ class BACKEND_EXPORT MemTrackerManager {
     }
   }
 };
+
 #define CALL_MEMORY_TRACKER_WITH_FILE(func, ...) MemTrackerManager::GetInstance().func(__VA_ARGS__, FILE_NAME, __LINE__)
 #define CALL_MEMORY_TRACKER(func, ...) MemTrackerManager::GetInstance().func(__VA_ARGS__)
 }  // namespace tracker
