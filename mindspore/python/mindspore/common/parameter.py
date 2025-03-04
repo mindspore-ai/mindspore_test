@@ -995,8 +995,10 @@ class Parameter(Tensor_):
                 data = self.init_mode.init_data(0, [1])
         else:
             data = self.init_mode.init_data(*init_data_args)
-
+        origin_dtype = self.dtype
         obj = self._update_tensor_data(data)
+        if self.dtype != origin_dtype:
+            self.set_dtype(origin_dtype)
         if id(obj) != id(self):
             self._inited_param = obj
         obj.init_mode = None
