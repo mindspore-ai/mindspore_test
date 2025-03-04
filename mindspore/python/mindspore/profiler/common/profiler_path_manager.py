@@ -163,6 +163,6 @@ class ProfilerPathManager:
         if not self._worker_name:
             worker_name = f"{socket.gethostname()}_{os.getpid()}"
         else:
-            worker_name = self._worker_name
+            worker_name = f"{self._worker_name}_{os.getpid()}"
 
         return self._ASCEND_MS_DIR.format(worker_name, timestamp)
