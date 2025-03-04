@@ -95,7 +95,7 @@ class OutputActor : public AbstractActor {
   friend class ControlNodeScheduler;
 
   TensorPtr CreateOutputTensor(const AnfNodePtr &output_node, size_t output_index, size_t output_position,
-                               OpContext<DeviceTensor> *const context);
+                               OpContext<DeviceTensor> *const context, DeviceTensor *old_device_tensor = nullptr);
 
   // The output device memory will be taken over by tensor in the last loop, otherwise needs to free the memory.
   // 1.Avoid the memory leak when memory used by dynamic ref count in the control flow scene.

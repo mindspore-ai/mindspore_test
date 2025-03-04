@@ -120,20 +120,9 @@ bool IsHostQueueDSActor(const AnfNodePtr &node, const KernelGraphPtr &graph,
 bool IsGraphRootParameter(const AnfNodePtr &node, const KernelGraphPtr &graph,
                           const std::vector<AnfNodePtr> &host_parameters, GraphExecutionStrategy strategy) {
   MS_EXCEPTION_IF_NULL(node);
-  KernelWithIndex front_node_with_idx{nullptr, 0};
-  if (IsInternalParameter(node, graph)) {
-    front_node_with_idx = graph->GetFrontNodeByInternalParameter(node);
-  } else {
-    front_node_with_idx = graph->GetElementInTupleBackendFrontIndexMap(node);
-    if (front_node_with_idx.first == nullptr) {
-      front_node_with_idx = {AnfAlgo::FetchFrontNodeByBackendNode(node, *graph), 0};
-    }
-  }
-  auto front_node = front_node_with_idx.first;
-  MS_EXCEPTION_IF_NULL(front_node);
-  bool is_parameter_data = front_node->isa<Parameter>();
-  if (is_parameter_data) {
-    return true;
+
+  if (!node->isa<Parameter>()) {
+    return false;
   }
   // Need to be updated every step.
   if (node->has_user_data(kForwardOutput)) {
@@ -150,6 +139,7 @@ bool IsGraphRootParameter(const AnfNodePtr &node, const KernelGraphPtr &graph,
   }
 
   // In control flow, only the parameters of the root funcgraph are in the host data source.
+  const auto &front_node = graph->GetFrontAnfByBackendAnf(node);
   bool is_host = ((front_node == nullptr) ||
                   find(host_parameters.begin(), host_parameters.end(), front_node) != host_parameters.end());
 
@@ -1012,7 +1002,7 @@ void SyncDeviceTensorsInParameterStore(size_t outer_index, size_t inner_index, c
     if (device_tensor == tensor_address.get()) {
       continue;
     }
-    UpdateRefCount(device_tensor, true);
+    graph_parameter_store->ResetAddrRefCount(outer_index, inner_index, device_tensor->GetDeviceType());
 
     auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
       {device_tensor->device_name(), device_tensor->device_id()});
@@ -1081,6 +1071,7 @@ DeviceTensorPtr PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size
   MS_EXCEPTION_IF_NULL(front_node.first);
   if (front_node.first->isa<Parameter>() &&
       common::AnfAlgo::IsParameterWeight(front_node.first->cast<ParameterPtr>())) {
+    UpdateRefCount(device_tensor.get(), true);
     tensor->set_device_address(device_tensor);
   }
   graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
@@ -1133,13 +1124,15 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
         }
       }
 
-      UpdateRefCount(tensor_address.get(), true);
       graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
       if (tensor_address == device_tensor) {
+        UpdateRefCount(tensor_address.get(), true);
         return tensor_address.get();
       }
       // Set tensor address to graph parameter store.
-      if (device_tensor == nullptr || tensor_address->GetDeviceType() == device_tensor->GetDeviceType()) {
+      if (device_tensor == nullptr || (tensor_address->GetDeviceType() == device_tensor->GetDeviceType() &&
+                                       AnfAlgo::IsEquivalentFormat(tensor_address->format(), device_tensor->format()) &&
+                                       tensor_address->type_id() == device_tensor->type_id())) {
         MS_LOG(DEBUG) << "Refresh store device tensor, from: " << tensor_address.get()
                       << ", to: " << device_tensor.get() << ", outer index: " << outer_index
                       << ", inner index: " << inner_index
@@ -1151,14 +1144,15 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
           tensor_address->SetNodeIndex(node_with_index.first, node_with_index.second);
           tensor_address->set_flag(device_tensor->flag());
         }
+        // device tensor may be null.
         device_tensor = tensor_address;
       }
       SyncDeviceTensorsInParameterStore(outer_index, inner_index, tensor_address, tensor, context, from_aid);
-      if (device_tensor != nullptr && tensor_address->GetDeviceType() != device_tensor->GetDeviceType() &&
-          front_node.first->isa<Parameter>() &&
+      tensor_address = device_tensor;
+      UpdateRefCount(tensor_address.get(), true);
+      if (tensor_address != nullptr && front_node.first->isa<Parameter>() &&
           common::AnfAlgo::IsParameterWeight(front_node.first->cast<ParameterPtr>())) {
-        tensor->set_device_address(device_tensor);
-        return device_tensor.get();
+        tensor->set_device_address(tensor_address);
       }
 
       return tensor_address.get();
