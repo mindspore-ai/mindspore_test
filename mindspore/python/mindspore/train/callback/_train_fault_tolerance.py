@@ -102,6 +102,7 @@ def _rename_save_result(step, cb_ctx):
 
 
 def _tft_exit_cb(ctx):
+    """Callback used for TFT exit function."""
     logger.error("Enter mindio ttp exit process, which means other ranks occur exception, check other ranks' logs!")
     _tft_sem_post()
     os._exit(1)  # pylint: disable=W0212
@@ -167,6 +168,7 @@ def _tft_stop_callback(args, cb_ctx):
 
 
 def _tft_rebuild_sub_groups(fault_ranks, args, ctx):
+    """Callback used for TFT Rebuild Group function."""
     logger.warning(f"Enter _tft_rebuild_sub_groups, device id: ".format(ctx.device_id))
     _finalize_comm()
     _rebuild_world_group()
@@ -286,7 +288,7 @@ class TrainFaultTolerance(Callback):
         >>> net_with_loss = nn.PipelineCell(nn.WithLossCell(net, loss_fn), 4)
         >>> net_with_loss.set_train()
         >>> model = Model(net_with_loss, optimizer=optimizer_wrapper)
-        >>> tft_cb = TrainFaultTolerance(0, "192.168.0.1", 2000, "./tft_checkpoint/")
+        >>> tft_cb = TrainFaultTolerance()
         >>> loss_cb = train.LossMonitor(1)
         >>> model.train(1, dataset, callbacks=[tft_cb, loss_cb])
     """
@@ -312,7 +314,7 @@ class TrainFaultTolerance(Callback):
         self.cur_step_num = 0
         self.cur_epoch_num = 0
         _tft_sem_enable()
-        self.tft_register()
+        self._tft_register()
 
     def _check_init(self):
         """Check if the mindio-ttp had inited"""
@@ -340,7 +342,7 @@ class TrainFaultTolerance(Callback):
         return False
 
     def _set_tft_optimizer_replica(self, run_context):
-        """ set Mindio TFT optimizer replica info, used internal. """
+        """ Set Mindio TFT optimizer replica info, used internal. """
         cur_rank = get_rank()
         cb_params = run_context.original_args()
         train_network = cb_params.train_network
@@ -365,15 +367,15 @@ class TrainFaultTolerance(Callback):
     @classmethod
     def get_optimizer_wrapper(cls, origin_opt_cls):
         """
-        optimizer wrapper func when using tft.
+        Optimizer wrapper func when using tft.
 
         Args:
-            origin_opt_cls: origin optimizer class
+            origin_opt_cls: origin optimizer class.
         """
 
         class TFTOptSubCls(origin_opt_cls):
             """
-            Optimizer wrapper class when using tft
+            Optimizer wrapper class when using tft.
             """
 
             def __init__(self, *args, **kwargs):
@@ -396,8 +398,8 @@ class TrainFaultTolerance(Callback):
 
         return TFTOptSubCls
 
-    def tft_register(self):
-        """register callback functions"""
+    def _tft_register(self):
+        """Register callback functions."""
         self.tft.tft_register_save_ckpt_handler(_save_checkpoint_on_failure, self)
         self.tft.tft_register_rename_handler(_rename_save_result, self)
         self.tft.tft_register_exit_handler(_tft_exit_cb, self)
@@ -416,7 +418,7 @@ class TrainFaultTolerance(Callback):
 
     def on_train_step_end(self, run_context):
         """
-        And report status to MindIO TFT after every step finished.
+        Report status to MindIO TFT after every step finished.
 
         Args:
             run_context (RunContext): Context of the train running. Refer to
@@ -441,6 +443,13 @@ class TrainFaultTolerance(Callback):
         logger.info("END Set optimizer finish step status to TFT.")
 
     def on_train_begin(self, run_context):
+        """
+        Register train params to MindIO TFT on train beginning.
+
+        Args:
+            run_context (RunContext): Context of the train running. Refer to
+                                      :class:`mindspore.train.RunContext` for detail.
+        """
         cb_params = run_context.original_args()
         sink_size = cb_params.get("sink_size", 0)
         if sink_size > 1:
@@ -450,5 +459,11 @@ class TrainFaultTolerance(Callback):
         self.cb_params = cb_params
 
     def end(self, run_context):
-        """train end"""
+        """
+        Unregister MindIO TFT on train end.
+
+        Args:
+            run_context (RunContext): Context of the train running. Refer to
+                                      :class:`mindspore.train.RunContext` for detail.
+        """
         _tft_handler.unregister_tft()
