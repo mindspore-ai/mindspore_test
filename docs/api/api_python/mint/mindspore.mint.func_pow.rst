@@ -24,4 +24,4 @@ mindspore.mint.pow
 
     异常：
         - **TypeError** - `input` 和 `exponent` 同时为 bool 类型。
-        - **TypeError** - `input` 是一个Tensor且为 int 或 bool 类型而 `exponent` 是一个Scalar且值为负整型时。
+        - **TypeError** - `input` 是一个Tensor且为 int 或 bool 类型，而 `exponent` 是一个Scalar且值为负整型时。

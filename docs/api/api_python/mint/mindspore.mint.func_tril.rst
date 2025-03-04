@@ -7,7 +7,7 @@ mindspore.mint.tril
 
     参数：
         - **input** (Tensor) - 输入Tensor。shape为 :math:`(x_1, x_2, ..., x_R)` ，其rank至少为2。
-          支持的数据类型有包括所有数值型和bool类型。
+          支持的数据类型包括所有数值型和bool类型。
         - **diagonal** (int，可选) - 指定对角线位置，默认值： ``0`` ，指定主对角线。
 
     返回：
@@ -17,4 +17,4 @@ mindspore.mint.tril
         - **TypeError** - 如果 `input` 不是Tensor。
         - **TypeError** - 如果 `diagonal` 不是int类型。
         - **TypeError** - 如果 `input` 的数据类型既不是数值型也不是bool。
-        - **ValueError** - 如果 `input` 的秩小于2。
+        - **ValueError** - 如果 `input` 的rank小于2。
