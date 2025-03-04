@@ -14,7 +14,7 @@ mindspore.load_checkpoint_async
         - `specify_prefix` 和 `filter_prefix` 参数已被弃用，推荐使用 `choice_func` 代替。并且使用这两个参数中的任何一个都将覆盖 `choice_func` 。
 
     参数：
-        - **ckpt_file_name** (str) - checkpoint的文件名称。
+        - **ckpt_file_name** (str) - checkpoint的文件名称。文件名后缀必须是 ``ckpt`` 或 ``safetensors`` 。
         - **net** (Cell，可选) - 加载checkpoint参数的网络。默认值： ``None`` 。
         - **strict_load** (bool，可选) - 是否将严格加载参数到网络中。如果是 ``False`` ，它将根据相同的后缀名将参数字典中的参数加载到网络中，并会在精度不匹配时，进行强制精度转换，比如将float32转换为float16。默认值： ``False`` 。
         - **filter_prefix** (Union[str, list[str], tuple[str]]，可选) - 废弃（请参考参数 `choice_func`）。以 `filter_prefix` 开头的参数将不会被加载。默认值： ``None`` 。
