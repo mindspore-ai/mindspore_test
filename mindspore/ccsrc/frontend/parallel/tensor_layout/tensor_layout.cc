@@ -287,6 +287,9 @@ void TensorLayout::RemoveElementEqualToOneInDeviceArrangement() {
     }
     device_arrangement_shape.push_back(device_arrangement_origin_.GetDimByIdx(i));
   }
+  if (device_arrangement_shape.empty()) {
+    device_arrangement_shape.emplace_back(1);
+  }
   (void)device_arrangement_.Init(device_arrangement_shape);
   (void)tensor_map_.Init(tensor_map_shape);
   tensor_shape_ = tensor_shape_origin_;
