@@ -48,13 +48,13 @@ struct DynamicMemBuf : public EventBase {
   DynamicMemBuf(DeviceMemPtr addr, DynamicMemBufStatus status, size_t size, uint32_t stream_id)
       : device_addr_(addr), status_(status), size_(size), stream_id_(stream_id) {}
   DynamicMemBuf(DeviceMemPtr addr, DynamicMemBufStatus status, size_t size, uint32_t stream_id,
-                const std::string &allocator_name, AllocatorType allocator_type)
+                const std::string &mem_name, memory::mem_pool::MemType mem_type)
       : device_addr_(addr),
         status_(status),
         size_(size),
         stream_id_(stream_id),
-        allocator_name_(allocator_name),
-        allocator_type_{allocator_type} {}
+        mem_name_(mem_name),
+        mem_type_{mem_type} {}
   DynamicMemBuf(const DynamicMemBuf &) = delete;
   DynamicMemBuf &operator=(const DynamicMemBuf &) = delete;
 
@@ -65,8 +65,8 @@ struct DynamicMemBuf : public EventBase {
   uint32_t stream_id_{0};
 
   // Debug info.
-  std::string allocator_name_;
-  AllocatorType allocator_type_{AllocatorType::kOther};
+  std::string mem_name_;
+  memory::mem_pool::MemType mem_type_{memory::mem_pool::MemType::kOther};
 };
 
 class DynamicMemBlock {

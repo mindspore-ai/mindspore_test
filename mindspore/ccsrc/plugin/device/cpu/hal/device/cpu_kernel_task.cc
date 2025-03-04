@@ -24,7 +24,7 @@ void MallocMemoryForDeviceAddress(const device::DeviceAddressPtr &device_address
                                   const device::DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(device_address);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", "Contiguous", "");
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", device::tracker::MemType::kPyNativeOutput,
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kPyNativeOutput,
                                                  device_address->GetSize(), device_address.get());
   if (device_address->GetPtr() == nullptr) {
     if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {

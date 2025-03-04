@@ -357,7 +357,7 @@ device::DeviceAddressPtrList PyBoostUtils::CreateWorkSpaceDeviceAddress(const Ke
   for (size_t i = 0; i < workspace_sizes.size(); ++i) {
     auto device_address = workspaces_address[i];
     MS_EXCEPTION_IF_NULL(device_address);
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", device::tracker::MemType::kWorkSpace,
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kWorkSpace,
                                                    device_address->GetSize(), device_address.get());
     if (device_address->GetPtr() == nullptr &&
         !device_context->device_res_manager_->AllocateMemory(device_address.get())) {

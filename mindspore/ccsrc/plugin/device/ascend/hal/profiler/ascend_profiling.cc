@@ -202,6 +202,7 @@ void AscendProfiler::InitFwkMemProfiling() {
   if (config_.profileMemory) {
     auto msContext = MsContext::GetInstance();
     msContext->set_param<std::string>(MS_CTX_PROF_MEM_OUTPUT_PATH, config_.frameworkDataPath);
+    msContext->set_param<bool>(MS_CTX_ENABLE_PROF_MEM, true);
     MS_LOG(INFO) << "profile_memory enabled, save path:" << config_.frameworkDataPath;
   }
 }

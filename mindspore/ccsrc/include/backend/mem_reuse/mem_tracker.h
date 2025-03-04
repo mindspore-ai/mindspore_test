@@ -31,6 +31,7 @@
 #include "utils/log_adapter.h"
 #include "include/backend/visible.h"
 #include "include/backend/device_address.h"
+#include "include/backend/mem_reuse/mem_pool_util.h"
 
 namespace mindspore {
 namespace device {
@@ -44,39 +45,9 @@ const char kSrcRank[] = "src_rank";
 const char kDstRank[] = "dst_rank";
 const char kRootRank[] = "root_rank";
 
-enum class MemType : int {
-  kWeight,
-  kConstantValue,
-  kKernel,
-  kGraphOutput,
-  kSomas,
-  kSomasOutput,
-  kGeConst,
-  kGeFixed,
-  kBatchMemory,
-  kContinuousMemory,
-  kPyNativeInput,
-  kPyNativeOutput,
-  kWorkSpace,
-  kOther
-};
-
-const std::map<MemType, std::string> MemTypeToStr = {{MemType::kWeight, "Weight"},
-                                                     {MemType::kConstantValue, "ConstantValue"},
-                                                     {MemType::kKernel, "Kernel"},
-                                                     {MemType::kGraphOutput, "GraphOutput"},
-                                                     {MemType::kSomas, "Somas"},
-                                                     {MemType::kSomasOutput, "SomasOutput"},
-                                                     {MemType::kGeConst, "GeConst"},
-                                                     {MemType::kGeFixed, "GeFixed"},
-                                                     {MemType::kBatchMemory, "BatchMemory"},
-                                                     {MemType::kContinuousMemory, "ContinuousMemory"},
-                                                     {MemType::kPyNativeInput, "PyNativeInput"},
-                                                     {MemType::kPyNativeOutput, "PyNativeOutput"},
-                                                     {MemType::kWorkSpace, "WorkSpace"},
-                                                     {MemType::kOther, "Other"}};
 using DeviceMemPtr = const void *;
 using KernelTensorPtr = const void *;
+using MemType = memory::mem_pool::MemType;
 
 struct TaskInfo {
   std::string node_name;
@@ -207,6 +178,13 @@ class BACKEND_EXPORT MemTracker {
   virtual void DumpProfilingMemInfo(size_t rank_id, const std::string &path, const std::string &file_name) = 0;
   virtual bool IsEnabled() = 0;
   virtual ~MemTracker() = default;
+
+  virtual void SetEnableMemoryDebugInfo(bool enable_memory_debug_info) {
+    enable_memory_debug_info_ = enable_memory_debug_info;
+  }
+
+ protected:
+  bool enable_memory_debug_info_{false};
 };
 
 class BACKEND_EXPORT MemoryTrackerEnabled : public MemTracker {
@@ -245,6 +223,7 @@ class BACKEND_EXPORT MemoryTrackerEnabled : public MemTracker {
                           const std::string &file_name, size_t line_num) override;
 
   bool IsEnabled() override { return true; }
+
   std::tuple<std::string, std::string, std::string> GetPath(size_t rank_id);
   MemoryTrackerEnabled(const MemoryTrackerEnabled &) = delete;
   MemoryTrackerEnabled &operator=(const MemoryTrackerEnabled &) = delete;
@@ -279,6 +258,7 @@ class BACKEND_EXPORT MemoryTrackerEnabled : public MemTracker {
   std::map<DeviceAddress *, MemInfoPtr> device_address_mem_map;
   // device addr -> mem block info
   std::map<DeviceMemPtr, MemBlockInfoPtr> device_mem_block_map;
+
   static MemoryTrackerEnabled &getInstance() {
     static MemoryTrackerEnabled instance;
     return instance;
@@ -291,9 +271,9 @@ class BACKEND_EXPORT MemoryTrackerDisabled : public MemTracker {
  public:
   // mock
   void AddTask(const std::string &task_name, const std::string &node_name, const std::string &graph_name,
-               const std::string &file_name, size_t line_num) override {}
+               const std::string &file_name, size_t line_num) override;
   void AddTask(const std::string &task_name, const std::string &node_name, const std::string &graph_name,
-               const bool to_graph, const std::string &file_name, size_t line_num) override {}
+               const bool to_graph, const std::string &file_name, size_t line_num) override;
   void AddNestedTask(const std::string &task_name, const std::string &node_name, const std::string &graph_name,
                      const std::string &file_name, size_t line_num) override {}
   void DelNestedTask() override {}
@@ -301,7 +281,7 @@ class BACKEND_EXPORT MemoryTrackerDisabled : public MemTracker {
   void CacheLastTask() override {}
   void EmptyCache() override {}
   void AddMemInfo(const std::string &task_name, MemType type, size_t size, DeviceAddress *device_address,
-                  const std::string &file_name, const size_t line_num) override {}
+                  const std::string &file_name, const size_t line_num) override;
   void AddCompileTimeMemInfo(const std::string &task_name, size_t size, DeviceMemPtr device_ptr, MemType mem_type,
                              const std::string &file_name, size_t line_num) override {}
   void AllocMemBlock(DeviceMemPtr device_addr, size_t size, const std::string &pool_name, size_t actual_peak_memory,
@@ -321,6 +301,7 @@ class BACKEND_EXPORT MemoryTrackerDisabled : public MemTracker {
   void UpdateProfilingPos() override {}
   void DumpProfilingMemInfo(size_t rank_id, const std::string &path, const std::string &file_name) override {}
   bool IsEnabled() override { return false; }
+
   MemoryTrackerDisabled(const MemoryTrackerDisabled &) = delete;
   MemoryTrackerDisabled &operator=(const MemoryTrackerDisabled &) = delete;
 
@@ -331,6 +312,8 @@ class BACKEND_EXPORT MemoryTrackerDisabled : public MemTracker {
     static MemoryTrackerDisabled instance;
     return instance;
   }
+
+  std::map<std::string, std::string> task_map_;
 };
 
 namespace graph {

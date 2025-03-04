@@ -522,9 +522,25 @@ AbstractAscendMemoryPoolSupport &AscendMemoryPool::GetInstance() {
       return rank_id;
     });
     instance_->SetPipelineCallback([]() { runtime::Pipeline::Get().launch_stage()->Wait(); });
-    pool_ = !UseEnhancedMemoryPool() ? instance_ : enhanced_instance_;
+    if (!UseEnhancedMemoryPool()) {
+      pool_ = instance_;
+      device::tracker::CALL_MEMORY_TRACKER(SetEnableMemoryDebugInfo, false);
+    } else {
+      pool_ = enhanced_instance_;
+      device::tracker::CALL_MEMORY_TRACKER(SetEnableMemoryDebugInfo, true);
+    }
   });
   return *pool_;
+}
+
+void AscendMemoryPool::SetEnhancedMemoryPool(bool enable) {
+  MS_LOG(INFO) << "Set enhanced memory pool : " << enable << ".";
+  if (enable) {
+    pool_ = enhanced_instance_;
+  } else {
+    pool_ = instance_;
+  }
+  device::tracker::CALL_MEMORY_TRACKER(SetEnableMemoryDebugInfo, enable);
 }
 
 bool AscendMemoryPool::UseOldMemoryPool() {

@@ -32,8 +32,8 @@ static thread_local AllocatorDebugInfo debug_info_;
 AllocatorDebugInfo &DynamicMemAllocatorDebugInfo::GetDebugInfo() noexcept { return debug_info_; }
 
 // Set the debug info when memory alloc.
-void DynamicMemAllocatorDebugInfo::SetDebugInfo(const std::string &name, AllocatorType type, int input_index,
-                                                int output_index, uint8_t run_mode) {
+void DynamicMemAllocatorDebugInfo::SetDebugInfo(const std::string &name, memory::mem_pool::MemType type,
+                                                int input_index, int output_index, uint8_t run_mode) {
   debug_info_.name_ = name;
   debug_info_.type_ = type;
   debug_info_.input_index_ = input_index;
@@ -48,19 +48,6 @@ static const std::map<DynamicMemBufStatus, std::string> kBufStatusString = {
   {DynamicMemBufStatus::kMemBufUsedByEvent, "used_by_event"}};
 
 const std::string &DynamicMemBufStatusToString(DynamicMemBufStatus status) { return kBufStatusString.at(status); }
-
-static const std::map<AllocatorType, std::string> kAllocatorTypeString = {
-  {AllocatorType::kWeight, "weight"},
-  {AllocatorType::kConstantValue, "constant value"},
-  {AllocatorType::kKernelOutput, "kernel output"},
-  {AllocatorType::kGraphOutput, "graph output"},
-  {AllocatorType::kWorkspace, "workspace"},
-  {AllocatorType::kOther, "other"},
-};
-
-const std::string &AllocatorTypeToString(AllocatorType allocator_type) {
-  return kAllocatorTypeString.at(allocator_type);
-}
 
 bool EventBase::RecordEvent(int64_t task_id_on_stream, uint32_t user_stream_id, const DeviceEventPtr &event) {
   MS_EXCEPTION_IF_NULL(event);

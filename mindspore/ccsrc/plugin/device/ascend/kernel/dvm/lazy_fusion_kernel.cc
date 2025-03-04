@@ -225,7 +225,7 @@ void LazyFusionKernelAscend::Flush() {
         }
         if (device_address->GetPtr() == nullptr) {
           device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative",
-                                                         device::tracker::MemType::kPyNativeOutput,
+                                                         memory::mem_pool::MemType::kPyNativeOutput,
                                                          device_address->GetSize(), device_address.get());
           if (!device_context_->device_res_manager_->AllocateMemory(device_address.get())) {
             MS_LOG(EXCEPTION) << "Allocate memory failed for dvm kernel output";

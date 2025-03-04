@@ -30,7 +30,7 @@
 
 namespace mindspore {
 namespace device {
-enum MemType { kStaticMem, kDynamicMem };
+enum class MemType { kStaticMem, kDynamicMem, kSomasReuseDynamicMem };
 constexpr int kGetAllOuts = -1;
 constexpr uint64_t kMemAlignSize = 512;
 constexpr uint64_t kTwiceMemAlignSize = kMemAlignSize << 1;

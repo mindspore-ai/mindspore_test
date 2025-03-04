@@ -19,9 +19,30 @@
 
 #include <string>
 
+#include "include/backend/visible.h"
+
 namespace mindspore {
 namespace memory {
 namespace mem_pool {
+enum class MemType : int {
+  kWeight = 0,
+  kConstantValue,
+  kKernel,
+  kGraphOutput,
+  kSomas,
+  kSomasOutput,
+  kGeConst,
+  kGeFixed,
+  kBatchMemory,
+  kContinuousMemory,
+  kPyNativeInput = 10,
+  kPyNativeOutput,
+  kWorkSpace,
+  kOther
+};
+
+BACKEND_EXPORT std::string MemTypeToStr(MemType mem_type);
+
 std::string GeneratePath(size_t rank_id, const std::string &file_name, const std::string &suffix);
 }  // namespace mem_pool
 }  // namespace memory

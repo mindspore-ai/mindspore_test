@@ -197,7 +197,7 @@ void UpdateFMTracker(size_t feature_memory_size, const std::string &graph_name) 
   device::tracker::CALL_MEMORY_TRACKER(FreeMemBlock, 0, 0, 0);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "RunGeGraph", "RunGeGraph", graph_name, false);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, "RunGeGraph", feature_memory_size, 0,
-                                                 device::tracker::MemType::kGeFixed);
+                                                 memory::mem_pool::MemType::kGeFixed);
 }
 
 bool CacheFileExists(const std::string &name) {
@@ -307,7 +307,7 @@ void SetDynamicOutputsForKernel(const std::vector<GeTensor> &ge_outputs,
 }
 
 void UpdateTracker(const std::string &task_name, const std::string &node_name, const std::string &graph_str,
-                   device::tracker::MemType mem_type, device::DeviceAddress *device_tensor) {
+                   memory::mem_pool::MemType mem_type, device::DeviceAddress *device_tensor) {
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, task_name, node_name, graph_str, false);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, task_name, mem_type, device_tensor->GetSize(),
                                                  device_tensor);
@@ -588,10 +588,10 @@ void GeGraphExecutor::AllocGEInputOutputMemory(const KernelGraphPtr &graph) cons
     }
     auto input_address = input_datas[i];
     if (input_address->GetPtr() == nullptr) {
-      auto mem_type = device::tracker::MemType::kKernel;
+      auto mem_type = memory::mem_pool::MemType::kKernel;
       if (need_update_input[i].first.lock()->isa<Parameter>() &&
           need_update_input[i].first.lock()->cast<ParameterPtr>()->has_default()) {
-        mem_type = device::tracker::MemType::kWeight;
+        mem_type = memory::mem_pool::MemType::kWeight;
       }
       UpdateTracker("AllocInputs", need_update_input[i].first.lock()->fullname_with_scope(), graph->ToString(),
                     mem_type, input_address);
@@ -637,7 +637,7 @@ void GeGraphExecutor::AllocGEInputOutputMemory(const KernelGraphPtr &graph) cons
     }
     if (output_address->GetPtr() == nullptr) {
       UpdateTracker("AllocOutputs", graph_outputs[i].first.lock()->fullname_with_scope(), graph->ToString(),
-                    device::tracker::MemType::kGraphOutput, output_address);
+                    memory::mem_pool::MemType::kGraphOutput, output_address);
       if (!ge_res_manager_->AllocateMemory(output_address, kDefaultStreamIndex)) {
         MS_LOG(EXCEPTION) << "#umsg#Memory not enough:#umsg#Device(id:"
                           << device_context_->device_context_key().device_id_

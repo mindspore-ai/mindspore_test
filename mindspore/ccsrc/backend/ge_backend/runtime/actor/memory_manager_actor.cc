@@ -30,14 +30,6 @@ void OnMemoryAllocFinish(const AID &from_aid, OpContext<DeviceTensor> *const op_
     ActorDispatcher::Send(from_aid, &MemoryAwareActor::OnMemoryAllocFinish, op_context);
   }
 }
-
-bool NeedSetDebugInfo() {
-  static bool need_set_debug_info = MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PROF_MEM) ||
-                                    common::IsEnableAllocConfig(common::kAllocMemoryTracker) ||
-                                    common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat) ||
-                                    common::GetEnv("GLOG_v") == "0";
-  return need_set_debug_info;
-}
 }  // namespace
 
 void MemoryManagerActor::AllocateMemory(const std::vector<DeviceTensor *> *alloc_list,
@@ -51,15 +43,12 @@ void MemoryManagerActor::AllocateMemory(const std::vector<DeviceTensor *> *alloc
     }
 
     if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), device::tracker::MemType::kKernel,
+      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), memory::mem_pool::MemType::kKernel,
                                                      device_tensor->GetSize(), device_tensor);
     }
 
     try {
-      if (NeedSetDebugInfo()) {
-        // Allocate memory through the device context.
-        device::DynamicMemAllocatorDebugInfo::SetDebugInfo(from_aid.Name(), device::AllocatorType::kKernelOutput);
-      }
+      // Allocate memory through the device context.
       bool success = device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex);
       if (!success) {
         SetOpContextMemoryAllocFail(from_aid.Name(), device_context, device_tensor->GetSize(), op_context);
@@ -105,10 +94,9 @@ void MemoryManagerActor::AllocateBatchMemory(const std::vector<DeviceTensor *> *
 
     try {
       // Allocate memory through the device context.
-      device::DynamicMemAllocatorDebugInfo::SetDebugInfo(from_aid.Name(), device::AllocatorType::kKernelOutput);
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "BatchMemory", "");
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
-        AddMemInfo, from_aid.Name(), device::tracker::MemType::kBatchMemory, device_tensor->GetSize(), device_tensor);
+        AddMemInfo, from_aid.Name(), memory::mem_pool::MemType::kBatchMemory, device_tensor->GetSize(), device_tensor);
       if (!device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex)) {
         SetOpContextMemoryAllocFail(from_aid.Name(), device_context, device_tensor->GetSize(), op_context);
         return;

@@ -23,6 +23,23 @@
 namespace mindspore {
 namespace memory {
 namespace mem_pool {
+const std::map<MemType, std::string> kMemTypeStr = {{MemType::kWeight, "Weight"},
+                                                    {MemType::kConstantValue, "ConstantValue"},
+                                                    {MemType::kKernel, "Kernel"},
+                                                    {MemType::kGraphOutput, "GraphOutput"},
+                                                    {MemType::kSomas, "Somas"},
+                                                    {MemType::kSomasOutput, "SomasOutput"},
+                                                    {MemType::kGeConst, "GeConst"},
+                                                    {MemType::kGeFixed, "GeFixed"},
+                                                    {MemType::kBatchMemory, "BatchMemory"},
+                                                    {MemType::kContinuousMemory, "ContinuousMemory"},
+                                                    {MemType::kPyNativeInput, "PyNativeInput"},
+                                                    {MemType::kPyNativeOutput, "PyNativeOutput"},
+                                                    {MemType::kWorkSpace, "WorkSpace"},
+                                                    {MemType::kOther, "Other"}};
+
+std::string MemTypeToStr(MemType mem_type) { return kMemTypeStr.at(mem_type); }
+
 std::string GeneratePath(size_t rank_id, const std::string &file_name, const std::string &suffix) {
   std::string path;
   auto &&ms_context = MsContext::GetInstance();

@@ -114,12 +114,10 @@ bool CopyTensorData(const tensor::BaseTensorPtr &tensor, const device::DeviceAdd
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-  device::DynamicMemAllocatorDebugInfo::SetDebugInfo(node->fullname_with_scope(), device::AllocatorType::kConstantValue,
-                                                     0);
   if (device_address->GetPtr() == nullptr) {
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "CopyTensorData", "CopyTensorData", "", false);
     auto mem_type =
-      tensor->is_parameter() ? device::tracker::MemType::kWeight : device::tracker::MemType::kPyNativeInput;
+      tensor->is_parameter() ? memory::mem_pool::MemType::kWeight : memory::mem_pool::MemType::kPyNativeInput;
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "CopyTensorData", mem_type, device_address->GetSize(),
                                                    device_address.get());
     if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {

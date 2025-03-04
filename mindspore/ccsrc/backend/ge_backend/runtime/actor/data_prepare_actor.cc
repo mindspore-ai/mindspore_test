@@ -37,7 +37,7 @@ namespace ge_backend {
 namespace runtime {
 namespace {
 void UpdateTracker(const std::string &task_name, const AnfNodePtr &node, const std::string &graph_str,
-                   device::tracker::MemType mem_type, const DeviceTensorPtr &device_tensor) {
+                   memory::mem_pool::MemType mem_type, const DeviceTensorPtr &device_tensor) {
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, task_name, node->fullname_with_scope(), graph_str);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, task_name, mem_type, device_tensor->GetSize(),
                                                  device_tensor.get());
@@ -52,11 +52,10 @@ void SyncTensorData(const TensorPtr &host_tensor, const DeviceTensorPtr &device_
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
   MS_EXCEPTION_IF_NULL(context);
-  auto allocator_type = node->isa<ValueNode>() ? device::AllocatorType::kConstantValue : device::AllocatorType::kWeight;
-  device::DynamicMemAllocatorDebugInfo::SetDebugInfo(node->fullname_with_scope(), allocator_type, 0);
   bool need_alloc_memory = (device_tensor->GetPtr() == nullptr);
   auto graph_str = (node->func_graph() == nullptr) ? "" : node->func_graph()->ToString();
-  auto mem_type = node->isa<ValueNode>() ? device::tracker::MemType::kConstantValue : device::tracker::MemType::kWeight;
+  auto mem_type =
+    node->isa<ValueNode>() ? memory::mem_pool::MemType::kConstantValue : memory::mem_pool::MemType::kWeight;
   if (need_alloc_memory) {
     UpdateTracker("SyncTensorData", node, graph_str, mem_type, device_tensor);
     if (!device_context->device_res_manager_->AllocateMemory(device_tensor.get(), kDefaultStreamIndex)) {
@@ -734,9 +733,8 @@ void DataPrepareActor::PrepareDataForControlValueNode(const KernelWithIndex &nod
   tensor->set_device_address(device_tensor);
   UpdateRefCount(device_tensor.get(), true);
 
-  device::DynamicMemAllocatorDebugInfo::SetDebugInfo(node->DebugString(), device::AllocatorType::kConstantValue, 0);
   auto graph_str = (node->func_graph() == nullptr) ? "" : node->func_graph()->ToString();
-  UpdateTracker("PrepareDataForControlValueNode", node, graph_str, device::tracker::MemType::kConstantValue,
+  UpdateTracker("PrepareDataForControlValueNode", node, graph_str, memory::mem_pool::MemType::kConstantValue,
                 device_tensor);
   if (!device_context->device_res_manager_->AllocateMemory(device_tensor.get(), kDefaultStreamIndex)) {
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *device_context, node->fullname_with_scope(),
@@ -802,10 +800,8 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
   }
   MS_LOG(INFO) << "Prepare device data for value node: " << node->DebugString();
 
-  device::DynamicMemAllocatorDebugInfo::SetDebugInfo(node->fullname_with_scope(), device::AllocatorType::kConstantValue,
-                                                     0);
   auto graph_str = (node->func_graph() == nullptr) ? "" : node->func_graph()->ToString();
-  UpdateTracker("PrepareDataForStringValue", node, graph_str, device::tracker::MemType::kConstantValue, device_tensor);
+  UpdateTracker("PrepareDataForStringValue", node, graph_str, memory::mem_pool::MemType::kConstantValue, device_tensor);
   if (!device_context->device_res_manager_->AllocateMemory(device_tensor.get(), kDefaultStreamIndex)) {
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *device_context, node->fullname_with_scope(),
                                                 device_tensor->GetSize());
@@ -863,11 +859,9 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
 
   UpdateRefCount(device_tensor.get(), true);
   MS_LOG(DEBUG) << "Prepare device data for value node: " << node->DebugString();
-  device::DynamicMemAllocatorDebugInfo::SetDebugInfo(node->fullname_with_scope(), device::AllocatorType::kConstantValue,
-                                                     0);
   // 1. Allocate device memory for value node.
   auto graph_str = (node->func_graph() == nullptr) ? "" : node->func_graph()->ToString();
-  UpdateTracker("PrepareDataForSequenceAndScalarValue", node, graph_str, device::tracker::MemType::kConstantValue,
+  UpdateTracker("PrepareDataForSequenceAndScalarValue", node, graph_str, memory::mem_pool::MemType::kConstantValue,
                 device_tensor);
   if (!device_context->device_res_manager_->AllocateMemory(device_tensor.get(), kDefaultStreamIndex)) {
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *device_context, node->fullname_with_scope(),

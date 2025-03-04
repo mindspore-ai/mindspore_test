@@ -599,7 +599,7 @@ std::pair<std::vector<size_t>, std::vector<size_t>> AscendResManager::AllocDevic
     auto total_align_size = device::MemoryManager::GetCommonAlignSize(total_size);
     auto device_ptr = mem_manager_->MallocMemFromMemPool(total_align_size, false, false, stream_id);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, "PyNative", total_align_size, device_ptr,
-                                                   device::tracker::MemType::kContinuousMemory);
+                                                   memory::mem_pool::MemType::kContinuousMemory);
     if (!device_ptr) {
       MS_LOG(EXCEPTION) << "Alloc device memory failed!";
     }
@@ -674,7 +674,7 @@ std::pair<std::vector<size_t>, std::vector<size_t>> AscendResManager::AllocDevic
     }
     tensor->set_device_address(device_address);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, "PyNative", before_padding_sizes[i], ptr,
-                                                   device::tracker::MemType::kContinuousMemory);
+                                                   memory::mem_pool::MemType::kContinuousMemory);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsOutput, "PyNative", device_address->device_name(), ptr,
                                                    tensor->data_type(), tensor->shape(), tensor->storage_info());
   }

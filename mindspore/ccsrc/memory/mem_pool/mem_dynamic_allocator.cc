@@ -144,8 +144,8 @@ const DeviceState MemStatusManager::DumpMemBlockDebugInfo(const std::string &mem
       }
       MS_LOG(INFO) << "  MemBuf info: address[" << mem_buf->device_addr_ << "] size[" << mem_buf->size_ << "] status["
                    << DynamicMemBufStatusToString(mem_buf->status_) << "] name["
-                   << (mem_buf->allocator_name_.empty() ? "Unknown" : mem_buf->allocator_name_) << "] type["
-                   << AllocatorTypeToString(mem_buf->allocator_type_) << "] stream id[" << mem_buf->stream_id_ << "].";
+                   << (mem_buf->mem_name_.empty() ? "Unknown" : mem_buf->mem_name_) << "] type["
+                   << MemTypeToStr(mem_buf->mem_type_) << "] stream id[" << mem_buf->stream_id_ << "].";
     }
   }
   return device_state;
@@ -382,8 +382,8 @@ DeviceMemPtr DynamicMemPoolBestFit::FindMemBufInSpecifiedMng(size_t size, bool f
       MS_LOG(EXCEPTION) << "Mem_buf is not " << target_status << ", alloc_size[" << size << "] mem_buf_size["
                         << mem_buf->size_ << "] mem_buf_address[" << mem_buf->device_addr_ << "].";
     }
-    mem_buf->allocator_name_ = DynamicMemAllocatorDebugInfo::GetDebugInfo().name_;
-    mem_buf->allocator_type_ = DynamicMemAllocatorDebugInfo::GetDebugInfo().type_;
+    mem_buf->mem_name_ = DynamicMemAllocatorDebugInfo::GetDebugInfo().name_;
+    mem_buf->mem_type_ = DynamicMemAllocatorDebugInfo::GetDebugInfo().type_;
     if (mem_buf->status_ == DynamicMemBufStatus::kMemBufEagerFree && IsEnableVmm()) {
       MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Find eager free memory, mem_buf_size[" << mem_buf->size_
                                            << "] mem_buf_address[" << mem_buf->device_addr_ << "], need size: " << size;
@@ -1035,8 +1035,8 @@ void DynamicMemPoolBestFit::KeepTensorMemByAddr(const DeviceMemPtr &device_addr,
   if (split_left_size == 0) {
     mem_buf->status_ = DynamicMemBufStatus::kMemBufUsed;
     mem_buf->size_ = size;
-    mem_buf->allocator_name_ = DynamicMemAllocatorDebugInfo::GetDebugInfo().name_;
-    mem_buf->allocator_type_ = DynamicMemAllocatorDebugInfo::GetDebugInfo().type_;
+    mem_buf->mem_name_ = DynamicMemAllocatorDebugInfo::GetDebugInfo().name_;
+    mem_buf->mem_type_ = DynamicMemAllocatorDebugInfo::GetDebugInfo().type_;
   } else {
     mem_buf->size_ = split_left_size;
     mem_mng->AddMemBuf(mem_buf);
@@ -1140,7 +1140,7 @@ void DynamicMemPoolBestFit::ReleaseDeviceRes() {
 }
 
 void DynamicMemPoolBestFit::DumpDynamicMemPoolStateInfo() {
-  size_t total_used_size_list[kAllocatorTypeNum] = {0};
+  size_t total_used_size_list[static_cast<int>(memory::mem_pool::MemType::kOther) + 1] = {0};
   static bool is_enable_memory_statistics = common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat) ||
                                             common::IsEnableRuntimeConfig(common::kRuntimeMemoryTrack);
   auto fn = [&](const MemStatusManagerPtr &mem_mng, const std::string &mem_type) {
@@ -1157,9 +1157,10 @@ void DynamicMemPoolBestFit::DumpDynamicMemPoolStateInfo() {
            mb != mem_mng->mem_block_list_[i]->block_all_mem_buf_map_.end(); ++mb) {
         if (mb->second->status_ == DynamicMemBufStatus::kMemBufUsed) {
           mem_block_used_size += mb->second->size_;
-          MS_EXCEPTION_IF_CHECK_FAIL((static_cast<int>(mb->second->allocator_type_) < kAllocatorTypeNum),
-                                     "Allocator type is out of range.");
-          total_used_size_list[static_cast<int>(mb->second->allocator_type_)] += mb->second->size_;
+          MS_EXCEPTION_IF_CHECK_FAIL(
+            (static_cast<int>(mb->second->mem_type_) < static_cast<int>(memory::mem_pool::MemType::kOther) + 1),
+            "Allocator type is out of range.");
+          total_used_size_list[static_cast<int>(mb->second->mem_type_)] += mb->second->size_;
         }
       }
       buf << ", block[" << i << "] stream id:" << mem_mng->mem_block_list_[i]->stream_id_
@@ -1185,6 +1186,14 @@ void DynamicMemPoolBestFit::DumpDynamicMemPoolStateInfo() {
   fn(common_mem_, std::string(kCommonMem));
   fn(persistent_mem_, std::string(kPersistentParamMem));
   std::ostringstream oss_mem;
+
+  size_t other_used_size = 0;
+  int start = static_cast<int>(memory::mem_pool::MemType::kGraphOutput);
+  int end = static_cast<int>(memory::mem_pool::MemType::kOther);
+  for (int i = start; i <= end; i++) {
+    other_used_size += total_used_size_list[i];
+  }
+
   oss_mem << "The dynamic memory pool total allocated mem:" << TotalMemStatistics() / kMBToByte
           << "M, min addr :" << GetMinUsingMemoryAddr()
           << ", max addr: " << (mem_bufs_.empty() ? nullptr : *(--mem_bufs_.end()))
@@ -1193,13 +1202,13 @@ void DynamicMemPoolBestFit::DumpDynamicMemPoolStateInfo() {
           << "M, in used mem:" << TotalUsedMemStatistics() / kMBToByte
           << "M, total used by event mem:" << TotalUsedByEventMemStatistics() / kMBToByte
           << "M, total idle mem:" << TotalIdleMemStatistics() / kMBToByte
-          << "M, total eager free mem:" << TotalEagerFreeMemStatistics() / kMBToByte
-          << "M. Weight used size:" << total_used_size_list[static_cast<int>(AllocatorType::kWeight)] / kMBToByte
+          << "M, total eager free mem:" << TotalEagerFreeMemStatistics() / kMBToByte << "M. Weight used size:"
+          << total_used_size_list[static_cast<int>(memory::mem_pool::MemType::kWeight)] / kMBToByte
           << "M, constant value used size:"
-          << total_used_size_list[static_cast<int>(AllocatorType::kConstantValue)] / kMBToByte
+          << total_used_size_list[static_cast<int>(memory::mem_pool::MemType::kConstantValue)] / kMBToByte
           << "M, kernel output used size:"
-          << total_used_size_list[static_cast<int>(AllocatorType::kKernelOutput)] / kMBToByte
-          << "M, other used size:" << total_used_size_list[static_cast<int>(AllocatorType::kOther)] / kMBToByte << "M.";
+          << total_used_size_list[static_cast<int>(memory::mem_pool::MemType::kKernel)] / kMBToByte
+          << "M, other used size:" << other_used_size / kMBToByte << "M.";
   if (is_enable_memory_statistics) {
     std::cout << "[MS_RUNTIME_PROF]" << oss_mem.str() << std::endl;
   }
