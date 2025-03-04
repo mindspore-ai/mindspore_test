@@ -43,7 +43,7 @@ class DummyAscendCollectiveCommLib : public DummyCollectiveCommunicationLib {
   bool CreateCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks,
                                 uint32_t local_group_rank, uint32_t local_group_size) override;
 
-  std::string HcclInnerCommName(const std::string &group_name);
+  std::string CommName(const std::string &group_name) override;
 
   bool DestroyDeviceCommunicationGroup(const std::string &group_name) override;
 

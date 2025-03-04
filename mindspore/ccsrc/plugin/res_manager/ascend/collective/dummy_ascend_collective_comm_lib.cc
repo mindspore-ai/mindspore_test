@@ -61,7 +61,7 @@ bool DummyAscendCollectiveCommLib::CreateCommunicationGroup(const std::string &g
   return true;
 }
 
-std::string DummyAscendCollectiveCommLib::HcclInnerCommName(const std::string &group_name) {
+std::string DummyAscendCollectiveCommLib::CommName(const std::string &group_name) {
   if (hccl::HcclAdapter::GetInstance().UseHcclCM()) {
     return "";
   }

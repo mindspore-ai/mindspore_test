@@ -145,6 +145,11 @@ bool MultiAscendCollectiveCommLib::CreateCommunicationGroup(const std::string &g
   return true;
 }
 
+std::string MultiAscendCollectiveCommLib::CommName(const std::string &group_name) {
+  MS_EXCEPTION_IF_NULL(ascend_collective_comm_lib_);
+  return ascend_collective_comm_lib_->CommName(group_name);
+}
+
 uint32_t MultiAscendCollectiveCommLib::GetRankId(const std::string &group_name) {
   MS_EXCEPTION_IF_NULL(ascend_collective_comm_lib_);
   return ascend_collective_comm_lib_->GetRankId(group_name);
