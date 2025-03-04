@@ -42,7 +42,7 @@ constexpr size_t kTBMMTInputTransposeA = 4;
 constexpr size_t kTBMMTInputTransposeB = 5;
 constexpr size_t kTBMMTInputNum = 6;
 
-size_t NormalizeDimIdx(int64_t idx, size_t rank) {
+size_t NormalizePermIdx(int64_t idx, size_t rank) {
   auto new_idx = idx >= 0 ? idx : (idx + SizeToLong(rank));
   return LongToSize(new_idx);
 }
@@ -64,7 +64,7 @@ void TransposeBatchMatmulTransposeMakeShape(ShapeVector *output, const ShapeVect
       continue;
     }
 
-    auto dim = NormalizeDimIdx(perm_in[i], x_shape.size());
+    auto dim = NormalizePermIdx(perm_in[i], x_shape.size());
     transpose_x_shape.push_back(x_shape[dim]);
   }
 
@@ -98,7 +98,7 @@ void TransposeBatchMatmulTransposeMakeShape(ShapeVector *output, const ShapeVect
       continue;
     }
 
-    auto dim = NormalizeDimIdx(perm_out[i], long_input.size());
+    auto dim = NormalizePermIdx(perm_out[i], long_input.size());
     output->push_back(bmm_shape[dim]);
   }
   return;
@@ -162,7 +162,7 @@ void CheckTransposePerm(const std::string &op_name, const std::string &input_nam
                                << perm[i];
     }
 
-    auto dim = NormalizeDimIdx(perm[i], x_rank);
+    auto dim = NormalizePermIdx(perm[i], x_rank);
     if (MS_UNLIKELY(seen.count(dim) != 0)) {
       MS_EXCEPTION(ValueError) << "For '" << op_name << "', the input '" << input_name
                                << " should all be unique dim, but  " << dim << "  is not unique!";

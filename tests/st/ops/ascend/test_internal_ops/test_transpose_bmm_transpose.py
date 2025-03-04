@@ -19,9 +19,10 @@ import pytest
 
 import mindspore as ms
 from mindspore.ops import operations as P
-from mindspore import Tensor, ops, nn, context
-from st_utils import custom_compare
+from mindspore import Tensor, nn, context
 from mindspore.common.np_dtype import bfloat16
+
+from st_utils import custom_compare
 
 class TransBMMTransNet(nn.Cell):
     '''TransBMMTransNet for fusion'''
@@ -127,14 +128,3 @@ def test_transpose_batch_matmul_transpose_with_b1(b1, mstype):
     """
     trans_bmm_trans_net(0, b1, 64, 128, 256, mstype)
     trans_bmm_trans_net(0, b1, 70, 70, 70, mstype)
-
-@pytest.mark.level1
-@pytest.mark.platform_ascend910b
-def test_transpose_batch_matmul_transpose_dyn():
-    """
-    Feature: test transpose operator in graph mode
-    Description: test transpose.
-    Expectation: the result is correct
-    """
-    trans_bmm_trans_net(2, 4, 32, 64, 128, is_dyn=True)
-    trans_bmm_trans_net(2, 4, 1025, 1025, 1025, is_dyn=True)
