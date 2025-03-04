@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 #include "runtime/graph_scheduler/actor/debug_actor.h"
 #include "runtime/graph_scheduler/actor/profiler_actor.h"
 #include "runtime/graph_scheduler/actor/control_flow/entrance_actor.h"
+#include "runtime/graph_scheduler/execution_order_check/comm_execution_order_check.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "runtime/device/stream_synchronizer.h"
@@ -60,6 +61,9 @@ void LoopCountActor::IncreaseLoopCount(OpContext<DeviceTensor> *const context) {
     MS_LOG(INFO) << "Run graph failed and please check error log.";
     return;
   }
+
+  static auto &process = Process::GetInstance();
+  process.CheckCommOrderIteration(total_running_count_);
 
   // Debug actor is blocked, must wait debug actor callback message to process continue.
   if (debug_aid_ != nullptr) {

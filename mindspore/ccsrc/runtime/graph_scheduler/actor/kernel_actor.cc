@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2024 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
 #include "runtime/graph_scheduler/actor/output_actor.h"
 #include "runtime/graph_scheduler/actor/recorder_actor.h"
 #include "runtime/graph_scheduler/actor/debug_actor.h"
+#include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
@@ -1184,6 +1185,11 @@ bool KernelActor::LaunchKernelWithDebug(OpContext<DeviceTensor> *const context, 
 }
 
 bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_skip_launch) {
+  static KernelCache &cache = KernelCache::GetInstance();
+  if (cache.need_add) {
+    cache.Add(kernel_);
+  }
+
   if (EnableExecuteOrderDump()) {
     auto &execute_order_tracker = ExecuteOrderTracker::GetInstance();
     execute_order_tracker.ProcessNode(kernel_);
