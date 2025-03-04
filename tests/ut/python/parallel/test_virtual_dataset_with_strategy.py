@@ -408,5 +408,32 @@ def test_virtual_dataset_model_parallel_semi_auto_parallel_with_layout_3():
     with pytest.raises(ValueError):
         context.set_auto_parallel_context(dataset_strategy=strategy0)
 
+
+def test_dataset_strategy_with_layout_using_autoparallel_cell():
+    """
+    Feature: test AutoParallel(cell).dataset_strategy(config).
+    Description: virtual_dataset/model_parallel/fully shard/repeat in left.
+    Expectation: compile done without error.
+    """
+    from mindspore.parallel.auto_parallel import AutoParallel
+    from hccl_test.manage.api import Hccl
+    hccl = Hccl()
+    hccl.rank_id = 0
+    hccl.rank_size = 8
+    layout = Layout((2, 2, 2), ("dp", "mp", "sp"))
+    strategy0 = (layout(("dp", "mp"), "sp"), layout(("dp", "mp"), "sp"), layout(("mp", "dp"), "sp"))
+    strategy1 = ((2, 2), (2, 2))
+    strategy2 = ((2, 2), (2, 2))
+    strategy3 = ((2, 4),)
+    net = GradWrap(NetWithLoss(Net1(strategy1, strategy2, strategy3)))
+    parallel_net = AutoParallel(net, parallel_mode="seme_auto")
+    parallel_net.dataset_strategy(strategy0)
+    x = Tensor(np.ones([128 // 4, 32 // 2]), dtype=ms.float32)
+    y = Tensor(np.ones([32 // 4, 64 // 2]), dtype=ms.float32)
+    b = Tensor(np.ones([64 // 4, 2048 // 2]), dtype=ms.float32)
+    phase = compile_net(parallel_net, x, y, b)
+    validator = ParallelValidator(parallel_net, phase)
+    assert validator.check_node_inputs_has('MatMul-0', ['Reshape-2', 'StridedSlice-1'])
+
 if __name__ == '__main__':
     context.reset_auto_parallel_context()

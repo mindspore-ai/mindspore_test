@@ -79,10 +79,10 @@ def test_dataset_strategy_data_parallel():
     '''
     init(backend_name='hccl')
     dataset_strategy = "data_parallel"
-    parallel_loss = train_using_auto_parallel_cell(
+    baseline_loss = train_using_set_auto_parallel_context(
         dataset_strategy)
     context.reset_auto_parallel_context()
-    baseline_loss = train_using_set_auto_parallel_context(
+    parallel_loss = train_using_auto_parallel_cell(
         dataset_strategy)
     allclose_nparray(np.array(parallel_loss),
                      np.array(baseline_loss), 0.001, 0.001)
@@ -96,10 +96,10 @@ def test_dataset_strategy_full_batch():
     '''
     init(backend_name='hccl')
     dataset_strategy = "full_batch"
-    parallel_loss = train_using_auto_parallel_cell(
+    baseline_loss = train_using_set_auto_parallel_context(
         dataset_strategy)
     context.reset_auto_parallel_context()
-    baseline_loss = train_using_set_auto_parallel_context(
+    parallel_loss = train_using_auto_parallel_cell(
         dataset_strategy)
     allclose_nparray(np.array(parallel_loss),
                      np.array(baseline_loss), 0.001, 0.001)
@@ -113,10 +113,10 @@ def test_dataset_strategy_using_tuple():
     '''
     init(backend_name='hccl')
     dataset_strategy = ((2, 1, 1), (2, 1))
-    parallel_loss = train_using_auto_parallel_cell(
+    baseline_loss = train_using_set_auto_parallel_context(
         dataset_strategy)
     context.reset_auto_parallel_context()
-    baseline_loss = train_using_set_auto_parallel_context(
+    parallel_loss = train_using_auto_parallel_cell(
         dataset_strategy)
     allclose_nparray(np.array(parallel_loss),
                      np.array(baseline_loss), 0.001, 0.001)

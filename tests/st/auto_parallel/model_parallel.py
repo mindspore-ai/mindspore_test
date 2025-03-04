@@ -279,9 +279,9 @@ def test_data_parallel_model_programming():
     """
     init(backend_name='hccl')
     strategy = ((8, 1), (1, 1))
-    parallel_loss = train_model_programming_using_autoparallel_cell(strategy)
-    context.reset_auto_parallel_context()
     context_loss = train_model_programming_baseline(strategy)
+    context.reset_auto_parallel_context()
+    parallel_loss = train_model_programming_using_autoparallel_cell(strategy)
     allclose_nparray(np.array(parallel_loss),
                      np.array(context_loss), 0.001, 0.001)
 
@@ -294,10 +294,10 @@ def test_data_parallel_functional_programming():
     """
     init(backend_name='hccl')
     strategy = ((8, 1), (1, 1))
+    context_loss = train_model_programming_baseline(strategy)
+    context.reset_auto_parallel_context()
     parallel_loss = train_functional_programming_using_autoparallel_cell(
         strategy)
-    context.reset_auto_parallel_context()
-    context_loss = train_model_programming_baseline(strategy)
     allclose_nparray(np.array(parallel_loss),
                      np.array(context_loss), 0.001, 0.001)
 
@@ -310,9 +310,9 @@ def test_model_parallel_model_programming():
     """
     init(backend_name='hccl')
     strategy = ((1, 1), (1, 2))
-    parallel_loss = train_model_programming_using_autoparallel_cell(strategy)
-    context.reset_auto_parallel_context()
     context_loss = train_model_programming_baseline(strategy)
+    context.reset_auto_parallel_context()
+    parallel_loss = train_model_programming_using_autoparallel_cell(strategy)
     allclose_nparray(np.array(parallel_loss),
                      np.array(context_loss), 0.001, 0.001)
 
@@ -325,9 +325,9 @@ def test_model_parallel_functional_programming():
     """
     init(backend_name='hccl')
     strategy = ((1, 1), (1, 2))
+    context_loss = train_model_programming_baseline(strategy)
+    context.reset_auto_parallel_context()
     parallel_loss = train_functional_programming_using_autoparallel_cell(
         strategy)
-    context.reset_auto_parallel_context()
-    context_loss = train_model_programming_baseline(strategy)
     allclose_nparray(np.array(parallel_loss),
                      np.array(context_loss), 0.001, 0.001)
