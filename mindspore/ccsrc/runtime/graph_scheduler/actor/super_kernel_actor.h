@@ -198,6 +198,9 @@ class SuperKernelActor : public DebugAwareActor {
 
   void InitParallelDispatchResource();
   void PartitionParallelDispatchKernels();
+  // Recreate the communication group for the communication operators, ensuring that the communication group is the
+  // same for the communication operators on each concurrent thread.
+  void RecreateCommunicationGroup();
   void ClearParallelDispatchResource();
 
   friend class GraphScheduler;
