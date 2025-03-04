@@ -40,20 +40,26 @@ void InsertPreFetchDepend::Init(const FuncGraphPtr &graph) {
 
 void InsertPreFetchDepend::MakeExecOrderCache() {
   const auto &execution_order = kernel_graph_->execution_order();
+  size_t j = 0;
   for (size_t i = 0; i < execution_order.size(); ++i) {
     exec_order_cache_[execution_order[i]] = i;
+    if (!IsPrimitiveCNode(execution_order[i], prim::kPrimMoveTo)) {
+      exec_order_cache_without_moveto_[execution_order[i]] = j++;
+      exec_order_without_moveto_.emplace_back(execution_order[i]);
+    }
   }
 }
 
 size_t InsertPreFetchDepend::CalPreFetchCeiling(const CNodePtr &move_to_node) {
   size_t ceiling = 0;
-  const auto &move_to_input = move_to_node->input(kIndex1);
-  if (!move_to_input->isa<CNode>()) {
+  const auto &move_to_input = common::AnfAlgo::VisitKernelWithReturnType(move_to_node->input(kIndex1), kIndex0);
+  const auto &move_to_input_node = move_to_input.first;
+  if (move_to_input_node == nullptr || !move_to_input_node->isa<CNode>()) {
     return ceiling;
   }
 
   std::queue<CNodePtr> to_visit;
-  to_visit.push(move_to_input->cast<CNodePtr>());
+  to_visit.push(move_to_input_node->cast<CNodePtr>());
   while (!to_visit.empty()) {
     const auto &node = to_visit.front();
     to_visit.pop();
@@ -63,11 +69,12 @@ size_t InsertPreFetchDepend::CalPreFetchCeiling(const CNodePtr &move_to_node) {
     const auto is_depend = IsPrimitiveCNode(node, prim::kPrimDepend);
     if (is_depend) {
       for (size_t i = kIndex1; i <= kIndex2; i += 1) {
-        const auto &input = node->input(i);
-        if (!input->isa<CNode>()) {
+        const auto &input = common::AnfAlgo::VisitKernelWithReturnType(node->input(i), kIndex0);
+        const auto &input_node = input.first;
+        if (input_node == nullptr || !input_node->isa<CNode>()) {
           continue;
         }
-        to_visit.push(input->cast<CNodePtr>());
+        to_visit.push(input_node->cast<CNodePtr>());
       }
     } else {
       const auto &exec_order_iter = exec_order_cache_.find(node);
@@ -143,18 +150,26 @@ bool InsertPreFetchDepend::CalExecutionOrder(const CNodePtr &move_to_node, int64
   if (prefetch + 1 == SizeToInt(bw_node_exec_order) && exec_order_cache_[move_to_node] == 0) {
     return false;
   }
+  const auto execution_order = kernel_graph_->execution_order();
+  const auto &bw_node = execution_order[bw_node_exec_order];
+  MS_EXCEPTION_IF_NULL(bw_node);
   const auto prefetch_ceiling = CalPreFetchCeiling(move_to_node);
-  auto pre_order = bw_node_exec_order - 1 - prefetch;
-  pre_order = pre_order > prefetch_ceiling ? pre_order : prefetch_ceiling;
-  auto post_order = pre_order + 1;
-  const auto &execution_order = kernel_graph_->execution_order();
-  if (execution_order[pre_order] == move_to_node) {
-    pre_order -= 1;
-  } else if (execution_order[post_order] == move_to_node) {
-    post_order += 1;
+  const auto bw_node_without_moveto = exec_order_cache_without_moveto_[bw_node];
+  auto pre_order_without_moveto = bw_node_without_moveto - 1 - prefetch;
+  auto pre_node = exec_order_without_moveto_[pre_order_without_moveto];
+  auto pre_order = exec_order_cache_[pre_node];
+  if (pre_order < prefetch_ceiling) {
+    pre_order = prefetch_ceiling;
+    while (IsPrimitiveCNode(execution_order[pre_order], prim::kPrimMoveTo)) {
+      pre_order += 1;
+    }
+    pre_node = execution_order[pre_order];
+    pre_order_without_moveto = exec_order_cache_without_moveto_[pre_node];
   }
-  *pre_exec_order = pre_order;
-  *post_exec_order = post_order;
+  auto post_order_without_move_to = pre_order_without_moveto + 1;
+
+  *pre_exec_order = pre_order_without_moveto;
+  *post_exec_order = post_order_without_move_to;
   return true;
 }
 
@@ -165,10 +180,9 @@ void InsertPreFetchDepend::InsertDepend(const CNodePtr &move_to_node, int64_t pr
   if (!CalExecutionOrder(move_to_node, prefetch, &pre_exec_order, &post_exec_order)) {
     return;
   }
-  const auto &execution_order = kernel_graph_->execution_order();
-  const auto &pre_node = execution_order[pre_exec_order];
+  const auto &pre_node = exec_order_without_moveto_[pre_exec_order];
   MS_EXCEPTION_IF_NULL(pre_node);
-  const auto &post_node = execution_order[post_exec_order];
+  const auto &post_node = exec_order_without_moveto_[post_exec_order];
   MS_EXCEPTION_IF_NULL(post_node);
   if (MoveToUtils::InsertDependNode(kernel_graph_, pre_node, move_to_node) == nullptr) {
     MS_LOG(WARNING) << "Insert depend for pre fetch " << move_to_node->fullname_with_scope()
