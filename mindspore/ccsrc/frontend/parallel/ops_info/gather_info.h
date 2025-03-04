@@ -114,8 +114,6 @@ class GatherUtil {
   bool repeated_num_in_dev_matrix_right_ = true;  // only for shard axis
   Shape out_dev_matrix_shape_;                    // only for shard axis
   bool dynamic_shape_flag_ = False;
-
- private:
   const std::vector<std::string> gather_mode_string_ = {"batch",
                                                         "normal",
                                                         "manual",
@@ -274,7 +272,7 @@ class ShardAxisImpl : public GatherUtil {
  protected:
   // use for split axis
   Status CheckSplitAxisStrategy(const Shape &param_strategy, const Shape &indices_strategy);
-  void SetAttribute(const Shape &param_strategy);
+  virtual void SetAttribute(const Shape &param_strategy);
   Status InferGroup();
   std::string target_ = DEVICE;
   std::string replace_op_name_;
@@ -349,9 +347,10 @@ class GatherInfo : public OperatorInfo {
   std::shared_ptr<Strategies> GenerateBatchStrategies() override;
   const std::vector<int64_t> &param_split_shapes() const { return param_split_shapes_; }
   const std::vector<int64_t> &index_offsets() const { return index_offsets_; }
-  GatherMode GetGatherMode(const Shape &param_strategy, const Shape &indices_strategy) const;
+  virtual GatherMode GetGatherMode(const Shape &param_strategy, const Shape &indices_strategy) const;
 
  protected:
+  Status CheckProductValidity(const Dimensions &param_strategy, const Dimensions &indices_strategy);
   Status CheckStrategy(const StrategyPtr &strategy) override;
   Status CheckOutputStrategy(const StrategyPtr &out_strategy) override;
   Status CheckStrategyForDynamicShape(const StrategyPtr &strategy) override;
@@ -365,17 +364,7 @@ class GatherInfo : public OperatorInfo {
   virtual void GetBatchDims() noexcept;
   virtual GatherUtilPtr MakeManualUtil();
   int64_t axis_ = 0;
-
- private:
-  int64_t batch_dims_ = 0;
-  Status GetManualSplitAttr();
-  Status GetManualSplitWithoutOffsetAttr();
-  Status ComputeReplaceOp();
-  bool ShardBatchAndAxis(const Shape &param_strategy, const Shape &indices_strategy) const;
-  bool ShardBatchAxisAndSp(const Shape &param_strategy, const Shape &indices_strategy) const;
-
   std::string target_ = DEVICE;
-  int64_t bias_ = 0;
   std::string replace_op_name_ = GATHERV2;
   bool manual_split_ = false;
   bool dynamic_shape_indices_ = false;
@@ -383,6 +372,13 @@ class GatherInfo : public OperatorInfo {
   std::vector<int64_t> index_offsets_;       // manual split
   GatherMode gather_mode_ = INVALID;
   GatherUtilPtr gather_util_;
+  int64_t batch_dims_ = 0;
+  Status GetManualSplitAttr();
+  Status GetManualSplitWithoutOffsetAttr();
+  Status ComputeReplaceOp();
+  bool ShardBatchAndAxis(const Shape &param_strategy, const Shape &indices_strategy) const;
+  bool ShardBatchAxisAndSp(const Shape &param_strategy, const Shape &indices_strategy) const;
+  int64_t bias_ = 0;
 };
 
 class IndexSelectInfo final : public GatherInfo {
@@ -417,6 +413,20 @@ class EmbeddingLookupInfo final : public GatherInfo {
   void DealWithBatchDimsMirrorOp() noexcept override {}
   void GetBatchDims() noexcept override {}
   GatherUtilPtr MakeManualUtil() override;
+};
+
+class EmbeddingInfo : public GatherInfo {
+ public:
+  EmbeddingInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                const PrimitiveAttrs &attrs, const std::string &replace_op_name = EMBEDDING)
+      : GatherInfo(name, inputs_shape, outputs_shape, attrs, replace_op_name) {}
+  ~EmbeddingInfo() override = default;
+
+ protected:
+  int64_t batch_dims_ = 0;
+  int64_t axis_ = 0;
+  Status InferMirrorOps() override;
+  Status GetAttrs() override;
 };
 }  // namespace parallel
 }  // namespace mindspore
