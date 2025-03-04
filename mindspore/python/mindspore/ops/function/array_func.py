@@ -7085,10 +7085,36 @@ def repeat_interleave(input, repeats, axis=None):
     if axis is None:
         input = input.reshape(-1)
         axis = 0
+    elif not isinstance(axis, int):
+        raise TypeError(f"For 'repeat_interleave', the argument 'axis' should be int, but got {type(axis)}.")
     if isinstance(repeats, Tensor):
         repeats = TensorToList()(repeats)
-    output = input.repeat(repeats, axis)
-    return output
+    if not isinstance(repeats, (tuple, list)):
+        repeats = (repeats,)
+    for index, element in enumerate(repeats):
+        if not isinstance(element, int):
+            raise TypeError(f"For 'repeat_interleave', each element in {repeats} should be int, but got "
+                            f"{type(element)} at index {index}.")
+
+    validator.check_axis_in_range(axis, input.ndim)
+    axis = axis + input.ndim if axis < 0 else axis
+
+    if len(repeats) == 1:
+        repeats = repeats[0]
+        if repeats == 0:
+            return Tensor(input.dtype, (0,))
+        return repeat_elements(input, repeats, axis=axis)
+    size = input.shape[axis]
+    if len(repeats) != size:
+        raise ValueError(f"For 'repeat_interleave', the length of 'repeats' must be the same as the shape "
+                         f"of the original tensor in the 'axis' dimension, but got the length of 'repeats' "
+                         f"{len(repeats)}, the shape of the original tensor in the 'axis' dimension {size}.")
+    subs = tensor_split(input, size, axis=axis)
+    repeated_subs = []
+    for sub, rep in zip(subs, repeats):
+        if rep != 0:
+            repeated_subs.append(repeat_elements(sub, rep, axis=axis))
+    return concat(repeated_subs, axis=axis)
 
 
 def repeat_interleave_ext(input, repeats, dim=None, output_size=None):

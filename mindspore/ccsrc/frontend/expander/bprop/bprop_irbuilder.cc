@@ -324,18 +324,6 @@ NodePtr IrBuilder::EmitValue(const ValuePtr &value) {
   infer_->Infer(node);
   return node;
 }
-
-NodePtr IrBuilder::Conditional(const NodePtr &cond, const BlockFunc &true_case, const BlockFunc &false_case) {
-  CtrlFlowBlock cfb(this, this->func_graph());
-  this->func_graph()->set_flag(kFlagIsControlFlow, true);
-  return cfb.IfThenElse(cond, true_case, false_case);
-}
-
-NodePtr IrBuilder::While(const NodePtr &cond, const BlockFunc &body, const NodePtrList &init_list) {
-  CtrlFlowBlock cfb(this, this->func_graph());
-  this->func_graph()->set_flag(kFlagIsControlFlow, true);
-  return cfb.While(cond, body, init_list);
-}
 }  // namespace bprop
 }  // namespace expander
 }  // namespace mindspore

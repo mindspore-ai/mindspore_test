@@ -1,0 +1,15 @@
+#operator repeat
+repeat:
+  args:
+    input:
+      dtype: tensor
+    repeats:
+      dtype: tuple[int]
+      type_cast: list[int]
+  returns:
+    out:
+      dtype: tensor
+  dispatch:
+    enable: True
+  function:
+    disable: True

@@ -589,12 +589,22 @@ class GraphModeBuilder : public IrBuilder {
 
   NodePtr Conditional(const NodePtr &cond, const BlockFunc &true_case, const BlockFunc &false_case) override {
     has_ctrl_flow_ = true;
-    return IrBuilder::Conditional(cond, true_case, false_case);
+    CtrlFlowBlock cfb(this, this->func_graph(),
+                      [this](const FuncGraphPtr &fg, const ExpanderInferPtr &infer) -> EmitterPtr {
+                        return std::make_shared<GraphModeBuilder>(this->name_ + "Conditional", fg, infer);
+                      });
+    this->func_graph()->set_flag(kFlagIsControlFlow, true);
+    return cfb.IfThenElse(cond, true_case, false_case);
   }
 
   NodePtr While(const NodePtr &cond, const BlockFunc &body, const NodePtrList &init_list) override {
     has_ctrl_flow_ = true;
-    return IrBuilder::While(cond, body, init_list);
+    CtrlFlowBlock cfb(this, this->func_graph(),
+                      [this](const FuncGraphPtr &fg, const ExpanderInferPtr &infer) -> EmitterPtr {
+                        return std::make_shared<GraphModeBuilder>(this->name_ + "While", fg, infer);
+                      });
+    this->func_graph()->set_flag(kFlagIsControlFlow, true);
+    return cfb.While(cond, body, init_list);
   }
 
  protected:

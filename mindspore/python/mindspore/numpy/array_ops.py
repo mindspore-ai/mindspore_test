@@ -1945,7 +1945,7 @@ def repeat(a, repeats, axis=None):
         [3 4]]
     """
     a = _to_tensor(a)
-    return a.repeat(repeats, axis)
+    return a.repeat_interleave(repeats, axis)
 
 
 def rot90(a, k=1, axes=(0, 1)):
