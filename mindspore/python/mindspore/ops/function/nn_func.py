@@ -7907,7 +7907,8 @@ def multilabel_soft_margin_loss(input, target, weight=None, reduction='mean'):
     Args:
         input (Tensor): A tensor of shape :math:`(N, C)` , where N is batch size and C is number of classes.
         target (Tensor): The label target Tensor which has the same shape as `input`.
-        weight (Union[Tensor, int, float]): The manual rescaling weight given to each class. Default: ``None``.
+        weight (Union[Tensor, int, float], optional): The manual rescaling weight given to each class.
+            Default: ``None``.
         reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
             ``'sum'`` . Default: ``'mean'`` .
 

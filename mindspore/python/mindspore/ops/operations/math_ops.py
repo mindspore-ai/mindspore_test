@@ -1736,7 +1736,8 @@ class ApproximateEqual(_LogicBinaryOp):
     the relatively highest precision data type.
 
     Args:
-        tolerance (float): The maximum deviation that two elements can be considered equal. Default: ``1e-05`` .
+        tolerance (float, optional): The maximum deviation that two elements can be considered equal.
+            Default: ``1e-05`` .
 
     Inputs:
         - **x** (Tensor) - A tensor. Must be one of the following types: float32, float16.

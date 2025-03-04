@@ -2213,10 +2213,10 @@ class ApplyMomentum(Primitive):
     Refer to :class:`mindspore.nn.Momentum` for more details about the formula and usage.
 
     Args:
-        use_locking (bool): Whether to enable a lock to protect the variable and accumulation tensors
+        use_locking (bool, optional): Whether to enable a lock to protect the variable and accumulation tensors
                             from being updated. Default: ``False`` .
-        use_nesterov (bool): Enable Nesterov momentum. Default: ``False`` .
-        gradient_scale (float): The scale of the gradient. Default: ``1.0`` .
+        use_nesterov (bool, optional): Enable Nesterov momentum. Default: ``False`` .
+        gradient_scale (float, optional): The scale of the gradient. Default: ``1.0`` .
 
     Inputs:
         - **variable** (Union[Parameter, Tensor]) - Weights to be updated. Data type must be float64, int64, float,
@@ -4582,9 +4582,10 @@ class SparseApplyAdagradV2(Primitive):
     Args:
         lr (float): Learning rate.
         epsilon (float): A small value added for numerical stability.
-        use_locking (bool): If ``True`` , the `var` and `accum` tensors will be protected from being updated.
+        use_locking (bool, optional): If ``True`` , the `var` and `accum` tensors will be protected from being updated.
             Default: ``False`` .
-        update_slots (bool): If ``True`` , the computation logic will be different to `False`. Default: ``True`` .
+        update_slots (bool, optional): If ``True`` , the computation logic will be different to `False`.
+            Default: ``True`` .
 
     Inputs:
         - **var** (Union[Parameter, Tensor]) - Variable to be updated. The data type must be float16 or float32.
@@ -6216,10 +6217,10 @@ class AvgPool3D(Primitive):
         This interface currently does not support Atlas A2 training series products.
 
     Args:
-        kernel_size (Union[int, tuple[int]]): The size of kernel used to take the average value,
+        kernel_size (Union[int, tuple[int]], optional): The size of kernel used to take the average value,
             is an int number that represents depth, height and width are both kernel_size, or a tuple
             of three int numbers that represent depth, height and width respectively. Default: ``1`` .
-        strides (Union[int, tuple[int]]): The distance of kernel moving, an int number that represents
+        strides (Union[int, tuple[int]], optional): The distance of kernel moving, an int number that represents
             the depth, height and width of movement are both strides, or a tuple of three int numbers that
             represent depth, height and width of movement respectively. Default: ``1`` .
         pad_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
@@ -6238,16 +6239,18 @@ class AvgPool3D(Primitive):
               in the depth, height and width dimension is determined by the `pad` parameter.
               If this mode is set, `pad` must be greater than or equal to 0.
 
-        pad (Union(int, tuple[int], list[int])): The pad value to be filled. Default: ``0`` . If `pad` is an integer,
+        pad (Union(int, tuple[int], list[int]), optional): The pad value to be filled. Default: ``0`` .
+            If `pad` is an integer,
             the paddings of head, tail, top, bottom, left and right are the same, equal to pad.
             If `pad` is a tuple of six integers, the padding of head, tail, top, bottom, left and right equal to
             pad[0], pad[1], pad[2], pad[3], pad[4] and pad[5] correspondingly.
-        ceil_mode (bool): If ``True`` , ceil instead of floor to compute the output shape. Default: ``False`` .
-        count_include_pad (bool): If ``True`` , averaging calculation will include the zero-padding.
+        ceil_mode (bool, optional): If ``True`` , ceil instead of floor to compute the output shape.
+            Default: ``False`` .
+        count_include_pad (bool, optional): If ``True`` , averaging calculation will include the zero-padding.
             Default: ``True`` .
-        divisor_override (int): If specified, it will be used as divisor in the averaging calculation,
+        divisor_override (int, optional): If specified, it will be used as divisor in the averaging calculation,
             otherwise kernel_size will be used. Default: ``0`` .
-        data_format (str) : The optional value for data format. Currently only support ``'NCDHW'`` .
+        data_format (str, optional): The optional value for data format. Currently only support ``'NCDHW'`` .
             Default: ``'NCDHW'`` .
 
     Inputs:

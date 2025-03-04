@@ -56,7 +56,7 @@ class RAdam(Optimizer):
 
     .. math::
         \begin{align*}
-            &\rule{110mm}{0.4pt} \\
+            &\rule{180mm}{0.4pt} \\
             &\textbf{Input}:
                 \gamma \text{ (lr)}, \: \beta_1, \beta_2 \text{ (betas)}, \: \theta_0 \text{ (params)}, \:f(\theta)
                 \text{ (objective)}, \:
@@ -67,7 +67,7 @@ class RAdam(Optimizer):
                     v_0 \leftarrow 0 \text{ (second moment)} \\
                     \rho_{\infty} \xleftarrow{\text{def}} \dfrac{2}{1 - \beta_2} - 1
                 \end{cases} \\
-            &\rule{110mm}{0.4pt} \\
+            &\rule{180mm}{0.4pt} \\
             &\textbf{For } t = 1 \text{ to } \ldots \text{ do}: \\
             &\quad g_t \leftarrow \nabla_{\theta} f_t(\theta_{t - 1}) \\
             &\quad \text{If } \lambda \neq 0: \\
@@ -84,9 +84,9 @@ class RAdam(Optimizer):
             &\quad\quad \theta_t \leftarrow \theta_{t - 1} - \gamma \widehat{m_t} r_t l_t \\
             &\quad \text{Else}: \\
             &\quad\quad \theta_t \leftarrow \theta_{t - 1} - \gamma \widehat{m_t} \\
-            &\rule{110mm}{0.4pt} \\
+            &\rule{180mm}{0.4pt} \\
             &\bf{Return}: \theta_t \\
-            &\rule{110mm}{0.4pt}
+            &\rule{180mm}{0.4pt}
         \end{align*}
 
     .. warning::

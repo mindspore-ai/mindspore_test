@@ -9,13 +9,13 @@ mindspore.experimental.optim.Adadelta
 
     .. math::
         \begin{aligned}
-            &\rule{150mm}{0.4pt}                                                                 \\
+            &\rule{180mm}{0.4pt}                                                                 \\
             &\textbf{input}      : \gamma \text{ (lr)}, \: \theta_0 \text{ (params)},
                 \: f(\theta) \text{ (objective)}, \: \rho \text{ (decay)},
                 \: \lambda \text{ (weight decay)}                                                \\
             &\textbf{initialize} :  v_0  \leftarrow 0 \: \text{ (square avg)},
                 \: u_0 \leftarrow 0 \: \text{ (accumulate variables)}                     \\[-1.ex]
-            &\rule{110mm}{0.4pt}                                                                 \\
+            &\rule{180mm}{0.4pt}                                                                 \\
             &\textbf{for} \: t=1 \: \textbf{to} \: \ldots \: \textbf{do}                         \\
             &\hspace{5mm}g_t           \leftarrow   \nabla_{\theta} f_t (\theta_{t-1})           \\
             &\hspace{5mm}if \: \lambda \neq 0                                                    \\
@@ -26,9 +26,9 @@ mindspore.experimental.optim.Adadelta
             &\hspace{5mm} u_t  \leftarrow   u_{t-1}  \rho +
                  \Delta x^2_t  (1 - \rho)                                                        \\
             &\hspace{5mm}\theta_t      \leftarrow   \theta_{t-1} - \gamma  \Delta x_t            \\
-            &\rule{110mm}{0.4pt}                                                          \\[-1.ex]
+            &\rule{180mm}{0.4pt}                                                          \\[-1.ex]
             &\bf{return} \:  \theta_t                                                     \\[-1.ex]
-            &\rule{110mm}{0.4pt}                                                          \\[-1.ex]
+            &\rule{180mm}{0.4pt}                                                          \\[-1.ex]
         \end{aligned}
 
     .. warning::

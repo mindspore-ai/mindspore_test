@@ -97,6 +97,7 @@ class AdamW(Optimizer):
 
     .. math::
         \begin{aligned}
+            &\rule{180mm}{0.4pt}                                                                 \\
             &\textbf{input}      : \gamma \text{(lr)}, \: \beta_1, \beta_2
                 \text{(betas)}, \: \theta_0 \text{(params)}, \: f(\theta) \text{(objective)},
                 \: \epsilon \text{ (epsilon)}                                                    \\
@@ -104,6 +105,7 @@ class AdamW(Optimizer):
                 \: \textit{maximize}                                                             \\
             &\textbf{initialize} : m_0 \leftarrow 0 \text{ (first moment)}, v_0 \leftarrow 0
                 \text{ ( second moment)}, \: \widehat{v_0}^{max}\leftarrow 0              \\[-1.ex]
+            &\rule{180mm}{0.4pt}                                                                 \\
             &\textbf{for} \: t=1 \: \textbf{to} \: \ldots \: \textbf{do}                         \\
             &\hspace{5mm}\textbf{if} \: \textit{maximize}:                                       \\
             &\hspace{10mm}g_t           \leftarrow   -\nabla_{\theta} f_t (\theta_{t-1})          \\
@@ -122,7 +124,9 @@ class AdamW(Optimizer):
             &\hspace{5mm}\textbf{else}                                                           \\
             &\hspace{10mm}\theta_t \leftarrow \theta_t - \gamma \widehat{m_t}/
                 \big(\sqrt{\widehat{v_t}} + \epsilon \big)                                       \\
+            &\rule{180mm}{0.4pt}                                                          \\[-1.ex]
             &\bf{return} \:  \theta_t                                                     \\[-1.ex]
+            &\rule{180mm}{0.4pt}                                                          \\[-1.ex]
        \end{aligned}
 
     .. warning::

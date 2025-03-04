@@ -4352,7 +4352,7 @@ def meshgrid(*inputs, indexing='xy'):
     coordinate tensors for evaluating expressions on an N-D grid.
 
     Args:
-        inputs (Union(tuple[Tensor], list[Tensor])): In GRAPH_MODE, a tuple of N 1-D Tensor objects and
+        inputs (Union[tuple[Tensor], list[Tensor]]): In GRAPH_MODE, a tuple of N 1-D Tensor objects and
             the length of input should be greater than 1. In PYNATIVE_MODE, a tuple of N 0-D or 1-D Tensor objects
             and the length of input should be greater than 0. The data type is Number.
 
