@@ -59,7 +59,7 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
   if ((profiler == nullptr || !profiler->IsInitialized()) &&
       device_ctx_->GetDeviceType() == device::DeviceType::kAscend) {
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    auto &hookDebugger = hooker::HookDebugger::GetInstance();
+    auto &hookDebugger = dump::HookDebugger::GetInstance();
     if (hookDebugger.IsHookerEnabled()) {
       MS_LOG(INFO) << "On multi graph step begin, hookdebugger is enable.";
       hookDebugger.HookOnStepBegin(device_id, graphs, step_count_, false);
@@ -70,7 +70,7 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
 void DebugActor::DebugOnStepEnd(OpContext<DeviceTensor> *const, const AID *, int total_running_count, int sink_size) {
   MS_LOG(INFO) << "Debug on step end. total_running_count is: " << total_running_count;
   step_count_ = total_running_count;
-  auto &hookDebugger = hooker::HookDebugger::GetInstance();
+  auto &hookDebugger = dump::HookDebugger::GetInstance();
   if (hookDebugger.IsHookerEnabled()) {
     MS_LOG(INFO) << "On step end, hookdebugger is enable.";
     device_ctx_->device_res_manager_->SyncAllStreams();

@@ -25,7 +25,7 @@ constexpr uint32_t kAllKernelNames = 0;
 constexpr uint32_t kIsKbyK = 1;
 
 namespace mindspore {
-namespace hooker {
+namespace dump {
 void AclDataAdapter::AdaptOnStepBegin(uint32_t device_id, int step_count_num, std::vector<std::string> all_kernel_names,
                                       bool is_kbyk) {
   if (!isLoaded) {
@@ -70,5 +70,5 @@ void AclDataAdapter::Load() {
 }
 
 REGISTER_ADAPTER(device::DeviceType::kAscend, AclDataAdapter);
-}  // namespace hooker
+}  // namespace dump
 }  // namespace mindspore

@@ -16,6 +16,8 @@
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include <algorithm>
 #include <fstream>
+#include <chrono>
+#include <thread>
 #include "debug/data_dump/npy_header.h"
 #include "debug/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -529,7 +531,14 @@ void DumpJsonParser::ParseE2eDumpSetting(const nlohmann::json &content) {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   if (e2e_dump_setting == content.end()) {
-    MS_LOG(INFO) << "No e2e_dump_settings";
+    constexpr int kMaxWarnings = 3;
+    constexpr auto kWarningInterval = std::chrono::milliseconds(1000);
+    for (int i = 0; i < kMaxWarnings; ++i) {
+      MS_LOG(WARNING) << "[Dump Alert " << i + 1 << "/" << kMaxWarnings << "]: "
+                      << "For 'Dump', in the scenario where 'jit_level' is 'O0' or 'O1', please configure "
+                         "'e2e_dump_setting', otherwise there will be no data.";
+      std::this_thread::sleep_for(kWarningInterval);
+    }
     return;
   }
 

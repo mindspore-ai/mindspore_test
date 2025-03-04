@@ -136,3 +136,6 @@ mindspore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/aarch64/*ms_kernel
 mindspore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/aarch64/*ms_kernels_dependency
 mindspore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/x86_64/*ms_kernels_internal
 mindspore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/x86_64/*ms_kernels_dependency
+
+# dump
+mindspore/ccsrc/backend/ge_backend/dump/hook_dynamic_loader.*

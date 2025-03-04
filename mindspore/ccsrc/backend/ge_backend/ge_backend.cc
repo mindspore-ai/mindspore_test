@@ -21,7 +21,7 @@
 #include <utility>
 #include <queue>
 #include <regex>
-#include "backend/common/optimizer/common_backend_optimization.h"
+#include "backend/ge_backend/pass/ge_backend_optimization.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "ir/manager.h"
 #include "runtime/device/device_address_utils.h"
@@ -33,6 +33,7 @@
 #include "utils/file_utils.h"
 #ifndef ENABLE_SECURITY
 #include "backend/ge_backend/dump/hook_debugger.h"
+#include "backend/ge_backend/dump/deprecated_env.h"
 #endif
 #include "debug/summary/summary.h"
 #include "include/common/utils/callbacks.h"
@@ -314,13 +315,7 @@ GEBackend::GEBackend() {
   graph_compiler_ = std::make_shared<mindspore::ge_backend::runtime::GraphCompiler>();
   mindspore::ge_backend::runtime::GraphScheduler::GetInstance().Initialize();
 #ifdef ENABLE_DEBUGGER
-  // SetDebuggerInit
-  auto debugger = Debugger::GetInstance();
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  MS_EXCEPTION_IF_NULL(debugger);
-  debugger->Init(ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID),
-                 ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET));
+  dump::CheckDeprecatedDumpEnv();
 #endif
 }
 
@@ -1518,7 +1513,7 @@ bool GEBackend::DebugOnStepBegin(const KernelGraphPtr &func_graph) {
   auto profiler = profiler::Profiler::GetInstance(kAscendDevice);
   if (profiler == nullptr || !profiler->IsInitialized()) {
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    auto &hookDebugger = hooker::HookDebugger::GetInstance();
+    auto &hookDebugger = dump::HookDebugger::GetInstance();
     if (hookDebugger.IsHookerEnabled()) {
       MS_LOG(INFO) << "On step begin, hookdebugger is enable.";
       auto step_count_num = graph_run_iter_[func_graph];
@@ -1535,7 +1530,7 @@ void GEBackend::DebugOnStepEnd(const KernelGraphPtr &graph, const device::Device
     return;
   }
   MS_LOG(INFO) << "Debug on step end.";
-  auto &hookDebugger = hooker::HookDebugger::GetInstance();
+  auto &hookDebugger = dump::HookDebugger::GetInstance();
   if (hookDebugger.IsHookerEnabled()) {
     MS_LOG(INFO) << "On step end, hookdebugger is enable.";
     device_context->device_res_manager_->SyncAllStreams();

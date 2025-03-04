@@ -29,7 +29,7 @@ using HookBeginPtr = void (*)(uint32_t device_id, int step_count_num, std::map<u
 using HookEndPtr = void (*)(std::map<uint32_t, void *> ext_args);
 
 namespace mindspore {
-namespace hooker {
+namespace dump {
 class AclDataAdapter : public Adapter {
  public:
   void AdaptOnStepBegin(uint32_t device_id, int step_count_num, std::vector<std::string> all_kernel_names,
@@ -47,6 +47,6 @@ class AclDataAdapter : public Adapter {
   bool isLoaded = false;
 };
 
-}  // namespace hooker
+}  // namespace dump
 }  // namespace mindspore
 #endif

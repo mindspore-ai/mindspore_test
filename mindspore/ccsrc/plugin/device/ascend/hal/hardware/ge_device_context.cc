@@ -313,6 +313,10 @@ void GeDeviceContext::Destroy() {
 }
 
 void GeDeviceContext::InitDump() const {
+  if (common::AnfAlgo::IsBackendGe()) {
+    MS_LOG(INFO) << "In the ge backend, dump is initialized at the same time as the backend.";
+    return;
+  }
   auto &dump_parser = DumpJsonParser::GetInstance();
   dump_parser.Parse();
 }
