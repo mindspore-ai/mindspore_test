@@ -1,4 +1,4 @@
-#deprecated operator bincount
+#deprecated operator roll
 roll:
   args:
     input:
