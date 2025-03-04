@@ -19,6 +19,7 @@
 
 #include <memory>
 #include <string>
+#include <nlohmann/json.hpp>
 #include "include/common/pybind_api/api_register.h"
 #include "plugin/res_manager/ascend/visible.h"
 #include "utils/ms_utils.h"
@@ -38,10 +39,14 @@ class ASCEND_RES_MANAGER_EXPORT OpDebugConf {
   void set_execute_timeout(uint32_t op_timeout);
   std::string debug_option() const;
   void set_debug_option(const std::string &option_value) { debug_option_ = option_value; }
+  void set_max_opqueue_num(const std::string &opqueue_num);
+  void set_err_msg_mode(const std::string &msg_mode);
+  bool GenerateAclInitJson();
   bool IsExecuteTimeoutConfigured() const { return is_execute_timeout_configured_; }
   bool IsDebugOptionConfigured() const { return !debug_option_.empty(); }
 
  private:
+  nlohmann::json acl_init_json_{{"err_msg_mode", "1"}};
   static std::shared_ptr<OpDebugConf> inst_context_;
   uint32_t execute_timeout_{kOpTimeout};
   bool is_execute_timeout_configured_{false};
