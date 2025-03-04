@@ -112,8 +112,8 @@ std::unordered_set<AnfNodePtr> HasPathToReturn(const FuncGraphPtr &func_graph) {
   return result;
 }
 
-void KeepExecOrder(const FuncGraphPtr &func_graph, const AnfNodePtr &getitem, const AnfNodePtr &assign_to_node,
-                   const FuncGraphManagerPtr &mng) {
+void KeepExecOrder(const FuncGraphPtr &func_graph, const AnfNodePtr &getitem, const CNodeIndexPair &getitem_user,
+                   const AnfNodePtr &assign_to_node, const FuncGraphManagerPtr &mng) {
   // Insert update_state_node, need mount a monad node.
   auto u = NewValueNode(kUMonad);
   u->set_abstract(kUMonad->ToAbstract());
@@ -127,8 +127,9 @@ void KeepExecOrder(const FuncGraphPtr &func_graph, const AnfNodePtr &getitem, co
   auto load_node = func_graph->NewCNode(load_inputs);
   load_node->set_abstract(assign_to_node->abstract());
   func_graph->AddNode(load_node);
-
-  (void)mng->Replace(getitem, load_node);
+  const auto &getitem_user_cnode = getitem_user.first->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(getitem_user_cnode);
+  getitem_user_cnode->set_input(getitem_user.second, load_node);
 }
 
 int64_t GetitemIndex(const AnfNodePtr &getitem) {
@@ -163,10 +164,12 @@ void UpdateUsersOfGraphKernel(const FuncGraphPtr &func_graph, const AnfNodePtr &
       // 2. If the `cnode` has another path to the getitem_user, it's unnecessary to add depend node to
       //    keep exec_order.
       if (HasPathToParamUser(cnode, getitem_user, getitem)) {
-        (void)mng->Replace(getitem, assign_to);
+        const auto &getitem_user_cnode = getitem_user->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(getitem_user_cnode);
+        getitem_user_cnode->set_input(getitem_user_iter.second, assign_to);
         continue;
       }
-      KeepExecOrder(func_graph, getitem, assign_to, mng);
+      KeepExecOrder(func_graph, getitem, getitem_user_iter, assign_to, mng);
     }
     // the index of TupleGetItem should be changed from the output index of the replaced node to the assign node
     auto item_idx = opt::CreateValueNodeWithKernelInfo(func_graph, MakeValue(assign_idx));

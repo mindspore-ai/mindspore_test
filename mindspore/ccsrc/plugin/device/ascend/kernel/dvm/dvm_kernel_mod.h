@@ -94,6 +94,7 @@ class DvmKernelMod : public KernelMod {
   std::ostringstream dump_buf_;
   std::string op_name_;
   std::string op_fullname_;
+  bool skip_launch_{false};
 };
 
 class SingleDvmKernelMod : public DvmKernelMod {
