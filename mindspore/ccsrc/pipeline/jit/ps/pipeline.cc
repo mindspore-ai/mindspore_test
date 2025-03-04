@@ -2189,7 +2189,8 @@ bool InitExecDatasetVm(const std::string &queue_name, int64_t size, int64_t batc
     if (need_run) {
       VectorRef outputs;
       const auto &backend_jit_config = backend::BackendJitConfig::ParseBackendJitConfig();
-      auto backend_ret = backend::BackendManager::GetInstance().Build(func_graph, backend_jit_config);
+      auto backend_ret =
+        backend::BackendManager::GetInstance().Build(func_graph, backend_jit_config, backend_jit_config.backend);
       backend::BackendManager::GetInstance().Run(backend_ret.first, backend_ret.second, args, &outputs);
     }
     ConfigManager::GetInstance().set_iter_num(queue_name, size);

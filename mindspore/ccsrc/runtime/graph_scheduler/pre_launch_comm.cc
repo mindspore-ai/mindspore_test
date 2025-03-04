@@ -180,6 +180,7 @@ void PreLaunchComm::PreLaunchCommKernel(runtime::ActorSet *actor_set) {
     is_pre_launch_comm_.insert(actor_set->name_);
   }
 
+  MS_LOG(INFO) << "Pre launch comm kernel.";
   const PrimitiveSet prim_set{prim::kPrimSend, prim::kPrimReceive};
   std::vector<LaunchCommNode> pre_build_hccl_kernels;
   for (const auto &kernel_actor : actor_set->kernel_actors_) {

@@ -623,6 +623,14 @@ void BuildSymbolEngine(const FuncGraphPtr &func_graph) {
   MS_LOG(INFO) << "Status record: start build symbol engine for function graph: " << func_graph->ToString();
   (void)symshape::SymbolEngineImpl::Build(func_graph);
   MS_LOG(INFO) << "Status record: end build symbol engine for function graph: " << func_graph->ToString();
+#ifdef ENABLE_DUMP_IR
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name = "root_graph_with_symbol_engine.ir";
+    DumpIR(file_name, func_graph, true, kWholeStack);
+  }
+#endif
 }
 
 bool NeedCheckMultiTarget(const FuncGraphPtr &func_graph, int ms_execution_mode) {
@@ -2012,6 +2020,7 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
     UnifyMindIR(root_graph);
   }
   root_graph_ = root_graph;
+  auto origin_output_node = root_graph->output();
 
   // Register a summary callback function, which is called in the final stages of summary.
   graph_compiler_->RegisterSummaryCallBackFunc(callbacks::SummarySaveCallback);
@@ -2056,7 +2065,7 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   graph_compiler_info->enable_graph_pipeline_ = CheckEnableGraphPipeline(graph_compiler_info);
   graph_compiler_info->func_graph_to_kernel_graph_ids_ = func_graph_to_kernel_graph_ids_;
   // Use kernel graph, which output maybe change by backed pass, so backup output
-  graph_compiler_info->output_node_ = root_graph_->output();
+  graph_compiler_info->origin_output_node_ = origin_output_node;
   graph_compiler_info->is_pynative_mode_ = true;
 
   if ((ms_execution_mode == kGraphMode ||
@@ -2269,7 +2278,8 @@ RunningStatus MSBackendBase::Run(BackendGraphId graph_id, const VectorRef &input
 }
 
 void MSBackendBase::UpdateGraphCompilerInfo(const GraphCompilerInfo &graph_compile_info) {
-  graph_compile_info.origin_outputs_order_ = FetchOriginOutputOrder(graph_compile_info.output_node_);
+  MS_EXCEPTION_IF_NULL(graph_compile_info.root_func_graph_);
+  graph_compile_info.origin_outputs_order_ = FetchOriginOutputOrder(graph_compile_info.root_func_graph_->output());
 }
 }  // namespace ms_backend
 }  // namespace backend

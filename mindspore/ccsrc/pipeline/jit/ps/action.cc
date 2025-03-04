@@ -1844,7 +1844,8 @@ bool TaskEmitAction(const ResourcePtr &resource) {
       [](const py::object &obj, ValuePtr *value) { return parse::ConvertData(obj, value); });
     const auto &backend_jit_config = backend::BackendJitConfig::ParseBackendJitConfig();
     MS_LOG(INFO) << "Use the new backend.";
-    auto backend_ret = backend::BackendManager::GetInstance().Build(resource->func_graph(), backend_jit_config);
+    auto backend_ret = backend::BackendManager::GetInstance().Build(resource->func_graph(), backend_jit_config,
+                                                                    backend_jit_config.backend);
     resource->SetResult(kBuildBackendType, backend_ret.first);
     resource->SetResult(kBuildBackendOutput, backend_ret.second);
     return true;
