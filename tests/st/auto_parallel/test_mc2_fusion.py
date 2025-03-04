@@ -28,7 +28,7 @@ def test_all_gather_matmul_forward():
     assert ret == 0
 
 
-@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="essential")
 def test_matmul_reduce_scatter_forward():
     '''
     Feature: MC2 fusion.
