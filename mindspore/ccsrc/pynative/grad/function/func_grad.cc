@@ -916,6 +916,11 @@ void FuncGrad::CallCPPFunctionBprop(const ValuePtrList &flatten_outputs, const B
 
   ProcessForwardOutput(flatten_outputs, input_base_tensors, dirty_tensors, non_diff_tensors, inputs,
                        input_value_grad_type, variable);
+  // for tensor hook
+  if (flatten_outputs.size() == 1) {
+    const auto fake_value = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(flatten_outputs[0]);
+    node->set_op_output(fake_value);
+  }
 }
 
 VariablePtr FuncGrad::SafeGetVariableImpl(const tensor::BaseTensorPtr &tensor) {

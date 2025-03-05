@@ -118,3 +118,31 @@ def test_custom_cpp_function_dirty_tensor_is_need_grad_leaf():
     with pytest.raises(RuntimeError) as err:
         grad_op(MyNet())(x, y)
         assert "A leaf tensor that need grad is being used in an inplace operator" in str(err.value)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level2', card_mark='onecard', essential_mark='essential')
+def test_custom_cpp_function_tensor_hook():
+    """
+    Feature: Custom cpp autograd function.
+    Description: Verify the correctness of tensor hook in the context of custom cpp autograd function.
+    Expectation: success.
+    """
+
+    class MyNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.my_ops = CustomOpBuilder("my_ops", ['./custom_src/function_ops.cpp'], backend="Ascend").load()
+
+        def construct(self, x, y):
+            z = self.my_ops.mul(x, y)
+            def hook_fn(grad):
+                return 2 * grad
+            z.register_hook(hook_fn)
+            return z
+
+    x = Tensor([2, 2], ms.float32)
+    y = Tensor([3, 3], ms.float32)
+    grad_op = ops.GradOperation(get_all=True)
+    grad = grad_op(MyNet())(x, y)
+    assert np.allclose(grad[0].asnumpy(), np.array([6.0, 6.0], dtype=np.float32), 0.00001, 0.00001)
+    assert np.allclose(grad[1].asnumpy(), np.array([4.0, 4.0], dtype=np.float32), 0.00001, 0.00001)
