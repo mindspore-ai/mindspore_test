@@ -361,6 +361,7 @@ HistcExt: 'aclnnHistc'
 
 # 553
 LogAddExp: 'aclnnLogAddExp'
+LogAddExp2: 'aclnnLogAddExp2'
 
 # 556
 LogSigmoid: 'aclnnLogSigmoidForward'
