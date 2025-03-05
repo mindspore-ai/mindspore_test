@@ -220,7 +220,7 @@ inline int64_t PadModeStringToInt(const std::string &pad) {
   }
 }
 
-static inline TypePtr PromoteType(TypePtr a, TypePtr b, const std::string &op_name) {
+static inline TypeId PromoteType(TypeId a, TypeId b, const std::string &op_name) {
   const auto f32 = kNumberTypeFloat32;
   const auto f16 = kNumberTypeFloat16;
   const auto f64 = kNumberTypeFloat64;
@@ -241,6 +241,59 @@ static inline TypePtr PromoteType(TypePtr a, TypePtr b, const std::string &op_na
   static std::unordered_map<TypeId, size_t> typeid_idx = {{f32, 0},  {f16, 1},  {f64, 2}, {bf16, 3}, {s8, 4},
                                                           {u8, 5},   {s16, 6},  {u16, 7}, {s32, 8},  {u32, 9},
                                                           {s64, 10}, {u64, 11}, {b1, 12}, {c64, 13}, {c128, 14}};
+  if (typeid_idx.find(a) == typeid_idx.end()) {
+    MS_EXCEPTION(TypeError) << "For Op[" << op_name << "], the type " << TypeIdToString(a) << "is invalid";
+  }
+  if (typeid_idx.find(b) == typeid_idx.end()) {
+    MS_EXCEPTION(TypeError) << "For Op[" << op_name << "], the type " << TypeIdToString(b) << "is invalid";
+  }
+  if (a == b) {
+    return a;
+  }
+
+  static const std::vector<std::vector<TypeId>> promote_types_lookup = {
+    /*         f32  f16  f64  bf16  s8  u8  s16  u16  s32  u32  s64  u64  b1 c64  c128 */
+    /* f32 */ {f32, f32, f64, f32, f32, f32, f32, ud, f32, ud, f32, ud, f32, c64, c128},
+    /* f16 */ {f32, f16, f64, f32, f16, f16, f16, ud, f16, ud, f16, ud, f16, c64, c128},
+    /* f64 */ {f64, f64, f64, f64, f64, f64, f64, ud, f64, ud, f64, ud, f64, c128, c128},
+    /* bf16*/ {f32, f32, f64, bf16, bf16, bf16, bf16, ud, bf16, ud, bf16, ud, bf16, c64, c128},
+    /* s8  */ {f32, f16, f64, bf16, s8, s16, s16, ud, s32, ud, s64, ud, s8, c64, c128},
+    /* u8  */ {f32, f16, f64, bf16, s16, u8, s16, ud, s32, ud, s64, ud, u8, c64, c128},
+    /* s16 */ {f32, f16, f64, bf16, s16, s16, s16, ud, s32, ud, s64, ud, s16, c64, c128},
+    /* u16 */ {ud, ud, ud, ud, ud, ud, ud, u16, ud, ud, ud, ud, ud, ud, ud},
+    /* s32 */ {f32, f16, f64, bf16, s32, s32, s32, ud, s32, ud, s64, ud, s32, c64, c128},
+    /* u32 */ {ud, ud, ud, ud, ud, ud, ud, ud, ud, u32, ud, ud, ud, ud, ud},
+    /* s64 */ {f32, f16, f64, bf16, s64, s64, s64, ud, s64, ud, s64, ud, s64, c64, c128},
+    /* u64 */ {ud, ud, ud, ud, ud, ud, ud, ud, ud, ud, ud, u64, ud, ud, ud},
+    /* b1  */ {f32, f16, f64, bf16, s8, u8, s16, ud, s32, ud, s64, ud, b1, c64, c128},
+    /* c64 */ {c64, c64, c128, c64, c64, c64, c64, ud, c64, ud, c64, ud, c64, c64, c128},
+    /* c128*/ {c128, c128, c128, c128, c128, c128, c128, ud, c128, ud, c128, ud, c128, c128, c128},
+  };
+
+  auto return_type_id = promote_types_lookup[typeid_idx[a]][typeid_idx[b]];
+  if (return_type_id == ud) {
+    MS_EXCEPTION(TypeError) << "For Op[" << op_name << "], the promote output type is invalid";
+  }
+  return return_type_id;
+}
+
+static inline TypePtr PromoteType(TypePtr a, TypePtr b, const std::string &op_name) {
+  const auto f32 = kNumberTypeFloat32;
+  const auto f16 = kNumberTypeFloat16;
+  const auto f64 = kNumberTypeFloat64;
+  const auto bf16 = kNumberTypeBFloat16;
+  const auto s8 = kNumberTypeInt8;
+  const auto u8 = kNumberTypeUInt8;
+  const auto s16 = kNumberTypeInt16;
+  const auto u16 = kNumberTypeUInt16;
+  const auto s32 = kNumberTypeInt32;
+  const auto u32 = kNumberTypeUInt32;
+  const auto s64 = kNumberTypeInt64;
+  const auto u64 = kNumberTypeUInt64;
+  const auto b1 = kNumberTypeBool;
+  const auto c64 = kNumberTypeComplex64;
+  const auto c128 = kNumberTypeComplex128;
+
   static std::unordered_map<TypeId, TypePtr> typeid_typeptr = {
     {f32, kFloat32}, {f16, kFloat16}, {f64, kFloat64}, {bf16, kBFloat16}, {s8, kInt8},
     {u8, kUInt8},    {s16, kInt16},   {u16, kUInt16},  {s32, kInt32},     {u32, kUInt32},
@@ -268,42 +321,7 @@ static inline TypePtr PromoteType(TypePtr a, TypePtr b, const std::string &op_na
     b_type_id = b->type_id();
   }
 
-  if (typeid_idx.find(a_type_id) == typeid_idx.end()) {
-    MS_EXCEPTION(TypeError) << "For Op[" << op_name << "], the type " << a->ToString() << "is invalid";
-  }
-
-  if (typeid_idx.find(b_type_id) == typeid_idx.end()) {
-    MS_EXCEPTION(TypeError) << "For Op[" << op_name << "], the type " << b->ToString() << "is invalid";
-  }
-
-  if (a_type_id == b_type_id) {
-    return typeid_typeptr[a_type_id];
-  }
-
-  static const std::vector<std::vector<TypeId>> promote_types_lookup = {
-    /*         f32  f16  f64  bf16  s8  u8  s16  u16  s32  u32  s64  u64  b1 c64  c128 */
-    /* f32 */ {f32, f32, f64, f32, f32, f32, f32, ud, f32, ud, f32, ud, f32, c64, c128},
-    /* f16 */ {f32, f16, f64, f32, f16, f16, f16, ud, f16, ud, f16, ud, f16, c64, c128},
-    /* f64 */ {f64, f64, f64, f64, f64, f64, f64, ud, f64, ud, f64, ud, f64, c128, c128},
-    /* bf16*/ {f32, f32, f64, bf16, bf16, bf16, bf16, ud, bf16, ud, bf16, ud, bf16, c64, c128},
-    /* s8  */ {f32, f16, f64, bf16, s8, s16, s16, ud, s32, ud, s64, ud, s8, c64, c128},
-    /* u8  */ {f32, f16, f64, bf16, s16, u8, s16, ud, s32, ud, s64, ud, u8, c64, c128},
-    /* s16 */ {f32, f16, f64, bf16, s16, s16, s16, ud, s32, ud, s64, ud, s16, c64, c128},
-    /* u16 */ {ud, ud, ud, ud, ud, ud, ud, u16, ud, ud, ud, ud, ud, ud, ud},
-    /* s32 */ {f32, f16, f64, bf16, s32, s32, s32, ud, s32, ud, s64, ud, s32, c64, c128},
-    /* u32 */ {ud, ud, ud, ud, ud, ud, ud, ud, ud, u32, ud, ud, ud, ud, ud},
-    /* s64 */ {f32, f16, f64, bf16, s64, s64, s64, ud, s64, ud, s64, ud, s64, c64, c128},
-    /* u64 */ {ud, ud, ud, ud, ud, ud, ud, ud, ud, ud, ud, u64, ud, ud, ud},
-    /* b1  */ {f32, f16, f64, bf16, s8, u8, s16, ud, s32, ud, s64, ud, b1, c64, c128},
-    /* c64 */ {c64, c64, c128, c64, c64, c64, c64, ud, c64, ud, c64, ud, c64, c64, c128},
-    /* c128*/ {c128, c128, c128, c128, c128, c128, c128, ud, c128, ud, c128, ud, c128, c128, c128},
-  };
-
-  auto return_type_id = promote_types_lookup[typeid_idx[a_type_id]][typeid_idx[b_type_id]];
-
-  if (return_type_id == ud) {
-    MS_EXCEPTION(TypeError) << "For Op[" << op_name << "], the promote output type is invalid";
-  }
+  auto return_type_id = PromoteType(a_type_id, b_type_id, op_name);
 
   return typeid_typeptr[return_type_id];
 }
