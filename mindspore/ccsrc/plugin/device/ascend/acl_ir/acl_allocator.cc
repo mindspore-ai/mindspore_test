@@ -19,6 +19,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore::device::ascend {
@@ -101,6 +102,15 @@ void AclAllocatorRegister::RegisterAllocator(void *stream) {
   if (is_disable_register) {
     return;
   }
+
+  // Parallel dispatch kernel need multi streams and multi threads, the allocator_map_ may experience read-write
+  // conflicts, and adding locks can impact execution performance. In scenarios requiring ultimate performance for
+  // parallel dispatch, it is necessary to disable the external allocator capability.
+  static bool enable_parallel_dispatch_kernel = runtime::RuntimeConf::GetInstance()->IsKernelLaunchGroupConfigured();
+  if (enable_parallel_dispatch_kernel) {
+    return;
+  }
+
   if (allocator_map_.find(stream) == allocator_map_.end()) {
     const auto &allocator_obj = NewAclAllocator(stream);
     (void)CALL_ASCEND_API(aclrtAllocatorRegister, stream, allocator_obj->allocator_desc());

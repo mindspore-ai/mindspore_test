@@ -22,6 +22,7 @@
 #include <map>
 #include <vector>
 #include <set>
+#include <mutex>
 #include <iostream>
 
 #include "mindapi/base/macros.h"
@@ -31,7 +32,7 @@
 namespace mindspore {
 namespace runtime {
 using BindCorePolicy = std::map<int, std::map<std::string, std::vector<int>>>;
-enum kBindCoreModule : int { kMAIN = 0, kRUNTIME, kPYNATIVE, kMINDDATA };
+enum kBindCoreModule : int { kMAIN = 0, kRUNTIME, kPYNATIVE, kMINDDATA, kBATCHLAUNCH };
 
 class COMMON_EXPORT ThreadBindCore {
  public:
@@ -53,6 +54,7 @@ class COMMON_EXPORT ThreadBindCore {
   std::map<kBindCoreModule, std::vector<int>> thread_bind_core_policy_;
   std::map<kBindCoreModule, bool> thread_bind_core_status_;
   bool is_enable_with_policy{false};
+  std::mutex mtx_;
   ThreadBindCore() = default;
   ~ThreadBindCore() = default;
 };

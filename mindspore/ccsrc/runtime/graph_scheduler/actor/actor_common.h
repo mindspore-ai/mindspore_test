@@ -181,13 +181,15 @@ enum MemoryType {
 };
 
 struct KernelMemoryTraceBlock {
-  KernelMemoryTraceBlock(const CNodePtr &kernel, void *start, size_t size, MemoryType mem_type, size_t index)
+  KernelMemoryTraceBlock(const CNodePtr &kernel, void *start, size_t size, MemoryType mem_type, size_t index,
+                         kernel::KernelTensor *kernel_tensor)
       : kernel_(kernel),
         start_(reinterpret_cast<uint8_t *>(start)),
         end_(reinterpret_cast<uint8_t *>(start) + size),
         size_(size),
         mem_type_(mem_type),
         index_(index),
+        kernel_tensor_(kernel_tensor),
         in_memory_trace_block_index_(0),
         offset_in_memory_trace_block_(0) {}
 
@@ -197,9 +199,11 @@ struct KernelMemoryTraceBlock {
   size_t size_;
   MemoryType mem_type_;
   size_t index_;
+  kernel::KernelTensor *kernel_tensor_;
 
   size_t in_memory_trace_block_index_;
   size_t offset_in_memory_trace_block_;
+  SpinLock lock_;
 };
 
 struct MemoryTraceBlock {
@@ -230,9 +234,14 @@ class MemoryTraceManager {
 
   const std::shared_ptr<mindspore::HashMap<CNodePtr, std::vector<KernelMemoryTraceBlockPtr>>> &GetAllKernelBlocksnfo();
 
+  const std::shared_ptr<HashMap<kernel::KernelTensor *, KernelMemoryTraceBlockPtr>> &GetKernelTensorToMemBlocksInfo()
+    const;
+
   void MergeBlocks();
 
-  void Clear();
+  void ClearExpiredCache();
+
+  void ClearAllCache();
 
  private:
   MemoryTraceManager() = default;
@@ -245,6 +254,7 @@ class MemoryTraceManager {
   std::shared_ptr<std::map<const DeviceContext *, std::vector<KernelMemoryTraceBlockPtr>>> kernel_memory_trace_blocks_;
   std::shared_ptr<std::map<const DeviceContext *, std::vector<MemoryTraceBlockPtr>>> merged_memory_trace_blocks_;
   std::shared_ptr<mindspore::HashMap<CNodePtr, std::vector<KernelMemoryTraceBlockPtr>>> kernel_to_block_;
+  std::shared_ptr<HashMap<kernel::KernelTensor *, KernelMemoryTraceBlockPtr>> kernel_tensor_to_kernel_mem_blocks_;
 
   std::map<uint32_t, std::shared_ptr<std::map<const DeviceContext *, std::vector<KernelMemoryTraceBlockPtr>>>>
     graph_to_kernel_memory_trace_blocks_;
@@ -252,6 +262,9 @@ class MemoryTraceManager {
     graph_to_merged_memory_trace_blocks_;
   std::map<uint32_t, std::shared_ptr<mindspore::HashMap<CNodePtr, std::vector<KernelMemoryTraceBlockPtr>>>>
     graph_to_kernel_blocks_;
+
+  std::map<std::uint32_t, std::shared_ptr<HashMap<kernel::KernelTensor *, KernelMemoryTraceBlockPtr>>>
+    graph_to_kernel_tensor_with_mem_blocks_;
 };
 
 // Encapsulate the actor APIs associated with execution.
@@ -367,6 +380,18 @@ class BACKEND_EXPORT ActorDispatcher {
   }
   static bool enable_use_trace_memory() { return enable_use_trace_memory_; }
 
+  static void set_enable_parallel_dispatch_kernel_for_cur_actor_set(bool enable_parallel_dispatch_kernel) {
+    enable_parallel_dispatch_kernel_for_cur_actor_set_ = enable_parallel_dispatch_kernel;
+  }
+  static bool enable_parallel_dispatch_kernel_for_cur_actor_set() {
+    return enable_parallel_dispatch_kernel_for_cur_actor_set_;
+  }
+
+  static void set_enable_parallel_dispatch_kernel_for_cur_step(bool enable_parallel_dispatch_kernel) {
+    enable_parallel_dispatch_kernel_for_cur_step_ = enable_parallel_dispatch_kernel;
+  }
+  static bool enable_parallel_dispatch_kernel_for_cur_step() { return enable_parallel_dispatch_kernel_for_cur_step_; }
+
   static void set_enable_input_optimize_for_cur_actor_set(bool enable_input_optimize) {
     enable_input_optimize_for_cur_actor_set_ = enable_input_optimize;
   }
@@ -411,7 +436,9 @@ class BACKEND_EXPORT ActorDispatcher {
   static bool enable_trace_dynamic_memory_;
   static bool enable_use_trace_memory_;
   static bool enable_input_optimize_for_cur_actor_set_;
-};
+  static bool enable_parallel_dispatch_kernel_for_cur_actor_set_;
+  static bool enable_parallel_dispatch_kernel_for_cur_step_;
+};  // namespace runtime
 
 bool IsRunningFailed(const OpContext<DeviceTensor> *context);
 
@@ -472,6 +499,8 @@ bool EnableInputOptimize();
 // Set ture will enable async launch, and also enable infer->resize->launch pipeline if actor set contains dynamic
 // shape kernel.
 bool EnableRuntimePipeline();
+
+bool EnableParallelDispatchKernel();
 
 // If enable async launch kernel, wait all kernels launch task finish.
 // If enable infer->resize->launch pipeline, also wait all infer, resize and launch task finish.

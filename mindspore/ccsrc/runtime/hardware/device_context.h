@@ -334,7 +334,9 @@ class BACKEND_EXPORT DeviceResManager {
   virtual DeviceEventPtr CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait) { return nullptr; }
 
   // Create device event with flag.
-  virtual DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking) { return nullptr; };
+  virtual DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking, bool use_extensional_api = true) {
+    return nullptr;
+  };
 
   // Destroy specified device event.
   virtual bool DestroyEvent(const DeviceEventPtr &event);

@@ -1543,8 +1543,8 @@ void MSBackendBase::BindCoreForMainThread() {
     MS_LOG(WARNING) << "Failed to bind thread core as no available core assigned to Main thread.";
   } else {
     bind_core_manager.bind_thread_core(core_list);
-    is_bind_core_ = true;
   }
+  is_bind_core_ = true;
 }
 
 void MSBackendBase::WaitMultiStream(const GraphCompilerInfo &graph_compiler_info) {
