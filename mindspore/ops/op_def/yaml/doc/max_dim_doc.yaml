@@ -9,7 +9,7 @@ max_dim:
                 :math:`(input_1, input_2, ..., input_N)` .Complex tensor is not supported.
             dim (int): The dimension to reduce.
             keepdim (bool, optional): Whether to reduce dimension, if ``True`` the output will keep the same dimension as the
-                `input` , the output will reduce dimension if ``false``. Default: ``False``.
+                `input` , the output will reduce dimension if ``False``. Default: ``False``.
 
         Returns:
             tuple (Tensor), tuple of 2 tensors, containing the maximum value of the self tensor along the given

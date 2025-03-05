@@ -1802,7 +1802,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         Args:
             axis (int, optional): The dimension to reduce. Default: ``0`` .
             keep_dims (bool, optional): Whether to reduce dimension, if ``true`` the output will keep the same dimension
-                as the input, the output will reduce dimension if ``false`` . Default: ``False`` .
+                as the input, the output will reduce dimension if ``False`` . Default: ``False`` .
 
         Returns:
             tuple (Tensor), tuple of 2 tensors, containing the corresponding index and the maximum value of the input

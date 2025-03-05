@@ -107,9 +107,9 @@ from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked
     expand_as, unstack_ext_op, full_like_op, \
     index_fill_scalar, index_fill_tensor
 from mindspore.ops.auto_generate import take, tensor_scatter_elements as tensor_scatter_elements_ext
-from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, gather_d_op, slice_op
+from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, gather_d_op, slice_op, tril_ext_op
 from mindspore.ops.operations.manually_defined import tile, rank, scalar_cast
-from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostOneHotExtPrim, tril_ext_impl
+from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostOneHotExtPrim
 from mindspore._c_expression import pyboost_empty
 from mindspore._c_expression import pyboost_empty_like
 from mindspore._c_expression import pyboost_new_empty
@@ -5463,7 +5463,7 @@ def tril_ext(input, diagonal=0):
          [10 11  0  0]
          [14 15 16  0]]
     """
-    return tril_ext_impl(input, diagonal)
+    return tril_ext_op(input, diagonal)
 
 
 @_primexpr
