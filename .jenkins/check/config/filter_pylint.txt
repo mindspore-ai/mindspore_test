@@ -285,6 +285,7 @@
 "mindspore/tests/st/mint/test_syncbatchnorm_msrun.py"                                                   "line-too-long"
 "mindspore/tests/st/mint/test_inner_syncbatchnorm_msrun.py"                                             "line-too-long"
 "mindspore/tests/st/ops/ascend/test_batch_norm_gather_stats_with_counts.py"
+"mindspore/tests/st/ops/test_ops_norm.py"                                                               "not-callable"
 "mindspore/tests/st/nn/test_mint_conv3d_ext.py"
 
 #MindSpore Lite
