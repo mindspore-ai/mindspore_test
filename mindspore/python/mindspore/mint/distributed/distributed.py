@@ -1035,8 +1035,8 @@ def reduce(tensor, dst, op=ReduceOp.SUM, group=None, async_op=False):
         async_op (bool, optional): Whether this operator should be an async operator. Default: ``False`` .
 
     Returns:
-        CommHandle, CommHandle is an async work handle, if `async_op` is set to True.
-        CommHandle will be None, when `async_op` is False.
+        CommHandle, CommHandle is an async work handle, if `async_op` is set to ``True``.
+        CommHandle will be None, when `async_op` is ``False``.
 
     Raises:
         TypeError: If the type of `tensor` is not Tensor, any of `op` and `group` is not a str.

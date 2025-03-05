@@ -21,9 +21,9 @@
     Compute the cross entropy of two distribution.
 
     Parameters
-        - **dist** (str) - the type of the other distribution.
-        - **probs1_b** (Tensor) - the probability of success of the other distribution.
-        - **probs1_a** (Tensor) - the probability of success. Default: ``None`` .
+        - **dist** (str) - the type of the distribution.
+        - **probs1_b** (Tensor) - the probability of success of the distribution b.
+        - **probs1_a** (Tensor) - the probability of success of the distribution a. Default: ``None`` .
 
     Returns
         Tensor, the value of the cross entropy.
@@ -44,8 +44,8 @@
 
     Parameters
         - **dist** (str) - the type of the other distribution.
-        - **probs1_b** (Tensor) - the probability of success of the other distribution.
-        - **probs1_a** (Tensor) - the probability of success. Default: ``None`` .
+        - **probs1_b** (Tensor) - the probability of success of the distribution a.
+        - **probs1_a** (Tensor) - the probability of success of the distribution b. Default: ``None`` .
 
     Returns
         Tensor, the value of the K-L loss.

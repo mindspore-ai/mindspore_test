@@ -5497,9 +5497,9 @@ def addr(x, vec1, vec2, *, beta=1, alpha=1):
         Tensor, the shape of the output tensor is :math:`(N, M)`, has the same dtype as `x`.
 
     Raises:
-        TypeError: If `x`, `vec1`, `vec2` is not a Tensor.
+        TypeError: If `x`, `vec1`, or `vec2` is not a Tensor.
         TypeError: If inputs `vec1`, `vec2` are not the same dtype.
-        ValueError: If `vec1`, `vec2` is not a 1-D Tensor.
+        ValueError: If `vec1` or `vec2` is not a 1-D Tensor.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -8488,7 +8488,7 @@ def linalg_norm(A, ord=None, dim=None, keepdim=False, *, dtype=None):
 
     Args:
         A (Tensor): Tensor of shape :math:`(*, n)` or :math:`(*, m, n)` where * is zero or more batch dimensions.
-        ord (Union[int, float, inf, -inf, 'fro', 'nuc'], optional): norm's mode. refer to the table above for
+        ord (Union[int, float, inf, -inf, 'fro', 'nuc'], optional): norm's mode. Refer to the table above for
             behavior. Default: ``None`` .
         dim (Union[int, Tuple(int)], optional): calculate the dimension of vector norm or matrix norm.
             Default: ``None`` .
@@ -8497,10 +8497,10 @@ def linalg_norm(A, ord=None, dim=None, keepdim=False, *, dtype=None):
 
             - When `dim` is a 2-tuple, it will be calculated by matrix norm.
 
-            - If `dim` is None and `ord` is None, `A` will be flattened to 1D and the 2-norm
+            - If `dim` is ``None`` and `ord` is ``None``, `A` will be flattened to 1D and the 2-norm
               of the vector will be calculated.
 
-            - If `dim` is None and `ord` is not None, `A` must be 1D or 2D.
+            - If `dim` is ``None`` and `ord` is not ``None``, `A` must be 1D or 2D.
 
         keepdim (bool): whether the output Tensor retains the original dimension. Default: ``False`` .
 

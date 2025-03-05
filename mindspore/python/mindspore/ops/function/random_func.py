@@ -1384,7 +1384,7 @@ def randn_like_ext(input, *, dtype=None):
         input (Tensor): Input Tensor to specify the output shape and its default dtype.
 
     Keyword Args:
-        dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype, it must be float type. If None,
+        dtype (:class:`mindspore.dtype`, optional): Designated Tensor dtype, it must be float type. If ``None``,
             the same dtype of `input` will be applied. Default: ``None`` .
 
     Returns:

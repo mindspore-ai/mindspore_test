@@ -40,7 +40,7 @@
         - **value** (Tensor) - the value of output after mapping.
 
     Returns
-        Tensor, the value of output after mapping.
+        Tensor, the value of input after mapping.
 
 .. py:method:: inverse_log_jacobian(value)
 

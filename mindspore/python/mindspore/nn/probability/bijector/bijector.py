@@ -41,15 +41,20 @@ class Bijector(Cell):
         param (dict): The parameters used to initialize the Bijector. Default: ``None`` .
 
     Note:
-        `dtype` of bijector represents the type of the distributions that the bijector could operate on.
-        When `dtype` is None, there is no enforcement on the type of input value except that the input value
-        has to be float type. During initialization, when `dtype` is None, there is no enforcement on the dtype
-        of the parameters. All parameters should have the same float type, otherwise a TypeError will be raised.
-        Specifically, the parameter type will follow the dtype of the input value, i.e. parameters of the bijector
-        will be casted into the same type as input value when `dtype` is None.
-        When `dtype` is specified, it is forcing the parameters and input value to be the same dtype as `dtype`.
-        When the type of parameters or the type of the input value is not the same as `dtype`, a TypeError will be
-        raised. Only subtype of mindspore.float_type can be used to specify bijector's `dtype`.
+        - `dtype` of bijector represents the type of the distributions that the bijector could operate on.
+        - When `dtype` is None, there is no enforcement on the type of input value except that the input value
+          has to be float type. During initialization, when `dtype` is None, there is no enforcement on the dtype
+          of the parameters. All parameters should have the same float type, otherwise a TypeError will be raised.
+
+          Specifically, the parameter type will follow the dtype of the input value.
+
+          - Parameters of the bijector will be casted into the same type as input value when `dtype` is None.
+
+          - When `dtype` is specified, it is forcing the parameters and input value to be the same dtype as `dtype`.
+            When the type of parameters or the type of the input value is not the same as `dtype`, a TypeError will be
+            raised.
+
+        - Only subtype of mindspore.float_type can be used to specify bijector's `dtype`.
 
     Supported Platforms:
         ``Ascend`` ``GPU``
@@ -226,7 +231,8 @@ class Bijector(Cell):
 
     def cast_param_by_value(self, value, para):
         """
-        Cast the parameter(s) of the bijector to be the same type of input_value.
+        Converts the data type of `para` in the input to the same type as `value`.
+        Typically used by subclasses of Bijector to convert data types of their own parameters.
 
         Args:
             value (Tensor): input value.
@@ -276,7 +282,7 @@ class Bijector(Cell):
             **kwargs (dict): the dictionary of keyword arguments forwarded to subclasses.
 
         Returns:
-            Tensor, the value of logarithm of the derivative of the forward transformation.
+            Tensor, outputs the value of a random variable after mapping.
         """
         return self._forward_log_jacobian(value, *args, **kwargs)
 

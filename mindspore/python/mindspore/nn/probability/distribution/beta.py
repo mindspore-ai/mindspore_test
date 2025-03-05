@@ -37,9 +37,9 @@ class Beta(Distribution):
 
     Args:
         concentration1 (int, float, list, numpy.ndarray, Tensor): The concentration1,
-          also know as alpha of the Beta distribution. Default: ``None`` .
+          also know as :math:`alpha` of the Beta distribution. Default: ``None`` .
         concentration0 (int, float, list, numpy.ndarray, Tensor): The concentration0, also know as
-          beta of the Beta distribution. Default: ``None`` .
+          :math:`beta` of the Beta distribution. Default: ``None`` .
         seed (int): The seed used in sampling. The global seed is used if it is None. Default: ``None`` .
         dtype (mindspore.dtype): The type of the event samples. Default: ``mstype.float32`` .
         name (str): The name of the distribution. Default: ``'Beta'`` .
@@ -51,7 +51,7 @@ class Beta(Distribution):
 
     Raises:
         ValueError: When concentration1 <= 0 or concentration0 >=1.
-        TypeError: When the input `dtype` is not a subclass of float.
+        TypeError: When the input `dtype` is not a float or a subclass of float.
 
     Supported Platforms:
         ``Ascend``

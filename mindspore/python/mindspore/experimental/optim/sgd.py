@@ -51,7 +51,7 @@ class SGD(Optimizer):
 
     To be noticed, for the first step, :math:`v_{t+1} = gradient`.
 
-    Here : where p, v and u denote the parameters, accum, and momentum respectively.
+    Here: where :math:`p`, :math:`v` and :math:`u` denote the parameters, accum, and momentum respectively.
 
     .. warning::
         This is an experimental optimizer API that is subject to change.

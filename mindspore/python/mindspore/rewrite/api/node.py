@@ -28,9 +28,11 @@ from .scoped_value import ScopedValue
 
 class Node:
     """
-    A node is a data structure that expresses source code statements in a network.
-
-    Each node usually corresponds to a statement in expanded forward evaluation process.
+    A node (Node) can be understood as a basic data structure unit in the computational graph of a neural network,
+    which represents an operation or computational step in the network.
+    Each node usually corresponds to a statement or expression in the source code,
+    which contains the information needed to perform the operation,
+    such as the type of operation, input data, output result, and connection relationships with other nodes.
 
     Nodes can express a ``Cell`` call statement, a ``Primitive`` call statement, an arithmetic operation statement, a
     return statements, etc. of the forward calculation process.
@@ -66,9 +68,9 @@ class Node:
                 source code.
             args (List[ScopedValue]): Indicate input names. Used as args of a call expression of an assign statement in
                 source code. Default: ``None`` , which indicates the `cell` has no args inputs.
-            kwargs (Dict[str, ScopedValue]): Type of key must be `str` and type of value must be `ScopedValue`.
-                Indicate keyword input names. Used as kwargs of a call expression of an assign statement in source
-                code. Default: ``None`` , which indicates the `cell` has no kwargs inputs.
+            kwargs (Dict[str, ScopedValue]): Used as kwargs of a call expression of an assign statement in source
+                code. Indicate keyword input names. Type of key must be `str` and type of value must be `ScopedValue`.
+                Default: ``None`` , which indicates the `cell` has no kwargs inputs.
             name (str): Indicate the name of node. Used as field name in source code. Default is None. Rewrite will
                 generate name from `cell` when name is None. Rewrite will check and ensure the uniqueness of `name`
                 while node being inserted. Default: ``""`` .
@@ -83,7 +85,7 @@ class Node:
             TypeError: If `targets` is not `list`.
             TypeError: If the type of `targets` is not in `[ScopedValue, str]`.
             TypeError: If arg in `args` is not a `ScopedValue`.
-            TypeError: If key of `kwarg` is not a str or value of kwarg in `kwargs` is not a `ScopedValue`.
+            TypeError: If key of `kwargs` is not a str or value of kwarg in `kwargs` is not a `ScopedValue`.
 
         Examples:
             >>> from mindspore.rewrite import SymbolTree, ScopedValue
@@ -125,9 +127,9 @@ class Node:
                 source code.
             args (List[ScopedValue]): Indicate input names. Used as args of a call expression of an assign statement in
                 source code. Default: ``None`` , which indicates the `function` has no args inputs.
-            kwargs (Dict[str, ScopedValue]): Type of key must be `str` and type of value must be `ScopedValue`.
-                Indicate keyword input names. Used as kwargs of a call expression of an assign statement in source
-                code. Default: ``None`` , which indicates the `function` has no kwargs inputs.
+            kwargs (Dict[str, ScopedValue]): Used as kwargs of a call expression of an assign statement in source
+                code. Indicate keyword input names. Type of key must be `str` and type of value must be `ScopedValue`.
+                Default: ``None`` , which indicates the `function` has no kwargs inputs.
 
         Returns:
             An instance of `Node`.
@@ -137,7 +139,7 @@ class Node:
             TypeError: If `targets` is not `list`.
             TypeError: If the type of `targets` is not in `[ScopedValue, str]`.
             TypeError: If arg in `args` is not a `ScopedValue`.
-            TypeError: If key of `kwarg` is not a str or value of kwarg in `kwargs` is not a `ScopedValue`.
+            TypeError: If key of `kwargs` is not a str or value of kwarg in `kwargs` is not a `ScopedValue`.
 
         Examples:
             >>> from mindspore.rewrite import SymbolTree, ScopedValue
