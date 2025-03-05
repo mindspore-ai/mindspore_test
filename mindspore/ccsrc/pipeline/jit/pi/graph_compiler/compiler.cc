@@ -71,6 +71,7 @@ bool CanbeMutable(const py::object &arg) {
 void MarkArgumentMutable(const py::tuple &args) {
   for (size_t idx = 0; idx < args.size(); idx++) {
     if (CanbeMutable(args[idx])) {
+      MS_LOG(DEBUG) << "Make argument mutable, arg index: " << idx << ", arg object: " << py::str(args[idx]);
       args[idx] = python_adapter::CallPyFn("mindspore.common", "mutable", args[idx]);
     }
   }
@@ -80,9 +81,12 @@ void MarkArgumentMutableWithParams(const py::tuple &args, const AnfNodePtrList &
   for (auto param : params) {
     auto abstract = param->abstract();
     MS_EXCEPTION_IF_NULL(abstract);
-    if (!abstract->isa<abstract::AbstractTensor>() && abstract->BuildValue() == kValueAny &&
-        abstract->has_user_data("param_index")) {
-      auto index = *(abstract->user_data<size_t>("param_index"));
+    if (!abstract->isa<abstract::AbstractTensor>() && abstract->BuildValue() == kValueAny) {
+      if (!abstract->has_user_data(pipeline::kActualArgumentIndex)) {  // Might be a bug!
+        MS_LOG(INFO) << "Cannot find index of param: " << param->DebugString() << ", " << abstract->ToString();
+        continue;
+      }
+      auto index = *(abstract->user_data<size_t>(pipeline::kActualArgumentIndex));
       auto arg = args[index];
       if (GraphUtils::IsMutable(arg)) {
         continue;
@@ -91,6 +95,8 @@ void MarkArgumentMutableWithParams(const py::tuple &args, const AnfNodePtrList &
       if (py::isinstance<py::bool_>(o) && py::bool_(o)) {
         args[index] = python_adapter::CallPyFn("mindspore.common", "mutable", arg);
         MS_LOG(INFO) << "Add mutable to object index " << index;
+      } else {
+        MS_LOG(INFO) << "Failed to make argument mutable, arg index: " << index << ", arg object: " << py::str(arg);
       }
     }
   }
@@ -121,6 +127,8 @@ py::tuple EliminateInvalidArgs(const py::tuple &args, int co_flags, bool enable_
       } else {
         new_args.append(args[idx]);
       }
+    } else {
+      MS_LOG(INFO) << "Eliminate invalid argument at index " << idx << ", arg object: " << py::str(args[idx]);
     }
   }
   return py::cast<py::tuple>(new_args);

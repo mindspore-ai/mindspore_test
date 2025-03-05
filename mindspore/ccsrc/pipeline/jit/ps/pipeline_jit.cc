@@ -304,6 +304,7 @@ void JitExecutorPy::ConvertArgs(const py::tuple &args, const py::dict &kwargs, c
     (void)arguments.emplace_back(converted);
     auto args_abstract_item = ArgsToAbstract(args[i], converted, enable_tuple_broaden_);
     (void)args_abs.emplace_back(args_abstract_item);
+    args_abstract_item->set_user_data<size_t>(kActualArgumentIndex, std::make_shared<size_t>(i));
     SetHookForArgAbstract(args[i], args_abstract_item);
   }
   for (const auto &item : kwargs) {

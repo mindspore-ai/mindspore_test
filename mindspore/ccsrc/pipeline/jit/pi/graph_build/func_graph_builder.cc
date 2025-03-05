@@ -480,6 +480,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphVargsInputs(const py::object &va
 
 AbstractWrapperPtr FuncGraphBuilder::AddAttributeInput(const py::object &object) {
   if (object.ptr() == nullptr) {
+    MS_LOG(INFO) << "Attribute object is null";
     return nullptr;
   }
   auto value = ConvertPyObjToValue(object);
@@ -488,7 +489,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddAttributeInput(const py::object &object)
   }
   AbstractBasePtr abs = abstract::ToAbstract(value, nullptr, nullptr);
   if (!abs->isa<abstract::AbstractScalar>() && !abs->isa<abstract::AbstractTensor>()) {
-    MS_LOG(ERROR) << "Can not broaden abstract: " << abs->ToString();
+    MS_LOG(INFO) << "Can not broaden abstract: " << abs->ToString();
     return nullptr;
   }
   abs = AbstractBroaden(abs);
