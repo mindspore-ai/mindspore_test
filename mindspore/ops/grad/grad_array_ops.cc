@@ -1182,32 +1182,6 @@ REG_BPROP_BUILDER("Contiguous").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   return {ib->GetInput(kIndex2)};
 });
 
-REG_BPROP_BUILDER("InnerStridedSlice").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto begin = ib->GetInput(kIndex1);
-  auto end = ib->GetInput(kIndex2);
-  auto strides = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
-  auto x_shape_vec = ib->GetShape(x);
-
-  NodePtr x_shape_node;
-  if (IsDynamic(x_shape_vec)) {
-    x_shape_node = ib->Shape(x);
-  } else {
-    x_shape_node = ib->EmitValue(MakeValue(x_shape_vec));
-  }
-  auto dx = ib->Emit("StridedSliceGrad", {dout, x_shape_node, begin, end, strides},
-                     {{"begin_mask", MakeValue<int64_t>(0)},
-                      {"end_mask", MakeValue<int64_t>(0)},
-                      {"ellipsis_mask", MakeValue<int64_t>(0)},
-                      {"new_axis_mask", MakeValue<int64_t>(0)},
-                      {"shrink_axis_mask", MakeValue<int64_t>(0)}});
-  auto dbegin = ib->OutZeros(begin);
-  auto dend = ib->OutZeros(end);
-  auto dstrides = ib->OutZeros(strides);
-  return {dx, dbegin, dend, dstrides};
-});
-
 REG_BPROP_BUILDER("StridedSlice").SetUnusedInputs({i0, i9}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto begin = ib->GetInput(kIndex1);
