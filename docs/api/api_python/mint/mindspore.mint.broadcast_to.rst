@@ -11,9 +11,9 @@ mindspore.mint.broadcast_to
 
     - 如果不相等，分以下三种情况：
 
-      - 情况一：如果目标shape该维的值为-1，则输出shape该维的值为对应输入shape该维的值。比如说输入shape为 :math:`(3, 3)` ，目标shape为 :math:`(-1, 3)` ，则输出shape为 :math:`(3, 3)` ；
+      - 情况一：如果目标shape该维的值为-1，则输出shape该维的值为对应输入shape该维的值。比如说输入shape为 :math:`(3, 3)` ，目标shape为 :math:`(-1, 3)` ，则输出shape为 :math:`(3, 3)` 。
 
-      - 情况二：如果目标shape该维的值不为-1，但是输入shape该维的值为1，则输出shape该维的值为目标shape该维的值。比如说输入shape为 :math:`(1, 3)` ，目标shape为 :math:`(8, 3)` ，则输出shape为 :math:`(8, 3)` ；
+      - 情况二：如果目标shape该维的值不为-1，但是输入shape该维的值为1，则输出shape该维的值为目标shape该维的值。比如说输入shape为 :math:`(1, 3)` ，目标shape为 :math:`(8, 3)` ，则输出shape为 :math:`(8, 3)` 。
 
       - 情况三：如果两个shape对应值不满足以上情况则说明不支持由输入shape广播到目标shape。
 
@@ -24,8 +24,8 @@ mindspore.mint.broadcast_to
     - 如果额外的 :math:`*` 维中含有-1，说明此时该-1对应一个不存在的维度，不支持广播。比如说目标shape为 :math:`(3, -1, 4, 1, 5, 9)` ，输入shape为 :math:`(1, 5, 9)` ，此时不进行增维处理，而是直接报错。
 
     参数：
-        - **input** (Tensor) - 第一个输入，任意维度的Tensor。
-        - **shape** (tuple) - 要广播的目标形状。可以完全指定，也可以在一个位置上以 -1 表示，该位置上的形状将被输入张量的形状所替代，请参阅示例。
+        - **input** (Tensor) - 第一个输入。可以是任意维度的Tensor。
+        - **shape** (tuple) - 要广播的目标shape。可以完全指定，也可以在一个位置上以 -1 表示，该位置上的shape将被输入Tensor的shape所替代，请参阅示例代码。
 
     返回：
         Tensor，shape与目标 `shape` 相同，数据类型与 `input` 相同。

@@ -3,7 +3,7 @@ mindspore.nn.SmoothL1Loss
 
 .. py:class:: mindspore.nn.SmoothL1Loss(beta=1.0, reduction='none')
 
-    SmoothL1损失函数，如果预测值和目标值的逐个元素绝对误差小于设定阈值 `beta` 则用平方项，否则用绝对误差项。
+    SmoothL1损失函数。如果预测值和目标值的逐个元素绝对误差小于设定阈值 `beta` ，则用平方项，否则用绝对误差项。
 
     给定两个输入 :math:`x,\  y`，SmoothL1Loss定义如下：
 
@@ -46,18 +46,19 @@ mindspore.nn.SmoothL1Loss
           
           - Ascend：float16、float32、bfloat16。
           - CPU/GPU: float16、float32、float64。
+
         - **labels** (Tensor) - 目标值，数据类型和shape与 `logits` 相同的Tensor。
           
           - CPU/Ascend: 与 `logits` 的shape相同， `logits` 和 `labels` 遵循隐式类型转换规则，使数据类型一致。
           - GPU: 与 `logits` 的shape和数据类型相同。
 
     输出：
-        Tensor。如果 `reduction` 为'none'，则输出为Tensor且与 `logits` 的shape相同。否则shape为 :math:`()`。
+        Tensor。如果 `reduction` 为 ``'none'``，则输出为Tensor，且shape与 `logits` 的shape相同。否则shape为 :math:`()`。
 
     异常：
         - **TypeError** - `logits` 或 `labels` 不是Tensor。
-        - **RuntimeError** - `logits` 或 `labels` 的数据类型不是float16，float32，float64和bfloat16中的任一者。
+        - **RuntimeError** - `logits` 或 `labels` 的数据类型不是float16、float32、float64或bfloat16。
         - **ValueError** - `logits` 与 `labels` 的shape不同。
-        - **ValueError** - `reduction` 不是 ``'none'`` ， ``'mean'`` 和 ``'sum'`` 中的任一者。
-        - **TypeError** - `beta` 不是float，bool或int。
+        - **ValueError** - `reduction` 不是 ``'none'`` 、 ``'mean'`` 或 ``'sum'`` 。
+        - **TypeError** - `beta` 不是float、bool或int。
         - **RuntimeError** - `beta` 小于等于0。
