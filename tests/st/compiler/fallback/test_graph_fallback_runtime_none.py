@@ -657,7 +657,7 @@ def test_raise_none_with_variable_control_flow3():
         grad = GradNet(net)
         grad.set_inputs(dyn_tensor)
         print(grad(data))
-    assert "ddddd, [" in str(control.value)
+    assert "ddddd, Tensor(shape=[4], dtype=Float32, value= [" in str(control.value)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')

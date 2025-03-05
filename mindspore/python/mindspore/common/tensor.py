@@ -466,11 +466,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             return out[0]
         raise TypeError("Not support len of a 0-D tensor")
 
-    def __str__(self):
-        if self.dtype == mstype.type_none:
-            return "Unknown Tensor type!"
-        return str(self.asnumpy())
-
     def __getstate__(self):
         state = self.__dict__.copy()
         state["value"] = TensorPy_.__getstate__(self)

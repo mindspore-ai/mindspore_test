@@ -46,7 +46,7 @@ def test_raise_with_variable_1():
         x = Tensor(11)
         res = net(x)
         print("res:", res)
-    assert "The input can not be 11." in str(raise_info_9.value)
+    assert "The input can not be Tensor(shape=[], dtype=Int64, value= 11)." in str(raise_info_9.value)
     compile_config.FALLBACK_SUPPORT_LIST_DICT_INPLACE = 0
 
 
@@ -66,7 +66,7 @@ def test_raise_with_variable_2():
         net = RaiseNet()
         res = net(Tensor(11))
         print("res:", res)
-    assert "The input can not be 11." in str(raise_info_10.value)
+    assert "The input can not be Tensor(shape=[], dtype=Int64, value= 11)." in str(raise_info_10.value)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -176,7 +176,7 @@ def test_raise_with_variable_joinedstr_tensor():
         x = Tensor(1)
         res = net(x)
         print("res:", res)
-    assert "The input should not be 1" in str(
+    assert "The input should not be Tensor(shape=[], dtype=Int64, value= 1)" in str(
         raise_info_joinedstr_tensor.value)
 
 
@@ -224,7 +224,7 @@ def test_raise_with_variable_control_flow1():
         y = Tensor(1)
         res = net(x, y)
         print("res:", res)
-    assert "The input should not be 1" in str(
+    assert "The input should not be Tensor(shape=[], dtype=Int64, value= 1)" in str(
         raise_info_joinedstr_tensor.value)
 
 
@@ -247,7 +247,7 @@ def test_raise_with_variable_control_flow2():
         y = Tensor(1)
         res = net(x, y)
         print("res:", res)
-    assert "The input should not be 1" in str(
+    assert "The input should not be Tensor(shape=[], dtype=Int64, value= 1)" in str(
         raise_info_joinedstr_tensor.value)
 
 
@@ -329,7 +329,7 @@ def test_raise_with_none_join():
         y = Tensor(1)
         res = net(x, y)
         print("res:", res)
-    assert "The input should not be 1" in str(
+    assert "The input should not be Tensor(shape=[], dtype=Int64, value= 1)" in str(
         raise_info_joinedstr_tensor.value)
 
 
@@ -354,8 +354,8 @@ def test_raise_with_raise_join():
         y = Tensor(1)
         res = net(x, y)
         print("res:", res)
-    assert "The input 1 should not equal 1" in str(
-        raise_info_joinedstr_tensor.value)
+    assert "The input Tensor(shape=[], dtype=Int64, value= 1) should not equal " \
+        "Tensor(shape=[], dtype=Int64, value= 1)" in str(raise_info_joinedstr_tensor.value)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -417,7 +417,7 @@ def test_raise_with_input_error_type_1():
         x = Tensor(11)
         res = net(x)
         print("res:", res)
-    assert "The input can not be 11." in str(raise_info.value)
+    assert "The input can not be Tensor(shape=[], dtype=Int64, value= 11)." in str(raise_info.value)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -438,7 +438,7 @@ def test_raise_with_input_error_type_2():
         x = Tensor(11)
         res = net(x)
         print("res:", res)
-    assert "The input can not be 11." in str(raise_info.value)
+    assert "The input can not be Tensor(shape=[], dtype=Int64, value= 11)." in str(raise_info.value)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
@@ -543,7 +543,7 @@ def test_raise_constant_folding():
         x = Tensor(11)
         res = foo(x)
         print("res:", res)
-    assert "The input can not be 11." in str(raise_info_constant.value)
+    assert "The input can not be Tensor(shape=[], dtype=Int64, value= 11)." in str(raise_info_constant.value)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
@@ -564,7 +564,7 @@ def test_raise_constant_folding_int64():
         x = Tensor(11)
         res = foo(x)
         print("res:", res)
-    assert "The input can not be 11." in str(raise_info_constant_int64.value)
+    assert "The input can not be Tensor(shape=[], dtype=Int64, value= 11)." in str(raise_info_constant_int64.value)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -589,7 +589,8 @@ def test_assert_tensor_join_assert():
     with pytest.raises(AssertionError) as err:
         net = Net()
         net(x, y)
-    assert "The output is 5, y is 3" in str(err)
+    assert "The output is Tensor(shape=[], dtype=Int32, value= 5), y is Tensor(shape=[], dtype=Int32, value= 3)" \
+        in str(err)
 
 
 def judge_tuple_index_dim_check_error(index_dim, data_dim, x):
