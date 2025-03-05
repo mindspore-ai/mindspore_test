@@ -1181,6 +1181,7 @@ class CustomOpBuilder:
         include_list.append(ms_inner_code_base + "/core/mindrt/include")
         include_list.append(ms_inner_code_base + "/core/mindrt")
         include_list.append(ms_inner_code_base + "/ops")
+        include_list.append(ms_inner_code_base + "/ops/kernel/include")
         include_list.append(ms_inner_code_base + "/ccsrc")
         include_list.append(ms_inner_code_base + "/ccsrc/include")
         include_list.append(ms_inner_code_base + "/ccsrc/minddata/mindrecord/include")
@@ -1200,7 +1201,7 @@ class CustomOpBuilder:
         flags = [
             '-L' + os.path.abspath(os.path.join(CustomOpBuilder._mindspore_path, 'lib')),
             '-lmindspore_core',
-            '-lmindspore_backend',
+            '-lmindspore_ms_backend',
             '-lmindspore_pynative'
         ]
         if self.backend == "Ascend":

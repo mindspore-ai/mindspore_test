@@ -21,9 +21,10 @@
 #ifndef BUILD_LITE
 #include "acl/acl.h"
 #include "utils/ms_exception.h"
+#include "include/backend/visible.h"
 
-extern "C" int (*aclrt_get_last_error)(int);
-extern "C" FuncGetRecentErrMsg acl_get_recent_err_msg;
+extern "C" BACKEND_EXPORT int (*aclrt_get_last_error)(int);
+extern "C" BACKEND_EXPORT FuncGetRecentErrMsg acl_get_recent_err_msg;
 
 #ifndef ACL_ERROR_RT_DEVICE_MEM_ERROR
 #define ACL_ERROR_RT_DEVICE_MEM_ERROR 507053
