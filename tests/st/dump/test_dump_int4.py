@@ -84,15 +84,22 @@ def np_gen_int4_data(scale, offset=0.):
 
 def run_dump_int4(dump_scene):
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
-    context.set_context(jit_level="O1")
+    if dump_scene in ['acl_dump', 'ge_dump']:
+        context.set_context(jit_level="O2")
+    else:
+        context.set_context(jit_level="O1")
     with tempfile.TemporaryDirectory(dir='/tmp') as tmp_dir:
         dump_path = os.path.join(tmp_dir, 'test_dump_int4')
         dump_config_path = os.path.join(tmp_dir, 'test_dump_int4.json')
-        if dump_scene == 'e2e_dump':
+        if dump_scene in ['acl_dump', 'ge_dump']:
+            generate_statistic_dump_json(dump_path, dump_config_path, 'test_async_dump', 'full')
+        elif dump_scene == 'e2e_dump':
             generate_statistic_dump_json(dump_path, dump_config_path, 'test_e2e_dump', 'full')
         else:
             generate_statistic_dump_json(dump_path, dump_config_path, 'test_e2e_async_dump', 'full')
         os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
+        if dump_scene == 'ge_dump':
+            os.environ['ENABLE_MS_GE_DUMP'] = "1"
         scale = 0.1
         offset = 4
         np_x, np_int8_data, np_int4_weight = np_gen_int4_data(scale, offset)
@@ -131,6 +138,32 @@ def run_dump_int4(dump_scene):
             for statistic_item in int4_statistics:
                 assert statistic_item['Max Value'] == str(expect_data.max())
                 assert statistic_item['Min Value'] == str(expect_data.min())
+        if dump_scene == 'ge_dump':
+            del os.environ['ENABLE_MS_GE_DUMP']
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@security_off_wrap
+def test_acl_dump_int4():
+    """
+    Feature: acl dump  for int4x2 data type.
+    Description: Test acl dump  when the input data is with dtype int4.
+    Expectation: Data is expected to be dumped correctly, and the statistic file is correctly record
+     the data type and  the statistic items.
+    """
+    run_dump_int4("acl_dump")
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@security_off_wrap
+def test_ge_dump_int4():
+    """
+    Feature: ge dump for int4x2 data type.
+    Description: Test ge dump when the input data is with dtype int4.
+    Expectation: Data is expected to be dumped correctly, and the statistic file is correctly record
+     the data type and  the statistic items.
+    """
+    run_dump_int4("ge_dump")
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')

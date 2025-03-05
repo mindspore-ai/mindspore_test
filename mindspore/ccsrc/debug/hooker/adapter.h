@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ constexpr auto kMSHookEnable = "MS_HOOK_ENABLE";
 constexpr auto kEnable = "on";
 
 namespace mindspore {
-namespace dump {
+namespace hooker {
 
 class BACKEND_EXPORT Adapter {
  public:
@@ -67,5 +67,5 @@ class BACKEND_EXPORT AdapterManager {
   static type##Register global_##type##Register;                                                        \
   }
 
-}  // namespace dump
+}  // namespace hooker
 }  // namespace mindspore

@@ -35,6 +35,7 @@
 #include "plugin/res_manager/ascend/event/ascend_event.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.h"
 #include "include/backend/debug/profiler/profiling.h"
+#include "plugin/device/ascend/hal/device/dump/ascend_dump.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"
 #include "utils/trace_base.h"
@@ -174,6 +175,20 @@ bool AscendKernelRuntime::NeedDestroyHccl() {
   return true;
 }
 
+void AsyncDataDumpUninit() {
+  if (DumpJsonParser::GetInstance().async_dump_enabled()) {
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_type = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    if (device_type == kAscendDevice) {
+      // When it is A+M dump mode, wait until file save is finished.
+      if (DumpJsonParser::GetInstance().FileFormatIsNpy()) {
+        mindspore::ascend::AscendAsyncDumpManager::GetInstance().WaitForWriteFileFinished();
+      }
+    }
+  }
+}
+
 void AscendKernelRuntime::ReleaseDeviceRes() {
   MS_LOG(INFO) << "Ascend finalize start";
   if (!initialized_) {
@@ -184,6 +199,7 @@ void AscendKernelRuntime::ReleaseDeviceRes() {
   // release ge runtime
   ClearGraphModelMap();
 
+  AsyncDataDumpUninit();
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);

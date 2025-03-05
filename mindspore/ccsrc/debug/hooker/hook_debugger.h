@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 #include "include/backend/kernel_graph.h"
 
 namespace mindspore {
-namespace dump {
+namespace hooker {
 class BACKEND_EXPORT HookDebugger {
  public:
   HookDebugger() : is_enabled_(IsHookerEnabled()) {
@@ -48,5 +48,5 @@ class BACKEND_EXPORT HookDebugger {
   bool is_enabled_ = false;
   int dataset_sink_ = 0;
 };
-}  // namespace dump
+}  // namespace hooker
 }  // namespace mindspore
