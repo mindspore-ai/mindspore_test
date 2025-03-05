@@ -167,6 +167,7 @@ constexpr const char kNameArgmax[] = "Argmax";
 constexpr const char kNameArgmin[] = "Argmin";
 constexpr const char kNameArgMaxWithValue[] = "ArgMaxWithValue";
 constexpr const char kNameArgMinWithValue[] = "ArgMinWithValue";
+constexpr const char kNameKthvalue[] = "Kthvalue";
 constexpr const char kNameReduceProd[] = "ReduceProd";
 constexpr const char kNameDynamicReduceProd[] = "DynamicReduceProd";
 constexpr const char kNameCumprod[] = "Cumprod";
