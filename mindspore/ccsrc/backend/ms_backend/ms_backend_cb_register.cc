@@ -15,9 +15,12 @@
  */
 
 #include "common/kernel_callback.h"
+#include "include/backend/distributed/init.h"
 #include "runtime/graph_scheduler/actor/kernel_async_infer_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_async_resize_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_async_launch_actor.h"
+#include "runtime/graph_scheduler/graph_scheduler.h"
+#include "runtime/graph_scheduler/embedding_cache_scheduler.h"
 
 namespace mindspore {
 namespace backend {
@@ -49,6 +52,25 @@ void WaitAsyncResizeAndLaunchFinish() {
 // Register a wait callback to kernel::KernelTensor, used to wait runtime async kernel launch task finish when get value
 // from device side.
 REGISTER_KERNEL_CALLBACK(WaitAsyncResizeAndLaunchFinish);
+
+// Callback function will be set to distributed module.
+// This function in invoked when exception happens in this cluster.
+void StopRuntimeSchedulerOnException() {
+#if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
+  MS_LOG(DEBUG) << "Start aborting rpc_node_scheduler.";
+  // Abort graph scheduler to avoid hang in rpc communication.
+  auto &graph_scheduler = runtime::GraphScheduler::GetInstance();
+  if (graph_scheduler.initialized() && graph_scheduler.rpc_node_scheduler() != nullptr) {
+    graph_scheduler.rpc_node_scheduler()->Abort();
+  }
+  MS_LOG(DEBUG) << "End aborting rpc_node_scheduler.";
+
+  MS_LOG(INFO) << "Begin finalize the EmbeddingCacheScheduler.";
+  runtime::EmbeddingCacheScheduler::GetInstance().Finalize(false);
+  MS_LOG(INFO) << "End finalize the EmbeddingCacheScheduler.";
+#endif
+}
+REGISTER_DISTRIBUTED_CALLBACK(StopRuntimeSchedulerOnException);
 }  // namespace ms_backend
 }  // namespace backend
 }  // namespace mindspore

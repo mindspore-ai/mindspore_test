@@ -17,6 +17,8 @@
 #ifndef MINDSPORE_CCSRC_DISTRIBUTED_INIT_H_
 #define MINDSPORE_CCSRC_DISTRIBUTED_INIT_H_
 
+#include <string>
+#include <utility>
 #include "include/backend/distributed/collective/collective_manager.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/cluster/cluster_context.h"
@@ -44,6 +46,23 @@ BACKEND_EXPORT bool FinalizeCollective();
 // Set and get whether this process in cluster exits with exception.
 BACKEND_EXPORT void set_cluster_exit_with_exception();
 BACKEND_EXPORT bool cluster_exit_with_exception();
+
+BACKEND_EXPORT void RegisterCallback(const std::string &name, const std::function<void()> &func);
 }  // namespace distributed
 }  // namespace mindspore
+
+template <typename Func>
+class DistributedCallbackRegister {
+ public:
+  DistributedCallbackRegister(const std::string &name, Func func) { register_impl(name, std::move(func)); }
+
+ private:
+  void register_impl(const std::string &name, std::function<void()> func) {
+    mindspore::distributed::RegisterCallback(name, std::move(func));
+  }
+};
+
+#define REGISTER_DISTRIBUTED_CALLBACK(func) \
+  static const DistributedCallbackRegister<std::function<decltype(func)>> g_##func##_callback_register(#func, func)
+
 #endif  // MINDSPORE_CCSRC_DISTRIBUTED_INIT_H_
