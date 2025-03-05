@@ -5079,7 +5079,7 @@ def diagflat(input, offset=0):
 
     Args:
         input (Tensor): Input Tensor.
-        offset (int, optional): Diagonal offset. Default: ``0`` .
+        offset (int, optional): Diagonal offset. Default ``0`` .
 
             - When `offset` is a positive integer, shift the diagonal upward.
             - When `offset` is a negative integer, shift the diagonal downward.

@@ -7,7 +7,7 @@ mindspore.ops.diagflat
 
     参数：
         - **input** (Tensor) - 输入tensor。
-        - **offset** (int, 可选) - 对角线偏移量。默认值： ``0`` 。
+        - **offset** (int, 可选) - 对角线偏移量。默认 ``0`` 。
 
           - 当 `offset` 是正整数时，对角线向上方偏移。
           - 当 `offset` 是负整数时，对角线向下方偏移。
