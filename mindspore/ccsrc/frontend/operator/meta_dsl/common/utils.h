@@ -124,6 +124,7 @@ namespace mindspore::prim {
                                  _20, NAME, ...)                                                                       \
   NAME
 
+// DECLARE_PARAMS support 1 to 20 parameters.
 #define DECLARE_PARAMS(...)                                                                                          \
   GET_DECLARE_PARAMS_MACRO(__VA_ARGS__, DECLARE_PARAMS_20, DECLARE_PARAMS_19, DECLARE_PARAMS_18, DECLARE_PARAMS_17,  \
                            DECLARE_PARAMS_16, DECLARE_PARAMS_15, DECLARE_PARAMS_14, DECLARE_PARAMS_13,               \
@@ -132,18 +133,73 @@ namespace mindspore::prim {
                            DECLARE_PARAMS_3, DECLARE_PARAMS_2, DECLARE_PARAMS_1, DECLARE_PARAMS_0)                   \
   (__VA_ARGS__)
 
+// There are variable length elements in params.
+#define IF_IMPL_0(cond, true_case, false_case, ...) \
+  IfCond(                                           \
+    cond,                                           \
+    [this, true_case]() {                           \
+      DECLARE_PARAMS(__VA_ARGS__);                  \
+      true_case();                                  \
+    },                                              \
+    [this, false_case]() {                          \
+      DECLARE_PARAMS(__VA_ARGS__);                  \
+      false_case();                                 \
+    },                                              \
+    {__VA_ARGS__})
+
+// The params is ().
+#define IF_IMPL_1(cond, true_case, false_case, ...) \
+  IfCond(                                           \
+    cond, [this, true_case]() { true_case(); }, [this, false_case]() { false_case(); }, {})
+
+// Select different macro definitions depending on whether params is empty.
+#define IF_IMPL_DISPATCH(cond, true_case, false_case, is_empty, ...) \
+  IF_IMPL_##is_empty(cond, true_case, false_case, __VA_ARGS__)
+
+#define IF_IMPL_SELECT(cond, true_case, false_case, is_empty, ...) \
+  IF_IMPL_DISPATCH(cond, true_case, false_case, is_empty, __VA_ARGS__)
+
+#define ARG_N(_1, _2, N, ...) N
+
+#define IS_EMPTY(params) ARG_N(EXPAND_PARAMS params, 0, 1)
+
+// Define IF_IMPL.
 #define IF_IMPL(cond, true_case, false_case, params) \
-  IfCond(                                            \
-    cond,                                            \
-    [this, true_case, EXPAND_PARAMS params]() {      \
-      DECLARE_PARAMS(EXPAND_PARAMS params);          \
-      true_case();                                   \
-    },                                               \
-    [this, false_case]() {                           \
-      DECLARE_PARAMS(EXPAND_PARAMS params);          \
-      false_case();                                  \
-    },                                               \
-    {EXPAND_PARAMS params})
+  IF_IMPL_SELECT(cond, true_case, false_case, IS_EMPTY(params), EXPAND_PARAMS params)
+
+// Definition of MetaImpl subclass.
+#define _DEFINE_FUNCTION_OP(name, check_func, bprop_func) \
+  class name##MetaImpl : public MetaImpl {                \
+   public:                                                \
+    explicit name##MetaImpl() : MetaImpl(#name) {         \
+      set_check_func(check_func);                         \
+      set_bprop_func(bprop_func);                         \
+    }                                                     \
+    ~name##MetaImpl() override = default;                 \
+    MS_DECLARE_PARENT(name##MetaImpl, MetaImpl)           \
+    void GenerateFunction() override;                     \
+  };                                                      \
+  static const MetaImplRegHelper meta_impl_helper_##name(#name, []() { return std::make_shared<name##MetaImpl>(); });
+
+// DEFINE_FUNCTION_OP(op_name) -> _DEFINE_FUNCTION_OP_1
+#define _DEFINE_FUNCTION_OP_1(name) _DEFINE_FUNCTION_OP(name, nullptr, nullptr)
+
+// DEFINE_FUNCTION_OP(op_name, check_func) -> _DEFINE_FUNCTION_OP_2
+#define _DEFINE_FUNCTION_OP_2(name, check_func) _DEFINE_FUNCTION_OP(name, check_func, nullptr)
+
+// DEFINE_FUNCTION_OP(op_name, check_func, bprop) -> _DEFINE_FUNCTION_OP_3
+
+#define _DEFINE_FUNCTION_OP_3(name, check_func, bprop) \
+  _DEFINE_FUNCTION_OP(bprop, nullptr, nullptr)         \
+  _DEFINE_FUNCTION_OP(name, check_func, []() { return std::make_shared<bprop##MetaImpl>(); })
+
+#define _EXPAND(x) x
+#define _GET_FUNCTION_OP_MACRO(_1, _2, _3, NAME, ...) NAME
+
+// Define REGISTER_FUNCTION_OP api.
+#define REGISTER_FUNCTION_OP(...)                                                           \
+  _EXPAND(_GET_FUNCTION_OP_MACRO(__VA_ARGS__, _DEFINE_FUNCTION_OP_3, _DEFINE_FUNCTION_OP_2, \
+                                 _DEFINE_FUNCTION_OP_1)(__VA_ARGS__))
 
 #define BeginFunction(name, ...)            \
   void name##MetaImpl::GenerateFunction() { \
