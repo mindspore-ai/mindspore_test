@@ -38,6 +38,8 @@ class MINDRECORD_API ShardPkSample : public ShardCategory {
 
   ~ShardPkSample() override{};
 
+  std::string Name() override { return "ShardPkSample"; }
+
   Status SufExecute(ShardTaskList &tasks) override;
 
   int64_t GetNumSamples() const { return num_samples_; }

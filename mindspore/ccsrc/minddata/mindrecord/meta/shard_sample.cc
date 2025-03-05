@@ -16,6 +16,8 @@
 
 #include "minddata/mindrecord/include/shard_sample.h"
 
+#include "utils/ms_utils.h"
+
 namespace mindspore {
 namespace mindrecord {
 ShardSample::ShardSample(int64_t n)
@@ -76,6 +78,55 @@ int64_t ShardSample::GetNumSamples(int64_t dataset_size, int64_t num_classes) {
   return 0;
 }
 
+namespace {
+inline void ComputeDistributed(int64_t partition_id, int64_t no_of_samples, int64_t denominator, int64_t taking,
+                               ShardTaskList *tasks, ShardTaskList *new_tasks) {
+  int64_t count = 0;
+  auto total_no = tasks->sample_ids_.size();
+  std::string env_mindrecord_shard_by_block = common::GetEnv("MS_DEV_MINDRECORD_SHARD_BY_BLOCK");
+  (void)transform(env_mindrecord_shard_by_block.begin(), env_mindrecord_shard_by_block.end(),
+                  env_mindrecord_shard_by_block.begin(), ::tolower);
+  if (env_mindrecord_shard_by_block == "true") {
+    // Distributed by block
+    for (int64_t i = partition_id * taking; i < (partition_id + 1) * taking; i++) {
+      if (no_of_samples != 0 && count == no_of_samples) {
+        break;
+      }
+      new_tasks->AssignTask(*tasks, i % total_no);  // rounding up. if overflow, go back to start
+      count++;
+    }
+  } else {
+    // Distributed by slice
+    for (int64_t i = 0; i < taking; i++) {
+      if (no_of_samples != 0 && count == no_of_samples) {
+        break;
+      }
+      // Sampling logic formula by slice: sample_ids = partition_id + denominator * index
+      // partition_id represents the card number of the current shard
+      // denominator represents the number of shards
+      // index represents the index of the sample in the card number
+      new_tasks->AssignTask(*tasks,
+                            (partition_id + denominator * i) % total_no);  // rounding up. if overflow, go back to start
+      count++;
+    }
+  }
+}
+
+inline void AddToPssc(PartitionedShardSampleCount *partitioned_shard_sample_count,
+                      std::vector<int64_t> tasks_shard_sample_count, int32_t shard_index, int64_t current_sample_id,
+                      int64_t num_samples_per_partition, int64_t sample_count, int64_t denominator) {
+  partitioned_shard_sample_count->task_type = TaskType::kCommonTask;
+  partitioned_shard_sample_count->shard_id = shard_index;
+  partitioned_shard_sample_count->start = current_sample_id;
+  partitioned_shard_sample_count->end =
+    (current_sample_id + (num_samples_per_partition - sample_count) * denominator) >
+        tasks_shard_sample_count[shard_index]
+      ? tasks_shard_sample_count[shard_index]
+      : (current_sample_id + (num_samples_per_partition - sample_count) * denominator);
+  partitioned_shard_sample_count->step = denominator;
+}
+}  // namespace
+
 Status ShardSample::UpdateTasks(ShardTaskList &tasks, int64_t taking) {
   if (tasks.permutation_.empty()) {
     ShardTaskList new_tasks;
@@ -88,16 +139,10 @@ Status ShardSample::UpdateTasks(ShardTaskList &tasks, int64_t taking) {
         new_tasks.AssignTask(tasks, index);  // different mod result between c and python
       }
     } else {
-      int64_t count = 0;
       if (nums_per_shard_.empty()) {
-        for (int64_t i = partition_id_ * taking; i < (partition_id_ + 1) * taking; i++) {
-          if (no_of_samples_ != 0 && count == no_of_samples_) {
-            break;
-          }
-          new_tasks.AssignTask(tasks, i % total_no);  // rounding up. if overflow, go back to start
-          count++;
-        }
+        ComputeDistributed(partition_id_, no_of_samples_, denominator_, taking, &tasks, &new_tasks);
       } else {
+        int64_t count = 0;
         // Get samples within a specific range
         int64_t i = partition_id_ - 1 >= 0 ? nums_per_shard_[partition_id_ - 1] : 0;
         for (; i < nums_per_shard_[partition_id_]; i++) {
@@ -228,6 +273,11 @@ Status ShardSample::UpdatePartitionWhenSlowMode(ShardTaskList &tasks) {
     }
   }
 
+  for (const auto &item : vpssc) {
+    MS_LOG(INFO) << "Distribute samples, partition_id: " << partition_id_ << ", task_type: " << item.task_type
+                 << ", shard_id: " << item.shard_id << ", start: " << item.start << ", end: " << item.end;
+  }
+
   tasks.SetPartitionedShardSampleCount(vpssc);
 
   // update vpssc by no_of_samples_
@@ -235,6 +285,122 @@ Status ShardSample::UpdatePartitionWhenSlowMode(ShardTaskList &tasks) {
     tasks.UpdatePartitionedShardSampleCountByNumSamples(no_of_samples_);
   }
 
+  return Status::OK();
+}
+
+Status ShardSample::UpdatePartitionWhenSlowModeBySlice(ShardTaskList &tasks) {
+  // distribtued sample by slice when load mode is slow load
+  // mindrecord files
+  // mindrecord file 0 has 50 samples
+  // mindrecord file 1 has 40 samples
+  // mindrecord file 2 has 60 samples
+  // mindrecord file 3 has 30 samples
+  // Assuming this is an 3-card training
+  // card 0 : kCommonTask, shard_id=0, start=0, end=50, step=3
+  // card 0 : kCommonTask, shard_id=1, start=51, end=90, step=3
+  // card 0 : kCommonTask, shard_id=2, start=90, end=150, step=3
+  // card 0 : kCommonTask, shard_id=3, start=150, end=180, step=3
+  // card 1 : kCommonTask, shard_id=0, start=1, end=50, step=3
+  // card 1 : kCommonTask, shard_id=1, start=52, end=90, step=3
+  // card 1 : kCommonTask, shard_id=2, start=91, end=150, step=3
+  // card 1 : kCommonTask, shard_id=3, start=151, end=180, step=3
+  // ...
+  auto tasks_shard_sample_count = tasks.shuffled_shard_sample_count_;
+  int64_t total_sample = tasks_shard_sample_count[tasks_shard_sample_count.size() - 1] + tasks.padded_sample_;
+  int64_t num_samples_per_partition =
+    total_sample % denominator_ == 0 ? total_sample / denominator_ : total_sample / denominator_ + 1;
+  std::vector<PartitionedShardSampleCount> vpssc;
+  int64_t current_sample_id = partition_id_;
+  // record how many sample ids have been saved
+  int64_t sample_count = 0;
+  for (int32_t shard_index = 0; shard_index < tasks_shard_sample_count.size(); shard_index++) {
+    if (current_sample_id >= tasks_shard_sample_count[shard_index]) {
+      continue;
+    }
+    // how many sample ids are there in the temporary record
+    int64_t shard_sample_count = (tasks_shard_sample_count[shard_index] - current_sample_id) % denominator_ == 0
+                                   ? (tasks_shard_sample_count[shard_index] - current_sample_id) / denominator_
+                                   : (tasks_shard_sample_count[shard_index] - current_sample_id) / denominator_ + 1;
+    if ((num_samples_per_partition - sample_count) <= shard_sample_count) {
+      // add new range to vp
+      PartitionedShardSampleCount pssc;
+      AddToPssc(&pssc, tasks_shard_sample_count, shard_index, current_sample_id, num_samples_per_partition,
+                sample_count, denominator_);
+      vpssc.push_back(pssc);
+      // sample_count and current_sample_id need consider uneven distribution scenarios
+      current_sample_id += ((num_samples_per_partition - sample_count) * denominator_);
+      sample_count += shard_sample_count;
+      break;
+    } else {
+      PartitionedShardSampleCount pssc;
+      pssc.task_type = TaskType::kCommonTask;
+      pssc.shard_id = shard_index;
+      pssc.start = current_sample_id;
+      pssc.end = tasks_shard_sample_count[shard_index];
+      pssc.step = denominator_;
+      vpssc.push_back(pssc);
+      current_sample_id += (shard_sample_count * denominator_);
+      sample_count += shard_sample_count;
+    }
+  }
+  // retrieve from the start or padded sample
+  if ((num_samples_per_partition * denominator_) > tasks_shard_sample_count[tasks_shard_sample_count.size() - 1]) {
+    if (sample_count < num_samples_per_partition) {
+      // padded scenario
+      if (tasks.padded_sample_ > 0) {
+        if (total_sample - tasks_shard_sample_count[tasks_shard_sample_count.size() - 1] <= tasks.padded_sample_) {
+          PartitionedShardSampleCount pssc;
+          pssc.task_type = TaskType::kPaddedTask;
+          pssc.shard_id = -1;
+          pssc.start = current_sample_id;
+          pssc.end = total_sample;
+          pssc.step = denominator_;
+          vpssc.push_back(pssc);
+        } else {
+          RETURN_STATUS_UNEXPECTED_MR(
+            "It's padded sample scenario, but the total sample: " + std::to_string(total_sample) +
+            " which is not divisible by " + std::to_string(denominator_));
+        }
+      } else {
+        // need to recalculate the value of current_sample_id
+        if (current_sample_id >= total_sample) {
+          current_sample_id -= total_sample;
+        }
+        for (int32_t shard_index = 0; shard_index < tasks_shard_sample_count.size(); shard_index++) {
+          if (current_sample_id >= tasks_shard_sample_count[shard_index]) {
+            continue;
+          }
+          int64_t shard_sample_count =
+            (tasks_shard_sample_count[shard_index] - current_sample_id) % denominator_ == 0
+              ? (tasks_shard_sample_count[shard_index] - current_sample_id) / denominator_
+              : (tasks_shard_sample_count[shard_index] - current_sample_id) / denominator_ + 1;
+          if ((num_samples_per_partition - sample_count) <= shard_sample_count) {
+            // add new range to vp
+            PartitionedShardSampleCount pssc;
+            AddToPssc(&pssc, tasks_shard_sample_count, shard_index, current_sample_id, num_samples_per_partition,
+                      sample_count, denominator_);
+            vpssc.push_back(pssc);
+            break;
+          } else {
+            PartitionedShardSampleCount pssc;
+            pssc.task_type = TaskType::kCommonTask;
+            pssc.shard_id = shard_index;
+            pssc.start = current_sample_id;
+            pssc.end = tasks_shard_sample_count[shard_index];
+            pssc.step = denominator_;
+            vpssc.push_back(pssc);
+            current_sample_id += (shard_sample_count * denominator_);
+            sample_count += shard_sample_count;
+          }
+        }
+      }
+    }
+  }
+  tasks.SetPartitionedShardSampleCount(vpssc);
+  // update vpssc by no_of_samples_
+  if (no_of_samples_ != 0) {
+    tasks.UpdatePartitionedShardSampleCountByNumSamples(no_of_samples_);
+  }
   return Status::OK();
 }
 
@@ -285,7 +451,14 @@ Status ShardSample::Execute(ShardTaskList &tasks) {
     return UpdateTasks(tasks, taking);
   }
 
-  return UpdatePartitionWhenSlowMode(tasks);
+  std::string env_mindrecord_shard_by_block = common::GetEnv("MS_DEV_MINDRECORD_SHARD_BY_BLOCK");
+  (void)transform(env_mindrecord_shard_by_block.begin(), env_mindrecord_shard_by_block.end(),
+                  env_mindrecord_shard_by_block.begin(), ::tolower);
+  if (env_mindrecord_shard_by_block == "true") {
+    return UpdatePartitionWhenSlowMode(tasks);
+  } else {
+    return UpdatePartitionWhenSlowModeBySlice(tasks);
+  }
 }
 
 Status ShardSample::SufExecute(ShardTaskList &tasks) {

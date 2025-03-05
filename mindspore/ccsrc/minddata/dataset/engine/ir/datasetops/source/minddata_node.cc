@@ -79,9 +79,9 @@ void MindDataNode::Print(std::ostream &out) const { out << (Name() + "(file:" + 
 Status MindDataNode::ValidateParams() {
   RETURN_IF_NOT_OK(DatasetNode::ValidateParams());
 
-  RETURN_IF_NOT_OK(
-    ValidateEnum("MindDataset", "ShuffleMode", shuffle_mode_,
-                 {ShuffleMode::kFalse, ShuffleMode::kFiles, ShuffleMode::kGlobal, ShuffleMode::kInfile}));
+  RETURN_IF_NOT_OK(ValidateEnum("MindDataset", "ShuffleMode", shuffle_mode_,
+                                {ShuffleMode::kFalse, ShuffleMode::kFiles, ShuffleMode::kGlobal, ShuffleMode::kInfile,
+                                 ShuffleMode::kAdaptive, ShuffleMode::kPartial}));
 
   std::vector<std::string> dataset_file_vec =
     search_for_pattern_ ? std::vector<std::string>{dataset_file_} : dataset_files_;
@@ -136,9 +136,6 @@ Status MindDataNode::BuildMindDatasetSamplerChain(const std::shared_ptr<SamplerO
   std::stack<std::shared_ptr<mindrecord::ShardOperator>> stack_ops;
   while (op != nullptr) {
     // update the shuffle mode for sampler op or shuffle op
-    if (shuffle_mode != ShuffleMode::kFalse) {
-      op->UpdateShuffleMode(shuffle_mode);
-    }
     if (op->GetNumSamples() != 0 &&
         (op->GetShuffleMode() == ShuffleMode::kFiles || op->GetShuffleMode() == ShuffleMode::kInfile)) {
       std::string err_msg =

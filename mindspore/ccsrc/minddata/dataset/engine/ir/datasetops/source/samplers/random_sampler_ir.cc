@@ -31,8 +31,12 @@
 namespace mindspore {
 namespace dataset {
 // Constructor
-RandomSamplerObj::RandomSamplerObj(bool replacement, int64_t num_samples, bool reshuffle_each_epoch)
-    : replacement_(replacement), num_samples_(num_samples), reshuffle_each_epoch_(reshuffle_each_epoch) {}
+RandomSamplerObj::RandomSamplerObj(bool replacement, int64_t num_samples, bool reshuffle_each_epoch,
+                                   dataset::ShuffleMode shuffle_mode)
+    : replacement_(replacement),
+      num_samples_(num_samples),
+      reshuffle_each_epoch_(reshuffle_each_epoch),
+      shuffle_mode_(shuffle_mode) {}
 
 // Destructor
 RandomSamplerObj::~RandomSamplerObj() = default;
@@ -52,6 +56,7 @@ Status RandomSamplerObj::to_json(nlohmann::json *const out_json) {
   args["replacement"] = replacement_;
   args["reshuffle_each_epoch"] = reshuffle_each_epoch_;
   args["num_samples"] = num_samples_;
+  args["shuffle_mode"] = shuffle_mode_;
   *out_json = args;
   return Status::OK();
 }

@@ -22,10 +22,59 @@ Users can also define a custom sampler by extending from the Sampler class.
 import copy
 import numbers
 
+from enum import Enum
 import numpy as np
 import mindspore._c_dataengine as cde
 import mindspore.dataset as ds
 from ..core import validator_helpers as validator
+
+
+class Shuffle(str, Enum):
+    """Specify the shuffle mode.
+
+    - ``Shuffle.FALSE`` : Disable the shuffle.
+    - ``Shuffle.ADAPTIVE`` : When the number of dataset samples is less than or equal to 100 million,
+      global shuffle is used. When the number of dataset samples is greater than 100 million, partial shuffle is used.
+    - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
+    - ``Shuffle.PARTIAL`` : Shuffle data with every 1 million samples
+    - ``Shuffle.FILES`` : Shuffle files only.
+    - ``Shuffle.INFILE`` : Shuffle data within each file.
+    """
+    FALSE: str = "false"
+    ADAPTIVE: str = "adaptive"
+    GLOBAL: str = "global"
+    PARTIAL: str = "partial"
+    FILES: str = "files"
+    INFILE: str = "infile"
+
+
+ShuffleToShuffleMode = {Shuffle.FALSE: cde.ShuffleMode.FALSE,
+                        Shuffle.ADAPTIVE: cde.ShuffleMode.ADAPTIVE,
+                        Shuffle.GLOBAL: cde.ShuffleMode.GLOBAL,
+                        Shuffle.PARTIAL: cde.ShuffleMode.PARTIAL,
+                        Shuffle.FILES: cde.ShuffleMode.FILES,
+                        Shuffle.INFILE: cde.ShuffleMode.INFILE}
+
+
+def shuffle_to_shuffle_mode(shuffle):
+    """
+    Shuffle Enum to Shuffle Mode
+
+    Args:
+        shuffle (Shuffle): shuffle flag to shuffle mode in C layer
+
+    Returns:
+        ShuffleMode, shuffle mode
+    """
+    shuffle_mode = cde.ShuffleMode.GLOBAL  # Global shuffle
+    if not isinstance(shuffle, Shuffle):
+        if shuffle is None or shuffle:
+            shuffle_mode = cde.ShuffleMode.GLOBAL  # Global shuffle
+        else:
+            shuffle_mode = cde.ShuffleMode.FALSE  # No shuffle
+    else:
+        shuffle_mode = ShuffleToShuffleMode[shuffle]
+    return shuffle_mode
 
 
 def select_sampler(num_samples, input_sampler, shuffle, num_shards, shard_id):
@@ -35,13 +84,16 @@ def select_sampler(num_samples, input_sampler, shuffle, num_shards, shard_id):
     Args:
         num_samples (int): Number of samples.
         input_sampler (Union[Iterable, Sampler]): Sampler from user.
-        shuffle (bool): Shuffle.
+        shuffle (Shuffle): Shuffle is FALSE / ADAPTIVE / GLOBAL / PARTIAL / FILES / INFILE
         num_shards (int): Number of shard for sharding.
         shard_id (int): Shard ID.
 
     Returns:
         Sampler, sampler selected based on user input.
     """
+    if input_sampler is None and shuffle not in (Shuffle.FALSE, Shuffle.ADAPTIVE, Shuffle.GLOBAL, Shuffle.PARTIAL,
+                                                 Shuffle.FILES, Shuffle.INFILE):
+        raise RuntimeError("The input parameter shuffle: {} is not valid.".format(shuffle))
 
     if input_sampler is not None:
         # If the user provided a sampler, then it doesn't matter what the other args are because
@@ -67,23 +119,14 @@ def select_sampler(num_samples, input_sampler, shuffle, num_shards, shard_id):
         if isinstance(input_sampler, int):
             return SubsetSampler([input_sampler])
         raise TypeError('Unsupported sampler object of type ({})'.format(type(input_sampler)))
-    if shuffle is None:
-        if num_shards is not None:
-            # If shuffle is not specified, sharding enabled, use distributed random sampler
-            shuffle = True
-            return DistributedSampler(num_shards, shard_id, shuffle=shuffle, num_samples=num_samples)
-        # If shuffle is not specified, sharding disabled, use random sampler
-        if num_samples is not None and num_samples != 0:
-            return RandomSampler(replacement=True, num_samples=num_samples)
-        return RandomSampler(num_samples=num_samples)
-    if shuffle is True:
+    if shuffle is not Shuffle.FALSE:
         if num_shards is not None:
             # If shuffle enabled, sharding enabled, use distributed random sampler
             return DistributedSampler(num_shards, shard_id, shuffle=shuffle, num_samples=num_samples)
         # If shuffle enabled, sharding disabled, use random sampler
         if num_samples is not None:
-            return RandomSampler(replacement=True, num_samples=num_samples)
-        return RandomSampler(num_samples=num_samples)
+            return RandomSampler(replacement=True, num_samples=num_samples, shuffle=shuffle)
+        return RandomSampler(num_samples=num_samples, shuffle=shuffle)
     if num_shards is not None:
         # If shuffle disabled, sharding enabled, use distributed sequential sampler
         return DistributedSampler(num_shards, shard_id, shuffle=shuffle, num_samples=num_samples)
@@ -110,6 +153,10 @@ class BuiltinSampler:
         Add a sub-sampler for given sampler. The parent will receive all data from the
         output of sub-sampler sampler and apply its sample logic to return new samples.
 
+        Note:
+            - If a child sampler is added and it has a shuffle option, its value cannot be ``Shuffle.PARTIAL`` .
+              Additionally, the parent sampler's shuffle value must be ``Shuffle.GLOBAL`` .
+
         Args:
             sampler (Sampler): Object used to choose samples from the dataset. Only builtin
                 samplers(:class:`mindspore.dataset.DistributedSampler` ,
@@ -127,6 +174,15 @@ class BuiltinSampler:
         """
         if self.child_sampler is not None:
             raise RuntimeError("Cannot add child sampler, this sampler already has a child.")
+
+        if sampler is not None and sampler.get_shuffle_mode() == Shuffle.PARTIAL:
+            raise RuntimeError("When multiple samplers are used, ensure that the shuffle of the input sampler "
+                               "must not be Shuffle.PARTIAL.")
+
+        if self.get_shuffle_mode() != Shuffle.GLOBAL and self.get_shuffle_mode() != Shuffle.FALSE:
+            raise RuntimeError("When multiple samplers are used, ensure that the shuffle of the current sampler "
+                               "must be Shuffle.FALSE or Shuffle.GLOBAL, but got: {}.".format(self.get_shuffle_mode()))
+
         self.child_sampler = sampler
 
     def get_child(self):
@@ -228,6 +284,10 @@ class BuiltinSampler:
             return child_samples
 
         return self.num_samples
+
+    def get_shuffle_mode(self):
+        """ Not implemented. """
+        return Shuffle.FALSE
 
 
 class Sampler(BuiltinSampler):
@@ -354,11 +414,58 @@ class DistributedSampler(BuiltinSampler):
     """
     A sampler that accesses a shard of the dataset, it helps divide dataset into multi-subset for distributed training.
 
+    - The shuffling modes supported for different datasets are as follows:
+
+    .. list-table:: List of support for shuffling mode
+        :widths: 50 50 50 50
+        :header-rows: 1
+
+        * - Shuffling Mode
+          - MindDataset
+          - TFRecordDataset
+          - Others
+        * - ``Shuffle.ADAPTIVE``
+          - Supported
+          - Not Supported
+          - Not Supported
+        * - ``Shuffle.GLOBAL``
+          - Supported
+          - Supported
+          - Supported
+        * - ``Shuffle.PARTIAL``
+          - Supported
+          - Not Supported
+          - Not Supported
+        * - ``Shuffle.FILES``
+          - Supported
+          - Supported
+          - Not Supported
+        * - ``Shuffle.INFILE``
+          - Supported
+          - Not Supported
+          - Not Supported
+
     Args:
         num_shards (int): Number of shards to divide the dataset into.
         shard_id (int): Shard ID of the current shard, which should within the range of [0, `num_shards` - 1].
-        shuffle (bool, optional): If True, the indices are shuffled, otherwise it will not be shuffled.
-            Default: ``True``.
+        shuffle (Union[bool, Shuffle], optional): Specify the shuffle mode.
+            Default: ``True``, performs ``mindspore.dataset.Shuffle.GLOBAL`` . If `shuffle` is ``False`` ,
+            no shuffling will be performed.
+            There are several levels of shuffling, desired shuffle enum defined by :class:`mindspore.dataset.Shuffle` .
+
+            - ``Shuffle.ADAPTIVE`` : When the number of dataset samples is less than or equal to 100 million,
+              ``Shuffle.GLOBAL`` is used. When the number of dataset samples is greater than 100
+              million, ``Shuffle.PARTIAL`` is used. The shuffle is performed once every 1 million samples.
+
+            - ``Shuffle.GLOBAL`` : Global shuffle of all rows of data in dataset. The memory usage is large.
+
+            - ``Shuffle.PARTIAL`` : Partial shuffle of data in dataset for every 1 million samples.
+              The memory usage is less than ``Shuffle.GLOBAL`` .
+
+            - ``Shuffle.FILES`` : Shuffle the file sequence but keep the order of data within each file.
+
+            - ``Shuffle.INFILE`` : Keep the file sequence the same but shuffle the data within each file.
+
         num_samples (int, optional): The number of samples to draw. Default: ``None``, which means sample all elements.
         offset(int, optional): The starting shard ID where the elements in the dataset are sent to, which
             should be no more than `num_shards` . This parameter is only valid when a ConcatDataset takes
@@ -368,7 +475,7 @@ class DistributedSampler(BuiltinSampler):
     Raises:
         TypeError: If `num_shards` is not of type int.
         TypeError: If `shard_id` is not of type int.
-        TypeError: If `shuffle` is not of type bool.
+        TypeError: If `shuffle` is not of type bool or Shuffle.
         TypeError: If `num_samples` is not of type int.
         TypeError: If `offset` is not of type int.
         ValueError: If `num_samples` is a negative value.
@@ -392,8 +499,9 @@ class DistributedSampler(BuiltinSampler):
         if not isinstance(shard_id, int):
             raise TypeError("shard_id must be integer but was: {}.".format(shard_id))
 
-        if not isinstance(shuffle, bool):
-            raise TypeError("shuffle must be a boolean value but was: {}.".format(shuffle))
+        if not isinstance(shuffle, bool) and shuffle not in (Shuffle.FALSE, Shuffle.ADAPTIVE, Shuffle.GLOBAL,
+                                                             Shuffle.PARTIAL, Shuffle.FILES, Shuffle.INFILE):
+            raise TypeError("shuffle must be a boolean value or valid shuffle mode but was: {}.".format(shuffle))
 
         if num_samples is not None:
             if not isinstance(num_samples, int):
@@ -407,7 +515,11 @@ class DistributedSampler(BuiltinSampler):
 
         self.num_shards = num_shards
         self.shard_id = shard_id
+
+        if isinstance(shuffle, bool):
+            shuffle = Shuffle.GLOBAL if shuffle is True else Shuffle.FALSE
         self.shuffle = shuffle
+
         # get seed in distributed scenario
         # Example 1. if user set seeds by ds.config.set_seed(4321), then seed 4321 is used
         # Example 2. if user does not set the seed, then existing or default seed (like 5489) is used
@@ -419,11 +531,18 @@ class DistributedSampler(BuiltinSampler):
         """ Parse the sampler."""
         num_samples = self.num_samples if self.num_samples is not None else 0
         shuffle = self.shuffle if self.shuffle is not None else True
+
+        if isinstance(shuffle, bool):
+            shuffle = Shuffle.GLOBAL if shuffle else Shuffle.FALSE
+
+        if shuffle not in (Shuffle.FALSE, Shuffle.GLOBAL):
+            raise RuntimeError("The shuffle mode: {} is not supported with current dataset.".format(self.shuffle))
+
         offset = self.offset if self.offset is not None else -1
         # each time user calls create_dict_iterator() (to do repeat) sampler would get a different seed to shuffle
         self.seed += 1
         c_sampler = cde.DistributedSamplerObj(self.num_shards, self.shard_id,
-                                              shuffle, num_samples, self.seed, offset, True)
+                                              shuffle_to_shuffle_mode(shuffle), num_samples, self.seed, offset, True)
         c_child_sampler = self.parse_child()
         c_sampler.add_child(c_child_sampler)
         return c_sampler
@@ -432,7 +551,14 @@ class DistributedSampler(BuiltinSampler):
         """ Parse the sampler for MindRecord."""
         num_samples = self.num_samples if self.num_samples is not None else 0
         shuffle = self.shuffle if self.shuffle is not None else True
-        c_sampler = cde.MindrecordDistributedSampler(self.num_shards, self.shard_id, shuffle,
+
+        # convert shuffle=True to Shuffle.ADAPTIVE, convert shuffle=False to Shuffle.FALSE
+        if isinstance(shuffle, bool):
+            if shuffle:
+                shuffle = Shuffle.ADAPTIVE
+            else:
+                shuffle = Shuffle.FALSE
+        c_sampler = cde.MindrecordDistributedSampler(self.num_shards, self.shard_id, shuffle_to_shuffle_mode(shuffle),
                                                      self.seed, num_samples, self.offset)
         c_child_sampler = self.parse_child_for_minddataset()
         c_sampler.add_child(c_child_sampler)
@@ -441,7 +567,9 @@ class DistributedSampler(BuiltinSampler):
 
     def is_shuffled(self):
         if self.child_sampler is None:
-            return self.shuffle
+            if self.shuffle == Shuffle.FALSE:
+                return False
+            return True
 
         return self.child_sampler.is_shuffled()
 
@@ -455,6 +583,9 @@ class DistributedSampler(BuiltinSampler):
         self.offset = offset
         return self
 
+    def get_shuffle_mode(self):
+        """Get the shuffle mode"""
+        return self.shuffle
 
 class PKSampler(BuiltinSampler):
     """
@@ -543,19 +674,71 @@ class PKSampler(BuiltinSampler):
         c_sampler.set_num_samples(num_samples)
         return c_sampler
 
+    def get_shuffle_mode(self):
+        """Get the shuffle mode"""
+        return Shuffle.FALSE
+
 
 class RandomSampler(BuiltinSampler):
     """
     Samples the elements randomly.
 
+    - The shuffling modes supported for different datasets are as follows:
+
+    .. list-table:: List of support for shuffling mode
+        :widths: 50 50 50 50
+        :header-rows: 1
+
+        * - Shuffling Mode
+          - MindDataset
+          - TFRecordDataset
+          - Others
+        * - ``Shuffle.ADAPTIVE``
+          - Supported
+          - Not Supported
+          - Not Supported
+        * - ``Shuffle.GLOBAL``
+          - Supported
+          - Supported
+          - Supported
+        * - ``Shuffle.PARTIAL``
+          - Supported
+          - Not Supported
+          - Not Supported
+        * - ``Shuffle.FILES``
+          - Supported
+          - Supported
+          - Not Supported
+        * - ``Shuffle.INFILE``
+          - Supported
+          - Not Supported
+          - Not Supported
+
     Args:
         replacement (bool, optional): If True, put the sample ID back for the next draw. Default: ``False``.
         num_samples (int, optional): Number of elements to sample. Default: ``None`` , which means sample all elements.
+        shuffle (Shuffle, optional): Specify the shuffle mode.
+            Default: ``Shuffle.GLOBAL``, Global shuffle of all rows of data in dataset.
+            There are several levels of shuffling, desired shuffle enum defined by :class:`mindspore.dataset.Shuffle` .
+
+            - ``Shuffle.ADAPTIVE`` : When the number of dataset samples is less than or equal to 100 million,
+              ``Shuffle.GLOBAL`` is used. When the number of dataset samples is greater than 100
+              million, ``Shuffle.PARTIAL`` is used. The shuffle is performed once every 1 million samples.
+
+            - ``Shuffle.GLOBAL`` : Global shuffle of all rows of data in dataset. The memory usage is large.
+
+            - ``Shuffle.PARTIAL`` : Partial shuffle of data in dataset for every 1 million samples.
+              The memory usage is less than ``Shuffle.GLOBAL`` .
+
+            - ``Shuffle.FILES`` : Shuffle the file sequence but keep the order of data within each file.
+
+            - ``Shuffle.INFILE`` : Keep the file sequence the same but shuffle the data within each file.
 
     Raises:
         TypeError: If `replacement` is not of type bool.
         TypeError: If `num_samples` is not of type int.
         ValueError: If `num_samples` is a negative value.
+        TypeError: If `shuffle` is not of type Shuffle.
 
     Examples:
         >>> import mindspore.dataset as ds
@@ -566,7 +749,7 @@ class RandomSampler(BuiltinSampler):
         ...                                 sampler=sampler)
      """
 
-    def __init__(self, replacement=False, num_samples=None):
+    def __init__(self, replacement=False, num_samples=None, shuffle=Shuffle.GLOBAL):
         if not isinstance(replacement, bool):
             raise TypeError("replacement must be a boolean value but was: {}.".format(replacement))
 
@@ -577,6 +760,10 @@ class RandomSampler(BuiltinSampler):
                 raise ValueError("num_samples exceeds the boundary between {} and {}(INT64_MAX)!"
                                  .format(0, validator.INT64_MAX))
 
+        if shuffle not in (Shuffle.ADAPTIVE, Shuffle.GLOBAL, Shuffle.PARTIAL, Shuffle.FILES, Shuffle.INFILE):
+            raise TypeError("shuffle must be valid shuffle mode but was: {}.".format(shuffle))
+        self.shuffle = shuffle
+
         self.deterministic = False
         self.replacement = replacement
         self.reshuffle_each_epoch = True
@@ -586,7 +773,11 @@ class RandomSampler(BuiltinSampler):
         """ Parse the sampler."""
         num_samples = self.num_samples if self.num_samples is not None else 0
         replacement = self.replacement if self.replacement is not None else False
-        c_sampler = cde.RandomSamplerObj(replacement, num_samples, self.reshuffle_each_epoch)
+        # convert shuffle=True to Shuffle.GLOBAL, convert shuffle=False to Shuffle.FALSE
+        if self.shuffle is not Shuffle.GLOBAL:
+            raise RuntimeError("The shuffle mode: {} is not supported with current dataset.".format(self.shuffle))
+        c_sampler = cde.RandomSamplerObj(replacement, num_samples, self.reshuffle_each_epoch,
+                                         shuffle_to_shuffle_mode(self.shuffle))
         c_child_sampler = self.parse_child()
         c_sampler.add_child(c_child_sampler)
         return c_sampler
@@ -594,7 +785,15 @@ class RandomSampler(BuiltinSampler):
     def parse_for_minddataset(self):
         """Parse the sampler for MindRecord."""
         num_samples = self.num_samples if self.num_samples is not None else 0
-        c_sampler = cde.MindrecordRandomSampler(num_samples, self.replacement, self.reshuffle_each_epoch)
+        shuffle = self.shuffle if self.shuffle is not None else True
+        # convert shuffle=True to Shuffle.ADAPTIVE, convert shuffle=False to Shuffle.FALSE
+        if isinstance(shuffle, bool):
+            if shuffle:
+                shuffle = Shuffle.ADAPTIVE
+            else:
+                raise RuntimeError("The shuffle: False is invalid for RandomSampler.")
+        c_sampler = cde.MindrecordRandomSampler(num_samples, self.replacement, self.reshuffle_each_epoch,
+                                                shuffle_to_shuffle_mode(shuffle))
         c_child_sampler = self.parse_child_for_minddataset()
         c_sampler.add_child(c_child_sampler)
         c_sampler.set_num_samples(num_samples)
@@ -608,6 +807,10 @@ class RandomSampler(BuiltinSampler):
             return False
 
         return self.child_sampler.is_sharded()
+
+    def get_shuffle_mode(self):
+        """Get the shuffle mode"""
+        return self.shuffle
 
 
 class SequentialSampler(BuiltinSampler):
@@ -677,6 +880,10 @@ class SequentialSampler(BuiltinSampler):
             return False
 
         return self.child_sampler.is_sharded()
+
+    def get_shuffle_mode(self):
+        """Get the shuffle mode"""
+        return Shuffle.FALSE
 
 
 class SubsetSampler(BuiltinSampler):
@@ -767,6 +974,10 @@ class SubsetSampler(BuiltinSampler):
 
         return min(len(self.indices), num_samples)
 
+    def get_shuffle_mode(self):
+        """Get the shuffle mode"""
+        return Shuffle.FALSE
+
 
 class SubsetRandomSampler(SubsetSampler):
     """
@@ -808,6 +1019,10 @@ class SubsetRandomSampler(SubsetSampler):
         c_sampler.add_child(c_child_sampler)
         c_sampler.set_num_samples(self.get_num_samples())
         return c_sampler
+
+    def get_shuffle_mode(self):
+        """Get the shuffle mode"""
+        return Shuffle.GLOBAL
 
 
 class IterSampler(Sampler):
@@ -917,3 +1132,7 @@ class WeightedRandomSampler(BuiltinSampler):
             return False
 
         return self.child_sampler.is_sharded()
+
+    def get_shuffle_mode(self):
+        """Get the shuffle mode"""
+        return Shuffle.GLOBAL

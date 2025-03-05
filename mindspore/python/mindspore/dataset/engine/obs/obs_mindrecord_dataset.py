@@ -29,7 +29,7 @@ import sys
 import time
 
 from mindspore import log as logger
-from ..datasets import Shuffle
+from ..samplers import Shuffle
 from ...core.config import set_seed
 
 
