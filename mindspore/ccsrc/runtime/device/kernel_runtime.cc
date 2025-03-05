@@ -29,7 +29,6 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
-#include "runtime/pynative/op_runtime_info.h"
 #include "runtime/device/kernel_runtime_manager.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/mem_reuse/mem_tracker.h"

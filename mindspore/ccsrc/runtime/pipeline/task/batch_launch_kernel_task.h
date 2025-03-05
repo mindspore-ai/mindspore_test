@@ -25,7 +25,7 @@
 
 namespace mindspore {
 namespace runtime {
-class BatchLaunchKernelTask : public AsyncTask {
+class RUNTIME_PIPELINE_EXPORT BatchLaunchKernelTask : public AsyncTask {
  public:
   explicit BatchLaunchKernelTask(std::function<void()> &&func) : AsyncTask(kKernelTask), func_(std::move(func)) {}
   ~BatchLaunchKernelTask() override = default;

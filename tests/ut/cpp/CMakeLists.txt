@@ -279,7 +279,7 @@ target_link_libraries(_ut_mindspore_obj PRIVATE mindspore_backend mindspore_core
 add_library(_ut_mindspore_ascend_obj STATIC ${MINDSPORE_ASCEND_SRC_LIST})
 target_link_libraries(_ut_mindspore_ascend_obj PRIVATE mindspore_backend mindspore_core
         _c_dataengine mindspore_common mindspore_ops_kernel_common mindspore_backend_manager mindspore_res_manager
-        mindspore_profiler mindspore_memory_pool)
+        mindspore_profiler mindspore_memory_pool mindspore_runtime_pipeline)
 
 foreach(number RANGE 1 ${CORE_OBJECT_COUNT})
     list(APPEND CORE_OBJECT_LIST $<TARGET_OBJECTS:core_obj_${number}>)
