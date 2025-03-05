@@ -114,6 +114,12 @@ if(ENABLE_GPU)
             COMPONENT mindspore
             NAMELINK_SKIP
     )
+    install(
+        TARGETS mindspore_gpu_res_manager LIBRARY
+        DESTINATION ${INSTALL_PLUGIN_DIR}
+        COMPONENT mindspore
+        NAMELINK_SKIP
+    )
     if(ENABLE_MPI)
         install(
                 TARGETS nvidia_collective
