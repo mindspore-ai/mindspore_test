@@ -17,8 +17,8 @@ mindspore.ops.Polar
         这是一个实验性API，后续可能修改或删除。
 
     输入：
-        - **abs** (Tensor, float) - 极径。其输入shape可以是任意维度，其数据类型须为：float32。
-        - **angle** (Tensor, float) - 极角。其shape与数据类型与 `abs` 一致。
+        - **abs** (Tensor, float) - 极径，其输入shape可以是任意维度，其数据类型须为：float32。
+        - **angle** (Tensor, float) - 极角，其shape和数据类型与 `abs` 一致。
 
     输出：
         Tensor，其shape与 `abs` 一致，dtype是complex64。

@@ -18,24 +18,24 @@ mindspore.ops.ApplyRMSProp
     :math:`s_{t+1}` 为均方梯度 `mean_square` ，:math:`s_{t}` 为上一步的 :math:`s_{t+1}` ，
     :math:`m_{t+1}` 为 `moment` ， :math:`m_{t}` 为上一步的 :math:`m_{t+1}` 。
     :math:`\rho` 为 `decay` 。 :math:`\beta` 为动量项 `momentum` 。
-    :math:`\epsilon` 是避免零为除数的平滑项 `epsilon` 。
+    :math:`\epsilon` 是避免除数为零的平滑项 `epsilon` 。
     :math:`\eta` 为 `learning_rate` 。 :math:`\nabla Q_{i}(w)` 代表 `grad` 。
 
     .. warning::
-        在该算法的稠密实现版本中，"mean_square"和"momemt"即使"grad"为零将仍被更新。但在该稀疏实现版本中，在"grad"为零的迭代"mean_squre"和"moment"将不被更新。
+        在该算法的稠密实现版本中，即使 `grad` 为零， `mean_square` 和 `momemt` 仍会被更新。但在该稀疏实现版本中，当 `grad` 为零时， `mean_squre` 和 `moment` 将不会被更新。
 
     参数：
-        - **use_locking** (bool) - 是否对参数更新加锁保护。默认值:  ``False`` 。
+        - **use_locking** (bool，可选) - 是否对参数更新加锁保护。默认值:  ``False`` 。
 
     输入：
         - **var** (Parameter) - 待更新的网络参数。
         - **mean_square** (Tensor) - 均方梯度，数据类型需与 `var` 相同。
         - **moment** (Tensor) - 一阶矩，数据类型需与 `var` 相同。
-        - **learning_rate** (Union[Number, Tensor]) - 学习率。需为浮点数或者数据类型为float16或float32的标量矩阵。
+        - **learning_rate** (Union[Number, Tensor]) - 学习率，需为浮点数或者数据类型为float16或float32的标量矩阵。
         - **grad** (Tensor) - 梯度，数据类型需与 `var` 相同。
-        - **decay** (float) - 衰减率。需为常量。
-        - **momentum** (float) - 移动平均的动量项momentum。需为常量。
-        - **epsilon** (float) - 避免除数为零的平滑项。需为常量。
+        - **decay** (float) - 衰减率，需为常量。
+        - **momentum** (float) - 移动平均的动量项momentum，需为常量。
+        - **epsilon** (float) - 避免除数为零的平滑项，需为常量。
 
     输出：
         Tensor，待更新的网络参数。
