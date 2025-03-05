@@ -1603,6 +1603,7 @@ class Model:
                                      will be built, and `metrics` in `Model` can not be None. Default: ``None`` .
             sink_size (int): Control the number of steps for each sinking. Default: ``-1`` .
             epoch (int): Control the training epochs. Default: ``1`` .
+            sink_mode (bool): Determines whether to pass the data through dataset channel. Default: ``True`` .
 
         Examples:
             >>> from mindspore import nn

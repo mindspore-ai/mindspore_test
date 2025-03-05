@@ -116,6 +116,14 @@ def _clear_auto_parallel_context(net):
         _reset_auto_parallel_context()
         net.transformer_opt(None)
 
+
+def _get_auto_parallel_net(net):
+    for cell in net.cells():
+        if type(cell).__name__ == 'AutoParallel':
+            return cell
+    return net
+
+
 def _get_parallel_mode():
     """Get parallel mode."""
     return auto_parallel_context().get_parallel_mode()

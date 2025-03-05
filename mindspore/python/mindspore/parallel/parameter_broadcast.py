@@ -20,8 +20,10 @@ __all__ = ["parameter_broadcast"]
 import numpy as np
 import mindspore as ms
 from mindspore.communication import get_rank, create_group, get_group_size
+from mindspore.parallel._utils import _get_auto_parallel_net
 
-
+# disable pylint too broad Exception
+# pylint: disable=W0212
 def parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
     """
     Broadcast parameter to other rank in data parallel dimension.
@@ -104,16 +106,22 @@ def parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
         ...         print("step end, cur step num: ", cb_params.cur_step_num, flush=True)
         >>> model.train(1, dataset, callbacks=[LossCallBack()])
     """
-    if not layout:
+    if not layout or get_group_size() <= 1:
         return
     from mindspore.train._utils import get_parameter_redundancy, remove_param_redundancy
     from mindspore.nn.wrap.cell_wrapper import AllreduceGraph
-    origin_parallel_mode = ms.get_auto_parallel_context("parallel_mode")
-    if origin_parallel_mode not in ("semi_auto_parallel", "auto_parallel"):
-        return
+    origin_parallel_mode = ""
+    pipeline_stages = 1
+    parallel_net = _get_auto_parallel_net(net)
+    if type(parallel_net).__name__ == 'AutoParallel':
+        origin_parallel_mode = parallel_net._parallel_mode
+        pipeline_stages = parallel_net._pipeline_stages
+    else:
+        origin_parallel_mode = ms.get_auto_parallel_context("parallel_mode")
+        pipeline_stages = ms.get_auto_parallel_context("pipeline_stages")
     if cur_rank != get_rank():
         raise ValueError(f"For parameter broadcast, the cur_rank: {cur_rank} is wrong.")
-    if initial_rank % (get_group_size() / ms.get_auto_parallel_context("pipeline_stages")) != 0:
+    if initial_rank % (get_group_size() / pipeline_stages) != 0:
         raise ValueError(f"For parameter broadcast, the initial_rank: {initial_rank} is wrong.")
     param_redundancy = get_parameter_redundancy(layout, initial_rank)
     if not param_redundancy:

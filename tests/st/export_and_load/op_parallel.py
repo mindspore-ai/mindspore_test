@@ -103,3 +103,40 @@ def test_param_broadcast():
     parameter_broadcast(model.train_network, layout, int(rank_id), 0)
 
     model.train(1, dataset)
+
+def test_param_broadcast_using_auto_parallel():
+    '''
+    Feature: parameter broadcast with AutoParallel(cell)
+    Description: broadcast param
+    Expectation: success
+    '''
+    from mindspore.parallel.auto_parallel import AutoParallel
+    ms.reset_auto_parallel_context()
+    print("distribute network shard.", flush=True)
+    net = Network()
+    net.matmul1.shard(((2, 4), (4, 1)))
+    net.relu1.shard(((4, 1),))
+    net.matmul2.shard(((1, 8), (8, 1)))
+    net.relu2.shard(((8, 1),))
+    print("distribute network create dataset.", flush=True)
+
+    dataset = create_dataset(32)
+    optim = nn.SGD(net.trainable_params(), 1e-2)
+    loss = nn.CrossEntropyLoss()
+
+    print("distribute network train.", flush=True)
+    parallel_net = AutoParallel(net)
+    model = Model(parallel_net, loss_fn=loss, optimizer=optim)
+    model.train(1, dataset)
+    rank_id = get_rank()
+    ckpt_path = "./device" + str(rank_id) + "/simple.ckpt"
+    ms.save_checkpoint(net, ckpt_path, False)
+
+    print("distribute network loadcheckpoint.", flush=True)
+    layout = model.train_network.parameter_layout_dict
+    param_dict = load_checkpoint(ckpt_path)
+    load_param_into_net(net, param_dict)
+    print("distribute network parameter broadcast.", flush=True)
+    parameter_broadcast(model.train_network, layout, int(rank_id), 0)
+
+    model.train(1, dataset)
