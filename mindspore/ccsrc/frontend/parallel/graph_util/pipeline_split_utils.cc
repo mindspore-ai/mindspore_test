@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -431,6 +431,28 @@ bool IsSourceUsedByMirror(const CNodePtr &node, const NodeUsersMap &node_user_ma
   }
   return false;
 }
+
+bool CheckNeedInsertVirtualAssignAddForMakeTuple(const CNodePtr &cnode, const NodeUsersMap &node_user_map) {
+  if (!IsPrimitiveCNode(cnode, prim::kPrimMakeTuple)) {
+    return false;
+  }
+  if (!UpdateStateUseOnly(cnode, node_user_map)) {
+    return true;
+  }
+  const auto &make_tuple_inputs = cnode->inputs();
+  for (size_t index = 1; index < make_tuple_inputs.size(); ++index) {
+    const auto &input = make_tuple_inputs[index];
+    if (input->cast<ParameterPtr>() || IsPrimitiveCNode(input, prim::kPrimMicroStepAllGather)) {
+      for (auto &item : node_user_map.at(input)) {
+        if (IsPrimitiveCNode(item.first, prim::kPrimMirrorMicroStep)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
 void InsertVirtualAssignAdd(const std::pair<AnfNodePtr, int> &node_user, const FuncGraphManagerPtr &manager,
                             const AnfNodePtr &accu_parameter, const NodeUsersMap &node_user_map) {
   auto cnode = node_user.first->cast<CNodePtr>();
@@ -441,8 +463,7 @@ void InsertVirtualAssignAdd(const std::pair<AnfNodePtr, int> &node_user, const F
   bool enable_parallel_optimizer = ParallelContext::GetInstance()->enable_parallel_optimizer();
   bool grad_accumulation_shard = ParallelContext::GetInstance()->grad_accumulation_shard();
   auto is_pp_interleave = ParallelContext::GetInstance()->pipeline_interleave();
-  if (!is_pp_interleave &&
-      (IsPrimitiveCNode(cnode, prim::kPrimMakeTuple) && !UpdateStateUseOnly(cnode, node_user_map))) {
+  if (!is_pp_interleave && CheckNeedInsertVirtualAssignAddForMakeTuple(cnode, node_user_map)) {
     return;
   }
   if (IsPrimitiveCNode(cnode, prim::kPrimDepend) && enable_parallel_optimizer &&
