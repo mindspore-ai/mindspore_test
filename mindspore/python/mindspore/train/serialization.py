@@ -766,6 +766,8 @@ def _convert_cell_param_and_names_to_dict(save_obj, choice_func):
     """Convert cell.parameters_and_names to OrderedDict."""
     param_dict = OrderedDict()
     for _, param in save_obj.parameters_and_names():
+        if param.name.startswith("accu_grads") or param.name.endswith("expert_load"):
+            continue
         not_sliced = not param.sliced
         is_graph_mode = context.get_context('mode') == context.GRAPH_MODE
         # All parameters are initialized immediately under PyNative mode, skip this judgement.
@@ -1735,6 +1737,7 @@ def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundanc
         chunk_size = device_num // stage_num
         initial_rank = (rank_id // chunk_size) * chunk_size
         _single_parameter_broadcast(net, param_layout, rank_id, initial_rank)
+        mindspore.hal.synchronize()
 
     return param_not_load, ckpt_not_load
 
