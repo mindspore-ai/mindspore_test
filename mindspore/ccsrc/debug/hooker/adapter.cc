@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include "backend/ge_backend/dump/adapter.h"
+#include "debug/hooker/adapter.h"
 #include <utility>
 #include <memory>
 
 namespace mindspore {
-namespace dump {
+namespace hooker {
 AdapterManager &AdapterManager::Instance() {
   static AdapterManager adapter_manager;
   return adapter_manager;
@@ -36,5 +36,5 @@ std::shared_ptr<Adapter> AdapterManager::GetAdapterForBackend(device::DeviceType
   }
   return iter->second;
 }
-}  // namespace dump
+}  // namespace hooker
 }  // namespace mindspore

@@ -3,7 +3,6 @@ if(ENABLE_D OR ENABLE_ACL)
 
     file(GLOB _GE_BACKEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
     list(APPEND _GE_BACKEND_SRC_LIST $<TARGET_OBJECTS:_mindspore_ge_runtime_obj>)
-    list(APPEND _GE_BACKEND_SRC_LIST $<TARGET_OBJECTS:_mindspore_ge_dump_obj>)
 
 
     set_property(SOURCE ${_GE_BACKEND_SRC_LIST}
@@ -25,5 +24,4 @@ if(ENABLE_D OR ENABLE_ACL)
     add_subdirectory(pass)
     add_subdirectory(executor)
     add_subdirectory(runtime)
-    add_subdirectory(dump)
 endif()

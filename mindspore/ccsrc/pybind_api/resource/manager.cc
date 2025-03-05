@@ -55,6 +55,7 @@
 #include "pipeline/jit/ps/pass_config.h"
 
 #include "include/backend/debug/data_dump/dump_json_parser.h"
+#include "include/backend/debug/data_dump/acl_dump_json_writer.h"
 #include "abstract/abstract_value.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/constants.h"
@@ -233,6 +234,7 @@ void ClearSingleton() {
   ExecuteOrderTracker::GetInstance().Clear();
   OpPrimPyRegister::GetInstance().Clear();
   DumpJsonParser::Finalize();
+  AclDumpJsonWriter::Finalize();
   CommManager::Clear();
   expander::ClearAllCache();
 

@@ -30,6 +30,7 @@
 #include "utils/file_utils.h"
 #include "debug/data_dump/data_dumper.h"
 #ifndef ENABLE_SECURITY
+#include "debug/hooker/hook_debugger.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"
 #endif
@@ -513,6 +514,12 @@ bool GEBackend::DebugOnStepBegin(const KernelGraphPtr &func_graph) {
   auto profiler = profiler::Profiler::GetInstance(kAscendDevice);
   if (profiler == nullptr || !profiler->IsInitialized()) {
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    auto &hookDebugger = hooker::HookDebugger::GetInstance();
+    if (hookDebugger.IsHookerEnabled()) {
+      auto step_count_num = graph_run_iter_[func_graph];
+      hookDebugger.HookOnStepBegin(device_id, func_graph, step_count_num, false);
+      return true;
+    }
     if (common::GetEnv("ENABLE_MS_GE_DUMP") != "1") {
       return ACLDump(device_id, func_graph);
     }
@@ -578,6 +585,17 @@ void GEBackend::DebugOnStepEnd(const KernelGraphPtr &graph, const device::Device
     return;
   }
   MS_LOG(INFO) << "Debug on step end. dump_iter: " << DumpJsonParser::GetInstance().cur_dump_iter();
+  auto &hookDebugger = hooker::HookDebugger::GetInstance();
+  if (hookDebugger.IsHookerEnabled()) {
+    device_context->device_res_manager_->SyncAllStreams();
+    hookDebugger.HookOnStepEnd();
+  } else {
+    auto registered_dumper = datadump::DataDumperRegister::Instance().GetDumperForBackend(device::DeviceType::kAscend);
+    if (registered_dumper != nullptr) {
+      device_context->device_res_manager_->SyncAllStreams();
+      registered_dumper->Finalize();
+    }
+  }
   device_context->device_res_manager_->SyncAllStreams();
 }
 
