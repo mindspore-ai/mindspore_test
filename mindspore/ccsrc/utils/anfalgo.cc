@@ -2833,5 +2833,12 @@ bool AnfAlgo::IsBackendGe() {
   std::string backend = context->GetBackend();
   return backend == kBackendGE;
 }
+
+bool AnfAlgo::IsBackendMs() {
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  std::string backend = context->GetBackend();
+  return backend == kBackendMSBackend;
+}
 }  // namespace common
 }  // namespace mindspore

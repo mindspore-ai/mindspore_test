@@ -540,7 +540,7 @@ std::string MsContext::GetJitLevel() const {
   return jit_level;
 }
 
-std::string MsContext::GetBackend() const {
+std::string MsContext::GetBackend() {
   const auto &jit_config = PhaseManager::GetInstance().jit_config();
   std::string backend = "";
   auto iter = jit_config.find("backend");
@@ -549,8 +549,7 @@ std::string MsContext::GetBackend() const {
   }
 
   if (backend.empty()) {
-    auto jit_level = GetJitLevel();
-    backend = jit_level == kAttrJitLevelO2 ? kBackendGE : kBackendMSBackend;
+    backend = IsKByKExecutorMode() ? kBackendMSBackend : kBackendGE;
   }
 
   return backend;

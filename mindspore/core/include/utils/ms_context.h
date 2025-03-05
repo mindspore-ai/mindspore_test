@@ -309,7 +309,7 @@ class MS_CORE_API MsContext {
 
   void SetJitLevel(const std::string &jit_level) const;
   std::string GetJitLevel() const;
-  std::string GetBackend() const;
+  std::string GetBackend();
   bool IsKByKExecutorMode();
 
   std::string GetLoadPluginErrorStr() const { return load_plugin_error_(); }
