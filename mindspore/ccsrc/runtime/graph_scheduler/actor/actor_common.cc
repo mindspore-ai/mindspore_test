@@ -373,7 +373,7 @@ bool EnableRuntimePipeline() {
   }
 
 #ifndef BUILD_LITE
-  if (distributed::recovery::RecoveryContext::GetInstance()->enable_gpu_recovery()) {
+  if (distributed::recovery::RecoveryContext::GetInstance()->enable_recovery()) {
     return false;
   }
 #endif

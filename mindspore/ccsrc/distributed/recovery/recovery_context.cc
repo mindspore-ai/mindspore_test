@@ -77,9 +77,9 @@ void RemoveAllCkptFiles(const std::string &directory, const std::vector<std::str
 }
 }  // namespace
 
-bool IsEnableRecovery() { return (common::GetEnv(kEnvEnableRecovery) == std::string("1")); }
+bool IsEnableRepeatRegister() { return (common::GetEnv(kEnvEnableRecovery) == std::string("1")); }
 
-bool IsEnableGpuRecovery() {
+bool IsEnableRecovery() {
   return common::GetEnv(kEnvEnableRecovery) == std::string("1") &&
          MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kGPUDevice;
 }
@@ -92,18 +92,18 @@ void RecoveryContext::Initialize() {
   }
 
   // 1. Read environment variable.
-  enable_recovery_ = IsEnableRecovery();
-  if (!enable_recovery_) {
+  enable_repeat_register_ = IsEnableRepeatRegister();
+  if (!enable_repeat_register_) {
     return;
   }
 
-  enable_gpu_recovery_ = IsEnableGpuRecovery();
+  enable_recovery_ = IsEnableRecovery();
 
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   context_ptr->set_param<bool>(MS_CTX_ENABLE_RECOVERY, true);
 
-  if (enable_gpu_recovery_) {
+  if (enable_recovery_) {
     recovery_path_ = RecoveryPath();
     if (recovery_path_.empty()) {
       MS_LOG(EXCEPTION) << "The recovery path is empty, please export MS_RECOVERY_PATH correctly.";
@@ -120,7 +120,7 @@ void RecoveryContext::Initialize() {
     MS_LOG(EXCEPTION) << "Role name '" << node_role_ << "' is invalid. ";
   }
 
-  if (enable_gpu_recovery_) {
+  if (enable_recovery_) {
     // 2. Get real recovery path and create config file.
     if (!storage::FileIOUtils::IsFileOrDirExist(recovery_path_)) {
       storage::FileIOUtils::CreateDirRecursive(recovery_path_);

@@ -43,6 +43,7 @@ _set_recovery_context_func_map = {
 
 _get_recovery_context_func_map = {
     "enable_recovery": recovery_context().enable_recovery,
+    "enable_repeat_register": recovery_context().enable_repeat_register,
     "latest_ckpt_file": recovery_context().latest_ckpt_file,
     "latest_ckpt_epoch": recovery_context().latest_ckpt_epoch,
     "latest_ckpt_step": recovery_context().latest_ckpt_step,
