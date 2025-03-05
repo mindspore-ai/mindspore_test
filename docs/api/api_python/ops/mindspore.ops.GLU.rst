@@ -8,7 +8,7 @@ mindspore.ops.GLU
     .. math::
         {GLU}(a, b)= a \otimes \sigma(b)
 
-    其中，:math:`a` 表示输入Tensor `input` 拆分后的前一半元素，:math:`b` 表示 `input` 拆分后的另一半元素。
+    其中，:math:`a` 表示输入Tensor `x` 拆分后的前一半元素，:math:`b` 表示 `x` 拆分后的另一半元素。
     这里 :math:`\sigma` 为sigmoid函数，:math:`\otimes` 是Hadamard乘积。
     请参考 `Language Modeling with Gated Convluational Networks <https://arxiv.org/abs/1612.08083>`_ 。
 
