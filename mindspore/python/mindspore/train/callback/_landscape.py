@@ -256,9 +256,6 @@ class SummaryLandscape:
         """
         Clean the checkpoint.
 
-        Tutorial Examples:
-            - `Training Optimization Process Visualization
-              <https://www.mindspore.cn/mindinsight/docs/en/master/landscape.html>`_
         """
         shutil.rmtree(self._ckpt_dir, ignore_errors=True)
 

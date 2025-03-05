@@ -107,22 +107,18 @@ class SummaryCollector(Callback):
               The first output will be treated as the loss and it will be averaged. Default: ``True`` .
             - collect_graph (bool): Whether to collect the computational graph. Currently, only
               training computational graph is collected. Default: ``True`` .
-            - collect_train_lineage (bool): Whether to collect lineage data for the training phase,
-              this field will be displayed on the `lineage page \
-              <https://www.mindspore.cn/mindinsight/docs/en/master/lineage_and_scalars_comparison.html>`_
-              of MindInsight. Default: ``True`` .
-            - collect_eval_lineage (bool): Whether to collect lineage data for the evaluation phase,
-              this field will be displayed on the `lineage page
-              <https://www.mindspore.cn/mindinsight/docs/en/master/lineage_and_scalars_comparison.html>`_
-              of MindInsight. Default: ``True`` .
+            - collect_train_lineage (bool): Whether to collect lineage data for the training phase.
+              Default: ``True`` .
+            - collect_eval_lineage (bool): Whether to collect lineage data for the evaluation phase.
+              Default: ``True`` .
             - collect_input_data (bool): Whether to collect dataset for each training.
               Currently only image data is supported.
               If there are multiple columns of data in the dataset, the first column should be image data.
               Default: ``True`` .
             - collect_dataset_graph (bool): Whether to collect dataset graph for the training phase.
               Default: ``True`` .
-            - histogram_regular (Union[str, None]): Collect weight and bias for parameter distribution page
-              and displayed in MindInsight. This field allows regular strings to control which parameters to collect.
+            - histogram_regular (Union[str, None]): Collect weight and bias for parameter distribution page.
+              This field allows regular strings to control which parameters to collect.
               It is not recommended to collect too many parameters at once, as it can affect performance.
               Note that if you collect too many parameters and run out of memory, the training will fail.
               Default: ``None`` , it means only the first five parameters are collected.
@@ -153,8 +149,7 @@ class SummaryCollector(Callback):
             True: it means that after specified data is set, non-specified data is collected as the default behavior.
             False: it means that after specified data is set, only the specified data is collected,
             and the others are not collected. Default: ``True`` .
-        custom_lineage_data (Union[dict, None]): Allows you to customize the data and present it on the MingInsight
-            `lineage page <https://www.mindspore.cn/mindinsight/docs/en/master/lineage_and_scalars_comparison.html>`_ .
+        custom_lineage_data (Union[dict, None]): Allows you to customize the data.
             In the custom data, the type of the key supports str, and the type of value supports str, int
             and float. Default: ``None`` , it means there is no custom data.
         collect_tensor_freq (Optional[int]): The same semantics as the `collect_freq`, but controls TensorSummary only.

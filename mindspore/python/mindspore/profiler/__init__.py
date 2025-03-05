@@ -16,7 +16,6 @@
 This module provides Python APIs to enable the profiling of MindSpore neural networks.
 Users can import the mindspore.profiler.Profiler, initialize the Profiler object to start profiling,
 and use Profiler.analyse() to stop profiling and analyse the results.
-Users can visualize the results using the MindInsight tool.
 Now, Profiler supports AICORE operator, AICPU operator, HostCPU operator, memory,
 correspondence, cluster, etc data analysis.
 """
