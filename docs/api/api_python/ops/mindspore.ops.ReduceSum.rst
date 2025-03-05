@@ -11,8 +11,8 @@ mindspore.ops.ReduceSum
         Tensor类型的 `axis` 仅用作兼容旧版本，不推荐使用。
 
     参数：
-        - **keep_dims** (bool) - 如果为 ``True`` ，则保留计算维度，长度为1。如果为 ``False`` ，则不保留计算维度。默认值： ``False`` ，输出结果会降低维度。
-        - **skip_mode** (bool) - 如果为 ``True`` ，并且 `axis` 为空tuple或空list，不进行ReduceSum计算, `axis` 为其他值，正常运算。如果为 ``False`` ，则正常进行运算。默认值： ``False`` 。
+        - **keep_dims** (bool，可选) - 如果为 ``True`` ，则保留计算维度，长度为1。如果为 ``False`` ，则不保留计算维度。默认值： ``False`` ，输出结果会降低维度。
+        - **skip_mode** (bool，可选) - 如果为 ``True`` ，当 `axis` 为空tuple或空list时，不进行ReduceSum计算，当 `axis` 为其他值时，正常运算。如果为 ``False`` ，则正常进行运算。默认值： ``False`` 。
 
     输入：
         - **x** (Tensor[Number]) - 输入Tensor。
