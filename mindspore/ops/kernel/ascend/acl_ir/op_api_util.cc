@@ -31,6 +31,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_precision_conf.h"
 #include "common/kernel_callback.h"
+#include "pybind_api/gil_scoped_long_running.h"
 
 namespace mindspore::device::ascend {
 namespace {
@@ -58,7 +59,10 @@ static const std::unordered_map<std::string, bool> kConvEnableHf32 = {{"", true}
 
 std::mutex set_opt_mutex;
 
-aclError SetCompileopt(aclCompileOpt opt, const char *value) { return CALL_ASCEND_API(aclSetCompileopt, opt, value); }
+aclError SetCompileopt(aclCompileOpt opt, const char *value) {
+  GilReleaseWithCheck gil_release;
+  return CALL_ASCEND_API(aclSetCompileopt, opt, value);
+}
 
 bool IsMatmulHf32Enable() {
   auto op_precision_conf = device::ascend::OpPrecisionConf::GetInstance();

@@ -50,6 +50,7 @@
 #include "plugin/res_manager/ascend/collective/lowlatency_collective_comm_lib.h"
 #endif
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
+#include "pybind_api/gil_scoped_long_running.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "common/kernel_callback.h"
 #include "runtime/device/tensor_array.h"
@@ -447,6 +448,23 @@ bool AscendResManager::LoadCollectiveCommLib() {
   return true;
 }
 
+void AscendResManager::SetAclDeterministic() const {
+  std::lock_guard<std::mutex> lock(set_opt_mutex);
+  if (UseSimulationApi()) {
+    return;
+  }
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  bool is_deterministic = ms_context->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON" ? true : false;
+  MS_LOG(INFO) << "Set acl deterministic value: " << (is_deterministic ? "1" : "0");
+  GilReleaseWithCheck gil_release;
+  auto ret = CALL_ASCEND_API(aclSetCompileopt, aclCompileOpt::ACL_OP_DETERMINISTIC, is_deterministic ? "1" : "0");
+  if (ret != ACL_SUCCESS) {
+    MS_LOG(EXCEPTION) << "Acl set deterministic mode failed! mode is " << is_deterministic << " and error flag is "
+                      << ret;
+  }
+}
+
 void AscendResManager::SetDeterministic() const {
   std::lock_guard<std::mutex> lock(set_opt_mutex);
   if (UseSimulationApi()) {
@@ -456,14 +474,8 @@ void AscendResManager::SetDeterministic() const {
   MS_EXCEPTION_IF_NULL(ms_context);
   bool is_deterministic = ms_context->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON" ? true : false;
   MS_LOG(INFO) << "Set kernel deterministic value: " << (is_deterministic ? "1" : "0");
-  // Set acl
-  auto ret = CALL_ASCEND_API(aclSetCompileopt, aclCompileOpt::ACL_OP_DETERMINISTIC, is_deterministic ? "1" : "0");
-  if (ret != ACL_SUCCESS) {
-    MS_LOG(EXCEPTION) << "Acl set deterministic mode failed! mode is " << is_deterministic << " and error flag is "
-                      << ret;
-  }
   // Set acl sys
-  ret = CALL_ASCEND_API(aclrtCtxSetSysParamOpt, aclSysParamOpt::ACL_OPT_DETERMINISTIC, is_deterministic ? 1 : 0);
+  auto ret = CALL_ASCEND_API(aclrtCtxSetSysParamOpt, aclSysParamOpt::ACL_OPT_DETERMINISTIC, is_deterministic ? 1 : 0);
   if (ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "Acl sys set deterministic mode failed! mode is " << is_deterministic << " and error flag is "
                       << ret;

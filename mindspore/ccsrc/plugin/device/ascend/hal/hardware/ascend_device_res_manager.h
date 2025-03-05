@@ -42,6 +42,8 @@ class AscendDeviceResManager : public DeviceResManager {
 
   void SetDeterministic() override;
 
+  void SetAclDeterministic() override;
+
   std::vector<void *> AllocateContinuousMemory(const std::vector<size_t> &size_list,
                                                uint32_t stream_id = kDefaultStreamIndex) const override;
 

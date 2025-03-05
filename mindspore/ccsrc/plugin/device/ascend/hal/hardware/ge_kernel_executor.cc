@@ -74,8 +74,10 @@
 #include "utils/anf_utils.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
+#include "kernel/ascend/acl/acl_kernel_mod.h"
 #include "plugin/device/ascend/hal/hardware/ascend_device_res_manager.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
+#include "plugin/device/ascend/hal/hardware/ge_device_context.h"
 
 namespace mindspore::device::ascend {
 namespace {
@@ -928,10 +930,6 @@ void GeKernelExecutor::Initialize() {
   MS_EXCEPTION_IF_NULL(device_context_);
   res_manager_ = device_context_->device_res_manager_.get();
   MS_EXCEPTION_IF_NULL(res_manager_);
-  SetAclDebugKernel();
-  // not check graph executor, may use in ascend device context
-  SetAclOpPrecisionMode();
-  res_manager_->SetDeterministic();
   initialized_ = true;
 }
 
@@ -1304,6 +1302,15 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vector<Ke
         return true;
       }
     }
+    if (!acl_option_initialized_ && dynamic_cast<kernel::AclKernelMod *>(kernel_mod) != nullptr) {
+      dynamic_cast<GeDeviceContext *>(device_context_)->GeInitialize();
+      SetAclDebugKernel();
+      // not check graph executor, may use in ascend device context
+      SetAclOpPrecisionMode();
+      res_manager_->SetAclDeterministic();
+      acl_option_initialized_ = true;
+    }
+
     bool ret = kernel_mod->Launch(inputs, workspace, outputs, stream);
     if (!ret) {
       MS_LOG(ERROR) << "Launch kernel failed, kernel full name: " << kernel->fullname_with_scope();

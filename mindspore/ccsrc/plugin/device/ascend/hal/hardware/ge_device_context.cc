@@ -21,6 +21,7 @@
 #include <map>
 #include <set>
 #include "backend/ge_backend/graph_ir/utils.h"
+#include "backend/ge_backend/executor/ge_graph_executor.h"
 #include "include/common/utils/utils.h"
 #include "include/common/debug/common.h"
 #include "include/common/debug/anf_ir_dump.h"
@@ -212,6 +213,18 @@ RunMode GeDeviceContext::GetRunMode(const FuncGraphPtr &func_graph) const {
   }
 }
 
+void GeDeviceContext::GeInitialize() const {
+  if (ge_initialized_) {
+    return;
+  }
+  if (!UseSimulationApi()) {
+    dynamic_cast<backend::ge_backend::GeGraphExecutor *>(graph_executor_.get())->InitializeGe();
+  }
+  // should be called after ge initialize.
+  SetAclOpDebugOption();
+  ge_initialized_ = true;
+}
+
 void GeDeviceContext::Initialize() {
   GilReleaseWithCheck gil_release;
   std::lock_guard<std::mutex> lock(init_mutex_);
@@ -249,8 +262,9 @@ void GeDeviceContext::Initialize() {
     graph_executor_->Initialize();
   }
 
-  // should be called after ge initialize.
-  SetAclOpDebugOption();
+  if (ms_context->GetJitLevel() == "O2" || ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+    GeInitialize();
+  }
 
   MS_EXCEPTION_IF_NULL(GetKernelExecutor(false));
   MS_EXCEPTION_IF_NULL(GetKernelExecutor(true));
