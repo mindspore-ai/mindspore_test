@@ -38,6 +38,10 @@ MultiAscendCollectiveCommLib::MultiAscendCollectiveCommLib() { global_group_name
 
 std::unordered_set<std::string> MultiAscendCollectiveCommLib::GetLcclEnabledGroups() { return lccl_enabled_groups; }
 
+std::unordered_set<std::string> MultiAscendCollectiveCommLib::GetDvmCommEnabledGroups() {
+  return dvm_comm_enabled_groups;
+}
+
 bool MultiAscendCollectiveCommLib::isGroupWithinLocalMachine(const std::vector<uint32_t> &group_ranks) {
   std::vector<size_t> all_host_hashs = distributed::collective::CollectiveManager::instance()->GetAllHostHashs();
   if (all_host_hashs.empty()) {
@@ -75,6 +79,11 @@ bool MultiAscendCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t glo
     MS_LOG(INFO) << "Successfully initialize LCCL.";
   }
 #endif
+  if (device::ascend::EnableDvmComm()) {
+    dvm_collective_comm_lib_ = &DvmCollectiveCommLib::GetInstance();
+    MS_EXCEPTION_IF_NULL(dvm_collective_comm_lib_);
+    dvm_collective_comm_lib_->Initialize(global_rank, global_rank_size, local_rank_id);
+  }
   ascend_collective_comm_lib_ = &AscendCollectiveCommLib::GetInstance();
   MS_EXCEPTION_IF_NULL(ascend_collective_comm_lib_);
   RETURN_IF_FALSE_WITH_LOG(ascend_collective_comm_lib_->Initialize(global_rank, global_rank_size, local_rank_id),
@@ -97,6 +106,11 @@ bool MultiAscendCollectiveCommLib::DestroyCommunicationGroup(const std::string &
     MS_LOG(INFO) << "Successfully destroy LCCL communication group " << group_name;
   }
 #endif
+  if (device::ascend::EnableDvmComm() && dvm_comm_enabled_groups.find(group_name) != dvm_comm_enabled_groups.end()) {
+    RETURN_IF_FALSE_WITH_LOG(dvm_collective_comm_lib_->DestroyCommunicationGroup(group_name),
+                             "Failed to destroy DVM communication group " + group_name);
+    dvm_comm_enabled_groups.erase(group_name);
+  }
   RETURN_IF_FALSE_WITH_LOG(ascend_collective_comm_lib_->DestroyCommunicationGroup(group_name),
                            "Failed to destroy HCCL communication group " + group_name);
   MS_LOG(INFO) << "Successfully destroy HCCL communication group " << group_name;
@@ -132,6 +146,15 @@ bool MultiAscendCollectiveCommLib::CreateCommunicationGroup(const std::string &g
     MS_LOG(INFO) << "Successfully create LCCL communication group " << group_name;
   }
 #endif
+  if (device::ascend::EnableDvmComm()) {
+    RETURN_IF_FALSE_WITH_LOG(
+      dvm_collective_comm_lib_->CreateCommunicationGroup(group_name, group_ranks, local_group_rank, local_group_size),
+      "Failed to create DVM communication group" + group_name);
+    CommunicationGroupPtr dvm_group = dvm_collective_comm_lib_->GetGroup(group_name);
+    MS_EXCEPTION_IF_NULL(dvm_group);
+    group->SetDvmCommGroup(dvm_group);
+    dvm_comm_enabled_groups.insert(group_name);
+  }
   RETURN_IF_FALSE_WITH_LOG(
     ascend_collective_comm_lib_->CreateCommunicationGroup(group_name, group_ranks, local_group_rank, local_group_size),
     "Failed to create HCCL communication group" + group_name);

@@ -31,6 +31,8 @@
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/graph_kernel/core/value_depend_op_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
+#include "backend/common/graph_kernel/adapter/graph_kernel_comm_info_manager.h"
+#include "mindspore/ops/op_def/other_ops.h"  // collective communication operations
 
 namespace mindspore::graphkernel {
 namespace {
@@ -93,6 +95,29 @@ class DvmSupportChecker {
       auto node_output_type = GetNodeOutputType(node);
       return node_output_type == kNumberTypeFloat16 || node_output_type == kNumberTypeFloat32;
     };
+    auto collective_comm_op_check = [](const AnfNodePtr &node) {
+      auto cb = Callback::Instance();
+      auto node_input_type = cb->GetInputType(node, 0);
+      // only support fp16 and fp32 at present
+      if (node_input_type != kNumberTypeFloat16 && node_input_type != kNumberTypeFloat32) {
+        return false;
+      }
+      const auto &node_input_shape = cb->GetInputShape(node, 0);
+      auto input_size =
+        std::accumulate(node_input_shape.begin(), node_input_shape.end(), 1, std::multiplies<int64_t>());
+      if (input_size == 1) {
+        return false;
+      }
+      const std::string &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+      auto comm_info = GraphKernelCommInfoManager::Instance().GetCommInfo(device_target);
+      if (comm_info == nullptr) {
+        return false;
+      }
+      if (comm_info->IsTargetCommOp(node)) {
+        return true;
+      }
+      return false;
+    };
     // cast op
     check_func_["Cast"] = {cast_check};
     // reducesum op
@@ -129,6 +154,8 @@ class DvmSupportChecker {
     check_func_["BatchMatMul"] = {DvmSupportChecker::DvmMatMulSupported, input_check_all};
     // transpose op
     check_func_["Transpose"] = {transpose_op_check, input_check_all};
+    // collective comm op
+    check_func_["AllReduce"] = {collective_comm_op_check};
   }
 
   static TypeId GetNodeOutputType(const AnfNodePtr &node) {

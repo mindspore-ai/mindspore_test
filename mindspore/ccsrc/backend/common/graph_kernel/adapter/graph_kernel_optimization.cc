@@ -73,6 +73,7 @@
 #include "backend/common/graph_kernel/proactive_fallback_expander.h"
 #include "backend/common/graph_kernel/transpose_matmul_fusion.h"
 #include "backend/common/graph_kernel/shrink_only_shape_needed.h"
+#include "backend/common/graph_kernel/add_attr.h"
 #ifdef ENABLE_AKG
 #include "backend/common/graph_kernel/graph_kernel_build.h"
 #endif
@@ -310,6 +311,10 @@ PassManagerPtr GraphKernelOptimizer::PostProcess() const {
 
   // Update side effect attr, update kernel graph ref pair(used in device address allocation)
   pm->Add(std::make_shared<DealWithSideEffect>(), OptLevel_1, is_dvm);
+
+  // add some attribute to graph kernel for further optimization
+  pm->Add(std::make_shared<AddAttr>(), OptLevel_1);
+
   pm->Add(std::make_shared<ConvertCallToPrim>(), OptLevel_1, is_dvm);
   return pm;
 }

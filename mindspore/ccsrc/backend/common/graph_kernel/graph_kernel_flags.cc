@@ -382,6 +382,9 @@ void GraphKernelFlags::RegisterFlags(std::map<std::string, std::string> *flag_ma
   reg.AddFlag("enable_vectorization", &enable_vectorization);
   reg.AddFlag("enable_dynamic_shape_fusion", &enable_dynamic_shape_fusion);
   reg.AddFlag("enable_parallel_op_combine", &enable_parallel_op_combine);
+  reg.AddFlag("disable_matmul_post_fusion", &disable_matmul_post_fusion);
+  reg.AddFlag("enable_allreduce_prologue_fusion", &enable_allreduce_prologue_fusion);
+  reg.AddFlag("enable_allreduce_epilogue_fusion", &enable_allreduce_epilogue_fusion);
 
   // Integer flags
   reg.AddFlag("reduce_fuse_depth", &reduce_fuse_depth);
@@ -418,7 +421,6 @@ void GraphKernelFlags::RegisterFlags(std::map<std::string, std::string> *flag_ma
   reg.AddFlag("disable_cce_lib_ops", &disable_cce_lib_ops);
   reg.AddFlag("enable_packet_ops_only", &enable_packet_ops_only);
   reg.AddFlag("disable_packet_ops", &disable_packet_ops);
-  reg.AddFlag("disable_matmul_post_fusion", &disable_matmul_post_fusion);
   reg.AddFlag("enable_fusion_pattern_only", &enable_fusion_pattern_only);
   reg.AddFlag("disable_fusion_pattern", &disable_fusion_pattern);
 
@@ -501,6 +503,8 @@ std::string GraphKernelFlags::DumpAllFlags() const {
   json["enable_packet_ops_only"] = enable_packet_ops_only;
   json["disable_packet_ops"] = disable_packet_ops;
   json["disable_matmul_post_fusion"] = disable_matmul_post_fusion;
+  json["enable_allreduce_prologue_fusion"] = enable_allreduce_prologue_fusion;
+  json["enable_allreduce_epilogue_fusion"] = enable_allreduce_epilogue_fusion;
   json["enable_fusion_pattern_only"] = enable_fusion_pattern_only;
   json["disable_fusion_pattern"] = disable_fusion_pattern;
 
