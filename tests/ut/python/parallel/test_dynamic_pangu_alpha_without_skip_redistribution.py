@@ -15,7 +15,6 @@
 """PanguAlpha model"""
 
 import os
-import pytest
 import math
 import numpy as np
 import mindspore.nn as nn
@@ -1488,7 +1487,6 @@ def compile_pipeline_net(net, _x1, _x2, _x3):
     return phase
 
 
-@pytest.mark.skip(reason="view feature not supported")
 def test_pipeline_dp_mp_op_bs_and_seq_dynamic_stage0():
     '''
     Feature: batch dim and seq dim are dynamic, and using pp + dp + mp + op, test stage-0
