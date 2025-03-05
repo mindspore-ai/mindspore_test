@@ -1,0 +1,21 @@
+addcdiv_ext:
+  args:
+    input:
+      dtype: tensor
+    tensor1:
+      dtype: tensor
+    tensor2:
+      dtype: tensor
+    value:
+      dtype: number
+      default: 1
+      type_cast: tensor
+  returns:
+    out:
+      dtype: tensor
+  function:
+    disable: True
+  dispatch:
+    enable: True
+  class:
+    name: AddcdivExt

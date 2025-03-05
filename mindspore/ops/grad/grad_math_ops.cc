@@ -3804,6 +3804,38 @@ REG_BPROP_BUILDER("AddV2").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
 
 REG_BPROP_BUILDER("Addcdiv").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) { return BpropAddcCommon(ib, "Addcdiv"); });
 
+REG_BPROP_BUILDER("AddcdivExt").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto tensor1 = ib->GetInput(kIndex1);
+  auto tensor2 = ib->GetInput(kIndex2);
+  auto value = ib->GetInput(kIndex3);
+  auto out = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex5);
+
+  auto shape = ib->GetShape(tensor2);
+  auto dtype = ib->GetDtype(tensor2)->type_id();
+  auto bc_dinput = dout;
+
+  if (input->need_compute_grad_out()) {
+    bc_dinput = BinopGradCommon(ib, out, input, dout, bc_dinput)[1];
+  } else {
+    bc_dinput = ib->OutZeros(input);
+  }
+  auto bc_dtensor1 =
+    tensor1->need_compute_grad_out()
+      ? BinopGradCommon(
+          ib, out, tensor1, dout,
+          ib->Mul(dout, ib->Div(ib->FillScalar(ib->Value(shape), value, ib->Value((int64_t)dtype)), tensor2)))[1]
+      : ib->OutZeros(tensor1);
+  auto bc_dtensor2 =
+    tensor2->need_compute_grad_out()
+      ? BinopGradCommon(
+          ib, out, tensor2, dout,
+          ib->Neg(ib->Div(ib->Mul(dout, ib->Emit("Muls", {tensor1, value})), ib->Mul(tensor2, tensor2))))[1]
+      : ib->OutZeros(tensor2);
+  return {bc_dinput, bc_dtensor1, bc_dtensor2, ib->OutZeros(value)};
+});
+
 REG_BPROP_BUILDER("Addcmul").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) { return BpropAddcCommon(ib, "Addcmul"); });
 
 REG_BPROP_BUILDER("LpNorm").SetBody(BODYFUNC(ib) {
