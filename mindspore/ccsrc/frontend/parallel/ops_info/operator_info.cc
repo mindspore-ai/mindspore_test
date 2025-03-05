@@ -593,15 +593,6 @@ Status OperatorInfo::InferMirrorOpsByLayout() {
       mirror_ops_.push_back(mirror_op);
       continue;
     }
-    if (is_auto_parallel_) {
-      if (g_device_manager->CheckDeviceList(repeated_rank_list) != SUCCESS) {
-        MS_LOG(INFO) << name_ << ": Try to create communication group : " << repeated_rank_list
-                     << " failed in auto parallel mode, "
-                        "this error can be ignored in parallel strategies searching step";
-        return FAILED;
-      }
-      return SUCCESS;
-    }
 
     Group mirror_group;
     if (g_device_manager->CreateGroup(repeated_rank_list, &mirror_group) != SUCCESS) {
@@ -1144,15 +1135,6 @@ Status OperatorInfo::CreateGroupByTensorMap(const Shape &tensor_map, std::vector
     MS_LOG(INFO) << name_ << ": The dev size is 1, no need to create group.";
     return SUCCESS;
   }
-  if (is_auto_parallel_) {
-    if (g_device_manager->CheckDeviceList(group_devices) != SUCCESS) {
-      MS_LOG(INFO) << name_ << ": Try to create communication group : " << group_devices
-                   << " failed in auto parallel mode, "
-                      "this error can be ignored in parallel strategies searching step";
-      return FAILED;
-    }
-    return SUCCESS;
-  }
 
   Group g;
   if (g_device_manager->CreateGroup(group_devices, &g) != SUCCESS) {
@@ -1353,15 +1335,6 @@ Status OperatorInfo::CreateGroupByDimWithDevMatrix(DeviceMatrix *dev_matrix, siz
 
   if (group_devices.size() == 1) {
     MS_LOG(INFO) << name_ << ": The dev size is 1, no need to create group.";
-    return SUCCESS;
-  }
-  if (is_auto_parallel_) {
-    if (g_device_manager->CheckDeviceList(group_devices) != SUCCESS) {
-      MS_LOG(INFO) << name_ << ": Try to create communication group : " << group_devices
-                   << " failed in auto parallel mode, "
-                   << "this error can be ignored in parallel strategies searching step";
-      return FAILED;
-    }
     return SUCCESS;
   }
   Group g;
