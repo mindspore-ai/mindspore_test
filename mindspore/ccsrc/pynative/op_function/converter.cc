@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "pynative/op_function/converter.h"
+#include <memory>
 #include <unordered_map>
 #include "include/common/utils/convert_utils_py.h"
 #include "frontend/operator/composite/functional_overload.h"
@@ -30,6 +31,14 @@ using OP_DTYPE = mindspore::ops::OP_DTYPE;
 template <typename T, typename U>
 std::shared_ptr<U> PyCast(const py::object &obj) {
   return std::make_shared<U>(py::cast<T>(obj));
+}
+
+template <>
+std::shared_ptr<FP32Imm> PyCast<double, FP32Imm>(const py::object &obj) {
+  auto obj_float32 = py::cast<float>(obj);
+  auto ret = std::make_shared<FP32Imm>(obj_float32);
+  ret->set_prim_value(py::cast<double>(obj));
+  return ret;
 }
 
 BoolImmPtr ConvertBool(const py::object &obj) {
@@ -62,13 +71,13 @@ FP32ImmPtr ConvertFloat(const py::object &obj) {
 
 ScalarPtr ConvertNumber(const py::object &obj) {
   if (py::isinstance<py::float_>(obj)) {
-    return std::make_shared<FP32Imm>(py::cast<double>(obj));
+    return PyCast<double, FP32Imm>(obj);
   }
   if (py::isinstance<py::bool_>(obj)) {
-    return std::make_shared<BoolImm>(py::cast<bool>(obj));
+    return PyCast<bool, BoolImm>(obj);
   }
   if (py::isinstance<py::int_>(obj)) {
-    return std::make_shared<Int64Imm>(py::cast<int64_t>(obj));
+    return PyCast<int64_t, Int64Imm>(obj);
   }
   return nullptr;
 }

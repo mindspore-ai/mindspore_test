@@ -16,3 +16,4 @@ sub_scalar:
     name: SubScalar
   dispatch:
     enable: True
+    Ascend: SubScalarAscend

@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/pyboost/customize/muls.h"
+#include "kernel/ascend/pyboost/customize/divs.h"
 #include <memory>
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"
@@ -25,7 +25,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr MulsAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+tensor::BaseTensorPtr DivsAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
                                           const ScalarPtr &other_scalar) {
   MS_EXCEPTION_IF_NULL(input_tensor);
   MS_EXCEPTION_IF_NULL(other_scalar);
@@ -38,15 +38,15 @@ tensor::BaseTensorPtr MulsAscendCustomize(const std::shared_ptr<OpRunner> &op, c
 
   // Async
   PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor, other_scalar_real]() {
-    MS_LOG(DEBUG) << "Run device task Muls start";
+    MS_LOG(DEBUG) << "Run device task Divs start";
     auto device_context = op->device_context();
     const auto &outputs = op->outputs();
     // Malloc for input tensors
     PyBoostUtils::MallocOpInputs(device_context, input_tensor);
     // Malloc for output tensors
     PyBoostUtils::MallocOpOutputs(device_context, outputs);
-    LAUNCH_ACLNN(aclnnMuls, device_context, op->stream_id(), input_tensor, other_scalar_real, outputs[0]);
-    MS_LOG(DEBUG) << "Run device task Muls end";
+    LAUNCH_ACLNN(aclnnDivs, device_context, op->stream_id(), input_tensor, other_scalar_real, outputs[0]);
+    MS_LOG(DEBUG) << "Run device task Divs end";
   }));
   return op->output(0);
 }
