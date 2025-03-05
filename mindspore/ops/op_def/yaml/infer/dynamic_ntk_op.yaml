@@ -1,0 +1,21 @@
+#operator dynamic_ntk
+dynamic_ntk:
+  args:
+    position_ids:
+      dtype: tensor
+    inv_freq:
+      dtype: tensor
+    seq_lens:
+      dtype: tensor
+    out_type:
+      dtype: int
+      default: 0
+  returns:
+    sin:
+      dtype: tensor
+    cos:
+      dtype: tensor
+  function:
+    disable: True
+  class:
+    name: DynamicNTK
