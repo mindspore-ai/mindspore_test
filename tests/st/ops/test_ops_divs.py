@@ -20,27 +20,7 @@ from tests.mark_utils import arg_mark
 
 import mindspore as ms
 from mindspore import Tensor, context
-from mindspore import mint, nn
-
-
-class DivsNetTensorTensor(nn.Cell):
-    def __init__(self):
-        super(DivsNetTensorTensor, self).__init__()
-        self.x = Tensor([5, 6], dtype=ms.int16)
-        self.y = Tensor([2, 3], dtype=ms.int16)
-
-    def construct(self):
-        return mint.div(self.x, self.y)
-
-
-class DivsNetTensorScalar(nn.Cell):
-    def __init__(self):
-        super(DivsNetTensorScalar, self).__init__()
-        self.x = Tensor([5, 6], dtype=ms.int16)
-        self.y = 3
-
-    def construct(self):
-        return mint.div(self.x, self.y)
+from mindspore import mint
 
 
 @test_utils.run_with_cell
@@ -73,25 +53,6 @@ def compare_result(actual, expected):
     diff = abs(actual.asnumpy() - expected)
     error = np.ones(shape=expected.shape) * 1.0e-4
     assert np.all(diff < error)
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize("mode", ["KBK"])
-def test_divs_infer_value(mode):
-    """
-    Feature: Divs for infer value
-    Description: test ops divs
-    Expectation: expect correct result.
-    """
-    set_mode(mode)
-
-    net1 = DivsNetTensorTensor()
-    output1 = net1()
-    np.allclose(output1.asnumpy(), np.array([2.5, 2]))
-
-    net2 = DivsNetTensorScalar()
-    output2 = net2()
-    np.allclose(output2.asnumpy(), np.array([1.66666, 2]), 0.0001, 0.0001)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')

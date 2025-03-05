@@ -66,7 +66,6 @@
 "mindspore/mindspore/ops/kernel/ascend/opapi/aclnn/conv1d_padding_aclnn_kernel.h"            "runtime/references"
 "mindspore/mindspore/ops/kernel/ascend/pyboost/customize/conv1d_padding.cc"                  "runtime/references"
 "mindspore/mindspore/ops/kernel/ascend/pyboost/customize/conv1d_padding.h"                  "runtime/references"
-"mindspore/mindspore/ops/infer/ops_frontend_func_impl/muls.cc"                               "build/include"
 "mindspore/mindspore/ops/kernel/ascend/opapi/aclnn/conv3d_padding_aclnn_kernel.h"            "runtime/references"
 "mindspore/mindspore/ops/kernel/ascend/opapi/aclnn/conv2d_padding_aclnn_kernel.cc"            "runtime/references"
 "mindspore/mindspore/ops/kernel/ascend/opapi/aclnn/conv2d_padding_aclnn_kernel.h"            "runtime/references"
