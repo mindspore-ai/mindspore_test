@@ -10,6 +10,8 @@ from mindspore.mint.optim import Adam
 from mindspore.experimental.optim.lr_scheduler import StepLR
 
 
+mindspore.set_context(jit_level="O0")
+
 class Network(nn.Cell):
     def __init__(self, lin_weight, lin_bias):
         super().__init__()

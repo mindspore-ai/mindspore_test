@@ -34,6 +34,9 @@ using BackendCreator = std::function<std::shared_ptr<BackendBase>()>;
 const char kMSBackendName[] = "ms_backend";
 const char kGEBackendName[] = "GE";
 
+// The name of backend lib.
+const char kGEBackendLibName[] = "libmindspore_ge_backend.so";
+
 // The backend type enum, please add a new enumeration definition before kInvalidBackend when adding a new backend.
 enum BackendType {
   kMSBackend = 0,
@@ -45,6 +48,8 @@ const std::map<std::string, BackendType> backend_name_to_type = {{kMSBackendName
                                                                  {kGEBackendName, kGEBackend}};
 const std::map<BackendType, std::string> backend_type_to_name = {{kMSBackend, kMSBackendName},
                                                                  {kGEBackend, kGEBackendName}};
+
+const std::map<BackendType, std::string> backend_type_to_lib_name = {{kGEBackend, kGEBackendLibName}};
 
 class BACKEND_MANAGER_EXPORT BackendManager {
  public:
@@ -83,10 +88,16 @@ class BACKEND_MANAGER_EXPORT BackendManager {
   BackendManager() = default;
   ~BackendManager() = default;
 
+  void LoadBackend(BackendType backend_type);
+  void UnloadBackend();
+
   BackendBase *GetOrCreateBackend(BackendType backend_type);
 
   IsPyBoostRegisteredFunc func_;
   RunPyBoostCallFunc call_func_;
+
+  // BackendType -> BackendLoadHandle.
+  std::map<BackendType, void *> backend_load_handle_;
 
   // BackendType -> BackendCreator.
   std::map<BackendType, BackendCreator> backend_creators_;

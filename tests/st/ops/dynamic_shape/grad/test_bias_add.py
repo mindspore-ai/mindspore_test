@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor, context
@@ -56,6 +55,7 @@ def test_dynamic_shape_bias_add():
     """
     # Graph mode
     context.set_context(mode=context.GRAPH_MODE)
+    context.set_context(jit_level="O0")
     run_dynamic_shape()
     # PyNative mode
     context.set_context(mode=context.PYNATIVE_MODE)
@@ -72,6 +72,7 @@ def test_dynamic_rank_bias_add():
     """
     # Graph mode
     context.set_context(mode=context.GRAPH_MODE)
+    context.set_context(jit_level="O0")
     run_dynamic_rank()
     # PyNative mode
     context.set_context(mode=context.PYNATIVE_MODE)

@@ -301,13 +301,6 @@ else()
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 endif()
 
-if(ENABLE_D OR ENABLE_ACL)
-    target_link_libraries(_c_expression PRIVATE -Wl,--no-whole-archive mindspore_ge_backend
-        mindspore_ascend_res_manager)
-    target_link_libraries(mindspore_backend PRIVATE mindspore_ascend_res_manager)
-endif()
-
-
 target_link_libraries(_c_expression PRIVATE mindspore::glog)
 set_target_properties(_c_expression PROPERTIES INSTALL_RPATH ${ORIGIN_PATH}/lib:${ORIGIN_PATH}/lib/plugin)
 

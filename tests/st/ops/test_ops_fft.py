@@ -20,6 +20,8 @@ from mindspore.ops import fft
 from tests.mark_utils import arg_mark
 
 
+ms.context.set_context(jit_level="O0")
+
 class FFTNet(nn.Cell):
     def __init__(self):
         super(FFTNet, self).__init__()

@@ -17,6 +17,7 @@
 #include "backend/backend_manager/backend_manager.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
+#include "utils/dlopen_macro.h"
 
 namespace mindspore {
 namespace backend {
@@ -33,6 +34,14 @@ std::string GetBackendNameByType(BackendType backend_type) {
   auto iter = backend_type_to_name.find(backend_type);
   if (iter == backend_type_to_name.end()) {
     MS_LOG(EXCEPTION) << "Illegal backend type: " << backend_type;
+  }
+  return iter->second;
+}
+
+std::string GetBackendLibNameByType(BackendType backend_type) {
+  auto iter = backend_type_to_lib_name.find(backend_type);
+  if (iter == backend_type_to_lib_name.end()) {
+    MS_LOG(EXCEPTION) << "Invalid backend type for the dynamic load: " << backend_type;
   }
   return iter->second;
 }
@@ -69,6 +78,9 @@ void BackendManager::Clear() {
   for (size_t i = 0; i < kInvalidBackend; i++) {
     backends_[i] = nullptr;
   }
+
+  backend_creators_.clear();
+  backend_load_handle_.clear();
 }
 
 std::pair<BackendType, BackendGraphId> BackendManager::Build(const FuncGraphPtr &func_graph,
@@ -124,9 +136,55 @@ void BackendManager::ConvertIR(const FuncGraphPtr &anf_graph,
   return backend->ConvertIR(anf_graph, init_tensors, ir_format);
 }
 
+void BackendManager::LoadBackend(BackendType backend_type) {
+  if (backend_load_handle_.count(backend_type) > 0) {
+    return;
+  }
+  if (backend_type != kGEBackend) {
+    MS_LOG(EXCEPTION) << "Only the ge backend support the dynamic load. ";
+  }
+
+  auto backend_lib_name = GetBackendLibNameByType(backend_type);
+  void *handle;
+  std::string err_msg = "";
+#ifndef _WIN32
+  handle = dlopen(backend_lib_name.c_str(), RTLD_LAZY);
+  err_msg = GetDlErrorMsg();
+#else
+  handle = LoadLibrary(backend_lib_name.c_str());
+  err_msg = std::to_string(GetLastError());
+#endif
+
+  if (handle == nullptr) {
+    MS_LOG(EXCEPTION) << "Loading " + backend_lib_name + " failed. Error: " + err_msg;
+  }
+  (void)backend_load_handle_.emplace(backend_type, handle);
+}
+
+void BackendManager::UnloadBackend() {
+  for (auto iter : backend_load_handle_) {
+    auto backend_lib_name = GetBackendLibNameByType(iter.first);
+    auto handle = iter.second;
+#ifndef _WIN32
+    if (dlclose(handle) != 0) {
+      MS_LOG(EXCEPTION) << "Closing " + backend_lib_name + " handle failed. Error: " + GetDlErrorMsg();
+    }
+#else
+    if (!FreeLibrary(reinterpret_cast<HINSTANCE__ *>(handle))) {
+      MS_LOG(EXCEPTION) << "Closing " + backend_lib_name + " handle failed. Error: " + std::to_string(GetLastError());
+    }
+#endif
+  }
+}
+
 BackendBase *BackendManager::GetOrCreateBackend(BackendType backend_type) {
   if (backends_[backend_type] != nullptr) {
     return backends_[backend_type].get();
+  }
+
+  // Only the ge backend support the dynamic load.
+  if (backend_type == kGEBackend) {
+    LoadBackend(backend_type);
   }
 
   auto creator_iter = backend_creators_.find(backend_type);

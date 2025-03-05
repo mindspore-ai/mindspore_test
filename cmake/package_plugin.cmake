@@ -54,6 +54,12 @@ if(ENABLE_D)
         COMPONENT mindspore
         NAMELINK_SKIP
     )
+    install(
+        TARGETS mindspore_ge_backend LIBRARY
+        DESTINATION ${INSTALL_LIB_DIR}
+        COMPONENT mindspore
+        NAMELINK_SKIP
+    )
     if(ENABLE_MPI)
         install(
                 TARGETS ascend_collective
