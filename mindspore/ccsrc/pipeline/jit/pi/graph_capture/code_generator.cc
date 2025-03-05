@@ -173,10 +173,15 @@ std::pair<py::bytes, py::bytes> CodeGenerator::ConvertToCodeBytes(const std::vec
 
   int line = first_line > 0 ? first_line : 0;
   int bci = 0;
+  bool start_flag = IS_PYTHON_3_10_PLUS;
   for (const auto &i : list) {
     int addr_off = sizeof(_Py_CODEUNIT) * (i->bci() - bci);
     int line_off = i->line() - line;
     if (i->line() != -1 && line_off > 0 && line_off < INT8_MAX && addr_off < INT8_MAX) {
+      if (start_flag) {
+        --line_off;
+        start_flag = false;
+      }
       co_lnotab.push_back(addr_off);
       co_lnotab.push_back(line_off);
       bci = i->bci();
@@ -188,6 +193,10 @@ std::pair<py::bytes, py::bytes> CodeGenerator::ConvertToCodeBytes(const std::vec
     }
     co_code.push_back(_Py_MAKECODEUNIT(i->op(), oparg & 0xffu));
   }
+#if IS_PYTHON_3_10_PLUS
+  co_lnotab.push_back(sizeof(_Py_CODEUNIT) * (list.size() - static_cast<size_t>(bci)));
+  co_lnotab.push_back(1);
+#endif
   const char *code_data = reinterpret_cast<const char *>(co_code.data());
   const size_t code_size = co_code.size() * sizeof(co_code[0]);
   return {py::bytes(code_data, code_size), py::bytes(co_lnotab.data(), co_lnotab.size())};
