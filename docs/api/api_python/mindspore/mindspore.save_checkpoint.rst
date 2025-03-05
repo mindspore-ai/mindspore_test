@@ -16,7 +16,7 @@ mindspore.save_checkpoint
         
         - **ckpt_file_name** (str) - checkpoint文件名称。如果文件已存在，将会覆盖原有文件。
         - **integrated_save** (bool) - 在并行场景下是否合并保存拆分的Tensor。默认值： ``True`` 。
-        - **async_save** (Union[bool, str]) - 是否使用异步方式保存checkpoint文件，True时默认使用异步线程；如果是str类型，选择异步保存方式，可以是 "process" 或 "thread"。默认值： ``False`` 。
+        - **async_save** (Union[bool, str]) - 是否使用异步方式保存checkpoint文件或safetensors文件，True时默认使用异步线程；如果是str类型，选择异步保存方式，可以是 "process" 或 "thread"。默认值： ``False`` 。
         - **append_dict** (dict) - 需要保存的其他信息。dict的键必须为str类型，dict的值类型必须是int、float、bool、string、Parameter或Tensor类型。默认值： ``None`` 。
         - **enc_key** (Union[None, bytes]) - 用于加密的字节类型密钥。如果值为 ``None`` ，那么不需要加密。默认值： ``None`` 。
         - **enc_mode** (str) - 该参数在 `enc_key` 不为 ``None`` 时有效，指定加密模式，目前仅支持 ``"AES-GCM"`` ， ``"AES-CBC"`` 和 ``"SM4-CBC"`` 。默认值： ``"AES-GCM"`` 。

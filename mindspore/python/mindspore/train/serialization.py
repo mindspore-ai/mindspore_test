@@ -432,7 +432,10 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                 crc_num = 0
                 for name in sorted(data_list.keys()):
                     value = data_list[name]
-                    save_dict[name] = value[2].asnumpy()
+                    if isinstance(value[2], np.ndarray):
+                        save_dict[name] = value[2]
+                    else:
+                        save_dict[name] = value[2].asnumpy()
 
                     if crc_check:
                         crc_num = binascii.crc32(bytes(name, encoding='utf-8'), crc_num)
@@ -609,15 +612,13 @@ def _check_load_checkpoint_upsupported_param(format, dec_key, dec_mode):
                              f"be set to default value '{default_value}', but got '{current_value}'.")
 
 
-def _check_save_checkpoint_upsupported_param(format, enc_key, enc_mode, async_save=False, map_param_inc=False,
-                                             global_step_num=None):
+def _check_save_checkpoint_upsupported_param(format, enc_key, enc_mode, map_param_inc=False, global_step_num=None):
     """check save checkpoint unsupported param"""
     if format != "safetensors":
         return
     default_params = {
         "enc_key": None,
         "enc_mode": "AES-GCM",
-        "async_save": False,
         "map_param_inc": False,
         "global_step_num": None
     }
@@ -668,8 +669,8 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
 
         ckpt_file_name (str): Checkpoint file name. If the file name already exists, it will be overwritten.
         integrated_save (bool): Whether to integrated save in automatic model parallel scene. Default: ``True`` .
-        async_save (Union[bool, str]): Whether to use asynchronous saving of the checkpoint file, if True,
-                                    the asynchronous thread is used by default. If the type is string,
+        async_save (Union[bool, str]): Whether to use asynchronous saving of the checkpoint file or safetensors file,
+                                    if True, the asynchronous thread is used by default. If the type is string,
                                     the method of asynchronous saving, it can be "process" or "thread".
                                     Default: ``False`` .
         append_dict (dict): Additional information that needs to be saved. The key of dict must be str, the value
@@ -736,7 +737,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
     map_param_inc = kwargs.get('incremental', False)
     logger.info("Execute the process of saving checkpoint files.")
     global_step_num = kwargs.get('global_step_num', None)
-    _check_save_checkpoint_upsupported_param(format, enc_key, enc_mode, async_save, map_param_inc, global_step_num)
+    _check_save_checkpoint_upsupported_param(format, enc_key, enc_mode, map_param_inc, global_step_num)
 
     if append_dict and "__exception_save__" in append_dict:
         s1 = mindspore.hal.Stream()
@@ -1437,7 +1438,7 @@ def load_checkpoint_async(ckpt_file_name, net=None, strict_load=False, filter_pr
           And using either of those two args will override `choice_func` at the same time.
 
     Args:
-        ckpt_file_name (str): Checkpoint file name.
+        ckpt_file_name (str): Checkpoint file name. The file extension must be ``ckpt`` or ``safetensors`` .
         net (Cell, optional): The network where the parameters will be loaded. Default: ``None`` .
         strict_load (bool, optional): Whether to strict load the parameter into net. If ``False`` , it will load
                                       parameter into net when parameter name's suffix in checkpoint file is the
@@ -1495,10 +1496,11 @@ def load_checkpoint_async(ckpt_file_name, net=None, strict_load=False, filter_pr
         >>> model.train(2, dataset)
         >>> print("param dict len: ", len(param_dict), flush=True)
     """
+    format = "safetensors" if ckpt_file_name.endswith(".safetensors") else "ckpt"
     from concurrent.futures import ThreadPoolExecutor
     executor = ThreadPoolExecutor(max_workers=2)
     param_dict_future = executor.submit(load_checkpoint, ckpt_file_name, net, strict_load, filter_prefix,
-                                        dec_key, dec_mode, specify_prefix, choice_func)
+                                        dec_key, dec_mode, specify_prefix, choice_func, format=format)
     return ParamDictFuture(executor, param_dict_future)
 
 
@@ -1726,15 +1728,6 @@ def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundanc
     if param_not_load and not strict_load:
         _load_dismatch_prefix_params(net, parameter_dict, param_not_load, strict_load)
 
-    logger.info("Loading parameters into net is finished.")
-    if param_not_load:
-        logger.warning("For 'load_param_into_net', "
-                       "{} parameters in the 'net' are not loaded, because they are not in the "
-                       "'parameter_dict', please check whether the network structure is consistent "
-                       "when training and loading checkpoint. Another possibility is that "
-                       "the redundant loading is not enabled, but the loaded checkpoint is saved with "
-                       "redundancy removed. ".format(len(param_not_load)))
-        logger.warning("{} are not loaded.".format(param_not_load))
     if remove_redundancy:
         parallel_mode = context.get_auto_parallel_context("parallel_mode")
         if parallel_mode == "stand_alone":
@@ -1749,8 +1742,16 @@ def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundanc
         stage_num = _get_auto_parallel_context("pipeline_stages")
         chunk_size = device_num // stage_num
         initial_rank = (rank_id // chunk_size) * chunk_size
-        _single_parameter_broadcast(net, param_layout, rank_id, initial_rank)
+        _single_parameter_broadcast(net, param_layout, rank_id, initial_rank, param_not_load)
         mindspore.hal.synchronize()
+
+    logger.info("Loading parameters into net is finished.")
+    if param_not_load:
+        logger.warning("For 'load_param_into_net', "
+                       "{} parameters in the 'net' are not loaded, because they are not in the "
+                       "'parameter_dict', please check whether the network structure is consistent "
+                       "when training and loading checkpoint.".format(len(param_not_load)))
+        logger.warning("{} are not loaded.".format(param_not_load))
 
     return param_not_load, ckpt_not_load
 

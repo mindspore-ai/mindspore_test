@@ -168,4 +168,24 @@ def test_save_checkpoint_async(mode):
     assert 'conv2.weight' in output_param_dict3
     assert 'conv1.weight' not in output_param_dict3
     assert 'fc1.bias' not in output_param_dict3
-    
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE])
+def test_load_checkpoint_async_support_sf(mode):
+    """
+    Feature: mindspore.load_checkpoint_async
+    Description: load safetensors async.
+    Expectation: success
+    """
+    context.set_context(mode=mode, device_target="Ascend")
+    net = LeNet5()
+    ms.save_checkpoint(net, "./lenet_sf.safetensors",
+                       choice_func=lambda x: x.startswith("conv") and not x.startswith("conv1"), format="safetensors")
+    output_param_dict_fu = load_checkpoint_async("./lenet_sf.safetensors")
+    output_param_dict = output_param_dict_fu.result()
+    remove_ckpt("./lenet_sf.safetensors")
+
+    assert 'conv2.weight' in output_param_dict
+    assert 'conv1.weight' not in output_param_dict
+    assert 'fc1.bias' not in output_param_dict
