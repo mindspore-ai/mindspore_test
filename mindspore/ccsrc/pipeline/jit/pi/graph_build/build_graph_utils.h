@@ -38,6 +38,7 @@ bool IsValidOutputAbstractTensor(const AbstractBasePtr &abs);
 bool IsPrimitiveCallable(const PrimitivePtr &prim, const AbstractBasePtr &abs);
 bool IsParameterSequence(const py::object &object);
 ParameterPtr AddParameter(const FuncGraphPtr &fg);
+std::string GetParameterName(const AnfNodePtr &node);
 
 py::tuple GetMethodInfo(const py::object &obj);
 std::string GetTensorMethodName(const py::object &obj);

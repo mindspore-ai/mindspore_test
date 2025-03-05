@@ -30,6 +30,7 @@
 #include "include/common/utils/tensor_py.h"
 #include "frontend/ir/primitive_py.h"
 #include "frontend/operator/composite/composite.h"
+#include "pipeline/jit/pi/graph_build/parameter_manager.h"
 
 namespace mindspore {
 namespace pijit {
@@ -59,7 +60,13 @@ py::object ConvertToPyTensorOrParameter(const py::object &cpp_tensor) {
   }
   auto tensor = tensor::ConvertToTensor(cpp_tensor);
   if (tensor->is_parameter()) {
-    return cpp_tensor;
+    ParamInfoPtr param_info = tensor->param_info();
+    MS_EXCEPTION_IF_NULL(param_info);
+    py::object parameter = ParameterManager::GetInstance().FindParameter(param_info->name());
+    if (parameter.ptr() == nullptr) {
+      MS_LOG(DEBUG) << "Cannot find parameter: " << param_info->name();
+    }
+    return parameter;
   }
 
   return ConvertCppTensorToPyTensor(cpp_tensor);

@@ -35,6 +35,7 @@
 #include "frontend/operator/composite/auto_generate/functional_map.h"
 #include "include/common/utils/tensor_py.h"
 #include "pipeline/jit/pi/graph_build/build_graph_utils.h"
+#include "pipeline/jit/pi/graph_build/parameter_manager.h"
 
 namespace mindspore {
 namespace pijit {
@@ -201,6 +202,24 @@ void UpdateParameterFuncGraph(const AnfNodePtr &node) {
   param->set_func_graph(top_graph);
   MS_LOG(INFO) << "Update parameter function graph from " << origin_fg->ToString() << " to " << top_graph->ToString();
 }
+
+AnfNodePtr ResolveParameter(const FuncGraphPtr &graph, const py::object &parameter_obj) {
+  parse::Resolver resolver(parse::Parser::GetTopFuncGraph());
+  AnfNodePtr param_node = resolver.ResolveParameterObj(graph, parameter_obj);
+  if (param_node == nullptr) {
+    MS_LOG(DEBUG) << "Fail to resolve parameter object";
+    return nullptr;
+  }
+  UpdateParameterFuncGraph(param_node);
+
+  const std::string &param_name = GetParameterName(param_node);
+  if (param_name.empty()) {
+    MS_LOG(DEBUG) << "Fail to resolve, Parameter name is empty!";
+    return nullptr;
+  }
+  ParameterManager::GetInstance().AddParameter(param_name, parameter_obj);
+  return param_node;
+}
 }  // namespace
 
 AnfNodePtr FuncGraphBuilder::ConvertParameterTupleToNode(const py::object &input_obj) {
@@ -210,17 +229,15 @@ AnfNodePtr FuncGraphBuilder::ConvertParameterTupleToNode(const py::object &input
   auto tuple_obj = input_obj.cast<py::tuple>();
   std::vector<AnfNodePtr> inputs = {NewValueNode(prim::kPrimMakeTuple)};
   std::vector<AbstractBasePtr> inputs_abs;
-  parse::Resolver resolver(parse::Parser::GetTopFuncGraph());
   for (const auto &obj : tuple_obj) {
     if (!parse::IsParameterObject(py::cast<py::object>(obj))) {
       MS_LOG(INFO) << "Encounter non parameter object in parameter tuple object: " << py::str(obj);
       return nullptr;
     }
-    auto cur_node = resolver.ResolveParameterObj(graph_, py::cast<py::object>(obj));
+    AnfNodePtr cur_node = ResolveParameter(graph_, py::cast<py::object>(obj));
     if (cur_node == nullptr) {
       return nullptr;
     }
-    UpdateParameterFuncGraph(cur_node);
     auto cur_abs = cur_node->abstract();
     if (cur_abs == nullptr) {
       return nullptr;
@@ -256,10 +273,7 @@ AnfNodePtr FuncGraphBuilder::ConvertObjToNode(const py::object &input_obj) {
   }
   if (parse::IsParameterObject(input_obj)) {
     // Add the fv parameter and set its abstract.
-    parse::Resolver resolver(parse::Parser::GetTopFuncGraph());
-    auto ret = resolver.ResolveParameterObj(graph_, input_obj);
-    UpdateParameterFuncGraph(ret);
-    return ret;
+    return ResolveParameter(graph_, input_obj);
   }
   auto parameter_tuple_object = ConvertParameterTupleToNode(input_obj);
   if (parameter_tuple_object != nullptr) {

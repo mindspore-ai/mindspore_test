@@ -28,6 +28,7 @@
 #include "include/common/utils/convert_utils_py.h"
 #include "pipeline/jit/pi/auto_grad/function_node.h"
 #include "pipeline/jit/pi/external.h"
+#include "pipeline/jit/pi/graph_build/parameter_manager.h"
 #include "pipeline/jit/pi/graph_capture/graph_build.h"
 #include "pipeline/jit/pi/graph_capture/graph_analyzer.h"
 #include "pipeline/jit/pi/graph_compiler/abstract_type_deducer.h"
@@ -551,6 +552,7 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
   ShapeContext sc(c->origin_frame().frame(), c->input_signature().ptr());
   MS_LOG(INFO) << "Start compile " << ToString(frame.GetCode());
 
+  ParameterManager::ScopedCleaner param_auto_cleaner;
   // new guard code
   c->set_code(c->codehub()->AddOptTarget(OptOption::CreateOptionByPoint(c)));
   AddConfigToGuard(*c->conf(), c->code()->GetGuard());

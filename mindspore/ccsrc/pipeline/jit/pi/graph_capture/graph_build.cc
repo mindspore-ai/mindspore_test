@@ -3284,18 +3284,18 @@ StopTraceReason GraphBuilder::HandleCall(int depth) {
 
 static bool GuardLoopSequence(Graph *graph, ValueNode *seq_node, Py_ssize_t seq_size) {
   if (graph == nullptr || seq_node == nullptr) {
-    MS_LOG(ERROR) << "Try to guard " << seq_node << " with graph " << graph << ".";
+    MS_LOG(INFO) << "Try to guard " << seq_node << " with graph " << graph << ".";
     return false;
   }
   auto vobj = seq_node->GetVobj();
   if (vobj == nullptr) {
-    MS_LOG(ERROR) << "Try to guard " << seq_node << " but vobj is nullptr.";
+    MS_LOG(INFO) << "Try to guard " << seq_node << " but vobj is nullptr.";
     return false;
   }
   auto base_version = vobj->GetBaseVersion();
   PyObject *seq = base_version->GetPyObject().ptr();
   if (seq == nullptr || !PySequence_Check(seq)) {
-    MS_LOG(ERROR) << "Try to guard " << seq_node << " but no pyobject or not a sequence.";
+    MS_LOG(INFO) << "Try to guard " << seq_node << " but no pyobject or not a sequence.";
     return false;
   }
   // guard length
@@ -3303,6 +3303,8 @@ static bool GuardLoopSequence(Graph *graph, ValueNode *seq_node, Py_ssize_t seq_
     seq_size = PySequence_Size(seq);
   }
   if (seq_size == -1) {
+    MS_LOG(INFO) << "Failed to get sequence length for: " << ToString(seq_node)
+                 << ", reason: " << py::error_already_set().what();
     PyErr_Clear();
     return false;
   }
@@ -3362,8 +3364,9 @@ bool GraphBuilder::TraceRunForIterSequence(int jump_bci) {
   }
   Py_ssize_t size = PySequence_Size(seq);
   if (size == -1) {
+    MS_LOG(INFO) << "Failed to get sequence length for: " << ToString(seq_node)
+                 << ", reason: " << py::error_already_set().what();
     PyErr_Clear();
-    MS_LOG(INFO) << "FOR_ITER without __len__";
     return false;
   }
 

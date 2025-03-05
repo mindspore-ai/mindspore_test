@@ -236,6 +236,19 @@ ParameterPtr AddParameter(const FuncGraphPtr &fg) {
   return param;
 }
 
+std::string GetParameterName(const AnfNodePtr &node) {
+  if (node == nullptr) {
+    MS_LOG(DEBUG) << "Node is null!";
+    return "";
+  }
+  auto param = node->cast_ptr<Parameter>();
+  if (param == nullptr) {
+    MS_LOG(DEBUG) << "Node is not a Parameter, but is: " << node->DebugString();
+    return "";
+  }
+  return param->name();
+}
+
 py::tuple GetMethodInfo(const py::object &obj) {
   py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
   return python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_GET_METHOD_INFO, obj);

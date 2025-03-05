@@ -16,15 +16,15 @@
 # ============================================================================
 """ test nn.Parameter """
 
-from mindspore import context, jit, Tensor, ops, nn, mutable
+import pytest
+import sys
+
+from mindspore import context, jit, Tensor, ops, nn, Parameter
 
 from tests.mark_utils import arg_mark
-from tests.st.pi_jit.share.utils import assert_no_graph_break, assert_equal
-from tests.st.pi_jit.share.utils import pi_jit_with_config
+from tests.st.pi_jit.share.utils import assert_no_graph_break, assert_equal, assert_executed_by_graph_mode
 
-context.set_context(mode=context.PYNATIVE_MODE)
-
-jit_cfg = {'compile_with_try': False}
+SKIP_PY37 = pytest.mark.skipif(sys.version_info[:2] == (3, 7), reason="Not support py37 setup loop bytecode")
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -34,6 +34,8 @@ def test_Parameter_in_nested_tuple_list_or_dict():
     Description: Parameter in nested tuple list or dict.
     Expectation: result is right, no graph break.
     """
+
+    context.set_context(mode=context.PYNATIVE_MODE)
 
     class Model(nn.Cell):
         def __init__(self):
@@ -53,8 +55,8 @@ def test_Parameter_in_nested_tuple_list_or_dict():
     model2 = Model()
     model2.dense = model1.dense
     model2.all_params = model1.all_params
-    
-    model2.construct = pi_jit_with_config(model2.construct, jit_config=jit_cfg)
+
+    model2.construct = jit(model2.construct, capture_mode='bytecode')
 
     x = ops.rand(2, 4)
     y = ops.rand(3, 3)
@@ -68,3 +70,109 @@ def test_Parameter_in_nested_tuple_list_or_dict():
     o2 = model2(x, y)
     assert_equal(o1, o2)
     assert_no_graph_break(model2.construct, call_count=2)
+
+
+@SKIP_PY37
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_Parameter_for_loop():
+    """
+    Feature: Parameter parsing.
+    Description: Parameter for loop.
+    Expectation: result is right, no graph break.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    class Model(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.x = Parameter(Tensor([1, 2, 3]))
+
+        def construct(self, x):
+            for v in self.param():
+                x = x + v
+            return x
+
+        def param(self):
+            return self.x
+
+    model = Model()
+    a = Tensor([0])
+    o1 = model(a)
+
+    model.construct = jit(model.construct, capture_mode='bytecode')
+    a = Tensor([0])
+    o2 = model(a)
+
+    assert_equal(o1, o2)
+    assert_executed_by_graph_mode(model.construct)
+
+
+@SKIP_PY37
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_Parameter_zip_for_loop():
+    """
+    Feature: Parameter parsing.
+    Description: Parameter zip for loop.
+    Expectation: result is right, no graph break.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    class Model(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.x = Parameter(Tensor([1, 2, 3]))
+            self.lst = [1, 2, 3]
+
+        def construct(self, x):
+            for i, v in zip(self.lst, self.param()):
+                x = x + v
+            return x
+
+        def param(self):
+            return self.x
+
+    model = Model()
+    a = Tensor([0])
+    o1 = model(a)
+
+    model.construct = jit(model.construct, capture_mode='bytecode')
+    a = Tensor([0])
+    o2 = model(a)
+
+    assert_equal(o1, o2)
+    assert_executed_by_graph_mode(model.construct)
+
+
+@SKIP_PY37
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_Parameter_enumerate_for_loop():
+    """
+    Feature: Parameter parsing.
+    Description: Parameter enumerate for loop.
+    Expectation: result is right, no graph break.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    class Model(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.x = Parameter(Tensor([1, 2, 3]))
+
+        def construct(self, x):
+            for i, v in enumerate(self.param()):
+                x = x + v
+            return x
+
+        def param(self):
+            return self.x
+
+    model = Model()
+    a = Tensor([0])
+    o1 = model(a)
+
+    model.construct = jit(model.construct, capture_mode='bytecode')
+    a = Tensor([0])
+    o2 = model(a)
+
+    assert_equal(o1, o2)
+    assert_executed_by_graph_mode(model.construct)
