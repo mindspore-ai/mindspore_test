@@ -16,7 +16,7 @@
 
 #include "kernel/gpu/arrays/copy_with_slice_gpu_kernel.h"
 #include <functional>
-#include "plugin/device/gpu/hal/device/cuda_driver.h"
+#include "plugin/res_manager/gpu/device/cuda_driver.h"
 #include "utils/log_adapter.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/copy_with_slice_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"

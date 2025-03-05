@@ -17,12 +17,12 @@
 #include <set>
 #include <algorithm>
 #include "include/backend/mem_reuse/mem_tracker.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/graph_scheduler/actor/super_kernel_actor.h"
 #include "runtime/graph_scheduler/scheduler_helper.h"
 #include "runtime/graph_scheduler/actor/output_actor.h"
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/graph_scheduler/actor/debug_actor.h"
-#include "runtime/device/multi_stream_controller.h"
 #include "async/async.h"
 #include "utils/phase.h"
 #include "utils/llm_manager.h"
@@ -691,13 +691,14 @@ void SuperKernelActor::FetchParameterInput(const KernelActorPtr &kernel_actor, O
   if (insert_event_iter != kernel_actors_insert_event_.end()) {
     auto stream_id = kernel_actor->kernel_info_->stream_id();
     if (stream_id != kDefaultStreamIndex) {
-      auto multi_stream_controller = device::MultiStreamController::GetInstance();
-      MS_EXCEPTION_IF_NULL(multi_stream_controller);
       auto device_context = kernel_actor->device_contexts_[0];
       MS_EXCEPTION_IF_NULL(device_context);
       MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
+      auto &multi_stream_controller =
+        device::HalResManager::GetInstance().GetMultiStreamController(device_context->DeviceName());
+      MS_EXCEPTION_IF_NULL(multi_stream_controller);
       device_context->device_res_manager_->BindDeviceToCurrentThread(false);
-      multi_stream_controller->DispatchRecordWaitEvent(device_context, stream_id, kDefaultStreamIndex);
+      multi_stream_controller->DispatchRecordWaitEvent(stream_id, kDefaultStreamIndex);
     }
   }
 

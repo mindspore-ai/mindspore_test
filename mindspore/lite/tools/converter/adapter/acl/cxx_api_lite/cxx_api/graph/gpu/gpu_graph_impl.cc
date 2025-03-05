@@ -23,7 +23,7 @@
 #include "backend/common/session/session_basic.h"
 #include "backend/common/session/executor_manager.h"
 #include "runtime/device/kernel_runtime_manager.h"
-#include "plugin/device/gpu/hal/device/cuda_driver.h"
+#include "plugin/res_manager/gpu/device/cuda_driver.h"
 
 namespace mindspore {
 API_GRAPH_REG(kGPUDevice, GPUGraphImpl);

@@ -30,7 +30,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "ops_utils/op_utils.h"
-#include "plugin/device/gpu/hal/device/kernel_info_setter.h"
+#include "plugin/res_manager/gpu/device/kernel_info_setter.h"
 
 namespace mindspore {
 namespace opt {

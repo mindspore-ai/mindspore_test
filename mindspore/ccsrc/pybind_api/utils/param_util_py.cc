@@ -22,7 +22,7 @@
 #include "utils/ms_context.h"
 #include "include/common/pybind_api/api_register.h"
 #include "include/common/utils/tensor_py.h"
-#include "runtime/device/multi_stream_controller.h"
+#include "runtime/device/res_manager/multi_stream_controller.h"
 
 namespace mindspore {
 namespace {

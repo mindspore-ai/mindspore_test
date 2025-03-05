@@ -19,7 +19,7 @@
 #if CUDA_VERSION > 11000
 #include <cuco/dynamic_map.cuh>
 #include <curand_kernel.h>
-#include "plugin/device/gpu/hal/device/gpu_hash_table_common.h"
+#include "plugin/res_manager/gpu/device/gpu_hash_table_common.h"
 
 namespace mindspore {
 namespace device {

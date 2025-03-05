@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/gpu/hal/device/gpu_hash_table_dummy.h"
+#include "plugin/res_manager/gpu/device/gpu_hash_table_dummy.h"
 
 namespace mindspore {
 namespace device {

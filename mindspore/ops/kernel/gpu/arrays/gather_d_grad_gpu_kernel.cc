@@ -18,7 +18,7 @@
 #include <functional>
 #include "mindspore/ops/op_def/array_ops.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
-#include "plugin/device/gpu/hal/device/gpu_device_address.h"
+#include "plugin/res_manager/gpu/device/gpu_device_address.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 
 namespace mindspore {

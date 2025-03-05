@@ -28,7 +28,7 @@
 #include "utils/ms_context.h"
 #include "plugin/device/gpu/optimizer/trt_pass/trt_converter_context.h"
 #include "utils/singleton.h"
-#include "plugin/device/gpu/hal/device/cuda_driver.h"
+#include "plugin/res_manager/gpu/device/cuda_driver.h"
 #include "plugin/device/gpu/hal/device/trt_loader.h"
 
 namespace mindspore {

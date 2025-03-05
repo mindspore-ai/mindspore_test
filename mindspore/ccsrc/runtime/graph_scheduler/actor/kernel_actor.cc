@@ -20,7 +20,8 @@
 #include <algorithm>
 #include <unordered_map>
 #include <limits>
-#include "runtime/device/multi_stream_controller.h"
+
+#include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/graph_scheduler/actor/output_actor.h"
 #include "runtime/graph_scheduler/actor/recorder_actor.h"
@@ -1227,11 +1228,11 @@ bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_s
     return ret;
   }
 
-  auto multi_stream_controller = device::MultiStreamController::GetInstance();
+  auto &multi_stream_controller =
+    device::HalResManager::GetInstance().GetMultiStreamController(device_contexts_[0]->DeviceName());
   bool ret = false;
   if (!ActorDispatcher::enable_async_launch_kernel()) {
-    std::lock_guard<std::mutex> lock(
-      multi_stream_controller->GetStreamMutex(device_contexts_[0], kernel_info_->stream_id()));
+    std::lock_guard<std::mutex> lock(multi_stream_controller->GetStreamMutex(kernel_info_->stream_id()));
     ProcessMultiStreamBeforeKernelLaunch(context);
     ret = LaunchKernelWithDebug(context, is_skip_launch);
     ProcessMultiStreamAfterKernelLaunch(context);
@@ -1248,11 +1249,12 @@ void KernelActor::ProcessMultiStreamBeforeKernelLaunch(OpContext<DeviceTensor> *
   auto device_context = device_contexts_[0];
   auto stream_id = kernel_info_->stream_id();
   // Update output_kernel_tensors_ with task id on stream.
-  auto multi_stream_controller = device::MultiStreamController::GetInstance();
-  auto task_id_on_stream = multi_stream_controller->LaunchTaskIdOnStream(device_context, stream_id);
+  auto &multi_stream_controller =
+    device::HalResManager::GetInstance().GetMultiStreamController(device_context->DeviceName());
+  auto task_id_on_stream = multi_stream_controller->LaunchTaskIdOnStream(stream_id);
   // Adapter for mc2 kernel, need more process later.
   if (is_mc2_kernel_) {
-    multi_stream_controller->DispatchRecordWaitEvent(device_context, kDefaultStreamIndex, kWorldGroupStreamIndex);
+    multi_stream_controller->DispatchRecordWaitEvent(kDefaultStreamIndex, kWorldGroupStreamIndex);
   }
   MS_LOG(DEBUG) << "device context : " << device_context
                 << ", name : " << device_context->device_context_key().device_name_ << ", stream id : " << stream_id
@@ -1280,7 +1282,7 @@ void KernelActor::ProcessMultiStreamBeforeKernelLaunch(OpContext<DeviceTensor> *
     MS_LOG(DEBUG) << "Process wait stream start, memory_stream_id : " << memory_stream_id
                   << ", send task id on stream : " << *(stream_send_actor_->task_id_on_stream_) << ".";
     // Here, need get task id on stream from send node.
-    (void)multi_stream_controller->WaitEvent(device_context, *(stream_send_actor_->task_id_on_stream_), user_stream_id,
+    (void)multi_stream_controller->WaitEvent(*(stream_send_actor_->task_id_on_stream_), user_stream_id,
                                              memory_stream_id);
     return;
   }
@@ -1337,24 +1339,22 @@ void KernelActor::ProcessMultiStreamBeforeKernelLaunch(OpContext<DeviceTensor> *
       auto user_stream_id = stream_id;
       auto memory_stream_id = cross_stream_kernel_tensor->stream_id();
       auto memory_task_id_on_stream = *cross_stream_kernel_tensor->task_id_on_stream();
-      auto safe_task_id_on_stream =
-        multi_stream_controller->QueryTaskIdOnStream(device_context, user_stream_id, memory_stream_id);
+      auto safe_task_id_on_stream = multi_stream_controller->QueryTaskIdOnStream(user_stream_id, memory_stream_id);
       if (safe_task_id_on_stream >= memory_task_id_on_stream) {
         MS_LOG(DEBUG) << "Safe_task_id_on_stream : " << safe_task_id_on_stream
                       << " is bigger than memory_task_id_on_stream : " << memory_task_id_on_stream << ".";
         continue;
       }
-      multi_stream_controller->DispatchRecordWaitEvent(device_context, user_stream_id, memory_stream_id);
+      multi_stream_controller->DispatchRecordWaitEvent(user_stream_id, memory_stream_id);
       // Add recv process.
       user_stream_id = memory_stream_id;
       memory_stream_id = stream_id;
-      auto last_task_id_on_stream = multi_stream_controller->GetTaskIdOnStream(device_context, user_stream_id);
-      MS_LOG(DEBUG) << "Dispatch wait stream start, usert_stream_id : " << user_stream_id
+      auto last_task_id_on_stream = multi_stream_controller->GetTaskIdOnStream(user_stream_id);
+      MS_LOG(DEBUG) << "Dispatch wait stream start, user_stream_id : " << user_stream_id
                     << ", memory_stream_id : " << memory_stream_id
                     << ", last_task_id_on_stream : " << last_task_id_on_stream << ".";
       // Here, need get task id on stream from send node.
-      (void)multi_stream_controller->WaitEvent(device_context, last_task_id_on_stream, user_stream_id,
-                                               memory_stream_id);
+      (void)multi_stream_controller->WaitEvent(last_task_id_on_stream, user_stream_id, memory_stream_id);
     }
   }
 }
@@ -1380,8 +1380,9 @@ void KernelActor::ProcessMultiStreamAfterKernelLaunch(OpContext<DeviceTensor> *c
                     << ", addresses size : " << cross_stream_addresses_.size() << ".";
       // Record event on stream.
       auto device_context = device_contexts_[0];
-      auto multi_stream_controller = device::MultiStreamController::GetInstance();
-      multi_stream_controller->RecordEvent(device_context, *task_id_on_stream_, stream_id, cross_stream_addresses_);
+      auto &multi_stream_controller =
+        device::HalResManager::GetInstance().GetMultiStreamController(device_context->DeviceName());
+      multi_stream_controller->RecordEvent(*task_id_on_stream_, stream_id, cross_stream_addresses_);
     }
   }
 }

@@ -24,8 +24,8 @@
 #include <vector>
 #include <set>
 #include <memory>
-#include "plugin/device/gpu/hal/device/cuda_driver.h"
-#include "plugin/device/gpu/hal/device/gpu_memory_allocator.h"
+#include "plugin/res_manager/gpu/device/cuda_driver.h"
+#include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
 
 namespace mindspore {
 namespace device {

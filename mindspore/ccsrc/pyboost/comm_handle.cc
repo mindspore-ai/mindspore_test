@@ -18,7 +18,7 @@
 #include "mindspore/ccsrc/pyboost/comm_utils.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pipeline/task/device_task.h"
-#include "runtime/device/multi_stream_controller.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
 namespace kernel {
@@ -36,8 +36,9 @@ void CommHandle::RecordEvent(size_t stream_id) {
 }
 
 void CommHandle::UpdateTaskId(size_t stream_id) {
-  device::MultiStreamController::GetInstance()->Refresh(device_ctx_);
-  auto task_id = device::MultiStreamController::GetInstance()->LaunchTaskIdOnStream(device_ctx_, stream_id);
+  auto &controller = device::HalResManager::GetInstance().GetMultiStreamController(device_ctx_->DeviceName());
+  controller->Refresh();
+  auto task_id = controller->LaunchTaskIdOnStream(stream_id);
   *task_id_on_stream_ = task_id;
   *record_stream_id_ = stream_id;
 }
@@ -63,8 +64,9 @@ void CommHandle::ReleaseMultiStreamEvent(size_t cur_stream_id) {
                 << ", event:" << event_ << ", task_id_on_stream:" << *task_id_on_stream_;
   // Release cross stream memory event, mark record_stream_id is use stream id, wait stream id is memory stream
   // id.
-  (void)device::MultiStreamController::GetInstance()->WaitEvent(device_ctx_, *task_id_on_stream_, *record_stream_id_,
-                                                                cur_stream_id);
+  (void)device::HalResManager::GetInstance()
+    .GetMultiStreamController(device_ctx_->DeviceName())
+    ->WaitEvent(*task_id_on_stream_, *record_stream_id_, cur_stream_id);
 }
 }  // namespace pyboost
 }  // namespace kernel

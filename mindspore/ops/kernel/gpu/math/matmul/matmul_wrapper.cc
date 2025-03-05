@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mindspore/ccsrc/plugin/device/gpu/device_context_conf/op_precision_conf.h"
+#include "mindspore/ccsrc/plugin/res_manager/gpu/device_context_conf/op_precision_conf.h"
 #include "kernel/gpu/math/matmul/matmul_wrapper.h"
 
 namespace mindspore {

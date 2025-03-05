@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "plugin/device/gpu/hal/device/gpu_event.h"
+#include "plugin/res_manager/gpu/device/gpu_event.h"
 #include "plugin/device/gpu/hal/device/gpu_common.h"
-#include "plugin/device/gpu/hal/device/gpu_device_manager.h"
+#include "plugin/res_manager/gpu/device/gpu_device_manager.h"
 
 namespace mindspore::device::gpu {
 GpuEvent::GpuEvent() {

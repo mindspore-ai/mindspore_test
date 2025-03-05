@@ -27,6 +27,7 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "plugin/device/gpu/hal/hardware/gpu_deprecated_interface.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_device_info.h"
+#include "plugin/res_manager/gpu/gpu_res_manager.h"
 
 namespace mindspore {
 namespace device {
@@ -34,7 +35,13 @@ namespace gpu {
 class GPUKernelExecutor;
 class GPUDeviceResManager : public DeviceResManager {
  public:
-  GPUDeviceResManager() {}
+  GPUDeviceResManager() {
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    ResKey res_key = {DeviceTargetType::kGPU, device_id};
+    gpu_res_manager_ = static_cast<GPUResManager *>(HalResManager::GetInstance().GetOrCreateResManager(res_key));
+  }
   ~GPUDeviceResManager() override = default;
 
   // Set device id and initialize device resource, such as stream, cudnn and cublas handle.
@@ -89,6 +96,7 @@ class GPUDeviceResManager : public DeviceResManager {
   DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking) override;
 
   bool LoadCollectiveCommLib() override;
+  mindspore::device::CollectiveCommunicationLib *collective_comm_lib() const override;
 
   bool single_op_multi_stream_enable() const override;
   void set_single_op_multi_stream_enable(bool single_op_multi_stream_enable) override;
@@ -121,6 +129,7 @@ class GPUDeviceResManager : public DeviceResManager {
  private:
   friend class GPUKernelExecutor;
   bool InitDevice();
+  GPUResManager *gpu_res_manager_{nullptr};
 };
 
 class GPUKernelExecutor : public KernelExecutor {

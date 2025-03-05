@@ -139,6 +139,17 @@ class AscendResManager : public HalResBase {
   bool AllocateForHete(DeviceAddress *const &address, mindspore::kernel::HeterogeneousInfoPtr hete_info) const;
   void FreeForHete(mindspore::kernel::HeterogeneousInfoPtr hete_info) const;
 
+  // Override interface for multi stream event control.
+  bool RecordEvent(int64_t task_id_on_stream, uint32_t user_stream_id,
+                   const std::vector<std::pair<uint32_t, DeviceMemPtr>> &memory_stream_addresses,
+                   const DeviceEventPtr &input_event) override;
+
+  bool WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id, uint32_t memory_stream_id) override;
+
+  bool WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id) override;
+
+  bool SyncAllEvents() override;
+
  private:
   bool is_use_cpu_memory_ = false;
   MemUceInfo mem_uce_info_;

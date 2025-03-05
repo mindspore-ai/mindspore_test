@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/gpu/hal/device/cuda_driver.h"
+#include "plugin/res_manager/gpu/device/cuda_driver.h"
 #include <nvrtc.h>
 #include "utils/log_adapter.h"
 #include "include/common/utils/convert_utils.h"

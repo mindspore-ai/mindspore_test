@@ -17,7 +17,7 @@
 #include "kernel/gpu/environ/environ_gpu_set.h"
 #include "kernel/environ_manager.h"
 #include "kernel/common_utils.h"
-#include "plugin/device/gpu/hal/device/gpu_memory_allocator.h"
+#include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
 
 namespace mindspore {
 namespace kernel {

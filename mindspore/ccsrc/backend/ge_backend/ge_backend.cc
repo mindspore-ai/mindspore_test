@@ -805,8 +805,9 @@ void GEBackend::WaitMultiStream() {
   MS_EXCEPTION_IF_NULL(device_context);
 
   if (device::ascend::AscendStreamMng::GetInstance().single_op_multi_stream_enable()) {
-    device::MultiStreamController::GetInstance()->WaitMultiStream(
-      device_context, device::ascend::AscendStreamMng::GetInstance().default_stream_id());
+    device::HalResManager::GetInstance()
+      .GetMultiStreamController(device_target)
+      ->WaitMultiStream(device::ascend::AscendStreamMng::GetInstance().default_stream_id());
   }
 }
 
@@ -1739,7 +1740,7 @@ BackendGraphId GEBackend::CompileSubGraph(const FuncGraphPtr &func_graph, const 
 
   for (const auto &graph_id_to_context : graph_id_to_device_context_) {
     auto context = graph_id_to_context.second;
-    device::MultiStreamController::GetInstance()->Refresh(context);
+    device::HalResManager::GetInstance().GetMultiStreamController(context->DeviceName())->Refresh();
   }
 
   MS_LOG(INFO) << "Status record: end compile graph.";

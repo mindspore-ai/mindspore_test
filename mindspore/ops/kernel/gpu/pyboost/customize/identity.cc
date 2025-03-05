@@ -17,7 +17,7 @@
 #include "kernel/gpu/pyboost/customize/identity.h"
 #include <memory>
 #include <utility>
-#include "plugin/device/gpu/hal/device/gpu_device_manager.h"
+#include "plugin/res_manager/gpu/device/gpu_device_manager.h"
 #include "mindspore/ccsrc/pyboost/customize/identity.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 

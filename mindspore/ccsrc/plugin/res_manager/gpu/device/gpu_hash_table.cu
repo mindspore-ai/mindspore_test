@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/gpu/hal/device/gpu_hash_table.h"
+#include "plugin/res_manager/gpu/device/gpu_hash_table.h"
 
 #if CUDA_VERSION > 11000
 #include <cuco/dynamic_map.cuh>
@@ -22,10 +22,10 @@
 #include <algorithm>
 #include <unordered_set>
 
-#include "plugin/device/gpu/hal/device/gpu_hash_table_kernel.cuh"
+#include "plugin/res_manager/gpu/device/gpu_hash_table_kernel.cuh"
 #include "utils/log_adapter.h"
 #include "utils/convert_utils_base.h"
-#include "plugin/device/gpu/hal/device/gpu_device_manager.h"
+#include "plugin/res_manager/gpu/device/gpu_device_manager.h"
 
 namespace mindspore {
 namespace device {

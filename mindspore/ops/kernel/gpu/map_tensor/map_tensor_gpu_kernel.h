@@ -23,9 +23,9 @@
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #ifndef ENABLE_ASAN
-#include "plugin/device/gpu/hal/device/gpu_hash_table.h"
+#include "plugin/res_manager/gpu/device/gpu_hash_table.h"
 #else
-#include "plugin/device/gpu/hal/device/gpu_hash_table_dummy.h"
+#include "plugin/res_manager/gpu/device/gpu_hash_table_dummy.h"
 #endif
 
 namespace mindspore {

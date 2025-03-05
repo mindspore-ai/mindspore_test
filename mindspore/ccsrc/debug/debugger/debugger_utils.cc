@@ -738,9 +738,10 @@ void LaunchDeviceStatCallback(std::vector<TensorInfoForDump> *tensor_info_vec_pt
   const std::vector<std::string> &stat_name_list = DumpJsonParser::GetInstance().statistic_category();
   std::vector<TensorInfoForDump> &tensor_info_vec = *tensor_info_vec_ptr;
   auto enable_stream_control = DumpJsonParser::GetInstance().IsDeviceStatHighPrecisionMode();
-  auto multi_stream_controller = device::MultiStreamController::GetInstance();
+  auto &multi_stream_controller =
+    device::HalResManager::GetInstance().GetMultiStreamController(device_context->DeviceName());
   if (enable_stream_control && stream_id != kDefaultStreamIndex) {
-    multi_stream_controller->DispatchRecordWaitEvent(device_context, stream_id, kDefaultStreamIndex);
+    multi_stream_controller->DispatchRecordWaitEvent(stream_id, kDefaultStreamIndex);
   }
   // launch statistic kernel
   for (auto &tensor_info : tensor_info_vec) {
@@ -761,7 +762,7 @@ void LaunchDeviceStatCallback(std::vector<TensorInfoForDump> *tensor_info_vec_pt
     MS_LOG(ERROR) << "Async device statistic dump callback launch fail.";
   }
   if (enable_stream_control && stream_id != kDefaultStreamIndex) {
-    multi_stream_controller->DispatchRecordWaitEvent(device_context, kDefaultStreamIndex, stream_id);
+    multi_stream_controller->DispatchRecordWaitEvent(kDefaultStreamIndex, stream_id);
   }
 }
 

@@ -42,8 +42,8 @@
 #include "mindspore/ops/op_def/sparse_tensor_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "runtime/device/device_address_utils.h"
-#include "runtime/device/multi_stream_controller.h"
 #include "runtime/device/pre_launch_comm.h"
+#include "runtime/device/res_manager/multi_stream_controller.h"
 #include "runtime/graph_scheduler/graph_compiler.h"
 #include "runtime/pynative/graph_adapter.h"
 #include "runtime/pipeline/pipeline.h"
@@ -1551,7 +1551,9 @@ void MSBackendBase::WaitMultiStream(const GraphCompilerInfo &graph_compiler_info
   for (auto device_context : graph_compiler_info.device_contexts_) {
     MS_EXCEPTION_IF_NULL(device_context);
     if (device_context->device_res_manager_->single_op_multi_stream_enable()) {
-      device::MultiStreamController::GetInstance()->WaitMultiStream(device_context, kDefaultStreamIndex);
+      device::HalResManager::GetInstance()
+        .GetMultiStreamController(device_context->DeviceName())
+        ->WaitMultiStream(kDefaultStreamIndex);
     }
   }
 }
@@ -2078,7 +2080,7 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
 
   for (const auto &graph_id_to_context : graph_id_to_device_context_) {
     auto context = graph_id_to_context.second;
-    device::MultiStreamController::GetInstance()->Refresh(context);
+    device::HalResManager::GetInstance().GetMultiStreamController(context->DeviceName())->Refresh();
   }
 
   PROF_END(compile_backend_graph);

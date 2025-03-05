@@ -20,7 +20,7 @@
 #include "utils/ms_context.h"
 #include "include/common/pybind_api/api_register.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "runtime/device/multi_stream_controller.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "runtime/hardware/device_context.h"
 
@@ -30,8 +30,9 @@ namespace {
 void Synchronize() {
   auto device_ctx = GetDeviceCtx();
   runtime::Pipeline::Get().WaitAll();
-  device::MultiStreamController::GetInstance()->Refresh(device_ctx);
-  (void)device::MultiStreamController::GetInstance()->SyncAllStreams(device_ctx);
+  auto &controller = device::HalResManager::GetInstance().GetMultiStreamController(device_ctx->DeviceName());
+  controller->Refresh();
+  (void)controller->SyncAllStreams();
 }
 
 std::vector<tensor::TensorPtr> ValuePtrListToTensorList(const ValuePtrList &value_list) {

@@ -23,8 +23,8 @@
 #include <utility>
 #include <map>
 #include <unordered_map>
-#include "mindspore/ccsrc/plugin/device/gpu/device_context_conf/op_precision_conf.h"
-#include "mindspore/ccsrc/plugin/device/gpu/device_context_conf/op_tuning_conf.h"
+#include "mindspore/ccsrc/plugin/res_manager/gpu/device_context_conf/op_precision_conf.h"
+#include "mindspore/ccsrc/plugin/res_manager/gpu/device_context_conf/op_tuning_conf.h"
 
 namespace mindspore {
 namespace kernel {

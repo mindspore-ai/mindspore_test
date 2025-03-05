@@ -52,7 +52,7 @@ endif()
 
 if(ENABLE_GPU)
     install(
-        TARGETS mindspore_gpu
+        TARGETS mindspore_gpu mindspore_gpu_res_manager
         DESTINATION ${INSTALL_PLUGIN_DIR}
         COMPONENT mindspore
     )

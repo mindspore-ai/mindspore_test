@@ -260,6 +260,21 @@ class RES_EXPORT HalResBase {
     return true;
   }
 
+  // Interface for multi stream event control.
+  virtual bool RecordEvent(int64_t task_id_on_stream, uint32_t user_stream_id,
+                           const std::vector<std::pair<uint32_t, DeviceMemPtr>> &memory_stream_addresses,
+                           const DeviceEventPtr &input_event) {
+    return false;
+  }
+
+  virtual bool WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id, uint32_t memory_stream_id) {
+    return false;
+  }
+
+  virtual bool WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id) { return false; }
+
+  virtual bool SyncAllEvents() { return false; }
+
  protected:
   std::mutex device_events_mutex_;
 
