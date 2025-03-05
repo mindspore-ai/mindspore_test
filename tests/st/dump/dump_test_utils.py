@@ -18,7 +18,6 @@ Utils for testing dump feature.
 
 import json
 import os
-import time
 import glob
 import csv
 import numpy as np
@@ -256,34 +255,6 @@ def generate_dump_json(dump_path, json_file_name, test_key, net_name='Net', over
     with open(json_file_name, 'w') as f:
         json.dump(data, f)
 
-
-def generate_dump_json_with_overflow(dump_path, json_file_name, test_key, op, overflow_number=0):
-    """
-    Util function to generate dump configuration json file.
-    """
-    if test_key in ["test_async_dump", "test_ge_dump", "test_overflow_acl_dump"]:
-        data = async_dump_dict
-        common_dump_settings = data.get("common_dump_settings", "")
-        if not isinstance(common_dump_settings, dict):
-            raise ValueError("Common_dump_settings should be dict, but got %s." % type(common_dump_settings))
-        common_dump_settings["path"] = dump_path
-        common_dump_settings["op_debug_mode"] = op
-    elif test_key in ["test_async_dump_npy", "test_ge_dump_npy"]:
-        data = async_dump_dict
-        common_dump_settings = data.get("common_dump_settings", "")
-        if not isinstance(common_dump_settings, dict):
-            raise ValueError("Common_dump_settings should be dict, but got %s." % type(common_dump_settings))
-        common_dump_settings["path"] = dump_path
-        common_dump_settings["op_debug_mode"] = op
-        common_dump_settings["file_format"] = "npy"
-        common_dump_settings["overflow_number"] = overflow_number
-    else:
-        raise ValueError(
-            "Failed to generate dump json file. Overflow only support in async dump")
-    with open(json_file_name, 'w') as f:
-        json.dump(data, f)
-
-
 def generate_statistic_dump_json(dump_path, json_file_name, test_key, saved_data, net_name='Net',
                                  statistic_category=None):
     """
@@ -309,21 +280,6 @@ def generate_statistic_dump_json(dump_path, json_file_name, test_key, saved_data
     data["common_dump_settings"]["net_name"] = net_name
     if statistic_category:
         data["common_dump_settings"]["statistic_category"] = statistic_category
-    with open(json_file_name, 'w') as f:
-        json.dump(data, f)
-
-
-def generate_cell_dump_json(dump_path, json_file_name, test_key, dump_mode):
-    """
-    Util function to generate dump configuration json file.
-    """
-    if test_key == "test_async_dump":
-        data = async_dump_dict
-        data["common_dump_settings"]["path"] = dump_path
-        data["common_dump_settings"]["dump_mode"] = dump_mode
-    else:
-        raise ValueError(
-            "Failed to generate dump json file. Overflow only support in async dump")
     with open(json_file_name, 'w') as f:
         json.dump(data, f)
 
@@ -372,15 +328,6 @@ def check_dump_structure(dump_path, json_file_path, num_card, num_graph, num_ite
                     it_id_path = os.path.join(graph_id_path, str(iteration_id))
                     assert os.path.isdir(it_id_path)
 
-
-def find_nth_pos(string, substring, n):
-    start = string.find(substring)
-    while n > 1 and start >= 0:
-        start = string.find(substring, start + len(substring))
-        n -= 1
-    return start
-
-
 def check_statistic_dump(dump_file_path):
     output_name = "statistic.csv"
     output_path = glob.glob(os.path.join(dump_file_path, output_name))[0]
@@ -417,130 +364,3 @@ def check_data_dump(dump_file_path):
     output = np.load(real_path)
     expect = np.array([[8, 10, 12], [14, 16, 18]], np.float32)
     assert np.array_equal(output, expect)
-
-
-def check_saved_data(iteration_path, saved_data):
-    if not saved_data:
-        return
-    if saved_data in ('statistic', 'full'):
-        check_statistic_dump(iteration_path)
-    if saved_data in ('tensor', 'full'):
-        check_data_dump(iteration_path)
-    if saved_data == 'statistic':
-        # assert only file is statistic.csv, tensor data is not saved
-        assert len(os.listdir(iteration_path)) == 1
-    elif saved_data == 'tensor':
-        # assert only tensor data is saved, not statistics
-        stat_path = os.path.join(iteration_path, 'statistic.csv')
-        assert not os.path.isfile(stat_path)
-
-
-def check_overflow_file(iteration_path, overflow_num, need_check):
-    if not need_check:
-        return overflow_num
-    overflow_files = glob.glob(os.path.join(iteration_path, "Opdebug.Node_OpDebug.*.*.*"))
-    overflow_num += len(overflow_files)
-    return overflow_num
-
-
-def check_iteration(iteration_id, num_iteration):
-    if iteration_id.isdigit():
-        assert int(iteration_id) < num_iteration
-
-
-def check_ge_dump_structure(dump_path, num_iteration, device_num=1, check_overflow=False, saved_data=None,
-                            check_data=True, check_overflow_num=False, overflow_number=0):
-    overflow_num = 0
-    for _ in range(3):
-        if not os.listdir(dump_path):
-            time.sleep(2)
-    sub_paths = os.listdir(dump_path)
-    assert sub_paths
-    device_path_num = 0
-    for sub_path in sub_paths:
-        # on GE, the whole dump directory of one training is saved within a time path, like '20230822120819'
-        if not (sub_path.isdigit() and len(sub_path) == 14):
-            continue
-        time_path = os.path.join(dump_path, sub_path)
-        assert os.path.isdir(time_path)
-        device_paths = os.listdir(time_path)
-        device_path_num += len(device_paths)
-        for device_path in device_paths:
-            assert device_path.isdigit()
-            abs_device_path = os.path.join(time_path, device_path)
-            assert os.path.isdir(abs_device_path)
-            model_names = os.listdir(abs_device_path)
-            for model_name in model_names:
-                model_path = os.path.join(abs_device_path, model_name)
-                assert os.path.isdir(model_path)
-                model_ids = os.listdir(model_path)
-                for model_id in model_ids:
-                    model_id_path = os.path.join(model_path, model_id)
-                    assert os.path.isdir(model_id_path)
-                    iteration_ids = os.listdir(model_id_path)
-                    for iteration_id in iteration_ids:
-                        check_iteration(iteration_id, num_iteration)
-                        iteration_path = os.path.join(model_id_path, iteration_id)
-                        assert os.path.isdir(iteration_path)
-                        if check_data:
-                            check_saved_data(iteration_path, saved_data)
-                        overflow_num = check_overflow_file(iteration_path, overflow_num, check_overflow)
-    assert device_path_num == device_num
-    if check_overflow:
-        assert overflow_num
-    if check_overflow_num:
-        assert overflow_num == overflow_number
-
-
-def check_aclnn_dump(abs_device_path):
-    files = os.listdir(abs_device_path)
-    for every_file in files:
-        abs_path = os.path.join(abs_device_path, every_file)
-        assert os.path.isfile(abs_path)
-    assert len(files) == 4
-
-
-def check_acldump_wholegraph(abs_device_path, check_overflow=False, saved_data=None):
-    overflow_num = 0
-    model_names = os.listdir(abs_device_path)
-    for model_name in model_names:
-        model_path = os.path.join(abs_device_path, model_name)
-        assert os.path.isdir(model_path)
-        model_ids = os.listdir(model_path)
-        for model_id in model_ids:
-            model_id_path = os.path.join(model_path, model_id)
-            assert os.path.isdir(model_id_path)
-            iteration_ids = os.listdir(model_id_path)
-            for iteration_id in iteration_ids:
-                iteration_path = os.path.join(model_id_path, iteration_id)
-                assert os.path.isdir(iteration_path)
-                check_saved_data(iteration_path, saved_data)
-                overflow_num = check_overflow_file(iteration_path, overflow_num, check_overflow)
-    if check_overflow:
-        assert overflow_num
-
-
-def check_ge_dump_structure_acl(dump_path, num_iteration, device_num=1, check_overflow=False, saved_data=None,
-                                is_kbk=False):
-    for _ in range(3):
-        if not os.path.exists(dump_path):
-            time.sleep(2)
-    assert os.path.isdir(dump_path)
-    iteration_path = os.path.join(dump_path, str(num_iteration))
-    assert os.path.isdir(iteration_path)
-    dump_device_num = 0
-    sub_paths = os.listdir(iteration_path)
-    for sub_path in sub_paths:
-        time_path = os.path.join(iteration_path, sub_path)
-        assert os.path.isdir(time_path)
-        device_paths = os.listdir(time_path)
-        dump_device_num += len(device_paths)
-        for device_path in device_paths:
-            assert device_path.isdigit()
-            abs_device_path = os.path.join(time_path, device_path)
-            assert os.path.isdir(abs_device_path)
-            if not is_kbk:
-                check_acldump_wholegraph(abs_device_path, check_overflow, saved_data)
-            else:
-                check_aclnn_dump(abs_device_path)
-    assert dump_device_num == device_num

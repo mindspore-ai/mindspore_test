@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "debug/hooker/acl_data_adapter.h"
+#include "backend/ge_backend/dump/acl_data_adapter.h"
 #include <string>
 #include <vector>
 #include <memory>
@@ -25,7 +25,7 @@ constexpr uint32_t kAllKernelNames = 0;
 constexpr uint32_t kIsKbyK = 1;
 
 namespace mindspore {
-namespace hooker {
+namespace dump {
 void AclDataAdapter::AdaptOnStepBegin(uint32_t device_id, int step_count_num, std::vector<std::string> all_kernel_names,
                                       bool is_kbyk) {
   if (!isLoaded) {
@@ -70,5 +70,5 @@ void AclDataAdapter::Load() {
 }
 
 REGISTER_ADAPTER(device::DeviceType::kAscend, AclDataAdapter);
-}  // namespace hooker
+}  // namespace dump
 }  // namespace mindspore
