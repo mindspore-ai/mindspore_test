@@ -33,6 +33,11 @@ def hook_triple(grad):
 def hook_print(grad):
     print("grad:", grad)
 
+def hook_with_ctrl_flow(grad):
+    if grad[0] < 10000000:
+        return hook_double(grad)
+    return hook_triple(grad)
+
 np_weight0 = np.array([1.0, 2.0, 3.0])
 np_weight1 = np.array([4.0, 5.0, 6.0])
 np_weight2 = np.array([7.0, 8.0, 9.0])
@@ -108,7 +113,8 @@ def test_one_tensor_one_hook_once_run():
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.PYNATIVE_MODE, context.GRAPH_MODE])
-def test_hook_in_jit(mode):
+@pytest.mark.parametrize('hook', [hook_double, hook_with_ctrl_flow])
+def test_hook_in_jit(mode, hook):
     """
     Feature: Tensor.register_hook(hook_fn) outside graph.
     Description: Test register hook outside graph when the graph is decorated by `@jit`.
@@ -121,7 +127,7 @@ def test_hook_in_jit(mode):
     grad_net = grad_op(net, net.trainable_params())
 
     input_x1 = Tensor(np_input_x1, ms.float32)
-    input_x1.register_hook(hook_double)
+    input_x1.register_hook(hook)
     input_y1 = Tensor(np_input_y1, ms.float32)
     output = grad_net(input_x1, input_y1)
 

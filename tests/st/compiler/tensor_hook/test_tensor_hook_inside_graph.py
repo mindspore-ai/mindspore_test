@@ -41,6 +41,11 @@ def hook_double_with_print(grad):
     print("hook_double")
     return grad * 2
 
+def hook_with_ctrl_flow(grad):
+    if grad[0] < 10000000:
+        return hook_double(grad)
+    return hook_triple(grad)
+
 np_weight0 = np.array([1.0, 2.0, 3.0])
 np_weight1 = np.array([4.0, 5.0, 6.0])
 np_input_x = np.array([7.0, 8.0, 9.0])
@@ -118,6 +123,23 @@ class HookInJITNet(nn.Cell):
     @ms.jit
     def hook(self, x):
         x.register_hook(hook_double_with_print)
+        return x
+
+    def construct(self, x):
+        x = x * self.weight0
+        x = self.hook(x)
+        out = x * self.weight1
+        return out
+
+class CtrlFlowHookInJITNet(nn.Cell):
+    def __init__(self):
+        super(CtrlFlowHookInJITNet, self).__init__()
+        self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")
+        self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
+
+    @ms.jit
+    def hook(self, x):
+        x.register_hook(hook_with_ctrl_flow)
         return x
 
     def construct(self, x):
@@ -281,7 +303,8 @@ def test_need_reorder_hook_stmt_net():
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.PYNATIVE_MODE, context.GRAPH_MODE])
-def test_hook_in_jit(mode):
+@pytest.mark.parametrize('net', [HookInJITNet(), CtrlFlowHookInJITNet()])
+def test_hook_in_jit(mode, net):
     """
     Feature: Tensor.register_hook(hook_fn) inside graph.
     Description: Test register hook inside jit wrapper
@@ -289,7 +312,6 @@ def test_hook_in_jit(mode):
     """
     context.set_context(mode=mode, device_target="CPU")
     input_x = Tensor(np_input_x, ms.float32)
-    net = HookInJITNet()
     grad_op = ops.GradOperation(get_all=True, get_by_list=True)
     grad_net = grad_op(net, net.trainable_params())
     output = grad_net(input_x)

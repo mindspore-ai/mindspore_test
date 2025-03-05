@@ -308,9 +308,9 @@ FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormaliz
     opt::OptPassConfig a_after_grad =
       opt::OptPassConfig({irpass.inline_without_move_, irpass.stack_unstack_eliminate_});
 
-    map.emplace_back("after_resolve", after_resolve_pass);
-    map.emplace_back("a_after_grad", a_after_grad);
-    map.emplace_back("renormalize", opt::OptPassConfig::Renormalize());
+    (void)map.emplace_back("after_resolve", after_resolve_pass);
+    (void)map.emplace_back("a_after_grad", a_after_grad);
+    (void)map.emplace_back("renormalize", opt::OptPassConfig::Renormalize());
   }
 
   opt::OptPassConfig grad_graph_opt = opt::OptPassConfig({
@@ -334,7 +334,19 @@ FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormaliz
   MS_EXCEPTION_IF_NULL(resource);
   auto func_graph = resource->func_graph();
   auto graph_opt = opt::Optimizer::MakeOptimizer("jit_bprop_graph_opt", resource, map);
-  return graph_opt->step(func_graph, false);
+  auto optimized_fg = graph_opt->step(func_graph, false);
+  auto lifted_fg = LiftingClone(optimized_fg);
+
+#ifdef ENABLE_DUMP_IR
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  bool enable_save_graphs = context->CanDump(kIntroductory);
+  if (enable_save_graphs) {
+    DumpIR("jit_bprop_graph_lift_" + lifted_fg->ToString(), lifted_fg);
+  }
+#endif
+
+  return lifted_fg;
 }
 
 FuncGraphPtr HighGradBpropGraphPass(const ResourcePtr &resource) {
