@@ -941,11 +941,12 @@ class DiceLoss(LossBase):
         if label.dtype == mstype.uint8:
             raise TypeError(f"For '{self.cls_name}', the dtype of 'labels' can not be uint8.")
         intersection = self.reduce_sum(self.mul(logits.view(-1), label.view(-1)))
-        unionset = self.reduce_sum(self.mul(logits.view(-1), logits.view(-1))) + \
-                   self.reduce_sum(self.mul(label.view(-1), label.view(-1)))
+        unionset_part1 = self.reduce_sum(self.mul(logits.view(-1), logits.view(-1)))
+        unionset_part2 = self.reduce_sum(self.mul(label.view(-1), label.view(-1)))
+        unionset = ops.add(unionset_part1, unionset_part2)
 
-        single_dice_coeff = (2 * intersection) / (unionset + self.smooth)
-        dice_loss = 1 - single_dice_coeff
+        single_dice_coeff = (2 * intersection) / ops.add(unionset, self.smooth)
+        dice_loss = ops.sub(1, single_dice_coeff)
 
         return dice_loss
 
