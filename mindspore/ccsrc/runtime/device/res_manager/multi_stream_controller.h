@@ -26,23 +26,13 @@
 #include <unordered_map>
 #include <utility>
 
+#include "async/spinlock.h"
 #include "ir/device_event.h"
 #include "runtime/device/res_manager/hal_res_base.h"
 #include "runtime/device/res_manager/utils/visible.h"
 
 namespace mindspore {
 namespace device {
-struct SpinLock final {
-  inline void lock() {
-    while (locked.test_and_set(std::memory_order_acquire)) {
-    }
-  }
-
-  inline void unlock() { locked.clear(std::memory_order_release); }
-
-  std::atomic_flag locked = ATOMIC_FLAG_INIT;
-};
-
 class TaskIdOnStreamManager;
 using TaskIdOnStreamManagerPtr = std::shared_ptr<TaskIdOnStreamManager>;
 
