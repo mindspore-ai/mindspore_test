@@ -40,8 +40,9 @@
 namespace mindspore {
 namespace parallel {
 // handle normal layout
-Status ProcessLayout(const std::string &strategy_key_name, const TensorLayoutValueMap &layout_map,
-                     const OperatorInfoPtr &operator_info, std::vector<std::shared_ptr<TensorLayout>> *tensor_layouts) {
+Status ProcessInLayout(const std::string &strategy_key_name, const TensorLayoutValueMap &layout_map,
+                       const OperatorInfoPtr &operator_info,
+                       std::vector<std::shared_ptr<TensorLayout>> *tensor_layouts) {
   auto layout_value_tuple = layout_map.at(strategy_key_name);
   std::vector<ValuePtr> layout_value_vector = layout_value_tuple->value();
   if (operator_info->inputs_shape().size() != layout_value_vector.size()) {
@@ -72,18 +73,51 @@ Status ProcessLayout(const std::string &strategy_key_name, const TensorLayoutVal
   return SUCCESS;
 }
 
+Status ProcessOutLayout(const std::string &strategy_key_name, const TensorLayoutValueMap &layout_map,
+                        const OperatorInfoPtr &operator_info,
+                        std::vector<std::shared_ptr<TensorLayout>> *tensor_layouts) {
+  auto layout_value_tuple = layout_map.at(strategy_key_name);
+  std::vector<ValuePtr> layout_value_vector = layout_value_tuple->value();
+  if (operator_info->outputs_shape().size() != layout_value_vector.size()) {
+    MS_LOG(ERROR) << "The in_layout configured for node is not equal to its input nums";
+    return FAILED;
+  }
+
+  for (size_t i = 0; i < layout_value_vector.size(); ++i) {
+    auto layout_item = layout_value_vector[i];
+    std::vector<std::string> alias_name;
+    std::vector<int64_t> device_matrix_vector;
+    std::vector<std::vector<int64_t>> tensor_map_vector;
+    bool interleaved_parallel;
+    if (GetLayoutFromAttrValue(layout_item, &alias_name, &device_matrix_vector, &tensor_map_vector,
+                               &interleaved_parallel) != SUCCESS) {
+      return FAILED;
+    }
+
+    auto layout = std::make_shared<TensorLayout>();
+    if (layout->InitFromExtendVector(device_matrix_vector, tensor_map_vector, operator_info->outputs_shape()[i],
+                                     interleaved_parallel) != SUCCESS) {
+      MS_LOG(ERROR) << "The in_layout configured incorrect, device_matrix:" << device_matrix_vector
+                    << ", tensor_map:" << tensor_map_vector;
+      return FAILED;
+    }
+    tensor_layouts->push_back(layout);
+  }
+  return SUCCESS;
+}
+
 // load normal layout
 Status LoadTensorLayouts(const std::string &strategy_key_name, const TensorLayoutValueMap &layout_map,
                          const TensorLayoutValueMap &out_layout_map, const OperatorInfoPtr &operator_info,
                          std::vector<std::shared_ptr<TensorLayout>> *in_tensor_layouts,
                          std::vector<std::shared_ptr<TensorLayout>> *out_tensor_layouts) {
   if (layout_map.find(strategy_key_name) != layout_map.end()) {
-    if (ProcessLayout(strategy_key_name, layout_map, operator_info, in_tensor_layouts) != SUCCESS) {
+    if (ProcessInLayout(strategy_key_name, layout_map, operator_info, in_tensor_layouts) != SUCCESS) {
       return FAILED;
     }
 
     if (out_layout_map.find(strategy_key_name) != out_layout_map.end()) {
-      if (ProcessLayout(strategy_key_name, out_layout_map, operator_info, out_tensor_layouts) != SUCCESS) {
+      if (ProcessOutLayout(strategy_key_name, out_layout_map, operator_info, out_tensor_layouts) != SUCCESS) {
         return FAILED;
       }
     }

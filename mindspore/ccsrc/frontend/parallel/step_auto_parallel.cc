@@ -361,7 +361,6 @@ void SetLayoutToOperator(const OperatorInfoPtr &operator_info, const mindspore::
     MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure:operator " << operator_info->name()
                                        << " extract configured layout failed";
   }
-  CheckStrategyUsedDevices(operator_info);
   Strategies in_strategy;
   (void)std::transform(in_tensor_layouts.begin(), in_tensor_layouts.end(), std::back_inserter(in_strategy),
                        [](const auto &layout) { return layout->get_in_layout_strategy(); });
