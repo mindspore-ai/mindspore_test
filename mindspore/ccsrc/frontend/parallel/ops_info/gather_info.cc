@@ -1360,17 +1360,26 @@ Status GatherInfo::CheckOutputStrategy(const StrategyPtr &out_strategy) {
   MS_EXCEPTION_IF_NULL(gather_util_);
   auto shard_axis_util = std::dynamic_pointer_cast<ShardAxisImpl>(gather_util_);
 
-  auto in_stra = strategy_->GetInputDim();
-  auto param_strategy = in_stra[0];
-  auto index_strategy = in_stra[1];
+  Strategies in_stra = strategy_->GetInputDim();
+  Dimensions param_strategy, index_strategy;
+  if (name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos) {
+    param_strategy = in_stra[1];
+    index_strategy = in_stra[0];
+  }
+  else {
+    param_strategy = in_stra[0];
+    index_strategy = in_stra[1];
+  }
 
   // only for axis == 0
   auto allreduce_strategy = index_strategy;
   (void)allreduce_strategy.insert(allreduce_strategy.end(), param_strategy.begin() + 1, param_strategy.end());
   auto reduce_scatter_strategy = allreduce_strategy;
   reduce_scatter_strategy[0] *= param_strategy[0];
-
+    MS_LOG(WARNING) << "Gather: allreduce_strategy."<< allreduce_strategy;
+  MS_LOG(WARNING) << "Gather: reduce_scatter_strategy."<< reduce_scatter_strategy;
   auto out_stra = out_strategy->GetInputDim()[0];
+    MS_LOG(WARNING) << "Gather: out_stra."<< out_stra;
   if (out_stra == allreduce_strategy) {
     if (shard_axis_util != nullptr) {
       shard_axis_util->set_axis_split_forward_allreduce(true);
