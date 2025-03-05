@@ -91,16 +91,29 @@ def _sync_stub_tensor(stub):
         return list(_sync_stub_tensor(item) for item in stub)
     return stub
 
+def convert_tensorpy(args):
+    new_args = []
+    for arg in args:
+        if isinstance(arg, Tensor):
+            new_args.append(PythonTensor(arg))
+        else:
+            new_args.append(arg)
+    return tuple(new_args)
 
-def nested_run(obj, *args):
+
+def nested_run(obj, cell, *args):
     """Start a trace process nested in ast."""
     set_jit_context(_trace_jit_context)
     _trace_jit_context.set_is_nested(True)
     args = args[0]
+    args = convert_tensorpy(args)
     if isinstance(obj, ms.nn.Cell):
         res = obj.construct.__wrapped__(obj, *args)
     else:
-        res = obj.__wrapped__(*args)
+        if not cell:
+            res = obj.__wrapped__(*args)
+        else:
+            res = obj.__wrapped__(cell, *args)
     if res is not tuple:
         res = (res,)
     file_names, linenos = _get_caller_lines()

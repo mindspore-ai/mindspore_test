@@ -1190,6 +1190,8 @@ def jit(
     if capture_mode == "bytecode":
         wrap_func = PIJitCaptureContext(jit_config)
     elif capture_mode == "trace":
+        if function is not None:
+            return _jit_trace(function)
         return _jit_trace
 
     if function is not None:

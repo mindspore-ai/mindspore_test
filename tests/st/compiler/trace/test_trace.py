@@ -24,6 +24,8 @@ import mindspore as ms
 from mindspore.common.api import _pynative_executor
 from mindspore.common.jit_begin_end import _jit_begin as jit_begin
 from mindspore.common.jit_begin_end import _jit_end as jit_end
+from mindspore.ops import functional as F
+import mindspore.common.dtype as mstype
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -782,3 +784,87 @@ def test_nested_trace_5():
     res_trace = trace_net(inputs)
     res_jit = jit_net(inputs)
     assert np.allclose(res_trace.asnumpy(), res_jit.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_trace_tensor_type():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function
+    Expectation: No exception
+    """
+    class TraceNet(ms.nn.Cell):
+        def __init__(self):
+            super(TraceNet, self).__init__()
+            self.x = ms.Tensor(1)
+
+        @ms.jit(capture_mode="trace")
+        def construct(self, x, y):
+            a = ms.Tensor(2)
+            if isinstance(F.typeof(a), mstype.TensorType):
+                z = x + a
+                z = z + self.x
+            z = z * y
+            return z
+
+    trace_net = TraceNet()
+    res = trace_net(ms.Tensor(1), ms.Tensor(3))
+    assert res == 12
+    res = trace_net(ms.Tensor(1), ms.Tensor(3))
+    assert res == 12
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_nested_trace_6():
+    """
+    Feature: JIT trace function nested by JIT ast
+    Description: JIT trace function nested by JIT ast
+    Expectation: No exception
+    """
+
+    class Net(ms.nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.x = ms.Tensor(1)
+
+        @ms.jit(capture_mode="trace")
+        def trace_func(self, a, x, y, self_x):
+            z = x + a
+            z = z + self_x
+            z = z * y
+            return z
+
+        def jit_func(self, a, x, y, self_x):
+            z = x + a
+            z = z + self_x
+            z = z * y
+            return z
+
+        @ms.jit(capture_mode="ast")
+        def construct(self, x, y, flag):
+            a = ms.Tensor(2)
+            if flag:
+                return self.trace_func(a, x, y, self.x)
+            return self.jit_func(a, x, y, self.x)
+
+    net = Net()
+    res_trace = net(ms.Tensor(1), ms.Tensor(3), True)
+    res_jit = net(ms.Tensor(1), ms.Tensor(3), False)
+    assert res_trace == res_jit
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_trace_functional():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function
+    Expectation: No exception
+    """
+    def foo(x, y, z):
+        return x + y + z
+
+    foo1 = ms.jit(foo, capture_mode="trace")
+    res = foo1(ms.Tensor(1), ms.Tensor(2), ms.Tensor(3))
+    assert res == 6
+    res = foo1(ms.Tensor(1), ms.Tensor(2), ms.Tensor(3))
+    assert res == 6

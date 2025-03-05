@@ -595,6 +595,13 @@ AnfNodePtr Resolver::ResolveSymbol(const FuncGraphManagerPtr &manager, const Nam
   TraceGuard trace_guard(MakeTraceInfo<TraceResolve>(trace::GetSourceCodeDebugInfo(node->debug_info())));
   auto obj = GetSymbolObject(name_space, symbol, node);
   AnfNodePtr resolved_node = ResolveObjectAndAddToManager(manager, obj, node);
+  if (IsPrimitive(resolved_node, prim::kPrimTraceGraph)) {
+    auto cell_obj = name_space->module_obj();
+    if (py::isinstance<Cell>(cell_obj)) {
+      auto cell_interpteted = std::make_shared<InterpretedObject>(cell_obj);
+      dyn_cast<CNode>(node)->add_input(NewValueNode(cell_interpteted));
+    }
+  }
   if (IsValueNode<NameSpace>(resolved_node) && !py::isinstance<py::none>(name_space->module_obj())) {
     auto name_value = GetValueNode(resolved_node);
     auto nameptr = name_value->cast<NameSpacePtr>();

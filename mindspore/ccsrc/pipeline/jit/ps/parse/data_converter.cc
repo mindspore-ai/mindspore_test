@@ -665,7 +665,8 @@ void ConvertBackwardHookToFuncGraph(const py::object &obj) {
 ValuePtr ConvertCellObjToFuncGraph(const py::object &obj, const ValuePtrList &args_value_list) {
   if (py::hasattr(obj, "construct")) {
     const auto &construct_obj = py::getattr(obj, "construct");
-    if (py::hasattr(construct_obj, "__trace_func__")) {
+    bool graph_mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode;
+    if (py::hasattr(construct_obj, "__trace_func__") && !graph_mode) {
       return prim::kPrimTraceGraph;
     }
   }
@@ -781,7 +782,8 @@ ValuePtr ConvertOtherObj(const py::object &obj, bool forbid_reuse = false) {
         return std::make_shared<InterpretedObject>(obj);
       }
     }
-    if (py::hasattr(obj, "__trace_func__")) {
+    bool graph_mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode;
+    if (py::hasattr(obj, "__trace_func__") && !graph_mode) {
       return prim::kPrimTraceGraph;
     }
     MS_LOG(DEBUG) << "Convert the obj to func graph, type is " << obj_type;
