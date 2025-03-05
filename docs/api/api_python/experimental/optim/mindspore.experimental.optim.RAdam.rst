@@ -9,7 +9,7 @@ mindspore.experimental.optim.RAdam
 
     .. math::
         \begin{aligned}
-            &\rule{110mm}{0.4pt}                                                                 \\
+            &\rule{180mm}{0.4pt}                                                                 \\
             &\textbf{input}      : \gamma \text{ (lr)}, \: \beta_1, \beta_2
                 \text{ (betas)}, \: \theta_0 \text{ (params)}, \:f(\theta) \text{ (objective)}, \:
                 \lambda \text{ (weightdecay)},                                                   \\
@@ -17,7 +17,7 @@ mindspore.experimental.optim.RAdam
             &\textbf{initialize} :  m_0 \leftarrow 0 \text{ ( first moment)},
                 v_0 \leftarrow 0 \text{ ( second moment)},                                       \\
             &\hspace{18mm} \rho_{\infty} \leftarrow 2/(1-\beta_2) -1                      \\[-1.ex]
-            &\rule{110mm}{0.4pt}  \\
+            &\rule{180mm}{0.4pt}  \\
             &\textbf{for} \: t=1 \: \textbf{to} \: \ldots \: \textbf{do}                         \\
             &\hspace{6mm}g_t           \leftarrow   \nabla_{\theta} f_t (\theta_{t-1})           \\
             &\hspace{5mm} \textbf{if} \: \lambda \neq 0                                          \\
@@ -34,9 +34,9 @@ mindspore.experimental.optim.RAdam
             &\hspace{12mm}\theta_t \leftarrow \theta_{t-1} - \gamma \widehat{m_t} r_t l_t        \\
             &\hspace{6mm}\textbf{else}                                                           \\
             &\hspace{12mm}\theta_t \leftarrow \theta_{t-1} - \gamma \widehat{m_t}                \\
-            &\rule{110mm}{0.4pt}                                                          \\[-1.ex]
+            &\rule{180mm}{0.4pt}                                                          \\[-1.ex]
             &\bf{return} \:  \theta_t                                                     \\[-1.ex]
-            &\rule{110mm}{0.4pt}                                                          \\[-1.ex]
+            &\rule{180mm}{0.4pt}                                                          \\[-1.ex]
         \end{aligned}
 
     .. warning::

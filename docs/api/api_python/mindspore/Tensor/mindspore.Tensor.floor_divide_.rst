@@ -8,7 +8,7 @@ mindspore.Tensor.floor_divide\_
     .. math::
         out_{i} = \text{floor}( \frac{self_i}{other_i})
 
-    其中 :math:`floor` 表示Floor算子。有关更多详细信息，请参阅 :class:`mindspore.mint.Floor` 算子。
+    其中 :math:`floor` 表示Floor算子。有关更多详细信息，请参阅 :class:`mindspore.mint.floor` 算子。
 
     .. warning::
         这是一个实验性API，后续可能修改或删除。

@@ -3,7 +3,7 @@ mindspore.communication.comm_func.all_to_all_single_with_output_shape
 
 .. py:function:: mindspore.communication.comm_func.all_to_all_single_with_output_shape(output_shape, tensor, output_split_sizes=None, input_split_sizes=None, group=None, async_op=False)
 
-    根据用户输入的切分大小，把输入`tensor`切分后，发送到其他的设备上，并从其他设备接收切分块，然后合并到一个输出Tensor中。
+    根据用户输入的切分大小，把输入 `tensor` 切分后，发送到其他的设备上，并从其他设备接收切分块，然后合并到一个输出Tensor中。
 
     .. note::
         各个rank之间发送和接收的切分块大小需要互相匹配。
