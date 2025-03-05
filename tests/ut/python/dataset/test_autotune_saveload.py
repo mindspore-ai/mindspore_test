@@ -49,7 +49,6 @@ def validate_jsonfile(filepath):
     return file_exist and isinstance(loaded_json, dict)
 
 
-@pytest.mark.forked
 class TestAutotuneSaveLoad:
     """
     Test AutoTune Save and Load Configuration Support

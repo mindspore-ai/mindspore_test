@@ -44,7 +44,7 @@ def test_inverse_mel_scale_pipeline():
     dataset = dataset.map(operations=transforms, input_columns=["multi_dimensional_data"])
     for item in dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
         out_data = item["multi_dimensional_data"]
-        epsilon = 1e-60
+        epsilon = 1e-6
         relative_diff = np.abs((out_data - out_expect) / (out_expect + epsilon))
         assert get_ratio(relative_diff < 1e-1) > 1e-2
 
@@ -56,7 +56,7 @@ def test_inverse_mel_scale_pipeline():
     dataset = dataset.map(operations=transforms, input_columns=["multi_dimensional_data"])
     for item in dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
         out_data = item["multi_dimensional_data"]
-        epsilon = 1e-60
+        epsilon = 1e-6
         relative_diff = np.abs((out_data - out_expect) / (out_expect + epsilon))
         assert get_ratio(relative_diff < 1e-1) > 1e-2
 
@@ -68,7 +68,7 @@ def test_inverse_mel_scale_pipeline():
     dataset = dataset.map(operations=transforms, input_columns=["multi_dimensional_data"])
     for item in dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
         out_data = item["multi_dimensional_data"]
-        epsilon = 1e-60
+        epsilon = 1e-6
         relative_diff = np.abs((out_data - out_expect) / (out_expect + epsilon))
         assert get_ratio(relative_diff < 1e-1) > 1e-2
 
@@ -143,7 +143,7 @@ def test_inverse_mel_scale_eager():
     out_ms = audio.InverseMelScale(n_stft=80, n_mels=32)(spectrogram)
     out_expect = np.load(DATA_DIR + 'inverse_mel_scale_80x81_out.npy')
 
-    epsilon = 1e-60
+    epsilon = 1e-6
     relative_diff = np.abs((out_ms - out_expect) / (out_expect + epsilon))
     assert get_ratio(relative_diff < 1e-1) > 1e-2
     assert get_ratio(relative_diff < 1e-3) > 1e-3

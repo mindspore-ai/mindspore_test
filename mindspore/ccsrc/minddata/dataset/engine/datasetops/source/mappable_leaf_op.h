@@ -73,7 +73,7 @@ class MappableLeafOp : public ParallelOp<std::unique_ptr<IOBlock>, TensorRow>, p
   /// \param[out] tensor - Returned tensor.
   /// \return Status code.
   static Status ImageDecrypt(const std::string &path, std::shared_ptr<Tensor> *tensor,
-                             const py::function &decrypt = py::none());
+                             const py::function &decrypt = py::object());
 #endif
 
   /// \brief In pull mode, gets the next row

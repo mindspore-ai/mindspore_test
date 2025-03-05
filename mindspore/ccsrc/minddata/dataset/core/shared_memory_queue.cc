@@ -339,7 +339,12 @@ Status SharedMemoryQueue::Deserialize(TensorRow *in_row) {
       std::string str(reinterpret_cast<char *>(shm_addr_) + offset, *data_len);
       {
         py::gil_scoped_acquire gil_acquire;
-        py::object shared_dict = py::module::import("pickle").attr("loads")(py::bytes(str));
+        py::object shared_dict;
+        try {
+          shared_dict = py::module::import("pickle").attr("loads")(py::bytes(str));
+        } catch (py::error_already_set &e) {
+          RETURN_STATUS_UNEXPECTED("Deserialize tensor failed: " + std::string(e.what()));
+        }
 
         // construct tensor
         std::vector<dsize_t> shape{};

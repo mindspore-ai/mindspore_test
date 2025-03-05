@@ -258,7 +258,7 @@ Status Tensor::CreateFromNpArray(py::array arr, std::shared_ptr<Tensor> *out) {
   return Status::OK();
 }
 
-Status Tensor::CreateFromPythonObject(py::object obj, std::shared_ptr<Tensor> *out) {
+Status Tensor::CreateFromPythonObject(const py::object &obj, std::shared_ptr<Tensor> *out) {
   RETURN_UNEXPECTED_IF_NULL(out);
   std::vector<dsize_t> shape{};
   DataType type = DataType(DataType::DE_PYTHON);

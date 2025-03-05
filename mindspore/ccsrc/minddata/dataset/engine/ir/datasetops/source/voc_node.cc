@@ -35,7 +35,7 @@ namespace dataset {
 // Constructor for VOCNode
 VOCNode::VOCNode(const std::string &dataset_dir, const std::string &task, const std::string &usage,
                  const std::map<std::string, int32_t> &class_indexing, bool decode, std::shared_ptr<SamplerObj> sampler,
-                 std::shared_ptr<DatasetCache> cache, bool extra_metadata, py::function decrypt)
+                 std::shared_ptr<DatasetCache> cache, bool extra_metadata, const py::function &decrypt)
     : MappableSourceNode(std::move(cache)),
       dataset_dir_(dataset_dir),
       task_(task),
@@ -43,8 +43,19 @@ VOCNode::VOCNode(const std::string &dataset_dir, const std::string &task, const 
       class_index_(class_indexing),
       decode_(decode),
       sampler_(sampler),
-      extra_metadata_(extra_metadata),
-      decrypt_(decrypt) {}
+      extra_metadata_(extra_metadata) {
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    decrypt_ = decrypt;
+  }
+}
+
+VOCNode::~VOCNode() {
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    decrypt_ = py::object();
+  }
+}
 #else
 // Constructor for VOCNode
 VOCNode::VOCNode(const std::string &dataset_dir, const std::string &task, const std::string &usage,
@@ -58,6 +69,8 @@ VOCNode::VOCNode(const std::string &dataset_dir, const std::string &task, const 
       decode_(decode),
       sampler_(sampler),
       extra_metadata_(extra_metadata) {}
+
+VOCNode::~VOCNode() = default;
 #endif
 
 std::shared_ptr<DatasetNode> VOCNode::Copy() {

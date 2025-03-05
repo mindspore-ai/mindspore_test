@@ -22,9 +22,19 @@
 namespace mindspore {
 namespace dataset {
 // Constructor for SyncWaitNode
-SyncWaitNode::SyncWaitNode(std::shared_ptr<DatasetNode> child, const std::string &condition_name, py::function callback)
-    : condition_name_(condition_name), callback_(callback) {
+SyncWaitNode::SyncWaitNode(std::shared_ptr<DatasetNode> child, const std::string &condition_name,
+                           const py::function &callback)
+    : condition_name_(condition_name) {
+  {
+    py::gil_scoped_acquire gil_acquire;
+    callback_ = callback;
+  }
   this->AddChild(child);
+}
+
+SyncWaitNode::~SyncWaitNode() {
+  py::gil_scoped_acquire gil_acquire;
+  callback_ = py::object();
 }
 
 std::shared_ptr<DatasetNode> SyncWaitNode::Copy() {

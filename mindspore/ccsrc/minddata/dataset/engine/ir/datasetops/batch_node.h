@@ -34,7 +34,7 @@ class BatchNode : public DatasetNode {
   /// \brief Constructor #1, for Python API to create a BatchNode
   BatchNode(std::shared_ptr<DatasetNode> child, int32_t batch_size, bool drop_remainder, bool pad,
             const std::vector<std::string> &in_col_names, const std::vector<std::string> &out_col_names,
-            py::function batch_size_func, py::function batch_map_func,
+            const py::function &batch_size_func, const py::function &batch_map_func,
             std::map<std::string, std::pair<TensorShape, std::shared_ptr<Tensor>>> pad_map,
             std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime = nullptr);
 #endif
@@ -43,7 +43,7 @@ class BatchNode : public DatasetNode {
   BatchNode(std::shared_ptr<DatasetNode> child, int32_t batch_size, bool drop_remainder);
 
   /// \brief Destructor
-  ~BatchNode() override = default;
+  ~BatchNode() override;
 
   /// \brief Node name getter
   /// \return Name of the current node

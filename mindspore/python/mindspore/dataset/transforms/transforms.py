@@ -94,7 +94,7 @@ class TensorOperation:
 
         # get or create the executor from EXECUTORS_LIST
         executor = None
-        key = str(os.getpid()) + "_" + str(threading.currentThread().ident)
+        key = str(os.getpid()) + "_" + str(threading.current_thread().ident)
         try:
             if key in EXECUTORS_LIST:
                 # get the executor by process id and thread id
@@ -111,7 +111,7 @@ class TensorOperation:
         except RuntimeError as e:
             if "Create stream failed" in str(e):
                 raise RuntimeError("Cannot reset NPU device in forked subprocess.\n    "
-                                   "Note: the following sevral scenarios are not supported yet.\n"
+                                   "Note: the following several scenarios are not supported yet.\n"
                                    "    1. GeneratorDataset with num_parallel_workers>1 and "
                                    "python_multiprocessing=True.\n    2. Independent dataset mode (export "
                                    "MS_INDEPENDENT_DATASET=True):\n        1) Use the eager mode of dvpp "

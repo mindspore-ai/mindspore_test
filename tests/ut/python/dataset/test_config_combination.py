@@ -21,9 +21,6 @@ import mindspore._c_dataengine as cde
 import mindspore.dataset as ds
 import mindspore.dataset.vision as vision
 
-# Need to run all these tests in separate processes since tests are modifying config parameters
-pytestmark = pytest.mark.forked
-
 ORIGINAL_SEED = 0  # Seed will be set internally in debug mode. Save original seed value to restore.
 
 

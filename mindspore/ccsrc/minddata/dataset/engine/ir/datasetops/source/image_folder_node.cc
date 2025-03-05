@@ -36,15 +36,26 @@ namespace dataset {
 ImageFolderNode::ImageFolderNode(std::string dataset_dir, bool decode, std::shared_ptr<SamplerObj> sampler,
                                  bool recursive, std::set<std::string> extensions,
                                  std::map<std::string, int32_t> class_indexing,
-                                 std::shared_ptr<DatasetCache> cache = nullptr, py::function decrypt)
+                                 std::shared_ptr<DatasetCache> cache = nullptr, const py::function &decrypt)
     : MappableSourceNode(std::move(cache)),
       dataset_dir_(dataset_dir),
       decode_(decode),
       sampler_(sampler),
       recursive_(recursive),
       class_indexing_(class_indexing),
-      exts_(extensions),
-      decrypt_(decrypt) {}
+      exts_(extensions) {
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    decrypt_ = decrypt;
+  }
+}
+
+ImageFolderNode::~ImageFolderNode() {
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    decrypt_ = py::object();
+  }
+}
 #else
 ImageFolderNode::ImageFolderNode(std::string dataset_dir, bool decode, std::shared_ptr<SamplerObj> sampler,
                                  bool recursive, std::set<std::string> extensions,
@@ -57,6 +68,8 @@ ImageFolderNode::ImageFolderNode(std::string dataset_dir, bool decode, std::shar
       recursive_(recursive),
       class_indexing_(class_indexing),
       exts_(extensions) {}
+
+ImageFolderNode::~ImageFolderNode() = default;
 #endif
 
 std::shared_ptr<DatasetNode> ImageFolderNode::Copy() {

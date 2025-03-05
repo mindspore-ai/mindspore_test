@@ -41,8 +41,6 @@ def test_disable_autotune_in_independent_mode():
     os.environ["MS_INDEPENDENT_DATASET"] = "False"
 
 
-# pylint: disable=unused-variable
-@pytest.mark.forked
 class TestAutotuneWithProfiler:
     @staticmethod
     def test_autotune_after_profiler_with_1_pipeline(capfd):
@@ -59,7 +57,7 @@ class TestAutotuneWithProfiler:
         data1 = ds.GeneratorDataset(source, ["data"])
         data1 = data1.shuffle(64)
         data1 = data1.batch(32)
-        itr1 = data1.create_dict_iterator(num_epochs=5)
+        _ = data1.create_dict_iterator(num_epochs=5)
 
         out, err = capfd.readouterr()
         assert "Cannot enable AutoTune for the current data pipeline as Dataset Profiling is already enabled for the " \
@@ -88,7 +86,7 @@ class TestAutotuneWithProfiler:
         data1 = ds.GeneratorDataset(source, ["data"])
         data1 = data1.shuffle(64)
         data1 = data1.batch(32)
-        itr1 = data1.create_dict_iterator(num_epochs=5)
+        _ = data1.create_dict_iterator(num_epochs=5)
 
         out, err = capfd.readouterr()
         assert "Cannot enable AutoTune for the current data pipeline as Dataset Profiling is already enabled for the " \
@@ -96,7 +94,7 @@ class TestAutotuneWithProfiler:
         # Change False to True in the following call to see complete stdout and stderr output in pytest summary output
         err_out_log(out, err, False)
 
-        itr2 = data1.create_dict_iterator(num_epochs=5)
+        _ = data1.create_dict_iterator(num_epochs=5)
 
         out, err = capfd.readouterr()
         assert "Dataset Profiling is already enabled for a different data pipeline." in err
@@ -121,8 +119,8 @@ class TestAutotuneWithProfiler:
         data1 = ds.GeneratorDataset(source, ["data"])
         data1 = data1.shuffle(64)
         data1 = data1.batch(32)
-        itr1 = data1.create_dict_iterator(num_epochs=5)
-        itr2 = data1.create_dict_iterator(num_epochs=5)
+        _ = data1.create_dict_iterator(num_epochs=5)
+        _ = data1.create_dict_iterator(num_epochs=5)
 
         out, err = capfd.readouterr()
         assert "Cannot enable AutoTune for the current data pipeline as it is already enabled for another data " \
@@ -143,10 +141,10 @@ class TestAutotuneWithProfiler:
         data1 = ds.GeneratorDataset(source, ["data"])
         data1 = data1.shuffle(64)
         data1 = data1.batch(32)
-        itr1 = data1.create_dict_iterator(num_epochs=5)
+        _ = data1.create_dict_iterator(num_epochs=5)
 
         ds.config.set_enable_autotune(True, str(tmp_path / "file.json"))
-        itr2 = data1.create_dict_iterator(num_epochs=5)
+        _ = data1.create_dict_iterator(num_epochs=5)
         ds.config.set_enable_autotune(False)
 
         out, err = capfd.readouterr()
@@ -165,13 +163,13 @@ class TestAutotuneWithProfiler:
         data1 = ds.GeneratorDataset(source, ["data"])
         data1 = data1.shuffle(64)
         data1 = data1.batch(32)
-        itr1 = data1.create_dict_iterator(num_epochs=5)
+        _ = data1.create_dict_iterator(num_epochs=5)
 
         ds.config.set_enable_autotune(True, str(tmp_path / "file.json"))
-        itr2 = data1.create_dict_iterator(num_epochs=5)
+        _ = data1.create_dict_iterator(num_epochs=5)
         ds.config.set_enable_autotune(False)
 
-        itr3 = data1.create_dict_iterator(num_epochs=5)
+        _ = data1.create_dict_iterator(num_epochs=5)
 
         out, err = capfd.readouterr()
         assert err == ''
@@ -192,7 +190,7 @@ class TestAutotuneWithProfiler:
         data1 = data1.shuffle(64)
         data1 = data1.batch(32)
         ds.config.set_enable_autotune(True)
-        itr1 = data1.create_dict_iterator(num_epochs=5)
+        _ = data1.create_dict_iterator(num_epochs=5)
         ds.config.set_enable_autotune(False)
 
         md_profiler = cde.GlobalContext.profiling_manager()

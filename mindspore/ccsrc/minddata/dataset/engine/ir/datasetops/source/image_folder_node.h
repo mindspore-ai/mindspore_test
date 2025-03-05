@@ -36,7 +36,7 @@ class ImageFolderNode : public MappableSourceNode {
   /// \brief Constructor
   ImageFolderNode(std::string dataset_dir, bool decode, std::shared_ptr<SamplerObj> sampler, bool recursive,
                   std::set<std::string> extensions, std::map<std::string, int32_t> class_indexing,
-                  std::shared_ptr<DatasetCache> cache, py::function decrypt = py::none());
+                  std::shared_ptr<DatasetCache> cache, const py::function &decrypt = py::object());
 #else
   /// \brief Constructor
   ImageFolderNode(std::string dataset_dir, bool decode, std::shared_ptr<SamplerObj> sampler, bool recursive,
@@ -44,7 +44,7 @@ class ImageFolderNode : public MappableSourceNode {
                   std::shared_ptr<DatasetCache> cache);
 #endif
   /// \brief Destructor
-  ~ImageFolderNode() override = default;
+  ~ImageFolderNode() override;
 
   /// \brief Node name getter
   /// \return Name of the current node

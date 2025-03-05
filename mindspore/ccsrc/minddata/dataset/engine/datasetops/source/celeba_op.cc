@@ -35,7 +35,7 @@ namespace dataset {
 #ifdef ENABLE_PYTHON
 CelebAOp::CelebAOp(int32_t num_workers, const std::string &dir, int32_t queue_size, bool decode,
                    const std::string &usage, const std::set<std::string> &exts, std::unique_ptr<DataSchema> schema,
-                   std::shared_ptr<SamplerRT> sampler, py::function decrypt)
+                   std::shared_ptr<SamplerRT> sampler, const py::function &decrypt)
     : MappableLeafOp(num_workers, queue_size, std::move(sampler)),
       folder_path_(dir),
       decode_(decode),
@@ -43,9 +43,19 @@ CelebAOp::CelebAOp(int32_t num_workers, const std::string &dir, int32_t queue_si
       data_schema_(std::move(schema)),
       num_rows_in_attr_file_(0),
       attr_file_(""),
-      usage_(usage),
-      decrypt_(std::move(decrypt)) {
+      usage_(usage) {
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    decrypt_ = decrypt;
+  }
   attr_info_queue_ = std::make_unique<Queue<std::vector<std::string>>>(queue_size);
+}
+
+CelebAOp::~CelebAOp() {
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    decrypt_ = py::object();
+  }
 }
 #else
 CelebAOp::CelebAOp(int32_t num_workers, const std::string &dir, int32_t queue_size, bool decode,
@@ -61,6 +71,8 @@ CelebAOp::CelebAOp(int32_t num_workers, const std::string &dir, int32_t queue_si
       usage_(usage) {
   attr_info_queue_ = std::make_unique<Queue<std::vector<std::string>>>(queue_size);
 }
+
+CelebAOp::~CelebAOp() = default;
 #endif
 
 Status CelebAOp::RegisterAndLaunchThreads() {

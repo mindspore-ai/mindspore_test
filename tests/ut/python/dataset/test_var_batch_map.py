@@ -69,8 +69,6 @@ def test_batch_corner_cases():
     assert len(tst4) == 4, "\nATTENTION BATCH FAILED\n"
 
 
-# Run this test in separate process since this test updates shared memory config
-@pytest.mark.forked
 def test_variable_size_batch():
     """
     Feature: Batch
@@ -797,7 +795,6 @@ def test_batch_multiprocessing_with_in_out_rowsize():
     for i in range(5):
         count = 0
         for item in dataset.create_tuple_iterator(output_numpy=True, num_epochs=1):
-            print("count: {}, type: {}, shape: {}".format(count, item[0].dtype, item[0].shape))
             assert item[0].dtype == np.float64
             assert item[0].shape == (4, 3, 65, 65)
             assert len(item) == 2

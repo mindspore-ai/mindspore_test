@@ -51,51 +51,52 @@ bool toBool(const py::handle &handle);
 
 std::string toString(const py::handle &handle);
 
-std::set<std::string> toStringSet(const py::list list);
+std::set<std::string> toStringSet(const py::list &list);
 
-std::map<std::string, int32_t> toStringMap(const py::dict dict);
+std::map<std::string, int32_t> toStringMap(const py::dict &dict);
 
-std::map<std::string, float> toStringFloatMap(const py::dict dict);
+std::map<std::string, float> toStringFloatMap(const py::dict &dict);
 
-std::vector<std::string> toStringVector(const py::list list);
+std::vector<std::string> toStringVector(const py::list &list);
 
-std::vector<pid_t> toIntVector(const py::list input_list);
+std::vector<pid_t> toIntVector(const py::list &input_list);
 
-std::vector<int64_t> toInt64Vector(const py::list input_list);
+std::vector<int64_t> toInt64Vector(const py::list &input_list);
 
-std::unordered_map<int32_t, std::vector<pid_t>> toIntMap(const py::dict input_dict);
+std::unordered_map<int32_t, std::vector<pid_t>> toIntMap(const py::dict &input_dict);
 
-std::pair<int64_t, int64_t> toIntPair(const py::tuple tuple);
+std::pair<int64_t, int64_t> toIntPair(const py::tuple &tuple);
 
-std::vector<std::pair<int, int>> toPairVector(const py::list list);
+std::vector<std::pair<int, int>> toPairVector(const py::list &list);
 
-std::vector<std::shared_ptr<TensorOperation>> toTensorOperations(py::list operations);
+std::vector<std::shared_ptr<TensorOperation>> toTensorOperations(const py::list &operations);
 
-std::shared_ptr<TensorOperation> toTensorOperation(py::handle operation);
+std::shared_ptr<TensorOperation> toTensorOperation(const py::handle &operation);
 
-std::vector<std::shared_ptr<DatasetNode>> toDatasetNode(std::shared_ptr<DatasetNode> self, py::list datasets);
+std::vector<std::shared_ptr<DatasetNode>> toDatasetNode(const std::shared_ptr<DatasetNode> &self,
+                                                        const py::list &datasets);
 
-std::shared_ptr<SamplerObj> toSamplerObj(const py::handle py_sampler, bool isMindDataset = false);
+std::shared_ptr<SamplerObj> toSamplerObj(const py::handle &py_sampler, bool isMindDataset = false);
 
 std::shared_ptr<DatasetCache> toDatasetCache(std::shared_ptr<CacheClient> cc);
 
-ShuffleMode toShuffleMode(const int32_t shuffle);
+ShuffleMode toShuffleMode(int32_t shuffle);
 
-std::vector<std::shared_ptr<CsvBase>> toCSVBase(py::list csv_bases);
+std::vector<std::shared_ptr<CsvBase>> toCSVBase(const py::list &csv_bases);
 
-std::shared_ptr<TensorOp> toPyFuncOp(py::object func, DataType::Type data_type);
+std::shared_ptr<TensorOp> toPyFuncOp(const py::object &func, DataType::Type data_type);
 
-Status ToJson(const py::handle &padded_sample, nlohmann::json *const padded_sample_json,
+Status ToJson(const py::handle &padded_sample, nlohmann::json *padded_sample_json,
               std::map<std::string, std::string> *sample_bytes);
 
 Status toPadInfo(const py::dict &value,
                  std::map<std::string, std::pair<TensorShape, std::shared_ptr<Tensor>>> *pad_info);
 
-py::list shapesToListOfShape(std::vector<TensorShape> shapes);
+py::list shapesToListOfShape(const std::vector<TensorShape> &shapes);
 
-py::list typesToListOfType(std::vector<DataType> types);
+py::list typesToListOfType(const std::vector<DataType> &types);
 
-Status toIntMapTensor(py::dict value, std::unordered_map<std::int16_t, std::shared_ptr<Tensor>> *feature);
+Status toIntMapTensor(const py::dict &value, std::unordered_map<std::int16_t, std::shared_ptr<Tensor>> *feature);
 }  // namespace dataset
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_MINDDATA_DATASET_API_PYTHON_PYBIND_CONVERSION_H_

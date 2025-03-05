@@ -19,7 +19,6 @@ import pytest
 import mindspore.dataset as ds
 
 
-@pytest.mark.forked
 class TestAutotuneConfig:
     @staticmethod
     def test_autotune_config_basic():

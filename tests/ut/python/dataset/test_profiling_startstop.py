@@ -29,7 +29,6 @@ DATASET_ROOT = "../data/dataset/testTFTestAllTypes/"
 SCHEMA_FILE = "../data/dataset/testTFTestAllTypes/datasetSchema.json"
 
 
-@pytest.mark.forked
 class TestMindDataProfilingStartStop:
     """
     Test MindData Profiling Manager Start-Stop Support

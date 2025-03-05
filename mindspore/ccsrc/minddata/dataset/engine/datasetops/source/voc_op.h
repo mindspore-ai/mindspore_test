@@ -67,7 +67,7 @@ class VOCOp : public MappableLeafOp {
   VOCOp(const TaskType &task_type, const std::string &task_mode, const std::string &folder_path,
         const std::map<std::string, int32_t> &class_index, int32_t num_workers, int32_t queue_size, bool decode,
         std::unique_ptr<DataSchema> data_schema, std::shared_ptr<SamplerRT> sampler, bool extra_metadata,
-        py::function decrypt = py::none());
+        const py::function &decrypt = py::object());
 #else
   // Constructor
   // @param TaskType task_type - task type of VOC
@@ -86,7 +86,7 @@ class VOCOp : public MappableLeafOp {
 #endif
 
   // Destructor
-  ~VOCOp() = default;
+  ~VOCOp() override;
 
   // A print method typically used for debugging
   // @param out
