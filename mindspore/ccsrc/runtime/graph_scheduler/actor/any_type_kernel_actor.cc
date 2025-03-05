@@ -36,94 +36,14 @@ std::mutex AnyTypeKernelActor::instance_lock_;
 AnyTypeKernelActor::AnyTypeKernelActor(const std::string &name, const KernelGraphPtr &graph,
                                        const DeviceContext *device_context, const AID &memory_manager_aid,
                                        const AID *debug_aid, const AID *recorder_aid, KernelTransformType type)
-    : SuperKernelActor(name, graph, "", device_context, memory_manager_aid, debug_aid, recorder_aid, type) {}
-
-void AnyTypeKernelActor::RunOpData(OpData<DeviceTensor> *const input_data, OpContext<DeviceTensor> *const context) {
-  MS_EXCEPTION_IF_NULL(input_data);
-  MS_EXCEPTION_IF_NULL(input_data->data_);
-  MS_EXCEPTION_IF_NULL(input_data->data_->kernel_tensor());
-  MS_EXCEPTION_IF_NULL(context);
-  MS_EXCEPTION_IF_NULL(graph());
-  auto &sequential_num = context->sequential_num_;
-  if (!ActorDispatcher::enable_async_launch_kernel() && !input_data->data_->IsPtrValid() &&
-      !TEST_FLAG(input_data->data_->flag(), device::kDeviceAddressFlagNotUsed)) {
-    MS_LOG(EXCEPTION) << "The input_data does not have a valid ptr of actor:" << GetAID().Name()
-                      << " with index:" << input_data->index_ << ", flag:" << input_data->data_->flag()
-                      << " device address:" << input_data->data_ << " ref count:" << input_data->data_->ref_count()
-                      << " dynamic ref count:" << input_data->data_->dynamic_ref_count()
-                      << " origin ref count:" << input_data->data_->original_ref_count();
-  }
-  MS_LOG(DEBUG) << "Actor(" << GetAID().Name() << ") receive the input op data:" << input_data->data_
-                << " index:" << input_data->index_ << ", size:" << input_data->data_->GetSize()
-                << " ptr:" << input_data->data_->GetPtr() << " user data:" << input_data->data_->user_data()
-                << " input num:" << input_datas_num_ << " input device tensor size:" << input_device_tensors_.size()
-                << " ref count:" << input_data->data_->ref_count()
-                << " dynamic ref count:" << input_data->data_->dynamic_ref_count()
-                << " origin ref count:" << input_data->data_->original_ref_count()
-                << " user data:" << input_data->data_->user_data()
-                << " type:" << input_data->data_->kernel_tensor()->GetType()
-                << " type id:" << input_data->data_->kernel_tensor()->type_id();
-  if (input_data->index_ < SizeToLong(graph()->input_nodes().size())) {
-    // Collect graph input data.
-    input_op_datas_[sequential_num].emplace_back(input_data);
-    if (CheckRunningCondition(context)) {
-      MS_LOG(DEBUG) << "Begin wait runtime pipeline to run for graph input for actor: " << GetAID().Name();
-      if (!WaitRuntimePipelineFinish(context)) {
-        MS_LOG(INFO) << "Run failed and early stop.";
-        return;
-      }
-      MS_LOG(DEBUG) << "End wait runtime pipeline to run for graph input for actor: " << GetAID().Name();
-      RunForGraphInput(context);
-    }
-  } else {
-    // Collect graph output data.
-    graph_output_op_data_[sequential_num].emplace_back(input_data);
-    if (CheckGraphOutputRunningCondition(context)) {
-      MS_LOG(DEBUG) << "Begin wait runtime pipeline to run for graph output for actor: " << GetAID().Name();
-      if (!WaitRuntimePipelineFinish(context)) {
-        MS_LOG(INFO) << "Run failed and early stop.";
-        return;
-      }
-      MS_LOG(DEBUG) << "End wait runtime pipeline to run for graph output for actor: " << GetAID().Name();
-      RunForGraphOutput(context);
-    }
-  }
-}
-
-void AnyTypeKernelActor::RunOpControl(AID *const input_control, OpContext<DeviceTensor> *const context) {
-  MS_EXCEPTION_IF_NULL(context);
-  MS_EXCEPTION_IF_NULL(input_control);
-  auto &sequential_num = context->sequential_num_;
-  MS_LOG(DEBUG) << "Actor(" << GetAID().Name() << ") receive the input op control:" << input_control->Name();
-  if (std::any_of(
-        input_control_arrow_aids_.begin(), input_control_arrow_aids_.end(),
-        [input_control](const auto &arrow_pair) { return arrow_pair.first.Name() == input_control->Name(); })) {
-    (void)input_op_controls_[sequential_num].emplace_back(input_control);
-    if (CheckRunningCondition(context)) {
-      if (!WaitRuntimePipelineFinish(context)) {
-        MS_LOG(INFO) << "Run failed and early stop.";
-        return;
-      }
-      RunForGraphInput(context);
-    }
-  } else {
-    graph_output_op_control_[sequential_num].emplace_back(input_control);
-    if (CheckGraphOutputRunningCondition(context)) {
-      if (!WaitRuntimePipelineFinish(context)) {
-        MS_LOG(INFO) << "Run failed and early stop.";
-        return;
-      }
-      RunForGraphOutput(context);
-    }
-  }
+    : SuperKernelActor(name, graph, "", device_context, memory_manager_aid, debug_aid, recorder_aid, type) {
+  enable_kbk_sub_graph_execute_ = true;
 }
 
 void AnyTypeKernelActor::FetchInputDeviceTensor(OpContext<DeviceTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
-  std::vector<DeviceTensor *> memory_free_list = graph_ouput_device_tensors_;
   const auto &data_iter = input_op_datas_.find(context->sequential_num_);
   if (data_iter == input_op_datas_.end()) {
-    memory_free_lists_.push(memory_free_list);
     return;
   }
   for (auto &input_data : data_iter->second) {
@@ -137,13 +57,9 @@ void AnyTypeKernelActor::FetchInputDeviceTensor(OpContext<DeviceTensor> *const c
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
     input_device_tensors_[index] = input_data->data_;
-    if (input_data->data_->ref_count() != SIZE_MAX) {
-      (void)memory_free_list.emplace_back(input_data->data_);
-    }
   }
-  memory_free_lists_.push(memory_free_list);
 
-  for (auto &device_tensor_store_key : device_tensor_store_keys_) {
+  for (auto &device_tensor_store_key : extern_device_tensor_store_keys_) {
     MS_EXCEPTION_IF_NULL(device_tensor_store_key.second);
     if (device_contexts_.empty() || device_contexts_[0] == nullptr) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context),
@@ -238,15 +154,17 @@ std::string GenerateIDForGraph(const std::vector<DeviceTensor *> &device_tensors
       MS_LOG(EXCEPTION) << "Empty device tensor index:" << index;
     }
     if (device_tensor->user_data() == nullptr) {
-      device_tensor->kernel_tensor()->SetType(device_tensor->kernel_tensor()->GetType());
-      device_tensor->kernel_tensor()->SetShape(device_tensor->kernel_tensor()->GetShape());
       get_shape_and_type_string(device_tensor->host_shape(), device_tensor->type_id());
       continue;
     }
 
     const auto &user_data_obj =
       device_tensor->user_data()->get<kernel::PyExecuteOutputUserData>(kernel::PyExecuteOutputUserData::key);
-    MS_EXCEPTION_IF_NULL(user_data_obj);
+    if (user_data_obj == nullptr) {
+      MS_LOG(ERROR) << "Failed to get user data from input index:" << index
+                    << " device tensor:" << device_tensor->PrintInfo();
+      return "FAILED";
+    }
     const auto &obj = user_data_obj->obj;
     py::gil_scoped_acquire gil_acquire;
     const auto &abstract = pyexecute::GenerateAbstractFromPyObject(obj);
@@ -259,10 +177,6 @@ std::string GenerateIDForGraph(const std::vector<DeviceTensor *> &device_tensors
       id = id + "Scalar_";
     } else if (abstract->isa<abstract::AbstractTensor>()) {
       id = id + "Tensor_";
-    }
-    if (abstract->isa<abstract::AbstractSequence>()) {
-      device_tensor->kernel_tensor()->SetType(abstract->BuildType());
-      device_tensor->kernel_tensor()->SetShape(abstract->BuildShape());
     }
     get_shape_and_type_string(device_tensor->host_shape(), device_tensor->type_id());
   }
@@ -405,7 +319,313 @@ void ClearAttrForGraph(const KernelGraphPtr &graph, const std::string &attr_name
     }
   }
 }
+
+void PrepareValueNode(const AnfNodePtr &value_node, DeviceTensor *device_tensor) {
+  MS_EXCEPTION_IF_NULL(value_node);
+  MS_EXCEPTION_IF_NULL(device_tensor);
+  const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+    {device_tensor->device_name(), device_tensor->device_id()});
+  MS_EXCEPTION_IF_NULL(device_context);
+  if (device_tensor->GetPtr() == nullptr) {
+    if (!device_context->device_res_manager_->AllocateMemory(device_tensor)) {
+      MS_LOG(EXCEPTION) << "Failed to allocate memory for device tensor store:" << device_tensor;
+    }
+    MS_LOG(DEBUG) << "Device address:" << device_tensor << " allocate ptr:" << device_tensor->GetPtr()
+                  << " for value node:" << value_node->DebugString();
+  } else {
+    MS_LOG(DEBUG) << "Device address:" << device_tensor << " already has ptr:" << device_tensor->GetPtr()
+                  << " for value node:" << value_node->DebugString();
+  }
+
+  const auto &kernel_tensor = device_tensor->kernel_tensor();
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  if (!device_tensor->SyncHostToDevice(kernel_tensor->GetShapeVector(), kernel_tensor->size(),
+                                       kernel_tensor->dtype_id(), kernel_tensor->GetValuePtr())) {
+    MS_LOG_WITH_NODE(EXCEPTION, value_node) << "Failed to sync data for value node:" << value_node->DebugString();
+  }
+
+  MS_LOG(DEBUG) << "Device address:" << device_tensor << " ptr:" << device_tensor->GetPtr()
+                << " for value node:" << value_node->DebugString();
+}
+
+void PersisitValueNode(const KernelGraphPtr &graph, const DeviceContext *device_context) {
+  MS_EXCEPTION_IF_NULL(graph);
+  MS_EXCEPTION_IF_NULL(device_context);
+  MS_LOG(DEBUG) << "Value node size:" << graph->graph_value_nodes().size() << " for graph:" << graph->ToString();
+  for (auto &value_node : graph->graph_value_nodes()) {
+    MS_EXCEPTION_IF_NULL(value_node);
+    if (!AnfAlgo::OutputAddrExist(value_node, 0)) {
+      MS_LOG(INFO) << "The device address is not exist: " << value_node->ToString()
+                   << " for graph:" << graph->ToString();
+      continue;
+    }
+    auto device_tensor = AnfAlgo::GetMutableOutputAddr(value_node, 0, false);
+    MS_EXCEPTION_IF_NULL(device_tensor);
+    const auto &front_node = AnfAlgo::FetchFrontNodeByBackendNode(value_node, *graph);
+    MS_EXCEPTION_IF_NULL(front_node);
+    device_tensor->SetNodeIndex(value_node, 0);
+    DeviceTensorStore::GetInstance().Insert(const_cast<AnfNode *>(front_node.get()), device_tensor);
+    PrepareValueNode(value_node, device_tensor.get());
+    MS_LOG(DEBUG) << "Add device tensor store:" << device_tensor << " node:" << front_node->DebugString()
+                  << " graph:" << graph->ToString();
+
+    // If the device tensor store of this device type is not exist, then create the new device tensor of this type.
+    if (DeviceTensorStore::GetInstance().Fetch(front_node.get(), device_context->GetDeviceType()) == nullptr) {
+      MS_LOG(INFO) << "Fetch no device tensor store by:" << front_node->fullname_with_scope()
+                   << ", type:" << device_context->GetDeviceType() << " dtype:" << device_tensor->type_id()
+                   << " current device address:" << device_tensor << " in value node:" << value_node->DebugString();
+
+      const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
+        {value_node, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
+        device_tensor->host_shape(), device_context->device_context_key().device_name_,
+        device_context->device_context_key().device_id_);
+      kernel_tensor->set_stream_id(device_tensor->stream_id());
+      auto other_type_device_tensor = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+      MS_EXCEPTION_IF_NULL(other_type_device_tensor);
+      other_type_device_tensor->SetNodeIndex(value_node, 0);
+      other_type_device_tensor->set_from_persistent_mem(true);
+      MS_LOG(DEBUG) << "Create device tensor:" << other_type_device_tensor
+                    << " type:" << other_type_device_tensor->type_id();
+      DeviceTensorStore::GetInstance().Insert(const_cast<AnfNode *>(front_node.get()), other_type_device_tensor);
+      MS_LOG(DEBUG) << "Add device tensor store:" << other_type_device_tensor << " node:" << front_node->DebugString()
+                    << " graph:" << graph->ToString();
+      PrepareValueNode(value_node, device_tensor.get());
+    }
+  }
+  for (const auto &kernel : graph->execution_order()) {
+    MS_EXCEPTION_IF_NULL(kernel);
+    const auto &real_device_context = device::FetchRealDeviceContext(kernel, device_context);
+    if (real_device_context == device_context) {
+      continue;
+    }
+    MS_LOG(DEBUG) << "Handle device tensor store for backoff kernel:" << kernel->fullname_with_scope()
+                  << " in graph:" << graph->ToString();
+    MS_EXCEPTION_IF_NULL(real_device_context);
+    for (size_t i = 0; i < common::AnfAlgo::GetInputNum(kernel); ++i) {
+      auto input_node = common::AnfAlgo::GetInputNode(kernel, i);
+      if (input_node == nullptr || !input_node->isa<ValueNode>()) {
+        continue;
+      }
+      const auto &front_node = AnfAlgo::FetchFrontNodeByBackendNode(input_node, *graph);
+      MS_EXCEPTION_IF_NULL(front_node);
+      if (DeviceTensorStore::GetInstance().Fetch(front_node.get(), real_device_context->GetDeviceType()) != nullptr ||
+          !AnfAlgo::OutputAddrExist(input_node, 0, false)) {
+        MS_LOG(DEBUG) << "Failed to get device tensor in value node:" << input_node->DebugString()
+                      << " has device address:" << AnfAlgo::OutputAddrExist(input_node, 0, false)
+                      << " real device type:" << real_device_context->GetDeviceType() << " fetch device address:"
+                      << DeviceTensorStore::GetInstance().Fetch(front_node.get(), real_device_context->GetDeviceType());
+        continue;
+      }
+      auto device_tensor = AnfAlgo::GetMutableOutputAddr(input_node, 0, false);
+      MS_EXCEPTION_IF_NULL(device_tensor);
+      MS_LOG(INFO) << "Fetch no device tensor store by:" << front_node->fullname_with_scope()
+                   << ", type:" << real_device_context->GetDeviceType()
+                   << " node device tensor:" << device_tensor->PrintInfo();
+      const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
+        {input_node, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
+        device_tensor->host_shape(), real_device_context->device_context_key().device_name_,
+        real_device_context->device_context_key().device_id_);
+      kernel_tensor->set_stream_id(device_tensor->stream_id());
+      auto other_type_device_tensor = real_device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+      MS_EXCEPTION_IF_NULL(other_type_device_tensor);
+      other_type_device_tensor->SetNodeIndex(input_node, 0);
+      other_type_device_tensor->set_from_persistent_mem(true);
+      MS_LOG(DEBUG) << "Create device tensor:" << other_type_device_tensor
+                    << " type:" << other_type_device_tensor->type_id()
+                    << " device type:" << real_device_context->device_context_key().ToString();
+      DeviceTensorStore::GetInstance().Insert(const_cast<AnfNode *>(front_node.get()), other_type_device_tensor);
+      MS_LOG(DEBUG) << "Add device tensor store:" << other_type_device_tensor << " node:" << front_node->DebugString()
+                    << " graph:" << graph->ToString();
+      PrepareValueNode(input_node, device_tensor.get());
+    }
+  }
+}
 }  // namespace
+
+KernelGraphPtr AnyTypeKernelActor::CompileRealKernelGraph(OpContext<DeviceTensor> *const context) {
+  try {
+    std::lock_guard<std::mutex> lock(instance_lock_);
+    InferParameterAbstractForModelGraph(model_graph_, input_device_tensors_, any_type_parameter_indexes_);
+    ClearAttrForGraph(model_graph_, kAttrInputIsDynamicShape);
+    ClearAttrForGraph(model_graph_, kAttrOutputIsDynamicShape);
+    model_graph_->InferType();
+    const auto &return_node = model_graph_->get_return();
+    MS_EXCEPTION_IF_NULL(return_node);
+    if (!return_node->isa<CNode>() || return_node->cast<CNodePtr>()->size() <= 1) {
+      MS_LOG_WITH_NODE(EXCEPTION, return_node)
+        << "Invalid return node:" << return_node->DebugString() << " for graph:" << model_graph_->ToString();
+    }
+    if (device_contexts().empty() || device_contexts()[0] == nullptr) {
+      MS_LOG(EXCEPTION) << "Invalid device context for actor:" << GetAID();
+    }
+    AnfNodePtrList inputs{};
+    AnfNodePtrList outputs{return_node->cast<CNodePtr>()->input(1)};
+    auto io_nodes = std::make_pair(inputs, outputs);
+    device_contexts()[0]->device_res_manager_->BindDeviceToCurrentThread(false);
+    auto new_graph =
+      compile_func_(BuildSegmentByGraph(model_graph_), io_nodes, device_contexts()[0], device::RunMode::kKernelMode);
+    MS_EXCEPTION_IF_NULL(new_graph);
+    MS_LOG(DEBUG) << "Compile graph:" << new_graph->ToString() << " for:" << model_graph_->ToString();
+    for (const auto &node_pair : new_graph->front_backend_anf_map()) {
+      MS_EXCEPTION_IF_NULL(node_pair.first);
+      if (!node_pair.first->isa<CNode>()) {
+        continue;
+      }
+      MS_LOG(DEBUG) << "Check for node:" << node_pair.first->DebugString();
+      const auto &cnode = node_pair.first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
+      if (cnode->HasAttr(kAttrReplaceRealKernelInBackend)) {
+        MS_LOG(DEBUG) << "Erase flag for node:" << node_pair.first->DebugString();
+        cnode->EraseAttr(kAttrReplaceRealKernelInBackend);
+      }
+    }
+    PersisitValueNode(new_graph, device_contexts()[0]);
+    return new_graph;
+  } catch (const std::exception &e) {
+    MsException::Instance().SetException();
+    MS_LOG(ERROR) << "Failed to compile graph:" << model_graph_->ToString() << " in actor:" << GetAID()
+                  << " error info:" << e.what();
+    return nullptr;
+  }
+}
+
+void AnyTypeKernelActor::PrepareRunContext(OpContext<DeviceTensor> *const context) {
+  const auto &data_type = GenerateIDForGraph(input_device_tensors_, any_type_parameter_indexes_);
+  if (data_type == "FAILED") {
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context),
+                                                  GetAID().Name() + " failed to generate id.");
+  }
+  if (data_type == current_data_type_) {
+    return;
+  }
+  current_data_type_ = data_type;
+  if (real_graphs_.find(current_data_type_) == real_graphs_.end()) {
+    const auto &new_graph = CompileRealKernelGraph(context);
+    if (new_graph == nullptr) {
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context),
+                                                    GetAID().Name() + " compile graph failed.");
+    }
+    if (new_graph->input_nodes().size() != model_graph_->input_nodes().size()) {
+      MS_LOG(EXCEPTION) << "Invalid input node num:" << new_graph->input_nodes().size()
+                        << " in graph:" << new_graph->ToString() << " for model graph:" << model_graph_->ToString()
+                        << " input num:" << model_graph_->input_nodes().size() << " for actor:" << GetAID();
+    }
+    real_graphs_[current_data_type_] = new_graph;
+  }
+  MS_EXCEPTION_IF_NULL(real_graphs_[current_data_type_]);
+  graph_ = real_graphs_[current_data_type_];
+  MS_LOG(DEBUG) << "Set graph:" << graph_->ToString() << " for actor:" << GetAID();
+  ClearElements(context);
+  MS_LOG(DEBUG) << "Clear element end and start build and link for actor:" << GetAID();
+  BuildAndLinkKernelActors();
+  return;
+}
+
+void AnyTypeKernelActor::ClearElements(OpContext<DeviceTensor> *const context) {
+  memory_alloc_list_.clear();
+  kernel_actors_insert_event_.clear();
+  param_node_to_input_idx_.clear();
+  cnode_to_kernel_actor_.clear();
+  kernel_actors_.clear();
+  kernel_input_to_graph_input_indices_.clear();
+  kernel_input_to_actor_output_indices_.clear();
+  MS_EXCEPTION_IF_NULL(model_graph_);
+  MS_EXCEPTION_IF_NULL(graph_);
+  const auto &model_output = common::AnfAlgo::GetAllOutputWithOutMonadAndParameter(model_graph_->output());
+  const auto &real_output = common::AnfAlgo::GetAllOutputWithOutMonadAndParameter(graph_->output());
+  if (model_output.size() != real_output.size()) {
+    MS_LOG(EXCEPTION) << "Invalid model output size:" << model_output.size()
+                      << " and real output size:" << real_output.size() << " for actor:" << GetAID();
+  }
+  std::map<KernelWithIndex, KernelWithIndex> model_to_real_outputs;
+  for (size_t i = 0; i < model_output.size(); ++i) {
+    MS_EXCEPTION_IF_NULL(model_output[i].first);
+    MS_EXCEPTION_IF_NULL(real_output[i].first);
+    model_to_real_outputs[model_output[i]] = real_output[i];
+  }
+  if (output_data_nodes_.size() != output_data_arrows_.size()) {
+    MS_LOG(EXCEPTION) << "Invalid output data node size:" << output_data_nodes_.size()
+                      << " and arrow size:" << output_data_arrows_.size() << " for actor:" << GetAID();
+  }
+  MS_LOG(DEBUG) << "node size:" << output_data_nodes_.size() << " for actor:" << GetAID();
+  for (size_t i = 0; i < output_data_nodes_.size(); ++i) {
+    MS_EXCEPTION_IF_NULL(output_data_nodes_[i]);
+    MS_EXCEPTION_IF_NULL(output_data_arrows_[i]);
+    const auto &iter = model_to_real_outputs.find({output_data_nodes_[i], output_data_arrows_[i]->from_output_index_});
+    if (iter == model_to_real_outputs.end()) {
+      MS_LOG(EXCEPTION) << "Failed to get real output by model output:" << output_data_nodes_[i]->DebugString()
+                        << " model graph:" << model_graph_->ToString() << " real graph:" << graph_->ToString();
+    }
+    output_data_nodes_[i] = iter->second.first;
+    output_data_arrows_[i]->from_output_index_ = SizeToInt(iter->second.second);
+    MS_LOG(DEBUG) << "Update output node:" << iter->second.first->fullname_with_scope()
+                  << " index:" << iter->second.second << " for actor:" << GetAID();
+  }
+  MS_LOG(DEBUG) << "Reorder Input device tensor";
+  if (graph_->input_nodes().size() != model_graph_->input_nodes().size()) {
+    MS_LOG(EXCEPTION) << "Invalid model input size:" << model_graph_->input_nodes().size()
+                      << " and real input size:" << graph_->input_nodes().size() << " for actor:" << GetAID();
+  }
+  std::vector<DeviceTensor *> new_input_device_tensors;
+  for (size_t i = 0; i < graph_->input_nodes().size(); ++i) {
+    const auto &backend_node = graph_->input_nodes()[i];
+    MS_EXCEPTION_IF_NULL(backend_node);
+    const auto &front_node = graph_->GetFrontAnfByBackendAnf(backend_node);
+    if (front_node == nullptr) {
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(
+        GraphExecutionStrategy::kPipeline, (*context),
+        "Failed to get front node by backend node:" + backend_node->DebugString() +
+          " in real graph:" + graph_->ToString());
+    }
+    MS_LOG(DEBUG) << "output data front node:" << front_node->DebugString();
+    const auto &front_parameters = model_graph_->input_nodes();
+    const auto &iter = find(front_parameters.begin(), front_parameters.end(), front_node);
+    if (iter == front_parameters.end()) {
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(
+        GraphExecutionStrategy::kPipeline, (*context),
+        "Failed to find index by backend parameter:" + backend_node->DebugString() +
+          " front node:" + front_node->DebugString());
+    }
+    size_t position = LongToSize(iter - front_parameters.begin());
+    if (position >= input_device_tensors_.size()) {
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context),
+                                                    "Invalid input position:" + std::to_string(position) +
+                                                      " total size:" + std::to_string(input_device_tensors_.size()) +
+                                                      " for actor:" + GetAID().Name());
+    }
+    new_input_device_tensors.emplace_back(input_device_tensors_[position]);
+    MS_LOG(DEBUG) << "Add model index:" << position << " real input index:" << i
+                  << " device tensor:" << input_device_tensors_[position] << " for actor:" << GetAID();
+  }
+  input_device_tensors_.swap(new_input_device_tensors);
+  MS_LOG(DEBUG) << "Clear element end";
+}
+
+void AnyTypeKernelActor::Run(OpContext<DeviceTensor> *const context) {
+  MS_EXCEPTION_IF_NULL(context);
+  MS_EXCEPTION_IF_NULL(model_graph_);
+  actor_state_ = AnyTypeKernelActorState::kAnyTypeKernelActorSendInput;
+  MS_LOG(DEBUG) << "Any type kernel actor:" << GetAID() << " run.";
+  FetchInputDeviceTensor(context);
+  if (!WaitRuntimePipelineFinish(context)) {
+    MS_LOG(INFO) << "Run failed and early stop.";
+    return;
+  }
+  PrepareRunContext(context);
+  try {
+    if (!LaunchAllKernels(context)) {
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context),
+                                                    "Launch kernels by execution order failed for graph: " +
+                                                      graph_->ToString() + " error info:" + context->error_info_);
+    }
+  } catch (const std::exception &e) {
+    MsException::Instance().SetException();
+    MS_LOG(WARNING) << "Catch error:" << e.what();
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), e.what());
+  }
+  EraseInput(context);
+  PostRun(context);
+}
 
 void AnyTypeKernelActor::RunForGraphInput(OpContext<DeviceTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
@@ -616,6 +836,8 @@ void AnyTypeKernelActor::Init() {
                     << " for actor:" << GetAID();
     }
   }
+  model_graph_ = graph();
+  extern_device_tensor_store_keys_.swap(device_tensor_store_keys_);
   for (const auto &node_with_index : common::AnfAlgo::GetAllOutputWithOutMonadAndParameter(graph()->output())) {
     MS_EXCEPTION_IF_NULL(node_with_index.first);
     if (!AnfAlgo::OutputAddrExist(node_with_index.first, node_with_index.second)) {
@@ -762,72 +984,19 @@ void AnyTypeKernelActor::UpdateOutputData(OpData<DeviceTensor> *const output_dat
   MS_EXCEPTION_IF_NULL(data_arrow);
   MS_EXCEPTION_IF_NULL(output_node);
   MS_EXCEPTION_IF_NULL(context);
-  MS_EXCEPTION_IF_NULL(graph());
-  if (actor_state_ == AnyTypeKernelActorState::kAnyTypeKernelActorSendOutput) {
-    size_t index = IntToSize(data_arrow->from_output_index_);
-    const auto &real_output = common::AnfAlgo::GetAllOutputWithOutMonadAndParameter(graph()->output());
-    const auto &output_iter = find(real_output.begin(), real_output.end(), std::make_pair(output_node, index));
-    if (output_iter == real_output.end()) {
-      MS_LOG_WITH_NODE(EXCEPTION, output_node) << "Invalid output node:" << output_node->DebugString()
-                                               << " index:" << index << " for graph:" << graph()->ToString();
-    }
-    size_t real_output_index = LongToSize(output_iter - real_output.begin());
-    if (real_output_index >= graph_ouput_device_tensors_.size()) {
-      MS_LOG_WITH_NODE(EXCEPTION, output_node)
-        << "Invalid input index:" << real_output_index << " by node:" << output_node->DebugString()
-        << " for actor:" << GetAID();
-    }
-    MS_LOG(DEBUG) << "actor:" << GetAID() << " output node:" << output_node->DebugString()
-                  << " to actor:" << data_arrow->to_op_id_ << " from index:" << real_output_index;
-    MS_EXCEPTION_IF_NULL(graph_ouput_device_tensors_[real_output_index]);
-    output_data->data_ = graph_ouput_device_tensors_[real_output_index];
+  if (!output_node->isa<CNode>()) {
     return;
   }
-
-  const auto &real_graph = real_graphs_[current_data_type_];
-  MS_EXCEPTION_IF_NULL(real_graph);
-  const auto &front_node = real_graph->GetFrontAnfByBackendAnf(output_node);
-  MS_EXCEPTION_IF_NULL(front_node);
-  const auto &model_graph = SuperKernelActor::graph();
-  MS_EXCEPTION_IF_NULL(model_graph);
-  auto &input_nodes = model_graph->input_nodes();
-  const auto &iter = find(input_nodes.begin(), input_nodes.end(), front_node);
-  if (iter == input_nodes.end()) {
-    MS_LOG_WITH_NODE(EXCEPTION, output_node)
-      << "Invalid input node:" << output_node->DebugString() << " front node:" << front_node->DebugString();
+  if (!AnfAlgo::OutputAddrExist(output_node, data_arrow->from_output_index_, false)) {
+    std::stringstream error_info;
+    error_info << "Failed to get output device address for:" << output_node->DebugString()
+               << " index:" << data_arrow->from_output_index_ << " for actor:" << GetAID();
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info.str());
   }
-  size_t index = LongToSize(iter - input_nodes.begin());
-  if (index >= node_device_tensors_.size()) {
-    MS_LOG_WITH_NODE(EXCEPTION, output_node)
-      << "Invalid input index:" << index << " by node:" << output_node->DebugString() << " for actor:" << GetAID();
-  }
-  if (node_device_tensors_[index] == nullptr) {
-    MS_LOG(EXCEPTION) << "failed to get input index:" << index << " for actor:" << GetAID();
-  }
-  output_data->data_ = node_device_tensors_[index].get();
-}
-
-void AnyTypeKernelActor::SendOutput(OpContext<DeviceTensor> *const context) {
-  MS_EXCEPTION_IF_NULL(context);
-  MS_LOG(DEBUG) << "Any type actor:" << GetAID() << " send output";
-  // Must be the execution order: send data --> send control, avoid the illegal timing problem.
-  SendOutputData(context, graph_input_data_nodes_[current_data_type_], graph_input_data_arrows_[current_data_type_],
-                 graph_input_data_[current_data_type_], data_arrow_to_graph_input_actor_indexs_[current_data_type_],
-                 &batch_graph_input_data_[current_data_type_]);
-
-  // 2.Send output control.
-  if (graph_input_control_arrows_[current_data_type_].size() > 0) {
-    auto from_aid = const_cast<AID *>(&GetAID());
-    for (auto &output_control : graph_input_control_arrows_[current_data_type_]) {
-      MS_EXCEPTION_IF_NULL(output_control);
-      if (TEST_FLAG(output_control->flag_, kOutputDataFlagBetweenFusion)) {
-        const auto &to_actor = FetchSubActorInFusionActor(output_control->to_op_id_.Name());
-        ActorDispatcher::SendSync(to_actor, &OpActor::RunOpControl, from_aid, context);
-      } else {
-        ActorDispatcher::Send(output_control->to_op_id_, &OpActor::RunOpControl, from_aid, context);
-      }
-    }
-  }
+  output_data->data_ = AnfAlgo::GetMutableOutputAddr(output_node, data_arrow->from_output_index_, false).get();
+  MS_LOG(DEBUG) << "Set output address:" << output_data->data_
+                << " to output data, output index:" << data_arrow->from_output_index_ << " node:" << output_node
+                << " in actor:" << GetAID();
 }
 }  // namespace runtime
 }  // namespace mindspore

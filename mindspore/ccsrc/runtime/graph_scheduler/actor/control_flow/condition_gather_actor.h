@@ -40,6 +40,10 @@ class ConditionGatherActor : public KernelActor {
   ~ConditionGatherActor() override;
   // Receive the branch name from condition switch actor.
   void RunBranchName(const std::string &branch_name, OpContext<DeviceTensor> *const context);
+  void ExecuteInferShapeTask(OpContext<DeviceTensor> *const context) override;
+  void ExecuteResizeKernelModTask(OpContext<DeviceTensor> *const context) override;
+  void ExecuteLaunchKernelTask(OpContext<DeviceTensor> *const context) override;
+  void UpdateRefDeviceAddress(OpContext<DeviceTensor> *const context, bool increase_ref_count) override;
 
  protected:
   void Init() override;
@@ -49,6 +53,7 @@ class ConditionGatherActor : public KernelActor {
  private:
   void FetchParameterInput(size_t start_index, OpContext<DeviceTensor> *const context);
 
+  friend class SuperKernelActor;
   friend class InlineControlFlowScheduler;
   // Output num of each branch.
   size_t branch_output_num_{0};
@@ -61,6 +66,7 @@ class ConditionGatherActor : public KernelActor {
   mindspore::HashMap<std::string, size_t> branch_name_to_input_data_num_;
   mindspore::HashMap<std::string, size_t> branch_name_to_input_control_num_;
   std::vector<device::DeviceAddressPtr> need_clean_ptr_device_addresses_;
+  std::shared_ptr<bool[]> branch_flags_;
 };
 
 using ConditionGatherActorPtr = std::shared_ptr<ConditionGatherActor>;

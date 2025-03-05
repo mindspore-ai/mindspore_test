@@ -224,13 +224,61 @@ void DeviceQueueDataSourceActor::SendRecorderInfo(OpContext<DeviceTensor> *const
   }
 }
 
+void DeviceQueueDataSourceActor::IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) {
+  if (buffers_.size() == 0) {
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The device data source actor data queue is empty.");
+  }
+  const auto &output_device_tensors = buffers_.front();
+  for (const auto &data_arrow : output_data_arrows_) {
+    MS_EXCEPTION_IF_NULL(data_arrow);
+    size_t position = IntToSize(data_arrow->from_output_index_);
+    if (position >= output_device_tensors.size()) {
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Invalid output index:" + std::to_string(position) +
+                                                      " total size:" + std::to_string(output_device_tensors.size()) +
+                                                      " for device queue data source actor.");
+    }
+    MS_EXCEPTION_IF_NULL(output_device_tensors[position]);
+    output_device_tensors[data_arrow->from_output_index_]->IncreaseNewRefCount();
+    MS_LOG(DEBUG) << "Increase new ref count for device address:"
+                  << output_device_tensors[data_arrow->from_output_index_]->PrintInfo() << " in actor:" << GetAID();
+  }
+}
+void HostQueueDataSourceActor::IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) {
+  if (buffers_.size() == 0) {
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The device data source actor data queue is empty.");
+  }
+  const auto &output_device_tensors = buffers_.front();
+  if (output_data_arrows_.size() != output_data_nodes_.size()) {
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR(
+      (*context), "Invalid data arrow size:" + std::to_string(output_data_arrows_.size()) + " and data node size:" +
+                    std::to_string(output_data_nodes_.size()) + " for host queue data source actor.");
+  }
+  for (size_t i = 0; i < output_data_arrows_.size(); ++i) {
+    auto &data_arrow = output_data_arrows_[i];
+    auto output_node = output_data_nodes_[i];
+    MS_EXCEPTION_IF_NULL(data_arrow);
+    MS_EXCEPTION_IF_NULL(output_node);
+    auto position = FetchNodePosition({output_node, data_arrow->from_output_index_});
+    if (position >= output_device_tensors.size()) {
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Invalid output index:" + std::to_string(position) +
+                                                      " total size:" + std::to_string(output_device_tensors.size()) +
+                                                      " for device queue data source actor.");
+    }
+    MS_EXCEPTION_IF_NULL(output_device_tensors[position]);
+    output_device_tensors[position]->IncreaseNewRefCount();
+    MS_LOG(DEBUG) << "Increase new ref count for device address:" << output_device_tensors[position]->PrintInfo()
+                  << " in actor:" << GetAID();
+  }
+}
+
 void HostQueueDataSourceActor::FillDataBuffer() {
   // Construct device tensors.
   std::vector<DeviceTensor *> device_tensors;
   for (auto &node_with_index : data_node_with_indexs_) {
-    MS_LOG(DEBUG) << "Node:" << node_with_index.first->DebugString() << " index:" << node_with_index.second;
     auto device_address = AnfAlgo::GetMutableOutputAddr(node_with_index.first, node_with_index.second, false);
     MS_EXCEPTION_IF_NULL(device_address);
+    MS_LOG(DEBUG) << "Node:" << node_with_index.first->DebugString() << " index:" << node_with_index.second
+                  << " device address:" << device_address->PrintInfo();
     (void)device_tensors.emplace_back(device_address.get());
   }
 
@@ -351,6 +399,7 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *cons
       MS_EXCEPTION_IF_NULL(host_tensor);
       // No used device address need skip.
       if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
+        device_tensor->IncreaseNewRefCount();
         MS_LOG(DEBUG) << GetAID().Name() << " input index " << i << " is not used.";
         continue;
       }
@@ -460,21 +509,12 @@ void HostQueueDataSourceActor::ReleaseData() {
       MS_LOG(DEBUG) << "Create device tensor:" << new_address << " type:" << new_address->type_id()
                     << ", kernel tensor addr:" << new_kernel_tensor.get();
       new_address->set_original_ref_count(old_address->original_ref_count());
+      new_address->set_new_ref_count(old_address->new_ref_count());
       new_address->ResetRefCount();
       new_address->set_flag(old_address->flag());
       auto [node, index] = old_address->GetNodeIndex();
       new_address->SetNodeIndex(node, index);
       AnfAlgo::SetOutputAddr(new_address, data_node_with_index.second, data_node_with_index.first.get());
-      if (ref_device_tensors_.find(data_node_with_index) == ref_device_tensors_.end()) {
-        continue;
-      }
-      for (const auto &device_tensor : ref_device_tensors_[data_node_with_index]) {
-        if (device_tensor != nullptr) {
-          MS_LOG(DEBUG) << "Set pointer ref count from device address:" << new_address << " to:" << device_tensor
-                        << " for data source node:" << data_node_with_index.first->DebugString();
-          device_tensor->set_pointer_ref_count(new_address->pointer_ref_count());
-        }
-      }
     }
   }
 }

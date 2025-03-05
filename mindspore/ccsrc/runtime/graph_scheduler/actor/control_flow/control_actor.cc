@@ -107,6 +107,31 @@ void ControlActor::IncreaseDynamicRefCount(const OpRealParameterWithBranchID &op
   }
 }
 
+void ControlActor::IncreaseNewRefCountForPartial(const OpPartialPtr &op_partial) {
+  if (op_partial == nullptr) {
+    MS_LOG(EXCEPTION) << "Empty op partial for actor:" << GetAID();
+  }
+  std::vector<DeviceTensor *> partial_device_tensors;
+  GetAllDeviceTensors(op_partial, &partial_device_tensors);
+  for (auto &partial_device_tensor : partial_device_tensors) {
+    MS_EXCEPTION_IF_NULL(partial_device_tensor);
+    partial_device_tensor->IncreaseNewRefCount();
+    MS_LOG(DEBUG) << "Increase new ref count for device address:" << partial_device_tensor->PrintInfo()
+                  << " in actor:" << GetAID();
+  }
+}
+
+void ControlActor::IncreaseNewRefCountForRealParameter(const OpRealParameterWithBranchID &op_real_parameter) {
+  std::vector<DeviceTensor *> partial_device_tensors;
+  GetAllDeviceTensors(op_real_parameter, &partial_device_tensors);
+  for (auto &partial_device_tensor : partial_device_tensors) {
+    MS_EXCEPTION_IF_NULL(partial_device_tensor);
+    partial_device_tensor->IncreaseNewRefCount();
+    MS_LOG(DEBUG) << "Increase new ref count for device address:" << partial_device_tensor->PrintInfo()
+                  << " in actor:" << GetAID();
+  }
+}
+
 size_t ControlActor::FetchNodePosition(const KernelWithIndex &node) const {
   const auto &iter = find(formal_parameters_.begin(), formal_parameters_.end(), node);
   if (iter == formal_parameters_.end()) {
@@ -166,7 +191,7 @@ void ControlActor::Run(OpContext<DeviceTensor> *const context) {
     // Note that IncreaseDynamicRefCounts must be in front of SendMemoryFreeReq. SendMemoryFreeReq will decreasing the
     // dynamic ref count. Avoid the illegal timing problem that the dynamic reference count is decremented and then
     // incremented.
-    IncreaseDynamicRefCounts(context);
+    IncreaseNewRefCounts(context);
     SendMemoryFreeReq(context);
 
     EraseInput(context);
@@ -385,6 +410,40 @@ void ControlActor::IncreaseDynamicRefCounts(OpContext<DeviceTensor> *const conte
   }
 }
 
+void ControlActor::IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) {
+  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
+  MS_EXCEPTION_IF_NULL(context);
+  // Increase dynamic ref count by the output data.
+  for (size_t i = 0; i < output_data_.size(); ++i) {
+    MS_EXCEPTION_IF_NULL(output_data_[i].first);
+    if (output_data_[i].first->data_ == nullptr) {
+      std::string error_info = GetAID().Name() + " fetches data null, data index:" + std::to_string(i) +
+                               " to actor:" + output_data_[i].first->op_id_.Name() +
+                               " index:" + std::to_string(output_data_[i].first->index_);
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
+    }
+    if (i < output_need_disable_dynamic_ref_counts_.size() && output_need_disable_dynamic_ref_counts_[i]) {
+      MS_LOG(DEBUG) << "Disable dynamic ref count for device address:" << output_data_[i].first->data_
+                    << " ptr:" << output_data_[i].first->data_->GetPtr() << " for actor:" << GetAID();
+      output_data_[i].first->data_->UpdateFlag(device::kDeviceAddressFlagNullptr);
+      continue;
+    }
+    IncreaseNewRefCount(output_data_[i].first.get());
+  }
+
+  // Increase dynamic ref count by the output partial.
+  for (const auto &output_partial_arrow : output_partial_arrows_) {
+    MS_EXCEPTION_IF_NULL(output_partial_arrow);
+    if (IntToSize(output_partial_arrow->from_output_index_) >= input_partials_.size()) {
+      std::string error_info = "Invalid partial input:" + std::to_string(output_partial_arrow->from_output_index_) +
+                               " current:" + std::to_string(input_partials_.size()) + " for actor:" + GetAID().Name();
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
+    }
+    auto output_partial = input_partials_[IntToSize(output_partial_arrow->from_output_index_)];
+    IncreaseNewRefCountForPartial(output_partial);
+  }
+}
+
 void ControlActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   const auto &sequential_num = context->sequential_num_;
@@ -494,102 +553,6 @@ void ControlActor::CreateHeterDeviceTensor(DeviceTensor *const node_device_tenso
     std::string error_info =
       "The formal parameter: " + node->DebugString() + " position:" + std::to_string(index) + " copy failed.";
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
-  }
-}
-
-void ControlActor::UpdateOutputData(OpData<DeviceTensor> *const output_data, const DataArrowPtr &data_arrow,
-                                    const AnfNodePtr &, OpContext<DeviceTensor> *const context) {
-  MS_EXCEPTION_IF_NULL(output_data);
-  MS_EXCEPTION_IF_NULL(data_arrow);
-  auto formal_parameter_position = data_arrow->from_output_index_;
-  // Has no the ref node formal parameter.
-  if (ref_node_formal_parameter_device_tensors_.count(formal_parameter_position) == 0) {
-    return;
-  }
-
-  MS_EXCEPTION_IF_NULL(context);
-  auto data = output_data->data_;
-  MS_EXCEPTION_IF_NULL(data);
-  if ((!data->IsPtrValid()) || (data->ref_count() != SIZE_MAX)) {
-    std::string error_info = "The address of the " + std::to_string(formal_parameter_position) +
-                             " device address:" + std::to_string((size_t)data) +
-                             " origin ref count:" + std::to_string(data->original_ref_count()) +
-                             " current ref count:" + std::to_string(data->ref_count()) +
-                             " dynamic ref count:" + std::to_string(data->dynamic_ref_count()) +
-                             " position real parameter is nullptr or ref count is wrong for actor:" + GetAID().Name() +
-                             ".";
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
-  }
-  if ((data->dynamic_ref_count() != INT32_MAX)) {
-    MS_LOG(DEBUG) << "Set dynamic ref count from:" << data->dynamic_ref_count()
-                  << " to int32 max for device address:" << data << " ptr:" << data->GetPtr()
-                  << " in actor:" << GetAID();
-    data->set_dynamic_ref_count(INT32_MAX);
-  }
-
-  // Foreach the device tensors to set the ptr from data, only the formal parameter device tensor of ref node need set
-  // before kernel running, because it will be used by ref output node.
-  DeviceTensorPtr real_device_tensor = nullptr;
-  for (auto &device_tensor : ref_node_formal_parameter_device_tensors_[formal_parameter_position]) {
-    MS_EXCEPTION_IF_NULL(device_tensor);
-    if ((device_tensor.get() == data) || (device_tensor->GetMutablePtr() == data->GetMutablePtr())) {
-      continue;
-    }
-    auto formal_parameter = device_tensor->GetNodeIndex();
-    MS_EXCEPTION_IF_NULL(formal_parameter.first);
-    if ((device_tensor->GetSize() != data->GetSize()) || (device_tensor->type_id() != data->type_id())) {
-      MS_LOG(WARNING) << "The formal parameter: " << formal_parameter.first->DebugString()
-                      << " position:" << formal_parameter_position
-                      << "please check the size and type id, formal parameter size:" << device_tensor->GetSize()
-                      << " type id:" << device_tensor->type_id() << ", real parameter size:" << data->GetSize()
-                      << " type id:" << data->type_id();
-    }
-    MS_LOG(DEBUG) << "Check copy for device address:" << device_tensor << " type:" << device_tensor->GetDeviceType()
-                  << " and " << data << " type:" << data->GetDeviceType() << " ptr:" << data->GetPtr();
-    // Copy from the real parameter to formal parameter and insert the device tensor copy store.
-    if ((!AnfAlgo::IsEquivalentFormat(device_tensor->format(), data->format())) ||
-        (device_tensor->GetDeviceType() != data->GetDeviceType())) {
-      MS_LOG(INFO) << GetAID().Name() << " the input position:" << formal_parameter_position
-                   << " copy from real parameter address:" << data << ", type:" << data->GetDeviceType()
-                   << ", format:" << data->format() << " to formal parameter address:" << device_tensor.get()
-                   << ", type:" << device_tensor->GetDeviceType() << ", format:" << device_tensor->format()
-                   << ", formal parameter name:" << formal_parameter.first->DebugString();
-      const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {device_tensor->device_name(), device_tensor->device_id()});
-      MS_EXCEPTION_IF_NULL(device_context);
-      MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-      const auto &iter =
-        created_heter_device_tensors_.find(std::make_pair(formal_parameter_position, device_tensor->GetDeviceType()));
-      if (iter == created_heter_device_tensors_.end()) {
-        CreateHeterDeviceTensor(device_tensor.get(), data, device_context, formal_parameter_position, context,
-                                formal_parameter.first);
-      }
-      const auto dst_device_tensor =
-        created_heter_device_tensors_[std::make_pair(formal_parameter_position, device_tensor->GetDeviceType())].get();
-      MS_EXCEPTION_IF_NULL(dst_device_tensor);
-      MS_LOG(DEBUG) << "Set ptr:" << dst_device_tensor->GetPtr() << " from:" << dst_device_tensor
-                    << " type:" << dst_device_tensor->GetDeviceType() << " to:" << device_tensor
-                    << " type:" << device_tensor->GetDeviceType();
-      device_tensor->set_ptr(dst_device_tensor->GetMutablePtr());
-      device_tensor->kernel_tensor()->SetShape(dst_device_tensor->kernel_tensor()->GetShape());
-      MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << device_tensor
-                    << " type:" << device_tensor->GetDeviceType() << " and " << data
-                    << " type:" << data->GetDeviceType() << " for copy actor:" << GetAID();
-      DeviceTensorCopyStore::GetInstance().Insert(device_tensor.get(), data);
-      output_data->data_ = device_tensor.get();
-      continue;
-    }
-    device_tensor->set_ptr(data->GetMutablePtr());
-    device_tensor->kernel_tensor()->SetShape(data->kernel_tensor()->GetShape());
-    MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << device_tensor
-                  << " type:" << device_tensor->GetDeviceType() << " and " << data << " type:" << data->GetDeviceType()
-                  << " for copy actor:" << GetAID();
-    DeviceTensorCopyStore::GetInstance().Insert(device_tensor.get(), data);
-    MS_LOG(DEBUG) << "Set the ptr: " << data->GetMutablePtr() << " from device address:" << data
-                  << " type:" << data->GetDeviceType() << " to device address:" << device_tensor
-                  << " type:" << device_tensor->GetDeviceType()
-                  << " for the ref formal parameter: " << formal_parameter.first->DebugString()
-                  << " index:" << formal_parameter_position << " in the actor: " << GetAID().Name();
   }
 }
 
