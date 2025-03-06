@@ -20,11 +20,18 @@
 #include "utils/log_adapter.h"
 #include "mindapi/base/format.h"
 #include "include/common/pybind_api/api_register.h"
+#include "runtime/device/res_manager/multi_stream_controller.h"
+#include "pynative/pynative_utils.h"
+#include "include/common/utils/convert_utils_py.h"
 
 namespace mindspore {
+
+void Synchronize() { runtime::Pipeline::Get().WaitForward(); }
+
 // Reuse src tensor's device address by dst tensor. For internal usage only.
 void ReuseDataPtr(const tensor::TensorPyPtr &dst_, const tensor::TensorPyPtr &src_, size_t offset) {
   // get context meta
+  Synchronize();
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   const auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
