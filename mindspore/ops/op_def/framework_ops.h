@@ -131,6 +131,7 @@ GVAR_DEF(PrimitivePtr, kPrimWithExit, std::make_shared<Primitive>("with_exit"));
 
 // Other miscellaneous
 GVAR_DEF(PrimitivePtr, kPrimInsertGradientOf, std::make_shared<Primitive>("InsertGradientOf"));
+GVAR_DEF(PrimitivePtr, kPrimMorph, std::make_shared<Primitive>("Morph"));
 GVAR_DEF(PrimitivePtr, kPrimCheckBprop, std::make_shared<Primitive>("CheckBprop"));
 GVAR_DEF(PrimitivePtr, kPrimMixedPrecisionCast, std::make_shared<Primitive>("MixedPrecisionCast"));
 GVAR_DEF(PrimitivePtr, kPrimDoUnpackCall, std::make_shared<Primitive>("DoUnpackCall"));

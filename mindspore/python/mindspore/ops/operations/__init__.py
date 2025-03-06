@@ -59,7 +59,7 @@ from .comm_ops import (AllGather, AllReduce, Reduce, NeighborExchange, NeighborE
                        _VirtualPipelineEnd, AlltoAllV, ReduceScatter, _VirtualAssignKvCache)
 from .control_ops import GeSwitch, Merge
 from .custom_ops import (Custom)
-from .debug_ops import (ImageSummary, InsertGradientOf, HookBackward, ScalarSummary,
+from .debug_ops import (ImageSummary, InsertGradientOf, Morph, HookBackward, ScalarSummary,
                         TensorSummary, HistogramSummary, TensorDump, Print, Assert)
 from .image_ops import (CropAndResize, NonMaxSuppressionV3, HSVToRGB, AdjustHue, AdjustSaturation,
                         NonMaxSuppressionWithOverlaps, ResizeArea, ResizeBilinearV2, ExtractGlimpse,
@@ -302,6 +302,7 @@ __all__ = [
     "Print",
     "Assert",
     'InsertGradientOf',
+    "Morph",
     'HookBackward',
     'InvertPermutation',
     'Shape',
