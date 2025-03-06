@@ -42,17 +42,12 @@ class ConditionSwitchActor : public KernelActor {
  protected:
   void Init() override;
   void Run(OpContext<DeviceTensor> *const context) override;
-  void UpdateRefDeviceAddress(OpContext<DeviceTensor> *const context, bool increase_ref_count) override;
-  void ExecuteInferShapeTask(OpContext<DeviceTensor> *const context) override;
-  void ExecuteResizeKernelModTask(OpContext<DeviceTensor> *const context) override;
-  void ExecuteLaunchKernelTask(OpContext<DeviceTensor> *const context) override;
   void FetchInput(OpContext<DeviceTensor> *const context);
   void SendOutput(OpContext<DeviceTensor> *const context, size_t index);
 
  private:
   void FetchParameterInput(OpContext<DeviceTensor> *const context);
 
-  friend class SuperKernelActor;
   friend class InlineControlFlowScheduler;
   // Collect memory free list, as the ref counts of different branches are superimposed on the output,
   // so the excess reference counts of other branches need to be subtracted in advance.
@@ -71,13 +66,6 @@ class ConditionSwitchActor : public KernelActor {
 
   // Switch needs to send current branch name to the corresponding gather actor to check its inputs.
   AID *gather_aid_{nullptr};
-
-  // The pointer points to the current branch name of condition gather actor to inform it the enable branch.
-  std::string *gather_branch_name_{nullptr};
-  // The enable flag of each branch to control the kernel actor between the condition actors.
-  std::shared_ptr<bool[]> branch_flags_;
-  // The output free index of each branch.
-  mindspore::HashMap<std::string, std::vector<size_t>> branch_output_free_index_;
 };
 
 using ConditionSwitchActorPtr = std::shared_ptr<ConditionSwitchActor>;

@@ -51,11 +51,13 @@ class AnyTypeKernelActor : public SuperKernelActor {
                      const AID &memory_manager_aid, const AID *debug_aid, const AID *recorder_aid,
                      KernelTransformType type = KernelTransformType::kAnyTypeKernelActor);
   ~AnyTypeKernelActor() override = default;
+
+  void RunOpData(OpData<DeviceTensor> *const input_data, OpContext<DeviceTensor> *const context) override;
+  void RunOpControl(AID *const input_control, OpContext<DeviceTensor> *const context) override;
   const std::string &current_data_type() const { return current_data_type_; }
 
  protected:
   void Init() override;
-  void Run(OpContext<DeviceTensor> *const context) override;
 
   // Hand the graph input.
   // The execution of actor is divided into the following steps:
@@ -67,6 +69,7 @@ class AnyTypeKernelActor : public SuperKernelActor {
   void RunForGraphInput(OpContext<DeviceTensor> *const context);
   void FetchInputDeviceTensor(OpContext<DeviceTensor> *const context) override;
   void UpdataDynamicShapeParameterForGraphInput(OpContext<DeviceTensor> *const context);
+  void SendOutput(OpContext<DeviceTensor> *const context) override;
   void OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) override;
 
   // Handle the graph output.
@@ -74,17 +77,11 @@ class AnyTypeKernelActor : public SuperKernelActor {
   // Receive graph outputs:
   // 1. find the corresponding arrow according to the current type key, and send the outputs.
   void RunForGraphOutput(OpContext<DeviceTensor> *const context);
-  KernelGraphPtr CompileRealKernelGraph(OpContext<DeviceTensor> *const context);
   void CheckParams(OpContext<DeviceTensor> *const context);
   void FetchGraphOutput(OpContext<DeviceTensor> *const context);
   void EraseGraphOutput(OpContext<DeviceTensor> *const context);
   void UpdateOutputData(OpData<DeviceTensor> *const output_data, const DataArrowPtr &data_arrow,
                         const AnfNodePtr &output_node, OpContext<DeviceTensor> *const context) override;
-  // Compile the corresponding kernel_graph according to the input tensors and create the kernel actor in super kernel
-  // actor.
-  void PrepareRunContext(OpContext<DeviceTensor> *const context);
-  // Clear the elements in super kernel actor and recreate by the new compiler action.
-  void ClearElements(OpContext<DeviceTensor> *const context);
 
  private:
   friend class AnyTypeGraphScheduler;
@@ -137,11 +134,6 @@ class AnyTypeKernelActor : public SuperKernelActor {
   CompileFunc compile_func_;
   TransformFunc transform_func_;
   ScheduleFunc schedule_func_;
-  KernelGraphPtr model_graph_;
-
-  // The dependent device tensor stores, the dependent expression is pair<index, AnfNode>.
-  // Index is the input position, AnfNode is the key of the device tensor store.
-  std::vector<std::pair<size_t, AnfNodePtr>> extern_device_tensor_store_keys_;
 };
 
 using AnyTypeKernelActorPtr = std::shared_ptr<AnyTypeKernelActor>;

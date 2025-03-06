@@ -43,14 +43,14 @@ void AbstractActor::RunOpData(OpData<DeviceTensor> *const input_data, OpContext<
   if (!ActorDispatcher::enable_async_launch_kernel() && !input_data->data_->IsPtrValid() &&
       (!TEST_FLAG(input_data->data_->flag(), device::kDeviceAddressFlagNotUsed) &&
        !TEST_FLAG(input_data->data_->flag(), device::kDeviceAddressFlagNullptr))) {
-    std::stringstream error_info;
-    error_info << "The input_data does not have a valid ptr of actor:" << GetAID().Name()
-               << " with index:" << input_data->index_ << ", flag:" << input_data->data_->flag()
-               << " device address:" << input_data->data_ << " ref count:" << input_data->data_->ref_count()
-               << " dynamic ref count:" << input_data->data_->dynamic_ref_count()
-               << " origin ref count:" << input_data->data_->original_ref_count()
-               << " new ref count:" << input_data->data_->new_ref_count();
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info.str());
+    std::string error_info = "The input_data does not have a valid ptr of actor:" + GetAID().Name() +
+                             " with index:" + std::to_string(input_data->index_) +
+                             ", flag:" + std::to_string(input_data->data_->flag()) +
+                             " device address:" + std::to_string((int64_t)(input_data->data_)) +
+                             " ref count:" + std::to_string(input_data->data_->ref_count()) +
+                             " dynamic ref count:" + std::to_string(input_data->data_->dynamic_ref_count()) +
+                             " origin ref count:" + std::to_string(input_data->data_->original_ref_count());
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
   }
   auto &sequential_num = context->sequential_num_;
   (void)input_op_datas_[sequential_num].emplace_back(input_data);
@@ -63,8 +63,7 @@ void AbstractActor::RunOpData(OpData<DeviceTensor> *const input_data, OpContext<
                 << ", origin ref count:" << input_data->data_->original_ref_count()
                 << ", current ref count:" << input_data->data_->ref_count()
                 << ", dynamic ref count:" << input_data->data_->dynamic_ref_count()
-                << ", new ref count:" << input_data->data_->new_ref_count() << ", flag:" << input_data->data_->flag()
-                << " user data:" << input_data->data_->user_data()
+                << ", flag:" << input_data->data_->flag() << " user data:" << input_data->data_->user_data()
                 << " from memory pool:" << input_data->data_->from_mem_pool()
                 << " device type:" << input_data->data_->GetDeviceType();
   if (is_run) {
@@ -302,19 +301,6 @@ void AbstractActor::SendOutput(OpContext<DeviceTensor> *const context) {
   SendRecorderInfo(context);
 }
 
-void AbstractActor::IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) {
-  std::for_each(output_data_.begin(), output_data_.end(),
-                [this](const auto &pair) { IncreaseNewRefCount(pair.first.get()); });
-}
-
-void AbstractActor::IncreaseNewRefCount(const OpData<DeviceTensor> *op_data) const {
-  MS_EXCEPTION_IF_NULL(op_data);
-  MS_EXCEPTION_IF_NULL(op_data->data_);
-  op_data->data_->IncreaseNewRefCount();
-  MS_LOG(DEBUG) << "Actor:" << GetAID() << " increase new ref count for:" << op_data->data_
-                << " count:" << op_data->data_->new_ref_count();
-}
-
 AbstractActor *AbstractActor::FetchSubActorInFusionActor(const std::string &sub_actor_name) const {
   if (parent_fusion_actor_ == nullptr) {
     return nullptr;
@@ -326,9 +312,6 @@ bool AbstractActor::IsOutputAddressPersisted(const DeviceTensor *output_device_t
                                              const KernelWithIndex &output_node) {
   MS_EXCEPTION_IF_NULL(output_node.first);
   MS_EXCEPTION_IF_NULL(output_device_tensor);
-  MS_LOG(DEBUG) << "Check persist for device address:" << output_device_tensor
-                << " for node:" << output_node.first->DebugString()
-                << " full name:" << output_node.first->fullname_with_scope() << " index:" << output_node.second;
   // The persisted address can't be replaced.
   if (output_device_tensor->is_ptr_persisted()) {
     return true;
@@ -353,10 +336,7 @@ bool AbstractActor::IsOutputAddressPersisted(const DeviceTensor *output_device_t
       return true;
     }
   }
-  if (output_device_tensor->new_ref_count() == SIZE_MAX) {
-    MS_LOG(DEBUG) << "Ref count of device address:" << output_device_tensor << " is max, should copy output.";
-    return true;
-  }
+
   return false;
 }
 

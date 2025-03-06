@@ -55,102 +55,17 @@ void ConditionGatherActor::RunBranchName(const std::string &branch_name, OpConte
                 << " for actor:" << GetAID();
 }
 
-void ConditionGatherActor::ExecuteInferShapeTask(OpContext<DeviceTensor> *const context) {
-  MS_LOG(EXCEPTION) << "Condition gather actor not support dynamci shape.";
-}
-
-void ConditionGatherActor::ExecuteResizeKernelModTask(OpContext<DeviceTensor> *const context) {
-  MS_LOG(EXCEPTION) << "Condition gather actor not support dynamci shape.";
-}
-
-void ConditionGatherActor::ExecuteLaunchKernelTask(OpContext<DeviceTensor> *const context) {
-  new_memory_free_list_.clear();
-  for (size_t i = 0; i < branch_names_.size(); ++i) {
-    branch_flags_.get()[i] = false;
-  }
-  if (input_device_tensors_.size() != output_device_tensors_.size() * branch_names_.size()) {
-    MS_LOG(EXCEPTION) << "Invalid input tensor size:" << input_device_tensors_.size()
-                      << " and output device tensor size:" << output_device_tensors_.size()
-                      << " branch name size:" << branch_names_ << " for actor:" << GetAID();
-  }
-  // Current branch name is set by the condition switch actor, it is used to make sure the real output index.
-  auto iter = std::find(branch_names_.begin(), branch_names_.end(), current_branch_name_);
-  if (iter == branch_names_.end()) {
-    MS_LOG(EXCEPTION) << "Invalid branch name :" << current_branch_name_ << " all branch name:" << branch_names_.size()
-                      << " for actor:" << GetAID();
-  }
-  size_t index = LongToSize(iter - branch_names_.begin());
-
-  // Collect the device address should be freed.
-  for (size_t input_index : input_free_index_) {
-    if (input_index < index * output_device_tensors_.size() ||
-        input_index >= (index + 1) * output_device_tensors_.size()) {
-      continue;
-    }
-    if (input_device_tensors_[input_index] == nullptr) {
-      MS_LOG(EXCEPTION) << "Failed to get input device tensor index:" << input_index
-                        << " for node:" << kernel_->DebugString() << " for actor:" << GetAID();
-    }
-    new_memory_free_list_.emplace_back(input_device_tensors_[input_index]);
-    MS_LOG(DEBUG) << "Add decrease new ref count for device address:" << input_device_tensors_[input_index]
-                  << " in actor:" << GetAID();
-  }
-
-  for (size_t output_index : output_free_index_) {
-    if (output_index >= output_device_tensors_.size() || output_device_tensors_[output_index] == nullptr) {
-      MS_LOG(EXCEPTION) << "Invalid output device tensor index:" << output_index
-                        << "total size:" << output_device_tensors_.size() << " for actor:" << GetAID();
-    }
-    new_memory_free_list_.emplace_back(output_device_tensors_[output_index]);
-    MS_LOG(DEBUG) << "Add decrease new ref count for device address:" << output_device_tensors_[output_index]
-                  << " in actor:" << GetAID();
-  }
-  if (new_memory_free_list_.size() > 0) {
-    SendMemoryFreeReq(context);
-  }
-}
-
 void ConditionGatherActor::Init() {
   // Check device contexts number.
   if (device_contexts_.size() != device::kDeviceContextsNumOne) {
     MS_LOG(EXCEPTION) << "The device contexts number is wrong.";
   }
-
-  MS_EXCEPTION_IF_NULL(kernel_);
-  if (!kernel_->HasAttr(kAttrBranchOutputNum)) {
-    MS_LOG(EXCEPTION) << "Failed to get branch output num by actor:" << GetAID();
-  }
-  const auto &output_value = kernel_->GetAttr(kAttrBranchOutputNum);
-  MS_EXCEPTION_IF_NULL(output_value);
-  branch_output_num_ = GetValue<size_t>(output_value);
-  MS_LOG(DEBUG) << "branch output num:" << branch_output_num_ << " for actor:" << GetAID();
-
-  if (!kernel_->HasAttr(kAttrBranchGraphName)) {
-    MS_LOG(EXCEPTION) << "Failed to get inline graph name by actor:" << GetAID();
-  }
-  const auto &branch_graph_names = kernel_->GetAttr(kAttrBranchGraphName);
-  MS_EXCEPTION_IF_NULL(branch_graph_names);
-  MS_LOG(DEBUG) << "Branch graph name:" << branch_graph_names->ToString() << " for actor:" << GetAID();
-  if (!branch_graph_names->isa<ValueTuple>()) {
-    MS_LOG(EXCEPTION) << "Invalid branch group name:" << branch_graph_names->ToString() << " for actor:" << GetAID();
-  }
-  const auto &tuple_name = branch_graph_names->cast<ValueTuplePtr>();
-  MS_EXCEPTION_IF_NULL(tuple_name);
-  std::for_each(tuple_name->value().begin(), tuple_name->value().end(),
-                [this](const auto &value) { branch_names_.emplace_back(GetValue<std::string>(value)); });
-  MS_LOG(DEBUG) << "Branch names:" << branch_names_ << " for actor:" << GetAID();
-
-  size_t input_num = branch_output_num_ * branch_names_.size();
-  input_device_tensors_.resize(input_num);
-  pre_input_device_tensors_.resize(input_num);
-  input_kernel_tensors_.resize(input_num);
-  input_kernel_tensors_for_infer_.resize(input_num);
-  memory_free_list_.resize(input_num);
+  MS_EXCEPTION_IF_NULL(device_contexts_[0]);
+  input_device_tensors_.resize(branch_output_num_);
+  InitOutputData();
 
   kernel_info_ = dynamic_cast<KernelInfo *>(kernel_->kernel_info());
   MS_EXCEPTION_IF_NULL(kernel_info_);
-  kernel_mod_ = kernel_info_->MutableKernelMod();
-  MS_EXCEPTION_IF_NULL(kernel_mod_);
   const auto &output_addresses = kernel_info_->output_address_list();
   const auto &somas_outputs = kernel_info_->somas_output_result();
   if (output_addresses.size() != somas_outputs.size()) {
@@ -180,69 +95,15 @@ void ConditionGatherActor::Init() {
         (void)somas_info_->InsertGraphOutputInfo(output_address.get(), somas_outputs[i].first, somas_outputs[i].second);
         output_address->set_from_mem_pool(true);
         need_clean_ptr_device_addresses_.emplace_back(output_address);
+      } else {
+        UpdateRefCount(output_address.get(), true);
       }
     }
   }
-
-  for (size_t i = 0; i < input_num; ++i) {
-    const auto &input_device_tensor = AnfAlgo::GetPrevNodeMutableOutputAddr(kernel_, i, false);
-    MS_EXCEPTION_IF_NULL(input_device_tensor);
-    (void)real_input_data_infos_.emplace_back(
-      std::make_shared<InputDataInfo>(input_device_tensor->format(), input_device_tensor->host_shape(),
-                                      input_device_tensor->GetSize(), input_device_tensor->type_id()));
-  }
-
-  for (size_t index : input_free_index_) {
-    if (index >= input_device_tensors_.size()) {
-      MS_LOG(EXCEPTION) << "Invalid output index:" << index << " output size:" << input_device_tensors_.size()
-                        << " for actor:" << GetAID();
-    }
-    new_memory_free_list_.emplace_back(input_device_tensors_[index]);
-  }
-  for (size_t index : output_free_index_) {
-    if (index >= output_device_tensors_.size()) {
-      MS_LOG(EXCEPTION) << "Invalid output index:" << index << " output size:" << output_device_tensors_.size()
-                        << " for actor:" << GetAID();
-    }
-    new_memory_free_list_.emplace_back(output_device_tensors_[index]);
-  }
-
-  if (output_device_tensors_.size() * branch_names_.size() != input_device_tensors_.size()) {
+  if (output_device_tensors_.size() != input_device_tensors_.size()) {
     MS_LOG(EXCEPTION) << "Invalid input tensor size:" << input_device_tensors_.size()
-                      << " branch size:" << branch_names_.size() << " and output size:" << output_device_tensors_.size()
-                      << " for actor:" << GetAID();
+                      << " and output size:" << output_device_tensors_.size() << " for actor:" << GetAID();
   }
-}
-
-void ConditionGatherActor::UpdateRefDeviceAddress(OpContext<DeviceTensor> *const context, bool increase_ref_count) {
-  if (input_device_tensors_.size() != output_device_tensors_.size() * branch_names_.size()) {
-    MS_LOG(EXCEPTION) << "Invalid input tensor size:" << input_device_tensors_.size()
-                      << " and output device tensor size:" << output_device_tensors_.size()
-                      << " branch name size:" << branch_names_ << " for actor:" << GetAID();
-  }
-  auto iter = std::find(branch_names_.begin(), branch_names_.end(), current_branch_name_);
-  if (iter == branch_names_.end()) {
-    MS_LOG(EXCEPTION) << "Invalid branch name :" << current_branch_name_ << " all branch name:" << branch_names_.size()
-                      << " for actor:" << GetAID();
-  }
-
-  // Actor output should be ref to the current branch.
-  size_t index = LongToSize(iter - branch_names_.begin());
-  for (size_t i = 0; i < output_device_tensors_.size(); ++i) {
-    size_t input_index = i + index * output_device_tensors_.size();
-    if (input_device_tensors_[input_index] == nullptr) {
-      MS_LOG(EXCEPTION) << "Invalid input device tensor index:" << input_index << " for actor:" << GetAID();
-    }
-    if (output_device_tensors_[i] == nullptr) {
-      MS_LOG(EXCEPTION) << "Invalid input device tensor index:" << input_index << " for actor:" << GetAID();
-    }
-    output_device_tensors_[i]->set_pointer_ref_count(input_device_tensors_[input_index]->pointer_ref_count());
-    output_device_tensors_[i]->IncreaseNewRefCount();
-    MS_LOG(DEBUG) << "Actor:" << GetAID() << " increase new ref count:" << output_device_tensors_[i]->new_ref_count()
-                  << " and set ref device address:" << output_device_tensors_[i]->PrintInfo()
-                  << " ref input device address:" << input_device_tensors_[input_index]->PrintInfo();
-  }
-  new_memory_free_list_.resize(input_free_index_.size() + output_free_index_.size());
 }
 
 void ConditionGatherActor::FetchParameterInput(size_t start_index, OpContext<DeviceTensor> *const context) {

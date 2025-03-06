@@ -209,7 +209,6 @@ bool CPUDeviceAddress::SyncHostToDevice(const ShapeVector &, size_t size, TypeId
     SetDevicePtr(const_cast<void *>(host_ptr));
     set_original_ref_count(SIZE_MAX);
     set_ref_count(SIZE_MAX);
-    set_new_ref_count(SIZE_MAX);
   } else if (type_id() == kNumberTypeFloat32 && type == kNumberTypeFloat16) {
     HalfToFloat(GetDevicePtr(), host_ptr, size >> 1);
   } else if (type_id() == kNumberTypeFloat32 && type == kNumberTypeFloat64) {

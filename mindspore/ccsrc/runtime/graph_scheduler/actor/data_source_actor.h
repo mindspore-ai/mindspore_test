@@ -89,7 +89,6 @@ class DeviceQueueDataSourceActor : public DataSourceActor {
   void SendMemoryFreeReq(OpContext<DeviceTensor> *const context) override;
   // Copy data from data source to the device tensor buffer of actor after memory alloc finished.
   void OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) override;
-  void IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) override;
 
   void SendDebugReq(OpContext<DeviceTensor> *const context) override;
 
@@ -137,7 +136,6 @@ class HostQueueDataSourceActor : public DataSourceActor {
   void SendMemoryFreeReq(OpContext<DeviceTensor> *const context) override;
   // Copy data from data source to the device tensor buffer of actor after memory alloc finished.
   void OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) override;
-  void IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) override;
 
   size_t FetchNodePosition(const KernelWithIndex &node) const override;
   KernelWithIndex FetchNode(size_t node_position) const;

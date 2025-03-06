@@ -76,7 +76,7 @@ void EntranceActor::Run(OpContext<DeviceTensor> *const context) {
   // Note that IncreaseDynamicRefCount must be in front of SendMemoryFreeReq. SendMemoryFreeReq will decreasing the
   // dynamic ref count. Avoid the illegal timing problem that the dynamic reference count is decremented and then
   // incremented.
-  IncreaseNewRefCounts(context);
+  IncreaseDynamicRefCounts(context);
   SendMemoryFreeReq(context);
 
   EraseInput(context);

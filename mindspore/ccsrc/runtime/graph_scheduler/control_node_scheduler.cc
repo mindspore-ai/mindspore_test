@@ -54,14 +54,14 @@ std::string GetStackActorNameByExitName(const std::string &exit_name) {
 bool is_need_copy_device_tensor(const AnfNodePtr &backend_node, size_t index) {
   MS_EXCEPTION_IF_NULL(backend_node);
   // Skip the parameter and Load node.
-  const auto &real_backend_node = common::AnfAlgo::VisitKernelWithReturnType(backend_node, index, false);
-  if (real_backend_node.first != nullptr && (!real_backend_node.first->isa<CNode>())) {
+  const auto &real_backend_node = common::AnfAlgo::VisitKernelWithReturnType(backend_node, index, false).first;
+  if (real_backend_node != nullptr && (!real_backend_node->isa<CNode>())) {
     return false;
   }
   auto kernel_graph = AnfAlgo::FetchKernelGraph(backend_node.get());
   MS_EXCEPTION_IF_NULL(kernel_graph);
-  if (kernel_graph->IsInRefOutputMap(real_backend_node)) {
-    const auto &origin_node = kernel_graph->GetRefNodeRecursive(real_backend_node).first;
+  if (kernel_graph->IsInRefOutputMap({backend_node, index})) {
+    const auto &origin_node = kernel_graph->GetRefNodeRecursive({backend_node, index}).first;
     MS_EXCEPTION_IF_NULL(origin_node);
     if (origin_node->isa<ValueNode>() || origin_node->isa<Parameter>()) {
       return false;
@@ -1028,12 +1028,11 @@ void ControlNodeScheduler::CollectIgnoreIndexForEntranceActor(std::set<int> *ign
       from_index_to_ignore[from_index] =
         (from_index_to_ignore[from_index] && entrance_actor->output_need_disable_dynamic_ref_counts_[i]);
     }
-    MS_LOG(DEBUG) << "from index:" << from_index << " bool:" << from_index_to_ignore[from_index]
-                  << " for actor:" << entrance_actor->GetAID();
+    MS_LOG(DEBUG) << "from index:" << from_index << " bool:" << from_index_to_ignore[from_index];
   }
   for (const auto &pair : from_index_to_ignore) {
     MS_LOG(DEBUG) << "Actor:" << entrance_actor->GetAID() << " from index:" << pair.first
-                  << " is ignore:" << pair.second << " for actor:" << entrance_actor->GetAID();
+                  << " is ignore:" << pair.second;
     if ((!pair.second) || pair.first < 0 || (IntToSize(pair.first) >= entrance_actor->formal_parameters_.size())) {
       continue;
     }
@@ -1199,31 +1198,29 @@ void ControlNodeScheduler::OptimizeDynamicRefCountForStackActor(const ActorSetPt
         from_index_to_ignore[from_index] =
           (from_index_to_ignore[from_index] && stack_actor->output_need_disable_dynamic_ref_counts_[i]);
       }
-      MS_LOG(DEBUG) << "from index:" << from_index << " bool:" << from_index_to_ignore[from_index]
-                    << " for stack actor:" << stack_actor->GetAID();
+      MS_LOG(DEBUG) << "from index:" << from_index << " bool:" << from_index_to_ignore[from_index];
     }
     std::set<int> ignore_index;
     for (const auto &pair : from_index_to_ignore) {
       MS_LOG(DEBUG) << "first:" << pair.first << " second:" << pair.second
                     << " stack data num:" << stack_actor->input_stack_data_num_
-                    << " stack partial num:" << stack_actor->input_stack_partials_num_
-                    << " for stack actor:" << stack_actor->GetAID();
+                    << " stack partial num:" << stack_actor->input_stack_partials_num_;
       if ((!pair.second) || pair.first < 0 ||
           (IntToSize(pair.first) >= stack_actor->input_stack_data_num_ + stack_actor->input_stack_partials_num_ &&
            stack_actor->input_stack_data_num_ + stack_actor->input_stack_partials_num_ > 0)) {
         continue;
       }
       ignore_index.emplace(pair.first);
-      MS_LOG(INFO) << "Add ignore index:" << pair.first << " for stack actor:" << stack_actor->GetAID();
+      MS_LOG(INFO) << "Add ignore index:" << pair.first;
     }
     for (const auto &pair : stack_actor->input_data_arrow_aids()) {
       const auto &data_arrow = pair.second;
-      MS_LOG(DEBUG) << "to index:" << data_arrow->to_input_index_ << " for stack actor:" << stack_actor->GetAID();
+      MS_LOG(DEBUG) << "to index:" << data_arrow->to_input_index_;
       if (data_arrow == nullptr || ignore_index.find(data_arrow->to_input_index_) == ignore_index.end()) {
         continue;
       }
       const auto &from_actor_name = pair.first.Name();
-      MS_LOG(DEBUG) << "from actor name:" << from_actor_name << " for stack actor:" << stack_actor->GetAID();
+      MS_LOG(DEBUG) << "from actor name:" << from_actor_name;
       int from_index = data_arrow->from_output_index_;
       if (from_actor_name.find("kernel_graph") == std::string::npos ||
           from_actor_name.find(kExitActorNameSuffix) == std::string::npos) {
@@ -1281,13 +1278,13 @@ void ControlNodeScheduler::OptimizeDynamicRefCountForEntranceActor(const ActorSe
         if (!super_kernel_actor->enable_kbk_sub_graph_execute()) {
           continue;
         }
-        const auto &shape_depend = super_kernel_actor->is_input_used();
+        const auto &shape_depend = super_kernel_actor->input_param_static_use_cnt();
         if (to_index >= shape_depend.size()) {
           MS_LOG(WARNING) << "Invalid shape depend vector:" << shape_depend << " to index:" << to_index
                           << " from actor:" << control_actor->GetAID() << " to actor:" << to_aid;
           continue;
         }
-        if (!shape_depend[to_index]) {
+        if (shape_depend[to_index] == 0) {
           control_actor->output_need_disable_dynamic_ref_counts_[i] = true;
           MS_LOG(INFO) << "Set invalid dynamic ref count for actor:" << control_actor->GetAID()
                        << " from index:" << from_index << " to actor:" << to_aid << " to index:" << to_index;
@@ -1328,9 +1325,11 @@ void ControlNodeScheduler::Optimize(const ActorSetPtr &actor_set, const GraphCom
     return;
   }
   OptimizeBranchIdArrow(actor_set, graph_compiler_info);
-  OptimizeDynamicRefCountForEntranceActor(actor_set);
-  OptimizeDynamicRefCountForStackActor(actor_set);
-  OptimizeDynamicRefCountForGatherActor(actor_set, graph_compiler_info);
+  if (!common::IsDisableRuntimeConfig(common::kRuntimeControlFlowOptimize)) {
+    OptimizeDynamicRefCountForEntranceActor(actor_set);
+    OptimizeDynamicRefCountForStackActor(actor_set);
+    OptimizeDynamicRefCountForGatherActor(actor_set, graph_compiler_info);
+  }
 }
 
 void ControlNodeScheduler::LinkArrowForControlActor(ControlActorSet *const control_actor_set,

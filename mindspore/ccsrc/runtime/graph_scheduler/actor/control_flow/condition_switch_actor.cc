@@ -35,131 +35,30 @@ void ConditionSwitchActor::Init() {
     MS_LOG(EXCEPTION) << "The device contexts number is wrong.";
   }
   MS_EXCEPTION_IF_NULL(device_contexts_[0]);
+  input_device_tensors_.resize(common::AnfAlgo::GetInputTensorNum(kernel_));
 
-  kernel_info_ = dynamic_cast<KernelInfo *>(kernel_->kernel_info());
-  MS_EXCEPTION_IF_NULL(kernel_info_);
-  kernel_mod_ = kernel_info_->MutableKernelMod();
-  MS_EXCEPTION_IF_NULL(kernel_mod_);
-  const auto &output_addresses = kernel_info_->output_address_list();
-  for (size_t i = 0; i < output_addresses.size(); ++i) {
-    auto &output_address = output_addresses[i];
-    MS_EXCEPTION_IF_NULL(output_address);
+  InitOutputData();
+  output_data_by_output_index_.resize(AnfAlgo::GetOutputTensorNum(kernel_));
+  if (output_data_.size() != output_data_arrows_.size()) {
+    MS_LOG(EXCEPTION) << "The output data size is wrong: " << GetAID().Name();
+  }
 
-    if (output_address->stream_id() != kernel_info_->stream_id()) {
-      MS_LOG(DEBUG) << "Output address : " << output_address << " stream id :" << output_address->stream_id()
-                    << " is not equal kernel info stream id : " << kernel_info_->stream_id() << ".";
+  for (size_t i = 0; i < output_data_arrows_.size(); ++i) {
+    const auto &output_data = output_data_[i].first;
+    const auto &data_arrow = output_data_arrows_[i];
+    MS_EXCEPTION_IF_NULL(output_data);
+    MS_EXCEPTION_IF_NULL(data_arrow);
+    const auto &from_index = data_arrow->from_output_index_;
+    if (IntToSize(from_index) >= output_data_by_output_index_.size()) {
+      MS_LOG(EXCEPTION) << "Invalid from index:" << from_index
+                        << " and output size:" << output_data_by_output_index_.size() << " for actor:" << GetAID();
     }
-    (void)output_device_tensors_.emplace_back(output_address.get());
+    output_data_by_output_index_[from_index].emplace_back(output_data.get());
   }
-
-  real_input_num_ = common::AnfAlgo::GetInputTensorNum(kernel_);
-  InitIsMonadInput();
-  InitInputInfo();
-
-  for (size_t index : output_free_index_) {
-    if (index >= output_device_tensors_.size()) {
-      MS_LOG(EXCEPTION) << "Invalid output index:" << index << " output size:" << output_device_tensors_.size()
-                        << " for actor:" << GetAID();
-    }
-    new_memory_free_list_.emplace_back(output_device_tensors_[index]);
-  }
-
-  if (!kernel_->HasAttr(kInlineSubGraphName)) {
-    MS_LOG(EXCEPTION) << "Failed to get inline graph name by actor:" << GetAID();
-  }
-  const auto &inline_sub_graph_names = kernel_->GetAttr(kInlineSubGraphName);
-  MS_EXCEPTION_IF_NULL(inline_sub_graph_names);
-  MS_LOG(DEBUG) << "inline sub graph name:" << inline_sub_graph_names->ToString() << " for actor:" << GetAID();
-  if (!inline_sub_graph_names->isa<ValueTuple>()) {
-    MS_LOG(EXCEPTION) << "Invalid input subgraph name:" << inline_sub_graph_names->ToString()
-                      << " for actor:" << GetAID();
-  }
-  const auto &tuple_name = inline_sub_graph_names->cast<ValueTuplePtr>();
-  MS_EXCEPTION_IF_NULL(tuple_name);
-  for_each(tuple_name->value().begin(), tuple_name->value().end(),
-           [this](const auto &value) { branch_names_.emplace_back(GetValue<std::string>(value)); });
-  MS_LOG(DEBUG) << "Branch names:" << branch_names_ << " for actor:" << GetAID();
-}
-
-void ConditionSwitchActor::UpdateRefDeviceAddress(OpContext<DeviceTensor> *const context, bool increase_ref_count) {
-  if (input_device_tensors_.size() != output_device_tensors_.size() + 1) {
-    MS_LOG(EXCEPTION) << "Invalid input tensor size:" << input_device_tensors_.size()
-                      << " and output device tensor size:" << output_device_tensors_.size()
-                      << " for actor:" << GetAID();
-  }
-  for (size_t i = 0; i < output_device_tensors_.size(); ++i) {
-    if (input_device_tensors_[i + 1] == nullptr) {
-      MS_LOG(EXCEPTION) << "Invalid input device tensor index:" << i + 1 << " for actor:" << GetAID();
-    }
-    if (output_device_tensors_[i] == nullptr) {
-      MS_LOG(EXCEPTION) << "Invalid input device tensor index:" << i + 1 << " for actor:" << GetAID();
-    }
-    output_device_tensors_[i]->set_pointer_ref_count(input_device_tensors_[i + 1]->pointer_ref_count());
-    output_device_tensors_[i]->IncreaseNewRefCount();
-    MS_LOG(DEBUG) << "Actor:" << GetAID() << " increase new ref count:" << output_device_tensors_[i]->new_ref_count()
-                  << " and set ref device address:" << output_device_tensors_[i]->PrintInfo()
-                  << " ref input device address:" << input_device_tensors_[i + 1]->PrintInfo();
-  }
-}
-
-void ConditionSwitchActor::ExecuteInferShapeTask(OpContext<DeviceTensor> *const context) {
-  MS_LOG(EXCEPTION) << "Condition switch actor not support dynamci shape.";
-}
-
-void ConditionSwitchActor::ExecuteResizeKernelModTask(OpContext<DeviceTensor> *const context) {
-  MS_LOG(EXCEPTION) << "Condition switch actor not support dynamci shape.";
-}
-
-void ConditionSwitchActor::ExecuteLaunchKernelTask(OpContext<DeviceTensor> *const context) {
-  if (!WaitRuntimePipelineFinish(context)) {
-    MS_LOG(INFO) << "Run failed and early stop.";
-    return;
-  }
-  MS_EXCEPTION_IF_NULL(input_device_tensors_[0]);
-  MS_EXCEPTION_IF_NULL(input_device_tensors_[0]->kernel_tensor());
-  bool index = input_device_tensors_[0]->kernel_tensor()->GetValueWithCheck<bool>();
-  if (common::IsDryRun()) {
-    index = true;
-  }
-  MS_LOG(DEBUG) << "Index:" << index << " for actor:" << GetAID();
-  if (index >= branch_names_.size()) {
-    std::string error_info = "Invalid index:" + std::to_string(index) +
-                             " and branch size:" + std::to_string(branch_names_.size()) +
-                             " for actor:" + GetAID().Name();
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context), error_info);
-  }
-  MS_EXCEPTION_IF_NULL(gather_branch_name_);
-  *gather_branch_name_ = branch_names_[index];
-  MS_EXCEPTION_IF_NULL(branch_flags_);
-  branch_flags_.get()[index] = true;
-  MS_LOG(DEBUG) << "Enable flag:" << &(branch_flags_.get()[index]) << " by index:" << index
-                << " branch name:" << branch_names_[index] << " in actor:" << GetAID();
-  new_memory_free_list_.clear();
-  for (size_t input_index : input_free_index_) {
-    if (input_index >= input_device_tensors_.size() || input_device_tensors_[input_index] == nullptr) {
-      MS_LOG(EXCEPTION) << "Failed to get input device tensor index:" << input_index
-                        << " total input size:" << input_device_tensors_.size()
-                        << " for node:" << kernel_->DebugString() << " for actor:" << GetAID();
-    }
-    new_memory_free_list_.emplace_back(input_device_tensors_[input_index]);
-    MS_LOG(DEBUG) << "Add decrease new ref count for device address:" << input_device_tensors_[input_index]
-                  << " in actor:" << GetAID();
-  }
-  if (branch_output_free_index_.find(branch_names_[index]) != branch_output_free_index_.end()) {
-    for (size_t output_index : branch_output_free_index_[branch_names_[index]]) {
-      if (output_index >= output_device_tensors_.size() || output_device_tensors_[output_index] == nullptr) {
-        MS_LOG(EXCEPTION) << "Invalid output device tensor index:" << output_index
-                          << "total size:" << output_device_tensors_.size() << " for actor:" << GetAID();
-      }
-      new_memory_free_list_.emplace_back(output_device_tensors_[output_index]);
-      MS_LOG(DEBUG) << "Add decrease new ref count for device address:" << output_device_tensors_[output_index]
-                    << " in actor:" << GetAID();
-    }
-  }
-
-  if (new_memory_free_list_.size() > 0) {
-    SendMemoryFreeReq(context);
-  }
+  MS_LOG(DEBUG) << "Condition switch actor:" << GetAID() << " init: branch name:" << branch_names_
+                << " branch origin ref count:" << branch_origin_ref_count_
+                << " output data branch index:" << output_data_branch_indexes_
+                << " output control branch index:" << output_control_branch_indexes_;
 }
 
 void ConditionSwitchActor::SendOutput(OpContext<DeviceTensor> *const context, size_t index) {

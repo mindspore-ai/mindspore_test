@@ -23,29 +23,6 @@ from tests.mark_utils import arg_mark
 context.set_context(mode=ms.GRAPH_MODE, jit_config={"jit_level": "O0"})
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-def test_single_add():
-    """
-    Feature: Support tensor inplace.
-    Description: Fix the input host tensor.
-    Expectation: Run success.
-    """
-    class Net(nn.Cell):
-        def __init__(self):
-            super().__init__()
-            self.assignadd = P.AssignAdd()
-
-        def construct(self, x, y):
-            self.assignadd(x, y)
-            return x
-
-    input_x = ms.Tensor(2)
-    input_y = ms.Tensor(3)
-    net = Net()
-    net(input_x, input_y)
-    assert input_x == 5
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_heter_add():
     """
     Feature: Support tensor inplace.

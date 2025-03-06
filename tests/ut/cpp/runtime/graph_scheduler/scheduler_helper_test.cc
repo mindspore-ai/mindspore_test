@@ -37,25 +37,8 @@ TEST_F(SchedulerHelperTest, AddDependency) {
   std::vector<AnfNodePtr> inputs{NewValueNode(prim::kPrimLess)};
   auto backend_node1 = kernel_graph->NewCNode(inputs);
   MS_EXCEPTION_IF_NULL(backend_node1);
-  auto kernel_info1 = std::make_shared<device::KernelInfo>();
-  MS_EXCEPTION_IF_NULL(kernel_info1);
-  backend_node1->set_kernel_info(kernel_info1);
-  auto builder1 = std::make_shared<kernel::KernelBuildInfo::KernelBuildInfoBuilder>();
-  MS_EXCEPTION_IF_NULL(builder1);
-  auto build_info1 = builder1->Build();
-  MS_EXCEPTION_IF_NULL(build_info1);
-  kernel_info1->set_select_kernel_build_info(build_info1);
-
   auto backend_node2 = kernel_graph->NewCNode(inputs);
   MS_EXCEPTION_IF_NULL(backend_node2);
-  auto kernel_info2 = std::make_shared<device::KernelInfo>();
-  MS_EXCEPTION_IF_NULL(kernel_info2);
-  backend_node2->set_kernel_info(kernel_info2);
-  auto builder2 = std::make_shared<kernel::KernelBuildInfo::KernelBuildInfoBuilder>();
-  MS_EXCEPTION_IF_NULL(builder2);
-  auto build_info2 = builder2->Build();
-  MS_EXCEPTION_IF_NULL(build_info2);
-  kernel_info2->set_select_kernel_build_info(build_info2);
   std::set<size_t> ref_input_indexes;
   std::set<size_t> ref_output_indexes;
 
@@ -89,14 +72,6 @@ TEST_F(SchedulerHelperTest, AddSomasInfo) {
   std::vector<AnfNodePtr> inputs{NewValueNode(prim::kPrimLess)};
   auto backend_node = kernel_graph->NewCNode(inputs);
   MS_EXCEPTION_IF_NULL(backend_node);
-  auto kernel_info = std::make_shared<device::KernelInfo>();
-  MS_EXCEPTION_IF_NULL(kernel_info);
-  backend_node->set_kernel_info(kernel_info);
-  auto builder = std::make_shared<kernel::KernelBuildInfo::KernelBuildInfoBuilder>();
-  MS_EXCEPTION_IF_NULL(builder);
-  auto build_info = builder->Build();
-  MS_EXCEPTION_IF_NULL(build_info);
-  kernel_info->set_select_kernel_build_info(build_info);
   std::set<size_t> ref_input_indexes;
   std::set<size_t> ref_output_indexes;
   auto kernel_actor =
@@ -126,25 +101,8 @@ TEST_F(SchedulerHelperTest, AddMemoryAllocSign) {
   std::vector<AnfNodePtr> inputs{NewValueNode(prim::kPrimLess)};
   auto backend_node1 = to_graph->NewCNode(inputs);
   MS_EXCEPTION_IF_NULL(backend_node1);
-  auto kernel_info1 = std::make_shared<device::KernelInfo>();
-  MS_EXCEPTION_IF_NULL(kernel_info1);
-  backend_node1->set_kernel_info(kernel_info1);
-  auto builder1 = std::make_shared<kernel::KernelBuildInfo::KernelBuildInfoBuilder>();
-  MS_EXCEPTION_IF_NULL(builder1);
-  auto build_info1 = builder1->Build();
-  MS_EXCEPTION_IF_NULL(build_info1);
-  kernel_info1->set_select_kernel_build_info(build_info1);
-
   auto backend_node2 = to_graph->NewCNode(inputs);
   MS_EXCEPTION_IF_NULL(backend_node2);
-  auto kernel_info2 = std::make_shared<device::KernelInfo>();
-  MS_EXCEPTION_IF_NULL(kernel_info2);
-  backend_node2->set_kernel_info(kernel_info2);
-  auto builder2 = std::make_shared<kernel::KernelBuildInfo::KernelBuildInfoBuilder>();
-  MS_EXCEPTION_IF_NULL(builder2);
-  auto build_info2 = builder2->Build();
-  MS_EXCEPTION_IF_NULL(build_info2);
-  kernel_info2->set_select_kernel_build_info(build_info2);
   std::set<size_t> ref_input_indexes;
   std::set<size_t> ref_output_indexes;
 
@@ -178,25 +136,8 @@ TEST_F(SchedulerHelperTest, AddMemoryFreeSign) {
   std::vector<AnfNodePtr> inputs{NewValueNode(prim::kPrimLess)};
   auto backend_node1 = from_graph->NewCNode(inputs);
   MS_EXCEPTION_IF_NULL(backend_node1);
-  auto kernel_info1 = std::make_shared<device::KernelInfo>();
-  MS_EXCEPTION_IF_NULL(kernel_info1);
-  backend_node1->set_kernel_info(kernel_info1);
-  auto builder1 = std::make_shared<kernel::KernelBuildInfo::KernelBuildInfoBuilder>();
-  MS_EXCEPTION_IF_NULL(builder1);
-  auto build_info1 = builder1->Build();
-  MS_EXCEPTION_IF_NULL(build_info1);
-  kernel_info1->set_select_kernel_build_info(build_info1);
-
   auto backend_node2 = from_graph->NewCNode(inputs);
   MS_EXCEPTION_IF_NULL(backend_node2);
-  auto kernel_info2 = std::make_shared<device::KernelInfo>();
-  MS_EXCEPTION_IF_NULL(kernel_info2);
-  backend_node2->set_kernel_info(kernel_info2);
-  auto builder2 = std::make_shared<kernel::KernelBuildInfo::KernelBuildInfoBuilder>();
-  MS_EXCEPTION_IF_NULL(builder2);
-  auto build_info2 = builder2->Build();
-  MS_EXCEPTION_IF_NULL(build_info2);
-  kernel_info2->set_select_kernel_build_info(build_info2);
   std::set<size_t> ref_input_indexes;
   std::set<size_t> ref_output_indexes;
 
