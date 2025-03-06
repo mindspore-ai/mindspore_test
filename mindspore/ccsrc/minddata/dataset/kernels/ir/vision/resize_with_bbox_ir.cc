@@ -18,16 +18,13 @@
 
 #include <algorithm>
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/resize_with_bbox_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // ResizeWithBBoxOperation
 ResizeWithBBoxOperation::ResizeWithBBoxOperation(const std::vector<int32_t> &size, InterpolationMode interpolation)
     : size_(size), interpolation_(interpolation) {}
@@ -82,7 +79,6 @@ Status ResizeWithBBoxOperation::from_json(nlohmann::json op_params, std::shared_
   *operation = std::make_shared<vision::ResizeWithBBoxOperation>(size, interpolation);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

@@ -15,16 +15,13 @@
  */
 #include "minddata/dataset/kernels/ir/vision/random_lighting_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/random_lighting_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // RandomLightingOperation.
 RandomLightingOperation::RandomLightingOperation(float alpha) : TensorOperation(true), alpha_(alpha) {}
 
@@ -57,7 +54,6 @@ Status RandomLightingOperation::from_json(nlohmann::json op_params, std::shared_
   *operation = std::make_shared<vision::RandomLightingOperation>(alpha);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

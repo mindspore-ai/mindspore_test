@@ -15,9 +15,6 @@
  */
 #include "minddata/dataset/kernels/image/resize_preserve_ar_op.h"
 
-#ifdef ENABLE_ANDROID
-#include "minddata/dataset/kernels/image/lite_image_utils.h"
-#endif
 #include "minddata/dataset/util/status.h"
 
 namespace mindspore {
@@ -29,9 +26,6 @@ ResizePreserveAROp::ResizePreserveAROp(int32_t height, int32_t width, int32_t im
 
 Status ResizePreserveAROp::Compute(const TensorRow &inputs, TensorRow *outputs) {
   IO_CHECK_VECTOR(inputs, outputs);
-#ifdef ENABLE_ANDROID
-  return ResizePreserve(inputs, height_, width_, img_orientation_, outputs);
-#endif
   return Status::OK();
 }
 }  // namespace dataset

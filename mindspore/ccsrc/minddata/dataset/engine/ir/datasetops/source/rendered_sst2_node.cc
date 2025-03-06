@@ -23,9 +23,7 @@
 #include <vector>
 
 #include "minddata/dataset/engine/datasetops/source/rendered_sst2_op.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/serdes.h"
-#endif
 #include "minddata/dataset/util/status.h"
 
 namespace mindspore {
@@ -126,7 +124,6 @@ Status RenderedSST2Node::to_json(nlohmann::json *out_json) {
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status RenderedSST2Node::from_json(nlohmann::json json_obj, std::shared_ptr<DatasetNode> *ds) {
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "num_parallel_workers", kRenderedSST2Node));
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "dataset_dir", kRenderedSST2Node));
@@ -144,6 +141,5 @@ Status RenderedSST2Node::from_json(nlohmann::json json_obj, std::shared_ptr<Data
   (*ds)->SetNumWorkers(json_obj["num_parallel_workers"]);
   return Status::OK();
 }
-#endif
 }  // namespace dataset
 }  // namespace mindspore

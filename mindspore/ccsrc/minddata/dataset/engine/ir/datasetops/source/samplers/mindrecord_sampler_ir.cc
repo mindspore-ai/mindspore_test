@@ -19,14 +19,11 @@
 #include <memory>
 #include <utility>
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/datasetops/source/sampler/mind_record_sampler.h"
 #include "minddata/mindrecord/include/shard_reader.h"
-#endif
 
 namespace mindspore {
 namespace dataset {
-#ifndef ENABLE_ANDROID
 // This function not only creates a runtime sampler object, but also creates a ShardReader,
 // which will also be needed to build a runtime MindRecordOp
 // (cannot add another output parameter because it has to override base class's function)
@@ -49,6 +46,5 @@ Status MindRecordSamplerObj::GetShardReader(std::unique_ptr<mindrecord::ShardRea
   *shard_reader = std::move(shard_reader_);
   return Status::OK();
 }
-#endif
 }  // namespace dataset
 }  // namespace mindspore

@@ -69,12 +69,12 @@ void VdecHelper::DestroyChannel() {
     if (ret != ACL_SUCCESS) {
       ACLLITE_LOG_ERROR("Vdec destroy channel failed, errorno: %d", ret);
     }
-    ACLLITE_LOG_INFO("Vdec destory Channel ok");
+    ACLLITE_LOG_INFO("Vdec destroy Channel ok");
     ret = aclvdecDestroyChannelDesc(vdecChannelDesc_);
     if (ret != ACL_SUCCESS) {
-      ACLLITE_LOG_ERROR("Vdec destory ChannelDesc failed, errorno: %d", ret);
+      ACLLITE_LOG_ERROR("Vdec destroy ChannelDesc failed, errorno: %d", ret);
     }
-    ACLLITE_LOG_INFO("Vdec destory ChannelDesc ok");
+    ACLLITE_LOG_INFO("Vdec destroy ChannelDesc ok");
     vdecChannelDesc_ = nullptr;
     isChannelExit_ = true;
   }
@@ -90,7 +90,7 @@ void VdecHelper::DestroyResource() {
   }
   UnsubscribReportThread();
 
-  // destory stream
+  // destroy stream
   aclError ret;
   if (stream_ != nullptr) {
     ret = CALL_ASCEND_API(aclrtDestroyStream, stream_);
@@ -132,7 +132,7 @@ void VdecHelper::UnsubscribReportThread() {
   }
 
   (void)aclrtUnSubscribeReport(static_cast<uint64_t>(subscribeThreadId_), stream_);
-  // destory thread
+  // destroy thread
   isExit_ = true;
 
   void *res = nullptr;
@@ -144,7 +144,7 @@ void VdecHelper::UnsubscribReportThread() {
       ACLLITE_LOG_ERROR("thread run failed. ret is %lu.", reinterpret_cast<uint64_t>(res));
     }
   }
-  ACLLITE_LOG_INFO("Destory report thread success.");
+  ACLLITE_LOG_INFO("Destroy report thread success.");
 }
 
 AclLiteError VdecHelper::Init() {

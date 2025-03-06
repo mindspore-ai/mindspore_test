@@ -81,7 +81,7 @@ class AclAdapter {
   int MallocHost(void **host_ptr, size_t size) const;
   int FreeHost(void *host_ptr) const;
 
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   // Ascend910B
   APP_ERROR DvppAdjustBrightness(const std::shared_ptr<DeviceTensorAscend910B> &input,
                                  std::shared_ptr<DeviceTensorAscend910B> *output, float factor);
@@ -228,7 +228,7 @@ class AclAdapter {
   aclrtFreeHostFunObj aclrt_free_host_fun_obj_;
   aclrtMemcpyFunObj aclrt_memcpy_fun_obj_;
 
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   // Ascend910B
   DvppAdjustBrightnessFunObj dvpp_brightness_fun_obj_;
   DvppAdjustContrastFunObj dvpp_contrast_fun_obj_;

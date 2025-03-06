@@ -20,11 +20,7 @@
 #include <vector>
 
 #include "minddata/dataset/kernels/data/data_utils.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/image_utils.h"
-#else
-#include "minddata/dataset/kernels/image/lite_image_utils.h"
-#endif
 #include "minddata/dataset/util/status.h"
 
 namespace mindspore {
@@ -42,11 +38,7 @@ Status NormalizeOp::Compute(const std::shared_ptr<Tensor> &input, std::shared_pt
     RETURN_STATUS_UNEXPECTED(err_msg);
   } else if (rank <= kDefaultImageRank) {
     // [H, W] or [H, W, C]
-#ifndef ENABLE_ANDROID
     return Normalize(input, output, mean_, std_, is_hwc_);
-#else
-    return Normalize(input, output, mean_, std_);
-#endif
   } else {
     // reshape [..., H, W, C] to [N, H, W, C]
     dsize_t num_batch = input->Size() / (input_shape[-3] * input_shape[-2] * input_shape[-1]);
@@ -58,11 +50,7 @@ Status NormalizeOp::Compute(const std::shared_ptr<Tensor> &input, std::shared_pt
     RETURN_IF_NOT_OK(BatchTensorToTensorVector(input, &input_vector_hwc));
     for (const auto &input_hwc : input_vector_hwc) {
       std::shared_ptr<Tensor> normalize;
-#ifndef ENABLE_ANDROID
       RETURN_IF_NOT_OK(Normalize(input_hwc, &normalize, mean_, std_, is_hwc_));
-#else
-      RETURN_IF_NOT_OK(Normalize(input_hwc, &normalize, mean_, std_));
-#endif
       output_vector_hwc.push_back(normalize);
     }
     // integrate N [H, W, C] to [N, H, W, C], and reshape [..., H, W, C]

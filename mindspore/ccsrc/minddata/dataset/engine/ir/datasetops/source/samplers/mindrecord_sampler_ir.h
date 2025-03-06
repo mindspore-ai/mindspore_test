@@ -20,13 +20,10 @@
 
 #include "minddata/dataset/engine/ir/datasetops/source/samplers/samplers_ir.h"
 #include "include/api/status.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/mindrecord/include/shard_reader.h"
-#endif
 
 namespace mindspore {
 namespace dataset {
-#ifndef ENABLE_ANDROID
 class MindRecordSamplerObj : public SamplerObj {
  public:
   /// \brief Constructor
@@ -59,7 +56,6 @@ class MindRecordSamplerObj : public SamplerObj {
  private:
   std::unique_ptr<mindrecord::ShardReader> shard_reader_;
 };
-#endif
 }  // namespace dataset
 }  // namespace mindspore
 #endif  // MINDSPORE_MINDRECORD_SAMPLER_IR_H

@@ -18,17 +18,14 @@
 
 #include <algorithm>
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/serdes.h"
 #include "minddata/dataset/kernels/image/uniform_aug_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // UniformAugOperation
 UniformAugOperation::UniformAugOperation(const std::vector<std::shared_ptr<TensorOperation>> &transforms,
                                          int32_t num_ops)
@@ -87,7 +84,6 @@ Status UniformAugOperation::from_json(nlohmann::json op_params, std::shared_ptr<
   *operation = std::make_shared<vision::UniformAugOperation>(transforms, num_ops);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

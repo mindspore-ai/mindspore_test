@@ -101,6 +101,13 @@
 "mindspore/mindspore/ccsrc/minddata/mindrecord/meta/shard_header.cc"                                  "useStlAlgorithm"
 "mindspore/mindspore/ccsrc/minddata/mindrecord/common/shard_pybind.cc"                                "syntaxError"
 "mindspore/mindspore/ccsrc/minddata/dataset/kernels/image/resize_cubic_op.cc"                         "constParameter"
+"mindspore/mindspore/lite/minddata/dataset/kernels/image/dvpp/utils/ResourceManager.cc"               "unreadVariable"
+"mindspore/mindspore/lite/minddata/dataset/kernels/image/dvpp/utils/dvpp_image_utils.cc"              "nullPointerRedundantCheck"
+"mindspore/mindspore/lite/minddata/dataset/kernels/image/dvpp/utils/dvpp_image_utils.cc"              "unsignedLessThanZero"
+"mindspore/mindspore/lite/minddata/dataset/kernels/image/dvpp/utils/dvpp_image_utils.cc"              "constParameter"
+"mindspore/mindspore/lite/minddata/dataset/kernels/image/dvpp/utils/dvpp_image_utils.cc"              "constParameter"
+"mindspore/mindspore/lite/minddata/dataset/kernels/image/dvpp/utils/dvpp_image_utils.cc"              "useStlAlgorithm"
+"mindspore/mindspore/lite/minddata/dataset/util/arena.cc"                                             "useStlAlgorithm"
 
 # Lite
 "mindspore/mindspore/core/mindrt/src/thread/"                                                         "useStlAlgorithm"

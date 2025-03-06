@@ -137,7 +137,6 @@ Status LFWNode::to_json(nlohmann::json *out_json) {
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status LFWNode::from_json(nlohmann::json json_obj, std::shared_ptr<DatasetNode> *ds) {
   RETURN_UNEXPECTED_IF_NULL(ds);
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "num_parallel_workers", kTFRecordNode));
@@ -160,6 +159,5 @@ Status LFWNode::from_json(nlohmann::json json_obj, std::shared_ptr<DatasetNode> 
   (*ds)->SetNumWorkers(json_obj["num_parallel_workers"]);
   return Status::OK();
 }
-#endif
 }  // namespace dataset
 }  // namespace mindspore

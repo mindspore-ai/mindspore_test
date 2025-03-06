@@ -16,16 +16,13 @@
 
 #include "minddata/dataset/kernels/ir/vision/random_equalize_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/random_equalize_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // RandomEqualizeOperation
 RandomEqualizeOperation::RandomEqualizeOperation(float prob) : TensorOperation(true), probability_(prob) {}
 
@@ -56,7 +53,6 @@ Status RandomEqualizeOperation::from_json(nlohmann::json op_params, std::shared_
   *operation = std::make_shared<vision::RandomEqualizeOperation>(prob);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

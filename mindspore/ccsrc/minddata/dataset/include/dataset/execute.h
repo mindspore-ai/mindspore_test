@@ -26,7 +26,7 @@
 #include "include/api/visible.h"
 #include "include/dataset/constants.h"
 #include "include/dataset/transforms.h"
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
 #endif
@@ -172,7 +172,7 @@ class DATASET_API Execute {
   struct ExtraInfo;
   std::shared_ptr<ExtraInfo> info_;
 
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   // Ascend910B
   device::DeviceContext *device_context_ = nullptr;
   size_t stream_id_;

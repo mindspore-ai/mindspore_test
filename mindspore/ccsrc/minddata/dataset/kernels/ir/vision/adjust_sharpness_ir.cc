@@ -15,10 +15,8 @@
  */
 #include "minddata/dataset/kernels/ir/vision/adjust_sharpness_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/sharpness_op.h"
-#endif
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_adjust_sharpness_op.h"
 #endif
 #include "minddata/dataset/kernels/ir/validators.h"
@@ -27,7 +25,6 @@
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // AdjustSharpnessOperation
 AdjustSharpnessOperation::AdjustSharpnessOperation(float sharpness_factor, const std::string &device_target)
     : sharpness_factor_(sharpness_factor), device_target_(device_target) {}
@@ -47,7 +44,7 @@ std::shared_ptr<TensorOp> AdjustSharpnessOperation::Build() {
   if (device_target_ == "CPU") {
     std::shared_ptr<SharpnessOp> tensor_op = std::make_shared<SharpnessOp>(sharpness_factor_);
     return tensor_op;
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_target_ == "Ascend") {
     return std::make_shared<DvppAdjustSharpnessOp>(sharpness_factor_);
 #endif
@@ -86,7 +83,6 @@ MapTargetDevice AdjustSharpnessOperation::Type() {
   }
   return MapTargetDevice::kInvalid;
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

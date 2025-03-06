@@ -20,13 +20,10 @@
 #include <vector>
 
 #include "minddata/dataset/engine/ir/datasetops/map_node.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/ir/datasetops/source/tf_record_node.h"
-#endif
 #include "minddata/dataset/kernels/ir/data/transforms_ir.h"
 
 namespace mindspore::dataset {
-#ifndef ENABLE_ANDROID
 Status InsertMapPass::Visit(std::shared_ptr<TFRecordNode> node, bool *const modified) {
   RETURN_UNEXPECTED_IF_NULL(node);
   RETURN_UNEXPECTED_IF_NULL(modified);
@@ -76,5 +73,4 @@ Status InsertMapPass::Visit(std::shared_ptr<TFRecordNode> node, bool *const modi
 #endif
   return Status ::OK();
 }
-#endif
 }  // namespace mindspore::dataset

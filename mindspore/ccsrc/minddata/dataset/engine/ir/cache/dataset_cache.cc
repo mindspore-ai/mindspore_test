@@ -21,12 +21,9 @@
 #include <optional>
 #include <vector>
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/ir/cache/dataset_cache_impl.h"
-#endif
 
 namespace mindspore::dataset {
-#ifndef ENABLE_ANDROID
 Status DatasetCache::from_json(nlohmann::json json_obj, std::shared_ptr<DatasetCache> *cache) {
   if (json_obj.find("cache") != json_obj.end()) {
     nlohmann::json json_cache = json_obj["cache"];
@@ -58,5 +55,4 @@ Status DatasetCache::from_json(nlohmann::json json_obj, std::shared_ptr<DatasetC
   }
   return Status::OK();
 }
-#endif
 }  // namespace mindspore::dataset

@@ -20,7 +20,7 @@
 #include <string>
 
 #include "minddata/dataset/core/device_tensor.h"
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/core/device_tensor_ascend910b.h"
 #endif
 #include "minddata/dataset/core/tensor.h"
@@ -79,7 +79,7 @@ ORIGIN_METHOD(aclrtMallocHost, int, void **, size_t);
 PLUGIN_METHOD(aclrtMemcpy, int, void *, size_t, const void *, size_t, int);
 ORIGIN_METHOD(aclrtFreeHost, int, void *);
 
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 // Ascend910B
 PLUGIN_METHOD(DvppAdjustBrightness, int, const std::shared_ptr<mindspore::dataset::DeviceTensorAscend910B> &,
               std::shared_ptr<mindspore::dataset::DeviceTensorAscend910B> *, float);

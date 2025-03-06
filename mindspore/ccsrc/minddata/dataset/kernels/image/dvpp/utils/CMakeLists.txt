@@ -21,7 +21,7 @@ if(NOT MSLITE_ENABLE_ACL)
     )
 endif()
 
-if(NOT BUILD_LITE AND ENABLE_D)
+if(ENABLE_D)
 set(DVPP_UTILS_SRC
     ${DVPP_UTILS_SRC}
     # Ascend910B

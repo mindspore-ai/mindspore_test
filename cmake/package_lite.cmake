@@ -226,19 +226,19 @@ endfunction()
 if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "full")
     # full header files
     install(FILES
-            ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/constants.h
-            ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/data_helper.h
-            ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/execute.h
-            ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/iterator.h
-            ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/samplers.h
-            ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/transforms.h
-            ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/vision_lite.h
-            ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/liteapi/include/datasets.h
+            ${TOP_DIR}/mindspore/lite/minddata/dataset/include/dataset/constants.h
+            ${TOP_DIR}/mindspore/lite/minddata/dataset/include/dataset/data_helper.h
+            ${TOP_DIR}/mindspore/lite/minddata/dataset/include/dataset/execute.h
+            ${TOP_DIR}/mindspore/lite/minddata/dataset/include/dataset/iterator.h
+            ${TOP_DIR}/mindspore/lite/minddata/dataset/include/dataset/samplers.h
+            ${TOP_DIR}/mindspore/lite/minddata/dataset/include/dataset/transforms.h
+            ${TOP_DIR}/mindspore/lite/minddata/dataset/include/dataset/vision_lite.h
+            ${TOP_DIR}/mindspore/lite/minddata/dataset/liteapi/include/datasets.h
         DESTINATION ${MIND_DATA_INC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
 
     if(PLATFORM_ARM64)
         if((MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE) AND MSLITE_ENABLE_ACL)
-            install(FILES ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/vision_ascend.h
+            install(FILES ${TOP_DIR}/mindspore/lite/minddata/dataset/include/dataset/vision_ascend.h
                     DESTINATION ${MIND_DATA_INC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
             install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/kernels-dvpp-image/utils/libdvpp_utils.so
                     DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
@@ -260,7 +260,7 @@ if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "full")
                 DESTINATION ${SECUREC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
     else()
         if((MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE) AND MSLITE_ENABLE_ACL)
-                install(FILES ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/vision_ascend.h
+                install(FILES ${TOP_DIR}/mindspore/lite/minddata/dataset/include/dataset/vision_ascend.h
                         DESTINATION ${MIND_DATA_INC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
                 install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/kernels-dvpp-image/utils/libdvpp_utils.so
                         DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
@@ -278,12 +278,12 @@ if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "full")
     endif()
 
     # lite_cv header files
-    install(DIRECTORY ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/kernels/image/lite_cv
+    install(DIRECTORY ${TOP_DIR}/mindspore/lite/minddata/dataset/kernels/image/lite_cv
             DESTINATION ${MIND_DATA_INC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME} FILES_MATCHING PATTERN "*.h")
 endif()
 
 if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "wrapper")
-    install(DIRECTORY ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/ DESTINATION ${MIND_DATA_INC_DIR}
+    install(DIRECTORY ${TOP_DIR}/mindspore/lite/minddata/dataset/include/ DESTINATION ${MIND_DATA_INC_DIR}
             COMPONENT ${RUNTIME_COMPONENT_NAME} FILES_MATCHING PATTERN "*.h" PATTERN "vision.h" EXCLUDE)
     if(PLATFORM_ARM64)
         install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
@@ -304,7 +304,7 @@ if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "wrapper")
 endif()
 
 if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "lite")
-    install(DIRECTORY ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/ DESTINATION ${MIND_DATA_INC_DIR}
+    install(DIRECTORY ${TOP_DIR}/mindspore/lite/minddata/dataset/include/ DESTINATION ${MIND_DATA_INC_DIR}
             COMPONENT ${RUNTIME_COMPONENT_NAME} FILES_MATCHING PATTERN "*.h")
     if(PLATFORM_ARM64)
         install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
@@ -332,17 +332,17 @@ endif()
 
 if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "lite_cv")
     if(PLATFORM_ARM64)
-        install(DIRECTORY ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/kernels/image/lite_cv
+        install(DIRECTORY ${TOP_DIR}/mindspore/lite/minddata/dataset/kernels/image/lite_cv
                 DESTINATION ${MIND_DATA_INC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME} FILES_MATCHING PATTERN "*.h")
         install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so
                 DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
     elseif(PLATFORM_ARM32)
-        install(DIRECTORY ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/kernels/image/lite_cv
+        install(DIRECTORY ${TOP_DIR}/mindspore/lite/minddata/dataset/kernels/image/lite_cv
                 DESTINATION ${MIND_DATA_INC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME} FILES_MATCHING PATTERN "*.h")
         install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
         ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
     else()
-        install(DIRECTORY ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/kernels/image/lite_cv
+        install(DIRECTORY ${TOP_DIR}/mindspore/lite/minddata/dataset/kernels/image/lite_cv
                 DESTINATION ${MIND_DATA_INC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME} FILES_MATCHING PATTERN "*.h")
         install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
                 ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})

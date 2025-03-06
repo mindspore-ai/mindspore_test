@@ -16,10 +16,8 @@
 
 #include "minddata/dataset/kernels/ir/vision/convert_color_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/convert_color_op.h"
-#endif
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_convert_color_op.h"
 #endif
 #include "minddata/dataset/kernels/ir/validators.h"
@@ -28,7 +26,6 @@
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // ConvertColorOperation
 ConvertColorOperation::ConvertColorOperation(ConvertMode convert_mode, const std::string &device_target)
     : convert_mode_(convert_mode), device_target_(device_target) {}
@@ -54,7 +51,7 @@ std::shared_ptr<TensorOp> ConvertColorOperation::Build() {
   if (device_target_ == "CPU") {
     std::shared_ptr<ConvertColorOp> tensor_op = std::make_shared<ConvertColorOp>(convert_mode_);
     return tensor_op;
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_target_ == "Ascend") {
     std::shared_ptr<DvppConvertColorOp> dvpp_tensor_op = std::make_shared<DvppConvertColorOp>(convert_mode_);
     return dvpp_tensor_op;
@@ -94,7 +91,6 @@ MapTargetDevice ConvertColorOperation::Type() {
   }
   return MapTargetDevice::kInvalid;
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

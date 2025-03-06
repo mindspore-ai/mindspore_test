@@ -29,13 +29,8 @@
 #include "minddata/dataset/util/log_adapter.h"
 #include "minddata/dataset/util/path.h"
 #include "minddata/dataset/util/status.h"
-#ifndef BUILD_LITE
 #include "utils/file_utils.h"
 namespace platform = mindspore;
-#else
-#include "mindspore/lite/src/common/file_utils.h"
-namespace platform = mindspore::lite;
-#endif
 
 namespace mindspore {
 namespace dataset {

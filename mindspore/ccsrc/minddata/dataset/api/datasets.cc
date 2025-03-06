@@ -36,10 +36,8 @@
 #include "minddata/dataset/util/path.h"
 #include "minddata/dataset/util/random.h"
 #include "minddata/dataset/util/status.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/ir/cache/dataset_cache_impl.h"
 #include "minddata/dataset/include/dataset/text.h"
-#endif
 
 // Sampler headers (in alphabetical order)
 #include "minddata/dataset/engine/ir/datasetops/source/samplers/samplers_ir.h"
@@ -49,31 +47,24 @@
 
 // IR non-leaf nodes
 #include "minddata/dataset/engine/ir/datasetops/batch_node.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/ir/datasetops/bucket_batch_by_length_node.h"
 #include "minddata/dataset/engine/ir/datasetops/build_sentence_piece_vocab_node.h"
 #include "minddata/dataset/engine/ir/datasetops/build_vocab_node.h"
 #include "minddata/dataset/engine/ir/datasetops/concat_node.h"
 #include "minddata/dataset/engine/ir/datasetops/filter_node.h"
-#endif
 #include "minddata/dataset/engine/ir/datasetops/map_node.h"
 #include "minddata/dataset/engine/ir/datasetops/project_node.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/ir/datasetops/rename_node.h"
-#endif
 #include "minddata/dataset/engine/ir/datasetops/repeat_node.h"
 #include "minddata/dataset/engine/ir/datasetops/shuffle_node.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/ir/datasetops/skip_node.h"
 #include "minddata/dataset/engine/ir/datasetops/take_node.h"
 #include "minddata/dataset/engine/ir/datasetops/data_queue_node.h"
 #include "minddata/dataset/engine/ir/datasetops/zip_node.h"
-#endif
 
 // IR leaf nodes
 #include "minddata/dataset/engine/ir/datasetops/source/ag_news_node.h"
 #include "minddata/dataset/engine/ir/datasetops/source/album_node.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/ir/datasetops/source/amazon_review_node.h"
 #include "minddata/dataset/engine/ir/datasetops/source/caltech256_node.h"
 #include "minddata/dataset/engine/ir/datasetops/source/celeba_node.h"
@@ -106,9 +97,7 @@
 #include "minddata/dataset/engine/ir/datasetops/source/lsun_node.h"
 #include "minddata/dataset/engine/ir/datasetops/source/manifest_node.h"
 #include "minddata/dataset/engine/ir/datasetops/source/minddata_node.h"
-#endif
 #include "minddata/dataset/engine/ir/datasetops/source/mnist_node.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/ir/datasetops/source/multi30k_node.h"
 #include "minddata/dataset/engine/ir/datasetops/source/omniglot_node.h"
 #include "minddata/dataset/engine/ir/datasetops/source/penn_treebank_node.h"
@@ -136,7 +125,6 @@
 #include "minddata/dataset/engine/ir/datasetops/source/yahoo_answers_node.h"
 #include "minddata/dataset/engine/ir/datasetops/source/yelp_review_node.h"
 #include "minddata/dataset/engine/ir/datasetops/source/yes_no_node.h"
-#endif
 
 namespace mindspore {
 namespace dataset {
@@ -206,7 +194,6 @@ std::shared_ptr<PullIterator> Dataset::CreatePullBasedIterator() {
 bool Dataset::DeviceQueueCharIF(const std::vector<char> &queue_name, const std::vector<char> &device_type,
                                 int32_t device_id, int32_t num_epochs, bool send_epoch_end, int32_t total_batches,
                                 bool create_data_info_queue) {
-#ifndef ENABLE_ANDROID
   Status rc;
 
   // Build and launch tree
@@ -244,13 +231,8 @@ bool Dataset::DeviceQueueCharIF(const std::vector<char> &queue_name, const std::
   }
 
   return true;
-#else
-  MS_LOG(ERROR) << "DeviceQueueCharIF is not support for Android.";
-  return false;
-#endif
 }
 
-#ifndef ENABLE_ANDROID
 // Function to create the saver, which will build and launch the execution tree and save data
 bool Dataset::SaveCharIF(const std::vector<char> &dataset_path, int32_t num_files,
                          const std::vector<char> &dataset_type) {
@@ -300,7 +282,6 @@ bool Dataset::SaveCharIF(const std::vector<char> &dataset_path, int32_t num_file
 
   return true;
 }
-#endif
 
 // Constructor
 Dataset::Dataset() { tree_getters_ = std::make_shared<TreeGetters>(); }
@@ -425,7 +406,6 @@ BatchDataset::BatchDataset(const std::shared_ptr<Dataset> &input, int32_t batch_
   }
 }
 
-#ifndef ENABLE_ANDROID
 // Function to create a BucketBatchByLength dataset
 BucketBatchByLengthDataset::BucketBatchByLengthDataset(
   const std::shared_ptr<Dataset> &input, const std::vector<std::vector<char>> &column_names,
@@ -487,7 +467,6 @@ FilterDataset::FilterDataset(const std::shared_ptr<Dataset> &input,
     ir_node_ = std::static_pointer_cast<DatasetNode>(ds);
   }
 }
-#endif
 
 MapDataset::MapDataset(const std::shared_ptr<Dataset> &input,
                        const std::vector<std::shared_ptr<TensorOperation>> &operations,
@@ -514,7 +493,6 @@ ProjectDataset::ProjectDataset(const std::shared_ptr<Dataset> &input, const std:
   }
 }
 
-#ifndef ENABLE_ANDROID
 RenameDataset::RenameDataset(const std::shared_ptr<Dataset> &input, const std::vector<std::vector<char>> &input_columns,
                              const std::vector<std::vector<char>> &output_columns) {
   if (input == nullptr) {
@@ -526,7 +504,6 @@ RenameDataset::RenameDataset(const std::shared_ptr<Dataset> &input, const std::v
     ir_node_ = std::static_pointer_cast<DatasetNode>(ds);
   }
 }
-#endif
 
 RepeatDataset::RepeatDataset(const std::shared_ptr<Dataset> &input, int32_t count) {
   if (input == nullptr) {
@@ -549,7 +526,6 @@ ShuffleDataset::ShuffleDataset(const std::shared_ptr<Dataset> &input, int32_t bu
   }
 }
 
-#ifndef ENABLE_ANDROID
 SkipDataset::SkipDataset(const std::shared_ptr<Dataset> &input, int32_t count) {
   if (input == nullptr) {
     ir_node_ = nullptr;
@@ -580,7 +556,6 @@ ZipDataset::ZipDataset(const std::vector<std::shared_ptr<Dataset>> &datasets) {
 
   ir_node_ = std::static_pointer_cast<DatasetNode>(ds);
 }
-#endif
 
 int64_t Dataset::GetBatchSize() {
   int64_t batch_size = -1;
@@ -607,7 +582,6 @@ std::shared_ptr<Dataset> Dataset::SetNumWorkers(int32_t num_workers) {
   return shared_from_this();
 }
 
-#ifndef ENABLE_ANDROID
 std::shared_ptr<SentencePieceVocab> Dataset::BuildSentencePieceVocabCharIF(
   const std::vector<std::vector<char>> &col_names, int32_t vocab_size, float character_coverage,
   SentencePieceModel model_type, const std::map<std::vector<char>, std::vector<char>> &params) {
@@ -680,7 +654,6 @@ std::shared_ptr<Vocab> Dataset::BuildVocabCharIF(const std::vector<std::vector<c
   }
   return vocab;
 }
-#endif
 
 std::shared_ptr<BatchDataset> Dataset::Batch(int32_t batch_size, bool drop_remainder) {
   return std::make_shared<BatchDataset>(shared_from_this(), batch_size, drop_remainder);
@@ -895,9 +868,6 @@ Status SchemaObj::ParseColumnStringCharIF(const std::vector<char> &json_string) 
 }
 
 // OTHER FUNCTIONS
-
-#ifndef ENABLE_ANDROID
-
 std::shared_ptr<DatasetCache> CreateDatasetCacheCharIF(session_id_type id, uint64_t mem_sz, bool spill,
                                                        const std::optional<std::vector<char>> &hostname,
                                                        const std::optional<int32_t> &port,
@@ -914,7 +884,6 @@ AGNewsDataset::AGNewsDataset(const std::vector<char> &dataset_dir, const std::ve
                                          num_shards, shard_id, cache);
   ir_node_ = std::static_pointer_cast<DatasetNode>(ds);
 }
-#endif
 
 AlbumDataset::AlbumDataset(const std::vector<char> &dataset_dir, const std::vector<char> &data_schema,
                            const std::vector<std::vector<char>> &column_names, bool decode,
@@ -943,7 +912,6 @@ AlbumDataset::AlbumDataset(const std::vector<char> &dataset_dir, const std::vect
   ir_node_ = std::static_pointer_cast<DatasetNode>(ds);
 }
 
-#ifndef ENABLE_ANDROID
 AmazonReviewDataset::AmazonReviewDataset(const std::vector<char> &dataset_dir, const std::vector<char> &usage,
                                          int64_t num_samples, ShuffleMode shuffle, int32_t num_shards, int32_t shard_id,
                                          const std::shared_ptr<DatasetCache> &cache) {
@@ -1692,7 +1660,6 @@ MindDataDataset::MindDataDataset(const std::vector<std::vector<char>> &dataset_f
                                            sampler_obj, sample, num_padded, shuffle_mode, cache);
   ir_node_ = std::static_pointer_cast<DatasetNode>(ds);
 }
-#endif
 
 MnistDataset::MnistDataset(const std::vector<char> &dataset_dir, const std::vector<char> &usage,
                            const std::shared_ptr<Sampler> &sampler, const std::shared_ptr<DatasetCache> &cache) {
@@ -1715,7 +1682,6 @@ MnistDataset::MnistDataset(const std::vector<char> &dataset_dir, const std::vect
   ir_node_ = std::static_pointer_cast<DatasetNode>(ds);
 }
 
-#ifndef ENABLE_ANDROID
 Multi30kDataset::Multi30kDataset(const std::vector<char> &dataset_dir, const std::vector<char> &usage,
                                  const std::vector<std::vector<char>> &language_pair, int64_t num_samples,
                                  ShuffleMode shuffle, int32_t num_shards, int32_t shard_id,
@@ -2181,6 +2147,5 @@ YesNoDataset::YesNoDataset(const std::vector<char> &dataset_dir, const std::refe
   auto ds = std::make_shared<YesNoNode>(CharToString(dataset_dir), sampler_obj, cache);
   ir_node_ = std::static_pointer_cast<DatasetNode>(ds);
 }
-#endif
 }  // namespace dataset
 }  // namespace mindspore

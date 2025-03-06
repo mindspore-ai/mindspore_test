@@ -29,9 +29,7 @@ class DatasetNode;
 class DatasetOp;
 class MappableSourceNode;
 class MapNode;
-#ifndef ENABLE_ANDROID
 class MindDataNode;
-#endif
 class NonMappableSourceNode;
 class ProjectNode;
 class RenameNode;

@@ -17,7 +17,7 @@
 
 #include "minddata/dataset/kernels/image/perspective_op.h"
 #include "minddata/dataset/util/validators.h"
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_perspective_op.h"
 #endif
 #include "minddata/dataset/kernels/ir/validators.h"
@@ -76,7 +76,7 @@ std::shared_ptr<TensorOp> PerspectiveOperation::Build() {
     std::shared_ptr<PerspectiveOp> tensor_op =
       std::make_shared<PerspectiveOp>(start_points_, end_points_, interpolation_);
     return tensor_op;
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_target_ == "Ascend") {
     std::shared_ptr<DvppPerspectiveOp> dvpp_tensor_op =
       std::make_shared<DvppPerspectiveOp>(start_points_, end_points_, interpolation_);

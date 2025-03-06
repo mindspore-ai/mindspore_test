@@ -18,7 +18,6 @@
 #include "minddata/dataset/engine/datasetops/source/sampler/distributed_sampler.h"
 #include "minddata/dataset/core/config_manager.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/util/random.h"
 #include "minddata/mindrecord/include/shard_distributed_sample.h"
 #include "minddata/mindrecord/include/shard_operator.h"
@@ -26,7 +25,6 @@
 #include "minddata/mindrecord/include/shard_sample.h"
 #include "minddata/mindrecord/include/shard_sequential_sample.h"
 #include "minddata/mindrecord/include/shard_shuffle.h"
-#endif
 
 namespace mindspore {
 namespace dataset {
@@ -93,14 +91,12 @@ Status DistributedSamplerObj::SamplerBuild(std::shared_ptr<SamplerRT> *sampler) 
   return s;
 }
 
-#ifndef ENABLE_ANDROID
 std::shared_ptr<mindrecord::ShardOperator> DistributedSamplerObj::BuildForMindDataset() {
   // runtime mindrecord sampler object
   auto mind_sampler = std::make_shared<mindrecord::ShardDistributedSample>(num_shards_, shard_id_, shuffle_mode_, seed_,
                                                                            num_samples_, offset_);
   return mind_sampler;
 }
-#endif
 
 Status DistributedSamplerObj::to_json(nlohmann::json *const out_json) {
   nlohmann::json args;
@@ -117,7 +113,6 @@ Status DistributedSamplerObj::to_json(nlohmann::json *const out_json) {
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status DistributedSamplerObj::from_json(nlohmann::json json_obj, int64_t num_samples,
                                         std::shared_ptr<SamplerObj> *sampler) {
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "num_shards", "DistributedSampler"));
@@ -138,7 +133,6 @@ Status DistributedSamplerObj::from_json(nlohmann::json json_obj, int64_t num_sam
   RETURN_IF_NOT_OK(SamplerObj::from_json(json_obj, sampler));
   return Status::OK();
 }
-#endif
 
 std::shared_ptr<SamplerObj> DistributedSamplerObj::SamplerCopy() {
   auto sampler = std::make_shared<DistributedSamplerObj>(num_shards_, shard_id_, shuffle_mode_, num_samples_, seed_,

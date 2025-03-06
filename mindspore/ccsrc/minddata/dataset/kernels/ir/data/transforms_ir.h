@@ -327,7 +327,6 @@ class TypeCastOperation : public TensorOperation {
   DataType data_type_;
 };
 
-#ifndef ENABLE_ANDROID
 class UniqueOperation : public TensorOperation {
  public:
   UniqueOperation() = default;
@@ -365,7 +364,6 @@ class PluginOperation : public TensorOperation {
   std::string func_name_;
   std::string user_args_;
 };
-#endif
 }  // namespace transforms
 }  // namespace dataset
 }  // namespace mindspore

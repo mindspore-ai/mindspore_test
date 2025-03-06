@@ -15,10 +15,8 @@
  */
 #include "minddata/dataset/kernels/ir/vision/horizontal_flip_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/horizontal_flip_op.h"
-#endif
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_horizontal_flip_op.h"
 #endif
 #include "minddata/dataset/kernels/ir/validators.h"
@@ -27,7 +25,6 @@
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // VerticalFlipOperation
 HorizontalFlipOperation::HorizontalFlipOperation(const std::string &device_target) : device_target_(device_target) {}
 
@@ -48,7 +45,7 @@ std::shared_ptr<TensorOp> HorizontalFlipOperation::Build() {
   if (device_target_ == "CPU") {
     std::shared_ptr<HorizontalFlipOp> tensor_op = std::make_shared<HorizontalFlipOp>();
     return tensor_op;
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_target_ == "Ascend") {
     std::shared_ptr<DvppHorizontalFlipOp> dvpp_tensor_op = std::make_shared<DvppHorizontalFlipOp>();
     return dvpp_tensor_op;
@@ -85,7 +82,6 @@ MapTargetDevice HorizontalFlipOperation::Type() {
     return MapTargetDevice::kInvalid;
   }
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

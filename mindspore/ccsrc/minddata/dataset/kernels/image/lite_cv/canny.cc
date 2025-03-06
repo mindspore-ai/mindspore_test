@@ -19,13 +19,6 @@
 #include "lite_cv/lite_mat.h"
 #include "lite_cv/image_process.h"
 
-#ifdef ENABLE_ANDROID
-#if defined(__arm__) || defined(__aarch64__) || defined(_M_ARM) || defined(_M_ARM64)
-#define USE_NEON
-#include <arm_neon.h>
-#endif
-#endif
-
 constexpr float kAngle22_5 = 0.39269908169872414;
 constexpr float kAngle67_5 = 1.1780972450961724;
 constexpr int kCertainBorder = 2;

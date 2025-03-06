@@ -15,16 +15,13 @@
  */
 #include "minddata/dataset/kernels/ir/vision/random_horizontal_flip_with_bbox_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/random_horizontal_flip_with_bbox_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // RandomHorizontalFlipWithBBoxOperation
 RandomHorizontalFlipWithBBoxOperation::RandomHorizontalFlipWithBBoxOperation(float probability)
     : TensorOperation(true), probability_(probability) {}
@@ -58,7 +55,6 @@ Status RandomHorizontalFlipWithBBoxOperation::from_json(nlohmann::json op_params
   *operation = std::make_shared<vision::RandomHorizontalFlipWithBBoxOperation>(prob);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

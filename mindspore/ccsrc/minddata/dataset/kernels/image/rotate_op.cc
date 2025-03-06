@@ -19,11 +19,7 @@
 #include <utility>
 
 #include "minddata/dataset/kernels/data/data_utils.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/image_utils.h"
-#else
-#include "minddata/dataset/kernels/image/lite_image_utils.h"
-#endif
 
 namespace mindspore {
 namespace dataset {
@@ -60,11 +56,7 @@ Status RotateOp::Compute(const std::shared_ptr<Tensor> &input, std::shared_ptr<T
   RETURN_IF_NOT_OK(ValidateImage(input, "Rotate", {1, 2, 3, 4, 5, 6, 10, 11, 12}));
   if (input->Rank() <= kDefaultImageRank) {
     // [H, W] or [H, W, C]
-#ifndef ENABLE_ANDROID
     RETURN_IF_NOT_OK(Rotate(input, output, center_, degrees_, interpolation_, expand_, fill_r_, fill_g_, fill_b_));
-#else
-    RETURN_IF_NOT_OK(Rotate(input, output, angle_id_));
-#endif
   } else {
     // reshape [..., H, W, C] to [N, H, W, C]
     auto original_shape = input->shape();
@@ -77,12 +69,8 @@ Status RotateOp::Compute(const std::shared_ptr<Tensor> &input, std::shared_ptr<T
     RETURN_IF_NOT_OK(BatchTensorToTensorVector(input, &input_vector_hwc));
     for (const auto &input_hwc : input_vector_hwc) {
       std::shared_ptr<Tensor> output_img;
-#ifndef ENABLE_ANDROID
       RETURN_IF_NOT_OK(
         Rotate(input_hwc, &output_img, center_, degrees_, interpolation_, expand_, fill_r_, fill_g_, fill_b_));
-#else
-      RETURN_IF_NOT_OK(Rotate(input_hwc, &output_img, angle_id_));
-#endif
       output_vector_hwc.push_back(output_img);
     }
     // integrate N [H, W, C] to [N, H, W, C], and reshape [..., H, W, C]
@@ -95,7 +83,6 @@ Status RotateOp::Compute(const std::shared_ptr<Tensor> &input, std::shared_ptr<T
 }
 
 Status RotateOp::OutputShape(const std::vector<TensorShape> &inputs, std::vector<TensorShape> &outputs) {
-#ifndef ENABLE_ANDROID
   RETURN_IF_NOT_OK(TensorOp::OutputShape(inputs, outputs));
   outputs.clear();
   int32_t outputH = -1, outputW = -1;
@@ -123,15 +110,6 @@ Status RotateOp::OutputShape(const std::vector<TensorShape> &inputs, std::vector
     (void)outputs.emplace_back(out_shape);
   }
   return Status::OK();
-#else
-  if (inputs.size() != NumInput()) {
-    return Status(StatusCode::kMDUnexpectedError,
-                  "The size of the input argument vector: " + std::to_string(inputs.size()) +
-                    ", does not match the number of inputs: " + std::to_string(NumInput()));
-  }
-  outputs = inputs;
-  return Status::OK();
-#endif
 }
 
 TensorShape RotateOp::ConstructShape(const TensorShape &in_shape) const {

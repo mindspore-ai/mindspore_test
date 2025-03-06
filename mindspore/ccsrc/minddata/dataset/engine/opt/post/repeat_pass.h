@@ -49,7 +49,6 @@ class RepeatPass : public IRNodePass {
   /// \return Status The status code returned
   Status Visit(std::shared_ptr<EpochCtrlNode> node, bool *const modified) override;
 
-#ifndef ENABLE_ANDROID
   /// \brief Identifies the subtree below this node as being in a cache merge path
   /// \param[in] node The node being visited
   /// \param[in,out] modified Indicator if the node was changed at all
@@ -61,7 +60,6 @@ class RepeatPass : public IRNodePass {
   /// \param[in,out] modified Indicator if the node was changed at all
   /// \return Status The status code returned
   Status Visit(std::shared_ptr<CacheNode> node, bool *const modified) override;
-#endif
 
   /// \brief Hooks up any identified eoe nodes under this repeat.
   /// \param[in] node The node being visited
@@ -75,7 +73,6 @@ class RepeatPass : public IRNodePass {
   /// \return Status The status code returned
   Status VisitAfter(std::shared_ptr<EpochCtrlNode> node, bool *const modified) override;
 
-#ifndef ENABLE_ANDROID
   /// \brief CacheNode removes previous leaf ops and replaces them with itself
   /// \param[in] node The node being visited
   /// \param[in,out] modified Indicator if the node was changed at all
@@ -93,7 +90,6 @@ class RepeatPass : public IRNodePass {
   /// \param[in,out] modified Indicator if the node was changed at all
   /// \return Status The status code returned
   Status VisitAfter(std::shared_ptr<CacheLookupNode> node, bool *const modified) override;
-#endif
 
   /// \brief Sets the epoch count for DataQueueNode
   /// \param[in] node The node being visited

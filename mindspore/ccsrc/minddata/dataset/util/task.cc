@@ -17,9 +17,6 @@
 #include "utils/os.h"
 #include "minddata/dataset/util/log_adapter.h"
 #include "minddata/dataset/util/task_manager.h"
-#if defined(__ANDROID__) || defined(ANDROID)
-#include "minddata/dataset/util/services.h"
-#endif
 #ifdef WITH_BACKEND
 #include "utils/ms_context.h"
 #include "mindspore/ccsrc/include/backend/data_queue/data_queue_mgr.h"
@@ -35,13 +32,13 @@ void Task::operator()() {
   id_ = this_thread::get_id();
   std::stringstream ss;
   ss << id_;
-#if defined(__ANDROID__) || defined(ANDROID) || defined(__APPLE__)
+#if defined(__APPLE__)
   // The thread id in Linux may be duplicate
   ss << Services::GetUniqueID();
 #endif
   MS_LOG(DEBUG) << "Task: " << my_name_ << " Thread ID " << ss.str() << " Started.";
 
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
   native_handle_ = pthread_self();
   thread_id_ = syscall(SYS_gettid);
 #endif
@@ -265,7 +262,7 @@ Status Task::OverrideInterruptRc(const Status &rc) {
   return rc;
 }
 
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 pthread_t Task::GetNativeHandle() const { return native_handle_; }
 #endif
 

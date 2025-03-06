@@ -20,7 +20,7 @@
 #include "minddata/dataset/kernels/image/dvpp/utils/dvpp_video.h"
 #include "minddata/dataset/kernels/image/dvpp/utils/ResourceManager.h"
 #include "minddata/dataset/kernels/image/dvpp/utils/MDAclProcess.h"
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/utils/dvpp_image_utils.h"
 #include "minddata/dataset/core/device_tensor_ascend910b.h"
 #endif
@@ -282,7 +282,7 @@ int PluginaclrtMemcpy(void *dst, size_t dest_max, const void *src, size_t count,
   return CALL_ASCEND_API(aclrtMemcpy, dst, dest_max, src, count, static_cast<aclrtMemcpyKind>(kind));
 }
 
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 // Ascend910B
 APP_ERROR PluginDvppAdjustBrightness(const std::shared_ptr<mindspore::dataset::DeviceTensorAscend910B> &input,
                                      std::shared_ptr<mindspore::dataset::DeviceTensorAscend910B> *output,

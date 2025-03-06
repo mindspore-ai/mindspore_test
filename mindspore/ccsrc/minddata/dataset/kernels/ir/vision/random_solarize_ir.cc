@@ -18,15 +18,12 @@
 
 #include <algorithm>
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/random_solarize_op.h"
-#endif
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // RandomSolarizeOperation.
 RandomSolarizeOperation::RandomSolarizeOperation(const std::vector<uint8_t> &threshold)
     : TensorOperation(true), threshold_(threshold) {}
@@ -78,7 +75,6 @@ Status RandomSolarizeOperation::from_json(nlohmann::json op_params, std::shared_
   *operation = std::make_shared<vision::RandomSolarizeOperation>(threshold);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

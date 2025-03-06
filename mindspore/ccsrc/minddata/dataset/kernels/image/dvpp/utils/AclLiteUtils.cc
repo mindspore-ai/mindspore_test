@@ -473,7 +473,7 @@ bool AnalyseLine(const std::string &line, std::string &key, std::string &value) 
   auto end_pos = line.size() - 1;
   std::string::size_type pos = line.find(COMMENT_CHAR);
   if (pos != std::string::npos) {
-    if (pos == 0) {  // the first charactor is #
+    if (pos == 0) {  // the first character is #
       return false;
     }
     end_pos = pos - 1;

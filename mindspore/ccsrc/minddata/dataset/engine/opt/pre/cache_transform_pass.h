@@ -60,14 +60,11 @@ class CacheTransformPass : public IRTreePass {
     /// \return Status The status code returned
     Status VisitAfter(std::shared_ptr<DatasetNode> node, bool *const modified) override;
 
-#ifndef ENABLE_ANDROID
-
     /// \brief Perform non-mappable leaf node cache transform identifications
     /// \param[in] node The node being visited
     /// \param[in,out] modified Indicator if the node was changed at all
     /// \return Status The status code returned
     Status Visit(std::shared_ptr<NonMappableSourceNode> node, bool *const modified) override;
-#endif
 
     /// \brief Perform non-mappable leaf node cache transform identifications
     /// \param[in] node The node being visited
@@ -89,13 +86,11 @@ class CacheTransformPass : public IRTreePass {
     Status Visit(std::shared_ptr<GeneratorNode> node, bool *const modified) override;
 #endif
 
-#ifndef ENABLE_ANDROID
     /// \brief Perform leaf node cache transform identifications
     /// \param[in] node The node being visited
     /// \param[in,out] modified Indicator if the node was changed at all
     /// \return Status The status code returned
     Status Visit(std::shared_ptr<MindDataNode> node, bool *const modified) override;
-#endif
 
     /// \brief Getter
     std::vector<std::pair<std::shared_ptr<MappableSourceNode>, std::shared_ptr<DatasetNode>>> cache_pairs() {

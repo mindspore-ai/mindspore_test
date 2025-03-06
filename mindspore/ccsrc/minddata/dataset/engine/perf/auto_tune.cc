@@ -24,10 +24,8 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/datasetops/source/nonmappable_leaf_op.h"
 #include "minddata/dataset/engine/serdes.h"
-#endif
 #include "minddata/dataset/util/task_manager.h"
 
 namespace mindspore {
@@ -78,12 +76,10 @@ Status AutoTune::Main() {
   RETURN_IF_NOT_OK(ATMainLoop(output_intermediate_config));
   RETURN_IF_NOT_OK(profiling_manager_->Stop());
   PostMainLogging();
-#ifndef ENABLE_ANDROID
   if (output_final_config &&
       (SaveAutotuneConfig(autotune_json_filepath_ + "_" + profiling_manager_->GetRankID() + ".json").IsError())) {
     MS_LOG(WARNING) << "Failed to write the final autotune configuration to disk";
   }
-#endif
   return Status::OK();
 }
 
@@ -92,10 +88,8 @@ Status AutoTune::ATMainLoop(bool output_intermediate_config) {
   int loop_cnt = 0;
   Status rc;
   while (!this_thread::is_interrupted() && !(tree_adapter_->tree_->isFinished())) {
-#ifndef ENABLE_ANDROID
     auto last_epoch = cur_epoch_running_;
     auto last_step = cur_step_running_;
-#endif
     RETURN_IF_NOT_OK(UpdateCurrentRunInfo());
     if (!WarmupSkipCheck()) {
       // Warm up complete - AT normally
@@ -111,7 +105,6 @@ Status AutoTune::ATMainLoop(bool output_intermediate_config) {
         RETURN_IF_NOT_OK(profiling_manager_->Stop());
         break;
       }
-#ifndef ENABLE_ANDROID
       if (last_epoch != cur_epoch_running_ || last_step != cur_step_running_) {
         if (output_intermediate_config &&
             (SaveAutotuneConfig(autotune_json_filepath_ + "_" + profiling_manager_->GetRankID() + "_" +
@@ -121,7 +114,6 @@ Status AutoTune::ATMainLoop(bool output_intermediate_config) {
         }
         ++loop_cnt;
       }
-#endif
       if (AT_phase_ == AutoTunePhase::kAutoTuneEnd) {
         MS_LOG(INFO) << "Dataset AutoTune stop, optimization complete.";
         break;
@@ -136,7 +128,6 @@ Status AutoTune::ATMainLoop(bool output_intermediate_config) {
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status AutoTune::SaveAutotuneConfig(const std::string &file_name) {
   Path jsonpath(file_name);
 
@@ -185,7 +176,6 @@ Status AutoTune::SetAutotuneConfigJson() {
   }
   return Status::OK();
 }
-#endif
 
 Status AutoTune::SummarizeTreeConfiguration(std::vector<std::string> *out) {
   constexpr int op_name_width = 20;
@@ -269,7 +259,6 @@ Status AutoTune::GetOpsCpuUtil(std::map<int32_t, double> *ops_cpu_util) {
   for (auto itr = ops_.begin(); itr != ops_.end(); ++itr) {
     std::vector<uint16_t> sys_util;
     std::vector<uint16_t> user_util;
-#ifndef ENABLE_ANDROID
     if (mode_ == AutoTuneMode::kAutoTuneModeEpoch) {
       RETURN_IF_NOT_OK(profiling_manager_->GetSysCpuUtilByEpoch(itr->first, cur_epoch_running_, &sys_util));
       RETURN_IF_NOT_OK(profiling_manager_->GetUserCpuUtilByEpoch(itr->first, cur_epoch_running_, &user_util));
@@ -279,7 +268,6 @@ Status AutoTune::GetOpsCpuUtil(std::map<int32_t, double> *ops_cpu_util) {
       RETURN_IF_NOT_OK(
         profiling_manager_->GetUserCpuUtilByStep(itr->first, last_step_autotuned_, cur_step_running_ - 1, &user_util));
     }
-#endif
     double sys_cpu_util = Mean(sys_util);
     double user_cpu_util = Mean(user_util);
     (*ops_cpu_util)[itr->first] = sys_cpu_util + user_cpu_util;
@@ -589,11 +577,9 @@ bool AutoTune::SkipOpsCheck(int op_id) {
     return true;
   }
   //  NonMappableDataset is not supported in AutoTune
-#ifndef ENABLE_ANDROID
   if (std::dynamic_pointer_cast<NonMappableLeafOp>(ops_[op_id]) != nullptr) {
     return true;
   }
-#endif
   return false;
 }
 

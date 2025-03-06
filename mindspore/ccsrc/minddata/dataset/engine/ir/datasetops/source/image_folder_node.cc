@@ -24,9 +24,7 @@
 #include <vector>
 
 #include "minddata/dataset/engine/datasetops/source/image_folder_op.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/serdes.h"
-#endif
 
 #include "minddata/dataset/util/status.h"
 namespace mindspore {
@@ -171,7 +169,6 @@ Status ImageFolderNode::to_json(nlohmann::json *out_json) {
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status ImageFolderNode::from_json(nlohmann::json json_obj, std::shared_ptr<DatasetNode> *ds) {
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "num_parallel_workers", kImageFolderNode));
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "connector_queue_size", kImageFolderNode));
@@ -201,6 +198,5 @@ Status ImageFolderNode::from_json(nlohmann::json json_obj, std::shared_ptr<Datas
   (void)(*ds)->SetConnectorQueueSize(json_obj["connector_queue_size"]);
   return Status::OK();
 }
-#endif
 }  // namespace dataset
 }  // namespace mindspore

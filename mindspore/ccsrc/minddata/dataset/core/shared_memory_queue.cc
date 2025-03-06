@@ -26,7 +26,7 @@
 
 namespace mindspore {
 namespace dataset {
-#if !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID)
+#if !defined(_WIN32) && !defined(_WIN64)
 SharedMemoryQueue::SharedMemoryQueue(const key_t &key)
     : key_(key), shm_id_(-1), shm_addr_(nullptr), shm_size_(0), release_flag_(true) {}
 

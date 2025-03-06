@@ -15,16 +15,13 @@
  */
 #include "minddata/dataset/kernels/ir/vision/cutmix_batch_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/cutmix_batch_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // CutMixBatchOperation
 CutMixBatchOperation::CutMixBatchOperation(ImageBatchFormat image_batch_format, float alpha, float prob)
     : image_batch_format_(image_batch_format), alpha_(alpha), prob_(prob) {}
@@ -69,7 +66,6 @@ Status CutMixBatchOperation::from_json(nlohmann::json op_params, std::shared_ptr
   *operation = std::make_shared<vision::CutMixBatchOperation>(image_batch, alpha, prob);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

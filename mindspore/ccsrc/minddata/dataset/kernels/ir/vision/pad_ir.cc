@@ -18,10 +18,10 @@
 
 #include <algorithm>
 
-#if !defined(ENABLE_ANDROID) || defined(ENABLE_MINDDATA_PYTHON)
+#if defined(ENABLE_MINDDATA_PYTHON)
 #include "minddata/dataset/kernels/image/pad_op.h"
 #endif
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_pad_op.h"
 #endif
 #include "minddata/dataset/kernels/ir/validators.h"
@@ -30,7 +30,7 @@
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#if !defined(ENABLE_ANDROID) || defined(ENABLE_MINDDATA_PYTHON)
+#if defined(ENABLE_MINDDATA_PYTHON)
 // PadOperation
 PadOperation::PadOperation(const std::vector<int32_t> &padding, const std::vector<uint8_t> &fill_value,
                            BorderType padding_mode, const std::string &device_target)
@@ -103,7 +103,7 @@ std::shared_ptr<TensorOp> PadOperation::Build() {
     std::shared_ptr<PadOp> tensor_op =
       std::make_shared<PadOp>(pad_top, pad_bottom, pad_left, pad_right, padding_mode_, fill_r, fill_g, fill_b);
     return tensor_op;
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_target_ == "Ascend") {
     std::shared_ptr<DvppPadOp> dvpp_tensor_op =
       std::make_shared<DvppPadOp>(pad_top, pad_bottom, pad_left, pad_right, padding_mode_, fill_r, fill_g, fill_b);

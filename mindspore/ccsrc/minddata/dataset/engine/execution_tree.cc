@@ -152,7 +152,7 @@ void ExecutionTree::PrintNode(std::ostream &out, const std::shared_ptr<DatasetOp
 Status ExecutionTree::Launch() {
   uint64_t start_time = GetSyscnt();
   // opencv limit too many threads
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__) && !defined(ENABLE_ANDROID)
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #ifdef WITH_BACKEND
   // Here we do numa bind for performance optimization, as our test result,
   // if we do numa bind when get_dataset_size launch a tree, we'll get a

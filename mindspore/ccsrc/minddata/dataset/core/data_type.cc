@@ -40,7 +40,7 @@ py::dtype DataType::AsNumpyType() const {
 }
 #endif
 
-#if !defined(ENABLE_ANDROID) || defined(ENABLE_MINDDATA_PYTHON)
+#if defined(ENABLE_MINDDATA_PYTHON)
 uint8_t DataType::AsCVType() const {
   uint8_t res = kCVInvalidType;
   if (type_ < DataType::NUM_OF_TYPES) {

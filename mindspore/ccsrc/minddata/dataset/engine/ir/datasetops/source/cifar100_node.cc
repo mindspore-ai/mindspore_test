@@ -22,9 +22,7 @@
 #include <vector>
 
 #include "minddata/dataset/engine/datasetops/source/cifar_op.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/serdes.h"
-#endif
 
 #include "minddata/dataset/util/status.h"
 namespace mindspore {
@@ -124,7 +122,6 @@ Status Cifar100Node::to_json(nlohmann::json *out_json) {
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status Cifar100Node::from_json(nlohmann::json json_obj, std::shared_ptr<DatasetNode> *ds) {
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "num_parallel_workers", kCifar100Node));
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "connector_queue_size", kCifar100Node));
@@ -142,6 +139,5 @@ Status Cifar100Node::from_json(nlohmann::json json_obj, std::shared_ptr<DatasetN
   (void)(*ds)->SetConnectorQueueSize(json_obj["connector_queue_size"]);
   return Status::OK();
 }
-#endif
 }  // namespace dataset
 }  // namespace mindspore

@@ -764,10 +764,10 @@ APP_ERROR DvppAutoContrast(const std::shared_ptr<DeviceTensorAscend910B> &input,
 APP_ERROR GetDVPPConvertMode(ConvertMode convertMode, acldvppConvertMode *dvpp_mode) {
   switch (convertMode) {
     case ConvertMode::COLOR_BGR2BGRA:                   // COLOR_BGR2BGRA=COLOR_RGB2RGBA
-      *dvpp_mode = acldvppConvertMode::COLOR_BGR2BGRA;  // dvpp alpah channel COLOR_BGR2BGRA/COLOR_RGB2RGBA
+      *dvpp_mode = acldvppConvertMode::COLOR_BGR2BGRA;  // dvpp alpha channel COLOR_BGR2BGRA/COLOR_RGB2RGBA
       break;
     case ConvertMode::COLOR_BGRA2BGR:                   // COLOR_BGRA2BGR=COLOR_RGBA2RGB
-      *dvpp_mode = acldvppConvertMode::COLOR_BGRA2BGR;  // dvpp alpah channel COLOR_BGRA2BGR/COLOR_RGBA2RGB
+      *dvpp_mode = acldvppConvertMode::COLOR_BGRA2BGR;  // dvpp alpha channel COLOR_BGRA2BGR/COLOR_RGBA2RGB
       break;
     case ConvertMode::COLOR_BGR2RGBA:                   // COLOR_BGR2RGBA=COLOR_RGB2BGRA
       *dvpp_mode = acldvppConvertMode::COLOR_BGR2RGBA;  // dvpp COLOR_BGR2RGBA/COLOR_RGB2BGRA

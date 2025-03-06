@@ -15,10 +15,11 @@
  */
 
 #include "minddata/dataset/engine/ir/datasetops/source/samplers/prebuilt_sampler_ir.h"
+
+#include <utility>
+
 #include "minddata/dataset/engine/datasetops/source/sampler/sampler.h"
 #include "minddata/dataset/core/config_manager.h"
-
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/util/random.h"
 #include "minddata/mindrecord/include/shard_distributed_sample.h"
 #include "minddata/mindrecord/include/shard_operator.h"
@@ -26,7 +27,6 @@
 #include "minddata/mindrecord/include/shard_sample.h"
 #include "minddata/mindrecord/include/shard_sequential_sample.h"
 #include "minddata/mindrecord/include/shard_shuffle.h"
-#endif
 
 namespace mindspore {
 namespace dataset {
@@ -36,10 +36,8 @@ PreBuiltSamplerObj::PreBuiltSamplerObj(std::shared_ptr<SamplerRT> sampler) : sp_
 // Destructor
 PreBuiltSamplerObj::~PreBuiltSamplerObj() = default;
 
-#ifndef ENABLE_ANDROID
 PreBuiltSamplerObj::PreBuiltSamplerObj(std::shared_ptr<mindrecord::ShardOperator> sampler)
     : sp_minddataset_(std::move(sampler)) {}
-#endif
 
 Status PreBuiltSamplerObj::ValidateParams() { return Status::OK(); }
 
@@ -53,12 +51,9 @@ Status PreBuiltSamplerObj::SamplerBuild(std::shared_ptr<SamplerRT> *const sample
   return s;
 }
 
-#ifndef ENABLE_ANDROID
 std::shared_ptr<mindrecord::ShardOperator> PreBuiltSamplerObj::BuildForMindDataset() { return sp_minddataset_; }
-#endif
 
 std::shared_ptr<SamplerObj> PreBuiltSamplerObj::SamplerCopy() {
-#ifndef ENABLE_ANDROID
   if (sp_minddataset_ != nullptr) {
     auto sampler = std::make_shared<PreBuiltSamplerObj>(sp_minddataset_);
     for (const auto &child : children_) {
@@ -69,7 +64,6 @@ std::shared_ptr<SamplerObj> PreBuiltSamplerObj::SamplerCopy() {
     }
     return sampler;
   }
-#endif
   auto sampler = std::make_shared<PreBuiltSamplerObj>(sp_);
   for (const auto &child : children_) {
     Status rc = sampler->AddChildSampler(child);

@@ -18,16 +18,13 @@
 
 #include <algorithm>
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/random_rotation_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 constexpr size_t dimension_zero = 0;
 constexpr size_t dimension_one = 1;
 constexpr size_t dimension_two = 2;
@@ -139,7 +136,6 @@ Status RandomRotationOperation::from_json(nlohmann::json op_params, std::shared_
   *operation = std::make_shared<vision::RandomRotationOperation>(degrees, resample, expand, center, fill_value);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

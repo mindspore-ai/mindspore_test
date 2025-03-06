@@ -358,7 +358,7 @@ void DvppVideo::ProcessDecodedImage(std::shared_ptr<ImageData> frameData) {
 
   auto ret = FrameImageEnQueue(frameData);
   if (ret != ACLLITE_OK) {
-    MS_LOG(ERROR) << "FrameImageEnQueue faile, errorno: " << ret;
+    MS_LOG(ERROR) << "FrameImageEnQueue failed, errorno: " << ret;
   }
 
   if ((status_ == DecodeStatus::DECODE_FRAME_EXTRACT_FINISHED) && (finFrameCnt_ >= frameId_)) {

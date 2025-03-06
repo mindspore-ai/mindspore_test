@@ -26,7 +26,7 @@
 #include "minddata/dataset/core/tensor_row.h"
 
 #include "minddata/dataset/engine/datasetops/map_op/cpu_map_job.h"
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/core/device_tensor_ascend910b.h"
 #include "minddata/dataset/engine/datasetops/map_op/npu_map_job.h"
 #include "minddata/dataset/kernels/image/image_utils.h"
@@ -36,7 +36,7 @@
 #include "minddata/dataset/util/log_adapter.h"
 #include "minddata/dataset/util/random.h"
 #include "minddata/dataset/util/task_manager.h"
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/acl_adapter.h"
 #include "minddata/dataset/kernels/image/dvpp/utils/ErrorCode.h"
 #endif
@@ -118,14 +118,14 @@ Status MapOp::GenerateWorkerJob(const std::unique_ptr<MapWorkerJob> *worker_job,
   std::shared_ptr<MapJob> map_job = nullptr;
   MapTargetDevice prev_target = MapTargetDevice::kCpu;
   CHECK_FAIL_RETURN_UNEXPECTED(tfuncs_[worker_id].size() > 0, "[Internal ERROR] Map's operations is null.");
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   if (tfuncs_[worker_id][0]->IsDvppOp()) {
     prev_target = MapTargetDevice::kAscend910B;
     map_job = std::make_shared<NpuMapJob>();
   } else {
 #endif
     map_job = std::make_shared<CpuMapJob>();
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   }
 #endif
   RETURN_IF_NOT_OK(map_job->AddOperation(tfuncs_[worker_id][0]));
@@ -140,13 +140,13 @@ Status MapOp::GenerateWorkerJob(const std::unique_ptr<MapWorkerJob> *worker_job,
     if (target_device != prev_target) {
       (*worker_job)->jobs.push_back(std::move(map_job));
       // create a new map_job for different target device operation
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
       if (target_device == MapTargetDevice::kAscend910B) {
         map_job = std::make_shared<NpuMapJob>();
       } else {
 #endif
         map_job = std::make_shared<CpuMapJob>();
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
       }
 #endif
       RETURN_IF_NOT_OK(map_job->AddOperation(tfuncs_[worker_id][j]));
@@ -224,7 +224,7 @@ Status MapOp::operator()() {
   return Status::OK();
 }
 
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 // init Ascend910B resource
 Status MapOp::InitResource(const std::vector<std::vector<std::shared_ptr<TensorOp>>> &tfuncs,
                            device::DeviceContext **device_context, size_t *stream_id) {
@@ -391,7 +391,7 @@ Status MapOp::WorkerEntry(int32_t worker_id) {
     python_multiprocessing_runtime_->set_thread_to_worker(worker_id);
   }
 
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   // init Ascend910B resource
   device::DeviceContext *device_context = nullptr;
   size_t stream_id = 0;
@@ -429,7 +429,7 @@ Status MapOp::WorkerEntry(int32_t worker_id) {
       CHECK_FAIL_RETURN_UNEXPECTED(in_row.size() != 0, "[Internal ERROR] MapOp got an empty TensorRow.");
       TensorRow out_row;
       // Perform the compute function of TensorOp(s) and store the result in new_tensor_table.
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
       RETURN_IF_NOT_OK(WorkerCompute(in_row, &out_row, job_list, device_context, stream_id));
 #else
       RETURN_IF_NOT_OK(WorkerCompute(in_row, &out_row, job_list));
@@ -456,7 +456,7 @@ Status MapOp::WorkerEntry(int32_t worker_id) {
   return Status::OK();
 }
 
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 Status MapOp::WorkerCompute(const TensorRow &in_row, TensorRow *out_row,
                             const std::vector<std::shared_ptr<MapJob>> &job_list, device::DeviceContext *device_context,
                             size_t stream_id) {
@@ -835,7 +835,7 @@ std::vector<int32_t> MapOp::GetMPWorkerPIDs() const {
 }
 
 Status MapOp::GetNextRowPullMode(TensorRow *const row) {
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   // init Ascend910B resource
   device::DeviceContext *device_context = nullptr;
   size_t stream_id = 0;
@@ -867,7 +867,7 @@ Status MapOp::GetNextRowPullMode(TensorRow *const row) {
   }
   // Apply transforms on tensor
   for (auto &t : tfuncs_[0]) {
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
     if (t->IsDvppOp()) {
       RETURN_IF_NOT_OK(ComputeIsDvpp(t, &i_row, &o_row, device_context, stream_id));
     } else {
@@ -877,7 +877,7 @@ Status MapOp::GetNextRowPullMode(TensorRow *const row) {
         std::string op_name = t->Name();
         RETURN_IF_NOT_OK(util::RebuildMapErrorMsg(i_row, op_name, &rc));
       }
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
     }
 #endif
     i_row = std::move(o_row);

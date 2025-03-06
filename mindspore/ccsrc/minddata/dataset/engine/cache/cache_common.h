@@ -79,7 +79,7 @@ inline void Status2CacheReply(const Status &rc, CacheReply *reply) {
 
 /// Return the default cache path for a user
 inline std::string DefaultUserDir() {
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
   char user[LOGIN_NAME_MAX];
   int rc = getlogin_r(user, sizeof(user));
   if (rc == 0) {

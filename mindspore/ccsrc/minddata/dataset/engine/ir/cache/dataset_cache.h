@@ -42,9 +42,7 @@ class DatasetCache {
 
   virtual Status to_json(nlohmann::json *out_json) { return Status::OK(); }
 
-#ifndef ENABLE_ANDROID
   static Status from_json(nlohmann::json json_obj, std::shared_ptr<DatasetCache> *cache);
-#endif
 };
 }  // namespace mindspore::dataset
 #endif  // MINDSPORE_CCSRC_MINDDATA_DATASET_ENGINE_IR_CACHE_DATASET_CACHE_H_

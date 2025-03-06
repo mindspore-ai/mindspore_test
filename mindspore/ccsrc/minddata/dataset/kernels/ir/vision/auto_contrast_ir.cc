@@ -18,10 +18,8 @@
 
 #include <algorithm>
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/auto_contrast_op.h"
-#endif
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_auto_contrast_op.h"
 #endif
 #include "minddata/dataset/kernels/ir/validators.h"
@@ -30,7 +28,6 @@
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // AutoContrastOperation
 AutoContrastOperation::AutoContrastOperation(float cutoff, const std::vector<uint32_t> &ignore,
                                              const std::string &device_target)
@@ -67,7 +64,7 @@ std::shared_ptr<TensorOp> AutoContrastOperation::Build() {
   if (device_target_ == "CPU") {
     std::shared_ptr<AutoContrastOp> tensor_op = std::make_shared<AutoContrastOp>(cutoff_, ignore_);
     return tensor_op;
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_target_ == "Ascend") {
     std::vector<float> dvpp_cutoff = {cutoff_, cutoff_};
     std::shared_ptr<DvppAutoContrastOp> dvpp_tensor_op = std::make_shared<DvppAutoContrastOp>(dvpp_cutoff, ignore_);
@@ -111,7 +108,6 @@ MapTargetDevice AutoContrastOperation::Type() {
   }
   return MapTargetDevice::kInvalid;
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

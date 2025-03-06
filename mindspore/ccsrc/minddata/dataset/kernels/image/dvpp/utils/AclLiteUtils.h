@@ -58,7 +58,7 @@
 #define YUV420SP_SIZE(width, height) ((width) * (height)*3 / 2)
 
 /**
- * @brief calculate YUVSP420 nv12 load to opencv mat height paramter
+ * @brief calculate YUVSP420 nv12 load to opencv mat height parameter
  * @param [in]: height: yuv image height
  * @return bytes size of image
  */
@@ -268,7 +268,7 @@
 #define TIME_HOUR_SHOW(X) cout << "Func " << #X << " cost : " << TIME_HOUR(X) << " h " << endl
 
 /**
- * @brief Recognize the string is a accessable directory or not
+ * @brief Recognize the string is a accessible directory or not
  * @param [in]: path: the input string
  * @return bool  true: is directory; false: not directory
  */
@@ -350,7 +350,7 @@ AclLiteError ReadJpeg(ImageData &image, const std::string &fileName);
 
 /**
  * @brief Get all files from file list string
- * @param [in]: pathList: files list string, seperate by ',',
+ * @param [in]: pathList: files list string, separate by ',',
  *                   the element could be file path or directory
  * @param [in]: fileVec: The data bytes size
  * @return AclLiteError ACLLITE_OK: read success

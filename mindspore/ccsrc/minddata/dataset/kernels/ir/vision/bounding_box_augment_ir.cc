@@ -15,17 +15,14 @@
  */
 #include "minddata/dataset/kernels/ir/vision/bounding_box_augment_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/serdes.h"
 #include "minddata/dataset/kernels/image/bounding_box_augment_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 BoundingBoxAugmentOperation::BoundingBoxAugmentOperation(const std::shared_ptr<TensorOperation> &transform, float ratio)
     : transform_(transform), ratio_(ratio) {}
 
@@ -71,7 +68,6 @@ Status BoundingBoxAugmentOperation::from_json(nlohmann::json op_params, std::sha
   *operation = std::make_shared<vision::BoundingBoxAugmentOperation>(transforms[0], ratio);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

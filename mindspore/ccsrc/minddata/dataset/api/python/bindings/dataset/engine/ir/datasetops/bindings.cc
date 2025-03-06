@@ -41,12 +41,10 @@
 #include "minddata/dataset/engine/ir/datasetops/zip_node.h"
 
 // IR non-leaf nodes - for android
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/ir/datasetops/bucket_batch_by_length_node.h"
 #include "minddata/dataset/engine/ir/datasetops/build_sentence_piece_vocab_node.h"
 #include "minddata/dataset/engine/ir/datasetops/build_vocab_node.h"
 #include "minddata/dataset/engine/ir/datasetops/sync_wait_node.h"
-#endif
 
 namespace mindspore {
 namespace dataset {

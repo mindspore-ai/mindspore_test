@@ -22,8 +22,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
 #include <sys/types.h>
 #include <sys/ipc.h>
 #endif
@@ -37,18 +36,12 @@
 #include "minddata/dataset/kernels/tensor_op.h"
 #include "minddata/dataset/util/queue.h"
 #include "minddata/dataset/util/wait_post.h"
-#ifndef BUILD_LITE
 #include "utils/file_utils.h"
 namespace platform = mindspore;
-#else
-#include "mindspore/lite/src/common/file_utils.h"
-namespace platform = mindspore::lite;
-#endif
 
 namespace mindspore {
 namespace dataset {
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
 extern std::atomic<uint32_t> inc_id;
 Status GetKey(key_t *key);
 #endif

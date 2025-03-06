@@ -25,9 +25,7 @@
 #include "minddata/dataset/engine/ir/datasetops/source/samplers/samplers_ir.h"
 #include "minddata/dataset/engine/ir/datasetops/source/samplers/subset_sampler_ir.h"
 #include "include/api/status.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/mindrecord/include/shard_operator.h"
-#endif
 
 namespace mindspore {
 namespace dataset {
@@ -42,17 +40,13 @@ class SubsetRandomSamplerObj : public SubsetSamplerObj {
 
   Status to_json(nlohmann::json *const out_json) override;
 
-#ifndef ENABLE_ANDROID
   static Status from_json(nlohmann::json json_obj, int64_t num_samples, std::shared_ptr<SamplerObj> *sampler);
-#endif
 
   Status SamplerBuild(std::shared_ptr<SamplerRT> *sampler) override;
 
   std::shared_ptr<SamplerObj> SamplerCopy() override;
 
-#ifndef ENABLE_ANDROID
   std::shared_ptr<mindrecord::ShardOperator> BuildForMindDataset() override;
-#endif
 
  private:
 };
