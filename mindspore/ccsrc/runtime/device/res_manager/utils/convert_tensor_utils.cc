@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "runtime/device/convert_tensor_utils.h"
+#include "runtime/device/res_manager/utils/convert_tensor_utils.h"
 #include <complex>
 #include <vector>
 namespace mindspore {

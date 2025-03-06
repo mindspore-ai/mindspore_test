@@ -19,7 +19,7 @@
 #include <map>
 #include <memory>
 #include "include/backend/visible.h"
-#include "include/backend/device_type.h"
+#include "utils/device_type.h"
 
 constexpr auto kMSHookEnable = "MS_HOOK_ENABLE";
 constexpr auto kEnable = "on";

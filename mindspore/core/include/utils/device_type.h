@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_HARDWARE_DEVICE_TYPE_H_
-#define MINDSPORE_CCSRC_RUNTIME_HARDWARE_DEVICE_TYPE_H_
+#ifndef MINDSPORE_CORE_INCLUDE_UTILS_DEVICE_TYPE_H_
+#define MINDSPORE_CORE_INCLUDE_UTILS_DEVICE_TYPE_H_
 
 #include <string>
 #include <map>
-#include "include/backend/visible.h"
+#include "mindapi/base/macros.h"
 
 namespace mindspore {
 namespace device {
@@ -41,8 +41,8 @@ const std::map<std::string, DeviceType> device_name_to_type_map = {{"Unknown", D
                                                                    {"CPU", DeviceType::kCPU},
                                                                    {"GPU", DeviceType::kGPU}};
 
-BACKEND_EXPORT const std::string &GetDeviceNameByType(const DeviceType &type);
-BACKEND_EXPORT DeviceType GetDeviceTypeByName(const std::string &name);
+MS_CORE_API const std::string &GetDeviceNameByType(const DeviceType &type);
+MS_CORE_API DeviceType GetDeviceTypeByName(const std::string &name);
 }  // namespace device
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_RUNTIME_HARDWARE_DEVICE_TYPE_H_
+#endif  // MINDSPORE_CORE_INCLUDE_UTILS_DEVICE_TYPE_H_

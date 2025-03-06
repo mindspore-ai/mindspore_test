@@ -42,11 +42,10 @@ if(MSLITE_ENABLE_CONVERTER)
                 ${OPS_DIR}/kernel/common/kernel_build_info.cc
                 ${OPS_DIR}/kernel/common/oplib/oplib.cc
                 ${CCSRC_DIR}/runtime/device/kernel_info.cc
+                ${CCSRC_DIR}/runtime/device/res_manager/utils/convert_tensor_utils.cc
                 ${CCSRC_DIR}/utils/ms_device_shape_transfer.cc
-                ${CCSRC_DIR}/runtime/hardware/device_type.cc
                 ${CCSRC_DIR}/runtime/device/kernel_runtime_manager.cc
                 ${CCSRC_DIR}/runtime/hardware/device_context_manager.cc
-                ${CCSRC_DIR}/runtime/device/convert_tensor_utils.cc
                 ${CCSRC_DIR}/common/runtime_conf/runtime_conf.cc
                 ${CCSRC_DIR}/utils/comm_manager.cc
                 ${CCSRC_DIR}/backend/common/session/exec_order_builder.cc

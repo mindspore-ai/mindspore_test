@@ -13,27 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSR_RUNTIME_DEVICE_RES_MANAGER_UTILS_UTILS_H_
-#define MINDSPORE_CCSR_RUNTIME_DEVICE_RES_MANAGER_UTILS_UTILS_H_
+#ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_RES_MANAGER_UTILS_UTILS_H_
+#define MINDSPORE_CCSRC_RUNTIME_DEVICE_RES_MANAGER_UTILS_UTILS_H_
 
 #include <string>
 #include <vector>
+#include "utils/device_type.h"
 #include "runtime/device/res_manager/utils/visible.h"
+#include "ir/tensor.h"
 
 namespace mindspore {
 namespace device {
-
-enum class DeviceTargetType { kUnknown = 0, kCPU = 1, kAscend = 2, kGPU = 3 };
-RES_EXPORT std::string DeviceTypeToString(const DeviceTargetType &target);
-RES_EXPORT DeviceTargetType DeviceStringToType(const std::string &device_name);
-
 struct ResKey {
-  DeviceTargetType device_name_;
+  DeviceType device_name_;
   uint32_t device_id_{0};
-  std::string ToString() const { return DeviceTypeToString(device_name_) + "_" + std::to_string(device_id_); }
+  std::string ToString() const { return GetDeviceNameByType(device_name_) + "_" + std::to_string(device_id_); }
 
-  std::string DeviceName() const { return DeviceTypeToString(device_name_); }
+  std::string DeviceName() const { return GetDeviceNameByType(device_name_); }
 };
 }  // namespace device
 }  // namespace mindspore
-#endif
+#endif  // MINDSPORE_CCSRC_RUNTIME_DEVICE_RES_MANAGER_UTILS_UTILS_H_

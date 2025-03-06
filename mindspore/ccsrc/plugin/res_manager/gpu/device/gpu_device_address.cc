@@ -97,7 +97,7 @@ bool GPUDeviceAddress::SyncHostToDevice(size_t size, const void *host_ptr) const
   if (!device_name().empty()) {
     auto ms_context = MsContext::GetInstance();
     auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    auto gpu_res_manager = HalResManager::GetInstance().GetOrCreateResManager({DeviceTargetType::kGPU, device_id});
+    auto gpu_res_manager = HalResManager::GetInstance().GetOrCreateResManager({DeviceType::kGPU, device_id});
     MS_EXCEPTION_IF_NULL(gpu_res_manager);
     if (!gpu_res_manager->BindDeviceToCurrentThread(false)) {
       MS_LOG(EXCEPTION) << "BindDeviceToCurrentThread failed.";

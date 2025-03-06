@@ -24,7 +24,7 @@
 #include <unordered_map>
 #include <utility>
 #include <unordered_set>
-#include "include/backend/device_type.h"
+#include "utils/device_type.h"
 #include "include/backend/device_address.h"
 #include "runtime/device/gsm/swap_manager.h"
 #include "runtime/collective/collective_communication_lib.h"
@@ -260,10 +260,6 @@ class BACKEND_EXPORT DeviceResManager {
   virtual DeviceAddressPtr CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
-  virtual void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor, const std::string &to,
-                      bool blocking, bool *return_self) {
-    MS_LOG(EXCEPTION) << "Unimplemented interface.";
-  }
 
   virtual DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
                                                const Format &format, TypeId type_id, const std::string &device_name,
@@ -497,11 +493,7 @@ class BACKEND_EXPORT KernelExecutor {
                             KernelMod *kernel_mod, void *stream) const {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
-  // Launch callback.
-  virtual bool LaunchCallback(std::function<void(void)> callback_func, size_t stream_id, bool is_block = false) const {
-    callback_func();
-    return true;
-  };
+
   // Unify the MindIR, the default behavior uses the common unified MindIR.
   virtual void UnifyMindIR(const KernelGraphPtr &graph) const;
   virtual void AddMindIRPass(const KernelGraphPtr &graph) const {}

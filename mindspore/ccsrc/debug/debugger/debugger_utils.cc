@@ -38,6 +38,7 @@
 #include "include/common/utils/config_manager.h"
 #include "common/kernel.h"
 #include "proto/debug_graph.pb.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 constexpr int kFailure = 1;
 constexpr int kQint4ShapeModify = 2;
@@ -550,7 +551,14 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
     }
   };
 
-  auto callback_ret = device_context->GetKernelExecutor(false)->LaunchCallback(callback_func, stream_id, true);
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  auto callback_ret = res_manager->LaunchCallback(callback_func, stream_id, true);
   if (!callback_ret) {
     MS_LOG(ERROR) << "Async dump callback launch fail.";
   }
@@ -757,7 +765,15 @@ void LaunchDeviceStatCallback(std::vector<TensorInfoForDump> *tensor_info_vec_pt
       Write2File(tensor_info, stream_id, tensor_info_comm);
     }
   };
-  auto callback_ret = device_context->GetKernelExecutor(false)->LaunchCallback(callback_func, stream_id);
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  auto callback_ret = res_manager->LaunchCallback(callback_func, stream_id);
   if (!callback_ret) {
     MS_LOG(ERROR) << "Async device statistic dump callback launch fail.";
   }

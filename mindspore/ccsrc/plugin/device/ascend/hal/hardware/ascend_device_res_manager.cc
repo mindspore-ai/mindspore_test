@@ -52,7 +52,7 @@ void AscendDeviceResManager::Initialize() {
   if (!runtime_instance_->Init()) {
     MS_LOG(EXCEPTION) << "Kernel runtime init error.";
   }
-  ResKey res_key{DeviceTargetType::kAscend, device_id};
+  ResKey res_key{DeviceType::kAscend, device_id};
   ascend_res_manager_ = dynamic_cast<AscendResManager *>(HalResManager::GetInstance().GetOrCreateResManager(res_key));
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
   ascend_res_manager_->Initialize();
@@ -431,12 +431,6 @@ DeviceEventPtr AscendDeviceResManager::CreateEventWithFlag(bool enable_timing, b
                                                            bool use_extensional_api) {
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
   return ascend_res_manager_->CreateEventWithFlag(enable_timing, blocking, use_extensional_api);
-}
-
-void AscendDeviceResManager::MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor,
-                                    const std::string &to, bool blocking, bool *return_self) {
-  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
-  return ascend_res_manager_->MoveTo(src_tensor, dst_tensor, to, blocking, return_self);
 }
 
 bool AscendDeviceResManager::GetMemUceInfo(int32_t device_id) {

@@ -22,6 +22,7 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/ms_context.h"
 #include "utils/llm_manager.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
 namespace runtime {
@@ -242,13 +243,15 @@ void AddCopyDataCallBack(const std::vector<TensorDataPtr> &tensor_data_in_callba
   device::CallbackFunc callback_func = [tensor_data_in_callback, device_tensor_in_callback]() {
     // Clear buffer automatically.
   };
-  const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  auto device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  device::DeviceContextKey device_key = {device_name, device_id};
-  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(device_key);
-  MS_EXCEPTION_IF_NULL(device_context);
-  device_context->device_res_manager_->BindDeviceToCurrentThread(false);
-  auto callback_ret = device_context->GetKernelExecutor(false)->LaunchCallback(callback_func, kDefaultStreamIndex);
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  auto callback_ret = res_manager->LaunchCallback(callback_func, kDefaultStreamIndex);
   if (!callback_ret) {
     MS_LOG(EXCEPTION) << "Async Copy memory launch callback failed";
   }

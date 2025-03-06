@@ -41,8 +41,6 @@
 #include "utils/file_utils.h"
 #include "utils/distributed_meta.h"
 #include "graph/def_types.h"
-#include "runtime/device/move_to.h"
-#include "runtime/device/tensor_array.h"
 #include "acl/acl_rt.h"
 #include "plugin/res_manager/ascend/collective/ccool_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
@@ -54,6 +52,7 @@
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "common/kernel_callback.h"
+#include "runtime/device/tensor_array.h"
 
 namespace mindspore {
 namespace device {
@@ -120,6 +119,12 @@ Format GetFormat(const tensor::TensorPtr &tensor) {
     }
   }
   return format;
+}
+
+void AclrtLaunchCallback(void *user_data) {
+  CallbackFunc *callback_func = reinterpret_cast<CallbackFunc *>(user_data);
+  (*callback_func)();
+  delete callback_func;
 }
 }  // namespace
 
@@ -799,11 +804,6 @@ DeviceEventPtr AscendResManager::CreateEventWithFlag(bool enable_timing, bool bl
   return event;
 }
 
-void AscendResManager::MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor,
-                              const std::string &to, bool blocking, bool *return_self) {
-  device::MoveTo(src_tensor, dst_tensor, to, blocking, return_self);
-}
-
 bool AscendResManager::GetMemUceInfo(int32_t device_id) {
   aclrtMemUceInfo info[MAX_MEM_UCE_INFO_ARRAY_SIZE];
   size_t retSize = 0;
@@ -896,7 +896,38 @@ bool AscendResManager::WaitEvent(int64_t task_id_on_stream, uint32_t user_stream
 
 bool AscendResManager::SyncAllEvents() { return mem_manager_->SyncAllEvents(); }
 
-MS_REGISTER_HAL_RES_MANAGER(kAscendDevice, DeviceTargetType::kAscend, AscendResManager);
+bool AscendResManager::LaunchCallback(std::function<void(void)> callback_func, size_t stream_id, bool is_block) const {
+  auto stream = AscendStreamMng::GetInstance().GetStream(stream_id);
+  if (stream == nullptr) {
+    stream = AscendStreamMng::GetInstance().default_stream();
+  }
+  MS_EXCEPTION_IF_NULL(stream);
+  auto block_type =
+    is_block ? aclrtCallbackBlockType::ACL_CALLBACK_BLOCK : aclrtCallbackBlockType::ACL_CALLBACK_NO_BLOCK;
+  auto callback_func_ptr = new CallbackFunc(callback_func);
+  aclError ret = CALL_ASCEND_API(aclrtLaunchCallback, AclrtLaunchCallback, callback_func_ptr, block_type, stream);
+  MS_LOG(DEBUG) << "Launch callback for stream_id : " << stream_id << ", ret : " << ret << ".";
+  if (ret) {
+    delete callback_func_ptr;
+    MS_LOG(ERROR) << "Launch callback for stream_id : " << stream_id << " failed, ret : " << ret << ".";
+    if (SyncStream(stream_id)) {
+      callback_func();
+      return true;
+    }
+
+    // ResetStreamAndCtx
+    AscendStreamMng::GetInstance().DestroyAllStreams();
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    AscendHalManager::GetInstance().ResetContext(device_id);
+    AscendStreamMng::GetInstance().CreateDefaultStream();
+    return false;
+  }
+  return true;
+}
+
+MS_REGISTER_HAL_RES_MANAGER(kAscendDevice, DeviceType::kAscend, AscendResManager);
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore

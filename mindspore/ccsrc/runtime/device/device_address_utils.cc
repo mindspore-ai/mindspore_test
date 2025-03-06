@@ -39,7 +39,7 @@
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "include/backend/device_type.h"
+#include "utils/device_type.h"
 #endif
 #include "runtime/pipeline/pipeline.h"
 

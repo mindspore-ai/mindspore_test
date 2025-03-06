@@ -26,7 +26,7 @@ HalResManager &HalResManager::GetInstance() {
   return instance;
 }
 
-void HalResManager::Register(const DeviceTargetType device, HalResManagerCreator &&hal_res_manager_creator) {
+void HalResManager::Register(const DeviceType device, HalResManagerCreator &&hal_res_manager_creator) {
   if (hal_res_manager_creators_.find(device) == hal_res_manager_creators_.end()) {
     (void)hal_res_manager_creators_.emplace(device, hal_res_manager_creator);
   }
@@ -67,7 +67,7 @@ MultiStreamControllerPtr &HalResManager::GetMultiStreamController(const std::str
   MS_LOG(WARNING) << "Found multi stream controller failed, and try to initialize, device_name : " << device_name
                   << ".";
   auto device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto res_key = ResKey{DeviceStringToType(device_name), device_id};
+  auto res_key = ResKey{GetDeviceTypeByName(device_name), device_id};
   auto hal_res_base = GetOrCreateResManager(res_key);
   MS_EXCEPTION_IF_NULL(hal_res_base);
   auto &&iter_again = multi_stream_controllers_.find(device_name);

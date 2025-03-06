@@ -191,7 +191,7 @@ void FillUserData(const UserDataPtr &user_data, DeviceAddress *device_address) {
 DeviceAddressPtr CPUResManager::CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const {
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   if (kernel_tensor->device_name().empty()) {
-    kernel_tensor->set_device_name(DeviceTypeToString(res_key_.device_name_));
+    kernel_tensor->set_device_name(GetDeviceNameByType(res_key_.device_name_));
     kernel_tensor->set_device_id(res_key_.device_id_);
   }
   auto device_address = std::make_shared<CPUDeviceAddress>(kernel_tensor);
@@ -203,11 +203,6 @@ DeviceAddressPtr CPUResManager::CreateDeviceAddress(const KernelTensorPtr &kerne
   }
   device_address->set_device_synchronizer(std::make_shared<CPUDeviceSynchronizer>());
   return device_address;
-}
-
-void CPUResManager::MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor,
-                           const std::string &to, bool blocking, bool *return_self) {
-  device::MoveTo(src_tensor, dst_tensor, to, blocking, return_self);
 }
 
 DeviceAddressPtr CPUResManager::CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
@@ -242,7 +237,7 @@ bool CPUResManager::LoadCollectiveCommLib() {
   return true;
 }
 
-MS_REGISTER_HAL_RES_MANAGER(kCPUDevice, DeviceTargetType::kCPU, CPUResManager);
+MS_REGISTER_HAL_RES_MANAGER(kCPUDevice, DeviceType::kCPU, CPUResManager);
 }  // namespace cpu
 }  // namespace device
 }  // namespace mindspore

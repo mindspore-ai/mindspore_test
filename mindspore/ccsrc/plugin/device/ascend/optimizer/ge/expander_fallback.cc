@@ -19,7 +19,7 @@
 #include "backend/common/expander/fallback/expander_fallback.h"
 #include "backend/ge_backend/graph_ir/utils.h"
 #include "backend/common/pass/value_graph_binder.h"
-#include "include/backend/device_type.h"
+#include "utils/device_type.h"
 #include "include/backend/kernel_graph.h"
 #include "kernel/ascend/opapi/aclnn_kernel_build.h"
 

@@ -32,7 +32,7 @@ void *AclAllocator::AllocFunc(void *obj, size_t size) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto ascend_res_manager = HalResManager::GetInstance().GetOrCreateResManager({DeviceTargetType::kAscend, device_id});
+  auto ascend_res_manager = HalResManager::GetInstance().GetOrCreateResManager({DeviceType::kAscend, device_id});
   MS_EXCEPTION_IF_NULL(ascend_res_manager);
   auto block = ascend_res_manager->AllocateMemory(size, stream_id);
   if (block == nullptr) {
@@ -56,7 +56,7 @@ void AclAllocator::FreeFunc(void *obj, void *block) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto ascend_res_manager = HalResManager::GetInstance().GetOrCreateResManager({DeviceTargetType::kAscend, device_id});
+  auto ascend_res_manager = HalResManager::GetInstance().GetOrCreateResManager({DeviceType::kAscend, device_id});
   MS_EXCEPTION_IF_NULL(ascend_res_manager);
   ascend_res_manager->FreeMemory(block);
 }

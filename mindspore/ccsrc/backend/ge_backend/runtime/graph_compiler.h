@@ -32,7 +32,7 @@
 #include "ir/tensor.h"
 #include "include/backend/visible.h"
 #include "kernel/framework_utils.h"
-#include "include/backend/device_type.h"
+#include "utils/device_type.h"
 
 namespace mindspore {
 namespace ge_backend {

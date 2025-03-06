@@ -17,7 +17,7 @@
 #include <memory>
 #include <algorithm>
 #include "runtime/device/move_to.h"
-#include "include/backend/device_type.h"
+#include "utils/device_type.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "runtime/hardware/device_context_manager.h"
 

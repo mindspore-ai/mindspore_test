@@ -27,7 +27,7 @@
 #include "abstract/utils.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
-#include "runtime/device/convert_tensor_utils.h"
+#include "runtime/device/res_manager/utils/convert_tensor_utils.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
@@ -220,9 +220,15 @@ void AscendDeviceAddress::SyncHostMemoryToDeviceWithCopySrc(void *dst, const voi
     // Clear buffer automatically.
     MS_LOG(DEBUG) << "callback_func exec, buffer cnt:" << buffer.use_count();
   };
-  auto device_context = GetDeviceContext();
-  MS_EXCEPTION_IF_NULL(device_context);
-  auto callback_ret = device_context->GetKernelExecutor(false)->LaunchCallback(callback_func, this->stream_id());
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  ResKey res_key{GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  auto callback_ret = res_manager->LaunchCallback(callback_func, this->stream_id());
   if (!callback_ret) {
     MS_LOG(EXCEPTION) << "LaunchCallback failed";
   }
@@ -265,9 +271,15 @@ void AscendDeviceAddress::SyncHostMemoryToDeviceWithTensorData(void *dst, const 
     // Clear tensor_data automatically.
     MS_LOG(DEBUG) << "callback_func exec, tensor_data cnt:" << tensor_data.use_count();
   };
-  auto device_context = GetDeviceContext();
-  MS_EXCEPTION_IF_NULL(device_context);
-  auto callback_ret = device_context->GetKernelExecutor(false)->LaunchCallback(callback_func, this->stream_id());
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  ResKey res_key{GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  auto callback_ret = res_manager->LaunchCallback(callback_func, this->stream_id());
   if (!callback_ret) {
     MS_LOG(EXCEPTION) << "LaunchCallback failed";
   }
@@ -370,7 +382,7 @@ void AscendDeviceAddress::BindDevice() const {
   // Bind device by device name and device id on the current thread.
   if (!device_name().empty()) {
     auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    ResKey res_key{DeviceTargetType::kAscend, device_id};
+    ResKey res_key{DeviceType::kAscend, device_id};
     auto ascend_res_manager = HalResManager::GetInstance().GetOrCreateResManager(res_key);
     MS_EXCEPTION_IF_NULL(ascend_res_manager);
     if (!ascend_res_manager->BindDeviceToCurrentThread(false)) {

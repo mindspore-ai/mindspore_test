@@ -21,7 +21,7 @@
 #include <string>
 #include <memory>
 #include <vector>
-#include "include/backend/device_type.h"
+#include "utils/device_type.h"
 #include "utils/log_adapter.h"
 #include "include/backend/visible.h"
 

@@ -43,7 +43,7 @@
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "runtime/device/convert_tensor_utils.h"
+#include "runtime/device/res_manager/utils/convert_tensor_utils.h"
 #include "utils/trace_base.h"
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"
