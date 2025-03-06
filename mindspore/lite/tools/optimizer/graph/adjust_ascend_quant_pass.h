@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_LITE_TOOLS_OPTIMIZER_GRAPH_ADJUST_QUANT_MATMUL_H
-#define MINDSPORE_LITE_TOOLS_OPTIMIZER_GRAPH_ADJUST_QUANT_MATMUL_H
+#ifndef MINDSPORE_LITE_TOOLS_OPTIMIZER_GRAPH_ADJUST_ASCEND_QUANT_H
+#define MINDSPORE_LITE_TOOLS_OPTIMIZER_GRAPH_ADJUST_ASCEND_QUANT_H
 
 #include "include/backend/optimizer/pass.h"
 
 namespace mindspore {
 namespace opt {
-class AdjustQuantMatmulPass : public Pass {
+class AdjustAscendQunatPass : public Pass {
  public:
-  AdjustQuantMatmulPass() : Pass("AdjustQuantMatmulPass") {}
-  ~AdjustQuantMatmulPass() override = default;
+  AdjustAscendQunatPass() : Pass("AdjustAscendQunatPass") {}
+  ~AdjustAscendQunatPass() override = default;
   bool Run(const FuncGraphPtr &func_graph) override;
 };
 }  // namespace opt
 }  // namespace mindspore
 
-#endif  // MINDSPORE_LITE_TOOLS_OPTIMIZER_GRAPH_ADJUST_QUANT_MATMUL_H
+#endif  // MINDSPORE_LITE_TOOLS_OPTIMIZER_GRAPH_ADJUST_ASCEND_QUANT_H

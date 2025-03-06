@@ -150,7 +150,7 @@
 #include "tools/optimizer/fusion/adjust_resize_dims_pass.h"
 #include "tools/optimizer/fusion/gnsnz_pass.h"
 #include "tools/optimizer/fusion/gnbmm_pass.h"
-#include "tools/optimizer/graph/adjust_quant_matmul_pass.h"
+#include "tools/optimizer/graph/adjust_ascend_quant_pass.h"
 #include "tools/converter/converter_funcgraph.h"
 #include "tools/optimizer/graph/add_variable_node_pass.h"
 #include "tools/optimizer/fusion/adjust_col2im_pass.h"
@@ -844,8 +844,8 @@ bool AnfTransform::StoreBuiltinPass(const std::shared_ptr<ConverterPara> &param)
     {"GNBMMPass", std::make_shared<opt::GNBMMPass>(), false},
     {"FuseAddAndLayernorm", std::make_shared<opt::FuseAddAndLayernorm>(), false},
     {"AdjustMatmulPass", std::make_shared<opt::AdjustMatmulPass>(), false},
-    {"AdjustQuantMatmulPass", std::make_shared<opt::AdjustQuantMatmulPass>(), false},
-    {"AdjustCol2imPass", std::make_shared<opt::AdjustCol2imPass>(), false}};
+    {"AdjustCol2imPass", std::make_shared<opt::AdjustCol2imPass>(), false},
+    {"AdjustAscendQunatPass", std::make_shared<opt::AdjustAscendQunatPass>(), false}};
   for (const auto &pass_info : pass_infos) {
     MS_CHECK_TRUE_RET(std::get<1>(pass_info) != nullptr, false);
     PassStorage::StorePass(std::get<0>(pass_info), std::get<1>(pass_info), std::get<opt::kInputIndexTwo>(pass_info));

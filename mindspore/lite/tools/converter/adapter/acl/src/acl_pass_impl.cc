@@ -52,7 +52,7 @@
 #include "tools/optimizer/common/pass_manager_extends.h"
 #include "tools/optimizer/graph/clip_convert_activation_pass.h"
 #include "tools/optimizer/fusion/adjust_matmul_pass.h"
-#include "tools/optimizer/graph/adjust_quant_matmul_pass.h"
+#include "tools/optimizer/graph/adjust_ascend_quant_pass.h"
 #include "tools/optimizer/graph/remove_load_pass.h"
 #include "tools/optimizer/fusion/transpose_fusion.h"
 #include "tools/optimizer/fusion/batchnorm_to_scale_fusion.h"
@@ -99,7 +99,7 @@ constexpr auto kConstFoldPass = "ConstFoldPass";
 constexpr auto kAdjustCol2imPass = "AdjustCol2imPass";
 constexpr auto kRemoveRedundantOpPass = "RemoveRedundantOpPass";
 constexpr auto kAdjustMatmulPass = "AdjustMatmulPass";
-constexpr auto kAdjustQuantMatmulPass = "AdjustQuantMatmulPass";
+constexpr auto kAdjustAscendQunatPass = "AdjustAscendQunatPass";
 constexpr auto kDelRedundantTranspose = "DeleteRedundantTranspose";
 constexpr auto kRemoveUnusedAddNodePass = "RemoveUnusedAddNodePass";
 constexpr auto kAdjustResizeDimsPass = "AdjustResizeDimsPass";
@@ -650,7 +650,7 @@ STATUS AclPassImpl::RunLiteInnerPass(const FuncGraphPtr &func_graph) {
     }
   }
   MS_LOG(INFO) << "Insert AscendQuant node before matmul input.";
-  MS_CHECK_TRUE_MSG(lite::RunOptimizerPass(func_graph, {kAdjustQuantMatmulPass}), lite::RET_ERROR,
+  MS_CHECK_TRUE_MSG(lite::RunOptimizerPass(func_graph, {kAdjustAscendQunatPass}), lite::RET_ERROR,
                     "Insert AscendQuant node before matmul input failed!");
   if (find(plugin_custom_ops.begin(), plugin_custom_ops.end(), "FFN") != plugin_custom_ops.end()) {
     MS_LOG(INFO) << "using FFN";

@@ -17,6 +17,7 @@
 #ifndef MINDSPORE_LITE_TOOLS_CONVERTER_ADAPTER_ACL_MAPPER_CONV2D_FUSION_MAPPER_H_
 #define MINDSPORE_LITE_TOOLS_CONVERTER_ADAPTER_ACL_MAPPER_CONV2D_FUSION_MAPPER_H_
 
+#include <memory>
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
 #include "tools/converter/adapter/acl/mapper/conv_base_mapper.h"
 #include "infer/cxx_api/conv2d_fusion.h"
@@ -31,6 +32,12 @@ class Conv2DFusionMapper : public ConvBaseMapper {
   ~Conv2DFusionMapper() override = default;
 
   STATUS Mapper(const CNodePtr &cnode) override;
+
+ private:
+  std::shared_ptr<CNode> CreateTransQuantParamV2(const FuncGraphPtr &func_graph, const CNodePtr &cnode);
+  CNodePtr InsertAdd(const FuncGraphPtr &func_graph, const CNodePtr &qaunt_conv_cnode, const AnfNodePtr &bias);
+  int ReplaceConvToQuantConv(const FuncGraphPtr &func_graph, const CNodePtr &mm_cnode);
+  int QuantConvMapper(const CNodePtr &cnode);
 };
 }  // namespace lite
 }  // namespace mindspore
