@@ -70,7 +70,7 @@
 #include "plugin/device/gpu/hal/device/gpu_kernel_build.h"
 #include "plugin/device/gpu/hal/device/gpu_kernel_runtime.h"
 #include "plugin/device/gpu/hal/device/gpu_stream_assign.h"
-#include "plugin/res_manager/gpu/device/kernel_info_setter.h"
+#include "plugin/device/gpu/hal/device/kernel_info_setter.h"
 #include "runtime/device/kernel_runtime_manager.h"
 #include "plugin/res_manager/gpu/device/cuda_driver.h"
 #include "include/backend/distributed/init.h"

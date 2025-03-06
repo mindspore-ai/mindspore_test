@@ -22,7 +22,6 @@
 #include "plugin/res_manager/gpu/device/gpu_memory_manager.h"
 #include "plugin/res_manager/gpu/device_context_conf/op_precision_conf.h"
 #include "plugin/res_manager/gpu/device_context_conf/op_tuning_conf.h"
-#include "plugin/res_manager/gpu/device/kernel_info_setter.h"
 #include "plugin/res_manager/gpu/device/gpu_device_manager.h"
 #include "plugin/res_manager/gpu/device/gpu_pin_mem_pool.h"
 #include "plugin/res_manager/gpu/device/gpu_device_address.h"

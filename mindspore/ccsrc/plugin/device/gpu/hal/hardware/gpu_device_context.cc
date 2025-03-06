@@ -24,7 +24,7 @@
 #include <unordered_set>
 #include "plugin/res_manager/gpu/device_context_conf/op_precision_conf.h"
 #include "plugin/res_manager/gpu/device_context_conf/op_tuning_conf.h"
-#include "plugin/res_manager/gpu/device/kernel_info_setter.h"
+#include "plugin/device/gpu/hal/device/kernel_info_setter.h"
 #include "plugin/device/gpu/hal/device/gpu_kernel_build.h"
 #include "plugin/res_manager/gpu/device/gpu_device_synchronizer.h"
 #include "plugin/res_manager/gpu/device/gpu_memory_manager.h"

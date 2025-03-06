@@ -30,7 +30,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "ir/primitive.h"
 #include "include/common/utils/utils.h"
-#include "plugin/res_manager/gpu/device/kernel_info_setter.h"
+#include "plugin/device/gpu/hal/device/kernel_info_setter.h"
 #include "include/backend/optimizer/helper.h"
 #ifndef _WIN32
 #include "kernel/gpu/nccl/nccl_gpu_kernel.h"
