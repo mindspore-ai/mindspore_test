@@ -858,6 +858,8 @@ class _Context:
                                 (ms_ctx_param.compute_communicate_fusion_level, int),
                             "enable_flash_attention_load_balance":
                                 (ms_ctx_param.enable_flash_attention_load_balance, bool),
+                            "pp_1f1b_overlap":
+                                (ms_ctx_param.pp_1f1b_overlap, str),
                             "dataset_broadcast_opt_level":
                                 (ms_ctx_param.dataset_broadcast_opt_level, int)}
             with open(speedup_config_real_path, 'r') as f:
@@ -871,6 +873,10 @@ class _Context:
                     if not isinstance(value, valid_type):
                         raise TypeError(f"The value type of {key} must be {valid_type}, "
                                         f"but got value is {value} and type is {type(value)}.")
+                    if key == "pp_1f1b_overlap":
+                        values = value.split(",")
+                        if not set(values).issubset(set(["AlltoAll", "AlltoAllV"])):
+                            raise ValueError("{} 's value should be one of ['AlltoAll'].".format(key))
                     self.set_param(set_func, value)
         except (TypeError, ValueError) as exo:
             raise ValueError(str(exo) + "\nFor 'context.set_context', "

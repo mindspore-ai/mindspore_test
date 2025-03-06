@@ -95,7 +95,17 @@ constexpr auto kPrimalAttrUniqueId = "unique_id";
 constexpr auto kPrimalAttrForwardUniqueId = "forward_unique_id";
 constexpr auto kPrimalAttrForwardCommNodeUniqueId = "forward_comm_node_unique_id";
 constexpr auto kPrimalAttrMirrorUserId = "mirror_user_id";
-
+constexpr auto kCNodeAttr1f1bIndexBp = "1f1b_index_bp";
+constexpr auto kCNodeAttr1f1bIndexFp = "1f1b_index_fp";
+constexpr auto kCNodeAttr1f1bIndexRecv = "1f1b_index_recv";
+constexpr auto kCNodeAttr1f1bIndexInterRecv = "1f1b_index_inter_recv";
+constexpr auto kCNodeAttr1f1bIndexBpBegin = "1f1b_index_bp_begin";
+constexpr auto kCNodeAttr1f1bLastCNode = "1f1b_last_cnode";
+constexpr auto kCNodeAttr1f1bMiddleCNode = "1f1b_middle_cnode";
+constexpr auto kCNodeAttrForwardAll2AllInput = "forward_all2all_input";
+constexpr auto kCNodeAttrForwardAll2AllOutput = "forward_all2all_output";
+constexpr auto kCNodeAttrBackwardAll2AllInput = "backward_all2all_input";
+constexpr auto kCNodeAttrBackwardAll2AllOutput = "backward_all2all_output";
 // attr value
 constexpr auto kValueTargetSwitch = "target_switch";
 constexpr auto kValueTargetOther = "target_other";
@@ -302,6 +312,10 @@ constexpr auto kNcclWorldGroup = "nccl_world_group";
 constexpr auto kHcclWorldGroup = "hccl_world_group";
 constexpr auto kSyncBnGroup = "sync_bn_group";
 constexpr auto kRankID = "RANK_ID";
+constexpr auto kIsBp = "is_bp";
+constexpr auto kSeqChunk = "seq_chunk";
+constexpr auto kChunk = "chunk";
+constexpr auto kMicro = "micro";
 
 // User data key.
 

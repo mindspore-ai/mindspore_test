@@ -3643,7 +3643,7 @@ void UpdateConditionNodePair(const KernelGraphPtr &kernel_graph, const KernelGra
 }  // namespace
 
 AnfNodePtr KernelGraphMgr::DoInline(const FuncGraphPtr &func_graph, const FuncGraphPtr &target_func_graph,
-                                    const AnfNodePtrList &func_graph_args, const ScopePtr &scope,
+                                    const AnfNodePtrList &func_graph_args, const CNodePtr &call_node,
                                     const uint32_t &target_graph_id,
                                     const std::map<session::AnfWithOutIndex, session::AnfWithOutIndex> &ref_map,
                                     const KernelGraphPtr &graph, bool is_switch_inline) {
@@ -3655,6 +3655,9 @@ AnfNodePtr KernelGraphMgr::DoInline(const FuncGraphPtr &func_graph, const FuncGr
     target_kernel_graph = target_func_graph->cast<KernelGraphPtr>();
   }
   Cloner cloner({}, false);
+  MS_EXCEPTION_IF_NULL(call_node);
+  MS_EXCEPTION_IF_NULL(call_node->input(0));
+  auto scope = call_node->input(0)->scope();
   if (scope != nullptr) {
     cloner.set_scope(scope);
   }
@@ -3680,6 +3683,7 @@ AnfNodePtr KernelGraphMgr::DoInline(const FuncGraphPtr &func_graph, const FuncGr
       auto prim = common::AnfAlgo::GetCNodePrimitive(new_cnode);
       new_cnode->set_input(0, NewValueNode(std::make_shared<Primitive>(prim->name())));
       common::AnfAlgo::CopyNodeAttrs(ori_node, new_cnode);
+      new_cnode->set_attrs(call_node->attrs());
     }
     // Add sub graph kernel for switch inline kernel graph.
     if (new_node->isa<CNode>() && target_kernel_graph != nullptr && is_switch_inline) {

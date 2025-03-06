@@ -101,7 +101,7 @@ class BACKEND_EXPORT KernelGraphMgr {
   void CacheKernelGraph(const std::vector<KernelGraphPtr> &kgs);
   // do inline
   static AnfNodePtr DoInline(const FuncGraphPtr &func_graph, const FuncGraphPtr &target_func_graph,
-                             const AnfNodePtrList &func_graph_args, const ScopePtr &scope,
+                             const AnfNodePtrList &func_graph_args, const CNodePtr &call_node,
                              const uint32_t &target_graph_id,
                              const std::map<session::AnfWithOutIndex, session::AnfWithOutIndex> &ref_map,
                              const KernelGraphPtr &graph, bool is_switch_inline);
