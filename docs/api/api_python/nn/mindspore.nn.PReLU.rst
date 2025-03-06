@@ -23,8 +23,8 @@ mindspore.nn.PReLU
         :align: center
 
     参数：
-        - **channel** (int) - 可训练参数 :math:`w` 的数量。它可以是int，值是1或输入Tensor `x` 的通道数。默认值： ``1`` 。
-        - **w** (Union[float, list, Tensor]) - 参数的初始值。它可以是float、float组成的list或与输入Tensor `x` 具有相同数据类型的Tensor。默认值： ``0.25`` 。
+        - **channel** (int，可选) - 可训练参数 :math:`w` 的数量。它可以是int，值是1或输入Tensor `x` 的通道数。默认值： ``1`` 。
+        - **w** (Union[float, list, Tensor]，可选) - 参数的初始值。它可以是float、float组成的list或与输入Tensor `x` 具有相同数据类型的Tensor。默认值： ``0.25`` 。
 
     输入：
         - **x** (Tensor) - PReLU的输入Tensor，其shape为 :math:`(N, *)` ，其中 :math:`*` 表示任意的额外维度，数据类型为float16或float32。
@@ -34,7 +34,7 @@ mindspore.nn.PReLU
 
     异常：
         - **TypeError** - `channel` 不是int。
-        - **TypeError** - `w` 不是float、float组成的list或float Tensor。
+        - **TypeError** - `w` 既不是float，也不是list[float]或Tensor[float]。
         - **TypeError** - `x` 的数据类型既不是float16也不是float32。
         - **ValueError** - `x` 是Ascend上的0-D或1-D Tensor。
         - **ValueError** - `channel` 小于1。

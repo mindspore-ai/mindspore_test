@@ -3,7 +3,7 @@ mindspore.nn.SmoothL1Loss
 
 .. py:class:: mindspore.nn.SmoothL1Loss(beta=1.0, reduction='none')
 
-    SmoothL1损失函数。如果预测值和目标值的逐个元素绝对误差小于设定阈值 `beta` ，则用平方项，否则用绝对误差项。
+    SmoothL1损失函数。逐元素进行对比，如果预测值和目标值的绝对误差小于设定阈值 `beta` ，则用平方项，否则用绝对误差项。
 
     给定两个输入 :math:`x,\  y`，SmoothL1Loss定义如下：
 
@@ -34,7 +34,8 @@ mindspore.nn.SmoothL1Loss
         - **beta** (number，可选) - 损失函数计算在L1Loss和L2Loss间变换的阈值。默认值： ``1.0`` 。
           
           - Ascend: 该值必须大于等于0。
-          - CPU/GPU: 该值必须大于0。 
+          - CPU/GPU: 该值必须大于0。
+ 
         - **reduction** (str，可选) - 指定应用于输出结果的规约计算方式，可选 ``'none'`` 、 ``'mean'`` 、 ``'sum'`` ，默认值： ``'none'`` 。
 
           - ``"none"``：不应用规约方法。
@@ -53,7 +54,7 @@ mindspore.nn.SmoothL1Loss
           - GPU: 与 `logits` 的shape和数据类型相同。
 
     输出：
-        Tensor。如果 `reduction` 为 ``'none'``，则输出为Tensor，且shape与 `logits` 的shape相同。否则shape为 :math:`()`。
+        Tensor。如果 `reduction` 为 ``'none'`` ，则输出为Tensor，且shape与 `logits` 的shape相同。否则shape为 :math:`()`。
 
     异常：
         - **TypeError** - `logits` 或 `labels` 不是Tensor。
