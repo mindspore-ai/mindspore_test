@@ -1,20 +1,15 @@
 floor_mod:
   description: |
-    Computes the remainder of division element-wise. It's a flooring divide.
-    E.g. :math:`floor(x / y) * y + mod(x, y) = x`.
+    Compute the remainder of element-wise flooring division of first input by second input.
 
-    Inputs of `x` and `y` comply with the implicit type conversion rules to make the data types consistent.
-    When the inputs are two tensors,
-    dtypes of them cannot be both bool, and the shapes of them could be broadcast.
-    When the inputs are one tensor and one scalar,
-    the scalar could only be a constant.
+    If two input have different data types, implicit type conversion rules are followed.
+    Inputs must be two tensors or one tensor and one scalar.
+    When the inputs are two tensors, their shapes must be broadcastable, and their data types cannot both be bool
+    simultaneously.
 
     .. math::
 
         out_{i} =\text{floor}(x_{i} // y_{i})
-
-    where the :math:`floor` indicates the Floor operator, for more details,
-    please refer to the :class:`mindspore.ops.Floor` operator.
 
     .. warning::
         - Data of input `y` should not be 0, or the maximum value of its dtype will be returned.
@@ -24,27 +19,34 @@ floor_mod:
         - If shape is expressed as :math:`(D1, D2 ..., Dn)`, then D1\*D2... \*DN<=1000000,n<=8.
 
     Args:
-        x (Union[Tensor, Number, bool]): The first input is a number or
-            a bool or a tensor whose data type is number or bool.
-        y (Union[Tensor, Number, bool]): The second input is a number or
-            a bool or a tensor whose data type is number or bool.
+        x (Union[Tensor, Number, bool]): The first input tensor.
+        y (Union[Tensor, Number, bool]): The second input tensor.
 
     Returns:
-        Tensor, the shape is the same as the one after broadcasting,
-        and the data type is the one with higher precision of the two inputs.
-
-    Raises:
-        TypeError: If neither `x` nor `y` is a Tensor, number.Number, or bool.
+        Tensor.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([2, 4, -1]), mindspore.int32)
-        >>> y = Tensor(np.array([3, 3, 3]), mindspore.int32)
-        >>> output = ops.floor_mod(x, y)
+        >>> # case 1: Two tensors with boolean and integer data type.
+        >>> input = mindspore.tensor([True, True, False])
+        >>> other = mindspore.tensor([1, 2, 4])
+        >>> output = mindspore.ops.floor_mod(input, other)
         >>> print(output)
-        [2 1 2]
+        [0 1 0]
+        >>>
+        >>> # case 2: One tensor and one scalar.
+        >>> input = mindspore.tensor([1, 2, 4])
+        >>> other = mindspore.tensor(1.5)
+        >>> output = mindspore.ops.floor_mod(input, other)
+        >>> print(output)
+        [1.  0.5 1. ]
+        >>>
+        >>> # case 3: When inputs have different data types, type promotion rules are followed.
+        >>> input = mindspore.tensor([1, 2, 4], mindspore.int32)
+        >>> other = mindspore.tensor([1.1, 2.5, -1.5], mindspore.float32)
+        >>> output = mindspore.ops.floor_mod(input, other)
+        >>> print(output)
+        [ 1.   2.  -0.5]

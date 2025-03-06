@@ -6124,74 +6124,59 @@ def narrow(input, axis, start, length):
 
 def topk(input, k, dim=None, largest=True, sorted=True):
     r"""
-    Finds values and indices of the `k` largest or smallest entries along a given dimension.
+    Return the top `k` largest or smallest elements of the input tensor along a specified dimension.
 
     .. warning::
         - If sorted is set to False, it will use the aicpu operator, the performance may be reduced. In addition, due to
           different memory layout and traversal methods on different platforms, the display order of calculation results
           may be inconsistent when `sorted` is False.
 
-    If the `input` is a one-dimensional Tensor, finds the `k` largest  or smallest entries in the Tensor,
-    and outputs its value and index as a Tensor. values[`k`] is the `k` largest item in `input`,
-    and its index is indices [`k`].
-
-    For a multi-dimensional matrix,
-    calculates the first or last `k` entries in a given dimension, therefore:
-
-    .. math::
-
-        values.shape = indices.shape
-
-    If the two compared elements are the same, the one with the smaller index value is returned first.
-
     Args:
-        input (Tensor): Input to be computed, data type must be float16, float32 or int32.
-        k (int): The number of top or bottom elements to be computed along the last dimension.
-        dim (int, optional): The dimension to sort along. Default: ``None`` .
-        largest (bool, optional): If largest is ``False``  then the k smallest elements are returned.
-            Default: ``True`` .
-        sorted (bool, optional): If ``True`` , the obtained elements will be sorted by the values in descending order.
-            If ``False`` , the obtained elements will not be sorted. Default: ``True`` .
+        input (Tensor): The input tensor.
+        k (int): The number elements to be returned.
+        dim (int, optional): Specify the dimension for sorting. Default ``None`` .
+        largest (bool, optional): If ``True`` , return largest elements. If ``False`` , then return smallest elements.
+            Default ``True`` .
+        sorted (bool, optional): If ``True`` , the elements are returned in descending order. If ``False`` , the
+            obtained elements will not be sorted. Default ``True`` .
 
     Returns:
-        A tuple consisting of `values` and `indexes`.
-
-        - values (Tensor): The `k` largest or smallest elements in each slice of the given dimension.
-        - indices (Tensor): The indices of values within the last dimension of input.
-
-    Raises:
-        TypeError: If `sorted` is not a bool.
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `k` is not an int.
-        TypeError: If dtype of `input` is not one of the following: float16, float32 or int32.
+        Tuple(values, indices) of 2 tensors.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import ops
-        >>> x = ms.Tensor([[0.5368, 0.2447, 0.4302, 0.9673],
-        ...                [0.4388, 0.6525, 0.4685, 0.1868],
-        ...                [0.3563, 0.5152, 0.9675, 0.8230]], dtype=ms.float32)
-        >>> output = ops.topk(x, 2, dim=1)
-        >>> print(output)
-        (Tensor(shape=[3, 2], dtype=Float32, value=
-        [[ 9.67299998e-01,  5.36800027e-01],
-         [ 6.52499974e-01,  4.68499988e-01],
-         [ 9.67499971e-01,  8.23000014e-01]]), Tensor(shape=[3, 2], dtype=Int32, value=
-        [[3, 0],
-         [1, 2],
-         [2, 3]]))
-        >>> output2 = ops.topk(x, 2, dim=1, largest=False)
-        >>> print(output2)
-        (Tensor(shape=[3, 2], dtype=Float32, value=
-        [[ 2.44700000e-01,  4.30200011e-01],
-         [ 1.86800003e-01,  4.38800007e-01],
-         [ 3.56299996e-01,  5.15200019e-01]]), Tensor(shape=[3, 2], dtype=Int32, value=
-        [[1, 2],
-         [3, 0],
-         [0, 1]]))
+        >>> import mindspore
+        >>> input = mindspore.tensor([[8, 2, 1],
+        ...                           [5, 9, 3],
+        ...                           [4, 6, 7]])
+        >>> # case 1: If dim is not given, the last dimension of the input is chosen.
+        >>> mindspore.ops.topk(input, 2)
+        (Tensor(shape=[3, 2], dtype=Int64, value=
+         [[8, 2],
+          [9, 5],
+          [7, 6]]),
+         Tensor(shape=[3, 2], dtype=Int32, value=
+         [[0, 1],
+          [1, 0],
+          [2, 1]]))
+        >>> # case 2: when dim is 0:
+        >>> mindspore.ops.topk(input, 2, dim=0)
+        (Tensor(shape=[2, 3], dtype=Int64, value=
+        [[8, 9, 7],
+         [5, 6, 3]]),
+        Tensor(shape=[2, 3], dtype=Int32, value=
+        [[0, 1, 2],
+         [1, 2, 1]]))
+        >>> # case 3: when largest is False, return smallest values.
+        >>> mindspore.ops.topk(input, 2, dim=0, largest=False)
+        (Tensor(shape=[2, 3], dtype=Int64, value=
+         [[4, 2, 1],
+          [5, 6, 3]]),
+         Tensor(shape=[2, 3], dtype=Int32, value=
+         [[2, 0, 0],
+          [1, 2, 1]]))
     """
     validator.check_value_type("largest", largest, [bool], "topk")
     top_k_ = _get_cache_prim(P.TopK)(sorted)

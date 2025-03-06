@@ -3,35 +3,17 @@ mindspore.ops.topk
 
 .. py:function:: mindspore.ops.topk(input, k, dim=None, largest=True, sorted=True)
 
-    沿给定维度查找 `k` 个最大或最小元素和对应的索引。
+    按指定维度返回前 `k` 个最大或最小元素及其对应索引。
 
     .. warning::
         - 如果 `sorted` 设置为False，它将使用aicpu运算符，性能可能会降低。此外，由于在不同平台上存在内存排布以及遍历方式不同等问题，`sorted` 设置为False时计算结果的显示顺序可能会出现不一致的情况。
 
-    如果 `input` 是一维Tensor，则查找Tensor中 `k` 个最大或最小元素，并将其值和索引输出为Tensor。 `values[k]` 是 `input` 中 `k` 个最大元素，其索引是 `indices[k]` 。
-
-    对于多维矩阵，计算给定维度中最大或最小的 `k` 个元素，因此：
-
-    .. math::
-        values.shape = indices.shape
-
-    如果两个比较的元素相同，则优先返回索引值较小的元素。
-
     参数：
-        - **input** (Tensor) - 需计算的输入，数据类型必须为float16、float32或int32。
-        - **k** (int) - 指定计算最大或最小元素的数量。
-        - **dim** (int, 可选) - 需要排序的维度。默认值： ``None`` 。
-        - **largest** (bool, 可选) - 如果为 ``False`` ，则会返回前k个最小值。默认值： ``True`` 。
-        - **sorted** (bool, 可选) - 如果为 ``True`` ，则获取的元素将按值降序排序。如果为 ``False`` ，则不对获取的元素进行排序。默认值： ``True`` 。
+        - **input** (Tensor) - 输入tensor。
+        - **k** (int) - 返回的元素数量。
+        - **dim** (int, 可选) - 指定排序的维度。如果为 ``None``，则会按最后一个维度排序。默认 ``None`` 。
+        - **largest** (bool, 可选) - 如果为 ``True`` ，返回最大元素。如果为 ``False`` ，返回最小元素。默认 ``True`` 。
+        - **sorted** (bool, 可选) - 如果为 ``True`` ，则返回的元素按降序排序。如果为 ``False`` ，则不对获取的元素进行排序。默认值： ``True`` 。
 
     返回：
-        由 `values` 和 `indices` 组成的tuple。
-
-        - **values** (Tensor) - 给定维度的每个切片中的 `k` 最大元素或最小元素。
-        - **indices** (Tensor) - `k` 最大元素的对应索引。
-
-    异常：
-        - **TypeError** - `sorted` 不是bool。
-        - **TypeError** - `input` 不是Tensor。
-        - **TypeError** - `k` 不是int。
-        - **TypeError** - `input` 的数据类型不是以下之一：float16、float32或int32。
+        两个tensor组成的tuple(values, indices)

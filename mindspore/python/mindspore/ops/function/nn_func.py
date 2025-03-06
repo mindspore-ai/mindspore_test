@@ -8406,35 +8406,36 @@ def mse_loss(input, target, reduction='mean'):
 
 def msort(input):
     r"""
-    Sorts the elements in Tensor in ascending order of value along its first dimension.
+    Return a tensor obtained by sorting the input tensor in ascending order along its first dimension.
 
-    `ops.msort(t)` is equivalent to `ops.Sort(axis=0)(t)[0]`. See also :class:`mindspore.ops.Sort()` for more details.
-
-    .. Note::
-        The Ascend backend only supports sorting the 1D input.
+    `ops.msort(input)` is equivalent to `ops.sort(axis=0)(input)[0]`. See also :class:`mindspore.ops.Sort()` for more
+    details.
 
     Args:
-        input (Tensor): The input to sort, with float16 or float32 data type.
+        input (Tensor): The input tensor to sort.
 
     Returns:
-        A tensor whose values are the sorted values, with the same shape and data type as input.
-
-    Raises:
-        TypeError: If dtype of `input` is neither float16 nor float32.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import ops
-        >>> import numpy as np
-        >>> input = ms.Tensor(np.array([[8, 2, 1], [5, 9, 3], [4, 6, 7]]), ms.float16)
-        >>> output = ops.msort(input)
-        >>> print(output)
-        [[4. 2. 1.]
-         [5. 6. 3.]
-         [8. 9. 7.]]
+        >>> import mindspore
+        >>> input = mindspore.tensor([[8, 2, 1],
+        ...                           [5, 9, 3],
+        ...                           [4, 6, 7]])
+        >>> mindspore.ops.msort(input)
+        Tensor(shape=[3, 3], dtype=Int64, value=
+        [[4, 2, 1],
+         [5, 6, 3],
+         [8, 9, 7]])
+        >>> # is equivalent to `ops.sort(axis=0)(input)[0]`
+        >>> mindspore.ops.sort(input, axis=0)[0]
+        Tensor(shape=[3, 3], dtype=Int64, value=
+        [[4, 2, 1],
+         [5, 6, 3],
+         [8, 9, 7]])
     """
     return ops.Sort(axis=0)(input)[0]
 

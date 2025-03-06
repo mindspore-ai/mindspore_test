@@ -2072,40 +2072,34 @@ def arctanh(input):
 
 def bitwise_and(input, other):
     r"""
-    Returns bitwise `and` of two tensors element-wise.
-
-    .. math::
-
-        out_i = input_{i} \wedge other_{i}
-
-    Args of `input` and `other` comply with the implicit type conversion rules to
-    make the data types consistent.
-    If they have different data types, the lower priority data type will be converted to
-    the relatively highest priority data type.
+    Compute the bitwise AND of two input tensors.
+    If `input` and `other` have different data types, the implicit type conversion rules and type promotion rules are
+    followed.
 
     Args:
-        input (Tensor): The first input tensor with shape :math:`(N, *)` where :math:`*` means
-            any number of additional dimensions.
-        other (Tensor): The second input tensor with the same dtype as `input`.
+        input (Tensor): The first input tensor.
+        other (Tensor): The second input tensor.
 
     Returns:
-        Tensor, has the same type as the `input`.
-
-    Raises:
-        TypeError: If `input` or `other` is not a Tensor.
+        Tensor.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([0, 0, 1, -1, 1, 1, 1]), mindspore.int16)
-        >>> other = Tensor(np.array([0, 1, 1, -1, -1, 2, 3]), mindspore.int16)
-        >>> output = ops.bitwise_and(input, other)
-        >>> print(output)
-        [ 0  0  1 -1  1  0  1]
+        >>> input = mindspore.tensor([-1, -2, 3])
+        >>> other = mindspore.tensor([1, 0, 3])
+        >>> mindspore.ops.bitwise_and(input, other)
+        Tensor(shape=[3], dtype=Int64, value= [1, 0, 3])
+        >>> # Same as calling via the | operator:
+        >>> input & other
+        Tensor(shape=[3], dtype=Int64, value= [1, 0, 3])
+        >>> # When inputs are boolean:
+        >>> input = mindspore.tensor([True, True, False])
+        >>> other = mindspore.tensor([False, True, False])
+        >>> mindspore.ops.bitwise_and(input, other)
+        Tensor(shape=[3], dtype=Bool, value= [False,  True, False])
     """
     return bitwise_and_(input, other)
 
@@ -2152,40 +2146,34 @@ def bitwise_and_ext(input, other):
 
 def bitwise_or(input, other):
     r"""
-    Returns bitwise `or` of two tensors element-wise.
-
-    .. math::
-
-        out_i = input_{i} \mid other_{i}
-
-    Args of `input` and `other` comply with the implicit type conversion rules to
-    make the data types consistent.
-    If they have different data types, the lower priority data type will be converted to
-    the relatively highest priority data type.
+    Compute the bitwise OR of two input tensors.
+    If `input` and `other` have different data types, the implicit type conversion rules and type promotion rules are
+    followed.
 
     Args:
-        input (Tensor): The first input tensor with shape :math:`(N, *)` where :math:`*` means
-            any number of additional dimensions.
-        other (Tensor): The second input tensor with the same dtype as `input`.
+        input (Tensor): The first input tensor.
+        other (Tensor): The second input tensor.
 
     Returns:
-        Tensor, has the same type as the `input`.
-
-    Raises:
-        TypeError: If `input` or `other` is not a Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([0, 0, 1, -1, 1, 1, 1]), mindspore.int16)
-        >>> other = Tensor(np.array([0, 1, 1, -1, -1, 2, 3]), mindspore.int16)
-        >>> output = ops.bitwise_or(input, other)
-        >>> print(output)
-        [ 0  1  1 -1 -1  3  3]
+        >>> input = mindspore.tensor([-1, -2, 3])
+        >>> other = mindspore.tensor([1, 0, 3])
+        >>> mindspore.ops.bitwise_or(input, other)
+        Tensor(shape=[3], dtype=Int64, value= [-1, -2,  3])
+        >>> # Same as calling via the | operator:
+        >>> input | other
+        Tensor(shape=[3], dtype=Int64, value= [-1, -2,  3])
+        >>> # When inputs are boolean:
+        >>> input = mindspore.tensor([True, True, False])
+        >>> other = mindspore.tensor([False, True, False])
+        >>> mindspore.ops.bitwise_or(input, other)
+        Tensor(shape=[3], dtype=Bool, value= [ True,  True, False])
     """
     return bitwise_or_(input, other)
 
@@ -2232,43 +2220,34 @@ def bitwise_or_ext(input, other):
 
 def bitwise_xor(input, other):
     r"""
-    Returns bitwise `xor` of two tensors element-wise.
-
-    .. math::
-
-        out_i = input_{i} \oplus other_{i}
-
-    Args of `input` and `other` comply with the implicit type conversion rules to
-    make the data types consistent.
-    If they have different data types, the lower priority data type will be converted to
-    the relatively highest priority data type.
-
-    .. warning::
-        This API has poor performance on CPU and it is recommended to run it on the Ascend/GPU.
+    Compute the bitwise XOR of two input tensors.
+    If `input` and `other` have different data types, the implicit type conversion rules and type promotion rules are
+    followed.
 
     Args:
-        input (Tensor): The first input tensor with shape :math:`(N, *)` where :math:`*` means
-            any number of additional dimensions.
-        other (Tensor): The second input tensor with the same dtype as `input`.
+        input (Tensor): The first input tensor.
+        other (Tensor): The second input tensor.
 
     Returns:
-        Tensor, has the same type as the `input`.
-
-    Raises:
-        TypeError: If `input` or `other` is not a Tensor.
+        Tensor.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([0, 0, 1, -1, 1, 1, 1]), mindspore.int16)
-        >>> other = Tensor(np.array([0, 1, 1, -1, -1, 2, 3]), mindspore.int16)
-        >>> output = ops.bitwise_xor(input, other)
-        >>> print(output)
-        [ 0  1  0  0 -2  3  2]
+        >>> input = mindspore.tensor([-1, -2, 3])
+        >>> other = mindspore.tensor([1, 0, 3])
+        >>> mindspore.ops.bitwise_xor(input, other)
+        Tensor(shape=[3], dtype=Int64, value= [-2, -2,  0])
+        >>> # Same as calling via the ^ operator:
+        >>> input ^ other
+        Tensor(shape=[3], dtype=Int64, value= [-2, -2,  0])
+        >>> # When inputs are boolean:
+        >>> input = mindspore.tensor([True, True, False])
+        >>> other = mindspore.tensor([False, True, False])
+        >>> mindspore.ops.bitwise_xor(input, other)
+        Tensor(shape=[3], dtype=Bool, value= [ True, False, False])
     """
     return bitwise_xor_(input, other)
 
@@ -2329,26 +2308,16 @@ def bitwise_left_shift(input, other):
         other (Union[Tensor, int, bool]): The number of bit to be applied on left arithmetic shift.
 
     Returns:
-        Tensor, the result after bitwise left shift.
-
-    Raises:
-        TypeError: If neither `input` nor `other` is a tensor.
-        TypeError: If either `input` or `other` is not a bool, int or a tensor of dtype: int or uint.
-        TypeError: If `input` and `other` do not have the same dtype.
-        ValueError: If `input` and `other` could not be broadcast.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([1024, 2]), mindspore.int16)
-        >>> other = Tensor(np.array([2]), mindspore.int16)
-        >>> output = ops.bitwise_left_shift(input, other)
-        >>> print(output)
-        [4096    8]
+        >>> input = mindspore.tensor([1, 2, 4, 8])
+        >>> mindspore.ops.bitwise_left_shift(input, 1)
+        Tensor(shape=[4], dtype=Int64, value= [ 2,  4,  8, 16])
     """
     if not isinstance(input, Tensor) and not isinstance(other, Tensor):
         raise TypeError(f"For 'bitwise_left_shift', at least one of the inputs should be a Tensor.")
@@ -2382,26 +2351,16 @@ def bitwise_right_shift(input, other):
         other (Union[Tensor, int, bool]): The number of bit to be applied on right arithmetic shift.
 
     Returns:
-        Tensor, the result after bitwise right shift.
-
-    Raises:
-        TypeError: If neither `input` nor `other` is a tensor.
-        TypeError: If either `input` or `other` is not a bool, int or a tensor of dtype: int or uint.
-        TypeError: If `input` and `other` do not have the same dtype.
-        ValueError: If `input` and `other` could not be broadcast.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([1024, 2]), mindspore.int16)
-        >>> other = Tensor(np.array([2]), mindspore.int16)
-        >>> output = ops.bitwise_right_shift(input, other)
-        >>> print(output)
-        [256   0]
+        >>> input = mindspore.tensor([1, 2, 4, 8])
+        >>> mindspore.ops.bitwise_right_shift(input, 1)
+        Tensor(shape=[4], dtype=Int64, value= [0, 1, 2, 4])
     """
     if not isinstance(input, Tensor) and not isinstance(other, Tensor):
         raise TypeError(f"For 'bitwise_left_shift', at least one of the inputs should be a Tensor.")
