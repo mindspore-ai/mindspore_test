@@ -22,7 +22,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/debug/dump_proto.h"
 #include "include/backend/optimizer/optimizer.h"
-#include "include/backend/debug/profiler/profiling.h"
+#include "debug/profiler/profiling.h"
 #include "include/common/utils/parallel_context.h"
 #include "backend/common/pass/erase_visit_attr.h"
 #include "backend/common/pass/communication_op_fusion.h"

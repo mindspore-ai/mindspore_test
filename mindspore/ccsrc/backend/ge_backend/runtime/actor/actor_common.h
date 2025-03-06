@@ -37,7 +37,7 @@
 #include "runtime/device/device_address_utils.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
-#include "include/common/profiler.h"
+#include "debug/profiler/profiler.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 
