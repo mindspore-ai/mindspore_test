@@ -46,7 +46,6 @@ class GatherActor : public ControlActor {
  protected:
   void SendOutput(OpContext<DeviceTensor> *const context) override;
   void IncreaseDynamicRefCounts(OpContext<DeviceTensor> *const context) override;
-  void IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) override;
 
  private:
   friend class ControlNodeScheduler;

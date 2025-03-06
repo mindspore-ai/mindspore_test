@@ -15,7 +15,6 @@
  */
 
 #include "runtime/graph_scheduler/actor/output_actor.h"
-#include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
@@ -113,11 +112,9 @@ void OutputActor::FreeOutputNodeMem() {
     if ((output_node == nullptr) || (output_device_tensor == nullptr) || (output_device_tensor->GetPtr() == nullptr)) {
       continue;
     }
-    const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {output_device_tensor->device_name(), output_device_tensor->device_id()});
-    MS_EXCEPTION_IF_NULL(device_context);
-    MS_LOG(DEBUG) << "Free device address:" << output_device_tensor << " for actor:" << GetAID();
-    MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(output_device_tensor, device_context, GetAID().Name());
+    if (!IsOutputAddressPersisted(output_device_tensor, output_nodes_[i])) {
+      FreeMemoryByDeviceContext(output_device_tensor, device_contexts_[i]);
+    }
   }
 }
 
@@ -130,8 +127,6 @@ void OutputActor::FreeSummaryNodeMem() {
     }
     auto output_device_addr = AnfAlgo::GetMutableOutputAddr(summary_node, index, false);
     if ((output_device_addr == nullptr) || (output_device_addr->GetPtr() == nullptr)) {
-      MS_LOG(DEBUG) << "Empty ptr in summary node:" << summary_node->DebugString() << " index:" << index
-                    << " device address:" << output_device_addr;
       continue;
     }
     if (!IsOutputAddressPersisted(output_device_addr.get(), summary_nodes_[i])) {
@@ -244,10 +239,7 @@ void OutputActor::RunOpControl(AID *const, OpContext<DeviceTensor> *const contex
     // Because device tensor store can't send data, so fetch the output result of device tensor store in running end.
     for (const auto &device_tensor_store_key : device_tensor_store_keys_) {
       if (device_tensor_store_key.first >= outputs_.size()) {
-        std::stringstream ofs;
-        ofs << "Invalid device tensor store index:" << device_tensor_store_key.first
-            << " output device tensor size:" << outputs_.size() << " for actor:" << GetAID();
-        SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), ofs.str());
+        SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The input index is of range.");
       }
       if (device_tensor_store_key.second != nullptr && device_tensor_store_key.second->isa<ValueNode>()) {
         const auto &value = device_tensor_store_key.second->cast<ValueNodePtr>()->value();
@@ -335,10 +327,7 @@ void OutputActor::RunOpData(OpData<DeviceTensor> *const input_data, OpContext<De
                 << " index:" << input_data->data_->GetNodeIndex().second;
   auto output_position = IntToSize(input_data->index_);
   if (output_position >= outputs_.size()) {
-    std::stringstream ofs;
-    ofs << "Invalid output position:" << output_position << " output device tensor size:" << outputs_.size()
-        << " for actor:" << GetAID();
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), ofs.str());
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The input index is of range.");
   }
   // Save the output nodes and output device tensors.
   auto node_with_index = input_data->data_->GetNodeIndex();
@@ -412,22 +401,11 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   const auto &output_shape = output_kernel_tensor->GetShape();
   if (output_shape != nullptr && output_shape->isa<abstract::SequenceShape>() &&
       output_shape->cast<abstract::SequenceShapePtr>()->size() == 0) {
-    ShapeVector shape_vector = {0};
+    ShapeVector shape = {0};
     TypeId type_id = (output_kernel_tensor->dtype_id() == TypeId::kTypeUnknown ? TypeId::kNumberTypeInt64
                                                                                : output_kernel_tensor->dtype_id());
-    const auto &tensor = std::make_shared<tensor::Tensor>(type_id, shape_vector);
+    const auto &tensor = std::make_shared<tensor::Tensor>(type_id, shape);
     tensor->set_base_shape(output_shape);
-    if (output_position < output_device_tensors_.size() && output_device_tensors_[output_position] &&
-        output_device_tensors_[output_position]->user_data() != nullptr && output_position < device_contexts_.size() &&
-        device_contexts_[output_position] != nullptr) {
-      auto shape = std::make_shared<abstract::TupleShape>();
-      auto type = std::make_shared<Tuple>();
-      auto kernel_tensor = std::make_shared<kernel::KernelTensor>(shape, type, nullptr);
-      auto tensor_device_address =
-        device_contexts_[output_position]->device_res_manager_->CreateDeviceAddress(kernel_tensor);
-      MS_EXCEPTION_IF_NULL(tensor_device_address);
-      tensor->set_device_address(tensor_device_address);
-    }
     return tensor;
   }
 
@@ -500,7 +478,6 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
                   << " output node:" << output_node->fullname_with_scope() << " output index:" << output_index
                   << " output position:" << output_position << ", origin output device tensor: " << device_tensor;
     tensor->set_device_address(tensor_device_address);
-    tensor_device_address->set_new_ref_count(SIZE_MAX);
     output_node_to_tensor_device_address_[{output_node, output_index}] = tensor_device_address;
   }
 
@@ -518,27 +495,6 @@ void OutputActor::SetStubOutput(const stub::StubNodePtr &stub_output) {
                       << ", but got: " << flatten_stub_nodes_.size();
   }
 }
-
-namespace {
-void HandleEmptySequenceOutput(DeviceTensor *const device_tensor, const tensor::TensorPtr &tensor, size_t index,
-                               const std::string &actor_name) {
-  MS_EXCEPTION_IF_NULL(device_tensor);
-  MS_EXCEPTION_IF_NULL(tensor);
-  MS_LOG(DEBUG) << "Empty sequence shape for input tensor index:" << index;
-  const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device_tensor->device_name(), device_tensor->device_id()});
-  MS_EXCEPTION_IF_NULL(device_context);
-  MS_LOG(DEBUG) << "Free device address:" << device_tensor << " for actor:" << actor_name;
-  MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor, device_context, actor_name);
-  if (device_tensor->user_data() != nullptr && tensor->device_address() != nullptr) {
-    auto tensor_device_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
-    MS_EXCEPTION_IF_NULL(tensor_device_address);
-    tensor_device_address->set_user_data(device_tensor->user_data());
-    MS_LOG(DEBUG) << "Set user data from device address:" << device_tensor
-                  << " to tensor device address:" << tensor_device_address;
-  }
-}
-}  // namespace
 
 void OutputActor::UpdateOutputDeviceAddress() {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kOutputProcess, "UpdateOutputDeviceAddress");
@@ -564,23 +520,19 @@ void OutputActor::UpdateOutputDeviceAddress() {
     MS_EXCEPTION_IF_NULL(tensor);
     if (tensor->base_shape_ptr() != nullptr && tensor->base_shape_ptr()->isa<abstract::SequenceShape>() &&
         tensor->base_shape_ptr()->cast<abstract::SequenceShapePtr>()->size() == 0) {
-      HandleEmptySequenceOutput(device_tensor, tensor, i, GetAID().Name());
       continue;
     }
     if (repeat_index.find(i) != repeat_index.end() && i > repeat_index[i] && outputs_[i] != nullptr) {
       tensor->set_device_address(outputs_[repeat_index[i]]->device_address());
-      const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {device_tensor->device_name(), device_tensor->device_id()});
-      MS_EXCEPTION_IF_NULL(device_context);
-      MS_LOG(DEBUG) << "Free device address:" << device_tensor << " for actor:" << GetAID();
-      MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor, device_context, GetAID().Name());
       continue;
     }
 
     auto tensor_device_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
     MS_EXCEPTION_IF_NULL(tensor_device_address);
     // Update tensor device address by device tensor of output node.
-    tensor_device_address->set_new_ref_count(SIZE_MAX);
+    tensor_device_address->set_original_ref_count(SIZE_MAX);
+    tensor_device_address->ResetRefCount();
+    tensor_device_address->set_dynamic_ref_count(INT32_MAX);
     auto node_with_index = device_tensor->GetNodeIndex();
     tensor_device_address->SetNodeIndex(node_with_index.first, node_with_index.second);
     tensor_device_address->set_from_persistent_mem(device_tensor->from_persistent_mem());
@@ -620,19 +572,15 @@ void OutputActor::UpdateOutputDeviceAddress() {
             << ", output node: " << output_node->fullname_with_scope();
         }
       }
-      MS_LOG(DEBUG) << "Copy graph output from device address:" << device_tensor << " to:" << tensor_device_address;
+
     } else {
-      MS_LOG(DEBUG) << "Swap ptr:" << device_tensor->GetPtr() << " from device tensor:" << device_tensor->PrintInfo()
-                    << " to :" << tensor_device_address->PrintInfo();
+      MS_LOG(DEBUG) << "Swap ptr:" << device_tensor->GetPtr() << " from device tensor:" << device_tensor
+                    << " device type:" << device_tensor->GetDeviceType() << " to :" << tensor_device_address
+                    << " device type:" << tensor_device_address->GetDeviceType();
       // Move the device ptr from device_tensor to tensor_device_address.
       device_tensor->Swap(tensor_device_address.get());
       tensor_device_address->set_user_data(device_tensor->user_data());
     }
-    const auto &real_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device_tensor->device_name(), device_tensor->device_id()});
-    MS_EXCEPTION_IF_NULL(real_device_context);
-    MS_LOG(DEBUG) << "Free device address:" << device_tensor << " for actor:" << GetAID();
-    MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor, real_device_context, GetAID().Name());
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
       MarkTensorAsOutput, GetAID().Name(), device_tensor->device_name(), device_tensor->GetPtr(),
       device_tensor->type_id(), device_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());

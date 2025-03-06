@@ -93,23 +93,6 @@ class DeviceTensorCopyStore {
 
   void Clear() { copy_device_tensors_.clear(); }
 
-  void Clear(DeviceTensor *const addr) {
-    std::shared_lock<std::shared_mutex> lock(map_mutex_);
-    if (copy_device_tensors_.find(addr) == copy_device_tensors_.end()) {
-      return;
-    }
-    copy_device_tensors_[addr]->erase(addr);
-    copy_device_tensors_.erase(addr);
-  }
-
-  void Replace(DeviceTensor *const old_addr, DeviceTensor *const new_addr) {
-    if (copy_device_tensors_.find(old_addr) == copy_device_tensors_.end()) {
-      return;
-    }
-    Insert(old_addr, new_addr);
-    Clear(old_addr);
-  }
-
  private:
   DeviceTensorCopyStore() = default;
   ~DeviceTensorCopyStore() = default;

@@ -32,8 +32,7 @@ bool RpcActor::CopyRpcDataWithOffset(RpcDataPtr *rpc_data, const void *src_data,
 
   int ret = memcpy_s(*rpc_data, src_data_size, src_data, src_data_size);
   if (EOK != ret) {
-    MS_LOG(ERROR) << "Failed to memcpy_s for rpc data. Error number: " << ret << " dst addr:" << rpc_data
-                  << " size:" << src_data_size << " src addr:" << src_data << " size:" << src_data_size;
+    MS_LOG(ERROR) << "Failed to memcpy_s for rpc data. Error number: " << ret;
     return false;
   }
   *rpc_data += src_data_size;

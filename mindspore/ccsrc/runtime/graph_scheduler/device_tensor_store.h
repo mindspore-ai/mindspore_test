@@ -45,9 +45,6 @@ class BACKEND_EXPORT DeviceTensorStore {
     MS_EXCEPTION_IF_NULL(value);
     std::unique_lock<std::shared_mutex> lock(map_mutex_);
     const auto &iter = device_tensors_.find(key);
-    value->set_new_ref_count(SIZE_MAX);
-    MS_LOG(DEBUG) << "Device tensor store set ref count to max for device address:" << value
-                  << " node:" << key->DebugString();
     if (iter == device_tensors_.end()) {
       device_tensors_[key].emplace_back(value);
       return;

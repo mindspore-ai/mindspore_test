@@ -329,8 +329,7 @@ void DumpSuperKernelActor(const SuperKernelActor *actor, std::ofstream &ofs) {
   const auto &input_nodes = graph->input_nodes();
   size_t input_num = input_nodes.size();
   const auto &input_param_static_use_cnt = actor->input_param_static_use_cnt();
-  const auto &is_input_used = actor->is_input_used();
-  if (input_param_static_use_cnt.size() != input_num || is_input_used.size() != input_num) {
+  if (input_param_static_use_cnt.size() != input_num) {
     MS_INTERNAL_EXCEPTION(ValueError) << "Invalid input param use count info, expected num: " << input_num
                                       << ", but got num: " << input_param_static_use_cnt.size();
   }
@@ -344,8 +343,7 @@ void DumpSuperKernelActor(const SuperKernelActor *actor, std::ofstream &ofs) {
     ofs << "\t\tParameter[" << i << "] name:" << parameter->name() << ", debug_name: " << parameter->DebugString()
         << ", use count: "
         << (input_param_static_use_cnt[i] == SIZE_MAX ? "SIZE_MAX" : std::to_string(input_param_static_use_cnt[i]))
-        << " , is used: " << is_input_used[i] << ", is weight: " << common::AnfAlgo::IsParameterWeight(parameter)
-        << "\n";
+        << ", is weight: " << common::AnfAlgo::IsParameterWeight(parameter) << "\n";
   }
   ofs << "\n";
 

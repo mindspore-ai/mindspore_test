@@ -133,16 +133,17 @@ void CopyActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) {
 
   {
     ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kCopyData, GetAID().Name());
-    MS_LOG(DEBUG) << "Copy device tensor from device address:" << input_device_tensor_[0]->PrintInfo() << " to "
-                  << output_device_tensor_[0]->PrintInfo() << " for copy actor:" << GetAID();
+    MS_LOG(DEBUG) << "Copy device tensor from device address:" << input_device_tensor_[0]
+                  << " type:" << input_device_tensor_[0]->GetDeviceType() << " to " << output_device_tensor_[0]
+                  << " type:" << output_device_tensor_[0]->GetDeviceType() << " for copy actor:" << GetAID();
     if (!Copy(output_device_tensor_[0], input_device_tensor_[0])) {
       std::string error_info = "Copy device tensor failed: " + GetAID().Name();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
-
-    MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << output_device_tensor_[0]->PrintInfo()
-                  << " and " << input_device_tensor_[0]->PrintInfo() << " for copy actor:" << GetAID();
-    DeviceTensorCopyStore::GetInstance().Insert(output_device_tensor_[0], input_device_tensor_[0]);
+    // Record ref map for non weight parameter.
+    if (CheckNonWeightParameter(device_tensor_store_keys_, parameter_indexs_)) {
+      UpdateRefDeviceTensors(input_device_tensor_, output_device_tensor_, ref_parameter_device_tensors_, GetAID());
+    }
     output_device_tensor_[0]->kernel_tensor()->SetType(input_device_tensor_[0]->kernel_tensor()->GetType());
     output_device_tensor_[0]->kernel_tensor()->SetShape(input_device_tensor_[0]->kernel_tensor()->GetShape());
     output_device_tensor_[0]->set_user_data(input_device_tensor_[0]->user_data());
@@ -255,21 +256,6 @@ void CopyActor::FetchDeviceTensor(OpContext<DeviceTensor> *const context) {
     MS_EXCEPTION_IF_NULL(input_kernel_tensor);
     output_kernel_tensor->SetType(input_kernel_tensor->GetType()->Clone());
     output_kernel_tensor->SetShape(input_kernel_tensor->GetShape()->Clone());
-  }
-}
-
-void CopyActor::IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) {
-  MS_EXCEPTION_IF_NULL(output_device_tensor_[0]);
-  if (output_data_arrows_.size() < output_free_size_) {
-    std::stringstream error_info;
-    error_info << "Invalid output size:" << output_data_arrows_.size() << " and free size:" << output_free_size_
-               << " for actor:" << GetAID();
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info.str());
-  }
-  for (size_t i = 0; i < output_data_arrows_.size() - output_free_size_; ++i) {
-    output_device_tensor_[0]->IncreaseNewRefCount();
-    MS_LOG(DEBUG) << "Increase new ref count for device address:" << output_device_tensor_[0]->PrintInfo()
-                  << " in actor:" << GetAID();
   }
 }
 
