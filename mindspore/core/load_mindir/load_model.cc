@@ -2475,6 +2475,12 @@ const LayoutMap MSANFModelParser::ParseLayout(const mind_ir::ModelProto &model_p
       cur_layout->set_peer_rank(peer_rank);
       cur_layout->set_sr_tag(sr_tag);
     }
+
+    std::vector<int64_t> opt_shard_slice_shape;
+    for (int num = 0; num < layout_proto.opt_shard_slice_shape_int_size(); ++num) {
+      (void)opt_shard_slice_shape.emplace_back(layout_proto.opt_shard_slice_shape_int(num));
+    }
+    cur_layout->set_opt_shard_slice_shape(opt_shard_slice_shape);
     ret[name] = cur_layout;
   }
   return ret;

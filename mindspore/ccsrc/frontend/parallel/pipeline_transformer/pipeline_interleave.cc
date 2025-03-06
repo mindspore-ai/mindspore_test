@@ -630,7 +630,8 @@ static AnfNodePtr CreateTupleZeroTensor(const FuncGraphPtr &graph, const AnfNode
   return temp_tuple;
 }
 
-void PipelineInterleave::InsertSendReceive(const AnfNodePtr &node, const AnfNodePtr &user_node, int64_t order) {
+void PipelineInterleave::InsertSendReceive(const AnfNodePtr &node, const AnfNodePtr &user_node, int64_t order,
+                                           int64_t index) {
   auto node_stage_info = node->user_data<NodeStageInfo>();
   auto user_node_stage_info = user_node->user_data<NodeStageInfo>();
   auto node_stage = node_stage_info->stage();
@@ -678,7 +679,7 @@ void PipelineInterleave::InsertSendReceive(const AnfNodePtr &node, const AnfNode
   if (micro != nullptr) {
     recv->AddPrimalAttr(MICRO, micro);
   }
-  manager_->Replace(node, recv);
+  manager_->SetEdge(user_node, index, recv);
 }
 
 void PipelineInterleave::CutBorderForNode(const FuncGraphPtr &graph, const AnfNodePtr &node, int64_t *order) {
@@ -704,7 +705,7 @@ void PipelineInterleave::CutBorderForNode(const FuncGraphPtr &graph, const AnfNo
       micro = MakeValue(int64_t(0));
     }
     if (node_stage != user_node_stage) {
-      InsertSendReceive(node, user_node, *order);
+      InsertSendReceive(node, user_node, *order, user_pair.second);
       (*order) += 1;
       if (send_param) {
         parameter_color_map_[pre_node].insert(user_node_stage);
