@@ -17,7 +17,7 @@
 #include "kernel/cpu/irfft_double_cpu_kernel.h"
 #include <algorithm>
 #include "ops_utils/op_utils.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 
 namespace mindspore {
 namespace kernel {

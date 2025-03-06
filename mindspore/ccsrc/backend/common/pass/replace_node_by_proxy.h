@@ -19,7 +19,7 @@
 #include "include/backend/optimizer/pass.h"
 #include "ir/func_graph.h"
 #include "ir/anf.h"
-#include "kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 
 namespace mindspore {
 namespace opt {

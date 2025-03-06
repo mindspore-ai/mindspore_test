@@ -35,7 +35,7 @@
 #include "tools/graph_kernel/converter/preprocess_weight.h"
 #include "tools/graph_kernel/common/utils.h"
 #include "utils/check_convert_utils.h"
-#include "mindspore/ccsrc/kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 #include "include/backend/kernel_info.h"
 
 namespace mindspore::graphkernel {

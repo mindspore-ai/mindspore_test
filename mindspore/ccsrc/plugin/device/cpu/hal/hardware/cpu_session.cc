@@ -24,7 +24,7 @@
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "runtime/device/kernel_runtime.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "plugin/device/cpu/optimizer/print_value_type.h"
@@ -55,6 +55,9 @@
 #endif
 
 namespace mindspore {
+namespace device::cpu {
+void SetCpuRefMapToKernelInfo(const CNodePtr &apply_kernel, const std::vector<kernel::KernelAttr> &apply_kernel_attrs);
+}
 namespace session {
 void CPUSession::Init(uint32_t device_id) {
   // Dump json config file if dump is enabled
@@ -283,7 +286,7 @@ void CPUSession::BuildKernel(const KernelGraph *kernel_graph) const {
     }
 
     auto kernel_attrs = cpu_kernel_mod->GetOpSupport();
-    SetCpuRefMapToKernelInfo(kernel_node, kernel_attrs);
+    device::cpu::SetCpuRefMapToKernelInfo(kernel_node, kernel_attrs);
     auto inputs = AnfAlgo::GetOrCreateAllInputKernelTensors(kernel_node);
     auto outputs = AnfAlgo::GetOrCreateAllOutputKernelTensors(kernel_node);
     auto ret = cpu_kernel_mod->Init(inputs, outputs);

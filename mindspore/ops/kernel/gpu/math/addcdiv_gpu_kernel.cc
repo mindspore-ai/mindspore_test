@@ -15,7 +15,7 @@
  */
 #include <utility>
 #include "kernel/gpu/math/addcdiv_gpu_kernel.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "include/cuda_fp16.h"
 
 namespace mindspore {

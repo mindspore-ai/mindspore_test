@@ -16,7 +16,7 @@
 
 #include "kernel/cpu/environ/environ_cpu_set.h"
 #include "kernel/environ_manager.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.h"
 
 namespace mindspore {

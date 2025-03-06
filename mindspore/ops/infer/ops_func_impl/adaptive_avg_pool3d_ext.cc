@@ -18,7 +18,6 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "infer/ops_func_impl/adaptive_avg_pool3d_ext.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

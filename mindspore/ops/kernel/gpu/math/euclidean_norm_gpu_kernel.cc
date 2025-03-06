@@ -21,7 +21,7 @@
 #include <algorithm>
 #include <set>
 #include "abstract/utils.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "mindspore/ops/infer/euclidean_norm.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/euclidean_norm_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"

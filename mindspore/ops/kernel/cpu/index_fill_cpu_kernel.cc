@@ -19,7 +19,7 @@
 #include <utility>
 
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 
 namespace {
 #define INDEXFILL_COMPUTE_CASE(DTYPE, TYPE, inputs, outputs) \

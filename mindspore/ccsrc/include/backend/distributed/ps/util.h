@@ -25,7 +25,7 @@
 #include "include/backend/distributed/ps/constants.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {

@@ -25,7 +25,7 @@
 #include <algorithm>
 #include <memory>
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "unsupported/Eigen/CXX11/Tensor"
 #include "utils/fft_helper.h"
 

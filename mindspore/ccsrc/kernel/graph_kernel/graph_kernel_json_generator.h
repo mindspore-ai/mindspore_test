@@ -24,7 +24,7 @@
 #include <utility>
 #include <vector>
 #include "nlohmann/json.hpp"
-#include "kernel/oplib/opinfo.h"
+#include "common/oplib/opinfo.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 #include "include/common/utils/convert_utils.h"
 #include "symbolic_shape/symbol_engine.h"

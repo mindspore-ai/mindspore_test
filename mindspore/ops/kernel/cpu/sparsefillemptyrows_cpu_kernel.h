@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SPARSEFILLEMPTYROWS_CPU_KERNEL_H_
 #include <vector>
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

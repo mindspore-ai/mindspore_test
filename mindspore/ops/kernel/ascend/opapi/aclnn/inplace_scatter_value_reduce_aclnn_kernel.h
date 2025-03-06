@@ -19,7 +19,7 @@
 #include <vector>
 #include "ops/base_operator.h"
 #include "mindspore/ops/kernel/ascend/opapi/aclnn/inplace_scatter_value_aclnn_kernel.h"
-#include "plugin/device/ascend/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {

@@ -25,7 +25,7 @@
 #include <algorithm>
 #include <utility>
 
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "mindspore/ops/infer/embedding_lookup.h"

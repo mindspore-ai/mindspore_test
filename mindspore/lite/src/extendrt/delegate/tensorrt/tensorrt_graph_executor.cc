@@ -26,7 +26,7 @@
 #include <fstream>
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "src/extendrt/delegate/delegate_utils.h"
-#include "ccsrc/kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "ccsrc/include/backend/optimizer/helper.h"
 #include "ccsrc/include/common/utils/convert_utils.h"
 #include "common/config_infos.h"

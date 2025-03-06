@@ -17,7 +17,7 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GPU_GPU_KERNEL_MOD_H_
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GPU_GPU_KERNEL_MOD_H_
 
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 
 namespace mindspore {
 namespace kernel {

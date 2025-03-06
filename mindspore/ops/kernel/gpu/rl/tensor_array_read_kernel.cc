@@ -15,7 +15,7 @@
  */
 
 #include "kernel/gpu/rl/tensor_array_read_kernel.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "plugin/device/gpu/hal/device/gpu_tensor_array.h"
 #include "runtime/device/tensor_array_manager.h"
 

@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <functional>
 #include <memory>
-#include "kernel/ops_utils.h"
+#include "common/kernel_utils.h"
 #include "mindspore/ops/op_def/math_ops.h"
 
 namespace mindspore {

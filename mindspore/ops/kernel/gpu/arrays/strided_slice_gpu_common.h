@@ -24,7 +24,7 @@
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "kernel/ops_utils.h"
+#include "common/kernel_utils.h"
 
 namespace mindspore {
 namespace kernel {

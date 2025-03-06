@@ -21,7 +21,7 @@
 #include "mindspore/ops/op_def/image_ops.h"
 #include "mindspore/ops/infer/resize_v2.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
-#include "kernel/ops_utils.h"
+#include "common/kernel_utils.h"
 
 namespace mindspore::kernel {
 namespace {

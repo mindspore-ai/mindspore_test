@@ -29,8 +29,8 @@
 #include "backend/graph_compiler/backend.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/ops_utils.h"
-#include "kernel/common_utils.h"
+#include "common/kernel_utils.h"
+#include "common/common_utils.h"
 #include "kernel/framework_utils.h"
 #define private public
 #define protected public

@@ -17,7 +17,7 @@
 #ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CPU_KERNEL_MOD_H_
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CPU_KERNEL_MOD_H_
 
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 
 namespace mindspore {
 namespace kernel {

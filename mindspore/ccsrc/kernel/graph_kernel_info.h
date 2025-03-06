@@ -24,7 +24,7 @@
 #include <utility>
 #include "ir/dtype.h"
 #include "ir/kernel_info_dev.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "include/backend/visible.h"
 namespace mindspore {
 class GraphKernelInfo {

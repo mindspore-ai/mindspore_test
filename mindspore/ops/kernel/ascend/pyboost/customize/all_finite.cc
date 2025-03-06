@@ -20,6 +20,7 @@
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/device/device_address_utils.h"
 #include "acl/acl_rt.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore::kernel::pyboost {
 namespace {
@@ -51,7 +52,7 @@ tensor::BaseTensorPtr AllFiniteAscendCustomize(const std::shared_ptr<OpRunner> &
     MS_EXCEPTION_IF_NULL(stream_ptr);
     runtime::OpExecutor::DispatchLaunchTask(
       [output_device_ptr = outputs[0]->device_address()->GetMutablePtr(), stream_ptr]() {
-        auto ret = aclrtMemsetAsync(output_device_ptr, kAlignSize, 0, kAlignSize, stream_ptr);
+        auto ret = CALL_ASCEND_API(aclrtMemsetAsync, output_device_ptr, kAlignSize, 0, kAlignSize, stream_ptr);
         if (ret != ACL_SUCCESS) {
           MS_LOG(EXCEPTION) << "Call runtime aclrtMemsetAsync error, ret[" << ret << "]";
         }

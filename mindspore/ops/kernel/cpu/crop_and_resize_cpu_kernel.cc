@@ -370,16 +370,6 @@ std::vector<std::pair<KernelAttr, CropAndResizeCpuKernelMod::CropAndResizeFunc>>
       .AddOutputAttr(kNumberTypeFloat32),
     &CropAndResizeCpuKernelMod::LaunchKernel<uint16_t>}};
 
-void CropAndResizeCpuKernelMod::InitFunc(const CNodePtr &kernel_node) {
-  auto kernel_attr = GetKernelAttrFromNode(kernel_node);
-  auto [is_match, index] = MatchKernelAttr(kernel_attr, GetOpSupport());
-  if (!is_match) {
-    MS_LOG(EXCEPTION) << "CropAndResize does not support this kernel data type: " << kernel_attr;
-  }
-
-  kernel_func_ = func_list_[index].second;
-}
-
 std::vector<KernelAttr> CropAndResizeCpuKernelMod::GetOpSupport() {
   std::vector<KernelAttr> support_list;
   (void)std::transform(func_list_.begin(), func_list_.end(), std::back_inserter(support_list),

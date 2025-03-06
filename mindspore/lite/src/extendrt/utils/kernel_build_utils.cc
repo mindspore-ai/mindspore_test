@@ -19,11 +19,11 @@
 #include <memory>
 #include <algorithm>
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "kernel/common_utils.h"
-#include "include/common/factory/ms_factory.h"
-#include "kernel/kernel_build_info.h"
-#include "kernel/oplib/opinfo.h"
-#include "kernel/oplib/oplib.h"
+#include "common/common_utils.h"
+#include "common/ms_factory.h"
+#include "common/kernel_build_info.h"
+#include "common/oplib/opinfo.h"
+#include "common/oplib/oplib.h"
 #include "utils/trace_base.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/anfalgo.h"

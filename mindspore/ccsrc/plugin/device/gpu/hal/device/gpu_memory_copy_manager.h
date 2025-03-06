@@ -23,7 +23,7 @@
 #include "backend/common/mem_reuse/mem_copy_manager.h"
 #include "include/backend/device_address.h"
 #include "plugin/res_manager/gpu/device/cuda_driver.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 
 // todo: delete with kernel-runtime
 namespace mindspore {

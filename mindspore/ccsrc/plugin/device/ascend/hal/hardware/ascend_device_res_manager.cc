@@ -31,7 +31,7 @@
 #include "include/backend/data_queue/data_queue_mgr.h"
 #include "plugin/device/ascend/hal/special/parameter_replication.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
-#include "mindspore/ops/kernel/ascend/pyboost/customize/stress_detect.h"
+#include "plugin/device/ascend/hal/hardware/stress_detect.h"
 #include "runtime/device/kernel_runtime_manager.h"
 #include "runtime/device/move_to.h"
 #include "utils/ms_exception.h"

@@ -20,7 +20,7 @@
 #include <memory>
 #include <complex>
 #include "ops_utils/op_utils.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "kernel/cpu/fftshift_cpu_kernel.h"
 
 namespace mindspore {

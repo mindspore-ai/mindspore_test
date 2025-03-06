@@ -23,7 +23,7 @@
 #include <string>
 #include <map>
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "mindspore/ops/kernel/cpu/random_util.h"
 #include "kernel/philox_random.h"
 #include "mindspore/ops/infer/random_gamma.h"

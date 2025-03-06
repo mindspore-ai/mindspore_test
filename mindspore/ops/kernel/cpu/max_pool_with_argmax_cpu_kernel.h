@@ -22,7 +22,7 @@
 #include <utility>
 #include "mindspore/ops/infer/max_pool_with_argmax.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {

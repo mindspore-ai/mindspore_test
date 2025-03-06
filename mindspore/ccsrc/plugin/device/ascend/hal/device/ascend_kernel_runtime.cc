@@ -52,7 +52,7 @@
 #include "include/common/debug/rdr/recorder_manager.h"
 #endif
 #include "backend/common/session/kernel_build_client.h"
-#include "plugin/device/ascend/acl_ir/op_api_exec.h"
+#include "kernel/ascend/acl_ir/op_api_exec.h"
 #include "kernel/framework_utils.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"

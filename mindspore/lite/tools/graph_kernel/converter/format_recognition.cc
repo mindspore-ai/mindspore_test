@@ -24,7 +24,7 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/anf_utils.h"
-#include "mindspore/ccsrc/kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 #include "include/backend/kernel_info.h"
 #include "tools/graph_kernel/common/utils.h"
 

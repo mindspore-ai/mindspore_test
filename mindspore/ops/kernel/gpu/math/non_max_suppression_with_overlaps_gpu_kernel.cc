@@ -19,7 +19,7 @@
 #include <utility>
 #include <functional>
 
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/non_max_suppression_with_overlaps_impl.cuh"
 #include "kernel/gpu/math/non_max_suppression_with_overlaps_gpu_kernel.h"
 

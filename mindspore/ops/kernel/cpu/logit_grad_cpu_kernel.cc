@@ -19,7 +19,7 @@
 #include <limits>
 #include <algorithm>
 #include <map>
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {

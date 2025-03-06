@@ -27,7 +27,7 @@
 #include "tools/graph_kernel/converter/akg/gpu_kernel_builder.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
-#include "mindspore/ccsrc/kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 #include "include/backend/kernel_info.h"
 
 namespace mindspore::graphkernel {

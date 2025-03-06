@@ -24,7 +24,7 @@
 #include <set>
 #include <deque>
 #include <vector>
-#include "kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"

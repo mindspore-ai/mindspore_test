@@ -53,11 +53,20 @@
 #endif
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
+#include "common/kernel_callback.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
 namespace {
+std::string GetCommName(const std::string &group) {
+  if (!common::GetEnv(kSimulationLevel).empty()) {
+    return DummyAscendCollectiveCommLib::GetInstance().CommName(group);
+  }
+  return AscendCollectiveCommLib::GetInstance().CommName(group);
+}
+REGISTER_KERNEL_CALLBACK(GetCommName);
+
 typedef HcclResult (*HcclSetConfigFunc)(HcclConfig, HcclConfigValue);
 std::mutex set_opt_mutex;
 std::string GetAscendPath() {

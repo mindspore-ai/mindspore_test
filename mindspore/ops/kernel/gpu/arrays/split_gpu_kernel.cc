@@ -19,7 +19,7 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/split_impl.cuh"
 #include "infer/ops_func_impl/split.h"
-#include "mindspore/ccsrc/kernel/format_utils.h"
+#include "common/format_utils.h"
 
 namespace mindspore {
 namespace kernel {

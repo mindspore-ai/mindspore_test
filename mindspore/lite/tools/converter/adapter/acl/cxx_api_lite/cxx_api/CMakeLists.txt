@@ -100,7 +100,7 @@ if((MODE_ASCEND_ACL) AND NOT BUILD_LITE)
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/backend/common/optimizer/node_pass.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/backend/common/optimizer/visitor.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/backend/operator/ops_backend_infer_function.cc"
-        "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/kernel/kernel_build_info.cc"
+        "${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/common/kernel_build_info.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/device/kernel_info.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/plugin/device/ascend/optimizer/mindir/reduce_axis_update.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/plugin/device/ascend/optimizer/ge_optimization.cc")
@@ -171,17 +171,19 @@ endif()
 if(ENABLE_D OR ENABLE_GPU)
     if(BUILD_LITE)
         target_link_libraries(mslite_shared_lib PRIVATE -Wl,--as-needed ${SECUREC_LIBRARY}
-                mindspore_backend mindspore_core mindspore_ops mindspore_common proto_input mindspore::protobuf)
+                mindspore_backend mindspore_core mindspore_ops mindspore_common mindspore_ops_kernel_common
+                proto_input mindspore::protobuf)
     else()
         target_link_libraries(mindspore_shared_lib PRIVATE -Wl,--as-needed ${SECUREC_LIBRARY}
-                mindspore_backend mindspore_core mindspore_ops mindspore_common proto_input mindspore::protobuf)
+                mindspore_backend mindspore_core mindspore_ops mindspore_common mindspore_ops_kernel_common
+                proto_input mindspore::protobuf)
     endif()
 else()
     if(BUILD_LITE)
         target_link_libraries(mslite_shared_lib PRIVATE mindspore_core mindspore_ops ${SECUREC_LIBRARY})
     else()
         target_link_libraries(mindspore_shared_lib PRIVATE ${PY3_LIBG} ${SECUREC_LIBRARY}
-                mindspore_backend mindspore mindspore_core mindspore_ops mindspore_common
+                mindspore_backend mindspore mindspore_core mindspore_ops mindspore_common mindspore_ops_kernel_common
                 proto_input mindspore::protobuf)
     endif()
 endif()

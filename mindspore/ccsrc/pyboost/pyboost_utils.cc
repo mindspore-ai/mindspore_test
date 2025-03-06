@@ -18,8 +18,8 @@
 #include <algorithm>
 #include <utility>
 #include <unordered_map>
-#include "kernel/common_utils.h"
-#include "kernel/kernel_mod_cache.h"
+#include "common/common_utils.h"
+#include "common/kernel_mod_cache.h"
 #include "mindapi/base/type_id.h"
 #include "runtime/device/device_address_utils.h"
 #include "ops/ops_frontend_func_impl.h"

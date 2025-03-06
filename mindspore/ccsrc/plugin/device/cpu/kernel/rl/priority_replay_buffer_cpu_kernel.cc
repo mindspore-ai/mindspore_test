@@ -20,7 +20,7 @@
 #include <algorithm>
 #include <memory>
 #include <functional>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "include/common/factory/replay_buffer_factory.h"
 
 namespace mindspore {

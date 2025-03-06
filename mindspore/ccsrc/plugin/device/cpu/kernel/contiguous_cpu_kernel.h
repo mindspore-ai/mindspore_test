@@ -21,7 +21,7 @@
 #include <map>
 #include <utility>
 #include "ir/tensor_storage_info.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore {

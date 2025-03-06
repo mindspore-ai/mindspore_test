@@ -23,7 +23,7 @@
 #include <utility>
 #include <map>
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
@@ -60,7 +60,6 @@ class CropAndResizeCpuKernelMod : public NativeCpuKernelMod {
   std::vector<KernelAttr> GetOpSupport() override;
 
  private:
-  void InitFunc(const CNodePtr &kernel_node);
   template <typename T>
   bool LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                     const std::vector<kernel::KernelTensor *> &outputs);

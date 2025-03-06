@@ -18,7 +18,7 @@
 #include "kernel/gpu/nn/apply_adam_with_amsgrad_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/apply_adam_with_amsgrad_impl.cuh"
 #include "abstract/utils.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "include/curand.h"
 #include "ops_utils/op_utils.h"
 

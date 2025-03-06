@@ -16,13 +16,8 @@ else()
 endif()
 
 # mindspore_ops_grad
-file(GLOB_RECURSE GRAD_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${OPS_DIR}/grad/*.cc)
-add_library(mindspore_ops_grad STATIC ${GRAD_SRC})
-target_compile_definitions(mindspore_ops_grad PRIVATE COMMON_DLL BUILDING_ME_DLL)
-set_property(TARGET mindspore_ops_grad PROPERTY COMPILE_DEFINITIONS
-  SUBMODULE_ID=mindspore::SubModuleId::SM_ANALYZER)
+include(cmake/ops_grad.cmake)
 
 add_subdirectory(kernel)
 
-# mindspore_ops_host
 include(cmake/ops_host.cmake)

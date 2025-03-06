@@ -16,7 +16,6 @@
 
 #include "infer/ops_func_impl/dot.h"
 #include "ops_utils/op_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::ops {
 ShapeArray DotFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {

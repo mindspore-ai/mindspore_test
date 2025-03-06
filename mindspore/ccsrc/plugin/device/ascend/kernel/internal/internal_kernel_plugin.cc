@@ -28,7 +28,7 @@
 #include "plugin/device/ascend/kernel/internal/internal_helper.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "kernel/framework_utils.h"
 #include "op_def/math_op_name.h"

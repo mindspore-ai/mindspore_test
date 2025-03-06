@@ -25,10 +25,10 @@
 #include <string>
 #include <functional>
 #include <utility>
-#include "kernel/ops_utils.h"
+#include "common/kernel_utils.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "kernel/philox_random.h"
 
 namespace mindspore {

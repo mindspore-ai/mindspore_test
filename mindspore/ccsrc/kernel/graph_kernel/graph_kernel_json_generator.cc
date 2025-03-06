@@ -36,7 +36,7 @@
 #include <cuda.h>
 #endif
 #else
-#include "kernel/oplib/oplib.h"
+#include "common/oplib/oplib.h"
 #include "runtime/hardware/device_context_manager.h"
 #endif
 

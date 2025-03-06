@@ -28,9 +28,9 @@
 #ifdef ENABLE_AKG
 #include "plugin/device/cpu/kernel/akg/akg_cpu_kernel_build.h"
 #endif
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 #include "kernel/framework_utils.h"
 #include "plugin/device/cpu/hal/device/kernel_select_cpu.h"
 #include "utils/trace_base.h"
@@ -71,7 +71,8 @@
 #include "plugin/device/cpu/hal/device/cpu_kernel_task.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_synchronizer.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "kernel/oplib/oplib.h"
+#include "ops_utils/op_constants.h"
+#include "common/oplib/oplib.h"
 #include "runtime/device/move_to.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "runtime/device/tensor_array.h"
@@ -86,6 +87,56 @@ const char kModelNameCPU[] = "CPU";
 const char kEventOptimizeGraph[] = "OptimizeGraph";
 const char kStageSetKernelInfo[] = "SetKernelInfo";
 
+std::pair<bool, size_t> MatchMultiDynamicKernelAttr(const kernel::KernelAttr &kernel_attr,
+                                                    const std::vector<int64_t> &dyn_input_sizes,
+                                                    const std::vector<kernel::KernelAttr> &kernel_attr_list) {
+  auto output_num = kernel_attr.GetOutputSize();
+  for (size_t index = 0; index < kernel_attr_list.size(); ++index) {
+    // support multi dynamic inputs.
+    const auto &cur_kernel_attr = kernel_attr_list[index];
+    auto cur_input_num = cur_kernel_attr.GetInputSize();
+    if (dyn_input_sizes.size() != cur_input_num) {
+      MS_LOG(EXCEPTION) << "Kernel attr's input num: " << cur_input_num
+                        << ", is not equal to dynamic input size: " << dyn_input_sizes.size();
+    }
+    bool mis_match = false;
+    size_t input_index = 0;
+    for (size_t i = 0; i < cur_input_num; ++i) {
+      int64_t dyn_input_size = dyn_input_sizes[i];
+      if (dyn_input_size < 0) {
+        dyn_input_size = 1;
+      }
+      auto dtype = cur_kernel_attr.GetInputAttr(i).dtype;
+      for (size_t j = 0; j < LongToSize(dyn_input_size); ++j) {
+        if (kernel_attr.GetInputAttr(input_index).dtype != dtype) {
+          mis_match = true;
+          break;
+        }
+        ++input_index;
+      }
+      if (mis_match) {
+        break;
+      }
+    }
+    if (mis_match) {
+      continue;
+    }
+
+    // only support one dynamic output. TODO: support multi dynamic output.
+    for (size_t i = 0; i < output_num; ++i) {
+      auto dtype = cur_kernel_attr.GetOutputAttr(i).dtype;
+      if (kernel_attr.GetInputAttr(i).dtype != dtype) {
+        mis_match = true;
+        break;
+      }
+    }
+    if (!mis_match) {
+      return std::make_pair(true, index);
+    }
+  }
+  return std::make_pair(false, 0);
+}
+
 runtime::KernelTaskPtr GetTaskByTaskType(const runtime::KernelTaskType &task_type,
                                          const std::shared_ptr<runtime::KernelTaskContext> &task_context) {
   switch (task_type) {
@@ -98,6 +149,50 @@ runtime::KernelTaskPtr GetTaskByTaskType(const runtime::KernelTaskType &task_typ
   }
 }
 }  // namespace
+
+void SetCpuRefMapToKernelInfo(const CNodePtr &apply_kernel, const std::vector<kernel::KernelAttr> &apply_kernel_attrs) {
+  MS_EXCEPTION_IF_NULL(apply_kernel);
+  auto kernel_attrs = apply_kernel_attrs;
+  if (kernel_attrs.empty()) {
+    return;
+  }
+
+  auto build_info = AnfAlgo::GetSelectKernelBuildInfo(apply_kernel);
+  MS_EXCEPTION_IF_NULL(build_info);
+  auto kernel_attr = GetKernelAttrFromBuildInfo(build_info);
+  std::vector<int64_t> dyn_input_sizes = {};
+  if (common::AnfAlgo::HasNodeAttr(kAttrDynInputSizes, apply_kernel)) {
+    dyn_input_sizes = common::AnfAlgo::GetNodeAttr<std::vector<int64_t>>(apply_kernel, kAttrDynInputSizes);
+  }
+  std::pair<bool, int64_t> match_result;
+
+  if (kernel_attrs[0].GetSkipCheck()) {
+    // If kernel skips attr check, we need to synchronize the ref map in case it's discarded.
+    SyncOutInRef(kernel_attrs[0], &kernel_attr);
+    kernel_attrs[0] = kernel_attr;
+    match_result = {true, 0};
+  } else if (dyn_input_sizes.empty() || kernel_attrs[0].GetAllSame()) {
+    match_result = MatchKernelAttr(kernel_attr, kernel_attrs);
+  } else {
+    match_result = MatchMultiDynamicKernelAttr(kernel_attr, dyn_input_sizes, kernel_attrs);
+  }
+
+  auto [is_match, index] = match_result;
+  if (!is_match) {
+    constexpr auto recursive_level = 2;
+    MS_LOG_WITH_NODE(EXCEPTION, apply_kernel)
+      << apply_kernel->fullname_with_scope() << " does not support this kernel data type: " << build_info->ToString()
+      << ", node debug name: " << apply_kernel->DebugString(recursive_level);
+  }
+
+  auto kernel_info = dynamic_cast<device::KernelInfo *>(apply_kernel->kernel_info());
+  MS_EXCEPTION_IF_NULL(kernel_info);
+  const auto &matched_kernel_attr = kernel_attrs[index];
+  if (!matched_kernel_attr.GetOutInRefMap().empty() || matched_kernel_attr.GetAllOutInRef()) {
+    kernel_info->set_ref_map(matched_kernel_attr.GetAllOutInRef(), matched_kernel_attr.GetOutInRefMap());
+  }
+}
+
 using mindspore::kernel::KernelBuildInfo;
 
 void CPUDeviceContext::Initialize() {
@@ -442,7 +537,7 @@ void CPUKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
     }
 
     auto kernel_attrs = cpu_kernel->GetOpSupport();
-    kernel::SetCpuRefMapToKernelInfo(node, kernel_attrs);
+    SetCpuRefMapToKernelInfo(node, kernel_attrs);
     auto thread_pool = kernel::GetActorMgrInnerThreadPool();
     cpu_kernel->SetThreadPool(thread_pool);
     std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(node);

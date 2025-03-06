@@ -71,16 +71,16 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
             ${CCSRC_DIR}/runtime/pynative/op_runtime_info.cc
             ${CCSRC_DIR}/runtime/hardware/device_type.cc
             ${CCSRC_DIR}/common/runtime_conf/runtime_conf.cc
-            ${CCSRC_DIR}/kernel/kernel_build_info.cc
-            ${CCSRC_DIR}/kernel/ops_utils.cc
-            ${CCSRC_DIR}/kernel/common_utils.cc
-            ${CCSRC_DIR}/kernel/format_utils.cc
+            ${OPS_DIR}/kernel/common/kernel_build_info.cc
+            ${OPS_DIR}/kernel/common/kernel_utils.cc
+            ${OPS_DIR}/kernel/common/common_utils.cc
+            ${OPS_DIR}/kernel/common/format_utils.cc
             ${CCSRC_DIR}/kernel/framework_utils.cc
             ${CCSRC_DIR}/kernel/philox_random.cc
-            ${CCSRC_DIR}/kernel/kernel_factory.cc
-            ${CCSRC_DIR}/kernel/kernel.cc
+            ${OPS_DIR}/kernel/common/kernel_factory.cc
+            ${OPS_DIR}/kernel/common/kernel.cc
             ${CCSRC_DIR}/kernel/kash/kernel_pack.cc
-            ${CCSRC_DIR}/kernel/oplib/oplib.cc
+            ${OPS_DIR}/kernel/common/oplib/oplib.cc
             ${CMAKE_CURRENT_SOURCE_DIR}/mock/anf_ir_dump.cc
             ${CCSRC_DIR}/common/debug/common.cc
             ${CCSRC_DIR}/common/debug/env_config_parser.cc

@@ -20,7 +20,7 @@
 #include "plugin/device/cpu/kernel/rl/tensors_queue_cpu_base.h"
 #include <string>
 #include <vector>
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

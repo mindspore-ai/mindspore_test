@@ -21,11 +21,12 @@
 #include "ir/tensor.h"
 #include "ir/scalar.h"
 #include "mindspore/ops/ops_utils/memory_overlap.h"
+#include "kernel/ascend/visible.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-class ${op_name}Ascend : public pyboost::${op_name} {
+class OPS_ASCEND_API ${op_name}Ascend : public pyboost::${op_name} {
  public:
   ${op_name}Ascend(PrimitivePtr primitive, const DeviceContext *device_context)
       : ${op_name}(std::move(primitive), device_context) {}

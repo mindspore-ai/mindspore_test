@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_FIFO_REPLAY_BUFFER_H_
 
 #include <vector>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 
 namespace mindspore {
 namespace kernel {

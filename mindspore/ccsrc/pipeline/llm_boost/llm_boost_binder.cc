@@ -22,7 +22,7 @@
 #include <vector>
 #include <algorithm>
 #include "include/common/utils/convert_utils_py.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "include/common/utils/tensor_py.h"
 
 namespace mindspore {

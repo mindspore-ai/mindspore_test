@@ -1,7 +1,6 @@
 include(${CMAKE_SOURCE_DIR}/cmake/graphengine_variables.cmake)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/plugin/device/ascend)
 add_subdirectory(backend/ge_backend/graph_ir)
-add_subdirectory(plugin/device/ascend/acl_ir)
 add_subdirectory(plugin/res_manager/ascend/ascend_device_address)
 add_subdirectory(plugin/res_manager/ascend/event)
 add_subdirectory(plugin/res_manager/ascend/mem_manager)

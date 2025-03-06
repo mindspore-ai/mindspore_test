@@ -23,7 +23,7 @@
 #include <unordered_map>
 
 #include "include/common/utils/anfalgo.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "base/base.h"
 #include "kernel/framework_utils.h"
 

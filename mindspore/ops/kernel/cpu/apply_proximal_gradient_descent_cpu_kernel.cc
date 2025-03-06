@@ -16,7 +16,7 @@
 #include "kernel/cpu/apply_proximal_gradient_descent_cpu_kernel.h"
 #include <algorithm>
 #include <functional>
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/cpu/nnacl/op_base.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/nnacl/fp32_grad/apply_proximal_gradient_descent_fp32.h"

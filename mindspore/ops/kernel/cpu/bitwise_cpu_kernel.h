@@ -27,7 +27,7 @@
 #include <utility>
 
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "kernel/cpu/nnacl/arithmetic_parameter.h"
 
 namespace mindspore {

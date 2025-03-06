@@ -23,7 +23,7 @@
 #include <map>
 #include <set>
 #include <string>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "op_def/structure_op_name.h"
 #include "op_def/nn_op_name.h"
 #include "op_def/framework_op_name.h"

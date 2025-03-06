@@ -16,7 +16,7 @@
 
 #include <algorithm>
 
-#include "kernel/ops_utils.h"
+#include "common/kernel_utils.h"
 #include "kernel/gpu/arrays/strided_slice_grad_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 

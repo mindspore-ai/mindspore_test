@@ -17,7 +17,7 @@
 #include "plugin/device/ascend/kernel/akg/akg_kernel_metadata.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "kernel/oplib/oplib.h"
+#include "common/oplib/oplib.h"
 #include "kernel/framework_utils.h"
 
 namespace mindspore {

@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <map>
 #include <functional>
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/cpu/nnacl/fp32/adam_fp32.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "ops_utils/op_utils.h"

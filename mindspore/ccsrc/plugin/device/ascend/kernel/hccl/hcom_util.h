@@ -29,7 +29,7 @@
 #include "hccl/hccl_types.h"
 #include "runtime/collective/collective_communication_lib.h"
 #include "utils/shape_utils.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "ir/base_tensor.h"

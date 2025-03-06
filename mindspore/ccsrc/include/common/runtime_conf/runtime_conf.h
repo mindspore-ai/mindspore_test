@@ -136,6 +136,8 @@ class COMMON_EXPORT RuntimeConf {
   int mem_optimize_level_;
   std::map<std::string, bool> conf_status_;
 };
+
+COMMON_EXPORT void ComputeThreadNums(size_t *actor_thread_num, size_t *actor_and_kernel_thread_num);
 }  // namespace runtime
 }  // namespace mindspore
 

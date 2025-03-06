@@ -17,9 +17,10 @@
 #include <memory>
 #include "plugin/device/ascend/hal/device/ascend_data_queue.h"
 #include "include/backend/data_queue/data_queue_mgr.h"
-#include "plugin/device/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "pybind_api/gil_scoped_long_running.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
@@ -99,6 +100,6 @@ bool GetNextAclKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
 
   return AclKernelMod::Launch(inputs, workspace, outputs, stream_ptr);
 }
-
+MS_KERNEL_FACTORY_REG(AclKernelMod, GetNext, GetNextAclKernelMod);
 }  // namespace kernel
 }  // namespace mindspore

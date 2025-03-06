@@ -24,7 +24,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/tensor.h"
-#include "kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 #include "include/backend/kernel_info.h"
 
 namespace mindspore {

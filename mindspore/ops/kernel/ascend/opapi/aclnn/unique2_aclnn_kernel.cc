@@ -16,7 +16,7 @@
 #include "kernel/ascend/opapi/aclnn/unique2_aclnn_kernel.h"
 #include <functional>
 #include "ir/tensor.h"
-#include "plugin/device/ascend/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "runtime/device/kernel_runtime.h"
 
 namespace mindspore {

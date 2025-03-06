@@ -17,7 +17,7 @@
 #include <memory>
 #include <vector>
 #include "ir/tensor.h"
-#include "plugin/device/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/base/types.h"
 #include "mindspore/ops/ops_utils/op_utils.h"

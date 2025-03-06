@@ -19,8 +19,8 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "kernel/kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore::kernel {
 class KernelPlugin {

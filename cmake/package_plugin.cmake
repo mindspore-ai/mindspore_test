@@ -43,7 +43,7 @@ endif()
 
 if(ENABLE_D)
     install(
-            TARGETS mindspore_ascend LIBRARY
+            TARGETS mindspore_ascend mindspore_ops_ascend LIBRARY
             DESTINATION ${INSTALL_PLUGIN_DIR}
             COMPONENT mindspore
             NAMELINK_SKIP

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "include/common/runtime_conf/runtime_conf.h"
+#include <algorithm>
 #include "utils/ms_utils.h"
 #include "utils/ms_context.h"
 
@@ -49,5 +50,47 @@ std::shared_ptr<RuntimeConf> RuntimeConf::GetInstance() {
   return inst_context_;
 }
 
+void ComputeThreadNums(size_t *actor_thread_num, size_t *actor_and_kernel_thread_num) {
+  MS_EXCEPTION_IF_NULL(actor_thread_num);
+  MS_EXCEPTION_IF_NULL(actor_and_kernel_thread_num);
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  const size_t cpu_core_num = std::thread::hardware_concurrency();
+
+  auto runtime_conf_instance = RuntimeConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(runtime_conf_instance);
+  auto inter_op_parallel_num = static_cast<size_t>(context_ptr->get_param<uint32_t>(MS_CTX_INTER_OP_PARALLEL_NUM));
+  if (runtime_conf_instance->IsDispatchThreadsNumConfigured()) {
+    inter_op_parallel_num = runtime_conf_instance->dispatch_threads_num();
+  }
+  auto runtime_num_threads = static_cast<size_t>(context_ptr->get_param<uint32_t>(MS_CTX_RUNTIME_NUM_THREADS));
+  if (runtime_conf_instance->IsOpThreadsNumConfigured()) {
+    runtime_num_threads = runtime_conf_instance->op_threads_num();
+  }
+
+  size_t runtime_num_threads_min = std::min(runtime_num_threads, cpu_core_num);
+  size_t inter_op_parallel_num_min = std::min(inter_op_parallel_num, cpu_core_num);
+  const float kActorUsage = 0.18;
+  const size_t kActorThreadMinNum = 1;
+  // Compute the actor and kernel thread num.
+  // The MemoryManagerActor binds single thread, so if runtime_num_threads is 30, actor num would be 5,
+  // kernel num would be 25.
+  if (inter_op_parallel_num_min == 0) {
+    size_t actor_thread_max_num =
+      std::max(static_cast<size_t>(std::floor(runtime_num_threads_min * kActorUsage)), kActorThreadMinNum);
+    *actor_thread_num = actor_thread_max_num;
+    *actor_and_kernel_thread_num =
+      runtime_num_threads_min > *actor_thread_num ? (runtime_num_threads_min) : (*actor_thread_num + 1);
+  } else {
+    *actor_thread_num = inter_op_parallel_num_min;
+    *actor_and_kernel_thread_num = runtime_num_threads_min + *actor_thread_num;
+  }
+
+  if (*actor_and_kernel_thread_num > cpu_core_num) {
+    MS_LOG(WARNING) << "The total num of thread pool is " << *actor_and_kernel_thread_num
+                    << ", but the num of cpu core is " << cpu_core_num
+                    << ", please set the threads within reasonable limits.";
+  }
+}
 }  // namespace runtime
 }  // namespace mindspore

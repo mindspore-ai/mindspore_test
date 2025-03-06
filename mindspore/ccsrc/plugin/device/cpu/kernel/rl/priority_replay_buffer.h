@@ -22,7 +22,7 @@
 #include <memory>
 #include <limits>
 #include <random>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "utils/log_adapter.h"
 #include "plugin/device/cpu/kernel/rl/fifo_replay_buffer.h"
 #include "plugin/device/cpu/kernel/rl/segment_tree.h"

@@ -28,8 +28,8 @@
 #include "runtime/device/device_address_utils.h"
 #include "runtime/pipeline/pipeline.h"
 #include "include/common/runtime_conf/runtime_conf.h"
-#include "plugin/device/ascend/acl_ir/op_api_exec.h"
-#include "plugin/device/ascend/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_exec.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 
 using ProcessCache = mindspore::device::ascend::ProcessCache;
 using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor *, ProcessCache, size_t>;

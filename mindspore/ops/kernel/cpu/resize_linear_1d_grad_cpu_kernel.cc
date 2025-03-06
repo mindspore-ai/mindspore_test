@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <functional>
 #include <unordered_map>
-#include "kernel/ops_utils.h"
+#include "common/kernel_utils.h"
 #include "infer/ops_func_impl/resize_linear_1d_grad.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 

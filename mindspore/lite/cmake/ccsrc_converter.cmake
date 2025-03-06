@@ -19,9 +19,10 @@ if(MSLITE_ENABLE_CONVERTER)
             ${CCSRC_DIR}/backend/common/optimizer/visitor.cc
             ${CCSRC_DIR}/backend/common/optimizer/graph_optimizer.cc
             ${CCSRC_DIR}/backend/operator/ops_backend_infer_function.cc
-            ${CCSRC_DIR}/kernel/kernel.cc
-            ${CCSRC_DIR}/kernel/kernel_factory.cc
-            ${CCSRC_DIR}/kernel/format_utils.cc
+            ${OPS_DIR}/kernel/common/kernel.cc
+            ${OPS_DIR}/kernel/common/kernel_tensor.cc
+            ${OPS_DIR}/kernel/common/kernel_factory.cc
+            ${OPS_DIR}/kernel/common/format_utils.cc
             ${CCSRC_DIR}/utils/convert_utils.cc
             )
 
@@ -33,13 +34,13 @@ if(MSLITE_ENABLE_CONVERTER)
                 ${CCSRC_DIR}/common/pynative/abstract_converter.cc
                 ${CCSRC_DIR}/plugin/device/cpu/kernel/cpu_kernel.cc
                 ${CCSRC_DIR}/distributed/cluster/dummy_cluster_context.cc
-                ${CCSRC_DIR}/kernel/ops_utils.cc
-                ${CCSRC_DIR}/kernel/common_utils.cc
+                ${OPS_DIR}/kernel/common/kernel_utils.cc
+                ${OPS_DIR}/kernel/common/common_utils.cc
                 ${CCSRC_DIR}/kernel/framework_utils.cc
                 ${CCSRC_DIR}/kernel/philox_random.cc
                 ${CCSRC_DIR}/kernel/kash/kernel_pack.cc
-                ${CCSRC_DIR}/kernel/kernel_build_info.cc
-                ${CCSRC_DIR}/kernel/oplib/oplib.cc
+                ${OPS_DIR}/kernel/common/kernel_build_info.cc
+                ${OPS_DIR}/kernel/common/oplib/oplib.cc
                 ${CCSRC_DIR}/runtime/device/kernel_info.cc
                 ${CCSRC_DIR}/utils/ms_device_shape_transfer.cc
                 ${CCSRC_DIR}/runtime/hardware/device_type.cc
@@ -113,4 +114,5 @@ if(MSLITE_ENABLE_CONVERTER)
     endif()
     target_compile_definitions(ccsrc_src_mid PRIVATE BACKEND_DLL)
     target_compile_definitions(ccsrc_src_mid PRIVATE COMMON_DLL)
+    target_compile_definitions(ccsrc_src_mid PRIVATE OPS_KERNEL_COMMON_DLL)
 endif()

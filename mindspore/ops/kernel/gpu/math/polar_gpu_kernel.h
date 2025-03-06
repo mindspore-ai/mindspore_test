@@ -26,7 +26,7 @@
 #include <functional>
 #include "mindspore/ops/infer/ops_func_impl/polar.h"
 #include "abstract/utils.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"

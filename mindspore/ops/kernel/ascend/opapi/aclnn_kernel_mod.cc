@@ -21,7 +21,7 @@
 #include <functional>
 #include "utils/ms_utils.h"
 #include "ir/tensor.h"
-#include "plugin/device/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 
 namespace mindspore {
 namespace kernel {

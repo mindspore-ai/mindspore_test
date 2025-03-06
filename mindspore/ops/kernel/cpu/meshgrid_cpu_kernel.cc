@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <functional>
 #include <string>
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "infer/ops_func_impl/meshgrid.h"
 #include "op_def/op_enum.h"
 

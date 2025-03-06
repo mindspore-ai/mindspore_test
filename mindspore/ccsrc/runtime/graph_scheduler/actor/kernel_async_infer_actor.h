@@ -21,7 +21,7 @@
 #include <memory>
 
 #include "runtime/graph_scheduler/actor/actor_common.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "runtime/hardware/device_context.h"
 #include "include/backend/visible.h"
 

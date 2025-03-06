@@ -31,17 +31,17 @@
 #include <tuple>
 #include <set>
 #include <optional>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "kernel/gpu/gpu_kernel_mod.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "kernel/gpu/kernel_constants.h"
 #include "plugin/res_manager/gpu/device/gpu_device_manager.h"
 #include "plugin/res_manager/gpu/device/gpu_device_address.h"
 #include "plugin/device/gpu/hal/device/gpu_common.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "kernel/kernel_build_info.h"
-#include "kernel/common_utils.h"
+#include "common/kernel_build_info.h"
+#include "common/common_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_common.h"
 
 using AnfAlgo = mindspore::session::AnfRuntimeAlgorithm;

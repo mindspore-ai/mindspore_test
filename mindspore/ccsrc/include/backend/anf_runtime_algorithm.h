@@ -30,8 +30,8 @@
 #include "base/base.h"
 #include "ir/primitive.h"
 #include "ir/kernel_info_dev.h"
-#include "kernel/kernel.h"
-#include "kernel/kernel_build_info.h"
+#include "common/kernel.h"
+#include "common/kernel_build_info.h"
 #include "utils/anf_utils.h"
 #include "include/common/utils/contract.h"
 #include "include/backend/device_address.h"
@@ -142,6 +142,19 @@ class BACKEND_EXPORT AnfRuntimeAlgorithm {
   // Get all output kernel tensor if exists, otherwise create new KernelTensor and set into node.
   static std::vector<KernelTensor *> GetOrCreateAllOutputKernelTensors(const AnfNodePtr &node);
 
+  // Set kernel object type
+  static void SetKernelObjectTypeBuildInfo(const AnfNodePtr &kernel_node,
+                                           const std::vector<kernel::KernelObjectType> &input_kernel_object_types,
+                                           const std::vector<kernel::KernelObjectType> &output_kernel_object_types);
+  static void SetKernelObjectTypeBuildInfo(
+    const AnfNodePtr &kernel_node, const std::vector<kernel::KernelObjectType> &input_kernel_object_types,
+    const std::vector<kernel::KernelObjectType> &output_kernel_object_types,
+    const std::vector<kernel::KernelObjectType> &output_elements_kernel_object_types);
+  static void SetKernelObjectTypeWithSelectedAttr(const CNodePtr &kernel_node,
+                                                  const kernel::KernelAttr &selected_kernel_attr);
+  static bool SelectKernelByObjectType(const CNodePtr &kernel_node,
+                                       const std::vector<kernel::KernelAttr> &registered_kernel_attrs,
+                                       std::vector<kernel::KernelAttr> *selected_kernel_attrs);
   // Create output kernel tensor for node using node's shape, type and value,
   // and set device information to kernel tensor.
   static KernelTensorPtr CreateOutputKernelTensorWithDeviceInfo(const AnfWithOutIndex &node_with_index,
@@ -186,6 +199,7 @@ class BACKEND_EXPORT AnfRuntimeAlgorithm {
   static void SetSelectKernelBuildInfo(const kernel::KernelBuildInfoPtr &select_kernel_build_info, AnfNode *node);
   // get select kernel_build_info
   static kernel::KernelBuildInfoPtr GetSelectKernelBuildInfo(const AnfNodePtr &node);
+  static kernel::KernelAttr GetKernelAttrFromNode(const AnfNodePtr &kernel_node);
   // get kernelMode
   static kernel::KernelMod *GetKernelMod(const AnfNodePtr &node);
   // set kernel mod

@@ -19,10 +19,10 @@
 #include <memory>
 #include <map>
 #include <vector>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "ir/func_graph.h"
 #include "runtime/hardware/device_context.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 namespace mindspore::kernel {
 class SubgraphKernel : public KernelMod {
  public:

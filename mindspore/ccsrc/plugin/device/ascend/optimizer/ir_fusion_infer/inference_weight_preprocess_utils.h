@@ -23,7 +23,7 @@
 #include <memory>
 #include "ir/anf.h"
 #include "ir/tensor.h"
-#include "kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 #include "include/common/utils/utils.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"

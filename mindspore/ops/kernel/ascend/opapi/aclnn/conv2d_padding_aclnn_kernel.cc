@@ -22,10 +22,10 @@
 #include <unordered_map>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "plugin/device/ascend/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "plugin/device/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "mindapi/base/types.h"
 
 namespace mindspore {

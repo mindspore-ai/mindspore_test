@@ -22,7 +22,7 @@
 #include <map>
 #include <utility>
 #include "kernel/cpu/mkldnn/mkl_cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

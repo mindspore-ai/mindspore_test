@@ -22,7 +22,7 @@
 #include <utility>
 #include <unordered_map>
 #include "ir/primitive.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "include/internal.h"
 #include "plugin/device/ascend/kernel/internal/tiling_mem_mgr.h"
 

@@ -26,17 +26,18 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "ops/op_def.h"
-#include "kernel/kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/kernel.h"
+#include "common/ms_factory.h"
 #include "include/common/utils/utils.h"
 #include "include/common/profiler.h"
 #include "runtime/pynative/op_runtime_info.h"
-#include "plugin/device/ascend/acl_ir/acl_convert.h"
-#include "plugin/device/ascend/acl_ir/op_api_exec.h"
-#include "plugin/device/ascend/acl_ir/op_api_util.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/op_api_exec.h"
+#include "kernel/ascend/acl_ir/op_api_util.h"
 #include "utils/ms_utils.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_manager.h"
 #include "kernel/ascend/opapi/aclnn_kernel_utils.h"
+#include "kernel/ascend/visible.h"
 
 namespace mindspore {
 namespace kernel {
@@ -234,7 +235,7 @@ class EmptyKernelTensor {
   KernelTensor *tensor_;
 };
 
-class AclnnKernelMod : public KernelMod {
+class OPS_ASCEND_API AclnnKernelMod : public KernelMod {
  public:
   explicit AclnnKernelMod(std::string &&op_type) : op_type_(std::move(op_type)) {
     auto capaticy_from_user = ops::GetCacheCapaticy();

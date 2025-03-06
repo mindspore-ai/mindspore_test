@@ -20,26 +20,27 @@
 #include "runtime/device/kernel_runtime.h"
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "kernel/ascend/opapi/aclnn/all_gather_matmul_aclnn_kernel.h"
-#include "plugin/device/ascend/acl_ir/op_api_util.h"
+#include "kernel/ascend/acl_ir/op_api_util.h"
 #include "mindspore/ops/infer/ops_func_impl/all_gather_matmul.h"
 
 namespace mindspore {
 namespace kernel {
-void AllGatherMatmulAscend::InitializeInputs(const std::vector<KernelTensor *> &inputs) {
+void AllGatherMatmulAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
+                                             const std::vector<KernelTensor *> &outputs) {
+  MS_EXCEPTION_IF_NULL(primitive_);
+
   trans_input_ = inputs[mindspore::ops::kAllGatherMatmulInputTransInputIndex]->GetValueWithCheck<bool>();
   trans_x2_ = inputs[mindspore::ops::kAllGatherMatmulInputTransX2Index]->GetValueWithCheck<bool>();
   input_ = std::pair<KernelTensor *, bool>(inputs[mindspore::ops::kAllGatherMatmulInputInputIndex], trans_input_);
   x2_ = std::pair<KernelTensor *, bool>(inputs[mindspore::ops::kAllGatherMatmulInputX2Index], trans_x2_);
   group_ = inputs[mindspore::ops::kAllGatherMatmulInputGroupIndex]->GetValueWithCheck<std::string>();
   hccl_inner_comm_name_ = mindspore::device::ascend::OpApiUtil::GetCommName(group_);
+  world_size_ = inputs[mindspore::ops::kAllGatherMatmulInputWorldSizeIndex]->GetValueWithCheck<int64_t>();
   gather_index_ = inputs[mindspore::ops::kAllGatherMatmulInputGatherIndexIndex]->GetValueWithCheck<int64_t>();
   comm_turn_ = inputs[mindspore::ops::kAllGatherMatmulInputCommTurnIndex]->GetValueWithCheck<int64_t>();
-}
 
-void AllGatherMatmulAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
-                                             const std::vector<KernelTensor *> &outputs) {
-  MS_EXCEPTION_IF_NULL(primitive_);
-  InitializeInputs(inputs);
+  mindspore::device::ascend::OpApiUtil::CheckWorldSize(group_, world_size_, primitive_->name());
+
   GetWorkspaceForResize(input_, x2_, nullptr, hccl_inner_comm_name_, gather_index_, comm_turn_, stream_mode_,
                         outputs[mindspore::ops::kAllGatherMatmulOutputYIndex],
                         outputs[mindspore::ops::kAllGatherMatmulOutputGatherOutIndex]);

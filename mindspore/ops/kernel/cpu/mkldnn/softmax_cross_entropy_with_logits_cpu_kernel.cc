@@ -18,7 +18,7 @@
 #include <numeric>
 #include <limits>
 #include <functional>
-#include "kernel/ops_utils.h"
+#include "common/kernel_utils.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {

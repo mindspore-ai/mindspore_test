@@ -45,7 +45,7 @@
 #include "include/common/utils/parallel_context.h"
 #include "utils/ms_context.h"
 #include "frontend/ir/primitive_py.h"
-#include "kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 #include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "abstract/utils.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "include/common/utils/utils.h"
 
 #include "plugin/device/cpu/hal/device/cpu_hash_table.h"

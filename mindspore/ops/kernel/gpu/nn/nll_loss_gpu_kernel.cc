@@ -17,7 +17,7 @@
 #include "kernel/gpu/nn/nll_loss_gpu_kernel.h"
 #include <map>
 #include <utility>
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

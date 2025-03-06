@@ -18,7 +18,6 @@
 
 #include <vector>
 
-#include "include/common/utils/utils.h"
 #include "ops/ops_func_impl/op_func_impl.h"
 #include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"

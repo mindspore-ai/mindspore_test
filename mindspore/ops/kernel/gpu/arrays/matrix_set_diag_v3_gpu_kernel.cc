@@ -20,7 +20,7 @@
 #include <map>
 #include <functional>
 #include "mindspore/ops/op_def/array_ops.h"
-#include "kernel/ops_utils.h"
+#include "common/kernel_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/matrix_set_diag_impl.cuh"
 #include "mindspore/ops/infer/matrix_set_diag_v3.h"
 

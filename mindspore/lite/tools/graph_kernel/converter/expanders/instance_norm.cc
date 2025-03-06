@@ -17,7 +17,7 @@
 #include <memory>
 
 #include "backend/common/graph_kernel/expanders/op_desc_registry.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 
 namespace mindspore::graphkernel::expanders {
 constexpr size_t kInputIdx = 0;

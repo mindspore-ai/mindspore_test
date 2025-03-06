@@ -21,7 +21,7 @@
 #include <string>
 #include <memory>
 #include <map>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "ir/dtype/type_id.h"
 #include "utils/ms_context.h"
 #include "runtime/hardware/device_context_manager.h"

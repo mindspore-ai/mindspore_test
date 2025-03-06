@@ -16,7 +16,7 @@
 
 #include "kernel/gpu/environ/environ_gpu_get.h"
 #include "kernel/environ_manager.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

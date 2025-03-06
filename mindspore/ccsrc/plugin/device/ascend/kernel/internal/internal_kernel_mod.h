@@ -20,10 +20,10 @@
 #include <vector>
 #include <string>
 
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "include/internal.h"
 #include "plugin/device/ascend/kernel/internal/tiling_mem_mgr.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 #include "plugin/device/ascend/kernel/internal/internal_tiling_cache.h"
 #include "plugin/device/ascend/kernel/internal/internal_spinlock.h"

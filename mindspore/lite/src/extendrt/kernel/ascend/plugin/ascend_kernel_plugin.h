@@ -22,7 +22,7 @@
 #include <memory>
 #include <mutex>
 #include <vector>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "include/api/status.h"
 
 namespace mindspore::kernel {

@@ -24,7 +24,7 @@
 #include "runtime/graph_scheduler/device_tensor_store.h"
 #include "runtime/hardware/device_context.h"
 #include "include/backend/debug/profiler/profiling.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 
 namespace mindspore {
 namespace runtime {

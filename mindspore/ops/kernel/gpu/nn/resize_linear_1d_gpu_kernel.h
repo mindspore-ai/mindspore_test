@@ -27,7 +27,7 @@
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "mindspore/ops/infer/ops_func_impl/resize_linear_1d.h"
-#include "mindspore/ccsrc/kernel/common_utils.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

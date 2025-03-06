@@ -22,7 +22,7 @@
 
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "plugin/device/ascend/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {

@@ -24,7 +24,7 @@
 #include <utility>
 #include <vector>
 
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/sparse_dense_cwise_operation_impl.cuh"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"

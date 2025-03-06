@@ -15,7 +15,7 @@
  */
 #include "kernel/gpu/rl/buffer_sample_gpu_kernel.h"
 
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/gpu/cuda_impl/rl/rl_buffer_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/topk_impl.cuh"
 #include "plugin/device/gpu/hal/device/gpu_common.h"

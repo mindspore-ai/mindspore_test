@@ -21,7 +21,7 @@
 #include <vector>
 #include <string>
 #include "src/extendrt/kernel/base_kernel.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "ops/base_operator.h"
 
 namespace mindspore::kernel {

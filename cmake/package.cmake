@@ -53,7 +53,7 @@ install(
 
 install(
     TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend mindspore_pyboost mindspore_pynative
-        mindspore_backend_manager mindspore_res_manager mindspore_frontend
+        mindspore_backend_manager mindspore_res_manager mindspore_frontend mindspore_ops_kernel_common
     DESTINATION ${INSTALL_LIB_DIR}
     COMPONENT mindspore
 )
@@ -72,7 +72,7 @@ if(ENABLE_D)
         COMPONENT mindspore
     )
     install(
-        TARGETS mindspore_ascend LIBRARY
+        TARGETS mindspore_ascend mindspore_ops_ascend LIBRARY
         DESTINATION ${INSTALL_PLUGIN_DIR}
         COMPONENT mindspore
         NAMELINK_SKIP

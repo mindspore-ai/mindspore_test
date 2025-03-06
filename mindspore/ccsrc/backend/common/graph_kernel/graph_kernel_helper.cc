@@ -35,7 +35,7 @@
 #include "kernel/graph_kernel/akg/akg_kernel_json_decoder.h"
 #include "kernel/graph_kernel/fake_abstract_shape.h"
 #include "kernel/graph_kernel/graph_kernel_json_generator.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/hash_set.h"
 #include "utils/check_convert_utils.h"

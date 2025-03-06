@@ -24,8 +24,8 @@
 #include <memory>
 #include "kernel/gpu/gpu_kernel.h"
 #include "plugin/res_manager/gpu/device/kernel_info_setter.h"
-#include "kernel/kernel_build_info.h"
-#include "kernel/common_utils.h"
+#include "common/kernel_build_info.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

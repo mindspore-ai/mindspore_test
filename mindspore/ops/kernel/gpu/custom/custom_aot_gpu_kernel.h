@@ -29,7 +29,7 @@
 #include <functional>
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "utils/custom_aot_extra.h"
 #include "utils/file_utils.h"
 

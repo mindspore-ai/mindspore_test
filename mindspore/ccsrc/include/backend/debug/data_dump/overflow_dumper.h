@@ -20,7 +20,7 @@
 #include <string>
 #include <map>
 #include "include/common/utils/anfalgo.h"
-#include "mindspore/ccsrc/kernel/kernel.h"
+#include "common/kernel.h"
 
 namespace mindspore {
 namespace debug {

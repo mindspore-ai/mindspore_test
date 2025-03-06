@@ -31,7 +31,7 @@
 #include "runtime/graph_scheduler/actor/kernel_async_resize_actor.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/graph_scheduler/device_tensor_store.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "ir/anf.h"
 #include "ir/tensor.h"
 

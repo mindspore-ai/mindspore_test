@@ -25,7 +25,7 @@
 
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "kernel/cpu/nnacl/base/broadcast_to.h"
 
 namespace mindspore {

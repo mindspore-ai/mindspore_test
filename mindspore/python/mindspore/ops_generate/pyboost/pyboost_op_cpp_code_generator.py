@@ -98,6 +98,7 @@ class PyboostOpHeaderGenerator(BaseGenerator):
                 f"Device must be ascend, gpu, or cpu, {device} is not supported")
         self.PYBOOST_OP_HEADER_TEMPLATE = template_dict[device]
         self.code_generate_path = f"{K.MS_OPS_KERNEL_PATH}/{device}/pyboost/auto_generate/"
+        self.hccl_code_generate_path = "mindspore/ccsrc/plugin/device/ascend/kernel/hccl/pyboost/auto_generate/"
         self.device = device
 
     def generate(self, work_path, op_protos):
@@ -116,6 +117,7 @@ class PyboostOpHeaderGenerator(BaseGenerator):
                 continue
             if getattr(op_proto.op_dispatch, self.device) == 'None':
                 continue
+            is_ascend_comm_op = op_proto.op_dispatch.is_comm_op and self.device == 'ascend'
             op_parser = OpTemplateParser(op_proto)
             op_name_str = op_proto.op_class.name
             call_args_with_type = op_parser.parse_call_args_with_types()
@@ -127,7 +129,7 @@ class PyboostOpHeaderGenerator(BaseGenerator):
                                                                      call_args_with_type=call_args_with_type,
                                                                      return_type=cpp_func_return)
 
-            save_path = os.path.join(work_path, self.code_generate_path)
+            save_path = os.path.join(work_path, self.code_generate_path if not is_ascend_comm_op else self.hccl_code_generate_path)
             file_name = f"{op_proto.op_name}.h"
             save_file(save_path, file_name, pyboost_op_str)
 
@@ -171,10 +173,11 @@ class PyboostOpCppGenerator:
         self.PYBOOST_CUSTOMIZE_CALL_TEMPLATE = PYBOOST_CUSTOMIZE_CALL_TEMPLATE
         self.PYBOOST_SINGLE_OP_HEADER_TEMPLATE = PYBOOST_SINGLE_OP_HEADER_TEMPLATE
         self.PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = PYBOOST_SINGLE_OP_SOURCE_TEMPLATE
+        self.PYBOOST_SINGLE_HCLL_OP_HEADER_TEMPLATE = template.PYBOOST_ASCEND_SINGLE_HCLL_OP_HEADER_TEMPLATE
         self.gen_path = gen_path
         self.device = device
 
-    def generate_customize_op_cpp_code(self, op_protos, merge_op_header, merge_op_function):
+    def generate_customize_op_cpp_code(self, op_protos, merge_op_header, merge_op_function, merge_op_hccl_header=None, merge_op_hccl_function=None):
         """
         Generate C++ code for PyBoost operations using the provided operation prototypes.
 
@@ -194,6 +197,7 @@ class PyboostOpCppGenerator:
                 continue
             if getattr(op_proto.op_dispatch, self.device) == 'None':
                 continue
+            is_ascend_comm_op = op_proto.op_dispatch.is_comm_op and self.device == 'ascend'
             op_parser = OpTemplateParser(op_proto)
             call_args = op_parser.parse_original_call_args(op_proto.op_args)
             call_args_with_type = op_parser.parse_call_args_with_types()
@@ -212,17 +216,34 @@ class PyboostOpCppGenerator:
                     op_proto.op_dispatch, self.device) + "Customize",
                 check_expression=check_inplace_func,
             )
-            customize_include = \
-                f'#include "{K.MS_OPS_KERNEL_PATH}/{self.device}/pyboost/customize/{operator_name.lower()}.h"\n'
+            if is_ascend_comm_op and ((merge_op_hccl_header is None) or (merge_op_hccl_function is None)):
+                raise ValueError(f"merge_op_hccl_header and merge_op_hccl_function must be provided for comm op {operator_name}")
+
+            if is_ascend_comm_op:
+                customize_include = \
+                    f'#include "mindspore/ccsrc/plugin/device/ascend/kernel/hccl/pyboost/{operator_name.lower()}.h"\n'
+            else:
+                customize_include = \
+                    f'#include "{K.MS_OPS_KERNEL_PATH}/{self.device}/pyboost/customize/{operator_name.lower()}.h"\n'
+
             register_custom = self._get_register_custom_kernel(op_proto)
             cpp_func_return = _generate_cpp_func_return(op_proto)
-            merge_op_header.append(self.PYBOOST_SINGLE_OP_HEADER_TEMPLATE.replace(operator_name=operator_name,
+            if is_ascend_comm_op:
+                merge_op_hccl_header.append(self.PYBOOST_SINGLE_HCLL_OP_HEADER_TEMPLATE.replace(operator_name=operator_name,
                                                                                   customize_include=customize_include))
-            merge_op_function.append(
-                self.PYBOOST_SINGLE_OP_SOURCE_TEMPLATE.replace(op_name=op_name_str,
-                                                               call_args_with_type=call_args_with_type,
-                                                               return_type=cpp_func_return, call_impl=call_impl,
-                                                               register_custom_kernel=register_custom))
+                merge_op_hccl_function.append(
+                    self.PYBOOST_SINGLE_OP_SOURCE_TEMPLATE.replace(op_name=op_name_str,
+                                                                call_args_with_type=call_args_with_type,
+                                                                return_type=cpp_func_return, call_impl=call_impl,
+                                                                register_custom_kernel=register_custom))
+            else:
+                merge_op_header.append(self.PYBOOST_SINGLE_OP_HEADER_TEMPLATE.replace(operator_name=operator_name,
+                                                                                  customize_include=customize_include))
+                merge_op_function.append(
+                    self.PYBOOST_SINGLE_OP_SOURCE_TEMPLATE.replace(op_name=op_name_str,
+                                                                call_args_with_type=call_args_with_type,
+                                                                return_type=cpp_func_return, call_impl=call_impl,
+                                                                register_custom_kernel=register_custom))
 
     def _get_register_custom_kernel(self, op_proto: OpProto):
         """
@@ -583,6 +604,7 @@ class PyboostOpFunctionGenerator(BaseGenerator):
         self.ascend_gen_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/auto_generate/"
         self.cpu_gen_path = f"{K.MS_OPS_KERNEL_PATH}/cpu/pyboost/auto_generate/"
         self.gpu_gen_path = f"{K.MS_OPS_KERNEL_PATH}/gpu/pyboost/auto_generate/"
+        self.hccl_gen_path = "mindspore/ccsrc/plugin/device/ascend/kernel/hccl/pyboost/auto_generate/"
 
     def generate(self, work_path, op_protos):
         """
@@ -617,8 +639,10 @@ class PyboostOpFunctionGenerator(BaseGenerator):
         """
         ascend_merge_op_header = []
         ascend_merge_op_function = []
+        hccl_merge_op_header = []
+        hccl_merge_op_function = []
         self.ascend_op_cpp_generator.generate_customize_op_cpp_code(op_protos, ascend_merge_op_header,
-                                                                    ascend_merge_op_function)
+                                                                    ascend_merge_op_function, hccl_merge_op_header, hccl_merge_op_function)
         self.ascend_view_op_cpp_generator.generate_view_op_cpp_code(op_protos, ascend_merge_op_header,
                                                                     ascend_merge_op_function)
         self.ascend_aclnn_cpp_generator.generate_aclnn_op_cpp_code(op_protos, ascend_merge_op_header,
@@ -640,6 +664,11 @@ class PyboostOpFunctionGenerator(BaseGenerator):
                 merge_op_header=op_header, merge_op_function=op_function)
             save_file(os.path.join(work_path, self.ascend_gen_path), f"pyboost_ascend_ops_{i}.cc",
                       ascend_pyboost_op_source)
+
+        hccl_pyboost_op_source = self.PYBOOST_ASCEND_OP_SOURCE_TEMPLATE.replace(
+            merge_op_header='\n'.join(hccl_merge_op_header), merge_op_function='\n'.join(hccl_merge_op_function))
+        save_file(os.path.join(work_path, self.hccl_gen_path), f"pyboost_hccl_ops.cc",
+                    hccl_pyboost_op_source)
 
     def _generate_pyboost_cpu_ops(self, work_path, op_protos):
         """

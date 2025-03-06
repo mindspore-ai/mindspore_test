@@ -26,7 +26,7 @@
 #include <list>
 #include <utility>
 #include "ops/base_operator.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "mindspore/core/include/ir/base_tensor.h"
 
 namespace mindspore {

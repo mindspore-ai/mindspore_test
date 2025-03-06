@@ -17,7 +17,7 @@
 #include "plugin/device/ascend/kernel/internal/quant_batch_matmul.h"
 
 #include <memory>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 
 namespace mindspore {
 namespace kernel {

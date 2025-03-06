@@ -18,7 +18,7 @@
 #include <functional>
 #include <complex>
 #include "utils/log_adapter.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "runtime/device/convert_tensor_utils.h"
 
 namespace mindspore {

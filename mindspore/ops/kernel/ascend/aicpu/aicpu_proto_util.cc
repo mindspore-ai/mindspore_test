@@ -22,7 +22,7 @@
 #include "proto/node_def.pb.h"
 
 #include "op_def/array_ops.h"
-#include "kernel/oplib/oplib.h"
+#include "common/oplib/oplib.h"
 #include "plugin/res_manager/ascend/op_adapter/transform_util.h"
 #include "kernel/ascend/aicpu/aicpu_util.h"
 

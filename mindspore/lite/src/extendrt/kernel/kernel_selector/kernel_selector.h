@@ -21,7 +21,7 @@
 #include <memory>
 #include <string>
 #include "src/infer/primitive_type.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "src/infer/graph_compiler.h"
 #include "src/extendrt/kernel/kernel_lib.h"
 #include "src/infer/kernel.h"

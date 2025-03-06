@@ -48,6 +48,7 @@ include_directories(${CMAKE_BINARY_DIR}/proto/metadef_protos)
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 include_directories(${CUDA_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops)
+include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/include)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/cpu)
 
 include(${CMAKE_SOURCE_DIR}/cmake/graphengine_variables.cmake)
@@ -260,8 +261,8 @@ list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/scheduler.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/plugin/device/cpu/kernel/akg_cpu_kernel_mod.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/plugin/device/cpu/kernel/akg_cpu_kernel_build.cc")
 
-list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
-        "../../../mindspore/ccsrc/plugin/device/ascend/hal/profiler/parallel_strategy_profiling.cc")
+# list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
+#         "../../../mindspore/ccsrc/plugin/device/ascend/hal/profiler/parallel_strategy_profiling.cc")
 list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
         "../../../mindspore/ccsrc/plugin/device/ascend/kernel/hccl/hcom_matmul_all_reduce.cc")
 list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
@@ -271,11 +272,11 @@ list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
 
 add_library(_ut_mindspore_obj STATIC ${MINDSPORE_SRC_LIST})
 target_link_libraries(_ut_mindspore_obj PRIVATE mindspore_backend mindspore_core _c_dataengine
-        mindspore_common mindspore_backend_manager mindspore_res_manager)
+        mindspore_common mindspore_ops_kernel_common mindspore_backend_manager mindspore_res_manager)
 
 add_library(_ut_mindspore_ascend_obj STATIC ${MINDSPORE_ASCEND_SRC_LIST})
 target_link_libraries(_ut_mindspore_ascend_obj PRIVATE mindspore_backend mindspore_core
-        _c_dataengine mindspore_common mindspore_backend_manager mindspore_res_manager)
+        _c_dataengine mindspore_common mindspore_ops_kernel_common mindspore_backend_manager mindspore_res_manager)
 
 foreach(number RANGE 1 ${CORE_OBJECT_COUNT})
     list(APPEND CORE_OBJECT_LIST $<TARGET_OBJECTS:core_obj_${number}>)

@@ -20,6 +20,7 @@
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "kernel/ascend/pyboost/customize/matmul_allreduce_add_rmsnorm.h"
+#include "kernel/ascend/acl_ir/op_api_util.h"
 
 namespace mindspore {
 namespace kernel {
@@ -37,7 +38,7 @@ void MatmulAllReduceAddRmsNormAscendCustomize(const std::shared_ptr<OpRunner> &o
   // Convert ValuePtr to c++ scalar
   auto epsilon_imm = static_cast<double>(GetValue<float>(epsilon));
   auto group_str = GetValue<std::string>(group);
-  std::string group_imm = device::ascend::AscendCollectiveCommLib::GetInstance().CommName(group_str);
+  std::string group_imm = device::ascend::OpApiUtil::GetCommName(group_str);
   auto comm_turn_imm = GetValue<int64_t>(comm_turn);
   auto stream_mode_imm = GetValue<int64_t>(stream_mode);
 

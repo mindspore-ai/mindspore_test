@@ -22,7 +22,7 @@
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "kernel/ascend/pyboost/auto_generate/transpose.h"
-#include "plugin/device/ascend/acl_ir/op_api_util.h"
+#include "kernel/ascend/acl_ir/op_api_util.h"
 
 namespace mindspore {
 namespace kernel {
@@ -49,12 +49,14 @@ std::vector<tensor::BaseTensorPtr> AllGatherMatmulAscendCustomize(
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
   auto group_imm = GetValue<std::string>(group);
+  auto world_size_imm = GetValue<int64_t>(world_size);
   auto gather_index_imm = GetValue<int64_t>(gather_index);
   auto comm_turn_imm = GetValue<int64_t>(comm_turn);
   auto trans_input_imm = GetValue<bool>(trans_input);
   auto trans_x2_imm = GetValue<bool>(trans_x2);
 
   auto hccl_inner_comm_name_imm = mindspore::device::ascend::OpApiUtil::GetCommName(group_imm);
+  mindspore::device::ascend::OpApiUtil::CheckWorldSize(group_imm, world_size_imm, op->primitive()->name());
   BaseTensorPtr input_ = input;
   BaseTensorPtr x2_ = x2;
   const auto &device_name = op->device_context()->device_context_key_.device_name_;

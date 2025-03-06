@@ -55,7 +55,7 @@
 #include "utils/ms_context.h"
 #include "utils/profile.h"
 #include "utils/phase.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "include/common/utils/signal_util.h"
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"
@@ -719,7 +719,7 @@ void GraphScheduler::Initialize() {
   // Create the thread pool of actor runtime and Set the OMP_NUM_THREADS env.
   size_t actor_thread_num = 0;
   size_t actor_and_kernel_thread_num = 0;
-  mindspore::ComputeThreadNums(&actor_thread_num, &actor_and_kernel_thread_num);
+  ComputeThreadNums(&actor_thread_num, &actor_and_kernel_thread_num);
   auto actor_manager = ActorMgr::GetActorMgrRef();
   MS_EXCEPTION_IF_NULL(actor_manager);
   size_t actor_queue_size = 81920;

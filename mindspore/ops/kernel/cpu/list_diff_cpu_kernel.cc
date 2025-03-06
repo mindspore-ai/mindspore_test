@@ -16,9 +16,9 @@
 
 #include "kernel/cpu/list_diff_cpu_kernel.h"
 #include <unordered_set>
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

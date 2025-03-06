@@ -23,12 +23,14 @@
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
+#include "kernel/ascend/visible.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void CustomizeCopyAscend(device::DeviceContext *device_context, const device::DeviceAddressPtr &input_addr,
-                         const device::DeviceAddressPtr &output_addr, const size_t &stream_id);
+OPS_ASCEND_API void CustomizeCopyAscend(device::DeviceContext *device_context,
+                                        const device::DeviceAddressPtr &input_addr,
+                                        const device::DeviceAddressPtr &output_addr, const size_t &stream_id);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

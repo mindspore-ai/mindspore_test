@@ -17,7 +17,7 @@
 #include "kernel/gpu/nn/apply_power_sign_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/apply_power_sign_impl.cuh"
 #include "abstract/utils.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "include/curand.h"
 #include "mindspore/ops/infer/apply_power_sign_d.h"
 

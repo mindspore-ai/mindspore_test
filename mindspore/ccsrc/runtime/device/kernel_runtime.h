@@ -29,7 +29,7 @@
 #endif
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "runtime/device/memory_manager.h"
 #include "runtime/device/memory_scheduler.h"
 #include "include/backend/visible.h"
