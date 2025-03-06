@@ -181,15 +181,18 @@ def _single_parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
         for param in params:
             if param not in net_param_dict:
                 continue
+            if param.startswith("accu_grads") or param.endswith("expert_load"):
+                continue
             real_param = net_param_dict[param]
             if param not in single_params[cur_rank]:
                 real_param.set_data(Tensor(np.zeros(real_param.shape), dtype=real_param.dtype), real_param.sliced)
             allreduce_input.append(real_param)
         if not allreduce_input:
             continue
+        allreduce_input.sort(key=lambda param: (str(param.shape), str(param.dtype)))
         communicator = SingleCommunicator(group_name)
         for real_param in allreduce_input:
-            real_param.set_data(communicator(real_param), real_param.sliced)
+            real_param.set_data(communicator(Tensor(real_param)), real_param.sliced)
         if is_manual_communication_group:
             destroy_group(group_name)
     _restore_parallel_context(origin_parallel_mode, origin_dataset_strategy)

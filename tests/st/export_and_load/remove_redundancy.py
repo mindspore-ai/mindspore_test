@@ -175,3 +175,30 @@ def test_remove_redundancy_strategy():
     model = Model(net, loss_fn=loss, optimizer=optim)
     model.train(1, dataset, callbacks=cbpoint_cb)
     get_parameter_redundancy(strategy_path)
+
+
+def test_remove_redundancy_save_True_load_True_tensor_merge():
+    '''
+    Feature: remove_redundancy save ckpt and load ckpt in data parallel.
+    Description: Saving and loading checkpoints with redundancy elimination.
+    Expectation: success.
+    '''
+    print("distribute network shard.", flush=True)
+    net = Network()
+    print("distribute network create dataset.", flush=True)
+
+    dataset = create_dataset(32)
+    optim = nn.SGD(net.trainable_params(), 1e-2)
+    loss = nn.CrossEntropyLoss()
+    rank_id = get_rank()
+    config = CheckpointConfig(remove_redundancy=True)
+    cbpoint = ModelCheckpoint(prefix="redundancy", directory=f"./device{rank_id}_redundancy11_merge", config=config)
+    print("distribute network train.", flush=True)
+    model = Model(net, loss_fn=loss, optimizer=optim)
+    model.train(1, dataset, callbacks=cbpoint)
+    ckpt_path = f"./device{rank_id}_redundancy11_merge/redundancy-1_1875.ckpt"
+
+    print("distribute network loadcheckpoint.", flush=True)
+    param_dict = load_checkpoint(ckpt_path)
+    load_param_into_net(model.train_network, param_dict, remove_redundancy=True)
+    print("distribute network parameter broadcast.", flush=True)
