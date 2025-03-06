@@ -36,9 +36,11 @@ class HalfNormal(Distribution):
     where :math:`\mu, \sigma` are the mean and the standard deviation of the half normal distribution respectively.
 
     Args:
-        mean (Union[int, float, list, numpy.ndarray, Tensor], optional): The mean of the distribution.
+        mean (Union[int, float, list, numpy.ndarray, Tensor], optional):
+            The mean of the distribution. :math:`\mu` in the formula.
             If this arg is ``None`` , then the mean of the distribution will be passed in runtime. Default: ``None`` .
-        sd (Union[int, float, list, numpy.ndarray, Tensor], optional): The standard deviation of the distribution.
+        sd (Union[int, float, list, numpy.ndarray, Tensor], optional):
+            The standard deviation of the distribution. :math:`\sigma` in the formula.
             If this arg is ``None`` , then the sd of the distribution will be passed in runtime. Default: ``None`` .
         seed (int, optional): The seed used in sampling. The global seed is used if it is None. Default: ``None`` .
         dtype (mindspore.dtype, optional): The type of the event samples. Default: ``mstype.float32`` .
@@ -52,7 +54,7 @@ class HalfNormal(Distribution):
 
     Raises:
         ValueError: When sd <= 0.
-        TypeError: When the input `dtype` is not a subclass of float.
+        TypeError: When the input `dtype` is not a float or a subclass of float.
 
     Supported Platforms:
         ``CPU``

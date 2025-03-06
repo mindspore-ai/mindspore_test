@@ -3,7 +3,7 @@
     forward mapping, compute the value after mapping as :math:`Y = \exp(X)`.
 
     Parameters
-        - **value** (Tensor) - the value to compute.
+        - **value** (Tensor) - the value to compute. :math:`X` in the formula.
 
     Returns
         Tensor, the value of output after mapping.
@@ -23,7 +23,7 @@
     Inverse mapping, compute the value after inverse mapping as :math:`X = \log(Y)`.
 
     Parameters
-        - **value** (Tensor) - the value of output after mapping.
+        - **value** (Tensor) - the value of output after mapping. :math:`Y` in the formula.
 
     Returns
         Tensor, the value to compute.

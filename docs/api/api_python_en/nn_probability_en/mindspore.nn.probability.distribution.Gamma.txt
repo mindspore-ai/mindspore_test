@@ -1,13 +1,13 @@
 .. py:property:: concentration
 
-    Return the concentration, aka the alpha parameter, of the distribution.
+    Return the concentration, aka the :math:`\alpha` parameter, of the distribution.
 
     Returns
         Tensor, concentration.
 
 .. py:property:: rate
 
-    Return the rate, aka the beta parameter, of the distribution.
+    Return the rate, aka the :math:`\beta` parameter, of the distribution.
 
     Returns
         Tensor, rate.
@@ -18,8 +18,8 @@
 
     Parameters
         - **value** (Tensor) - the value to compute.
-        - **concentration** (Tensor) - the alpha parameter of the distribution. Default: ``None`` .
-        - **rate** (Tensor) - the beta parameter of the distribution. Default: ``None`` .
+        - **concentration** (Tensor) - the :math:`\alpha` parameter of the distribution. Default: ``None`` .
+        - **rate** (Tensor) - the :math:`\beta` parameter of the distribution. Default: ``None`` .
 
     Returns
         Tensor, the value of the cumulatuve distribution function for the given input.
@@ -30,10 +30,10 @@
 
     Parameters
         - **dist** (str) - the type of the other distribution.
-        - **concentration_b** (Tensor) - the alpha parameter of the other distribution. 
-        - **rate_b** (Tensor) - the beta parameter of the other distribution. 
-        - **concentration** (Tensor) - the alpha parameter of the distribution. Default: ``None`` .
-        - **rate** (Tensor) - the beta parameter of the distribution. Default: ``None`` .
+        - **concentration_b** (Tensor) - the :math:`\alpha` parameter of the other distribution. 
+        - **rate_b** (Tensor) - the :math:`\beta` parameter of the other distribution. 
+        - **concentration** (Tensor) - the :math:`\alpha` parameter of the distribution. Default: ``None`` .
+        - **rate** (Tensor) - the :math:`\beta` parameter of the distribution. Default: ``None`` .
 
     Returns
         Tensor, the value of the cross entropy.
@@ -43,8 +43,8 @@
     Compute the value of the entropy.
 
     Parameters
-        - **concentration** (Tensor) - the alpha parameter of the distribution. Default: ``None`` .
-        - **rate** (Tensor) - the beta parameter of the distribution. Default: ``None`` .
+        - **concentration** (Tensor) - the :math:`\alpha` parameter of the distribution. Default: ``None`` .
+        - **rate** (Tensor) - the :math:`\beta` parameter of the distribution. Default: ``None`` .
 
     Returns
         Tensor, the value of the entropy.
@@ -55,10 +55,10 @@
 
     Parameters
         - **dist** (str) - the type of the other distribution.
-        - **concentration_b** (Tensor) - the alpha parameter of the other distribution. 
-        - **rate_b** (Tensor) - the beta parameter of the other distribution.
-        - **concentration** (Tensor) - the alpha parameter of the distribution. Default: ``None`` .
-        - **rate** (Tensor) - the beta parameter of the distribution. Default: ``None`` .
+        - **concentration_b** (Tensor) - the :math:`\alpha` parameter of the other distribution. 
+        - **rate_b** (Tensor) - the :math:`\beta` parameter of the other distribution.
+        - **concentration** (Tensor) - the :math:`\alpha` parameter of the distribution. Default: ``None`` .
+        - **rate** (Tensor) - the :math:`\beta` parameter of the distribution. Default: ``None`` .
 
     Returns
         Tensor, the value of the K-L loss.
@@ -69,8 +69,8 @@
 
     Parameters
         - **value** (Tensor) - the value to compute.
-        - **concentration** (Tensor) - the alpha parameter of the distribution. Default: ``None`` .
-        - **rate** (Tensor) - the beta parameter of the distribution. Default: ``None`` .
+        - **concentration** (Tensor) - the :math:`\alpha` parameter of the distribution. Default: ``None`` .
+        - **rate** (Tensor) - the :math:`\beta` parameter of the distribution. Default: ``None`` .
 
     Returns
         Tensor, the log value of the cumulatuve distribution function.
@@ -81,8 +81,8 @@
 
     Parameters
         - **value** (Tensor) - the value to compute.
-        - **concentration** (Tensor) - the alpha parameter of the distribution. Default: ``None`` .
-        - **rate** (Tensor) - the beta parameter of the distribution. Default: ``None`` .
+        - **concentration** (Tensor) - the :math:`\alpha` parameter of the distribution. Default: ``None`` .
+        - **rate** (Tensor) - the :math:`\beta` parameter of the distribution. Default: ``None`` .
 
     Returns
         Tensor, the log value of the probability.
@@ -93,8 +93,8 @@
 
     Parameters
         - **value** (Tensor) - the value to compute.
-        - **concentration** (Tensor) - the alpha parameter of the distribution. Default: ``None`` .
-        - **rate** (Tensor) - the beta parameter of the distribution. Default: ``None`` .
+        - **concentration** (Tensor) - the :math:`\alpha` parameter of the distribution. Default: ``None`` .
+        - **rate** (Tensor) - the :math:`\beta` parameter of the distribution. Default: ``None`` .
 
     Returns
         Tensor, the value of the K-L loss.
@@ -104,8 +104,8 @@
     Compute the mean value of the distribution.
 
     Parameters
-        - **concentration** (Tensor) - the alpha parameter of the distribution. Default: ``None`` .
-        - **rate** (Tensor) - the beta parameter of the distribution. Default: ``None`` .
+        - **concentration** (Tensor) - the :math:`\alpha` parameter of the distribution. Default: ``None`` .
+        - **rate** (Tensor) - the :math:`\beta` parameter of the distribution. Default: ``None`` .
 
     Returns
         Tensor, the mean of the distribution.
@@ -115,8 +115,8 @@
     Compute the mode value of the distribution.
 
     Parameters
-        - **concentration** (Tensor) - the alpha parameter of the distribution. Default: ``None`` .
-        - **rate** (Tensor) - the beta parameter of the distribution. Default: ``None`` .
+        - **concentration** (Tensor) - the :math:`\alpha` parameter of the distribution. Default: ``None`` .
+        - **rate** (Tensor) - the :math:`\beta` parameter of the distribution. Default: ``None`` .
 
     Returns
         Tensor, the mode of the distribution.
@@ -127,8 +127,8 @@
 
     Parameters
         - **value** (Tensor) - the value to compute.
-        - **concentration** (Tensor) - the alpha parameter of the distribution. Default: ``None`` .
-        - **rate** (Tensor) - the beta parameter of the distribution. Default: ``None`` .
+        - **concentration** (Tensor) - the :math:`\alpha` parameter of the distribution. Default: ``None`` .
+        - **rate** (Tensor) - the :math:`\beta` parameter of the distribution. Default: ``None`` .
 
     Returns
         Tensor, the value of the probability.
@@ -139,8 +139,8 @@
 
     Parameters
         - **shape** (tuple) - the shape of the sample.
-        - **concentration** (Tensor) - the alpha parameter of the distribution. Default: ``None`` .
-        - **rate** (Tensor) - the beta parameter of the distribution. Default: ``None`` .
+        - **concentration** (Tensor) - the :math:`\alpha` parameter of the distribution. Default: ``None`` .
+        - **rate** (Tensor) - the :math:`\beta` parameter of the distribution. Default: ``None`` .
 
     Returns
         Tensor, the sample following the distribution.
@@ -150,8 +150,8 @@
     The standard deviation.
 
     Parameters
-        - **concentration** (Tensor) - the alpha parameter of the distribution. Default: ``None`` .
-        - **rate** (Tensor) - the beta parameter of the distribution. Default: ``None`` .
+        - **concentration** (Tensor) - the :math:`\alpha` parameter of the distribution. Default: ``None`` .
+        - **rate** (Tensor) - the :math:`\beta` parameter of the distribution. Default: ``None`` .
 
     Returns
         Tensor, the standard deviation of the distribution.
@@ -162,8 +162,8 @@
 
     Parameters
         - **value** (Tensor) - the value to compute.
-        - **concentration** (Tensor) - the alpha parameter of the distribution. Default: ``None`` .
-        - **rate** (Tensor) - the beta parameter of the distribution. Default: ``None`` .
+        - **concentration** (Tensor) - the :math:`\alpha` parameter of the distribution. Default: ``None`` .
+        - **rate** (Tensor) - the :math:`\beta` parameter of the distribution. Default: ``None`` .
 
     Returns
         Tensor, the value of the survival function.
@@ -173,8 +173,8 @@
     Compute the variance of the distribution.
 
     Parameters
-        - **concentration** (Tensor) - the alpha parameter of the distribution. Default: ``None`` .
-        - **rate** (Tensor) - the beta parameter of the distribution. Default: ``None`` .
+        - **concentration** (Tensor) - the :math:`\alpha` parameter of the distribution. Default: ``None`` .
+        - **rate** (Tensor) - the :math:`\beta` parameter of the distribution. Default: ``None`` .
 
     Returns
         Tensor, the variance of the distribution.

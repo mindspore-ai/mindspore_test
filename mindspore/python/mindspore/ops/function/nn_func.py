@@ -3418,7 +3418,7 @@ def selu(input_x):
 
 def logsigmoid(x):
     r"""
-    Applies logsigmoid activation element-wise. The input is a Tensor with any valid shape.
+    Applies LogSigmoid activation element-wise. The input is a Tensor with any valid shape.
 
     Logsigmoid is defined as:
 

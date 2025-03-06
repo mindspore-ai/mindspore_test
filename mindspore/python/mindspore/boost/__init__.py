@@ -13,8 +13,8 @@
 # limitations under the License.
 # ============================================================================
 """
-Boost provide auto accelerating for network, such as Less BN, Gradient Freeze, Gradient
-accumulation and so on.
+Boost is able to automatically optimize network performance, e.g., by reducing BN, gradient freezing,
+and accumulating gradients to achieve network acceleration.
 
 Note:
     This feature is a beta feature, and we are still improving its functionality.
