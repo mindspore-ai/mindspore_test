@@ -1192,7 +1192,6 @@ bool MSBackendBase::DumpBackendInfo() {
   auto func_graph = context.FrontGraph();
   if (func_graph == nullptr) {
     MS_LOG(WARNING) << "The front graph to be cached is null, backend graph cache Missed.";
-    context.Clear();
     return false;
   }
 
@@ -1286,7 +1285,6 @@ bool MSBackendBase::DumpBackendInfo() {
   new_data_json[kDeviceName] = device_name_;
   new_data_json[kDeviceId] = device_id_;
   backinfo_json[kControlNodeCache] = new_data_json;
-  context.Clear();
   MS_LOG(DEBUG) << "Dump backinfo json to " << backinfo_json_real_path.value() << ".";
   return Common::SaveStringToFile(backinfo_json_real_path.value(), backinfo_json.dump());
 }
@@ -1376,9 +1374,6 @@ bool MSBackendBase::LoadBackendInfo() {
     device_name_ = control_node_json[kDeviceName];
     device_id_ = control_node_json[kDeviceId].get<uint32_t>();
     json_stream.close();
-    if (CompileCacheEnable()) {
-      context.Clear();
-    }
     MS_LOG(INFO) << "Load control node cache success. Json path: " << json_path;
   } catch (std::exception &e) {
     json_stream.close();
