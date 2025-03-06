@@ -157,6 +157,31 @@ def test_scan_not_unroll():
 @case_register.level0
 @case_register.target_ascend
 @case_register.target_gpu
+def test_scan_simple_loop():
+    """
+    Feature: control flow
+    Description: Using ScanEvaluator to handle ops.Scan operation
+    Expectation: No exception.
+    """
+
+    def simple_loop_func(res, el):
+        res = res + el
+        return res, res
+
+    @jit
+    def test_simple_scan_inner(result_init):
+        array = [1, 2, 3, 4]
+        scan_op = ops.Scan()
+        return scan_op(simple_loop_func, result_init, array, len(array), False)
+
+    result_init = ms.Tensor(0)
+    result = test_simple_scan_inner(result_init)
+    assert result == (10, [1, 3, 6, 10])
+
+
+@case_register.level0
+@case_register.target_ascend
+@case_register.target_gpu
 def test_foriloop_unroll():
     """
     Feature: control flow
