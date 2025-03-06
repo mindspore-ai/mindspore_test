@@ -81,7 +81,7 @@ void FuncGraph::GenerateVarParams(const FuncGraphPtr &specialized_graph, int pos
     // No *args in parameter, varaible_args_count need to be 0
     if (pos_args_input_count > pos_params_count) {
       MS_LOG(EXCEPTION) << "Function:" << this->ToString() << " takes " << pos_params_count
-                        << " positional arguments, but " << pos_params_count << " were given.";
+                        << " positional arguments, but " << pos_args_input_count << " were given.";
     }
     // Only copy parameters other than default arguments.
     size_t pos_size = IntToSize(pos_args_input_count);
