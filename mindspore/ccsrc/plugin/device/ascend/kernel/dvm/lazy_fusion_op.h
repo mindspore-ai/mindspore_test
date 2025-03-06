@@ -56,13 +56,19 @@
 #include "kernel/ascend/pyboost/auto_generate/less.h"
 #include "kernel/ascend/pyboost/auto_generate/less_equal.h"
 #include "kernel/ascend/pyboost/auto_generate/add_ext.h"
+#include "kernel/ascend/pyboost/auto_generate/sub_ext.h"
 #include "kernel/ascend/pyboost/auto_generate/tile.h"
 #include "kernel/ascend/pyboost/auto_generate/linalg_vector_norm.h"
 #include "kernel/ascend/pyboost/auto_generate/adamw.h"
 #include "kernel/ascend/pyboost/auto_generate/inplace_copy.h"
+#include "kernel/ascend/pyboost/auto_generate/inplace_div.h"
+#include "kernel/ascend/pyboost/auto_generate/inplace_exp.h"
+#include "kernel/ascend/pyboost/auto_generate/inplace_add_ext.h"
+#include "kernel/ascend/pyboost/auto_generate/inplace_sub_ext.h"
 #include "kernel/ascend/pyboost/auto_generate/dense.h"
 #include "kernel/ascend/pyboost/auto_generate/matmul.h"
 #include "kernel/ascend/pyboost/auto_generate/batch_mat_mul.h"
+#include "kernel/ascend/pyboost/auto_generate/matmul_ext.h"
 
 namespace mindspore {
 namespace kernel {
@@ -358,6 +364,15 @@ class AddExtAscendDvm : public AddExtAscend {
                              const ScalarPtr &alpha) override;
 };
 
+class SubExtAscendDvm : public SubExtAscend {
+ public:
+  SubExtAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
+      : SubExtAscend(std::move(primitive), device_context) {}
+  ~SubExtAscendDvm() = default;
+  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor,
+                             const ScalarPtr &alpha) override;
+};
+
 class TileAscendDvm : public TileAscend {
  public:
   TileAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
@@ -396,6 +411,41 @@ class InplaceCopyAscendDvm : public InplaceCopyAscend {
   tensor::BaseTensorPtr Call(const BaseTensorPtr &variable_tensor, const BaseTensorPtr &value_tensor) override;
 };
 
+class InplaceDivAscendDvm : public InplaceDivAscend {
+ public:
+  InplaceDivAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
+      : InplaceDivAscend(std::move(primitive), device_context) {}
+  ~InplaceDivAscendDvm() = default;
+  tensor::BaseTensorPtr Call(const mindspore::tensor::BaseTensorPtr &input_tensor,
+                             const mindspore::tensor::BaseTensorPtr &other_tensor) override;
+};
+
+class InplaceExpAscendDvm : public InplaceExpAscend {
+ public:
+  InplaceExpAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
+      : InplaceExpAscend(std::move(primitive), device_context) {}
+  ~InplaceExpAscendDvm() = default;
+  tensor::BaseTensorPtr Call(const mindspore::tensor::BaseTensorPtr &input_tensor) override;
+};
+
+class InplaceAddExtAscendDvm : public InplaceAddExtAscend {
+ public:
+  InplaceAddExtAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
+      : InplaceAddExtAscend(std::move(primitive), device_context) {}
+  ~InplaceAddExtAscendDvm() = default;
+  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor,
+                             const ScalarPtr &alpha) override;
+};
+
+class InplaceSubExtAscendDvm : public InplaceSubExtAscend {
+ public:
+  InplaceSubExtAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
+      : InplaceSubExtAscend(std::move(primitive), device_context) {}
+  ~InplaceSubExtAscendDvm() = default;
+  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor,
+                             const ScalarPtr &alpha) override;
+};
+
 class DenseAscendDvm : public DenseAscend {
  public:
   DenseAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
@@ -424,6 +474,16 @@ class BatchMatMulAscendDvm : public pyboost::BatchMatMulAscend {
 
   tensor::BaseTensorPtr Call(const BaseTensorPtr &x_tensor, const BaseTensorPtr &y_tensor,
                              const BoolImmPtr &transpose_a, const BoolImmPtr &transpose_b) override;
+};
+
+class MatMulExtAscendDvm : public MatMulExtAscend {
+ public:
+  MatMulExtAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
+      : MatMulExtAscend(std::move(primitive), device_context) {}
+  ~MatMulExtAscendDvm() = default;
+
+  tensor::BaseTensorPtr Call(const mindspore::tensor::BaseTensorPtr &input_tensor,
+                             const mindspore::tensor::BaseTensorPtr &other_tensor) override;
 };
 }  // namespace pyboost
 }  // namespace kernel

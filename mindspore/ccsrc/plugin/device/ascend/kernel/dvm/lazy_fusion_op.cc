@@ -25,6 +25,7 @@
 #include "plugin/device/ascend/kernel/dvm/lazy_fusion_kernel.h"
 #include "plugin/device/ascend/kernel/dvm/lazy_fusion_flags.h"
 #include "runtime/pipeline/pipeline.h"
+#include "view/view_strides_calculator.h"
 
 namespace mindspore {
 namespace kernel {
@@ -782,6 +783,30 @@ tensor::BaseTensorPtr AddExtAscendDvm::Call(const BaseTensorPtr &input_tensor, c
   return outputs_.front();
 }
 
+tensor::BaseTensorPtr SubExtAscendDvm::Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor,
+                                            const ScalarPtr &alpha) {
+  if (!InputCheck(input_tensor) || !InputCheck(other_tensor)) {
+    return SubExtAscend::Call(input_tensor, other_tensor, alpha);
+  }
+  DvmCall(
+    op_name_, this,
+    [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
+      auto [succ, scalar] = GetScalarValue<float>(alpha);
+      if (!succ) {
+        return SubExtAscend::Call(input_tensor, other_tensor, alpha);
+      }
+      auto input_obj = k->Input(input_tensor);
+      auto other_obj = k->Input(other_tensor);
+      if (scalar != 1.0) {
+        other_obj = k->Binary(dvm::BinaryOpType::kMul, other_obj, scalar);
+      }
+      auto out_obj = k->Binary(dvm::BinaryOpType::kSub, input_obj, other_obj);
+      return k->Output(out_obj, input_tensor->data_type(), k->GetShape(out_obj));
+    },
+    input_tensor, other_tensor);
+  return outputs_.front();
+}
+
 tensor::BaseTensorPtr TileAscendDvm::Call(const BaseTensorPtr &input_tensor, const ValueTuplePtr &dims) {
   if (!InputCheck(input_tensor, IsFloatIntType)) {
     return TileAscend::Call(input_tensor, dims);
@@ -960,6 +985,109 @@ tensor::BaseTensorPtr InplaceCopyAscendDvm::Call(const BaseTensorPtr &variable_t
   return outputs_[0];
 }
 
+tensor::BaseTensorPtr InplaceDivAscendDvm::Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor) {
+  if (!InputCheck(input_tensor) || !InputCheck(other_tensor)) {
+    return InplaceDivAscend::Call(input_tensor, other_tensor);
+  }
+  auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
+  MS_LOG(INFO) << op_name() << " call start, kernel id is " << k->id();
+  PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, input_tensor, other_tensor);
+  auto input_obj = k->Input(input_tensor);
+  auto other_obj = k->Input(other_tensor);
+  auto input_dtype = k->GetDType(input_obj);
+  auto other_dtype = k->GetDType(other_obj);
+  if (other_dtype != input_dtype) {
+    other_obj = k->Cast(other_obj, input_dtype);
+  }
+  auto out_obj = k->Binary(dvm::BinaryOpType::kDiv, input_obj, other_obj);
+  // update
+  outputs_.push_back(input_tensor);
+  k->Output(outputs_[0], out_obj);
+  outputs_[0]->set_need_pipeline_sync(true);
+  CreateOutputSimpleInfo();
+  MS_LOG(INFO) << op_name() << " call end, kernel id is " << k->id();
+  FlushLazyFusion();
+  return outputs_[0];
+}
+
+tensor::BaseTensorPtr InplaceExpAscendDvm::Call(const BaseTensorPtr &input_tensor) {
+  if (!InputCheck(input_tensor)) {
+    return InplaceExpAscend::Call(input_tensor);
+  }
+  auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
+  MS_LOG(INFO) << op_name() << " call start, kernel id is " << k->id();
+  PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, input_tensor);
+  auto out_obj = k->Unary(dvm::UnaryOpType::kExp, k->Input(input_tensor));
+  // update
+  outputs_.push_back(input_tensor);
+  k->Output(outputs_[0], out_obj);
+  outputs_[0]->set_need_pipeline_sync(true);
+  CreateOutputSimpleInfo();
+  MS_LOG(INFO) << op_name() << " call end, kernel id is " << k->id();
+  FlushLazyFusion();
+  return outputs_[0];
+}
+
+tensor::BaseTensorPtr InplaceAddExtAscendDvm::Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor,
+                                                   const ScalarPtr &alpha) {
+  auto [succ, scalar] = GetScalarValue<float>(alpha);
+  if (!succ || !InputCheck(input_tensor) || !InputCheck(other_tensor)) {
+    return InplaceAddExtAscend::Call(input_tensor, other_tensor, alpha);
+  }
+  auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
+  MS_LOG(INFO) << op_name() << " call start, kernel id is " << k->id();
+  PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, input_tensor, other_tensor);
+  auto input_obj = k->Input(input_tensor);
+  auto other_obj = k->Input(other_tensor);
+  auto input_dtype = k->GetDType(input_obj);
+  auto other_dtype = k->GetDType(other_obj);
+  if (other_dtype != input_dtype) {
+    other_obj = k->Cast(other_obj, input_dtype);
+  }
+  if (scalar != 1.0) {
+    other_obj = k->Binary(dvm::BinaryOpType::kMul, other_obj, scalar);
+  }
+  auto out_obj = k->Binary(dvm::BinaryOpType::kAdd, input_obj, other_obj);
+  // update
+  outputs_.push_back(input_tensor);
+  k->Output(outputs_[0], out_obj);
+  outputs_[0]->set_need_pipeline_sync(true);
+  CreateOutputSimpleInfo();
+  MS_LOG(INFO) << op_name() << " call end, kernel id is " << k->id();
+  FlushLazyFusion();
+  return outputs_[0];
+}
+
+tensor::BaseTensorPtr InplaceSubExtAscendDvm::Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor,
+                                                   const ScalarPtr &alpha) {
+  auto [succ, scalar] = GetScalarValue<float>(alpha);
+  if (!succ || !InputCheck(input_tensor) || !InputCheck(other_tensor)) {
+    return InplaceSubExtAscend::Call(input_tensor, other_tensor, alpha);
+  }
+  auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
+  MS_LOG(INFO) << op_name() << " call start, kernel id is " << k->id();
+  PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, input_tensor, other_tensor);
+  auto input_obj = k->Input(input_tensor);
+  auto other_obj = k->Input(other_tensor);
+  auto input_dtype = k->GetDType(input_obj);
+  auto other_dtype = k->GetDType(other_obj);
+  if (other_dtype != input_dtype) {
+    other_obj = k->Cast(other_obj, input_dtype);
+  }
+  if (scalar != 1.0) {
+    other_obj = k->Binary(dvm::BinaryOpType::kMul, other_obj, scalar);
+  }
+  auto out_obj = k->Binary(dvm::BinaryOpType::kSub, input_obj, other_obj);
+  // update
+  outputs_.push_back(input_tensor);
+  k->Output(outputs_[0], out_obj);
+  outputs_[0]->set_need_pipeline_sync(true);
+  CreateOutputSimpleInfo();
+  MS_LOG(INFO) << op_name() << " call end, kernel id is " << k->id();
+  FlushLazyFusion();
+  return outputs_[0];
+}
+
 tensor::BaseTensorPtr DenseAscendDvm::Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &weight_tensor,
                                            const std::optional<BaseTensorPtr> &bias_tensor) {
   BaseTensorPtr bias = nullptr;
@@ -1030,6 +1158,55 @@ tensor::BaseTensorPtr BatchMatMulAscendDvm::Call(const BaseTensorPtr &x_tensor, 
   return outputs_.front();
 }
 
+bool CheckMatMulExtTranspose(const mindspore::tensor::BaseTensorPtr &tensor, bool *transpose, ShapeVector *shape) {
+  *transpose = false;
+  const auto &tensor_shape = tensor->shape();
+  *shape = tensor_shape;
+  if (!tensor->is_contiguous()) {
+    auto storage_info = tensor->storage_info();
+    MS_EXCEPTION_IF_NULL(storage_info);
+    const auto &cur_shape = storage_info->shape;
+    const auto &cur_strides = storage_info->strides;
+    const auto &ori_shape = storage_info->ori_shape;
+    const auto &ori_strides = storage_info->ori_strides;
+    if (ops::IsContiguous(ori_shape, ori_strides) && cur_strides.size() == kDim2 && cur_strides[0] == 1 &&
+        cur_strides[1] == cur_shape[0]) {
+      *transpose = true;
+      (*shape).resize(kDim2);
+      (*shape)[0] = cur_shape[1];
+      (*shape)[1] = cur_shape[0];
+      return true;
+    }
+    return false;
+  }
+  return true;
+}
+
+tensor::BaseTensorPtr MatMulExtAscendDvm::Call(const mindspore::tensor::BaseTensorPtr &input_tensor,
+                                               const mindspore::tensor::BaseTensorPtr &other_tensor) {
+  bool transpose_a = false;
+  bool transpose_b = false;
+  ShapeVector input_shape;
+  ShapeVector other_shape;
+  auto data_type = input_tensor->data_type();
+  if (other_tensor->data_type() != data_type || (data_type != kNumberTypeFloat16 && data_type != kNumberTypeBFloat16) ||
+      !CheckMatMulExtTranspose(input_tensor, &transpose_a, &input_shape) ||
+      !CheckMatMulExtTranspose(other_tensor, &transpose_b, &other_shape)) {
+    return MatMulExtAscend::Call(input_tensor, other_tensor);
+  }
+  FlushLazyFusion();  // forward fusion not allowed
+  DvmCall(
+    op_name_, this,
+    [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
+      auto input_obj = k->Input(input_tensor, false, input_shape);
+      auto weight_obj = k->Input(other_tensor, false, other_shape);
+      auto out_obj = k->MatMul(input_obj, weight_obj, transpose_a, transpose_b, nullptr);
+      return k->Output(out_obj, data_type, k->GetShape(out_obj));
+    },
+    input_tensor, other_tensor);
+  return outputs_.front();
+}
+
 #define MS_REPLACE_DVM_OP(clazz)                                                                     \
   if (std::find(disable_ops.begin(), disable_ops.end(), #clazz) == disable_ops.end()) {              \
     OpFactory<clazz>::Get().op_creator()[kAscendDevice] = []() {                                     \
@@ -1077,13 +1254,19 @@ void RegisterLazyFusionOp() {
   MS_REPLACE_DVM_OP(GeLUGrad);
   MS_REPLACE_DVM_OP(SumExt);
   MS_REPLACE_DVM_OP(AddExt);
+  MS_REPLACE_DVM_OP(SubExt);
   MS_REPLACE_DVM_OP(Tile);
   MS_REPLACE_DVM_OP(LinalgVectorNorm);
   MS_REPLACE_DVM_OP(AdamW);
   MS_REPLACE_DVM_OP(InplaceCopy);
+  MS_REPLACE_DVM_OP(InplaceDiv);
+  MS_REPLACE_DVM_OP(InplaceExp);
+  MS_REPLACE_DVM_OP(InplaceAddExt);
+  MS_REPLACE_DVM_OP(InplaceSubExt);
   MS_REPLACE_DVM_OP(Dense);
   MS_REPLACE_DVM_OP(MatMul);
   MS_REPLACE_DVM_OP(BatchMatMul);
+  MS_REPLACE_DVM_OP(MatMulExt);
 }
 
 void LazyFusionAscendInit() {
