@@ -1133,7 +1133,7 @@ static PyObject *DoCall(const std::vector<PyObject *> &params, int op, const std
 
   size_t nargs = (params.size() - 1);
   size_t kw_cnt;
-  if (op == CALL_FUNCTION) {
+  if (Opcode(op).IsCallFunc()) {
     return PyObject_Vectorcall(params[0], params.data() + 1, nargs, NULL);
   } else if (op == CALL_FUNCTION_KW) {
     kw_cnt = PyTuple_GET_SIZE(params.back());
@@ -1488,26 +1488,24 @@ static std::unordered_map<int, PythonBytecodeFuncSet> kBytecodeExecuter = {
     }}},
   {INPLACE_XOR,
    {ByteCodeTest(INPLACE_XOR),
-    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject
-                                                                   * {
-                                                                     if (ByteCodeCheck(INPLACE_XOR, opargs, objs)) {
-                                                                       return PyNumber_InPlaceXor(objs[0], objs[1]);
-                                                                     } else {
-                                                                       Py_INCREF(objs[0]);
-                                                                       return objs[0];
-                                                                     }
-                                                                   }}},
+    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject * {
+      if (ByteCodeCheck(INPLACE_XOR, opargs, objs)) {
+        return PyNumber_InPlaceXor(objs[0], objs[1]);
+      } else {
+        Py_INCREF(objs[0]);
+        return objs[0];
+      }
+    }}},
   {INPLACE_OR,
    {ByteCodeTest(INPLACE_OR),
-    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject
-                                                                   * {
-                                                                     if (ByteCodeCheck(INPLACE_OR, opargs, objs)) {
-                                                                       return PyNumber_InPlaceOr(objs[0], objs[1]);
-                                                                     } else {
-                                                                       Py_INCREF(objs[0]);
-                                                                       return objs[0];
-                                                                     }
-                                                                   }}},
+    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject * {
+      if (ByteCodeCheck(INPLACE_OR, opargs, objs)) {
+        return PyNumber_InPlaceOr(objs[0], objs[1]);
+      } else {
+        Py_INCREF(objs[0]);
+        return objs[0];
+      }
+    }}},
   {RETURN_VALUE, {ByteCodeUnsupported, nullptr}},
   {IMPORT_STAR, {ByteCodeUnsupported, nullptr}},
   {SETUP_ANNOTATIONS, {ByteCodeUnsupported, nullptr}},
@@ -1598,6 +1596,7 @@ static std::unordered_map<int, PythonBytecodeFuncSet> kBytecodeExecuter = {
   {DELETE_FAST, {ByteCodeUnsupported, nullptr}},
   {RAISE_VARARGS, {ByteCodeUnsupported, nullptr}},
   {CALL_FUNCTION, {ByteCodeSupported, nullptr}},
+  {CALL, {ByteCodeSupported, nullptr}},
   {MAKE_FUNCTION, {ByteCodeUnsupported, nullptr}},
   {BUILD_SLICE,
    {ByteCodeSupported,
@@ -1822,7 +1821,7 @@ static std::unordered_map<int, PythonBytecodeFuncSet> kBytecodeExecuter = {
 OpTrace::OpTrace(PyObject *obj, int opcode, int opargs, TraceVector params, std::string name)
     : Trace(obj, nullptr), opcode_(opcode), opargs_(opargs), params_(params), name_(name), is_fold_(false) {
   curType_ = TraceType::Operation;
-  if (opcode_ == CALL_FUNCTION || opcode_ == CALL_FUNCTION_EX || opcode_ == CALL_FUNCTION_KW || opcode_ == LOAD_ATTR) {
+  if (Opcode(opcode_).IsCall() || opcode_ == LOAD_ATTR) {
     opargs_ = -1;
   }
   if (!std::any_of(params.begin(), params.end(), [](const TracePtr &item) { return !item->IsConst(); })) {
@@ -1892,7 +1891,7 @@ PyObject *OpTrace::Retrieve(PTraceContext context, bool perf) {
   } else if (opcode_ == LOAD_ATTR) {
     MS_EXCEPTION_IF_CHECK_FAIL(name_.size(), "check trace");
     ret = PyObject_GetAttrString(params[0], name_.c_str());
-  } else if (opcode_ == CALL_FUNCTION || opcode_ == CALL_FUNCTION_EX || opcode_ == CALL_FUNCTION_KW) {
+  } else if (Opcode(opcode_).IsCall()) {
     ret = DoCall(params, opcode_, name_);
   }
   for (auto p : params) {
@@ -1985,7 +1984,7 @@ TracePtr OpTrace::RemoveCastDuplicatePatternPass() {
   TracePtr next_op;
   TracePtr this_op;
   TracePtr ret_op;
-  if (opcode_ != CALL_FUNCTION || (cast_op = CastTrace<OpTrace>(GetParam(kParamIndexTwo))) == nullptr ||
+  if (!Opcode(opcode_).IsCallFunc() || (cast_op = CastTrace<OpTrace>(GetParam(kParamIndexTwo))) == nullptr ||
       (next_op = cast_op->GetParam(kParamIndexTwo)) == nullptr) {
     return nullptr;
   }
@@ -2008,10 +2007,10 @@ TracePtr OpTrace::RemovePrimOutIsTensorPass() {
   RootTracePtr global_op;
   OpTracePtr call_op;
   TracePtr param_op;
-  if (opcode_ != CALL_FUNCTION || !(name_ == kIsInstance) ||
+  if (!Opcode(opcode_).IsCallFunc() || !(name_ == kIsInstance) ||
       (global_op = CastTrace<RootTrace>(GetParam(kParamIndexThree))) == nullptr ||
       global_op->GetTraceType() != TraceType::Global ||
-      (call_op = CastOpTrace(GetParam(kParamIndexTwo), CALL_FUNCTION)) == nullptr ||
+      (call_op = CastOpTrace(GetParam(kParamIndexTwo), IS_PYTHON_3_11_PLUS ? CALL : CALL_FUNCTION)) == nullptr ||
       (param_op = call_op->GetParam(kParamIndexOne)) == nullptr) {
     return nullptr;
   }
@@ -2073,7 +2072,7 @@ void OpTrace::JudgeDTypeChangePass() {
     return;
   }
   for (size_t i = 0; i < kParamCountTwo; ++i) {
-    OpTracePtr trace = CastOpTrace(GetParam(i), CALL_FUNCTION);
+    OpTracePtr trace = CastOpTrace(GetParam(i), IS_PYTHON_3_11_PLUS ? CALL : CALL_FUNCTION);
     ConstTracePtr const_op = trace ? CastConstTrace(trace->GetParam(kParamIndexOne)) : nullptr;
     PyObject *const_param = const_op ? const_op->GetObject() : nullptr;
     if (trace != nullptr && const_op != nullptr && const_param != nullptr &&
@@ -2103,7 +2102,7 @@ void OpTrace::JudgeDTypeScopePass() {
 }
 
 void OpTrace::JudgeDTypeTensorAttrPass() {
-  if (opcode_ != CALL_FUNCTION) {
+  if (!Opcode(opcode_).IsCallFunc()) {
     return;
   }
   RootTracePtr global_op;
@@ -2237,7 +2236,7 @@ void OpTrace::JudgeSubScrRandPass() {
   if (opcode_ != BINARY_SUBTRACT || params_.size() < kParamCountTwo) {
     return;
   }
-  auto call_op = CastOpTrace(params_[kParamIndexOne], CALL_FUNCTION);
+  auto call_op = CastOpTrace(params_[kParamIndexOne], IS_PYTHON_3_11_PLUS ? CALL : CALL_FUNCTION);
   ConstTracePtr prim;
   if (call_op != nullptr && call_op->params_.size() > kParamCountOne) {
     if ((prim = CastConstTrace(call_op->params_[kParamIndexOne])) != nullptr) {
@@ -2281,7 +2280,7 @@ static bool CheckRelaxGuardFunc(const py::object &callable) {
 }
 
 void OpTrace::JudgeRelaxGuardFuncPass() {
-  if (opcode_ != CALL_FUNCTION || params_.size() < kParamCountOne) {
+  if (!Opcode(opcode_).IsCallFunc() || params_.size() < kParamCountOne) {
     return;
   }
   if (CheckRelaxGuardFunc(py::cast<py::object>(params_[0]->GetObject()))) {
@@ -2297,7 +2296,7 @@ void OpTrace::CheckSpecialize() {
       break;
     }
   }
-  if (opcode_ == CALL_FUNCTION) {
+  if (Opcode(opcode_).IsCallFunc()) {
     if (name_ == kShape_Name && !any_params_specialized) {
       is_specialized_ = true;
     } else if (params_.size() > kParamCountOne &&

@@ -484,14 +484,15 @@ std::pair<ValueNode *, ValueNode *> GraphAnalyzer::MutateDictNode(ValueNode *nod
   ValueNode *dict_method = GetBuiltinMethodNode(&interpret.operations, "dict");  // always interpret
   // use 'dict(zip(dict.keys(obj), dict.value(obj)))' to restore dict
   // consider use expression 'dict(dict.items(obj))'
-  auto bc_keys = graph_->NewCallNode(CALL_FUNCTION, 1, {dict_keys_method, node});
+  auto call_op_code = IS_PYTHON_3_11_PLUS ? CALL : CALL_FUNCTION;
+  auto bc_keys = graph_->NewCallNode(call_op_code, 1, {dict_keys_method, node});
   bc_keys->set_abstract_wrapper(keys_wrapper);
   bc_keys->SetVobj(AObject::Convert(keys_wrapper));
-  auto bc_values = graph_->NewCallNode(CALL_FUNCTION, 1, {dict_values_method, node});
+  auto bc_values = graph_->NewCallNode(call_op_code, 1, {dict_values_method, node});
   bc_values->set_abstract_wrapper(values_wrapper);
   bc_values->SetVobj(AObject::Convert(values_wrapper));
-  auto call_zip = graph_->NewCallNode(CALL_FUNCTION, 2, {zip_method, bc_keys, bc_values});
-  auto make_dict = graph_->NewCallNode(CALL_FUNCTION, 1, {dict_method, call_zip});
+  auto call_zip = graph_->NewCallNode(call_op_code, 2, {zip_method, bc_keys, bc_values});
+  auto make_dict = graph_->NewCallNode(call_op_code, 1, {dict_method, call_zip});
   make_dict->set_abstract_wrapper(std::make_shared<AbstractWrapper>(abstract));
   make_dict->SetVobj(node->GetVobj());
 

@@ -210,15 +210,10 @@ std::string GraphUtils::OpCodeToGraphName(int op_code) {
 
 std::string GraphUtils::OpCompareArgToGraphName(int oparg) {
   static std::map<int, std::string> compare_arg_2_graph_name = {
-    {Py_LT, "less"},
-    {Py_LE, "less_equal"},
-    {Py_EQ, "equal"},
-    {Py_NE, "not_equal"},
-    {Py_GT, "greater"},
-    {Py_GE, "greater_equal"},
+    {Py_LT, "less"},      {Py_LE, "less_equal"},     {Py_EQ, "equal"},
+    {Py_NE, "not_equal"}, {Py_GT, "greater"},        {Py_GE, "greater_equal"},
 #if (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 9)
-    {PyCmp_IN, "in_"},
-    {PyCmp_NOT_IN, "not_in_"},
+    {PyCmp_IN, "in_"},    {PyCmp_NOT_IN, "not_in_"},
 #endif
   };
   auto iter = compare_arg_2_graph_name.find(oparg);
@@ -229,6 +224,39 @@ std::string GraphUtils::OpCompareArgToGraphName(int oparg) {
 }
 
 std::string GraphUtils::ContainsOpToGraphName(int oparg) { return oparg == 1 ? "not_in_" : "in_"; }
+
+std::string GraphUtils::BinaryOpToGraphName(int oparg) {
+  static std::map<int, std::string> binary_op_arg_2_graph_name = {{NB_ADD, "add"},
+                                                                  {NB_POWER, "pow_"},
+                                                                  {NB_MULTIPLY, "mul"},
+                                                                  {NB_REMAINDER, "mod"},
+                                                                  {NB_SUBTRACT, "sub"},
+                                                                  {NB_FLOOR_DIVIDE, "floordiv"},
+                                                                  {NB_TRUE_DIVIDE, "div"},
+                                                                  {NB_MATRIX_MULTIPLY, "matmul"},
+                                                                  {NB_INPLACE_FLOOR_DIVIDE, "floordiv"},
+                                                                  {NB_INPLACE_TRUE_DIVIDE, "div"},
+                                                                  {NB_INPLACE_ADD, "add"},
+                                                                  {NB_INPLACE_SUBTRACT, "sub"},
+                                                                  {NB_INPLACE_MULTIPLY, "mul"},
+                                                                  {NB_INPLACE_REMAINDER, "mod"},
+                                                                  {NB_LSHIFT, "left_shift"},
+                                                                  {NB_RSHIFT, "right_shift"},
+                                                                  {NB_AND, "bitwise_and"},
+                                                                  {NB_XOR, "bitwise_xor"},
+                                                                  {NB_OR, "bitwise_or"},
+                                                                  {NB_INPLACE_POWER, "pow"},
+                                                                  {NB_INPLACE_LSHIFT, "left_shift"},
+                                                                  {NB_INPLACE_RSHIFT, "right_shift"},
+                                                                  {NB_INPLACE_AND, "bitwise_and"},
+                                                                  {NB_INPLACE_XOR, "bitwise_xor"},
+                                                                  {NB_INPLACE_OR, "bitwise_or"}};
+  auto iter = binary_op_arg_2_graph_name.find(oparg);
+  if (iter == binary_op_arg_2_graph_name.end()) {
+    return "";
+  }
+  return iter->second;
+}
 
 AnfNodePtr GraphUtils::GetMetaFuncGraph(int op_code) {
   // MS_EXCEPTION_IF_CHECK_FAIL(op_code_2_graph_name.find(op_code) != op_code_2_graph_name.end(),

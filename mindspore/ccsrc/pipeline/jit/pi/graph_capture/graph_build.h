@@ -228,6 +228,7 @@ class GraphBuilder {
   ValueNode *getLocal(int i) { return frame_.Local(i); }
   void setLocal(int i, ValueNode *n) { frame_.SetLocal(i, n); }
 
+  Instr NewCallFuncInstr(int oparg);
   // pointers
   std::vector<Graph *> graph_pool_;
   ValueNode *NewValueNode(AObject *o, int op, int arg, const std::vector<ValueNode *> &p = {},
@@ -302,6 +303,8 @@ class GraphBuilder {
   bool DoRaiseVarags(const Instr &instr);
   bool DoLoadName(const Instr &instr);
   bool DoPushNull(const Instr &instr);
+  bool DoBinaryOp(const Instr &instr);
+  bool DoCheckExcMatch(const Instr &instr);
 
   const auto &root() const { return root_; }
   const auto &frame() const { return frame_; }
@@ -330,7 +333,8 @@ class GraphBuilder {
 
   BindArgumentsHelper<ValueNode *> PackInputsForFunc(const py::object &obj, int op_code,
                                                      const std::vector<ValueNode *> &inputs,
-                                                     ValueNode *self_node = nullptr, bool eliminate_sens = false);
+                                                     ValueNode *self_node = nullptr, bool eliminate_sens = false,
+                                                     PyObject *kw_names = nullptr);
   GraphBuilderPtr get_prev_call_builder() const { return prev_call_builder_; }
 
  private:

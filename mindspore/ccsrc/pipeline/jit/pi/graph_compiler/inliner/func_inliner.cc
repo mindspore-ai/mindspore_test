@@ -116,7 +116,7 @@ void FuncInlineDetector::Visit_(const ir::CallNodePtr &node) {
     auto byteCodeParser = std::make_shared<ByteCodeParser>(func);
     ir::FunctionNodePtr func_node = byteCodeParser->Parse();
     ir::NodePtrList args(node->GetArgs().begin() + 1, node->GetArgs().end());
-    if (node->GetOpCode() != CALL_FUNCTION) {
+    if (!Opcode(node->GetOpCode()).IsCallFunc()) {
       UnpackArgsInTuple(func, &args);
     }
     EvolvingFunction(func_node, args);

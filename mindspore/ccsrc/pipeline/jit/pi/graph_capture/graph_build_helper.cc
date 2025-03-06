@@ -392,7 +392,8 @@ std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>> GradGraphBuildHelper::
     MS_LOG(EXCEPTION) << "Do not handle kwargs yet.";
   } else {
     MS_LOG(DEBUG) << "Start trace bytecodes of forward graph";
-    graph_builder->DoCall({CALL_FUNCTION, arg_size});
+    auto call_instr = graph_builder->NewCallFuncInstr(arg_size);
+    graph_builder->DoCall(call_instr);
   }
   auto forward_call_value_node = graph_builder->pop();
   // This forward node is only used for abstract, no need to attach on graph.

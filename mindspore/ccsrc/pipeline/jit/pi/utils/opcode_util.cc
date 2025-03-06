@@ -21,7 +21,7 @@ namespace mindspore {
 namespace pijit {
 
 Opcode Opcode::opmap[Opcode::kMaxCode];
-const Opcode Opcode::k_ILLEGAL_OPCODE = {"ILLEGAL_OPCODE", ILLEGAL_OPCODE, Opcode::Class::kOther, 0};
+const Opcode Opcode::k_ILLEGAL_OPCODE = {"ILLEGAL_OPCODE", ILLEGAL_OPCODE, Opcode::Class::kNop, 0};
 
 enum OpcodeFlag {
   kJRel = 1 << 0,      // is jump relative
@@ -57,6 +57,24 @@ bool Opcode::IsExcMatch(int oparg) const {
 #else
   return false;
 #endif
+}
+
+bool Opcode::IsCallFunc() const {
+  if (code_ == ILLEGAL_OPCODE) {
+    return false;
+  }
+  return code_ == CALL || code_ == CALL_FUNCTION;
+}
+
+bool Opcode::IsConditionJump() const {
+  if (code_ == ILLEGAL_OPCODE) {
+    return false;
+  }
+  return code_ == POP_JUMP_BACKWARD_IF_FALSE || code_ == POP_JUMP_BACKWARD_IF_NONE ||
+         code_ == POP_JUMP_BACKWARD_IF_NOT_NONE || code_ == POP_JUMP_BACKWARD_IF_TRUE ||
+         code_ == POP_JUMP_FORWARD_IF_FALSE || code_ == POP_JUMP_FORWARD_IF_NONE ||
+         code_ == POP_JUMP_FORWARD_IF_NOT_NONE || code_ == POP_JUMP_FORWARD_IF_TRUE || code_ == POP_JUMP_IF_FALSE ||
+         code_ == POP_JUMP_IF_TRUE || code_ == JUMP_IF_FALSE_OR_POP || code_ == JUMP_IF_TRUE_OR_POP;
 }
 
 // see "${PythonInclude}/internal/pycore_opcode.h"

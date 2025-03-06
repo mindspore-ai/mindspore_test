@@ -184,7 +184,7 @@ std::pair<py::object, py::object> Utils::PackCallStackArgs(const std::vector<py:
   Py_ssize_t kwsize = 0;
   py::object pargs;
   py::object kwargs;
-  if (callop == CALL_FUNCTION_KW || callop == CALL_FUNCTION || callop == CALL_METHOD) {
+  if (Opcode(callop).IsCall()) {
     if (callop == CALL_FUNCTION_KW) {
       py::object keys = args.back();
       if (!PyTuple_Check(keys.ptr())) {

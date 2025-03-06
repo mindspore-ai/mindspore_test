@@ -86,6 +86,8 @@ class Opcode {
   bool IsBuildOp() const { return class_ == Class::kContainerBuild; }
   bool IsCellAccess() const { return class_ == Class::kCell; }
   bool IsLocalAccess() const { return class_ == Class::kLocal; }
+  bool IsCallFunc() const;
+  bool IsConditionJump() const;
 
   // python3.9 explicit IS_OP from COMPARE_OP
   bool CheckIsOp(int oparg, bool *invert = nullptr) const;

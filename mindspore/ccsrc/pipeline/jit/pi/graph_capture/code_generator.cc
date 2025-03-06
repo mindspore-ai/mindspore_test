@@ -362,6 +362,10 @@ static std::string MakeBrkName(const std::string &co_name, int bci) {
   return std::to_string(bci) + mark + std::regex_replace(co_name, std::regex(reg_mark), "");
 }
 
+static std::unique_ptr<Instr> MakeCallFunInstrPtr(int oparg) {
+  return std::make_unique<Instr>(IS_PYTHON_3_11_PLUS ? CALL : CALL_FUNCTION, oparg);
+}
+
 py::object CodeGenerator::Transform(const Code &ccode) {
   std::unordered_map<std::string, int> names;
   py::dict consts;
@@ -626,7 +630,10 @@ std::vector<std::unique_ptr<Instr>> CodeGenerator::RotStack(int stack) {
   std::vector<std::unique_ptr<Instr>> res;
   if (stack == 0) {
     return res;
-#if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION == 10)
+#if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION == 11)
+  } else {
+    res.push_back(std::make_unique<Instr>(SWAP, stack + 1));
+#elif (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION == 10)
   } else {
     res.push_back(std::make_unique<Instr>(ROT_N, stack + 1));
 #elif PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 10 && PY_MINOR_VERSION >= 7
@@ -738,7 +745,7 @@ void CodeGenerator::AddCallInstr(size_t load_args_offset, int oparg) {
     code_.co_code.insert(iter, std::make_unique<Instr>(PUSH_NULL));
   }
 #endif
-  NewInstr(IS_PYTHON_3_11_PLUS ? CALL : CALL_FUNCTION, oparg);
+  AddInstr(MakeCallFunInstrPtr(oparg));
 }
 
 void CodeGenerator::LoadValue(ValueNode *node) {
@@ -1264,7 +1271,6 @@ void CodeBreakGenerator::BreakAtIf(CodeGenerator *code_gen) const {
   RestoreLocals(code_gen, true);
   code_gen->AddCallInstr(load_args_offset, argc);
   code_gen->NewInstr(RETURN_VALUE);
-
   if_instr->set_extra_jump(code_gen->GetCode().co_code[load_args_offset].get());
 }
 
@@ -1406,7 +1412,7 @@ py::object PackNestedFuncCodes(const std::vector<Graph *> &call_stack, int top_a
     for (int i = 0; i < alive_local_size; ++i) {
       oper.push_back(std::make_unique<Instr>(LOAD_FAST, load_offset++));
     }
-    oper.push_back(std::make_unique<Instr>(IS_PYTHON_3_11_PLUS ? CALL : CALL_FUNCTION, co_argcount));
+    oper.push_back(MakeCallFunInstrPtr(co_argcount));
   }
   if (argc != top_argc) {
     MS_LOG(INTERNAL_EXCEPTION) << "Expect argc to be " << top_argc << ", but is " << argc;
@@ -1459,7 +1465,7 @@ void CodeBreakGenerator::BreakAtCall(CodeGenerator *cg) const {
   for (; iter != end; ++iter) {
     cg->LoadValue(*iter);  // bottom function alive locals
   }
-  cg->NewInstr(CALL_FUNCTION, argc);
+  cg->AddInstr(MakeCallFunInstrPtr(argc));
   cg->NewInstr(RETURN_VALUE);
 }
 
@@ -1923,7 +1929,8 @@ static int FindTryBlockEnd(int start, const CFG *cfg) {
   MS_EXCEPTION_IF_NULL(tar);
 
   size_t res = (size_t)tar->bci();
-  if (tar->op() == DUP_TOP) {
+  auto is_copy_top_op = tar->op() == DUP_TOP || (tar->op() == COPY && tar->arg() == 1);
+  if (is_copy_top_op) {
     // try block without finally
     MS_EXCEPTION_IF_CHECK_FAIL(res + 2 < list.size(), "can't find try block");
     while (res < list.size() && list[res]->op() != RERAISE) {
@@ -2291,7 +2298,7 @@ py::object LoopBodyReCaptureCodeGenerator::Build() {
   std::move(func_instrs.begin(), func_instrs.end(), std::back_inserter(newLoopBodyInstrs));
   auto rot_stack_instrs = CodeGenerator::RotStack(localsForInput.size() + stack_effect);
   std::move(rot_stack_instrs.begin(), rot_stack_instrs.end(), std::back_inserter(newLoopBodyInstrs));
-  (void)newLoopBodyInstrs.emplace_back(std::make_unique<Instr>(CALL_FUNCTION, stack_effect + localsForInput.size()));
+  (void)newLoopBodyInstrs.emplace_back(MakeCallFunInstrPtr(stack_effect + localsForInput.size()));
   if (!localsForOutput.empty()) {
     if (localsForOutput.size() > 1) {
       (void)newLoopBodyInstrs.emplace_back(std::make_unique<Instr>(UNPACK_SEQUENCE, localsForOutput.size()));

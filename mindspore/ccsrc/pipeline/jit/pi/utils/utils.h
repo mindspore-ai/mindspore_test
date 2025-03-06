@@ -199,16 +199,17 @@ class PackCallStackHelper {
   auto &result() { return result_; }
 
   template <typename CastKeys, typename CastSequence, typename CastKeyWords>
-  bool Pack(const std::vector<T> &stack_args, CastKeys to_keys, CastSequence to_seq, CastKeyWords to_map) {
+  bool Pack(const std::vector<T> &stack_args, CastKeys to_keys, CastSequence to_seq, CastKeyWords to_map, PyObject *kw_names) {
     if (opcode_ == CALL_FUNCTION_EX) {
       result_.args_ = to_seq(stack_args[0]);
       result_.kw_ = stack_args.size() > 1 ? to_map(stack_args[1]) : std::map<std::string, T>();
       return true;
     }
-    if (opcode_ != CALL_FUNCTION_KW && opcode_ != CALL_FUNCTION) {
+    if (opcode_ != CALL_FUNCTION_KW && opcode_ != CALL_FUNCTION && opcode_ != CALL) {
       return false;
     }
     size_t size = stack_args.size();
+#if !IS_PYTHON_3_11_PLUS
     if (opcode_ == CALL_FUNCTION_KW) {
       std::vector<std::string> keys = to_keys(stack_args.back());
       size = size - keys.size() - 1;
@@ -216,6 +217,15 @@ class PackCallStackHelper {
         result_.kw_[std::move(keys[i])] = stack_args[size + i];
       }
     }
+#else
+    if (opcode_ == CALL && kw_names != nullptr) {
+      std::vector<std::string> keys = to_keys(py::cast<py::object>(kw_names));
+      size = size - keys.size();
+      for (size_t i = 0; i < keys.size(); ++i) {
+        result_.kw_[std::move(keys[i])] = stack_args[size + i];
+      }
+    }
+#endif
     std::copy(stack_args.begin(), stack_args.begin() + size, std::back_inserter(result_.args_));
     return true;
   }
@@ -268,7 +278,8 @@ class BindArgumentsHelper {
       MS_LOG(ERROR) << "takes " << co_->co_argcount << " positional arguments but " << argc << " was given";
       return false;
     }
-    PyObject **begin = &PyTuple_GET_ITEM(PyCodeWrapper(co_).VarNames().ptr(), 0);
+    auto vars = PyCodeWrapper(co_).VarNames();
+    PyObject **begin = &PyTuple_GET_ITEM(vars.ptr(), 0);
     PyObject **end = begin + parameter_argc;
     for (const auto &item : kw) {
       const auto &k = item.first;

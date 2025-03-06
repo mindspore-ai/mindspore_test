@@ -215,7 +215,9 @@ void Graph::AddNodeInfo(ValueNode *node, AObject *obj_info, const std::string &n
   }
   ConstantInfo::CollectConstantInfo(node);
   if (node->IsConstantValue() && obj_info && CheckConstPyObject(obj_info->GetPyObject().ptr())) {
-    node->SetOpcode(LOAD_CONST);
+    if (node->GetOpcode() != KW_NAMES || node->GetOpcode() != LOAD_CONST) {
+      node->SetOpcode(LOAD_CONST);
+    }
     node->SetOparg(-1);
     node->ClearInputs();
   }
@@ -643,8 +645,8 @@ bool Graph::GuardSequenceNodeLength(ValueNode *sequence_node, Py_ssize_t sequenc
   PyObject *builtin_len = PyDict_GetItemString(PyEval_GetBuiltins(), "len");
   MS_EXCEPTION_IF_NULL(builtin_len);
   TracePtr len_func = CreateOpTrace(builtin_len, LOAD_CONST, -1, {}, "", "", strict);
-  TracePtr len_trace =
-    CreateOpTrace(py::int_(sequence_size).ptr(), CALL_FUNCTION, 1, {len_func, tr}, "", "len", strict);
+  TracePtr len_trace = CreateOpTrace(py::int_(sequence_size).ptr(), IS_PYTHON_3_11_PLUS ? CALL : CALL_FUNCTION, 1,
+                                     {len_func, tr}, "", "len", strict);
   guard->GuardOn(len_trace, GuardLevel::GEqual, true);
 
   sequence_node->MakeConstantInfo()->set_len(sequence_size);
@@ -894,8 +896,7 @@ void Graph::DumpBreakInfo(std::ostream *out) const {
     Opcode op(instrs[break_bci]->op());
     int arg = instrs[break_bci]->arg();
     DumpUnsupportedByteCodeInfo(s, op, arg);
-    if (op == POP_JUMP_IF_FALSE || op == POP_JUMP_IF_TRUE || op == JUMP_IF_FALSE_OR_POP || op == JUMP_IF_TRUE_OR_POP ||
-        op == FOR_ITER || op == UNPACK_SEQUENCE || op == UNPACK_EX) {
+    if (op.IsConditionJump() || op == FOR_ITER || op == UNPACK_SEQUENCE || op == UNPACK_EX) {
       arg = 0;
     } else if (op == CALL_FUNCTION_EX) {
       arg = (arg & 0x01) + 1;

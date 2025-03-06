@@ -692,7 +692,7 @@ static void TensorAssignValue(CallNode *call_node, GraphBuilder *parent, ValueNo
 bool InferTensorAssignValue(CallNode *call_node, GraphBuilder *parent) {
   bool is_not_method = false;
   ValueNode *self = GetSelfFromKnownMethod(call_node, &is_not_method);
-  if (self == nullptr || call_node->GetOpcode() != CALL_FUNCTION) {
+  if (self == nullptr || !Opcode(call_node->GetOpcode()).IsCallFunc()) {
     call_node->SetSubGraph(nullptr);
     return false;
   }
