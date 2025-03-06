@@ -137,6 +137,9 @@ void BlockInvalid(const PrimitivePtr &primitive, const std::vector<AbstractBaseP
 BaseShapePtr SetPadShape(const ShapeVector &x_shape, const ArrayValue<int64_t> &paddings);
 BaseShapePtr PadInferShapeBase(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args,
                                const size_t pad_dim);
+size_t GetHashId(int a, int b);
+TypeId ConvertTypeBetweenTensorAndScalar(const TypeId &tensor_type_id, const TypeId &scalar_type_id,
+                                         const size_t hash_id);
 
 bool ObscureShapeEqual(const ShapeVector &lhs, const ShapeVector &rhs);
 

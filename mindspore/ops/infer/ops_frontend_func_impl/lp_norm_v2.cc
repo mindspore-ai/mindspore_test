@@ -18,15 +18,15 @@
 
 namespace mindspore::ops {
 namespace {
-constexpr auto kDiv = "Div";
+constexpr auto kLpNormV2 = "LpNormV2";
 }  // namespace
 
-class DivFrontendFuncImpl : public OpFrontendFuncImpl {
+class LLpNormV2FrontendFuncImpl : public OpFrontendFuncImpl {
  public:
   ValuePtr InferValue(const PrimitivePtr &, const std::vector<AbstractBasePtr> &input_args) const override {
-    return InferValueCallback::GetInstance().CallPyInferValue(kDiv, input_args);
+    return InferValueCallback::GetInstance().CallPyInferValue(kLpNormV2, input_args);
   }
 };
 
-REGISTER_PRIMITIVE_FUNCTION_FRONTEND_FUNC_IMPL(kDiv, DivFrontendFuncImpl);
+REGISTER_PRIMITIVE_FUNCTION_FRONTEND_FUNC_IMPL(kLpNormV2, LLpNormV2FrontendFuncImpl);
 }  // namespace mindspore::ops
