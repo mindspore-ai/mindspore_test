@@ -56,10 +56,10 @@ typedef struct FASparseInfo {
 } FASparseInfo;
 
 int64_t InferSeqDimByInputLayout(int64_t input_layout) {
-  if (layoutMap.find(input_layout) == layoutMap.end()) {
+  if (ops::layoutMap.find(input_layout) == ops::layoutMap.end()) {
     MS_LOG(EXCEPTION) << "Invalid input layout: " << input_layout;
   }
-  auto input_layout_str = layoutMap.at(input_layout);
+  auto input_layout_str = ops::layoutMap.at(input_layout);
   auto dim = input_layout_str.find('S');
   if (dim != std::string::npos) {
     return dim;

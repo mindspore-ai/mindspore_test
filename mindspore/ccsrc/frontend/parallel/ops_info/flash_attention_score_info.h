@@ -46,11 +46,6 @@ const std::map<int64_t, int64_t> opAttrUpdateMap = {{ops::kSparseDefaultMask, kL
                                                     {ops::kSparseRightDownCausal, kRightDownToRightDown},
                                                     {ops::kSparseBand, kRightDownToRightDown},
                                                     {ops::kSparseBlockLocal, kLeftUpToRightDown}};
-const std::map<int64_t, std::string> layoutMap = {
-  {ops::FASInputLayoutMode::BSH, "BSH"}, {ops::FASInputLayoutMode::BNSD, "BNSD"},
-  {ops::FASInputLayoutMode::SBH, "SBH"}, {ops::FASInputLayoutMode::BSND, "BSND"},
-  {ops::FASInputLayoutMode::TND, "TND"}, {ops::FASInputLayoutMode::TH, "TH"},
-  {ops::FASInputLayoutMode::NSD, "NSD"}, {ops::FASInputLayoutMode::SH, "SH"}};
 
 Status ComputeSparseInfoForFlashAttentionScore(const int64_t sparse_mode, const int64_t pre_tokens,
                                                const int64_t next_tokens, const int64_t seq_split_id,

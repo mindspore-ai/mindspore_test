@@ -24,7 +24,6 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "utils/check_convert_utils.h"
 #include "ops/primitive_c.h"
-#include "mindspore/ops/op_def/op_enum.h"
 #include "mindapi/helper.h"
 #include "ops_utils/op_utils.h"
 #include "ops_utils/op_constants.h"
@@ -170,23 +169,54 @@ void CheckFlashAttentionScoreSparseMode(const PrimitivePtr &primitive, const std
   }
 }
 
-BaseShapePtr ConstructInferShape(const ShapeVector &softmax_shape, const ShapeVector &query_shape) {
+BaseShapePtr ConstructInferShape(const ShapeVector &softmax_shape, const ShapeVector &query_shape,
+                                 const ShapeVector &key_shape, const ShapeVector &value_shape,
+                                 std::optional<int64_t> input_layout = std::nullopt) {
+  auto output_shape = query_shape;
+  if (input_layout.has_value() && !IsDynamicRank(query_shape) && !IsDynamicRank(key_shape) &&
+      !IsDynamicRank(value_shape)) {
+    auto input_layout_pair = layoutMap.find(input_layout.value());
+    if (input_layout_pair == layoutMap.end()) {
+      MS_LOG(EXCEPTION) << "FlashAttentionScore: unsupported layout: " << input_layout.value();
+    }
+    auto input_layout_str = input_layout_pair->second;
+    if (input_layout_str.find("D") != std::string::npos) {
+      auto head_dim_index = input_layout_str.find("D");
+      auto value_head_dim = value_shape.at(head_dim_index);
+      output_shape.at(head_dim_index) = value_head_dim;
+    } else {
+      auto hidden_dim_index = input_layout_str.find("H");
+      if (hidden_dim_index == std::string::npos) {
+        MS_LOG(EXCEPTION) << "FlashAttentionScore: cannot find the head_dim or hidden dimension from layout "
+                          << input_layout_str;
+      }
+      auto query_hidden_size = query_shape.at(hidden_dim_index);
+      auto key_hidden_size = key_shape.at(hidden_dim_index);
+      auto value_hidden_size = value_shape.at(hidden_dim_index);
+      auto output_hidden_size = query_hidden_size / key_hidden_size * value_hidden_size;
+      output_shape.at(hidden_dim_index) = output_hidden_size < 0 ? abstract::Shape::kShapeDimAny : output_hidden_size;
+    }
+  }
   return std::make_shared<abstract::TupleShape>(abstract::BaseShapePtrList(
     {std::make_shared<abstract::Shape>(softmax_shape), std::make_shared<abstract::Shape>(softmax_shape),
-     std::make_shared<abstract::Shape>(ShapeVector{1}), std::make_shared<abstract::Shape>(query_shape)}));
+     std::make_shared<abstract::Shape>(ShapeVector{1}), std::make_shared<abstract::Shape>(output_shape)}));
 }
 
 std::vector<int64_t> GetFASInfoFromInputLayout(int64_t input_layout, int64_t q_head_num, const std::string &op_name,
-                                               const ShapeVector &query_shape, const ShapeVector &key_shape) {
+                                               const ShapeVector &query_shape, const ShapeVector &key_shape,
+                                               const ShapeVector &value_shape) {
   int64_t batch_size = -1;
   int64_t q_seq_len = -1;
   int64_t kv_seq_len = -1;
   int64_t kv_head_num = -1;
+  if (query_shape.size() != key_shape.size() || query_shape.size() != value_shape.size()) {
+    MS_LOG(EXCEPTION) << op_name << ": The rank among 'query', 'key' and 'value' must be the same, but got "
+                      << query_shape.size() << ", " << key_shape.size() << " and " << value_shape.size();
+  }
   if (input_layout == FASInputLayoutMode::BSH) {
-    if (query_shape.size() != kInputFlashAttentionScoreQueryBSHRank || key_shape.size() != query_shape.size()) {
-      MS_LOG(EXCEPTION) << op_name << ": The rank of 'query' and 'key' must be "
-                        << kInputFlashAttentionScoreQueryBSHRank << ", but got " << query_shape.size() << " and "
-                        << key_shape.size();
+    if (query_shape.size() != kInputFlashAttentionScoreQueryBSHRank) {
+      MS_LOG(EXCEPTION) << op_name << ": The rank of 'query' must be " << kInputFlashAttentionScoreQueryBSHRank
+                        << ", but got " << query_shape.size() << " and " << key_shape.size();
     }
     batch_size = query_shape[0];
     q_seq_len = query_shape[1];
@@ -256,16 +286,17 @@ BaseShapePtr FlashAttentionScoreFuncImpl::InferShape(const PrimitivePtr &primiti
   auto op_name = primitive->name();
   auto query_shape = input_args[kFlashAttentionScoreInputQueryIndex]->GetShape()->GetShapeVector();
   auto key_shape = input_args[kFlashAttentionScoreInputKeyIndex]->GetShape()->GetShapeVector();
+  auto value_shape = input_args[kFlashAttentionScoreInputValueIndex]->GetShape()->GetShapeVector();
   ShapeVector dyn_rank{abstract::Shape::kShapeRankAny};
   ShapeVector dyn_shape{abstract::Shape::kShapeDimAny};
   if (IsFlashAttentionScoreOptionalInputNotPass(input_args[kFlashAttentionScoreInputLayoutIndex])) {
-    return ConstructInferShape(dyn_rank, query_shape);
+    return ConstructInferShape(dyn_rank, query_shape, key_shape, value_shape);
   }
   auto input_layout_value = input_args[kFlashAttentionScoreInputLayoutIndex]->GetValue();
   MS_EXCEPTION_IF_NULL(input_layout_value);
   auto input_layout_opt = GetScalarValue<int64_t>(input_layout_value);
   if (!input_layout_opt.has_value()) {
-    return ConstructInferShape(dyn_rank, query_shape);
+    return ConstructInferShape(dyn_rank, query_shape, key_shape, value_shape);
   }
 
   auto head_num_value = input_args[kFlashAttentionScoreInputHeadNumIndex]->GetValue();
@@ -291,27 +322,28 @@ BaseShapePtr FlashAttentionScoreFuncImpl::InferShape(const PrimitivePtr &primiti
       if (IsDynamicRank(query_shape)) {
         return ConstructInferShape(
           ShapeVector{abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny, kFlashAttentionScoreSoftmaxLastDim},
-          query_shape);
+          query_shape, key_shape, value_shape, input_layout_opt);
       }
       return ConstructInferShape(ShapeVector{query_shape[0], query_shape[1], kFlashAttentionScoreSoftmaxLastDim},
-                                 query_shape);
+                                 query_shape, key_shape, value_shape, input_layout_opt);
     } else {
       if (IsDynamicRank(query_shape)) {
         return ConstructInferShape(ShapeVector{abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny},
-                                   query_shape);
+                                   query_shape, key_shape, value_shape, input_layout_opt);
       }
 
       auto head_num_opt = GetScalarValue<int64_t>(head_num_value);
       int64_t q_head_num = head_num_opt.value();
       q_head_num *= static_cast<int64_t>(kFlashAttentionScoreSoftmaxLastDim);
-      return ConstructInferShape(ShapeVector{query_shape[0], q_head_num}, query_shape);
+      return ConstructInferShape(ShapeVector{query_shape[0], q_head_num}, query_shape, key_shape, value_shape,
+                                 input_layout_opt);
     }
   }
 
   if (IsDynamicRank(query_shape)) {
     return ConstructInferShape(ShapeVector{abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny,
                                            abstract::Shape::kShapeDimAny, kFlashAttentionScoreSoftmaxLastDim},
-                               query_shape);
+                               query_shape, key_shape, value_shape, input_layout_opt);
   }
 
   size_t seq_index = kIndex1, batch_index = kIndex0;
@@ -324,7 +356,7 @@ BaseShapePtr FlashAttentionScoreFuncImpl::InferShape(const PrimitivePtr &primiti
   if (head_num_no_value) {
     return ConstructInferShape(ShapeVector{query_shape[batch_index], abstract::Shape::kShapeDimAny,
                                            query_shape[seq_index], kFlashAttentionScoreSoftmaxLastDim},
-                               query_shape);
+                               query_shape, key_shape, value_shape, input_layout_opt);
   }
 
   auto head_num_opt = GetScalarValue<int64_t>(head_num_value);
@@ -332,15 +364,14 @@ BaseShapePtr FlashAttentionScoreFuncImpl::InferShape(const PrimitivePtr &primiti
   if (IsDynamicShape(query_shape) || IsDynamic(key_shape)) {
     return ConstructInferShape(
       ShapeVector{query_shape[batch_index], q_head_num, query_shape[seq_index], kFlashAttentionScoreSoftmaxLastDim},
-      query_shape);
+      query_shape, key_shape, value_shape, input_layout_opt);
   }
 
-  auto shape_info = GetFASInfoFromInputLayout(input_layout, q_head_num, op_name, query_shape, key_shape);
+  auto shape_info = GetFASInfoFromInputLayout(input_layout, q_head_num, op_name, query_shape, key_shape, value_shape);
   int64_t batch_size = shape_info[kIndex0];
   int64_t q_seq_len = shape_info[kIndex1];
   int64_t kv_seq_len = shape_info[kIndex2];
 
-  CheckFlashAttentionScoreInputShape(input_args[kFlashAttentionScoreInputValueIndex], key_shape, op_name, "value");
   CheckFlashAttentionScoreInputShape(input_args[kFlashAttentionScoreInputRealShiftIndex],
                                      {{batch_size, q_head_num, q_seq_len, kv_seq_len},
                                       {1, q_head_num, q_seq_len, kv_seq_len},
@@ -352,7 +383,7 @@ BaseShapePtr FlashAttentionScoreFuncImpl::InferShape(const PrimitivePtr &primiti
   CheckFlashAttentionScoreSparseMode(primitive, input_args, shape_info, q_head_num);
 
   return ConstructInferShape(ShapeVector{batch_size, q_head_num, q_seq_len, kFlashAttentionScoreSoftmaxLastDim},
-                             query_shape);
+                             query_shape, key_shape, value_shape, input_layout_opt);
 }
 
 TypePtr FlashAttentionScoreFuncImpl::InferType(const PrimitivePtr &prim,

@@ -234,9 +234,6 @@ BaseShapePtr FlashAttentionScoreGradFuncImpl::InferShape(const PrimitivePtr &pri
     int64_t q_seq_len = shape_info[kIndex1];
     int64_t kv_seq_len = shape_info[kIndex2];
 
-    CheckFlashAttentionScoreGradInputShape(input_args[kFASGradInputDyIndex], query_shape, op_name, "dy");
-    CheckFlashAttentionScoreGradInputShape(input_args[kFASGradInputAttentionInIndex], query_shape, op_name,
-                                           "attention_in");
     CheckFlashAttentionScoreGradInputShape(input_args[kFASGradInputPseShiftIndex],
                                            {{batch_size, q_head_num, q_seq_len, kv_seq_len},
                                             {1, q_head_num, q_seq_len, kv_seq_len},
