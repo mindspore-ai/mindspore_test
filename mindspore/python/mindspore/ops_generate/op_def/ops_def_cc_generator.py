@@ -71,7 +71,7 @@ class OpsDefCcGenerator(BaseGenerator):
         for op_proto in op_protos:
             operator_name = op_proto.op_name
             class_name = op_proto.op_class.name
-            if "deprecated" not in operator_name:
+            if not op_proto.func_op:
                 gen_include_list.append(self.include_template.replace(path=K.MS_OPS_FUNC_IMPL_PATH,
                                                                       operator_name=operator_name))
                 func_impl_declaration_str = self.func_impl_declaration_template.replace(class_name=class_name)

@@ -2206,6 +2206,14 @@ REG_BPROP_BUILDER("ExpandDims").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(i
   return {dx, ib->OutZeros(axis)};
 });
 
+REG_BPROP_BUILDER("View").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto shape = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  auto dx = ib->Reshape(dout, ib->Shape(input));
+  return {dx, ib->OutZeros(shape)};
+});
+
 REG_BPROP_BUILDER("Squeeze").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex1);

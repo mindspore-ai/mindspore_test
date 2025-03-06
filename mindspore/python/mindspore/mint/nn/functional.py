@@ -134,7 +134,7 @@ from mindspore.ops.functional import embedding
 # 53
 
 # 54
-
+from mindspore.ops.functional_overload import pixel_shuffle
 # 55
 
 # 56
@@ -1227,7 +1227,7 @@ __all__ = [
     # 53
 
     # 54
-
+    'pixel_shuffle',
     # 55
 
     # 56

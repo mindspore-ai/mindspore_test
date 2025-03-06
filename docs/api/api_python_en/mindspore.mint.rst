@@ -438,7 +438,7 @@ Loss Functions
     mindspore.mint.nn.NLLLoss
     mindspore.mint.nn.SmoothL1Loss
 
-Image Processing Layer
+Vision Layer
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. msplatwarnautosummary::
@@ -446,6 +446,7 @@ Image Processing Layer
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.nn.PixelShuffle
     mindspore.mint.nn.Upsample
 
 Tools
@@ -596,6 +597,7 @@ Vision functions
     mindspore.mint.nn.functional.interpolate
     mindspore.mint.nn.functional.grid_sample
     mindspore.mint.nn.functional.pad
+    mindspore.mint.nn.functional.pixel_shuffle
 
 mindspore.mint.optim
 ---------------------

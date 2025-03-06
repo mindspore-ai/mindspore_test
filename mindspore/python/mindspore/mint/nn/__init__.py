@@ -1179,11 +1179,36 @@ class UpsamplingBilinear2d(Cell):
         return upsample_bilinear2d_op(input, self.size, self.scale_factor, True)
 
 
+class PixelShuffle(Cell):
+    r"""Rearrange elements in a tensor according to an upscaling factor.
+
+    For details, please refer to :func:`mindspore.mint.nn.functional.pixel_shuffle`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> from mindspore import mint
+        >>> pixel_shuffle = mint.nn.PixelShuffle(3)
+        >>> input = mint.randn(1, 9, 4, 4)
+        >>> output = pixel_shuffle(input)
+        >>> print(output.shape())
+            [1, 1, 12, 12]
+    """
+
+    def __init__(self, upscale_factor):
+        super(PixelShuffle, self).__init__()
+        self.upscale_factor = upscale_factor
+
+    def construct(self, input):
+        return F.pixel_shuffle(input, self.upscale_factor)
+
+
 __all__ = [
     # 1
     'BCEWithLogitsLoss',
     # 2
-
+    'PixelShuffle',
     # 3
     'Identity',
     # 4

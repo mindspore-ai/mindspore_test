@@ -38,6 +38,7 @@ def generate_ops_py_files(resource_mgr, file_pre='gen'):
     Generate ops python file from yaml.
     """
     op_protos = resource_mgr.get_resource(ResourceType.OP_PROTO)
+    op_protos += resource_mgr.get_resource(ResourceType.FUNC_OP_PROTO)
     doc_dict = resource_mgr.get_resource(ResourceType.OP_DOC_YAML)
     generate_ops_prim_file(K.WORK_DIR, op_protos, doc_dict, file_pre)
     generate_ops_def_file(K.WORK_DIR, op_protos, doc_dict, file_pre)
