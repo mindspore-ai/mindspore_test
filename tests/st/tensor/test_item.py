@@ -18,6 +18,7 @@ from tests.mark_utils import arg_mark
 
 import mindspore as ms
 import mindspore.nn as nn
+from mindspore import context
 
 
 class Net(nn.Cell):
@@ -43,6 +44,7 @@ def test_tensor_item(mode):
     Expectation: success
     """
     ms.set_context(mode=mode)
+    context.set_context(jit_level='O0')
     eps = 1e-6
     x = ms.Tensor(1.2, ms.float32)
     net = Net()

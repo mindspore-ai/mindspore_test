@@ -17,10 +17,12 @@ import numpy as np
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 import mindspore as ms
-from mindspore import Tensor
+from mindspore import Tensor, context
 from mindspore.nn import Cell
 from mindspore.mint.nn.functional import pad
 from grad import GradOfFirstInput
+
+context.set_context(jit_level='O0')
 
 
 def generate_random_input(shape, dtype):

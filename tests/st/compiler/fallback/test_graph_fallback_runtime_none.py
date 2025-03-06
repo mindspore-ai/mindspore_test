@@ -593,6 +593,7 @@ def test_none_is_return_raise():
     Description: Support None is the return of sub_graph in control flow. And Raise node is in sub_graph.
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     def check_test(shp):  # pylint: disable=R1711
         if shp[0] > 5:
             raise ValueError('raise value error.')

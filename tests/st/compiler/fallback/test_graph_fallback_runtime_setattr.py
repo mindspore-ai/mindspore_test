@@ -20,10 +20,11 @@ import numpy as np
 import mindspore as ms
 from mindspore import nn
 from mindspore import ops
-from mindspore import Tensor, Parameter, jit, jit_class
+from mindspore import Tensor, Parameter, jit, jit_class, context
 from tests.mark_utils import arg_mark
 
 ms.set_context(mode=ms.GRAPH_MODE)
+context.set_context(jit_level='O0')
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',

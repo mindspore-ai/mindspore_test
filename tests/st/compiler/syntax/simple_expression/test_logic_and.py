@@ -196,6 +196,7 @@ def test_ms_syntax_operator_logic_list_int_and_list_int():
     Description: test logic and operator.
     Expectation: No exception
     """
+    context.set_context(jit_level='O0')
     net = LogicAnd()
     ret = net([1, 2, 3], [3, 2, 1])
     assert ret == [3, 2, 1]

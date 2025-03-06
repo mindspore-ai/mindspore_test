@@ -14,10 +14,10 @@
 # ============================================================================
 import pytest
 from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
 
 import mindspore as ms
 from mindspore import ops
-from tests.mark_utils import arg_mark
 
 
 @test_utils.run_with_cell
@@ -49,6 +49,7 @@ def test_shape_dynamic(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    ms.context.set_context(jit_level='O0')
     x_dyn1 = ms.Tensor(shape=None, dtype=ms.float32)
     expect_out1 = (1,)
     x1 = ms.Tensor([0], ms.float32)

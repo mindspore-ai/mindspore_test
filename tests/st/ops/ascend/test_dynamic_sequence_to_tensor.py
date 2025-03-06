@@ -114,6 +114,7 @@ def test_seq_to_tensor3():
     Description: inputs is dynamic sequence or scalar; DType=float32
     Expectation: the result match with numpy result
     """
+    context.set_context(jit_level='O0')
     x0 = mutable((1.1, 2.1, 3.1), True)
     y0 = mutable(3.1)
     expect_x0 = np.array([1.1, 2.1, 3.1], dtype=np.float32)

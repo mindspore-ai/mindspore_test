@@ -267,6 +267,7 @@ def test_forward_contain_make_dict_and_dict_setitem_backward_return_dict2():
                  and the backward returns make_dict.
     Expectation: Get the correct output.
     """
+    context.set_context(jit_level='O0')
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()

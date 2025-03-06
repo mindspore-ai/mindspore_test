@@ -141,6 +141,7 @@ def test_ms_syntax_operator_logic_int_or_str():
     Description: test logic or operator.
     Expectation: No exception
     """
+    context.set_context(jit_level='O0')
     net = LogicOr()
     ret = net(1, "cba")
     assert ret == 1
@@ -219,6 +220,7 @@ def test_ms_syntax_operator_logic_list_int_or_list_str():
     Description: test logic or operator.
     Expectation: No exception
     """
+    context.set_context(jit_level='O0')
     net = LogicOrSpec([1, 2, 3], ["1", "2", "3"])
     ret = net(1, 2)
     assert ret == [1, 2, 3]

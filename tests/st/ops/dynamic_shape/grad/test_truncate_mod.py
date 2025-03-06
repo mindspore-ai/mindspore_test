@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor, context
@@ -54,6 +53,7 @@ def test_dynamic_truncate_mode():
     Description: Test case of dynamic shape for  TruncateMod grad operator.
     Expectation: success.
     """
+    context.set_context(jit_level='O0')
     # Graph mode
     context.set_context(mode=context.GRAPH_MODE)
     run_dynamic_shape()

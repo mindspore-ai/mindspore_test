@@ -17,7 +17,7 @@
 import os
 import pytest
 import mindspore as ms
-from mindspore import nn
+from mindspore import nn, context
 from tests.mark_utils import arg_mark
 
 ms.set_context(mode=ms.GRAPH_MODE)
@@ -36,6 +36,7 @@ def test_dict_in_cell():
     Description: Test jit_syntax_level for nn.cell.
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class Net(nn.Cell):
         def construct(self):
             return {"a": 1}

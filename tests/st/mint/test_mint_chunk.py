@@ -18,7 +18,7 @@ from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
 import mindspore as ms
-from mindspore import mint, Tensor, jit, context, JitConfig, ops
+from mindspore import mint, Tensor, jit, context, ops
 from mindspore.common.api import _pynative_executor
 
 
@@ -88,6 +88,7 @@ def test_chunk_forward_dynamic_shape(context_mode):
     Expectation: output the right result.
     """
     context.set_context(mode=context_mode)
+    context.set_context(jit_level='O0')
     input_dyn = Tensor(shape=[4, None, None], dtype=ms.int64)
     chunks = 3
     dims = 0
@@ -145,6 +146,7 @@ def test_chunk_backward_dynamic_shape(context_mode):
     Expectation: output the right result.
     """
     context.set_context(mode=context_mode)
+    context.set_context(jit_level='O0')
     input_dyn = Tensor(shape=[None, 4, None], dtype=ms.float32)
     chunks = 3
     dims = 1

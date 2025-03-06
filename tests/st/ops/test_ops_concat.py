@@ -179,6 +179,7 @@ def test_concat_backward_dynamic(mode, dyn_mode):
     Expectation: expect correct result.
     """
     ms.set_context(mode=mode)
+    context.set_context(jit_level='O0')
     dyn_tensor_shape = [None, None] if dyn_mode == "dyn_shape" else None
     axis = 1
     x1_dyn = ms.Tensor(shape=dyn_tensor_shape, dtype=ms.float32)

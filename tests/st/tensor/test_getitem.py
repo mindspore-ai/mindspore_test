@@ -19,7 +19,7 @@ from tests.mark_utils import arg_mark
 
 import mindspore as ms
 import mindspore.nn as nn
-from mindspore import Tensor, ops
+from mindspore import Tensor, ops, context
 
 
 class Net_index3(nn.Cell):
@@ -40,6 +40,7 @@ def test_getitem_index_negative(mode):
     Expectation: success
     """
     ms.set_context(mode=mode)
+    context.set_context(jit_level='O0')
     net = Net_index3()
     x_np = np.arange(6 * 7 * 8 * 9).reshape((6, 7, 8, 9)).astype(np.float32)
     index1_np = -1
@@ -68,6 +69,7 @@ def test_getitem_index_negative_with_slice(mode):
     Expectation: success
     """
     ms.set_context(mode=mode)
+    context.set_context(jit_level='O0')
     net = Net_index2_slice()
     x_np = np.arange(6 * 7 * 8 * 9).reshape((6, 7, 8, 9)).astype(np.float32)
     index1_np = -1

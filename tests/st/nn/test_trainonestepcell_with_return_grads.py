@@ -16,6 +16,7 @@ import numpy as np
 import pytest
 import mindspore as ms
 import mindspore.nn as nn
+from mindspore import context
 from mindspore import Tensor
 from mindspore import ops
 from tests.mark_utils import arg_mark
@@ -47,6 +48,7 @@ def test_trainonestepcellwithgrad(mode):
     Expectation: success
     """
     ms.set_context(mode=mode)
+    context.set_context(jit_level='O0')
     net = NetAdam()
     optimizer = nn.Adam(filter(lambda x: x.requires_grad, net.get_parameters()), learning_rate=0.01)
     criterion = nn.SoftmaxCrossEntropyWithLogits(sparse=True, reduction='mean')

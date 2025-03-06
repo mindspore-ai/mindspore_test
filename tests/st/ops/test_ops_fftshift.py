@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, nn, mutable
+from mindspore import ops, nn, mutable, context
 from mindspore.ops import fftshift
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -91,6 +91,7 @@ def test_ops_fftshift_dynamic_shape(mode):
     Expectation: success
     """
     ms.context.set_context(mode=mode)
+    context.set_context(jit_level='O0')
     dim = 0
     x_dyn = ms.Tensor(shape=[None, None, None, None], dtype=ms.float32)
     dim_dyn = mutable(dim)
@@ -140,6 +141,7 @@ def test_ops_fftshift_dynamic_rank(mode):
     Expectation: success
     """
     ms.context.set_context(mode=mode)
+    context.set_context(jit_level='O0')
     dim = (0,)
     x_dyn = ms.Tensor(shape=None, dtype=ms.float32)
     dim_dyn = mutable(dim)

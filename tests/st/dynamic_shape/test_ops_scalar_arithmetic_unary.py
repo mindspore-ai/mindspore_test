@@ -22,6 +22,8 @@ import mindspore.ops.operations.manually_defined as F
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
+context.set_context(jit_level='O0')
+
 
 def setup_module():
     compile_config.GRAD_FOR_SCALAR = 1

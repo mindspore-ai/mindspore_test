@@ -17,7 +17,7 @@ import pytest
 import mindspore as ms
 from mindspore.nn import Cell
 from mindspore.ops.function.array_func import one_hot_ext as one_hot
-from mindspore import ops
+from mindspore import ops, context
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
@@ -127,6 +127,7 @@ def test_ops_onehot_forward_dynamic_shape(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    context.set_context(jit_level='O0')
 
     x_dyn = ms.Tensor(shape=[None], dtype=ms.int64)
     test_cell = test_utils.to_cell_obj(onehot_dyn_shape_func)
@@ -154,6 +155,7 @@ def test_ops_onehot_forward_dynamic_rank(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    context.set_context(jit_level='O0')
 
     x_dyn = ms.Tensor(shape=None, dtype=ms.int64)
     test_cell = test_utils.to_cell_obj(onehot_forward_func)
