@@ -5138,7 +5138,7 @@ void OnnxExporter::InitExportTables(std::vector<std::pair<PrimitivePtr, ExportFu
     {prim::kPrimSubExt, &OnnxExporter::ExportPrimSubExt},
     {prim::kPrimMatMulExt, &OnnxExporter::ExportPrimMatMulExt},
     {prim::kPrimBatchMatMulExt, &OnnxExporter::ExportPrimBatchMatMulExt},
-    {prim::kPrimTransposeExt, &OnnxExporter::ExportPrimTransposeExt},
+    {prim::kPrimTransposeExtView, &OnnxExporter::ExportPrimTransposeExt},
     {prim::kPrimSplitTensor, &OnnxExporter::ExportPrimSplitTensor},
     {prim::kPrimAddExt, &OnnxExporter::ExportPrimAddExt},
     {prim::kPrimSliceExt, &OnnxExporter::ExportPrimSliceExt},
