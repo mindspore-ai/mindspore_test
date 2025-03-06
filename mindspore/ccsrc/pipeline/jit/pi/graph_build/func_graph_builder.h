@@ -280,8 +280,6 @@ class FuncGraphBuilder {
 
   AbstractWrapperPtr AddAttributeInput(const py::object &object);
 
-  size_t origin_top_input_num() const { return origin_top_input_num_; }
-
  private:
   AnfNodePtr ConvertObjToNode(const py::object &input_obj);
   AnfNodePtr ConvertParameterTupleToNode(const py::object &input_obj);
