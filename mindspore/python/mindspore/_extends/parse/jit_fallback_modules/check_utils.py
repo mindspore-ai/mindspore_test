@@ -95,13 +95,14 @@ class ThirdPartyLibraryChecker:
         if not hasattr(module, '__file__'):
             return False
         module_path = os.path.realpath(module.__file__)
+        split_path = module_path.split(os.path.sep)
+        under_site_packages = "site-packages" in split_path
         # Python builtin modules are treated as third-party libraries.
-        if module_path.startswith(self.python_builtin_dir):
+        if not under_site_packages and module_path.startswith(self.python_builtin_dir):
             logger.debug(f"Found python builtin module '{module.__name__}', which is a third-party module.")
             return True
         # Third-party modules are under site-packages.
-        split_path = module_path.split(os.path.sep)
-        if "site-packages" in split_path and module_leftmost_name in third_party_modules_whitelist:
+        if under_site_packages and module_leftmost_name in third_party_modules_whitelist:
             logger.debug(f"Found third-party module '{module.__name__}' in path '{module_path}'")
             return True
         return False
