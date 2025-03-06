@@ -1739,6 +1739,71 @@ def test_basic_transforms_pipeline():
     map_with_dvpp_shape_and_type()
 
 
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_map_with_dvpp_with_spawn_independent_mode():
+    """
+    Feature: Map op
+    Description: Test map with dvpp with multi process + spawn mode by independent mode
+    Expectation: The result is equal to the expected
+    """
+
+    os.environ['MS_INDEPENDENT_DATASET'] = "True"
+    ds.config.set_multiprocessing_start_method("spawn")
+
+    # Random-accessible object as input source
+    class RandomAccessDataset:
+        def __init__(self):
+            self._data = np.ones((5, 2))
+            self._label = np.zeros((5, 1))
+        def __getitem__(self, index):
+            image = np.fromfile(input_apple_jpg, dtype=np.uint8)
+            return image, self._label[index]
+        def __len__(self):
+            return len(self._data)
+
+    def decode_resize(data):
+        print("map worker pid: {}".format(os.getpid()), flush=True)
+        decode = vision.Decode()(data)
+        resized = vision.Resize((224, 224)).device("Ascend")(decode)
+        # resized = vision.Resize((224, 224))(decode)
+        return (resized,)
+
+    # map with multi process by spawn
+    loader6 = RandomAccessDataset()
+    dataset6 = ds.GeneratorDataset(source=loader6, column_names=["data", "label"])
+    dataset6 = dataset6.map(decode_resize, input_columns=["data"], python_multiprocessing=True,
+                            num_parallel_workers=2)
+
+    print(dataset6.output_shapes())
+    print(dataset6.output_types())
+    count = 0
+    for data in dataset6:
+        print(count, data[0].shape, flush=True)
+        count += 1
+    assert count == 5
+
+    # compose map with multi process by spawn
+    loader7 = RandomAccessDataset()
+    dataset7 = ds.GeneratorDataset(source=loader7, column_names=["data", "label"])
+    transform_ops = [
+        vision.Decode().device("Ascend"),
+        vision.Resize((224, 224)).device("Ascend")
+        ]
+    dataset7 = dataset7.map(transforms.Compose(transform_ops), input_columns=["data"], python_multiprocessing=True,
+                            num_parallel_workers=2)
+
+    print(dataset7.output_shapes())
+    print(dataset7.output_types())
+    # Not support yet, main process has set device, independent dataset map with thread cannot set device in fork mode
+    ## count = 0
+    ## for data in dataset7:
+    ##     print(count, data[0].shape, flush=True)
+    ##     count += 1
+    ## assert count == 5
+
+    os.environ['MS_INDEPENDENT_DATASET'] = "False"
+
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_map_with_dvpp_with_spawn():
     """
@@ -1799,71 +1864,6 @@ def test_map_with_dvpp_with_spawn():
     assert count == 100
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-def test_map_with_dvpp_with_spawn_independent_mode():
-    """
-    Feature: Map op
-    Description: Test map with dvpp with multi process + spawn mode by independent mode
-    Expectation: The result is equal to the expected
-    """
-
-    os.environ['MS_INDEPENDENT_DATASET'] = "True"
-    ds.config.set_multiprocessing_start_method("spawn")
-
-    # Random-accessible object as input source
-    class RandomAccessDataset:
-        def __init__(self):
-            self._data = np.ones((5, 2))
-            self._label = np.zeros((5, 1))
-        def __getitem__(self, index):
-            image = np.fromfile(input_apple_jpg, dtype=np.uint8)
-            return image, self._label[index]
-        def __len__(self):
-            return len(self._data)
-
-    def decode_resize(data):
-        print("map worker pid: {}".format(os.getpid()), flush=True)
-        decode = vision.Decode()(data)
-        resized = vision.Resize((224, 224)).device("Ascend")(decode)
-        # resized = vision.Resize((224, 224))(decode)
-        return (resized,)
-
-    # map with multi process by spawn
-    loader6 = RandomAccessDataset()
-    dataset6 = ds.GeneratorDataset(source=loader6, column_names=["data", "label"])
-    dataset6 = dataset6.map(decode_resize, input_columns=["data"], python_multiprocessing=True,
-                            num_parallel_workers=1)
-
-    print(dataset6.output_shapes())
-    print(dataset6.output_types())
-    count = 0
-    for data in dataset6:
-        print(count, data[0].shape, flush=True)
-        count += 1
-    assert count == 5
-
-    # compose map with multi process by spawn
-    loader7 = RandomAccessDataset()
-    dataset7 = ds.GeneratorDataset(source=loader7, column_names=["data", "label"])
-    transform_ops = [
-        vision.Decode().device("Ascend"),
-        vision.Resize((224, 224)).device("Ascend")
-        ]
-    dataset7 = dataset7.map(transforms.Compose(transform_ops), input_columns=["data"], python_multiprocessing=True,
-                            num_parallel_workers=2)
-
-    print(dataset7.output_shapes())
-    print(dataset7.output_types())
-    # Not support yet, main process has set device, independent dataset map with thread cannot set device in fork mode
-    ## count = 0
-    ## for data in dataset7:
-    ##     print(count, data[0].shape, flush=True)
-    ##     count += 1
-    ## assert count == 5
-
-    os.environ['MS_INDEPENDENT_DATASET'] = "False"
-
-
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_map_with_dvpp_with_910a_exception():
     """
@@ -1892,6 +1892,6 @@ if __name__ == '__main__':
     test_map_with_dvpp_resize_crop_with_exception()
     test_map_with_dvpp_perspective_with_exception()
     test_basic_transforms_pipeline()
-    test_map_with_dvpp_with_spawn()
     test_map_with_dvpp_with_spawn_independent_mode()
+    test_map_with_dvpp_with_spawn()
     test_map_with_dvpp_with_910a_exception()

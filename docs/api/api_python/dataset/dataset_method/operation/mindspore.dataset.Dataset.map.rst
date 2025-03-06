@@ -37,7 +37,9 @@ mindspore.dataset.Dataset.map
 
     .. note::
         - `operations` 参数接收 `TensorOperation` 类型的数据处理操作，以及用户定义的Python函数(PyFuncs)。
-        - 不要将 `mindspore.nn` 和 `mindspore.ops` 或其他的网络计算算子添加到 `operations` 中。
+        - 通过ds.config.set_multiprocessing_start_method("spawn")方式设置多进程的启动方式为 `spawn` 模式，且 `python_multiprocessing=True`
+          和 `num_parallel_workers>1` 时，支持将 `mindspore.nn` 和 `mindspore.ops` 或其他的网络计算算子添加到 `operations` 中，
+          否则不支持添加到 `operations` 中。
 
     返回：
         Dataset，应用了上述操作的新数据集对象。

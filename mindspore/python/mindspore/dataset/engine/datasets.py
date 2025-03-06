@@ -881,8 +881,11 @@ class Dataset:
         Note:
             - Input `operations` accepts TensorOperations defined in mindspore.dataset part, plus user-defined
               Python functions (PyFuncs).
-            - Do not add network computing operators from mindspore.nn and mindspore.ops or others into this
-              `operations` .
+            - Setting the start method of multiprocessing to `spawn` mode by
+              ds.config.set_multiprocessing_start_method("spawn") with `python_ multiprocessing=True`
+              and `num_parallel_workers>1` supports adding network computing operators from mindspore.nn and
+              mindspore.ops or other network computing operators into this `operations` .
+              Otherwise, adding to `operations` is not supported.
 
         Returns:
             Dataset, a new dataset with the above operation applied.
