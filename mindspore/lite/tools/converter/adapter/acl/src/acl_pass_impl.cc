@@ -107,6 +107,8 @@ constexpr auto kCustomOpFlashAttentionFusionForCustom = "FlashAttentionFusionFor
 constexpr auto kFlashAttentionTikPass = "FlashAttentionTikPass";
 constexpr auto kCustomOpInsertVariableNodePass = "InsertVariableNodePass";
 constexpr auto kCustomOpFlashAttentionFusion = "FlashAttentionFusion";
+constexpr auto kCustomOpLeakyReluFusion = "LeakyReluFusion";
+
 constexpr auto kCustomOpGroupNormSiluFusion = "GroupNormSiluFusion";
 constexpr auto kCustomOpGeGluV2Fusion = "GeGluV2Fusion";
 constexpr auto kLayerNormV3Fusion = "LayerNormV3Fusion";
@@ -620,6 +622,10 @@ STATUS FlashAttentionPass(const FuncGraphPtr &func_graph, const string &soc_vers
     FlashAttentionFusion::SetSocVersion(soc_version);
     if (!lite::RunOptimizerPass(func_graph, {kCustomOpFlashAttentionFusion})) {
       MS_LOG(ERROR) << kCustomOpFlashAttentionFusion << " op pass failed.";
+      return lite::RET_ERROR;
+    }
+    if (!lite::RunOptimizerPass(func_graph, {kCustomOpLeakyReluFusion})) {
+      MS_LOG(ERROR) << kCustomOpLeakyReluFusion << " op pass failed.";
       return lite::RET_ERROR;
     }
   } else {

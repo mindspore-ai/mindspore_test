@@ -140,6 +140,7 @@
 #include "tools/optimizer/fusion/tile_matmul_fusion.h"
 #include "tools/optimizer/fusion/flash_attention_fusion_for_custom.h"
 #include "tools/optimizer/fusion/gegluv2_fusion.h"
+#include "tools/optimizer/fusion/leaky_relu_fusion.h"
 #include "tools/optimizer/fusion/ffn_fusion.h"
 #include "tools/optimizer/fusion/ffn_custom_pass.h"
 #include "tools/optimizer/graph/make_list_pass.h"
@@ -828,6 +829,7 @@ bool AnfTransform::StoreBuiltinPass(const std::shared_ptr<ConverterPara> &param)
                                                           param->aclModelOptionCfgParam.enable_custom_fusion_pattern,
                                                           param->aclModelOptionCfgParam.disable_custom_fusion_pattern),
      false},
+    {"LeakyReluFusion", std::make_shared<opt::LeakyReluFusion>(), false},
     {"InsertVariableNodePass", std::make_shared<opt::InsertVariableNodePass>(param), false},
     {"MakeListPass", std::make_shared<opt::MakeListPass>(), true},
     {"FlashAttentionFusion", std::make_shared<opt::FlashAttentionFusion>(param->aclModelOptionCfgParam.op_attrs_map),
