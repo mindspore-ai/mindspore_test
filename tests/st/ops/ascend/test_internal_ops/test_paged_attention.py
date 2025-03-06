@@ -172,7 +172,7 @@ class PagedAttentionTest(PagedAttentionBase):
         # attn_mask
         if self.i_test["is_amask"]:
             self.i_construct["attn_mask"] = ms.Tensor(
-                shape=[None, None, None], dtype=ms.float16)
+                shape=[None, None, None], dtype=q_type)
         # q_seq_lens
         self.i_construct["q_seq_lens"] = ms.Tensor(
             shape=[None], dtype=ms.int32)
@@ -233,7 +233,8 @@ class PagedAttentionTest(PagedAttentionBase):
                 self.o_ascend["attention_out"] = self.net(
                     *tuple(self.i_construct.values()))
             return
-
+        D = self.gen["query"].shape[-1]
+        D_V = self.gen["value_cache"].shape[-1]
         # query
         if self.i_test["layout"] == "BSH":
             B, Sq, N, G, D = self.gen["query"].shape
@@ -254,9 +255,12 @@ class PagedAttentionTest(PagedAttentionBase):
             newshape=[block_num, block_size, N, D])
         value_cache = np.reshape(
             self.gen["value_cache"],
-            newshape=[block_num, block_size, N, D])
+            newshape=[block_num, block_size, N, D_V])
         self.i_construct["key_cache"] = ms.Tensor(key_cache, dtype=kv_type)
-        self.i_construct["value_cache"] = ms.Tensor(value_cache, dtype=kv_type)
+        if self.i_test.get("mla_kvcombined", False):
+            self.i_construct["value_cache"] = self.i_construct["key_cache"]
+        else:
+            self.i_construct["value_cache"] = ms.Tensor(value_cache, dtype=kv_type)
         # block_tables
         self.i_construct["block_tables"] = ms.Tensor(self.gen["block_tables"])
         # batch_valid_length
@@ -285,7 +289,7 @@ class PagedAttentionTest(PagedAttentionBase):
                 self.gen["attn_mask"],
                 newshape=[B, Sq, MaxSkv])
             self.i_construct["attn_mask"] = ms.Tensor(
-                attn_mask, dtype=ms.float16)
+                attn_mask, dtype=q_type)
         self.i_construct["q_seq_lens"] = ms.Tensor(self.gen["sq"])
 
         self.o_ascend = {
@@ -1026,5 +1030,67 @@ def test_paged_attention_alibi_fd_bsh_64():
         "is_amask": False,
         "blk_sparse": 0,
         "msprof": 0,
+    }
+    PagedAttentionTest(i_test)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('dtype', ["float16", "float32"])
+@pytest.mark.parametrize('mask_mode', ["MASK_DEFAULT", "TRAPEZOIDAL"])
+def test_paged_attention_trapezoidal(dtype, mask_mode):
+    """
+    Feature: test PagedAttention op in kbk enabling infer_boost
+    Description: test PagedAttention op with mask_mode TRAPEZOIDAL.
+    Expectation: the result is correct
+    """
+    i_test = {
+        "type": dtype,
+        "layout": "BSH",
+        "b": 1,
+        "sq": 1001,
+        "skv": "rand-b",
+        "max_skv": 32768,
+        "nq": 4,
+        "nkv": 2,
+        "d": 128,
+        "blk_sz": 128,
+        "drop_prop": 0.0,
+        "quant_mode": 0,
+        "is_alibi": 0,
+        "is_amask": 0,
+        "mask_mode": mask_mode,
+        "msprof": 0
+    }
+    PagedAttentionTest(i_test)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('blk_sz', [16, 128])
+@pytest.mark.parametrize('dtype', ["float16", "float32"])
+def test_paged_attention_mla_combine_cache_norm(blk_sz, dtype):
+    """
+    Feature: test PagedAttention op in kbk enabling infer_boost
+    Description: test PagedAttention op with deepseek mla.
+    Expectation: the result is correct
+    """
+    i_test = {
+        "type": dtype,
+        "layout": "BSH",
+        "b": 1,
+        "sq": 1,
+        "skv": 512,
+        "max_skv": 512,
+        "nq": 4,
+        "nkv": 1,
+        "d": 576,
+        "d_vo": 512,
+        "blk_sz": blk_sz,
+        "drop_prop": 0.0,
+        "quant_mode": 0,
+        "is_alibi": False,
+        "is_amask": False,
+        "mla_kvcombined": True,
+        "blk_sparse": 0,
+        "msprof": 0
     }
     PagedAttentionTest(i_test)

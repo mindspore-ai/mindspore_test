@@ -14,6 +14,7 @@
 # ============================================================================
 
 import os
+import sys
 import numpy as np
 import math
 from enum import Enum
@@ -194,6 +195,12 @@ class PagedAttentionBase:
         if "ASCEND_HOME_PATH" not in os.environ:
             os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
         context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+        if first_case.get("mask_mode", "MASK_DEFAULT") != "MASK_DEFAULT":
+            i_init["mask_mode"] = first_case.get("mask_mode", "MASK_DEFAULT")
+        if first_case.get("mla_kvcombined", False):
+            i_init["mla_v_dim"] = first_case.get("d_vo", 0)
+            if i_init["mla_v_dim"] == 0:
+                raise ValueError("mla_v_dim == 0 when mla_kvcombined is True.")
         context.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
         self.net = net_function(**i_init)
 
@@ -258,6 +265,12 @@ class PagedAttentionBase:
             raise Exception("[Error] sq can only be "
                             "int/list[int] but got %s" % sq)
         max_skv = self.i_test["max_skv"]
+        anti_max_sq = self.i_test.get("anti_max_sq", sys.maxsize)
+        if anti_max_sq < max_skv:
+            raise ValueError(f"max_skv={max_skv} should equal or less than anti_max_sq={anti_max_sq}")
+        anti_max_b = self.i_test.get("anti_max_b", sys.maxsize)
+        if anti_max_b < b:
+            raise ValueError(f"b={b} should equal or less than anti_max_b={anti_max_b}")
         multi_skv = False
         skv = self.i_test["skv"]
         if skv == "max":
@@ -290,7 +303,9 @@ class PagedAttentionBase:
         n = self.i_test["nkv"]
         g = nq // n
         d = self.i_test["d"]
-        if d not in DIM_SET:
+        d_vo = self.i_test.get("d_vo", d)
+        mla_kvcombined = self.i_test.get("mla_kvcombined", False)
+        if (d not in DIM_SET) and (d == d_vo):
             raise Exception("[Error] embed can only be %s, but got %d" % (
                 DIM_SET, d))
         bs = b * max_skv
@@ -343,7 +358,10 @@ class PagedAttentionBase:
             q = np.random.uniform(-1.0, 1.0, size=sz_q)
             # BSH of k and v in pa
             k = np.random.uniform(-1.0, 1.0, size=[b, max_skv, n, 1, d])
-            v = np.random.uniform(-1.0, 1.0, size=[b, max_skv, n, 1, d])
+            if mla_kvcombined:
+                v = k[:, :, :, :, :d_vo].copy()
+            else:
+                v = np.random.uniform(-1.0, 1.0, size=[b, max_skv, n, 1, d_vo])
             q = q.astype(np.float16).astype(input_type)
             k = k.astype(np.float16).astype(input_type)
             v = v.astype(np.float16).astype(input_type)
@@ -458,7 +476,7 @@ class PagedAttentionBase:
             q = np.reshape(q, newshape=sz_q)
             # BSH of k and v in pa
             k = np.reshape(k, newshape=[b, max_skv, n, 1, d])
-            v = np.reshape(v, newshape=[b, max_skv, n, 1, d])
+            v = np.reshape(v, newshape=[b, max_skv, n, 1, d_vo])
             batch_valid_length = self.load["batch_valid_length"].copy()
             if self.i_test["is_alibi"]:
                 alibi = self.load["alibi_mask"].copy()
@@ -518,7 +536,7 @@ class PagedAttentionBase:
             if diff_skv:  # max_skv to skv
                 # BSH of k and v in pa
                 k = k[:, :skv, :, :, :]  # [b, skv, n, 1, d]
-                v = v[:, :skv, :, :, :]  # [b, skv, n, 1, d]
+                v = v[:, :skv, :, :, :]  # [b, skv, n, 1, d_vo]
                 if self.i_test["is_alibi"]:
                     alibi = alibi[:, :, :, :, :skv]  # [b, n, g, sq, skv]
                 if self.i_test["is_amask"]:
@@ -530,7 +548,7 @@ class PagedAttentionBase:
                 q = np.transpose(q, axes=(0, 2, 3, 1, 4))  # [b, n, g, sq, d]
             # BSH of k and v in pa
             k = np.transpose(k, axes=(0, 2, 3, 1, 4))  # [b, n, 1, skv, d]
-            v = np.transpose(v, axes=(0, 2, 3, 1, 4))  # [b, n, 1, skv, d]
+            v = np.transpose(v, axes=(0, 2, 3, 1, 4))  # [b, n, 1, skv, d_vo]
 
             # np.matmul of float32 is faster 600 times than float16
             q = q.astype(np.float32)
@@ -547,6 +565,10 @@ class PagedAttentionBase:
                 s1 = s1 + alibi.astype(np.float32)
             if self.i_test["is_amask"] and self.i_test["sq"] != 1:
                 s1 = s1 + amask.astype(np.float32)
+            if self.i_test.get("mask_mode", "MASK_DEFAULT") == "TRAPEZOIDAL":
+                tri_mask = np.ones(shape=[b, 1, 1, sq, skv]).astype(np.float32)
+                tri_mask = np.triu(tri_mask, skv - sq + 1)
+                s1 = s1 - tri_mask.astype(np.float32) * np.float32(10000)
 
             score_max = np.max(s1, axis=-1, keepdims=True)  # [b, n, g, sq, 1]
 
@@ -560,7 +582,7 @@ class PagedAttentionBase:
 
             p = s3 / score_sum  # [b, n, g, sq, skv]
 
-            o = np.matmul(p, v)  # [b, n, g, sq, d]
+            o = np.matmul(p, v)  # [b, n, g, sq, d_vo]
             o = o.astype(input_type)
 
             if diff_skv:
@@ -568,18 +590,18 @@ class PagedAttentionBase:
                 p = concat_zeros(p, 4, diff_skv)  # [b, n, g, sq, max_skv]
 
             if layout in ["BSH", "TH"]:
-                o = np.transpose(o, axes=(0, 3, 1, 2, 4))  # [b, sq, n, g, d]
+                o = np.transpose(o, axes=(0, 3, 1, 2, 4))  # [b, sq, n, g, d_vo]
 
         elif gen_id == 1:
             if layout in ["BSH", "TH"]:
                 q = np.transpose(q, axes=(0, 2, 3, 1, 4))  # [b, n, g, sq, d]
             # BSH of k and v in pa
             k = np.transpose(k, axes=(0, 2, 3, 1, 4))  # [b, n, 1, max_skv, d]
-            v = np.transpose(v, axes=(0, 2, 3, 1, 4))  # [b, n, 1, max_skv, d]
+            v = np.transpose(v, axes=(0, 2, 3, 1, 4))  # [b, n, 1, max_skv, d_vo]
             # tensor to list
             q = list(q)  # [b, n, g, sq, d] to [n, g, sq, d] * b
             k = skv2multi(k, 3, skv)  # [b, n, 1, max_skv, d] to [n, 1, skv, d] * b
-            v = skv2multi(v, 3, skv)  # [b, n, 1, max_skv, d] to [n, 1, skv, d] * b
+            v = skv2multi(v, 3, skv)  # [b, n, 1, max_skv, d_vo] to [n, 1, skv, d_vo] * b
             if self.i_test["is_alibi"]:
                 # [b, n, g, sq, max_skv] to [n, g, sq, max_skv] * b
                 alibi = list(alibi)
@@ -620,6 +642,10 @@ class PagedAttentionBase:
                     s1 = s1 + alibi[i].astype(np.float32)
                 if self.i_test["is_amask"] and self.i_test["sq"] != 1:
                     s1 = s1 + amask[i].astype(np.float32)
+                if self.i_test.get("mask_mode", "MASK_DEFAULT") == "TRAPEZOIDAL":
+                    tri_mask = np.ones(shape=[1, 1, sq, skv[i]]).astype(np.float32)
+                    tri_mask = np.triu(tri_mask, skv[i] - sq + 1)
+                    s1 = s1 - tri_mask.astype(np.float32) * np.float32(10000)
 
                 score_max[i] = np.max(s1, axis=-1, keepdims=True)  # [n, g, sq, 1]
 
@@ -633,7 +659,7 @@ class PagedAttentionBase:
 
                 p[i] = s3 / score_sum[i]  # [n, g, sq, skv]
 
-                o[i] = np.matmul(p[i], v[i])  # [n, g, sq, d]
+                o[i] = np.matmul(p[i], v[i])  # [n, g, sq, d_vo]
                 o[i] = o[i].astype(input_type)
 
                 if diff_skv[i]:
@@ -644,20 +670,20 @@ class PagedAttentionBase:
             score_max = np.stack(score_max, axis=0)  # [b, n, g, sq, 1]
             score_sum = np.stack(score_sum, axis=0)  # [b, n, g, sq, 1]
             p = np.stack(p, axis=0)  # [b, n, g, sq, max_skv]
-            o = np.stack(o, axis=0)  # [b, n, g, sq, d]
+            o = np.stack(o, axis=0)  # [b, n, g, sq, d_vo]
             if layout in ["BSH", "TH"]:
-                o = np.transpose(o, axes=(0, 3, 1, 2, 4))  # [b, sq, n, g, d]
+                o = np.transpose(o, axes=(0, 3, 1, 2, 4))  # [b, sq, n, g, d_vo]
 
         elif gen_id in (2, 3):
             if layout in ["BSH", "TH"]:
                 q = np.transpose(q, axes=(1, 2, 0, 3))  # [np.sum(sq), n, g, d] to [n, g, np.sum(sq), d]
             # BSH of k and v in pa
             k = np.transpose(k, axes=(0, 2, 3, 1, 4))  # [b, n, 1, max_skv, d]
-            v = np.transpose(v, axes=(0, 2, 3, 1, 4))  # [b, n, 1, max_skv, d]
+            v = np.transpose(v, axes=(0, 2, 3, 1, 4))  # [b, n, 1, max_skv, d_vo]
             # tensor to list
             q = sq2multi(q, 2, sq)  # [n, g, np.sum(sq), d] to [n, g, sq, d] * b
             k = skv2multi(k, 3, skv)  # [b, n, 1, max_skv, d] to [n, 1, skv, d] * b
-            v = skv2multi(v, 3, skv)  # [b, n, 1, max_skv, d] to [n, 1, skv, d] * b
+            v = skv2multi(v, 3, skv)  # [b, n, 1, max_skv, d_vo] to [n, 1, skv, d_vo] * b
             if self.i_test["is_alibi"]:
                 # [n, g, np.sum(sq), max_skv] to [n, g, sq, max_skv] * b
                 alibi = sq2multi(alibi, 2, sq)
@@ -711,7 +737,7 @@ class PagedAttentionBase:
 
                 p[i] = s3 / score_sum[i]  # [n, g, sq, skv]
 
-                o[i] = np.matmul(p[i], v[i])  # [n, g, sq, d]
+                o[i] = np.matmul(p[i], v[i])  # [n, g, sq, d_vo]
                 o[i] = o[i].astype(input_type)
 
                 if diff_skv[i]:
@@ -722,9 +748,9 @@ class PagedAttentionBase:
             score_max = np.concatenate(score_max, axis=2)  # [n, g, np.sum(sq), 1]
             score_sum = np.concatenate(score_sum, axis=2)  # [n, g, np.sum(sq), 1]
             p = np.concatenate(p, axis=2)  # [n, g, np.sum(sq), max_skv]
-            o = np.concatenate(o, axis=2)  # [n, g, np.sum(sq), d]
+            o = np.concatenate(o, axis=2)  # [n, g, np.sum(sq), d_vo]
             if layout in ["BSH", "TH"]:
-                o = np.transpose(o, axes=(2, 0, 1, 3))  # [np.sum(sq), n, g, d]
+                o = np.transpose(o, axes=(2, 0, 1, 3))  # [np.sum(sq), n, g, d_vo]
 
         else:
             raise Exception("gen_id can only in (0, 1, 2, 3), but got %d" % gen_id)
