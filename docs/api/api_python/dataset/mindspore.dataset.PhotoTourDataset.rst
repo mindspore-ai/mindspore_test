@@ -32,7 +32,7 @@ mindspore.dataset.PhotoTourDataset
         - **RuntimeError** - 指定了 `shard_id` 参数，但是未指定 `num_shards` 参数。
         - **ValueError** - `dataset_dir` 不存在。
         - **ValueError** - `usage` 不是 ``'train'`` 或 ``'test'`` 。
-        - **ValueError** - `name` 不是 ``''notredame'`` 、 ``'yosemite'`` 、 ``'liberty'`` 、 ``'notredame_harris'`` 、 ``'yosemite_harris'`` 或 ``'liberty_harris'`` 。
+        - **ValueError** - `name` 不是 ``'notredame'`` 、 ``'yosemite'`` 、 ``'liberty'`` 、 ``'notredame_harris'`` 、 ``'yosemite_harris'`` 或 ``'liberty_harris'`` 。
         - **ValueError** - `num_parallel_workers` 参数超过系统最大线程数。
         - **ValueError** - 如果 `shard_id` 取值不在[0, `num_shards` )范围。
 

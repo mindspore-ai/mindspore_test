@@ -46,7 +46,7 @@ mindspore.dataset.LibriTTSDataset
 
     **关于LibriTTS数据集：**
 
-    LibriTTS是由Heiga Zen在谷歌语音和谷歌大脑团队成员的协助下准备的一个多语言英语语料库，
+    LibriTTS是由Heiga Zen在谷歌语音和谷歌大脑团队成员的协助下准备的一个多语者英语语料库，
     包括了大约585小时的24kHz采样率的英语语音。LibriTTS语料库是为TTS研究设计的。它是由\
     LibriSpeech语料库的原始语料（来自LibriVox的mp3音频文件和来自Project Gutenberg的文本文件）
     衍生而来。

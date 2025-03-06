@@ -44,7 +44,7 @@ mindspore.dataset.TedliumDataset
 
     TEDLIUM_release1数据集：TED-LUM语料库是英语TED演讲，有转录，采样频率为16kHz。包含了大约118小时的演讲。
 
-    TEDLIUM_release2数据集：这是TED-LIUM语料库版本2，根据知识共享BY-NC-ND 3.0授权。所有会谈和文本均为TED会议有限责任公司的财产。TED-LIUM语料库是由音频谈话和他们的转录在TED网站上提供的。我们准备并过滤了这些数据，以便训练声学模型参加2011年口语翻译国际研讨会（LIUM英语/法语SLT系统在SLT任务中排名第一）。
+    TEDLIUM_release2数据集：这是TED-LIUM语料库版本2，根据知识共享BY-NC-ND 3.0授权。所有会谈和文本均为TED会议有限责任公司的财产。TED-LIUM语料库由音频谈话及其转录组成，由TED网站提供。我们准备并过滤了这些数据，以便训练声学模型参加2011年口语翻译国际研讨会（LIUM英语/法语SLT系统在SLT任务中排名第一）。
 
     TEDLIUM_release-3数据集：这是TED-LIUM语料库版本3，根据知识共享BY-NC-ND 3.0授权。所有会谈和文本均为TED会议有限责任公司的财产。这个新的TED-LIUM版本是通过Ubiqus公司和LIUM（法国勒芒大学）的合作发布的。
 

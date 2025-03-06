@@ -33,9 +33,9 @@ mindspore.dataset.AGNewsDataset
         - `使用数据Pipeline加载 & 处理数据集
           <https://www.mindspore.cn/docs/zh-CN/master/api_python/samples/dataset/dataset_gallery.html>`_
 
-    **关于AGNews数据集：**
+    **关于AG News数据集：**
 
-    AG是一个大型合集，具有超过100万篇新闻文章。这些新闻文章是由ComeToMyHead在持续1年多的活动中，从2000多个新闻来源收集的。ComeToMyHead是一个学术新闻搜索引擎，自2004年7月以来一直在运营。
+    AG News是一个大型合集，具有超过100万篇新闻文章。这些新闻文章是由ComeToMyHead在持续1年多的活动中，从2000多个新闻来源收集的。ComeToMyHead是一个学术新闻搜索引擎，自2004年7月以来一直在运营。
     数据集由学者提供，用于研究目的，如数据挖掘（聚类、分类等）、信息检索（排名、搜索等）、xml、数据压缩、数据流和任何其他非商业活动。
     AG的新闻主题类别来自于原始语料库中四个最大的类别。每个分类包含30000个训练样本和1900个测试样本。train.csv中的训练样本总数为12万，test.csv中的测试样本总数为7600。
 
