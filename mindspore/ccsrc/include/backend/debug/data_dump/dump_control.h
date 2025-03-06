@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ class BACKEND_EXPORT DumpControl {
   void SetDynamicDump() { dynamic_switch_ = true; }
   void DynamicDumpStart();
   void DynamicDumpStop();
+  void SetInitialIteration(std::uint32_t initial_iteration);
 
  private:
   DumpControl() = default;

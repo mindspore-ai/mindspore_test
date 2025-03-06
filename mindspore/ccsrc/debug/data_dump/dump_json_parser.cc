@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2024 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ constexpr auto kPath = "path";
 constexpr auto kNetName = "net_name";
 constexpr auto kSavedData = "saved_data";
 constexpr auto kIteration = "iteration";
+constexpr auto kInitialIteration = "initial_iteration";
 constexpr auto kInputOutput = "input_output";
 constexpr auto kKernels = "kernels";
 constexpr auto kSupportDevice = "support_device";
@@ -87,6 +88,13 @@ constexpr auto kSupportedStatisticsategory =
 }  // namespace
 
 namespace mindspore {
+
+void DumpJsonParser::SetInitialIteration(uint32_t initial_iteration) {
+  Parse();
+  cur_dump_iter_ = initial_iteration;
+  initial_dump_iter_ = initial_iteration;
+}
+
 auto DumpJsonParser::CheckJsonKeyExist(const nlohmann::json &content, const std::string &key) {
   nlohmann::json::const_iterator iter = content.find(key);
   if (iter == content.end()) {
@@ -512,8 +520,9 @@ void DumpJsonParser::ParseCommonDumpSetting(const nlohmann::json &content) {
       CheckOverflowSetting();
     }
   }
-  ParseOverflowNumber(*common_dump_settings);  // The overflow number field is optional.
-  ParseSavedData(*common_dump_settings);       // saved data optional
+  ParseOverflowNumber(*common_dump_settings);    // The overflow number field is optional.
+  ParseSavedData(*common_dump_settings);         // saved data optional
+  ParseInitialIteration(*common_dump_settings);  // saved initial iter
 }
 
 void DumpJsonParser::ParseE2eSyncDumpEnable(const nlohmann::json &content) {
@@ -697,6 +706,15 @@ void DumpJsonParser::ParseIteration(const nlohmann::json &content) {
     MS_LOG(WARNING) << "Dump is not enabled. ";
   } else {
     MS_LOG(EXCEPTION) << "Dump Json Parse Failed. Async or E2E should be enabled. ";
+  }
+}
+
+void DumpJsonParser::ParseInitialIteration(const nlohmann::json &content) {
+  auto json_iter = content.find(kInitialIteration);
+  if (json_iter != content.end()) {
+    CheckJsonUnsignedType(*json_iter, kInitialIteration);
+    initial_dump_iter_ = *json_iter;
+    cur_dump_iter_ = initial_dump_iter_;
   }
 }
 

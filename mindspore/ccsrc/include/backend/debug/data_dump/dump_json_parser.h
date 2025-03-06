@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2023 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ class BACKEND_EXPORT DumpJsonParser {
   uint32_t cur_dump_iter() const { return cur_dump_iter_; }
   uint32_t input_output() const { return input_output_; }
   void UpdateDumpIter() { ++cur_dump_iter_; }
-  void UpdateDumpIter(int cur_step_count) { cur_dump_iter_ = cur_step_count; }
+  void UpdateDumpIter(int cur_step_count) { cur_dump_iter_ = cur_step_count + initial_dump_iter_; }
   bool GetDatasetSink() { return is_dataset_sink_; }
   void SetDatasetSink(bool is_dataset_sink) { is_dataset_sink_ = is_dataset_sink; }
   bool FileFormatIsNpy() const { return file_format_ == JsonFileFormat::FORMAT_NPY; }
@@ -98,6 +98,7 @@ class BACKEND_EXPORT DumpJsonParser {
   bool IsHCCLKernelInput(const std::string &kernel_name) const;
   bool IsCallbackRegistered() { return dumpdatacallback_registered_; }
   void SetCallbackRegistered() { dumpdatacallback_registered_ = true; }
+  void SetInitialIteration(uint32_t initial_iteration);
 
   void ClearGraph() { graphs_.clear(); }
   void SaveGraph(session::KernelGraph *graph) { (void)graphs_.emplace_back(graph); }
@@ -153,6 +154,7 @@ class BACKEND_EXPORT DumpJsonParser {
   uint32_t sample_mode_{0};
   uint32_t sample_num_{100};
   uint32_t cur_dump_iter_{0};
+  uint32_t initial_dump_iter_{0};
   bool already_parsed_{false};
   std::string dump_layer_{""};
   std::string stat_calc_mode_{"host"};
@@ -174,6 +176,7 @@ class BACKEND_EXPORT DumpJsonParser {
   void ParseNetName(const nlohmann::json &content);
   void ParseSavedData(const nlohmann::json &content);
   void ParseIteration(const nlohmann::json &content);
+  void ParseInitialIteration(const nlohmann::json &content);
   void ParseInputOutput(const nlohmann::json &content);
   void ParseKernels(const nlohmann::json &content);
   void ParseSupportDevice(const nlohmann::json &content);
