@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace cast_cpu {
 class CastCpuKernelMod : public NativeCpuKernelMod {
  public:
   CastCpuKernelMod() = default;
@@ -61,6 +62,7 @@ class CastCpuKernelMod : public NativeCpuKernelMod {
 
   std::shared_ptr<CpuKernelFunc> kernel_func_;
 };
+}  // namespace cast_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

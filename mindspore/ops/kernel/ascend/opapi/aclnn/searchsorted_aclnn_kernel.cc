@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace searchsorted {
 
 void SearchsortedAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &outputs) {
@@ -57,5 +58,6 @@ bool SearchsortedAscend::Launch(const std::vector<KernelTensor *> &inputs, const
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(SearchSorted, SearchsortedAscend);
+}  // namespace searchsorted
 }  // namespace kernel
 }  // namespace mindspore

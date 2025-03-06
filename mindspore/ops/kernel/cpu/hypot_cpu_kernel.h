@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace hypot_cpu {
 class HypotCpuKernelMod : public NativeCpuKernelMod {
  public:
   HypotCpuKernelMod() = default;
@@ -57,6 +58,7 @@ class HypotCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector y_shape_;
   bool need_bcast_{false};
 };
+}  // namespace hypot_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

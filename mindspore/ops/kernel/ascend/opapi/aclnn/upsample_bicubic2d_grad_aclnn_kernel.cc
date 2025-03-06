@@ -31,6 +31,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_bicubic2d_grad {
 namespace {
 std::tuple<std::vector<int64_t>, std::vector<int64_t>, std::tuple<double, double>, bool> UpsampleBicubic2DGradGenerate(
   const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
@@ -74,5 +75,6 @@ bool UpsampleBicubic2DGradAscend::Launch(const std::vector<KernelTensor *> &inpu
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(UpsampleBicubic2DGrad, UpsampleBicubic2DGradAscend);
+}  // namespace upsample_bicubic2d_grad
 }  // namespace kernel
 }  // namespace mindspore

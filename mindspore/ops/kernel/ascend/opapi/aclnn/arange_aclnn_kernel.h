@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace arange {
 
 class ArangeAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class ArangeAscend : public AclnnKernelMod {
   ScalarPtr end = nullptr;
   ScalarPtr step = nullptr;
 };
+}  // namespace arange
 }  // namespace kernel
 }  // namespace mindspore
 

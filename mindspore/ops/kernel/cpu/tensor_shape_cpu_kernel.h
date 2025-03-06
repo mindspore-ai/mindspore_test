@@ -22,6 +22,7 @@
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore::kernel {
+namespace tensor_shape_cpu {
 class TensorShapeCpuKernelMod : public NativeCpuKernelMod {
  public:
   TensorShapeCpuKernelMod() = default;
@@ -38,6 +39,7 @@ class TensorShapeCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector input_shape_;
   ShapeVector output_shape_;
 };
+}  // namespace tensor_shape_cpu
 }  // namespace mindspore::kernel
 
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_TENSOR_SHAPE_CPU_KERNEL_H_

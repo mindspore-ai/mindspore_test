@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparsefillemptyrowsgrad_cpu {
 namespace {
 constexpr size_t kSparseFillEmptyRowsGradInputsNum = 2;
 constexpr size_t kSparseFillEmptyRowsGradOutputsNum = 2;
@@ -223,5 +224,6 @@ bool SparseFillEmptyRowsGradCpuKernelMod::Launch(const std::vector<KernelTensor 
   return ret;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseFillEmptyRowsGrad, SparseFillEmptyRowsGradCpuKernelMod);
+}  // namespace sparsefillemptyrowsgrad_cpu
 }  // namespace kernel
 }  // namespace mindspore

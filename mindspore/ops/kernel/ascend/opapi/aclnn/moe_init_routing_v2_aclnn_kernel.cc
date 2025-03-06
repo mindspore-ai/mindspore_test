@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace moe_init_routing_v2 {
 void MoeInitRoutingV2Ascend::InitInputAttributes(const std::vector<KernelTensor *> &inputs,
                                                  const std::vector<KernelTensor *> &outputs) {
   active_num_ = inputs[kIndex2]->GetValueWithCheck<int64_t>();
@@ -54,5 +55,6 @@ bool MoeInitRoutingV2Ascend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(MoeInitRoutingV2, MoeInitRoutingV2Ascend);
+}  // namespace moe_init_routing_v2
 }  // namespace kernel
 }  // namespace mindspore

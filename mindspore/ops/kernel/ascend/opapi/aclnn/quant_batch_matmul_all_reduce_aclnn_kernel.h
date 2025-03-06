@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace quant_batch_matmul_all_reduce {
 
 class QuantBatchMatmulAllReduceAscend : public AclnnKernelMod {
  public:
@@ -46,6 +47,7 @@ class QuantBatchMatmulAllReduceAscend : public AclnnKernelMod {
   std::string reduce_op_;
   int64_t stream_mode_ = 1;
 };
+}  // namespace quant_batch_matmul_all_reduce
 }  // namespace kernel
 }  // namespace mindspore
 

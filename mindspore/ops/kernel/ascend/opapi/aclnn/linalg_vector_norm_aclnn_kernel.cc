@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace linalg_vector_norm {
 void LinalgVectorNormAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &outputs) {
   auto ord_dtype_id = inputs[kIndex1]->dtype_id();
@@ -51,5 +52,6 @@ bool LinalgVectorNormAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(LinalgVectorNorm, LinalgVectorNormAscend);
+}  // namespace linalg_vector_norm
 }  // namespace kernel
 }  // namespace mindspore

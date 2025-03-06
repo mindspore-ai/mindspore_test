@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace var_mean {
 
 void VarMeanAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
@@ -47,5 +48,6 @@ bool VarMeanAscend::Launch(const std::vector<KernelTensor *> &inputs, const std:
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(VarMean, VarMeanAscend);
+}  // namespace var_mean
 }  // namespace kernel
 }  // namespace mindspore

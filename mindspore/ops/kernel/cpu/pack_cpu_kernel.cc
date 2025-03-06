@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace pack_cpu {
 namespace {
 constexpr size_t kPackOutputsNum = 1;
 }  // namespace
@@ -137,5 +138,6 @@ std::vector<KernelAttr> PackFwdCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Stack, PackFwdCpuKernelMod);
+}  // namespace pack_cpu
 }  // namespace kernel
 }  // namespace mindspore

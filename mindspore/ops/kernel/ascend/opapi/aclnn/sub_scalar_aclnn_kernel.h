@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sub_scalar {
 
 class SubScalarAscend : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class SubScalarAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace sub_scalar
 }  // namespace kernel
 }  // namespace mindspore
 

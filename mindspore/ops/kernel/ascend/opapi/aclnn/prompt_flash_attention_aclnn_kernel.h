@@ -27,6 +27,7 @@
 namespace mindspore {
 using mindspore::device::ascend::FASInputLayoutMode;
 namespace kernel {
+namespace prompt_flash_attention {
 using TensorParams = device::ascend::TensorParams;
 
 class PromptFlashAttentionAscend : public AclnnKernelMod {
@@ -99,6 +100,7 @@ class PromptFlashAttentionAscend : public AclnnKernelMod {
           input_layout_string, num_key_value_heads_value, sparse_mode_value, inner_precise_value, outputs[kIndex0]);
   }
 };
+}  // namespace prompt_flash_attention
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_PROMPT_FLASH_ATTENTION_ACLNN_KERNEL_MOD_H_

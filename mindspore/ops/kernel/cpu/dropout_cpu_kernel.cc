@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dropout_cpu {
 namespace {
 constexpr size_t kDropoutInputsNum = 4;
 constexpr size_t kDropoutOutputsNum = 2;
@@ -141,5 +142,6 @@ FuncVec &DropoutCpuKernelMod::GetFuncList() const {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Dropout, DropoutCpuKernelMod);
+}  // namespace dropout_cpu
 }  // namespace kernel
 }  // namespace mindspore

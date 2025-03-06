@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace cummin_ext {
 
 class CumminExtAscend : public AclnnKernelMod {
  public:
@@ -36,6 +37,7 @@ class CumminExtAscend : public AclnnKernelMod {
   int64_t dim_;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace cummin_ext
 }  // namespace kernel
 }  // namespace mindspore
 

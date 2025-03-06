@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lu_unpack_grad_cpu {
 class LuUnpackGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   LuUnpackGradCpuKernelMod() = default;
@@ -54,6 +55,7 @@ class LuUnpackGradCpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, LuUnpackGradFunc>> func_list_;
   LuUnpackGradFunc kernel_func_;
 };
+}  // namespace lu_unpack_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_LUUNPACKGRAD_CPU_KERNEL_H_

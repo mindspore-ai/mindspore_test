@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace var {
 
 class VarAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class VarAscend : public AclnnKernelMod {
   int64_t correction_{1};
   bool keepdim_{false};
 };
+}  // namespace var
 }  // namespace kernel
 }  // namespace mindspore
 

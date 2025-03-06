@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace batch_norm_grad_ext {
 
 class BatchNormGradExtAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class BatchNormGradExtAscend : public AclnnKernelMod {
   int64_t axis_;
   std::vector<uint8_t> output_mask_{};
 };
+}  // namespace batch_norm_grad_ext
 }  // namespace kernel
 }  // namespace mindspore
 

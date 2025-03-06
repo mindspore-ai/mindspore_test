@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lstsq_cpu {
 class LstsqCpuKernelMod : public NativeCpuKernelMod {
  public:
   LstsqCpuKernelMod() = default;
@@ -53,6 +54,7 @@ class LstsqCpuKernelMod : public NativeCpuKernelMod {
   TypeId dtype_0_{kTypeUnknown};
   TypeId dtype_1_{kTypeUnknown};
 };
+}  // namespace lstsq_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

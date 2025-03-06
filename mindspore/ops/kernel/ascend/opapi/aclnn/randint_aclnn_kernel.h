@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace randint {
 
 class RandIntAscend : public AclnnKernelMod {
  public:
@@ -45,6 +46,7 @@ class RandIntLikeAscend : public RandIntAscend {
  public:
   RandIntLikeAscend() : RandIntAscend() { input_idx_shift_ = 1; }
 };
+}  // namespace randint
 }  // namespace kernel
 }  // namespace mindspore
 

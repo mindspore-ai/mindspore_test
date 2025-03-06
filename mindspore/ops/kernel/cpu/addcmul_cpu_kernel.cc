@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace addcmul_cpu {
 namespace {
 #define F32 kNumberTypeFloat32
 #define F16 kNumberTypeFloat16
@@ -212,5 +213,6 @@ std::vector<KernelAttr> AddcmulCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Addcmul, AddcmulCpuKernelMod);
+}  // namespace addcmul_cpu
 }  // namespace kernel
 }  // namespace mindspore

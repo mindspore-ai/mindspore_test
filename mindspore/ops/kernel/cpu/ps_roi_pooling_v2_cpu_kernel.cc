@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace ps_roi_pooling_v2_cpu {
 namespace {
 constexpr int INPUT_NUM = 2;
 constexpr int OUTPUT_NUM = 1;
@@ -266,5 +267,6 @@ std::vector<KernelAttr> PSROIPoolingCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, PSROIPooling, PSROIPoolingCpuKernelMod);
+}  // namespace ps_roi_pooling_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore

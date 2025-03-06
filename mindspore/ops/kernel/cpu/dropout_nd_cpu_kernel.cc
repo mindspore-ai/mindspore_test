@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dropout_nd_cpu {
 bool DropoutNdCpuKernelMod::CheckDropOutNdShape() {
   constexpr size_t k4d = 4;
   constexpr size_t k5d = 5;
@@ -171,5 +172,6 @@ const std::vector<std::pair<KernelAttr, DropoutNdCpuKernelMod::KernelRunFunc>> &
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Dropout2D, DropoutNdCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Dropout3D, DropoutNdCpuKernelMod);
+}  // namespace dropout_nd_cpu
 }  // namespace kernel
 }  // namespace mindspore

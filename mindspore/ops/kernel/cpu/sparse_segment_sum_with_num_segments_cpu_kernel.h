@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_segment_sum_with_num_segments_cpu {
 class SparseSegmentSumWithNumSegmentsCpuKernelMod : public NativeCpuKernelMod {
  public:
   SparseSegmentSumWithNumSegmentsCpuKernelMod() = default;
@@ -65,6 +66,7 @@ class SparseSegmentSumWithNumSegmentsCpuKernelMod : public NativeCpuKernelMod {
   TypeId x_dtype_{kTypeUnknown};
   TypeId indices_dtype_{kTypeUnknown};
 };
+}  // namespace sparse_segment_sum_with_num_segments_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SPARSE_SEGMENT_SUM_WITH_NUM_SGEMENTS_CPU_KERNEL_H_

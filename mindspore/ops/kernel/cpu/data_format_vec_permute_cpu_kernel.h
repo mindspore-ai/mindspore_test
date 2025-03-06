@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace data_format_vec_permute_cpu {
 class DataFormatVecPermuteCpuKernelMod : public NativeCpuKernelMod {
  public:
   DataFormatVecPermuteCpuKernelMod() = default;
@@ -60,6 +61,7 @@ class DataFormatVecPermuteCpuKernelMod : public NativeCpuKernelMod {
   TypeId output_type_{kTypeUnknown};
   size_t dim_{0};
 };
+}  // namespace data_format_vec_permute_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

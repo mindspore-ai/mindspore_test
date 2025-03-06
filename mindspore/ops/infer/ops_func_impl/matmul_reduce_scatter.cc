@@ -22,9 +22,6 @@
 
 namespace mindspore {
 namespace ops {
-static constexpr ShapeValueDType kShapeRankAny = mindspore::abstract::Shape::kShapeRankAny;
-static constexpr ShapeValueDType kShapeDimAny = mindspore::abstract::Shape::kShapeDimAny;
-
 ShapeArray MatmulReduceScatterFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                    const InferInfoPtrList &input_infos) const {
   auto op_name = primitive->name();
@@ -71,6 +68,8 @@ ShapeArray MatmulReduceScatterFuncImpl::InferShape(const PrimitivePtr &primitive
   }
 
   ShapeVector output_shape(2);  // The rank of output is 2.
+  static constexpr ShapeValueDType kShapeDimAny = mindspore::abstract::Shape::kShapeDimAny;
+
   output_shape[0] = input_row_known ? input_shape[input_row] / world_size : kShapeDimAny;
   output_shape[1] = x2_col_known ? x2_shape[x2_col] : kShapeDimAny;
   return {output_shape};

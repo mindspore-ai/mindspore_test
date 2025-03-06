@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_uniform {
 class InplaceUniformAscend : public AclnnKernelMod {
  public:
   InplaceUniformAscend() : AclnnKernelMod("aclnnInplaceUniform") {}
@@ -38,6 +39,7 @@ class InplaceUniformAscend : public AclnnKernelMod {
   uint64_t offset_;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace inplace_uniform
 }  // namespace kernel
 }  // namespace mindspore
 

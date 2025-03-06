@@ -23,6 +23,7 @@
 #include "kernel/ascend/acl_ir/op_api_util.h"
 namespace mindspore {
 namespace kernel {
+namespace batchmatmul_reduce_scatter_all_to_all {
 void BatchMatMulReduceScatterAlltoAllAscend::InitializeCommunicationAttributes() {
   group_ep_ = GetRequiredAttr<std::string>(kAttrGroupEp);
   group_tp_ = GetRequiredAttr<std::string>(kAttrGroupTp);
@@ -83,5 +84,6 @@ bool BatchMatMulReduceScatterAlltoAllAscend::Launch(const std::vector<KernelTens
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(BatchMatMulReduceScatterAlltoAll, BatchMatMulReduceScatterAlltoAllAscend);
+}  // namespace batchmatmul_reduce_scatter_all_to_all
 }  // namespace kernel
 }  // namespace mindspore

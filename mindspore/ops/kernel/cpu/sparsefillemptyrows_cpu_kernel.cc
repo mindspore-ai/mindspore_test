@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparsefillemptyrows_cpu {
 namespace {
 constexpr size_t kIndicesSizeNum = 2;
 constexpr size_t kIndicesLastDim = 2;
@@ -60,15 +61,15 @@ inline Eigen::DenseIndex EigenShapeCast(const std::vector<KernelTensor *> &input
     break;                                               \
   }
 
-#define ADD_KERNEL(t1, t2, t3, t4, t5, t6, t7, t8) \
-  KernelAttr()                                     \
-    .AddInputAttr(kNumberType##t1)                 \
-    .AddInputAttr(kNumberType##t2)                 \
-    .AddInputAttr(kNumberType##t3)                 \
-    .AddInputAttr(kNumberType##t4)                 \
-    .AddOutputAttr(kNumberType##t5)                \
-    .AddOutputAttr(kNumberType##t6)                \
-    .AddOutputAttr(kNumberType##t7)                \
+#define SPARSEFILLEMPTYROWS_ADD_KERNEL(t1, t2, t3, t4, t5, t6, t7, t8) \
+  KernelAttr()                                                         \
+    .AddInputAttr(kNumberType##t1)                                     \
+    .AddInputAttr(kNumberType##t2)                                     \
+    .AddInputAttr(kNumberType##t3)                                     \
+    .AddInputAttr(kNumberType##t4)                                     \
+    .AddOutputAttr(kNumberType##t5)                                    \
+    .AddOutputAttr(kNumberType##t6)                                    \
+    .AddOutputAttr(kNumberType##t7)                                    \
     .AddOutputAttr(kNumberType##t8)
 }  // namespace
 
@@ -238,20 +239,20 @@ void SparseFillEmptyRowsCpuKernelMod::UpdateOutputShapeAndSize(const std::vector
 
 std::vector<KernelAttr> SparseFillEmptyRowsCpuKernelMod::GetOpSupport() {
   static std::vector<KernelAttr> support_list = {
-    ADD_KERNEL(Int64, Int8, Int64, Int8, Int64, Int8, Bool, Int64),
-    ADD_KERNEL(Int64, UInt8, Int64, UInt8, Int64, UInt8, Bool, Int64),
-    ADD_KERNEL(Int64, Int16, Int64, Int16, Int64, Int16, Bool, Int64),
-    ADD_KERNEL(Int64, UInt16, Int64, UInt16, Int64, UInt16, Bool, Int64),
-    ADD_KERNEL(Int64, Int32, Int64, Int32, Int64, Int32, Bool, Int64),
-    ADD_KERNEL(Int64, UInt32, Int64, UInt32, Int64, UInt32, Bool, Int64),
-    ADD_KERNEL(Int64, Int64, Int64, Int64, Int64, Int64, Bool, Int64),
-    ADD_KERNEL(Int64, UInt64, Int64, UInt64, Int64, UInt64, Bool, Int64),
-    ADD_KERNEL(Int64, Float16, Int64, Float16, Int64, Float16, Bool, Int64),
-    ADD_KERNEL(Int64, Float32, Int64, Float32, Int64, Float32, Bool, Int64),
-    ADD_KERNEL(Int64, Bool, Int64, Bool, Int64, Bool, Bool, Int64),
-    ADD_KERNEL(Int64, Float64, Int64, Float64, Int64, Float64, Bool, Int64),
-    ADD_KERNEL(Int64, Complex64, Int64, Complex64, Int64, Complex64, Bool, Int64),
-    ADD_KERNEL(Int64, Complex128, Int64, Complex128, Int64, Complex128, Bool, Int64)};
+    SPARSEFILLEMPTYROWS_ADD_KERNEL(Int64, Int8, Int64, Int8, Int64, Int8, Bool, Int64),
+    SPARSEFILLEMPTYROWS_ADD_KERNEL(Int64, UInt8, Int64, UInt8, Int64, UInt8, Bool, Int64),
+    SPARSEFILLEMPTYROWS_ADD_KERNEL(Int64, Int16, Int64, Int16, Int64, Int16, Bool, Int64),
+    SPARSEFILLEMPTYROWS_ADD_KERNEL(Int64, UInt16, Int64, UInt16, Int64, UInt16, Bool, Int64),
+    SPARSEFILLEMPTYROWS_ADD_KERNEL(Int64, Int32, Int64, Int32, Int64, Int32, Bool, Int64),
+    SPARSEFILLEMPTYROWS_ADD_KERNEL(Int64, UInt32, Int64, UInt32, Int64, UInt32, Bool, Int64),
+    SPARSEFILLEMPTYROWS_ADD_KERNEL(Int64, Int64, Int64, Int64, Int64, Int64, Bool, Int64),
+    SPARSEFILLEMPTYROWS_ADD_KERNEL(Int64, UInt64, Int64, UInt64, Int64, UInt64, Bool, Int64),
+    SPARSEFILLEMPTYROWS_ADD_KERNEL(Int64, Float16, Int64, Float16, Int64, Float16, Bool, Int64),
+    SPARSEFILLEMPTYROWS_ADD_KERNEL(Int64, Float32, Int64, Float32, Int64, Float32, Bool, Int64),
+    SPARSEFILLEMPTYROWS_ADD_KERNEL(Int64, Bool, Int64, Bool, Int64, Bool, Bool, Int64),
+    SPARSEFILLEMPTYROWS_ADD_KERNEL(Int64, Float64, Int64, Float64, Int64, Float64, Bool, Int64),
+    SPARSEFILLEMPTYROWS_ADD_KERNEL(Int64, Complex64, Int64, Complex64, Int64, Complex64, Bool, Int64),
+    SPARSEFILLEMPTYROWS_ADD_KERNEL(Int64, Complex128, Int64, Complex128, Int64, Complex128, Bool, Int64)};
   return support_list;
 }
 
@@ -282,5 +283,6 @@ bool SparseFillEmptyRowsCpuKernelMod::Launch(const std::vector<KernelTensor *> &
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseFillEmptyRows, SparseFillEmptyRowsCpuKernelMod);
+}  // namespace sparsefillemptyrows_cpu
 }  // namespace kernel
 }  // namespace mindspore

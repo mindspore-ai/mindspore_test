@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace smooth_l1_loss_grad {
 
 void SmoothL1LossGradAscendKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                        const std::vector<KernelTensor *> &outputs) {
@@ -46,5 +47,6 @@ bool SmoothL1LossGradAscendKernelMod::Launch(const std::vector<KernelTensor *> &
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(SmoothL1LossGrad, SmoothL1LossGradAscendKernelMod);
+}  // namespace smooth_l1_loss_grad
 }  // namespace kernel
 }  // namespace mindspore

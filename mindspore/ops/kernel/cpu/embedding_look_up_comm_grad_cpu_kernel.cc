@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace embedding_look_up_comm_grad_cpu {
 template <typename T>
 void EmbeddingLookUpCommGradCpuKernelMod::InitSplitNum(const std::vector<kernel::KernelTensor *> &inputs) {
   T split_num = static_cast<T *>(inputs[kIndex1]->device_ptr())[0];
@@ -96,5 +97,6 @@ bool EmbeddingLookUpCommGradCpuKernelMod::Launch(const std::vector<kernel::Kerne
 #endif
   return true;
 }
+}  // namespace embedding_look_up_comm_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

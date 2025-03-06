@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dense {
 class DenseAclnnKernelMod : public AclnnKernelMod {
  public:
   DenseAclnnKernelMod() : AclnnKernelMod(std::move("aclnnMatmul")) {}
@@ -51,6 +52,7 @@ class DenseAclnnKernelMod : public AclnnKernelMod {
   std::shared_ptr<KernelTensor> input_kernel_tensor_;
   std::shared_ptr<KernelTensor> output_kernel_tensor_;
 };
+}  // namespace dense
 }  // namespace kernel
 }  // namespace mindspore
 

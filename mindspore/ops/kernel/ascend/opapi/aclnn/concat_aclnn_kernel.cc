@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace concat {
 namespace {
 constexpr size_t kConcatMinNum = 2;
 }  // namespace
@@ -56,5 +57,6 @@ bool ConcatAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Concat, ConcatAscend);
+}  // namespace concat
 }  // namespace kernel
 }  // namespace mindspore

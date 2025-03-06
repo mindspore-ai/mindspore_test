@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inner_inplace_index_put {
 class InnerInplaceIndexPutAscend : public AclnnKernelMod {
  public:
   InnerInplaceIndexPutAscend() : AclnnKernelMod(std::move("aclnnIndexPutImpl")) {}
@@ -35,6 +36,7 @@ class InnerInplaceIndexPutAscend : public AclnnKernelMod {
 
   bool accumulate_{false};
 };
+}  // namespace inner_inplace_index_put
 }  // namespace kernel
 }  // namespace mindspore
 

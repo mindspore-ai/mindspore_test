@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fused_cast_adam_weight_decay_cpu {
 namespace {
 constexpr size_t kSizeFloat32 = sizeof(float);
 constexpr size_t kSizeFloat16 = sizeof(float16);
@@ -257,5 +258,6 @@ bool FusedCastAdamWeightDecayCpuKernelMod::Launch(const std::vector<kernel::Kern
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FusedCastAdamWeightDecay, FusedCastAdamWeightDecayCpuKernelMod);
+}  // namespace fused_cast_adam_weight_decay_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -28,7 +28,6 @@ namespace pyboost {
 namespace {
 constexpr int kShapeDim1d = 1;
 constexpr int kShapeDim3d = 3;
-constexpr int kShapeDimNone = -1;
 }  // namespace
 tensor::BaseTensorPtr AdaptiveAvgPool3DExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
                                                           const BaseTensorPtr &input_tensor,
@@ -42,6 +41,7 @@ tensor::BaseTensorPtr AdaptiveAvgPool3DExtAscendCustomize(const std::shared_ptr<
   auto input_shape = input_tensor->shape();
   auto input_shape_size = input_shape.size();
   std::vector<int64_t> output_size_update;
+  constexpr int kShapeDimNone = -1;
   for (auto i = 0; i < kShapeDim3d; i++) {
     if (output_size_vector[i] != kShapeDimNone)
       output_size_update.emplace_back(output_size_vector[i]);

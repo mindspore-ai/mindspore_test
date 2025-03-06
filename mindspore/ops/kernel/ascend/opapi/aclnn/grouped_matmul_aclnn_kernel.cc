@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace grouped_matmul {
 namespace {
 constexpr size_t kInputXIdx = 0;
 constexpr size_t kInputWeightIdx = 1;
@@ -92,5 +93,6 @@ bool GroupedMatmulAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(GroupedMatmul, GroupedMatmulAscend);
+}  // namespace grouped_matmul
 }  // namespace kernel
 }  // namespace mindspore

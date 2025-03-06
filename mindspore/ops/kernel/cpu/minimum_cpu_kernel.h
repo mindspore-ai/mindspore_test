@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace minimum_cpu {
 class MinimumCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<MinimumCpuKernelMod> {
  public:
   MinimumCpuKernelMod() = default;
@@ -84,6 +85,7 @@ class MinimumCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<
   std::vector<int64_t> broadcast_output_shape_;
   const size_t max_dims_{7};
 };
+}  // namespace minimum_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

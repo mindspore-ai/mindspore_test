@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_concat_cpu {
 namespace {
 constexpr size_t kCOOTensorNum = 3;
 constexpr size_t kSparseConcatOutputNum = 3;
@@ -226,5 +227,6 @@ bool SparseConcatCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTens
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseConcat, SparseConcatCpuKernelMod);
+}  // namespace sparse_concat_cpu
 }  // namespace kernel
 }  // namespace mindspore

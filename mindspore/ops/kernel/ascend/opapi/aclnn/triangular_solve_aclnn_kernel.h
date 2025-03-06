@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace triangular_solve {
 
 class TriangularSolveAscend : public AclnnKernelMod {
  public:
@@ -39,6 +40,7 @@ class TriangularSolveAscend : public AclnnKernelMod {
   bool transpose_{false};
   bool unitriangular_{false};
 };
+}  // namespace triangular_solve
 }  // namespace kernel
 }  // namespace mindspore
 

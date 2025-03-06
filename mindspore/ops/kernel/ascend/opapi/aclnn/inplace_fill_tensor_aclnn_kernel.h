@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_fill_tensor {
 
 class InplaceFillTensorAscend : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class InplaceFillTensorAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace inplace_fill_tensor
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fractional_max_pool_cpu {
 class FractionalMaxPoolCpuKernelMod : public NativeCpuKernelMod {
  public:
   FractionalMaxPoolCpuKernelMod() = default;
@@ -67,6 +68,7 @@ class FractionalMaxPoolCpuKernelMod : public NativeCpuKernelMod {
   int seed_{0};
   int seed2_{0};
 };
+}  // namespace fractional_max_pool_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_FRACTIONAL_MAX_POOL_CPU_KERNEL_H_

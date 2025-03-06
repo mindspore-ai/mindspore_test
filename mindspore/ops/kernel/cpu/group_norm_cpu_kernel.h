@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace group_norm_cpu {
 class GroupNormCpuKernelMod : public NativeCpuKernelMod {
  public:
   GroupNormCpuKernelMod() = default;
@@ -52,6 +53,7 @@ class GroupNormCpuKernelMod : public NativeCpuKernelMod {
   size_t inner_size_{1};
   size_t outter_size_{1};
 };
+}  // namespace group_norm_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_GROUP_NORM_CPU_KERNEL_H_

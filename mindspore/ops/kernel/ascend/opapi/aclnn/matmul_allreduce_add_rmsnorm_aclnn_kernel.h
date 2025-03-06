@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matmul_allreduce_add_rmsnorm {
 class MatmulAllReduceAddRmsNormAscend : public AclnnKernelMod {
  public:
   MatmulAllReduceAddRmsNormAscend() : AclnnKernelMod(std::move("aclnnMatmulAllReduceAddRmsNorm")) {}
@@ -42,6 +43,7 @@ class MatmulAllReduceAddRmsNormAscend : public AclnnKernelMod {
   int64_t comm_turn_;
   int64_t stream_mode_;
 };
+}  // namespace matmul_allreduce_add_rmsnorm
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_MATMUL_ALLREDUCE_ADD_RMSNORM_ACLNN_KERNEL_MOD_H_

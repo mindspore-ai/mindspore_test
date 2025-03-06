@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace unravel_index_cpu {
 class UnravelIndexCpuKernelMod : public NativeCpuKernelMod {
  public:
   UnravelIndexCpuKernelMod() = default;
@@ -49,6 +50,7 @@ class UnravelIndexCpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, UnravelIndexFunc>> func_list_;
   UnravelIndexFunc kernel_func_;
 };
+}  // namespace unravel_index_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

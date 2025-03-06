@@ -27,7 +27,8 @@ namespace mindspore {
 namespace kernel {
 class SparseApplyLazyAdamCpuKernelTest : public UT::Common {
  public:
-  SparseApplyLazyAdamCpuKernelTest() : sparse_lazy_adam_(std::make_shared<SparseApplyLazyAdamCpuKernelMod>()) {}
+  SparseApplyLazyAdamCpuKernelTest() :
+    sparse_lazy_adam_(std::make_shared<sparse_apply_lazy_adam_cpu::SparseApplyLazyAdamCpuKernelMod>()) {}
 
   void SetUp() override {
     var_.clear();
@@ -114,7 +115,7 @@ class SparseApplyLazyAdamCpuKernelTest : public UT::Common {
   std::vector<KernelTensor *> outputs_;
   std::vector<KernelTensor *> kernel_tensor_inputs_;
   std::vector<KernelTensor *> kernel_tensor_outputs_;
-  std::shared_ptr<SparseApplyLazyAdamCpuKernelMod> sparse_lazy_adam_;
+  std::shared_ptr<sparse_apply_lazy_adam_cpu::SparseApplyLazyAdamCpuKernelMod> sparse_lazy_adam_;
   float beta1_power_ = 0.9;
   float beta2_power_ = 0.999;
   float lr_ = 0.001;

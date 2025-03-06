@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace index_fill_scalar {
 
 class IndexFillScalarAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class IndexFillScalarAscend : public AclnnKernelMod {
   ScalarPtr value_ = nullptr;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace index_fill_scalar
 }  // namespace kernel
 }  // namespace mindspore
 

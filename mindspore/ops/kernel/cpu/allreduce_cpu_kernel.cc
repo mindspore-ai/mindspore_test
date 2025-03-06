@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace allreduce_cpu {
 #if defined(__linux__) && defined(WITH_BACKEND)
 using device::CollectiveOpReduceType::Reduce_Sum;
 using device::cpu::kMCCLGlobalGroupName;
@@ -87,5 +88,6 @@ bool AllReduceCPUKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AllReduce, AllReduceCPUKernelMod);
+}  // namespace allreduce_cpu
 }  // namespace kernel
 }  // namespace mindspore

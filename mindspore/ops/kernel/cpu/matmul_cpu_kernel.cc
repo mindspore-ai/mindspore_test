@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matmul_cpu {
 namespace {
 constexpr auto kMatMul = "MatMul";
 constexpr auto kBatchMatMul = "BatchMatMul";
@@ -316,5 +317,6 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, FusedMatMulBiasAdd,
                                  []() { return std::make_shared<MatMulCpuKernelMod>(kMatMulBiasAdd); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, MatMulBiasAddReluFusion,
                                  []() { return std::make_shared<MatMulCpuKernelMod>(kMatMulBiasAddRelu); });
+}  // namespace matmul_cpu
 }  // namespace kernel
 }  // namespace mindspore

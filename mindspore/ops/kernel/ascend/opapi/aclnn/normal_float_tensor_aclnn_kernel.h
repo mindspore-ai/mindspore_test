@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace normal_float_tensor {
 
 class NormalFloatTensorAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class NormalFloatTensorAscend : public AclnnKernelMod {
   int64_t seed_;
   int64_t offset_;
 };
+}  // namespace normal_float_tensor
 }  // namespace kernel
 }  // namespace mindspore
 

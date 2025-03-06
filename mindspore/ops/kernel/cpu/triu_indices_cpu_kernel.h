@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace triu_indices_cpu {
 class TriuIndicesCpuKernelMod : public NativeCpuKernelMod {
  public:
   TriuIndicesCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class TriuIndicesCpuKernelMod : public NativeCpuKernelMod {
   int64_t offset_ = 0;
   int64_t offset1_ = 0;
 };
+}  // namespace triu_indices_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

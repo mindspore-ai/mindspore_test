@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace group_norm_cpu {
 namespace {
 constexpr size_t kGroupNormInputsNum = 5;
 constexpr size_t kGroupNormOutputsNum = 3;
@@ -159,5 +160,6 @@ std::vector<KernelAttr> GroupNormCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, GroupNorm, GroupNormCpuKernelMod);
+}  // namespace group_norm_cpu
 }  // namespace kernel
 }  // namespace mindspore

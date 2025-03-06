@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matrix_diag_v3_cpu {
 namespace {
 constexpr size_t kMatrixDiagV3InputsNum = 5;
 constexpr size_t kMatrixDiagV3OutputsNum = 1;
@@ -343,5 +344,6 @@ std::vector<KernelAttr> MatrixDiagV3CpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MatrixDiagV3, MatrixDiagV3CpuKernelMod);
+}  // namespace matrix_diag_v3_cpu
 }  // namespace kernel
 }  // namespace mindspore

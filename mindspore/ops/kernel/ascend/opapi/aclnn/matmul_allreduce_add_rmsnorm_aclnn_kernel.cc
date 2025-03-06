@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matmul_allreduce_add_rmsnorm {
 void MatmulAllReduceAddRmsNormAscend::InitInputAttributes(const std::vector<KernelTensor *> &inputs,
                                                           const std::vector<KernelTensor *> &outputs) {
   auto eps_dtype_id = inputs[kIndex5]->dtype_id();
@@ -70,5 +71,6 @@ bool MatmulAllReduceAddRmsNormAscend::Launch(const std::vector<KernelTensor *> &
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(MatmulAllReduceAddRmsNorm, MatmulAllReduceAddRmsNormAscend);
+}  // namespace matmul_allreduce_add_rmsnorm
 }  // namespace kernel
 }  // namespace mindspore

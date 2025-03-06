@@ -29,6 +29,7 @@ using complex128 = std::complex<double>;
 
 namespace mindspore {
 namespace kernel {
+namespace eltwise_grad_cpu {
 constexpr size_t kInputMinNum = 2;
 constexpr size_t kOutputNum = 1;
 constexpr auto kUnKnown = "UnKnown";
@@ -66,6 +67,7 @@ class EltWiseGradCpuKernelMod : public NativeCpuKernelMod {
   bool is_null_input_{false};
   std::string kernel_name_{kUnKnown};
 };
+}  // namespace eltwise_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

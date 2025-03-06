@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace stack_ext {
 class StackExtAscend : public AclnnKernelMod {
  public:
   StackExtAscend() : AclnnKernelMod(std::move("aclnnStack")) {}
@@ -37,6 +38,7 @@ class StackExtAscend : public AclnnKernelMod {
   std::vector<KernelTensorPtr> tuple_tensors_;
   int64_t axis_;
 };
+}  // namespace stack_ext
 }  // namespace kernel
 }  // namespace mindspore
 

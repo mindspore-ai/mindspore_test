@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dropout_cpu {
 class DropoutCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<DropoutCpuKernelMod> {
  public:
   DropoutCpuKernelMod() = default;
@@ -55,6 +56,7 @@ class DropoutCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<
   size_t tensor_size_{1};
   std::default_random_engine rng_;
 };
+}  // namespace dropout_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_DROPOUT_CPU_KERNEL_H_

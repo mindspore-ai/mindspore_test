@@ -17,6 +17,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace cast {
 
 void CastAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &outputs) {
@@ -31,5 +32,6 @@ bool CastAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::ve
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Cast, CastAscend);
+}  // namespace cast
 }  // namespace kernel
 }  // namespace mindspore

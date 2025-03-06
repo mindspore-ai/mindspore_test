@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace group_norm_grad_cpu {
 namespace {
 constexpr size_t kGroupNormGradInputsNum = 9;
 constexpr size_t kGroupNormGradOutputsNum = 3;
@@ -201,5 +202,6 @@ std::vector<KernelAttr> GroupNormGradCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, GroupNormGrad, GroupNormGradCpuKernelMod);
+}  // namespace group_norm_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

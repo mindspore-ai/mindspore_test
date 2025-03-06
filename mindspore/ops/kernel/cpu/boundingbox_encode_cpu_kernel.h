@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace boundingbox_encode_cpu {
 constexpr size_t INPUT_NUMS = 2;
 class BoundingBoxEncodeCpuKernelMod : public NativeCpuKernelMod {
  public:
@@ -58,6 +59,7 @@ class BoundingBoxEncodeCpuKernelMod : public NativeCpuKernelMod {
   std::vector<float> means_;
   std::vector<float> stds_;
 };
+}  // namespace boundingbox_encode_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

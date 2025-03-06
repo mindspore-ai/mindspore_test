@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace elu_grad_ext {
 
 class EluGradExtAscend : public AclnnKernelMod {
  public:
@@ -39,6 +40,7 @@ class EluGradExtAscend : public AclnnKernelMod {
   ScalarPtr input_scale_ = nullptr;
   bool is_result_ = false;
 };
+}  // namespace elu_grad_ext
 }  // namespace kernel
 }  // namespace mindspore
 

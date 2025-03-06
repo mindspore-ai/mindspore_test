@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace check_numerics_cpu {
 namespace {
 constexpr size_t kCheckNumericsInputsNum = 1;
 constexpr size_t kCheckNumericsOutputsNum = 1;
@@ -84,5 +85,6 @@ void CheckNumericsCpuKernelMod::LaunchKernelFloat(const std::vector<KernelTensor
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CheckNumerics, CheckNumericsCpuKernelMod);
+}  // namespace check_numerics_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace heaviside_cpu {
 class HeavisideCpuKernelMod : public NativeCpuKernelMod {
  public:
   HeavisideCpuKernelMod() = default;
@@ -59,6 +60,7 @@ class HeavisideCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector input1_shape;
   ShapeVector output_shape;
 };
+}  // namespace heaviside_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_HEAVISIDE_CPU_KERNEL_H_

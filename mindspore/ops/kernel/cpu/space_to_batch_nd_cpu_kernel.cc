@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace space_to_batch_nd_cpu {
 namespace {
 constexpr size_t PADDING_SHAPE_1 = 2;
 constexpr size_t kSpaceToBatchNDInputsNum = 1;
@@ -189,5 +190,6 @@ const std::vector<std::pair<KernelAttr, KernelRunFunc>> &SpaceToBatchNDCpuKernel
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SpaceToBatchND, SpaceToBatchNDCpuKernelMod);
+}  // namespace space_to_batch_nd_cpu
 }  // namespace kernel
 }  // namespace mindspore

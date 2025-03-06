@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace resize_nearest_neighbor_v2_cpu {
 class ResizeNearestNeighborV2CpuKernelMod : public NativeCpuKernelMod {
  public:
   ResizeNearestNeighborV2CpuKernelMod() = default;
@@ -58,6 +59,7 @@ class ResizeNearestNeighborV2CpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> x_shape_;
   std::vector<int64_t> y_shape_;
 };
+}  // namespace resize_nearest_neighbor_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

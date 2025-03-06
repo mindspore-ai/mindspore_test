@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inner_inplace_index_put {
 namespace {
 constexpr size_t kInnerInplaceIndexPutKenelMinNum = 4;
 }  // namespace
@@ -67,5 +68,6 @@ bool InnerInplaceIndexPutAscend::Launch(const std::vector<KernelTensor *> &input
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(InnerInplaceIndexPut, InnerInplaceIndexPutAscend);
+}  // namespace inner_inplace_index_put
 }  // namespace kernel
 }  // namespace mindspore

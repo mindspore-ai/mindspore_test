@@ -18,6 +18,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matrix_exp_cpu {
 namespace {
 constexpr uint32_t kMatrixExpInputsNum = 1;
 constexpr uint32_t kMatrixExpOutputsNum = 1;
@@ -165,5 +166,6 @@ const std::vector<std::pair<KernelAttr, MatrixExpCpuKernelMod::KernelRunFunc>> &
      &MatrixExpCpuKernelMod::LaunchKernel<std::complex<double>>}};
   return func_list;
 }
+}  // namespace matrix_exp_cpu
 }  // namespace kernel
 }  // namespace mindspore

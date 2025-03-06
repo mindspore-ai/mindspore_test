@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace bias_add_cpu {
 namespace {
 constexpr size_t kBiasAddMinDim = 2;
 constexpr size_t kBiasAddMaxDim = 5;
@@ -188,5 +189,6 @@ const std::vector<std::pair<KernelAttr, BiasAddCpuKernelMod::KernelRunFunc>> &Bi
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, BiasAdd, BiasAddCpuKernelMod);
+}  // namespace bias_add_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace median_grad_cpu {
 namespace {
 constexpr size_t kMedianGradInputsNum = 4;
 constexpr size_t kMedianGradOutputsNum = 1;
@@ -250,5 +251,6 @@ bool MedianGradCpuKernelMod::MedianGradCompute(const std::vector<KernelTensor *>
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MedianGrad, MedianGradCpuKernelMod);
+}  // namespace median_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

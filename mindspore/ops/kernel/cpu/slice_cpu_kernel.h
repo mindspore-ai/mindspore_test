@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace slice_cpu {
 class SliceCpuKernelMod : public NativeCpuKernelMod {
  public:
   SliceCpuKernelMod() = default;
@@ -53,6 +54,7 @@ class SliceCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> size_shape_;
   bool is_got_value_{false};
 };
+}  // namespace slice_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_SLICE_CPU_KERNEL_H_

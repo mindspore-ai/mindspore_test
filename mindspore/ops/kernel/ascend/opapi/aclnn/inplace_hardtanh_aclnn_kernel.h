@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_hardtanh {
 
 class InplaceHardtanhAclnnKernelMod : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class InplaceHardtanhAclnnKernelMod : public AclnnKernelMod {
   ScalarPtr min_val_{nullptr};
   ScalarPtr max_val_{nullptr};
 };
+}  // namespace inplace_hardtanh
 }  // namespace kernel
 }  // namespace mindspore
 

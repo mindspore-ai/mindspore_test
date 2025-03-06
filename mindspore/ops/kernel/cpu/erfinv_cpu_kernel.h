@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace erfinv_cpu {
 class ErfinvCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<ErfinvCpuKernelMod> {
  public:
   ErfinvCpuKernelMod() = default;
@@ -49,6 +50,7 @@ class ErfinvCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<E
                     const std::vector<kernel::KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &outputs);
 };
+}  // namespace erfinv_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

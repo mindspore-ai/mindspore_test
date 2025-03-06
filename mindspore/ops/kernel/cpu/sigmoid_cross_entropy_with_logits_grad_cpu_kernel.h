@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sigmoid_cross_entropy_with_logits_grad_cpu {
 class SigmoidCrossEntropyWithLogitsGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   SigmoidCrossEntropyWithLogitsGradCpuKernelMod() = default;
@@ -59,6 +60,7 @@ class SigmoidCrossEntropyWithLogitsGradCpuKernelMod : public NativeCpuKernelMod 
   TypeId dtype_{kTypeUnknown};
   uint64_t tensor_size_{1};
 };
+}  // namespace sigmoid_cross_entropy_with_logits_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SIGMOID_CROSS_ENTROPY_WITH_LOGITS_GRAD_CPU_KERNEL_H_

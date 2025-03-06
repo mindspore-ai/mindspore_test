@@ -24,6 +24,7 @@
 #include "common/kernel_utils.h"
 
 namespace mindspore::kernel {
+namespace resize_v2_cpu {
 namespace {
 constexpr auto kResizeV2 = "ResizeV2";
 constexpr float half = 0.5;
@@ -453,4 +454,5 @@ const std::vector<std::pair<KernelAttr, ResizeV2CpuKernelMod::KernelRunFunc>> &R
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ResizeV2, ResizeV2CpuKernelMod);
+}  // namespace resize_v2_cpu
 }  // namespace mindspore::kernel

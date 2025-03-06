@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lin_space_ext {
 void LinSpaceExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
   start_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex0]);
@@ -42,5 +43,6 @@ bool LinSpaceExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const 
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(LinSpaceExt, LinSpaceExtAscend);
+}  // namespace lin_space_ext
 }  // namespace kernel
 }  // namespace mindspore

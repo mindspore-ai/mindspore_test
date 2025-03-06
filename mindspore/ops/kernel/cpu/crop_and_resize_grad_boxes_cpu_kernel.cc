@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace crop_and_resize_grad_boxes_cpu {
 bool CropAndResizeGradBoxesCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kInputNums, kernel_name_);
@@ -80,7 +81,7 @@ int CropAndResizeGradBoxesCpuKernelMod::Resize(const std::vector<KernelTensor *>
   }
 
   //  output
-  output_shape_ = outputs[kOutputIndex]->GetShapeVector();
+  output_shape_ = outputs[kOutputIdx]->GetShapeVector();
   auto output_shape_len = output_shape_.size();
   if (output_shape_len != kOutputShapeLen) {
     MS_LOG(ERROR) << "Output tensor is " << output_shape_len << "-D, but CropAndResizeGradBoxes supports only "
@@ -270,5 +271,6 @@ std::vector<KernelAttr> CropAndResizeGradBoxesCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CropAndResizeGradBoxes, CropAndResizeGradBoxesCpuKernelMod);
+}  // namespace crop_and_resize_grad_boxes_cpu
 }  // namespace kernel
 }  // namespace mindspore

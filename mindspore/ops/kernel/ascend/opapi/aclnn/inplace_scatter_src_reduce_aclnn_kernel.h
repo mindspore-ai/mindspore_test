@@ -23,8 +23,8 @@
 
 namespace mindspore {
 namespace kernel {
-
-class InplaceScatterSrcReduceAscend : public InplaceScatterSrcAscend {
+namespace inplace_scatter_src_reduce {
+class InplaceScatterSrcReduceAscend : public inplace_scatter_src::InplaceScatterSrcAscend {
  public:
   InplaceScatterSrcReduceAscend() = default;
   ~InplaceScatterSrcReduceAscend() = default;
@@ -35,6 +35,7 @@ class InplaceScatterSrcReduceAscend : public InplaceScatterSrcAscend {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace inplace_scatter_src_reduce
 }  // namespace kernel
 }  // namespace mindspore
 

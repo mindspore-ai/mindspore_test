@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lstsqv2_grad_cpu {
 class LstsqV2GradCpuKernelMod : public NativeCpuKernelMod {
  public:
   LstsqV2GradCpuKernelMod() = default;
@@ -65,6 +66,7 @@ class LstsqV2GradCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector b_batch_shape_;
   ShapeVector broadcast_batch_shape_;
 };
+}  // namespace lstsqv2_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_LSTSQV2_CPU_KERNEL_H_

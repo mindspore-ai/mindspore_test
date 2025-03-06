@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace random_choice_with_mask_cpu {
 class RandomChoiceWithMaskCpuKernelMod : public NativeCpuKernelMod {
  public:
   RandomChoiceWithMaskCpuKernelMod() = default;
@@ -53,6 +54,7 @@ class RandomChoiceWithMaskCpuKernelMod : public NativeCpuKernelMod {
   size_t batch_rank_{0};
   size_t batch_size_{1};
 };
+}  // namespace random_choice_with_mask_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace log1p_cpu {
 namespace {
 constexpr size_t kLog1pInputsNum = 1;
 constexpr size_t kLog1pOutputsNum = 1;
@@ -75,5 +76,6 @@ void Log1pCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Log1p, Log1pCpuKernelMod);
+}  // namespace log1p_cpu
 }  // namespace kernel
 }  // namespace mindspore

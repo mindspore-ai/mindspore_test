@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace identityn_cpu {
 class IdentityNCpuKernelMod : public NativeCpuKernelMod {
  public:
   IdentityNCpuKernelMod() = default;
@@ -44,6 +45,7 @@ class IdentityNCpuKernelMod : public NativeCpuKernelMod {
     kNumberTypeInt32, kNumberTypeUInt64, kNumberTypeInt64, kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeFloat64};
   bool CheckType(TypeId idx_type, size_t idx);
 };
+}  // namespace identityn_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

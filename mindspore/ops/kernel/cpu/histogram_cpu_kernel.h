@@ -24,6 +24,7 @@
 #include "common/ms_factory.h"
 namespace mindspore {
 namespace kernel {
+namespace histogram_cpu {
 class HistogramCPUKernelMod : public NativeCpuKernelMod {
  public:
   HistogramCPUKernelMod() = default;
@@ -45,6 +46,7 @@ class HistogramCPUKernelMod : public NativeCpuKernelMod {
   double min_attr_;
   double max_attr_;
 };
+}  // namespace histogram_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_HISTOGRAMD_CPU_KERNEL_H_

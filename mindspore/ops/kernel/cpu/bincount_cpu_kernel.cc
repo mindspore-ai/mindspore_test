@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace bincount_cpu {
 bool BincountCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   constexpr size_t input_num = 3;
   constexpr size_t output_num = 1;
@@ -142,5 +143,6 @@ std::vector<KernelAttr> BincountCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Bincount, BincountCpuKernelMod);
+}  // namespace bincount_cpu
 }  // namespace kernel
 }  // namespace mindspore

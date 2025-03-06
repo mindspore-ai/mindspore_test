@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace map_cache_idx_cpu {
 class MapCacheIdxCpuKernelMod : public NativeCpuKernelMod {
  public:
   MapCacheIdxCpuKernelMod() = default;
@@ -66,6 +67,7 @@ class MapCacheIdxCpuKernelMod : public NativeCpuKernelMod {
   size_t miss_count_{0};
   size_t outputs_size_{0};
 };
+}  // namespace map_cache_idx_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

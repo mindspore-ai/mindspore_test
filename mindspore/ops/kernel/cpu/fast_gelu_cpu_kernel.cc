@@ -21,6 +21,7 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore::kernel {
+namespace fast_gelu_cpu {
 constexpr auto kFastGeLU = "FastGeLU";
 constexpr const size_t kFastGeluInputsNum = 1;
 constexpr const size_t kFastGeluOutputsNum = 1;
@@ -97,4 +98,5 @@ int FastGeLUCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, FastGeLU,
                                  []() { return std::make_shared<FastGeLUCpuKernelMod>(kFastGeLU); });
+}  // namespace fast_gelu_cpu
 }  // namespace mindspore::kernel

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_elu {
 class InplaceEluAclnnKernelMod : public AclnnKernelMod {
  public:
   InplaceEluAclnnKernelMod() : AclnnKernelMod("aclnnInplaceElu") {}
@@ -38,6 +39,7 @@ class InplaceEluAclnnKernelMod : public AclnnKernelMod {
   ScalarPtr input_scale_ = nullptr;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace inplace_elu
 }  // namespace kernel
 }  // namespace mindspore
 

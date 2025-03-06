@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace chunk {
 
 class ChunkAscend : public AclnnKernelMod {
  public:
@@ -42,6 +43,7 @@ class ChunkAscend : public AclnnKernelMod {
 
   int64_t GetDimValue(KernelTensor *axis_ptr) const noexcept;
 };
+}  // namespace chunk
 }  // namespace kernel
 }  // namespace mindspore
 

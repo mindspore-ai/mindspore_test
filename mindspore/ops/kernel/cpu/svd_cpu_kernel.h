@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace svd_cpu {
 class SvdCpuKernelMod : public NativeCpuKernelMod {
  public:
   SvdCpuKernelMod() {}
@@ -64,6 +65,7 @@ class SvdCpuKernelMod : public NativeCpuKernelMod {
   int64_t num_of_rows_;
   int64_t num_of_cols_;
 };
+}  // namespace svd_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

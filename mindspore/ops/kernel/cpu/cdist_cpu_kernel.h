@@ -25,6 +25,7 @@
 #include "common/ms_factory.h"
 namespace mindspore {
 namespace kernel {
+namespace cdist_cpu {
 class CdistCpuKernelMod : public NativeCpuKernelMod {
  public:
   CdistCpuKernelMod() {}
@@ -58,6 +59,7 @@ class CdistCpuKernelMod : public NativeCpuKernelMod {
   void *in_data1_;
   void *out_data_;
 };
+}  // namespace cdist_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

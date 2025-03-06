@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace reduce_scatter_cpu {
 namespace {
 constexpr auto kOP = "op";
 constexpr auto kRanksGroup = "group";
@@ -59,5 +60,6 @@ bool ReduceScatterCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *>
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, _HostReduceScatter, ReduceScatterCpuKernelMod);
+}  // namespace reduce_scatter_cpu
 }  // namespace kernel
 }  // namespace mindspore

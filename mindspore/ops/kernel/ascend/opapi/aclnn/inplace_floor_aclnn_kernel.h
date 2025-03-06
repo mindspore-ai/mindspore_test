@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_floor {
 using TensorParams = device::ascend::TensorParams;
 
 class InplaceFloorAclnnKernelMod : public AclnnKernelMod {
@@ -37,6 +38,7 @@ class InplaceFloorAclnnKernelMod : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace inplace_floor
 }  // namespace kernel
 }  // namespace mindspore
 

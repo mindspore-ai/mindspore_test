@@ -30,7 +30,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-namespace {
+namespace dense {
 ValueTuplePtr GetTransposePerm(const BaseTensorPtr &weight_tensor) {
   const auto &shape = weight_tensor->shape();
   size_t size = shape.size();
@@ -47,7 +47,7 @@ ValueTuplePtr GetTransposePerm(const BaseTensorPtr &weight_tensor) {
   }
   return std::make_shared<ValueTuple>(perm);
 }
-}  // namespace
+}  // namespace dense
 
 void DenseAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
                           const BaseTensorPtr &weight_tensor, const std::optional<BaseTensorPtr> &bias_tensor) {
@@ -81,7 +81,7 @@ void DenseAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorP
   auto device_context = op->device_context();
   const auto &device_name = device_context->device_context_key_.device_name_;
 
-  auto perm = GetTransposePerm(weight_tensor);
+  auto perm = dense::GetTransposePerm(weight_tensor);
   auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
   auto weight_transposed = transpose_op->Call(weight_tensor, perm);
 

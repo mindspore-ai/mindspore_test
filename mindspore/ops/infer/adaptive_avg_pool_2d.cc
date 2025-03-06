@@ -42,9 +42,6 @@
 namespace mindspore {
 namespace ops {
 namespace {
-constexpr int64_t kOutputSizeLen2 = 2;
-constexpr int64_t kValueNone = -1;
-
 abstract::ShapePtr AdaptiveAvgPool2DInferShape(const PrimitivePtr &primitive,
                                                const std::vector<AbstractBasePtr> &input_args) {
   auto op_name = primitive->name();
@@ -66,6 +63,7 @@ abstract::ShapePtr AdaptiveAvgPool2DInferShape(const PrimitivePtr &primitive,
   const auto &output_size_ptr = primitive->GetAttr("output_size");
   MS_EXCEPTION_IF_NULL(output_size_ptr);
   const auto &output_size = GetValue<std::vector<int64_t>>(output_size_ptr);
+  constexpr int64_t kOutputSizeLen2 = 2;
   (void)CheckAndConvertUtils::CheckInteger("length of output_size", static_cast<int64_t>(output_size.size()), kEqual,
                                            kOutputSizeLen2, op_name);
 
@@ -74,6 +72,7 @@ abstract::ShapePtr AdaptiveAvgPool2DInferShape(const PrimitivePtr &primitive,
   auto output_size_iter = output_size.rbegin();
   for (; output_size_iter != output_size.rend(); (void)output_size_iter++, (void)input_size_iter++) {
     // If output size is none, the input shape should be used.
+    constexpr int64_t kValueNone = -1;
     if (*output_size_iter != kValueNone) {
       *input_size_iter = *output_size_iter;
     }

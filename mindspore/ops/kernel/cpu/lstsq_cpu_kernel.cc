@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lstsq_cpu {
 namespace {
 constexpr size_t kLstsqInputsNum = 2;
 constexpr size_t kLstsqOutputsNum = 1;
@@ -137,5 +138,6 @@ void LstsqCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Lstsq, LstsqCpuKernelMod);
+}  // namespace lstsq_cpu
 }  // namespace kernel
 }  // namespace mindspore

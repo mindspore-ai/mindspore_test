@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace get_squeeze_slice_shape_cpu {
 bool GetSqueezeSliceShapeCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &outputs) {
   tuple_index_types_ = GetValue<std::vector<int64_t>>(primitive_->GetAttr(kAttrTupleIndexTypes));
@@ -122,5 +123,6 @@ std::vector<KernelAttr> GetSqueezeSliceShapeCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, GetSqueezeSliceShape, GetSqueezeSliceShapeCpuKernelMod);
+}  // namespace get_squeeze_slice_shape_cpu
 }  // namespace kernel
 }  // namespace mindspore

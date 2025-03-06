@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace normalize_slice_cpu {
 bool NormalizeSliceInfoCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &outputs) {
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
@@ -175,5 +176,6 @@ std::vector<KernelAttr> NormalizeSliceInfoCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NormalizeSlice, NormalizeSliceInfoCpuKernelMod);
+}  // namespace normalize_slice_cpu
 }  // namespace kernel
 }  // namespace mindspore

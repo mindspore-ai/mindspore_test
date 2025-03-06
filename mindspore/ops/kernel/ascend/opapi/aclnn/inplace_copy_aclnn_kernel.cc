@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_copy {
 
 void InplaceCopyAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                  const std::vector<KernelTensor *> &outputs) {
@@ -37,5 +38,6 @@ bool InplaceCopyAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceCopy, InplaceCopyAclnnKernelMod);
+}  // namespace inplace_copy
 }  // namespace kernel
 }  // namespace mindspore

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_log {
 
 class InplaceLogAscend : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class InplaceLogAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace inplace_log
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matrix_set_diag_v3_cpu {
 class MatrixSetDiagV3CpuKernelMod : public NativeCpuKernelMod {
  public:
   MatrixSetDiagV3CpuKernelMod() = default;
@@ -74,6 +75,7 @@ class MatrixSetDiagV3CpuKernelMod : public NativeCpuKernelMod {
   int64_t max_diag_len_ = 0;
   size_t input_numelements_ = 0;
 };
+}  // namespace matrix_set_diag_v3_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

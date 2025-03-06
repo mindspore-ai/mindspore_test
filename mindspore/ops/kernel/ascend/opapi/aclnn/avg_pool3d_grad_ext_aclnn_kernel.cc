@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace avg_pool3d_grad_ext {
 
 void AvgPool3dGradExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &outputs) {
@@ -64,5 +65,6 @@ bool AvgPool3dGradExtAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(AvgPool3DGradExt, AvgPool3dGradExtAscend);
+}  // namespace avg_pool3d_grad_ext
 }  // namespace kernel
 }  // namespace mindspore

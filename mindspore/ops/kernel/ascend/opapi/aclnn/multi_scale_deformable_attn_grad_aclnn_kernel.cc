@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace multi_scale_deformable_attn_grad {
 void CheckInputType(const std::vector<KernelTensor *> &inputs) {
   auto dtype_id = inputs[kIndex0]->dtype_id();
   if (dtype_id != kNumberTypeFloat32 && dtype_id != kNumberTypeFloat16) {
@@ -250,5 +251,6 @@ bool MultiScaleDeformableAttnGradAscend::Launch(const std::vector<KernelTensor *
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(MultiScaleDeformableAttnGrad, MultiScaleDeformableAttnGradAscend);
+}  // namespace multi_scale_deformable_attn_grad
 }  // namespace kernel
 }  // namespace mindspore

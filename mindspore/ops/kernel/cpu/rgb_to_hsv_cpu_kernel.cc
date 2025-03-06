@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace rgb_to_hsv_cpu {
 namespace {
 constexpr size_t kNumberOfRGB = 3;
 const size_t kInputNum = 1;
@@ -157,5 +158,6 @@ std::vector<KernelAttr> RGBToHSVCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, RGBToHSV, RGBToHSVCpuKernelMod);
+}  // namespace rgb_to_hsv_cpu
 }  // namespace kernel
 }  // namespace mindspore

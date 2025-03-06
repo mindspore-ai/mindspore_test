@@ -35,7 +35,8 @@ void ExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim) {
   }
 }
 
-bool Conv1DBatchify(const ShapeVector &input_shape, const int64_t num_spatial_dims, const std::string &func_name) {
+bool Conv1DPaddingBatchify(const ShapeVector &input_shape, const int64_t num_spatial_dims,
+                           const std::string &func_name) {
   const auto dim_count_no_batch = num_spatial_dims + 1;
   const auto dim_count_batch = dim_count_no_batch + 1;
   auto origin_shape_dim = SizeToLong(input_shape.size());
@@ -93,7 +94,7 @@ tensor::BaseTensorPtr Conv1DPaddingAscendCustomize(const std::shared_ptr<OpRunne
   // Convert ValuePtr to c++ scalar
   auto padding_enum_imm = GetValue<int64_t>(padding_enum);
   auto input_shape = input_tensor->shape();
-  auto is_batchify = Conv1DBatchify(input_shape, 1, "conv1d");
+  auto is_batchify = Conv1DPaddingBatchify(input_shape, 1, "conv1d");
   BaseTensorPtr input_tensor_new = input_tensor;
   BaseTensorPtr expand_input_x_imm = input_tensor;
   if (!is_batchify) {

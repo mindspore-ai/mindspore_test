@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matrix_inverse_cpu {
 namespace {
 constexpr size_t kInputSize = 1;
 constexpr size_t kOutputSize = 1;
@@ -131,5 +132,6 @@ void MatrixInverseCpuKernelMod::LaunchMatrixInverse(const std::vector<KernelTens
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MatrixInverse, MatrixInverseCpuKernelMod);
+}  // namespace matrix_inverse_cpu
 }  // namespace kernel
 }  // namespace mindspore

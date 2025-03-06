@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace searchsorted {
 
 class SearchsortedAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class SearchsortedAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace searchsorted
 }  // namespace kernel
 }  // namespace mindspore
 

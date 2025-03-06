@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace reversev2_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
@@ -62,6 +63,7 @@ class ReverseV2CpuKernelMod : public NativeCpuKernelMod {
   int64_t input_dims_ = 0;
   int64_t axis_dims_ = 0;
 };
+}  // namespace reversev2_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_REVERSEV2_CPU_KERNEL_H_

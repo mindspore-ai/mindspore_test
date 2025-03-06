@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dropout_gen_mask_ext {
 void DropoutGenMaskExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
   MS_EXCEPTION_IF_NULL(primitive_);
@@ -58,5 +59,6 @@ bool DropoutGenMaskExtAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(DropoutGenMaskExt, DropoutGenMaskExtAscend);
+}  // namespace dropout_gen_mask_ext
 }  // namespace kernel
 }  // namespace mindspore

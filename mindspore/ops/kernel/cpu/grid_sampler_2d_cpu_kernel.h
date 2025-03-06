@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace grid_sampler_2d_cpu {
 class GridSampler2DCpuKernelMod : public NativeCpuKernelMod {
  public:
   GridSampler2DCpuKernelMod() = default;
@@ -94,6 +95,7 @@ class GridSampler2DCpuKernelMod : public NativeCpuKernelMod {
                     std::vector<int64_t> x_dims, int64_t *y_stride, int64_t *x_stride, int64_t x_ptr_NC,
                     int64_t y_ptr_NCHW) const;
 };
+}  // namespace grid_sampler_2d_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif

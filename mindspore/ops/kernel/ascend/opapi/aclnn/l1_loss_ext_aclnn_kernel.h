@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace l1_loss_ext {
 using TensorParams = device::ascend::TensorParams;
 
 class L1LossExtAclnnKernelMod : public AclnnKernelMod {
@@ -48,6 +49,7 @@ class L1LossExtAclnnKernelMod : public AclnnKernelMod {
   int64_t reduction_{1};
 };
 
+}  // namespace l1_loss_ext
 }  // namespace kernel
 }  // namespace mindspore
 

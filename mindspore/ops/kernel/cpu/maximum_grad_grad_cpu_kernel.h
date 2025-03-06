@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace maximum_grad_grad_cpu {
 class MaximumGradGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   MaximumGradGradCpuKernelMod() = default;
@@ -60,6 +61,7 @@ class MaximumGradGradCpuKernelMod : public NativeCpuKernelMod {
   int64_t output_size_{0};
   uint64_t tensor_size_ = 1;
 };
+}  // namespace maximum_grad_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_MAXIMUM_GRAD_GRAD_CPU_KERNEL_H_

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace group_norm {
 
 class GroupNormAscend : public AclnnKernelMod {
  public:
@@ -41,6 +42,7 @@ class GroupNormAscend : public AclnnKernelMod {
   int64_t c_;
   int64_t hw_;
 };
+}  // namespace group_norm
 }  // namespace kernel
 }  // namespace mindspore
 

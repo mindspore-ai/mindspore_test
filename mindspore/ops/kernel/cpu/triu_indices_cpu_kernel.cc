@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace triu_indices_cpu {
 bool TriuIndicesCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs) {
   row_ = GetValue<int64_t>(primitive_->GetAttr("row"));
@@ -91,5 +92,6 @@ std::vector<KernelAttr> TriuIndicesCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TriuIndices, TriuIndicesCpuKernelMod);
+}  // namespace triu_indices_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -19,19 +19,20 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_segment_sum_with_num_segments_cpu {
 namespace {
 constexpr size_t kInputsNum = 4;
 constexpr size_t kOutputsNum = 1;
 
-#define ADD_KERNEL(T1, T2, T3, T4, T5, T6, T7)                           \
-  {                                                                      \
-    KernelAttr()                                                         \
-      .AddInputAttr(kNumberType##T1)                                     \
-      .AddInputAttr(kNumberType##T2)                                     \
-      .AddInputAttr(kNumberType##T3)                                     \
-      .AddInputAttr(kNumberType##T4)                                     \
-      .AddOutputAttr(kNumberType##T5),                                   \
-      &SparseSegmentSumWithNumSegmentsCpuKernelMod::LaunchKernel<T6, T7> \
+#define SPARSE_SEGMENT_SUM_WITH_NUM_SEGMENTS_ADD_KERNEL(T1, T2, T3, T4, T5, T6, T7) \
+  {                                                                                 \
+    KernelAttr()                                                                    \
+      .AddInputAttr(kNumberType##T1)                                                \
+      .AddInputAttr(kNumberType##T2)                                                \
+      .AddInputAttr(kNumberType##T3)                                                \
+      .AddInputAttr(kNumberType##T4)                                                \
+      .AddOutputAttr(kNumberType##T5),                                              \
+      &SparseSegmentSumWithNumSegmentsCpuKernelMod::LaunchKernel<T6, T7>            \
   }
 }  // namespace
 
@@ -118,25 +119,26 @@ void SparseSegmentSumWithNumSegmentsCpuKernelMod::LaunchKernel(const std::vector
 
 std::vector<std::pair<KernelAttr, SparseSegmentSumWithNumSegmentsCpuKernelMod::LaunchKernelFunc>>
   SparseSegmentSumWithNumSegmentsCpuKernelMod::f_list_ = {
-    ADD_KERNEL(Int8, Int32, Int32, Int32, Int8, int8_t, int32_t),
-    ADD_KERNEL(Int8, Int64, Int64, Int64, Int8, int8_t, int64_t),
-    ADD_KERNEL(Int16, Int32, Int32, Int32, Int16, int16_t, int32_t),
-    ADD_KERNEL(Int16, Int64, Int64, Int64, Int16, int16_t, int64_t),
-    ADD_KERNEL(Int32, Int32, Int32, Int32, Int32, int32_t, int32_t),
-    ADD_KERNEL(Int32, Int64, Int64, Int64, Int32, int32_t, int64_t),
-    ADD_KERNEL(Int64, Int32, Int32, Int32, Int64, int64_t, int32_t),
-    ADD_KERNEL(Int64, Int64, Int64, Int64, Int64, int64_t, int64_t),
-    ADD_KERNEL(UInt8, Int32, Int32, Int32, UInt8, uint8_t, int32_t),
-    ADD_KERNEL(UInt8, Int64, Int64, Int64, UInt8, uint8_t, int64_t),
-    ADD_KERNEL(UInt16, Int32, Int32, Int32, UInt16, uint16_t, int32_t),
-    ADD_KERNEL(UInt16, Int64, Int64, Int64, UInt16, uint16_t, int64_t),
-    ADD_KERNEL(Float16, Int32, Int32, Int32, Float16, float16, int32_t),
-    ADD_KERNEL(Float16, Int64, Int64, Int64, Float16, float16, int64_t),
-    ADD_KERNEL(Float32, Int32, Int32, Int32, Float32, float, int32_t),
-    ADD_KERNEL(Float32, Int64, Int64, Int64, Float32, float, int64_t),
-    ADD_KERNEL(Float64, Int32, Int32, Int32, Float64, double, int32_t),
-    ADD_KERNEL(Float64, Int64, Int64, Int64, Float64, double, int64_t)};
+    SPARSE_SEGMENT_SUM_WITH_NUM_SEGMENTS_ADD_KERNEL(Int8, Int32, Int32, Int32, Int8, int8_t, int32_t),
+    SPARSE_SEGMENT_SUM_WITH_NUM_SEGMENTS_ADD_KERNEL(Int8, Int64, Int64, Int64, Int8, int8_t, int64_t),
+    SPARSE_SEGMENT_SUM_WITH_NUM_SEGMENTS_ADD_KERNEL(Int16, Int32, Int32, Int32, Int16, int16_t, int32_t),
+    SPARSE_SEGMENT_SUM_WITH_NUM_SEGMENTS_ADD_KERNEL(Int16, Int64, Int64, Int64, Int16, int16_t, int64_t),
+    SPARSE_SEGMENT_SUM_WITH_NUM_SEGMENTS_ADD_KERNEL(Int32, Int32, Int32, Int32, Int32, int32_t, int32_t),
+    SPARSE_SEGMENT_SUM_WITH_NUM_SEGMENTS_ADD_KERNEL(Int32, Int64, Int64, Int64, Int32, int32_t, int64_t),
+    SPARSE_SEGMENT_SUM_WITH_NUM_SEGMENTS_ADD_KERNEL(Int64, Int32, Int32, Int32, Int64, int64_t, int32_t),
+    SPARSE_SEGMENT_SUM_WITH_NUM_SEGMENTS_ADD_KERNEL(Int64, Int64, Int64, Int64, Int64, int64_t, int64_t),
+    SPARSE_SEGMENT_SUM_WITH_NUM_SEGMENTS_ADD_KERNEL(UInt8, Int32, Int32, Int32, UInt8, uint8_t, int32_t),
+    SPARSE_SEGMENT_SUM_WITH_NUM_SEGMENTS_ADD_KERNEL(UInt8, Int64, Int64, Int64, UInt8, uint8_t, int64_t),
+    SPARSE_SEGMENT_SUM_WITH_NUM_SEGMENTS_ADD_KERNEL(UInt16, Int32, Int32, Int32, UInt16, uint16_t, int32_t),
+    SPARSE_SEGMENT_SUM_WITH_NUM_SEGMENTS_ADD_KERNEL(UInt16, Int64, Int64, Int64, UInt16, uint16_t, int64_t),
+    SPARSE_SEGMENT_SUM_WITH_NUM_SEGMENTS_ADD_KERNEL(Float16, Int32, Int32, Int32, Float16, float16, int32_t),
+    SPARSE_SEGMENT_SUM_WITH_NUM_SEGMENTS_ADD_KERNEL(Float16, Int64, Int64, Int64, Float16, float16, int64_t),
+    SPARSE_SEGMENT_SUM_WITH_NUM_SEGMENTS_ADD_KERNEL(Float32, Int32, Int32, Int32, Float32, float, int32_t),
+    SPARSE_SEGMENT_SUM_WITH_NUM_SEGMENTS_ADD_KERNEL(Float32, Int64, Int64, Int64, Float32, float, int64_t),
+    SPARSE_SEGMENT_SUM_WITH_NUM_SEGMENTS_ADD_KERNEL(Float64, Int32, Int32, Int32, Float64, double, int32_t),
+    SPARSE_SEGMENT_SUM_WITH_NUM_SEGMENTS_ADD_KERNEL(Float64, Int64, Int64, Int64, Float64, double, int64_t)};
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseSegmentSumWithNumSegments, SparseSegmentSumWithNumSegmentsCpuKernelMod);
+}  // namespace sparse_segment_sum_with_num_segments_cpu
 }  // namespace kernel
 }  // namespace mindspore

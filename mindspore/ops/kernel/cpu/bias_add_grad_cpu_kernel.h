@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace bias_add_grad_cpu {
 class BiasAddGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<BiasAddGradCpuKernelMod> {
  public:
   BiasAddGradCpuKernelMod() = default;
@@ -50,6 +51,7 @@ class BiasAddGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHel
   std::vector<size_t> input_shape_;
   int64_t data_format_ = Format::NCHW;
 };
+}  // namespace bias_add_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_BIAS_ADD_GRAD_CPU_KERNEL_H_

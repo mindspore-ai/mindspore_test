@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace strided_slice_v2_grad_cpu {
 constexpr auto kStridedSliceV2Grad = "StridedSliceV2Grad";
 constexpr auto kUnknown = "Unknown";
 
@@ -84,6 +85,7 @@ class StridedSliceV2GradCpuKernelMod : public NativeCpuKernelMod {
   TypeId dtype_grad_attr{kTypeUnknown};
   std::string kernel_type_{kUnknown};
 };
+}  // namespace strided_slice_v2_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_STRIDED_SLICE_GRAD_V2_CPU_KERNEL_H_

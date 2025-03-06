@@ -31,6 +31,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace div_cpu {
 namespace {
 constexpr float kMaxSubSerialSize = 10000.0;
 constexpr float kMaxPowSerialSize = 700.0;
@@ -259,5 +260,6 @@ std::vector<KernelAttr> DivCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Div, DivCpuKernelMod);
+}  // namespace div_cpu
 }  // namespace kernel
 }  // namespace mindspore

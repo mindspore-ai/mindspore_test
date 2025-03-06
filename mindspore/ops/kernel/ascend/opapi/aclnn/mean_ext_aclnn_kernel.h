@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace mean_ext {
 
 class MeanExtAscend : public AclnnKernelMod {
  public:
@@ -40,6 +41,7 @@ class MeanExtAscend : public AclnnKernelMod {
   bool keep_dims_{false};
   TypeId dtype_;
 };
+}  // namespace mean_ext
 }  // namespace kernel
 }  // namespace mindspore
 

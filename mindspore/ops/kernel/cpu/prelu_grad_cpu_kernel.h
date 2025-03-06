@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace prelu_grad_cpu {
 class PReLUGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   PReLUGradCpuKernelMod() = default;
@@ -61,6 +62,7 @@ class PReLUGradCpuKernelMod : public NativeCpuKernelMod {
   size_t per_channel_length_{0};
   size_t workspace_size_{0};
 };
+}  // namespace prelu_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

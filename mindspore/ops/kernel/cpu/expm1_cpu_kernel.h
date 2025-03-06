@@ -28,6 +28,7 @@ using complex128 = std::complex<double>;
 
 namespace mindspore {
 namespace kernel {
+namespace expm1_cpu {
 class Expm1CpuKernelMod : public NativeCpuKernelMod {
  public:
   Expm1CpuKernelMod() = default;
@@ -62,6 +63,7 @@ class Expm1CpuKernelMod : public NativeCpuKernelMod {
 
   TypeId input_dtype_{kTypeUnknown};
 };
+}  // namespace expm1_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

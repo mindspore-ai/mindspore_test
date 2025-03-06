@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace pack_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
@@ -56,6 +57,7 @@ class PackFwdCpuKernelMod : public NativeCpuKernelMod {
   size_t output_size_{0};
   size_t dims_behind_axis_{1};
 };
+}  // namespace pack_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_PACK_CPU_KERNEL_H_

@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace ellipsis_to_slice_cpu {
 class EllipsisToSliceCpuKernelMod : public NativeCpuKernelMod {
  public:
   EllipsisToSliceCpuKernelMod() = default;
@@ -55,6 +56,7 @@ class EllipsisToSliceCpuKernelMod : public NativeCpuKernelMod {
   size_t ellipse_position_{0};
   size_t not_ellipse_occupy_dims_{0};
 };
+}  // namespace ellipsis_to_slice_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_ELLIPSIS_TO_SLICE_CPU_KERNEL_H_

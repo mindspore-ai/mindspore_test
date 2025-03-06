@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace rotary_position_embedding_grad {
 
 class RotaryPositionEmbeddingGradAscend : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class RotaryPositionEmbeddingGradAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace rotary_position_embedding_grad
 }  // namespace kernel
 }  // namespace mindspore
 

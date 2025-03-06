@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace argsort {
 class ArgSortAscend final : public AclnnKernelMod {
  public:
   ArgSortAscend() : AclnnKernelMod(std::move("aclnnSort")) {}
@@ -41,6 +42,7 @@ class ArgSortAscend final : public AclnnKernelMod {
   // DEFINE_GET_WORKSPACE_FOR_RESIZE()
   DEFINE_GET_WORKSPACE_FOR_OPS(aclnnSort, Sort)
 };
+}  // namespace argsort
 }  // namespace kernel
 }  // namespace mindspore
 

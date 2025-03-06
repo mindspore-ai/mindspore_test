@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace maximum_cpu {
 namespace {
 constexpr auto kShapeIndexZero = 0;
 constexpr auto kShapeIndex1st = 1;
@@ -275,5 +276,6 @@ const std::vector<std::pair<KernelAttr, MaximumCpuKernelMod::KernelRunFunc>> &Ma
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Maximum, MaximumCpuKernelMod);
+}  // namespace maximum_cpu
 }  // namespace kernel
 }  // namespace mindspore

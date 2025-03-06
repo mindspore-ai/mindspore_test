@@ -29,11 +29,11 @@
 
 namespace mindspore {
 namespace kernel {
+namespace unique_with_pad_cpu {
 inline static constexpr size_t kUniqueWithPadInputsNum = 2;
 inline static constexpr size_t kUniqueWithPadOutputsNum = 2;
 inline static constexpr size_t kPadNumIndex = 1;
-inline static constexpr size_t kInputIndex = 0;
-class UniqueWithPadCpuKernelMod : public UniqueCpuKernelMod {
+class UniqueWithPadCpuKernelMod : public unique_cpu::UniqueCpuKernelMod {
  public:
   UniqueWithPadCpuKernelMod() = default;
   ~UniqueWithPadCpuKernelMod() override = default;
@@ -80,6 +80,7 @@ class UniqueWithPadCpuKernelMod : public UniqueCpuKernelMod {
   // UniqueWithPad doesn't need.
   bool IsNeedUpdateOutputShapeAndSize() override { return false; }
 };
+}  // namespace unique_with_pad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_UNIQUE_WITH_PAD_CPU_KERNEL_H_

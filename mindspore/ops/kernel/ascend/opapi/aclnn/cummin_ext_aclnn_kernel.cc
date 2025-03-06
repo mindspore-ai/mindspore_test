@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace cummin_ext {
 
 void CumminExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
@@ -36,5 +37,6 @@ bool CumminExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const st
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(CumminExt, CumminExtAscend);
+}  // namespace cummin_ext
 }  // namespace kernel
 }  // namespace mindspore

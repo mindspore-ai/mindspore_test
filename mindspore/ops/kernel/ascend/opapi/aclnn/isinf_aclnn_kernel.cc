@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace isinf {
 
 void IsInfAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs) {
@@ -94,5 +95,6 @@ bool IsInfAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::v
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(IsInf, IsInfAscend);
+}  // namespace isinf
 }  // namespace kernel
 }  // namespace mindspore

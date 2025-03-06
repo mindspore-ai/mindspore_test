@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace divmods {
 
 void DivModsAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
@@ -39,5 +40,6 @@ bool DivModsAscend::Launch(const std::vector<KernelTensor *> &inputs, const std:
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(DivMods, DivModsAscend);
+}  // namespace divmods
 }  // namespace kernel
 }  // namespace mindspore

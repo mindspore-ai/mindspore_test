@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_tensor_dense_matmul_cpu {
 namespace {
 constexpr size_t kSparseTensorDenseMatmulInputsNum = 4;
 constexpr size_t kSparseTensorDenseMatmulOutputsNum = 1;
@@ -252,5 +253,6 @@ std::vector<KernelAttr> SparseTensorDenseMatmulCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseTensorDenseMatmul, SparseTensorDenseMatmulCpuKernelMod);
+}  // namespace sparse_tensor_dense_matmul_cpu
 }  // namespace kernel
 }  // namespace mindspore

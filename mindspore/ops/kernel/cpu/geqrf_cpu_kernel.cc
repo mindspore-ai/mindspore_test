@@ -21,12 +21,13 @@
 
 namespace mindspore {
 namespace kernel {
+namespace geqrf_cpu {
 namespace {
 constexpr size_t kInputsNum = 1;
 constexpr size_t kOutputsNum = 2;
 constexpr size_t kInputIndex0 = 0;
-constexpr size_t kOutputIndex0 = 0;
-constexpr size_t kOutputIndex1 = 1;
+constexpr size_t kOutputIdx0 = 0;
+constexpr size_t kOutputIdx1 = 1;
 constexpr int64_t kLastSecond = -2;
 }  // namespace
 
@@ -138,11 +139,11 @@ template <typename T>
 bool GeqrfCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                      const std::vector<kernel::KernelTensor *> &outputs) {
   MS_EXCEPTION_IF_NULL(inputs[kInputIndex0]);
-  MS_EXCEPTION_IF_NULL(outputs[kOutputIndex0]);
-  MS_EXCEPTION_IF_NULL(outputs[kOutputIndex1]);
+  MS_EXCEPTION_IF_NULL(outputs[kOutputIdx0]);
+  MS_EXCEPTION_IF_NULL(outputs[kOutputIdx1]);
   T *x = static_cast<T *>(inputs[kInputIndex0]->device_ptr());
-  T *y = static_cast<T *>(outputs[kOutputIndex0]->device_ptr());
-  T *tau = static_cast<T *>(outputs[kOutputIndex1]->device_ptr());
+  T *y = static_cast<T *>(outputs[kOutputIdx0]->device_ptr());
+  T *tau = static_cast<T *>(outputs[kOutputIdx1]->device_ptr());
   std::copy(x, x + elem_num, y);
   Geqrf<T>(num_m, num_n, y, tau);
   return true;
@@ -163,5 +164,6 @@ std::vector<KernelAttr> GeqrfCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Geqrf, GeqrfCpuKernelMod);
+}  // namespace geqrf_cpu
 }  // namespace kernel
 }  // namespace mindspore

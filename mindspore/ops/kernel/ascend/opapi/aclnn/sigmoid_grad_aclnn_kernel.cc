@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sigmoid_grad {
 
 void SigmoidGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
@@ -38,5 +39,6 @@ bool SigmoidGradAscend::Launch(const std::vector<KernelTensor *> &inputs, const 
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(SigmoidGrad, SigmoidGradAscend);
+}  // namespace sigmoid_grad
 }  // namespace kernel
 }  // namespace mindspore

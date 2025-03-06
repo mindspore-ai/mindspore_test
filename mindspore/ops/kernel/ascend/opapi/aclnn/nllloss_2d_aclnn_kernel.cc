@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace nllloss_2d {
 void NLLLoss2dAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
   auto reduction_imm = static_cast<Reduction>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
@@ -49,5 +50,6 @@ bool NLLLoss2dAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(NLLLoss2d, NLLLoss2dAclnnKernelMod);
+}  // namespace nllloss_2d
 }  // namespace kernel
 }  // namespace mindspore

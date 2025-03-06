@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace assign_cpu {
 class AssignCpuKernelMod : public NativeCpuKernelMod {
  public:
   AssignCpuKernelMod() = default;
@@ -48,6 +49,7 @@ class AssignCpuKernelMod : public NativeCpuKernelMod {
   size_t input_x_dtype_size_{4};
   TypeId input_x_dtype_{kTypeUnknown};
 };
+}  // namespace assign_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

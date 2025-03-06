@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adamw {
 
 class AdamWAscend : public AclnnKernelMod {
  public:
@@ -44,6 +45,7 @@ class AdamWAscend : public AclnnKernelMod {
   bool amsgrad_{false};
   bool maximize_{false};
 };
+}  // namespace adamw
 }  // namespace kernel
 }  // namespace mindspore
 

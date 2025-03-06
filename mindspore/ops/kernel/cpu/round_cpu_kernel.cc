@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace round_cpu {
 
 bool RoundCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
@@ -80,5 +81,6 @@ std::vector<KernelAttr> RoundCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Round, RoundCpuKernelMod);
+}  // namespace round_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace triu_cpu {
 namespace {
 constexpr size_t kTriuInputsNum = 2;
 constexpr size_t kTriuOutputsNum = 1;
@@ -183,5 +184,6 @@ std::vector<KernelAttr> TriuCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Triu, TriuCpuKernelMod);
+}  // namespace triu_cpu
 }  // namespace kernel
 }  // namespace mindspore

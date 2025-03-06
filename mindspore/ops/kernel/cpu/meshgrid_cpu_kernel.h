@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace meshgrid_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
@@ -63,6 +64,7 @@ class MeshgridCpuKernelMod : public NativeCpuKernelMod {
   size_t output_element_ = 0;
   size_t unit_size_ = 0;
 };
+}  // namespace meshgrid_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_MESHGRID_CPU_KERNEL_H_

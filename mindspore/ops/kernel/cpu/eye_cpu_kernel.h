@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace eye_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
@@ -54,6 +55,7 @@ class EyeCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<EyeC
   int64_t num_n_ = 0;
   int64_t num_m_ = 0;
 };
+}  // namespace eye_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

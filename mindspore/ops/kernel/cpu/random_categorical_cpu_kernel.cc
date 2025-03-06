@@ -26,39 +26,41 @@
 
 namespace mindspore {
 namespace kernel {
+namespace random_categorical_cpu {
 namespace {
 using KernelRunFunc = RandomCategoricalCpuKernel::KernelRunFunc;
-#define ADD_KERNEL(logits_dtype, nun_sample_dtype, seed_dtype, output_dtype, logits_type, output_type) \
-  {                                                                                                    \
-    KernelAttr()                                                                                       \
-      .AddInputAttr(kNumberType##logits_dtype)                                                         \
-      .AddInputAttr(kNumberType##nun_sample_dtype)                                                     \
-      .AddInputAttr(kNumberType##seed_dtype)                                                           \
-      .AddOutputAttr(kNumberType##output_dtype),                                                       \
-      &RandomCategoricalCpuKernel::LaunchKernel<logits_type, output_type>                              \
+#define RANDOM_CATEGORICAL_ADD_KERNEL(logits_dtype, nun_sample_dtype, seed_dtype, output_dtype, logits_type, \
+                                      output_type)                                                           \
+  {                                                                                                          \
+    KernelAttr()                                                                                             \
+      .AddInputAttr(kNumberType##logits_dtype)                                                               \
+      .AddInputAttr(kNumberType##nun_sample_dtype)                                                           \
+      .AddInputAttr(kNumberType##seed_dtype)                                                                 \
+      .AddOutputAttr(kNumberType##output_dtype),                                                             \
+      &RandomCategoricalCpuKernel::LaunchKernel<logits_type, output_type>                                    \
   }
 }  // namespace
 
 const std::vector<std::pair<KernelAttr, KernelRunFunc>> &RandomCategoricalCpuKernel::GetFuncList() const {
   static const std::vector<std::pair<KernelAttr, RandomCategoricalCpuKernel::KernelRunFunc>> func_list = {
-    ADD_KERNEL(Float16, Int32, Int32, Int16, float16, int16_t),
-    ADD_KERNEL(Float16, Int32, Int32, Int32, float16, int32_t),
-    ADD_KERNEL(Float16, Int32, Int32, Int64, float16, int64_t),
-    ADD_KERNEL(Float32, Int32, Int32, Int16, float, int16_t),
-    ADD_KERNEL(Float32, Int32, Int32, Int32, float, int32_t),
-    ADD_KERNEL(Float32, Int32, Int32, Int64, float, int64_t),
-    ADD_KERNEL(Float64, Int32, Int32, Int16, double, int16_t),
-    ADD_KERNEL(Float64, Int32, Int32, Int32, double, int32_t),
-    ADD_KERNEL(Float64, Int32, Int32, Int64, double, int64_t),
-    ADD_KERNEL(Float16, Int64, Int64, Int16, float16, int16_t),
-    ADD_KERNEL(Float16, Int64, Int64, Int32, float16, int32_t),
-    ADD_KERNEL(Float16, Int64, Int64, Int64, float16, int64_t),
-    ADD_KERNEL(Float32, Int64, Int64, Int16, float, int16_t),
-    ADD_KERNEL(Float32, Int64, Int64, Int32, float, int32_t),
-    ADD_KERNEL(Float32, Int64, Int64, Int64, float, int64_t),
-    ADD_KERNEL(Float64, Int64, Int64, Int16, double, int16_t),
-    ADD_KERNEL(Float64, Int64, Int64, Int32, double, int32_t),
-    ADD_KERNEL(Float64, Int64, Int64, Int64, double, int64_t)};
+    RANDOM_CATEGORICAL_ADD_KERNEL(Float16, Int32, Int32, Int16, float16, int16_t),
+    RANDOM_CATEGORICAL_ADD_KERNEL(Float16, Int32, Int32, Int32, float16, int32_t),
+    RANDOM_CATEGORICAL_ADD_KERNEL(Float16, Int32, Int32, Int64, float16, int64_t),
+    RANDOM_CATEGORICAL_ADD_KERNEL(Float32, Int32, Int32, Int16, float, int16_t),
+    RANDOM_CATEGORICAL_ADD_KERNEL(Float32, Int32, Int32, Int32, float, int32_t),
+    RANDOM_CATEGORICAL_ADD_KERNEL(Float32, Int32, Int32, Int64, float, int64_t),
+    RANDOM_CATEGORICAL_ADD_KERNEL(Float64, Int32, Int32, Int16, double, int16_t),
+    RANDOM_CATEGORICAL_ADD_KERNEL(Float64, Int32, Int32, Int32, double, int32_t),
+    RANDOM_CATEGORICAL_ADD_KERNEL(Float64, Int32, Int32, Int64, double, int64_t),
+    RANDOM_CATEGORICAL_ADD_KERNEL(Float16, Int64, Int64, Int16, float16, int16_t),
+    RANDOM_CATEGORICAL_ADD_KERNEL(Float16, Int64, Int64, Int32, float16, int32_t),
+    RANDOM_CATEGORICAL_ADD_KERNEL(Float16, Int64, Int64, Int64, float16, int64_t),
+    RANDOM_CATEGORICAL_ADD_KERNEL(Float32, Int64, Int64, Int16, float, int16_t),
+    RANDOM_CATEGORICAL_ADD_KERNEL(Float32, Int64, Int64, Int32, float, int32_t),
+    RANDOM_CATEGORICAL_ADD_KERNEL(Float32, Int64, Int64, Int64, float, int64_t),
+    RANDOM_CATEGORICAL_ADD_KERNEL(Float64, Int64, Int64, Int16, double, int16_t),
+    RANDOM_CATEGORICAL_ADD_KERNEL(Float64, Int64, Int64, Int32, double, int32_t),
+    RANDOM_CATEGORICAL_ADD_KERNEL(Float64, Int64, Int64, Int64, double, int64_t)};
   return func_list;
 }
 
@@ -172,5 +174,6 @@ bool RandomCategoricalCpuKernel::LaunchKernel(const std::vector<kernel::KernelTe
   return true;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, RandomCategorical, RandomCategoricalCpuKernel);
+}  // namespace random_categorical_cpu
 }  // namespace kernel
 }  // namespace mindspore

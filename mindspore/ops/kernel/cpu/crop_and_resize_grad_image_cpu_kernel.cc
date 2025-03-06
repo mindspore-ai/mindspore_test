@@ -18,6 +18,9 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/crop_and_resize_grad_image.h"
 
+namespace mindspore {
+namespace kernel {
+namespace crop_and_resize_grad_image_cpu {
 namespace {
 constexpr size_t kInputNumsImage = 4;
 constexpr size_t kOutNumImage = 1;
@@ -39,13 +42,10 @@ constexpr size_t kBoxesShapeLenImage = 2;
 constexpr size_t kCoordinateLenImage = 4;
 constexpr size_t kBoxIndexImage = 2;
 constexpr size_t kBoxIndexShapeLenImage = 1;
-constexpr size_t kOutputIndexImage = 0;
+constexpr size_t kOutputIdxImage = 0;
 constexpr size_t kOutputShapeLenImage = 4;
 constexpr float kNumImage = 0.5;
 }  // namespace
-
-namespace mindspore {
-namespace kernel {
 bool CropAndResizeGradImageCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kInputNumsImage, kernel_name_);
@@ -109,7 +109,7 @@ int CropAndResizeGradImageCpuKernelMod::Resize(const std::vector<KernelTensor *>
   }
 
   //  output
-  output_shape_ = outputs[kOutputIndexImage]->GetShapeVector();
+  output_shape_ = outputs[kOutputIdxImage]->GetShapeVector();
   auto output_shape_len = output_shape_.size();
   if (output_shape_len != kOutputShapeLenImage) {
     MS_LOG(ERROR) << "Output tensor is " << output_shape_len << ", but CropAndResizeGradImage supports only "
@@ -272,5 +272,6 @@ std::vector<KernelAttr> CropAndResizeGradImageCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CropAndResizeGradImage, CropAndResizeGradImageCpuKernelMod);
+}  // namespace crop_and_resize_grad_image_cpu
 }  // namespace kernel
 }  // namespace mindspore

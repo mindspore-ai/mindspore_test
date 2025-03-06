@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace layer_norm_grad_ext {
 
 void LayerNormGradExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &outputs) {
@@ -49,5 +50,6 @@ bool LayerNormGradExtAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(LayerNormGradExt, LayerNormGradExtAscend);
+}  // namespace layer_norm_grad_ext
 }  // namespace kernel
 }  // namespace mindspore

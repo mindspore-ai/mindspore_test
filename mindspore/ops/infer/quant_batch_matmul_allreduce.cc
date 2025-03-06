@@ -43,14 +43,6 @@
 
 namespace mindspore {
 namespace ops {
-namespace {
-constexpr size_t kIndex0 = 0;
-constexpr size_t kIndex1 = 1;
-constexpr size_t kIndex4 = 4;
-constexpr size_t kIndex5 = 5;
-constexpr size_t kIndex6 = 6;
-}  // namespace
-
 abstract::TupleShapePtr QuantBatchMatmulAllReduceInferShape(const PrimitivePtr &primitive,
                                                             const std::vector<AbstractBasePtr> &input_args) {
   const std::string op_name = primitive->name();

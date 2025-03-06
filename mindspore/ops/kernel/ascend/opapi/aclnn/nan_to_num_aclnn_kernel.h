@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace nan_to_num {
 
 class NanToNumAscend : public AclnnKernelMod {
  public:
@@ -42,6 +43,7 @@ class NanToNumAscend : public AclnnKernelMod {
   float posinf_ = 0.0;
   float neginf_ = 0.0;
 };
+}  // namespace nan_to_num
 }  // namespace kernel
 }  // namespace mindspore
 

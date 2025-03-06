@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sort_ext {
 
 void SortExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
@@ -42,5 +43,6 @@ bool SortExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std:
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(SortExt, SortExtAscend);
+}  // namespace sort_ext
 }  // namespace kernel
 }  // namespace mindspore

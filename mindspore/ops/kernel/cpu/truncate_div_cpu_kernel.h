@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace truncate_div_cpu {
 class TruncateDivCpuKernelMod : public NativeCpuKernelMod {
  public:
   TruncateDivCpuKernelMod() = default;
@@ -57,6 +58,7 @@ class TruncateDivCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector input_shape_2_;
   ShapeVector output_shape_;
 };
+}  // namespace truncate_div_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace l1_loss_backward_ext {
 class L1LossBackwardExtAclnnKernelMod : public AclnnKernelMod {
  public:
   L1LossBackwardExtAclnnKernelMod() : AclnnKernelMod("aclnnL1LossBackward") {}
@@ -46,6 +47,7 @@ class L1LossBackwardExtAclnnKernelMod : public AclnnKernelMod {
   int64_t reduction_{1};
 };
 
+}  // namespace l1_loss_backward_ext
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace moe_token_unpermute {
 class MoeTokenUnpermuteAscend final : public AclnnKernelMod {
  public:
   MoeTokenUnpermuteAscend() : AclnnKernelMod(std::move("aclnnMoeTokenUnpermute")) {}
@@ -37,6 +38,7 @@ class MoeTokenUnpermuteAscend final : public AclnnKernelMod {
   std::vector<int64_t> restore_shape_val = {1};
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace moe_token_unpermute
 }  // namespace kernel
 }  // namespace mindspore
 

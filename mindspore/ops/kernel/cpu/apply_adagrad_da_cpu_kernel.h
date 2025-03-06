@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace apply_adagrad_da_cpu {
 class ApplyAdagradDACpuKernelMod : public NativeCpuKernelMod {
  public:
   ApplyAdagradDACpuKernelMod() = default;
@@ -53,6 +54,7 @@ class ApplyAdagradDACpuKernelMod : public NativeCpuKernelMod {
   int64_t input_elements_;
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace apply_adagrad_da_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif

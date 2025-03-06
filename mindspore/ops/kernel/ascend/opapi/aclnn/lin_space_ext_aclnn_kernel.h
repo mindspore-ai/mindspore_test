@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lin_space_ext {
 
 class LinSpaceExtAscend : public AclnnKernelMod {
  public:
@@ -40,6 +41,7 @@ class LinSpaceExtAscend : public AclnnKernelMod {
   ScalarPtr start_;
   ScalarPtr end_;
 };
+}  // namespace lin_space_ext
 }  // namespace kernel
 }  // namespace mindspore
 

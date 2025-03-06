@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace list_diff_cpu {
 class ListDiffCPUKernelMod : public NativeCpuKernelMod {
  public:
   ListDiffCPUKernelMod() = default;
@@ -58,6 +59,7 @@ class ListDiffCPUKernelMod : public NativeCpuKernelMod {
   TypeId out_type_{kTypeUnknown};
   TypeId idx_type_{kTypeUnknown};
 };
+}  // namespace list_diff_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

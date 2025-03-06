@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace unique2 {
 
 void Unique2Ascend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
@@ -69,5 +70,6 @@ void Unique2Ascend::UpdateOutputShapeAndSize(const std::vector<KernelTensor *> &
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Unique2, Unique2Ascend);
+}  // namespace unique2
 }  // namespace kernel
 }  // namespace mindspore

@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adamw {
 void AdamWAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs) {
   lr_ = device::ascend::ConvertKernelTensor<float>(inputs[kIndex6]);
@@ -60,5 +61,6 @@ bool AdamWAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::v
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(AdamW, AdamWAscend);
+}  // namespace adamw
 }  // namespace kernel
 }  // namespace mindspore

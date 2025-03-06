@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace trace_cpu {
 namespace {
 constexpr size_t kInputNum = 1;
 constexpr size_t kInputDim = 2;
@@ -102,5 +103,6 @@ void TraceCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Trace, TraceCpuKernelMod);
+}  // namespace trace_cpu
 }  // namespace kernel
 }  // namespace mindspore

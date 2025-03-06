@@ -33,6 +33,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace silent_check_v3 {
 namespace {
 std::vector<int64_t> GetTensorStride(const KernelTensor *tensor) {
   auto storage = tensor->tensor_storage_info();
@@ -87,5 +88,6 @@ bool SilentCheckV3Ascend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(SilentCheckV3, SilentCheckV3Ascend);
+}  // namespace silent_check_v3
 }  // namespace kernel
 }  // namespace mindspore

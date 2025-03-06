@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace narrow {
 
 class NarrowAscend : public AclnnKernelMod {
  public:
@@ -42,6 +43,7 @@ class NarrowAscend : public AclnnKernelMod {
   int64_t end_;
   int64_t step_{1};
 };
+}  // namespace narrow
 }  // namespace kernel
 }  // namespace mindspore
 

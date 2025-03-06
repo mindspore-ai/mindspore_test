@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace nllloss {
 using TensorParams = device::ascend::TensorParams;
 
 class NLLLossAclnnKernelMod : public AclnnKernelMod {
@@ -38,6 +39,7 @@ class NLLLossAclnnKernelMod : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
 
+}  // namespace nllloss
 }  // namespace kernel
 }  // namespace mindspore
 

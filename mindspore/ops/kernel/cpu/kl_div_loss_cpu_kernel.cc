@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace kl_div_loss_cpu {
 const size_t kMyAddInputsNum = 2;
 const size_t kMyAddOutputsNum = 1;
 
@@ -156,5 +157,6 @@ std::vector<std::pair<KernelAttr, KLDivLossCpuKernelMod::KLDivLossFunc>> KLDivLo
    &KLDivLossCpuKernelMod::LaunchKernel<double>}};
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, KLDivLoss, KLDivLossCpuKernelMod);
+}  // namespace kl_div_loss_cpu
 }  // namespace kernel
 }  // namespace mindspore

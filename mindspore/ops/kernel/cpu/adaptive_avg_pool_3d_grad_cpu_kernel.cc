@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
-namespace {
+namespace adaptive_avg_pool_3d_grad_cpu {
 constexpr size_t k5D = 5;
 constexpr size_t k4D = 4;
 constexpr size_t kInputsNum = 2;
@@ -52,7 +52,6 @@ inline int64_t StartIndex(int64_t offset, int64_t out_size, int64_t in_size) {
 inline int64_t EndIndex(int64_t offset, int64_t out_size, int64_t in_size) {
   return static_cast<int64_t>(std::ceil(static_cast<float>((offset + 1) * in_size) / out_size));
 }
-}  // namespace
 
 bool AdaptiveAvgPool3DGradCPUKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
@@ -209,5 +208,6 @@ std::vector<KernelAttr> AdaptiveAvgPool3DGradCPUKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AdaptiveAvgPool3DGrad, AdaptiveAvgPool3DGradCPUKernelMod);
+}  // namespace adaptive_avg_pool_3d_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

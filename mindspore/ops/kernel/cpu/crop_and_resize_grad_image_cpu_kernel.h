@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace crop_and_resize_grad_image_cpu {
 class CropAndResizeGradImageCpuKernelMod : public NativeCpuKernelMod {
  public:
   CropAndResizeGradImageCpuKernelMod() = default;
@@ -64,6 +65,7 @@ class CropAndResizeGradImageCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> output_shape_;
   std::string attr_method_ = "bilinear";
 };
+}  // namespace crop_and_resize_grad_image_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

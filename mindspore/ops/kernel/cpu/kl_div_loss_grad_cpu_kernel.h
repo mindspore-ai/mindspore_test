@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace kl_div_loss_grad_cpu {
 class KLDivLossGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   KLDivLossGradCpuKernelMod() {}
@@ -61,6 +62,7 @@ class KLDivLossGradCpuKernelMod : public NativeCpuKernelMod {
   size_t input_target_shape_size_{1};
   size_t input_grad_shape_size_{1};
 };
+}  // namespace kl_div_loss_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

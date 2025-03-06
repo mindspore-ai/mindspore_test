@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fftshift_cpu {
 namespace {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
@@ -148,5 +149,6 @@ std::vector<KernelAttr> FFTShiftCpuKernelMod::GetOpSupport() {
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FFTShift, FFTShiftCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IFFTShift, FFTShiftCpuKernelMod);
+}  // namespace fftshift_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace mse_loss_ext {
 
 void MSELossExtAclnnKernelMod::SetExpandTensor(KernelTensor *input_tensor, const std::vector<KernelTensor *> &inputs,
                                                const size_t &input_index) {
@@ -99,5 +100,6 @@ bool MSELossExtAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(MSELossExt, MSELossExtAclnnKernelMod);
+}  // namespace mse_loss_ext
 }  // namespace kernel
 }  // namespace mindspore

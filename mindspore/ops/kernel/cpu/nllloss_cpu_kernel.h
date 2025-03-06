@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace nllloss_cpu {
 class NLLLossCpuKernelMod : public NativeCpuKernelMod {
  public:
   NLLLossCpuKernelMod() = default;
@@ -58,6 +59,7 @@ class NLLLossCpuKernelMod : public NativeCpuKernelMod {
   Reduction reduction_type_;
   int64_t ignore_index_;
 };
+}  // namespace nllloss_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_NLLLOSS_CPU_KERNEL_H_

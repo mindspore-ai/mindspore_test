@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_index_add_cpu {
 
 bool InplaceIndexAddCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
@@ -206,5 +207,6 @@ const std::vector<std::pair<KernelAttr, KernelRunFunc>> &InplaceIndexAddCpuKerne
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, InplaceIndexAdd, InplaceIndexAddCpuKernelMod);
+}  // namespace inplace_index_add_cpu
 }  // namespace kernel
 }  // namespace mindspore

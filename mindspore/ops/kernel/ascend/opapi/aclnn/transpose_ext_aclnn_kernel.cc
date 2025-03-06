@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace transpose_ext {
 void TransposeExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &outputs) {
   auto input_shape = inputs[kIndex0]->GetShape()->GetShapeVector();
@@ -54,5 +55,6 @@ bool TransposeExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(TransposeExt, TransposeExtAscend);
+}  // namespace transpose_ext
 }  // namespace kernel
 }  // namespace mindspore

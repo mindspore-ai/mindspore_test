@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace stft_cpu {
 namespace {
 const size_t kSTFTInputsNum = 2;
 const size_t kSTFTOutputsNum = 1;
@@ -363,5 +364,6 @@ const std::vector<std::pair<KernelAttr, STFTCpuKernelMod::KernelRunFunc>> &STFTC
 
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, STFT,
                                  []() { return std::make_shared<STFTCpuKernelMod>(prim::kPrimSTFT->name()); });
+}  // namespace stft_cpu
 }  // namespace kernel
 }  // namespace mindspore

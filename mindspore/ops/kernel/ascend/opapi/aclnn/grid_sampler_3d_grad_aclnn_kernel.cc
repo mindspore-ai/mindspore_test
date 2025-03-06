@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace grid_sampler_3d_grad {
 
 void GridSampler3DGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
@@ -49,5 +50,6 @@ bool GridSampler3DGradAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(GridSampler3DGrad, GridSampler3DGradAscend);
+}  // namespace grid_sampler_3d_grad
 }  // namespace kernel
 }  // namespace mindspore

@@ -23,6 +23,8 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_apply_proximal_adagrad_cpu {
+using namespace sparse_optimizer_cpu;
 namespace {
 constexpr size_t kSparseApplyProximalAdagradInputsNum = 7;
 constexpr size_t kSparseApplyProximalAdagradWorkspaceSize = 4;
@@ -267,5 +269,6 @@ bool SparseApplyProximalAdagradCpuKernelMod::LaunchKernel(const std::vector<kern
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FusedSparseProximalAdagrad, SparseApplyProximalAdagradCpuKernelMod);
+}  // namespace sparse_apply_proximal_adagrad_cpu
 }  // namespace kernel
 }  // namespace mindspore

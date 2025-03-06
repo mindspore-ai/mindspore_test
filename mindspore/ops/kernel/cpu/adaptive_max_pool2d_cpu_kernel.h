@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adaptive_max_pool2d_cpu {
 static inline size_t start_index(size_t dim, size_t output_range, size_t input_range) {
   return static_cast<size_t>(std::floor(dim * input_range / static_cast<float>(output_range)));
 }
@@ -79,6 +80,7 @@ class AdaptiveMaxPool2dCpuKernelMod : public NativeCpuKernelMod,
   std::vector<int64_t> attr_output_size_;
   bool attr_return_indices_{false};
 };
+}  // namespace adaptive_max_pool2d_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_ADAPTIVE_MAXPOOL2D_CPU_KERNEL_H_

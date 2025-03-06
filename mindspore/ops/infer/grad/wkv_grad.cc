@@ -29,9 +29,9 @@
 namespace mindspore {
 namespace ops {
 namespace {
-constexpr size_t kIndexK = 2;
+constexpr size_t kWKVGradIndexK = 2;
 constexpr size_t kIndexV = 3;
-constexpr int64_t kTotalShapeSize = 3;
+constexpr int64_t kWKVGradTotalShapeSize = 3;
 constexpr int64_t kInuputNumber = 5;
 constexpr size_t kOutputNumber = 4;
 }  // namespace
@@ -44,14 +44,14 @@ class WKVGradInfer : public abstract::OpInferBase {
     auto prim_name = primitive->name();
     (void)CheckAndConvertUtils::CheckInteger("input numbers", SizeToLong(input_args.size()), kGreaterEqual,
                                              kInuputNumber, prim_name);
-    auto k_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[kIndexK]->GetShape())[kShape];
+    auto k_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[kWKVGradIndexK]->GetShape())[kShape];
     auto v_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[kIndexV]->GetShape())[kShape];
-    (void)CheckAndConvertUtils::CheckInteger("k shape size", SizeToLong(k_shape.size()), kEqual, kTotalShapeSize,
+    (void)CheckAndConvertUtils::CheckInteger("k shape size", SizeToLong(k_shape.size()), kEqual, kWKVGradTotalShapeSize,
                                              prim_name);
-    (void)CheckAndConvertUtils::CheckInteger("v shape size", SizeToLong(v_shape.size()), kEqual, kTotalShapeSize,
+    (void)CheckAndConvertUtils::CheckInteger("v shape size", SizeToLong(v_shape.size()), kEqual, kWKVGradTotalShapeSize,
                                              prim_name);
-    ShapeVector dw_shape = {k_shape[0], k_shape[kIndexK]};
-    ShapeVector du_shape = {k_shape[0], k_shape[kIndexK]};
+    ShapeVector dw_shape = {k_shape[0], k_shape[kWKVGradIndexK]};
+    ShapeVector du_shape = {k_shape[0], k_shape[kWKVGradIndexK]};
     std::vector<abstract::BaseShapePtr> output_shapes;
     output_shapes.push_back(std::make_shared<abstract::Shape>(dw_shape));
     output_shapes.push_back(std::make_shared<abstract::Shape>(du_shape));
@@ -59,7 +59,7 @@ class WKVGradInfer : public abstract::OpInferBase {
     output_shapes.push_back(std::make_shared<abstract::Shape>(v_shape));
     primitive->set_attr("batch_size", MakeValue(k_shape[0]));
     primitive->set_attr("seq_length", MakeValue(k_shape[1]));
-    primitive->set_attr("hidden_size", MakeValue(k_shape[kIndexK]));
+    primitive->set_attr("hidden_size", MakeValue(k_shape[kWKVGradIndexK]));
     return std::make_shared<abstract::TupleShape>(output_shapes);
   }
 
@@ -68,8 +68,8 @@ class WKVGradInfer : public abstract::OpInferBase {
     auto prim_name = prim->name();
     (void)CheckAndConvertUtils::CheckInteger("input numbers", SizeToLong(input_args.size()), kEqual, kInuputNumber,
                                              prim_name);
-    MS_EXCEPTION_IF_NULL(input_args[kIndexK]);
-    auto k_type = input_args[kIndexK]->GetType();
+    MS_EXCEPTION_IF_NULL(input_args[kWKVGradIndexK]);
+    auto k_type = input_args[kWKVGradIndexK]->GetType();
     (void)CheckAndConvertUtils::CheckTensorTypeValid("input_k", k_type, common_valid_types, prim_name);
     std::vector<TypePtr> types(kOutputNumber, k_type);
     return std::make_shared<Tuple>(types);

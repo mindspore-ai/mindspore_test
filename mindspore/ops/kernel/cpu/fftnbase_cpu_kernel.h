@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fftnbase_cpu {
 class FFTNBaseCpuKernelMod : public NativeCpuKernelMod {
  public:
   FFTNBaseCpuKernelMod() = default;
@@ -85,6 +86,7 @@ class FFTNBaseCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> tensor_shape_;
   std::vector<int64_t> calculate_shape_;
 };
+}  // namespace fftnbase_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_FFTNBASE_CPU_KERNEL_H_

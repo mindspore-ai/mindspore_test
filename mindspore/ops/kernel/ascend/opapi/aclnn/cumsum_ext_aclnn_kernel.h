@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace cumsum_ext {
 
 class CumsumExtAscend : public AclnnKernelMod {
  public:
@@ -39,6 +40,7 @@ class CumsumExtAscend : public AclnnKernelMod {
   int64_t dim_ = 0;
   TypeId dtype_;
 };
+}  // namespace cumsum_ext
 }  // namespace kernel
 }  // namespace mindspore
 

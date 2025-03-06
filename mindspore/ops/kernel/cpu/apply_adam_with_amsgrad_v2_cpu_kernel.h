@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace apply_adam_with_amsgrad_v2_cpu {
 class ApplyAdamWithAmsgradV2CpuKernelMod : public NativeCpuKernelMod {
  public:
   ApplyAdamWithAmsgradV2CpuKernelMod() = default;
@@ -54,6 +55,7 @@ class ApplyAdamWithAmsgradV2CpuKernelMod : public NativeCpuKernelMod {
   size_t input_elements_;
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace apply_adam_with_amsgrad_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

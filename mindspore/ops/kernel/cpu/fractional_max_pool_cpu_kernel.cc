@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fractional_max_pool_cpu {
 namespace {
 constexpr size_t kInputsNum = 1;
 constexpr size_t kOutputsNum = 3;
@@ -304,5 +305,6 @@ std::vector<KernelAttr> FractionalMaxPoolCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FractionalMaxPool, FractionalMaxPoolCpuKernelMod);
+}  // namespace fractional_max_pool_cpu
 }  // namespace kernel
 }  // namespace mindspore

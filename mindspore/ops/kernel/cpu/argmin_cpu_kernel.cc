@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace argmin_cpu {
 namespace {
 constexpr size_t kArgMinInputsNum = 3;
 constexpr size_t kArgMinOutputsNum = 1;
@@ -273,5 +274,6 @@ std::vector<KernelAttr> ArgminCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Argmin, ArgminCpuKernelMod);
+}  // namespace argmin_cpu
 }  // namespace kernel
 }  // namespace mindspore

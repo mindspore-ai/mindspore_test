@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace tril_cpu {
 namespace {
 constexpr size_t kTrilInputsNum = 1;
 constexpr size_t kTrilOutputsNum = 1;
@@ -166,5 +167,6 @@ std::vector<KernelAttr> TrilCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Tril, TrilCpuKernelMod);
+}  // namespace tril_cpu
 }  // namespace kernel
 }  // namespace mindspore

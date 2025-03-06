@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace batch_norm_grad_grad_cpu {
 class BatchNormGradGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   BatchNormGradGradCpuKernelMod() = default;
@@ -120,6 +121,7 @@ class BatchNormGradGradCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> x_shape_;
   std::vector<int64_t> scale_shape_;
 };
+}  // namespace batch_norm_grad_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_BATCH_NORM_GRAD_GRAD_CPU_KERNEL_H_

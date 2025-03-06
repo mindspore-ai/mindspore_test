@@ -32,6 +32,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_matrix_transpose_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
@@ -66,6 +67,7 @@ class SparseMatrixTransposeCpuKernelMod : public NativeCpuKernelMod {
   TypeId indiceT_{kTypeUnknown};
   TypeId valueT_{kTypeUnknown};
 };
+}  // namespace sparse_matrix_transpose_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

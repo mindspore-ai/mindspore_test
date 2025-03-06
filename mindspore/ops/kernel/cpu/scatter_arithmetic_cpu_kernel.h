@@ -27,6 +27,7 @@
 #include "common/common_utils.h"
 namespace mindspore {
 namespace kernel {
+namespace scatter_arithmetic_cpu {
 class ScatterArithmeticCpuKernelMod : public NativeCpuKernelMod,
                                       public MatchKernelHelper<ScatterArithmeticCpuKernelMod> {
  public:
@@ -66,6 +67,7 @@ class ScatterArithmeticCpuKernelMod : public NativeCpuKernelMod,
   int32_t parameter_key_{-1};
   bool has_null_input_{false};
 };
+}  // namespace scatter_arithmetic_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

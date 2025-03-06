@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace reduce_sum {
 using TensorParams = device::ascend::TensorParams;
 
 class ReduceSumAclnnKernelMod : public AclnnKernelMod {
@@ -43,6 +44,7 @@ class ReduceSumAclnnKernelMod : public AclnnKernelMod {
   std::vector<int64_t> dims_{};
   bool keep_dim_{false};
 };
+}  // namespace reduce_sum
 }  // namespace kernel
 }  // namespace mindspore
 

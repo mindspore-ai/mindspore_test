@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace cummax {
 
 void CummaxAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
@@ -36,5 +37,6 @@ bool CummaxAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Cummax, CummaxAscend);
+}  // namespace cummax
 }  // namespace kernel
 }  // namespace mindspore

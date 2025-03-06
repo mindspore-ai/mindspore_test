@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adjust_saturation_cpu {
 namespace {
 const std::int64_t kAdjustSaturationParallelNum = 64 * 1024;
 const std::int64_t kAdjustSaturationZero = 0;
@@ -183,5 +184,6 @@ std::vector<KernelAttr> AdjustSaturationCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AdjustSaturation, AdjustSaturationCpuKernelMod);
+}  // namespace adjust_saturation_cpu
 }  // namespace kernel
 }  // namespace mindspore

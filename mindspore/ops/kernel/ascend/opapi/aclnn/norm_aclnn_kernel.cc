@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace norm {
 namespace {
 constexpr float kDefaultOrd = 2.0;
 }
@@ -59,5 +60,6 @@ bool NormAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::ve
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Norm, NormAscend);
+}  // namespace norm
 }  // namespace kernel
 }  // namespace mindspore

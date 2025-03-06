@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_log {
 
 void InplaceLogAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &outputs) {
@@ -35,5 +36,6 @@ bool InplaceLogAscend::Launch(const std::vector<KernelTensor *> &inputs, const s
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceLog, InplaceLogAscend);
+}  // namespace inplace_log
 }  // namespace kernel
 }  // namespace mindspore

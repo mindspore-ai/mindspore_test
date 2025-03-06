@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace population_count_cpu {
 namespace {
 const size_t kZero = 0;
 constexpr size_t kPopulationCountInputsNum = 1;
@@ -120,5 +121,6 @@ std::vector<KernelAttr> PopulationCountCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, PopulationCount, PopulationCountCpuKernelMod);
+}  // namespace population_count_cpu
 }  // namespace kernel
 }  // namespace mindspore

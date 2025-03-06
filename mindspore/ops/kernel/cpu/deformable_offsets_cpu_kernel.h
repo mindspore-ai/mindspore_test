@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace deformable_offsets_cpu {
 class DeformableOffsetsCpuKernelMod : public NativeCpuKernelMod,
                                       public MatchKernelHelper<DeformableOffsetsCpuKernelMod> {
  public:
@@ -76,6 +77,7 @@ class DeformableOffsetsCpuKernelMod : public NativeCpuKernelMod,
   int64_t output_w_{0};
   int64_t position_grid_size_{0};
 };
+}  // namespace deformable_offsets_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_DEFORMABLE_OFFSETS_CPU_KERNEL_H_

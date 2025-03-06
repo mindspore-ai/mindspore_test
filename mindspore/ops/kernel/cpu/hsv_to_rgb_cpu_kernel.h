@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace hsv_to_rgb_cpu {
 class HSVToRGBCpuKernelMod : public NativeCpuKernelMod {
  public:
   HSVToRGBCpuKernelMod() = default;
@@ -52,6 +53,7 @@ class HSVToRGBCpuKernelMod : public NativeCpuKernelMod {
   const size_t kInputNum = 1;
   const size_t kOutputNum = 1;
 };
+}  // namespace hsv_to_rgb_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_HSV_TO_RGB_CPU_KERNEL_H_

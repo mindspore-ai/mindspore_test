@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace group_norm_grad {
 
 class GroupNormGradAscend : public AclnnKernelMod {
  public:
@@ -41,6 +42,7 @@ class GroupNormGradAscend : public AclnnKernelMod {
   int64_t num_groups_{1};
   std::vector<uint8_t> output_mask_{};
 };
+}  // namespace group_norm_grad
 }  // namespace kernel
 }  // namespace mindspore
 

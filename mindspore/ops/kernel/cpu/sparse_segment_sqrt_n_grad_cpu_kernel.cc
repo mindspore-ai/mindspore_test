@@ -19,16 +19,17 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_segment_sqrt_n_grad_cpu {
 namespace {
 constexpr size_t kSparseSegmentSqrtNGradInputsNum = 4;
 constexpr size_t kSparseSegmentSqrtNGradOutputsNum = 1;
 
-#define ADD_KERNEL(t1, t2, t3, t4, t5) \
-  KernelAttr()                         \
-    .AddInputAttr(kNumberType##t1)     \
-    .AddInputAttr(kNumberType##t2)     \
-    .AddInputAttr(kNumberType##t3)     \
-    .AddInputAttr(kNumberType##t4)     \
+#define SPARSE_SEGMENT_SQRT_N_GRAD_ADD_KERNEL(t1, t2, t3, t4, t5) \
+  KernelAttr()                                                    \
+    .AddInputAttr(kNumberType##t1)                                \
+    .AddInputAttr(kNumberType##t2)                                \
+    .AddInputAttr(kNumberType##t3)                                \
+    .AddInputAttr(kNumberType##t4)                                \
     .AddOutputAttr(kNumberType##t5)
 }  // namespace
 
@@ -127,12 +128,14 @@ void SparseSegmentSqrtNGradCpuKernelMod::LaunchKernel(const std::vector<kernel::
 }
 
 std::vector<KernelAttr> SparseSegmentSqrtNGradCpuKernelMod::GetOpSupport() {
-  static std::vector<KernelAttr> kernel_attr_list = {ADD_KERNEL(Float16, Int32, Int32, Int32, Float16),
-                                                     ADD_KERNEL(Float32, Int32, Int32, Int32, Float32),
-                                                     ADD_KERNEL(Float64, Int32, Int32, Int32, Float64)};
+  static std::vector<KernelAttr> kernel_attr_list = {
+    SPARSE_SEGMENT_SQRT_N_GRAD_ADD_KERNEL(Float16, Int32, Int32, Int32, Float16),
+    SPARSE_SEGMENT_SQRT_N_GRAD_ADD_KERNEL(Float32, Int32, Int32, Int32, Float32),
+    SPARSE_SEGMENT_SQRT_N_GRAD_ADD_KERNEL(Float64, Int32, Int32, Int32, Float64)};
 
   return kernel_attr_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseSegmentSqrtNGrad, SparseSegmentSqrtNGradCpuKernelMod);
+}  // namespace sparse_segment_sqrt_n_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -36,6 +36,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lp_norm_cpu {
 namespace {
 // An empiric parameters for parallel
 constexpr size_t kGrainSize = 32768;
@@ -242,5 +243,6 @@ std::vector<KernelAttr> LpNormCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LpNorm, LpNormCpuKernelMod);
+}  // namespace lp_norm_cpu
 }  // namespace kernel
 }  // namespace mindspore

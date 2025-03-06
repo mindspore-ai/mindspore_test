@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace randint {
 
 void RandIntAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
@@ -45,5 +46,6 @@ bool RandIntAscend::Launch(const std::vector<KernelTensor *> &inputs, const std:
 
 MS_ACLNN_KERNEL_FACTORY_REG(RandInt, RandIntAscend);
 MS_ACLNN_KERNEL_FACTORY_REG(RandIntLike, RandIntLikeAscend);
+}  // namespace randint
 }  // namespace kernel
 }  // namespace mindspore

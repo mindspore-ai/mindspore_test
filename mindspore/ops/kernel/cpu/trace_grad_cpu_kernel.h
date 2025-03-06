@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace trace_grad_cpu {
 class TraceGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   TraceGradCpuKernelMod() = default;
@@ -60,6 +61,7 @@ class TraceGradCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> input_shape_;
   TypeId values_type_{kTypeUnknown};
 };
+}  // namespace trace_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

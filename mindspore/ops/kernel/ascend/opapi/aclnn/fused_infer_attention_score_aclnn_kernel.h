@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fused_infer_attention_score {
 class FusedInferAttentionScoreAscend : public AclnnKernelMod {
  public:
   FusedInferAttentionScoreAscend() : AclnnKernelMod(std::move("aclnnFusedInferAttentionScoreV2")) {}
@@ -36,6 +37,7 @@ class FusedInferAttentionScoreAscend : public AclnnKernelMod {
   std::vector<int64_t> ConvertTensorToVector(const std::string &tensor_name, KernelTensor *const tensor_ptr);
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace fused_infer_attention_score
 }  // namespace kernel
 }  // namespace mindspore
 

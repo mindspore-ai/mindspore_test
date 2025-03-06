@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fractional_avg_pool_grad_cpu {
 class FractionalAvgPoolGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   FractionalAvgPoolGradCpuKernelMod() : kernel_func_(nullptr) {}
@@ -71,6 +72,7 @@ class FractionalAvgPoolGradCpuKernelMod : public NativeCpuKernelMod {
   bool overlapping_{false};
   ShapeVector out_shape_{};
 };
+}  // namespace fractional_avg_pool_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_FRACTIONAL_AVG_POOL_GRAD_CPU_KERNEL_H_

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace threshold {
 
 class ThresholdAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class ThresholdAscend : public AclnnKernelMod {
   ScalarPtr threshold_{nullptr};
   ScalarPtr value_{nullptr};
 };
+}  // namespace threshold
 }  // namespace kernel
 }  // namespace mindspore
 

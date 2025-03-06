@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace soft_margin_loss_grad {
 
 class SoftMarginLossGradAscendKernelMod : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class SoftMarginLossGradAscendKernelMod : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   int64_t reduction_value_{2};
 };
+}  // namespace soft_margin_loss_grad
 }  // namespace kernel
 }  // namespace mindspore
 

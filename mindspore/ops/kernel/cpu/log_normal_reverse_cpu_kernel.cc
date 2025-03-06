@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace log_normal_reverse_cpu {
 namespace {
 constexpr uint32_t kNumInput = 1;
 constexpr uint32_t kNumOutput = 1;
@@ -88,5 +89,6 @@ void LogNormalReverseCpuKernel::LaunchKernelFloat(const std::vector<KernelTensor
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LogNormalReverse, LogNormalReverseCpuKernel);
+}  // namespace log_normal_reverse_cpu
 }  // namespace kernel
 }  // namespace mindspore

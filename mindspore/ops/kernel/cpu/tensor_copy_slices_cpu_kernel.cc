@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace tensor_copy_slices_cpu {
 namespace {
 constexpr size_t kTensorCopySlicesInputsNum = 2;
 constexpr size_t kTensorCopySlicesDynamicInputsNum = 5;
@@ -123,5 +124,6 @@ bool TensorCopySlicesCpuKernelMod::Launch(const std::vector<kernel::KernelTensor
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TensorCopySlices, TensorCopySlicesCpuKernelMod);
+}  // namespace tensor_copy_slices_cpu
 }  // namespace kernel
 }  // namespace mindspore

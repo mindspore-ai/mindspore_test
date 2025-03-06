@@ -24,9 +24,8 @@
 #include "common/ms_factory.h"
 
 namespace mindspore {
-constexpr size_t kInputNum = 3;
-constexpr size_t kOutputNum = 1;
 namespace kernel {
+namespace lu_solve_cpu {
 class LuSolveCpuKernelMod : public NativeCpuKernelMod {
  public:
   LuSolveCpuKernelMod() = default;
@@ -59,6 +58,7 @@ class LuSolveCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> input_1_shape_;
   std::vector<int64_t> output_shape_;
 };
+}  // namespace lu_solve_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_LUSOLVE_CPU_KERNEL_H_

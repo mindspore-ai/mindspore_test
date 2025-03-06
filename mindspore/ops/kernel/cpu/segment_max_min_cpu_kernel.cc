@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace segment_max_min_cpu {
 namespace {
 const size_t kSegmentsThreshold = 2 * 1024;
 const size_t kDataSizeThreshold = 2 * 1024;
@@ -232,5 +233,6 @@ bool SegmentMaxMinCPUKernelMod::LaunchKernel(const std::vector<kernel::KernelTen
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SegmentMin, SegmentMaxMinCPUKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SegmentMax, SegmentMaxMinCPUKernelMod);
+}  // namespace segment_max_min_cpu
 }  // namespace kernel
 }  // namespace mindspore

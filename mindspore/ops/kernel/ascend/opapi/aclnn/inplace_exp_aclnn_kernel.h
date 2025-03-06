@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_exp {
 
 class InplaceExpAscend : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class InplaceExpAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace inplace_exp
 }  // namespace kernel
 }  // namespace mindspore
 

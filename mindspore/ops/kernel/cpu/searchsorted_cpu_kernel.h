@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace searchsorted_cpu {
 class SearchSortedCpuKernelMod : public NativeCpuKernelMod {
  public:
   SearchSortedCpuKernelMod() = default;
@@ -60,6 +61,7 @@ class SearchSortedCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> values_shape_;
   std::vector<int64_t> output_shape_;
 };
+}  // namespace searchsorted_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SEARCHSORTED_CPU_KERNEL_H_

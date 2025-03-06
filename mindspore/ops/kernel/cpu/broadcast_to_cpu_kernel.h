@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace broadcast_to_cpu {
 constexpr auto kBroadcastTo = "BroadcastTo";
 constexpr auto kDynamicBroadcastTo = "DynamicBroadcastTo";
 constexpr auto kUnknown = "Unknown";
@@ -69,6 +70,7 @@ class BroadcastToCpuKernelMod : public NativeCpuKernelMod {
   BroadcastShapeInfo shape_info_{};
   std::string kernel_type_{kUnknown};
 };
+}  // namespace broadcast_to_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

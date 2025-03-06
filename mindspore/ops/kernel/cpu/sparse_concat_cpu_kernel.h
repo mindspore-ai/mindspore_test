@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_concat_cpu {
 class SparseConcatCpuKernelMod : public NativeCpuKernelMod {
  public:
   SparseConcatCpuKernelMod() = default;
@@ -55,6 +56,7 @@ class SparseConcatCpuKernelMod : public NativeCpuKernelMod {
   TypeId values_dtype_{kTypeUnknown};
   TypeId shapes_dtype_{kTypeUnknown};
 };
+}  // namespace sparse_concat_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

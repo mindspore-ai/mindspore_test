@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matrix_diag_part_v3_cpu {
 class MatrixDiagPartV3CpuKernelMod : public NativeCpuKernelMod {
  public:
   MatrixDiagPartV3CpuKernelMod() = default;
@@ -71,6 +72,7 @@ class MatrixDiagPartV3CpuKernelMod : public NativeCpuKernelMod {
   int64_t data_num_ = 0;
   int64_t num_array_ = 0;
 };
+}  // namespace matrix_diag_part_v3_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

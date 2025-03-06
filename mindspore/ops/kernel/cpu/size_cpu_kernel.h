@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace size_cpu {
 class SizeCpuKernelMod : public NativeCpuKernelMod {
  public:
   SizeCpuKernelMod() = default;
@@ -43,6 +44,7 @@ class SizeCpuKernelMod : public NativeCpuKernelMod {
  private:
   int64_t input_elements;
 };
+}  // namespace size_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SIZE_CPU_KERNEL_H_

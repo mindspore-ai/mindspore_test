@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace median_cpu {
 namespace {
 constexpr size_t kSizeInt64 = sizeof(int64_t);
 constexpr size_t kMedianInputsNum = 1;
@@ -311,5 +312,6 @@ bool MedianCpuKernelMod::MedianComputeIgnoreNan(const std::vector<KernelTensor *
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Median, MedianCpuKernelMod);
+}  // namespace median_cpu
 }  // namespace kernel
 }  // namespace mindspore

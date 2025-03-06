@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lp_norm_cpu {
 class LpNormCpuKernelMod : public NativeCpuKernelMod {
  public:
   LpNormCpuKernelMod() = default;
@@ -63,6 +64,7 @@ class LpNormCpuKernelMod : public NativeCpuKernelMod {
   std::vector<size_t> physical_indexes_;
   static std::vector<std::pair<KernelAttr, LpNromFunc>> func_list_;
 };
+}  // namespace lp_norm_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

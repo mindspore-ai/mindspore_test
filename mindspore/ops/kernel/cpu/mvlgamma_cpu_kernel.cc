@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace mvlgamma_cpu {
 namespace {
 constexpr double HALF = 0.5;
 constexpr double QUARTER = 0.25;
@@ -91,5 +92,6 @@ const std::vector<std::pair<KernelAttr, MvlgammaCpuKernelMod::KernelRunFunc>> &M
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Mvlgamma, MvlgammaCpuKernelMod);
+}  // namespace mvlgamma_cpu
 }  // namespace kernel
 }  // namespace mindspore

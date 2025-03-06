@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_tensor_to_csr_sparse_matrix_cpu {
 namespace {
 constexpr int64_t kRankWithoutBatch = 2;
 constexpr int64_t kRankWithBatch = 3;
@@ -30,23 +31,23 @@ constexpr int64_t kSparseTensorToCSRSparseMatrixOutputsNum = 5;
 constexpr size_t kInputIndex0 = 0;
 constexpr size_t kInputIndex1 = 1;
 constexpr size_t kInputIndex2 = 2;
-constexpr size_t kOutputIndex0 = 0;
-constexpr size_t kOutputIndex1 = 1;
-constexpr size_t kOutputIndex2 = 2;
-constexpr size_t kOutputIndex3 = 3;
-constexpr size_t kOutputIndex4 = 4;
+constexpr size_t kOutputIdx0 = 0;
+constexpr size_t kOutputIdx1 = 1;
+constexpr size_t kOutputIdx2 = 2;
+constexpr size_t kOutputIdx3 = 3;
+constexpr size_t kOutputIdx4 = 4;
 constexpr int64_t kInitPrevBatch = -1;
 constexpr char kKernelName[] = "SparseTensorToCSRSparseMatrix";
 
-#define ADD_KERNEL(t1, t2, t3, t4, t5, t6, t7, t8) \
-  KernelAttr()                                     \
-    .AddInputAttr(kNumberType##t1)                 \
-    .AddInputAttr(kNumberType##t2)                 \
-    .AddInputAttr(kNumberType##t3)                 \
-    .AddOutputAttr(kNumberType##t4)                \
-    .AddOutputAttr(kNumberType##t5)                \
-    .AddOutputAttr(kNumberType##t6)                \
-    .AddOutputAttr(kNumberType##t7)                \
+#define SPARSE_TENSOR_TO_CSR_SPARSE_MATRIX_ADD_KERNEL(t1, t2, t3, t4, t5, t6, t7, t8) \
+  KernelAttr()                                                                        \
+    .AddInputAttr(kNumberType##t1)                                                    \
+    .AddInputAttr(kNumberType##t2)                                                    \
+    .AddInputAttr(kNumberType##t3)                                                    \
+    .AddOutputAttr(kNumberType##t4)                                                   \
+    .AddOutputAttr(kNumberType##t5)                                                   \
+    .AddOutputAttr(kNumberType##t6)                                                   \
+    .AddOutputAttr(kNumberType##t7)                                                   \
     .AddOutputAttr(kNumberType##t8)
 }  // namespace
 
@@ -131,11 +132,11 @@ void SparseTensorToCSRSparseMatrixCpuKernelMod::LaunchKernel(const std::vector<k
   valueT *x_values = static_cast<valueT *>(inputs[kInputIndex1]->device_ptr());
   indiceT *x_dense_shape = static_cast<indiceT *>(inputs[kInputIndex2]->device_ptr());
   batch_size_ = (rank_ == kRankWithoutBatch) ? kOne : x_dense_shape[kZero];
-  indiceT *y_dense_shape_addr = static_cast<indiceT *>(outputs[kOutputIndex0]->device_ptr());
-  indiceT *y_batch_pointers_addr = static_cast<indiceT *>(outputs[kOutputIndex1]->device_ptr());
-  indiceT *y_row_pointers_addr = static_cast<indiceT *>(outputs[kOutputIndex2]->device_ptr());
-  indiceT *y_col_indices_addr = static_cast<indiceT *>(outputs[kOutputIndex3]->device_ptr());
-  valueT *y_values_addr = static_cast<valueT *>(outputs[kOutputIndex4]->device_ptr());
+  indiceT *y_dense_shape_addr = static_cast<indiceT *>(outputs[kOutputIdx0]->device_ptr());
+  indiceT *y_batch_pointers_addr = static_cast<indiceT *>(outputs[kOutputIdx1]->device_ptr());
+  indiceT *y_row_pointers_addr = static_cast<indiceT *>(outputs[kOutputIdx2]->device_ptr());
+  indiceT *y_col_indices_addr = static_cast<indiceT *>(outputs[kOutputIdx3]->device_ptr());
+  valueT *y_values_addr = static_cast<valueT *>(outputs[kOutputIdx4]->device_ptr());
 
   for (int64_t i = kZero; i < rank_; i++) {
     y_dense_shape_addr[i] = x_dense_shape[i];
@@ -179,17 +180,18 @@ void SparseTensorToCSRSparseMatrixCpuKernelMod::LaunchKernel(const std::vector<k
 }
 std::vector<KernelAttr> SparseTensorToCSRSparseMatrixCpuKernelMod::GetOpSupport() {
   static std::vector<KernelAttr> kernel_attr_list = {
-    ADD_KERNEL(Int32, Float32, Int32, Int32, Int32, Int32, Int32, Float32),
-    ADD_KERNEL(Int32, Float64, Int32, Int32, Int32, Int32, Int32, Float64),
-    ADD_KERNEL(Int32, Complex64, Int32, Int32, Int32, Int32, Int32, Complex64),
-    ADD_KERNEL(Int32, Complex128, Int32, Int32, Int32, Int32, Int32, Complex128),
-    ADD_KERNEL(Int64, Float32, Int64, Int64, Int64, Int64, Int64, Float32),
-    ADD_KERNEL(Int64, Float64, Int64, Int64, Int64, Int64, Int64, Float64),
-    ADD_KERNEL(Int64, Complex64, Int64, Int64, Int64, Int64, Int64, Complex64),
-    ADD_KERNEL(Int64, Complex128, Int64, Int64, Int64, Int64, Int64, Complex128)};
+    SPARSE_TENSOR_TO_CSR_SPARSE_MATRIX_ADD_KERNEL(Int32, Float32, Int32, Int32, Int32, Int32, Int32, Float32),
+    SPARSE_TENSOR_TO_CSR_SPARSE_MATRIX_ADD_KERNEL(Int32, Float64, Int32, Int32, Int32, Int32, Int32, Float64),
+    SPARSE_TENSOR_TO_CSR_SPARSE_MATRIX_ADD_KERNEL(Int32, Complex64, Int32, Int32, Int32, Int32, Int32, Complex64),
+    SPARSE_TENSOR_TO_CSR_SPARSE_MATRIX_ADD_KERNEL(Int32, Complex128, Int32, Int32, Int32, Int32, Int32, Complex128),
+    SPARSE_TENSOR_TO_CSR_SPARSE_MATRIX_ADD_KERNEL(Int64, Float32, Int64, Int64, Int64, Int64, Int64, Float32),
+    SPARSE_TENSOR_TO_CSR_SPARSE_MATRIX_ADD_KERNEL(Int64, Float64, Int64, Int64, Int64, Int64, Int64, Float64),
+    SPARSE_TENSOR_TO_CSR_SPARSE_MATRIX_ADD_KERNEL(Int64, Complex64, Int64, Int64, Int64, Int64, Int64, Complex64),
+    SPARSE_TENSOR_TO_CSR_SPARSE_MATRIX_ADD_KERNEL(Int64, Complex128, Int64, Int64, Int64, Int64, Int64, Complex128)};
   return kernel_attr_list;
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseTensorToCSRSparseMatrix, SparseTensorToCSRSparseMatrixCpuKernelMod);
+}  // namespace sparse_tensor_to_csr_sparse_matrix_cpu
 }  // namespace kernel
 }  // namespace mindspore

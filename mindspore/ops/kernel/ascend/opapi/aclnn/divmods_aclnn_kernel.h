@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace divmods {
 
 class DivModsAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class DivModsAscend : public AclnnKernelMod {
   ScalarPtr other_{nullptr};
   int64_t mode_{0};
 };
+}  // namespace divmods
 }  // namespace kernel
 }  // namespace mindspore
 

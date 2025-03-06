@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace max_pool_grad_with_argmax_cpu {
 class MaxPoolGradWithArgmaxCpuKernelMod : public NativeCpuKernelMod {
  public:
   MaxPoolGradWithArgmaxCpuKernelMod() {}
@@ -64,6 +65,7 @@ class MaxPoolGradWithArgmaxCpuKernelMod : public NativeCpuKernelMod {
   int stride_width_ = 1;
   PadMode pad_mode_ = PadMode::VALID;
 };
+}  // namespace max_pool_grad_with_argmax_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_MAX_POOL_GRAD_WITH_ARGMAX_CPU_KERNEL_H_

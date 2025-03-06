@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace instance_norm_v2_cpu {
 namespace {
 constexpr auto kInstanceNormV2InputsNum = 5;
 constexpr auto kInstanceNormV2OutputNum = 3;
@@ -302,5 +303,6 @@ std::vector<KernelAttr> InstanceNormV2CpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, InstanceNormV2, InstanceNormV2CpuKernelMod);
+}  // namespace instance_norm_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore

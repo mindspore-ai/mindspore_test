@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace threshold_grad {
 
 class ThresholdGradAscend : public AclnnKernelMod {
  public:
@@ -36,6 +37,7 @@ class ThresholdGradAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   ScalarPtr threshold_{nullptr};
 };
+}  // namespace threshold_grad
 }  // namespace kernel
 }  // namespace mindspore
 

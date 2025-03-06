@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace weight_quant_batch_matmul {
 
 void WeightQuantBatchMatmulV2Ascend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                       const std::vector<KernelTensor *> &outputs) {
@@ -70,5 +71,6 @@ bool WeightQuantBatchMatmulV2Ascend::Launch(const std::vector<KernelTensor *> &i
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(WeightQuantBatchMatmul, WeightQuantBatchMatmulV2Ascend);
+}  // namespace weight_quant_batch_matmul
 }  // namespace kernel
 }  // namespace mindspore

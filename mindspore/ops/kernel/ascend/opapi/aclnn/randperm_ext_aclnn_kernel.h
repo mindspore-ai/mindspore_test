@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace randperm_ext {
 
 class RandpermExtAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class RandpermExtAscend : public AclnnKernelMod {
   int64_t n_{1};
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace randperm_ext
 }  // namespace kernel
 }  // namespace mindspore
 

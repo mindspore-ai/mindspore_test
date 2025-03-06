@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matrix_power_cpu {
 namespace {
 constexpr size_t kInputSize = 1;
 constexpr size_t kOutputSize = 1;
@@ -136,5 +137,6 @@ void MatrixPowerCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTenso
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MatrixPower, MatrixPowerCpuKernelMod);
+}  // namespace matrix_power_cpu
 }  // namespace kernel
 }  // namespace mindspore

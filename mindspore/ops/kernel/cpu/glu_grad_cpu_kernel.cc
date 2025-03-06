@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace glu_grad_cpu {
 namespace {
 const int64_t kEvenNum = 2;
 }  // namespace
@@ -146,5 +147,6 @@ std::vector<KernelAttr> GluGradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, GluGrad, GluGradCpuKernelMod);
+}  // namespace glu_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

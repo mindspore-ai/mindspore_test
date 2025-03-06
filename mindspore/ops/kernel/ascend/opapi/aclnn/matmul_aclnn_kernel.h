@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matmul {
 using TensorParams = device::ascend::TensorParams;
 
 class MatMulAclnnKernelMod : public AclnnKernelMod {
@@ -69,6 +70,7 @@ class MmAclnnKernelMod : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace matmul
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace slice_ext {
 
 void SliceExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &outputs) {
@@ -72,5 +73,6 @@ bool SliceExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(SliceExt, SliceExtAscend);
+}  // namespace slice_ext
 }  // namespace kernel
 }  // namespace mindspore

@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace xdivy_cpu {
 class XdivyCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<XdivyCpuKernelMod> {
  public:
   XdivyCpuKernelMod() { ResetResource(); }
@@ -58,6 +59,7 @@ class XdivyCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<Xd
   bool is_need_broadcast_{false};
   bool has_null_input_{false};
 };
+}  // namespace xdivy_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_XDIVY_CPU_KERNEL_H

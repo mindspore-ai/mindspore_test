@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace moe_token_unpermute {
 void MoeTokenUnpermuteAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
   padded_mode = inputs[kIndex3]->GetValueWithCheck<bool>();
@@ -50,5 +51,6 @@ bool MoeTokenUnpermuteAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(MoeTokenUnpermute, MoeTokenUnpermuteAscend);
+}  // namespace moe_token_unpermute
 }  // namespace kernel
 }  // namespace mindspore

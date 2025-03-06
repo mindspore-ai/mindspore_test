@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adaptive_avg_pool3d_ext {
 
 class AdaptiveAvgPool3DExtAclnnKernelMod : public AclnnKernelMod {
  public:
@@ -41,6 +42,7 @@ class AdaptiveAvgPool3DExtAclnnKernelMod : public AclnnKernelMod {
   std::vector<int64_t> axis_{-1, -2, -3};  // {-1, -2, -3} fixed axis dims for aclnnMean
   bool keep_dims_{true};                   // true fixed keep_dims for aclnnMean
 };
+}  // namespace adaptive_avg_pool3d_ext
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace masked_fill {
 
 class MaskedFillAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class MaskedFillAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_OPS(aclnnInplaceMaskedFillTensor, InplaceMaskedFillTensor)
   DEFINE_GET_WORKSPACE_FOR_OPS(aclnnInplaceCopy, InplaceCopy)
 };
+}  // namespace masked_fill
 }  // namespace kernel
 }  // namespace mindspore
 

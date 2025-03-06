@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_dense_cwise_div_cpu {
 namespace {
 constexpr int64_t kSparseDenseCwiseInputsNum = 4;
 constexpr int64_t kSparseDenseCwiseOutputsNum = 1;
@@ -251,5 +252,6 @@ std::vector<KernelAttr> SparseDenseCwiseDivCpuKernelMod::GetOpSupport() {
 
   return kernel_attr_list;
 }
+}  // namespace sparse_dense_cwise_div_cpu
 }  // namespace kernel
 }  // namespace mindspore

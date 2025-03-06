@@ -25,11 +25,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-void ExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim) {
-  if (param->size() == kIndex1) {
-    param->insert(param->end(), expect_dim - kIndex1, param->at(kIndex0));
-  }
-}
+void ExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim);
 }  // namespace
 std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> ConvolutionGradAscendCustomize(
   const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &dout_tensor, const BaseTensorPtr &input_tensor,

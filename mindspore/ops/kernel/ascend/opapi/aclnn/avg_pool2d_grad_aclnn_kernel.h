@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace avg_pool2d_grad {
 class AvgPool2DGradAscend final : public AclnnKernelMod {
  public:
   AvgPool2DGradAscend() : AclnnKernelMod(std::move("aclnnAvgPool2dBackward")) {}
@@ -35,6 +36,7 @@ class AvgPool2DGradAscend final : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace avg_pool2d_grad
 }  // namespace kernel
 }  // namespace mindspore
 

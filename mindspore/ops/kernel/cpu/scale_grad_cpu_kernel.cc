@@ -21,6 +21,7 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore::kernel {
+namespace scale_grad_cpu {
 template <typename T>
 void ScaleGradCpuKernelMod::LaunchScaleGradPerGrad(const std::vector<KernelTensor *> &inputs,
                                                    const std::vector<KernelTensor *> &outputs,
@@ -95,4 +96,5 @@ bool ScaleGradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ScaleGrad, ScaleGradCpuKernelMod);
+}  // namespace scale_grad_cpu
 }  // namespace mindspore::kernel

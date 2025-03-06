@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace quantile_cpu {
 namespace {
 constexpr size_t kQuantileInputsNum = 2;
 constexpr size_t kQuantileOutputsNum = 1;
@@ -318,5 +319,6 @@ const std::vector<std::pair<KernelAttr, QuantileCpuKernelMod::KernelRunFunc>> &Q
      &QuantileCpuKernelMod::LaunchKernel<double>}};
   return func_list;
 }
+}  // namespace quantile_cpu
 }  // namespace kernel
 }  // namespace mindspore

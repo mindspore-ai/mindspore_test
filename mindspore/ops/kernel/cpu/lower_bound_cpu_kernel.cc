@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lower_bound_cpu {
 namespace {
 constexpr size_t kInputsNum = 2;
 constexpr size_t kOutputsNum = 1;
@@ -137,5 +138,6 @@ const std::vector<std::pair<KernelAttr, LowerBoundCpuKernelMod::KernelRunFunc>> 
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LowerBound, LowerBoundCpuKernelMod);
+}  // namespace lower_bound_cpu
 }  // namespace kernel
 }  // namespace mindspore

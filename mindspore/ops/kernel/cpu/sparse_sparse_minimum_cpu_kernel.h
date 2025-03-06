@@ -31,6 +31,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_sparse_minimum_cpu {
 class SparseSparseMinimumCpuKernelMod : public NativeCpuKernelMod {
  public:
   SparseSparseMinimumCpuKernelMod() = default;
@@ -63,6 +64,7 @@ class SparseSparseMinimumCpuKernelMod : public NativeCpuKernelMod {
   int64_t num_dims_;
   int64_t y_nnz_;
 };
+}  // namespace sparse_sparse_minimum_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SPARSE_SPARSE_MINIMUM_CPU_KERNEL_H_

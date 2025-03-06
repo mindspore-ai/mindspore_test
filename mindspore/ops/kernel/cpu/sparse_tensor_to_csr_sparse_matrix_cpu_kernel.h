@@ -31,6 +31,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_tensor_to_csr_sparse_matrix_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 class SparseTensorToCSRSparseMatrixCpuKernelMod : public NativeCpuKernelMod {
@@ -59,6 +60,7 @@ class SparseTensorToCSRSparseMatrixCpuKernelMod : public NativeCpuKernelMod {
   TypeId value_type_{kTypeUnknown};
   TypeId indice_type_{kTypeUnknown};
 };
+}  // namespace sparse_tensor_to_csr_sparse_matrix_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_EIGEN_SPARSE_TENSOR_TO_CSR_SPARSE_MATRIX_CPU_KERNEL_H_

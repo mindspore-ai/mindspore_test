@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace outer {
 
 void OuterAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs) {
@@ -53,5 +54,6 @@ bool OuterAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::v
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Outer, OuterAscend);
+}  // namespace outer
 }  // namespace kernel
 }  // namespace mindspore

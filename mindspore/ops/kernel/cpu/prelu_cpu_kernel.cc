@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace prelu_cpu {
 bool PReluCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   constexpr size_t input_num = 2;
   constexpr size_t output_num = 1;
@@ -99,5 +100,6 @@ bool PReluCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs, 
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, PReLU, PReluCpuKernelMod);
+}  // namespace prelu_cpu
 }  // namespace kernel
 }  // namespace mindspore

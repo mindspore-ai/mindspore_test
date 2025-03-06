@@ -36,6 +36,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace arithmetic_cpu {
 namespace {
 constexpr float kMaxSubSerialSize = 10000.0;
 constexpr float kMaxPowSerialSize = 700.0;
@@ -1265,5 +1266,6 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, Atan2,
                                  []() { return std::make_shared<ArithmeticCpuKernelMod>(kAtan2); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, AddV2,
                                  []() { return std::make_shared<ArithmeticCpuKernelMod>(kAddV2); });
+}  // namespace arithmetic_cpu
 }  // namespace kernel
 }  // namespace mindspore

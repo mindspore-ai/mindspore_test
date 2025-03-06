@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_erfinv {
 class InplaceErfinvAscend : public AclnnKernelMod {
  public:
   InplaceErfinvAscend() : AclnnKernelMod("aclnnInplaceErfinv") {}
@@ -34,6 +35,7 @@ class InplaceErfinvAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace inplace_erfinv
 }  // namespace kernel
 }  // namespace mindspore
 

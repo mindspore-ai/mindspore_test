@@ -38,7 +38,7 @@ constexpr auto kPrefixLen = 5;
 
 template <size_t arg_num>
 std::shared_ptr<AclnnKernelMod> CreateCustomAclnnKernelModInstance(const std::string &op_type) {
-  return std::make_shared<CustomAclnnKernelMod<arg_num>>(op_type);
+  return std::make_shared<custom::CustomAclnnKernelMod<arg_num>>(op_type);
 }
 
 template <size_t arg_num>

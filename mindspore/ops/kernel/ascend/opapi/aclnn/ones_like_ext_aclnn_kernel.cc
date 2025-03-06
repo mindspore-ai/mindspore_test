@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace ones_like_ext {
 
 void OnesLikeExtAscendCall::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
@@ -44,5 +45,6 @@ bool OnesLikeExtAscendCall::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(OnesLikeExt, OnesLikeExtAscendCall);
+}  // namespace ones_like_ext
 }  // namespace kernel
 }  // namespace mindspore

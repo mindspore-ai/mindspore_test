@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace mean_ext {
 void MeanExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
   const auto axis_opt = inputs[kIndex1]->GetOptionalValueWithCheck<std::vector<int64_t>>();
@@ -48,5 +49,6 @@ bool MeanExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std:
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(MeanExt, MeanExtAscend);
+}  // namespace mean_ext
 }  // namespace kernel
 }  // namespace mindspore

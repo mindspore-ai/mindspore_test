@@ -47,10 +47,6 @@ namespace mindspore {
 namespace ops {
 namespace {
 constexpr size_t kSizeFour = 4;
-constexpr size_t kIndex0 = 0;
-constexpr size_t kIndex1 = 1;
-constexpr size_t kIndex2 = 2;
-constexpr size_t kIndex3 = 3;
 constexpr auto kAttrPrimitiveTarget = "primitive_target";
 
 void ConvertShapeNHWCToNCHW(std::vector<int64_t> *const nhwc_shape) {

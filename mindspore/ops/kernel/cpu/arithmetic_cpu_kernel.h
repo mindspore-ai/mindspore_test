@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace arithmetic_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 class ArithmeticCpuKernelMod : public NativeCpuKernelMod {
@@ -57,6 +58,7 @@ class ArithmeticCpuKernelMod : public NativeCpuKernelMod {
   std::string kernel_type_{"Unknown"};
   bool is_null_input_{false};
 };
+}  // namespace arithmetic_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_ARITHMETIC_CPU_KERNEL_H_

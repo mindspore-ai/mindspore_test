@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_floor_divides {
 
 class InplaceFloorDividesAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class InplaceFloorDividesAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   ScalarPtr other_{nullptr};
 };
+}  // namespace inplace_floor_divides
 }  // namespace kernel
 }  // namespace mindspore
 

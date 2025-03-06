@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace reduce_sum {
 void ReduceSumAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
   dims_ = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex1]);
@@ -48,5 +49,6 @@ bool ReduceSumAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(ReduceSum, ReduceSumAclnnKernelMod);
+}  // namespace reduce_sum
 }  // namespace kernel
 }  // namespace mindspore

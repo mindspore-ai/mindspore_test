@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace max_pool3d_grad_with_argmax_cpu {
 namespace {
 constexpr size_t kMaxPool3DGradWithArgmaxInputNum = 3;
 constexpr size_t kMaxPool3DGradWithArgmaxOutputsNum = 1;
@@ -251,29 +252,40 @@ bool MaxPool3DGradWithArgmaxCpuKernelMod::LaunchKernel(const std::vector<KernelT
   return true;
 }
 
-#define ADD_KERNEL(x_dtype, shape_dtype, x_type, shape_type)                 \
-  {                                                                          \
-    KernelAttr()                                                             \
-      .AddInputAttr(kNumberType##x_dtype)                                    \
-      .AddInputAttr(kNumberType##x_dtype)                                    \
-      .AddInputAttr(kNumberType##shape_dtype)                                \
-      .AddOutputAttr(kNumberType##x_dtype),                                  \
-      &MaxPool3DGradWithArgmaxCpuKernelMod::LaunchKernel<x_type, shape_type> \
+#define MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(x_dtype, shape_dtype, x_type, shape_type) \
+  {                                                                                      \
+    KernelAttr()                                                                         \
+      .AddInputAttr(kNumberType##x_dtype)                                                \
+      .AddInputAttr(kNumberType##x_dtype)                                                \
+      .AddInputAttr(kNumberType##shape_dtype)                                            \
+      .AddOutputAttr(kNumberType##x_dtype),                                              \
+      &MaxPool3DGradWithArgmaxCpuKernelMod::LaunchKernel<x_type, shape_type>             \
   }
 
 std::vector<std::pair<KernelAttr, MaxPool3DGradWithArgmaxCpuKernelMod::MaxPool3DGradWithArgmaxFunc>>
   MaxPool3DGradWithArgmaxCpuKernelMod::func_list_ = {
-    ADD_KERNEL(Float16, Int32, float16, int32_t), ADD_KERNEL(Float32, Int32, float, int32_t),
-    ADD_KERNEL(Float64, Int32, double, int32_t),  ADD_KERNEL(Int8, Int32, int8_t, int32_t),
-    ADD_KERNEL(Int16, Int32, int16_t, int32_t),   ADD_KERNEL(Int32, Int32, int32_t, int32_t),
-    ADD_KERNEL(Int64, Int32, int64_t, int32_t),   ADD_KERNEL(UInt8, Int32, uint8_t, int32_t),
-    ADD_KERNEL(UInt16, Int32, uint16_t, int32_t), ADD_KERNEL(UInt32, Int32, uint32_t, int32_t),
-    ADD_KERNEL(UInt64, Int32, uint64_t, int32_t), ADD_KERNEL(Float16, Int64, float16, int64_t),
-    ADD_KERNEL(Float32, Int64, float, int64_t),   ADD_KERNEL(Float64, Int64, double, int64_t),
-    ADD_KERNEL(Int8, Int64, int8_t, int64_t),     ADD_KERNEL(Int16, Int64, int16_t, int64_t),
-    ADD_KERNEL(Int32, Int64, int32_t, int64_t),   ADD_KERNEL(Int64, Int64, int64_t, int64_t),
-    ADD_KERNEL(UInt8, Int64, uint8_t, int64_t),   ADD_KERNEL(UInt16, Int64, uint16_t, int64_t),
-    ADD_KERNEL(UInt32, Int64, uint32_t, int64_t), ADD_KERNEL(UInt64, Int64, uint64_t, int64_t)};
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(Float16, Int32, float16, int32_t),
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(Float32, Int32, float, int32_t),
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(Float64, Int32, double, int32_t),
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(Int8, Int32, int8_t, int32_t),
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(Int16, Int32, int16_t, int32_t),
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(Int32, Int32, int32_t, int32_t),
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(Int64, Int32, int64_t, int32_t),
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(UInt8, Int32, uint8_t, int32_t),
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(UInt16, Int32, uint16_t, int32_t),
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(UInt32, Int32, uint32_t, int32_t),
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(UInt64, Int32, uint64_t, int32_t),
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(Float16, Int64, float16, int64_t),
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(Float32, Int64, float, int64_t),
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(Float64, Int64, double, int64_t),
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(Int8, Int64, int8_t, int64_t),
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(Int16, Int64, int16_t, int64_t),
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(Int32, Int64, int32_t, int64_t),
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(Int64, Int64, int64_t, int64_t),
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(UInt8, Int64, uint8_t, int64_t),
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(UInt16, Int64, uint16_t, int64_t),
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(UInt32, Int64, uint32_t, int64_t),
+    MAX_POOL3D_GRAD_WITH_ARGMAX_ADD_KERNEL(UInt64, Int64, uint64_t, int64_t)};
 
 std::vector<KernelAttr> MaxPool3DGradWithArgmaxCpuKernelMod::GetOpSupport() {
   std::vector<KernelAttr> support_list;
@@ -282,5 +294,6 @@ std::vector<KernelAttr> MaxPool3DGradWithArgmaxCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MaxPool3DGradWithArgmax, MaxPool3DGradWithArgmaxCpuKernelMod);
+}  // namespace max_pool3d_grad_with_argmax_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace binary_cross_entropy_cpu {
 
 class BinaryCrossEntropyCpuKernelMod : public NativeCpuKernelMod {
  public:
@@ -51,6 +52,7 @@ class BinaryCrossEntropyCpuKernelMod : public NativeCpuKernelMod {
   size_t input_size_{1};
   Reduction reduction_{Reduction::MEAN};
 };
+}  // namespace binary_cross_entropy_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_NN_BINARY_CROSS_ENTROPY_KERNEL_H

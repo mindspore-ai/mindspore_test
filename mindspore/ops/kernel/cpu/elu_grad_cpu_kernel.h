@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace elu_grad_cpu {
 class EluGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<EluGradCpuKernelMod> {
  public:
   EluGradCpuKernelMod() = default;
@@ -53,6 +54,7 @@ class EluGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<
   bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                     const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace elu_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_ELU_GRAD_CPU_KERNEL_H_

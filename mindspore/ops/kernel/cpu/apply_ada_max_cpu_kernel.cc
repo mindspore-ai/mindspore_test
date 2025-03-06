@@ -23,6 +23,9 @@
 #include "common/common_utils.h"
 #include "ops_utils/op_utils.h"
 
+namespace mindspore {
+namespace kernel {
+namespace apply_ada_max_cpu {
 namespace {
 const size_t kZero = 0;
 const size_t kOne = 1;
@@ -44,9 +47,6 @@ constexpr size_t kApplyAdaMaxOutputsNum = 3;
 
 bool CheckShapeIsScalar(const ShapeVector &shape) { return shape.empty() || (shape.size() == 1 && shape[0] == 1); }
 }  // namespace
-
-namespace mindspore {
-namespace kernel {
 bool ApplyAdaMaxCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs) {
   dtype_ = inputs[0]->dtype_id();
@@ -199,5 +199,6 @@ void ApplyAdaMaxCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &in
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ApplyAdaMax, ApplyAdaMaxCpuKernelMod);
+}  // namespace apply_ada_max_cpu
 }  // namespace kernel
 }  // namespace mindspore

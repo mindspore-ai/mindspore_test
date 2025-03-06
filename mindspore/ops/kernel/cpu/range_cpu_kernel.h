@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace range_cpu {
 class RangeCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<RangeCpuKernelMod> {
  public:
   RangeCpuKernelMod() = default;
@@ -47,6 +48,7 @@ class RangeCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<Ra
   bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                     const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace range_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_addmm {
 using TensorParams = device::ascend::TensorParams;
 
 class InplaceAddmmAclnnKernelMod : public AclnnKernelMod {
@@ -39,6 +40,7 @@ class InplaceAddmmAclnnKernelMod : public AclnnKernelMod {
 
   int8_t cube_math_type_;
 };
+}  // namespace inplace_addmm
 }  // namespace kernel
 }  // namespace mindspore
 

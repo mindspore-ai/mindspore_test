@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_trilinear3d {
 namespace {
 std::tuple<std::vector<int64_t>, std::tuple<double, double, double>, bool> UpsampleTrilinear3DGenerate(
   const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
@@ -71,5 +72,6 @@ bool UpsampleTrilinear3DAscend::Launch(const std::vector<KernelTensor *> &inputs
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(UpsampleTrilinear3D, UpsampleTrilinear3DAscend);
+}  // namespace upsample_trilinear3d
 }  // namespace kernel
 }  // namespace mindspore

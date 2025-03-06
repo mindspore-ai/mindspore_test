@@ -25,7 +25,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-namespace {
+namespace batch_matmul {
 ValueTuplePtr GetTransposePerm(const BaseTensorPtr &weight_tensor) {
   const auto &shape = weight_tensor->shape();
   size_t size = shape.size();
@@ -42,7 +42,7 @@ ValueTuplePtr GetTransposePerm(const BaseTensorPtr &weight_tensor) {
   }
   return std::make_shared<ValueTuple>(perm);
 }
-}  // namespace
+}  // namespace batch_matmul
 tensor::BaseTensorPtr BatchMatMulAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
                                                  const BaseTensorPtr &mat2_tensor, const BoolImmPtr &transpose_a,
                                                  const BoolImmPtr &transpose_b) {
@@ -59,14 +59,14 @@ tensor::BaseTensorPtr BatchMatMulAscendCustomize(const std::shared_ptr<OpRunner>
   if (transpose_a_imm) {
     const auto &device_name = device_context->device_context_key_.device_name_;
     auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
-    input_tensor_ = transpose_op->Call(input_tensor, GetTransposePerm(input_tensor));
+    input_tensor_ = transpose_op->Call(input_tensor, batch_matmul::GetTransposePerm(input_tensor));
   }
 
   BaseTensorPtr mat2_tensor_ = mat2_tensor;
   if (transpose_b_imm) {
     const auto &device_name = device_context->device_context_key_.device_name_;
     auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
-    mat2_tensor_ = transpose_op->Call(mat2_tensor, GetTransposePerm(mat2_tensor));
+    mat2_tensor_ = transpose_op->Call(mat2_tensor, batch_matmul::GetTransposePerm(mat2_tensor));
   }
   // Async
   PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor_, mat2_tensor_]() {

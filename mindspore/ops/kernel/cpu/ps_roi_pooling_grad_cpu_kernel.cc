@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace ps_roi_pooling_grad_cpu {
 namespace {
 constexpr int kDyOutputDimIndex = 1;
 constexpr int kDyHeightIndex = 2;
@@ -359,5 +360,6 @@ std::vector<KernelAttr> PSROIPoolingGradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, PSROIPoolingGrad, PSROIPoolingGradCpuKernelMod);
+}  // namespace ps_roi_pooling_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

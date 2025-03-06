@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace parallel_concat_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
@@ -65,6 +66,7 @@ class ParallelConcatCpuKernelMod : public NativeCpuKernelMod {
   std::vector<ShapeVector> input_flat_shape_list_;
   static std::vector<std::pair<KernelAttr, PCFunc>> func_list_;
 };
+}  // namespace parallel_concat_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

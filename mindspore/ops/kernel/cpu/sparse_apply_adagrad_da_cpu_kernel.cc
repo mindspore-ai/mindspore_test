@@ -25,23 +25,25 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_apply_adagrad_da_cpu {
+using namespace sparse_optimizer_cpu;
 namespace {
 constexpr size_t kSparseApplyAdagradDAInputsNum = 9;
 constexpr size_t kSparseApplyAdagradDAOutputsNum = 1;
 
 using KernelRunFunc = SparseApplyAdagradDACpuKernelMod::KernelRunFunc;
 
-#define ADD_KERNEL(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10) \
-  KernelAttr()                                              \
-    .AddInputAttr(kNumberType##t1)                          \
-    .AddInputAttr(kNumberType##t2)                          \
-    .AddInputAttr(kNumberType##t3)                          \
-    .AddInputAttr(kNumberType##t4)                          \
-    .AddInputAttr(kNumberType##t5)                          \
-    .AddInputAttr(kNumberType##t6)                          \
-    .AddInputAttr(kNumberType##t7)                          \
-    .AddInputAttr(kNumberType##t8)                          \
-    .AddInputAttr(kNumberType##t9)                          \
+#define SPARSE_APPLY_ADAGRAD_DA_ADD_KERNEL(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10) \
+  KernelAttr()                                                                      \
+    .AddInputAttr(kNumberType##t1)                                                  \
+    .AddInputAttr(kNumberType##t2)                                                  \
+    .AddInputAttr(kNumberType##t3)                                                  \
+    .AddInputAttr(kNumberType##t4)                                                  \
+    .AddInputAttr(kNumberType##t5)                                                  \
+    .AddInputAttr(kNumberType##t6)                                                  \
+    .AddInputAttr(kNumberType##t7)                                                  \
+    .AddInputAttr(kNumberType##t8)                                                  \
+    .AddInputAttr(kNumberType##t9)                                                  \
     .AddOutputAttr(kNumberType##t10)
 }  // namespace
 
@@ -196,37 +198,44 @@ bool SparseApplyAdagradDACpuKernelMod::LaunchKernel(const std::vector<kernel::Ke
 
 const std::vector<std::pair<KernelAttr, KernelRunFunc>> &SparseApplyAdagradDACpuKernelMod::GetFuncList() const {
   static const std::vector<std::pair<KernelAttr, KernelRunFunc>> func_list = {
-    {ADD_KERNEL(Int8, Int8, Int8, Int8, Int32, Int8, Int8, Int8, Int64, Int8),
+    {SPARSE_APPLY_ADAGRAD_DA_ADD_KERNEL(Int8, Int8, Int8, Int8, Int32, Int8, Int8, Int8, Int64, Int8),
      &SparseApplyAdagradDACpuKernelMod::LaunchKernel<int32_t, int8_t>},
-    {ADD_KERNEL(Int16, Int16, Int16, Int16, Int32, Int16, Int16, Int16, Int64, Int16),
+    {SPARSE_APPLY_ADAGRAD_DA_ADD_KERNEL(Int16, Int16, Int16, Int16, Int32, Int16, Int16, Int16, Int64, Int16),
      &SparseApplyAdagradDACpuKernelMod::LaunchKernel<int32_t, int16_t>},
-    {ADD_KERNEL(Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int64, Int32),
+    {SPARSE_APPLY_ADAGRAD_DA_ADD_KERNEL(Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int64, Int32),
      &SparseApplyAdagradDACpuKernelMod::LaunchKernel<int32_t, int32_t>},
-    {ADD_KERNEL(Int64, Int64, Int64, Int64, Int32, Int64, Int64, Int64, Int64, Int64),
+    {SPARSE_APPLY_ADAGRAD_DA_ADD_KERNEL(Int64, Int64, Int64, Int64, Int32, Int64, Int64, Int64, Int64, Int64),
      &SparseApplyAdagradDACpuKernelMod::LaunchKernel<int32_t, int64_t>},
-    {ADD_KERNEL(Float16, Float16, Float16, Float16, Int32, Float16, Float16, Float16, Int64, Float16),
+    {SPARSE_APPLY_ADAGRAD_DA_ADD_KERNEL(Float16, Float16, Float16, Float16, Int32, Float16, Float16, Float16, Int64,
+                                        Float16),
      &SparseApplyAdagradDACpuKernelMod::LaunchKernel<int32_t, float16>},
-    {ADD_KERNEL(Float32, Float32, Float32, Float32, Int32, Float32, Float32, Float32, Int64, Float32),
+    {SPARSE_APPLY_ADAGRAD_DA_ADD_KERNEL(Float32, Float32, Float32, Float32, Int32, Float32, Float32, Float32, Int64,
+                                        Float32),
      &SparseApplyAdagradDACpuKernelMod::LaunchKernel<int32_t, float>},
-    {ADD_KERNEL(Float64, Float64, Float64, Float64, Int32, Float64, Float64, Float64, Int64, Float64),
+    {SPARSE_APPLY_ADAGRAD_DA_ADD_KERNEL(Float64, Float64, Float64, Float64, Int32, Float64, Float64, Float64, Int64,
+                                        Float64),
      &SparseApplyAdagradDACpuKernelMod::LaunchKernel<int32_t, double>},
-    {ADD_KERNEL(Int8, Int8, Int8, Int8, Int64, Int8, Int8, Int8, Int64, Int8),
+    {SPARSE_APPLY_ADAGRAD_DA_ADD_KERNEL(Int8, Int8, Int8, Int8, Int64, Int8, Int8, Int8, Int64, Int8),
      &SparseApplyAdagradDACpuKernelMod::LaunchKernel<int64_t, int8_t>},
-    {ADD_KERNEL(Int16, Int16, Int16, Int16, Int64, Int16, Int16, Int16, Int64, Int16),
+    {SPARSE_APPLY_ADAGRAD_DA_ADD_KERNEL(Int16, Int16, Int16, Int16, Int64, Int16, Int16, Int16, Int64, Int16),
      &SparseApplyAdagradDACpuKernelMod::LaunchKernel<int64_t, int16_t>},
-    {ADD_KERNEL(Int32, Int32, Int32, Int32, Int64, Int32, Int32, Int32, Int64, Int32),
+    {SPARSE_APPLY_ADAGRAD_DA_ADD_KERNEL(Int32, Int32, Int32, Int32, Int64, Int32, Int32, Int32, Int64, Int32),
      &SparseApplyAdagradDACpuKernelMod::LaunchKernel<int64_t, int32_t>},
-    {ADD_KERNEL(Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64),
+    {SPARSE_APPLY_ADAGRAD_DA_ADD_KERNEL(Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64),
      &SparseApplyAdagradDACpuKernelMod::LaunchKernel<int64_t, int64_t>},
-    {ADD_KERNEL(Float16, Float16, Float16, Float16, Int64, Float16, Float16, Float16, Int64, Float16),
+    {SPARSE_APPLY_ADAGRAD_DA_ADD_KERNEL(Float16, Float16, Float16, Float16, Int64, Float16, Float16, Float16, Int64,
+                                        Float16),
      &SparseApplyAdagradDACpuKernelMod::LaunchKernel<int64_t, float16>},
-    {ADD_KERNEL(Float32, Float32, Float32, Float32, Int64, Float32, Float32, Float32, Int64, Float32),
+    {SPARSE_APPLY_ADAGRAD_DA_ADD_KERNEL(Float32, Float32, Float32, Float32, Int64, Float32, Float32, Float32, Int64,
+                                        Float32),
      &SparseApplyAdagradDACpuKernelMod::LaunchKernel<int64_t, float>},
-    {ADD_KERNEL(Float64, Float64, Float64, Float64, Int64, Float64, Float64, Float64, Int64, Float64),
+    {SPARSE_APPLY_ADAGRAD_DA_ADD_KERNEL(Float64, Float64, Float64, Float64, Int64, Float64, Float64, Float64, Int64,
+                                        Float64),
      &SparseApplyAdagradDACpuKernelMod::LaunchKernel<int64_t, double>}};
   return func_list;
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseApplyAdagradDA, SparseApplyAdagradDACpuKernelMod);
+}  // namespace sparse_apply_adagrad_da_cpu
 }  // namespace kernel
 }  // namespace mindspore

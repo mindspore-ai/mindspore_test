@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace triplet_margin_loss_cpu {
 constexpr int kParallel = 28;
 constexpr int kParallelunit = 1024;
 constexpr int kPInit = 2;
@@ -211,6 +212,7 @@ class TripletMarginLossCPUKernelMod : public NativeCpuKernelMod {
   size_t once_compute_size_{kInitParam};
   bool broadcast_{false};
 };
+}  // namespace triplet_margin_loss_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_TRIPLET_MARGIN_LOSS_CPU_KERNEL_H_

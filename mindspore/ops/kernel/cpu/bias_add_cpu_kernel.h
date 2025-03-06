@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace bias_add_cpu {
 
 class BiasAddCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<BiasAddCpuKernelMod> {
  public:
@@ -59,6 +60,7 @@ class BiasAddCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<
   std::vector<size_t> bias_shape_;
   int64_t data_format_ = Format::NCHW;
 };
+}  // namespace bias_add_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_BIAS_ADD_CPU_KERNEL_H_

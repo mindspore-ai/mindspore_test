@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace masked_select_cpu {
 namespace {
 constexpr size_t kMaskedSelectInputsNum = 2;
 constexpr size_t kMaskedSelectOutputsNum = 1;
@@ -143,5 +144,6 @@ std::vector<KernelAttr> MaskedSelectCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MaskedSelect, MaskedSelectCpuKernelMod);
+}  // namespace masked_select_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace ones_like_cpu {
 namespace {
 constexpr size_t kOnesLikeInputsNum = 1;
 constexpr size_t kOnesLikeOutputsNum = 1;
@@ -95,5 +96,6 @@ std::vector<KernelAttr> OnesLikeCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, OnesLike, OnesLikeCpuKernelMod);
+}  // namespace ones_like_cpu
 }  // namespace kernel
 }  // namespace mindspore

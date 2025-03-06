@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace resize_area_cpu {
 namespace {
 constexpr size_t kResizeAreaInputsNum = 2;
 constexpr size_t kResizeAreaOutputsNum = 1;
@@ -171,5 +172,6 @@ std::vector<KernelAttr> ResizeAreaCPUKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ResizeArea, ResizeAreaCPUKernelMod);
+}  // namespace resize_area_cpu
 }  // namespace kernel
 }  // namespace mindspore

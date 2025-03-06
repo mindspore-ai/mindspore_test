@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adjust_hue_cpu {
 namespace {
 constexpr size_t kAdjustHueInputNum = 2;
 constexpr size_t kAdjustHueOutputNum = 1;
@@ -310,5 +311,6 @@ std::vector<KernelAttr> AdjustHueCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AdjustHue, AdjustHueCpuKernelMod);
+}  // namespace adjust_hue_cpu
 }  // namespace kernel
 }  // namespace mindspore

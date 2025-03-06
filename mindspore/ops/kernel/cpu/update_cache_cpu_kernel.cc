@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace update_cache_cpu {
 namespace {
 constexpr size_t kMinUpdateShapeSize = 2;
 }  // namespace
@@ -97,5 +98,6 @@ void UpdateCacheCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &in
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpdateCache, UpdateCacheCpuKernelMod);
+}  // namespace update_cache_cpu
 }  // namespace kernel
 }  // namespace mindspore

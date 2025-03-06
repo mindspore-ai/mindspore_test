@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace softshrink_grad {
 
 void SoftshrinkGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &outputs) {
@@ -42,5 +43,6 @@ bool SoftshrinkGradAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(SoftShrinkGrad, SoftshrinkGradAscend);
+}  // namespace softshrink_grad
 }  // namespace kernel
 }  // namespace mindspore

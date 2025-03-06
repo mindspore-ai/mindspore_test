@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adaptive_avg_pool_2d_cpu {
 class AdaptiveAvgPool2DCpuKernelMod : public NativeCpuKernelMod {
  public:
   AdaptiveAvgPool2DCpuKernelMod() = default;
@@ -46,6 +47,7 @@ class AdaptiveAvgPool2DCpuKernelMod : public NativeCpuKernelMod {
   template <typename SCALAR_T>
   bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace adaptive_avg_pool_2d_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dynamic_assign_cpu {
 int DynamicAssignCpuKernelMod::Resize(const std::vector<kernel::KernelTensor *> &inputs,
                                       const std::vector<kernel::KernelTensor *> &outputs) {
   if (auto ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
@@ -111,5 +112,6 @@ std::vector<KernelAttr> DynamicAssignCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, DynamicAssign, DynamicAssignCpuKernelMod);
+}  // namespace dynamic_assign_cpu
 }  // namespace kernel
 }  // namespace mindspore

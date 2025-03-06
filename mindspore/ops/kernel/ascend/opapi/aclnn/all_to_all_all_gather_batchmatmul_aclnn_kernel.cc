@@ -23,6 +23,7 @@
 #include "kernel/ascend/acl_ir/op_api_util.h"
 namespace mindspore {
 namespace kernel {
+namespace all_to_all_all_gather_batchmatmul {
 void AlltoAllAllGatherBatchMatMulAscend::InitializeCommunicationAttributes() {
   group_ep_ = GetRequiredAttr<std::string>(kAttrGroupEp);
   group_tp_ = GetRequiredAttr<std::string>(kAttrGroupTp);
@@ -170,5 +171,6 @@ bool AlltoAllAllGatherBatchMatMulAscend::Launch(const std::vector<KernelTensor *
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(AlltoAllAllGatherBatchMatMul, AlltoAllAllGatherBatchMatMulAscend);
+}  // namespace all_to_all_all_gather_batchmatmul
 }  // namespace kernel
 }  // namespace mindspore

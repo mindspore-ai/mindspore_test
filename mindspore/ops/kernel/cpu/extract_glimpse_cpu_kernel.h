@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace extract_glimpse_cpu {
 class ExtractGlimpseCpuKernelMod : public NativeCpuKernelMod {
  public:
   ExtractGlimpseCpuKernelMod() = default;
@@ -67,6 +68,7 @@ class ExtractGlimpseCpuKernelMod : public NativeCpuKernelMod {
   bool uniform_noise_;
   string noise_;
 };
+}  // namespace extract_glimpse_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_EXTRACT_GLIMPSE_CPU_KERNEL_H_

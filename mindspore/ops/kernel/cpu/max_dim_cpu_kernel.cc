@@ -19,6 +19,8 @@
 
 namespace mindspore {
 namespace kernel {
+namespace max_dim_cpu {
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MaxDim, MaxDimCpuKernelMod);
+}  // namespace max_dim_cpu
 }  // namespace kernel
 }  // namespace mindspore

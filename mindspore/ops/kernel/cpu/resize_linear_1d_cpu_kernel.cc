@@ -23,6 +23,7 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore::kernel {
+namespace resize_linear_1d_cpu {
 constexpr auto kResizeLinear1D = "ResizeLinear1D";
 constexpr const size_t kResizeLinear1DInputsNum = 3;
 constexpr const size_t kResizeLinear1DOutputsNum = 1;
@@ -173,4 +174,5 @@ int ResizeLinear1DCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs
 
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, ResizeLinear1D,
                                  []() { return std::make_shared<ResizeLinear1DCpuKernelMod>(kResizeLinear1D); });
+}  // namespace resize_linear_1d_cpu
 }  // namespace mindspore::kernel

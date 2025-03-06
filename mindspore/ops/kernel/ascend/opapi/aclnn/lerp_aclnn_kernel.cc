@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lerp {
 
 void LerpAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &outputs) {
@@ -33,5 +34,6 @@ bool LerpAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::ve
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Lerp, LerpAscend);
+}  // namespace lerp
 }  // namespace kernel
 }  // namespace mindspore

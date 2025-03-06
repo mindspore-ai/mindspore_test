@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace apply_adadelta_cpu {
 class ApplyAdadeltaCpuKernelMod : public NativeCpuKernelMod {
  public:
   ApplyAdadeltaCpuKernelMod() = default;
@@ -67,6 +68,7 @@ class ApplyAdadeltaCpuKernelMod : public NativeCpuKernelMod {
   int unit_size_;
   size_t input_elements_;
 };
+}  // namespace apply_adadelta_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

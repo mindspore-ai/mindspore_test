@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_reorder_cpu {
 namespace {
 constexpr size_t kIndicesShapeSize = 2;
 constexpr size_t kSparseReorderInputsNum = 3;
@@ -243,5 +244,6 @@ std::vector<KernelAttr> SparseReorderCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseReorder, SparseReorderCpuKernelMod);
+}  // namespace sparse_reorder_cpu
 }  // namespace kernel
 }  // namespace mindspore

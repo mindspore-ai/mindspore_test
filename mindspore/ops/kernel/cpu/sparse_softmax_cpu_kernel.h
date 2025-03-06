@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_softmax_cpu {
 class SparseSoftmaxCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<SparseSoftmaxCpuKernelMod> {
  public:
   SparseSoftmaxCpuKernelMod() = default;
@@ -55,6 +56,7 @@ class SparseSoftmaxCpuKernelMod : public NativeCpuKernelMod, public MatchKernelH
   size_t values_size_{0};
   size_t shape_size_{0};
 };
+}  // namespace sparse_softmax_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SPARSE_SOFTMAX_CPU_KERNEL_H_

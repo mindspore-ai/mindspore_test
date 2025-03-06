@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_fill_scalar {
 
 class InplaceFillScalarAscend : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class InplaceFillScalarAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace inplace_fill_scalar
 }  // namespace kernel
 }  // namespace mindspore
 

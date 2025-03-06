@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace isclose {
 class IsCloseAscend final : public AclnnKernelMod {
  public:
   IsCloseAscend() : AclnnKernelMod(std::move("aclnnIsClose")) {}
@@ -40,6 +41,7 @@ class IsCloseAscend final : public AclnnKernelMod {
   double atol_{0};
   bool equal_nan_{False};
 };
+}  // namespace isclose
 }  // namespace kernel
 }  // namespace mindspore
 

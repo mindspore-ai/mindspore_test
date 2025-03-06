@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sspaddmm_cpu {
 namespace {
 constexpr size_t kInputsNum = 9;
 constexpr size_t kOutputsNum = 3;
@@ -381,5 +382,6 @@ void SspaddmmCPUKernelMod::SparseMulDense(void *mat1_indices, const S *mat1_valu
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Sspaddmm, SspaddmmCPUKernelMod);
+}  // namespace sspaddmm_cpu
 }  // namespace kernel
 }  // namespace mindspore

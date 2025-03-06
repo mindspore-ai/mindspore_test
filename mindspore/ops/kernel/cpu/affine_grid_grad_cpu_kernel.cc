@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace affine_grid_grad_cpu {
 namespace {
 constexpr size_t kAffineGridGradInputsNum = 2;
 constexpr size_t kAffineGridGradOutputsNum = 1;
@@ -324,5 +325,6 @@ const std::vector<AffineGridGradPair> &AffineGridGradCpuKernelMod::GetFuncList()
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AffineGridGrad, AffineGridGradCpuKernelMod);
+}  // namespace affine_grid_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

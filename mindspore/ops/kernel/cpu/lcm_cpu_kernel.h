@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lcm_cpu {
 class LcmCpuKernelMod : public NativeCpuKernelMod {
  public:
   LcmCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class LcmCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector y_shape_;
   bool need_bcast_{false};
 };
+}  // namespace lcm_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_LCM_CPU_KERNEL_H_

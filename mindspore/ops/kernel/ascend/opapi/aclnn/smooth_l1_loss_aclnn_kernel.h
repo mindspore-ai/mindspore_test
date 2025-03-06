@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace smooth_l1_loss {
 class SmoothL1LossAscendKernelMod : public AclnnKernelMod {
  public:
   SmoothL1LossAscendKernelMod() : AclnnKernelMod(std::move("aclnnSmoothL1Loss")) {}
@@ -37,6 +38,7 @@ class SmoothL1LossAscendKernelMod : public AclnnKernelMod {
   float beta_ = 1.0;
   int64_t reduction_value_{2};
 };
+}  // namespace smooth_l1_loss
 }  // namespace kernel
 }  // namespace mindspore
 

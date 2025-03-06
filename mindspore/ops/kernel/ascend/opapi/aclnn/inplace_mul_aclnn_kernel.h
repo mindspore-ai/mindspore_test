@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_mul {
 
 class InplaceMulAclnnKernelMod : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class InplaceMulAclnnKernelMod : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace inplace_mul
 }  // namespace kernel
 }  // namespace mindspore
 

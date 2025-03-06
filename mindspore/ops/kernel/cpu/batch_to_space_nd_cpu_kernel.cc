@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace batch_to_space_nd_cpu {
 constexpr size_t CROP_SHAPE_1 = 2;
 constexpr size_t kBatchToSpaceNDInputsNum = 1;
 constexpr size_t kBatchToSpaceNDOutputsNum = 1;
@@ -209,5 +210,6 @@ const FuncList &BatchToSpaceNDCpuKernelMod::GetFuncList() const {
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, BatchToSpaceND, BatchToSpaceNDCpuKernelMod);
+}  // namespace batch_to_space_nd_cpu
 }  // namespace kernel
 }  // namespace mindspore

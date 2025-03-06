@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace argmin_cpu {
 class ArgminCpuKernelMod : public NativeCpuKernelMod {
  public:
   ArgminCpuKernelMod() = default;
@@ -57,6 +58,7 @@ class ArgminCpuKernelMod : public NativeCpuKernelMod {
   int64_t dim_axis_{0};
   int64_t axis_{0};
 };
+}  // namespace argmin_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

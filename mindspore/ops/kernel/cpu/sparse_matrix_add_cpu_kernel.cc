@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_matrix_add_cpu {
 namespace {
 constexpr size_t kMatrixDims = 2;
 constexpr size_t kInputNum = 12;
@@ -217,50 +218,55 @@ bool SparseMatrixAddCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *>
   return true;
 }
 
-#define CPU_SPARSE_MATRIX_ADD_KERNEL_REGISTER(ms_index_type, ms_value_type, index_type, value_type) \
-  {                                                                                                 \
-    KernelAttr()                                                                                    \
-      .AddInputAttr(ms_index_type)                                                                  \
-      .AddInputAttr(ms_index_type)                                                                  \
-      .AddInputAttr(ms_index_type)                                                                  \
-      .AddInputAttr(ms_index_type)                                                                  \
-      .AddInputAttr(ms_value_type)                                                                  \
-      .AddInputAttr(ms_index_type)                                                                  \
-      .AddInputAttr(ms_index_type)                                                                  \
-      .AddInputAttr(ms_index_type)                                                                  \
-      .AddInputAttr(ms_index_type)                                                                  \
-      .AddInputAttr(ms_value_type)                                                                  \
-      .AddInputAttr(ms_value_type)                                                                  \
-      .AddInputAttr(ms_value_type)                                                                  \
-      .AddOutputAttr(ms_index_type)                                                                 \
-      .AddOutputAttr(ms_index_type)                                                                 \
-      .AddOutputAttr(ms_index_type)                                                                 \
-      .AddOutputAttr(ms_index_type)                                                                 \
-      .AddOutputAttr(ms_value_type),                                                                \
-      &SparseMatrixAddCpuKernelMod::LaunchKernel<index_type, value_type>                            \
+#define CPU_SPARSE_MATRIX_SPARSE_MATRIX_ADD_ADD_KERNEL_REGISTER(ms_index_type, ms_value_type, index_type, value_type) \
+  {                                                                                                                   \
+    KernelAttr()                                                                                                      \
+      .AddInputAttr(ms_index_type)                                                                                    \
+      .AddInputAttr(ms_index_type)                                                                                    \
+      .AddInputAttr(ms_index_type)                                                                                    \
+      .AddInputAttr(ms_index_type)                                                                                    \
+      .AddInputAttr(ms_value_type)                                                                                    \
+      .AddInputAttr(ms_index_type)                                                                                    \
+      .AddInputAttr(ms_index_type)                                                                                    \
+      .AddInputAttr(ms_index_type)                                                                                    \
+      .AddInputAttr(ms_index_type)                                                                                    \
+      .AddInputAttr(ms_value_type)                                                                                    \
+      .AddInputAttr(ms_value_type)                                                                                    \
+      .AddInputAttr(ms_value_type)                                                                                    \
+      .AddOutputAttr(ms_index_type)                                                                                   \
+      .AddOutputAttr(ms_index_type)                                                                                   \
+      .AddOutputAttr(ms_index_type)                                                                                   \
+      .AddOutputAttr(ms_index_type)                                                                                   \
+      .AddOutputAttr(ms_value_type),                                                                                  \
+      &SparseMatrixAddCpuKernelMod::LaunchKernel<index_type, value_type>                                              \
   }
 
 const std::vector<std::pair<KernelAttr, KernelRunFunc>> &SparseMatrixAddCpuKernelMod::GetFuncList() const {
   static const std::vector<std::pair<KernelAttr, KernelRunFunc>> func_list = {
     // float values
-    CPU_SPARSE_MATRIX_ADD_KERNEL_REGISTER(kNumberTypeInt32, kNumberTypeFloat32, int, float),
-    CPU_SPARSE_MATRIX_ADD_KERNEL_REGISTER(kNumberTypeInt64, kNumberTypeFloat32, int64_t, float),
+    CPU_SPARSE_MATRIX_SPARSE_MATRIX_ADD_ADD_KERNEL_REGISTER(kNumberTypeInt32, kNumberTypeFloat32, int, float),
+    CPU_SPARSE_MATRIX_SPARSE_MATRIX_ADD_ADD_KERNEL_REGISTER(kNumberTypeInt64, kNumberTypeFloat32, int64_t, float),
     // double values
-    CPU_SPARSE_MATRIX_ADD_KERNEL_REGISTER(kNumberTypeInt32, kNumberTypeFloat64, int, double),
-    CPU_SPARSE_MATRIX_ADD_KERNEL_REGISTER(kNumberTypeInt64, kNumberTypeFloat64, int64_t, double),
+    CPU_SPARSE_MATRIX_SPARSE_MATRIX_ADD_ADD_KERNEL_REGISTER(kNumberTypeInt32, kNumberTypeFloat64, int, double),
+    CPU_SPARSE_MATRIX_SPARSE_MATRIX_ADD_ADD_KERNEL_REGISTER(kNumberTypeInt64, kNumberTypeFloat64, int64_t, double),
     // int values
-    CPU_SPARSE_MATRIX_ADD_KERNEL_REGISTER(kNumberTypeInt32, kNumberTypeInt32, int, int),
-    CPU_SPARSE_MATRIX_ADD_KERNEL_REGISTER(kNumberTypeInt64, kNumberTypeInt32, int64_t, int),
+    CPU_SPARSE_MATRIX_SPARSE_MATRIX_ADD_ADD_KERNEL_REGISTER(kNumberTypeInt32, kNumberTypeInt32, int, int),
+    CPU_SPARSE_MATRIX_SPARSE_MATRIX_ADD_ADD_KERNEL_REGISTER(kNumberTypeInt64, kNumberTypeInt32, int64_t, int),
     // complex46 values
-    CPU_SPARSE_MATRIX_ADD_KERNEL_REGISTER(kNumberTypeInt32, kNumberTypeComplex64, int, std::complex<float>),
-    CPU_SPARSE_MATRIX_ADD_KERNEL_REGISTER(kNumberTypeInt64, kNumberTypeComplex64, int64_t, std::complex<float>),
+    CPU_SPARSE_MATRIX_SPARSE_MATRIX_ADD_ADD_KERNEL_REGISTER(kNumberTypeInt32, kNumberTypeComplex64, int,
+                                                            std::complex<float>),
+    CPU_SPARSE_MATRIX_SPARSE_MATRIX_ADD_ADD_KERNEL_REGISTER(kNumberTypeInt64, kNumberTypeComplex64, int64_t,
+                                                            std::complex<float>),
     // complex46 values
-    CPU_SPARSE_MATRIX_ADD_KERNEL_REGISTER(kNumberTypeInt32, kNumberTypeComplex128, int, std::complex<double>),
-    CPU_SPARSE_MATRIX_ADD_KERNEL_REGISTER(kNumberTypeInt64, kNumberTypeComplex128, int64_t, std::complex<double>),
+    CPU_SPARSE_MATRIX_SPARSE_MATRIX_ADD_ADD_KERNEL_REGISTER(kNumberTypeInt32, kNumberTypeComplex128, int,
+                                                            std::complex<double>),
+    CPU_SPARSE_MATRIX_SPARSE_MATRIX_ADD_ADD_KERNEL_REGISTER(kNumberTypeInt64, kNumberTypeComplex128, int64_t,
+                                                            std::complex<double>),
   };
   return func_list;
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseMatrixAdd, SparseMatrixAddCpuKernelMod);
+}  // namespace sparse_matrix_add_cpu
 }  // namespace kernel
 }  // namespace mindspore

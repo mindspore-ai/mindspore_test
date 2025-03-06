@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dense {
 void DenseAclnnKernelMod::SetFlatternNdLinearTensorStorageInfo(const KernelTensorPtr &new_tensor,
                                                                const int &new_shape_first, const ShapeVector &shape) {
   auto new_shape_second = shape[shape.size() - 1];
@@ -165,5 +166,6 @@ bool DenseAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Dense, DenseAclnnKernelMod);
+}  // namespace dense
 }  // namespace kernel
 }  // namespace mindspore

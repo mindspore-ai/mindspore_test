@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace rms_norm {
 
 class RmsNormAscend : public AclnnKernelMod {
  public:
@@ -36,6 +37,7 @@ class RmsNormAscend : public AclnnKernelMod {
   double epsilon_;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace rms_norm
 }  // namespace kernel
 }  // namespace mindspore
 

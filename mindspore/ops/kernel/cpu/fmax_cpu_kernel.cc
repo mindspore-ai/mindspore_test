@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fmax_cpu {
 namespace {
 constexpr auto kShapeIndexZero = 0;
 constexpr auto kShapeIndex1st = 1;
@@ -272,5 +273,6 @@ std::vector<KernelAttr> FmaxCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Fmax, FmaxCpuKernelMod);
+}  // namespace fmax_cpu
 }  // namespace kernel
 }  // namespace mindspore

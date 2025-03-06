@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace norm {
 
 class NormAscend : public AclnnKernelMod {
  public:
@@ -39,6 +40,7 @@ class NormAscend : public AclnnKernelMod {
   std::vector<int64_t> dim_{};
   bool keepdim_;
 };
+}  // namespace norm
 }  // namespace kernel
 }  // namespace mindspore
 

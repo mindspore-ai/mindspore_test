@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace resize_nearest_neighbor_grad_cpu {
 class ResizeNearestNeighborGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   ResizeNearestNeighborGradCpuKernelMod() = default;
@@ -118,6 +119,7 @@ class ResizeNearestNeighborGradCpuKernelMod : public NativeCpuKernelMod {
   float height_scale_{1.0};
   float width_scale_{1.0};
 };
+}  // namespace resize_nearest_neighbor_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_RESIZE_NEAREST_NEIGHBOR_GRAD_CPU_KERNEL_H_

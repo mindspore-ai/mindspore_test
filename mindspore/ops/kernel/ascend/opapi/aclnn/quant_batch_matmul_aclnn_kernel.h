@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace quant_batch_matmul {
 class QuantMatmulV4Ascend : public AclnnKernelMod {
  public:
   QuantMatmulV4Ascend() : AclnnKernelMod(std::move("aclnnQuantMatmulV4")) {}
@@ -38,6 +39,7 @@ class QuantMatmulV4Ascend : public AclnnKernelMod {
   bool transpose_x1_;
   bool transpose_x2_;
 };
+}  // namespace quant_batch_matmul
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -20,8 +20,8 @@
 
 namespace mindspore {
 namespace ops {
-static constexpr ShapeValueDType kShapeDimAny = mindspore::abstract::Shape::kShapeDimAny;
 ShapeArray DiagExtFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  static constexpr ShapeValueDType kShapeDimAny = mindspore::abstract::Shape::kShapeDimAny;
   const auto &input = input_infos[kInputIndex0];
   auto input_shape = input->GetShape();
   const auto &diagonal_opt = input_infos[kInputIndex1]->GetScalarValue<int64_t>();

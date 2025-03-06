@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sample_distorted_bounding_box_v2_cpu {
 namespace {
 constexpr size_t kOutputSize = 3;
 constexpr size_t kInputSize = 3;
@@ -468,5 +469,6 @@ std::vector<KernelAttr> SampleDistortedBoundingBoxV2CPUKernelMod::GetOpSupport()
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SampleDistortedBoundingBoxV2, SampleDistortedBoundingBoxV2CPUKernelMod);
+}  // namespace sample_distorted_bounding_box_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore

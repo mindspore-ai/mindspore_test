@@ -26,6 +26,7 @@
 #include "common/ms_factory.h"
 
 namespace mindspore::kernel {
+namespace hsigmoid_grad_cpu {
 constexpr auto kUnknown = "Unknown";
 
 class HSigmoidGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<HSigmoidGradCpuKernelMod> {
@@ -57,6 +58,7 @@ class HSigmoidGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHe
   std::string kernel_type_{kUnknown};
   const size_t max_dims_{7};
 };
+}  // namespace hsigmoid_grad_cpu
 }  // namespace mindspore::kernel
 
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_HSIGMOID_GRAD_CPU_KERNEL_H_

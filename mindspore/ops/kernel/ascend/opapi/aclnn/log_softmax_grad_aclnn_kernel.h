@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace log_softmax_grad {
 
 class LogSoftmaxGradAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class LogSoftmaxGradAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   int64_t axis_;
 };
+}  // namespace log_softmax_grad
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_nearest2d {
 
 class UpsampleNearest2DAscend final : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class UpsampleNearest2DAscend final : public AclnnKernelMod {
 
   std::vector<int64_t> output_size_;
 };
+}  // namespace upsample_nearest2d
 }  // namespace kernel
 }  // namespace mindspore
 

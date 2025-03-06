@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_segment_sqrt_n_cpu {
 class SparseSegmentSqrtNCpuKernelMod : public NativeCpuKernelMod {
  public:
   SparseSegmentSqrtNCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class SparseSegmentSqrtNCpuKernelMod : public NativeCpuKernelMod {
   TypeId dtype2_{kTypeUnknown};
   bool is_null_input_{false};
 };
+}  // namespace sparse_segment_sqrt_n_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SPARSE_SEGMENT_SQRT_N_CPU_KERNEL_H_

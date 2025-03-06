@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace rmsprop_cpu {
 class RMSPropCpuKernelMod : public NativeCpuKernelMod {
  public:
   RMSPropCpuKernelMod() = default;
@@ -70,6 +71,7 @@ class RMSPropCpuKernelMod : public NativeCpuKernelMod {
   TypeId dtype_{kTypeUnknown};
   std::string kernel_type_{"Unknown"};
 };
+}  // namespace rmsprop_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_RMSPROP_CPU_KERNEL_H_

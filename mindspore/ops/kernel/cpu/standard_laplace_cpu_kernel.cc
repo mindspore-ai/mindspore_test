@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace standard_laplace_cpu {
 namespace {
 constexpr size_t kStandardLaplaceInputsNum = 1;
 constexpr size_t kStandardLaplaceOutputsNum = 1;
@@ -67,5 +68,6 @@ std::vector<KernelAttr> StandardLaplaceCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, StandardLaplace, StandardLaplaceCpuKernelMod);
+}  // namespace standard_laplace_cpu
 }  // namespace kernel
 }  // namespace mindspore

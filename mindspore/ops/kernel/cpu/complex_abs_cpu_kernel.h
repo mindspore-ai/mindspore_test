@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace complex_abs_cpu {
 class ComplexAbsCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<ComplexAbsCpuKernelMod> {
  public:
   ComplexAbsCpuKernelMod() = default;
@@ -47,6 +48,7 @@ class ComplexAbsCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelp
   bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<kernel::KernelTensor *> &,
                     const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace complex_abs_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

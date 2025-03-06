@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fill_tensor {
 
 class FillTensorAscend : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class FillTensorAscend : public AclnnKernelMod {
   ScalarPtr value_ = nullptr;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace fill_tensor
 }  // namespace kernel
 }  // namespace mindspore
 

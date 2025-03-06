@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_erfinv {
 void InplaceErfinvAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                            const std::vector<KernelTensor *> &outputs) {
   GetWorkspaceForResize(inputs[kIndex0]);
@@ -33,5 +34,6 @@ bool InplaceErfinvAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceErfinv, InplaceErfinvAscend);
+}  // namespace inplace_erfinv
 }  // namespace kernel
 }  // namespace mindspore

@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace cast {
 
 class CastAscend : public AclnnKernelMod {
  public:
@@ -34,6 +35,7 @@ class CastAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace cast
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace random_cpu {
 constexpr auto kStandardNormal = "StandardNormal";
 constexpr auto kUniformInt = "UniformInt";
 constexpr auto kUniformReal = "UniformReal";
@@ -56,6 +57,7 @@ class RandomCpuKernelMod : public NativeCpuKernelMod {
   std::mt19937 mtrng_;
   std::default_random_engine dfrng_;
 };
+}  // namespace random_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_RANDOM_CPU_KERNEL_H_

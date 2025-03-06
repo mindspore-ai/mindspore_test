@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace tensor_copy_cpu {
 namespace {
 constexpr size_t ktInput = 0;
 constexpr size_t ktOutput = 0;
@@ -79,5 +80,6 @@ bool TensorCopyCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &i
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TensorMove, TensorCopyCpuKernelMod);
+}  // namespace tensor_copy_cpu
 }  // namespace kernel
 }  // namespace mindspore

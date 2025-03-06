@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace layer_norm_grad_grad_cpu {
 namespace {
 constexpr size_t kInputSize = 10;
 constexpr size_t kOutputSize = 3;
@@ -275,5 +276,6 @@ std::vector<KernelAttr> LayerNormGradGradCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LayerNormGradGrad, LayerNormGradGradCpuKernelMod);
+}  // namespace layer_norm_grad_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matrix_determinant_cpu {
 namespace {
 constexpr size_t kInputOutputNumber = 1;
 static constexpr int kNumber0 = 0;
@@ -107,5 +108,6 @@ void MatrixDeterminantCpuKernelMod::LaunchMatrixDeterminant(const std::vector<Ke
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MatrixDeterminant, MatrixDeterminantCpuKernelMod);
+}  // namespace matrix_determinant_cpu
 }  // namespace kernel
 }  // namespace mindspore

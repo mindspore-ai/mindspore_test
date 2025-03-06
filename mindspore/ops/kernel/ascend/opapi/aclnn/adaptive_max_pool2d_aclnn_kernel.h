@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adaptive_max_pool2d {
 
 class AdaptiveMaxPool2DAscend : public AclnnKernelMod {
  public:
@@ -36,6 +37,7 @@ class AdaptiveMaxPool2DAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_OPS(aclnnAdaptiveMaxPool2d, AdaptiveMaxPool2D)
   std::vector<int64_t> output_size_vector_;
 };
+}  // namespace adaptive_max_pool2d
 }  // namespace kernel
 }  // namespace mindspore
 

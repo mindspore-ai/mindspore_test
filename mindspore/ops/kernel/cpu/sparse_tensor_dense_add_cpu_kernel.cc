@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_tensor_dense_add_cpu {
 namespace {
 constexpr size_t kIndicesShapeSize = 2;
 constexpr size_t kSparseTensorDenseAddInputsNum = 4;
@@ -305,5 +306,6 @@ std::vector<KernelAttr> SparseTensorDenseAddCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseTensorDenseAdd, SparseTensorDenseAddCpuKernelMod);
+}  // namespace sparse_tensor_dense_add_cpu
 }  // namespace kernel
 }  // namespace mindspore

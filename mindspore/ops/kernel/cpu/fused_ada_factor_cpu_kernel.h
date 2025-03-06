@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fused_ada_factor_cpu {
 constexpr auto kFusedAdaFactor = "FusedAdaFactor";
 constexpr auto kFusedAdaFactorWithGlobalNorm = "FusedAdaFactorWithGlobalNorm";
 constexpr auto kUnknown = "Unknown";
@@ -66,6 +67,7 @@ class FusedAdaFactorCpuKernelMod : public NativeCpuKernelMod {
   float global_norm_reciprocal_{1.0f};
   std::string kernel_type_{kUnknown};
 };
+}  // namespace fused_ada_factor_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

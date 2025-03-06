@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace max_unpool2d_grad_cpu {
 namespace {
 constexpr size_t kMaxUnpool2DGradInputsNum = 3;
 constexpr size_t kMaxUnpool2DGradOutputsNum = 1;
@@ -297,5 +298,6 @@ std::vector<KernelAttr> MaxUnpool2DGradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MaxUnpool2DGrad, MaxUnpool2DGradCpuKernelMod);
+}  // namespace max_unpool2d_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

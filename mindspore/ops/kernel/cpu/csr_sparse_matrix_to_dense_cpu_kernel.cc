@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace csr_sparse_matrix_to_dense_cpu {
 namespace {
 constexpr size_t kZero = 0;
 constexpr size_t kOne = 1;
@@ -29,7 +30,7 @@ constexpr size_t kInputIndex1 = 1;
 constexpr size_t kInputIndex2 = 2;
 constexpr size_t kInputIndex3 = 3;
 constexpr size_t kInputIndex4 = 4;
-constexpr size_t kOutputIndex = 0;
+constexpr size_t kOutputIdx = 0;
 constexpr size_t kCSRSparseMatrixToDenseInputsNum = 5;
 constexpr size_t kCSRSparseMatrixToDenseOutputsNum = 1;
 }  // namespace
@@ -129,7 +130,7 @@ void CSRSparseMatrixToDenseCpuKernelMod::LaunchKernel(const std::vector<KernelTe
   indiceT *row_ptrs = static_cast<indiceT *>(inputs[kInputIndex2]->device_ptr());
   indiceT *col_ind = static_cast<indiceT *>(inputs[kInputIndex3]->device_ptr());
   valueT *values = static_cast<valueT *>(inputs[kInputIndex4]->device_ptr());
-  valueT *y_data = static_cast<valueT *>(outputs[kOutputIndex]->device_ptr());
+  valueT *y_data = static_cast<valueT *>(outputs[kOutputIdx]->device_ptr());
   for (size_t batch_idx = kZero; batch_idx < batch_size_; batch_idx++) {
     const size_t dense_offset = batch_idx * num_rows_ * num_cols_;
     for (size_t i = kZero; i < num_rows_ * num_cols_; ++i) {
@@ -209,5 +210,6 @@ std::vector<KernelAttr> CSRSparseMatrixToDenseCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CSRSparseMatrixToDense, CSRSparseMatrixToDenseCpuKernelMod);
+}  // namespace csr_sparse_matrix_to_dense_cpu
 }  // namespace kernel
 }  // namespace mindspore

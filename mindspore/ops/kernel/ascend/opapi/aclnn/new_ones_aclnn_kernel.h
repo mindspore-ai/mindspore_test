@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace new_ones {
 
 class NewOnesAscend : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class NewOnesAscend : public AclnnKernelMod {
   ScalarPtr one_ = nullptr;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace new_ones
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace hshrink_grad_cpu {
 namespace {
 constexpr size_t kHShrinkGradInputsNum = 3;
 constexpr size_t kHShrinkGradOutputsNum = 1;
@@ -87,5 +88,6 @@ bool HShrinkGradCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs, 
 std::vector<KernelAttr> HShrinkGradCpuKernelMod::GetOpSupport() { return kernel_attr; }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, HShrinkGrad, HShrinkGradCpuKernelMod);
+}  // namespace hshrink_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

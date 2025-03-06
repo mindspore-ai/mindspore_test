@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_scatter_src_reduce {
 
 int64_t InplaceScatterSrcReduceAscend::GetReduce(const std::vector<KernelTensor *> &inputs) {
   auto reduce = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
@@ -36,5 +37,6 @@ int64_t InplaceScatterSrcReduceAscend::GetReduce(const std::vector<KernelTensor 
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceScatterSrcReduce, InplaceScatterSrcReduceAscend);
+}  // namespace inplace_scatter_src_reduce
 }  // namespace kernel
 }  // namespace mindspore

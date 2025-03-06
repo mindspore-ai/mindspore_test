@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace array_len_cpu {
 class ArrayLenCpuKernelMod : public NativeCpuKernelMod {
  public:
   ArrayLenCpuKernelMod() = default;
@@ -43,6 +44,7 @@ class ArrayLenCpuKernelMod : public NativeCpuKernelMod {
  private:
   ShapeVector input_shape_;
 };
+}  // namespace array_len_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif

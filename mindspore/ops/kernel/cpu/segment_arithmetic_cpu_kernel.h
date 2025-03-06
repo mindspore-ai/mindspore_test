@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace segment_arithmetic_cpu {
 class SegmentArithmeticCPUKernelMod : public NativeCpuKernelMod {
  public:
   SegmentArithmeticCPUKernelMod() = default;
@@ -74,6 +75,7 @@ class SegmentArithmeticCPUKernelMod : public NativeCpuKernelMod {
   TypeId segment_ids_dtype_{kTypeUnknown};
   TypeId output_dtype_{kTypeUnknown};
 };
+}  // namespace segment_arithmetic_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

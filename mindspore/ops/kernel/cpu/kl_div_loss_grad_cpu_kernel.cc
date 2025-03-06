@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace kl_div_loss_grad_cpu {
 const size_t kInputsNum = 3;
 const size_t kOutputsNum = 1;
 
@@ -186,5 +187,6 @@ std::vector<std::pair<KernelAttr, KLDivLossGradCpuKernelMod::KLDivLossGradFunc>>
     &KLDivLossGradCpuKernelMod::LaunchKernel<double>}};
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, KLDivLossGrad, KLDivLossGradCpuKernelMod);
+}  // namespace kl_div_loss_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

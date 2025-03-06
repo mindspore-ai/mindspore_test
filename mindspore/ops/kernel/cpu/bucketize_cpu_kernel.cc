@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace bucketize_cpu {
 namespace {
 const size_t kOutputNum = 1;
 const size_t kInputNum = 1;
@@ -111,5 +112,6 @@ std::vector<KernelAttr> BucketizeCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Bucketize, BucketizeCpuKernelMod);
+}  // namespace bucketize_cpu
 }  // namespace kernel
 }  // namespace mindspore

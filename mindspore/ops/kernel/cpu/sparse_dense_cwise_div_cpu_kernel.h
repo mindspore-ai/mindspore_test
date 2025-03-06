@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_dense_cwise_div_cpu {
 class SparseDenseCwiseDivCpuKernelMod : public NativeCpuKernelMod {
  public:
   SparseDenseCwiseDivCpuKernelMod() = default;
@@ -55,6 +56,7 @@ class SparseDenseCwiseDivCpuKernelMod : public NativeCpuKernelMod {
   void SparseDenseCwiseDivBcastCompute(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace sparse_dense_cwise_div_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

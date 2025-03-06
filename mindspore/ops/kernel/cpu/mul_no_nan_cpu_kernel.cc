@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace mul_no_nan_cpu {
 namespace {
 constexpr size_t kMulNoNanInputsNum = 2;
 constexpr size_t kMulNoNanOutputsNum = 1;
@@ -176,5 +177,6 @@ bool MulNoNanCPUKernelMod::LaunchKernel(const std::vector<KernelTensor *> &input
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MulNoNan, MulNoNanCPUKernelMod);
+}  // namespace mul_no_nan_cpu
 }  // namespace kernel
 }  // namespace mindspore

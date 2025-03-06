@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace convolution {
 
 class ConvolutionAscend : public AclnnKernelMod {
  public:
@@ -42,6 +43,7 @@ class ConvolutionAscend : public AclnnKernelMod {
   bool transposed_{false};
   std::vector<int64_t> output_padding_;
 };
+}  // namespace convolution
 }  // namespace kernel
 }  // namespace mindspore
 

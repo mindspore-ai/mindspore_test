@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_nearest3d {
 
 class UpsampleNearest3DAscend final : public AclnnKernelMod {
  public:
@@ -41,6 +42,7 @@ class UpsampleNearest3DAscend final : public AclnnKernelMod {
   double scales_h_;
   double scales_w_;
 };
+}  // namespace upsample_nearest3d
 }  // namespace kernel
 }  // namespace mindspore
 

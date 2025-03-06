@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace channel_shuffle_cpu {
 namespace {
 constexpr size_t kChannelShuffleInputsNum = 1;
 constexpr size_t kChannelShuffleOutputsNum = 1;
@@ -121,5 +122,6 @@ bool ChannelShuffleCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> 
   return true;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ChannelShuffle, ChannelShuffleCpuKernelMod);
+}  // namespace channel_shuffle_cpu
 }  // namespace kernel
 }  // namespace mindspore

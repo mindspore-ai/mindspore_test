@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_clamp_scalar {
 
 void InplaceClampScalarAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                         const std::vector<KernelTensor *> &outputs) {
@@ -35,5 +36,6 @@ bool InplaceClampScalarAclnnKernelMod::Launch(const std::vector<KernelTensor *> 
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceClampScalar, InplaceClampScalarAclnnKernelMod);
+}  // namespace inplace_clamp_scalar
 }  // namespace kernel
 }  // namespace mindspore

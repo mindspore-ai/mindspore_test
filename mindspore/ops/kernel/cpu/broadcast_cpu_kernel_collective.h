@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace broadcast_cpu {
 class BroadcastCPUKernelMod : public NativeCpuKernelMod {
  public:
   BroadcastCPUKernelMod() = default;
@@ -40,6 +41,7 @@ class BroadcastCPUKernelMod : public NativeCpuKernelMod {
   uint32_t root_rank_ = 0;
   mindspore::TypeId input_dtype_ = kNumberTypeFloat32;
 };
+}  // namespace broadcast_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

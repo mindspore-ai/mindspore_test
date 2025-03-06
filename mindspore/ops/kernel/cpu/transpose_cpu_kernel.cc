@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace transpose_cpu {
 namespace {
 constexpr size_t kTransposeInputNum = 2;
 constexpr size_t kTransposeOutputsNum = 1;
@@ -561,5 +562,6 @@ void TransposeFwdCpuKernelMod::TransposeDims(const T *in_data, T *out_data, int6
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Transpose, TransposeFwdCpuKernelMod);
+}  // namespace transpose_cpu
 }  // namespace kernel
 }  // namespace mindspore

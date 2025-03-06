@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace elu_ext {
 
 class EluExtAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class EluExtAscend : public AclnnKernelMod {
   ScalarPtr scale_ = nullptr;
   ScalarPtr input_scale_ = nullptr;
 };
+}  // namespace elu_ext
 }  // namespace kernel
 }  // namespace mindspore
 

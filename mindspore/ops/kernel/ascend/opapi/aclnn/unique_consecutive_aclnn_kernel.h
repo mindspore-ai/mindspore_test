@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace unique_consecutive {
 
 class UniqueConsecutiveAscend : public AclnnKernelMod {
  public:
@@ -41,6 +42,7 @@ class UniqueConsecutiveAscend : public AclnnKernelMod {
   std::vector<ShapeVector> output_shapes_;
   int64_t dim_{0};
 };
+}  // namespace unique_consecutive
 }  // namespace kernel
 }  // namespace mindspore
 

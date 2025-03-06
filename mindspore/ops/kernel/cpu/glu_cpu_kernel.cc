@@ -21,6 +21,7 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore::kernel {
+namespace glu_cpu {
 namespace {
 constexpr const size_t kGLUInputsNum = 2;
 constexpr const size_t kGLUOutputsNum = 1;
@@ -164,4 +165,5 @@ int GLUCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, GLU, GLUCpuKernelMod);
+}  // namespace glu_cpu
 }  // namespace mindspore::kernel

@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_to_dense_v2_cpu {
 namespace {
 constexpr size_t kSparseToDenseV2TwoDims = 2;
 constexpr size_t kSparseToDenseV2OneDim = 1;
@@ -37,12 +38,12 @@ constexpr size_t kIndex0 = 0;
 constexpr size_t kIndex1 = 1;
 constexpr size_t kIndex2 = 2;
 constexpr size_t kIndex3 = 3;
-#define ADD_KERNEL(t1, t2, t3, t4, t5) \
-  KernelAttr()                         \
-    .AddInputAttr(kNumberType##t1)     \
-    .AddInputAttr(kNumberType##t2)     \
-    .AddInputAttr(kNumberType##t3)     \
-    .AddInputAttr(kNumberType##t4)     \
+#define SPARSE_TO_DENSE_V2_ADD_KERNEL(t1, t2, t3, t4, t5) \
+  KernelAttr()                                            \
+    .AddInputAttr(kNumberType##t1)                        \
+    .AddInputAttr(kNumberType##t2)                        \
+    .AddInputAttr(kNumberType##t3)                        \
+    .AddInputAttr(kNumberType##t4)                        \
     .AddOutputAttr(kNumberType##t5)
 }  // namespace
 bool SparseToDenseV2CpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
@@ -210,29 +211,50 @@ bool SparseToDenseV2CpuKernelMod::LaunchKernel(const std::vector<kernel::KernelT
 const std::vector<std::pair<KernelAttr, SparseToDenseV2CpuKernelMod::KernelRunFunc>>
   &SparseToDenseV2CpuKernelMod::GetFuncList() const {
   static const std::vector<std::pair<KernelAttr, SparseToDenseV2CpuKernelMod::KernelRunFunc>> func_list = {
-    {ADD_KERNEL(Int32, Int32, Bool, Bool, Bool), &SparseToDenseV2CpuKernelMod::LaunchKernel<int32_t, bool>},
-    {ADD_KERNEL(Int32, Int32, Int8, Int8, Int8), &SparseToDenseV2CpuKernelMod::LaunchKernel<int32_t, int8_t>},
-    {ADD_KERNEL(Int32, Int32, Int16, Int16, Int16), &SparseToDenseV2CpuKernelMod::LaunchKernel<int32_t, int16_t>},
-    {ADD_KERNEL(Int32, Int32, Int32, Int32, Int32), &SparseToDenseV2CpuKernelMod::LaunchKernel<int32_t, int32_t>},
-    {ADD_KERNEL(Int32, Int32, Int64, Int64, Int64), &SparseToDenseV2CpuKernelMod::LaunchKernel<int32_t, int64_t>},
-    {ADD_KERNEL(Int32, Int32, UInt8, UInt8, UInt8), &SparseToDenseV2CpuKernelMod::LaunchKernel<int32_t, uint8_t>},
-    {ADD_KERNEL(Int32, Int32, UInt16, UInt16, UInt16), &SparseToDenseV2CpuKernelMod::LaunchKernel<int32_t, uint16_t>},
-    {ADD_KERNEL(Int32, Int32, Float16, Float16, Float16), &SparseToDenseV2CpuKernelMod::LaunchKernel<int32_t, float16>},
-    {ADD_KERNEL(Int32, Int32, Float32, Float32, Float32), &SparseToDenseV2CpuKernelMod::LaunchKernel<int32_t, float>},
-    {ADD_KERNEL(Int32, Int32, Float64, Float64, Float64), &SparseToDenseV2CpuKernelMod::LaunchKernel<int32_t, double>},
-    {ADD_KERNEL(Int64, Int64, Bool, Bool, Bool), &SparseToDenseV2CpuKernelMod::LaunchKernel<int64_t, bool>},
-    {ADD_KERNEL(Int64, Int64, Int8, Int8, Int8), &SparseToDenseV2CpuKernelMod::LaunchKernel<int64_t, int8_t>},
-    {ADD_KERNEL(Int64, Int64, Int16, Int16, Int16), &SparseToDenseV2CpuKernelMod::LaunchKernel<int64_t, int16_t>},
-    {ADD_KERNEL(Int64, Int64, Int32, Int32, Int32), &SparseToDenseV2CpuKernelMod::LaunchKernel<int64_t, int32_t>},
-    {ADD_KERNEL(Int64, Int64, Int64, Int64, Int64), &SparseToDenseV2CpuKernelMod::LaunchKernel<int64_t, int64_t>},
-    {ADD_KERNEL(Int64, Int64, UInt8, UInt8, UInt8), &SparseToDenseV2CpuKernelMod::LaunchKernel<int64_t, uint8_t>},
-    {ADD_KERNEL(Int64, Int64, UInt16, UInt16, UInt16), &SparseToDenseV2CpuKernelMod::LaunchKernel<int64_t, uint16_t>},
-    {ADD_KERNEL(Int64, Int64, Float16, Float16, Float16), &SparseToDenseV2CpuKernelMod::LaunchKernel<int64_t, float16>},
-    {ADD_KERNEL(Int64, Int64, Float32, Float32, Float32), &SparseToDenseV2CpuKernelMod::LaunchKernel<int64_t, float>},
-    {ADD_KERNEL(Int64, Int64, Float64, Float64, Float64), &SparseToDenseV2CpuKernelMod::LaunchKernel<int64_t, double>},
+    {SPARSE_TO_DENSE_V2_ADD_KERNEL(Int32, Int32, Bool, Bool, Bool),
+     &SparseToDenseV2CpuKernelMod::LaunchKernel<int32_t, bool>},
+    {SPARSE_TO_DENSE_V2_ADD_KERNEL(Int32, Int32, Int8, Int8, Int8),
+     &SparseToDenseV2CpuKernelMod::LaunchKernel<int32_t, int8_t>},
+    {SPARSE_TO_DENSE_V2_ADD_KERNEL(Int32, Int32, Int16, Int16, Int16),
+     &SparseToDenseV2CpuKernelMod::LaunchKernel<int32_t, int16_t>},
+    {SPARSE_TO_DENSE_V2_ADD_KERNEL(Int32, Int32, Int32, Int32, Int32),
+     &SparseToDenseV2CpuKernelMod::LaunchKernel<int32_t, int32_t>},
+    {SPARSE_TO_DENSE_V2_ADD_KERNEL(Int32, Int32, Int64, Int64, Int64),
+     &SparseToDenseV2CpuKernelMod::LaunchKernel<int32_t, int64_t>},
+    {SPARSE_TO_DENSE_V2_ADD_KERNEL(Int32, Int32, UInt8, UInt8, UInt8),
+     &SparseToDenseV2CpuKernelMod::LaunchKernel<int32_t, uint8_t>},
+    {SPARSE_TO_DENSE_V2_ADD_KERNEL(Int32, Int32, UInt16, UInt16, UInt16),
+     &SparseToDenseV2CpuKernelMod::LaunchKernel<int32_t, uint16_t>},
+    {SPARSE_TO_DENSE_V2_ADD_KERNEL(Int32, Int32, Float16, Float16, Float16),
+     &SparseToDenseV2CpuKernelMod::LaunchKernel<int32_t, float16>},
+    {SPARSE_TO_DENSE_V2_ADD_KERNEL(Int32, Int32, Float32, Float32, Float32),
+     &SparseToDenseV2CpuKernelMod::LaunchKernel<int32_t, float>},
+    {SPARSE_TO_DENSE_V2_ADD_KERNEL(Int32, Int32, Float64, Float64, Float64),
+     &SparseToDenseV2CpuKernelMod::LaunchKernel<int32_t, double>},
+    {SPARSE_TO_DENSE_V2_ADD_KERNEL(Int64, Int64, Bool, Bool, Bool),
+     &SparseToDenseV2CpuKernelMod::LaunchKernel<int64_t, bool>},
+    {SPARSE_TO_DENSE_V2_ADD_KERNEL(Int64, Int64, Int8, Int8, Int8),
+     &SparseToDenseV2CpuKernelMod::LaunchKernel<int64_t, int8_t>},
+    {SPARSE_TO_DENSE_V2_ADD_KERNEL(Int64, Int64, Int16, Int16, Int16),
+     &SparseToDenseV2CpuKernelMod::LaunchKernel<int64_t, int16_t>},
+    {SPARSE_TO_DENSE_V2_ADD_KERNEL(Int64, Int64, Int32, Int32, Int32),
+     &SparseToDenseV2CpuKernelMod::LaunchKernel<int64_t, int32_t>},
+    {SPARSE_TO_DENSE_V2_ADD_KERNEL(Int64, Int64, Int64, Int64, Int64),
+     &SparseToDenseV2CpuKernelMod::LaunchKernel<int64_t, int64_t>},
+    {SPARSE_TO_DENSE_V2_ADD_KERNEL(Int64, Int64, UInt8, UInt8, UInt8),
+     &SparseToDenseV2CpuKernelMod::LaunchKernel<int64_t, uint8_t>},
+    {SPARSE_TO_DENSE_V2_ADD_KERNEL(Int64, Int64, UInt16, UInt16, UInt16),
+     &SparseToDenseV2CpuKernelMod::LaunchKernel<int64_t, uint16_t>},
+    {SPARSE_TO_DENSE_V2_ADD_KERNEL(Int64, Int64, Float16, Float16, Float16),
+     &SparseToDenseV2CpuKernelMod::LaunchKernel<int64_t, float16>},
+    {SPARSE_TO_DENSE_V2_ADD_KERNEL(Int64, Int64, Float32, Float32, Float32),
+     &SparseToDenseV2CpuKernelMod::LaunchKernel<int64_t, float>},
+    {SPARSE_TO_DENSE_V2_ADD_KERNEL(Int64, Int64, Float64, Float64, Float64),
+     &SparseToDenseV2CpuKernelMod::LaunchKernel<int64_t, double>},
   };
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseToDenseV2, SparseToDenseV2CpuKernelMod);
+}  // namespace sparse_to_dense_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore

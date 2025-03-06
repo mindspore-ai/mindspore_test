@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace nms_with_mask_cpu {
 constexpr int X0 = 0;
 constexpr int Y0 = 1;
 constexpr int X1 = 2;
@@ -75,6 +76,7 @@ class NMSWithMaskCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHel
   size_t ceil_power_2_{0};
   static const int box_size_ = 5;  //  pre_defined box width
 };
+}  // namespace nms_with_mask_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

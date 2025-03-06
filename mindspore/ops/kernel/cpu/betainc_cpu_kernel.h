@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace betainc_cpu {
 class BetaincCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<BetaincCpuKernelMod> {
  public:
   BetaincCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class BetaincCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<
   std::vector<int64_t> input2_shape_;
   std::vector<int64_t> output_shape_;
 };
+}  // namespace betainc_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

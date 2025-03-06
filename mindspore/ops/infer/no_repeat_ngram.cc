@@ -60,9 +60,6 @@ abstract::ShapePtr NoRepeatNGramInferShape(const PrimitivePtr &primitive,
   }
   auto ngram_size = GetValue<int64_t>(primitive->GetAttr(kNgramSize));
   const int64_t kShapeSize = 3;
-  constexpr int64_t kIndex0 = 0;
-  constexpr int64_t kIndex1 = 1;
-  constexpr int64_t kIndex2 = 2;
   if (input_args.size() < 2) {
     MS_LOG(EXCEPTION) << "The size of input_args is expected to be `2`, but found " << input_args.size();
   }

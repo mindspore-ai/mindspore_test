@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_copy {
 
 class InplaceCopyAclnnKernelMod : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class InplaceCopyAclnnKernelMod : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE();
 };
+}  // namespace inplace_copy
 }  // namespace kernel
 }  // namespace mindspore
 

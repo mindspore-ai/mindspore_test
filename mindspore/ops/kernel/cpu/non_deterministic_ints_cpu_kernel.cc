@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace non_deterministic_ints_cpu {
 namespace {
 const uint32_t kInputNum = 1;
 const uint32_t kInpuDims = 1;
@@ -112,5 +113,6 @@ std::vector<KernelAttr> NonDeterministicIntsCPUKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NonDeterministicInts, NonDeterministicIntsCPUKernelMod);
+}  // namespace non_deterministic_ints_cpu
 }  // namespace kernel
 }  // namespace mindspore

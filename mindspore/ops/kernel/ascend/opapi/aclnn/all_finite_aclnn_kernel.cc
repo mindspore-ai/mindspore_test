@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace all_finite {
 namespace {
 static constexpr size_t kAlignSize = 512;
 }  // namespace
@@ -46,5 +47,6 @@ bool AllFiniteAscend::Launch(const std::vector<KernelTensor *> &inputs, const st
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(AllFinite, AllFiniteAscend);
+}  // namespace all_finite
 }  // namespace kernel
 }  // namespace mindspore

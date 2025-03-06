@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace linear_sum_assignment_cpu {
 namespace {
 using LSAP_FUNC_VECTOR = std::vector<std::pair<KernelAttr, LinearSumAssignmentCpuKernelMod::KernelRunFunc>>;
 
@@ -390,5 +391,6 @@ void LinearSumAssignmentCpuKernelMod::PostProcess(int64_t *a, int64_t *b, const 
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LinearSumAssignment, LinearSumAssignmentCpuKernelMod);
+}  // namespace linear_sum_assignment_cpu
 }  // namespace kernel
 }  // namespace mindspore

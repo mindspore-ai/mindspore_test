@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace resize_bilinear_cpu {
 namespace {
 constexpr size_t kResizeBilinearV2InputsNum = 4;
 constexpr size_t kResizeBilinearOutputsNum = 1;
@@ -257,5 +258,6 @@ FuncVec &ResizeBilinearCpuKernelMod::GetFuncList() const {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ResizeBilinearV2, ResizeBilinearCpuKernelMod);
+}  // namespace resize_bilinear_cpu
 }  // namespace kernel
 }  // namespace mindspore

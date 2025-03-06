@@ -32,6 +32,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace ger_cpu {
 namespace {
 const size_t kGerInputsNum = 2;
 const size_t kGerOutputsNum = 1;
@@ -302,5 +303,6 @@ const std::vector<std::pair<KernelAttr, GerCpuKernelMod::KernelRunFunc>> &GerCpu
 
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, Ger,
                                  []() { return std::make_shared<GerCpuKernelMod>(prim::kPrimGer->name()); });
+}  // namespace ger_cpu
 }  // namespace kernel
 }  // namespace mindspore

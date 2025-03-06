@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adaptive_max_pool1d {
 void AdaptiveMaxPool1DAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
   SetParaForPool2D(inputs, outputs);
@@ -42,5 +43,6 @@ bool AdaptiveMaxPool1DAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(AdaptiveMaxPool1D, AdaptiveMaxPool1DAscend);
+}  // namespace adaptive_max_pool1d
 }  // namespace kernel
 }  // namespace mindspore

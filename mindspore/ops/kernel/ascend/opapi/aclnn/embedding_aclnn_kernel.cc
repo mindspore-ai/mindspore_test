@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace embedding {
 
 void EmbeddingAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
@@ -50,5 +51,6 @@ bool EmbeddingAscend::Launch(const std::vector<KernelTensor *> &inputs, const st
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Embedding, EmbeddingAscend);
+}  // namespace embedding
 }  // namespace kernel
 }  // namespace mindspore

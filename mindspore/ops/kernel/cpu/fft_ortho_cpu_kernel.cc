@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fft_ortho_cpu {
 namespace {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
@@ -115,7 +116,7 @@ bool FFTOrthoCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *
   return true;
 }
 
-#define ONE_DIM_CPU_REG(MS_Tin, MS_Tout, T)                         \
+#define FFT_ORTHO_ONE_DIM_CPU_REG(MS_Tin, MS_Tout, T)               \
   KernelAttr()                                                      \
     .AddInputAttr(MS_Tin)                             /* dout */    \
     .AddOptionalInputAttr(kNumberTypeInt64)           /* axes */    \
@@ -124,8 +125,8 @@ bool FFTOrthoCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *
     &FFTOrthoCpuKernelMod::LaunchKernel<T>
 
 std::vector<std::pair<KernelAttr, FFTOrthoCpuKernelMod::FFTOrthoFunc>> FFTOrthoCpuKernelMod::func_list_ = {
-  {ONE_DIM_CPU_REG(kNumberTypeFloat32, kNumberTypeFloat32, float)},
-  {ONE_DIM_CPU_REG(kNumberTypeFloat64, kNumberTypeFloat64, double)}};
+  {FFT_ORTHO_ONE_DIM_CPU_REG(kNumberTypeFloat32, kNumberTypeFloat32, float)},
+  {FFT_ORTHO_ONE_DIM_CPU_REG(kNumberTypeFloat64, kNumberTypeFloat64, double)}};
 
 std::vector<KernelAttr> FFTOrthoCpuKernelMod::GetOpSupport() {
   std::vector<KernelAttr> support_list;
@@ -135,5 +136,6 @@ std::vector<KernelAttr> FFTOrthoCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FFTOrtho, FFTOrthoCpuKernelMod);
+}  // namespace fft_ortho_cpu
 }  // namespace kernel
 }  // namespace mindspore

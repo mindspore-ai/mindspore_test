@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fftnbase_cpu {
 namespace {
 constexpr int kOnesideDivisor = 2;
 using complex64 = std::complex<float>;
@@ -367,5 +368,6 @@ MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, RFFT2, FFTNBaseCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, RFFTN, FFTNBaseCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IRFFT2, FFTNBaseCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IRFFTN, FFTNBaseCpuKernelMod);
+}  // namespace fftnbase_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace no_repeat_ngram_cpu {
 namespace {
 constexpr size_t kNoRepeatNGramInputsNum = 2;
 constexpr size_t kNoRepeatNGramOutputsNum = 1;
@@ -142,5 +143,6 @@ std::vector<KernelAttr> NoRepeatNGramCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NoRepeatNGram, NoRepeatNGramCpuKernelMod);
+}  // namespace no_repeat_ngram_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace linalg_qr {
 
 class LinalgQrAclnnKernelMod : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class LinalgQrAclnnKernelMod : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   int64_t mode_ = 0;  // default use "reduced"
 };
+}  // namespace linalg_qr
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matrix_triangular_solve_cpu {
 class MatrixTriangularSolveCpuKernelMod : public NativeCpuKernelMod {
  public:
   MatrixTriangularSolveCpuKernelMod() = default;
@@ -58,6 +59,7 @@ class MatrixTriangularSolveCpuKernelMod : public NativeCpuKernelMod {
   bool trans_{false};
   bool unit_diagonal_{false};
 };
+}  // namespace matrix_triangular_solve_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace col2im_cpu {
 class Col2ImCpuKernelMod : public NativeCpuKernelMod {
  public:
   Col2ImCpuKernelMod() = default;
@@ -59,6 +60,7 @@ class Col2ImCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> dilation_;
   std::vector<int64_t> padding_;
 };
+}  // namespace col2im_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

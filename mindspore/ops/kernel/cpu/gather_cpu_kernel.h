@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace gather_cpu {
 class GatherCpuKernelMod : public NativeCpuKernelMod {
  public:
   GatherCpuKernelMod() = default;
@@ -75,6 +76,7 @@ class GatherCpuKernelMod : public NativeCpuKernelMod {
   size_t indices_type_size_ = 0;
   bool is_null_input_ = false;
 };
+}  // namespace gather_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

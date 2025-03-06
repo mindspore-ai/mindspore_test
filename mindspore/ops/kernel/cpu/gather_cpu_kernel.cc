@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace gather_cpu {
 namespace {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
@@ -158,5 +159,6 @@ std::vector<KernelAttr> GatherCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Gather, GatherCpuKernelMod);
+}  // namespace gather_cpu
 }  // namespace kernel
 }  // namespace mindspore

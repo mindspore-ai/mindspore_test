@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace nllloss_cpu {
 namespace {
 constexpr size_t kNLLLossInputsNum = 5;
 constexpr size_t kNLLLossOutputsNum = 2;
@@ -134,5 +135,6 @@ std::vector<KernelAttr> NLLLossCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NLLLoss, NLLLossCpuKernelMod);
+}  // namespace nllloss_cpu
 }  // namespace kernel
 }  // namespace mindspore

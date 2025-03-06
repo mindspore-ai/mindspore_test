@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_count_sparse_output_cpu {
 namespace {
 constexpr size_t kSparseCountSparseOutputInputsNum = 4;
 constexpr size_t kSparseCountSparseOutputOutputsNum = 3;
@@ -322,5 +323,6 @@ std::vector<KernelAttr> SparseCountSparseOutputCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseCountSparseOutput, SparseCountSparseOutputCpuKernelMod);
+}  // namespace sparse_count_sparse_output_cpu
 }  // namespace kernel
 }  // namespace mindspore

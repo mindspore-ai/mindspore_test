@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace max_unpool2d_ext {
 
 class MaxUnpool2DExtAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class MaxUnpool2DExtAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   ShapeVector output_size_{};
 };
+}  // namespace max_unpool2d_ext
 }  // namespace kernel
 }  // namespace mindspore
 

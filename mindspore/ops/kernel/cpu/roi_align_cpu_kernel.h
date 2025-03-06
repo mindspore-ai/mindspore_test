@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace roi_align_cpu {
 class ROIAlignCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<ROIAlignCpuKernelMod> {
  public:
   ROIAlignCpuKernelMod() = default;
@@ -78,6 +79,7 @@ class ROIAlignCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper
   size_t rois_size_{0};
   size_t output_size_{0};
 };
+}  // namespace roi_align_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

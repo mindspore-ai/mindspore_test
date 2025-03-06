@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matrix_logarithm_cpu {
 class MatrixLogarithmCpuKernelMod : public NativeCpuKernelMod {
  public:
   MatrixLogarithmCpuKernelMod() = default;
@@ -55,6 +56,7 @@ class MatrixLogarithmCpuKernelMod : public NativeCpuKernelMod {
 
   ShapeVector shape_x_;
 };
+}  // namespace matrix_logarithm_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_MATRIX_LOGARITHM_CPU_KERNEL_H_

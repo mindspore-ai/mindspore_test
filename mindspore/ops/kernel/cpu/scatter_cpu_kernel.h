@@ -28,6 +28,7 @@
 #include "include/common/utils/utils.h"
 
 namespace mindspore::kernel {
+namespace scatter_cpu {
 constexpr auto kUnKnown = "Unknown";
 constexpr auto kScatter = "Scatter";
 constexpr auto kTensorScatterElements = "TensorScatterElements";
@@ -79,6 +80,7 @@ class ScatterCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<
   size_t src_idx_ = kIndex3;
   size_t reduce_idx_ = kIndex4;
 };
+}  // namespace scatter_cpu
 }  // namespace mindspore::kernel
 
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_SCATTER_CPU_KERNEL_H_

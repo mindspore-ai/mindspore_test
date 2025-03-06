@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adam_cpu {
 namespace {
 constexpr size_t kAdamInputsNum = 10;
 constexpr size_t kAdamOutputsNum = 3;
@@ -232,5 +233,6 @@ std::vector<KernelAttr> AdamCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Adam, AdamCpuKernelMod);
+}  // namespace adam_cpu
 }  // namespace kernel
 }  // namespace mindspore

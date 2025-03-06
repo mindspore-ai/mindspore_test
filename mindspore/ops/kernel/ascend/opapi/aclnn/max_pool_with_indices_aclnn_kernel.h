@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace max_pool_with_indices {
 
 class MaxPoolWithIndicesAscend : public AclnnKernelMod {
  public:
@@ -41,6 +42,7 @@ class MaxPoolWithIndicesAscend : public AclnnKernelMod {
   std::vector<int64_t> dilation_;
   bool ceil_mode_;
 };
+}  // namespace max_pool_with_indices
 }  // namespace kernel
 }  // namespace mindspore
 

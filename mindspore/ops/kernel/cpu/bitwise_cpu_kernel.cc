@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace bitwise_cpu {
 namespace {
 const size_t kBitwiseInputsNum = 2;
 const size_t kBitwiseOutputsNum = 1;
@@ -249,5 +250,6 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, BitwiseOr,
                                  []() { return std::make_shared<BitwiseCpuKernelMod>(prim::kPrimBitwiseOr->name()); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, BitwiseXor,
                                  []() { return std::make_shared<BitwiseCpuKernelMod>(prim::kPrimBitwiseXor->name()); });
+}  // namespace bitwise_cpu
 }  // namespace kernel
 }  // namespace mindspore

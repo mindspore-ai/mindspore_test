@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace print_cpu {
 class PrintCpuKernelMod : public NativeCpuKernelMod {
  public:
   PrintCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class PrintCpuKernelMod : public NativeCpuKernelMod {
   std::unordered_map<int64_t, int64_t> value_type_;
   std::vector<std::tuple<size_t, TypeId>> input_info_;
 };
+}  // namespace print_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

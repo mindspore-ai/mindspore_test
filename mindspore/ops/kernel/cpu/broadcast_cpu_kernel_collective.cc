@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace broadcast_cpu {
 #if defined(__linux__) && defined(WITH_BACKEND)
 using device::cpu::kMCCLGlobalGroupName;
 using device::cpu::MsCollectiveCommLib;
@@ -83,5 +84,6 @@ bool BroadcastCPUKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Broadcast, BroadcastCPUKernelMod);
+}  // namespace broadcast_cpu
 }  // namespace kernel
 }  // namespace mindspore

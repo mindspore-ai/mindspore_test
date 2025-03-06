@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace remove_expanded_dims_cpu {
 bool RemoveExpandedDimsCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &outputs) {
   tuple_index_types_ = GetValue<std::vector<int64_t>>(primitive_->GetAttr(kAttrTupleIndexTypes));
@@ -140,5 +141,6 @@ std::vector<KernelAttr> RemoveExpandedDimsCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, RemoveExpandedDims, RemoveExpandedDimsCpuKernelMod);
+}  // namespace remove_expanded_dims_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matrix_inverse_cpu {
 class MatrixInverseCpuKernelMod : public NativeCpuKernelMod {
  public:
   MatrixInverseCpuKernelMod() = default;
@@ -51,6 +52,7 @@ class MatrixInverseCpuKernelMod : public NativeCpuKernelMod {
   void LaunchMatrixInverse(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
   ShapeVector input_shape_;
 };
+}  // namespace matrix_inverse_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_MATRIX_INVERSE_CPU_KERNEL_H_

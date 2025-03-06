@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dense_to_csr_sparse_matrix_cpu {
 namespace {
 constexpr size_t kZero = 0;
 constexpr size_t kOne = 1;
@@ -26,11 +27,11 @@ constexpr size_t kTwo = 2;
 constexpr size_t kDefaultRank = 2;
 constexpr size_t kInputIndex0 = 0;
 constexpr size_t kInputIndex1 = 1;
-constexpr size_t kOutputIndex0 = 0;
-constexpr size_t kOutputIndex1 = 1;
-constexpr size_t kOutputIndex2 = 2;
-constexpr size_t kOutputIndex3 = 3;
-constexpr size_t kOutputIndex4 = 4;
+constexpr size_t kOutputIdx0 = 0;
+constexpr size_t kOutputIdx1 = 1;
+constexpr size_t kOutputIdx2 = 2;
+constexpr size_t kOutputIdx3 = 3;
+constexpr size_t kOutputIdx4 = 4;
 constexpr size_t kDenseToCSRSparseMatrixInputsNum = 2;
 constexpr size_t kDenseToCSRSparseMatrixOutputsNum = 5;
 constexpr int64_t kInitPrevBatch = -1;
@@ -127,11 +128,11 @@ void DenseToCSRSparseMatrixCpuKernelMod::LaunchKernel(const std::vector<KernelTe
                                                       const std::vector<KernelTensor *> &outputs) const {
   auto dense_input_ptr = reinterpret_cast<valueT *>(inputs[kInputIndex0]->device_ptr());
   auto indices_ptr = reinterpret_cast<indiceT *>(inputs[kInputIndex1]->device_ptr());
-  auto y_dense_shape_ptr = reinterpret_cast<indiceT *>(outputs[kOutputIndex0]->device_ptr());
-  auto y_batch_pointers_ptr = reinterpret_cast<indiceT *>(outputs[kOutputIndex1]->device_ptr());
-  auto y_row_pointers_ptr = reinterpret_cast<indiceT *>(outputs[kOutputIndex2]->device_ptr());
-  auto y_col_indices_ptr = reinterpret_cast<indiceT *>(outputs[kOutputIndex3]->device_ptr());
-  auto y_values_ptr = reinterpret_cast<valueT *>(outputs[kOutputIndex4]->device_ptr());
+  auto y_dense_shape_ptr = reinterpret_cast<indiceT *>(outputs[kOutputIdx0]->device_ptr());
+  auto y_batch_pointers_ptr = reinterpret_cast<indiceT *>(outputs[kOutputIdx1]->device_ptr());
+  auto y_row_pointers_ptr = reinterpret_cast<indiceT *>(outputs[kOutputIdx2]->device_ptr());
+  auto y_col_indices_ptr = reinterpret_cast<indiceT *>(outputs[kOutputIdx3]->device_ptr());
+  auto y_values_ptr = reinterpret_cast<valueT *>(outputs[kOutputIdx4]->device_ptr());
   if (rank_ == kDefaultRank) {
     y_dense_shape_ptr[kZero] = indiceT(num_rows_);
     y_dense_shape_ptr[kOne] = indiceT(num_cols_);
@@ -253,5 +254,6 @@ std::vector<KernelAttr> DenseToCSRSparseMatrixCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, DenseToCSRSparseMatrix, DenseToCSRSparseMatrixCpuKernelMod);
+}  // namespace dense_to_csr_sparse_matrix_cpu
 }  // namespace kernel
 }  // namespace mindspore

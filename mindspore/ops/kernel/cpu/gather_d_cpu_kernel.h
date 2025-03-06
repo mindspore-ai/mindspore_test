@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace gather_d_cpu {
 class GatherDCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<GatherDCpuKernelMod> {
  public:
   GatherDCpuKernelMod() = default;
@@ -45,6 +46,7 @@ class GatherDCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<
   std::vector<size_t> index_shape_;
   std::vector<size_t> output_shape_;
 };
+}  // namespace gather_d_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

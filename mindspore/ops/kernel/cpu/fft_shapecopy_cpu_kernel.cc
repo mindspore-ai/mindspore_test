@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fft_shapecopy_cpu {
 namespace {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
@@ -64,23 +65,23 @@ bool FFTShapeCopyCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTens
   return true;
 }
 
-#define ONE_DIM_CPU_REG(MS_Tin, MS_Tout, T)     \
-  KernelAttr()                                  \
-    .AddInputAttr(MS_Tin)           /* dout */  \
-    .AddInputAttr(kNumberTypeInt64) /* shape */ \
-    .AddOutputAttr(MS_Tout),                    \
+#define FFT_SHAPECOPY_ONE_DIM_CPU_REG(MS_Tin, MS_Tout, T) \
+  KernelAttr()                                            \
+    .AddInputAttr(MS_Tin)           /* dout */            \
+    .AddInputAttr(kNumberTypeInt64) /* shape */           \
+    .AddOutputAttr(MS_Tout),                              \
     &FFTShapeCopyCpuKernelMod::LaunchKernel<T>
 
 std::vector<std::pair<KernelAttr, FFTShapeCopyCpuKernelMod::FFTShapeCopyFunc>> FFTShapeCopyCpuKernelMod::func_list_ = {
-  {ONE_DIM_CPU_REG(kNumberTypeInt16, kNumberTypeInt16, int16_t)},
-  {ONE_DIM_CPU_REG(kNumberTypeInt32, kNumberTypeInt32, int32_t)},
-  {ONE_DIM_CPU_REG(kNumberTypeInt64, kNumberTypeInt64, int64_t)},
-  {ONE_DIM_CPU_REG(kNumberTypeBFloat16, kNumberTypeBFloat16, bfloat16)},
-  {ONE_DIM_CPU_REG(kNumberTypeFloat16, kNumberTypeFloat16, Eigen::half)},
-  {ONE_DIM_CPU_REG(kNumberTypeFloat32, kNumberTypeFloat32, float)},
-  {ONE_DIM_CPU_REG(kNumberTypeFloat64, kNumberTypeFloat64, double)},
-  {ONE_DIM_CPU_REG(kNumberTypeComplex64, kNumberTypeComplex64, complex64)},
-  {ONE_DIM_CPU_REG(kNumberTypeComplex128, kNumberTypeComplex128, complex128)}};
+  {FFT_SHAPECOPY_ONE_DIM_CPU_REG(kNumberTypeInt16, kNumberTypeInt16, int16_t)},
+  {FFT_SHAPECOPY_ONE_DIM_CPU_REG(kNumberTypeInt32, kNumberTypeInt32, int32_t)},
+  {FFT_SHAPECOPY_ONE_DIM_CPU_REG(kNumberTypeInt64, kNumberTypeInt64, int64_t)},
+  {FFT_SHAPECOPY_ONE_DIM_CPU_REG(kNumberTypeBFloat16, kNumberTypeBFloat16, bfloat16)},
+  {FFT_SHAPECOPY_ONE_DIM_CPU_REG(kNumberTypeFloat16, kNumberTypeFloat16, Eigen::half)},
+  {FFT_SHAPECOPY_ONE_DIM_CPU_REG(kNumberTypeFloat32, kNumberTypeFloat32, float)},
+  {FFT_SHAPECOPY_ONE_DIM_CPU_REG(kNumberTypeFloat64, kNumberTypeFloat64, double)},
+  {FFT_SHAPECOPY_ONE_DIM_CPU_REG(kNumberTypeComplex64, kNumberTypeComplex64, complex64)},
+  {FFT_SHAPECOPY_ONE_DIM_CPU_REG(kNumberTypeComplex128, kNumberTypeComplex128, complex128)}};
 
 std::vector<KernelAttr> FFTShapeCopyCpuKernelMod::GetOpSupport() {
   std::vector<KernelAttr> support_list;
@@ -90,5 +91,6 @@ std::vector<KernelAttr> FFTShapeCopyCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FFTShapeCopy, FFTShapeCopyCpuKernelMod);
+}  // namespace fft_shapecopy_cpu
 }  // namespace kernel
 }  // namespace mindspore

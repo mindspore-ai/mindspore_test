@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace argmax_ext {
 
 class ArgMaxAscend : public AclnnKernelMod {
  public:
@@ -42,6 +43,7 @@ class ArgMaxAscend : public AclnnKernelMod {
   ShapeVector output_realshape_;
   std::shared_ptr<KernelTensor> input_kernel_tensor_;
 };
+}  // namespace argmax_ext
 }  // namespace kernel
 }  // namespace mindspore
 

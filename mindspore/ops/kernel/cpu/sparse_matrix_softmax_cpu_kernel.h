@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_matrix_softmax_cpu {
 class SparseMatrixSoftmaxCpuKernelMod : public NativeCpuKernelMod {
  public:
   SparseMatrixSoftmaxCpuKernelMod() = default;
@@ -45,6 +46,7 @@ class SparseMatrixSoftmaxCpuKernelMod : public NativeCpuKernelMod {
   template <typename T>
   void LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace sparse_matrix_softmax_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif

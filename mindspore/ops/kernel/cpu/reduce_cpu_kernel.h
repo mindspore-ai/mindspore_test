@@ -36,6 +36,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace reduce_cpu {
 class ReduceCpuKernelMod : public NativeCpuKernelMod {
  public:
   ReduceCpuKernelMod() = default;
@@ -95,6 +96,7 @@ class ReduceCpuKernelMod : public NativeCpuKernelMod {
   std::shared_ptr<CpuKernelFunc> func_obj_;
   std::string kernel_type_{"Unknown"};
 };
+}  // namespace reduce_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_REDUCE_CPU_KERNEL_H_

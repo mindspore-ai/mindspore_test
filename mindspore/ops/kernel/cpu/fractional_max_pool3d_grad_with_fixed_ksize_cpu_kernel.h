@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fractional_max_pool3d_grad_with_fixed_ksize_cpu {
 class FractionalMaxPool3DGradWithFixedKsizeCPUKernelMod : public NativeCpuKernelMod {
  public:
   FractionalMaxPool3DGradWithFixedKsizeCPUKernelMod() = default;
@@ -63,6 +64,7 @@ class FractionalMaxPool3DGradWithFixedKsizeCPUKernelMod : public NativeCpuKernel
   int64_t outputH_;
   int64_t outputW_;
 };
+}  // namespace fractional_max_pool3d_grad_with_fixed_ksize_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_FRACTIONAL_MAX_POOL3D_GRAD_WITH_FIXED_KSIZE_CPU_KERNEL_H_

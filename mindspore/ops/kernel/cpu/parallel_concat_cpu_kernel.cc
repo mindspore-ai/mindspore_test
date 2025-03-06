@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace parallel_concat_cpu {
 namespace {
 constexpr int axis = 0;
 constexpr size_t kParallelConcatOutputsNum = 1;
@@ -153,5 +154,6 @@ std::vector<KernelAttr> ParallelConcatCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ParallelConcat, ParallelConcatCpuKernelMod);
+}  // namespace parallel_concat_cpu
 }  // namespace kernel
 }  // namespace mindspore

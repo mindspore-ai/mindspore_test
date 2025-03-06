@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace linear_sum_assignment_cpu {
 class LinearSumAssignmentCpuKernelMod : public NativeCpuKernelMod,
                                         public MatchKernelHelper<LinearSumAssignmentCpuKernelMod> {
  public:
@@ -74,6 +75,7 @@ class LinearSumAssignmentCpuKernelMod : public NativeCpuKernelMod,
   void AugmentPreviousSolution(int64_t j, int64_t cur_row, std::vector<int64_t> *path, std::vector<int64_t> *row4col,
                                std::vector<int64_t> *col4row) const;
 };
+}  // namespace linear_sum_assignment_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

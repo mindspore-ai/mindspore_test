@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_put {
 class InplacePutAscend final : public AclnnKernelMod {
  public:
   InplacePutAscend() : AclnnKernelMod(std::move("aclnnInplacePut")) {}
@@ -39,6 +40,7 @@ class InplacePutAscend final : public AclnnKernelMod {
 
   bool accumulate_{false};
 };
+}  // namespace inplace_put
 }  // namespace kernel
 }  // namespace mindspore
 

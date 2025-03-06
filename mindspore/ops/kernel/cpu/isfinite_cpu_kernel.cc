@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace isfinite_cpu {
 namespace {
 constexpr size_t kIsFiniteInputsNum = 1;
 constexpr size_t kIsFiniteOutputsNum = 1;
@@ -102,5 +103,6 @@ const std::vector<std::pair<KernelAttr, IsFiniteCpuKernelMod::KernelRunFunc>> &I
   return func_list_;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IsFinite, IsFiniteCpuKernelMod);
+}  // namespace isfinite_cpu
 }  // namespace kernel
 }  // namespace mindspore

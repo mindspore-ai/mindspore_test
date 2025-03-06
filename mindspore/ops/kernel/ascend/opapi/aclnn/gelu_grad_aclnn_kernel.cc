@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace gelu_grad {
 void GeLUGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &outputs) {
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], outputs[kIndex0]);
@@ -39,5 +40,6 @@ bool GeLUGradAscend::Launch(const std::vector<KernelTensor *> &inputs, const std
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(GeLUGrad, GeLUGradAscend);
+}  // namespace gelu_grad
 }  // namespace kernel
 }  // namespace mindspore

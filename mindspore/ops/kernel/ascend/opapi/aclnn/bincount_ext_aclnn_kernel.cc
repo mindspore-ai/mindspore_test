@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace bincount_ext {
 namespace {
 int64_t GetValueFromTensorToInt64(KernelTensor *tensor) {
   auto data_type = tensor->dtype_id();
@@ -142,5 +143,6 @@ void BincountExtAscend::UpdateOutputShapeAndSize(const std::vector<KernelTensor 
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(BincountExt, BincountExtAscend);
+}  // namespace bincount_ext
 }  // namespace kernel
 }  // namespace mindspore

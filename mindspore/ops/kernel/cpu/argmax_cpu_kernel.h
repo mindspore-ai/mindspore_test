@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace argmax_cpu {
 class ArgmaxCpuKernelMod : public NativeCpuKernelMod {
  public:
   ArgmaxCpuKernelMod() = default;
@@ -57,6 +58,7 @@ class ArgmaxCpuKernelMod : public NativeCpuKernelMod {
   int64_t dim_axis_{0};
   int64_t axis_{0};
 };
+}  // namespace argmax_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

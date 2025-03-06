@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace max_unpool2d_cpu {
 class MaxUnpool2DCpuKernelMod : public NativeCpuKernelMod {
  public:
   MaxUnpool2DCpuKernelMod() = default;
@@ -58,6 +59,7 @@ class MaxUnpool2DCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector output_shape_;
   std::string data_format_;
 };
+}  // namespace max_unpool2d_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

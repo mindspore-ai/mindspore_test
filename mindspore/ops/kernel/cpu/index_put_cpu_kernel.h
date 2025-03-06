@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace index_put_cpu {
 class IndexPutCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<IndexPutCpuKernelMod> {
  public:
   IndexPutCpuKernelMod() = default;
@@ -63,6 +64,7 @@ class IndexPutCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper
   int64_t accumulate{0};
   std::vector<TypeId> input_info_{};
 };
+}  // namespace index_put_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

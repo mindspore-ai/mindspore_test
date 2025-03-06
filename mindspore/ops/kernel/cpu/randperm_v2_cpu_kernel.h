@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace randperm_v2_cpu {
 class RandpermV2CPUKernelMod : public NativeCpuKernelMod {
  public:
   RandpermV2CPUKernelMod() = default;
@@ -47,6 +48,7 @@ class RandpermV2CPUKernelMod : public NativeCpuKernelMod {
   bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
   bool LaunchKernelFp16(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace randperm_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_RANDPERM_V2_CPU_KERNEL_H_

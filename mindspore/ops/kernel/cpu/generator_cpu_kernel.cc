@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace generator_cpu {
 using namespace ops::generator;
 namespace {
 constexpr char kGenerator[] = "Generator";
@@ -220,5 +221,6 @@ std::vector<KernelAttr> GeneratorCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Generator, GeneratorCpuKernelMod);
+}  // namespace generator_cpu
 }  // namespace kernel
 }  // namespace mindspore

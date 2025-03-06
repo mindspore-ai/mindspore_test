@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace batch_norm_gather_stats_with_counts {
 void BatchNormGatherStatsWithCountsAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                             const std::vector<KernelTensor *> &outputs) {
   auto momentum = device::ascend::ConvertKernelTensor<float>(inputs[kIndex5]);
@@ -49,5 +50,6 @@ bool BatchNormGatherStatsWithCountsAscend::Launch(const std::vector<KernelTensor
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(BatchNormGatherStatsWithCounts, BatchNormGatherStatsWithCountsAscend);
+}  // namespace batch_norm_gather_stats_with_counts
 }  // namespace kernel
 }  // namespace mindspore

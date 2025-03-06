@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace maxpool_grad_grad_with_argmax_cpu {
 class MaxPoolGradGradWithArgmaxCpuKernelMod : public NativeCpuKernelMod,
                                               public MatchKernelHelper<MaxPoolGradGradWithArgmaxCpuKernelMod> {
  public:
@@ -56,6 +57,7 @@ class MaxPoolGradGradWithArgmaxCpuKernelMod : public NativeCpuKernelMod,
   size_t input_batch_stride_ = 0;
   size_t output_batch_stride_ = 0;
 };
+}  // namespace maxpool_grad_grad_with_argmax_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

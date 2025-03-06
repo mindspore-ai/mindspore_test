@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace one_hot_cpu {
 namespace {
 constexpr size_t kOneHotInputsNum = 5;
 constexpr size_t kOneHotOutputsNum = 1;
@@ -472,5 +473,6 @@ std::vector<KernelAttr> OneHotCpuKernelMod::support_list_ = {KernelAttr()
 std::vector<KernelAttr> OneHotCpuKernelMod::GetOpSupport() { return support_list_; }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, OneHot, OneHotCpuKernelMod);
+}  // namespace one_hot_cpu
 }  // namespace kernel
 }  // namespace mindspore

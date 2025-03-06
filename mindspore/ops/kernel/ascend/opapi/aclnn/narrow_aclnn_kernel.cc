@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace narrow {
 
 void NarrowAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
@@ -55,5 +56,6 @@ bool NarrowAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Narrow, NarrowAscend);
+}  // namespace narrow
 }  // namespace kernel
 }  // namespace mindspore

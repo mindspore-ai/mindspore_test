@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matrix_exp_cpu {
 template <typename T>
 using MatrixXd = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
@@ -71,6 +72,7 @@ class MatrixExpCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelpe
   std::vector<size_t> input_shape_{};
   TypeId data_type_;
 };
+}  // namespace matrix_exp_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_MATRIX_EXP_CPU_KERNEL_H_

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace rolling_cpu {
 namespace rolling {
 enum Method : int {
   Max,
@@ -53,6 +54,7 @@ class RollingCpuKernelMod : public NativeCpuKernelMod {
  private:
   std::shared_ptr<CpuKernelFunc> func_obj_;
 };
+}  // namespace rolling_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

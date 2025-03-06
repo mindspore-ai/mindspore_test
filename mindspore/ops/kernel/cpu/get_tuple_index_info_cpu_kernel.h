@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace get_tuple_index_info_cpu {
 class GetTupleIndexInfoCpuKernelMod : public NativeCpuKernelMod {
  public:
   GetTupleIndexInfoCpuKernelMod() = default;
@@ -57,6 +58,7 @@ class GetTupleIndexInfoCpuKernelMod : public NativeCpuKernelMod {
   string tuple_index_info_type_;
   int64_t expand_dims_count_ = 0;
 };
+}  // namespace get_tuple_index_info_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_GET_TUPLE_INDEX_INFO_CPU_KERNEL_H_

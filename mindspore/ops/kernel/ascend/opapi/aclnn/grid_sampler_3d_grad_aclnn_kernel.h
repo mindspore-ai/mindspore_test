@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace grid_sampler_3d_grad {
 
 class GridSampler3DGradAscend : public AclnnKernelMod {
  public:
@@ -40,6 +41,7 @@ class GridSampler3DGradAscend : public AclnnKernelMod {
   int64_t padding_mode_;
   int64_t align_corners_;
 };
+}  // namespace grid_sampler_3d_grad
 }  // namespace kernel
 }  // namespace mindspore
 

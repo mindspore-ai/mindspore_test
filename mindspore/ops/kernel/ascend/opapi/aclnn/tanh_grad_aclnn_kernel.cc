@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace tanh_grad {
 
 void TanhGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &outputs) {
@@ -38,5 +39,6 @@ bool TanhGradAscend::Launch(const std::vector<KernelTensor *> &inputs, const std
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(TanhGrad, TanhGradAscend);
+}  // namespace tanh_grad
 }  // namespace kernel
 }  // namespace mindspore

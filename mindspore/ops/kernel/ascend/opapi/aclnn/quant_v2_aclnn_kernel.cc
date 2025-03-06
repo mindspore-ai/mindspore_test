@@ -28,6 +28,7 @@
 namespace mindspore {
 using mindspore::device::ascend::AscendQuantRoundMode;
 namespace kernel {
+namespace quant_v2 {
 
 void QuantV2Ascend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
@@ -58,5 +59,6 @@ bool QuantV2Ascend::Launch(const std::vector<KernelTensor *> &inputs, const std:
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(QuantV2, QuantV2Ascend);
+}  // namespace quant_v2
 }  // namespace kernel
 }  // namespace mindspore

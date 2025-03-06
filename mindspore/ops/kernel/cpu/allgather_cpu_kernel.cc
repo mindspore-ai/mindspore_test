@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace allgather_cpu {
 namespace {
 constexpr auto kRanksGroup = "group";
 }  // namespace
@@ -51,5 +52,6 @@ std::vector<KernelAttr> AllGatherCpuKernelMod::GetOpSupport() {
   return kernel_attr_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, _HostAllGather, AllGatherCpuKernelMod);
+}  // namespace allgather_cpu
 }  // namespace kernel
 }  // namespace mindspore

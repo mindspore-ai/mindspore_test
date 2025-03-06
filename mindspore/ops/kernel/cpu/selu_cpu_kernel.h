@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace selu_cpu {
 class SeluCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<SeluCpuKernelMod> {
  public:
   SeluCpuKernelMod() = default;
@@ -52,6 +53,7 @@ class SeluCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<Sel
   size_t output_size_{1};
   std::vector<size_t> output_shape_;
 };
+}  // namespace selu_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SELU_CPU_KERNEL_H_

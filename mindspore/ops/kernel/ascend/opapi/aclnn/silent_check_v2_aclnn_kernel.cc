@@ -32,6 +32,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace silent_check_v2 {
 void SilentCheckV2Ascend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                            const std::vector<KernelTensor *> &outputs) {
   c_min_steps_ = inputs[kIndex4]->GetValueWithCheck<int64_t>();
@@ -61,5 +62,6 @@ bool SilentCheckV2Ascend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(SilentCheckV2, SilentCheckV2Ascend);
+}  // namespace silent_check_v2
 }  // namespace kernel
 }  // namespace mindspore

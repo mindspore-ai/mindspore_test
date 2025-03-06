@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adjust_contrastv2_cpu {
 namespace {
 constexpr size_t kAdjustContrastv2InputNum = 2;
 constexpr size_t kAdjustContrastv2OutputNum = 1;
@@ -121,5 +122,6 @@ std::vector<KernelAttr> AdjustContrastv2CpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AdjustContrastv2, AdjustContrastv2CpuKernelMod);
+}  // namespace adjust_contrastv2_cpu
 }  // namespace kernel
 }  // namespace mindspore

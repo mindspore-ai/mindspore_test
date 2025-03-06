@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace diag_ext {
 
 class DiagExtAscend : public AclnnKernelMod {
  public:
@@ -36,6 +37,7 @@ class DiagExtAscend : public AclnnKernelMod {
   int64_t diagonal_;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace diag_ext
 }  // namespace kernel
 }  // namespace mindspore
 

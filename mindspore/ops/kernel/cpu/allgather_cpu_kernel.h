@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace allgather_cpu {
 class AllGatherCpuKernelMod : public NativeCpuKernelMod {
  public:
   AllGatherCpuKernelMod() = default;
@@ -42,6 +43,7 @@ class AllGatherCpuKernelMod : public NativeCpuKernelMod {
  private:
   std::vector<int> ranks_group_;
 };
+}  // namespace allgather_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

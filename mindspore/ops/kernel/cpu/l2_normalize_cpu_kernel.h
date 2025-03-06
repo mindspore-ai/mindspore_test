@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace l2_normalize_cpu {
 class L2NormalizeCpuKernelMod : public NativeCpuKernelMod {
  public:
   L2NormalizeCpuKernelMod() = default;
@@ -45,6 +46,7 @@ class L2NormalizeCpuKernelMod : public NativeCpuKernelMod {
  private:
   std::shared_ptr<CpuKernelFunc> func_obj_;
 };
+}  // namespace l2_normalize_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

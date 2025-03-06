@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sigmoid_grad {
 
 class SigmoidGradAscend : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class SigmoidGradAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace sigmoid_grad
 }  // namespace kernel
 }  // namespace mindspore
 

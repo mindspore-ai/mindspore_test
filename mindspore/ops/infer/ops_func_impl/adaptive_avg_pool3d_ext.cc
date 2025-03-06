@@ -76,12 +76,12 @@ ShapeArray AdaptiveAvgPool3DExtFuncImpl::InferShape(const PrimitivePtr &primitiv
   }
   return {x_shape};
 }
-const std::set<TypeId> valid_types = {kNumberTypeFloat16,  kNumberTypeFloat32,   kNumberTypeFloat64,
-                                      kNumberTypeBFloat16, kNumberTypeComplex64, kNumberTypeComplex128};
 std::vector<TypeId> AdaptiveAvgPool3DExtFuncImpl::InferType(const PrimitivePtr &primitive,
                                                             const InferInfoPtrList &input_infos) const {
   auto input_type = input_infos[kInputIndex0]->GetType();
   auto prim_name = primitive->name();
+  const std::set<TypeId> valid_types = {kNumberTypeFloat16,  kNumberTypeFloat32,   kNumberTypeFloat64,
+                                        kNumberTypeBFloat16, kNumberTypeComplex64, kNumberTypeComplex128};
   (void)CheckAndConvertUtils::CheckTypeIdValid("input", input_type, valid_types, prim_name);
   return {input_type};
 }

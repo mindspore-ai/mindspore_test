@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace stridedslice_v2_cpu {
 constexpr auto kStridedSliceV2 = "StridedSliceV2";
 class StridedSliceV2CpuKernelMod : public NativeCpuKernelMod {
  public:
@@ -77,6 +78,7 @@ class StridedSliceV2CpuKernelMod : public NativeCpuKernelMod {
   ShapeVector stride_shape_;
   StridedSliceParameter slice_param_;
 };
+}  // namespace stridedslice_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

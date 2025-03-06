@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace geqrf_cpu {
 class GeqrfCpuKernelMod : public NativeCpuKernelMod {
  public:
   GeqrfCpuKernelMod() = default;
@@ -67,6 +68,7 @@ class GeqrfCpuKernelMod : public NativeCpuKernelMod {
   size_t elem_num;
   size_t batch_num;
 };
+}  // namespace geqrf_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

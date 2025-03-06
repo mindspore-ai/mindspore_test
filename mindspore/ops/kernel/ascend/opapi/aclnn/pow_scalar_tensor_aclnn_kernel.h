@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace pow_scalar_tensor {
 
 class PowScalarTensorAscend : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class PowScalarTensorAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace pow_scalar_tensor
 }  // namespace kernel
 }  // namespace mindspore
 

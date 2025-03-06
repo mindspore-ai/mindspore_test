@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_relu {
 
 void InplaceReLUAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                  const std::vector<KernelTensor *> &outputs) {
@@ -35,5 +36,6 @@ bool InplaceReLUAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceReLU, InplaceReLUAclnnKernelMod);
+}  // namespace inplace_relu
 }  // namespace kernel
 }  // namespace mindspore

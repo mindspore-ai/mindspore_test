@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace arg_with_value {
 
 void ArgMaxWithValueAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
@@ -59,5 +60,6 @@ bool ArgMinWithValueAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 MS_ACLNN_KERNEL_FACTORY_REG(ArgMaxWithValue, ArgMaxWithValueAscend);
 MS_ACLNN_KERNEL_FACTORY_REG(ArgMinWithValue, ArgMinWithValueAscend);
+}  // namespace arg_with_value
 }  // namespace kernel
 }  // namespace mindspore

@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace left_shift_cpu {
 namespace {
 const size_t kLeftShiftInputsNum = 2;
 const size_t kLeftShiftOutputsNum = 1;
@@ -164,5 +165,6 @@ std::vector<KernelAttr> LeftShiftCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LeftShift, LeftShiftCpuKernelMod);
+}  // namespace left_shift_cpu
 }  // namespace kernel
 }  // namespace mindspore

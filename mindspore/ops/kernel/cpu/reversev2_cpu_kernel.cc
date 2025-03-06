@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace reversev2_cpu {
 namespace {
 constexpr size_t kReverseV2InputsNum = 2;
 constexpr size_t kReverseV2OutputsNum = 1;
@@ -207,5 +208,6 @@ std::vector<KernelAttr> ReverseV2CpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ReverseV2, ReverseV2CpuKernelMod);
+}  // namespace reversev2_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_tanh {
 class InplaceTanhAscend : public AclnnKernelMod {
  public:
   InplaceTanhAscend() : AclnnKernelMod("aclnnInplaceTanh") {}
@@ -35,6 +36,7 @@ class InplaceTanhAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace inplace_tanh
 }  // namespace kernel
 }  // namespace mindspore
 

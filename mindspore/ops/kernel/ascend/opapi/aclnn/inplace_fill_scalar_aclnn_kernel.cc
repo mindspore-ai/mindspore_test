@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_fill_scalar {
 
 void InplaceFillScalarAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
@@ -44,5 +45,6 @@ bool InplaceFillScalarAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceFillScalar, InplaceFillScalarAscend);
+}  // namespace inplace_fill_scalar
 }  // namespace kernel
 }  // namespace mindspore

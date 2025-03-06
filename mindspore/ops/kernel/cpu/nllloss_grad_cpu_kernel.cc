@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace nllloss_grad_cpu {
 namespace {
 constexpr size_t kNLLLossGradInputsNum = 7;
 constexpr size_t kNLLLossGradOutputsNum = 1;
@@ -131,5 +132,6 @@ std::vector<KernelAttr> NLLLossGradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NLLLossGrad, NLLLossGradCpuKernelMod);
+}  // namespace nllloss_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

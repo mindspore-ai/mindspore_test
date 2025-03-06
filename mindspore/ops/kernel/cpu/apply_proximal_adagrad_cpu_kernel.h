@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace apply_proximal_adagrad_cpu {
 class ApplyProximalAdagradCpuKernelMod : public NativeCpuKernelMod {
  public:
   ApplyProximalAdagradCpuKernelMod() = default;
@@ -60,6 +61,7 @@ class ApplyProximalAdagradCpuKernelMod : public NativeCpuKernelMod {
   int unit_size_;
   size_t input_elements_;
 };
+}  // namespace apply_proximal_adagrad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

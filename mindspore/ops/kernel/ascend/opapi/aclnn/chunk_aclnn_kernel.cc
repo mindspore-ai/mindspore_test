@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace chunk {
 void ChunkAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs) {
   const auto &input_shape = inputs[kIndex0]->GetShape()->GetShapeVector();
@@ -63,5 +64,6 @@ bool ChunkAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::v
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Chunk, ChunkAscend);
+}  // namespace chunk
 }  // namespace kernel
 }  // namespace mindspore

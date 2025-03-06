@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace iou_cpu {
 namespace {
 constexpr size_t kIOUInputsNum = 2;
 constexpr size_t kIOUOutputsNum = 1;
@@ -139,5 +140,6 @@ std::vector<KernelAttr> IOUCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IOU, IOUCpuKernelMod);
+}  // namespace iou_cpu
 }  // namespace kernel
 }  // namespace mindspore

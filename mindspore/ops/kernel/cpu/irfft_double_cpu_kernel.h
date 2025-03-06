@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace irfft_double_cpu {
 class IRFFTDoubleCpuKernelMod : public NativeCpuKernelMod {
  public:
   IRFFTDoubleCpuKernelMod() = default;
@@ -59,6 +60,7 @@ class IRFFTDoubleCpuKernelMod : public NativeCpuKernelMod {
   int64_t dim_;
   int64_t n_;
 };
+}  // namespace irfft_double_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_IRFFT_DOUBLE_CPU_KERNEL_H_

@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_nearest_3d_grad_cpu {
 class UpsampleNearest3DGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   UpsampleNearest3DGradCpuKernelMod() = default;
@@ -63,6 +64,7 @@ class UpsampleNearest3DGradCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> none_list_;
   std::vector<float> scales_;
 };
+}  // namespace upsample_nearest_3d_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

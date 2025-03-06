@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace masked_select {
 void MaskedSelectAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                   const std::vector<KernelTensor *> &outputs) {
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], outputs[kIndex0]);
@@ -51,5 +52,6 @@ void MaskedSelectAclnnKernelMod::UpdateOutputShapeAndSize(const std::vector<Kern
   outputs[kIndex0]->set_size(size);
 }
 MS_ACLNN_KERNEL_FACTORY_REG(MaskedSelect, MaskedSelectAclnnKernelMod);
+}  // namespace masked_select
 }  // namespace kernel
 }  // namespace mindspore

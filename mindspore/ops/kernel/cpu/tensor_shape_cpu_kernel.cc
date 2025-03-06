@@ -19,6 +19,7 @@
 #include "common/ms_factory.h"
 
 namespace mindspore::kernel {
+namespace tensor_shape_cpu {
 namespace {
 constexpr size_t kTensorShapeOutputNum = 1;
 }  // namespace
@@ -80,4 +81,5 @@ std::vector<KernelAttr> TensorShapeCpuKernelMod::GetOpSupport() {
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, DynamicShape, TensorShapeCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TensorShape, TensorShapeCpuKernelMod);
+}  // namespace tensor_shape_cpu
 }  // namespace mindspore::kernel

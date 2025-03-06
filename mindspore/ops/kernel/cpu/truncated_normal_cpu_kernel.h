@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace truncated_normal_cpu {
 class TruncatedNormalCPUKernelMod : public NativeCpuKernelMod {
  public:
   TruncatedNormalCPUKernelMod() = default;
@@ -53,6 +54,7 @@ class TruncatedNormalCPUKernelMod : public NativeCpuKernelMod {
   std::default_random_engine rng_;
   bool flag_{true};
 };
+}  // namespace truncated_normal_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_TRUNCATEDNORMAL_CPU_KERNEL_H_

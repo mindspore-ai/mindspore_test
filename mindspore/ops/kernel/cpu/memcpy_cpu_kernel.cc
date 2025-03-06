@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace memcpy_cpu {
 namespace {
 #define EXPAND_DIMS_CPU_REG(T)                                                                     \
   KernelAttr().AddInputAttr(T).AddInputAttr(kObjectTypeNumber, kNumberTypeInt64).AddOutputAttr(T), \
@@ -241,5 +242,6 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, ExpandDims,
                                  []() { return std::make_shared<MemcpyCpuKernelMod>(kExpandDims); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, Squeeze,
                                  []() { return std::make_shared<MemcpyCpuKernelMod>(kSqueeze); });
+}  // namespace memcpy_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adaptive_avg_pool1d {
 std::vector<int64_t> GetOriStrides(const std::vector<int64_t> &shape) {
   if (shape.empty()) {
     return {};
@@ -98,5 +99,6 @@ bool AdaptiveAvgPool1DAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(AdaptiveAvgPool1D, AdaptiveAvgPool1DAscend);
+}  // namespace adaptive_avg_pool1d
 }  // namespace kernel
 }  // namespace mindspore

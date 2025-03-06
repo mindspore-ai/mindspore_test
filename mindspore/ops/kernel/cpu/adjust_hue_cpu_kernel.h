@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adjust_hue_cpu {
 struct HsvTuple {
   float h;
   float s;
@@ -49,6 +50,7 @@ class AdjustHueCpuKernelMod : public NativeCpuKernelMod {
  private:
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace adjust_hue_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

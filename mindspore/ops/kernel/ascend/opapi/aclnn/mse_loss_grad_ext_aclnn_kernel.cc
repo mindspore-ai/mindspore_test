@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace mse_loss_grad_ext {
 
 void MSELossGradExtAclnnKernelMod::SetExpandTensor(KernelTensor *input_tensor,
                                                    const std::vector<KernelTensor *> &inputs,
@@ -96,5 +97,6 @@ bool MSELossGradExtAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inp
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(MSELossGradExt, MSELossGradExtAclnnKernelMod);
+}  // namespace mse_loss_grad_ext
 }  // namespace kernel
 }  // namespace mindspore

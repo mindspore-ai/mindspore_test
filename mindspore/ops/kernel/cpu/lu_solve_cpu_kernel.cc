@@ -20,9 +20,12 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lu_solve_cpu {
 namespace {
 constexpr size_t kDimNum = 2;
-}
+constexpr size_t kInputNum = 3;
+constexpr size_t kOutputNum = 1;
+}  // namespace
 
 int64_t get_element_num(const std::vector<int64_t> &shape) { return SizeToLong(SizeOf(shape)); }
 
@@ -157,5 +160,6 @@ std::vector<KernelAttr> LuSolveCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LuSolve, LuSolveCpuKernelMod);
+}  // namespace lu_solve_cpu
 }  // namespace kernel
 }  // namespace mindspore

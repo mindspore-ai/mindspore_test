@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace addcmul_cpu {
 class AddcmulCpuKernelMod : public NativeCpuKernelMod {
  public:
   AddcmulCpuKernelMod() = default;
@@ -63,6 +64,7 @@ class AddcmulCpuKernelMod : public NativeCpuKernelMod {
   template <typename T1, typename T2>
   bool AddcmulCompute(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace addcmul_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_ADDCMUL_CPU_KERNEL_H_

@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace segment_mean_cpu {
 class SegmentMeanCPUKernelMod : public NativeCpuKernelMod {
  public:
   SegmentMeanCPUKernelMod() = default;
@@ -55,6 +56,7 @@ class SegmentMeanCPUKernelMod : public NativeCpuKernelMod {
   TypeId segment_ids_dtype_{kTypeUnknown};
   TypeId output_dtype_{kTypeUnknown};
 };
+}  // namespace segment_mean_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

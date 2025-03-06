@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace diag_part_cpu {
 class DiagPartCpuKernelMod : public NativeCpuKernelMod {
  public:
   DiagPartCpuKernelMod() = default;
@@ -51,6 +52,7 @@ class DiagPartCpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, DiagPartFunc>> func_list_;
   DiagPartFunc kernel_func_;
 };
+}  // namespace diag_part_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

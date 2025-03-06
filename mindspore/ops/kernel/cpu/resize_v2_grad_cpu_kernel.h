@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace resize_v2_grad_cpu {
 constexpr auto kUnknown = "Unknown";
 
 class ResizeV2GradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<ResizeV2GradCpuKernelMod> {
@@ -85,6 +86,7 @@ class ResizeV2GradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHe
   size_t in_hw_size_{0};
   size_t out_hw_size_{0};
 };
+}  // namespace resize_v2_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_RESIZE_V2_GRAD_CPU_KERNEL_H_

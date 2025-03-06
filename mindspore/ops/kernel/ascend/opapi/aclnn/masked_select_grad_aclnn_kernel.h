@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace masked_select_grad {
 class MaskedSelectGradAclnnKernelMod : public AclnnKernelMod {
  public:
   MaskedSelectGradAclnnKernelMod() : AclnnKernelMod("aclnnInplaceMaskedScatter") {}
@@ -37,6 +38,7 @@ class MaskedSelectGradAclnnKernelMod : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_OPS(aclnnInplaceMaskedScatter, InplaceMaskedScatter)
   DEFINE_GET_WORKSPACE_FOR_OPS(aclnnInplaceZero, InplaceZero)
 };
+}  // namespace masked_select_grad
 }  // namespace kernel
 }  // namespace mindspore
 

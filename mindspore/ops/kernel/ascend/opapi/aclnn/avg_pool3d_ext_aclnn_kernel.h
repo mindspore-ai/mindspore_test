@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace avg_pool3d_ext {
 
 class AvgPool3dExtAscend : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class AvgPool3dExtAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace avg_pool3d_ext
 }  // namespace kernel
 }  // namespace mindspore
 

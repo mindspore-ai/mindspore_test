@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace std_mean {
 
 class StdMeanAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class StdMeanAscend : public AclnnKernelMod {
   int64_t correction_{1};
   bool keepdim_{false};
 };
+}  // namespace std_mean
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace zeros_like_ext {
 
 void ZerosLikeExtAscendCall::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &outputs) {
@@ -44,5 +45,6 @@ bool ZerosLikeExtAscendCall::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(ZerosLikeExt, ZerosLikeExtAscendCall);
+}  // namespace zeros_like_ext
 }  // namespace kernel
 }  // namespace mindspore

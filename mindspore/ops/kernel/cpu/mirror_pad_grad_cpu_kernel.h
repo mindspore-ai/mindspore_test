@@ -29,6 +29,7 @@
 #include "common/ms_factory.h"
 namespace mindspore {
 namespace kernel {
+namespace mirror_pad_grad_cpu {
 class MirrorPadGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   MirrorPadGradCpuKernelMod() = default;
@@ -104,6 +105,7 @@ class MirrorPadGradCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> input_shape_;
   std::vector<int64_t> output_shape_;
 };
+}  // namespace mirror_pad_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_MIRROR_PAD_GRAD_CPU_KERNEL_H_

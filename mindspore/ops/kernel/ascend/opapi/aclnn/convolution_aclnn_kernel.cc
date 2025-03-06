@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace convolution {
 namespace {
 void ExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim) {
   if (param->size() == kIndex1) {
@@ -61,5 +62,6 @@ bool ConvolutionAscend::Launch(const std::vector<KernelTensor *> &inputs, const 
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Convolution, ConvolutionAscend);
+}  // namespace convolution
 }  // namespace kernel
 }  // namespace mindspore

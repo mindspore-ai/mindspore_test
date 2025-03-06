@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace tile {
 
 class TileAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class TileAscend : public AclnnKernelMod {
 
   std::vector<int64_t> multiples_;
 };
+}  // namespace tile
 }  // namespace kernel
 }  // namespace mindspore
 

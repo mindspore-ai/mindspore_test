@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace divmod {
 
 class DivModAscend : public AclnnKernelMod {
  public:
@@ -36,6 +37,7 @@ class DivModAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   int64_t mode_ = 0;
 };
+}  // namespace divmod
 }  // namespace kernel
 }  // namespace mindspore
 

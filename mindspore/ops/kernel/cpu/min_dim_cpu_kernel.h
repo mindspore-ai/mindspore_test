@@ -28,9 +28,10 @@
 
 namespace mindspore {
 namespace kernel {
-class MinDimCpuKernelMod : public ArgMinWithValueCpuKernelMod {
+namespace min_dim_cpu {
+class MinDimCpuKernelMod : public argmin_with_value_cpu::ArgMinWithValueCpuKernelMod {
  public:
-  MinDimCpuKernelMod() : ArgMinWithValueCpuKernelMod(1, 0) {}
+  MinDimCpuKernelMod() : argmin_with_value_cpu::ArgMinWithValueCpuKernelMod(1, 0) {}
   ~MinDimCpuKernelMod() override = default;
 
  protected:
@@ -106,6 +107,7 @@ class MinDimCpuKernelMod : public ArgMinWithValueCpuKernelMod {
     return kernel_attr_list;
   }
 };
+}  // namespace min_dim_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_count_sparse_output_cpu {
 class SparseCountSparseOutputCpuKernelMod : public NativeCpuKernelMod {
  public:
   SparseCountSparseOutputCpuKernelMod() = default;
@@ -63,6 +64,7 @@ class SparseCountSparseOutputCpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, SparseCountSparseOutputFunc>> func_list_;
   std::vector<TypeId> types_;
 };
+}  // namespace sparse_count_sparse_output_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

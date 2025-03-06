@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace topk_cpu {
 namespace {
 constexpr size_t kTopKInputsNum = 2;
 constexpr size_t kTopKOutputsNum = 2;
@@ -214,5 +215,6 @@ std::vector<KernelAttr> TopKCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TopK, TopKCpuKernelMod);
+}  // namespace topk_cpu
 }  // namespace kernel
 }  // namespace mindspore

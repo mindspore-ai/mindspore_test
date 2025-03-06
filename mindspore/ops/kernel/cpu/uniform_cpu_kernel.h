@@ -31,6 +31,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace uniform_cpu {
 class UniformCpuKernelMod : public NativeCpuKernelMod {
  public:
   UniformCpuKernelMod() = default;
@@ -72,6 +73,7 @@ class UniformCpuKernelMod : public NativeCpuKernelMod {
   float to_{1.0};
   BaseOperatorPtr kernel_ptr_{nullptr};
 };
+}  // namespace uniform_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

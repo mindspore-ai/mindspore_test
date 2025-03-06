@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace softmax_cpu {
 namespace {
 #define SOFTMAX_CPU_REG(M_T, T)                                                                       \
   KernelAttr().AddInputAttr(M_T).AddInputAttr(kObjectTypeTuple, kNumberTypeInt64).AddOutputAttr(M_T), \
@@ -192,5 +193,6 @@ std::vector<KernelAttr> SoftmaxCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Softmax, SoftmaxCpuKernelMod);
+}  // namespace softmax_cpu
 }  // namespace kernel
 }  // namespace mindspore

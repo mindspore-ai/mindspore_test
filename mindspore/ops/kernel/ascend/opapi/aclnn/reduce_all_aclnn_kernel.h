@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace reduce_all {
 
 class ReduceAllAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class ReduceAllAscend : public AclnnKernelMod {
   std::vector<int64_t> axis_;
   bool keep_dims_{false};
 };
+}  // namespace reduce_all
 }  // namespace kernel
 }  // namespace mindspore
 

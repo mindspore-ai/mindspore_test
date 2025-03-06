@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dropout_ext {
 
 class DropoutExtAscend : public AclnnKernelMod {
  public:
@@ -45,6 +46,7 @@ class DropoutExtAscend : public AclnnKernelMod {
   int64_t offset_value_;
   TypeId dtype_value_;
 };
+}  // namespace dropout_ext
 }  // namespace kernel
 }  // namespace mindspore
 

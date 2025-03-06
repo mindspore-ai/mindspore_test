@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace triplet_margin_loss_cpu {
 bool TripletMarginLossCPUKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kInputNumber, kernel_name_);
@@ -841,5 +842,6 @@ void TripletMarginLossCPUKernelMod::complextype_swap(size_t start, std::vector<T
     calc_swap_sum += calculate_swap_float;
   }
 }
+}  // namespace triplet_margin_loss_cpu
 }  // namespace kernel
 }  // namespace mindspore

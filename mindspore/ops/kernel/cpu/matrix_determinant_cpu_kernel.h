@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matrix_determinant_cpu {
 class MatrixDeterminantCpuKernelMod : public NativeCpuKernelMod {
  public:
   MatrixDeterminantCpuKernelMod() = default;
@@ -48,6 +49,7 @@ class MatrixDeterminantCpuKernelMod : public NativeCpuKernelMod {
   template <typename T>
   void LaunchMatrixDeterminant(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace matrix_determinant_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_MATRIX_DETERMINANT_CPU_KERNEL_H_

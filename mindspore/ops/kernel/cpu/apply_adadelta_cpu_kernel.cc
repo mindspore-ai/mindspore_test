@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace apply_adadelta_cpu {
 constexpr size_t kApplyAdadeltaInputsNum = 7;
 constexpr size_t kVarIndex = 0;
 constexpr size_t kAccumIndex = 1;
@@ -163,5 +164,6 @@ bool ApplyAdadeltaCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *>
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ApplyAdadelta, ApplyAdadeltaCpuKernelMod);
+}  // namespace apply_adadelta_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_linear1d {
 namespace {
 const double UpsampleLinear1dEps = 1e-7;
 const pyfloat DEFAULT_SCALE_VALUE = -1;
@@ -77,5 +78,6 @@ bool UpsampleLinear1DAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(UpsampleLinear1D, UpsampleLinear1DAscend);
+}  // namespace upsample_linear1d
 }  // namespace kernel
 }  // namespace mindspore

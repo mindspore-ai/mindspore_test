@@ -16,6 +16,9 @@
 #include "kernel/cpu/segment_mean_cpu_kernel.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
+namespace mindspore {
+namespace kernel {
+namespace segment_mean_cpu {
 namespace {
 const size_t kSegmentsThreshold = 2 * 1024;
 const size_t kDataSizeThreshold = 2 * 1024;
@@ -26,9 +29,6 @@ const size_t kDataSizeThreshold = 2 * 1024;
     break;                                             \
   }
 }  // namespace
-
-namespace mindspore {
-namespace kernel {
 template <typename T>
 T ComplexDiv(T sum, size_t num) {
   if (num != 0) {
@@ -230,5 +230,6 @@ bool SegmentMeanCPUKernelMod::LaunchKernel(const std::vector<kernel::KernelTenso
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SegmentMean, SegmentMeanCPUKernelMod);
+}  // namespace segment_mean_cpu
 }  // namespace kernel
 }  // namespace mindspore

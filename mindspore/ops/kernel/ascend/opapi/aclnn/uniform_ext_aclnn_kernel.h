@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace uniform_ext {
 
 class UniformExtAscend : public AclnnKernelMod {
  public:
@@ -40,6 +41,7 @@ class UniformExtAscend : public AclnnKernelMod {
   uint64_t seed_{0};
   uint64_t offset_{0};
 };
+}  // namespace uniform_ext
 }  // namespace kernel
 }  // namespace mindspore
 

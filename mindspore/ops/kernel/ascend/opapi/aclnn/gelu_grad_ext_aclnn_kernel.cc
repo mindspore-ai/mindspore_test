@@ -31,6 +31,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace gelu_grad_ext {
 namespace {
 using ops::Approximate;
 const std::unordered_map<Approximate, std::string> ApproximateModeMap{{Approximate::NONE, "none"},
@@ -59,5 +60,6 @@ bool GeluGradExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const 
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(GeluGradExt, GeluGradExtAscend);
+}  // namespace gelu_grad_ext
 }  // namespace kernel
 }  // namespace mindspore

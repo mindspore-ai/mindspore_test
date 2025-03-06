@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace incre_flash_attention {
 
 class IncreFlashAttentionAscend : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class IncreFlashAttentionAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace incre_flash_attention
 }  // namespace kernel
 }  // namespace mindspore
 

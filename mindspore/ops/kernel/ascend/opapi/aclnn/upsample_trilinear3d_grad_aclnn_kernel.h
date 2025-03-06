@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_trilinear3d_grad {
 
 class UpsampleTrilinear3DGradAscend final : public AclnnKernelMod {
  public:
@@ -43,6 +44,7 @@ class UpsampleTrilinear3DGradAscend final : public AclnnKernelMod {
   double scales_h_;
   double scales_w_;
 };
+}  // namespace upsample_trilinear3d_grad
 }  // namespace kernel
 }  // namespace mindspore
 

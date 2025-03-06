@@ -25,20 +25,21 @@
 
 namespace mindspore {
 namespace kernel {
+namespace randperm_v2_cpu {
 namespace {
 const uint32_t kInputNum = 4;
 const uint32_t kOutputNum = 1;
 constexpr size_t kIndex0 = 0;
 constexpr size_t kIndex1 = 1;
 constexpr size_t kIndex2 = 2;
-constexpr size_t kOutputIndex0 = 0;
+constexpr size_t kOutputIdx0 = 0;
 constexpr size_t kOutputShapeLen = 1;
 }  // namespace
 
 bool RandpermV2CPUKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &outputs) {
-  MS_EXCEPTION_IF_NULL(outputs[kOutputIndex0]);
-  output_type_ = outputs[kOutputIndex0]->dtype_id();
+  MS_EXCEPTION_IF_NULL(outputs[kOutputIdx0]);
+  output_type_ = outputs[kOutputIdx0]->dtype_id();
   if (seed_ < 0 && seed_ != -1) {
     MS_EXCEPTION(ValueError) << "For '" << kernel_name_
                              << "', the attr seed must be greater than 0 or equal to 0 or -1, but got data: " << seed_
@@ -53,7 +54,7 @@ int RandpermV2CPUKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
     return ret;
   }
   //  output
-  output_shape_ = outputs[kOutputIndex0]->GetShapeVector();
+  output_shape_ = outputs[kOutputIdx0]->GetShapeVector();
   auto output_shape_len = output_shape_.size();
   if (output_shape_len != kOutputShapeLen) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', output is " << output_shape_len << ", but RandpermV2 supports only "
@@ -196,5 +197,6 @@ std::vector<KernelAttr> RandpermV2CPUKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, RandpermV2, RandpermV2CPUKernelMod);
+}  // namespace randperm_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adjust_contrastv2_cpu {
 constexpr size_t MIN_DIM = 3;
 
 class AdjustContrastv2CpuKernelMod : public NativeCpuKernelMod {
@@ -49,6 +50,7 @@ class AdjustContrastv2CpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> images_shape_;
   TypeId input_type_{kTypeUnknown};
 };
+}  // namespace adjust_contrastv2_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

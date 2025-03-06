@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace apply_adam_with_amsgrad_cpu {
 namespace {
 constexpr size_t kApplyAdamWithAmsgradInputsNum = 8;
 constexpr size_t kApplyAdamWithAmsgradOutputsNum = 4;
@@ -233,5 +234,6 @@ std::vector<KernelAttr> ApplyAdamWithAmsgradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ApplyAdamWithAmsgrad, ApplyAdamWithAmsgradCpuKernelMod);
+}  // namespace apply_adam_with_amsgrad_cpu
 }  // namespace kernel
 }  // namespace mindspore

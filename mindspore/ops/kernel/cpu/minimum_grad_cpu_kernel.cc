@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace minimum_grad_cpu {
 namespace {
 constexpr size_t kMinimumGradInputsNum = 5;
 constexpr size_t kMinimumGradOutputsNum = 2;
@@ -253,5 +254,6 @@ bool MinimumGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &in
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MinimumGrad, MinimumGradCpuKernelMod);
+}  // namespace minimum_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

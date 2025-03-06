@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace zeros_cpu {
 namespace {
 constexpr size_t kZerosInputsNum = 2;
 constexpr size_t kZerosOutputsNum = 1;
@@ -101,5 +102,6 @@ std::vector<KernelAttr> ZerosCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Zeros, ZerosCpuKernelMod);
+}  // namespace zeros_cpu
 }  // namespace kernel
 }  // namespace mindspore

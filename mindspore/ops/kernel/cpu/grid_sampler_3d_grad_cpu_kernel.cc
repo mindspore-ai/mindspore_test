@@ -17,6 +17,9 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/op_def/op_enum.h"
 
+namespace mindspore {
+namespace kernel {
+namespace grid_sampler_3d_grad_cpu {
 namespace {
 const size_t kDataSizeThreshold = 64 * 1024;
 const size_t kZero = 0;
@@ -29,9 +32,6 @@ const int64_t kNumber1 = 1;
 const size_t kInputsNum = 7;
 const size_t kOutputsNum = 2;
 }  // namespace
-
-namespace mindspore {
-namespace kernel {
 bool GridSampler3DGradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
   constexpr size_t input_num = kInputsNum;
@@ -358,5 +358,6 @@ bool GridSampler3DGradCpuKernelMod::within_bounds_3d(int64_t d, int64_t h, int64
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, GridSampler3DGrad, GridSampler3DGradCpuKernelMod);
+}  // namespace grid_sampler_3d_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

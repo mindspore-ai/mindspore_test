@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace allreduce_cpu {
 class AllReduceCPUKernelMod : public NativeCpuKernelMod {
  public:
   AllReduceCPUKernelMod() = default;
@@ -37,6 +38,7 @@ class AllReduceCPUKernelMod : public NativeCpuKernelMod {
 
   std::vector<KernelAttr> GetOpSupport() override;
 };
+}  // namespace allreduce_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

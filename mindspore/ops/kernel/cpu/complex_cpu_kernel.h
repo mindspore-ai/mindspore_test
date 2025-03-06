@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace complex_cpu {
 class ComplexCpuKernelMod : public NativeCpuKernelMod {
  public:
   ComplexCpuKernelMod() = default;
@@ -60,6 +61,7 @@ class ComplexCpuKernelMod : public NativeCpuKernelMod {
 
   bool is_null_input_{false};
 };
+}  // namespace complex_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

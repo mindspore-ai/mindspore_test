@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_linear1d_grad {
 
 class UpsampleLinear1DGradAscend final : public AclnnKernelMod {
  public:
@@ -41,6 +42,7 @@ class UpsampleLinear1DGradAscend final : public AclnnKernelMod {
   double scales_l_;
   bool align_corners_;
 };
+}  // namespace upsample_linear1d_grad
 }  // namespace kernel
 }  // namespace mindspore
 

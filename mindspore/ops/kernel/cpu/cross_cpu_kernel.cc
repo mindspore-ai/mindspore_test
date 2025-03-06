@@ -17,6 +17,9 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/ops_func_impl/cross.h"
 
+namespace mindspore {
+namespace kernel {
+namespace cross_cpu {
 namespace {
 const size_t kDataSizeThreshold = 4 * 1024;
 const size_t kNumber0 = 0;
@@ -24,8 +27,6 @@ const size_t kNumber1 = 1;
 const size_t kNumber3 = 3;
 }  // namespace
 
-namespace mindspore {
-namespace kernel {
 bool CrossCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   constexpr size_t input_num = 3;
   constexpr size_t output_num = 1;
@@ -279,5 +280,6 @@ std::vector<KernelAttr> CrossCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Cross, CrossCpuKernelMod);
+}  // namespace cross_cpu
 }  // namespace kernel
 }  // namespace mindspore

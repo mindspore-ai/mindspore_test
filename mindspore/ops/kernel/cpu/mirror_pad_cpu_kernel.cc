@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace mirror_pad_cpu {
 namespace {
 // preset size of paddings
 constexpr int64_t MAX_PADDINGS = 5;
@@ -292,5 +293,6 @@ const std::vector<std::pair<KernelAttr, KernelRunFunc>> &MirrorPadCpuKernelMod::
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MirrorPad, MirrorPadCpuKernelMod);
+}  // namespace mirror_pad_cpu
 }  // namespace kernel
 }  // namespace mindspore

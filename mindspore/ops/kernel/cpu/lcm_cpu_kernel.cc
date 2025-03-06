@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lcm_cpu {
 namespace {
 const size_t kLcmInputsNum = 2;
 const size_t kLcmOutputsNum = 1;
@@ -96,5 +97,6 @@ std::vector<KernelAttr> LcmCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Lcm, LcmCpuKernelMod);
+}  // namespace lcm_cpu
 }  // namespace kernel
 }  // namespace mindspore

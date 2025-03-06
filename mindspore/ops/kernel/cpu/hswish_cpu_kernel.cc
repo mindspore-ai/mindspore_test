@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace hswish_cpu {
 namespace {
 constexpr size_t kHSwishInputsNum = 1;
 constexpr size_t kHSwishOutputsNum = 1;
@@ -104,5 +105,6 @@ std::vector<KernelAttr> HSwishCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, HSwish, HSwishCpuKernelMod);
+}  // namespace hswish_cpu
 }  // namespace kernel
 }  // namespace mindspore

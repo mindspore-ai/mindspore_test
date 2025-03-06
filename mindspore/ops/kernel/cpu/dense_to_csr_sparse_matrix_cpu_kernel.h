@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dense_to_csr_sparse_matrix_cpu {
 class DenseToCSRSparseMatrixCpuKernelMod : public NativeCpuKernelMod {
  public:
   DenseToCSRSparseMatrixCpuKernelMod() = default;
@@ -54,6 +55,7 @@ class DenseToCSRSparseMatrixCpuKernelMod : public NativeCpuKernelMod {
   TypeId values_type_{kTypeUnknown};
   TypeId indices_type_{kTypeUnknown};
 };
+}  // namespace dense_to_csr_sparse_matrix_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_DENSE_TO_CSR_SPARSE_MATRIX_KERNEL_H_

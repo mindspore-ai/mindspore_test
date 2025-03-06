@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace apply_momentum_cpu {
 class ApplyMomentumCpuKernelMod : public NativeCpuKernelMod {
  public:
   ApplyMomentumCpuKernelMod() = default;
@@ -45,6 +46,7 @@ class ApplyMomentumCpuKernelMod : public NativeCpuKernelMod {
 
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace apply_momentum_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

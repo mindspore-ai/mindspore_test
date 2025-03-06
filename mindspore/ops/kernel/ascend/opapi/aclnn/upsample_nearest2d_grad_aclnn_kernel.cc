@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_nearest2d_grad {
 namespace {
 std::tuple<std::vector<int64_t>, std::vector<int64_t>, std::tuple<double, double>> UpsampleNearest2DGradGenerate(
   const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
@@ -68,5 +69,6 @@ bool UpsampleNearest2DGradAscend::Launch(const std::vector<KernelTensor *> &inpu
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(UpsampleNearest2DGrad, UpsampleNearest2DGradAscend);
+}  // namespace upsample_nearest2d_grad
 }  // namespace kernel
 }  // namespace mindspore

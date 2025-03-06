@@ -24,6 +24,8 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_apply_r_m_s_prop_cpu {
+using namespace sparse_optimizer_cpu;
 namespace {
 constexpr size_t kSparseApplyRMSPropOutputsNum = 3;
 constexpr size_t kSparseApplyRMSPropInputsNum = 6;
@@ -279,5 +281,6 @@ const std::vector<std::pair<KernelAttr, KernelRunFunc>> &SparseApplyRMSPropCpuKe
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseApplyRMSProp, SparseApplyRMSPropCpuKernelMod);
+}  // namespace sparse_apply_r_m_s_prop_cpu
 }  // namespace kernel
 }  // namespace mindspore

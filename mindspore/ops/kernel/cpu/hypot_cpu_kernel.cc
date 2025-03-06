@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace hypot_cpu {
 namespace {
 const size_t kHypotInputsNum = 2;
 const size_t kHypotOutputsNum = 1;
@@ -96,5 +97,6 @@ std::vector<KernelAttr> HypotCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Hypot, HypotCpuKernelMod);
+}  // namespace hypot_cpu
 }  // namespace kernel
 }  // namespace mindspore

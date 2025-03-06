@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dense_to_sparse_set_operation_cpu {
 namespace {
 const uint32_t kOutputNum = 3;
 const uint32_t kInputNum = 4;
@@ -466,5 +467,6 @@ std::vector<KernelAttr> DenseToSparseSetOperationCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, DenseToSparseSetOperation, DenseToSparseSetOperationCpuKernelMod);
+}  // namespace dense_to_sparse_set_operation_cpu
 }  // namespace kernel
 }  // namespace mindspore

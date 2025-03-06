@@ -1,2 +1,5 @@
-file(GLOB_RECURSE OPAPI_SCRS *.cc)
-add_library(_mindspore_ops_kernel_ascend_opapi_obj OBJECT ${OPAPI_SCRS})
+include(${OPS_DIR}/cmake/merge_ops.cmake)
+set(ASCEND_OPAPI_MERGE_DIR ${CMAKE_BINARY_DIR}/merge/mindspore/ops/kernel/ascend/opapi)
+merge_ops_files(${CMAKE_CURRENT_SOURCE_DIR} ${ASCEND_OPAPI_MERGE_DIR} ascend_opapi_merge "")
+file(GLOB_RECURSE ASCEND_OPAPI_MERGE_FILES ${ASCEND_OPAPI_MERGE_DIR}/*.cc)
+add_library(_mindspore_ops_kernel_ascend_opapi_obj OBJECT ${ASCEND_OPAPI_MERGE_FILES})

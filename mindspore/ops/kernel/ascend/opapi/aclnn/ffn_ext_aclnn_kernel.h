@@ -23,6 +23,7 @@
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 namespace mindspore {
 namespace kernel {
+namespace ffn_ext {
 
 class FFNExtAscend : public AclnnKernelMod {
  public:
@@ -39,6 +40,7 @@ class FFNExtAscend : public AclnnKernelMod {
   std::vector<int64_t> expertTokens_array;
   int64_t innerPrecise_;
 };
+}  // namespace ffn_ext
 }  // namespace kernel
 }  // namespace mindspore
 

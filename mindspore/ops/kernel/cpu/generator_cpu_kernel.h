@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace generator_cpu {
 class GeneratorCpuKernelMod : public NativeCpuKernelMod {
  public:
   GeneratorCpuKernelMod() = default;
@@ -36,6 +37,7 @@ class GeneratorCpuKernelMod : public NativeCpuKernelMod {
               const std::vector<KernelTensor *> &outputs) override;
   std::vector<KernelAttr> GetOpSupport() override;
 };
+}  // namespace generator_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

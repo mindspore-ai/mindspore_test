@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dynamic_stitch_cpu {
 int64_t GetShapeSize(const ShapeVector &shape) {
   return std::accumulate(shape.begin(), shape.end(), int64_t(1), std::multiplies<int64_t>());
 }
@@ -168,5 +169,6 @@ int DynamicStitchCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, DynamicStitch, DynamicStitchCpuKernelMod);
+}  // namespace dynamic_stitch_cpu
 }  // namespace kernel
 }  // namespace mindspore

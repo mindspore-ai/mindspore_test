@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace multinomial_ext {
 
 class MultinomialExtAscend : public AclnnKernelMod {
  public:
@@ -40,6 +41,7 @@ class MultinomialExtAscend : public AclnnKernelMod {
   int64_t offset_{0};
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace multinomial_ext
 }  // namespace kernel
 }  // namespace mindspore
 

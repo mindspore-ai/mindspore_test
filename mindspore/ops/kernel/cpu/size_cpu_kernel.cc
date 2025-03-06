@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace size_cpu {
 namespace {
 const size_t kSizeInputsNum = 1;
 const size_t kSizeOutputsNum = 1;
@@ -86,5 +87,6 @@ std::vector<KernelAttr> SizeCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Size, SizeCpuKernelMod);
+}  // namespace size_cpu
 }  // namespace kernel
 }  // namespace mindspore

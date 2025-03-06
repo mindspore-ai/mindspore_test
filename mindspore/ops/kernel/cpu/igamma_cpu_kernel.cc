@@ -18,6 +18,7 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 namespace mindspore {
 namespace kernel {
+namespace igamma_cpu {
 namespace {
 /**
  * Coefficients for the Lanczos approximation of the gamma function. The
@@ -44,7 +45,7 @@ constexpr size_t kInputIndex11 = 11;
 constexpr size_t kInputIndex12 = 12;
 constexpr size_t kInputIndex13 = 13;
 constexpr size_t kInputIndex14 = 14;
-constexpr size_t kOutputIndex0 = 0;
+constexpr size_t kOutputIdx0 = 0;
 static constexpr double kBaseLanczosCoeff = 0.99999999999980993227684700473478;
 static constexpr double M_pi = 3.141592653589793238462643383279;
 static constexpr std::array<double, 8> kLanczosCoefficients = {
@@ -361,7 +362,7 @@ int IgammaCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const 
   }
   a_shape_ = inputs[kInputIndex0]->GetDeviceShapeVector();
   x_shape_ = inputs[kInputIndex1]->GetDeviceShapeVector();
-  z_shape_ = outputs[kOutputIndex0]->GetDeviceShapeVector();
+  z_shape_ = outputs[kOutputIdx0]->GetDeviceShapeVector();
   return ret;
 }
 
@@ -401,5 +402,6 @@ void IgammaCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> 
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Igamma, IgammaCpuKernelMod);
+}  // namespace igamma_cpu
 }  // namespace kernel
 }  // namespace mindspore

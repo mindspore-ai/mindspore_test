@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace hshrink {
 
 class HshrinkAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class HshrinkAscend : public AclnnKernelMod {
 
   ScalarPtr lambd_ = nullptr;
 };
+}  // namespace hshrink
 }  // namespace kernel
 }  // namespace mindspore
 

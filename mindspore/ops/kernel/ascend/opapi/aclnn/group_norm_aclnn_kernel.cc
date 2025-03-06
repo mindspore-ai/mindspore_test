@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace group_norm {
 namespace {
 constexpr size_t kNumberTwo = 2;
 }  // namespace
@@ -67,5 +68,6 @@ bool GroupNormAscend::Launch(const std::vector<KernelTensor *> &inputs, const st
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(GroupNorm, GroupNormAscend);
+}  // namespace group_norm
 }  // namespace kernel
 }  // namespace mindspore

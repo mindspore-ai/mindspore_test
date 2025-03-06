@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace depthtospace_cpu {
 class DepthToSpaceCpuKernelMod : public NativeCpuKernelMod {
  public:
   DepthToSpaceCpuKernelMod() = default;
@@ -55,6 +56,7 @@ class DepthToSpaceCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> output_shape_;
   size_t block_size_{0};
 };
+}  // namespace depthtospace_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_DEPTHTOSPACE_CPU_KERNEL_H_

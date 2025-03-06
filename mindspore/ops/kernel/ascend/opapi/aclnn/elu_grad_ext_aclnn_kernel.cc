@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace elu_grad_ext {
 
 void EluGradExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &outputs) {
@@ -43,5 +44,6 @@ bool EluGradExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const s
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(EluGradExt, EluGradExtAscend);
+}  // namespace elu_grad_ext
 }  // namespace kernel
 }  // namespace mindspore

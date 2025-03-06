@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace map_uniform_cpu {
 namespace {
 constexpr size_t kMapUniformInputsNum = 3;
 constexpr size_t kMapUniformOutputsNum = 1;
@@ -100,5 +101,6 @@ std::vector<KernelAttr> MapUniformCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MapUniform, MapUniformCpuKernelMod);
+}  // namespace map_uniform_cpu
 }  // namespace kernel
 }  // namespace mindspore

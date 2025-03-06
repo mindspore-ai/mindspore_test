@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace truncated_normal_cpu {
 namespace {
 const int32_t kMax = 2;
 const uint32_t kInputNum = 1;
@@ -142,5 +143,6 @@ std::vector<KernelAttr> TruncatedNormalCPUKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TruncatedNormal, TruncatedNormalCPUKernelMod);
+}  // namespace truncated_normal_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace conv_transpose2d {
 namespace {
 void ExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim) {
   if (param->size() == kIndex1) {
@@ -122,5 +123,6 @@ bool ConvTranspose2DAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(ConvTranspose2D, ConvTranspose2DAscend);
+}  // namespace conv_transpose2d
 }  // namespace kernel
 }  // namespace mindspore

@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace masked_select_cpu {
 class MaskedSelectCpuKernelMod : public NativeCpuKernelMod {
  public:
   MaskedSelectCpuKernelMod() = default;
@@ -62,6 +63,7 @@ class MaskedSelectCpuKernelMod : public NativeCpuKernelMod {
   size_t tensor_size_;
   size_t real_output_size_;
 };
+}  // namespace masked_select_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_MASKED_SELECTED_CPU_KERNEL_H_

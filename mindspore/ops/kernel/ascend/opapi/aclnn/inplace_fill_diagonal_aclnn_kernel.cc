@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_fill_diagonal {
 
 void InplaceFillDiagonalAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                          const std::vector<KernelTensor *> &outputs) {
@@ -37,5 +38,6 @@ bool InplaceFillDiagonalAclnnKernelMod::Launch(const std::vector<KernelTensor *>
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceFillDiagonal, InplaceFillDiagonalAclnnKernelMod);
+}  // namespace inplace_fill_diagonal
 }  // namespace kernel
 }  // namespace mindspore

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace slice_cpu {
 namespace {
 constexpr size_t kSliceInputsNum = 3;
 constexpr size_t kSliceOutputsNum = 1;
@@ -283,5 +284,6 @@ std::vector<KernelAttr> SliceCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Slice, SliceCpuKernelMod);
+}  // namespace slice_cpu
 }  // namespace kernel
 }  // namespace mindspore

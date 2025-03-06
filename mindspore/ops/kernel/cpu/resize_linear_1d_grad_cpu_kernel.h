@@ -27,6 +27,7 @@
 #include "mindapi/base/types.h"
 
 namespace mindspore::kernel {
+namespace resize_linear_1d_grad_cpu {
 constexpr auto kUnknown = "Unknown";
 
 class ResizeLinear1DGradCpuKernelMod : public NativeCpuKernelMod,
@@ -78,6 +79,7 @@ class ResizeLinear1DGradCpuKernelMod : public NativeCpuKernelMod,
   size_t output_width_{0};
   CoordinateTransformMode coordinate_transformation_mode_ = CoordinateTransformMode::ALIGN_CORNERS;
 };
+}  // namespace resize_linear_1d_grad_cpu
 }  // namespace mindspore::kernel
 
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_RESIZE_LINEAR_1D_GRAD_CPU_KERNEL_H_

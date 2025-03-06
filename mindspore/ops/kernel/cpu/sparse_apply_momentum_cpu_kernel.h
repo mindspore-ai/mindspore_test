@@ -27,7 +27,8 @@
 
 namespace mindspore {
 namespace kernel {
-class SparseApplyMomentumCpuKernelMod : public SparseOptimizerCpuKernelMod,
+namespace sparse_apply_momentum_cpu {
+class SparseApplyMomentumCpuKernelMod : public sparse_optimizer_cpu::SparseOptimizerCpuKernelMod,
                                         public MatchKernelHelper<SparseApplyMomentumCpuKernelMod> {
  public:
   SparseApplyMomentumCpuKernelMod() = default;
@@ -55,6 +56,7 @@ class SparseApplyMomentumCpuKernelMod : public SparseOptimizerCpuKernelMod,
  private:
   bool use_nesterov_{false};
 };
+}  // namespace sparse_apply_momentum_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

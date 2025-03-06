@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace histogram_cpu {
 namespace {
 const uint32_t kInputNum = 1;
 const uint32_t kOutputNum = 1;
@@ -143,5 +144,6 @@ std::vector<KernelAttr> HistogramCPUKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Histogram, HistogramCPUKernelMod);
+}  // namespace histogram_cpu
 }  // namespace kernel
 }  // namespace mindspore

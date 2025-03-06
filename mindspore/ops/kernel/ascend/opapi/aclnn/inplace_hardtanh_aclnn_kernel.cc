@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_hardtanh {
 
 void InplaceHardtanhAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                      const std::vector<KernelTensor *> &outputs) {
@@ -40,5 +41,6 @@ bool InplaceHardtanhAclnnKernelMod::Launch(const std::vector<KernelTensor *> &in
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceHardtanh, InplaceHardtanhAclnnKernelMod);
+}  // namespace inplace_hardtanh
 }  // namespace kernel
 }  // namespace mindspore

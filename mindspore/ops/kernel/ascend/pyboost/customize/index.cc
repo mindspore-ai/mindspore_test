@@ -28,8 +28,8 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-std::vector<BaseTensorPtr> GetNewTensor(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                        const std::vector<BaseTensorPtr> &tensors) {
+std::vector<BaseTensorPtr> IndexGetNewTensor(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+                                             const std::vector<BaseTensorPtr> &tensors) {
   auto device_context = op->device_context();
   const auto &device_name = device_context->device_context_key_.device_name_;
   std::vector<BaseTensorPtr> result{};
@@ -94,7 +94,7 @@ tensor::BaseTensorPtr IndexAscendCustomize(const std::shared_ptr<OpRunner> &op, 
   if (indices_tensor_vector.size() == 0) {
     MS_EXCEPTION(ValueError) << "For 'Index', 'indices' shape can't be empty.";
   }
-  auto new_indices_tensor_vector = GetNewTensor(op, input_tensor, indices_tensor_vector);
+  auto new_indices_tensor_vector = IndexGetNewTensor(op, input_tensor, indices_tensor_vector);
   ValueTuplePtr new_indices_tensor_list = PyBoostUtils::ConvertTensorVectorToTuple(new_indices_tensor_vector);
 
   auto device_context = op->device_context();

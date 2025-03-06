@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace embedding_dense_backward {
 
 void EmbeddingDenseBackwardAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                     const std::vector<KernelTensor *> &outputs) {
@@ -53,5 +54,6 @@ bool EmbeddingDenseBackwardAscend::Launch(const std::vector<KernelTensor *> &inp
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(EmbeddingDenseBackward, EmbeddingDenseBackwardAscend);
+}  // namespace embedding_dense_backward
 }  // namespace kernel
 }  // namespace mindspore

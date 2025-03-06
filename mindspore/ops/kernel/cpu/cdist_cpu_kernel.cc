@@ -21,6 +21,7 @@
 #include "kernel/cpu/nnacl/fp32/cdist_fp32.h"
 namespace mindspore {
 namespace kernel {
+namespace cdist_cpu {
 namespace {
 constexpr size_t kCdistInputDimsMin = 2;
 
@@ -149,5 +150,6 @@ bool CdistCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const 
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Cdist, CdistCpuKernelMod);
+}  // namespace cdist_cpu
 }  // namespace kernel
 }  // namespace mindspore

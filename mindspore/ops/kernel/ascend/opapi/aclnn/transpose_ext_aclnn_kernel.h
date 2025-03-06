@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace transpose_ext {
 
 class TransposeExtAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class TransposeExtAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   std::vector<int64_t> input_perm_{};
 };
+}  // namespace transpose_ext
 }  // namespace kernel
 }  // namespace mindspore
 

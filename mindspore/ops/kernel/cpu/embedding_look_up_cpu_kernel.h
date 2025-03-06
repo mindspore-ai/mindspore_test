@@ -31,6 +31,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace embedding_look_up_cpu {
 class EmbeddingLookUpCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<EmbeddingLookUpCpuKernelMod> {
  public:
   EmbeddingLookUpCpuKernelMod() = default;
@@ -68,6 +69,7 @@ class EmbeddingLookUpCpuKernelMod : public NativeCpuKernelMod, public MatchKerne
   // The global unique parameter key, used to get the embedding storage instance.
   int32_t parameter_key_{-1};
 };
+}  // namespace embedding_look_up_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

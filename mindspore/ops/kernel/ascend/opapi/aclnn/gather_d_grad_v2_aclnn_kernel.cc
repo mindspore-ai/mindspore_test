@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace gather_d_grad_v2 {
 
 void GatherDGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
@@ -44,5 +45,6 @@ bool GatherDGradAscend::Launch(const std::vector<KernelTensor *> &inputs, const 
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(GatherDGradV2, GatherDGradAscend);
+}  // namespace gather_d_grad_v2
 }  // namespace kernel
 }  // namespace mindspore

@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace square {
 
 class SquareAscend : public AclnnKernelMod {
  public:
@@ -34,6 +35,7 @@ class SquareAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace square
 }  // namespace kernel
 }  // namespace mindspore
 

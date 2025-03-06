@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace list_diff_cpu {
 namespace {
 constexpr size_t kListDiffInputNum = 2;
 constexpr size_t kListDiffOutputNum = 2;
@@ -251,5 +252,6 @@ void ListDiffCPUKernelMod::UpdateOutputShapeAndSize(const std::vector<KernelTens
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ListDiff, ListDiffCPUKernelMod);
+}  // namespace list_diff_cpu
 }  // namespace kernel
 }  // namespace mindspore

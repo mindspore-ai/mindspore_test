@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adam_weight_decay_cpu {
 namespace {
 constexpr size_t kSizeFloat32 = sizeof(float);
 constexpr size_t kScalarIndex = 0;
@@ -144,5 +145,6 @@ bool AdamWeightDecayCpuKernelMod::Launch(const std::vector<kernel::KernelTensor 
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AdamWeightDecay, AdamWeightDecayCpuKernelMod);
+}  // namespace adam_weight_decay_cpu
 }  // namespace kernel
 }  // namespace mindspore

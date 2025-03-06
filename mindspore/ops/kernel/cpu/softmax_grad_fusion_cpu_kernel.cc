@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace softmax_grad_fusion_cpu {
 namespace {
 constexpr size_t kSoftmaxGradFusionInputsNum = 2;
 constexpr size_t kSoftmaxGradFusionOutputsNum = 1;
@@ -87,5 +88,6 @@ bool SoftmaxGradFusionCpuKernelMod::LaunchKernel(const std::vector<kernel::Kerne
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SoftmaxGradFusion, SoftmaxGradFusionCpuKernelMod);
+}  // namespace softmax_grad_fusion_cpu
 }  // namespace kernel
 }  // namespace mindspore

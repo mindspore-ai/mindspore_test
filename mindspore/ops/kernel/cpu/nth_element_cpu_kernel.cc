@@ -19,6 +19,7 @@
 #include "mindspore/ops/infer/nth_element.h"
 namespace mindspore {
 namespace kernel {
+namespace nth_element_cpu {
 namespace {
 constexpr size_t kNthElementInputsNum = 2;
 constexpr size_t kNthElementOutputsNum = 1;
@@ -115,5 +116,6 @@ const std::vector<std::pair<KernelAttr, NthElementCpuKernelMod::KernelRunFunc>> 
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NthElement, NthElementCpuKernelMod);
 // }
+}  // namespace nth_element_cpu
 }  // namespace kernel
 }  // namespace mindspore

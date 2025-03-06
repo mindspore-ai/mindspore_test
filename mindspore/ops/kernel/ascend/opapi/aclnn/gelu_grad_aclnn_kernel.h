@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace gelu_grad {
 
 class GeLUGradAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class GeLUGradAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace gelu_grad
 }  // namespace kernel
 }  // namespace mindspore
 

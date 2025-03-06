@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace multi_margin_loss_cpu {
 namespace {
 constexpr size_t kMultiMarginLossInputNumWithWeight = 3;
 constexpr size_t kMultiMarginLossInputNumWithoutWeight = 2;
@@ -227,5 +228,6 @@ void MultiMarginLossCPUKernelMod::CheckParam(const CNodePtr &kernel_node) {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MultiMarginLoss, MultiMarginLossCPUKernelMod);
+}  // namespace multi_margin_loss_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_trilinear_3d_cpu {
 namespace {
 constexpr size_t kUpsampleTrilinear3DInputsNum = 2;
 constexpr size_t kUpsampleTrilinear3DOutputNum = 1;
@@ -233,5 +234,6 @@ std::vector<KernelAttr> UpsampleTrilinear3DCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpsampleTrilinear3D, UpsampleTrilinear3DCpuKernelMod);
+}  // namespace upsample_trilinear_3d_cpu
 }  // namespace kernel
 }  // namespace mindspore

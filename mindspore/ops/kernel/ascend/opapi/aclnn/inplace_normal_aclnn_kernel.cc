@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_normal {
 float GetInputValueToFloat(const std::vector<KernelTensor *> &inputs, const size_t kIndex) {
   float value = 0;
   auto dtype_id = inputs[kIndex]->dtype_id();
@@ -65,5 +66,6 @@ bool InplaceNormalAscend::Launch(const std::vector<KernelTensor *> &inputs,
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceNormal, InplaceNormalAscend);
+}  // namespace inplace_normal
 }  // namespace kernel
 }  // namespace mindspore

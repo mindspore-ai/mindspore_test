@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace tile_size_cpu {
 class TileSizeCpuKernelMod : public NativeCpuKernelMod {
  public:
   TileSizeCpuKernelMod() = default;
@@ -52,6 +53,7 @@ class TileSizeCpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, TileSizeFunc>> func_list_;
   TileSizeFunc kernel_func_;
 };
+}  // namespace tile_size_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_TILE_SIZE_CPU_KERNEL_H_

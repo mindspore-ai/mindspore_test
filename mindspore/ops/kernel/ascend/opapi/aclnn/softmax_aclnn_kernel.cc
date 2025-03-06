@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace softmax {
 int64_t SoftmaxAscend::GetDimValue(KernelTensor *axis_ptr) const noexcept {
   auto axis_vec = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(axis_ptr);
   auto dim = axis_vec[0];
@@ -46,5 +47,6 @@ bool SoftmaxAscend::Launch(const std::vector<KernelTensor *> &inputs, const std:
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Softmax, SoftmaxAscend);
+}  // namespace softmax
 }  // namespace kernel
 }  // namespace mindspore

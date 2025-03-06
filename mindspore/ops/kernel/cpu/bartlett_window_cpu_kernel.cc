@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace bartlett_window_cpu {
 namespace {
 constexpr size_t kBartlettWindowInputsNum = 1;
 constexpr size_t kBartlettWindowOutputsNum = 1;
@@ -102,5 +103,6 @@ std::vector<KernelAttr> BartlettWindowCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, BartlettWindow, BartlettWindowCpuKernelMod);
+}  // namespace bartlett_window_cpu
 }  // namespace kernel
 }  // namespace mindspore

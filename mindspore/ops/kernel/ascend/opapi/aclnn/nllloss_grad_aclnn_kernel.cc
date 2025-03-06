@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace nllloss_grad {
 void NLLLossGradAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                  const std::vector<KernelTensor *> &outputs) {
   auto reduction_imm = static_cast<Reduction>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex5]));
@@ -49,5 +50,6 @@ bool NLLLossGradAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(NLLLossGrad, NLLLossGradAclnnKernelMod);
+}  // namespace nllloss_grad
 }  // namespace kernel
 }  // namespace mindspore

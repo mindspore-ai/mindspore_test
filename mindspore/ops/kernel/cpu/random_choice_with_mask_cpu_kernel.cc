@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace random_choice_with_mask_cpu {
 constexpr char kKernelName[] = "RandomChoiceWithMask";
 
 void ParseOutputCoordinate(std::vector<int32_t> dims_, int32_t output_length_, int32_t input_dim_size_,
@@ -210,5 +211,6 @@ bool RandomChoiceWithMaskCpuKernelMod::Launch(const std::vector<kernel::KernelTe
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, RandomChoiceWithMask, RandomChoiceWithMaskCpuKernelMod);
+}  // namespace random_choice_with_mask_cpu
 }  // namespace kernel
 }  // namespace mindspore

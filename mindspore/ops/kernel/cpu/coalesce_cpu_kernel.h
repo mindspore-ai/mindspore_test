@@ -31,6 +31,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace coalesce_cpu {
 class CoalesceCpuKernelMod : public NativeCpuKernelMod {
  public:
   CoalesceCpuKernelMod() = default;
@@ -62,6 +63,7 @@ class CoalesceCpuKernelMod : public NativeCpuKernelMod {
   size_t jump = 0;
   ShapeVector y_shape_shape_{};
 };
+}  // namespace coalesce_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_COALESCE_CPU_KERNEL_H_

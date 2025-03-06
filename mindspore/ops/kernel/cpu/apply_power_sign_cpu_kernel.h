@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace apply_power_sign_cpu {
 class ApplyPowerSignCpuKernelMod : public NativeCpuKernelMod {
  public:
   ApplyPowerSignCpuKernelMod() = default;
@@ -49,6 +50,7 @@ class ApplyPowerSignCpuKernelMod : public NativeCpuKernelMod {
   int64_t input_elements_{0};
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace apply_power_sign_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace gathernd_cpu {
 constexpr auto kUnknown = "Unknown";
 
 class GatherNdCpuKernelMod : public NativeCpuKernelMod {
@@ -62,6 +63,7 @@ class GatherNdCpuKernelMod : public NativeCpuKernelMod {
   TypeId dtype_{kTypeUnknown};
   std::string kernel_type_{kUnknown};
 };
+}  // namespace gathernd_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace slice_to_indices_cpu {
 bool SliceToIndicesCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &outputs) {
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
@@ -143,5 +144,6 @@ std::vector<KernelAttr> SliceToIndicesCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SliceToIndices, SliceToIndicesCpuKernelMod);
+}  // namespace slice_to_indices_cpu
 }  // namespace kernel
 }  // namespace mindspore

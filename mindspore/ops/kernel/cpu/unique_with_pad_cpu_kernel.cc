@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace unique_with_pad_cpu {
 int UniqueWithPadCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &outputs) {
   if (auto ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
@@ -92,5 +93,6 @@ void UniqueWithPadCpuKernelMod::PadOutput(const std::vector<KernelTensor *> &inp
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UniqueWithPad, UniqueWithPadCpuKernelMod);
+}  // namespace unique_with_pad_cpu
 }  // namespace kernel
 }  // namespace mindspore

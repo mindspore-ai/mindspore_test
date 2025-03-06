@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace left_shift_cpu {
 class LeftShiftCpuKernelMod : public NativeCpuKernelMod {
  public:
   LeftShiftCpuKernelMod() = default;
@@ -49,6 +50,7 @@ class LeftShiftCpuKernelMod : public NativeCpuKernelMod {
   template <typename T>
   bool UIntCompute(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace left_shift_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

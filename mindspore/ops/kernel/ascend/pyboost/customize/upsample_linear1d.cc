@@ -24,8 +24,6 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-const double UpsampleLinear1dEps = 1e-7;
-const pyfloat DEFAULT_SCALE_VALUE = -1;
 tensor::BaseTensorPtr UpsampleLinear1DAscendCall(const std::shared_ptr<OpRunner> &op,
                                                  const device::DeviceContext *device_context,
                                                  const BaseTensorPtr &input_tensor,
@@ -37,6 +35,8 @@ tensor::BaseTensorPtr UpsampleLinear1DAscendCall(const std::shared_ptr<OpRunner>
   // to double number according to PyTorch. For example, python scale is 2.6,
   // but the last scale we got in c++ is 2.5999999046325684,
   // which caused aclnn verification to fail.
+  const pyfloat DEFAULT_SCALE_VALUE = -1;
+  const double UpsampleLinear1dEps = 1e-7;
   double scale_l = scales.at(0) != DEFAULT_SCALE_VALUE ? (static_cast<double>(scales.at(0)) + UpsampleLinear1dEps)
                                                        : DEFAULT_SCALE_VALUE;
   LAUNCH_ACLNN(aclnnUpsampleLinear1d, device_context, op->stream_id(), input_tensor, output_size, align_corners,
@@ -64,6 +64,7 @@ tensor::BaseTensorPtr UpsampleLinear1DAscendCustomize(const std::shared_ptr<OpRu
     MS_LOG(EXCEPTION) << "For UpsampleLinear1D with align_corners false, scales was not supported.";
   }
 
+  const pyfloat DEFAULT_SCALE_VALUE = -1;
   std::vector<pyfloat> scales{DEFAULT_SCALE_VALUE};
   if (scale_factors.has_value()) {
     scales = ConvertValueTupleToVector<pyfloat>(scale_factors.value());

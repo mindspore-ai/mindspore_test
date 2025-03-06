@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace hamming_window_cpu {
 namespace {
 const size_t kHammingWindowOutputNum = 1;
 const size_t kHammingWindowInputNum = 1;
@@ -135,5 +136,6 @@ std::vector<KernelAttr> HammingWindowCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, HammingWindow, HammingWindowCpuKernelMod);
+}  // namespace hamming_window_cpu
 }  // namespace kernel
 }  // namespace mindspore

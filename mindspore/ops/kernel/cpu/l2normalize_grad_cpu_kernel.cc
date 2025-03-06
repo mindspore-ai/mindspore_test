@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace l2normalize_grad_cpu {
 namespace {
 constexpr size_t kL2NormalizeGradInputsNum = 3;
 constexpr size_t kL2NormalizeGradOutputsNum = 1;
@@ -267,5 +268,6 @@ std::vector<KernelAttr> L2NormalizeGradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, L2NormalizeGrad, L2NormalizeGradCpuKernelMod);
+}  // namespace l2normalize_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

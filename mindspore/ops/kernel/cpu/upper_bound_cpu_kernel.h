@@ -24,6 +24,7 @@
 #include "common/ms_factory.h"
 namespace mindspore {
 namespace kernel {
+namespace upper_bound_cpu {
 class UpperBoundCpuKernelMod : public NativeCpuKernelMod {
  public:
   UpperBoundCpuKernelMod() = default;
@@ -58,6 +59,7 @@ class UpperBoundCpuKernelMod : public NativeCpuKernelMod {
   size_t values_num_;
   size_t output_num_;
 };
+}  // namespace upper_bound_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

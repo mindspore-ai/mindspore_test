@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_matrix_mul_cpu {
 class SparseMatrixMulCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<SparseMatrixMulCpuKernelMod> {
  public:
   SparseMatrixMulCpuKernelMod() = default;
@@ -52,6 +53,7 @@ class SparseMatrixMulCpuKernelMod : public NativeCpuKernelMod, public MatchKerne
   size_t dense_size_ = 0;
   std::vector<TypeId> types_;
 };
+}  // namespace sparse_matrix_mul_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

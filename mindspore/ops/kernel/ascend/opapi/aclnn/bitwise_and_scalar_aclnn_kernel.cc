@@ -17,6 +17,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace bitwise_and_scalar {
 
 void BitwiseAndScalarAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &outputs) {
@@ -33,5 +34,6 @@ bool BitwiseAndScalarAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(BitwiseAndScalar, BitwiseAndScalarAscend);
+}  // namespace bitwise_and_scalar
 }  // namespace kernel
 }  // namespace mindspore
