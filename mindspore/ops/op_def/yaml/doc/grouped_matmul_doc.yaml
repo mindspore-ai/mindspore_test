@@ -20,6 +20,8 @@ grouped_matmul:
         split_item (int): Splitting input mode. Only support 0 and 3. 0 represents multiple Tensors, and 3 represents a single Tensor.
         group_type (int): The axis to be split. Only support -1 and 0. If the matrix is multiplied by A[m,k]xB[k,n]=C[m,n].
                           -1: No grouping, 0: Group on the m-axis
+        transpose_a (bool): If ``True`` , `x` is transposed before multiplication. Default: ``False`` .
+        transpose_b (bool): If ``True`` , `weight` is transposed before multiplication. Default: ``False`` .
 
     Inputs:
         x (TensorList): TensorList, including 2D-6D Tensors. Supported dtypes: Float16, Float32.
