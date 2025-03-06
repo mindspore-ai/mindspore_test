@@ -43,7 +43,7 @@ mindspore.runtime.Event
             - **stream** (Stream, 可选) - 需要记录的流。如果输入为 ``None``，将使用当前流。默认值： ``None``。
 
         异常：
-            - **TypeError** - 参数 `stream` 即不是一个 :class:`mindspore.runtime.Stream` 也不是一个 ``None``。
+            - **TypeError** - 参数 `stream` 既不是一个 :class:`mindspore.runtime.Stream` 也不是一个 ``None``。
 
     .. py:method:: mindspore.runtime.Event.synchronize()
 
@@ -62,4 +62,4 @@ mindspore.runtime.Event
             - **stream** (Stream, 可选) - 需要等待的流。如果输入为 ``None``，将使用当前流。默认值： ``None``。
 
         异常：
-            - **TypeError** - 参数 `stream` 即不是一个 :class:`mindspore.runtime.Stream` 也不是一个 ``None``。
+            - **TypeError** - 参数 `stream` 既不是一个 :class:`mindspore.runtime.Stream` 也不是一个 ``None``。
