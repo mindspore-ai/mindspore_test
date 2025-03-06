@@ -20,9 +20,20 @@
 #include <string>
 #include <map>
 #include "mindapi/base/macros.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 const char kDeterministic[] = "deterministic";
+const char kDeviceTargetType[] = "device_target";
+enum class DeviceTargetType { kUnknown = 0, kCPU = 1, kAscend = 2, kGPU = 3 };
+const std::map<std::string, DeviceTargetType> device_name_to_type_map = {{"Unknown", DeviceTargetType::kUnknown},
+                                                                         {"Ascend", DeviceTargetType::kAscend},
+                                                                         {"CPU", DeviceTargetType::kCPU},
+                                                                         {"GPU", DeviceTargetType::kGPU}};
+const std::map<DeviceTargetType, std::string> device_type_to_name_map = {{DeviceTargetType::kUnknown, "Unknown"},
+                                                                         {DeviceTargetType::kAscend, "Ascend"},
+                                                                         {DeviceTargetType::kCPU, "CPU"},
+                                                                         {DeviceTargetType::kGPU, "GPU"}};
 
 class MS_CORE_API DeviceManagerConf {
  public:
@@ -33,14 +44,21 @@ class MS_CORE_API DeviceManagerConf {
   static std::shared_ptr<DeviceManagerConf> GetInstance();
 
   void set_device(const std::string &device_target, uint32_t device_id, bool is_default_device_id) {
-    device_target_ = device_target;
+    SetDeviceType(device_target);
+    conf_status_[kDeviceTargetType] = true;
     device_id_ = device_id;
     is_default_device_id_ = is_default_device_id;
   }
-  const std::string &device_target() { return device_target_; }
+  const std::string &GetDeviceTarget() {
+    auto it = device_type_to_name_map.find(device_type_);
+    if (it == device_type_to_name_map.end()) {
+      MS_EXCEPTION(RuntimeError) << "Can't get the device target. Current wrong device type: " << device_type_;
+    }
+    return it->second;
+  }
   const uint32_t &device_id() { return device_id_; }
   bool is_default_device_id() { return is_default_device_id_; }
-  bool IsDeviceEnable() { return !device_target_.empty(); }
+  bool IsDeviceEnable() { return conf_status_.count(kDeviceTargetType); }
 
   void set_deterministic(bool deterministic) {
     deterministic_ = deterministic ? "ON" : "OFF";
@@ -49,10 +67,21 @@ class MS_CORE_API DeviceManagerConf {
   const std::string &deterministic() { return deterministic_; }
   bool IsDeterministicConfigured() { return conf_status_.count(kDeterministic); }
 
+  const DeviceTargetType device_type() const { return device_type_; }
+  void SetDeviceType(const std::string &device_target) {
+    if (IsDeviceEnable()) {
+      return;
+    }
+    auto it = device_name_to_type_map.find(device_target);
+    if (it != device_name_to_type_map.end()) {
+      device_type_ = it->second;
+    }
+  }
+
  private:
   static std::shared_ptr<DeviceManagerConf> instance_;
 
-  std::string device_target_{""};
+  DeviceTargetType device_type_{DeviceTargetType::kUnknown};
   uint32_t device_id_{0};
   bool is_default_device_id_{true};
 

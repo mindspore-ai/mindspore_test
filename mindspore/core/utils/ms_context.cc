@@ -68,6 +68,7 @@ MsContext::MsContext(const std::string &policy, const std::string &target) {
   InitDigitalTypeDefaultValue();
   MsContext::SetDeviceId();
   string_params_[MS_CTX_DEVICE_TARGET - MS_CTX_TYPE_STRING_BEGIN] = target;
+  DeviceManagerConf::GetInstance()->SetDeviceType(target);
   set_param<bool>(MS_CTX_ENABLE_LOOP_SINK, target == kAscendDevice || target == kDavinciDevice);
 
   backend_policy_ = kPolicyMap[policy];
@@ -309,6 +310,7 @@ void MsContext::SetDeviceTargetFromInner(const std::string &device_target) {
     MS_LOG(INFO) << "Set memory_optimize_level to O0 as default on other device";
     int_params_[MS_CTX_MEMORY_OPTIMIZE_LEVEL - MS_CTX_TYPE_INT_BEGIN] = kOptimizeO0;
   }
+  DeviceManagerConf::GetInstance()->SetDeviceType(device_target);
   string_params_[MS_CTX_DEVICE_TARGET - MS_CTX_TYPE_STRING_BEGIN] = device_target;
 }
 
