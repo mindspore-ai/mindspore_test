@@ -78,7 +78,7 @@ void *LowlatencyCommunicationGroup::GenerateRootInfo(size_t *root_info_size) {
 
 const LcclPtr &LowlatencyCommunicationGroup::lccl_communicator() const { return lccl_comm_; }
 
-const LcalCommPtr &LowlatencyCommunicationGroup::lcal_comm() const { return lcal_comm_; }
+const LcalCommClassPtr &LowlatencyCommunicationGroup::lcal_comm() const { return lcal_comm_; }
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore

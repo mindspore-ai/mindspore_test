@@ -62,5 +62,5 @@ if [[ $? -ne 0 ]]; then
   return
 fi
 
-cp -r ${file_path}/ms_kernels_dependency/lccl ${file_path}/ms_kernels_dependency/asdops ${file_path}/ms_kernels_internal
+cp -r ${file_path}/ms_kernels_dependency/asdops ${file_path}/ms_kernels_internal
 echo "Unzip ms_kernels_dependency.tar.gz SUCCESS!"

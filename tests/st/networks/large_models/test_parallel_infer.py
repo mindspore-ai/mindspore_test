@@ -70,15 +70,15 @@ class TestInferParallel:
         Expectation: AssertionError
         """
         commands = [
-            (f"export ASCEND_RT_VISIBLE_DEVICES=0,1 && export LCAL_IF_PORT=10068 && msrun --worker_num=2 "
+            (f"export ASCEND_RT_VISIBLE_DEVICES=0,1 && export LCAL_COMM_ID=127.0.0.1:10068 && msrun --worker_num=2 "
              f"--local_worker_num=2 --master_port=8222 --log_dir=parallel_qwen2_0_5b_predict_mp2 --join=True "
              f"{cur_dir}/run_parallel.py --mode parallel_qwen2_0_5b_predict_mp2",
              'parallel_qwen2_0_5b_predict_mp2/worker_0.log', 792),  # command, log_path, expect_peak_memory
-            (f"export ASCEND_RT_VISIBLE_DEVICES=2,3 && export LCAL_IF_PORT=10070 && msrun --worker_num=2 "
+            (f"export ASCEND_RT_VISIBLE_DEVICES=2,3 && export LCAL_COMM_ID=127.0.0.1:10070 && msrun --worker_num=2 "
              f"--local_worker_num=2 --master_port=8230 --log_dir=parallel_qwen2_0_5b_predict_mp2_static --join=True  "
              f"{cur_dir}/run_parallel.py --mode parallel_qwen2_0_5b_predict_mp2_static",
              'parallel_qwen2_0_5b_predict_mp2_static/worker_0.log', 868),
-            (f"export ASCEND_RT_VISIBLE_DEVICES=4,5 && export LCAL_IF_PORT=10072 && msrun --worker_num=2 "
+            (f"export ASCEND_RT_VISIBLE_DEVICES=4,5 && export LCAL_COMM_ID=127.0.0.1:10072 && msrun --worker_num=2 "
              f"--local_worker_num=2 --master_port=8238 --log_dir=parallel_qwen2_0_5b_parallel_decoding_mp2 --join=True "
              f"{cur_dir}/run_parallel.py --mode parallel_qwen2_0_5b_parallel_decoding_mp2",
              'parallel_qwen2_0_5b_parallel_decoding_mp2/worker_0.log', 810),
