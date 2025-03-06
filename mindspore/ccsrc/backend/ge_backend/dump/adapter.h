@@ -25,7 +25,7 @@ constexpr auto kMSHookEnable = "MS_HOOK_ENABLE";
 constexpr auto kEnable = "on";
 
 namespace mindspore {
-namespace hooker {
+namespace dump {
 
 class BACKEND_EXPORT Adapter {
  public:
@@ -67,5 +67,5 @@ class BACKEND_EXPORT AdapterManager {
   static type##Register global_##type##Register;                                                        \
   }
 
-}  // namespace hooker
+}  // namespace dump
 }  // namespace mindspore

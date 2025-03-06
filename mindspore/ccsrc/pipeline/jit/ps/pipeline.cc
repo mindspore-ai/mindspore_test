@@ -99,8 +99,6 @@
 #include "load_mindir/infer_mindir.h"
 #include "pipeline/jit/ps/pass_config.h"
 
-#include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "include/backend/debug/data_dump/acl_dump_json_writer.h"
 #include "abstract/abstract_value.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/constants.h"

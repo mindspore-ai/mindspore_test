@@ -46,12 +46,8 @@
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "include/common/utils/signal_util.h"
 #endif
-#include "include/backend/debug/data_dump/dump_json_parser.h"
 #ifdef ENABLE_DUMP_IR
 #include "include/common/debug/rdr/recorder_manager.h"
-#endif
-#ifdef ENABLE_DEBUGGER
-#include "include/backend/debug/debugger/debugger.h"
 #endif
 #include "debug/profiler/profiling.h"
 #include "include/common/debug/common.h"
@@ -382,20 +378,7 @@ void GraphScheduler::BuildAndScheduleGlobalActor() {
   }
 
   // Create and schedule debug actor.
-  // debugger_actor_need is true for CPU when e2e dump is enabled and for Ascend and GPU is true when debugger or dump
-  // is enabled.
-  bool debugger_actor_need = DumpJsonParser::GetInstance().e2e_dump_enabled();
-#ifdef ENABLE_DEBUGGER
-  auto debugger = Debugger::GetInstance();
-  MS_EXCEPTION_IF_NULL(debugger);
-  if (debugger->DebuggerBackendEnabled()) {
-    debugger_actor_need = true;
-  }
-  // If dump hooker tool is enabled
-  if (common::GetEnv("MS_HOOK_ENABLE") == "on") {
-    debugger_actor_need = true;
-  }
-#endif
+  bool debugger_actor_need = (common::GetEnv("MS_HOOK_ENABLE") == "on");
   if (debugger_actor_need) {
     auto debug_actor = std::make_shared<DebugActor>();
     MS_EXCEPTION_IF_NULL(debug_actor);

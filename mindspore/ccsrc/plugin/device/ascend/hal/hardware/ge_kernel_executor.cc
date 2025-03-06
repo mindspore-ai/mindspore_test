@@ -350,8 +350,6 @@ void InlineSubGraph(const KernelGraphPtr &graph, const KernelGraphPtr &sub_graph
   // Inline graph boundary: MakeTuple---->Depend---->Tensormove
   // Avoid long link times at runtime
   if (last_call != nullptr) {
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
     static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
     if (!enable_infer_boost) {
       auto value_node = graph->NewValueNode(MakeValue(std::make_shared<tensor::Tensor>(1)));

@@ -40,7 +40,6 @@
 #include "include/common/utils/compile_cache_context.h"
 #include "utils/file_utils.h"
 #include "utils/ms_utils.h"
-#include "plugin/device/ascend/hal/device/dump/ascend_dump.h"
 #include "backend/ge_backend/pass/ge_backend_optimization.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
@@ -306,7 +305,6 @@ void GeDeviceContext::Destroy() {
   if (op_tuning_conf->EnableAoeOnline()) {
     backend::ge_backend::DestroyAoeUtil();
   }
-  FinalizeDump();
   if (graph_executor_ == nullptr) {
     return;
   }
@@ -329,30 +327,12 @@ void GeDeviceContext::Destroy() {
 }
 
 void GeDeviceContext::InitDump() const {
-  auto &dump_parser = DumpJsonParser::GetInstance();
-  dump_parser.Parse();
-  if (!dump_parser.async_dump_enabled()) {
+  if (common::AnfAlgo::IsBackendGe()) {
+    MS_LOG(INFO) << "In the ge backend, dump is initialized at the same time as the backend.";
     return;
   }
-  if (dump_parser.FileFormatIsNpy()) {
-    if (dump_parser.IsCallbackRegistered()) {
-      MS_LOG(INFO) << "DumpDataCallback already registered, no need to register again.";
-      return;
-    }
-    (void)acldumpRegCallback(mindspore::ascend::DumpDataCallBack, 0);
-    dump_parser.SetCallbackRegistered();
-  }
-}
-
-void GeDeviceContext::FinalizeDump() const {
   auto &dump_parser = DumpJsonParser::GetInstance();
   dump_parser.Parse();
-  if (!dump_parser.async_dump_enabled()) {
-    return;
-  }
-  if (dump_parser.FileFormatIsNpy() && dump_parser.IsTensorDump()) {
-    mindspore::ascend::AscendAsyncDumpManager::GetInstance().WaitForWriteFileFinished();
-  }
 }
 
 DeprecatedInterface *GeDeviceContext::GetDeprecatedInterface() {

@@ -18,7 +18,7 @@
 #include "include/backend/kernel_graph.h"
 
 namespace mindspore {
-namespace hooker {
+namespace dump {
 class BACKEND_EXPORT HookDebugger {
  public:
   HookDebugger() : is_enabled_(IsHookerEnabled()) {
@@ -48,5 +48,5 @@ class BACKEND_EXPORT HookDebugger {
   bool is_enabled_ = false;
   int dataset_sink_ = 0;
 };
-}  // namespace hooker
+}  // namespace dump
 }  // namespace mindspore

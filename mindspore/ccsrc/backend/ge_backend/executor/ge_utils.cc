@@ -26,7 +26,6 @@
 #include "backend/ge_backend/graph_ir/utils.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/backend/kernel_graph.h"
-#include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "abstract/abstract_value.h"
 #include "utils/phase.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
@@ -275,52 +274,6 @@ void SetHcclOptions(const std::shared_ptr<MsContext> &inst_context, std::map<std
   }
 }
 
-void SetDumpOptions(std::map<std::string, std::string> *ge_options) {
-  MS_EXCEPTION_IF_NULL(ge_options);
-  // set up dump options
-  auto &dump_parser = DumpJsonParser::GetInstance();
-  dump_parser.Parse();
-  if (dump_parser.async_dump_enabled()) {
-    (*ge_options)["ge.exec.enableDump"] = std::to_string(static_cast<int>(dump_parser.async_dump_enabled()));
-    auto dump_path = FileUtils::CreateNotExistDirs(dump_parser.path());
-    if (!dump_path.has_value()) {
-      MS_LOG(EXCEPTION) << "Invalid dump path: " << dump_parser.path();
-    }
-    (*ge_options)["ge.exec.dumpPath"] = dump_path.value();
-    // Parse() make sure that input_output is less than 3.
-    (*ge_options)["ge.exec.dumpMode"] = kGeDumpMode[dump_parser.input_output()];
-    // DumpStep is set to "all" by default
-    if (dump_parser.iteration_string() != "all") {
-      (*ge_options)["ge.exec.dumpStep"] = dump_parser.iteration_string();
-    }
-    if (dump_parser.dump_mode() == 1) {
-      (*ge_options)["ge.exec.dumpLayer"] = dump_parser.dump_layer();
-      MS_LOG(INFO) << "Set dumplayer to: " << (*ge_options)["ge.exec.dumpLayer"];
-    }
-    if (dump_parser.op_debug_mode() > 0) {
-      (*ge_options)["ge.exec.enableDump"] = "0";
-      (*ge_options)["ge.exec.enableDumpDebug"] = "1";
-      switch (dump_parser.op_debug_mode()) {
-        case kDumpModeAicoreOverflow:
-          (*ge_options)["ge.exec.dumpDebugMode"] = "aicore_overflow";
-          break;
-        case kDumpModeAtomicOverflow:
-          (*ge_options)["ge.exec.dumpDebugMode"] = "atomic_overflow";
-          break;
-        case kDumpModeAll:
-          (*ge_options)["ge.exec.dumpDebugMode"] = "all";
-          break;
-        default:
-          break;
-      }
-    }
-
-    MS_LOG(INFO) << "The enable dump state is " << (*ge_options)["ge.exec.enableDump"] << ", save dump path is "
-                 << (*ge_options)["ge.exec.dumpPath"] << ", dump mode is " << kGeDumpMode[dump_parser.input_output()]
-                 << ", dump step is " << dump_parser.iteration_string() << ".";
-  }
-}
-
 }  // namespace
 
 bool IsGeTrain() {
@@ -441,10 +394,6 @@ void GetGeGlobalOptions(std::map<std::string, std::string> *ge_options) {
   MS_EXCEPTION_IF_NULL(ms_context_ptr);
 
   SetHcclOptions(ms_context_ptr, ge_options);
-  auto enable_ge_dump = common::GetEnv("ENABLE_MS_GE_DUMP");
-  if (enable_ge_dump == "1") {
-    SetDumpOptions(ge_options);
-  }
   (*ge_options)["ge.exec.jobId"] = "0";
   MS_LOG(INFO) << "Set ge.exec.jobId to default value 0";
 

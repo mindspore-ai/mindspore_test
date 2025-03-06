@@ -30,85 +30,17 @@
 #include "debug/data_dump/device_statistic/check_overflow.h"
 #endif
 #include "debug/data_dump/data_dumper.h"
-#include "debug/hooker/hook_debugger.h"
 #include "include/common/debug/common.h"
 #include "utils/file_utils.h"
 #include "debug/profiler/profiling.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "debug/data_dump/overflow_counter.h"
+#include "debug/hooker/hook_debugger.h"
+#include "debug/hooker/deprecated_env.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 
 namespace mindspore {
 namespace runtime {
-// Get kernel names with dump flag.
-void GetSetDumpNames(const AnfNodePtr &node, std::vector<std::string> *set_dump_names) {
-  auto dump_flag = common::AnfAlgo::GetDumpFlag(node);
-  if (dump_flag.has_value() && dump_flag.value().compare("true") == 0) {
-    (*set_dump_names).push_back(node->fullname_with_scope());
-  }
-}
-
-void DebugActor::ACLDump(uint32_t device_id, const std::vector<KernelGraphPtr> &graphs, bool is_kbyk) {
-  std::vector<std::string> all_kernel_names;
-  std::vector<std::string> set_dump_names;
-  for (const auto &graph : graphs) {
-    auto all_kernels = graph->execution_order();
-    std::for_each(all_kernels.begin(), all_kernels.end(), [&](const auto &k) {
-      all_kernel_names.push_back(k->fullname_with_scope());
-      GetSetDumpNames(k, &set_dump_names);
-      if (IsPrimitiveCNode(k, prim::kPrimGEGraphOp)) {
-        auto inline_subgraph = common::AnfAlgo::GetNodeAttr<KernelGraphPtr>(k, kAttrKernelGraph);
-        auto all_kernels = inline_subgraph->execution_order();
-        std::for_each(all_kernels.begin(), all_kernels.end(),
-                      [&](const auto &k) { GetSetDumpNames(k, &set_dump_names); });
-      }
-    });
-  }
-
-  auto step_count_num = 0;
-  step_count_num = step_count_;
-  if (step_count_ == 1 && is_dataset_sink_ == 1) {
-    step_count_num = 0;
-  }
-  DumpJsonParser::GetInstance().UpdateDumpIter(step_count_num);
-  MS_LOG(INFO) << "UpdateDumpIter: " << step_count_num;
-  if (!graphs.empty()) {
-    auto graph = graphs[0];
-    is_dataset_sink_ = graph->IsDatasetGraph();
-  }
-  auto enable_ge_dump = common::GetEnv("ENABLE_MS_GE_DUMP");
-  if (DumpJsonParser::GetInstance().async_dump_enabled() &&
-      ((DumpJsonParser::GetInstance().DumpEnabledForIter() && is_kbyk) || (enable_ge_dump != "1" && !is_kbyk))) {
-    bool is_init = false;
-    if ((enable_ge_dump != "1") && !(DumpJsonParser::GetInstance().DumpEnabledForIter())) {
-      is_init = true;
-    } else {
-      std::string dump_path = DumpJsonParser::GetInstance().path();
-      std::string dump_path_step = dump_path + "/" + std::to_string(step_count_num);
-      auto real_path = FileUtils::CreateNotExistDirs(dump_path_step, false);
-      if (!real_path.has_value()) {
-        MS_LOG(WARNING) << "Fail to create acl dump dir " << real_path.value();
-        return;
-      }
-    }
-    dump_flag_ = true;
-    auto registered_dumper = datadump::DataDumperRegister::Instance().GetDumperForBackend(device::DeviceType::kAscend);
-    if (registered_dumper != nullptr) {
-      registered_dumper->Initialize();
-      if (DumpJsonParser::GetInstance().dump_mode() ==
-          static_cast<uint32_t>(mindspore::DumpJsonParser::JsonDumpMode::DUMP_KERNELS_WITH_FLAG)) {
-        if (set_dump_names.empty()) {
-          MS_LOG(WARNING) << "[set dump] There is no target with dump flag.";
-          set_dump_names.push_back("NoSetDumpTarget");
-        }
-        registered_dumper->EnableDump(device_id, step_count_num, is_init, set_dump_names);
-      } else {
-        registered_dumper->EnableDump(device_id, step_count_num, is_init, all_kernel_names);
-      }
-    }
-  }
-}
-
 void DebugActor::DebugPreLaunch(const AnfNodePtr &node, const std::vector<DeviceTensor *> &input_device_tensors,
                                 const std::vector<DeviceTensor *> &output_device_tensors,
                                 const DeviceContext *device_context, OpContext<DeviceTensor> *const op_context,
@@ -242,18 +174,17 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
   MS_LOG(INFO) << "Debug on step begin.";
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  auto is_kbyk = context->IsKByKExecutorMode();
-  std::string backend = context->backend_policy();
   device_ctx_ = device_contexts[0];
-  auto profiler = profiler::Profiler::GetInstance(kAscendDevice);
-  if ((profiler == nullptr || !profiler->IsInitialized()) &&
-      device_ctx_->GetDeviceType() == device::DeviceType::kAscend) {
-    auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    if (common::GetEnv("ENABLE_MS_GE_DUMP") != "1") {
-      ACLDump(device_id, graphs, is_kbyk);
+  if (common::AnfAlgo::IsBackendGe()) {
+    hooker::CheckDeprecatedDumpEnv();
+    auto profiler = profiler::Profiler::GetInstance(kAscendDevice);
+    if ((profiler == nullptr || !profiler->IsInitialized()) &&
+        device_ctx_->GetDeviceType() == device::DeviceType::kAscend) {
+      auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+      auto &hookDebugger = hooker::HookDebugger::GetInstance();
+      hookDebugger.HookOnStepBegin(device_id, graphs, step_count_, false);
     }
-    auto &hookDebugger = hooker::HookDebugger::GetInstance();
-    hookDebugger.HookOnStepBegin(device_id, graphs, step_count_, is_kbyk);
+    return;
   }
   if (DumpJsonParser::GetInstance().e2e_dump_enabled() && !graphs.empty()) {
     // First graph is the dataset graph when dataset_sink_mode = True
@@ -266,9 +197,6 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
       MS_LOG(INFO) << "In dataset sink mode, reset step to init_step: " << init_step;
     }
     DumpJsonParser::GetInstance().SetDatasetSink(is_dataset_graph);
-  }
-  if (backend == "ge") {
-    return;
   }
   MS_EXCEPTION_IF_NULL(op_context);
   std::lock_guard<std::mutex> locker(debug_mutex_);
@@ -322,16 +250,11 @@ void DebugActor::DebugOnStepEnd(OpContext<DeviceTensor> *const, const AID *, int
       MS_EXCEPTION(ValueError) << "When using acl dump in data sink mode, sink size must be 1, but got " << sink_size_
                                << ".";
     }
-    auto registered_dumper = datadump::DataDumperRegister::Instance().GetDumperForBackend(device::DeviceType::kAscend);
-    if (registered_dumper != nullptr) {
-      device_ctx_->device_res_manager_->SyncAllStreams();
-      registered_dumper->Finalize();
-    }
     dump_flag_ = false;
   }
+
   auto &hookDebugger = hooker::HookDebugger::GetInstance();
   hookDebugger.HookOnStepEnd();
-
   device_ctx_->device_res_manager_->SyncAllStreams();
   std::lock_guard<std::mutex> locker(debug_mutex_);
 
@@ -343,7 +266,7 @@ void DebugActor::DebugOnStepEnd(OpContext<DeviceTensor> *const, const AID *, int
 #ifdef ENABLE_DEBUGGER
   auto debugger = Debugger::GetInstance();
   if (debugger != nullptr) {
-    if (backend == "ge" && !debugger->GetAscendKernelByKernelFlag()) {
+    if (common::AnfAlgo::IsBackendGe()) {
       MS_LOG(INFO) << "Not kernel mode, skip post actions.";
       return;
     }

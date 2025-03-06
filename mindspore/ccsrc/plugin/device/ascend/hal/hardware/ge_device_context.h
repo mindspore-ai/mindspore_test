@@ -70,7 +70,6 @@ class GeDeviceContext
   DISABLE_COPY_AND_ASSIGN(GeDeviceContext);
 
   void InitDump() const;
-  void FinalizeDump() const;
 
   std::unique_ptr<AscendDeprecatedInterface> deprecated_interface_;
   mutable bool ge_initialized_{false};

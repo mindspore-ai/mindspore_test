@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include "debug/hooker/adapter.h"
+#include "backend/ge_backend/dump/adapter.h"
 #include <utility>
 #include <memory>
 
 namespace mindspore {
-namespace hooker {
+namespace dump {
 AdapterManager &AdapterManager::Instance() {
   static AdapterManager adapter_manager;
   return adapter_manager;
@@ -36,5 +36,5 @@ std::shared_ptr<Adapter> AdapterManager::GetAdapterForBackend(device::DeviceType
   }
   return iter->second;
 }
-}  // namespace hooker
+}  // namespace dump
 }  // namespace mindspore

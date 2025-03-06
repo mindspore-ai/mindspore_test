@@ -34,6 +34,7 @@ list(APPEND _DEBUG_SRC_LIST
         "${CMAKE_CURRENT_SOURCE_DIR}/execute_order_tracker/execute_order_tracker.cc"
         "${CMAKE_CURRENT_SOURCE_DIR}/hooker/hook_debugger.cc"
         "${CMAKE_CURRENT_SOURCE_DIR}/hooker/adapter.cc"
+        "${CMAKE_CURRENT_SOURCE_DIR}/hooker/deprecated_env.cc"
     )
 
 list(APPEND _DEBUG_SRC_LIST
@@ -46,7 +47,6 @@ list(APPEND _DEBUG_SRC_LIST
     "${CMAKE_CURRENT_SOURCE_DIR}/utils.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/common/csv_writer.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/summary/summary.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/acl_dump_json_writer.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_control.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/tensordump_control.cc"
     )

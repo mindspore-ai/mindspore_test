@@ -139,6 +139,7 @@ mindspore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/x86_64/*ms_kernels
 
 # dump
 mindspore/ccsrc/backend/ge_backend/dump/hook_dynamic_loader.*
+mindspore/ccsrc/debug/hooker/hook_dynamic_loader.*
 
 # tools
 .cursorignore

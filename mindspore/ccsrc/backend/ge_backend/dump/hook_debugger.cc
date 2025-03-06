@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include "debug/hooker/hook_debugger.h"
+#include "backend/ge_backend/dump/hook_debugger.h"
 #include <string>
-#include "debug/hooker/adapter.h"
+#include "backend/ge_backend/dump/adapter.h"
 
 namespace mindspore {
-namespace hooker {
+namespace dump {
 HookDebugger &HookDebugger::GetInstance() {
   static HookDebugger hook_debugger;
   return hook_debugger;
@@ -48,7 +48,7 @@ void HookDebugger::HookOnStepBegin(uint32_t device_id, const std::vector<KernelG
     auto graph = graphs[0];
     dataset_sink_ = graph->IsDatasetGraph();
   }
-  auto registered_adapter = hooker::AdapterManager::Instance().GetAdapterForBackend(device::DeviceType::kAscend);
+  auto registered_adapter = dump::AdapterManager::Instance().GetAdapterForBackend(device::DeviceType::kAscend);
   if (registered_adapter != nullptr) {
     if (step_count_num == 0) {
       registered_adapter->Load();
@@ -77,7 +77,7 @@ void HookDebugger::HookOnStepBegin(uint32_t device_id, const KernelGraphPtr &gra
   }
   dataset_sink_ = graph->IsDatasetGraph();
 
-  auto registered_adapter = hooker::AdapterManager::Instance().GetAdapterForBackend(device::DeviceType::kAscend);
+  auto registered_adapter = dump::AdapterManager::Instance().GetAdapterForBackend(device::DeviceType::kAscend);
   if (registered_adapter != nullptr) {
     if (step_count_num == 0) {
       registered_adapter->Load();
@@ -94,7 +94,7 @@ void HookDebugger::HookOnStepEnd() {
     return;
   }
 
-  auto registered_adapter = hooker::AdapterManager::Instance().GetAdapterForBackend(device::DeviceType::kAscend);
+  auto registered_adapter = dump::AdapterManager::Instance().GetAdapterForBackend(device::DeviceType::kAscend);
   if (registered_adapter != nullptr) {
     registered_adapter->AdaptOnStepEnd();
   } else {
@@ -102,5 +102,5 @@ void HookDebugger::HookOnStepEnd() {
     return;
   }
 }
-}  // namespace hooker
+}  // namespace dump
 }  // namespace mindspore

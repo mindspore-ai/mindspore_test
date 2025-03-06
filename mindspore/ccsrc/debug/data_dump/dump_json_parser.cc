@@ -16,6 +16,8 @@
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include <algorithm>
 #include <fstream>
+#include <chrono>
+#include <thread>
 #include "debug/data_dump/npy_header.h"
 #include "debug/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -529,7 +531,14 @@ void DumpJsonParser::ParseE2eDumpSetting(const nlohmann::json &content) {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   if (e2e_dump_setting == content.end()) {
-    MS_LOG(INFO) << "No e2e_dump_settings";
+    constexpr int kMaxWarnings = 3;
+    constexpr auto kWarningInterval = std::chrono::milliseconds(1000);
+    for (int i = 0; i < kMaxWarnings; ++i) {
+      MS_LOG(WARNING) << "[Dump Alert " << i + 1 << "/" << kMaxWarnings << "]: "
+                      << "For 'Dump', in the scenario where 'jit_level' is 'O0' or 'O1', please configure "
+                         "'e2e_dump_setting', otherwise there will be no data.";
+      std::this_thread::sleep_for(kWarningInterval);
+    }
     return;
   }
 
@@ -589,9 +598,6 @@ void DumpJsonParser::ParseDumpMode(const nlohmann::json &content) {
   if (dump_mode_ == static_cast<uint32_t>(DUMP_KERNELS_WITH_FLAG)) {
     if (context->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice) {
       MS_LOG(EXCEPTION) << "Set dump is only supported in Ascend async dump. Please set dump_mode to 0 or 1.";
-    }
-    if (IsGeDump()) {
-      MS_LOG(EXCEPTION) << "Set dump is not supported in GE dump. Please set dump_mode to 0 or 1.";
     }
   }
 }
@@ -923,13 +929,11 @@ void DumpJsonParser::ParseOpDebugMode(const nlohmann::json &content) {
     case static_cast<uint32_t>(DUMP_WHOLE):
       break;
     case static_cast<uint32_t>(DUMP_AICORE_OVERFLOW):
-    case static_cast<uint32_t>(DUMP_ATOMIC_OVERFLOW):
-      if (!IsGeDump()) {
-        MS_LOG(INFO) << "Op_debug_mode should be 0, 3, 4. When set to 1 or 2, it would be reset to 3 and overflow dump "
-                        "is enabled.";
-        op_debug_mode_ = static_cast<uint32_t>(DUMP_BOTH_OVERFLOW);
-      }
-      break;
+    case static_cast<uint32_t>(DUMP_ATOMIC_OVERFLOW): {
+      MS_LOG(INFO) << "Op_debug_mode should be 0, 3, 4. When set to 1 or 2, it would be reset to 3 and overflow dump "
+                      "is enabled.";
+      op_debug_mode_ = static_cast<uint32_t>(DUMP_BOTH_OVERFLOW);
+    } break;
     case static_cast<uint32_t>(DUMP_BOTH_OVERFLOW): {
       break;
     }
@@ -950,17 +954,10 @@ void DumpJsonParser::ParseOpDebugMode(const nlohmann::json &content) {
                            "whole tensor would be saved when exception occur.";
         sample_mode_ = 0;
       }
-      if (async_dump_enabled_ && IsGeDump()) {
-        MS_LOG(EXCEPTION) << "For ge dump, op_debug_mode should be 0, 1, 2, 3.";
-      }
       break;
     }
     default:
-      if (!IsGeDump()) {
-        MS_LOG(EXCEPTION) << "Dump Json Parse Failed. op_debug_mode should be 0, 3, 4";
-      } else {
-        MS_LOG(EXCEPTION) << "Dump Json Parse Failed. op_debug_mode should be 0, 1, 2, 3";
-      }
+      MS_LOG(EXCEPTION) << "Dump Json Parse Failed. op_debug_mode should be 0, 3, 4";
   }
   if (op_debug_mode_ != static_cast<uint32_t>(DUMP_WHOLE) && dump_mode_ != static_cast<uint32_t>(DUMP_ALL)) {
     MS_LOG(WARNING) << "Overflow dump or exception dump do not support specify kernels, the dump_mode is set to 0";
@@ -1041,15 +1038,6 @@ void DumpJsonParser::JudgeDumpEnabled() {
       async_dump_enabled_ = false;
       e2e_dump_enabled_ = false;
       MS_LOG(WARNING) << "Dump is not enabled. device_id:" << device_id << " not support";
-    }
-  }
-  if (context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice) {
-    if (async_dump_enabled_ && IsGeDump()) {
-      if (context->IsKByKExecutorMode()) {
-        MS_LOG(WARNING)
-          << "When jit_level is set to 'o0' or 'o1', async_dump only support acl dump method, ie. set environment "
-             "MS_ACL_DUMP_CFG_PATH to the same path with MINDSPORE_DUMP_CONFIG. In fact, e2e dump is preferable.";
-      }
     }
   }
   JsonConfigToString();
@@ -1241,11 +1229,6 @@ bool DumpJsonParser::IsHCCLKernelInput(const std::string &kernel_name) const {
     return true;
   }
   return false;
-}
-
-bool DumpJsonParser::IsGeDump() {
-  auto enable_ge_dump = common::GetEnv("ENABLE_MS_GE_DUMP");
-  return enable_ge_dump == "1";
 }
 
 bool DumpJsonParser::IsDeviceStatHighPrecisionMode() const { return device_stat_precision_mode_ == kHighPrecision; }
