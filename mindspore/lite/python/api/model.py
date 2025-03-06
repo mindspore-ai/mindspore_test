@@ -460,7 +460,8 @@ class Model(BaseModel):
         2. Adjust the input size to the specify shape.
 
         3. When the input is a dynamic shape (a dimension of the shape of the model input contains -1), -1 must be
-           replaced by a fixed dimension through `resize` .
+           replaced by a fixed dimension through `resize` . (When `provider` is set to `ge`, model input shape is
+           fixed by input Tensor shape.)
 
         4. The shape operator contained in the model is dynamic shape (a dimension of the shape operator contains -1).
 

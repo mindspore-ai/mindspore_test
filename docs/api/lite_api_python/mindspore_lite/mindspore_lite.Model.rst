@@ -119,7 +119,7 @@ mindspore_lite.Model
 
         2. 将输入大小调整为指定shape。
 
-        3. 当输入是动态shape时（模型输入的shape的维度包含-1），必须通过 `resize` 把-1换成固定维度。
+        3. 当输入是动态shape时（模型输入的shape的维度包含-1），必须通过 `resize` 把-1换成固定维度。（配置 `provider` 为 `ge` 时，模型输入的shape根据输入Tensor的shape，设置成固定维度）
 
         4. 模型中包含的shape算子是动态shape（shape算子的维度包含-1）。
 
