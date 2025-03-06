@@ -823,6 +823,9 @@ DeviceEventPtr GPUDeviceResManager::CreateEventWithFlag(bool enable_timing, bool
   return gpu_res_manager_->CreateEventWithFlag(enable_timing, blocking, use_extensional_api);
 }
 
+bool GPUDeviceResManager::DestroyEvent(const DeviceEventPtr &event) { return gpu_res_manager_->DestroyEvent(event); }
+bool GPUDeviceResManager::DestroyAllEvents() { return gpu_res_manager_->DestroyAllEvents(); }
+
 bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,
                                           const device::DeviceAddressPtrList &input_addr_list,
                                           const device::DeviceAddressPtrList &output_addr_list,

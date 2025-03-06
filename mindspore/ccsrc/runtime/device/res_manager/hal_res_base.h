@@ -207,10 +207,10 @@ class RES_EXPORT HalResBase {
   }
 
   // Destroy specified device event.
-  virtual bool DestroyEvent(const DeviceEventPtr &event);
+  virtual bool DestroyEvent(const DeviceEventPtr &event) { return false; }
 
   // Destroy all device events.
-  virtual bool DestroyAllEvents();
+  virtual bool DestroyAllEvents() { return false; }
 
   // Detect stress.
   virtual int StressDetect() const { MS_LOG(EXCEPTION) << "Stress detection is not supported."; }
@@ -274,10 +274,6 @@ class RES_EXPORT HalResBase {
   virtual bool SyncAllEvents() { return false; }
 
  protected:
-  std::mutex device_events_mutex_;
-
-  DeviceEventPtrList device_events_{};
-
   ResKey res_key_;
 };
 using HalResPtr = std::shared_ptr<HalResBase>;

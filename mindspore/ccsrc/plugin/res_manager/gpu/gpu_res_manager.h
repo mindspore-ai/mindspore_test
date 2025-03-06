@@ -79,6 +79,8 @@ class GPUResManager : public HalResBase {
   DeviceEventPtr CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait) override;
 
   DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking, bool use_extensional_api) override;
+  bool DestroyEvent(const DeviceEventPtr &event) override;
+  bool DestroyAllEvents() override;
 
   bool LoadCollectiveCommLib() override;
   mindspore::device::CollectiveCommunicationLib *collective_comm_lib() const override { return collective_comm_lib_; }
@@ -115,6 +117,8 @@ class GPUResManager : public HalResBase {
   std::shared_ptr<SwapManager> swap_manager_{nullptr};
   std::shared_ptr<GPUMemoryManager> mem_manager_{nullptr};
   mindspore::device::CollectiveCommunicationLib *collective_comm_lib_;
+  DeviceEventPtrList device_events_{};
+  std::mutex device_events_mutex_;
 };
 }  // namespace gpu
 }  // namespace device
