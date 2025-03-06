@@ -332,8 +332,10 @@ class COMMON_EXPORT AnfAlgo {
   static bool HasIncorporateCallNode(const CNodePtr &cnode);
   static bool IsDynamicGraph(const FuncGraphPtr &func_graph);
   static bool IsMonadType(const TypeId &type_id);
-  // check if is ge backend
+  // check if is GE backend
   static bool IsBackendGe();
+  // check if is ms_backend backend
+  static bool IsBackendMs();
 };
 }  // namespace common
 }  // namespace mindspore

@@ -323,7 +323,7 @@ void ProcessSpecialNodes(const FuncGraphPtr &graph, const std::vector<AnfNodePtr
 void ProcessSendRecvForGE(const FuncGraphPtr &graph) {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  static const bool is_enable_ge = (context->backend_policy() == "ge");
+  static const bool is_enable_ge = common::AnfAlgo::IsBackendGe();
   const auto no_cell_reuse = context->CellReuseLevel() == CellReuseLevel::kNoCellReuse;
   if (!is_enable_ge || no_cell_reuse) {
     return;
