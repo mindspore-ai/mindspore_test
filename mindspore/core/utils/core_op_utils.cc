@@ -125,7 +125,8 @@ CNodePtr ConvertArgsToAttr(const CNodePtr &cnode) {
                   << "is not a primitive defined in yaml, cannot convert args to attr, cnode:" << cnode->DebugString();
     return nullptr;
   }
-  std::vector<AnfNodePtr> new_node_inputs = {cnode->input(0)};
+  prim = std::make_shared<Primitive>(prim_name);
+  std::vector<AnfNodePtr> new_node_inputs = {NewValueNode(prim)};
   for (size_t arg_index = 0; arg_index < op_def->args_.size(); ++arg_index) {
     auto arg = op_def->args_[arg_index];
     if (!arg.as_init_arg_) {
