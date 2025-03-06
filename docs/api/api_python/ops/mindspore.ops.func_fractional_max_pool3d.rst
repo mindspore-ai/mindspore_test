@@ -3,7 +3,7 @@ mindspore.ops.fractional_max_pool3d
 
 .. py:function:: mindspore.ops.fractional_max_pool3d(input, kernel_size, output_size=None, output_ratio=None, return_indices=False, _random_samples=None)
 
-    在输入 `input` 上应用三维分数最大池化。输出Tensor的shape可以由 `output_size` 和 `output_ratio` 其中之一确定，步长由 `_random_samples` 随机。 `output_size` 和 `output_ratio` 同时设置， `output_size` 会生效。 `output_size` 和 `output_ratio` 不能同时为 ``None`` 。
+    在输入 `input` 上应用三维分数最大池化。输出Tensor的shape可以由 `output_size` 或 `output_ratio` 确定，步长由 `_random_samples` 随机生成。当同时设置 `output_size` 和 `output_ratio` 时， `output_size` 生效。 `output_size` 和 `output_ratio` 不能同时为 ``None`` 。
 
     分数最大池化的详细描述在 `Fractional MaxPooling by Ben Graham <https://arxiv.org/abs/1412.6071>`_ 。
 
@@ -32,7 +32,7 @@ mindspore.ops.fractional_max_pool3d
         - **TypeError** - `argmax` 数据类型不是int32、int64。
         - **TypeError** - `_random_samples` 和 `input` 数据类型不相同。
         - **ValueError** - `output_shape` 不是长度为3的tuple。
-        - **ValueError** - `kernal_size` 不是长度为3的tuple。
+        - **ValueError** - `kernel_size` 不是长度为3的tuple。
         - **ValueError** - `output_shape` 和 `kernel_size` 不是正数。
         - **ValueError** - `output_size` 和 `output_ratio` 同时为 `None` 。
         - **ValueError** - `input` 和 `_random_samples` 的第一维度大小不相等。

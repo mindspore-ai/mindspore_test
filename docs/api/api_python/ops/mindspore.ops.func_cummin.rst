@@ -18,7 +18,7 @@ mindspore.ops.cummin
         一个包含两个Tensor的元组，分别表示累积最小值和对应索引。每个输出Tensor的形状和输入Tensor的形状相同。
 
     异常：
-        - **TypeError** - 如果 `input` 不是Tensor。
-        - **TypeError** - 如果 `input` 的Tensor类型是复数或bool。
-        - **TypeError** - 如果 `axis` 不是int。
-        - **ValueError** - 如果 `axis` 不在范围[-input.ndim, input.ndim - 1]内。
+        - **TypeError** - `input` 不是Tensor。
+        - **TypeError** - `input` 的Tensor类型是复数或bool。
+        - **TypeError** - `axis` 不是int。
+        - **ValueError** - `axis` 不在范围[-input.ndim, input.ndim - 1]内。

@@ -15,5 +15,5 @@ mindspore.ops.coo_cosh
         COOTensor，数据类型和shape与 `x` 相同。
 
     异常：
-        - **TypeError** - `x` 的数据类型不是float16、float32、float64、complex64、complex128。
+        - **TypeError** - `x` 的数据类型不是float16、float32、float64、complex64或complex128。
         - **TypeError** - `x` 不是COOTensor。

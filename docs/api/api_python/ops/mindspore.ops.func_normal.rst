@@ -15,4 +15,4 @@
         - **seed** (int) - 随机种子。取值须为非负数。默认值： ``None`` ，等同于 ``0`` 。
 
     返回：
-        Tensor，shape应与输入 `shape` 与 `mean` 和 `stddev` 进行广播之后的shape相同。数据类型支持[float32, float64]。
+        Tensor，shape应与输入 `shape` 与 `mean` 和 `stddev` 进行广播之后的shape相同。数据类型支持float32和float64。

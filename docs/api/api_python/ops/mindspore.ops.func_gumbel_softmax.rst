@@ -3,12 +3,12 @@ mindspore.ops.gumbel_softmax
 
 .. py:function:: mindspore.ops.gumbel_softmax(logits, tau=1.0, hard=False, dim=-1)
 
-    返回Gumbel-Softmax分布的Tensor。在 `hard = True` 的时候，返回one-hot形式的离散型Tensor，`hard = False` 时返回在dim维进行过softmax的Tensor。
+    返回Gumbel-Softmax分布的Tensor。当 `hard` 为 ``True`` 时，返回one-hot形式的离散型Tensor；当 `hard` 为 ``False`` 时，返回在 `dim` 维度上进行softmax运算后的Tensor。
 
     参数：
         - **logits** (Tensor) - 输入，是一个非标准化的对数概率分布。只支持float16和float32。
         - **tau** (float) - 标量温度，正数。默认值： ``1.0`` 。
-        - **hard** (bool) - 为True时返回one-hot离散型Tensor，可反向求导。默认值： ``False`` 。
+        - **hard** (bool) - 为 ``True`` 时返回one-hot离散型Tensor，可反向求导。默认值： ``False`` 。
         - **dim** (int) - 给softmax使用的参数，在dim维上做softmax操作。默认值： ``-1`` 。
 
     返回：

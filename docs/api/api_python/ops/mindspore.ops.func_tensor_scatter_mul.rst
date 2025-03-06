@@ -23,5 +23,5 @@ mindspore.ops.tensor_scatter_mul
 
     异常：
         - **TypeError** - `indices` 的数据类型不满足int32或int64。
-        - **ValueError** - `input_x` 的rank小于 indices.shape的最后一维。
+        - **ValueError** - `input_x` 的rank小于 `indices.shape` 的最后一维。
         - **RuntimeError** - `indices` 中的值超出了 `input_x` 的索引范围。

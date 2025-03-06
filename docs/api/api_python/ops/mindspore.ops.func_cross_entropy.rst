@@ -50,15 +50,15 @@
 
     参数：
         - **input** (Tensor) - 输入预测值，shape为 :math:`(N)` 或 :math:`(N, C)` 或 :math:`(N, C, H, W)`
-          (针对二维数据)，或 :math:`(N, C, d_1, d_2, ..., d_K)` (针对高维数据)。`input` 需为对数概率。数据类型仅支持float64或float32或float16。
+          （针对二维数据），或 :math:`(N, C, d_1, d_2, ..., d_K)` （针对高维数据）。 `input` 需为对数概率。数据类型支持float16、float32或float64。
         - **target** (Tensor) - 输入目标值。若目标值为类别索引，则shape为 :math:`()` 、 :math:`(N)` 或 :math:`(N, d_1, d_2, ..., d_K)` ，数据类型仅支持int32。
           若目标值为类别概率，则shape为 :math:`(C,)` 、 :math:`(N, C)` 或 :math:`(N, C, d_1, d_2, ..., d_K)` ，数据类型仅支持float32或float16。
         - **weight** (Tensor) - 指定各类别的权重。若值不为 ``None`` ，则shape为 :math:`(C,)`。
           数据类型仅支持float32或float16。默认值： ``None`` 。
-        - **ignore_index** (int) - 指定target中需要忽略的值(一般为填充值)，使其不对梯度产生影响。默认值： ``-100`` 。
+        - **ignore_index** (int) - 指定target中需要忽略的值（一般为填充值），使其不对梯度产生影响。默认值： ``-100`` 。
         - **reduction** (str，可选) - 指定应用于输出结果的规约计算方式，可选 ``'none'`` 、 ``'mean'`` 、 ``'sum'`` ，默认值： ``'mean'`` 。
 
-          - ``''none'``：不应用规约方法。
+          - ``'none'``：不应用规约方法。
           - ``'mean'``：计算输出元素的加权平均值。
           - ``'sum'``：计算输出元素的总和。
 

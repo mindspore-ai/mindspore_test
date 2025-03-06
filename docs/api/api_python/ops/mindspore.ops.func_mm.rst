@@ -20,4 +20,4 @@ mindspore.ops.mm
 
     异常：
         - **ValueError** - `input` 的最后一维度和 `mat2` 的倒数第二维度不相等。
-        - **ValueError** - `input` 或者 `mat2` 不是一个Tensor。
+        - **ValueError** - `input` 或 `mat2` 不是Tensor。

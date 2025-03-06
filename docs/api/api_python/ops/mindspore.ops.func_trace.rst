@@ -15,5 +15,5 @@ mindspore.ops.trace
         Tensor，其数据类型与 `input` 一致，含有一个元素。
 
     异常：
-        - **TypeError** - 如果 `input` 不是Tensor。
-        - **ValueError** - 如果当 `input` 的维度不是2。
+        - **TypeError** - `input` 不是Tensor。
+        - **ValueError** - `input` 的维度不是2。

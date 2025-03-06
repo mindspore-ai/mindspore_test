@@ -67,7 +67,7 @@ mindspore.ops.flash_attention_score
           - (pre_tokens >= 0 且 next_tokens < 0) 且 (abs(next_tokens) > pre_tokens 或 abs(next_tokens) >= S1)。
 
         - **inner_precise** (int，可选) - 保留参数，尚未使能。默认值为： ``0`` 。
-        - **input_layout** (str，可选) - 指定输入 `query` 、 `key` 和 `value` 的数据格式。值可以为 "BSH"、"BNSD"、"SBH"、"BSND" 或 "TND"。其中 "TND" 是实验性格式，。默认值为： ``"BSH"``。
+        - **input_layout** (str，可选) - 指定输入 `query` 、 `key` 和 `value` 的数据格式。值可以为 "BSH"、"BNSD"、"SBH"、"BSND" 或 "TND"。其中 "TND" 是实验性格式。默认值为： ``"BSH"``。
 
           当 `input_layout` 为"TND"时，必须满足以下限制：
           假设有两个列表list_seq_q和list_seq_k表示输入序列的长度。每个列表的值表示batch中每个序列的长度。例如，list_seq_q = [4, 2, 6]，list_seq_k = [10, 3, 9]。
