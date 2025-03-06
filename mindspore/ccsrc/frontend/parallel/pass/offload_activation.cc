@@ -55,13 +55,12 @@ FuncGraphPtr OffloadActivationOptimizer::GetBackwardGraph(const FuncGraphPtr &fu
 void OffloadActivationOptimizer::GetFwBwGraphs() {
   for (const auto &child_graph : manager_->func_graphs()) {
     if (child_graph->has_flag(FUNC_GRAPH_RECOMPUTE_K_GRAPH)) {
-      MS_LOG(DEBUG) << "Graph " << child_graph->ToString() << " has flag " << FUNC_GRAPH_RECOMPUTE_K_GRAPH
-                    << ", skip it.";
+      MS_LOG(WARNING) << "Cell can not be recomputed and offloaded at the same time, ignore offload fot it. Graph: "
+                      << child_graph->ToString() << ".";
       continue;
     }
     const auto &backward_graph = GetBackwardGraph(child_graph);
     if (backward_graph == nullptr) {
-      MS_LOG(DEBUG) << "Get backward func graph for " << child_graph->ToString() << "failed, skip it.";
       continue;
     }
     fw_bw_graphs_.emplace_back(child_graph, backward_graph);
@@ -108,6 +107,10 @@ void OffloadActivationOptimizer::GetActivationOffloadInfo(const FuncGraphPtr &fw
       const auto &fw_primitive = GetCNodePrimitive(fw_cnode);
       if (!GetPrimitiveFlag(fw_primitive, kAttrOffload)) {
         continue;
+      }
+      if (GetPrimitiveFlag(fw_primitive, kAttrRecompute)) {
+        MS_LOG(WARNING) << "Node can not be recomputed and offloaded at the same time, ignore offload fot it. Node: "
+                        << trace::GetDebugInfoStr(fw_cnode->debug_info());
       }
       int64_t prefetch = kDefaultPrefetch;
       const auto prefetch_value = fw_primitive->GetAttr(kAttrBackwardPrefetch);

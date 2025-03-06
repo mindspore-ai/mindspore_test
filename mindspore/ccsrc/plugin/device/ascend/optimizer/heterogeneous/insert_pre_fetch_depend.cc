@@ -52,7 +52,8 @@ void InsertPreFetchDepend::MakeExecOrderCache() {
 
 size_t InsertPreFetchDepend::CalPreFetchCeiling(const CNodePtr &move_to_node) {
   size_t ceiling = 0;
-  const auto &move_to_input = common::AnfAlgo::VisitKernelWithReturnType(move_to_node->input(kIndex1), kIndex0);
+  const auto &move_to_input =
+    common::AnfAlgo::VisitKernelWithReturnType(move_to_node->input(kIndex1), kIndex0, true, {prim::kPrimDepend});
   const auto &move_to_input_node = move_to_input.first;
   if (move_to_input_node == nullptr || !move_to_input_node->isa<CNode>()) {
     return ceiling;
@@ -69,7 +70,8 @@ size_t InsertPreFetchDepend::CalPreFetchCeiling(const CNodePtr &move_to_node) {
     const auto is_depend = IsPrimitiveCNode(node, prim::kPrimDepend);
     if (is_depend) {
       for (size_t i = kIndex1; i <= kIndex2; i += 1) {
-        const auto &input = common::AnfAlgo::VisitKernelWithReturnType(node->input(i), kIndex0);
+        const auto &input =
+          common::AnfAlgo::VisitKernelWithReturnType(node->input(i), kIndex0, true, {prim::kPrimDepend});
         const auto &input_node = input.first;
         if (input_node == nullptr || !input_node->isa<CNode>()) {
           continue;
