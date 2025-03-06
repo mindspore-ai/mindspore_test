@@ -24,7 +24,7 @@
 #include "kernel/ascend/acl_ir/acl_allocator.h"
 #include "include/common/debug/common.h"
 #include "utils/file_utils.h"
-#include "debug/profiler/profiler.h"
+#include "include/common/profiler.h"
 #include "kernel/ascend/acl_ir/op_api_util.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_compiler_symbol.h"

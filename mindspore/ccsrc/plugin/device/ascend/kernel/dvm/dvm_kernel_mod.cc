@@ -19,7 +19,7 @@
 #include <vector>
 #include <string>
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
-#include "debug/profiler/profiling.h"
+#include "include/backend/debug/profiler/profiling.h"
 #include "utils/file_utils.h"
 
 namespace mindspore {

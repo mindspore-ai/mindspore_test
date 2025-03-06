@@ -60,7 +60,6 @@ install(
 install(
   TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend mindspore_pyboost mindspore_pynative
         mindspore_backend_manager mindspore_res_manager mindspore_frontend mindspore_ops_kernel_common
-        mindspore_profiler
   DESTINATION ${INSTALL_LIB_DIR}
   COMPONENT mindspore
 )
@@ -78,7 +77,6 @@ if(MSVC AND DEBUG_MODE)
     $<TARGET_PDB_FILE:mindspore_pynative>
     $<TARGET_PDB_FILE:mindspore_backend_manager>
     $<TARGET_PDB_FILE:mindspore_res_manager>
-    $<TARGET_PDB_FILE:mindspore_profiler>
     DESTINATION ${INSTALL_LIB_DIR}
     COMPONENT mindspore
   )

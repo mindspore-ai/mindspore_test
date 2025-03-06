@@ -20,7 +20,7 @@
 
 #include "include/common/debug/anf_ir_dump.h"
 #include "plugin/device/ascend/optimizer/mindir/reduce_axis_update.h"
-#include "debug/profiler/profiling.h"
+#include "include/backend/debug/profiler/profiling.h"
 
 namespace mindspore {
 namespace opt {

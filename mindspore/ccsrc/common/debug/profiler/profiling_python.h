@@ -27,11 +27,9 @@
 #include <deque>
 #include <limits>
 #include <Python.h>
-#include <mutex>
-#include <atomic>
 #include "pybind11/pybind11.h"
-#include "debug/profiler/python_obj_pointer.h"
-#include "include/common/visible.h"
+#include "include/common/utils/python_adapter.h"
+#include "common/debug/profiler/python_obj_pointer.h"
 
 namespace mindspore {
 namespace profiler {
@@ -39,11 +37,11 @@ namespace py = pybind11;
 
 constexpr size_t max_py_threads = std::numeric_limits<uint8_t>::max() + 1;
 
-enum class PROFILER_EXPORT Command { kStartOne = 0, kStartAll, kStop, kClear };
+enum class COMMON_EXPORT Command { kStartOne = 0, kStartAll, kStop, kClear };
 
-enum class PROFILER_EXPORT TraceTag { kPy_Call = 0, kPy_Return, kC_Call, kC_Return };
+enum class COMMON_EXPORT TraceTag { kPy_Call = 0, kPy_Return, kC_Call, kC_Return };
 
-class PROFILER_EXPORT PythonCApi {
+class COMMON_EXPORT PythonCApi {
  public:
   static PyFrameObject *PyEval_GetFrame_MS() {
     auto frame = PyEval_GetFrame();
@@ -61,11 +59,11 @@ class PROFILER_EXPORT PythonCApi {
 #endif
 };
 
-struct PROFILER_EXPORT TraceContext {
+struct COMMON_EXPORT TraceContext {
   PyObject_HEAD PyThreadState *thread_state_;
 };
 
-struct PROFILER_EXPORT PythonFuncCallData {
+struct COMMON_EXPORT PythonFuncCallData {
   uint64_t start_time_{0};
   uint64_t end_time_{0};
   uint32_t map_index_{0};
@@ -73,7 +71,7 @@ struct PROFILER_EXPORT PythonFuncCallData {
       : start_time_{start_time}, end_time_{end_time}, map_index_{map_index} {}
 };
 
-class PROFILER_EXPORT PythonTracer final {
+class COMMON_EXPORT PythonTracer final {
  public:
   static void call(Command c, uint32_t rank_id);
   static int pyProfileFn(PyObject *obj, PyFrameObject *frame, int what, PyObject *arg);

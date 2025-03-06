@@ -24,7 +24,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/common/expander/core/infer.h"
-#include "debug/profiler/profiler.h"
+#include "include/common/profiler.h"
 #include "include/backend/kernel_graph.h"
 #include "utils/anf_utils.h"
 #include "include/common/debug/anf_ir_dump.h"

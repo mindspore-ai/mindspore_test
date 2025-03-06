@@ -32,8 +32,7 @@ if(ENABLE_D OR ENABLE_ACL)
         find_library(LCAL_LIB lcal $ENV{MS_INTERNAL_KERNEL_HOME}/asdops/lib)
 
         add_library(ms_ascend_native_boost SHARED ${MS_LLM_BOOST_910B})
-        target_link_libraries(ms_ascend_native_boost PRIVATE mindspore_backend mindspore_core mindspore_common
-                              mindspore_profiler)
+        target_link_libraries(ms_ascend_native_boost PRIVATE mindspore_backend mindspore_core mindspore_common)
         target_link_libraries(ms_ascend_native_boost PRIVATE securec d_collective)
         target_link_libraries(ms_ascend_native_boost PRIVATE ${ASCENDCL})
         target_link_libraries(ms_ascend_native_boost PRIVATE ${LLAMA_OP} ${MS_KERNELS_LIB} ${LCAL_LIB})

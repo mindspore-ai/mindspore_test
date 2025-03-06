@@ -34,7 +34,7 @@
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_manager.h"
 #include "plugin/res_manager/ascend/event/ascend_event.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.h"
-#include "debug/profiler/profiling.h"
+#include "include/backend/debug/profiler/profiling.h"
 #include "plugin/device/ascend/hal/device/dump/ascend_dump.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"

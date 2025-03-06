@@ -34,7 +34,7 @@
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/action.h"
 #include "utils/ms_context.h"
-#include "debug/profiler/profiling.h"
+#include "include/backend/debug/profiler/profiling.h"
 
 namespace mindspore {
 namespace opt {

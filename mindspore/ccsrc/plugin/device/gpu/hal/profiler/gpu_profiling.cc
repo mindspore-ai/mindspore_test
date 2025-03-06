@@ -35,8 +35,8 @@
 #include "include/common/utils/utils.h"
 #include "utils/profile.h"
 #include "utils/ms_context.h"
-#include "debug/profiler/profiling_data_dumper.h"
-#include "debug/profiler/profiling_framework_data.h"
+#include "common/debug/profiler/profiling_data_dumper.h"
+#include "common/debug/profiler/profiling_framework_data.h"
 
 #ifdef _MSC_VER
 namespace {

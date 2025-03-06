@@ -25,9 +25,6 @@
 #include <unistd.h>
 #endif
 #include <string>
-#include "utils/file_utils.h"
-#include "utils/ms_context.h"
-#include "utils/distributed_meta.h"
 
 constexpr int EXPECT_FALSE = 0;
 constexpr int EXPECT_TRUE = 1;
@@ -37,6 +34,7 @@ constexpr int EXPECT_TRUE = 1;
 
 namespace mindspore {
 namespace profiler {
+namespace ascend {
 
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
 class Utils {
@@ -164,62 +162,6 @@ class Utils {
     int fd = creat(path.c_str(), S_IRUSR | S_IWUSR | S_IRGRP);
     return (fd < 0 || close(fd) != 0) ? false : true;
   }
-
-  static std::optional<std::string> CreatePrefixPath(const std::string &input_path,
-                                                     const bool support_relative_path = false) {
-    std::optional<std::string> prefix_path;
-    std::optional<std::string> file_name;
-
-    FileUtils::SplitDirAndFileName(input_path, &prefix_path, &file_name);
-    if (!file_name.has_value()) {
-      MS_LOG(ERROR) << "Cannot get file_name from: " << input_path;
-      return std::nullopt;
-    }
-
-    auto file_name_str = file_name.value();
-
-#if defined(SYSTEM_ENV_POSIX)
-    if (file_name_str.length() > NAME_MAX) {
-      MS_LOG(ERROR) << "The length of file name: " << file_name_str.length() << " exceeds limit: " << NAME_MAX;
-      return std::nullopt;
-    }
-#endif
-
-    std::string prefix_path_str;
-    if (prefix_path.has_value()) {
-      auto create_prefix_path = FileUtils::CreateNotExistDirs(prefix_path.value(), support_relative_path);
-      if (!create_prefix_path.has_value()) {
-        return std::nullopt;
-      }
-      prefix_path_str = create_prefix_path.value();
-    } else {
-      auto pwd_path = FileUtils::GetRealPath("./");
-      if (!pwd_path.has_value()) {
-        MS_LOG(ERROR) << "Cannot get pwd path";
-        return std::nullopt;
-      }
-      prefix_path_str = pwd_path.value();
-    }
-
-    return std::string(prefix_path_str + "/" + file_name_str);
-  }
-
-  static std::string GetSaveGraphsPathName(const std::string &file_name, const std::string &save_path = "") {
-    std::string save_graphs_path;
-    if (save_path.empty()) {
-      auto ms_context = MsContext::GetInstance();
-      MS_EXCEPTION_IF_NULL(ms_context);
-      save_graphs_path = ms_context->GetSaveGraphsPath();
-      if (save_graphs_path.empty()) {
-        save_graphs_path = ".";
-      }
-    } else {
-      save_graphs_path = save_path;
-    }
-    uint32_t rank_id = DistributedMeta::GetInstance()->global_rank_id();
-
-    return save_graphs_path + "/rank_" + std::to_string(rank_id) + "/" + file_name;
-  }
 };
 #else
 class Utils {
@@ -234,15 +176,9 @@ class Utils {
   static uint64_t GetClockMonotonicRawNs() { return 0; }
   static uint64_t getClockSyscnt() { return 0; }
   static bool CreateFile(const std::string &path) { return true; }
-  static std::string GetSaveGraphsPathName(const std::string &file_name, const std::string &save_path = "") {
-    return "";
-  }
-  static std::optional<std::string> CreatePrefixPath(const std::string &input_path,
-                                                     const bool support_relative_path = false) {
-    return "";
-  }
 };
 #endif
+}  // namespace ascend
 }  // namespace profiler
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_COMMON_DEBUG_PROFILER_UTILS_H

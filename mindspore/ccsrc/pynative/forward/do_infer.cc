@@ -18,7 +18,7 @@
 #include "pynative/pynative_utils.h"
 #include "frontend/operator/ops_front_infer_function.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "debug/profiler/profiler.h"
+#include "include/common/profiler.h"
 #include "include/common/pynative/common_utils.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "ops/ops_frontend_func_impl.h"

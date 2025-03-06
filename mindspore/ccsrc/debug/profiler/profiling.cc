@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "debug/profiler/profiling.h"
+#include "include/backend/debug/profiler/profiling.h"
 #include <chrono>
 #include <cmath>
 #include <sstream>
@@ -23,9 +23,10 @@
 #ifdef __linux__
 #include <unistd.h>
 #include "utils/profile.h"
+#include "include/backend/debug/common/csv_writer.h"
 #endif
-#include "debug/profiler/profiling_framework_data.h"
-#include "debug/profiler/profiler.h"
+#include "common/debug/profiler/profiling_framework_data.h"
+#include "include/common/profiler.h"
 
 namespace mindspore {
 namespace profiler {

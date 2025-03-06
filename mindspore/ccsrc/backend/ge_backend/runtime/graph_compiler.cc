@@ -32,7 +32,7 @@
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
 #include "kernel/framework_utils.h"
-#include "debug/profiler/profiling.h"
+#include "include/backend/debug/profiler/profiling.h"
 #include "include/backend/optimizer/helper.h"
 #include "base/base_ref_utils.h"
 #include "include/common/debug/dump_proto.h"
@@ -45,7 +45,7 @@
 #endif
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/optimizer/graph_optimizer.h"
-#include "debug/profiler/profiler.h"
+#include "include/common/profiler.h"
 #include "include/common/utils/compile_cache_context.h"
 #include "utils/phase.h"
 #include "pipeline/jit/ps/base.h"

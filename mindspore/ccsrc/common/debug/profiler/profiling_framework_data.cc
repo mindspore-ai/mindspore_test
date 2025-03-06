@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "debug/profiler/profiling_framework_data.h"
+#include "common/debug/profiler/profiling_framework_data.h"
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
 #include <sys/syscall.h>
 #endif
 #include <utility>
 #include <algorithm>
 #include <mutex>
-#include "debug/profiler/profiling.h"
-#include "debug/profiler/profiler.h"
+#include "include/backend/debug/profiler/profiling.h"
+#include "include/common/profiler.h"
 
 namespace mindspore {
 namespace profiler {

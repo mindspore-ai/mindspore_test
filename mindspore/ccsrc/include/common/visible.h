@@ -32,18 +32,6 @@
 #endif
 
 #if (defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__CYGWIN__))
-#ifdef PROFILER_DLL
-#define PROFILER_EXPORT __declspec(dllexport)
-#else
-#define PROFILER_EXPORT __declspec(dllimport)
-#endif
-#define PROFILER_LOCAL
-#else
-#define PROFILER_EXPORT __attribute__((visibility("default")))
-#define PROFILER_LOCAL __attribute__((visibility("hidden")))
-#endif
-
-#if (defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__CYGWIN__))
 #ifdef BUILDING_ME_DLL
 #define ME_EXPORT __declspec(dllexport)
 #else

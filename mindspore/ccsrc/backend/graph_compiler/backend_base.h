@@ -30,7 +30,7 @@
 #include "runtime/hardware/device_context.h"
 #include "backend/graph_compiler/segment_runner.h"
 #include "runtime/graph_scheduler/actor/actor_set.h"
-#include "debug/profiler/profiler.h"
+#include "include/common/profiler.h"
 #include "backend/backend_manager/backend_jit_config.h"
 #include "include/backend/py_execute_utils.h"
 #include "backend/graph_compiler/ge_backend/ge_backend.h"

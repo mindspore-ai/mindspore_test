@@ -23,8 +23,8 @@
 #include <set>
 #include <unordered_map>
 #include <utility>
-#include "debug/profiler/profiling_data_dumper.h"
-#include "debug/profiler/profiler.h"
+#include "common/debug/profiler/profiling_data_dumper.h"
+#include "include/common/profiler.h"
 
 namespace mindspore {
 namespace profiler {
@@ -34,7 +34,7 @@ using mindspore::runtime::kProfilerModuleString;
 using mindspore::runtime::kProfilerStageString;
 using mindspore::runtime::ProfilerData;
 
-class PROFILER_EXPORT ProfilingFrameworkData {
+class COMMON_EXPORT ProfilingFrameworkData {
  public:
   static void RecordHostProfile(std::shared_ptr<ProfilerData> data);
 

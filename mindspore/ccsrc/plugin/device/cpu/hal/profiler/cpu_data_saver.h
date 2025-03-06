@@ -22,11 +22,11 @@
 #include <string>
 #include <memory>
 #include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
-#include "debug/profiler/data_saver.h"
+#include "include/backend/debug/profiler/data_saver.h"
 namespace mindspore {
 namespace profiler {
 namespace cpu {
-class PROFILER_EXPORT CpuDataSaver : public DataSaver {
+class BACKEND_EXPORT CpuDataSaver : public DataSaver {
  public:
   static std::shared_ptr<CpuDataSaver> &GetInstance();
 

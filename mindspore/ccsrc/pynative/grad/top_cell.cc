@@ -17,7 +17,7 @@
 #include "pynative/pynative_utils.h"
 #include "ir/tensor.h"
 #include "include/backend/device_address.h"
-#include "debug/profiler/profiler.h"
+#include "include/common/profiler.h"
 
 namespace mindspore {
 namespace pynative {

@@ -52,8 +52,8 @@
 #include "pipeline/llm_boost/llm_boost_binder.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "pybind_api/resource/manager.h"
-#include "debug/profiler/profiling.h"
-#include "debug/profiler/profiler.h"
+#include "include/backend/debug/profiler/profiling.h"
+#include "include/common/profiler.h"
 
 #include "pipeline/jit/pi/external.h"
 #include "include/common/np_dtype/np_dtypes.h"

@@ -25,7 +25,7 @@
 #include "ir/anf.h"
 #include "include/common/utils/hook.h"
 #include "pynative/grad/function/func_builder.h"
-#include "debug/profiler/profiler.h"
+#include "include/common/profiler.h"
 
 namespace mindspore::pynative::autograd {
 struct GradAttr {
