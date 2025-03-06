@@ -16,7 +16,6 @@
 #include <memory>
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "infer/ops_func_impl/transpose_ext_view.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"

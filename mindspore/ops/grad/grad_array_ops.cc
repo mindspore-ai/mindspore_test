@@ -2240,7 +2240,6 @@ REG_BPROP_BUILDER("ExpandDims").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(i
   return {dx, ib->OutZeros(axis)};
 });
 
-<<<<<<< HEAD
 REG_BPROP_BUILDER("View").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto shape = ib->GetInput(kIndex1);

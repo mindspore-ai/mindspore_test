@@ -32,6 +32,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "kernel/ascend/visible.h"
 
 namespace mindspore::device::ascend {
 enum class ProcessCacheType {

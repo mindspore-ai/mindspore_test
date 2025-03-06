@@ -105,6 +105,7 @@ class GeKernelExecutor : public KernelExecutor {
   void DoAsyncCkpt(const CNodePtr &kernel) const;
   void SetArfError() const;
   void SetUceError() const;
+  bool LaunchCallback(CallbackFunc callback_func, size_t stream_id, bool is_block) const;
 
   mutable std::set<CNodePtr> nop_op_to_memcpy_;
   // Maybe AscendDeviceResManager and GEDeviceResManager now
