@@ -14,7 +14,7 @@
 # ============================================================================
 import pytest
 import numpy as np
-from mindspore import nn
+from mindspore import nn, context
 import mindspore as ms
 from mindspore.experimental import optim
 from tests.mark_utils import arg_mark
@@ -79,6 +79,7 @@ def test_reduce_lr_on_plateau(mode):
     Expectation: success
     """
     ms.set_context(mode=mode, jit_syntax_level=ms.STRICT)
+    context.set_context(jit_level='O0')
     net = Net()
     optimizer = optim.Adam(net.trainable_params(), 0.1)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=0)

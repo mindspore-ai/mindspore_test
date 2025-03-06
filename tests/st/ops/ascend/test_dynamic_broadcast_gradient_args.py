@@ -14,7 +14,6 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 import numpy as np
-import pytest
 import mindspore
 import mindspore.nn as nn
 import mindspore.context as context
@@ -95,6 +94,7 @@ def test_dynamic_broadcast_to_net_dyn():
     Description: The input shape is dynamic.
     Expectation: Assert that results is right.
     """
+    context.set_context(jit_level='O0')
     data = Tensor(np.array([1, 2, 3]), mindspore.int64)
     shape = Tensor(np.zeros((2, 3)), mindspore.int64)
     grad_net = GradWrap(NetWrap())

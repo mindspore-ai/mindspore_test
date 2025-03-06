@@ -22,6 +22,7 @@ from mindspore.nn import Cell
 import mindspore.common.dtype as mstype
 
 context.set_context(mode=context.GRAPH_MODE)
+context.set_context(jit_level='O0')
 
 
 class _Grad(Cell):

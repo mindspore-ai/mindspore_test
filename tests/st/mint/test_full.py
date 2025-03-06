@@ -124,6 +124,7 @@ def test_full_forward_dynamic_rank(context_mode):
     Expectation: output the right result.
     """
     context.set_context(mode=context_mode)
+    context.set_context(jit_level='O0')
     size = (2, 3)
     value_dyn = Tensor(shape=None, dtype=mstype.float32)
     test_cell = FullNet()

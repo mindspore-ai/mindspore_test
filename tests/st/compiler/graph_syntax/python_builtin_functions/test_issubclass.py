@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """ test graph fallback buildin python function issubclass"""
-import pytest
 import mindspore.nn as nn
 from mindspore import context, Tensor, Parameter
 from tests.mark_utils import arg_mark
@@ -56,6 +55,7 @@ def test_issubclass_tensor():
     Description: Test issubclass() in graph mode.
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()

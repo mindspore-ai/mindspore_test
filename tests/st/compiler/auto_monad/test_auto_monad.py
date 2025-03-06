@@ -1580,6 +1580,7 @@ def test_while_forward():
     Description: Verify control flow.
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class MyWhileNet(nn.Cell):
         def __init__(self):
             super().__init__()

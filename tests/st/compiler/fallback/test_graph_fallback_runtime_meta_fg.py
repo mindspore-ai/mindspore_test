@@ -19,7 +19,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import nn
 from mindspore import dtype as mstype
-from mindspore import Tensor, mutable, jit, ops
+from mindspore import Tensor, mutable, jit, ops, context
 from mindspore.ops import composite as C
 from mindspore.ops import functional as F
 from . import utils
@@ -282,6 +282,7 @@ def test_fallback_compare_meta_2():
     Description: Support JIT Fallback runtime feature.
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class SubClass:
         number1 = 10
         list1 = [Tensor(1), Tensor(2), Tensor(3)]
@@ -578,6 +579,7 @@ def test_fallback_meta_fg_not_support_type_greater_equal_1():
     Description: Support JIT Fallback runtime feature.
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class InnerClass(nn.Cell):
         def construct(self):
             x = [1, 2, 3]
@@ -907,7 +909,7 @@ def test_shift_operator_error_list_input():
     Description: test shift operator with lists
     Expectation: throw RuntimeError
     """
-
+    context.set_context(jit_level='O0')
     class Net(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -1151,6 +1153,7 @@ def test_fallback_setitem_meta_dict():
     Description: Support JIT Fallback runtime feature.
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class InnerClass(nn.Cell):
         def __init__(self, x):
             super(InnerClass, self).__init__()

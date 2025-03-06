@@ -23,7 +23,6 @@ from mindspore import Tensor, jit, context, nn, mutable
 import mindspore.ops as ops
 from tests.mark_utils import arg_mark
 
-
 context.set_context(mode=context.GRAPH_MODE)
 
 
@@ -95,6 +94,7 @@ def test_fallback_print_asnumpy_custom_class_ascend():
     Description: Test print in fallback runtime
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class GetattrClass():
         def __init__(self):
             self.attr1 = Tensor(np.array([1, 2, 3, 4])).asnumpy()
@@ -186,6 +186,7 @@ def test_np_init():
     Description: Test numpy defined in init in graph mode.
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -215,6 +216,7 @@ def test_print_str_format():
     Description: Test print str format in graph mode.
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class Net(nn.Cell):
         def construct(self, x):
             x = ops.add(x, x)

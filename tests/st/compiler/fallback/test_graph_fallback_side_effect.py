@@ -18,6 +18,7 @@ import os
 import shutil
 import numpy as np
 import mindspore as ms
+from mindspore import context
 from mindspore import Tensor
 from mindspore.common.parameter import Parameter
 from mindspore import jit
@@ -388,6 +389,7 @@ def test_fallback_save_load():
     Description: Test fallback with side effect operate from third-party module.
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class LinearNet(nn.Cell):
         def __init__(self, path_file):
             super(LinearNet, self).__init__()
@@ -425,6 +427,7 @@ def test_fallback_save_load_with_annotation():
     Description: Test fallback with side effect operate from third-party module.
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class LinearNet3(nn.Cell):
         def __init__(self, path_file):
             super(LinearNet3, self).__init__()
@@ -476,6 +479,7 @@ def test_tensor_save_with_side_effect():
     Description: Test fallback with side effect operate from third-party module.
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     file_path = './Tensor'
     model = TransformerNet(file_path)
     input1_1 = Tensor(shape=(20, 32, 10), dtype=ms.float32, init=One())

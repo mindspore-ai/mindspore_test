@@ -16,6 +16,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
+from mindspore import context
 from mindspore import ops
 from mindspore import mutable
 from tests.mark_utils import arg_mark
@@ -265,6 +266,7 @@ def test_pyexecute_with_stub_tensor():
     Description: The output of pyexecute is not allow to have stub tensor.
     Expectation: No error.
     """
+    context.set_context(jit_level='O0')
     net = OuterNet(UserDefinedTupleNet())
     x = np.array([10], np.float64)
     output = net(ms.Tensor(x))
@@ -290,6 +292,7 @@ def test_pyexecute_with_stub_tensor_2():
     Description: The output of pyexecute is not allow to have stub tensor.
     Expectation: No error.
     """
+    context.set_context(jit_level='O0')
     net = OuterNet(UserDefinedListNet())
     x = np.array([10], np.float64)
     output = net(ms.Tensor(x))
@@ -315,6 +318,7 @@ def test_pyexecute_with_stub_tensor_3():
     Description: The output of pyexecute is not allow to have stub tensor.
     Expectation: No error.
     """
+    context.set_context(jit_level='O0')
     net = OuterNet(UserDefinedDictNet())
     x = np.array([10], np.float64)
     output = net(ms.Tensor(x))
@@ -351,6 +355,7 @@ def test_parser_fallback_nested_class_outer_grad():
     x = 2
     y = 4
     net = NestedNet()
+    # pylint: disable=E1102
     output = ops.grad(net)(mutable(x), y)
     assert output == 0
 
