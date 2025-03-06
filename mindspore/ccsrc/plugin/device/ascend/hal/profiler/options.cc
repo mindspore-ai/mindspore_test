@@ -23,7 +23,7 @@
 #include "utils/ms_context.h"
 #include "nlohmann/detail/iterators/iter_impl.hpp"
 #include "nlohmann/json.hpp"
-#include "debug/profiler/profiling.h"
+#include "include/backend/debug/profiler/profiling.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 

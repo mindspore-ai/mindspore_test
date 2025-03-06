@@ -54,7 +54,7 @@
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif
-#include "debug/profiler/profiling.h"
+#include "include/backend/debug/profiler/profiling.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/ps_context.h"
 #endif

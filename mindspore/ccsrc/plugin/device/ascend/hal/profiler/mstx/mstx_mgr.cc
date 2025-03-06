@@ -20,8 +20,8 @@
 #include <sstream>
 #include <utility>
 #include <vector>
-#include "debug/profiler/profiling.h"
-#include "debug/profiler/profiler.h"
+#include "include/backend/debug/profiler/profiling.h"
+#include "include/common/profiler.h"
 #include "pynative/pynative_utils.h"
 #include "pynative/forward/forward_task.h"
 #include "plugin/device/ascend/hal/profiler/mstx/mstx_mgr.h"

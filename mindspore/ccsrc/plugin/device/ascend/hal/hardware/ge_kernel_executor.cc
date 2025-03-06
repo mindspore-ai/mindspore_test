@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <deque>
 #include "include/common/utils/parallel_context.h"
-#include "debug/profiler/profiler.h"
+#include "include/common/profiler.h"
 #include "common/kernel.h"
 #include "mindapi/base/type_id.h"
 #include "mindspore/ops/op_def/array_ops.h"
@@ -70,7 +70,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/backend/debug/data_dump/overflow_dumper.h"
-#include "debug/profiler/profiling.h"
+#include "include/backend/debug/profiler/profiling.h"
 #include "utils/anf_utils.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "kernel/ascend/availability/silent_check/ascend_silent_check.h"

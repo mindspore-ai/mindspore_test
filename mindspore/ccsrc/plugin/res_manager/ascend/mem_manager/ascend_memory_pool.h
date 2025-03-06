@@ -27,6 +27,7 @@
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "include/backend/visible.h"
 #include "plugin/res_manager/ascend/mem_manager/abstract_ascend_memory_pool_support.h"
+#include "plugin/device/ascend/hal/profiler/ascend_profiling.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
 #include "include/common/runtime_conf/runtime_conf.h"

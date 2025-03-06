@@ -17,7 +17,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
 endif()
 target_link_libraries(mindspore_pynative mindspore_core mindspore_ops mindspore_frontend mindspore_pyboost
                       mindspore_common mindspore_ops_kernel_common mindspore_backend mindspore_backend_manager
-                      mindspore::pybind11_module mindspore_profiler)
+                      mindspore::pybind11_module)
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set_target_properties(mindspore_pynative PROPERTIES MACOSX_RPATH ON)

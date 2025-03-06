@@ -24,7 +24,7 @@
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
-#include "debug/profiler/profiler.h"
+#include "include/common/profiler.h"
 
 #include "utils/profile.h"
 

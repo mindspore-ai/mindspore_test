@@ -27,7 +27,7 @@
 #include "frontend/optimizer/ad/pynative_jit_grad.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/convert_utils_py.h"
-#include "debug/profiler/profiler.h"
+#include "include/common/profiler.h"
 #include "include/common/pynative/common_utils.h"
 #include "ir/anf.h"
 #include "ir/func_graph_cloner.h"

@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "debug/profiler/profiling_data_dumper.h"
+#include "common/debug/profiler/profiling_data_dumper.h"
 #include <algorithm>
 #include <mutex>
 #include <utility>
 #include "common/kernel.h"
-#include "debug/profiler/profiling.h"
+#include "include/backend/debug/profiler/profiling.h"
 
 namespace mindspore {
 namespace profiler {

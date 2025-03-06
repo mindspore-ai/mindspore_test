@@ -30,7 +30,7 @@ namespace ascend {
 constexpr uint8_t kBitsPerByte = 8;
 constexpr uint8_t kBytesMask = 0xff;
 
-enum class PROFILER_EXPORT OpRangeDataType : uint8_t {
+enum class COMMON_EXPORT OpRangeDataType : uint8_t {
   THREAD_ID = 0,
   FLOW_ID = 1,
   STEP = 2,
@@ -51,7 +51,7 @@ enum class PROFILER_EXPORT OpRangeDataType : uint8_t {
   CUSTOM_INFO = 17,
 };
 
-enum class PROFILER_EXPORT ReportFileType : uint32_t {
+enum class COMMON_EXPORT ReportFileType : uint32_t {
   OP_RANGE = 0,
   PYTHON_STACK = 1,
   MEMORY_USAGE = 2,
@@ -63,7 +63,7 @@ static const std::map<ReportFileType, std::string> kReportFileTypeMap = {
   {ReportFileType::MEMORY_USAGE, "mindspore.memory_usage"},
 };
 
-struct PROFILER_EXPORT BaseReportData {
+struct COMMON_EXPORT BaseReportData {
   // 1 * 4 bytes = 4 bytes
   int32_t device_id{0};
   // 1 * 4 bytes = 4 bytes
@@ -73,7 +73,7 @@ struct PROFILER_EXPORT BaseReportData {
   virtual std::vector<uint8_t> encode() = 0;
 };
 
-struct PROFILER_EXPORT OpRangeData : BaseReportData {
+struct COMMON_EXPORT OpRangeData : BaseReportData {
   // 5 * 8 bytes = 40 bytes
   uint64_t thread_id{0};
   uint64_t flow_id{0};

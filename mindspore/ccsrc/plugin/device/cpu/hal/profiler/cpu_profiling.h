@@ -26,18 +26,17 @@
 #include <utility>
 #include <vector>
 #include <optional>
-#include "debug/profiler/profiling.h"
-#include "debug/profiler/data_saver.h"
+#include "include/backend/debug/profiler/profiling.h"
+#include "include/backend/debug/profiler/data_saver.h"
 #include "actor/actormgr.h"
-#include "abstract/dshape.h"
-#include "ir/anf.h"
-#include "include/common/visible.h"
+#include "include/backend/kernel_graph.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace profiler {
 namespace cpu {
 constexpr float kNanosecondToMillisecond = 1000000;
-class PROFILER_EXPORT CPUProfiler : public Profiler {
+class BACKEND_EXPORT CPUProfiler : public Profiler {
  public:
   static std::shared_ptr<CPUProfiler> GetInstance();
 

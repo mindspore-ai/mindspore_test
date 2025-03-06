@@ -17,7 +17,7 @@
 #include "pynative/grad/bprop_task.h"
 #include "utils/log_adapter.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "debug/profiler/profiler.h"
+#include "include/common/profiler.h"
 
 namespace mindspore {
 namespace pynative {

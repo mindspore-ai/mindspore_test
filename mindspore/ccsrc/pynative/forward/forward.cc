@@ -33,7 +33,7 @@
 #include "pynative/predict_out_type_map.h"
 #include "include/common/utils/stub_tensor.h"
 #include "runtime/pynative/op_executor.h"
-#include "debug/profiler/profiling.h"
+#include "include/backend/debug/profiler/profiling.h"
 using mindspore::profiler::ProfilerManager;
 #include "frontend/operator/ops_front_infer_function.h"
 #include "runtime/pipeline/pipeline.h"

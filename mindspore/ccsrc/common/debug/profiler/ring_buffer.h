@@ -30,7 +30,7 @@ namespace ascend {
 
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
 template <typename T>
-class PROFILER_EXPORT RingBuffer {
+class COMMON_EXPORT RingBuffer {
  public:
   RingBuffer()
       : is_inited_(false),
@@ -145,7 +145,7 @@ class PROFILER_EXPORT RingBuffer {
 };
 #else
 template <typename T>
-class PROFILER_EXPORT RingBuffer {
+class COMMON_EXPORT RingBuffer {
  public:
   RingBuffer() {}
   ~RingBuffer() {}

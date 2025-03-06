@@ -33,7 +33,7 @@
 #include "debug/hooker/hook_debugger.h"
 #include "include/common/debug/common.h"
 #include "utils/file_utils.h"
-#include "debug/profiler/profiling.h"
+#include "include/backend/debug/profiler/profiling.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "debug/data_dump/overflow_counter.h"
 #include "mindspore/ops/op_def/framework_ops.h"
