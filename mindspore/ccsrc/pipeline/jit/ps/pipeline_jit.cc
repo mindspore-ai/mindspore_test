@@ -24,6 +24,7 @@
 #include "utils/phase.h"
 #include "include/common/fallback.h"
 #include "include/common/utils/compile_cache_context.h"
+#include "include/backend/distributed/recovery/recovery_context.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -401,6 +402,12 @@ py::object JitExecutorPy::RunInner(const py::tuple &args, const py::object &phas
   const auto &output_abs = output->abstract();
   MS_EXCEPTION_IF_NULL(output_abs);
   BaseRef value = (*run)(execute_info->arg_list);
+  bool need_recovery = distributed::recovery::RecoveryContext::GetInstance()->enable_gpu_recovery() &&
+                       distributed::recovery::RecoveryContext::GetInstance()->need_reset();
+  if (need_recovery) {
+    // In recovery scenario, the output value could be empty, do not transform return data.
+    return py::none();
+  }
   py::object res = BaseRefToPyDataWithUserData(value, output_abs);
   ClearRunArgumentsResource(args.size(), &execute_info->arg_list);
   PhaseManager::GetInstance().ClearPhase();
