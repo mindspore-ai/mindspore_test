@@ -961,28 +961,6 @@ bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_ty
   return true;
 }
 
-bool GPUDeviceResManager::LoadCollectiveCommLib() {
-#ifdef ENABLE_MPI
-  std::string nvidia_comm_lib_name = GetCurrentDir() + "/gpu" + std::to_string(CUDA_VERSION / 1000) + "." +
-                                     std::to_string(CUDA_VERSION / 10 % 10) + "/libnvidia_collective.so";
-  auto loader = std::make_shared<CollectiveCommLibLoader>(nvidia_comm_lib_name);
-  MS_EXCEPTION_IF_NULL(loader);
-  if (!loader->Initialize()) {
-    MS_LOG(EXCEPTION) << "Loading NCCL collective library failed.";
-    return false;
-  }
-  void *collective_comm_lib_handle = loader->collective_comm_lib_ptr();
-  MS_EXCEPTION_IF_NULL(collective_comm_lib_handle);
-
-  auto instance_func = DlsymFuncObj(communication_lib_instance, collective_comm_lib_handle);
-  collective_comm_lib_ = instance_func();
-  MS_EXCEPTION_IF_NULL(collective_comm_lib_);
-  return true;
-#else
-  return false;
-#endif
-}
-
 bool GPUDeviceResManager::BindDeviceToCurrentThread(bool force_bind) const {
   return gpu_res_manager_->BindDeviceToCurrentThread(force_bind);
 }

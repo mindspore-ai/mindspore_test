@@ -563,14 +563,7 @@ bool IsEmptySequence(const tensor::TensorPtr &tensor) {
 }
 }  // namespace
 
-void OutputActor::UpdateOutputDeviceAddress() {
-  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kOutputProcess, "UpdateOutputDeviceAddress");
-  // In the running end, when the device ptr of graph output node is set into host tensor, the graph output node
-  // need be set new device ptr, to avoid that the device ptr context of host tensor be rewritten in the next
-  // step or next loop. But the graph output nodes corresponding to device tensor store need to be skipped, because
-  // they are fixed addresses and persistent.
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), "UpdateOutputDeviceAddress", "");
-
+void OutputActor::HandleOutput() {
   auto repeat_index = GetRepeatDeviceAddressIndexPair(output_device_tensors_);
   for (size_t i = 0; i < output_nodes_.size(); ++i) {
     auto &output_node = output_nodes_[i].first;
@@ -670,6 +663,16 @@ void OutputActor::UpdateOutputDeviceAddress() {
       MarkTensorAsOutput, GetAID().Name(), device_tensor->device_name(), device_tensor->GetPtr(),
       device_tensor->type_id(), device_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());
   }
+}
+
+void OutputActor::UpdateOutputDeviceAddress() {
+  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kOutputProcess, "UpdateOutputDeviceAddress");
+  // In the running end, when the device ptr of graph output node is set into host tensor, the graph output node
+  // need be set new device ptr, to avoid that the device ptr context of host tensor be rewritten in the next
+  // step or next loop. But the graph output nodes corresponding to device tensor store need to be skipped, because
+  // they are fixed addresses and persistent.
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), "UpdateOutputDeviceAddress", "");
+  HandleOutput();
 
   old_to_new_device_address_.clear();
   output_nodes_.clear();

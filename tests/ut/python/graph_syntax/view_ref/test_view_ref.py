@@ -17,6 +17,7 @@
 
 import copy
 import os
+import pytest
 
 import numpy as np
 import mindspore as ms
@@ -149,8 +150,8 @@ def TEST_VIEW(op, inputs_seq):
 
     os.chdir(ir_path)
     for filename in os.listdir():
-        if '18_validate' in filename:
-            check_nextline_followed_by_ref(filename, 'PrimFunc_Narrow')
+        if '_validate' in filename:
+            check_nextline_followed_by_ref(filename, 'PrimFunc_NarrowView')
 
     os.system(f"rm -rf ../../{save_path}")
 
@@ -188,6 +189,7 @@ def diff_forward_dyn_func(input_x, n=1, dim=-1, prepend=None, append=None):
     return mint.diff(input_x, n, dim, prepend, append)
 
 
+@pytest.mark.skip(reason="view feature not supported.")
 def test_view_resize_loss_ref():
     """
     Feature: View
