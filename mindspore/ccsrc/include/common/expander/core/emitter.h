@@ -95,6 +95,7 @@ class COMMON_EXPORT Emitter {
   virtual NodePtr Mul(const NodePtr &lhs, const NodePtr &rhs) {
     return UnifyDtypeAndEmit(mindspore::kMulOpName, lhs, rhs);
   }
+  virtual NodePtr Muls(const NodePtr &input, const NodePtr &other) { return Emit("Muls", {input, other}); }
   virtual NodePtr Div(const NodePtr &lhs, const NodePtr &rhs) { return UnifyDtypeAndEmit(kDivOpName, lhs, rhs); }
   NodePtr RealDiv(const NodePtr &lhs, const NodePtr &rhs) {
     return UnifyDtypeAndEmit(mindspore::kRealDivOpName, lhs, rhs);

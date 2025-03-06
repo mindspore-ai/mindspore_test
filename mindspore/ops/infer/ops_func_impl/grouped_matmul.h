@@ -28,8 +28,8 @@ class OPS_API GroupedMatmulFuncImpl final : public GroupedMatmulBaseFuncImpl {
     idxes_.x = 0;
     idxes_.weight = 1;
     idxes_.group_list = 7;
-    idxes_.split_item = 8;
-    idxes_.group_type = 9;
+    idxes_.split_item_offset = -4;
+    idxes_.group_type_offset = -3;
     idxes_.transpose_a = 10;
     idxes_.transpose_b = 11;
   }
