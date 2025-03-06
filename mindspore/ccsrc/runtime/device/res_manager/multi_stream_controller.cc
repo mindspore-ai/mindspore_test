@@ -307,6 +307,7 @@ bool MultiStreamController::WaitMultiStream(size_t wait_stream_id) {
   MS_LOG(INFO) << "Wait multi stream on wait stream id : " << wait_stream_id << ".";
   const auto &stream_ids = device_res_base_->GetStreamIds();
   auto event = event_pool_->Get();
+  device_res_base_->BindDeviceToCurrentThread(true);
   for (auto stream_id : stream_ids) {
     if (stream_id != wait_stream_id) {
       event->RecordEvent(stream_id);

@@ -185,6 +185,8 @@ class BACKEND_EXPORT DeviceResManager {
   // Set the deterministic mode.
   virtual void SetDeterministic() {}
 
+  virtual void SetAclDeterministic() {}
+
   // Destroy device resource manager and release device resource.
   virtual void Destroy() {}
 

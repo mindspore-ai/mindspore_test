@@ -50,6 +50,8 @@ class AscendResManager : public HalResBase {
 
   void SetDeterministic() const;
 
+  void SetAclDeterministic() const;
+
   CollectiveCommunicationLib *collective_comm_lib() { return collective_comm_lib_; }
   std::shared_ptr<MemoryManager> mem_manager() { return mem_manager_; }
   std::shared_ptr<SwapManager> swap_manager() const { return swap_manager_; }
