@@ -27,5 +27,7 @@ moe_init_routing_v2:
       dtype: tensor
     expert_tokens_before_capacity:
       dtype: tensor
+  function:
+    disable: True
   dispatch:
     enable: True

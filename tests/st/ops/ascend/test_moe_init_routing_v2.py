@@ -17,7 +17,7 @@ import pytest
 import mindspore as ms
 from mindspore import context
 from mindspore.nn import Cell
-from mindspore.ops.auto_generate import MoeInitRoutingV2
+from mindspore import ops
 from tests.mark_utils import arg_mark
 
 
@@ -94,15 +94,19 @@ def moe_init_routing_v2_exec(x, expert_idx, active_num, expert_capacity, expert_
                 expanded_x[i] = x[val // k]
         expanded_x = expanded_x.reshape(expert_num, expert_capacity, hidden_size)
 
-    return expanded_x, expanded_row_idx.astype("int32"), expert_tokens_count_or_cumsum, expert_tokens_before_capacity
+    if expert_tokens_count_or_cumsum is not None:
+        return expanded_x, expanded_row_idx.astype("int32"), expert_tokens_count_or_cumsum
+    if expert_tokens_before_capacity is not None:
+        return expanded_x, expanded_row_idx.astype("int32"), expert_tokens_before_capacity
+    return expanded_x, expanded_row_idx.astype("int32")
 
 class MoeInitRoutingV2Net(Cell):
     def __init__(self):
         super().__init__()
-        self.net = MoeInitRoutingV2()
+        self.forward_func = ops.moe_init_routing_v2
 
     def construct(self, *args):
-        return self.net(*args)
+        return self.forward_func(*args)
 
 class TestMoeInitRoutingV2:
     def __init__(self, test_inputs: dict):
@@ -115,8 +119,8 @@ class TestMoeInitRoutingV2:
 
         self.init_ctx()
         self.set_ms_inputs()
-        self.np_out = {}
-        self.ms_out = {}
+        self.np_out = None
+        self.ms_out = None
         self.cal_np_out()
         self.cal_ms_out()
         self.compare()
@@ -127,29 +131,29 @@ class TestMoeInitRoutingV2:
         num_rows = self.inputs_dct["NUM_ROWS"]
         h = self.inputs_dct["H"]
         k = self.inputs_dct["K"]
-        self.ms_inputs["x"] = np.random.uniform(-1, 1, size=(num_rows, h)).astype(np.float16)
+        np_dtype = np.float16
+        if self.dtype == ms.bfloat16 or self.dtype == ms.float32:
+            np_dtype = np.float32
+        self.ms_inputs["x"] = np.random.uniform(-1, 1, size=(num_rows, h)).astype(np_dtype)
         if self.ms_inputs["drop_pad_mode"] == 1 or (self.ms_inputs["drop_pad_mode"] == 0 and \
                                                     self.ms_inputs["expert_tokens_count_or_cumsum_flag"] > 0):
             self.ms_inputs["expert_idx"] = np.random.randint(0, self.ms_inputs["expert_num"], \
                                                              size=(num_rows, k)).astype(np.int32)
         else:
             self.ms_inputs["expert_idx"] = np.random.randint(0, MAX_EXPERT_NUM, size=(num_rows, k)).astype(np.int32)
-        self.np_out["expanded_x"], self.np_out["expanded_row_idx"],\
-        self.np_out["expert_tokens_count_or_cumsum"],\
-        self.np_out["expert_tokens_before_capacity"] = moe_init_routing_v2_exec(*tuple(self.ms_inputs.values()))
+        self.np_out = moe_init_routing_v2_exec(*tuple(self.ms_inputs.values()))
 
     def cal_ms_out(self):
         self.ms_inputs["x"] = ms.Tensor(self.ms_inputs["x"], self.dtype)
         self.ms_inputs["expert_idx"] = ms.Tensor(self.ms_inputs["expert_idx"], ms.int32)
-        self.ms_out["expanded_x"], self.ms_out["expanded_row_idx"],\
-        self.ms_out["expert_tokens_count_or_cumsum"],\
-        self.ms_out["expert_tokens_before_capacity"] = self.net(*tuple(self.ms_inputs.values()))
+        self.ms_out = self.net(*tuple(self.ms_inputs.values()))
 
     def compare(self):
-        for expect_out, out in zip(self.np_out.values(), self.ms_out.values()):
-            if expect_out is None:
-                continue
-            np.testing.assert_allclose(out.asnumpy(), expect_out, rtol=5e-3)
+        for np_out, ms_out in zip(self.np_out, self.ms_out):
+            if self.dtype == ms.bfloat16:
+                np.testing.assert_allclose(ms_out.float().asnumpy(), np_out, rtol=4e-3)
+            else:
+                np.testing.assert_allclose(ms_out.asnumpy(), np_out, rtol=1e-3)
         print(f"test success for {self.case_name}")
 
     def set_ms_inputs(self):
