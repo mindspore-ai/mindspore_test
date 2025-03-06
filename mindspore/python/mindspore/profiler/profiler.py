@@ -20,6 +20,8 @@ from sys import getsizeof
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from mindspore import log as logger
+import mindspore.communication as comm
+import mindspore.communication._comm_helper as comm_helper
 from mindspore.profiler.common.constant import ProfilerStepNameConstant, DeviceTarget
 from mindspore.profiler.common.profiler_context import ProfilerContext
 from mindspore.profiler.platform.npu_profiler import NPUProfilerAnalysis
@@ -621,11 +623,33 @@ class Profiler:
 
     def _dump_metadata(self):
         """Dump metadata to file."""
+        self._add_group_info_to_metadata()
         if not self._metadata:
             return
         save_path = os.path.join(self._prof_context.ascend_ms_dir, "profiler_metadata.json")
-        FileManager.create_json_file(save_path, self._metadata, indent=4)
+        FileManager.create_json_file(save_path, self._metadata)
         self._metadata.clear()
+
+    def _add_group_info_to_metadata(self):
+        """Add parallel group info to metadata"""
+        try:
+            # pylint:disable=protected-access
+            if self._prof_context.device_target == DeviceTarget.NPU.value and comm.GlobalComm.INITED \
+               and comm.GlobalComm.BACKEND == comm_helper.Backend.HCCL:
+                group_info = {}
+                for group_name in comm_helper._get_group_map().keys(): # pylint:disable=protected-access
+                    comm_name = comm.get_comm_name(group_name)
+                    if not comm_name:
+                        continue
+                    group_info[comm_name] = {
+                        "group_name": group_name,
+                        "group_rank": comm.get_local_rank(group_name),
+                        "global_ranks": comm.get_process_group_ranks(group_name)
+                    }
+                if group_info:
+                    self._metadata.update({"parallel_group_info": group_info})
+        except Exception as err: # pylint: disable=W0703
+            logger.error(f"Failed to get parallel group info, Exception: {str(err)}.")
 
     def __enter__(self) -> 'Profiler':
         if not self._has_started:
