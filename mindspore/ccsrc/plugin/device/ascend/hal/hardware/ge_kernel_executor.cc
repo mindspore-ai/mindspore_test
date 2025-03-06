@@ -354,11 +354,18 @@ void InlineSubGraph(const KernelGraphPtr &graph, const KernelGraphPtr &sub_graph
     if (!enable_infer_boost) {
       auto value_node = graph->NewValueNode(MakeValue(std::make_shared<tensor::Tensor>(1)));
       MS_EXCEPTION_IF_NULL(value_node);
-      auto depend = graph->NewCNode({NewValueNode(prim::kPrimDepend), value_node, out});
-      MS_EXCEPTION_IF_NULL(depend);
-      depend->set_abstract(value_node->abstract());
-      auto tensor_move =
-        graph->NewCNode({NewValueNode(std::make_shared<Primitive>(prim::kPrimTensorMove->name())), depend});
+      CNodePtr tensor_move = nullptr;
+      if (pp_1f1b_value.empty()) {
+        auto depend = graph->NewCNode({NewValueNode(prim::kPrimDepend), value_node, out});
+        MS_EXCEPTION_IF_NULL(depend);
+        depend->set_abstract(value_node->abstract());
+        tensor_move =
+          graph->NewCNode({NewValueNode(std::make_shared<Primitive>(prim::kPrimTensorMove->name())), depend});
+      } else {
+        tensor_move =
+          graph->NewCNode({NewValueNode(std::make_shared<Primitive>(prim::kPrimTensorMove->name())), value_node});
+      }
+
       MS_EXCEPTION_IF_NULL(tensor_move);
       tensor_move->set_abstract(value_node->abstract());
       common::AnfAlgo::SetNodeAttr(kAttrKernelGraphBoundary, MakeValue(sub_graph->ToString()), tensor_move);
