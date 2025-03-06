@@ -65,3 +65,17 @@ def test_silent_check_prod_grad():
     ret1 = os.system(f"bash {sh_path}/singlerun_silent_check.sh {sh_path}/{py_file}")
     assert ret1 == 0
     os.system(f'rm -rf ms_graphs log_output ascend_log')
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_silent_check_rsqrt_grad():
+    """
+    Feature: Test silent check for last grad node for network with multiple instances in one process
+    Description: Used for checking silent check related operators write buffer out of allocated address.
+    Expectation: The output of grad of rsqrt is as expected.
+    """
+    sh_path = os.path.split(os.path.realpath(__file__))[0]
+    py_file = 'rsqrt_grad.py'
+    ret1 = os.system(f"NPU_ASD_ENABLE=1 bash {sh_path}/singlerun_silent_check.sh {sh_path}/{py_file}")
+    assert ret1 == 0
+    os.system(f'rm -rf ms_graphs log_output ascend_log')
