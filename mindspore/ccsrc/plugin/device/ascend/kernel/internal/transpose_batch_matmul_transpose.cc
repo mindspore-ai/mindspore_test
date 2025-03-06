@@ -17,7 +17,7 @@
 #include "plugin/device/ascend/kernel/internal/transpose_batch_matmul_transpose.h"
 
 #include <memory>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 
 namespace mindspore {
 namespace kernel {
