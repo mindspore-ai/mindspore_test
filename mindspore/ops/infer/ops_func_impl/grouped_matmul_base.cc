@@ -184,14 +184,14 @@ ShapeArray GroupedMatmulBaseFuncImpl::InferShapeForMultiOutput(const PrimitivePt
 ShapeArray GroupedMatmulBaseFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                  const InferInfoPtrList &input_infos) const {
   auto [x_shapes, w_shapes] = FetchInputAndWeightShapes(primitive, input_infos);
-  auto group_type_opt = input_infos[idxes_.group_type]->GetScalarValue<int64_t>();
+  const auto group_type_idx = SizeToLong(input_infos.size()) + idxes_.group_type_offset;
+  auto group_type_opt = input_infos[group_type_idx]->GetScalarValue<int64_t>();
   MS_ASSERT(group_type_opt.has_value());
   auto group_type = group_type_opt.value();
   if (group_type == -1) {
     return InferShapeForMultiOutput(primitive, x_shapes, w_shapes);
   }
   auto group_list_size = FetchGroupListSize(primitive, input_infos);
-
   auto transpose_b = GetTransposeValue(input_infos, idxes_.transpose_b);
   return InferShapeForSingleOutput(primitive, x_shapes, w_shapes, group_list_size, group_type, transpose_b);
 }
@@ -213,7 +213,8 @@ TypeIdList GroupedMatmulBaseFuncImpl::InferType(const PrimitivePtr &primitive,
 
 std::pair<int32_t, int64_t> GroupedMatmulBaseFuncImpl::CommonCheckValidation(
   const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
-  auto group_type_opt = input_infos[idxes_.group_type]->GetScalarValue<int64_t>();
+  const auto group_type_idx = SizeToLong(input_infos.size()) + idxes_.group_type_offset;
+  auto group_type_opt = input_infos[group_type_idx]->GetScalarValue<int64_t>();
   if (MS_UNLIKELY(!group_type_opt.has_value())) {
     MS_EXCEPTION(RuntimeError) << "For '" << primitive->name() << "', group_type should not be dynamic.";
   }
@@ -237,15 +238,10 @@ std::pair<int32_t, int64_t> GroupedMatmulBaseFuncImpl::CommonCheckValidation(
         << "', when group_type is not -1, group_list should be 1-D Tensor or List with int64 elements, but got "
         << group_list_info->DebugInfo();
     }
-  } else {
-    if (MS_UNLIKELY(!group_list_info->IsNone())) {
-      MS_EXCEPTION(ValueError) << "For '" << primitive->name()
-                               << "', when group_type is -1, group_list should be None, but got "
-                               << group_list_info->DebugInfo();
-    }
   }
 
-  auto split_item_opt = input_infos[idxes_.split_item]->GetScalarValue<int64_t>();
+  const auto split_item_idx = idxes_.split_item_offset + SizeToLong(input_infos.size());
+  auto split_item_opt = input_infos[split_item_idx]->GetScalarValue<int64_t>();
   if (MS_UNLIKELY(!split_item_opt.has_value())) {
     return std::make_pair(OP_CHECK_RETRY, group_type);
   }

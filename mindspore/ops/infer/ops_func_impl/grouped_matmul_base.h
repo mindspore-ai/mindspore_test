@@ -38,13 +38,13 @@ class OPS_API GroupedMatmulBaseFuncImpl : public OpFuncImpl {
 
  protected:
   struct Indexes {
-    size_t x = 0;
-    size_t weight = 1;
-    size_t group_list = 8;
-    size_t split_item = 12;
-    size_t group_type = 13;
-    size_t transpose_a = 10;
-    size_t transpose_b = 11;
+    int64_t x = 0;
+    int64_t weight = 1;
+    int64_t group_list = 8;
+    int64_t split_item_offset = -4;
+    int64_t group_type_offset = -3;
+    int64_t transpose_a = 10;
+    int64_t transpose_b = 11;
   } idxes_;
 
   virtual void FetchGroupInfo(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
