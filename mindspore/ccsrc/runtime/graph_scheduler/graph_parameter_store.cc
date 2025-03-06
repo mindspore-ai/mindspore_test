@@ -208,14 +208,28 @@ Tensor *GraphParameterStore::FetchTensor(size_t args_index, const KernelWithInde
   return tensor.get();
 }
 
-bool GraphParameterStore::RecordGraphInputsAndIsDyn(const std::vector<size_t> &input_index,
-                                                    const std::vector<ParameterPtr> &parameters) {
+bool GraphParameterStore::RecordGraphInputsAndIsDyn() {
   bool isDyn = false;
   auto &llm_manager = LLMManager::GetInstance();
-  for (size_t l = 0; l < input_index.size(); ++l) {
-    auto i = input_index[l];
-    auto origin_parameter = parameters[l];
+  auto buffer_outer_size = buffers_.size();
+  auto tensor_shape_outer_size = host_tensors_shape_.size();
+  if (buffer_outer_size != tensor_shape_outer_size) {
+    MS_LOG(EXCEPTION) << "Buffer size " << buffer_outer_size << " is not same as host tensor size "
+                      << tensor_shape_outer_size;
+  }
+  for (size_t i = 0; i < buffer_outer_size; ++i) {
+    const auto &iter = index_to_front_node_.find(i);
+    if (iter == index_to_front_node_.end()) {
+      MS_LOG(INFO) << "Not found origin parameter in store by index " << i;
+      continue;
+    }
+    const auto &origin_parameter = iter->second;
     MS_EXCEPTION_IF_NULL(origin_parameter);
+    if (origin_parameter->isa<Parameter>() &&
+        common::AnfAlgo::IsParameterWeight(origin_parameter->cast<ParameterPtr>())) {
+      MS_LOG(DEBUG) << "Skip the prepare host data for parameter in store: " << origin_parameter->fullname_with_scope();
+      continue;
+    }
     auto buffer_inner_size = buffers_[i].size();
     // List tensor input do not compare shape.
     if (buffer_inner_size != 1) {
