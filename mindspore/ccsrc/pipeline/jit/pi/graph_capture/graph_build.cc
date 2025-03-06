@@ -5084,10 +5084,11 @@ void Graph::GuardAttribute(ValueNode *attr_node) {
     MS_LOG(INFO) << "delay guard the function type of '" << AObject::ToString(src_object.ptr(), false) << "'";
   } else if (src_type == AObject::kTypeTensor /* tensor attribute always constant. */
              || CheckConstPyObject(src_object.ptr()) /* constant python object not need check */) {
-    MS_LOG(INFO) << "skip guard the attribute '" << name << "' of the builtin " << Py_TYPE(src_object.ptr())->tp_name;
-  } else if (attr_type == AObject::kTypeTensor && IsParameterObject(attr_object)) {
+    MS_LOG(INFO) << "skip guard the attribute '" << name << "' of the builtin type "
+                 << Py_TYPE(src_object.ptr())->tp_name;
+  } else if (attr_type == AObject::kTypeTensor) {
     // The mindspore.Parameter must be guard id. FuncGraph reuse the object
-    graph->GuardValueNode(attr_node, GuardLevel::GId);
+    graph->GuardValueNode(attr_node, IsParameterObject(attr_object) ? GuardLevel::GId : GuardLevel::GEqual);
   } else if (is_const_attr_type || (attr_type == AObject::kTypePrimitive && IsPrimWithAttr(attr_object))) {
     // For primitive, check the attribute that transform to partial arguments
     graph->GuardValueNode(attr_node, GuardLevel::GEqual);

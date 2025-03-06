@@ -1119,6 +1119,29 @@ def test_attr_as_inputs_5():
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_attr_as_inputs_6():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit(capture_mode="bytecode")
+        def construct(self, x):
+            return self.x + x
+
+    net = Net()
+    cond = [Tensor([99]), Tensor([61]), Tensor([32])]
+    for i in range(10):
+        net.x = cond[i % 3]
+        x = Tensor(np.random.rand(4,4))
+        y = net(x)
+        assert np.all((x + net.x == y).asnumpy())
+
+    assert_graph_compile_status(Net.construct.__wrapped__, 0, 9, 2)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_attr_as_inputs_config():
     """
     Feature: One stage basic operation.
