@@ -7,23 +7,16 @@ atanh:
             out_i = \tanh^{-1}(input_{i})
 
         Args:
-            input (Tensor): The shape of tensor is
-                :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
+            input (Tensor): The input tensor.
 
         Returns:
-            Tensor, has the same shape as `input`. The dtype of output is float32 when dtype of `input` is in [bool, int8, uint8, int16, int32, int64]. Otherwise output has the same dtype as `input`.
-
-        Raises:
-            TypeError: If `input` is not a Tensor.
+            Tensor
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
 
         Examples:
             >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> input = Tensor(np.array([0, -0.5]), mindspore.float32)
-            >>> output = ops.atanh(input)
+            >>> output = mindspore.ops.atanh(mindspore.tensor([0, -0.5]))
             >>> print(output)
             [ 0.         -0.54930615]

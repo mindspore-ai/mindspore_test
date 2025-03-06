@@ -1759,14 +1759,6 @@ def arccosh(input):
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
-    Examples:
-        >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> import numpy as np
-        >>> x = Tensor(np.array([1.0, 1.5, 3.0, 100.0]), mindspore.float32)
-        >>> output = ops.arccosh(x)
-        >>> print(output)
-        [0.        0.9624237 1.7627472 5.298292 ]
     """
     return acosh_(input)
 
@@ -1808,14 +1800,6 @@ def arctan(input):
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
-    Examples:
-        >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> import numpy as np
-        >>> x = Tensor(np.array([1.0, 0.0]), mindspore.float32)
-        >>> output = ops.arctan(x)
-        >>> print(output)
-        [0.7853982 0.       ]
     """
     return atan_(input)
 
@@ -1837,15 +1821,6 @@ def arctan2(input, other):
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
-    Examples:
-        >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> import numpy as np
-        >>> x = Tensor(np.array([0, 1]), mindspore.float32)
-        >>> y = Tensor(np.array([1, 1]), mindspore.float32)
-        >>> output = ops.arctan2(x, y)
-        >>> print(output)
-        [0.        0.7853982]
     """
     return atan2_(input, other)
 
