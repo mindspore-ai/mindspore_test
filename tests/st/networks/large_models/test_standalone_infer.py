@@ -38,6 +38,7 @@ def test_qwen2_0_5b_predict_standalone():
     Description: Test infer interface for prediction with standalone.
     Expectation: AssertionError
     """
+    ms.runtime.set_kernel_launch_group()
     ascend_home_path = os.getenv('ASCEND_HOME_PATH')
     if not ascend_home_path:
         os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
