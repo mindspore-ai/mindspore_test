@@ -19,7 +19,6 @@
 
 #include <string>
 #include "include/backend/device_synchronizer.h"
-#include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
 namespace device {

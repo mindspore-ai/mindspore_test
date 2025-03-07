@@ -29,7 +29,6 @@
 #include "runtime/device/hash_table.h"
 #include "plugin/res_manager/gpu/device/gpu_hash_table_common.h"
 #include "plugin/device/gpu/hal/device/gpu_allocator.h"
-#include "kernel/gpu/cuda_impl/cuda_ops/cuda_common.h"
 
 namespace mindspore {
 namespace device {

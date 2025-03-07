@@ -32,12 +32,6 @@
 #include "include/backend/data_queue/data_queue_mgr.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "runtime/device/tensor_array.h"
-#include "runtime/device/move_to.h"
-#include "kernel/gpu/cuda_impl/cuda_ops/cuda_common.h"
-#ifdef ENABLE_DUMP_IR
-#include "include/common/debug/rdr/recorder_manager.h"
-#include "debug/rdr/mem_address_recorder.h"
-#endif
 
 namespace mindspore {
 namespace device {
@@ -92,6 +86,16 @@ void GPUResManager::Initialize() {
   }
 }
 
+namespace {
+float GetCudaCap(const uint32_t device_id) {
+  cudaDeviceProp prop;
+  (void)cudaGetDeviceProperties(&prop, device_id);
+  auto major = prop.major;
+  auto minor = prop.minor;
+  return static_cast<float>(major * 10 + minor) / 10.0;
+}
+}  // namespace
+
 bool GPUResManager::InitDevice() {
   if (GPUDeviceManager::GetInstance().device_count() <= 0) {
     MS_LOG(ERROR) << "No GPU device found.";
@@ -105,14 +109,14 @@ bool GPUResManager::InitDevice() {
     }
   }
   // Check the Cuda capability
-  const float cuda_cap = GET_CUDA_CAP;
-  if (cuda_cap < SUPPORTED_CAP) {
+  const float cuda_cap = GetCudaCap(res_key_.device_id_);
+  if (cuda_cap < 5.3) {
     MS_LOG(WARNING) << "The device with Cuda compute capability " << cuda_cap
-                    << " is lower than the minimum required capability " << SUPPORTED_CAP
+                    << " is lower than the minimum required capability " << 5.3
                     << ", this may cause some unexpected problems and severely affect the results. "
                     << "Eg: the outputs are all zeros.\n"
-                    << "Device with a compute capability > " << SUPPORTED_CAP << " is required, "
-                    << "and it is recommended to use devices with a compute capability >= " << RECOMMEND_SM;
+                    << "Device with a compute capability > " << 5.3 << " is required, "
+                    << "and it is recommended to use devices with a compute capability >= " << 7;
   }
 
   // Initialize device resource, such as stream, cudnn and cublas handle.
@@ -376,24 +380,7 @@ void SetUserData(DeviceAddress *device_address, const UserDataPtr &user_data) {
   if (user_data_type == nullptr) {
     return;
   }
-  if (*user_data_type == UserDataType::kUserTypeHashTable) {
-#if CUDA_VERSION > 11000 && defined(__linux__)
-    auto key_type = user_data->get<TypeId>(kHashTableKeyType);
-    auto value_type = user_data->get<TypeId>(kHashTableValueType);
-    MS_EXCEPTION_IF_NULL(key_type);
-    MS_EXCEPTION_IF_NULL(value_type);
-    const auto &iter = hashtable_func_list.find({*key_type, *value_type});
-    if (iter != hashtable_func_list.end()) {
-      return std::get<kSetFuncIndex>(iter->second)(user_data);
-    } else {
-      MS_LOG(EXCEPTION) << "Unsupported hash table type:" << *key_type << " and:" << *value_type;
-    }
-#else
-    MS_LOG(EXCEPTION) << "Invalid platform or cuda version for gpu hash table.";
-#endif
-  } else {
-    MS_LOG(EXCEPTION) << "Invalid user data type:" << *user_data_type;
-  }
+  MS_LOG(EXCEPTION) << "Invalid user data type:" << *user_data_type;
 }
 }  // namespace
 
@@ -463,32 +450,14 @@ bool GPUResManager::QueryStream(size_t stream_id) const {
   return GPUDeviceManager::GetInstance().QueryStream(stream_id);
 }
 
-bool GPUResManager::SyncStream(size_t stream_id) const {
-  bool result = GPUDeviceManager::GetInstance().SyncStream(stream_id);
-#ifdef ENABLE_DUMP_IR
-  if (!result) {
-    mindspore::RDR::TriggerAll();
-  }
-  // clear RDR gpu memory info
-  mindspore::RDR::ClearMemAddressInfo();
-#endif
-  return result;
-}
+bool GPUResManager::SyncStream(size_t stream_id) const { return GPUDeviceManager::GetInstance().SyncStream(stream_id); }
 
 bool GPUResManager::SyncAllStreams() const {
   if (!BindDeviceToCurrentThread(false)) {
     MS_LOG(ERROR) << "Fail to bind device to current thread";
     return false;
   }
-  bool result = GPUDeviceManager::GetInstance().SyncAllStreams();
-#ifdef ENABLE_DUMP_IR
-  if (!result) {
-    mindspore::RDR::TriggerAll();
-  }
-  // clear RDR gpu memory info
-  mindspore::RDR::ClearMemAddressInfo();
-#endif
-  return result;
+  return GPUDeviceManager::GetInstance().SyncAllStreams();
 }
 bool GPUResManager::SyncNotDefaultStreams() const { return GPUDeviceManager::GetInstance().SyncNotDefaultStreams(); }
 

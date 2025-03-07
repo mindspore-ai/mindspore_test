@@ -78,6 +78,7 @@ def test_ftrl():
         losses2.append(loss.asnumpy())
 
 
+@pytest.mark.skip(reason="skip gpu hashtable")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ftrl_net_with_map_tensor():
     """
