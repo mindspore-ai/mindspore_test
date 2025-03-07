@@ -108,9 +108,7 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
                 ${CMAKE_CURRENT_SOURCE_DIR}/delegate/ascend_native/ascend_native_layernorm_kernel.cc
                 ${CMAKE_CURRENT_SOURCE_DIR}/delegate/ascend_native/ascend_native_gather_kernel.cc
                 ${CMAKE_CURRENT_SOURCE_DIR}/delegate/ascend_native/ascend_native_encoder_kernel.cc
-                ${CCSRC_DIR}/plugin/device/ascend/hal/hccl_adapter/hccl_adapter.cc
-                ${CCSRC_DIR}/plugin/device/ascend/hal/hccl_adapter/converter.cc
-                ${CCSRC_DIR}/plugin/device/ascend/hal/hccl_adapter/all_to_all_v_calc_param.cc
+                ${CCSRC_DIR}/plugin/res_manager/ascend/hccl_adapter/hccl_adapter.cc
                 ${CCSRC_DIR}/utils/config_manager.cc
                 ${CMAKE_CURRENT_SOURCE_DIR}/mock/ge_mock.cc
                 ${CMAKE_CURRENT_SOURCE_DIR}/mock/transform_mock.cc
@@ -125,8 +123,8 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
             endif()
             target_link_libraries(ascend_native_plugin ${ASCEND_NATIVE_KERNELS_IMPL} ascend_native_mid)
             set(ASCEND_TOOLKIT_PLUGIN_PATH ${ASCEND_TOOLKIT_RUNTIME_PATH}/plugin/opskernel)
-            include_directories(${CCSRC_DIR}/plugin/device/ascend/hal/hccl_adapter)
-            add_subdirectory(${CCSRC_DIR}/plugin/device/ascend/hal/hccl_adapter/plugin build)
+            include_directories(${CCSRC_DIR}/plugin/res_manager/ascend/hccl_adapter/)
+            add_subdirectory(${CCSRC_DIR}/plugin/res_manager/ascend/hccl_adapter/plugin build)
         endif()
     endif()
 

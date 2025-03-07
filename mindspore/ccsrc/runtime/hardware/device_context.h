@@ -26,11 +26,7 @@
 #include <unordered_set>
 #include "common/device_type.h"
 #include "common/device_address.h"
-<<<<<<< HEAD
-#include "runtime/device/gsm/swap_manager.h"
-=======
 #include "runtime/device/res_manager/swap_manager.h"
->>>>>>> 3b56f2d5ddb (ms-decouple loadable device address)
 #include "runtime/collective/collective_communication_lib.h"
 #include "runtime/collective/collective_comm_lib_loader.h"
 #include "include/backend/kernel_graph.h"

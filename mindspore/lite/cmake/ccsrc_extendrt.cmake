@@ -62,7 +62,7 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
             ${CCSRC_DIR}/runtime/device/kernel_runtime.cc
             ${CCSRC_DIR}/runtime/device/memory_scheduler.cc
             ${CCSRC_DIR}/runtime/device/memory_offload_strategy.cc
-            ${CCSRC_DIR}/runtime/device/memory_manager.cc
+            ${CCSRC_DIR}/runtime/device/res_manager/memory_manager.cc
             ${CCSRC_DIR}/runtime/device/auto_mem_offload.cc
             ${CCSRC_DIR}/runtime/device/gsm/mem_usage_analyzer.cc
             ${CCSRC_DIR}/runtime/device/gsm/swap_strategy_builder.cc
@@ -106,7 +106,7 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
                 ${CCSRC_DIR}/kernel/environ_manager.cc
                 ${CCSRC_DIR}/utils/python_fallback_running.cc
                 ${CCSRC_DIR}/runtime/device/tensors_queue.cc
-                ${CCSRC_DIR}/runtime/device/tensor_array.cc
+                ${CCSRC_DIR}/runtime/device/res_manager/tensor_array.cc
                 ${CCSRC_DIR}/runtime/hardware/device_context_manager.cc
                 ${CCSRC_DIR}/plugin/device/cpu/hal/device/cpu_tensor_array.cc
                 ${CCSRC_DIR}/plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.cc

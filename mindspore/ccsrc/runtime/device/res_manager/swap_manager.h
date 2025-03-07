@@ -24,15 +24,9 @@
 
 #include "include/backend/mem_reuse/dynamic_mem_pool.h"
 #include "common/device_address.h"
-<<<<<<< HEAD:mindspore/ccsrc/runtime/device/gsm/swap_manager.h
-#include "runtime/device/gsm/io_handle.h"
-#include "runtime/device/gsm/pin_mem_pool.h"
-#include "include/backend/visible.h"
-=======
 #include "runtime/device/res_manager/utils/io_handle.h"
 #include "runtime/device/res_manager/utils/pin_mem_pool.h"
 #include "runtime/device/res_manager/utils/visible.h"
->>>>>>> 3b56f2d5ddb (ms-decouple loadable device address):mindspore/ccsrc/runtime/device/res_manager/swap_manager.h
 
 namespace mindspore {
 namespace device {

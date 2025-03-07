@@ -25,7 +25,7 @@
 "mindspore/mindspore/ops/infer/strided_slice.cc"                                                       "zerodivcond"
 "mindspore/mindspore/ops/infer/avg_pool_3d.cc"                                                         "zerodivcond"
 "mindspore/mindspore/ops/infer/ops_func_impl/avg_pool1d.cc"                                            "zerodivcond"
-"mindspore/mindspore/ccsrc/plugin/device/ascend/hal/hccl_adapter/hccl_adapter.cc"                     "useStlAlgorithm"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/hccl_adapter/hccl_adapter.cc"                     "useStlAlgorithm"
 "mindspore/mindspore/ops/kernel/gpu/arrays/cast_gpu_kernel.cc"                        "unknownMacro"
 "mindspore/mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_memory_manager.cc"                  "nullPointerArithmeticRedundantCheck"
 "mindspore/mindspore/ccsrc/pipeline/jit/ps/static_analysis/auto_monad.cc"                             "containerOutOfBounds"

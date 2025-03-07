@@ -16,7 +16,7 @@
 
 #include "hccl/hccl_types.h"
 #include "plugin/device/ascend/kernel/hccl/hcom_matmul_all_reduce.h"
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
+#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "runtime/rt.h"
 

@@ -15,7 +15,7 @@
  */
 #include "plugin/device/ascend/kernel/hccl/hcom_all_to_all.h"
 #include <algorithm>
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
+#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/comm_manager.h"

@@ -15,7 +15,7 @@
  */
 
 #include "include/common/utils/comm_manager.h"
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
+#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #include "hccl/hcom.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/parallel_context.h"
