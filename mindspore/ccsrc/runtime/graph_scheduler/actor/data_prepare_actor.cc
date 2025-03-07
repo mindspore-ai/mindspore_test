@@ -345,11 +345,14 @@ void RecordGraphInputsForInputOptimize(const GraphCompilerInfo *graph_compiler_i
   MS_EXCEPTION_IF_NULL(graph_parameter_store);
   static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
   if (enable_infer_boost && EnableKbkSubGraphExecute()) {
+    std::vector<size_t> input_index;
+    std::vector<ParameterPtr> parameters;
     for (size_t i = 0; i < graph_compiler_info->origin_parameters_order_.size(); ++i) {
       const auto &origin_parameter = graph_compiler_info->origin_parameters_order_[i];
       MS_EXCEPTION_IF_NULL(origin_parameter);
+      const auto parameter = origin_parameter->cast<ParameterPtr>();
       // The input data is front of the parameter weight.
-      if (common::AnfAlgo::IsParameterWeight(origin_parameter->cast<ParameterPtr>())) {
+      if (common::AnfAlgo::IsParameterWeight(parameter)) {
         MS_LOG(DEBUG) << "Skip the prepare host data for parameter: " << origin_parameter->fullname_with_scope();
         continue;
       }
@@ -357,6 +360,8 @@ void RecordGraphInputsForInputOptimize(const GraphCompilerInfo *graph_compiler_i
         MS_LOG(DEBUG) << "Arg index out of args range, index is " << i << " and args size is " << args.size();
         continue;
       }
+      input_index.emplace_back(i);
+      parameters.emplace_back(parameter);
 
       std::vector<tensor::TensorPtr> flatten_tensors;
       AnfAlgo::FlattenInputArg(args[i], origin_parameter, &flatten_tensors);
@@ -374,7 +379,7 @@ void RecordGraphInputsForInputOptimize(const GraphCompilerInfo *graph_compiler_i
         runtime::DeviceAddressUtils::CreateKernelTensor(tensor);
       }
     }
-    auto isDyn = graph_parameter_store->RecordGraphInputsAndIsDyn();
+    auto isDyn = graph_parameter_store->RecordGraphInputsAndIsDyn(input_index, parameters);
     if (has_dynamic_shape) {
       ActorDispatcher::set_enable_static_shape(!isDyn);
       const auto &phase = graph_compiler_info->graph_phase_;

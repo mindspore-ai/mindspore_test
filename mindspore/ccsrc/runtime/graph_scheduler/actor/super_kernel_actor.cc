@@ -175,6 +175,10 @@ void RecordInputParamsWithoutUser(const KernelGraphPtr &graph,
   const auto &input_nodes = graph->input_nodes();
   size_t input_num = input_nodes.size();
   for (size_t i = 0; i < input_num; ++i) {
+    if (input_nodes[i]->isa<Parameter>() &&
+        (common::AnfAlgo::IsParameterWeight(input_nodes[i]->cast<ParameterPtr>()))) {
+      continue;
+    }
     if (input_params_use_cnt.at(i) == 0) {
       const auto &parameter_index_iter = parameter_indexs_map.find(i);
       if (parameter_index_iter != parameter_indexs_map.end()) {
@@ -768,8 +772,14 @@ void SuperKernelActor::FetchParameterInput(const KernelActorPtr &kernel_actor, O
   if (!enable_input_optimize_) {
     return;
   }
+  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, "FetchParameterInput");
+  bool need_event = false;
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   for (const auto &parameter_index : kernel_actor->parameter_indexs()) {
+    if (!first_step_for_inference_ && kernel_actor->is_weight_[parameter_index.first]) {
+      continue;
+    }
+    need_event = true;
     auto device_tensor =
       FetchParameter(parameter_index.second, context, kernel_actor->device_contexts()[0], kernel_actor->GetAID());
     MS_LOG(DEBUG) << "Actor: " << kernel_actor->GetAID().Name() << ", input index: " << parameter_index.first
@@ -790,6 +800,9 @@ void SuperKernelActor::FetchParameterInput(const KernelActorPtr &kernel_actor, O
   if (iter != kernel_actor_to_graph_parameters_map_.end()) {
     for (const auto &input_pair : iter->second) {
       auto actor_input_idx = input_pair.first;
+      if (!first_step_for_inference_ && kernel_actor->is_weight_[actor_input_idx]) {
+        continue;
+      }
       auto graph_input_idx = input_pair.second;
       if (memory_free_lists_.empty()) {
         memory_free_lists_.push({});
@@ -805,22 +818,27 @@ void SuperKernelActor::FetchParameterInput(const KernelActorPtr &kernel_actor, O
   }
 
   // Insert record wait pair to ensure first used parameter async copy end before launch.
-  const auto &insert_event_iter = kernel_actors_insert_event_.find(kernel_actor.get());
-  if (insert_event_iter != kernel_actors_insert_event_.end()) {
-    auto stream_id = kernel_actor->kernel_info_->stream_id();
-    if (stream_id != kDefaultStreamIndex) {
-      auto device_context = kernel_actor->device_contexts_[0];
-      MS_EXCEPTION_IF_NULL(device_context);
-      MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-      auto &multi_stream_controller =
-        device::HalResManager::GetInstance().GetMultiStreamController(device_context->DeviceName());
-      MS_EXCEPTION_IF_NULL(multi_stream_controller);
-      device_context->device_res_manager_->BindDeviceToCurrentThread(false);
-      multi_stream_controller->DispatchRecordWaitEvent(stream_id, kDefaultStreamIndex);
+  if (need_event) {
+    const auto &insert_event_iter = kernel_actors_insert_event_.find(kernel_actor.get());
+    if (insert_event_iter != kernel_actors_insert_event_.end()) {
+      auto stream_id = kernel_actor->kernel_info_->stream_id();
+      if (stream_id != kDefaultStreamIndex) {
+        auto device_context = kernel_actor->device_contexts_[0];
+        MS_EXCEPTION_IF_NULL(device_context);
+        MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
+        auto &multi_stream_controller =
+          device::HalResManager::GetInstance().GetMultiStreamController(device_context->DeviceName());
+        MS_EXCEPTION_IF_NULL(multi_stream_controller);
+        device_context->device_res_manager_->BindDeviceToCurrentThread(false);
+        multi_stream_controller->DispatchRecordWaitEvent(stream_id, kDefaultStreamIndex);
+      }
     }
   }
 
   for (const auto &parameter_index : kernel_actor->parameter_indexs()) {
+    if (!first_step_for_inference_ && kernel_actor->is_weight_[parameter_index.first]) {
+      continue;
+    }
     kernel_actor->memory_free_list_[parameter_index.first] = kernel_actor->input_device_tensors_[parameter_index.first];
     kernel_actor->CopyInputDeviceTensor(kernel_actor->input_device_tensors_[parameter_index.first],
                                         parameter_index.first, context);
@@ -828,6 +846,7 @@ void SuperKernelActor::FetchParameterInput(const KernelActorPtr &kernel_actor, O
 }
 
 void SuperKernelActor::FreeInputParamWithoutUser(OpContext<DeviceTensor> *const context) {
+  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, "FreeInputParamWithoutUser");
   if (enable_input_optimize_) {
     for (const auto &iter : input_params_no_user_) {
       auto device_tensor = FetchParameter(iter.second, context, device_contexts_[0], GetAID());
@@ -949,6 +968,12 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<DeviceTensor> *const context) 
       MS_INTERNAL_EXCEPTION(RuntimeError)
         << "Copy for heterogeneous output failed, kernel actor: " << kernel_actor->GetAID().Name();
     }
+  }
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
+  if (enable_infer_boost) {
+    first_step_for_inference_ = false;
   }
 
   return true;
@@ -1675,6 +1700,7 @@ void SuperKernelActor::LinkKernelActors() {
   AnalyseNodesDependence(device_tensor_store_keys_map, parameter_indexs_map, output_node_to_actor_output_index,
                          &param_first_used_kernel_actors);
 
+  RecordKernelActorWeight();
   if (IS_OUTPUT_ON(MsLogLevel::kDebug)) {
     for (size_t i = 0; i < input_num; i++) {
       MS_LOG(DEBUG) << "SuperKernelActor: " << GetAID().Name() << " Parameter[" << input_nodes[i]->fullname_with_scope()
@@ -1769,6 +1795,35 @@ void SuperKernelActor::AnalyseNodesDependence(
   CollectStreamFirstUsedParamKernelActors(&param_first_used_actors_on_stream, &kernel_actors_insert_event_);
   ParamFirstUsedKernelActorsToMap(*param_first_used_kernel_actors, &kernel_actor_to_graph_parameters_map_);
   RecordInputParamsWithoutUser(graph_, parameter_indexs_map, input_params_use_cnt_, &input_params_no_user_);
+}
+
+// Record kernel actor weight position for inference input optimize.
+void SuperKernelActor::RecordKernelActorWeight() {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto enable_infer_boost = ms_context->IsEnableInferBoost();
+  if (!EnableInputOptimize() || !enable_infer_boost) {
+    return;
+  }
+  const auto &execution_order = graph_->execution_order();
+  size_t kernel_num = execution_order.size();
+  for (size_t i = 0; i < kernel_num; i++) {
+    const auto &kernel = execution_order[i];
+    MS_EXCEPTION_IF_NULL(kernel);
+
+    auto kernel_input_num = common::AnfAlgo::GetInputTensorNum(kernel);
+    auto &kernel_actor = kernel_actors_[i];
+    MS_EXCEPTION_IF_NULL(kernel_actor);
+    kernel_actor->is_weight_.resize(kernel_input_num, false);
+    for (const auto &iter : kernel_actor->parameter_indexs_) {
+      auto input_index = iter.first;
+      auto node = iter.second.first.first;
+      MS_EXCEPTION_IF_NULL(node);
+      if (node->isa<Parameter>() && common::AnfAlgo::IsParameterWeight(node->cast<ParameterPtr>())) {
+        kernel_actor->is_weight_[input_index] = true;
+      }
+    }
+  }
 }
 
 void SuperKernelActor::LinkKernelActor(const CNodePtr &kernel, size_t input_index, const AnfNodePtr &input_kernel,
