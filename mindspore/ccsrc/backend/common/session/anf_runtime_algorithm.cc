@@ -35,7 +35,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/debug/anf_dump_utils.h"
 #include "include/backend/kernel_info.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "include/backend/optimizer/helper.h"
 #include "common/kernel.h"
 #include "common/kernel_build_info.h"

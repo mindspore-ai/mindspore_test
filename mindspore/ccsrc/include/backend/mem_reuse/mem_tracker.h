@@ -30,7 +30,7 @@
 #include "utils/ms_utils.h"
 #include "utils/log_adapter.h"
 #include "include/backend/visible.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "include/backend/mem_reuse/mem_pool_util.h"
 
 namespace mindspore {

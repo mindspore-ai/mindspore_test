@@ -21,7 +21,7 @@
 #include "plugin/device/ascend/llm_boost/ascend_native/boost_model_ascend_native.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
 #include "common/kernel.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "include/llm/llama_impl.h"
 
 namespace mindspore {

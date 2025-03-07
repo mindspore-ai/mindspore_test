@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_INCLUDE_UTILS_DEVICE_TYPE_H_
-#define MINDSPORE_CORE_INCLUDE_UTILS_DEVICE_TYPE_H_
+#ifndef MINDSPORE_OPS_KERNEL_INCLUDE_COMMON_DEVICE_TYPE_H_
+#define MINDSPORE_OPS_KERNEL_INCLUDE_COMMON_DEVICE_TYPE_H_
 
 #include <string>
 #include <map>
-#include "mindapi/base/macros.h"
+#include "common/kernel_visible.h"
 
 namespace mindspore {
 namespace device {
@@ -41,8 +41,8 @@ const std::map<std::string, DeviceType> device_name_to_type_map = {{"Unknown", D
                                                                    {"CPU", DeviceType::kCPU},
                                                                    {"GPU", DeviceType::kGPU}};
 
-MS_CORE_API const std::string &GetDeviceNameByType(const DeviceType &type);
-MS_CORE_API DeviceType GetDeviceTypeByName(const std::string &name);
+OPS_KERNEL_COMMON_API const std::string &GetDeviceNameByType(const DeviceType &type);
+OPS_KERNEL_COMMON_API DeviceType GetDeviceTypeByName(const std::string &name);
 }  // namespace device
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_INCLUDE_UTILS_DEVICE_TYPE_H_
+#endif  // MINDSPORE_OPS_KERNEL_INCLUDE_COMMON_DEVICE_TYPE_H_

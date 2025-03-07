@@ -29,7 +29,7 @@
 #include "include/common/utils/config_manager.h"
 #include "debug/profiler/profiling.h"
 #include "debug/profiler/profiler.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "utils/file_utils.h"
 #ifndef ENABLE_SECURITY
 #include "backend/ge_backend/dump/hook_debugger.h"

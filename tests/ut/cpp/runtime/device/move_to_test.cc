@@ -21,7 +21,7 @@
 #include "common/py_func_graph_fetcher.h"
 #include "include/common/utils/utils.h"
 #include "runtime/device/move_to.h"
-#include "utils/device_type.h"
+#include "common/device_type.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "securec/include/securec.h"
 #include "ir/tensor.h"

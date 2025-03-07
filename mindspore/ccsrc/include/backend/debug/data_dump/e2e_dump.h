@@ -24,7 +24,7 @@
 #include <vector>
 
 #include "include/backend/kernel_graph.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/dump_utils.h"
 #ifdef ENABLE_DEBUGGER

@@ -16,7 +16,7 @@
 #include "pynative/grad/top_cell.h"
 #include "pynative/pynative_utils.h"
 #include "ir/tensor.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "debug/profiler/profiler.h"
 
 namespace mindspore {

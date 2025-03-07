@@ -19,7 +19,7 @@
 
 #include <memory>
 #include <string>
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
 

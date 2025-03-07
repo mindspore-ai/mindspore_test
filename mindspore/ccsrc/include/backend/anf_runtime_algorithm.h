@@ -34,7 +34,7 @@
 #include "common/kernel_build_info.h"
 #include "utils/anf_utils.h"
 #include "include/common/utils/contract.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/kernel_info.h"
 #include "include/backend/visible.h"

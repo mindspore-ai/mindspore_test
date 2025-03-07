@@ -24,7 +24,7 @@
 #include "kernel/ascend/acl_ir/acl_adapter_info.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
 #include "ops_utils/op_utils.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "kernel/ascend/acl_ir/op_api_util.h"

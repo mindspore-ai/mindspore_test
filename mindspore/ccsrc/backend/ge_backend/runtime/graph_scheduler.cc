@@ -30,7 +30,7 @@
 #include "debug/profiler/profiler.h"
 #include "actor/actormgr.h"
 #include "async/async.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"

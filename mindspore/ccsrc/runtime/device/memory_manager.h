@@ -25,7 +25,7 @@
 #include <unordered_map>
 #include "include/backend/mem_reuse/dynamic_mem_pool.h"
 #include "ir/anf.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "include/backend/kernel_info.h"
 
 namespace mindspore {

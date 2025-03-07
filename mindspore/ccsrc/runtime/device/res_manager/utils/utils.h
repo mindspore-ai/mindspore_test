@@ -18,7 +18,7 @@
 
 #include <string>
 #include <vector>
-#include "utils/device_type.h"
+#include "common/device_type.h"
 #include "runtime/device/res_manager/utils/visible.h"
 #include "ir/tensor.h"
 

@@ -28,7 +28,7 @@
 #include "utils/log_adapter.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
-#include "utils/device_type.h"
+#include "common/device_type.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/device/device_address_utils.h"

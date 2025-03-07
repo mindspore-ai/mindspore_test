@@ -27,7 +27,7 @@
 #include <memory>
 #include "utils/hash_map.h"
 #include "actor/op_actor.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"

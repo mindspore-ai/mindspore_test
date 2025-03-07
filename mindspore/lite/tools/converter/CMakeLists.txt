@@ -315,6 +315,8 @@ set(LITE_SRC
         ${CORE_DIR}/ir/anf.cc
         ${CORE_DIR}/base/base.cc
         ${OPS_DIR}/op_def/auto_generate/gen_lite_ops.cc
+        ${OPS_DIR}/kernel/common/device_address.cc
+        ${OPS_DIR}/kernel/common/device_type.cc
         )
 
 set_property(SOURCE ${CONVERTER_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_LITE)

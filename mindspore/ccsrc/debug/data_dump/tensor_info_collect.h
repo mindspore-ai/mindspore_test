@@ -21,7 +21,7 @@
 #include <string>
 #include <map>
 
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 
 namespace mindspore {
 

@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "runtime/device/loadable_device_address.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_pool.h"
 #include "ir/dtype.h"
