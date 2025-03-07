@@ -724,6 +724,10 @@ void GeGraphExecutor::AllocGEFixMemory() const {
                         size_t size) {
     MS_LOG(INFO) << "Update GE fixed memory, graph name: " << options.name << ", is_refreshable: " << is_refreshable
                  << ", size: " << size << ", memory: " << memory;
+    if (size == 0) {
+      MS_LOG(INFO) << "GE fixed memory size == 0, skip update GE fixed memory.";
+      return Status::SUCCESS;
+    }
     if (common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat)) {
       std::cout << "[MS_RUNTIME_PROF]"
                 << "Update GE fixed memory, graph name: " << options.name << ", is_refreshable: " << is_refreshable
