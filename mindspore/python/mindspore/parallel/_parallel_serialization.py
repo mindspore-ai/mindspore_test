@@ -34,7 +34,12 @@ def _convert_to_list(strategy, rank_id=None):
         try:
             layout = strategy.get(param_name)
             dev_mat = list(layout.dev_matrix[0].dim)
-            tensor_map = list(layout.tensor_map[0].dim)
+            # for layout one axis two slices, layout(("dp", "mp"), "None")
+            if len(layout.tensor_map) > 1:
+                tensor_map = [list(tensor_map.dim) for tensor_map in layout.tensor_map
+                              if list(tensor_map.dim)]
+            else:
+                tensor_map = list(layout.tensor_map[0].dim)
             param_split_shape = list(layout.param_split_shape[0].dim)
             field_size = int(layout.field)
             shard_stride = int(layout.opt_weight_shard_step)
@@ -441,6 +446,9 @@ def _transform_parallel_checkpoint(rank_id, param_total_dict, param_attr_dict, s
                 continue
             origin_tensor_shape += (item * param_strategy[i],)
 
+        has_layout_from = any(isinstance(i, (list, tuple)) for i in from_tensor_map)
+        has_layout_to = any(isinstance(i, (list, tuple)) for i in to_tensor_map_origin)
+
         from_dev_matrix, from_tensor_map, from_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
             from_dev_matrix, from_tensor_map, from_opt_shard_step, from_opt_shard_size, origin_tensor_shape)
         to_dev_matrix, to_tensor_map, to_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
@@ -460,6 +468,7 @@ def _transform_parallel_checkpoint(rank_id, param_total_dict, param_attr_dict, s
         from_info_tuple = (from_opt_shard_size, from_dev_matrix, from_tensor_map, from_full_tensor_shape)
         to_info_tuple = (to_opt_shard_size, to_dev_matrix_origin, to_tensor_map_origin, origin_tensor_shape)
         _insert_opt_shard_reshape(param_rank_map, from_info_tuple, to_info_tuple)
+        _insert_expand_layout_reshape(param_rank_map, from_info_tuple, to_info_tuple, has_layout_from, has_layout_to)
         transform_operator_stack = _generate_transform_operator_stack(param_rank_map, rank_id)
         param_total_dict_copy = param_total_dict[param_name].copy()
         _apply_tensor_transform_operators(transform_operator_stack, param_total_dict_copy, device_num)
@@ -552,6 +561,32 @@ def _insert_opt_shard_reshape(param_rank_map, from_info_tuple, to_info_tuple):
                 if i == 0 and to_opt_shard_size > 0:
                     to_slice_tensor_shape += (item // (to_tensor_strategy[i] * to_opt_shard_size),)
                     continue
+                to_slice_tensor_shape += (item // to_tensor_strategy[i],)
+            param_rank_map.get(param_rank).append(('Reshape', list(to_slice_tensor_shape)))
+
+
+def _insert_expand_layout_reshape(param_rank_map, from_info_tuple, to_info_tuple,
+                                  insert_from_reshape, insert_to_reshape):
+    """ insert layout expand op reshape """
+    from_opt_shard_size = from_info_tuple[0]
+    from_dev_matrix = from_info_tuple[1]
+    from_tensor_map = from_info_tuple[2]
+    from_full_tensor_shape = from_info_tuple[3]
+    to_opt_shard_size = to_info_tuple[0]
+    to_dev_matrix_origin = to_info_tuple[1]
+    to_tensor_map_origin = to_info_tuple[2]
+    origin_tensor_shape = to_info_tuple[3]
+    for param_rank, _ in param_rank_map.items():
+        if from_opt_shard_size == 0 and insert_from_reshape:
+            from_slice_tensor_shape = ()
+            from_tensor_strategy = _get_tensor_strategy(from_dev_matrix, from_tensor_map)
+            for i, item in enumerate(from_full_tensor_shape):
+                from_slice_tensor_shape += (item // from_tensor_strategy[i],)
+            param_rank_map.get(param_rank).insert(0, ('Reshape', list(from_slice_tensor_shape)))
+        if to_opt_shard_size == 0 and insert_to_reshape:
+            to_tensor_strategy = _get_tensor_strategy(to_dev_matrix_origin, to_tensor_map_origin)
+            to_slice_tensor_shape = ()
+            for i, item in enumerate(origin_tensor_shape):
                 to_slice_tensor_shape += (item // to_tensor_strategy[i],)
             param_rank_map.get(param_rank).append(('Reshape', list(to_slice_tensor_shape)))
 

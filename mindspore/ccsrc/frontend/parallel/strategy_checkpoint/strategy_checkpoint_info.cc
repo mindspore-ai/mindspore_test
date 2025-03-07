@@ -248,10 +248,28 @@ straspb::ParallelStrategyMap StrategyCheckpointInfo::to_protobuf() const {
     for (auto dev_dim : tensor_layout->device_arrangement().array()) {
       dev_matrix->add_dim(UlongToUint(LongToUlong(dev_dim)));
     }
-    straspb::TensorMap *tensor_map = parallel_layouts->add_tensor_map();
-    MS_EXCEPTION_IF_NULL(tensor_map);
-    for (auto map_dim : tensor_layout->tensor_map().array()) {
-      tensor_map->add_dim(LongToInt(map_dim));
+
+    if (!tensor_layout->init_from_extend_vector()) {
+      // tensor_map_before is empty, the param is in strategy process
+      straspb::TensorMap *tensor_map = parallel_layouts->add_tensor_map();
+      MS_EXCEPTION_IF_NULL(tensor_map);
+      for (auto map_dim : tensor_layout->tensor_map().array()) {
+        tensor_map->add_dim(LongToInt(map_dim));
+      }
+    } else {
+      // tensor_map_before is not empty, the param is in layout process
+      for (auto tensor_map_vec : tensor_layout->tensor_map_before()) {
+        straspb::TensorMap *tensor_map = parallel_layouts->add_tensor_map();
+        MS_EXCEPTION_IF_NULL(tensor_map);
+        for (auto map_dim : tensor_map_vec) {
+          tensor_map->add_dim(LongToInt(map_dim));
+        }
+      }
+      // if tensor_map_before size is 1, insert an empty tensor map
+      if (tensor_layout->tensor_map_before().size() == 1) {
+        straspb::TensorMap *tensor_map = parallel_layouts->add_tensor_map();
+        MS_EXCEPTION_IF_NULL(tensor_map);
+      }
     }
     straspb::ParamSplitShape *param_split_shape = parallel_layouts->add_param_split_shape();
     straspb::IndicesOffset *indices_offset = parallel_layouts->add_indices_offset();

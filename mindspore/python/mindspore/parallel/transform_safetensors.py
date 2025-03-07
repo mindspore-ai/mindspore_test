@@ -35,7 +35,7 @@ from mindspore import log as logger
 from mindspore.log import vlog_print
 from mindspore.parallel._parallel_serialization import _get_device_num_from_strategy, _make_dir, \
     _extract_layout_map, _extract_src_dst_layout_map, _parameter_not_in_local_stage, _extract_pipeline_stage_num, \
-    _insert_opt_shard_reshape, _extract_src_dst_layout_map_by_src
+    _insert_opt_shard_reshape, _extract_src_dst_layout_map_by_src, _insert_expand_layout_reshape
 from mindspore.parallel._tensor import _get_tensor_strategy, _construct_from_to_tensor_layout, \
     _get_needed_rank_transform_operator_map_by_layouts, \
     _generate_transform_operator_stack, _apply_tensor_transform_operators, _construct_tensor_layout_for_opt_shard, \
@@ -686,6 +686,9 @@ def _transform_parallel_safetensor(rank_id, param_total_dict, param_attr_dict, s
                 continue
             origin_tensor_shape += (item * param_strategy[i],)
 
+        has_layout_from = any(isinstance(i, (list, tuple)) for i in from_tensor_map)
+        has_layout_to = any(isinstance(i, (list, tuple)) for i in to_tensor_map_origin)
+
         from_dev_matrix, from_tensor_map, from_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
             from_dev_matrix, from_tensor_map, from_opt_shard_step, from_opt_shard_size, origin_tensor_shape)
         to_dev_matrix, to_tensor_map, to_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
@@ -705,6 +708,7 @@ def _transform_parallel_safetensor(rank_id, param_total_dict, param_attr_dict, s
         from_info_tuple = (from_opt_shard_size, from_dev_matrix, from_tensor_map, from_full_tensor_shape)
         to_info_tuple = (to_opt_shard_size, to_dev_matrix_origin, to_tensor_map_origin, origin_tensor_shape)
         _insert_opt_shard_reshape(param_rank_map, from_info_tuple, to_info_tuple)
+        _insert_expand_layout_reshape(param_rank_map, from_info_tuple, to_info_tuple, has_layout_from, has_layout_to)
         transform_operator_stack = _generate_transform_operator_stack(param_rank_map, rank_id)
         param_total_dict_copy = param_total_dict[param_name].copy()
         _apply_tensor_transform_operators(transform_operator_stack, param_total_dict_copy, device_num)
@@ -1116,6 +1120,9 @@ def _load_parallel_checkpoint(file_info):
                     continue
                 origin_tensor_shape += (item * param_strategy[i],)
 
+            has_layout_from = any(isinstance(i, (list, tuple)) for i in from_tensor_map)
+            has_layout_to = any(isinstance(i, (list, tuple)) for i in to_tensor_map_origin)
+
             from_dev_matrix, from_tensor_map, from_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
                 from_dev_matrix, from_tensor_map, from_opt_shard_step, from_opt_shard_size, origin_tensor_shape)
             to_dev_matrix, to_tensor_map, to_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
@@ -1135,6 +1142,8 @@ def _load_parallel_checkpoint(file_info):
             from_info_tuple = (from_opt_shard_size, from_dev_matrix, from_tensor_map, from_full_tensor_shape)
             to_info_tuple = (to_opt_shard_size, to_dev_matrix_origin, to_tensor_map_origin, origin_tensor_shape)
             _insert_opt_shard_reshape(param_rank_map, from_info_tuple, to_info_tuple)
+            _insert_expand_layout_reshape(param_rank_map, from_info_tuple, to_info_tuple,
+                                          has_layout_from, has_layout_to)
             transform_operator_stack = _generate_transform_operator_stack(param_rank_map, local_rank_id)
             start_time = time.time()
             slice_param = _apply_sf_obj_transform_operators(transform_operator_stack, sf_obj, device_num)

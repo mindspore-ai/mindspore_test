@@ -16,7 +16,7 @@ import numpy as np
 from mindspore.parallel._tensor import _transform_tensor_by_layout, _get_needed_rank_list_by_layouts, \
     _get_needed_rank_transform_operator_map_by_layouts, _generate_transform_operator_stack, \
     _apply_tensor_transform_operators, _construct_from_to_tensor_layout, _construct_tensor_layout_for_opt_shard, \
-    _get_tensor_strategy
+    _get_tensor_strategy, _construct_tensor_layout_for_opt_shard_by_layout
 
 
 def test_transform_tensor_by_layout_allconcat_axis_1():
@@ -593,3 +593,61 @@ def test_transform_parallel_checkpoint_2():
         first_value = (rank % 2) * 8 + (rank // 2) * 2
         assert np.all(result[0] == first_value)
         assert np.all(result[1] == first_value + 1)
+
+
+def test_construct_tensor_layout_for_opt_shard_by_layout():
+    """
+    Feature: construct tensor layout for optimizer shard.
+    Description: construct tensor layout for optimizer shard, one repeated dim fully sharded.
+    Expectation: assert no error.
+    """
+    dev_matrix = [8, 2, 4]
+    tensor_map = [-1, [0, 1]]
+    opt_shard_step = 8
+    opt_shard_size = 8
+    origin_full_tensor_shape = [16, 16]
+    new_dev_matrix, new_tensor_map, full_tensor_shape = \
+    _construct_tensor_layout_for_opt_shard_by_layout(dev_matrix, tensor_map, opt_shard_step,
+                                                     opt_shard_size, origin_full_tensor_shape)
+    assert new_dev_matrix == [8, 2, 4]
+    assert new_tensor_map == [-1, 2, [0, 1]]
+    assert full_tensor_shape == [1, 16, 16]
+
+
+def test_construct_tensor_layout_for_opt_shard_by_layout_reshape_dev_mat():
+    """
+    Feature: construct tensor layout for optimizer shard.
+    Description: construct tensor layout for optimizer shard, multi repeated dim fully sharded.
+    Expectation: assert no error.
+    """
+    dev_matrix = [4, 2, 4, 2]
+    tensor_map = [[2, 3], -1]
+    opt_shard_step = 8
+    opt_shard_size = 4
+    origin_full_tensor_shape = [32, 8]
+    new_dev_matrix, new_tensor_map, full_tensor_shape = \
+    _construct_tensor_layout_for_opt_shard_by_layout(dev_matrix, tensor_map, opt_shard_step,
+                                                     opt_shard_size, origin_full_tensor_shape)
+    assert new_dev_matrix == [4, 2, 2, 2, 2]
+    assert new_tensor_map == [[3, 4], 1, 0, -1]
+    assert full_tensor_shape == [8, 2, 2, 8]
+
+
+def test_construct_tensor_layout_for_opt_shard_by_layout_multi_repeat_dim():
+    """
+    Feature: construct tensor layout for optimizer shard.
+    Description: construct tensor layout for optimizer shard, multi repeated dim fully sharded,
+    need reshape device matrix.
+    Expectation: assert no error.
+    """
+    dev_matrix = [4, 2, 2, 4]
+    tensor_map = [[0, 1], -1]
+    opt_shard_step = 8
+    opt_shard_size = 8
+    origin_full_tensor_shape = [32, 8]
+    new_dev_matrix, new_tensor_map, full_tensor_shape = \
+    _construct_tensor_layout_for_opt_shard_by_layout(dev_matrix, tensor_map, opt_shard_step,
+                                                     opt_shard_size, origin_full_tensor_shape)
+    assert new_dev_matrix == [4, 2, 2, 4]
+    assert new_tensor_map == [[0, 1], 3, 2, -1]
+    assert full_tensor_shape == [8, 4, 1, 8]

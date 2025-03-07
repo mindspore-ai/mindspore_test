@@ -456,7 +456,7 @@ void SliceParameterObj(const ParameterPtr &parameter, const TensorLayoutPtr &ten
     auto obj_list = py::cast<py::list>(cloned_py_obj);
     for (size_t i = 0; i < obj_list.size(); ++i) {
       py::object each_cloned_obj = obj_list[i];
-      auto cloned_param_slice_shape = tensor_layout->slice_shape().array();
+      auto cloned_param_slice_shape = tensor_layout->base_slice_shape().array();
       if (!opt_shard_group.empty()) {
         if (!IsAccuGradObj(each_cloned_obj) || grad_accumulation_shard) {
           cloned_param_slice_shape = tensor_layout->opt_shard_slice_shape();

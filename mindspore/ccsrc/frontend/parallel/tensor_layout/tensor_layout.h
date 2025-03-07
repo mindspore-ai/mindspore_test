@@ -179,6 +179,8 @@ class TensorLayout {
   void set_fine_grain_block_index(int64_t fine_grain_block_index) { fine_grain_block_index_ = fine_grain_block_index; }
 
   int64_t fine_grain_block_index() { return fine_grain_block_index_; }
+
+  bool init_from_extend_vector() const { return init_from_extend_vector_; }
   // Key for user data.
   constexpr static char key[] = "TLayout";
 
@@ -215,6 +217,7 @@ class TensorLayout {
   int32_t opt_weight_shard_step_ = 0;
   int32_t opt_weight_shard_size_ = 0;
   bool is_shared_param_ = false;
+  bool init_from_extend_vector_ = false;
 };
 }  // namespace parallel
 }  // namespace mindspore
