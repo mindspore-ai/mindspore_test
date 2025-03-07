@@ -112,8 +112,8 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             alias_func_mapping (dict): A dictionary mapping function name to its alias function names.
         """
 
-        all_op_func_data, single_op_func_data, overload_op_func_data, _ = op_api_proto.categorize_func_data(
-            func_protos_data)
+        all_op_func_data, single_op_func_data, overload_op_func_data, op_class_name_set = \
+            op_api_proto.categorize_func_data(func_protos_data)
 
         tensor_method_list = self._get_op_enum_name_list(op_protos)
         func_call_body_list = []
@@ -123,9 +123,12 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             overload_op_func_data, func_call_body_list)
         merge_func_call_body = pyboost_utils.merge_strings_by_chunk_size(
             func_call_body_list)
-
+        ops_inc_head_set = set()
+        for op_class_name in op_class_name_set:
+            ops_inc_head_set.add(template.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_class_name[0].lower()))
         for i, func_body_chunk_str in enumerate(merge_func_call_body):
             tensor_api_source = self.TENSOR_API_SOURCE.replace(
+                ops_inc=list(sorted(ops_inc_head_set)),
                 tenosr_func_call_body=func_body_chunk_str)
             save_file(os.path.join(work_path, K.TENSOR_API_PATH), f"tensor_api_{i}.cc",
                       tensor_api_source)

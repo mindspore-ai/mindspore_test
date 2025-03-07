@@ -27,7 +27,6 @@
 #include "include/common/utils/primfunc_utils.h"
 #include "ops/op_def.h"
 #include "include/common/visible.h"
-#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pynative {

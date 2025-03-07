@@ -27,6 +27,7 @@
 #include "pynative/pynative_utils.h"
 #include "op_def/auto_generate/gen_ops_def.h"
 #include "pynative/op_function/customize/direct_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 
 namespace mindspore::pynative {
 py::object Pyboost_Empty_OP(const PrimitivePtr &prim, const std::vector<mindspore::ops::OP_DTYPE> &source_type,
