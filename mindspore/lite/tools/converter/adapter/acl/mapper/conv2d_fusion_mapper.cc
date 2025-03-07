@@ -72,7 +72,6 @@ std::shared_ptr<CNode> Conv2DFusionMapper::CreateTransQuantParamV2(const FuncGra
   std::vector<int64_t> shape_vector = {static_cast<int64_t>(per_channel_size)};
   auto buf = std::make_unique<float[]>(per_channel_size);
   MS_CHECK_TRUE_RET(buf != nullptr, nullptr);
-  // QuantConv scale = scale1 * scale2
   for (uint64_t i = 0; i < per_channel_size; i++) {
     buf[i] = scale_x1 * quant_params_x2.at(i).scale;
     if (quant_params_x2.at(i).zeroPoint != 0) {
@@ -187,8 +186,8 @@ int Conv2DFusionMapper::ReplaceConvToQuantConv(const FuncGraphPtr &func_graph, c
   MS_CHECK_TRUE_RET(qaunt_conv_cnode != nullptr, RET_ERROR);
   qaunt_conv_cnode->set_fullname_with_scope(cnode->fullname_with_scope() + "_quant_conv");
   MS_CHECK_TRUE_RET(cnode->abstract() != nullptr, RET_ERROR);
-  auto abstract = cnode->abstract()->Clone();
-  abstract->set_type(kFloat16);
+  auto abs_shape_ptr = cnode->abstract()->GetShape();
+  auto abstract = std::make_shared<abstract::AbstractTensor>(TypeIdToType(TypeId::kNumberTypeFloat16), abs_shape_ptr);
   qaunt_conv_cnode->set_abstract(abstract);
   MS_LOG(INFO) << "QuantConv name: " << qaunt_conv_cnode->fullname_with_scope()
                << ", prim name: " << quant_conv_prim->name() << ", input1: " << input1->DebugString()
