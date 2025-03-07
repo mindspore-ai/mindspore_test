@@ -280,6 +280,8 @@ Other Operations
     mindspore.mint.diag
     mindspore.mint.flatten
     mindspore.mint.flip
+    mindspore.mint.fliplr
+    mindspore.mint.flipud
     mindspore.mint.repeat_interleave
     mindspore.mint.searchsorted
     mindspore.mint.tril

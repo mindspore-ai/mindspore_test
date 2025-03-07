@@ -469,6 +469,12 @@ from mindspore.ops.function.array_func import hstack
 # 826
 from mindspore.ops.functional_overload import floor_divide
 
+# 884
+from mindspore.ops.function.nn_func import fliplr
+
+# 885
+from mindspore.ops.function.nn_func import flipud
+
 # 887
 from mindspore.ops.auto_generate import log2_ext as log2
 
@@ -2064,6 +2070,12 @@ __all__ = [
 
     # 826
     'floor_divide',
+
+    # 884
+    'fliplr',
+
+    # 885
+    'flipud',
 
     # 887
     'log2',
