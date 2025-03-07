@@ -24,6 +24,7 @@ from tests.mark_utils import arg_mark
 
 from tests.st.utils import test_utils
 
+context.set_context(jit_level='O0')
 set_seed(123456)
 np.random.seed(123456)
 

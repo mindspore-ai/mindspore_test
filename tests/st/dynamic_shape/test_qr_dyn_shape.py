@@ -20,6 +20,8 @@ from mindspore import ops
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
+context.set_context(jit_level='O0')
+
 
 @test_utils.run_with_cell
 def qr_forward_func(x, full_matrices):

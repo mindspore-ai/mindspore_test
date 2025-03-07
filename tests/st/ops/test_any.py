@@ -15,11 +15,13 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, jit
+from mindspore import ops, jit, context
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.common.random_generator import generate_numpy_ndarray_by_randn
 from tests.mark_utils import arg_mark
+
+context.set_context(jit_level='O0')
 
 
 def generate_random_input(shape, dtype):

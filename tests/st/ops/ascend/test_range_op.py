@@ -14,7 +14,6 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 import numpy as np
-import pytest
 
 import mindspore.common.dtype as mstype
 import mindspore.context as context
@@ -41,6 +40,7 @@ def test_range_int64():
     Description: test the Range when input is int64.
     Expectation: result is right.
     """
+    context.set_context(jit_level='O0')
     range_net = RangeNet()
     ms_out = range_net(Tensor(2, mstype.int64), Tensor(5, mstype.int64), Tensor(1, mstype.int64)).asnumpy()
     np_expected = np.array([2, 3, 4])

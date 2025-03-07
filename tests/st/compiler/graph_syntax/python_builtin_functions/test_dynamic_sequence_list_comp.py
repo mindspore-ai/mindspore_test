@@ -67,6 +67,7 @@ def test_dynamic_sequence_list_comp_3():
     Description: support dynamic length sequence as the input of ListComprehension
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class InnerClass(nn.Cell):
         def construct(self, x):
             x = [i for i in range(len(x))]

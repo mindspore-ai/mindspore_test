@@ -23,6 +23,7 @@ from mindspore.ops.functional import vmap
 
 context.set_context(mode=context.GRAPH_MODE,
                     device_target="Ascend")
+context.set_context(jit_level='O0')
 
 
 class Net(nn.Cell):

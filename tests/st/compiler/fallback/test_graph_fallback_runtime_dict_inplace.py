@@ -22,6 +22,7 @@ from tests.mark_utils import arg_mark
 
 
 context.set_context(mode=context.GRAPH_MODE)
+context.set_context(jit_level='O0')
 
 global_dict_1 = {"1": 1}
 
@@ -254,7 +255,7 @@ def test_dict_inplace_setitem_with_attribute():
     Description: Dict after inplace operation should keep object not changed.
     Expectation: No exception.
     """
-
+    context.set_context(jit_level='O0')
     class Net(nn.Cell):
         def __init__(self, x):
             super(Net, self).__init__()
@@ -281,7 +282,7 @@ def test_dict_inplace_setitem_with_attribute_2():
     Description: Dict after inplace operation should keep object not changed.
     Expectation: No exception.
     """
-
+    context.set_context(jit_level='O0')
     @jit_class
     class AttrClass():
         def __init__(self, x):

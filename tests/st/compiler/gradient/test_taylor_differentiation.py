@@ -22,6 +22,8 @@ from mindspore import Tensor
 from mindspore.ops.functional import jet, derivative
 from tests.mark_utils import arg_mark
 
+context.set_context(jit_level='O0')
+
 
 class MultipleInputSingleOutputNet(nn.Cell):
     def __init__(self):

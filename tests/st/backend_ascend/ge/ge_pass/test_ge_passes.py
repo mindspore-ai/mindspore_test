@@ -14,6 +14,9 @@
 # ============================================================================
 import tests.st.backend_ascend.ge.ge_test_utils as utils
 from tests.mark_utils import arg_mark
+from mindspore import context
+
+context.set_context(jit_level='O0')
 
 
 

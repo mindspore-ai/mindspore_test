@@ -15,12 +15,14 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import Tensor
+from mindspore import Tensor, context
 from mindspore.mint.linalg import qr
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 import scipy
+
+context.set_context(jit_level='O0')
 
 
 def syminvadj_np(mat):
