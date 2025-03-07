@@ -32,20 +32,16 @@
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
 #include "kernel/framework_utils.h"
-#include "include/backend/debug/profiler/profiling.h"
+#include "debug/profiler/profiling.h"
 #include "include/backend/optimizer/helper.h"
 #include "base/base_ref_utils.h"
 #include "include/common/debug/dump_proto.h"
 #include "include/common/utils/parallel_context.h"
-#ifdef ENABLE_DEBUGGER
-#include "include/backend/debug/debugger/debugger.h"
-#endif
 #ifdef ENABLE_DUMP_IR
 #include "include/common/debug/anf_ir_dump.h"
 #endif
-#include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/optimizer/graph_optimizer.h"
-#include "include/common/profiler.h"
+#include "debug/profiler/profiler.h"
 #include "include/common/utils/compile_cache_context.h"
 #include "utils/phase.h"
 #include "pipeline/jit/ps/base.h"
@@ -248,8 +244,6 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
   AnfAlgo::AddOutInRefToGraph(graph);
 
   session_->RecurseSetSummaryNodesForAllGraphs(graph.get());
-  // Update needed dump kernels for mindRT.
-  DumpJsonParser::GetInstance().UpdateNeedDumpKernels(*graph.get());
 
   // dynamic shape pass of graphmode
   if (graph->is_dynamic_shape()) {
@@ -283,17 +277,6 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
   // Dump .pb graph after graph optimization.
   if (context->CanDump(kIntroductory)) {
     DumpIRProto(graph, "after_opt_" + std::to_string(graph->graph_id()));
-  }
-#endif
-
-#ifdef ENABLE_DEBUGGER
-  auto debugger = Debugger::GetInstance();
-  MS_EXCEPTION_IF_NULL(debugger);
-  // Dump graph for GPU mindRT if dump is enabled.
-  debugger->DumpInGraphCompiler(graph);
-  if (debugger && debugger->DebuggerBackendEnabled()) {
-    // Load graphs for GPU and Ascend mindRT.
-    debugger->LoadGraphs(graph);
   }
 #endif
 

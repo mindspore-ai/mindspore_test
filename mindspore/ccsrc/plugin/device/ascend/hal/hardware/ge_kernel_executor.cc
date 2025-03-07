@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <deque>
 #include "include/common/utils/parallel_context.h"
-#include "include/common/profiler.h"
+#include "debug/profiler/profiler.h"
 #include "common/kernel.h"
 #include "mindapi/base/type_id.h"
 #include "mindspore/ops/op_def/array_ops.h"
@@ -70,7 +70,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/backend/debug/data_dump/overflow_dumper.h"
-#include "include/backend/debug/profiler/profiling.h"
+#include "debug/profiler/profiling.h"
 #include "utils/anf_utils.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
@@ -350,8 +350,6 @@ void InlineSubGraph(const KernelGraphPtr &graph, const KernelGraphPtr &sub_graph
   // Inline graph boundary: MakeTuple---->Depend---->Tensormove
   // Avoid long link times at runtime
   if (last_call != nullptr) {
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
     static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
     if (!enable_infer_boost) {
       auto value_node = graph->NewValueNode(MakeValue(std::make_shared<tensor::Tensor>(1)));

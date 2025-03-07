@@ -21,6 +21,8 @@
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
 #include <libgen.h>
 #include <linux/limits.h>
+#include <unistd.h>
+#include <sys/types.h>
 #include <sys/syscall.h>
 #endif
 #include <stdint.h>
@@ -44,7 +46,7 @@ constexpr uint32_t kBatchMaxLen = 5 * 1024 * 1024;  // 5 MB
 constexpr uint32_t kMaxWaitTimeUs = 100 * 1000;
 constexpr uint32_t kMaxWaitTimes = 10;
 
-class COMMON_EXPORT Utils {
+class PROFILER_EXPORT Utils {
  public:
   static bool IsFileExist(const std::string &path);
   static bool IsFileWritable(const std::string &path);
@@ -61,7 +63,7 @@ class COMMON_EXPORT Utils {
 };
 
 template <typename T>
-class COMMON_EXPORT RingBuffer {
+class PROFILER_EXPORT RingBuffer {
  public:
   RingBuffer()
       : is_inited_(false),
@@ -92,7 +94,7 @@ class COMMON_EXPORT RingBuffer {
   std::vector<T> data_queue_;
 };
 
-struct COMMON_EXPORT BaseReportData {
+struct PROFILER_EXPORT BaseReportData {
   int32_t device_id{0};
   std::string tag;
   BaseReportData(int32_t device_id, std::string tag) : device_id(device_id), tag(std::move(tag)) {}
@@ -100,7 +102,7 @@ struct COMMON_EXPORT BaseReportData {
   virtual std::vector<uint8_t> encode() = 0;
 };
 
-enum class COMMON_EXPORT OpRangeDataType {
+enum class PROFILER_EXPORT OpRangeDataType {
   OP_RANGE_DATA = 1,
   IS_ASYNC = 2,
   NAME = 3,
@@ -113,7 +115,7 @@ enum class COMMON_EXPORT OpRangeDataType {
   RESERVED = 30,
 };
 
-struct COMMON_EXPORT OpRangeData : BaseReportData {
+struct PROFILER_EXPORT OpRangeData : BaseReportData {
   int64_t start_ns{0};
   int64_t end_ns{0};
   int64_t sequence_number{0};
@@ -159,7 +161,7 @@ struct COMMON_EXPORT OpRangeData : BaseReportData {
   std::vector<uint8_t> encode();
 };
 
-class COMMON_EXPORT ProfilingDataDumper {
+class PROFILER_EXPORT ProfilingDataDumper {
  public:
   void Init(const std::string &path, int32_t rank_id, size_t capacity = kDefaultRingBuffer);
   void UnInit();

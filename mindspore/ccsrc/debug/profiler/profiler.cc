@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#include "include/common/profiler.h"
+#include "debug/profiler/profiler.h"
 #include <functional>
 #include <iomanip>
 #include <utility>
 #include "utils/file_utils.h"
-#include "include/common/debug/common.h"
+#include "debug/profiler/utils.h"
 #ifdef ENABLE_DEBUGGER
-#include "include/backend/debug/profiler/profiling.h"
-#include "common/debug/profiler/profiling_framework_data.h"
+#include "debug/profiler/profiling.h"
+#include "debug/profiler/profiling_framework_data.h"
 #endif
 
 namespace mindspore {
@@ -54,8 +54,8 @@ static const char kDetailInfoFileName[] = "RuntimeProfilerDetail";
 
 namespace {
 std::string GetRealPathName(const std::string &name) {
-  auto path_name = GetSaveGraphsPathName(name);
-  auto real_path = mindspore::Common::CreatePrefixPath(path_name);
+  auto path_name = mindspore::profiler::Utils::GetSaveGraphsPathName(name);
+  auto real_path = mindspore::profiler::Utils::CreatePrefixPath(path_name);
   if (!real_path.has_value()) {
     MS_LOG(ERROR) << "Get real path failed, path: " << path_name;
     return ("./" + name);

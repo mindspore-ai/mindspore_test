@@ -29,7 +29,7 @@
 #include "utils/ms_context.h"
 #include "include/common/utils/primitive_utils.h"
 #include "utils/check_convert_utils.h"
-#include "include/common/profiler.h"
+#include "debug/profiler/profiler.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "include/common/utils/tensor_py.h"
 #include "utils/flags.h"

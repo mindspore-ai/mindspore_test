@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/backend/debug/profiler/data_saver.h"
+#include "debug/profiler/data_saver.h"
 #include <fstream>
 #include <numeric>
 #include "sys/stat.h"
 #include "utils/ms_utils.h"
-#include "include/common/debug/common.h"
+#include "debug/profiler/utils.h"
 
 namespace mindspore {
 namespace profiler {
@@ -228,7 +228,7 @@ void DataSaver::ParseMemoryInfo(const MemoryInfoList &memory_info_list) {
 
 void DataSaver::WriteMemoryData(const std::string &saver_base_dir) {
   std::string file_path = saver_base_dir + "/" + op_side_ + "_ms_memory_record_" + device_id_ + ".txt";
-  auto realpath = Common::CreatePrefixPath(file_path);
+  auto realpath = mindspore::profiler::Utils::CreatePrefixPath(file_path);
   if (!realpath.has_value()) {
     MS_LOG(ERROR) << "Get realpath failed, path=" << file_path;
     return;

@@ -40,7 +40,7 @@
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "include/common/runtime_conf/thread_bind_core.h"
 #include "runtime/pipeline/pipeline.h"
-#include "include/common/profiler.h"
+#include "debug/profiler/profiler.h"
 #include "actor/actormgr.h"
 #include "async/async.h"
 #include "include/backend/device_address.h"
@@ -67,7 +67,7 @@
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif
-#include "include/backend/debug/profiler/profiling.h"
+#include "debug/profiler/profiling.h"
 #include "include/common/debug/common.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/collective/collective_manager.h"

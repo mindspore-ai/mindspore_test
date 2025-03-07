@@ -116,7 +116,6 @@ class BACKEND_EXPORT GEBackend : public BackendBase {
 
   // for acl dump
   bool DebugOnStepBegin(const KernelGraphPtr &func_graph);
-  bool ACLDump(uint32_t device_id, const KernelGraphPtr &graph);
   void DebugOnStepEnd(const KernelGraphPtr &graph, const device::DeviceContext *device_context, bool dump_flag);
 
   // for profiling

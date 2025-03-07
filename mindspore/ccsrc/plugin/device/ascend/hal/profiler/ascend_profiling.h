@@ -20,8 +20,8 @@
 #include "acl/acl_prof.h"
 #include "include/backend/kernel_graph.h"
 #include "common/kernel.h"
-#include "common/debug/profiler/profiling_data_dumper.h"
-#include "include/backend/debug/profiler/profiling.h"
+#include "debug/profiler/profiling_data_dumper.h"
+#include "debug/profiler/profiling.h"
 
 namespace mindspore {
 namespace profiler {

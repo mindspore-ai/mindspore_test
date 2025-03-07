@@ -29,7 +29,7 @@
 #include "common/kernel.h"
 #include "common/ms_factory.h"
 #include "include/common/utils/utils.h"
-#include "include/common/profiler.h"
+#include "debug/profiler/profiler.h"
 #include "runtime/pynative/op_runtime_info.h"
 #include "kernel/ascend/acl_ir/acl_convert.h"
 #include "kernel/ascend/acl_ir/op_api_exec.h"

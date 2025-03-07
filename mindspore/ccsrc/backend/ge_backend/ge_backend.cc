@@ -20,21 +20,20 @@
 #include <set>
 #include <utility>
 #include <queue>
+#include <regex>
 #include "backend/ge_backend/pass/ge_backend_optimization.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "ir/manager.h"
 #include "runtime/device/device_address_utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/config_manager.h"
-#include "include/backend/debug/profiler/profiling.h"
-#include "include/common/profiler.h"
+#include "debug/profiler/profiling.h"
+#include "debug/profiler/profiler.h"
 #include "include/backend/device_address.h"
 #include "utils/file_utils.h"
-#include "debug/data_dump/data_dumper.h"
 #ifndef ENABLE_SECURITY
-#include "debug/hooker/hook_debugger.h"
-#include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "include/backend/debug/data_dump/e2e_dump.h"
+#include "backend/ge_backend/dump/hook_debugger.h"
+#include "backend/ge_backend/dump/deprecated_env.h"
 #endif
 #include "debug/summary/summary.h"
 #include "include/common/utils/callbacks.h"
@@ -316,13 +315,7 @@ GEBackend::GEBackend() {
   graph_compiler_ = std::make_shared<mindspore::ge_backend::runtime::GraphCompiler>();
   mindspore::ge_backend::runtime::GraphScheduler::GetInstance().Initialize();
 #ifdef ENABLE_DEBUGGER
-  // SetDebuggerInit
-  auto debugger = Debugger::GetInstance();
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  MS_EXCEPTION_IF_NULL(debugger);
-  debugger->Init(ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID),
-                 ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET));
+  dump::CheckDeprecatedDumpEnv();
 #endif
 }
 
@@ -1442,19 +1435,7 @@ void GEBackend::RunWholeGraph(BackendGraphId graph_id, const VectorRef &inputs, 
 
 // for data_dump
 #ifndef ENABLE_SECURITY
-  bool debugger_actor_need = DumpJsonParser::GetInstance().e2e_dump_enabled();
-  if (common::GetEnv("MS_HOOK_ENABLE") == "on") {
-    debugger_actor_need = True;
-  }
-#endif
-#ifdef ENABLE_DEBUGGER
-  auto debugger = Debugger::GetInstance();
-  MS_EXCEPTION_IF_NULL(debugger);
-  if (debugger->DebuggerBackendEnabled()) {
-    debugger_actor_need = true;
-  }
-#endif
-#ifndef ENABLE_SECURITY
+  bool debugger_actor_need = common::GetEnv("MS_HOOK_ENABLE") == "on";
   bool dump_flag = false;
   if (debugger_actor_need) {
     dump_flag = DebugOnStepBegin(func_graph);
@@ -1524,12 +1505,6 @@ void GEBackend::RunWholeGraph(BackendGraphId graph_id, const VectorRef &inputs, 
 
 bool GEBackend::DebugOnStepBegin(const KernelGraphPtr &func_graph) {
   MS_LOG(INFO) << "Debug on step begin.";
-  if (common::GetEnv("ENABLE_MS_GE_DUMP") != "1" &&
-      ConfigManager::GetInstance().dataset_mode() == DatasetMode::DS_SINK_MODE &&
-      ConfigManager::GetInstance().iter_num() != 1) {
-    MS_LOG(EXCEPTION) << "When using acl dump in data sink mode, sink size must be 1, but got "
-                      << ConfigManager::GetInstance().iter_num() << ".";
-  }
   if (func_graph->IsDatasetGraph()) {
     return false;
   }
@@ -1539,67 +1514,13 @@ bool GEBackend::DebugOnStepBegin(const KernelGraphPtr &func_graph) {
   auto profiler = profiler::Profiler::GetInstance(kAscendDevice);
   if (profiler == nullptr || !profiler->IsInitialized()) {
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    auto &hookDebugger = hooker::HookDebugger::GetInstance();
+    auto &hookDebugger = dump::HookDebugger::GetInstance();
     if (hookDebugger.IsHookerEnabled()) {
+      MS_LOG(INFO) << "On step begin, hookdebugger is enable.";
       auto step_count_num = graph_run_iter_[func_graph];
       hookDebugger.HookOnStepBegin(device_id, func_graph, step_count_num, false);
       return true;
     }
-    if (common::GetEnv("ENABLE_MS_GE_DUMP") != "1") {
-      return ACLDump(device_id, func_graph);
-    }
-  }
-  return false;
-}
-
-bool GEBackend::ACLDump(uint32_t device_id, const KernelGraphPtr &graph) {
-  std::vector<std::string> all_kernel_names;
-  std::vector<std::string> set_dump_names;
-  auto all_kernels = graph->execution_order();
-  std::for_each(all_kernels.begin(), all_kernels.end(), [&](const auto &k) {
-    all_kernel_names.push_back(k->fullname_with_scope());
-    auto dump_flag = common::AnfAlgo::GetDumpFlag(k);
-    if (dump_flag.has_value() && dump_flag.value().compare("true") == 0) {
-      (set_dump_names).push_back(k->fullname_with_scope());
-    }
-  });
-
-  auto step_count_num = graph_run_iter_[graph];
-  if (ConfigManager::GetInstance().dataset_mode() == DatasetMode::DS_SINK_MODE) {
-    step_count_num = 0;
-  }
-  DumpJsonParser::GetInstance().UpdateDumpIter(step_count_num);
-  MS_LOG(INFO) << "Dump iter: " << step_count_num;
-
-  auto enable_ge_dump = common::GetEnv("ENABLE_MS_GE_DUMP");
-  if (DumpJsonParser::GetInstance().async_dump_enabled() && enable_ge_dump != "1") {
-    bool is_init = false;
-    if ((enable_ge_dump != "1") && !(DumpJsonParser::GetInstance().DumpEnabledForIter())) {
-      is_init = true;
-    } else {
-      std::string dump_path = DumpJsonParser::GetInstance().path();
-      std::string dump_path_step = dump_path + "/" + std::to_string(step_count_num);
-      auto real_path = FileUtils::CreateNotExistDirs(dump_path_step, false);
-      if (!real_path.has_value()) {
-        MS_LOG(WARNING) << "Fail to create acl dump dir " << real_path.value();
-        return false;
-      }
-    }
-    auto registered_dumper = datadump::DataDumperRegister::Instance().GetDumperForBackend(device::DeviceType::kAscend);
-    if (registered_dumper != nullptr) {
-      registered_dumper->Initialize();
-      if (DumpJsonParser::GetInstance().dump_mode() ==
-          static_cast<uint32_t>(mindspore::DumpJsonParser::JsonDumpMode::DUMP_KERNELS_WITH_FLAG)) {
-        if (set_dump_names.empty()) {
-          MS_LOG(WARNING) << "[set dump] There is no target with dump flag.";
-          set_dump_names.push_back("NoSetDumpTarget");
-        }
-        registered_dumper->EnableDump(device_id, step_count_num, is_init, set_dump_names);
-      } else {
-        registered_dumper->EnableDump(device_id, step_count_num, is_init, all_kernel_names);
-      }
-    }
-    return true;
   }
   return false;
 }
@@ -1609,17 +1530,12 @@ void GEBackend::DebugOnStepEnd(const KernelGraphPtr &graph, const device::Device
   if (!dump_flag) {
     return;
   }
-  MS_LOG(INFO) << "Debug on step end. dump_iter: " << DumpJsonParser::GetInstance().cur_dump_iter();
-  auto &hookDebugger = hooker::HookDebugger::GetInstance();
+  MS_LOG(INFO) << "Debug on step end.";
+  auto &hookDebugger = dump::HookDebugger::GetInstance();
   if (hookDebugger.IsHookerEnabled()) {
+    MS_LOG(INFO) << "On step end, hookdebugger is enable.";
     device_context->device_res_manager_->SyncAllStreams();
     hookDebugger.HookOnStepEnd();
-  } else {
-    auto registered_dumper = datadump::DataDumperRegister::Instance().GetDumperForBackend(device::DeviceType::kAscend);
-    if (registered_dumper != nullptr) {
-      device_context->device_res_manager_->SyncAllStreams();
-      registered_dumper->Finalize();
-    }
   }
   device_context->device_res_manager_->SyncAllStreams();
 }

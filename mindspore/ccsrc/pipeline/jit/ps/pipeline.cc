@@ -83,12 +83,12 @@
 #include "runtime/pynative/op_executor.h"
 #include "runtime/device/stream_synchronizer.h"
 #include "include/common/fallback.h"
-#include "include/common/profiler.h"
+#include "debug/profiler/profiler.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
 #include "include/backend/distributed/init.h"
-#include "include/backend/debug/profiler/profiling.h"
+#include "debug/profiler/profiling.h"
 #include "include/backend/debug/tft_adapter/tft_wait_sem.h"
 #include "kernel/graph_kernel/graph_kernel_builder_manager.h"
 #include "kernel/graph_kernel_info.h"
@@ -99,8 +99,6 @@
 #include "load_mindir/infer_mindir.h"
 #include "pipeline/jit/ps/pass_config.h"
 
-#include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "include/backend/debug/data_dump/acl_dump_json_writer.h"
 #include "abstract/abstract_value.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/constants.h"
