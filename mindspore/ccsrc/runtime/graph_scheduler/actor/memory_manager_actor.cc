@@ -424,7 +424,7 @@ void MemoryManagerActor::FreeMemoryByRefCount(DeviceTensor *const device_tensor,
     }
   } else if (device_tensor->dynamic_ref_count() != INT32_MAX) {
     // The dynamic reference count is decremented to zero to free memory.
-    if ((device_tensor->DecreaseDynamicRefCount(op_name) == 0) && (device_tensor->GetPtr() != nullptr)) {
+    if ((device_tensor->DecreaseDynamicRefCount(op_name) == 0) && device_tensor->IsPtrValid()) {
       device_tensor->ClearUserData();
       MS_LOG(DEBUG) << "Free memory by the dynamic reference count, device address" << device_tensor->GetPtr() << ".";
       if (device_tensor->deleter() != nullptr) {
