@@ -19,7 +19,7 @@ mindspore.Tensor.hardshrink
         :align: center
 
     .. note::
-        指数函数的输入Tensor。上述公式中的 :math:`x` 。支持数据类型：
+        指数函数的输入Tensor。对应上述公式中的 :math:`x` 。支持数据类型：
 
         - Ascend：float16、float32、bfloat16。
         - CPU/GPU：float16、float32。
