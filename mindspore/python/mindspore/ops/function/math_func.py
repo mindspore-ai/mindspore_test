@@ -1528,7 +1528,7 @@ def sgn(input):
 
 def cosine_similarity(x1, x2, dim=1, eps=1e-08):
     r"""
-    Calculate cosine similarity between `x1` and `x2` along the axis, `dim`.
+    Calculate cosine similarity between two input tensors along the specified dimension.
 
     .. math::
         \text{similarity} = \dfrac{x_1 \cdot x_2}{\max(\Vert x_1 \Vert _2 \cdot \Vert x_2 \Vert _2, \epsilon)}
@@ -1537,28 +1537,24 @@ def cosine_similarity(x1, x2, dim=1, eps=1e-08):
         Currently, broadcast of input is not supported.
 
     Args:
-        x1 (Tensor): The first input Tensor.
-        x2 (Tensor): The second input Tensor.
-        dim (int, optional): Axis for calculating cosine similarity. Default: ``1`` .
-        eps (float, optional): Minimal value to avoid division by zero. Default: ``1e-08`` .
+        x1 (Tensor): The first input tensor.
+        x2 (Tensor): The second input tensor.
+        dim (int, optional): Specify the dimension for computation. Default ``1`` .
+        eps (float, optional): Minimal value to avoid division by zero. Default ``1e-08`` .
 
     Returns:
-        Tensor, cosine similarity between x1 and x2.
-
-    Raises:
-        TypeError: If the dtype of x1 or x2 is neither float16 nor float32.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import ops
-        >>> x1 = ms.Tensor([[-0.0256, 0.0127, -0.2475, 0.2316, 0.8037],
-        ...                 [0.5809, -1.2712, -0.7038, -0.2558, 0.7494]], dtype=ms.float32)
-        >>> x2 = ms.Tensor([[-0.6115, -0.1965, -0.8484, 0.2389, 0.2409],
-        ...                 [1.8940, -2.1997, 0.1915, 0.0856, 0.7542]], dtype=ms.float32)
-        >>> output = ops.cosine_similarity(x1, x2)
+        >>> import mindspore
+        >>> input = mindspore.tensor([[-0.0256, 0.0127, -0.2475, 0.2316, 0.8037],
+        ...                           [0.5809, -1.2712, -0.7038, -0.2558, 0.7494]])
+        >>> other = mindspore.tensor([[-0.6115, -0.1965, -0.8484, 0.2389, 0.2409],
+        ...                           [1.8940, -2.1997, 0.1915, 0.0856, 0.7542]])
+        >>> output = mindspore.ops.cosine_similarity(input, other)
         >>> print(output)
         [0.4843164  0.81647635]
     """
@@ -6938,44 +6934,51 @@ def row_stack(tensors):
 
 def combinations(input, r=2, with_replacement=False):
     r"""
-    Returns all r-length subsequences of input Tensor.
+    Return all r-length subsequences of input tensor.
 
     When `with_replacement` is set to ``False``, it works similar to Python's
     `itertools.combinations`, and when `with_replacement` is set to ``True``,
     it behaves like `itertools.combinations_with_replacement`.
 
     Args:
-        input (Tensor): One-dimensional tensors.
-        r (int, optional): Number of elements to perform combination. Default: ``2`` .
-        with_replacement (bool, optional): Allow duplication or not. Default: ``False`` .
+        input (Tensor): One-dimensional input tensor.
+        r (int, optional): Number of elements to perform combination. Default ``2`` .
+        with_replacement (bool, optional): Allow duplication or not. Default ``False`` .
 
     Returns:
-        Tensor, contains all possible combinations of elements sampled from input Tensor.
-
-    Raises:
-        TypeError: If `input` is not a tensor.
-        TypeError: If `r` is not an int.
-        TypeError: If `with_replacement` is not bool.
-        ValueError: If `input` is not one-dimensional.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor([1, 3, -1, 0, 4])
-        >>> output = ops.combinations(input)
-        >>> print(output.asnumpy())
-        [[ 1  3]
-         [ 1 -1]
-         [ 1  0]
-         [ 1  4]
-         [ 3 -1]
-         [ 3  0]
-         [ 3  4]
-         [-1  0]
-         [-1  4]
-         [ 0  4]]
+        >>> import itertools
+        >>> input = [1, 2, 3]
+        >>> list(itertools.combinations(input, r=2))
+        >>> [(1, 2), (1, 3), (2, 3)]
+        >>> list(itertools.combinations(input, r=3))
+        >>> [(1, 2, 3)]
+        >>> list(itertools.combinations_with_replacement(input, r=2))
+        >>> [(1, 1), (1, 2), (1, 3), (2, 2), (2, 3), (3, 3)]
+        >>>
+        >>> import mindspore
+        >>> input = mindspore.tensor(input)
+        >>> mindspore.ops.combinations(input)
+        >>> Tensor(shape=[3, 2], dtype=Int64, value=
+        >>> [[1, 2],
+        >>>  [1, 3],
+        >>>  [2, 3]])
+        >>> mindspore.ops.combinations(input, r=3)
+        >>> Tensor(shape=[1, 3], dtype=Int64, value=
+        >>> [[1, 2, 3]])
+        >>> mindspore.ops.combinations(input, with_replacement=True)
+        >>> Tensor(shape=[6, 2], dtype=Int64, value=
+        >>> [[1, 1],
+        >>>  [1, 2],
+        >>>  [1, 3],
+        >>>  [2, 2],
+        >>>  [2, 3],
+        >>>  [3, 3]])
     """
 
     def _combinations(iterable, r):
@@ -7085,33 +7088,34 @@ def dist(input, other, p=2):
 
 def copysign(x, other):
     r"""
-    Create a new floating-point tensor with the magnitude of `x` and the sign of `other`, element-wise.
+    Create a float tensor composed of the absolute values of `x` and the signs of `other` .
+    Support broadcasting.
 
     Args:
-        x (Union[Tensor]): Values to change the sign of.
-        other (Union[int, float, Tensor]): The sign of `other` is copied to `x`. If `x.shape != other.shape`,
-            `other` must be broadcastable to the shape of `x` (which is also the shape of the output).
+        x (Union[Tensor]): The input tensor.
+        other (Union[int, float, Tensor]): A tensor that determines the sign of the return value.
 
     Returns:
-        Tensor. The dtype of the tensor is float.
-        The values of `x` with the sign of `other`, the shape is the same as `x`.
-
-    Raises:
-        TypeError: If dtype of the input is not in the given types or
-            the input can not be converted to tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore.numpy as np
-        >>> from mindspore import ops
-        >>> x = np.array([[0.3, -0.7], [0.5, 0.5]])
-        >>> other = np.array([[-0.4, 0.6], [0.4, -0.6]])
-        >>> out = ops.copysign(x, other)
-        >>> print(out)
+        >>> import mindspore
+        >>> # case 1: When other is a tensor
+        >>> x = mindspore.tensor([[0.3, -0.7],
+        ...                       [0.5, 0.5]])
+        >>> other = mindspore.tensor([-0.4, 0.6])
+        >>> output = mindspore.ops.copysign(x, other)
+        >>> print(output)
         [[-0.3  0.7]
-         [ 0.5 -0.5]]
+         [-0.5  0.5]]
+        >>> # case 2: When other is a scalar
+        >>> output = mindspore.ops.copysign(x, 2)
+        >>> print(output)
+        [[0.3 0.7]
+         [0.5 0.5]]
     """
 
     def _broadcast_to_shape(x, shape):
@@ -11652,47 +11656,63 @@ def nansum(input, axis=None, keepdims=False, *, dtype=None):
 
 def diag_embed(input, offset=0, dim1=-2, dim2=-1):
     r"""
-    Creates a tensor with diagonals filled by `input`. The remaining elements are filled by 0.
-    If the shape of `input` is :math:`[x_{0}, x_{1}, ..., x_{n-1}, x_{n}]`, the output shape is: the vector obtained
-    by inserting :math:`x_{n}+|offset|` into the vector :math:`[x_{0}, x_{1}, ..., x_{n-1}]`
-    at position `dim1` and `dim2`.
+    Create a tensor whose diagonals of certain 2D planes (specified by `dim1` and `dim2`) are filled by `input`, and
+    all other positions are set to ``0``. The 2D planes formed by the last two dimensions of the returned tensor are
+    chosen by default.
 
     Args:
         input (Tensor): Values to fill diagonal.
-        offset (int, optional): Offset of the diagonal. :math:`offset=0` refers to the main diagonal. Default: ``0`` .
+        offset (int, optional): Diagonal offset. Default ``0`` .
 
-            - If :math:`offset>0`, fill the diagonals that are `offset` units upward from the main diagonal.
-            - If :math:`offset<0`, fill the diagonals that are `|offset|` units downward from the main diagonal.
-
-        dim1 (int, optional): The first dimension in `input` with respect to which to fill diagonal. Default: ``-2`` .
-        dim2 (int, optional): The second dimension in `input` with respect to which to fill diagonal. Default: ``-1`` .
+            - When `offset` is a positive integer, shift the diagonal upward.
+            - When `offset` is a negative integer, shift the diagonal downward.
+        dim1 (int, optional): The first dimension for diagonal filling. Default ``-2`` .
+        dim2 (int, optional): The second dimension for diagonal filling. Default ``-1`` .
 
     Returns:
-        Tensor, has the same dtype as `input`, but the shape of output is one dimension higher than the `input`.
+        A tensor with the same dtype as `input`, and with shape that has one dimension higher than the `input`.
 
     Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If dtype of `input` is not supported.
-        TypeError: If `offset` is not an int.
-        TypeError: If `dim1` or `dim2` is not an int.
         ValueError: If the dimension of `input` is not 1D-6D.
-        ValueError: If `dim1` is not in range of [-len(input.shape) - 1, len(input.shape)].
-        ValueError: If `dim2` is not in range of [-len(input.shape) - 1, len(input.shape)].
-        ValueError: If `dim1` and `dim2` are identical.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([2,3,4]), mindspore.float32)
-        >>> output = ops.diag_embed(x)
-        >>> print(output)
-        [[2. 0. 0.]
-         [0. 3. 0.]
-         [0. 0. 4.]]
+        >>> input = mindspore.tensor([[1, 2, 3],
+        ...                           [4, 5, 6],
+        ...                           [7, 8, 9]])
+        >>> mindspore.ops.diag_embed(input)
+        >>> Tensor(shape=[3, 3, 3], dtype=Int64, value=
+        [[[1, 0, 0],
+          [0, 2, 0],
+          [0, 0, 3]],
+         [[4, 0, 0],
+          [0, 5, 0],
+          [0, 0, 6]],
+         [[7, 0, 0],
+          [0, 8, 0],
+          [0, 0, 9]]])
+        >>> mindspore.ops.diag_embed(input, offset=1, dim1=0, dim2=1)
+        mindspore.ops.diag_embed(input, offset=1, dim1=0, dim2=1)
+        Tensor(shape=[4, 4, 3], dtype=Int64, value=
+        [[[0, 0, 0],
+          [1, 4, 7],
+          [0, 0, 0],
+          [0, 0, 0]],
+         [[0, 0, 0],
+          [0, 0, 0],
+          [2, 5, 8],
+          [0, 0, 0]],
+         [[0, 0, 0],
+          [0, 0, 0],
+          [0, 0, 0],
+          [3, 6, 9]],
+         [[0, 0, 0],
+          [0, 0, 0],
+          [0, 0, 0],
+          [0, 0, 0]]])
     """
 
     transpose_op = Transpose()

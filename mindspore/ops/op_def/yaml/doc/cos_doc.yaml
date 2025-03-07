@@ -4,32 +4,28 @@ cos:
 
         .. math::
             out_i = \cos(x_i)
-    
+
         .. warning::
             Using float64 may cause a problem of missing precision.
-    
-        Args:
-            input (Tensor): The shape of tensor is
-                :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
-    
-        Returns:
-            Tensor, has the same shape as the `input`. 
-            The dtype of output is float32 when dtype of `input` is in
-            [bool, int8, uint8, int16, int32, int64]. Otherwise output has the same dtype as the `input`.
 
-        :raise TypeError: If `input` is not a Tensor.
-        :raise TypeError:
-            * CPU/GPU: If dtype of `input` is not float16, float32 or float64, complex64, complex128.
-            * Ascend: If dtype of `input` is not bool, int8, uint8, int16, int32, int64, float16, float32, float64, complex64, complex128.
+        Args:
+            input (Tensor): The input tensor.
+  
+        Returns:
+            Tensor
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
     
         Examples:
             >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> input = Tensor(np.array([0.24, 0.83, 0.31, 0.09]), mindspore.float32)
-            >>> output = ops.cos(input)
-            >>> print(output)
-            [0.971338 0.6748758 0.95233357 0.9959527]
+            >>> # The data type of output will be float32 when `input` is in [bool, int8, uint8, int16, int32, int64].
+            >>> input = mindspore.tensor([0, 1, 2], mindspore.int32)
+            >>> mindspore.ops.cos(input)
+            Tensor(shape=[3], dtype=Float32, value= [ 1.00000000e+00,  5.40302306e-01, -4.16146837e-01])
+            >>>
+            >>> # Otherwise output has the same dtype as the `input`.
+            >>> input = mindspore.tensor([0.74, 0.04, 0.30, 0.56], mindspore.float64)
+            >>> mindspore.ops.cos(input)
+            Tensor(shape=[4], dtype=Float64, value= [ 7.38468559e-01,  9.99200107e-01,  9.55336489e-01,  8.47255111e-01])
+
