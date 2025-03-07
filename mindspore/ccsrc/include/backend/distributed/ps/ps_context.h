@@ -127,10 +127,10 @@ class BACKEND_EXPORT PSContext {
 
   void set_checkpoint_load_status(bool status);
 
-  int32_t StoreWarmUpPtrByTensor(int32_t param_key, const tensor::TensorPyPtr &tensorpy_ptr);
+  int32_t StoreWarmUpPtrByTensor(int32_t param_key, const py::object &tensorpy_ptr);
 
-  int32_t StoreWarmUpPtrByTensorList(int32_t param_key, const tensor::TensorPyPtr &key_ptr,
-                                     const tensor::TensorPyPtr &value_ptr, const tensor::TensorPyPtr &status_ptr);
+  int32_t StoreWarmUpPtrByTensorList(int32_t param_key, const py::object &key_ptr, const py::object &value_ptr,
+                                     const py::object &status_ptr);
 
  private:
   PSContext();

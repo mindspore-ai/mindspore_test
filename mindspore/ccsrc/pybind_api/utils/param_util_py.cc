@@ -26,7 +26,7 @@
 
 namespace mindspore {
 namespace {
-int SendRecv(const std::vector<tensor::TensorPyPtr> &params, int src_rank, int dst_rank) {
+int SendRecv(const std::vector<py::object> &params, int src_rank, int dst_rank) {
   const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   auto device_ctx = device::DeviceContextManager::GetInstance().GetDeviceContext(device_name);
   MS_EXCEPTION_IF_NULL(device_ctx);
@@ -34,11 +34,11 @@ int SendRecv(const std::vector<tensor::TensorPyPtr> &params, int src_rank, int d
   device::DeviceContextManager::GetInstance().SyncAllStreams();
   tensor::TensorPtrList params_;
   (void)std::transform(params.begin(), params.end(), std::back_inserter(params_),
-                       [](const tensor::TensorPyPtr &p) { return p->GetTensor(); });
+                       [](const py::object &p) { return tensor::ConvertToTensor(p); });
   return device_ctx->device_res_manager_->SendRecv(params_, src_rank, dst_rank);
 }
 
-int ResetParams(const std::vector<tensor::TensorPyPtr> &params) {
+int ResetParams(const std::vector<py::object> &params) {
   const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   auto device_ctx = device::DeviceContextManager::GetInstance().GetDeviceContext(device_name);
   MS_EXCEPTION_IF_NULL(device_ctx);
@@ -46,7 +46,7 @@ int ResetParams(const std::vector<tensor::TensorPyPtr> &params) {
   device::DeviceContextManager::GetInstance().SyncAllStreams();
   tensor::TensorPtrList params_;
   (void)std::transform(params.begin(), params.end(), std::back_inserter(params_),
-                       [](const tensor::TensorPyPtr &p) { return p->GetTensor(); });
+                       [](const py::object &p) { return tensor::ConvertToTensor(p); });
   return device_ctx->device_res_manager_->ResetParams(params_);
 }
 }  // namespace

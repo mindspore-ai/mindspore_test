@@ -29,7 +29,7 @@ namespace mindspore {
 void Synchronize() { runtime::Pipeline::Get().WaitForward(); }
 
 // Reuse src tensor's device address by dst tensor. For internal usage only.
-void ReuseDataPtr(const tensor::TensorPyPtr &dst_, const tensor::TensorPyPtr &src_, size_t offset) {
+void ReuseDataPtr(const py::object &dst_, const py::object &src_, size_t offset) {
   // get context meta
   Synchronize();
   auto ms_context = MsContext::GetInstance();
@@ -45,7 +45,7 @@ void ReuseDataPtr(const tensor::TensorPyPtr &dst_, const tensor::TensorPyPtr &sr
   auto stream_id = device_ctx->device_res_manager_->DefaultStream();
 
   // create src device address if null
-  auto src = src_->GetTensor();
+  auto src = tensor::ConvertToTensor(src_);
   if (src->device_address() == nullptr) {
     auto device_ptr = device_ctx->device_res_manager_->AllocateMemory(src->Size(), stream_id);
     auto src_device_address = device_ctx->device_res_manager_->CreateDeviceAddress(
@@ -62,7 +62,7 @@ void ReuseDataPtr(const tensor::TensorPyPtr &dst_, const tensor::TensorPyPtr &sr
 
   // create device address with src ptr
   uint8_t *ptr = reinterpret_cast<uint8_t *>(src->device_address()->GetMutablePtr());
-  auto dst = dst_->GetTensor();
+  auto dst = tensor::ConvertToTensor(dst_);
   auto offset_size = offset * UnitSizeInBytes(dst->data_type());
   if (offset_size >= src->Size()) {
     MS_EXCEPTION(ValueError) << "Offset overflow. Expect offset in bytes less than " << src->Size() << ", got "
