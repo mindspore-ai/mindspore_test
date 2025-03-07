@@ -1,0 +1,7 @@
+triangular_solve:
+  op_yaml: triangular_solve_op.yaml
+  py_method: tensor_triangular_solve
+  Ascend: pyboost
+  CPU: py_method
+  GPU: py_method
+  interface: tensor
