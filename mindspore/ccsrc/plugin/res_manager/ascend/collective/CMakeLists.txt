@@ -28,6 +28,18 @@ if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
     add_compile_definitions(ENABLE_INTERNAL_KERNELS)
 endif()
 
+set(DVM_KERNEL_HOME ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/plugin/device/ascend/kernel/dvm)
+include_directories(${DVM_KERNEL_HOME})
+link_directories(${DVM_LIB})
+set(DVM_COLLECTIVE_SRCS "dvm_collective_comm_lib.cc"
+        "dvm_communication_group.cc"
+        ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/collective/collective_communication_lib.cc
+        ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/collective/communication_group.cc)
+set_property(SOURCE ${DVM_COLLECTIVE_SRCS} PROPERTY COMPILE_DEFINITIONS
+        SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
+add_library(dvm_collective STATIC ${DVM_COLLECTIVE_SRCS})
+target_link_libraries(dvm_collective PRIVATE ${DVM_LIB})
+
 set(MULTI_ASCEND_COLLECTIVE_SRCS "multi_ascend_collective_comm_lib.cc"
         "multi_ascend_communication_group.cc"
         ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/collective/collective_communication_lib.cc
@@ -36,4 +48,4 @@ set(MULTI_ASCEND_COLLECTIVE_SRCS "multi_ascend_collective_comm_lib.cc"
 set_property(SOURCE ${MULTI_ASCEND_COLLECTIVE_SRCS} PROPERTY COMPILE_DEFINITIONS
         SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
 add_library(multi_ascend_collective STATIC ${MULTI_ASCEND_COLLECTIVE_SRCS})
-target_link_libraries(multi_ascend_collective PRIVATE d_collective)
+target_link_libraries(multi_ascend_collective PRIVATE d_collective PRIVATE dvm_collective)
