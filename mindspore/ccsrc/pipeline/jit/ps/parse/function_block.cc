@@ -152,6 +152,15 @@ void FunctionBlock::WriteVariable(const std::string &var_name, const AnfNodePtr 
                  << "` with node " << node->DebugString();
     iter->second = std::make_pair(node, false);
     if (is_used && need_reorder) {
+      auto registered_iter = assigned_hook_.find(var_name);
+      if (registered_iter != assigned_hook_.end()) {
+        auto it = std::find_if(registered_iter->second.begin(), registered_iter->second.end(),
+                               [&hidden_node](const auto &kv) { return kv.second == hidden_node; });
+        if (it != registered_iter->second.end()) {
+          MS_LOG(EXCEPTION) << "It is not supported to register multiple hooks for a Tensor. You tensor is `"
+                            << var_name << "`.";
+        }
+      }
       MS_LOG(DEBUG) << "Replace " << hidden_node->ToString() << " with " << node->ToString();
       assigned_hook_[var_name][hidden_node] = node;
       iter->second = std::make_pair(node, true);

@@ -1245,6 +1245,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
               - The `hook` must satisfy the syntax constraints of the graph mode.
               - It is not supported to delete `hook` inside graph.
               - It is not supported to register `hook` after the `Tensor` is used before.
+              - It is not supported to register multiple `hooks` for a `Tensor` inside graph.
               - Register `hook` in the graph will return then `Tensor` it self.
 
         Args:
