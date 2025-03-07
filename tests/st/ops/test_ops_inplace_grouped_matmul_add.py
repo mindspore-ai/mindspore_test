@@ -52,7 +52,7 @@ def gmm_add_golden_forward_func(grad, x, split_sizes, out):
     return out
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['KBK'])
 def test_gmm_add_static_shape(mode):
     """
