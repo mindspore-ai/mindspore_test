@@ -32,7 +32,10 @@
 
 namespace mindspore {
 namespace parallel {
-using CostPtrKey = std::pair<StrategyPtr, StrategyPtr>;
+using StraLayoutPair = std::pair<StrategyPtr, TensorLayout>;
+using CostPtrKey = std::pair<TensorLayout, TensorLayout>;
+using DpCostPtrKey = std::pair<StrategyPtr, StrategyPtr>;
+using CostCacheKey = std::pair<std::pair<Arrangement, Map>, std::pair<Arrangement, Map>>;
 using EdgePtr = std::shared_ptr<mindspore::parallel::Edge>;
 
 struct OpsPtrCompare {
@@ -86,36 +89,30 @@ class Edge {
   void InitIdentityEdgeCost(bool *has_available_cost);
   void InitNotIdentityEdgeCost(bool *has_available_cost);
   std::map<CostPtrKey, CostPtrList> GetCostMap() { return cost_map_; }
-  CostPtr GetCostByStrategyPair(const StrategyPtr &output_str, const StrategyPtr &input_str);
+
   StrategyPtr GetNextOpStrategyByOutStrategy(const StrategyPtr &out_strategy);
-  StrategyPtr GetNextOpStrategyByPrevOpStrategyWithMiniComm(const StrategyPtr &prev_op_stra);
-  StrategyPtr GetPrevOpStrategyByNextOpStrategyWithMiniComm(const StrategyPtr &next_op_stra);
+  std::shared_ptr<StrategyWithCost> GetNextOpSwcByPrevOpStrategyWithMiniComm(const StrategyPtr &prev_op_stra);
+  std::shared_ptr<StrategyWithCost> GetPrevOpSwcByNextOpStrategyWithMiniComm(const StrategyPtr &next_op_stra);
   int64_t GetReshapeSWCIndexByNextOpStrategy(const StrategyPtr &next_op_stra);
   int64_t GetReshapeSWCIndexByPrevOpStrategy(const StrategyPtr &prev_op_stra);
   StrategyPtr GetPrevOpStrategyByReshapeSWCIndex(int64_t swc_index);
   StrategyPtr GetNextOpStrategyByReshapeSWCIndex(int64_t swc_index);
-  bool CheckStrategyConsistency(StrategyPtr prev_stra, StrategyPtr next_stra,
-                                std::set<OperatorInfoPtr> *_diff_stra_params);
-
-  void SetCostMapAndInputOutput(const std::map<CostPtrKey, CostPtrList> &cost_map);
+  bool CheckLayoutConsistency(std::set<OperatorInfoPtr> *_diff_stra_params);
   // For two operators u--->v, given the output tensor layout of u,
   // and the input tensor layout of v, return the redistribution cost,
   // and the op_list to carry out the redistribution.
   Status GetRedistributionCost(const TensorLayout &prev_op_output_layout, const TensorLayout &next_op_input_layout,
                                size_t type_length, const TypePtr &type, CostPtr *cost);
 
-  void set_pre_op_output(const std::vector<std::pair<StrategyPtr, TensorLayout>> &output_set) {
-    pre_op_output_ = output_set;
-  }
-  void set_next_op_input(const std::vector<std::pair<StrategyPtr, TensorLayout>> &input_set) {
-    next_op_input_ = input_set;
-  }
+  void set_pre_op_output(const std::vector<StraLayoutPair> &output_set) { pre_op_output_ = output_set; }
+  void set_next_op_input(const std::vector<StraLayoutPair> &input_set) { next_op_input_ = input_set; }
 
   // Given a pair of output strategy and input strategy, return the corresponding costlist
   CostPtrList GetCostList(StrategyPtr output_str, StrategyPtr input_str);
+  CostPtr GetCostByLayoutPair(const CostPtrKey &layout_pair);
 
-  std::vector<std::pair<StrategyPtr, TensorLayout>> prev_op_output() const { return pre_op_output_; }
-  std::vector<std::pair<StrategyPtr, TensorLayout>> next_op_input() const { return next_op_input_; }
+  std::vector<StraLayoutPair> prev_op_output() const { return pre_op_output_; }
+  std::vector<StraLayoutPair> next_op_input() const { return next_op_input_; }
 
   bool is_combined() const { return is_combined_; }
   size_t prev_op_output_index() const { return prev_op_output_index_; }
@@ -159,9 +156,10 @@ class Edge {
   std::string edge_name_;
   std::shared_ptr<OperatorInfo> prev_op_, next_op_;
   std::map<CostPtrKey, CostPtrList> cost_map_;
+  std::map<DpCostPtrKey, CostPtrList> dp_cost_map_;
   // pre_op_output_
-  std::vector<std::pair<StrategyPtr, TensorLayout>> pre_op_output_;
-  std::vector<std::pair<StrategyPtr, TensorLayout>> next_op_input_;
+  std::vector<StraLayoutPair> pre_op_output_;
+  std::vector<StraLayoutPair> next_op_input_;
   // the index of outputs of prev_op, and the index of inputs of next_op
   size_t prev_op_output_index_, next_op_input_index_;
 
@@ -181,12 +179,6 @@ class Edge {
   int64_t is_output_parameter_involve_ = -1;  // -1: unset; 0: not parameter_involved; 1: parameter_involved
   // In the inference phase, this is used to mark whether the output of the previous operator is critical.
   int64_t is_output_critical_ = 0;
-
-  // Returns whether two double variable are equal.
-  bool IsDoubleEqual(double x, double y) const { return std::abs(x - y) < EPS; }
-
-  // For edge_name_ = "ReshapeInfo44-MulInfo1010", will return "ReshapeInfo-MulInfo"
-  std::string GetEdgeNameNoDigit();
 };
 }  // namespace parallel
 }  // namespace mindspore

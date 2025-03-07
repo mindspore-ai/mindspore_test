@@ -93,6 +93,76 @@ struct OutStrategyValueRegister {
     });
   }
 } out_regist;
+
+struct InLayoutValueRegister {
+  InLayoutValueRegister() noexcept {
+    AnfDumpHandler::SetInLayoutValueHandler([](const std::shared_ptr<AnfNode> &node) -> ValueTuplePtr {
+      auto operator_info = node->user_data<parallel::OperatorInfo>();
+      if (operator_info == nullptr) {
+        return nullptr;
+      }
+
+      auto tensor_infos = operator_info->inputs_tensor_info();
+      if (tensor_infos.empty()) {
+        return nullptr;
+      }
+
+      std::vector<ValuePtr> result;
+      for (const TensorInfo &tensor_info : tensor_infos) {
+        std::vector<std::pair<ValuePtr, ValuePtr>> key_values;
+        auto tensor_layout = tensor_info.tensor_layout();
+
+        Arrangement device_mat = tensor_layout.device_arrangement_origin();
+        ValuePtr device_matrix_key = MakeValue<std::string>(DEVICE_MATRIX);
+        ValuePtr device_matrix_value = MakeValue<Shape>(device_mat.array());
+        key_values.emplace_back(device_matrix_key, device_matrix_value);
+
+        Map tensor_map = tensor_layout.origin_tensor_map();
+        ValuePtr tensor_map_key = MakeValue<std::string>(TENSOR_MAP);
+        ValuePtr tensor_map_value = MakeValue<Shape>(tensor_map.array());
+        key_values.emplace_back(tensor_map_key, tensor_map_value);
+
+        result.push_back(std::make_shared<ValueDictionary>(key_values));
+      }
+      return std::make_shared<ValueTuple>(result);
+    });
+  }
+} in_layout_regist;
+
+struct OutLayoutValueRegister {
+  OutLayoutValueRegister() noexcept {
+    AnfDumpHandler::SetOutLayoutValueHandler([](const std::shared_ptr<AnfNode> &node) -> ValueTuplePtr {
+      auto operator_info = node->user_data<parallel::OperatorInfo>();
+      if (operator_info == nullptr) {
+        return nullptr;
+      }
+
+      auto tensor_infos = operator_info->outputs_tensor_info();
+      if (tensor_infos.empty()) {
+        return nullptr;
+      }
+
+      std::vector<ValuePtr> result;
+      for (const TensorInfo &tensor_info : tensor_infos) {
+        std::vector<std::pair<ValuePtr, ValuePtr>> key_values;
+        auto tensor_layout = tensor_info.tensor_layout();
+
+        Arrangement device_mat = tensor_layout.device_arrangement_origin();
+        ValuePtr device_matrix_key = MakeValue<std::string>(DEVICE_MATRIX);
+        ValuePtr device_matrix_value = MakeValue<Shape>(device_mat.array());
+        key_values.emplace_back(device_matrix_key, device_matrix_value);
+
+        Map tensor_map = tensor_layout.origin_tensor_map();
+        ValuePtr tensor_map_key = MakeValue<std::string>(TENSOR_MAP);
+        ValuePtr tensor_map_value = MakeValue<Shape>(tensor_map.array());
+        key_values.emplace_back(tensor_map_key, tensor_map_value);
+
+        result.push_back(std::make_shared<ValueDictionary>(key_values));
+      }
+      return std::make_shared<ValueTuple>(result);
+    });
+  }
+} out_layout_regist;
 }  // namespace
 
 std::string StrategyToString(const Strategies &strategy) {
@@ -522,15 +592,6 @@ Status OperatorInfo::InferMirrorOpsByLayout() {
       MS_LOG(INFO) << name_ << ": The mirror group is empty, the input index is " << i;
       mirror_ops_.push_back(mirror_op);
       continue;
-    }
-    if (is_auto_parallel_) {
-      if (g_device_manager->CheckDeviceList(repeated_rank_list) != SUCCESS) {
-        MS_LOG(INFO) << name_ << ": Try to create communication group : " << repeated_rank_list
-                     << " failed in auto parallel mode, "
-                        "this error can be ignored in parallel strategies searching step";
-        return FAILED;
-      }
-      return SUCCESS;
     }
 
     Group mirror_group;
@@ -1074,15 +1135,6 @@ Status OperatorInfo::CreateGroupByTensorMap(const Shape &tensor_map, std::vector
     MS_LOG(INFO) << name_ << ": The dev size is 1, no need to create group.";
     return SUCCESS;
   }
-  if (is_auto_parallel_) {
-    if (g_device_manager->CheckDeviceList(group_devices) != SUCCESS) {
-      MS_LOG(INFO) << name_ << ": Try to create communication group : " << group_devices
-                   << " failed in auto parallel mode, "
-                      "this error can be ignored in parallel strategies searching step";
-      return FAILED;
-    }
-    return SUCCESS;
-  }
 
   Group g;
   if (g_device_manager->CreateGroup(group_devices, &g) != SUCCESS) {
@@ -1283,15 +1335,6 @@ Status OperatorInfo::CreateGroupByDimWithDevMatrix(DeviceMatrix *dev_matrix, siz
 
   if (group_devices.size() == 1) {
     MS_LOG(INFO) << name_ << ": The dev size is 1, no need to create group.";
-    return SUCCESS;
-  }
-  if (is_auto_parallel_) {
-    if (g_device_manager->CheckDeviceList(group_devices) != SUCCESS) {
-      MS_LOG(INFO) << name_ << ": Try to create communication group : " << group_devices
-                   << " failed in auto parallel mode, "
-                   << "this error can be ignored in parallel strategies searching step";
-      return FAILED;
-    }
     return SUCCESS;
   }
   Group g;
@@ -1506,15 +1549,28 @@ Status OperatorInfo::InitWithAutoRepeatCalc(const StrategyPtr &in_strategy, cons
 }
 
 Status OperatorInfo::CheckInputLayout() {
-  MS_LOG(ERROR)
-    << "Current op " << name_
-    << " does not support config layout. Please check "
-       "https://www.mindspore.cn/docs/zh-CN/master/api_python/operator_list_parallel.html to get limitation "
-       "and more details";
+  if (is_in_layout_propagation_) {
+    MS_LOG(WARNING)
+      << "Current op " << name_
+      << " does not support config layout. Please check "
+         "https://www.mindspore.cn/docs/zh-CN/master/api_python/operator_list_parallel.html to get limitation "
+         "and more details";
+  } else {
+    MS_LOG(ERROR)
+      << "Current op " << name_
+      << " does not support config layout. Please check "
+         "https://www.mindspore.cn/docs/zh-CN/master/api_python/operator_list_parallel.html to get limitation "
+         "and more details";
+  }
   // Check self_define_shard attribute
   if (!self_define_shard_) {
-    MS_LOG(ERROR) << "Please set add_prim_attr('self_define_shard', True) to " << name_
-                  << " to config layout for this ops";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "Please set add_prim_attr('self_define_shard', True) to " << name_
+                      << " to config layout for this ops";
+    } else {
+      MS_LOG(ERROR) << "Please set add_prim_attr('self_define_shard', True) to " << name_
+                    << " to config layout for this ops";
+    }
     return FAILED;
   }
   return FAILED;
@@ -2292,18 +2348,16 @@ Status GenerateStrategiesWithBroadcast(int64_t stage_id, const Shapes &inputs_sh
   return SUCCESS;
 }
 
-Status OperatorInfo::SetCostUnderStrategyBase(const StrategyPtr &strategy) {
-  StrategyPtr out_strategy = out_strategy_;
-  if (InitForCostModel(strategy, out_strategy) == FAILED) {
-    MS_LOG(DEBUG) << name_ << ": Initialization under the strategy failed.";
-    return FAILED;
+CostPtr OperatorInfo::ComputeCost(const StrategyPtr &strategy) {
+  if (strategy == nullptr) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "ComputeCost failed: strategy is null.";
   }
   int64_t stage_id = strategy->GetInputStage();
   double computation_cost =
     operator_cost()->GetForwardComputationCost(inputs_tensor_info_, outputs_tensor_info_, stage_id);
   double communication_cost = operator_cost()->GetCommCost(inputs_tensor_info_, outputs_tensor_info_, stage_id);
   const auto gamma = CostModelContext::GetInstance()->costmodel_gamma();
-  std::shared_ptr<Cost> result = std::make_shared<Cost>(computation_cost, communication_cost);
+  CostPtr result = std::make_shared<Cost>(computation_cost, communication_cost);
   result->communication_without_parameter_ =
     operator_cost()->GetForwardCommCost(inputs_tensor_info_, outputs_tensor_info_, stage_id);
   result->communication_with_partial_para_ =
@@ -2314,7 +2368,17 @@ Status OperatorInfo::SetCostUnderStrategyBase(const StrategyPtr &strategy) {
   // refine communication cost calculation for practice
   RefineForPracticalCost(result, false);
   result->communication_forward_ = result->communication_without_parameter_;
+  return result;
+}
 
+Status OperatorInfo::SetCostUnderStrategyBase(const StrategyPtr &strategy) {
+  StrategyPtr out_strategy = out_strategy_;
+  if (InitForCostModel(strategy, out_strategy) == FAILED) {
+    MS_LOG(DEBUG) << name_ << ": Initialization under the strategy failed.";
+    return FAILED;
+  }
+
+  CostPtr result = ComputeCost(strategy);
   std::shared_ptr<StrategyWithCost> swc =
     std::make_shared<StrategyWithCost>(strategy, inputs_tensor_info_, outputs_tensor_info_);
   swc->cost_list.push_back(result);
@@ -2323,14 +2387,172 @@ Status OperatorInfo::SetCostUnderStrategyBase(const StrategyPtr &strategy) {
   return SUCCESS;
 }
 
-CostPtrList OperatorInfo::GetCostByStrategyPtr(const StrategyPtr &strategy) {
-  auto target = std::find_if(
-    strategy_cost_.begin(), strategy_cost_.end(),
-    [&](const std::shared_ptr<StrategyWithCost> &stra_cost) { return stra_cost->strategy_ptr->IsEqual(strategy); });
-  if (target == strategy_cost_.end()) {
-    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "There is no StrategyWithCost with a strategy";
+Status OperatorInfo::SetCostUnderLayout(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy,
+                                        const std::vector<std::shared_ptr<TensorLayout>> &in_tensor_layouts,
+                                        const std::vector<std::shared_ptr<TensorLayout>> &out_tensor_layouts) {
+  if (Init(in_strategy, out_strategy, in_tensor_layouts, out_tensor_layouts) == FAILED) {
+    MS_LOG(DEBUG) << name_ << ": Initialization under the layout failed.";
+    return FAILED;
   }
-  return (*target)->cost_list;
+
+  strategy_ = in_strategy;
+  out_strategy_ = out_strategy;
+
+  CostPtr result = ComputeCost(in_strategy);
+  std::shared_ptr<StrategyWithCost> swc =
+    std::make_shared<StrategyWithCost>(in_strategy, inputs_tensor_info_, outputs_tensor_info_);
+  swc->cost_list.push_back(result);
+  (void)strategy_cost_.emplace_back(swc);
+
+  if (SetDevMatrixShapeByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": SetDevMatrixShapeByLayout failed.";
+  }
+  if (SetTensorMapByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": SetTensorMapByLayout failed.";
+  }
+  if (SetTensorMapBeforeByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": SetTensorMapBeforeByLayout failed.";
+  }
+  if (SetOutDevMatrixShapeByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": SetOutDevMatrixShapeByLayout failed.";
+  }
+  if (SetOutTensorMapByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": SetOutTensorMapByLayout failed.";
+  }
+  if (SetOutTensorMapBeforeByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": SetOutTensorMapBeforeByLayout failed.";
+  }
+  return SUCCESS;
+}
+
+Status OperatorInfo::SetCostUnderStrategyWithCost(const std::shared_ptr<StrategyWithCost> &swc) {
+  ResetQueueMember();
+
+  if (InferAttrs() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": InferAttrs failed.";
+    return FAILED;
+  }
+
+  strategy_ = swc->strategy_ptr;
+  inputs_tensor_info_ = swc->inputs_ptr;
+  strategy_cost_.push_back(swc);
+
+  if (CheckInputLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": CheckInputLayout failed.";
+    return FAILED;
+  }
+
+  outputs_tensor_info_.clear();
+  // Need be override
+  if (InferOutputTensorInfo() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": InferOutputTensorLayout failed.";
+    return FAILED;
+  }
+
+  if (outputs_tensor_info_.size() != outputs_shape_.size()) {
+    MS_LOG(WARNING) << name_ << ": the output tensor layout num " << outputs_tensor_info_.size()
+                    << " dose not match the output num " << outputs_shape_.size();
+    return FAILED;
+  }
+
+  if (SetDevMatrixShapeByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": SetDevMatrixShapeByLayout failed.";
+  }
+  if (SetTensorMapByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": SetTensorMapByLayout failed.";
+  }
+  if (SetTensorMapBeforeByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": SetTensorMapBeforeByLayout failed.";
+  }
+  if (SetOutDevMatrixShapeByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": SetOutDevMatrixShapeByLayout failed.";
+  }
+  if (SetOutTensorMapByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": SetOutTensorMapByLayout failed.";
+  }
+  if (SetOutTensorMapBeforeByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": SetOutTensorMapBeforeByLayout failed.";
+  }
+
+  if (CheckOutputLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": CheckLayout failed.";
+    return FAILED;
+  }
+  // Need be override
+  if (InferForwardCommunicationByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": InferForwardCommunication failed.";
+    return FAILED;
+  }
+
+  if (InferMirrorOpsByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": InferMirrorOps failed.";
+    return FAILED;
+  }
+  if (InferVirtualDivOpsByLayout() != SUCCESS) {
+    MS_LOG(WARNING) << name_ << ": InferVirtualDivOps failed.";
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+Status OperatorInfo::SetDevMatrixShapeByLayout() {
+  dev_matrix_shape_.clear();
+  for (const auto &tensor_info : inputs_tensor_info_) {
+    TensorLayout layout = tensor_info.tensor_layout();
+    Arrangement device_arrangement = layout.device_arrangement_origin();
+    if (!dev_matrix_shape_.empty() && dev_matrix_shape_ != device_arrangement.array()) {
+      MS_LOG(ERROR) << "Not support different device matrix now.";
+      return FAILED;
+    }
+    dev_matrix_shape_ = device_arrangement.array();
+  }
+  return SUCCESS;
+}
+
+Status OperatorInfo::SetTensorMapByLayout() {
+  inputs_tensor_map_.clear();
+  (void)std::transform(
+    inputs_tensor_info_.begin(), inputs_tensor_info_.end(), std::back_inserter(inputs_tensor_map_),
+    [&](const TensorInfo &tensor_info) { return tensor_info.tensor_layout().origin_tensor_map().array(); });
+  return SUCCESS;
+}
+
+Status OperatorInfo::SetTensorMapBeforeByLayout() {
+  inputs_tensor_map_before_.clear();
+  (void)std::transform(inputs_tensor_info_.begin(), inputs_tensor_info_.end(),
+                       std::back_inserter(inputs_tensor_map_before_),
+                       [&](const TensorInfo &tensor_info) { return tensor_info.tensor_layout().tensor_map_before(); });
+  return SUCCESS;
+}
+
+Status OperatorInfo::SetOutDevMatrixShapeByLayout() {
+  out_dev_matrix_shape_.clear();
+  for (const auto &tensor_info : outputs_tensor_info_) {
+    TensorLayout layout = tensor_info.tensor_layout();
+    Arrangement device_arrangement = layout.device_arrangement_origin();
+    if (!out_dev_matrix_shape_.empty() && out_dev_matrix_shape_ != device_arrangement.array()) {
+      MS_LOG(ERROR) << "Not support different device matrix now.";
+      return FAILED;
+    }
+    out_dev_matrix_shape_ = device_arrangement.array();
+  }
+  return SUCCESS;
+}
+
+Status OperatorInfo::SetOutTensorMapByLayout() {
+  outputs_tensor_map_.clear();
+  (void)std::transform(
+    outputs_tensor_info_.begin(), outputs_tensor_info_.end(), std::back_inserter(outputs_tensor_map_),
+    [&](const TensorInfo &tensor_info) { return tensor_info.tensor_layout().origin_tensor_map().array(); });
+  return SUCCESS;
+}
+
+Status OperatorInfo::SetOutTensorMapBeforeByLayout() {
+  outputs_tensor_map_before_.clear();
+  (void)std::transform(outputs_tensor_info_.begin(), outputs_tensor_info_.end(),
+                       std::back_inserter(outputs_tensor_map_before_),
+                       [&](const TensorInfo &tensor_info) { return tensor_info.tensor_layout().tensor_map_before(); });
+  return SUCCESS;
 }
 
 TensorLayout OperatorInfo::GetInputLayoutFromSWCByStrategy(const StrategyPtr &stra, size_t input_index) {
@@ -2375,6 +2597,26 @@ StrategyPtr OperatorInfo::GetStrategyFromSWCByOutputLayout(const TensorLayout &o
     return (*it)->strategy_ptr;
   }
   return nullptr;
+}
+
+std::vector<std::shared_ptr<StrategyWithCost>> OperatorInfo::GetSwcByInputLayout(const TensorLayout &input_layout,
+                                                                                 size_t input_index) {
+  std::vector<std::shared_ptr<StrategyWithCost>> matchedSwcs;
+  auto is_target = [&](const std::shared_ptr<StrategyWithCost> &swc) {
+    return swc->inputs_ptr[input_index].tensor_layout() == input_layout;
+  };
+  std::copy_if(strategy_cost_.begin(), strategy_cost_.end(), std::back_inserter(matchedSwcs), is_target);
+  return matchedSwcs;
+}
+
+std::vector<std::shared_ptr<StrategyWithCost>> OperatorInfo::GetSwcByOutputLayout(const TensorLayout &output_layout,
+                                                                                  size_t output_index) {
+  std::vector<std::shared_ptr<StrategyWithCost>> matchedSwcs;
+  auto is_target = [&](const std::shared_ptr<StrategyWithCost> &swc) {
+    return swc->outputs_ptr[output_index].tensor_layout() == output_layout;
+  };
+  std::copy_if(strategy_cost_.begin(), strategy_cost_.end(), std::back_inserter(matchedSwcs), is_target);
+  return matchedSwcs;
 }
 
 bool OperatorInfo::IsReshape() const {
@@ -2522,10 +2764,12 @@ int64_t OperatorInfo::ComputeOpAndPrevEdgeParameterInvolved() {
 }
 
 Status OperatorInfo::set_is_parameter(const std::vector<bool> &is_parameter) {
-  if (is_parameter.size() != inputs_shape_.size()) {
-    MS_LOG(ERROR) << name_ << ": Is_parameter: " << is_parameter.size()
-                  << " do not have the same number of inputs_shape_: " << inputs_shape_.size();
-    return FAILED;
+  if (inputs_shape_new_.size() == 0) {
+    if (is_parameter.size() != inputs_shape_.size()) {
+      MS_LOG(ERROR) << name_ << ": Is_parameter: " << is_parameter.size()
+                    << " do not have the same number of inputs_shape_: " << inputs_shape_.size();
+      return FAILED;
+    }
   }
   is_parameter_ = is_parameter;
   operator_cost()->set_is_parameter(is_parameter);
@@ -2723,15 +2967,19 @@ Status OperatorInfo::InferVirtualDivOpsByLayout() {
 
 Status OperatorInfo::SetInputAndOutputTypeLength(const std::vector<size_t> &input_lengths,
                                                  const std::vector<size_t> &output_lengths) {
-  if (input_lengths.size() != inputs_shape_.size()) {
-    MS_LOG(ERROR) << name_ << ": Input_lengths: " << input_lengths.size()
-                  << " do not have the same number of inputs shape: " << inputs_shape_.size();
-    return FAILED;
+  if (inputs_shape_new_.size() == 0) {
+    if (input_lengths.size() != inputs_shape_.size()) {
+      MS_LOG(ERROR) << name_ << ": Input_lengths: " << input_lengths.size()
+                    << " do not have the same number of inputs shape: " << inputs_shape_.size();
+      return FAILED;
+    }
   }
-  if (output_lengths.size() != outputs_shape_.size()) {
-    MS_LOG(ERROR) << name_ << ": Output_lengths: " << output_lengths.size()
-                  << " do not have the same number of outputs shape: " << outputs_shape_.size();
-    return FAILED;
+  if (outputs_shape_new_.size() == 0) {
+    if (output_lengths.size() != outputs_shape_.size()) {
+      MS_LOG(ERROR) << name_ << ": Output_lengths: " << output_lengths.size()
+                    << " do not have the same number of outputs shape: " << outputs_shape_.size();
+      return FAILED;
+    }
   }
   inputs_type_lengths_ = input_lengths;
   outputs_type_lengths_ = output_lengths;
@@ -2759,10 +3007,12 @@ double OperatorInfo::GetOutputsTotalSize() {
 }
 
 Status OperatorInfo::set_outputs_type(const std::vector<TypePtr> &outputs_type) {
-  if (outputs_type.size() != outputs_shape_.size()) {
-    MS_LOG(ERROR) << name_ << ": Outputs type: " << outputs_type.size()
-                  << " do not have the same number of outputs shape: " << outputs_shape_.size();
-    return FAILED;
+  if (outputs_shape_new_.size() == 0) {
+    if (outputs_type.size() != outputs_shape_.size()) {
+      MS_LOG(ERROR) << name_ << ": Outputs type: " << outputs_type.size()
+                    << " do not have the same number of outputs shape: " << outputs_shape_.size();
+      return FAILED;
+    }
   }
   outputs_type_ = outputs_type;
   return SUCCESS;
@@ -2999,6 +3249,101 @@ std::vector<int64_t> GetTensorValue(const ValuePtr &ori_value) {
     value.push_back(data[i]);
   }
   return value;
+}
+
+Dimensions ConvertLayoutToDemensions(const Shape &dev_matrix, const std::vector<Shape> &tensor_map) {
+  Dimensions dimens;
+  for (size_t i = 0; i < tensor_map.size(); ++i) {
+    int64_t accu_shp = 1;
+    for (size_t j = 0; j < tensor_map[i].size(); ++j) {
+      if (tensor_map[i][j] == -1) {
+        continue;
+      }
+      size_t tensor_index = dev_matrix.size() - 1 - static_cast<size_t>(tensor_map[i][j]);
+      auto shard_size = dev_matrix[tensor_index];
+      accu_shp *= shard_size;
+    }
+    dimens.push_back(accu_shp);
+  }
+  return dimens;
+}
+
+Status OperatorInfo::AddSwcUnderPrevOpDevMatrix(const Shape &prev_op_dev_matrix,
+                                                const std::vector<Shape> &prev_op_tensor_map, size_t layout_index) {
+  if (prev_op_dev_matrix.empty()) {
+    MS_LOG(WARNING) << "Layout propagation prev_op_dev_matrix is empty";
+    return FAILED;
+  }
+  if (inputs_shape_.size() <= layout_index) {
+    MS_LOG(WARNING) << "layout_index is illegal:" << layout_index
+                    << " while inputs_shape_ size:" << inputs_shape_.size();
+    return FAILED;
+  }
+  if (inputs_shape_[layout_index].size() != prev_op_tensor_map.size()) {
+    MS_LOG(WARNING) << "prev_op_tensor_map is illegal";
+    return FAILED;
+  }
+  if (dev_matrix_shape_ == prev_op_dev_matrix) {
+    return SUCCESS;
+  }
+  if (strategy_cost_.empty()) {
+    return SUCCESS;
+  }
+
+  dev_matrix_shape_ = prev_op_dev_matrix;
+  std::vector<StrategyPtr> strategy_ptrs;
+  (void)std::transform(strategy_cost_.begin(), strategy_cost_.end(), std::back_inserter(strategy_ptrs),
+                       [](const auto &swc) { return swc->strategy_ptr; });
+  size_t add_cnt = 0;
+  for (const auto &strategy_ptr : strategy_ptrs) {
+    if (strategy_ptr->GetInputDim()[layout_index] !=
+        ConvertLayoutToDemensions(prev_op_dev_matrix, prev_op_tensor_map)) {
+      continue;
+    }
+    std::vector<std::shared_ptr<TensorLayout>> in_tensor_layouts =
+      InferLayoutsByStrategy(strategy_ptr, prev_op_tensor_map, layout_index);
+    if (in_tensor_layouts.empty()) {
+      continue;
+    }
+    auto out_tensor_layouts = std::vector<std::shared_ptr<TensorLayout>>();
+    if (SetCostUnderLayout(strategy_ptr, nullptr, in_tensor_layouts, out_tensor_layouts) != SUCCESS) {
+      MS_LOG(WARNING) << "Failure: operator " << name_ << " SetCostUnderLayout failed";
+      return FAILED;
+    }
+    add_cnt++;
+  }
+  MS_LOG(INFO) << name_ << " add " << add_cnt << " swcs.";
+  return SUCCESS;
+}
+
+std::vector<std::shared_ptr<TensorLayout>> OperatorInfo::InferLayoutsByStrategy(
+  const StrategyPtr &strategy_ptr, const std::vector<Shape> &prev_op_tensor_map, size_t layout_index) {
+  std::vector<std::shared_ptr<TensorLayout>> in_layouts;
+  Strategies inputs = strategy_ptr->GetInputDim();
+  for (size_t i = 0; i < inputs.size(); i++) {
+    auto in_layout = std::make_shared<TensorLayout>();
+    if (i == layout_index) {
+      MS_LOG(ERROR) << "Begin InitFromExtendVector";
+      if (in_layout->InitFromExtendVector(dev_matrix_shape_, prev_op_tensor_map, inputs_shape_[i]) != SUCCESS) {
+        MS_LOG(ERROR) << "InferLayoutsByStrategy failed.";
+        return std::vector<std::shared_ptr<TensorLayout>>();
+      }
+      in_layouts.push_back(in_layout);
+      MS_LOG(ERROR) << "in_layout:" << in_layout->ToString();
+      continue;
+    }
+    std::vector<Shape> empty_tensor_map;
+    if (!inputs[i].empty()) {
+      MS_LOG(WARNING) << "Not Support Multiple inputs operator";
+      return std::vector<std::shared_ptr<TensorLayout>>();
+    }
+    if (in_layout->InitFromExtendVector(dev_matrix_shape_, empty_tensor_map, inputs_shape_[i]) != SUCCESS) {
+      MS_LOG(ERROR) << "InferLayoutsByStrategy failed.";
+      return std::vector<std::shared_ptr<TensorLayout>>();
+    }
+    in_layouts.push_back(in_layout);
+  }
+  return in_layouts;
 }
 }  // namespace parallel
 }  // namespace mindspore

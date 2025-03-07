@@ -15,6 +15,7 @@
  */
 
 #include "frontend/parallel/tensor_layout/tensor_layout.h"
+#include <algorithm>
 #include <iostream>
 #include <utility>
 #include "utils/ms_utils.h"
@@ -85,6 +86,21 @@ Status TensorLayout::InitFromVector(const Shape &device_arrangement, const Shape
   }
   if (Init(device_arrangement_origin_, tensor_map_origin_, tensor_shape_origin_) != SUCCESS) {
     MS_LOG(ERROR) << "Init tensor_layout failed.";
+    return FAILED;
+  }
+  if (SetDefaultTensorMapAndShapeBefore(tensor_map, tensor_shape) != SUCCESS) {
+    MS_LOG(ERROR) << "Set default tensor_shape_before_ or tensor_map_before_ failed.";
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+Status TensorLayout::SetDefaultTensorMapAndShapeBefore(const Shape &tensor_map, const Shape &tensor_shape) {
+  tensor_map_before_.clear();
+  std::transform(tensor_map.begin(), tensor_map.end(), std::back_inserter(tensor_map_before_),
+                 [](int64_t x) { return Shape{x}; });
+  if (tensor_shape_before_.Init(tensor_shape) != SUCCESS) {
+    MS_LOG(ERROR) << "Init tensor_shape_before_ failed.";
     return FAILED;
   }
   return SUCCESS;
@@ -560,6 +576,9 @@ bool TensorLayout::operator<(const TensorLayout &t1) const {
   }
   if (!IsSameTensorMap(t1)) {
     return tensor_map_ < t1.tensor_map();
+  }
+  if (!IsSameTensorShape(t1)) {
+    return tensor_shape_ < t1.tensor_shape();
   }
   return false;
 }

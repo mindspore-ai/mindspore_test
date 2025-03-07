@@ -15,9 +15,9 @@
  */
 
 #include "frontend/parallel/strategy_checkpoint/strategy_checkpoint_info.h"
-
 #include <vector>
 #include <utility>
+#include "frontend/parallel/step_parallel_utils.h"
 
 namespace mindspore {
 namespace parallel {
@@ -33,6 +33,23 @@ void StrategyCheckpointInfo::set_tensor_info_map(const TensorInfoMap &tensor_inf
 
 void StrategyCheckpointInfo::set_manual_shape_map(const ManualShapeMap &manual_shape_map) {
   manual_shape_map_ = manual_shape_map;
+}
+
+void StrategyCheckpointInfo::set_tensor_layout_map(const TensorLayoutValueMap &tensor_layout_map) {
+  tensor_layout_map_ = tensor_layout_map;
+}
+
+void StrategyCheckpointInfo::set_out_tensor_layout_map(const TensorLayoutValueMap &out_tensor_layout_map) {
+  out_tensor_layout_map_ = out_tensor_layout_map;
+}
+
+void StrategyCheckpointInfo::set_tensor_layout_newshape_map(const TensorLayoutValueMap &tensor_layout_newshape_map) {
+  tensor_layout_newshape_map_ = tensor_layout_newshape_map;
+}
+
+void StrategyCheckpointInfo::set_out_tensor_layout_newshape_map(
+  const TensorLayoutValueMap &out_tensor_layout_newshape_map) {
+  out_tensor_layout_newshape_map_ = out_tensor_layout_newshape_map;
 }
 
 void StrategyCheckpointInfo::FromJson(const nlohmann::json &stra_ckpt_info_j) {
@@ -70,6 +87,57 @@ void StrategyCheckpointInfo::FromJson(const nlohmann::json &stra_ckpt_info_j) {
   }
 }
 
+nlohmann::json StrategyCheckpointInfo::to_json_strategy_item(const StrategyPtr &node_stra) const {
+  nlohmann::json stra_j;
+  stra_j["stage"] = node_stra->GetInputStage();
+  stra_j["parallel_strategy"] = node_stra->GetInputDim();
+  return stra_j;
+}
+
+nlohmann::json StrategyCheckpointInfo::to_json_tensorinfo_item(const std::string &parameter_name,
+                                                               const TensorLayoutPtr &layout) const {
+  nlohmann::json layout_j;
+  layout_j["dev_matrix"] = layout->device_arrangement().array();
+  layout_j["tensor_map"] = layout->tensor_map().array();
+  layout_j["tensor_shape"] = layout->tensor_shape().array();
+  layout_j["field"] = layout->get_field_size();
+  layout_j["opt_weight_shard_step"] = layout->opt_weight_shard_step();
+  layout_j["opt_weight_shard_size"] = layout->opt_weight_shard_size();
+  if (manual_shape_map_.find(parameter_name) != manual_shape_map_.end()) {
+    auto manual_shape = manual_shape_map_.at(parameter_name);
+    for (auto dim_pair : manual_shape) {
+      layout_j["param_split_shape"].push_back(dim_pair.first);
+      layout_j["indices_offset"].push_back(dim_pair.second);
+    }
+  }
+  return layout_j;
+}
+
+nlohmann::json StrategyCheckpointInfo::to_json_layout_value_tuple_item(const std::string &node_name,
+                                                                       const ValueTuplePtr &layout_value_tuple) const {
+  nlohmann::json layout_j;
+  std::vector<ValuePtr> layout_value_vector = layout_value_tuple->value();
+  for (size_t i = 0; i < layout_value_vector.size(); ++i) {
+    nlohmann::json layout_i;
+    auto layout_item = layout_value_vector[i];
+    std::vector<std::string> alias_name;
+    std::vector<int64_t> device_matrix_vector;
+    std::vector<std::vector<int64_t>> tensor_map_vector;
+    bool interleaved_parallel;
+    if (GetLayoutFromAttrValue(layout_item, &alias_name, &device_matrix_vector, &tensor_map_vector,
+                               &interleaved_parallel) != SUCCESS) {
+      MS_LOG(EXCEPTION) << "GetLayoutFromAttrValue failed when saving to json, node_name: " << node_name;
+    }
+    layout_i["dev_matrix"] = device_matrix_vector;
+    layout_i["tensor_map"] = tensor_map_vector;
+    layout_i["interleaved_parallel"] = interleaved_parallel;
+    layout_i["alias_name"] = alias_name;
+    // layout_j[i] is the ith layout of inputs, i stands for the ith input of current node.
+    layout_j[std::to_string(i)] = layout_i;
+  }
+  return layout_j;
+}
+
 nlohmann::json StrategyCheckpointInfo::to_json() const {
   nlohmann::json stra_ckpt_info_j;
   stra_ckpt_info_j["current_stage"] = current_stage_;
@@ -77,36 +145,50 @@ nlohmann::json StrategyCheckpointInfo::to_json() const {
     auto node_name = stra_pair.first;
     auto node_stra = stra_pair.second;
     nlohmann::json stra_j;
-    stra_j["stage"] = node_stra->GetInputStage();
-    stra_j["parallel_strategy"] = node_stra->GetInputDim();
+    stra_j = to_json_strategy_item(node_stra);
     stra_ckpt_info_j["parallel_strategy_item"][node_name] = stra_j;
   }
   for (const auto &stra_pair : out_strategy_map_) {
     auto node_name = stra_pair.first;
     auto node_stra = stra_pair.second;
     nlohmann::json stra_j;
-    stra_j["stage"] = node_stra->GetInputStage();
-    stra_j["parallel_strategy"] = node_stra->GetInputDim();
+    stra_j = to_json_strategy_item(node_stra);
     stra_ckpt_info_j["parallel_out_strategy_item"][node_name] = stra_j;
   }
   for (const auto &layout_pair : tensor_info_map_) {
     auto parameter_name = layout_pair.first;
     auto layout = layout_pair.second;
     nlohmann::json layout_j;
-    layout_j["dev_matrix"] = layout->device_arrangement().array();
-    layout_j["tensor_map"] = layout->tensor_map().array();
-    layout_j["tensor_shape"] = layout->tensor_shape().array();
-    layout_j["field"] = layout->get_field_size();
-    layout_j["opt_weight_shard_step"] = layout->opt_weight_shard_step();
-    layout_j["opt_weight_shard_size"] = layout->opt_weight_shard_size();
-    if (manual_shape_map_.find(parameter_name) != manual_shape_map_.end()) {
-      auto manual_shape = manual_shape_map_.at(parameter_name);
-      for (auto dim_pair : manual_shape) {
-        layout_j["param_split_shape"].push_back(dim_pair.first);
-        layout_j["indices_offset"].push_back(dim_pair.second);
-      }
-    }
+    layout_j = to_json_tensorinfo_item(parameter_name, layout);
     stra_ckpt_info_j["parallel_layout_item"][parameter_name] = layout_j;
+  }
+  for (const auto &layout_pair : tensor_layout_map_) {
+    auto node_name = layout_pair.first;
+    auto layout_value_tuple = layout_pair.second;
+    nlohmann::json layout_j;
+    layout_j = to_json_layout_value_tuple_item(node_name, layout_value_tuple);
+    stra_ckpt_info_j["parallel_layout_value_item"][node_name] = layout_j;
+  }
+  for (const auto &layout_pair : out_tensor_layout_map_) {
+    auto node_name = layout_pair.first;
+    auto layout_value_tuple = layout_pair.second;
+    nlohmann::json layout_j;
+    layout_j = to_json_layout_value_tuple_item(node_name, layout_value_tuple);
+    stra_ckpt_info_j["parallel_out_layout_value_item"][node_name] = layout_j;
+  }
+  for (const auto &layout_pair : tensor_layout_newshape_map_) {
+    auto node_name = layout_pair.first;
+    auto layout_value_tuple = layout_pair.second;
+    nlohmann::json layout_j;
+    layout_j = to_json_layout_value_tuple_item(node_name, layout_value_tuple);
+    stra_ckpt_info_j["parallel_newshape_layout_value_item"][node_name] = layout_j;
+  }
+  for (const auto &layout_pair : out_tensor_layout_newshape_map_) {
+    auto node_name = layout_pair.first;
+    auto layout_value_tuple = layout_pair.second;
+    nlohmann::json layout_j;
+    layout_j = to_json_layout_value_tuple_item(node_name, layout_value_tuple);
+    stra_ckpt_info_j["parallel_out_newshape_layout_value_item"][node_name] = layout_j;
   }
   return stra_ckpt_info_j;
 }
@@ -186,7 +268,11 @@ straspb::ParallelStrategyMap StrategyCheckpointInfo::to_protobuf() const {
   }
   return parallel_strategy_map;
 }
-void StrategyJsonInfo::FromJson(const nlohmann::json &stra_json_info_j) {
+
+void StrategyJsonInfo::StrategyFromJson(const nlohmann::json &stra_json_info_j) {
+  if (!stra_json_info_j.contains("parallel_strategy_item")) {
+    return;
+  }
   for (const auto &stra_j : stra_json_info_j.at("parallel_strategy_item").items()) {
     auto node_name = stra_j.key();
     auto stage = stra_j.value().at("stage").get<int64_t>();
@@ -202,6 +288,110 @@ void StrategyJsonInfo::FromJson(const nlohmann::json &stra_json_info_j) {
     auto stra = stra_j.value().at("parallel_strategy").get<std::vector<std::vector<int64_t>>>();
     out_strategy_map_[node_name] = std::make_shared<Strategy>(stage, stra);
   }
+}
+
+void StrategyJsonInfo::LayoutFromJson(const nlohmann::json &stra_json_info_j) {
+  if (!stra_json_info_j.contains("parallel_layout_value_item")) {
+    return;
+  }
+  for (const auto &layout_j : stra_json_info_j.at("parallel_layout_value_item").items()) {
+    auto node_name = layout_j.key();
+    std::vector<ValuePtr> layout_dict_vector;
+    for (auto &json_i : layout_j.value().items()) {
+      const auto &layout_i = json_i.value();
+      auto device_matrix = layout_i.at("dev_matrix").get<std::vector<int64_t>>();
+      auto interleaved_parallel = layout_i.at("interleaved_parallel").get<bool>();
+      auto tensor_map = layout_i.at("tensor_map").get<std::vector<std::vector<int64_t>>>();
+      auto alias_name = layout_i.at("alias_name").get<std::vector<std::string>>();
+      std::vector<std::pair<ValuePtr, ValuePtr>> layout_map;
+      layout_map.emplace_back(std::make_pair(MakeValue(DEVICE_MATRIX), MakeValue(device_matrix)));
+      layout_map.emplace_back(std::make_pair(MakeValue(TENSOR_MAP), MakeValue(tensor_map)));
+      layout_map.emplace_back(std::make_pair(MakeValue(INTERLEAVED_PARALLEL), MakeValue(interleaved_parallel)));
+      layout_map.emplace_back(std::make_pair(MakeValue(ALIAS_NAME), MakeValue(alias_name)));
+      ValuePtr layout_dict = std::make_shared<ValueDictionary>(layout_map);
+      layout_dict_vector.emplace_back(layout_dict);
+    }
+    auto current_layout = std::make_shared<ValueTuple>(layout_dict_vector);
+    tensor_layout_map_[node_name] = current_layout;
+  }
+  if (!stra_json_info_j.contains("parallel_out_layout_value_item")) {
+    return;
+  }
+  for (const auto &layout_j : stra_json_info_j.at("parallel_out_layout_value_item").items()) {
+    auto node_name = layout_j.key();
+    std::vector<ValuePtr> layout_dict_vector;
+    for (auto &json_i : layout_j.value().items()) {
+      const auto &layout_i = json_i.value();
+      auto device_matrix = layout_i.at("dev_matrix").get<std::vector<int64_t>>();
+      auto interleaved_parallel = layout_i.at("interleaved_parallel").get<bool>();
+      auto tensor_map = layout_i.at("tensor_map").get<std::vector<std::vector<int64_t>>>();
+      auto alias_name = layout_i.at("alias_name").get<std::vector<std::string>>();
+      std::vector<std::pair<ValuePtr, ValuePtr>> layout_map;
+      layout_map.emplace_back(std::make_pair(MakeValue(DEVICE_MATRIX), MakeValue(device_matrix)));
+      layout_map.emplace_back(std::make_pair(MakeValue(TENSOR_MAP), MakeValue(tensor_map)));
+      layout_map.emplace_back(std::make_pair(MakeValue(INTERLEAVED_PARALLEL), MakeValue(interleaved_parallel)));
+      layout_map.emplace_back(std::make_pair(MakeValue(ALIAS_NAME), MakeValue(alias_name)));
+      ValuePtr layout_dict = std::make_shared<ValueDictionary>(layout_map);
+      layout_dict_vector.emplace_back(layout_dict);
+    }
+    auto current_layout = std::make_shared<ValueTuple>(layout_dict_vector);
+    out_tensor_layout_map_[node_name] = current_layout;
+  }
+}
+
+void StrategyJsonInfo::NewShapeLayoutFromJson(const nlohmann::json &stra_json_info_j) {
+  if (!stra_json_info_j.contains("parallel_newshape_layout_value_item")) {
+    return;
+  }
+  for (const auto &layout_j : stra_json_info_j.at("parallel_newshape_layout_value_item").items()) {
+    auto node_name = layout_j.key();
+    std::vector<ValuePtr> layout_dict_vector;
+    for (auto &json_i : layout_j.value().items()) {
+      const auto &layout_i = json_i.value();
+      auto device_matrix = layout_i.at("dev_matrix").get<std::vector<int64_t>>();
+      auto interleaved_parallel = layout_i.at("interleaved_parallel").get<bool>();
+      auto tensor_map = layout_i.at("tensor_map").get<std::vector<std::vector<int64_t>>>();
+      auto alias_name = layout_i.at("alias_name").get<std::vector<std::string>>();
+      std::vector<std::pair<ValuePtr, ValuePtr>> layout_map;
+      layout_map.emplace_back(std::make_pair(MakeValue(DEVICE_MATRIX), MakeValue(device_matrix)));
+      layout_map.emplace_back(std::make_pair(MakeValue(TENSOR_MAP), MakeValue(tensor_map)));
+      layout_map.emplace_back(std::make_pair(MakeValue(INTERLEAVED_PARALLEL), MakeValue(interleaved_parallel)));
+      layout_map.emplace_back(std::make_pair(MakeValue(ALIAS_NAME), MakeValue(alias_name)));
+      ValuePtr layout_dict = std::make_shared<ValueDictionary>(layout_map);
+      layout_dict_vector.emplace_back(layout_dict);
+    }
+    auto current_layout = std::make_shared<ValueTuple>(layout_dict_vector);
+    tensor_layout_newshape_map_[node_name] = current_layout;
+  }
+  if (!stra_json_info_j.contains("parallel_out_newshape_layout_value_item")) {
+    return;
+  }
+  for (const auto &layout_j : stra_json_info_j.at("parallel_out_newshape_layout_value_item").items()) {
+    auto node_name = layout_j.key();
+    std::vector<ValuePtr> layout_dict_vector;
+    for (auto &json_i : layout_j.value().items()) {
+      const auto &layout_i = json_i.value();
+      auto device_matrix = layout_i.at("dev_matrix").get<std::vector<int64_t>>();
+      auto interleaved_parallel = layout_i.at("interleaved_parallel").get<bool>();
+      auto tensor_map = layout_i.at("tensor_map").get<std::vector<std::vector<int64_t>>>();
+      auto alias_name = layout_i.at("alias_name").get<std::vector<std::string>>();
+      std::vector<std::pair<ValuePtr, ValuePtr>> layout_map;
+      layout_map.emplace_back(std::make_pair(MakeValue(DEVICE_MATRIX), MakeValue(device_matrix)));
+      layout_map.emplace_back(std::make_pair(MakeValue(TENSOR_MAP), MakeValue(tensor_map)));
+      layout_map.emplace_back(std::make_pair(MakeValue(INTERLEAVED_PARALLEL), MakeValue(interleaved_parallel)));
+      layout_map.emplace_back(std::make_pair(MakeValue(ALIAS_NAME), MakeValue(alias_name)));
+      ValuePtr layout_dict = std::make_shared<ValueDictionary>(layout_map);
+      layout_dict_vector.emplace_back(layout_dict);
+    }
+    auto current_layout = std::make_shared<ValueTuple>(layout_dict_vector);
+    out_tensor_layout_newshape_map_[node_name] = current_layout;
+  }
+}
+
+void StrategyJsonInfo::FromJson(const nlohmann::json &stra_json_info_j) {
+  StrategyFromJson(stra_json_info_j);
+  LayoutFromJson(stra_json_info_j);
+  NewShapeLayoutFromJson(stra_json_info_j);
 }
 }  // namespace parallel
 }  // namespace mindspore

@@ -705,6 +705,18 @@ void DumpParallelInfo(const CNodePtr &node, const std::shared_ptr<SubGraphIRInfo
     gsub->buffer << out_tmp->ToString();
   }
 
+  ValueTuplePtr in_layout_tmp = AnfDumpHandler::InLayoutValue(node);
+  if (in_layout_tmp != nullptr) {
+    gsub->buffer << ", in_layout: ";
+    gsub->buffer << in_layout_tmp->ToString();
+  }
+
+  ValueTuplePtr out_layout_tmp = AnfDumpHandler::OutLayoutValue(node);
+  if (out_layout_tmp != nullptr) {
+    gsub->buffer << ", out_layout: ";
+    gsub->buffer << out_layout_tmp->ToString();
+  }
+
   gsub->buffer << "}";
 }
 
