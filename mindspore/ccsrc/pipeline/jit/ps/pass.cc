@@ -47,6 +47,7 @@
 #include "frontend/parallel/pipeline_transformer/pipeline_interleave.h"
 #include "frontend/parallel/pipeline_transformer/gpipe_interleave_scheduler.h"
 #include "frontend/parallel/pass/merge_comm.h"
+#include "frontend/parallel/pass/set_forward_comm_id_for_comm_node.h"
 #include "frontend/parallel/cache_embedding/cache_embedding.h"
 #include "frontend/parallel/cache_embedding/ps_embedding_cache_inserter.h"
 #include "frontend/parallel/allreduce_fusion/step_allreduce_fusion.h"
@@ -608,6 +609,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, cons
      {"cell_reuse_handle_not_recompute_node_pass", cell_reuse_handle_not_recompute_node_pass},
      {"before_grad", before_grad},
      {"inplace_validation", opt::OptPassConfig(InplaceValidationWrapper)},
+     {kSetForwardCommIdForCommNodePass, opt::OptPassConfig(parallel::SetForwardCommIdForCommNode)},
      {kMetaFgExpandFlag, opt::OptPassConfig(opt::irpass::ExpandMetaFg())},
      {"inplace_validation_after_expand", opt::OptPassConfig(InplaceValidationAfterExpandWrapper)},
      {"flash_sp_send_recv_attached", opt::OptPassConfig(parallel::FlashSPSendRecvNodeAttach)},
@@ -621,7 +623,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, cons
      {"auto_monad_eliminator", opt::OptPassConfig(opt::AutoMonadEliminator())},
      {"cse", opt::OptPassConfig(opt::CSEPass(false))},
      {"a_3", a_3}});
-  AddMetaMorphosis(resource, kMetaFgExpandFlag, kExpandDumpFlag, &map_a);
+  AddMetaMorphosis(resource, kSetForwardCommIdForCommNodePass, kExpandDumpFlag, &map_a);
   AddParallelRenormalize(&map_a);
   return map_a;
 }

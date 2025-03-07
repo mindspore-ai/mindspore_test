@@ -92,6 +92,7 @@ const char kRewriterBeforeOptA[] = "rewriter_before_opt_a";
 const char kExpandDumpFlag[] = "expand_dump_flag";
 const char kSwitchSimplifyFlag[] = "switch_simplify";
 const char kMetaFgExpandFlag[] = "meta_fg_expand";
+const char kSetForwardCommIdForCommNodePass[] = "set_forward_comm_id_for_comm_node_pass";
 const char kJitOptA[] = "jit_opt_a";
 const char kJitOptB[] = "jit_opt_b";
 const char kPyInterpretToExecuteAfterOptA[] = "py_interpret_to_execute_after_opt_a";
