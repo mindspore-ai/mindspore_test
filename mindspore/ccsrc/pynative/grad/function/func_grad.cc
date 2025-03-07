@@ -1114,11 +1114,8 @@ void FuncGrad::BackPropagate() {
       const auto &last_gradient = gradient_out[i];
       // If last_gradient is None, It represents that this tensor grad is zeros.
       if (last_gradient->isa<None>()) {
-        if (!last_variable->is_custom_op_variable()) {
-          MS_LOG(DEBUG) << last_variable->ToString() << ", its gradient is kNone, no need propagate!";
-          continue;
-        }
-        MS_LOG(DEBUG) << "Get custom bprop variable, zeros input din may be have non zeors dout";
+        MS_LOG(DEBUG) << last_variable->ToString() << ", its gradient is kNone, no need propagate!";
+        continue;
       }
       if (input_buffer.find(last_fn.get()) != input_buffer.end()) {
         Add(last_gradient, next_edge.input_index, func_impl_, &input_buffer[last_fn.get()]);
