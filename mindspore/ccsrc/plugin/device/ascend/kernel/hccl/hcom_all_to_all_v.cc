@@ -102,6 +102,11 @@ int HcomAlltoAllVKernel::Resize(const std::vector<KernelTensor *> &inputs, const
   } else {
     MS_LOG(INTERNAL_EXCEPTION) << "Invalid hccl AlltoAllV input size " << inputs.size();
   }
+  auto block_size = GetValue<int64_t>(primitive_->GetAttr(kAttrBlockSize));
+  for (size_t i = 0; i < send_numel_list.size(); i++) {
+    send_numel_list[i] = send_numel_list[i] * block_size;
+    recv_numel_list[i] = recv_numel_list[i] * block_size;
+  }
   if (!GetAllToAllVParam(send_numel_list, recv_numel_list)) {
     MS_LOG(INTERNAL_EXCEPTION) << "GetAllToAllVParam failed.";
   }

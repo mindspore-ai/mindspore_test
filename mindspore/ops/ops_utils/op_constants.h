@@ -162,6 +162,7 @@ constexpr auto kAttrRecomputeCommDepend = "recompute_comm_depend";
 constexpr auto kAttrEagerDepend = "eager_depend";
 constexpr auto kAttrNotDelayFusion = "not_delay_fusion";
 constexpr auto kAttrGroup = "group";
+constexpr auto kAttrBlockSize = "block_size";
 constexpr auto kAttrRankList = "rank_list";
 constexpr auto kAttrGroups = "groups";
 constexpr auto kAttrGroupBack = "group_back";

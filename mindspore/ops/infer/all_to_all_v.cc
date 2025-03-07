@@ -69,13 +69,14 @@ class AlltoAllVInfer : public abstract::OpInferBase {
     } else {
       MS_LOG(EXCEPTION) << "AlltoAllV input numbers must be 3.";
     }
+    auto block_size = GetValue<int64_t>(primitive->GetAttr(kAttrBlockSize));
     int64_t output_numel = 0;
     for (size_t i = 0; i < recv_numel_list.size(); i++) {
       if (recv_numel_list[i] < 0) {
         output_numel = abstract::Shape::kShapeDimAny;
         break;
       }
-      output_numel += recv_numel_list[i];
+      output_numel += recv_numel_list[i] * block_size;
     }
     if (output_numel == 0) {
       return std::make_shared<abstract::TensorShape>(ShapeVector{});
