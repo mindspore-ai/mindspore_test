@@ -993,9 +993,6 @@ class KLDivLoss(Cell):
         - The output aligns with the mathematical definition of Kullback-Leibler divergence
           only when `reduction` is set to ``'batchmean'``.
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         reduction (str, optional): Specifies the reduction to be applied to the output. Default: ``'mean'``.
         log_target (bool, optional): Specifies whether `target` is passed in the log space. Default: ``False``.

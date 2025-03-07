@@ -12,9 +12,6 @@ mindspore.mint.nn.functional.glu
     其中 :math:`\sigma` 是sigmoid函数， :math:`\otimes` 是Hadamard乘积。
     请参考 `Language Modeling with Gated Convluational Networks <https://arxiv.org/abs/1612.08083>`_ 。
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **input** (Tensor) - 待计算的Tensor，数据类型为浮点型，shape为 :math:`(\ast_1, N, \ast_2)` ，其中 `*` 为任意额外维度，且要求 :math:`N` 为偶数。 :math:`N` 为 `input` 在被 `dim` 选中的维度上的大小。
         - **dim** (int，可选) - 指定分割 `input` 的轴，取值范围 `[-r, r)` ，其中 `r` 为 `input` 的维度数。默认值： ``-1`` ，输入 `input` 的最后一维。

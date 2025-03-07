@@ -5,7 +5,6 @@ moe_token_permute:
         .. warning::
             - It is only supported on Atlas A2 Training Series Products.
             - The input `tokens` only supports the bfloat16 data type in the current version.
-            - This is an experimental API that is subject to change or deletion.
             - When `indices` is 2-D, the size of the second dim must be less than or equal to 512.
 
         Args:

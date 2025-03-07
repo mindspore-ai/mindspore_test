@@ -250,9 +250,6 @@ class GLU(Cell):
     Here :math:`\sigma` is the sigmoid function, and :math:`\otimes` is the Hadamard product.
     See `Language Modeling with Gated Convluational Networks <https://arxiv.org/abs/1612.08083>`_ .
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         dim (int, optional): The dimension to split the input `input`. The value range is `[-r, r)` where `r`
             is the number of dimensions of `input`. Default: ``-1`` , the last dimension in `input`.

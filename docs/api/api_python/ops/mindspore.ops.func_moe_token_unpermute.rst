@@ -9,7 +9,6 @@ mindspore.ops.moe_token_unpermute
         - 仅支持 Atlas A2 训练系列产品。
         - 当前版本下，输入 `permuted_tokens` 和 `probs` 仅支持bfloat16类型。
         - `sorted_indices` 必须不存在重复值，否则结果未定义。
-        - 这是一个实验性API，后续可能修改或删除。
 
     参数：
         - **permuted_tokens** (Tensor) - 要进行反排列的已排列标记的Tensor。

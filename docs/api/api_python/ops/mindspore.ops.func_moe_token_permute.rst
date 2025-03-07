@@ -8,7 +8,6 @@ mindspore.ops.moe_token_permute
     .. warning::
         - 仅支持 Atlas A2 训练系列产品。
         - 当前版本下，输入 `tokens` 仅支持bfloat16类型。
-        - 这是一个实验性API，后续可能修改或删除。
         - `indices` 为二维的时候，第二维的size需要小于等于512。
 
     参数：

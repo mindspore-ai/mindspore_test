@@ -9,7 +9,6 @@ mindspore.Tensor.log2
         y_i = \log_2(x_i)
 
     .. warning::
-        - 这是一个实验性API，可能会更改或删除。
         - 如果log2的输入值范围在(0, 0.01]或[0.95, 1.05]区间，输出精度可能会受影响。
 
     .. note::
