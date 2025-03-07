@@ -148,7 +148,7 @@ def test_embedding_semi_auto_parallel():
     Expectation: compile done without error.
     """
     strategy1 = ((1, 1), (2, 4))
-    out_strategy = ((2, 4, 1),)
+    out_strategy = ((1, 1, 4),)
     strategy2 = ((2, 4, 1), (2, 4, 1))
     net = GradWrap(NetWithLoss(Net(strategy1, strategy2, embedding_out_strategy=out_strategy)))
     x = Parameter(np.ones([64, 64]).astype(np.float32))
