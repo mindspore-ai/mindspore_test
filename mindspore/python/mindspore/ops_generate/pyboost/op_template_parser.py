@@ -436,16 +436,7 @@ parse_args.arg_list_[${idx}]))->value());\n"
                                 "to_rates": "ops::OP_DTYPE::DT_TUPLE_INT"}
         arg_handler_processor = []
         op_args = op_proto.op_args
-        self_index = 0
-        if is_tensor_api:
-            self_index = self.get_input_tensor_index(op_proto)
         for idx, op_arg in enumerate(op_args):
-            index = idx
-            if is_tensor_api:
-                if self_index < idx:
-                    index = idx - 1
-                elif self_index == idx:
-                    continue
             arg_handler = op_arg.arg_handler
             func_str = ''.join(word.capitalize()
                                for word in arg_handler.split('_'))
@@ -456,17 +447,17 @@ parse_args.arg_list_[${idx}]))->value());\n"
                     arg_handler_str = arg_handler_prt_template.replace(func_str=func_str,
                                                                        func_name=func_name,
                                                                        op_arg_name=op_arg_name,
-                                                                       idx=index,
+                                                                       idx=idx,
                                                                        new_type=new_type)
                 else:
                     arg_handler_str = arg_handler_template.replace(func_str=func_str,
                                                                    func_name=func_name,
                                                                    op_arg_name=op_arg_name,
-                                                                   idx=index,
+                                                                   idx=idx,
                                                                    new_type=new_type)
 
                 if op_arg.default == "None":
-                    arg_handler_str = arg_handler_optional_template.replace(idx=index,
+                    arg_handler_str = arg_handler_optional_template.replace(idx=idx,
                                                                             arg_handler_str=arg_handler_str)
                 arg_handler_processor.append(arg_handler_str)
 
@@ -514,12 +505,6 @@ parse_args.arg_list_[${idx}]))->value());\n"
                 if self_index == idx:
                     convert_args_str += "input_tensor, "
                     continue
-                elif self_index < idx:
-                    index = idx - 1
-                else:
-                    index = idx
-            else:
-                index = idx
             is_optional = is_optional_param(op_arg)
             arg_convert_template = Template("parse_args.ConvertOptional<${des_type}>(${index}), ") if is_optional \
                                    else Template("parse_args.Convert<${des_type}>(${index}), ")
@@ -527,6 +512,6 @@ parse_args.arg_list_[${idx}]))->value());\n"
                 arg_type_str = get_input_args_type_str('type', False)
             else:
                 arg_type_str = get_input_args_type_str(op_arg.arg_dtype, False)
-            convert_args_str += arg_convert_template.replace(index=index,
+            convert_args_str += arg_convert_template.replace(index=idx,
                                                              des_type=arg_type_str[:-3])
         return convert_args_str[:-2]

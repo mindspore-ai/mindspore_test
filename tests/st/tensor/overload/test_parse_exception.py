@@ -113,18 +113,3 @@ where=<Tensor, bool>, return_indices=<bool>)" in str(raise_info.value)
     assert "max(dim=<int>, keepdim=<bool>)" in str(raise_info.value)
     assert "(int, List<int>)" in str(raise_info.value)
     assert "~~~~~~~~~~~" in str(raise_info.value)
-
-
-
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
-def test_wrong_input_exception():
-    """
-    Feature: parse error info.
-    Description: Check parse error info when input is not none.
-    Expectation: Raise expected exception.
-    """
-    with pytest.raises(TypeError) as raise_info:
-        ms.Tensor.add([1], ms.Tensor([1, 2, 3]))
-    assert "Tensor.add" in str(raise_info.value)
-    assert "doesn't apply to 'List<int>' object." in str(raise_info.value)

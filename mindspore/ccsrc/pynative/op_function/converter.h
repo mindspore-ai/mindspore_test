@@ -139,6 +139,7 @@ struct PYNATIVE_EXPORT ParserArgs {
     dst_types_.resize(signature->params_.size());
   }
   ValuePtr ConvertByParseDtype(size_t index);
+  void InsertInputTensor(size_t index, const py::object &input);
   void SetArg(const py::object &arg, const ConvertPair &convert_type, size_t index);
   void ClearArgs();
   const int &GetOvertLoadIndex() { return signature_->index_; }
@@ -174,7 +175,6 @@ struct PYNATIVE_EXPORT ParserArgs {
   // {src_type , dst_type} for convert
   std::vector<ops::OP_DTYPE> src_types_;
   std::vector<ops::OP_DTYPE> dst_types_;
-  int64_t input_index_ = -1;
 };
 
 // parser util

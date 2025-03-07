@@ -1134,6 +1134,12 @@ ValuePtr ParserArgs::ConvertByParseDtype(size_t index) {
   return nullptr;
 }
 
+void ParserArgs::InsertInputTensor(size_t index, const py::object &input) {
+  arg_list_.insert(arg_list_.begin() + index, input);
+  src_types_.insert(src_types_.begin() + index, ops::OP_DTYPE::DT_BEGIN);
+  dst_types_.insert(dst_types_.begin() + index, ops::OP_DTYPE::DT_TENSOR);
+}
+
 ValuePtr UnpackTensor(const py::object &input, const std::string &func_name) {
   if (IsStubTensor(input)) {
     return ConvertStubTensor(input);
@@ -1165,8 +1171,12 @@ void ParserArgs::PrintConvertError(size_t index) {
   const auto &obj = arg_list_[index];
   std::stringstream ss;
   size_t param_idx = index;
+  // In tensor api, 'input' is not included in the signature's parameter list
   if (arg_list_.size() > signature_->params_.size()) {
-    MS_LOG(EXCEPTION) << "Invalid param idx, please check.";
+    if (param_idx == 0) {
+      MS_LOG(EXCEPTION) << "Invalid param idx, please check.";
+    }
+    param_idx -= 1;
   }
   ss << signature_->name_ << "():";
   ss << " argument \'" << signature_->params_[param_idx].name_ << "\'(position " << param_idx << ") should be "
