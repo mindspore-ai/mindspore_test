@@ -34,6 +34,7 @@ file(GLOB_RECURSE MS_OPTIMIZER_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "./ir_fusion/batchnormgrad_to_bninfergrad.cc"
         "./ir_fusion/adaptive_max_pool2d_fusion.cc"
         "./ir_fusion/flash_attention_fusion.cc"
+        "./ir_fusion/grouped_matmul_assignadd_fusion.cc"
         "./ir_fusion/mc2_fusion.cc"
         "./ir_fusion/insert_depend_for_all_gather.cc"
         "./ir_fusion/batchmatmul_reducescatter_alltoall_fusion.cc"

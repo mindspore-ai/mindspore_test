@@ -11,8 +11,10 @@ file(GLOB_RECURSE SRC_IN_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "rts/*.cc"
         "akg/*.cc"
         "graph_kernel/*.cc"
+        "utils/*.cc"
         "internal/internal_kernel_build.cc"
         "internal/internal_ascend_adapter.cc"
+        "atb/atb_kernel_build.cc"
         )
 
 if(NOT DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
@@ -33,3 +35,5 @@ add_library(_mindspore_plugin_device_ascend_kernel_910b_obj OBJECT ${SRC_IN_910B
 add_subdirectory(aicore)
 
 add_subdirectory(internal)
+
+add_subdirectory(atb)

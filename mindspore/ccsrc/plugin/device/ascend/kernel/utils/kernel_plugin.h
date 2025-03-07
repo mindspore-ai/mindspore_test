@@ -31,8 +31,8 @@ class KernelPlugin {
   virtual bool IsRegisteredKernel(const AnfNodePtr &anf_node) = 0;
   virtual void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node,
                                                          std::vector<std::string> *input_formats,
-                                                         std::vector<std::string> *output_formats) = 0;
-  virtual void InitInternalLog() = 0;
+                                                         std::vector<std::string> *output_formats) {}
+  virtual void InitInternalLog() {}
 };
 
 #define MS_PLUGIN_FACTORY_REG(BASE, NAME, DERIVE)                                              \

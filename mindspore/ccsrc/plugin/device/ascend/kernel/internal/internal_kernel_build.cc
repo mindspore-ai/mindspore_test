@@ -23,7 +23,7 @@
 #include <set>
 #include <unordered_map>
 
-#include "plugin/device/ascend/kernel/internal/kernel_plugin.h"
+#include "plugin/device/ascend/kernel/utils/kernel_plugin.h"
 #include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {

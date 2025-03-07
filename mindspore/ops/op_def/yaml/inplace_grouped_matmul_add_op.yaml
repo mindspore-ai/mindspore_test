@@ -1,0 +1,24 @@
+#operator inplace_grouped_matmul_add
+inplace_grouped_matmul_add:
+    args:
+        x:
+            dtype: tensor
+        weight:
+            dtype: tensor
+        group_list:
+            dtype: tensor
+        out:
+            dtype: tensor
+    args_signature:
+        rw_write: out
+    returns:
+        output:
+            dtype: tensor
+            inplace: out
+    function:
+        name: grouped_matmul_add_
+    labels:
+        side_effect_mem: True
+    dispatch:
+        enable: True
+        Ascend: InplaceGroupedMatmulAddAscend

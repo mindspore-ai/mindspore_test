@@ -33,19 +33,12 @@ class OPS_API GroupedMatmulV4FuncImpl final : public GroupedMatmulBaseFuncImpl {
   }
   ~GroupedMatmulV4FuncImpl() = default;
 
-  std::set<int64_t> GetValueDependArgIndices() const override {
-    return {static_cast<int64_t>(this->idxes_.group_list)};
-  }
-
   TypeIdList InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
  protected:
   void FetchGroupInfo(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
   int64_t FetchGroupListSize(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
-
-  int32_t PrivateCheckValidation(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
-                                 int64_t group_type) const override;
 
  private:
   int64_t group_list_type_idx_ = 14;

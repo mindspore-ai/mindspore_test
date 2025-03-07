@@ -74,6 +74,14 @@ if(ENABLE_D)
             )
         endif()
     endif()
+    if(EXISTS ${ASCEND_NNAL_ATB_PATH})
+        install(
+                TARGETS mindspore_atb_kernels LIBRARY
+                DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+                COMPONENT mindspore
+                NAMELINK_SKIP
+        )
+    endif()
     install(
         TARGETS ms_atb_boost
         DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
