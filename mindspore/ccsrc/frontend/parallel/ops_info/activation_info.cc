@@ -78,7 +78,7 @@ Status ActivationBase::CheckInputLayout() {
 }
 
 Status ActivationBase::CheckOutputLayout() {
-  if (outputs_tensor_info_.size() != kSizeOne) {
+  if (outputs_tensor_info_.size() != outputs_size_) {
     MS_LOG(ERROR) << "The size of output_tensor_layout for " << name_ << " is " << outputs_tensor_info_.size()
                   << " rather than 1.";
     return FAILED;
@@ -101,7 +101,9 @@ Status AShardIdentityInfo::CheckOutputLayout() { return SUCCESS; }
 Status ActivationBase::InferOutputTensorInfo() {
   output_infer_tensor_layout_ = inputs_tensor_info_[kIndex0].tensor_layout();
   TensorInfo output_tensor_info(output_infer_tensor_layout_);
-  outputs_tensor_info_.push_back(output_tensor_info);
+  for (size_t i = 0; i < outputs_size_; ++i) {
+    outputs_tensor_info_.push_back(output_tensor_info);
+  }
   return SUCCESS;
 }
 
@@ -385,8 +387,8 @@ Status CumOpBase::GetAttrs() {
                   << ", ops::GetOpInputsNum: " << ops::GetOpInputsNum(op_name);
     return FAILED;
   }
-
-  std::optional<int64_t> axis_opt = GetScalarValueFromInputs<int64_t>(input_value_, op_name, AXIS);
+  auto axis_name = is_axis_ ? AXIS : DIM;
+  std::optional<int64_t> axis_opt = GetScalarValueFromInputs<int64_t>(input_value_, op_name, axis_name);
   if (!axis_opt.has_value()) {
     MS_LOG(ERROR) << name_ << ": The type of axis has no value.";
     return FAILED;
@@ -427,7 +429,8 @@ Status CumOpBase::CheckStrategy(const StrategyPtr &strategy) {
   }
   auto axis_split = input_strategy[LongToSize(axis_)];
   if (axis_split != NO_SPLIT_STRATEGY) {
-    MS_LOG(ERROR) << "Currently, CumSum does not support the sharding strategies which splits axis.";
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the input's dimension 'dim'/'axis' can not be split, "
+                  << "the 'dim'/'axis' is " << axis_ << " and the shard strategy is " << input_strategy << ".";
     return FAILED;
   }
 
@@ -464,6 +467,14 @@ Status CumOpBase::InferMirrorOps() {
   OperatorVector op_for_axis;
   (void)mirror_ops_.emplace_back(std::move(op_for_axis));
   return SUCCESS;
+}
+
+ReplaceGraphPtr CumsumExtInfo::replace_graph(const CNodePtr &cnode) {
+  if (inputs_tensor_info_[kIndex0].tensor_layout().IsInterleavedParallel()) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "For distributed operator " << name_ << " it does not support "
+                                       << "interleaved parallel.";
+  }
+  return replace_graph_;
 }
 
 Status ActivationBase::InferDevMatrixShape() {
@@ -1216,6 +1227,86 @@ Status SortInfo::GetAttrs() {
   return SUCCESS;
 }
 
+Status SortExtInfo::GetAttrs() {
+  if (inputs_shape_.empty()) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the inputs shape is empty.";
+    return FAILED;
+  }
+  int rank = SizeToInt(inputs_shape_[kIndex0].size());
+
+  // get attr dim
+  auto dim_opt = GetScalarValueFromInputs<int64_t>(input_value_, name_, DIM);
+  if (!dim_opt.has_value()) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", failed to get the input value of parameter 'dim'.";
+    return FAILED;
+  }
+  auto dim = dim_opt.value() < 0 ? dim_opt.value() + rank : dim_opt.value();
+  axis_.push_back(dim);
+
+  return SUCCESS;
+}
+
+Status SortExtInfo::CheckInputLayout() {
+  if (inputs_tensor_info_.size() != kSizeOne) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 1, but got "
+                  << inputs_tensor_info_.size() << ".";
+    return FAILED;
+  }
+  auto input_tensor_layout = inputs_tensor_info_[kIndex0].tensor_layout();
+  auto input_tensor_map = input_tensor_layout.tensor_map_before();
+  dev_matrix_shape_ = input_tensor_layout.device_arrangement_origin().array();
+  Shapes input_shard_strategy;
+  Shape dim_shard_strategy;
+  for (size_t i = 0; i < input_tensor_map.size(); ++i) {
+    dim_shard_strategy.clear();
+    for (size_t j = 0; j < input_tensor_map[i].size(); ++j) {
+      auto shard_idx = dev_matrix_shape_.size() - 1 - input_tensor_map[i][j];
+      dim_shard_strategy.push_back(dev_matrix_shape_[shard_idx]);
+    }
+    input_shard_strategy.push_back(dim_shard_strategy);
+  }
+  if (input_shard_strategy[axis_[kIndex0]].size() == 1 && input_shard_strategy[axis_[kIndex0]][kIndex0] == 1) {
+    return SUCCESS;
+  } else {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the input's dimension 'dim' can not be split, the 'dim'"
+                  << " is " << axis_[kIndex0] << " and the input shard strategy is " << input_shard_strategy << ".";
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+Status SortExtInfo::InferAsLossDivisorByLayout() {
+  if (outputs_tensor_info_.size() != kSizeTwo) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of outputs_tensor_info should be 2, but got "
+                  << outputs_tensor_info_.size();
+    return FAILED;
+  }
+
+  auto out_dev_matrix_shape = outputs_tensor_info_[kIndex0].tensor_layout().device_arrangement_origin().array();
+  TensorMaps outputs_tensor_map = outputs_tensor_info_[kIndex0].tensor_layout().tensor_map_before();
+  if (out_dev_matrix_shape.empty()) {
+    MS_LOG(DEBUG) << "For distributed operator " << name_ << ", out_dev_matrix_shape is empty";
+    out_dev_matrix_shape = dev_matrix_shape_;
+  }
+  Shape squashed_tensor_map;
+  for (const auto &tensor_map : outputs_tensor_map) {
+    std::copy(tensor_map.begin(), tensor_map.end(), std::back_inserter(squashed_tensor_map));
+  }
+
+  as_loss_divisor_ = ComputeRepeatDeviceNumByTensorMap(out_dev_matrix_shape, squashed_tensor_map);
+  MS_LOG(DEBUG) << "For distributed operator " << name_ << ", the dev matrix is " << out_dev_matrix_shape << ", the "
+                << "output tensor map is " << squashed_tensor_map << ", the loss divisor is " << as_loss_divisor_;
+  return SUCCESS;
+}
+
+ReplaceGraphPtr SortExtInfo::replace_graph(const CNodePtr &cnode) {
+  if (inputs_tensor_info_[kIndex0].tensor_layout().IsInterleavedParallel()) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "For distributed operator " << name_ << " it does not support "
+                                       << "interleaved parallel.";
+  }
+  return replace_graph_;
+}
+
 Status GeLUInfo::InferForwardCommunicationByLayout() { return SUCCESS; }
 
 REGISTER(ActivationInfo);
@@ -1225,16 +1316,18 @@ REGISTER(FastGeLUInfo);
 REGISTER(TanhInfo);
 REGISTER(SoftmaxInfo);
 REGISTER(SortInfo);
+REGISTER(SortExtInfo);
 REGISTER(LogSoftmaxInfo);
 REGISTER(ReverseV2Info);
 REGISTER(CumSumInfo);
+REGISTER(CumsumExtInfo);
 REGISTER(CummaxInfo);
 REGISTER(CumminInfo);
 REGISTER(CumProdInfo);
 REGISTER(EluInfo);
 REGISTER(ReLUInfo);
 REGISTER(SiLUInfo);
-REGISTER(identityInfo);
+REGISTER(IdentityInfo);
 REGISTER(AShardIdentityInfo);
 REGISTER(RepeatElementsInfo);
 REGISTER(ReLU6Info);
@@ -1258,6 +1351,12 @@ REGISTER(SeLUInfo);
 REGISTER(SoftShrinkInfo);
 REGISTER(L2LossInfo);
 REGISTER(ErfinvInfo);
+REGISTER(EluExtInfo);
+REGISTER(LeakyReLUExtInfo);
+REGISTER(NanToNumInfo);
+REGISTER(SoftplusExtInfo);
+REGISTER(RemainderTensorScalarInfo);
+REGISTER(RemainderScalarTensorInfo);
 REGISTER(InvertInfo);           // has not bprop
 REGISTER(PopulationCountInfo);  // has not bprop
 }  // namespace parallel

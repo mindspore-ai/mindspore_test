@@ -29,7 +29,7 @@ from mindspore.common.tensor import Tensor
 from mindspore.ops._utils import get_broadcast_shape
 from mindspore.ops.primitive import Primitive, PrimitiveWithInfer, PrimitiveWithCheck, prim_attr_register, _run_op
 from mindspore._c_expression import TensorPy as Tensor_
-from ..auto_generate import (Add, Addcdiv, AddcdivExt, Addcmul, ReduceMean, ReduceSum, ReduceAll, ReduceAny,
+from ..auto_generate import (Add, Addcdiv, AddcdivExt, Addcmul, AddcmulExt, ReduceMean, ReduceSum, ReduceAll, ReduceAny,
                              ReduceMax, ReduceMin, ReduceProd, Betainc, Neg, MatMul, BatchMatMul,
                              Mul, Square, Rsqrt, Sqrt, Reciprocal, Pow, Exp, Cdist,
                              Logit, ReduceStd, Expm1, Log, Log1p, Erf, Erfc,

@@ -47,6 +47,10 @@ class ActivationBase : public OperatorInfo {
   Status CheckOutputLayout() override;
   Status InferOutputTensorInfo() override;
   virtual Status ComputeReplaceGraphForInterleaved(const CNodePtr &cnode);
+  void set_output_infer_tensor_layout(const TensorLayout &tensor_layout) {
+    output_infer_tensor_layout_ = tensor_layout;
+  }
+  size_t outputs_size_ = 1;
 
  private:
   TensorLayout output_infer_tensor_layout_;
@@ -172,6 +176,22 @@ class SortInfo : public Softmax {
   Status GetAttrs() override;
 };
 
+class SortExtInfo : public SortInfo {
+ public:
+  SortExtInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+              const PrimitiveAttrs &attrs)
+      : SortInfo(name, inputs_shape, outputs_shape, attrs) {
+    outputs_size_ = 2;
+  }
+  ~SortExtInfo() override = default;
+  ReplaceGraphPtr replace_graph(const CNodePtr &cnode) override;
+
+ protected:
+  Status GetAttrs() override;
+  Status InferAsLossDivisorByLayout() override;
+  Status CheckInputLayout() override;
+};
+
 class ReverseV2Info : public Softmax {
  public:
   ReverseV2Info(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
@@ -196,6 +216,7 @@ class CumOpBase : public ActivationBase {
   Status InferMirrorOps() override;
   Status GetAttrs() override;
   int64_t axis_ = -1;
+  bool is_axis_ = true;
 };
 
 class CumSumInfo : public CumOpBase {
@@ -204,6 +225,17 @@ class CumSumInfo : public CumOpBase {
              const PrimitiveAttrs &attrs)
       : CumOpBase(name, inputs_shape, outputs_shape, attrs, std::make_shared<CumSumCost>()) {}
   ~CumSumInfo() override = default;
+};
+
+class CumsumExtInfo : public CumOpBase {
+ public:
+  CumsumExtInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                const PrimitiveAttrs &attrs)
+      : CumOpBase(name, inputs_shape, outputs_shape, attrs, std::make_shared<CumsumExtCost>()) {
+    is_axis_ = False;
+  }
+  ~CumsumExtInfo() override = default;
+  ReplaceGraphPtr replace_graph(const CNodePtr &cnode) override;
 };
 
 class CumProdInfo : public CumOpBase {
@@ -243,6 +275,22 @@ class EluInfo : public ActivationOther {
   ~EluInfo() override = default;
 };
 
+class EluExtInfo : public EluInfo {
+ public:
+  EluExtInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+             const PrimitiveAttrs &attrs)
+      : EluInfo(name, inputs_shape, outputs_shape, attrs) {}
+  ~EluExtInfo() override = default;
+};
+
+class LeakyReLUExtInfo : public EluInfo {
+ public:
+  LeakyReLUExtInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                   const PrimitiveAttrs &attrs)
+      : EluInfo(name, inputs_shape, outputs_shape, attrs) {}
+  ~LeakyReLUExtInfo() override = default;
+};
+
 class ReLUInfo : public ActivationOther {
  public:
   ReLUInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
@@ -270,12 +318,12 @@ class AShardIdentityInfo : public ReLUInfo {
   Status CheckOutputLayout() override;
 };
 
-class identityInfo : public ActivationOther {
+class IdentityInfo : public ActivationOther {
  public:
-  identityInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+  IdentityInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
                const PrimitiveAttrs &attrs)
       : ActivationOther(name, inputs_shape, outputs_shape, attrs, std::make_shared<identityCost>()) {}
-  ~identityInfo() override = default;
+  ~IdentityInfo() override = default;
 };
 
 class RepeatElementsInfo : public ActivationOther {
@@ -308,6 +356,14 @@ class SoftplusInfo : public ActivationOther {
                const PrimitiveAttrs &attrs)
       : ActivationOther(name, inputs_shape, outputs_shape, attrs, std::make_shared<SoftplusCost>()) {}
   ~SoftplusInfo() override = default;
+};
+
+class SoftplusExtInfo : public SoftplusInfo {
+ public:
+  SoftplusExtInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                  const PrimitiveAttrs &attrs)
+      : SoftplusInfo(name, inputs_shape, outputs_shape, attrs) {}
+  ~SoftplusExtInfo() override = default;
 };
 
 class CastInfo : public ActivationOther {
@@ -529,6 +585,30 @@ class PopulationCountInfo : public ActivationOther {
                       const PrimitiveAttrs &attrs)
       : ActivationOther(name, inputs_shape, outputs_shape, attrs, std::make_shared<ReLUCost>()) {}
   ~PopulationCountInfo() = default;
+};
+
+class NanToNumInfo : public ActivationOther {
+ public:
+  NanToNumInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+               const PrimitiveAttrs &attrs)
+      : ActivationOther(name, inputs_shape, outputs_shape, attrs, std::make_shared<NanToNumCost>()) {}
+  ~NanToNumInfo() = default;
+};
+
+class RemainderTensorScalarInfo : public ActivationOther {
+ public:
+  RemainderTensorScalarInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                            const PrimitiveAttrs &attrs)
+      : ActivationOther(name, inputs_shape, outputs_shape, attrs, std::make_shared<RemainderCost>()) {}
+  ~RemainderTensorScalarInfo() = default;
+};
+
+class RemainderScalarTensorInfo : public ActivationOther {
+ public:
+  RemainderScalarTensorInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                            const PrimitiveAttrs &attrs)
+      : ActivationOther(name, inputs_shape, outputs_shape, attrs, std::make_shared<RemainderCost>()) {}
+  ~RemainderScalarTensorInfo() = default;
 };
 }  // namespace parallel
 }  // namespace mindspore

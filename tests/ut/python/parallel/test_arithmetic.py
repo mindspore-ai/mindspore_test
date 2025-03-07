@@ -21,6 +21,7 @@ from mindspore import Parameter, Tensor, context, ops, Symbol
 from mindspore.common.api import _cell_graph_executor
 from mindspore.ops import composite as C
 from mindspore.ops import operations as P
+from mindspore.parallel.shard import Layout
 from tests.ut.python.ops.test_math_ops import VirtualLoss
 
 
@@ -1399,3 +1400,126 @@ def test_matmul_masked_fill_broadcast_with_value_tensor():
     y = Tensor(np.ones([32, 1]), dtype=ms.float32)
     b = Tensor(np.ones([1, 64]), dtype=ms.bool_)
     compile_net(net, x, y, b)
+
+
+class AddcmulExtNet(nn.Cell):
+    def __init__(self, strategy1=None, strategy2=None):
+        super().__init__()
+        self.matmul = P.MatMul().shard(strategy1)
+        self.addcmul = ops.auto_generate.addcmul_ext_op.shard(strategy2)
+        self.value = 1
+
+    def construct(self, x, y, tensor1, tensor2):
+        out = self.matmul(x, y)
+        out = self.addcmul(out, tensor1, tensor2, self.value)
+        return out
+
+
+def test_matmul_addcmulext_same_shape():
+    """
+    Feature: distribute operator AddcmulExt when 3 inputs have the same shape.
+    Description: MatMul-AddcmulExt net with strategy in semi auto parallel.
+    Expectation: compile done without error.
+    """
+    context.set_auto_parallel_context(device_num=16, global_rank=0, parallel_mode="semi_auto_parallel")
+    x = Tensor(np.ones([64, 32]), dtype=ms.float32)
+    y = Tensor(np.ones([32, 8]), dtype=ms.float32)
+    tensor1 = Tensor(np.ones([64, 8]), dtype=ms.float32)
+    tensor2 = Tensor(np.ones([64, 8]), dtype=ms.float32)
+    strategy1 = ((4, 2), (2, 2))
+    strategy2 = ((4, 2), (4, 2), (4, 2))
+    net = AddcmulExtNet(strategy1, strategy2)
+    net.set_train()
+    _cell_graph_executor.compile(net, x, y, tensor1, tensor2)
+
+
+def test_matmul_addcmulext_broadcast():
+    """
+    Feature: distribute operator AddcmulExt when 3 inputs have different shapes.
+    Description: MatMul-AddcmulExt net with strategy in semi auto parallel.
+    Expectation: compile done without error.
+    """
+    context.set_auto_parallel_context(device_num=16, global_rank=0, parallel_mode="semi_auto_parallel")
+    x = Tensor(np.ones([64, 32]), dtype=ms.float32)
+    y = Tensor(np.ones([32, 8]), dtype=ms.float32)
+    tensor1 = Tensor(np.ones([2, 64, 8]), dtype=ms.float32)
+    tensor2 = Tensor(np.ones([8]), dtype=ms.float32)
+    strategy1 = ((4, 2), (2, 2))
+    strategy2 = ((4, 2), (2, 4, 2), (2,))
+    net = AddcmulExtNet(strategy1, strategy2)
+    net.set_train()
+    _cell_graph_executor.compile(net, x, y, tensor1, tensor2)
+
+
+def test_matmul_addcmulext_auto_parallel():
+    """
+    Feature: distribute operator AddcmulExt in auto parallel.
+    Description: MatMul-AddcmulExt net with strategy in auto parallel.
+    Expectation: compile done without error.
+    """
+    context.set_auto_parallel_context(device_num=16, global_rank=0, parallel_mode="auto_parallel")
+    x = Tensor(np.ones([64, 32]), dtype=ms.float32)
+    y = Tensor(np.ones([32, 8]), dtype=ms.float32)
+    tensor1 = Tensor(np.ones([64, 8]), dtype=ms.float32)
+    tensor2 = Tensor(np.ones([64, 8]), dtype=ms.float32)
+    strategy1 = ((4, 2), (2, 2))
+    net = AddcmulExtNet(strategy1)
+    net.set_train()
+    _cell_graph_executor.compile(net, x, y, tensor1, tensor2)
+
+
+def test_matmul_addcmulext_dynamic():
+    """
+    Feature: distribute operator AddcmulExt in auto parallel.
+    Description: matmul-sub net with strategy in semi auto parallel.
+    Expectation: compile done without error.
+    """
+    context.set_auto_parallel_context(device_num=16, global_rank=0, parallel_mode="semi_auto_parallel")
+    s1 = Symbol(divisor=8)
+    x = Tensor(shape=[s1, 32], dtype=ms.float32)
+    y = Tensor(shape=[32, s1], dtype=ms.float32)
+    tensor1 = Tensor(shape=[s1, 8], dtype=ms.float32)
+    tensor2 = Tensor(shape=[s1, 8], dtype=ms.float32)
+    strategy1 = ((4, 2), (2, 2))
+    strategy2 = ((4, 2), (4, 2), (4, 2))
+    net = AddcmulExtNet(strategy1, strategy2)
+    net.set_train()
+    _cell_graph_executor.compile(net, x, y, tensor1, tensor2)
+
+
+def test_matmul_addcmulext_layout_same_shape():
+    """
+    Feature: distribute operator AddcmulExt when 3 inputs have the same shape.
+    Description: MatMul-AddcmulExt net with layout in semi auto parallel.
+    Expectation: compile done without error.
+    """
+    context.set_auto_parallel_context(device_num=16, global_rank=0, parallel_mode="semi_auto_parallel")
+    layout = Layout((4, 2, 2), ("a", "b", "c"))
+    x = Tensor(np.ones([64, 32]), dtype=ms.float32)
+    y = Tensor(np.ones([32, 8]), dtype=ms.float32)
+    tensor1 = Tensor(np.ones([64, 8]), dtype=ms.float32)
+    tensor2 = Tensor(np.ones([64, 8]), dtype=ms.float32)
+    in_layout1 = (layout("a", "b"), layout("b", "c"))
+    in_layout2 = (layout("a", "c"), layout("a", "c"), layout("a", "c"))
+    net = AddcmulExtNet(in_layout1, in_layout2)
+    net.set_train()
+    _cell_graph_executor.compile(net, x, y, tensor1, tensor2)
+
+
+def test_matmul_addcmulext_layout_broadcast():
+    """
+    Feature: distribute operator AddcmulExt when 3 inputs have different shapes.
+    Description: MatMul-AddcmulExt net with layout in semi auto parallel.
+    Expectation: compile done without error.
+    """
+    context.set_auto_parallel_context(device_num=16, global_rank=0, parallel_mode="semi_auto_parallel")
+    layout = Layout((2, 4, 2), ("a", "b", "c"))
+    x = Tensor(np.ones([64, 32]), dtype=ms.float32)
+    y = Tensor(np.ones([32, 8]), dtype=ms.float32)
+    tensor1 = Tensor(np.ones([2, 64, 8]), dtype=ms.float32)
+    tensor2 = Tensor(np.ones([8]), dtype=ms.float32)
+    strategy1 = (layout("a", "b"), layout("b", "c"))
+    strategy2 = (layout("b", "c"), layout("a", "b", "c"), layout("c"))
+    net = AddcmulExtNet(strategy1, strategy2)
+    net.set_train()
+    _cell_graph_executor.compile(net, x, y, tensor1, tensor2)

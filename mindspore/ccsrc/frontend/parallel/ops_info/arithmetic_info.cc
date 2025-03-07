@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <utility>
 #include <vector>
+#include <unordered_set>
 
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "frontend/parallel/device_matrix.h"
@@ -462,6 +463,139 @@ std::vector<StrategyPtr> ArithmeticBase::GenerateOpStrategies(int64_t stage_id) 
   return sp_vector;
 }
 
+Status OuterInfo::CheckStrategy(const StrategyPtr &strategy) {
+  if (CheckStrategyValue(strategy, inputs_shape_) != SUCCESS) {
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+Status OuterInfo::InferDevMatrixShape() {
+  MS_EXCEPTION_IF_NULL(strategy_);
+  std::vector<Dimensions> strategies = strategy_->GetInputDim();
+  if (strategies.empty()) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the shard strategies is empty.";
+    return FAILED;
+  }
+  if (strategies.size() != kSizeTwo) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", it has two 1D inputs so the shard strategies.size() "
+                  << "should be 2, but the strategies is " << strategies << " and its size is " << strategies.size()
+                  << ".";
+    return FAILED;
+  }
+  Dimensions input_strategy = strategies.at(kIndex0);
+  Dimensions vec2_strategy = strategies.at(kIndex1);
+  dev_matrix_shape_.push_back(input_strategy[kIndex0]);
+  dev_matrix_shape_.push_back(vec2_strategy[kIndex0]);
+  return SUCCESS;
+}
+
+Status OuterInfo::InferTensorMap() {
+  inputs_tensor_map_.clear();
+  outputs_tensor_map_.clear();
+  // Get dev matrix without repeated calculation
+  Shape dev_matrix = dev_matrix_shape_;
+  if (repeated_calc_num_ > 1) {
+    if (repeated_num_in_dev_matrix_right_) {
+      dev_matrix.pop_back();
+    } else {
+      (void)dev_matrix.erase(dev_matrix.cbegin());
+    }
+  }
+  if (dev_matrix.size() != kSizeTwo) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", it has two 1D inputs so the dev_matrix.size() "
+                  << "before extend should be 2, but the dev_matrix is " << dev_matrix << " and its size is "
+                  << dev_matrix.size() << ".";
+    return FAILED;
+  }
+  inputs_tensor_map_.push_back({kIndex1});
+  inputs_tensor_map_.push_back({kIndex0});
+  outputs_tensor_map_.push_back({kIndex1, kIndex0});  // output
+  return SUCCESS;
+}
+
+std::shared_ptr<Strategies> OuterInfo::GenerateBatchStrategies() {
+  Dimensions batch_input_strategy(inputs_shape_[kIndex0].size(), 1);
+  Dimensions batch_vec2_strategy(inputs_shape_[kIndex1].size(), 1);
+  MS_EXCEPTION_IF_ZERO("device_num", stage_device_size_);
+  Strategies strategy_v;
+
+  batch_input_strategy[kIndex0] = stage_device_size_;
+
+  strategy_v = {batch_input_strategy, batch_vec2_strategy};
+  return std::make_shared<Strategies>(strategy_v);
+}
+
+bool TensorMapHasRepeatElem(const std::vector<Shape> &input_tensor_map, const std::vector<Shape> &vec2_tensor_map) {
+  std::unordered_set<int64_t> input_tensor_map_set;
+  for (auto sub_map_i : input_tensor_map) {
+    for (auto elem_i : sub_map_i) {
+      input_tensor_map_set.insert(elem_i);
+    }
+  }
+  for (auto sub_map_v : vec2_tensor_map) {
+    for (auto elem_v : sub_map_v) {
+      if (input_tensor_map_set.find(elem_v) != input_tensor_map_set.end()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+Status OuterInfo::CheckInputLayout() {
+  if (inputs_tensor_info_.size() != kSizeTwo) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 2, but got "
+                  << inputs_tensor_info_.size() << ".";
+    return FAILED;
+  }
+  auto input_tensor_layout = inputs_tensor_info_[kIndex0].tensor_layout();
+  auto vec2_tensor_layout = inputs_tensor_info_[kIndex1].tensor_layout();
+  auto input_tensor_map = input_tensor_layout.tensor_map_before();
+  auto vec2_tensor_map = vec2_tensor_layout.tensor_map_before();
+  if (TensorMapHasRepeatElem(input_tensor_map, vec2_tensor_map)) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", there cannot be duplicate elements in input_tensor_map "
+                  << "and vec2_tensor_map.";
+    return FAILED;
+  }
+  dev_matrix_shape_ = input_tensor_layout.device_arrangement_origin().array();
+  return SUCCESS;
+}
+
+Status OuterInfo::InferOutputTensorInfo() {
+  auto input_tensor_layout = inputs_tensor_info_[kIndex0].tensor_layout();
+  auto vec2_tensor_layout = inputs_tensor_info_[kIndex1].tensor_layout();
+  auto input_tensor_map = input_tensor_layout.tensor_map_before();
+  auto vec2_tensor_map = vec2_tensor_layout.tensor_map_before();
+  Shapes outputs_tensor_map = {};
+  outputs_tensor_map.push_back(input_tensor_map[kIndex0]);
+  outputs_tensor_map.push_back(vec2_tensor_map[kIndex0]);
+
+  if ((output_infer_tensor_layout_.InitFromExtendVector(dev_matrix_shape_, outputs_tensor_map,
+                                                        outputs_shape_[kIndex0]) != SUCCESS)) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the output_tensor_layout init failed.";
+    return FAILED;
+  }
+  if (output_infer_tensor_layout_.tensor_shape_before().array() != outputs_shape_[kIndex0]) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the infer output shape "
+                  << output_infer_tensor_layout_.tensor_shape_before().array() << " dose not match the output shape "
+                  << outputs_shape_[kIndex0];
+    return FAILED;
+  }
+  TensorInfo output_tensor_info(output_infer_tensor_layout_);
+  outputs_tensor_info_.push_back(output_tensor_info);  // output
+  return SUCCESS;
+}
+
+ReplaceGraphPtr OuterInfo::replace_graph(const CNodePtr &cnode) {
+  if (inputs_tensor_info_[kIndex0].tensor_layout().IsInterleavedParallel() ||
+      inputs_tensor_info_[kIndex0].tensor_layout().IsInterleavedParallel()) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "For distributed operator " << name_ << " it does not support "
+                                       << "interleaved parallel.";
+  }
+  return replace_graph_;
+}
+
 Status LerpInfo::GetAttrs() {
   inputs_size_ = inputs_shape_.size();
   if (inputs_size_ != 2 && inputs_size_ != 3) {
@@ -699,6 +833,329 @@ Status MaskedFillInfo::InferMirrorOps() {
   return SUCCESS;
 }
 
+Status AddcmulExtInfo::GetAttrs() {
+  inputs_size_ = inputs_shape_.size();
+  if (inputs_size_ != kSizeThree) {
+    MS_LOG(ERROR) << name_ << ": Inputs size should be 3, but get " << inputs_size_;
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+// expand shapes to the same size, e.g. [a, b, c], [d, e], [f] -> [a, b, c], [1, d, e], [1, 1, f]
+Shapes ExpandShapes(const Shapes &inputs_shape) {
+  size_t larger_index = 0;
+  for (size_t i = 1; i < inputs_shape.size(); ++i) {
+    if (inputs_shape[i].size() > inputs_shape[larger_index].size()) {
+      larger_index = i;
+    }
+  }
+  Shapes expand_inputs_shape;
+  for (const auto &shape : inputs_shape) {
+    if (shape.size() < inputs_shape[larger_index].size()) {
+      expand_inputs_shape.push_back(ExpandShape(inputs_shape[larger_index], shape));
+    } else {
+      expand_inputs_shape.push_back(shape);
+    }
+  }
+  return expand_inputs_shape;
+}
+
+// infer strategies after broadcast, e.g. [a, 1, c], [1, b, 1] -> [a, b, c]
+Dimensions InferBroadcastStrategy(const Strategies &expand_strategies) {
+  size_t strategy_size = expand_strategies[0].size();
+  Dimensions broadcast_strategy;
+  for (size_t i = 0; i < strategy_size; ++i) {
+    int64_t dim_max = -1;
+    for (const auto &strategy : expand_strategies) {
+      dim_max = std::max(dim_max, strategy[i]);
+    }
+    broadcast_strategy.push_back(dim_max);
+  }
+  return broadcast_strategy;
+}
+
+std::vector<StrategyPtr> AddcmulExtInfo::GenerateOpStrategies(int64_t stage_id) {
+  // generate strategies for 2 inputs with larger size
+  size_t smaller_index = 0;
+  for (size_t i = 1; i < inputs_size_; ++i) {
+    if (inputs_shape_[i].size() <= inputs_shape_[smaller_index].size()) {
+      smaller_index = i;
+    }
+  }
+  Shapes sub_inputs_shape;
+  Shapes sub_splittable_inputs;
+  for (size_t i = 0; i < inputs_size_; ++i) {
+    if (i != smaller_index) {
+      sub_inputs_shape.push_back(inputs_shape_[i]);
+      sub_splittable_inputs.emplace_back(inputs_shape_[i].size(), 1);
+    }
+  }
+  std::vector<StrategyPtr> sub_sp_vector;
+  if (GenerateStrategiesWithBroadcast(stage_id, sub_inputs_shape, sub_splittable_inputs, &sub_sp_vector) != SUCCESS) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies with broadcast failed.";
+  }
+
+  // infer strategy for input with smaller size
+  std::vector<StrategyPtr> sp_vector;
+  for (const auto &sub_strategies : sub_sp_vector) {
+    Strategies strategies = sub_strategies->GetInputDim();
+    Strategies expand_sub_strategies = ExpandShapes(strategies);
+    Dimensions broadcast_sub_strategy = InferBroadcastStrategy(expand_sub_strategies);
+    Shape smaller_shape = inputs_shape_[smaller_index];
+    size_t offset = broadcast_sub_strategy.size() - smaller_shape.size();
+    Dimensions smaller_strategy;
+    for (size_t i = 0; i < smaller_shape.size(); ++i) {
+      if (smaller_shape[i] == 1) {
+        smaller_strategy.push_back(1);
+      } else {
+        smaller_strategy.push_back(broadcast_sub_strategy[offset + i]);
+      }
+    }
+    strategies.insert(strategies.begin() + smaller_index, smaller_strategy);
+    sp_vector.emplace_back(std::make_shared<Strategy>(stage_id, strategies));
+  }
+
+  return sp_vector;
+}
+
+Status AddcmulExtInfo::CheckStrategy(const StrategyPtr &strategy) {
+  if (CheckStrategyValue(strategy, inputs_shape_) != SUCCESS) {
+    return FAILED;
+  }
+
+  // broadcast shape and strategy
+  Shapes expand_inputs_shape = ExpandShapes(inputs_shape_);
+  expand_strategies_ = ExpandShapes(strategy->GetInputDim());
+  broadcast_strategy_ = InferBroadcastStrategy(expand_strategies_);
+  MS_LOG(DEBUG) << name_ << ": inputs_shape: " << ShapesToString(inputs_shape_)
+                << " expand_inputs_shape: " << ShapesToString(expand_inputs_shape)
+                << " strategies: " << StrategyToString(strategy->GetInputDim())
+                << " expand_strategies: " << StrategyToString(expand_strategies_)
+                << " broadcast_strategy: " << ShapeToString(broadcast_strategy_);
+
+  // check if input strategies are equal for non-broadcast dim
+  size_t expand_shape_size = expand_inputs_shape[0].size();
+  for (size_t i = 0; i < inputs_size_; ++i) {
+    for (size_t j = 0; j < expand_shape_size; ++j) {
+      if (expand_strategies_[i][j] != broadcast_strategy_[j] && expand_inputs_shape[i][j] != 1 &&
+          (expand_inputs_shape[i][j] != -1 || expand_strategies_[i][j] != 1)) {
+        MS_LOG(ERROR) << name_ << ": Invalid strategy. inputs_shape: " << ShapesToString(inputs_shape_)
+                      << " strategy: " << StrategyToString(strategy->GetInputDim());
+        return FAILED;
+      }
+    }
+  }
+
+  return SUCCESS;
+}
+
+Status AddcmulExtInfo::InferDevMatrixShape() {
+  dev_matrix_shape_ = broadcast_strategy_;
+  MS_LOG(DEBUG) << name_ << ": dev_matrix: " << ShapeToString(dev_matrix_shape_);
+  return SUCCESS;
+}
+
+Status AddcmulExtInfo::InferTensorMap() {
+  // get dev matrix without repeated calculation
+  Shape dev_shape = dev_matrix_shape_;
+  if (repeated_calc_num_ > 1) {
+    if (repeated_num_in_dev_matrix_right_) {
+      dev_shape.pop_back();
+    } else {
+      (void)dev_shape.erase(dev_shape.cbegin());
+    }
+  }
+
+  Strategies stra = strategy_->GetInputDim();
+  for (size_t i = 0; i < stra.size(); ++i) {
+    inputs_tensor_map_.push_back(SetTensorMap(expand_strategies_[i], dev_shape, stra[i]));
+  }
+
+  size_t dev_shape_size = dev_shape.size();
+  Shape tensor_map_index;
+  for (size_t i = 0; i < dev_shape_size; ++i) {
+    tensor_map_index.push_back(static_cast<int64_t>(dev_shape_size - i - 1));
+  }
+  outputs_tensor_map_.push_back(tensor_map_index);
+
+  return SUCCESS;
+}
+
+// infer tensor map after broadcast, e.g. [a, b, -1, d], [c, d] -> [a, b, c, d]
+Shape InferBroadcastTensorMap(const TensorMaps &tensor_maps) {
+  size_t larger_index = 0;
+  for (size_t i = 1; i < tensor_maps.size(); ++i) {
+    if (tensor_maps[i].size() > tensor_maps[larger_index].size()) {
+      larger_index = i;
+    }
+  }
+  Shape broadcast_tensor_map = tensor_maps[larger_index];
+  size_t broadcast_size = broadcast_tensor_map.size();
+  for (size_t i = 0; i < broadcast_size; ++i) {
+    if (broadcast_tensor_map[i] != MAP_NONE) {
+      continue;
+    }
+    for (const auto &tensor_map : tensor_maps) {
+      size_t offset = broadcast_size - tensor_map.size();
+      if (i >= offset && tensor_map[i - offset] != MAP_NONE) {
+        broadcast_tensor_map[i] = tensor_map[i - offset];
+        break;
+      }
+    }
+  }
+  return broadcast_tensor_map;
+}
+
+Status AddcmulExtInfo::InferOutputTensorMap() {
+  if (inputs_tensor_map_[kIndex0] == inputs_tensor_map_[kIndex1] &&
+      inputs_tensor_map_[kIndex0] == inputs_tensor_map_[kIndex2]) {
+    outputs_tensor_map_.push_back(inputs_tensor_map_[0]);
+    return SUCCESS;
+  }
+
+  Shape output_tensor_map = InferBroadcastTensorMap(inputs_tensor_map_);
+  outputs_tensor_map_.push_back(output_tensor_map);
+  MS_LOG(DEBUG) << name_ << ": outputs_tensor_map: " << ShapesToString(outputs_tensor_map_);
+
+  return SUCCESS;
+}
+
+// expand tensor maps to the same size, e.g. [a, b, c], [d, e] -> [a, b, c], [-1, d, e]
+void ExpandTensorMaps(std::vector<Shapes> *tensor_maps) {
+  size_t larger_index = 0;
+  for (size_t i = 1; i < tensor_maps->size(); ++i) {
+    if ((*tensor_maps)[i].size() > (*tensor_maps)[larger_index].size()) {
+      larger_index = i;
+    }
+  }
+  const Shapes &larger_tensor_map = (*tensor_maps)[larger_index];
+  for (auto &tensor_map : *tensor_maps) {
+    if (tensor_map.size() < larger_tensor_map.size()) {
+      ExpandSmallerShapes(&larger_tensor_map, &tensor_map);
+    }
+  }
+}
+
+TensorLayout AddcmulExtInfo::InferOutputLayout() {
+  auto in_layout0 = inputs_tensor_info_[kIndex0].tensor_layout();
+  auto in_layout1 = inputs_tensor_info_[kIndex1].tensor_layout();
+  auto in_layout2 = inputs_tensor_info_[kIndex2].tensor_layout();
+  // broadcast inputs tensor map to get output tensor map, e.g [a, b, c, d], [-1, d] -> [a, b, c, d]
+  std::vector<Shapes> inputs_tensor_map = {in_layout0.tensor_map_before(), in_layout1.tensor_map_before(),
+                                           in_layout2.tensor_map_before()};
+  ExpandTensorMaps(&inputs_tensor_map);
+  Shapes output_tensor_map = inputs_tensor_map[0];
+  Shape map_none_shape(1, MAP_NONE);
+  for (size_t i = 0; i < output_tensor_map.size(); ++i) {
+    if (output_tensor_map[i] != map_none_shape) {
+      continue;
+    }
+    auto it = std::find_if(inputs_tensor_map.begin(), inputs_tensor_map.end(),
+                           [i, map_none_shape](const auto &tensor_map) { return tensor_map[i] != map_none_shape; });
+    if (it != inputs_tensor_map.end()) {
+      output_tensor_map[i] = (*it)[i];
+    }
+  }
+
+  TensorLayout output_tensor_layout;
+  output_tensor_layout.InitFromExtendVector(in_layout0.device_arrangement_origin().array(), output_tensor_map,
+                                            outputs_shape_[0]);
+  return output_tensor_layout;
+}
+
+Status AddcmulExtInfo::CheckLayoutConfig() {
+  // check size
+  size_t inputs_size = inputs_shape_.size();
+  if (inputs_size != inputs_tensor_map_.size()) {
+    MS_LOG(ERROR) << name_ << ": inputs_size " << inputs_size << " is not equal to tensor_maps_size "
+                  << inputs_tensor_map_.size();
+    return FAILED;
+  }
+  size_t larger_index = 0;
+  for (size_t i = 0; i < inputs_size; ++i) {
+    size_t input_shape_size = inputs_shape_[i].size();
+    if (input_shape_size != inputs_tensor_map_[i].size()) {
+      MS_LOG(ERROR) << name_ << ": " << i << "-th input size " << input_shape_size
+                    << " is not equal to tensor map size " << inputs_tensor_map_[i].size();
+      return FAILED;
+    }
+    if (input_shape_size > inputs_shape_[larger_index].size()) {
+      larger_index = i;
+    }
+  }
+
+  // check with input with larger size
+  Shape larger_input_shape = inputs_shape_[larger_index];
+  Shape larger_tensor_map = inputs_tensor_map_[larger_index];
+  for (size_t i = 0; i < inputs_size; ++i) {
+    if (i == larger_index) {
+      continue;
+    }
+    size_t offset = larger_input_shape.size() - inputs_shape_[i].size();
+    for (size_t j = 0; i < inputs_shape_[i].size(); ++j) {
+      if (inputs_shape_[i][j] == larger_input_shape[j + offset] &&
+          inputs_tensor_map_[i][j] != larger_tensor_map[j + offset]) {
+        MS_LOG(ERROR) << name_ << ": Invalid tensor map, inputs_tensor_map: " << ShapesToString(inputs_tensor_map_)
+                      << " inputs_shape: " << ShapesToString(inputs_shape_);
+        return FAILED;
+      }
+    }
+  }
+
+  return SUCCESS;
+}
+
+Status AddcmulExtInfo::CheckInputLayout() {
+  // check if all device matrix are same
+  if (inputs_tensor_info_.size() != kSizeThree) {
+    MS_LOG(ERROR) << name_ << ": input_tensor_layout size should be 3, but get " << inputs_tensor_info_.size();
+    return FAILED;
+  }
+  auto in_layout0 = inputs_tensor_info_[kIndex0].tensor_layout();
+  auto in_layout1 = inputs_tensor_info_[kIndex1].tensor_layout();
+  auto in_layout2 = inputs_tensor_info_[kIndex2].tensor_layout();
+  auto dev_matrix0 = in_layout0.device_arrangement_origin().array();
+  auto dev_matrix1 = in_layout1.device_arrangement_origin().array();
+  auto dev_matrix2 = in_layout2.device_arrangement_origin().array();
+  if (dev_matrix0 != dev_matrix1 || dev_matrix0 != dev_matrix2) {
+    MS_LOG(ERROR) << name_ << ": Inputs device matrix are not equal. dev_matrix0: " << ShapeToString(dev_matrix0)
+                  << " dev_matrix1: " << ShapeToString(dev_matrix1) << " dev_matrix2: " << ShapeToString(dev_matrix2);
+    return FAILED;
+  }
+
+  // check if tensor map are equal for non-broadcast dim
+  Shapes inputs_shape = ExpandShapes(inputs_shape_);
+  std::vector<Shapes> tensor_maps = {in_layout0.tensor_map_before(), in_layout1.tensor_map_before(),
+                                     in_layout2.tensor_map_before()};
+  ExpandTensorMaps(&tensor_maps);
+  size_t expand_size = inputs_shape[0].size();
+  for (size_t i = 1; i < tensor_maps.size(); ++i) {
+    for (size_t j = 0; j < expand_size; ++j) {
+      if (tensor_maps[0][j] != tensor_maps[i][j] && inputs_shape[0][j] != 1 && inputs_shape[i][j] != 1) {
+        MS_LOG(ERROR) << name_ << " : Invalid strategy. inputs_tensor_map0: " << ShapesToString(tensor_maps[0])
+                      << " inputs_tensor_map" << i << ": " << ShapesToString(tensor_maps[i]) << " "
+                      << " inputs_shape0 " << ShapeToString(inputs_shape_[0]) << " inputs_shape" << i << ": "
+                      << ShapeToString(inputs_shape_[i]);
+        return FAILED;
+      }
+    }
+  }
+
+  return SUCCESS;
+}
+
+void AddcmulExtInfo::ReComputeBatchSplitFlagList() {
+  Shapes expand_inputs_shape = ExpandShapes(inputs_shape_);
+  for (size_t i = 0; i < inputs_shape_.size(); ++i) {
+    if (expand_inputs_shape[i].empty() || expand_inputs_shape[i].at(0) == 1) {
+      split_flag_list_[i] = false;
+    } else {
+      split_flag_list_[i] = true;
+    }
+  }
+}
+
 REGISTER(SubInfo);
 REGISTER(AddInfo);
 REGISTER(MulInfo);
@@ -738,5 +1195,10 @@ REGISTER(MaskedFillInfo);
 REGISTER(AddExtInfo);
 REGISTER(SubExtInfo);
 REGISTER(DivModInfo);
+REGISTER(OuterInfo);
+REGISTER(AddcmulExtInfo);
+REGISTER(PolarInfo);
+REGISTER(IsCloseInfo);
+REGISTER(RemainderTensorTensorInfo);
 }  // namespace parallel
 }  // namespace mindspore

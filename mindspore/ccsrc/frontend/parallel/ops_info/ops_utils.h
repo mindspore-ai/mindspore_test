@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -439,6 +439,7 @@ constexpr char SOFTMAX_CROSS_ENTROPY_WITH_LOGITS[] = "SoftmaxCrossEntropyWithLog
 constexpr char SIGMOID_CROSS_ENTROPY_WITH_LOGITS[] = "SigmoidCrossEntropyWithLogits";
 constexpr char MATMUL[] = "MatMul";
 constexpr char MATMUL_EXT[] = "MatMulExt";
+constexpr char OUTER[] = "Outer";
 constexpr char BATCH_MATMUL_EXT[] = "BatchMatMulExt";
 constexpr char GELU[] = "GeLU";
 constexpr char FAST_GELU[] = "FastGeLU";
@@ -488,6 +489,8 @@ constexpr char SPARSE_SOFTMAX_CROSS_ENTROPY_WITH_LOGITS[] = "SparseSoftmaxCrossE
 constexpr char RELU[] = "ReLU";
 constexpr char SILU[] = "SiLU";
 constexpr char REPEAT_ELEMENTS[] = "RepeatElements";
+constexpr char REPEAT_INTERLEAVE_INT[] = "RepeatInterleaveInt";
+constexpr char REPEAT_INTERLEAVE_TENSOR[] = "RepeatInterleaveTensor";
 constexpr char TENSOR_DOT[] = "TensorDot";
 constexpr char RANGE[] = "Range";
 constexpr char ONEHOT[] = "OneHot";
@@ -598,8 +601,11 @@ constexpr char DIVNONAN[] = "DivNoNan";
 constexpr char LOGICALAND[] = "LogicalAnd";
 constexpr char LOGICALOR[] = "LogicalOr";
 constexpr char ELU[] = "Elu";
+constexpr char ELU_EXT[] = "EluExt";
+constexpr char LEAKYRELU_EXT[] = "LeakyReLUExt";
 constexpr char RELU6[] = "ReLU6";
 constexpr char SOFTPLUS[] = "Softplus";
+constexpr char SOFTPLUS_EXT[] = "SoftplusExt";
 constexpr char SOFTSIGN[] = "Softsign";
 constexpr char GREATEREQUAL[] = "GreaterEqual";
 constexpr char LESSEQUAL[] = "LessEqual";
@@ -649,6 +655,7 @@ constexpr char DSD_MATMUL[] = "DSDMatmul";
 constexpr char RESIZE_BILINEAR_V2[] = "ResizeBilinearV2";
 constexpr char RESIZE_NEAREST_NEIGHBOR[] = "ResizeNearestNeighbor";
 constexpr char CUM_SUM[] = "CumSum";
+constexpr char CUM_SUM_EXT[] = "CumsumExt";
 constexpr char CUM_MAX[] = "Cummax";
 constexpr char CUM_MIN[] = "Cummin";
 constexpr char CUM_PROD[] = "CumProd";
@@ -658,6 +665,8 @@ constexpr char RANDOM_CHOICE_WITH_MASK[] = "RandomChoiceWithMask";
 constexpr char CROP_AND_RESIZE[] = "CropAndResize";
 constexpr char MASKED_FILL[] = "MaskedFill";
 constexpr char MAX[] = "Max";
+constexpr char MAXDIM[] = "MaxDim";
+constexpr char SUM_EXT[] = "SumExt";
 constexpr char ROI_ALIGN[] = "ROIAlign";
 constexpr char SQUARE_SUM_ALL[] = "SquareSumAll";
 constexpr char IS_FINITE[] = "IsFinite";
@@ -702,6 +711,7 @@ constexpr char KLDIV_LOSS[] = "KLDivLoss";
 constexpr char LIN_SPACE[] = "LinSpace";
 constexpr char LIN_SPACE_EXT[] = "LinSpaceExt";
 constexpr char SORT[] = "SORT";
+constexpr char SORT_EXT[] = "SortExt";
 constexpr char FILLV2[] = "FillV2";
 constexpr char WKV[] = "WKV";
 constexpr char FFN[] = "FFN";
@@ -738,8 +748,15 @@ constexpr char IDCTN[] = "IDCTN";
 constexpr char SOLVE_TRIANGULAR[] = "SolveTriangular";
 constexpr char TRACEV2[] = "TraceV2";
 constexpr char LSTSQV2[] = "LstsqV2";
+constexpr char NANTONUM[] = "NanToNum";
+constexpr char ISCLOSE[] = "IsClose";
+constexpr char POLAR[] = "Polar";
+constexpr char REMAINDER_TENSOR_TENSOR[] = "RemainderTensorTensor";
+constexpr char REMAINDER_TENSOR_SCALAR[] = "RemainderTensorScalar";
+constexpr char REMAINDER_SCALAR_TENSOR[] = "RemainderScalarTensor";
 constexpr char CUSTOM[] = "Custom";
 constexpr char GENERATOR[] = "Generator";
+constexpr char MEANEXT[] = "MeanExt";
 
 // pipeline
 constexpr size_t PIPELINE_FUSTION_OFFSET = 100;

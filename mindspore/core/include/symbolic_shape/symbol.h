@@ -334,7 +334,7 @@ class MS_CORE_API ListSymbol final : public Symbol {
  public:
   using SPtr = std::shared_ptr<ListSymbol>;
   ListSymbol(const SymbolPtrList &slist, const OpPtr &op) : Symbol(op), symbols_(slist) {}
-  ListSymbol(SymbolPtrList &&slist, const OpPtr &op) : Symbol(op), symbols_(slist) {}
+  ListSymbol(SymbolPtrList &&slist, const OpPtr &op) : Symbol(op), symbols_(std::move(slist)) {}
   ListSymbol(const std::initializer_list<SymbolPtr> &slist, const OpPtr &op) : Symbol(op), symbols_(slist) {}
   explicit ListSymbol(const OpPtr &op) : Symbol(op), is_dyn_len_(true), has_data_(false) {}
   ~ListSymbol() override = default;
@@ -344,7 +344,7 @@ class MS_CORE_API ListSymbol final : public Symbol {
     return std::make_shared<ListSymbol>(slist, op);
   }
   static inline SPtr Make(SymbolPtrList &&slist, const OpPtr &op = nullptr) {
-    return std::make_shared<ListSymbol>(slist, op);
+    return std::make_shared<ListSymbol>(std::move(slist), op);
   }
   static inline SPtr Make(const std::initializer_list<SymbolPtr> &slist, const OpPtr &op = nullptr) {
     return std::make_shared<ListSymbol>(slist, op);
@@ -370,7 +370,7 @@ class MS_CORE_API ListSymbol final : public Symbol {
   inline void UpdateList(SymbolPtrList &&slist) {
     if (is_dyn_len_) {
       has_data_ = true;
-      symbols_ = slist;
+      symbols_ = std::move(slist);
     } else {
       UpdateList(static_cast<const SymbolPtrList &>(slist));
     }
@@ -403,6 +403,20 @@ class MS_CORE_API ListSymbol final : public Symbol {
   bool has_data_{true};
 };
 using ListSymbolPtr = std::shared_ptr<ListSymbol>;
+
+class MS_CORE_API NoneSymbol final : public Symbol {
+ public:
+  using SPtr = std::shared_ptr<NoneSymbol>;
+  ~NoneSymbol() override = default;
+  MS_DECLARE_PARENT(NoneSymbol, Symbol)
+
+  bool HasData() const override { return false; }
+  bool CanUpdate() const override { return false; }
+  bool operator==(const Symbol &s) const override { return false; }
+  std::string ToString() const override { return "none"; }
+  ValuePtr ToValue() const override { return kNone; }
+};
+GVAR_DEF(SymbolPtr, kNoneSymbol, std::make_shared<NoneSymbol>());
 }  // namespace symshape
 
 using symshape::BoolSymbol;

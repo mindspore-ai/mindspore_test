@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2023 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "symbolic_shape/operation_builder.h"
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_ADDCMUL_EXT_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_ADDCMUL_EXT_H_
+
+#include <vector>
+#include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
-namespace symshape {
 namespace ops {
-SymbolPtr SortOpShapeBuilder(OperationBuilder *b) {
-  auto x_shape = b->GetInputShape(0);
-  return ListSymbol::Make({x_shape, x_shape});
-}
-REG_SYMBOL_OP_BUILDER("Sort").SetShapeDepend({DependOn::kShape}).SetShapeFunc(SortOpShapeBuilder);
-REG_SYMBOL_OP_BUILDER("SortExt").SetShapeDepend({DependOn::kShape}).SetShapeFunc(SortOpShapeBuilder);
+class OPS_API AddcmulExtFuncImpl : public OpFuncImpl {
+ public:
+  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  bool GeneralInferRegistered() const override { return true; };
+};
 }  // namespace ops
-}  // namespace symshape
 }  // namespace mindspore
+
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_ADDCMUL_EXT_H_
