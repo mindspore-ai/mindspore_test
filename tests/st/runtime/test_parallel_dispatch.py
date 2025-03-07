@@ -43,21 +43,28 @@ class Net(nn.Cell):
         self.add = P.Add()
         self.mul = P.Mul()
         self.sub = P.Sub()
+        self.reshape = P.Reshape()
 
     def construct(self, x):
+        x = self.reshape(x, (1, -1))
+
         for _ in range(g_block_num):
             x = self.add(x, 1)
             x = self.sub(x, 1.1)
+            x = self.reshape(x, (3, -1))
             x = self.mul(x, 0.251)
             x = self.add(x, 1)
 
             x = self.mul(x, 0.501)
             x = self.sub(x, 1.1)
+            x = self.reshape(x, (2, -1))
             x = self.mul(x, 2)
             x = self.add(x, 1)
             x = self.sub(x, 1.1)
+            x = self.reshape(x, (6, -1))
             x = self.mul(x, 0.051)
 
+        x = self.reshape(x, (2, -1))
         return x
 
 
