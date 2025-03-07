@@ -19,7 +19,7 @@ mindspore.ops.GLU
         - **axis** (int，可选) - 指定分割输入 `x` 的轴，取值范围 `[-r, r)` ，其中 `r` 为 `x` 的维度数。默认值： ``-1`` ，输入 `x` 的最后一维。
 
     输入：
-        - **x** (Tensor) - 待计算的Tensor，数据类型为浮点型, shape为 :math:`(\ast_1, N, \ast_2)` ，其中 `*` 为任意额外维度，且要求 :math:`N` 为偶数。 :math:`N` 为 `x` 在被 `axis` 选中的维度上的大小。
+        - **x** (Tensor) - 待计算的Tensor，数据类型为浮点型，shape为 :math:`(\ast_1, N, \ast_2)` ，其中 `*` 为任意额外维度，且要求 :math:`N` 为偶数。 :math:`N` 为 `x` 在被 `axis` 选中的维度上的大小。
 
     输出：
         Tensor，数据类型与输入 `x` 相同，shape为 :math:`(\ast_1, M, \ast_2)`，其中 :math:`M=N/2` 。
