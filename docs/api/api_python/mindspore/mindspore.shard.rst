@@ -16,7 +16,7 @@ mindspore.shard
         - **fn** (Union[Cell, Function]) - 待通过分布式并行执行的函数，它的参数和返回值类型应该均为Tensor或Parameter。
           如果 `fn` 是Cell类型且含有参数，则 `fn` 必须是一个实例化的对象，否则无法访问到其内部参数。
         - **in_strategy** (tuple) - 指定各输入的切分策略，输入元组的每个元素可以为整数元组或mindspore.Layout的元组。元组即具体指定输入每一维的切分策略。
-        - **out_strategy** (Union[tuple, None]) - 指定各输出的切分策略，用法同 `in_strategy`，目前未使能。默认值： ``None`` 。
+        - **out_strategy** (Union[tuple, None]) - 指定各输出的切分策略，用法同 `in_strategy`。默认值： ``None`` 。
         - **parameter_plan** (Union[dict, None]) - 指定各参数的切分策略，传入字典时，键是str类型的参数名，值是一维整数tuple或一维mindspore.Layout的tuple（表示相应的切分策略）。
           如果参数名错误或对应参数已经设置了切分策略，该参数的设置会被跳过。默认值： ``None`` 。
         - **device** (str) - 指定执行设备，可以为["CPU", "GPU", "Ascend"]中任意一个，目前未使能。默认值： ``"Ascend"`` 。

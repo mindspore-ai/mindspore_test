@@ -435,7 +435,7 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
                              tuple(mindspore.Layout).
                              Tuple defines the layout of the corresponding input.
         out_strategy (Union[tuple, None]): Define the layout of outputs similar with `in_strategy`.
-                                           It is not in use right now. Default: ``None`` .
+                                           Default: ``None`` .
         parameter_plan (Union[dict, None]): Define the layout for the specified parameters. Each element in dict
                                             defines the layout of the parameter like "param_name: layout".
                                             The key is a parameter name of type 'str'.
