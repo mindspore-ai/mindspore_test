@@ -49,7 +49,7 @@ mindspore.dataset.DistributedSampler
           - ``Shuffle.FILES`` ：仅混洗文件序列，不混洗文件中的数据。
           - ``Shuffle.INFILE`` ：保持读入文件的序列，仅混洗每个文件中的数据。
 
-        - **num_samples** (int, 可选) - 获取的样本数，可用于部分获取采样得到的样本。默认值： ``None`` ，获取采样到的所有样本。
+        - **num_samples** (int, 可选) - 获取的样本数，可用于获取部分采样得到的样本。默认值： ``None`` ，获取采样到的所有样本。
         - **offset** (int, 可选) - 分布式采样结果进行分配时的起始分片ID号，值不能大于参数 `num_shards` 。从不同的分片ID开始分配数据可能会影响每个分片的最终样本数。仅当ConcatDataset以 :class:`mindspore.dataset.DistributedSampler` 为采样器时，此参数才有效。默认值： ``-1`` ，每个分片具有相同的样本数。
 
     异常：

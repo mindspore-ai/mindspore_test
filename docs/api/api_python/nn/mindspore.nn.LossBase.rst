@@ -11,7 +11,7 @@ mindspore.nn.LossBase
         - **reduction** (str，可选) - 指定应用于输出结果的规约计算方式，可选 ``'none'`` 、 ``'mean'`` 、 ``'sum'`` ，默认值： ``'mean'`` 。
 
           - ``"none"``：不应用规约方法。
-          - ``"mean"``：计算输出元素的(加权)平均值。
+          - ``"mean"``：计算输出元素的（加权）平均值。
           - ``"sum"``：计算输出元素的总和。
 
     异常：
@@ -30,7 +30,7 @@ mindspore.nn.LossBase
 
         参数：
             - **x** (Tensor) - shape为 :math:`(N, *)` 的输入Tensor，其中 :math:`*` 表示任意数量的附加维度。
-            - **weights** (Union[float, Tensor]) - 可选值，要么rank为0，要么rank与输入相同，并且必须可广播到输入（即，所有维度必须为 `1` ，或与相应输入的维度相同）。默认值： ``1.0``。
+            - **weights** (Union[float, Tensor], 可选) - 权重。当 `weights` 为Tensor时，其rank必须为0或与输入相同，并且必须可广播到输入（即，所有维度必须为 `1` ，或与相应输入的维度相同）。默认值： ``1.0``。
 
         返回：
             返回加权损失。

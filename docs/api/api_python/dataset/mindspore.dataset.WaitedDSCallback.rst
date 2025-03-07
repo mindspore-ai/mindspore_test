@@ -21,7 +21,7 @@ mindspore.dataset.WaitedDSCallback
         用于定义在数据epoch开始前，训练epoch结束后执行的回调方法。
 
         参数：
-            - **train_run_context** - 包含前一个epoch的反馈信息的网络训练运行信息。
+            - **train_run_context** - 包含前一个epoch反馈信息的网络训练运行信息。
             - **ds_run_context** - 数据处理管道运行信息。
 
     .. py:method:: sync_step_begin(train_run_context, ds_run_context)
@@ -29,5 +29,5 @@ mindspore.dataset.WaitedDSCallback
         用于定义在数据step开始前，训练step结束后执行的回调方法。
 
         参数：
-            - **train_run_context** - 包含前一个step的反馈信息的网络训练运行信息。
+            - **train_run_context** - 包含前一个step反馈信息的网络训练运行信息。
             - **ds_run_context** - 数据处理管道运行信息。

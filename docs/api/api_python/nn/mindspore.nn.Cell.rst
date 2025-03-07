@@ -5,7 +5,7 @@
 
     MindSpore中神经网络的基本构成单元。模型或神经网络层应当继承该基类。
 
-    `mindspore.nn` 中神经网络层也是Cell的子类，如 :class:`mindspore.nn.Conv2d` 、 :class:`mindspore.nn.ReLU` 等。Cell在GRAPH_MODE(静态图模式)下将编译为一张计算图，在PYNATIVE_MODE(动态图模式)下作为神经网络的基础模块。
+    `mindspore.nn` 中神经网络层也是Cell的子类，如 :class:`mindspore.nn.Conv2d` 、 :class:`mindspore.nn.ReLU` 等。Cell在GRAPH_MODE（静态图模式）下将编译为一张计算图，在PYNATIVE_MODE（动态图模式）下作为神经网络的基础模块。
 
     .. note::
         Cell默认情况下是推理模式。对于继承Cell的类，如果训练和推理具有不同结构，子类会默认执行推理分支。设置训练模式，请参考 `mindspore.nn.Cell.set_train` 。
@@ -15,7 +15,7 @@
 
     参数：
         - **auto_prefix** (bool，可选) - 是否自动为Cell及其子Cell生成NameSpace。该参数同时会影响 `Cell` 中权重参数的名称。如果设置为 ``True`` ，则自动给权重参数的名称添加前缀，否则不添加前缀。通常情况下，骨干网络应设置为 ``True`` ，否则会产生重名问题。用于训练骨干网络的优化器、 :class:`mindspore.nn.TrainOneStepCell` 等，应设置为 ``False`` ，否则骨干网络的权重参数名会被误改。默认值： ``True`` 。
-        - **flags** (dict，可选) - Cell的配置信息，目前用于绑定Cell和数据集。用户也通过该参数自定义Cell属性。默认值： ``None`` 。
+        - **flags** (dict，可选) - Cell的配置信息，目前用于绑定Cell和数据集。用户也可通过该参数自定义Cell属性。默认值： ``None`` 。
 
     .. py:method:: add_flags(**flags)
 
@@ -24,14 +24,14 @@
         在实例化Cell类时，如果入参flags不为空，会调用此方法。
 
         参数：
-            - **flags** (dict) - Cell的配置信息，目前用于绑定Cell和数据集。用户也通过该参数自定义Cell属性。
+            - **flags** (dict) - Cell的配置信息，目前用于绑定Cell和数据集。用户也可通过该参数自定义Cell属性。
 
     .. py:method:: add_flags_recursive(**flags)
 
-        如果Cell含有多个子Cell，此方法会递归得给所有子Cell添加自定义属性。
+        如果Cell含有多个子Cell，此方法会递归地给所有子Cell添加自定义属性。
 
         参数：
-            - **flags** (dict) - Cell的配置信息，目前用于绑定Cell和数据集。用户也通过该参数自定义Cell属性。
+            - **flags** (dict) - Cell的配置信息，目前用于绑定Cell和数据集。用户也可通过该参数自定义Cell属性。
 
     .. py:method:: apply(fn)
 
@@ -155,7 +155,7 @@
 
         .. note::
             默认情况下，具有相同数据类型的参数会使用同一个连续内存块。但对于某些具有大量参数的模型，
-            将一个大的连续内存块分为多个小一点的内存块有可能提升性能，对于这种情况，
+            将一个大的连续内存块分为多个小一点的内存块，有可能提升性能，对于这种情况，
             可以通过 `fusion_size` 参数来限制最大连续内存块的的大小。
 
         参数：
@@ -220,7 +220,7 @@
         初始化并替换Cell中所有的parameter的值。
 
         .. note::
-            在调用 `init_parameters_data` 后，`trainable_params()` 或其他相似的接口可能返回不同的参数对象，不要保存这些结果。
+            在调用 `init_parameters_data` 后，`trainable_params()` 或其他相似的接口可能返回不同的参数对象，不建议保存这些结果。
 
         参数：
             - **auto_parallel_mode** (bool) - 是否在自动并行模式下执行。默认值： ``False`` 。
@@ -306,7 +306,7 @@
         获取此Cell的parameter字典。
 
         参数：
-            - **recurse** (bool) - 是否递归得包含所有子Cell的parameter。默认值： ``True`` 。
+            - **recurse** (bool) - 是否递归地包含所有子Cell的parameter。默认值： ``True`` 。
 
         返回：
             OrderedDict类型，返回参数字典。
@@ -326,7 +326,7 @@
 
         参数：
             - **role** (str) - 算子执行所在进程的角色。只支持'MS_WORKER'。
-            - **rank_id** (int) - 算子执行所在进程的id。在相同进程角色间， `rank_id` 是唯一的。
+            - **rank_id** (int) - 算子执行所在进程的ID。在相同进程角色间， `rank_id` 是唯一的。
 
     .. py:method:: recompute(**kwargs)
 
@@ -336,7 +336,7 @@
             - 如果计算涉及到诸如随机化或全局变量之类的操作，那么目前还不能保证等价。
             - 如果该Cell中算子的重计算API也被调用，则该算子的重计算模式以算子的重计算API的设置为准。
             - 该接口仅配置一次，即当父Cell配置了，子Cell不需再配置。
-            - Cell的输出算子默认不做重计算，这一点是基于我们减少内存占用的配置经验。如果一个Cell里面只有一个算子而且想要把这个算子设置为重计算的，那么请使用算子的重计算API。
+            - Cell的输出算子默认不做重计算，这一点是基于我们减少内存占用的配置经验。如果一个Cell里面只有一个算子，且想要把这个算子设置为重计算的，那么请使用算子的重计算API。
             - 当应用了重计算且内存充足时，可以配置'mp_comm_recompute=False'来提升性能。
             - 当应用了重计算但内存不足时，可以配置'parallel_optimizer_comm_recompute=True'来节省内存。有相同融合group的Cell应该配置相同的parallel_optimizer_comm_recompute。
 
@@ -578,7 +578,7 @@
 
         在Cell和所有子Cell的输入上添加类型转换，以使用特定的浮点类型运行。
 
-        如果 `dst_type` 是 `mindspore.dtype.float16` ，Cell的所有输入(包括作为常量的input， Parameter， Tensor)都会被转换为float16。请参考 :func:`mindspore.amp.build_train_network` 的源代码中的用法。
+        如果 `dst_type` 是 `mindspore.dtype.float16` ，Cell的所有输入(包括作为常量的input、Parameter、Tensor)都会被转换为float16。请参考 :func:`mindspore.amp.build_train_network` 的源代码中的用法。
 
         .. note:: 多次调用将产生覆盖。
 

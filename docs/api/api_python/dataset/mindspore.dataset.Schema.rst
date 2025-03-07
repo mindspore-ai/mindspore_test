@@ -37,7 +37,7 @@ mindspore.dataset.Schema
 
     .. py:method:: parse_columns(columns)
 
-        解析传入的数据列的属性并将其添加到自身的schema中。
+        解析传入的数据列的属性，并将其添加到自身的schema中。
 
         参数：
             - **columns** (Union[dict, list[dict], tuple[dict]]) - 数据集属性信息，从schema文件解码。

@@ -5,7 +5,7 @@ mindspore.nn.SequentialCell
 
     构造Cell顺序容器。关于Cell的介绍，可参考 `Cell <https://www.mindspore.cn/docs/zh-CN/master/api_python/nn/mindspore.nn.Cell.html#mindspore.nn.Cell>`_。
 
-    SequentialCell将按照传入List的顺序依次将Cell添加。此外，也支持OrderedDict作为构造器传入。
+    SequentialCell将按照传入List的顺序依次添加Cell。此外，也支持OrderedDict作为构造器传入。
 
     参数：
         - **args** (list, OrderedDict) - 仅包含Cell子类的列表或有序字典。
