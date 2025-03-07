@@ -426,6 +426,9 @@ from mindspore.ops.function.math_func import count_nonzero
 # 880
 from mindspore.ops.auto_generate import lerp, lerp_scalar
 
+# 883
+from mindspore.ops.function.nn_func import flip
+
 # 790 addmv
 from mindspore.ops.function.math_func import addmv
 
@@ -1699,6 +1702,10 @@ def tensor_lerp_scalar(input, end, weight):
 # 220 hardshrink
 def tensor_hardshrink(input, lambd=0.5):
     return hardshrink(input, lambd)
+
+# 883
+def tensor_flip(input, dims):
+    return flip(input, dims)
 
 
 # 931

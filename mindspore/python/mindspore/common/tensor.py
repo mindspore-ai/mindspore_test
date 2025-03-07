@@ -3544,12 +3544,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return self.ne(self)
 
-    def flip(self, dims):
-        """
-        For details, please refer to :func:`mindspore.ops.flip`.
-        """
-        return tensor_operator_registry.get('flip')(self, dims)
-
     def fliplr(self):
         """
         For details, please refer to :func:`mindspore.ops.fliplr`.
