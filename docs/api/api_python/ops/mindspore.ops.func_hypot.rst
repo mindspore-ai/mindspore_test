@@ -17,5 +17,5 @@ mindspore.ops.hypot
         Tensor，shape和广播后的shape相同，数据类型为两个输入数据中精度更高的。
 
     异常：
-        - **TypeError** - 如果 `input` 或 `other` 的类型不是float32或float64。
+        - **TypeError** - `input` 或 `other` 的类型不是float32或float64。
         - **ValueError** - 两个输入参数的shape不支持广播。

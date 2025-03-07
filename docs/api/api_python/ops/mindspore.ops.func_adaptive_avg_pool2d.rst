@@ -3,7 +3,7 @@ mindspore.ops.adaptive_avg_pool2d
 
 .. py:function:: mindspore.ops.adaptive_avg_pool2d(input, output_size)
 
-    对一个多平面输入信号执行二维自适应平均池化。也就是说，对于输入任何尺寸，指定输出的尺寸都为H * W。但是输入和输出特征的数目不会变化。
+    对一个多平面输入信号执行二维自适应平均池化。即对于任意输入尺寸，指定输出的尺寸都为H * W。但是输入和输出特征的数目保持不变。
 
     输入和输出数据格式可以是"NCHW"和"CHW"。N是批处理大小，C是通道数，H是特征高度，W是特征宽度。
 
@@ -24,7 +24,7 @@ mindspore.ops.adaptive_avg_pool2d
 
     参数：
         - **input** (Tensor) - adaptive_avg_pool2d的输入，为三维或四维的Tensor，数据类型为float16、float32或者float64。
-        - **output_size** (Union[int, tuple]) - 输出特征图的size。 `output_size` 可以为二元tuple表示 :math:`(H, W)`。或者是单个int表示 :math:`(H, H)` 。 :math:`H` 和 :math:`W` 可以是int或None，如果是None，则意味着输出的size与输入相同。
+        - **output_size** (Union[int, tuple]) - 输出特征图的size。 `output_size` 可以为二元tuple，表示 :math:`(H, W)`，或单个int，表示 :math:`(H, H)` 。 :math:`H` 和 :math:`W` 可以是int或None，如果是None，则意味着输出的size与输入相同。
 
     返回：
         Tensor，数据类型与 `input` 相同。

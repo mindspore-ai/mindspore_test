@@ -16,5 +16,5 @@ mindspore.ops.logical_xor
         Tensor，其shape与广播后的shape相同，数据类型为bool。
  
     异常：
-        - **TypeError** - 如果 `input` 或 `other` 的dtype不是bool，或不可被隐式转换为bool。
-        - **ValueError** - 如果两个输入的shape不能被广播。
+        - **TypeError** - `input` 或 `other` 的dtype不是bool，或不可被隐式转换为bool。
+        - **ValueError** - 两个输入的shape不能被广播。

@@ -14,15 +14,14 @@ mindspore.ops.arange
         - **dtype** (mindspore.dtype, 可选) - 返回Tensor的所需数据类型。默认值： ``None`` 。
           当 `dtype` 未指定或者为 ``None`` 时：
 
-          若 `start` 、 `end` 和 `step` 全为整数，则输出为int64类型；
-
-          若 `start` 、 `end` 和 `step` 含至少一个浮点数，则输出为float32类型。
+          - 当 `start` 、 `end` 和 `step` 均为整数时，输出为int64类型；
+          - 当 `start` 、 `end` 和 `step` 中至少有一个为浮点数时，输出为float32类型。
 
     返回：
         一维Tensor，数据类型由 `dtype` 决定。
 
     异常：
-        - **TypeError** - `start` ， `end` ， `step` 既不是int也不是float也不是在支持类型中的TensorScalar(shape为()的特殊Tensor)。
+        - **TypeError** - `start` 、 `end` 、 `step` 既不是int、float，也不是支持类型中的TensorScalar（shape为()的特殊Tensor）。
         - **ValueError** - `step` 等于0。
         - **ValueError** - `start` 小于等于 `end` ，且 `step` 小于0。
         - **ValueError** - `start` 大于等于 `end` ，且 `step` 大于0。

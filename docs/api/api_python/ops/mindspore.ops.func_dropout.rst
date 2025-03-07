@@ -11,7 +11,7 @@ mindspore.ops.dropout
     参数：
         - **input** (Tensor) - 输入Tensor，shape为 :math:`(*, N)` ，数据类型为float16、float32或float64。
         - **p** (float，可选) - 输入神经元丢弃概率，数值范围在0到1之间。例如，p=0.1，删除10%的神经元。默认值： ``0.5`` 。
-        - **training** (bool) - 若为True则启用dropout功能。默认值： ``True`` 。
+        - **training** (bool，可选) - 若为 ``True`` 则启用dropout功能。默认值： ``True`` 。
         - **seed** (int, 可选) - 随机数生成器的种子，必须是非负数，默认值： ``None`` ，默认为 ``0`` 。
 
     返回：

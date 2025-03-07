@@ -24,4 +24,4 @@ mindspore.ops.randperm
         - **TypeError** - 如果 `dtype` 不是一个 `mstype.float_type` 类型。
         - **ValueError** - 如果 `n` 是负数或0。
         - **ValueError** - 如果 `seed` 不是非负整数。
-        - **ValueError** - 如果 `n` 是超过指定数据类型的最大范围。
+        - **ValueError** - 如果 `n` 超过指定数据类型的最大范围。
