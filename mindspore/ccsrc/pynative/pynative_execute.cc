@@ -236,6 +236,8 @@ void PyNativeExecutor::set_enable_grad(bool enable_grad) const { GradState::Get(
 
 bool PyNativeExecutor::RequiresGrad() const { return GradState::Get().RequiresGrad(); }
 
+bool PyNativeExecutor::IsHighOrder() const { return grad_executor()->IsHighOrderTopCell(); }
+
 py::object PyNativeExecutor::CheckAlreadyRun(const prim::GradOperationPtr &grad, const py::object &obj,
                                              const py::object &weights, const py::object &grad_hash_id,
                                              const py::args &args) const {
@@ -378,6 +380,7 @@ void RegPyNativeExecutor(const py::module *m) {
          "Executor set grad flag.")
     .def("set_enable_grad", &PyNativeExecutor::set_enable_grad, py::arg("enable_grad") = py::bool_(true),
          "pynative set enable grad")
+    .def("high_order", &PyNativeExecutor::IsHighOrder, "pynative high order")
     .def("set_cell_use_dynamic_shape_process", &PyNativeExecutor::set_forward_use_dynamic_shape_process,
          "set eval use dynamic shape process.")
     .def("set_dynamic_input", &PyNativeExecutor::SetDynamicInput, "set dynamic input")

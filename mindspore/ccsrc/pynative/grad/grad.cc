@@ -69,7 +69,8 @@ void ParsePyArgsToInputArgsInfo(const InputArgsInfoPtr &input_args_info, const p
   MS_EXCEPTION_IF_NULL(input_args_info);
   input_args_info->has_custom_bprop = py::hasattr(obj, parse::CUSTOM_BPROP_NAME);
   MS_LOG(DEBUG) << "Cell has custom bprop " << input_args_info->has_custom_bprop;
-  bool is_top_cell = input_args_info->is_grad_topest_cell || input_args_info->is_high_order_top_cell;
+  bool is_top_cell = input_args_info->is_grad_topest_cell || input_args_info->is_high_order_top_cell ||
+                     input_args_info->is_inner_grad_topest_cell;
   if (is_top_cell) {
     pipeline::CheckArgsValid(obj, args);
   }
@@ -104,7 +105,7 @@ void ParsePyArgsToInputArgsInfo(const InputArgsInfoPtr &input_args_info, const p
     MS_LOG(DEBUG) << "Cell_id is " << input_args_info->cell_id << ", is grad topest cell "
                   << input_args_info->is_grad_topest_cell << ", is high order top cell "
                   << input_args_info->is_high_order_top_cell << ", is bprop need get forward graph "
-                  << is_bprop_need_get_forward_graph;
+                  << is_bprop_need_get_forward_graph << ", is inner grad topest cell";
   }
 }
 
@@ -541,7 +542,8 @@ void GradExecutor::Init() {
 
 TopCellInfoPtr GradExecutor::PopTopCellStack() {
   if (top_cell_stack_.empty()) {
-    MS_LOG(EXCEPTION) << "Stack top cell stack is empty";
+    MS_LOG(DEBUG) << "Stack top cell stack is empty";
+    return nullptr;
   }
   MS_LOG(DEBUG) << "Pop top cell " << top_cell_stack_.top() << " on top cell stack";
   top_cell_stack_.pop();
@@ -660,6 +662,11 @@ void GradExecutor::InitResourceAndDfBuilder(const InputArgsInfoPtr &input_args_i
     MakeNewTopCell(input_args_info);
     curr_g()->debug_info()->set_name("bprop_forward_graph");
     top_cell_->set_is_bprop_need_get_forward_graph(is_bprop_need_get_forward_graph);
+  } else if (input_args_info->is_inner_grad_topest_cell) {
+    MS_LOG(DEBUG) << "Make new inner topest graph";
+    WaitBpropTask();
+    ResetMetaGradInfoForNewTopCell(input_args_info);
+    MakeNewTopCell(input_args_info);
   }
 
   // Init kPynativeCellPtr with input parameters of top cell
@@ -703,19 +710,25 @@ void GradExecutor::NewGraphInner(const py::object &obj, const py::args &args) {
 
   // Make top graph and init resource
   if (input_args_info->is_grad_topest_cell || input_args_info->is_high_order_top_cell ||
-      is_bprop_need_get_forward_graph) {
+      is_bprop_need_get_forward_graph || input_args_info->is_inner_grad_topest_cell) {
     InitResourceAndDfBuilder(input_args_info, is_bprop_need_get_forward_graph);
   }
 }
 
 InputArgsInfoPtr GradExecutor::GetInputArgsInfo(const py::object &obj, const py::args &args,
                                                 bool is_bprop_need_get_forward_graph) {
-  const auto &input_args_info = std::make_shared<InputArgsInfo>(input_args_info_stack_.empty(), IsHighOrderTopCell());
+  bool is_high_order = IsHighOrderTopCell();
+  bool is_grad_topest_cell = input_args_info_stack_.empty();
+  bool is_inner_grad_topest_cell =
+    !input_args_info_stack_.empty() && !is_high_order && !is_bprop_need_get_forward_graph;
+  const auto &input_args_info =
+    std::make_shared<InputArgsInfo>(is_grad_topest_cell, is_inner_grad_topest_cell, is_high_order);
   ParsePyArgsToInputArgsInfo(input_args_info, obj, args, is_bprop_need_get_forward_graph);
 
   // CheckAlready run first, grad_order_ will increase 1(highorder scenario)
   // If NetA.set_grad(), so come here first, CheckAlready run later, so grad_order_ need increase 1
-  if (input_args_info->is_grad_topest_cell || input_args_info->is_high_order_top_cell) {
+  if (input_args_info->is_grad_topest_cell || input_args_info->is_high_order_top_cell ||
+      input_args_info->is_inner_grad_topest_cell) {
     if (grad_order_ == 0) {
       IncreaseGradOrder();
     }
@@ -837,6 +850,8 @@ void GradExecutor::MakeNewTopCell(const InputArgsInfoPtr &input_args_info) {
     // Or inner top cell is high-order
     if (top_cell_->is_high_order_top_cell() ||
         pipeline_top_cell_map_[input_args_info->already_run_cell_id].front()->inner_has_high_order()) {
+      PushTopCellStack(top_cell_);
+    } else {
       PushTopCellStack(top_cell_);
     }
     MS_LOG(DEBUG) << "Create pipeline top cell, input args id " << top_cell_->input_args_id()
@@ -973,10 +988,6 @@ void GradExecutor::EndGraphImpl(const InputArgsInfoPtr &input_args_info) {
   // Set sens value for grad
   SetForwardLastNodeInfo(input_args_info->out_value);
 
-  if (input_args_info->is_grad_topest_cell) {
-    MS_LOG(DEBUG) << "Cur top last cell " << input_args_info->cell_id;
-  }
-
   // Checkout whether you need to compile graph when each top cell has run finished
   CheckNeedCompileGraph(input_args_info);
   if (!top_cell_->grad_first()) {
@@ -984,6 +995,17 @@ void GradExecutor::EndGraphImpl(const InputArgsInfoPtr &input_args_info) {
   }
   top_input_args_info_ = input_args_info;
   forward()->ClearNodeAbsMap();
+  auto cur_top_cell = top_cell_;
+  if (input_args_info->is_inner_grad_topest_cell) {
+    MS_LOG(DEBUG) << "cur innner top cell: " << input_args_info->cell_id;
+    top_cell_->ResetMetaGradInfo();
+    top_cell_ = PopTopCellStack();
+    top_cell_->ResumeMetaGradInfo();
+  } else if (cur_top_cell->is_pipeline_top_cell() && !cur_top_cell->is_high_order_top_cell() &&
+             !pipeline_top_cell_map_[input_args_info->already_run_cell_id].front()->inner_has_high_order()) {
+    (void)PopTopCellStack();
+  }
+  MS_LOG(DEBUG) << "Cur top last cell " << input_args_info->cell_id;
 }
 
 void GradExecutor::ClearPreTopCell(const TopCellInfoPtr &new_top_cell, bool is_need_clear_device_mem) {
@@ -1183,7 +1205,7 @@ py::object GradExecutor::RunGrad(const prim::GradOperationPtr &grad, const py::o
 
   MS_LOG(DEBUG) << "RunGrad start " << args.size() << ", cell_id " << top_input_args_info_->cell_id
                 << ", input args info ptr " << top_input_args_info_.get();
-
+  running_top_cell_.push(top_cell_);
   if (!top_cell_->need_compile_graph()) {
     MS_LOG(DEBUG) << "No need compile graph, graph is ir_grad " << top_cell_->is_ir_grad();
     // If no need compile, we can clear construct bprop queue.
@@ -1253,6 +1275,8 @@ void GradExecutor::GetTopCellWithInputArgsRespectTo(const prim::GradOperationPtr
       // Need do meta grad info reset for NetB because NetB run after NetA and NetB not do this operation in
       // MakeNewTopCell. If have same inputs or weight parameters, auto grad meta maybe meet nullptr.
       top_cell_->ResetMetaGradInfo();
+      top_cell_ = finded_top_cell_;
+    } else if (top_cell_ == nullptr) {
       top_cell_ = finded_top_cell_;
     }
   };
@@ -1637,7 +1661,9 @@ py::object GradExecutor::RunGradFunc(const autograd::GradAttr &grad_attr,
   // To avoid grad_operation_ be used by nested grad func when running grad.
   std::string swap_grad_operation;
   std::swap(grad_operation_, swap_grad_operation);
+  auto cur_top_cell = top_cell_;
   auto grads = auto_grad_cell->Finish(w_args, p_args, grad_attr, has_aux, sens);
+  top_cell_ = cur_top_cell;
   std::swap(grad_operation_, swap_grad_operation);
   MS_EXCEPTION_IF_NULL(grads);
   InsertCheckForLastGrad(grads);
@@ -1652,7 +1678,11 @@ py::object GradExecutor::RunGradFunc(const autograd::GradAttr &grad_attr,
   // Func grad need to use auto grad meta in finish, so clear it after finish.
   AsyncClearAutoGradCell(top_cell_);
   ClearGradRes();
-
+  running_top_cell_.pop();
+  if (!running_top_cell_.empty()) {
+    top_cell_ = running_top_cell_.top();
+    MS_LOG(DEBUG) << "Resume parent top cell: " << top_cell_;
+  }
   // For custom nested grad, we need to resume grad info when finish custom grad.
   if (top_cell_ != nullptr) {
     top_cell_->ResumeMetaGradInfo();
@@ -1690,7 +1720,7 @@ py::object GradExecutor::RunGradGraph() {
   // Do high-order grad
   MakeNestedCnode(top_input_args_info_->has_custom_bprop, top_input_args_info_->input_arg_value_vec,
                   resource->optimize_graph(), out_value);
-
+  running_top_cell_.pop();
   // For custom nested grad, we need to resume grad info when finish custom grad.
   if (top_cell_ != nullptr) {
     top_cell_->ResumeMetaGradInfo();
@@ -1719,6 +1749,7 @@ void GradExecutor::MakeNestedCnode(bool has_custom_bprop, const std::vector<Valu
     first_grad_fg = curr_g();
     // Bprop top cell just used for getting forward graph
     top_cell_ = PopTopCellStack();
+    MS_EXCEPTION_IF_NULL(top_cell_);
     MS_LOG(DEBUG) << "Bprop nested, after get bprop forward graph, current top cell ptr " << top_cell().get();
   } else {
     RestoreBpropGraphParameter(cur_run_bprop_graph, top_cell()->initial_graph_param_size());
@@ -1950,6 +1981,7 @@ void GradExecutor::ClearRes() {
   top_input_args_info_ = nullptr;
   std::stack<InputArgsInfoPtr>().swap(input_args_info_stack_);
   std::stack<TopCellInfoPtr>().swap(top_cell_stack_);
+  std::stack<TopCellInfoPtr>().swap(running_top_cell_);
   finded_top_cell_ = nullptr;
   already_run_top_cell_.clear();
   pipeline_top_cell_map_.clear();

@@ -117,6 +117,7 @@ class Cell(Cell_):
         self._primitives = OrderedDict()
         self.training = False
         self.requires_grad = False
+        self.is_top_cell = False
         self.pynative = False
         self._attr_synced = False
         self._param_prefix = ''
@@ -763,7 +764,8 @@ class Cell(Cell_):
         """
         Process cell info before call construct
         """
-        if self.requires_grad:
+        if self.requires_grad and (not _pynative_executor.grad_flag() or _pynative_executor.high_order()):
+            self.is_top_cell = True
             _pynative_executor.set_grad_flag(True)
             _pynative_executor.new_graph(self, *args, **kwargs)
         elif self._dynamic_shape_inputs is not None:
@@ -777,8 +779,9 @@ class Cell(Cell_):
         """
         Process cell info after call construct
         """
-        if self.requires_grad:
+        if self.requires_grad and self.is_top_cell:
             _pynative_executor.end_graph(self, output, *args, **kwargs)
+            self.is_top_cell = False
         elif self._dynamic_shape_inputs is not None:
             _pynative_executor.set_cell_use_dynamic_shape_process(False)
 

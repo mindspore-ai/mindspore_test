@@ -157,6 +157,9 @@ class PYNATIVE_EXPORT GradExecutor {
   inline bool is_high_order_top_cell() const { return top_cell_ != nullptr && top_cell_->is_high_order_top_cell(); }
   void ChildAfterFork();
   void DispatchGradQueueTask(std::function<void(void)> &&task) const;
+  inline bool IsHighOrderTopCell() const {
+    return !input_args_info_stack_.empty() && IsNestedGrad() && top_cell()->grad_order() != grad_order_;
+  }
 
  private:
   ForwardExecutorPtr forward() const;
@@ -185,9 +188,6 @@ class PYNATIVE_EXPORT GradExecutor {
       --grad_order_;
     }
     MS_LOG(DEBUG) << "Decrease grad order, current grad_order is " << grad_order_;
-  }
-  inline bool IsHighOrderTopCell() const {
-    return !input_args_info_stack_.empty() && IsNestedGrad() && top_cell()->grad_order() != grad_order_;
   }
   uint32_t kernel_graph_id_for_control_flow() { return --kernel_graph_id_for_control_flow_; }
   void ClearPreTopCell(const TopCellInfoPtr &new_top_cell, bool is_need_clear_device_mem);
@@ -264,7 +264,7 @@ class PYNATIVE_EXPORT GradExecutor {
 
   // For top cell nested top cell, import for high-order grad
   std::stack<TopCellInfoPtr> top_cell_stack_;
-
+  std::stack<TopCellInfoPtr> running_top_cell_;
   // If is not ir_grad top cell, no need find every time
   TopCellInfoPtr pre_top_cell_;
   // Used for set grad scenario. If top cell set in CheckAlreadyRun, no need find again in RunGrad;
