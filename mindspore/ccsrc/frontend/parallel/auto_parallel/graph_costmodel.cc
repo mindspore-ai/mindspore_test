@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 #include <set>
+#include <unordered_set>
 
 #include "frontend/parallel/auto_parallel/graph_costmodel.h"
 #include "frontend/parallel/ops_info/reshape_info.h"
@@ -100,8 +101,11 @@ void CostGraph::StrategyPropagate(const std::map<OperatorInfoPtr, StrategyPtr, O
   for (auto &op : ops_) {
     visited[op] = false;
   }
-  for (auto &op_stra : ops_stras) {
-    BFS(op_stra.first, op_stra.second);
+
+  auto it = configured_ops.begin();
+  while (it != configured_ops.end()) {
+    BFS(it);
+    ++it;
   }
 
   ProcessDiffStraParams();
@@ -343,25 +347,34 @@ void CostGraph::BFSNextNodeIfCurrIsReshape(const std::shared_ptr<Edge> &edge, in
   return;
 }
 
-void CostGraph::BFSNextNode(const std::shared_ptr<Edge> &edge, int64_t curr_depth) {
-  MS_EXCEPTION_IF_NULL(edge);
-  const auto &curr_op = edge->prev_operator();
-  const auto &next_op = edge->next_operator();
+bool CostGraph::CheckBFSNextNode(const std::shared_ptr<Edge> &edge, const OperatorInfoPtr &curr_op,
+                                 const OperatorInfoPtr &next_op, int64_t curr_depth) {
   bool is_has_stra_op = visited.at(next_op) || configured_ops.find(next_op) != configured_ops.end();
   if (IsOpNotPropagate(curr_op, next_op)) {
-    return;
+    return false;
   }
   if (edge->InitEdgeCost() != SUCCESS && !is_has_stra_op) {
     MS_LOG(EXCEPTION) << "Edge cost initialization failed.";
   }
   if (visited.at(next_op)) {
     (void)CheckVisitedEdgeConsistency(edge);
-    return;
+    return false;
   }
   if ((curr_depth > 0) && (configured_ops.find(next_op) != configured_ops.end())) {
     (void)CheckConfiguredSuccEdgeConsistency(edge);
   }
   if (configured_ops.find(next_op) != configured_ops.end()) {
+    return false;
+  }
+  return true;
+}
+
+void CostGraph::BFSNextNode(const std::shared_ptr<Edge> &edge, int64_t curr_depth) {
+  MS_EXCEPTION_IF_NULL(edge);
+  const auto &curr_op = edge->prev_operator();
+  const auto &next_op = edge->next_operator();
+
+  if (!CheckBFSNextNode(edge, curr_op, next_op, curr_depth)) {
     return;
   }
 
@@ -390,17 +403,43 @@ void CostGraph::BFSNextNode(const std::shared_ptr<Edge> &edge, int64_t curr_dept
   }
 
   next_op->LayoutPropagationBegin();
-  const auto &candidate_swc = edge->GetNextOpSwcByPrevOpStrategyWithMiniComm(curr_op->selected_strategy());
+
+  MS_LOG(INFO) << "BFSNextNode: cur op: " << curr_op->name() << " next_op: " << next_op->name();
+
+  std::shared_ptr<StrategyWithCost> candidate_swc = nullptr;
+
+  if (next_op->IsMultiInput()) {
+    MS_LOG(INFO) << "BFSNextNode next_op is multi-input op! cur:" << curr_op->name() << " next: " << next_op->name()
+                 << " cnode name: " << next_op->cnode()->fullname_with_scope();
+    bool exist_candidate_strategy = false;
+    next_op->AddVisitedEdge(edge);
+    candidate_swc = edge->GetNextOpStrategyByCurMultiInput(curr_op->selected_strategy(), &waitting_list_, curr_depth,
+                                                           &exist_candidate_strategy);
+    if (exist_candidate_strategy) {
+      MS_LOG(INFO) << "BFSNextNode next_op is multi-input op! exist candidate strategy";
+      // Do nothing when next_op has candidate strategies
+      return;
+    }
+    MS_LOG(INFO) << "Get selected next op strategy: " << candidate_swc->strategy_ptr->ToString();
+    // Clear VisitedEdges when next_op has selected strategy.
+    next_op->ClearVisitedEdges();
+    MS_LOG(INFO) << "next_op->ClearVisitedEdges() finish";
+  } else {
+    candidate_swc = edge->GetNextOpSwcByPrevOpStrategyWithMiniComm(curr_op->selected_strategy());
+  }
+
   if (candidate_swc == nullptr) {
     MS_LOG(EXCEPTION) << "Current op " << curr_op->name() << "'s strategy is "
                       << curr_op->selected_strategy()->ToString() << ". " << next_op->name()
                       << "'s candidate swc is null in the edge: " << edge->edge_name();
+    return;
   }
   const auto &next_op_stra = candidate_swc->strategy_ptr;
   if (next_op_stra == nullptr) {
     MS_LOG(EXCEPTION) << "Current op " << curr_op->name() << "'s strategy is "
                       << curr_op->selected_strategy()->ToString() << ". " << next_op->name()
                       << "'s strategy is null in the edge: " << edge->edge_name();
+    return;
   }
   (void)next_level.emplace(std::make_pair(next_op, std::make_pair(next_op_stra, -1)), curr_depth + 1);
   next_op->SetSelectedStrategy(next_op_stra, LongToSize(curr_depth + 1));
@@ -419,10 +458,24 @@ void CostGraph::BFSNextNode(const std::shared_ptr<Edge> &edge, int64_t curr_dept
   visited.at(next_op) = true;
 }
 
-void CostGraph::BFS(const OperatorInfoPtr &op, const StrategyPtr &op_stra) {
+bool CostGraph::ExistPrevConfiguredOps(
+  const OperatorInfoPtr &cur_op,
+  const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare>::const_iterator &configured_ops_it) {
+  auto it = configured_ops_it;
+  ++it;
+  if (it == configured_ops.end()) {
+    return false;
+  }
+  return cur_op->get_topo_index() > it->first->get_topo_index();
+}
+
+void CostGraph::BFS(const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare>::const_iterator &configured_ops_it) {
+  const OperatorInfoPtr &op = configured_ops_it->first;
+  const StrategyPtr &op_stra = configured_ops_it->second;
   next_level = std::queue<std::pair<std::pair<OperatorInfoPtr, std::pair<StrategyPtr, int64_t>>, int64_t>>();
   (void)next_level.emplace(std::make_pair(op, std::make_pair(op_stra, -1)), 0);
   op->SetSelectedStrategy(op_stra, 0);
+
   while (!next_level.empty()) {
     auto curr_op = next_level.front().first.first;
     auto configured_stra = next_level.front().first.second.first;
@@ -436,6 +489,39 @@ void CostGraph::BFS(const OperatorInfoPtr &op, const StrategyPtr &op_stra) {
       BFSPrevNode(edge, curr_depth);
     }
     next_level.pop();
+
+    if (next_level.empty() && !waitting_list_.empty()) {
+      MS_LOG(INFO) << "waitting_list_ not empty!";
+
+      auto it = waitting_list_.begin();
+
+      const OperatorInfoPtr &op_with_cands = it->first;
+      if (visited.at(op_with_cands) || ExistPrevConfiguredOps(op_with_cands, configured_ops_it)) {
+        MS_LOG(INFO) << "ExistPrevConfiguredOps Skip";
+        continue;
+      }
+      int64_t saved_depth = 0;
+      std::shared_ptr<StrategyWithCost> selected_swc = op_with_cands->GetStrategyByVisitedEdges();
+
+      StrategyPtr &selected_strategy = selected_swc->strategy_ptr;
+      op_with_cands->SetSelectedStrategy(selected_strategy, LongToSize(curr_depth + 1));
+      op_with_cands->ClearStrategyCost();
+      if (op_with_cands->SetCostUnderStrategyWithCost(selected_swc) != SUCCESS) {
+        MS_LOG(WARNING) << "Operator " << op_with_cands->name()
+                        << " SetCostUnderStrategyWithCost failed. Try to SetCostUnderStrategy.";
+        op_with_cands->ClearStrategyCost();
+        if (op_with_cands->SetCostUnderStrategy(selected_strategy) != SUCCESS) {
+          MS_LOG(EXCEPTION) << "Operator " << op_with_cands->name() << " SetCostUnderStrategy failed";
+        }
+      }
+      op_with_cands->set_config_by_layout(true);
+
+      MS_LOG(INFO) << "waitting_list_ to next_level, name: " << op_with_cands->name() << " depth: " << saved_depth
+                   << " selected strategy: " << selected_strategy->ToString();
+
+      next_level.emplace(std::make_pair(op_with_cands, std::make_pair(selected_strategy, -1)), saved_depth);
+      waitting_list_.erase(it);
+    }
   }
 }
 
