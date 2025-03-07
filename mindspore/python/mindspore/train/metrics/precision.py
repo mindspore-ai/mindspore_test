@@ -74,18 +74,20 @@ class Precision(EvaluationBase):
     @rearrange_inputs
     def update(self, *inputs):
         """
-        Updates the internal evaluation result with `y_pred` and `y`. In the multi-label cases, the elements of
+        Updates the internal evaluation result with :math:`y_pred` and :math:`y`.
+        In the multi-label cases, the elements of
         :math:`y` and :math:`y_pred` must be 0 or 1.
 
         Args:
-            inputs: Input `y_pred` and `y`. `y_pred` and `y` are Tensor, list or numpy.ndarray.
-                For 'classification' evaluation type, `y_pred` is in most cases (not strictly) a list
+            inputs: Input :math:`y_pred` and :math:`y`. :math:`y_pred` and :math:`y`
+                are Tensor, list or numpy.ndarray.
+                For 'classification' evaluation type, :math:`y_pred` is in most cases (not strictly) a list
                 of floating numbers in range :math:`[0, 1]`
                 and the shape is :math:`(N, C)`, where :math:`N` is the number of cases and :math:`C`
-                is the number of categories. Shape of `y` can be :math:`(N, C)` with values 0 and 1 if one-hot
+                is the number of categories. Shape of :math:`y` can be :math:`(N, C)` with values 0 and 1 if one-hot
                 encoding is used or the shape is :math:`(N,)` with integer values if index of category is used.
-                For 'multilabel' evaluation type, `y_pred` and `y` can only be one-hot encoding with
-                values 0 or 1. Indices with 1 indicate positive category. The shape of `y_pred` and `y`
+                For 'multilabel' evaluation type, :math:`y_pred` and :math:`y` can only be one-hot encoding with
+                values 0 or 1. Indices with 1 indicate positive category. The shape of :math:`y_pred` and :math:`y`
                 are both :math:`(N, C)`.
 
         Raises:

@@ -5,9 +5,9 @@ matmul:
     Returns the matrix product of two tensors.
     
     Note:
-        Numpy arguments `out`, `casting`, `order`, `subok`, `signature`, and `extobj` are not supported.
+        - Numpy arguments `out`, `casting`, `order`, `subok`, `signature`, and `extobj` are not supported.
 
-        The dtype of `self` and `tensor2` must be same.
+        - The dtype of `self` and `tensor2` must be same.
 
         - On Ascend platform, the dims of `self` and `tensor2` must be between 1 and 6.
         - On GPU platform, the supported dtypes of `self` and `tensor2` are ms.float16 and ms.float32.

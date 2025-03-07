@@ -18,8 +18,6 @@ mindspore.Tensor.uniform\_
     关键字参数：
         - **generator** (:class:`mindspore.Generator`, 可选) - 伪随机数生成器。默认值： ``None`` ，使用默认伪随机数生成器。
 
-
-
     返回：
         返回输入tensor。
 

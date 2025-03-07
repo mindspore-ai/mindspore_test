@@ -63,12 +63,17 @@ class ReduceLROnPlateau(Callback):
             will be reduced. Default: ``10`` .
         verbose (bool): If False: quiet, if True: print related information.
             Default: ``False`` .
-        mode (str): one of `{'auto', 'min', 'max'}`. In "min" mode,
-            the learning rate will be reduced when the
-            quantity monitored has stopped decreasing; in "max" mode it will be
-            reduced when the quantity monitored has stopped increasing; in "auto"
-            mode, the direction is automatically inferred from the name of the
-            monitored quantity. Default: ``'auto'`` .
+        mode (str): one of `{'auto', 'min', 'max'}`. Default: ``'auto'`` .
+
+            - In ``'min'`` mode,
+              the learning rate will be reduced when the
+              quantity monitored has stopped decreasing.
+            - In ``'max'`` mode it will be
+              reduced when the quantity monitored has stopped increasing.
+            - In ``'auto'``
+              mode, the direction is automatically inferred from the name of the
+              monitored quantity.
+
         min_delta (float): threshold for measuring the new optimum, to only focus on
             significant changes. Default: ``1e-4`` .
         cooldown (int): number of epochs to wait before resuming normal operation after

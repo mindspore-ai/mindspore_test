@@ -270,9 +270,9 @@ class HausdorffDistance(Metric):
 
         Raises:
             ValueError: If the number of the inputs is not 3.
-            TypeError: If the data type of label_idx is not int or float.
-            ValueError: If the value of label_idx is not in y_pred or y.
-            ValueError: If y_pred and y have different shapes.
+            TypeError: If the data type of `label_idx` is not int or float.
+            ValueError: If the value of `label_idx` is not in `y_pred` or `y`.
+            ValueError: If `y_pred` and `y` have different shapes.
         """
         self._is_update = True
 

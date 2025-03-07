@@ -2147,9 +2147,9 @@ class Model:
                                       Configure pynative mode or CPU, the training process will be performed with
                                       dataset not sink. Default: ``True`` .
             sink_size (int): Control the number of steps for each sinking.
+                             If dataset_sink_mode is False, set sink_size as invalid.
                              If sink_size = -1, sink the complete dataset for each epoch.
                              If sink_size > 0, sink sink_size data for each epoch.
-                             If dataset_sink_mode is False, set sink_size as invalid.
                              Default: ``-1`` .
 
         Returns:
