@@ -1445,6 +1445,7 @@ class MS_CORE_API AbstractRefTensor final : public AbstractTensor {
  public:
   // The order of these enum values determines the priority in AbstractRefTensor::Join().
   enum class DataType : char { kParameter = 0, kInplaceOp, kViewOp };
+  static std::string ToString(DataType type);
 
  public:
   /// \brief Constructor of AbstractRef.
@@ -1489,7 +1490,7 @@ class MS_CORE_API AbstractRefTensor final : public AbstractTensor {
 
   void set_ref_key_value(const ValuePtr &ref_key_value) { ref_key_value_ = ref_key_value; }
 
-  /// \brief Whether it is an nn.Parameter.
+  /// \brief Whether it is a Parameter.
   bool is_parameter() const { return data_type_ == DataType::kParameter; }
   DataType data_type() const { return data_type_; }
 
