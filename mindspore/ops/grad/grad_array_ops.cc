@@ -1999,11 +1999,22 @@ REG_BPROP_BUILDER("BroadcastTo").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(
   auto broadcast_axes = ib->BroadcastGradientArgs(dout, x);
   MS_EXCEPTION_IF_CHECK_FAIL(!broadcast_axes.empty(), "BroadcastGradientArgs out should not be empty!");
   auto reduction_axes = broadcast_axes[kIndex1];
-  NodePtr reduced_grad = nullptr;
-
-  reduced_grad = ib->SumExt(dout, reduction_axes, ib->Value(true));
+  NodePtr reduced_grad = dout;
+  auto abs = reduction_axes->abstract();
+  MS_EXCEPTION_IF_NULL(abs);
+  auto base_shape = abs->GetShape();
+  MS_EXCEPTION_IF_NULL(base_shape);
+  auto is_dyn_seq = base_shape->isa<abstract::DynamicSequenceShape>();
+  if (is_dyn_seq) {
+    reduced_grad = ib->ReduceSum(dout, reduction_axes, true, true);
+  } else {
+    auto sequence_shape = base_shape->cast<abstract::TupleShapePtr>();
+    MS_EXCEPTION_IF_NULL(sequence_shape);
+    if (sequence_shape->size() != 0) {
+      reduced_grad = ib->SumExt(dout, reduction_axes, ib->Value(true));
+    }
+  }
   auto dx = ib->Reshape(reduced_grad, x_shape_node);
-
   return {dx, ib->OutZeros(ib->GetInput(kIndex1))};
 });
 
