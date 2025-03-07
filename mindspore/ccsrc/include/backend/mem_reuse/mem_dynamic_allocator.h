@@ -44,7 +44,7 @@
 
 namespace mindspore {
 namespace device {
-struct DynamicMemBuf : public EventBase {
+struct BACKEND_EXPORT DynamicMemBuf : public EventBase {
   DynamicMemBuf(DeviceMemPtr addr, DynamicMemBufStatus status, size_t size, uint32_t stream_id)
       : device_addr_(addr), status_(status), size_(size), stream_id_(stream_id) {}
   DynamicMemBuf(DeviceMemPtr addr, DynamicMemBufStatus status, size_t size, uint32_t stream_id,
@@ -69,7 +69,7 @@ struct DynamicMemBuf : public EventBase {
   memory::mem_pool::MemType mem_type_{memory::mem_pool::MemType::kOther};
 };
 
-class DynamicMemBlock {
+class BACKEND_EXPORT DynamicMemBlock {
  public:
   DynamicMemBlock(DeviceMemPtr addr_base, size_t size, const uint32_t stream_id)
       : device_addr_base_(addr_base), mem_block_size_(size), stream_id_(stream_id) {}
@@ -101,7 +101,7 @@ class DynamicMemBlock {
   const uint32_t stream_id_;
 };
 
-struct DeviceState {
+struct BACKEND_EXPORT DeviceState {
   void UpdatePeakSize() {
     size_t total_used_size_ = total_used_mem_size_ + total_used_by_event_mem_size_;
     size_t temp_used_size_ = temp_total_used_mem_size_ + temp_total_used_by_event_mem_size_;
@@ -133,7 +133,7 @@ struct DeviceState {
   size_t temp_total_mem_size_{0};
 };
 
-struct MemStatusManager {
+struct BACKEND_EXPORT MemStatusManager {
   bool Empty() const { return mem_block_list_.empty(); }
 
   void AddMemBlock(const DynamicMemBlockPtr &mem_block, uint32_t stream_id);
@@ -242,8 +242,6 @@ class BACKEND_EXPORT DynamicMemPoolBestFit : virtual public DynamicMemPool {
 
   std::string GetMemoryPoolType() const override { return "Other"; }
 
-  static void set_wait_callback(const std::function<void()> &wait_callback) { wait_callback_ = wait_callback; }
-
   bool IsEnableTimeEvent() override { return enable_time_event_; }
 
   void SetEnableTimeEvent(bool enable_time_event) override { enable_time_event_ = enable_time_event; }
@@ -343,12 +341,12 @@ class BACKEND_EXPORT DynamicMemPoolBestFit : virtual public DynamicMemPool {
 
   // key : <user_stream_id, memory_stream_id>
   std::unordered_map<std::pair<uint32_t, uint32_t>, std::set<DynamicMemBufPtr>, pair_hash> stream_pair_addresses_;
-  static std::function<void()> wait_callback_;
 
   bool enable_vmm_{false};
   size_t eager_free_count_{0};
   size_t last_eager_free_count_{0};
   std::atomic<bool> enable_time_event_{false};
+  size_t increase_size_{kDynamicMemAllocUnitSize};
 };
 }  // namespace device
 }  // namespace mindspore

@@ -42,6 +42,7 @@ endif()
 target_link_libraries(mindspore_gpu PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common
     mindspore_res_manager mindspore_gpu_res_manager mindspore_profiler)
 target_link_libraries(mindspore_gpu PRIVATE -Wl,--no-as-needed mindspore_pyboost -Wl,--as-needed)
+target_link_libraries(mindspore_gpu PRIVATE mindspore_memory_pool)
 target_link_libraries(mindspore_gpu PRIVATE -Wl,--whole-archive mindspore_ops_gpu -Wl,--no-whole-archive)
 target_link_libraries(mindspore_gpu PRIVATE securec)
 set_target_properties(mindspore_gpu PROPERTIES INSTALL_RPATH

@@ -83,7 +83,7 @@ set(MS_KERNELS_INTERNAL_LIB_PATH
     ${ORIGIN_PATH}/ascend/ms_kernels_internal/internal_kernel/lib)
 
 target_link_libraries(mindspore_ascend PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common
-                      mindspore_ops_kernel_common mindspore_ops_ascend mindspore_profiler)
+                      mindspore_ops_kernel_common mindspore_ops_ascend mindspore_profiler mindspore_memory_pool)
 target_link_libraries(mindspore_ascend PRIVATE mindspore_ascend_res_manager)
 target_link_libraries(mindspore_ascend PRIVATE -Wl,--no-as-needed mindspore_pyboost -Wl,--as-needed)
 target_link_libraries(mindspore_ascend PRIVATE proto_input mindspore::protobuf)

@@ -19,7 +19,6 @@
 #include <numeric>
 #include <ostream>
 
-#include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/utils/utils.h"
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"

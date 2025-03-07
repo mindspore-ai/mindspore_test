@@ -37,9 +37,9 @@ namespace mindspore {
 namespace device {
 constexpr size_t kDecimalPrecision = 3;
 
-class AbstractDynamicMemPool;
+class BACKEND_EXPORT AbstractDynamicMemPool;
 
-class Lock {
+class BACKEND_EXPORT Lock {
  public:
   inline void lock() {
     while (locked.test_and_set(std::memory_order_acquire)) {
@@ -61,7 +61,7 @@ class BACKEND_EXPORT LockGuard {
   Lock *lock_;
 };
 
-struct MemBlock;
+struct BACKEND_EXPORT MemBlock;
 
 using MemBufStatus = DynamicMemBufStatus;
 struct BACKEND_EXPORT MemBuf : EventBase {
@@ -131,7 +131,7 @@ struct MemBufComparator {
   }
 };
 
-struct MemBlock {
+struct BACKEND_EXPORT MemBlock {
   explicit MemBlock(size_t size, void *addr, uint32_t stream_id) : size_(size), addr_(addr), stream_id_(stream_id) {
     min_addr_ = nullptr;
     max_addr_ = nullptr;
@@ -178,7 +178,7 @@ struct MemBlock {
   void *max_addr_;
 };
 
-struct MemStat {
+struct BACKEND_EXPORT MemStat {
   MemStat() { Reset(); }
 
   MemStat(const MemStat &) = delete;
@@ -247,7 +247,7 @@ struct MemStat {
   size_t temp_alloc_size_;
 };
 
-class MemBufAllocator {
+class BACKEND_EXPORT MemBufAllocator {
  public:
   explicit MemBufAllocator(std::function<MemBlock *(size_t)> mem_block_expander,
                            std::function<bool(MemBlock *)> mem_block_cleaner,

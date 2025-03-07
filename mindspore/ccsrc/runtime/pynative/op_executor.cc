@@ -79,10 +79,7 @@ bool OpExecutor::NeedSync() {
 }
 
 void OpExecutor::RegisterCallbackForMemoryPool() {
-  device::DynamicMemPoolBestFit::set_wait_callback([]() {
-    MS_LOG(DEBUG) << "Wait all in memory pool";
-    runtime::Pipeline::Get().WaitAll();
-  });
+  // Not worked currently.
 }
 
 void OpExecutor::ChildAfterFork() {

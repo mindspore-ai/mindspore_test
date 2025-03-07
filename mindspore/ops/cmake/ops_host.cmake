@@ -30,7 +30,7 @@ if((NOT ENABLE_CPU) OR (BUILD_LITE OR ENABLE_TESTCASES))
     add_library(mindspore_ops_host INTERFACE)
 else()
     add_library(mindspore_ops_host SHARED ${CPU_KERNEL_OBJECTS})
-    target_link_libraries(mindspore_ops_host PRIVATE mindspore_core mindspore_ops
+    target_link_libraries(mindspore_ops_host PRIVATE mindspore_core mindspore_ops mindspore_memory_pool
         mindspore_common mindspore_ops_kernel_common mindspore_backend mindspore_pyboost mindspore_profiler
         nnacl mindspore::dnnl mindspore::mkldnn)
     target_link_libraries(mindspore_ops_host PRIVATE securec)
