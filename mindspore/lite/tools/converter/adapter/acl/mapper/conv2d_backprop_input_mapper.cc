@@ -56,6 +56,14 @@ STATUS Conv2DBackpropInputMapper::Mapper(const CNodePtr &cnode) {
   }
   value_node->set_value(dst_prim);
 
+  MS_CHECK_TRUE_RET(cnode->abstract() != nullptr, RET_ERROR);
+  auto origin_shape = cnode->abstract()->GetShape()->cast<abstract::ShapePtr>()->shape();
+  if (origin_shape.size() == 1 && origin_shape[0] == -1) {
+    ShapeVector out_shape = {-1, -1, -1, -1};
+    auto abs_shape_ptr = std::make_shared<abstract::Shape>(abstract::Shape(out_shape));
+    auto abstract = std::make_shared<abstract::AbstractTensor>(TypeIdToType(TypeId::kNumberTypeFloat32), abs_shape_ptr);
+    cnode->set_abstract(abstract);
+  }
   return lite::RET_OK;
 }
 

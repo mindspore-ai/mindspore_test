@@ -28,6 +28,9 @@
 
 namespace mindspore {
 namespace lite {
+namespace {
+constexpr size_t kInt64Len = 8;
+}  // namespace
 STATUS OnnxConstantParser::AddDataInfoAttr(const onnx::TensorProto &onnx_const_tensor, PrimitiveCPtr prim) {
   MS_CHECK_TRUE_RET(prim != nullptr, RET_ERROR);
   tensor::TensorPtr tensor_info;
@@ -96,6 +99,14 @@ PrimitiveCPtr OnnxConstantParser::Parse(const onnx::GraphProto &onnx_graph, cons
         MS_LOG(ERROR) << "add basic attr failed.";
         return nullptr;
       }
+    } else if (attr.name() == "value_ints") {
+      std::vector<int64_t> value;
+      for (int i = 0; i < attr.ints().size(); i++) {
+        value.push_back(attr.ints(i));
+      }
+      auto tensor_info =
+        CreateTensorInfo(value.data(), attr.ints().size() * kInt64Len, {attr.ints().size()}, kNumberTypeInt64);
+      prim->set_attr("const_data", tensor_info);
     } else {
       MS_LOG(ERROR) << "processing Constant op attr " << attr.name() << " not implemented";
       return nullptr;
