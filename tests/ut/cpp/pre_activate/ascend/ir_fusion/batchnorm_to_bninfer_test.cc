@@ -16,7 +16,7 @@
 #include "common/backend_common_test.h"
 #include "common/py_func_graph_fetcher.h"
 #include "include/backend/optimizer/optimizer.h"
-#include "plugin/device/ascend/optimizer/ir_fusion/batchnorm_to_bninfer.h"
+#include "backend/common/pass/ir_fusion/batchnorm_to_bninfer.h"
 #include "include/common/debug/anf_ir_dump.h"
 
 namespace mindspore {
