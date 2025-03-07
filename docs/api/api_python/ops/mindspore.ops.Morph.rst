@@ -15,6 +15,7 @@ mindspore.ops.Morph
         - 本算子只支持图模式。
         - `fn` 必须满足图模式语法约束。
         - 用户无需实现自定义反向函数。
+        - 用户自定义函数不支持 `vararg`、`kwarg`、`kwonlyargs` 和自由变量。
 
     参数:
         - **fn** (Function) - MindSpore Function，用户自定义函数。
