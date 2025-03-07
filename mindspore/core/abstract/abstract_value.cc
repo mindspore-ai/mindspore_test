@@ -2148,10 +2148,14 @@ AbstractBasePtr AbstractRefTensor::Broaden() const {
   return std::make_shared<AbstractRefTensor>(abs_tensor, ref_key_value_, data_type_);
 }
 
+std::string AbstractRefTensor::ToString(DataType type) {
+  return type == DataType::kParameter ? "kParameter" : type == DataType::kInplaceOp ? "kInplaceOp" : "kViewOP";
+}
+
 std::string AbstractRefTensor::ToString() const {
   std::ostringstream buffer;
   MS_EXCEPTION_IF_NULL(ref_key_value_);
-  buffer << type_name() << "(key: " << ref_key_value_->ToString() << ", data_type: " << data_type_
+  buffer << type_name() << "(key: " << ref_key_value_->ToString() << ", data_type: " << ToString(data_type_)
          << ", ref_value: " << AbstractTensor::ToString();
   auto value = GetValueTrack();
   if (value != nullptr) {
