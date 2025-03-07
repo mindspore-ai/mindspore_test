@@ -99,11 +99,6 @@ def grouped_matmul_v4_forward_func(x, weight, group_list):
     out = net([x,], [weight,], group_list=group_list, split_item=3, group_type=0, group_list_type=1)
     return out[0]
 
-@test_utils.run_with_cell
-def grouped_matmul_v4_multi_forward_func(x, weight):
-    out = grouped_matmul_v4(x, weight, split_item=0, group_type=-1)
-    return out
-
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['KBK', 'pynative'])
@@ -316,24 +311,44 @@ def test_grouped_matmul_v4_dyn_shape():
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_ops_grouped_mamtul_v4_multi_dyn():
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_ops_grouped_mamtul_v4_multi_dyn(mode):
     """
     Feature: pyboost function.
     Description: test GroupedMatmulV4 forward with dynamic rank/shape.
     Expectation: success.
     """
+    context.set_context(device_target="Ascend")
+    if mode == 'KBK':
+        ms.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O0')
+    elif mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+    gmm_v4_net = GroupedMatmulV4Net()
+    
+    split_item = 0
+    group_type = -1
+    group_list_type = 0
+    
+    x = ms.mutable([Tensor(shape=(None, None), dtype=mstype.float16), Tensor(shape=(None, None), dtype=mstype.float16)])
+    weight = ms.mutable([Tensor(shape=(None, None), dtype=mstype.float16), Tensor(shape=(None, None), dtype=mstype.float16)])
+    gmm_v4_net.set_inputs(x, weight, None, None, None, None, None, None, None, split_item, group_type, group_list_type)
 
-    np_x0 = np.random.uniform(0.1, 2, size=[16, 256]).astype(np.float16)
-    np_w0 = np.random.uniform(0.1, 1, size=[256, 128]).astype(np.float16)
+    np_x0 = np.random.uniform(0.1, 2, size=[16, 256]).astype(np.float32)
+    np_w0 = np.random.uniform(0.1, 1, size=[256, 128]).astype(np.float32)
+    expect0 = np.matmul(np_x0, np_w0)
 
-    np_x1 = np.random.uniform(0.1, 2, size=[127, 88]).astype(np.float16)
-    np_w1 = np.random.uniform(0.1, 1, size=[88, 64]).astype(np.float16)
+    np_x1 = np.random.uniform(0.1, 2, size=[127, 88]).astype(np.float32)
+    np_w1 = np.random.uniform(0.1, 1, size=[88, 64]).astype(np.float32)
+    expect1 = np.matmul(np_x1, np_w1)
 
-    x1 = [ms.Tensor(np_x0), ms.Tensor(np_x1)]
-    wweight1 = [ms.Tensor(np_w0), ms.Tensor(np_w1)]
+    x1 = ms.mutable([ms.Tensor(np_x0, dtype=mstype.float16), ms.Tensor(np_x1, dtype=mstype.float16)])
+    weight1 = ms.mutable([ms.Tensor(np_w0, dtype=mstype.float16), ms.Tensor(np_w1, dtype=mstype.float16)])
+    res1 = gmm_v4_net(x1, weight1, split_item=split_item, group_type=group_type)
+    np.testing.assert_allclose(expect0, res1[0].asnumpy(), rtol=1e-1)
+    np.testing.assert_allclose(expect1, res1[1].asnumpy(), rtol=1e-1)
 
-    x2 = [ms.Tensor(np_x0)]
-    weight2 = [ms.Tensor(np_w0)]
-
-    TEST_OP(grouped_matmul_v4_multi_forward_func, [[x1, wweight1], [x2, weight2]], '', disable_input_check=True,
-            disable_grad=True, disable_yaml_check=True, disable_resize=True, disable_mode=['GRAPH_MODE',])
+    x2 = ms.mutable([ms.Tensor(np_x0, dtype=mstype.float16)])
+    weight2 = ms.mutable([ms.Tensor(np_w0, dtype=mstype.float16)])
+    res2 = gmm_v4_net(x2, weight2, split_item=split_item, group_type=group_type)
+    np.testing.assert_allclose(expect0, res2[0].asnumpy(), rtol=1e-1)
