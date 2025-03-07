@@ -40,6 +40,8 @@ from mindformers.pet import get_pet_model
 from mindformers.pet.pet_config import SLoraConfig
 from research.qwen2.qwen2_tokenizer import Qwen2Tokenizer
 
+ms.runtime.set_kernel_launch_group()
+
 
 def parallel_qwen2_0_5b_predict_mp2():
     """test qwen2-0.5B predict in model_parallel=2 with dynamic shape"""
