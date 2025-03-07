@@ -499,6 +499,51 @@ std::vector<AnfNodePtr> GetEmbeddingApplyAdamOutput(const CNodePtr &node) {
   ret_nodes.insert(ret_nodes.end(), output_nodes.begin() + 1, output_nodes.end());
   return ret_nodes;
 }
+
+void GetBranchToParentMapFromFuncGraph(const AnfNodePtr &branch_node, ParamIndexMap *branch_to_parent_node_map) {
+  MS_EXCEPTION_IF_NULL(branch_node);
+  MS_EXCEPTION_IF_NULL(branch_to_parent_node_map);
+  MS_EXCEPTION_IF_CHECK_FAIL(branch_node->isa<ValueNode>(), "Branch node is not ValueNode!");
+  auto branch_value_node = branch_node->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(branch_value_node);
+  auto branch = GetValue<FuncGraphPtr>(branch_value_node->value());
+  MS_EXCEPTION_IF_NULL(branch);
+  std::map<std::string, size_t> param_name_count_map;
+  std::map<std::string, size_t> input_name_map;
+  auto branch_inputs = branch->get_inputs();
+  auto fg_name_attr = branch->get_attr("graph_name");
+  MS_EXCEPTION_IF_NULL(fg_name_attr);
+  auto partial_fg_name = fg_name_attr->ToString();
+  for (auto &fg_input : branch_inputs) {
+    auto fg_input_name = fg_input->fullname_with_scope();
+    auto pos = partial_fg_name.size() + sizeof("_input_");
+    auto pos2 = fg_input_name.find('_', pos);
+    auto idx_str = fg_input_name.substr(pos - 1, pos2 - pos + 1);
+    auto partial_idx = 0;
+    try {
+      partial_idx = std::stoi(idx_str);
+    } catch (const std::exception &e) {
+      MS_EXCEPTION_IF_CHECK_FAIL(false, "stoi failed!");
+    }
+    input_name_map[fg_input_name] = partial_idx;
+  }
+  auto params = branch->parameters();
+  for (size_t i = 0; i < params.size(); i++) {
+    auto &param = params[i];
+    auto param_name = param->cast<ParameterPtr>()->fullname_with_scope();
+    if (param_name_count_map.find(param_name) != param_name_count_map.end()) {
+      param_name_count_map[param_name]++;
+    } else {
+      param_name_count_map[param_name] = 0;
+    }
+    if (input_name_map.find(param_name) != input_name_map.end()) {
+      (*branch_to_parent_node_map)[i] = input_name_map[param_name];
+    }
+    auto new_input_name = param_name + std::to_string(param_name_count_map[param_name]);
+    param->cast<ParameterPtr>()->set_name(new_input_name);
+  }
+}
+
 }  // namespace
 
 DfGraphPtr GenExampleGraph(const std::string &name) {
@@ -1713,12 +1758,41 @@ void DfGraphConvertor::ConvertWhileNode(const CNodePtr &node) {
   return;
 }
 
+void DfGraphConvertor::GenBranchToParentNodeMap(const size_t &index, const size_t &branch_call_input_size,
+                                                const CNodePtr &bnode, const CNodePtr &cnode, size_t *node_input_index,
+                                                ParamIndexMap *branch_to_parent_node_map) {
+  size_t branch_index = 0;  //  branch graph input's index
+  if (bnode->input(index)->isa<CNode>()) {
+    auto branch_node = bnode->input(index)->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(branch_node);
+    for (size_t j = kInputOffset; j < branch_node->size(); j++) {
+      auto pred = branch_node->input(j);
+      if (!IsDataInput(cnode, pred, 0)) {
+        continue;
+      }
+      (*branch_to_parent_node_map)[branch_index] = (*node_input_index);
+      (*node_input_index)++;
+      branch_index++;
+    }
+  }
+  if ((!is_kernel_graph_ && !cnode->input(0)->isa<CNode>())) {
+    GetBranchToParentMapFromFuncGraph(bnode->input(index), branch_to_parent_node_map);
+  } else if (!is_kernel_graph_) {
+    for (size_t k = 0; k < branch_call_input_size; k++) {
+      (*branch_to_parent_node_map)[branch_index] = k;
+      branch_index++;
+    }
+  }
+}
+
 std::shared_ptr<std::vector<DfGraph>> DfGraphConvertor::BuildBranchGraphs(const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(cnode);
   bool is_case = device::ascend::IsCaseNode(cnode);
   std::shared_ptr<std::vector<DfGraph>> df_branches = std::make_shared<std::vector<DfGraph>>();
   MS_EXCEPTION_IF_NULL(df_branches);
   if (IsNormalGraph() || IsBodyGraph() || IsBranchGraph()) {
+    bool is_controlflow_if = (!is_kernel_graph_ && !cnode->input(0)->isa<CNode>());
+    bool is_use_cur_node = (is_kernel_graph_ || !cnode->input(0)->isa<CNode>());
     size_t branch_call_input_size = 0;
     size_t node_input_index = 0;
     if (!is_kernel_graph_) {
@@ -1732,35 +1806,21 @@ std::shared_ptr<std::vector<DfGraph>> DfGraphConvertor::BuildBranchGraphs(const 
       }
     }
     MS_EXCEPTION_IF_NULL(cnode->input(0));
-    CNodePtr input_node = is_kernel_graph_ ? cnode : cnode->input(0)->cast<CNodePtr>();
+    CNodePtr input_node = nullptr;
+    if (is_use_cur_node) {
+      input_node = cnode;
+    } else {
+      input_node = cnode->input(0)->cast<CNodePtr>();
+    }
     MS_EXCEPTION_IF_NULL(input_node);
     MS_EXCEPTION_IF_NULL(input_node->input(kInputOffset));
     auto bnode = is_case ? input_node->input(kInputOffset)->cast<CNodePtr>() : input_node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(bnode);
     const size_t init_i = is_case ? 1 : 2;
-
-    for (size_t i = init_i; i < bnode->size(); i++) {
+    size_t branch_end_i = is_controlflow_if ? kIndex4 : bnode->size();
+    for (size_t i = init_i; i < branch_end_i; i++) {
       ParamIndexMap branch_to_parent_node_map;
-      size_t branch_index = 0;  //  branch graph input's index
-      if (bnode->input(i)->isa<CNode>()) {
-        auto branch_node = bnode->input(i)->cast<CNodePtr>();
-        MS_EXCEPTION_IF_NULL(branch_node);
-        for (size_t j = kInputOffset; j < branch_node->size(); j++) {
-          auto pred = branch_node->input(j);
-          if (!IsDataInput(cnode, pred, 0)) {
-            continue;
-          }
-          branch_to_parent_node_map[branch_index] = node_input_index;
-          node_input_index++;
-          branch_index++;
-        }
-      }
-      if (!is_kernel_graph_) {
-        for (size_t k = 0; k < branch_call_input_size; k++) {
-          branch_to_parent_node_map[branch_index] = k;
-          branch_index++;
-        }
-      }
+      GenBranchToParentNodeMap(i, branch_call_input_size, bnode, cnode, &node_input_index, &branch_to_parent_node_map);
       ProcessSubgraph(cnode, bnode->input(i), branch_to_parent_node_map);
       (void)(df_branches->emplace_back(branches_map_[bnode->input(i).get()]));
     }
@@ -1811,7 +1871,6 @@ void DfGraphConvertor::SetSubgraph(const AnfNodePtr &node) {
     MS_LOG(DEBUG) << "Set while's sub graph end.";
     return;
   }
-
   if (IsBranchNode(cnode)) {
     MS_LOG(DEBUG) << "Start to set if/case's sub graph.";
     std::shared_ptr<std::vector<DfGraph>> df_branches = BuildBranchGraphs(cnode);
@@ -1819,6 +1878,11 @@ void DfGraphConvertor::SetSubgraph(const AnfNodePtr &node) {
       return;
     }
 
+    if (!is_kernel_graph_ && !cnode->input(0)->isa<CNode>()) {
+      auto node_inputs = cnode->inputs();
+      node_inputs.erase(node_inputs.begin() + kIndex1, node_inputs.begin() + kIndex4);
+      cnode->set_inputs(node_inputs);
+    }
     OpAdapterPtr adpt = device::ascend::FindAdapter(node, training_);
     if (adpt == nullptr) {
       MS_LOG(DEBUG) << "Not found adapter";
@@ -1865,7 +1929,12 @@ void DfGraphConvertor::GetBranchNodeInput(const CNodePtr node) {
 
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(node->input(0));
-  CNodePtr sw_node = is_kernel_graph_ ? node : node->input(0)->cast<CNodePtr>();
+  CNodePtr sw_node = nullptr;
+  if (is_kernel_graph_ || !node->input(0)->isa<CNode>()) {
+    sw_node = node;
+  } else {
+    sw_node = node->input(0)->cast<CNodePtr>();
+  }
   MS_EXCEPTION_IF_NULL(sw_node);
   AnfNodePtr branch_index_iter = sw_node->input(branch_index);
   AnfNodePtr branch_dyn_input_node = nullptr;
@@ -1877,12 +1946,13 @@ void DfGraphConvertor::GetBranchNodeInput(const CNodePtr node) {
   MS_EXCEPTION_IF_NULL(tuple_items);
 
   CNodePtr input_node = node;
+  size_t init_input = (!is_kernel_graph_ && !node->input(0)->isa<CNode>()) ? kIndex5 : kIndex1;
   if (!is_kernel_graph_) {
-    for (size_t i = 1; i < node->size(); i++) {
+    for (size_t i = init_input; i < node->size(); i++) {
       auto pred = node->input(i);
       (void)(branch_inputs.emplace_back(pred));
     }
-    input_node = node->input(0)->cast<CNodePtr>();
+    input_node = node->input(0)->isa<CNode>() ? node->input(0)->cast<CNodePtr>() : node;
   }
   MS_EXCEPTION_IF_NULL(input_node);
   auto bnode = is_case ? input_node->input(make_tuple_index)->cast<CNodePtr>() : input_node;
@@ -3562,7 +3632,6 @@ void DfGraphConvertor::ProcessSubgraph(const AnfNodePtr &node, const AnfNodePtr 
   MS_EXCEPTION_IF_NULL(anf_graph);
   DfGraphConvertor converter(anf_graph, phase_prefix_);
   converter.graph_type_ = GraphType::kBranch;
-
   auto &params = anf_graph->parameters();
   if (ref_mode_) {
     for (size_t i = 0; i < params.size(); i++) {
@@ -3603,10 +3672,13 @@ void DfGraphConvertor::ProcessSubgraph(const AnfNodePtr &node, const AnfNodePtr 
           SetXDataIndex(op, parent_index);
         }
         converter.op_cache_[param.get()] = op;
+      } else if (param->isa<Parameter>() && param->cast<ParameterPtr>()->has_default()) {
+        continue;
       } else if (!HasAbstractMonad(param)) {
         MS_LOG(EXCEPTION) << "Branch graph input index to parent node dyn input index error, "
                           << "branch graph: " << anf_graph->ToString() << "'s " << i << "(st/nd/rd/st)"
-                          << " input can not find the corresponding parent node input index.";
+                          << " input can not find the corresponding parent node input index."
+                          << "param name:" << param->fullname_with_scope();
       }
     }
   }

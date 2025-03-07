@@ -97,6 +97,7 @@ constexpr auto kToNCHWFormatPass = "ToNCHWFormat";
 constexpr auto kInferShapePass = "InferShapePass";
 constexpr auto kConstFoldPass = "ConstFoldPass";
 constexpr auto kAdjustCol2imPass = "AdjustCol2imPass";
+constexpr auto kAdjustControlFlowPass = "AdjustControlflowPass";
 constexpr auto kRemoveRedundantOpPass = "RemoveRedundantOpPass";
 constexpr auto kAdjustMatmulPass = "AdjustMatmulPass";
 constexpr auto kAdjustAscendQunatPass = "AdjustAscendQunatPass";
@@ -106,6 +107,7 @@ constexpr auto kAdjustResizeDimsPass = "AdjustResizeDimsPass";
 constexpr auto kCustomOpFlashAttentionFusionForCustom = "FlashAttentionFusionForCustom";
 constexpr auto kFlashAttentionTikPass = "FlashAttentionTikPass";
 constexpr auto kCustomOpInsertVariableNodePass = "InsertVariableNodePass";
+constexpr auto kAddStreamLabelPass = "AddStreamLabelPass";
 constexpr auto kCustomOpFlashAttentionFusion = "FlashAttentionFusion";
 constexpr auto kCustomOpLeakyReluFusion = "LeakyReluFusion";
 
@@ -953,7 +955,10 @@ STATUS AclPassImpl::ConvertGraphToOm(const FuncGraphPtr &func_graph, Buffer *om_
     MS_LOG(ERROR) << "convert args to attr pass failed";
     return lite::RET_ERROR;
   }
-
+  if (!lite::RunOptimizerPass(func_graph, {kAdjustControlFlowPass})) {
+    MS_LOG(ERROR) << "kAdjustControlFlowPass failed!";
+    return lite::RET_ERROR;
+  }
   // call interface of cloud
   ModelConverter model_converter;
   options_->SetConstName(param_->const_names);
@@ -1271,6 +1276,11 @@ bool AclPassImpl::Run(const FuncGraphPtr &func_graph) {
   if (DeparseGraph(func_graph, manager) != lite::RET_OK) {
     MS_LOG(ERROR) << "Deparse graph failed.";
     return false;
+  }
+
+  if (!lite::RunOptimizerPass(func_graph, {kAddStreamLabelPass})) {
+    MS_LOG(ERROR) << "add stream label pass failed!";
+    return lite::RET_ERROR;
   }
 
   if (param_->provider == "ge") {

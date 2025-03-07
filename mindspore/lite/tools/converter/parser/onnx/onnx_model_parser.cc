@@ -536,6 +536,38 @@ FuncGraphPtr ConvertGraph(api::FuncGraphPtr func_graph) {
   auto impl = func_graph->impl();
   return std::dynamic_pointer_cast<FuncGraph>(impl);
 }
+
+STATUS RenameSubGraphInputName(const std::string &if_node_name, const std::vector<AnfNodePtr> &if_new_input_not_same,
+                               const std::vector<AnfNodePtr> &then_subgraph_extra_inputs,
+                               const std::vector<AnfNodePtr> &else_subgraph_extra_inputs) {
+  std::vector<AnfNodePtr> if_input_sub(if_new_input_not_same.begin() + kIndex4, if_new_input_not_same.end());
+  std::map<std::string, size_t> input_name_map;
+  for (size_t i = 0; i < if_input_sub.size(); i++) {
+    input_name_map[if_input_sub[i]->fullname_with_scope()] = i;
+  }
+  for (auto &sub_input : then_subgraph_extra_inputs) {
+    if (input_name_map.find(sub_input->fullname_with_scope()) == input_name_map.end()) {
+      MS_LOG(ERROR) << "Extra input name not in input name map, input name:" << sub_input->fullname_with_scope();
+      return RET_ERROR;
+    }
+    auto input_parameter = sub_input->cast<ParameterPtr>();
+    MS_CHECK_TRUE_MSG(input_parameter != nullptr, RET_ERROR, "subgraph input should be a parameter");
+    input_parameter->set_name(if_node_name + "_then_branch" + "_input_" +
+                              std::to_string(input_name_map[sub_input->fullname_with_scope()]) + "_parameter");
+  }
+  for (auto &sub_input : else_subgraph_extra_inputs) {
+    if (input_name_map.find(sub_input->fullname_with_scope()) == input_name_map.end()) {
+      MS_LOG(ERROR) << "Extra input name not in input name map, input name:" << sub_input->fullname_with_scope();
+      return RET_ERROR;
+    }
+    auto input_parameter = sub_input->cast<ParameterPtr>();
+    MS_CHECK_TRUE_MSG(input_parameter != nullptr, RET_ERROR, "subgraph input should be a parameter");
+    input_parameter->set_name(if_node_name + "_then_branch" + "_input_" +
+                              std::to_string(input_name_map[sub_input->fullname_with_scope()]) + "_parameter");
+  }
+  return RET_OK;
+}
+
 }  // namespace
 
 FuncGraphPtr OnnxModelParser::BuildBodyGraph(const onnx::NodeProto &loop_node, const onnx::GraphProto &subgraph_proto,
@@ -911,11 +943,11 @@ STATUS OnnxModelParser::ConvertNodes(const onnx::GraphProto &onnx_graph, const F
 
 STATUS OnnxModelParser::ConvertIfSubgraph(const onnx::GraphProto &subgraph_proto, const FuncGraphPtr &subgraph,
                                           const std::string &subgraph_name, const std::string &if_node_name,
-                                          const std::string &root_node_name) {
+                                          const std::string &root_node_name,
+                                          std::vector<AnfNodePtr> *subgraph_extra_inputs) {
   MS_CHECK_TRUE_RET(subgraph != nullptr, RET_NULL_PTR);
   std::unordered_map<std::string, AnfNodePtr> anf_nodes_map;
-  std::vector<AnfNodePtr> subgraph_extra_inputs;
-  auto status = ConvertOnnxGraph(subgraph_proto, subgraph, &anf_nodes_map, &subgraph_extra_inputs, if_node_name);
+  auto status = ConvertOnnxGraph(subgraph_proto, subgraph, &anf_nodes_map, subgraph_extra_inputs, if_node_name);
   if (status != RET_OK) {
     MS_LOG(ERROR) << "convert loop OnnxGraph failed";
     return status;
@@ -931,12 +963,6 @@ STATUS OnnxModelParser::ConvertIfSubgraph(const onnx::GraphProto &subgraph_proto
     auto input_parameter = input_anode_iter->second->cast<ParameterPtr>();
     MS_CHECK_TRUE_MSG(input_parameter != nullptr, RET_ERROR, "subgraph input should be a parameter");
     input_parameter->set_name(subgraph_name + "_input_" + std::to_string(j) + "_parameter");
-  }
-  for (size_t j = 0; j < subgraph_extra_inputs.size(); j++) {
-    auto input_parameter = subgraph_extra_inputs[j]->cast<ParameterPtr>();
-    MS_CHECK_TRUE_MSG(input_parameter != nullptr, RET_ERROR, "subgraph input should be a parameter");
-    input_parameter->set_name(subgraph_name + "_input_" + std::to_string(j + subgraph_proto.input_size()) +
-                              "_parameter");
   }
   auto return_node = subgraph->get_return();
   MS_CHECK_TRUE_MSG(return_node != nullptr, RET_ERROR, "subgraph has no return");
@@ -972,7 +998,8 @@ STATUS OnnxModelParser::ConvertIfOnnxNode(const onnx::NodeProto &onnx_node,
   FuncGraphPtr subgraph = nullptr;
   std::string subgraph_name;
   auto &if_node_name = onnx_node.name();
-
+  std::vector<AnfNodePtr> then_subgraph_extra_inputs;
+  std::vector<AnfNodePtr> else_subgraph_extra_inputs;
   for (int i = 0; i < onnx_node.attribute_size(); i++) {
     auto &attr = onnx_node.attribute(i);
     auto &subgraph_proto = attr.g();
@@ -980,7 +1007,8 @@ STATUS OnnxModelParser::ConvertIfOnnxNode(const onnx::NodeProto &onnx_node,
       subgraph_name = if_node_name + "_then_branch";
       then_branch_graph = std::make_shared<FuncGraph>();
       MS_CHECK_TRUE_MSG(then_branch_graph != nullptr, RET_NULL_PTR, "create then_branch_graph return nullptr");
-      auto status = ConvertIfSubgraph(subgraph_proto, then_branch_graph, subgraph_name, if_node_name, root_node_name);
+      auto status = ConvertIfSubgraph(subgraph_proto, then_branch_graph, subgraph_name, if_node_name, root_node_name,
+                                      &then_subgraph_extra_inputs);
       if (status != RET_OK) {
         MS_LOG(ERROR) << "build if node else branch failed.";
       }
@@ -988,7 +1016,8 @@ STATUS OnnxModelParser::ConvertIfOnnxNode(const onnx::NodeProto &onnx_node,
       subgraph_name = if_node_name + "_else_branch";
       else_branch_graph = std::make_shared<FuncGraph>();
       MS_CHECK_TRUE_MSG(else_branch_graph != nullptr, RET_NULL_PTR, "create else_branch_graph return nullptr");
-      auto status = ConvertIfSubgraph(subgraph_proto, else_branch_graph, subgraph_name, if_node_name, root_node_name);
+      auto status = ConvertIfSubgraph(subgraph_proto, else_branch_graph, subgraph_name, if_node_name, root_node_name,
+                                      &else_subgraph_extra_inputs);
       if (status != RET_OK) {
         MS_LOG(ERROR) << "build if node else branch failed.";
       }
@@ -1016,7 +1045,12 @@ STATUS OnnxModelParser::ConvertIfOnnxNode(const onnx::NodeProto &onnx_node,
     if_new_input_not_same.push_back(input);
     if_set.insert(input);
   }
-
+  auto status = RenameSubGraphInputName(if_node_name, if_new_input_not_same, then_subgraph_extra_inputs,
+                                        else_subgraph_extra_inputs);
+  if (status != RET_OK) {
+    MS_LOG(ERROR) << "RenameSubGraphInputName failed!";
+    return RET_ERROR;
+  }
   root_if_node->set_inputs(if_new_input_not_same);
   return RET_OK;
 }
@@ -1053,11 +1087,13 @@ STATUS OnnxModelParser::BuildCNode(const onnx::NodeProto &onnx_node, const FuncG
           CHECK_NULL_RETURN(outside_input_node);
           // copy outside input parameter value to inside subgraph
           ext_subgraph_input->set_abstract(outside_input_node->abstract());
-          ext_subgraph_input->set_name(input_name);
+          ext_subgraph_input->set_name(outside_input_node->fullname_with_scope());
           if (outside_input_node->isa<Parameter>()) {
             auto parameter = outside_input_node->cast<ParameterPtr>();
             if (!parameter->has_default()) {
-              MS_LOG(ERROR) << "outside_input_node should has data.";
+              MS_LOG(ERROR) << "outside_input_node should has data! node name:" << onnx_node.name()
+                            << "outside input name:" << outside_input_node->fullname_with_scope()
+                            << " input name:" << input_name;
               return RET_ERROR;
             }
             auto tensor_info = parameter->default_param()->cast<tensor::TensorPtr>();
