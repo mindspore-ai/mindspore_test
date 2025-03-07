@@ -17,7 +17,7 @@ It is a `dataset engine <https://www.mindspore.cn/docs/en/master/design/data_eng
 
 This module provides the following data loading methods to help users load datasets into MindSpore.
 
-- User defined dataset loading: allows users to define `Random-accessible(Map-style) datasets
+- User defined dataset loading: allows users to define `Random-accessible(Map-style) dataset
   <https://www.mindspore.cn/tutorials/en/master/beginner/dataset.html#random-accessible-dataset>`_ or
   `Iterable-style dataset <https://www.mindspore.cn/tutorials/en/master/beginner/dataset.html#iterable-dataset>`_
   to customize data reading and processing logic.
@@ -53,25 +53,48 @@ As shown in the above figure, the mindspore dataset module makes it easy for use
 pipelines and transform samples in the dataset in the most efficient (multi-process / multi-thread) manner.
 The specific steps are as follows:
 
-- Loading datasets: Users can easily load supported datasets using the `*Dataset` class, or load Python layer
-  customized datasets through `UDF Loader` + `GeneratorDataset` . At the same time, the loading class method can
-  accept a variety of parameters such as sampler, data slicing, and data shuffle;
-- Dataset operation: The user uses the dataset object method `.shuffle` / `.filter` / `.skip` / `.split` /
-  `.take` / ... to further shuffle, filter, skip, and obtain the maximum number of samples of datasets;
+- Loading datasets: Users can easily load supported datasets using the Dataset class
+  (`Standard-format Dataset
+  <https://www.mindspore.cn/docs/en/master/api_python/mindspore.dataset.loading.html#standard-format>`_,
+  `Vision Dataset <https://www.mindspore.cn/docs/en/master/api_python/mindspore.dataset.loading.html#vision>`_,
+  `NLP Dataset <https://www.mindspore.cn/docs/en/master/api_python/mindspore.dataset.loading.html#text>`_,
+  `Audio Dataset <https://www.mindspore.cn/docs/en/master/api_python/mindspore.dataset.loading.html#audio>`_,
+  or load Python layer customized datasets through
+  `User Defined Dataset
+  <https://www.mindspore.cn/docs/en/master/api_python/mindspore.dataset.loading.html#user-defined>`_,
+- Dataset operation: The user uses the dataset object method
+  `.shuffle <https://www.mindspore.cn/docs/en/master/api_python/dataset/dataset_method/operation/
+  mindspore.dataset.Dataset.shuffle.html#mindspore.dataset.Dataset.shuffle)>`_,
+  `.filter <https://www.mindspore.cn/docs/en/master/api_python/dataset/dataset_method/operation/
+  mindspore.dataset.Dataset.filter.html#mindspore.dataset.Dataset.filter)>`_,
+  `.skip <https://www.mindspore.cn/docs/en/master/api_python/dataset/dataset_method/operation/
+  mindspore.dataset.Dataset.skip.html#mindspore.dataset.Dataset.skip)>`_,
+  `.split <https://www.mindspore.cn/docs/en/master/api_python/dataset/dataset_method/operation/
+  mindspore.dataset.Dataset.split.html#mindspore.dataset.Dataset.split)>`_,
+  `.take <https://www.mindspore.cn/docs/en/master/api_python/dataset/dataset_method/operation/
+  mindspore.dataset.Dataset.take.html#mindspore.dataset.Dataset.take)>`_,
+  / … to further shuffle, filter, skip, and obtain the maximum number of samples of datasets.
 - Dataset sample transform operation: The user can add data transform operations
-  ( `vision transform <https://mindspore.cn/docs/en/master/api_python/mindspore.\
-  dataset.transforms.html#module-mindspore.dataset.vision>`_ ,
-  `NLP transform <https://mindspore.cn/docs/en/master/api_python/mindspore.\
-  dataset.transforms.html#module-mindspore.dataset.text>`_ ,
-  `audio transform <https://mindspore.cn/docs/en/master/api_python/mindspore.\
-  dataset.transforms.html#module-mindspore.dataset.audio>`_ ) to the map
-  operation to perform transformations. During data preprocessing, multiple map operations can be defined to
-  perform different transform operations to different fields. The data transform operation can also be a
-  user-defined transform `pyfunc` (Python function);
-- Batch: After the transformation of the samples, the user can use the batch operation to organize multiple samples
-  into batches, or use self-defined batch logic with the parameter `per_batch_map` applied;
-- Iterator: Finally, the user can use the dataset object method `create_dict_iterator` to create an
-  iterator, which can output the preprocessed data cyclically.
+  (`vision transform <https://www.mindspore.cn/docs/en/master/api_python/
+  mindspore.dataset.transforms.html#module-mindspore.dataset.vision>`_,
+  `nlp transform <https://www.mindspore.cn/docs/en/master/api_python/
+  mindspore.dataset.transforms.html#module-mindspore.dataset.text>`_,
+  `audio transform <https://www.mindspore.cn/docs/en/master/api_python/
+  mindspore.dataset.transforms.html#module-mindspore.dataset.audio>`_ )
+  to the map operation to perform transforms. During data preprocessing, multiple map operations can be defined
+  to perform different transform operations to different fields.
+  The data transform operation can also be a user-defined Python function.
+- Batch: After the transforms of the samples, the user can use the
+  `.batch <https://www.mindspore.cn/docs/en/master/api_python/dataset/dataset_method/batch/
+  mindspore.dataset.Dataset.batch.html#mindspore.dataset.Dataset.batch>`_ operation to organize multiple samples
+  into batches, or use self-defined batch logic with the parameter per_batch_map applied.
+- Iterator: Finally, the user can use the method
+  `.create_dict_iterator <https://www.mindspore.cn/docs/en/master/api_python/dataset/dataset_method/iterator/
+  mindspore.dataset.Dataset.create_dict_iterator.html#mindspore.dataset.Dataset.create_dict_iterator>`_ operation
+  to organize multiple samples into batches, or use self-defined batch logic with the parameter per_batch_map applied.
+  `.create_tuple_iterator <https://www.mindspore.cn/docs/en/master/api_python/dataset/dataset_method/iterator/
+  mindspore.dataset.Dataset.create_tuple_iterator.html#mindspore.dataset.Dataset.create_tuple_iterator>`_ operation
+  to organize multiple samples into batches, or use self-defined batch logic with the parameter per_batch_map applied.
 
 Quick start of Dataset Pipeline
 -------------------------------

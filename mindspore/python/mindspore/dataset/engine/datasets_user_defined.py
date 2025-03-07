@@ -744,10 +744,10 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
         column_names (Union[str, list[str]], optional): List of column names of the dataset. Default: ``None`` .
             Users are required to provide either column_names or schema.
         column_types (list[mindspore.dtype], optional): List of column data types of the dataset. Default: ``None`` .
-            If provided, sanity check will be performed on generator output.
+            If provided, sanity check will be performed on generator output (deprecated in future version).
         schema (Union[str, Schema], optional): Data format policy, which specifies the data types and shapes of the data
             column to be read. Both JSON file path and objects constructed by :class:`mindspore.dataset.Schema` are
-            acceptable. Default: ``None`` .
+            acceptable (deprecated in future version). Default: ``None`` .
         num_samples (int, optional): The number of samples to be included in the dataset.
             Default: ``None`` , all images.
         num_parallel_workers (int, optional): Number of worker threads/subprocesses used to
@@ -767,9 +767,10 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
             option could be beneficial if the Python operation is computational heavy. Default: ``True``.
         max_rowsize(int, optional): Maximum size of data (in MB) that is used for shared memory
             allocation to copy data between processes, the total occupied shared memory will increase as
-            ``num_parallel_workers`` and :func:`mindspore.dataset.config.set_prefetch_size` increase. If set to -1,
+            ``num_parallel_workers`` and :func:`mindspore.dataset.config.set_prefetch_size` increase. If set to ``-1``,
             shared memory will be dynamically allocated with the actual size of data. This is only used if
-            ``python_multiprocessing`` is set to True. Default: ``None`` , allocate shared memory dynamically.
+            ``python_multiprocessing`` is set to ``True``. Default: ``None`` , allocate shared memory dynamically
+            (deprecated in future version).
         batch_sampler (Iterable, optional): Similar to `sampler` , but returns a batch of indices at a time, the
             corresponding data will be combined into a batch. Mutually exclusive with `num_samples` , `shuffle` ,
             `num_shards` , `shard_id` and `sampler` . Default: ``None`` , do not use batch sampler.

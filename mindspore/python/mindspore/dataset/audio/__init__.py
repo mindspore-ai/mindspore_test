@@ -26,12 +26,6 @@ Common imported modules in corresponding API examples are as follows:
     import mindspore.dataset.audio as audio
     from mindspore.dataset.audio import utils
 
-Alternative and equivalent imported audio module is as follows:
-
-.. code-block::
-
-    import mindspore.dataset.audio.transforms as audio
-
 Descriptions of common data processing terms are as follows:
 
 - TensorOperation, the base class of all data processing operations implemented in C++.
@@ -41,7 +35,7 @@ The data transform operation can be executed in the data processing pipeline or 
 
 - Pipeline mode is generally used to process big datasets. Examples refer to
   `introduction to data processing pipeline <https://www.mindspore.cn/docs/en/master/api_python/
-  mindspore.dataset.html#introduction-to-data-processing-pipeline>`_ .
+  mindspore.dataset.loading.html#introduction-to-data-processing-pipeline>`_ .
 - Eager mode is more like a function call to process data. Examples refer to
   `Lightweight Data Processing <https://www.mindspore.cn/docs/en/master/model_train/dataset/eager.html>`_ .
 """

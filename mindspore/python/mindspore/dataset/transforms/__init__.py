@@ -23,19 +23,10 @@ Common imported modules in corresponding API examples are as follows:
     import mindspore.dataset as ds
     import mindspore.dataset.transforms as transforms
 
-Note: Legacy c_transforms and py_transforms are deprecated but can still be imported as follows:
-
-.. code-block::
-
-    from mindspore.dataset.transforms import c_transforms
-    from mindspore.dataset.transforms import py_transforms
-
 Descriptions of common data processing terms are as follows:
 
 - TensorOperation, the base class of all data processing operations implemented in C++.
 - PyTensorOperation, the base class of all data processing operations implemented in Python.
-
-Note: In eager mode, non-NumPy input is implicitly converted to NumPy format and sent to MindSpore.
 """
 from .. import vision
 from . import c_transforms

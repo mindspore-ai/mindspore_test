@@ -14,9 +14,9 @@
             例如，使用 `iter(source)` 访问数据集时，可以返回从数据库、远程服务器读取的数据流，详情请参阅 `可迭代数据集样例 <https://www.mindspore.cn/tutorials/zh-CN/master/beginner/dataset.html#可迭代数据集>`_ 。
         - **column_names** (Union[str, list[str]]，可选) - 指定数据集生成的列名。默认值： ``None`` ，不指定。用户可以通过此参数或 `schema` 参数指定列名。
         - **column_types** (list[mindspore.dtype]，可选) - 指定生成数据集各个数据列的数据类型。默认值： ``None`` ，不指定。
-          如果未指定该参数，则自动推断类型；如果指定了该参数，将在数据输出时做类型匹配检查。
+          如果未指定该参数，则自动推断类型；如果指定了该参数，将在数据输出时做类型匹配检查（后续版本将废弃此参数）。
         - **schema** (Union[str, :class:`~.dataset.Schema`], 可选) - 数据格式策略，用于指定读取数据列的数据类型、数据维度等信息。
-          支持传入JSON文件路径或 :class:`mindspore.dataset.Schema` 构造的对象。默认值： ``None`` 。
+          支持传入JSON文件路径或 :class:`mindspore.dataset.Schema` 构造的对象（后续版本将废弃此参数）。默认值： ``None`` 。
         - **num_samples** (int, 可选) - 指定从数据集中读取的样本数。默认值： ``None`` ，读取全部样本。
         - **num_parallel_workers** (int, 可选) - 指定读取数据的工作进程数/线程数（由参数 `python_multiprocessing` 决定当前为多进程模式或多线程模式）。默认值： ``1`` 。
         - **shuffle** (bool，可选) - 是否混洗数据集。只有输入的 `source` 参数带有可随机访问属性（`__getitem__`）时，才可以指定该参数。默认值： ``None`` 。下表中会展示不同配置的预期行为。
@@ -24,7 +24,7 @@
         - **num_shards** (int, 可选) - 指定分布式训练时将数据集进行划分的分片数。默认值： ``None`` 。指定此参数后， `num_samples` 表示每个分片的最大样本数。一般在 `数据并行模式训练 <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/data_parallel.html#数据并行模式加载数据集>`_ 的时候使用。
         - **shard_id** (int, 可选) - 指定分布式训练时使用的分片ID号。默认值： ``None`` 。只有当指定了 `num_shards` 时才能指定此参数。
         - **python_multiprocessing** (bool，可选) - 启用Python多进程模式加速运算。默认值： ``True`` 。当传入 `source` 的Python对象的计算量很大时，开启此选项可能会有较好效果。
-        - **max_rowsize** (int, 可选) - 指定在多进程之间复制数据时，共享内存分配的基本单位，单位为MB，总占用的共享内存会随着 ``num_parallel_workers`` 和 :func:`mindspore.dataset.config.set_prefetch_size` 增加而变大。如果设置为 ``-1`` ，共享内存将随数据大小动态分配。仅当参数 `python_multiprocessing` 设为 ``True`` 时，此参数才会生效。默认值： ``None`` ，动态分配共享内存。
+        - **max_rowsize** (int, 可选) - 指定在多进程之间复制数据时，共享内存分配的基本单位，单位为MB，总占用的共享内存会随着 ``num_parallel_workers`` 和 :func:`mindspore.dataset.config.set_prefetch_size` 增加而变大。如果设置为 ``-1`` ，共享内存将随数据大小动态分配。仅当参数 `python_multiprocessing` 设为 ``True`` 时，此参数才会生效。默认值： ``None`` ，动态分配共享内存（后续版本将废弃此参数）。
         - **batch_sampler** (Iterable，可选) - 与 `sampler` 类似，但每次返回1批索引，对应的数据将被合并为1个Batch。不可与 `num_samples` ，`shuffle` ，`num_shards` ，`shard_id` 和 `sampler` 等参数同时使用。默认值： ``None`` ，不使用批采样器。
         - **collate_fn** (Callable[List[numpy.ndarray]]，可选) - 定义如何将数据列表合并为1个Batch。仅在使用了 `batch_sampler` 时有效。默认值：``None`` ，不指定合并函数。
 

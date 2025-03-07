@@ -8,6 +8,7 @@ API样例中常用的导入模块如下：
 
     import mindspore.dataset as ds
     import mindspore.dataset.audio as audio
+    from mindspore.dataset.audio import utils
 
 常用数据处理术语说明如下：
 

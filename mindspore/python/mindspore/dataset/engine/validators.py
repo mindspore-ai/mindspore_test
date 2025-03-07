@@ -1133,8 +1133,12 @@ def check_generator_dataset(method):
             raise ValueError("Neither columns_names nor schema are provided.")
 
         if schema is not None:
+            logger.warning("'schema' is deprecated from version 2.6 and will be removed in a future version.")
             if not isinstance(schema, (datasets.Schema, str)):
                 raise ValueError("schema should be a path to schema file or a schema object.")
+
+        if param_dict.get('column_types') is not None:
+            logger.warning("'column_types' is deprecated from version 2.6 and will be removed in a future version.")
 
         # check optional argument
         nreq_param_int = ["max_rowsize", "num_samples", "num_parallel_workers", "num_shards", "shard_id"]
@@ -1146,6 +1150,7 @@ def check_generator_dataset(method):
 
         max_rowsize = param_dict.get("max_rowsize")
         if max_rowsize is not None:
+            logger.warning("'max_rowsize' is deprecated from version 2.6 and will be removed in a future version.")
             check_value(max_rowsize, [-1, INT32_MAX], "max_rowsize")
 
         num_shards = param_dict.get("num_shards")
@@ -1345,6 +1350,8 @@ def check_batch(method):
             check_num_parallel_workers(num_parallel_workers)
         type_check(drop_remainder, (bool,), "drop_remainder")
 
+        if max_rowsize is not None:
+            logger.warning("'max_rowsize' is deprecated from version 2.6 and will be removed in a future version.")
         check_max_rowsize(max_rowsize)
 
         if (input_columns is not None) and (per_batch_map is None):
@@ -1523,6 +1530,9 @@ def check_map(method):
             check_num_parallel_workers(num_parallel_workers)
         type_check(python_multiprocessing, (bool,), "python_multiprocessing")
         check_cache_option(cache)
+
+        if max_rowsize is not None:
+            logger.warning("'max_rowsize' is deprecated from version 2.6 and will be removed in a future version.")
         check_max_rowsize(max_rowsize)
         if offload is not None:
             type_check(offload, (bool,), "offload")

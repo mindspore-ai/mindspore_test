@@ -564,13 +564,19 @@ class Dataset:
 
                 - max_rowsize(Union[int, list[int]], optional): Maximum size of row in MB that is used for shared memory
                   allocation to copy data between processes, the total occupied shared memory will increase as
-                  ``num_parallel_workers`` and :func:`mindspore.dataset.config.set_prefetch_size` increase. If set
-                  to -1, shared memory will be dynamically allocated with the actual size of data. This is only used if
-                  ``python_multiprocessing`` is set to True. If it is an int value, it represents
-                  ``input_columns`` and ``output_columns`` use this value as the unit to create shared memory.
-                  If it is a list, the first element represents the ``input_columns`` use this value as the unit to
-                  create shared memory, and the second element represents ``output_columns`` use this value as the unit
-                  to create shared memory. Default: ``None`` , allocate shared memory dynamically.
+                  ``num_parallel_workers`` and :func:`mindspore.dataset.config.set_prefetch_size` increase.
+                  This is only used if ``python_multiprocessing`` is set to ``True``.
+                  Default: ``None`` , allocate shared memory dynamically (deprecated in future version).
+
+                  - If set to ``-1`` / ``None``, shared memory will be dynamically allocated with the
+                    actual size of data.
+
+                  - If it is an int value, it represents ``input_columns`` and ``output_columns`` use this value as the
+                    unit to create shared memory.
+
+                  - If it is a list, the first element represents the ``input_columns`` use this value as the unit to
+                    create shared memory, and the second element represents ``output_columns`` use this value as the
+                    unit to create shared memory.
 
         Returns:
             Dataset, a new dataset with the above operation applied.
@@ -860,15 +866,21 @@ class Dataset:
                 - python_multiprocessing (bool, optional): Parallelize Python operations with multiple worker processes.
                   This option could be beneficial if the Python operation is computational heavy. Default: ``False``.
 
-                - max_rowsize (Union[int, list[int]], optional): Maximum size of row in MB that is used for shared
-                  memory allocation to copy data between processes, the total occupied shared memory will increase as
-                  ``num_parallel_workers`` and :func:`mindspore.dataset.config.set_prefetch_size` increase. If set
-                  to -1, shared memory will be dynamically allocated with the actual size of data. This is only used if
-                  ``python_multiprocessing`` is set to True. If it is an int value, it represents
-                  ``input_columns`` and ``output_columns`` use this value as the unit to create shared memory.
-                  If it is a list, the first element represents the ``input_columns`` use this value as the unit to
-                  create shared memory, and the second element represents ``output_columns`` use this value as the unit
-                  to create shared memory. Default: ``None`` , allocate shared memory dynamically.
+                - max_rowsize(Union[int, list[int]], optional): Maximum size of row in MB that is used for shared memory
+                  allocation to copy data between processes, the total occupied shared memory will increase as
+                  ``num_parallel_workers`` and :func:`mindspore.dataset.config.set_prefetch_size` increase.
+                  This is only used if ``python_multiprocessing`` is set to ``True``.
+                  Default: ``None`` , allocate shared memory dynamically (deprecated in future version).
+
+                  - If set to ``-1`` / ``None``, shared memory will be dynamically allocated with the
+                    actual size of data.
+
+                  - If it is an int value, it represents ``input_columns`` and ``output_columns`` use this value as the
+                    unit to create shared memory.
+
+                  - If it is a list, the first element represents the ``input_columns`` use this value as the unit to
+                    create shared memory, and the second element represents ``output_columns`` use this value as the
+                    unit to create shared memory.
 
                 - cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing.
                   Default: ``None``, which means no cache is used.
