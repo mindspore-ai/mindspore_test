@@ -421,7 +421,8 @@ void BaseTensor::data_sync(bool need_wait) const {
   (void)std::transform(shape().begin(), shape().end(), std::back_inserter(shape_tmp), LongToSize);
   auto size = abstract::ShapeSize(shape_tmp) * abstract::TypeIdSize(data_type());
   auto address = device_sync_;
-  if (size != 0 && !address->SyncDeviceToHost(shape(), size, data_type(), data_c())) {
+  if (size != 0 && address->GetMutablePtr() != nullptr &&
+      !address->SyncDeviceToHost(shape(), size, data_type(), data_c())) {
     MS_LOG(INTERNAL_EXCEPTION) << "SyncDeviceToHost failed.";
   }
   if (!data_->file_path().empty()) {
