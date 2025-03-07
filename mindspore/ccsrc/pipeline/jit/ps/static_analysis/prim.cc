@@ -4411,7 +4411,11 @@ class WhileLoopEvaluator : public Evaluator {
                            MS_EXCEPTION_IF_NULL(config);
                            const auto &eval_result = config->ObtainEvalResult();
                            MS_EXCEPTION_IF_NULL(eval_result);
-                           return eval_result->abstract();
+                           const auto &abs = eval_result->abstract();
+                           if (abs->isa<abstract::AbstractSequence>()) {
+                             SetSequenceElementsUseFlagsRecursively(abs, true);
+                           }
+                           return abs;
                          });
 
     // Get conditiona and loop func graph
@@ -4514,7 +4518,11 @@ class ScanEvaluator : public Evaluator {
                            MS_EXCEPTION_IF_NULL(config);
                            const auto &eval_result = config->ObtainEvalResult();
                            MS_EXCEPTION_IF_NULL(eval_result);
-                           return eval_result->abstract();
+                           const auto &abs = eval_result->abstract();
+                           if (abs->isa<abstract::AbstractSequence>()) {
+                             SetSequenceElementsUseFlagsRecursively(abs, true);
+                           }
+                           return abs;
                          });
 
     // CNode: {kPrimScan, f, init, xs, length, unroll}
