@@ -868,3 +868,36 @@ def test_trace_functional():
     assert res == 6
     res = foo1(ms.Tensor(1), ms.Tensor(2), ms.Tensor(3))
     assert res == 6
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_trace_empty_input():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function
+    Expectation: No exception
+    """
+    @ms.jit(capture_mode="trace")
+    def foo():
+        return ms.Tensor(1) + ms.Tensor(2)
+
+    res = foo()
+    assert res == 3
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_trace_8():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function
+    Expectation: No exception
+    """
+    @ms.jit(capture_mode="trace")
+    def foo(inputs):
+        return inputs[0] + inputs[1] + inputs[2]
+
+    inputs = ms.mutable({0: ms.Tensor(1), 1: ms.Tensor(2), 2: ms.Tensor(3)})
+    res = foo(inputs)
+    assert res == 6
+    res = foo(inputs)
+    assert res == 6

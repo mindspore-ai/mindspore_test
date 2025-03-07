@@ -5548,8 +5548,8 @@ class TraceGraphEvaluator : public TransitionPrimEvaluator {
     MS_EXCEPTION_IF_NULL(obj_value);
     const py::object &func_obj = obj_value->obj();
     py::object cell_obj = py::none();
-    if (trace_prim_cnode->inputs().size() == 5) {
-      constexpr auto cell_index = 4;
+    constexpr auto cell_index = 4;
+    if (trace_prim_cnode->inputs().size() > cell_index) {
       const auto &cell_node = trace_prim_cnode->input(cell_index);
       if (!cell_node->isa<ValueNode>()) {
         MS_LOG(EXCEPTION) << "Trace node missing cell object.";

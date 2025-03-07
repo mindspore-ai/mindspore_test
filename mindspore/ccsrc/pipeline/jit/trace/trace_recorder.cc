@@ -118,6 +118,66 @@ DebugInfoPtr GenerateDebugInfos(const py::list &file_names, const py::list &line
   }
   return debug_info;
 }
+
+AnfNodePtr GetInt(const py::object &obj, bool set_abstract) {
+  MS_LOG(DEBUG) << "Constant int64_t: " << py::str(obj);
+  const auto &value_node = NewValueNode(py::cast<int64_t>(obj));
+  if (set_abstract) {
+    value_node->set_abstract(GetAbstract(obj));
+  }
+  return value_node;
+}
+
+AnfNodePtr GetFloat(py::object obj, bool set_abstract) {
+  MS_LOG(DEBUG) << "Constant float: " << py::str(obj);
+  auto data = py::cast<float>(obj);
+  const auto &value_node = NewValueNode(data);
+  auto fp32_val = value_node->value()->cast<FP32ImmPtr>();
+  if (fp32_val != nullptr) {
+    MS_LOG(DEBUG) << "Set float64 value to FP32Imm.";
+    fp32_val->set_prim_value(py::cast<double>(obj));
+  }
+  if (set_abstract) {
+    value_node->set_abstract(GetAbstract(obj));
+  }
+  return value_node;
+}
+
+AnfNodePtr GetStr(py::object obj, bool set_abstract) {
+  MS_LOG(DEBUG) << "Constant str: " << py::str(obj);
+  const auto &value_node = NewValueNode(py::cast<std::string>(obj));
+  if (set_abstract) {
+    value_node->set_abstract(GetAbstract(obj));
+  }
+  return value_node;
+}
+
+AnfNodePtr GetNone(py::object obj, bool set_abstract) {
+  MS_LOG(DEBUG) << "Constant none: " << py::str(obj);
+  const auto &value_node = NewValueNode(kNone);
+  if (set_abstract) {
+    value_node->set_abstract(GetAbstract(obj));
+  }
+  return value_node;
+}
+
+AnfNodePtr GetEllipsis(py::object obj, bool set_abstract) {
+  MS_LOG(DEBUG) << "Constance ellipsis: " << py::str(obj);
+  const auto &value_node = NewValueNode(kEllipsis);
+  if (set_abstract) {
+    value_node->set_abstract(GetAbstract(obj));
+  }
+  return value_node;
+}
+
+AnfNodePtr GetType(py::object obj, bool set_abstract) {
+  MS_LOG(DEBUG) << "Constance type: " << py::str(obj);
+  const auto &type_node = NewValueNode(obj.cast<TypePtr>());
+  if (set_abstract) {
+    type_node->set_abstract(GetAbstract(obj));
+  }
+  return type_node;
+}
 }  // namespace
 
 void Capture(const py::args &args, py::object *res) {
@@ -227,7 +287,7 @@ void TraceRecorder::BeginGraph(const py::object &func_name, const py::object &ph
 
 FuncGraphPtr TraceRecorder::BuildEndGraph(const py::list &file_names, const py::list &linenos,
                                           const py::args &output_args, bool nested) {
-  const auto &func_graph = graph_stack_.top();
+  auto func_graph = graph_stack_.top();
   MS_LOG(DEBUG) << "End build graph, " << func_graph << "/" << func_graph->ToString()
                 << ", output_args: " << py::str(py::cast<py::object>(output_args)) << ", phase_: " << phase_;
   const auto debug_info = GenerateDebugInfos(file_names, linenos);
@@ -449,59 +509,26 @@ AnfNodePtr TraceRecorder::GetNode(const py::object &obj, const DebugInfoPtr &deb
     }
     return value_node;
   } else if (py::isinstance<py::int_>(obj)) {
-    MS_LOG(DEBUG) << "Constant int64_t: " << py::str(obj);
-    const auto &value_node = NewValueNode(py::cast<int64_t>(obj));
-    if (set_abstract) {
-      value_node->set_abstract(GetAbstract(obj));
-    }
-    return value_node;
+    return GetInt(obj, set_abstract);
   } else if (py::isinstance<py::float_>(obj)) {
-    MS_LOG(DEBUG) << "Constant float: " << py::str(obj);
-    auto data = py::cast<float>(obj);
-    const auto &value_node = NewValueNode(data);
-    auto fp32_val = value_node->value()->cast<FP32ImmPtr>();
-    if (fp32_val != nullptr) {
-      MS_LOG(DEBUG) << "Set float64 value to FP32Imm.";
-      fp32_val->set_prim_value(py::cast<double>(obj));
-    }
-    if (set_abstract) {
-      value_node->set_abstract(GetAbstract(obj));
-    }
-    return value_node;
+    return GetFloat(obj, set_abstract);
   } else if (py::isinstance<py::str>(obj)) {
-    MS_LOG(DEBUG) << "Constant str: " << py::str(obj);
-    const auto &value_node = NewValueNode(py::cast<std::string>(obj));
-    if (set_abstract) {
-      value_node->set_abstract(GetAbstract(obj));
-    }
-    return value_node;
+    return GetStr(obj, set_abstract);
   } else if (py::isinstance<py::none>(obj)) {
-    MS_LOG(DEBUG) << "Constant none: " << py::str(obj);
-    const auto &value_node = NewValueNode(kNone);
-    if (set_abstract) {
-      value_node->set_abstract(GetAbstract(obj));
-    }
-    return value_node;
+    return GetNone(obj, set_abstract);
   } else if (py::isinstance<py::ellipsis>(obj)) {
-    MS_LOG(DEBUG) << "Constance ellipsis: " << py::str(obj);
-    const auto &value_node = NewValueNode(kEllipsis);
-    if (set_abstract) {
-      value_node->set_abstract(GetAbstract(obj));
-    }
-    return value_node;
+    return GetEllipsis(obj, set_abstract);
   } else if (py::isinstance<Type>(obj)) {
-    MS_LOG(DEBUG) << "Constance type: " << py::str(obj);
-    const auto &type_node = NewValueNode(obj.cast<TypePtr>());
-    if (set_abstract) {
-      type_node->set_abstract(GetAbstract(obj));
-    }
-    return type_node;
+    return GetType(obj, set_abstract);
   } else if (py::isinstance<py::tuple>(obj)) {
     const py::tuple &tuple_obj = py::cast<py::tuple>(obj);
     return GetTupleNode(tuple_obj, debug_info, set_abstract);
   } else if (py::isinstance<py::list>(obj)) {
     const py::list &list_obj = py::cast<py::list>(obj);
     return GetListNode(list_obj, debug_info, set_abstract);
+  } else if (py::isinstance<py::dict>(obj)) {
+    const py::list &dict_obj = py::cast<py::list>(obj);
+    return GetDictNode(dict_obj, debug_info, set_abstract);
   }
   Clear();
   MS_LOG(INTERNAL_EXCEPTION) << "Not support [" << py::str(obj.get_type()) << "] " << py::str(obj)
@@ -575,6 +602,28 @@ AnfNodePtr TraceRecorder::GetListNode(const py::list &list_obj, const DebugInfoP
   return list_cnode;
 }
 
+AnfNodePtr TraceRecorder::GetDictNode(const py::dict &dict_obj, const DebugInfoPtr &debug_info, bool set_abstract) {
+  // Create MakeDict CNode for py::dict each time.
+  AnfNodePtrList make_dict_inputs = {NewValueNode(prim::kPrimMakeDict)};
+  std::vector<AnfNodePtr> dict_key_nodes;
+  std::vector<AnfNodePtr> dict_value_nodes;
+  (void)dict_key_nodes.emplace_back(NewValueNode(prim::kPrimMakeTuple));
+  (void)dict_value_nodes.emplace_back(NewValueNode(prim::kPrimMakeTuple));
+  for (auto item : dict_obj) {
+    (void)dict_key_nodes.emplace_back(GetNode(py::cast<py::object>(item.first), debug_info));
+    (void)dict_value_nodes.emplace_back(GetNode(py::cast<py::object>(item.second), debug_info));
+  }
+  const auto &key_cnode = graph_stack_.top()->NewCNodeInOrder(dict_key_nodes);
+  const auto &value_cnode = graph_stack_.top()->NewCNodeInOrder(dict_value_nodes);
+  (void)make_dict_inputs.emplace_back(key_cnode);
+  (void)make_dict_inputs.emplace_back(value_cnode);
+  const auto &dict_cnode = graph_stack_.top()->NewCNodeInOrder(make_dict_inputs);
+  if (set_abstract) {
+    dict_cnode->set_abstract(GetAbstract(dict_obj));
+  }
+  return dict_cnode;
+}
+
 void TraceRecorder::SetNode(const py::object &obj, const AnfNodePtr &node, const DebugInfoPtr &debug_info,
                             bool set_abstract) {
   if (tensor::IsTensorPy(obj)) {
@@ -588,38 +637,9 @@ void TraceRecorder::SetNode(const py::object &obj, const AnfNodePtr &node, const
       node->set_abstract(GetAbstract(obj));
     }
     return;
-  } else if (py::isinstance<py::bool_>(obj)) {
-    MS_LOG(DEBUG) << "Constant bool: " << py::str(obj);
-    if (set_abstract) {
-      node->set_abstract(GetAbstract(obj));
-    }
-    return;
-  } else if (py::isinstance<py::int_>(obj)) {
-    MS_LOG(DEBUG) << "Constant int64_t: " << py::str(obj);
-    if (set_abstract) {
-      node->set_abstract(GetAbstract(obj));
-    }
-    return;
-  } else if (py::isinstance<py::float_>(obj)) {
-    MS_LOG(DEBUG) << "Constant float: " << py::str(obj);
-    if (set_abstract) {
-      node->set_abstract(GetAbstract(obj));
-    }
-    return;
-  } else if (py::isinstance<py::str>(obj)) {
-    MS_LOG(DEBUG) << "Constant str: " << py::str(obj);
-    if (set_abstract) {
-      node->set_abstract(GetAbstract(obj));
-    }
-    return;
-  } else if (py::isinstance<py::none>(obj)) {
-    MS_LOG(DEBUG) << "Constant none: " << py::str(obj);
-    if (set_abstract) {
-      node->set_abstract(GetAbstract(obj));
-    }
-    return;
-  } else if (py::isinstance<py::ellipsis>(obj)) {
-    MS_LOG(DEBUG) << "Constance ellipsis: " << py::str(obj);
+  } else if (py::isinstance<py::bool_>(obj) || py::isinstance<py::int_>(obj) || py::isinstance<py::float_>(obj) ||
+             py::isinstance<py::str>(obj) || py::isinstance<py::none>(obj) || py::isinstance<py::ellipsis>(obj)) {
+    MS_LOG(DEBUG) << "Get Constant value: " << py::str(obj);
     if (set_abstract) {
       node->set_abstract(GetAbstract(obj));
     }
@@ -631,6 +651,10 @@ void TraceRecorder::SetNode(const py::object &obj, const AnfNodePtr &node, const
   } else if (py::isinstance<py::list>(obj)) {
     const py::list &list_obj = py::cast<py::list>(obj);
     SetListNode(list_obj, node, debug_info, set_abstract);
+    return;
+  } else if (py::isinstance<py::dict>(obj)) {
+    const py::dict &dict_obj = py::cast<py::dict>(obj);
+    SetDictNode(dict_obj, node, debug_info, set_abstract);
     return;
   } else if (py::isinstance<TensorType>(obj)) {
     MS_LOG(DEBUG) << "Constance TensorType: " << py::str(obj);
@@ -689,6 +713,25 @@ void TraceRecorder::SetListNode(const py::list &list_obj, const AnfNodePtr &node
     (void)list_getitem_inputs.emplace_back(NewValueNode(SizeToLong(i)));
     const auto &getitem_cnode = graph_stack_.top()->NewCNodeInOrder(list_getitem_inputs);
     SetNode(list_obj[i], getitem_cnode, debug_info, set_abstract);
+  }
+}
+
+void TraceRecorder::SetDictNode(const py::dict &dict_obj, const AnfNodePtr &node, const DebugInfoPtr &debug_info,
+                                bool set_abstract) {
+  if (!IsMutable(dict_obj)) {
+    // Not create dict -> node relation, to get node by GetNode(dict_obj) if need.
+    if (set_abstract) {
+      node->set_abstract(GetAbstract(dict_obj));
+    }
+    // Not return, create tensor -> node relation by dict items in advance.
+  }
+  for (const auto &item : dict_obj) {
+    // Create dict GetItem CNode.
+    AnfNodePtrList dict_getitem_inputs = {NewValueNode(prim::kPrimDictGetItem)};
+    (void)dict_getitem_inputs.emplace_back(node);
+    (void)dict_getitem_inputs.emplace_back(GetNode(py::cast<py::object>(item.first), debug_info));
+    const auto &getitem_cnode = graph_stack_.top()->NewCNodeInOrder(dict_getitem_inputs);
+    SetNode(py::cast<py::object>(item.second), getitem_cnode, debug_info, set_abstract);
   }
 }
 

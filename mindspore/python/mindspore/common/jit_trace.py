@@ -28,6 +28,7 @@ from mindspore._c_expression import TraceRecorder as tr
 from mindspore._c_expression import JitExecutor_
 from mindspore._c_expression import TensorNode
 from mindspore._c_expression import TensorPy as Tensor, CSRTensor, COOTensor
+from mindspore._c_expression import typing
 
 
 class TraceJitContext(JitContext):
@@ -50,6 +51,7 @@ class TraceJitContext(JitContext):
             prim_res = prim_res.get_value()
         prim_res = _sync_stub_tensor(prim_res)
         args = tuple(_sync_stub_tensor(arg) for arg in args)
+        args = tuple(_convert_arg_for_operators(arg, prim.name) for arg in args)
         file_names, linenos = _get_caller_lines()
         tr.get_instance().new_node(prim, prim_res, file_names, linenos, False, *args)
         return prim_res
@@ -99,6 +101,14 @@ def convert_tensorpy(args):
         else:
             new_args.append(arg)
     return tuple(new_args)
+
+def _convert_arg_for_operators(arg, prim_name):
+    """Convert dtype to enum"""
+    from mindspore.ops._utils.arg_dtype_cast import DtypeToEnum
+    if isinstance(arg, typing.Type):
+        return DtypeToEnum()(prim_name, 'dtype', arg)
+    return arg
+
 
 
 def nested_run(obj, cell, *args):
@@ -167,14 +177,17 @@ def _jit_trace(fn):
             bound_arguments.apply_defaults()
             args = bound_arguments.args
             kwargs = bound_arguments.kwargs
-        jit_args = args[1:] if hasattr(args[0], fn.__name__) else args
-
-        obj = args[0]
         generate_name = fn.__module__
-        if hasattr(obj, fn.__name__):  # Add class name for Cell.
-            generate_name = generate_name + "." + obj.__class__.__name__
+        if args:
+            jit_args = args[1:] if hasattr(args[0], fn.__name__) else args
+            obj = args[0]
+            if hasattr(obj, fn.__name__):  # Add class name for Cell.
+                generate_name = generate_name + "." + obj.__class__.__name__
+        else:
+            jit_args = args
         generate_name = generate_name + "." + fn.__name__ + "#" + str(id(fn))
-        if hasattr(obj, fn.__name__):  # Add create time for Cell.
+        # Add create time for Cell.
+        if args and hasattr(obj, fn.__name__):
             generate_name = generate_name + '#created_' + str(args[0].create_time)
         line_str = fn.__code__.co_filename + ":" + str(fn.__code__.co_firstlineno)
         generate_name = generate_name + '#[' + line_str + ']'
@@ -223,6 +236,8 @@ def _get_args_for_run(args):
             new_args.append(arg)
         elif context.get_context("grad_for_scalar") and isinstance(arg, (int, float)):
             new_args.append(arg)
+        elif isinstance(arg, dict) and hasattr(arg, "__ms_mutable__"):
+            new_args.append(tuple(arg.values()))
     return tuple(new_args)
 
 
