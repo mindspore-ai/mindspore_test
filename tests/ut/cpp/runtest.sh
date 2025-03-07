@@ -37,6 +37,9 @@ cp -fr $PROJECT_PATH/tests/ut/data ${PROJECT_PATH}/build/mindspore/tests/ut/cpp/
 ## prepare album dataset, uses absolute path so has to be generated
 python ${PROJECT_PATH}/build/mindspore/tests/ut/cpp/data/dataset/testAlbum/gen_json.py
 
+## prepare data for graph kernel
+cp -fr $PROJECT_PATH/tests/ut/cpp/graph_kernel/opt/config ${PROJECT_PATH}/build/mindspore/tests/ut/cpp/graph_kernel_config
+
 RET=0
 if [ $# -gt 0 ]; then
   ./ut_CORE_tests --gtest_filter=$1
