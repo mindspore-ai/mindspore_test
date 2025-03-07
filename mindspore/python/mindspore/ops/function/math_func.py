@@ -10036,8 +10036,8 @@ def any(input, axis=None, keep_dims=False):
     Args:
         input (Tensor): The input tensor.
         axis (Union[int, tuple(int), list(int), Tensor], optional): The dimensions to reduce. If ``None`` ,
-                all dimensions are reduced.
-        keep_dims (bool, optional): Whether the output tensor has dim retained or not.
+                all dimensions are reduced. Default ``None`` .
+        keep_dims (bool, optional): Whether the output tensor has dim retained or not. Default ``False`` .
 
     Returns:
         Tensor

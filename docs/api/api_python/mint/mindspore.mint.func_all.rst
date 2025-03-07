@@ -19,7 +19,7 @@ mindspore.mint.all
     参数：
         - **input** (Tensor) - 输入tensor。
         - **dim** (Union[int, tuple(int), list(int), Tensor]) - 要减少的维度。如果为 ``None``，减少所有维度。
-        - **keepdim** (bool, 可选) - 输出tensor是否保留维度。
+        - **keepdim** (bool, 可选) - 输出tensor是否保留维度。默认 ``False`` 。
 
     返回：
         Tensor

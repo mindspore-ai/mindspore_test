@@ -495,8 +495,8 @@ def any(input, dim=None, keepdim=False):
     Args:
         input (Tensor): The input tensor.
         dim (Union[int, tuple(int), list(int), Tensor], optional): The dimensions to reduce. If ``None`` ,
-                all dimensions are reduced.
-        keepdim (bool, optional): Whether the output tensor has dim retained or not..
+                all dimensions are reduced. Default ``None`` .
+        keepdim (bool, optional): Whether the output tensor has dim retained or not. Default ``False`` .
 
     Returns:
         Tensor
@@ -561,8 +561,8 @@ def all(input, dim=None, keepdim=False):
     Args:
         input (Tensor): The input tensor.
         dim (Union[int, tuple(int), list(int), Tensor]): The dimensions to reduce. If ``None`` ,
-                all dimensions are reduced.
-        keepdim (bool, optional): Whether the output tensor has dim retained or not.
+                all dimensions are reduced. Default ``None`` .
+        keepdim (bool, optional): Whether the output tensor has dim retained or not. Default ``False`` .
 
     Returns:
         Tensor
