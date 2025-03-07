@@ -18,6 +18,7 @@ endif()
 if(MSVC)
     # define this for msvc:dllexport or dllimport
     add_compile_definitions(BUILDING_DATASET_DLL)
+    add_compile_options(/utf-8)
 endif()
 
 # fix for GCC8.0
