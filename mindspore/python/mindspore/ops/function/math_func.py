@@ -13566,7 +13566,7 @@ def mul_ext(input, other):
             `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
 
     Returns:
-        Tensor with a shape that is the same as the broadcasted shape of the input `input` and `other`,
+        Tensor, the shape is the same as the one after broadcasting,
         and the data type is the one with higher precision or higher digits among the two inputs.
 
     Raises:

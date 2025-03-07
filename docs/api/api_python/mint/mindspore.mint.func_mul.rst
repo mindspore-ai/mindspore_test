@@ -24,8 +24,7 @@ mindspore.mint.mul
           `bool_ <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html>`_ 的Tensor。
 
     返回：
-        Tensor，其shape与输入 `input`、 `other` 广播后的shape相同。
-        其数据类型是两个输入和 alpha 中，精度更高或位数更多的类型。
+        Tensor，shape与广播后的shape相同，数据类型为两个输入中精度较高的类型。
 
     异常：
         - **TypeError** - 如果 `input`、 `other` 不是以下之一：Tensor、number.Number、bool。
