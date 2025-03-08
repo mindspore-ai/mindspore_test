@@ -597,6 +597,12 @@ void TraceRecorder::SetNode(const py::object &obj, const AnfNodePtr &node, const
     const py::list &list_obj = py::cast<py::list>(obj);
     SetListNode(list_obj, node, debug_info, set_abstract);
     return;
+  } else if (py::isinstance<TensorType>(obj)) {
+    MS_LOG(DEBUG) << "Constance TensorType: " << py::str(obj);
+    if (set_abstract) {
+      node->set_abstract(GetAbstract(obj));
+    }
+    return;
   }
   Clear();
   MS_LOG(INTERNAL_EXCEPTION) << "Not support [" << py::str(obj.get_type()) << "] " << py::str(obj)
