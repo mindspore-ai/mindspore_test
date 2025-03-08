@@ -22,7 +22,7 @@ from mindspore import Tensor, Parameter, context
 from mindspore.ops import operations as P
 from mindspore.ops import composite as C
 from mindspore.parallel.shard import Layout
-from parallel.utils.utils import check_layout_config, compile_net
+from parallel.utils.utils import ParallelValidator, check_layout_config, compile_net
 from tests.ut.python.ops.test_math_ops import VirtualLoss
 
 def setup_function():
@@ -69,13 +69,13 @@ class ShardSubNet(nn.Cell):
         return y
 
 class ShardNet(nn.Cell):
-    def __init__(self, in_strategy, out_strategy, shard_key="cell"):
+    def __init__(self, in_strategy, out_strategy=None, shard_key="cell"):
         super().__init__()
         self.subnet = ShardSubNet()
         if shard_key == "cell":
-            self.subnet_shard = self.subnet.shard(in_strategy)
+            self.subnet_shard = self.subnet.shard(in_strategy, out_strategy)
         if shard_key == "ms":
-            self.subnet_shard = ms.shard(self.subnet, in_strategy)
+            self.subnet_shard = ms.shard(self.subnet, in_strategy, out_strategy)
         self.add = P.Add()
         self.matmul = P.MatMul()
         self.relu = P.ReLU()
@@ -100,7 +100,7 @@ def test_cell_shard_with_layout_be_set_and_propagate():
     layout = Layout((2, 4, 1), ("dp", "sp", "mp"))
     in_layout1 = (layout("dp", "mp"),)
     x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
-    net = GradWrap(NetWithLoss(ShardNet(in_layout1, "cell")))
+    net = GradWrap(NetWithLoss(ShardNet(in_layout1, shard_key="cell")))
     compile_net(net, x)
     file = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
     para1 = "PrimFunc_AShardIdentity(%1)"
@@ -128,7 +128,7 @@ def test_ms_shard_with_layout_be_set_and_propagate():
     layout = Layout((2, 4, 1), ("dp", "sp", "mp"))
     in_layout1 = (layout("dp", "mp"),)
     x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
-    net = GradWrap(NetWithLoss(ShardNet(in_layout1, "ms")))
+    net = GradWrap(NetWithLoss(ShardNet(in_layout1, shard_key="ms")))
     compile_net(net, x)
     file = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
     para1 = "PrimFunc_AShardIdentity(%1)"
@@ -156,7 +156,7 @@ def test_ms_shard_with_multi_dim_and_interleaved_parallel_layout():
     layout = Layout((2, 4, 2, 2), ("dp", "mp", "sp", "interleaved_parallel"))
     in_layout1 = (layout(("dp", "interleaved_parallel", "mp"), "sp"),)
     x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
-    net = GradWrap(NetWithLoss(ShardNet(in_layout1, "ms")))
+    net = GradWrap(NetWithLoss(ShardNet(in_layout1, shard_key="ms")))
     compile_net(net, x)
     file = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
     para1 = "PrimFunc_AShardIdentity(%1)"
@@ -183,6 +183,168 @@ def test_error_given_illegal_strategy():
     error_msg = "The tuple strategy for each dimension should be tuple(int)"
 
     with pytest.raises(Exception) as err:
-        net = GradWrap(NetWithLoss(ShardNet(in_layout1, "ms")))
+        net = GradWrap(NetWithLoss(ShardNet(in_layout1, shard_key="ms")))
         compile_net(net, x)
     assert error_msg in str(err.value)
+
+
+def test_cell_shard_with_out_layout_be_set_and_propagate():
+    """
+    Feature: Test cell.shard given layout. The set layout can be seen in shard identity and the next operator.
+    Description: dev_num is 8.
+    Expectation: compile success, forward reduce_scatter
+    """
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
+                                      device_num=8, global_rank=0)
+    case_name = "test_cell_shard_with_out_layout_be_set_and_propagate"
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "layout_ir", case_name)
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    layout = Layout((2, 4, 1), ("dp", "sp", "mp"))
+    in_layout1 = (layout("dp", "mp"),)
+    x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    out_layout1 = (layout("dp", "mp"),)
+    net = GradWrap(NetWithLoss(ShardNet(in_layout1, out_layout1, "cell")))
+    phase = compile_net(net, x)
+    file = f"{ir_graph_path}/rank_0/*_validate_*"
+    para1 = "PrimFunc_MatMul(%4"
+    in_strategy = "out_strategy: ((2, 1))"
+    check_layout_config(para1, file, in_strategy)
+
+    validator = ParallelValidator(net, phase)
+    rank_list = {"rank_list": '(0, 1, 2, 3)'}
+    assert validator.check_node_attrs('AllReduce-0', rank_list)
+
+
+def test_cell_shard_with_out_strategy_be_set_and_propagate():
+    """
+    Feature: Test cell.shard given layout. The set layout can be seen in shard identity and the next operator.
+    Description: dev_num is 8.
+    Expectation: compile success, forward reduce_scatter
+    """
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
+                                      device_num=8, global_rank=0)
+    case_name = "test_cell_shard_with_out_strategy_be_set_and_propagate"
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "layout_ir", case_name)
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    layout = Layout((2, 4, 1), ("dp", "sp", "mp"))
+    in_layout1 = (layout("dp", "mp"),)
+    x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    out_layout1 = ((2, 1),)
+    net = GradWrap(NetWithLoss(ShardNet(in_layout1, out_layout1, "cell")))
+    phase = compile_net(net, x)
+    file = f"{ir_graph_path}/rank_0/*_validate_*"
+    para1 = "PrimFunc_MatMul(%4"
+    in_strategy = "out_strategy: ((2, 1))"
+    check_layout_config(para1, file, in_strategy)
+
+    validator = ParallelValidator(net, phase)
+    rank_list = {"rank_list": '(0, 1, 2, 3)'}
+    assert validator.check_node_attrs('AllReduce-0', rank_list)
+
+
+def test_cell_shard_with_out_strategy_be_set_and_propagate_reduce_scatter():
+    """
+    Feature: Test cell.shard given layout. The set layout can be seen in shard identity and the next operator.
+    Description: dev_num is 8.
+    Expectation: compile success, forward reduce_scatter
+    """
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
+                                      device_num=8, global_rank=0)
+    case_name = "test_cell_shard_with_out_strategy_be_set_and_propagate_reduce_scatter"
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "layout_ir", case_name)
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    layout = Layout((2, 4, 1), ("dp", "sp", "mp"))
+    in_layout1 = (layout("dp", "mp"),)
+    x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    out_layout1 = ((8, 1),)
+    net = GradWrap(NetWithLoss(ShardNet(in_layout1, out_layout1, "cell")))
+    phase = compile_net(net, x)
+    file = f"{ir_graph_path}/rank_0/*_validate_*"
+    para1 = "PrimFunc_MatMul(%4"
+    in_strategy = "out_strategy: ((8, 1))"
+    check_layout_config(para1, file, in_strategy)
+
+    validator = ParallelValidator(net, phase)
+    rank_list = {"rank_list": '(0, 1, 2, 3)'}
+    assert validator.check_node_attrs('ReduceScatter-0', rank_list)
+
+
+def test_ms_shard_with_out_layout_be_set_and_propagate():
+    """
+    Feature: Test cell.shard given layout. The set layout can be seen in shard identity and the next operator.
+    Description: dev_num is 8.
+    Expectation: compile success, forward reduce_scatter
+    """
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
+                                      device_num=8, global_rank=0)
+    case_name = "test_ms_shard_with_out_layout_be_set_and_propagate"
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "layout_ir", case_name)
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    layout = Layout((2, 4, 1), ("dp", "sp", "mp"))
+    in_layout1 = (layout("dp", "mp"),)
+    x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    out_layout1 = (layout("dp", "mp"),)
+    net = GradWrap(NetWithLoss(ShardNet(in_layout1, out_layout1, "ms")))
+    phase = compile_net(net, x)
+    file = f"{ir_graph_path}/rank_0/*_validate_*"
+    para1 = "PrimFunc_MatMul(%4"
+    in_strategy = "out_strategy: ((2, 1))"
+    check_layout_config(para1, file, in_strategy)
+
+    validator = ParallelValidator(net, phase)
+    rank_list = {"rank_list": '(0, 1, 2, 3)'}
+    assert validator.check_node_attrs('AllReduce-0', rank_list)
+
+
+def test_ms_shard_with_out_strategy_be_set_and_propagate():
+    """
+    Feature: Test cell.shard given layout. The set layout can be seen in shard identity and the next operator.
+    Description: dev_num is 8.
+    Expectation: compile success, forward reduce_scatter
+    """
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
+                                      device_num=8, global_rank=0)
+    case_name = "test_ms_shard_with_out_strategy_be_set_and_propagate"
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "layout_ir", case_name)
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    layout = Layout((2, 4, 1), ("dp", "sp", "mp"))
+    in_layout1 = (layout("dp", "mp"),)
+    x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    out_layout1 = ((2, 1),)
+    net = GradWrap(NetWithLoss(ShardNet(in_layout1, out_layout1, "ms")))
+    phase = compile_net(net, x)
+    file = f"{ir_graph_path}/rank_0/*_validate_*"
+    para1 = "PrimFunc_MatMul(%4"
+    in_strategy = "out_strategy: ((2, 1))"
+    check_layout_config(para1, file, in_strategy)
+
+    validator = ParallelValidator(net, phase)
+    rank_list = {"rank_list": '(0, 1, 2, 3)'}
+    assert validator.check_node_attrs('AllReduce-0', rank_list)
+
+
+def test_ms_shard_with_out_strategy_be_set_and_propagate_reduce_scatter():
+    """
+    Feature: Test cell.shard given layout. The set layout can be seen in shard identity and the next operator.
+    Description: dev_num is 8.
+    Expectation: compile success, forward reduce_scatter
+    """
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
+                                      device_num=8, global_rank=0)
+    case_name = "test_ms_shard_with_out_strategy_be_set_and_propagate_reduce_scatter"
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "layout_ir", case_name)
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    layout = Layout((2, 4, 1), ("dp", "sp", "mp"))
+    in_layout1 = (layout("dp", "mp"),)
+    x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    out_layout1 = ((8, 1),)
+    net = GradWrap(NetWithLoss(ShardNet(in_layout1, out_layout1, "ms")))
+    phase = compile_net(net, x)
+    file = f"{ir_graph_path}/rank_0/*_validate_*"
+    para1 = "PrimFunc_MatMul(%4"
+    in_strategy = "out_strategy: ((8, 1))"
+    check_layout_config(para1, file, in_strategy)
+
+    validator = ParallelValidator(net, phase)
+    rank_list = {"rank_list": '(0, 1, 2, 3)'}
+    assert validator.check_node_attrs('ReduceScatter-0', rank_list)

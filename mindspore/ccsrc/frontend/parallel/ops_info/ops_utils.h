@@ -150,6 +150,7 @@ constexpr char PP_OPT_SHARD_CONTROL[] = "Pipeline_Opt_Shard_control";
 constexpr char FIAS_SP_RUN_ONCE_ONLY[] = "FIAS_SP_RUN_ONCE_ONLY";
 constexpr char IN_STRATEGY[] = "in_strategy";
 constexpr char OUT_STRATEGY[] = "out_strategy";
+constexpr char CELL_SHARD_OP[] = "cell_shard_op";
 constexpr char INTERFERED_SAPP[] = "MS_INTERFERED_SAPP";
 constexpr char TUPLE[] = "tuple";
 constexpr char LAYOUT[] = "layout";
