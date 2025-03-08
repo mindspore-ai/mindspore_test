@@ -1309,6 +1309,69 @@ ReplaceGraphPtr SortExtInfo::replace_graph(const CNodePtr &cnode) {
 
 Status GeLUInfo::InferForwardCommunicationByLayout() { return SUCCESS; }
 
+Status SwigluInfo::GetAttrs() {
+  auto input = GetInputValueFromCNode<int64_t>(cnode_, kIndex2);
+  axis_.push_back(input);
+
+  // for example: tensor dimension is 4, then axis range [-4, 3]
+  int64_t dim = SizeToLong(inputs_shape_.at(0).size());
+  auto it =
+    std::find_if(axis_.begin(), axis_.end(), [dim](int64_t element) { return ((element >= dim) || (element < -dim)); });
+  if (it != axis_.end()) {
+    MS_LOG(ERROR) << name_ << " : The axis(" << *it << ") is out of range[" << (-dim) << ", " << (dim - 1) << "].";
+    return FAILED;
+  }
+
+  return SUCCESS;
+}
+
+Status SwigluInfo::ComputeReplaceGraphForInterleaved(const CNodePtr &cnode) {
+  GenerateGraph gen_g = GenerateGraph(attrs_);
+  if (gen_g.Init(cnode) != SUCCESS) {
+    MS_LOG(ERROR) << name_ << "GenerateGraph Init failed";
+    return FAILED;
+  }
+  auto interleaved_num = ParallelContext::GetInstance()->fine_grained_micro_interleaved_size();
+  Attr output_nums_attr = {"output_nums", MakeValue(interleaved_num)};
+  OperatorAttrs virtual_converter_begin_attrs = {output_nums_attr};
+  auto virtual_converter_begin = gen_g.PushBack(
+    {gen_g.NewOpInst(VIRTUAL_CONVERTER_BEGIN, virtual_converter_begin_attrs), gen_g.virtual_input_node()});
+  std::vector<AnfNodePtr> virtual_converter_end_inputs_vector;
+  std::vector<std::pair<AnfNodePtr, int64_t>> input_nodes = {std::make_pair(virtual_converter_begin, 1)};
+  for (int64_t i = 0; i < interleaved_num; ++i) {
+    auto tuple_get_item = gen_g.PushBack({gen_g.NewOpInst(TUPLE_GETITEM), virtual_converter_begin, CreatInt64Imm(i)});
+    auto axis = CreatInt64Imm(axis_.at(kIndex0));
+    auto activation = gen_g.PushBack({gen_g.NewOpInst(prim_name_), tuple_get_item, axis});
+    virtual_converter_end_inputs_vector.push_back(activation);
+  }
+  Attr input_nums_attr = {"input_nums", MakeValue(interleaved_num)};
+  OperatorAttrs virtual_converter_end_attrs = {input_nums_attr};
+  std::vector<AnfNodePtr> virtual_converter_end_inputs = {
+    gen_g.NewOpInst(VIRTUAL_CONVERTER_END, virtual_converter_end_attrs)};
+  std::copy(virtual_converter_end_inputs_vector.begin(), virtual_converter_end_inputs_vector.end(),
+            std::back_inserter(virtual_converter_end_inputs));
+  auto virtual_converter_end = gen_g.PushBack(virtual_converter_end_inputs);
+  replace_graph_ = std::make_shared<std::pair<std::vector<std::pair<AnfNodePtr, int64_t>>, AnfNodePtr>>(
+    std::make_pair(input_nodes, virtual_converter_end));
+  return SUCCESS;
+}
+
+Status SwigluInfo::InferOutputTensorInfo() {
+  auto output_infer_tensor_layout = inputs_tensor_info_[kIndex0].tensor_layout();
+  TensorLayout output_infer_tensor_layout_new;
+  auto status = output_infer_tensor_layout_new.InitFromExtendVector(
+    output_infer_tensor_layout.device_arrangement_origin().array(), output_infer_tensor_layout.tensor_map_before(),
+    outputs_shape_[kIndex0]);
+  if (status != SUCCESS) {
+    MS_LOG(ERROR) << "Init layout failed";
+    return FAILED;
+  }
+  set_output_infer_tensor_layout(output_infer_tensor_layout_new);
+  TensorInfo output_tensor_info(output_infer_tensor_layout_new);
+  outputs_tensor_info_.push_back(output_tensor_info);
+  return SUCCESS;
+}
+
 REGISTER(ActivationInfo);
 REGISTER(GeLUInfo);
 REGISTER(ClampScalarInfo);
@@ -1359,5 +1422,6 @@ REGISTER(RemainderTensorScalarInfo);
 REGISTER(RemainderScalarTensorInfo);
 REGISTER(InvertInfo);           // has not bprop
 REGISTER(PopulationCountInfo);  // has not bprop
+REGISTER(SwigluInfo);
 }  // namespace parallel
 }  // namespace mindspore
