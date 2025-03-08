@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <tuple>
 
 #include "utils/hash_map.h"
 #include "ir/value.h"
@@ -34,11 +35,14 @@ class TriuInfo : public TrilInfo {
   TriuInfo(const std::string &name, const Shapes &input_shape, const Shapes &output_shape, const PrimitiveAttrs &attrs)
       : TrilInfo(name, input_shape, output_shape, attrs) {}
   ~TriuInfo() = default;
+  ReplaceGraphPtr replace_graph(const CNodePtr &cnode) override;
 
  protected:
   Status GetAttrs() override;
   void ReplaceNodeInputOrAttrs() override;
   int64_t GetDiag();
+  Status ReplaceGraphForDynamicShape(const CNodePtr &cnode);
+  std::tuple<int64_t, int64_t, int64_t, int64_t> GetSliceInfo();
 };
 }  // namespace parallel
 }  // namespace mindspore

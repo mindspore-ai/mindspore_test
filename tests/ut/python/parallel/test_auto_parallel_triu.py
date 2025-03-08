@@ -15,7 +15,7 @@
 import numpy as np
 
 import mindspore as ms
-from mindspore import context, Tensor
+from mindspore import context, Tensor, Symbol
 from mindspore.nn import Cell
 from mindspore.ops import operations as P
 from mindspore.parallel.shard import Layout
@@ -108,3 +108,53 @@ def test_semi_auto_parallel_triu_4():
     phase = compile_net(net, x)
     validator = ParallelValidator(net, phase)
     assert validator.check_node_inputs('Triu-0', ['Reshape-1', -26])
+
+def test_semi_auto_parallel_triu_5():
+    """
+    Feature: test triu semi auto parallel with dynamic shape
+    Description: semi auto parallel
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=4)
+    diagonal = 0
+    strategy = ((1, 2, 4),)
+    s1 = Symbol(divisor=2)
+    s2 = Symbol(divisor=4)
+    x = Tensor(shape=[16, s1, s2], dtype=ms.float32)
+    net = Net(diagonal, strategy)
+    phase = compile_net(net, x)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs('Triu-0', ['Reshape-1', 'ScalarMax-0'])
+
+def test_semi_auto_parallel_triu_6():
+    """
+    Feature: test triu semi auto parallel with dynamic shape
+    Description: semi auto parallel
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=4)
+    diagonal = 0
+    layout = Layout((1, 2, 4), ("ap", "bp", "cp"))
+    strategy = (layout("ap", "bp", "cp"),)
+    s1 = Symbol(divisor=2)
+    x = Tensor(shape=[16, s1, 32], dtype=ms.float32)
+    net = Net(diagonal, strategy)
+    phase = compile_net(net, x)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs('Triu-0', ['Reshape-1', 'ScalarMax-0'])
+
+def test_semi_auto_parallel_triu_7():
+    """
+    Feature: test triu semi auto parallel with dynamic shape
+    Description: semi auto parallel
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=4)
+    diagonal = 0
+    strategy = ((2, 1, 4),)
+    s1 = Symbol(divisor=4)
+    x = Tensor(shape=[16, 64, s1], dtype=ms.float32)
+    net = Net(diagonal, strategy)
+    phase = compile_net(net, x)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs('Triu-0', ['Reshape-1', 'ScalarMax-0'])
