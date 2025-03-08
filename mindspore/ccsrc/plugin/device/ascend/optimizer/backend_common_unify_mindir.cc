@@ -64,6 +64,7 @@
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_rms_norm_quant_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_cast_rms_norm_cast_quant_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_cast_rms_norm_cast_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/transpose_batch_matmul_transpose_fusion.h"
 #include "plugin/device/ascend/optimizer/ge/avg_pool_grad_for_ge.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/mc2_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/insert_depend_for_all_gather.h"
@@ -77,6 +78,8 @@
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_allreduce_add_rmsnorm_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/qbmm_allreduce_convert_bias.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_sigmoid_add_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_sigmoid_cast_add_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_elemwise_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/remove_fa_tensor_to_tuple_ops.h"
 #include "utils/phase.h"
@@ -183,10 +186,13 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::ShapeReshapeFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::SplitConcatFusion>());
+  pm->AddFusionPass(std::make_shared<opt::MatMulSigmoidAddFusion>(), infer_boost);
+  pm->AddFusionPass(std::make_shared<opt::MatMulSigmoidCastAddFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::MatmulElemFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::QbmmAllReduceConvertBias>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::QbmmAllReduceAddFusion>());
   pm->AddFusionPass(std::make_shared<opt::RemoveFATensorToTupleOps>(), infer_boost);
+  pm->AddFusionPass(std::make_shared<opt::TransposeBatchMatmulTranspose>(), infer_boost);
 #endif  // ENABLE_INTERNAL_KERNELS
 
   if (ms_context->IsKByKExecutorMode()) {

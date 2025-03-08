@@ -26,6 +26,7 @@ constexpr auto matmul_elemwise_fusion_relu_str = "relu";
 constexpr auto matmul_elemwise_fusion_gelu_str = "gelu";
 constexpr auto matmul_elemwise_fusion_biasadd_str = "bias_add";
 constexpr auto matmul_elemwise_fusion_biasadd_fastgelu_str = "bias_add_fastgelu";
+constexpr auto matmul_elemwise_fusion_sigmoid_add_str = "sigmoid_add";
 }  // namespace
 
 internal::InternalOpPtr InternalFusedMatmulElemBase::CreateKernel(const internal::InputsImmutableInfoList &inputs,
@@ -45,6 +46,8 @@ internal::InternalOpPtr InternalFusedMatmulElemBase::CreateKernel(const internal
     param_.with_bias = true;
   } else if (elemwise_type == matmul_elemwise_fusion_biasadd_fastgelu_str) {
     param_.with_bias_fastgelu = true;
+  } else if (elemwise_type == matmul_elemwise_fusion_sigmoid_add_str) {
+    param_.with_sigmoid_add = true;
   }
   param_.enable_shuffle = false;  // the real definition is in internal
   param_.enable_dequant = false;
