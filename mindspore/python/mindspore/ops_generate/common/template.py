@@ -515,3 +515,8 @@ FUNCTIONS_H_TEMPLATE = Template.load_from_file(
 
 DO_GRAD_FUNCTION_BODY_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/do_grad_function.tpl'))
+
+TENSOR_PY_CC_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pybind_api/ir/template/tensor_py_gen.tpl'))
+TENSOR_PY_H_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pybind_api/ir/template/tensor_py_genH.tpl'))

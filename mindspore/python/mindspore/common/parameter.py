@@ -475,7 +475,7 @@ class Parameter(Tensor_):
         Tensor_.wait_pipeline(self)
         param_info_.obj = self
         self._param_info = param_info_
-        Tensor_.param_info.fset(self, param_info_)
+        Tensor_.set_param_info(self, param_info_)
 
     @property
     def name(self):

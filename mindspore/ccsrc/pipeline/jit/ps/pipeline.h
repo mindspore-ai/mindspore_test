@@ -165,7 +165,7 @@ class FRONTEND_EXPORT GraphExecutorPy : public ExecutorPy {
                    char *key = nullptr);
   py::bytes GetRandomStatus(const std::string &phase) const;
   void UpdataParamNodeDefaultInput(const std::string &phase,
-                                   const std::unordered_map<std::string, tensor::TensorPyPtr> &params_value);
+                                   const std::unordered_map<std::string, py::object> &params_value);
   void PyExePath(const py::object &py_exe_path) const;
   void KernelBuildServerDir(const py::object &kernel_build_server_dir) const;
   py::dict GetParameterLayout(const std::string &phase);
@@ -275,8 +275,9 @@ FRONTEND_EXPORT py::bytes PyDecryptData(char *model_data, size_t data_size, char
                                         const std::string &dec_mode);
 FRONTEND_EXPORT bool PyIsCipherFile(const std::string &file_path);
 FRONTEND_EXPORT void FinalizeCluster();
-FRONTEND_EXPORT void SwapCache(const tensor::TensorPyPtr &host, const tensor::TensorPyPtr &device,
-                               const tensor::TensorPyPtr &block_mapping, const bool &type);
+FRONTEND_EXPORT void SwapCache(const py::object &host_, const py::object &device_, const py::object &block_mapping_,
+                               const bool &type);
+
 bool IsPhaseExport(const std::string &phase);
 py::object BaseRefToPyDataWithUserData(const BaseRef &value, const AbstractBasePtr &abs);
 void SetLoopCount(const ResourcePtr &resource);

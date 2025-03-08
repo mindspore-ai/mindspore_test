@@ -84,7 +84,7 @@ FRONTEND_EXPORT void RegCSRTensor(const py::module *m);
 FRONTEND_EXPORT void RegCOOTensor(const py::module *m);
 FRONTEND_EXPORT void RegRowTensor(const py::module *m);
 FRONTEND_EXPORT void RegMapTensor(const py::module *m);
-FRONTEND_EXPORT void RegTensorPy(const py::module *m);
+FRONTEND_EXPORT void RegPyTensor(py::module *m);
 }  // namespace tensor
 
 namespace profiler {

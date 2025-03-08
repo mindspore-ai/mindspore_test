@@ -51,8 +51,8 @@ class PyCommon : public testing::Test {
   }
 
   pybind11::object NewPyTensor(const tensor::BaseTensorPtr &tensor) {
-    auto tensorpy =  std::make_shared<tensor::TensorPy>(tensor);
-    return tensor_module_.attr("Tensor")(tensorpy);
+    py::object tensor_obj = tensor::PackTensorToPyObject(tensor);
+    return tensor_module_.attr("Tensor")(tensor_obj);
   }
 
   pybind11::object NewPyStubTensor(const stub::StubNodePtr &stub_tensor) {

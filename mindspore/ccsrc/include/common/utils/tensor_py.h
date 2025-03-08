@@ -36,7 +36,6 @@ namespace tensor {
 class COMMON_EXPORT TensorPy : public TensorPyBase {
  public:
   TensorPy() = default;
-
   /// \brief Create tensorpy from another tensorpy, data is shared.
   ///
   /// \param[in] input [TensorPy] The input tensorpy.
@@ -405,6 +404,8 @@ class COMMON_EXPORT TensorPy : public TensorPyBase {
   ///
   /// \return True if tensor memory is contiguous, false otherwise.
   bool NeedContiguous() const;
+  PyObject *GetFlattenTensor();
+  void SetFlattenTensor(PyObject *tensor);
 
   /// \brief Used for automatic gradient.
   ///
@@ -497,10 +498,7 @@ class COMMON_EXPORT TensorPy : public TensorPyBase {
   py::object slice_num_of_persistent_data_;
   py::object slice_shape_of_persistent_data_;
   std::string device_;
-  std::shared_ptr<TensorPy> flatten_tensor_{nullptr};
-
-  const std::shared_ptr<TensorPy> GetFlattenTensor();
-  void SetFlattenTensor(const std::shared_ptr<TensorPy> tensor);
+  PyObject *flatten_tensor_;
 };
 
 using TensorPyPtr = std::shared_ptr<TensorPy>;
@@ -518,7 +516,7 @@ COMMON_EXPORT bool IsTensorPy(const py::handle &obj);
 /// \param[in] obj [py::handle] The python object.
 ///
 /// \return A pointer address of TensorPy.
-COMMON_EXPORT const TensorPyPtr ConvertToTensorPy(const py::handle &obj);
+COMMON_EXPORT const py::handle ConvertToTensorPy(const py::handle &obj);
 
 /// \brief Convert the python object to C++ Tensor.
 ///
@@ -526,6 +524,37 @@ COMMON_EXPORT const TensorPyPtr ConvertToTensorPy(const py::handle &obj);
 ///
 /// \return A pointer address of C++ Tensor.
 COMMON_EXPORT const TensorPtr ConvertToTensor(const py::handle &obj);
+template <typename T>
+struct PyType {
+  PyObject_HEAD T value;
+};
+/// \brief Convert the python object to C++ TensorPy.
+///
+/// \param[in] obj [py::handle] The python object.
+///
+/// \return A pointer address of C++ TensorPy.
+COMMON_EXPORT PyType<TensorPy> *ConvertPyObject2TensorPyType(const py::object obj);
+/// \brief get TensorPy Type.
+///
+/// \param[in] none.
+///
+/// \return PyTypeObject of TensorPy Type.
+COMMON_EXPORT PyTypeObject *GetTensorPyType();
+/// \brief set TensorPy Type for global use.
+///
+/// \param[in] TensorPyType [PyTypeObject *] The python type.
+///
+/// \return none.
+COMMON_EXPORT void SetTensorPyType(PyTypeObject *TensorPyType);
+/// \brief alloc Python Tensor from C++ Tensor.
+///
+/// \param[in] tensor [BaseTensorPtr] C++ Tensor.
+///
+/// \return A PyObject address of Python Tensor.
+COMMON_EXPORT PyObject *TensorPythonInit(BaseTensorPtr tensor);
+COMMON_EXPORT PyObject *TensorPythonInitFromTensor(TensorPtr tensor);
+
+COMMON_EXPORT py::object PackTensorToPyObject(BaseTensorPtr tensor);
 
 /// \brief Get the Python Tensor Object.
 ///
@@ -545,13 +574,6 @@ COMMON_EXPORT const BaseTensorPtr GetBaseTensorFromValue(const ValuePtr &value);
 ///
 /// \return A Tensor.
 COMMON_EXPORT const TensorPtr GetTensorFromValue(const ValuePtr &value);
-
-/// \brief Make default_parameter of Parameter to TensorPy, and return to Pybind.
-///
-/// \param[in] value [ValuePtr] The given input parameter.
-///
-/// \return A TensorPy.
-COMMON_EXPORT const TensorPyPtr GetTensorPyFromValue(const ValuePtr &value);
 
 /// \brief Make default_parameter of Parameter to MetaTensor.
 ///

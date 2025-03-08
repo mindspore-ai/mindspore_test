@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2024 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1125,7 +1125,6 @@ uintptr_t TensorPyImpl::DataPtr(const TensorPyPtr &tensorpy) {
   auto tensor = tensorpy->GetTensor();
   return TensorPybind::DataPtr(*tensor);
 }
-
 ShapeVector TensorPyImpl::GetShapeFromTuple(const py::tuple &tuple) {
   ShapeVector shape;
   const size_t size = tuple.size();
@@ -1148,36 +1147,36 @@ py::tuple GetSparseTensorShape(const T &sparse_tensor) {
 
 py::tuple CSRTensorPy::GetPyTupleShape(const CSRTensor &csr_tensor) { return GetSparseTensorShape(csr_tensor); }
 
-TensorPyPtr CSRTensorPy::GetIndptr(const CSRTensorPtr &csr_tensor) {
-  return std::make_shared<TensorPy>(csr_tensor->GetIndptr());
+py::object CSRTensorPy::GetIndptr(const CSRTensorPtr &csr_tensor) {
+  return PackTensorToPyObject(csr_tensor->GetIndptr());
 }
 
-TensorPyPtr CSRTensorPy::GetIndices(const CSRTensorPtr &csr_tensor) {
-  return std::make_shared<TensorPy>(csr_tensor->GetIndices());
+py::object CSRTensorPy::GetIndices(const CSRTensorPtr &csr_tensor) {
+  return PackTensorToPyObject(csr_tensor->GetIndices());
 }
 
-TensorPyPtr CSRTensorPy::GetValues(const CSRTensorPtr &csr_tensor) {
-  return std::make_shared<TensorPy>(csr_tensor->GetValues());
+py::object CSRTensorPy::GetValues(const CSRTensorPtr &csr_tensor) {
+  return PackTensorToPyObject(csr_tensor->GetValues());
 }
 
 py::tuple COOTensorPy::GetPyTupleShape(const COOTensor &coo_tensor) { return GetSparseTensorShape(coo_tensor); }
 
-TensorPyPtr COOTensorPy::GetIndices(const COOTensorPtr &coo_tensor) {
-  return std::make_shared<TensorPy>(coo_tensor->GetIndices());
+py::object COOTensorPy::GetIndices(const COOTensorPtr &coo_tensor) {
+  return PackTensorToPyObject(coo_tensor->GetIndices());
 }
 
-TensorPyPtr COOTensorPy::GetValues(const COOTensorPtr &coo_tensor) {
-  return std::make_shared<TensorPy>(coo_tensor->GetValues());
+py::object COOTensorPy::GetValues(const COOTensorPtr &coo_tensor) {
+  return PackTensorToPyObject(coo_tensor->GetValues());
 }
 
 py::tuple RowTensorPy::GetPyTupleShape(const RowTensor &row_tensor) { return GetSparseTensorShape(row_tensor); }
 
-TensorPyPtr RowTensorPy::GetIndices(const RowTensorPtr &row_tensor) {
-  return std::make_shared<TensorPy>(row_tensor->GetIndices());
+py::object RowTensorPy::GetIndices(const RowTensorPtr &row_tensor) {
+  return PackTensorToPyObject(row_tensor->GetIndices());
 }
 
-TensorPyPtr RowTensorPy::GetValues(const RowTensorPtr &row_tensor) {
-  return std::make_shared<TensorPy>(row_tensor->GetValues());
+py::object RowTensorPy::GetValues(const RowTensorPtr &row_tensor) {
+  return PackTensorToPyObject(row_tensor->GetValues());
 }
 }  // namespace tensor
 }  // namespace mindspore

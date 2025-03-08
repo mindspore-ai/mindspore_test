@@ -81,6 +81,9 @@ def get_obj_module_and_name_info(obj):
         return None
     if isinstance(obj, (types.FunctionType, types.MethodType)):
         return obj.__module__, obj.__qualname__, "method or function"
+    if isinstance(obj, types.BuiltinMethodType):
+        class_name_and_method_name = obj.__qualname__.split('.')
+        return class_name_and_method_name[0], obj.__qualname__, "method or function"
     return obj.__module__, obj.__name__, "class"
 
 

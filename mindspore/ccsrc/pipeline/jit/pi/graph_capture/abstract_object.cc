@@ -1604,8 +1604,8 @@ py::object TensorInferBinary(const AbstractBasePtr &left, const AbstractBasePtr 
   MS_EXCEPTION_IF_NULL(shape_ptr);
   auto shape = shape_ptr->cast<mindspore::abstract::ShapePtr>()->shape();
   auto dtype = dtype_ptr->type_id();
-  auto tensorpy = std::make_shared<mindspore::tensor::TensorPy>(dtype, shape);
-  return py::cast(tensorpy);
+  py::object tensorpyObject = PackTensorToPyObject(std::make_shared<mindspore::tensor::Tensor>(dtype, shape));
+  return tensorpyObject;
 }
 
 py::object AbstractTensor::Binary(int op, const py::object &l_tensor, const py::object &r_tensor) {

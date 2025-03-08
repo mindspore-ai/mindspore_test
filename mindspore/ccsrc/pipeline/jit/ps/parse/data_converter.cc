@@ -767,9 +767,10 @@ ValuePtr ConvertOtherObj(const py::object &obj, bool forbid_reuse = false) {
     // desc has format "<class xxxx>", strip the '<' and '>' by offset 1.
     return std::make_shared<ClassType>(obj, std::string(desc.begin() + 1, desc.end() - 1));
   }
-  if (obj_type == RESOLVE_TYPE_FUNCTION || obj_type == RESOLVE_TYPE_METHOD ||
+  if (obj_type == RESOLVE_TYPE_FUNCTION || obj_type == RESOLVE_TYPE_METHOD || obj_type == RESOLVE_TYPE_BUILTIN_METHOD ||
       (obj_type == RESOLVE_TYPE_CLASS_INSTANCE && py::hasattr(obj, PYTHON_PARSE_METHOD))) {
-    if (obj_type == RESOLVE_TYPE_FUNCTION || obj_type == RESOLVE_TYPE_METHOD) {
+    if (obj_type == RESOLVE_TYPE_FUNCTION || obj_type == RESOLVE_TYPE_METHOD ||
+        obj_type == RESOLVE_TYPE_BUILTIN_METHOD) {
       // Check JIT forbidden API
       CheckJITForbiddenAPI(obj);
       // Check if the function is from a third-party library.

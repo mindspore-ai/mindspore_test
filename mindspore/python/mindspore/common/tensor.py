@@ -216,7 +216,7 @@ def tensor(input_data=None, dtype=None, shape=None, init=None, const_arg=False):
     return Tensor(input_data, dtype, shape, init, const_arg)  # @jit.typing: () -> tensor_type[{dtype}]
 
 
-class _TensorMeta(type(TensorPy_), abc.ABCMeta):
+class _TensorMeta(abc.ABCMeta, type(TensorPy_)):
     """
     Meta class for Tensor. Used internally.
     """

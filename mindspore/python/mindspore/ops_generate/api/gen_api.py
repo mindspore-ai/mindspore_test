@@ -19,13 +19,13 @@ import copy
 
 from resources.resource_list import ResourceType
 from common import gen_constants as K
+from tensor_py_cc_generator import TensorPyCppGenerator
 
 from .tensor_func_reg_cpp_generator import TensorFuncRegCppGenerator
 from .functional_map_cpp_generator import FunctionalMapCppGenerator
 from .add_tensor_docs_generator import AddTensorDocsGenerator
 from .functional_overload_py_generator import FunctionalOverloadPyGenerator
 from .cpp_create_prim_instance_helper_generator import CppCreatePrimInstanceHelperGenerator
-
 
 def gen_tensor_func_code(work_path, op_protos, func_protos, alias_api_mapping):
     generator = TensorFuncRegCppGenerator()
@@ -45,6 +45,10 @@ def gen_tensor_docs_code():
 def gen_functional_overload_py(work_path, mint_func_protos, alias_api_mapping):
     generator = FunctionalOverloadPyGenerator()
     generator.generate(work_path, mint_func_protos, alias_api_mapping)
+
+def gen_tensor_py_cc(work_path, tensor_method_protos, alias_api_mapping):
+    generator = TensorPyCppGenerator()
+    generator.generate(work_path, tensor_method_protos, alias_api_mapping)
 
 def generate_create_instance_helper_file(resource_mgr):
     """
@@ -92,3 +96,5 @@ def generate_api_files(resource_mgr):
     gen_tensor_docs_code()
     # generate functional_overload.py which init pybind mint APIs from cpp
     gen_functional_overload_py(work_path, mint_func_protos, alias_api_mapping)
+    # generate tensor_py.cc
+    gen_tensor_py_cc(work_path, tensor_method_protos, alias_api_mapping)

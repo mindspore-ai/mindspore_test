@@ -55,11 +55,11 @@ void SummaryReceiveData(const ScopeAclTdtDataset &dataset, const string &channel
       continue;
     }
     auto tensor_ptr = std::get<mindspore::tensor::TensorPtr>(data_elem);
-    auto tensor_py = std::make_shared<tensor::TensorPy>(tensor_ptr);
+    py::object tensorpyObject = PackTensorToPyObject(tensor_ptr);
     py::list summary_list = py::list();
     py::dict summary_value_dict;
     summary_value_dict["name"] = summary_name;
-    summary_value_dict["data"] = tensor_py;
+    summary_value_dict["data"] = tensorpyObject;
     summary_list.append(summary_value_dict);
     py::bool_ ret = python_adapter::CallPyFn(PYTHON_MOD_CALLBACK_MODULE, PYTHON_FUN_PROCESS_SUMMARY, summary_list);
 

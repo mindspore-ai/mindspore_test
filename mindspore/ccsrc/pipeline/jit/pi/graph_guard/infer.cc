@@ -119,9 +119,9 @@ static py::object CreateMetaTensor(const ShapeVector &shape, const mindspore::Ty
   /**
    * NOTE: here create a lazy initialized tensor, avoid allocate data
    */
-  auto tensorpy = std::make_shared<mindspore::tensor::TensorPy>(dtype->type_id(), shape);
-  py::object pytensor = py::reinterpret_borrow<py::object>(GetMsTensorType());
-  return pytensor(py::cast(tensorpy));
+  py::object tensorpyObject =
+    PackTensorToPyObject(std::make_shared<mindspore::tensor::Tensor>(dtype->type_id(), shape));
+  return tensorpyObject;
 }
 
 static py::object CreateMetaTensor(const mindspore::abstract::ShapePtr &shape, const mindspore::TypePtr &type) {
@@ -800,8 +800,8 @@ bool IsStubTensorType<true>(PyTypeObject *tp) {
 }
 template <>
 bool IsTensorType<true>(PyTypeObject *tp) {
-  return IsPybindType<mindspore::tensor::MetaTensor, true>(tp) || IsPybindType<mindspore::tensor::TensorPy, true>(tp) ||
-         IsPybindType<mindspore::tensor::Tensor, true>(tp);
+  PyTypeObject *tar = mindspore::tensor::GetTensorPyType();
+  return IsPybindType<mindspore::tensor::MetaTensor, true>(tp) || tp == tar || PyType_IsSubtype(tp, tar);
 }
 template <>
 bool IsCellType<true>(PyTypeObject *tp) {

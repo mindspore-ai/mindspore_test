@@ -44,6 +44,7 @@
 #include "include/common/debug/anf_dump_utils.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/tensor_py.h"
+#include "include/common/utils/tensor_py_wrapper.h"
 
 namespace mindspore {
 namespace parse {
@@ -154,7 +155,7 @@ ValuePtr GetParameterValue(const py::object &param_obj) {
     return map_tensor;
   }
 
-  return tensor::ConvertToTensorPy(param_obj);
+  return tensor::ConvertToTensorPyWrapper(param_obj);
 }
 
 namespace {

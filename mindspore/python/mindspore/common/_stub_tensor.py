@@ -18,6 +18,7 @@ import inspect
 from functools import reduce
 from mindspore.common.tensor import Tensor
 from mindspore.common.dtype import type_size_in_bytes
+import mindspore._c_expression as c_expression
 from mindspore._c_expression import TensorNode, SequenceNode, NoneTypeNode, AnyTypeNode
 from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.common.api import _convert_python_data
@@ -211,7 +212,7 @@ def _init_stub_tensor_api():
 
 
 _init_stub_tensor_api()
-
+c_expression.addStubTensorMethods()
 
 def _convert_stub(stub):
     "convert stub to StubNode or Value"

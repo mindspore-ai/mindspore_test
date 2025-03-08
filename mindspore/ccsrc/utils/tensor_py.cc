@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,10 @@
 
 namespace mindspore {
 namespace tensor {
+static PyObject *tensorModule{nullptr};
+
+PyTypeObject *TensorPy_Type;
+
 TensorPy::TensorPy(const BaseTensorPtr &input) { SetBaseTensor(input); }
 
 TensorPy::TensorPy(const TensorPtr &input) { SetBaseTensor(input); }
@@ -232,9 +236,9 @@ void TensorPy::SetParamInfo(const ParamInfoPtr &param_info) {
   base_tensor->set_param_info(param_info);
 }
 
-const TensorPyPtr TensorPy::GetFlattenTensor() { return flatten_tensor_; }
+PyObject *TensorPy::GetFlattenTensor() { return flatten_tensor_; }
 
-void TensorPy::SetFlattenTensor(const TensorPyPtr tensor) {
+void TensorPy::SetFlattenTensor(PyObject *tensor) {
   if (tensor == nullptr) {
     return;
   }
@@ -249,54 +253,12 @@ bool TensorPy::IsFlattened(const TensorPyPtrList &tensorpys) {
 }
 
 TensorPyPtrList TensorPy::FlattenTensors(const TensorPyPtrList &tensorpys, size_t fusion_size) {
-  TensorPtrList tensors;
-  (void)std::transform(tensorpys.begin(), tensorpys.end(), std::back_inserter(tensors),
-                       [](const TensorPyPtr &p) { return p->GetTensor(); });
-  TensorPtrList out_tensors = Tensor::FlattenTensors(tensors, fusion_size);
   TensorPyPtrList out;
-  (void)std::transform(out_tensors.begin(), out_tensors.end(), std::back_inserter(out),
-                       [&tensorpys](const TensorPtr &p) {
-                         auto tensorpy = std::make_shared<TensorPy>(p);
-                         for (auto t : tensorpys) {
-                           auto flatten = Tensor::GetFlattenedTensor(t->GetTensor());
-                           if (p == flatten) {
-                             t->SetFlattenTensor(tensorpy);
-                           }
-                         }
-                         return tensorpy;
-                       });
   return out;
 }
 
 TensorPyPtrList TensorPy::GetFlattenedTensors(const TensorPyPtrList &tensorpys) {
-  TensorPtrList tensors;
-  (void)std::transform(tensorpys.begin(), tensorpys.end(), std::back_inserter(tensors),
-                       [](const TensorPyPtr &p) { return p->GetTensor(); });
-  TensorPtrList out_tensors = Tensor::GetFlattenedTensors(tensors);
-  if (out_tensors.empty()) {
-    return {};
-  }
-
-  // Use std::map to keep order by type id.
-  std::map<TypeId, OrderedSet<TensorPyPtr>> chunk_map;
-  for (auto &tensorpy : tensorpys) {
-    auto owner_tensorpy = tensorpy->GetFlattenTensor();
-    auto get_normalize_type = [](TypeId id) {
-      if (id == kNumberTypeFloat) {
-        // kNumberTypeFloat is an alias of kNumberTypeFloat32.
-        return kNumberTypeFloat32;
-      }
-      return id;
-    };
-    auto chunk_dtype = get_normalize_type(tensorpy->GetDataType());
-    chunk_map[chunk_dtype].add(owner_tensorpy);
-  }
-  // Generate result tensorpy list.
   TensorPyPtrList result_tensorpys;
-  for (auto &entry : chunk_map) {
-    auto &chunk_tensors = entry.second;
-    (void)result_tensorpys.insert(result_tensorpys.end(), chunk_tensors.begin(), chunk_tensors.end());
-  }
   return result_tensorpys;
 }
 
@@ -382,14 +344,22 @@ void TensorPy::SetSliceShapeOfPersistentData(const py::object &slice_shape_of_pe
 abstract::AbstractBasePtr TensorPy::ToAbstract() { return GetTensor()->ToAbstract(); }
 
 /* =========================================== Common Function ================================================= */
-bool IsTensorPy(const py::handle &obj) { return py::isinstance<TensorPy>(obj); }
-
-const TensorPyPtr ConvertToTensorPy(const py::handle &obj) { return obj.cast<TensorPyPtr>(); }
+bool IsTensorPy(const py::handle &obj) {
+  if (TensorPy_Type == nullptr || !obj.check()) {
+    return false;
+  }
+  PyObject *raw_ptr = obj.ptr();
+  PyObject *str_type = reinterpret_cast<PyObject *>(TensorPy_Type);
+  return PyObject_IsInstance(raw_ptr, str_type);
+}
 
 const TensorPtr ConvertToTensor(const py::handle &obj) {
-  if (IsTensorPy(obj)) {
-    TensorPyPtr tensorpy = ConvertToTensorPy(obj);
-    return tensorpy->GetTensor();
+  PyObject *raw_ptr = obj.ptr();
+  PyObject *str_type = reinterpret_cast<PyObject *>(TensorPy_Type);
+  if (PyObject_IsInstance(raw_ptr, str_type)) {
+    PyType<TensorPy> *tensor = (PyType<TensorPy> *)raw_ptr;
+    TensorPtr tensor_ptr = tensor->value.GetTensor();
+    return tensor_ptr;
   }
 
   return nullptr;
@@ -429,24 +399,6 @@ const TensorPtr GetTensorFromValue(const ValuePtr &value) {
   return value->cast<TensorPtr>();
 }
 
-const TensorPyPtr GetTensorPyFromValue(const ValuePtr &value) {
-  if (value == nullptr) {
-    return nullptr;
-  }
-
-  if (value->isa<Tensor>()) {
-    auto tensor = value->cast<TensorPtr>();
-    return std::make_shared<TensorPy>(tensor);
-  }
-
-  if (value->isa<BaseTensor>()) {
-    auto tensor = value->cast<BaseTensorPtr>();
-    return std::make_shared<TensorPy>(tensor);
-  }
-
-  return value->cast<TensorPyPtr>();
-}
-
 const MetaTensorPtr GetMetaTensorFromValue(const ValuePtr &value) {
   if (value == nullptr) {
     return nullptr;
@@ -466,7 +418,72 @@ const MetaTensorPtr GetMetaTensorFromValue(const ValuePtr &value) {
   return value->cast<MetaTensorPtr>();
 }
 
-/* =========================================== Common Function ================================================= */
+PyType<TensorPy> *ConvertPyObject2TensorPyType(const py::object obj) {
+  PyType<TensorPy> *tensor_type = reinterpret_cast<PyType<TensorPy> *>(obj.ptr());
+
+  return tensor_type;
+}
+
+const py::handle ConvertToTensorPy(const py::handle &obj) {
+  PyObject *raw_ptr = obj.ptr();
+  PyObject *str_type = reinterpret_cast<PyObject *>(TensorPy_Type);
+
+  if (PyObject_IsInstance(raw_ptr, str_type)) {
+    return obj;
+  }
+
+  return nullptr;
+}
+
+PyObject *TensorPythonInit(BaseTensorPtr tensor) {
+  if (tensorModule == nullptr) {
+    tensorModule = PyImport_ImportModule("mindspore.common.tensor");
+  }
+  PyObject *tensorPythonClass = PyObject_GetAttrString(tensorModule, "Tensor");
+  PyObject *obj = (reinterpret_cast<PyTypeObject *>(tensorPythonClass))
+                    ->tp_alloc(reinterpret_cast<PyTypeObject *>(tensorPythonClass), 0);
+  if (obj == nullptr) {
+    PyErr_SetString(PyExc_RuntimeError, "Failed to create TensorPy object");
+    return nullptr;
+  }
+  auto result = (PyType<TensorPy> *)obj;
+  if (tensor == nullptr) {
+    PyErr_SetString(PyExc_RuntimeError, "Failed to create TensorPy object");
+    return nullptr;
+  }
+
+  new (&result->value) TensorPy(tensor);
+  result->value.SetInitFinished(true);
+
+  return reinterpret_cast<PyObject *>(result);
+}
+
+PyObject *TensorPythonInitFromTensor(TensorPtr tensor) {
+  PyType<TensorPy> *result = (PyType<TensorPy> *)TensorPy_Type->tp_alloc(TensorPy_Type, 0);
+  if (result == nullptr) {
+    PyErr_SetString(PyExc_RuntimeError, "Failed to create TensorPy object");
+    return nullptr;
+  }
+  if (tensor == nullptr) {
+    PyErr_SetString(PyExc_RuntimeError, "Failed to create TensorPy object");
+    return nullptr;
+  }
+
+  new (&result->value) TensorPy(tensor);
+  // set to adapt python __repr__
+  result->value.SetInitFinished(true);
+
+  return reinterpret_cast<PyObject *>(result);
+}
+
+PyTypeObject *GetTensorPyType() { return TensorPy_Type; }
+
+void SetTensorPyType(PyTypeObject *TensorPyType) { TensorPy_Type = TensorPyType; }
+
+py::object PackTensorToPyObject(BaseTensorPtr tensor) {
+  PyObject *tensor_py = TensorPythonInit(tensor);
+  return py::reinterpret_steal<py::object>(tensor_py);
+}
 
 }  // namespace tensor
 }  // namespace mindspore
