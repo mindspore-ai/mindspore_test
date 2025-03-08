@@ -16,6 +16,7 @@
 #include "pipeline/jit/pi/graph_capture/graph_build.h"
 #include <algorithm>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <vector>
@@ -266,7 +267,7 @@ Graph *GraphBuilder::NewGraph(PyCodeObject *co, PyObject *globals) {
     graphs.back()->GetSideEffect()->set_data(std::make_shared<SideEffectData>());
   } else {
     graphs.push_back(new Graph(co, globals, root_->GetGraph()->Config()));
-    graphs.back()->SetGuard(root_->GetGraph()->GetGuard());
+    graphs.back()->SetGuard(root_->GetGraph()->GetGuardManager());
     graphs.back()->SetSideEffect(root_->GetGraph()->GetSideEffect());
   }
   return graphs.back();
@@ -990,12 +991,12 @@ bool GraphBuilder::Symbolic(ValueNode *node) {
     return false;
   }
   MS_LOG(INFO) << "Try adding node as graph input: [" << node->ToString();
+  // rename 'AddAttributeInput' to 'AddSymbolicParameter', call this only if the guard failed
   auto abstract_wrapper = FGBuilder()->AddAttributeInput(o);
   MS_EXCEPTION_IF_CHECK_FAIL(abstract_wrapper, "Failed to add scalar or Tensor as input: [" + node->ToString());
   node->set_abstract_wrapper(abstract_wrapper);
   // tensor must be guard dtype
-  bool is_tensor = node->GetVobj()->GetType() == AObject::kTypeTensor;
-  graph_->GuardValueNode(node, is_tensor ? GuardLevel::GDeduce : GuardLevel::GType);
+  graph_->GuardParameter(node);
   return true;
 }
 
@@ -1006,14 +1007,11 @@ void GraphBuilder::DoLoadGlobal(const Instr &instr) {
   if (handle.ptr() == nullptr) {
     return;  // name not define
   }
-  if (node->GetVobj()->GetType() == AObject::kTypeTensor) {
-    MS_LOG(WARNING) << "use global tensor in jit, treat as Parameter of graph";
-    // not implement ...
-  }
-  // global guard not implement
+
   // if Symbolic(node) and do something ...
   MS_LOG(INFO) << "constant global " << node->ToString();
   node->set_abstract_wrapper(FGBuilder()->AddLocalVariable(handle));
+  GetGraph()->GuardGlobal(node);
 }
 
 bool GraphBuilder::DoGlobalAccess(const Instr &instr) {
@@ -1076,10 +1074,6 @@ PyObject *SetLocalPyObject(ValueNode *node) {
 }
 
 std::pair<PyObject *, ValueNode *> GraphBuilder::SearchSelfPyObject(PyCodeObject *co) {
-#if IS_PYTHON_3_11_PLUS
-  MS_LOG(ERROR) << "not implement in python3.11";
-  return {nullptr, nullptr};
-#else
   if (co->co_argcount < 1) {
     return {nullptr, nullptr};
   }
@@ -1088,11 +1082,18 @@ std::pair<PyObject *, ValueNode *> GraphBuilder::SearchSelfPyObject(PyCodeObject
   // get self or son class, eg.super(Son, self)
   PyObject *obj = SetLocalPyObject(frame_.Local(0));
   Py_ssize_t i, n;
-  if (obj == NULL && co->co_cell2arg) {
+  PyCodeWrapper co_wrapper(co);
+  if (obj != NULL && co_wrapper.FastLocalKind(0) == PyCodeWrapper::LocalKind::kCoFastCell) {
+    auto valid = _Py_OPCODE(_PyCode_CODE(co)[0]) == MAKE_CELL || _Py_OPCODE(_PyCode_CODE(co)[0]) == COPY_FREE_VARS;
+    MS_EXCEPTION_IF_CHECK_FAIL(valid, "First op is not MAKE_CELL or COPY_FREE_VARS");
+    MS_EXCEPTION_IF_CHECK_FAIL(PyCell_Check(obj), "First arg is not a cell");
+    value = frame_.Closure(0)->GetValue();
+    obj = SetLocalPyObject(frame_.Closure(0));
+  } else if (obj == NULL && co_wrapper.Cell2Arg()) {
     // the first argument might be a cell
-    n = PyTuple_GET_SIZE(co->co_cellvars);
+    n = PyTuple_GET_SIZE(co_wrapper.CellVars().ptr());
     for (i = 0; i < n; i++) {
-      if (co->co_cell2arg[i] == 0) {
+      if (co_wrapper.Cell2Arg()[i] == 0) {
         value = frame_.Closure(i)->GetValue();
         obj = SetLocalPyObject(frame_.Closure(i));
         break;
@@ -1101,7 +1102,6 @@ std::pair<PyObject *, ValueNode *> GraphBuilder::SearchSelfPyObject(PyCodeObject
   }
   obj_value = std::make_pair(obj, value);
   return obj_value;
-#endif
 }
 
 ValueNode *GraphBuilder::DoMixedPrecisionAttrAccess(const Instr &instr, ValueNode *node, ValueNode *attr) {
@@ -1197,109 +1197,15 @@ bool GraphBuilder::DoAttrAccess(const Instr &instr) {
   return true;
 }
 
-// for unpack call optimize
-static ValueNode *TupleDictGetItem(ValueNode *container, ValueNode *index_node) {
-  if (!index_node->IsConstantValue()) {
-    return nullptr;
-  }
-  PyObject *index_object = index_node->GetVobj()->GetPyObject().ptr();
-  int opcode = container->GetOpcode();
-  if ((opcode == BUILD_TUPLE || opcode == BUILD_LIST) && PyLong_Check(index_object)) {
-    Py_ssize_t index = PyLong_AsSsize_t(index_object);
-    Py_ssize_t size = container->getInputs().size();
-    if (index < -size || index >= size) {
-      return nullptr;
-    }
-    index = index < 0 ? (size + index) : index;
-    return container->input(index);
-  }
-  if (container->GetOpcode() == BUILD_MAP && PyUnicode_Check(index_object)) {
-    std::string k = PyUnicode_AsUTF8(index_object);
-    size_t element_count = container->GetOparg() << 1;
-    MS_EXCEPTION_IF_CHECK_FAIL(element_count == container->getInputs().size(), "check BUILD_MAP oparg");
-    for (int i = 0; i < container->GetOparg(); ++i) {
-      AObject *tmp = container->input(i * 2)->GetVobj();
-      PyObject *str = tmp ? tmp->GetPyObject().ptr() : nullptr;
-      if (str == nullptr || !PyUnicode_Check(str) || k != PyUnicode_AsUTF8(str)) {
-        continue;
-      }
-      return container->input((i << 1) + 1);
-    }
-  }
-  return nullptr;
-}
-
-// todo: this function should not be called later.
-bool GraphBuilder::DoGetItemWithByteCode(const Instr &instr) {
-  constexpr const char *kNameGetItem = "__getitem__";
-  auto r = pop();
-  auto l = pop();
-  ValueNode *v = TupleDictGetItem(l, r);
-  if (v != nullptr) {
-    push(v);
-    return true;
-  }
-
-  AObject *container = l->GetVobj();
-  PyObject *op = container ? container->GetPyObject().ptr() : nullptr;
-  AObject *meth = nullptr;
-
-  bool call_getitem = op == nullptr || container->GetType() != AObject::kTypeAnyValue;
-  if (!call_getitem) {
-    call_getitem = PyDict_Check(op) || PyTuple_Check(op) || PyList_Check(op);
-  }
-  if (!call_getitem) {
-    meth = container->GetAttr(kNameGetItem);
-    PyObject *m = meth ? meth->GetPyObject().ptr() : nullptr;
-    call_getitem = m == nullptr || !PyMethod_Check(m) || !PyFunction_Check(PyMethod_GET_FUNCTION(m));
-  }
-  if (call_getitem) {
-    /**
-     * check safe callable of __getitem__ if user defined.
-     */
-    AObject *vo = l->binary_subscr(r);
-    v = NewValueNode(vo, instr, {l, r});
-    push(v);
-    return true;
-  }
-
-  push(l);
-  DoAttrAccess({LOAD_ATTR, 0, kNameGetItem});
-  push(r);
-  return DoCall({CALL_FUNCTION, 1});
-}
-
 bool GraphBuilder::DoGetItem(const Instr &instr) {
   auto r = pop();
   auto l = pop();
   auto node = BuildMultiOpValueNode(instr, {l, r});
-  if (node != nullptr) {
-    push(node);
-    return true;
+  if (node == nullptr) {
+    return false;
   }
-  /*
-   * Currently, there are several known scenarios where MetaFuncGraph-getitem infer may fail:
-   * 1.Cell list getitem: The Cell to be retrieved fails to be parsed (e.g. due to side effects in Cell.construct(),
-   * such as STORE_ATTR).
-   * 2.Index Out-of-Bounds or Key not exist.
-   * In the first case, we can try to fallback to two-stages mode and do getitem from python object.
-   * But in the second case, fallback to two-stages is useless. However, we cannot distinguish which scenario caused
-   * getitem infer failure, so we always fallback to have a try.
-   */
-  MS_LOG(INFO) << "Getitem infer failed, fallback to do getitem from python obj. source: " << l->ToString()
-               << ", key: " << r->ToString();
-  push(l);
-  push(r);
-  if (DoGetItemWithByteCode(instr)) {
-    auto v = seek(0);
-    auto o = FGBuilder()->AddLocalVariable(v->GetVobj()->GetPyObject());
-    if (o != nullptr) {
-      v->set_abstract_wrapper(o);
-      return true;
-    }
-  }
-  MS_LOG(INFO) << "Failed to getitem from python obj, do break graph";
-  return false;
+  push(node);
+  return true;
 }
 
 ValueNode *GraphBuilder::TransformDictSetItem(ValueNode *map, ValueNode *key, ValueNode *value, bool ignore_key_error) {
@@ -1630,13 +1536,12 @@ bool GraphBuilder::DoGetIter(const Instr &instr) {
 bool GraphBuilder::DoMakeFunction(const Instr &instr) {
   int oparg = instr.arg();
   // int cnt = __builtin_popcount(oparg & 0xf) + 2;
-  int cnt = !!(oparg & 0x08) + !!(oparg & 0x04) + !!(oparg & 0x02) + !!(oparg & 0x01) + 2;
+  int cnt = !IS_PYTHON_3_11_PLUS + 1 + !!(oparg & 0x08) + !!(oparg & 0x04) + !!(oparg & 0x02) + !!(oparg & 0x01);
   std::vector<ValueNode *> p(frame_.GetStacks().end() - cnt, frame_.GetStacks().end());
   popn(cnt);
   AObject *f = AObject::MakeFunction(CollectObjects(p), graph_->GetGlobals(), oparg);
   ValueNode *func = NewValueNode(f, instr, p);
   push(func);
-  current_block_->SetTrackResult(Block::kHasGlobalSideEffect);
   return true;
 }
 
@@ -1802,7 +1707,7 @@ bool GraphBuilder::DoBuildOp(const Instr &instr) {
   std::vector<ValueNode *> p(frame_.GetStacks().end() - tmp_arg, frame_.GetStacks().end());
   auto o = HandleBuildOp(instr, p);
   popn(tmp_arg);
-  AObject *vo = AObject::BuildOperations(CollectObjects(p), opcode);
+  AObject *vo = AObject::BuildOperations(CollectObjects(p), opcode, o);
   auto v = NewValueNode(vo, instr, p);
   v->set_abstract_wrapper(o);
   push(v);
@@ -1965,6 +1870,7 @@ bool GraphBuilder::DoImport(const Instr &instr) {
 }
 
 bool GraphBuilder::DoByteCode(const Instr &instr) {
+  MS_LOG(INFO) << "Do bytecode " << instr.ToString() << " at \"" << GetFileName(graph_) << ":" << instr.line() << "\"";
   if (current_block_->is_loop_head() && !graph_->Config().GetBoolConfig(GraphJitConfig::kLoopUnrolling)) {
     graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceLoop_Unsupported);
     return false;
@@ -1976,7 +1882,6 @@ bool GraphBuilder::DoByteCode(const Instr &instr) {
     MS_LOG(INFO) << "ByteCode " << Opcode(instr.op()).name() << " is not supported yet.";
     return false;
   }
-  MS_LOG(DEBUG) << "Do bytecode " << instr.ToString();
   bool infer_succ = false;
   {
     TraceGuard trace_guard(GetLocation(instr));
@@ -1997,7 +1902,8 @@ bool GraphBuilder::DoByteCode(const Instr &instr) {
     return false;
   }
   if (!infer_succ) {
-    MS_LOG(INFO) << "Function " << graph_->GetCodeName() << " break graph at: " << instr.ToString();
+    MS_LOG(INFO) << "Function '" << graph_->GetCodeName() << "' break graph at: " << instr.ToString() << ", file \""
+                 << GetFileName(graph_) << ":" << instr.line() << "\"";
     return false;
   }
 
@@ -2037,19 +1943,14 @@ GraphBuilder::GraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, P
 
 GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
     : root_(this), parent_(nullptr), graph_(nullptr), current_block_(nullptr), no_grad_(false), side_effect_outputs_() {
-#if IS_PYTHON_3_11_PLUS
-  MS_LOG(ERROR) << "not implement in python3.11";
-#else
   auto co_wrapper = f.GetCode();
   PyCodeObject *co = co_wrapper.ptr();
   int argc = co_wrapper.ArgCount();
-  int nfrees = co_wrapper.FreeVarsSize();
   int nlocals = co->co_nlocals;
   int fast_local_size = co_wrapper.FastLocalSize();
-  int free_offset = fast_local_size - nfrees;
   auto varnames_release_handle = co_wrapper.VarNames();
   PyObject *names = varnames_release_handle.ptr();
-  PyObject **fast_locals = f.FastLocal();
+  auto fast_locals = f.FastLocal();
   graph_ = NewGraph(co, f.Globals().ptr());
   frame_.ResizeLocal(nlocals);
   for (int i = 0; i < argc; i++) {
@@ -2069,15 +1970,10 @@ GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
     }
     int offset = fast_index - nlocals;
     int oparg = IS_PYTHON_3_11_PLUS ? fast_index : offset;
-    AbstractNode::Type t = fast_index < free_offset ? AbstractNode::CellVar : AbstractNode::FreeVar;
     PyObject *cell_contents = PyCell_GET(cell);
     CellVarNode *n = graph_->NewCellNode(AObject::Convert(cell), LOAD_CLOSURE, oparg);
     graph_->GetTracedNodes().push_back(n);
     frame_.SetClosure(offset, n);
-    if (t == AbstractNode::CellVar && co->co_cell2arg != nullptr && co->co_cell2arg[offset] != CO_CELL_NOT_AN_ARG) {
-      MS_EXCEPTION_IF_NULL(cell_contents);
-      n->SetFromParam(co->co_cell2arg[offset]);
-    }
     if (cell_contents == nullptr) {
       n->SetValue(&ValueNode::kUnboundLocal);
     } else {
@@ -2093,7 +1989,6 @@ GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
   int first_line = co_wrapper.FirstLine();
   auto fg_builder = std::make_shared<FuncGraphBuilder>(true);
   fg_builder->SetGraphName(std::string() + name + "_" + std::to_string(first_line));
-  co_name_ = name;
 
   graph_->set_func_graph_builder(fg_builder);
   this->FGAddTopInputs();
@@ -2101,6 +1996,7 @@ GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
     if (node != &ValueNode::kUnboundLocal && node->abstract_wrapper() == nullptr) {
       MS_LOG(INFO) << "The python argument is Parameter, recompile if it's changed [" << node->ToString();
       node->set_abstract_wrapper(FGBuilder()->AddLocalVariable(node->GetVobj()->GetPyObject()));
+      GetGraph()->GuardValueNode(node, GuardLevel::GDeduce);
     }
   };
   std::for_each(frame_.GetLocals().begin(), frame_.GetLocals().end(), add_local);
@@ -2108,7 +2004,6 @@ GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
     add_local(n);
     add_local(n->GetValue());
   }
-#endif
 }
 
 void GraphBuilder::CollectInlineInfo(CallNode *node, int depth) {
@@ -2201,7 +2096,6 @@ bool GraphBuilder::WhiteListFuncCheckAndInfer(CallNode *call_node, const py::obj
 
   AObject::Type vobj_type = call_node->input(0)->GetVobj()->GetType();
   if (vobj_type == AObject::kTypeCell) {
-    current_block_->SetTrackResult(Block::kTrackHasOpsPrimitive);
     std::string module_name = GetTopModule(callable);
     if (!module_name.empty()) {
       kPIJitConfigDefault.AddAllowedInlineModules(module_name);
@@ -2219,7 +2113,6 @@ bool GraphBuilder::WhiteListFuncCheckAndInfer(CallNode *call_node, const py::obj
   if (!infer_primitive && vobj_type == AObject::kTypePrimitive) {
     call_node->SetVobj(AObject::MakeAObject(AObject::kTypeTensor));
     call_node->SetInlineReason(InlineReason::kInlineGraphSupportedByMS);
-    current_block_->SetTrackResult(Block::kTrackHasOpsPrimitive);
     return true;
   }
 
@@ -2230,7 +2123,7 @@ bool GraphBuilder::WhiteListFuncCheckAndInfer(CallNode *call_node, const py::obj
 
   call_node->SetInlineReason(InlineReason::kInlineUnknown);
   call_node->SetSubGraph(NewGraph(nullptr, nullptr));
-  call_node->GetSubGraph()->SetGuard(root_->GetGraph()->GetGuard());
+  call_node->GetSubGraph()->SetGuard(root_->GetGraph()->GetGuardManager());
   infer_func(call_node, this);
 
   InlineReason r;
@@ -2344,10 +2237,6 @@ bool CheckSupportCreateInstance(CallNode *call_node) {
 }
 
 AObject *GraphBuilder::BuildSuperObject(PyCodeObject *co) {
-#if IS_PYTHON_3_11_PLUS
-  MS_LOG(ERROR) << "not implement in python3.11";
-  return nullptr;
-#else
   AObject *super_obj = nullptr;
   if (co->co_argcount == 0) {
     PyErr_SetString(PyExc_RuntimeError, "super(): no arguments");
@@ -2361,21 +2250,21 @@ AObject *GraphBuilder::BuildSuperObject(PyCodeObject *co) {
     PyErr_SetString(PyExc_RuntimeError, "super(): arg[0] deleted");
     return nullptr;
   }
-
-  if (co->co_freevars == NULL) {
+  PyCodeWrapper co_wrapper(co);
+  if (co_wrapper.FreeVars().ptr() == NULL) {
     n = 0;
   } else {
-    assert(PyTuple_Check(co->co_freevars));
-    n = PyTuple_GET_SIZE(co->co_freevars);
+    assert(PyTuple_Check(co_wrapper.FreeVars().ptr()));
+    n = PyTuple_GET_SIZE(co_wrapper.FreeVars().ptr());
   }
 
   PyTypeObject *type = NULL;
   for (i = 0; i < n; i++) {
-    PyObject *name = PyTuple_GET_ITEM(co->co_freevars, i);
+    PyObject *name = PyTuple_GET_ITEM(co_wrapper.FreeVars().ptr(), i);
     assert(PyUnicode_Check(name));
     // check class id
     if (!strcmp("__class__", PyUnicode_AsUTF8(name))) {
-      Py_ssize_t index = PyTuple_GET_SIZE(co->co_cellvars) + i;
+      Py_ssize_t index = PyTuple_GET_SIZE(co_wrapper.CellVars().ptr()) + i;
       PyObject *cell = SetLocalPyObject(frame_.Closure(index));
       if (cell == NULL || !PyCell_Check(cell)) {
         PyErr_SetString(PyExc_RuntimeError, "super(): bad __class__ cell");
@@ -2407,7 +2296,6 @@ AObject *GraphBuilder::BuildSuperObject(PyCodeObject *co) {
   super_obj = AObject::Convert(ret);
   Py_DECREF(ret);
   return super_obj;
-#endif
 }
 
 bool GraphBuilder::ClassInstantiationFold(CallNode *call_node, AObject::Type type) {
@@ -2636,7 +2524,7 @@ bool GraphBuilder::ReplaceCall(CallNode *call_node, const py::object &old_func) 
   ValueNode *args_node = call_node->input(1);
   std::vector<ValueNode *> inputs = args_node->getInputs();
   inputs.insert(inputs.begin(), self);
-  AObject *args_info = AObject::BuildOperations(CollectObjects(inputs), BUILD_TUPLE);
+  AObject *args_info = AObject::BuildOperations(CollectObjects(inputs), BUILD_TUPLE, nullptr);
 
   ValueNode *tuple = this->NewValueNode(args_info, BUILD_TUPLE, inputs.size(), inputs);
   tuple->set_bci(call_node->bci());
@@ -2720,6 +2608,25 @@ void UpdateNodeInfo(const AbstractWrapperPtr &res, CallNode *call_node, StopTrac
     *stop_reason = StopTraceReason::kNonStopTrace;
   }
 }
+
+ScopePtr GetScopeForCallNode(CallNode *node) {
+  ScopePtr scope = ScopeManager::GetInstance().GetCurrentScope();
+  auto call_vobj = node->input(0)->GetVobj();
+  if (call_vobj == nullptr) {
+    return scope;
+  }
+  auto object = call_vobj->GetPyObject();
+  if (object.ptr() == nullptr) {
+    return scope;
+  }
+  py::object scope_str =
+    python_adapter::CallPyFn(parse::PYTHON_MOD_PARSE_MODULE, parse::PYTHON_PARSE_GET_SCOPE_NAME, object);
+  if (!py::isinstance<py::none>(scope_str)) {
+    auto scope_name = py::cast<std::string>(scope_str);
+    scope = std::make_shared<Scope>(scope_name);
+  }
+  return scope;
+}
 }  // namespace
 
 AbstractWrapperPtrList GraphBuilder::HandleInputArgs(const std::vector<ValueNode *> args) {
@@ -2751,33 +2658,12 @@ AbstractWrapperPtrList GraphBuilder::HandleInputArgs(const std::vector<ValueNode
   return ret;
 }
 
-void GraphBuilder::HandleCustomBProp(const FuncGraphPtr &graph, const py::object &obj) const {
-  if (graph == nullptr || obj.ptr() == nullptr) {
-    return;
-  }
-  if (!py::hasattr(obj, parse::CUSTOM_BPROP_NAME)) {
-    return;
-  }
-  bool enable_bprop_debug = py::cast<bool>(py::getattr(obj, "bprop_debug"));
-  FuncGraphPtr bprop_graph = enable_bprop_debug
-                               ? parse::ConvertToBpropCut(obj)
-                               : parse::ConvertToFuncGraph(obj, {}, parse::PYTHON_MOD_GET_BPROP_METHOD);
-  if (bprop_graph != nullptr) {
-    (void)graph->transforms().emplace(parse::CUSTOM_BPROP_NAME, FuncGraphTransform(bprop_graph));
-    (void)bprop_graph->transforms().emplace("primal", FuncGraphTransform(graph));
-    graph->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, true);
-    graph->set_flag(FUNC_GRAPH_FLAG_PRIMAL_OF_BPROP, true);
-    MS_LOG(INFO) << "Add custom bprop to graph.";
-  }
-  return;
-}
-
 StopTraceReason GraphBuilder::BuildSubGraph(CallNode *call_node, int depth, const py::object &func,
                                             const GraphBuilderPtr &sg) {
   sg->FGBuilder()->AddPrevBuilder(FGBuilder());
   sg->FGBuilder()->set_manager(FGBuilder()->manager());
 
-  auto code = sg->GetGraph()->GetGuard();
+  auto code = sg->GetGraph()->GetGuardManager();
   MS_EXCEPTION_IF_NULL(code);
   code->GetGuard()->Backup();
 
@@ -2789,21 +2675,21 @@ StopTraceReason GraphBuilder::BuildSubGraph(CallNode *call_node, int depth, cons
     (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
   }
 
-  MS_LOG(INFO) << "new subgraph->TraceRun: " << py::str(func);
+  MS_LOG(INFO) << "Subgraph TraceRun start: " << py::str(func);
   bool succ = sg->FGAddInputs(args);
   if (!succ) {
-    MS_LOG(INFO) << "Add input fail for new subgraph->TraceRun: " << py::str(func);
+    MS_LOG(INFO) << "Add input fail for subgraph: " << py::str(func);
     return StopTraceReason::kStopTraceFunc_ArgHandle_Unsupported;
   }
   call_node->SetSubGraph(sg->GetGraph());
+  call_node->set_subgraph_args(HandleInputArgs(args));
   auto reason = sg->TraceRun();
-  MS_LOG(INFO) << "new subgraph->TraceRun end: " << py::str(func);
+  MS_LOG(INFO) << "Subgraph TraceRun end: " << py::str(func);
 
   sg->CollectSideEffectOutputs();
   auto sub_ret = sg->GetGraph()->GetRetVal();
   if (sub_ret == nullptr || !sub_ret->has_abstract_wrapper()) {
     MS_LOG(INFO) << "Failed to build subgraph for call node " << call_node->ToString();
-    sg->RollbackSideEffectRecords();
   } else if (sg->side_effect_outputs_.empty() && sub_ret->abstract_wrapper()->IsConstant() &&
              !CheckBuildSubGraph(sub_ret->GetVobj()->GetPyObject())) {
     // If there are side effect outputs, we need to build sub-graph and add these nodes as graph outputs.
@@ -2817,14 +2703,13 @@ StopTraceReason GraphBuilder::BuildSubGraph(CallNode *call_node, int depth, cons
   } else {
     sg->FGBuilder()->SetGraphName(GetFuncGraphName(func, sg));
 
-    const FuncGraphPtr &sub_graph = BuildSubFuncGraph(sg, args, call_node);
+    const FuncGraphPtr &sub_graph = BuildSubFuncGraph(sg, call_node);
     if (sub_graph == nullptr) {
-      sg->RollbackSideEffectRecords();
       return StopTraceReason::kTrace_Fail;
     }
     auto callable_obj = GetPyObject(call_node->input(0));
     if (py::isinstance<Cell>(callable_obj)) {
-      HandleCustomBProp(sub_graph, callable_obj);
+      AttachCustomBPropToGraph(sub_graph, callable_obj);
     }
   }
   if (call_node->input(0)->GetOpcode() != MAKE_FUNCTION) {
@@ -2839,101 +2724,57 @@ void GraphBuilder::CollectSideEffectOutputs() {
                [this](ValueNode *node) { return node->GetGraph() == graph_; });
 }
 
-namespace {
-void CollectAllSubGraphs(Graph *cur_graph, std::unordered_set<Graph *> *graphs) {
-  for (auto node : cur_graph->GetTracedNodes()) {
-    if (node->GetType() == ValueNode::Call) {
-      auto call_node = static_cast<CallNode *>(node);
-      if (call_node->GetSubGraph() != nullptr) {
-        graphs->insert(call_node->GetSubGraph());
-        CollectAllSubGraphs(call_node->GetSubGraph(), graphs);
-      }
-    }
-  }
-}
-}  // namespace
-
-void GraphBuilder::RollbackSideEffectRecords() {
-  if (side_effect_outputs_.empty()) {
-    return;
-  }
-  std::unordered_set<Graph *> graphs{graph_};
-  CollectAllSubGraphs(graph_, &graphs);
-
-  std::set<ValueNode *> new_side_effect_nodes;
-  for (const auto &pair : graph_->GetSideEffect()->nodes()) {
-    ValueNode *node = pair.first;
-    // Exclude the side-effect nodes generated in current graph (and all its subgraphs).
-    if (graphs.find(node->GetGraph()) == graphs.end()) {
-      new_side_effect_nodes.insert(node);
-    }
-  }
-  graph_->GetSideEffect()->ResetRecord(new_side_effect_nodes);
-}
-
-FuncGraphPtr GraphBuilder::BuildSubFuncGraph(const GraphBuilderPtr &subgraph_builder,
-                                             const std::vector<ValueNode *> &args, CallNode *call_node) {
+FuncGraphPtr GraphBuilder::BuildSubFuncGraph(const GraphBuilderPtr &subgraph_builder, CallNode *call_node) {
   bool succ = subgraph_builder->FGAddOutput();
   if (!succ) {
     return nullptr;
   }
-  const FuncGraphPtr &sub_graph = subgraph_builder->FGBuilder()->graph();
-  if (sub_graph == nullptr) {
-    MS_LOG(INFO) << "Subgraph's func graph is NULL";
+  AbstractWrapperPtr subgraph_output = fg_build_utils::FgCallSubGraph(call_node);
+  if (subgraph_output == nullptr) {
     return nullptr;
   }
-  const AbstractWrapperPtr &res = FGBuilder()->AddNode(sub_graph, HandleInputArgs(args));
-  if (res == nullptr) {
-    MS_LOG(INFO) << "Add fg node failed: " << sub_graph->ToString();
-    return nullptr;
-  }
-  MS_LOG(INFO) << "Add fg node success: " << res->ToString();
 
-  succ = HandleSubGraphOutput(res, subgraph_builder, call_node);
-  return succ ? sub_graph : nullptr;
+  succ = HandleSubGraphOutput(subgraph_output, subgraph_builder, call_node);
+  if (!succ) {
+    return nullptr;
+  }
+  FuncGraphBuilderPtr sub_fg_builder = call_node->GetSubGraph()->func_graph_builder();
+  MS_EXCEPTION_IF_NULL(sub_fg_builder);
+  return sub_fg_builder->graph();
 }
 
 bool GraphBuilder::HandleSubGraphOutput(const AbstractWrapperPtr &output, const GraphBuilderPtr &subgraph_builder,
                                         CallNode *call_node) {
-  if (subgraph_builder->FGBuilder()->GetOutputSize() == 1) {
-    // Only the output of function call, no side effect output.
-    call_node->SetVobj(AObject::Convert(output));
-    call_node->set_abstract_wrapper(output);
-  } else {
-    // output[0] is function call output, and output[1:] are side effect outputs.
-    AbstractWrapperPtr call_node_output = FGTupleGetItem(output, 0);
-    if (call_node_output == nullptr) {
-      return false;
-    }
-    call_node->SetVobj(AObject::Convert(call_node_output));
-    call_node->set_abstract_wrapper(call_node_output);
-    // Add sub-graph's side effect outputs to parent-graph.
-    for (size_t i = 0; i < subgraph_builder->side_effect_outputs_.size(); ++i) {
-      AbstractWrapperPtr side_effect_output = FGTupleGetItem(output, SizeToInt(i + 1));
-      if (side_effect_output == nullptr) {
-        return false;
-      }
-      // Build the mapping from sub-graph's ValueNode to parent-graph's AnfNode.
-      AnfNodePtr side_effect_anf_node = FGBuilder()->ReadLocalVariable(side_effect_output);
-      MS_EXCEPTION_IF_NULL(side_effect_anf_node);
-      AbstractWrapperPtr side_effect_abs = subgraph_builder->side_effect_outputs_[i]->abstract_wrapper();
-      FGBuilder()->UpdateNodesMap(side_effect_abs, side_effect_anf_node);
-    }
-    (void)std::copy(subgraph_builder->side_effect_outputs_.begin(), subgraph_builder->side_effect_outputs_.end(),
-                    std::back_inserter(side_effect_outputs_));
+  if (subgraph_builder->FGBuilder()->GetOutputSize() <= 1) {  // no side-effect outputs
+    return true;
   }
-  return true;
-}
+  // output should be an AbstractTuple.
+  auto unpacked_outputs = fg_build_utils::FgTupleUnpack(FGBuilder(), output);
+  if (!unpacked_outputs.has_value()) {
+    MS_LOG(INFO) << "Fail to unpack outputs for subgraph: " << GetNameAndLocation(call_node->GetSubGraph());
+    return false;
+  }
+  size_t side_effect_num = subgraph_builder->side_effect_outputs_.size();
+  MS_EXCEPTION_IF_CHECK_FAIL(unpacked_outputs->size() == side_effect_num + 1, "Outputs num mismatch!");
+  // output[0] is function call output, and output[1:] are side effect outputs.
+  AbstractWrapperPtr call_output = unpacked_outputs->at(0);
+  MS_EXCEPTION_IF_NULL(call_output);
+  call_node->SetVobj(AObject::Convert(call_output));
+  call_node->set_abstract_wrapper(call_output);
+  // Add sub-graph's side effect outputs to parent-graph.
+  for (size_t i = 0; i < side_effect_num; ++i) {
+    AbstractWrapperPtr side_effect_output = unpacked_outputs->at(i + 1);
+    MS_EXCEPTION_IF_NULL(side_effect_output);
+    // Build the mapping from sub-graph's ValueNode to parent-graph's AnfNode.
+    AnfNodePtr side_effect_anf_node = FGBuilder()->ReadLocalVariable(side_effect_output);
+    MS_EXCEPTION_IF_NULL(side_effect_anf_node);
+    AbstractWrapperPtr side_effect_abs = subgraph_builder->side_effect_outputs_[i]->abstract_wrapper();
+    FGBuilder()->UpdateNodesMap(side_effect_abs, side_effect_anf_node);
+  }
 
-AbstractWrapperPtr GraphBuilder::FGTupleGetItem(const AbstractWrapperPtr &tuple, int index) {
-  MS_EXCEPTION_IF_NULL(tuple);
-  AbstractWrapperPtr idx = FGBuilder()->AddLocalVariable(py::int_(index));
-  AbstractWrapperPtr ret = FGBuilder()->AddNode(prim::kPrimTupleGetItem, {tuple, idx});
-  if (ret == nullptr || ret->abstract() == nullptr) {
-    MS_LOG(INFO) << "Failed to do tuple getitem, index: " << index << ", tuple: " << tuple->ToString();
-    return nullptr;
-  }
-  return ret;
+  (void)std::copy(subgraph_builder->side_effect_outputs_.begin(), subgraph_builder->side_effect_outputs_.end(),
+                  std::back_inserter(side_effect_outputs_));
+  return true;
 }
 
 bool GraphBuilder::UnpackDynamicLengthDictByBytecode(std::vector<ValueNode *> *params, CallNode *call_node,
@@ -3135,10 +2976,6 @@ ValueNode *GraphBuilder::GetBoundSelf(CallNode *call_node) {
 
 // todo: Add new class CallParameter handler to move these function out.
 bool GraphBuilder::HandleCallParameters(const py::object &func_info, CallNode *call_node, FrameStates *frame) {
-#if IS_PYTHON_3_11_PLUS
-  MS_LOG(ERROR) << "not implement in python3.11";
-  return false;
-#else
   if (func_info.ptr() == nullptr) {
     MS_LOG(EXCEPTION) << "HandleCallParameters with empty func_info input.";
   }
@@ -3163,8 +3000,9 @@ bool GraphBuilder::HandleCallParameters(const py::object &func_info, CallNode *c
   // python3.10 and lower only
   // after store all params
   // cell2arg
-  const Py_ssize_t ncells = PyCodeWrapper(co).CellVarsSize();
-  const Py_ssize_t *c2a_arr = co->co_cell2arg;
+  PyCodeWrapper co_wrapper(co);
+  const Py_ssize_t ncells = co_wrapper.CellVarsSize();
+  const Py_ssize_t *c2a_arr = reinterpret_cast<const Py_ssize_t *>(co_wrapper.Cell2Arg());
   for (int i = 0; c2a_arr != nullptr && i < ncells; ++i) {
     if (c2a_arr[i] != CO_CELL_NOT_AN_ARG) {
       Py_ssize_t arg_index = c2a_arr[i];
@@ -3184,12 +3022,12 @@ bool GraphBuilder::HandleCallParameters(const py::object &func_info, CallNode *c
       cell_node->AddCellOper(n);
       cell_node->SetValue(arg_node);
       Py_XSETREF(PyCell_GET(cell), cell_contents);
+      MS_LOG(DEBUG) << "cell2arg: cell[" << i << "] -> arg[" << arg_index << "]: " << ToString(arg_node);
       // cell variable is eliminate
       // call_node->AddParam(n);
     }
   }
   return true;
-#endif
 }
 
 static void SetGradFuncInfo(mindspore::pijit::CallNode *call_node);
@@ -3358,8 +3196,10 @@ void GraphBuilder::ResolveClosure(const py::object &func_info, CallNode *call_no
         MS_EXCEPTION_IF_NULL(cell_contents_node->GetVobj()->GetPyObject().ptr());
         freevar->SetValue(cell_contents_node);
         freevar->set_abstract_wrapper(tmp->abstract_wrapper());
+        MS_LOG(DEBUG) << "Closure[" << (ncells + i) << "] cell_contents: " << ToString(cell_contents_node);
       }
       frame->SetClosure(ncells + i, freevar);
+      MS_LOG(DEBUG) << "Set closure[" << (ncells + i) << "]: " << ToString(freevar);
     }
   }
 }
@@ -3402,6 +3242,9 @@ void SetMixedPrecisionType(CallNode *call_node, FrameStates *frame) {
 StopTraceReason GraphBuilder::HandleCall(int depth) {
   MS_EXCEPTION_IF_CHECK_FAIL(seek(0)->GetType() == ValueNode::Call, "must be call node");
   CallNode *call_node = reinterpret_cast<CallNode *>(seek(0));
+  const auto &scope = GetScopeForCallNode(call_node);
+  ScopeGuard scope_guard(scope);
+
   if (depth > root_->graph_->Config().getIntConfig(GraphJitConfig::kMaxInlineDepth)) {
     call_node->SetInlineReason(InlineReason::kInlineTooDeep);
     return StopTraceReason::kNonStopTrace;
@@ -3422,7 +3265,7 @@ StopTraceReason GraphBuilder::HandleCall(int depth) {
   PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(callable_info.ptr()));
   PyObject *globals = PyFunction_GET_GLOBALS(callable_info.ptr());
   auto subgraph = std::make_shared<GraphBuilder>(this->root_ ? this->root_ : this, this, co, globals);
-  this->sub_graph = subgraph;
+  this->prev_call_builder_ = subgraph;
 
   // frame build
   FrameStates *frame = &(subgraph->frame_);
@@ -3441,18 +3284,18 @@ StopTraceReason GraphBuilder::HandleCall(int depth) {
 
 static bool GuardLoopSequence(Graph *graph, ValueNode *seq_node, Py_ssize_t seq_size) {
   if (graph == nullptr || seq_node == nullptr) {
-    MS_LOG(ERROR) << "Try to guard " << seq_node << " with graph " << graph << ".";
+    MS_LOG(INFO) << "Try to guard " << seq_node << " with graph " << graph << ".";
     return false;
   }
   auto vobj = seq_node->GetVobj();
   if (vobj == nullptr) {
-    MS_LOG(ERROR) << "Try to guard " << seq_node << " but vobj is nullptr.";
+    MS_LOG(INFO) << "Try to guard " << seq_node << " but vobj is nullptr.";
     return false;
   }
   auto base_version = vobj->GetBaseVersion();
   PyObject *seq = base_version->GetPyObject().ptr();
   if (seq == nullptr || !PySequence_Check(seq)) {
-    MS_LOG(ERROR) << "Try to guard " << seq_node << " but no pyobject or not a sequence.";
+    MS_LOG(INFO) << "Try to guard " << seq_node << " but no pyobject or not a sequence.";
     return false;
   }
   // guard length
@@ -3460,6 +3303,8 @@ static bool GuardLoopSequence(Graph *graph, ValueNode *seq_node, Py_ssize_t seq_
     seq_size = PySequence_Size(seq);
   }
   if (seq_size == -1) {
+    MS_LOG(INFO) << "Failed to get sequence length for: " << ToString(seq_node)
+                 << ", reason: " << py::error_already_set().what();
     PyErr_Clear();
     return false;
   }
@@ -3494,7 +3339,7 @@ bool GuardIterInputs(Graph *graph, ValueNode *seq_node, Py_ssize_t seq_size = -1
     if (tr == nullptr) {
       return graph->GuardValueNodeClosure(input_node);
     }
-    if (!(graph->GetGuard()->GetGuard()->GuardOn(tr, GuardLevel::GEqual))) {
+    if (!(graph->GetGuardManager()->GetGuard()->GuardOn(tr, GuardLevel::GEqual))) {
       MS_LOG(INFO) << "Iterator guard fail: " << seq_node->ToString();
       return false;
     }
@@ -3519,8 +3364,9 @@ bool GraphBuilder::TraceRunForIterSequence(int jump_bci) {
   }
   Py_ssize_t size = PySequence_Size(seq);
   if (size == -1) {
+    MS_LOG(INFO) << "Failed to get sequence length for: " << ToString(seq_node)
+                 << ", reason: " << py::error_already_set().what();
     PyErr_Clear();
-    MS_LOG(INFO) << "FOR_ITER without __len__";
     return false;
   }
 
@@ -3824,7 +3670,7 @@ LocationPtr GraphBuilder::GetLocation(const Instr &instr) const {
   if (graph_ == nullptr || graph_->GetCodeObj() == nullptr) {
     return std::make_shared<Location>("anonymous", 0, 0, 0, 0, "", std::vector<std::string>());
   }
-  auto file_name = PyCodeWrapper(graph_->GetCodeObj()).FileName();
+  const auto &file_name = PyCodeWrapper(graph_->GetCodeObj()).FileName();
   auto line_no = instr.line();
   std::vector<std::string> comments;
   return std::make_shared<Location>(file_name, line_no, 0, line_no, 0, "", std::move(comments));
@@ -3963,7 +3809,7 @@ bool IsSatisfyPruneLimit(int cond, Graph *graph_, ValueNode *cond_node) {
   } else {
     cond_node->SetConstantValue(true);
   }
-  graph_->GetGuard()->GetGuard()->GuardOn(tr, GuardLevel::GId);
+  graph_->GetGuardManager()->GetGuard()->GuardOn(tr, GuardLevel::GId);
   return true;
 }
 
@@ -4027,6 +3873,12 @@ bool GraphBuilder::TraceRunControl(const Instr &instr) {
 }
 
 StopTraceReason GraphBuilder::TraceRun() {
+  MS_LOG(INFO) << "Trace " << GetNameAndLocation(graph_);
+  if (graph_->Config().GetBoolConfig(GraphJitConfig::kPrintBytecode)) {
+    auto code = reinterpret_cast<PyObject *>(graph_->GetCodeObj());
+    PY_PRINTF("*** Print bytecode of function [%A] ***", code);
+    Utils::DisFuncObject(code);
+  }
   current_block_ = graph_->GetCFG()->GetFirstBB();
   cur_bci_ = 0;
   const auto &instrs = graph_->GetCFG()->instr_pool();
@@ -4040,9 +3892,6 @@ StopTraceReason GraphBuilder::TraceRun() {
   }
   return graph_->GetStopTraceReason();
 }
-
-extern void AddConfigToGuard(const GraphJitConfig &c, OptGuardPtr guard);
-extern void AddGuardForParam(const PyFrameWrapper &f, OptGuardPtr guard, bool detach);
 
 /**
  * Generate a graph from callable, this function will actually create python frame
@@ -4061,10 +3910,6 @@ static std::unique_ptr<GraphBuilder> GenerateRootGraph(const py::object &callabl
   jcr->set_code(jcr->codehub()->AddOptTarget(OptOption::CreateOptionByPoint(jcr)));
 
   auto res = std::make_unique<GraphBuilder>(ef);
-
-  auto code = res->GetGraph()->GetGuard();
-  AddConfigToGuard(conf, code->GetGuard());
-  AddGuardForParam(ef, code->GetGuard(), conf.GetBoolConfig(GraphJitConfig::kGuardDetachObject));
 
   Py_DECREF(frame);
   return res;
@@ -4087,7 +3932,7 @@ AObject *InferFuncResult(const py::object &callable, const py::object &args, con
   if (clear_guard) {
     Graph *graph = g->GetGraph();
     auto jcr = GetJitCompileResults(graph->GetCodeObj());
-    jcr->codehub()->DelOptTarget(OptOption::CreateOptionByPoint(jcr), graph->GetGuard());
+    jcr->codehub()->DelOptTarget(OptOption::CreateOptionByPoint(jcr), graph->GetGuardManager());
   }
 
   ValueNode *res = g->GetGraph()->GetRetVal();
@@ -4168,12 +4013,27 @@ static void SetGradFuncInfo(CallNode *call_node) {
 
 void GraphBuilder::DumpDFG() { GRAPH_JIT_LOG_F("%s", graph_->ToString().c_str()); }
 
+void GraphBuilder::AddVarInput(ValueNode *cur, bool is_var_keywords) {
+  if (cur == &ValueNode::kUnboundLocal) {
+    return; /* LOAD_DEREF */
+  }
+  auto cur_object = cur->GetVobj()->GetPyObject();
+  auto ret = is_var_keywords ? FGBuilder()->AddTopGraphKwargsInputs(cur_object)
+                             : FGBuilder()->AddTopGraphVargsInputs(cur_object);
+  if (ret == nullptr) {
+    return;
+  }
+  cur->set_abstract_wrapper(ret);
+  root()->GetGraph()->PrepareParameter(cur);
+  GetGraph()->GuardParameter(cur);
+}
+
 void GraphBuilder::AddInput(ValueNode *node) {
   auto obj = node->GetVobj()->GetPyObject();
   // tuple list is expand, this branch always false
-  if (FGBuilder()->IsParameterSequence(obj)) {
+  if (IsParameterSequence(obj)) {
     MS_LOG(WARNING) << "Get Parameter as function inputs, recompile if it's id changed";
-    graph_->GuardValueNode(node, GuardLevel::GDeduce);
+    // delay guard
     return;
   }
   auto ret = FGBuilder()->AddTopGraphArgInput(obj);
@@ -4182,11 +4042,12 @@ void GraphBuilder::AddInput(ValueNode *node) {
       MS_LOG(INFO) << "The object can't be a runtime argument of FuncGraph, build value node: " << node->ToString();
       node->set_abstract_wrapper(FGBuilder()->AddLocalVariable(node->GetVobj()->GetPyObject()));
     }
-    graph_->GuardValueNode(node, GuardLevel::GDeduce);
+    // delay guard
     return;
   }
   node->set_abstract_wrapper(ret);
   root()->GetGraph()->PrepareParameter(node);
+  GetGraph()->GuardParameter(node);
 }
 
 namespace {
@@ -4290,19 +4151,6 @@ void GraphBuilder::FGAddTopInputs() {
   if (graph_->Config().GetBoolConfig(GraphJitConfig::kExpandGraphInput)) {
     FGAddTopInputsWithExpander();
   } else {
-    auto add_var_input = [this](ValueNode *cur, bool is_var_keywords) {
-      if (cur == &ValueNode::kUnboundLocal) {
-        return; /* LOAD_DEREF */
-      }
-      auto cur_object = cur->GetVobj()->GetPyObject();
-      auto ret = is_var_keywords ? FGBuilder()->AddTopGraphKwargsInputs(cur_object)
-                                 : FGBuilder()->AddTopGraphVargsInputs(cur_object);
-      if (ret == nullptr) {
-        return;
-      }
-      cur->set_abstract_wrapper(ret);
-      root()->GetGraph()->PrepareParameter(cur);
-    };
     bool has_vargs;
     bool has_kwargs;
     int args_count = PyCodeWrapper(GetGraph()->GetCodeObj()).ArgCount(&has_vargs, &has_kwargs);
@@ -4323,12 +4171,12 @@ void GraphBuilder::FGAddTopInputs() {
     }
     if (has_vargs) {
       auto cur = locals[cur_index];
-      add_var_input(cur, false);
+      AddVarInput(cur, false);
       cur_index++;
     }
     if (has_kwargs) {
       auto cur = locals[cur_index];
-      add_var_input(cur, true);
+      AddVarInput(cur, true);
     }
   }
 }
@@ -4340,11 +4188,11 @@ bool GraphBuilder::FGAddInputs(const std::vector<ValueNode *> &args) {
   for (size_t i = 0; i < args_wrapper.size(); ++i) {
     auto ret_abstract_wrapper = FGBuilder()->AddSubGraphInput(args_wrapper[i]);
     if (ret_abstract_wrapper == nullptr) {
-      MS_LOG(INFO) << "Add input fail for input: " << args[i]->ToString();
+      MS_LOG(INFO) << "Add input fail for input[" << i << "]: " << args[i]->ToString();
       return false;
     }
     args[i]->set_abstract_wrapper(ret_abstract_wrapper);
-    MS_LOG(INFO) << "Add input success for input: " << args[i]->ToString();
+    MS_LOG(INFO) << "Add input success for input[" << i << "]: " << args[i]->ToString();
   }
   return true;
 }
@@ -4572,68 +4420,6 @@ BindArgumentsHelper<ValueNode *> GraphBuilder::PackInputsForFunc(const py::objec
   return bind_helper;
 }
 
-std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>> GraphBuilder::BuildForwardGraph(CallNode *call_node) {
-  auto grad_net_node = static_cast<CallNode *>(call_node->input(0));
-  MS_EXCEPTION_IF_NULL(grad_net_node);
-  constexpr size_t grad_operation_index = 0;
-  constexpr size_t forward_node_index = 1;
-  auto grad_operation_node = grad_net_node->input(grad_operation_index);
-  auto grad_object = grad_operation_node->GetVobj()->GetPyObject();
-  auto forward_node = grad_net_node->input(forward_node_index);
-  bool has_sense = py::hasattr(grad_object, "sens_param") && (grad_object.attr("sens_param").ptr() == Py_True);
-  auto func_info = forward_node->GetVobj()->GetPyObject();
-  bool is_cell = py::isinstance<Cell>(func_info);
-  MS_EXCEPTION_IF_NULL(func_info.ptr());
-
-  auto self_node = is_cell ? forward_node : nullptr;
-  BindArgumentsHelper<ValueNode *> bind_helper =
-    PackInputsForFunc(func_info, call_node->GetOpcode(), call_node->getInputs(), self_node, has_sense);
-
-  auto bind_arguments_result = bind_helper.results();
-  const auto &bind_args = bind_arguments_result.args_;
-  const auto &bind_vargs = bind_arguments_result.va_;
-  const auto &bind_kwargs = bind_arguments_result.kw_va_;
-
-  func_info = FindPyFunc(AObject::Convert(func_info));
-  DoLoadConst({LOAD_CONST, -1, py::reinterpret_borrow<py::object>(func_info)});
-  int arg_size = 0;
-  for (auto arg : bind_args) {
-    push(arg);
-    arg_size = arg_size + 1;
-  }
-  for (auto varg : bind_vargs) {
-    push(varg);
-    arg_size = arg_size + 1;
-  }
-
-  if (!bind_kwargs.empty()) {
-    // Use CALL_FUNCTION_KW to build forward node.
-    MS_LOG(EXCEPTION) << "Do not handle kwargs yet.";
-  } else {
-    DoCall({CALL_FUNCTION, arg_size});
-  }
-  pop();
-  auto forward_graph_builder = sub_graph;
-  if (forward_graph_builder == nullptr) {
-    MS_LOG(INFO) << "Failed to get function graph builder for forward graph.";
-    return std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>>(nullptr, bind_helper);
-  }
-  auto fg = forward_graph_builder->FGBuilder()->graph();
-  if (fg == nullptr) {
-    MS_LOG(INFO) << "Failed to get function graph builder for forward graph.";
-    return std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>>(nullptr, bind_helper);
-  }
-  fg = BasicClone(fg);
-  if (bind_vargs.size() != 0) {
-    MS_LOG(INFO) << "Build call graph for forward graph.";
-    std::vector<size_t> arg_len = {bind_args.size(), bind_vargs.size(), bind_kwargs.size()};
-    auto outer_fg = FuncGraphBuilder::BuildCallForwardGraphForGrad(fg, arg_len, is_cell);
-    return std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>>(outer_fg, bind_helper);
-  }
-
-  return std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>>(fg, bind_helper);
-}
-
 namespace {
 TracePtr CreateRegisterHookTrace(const TracePtr &trace) {
   auto obj = py::cast<py::object>(trace->GetObject());
@@ -4670,6 +4456,7 @@ TracePtr CreateRegisterHookTrace(const TracePtr &trace) {
     });
   return std::move(hook_trace);
 }
+}  // namespace
 
 void GuardRegisterHook(ValueNode *node) {
   MS_EXCEPTION_IF_NULL(node);
@@ -4682,7 +4469,7 @@ void GuardRegisterHook(ValueNode *node) {
   }
   auto graph = node->GetGraph();
   MS_EXCEPTION_IF_NULL(graph);
-  const auto &guard = graph->GetGuard()->GetGuard();
+  const auto &guard = graph->GetGuardManager()->GetGuard();
   auto trace = node->GetTrace();
   if (trace == nullptr) {
     trace = graph->TraceValueNode(node);
@@ -4704,252 +4491,6 @@ void GuardRegisterHook(ValueNode *node) {
     }
   }
 }
-}  // namespace
-
-AbstractWrapperPtrList GraphBuilder::HandleInputsForGrad(CallNode *call_node,
-                                                         BindArgumentsHelper<ValueNode *> forward_inputs) {
-  auto grad_net_node = static_cast<CallNode *>(call_node->input(0));
-  MS_EXCEPTION_IF_NULL(grad_net_node);
-  constexpr size_t grad_operation_index = 0;
-  constexpr size_t forward_node_index = 1;
-  constexpr size_t param_tuple_index = 2;
-  auto grad_operation_node = grad_net_node->input(grad_operation_index);
-  auto grad_object = grad_operation_node->GetVobj()->GetPyObject();
-  auto forward_node = grad_net_node->input(forward_node_index);
-  bool has_sense = py::hasattr(grad_object, "sens_param") && (grad_object.attr("sens_param").ptr() == Py_True);
-  auto func_info = forward_node->GetVobj()->GetPyObject();
-  MS_EXCEPTION_IF_NULL(func_info.ptr());
-
-  const auto &bind_arguments_result = forward_inputs.results();
-  const auto &bind_args = bind_arguments_result.args_;
-  const auto &bind_vargs = bind_arguments_result.va_;
-  const auto &bind_kwargs = bind_arguments_result.kw_va_;
-
-  auto wrapper_args = HandleInputArgs(bind_args);
-  const auto &wrapper_vargs = HandleInputArgs(bind_vargs);
-
-  bool get_all = py::hasattr(grad_object, "get_all") && (grad_object.attr("get_all").ptr() == Py_True);
-  bool get_by_list = py::hasattr(grad_object, "get_by_list") && (grad_object.attr("get_by_list").ptr() == Py_True);
-  auto offset = py::isinstance<Cell>(func_info) ? 1 : 0;
-  std::vector<ValueNode *> forward_input(bind_args.begin() + offset, bind_args.end());
-  size_t input_grad_cnt = get_all ? forward_input.size() : (get_by_list ? 0 : (forward_input.empty() ? 0 : 1));
-
-  for (size_t index = 0; index < input_grad_cnt; index++) {
-    if (!forward_input[index]->has_abstract_wrapper() || forward_input[index]->GetVobj() == nullptr) {
-      continue;
-    }
-    auto obj = forward_input[index]->GetVobj()->GetPyObject();
-    if (py::isinstance<py::none>(obj)) {
-      continue;
-    }
-    auto wrapper = forward_input[index]->abstract_wrapper();
-    auto node = FGBuilder()->FindNodeByWrapper(wrapper);
-    pijit::SaveTensorRegisterHook(obj, node);
-    GuardRegisterHook(forward_input[index]);
-  }
-  if (get_by_list) {
-    GuardRegisterHook(grad_net_node->input(param_tuple_index));
-  }
-
-  if (has_sense) {
-    if (!bind_vargs.empty() || !bind_kwargs.empty()) {
-      MS_LOG(EXCEPTION) << "Do not support sense param with vargs and kwargs yet.";
-    }
-    MS_EXCEPTION_IF_CHECK_FAIL(call_node->getInputs().size() > bind_args.size(), "Arg size check failed.");
-    auto sens_value_node = call_node->getInputs().back();
-    auto new_wrapper = sens_value_node->has_abstract_wrapper()
-                         ? sens_value_node->abstract_wrapper()
-                         : FGBuilder()->AddLocalVariable(sens_value_node->GetVobj()->GetPyObject());
-    sens_value_node->set_abstract_wrapper(new_wrapper);
-    wrapper_args.push_back(new_wrapper);
-  }
-
-  AbstractWrapperPtrList final_wrapper;
-  // Eliminate self input for cell when building grad graph.
-  bool input_offset = py::isinstance<Cell>(func_info) ? 1 : 0;
-  (void)std::copy(wrapper_args.begin() + input_offset, wrapper_args.end(), std::back_inserter(final_wrapper));
-  (void)std::copy(wrapper_vargs.begin(), wrapper_vargs.end(), std::back_inserter(final_wrapper));
-  return final_wrapper;
-}
-
-AnfNodePtr CreateInsertGradientOfNode(const AnfNodePtr &node, const FuncGraphPtr &func_graph) {
-  auto hooks = node->abstract()->user_data<py::tuple>(pijit::kRegisterHookKey);
-  MS_LOG(INFO) << "Apply " << py::str(py::object(*hooks)) << " to " << node->DebugString();
-  auto ops_mod = python_adapter::GetPyModule("mindspore.ops.operations.debug_ops");
-  auto op_class = python_adapter::GetPyObjAttr(ops_mod, "InsertGradientOf");
-  auto insert_grad_of = node;
-  for (const auto &hook : *hooks) {
-    // Create class instance.
-    auto params = py::make_tuple(hook);
-    auto obj = parse::data_converter::CreatePythonObject(op_class, params);
-    if (py::isinstance<py::none>(obj)) {
-      MS_LOG(ERROR) << "Create python object `" << py::str(op_class)
-                    << "` failed, only support to create 'Cell', 'Primitive' or "
-                    << "user-defined Class decorated with 'jit_class'.";
-      return nullptr;
-    }
-    ValuePtr converted_res = nullptr;
-    bool converted = parse::ConvertData(obj, &converted_res, false);
-    if (!converted) {
-      MS_LOG(ERROR) << "Convert the python object failed";
-      return nullptr;
-    }
-    MS_EXCEPTION_IF_NULL(converted_res);
-    insert_grad_of = func_graph->NewCNode({NewValueNode(converted_res), insert_grad_of});
-    insert_grad_of->set_abstract(node->abstract());
-  }
-  return insert_grad_of;
-}
-
-bool ApplyRegisterHook(const AnfNodePtr &node) {
-  if (node->abstract() == nullptr || !node->abstract()->has_user_data(pijit::kRegisterHookKey)) {
-    return true;
-  }
-  auto func_graph = node->func_graph();
-  MS_EXCEPTION_IF_NULL(func_graph);
-  auto manager = func_graph->manager();
-  MS_EXCEPTION_IF_NULL(manager);
-  auto node_users = manager->node_users()[node];
-  for (const auto &node_and_index : node_users) {
-    if (IsPrimitiveCNode(node_and_index.first, prim::kPrimInsertGradientOf)) {
-      continue;
-    }
-    auto insert_grad_of = CreateInsertGradientOfNode(node, node_and_index.first->func_graph());
-    if (insert_grad_of == nullptr) {
-      return false;
-    }
-    manager->SetEdge(node_and_index.first, node_and_index.second, insert_grad_of);
-  }
-  return true;
-}
-
-bool HandleRegisterHook(const FuncGraphPtr &func_graph) {
-  auto top_func_graph = parse::Parser::GetTopFuncGraph();
-  MS_EXCEPTION_IF_NULL(top_func_graph);
-  if (func_graph->manager() == nullptr) {
-    auto manager = top_func_graph->manager();
-    MS_EXCEPTION_IF_NULL(manager);
-    manager->AddFuncGraph(func_graph);
-  }
-  mindspore::CompactSet<AnfNodePtr> nodes;
-  nodes.insert(func_graph->parameters().begin(), func_graph->parameters().end());
-  auto vars = func_graph->free_variables();
-  std::for_each(vars.begin(), vars.end(), [&nodes](const auto &var) { nodes.insert(var.first); });
-  nodes.insert(top_func_graph->parameters().begin(), top_func_graph->parameters().end());
-  return std::all_of(nodes.begin(), nodes.end(), [](const auto &node) { return ApplyRegisterHook(node); });
-}
-
-py::object GraphBuilder::ResolveGradCall(CallNode *call_node, StopTraceReason *stop_reason) {
-  auto grad_net_node = static_cast<CallNode *>(call_node->input(0));
-  if (grad_net_node == nullptr) {
-    return py::object();
-  }
-  auto grad_net_wrapper = grad_net_node->abstract_wrapper();
-  if (grad_net_wrapper == nullptr) {
-    MS_LOG(ERROR) << "Fail to get abstract wrapper for grad net node: " << grad_net_node->ToString();
-    return py::object();
-  }
-  constexpr size_t grad_operation_index = 0;
-  constexpr size_t forward_net_index = 1;
-  bool guard_grad_operation = graph_->GuardValueNode(grad_net_node->input(grad_operation_index), GId);
-  if (!guard_grad_operation) {
-    MS_LOG(WARNING) << "Guard GradOperation value node failed, value node: "
-                    << grad_net_node->input(grad_operation_index)->ToString();
-  }
-
-  auto forward_net_object = grad_net_node->input(forward_net_index)->GetVobj()->GetPyObject();
-  (void)pi_jit_should_compile(forward_net_object, py::dict(), py::none());
-
-  bool guard_forward_net = graph_->GuardValueNode(grad_net_node->input(forward_net_index), GId);
-  if (!guard_forward_net) {
-    MS_LOG(WARNING) << "Guard forward net value node for GradOperation failed, value node: "
-                    << grad_net_node->input(forward_net_index)->ToString();
-  }
-
-  auto forward_result = BuildForwardGraph(call_node);
-  auto forward_fg = forward_result.first;
-  if (forward_fg == nullptr) {
-    MS_LOG(INFO) << "Build forward fg failed.";
-    return py::object();
-  }
-  if (py::isinstance<Cell>(forward_net_object)) {
-    HandleCustomBProp(forward_fg, forward_net_object);
-  }
-
-  const auto &inputs_wrapper = HandleInputsForGrad(call_node, forward_result.second);
-  for (auto input_wrapper : inputs_wrapper) {
-    if (input_wrapper == nullptr) {
-      MS_LOG(EXCEPTION) << "Input wrapper is NULL, failed to build graph.";
-    }
-    MS_LOG(INFO) << "input wrapper is: " << input_wrapper->ToString();
-  }
-  auto ret = FGBuilder()->BuildGradNode(grad_net_wrapper, forward_fg, inputs_wrapper);
-  MS_EXCEPTION_IF_NULL(ret);
-  if (ret != nullptr) {
-    call_node->SetVobj(AObject::Convert(ret));
-    call_node->set_abstract_wrapper(ret);
-    *stop_reason = StopTraceReason::kNonStopTrace;
-  }
-  if (!HandleRegisterHook(forward_fg)) {
-    *stop_reason = StopTraceReason::kStopTraceTensorHook;
-  }
-  HandleGradForwardSideEffect(forward_fg, ret, sub_graph, call_node);
-  return py::object();
-}
-
-void GraphBuilder::HandleGradForwardSideEffect(const FuncGraphPtr &forward_fg, const AbstractWrapperPtr &grad,
-                                               const GraphBuilderPtr &subgraph_builder, CallNode *call_node) {
-  const auto &side_effect_outputs = subgraph_builder->side_effect_outputs();
-  if (side_effect_outputs.empty() || !grad->grad_info().get_value_) {
-    return;
-  }
-  // For value_and_grad with forward net side effect,
-  // the output is format ((real_forward, side_effect_output), real_grad)
-  // Need to adjust abstract wrapper for call node to (real_forward, real_grad) and adjust side_effect_outputs as well.
-  MS_EXCEPTION_IF_NULL(forward_fg->output());
-  auto grad_abstract = grad->abstract();
-  MS_EXCEPTION_IF_NULL(grad_abstract);
-  if (!grad_abstract->isa<abstract::AbstractTuple>()) {
-    return;
-  }
-
-  AbstractWrapperPtr forward_idx = FGBuilder()->AddLocalVariable(py::int_(0));
-  auto forward = FGBuilder()->AddNode(prim::kPrimTupleGetItem, {grad, forward_idx});
-  MS_EXCEPTION_IF_NULL(forward);
-  AbstractWrapperPtr grad_idx = FGBuilder()->AddLocalVariable(py::int_(1));
-  auto real_grad = FGBuilder()->AddNode(prim::kPrimTupleGetItem, {grad, grad_idx});
-  MS_EXCEPTION_IF_NULL(real_grad);
-  AbstractWrapperPtr real_forward_idx = FGBuilder()->AddLocalVariable(py::int_(0));
-  auto real_forward = FGBuilder()->AddNode(prim::kPrimTupleGetItem, {forward, real_forward_idx});
-  MS_EXCEPTION_IF_NULL(real_forward);
-  for (size_t i = 0; i < side_effect_outputs.size(); ++i) {
-    AbstractWrapperPtr cur_idx = FGBuilder()->AddLocalVariable(py::int_(i + 1));
-    auto cur_side_effect_output = FGBuilder()->AddNode(prim::kPrimTupleGetItem, {forward, cur_idx});
-    MS_EXCEPTION_IF_NULL(cur_side_effect_output);
-    side_effect_outputs[i]->set_abstract_wrapper(cur_side_effect_output);
-  }
-  auto real_ret = FGBuilder()->AddNode(prim::kPrimMakeTuple, {real_forward, real_grad});
-  MS_EXCEPTION_IF_NULL(real_ret);
-  call_node->SetVobj(AObject::Convert(real_ret));
-  call_node->set_abstract_wrapper(real_ret);
-}
-
-bool GraphBuilder::IsGradCallable(ValueNode *node) {
-  if (node == nullptr || !node->has_abstract_wrapper()) {
-    return false;
-  }
-  auto abstract = node->abstract_wrapper()->abstract();
-  if (abstract == nullptr) {
-    return false;
-  }
-  auto value = abstract->BuildValue();
-  if (!value->isa<StringImm>()) {
-    return false;
-  }
-  const auto &call_str = value->cast<StringImmPtr>()->value();
-  const std::string fake_grad_prefix = "FakeNodeKey MetaFuncGraph-grad";
-  return call_str.substr(0, fake_grad_prefix.size()) == fake_grad_prefix;
-}
 
 py::object GraphBuilder::GetPyObject(ValueNode *node) {
   if (node == nullptr) {
@@ -4966,7 +4507,13 @@ py::object GraphBuilder::GetPyObject(ValueNode *node) {
   return AbstractWrapper::ConvertToPyObject(node->abstract_wrapper());
 }
 
-static bool MindFGForbiddenConvertFunc(const py::handle &func) {
+static bool IsForbiddenConvertFunc(const py::handle &func) {
+  static std::vector<std::string> tensor_method_forbidden_list = {"__setitem__", "tolist"};
+  const auto &method_name = GetTensorMethodName(py::cast<py::object>(func));
+  if (method_name != "") {
+    return std::any_of(tensor_method_forbidden_list.begin(), tensor_method_forbidden_list.end(),
+                       [&method_name](const std::string &name) { return method_name == name; });
+  }
   auto ptr = func.ptr();
   if (PyMethod_Check(ptr)) {
     ptr = PyMethod_GET_FUNCTION(ptr);
@@ -4980,28 +4527,10 @@ static bool MindFGForbiddenConvertFunc(const py::handle &func) {
   //   1. function with side effect such as list.__setitem__.
   //   2. function return iterator, such as enumerate.
   static std::vector<std::string> forbidden_list = {
-    "Tensor.__setitem__",
-    // tolist require tensor value
-    "Tensor.tolist",
-    "list.append",
-    "list.pop",
-    "list.insert",
-    "list.clear",
-    "list.reverse",
-    "list.__setitem__",
-    "dict.__setitem__",
-    "dict.update",
-    "dict.clear",
-    "dict.pop",
-    "dict.keys",
-    "enumerate",
-    "zip",
-    "map",
-    "filter",
-    "__setitem__",
-    "getattr",
-    "range",
-    "concat",
+    "list.append",      "list.pop",         "list.insert", "list.clear", "list.reverse",
+    "list.__setitem__", "dict.__setitem__", "dict.update", "dict.clear", "dict.pop",
+    "dict.keys",        "enumerate",        "zip",         "map",        "filter",
+    "__setitem__",      "getattr",          "range",       "concat",
   };
   return std::any_of(forbidden_list.begin(), forbidden_list.end(),
                      [&qualname](const std::string &name) { return qualname == name; });
@@ -5062,9 +4591,6 @@ bool GraphBuilder::ConvertClassType(const py::object &callable_info, CallNode *c
 
 std::pair<bool, py::object> GraphBuilder::ConvertCallableObject(const py::object &callable_info) const {
   bool should_parse_in_ast = false;
-  if (MindFGForbiddenConvertFunc(callable_info)) {
-    return std::make_pair(should_parse_in_ast, callable_info);
-  }
   auto method = FGBuilder()->ConvertMethod(callable_info);
   if (method.ptr() != nullptr) {
     MS_LOG(INFO) << "convert method :" << py::str(callable_info) << " to " << py::str(method);
@@ -5114,9 +4640,9 @@ py::object GraphBuilder::FGAddNodeAst(CallNode *call_node, const py::object &cal
   return py::object();
 }
 
-py::object GraphBuilder::FGAddNodePyCapsuleOverload(CallNode *call_node, const py::object &callable_info,
-                                                    StopTraceReason *stop_reason) {
-  MS_LOG(INFO) << "Add PyCapsule overload method " << call_node->ToString();
+py::object GraphBuilder::FGAddNodeTensorOverload(CallNode *call_node, const py::object &callable_info,
+                                                 StopTraceReason *stop_reason) {
+  MS_LOG(INFO) << "Add Tensor overload method " << call_node->ToString();
   auto self_node = GetBoundSelf(call_node);
   if (self_node == nullptr) {
     MS_LOG(EXCEPTION) << "Get self failed for call_node " << call_node->ToString();
@@ -5124,7 +4650,8 @@ py::object GraphBuilder::FGAddNodePyCapsuleOverload(CallNode *call_node, const p
   std::vector<ValueNode *> args{self_node};
   const auto &call_node_inputs = call_node->getInputs();
   (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
-  const auto &name = py::str(py::getattr(callable_info, "__name__")).cast<std::string>();
+  const auto &name = GetTensorMethodName(callable_info);
+  MS_EXCEPTION_IF_CHECK_FAIL(name != "", "Fail to get tensor method name");
   const auto &functional_prim = abstract::BuildMethodFunctional(name);
   FGAddNode(call_node, functional_prim, HandleInputArgs(args), stop_reason);
   return py::object();
@@ -5149,7 +4676,17 @@ py::object GraphBuilder::HandleMSCallable(CallNode *call_node, const py::object 
     const auto &call_node_inputs = call_node->getInputs();
     (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
   }
-  FGAddNode(call_node, callable_info, HandleInputArgs(args), stop_reason);
+  const auto &args_abstract_wrapper = HandleInputArgs(args);
+  const auto &helper = GraphBuildHelperFactory(callable_info);
+  if (helper != nullptr) {
+    auto callable_value = ConvertPyObjToValue(callable_info);
+    CallInfo call_info{callable_value, callable_info, args_abstract_wrapper};
+    auto res = helper->Prepare(this, call_info);
+    UpdateNodeInfo(res, call_node, stop_reason);
+    return py::object();
+  }
+
+  FGAddNode(call_node, callable_info, args_abstract_wrapper, stop_reason);
   return py::object();
 }
 
@@ -5169,8 +4706,15 @@ py::object GraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *s
   if (!FGBuilder()->ValidateCallableObject(callable_info)) {
     return py::object();
   }
-  if (IsGradCallable(call_node->input(0))) {
-    return ResolveGradCall(call_node, stop_reason);
+  const auto &helper = GetCallNodeGraphBuildHelper(call_node);
+  if (helper != nullptr) {
+    auto ret = helper->Build(this, call_node);
+    if (ret != nullptr) {
+      call_node->SetVobj(AObject::Convert(ret));
+      call_node->set_abstract_wrapper(ret);
+      *stop_reason = StopTraceReason::kNonStopTrace;
+    }
+    return py::object();
   }
   if (FGBuilder()->CanConstantFoldFunc(callable_info)) {
     const auto &res = GetConstantInputsObject(call_node);
@@ -5181,17 +4725,19 @@ py::object GraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *s
   if (ConvertClassType(callable_info, call_node, stop_reason)) {
     return py::object();
   }
-  if (IsPyCapsuleOverload(callable_info)) {
-    return FGAddNodePyCapsuleOverload(call_node, callable_info, stop_reason);
+  py::object original_callable = callable_info;
+  if (!IsForbiddenConvertFunc(callable_info)) {
+    if (EnableTensorOverload() && IsTensorOverloadMethod(callable_info)) {
+      return FGAddNodeTensorOverload(call_node, callable_info, stop_reason);
+    }
+    const auto &convert_result = ConvertCallableObject(callable_info);
+    callable_info = convert_result.second;
+    bool should_parse_in_ast = convert_result.first;
+    if (should_parse_in_ast) {
+      return FGAddNodeAst(call_node, callable_info, original_callable, stop_reason);
+    }
   }
 
-  py::object original_callable = callable_info;
-  const auto &convert_result = ConvertCallableObject(callable_info);
-  callable_info = convert_result.second;
-  bool should_parse_in_ast = convert_result.first;
-  if (should_parse_in_ast) {
-    return FGAddNodeAst(call_node, callable_info, original_callable, stop_reason);
-  }
   if (IsObjectCallable(callable_info)) {
     return HandleMSCallable(call_node, callable_info, original_callable, stop_reason);
   }
@@ -5507,7 +5053,9 @@ AbstractWrapperPtr GraphBuilder::HandleGetShapeOfDynamicLengthTensor(const Abstr
   return FGBuilder()->AddNode(prim::kPrimShape, input_abstract_wrapper);
 }
 
-void GraphBuilder::GuardAttribute(ValueNode *attr_node) {
+// Add Guard for getattr node. For scalar/list/tuple/primitive, need to guard value. Otherwise, guard type and shape.
+void Graph::GuardAttribute(ValueNode *attr_node) {
+  Graph *graph = this;
   static constexpr auto const_type = {
     AObject::kTypeInt,   AObject::kTypeFloat, AObject::kTypeBool, AObject::kTypeMSDType,
     AObject::kTypeTuple, AObject::kTypeList,  AObject::kTypeDict,
@@ -5539,16 +5087,17 @@ void GraphBuilder::GuardAttribute(ValueNode *attr_node) {
     MS_LOG(INFO) << "delay guard the function type of '" << AObject::ToString(src_object.ptr(), false) << "'";
   } else if (src_type == AObject::kTypeTensor /* tensor attribute always constant. */
              || CheckConstPyObject(src_object.ptr()) /* constant python object not need check */) {
-    MS_LOG(INFO) << "skip guard the attribute '" << name << "' of the builtin " << Py_TYPE(src_object.ptr())->tp_name;
-  } else if (attr_type == AObject::kTypeTensor && IsParameterObject(attr_object)) {
+    MS_LOG(INFO) << "skip guard the attribute '" << name << "' of the builtin type "
+                 << Py_TYPE(src_object.ptr())->tp_name;
+  } else if (attr_type == AObject::kTypeTensor) {
     // The mindspore.Parameter must be guard id. FuncGraph reuse the object
-    graph_->GuardValueNode(attr_node, GuardLevel::GId);
+    graph->GuardValueNode(attr_node, IsParameterObject(attr_object) ? GuardLevel::GId : GuardLevel::GEqual);
   } else if (is_const_attr_type || (attr_type == AObject::kTypePrimitive && IsPrimWithAttr(attr_object))) {
     // For primitive, check the attribute that transform to partial arguments
-    graph_->GuardValueNode(attr_node, GuardLevel::GEqual);
+    graph->GuardValueNode(attr_node, GuardLevel::GEqual);
   } else {
     // Anyway, guard the type of attribute
-    graph_->GuardType(attr_node);
+    graph->GuardType(attr_node);
   }
   if (is_const_attr_type) {  // shouldn't set false
     attr_node->SetConstantValue(true);
@@ -5588,9 +5137,7 @@ ValueNode *GraphBuilder::HandleGetattr(ValueNode *target_node, const Instr &inst
   if (abstract_wrapper != nullptr) {
     graph_attr_node->set_abstract_wrapper(abstract_wrapper);
   }
-  // Need to check whether the guard is failed in the future.
-  // Add Guard for getattr node. For scalar/list/tuple/primitive, need to guard value. Otherwise, guard type and shape.
-  GuardAttribute(graph_attr_node);
+  GetGraph()->GuardAttribute(graph_attr_node);
   return graph_attr_node;
 }
 
@@ -5614,7 +5161,7 @@ ValueNode *GraphBuilder::HandleNamedtupleGetElem(const Instr &instr, ValueNode *
   int idx = namedtuple_aobj->GetIndexOfKey(instr.name());
   MS_EXCEPTION_IF_CHECK_FAIL(idx >= 0, "Can not find attribute '" + instr.name());
 
-  const AbstractWrapperPtr &abs = FGTupleGetItem(node->abstract_wrapper(), idx);
+  const AbstractWrapperPtr &abs = fg_build_utils::FgTupleGetItem(FGBuilder(), node->abstract_wrapper(), idx);
 
   if (abs == nullptr || abs->abstract() == nullptr) {
     MS_LOG(INFO) << "Failed to do namedtuple getitem, idx=" << idx << ", node: " << node->ToString();
@@ -5885,5 +5432,75 @@ bool GraphBuilder::UnpackCallExDict(std::vector<ValueNode *> *params, CallNode *
   params->push_back(pop());
   return true;
 }
+
+namespace fg_build_utils {
+namespace {
+inline bool CheckTupleType(const AbstractWrapperPtr &tuple) {
+  return tuple != nullptr && tuple->abstract() != nullptr &&
+         tuple->abstract()->cast_ptr<abstract::AbstractTuple>() != nullptr;
+}
+}  // namespace
+
+AbstractWrapperPtr FgTupleGetItem(const FuncGraphBuilderPtr &fg_builder, const AbstractWrapperPtr &tuple, int index) {
+  if (!CheckTupleType(tuple)) {
+    MS_LOG(INFO) << "Expect to be a tuple, but is: " << ToString(tuple);
+    return nullptr;
+  }
+  if (index < 0) {
+    MS_LOG(INFO) << "Tuple getitem index should >= 0, but is: " << index;
+    return nullptr;
+  }
+  AbstractWrapperPtr idx = fg_builder->AddLocalVariable(py::int_(index));
+  AbstractWrapperPtr ret = fg_builder->AddNode(prim::kPrimTupleGetItem, {tuple, idx});
+  if (ret == nullptr || ret->abstract() == nullptr) {
+    MS_LOG(INFO) << "Failed to do tuple getitem, index: " << index << ", tuple: " << tuple->ToString();
+    return nullptr;
+  }
+  return ret;
+}
+
+std::optional<std::vector<AbstractWrapperPtr>> FgTupleUnpack(const FuncGraphBuilderPtr &fg_builder,
+                                                             const AbstractWrapperPtr &tuple) {
+  if (!CheckTupleType(tuple)) {
+    MS_LOG(INFO) << "Expect to be a tuple, but is: " << ToString(tuple);
+    return std::nullopt;
+  }
+  std::vector<AbstractWrapperPtr> ret;
+  auto abs_tuple = tuple->abstract()->cast_ptr<abstract::AbstractTuple>();
+  MS_EXCEPTION_IF_NULL(abs_tuple);
+
+  for (size_t i = 0; i < abs_tuple->elements().size(); ++i) {
+    AbstractWrapperPtr getitem_ret = FgTupleGetItem(fg_builder, tuple, SizeToInt(i));
+    if (getitem_ret == nullptr) {
+      return std::nullopt;
+    }
+    ret.push_back(getitem_ret);
+  }
+  return std::make_optional(std::move(ret));
+}
+
+AbstractWrapperPtr FgCallSubGraph(CallNode *call_node) {
+  FuncGraphBuilderPtr sub_fg_builder = call_node->GetSubGraph()->func_graph_builder();
+  MS_EXCEPTION_IF_NULL(sub_fg_builder);
+  FuncGraphPtr sub_fg = sub_fg_builder->graph();
+  if (sub_fg == nullptr) {
+    MS_LOG(INFO) << "Failed to build fg for subgraph: " << GetNameAndLocation(call_node->GetSubGraph());
+    return nullptr;
+  }
+
+  FuncGraphBuilderPtr fg_builder = call_node->GetGraph()->func_graph_builder();
+  MS_EXCEPTION_IF_NULL(fg_builder);
+  AbstractWrapperPtr sub_fg_output = fg_builder->AddNode(sub_fg, call_node->subgraph_args());
+
+  if (sub_fg_output == nullptr || sub_fg_output->abstract() == nullptr) {
+    MS_LOG(INFO) << "Failed to call subgraph: " << GetNameAndLocation(call_node->GetSubGraph());
+    return nullptr;
+  }
+  call_node->SetVobj(AObject::Convert(sub_fg_output));
+  call_node->set_abstract_wrapper(sub_fg_output);
+  return sub_fg_output;
+}
+}  // namespace fg_build_utils
+
 }  // namespace pijit
 }  // namespace mindspore

@@ -30,6 +30,7 @@
 #include "include/common/utils/tensor_py.h"
 #include "frontend/ir/primitive_py.h"
 #include "frontend/operator/composite/composite.h"
+#include "pipeline/jit/pi/graph_build/parameter_manager.h"
 
 namespace mindspore {
 namespace pijit {
@@ -59,7 +60,13 @@ py::object ConvertToPyTensorOrParameter(const py::object &cpp_tensor) {
   }
   auto tensor = tensor::ConvertToTensor(cpp_tensor);
   if (tensor->is_parameter()) {
-    return cpp_tensor;
+    ParamInfoPtr param_info = tensor->param_info();
+    MS_EXCEPTION_IF_NULL(param_info);
+    py::object parameter = ParameterManager::GetInstance().FindParameter(param_info->name());
+    if (parameter.ptr() == nullptr) {
+      MS_LOG(DEBUG) << "Cannot find parameter: " << param_info->name();
+    }
+    return parameter;
   }
 
   return ConvertCppTensorToPyTensor(cpp_tensor);
@@ -428,20 +435,6 @@ std::vector<py::object> AbstractWrapper::GetDictKeysObject() const {
     return ConvertToPyObject(e.first);
   });
   return ret;
-}
-
-void AbstractWrapper::UpdateGradInfo(const ValuePtr &meta) {
-  MS_EXCEPTION_IF_NULL(meta);
-  auto grad = meta->cast<prim::GradOperationPtr>();
-  MS_EXCEPTION_IF_NULL(grad);
-  grad_info_.get_all_ = grad->get_all_;
-  grad_info_.get_by_list_ = grad->get_by_list_;
-  grad_info_.sens_param_ = grad->sens_param_;
-  grad_info_.get_by_position_ = grad->get_by_position_;
-  grad_info_.has_aux_ = grad->has_aux_;
-  grad_info_.get_value_ = grad->get_value_;
-  grad_info_.return_ids_ = grad->return_ids_;
-  grad_info_.merge_forward_ = grad->merge_forward_;
 }
 
 std::vector<py::object> AbstractWrapper::GetSliceInputsPyObject() const {

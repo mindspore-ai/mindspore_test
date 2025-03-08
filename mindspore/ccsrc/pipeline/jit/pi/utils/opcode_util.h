@@ -69,6 +69,7 @@ class Opcode {
 
   bool IsJRel() const;
   bool IsJAbs() const;
+  bool IsJBack() const;
   bool IsNotFall() const;
   bool HasName() const;
   bool HasFree() const;
@@ -76,7 +77,9 @@ class Opcode {
   bool CanDelete(int oparg = 0) const;
   bool MayDelete(int oparg = 0) const;
   bool IsExcMatch(int oparg = 0) const;
+  int InstrSize(int oparg = 0) const;
 
+  bool HasJump() const { return IsJRel() || IsJAbs(); }
   bool IsCall() const { return class_ == Class::kCall; }
   bool IsBinaryMath() const { return class_ == Class::kBinaryMath; }
   bool IsUnaryMath() const { return class_ == Class::kUnaryMath; }

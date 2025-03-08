@@ -124,7 +124,7 @@ namespace pijit {
 EvalFrameObject *FrameConvert(PyFrameObject *f) { return GetEvalFrame(f); }
 
 // copy a function helper for EvalNewCode
-static PyFunctionObject *FunctionNew(PyFunctionObject *old_func, PyCodeObject *new_code) {
+PyFunctionObject *FunctionNew(PyFunctionObject *old_func, PyCodeObject *new_code) {
   PyObject *tmp = reinterpret_cast<PyObject *>(new_code);
   tmp = PyFunction_New(tmp, old_func->func_globals);
   PyFunctionObject *op = reinterpret_cast<PyFunctionObject *>(tmp);
@@ -276,7 +276,7 @@ PyCodeWrapper PyFrameWrapper::GetCode() const { return PyCodeWrapper(EvalFrameGe
  * Cells and fress is empty at the begin of eval frame.
  * Frame is incomplete and no PyFrameObject until executed the first instruction
  */
-PyObject **PyFrameWrapper::FastLocal() const { return EvalFrameGetFastLocals(frame_); }
+PyObject *const *PyFrameWrapper::FastLocal() const { return EvalFrameGetFastLocals(frame_); }
 
 }  // namespace pijit
 }  // namespace mindspore

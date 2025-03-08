@@ -46,7 +46,7 @@ class PyFrameWrapper {
   py::object Builtins() const;
 
   PyCodeWrapper GetCode() const;
-  PyObject **FastLocal() const;
+  PyObject *const *FastLocal() const;
 
   PyObject *EvalNewCode(PyThreadState *, PyCodeObject *) const;
 
@@ -86,6 +86,7 @@ class PyFrameWrapper {
 };
 
 EvalFrameObject *FrameConvert(PyFrameObject *);
+PyFunctionObject *FunctionNew(PyFunctionObject *old_func, PyCodeObject *new_code);
 
 }  // namespace pijit
 }  // namespace mindspore

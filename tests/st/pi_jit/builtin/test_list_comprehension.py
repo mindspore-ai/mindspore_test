@@ -20,7 +20,7 @@ import pytest
 from typing import List, Dict, Union
 
 import mindspore as ms
-from mindspore import context, jit, Tensor, ops, nn, mutable
+from mindspore import context, jit, Tensor, ops, nn, mutable, Parameter
 from mindspore.ops import functional as F
 from mindspore.ops import operations as P
 
@@ -487,6 +487,40 @@ def test_list_comp_13():
 
     assert_equal(o1, o2)
     assert_no_graph_break(net.construct)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_Parameter_for_loop():
+    """
+    Feature: Parameter parsing.
+    Description: Parameter for loop.
+    Expectation: result is right, no graph break.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    class Model(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.x = Parameter(Tensor([1, 2, 3]))
+
+        def construct(self, loss_dict: dict):
+            weighted_loss, s_t = self.loss()
+            st_names = [x.replace('loss', 'st') for x in loss_dict.keys()]
+            st_dict = dict([[name, cur_st] for name, cur_st in zip(st_names, s_t)])
+            return st_dict['st_3'] + st_dict['st_2']
+
+        def loss(self):
+            return [], self.x
+
+    model = Model()
+    loss_dict = {'loss_1': 1, 'loss_2': 2, 'loss_3': 3}
+    o1 = model(loss_dict)
+
+    model.construct = jit(model.construct, capture_mode='bytecode')
+    o2 = model(loss_dict)
+
+    assert_equal(o1, o2)
+    assert_executed_by_graph_mode(model.construct)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')

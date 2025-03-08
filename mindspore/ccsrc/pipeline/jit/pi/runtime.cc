@@ -28,6 +28,7 @@
 #include "include/common/utils/convert_utils_py.h"
 #include "pipeline/jit/pi/auto_grad/function_node.h"
 #include "pipeline/jit/pi/external.h"
+#include "pipeline/jit/pi/graph_build/parameter_manager.h"
 #include "pipeline/jit/pi/graph_capture/graph_build.h"
 #include "pipeline/jit/pi/graph_capture/graph_analyzer.h"
 #include "pipeline/jit/pi/graph_compiler/abstract_type_deducer.h"
@@ -54,8 +55,6 @@ namespace mindspore {
 namespace pijit {
 
 void AddConfigToGuard(const GraphJitConfig &c, OptGuardPtr guard);
-void AddGuardForParam(const PyFrameWrapper &f, OptGuardPtr guard, bool detach);
-void AddGuardForGlobals(const PyFrameWrapper &f, OptGuardPtr guard, bool detach);
 static void AddGradFlagForParam(const OptGuardPtr &guard, bool detach);
 static void CollectTraceBack(JitCompileResults *c, PyCodeObject *code, bool is_graph_mode);
 
@@ -328,16 +327,10 @@ int Traceback::FindMaxNameLength(const std::list<Element> &tbs) const {
 static void GuardForFrame(const PyFrameWrapper &f, const OptCodePtr &oc, const GraphJitConfig &conf) {
   const char *code_name = f.GetCode().Name();
   AddConfigToGuard(conf, oc->GetGuard());
-  AddGuardForParam(f, oc->GetGuard(), conf.GetBoolConfig(GraphJitConfig::kGuardDetachObject));
+  // parameter guard is delay to graph parameter build
   AddGradFlagForParam(oc->GetGuard(), conf.GetBoolConfig(GraphJitConfig::kGuardDetachObject));
-  if (conf.GetBoolConfig(GraphJitConfig::kPrintGuard)) {
-    GRAPH_JIT_LOG_F("Guard on %s by %s!\n", code_name, oc->GetGuard()->GetDescript().c_str());
-    return;
-  }
-  if (IS_OUTPUT_ON(mindspore::kDebug)) {
-    // It tooks too much time in Guard's GetDescript function when trace depth is too large.
-    MS_LOG(DEBUG) << "Guard on " << code_name << " by " << oc->GetGuard()->GetDescript() << "!" << std::endl;
-  }
+  // It tooks too much time in Guard's GetDescript function when trace depth is too large.
+  MS_LOG(DEBUG) << "Guard on " << code_name << " by " << oc->GetGuard()->GetDescript() << "!" << std::endl;
 }
 
 static void ValidateCompiledResults(const JitCompileResults *c) {
@@ -400,10 +393,11 @@ static bool TryLoopBodyReCapture(JitCompileResults *jcr, const GraphBuilderPtr &
 
 static auto HandleBreakAtLoop(JitCompileResults *jcr, const GraphBuilderPtr &g) {
   // one stage need adapter
-  if (g->GetGraph()->IsBreakAtLoopAfterUnrolling()) {
+  if (jcr->conf()->GetBoolConfig(GraphJitConfig::kLoopUnrolling) && g->GetGraph()->IsBreakAtLoop()) {
     if (jcr->conf()->GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
       GRAPH_JIT_LOG_F("===> graph break after loop unrolling\n%s\n", g->GetGraph()->ToString(1).c_str());
     }
+    MS_LOG(INFO) << "Top graph is graph break at loop after unrolling. Disable loop unrolling and re-capture graph";
     // reset guard
     jcr->code()->SetGuard(std::make_shared<OptGuard>());
     AddConfigToGuard(*jcr->conf(), jcr->code()->GetGuard());
@@ -428,6 +422,7 @@ static auto HandleUnsupportedSyntax(JitCompileResults *jcr, const GraphBuilderPt
     break_op == WITH_CLEANUP_START || break_op == WITH_CLEANUP_FINISH || break_op == END_FINALLY || break_op == RERAISE;
   if (g->StackSize() > 0 || unsupported) {
     // something happened in with syntax
+    MS_LOG(DEBUG) << "Break at unsupported syntax";
     jcr->code()->SetGuard(std::make_shared<OptGuard>());
     AddConfigToGuard(*jcr->conf(), jcr->code()->GetGuard());
     jcr->conf()->SetBool<GraphJitConfig::kSkipException>(Py_True);
@@ -472,6 +467,7 @@ static void GraphCapture(JitCompileResults *jcr) {
     if (jcr->conf()->GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
       GRAPH_JIT_LOG_F("===> graph break after loop unrolling\n%s\n", g->GetGraph()->ToString(1).c_str());
     }
+    MS_LOG(INFO) << "Cannot capture graph, mark it as NEVER_COMPILE: " << ToString(jcr->origin_frame().GetCode());
     jcr->set_stat(JitCompileResults::NEVER_COMPILE);
     return;
   }
@@ -495,6 +491,7 @@ static void GraphCapture(JitCompileResults *jcr) {
   }
 
   if (conf.GetBoolConfig(GraphJitConfig::kPrintAfterAll)) {
+    PY_PRINTF("*** Dump ByteCode After CodeGen on [%A] ***", new_code.ptr());
     Utils::DisFuncObject(new_code.ptr());
     GRAPH_JIT_LOG_F("\n\n");
   }
@@ -521,95 +518,6 @@ void AddConfigToGuard(const GraphJitConfig &c, OptGuardPtr guard) {
   bool_cfg[kSpecializeTensor] = c.GetBoolConfig(GraphJitConfig::kGuardSpecializeTensor);
   int_cfg[kGuardRelaxCnt] = c.getIntConfig(GraphJitConfig::kGuardRelaxCount);
   guard->UpdateConfig(bool_cfg, int_cfg);
-}
-
-void AddGuardForParam(const PyFrameWrapper &wrapper, OptGuardPtr guard, bool detach) {
-#if IS_PYTHON_3_11_PLUS
-  MS_LOG(ERROR) << "not implement in python3.11";
-#else
-  auto jcr = GetJitCompileResults(wrapper.GetCode().ptr());
-  auto lh = [&guard, &detach, &jcr](PyObject *value, int fast_index) {
-    RootTracePtr ptr = std::make_shared<RootTrace>(value, mindspore::pijit::TraceType::Param, fast_index);
-    // The GDeduce Guard by default generates an EqualGuard for Scalar types; for the loop encapsulation scenario,
-    // change it to a TypeGuard.
-    if (fast_index == 0 && jcr->is_for_loop_body_wrapper() && CheckScalar(value)) {
-      guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GType, false);
-    } else if (value != nullptr && PyList_Check(value)) {
-      guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GEqual, true);
-    } else {
-      guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GDeduce, false);
-    }
-    if (detach) {
-      ptr->Detach();
-    }
-  };
-  auto ch = [&wrapper, &guard, &detach](PyObject *cell_or_local, int fast_index) {
-    bool is_cell = PyCell_Check(cell_or_local);
-    auto value = is_cell ? PyCell_GET(cell_or_local) : cell_or_local;
-    auto type = is_cell ? TraceType::Deref : TraceType::Param;
-#if IS_PYTHON_3_11_PLUS
-    int guard_retrieve_index = fast_index;
-    MS_LOG(ERROR) << "not implement in python3.11, retrieve deref index is error";
-#else
-    int guard_retrieve_index = fast_index - wrapper.GetCode().LocalSize();
-#endif
-    RootTracePtr ptr = std::make_shared<RootTrace>(value, type, guard_retrieve_index);
-    guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GDeduce, false);
-    if (detach) {
-      ptr->Detach();
-    }
-  };
-  wrapper.ForEachFastLocal(lh, ch, ch);
-#endif
-}
-
-void AddGuardForGlobals(const PyFrameWrapper &wrapper, OptGuardPtr guard, bool detach) {
-#if IS_PYTHON_3_11_PLUS
-  MS_LOG(ERROR) << "not implement in python3.11";
-#else
-  EvalFrameObject *f = wrapper.frame();
-  PyCodeObject *co = wrapper.GetCode().ptr();
-  const _Py_CODEUNIT *bytecodes = _PyCode_CODE(co);
-  int size = static_cast<size_t>(_PyCode_NBYTES(co)) / sizeof(_Py_CODEUNIT);
-  unsigned int exarg = 0;
-  for (int bci = 0; bci < size; ++bci) {
-    int opcode = _Py_OPCODE(bytecodes[bci]);
-    int oparg = (exarg << 8) | _Py_OPARG(bytecodes[bci]);
-    exarg = static_cast<unsigned>((opcode == EXTENDED_ARG) ? oparg : 0);
-    if (opcode != LOAD_GLOBAL) {
-      continue;
-    }
-    PyObject *k = PyTuple_GET_ITEM(co->co_names, oparg);
-    PyObject *v = PyDict_GetItem(f->f_globals, k);
-    std::string key = PyUnicode_AsUTF8(k);
-    if (v == nullptr) {
-      PyErr_Clear();
-      continue;
-    }
-
-    TracePtr ptr = std::make_shared<RootTrace>(v, TraceType::Global, -1, key);
-
-    AObject::Type t = AObject::GetPyType(v);
-    GuardLevel level = GuardLevel::GType;
-    if (t == AObject::kTypeCell || t == AObject::kTypePrimitive || t == AObject::kTypeMSDType) {
-      level = GuardLevel::GDeduce;
-    } else if (t == AObject::kTypeFunction) {
-      ptr = std::make_shared<OpTrace>(PyFunction_GET_CODE(v), LOAD_ATTR, -1, std::vector<TracePtr>({ptr}), "__code__");
-      level = GuardLevel::GId;
-    } else if (t == AObject::kTypeTuple || t == AObject::kTypeList || t == AObject::kTypeDict) {
-      /**
-       * graph treat tuple, list, dict as constant variable.
-       * add container guard and check it, check contains Tensor
-       */
-      continue;
-    }
-
-    guard->GuardOn(ptr, level, false);
-    if (detach) {
-      ptr->Detach();
-    }
-  }
-#endif
 }
 
 static void AddGradFlagForParam(const OptGuardPtr &guard, bool detach) {
@@ -642,8 +550,9 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
     return false;
   }
   ShapeContext sc(c->origin_frame().frame(), c->input_signature().ptr());
-  MS_LOG(DEBUG) << "---start compile " << py::str(reinterpret_cast<PyObject *>(code)) << "---";
+  MS_LOG(INFO) << "Start compile " << ToString(frame.GetCode());
 
+  ParameterManager::ScopedCleaner param_auto_cleaner;
   // new guard code
   c->set_code(c->codehub()->AddOptTarget(OptOption::CreateOptionByPoint(c)));
   AddConfigToGuard(*c->conf(), c->code()->GetGuard());
@@ -661,6 +570,8 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
                                 c->conf()->getIntConfig(GraphJitConfig::kLimitGraphCount), enable_dynamicshape,
                                 c->code());
     if (enable_dynamicshape) {
+      // this is dynamic symbolic tensor shape. if shape guard failed, use dynamic shape recompile
+      // move this to graph builder ...
       backup = c->code()->GetGuard()->ApplyDynamicShape(frame.frame());
 #if !IS_PYTHON_3_11_PLUS
       PyFrame_FastToLocals(frame.frame());
@@ -670,12 +581,14 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
     GraphCapture(c);
 
     if (enable_dynamicshape) {
+      // move this to graph builder ...
       c->code()->GetGuard()->RevertDynamicShape(frame.frame(), backup);
 #if !IS_PYTHON_3_11_PLUS
       PyFrame_FastToLocals(frame.frame());
 #endif
     }
-    AddGuardForGlobals(frame, c->code()->GetGuard(), c->conf()->GetBoolConfig(GraphJitConfig::kGuardDetachObject));
+    // global guard is generated while graph build
+    c->code()->guard_status() == nullptr;
     aobject_resource.Release();
   }
   sc.ApplySignature();
@@ -852,6 +765,15 @@ static bool CheckGuard(JitCompileResults *c, const PyFrameWrapper &f) {
   return c->code() != nullptr;
 }
 
+static void InitCompileConfig() {
+  static bool initialized = false;
+  if (!initialized) {
+    MS_LOG(INFO) << "Init compile config";
+    CompileConfigManager::GetInstance().CollectCompileConfig();
+    initialized = true;
+  }
+}
+
 static bool JitCompileWithTry(PyThreadState *tstate, JitCompileResults *c) {
   TimeRecorder time_recorder(__FUNCTION__, kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
 
@@ -859,6 +781,7 @@ static bool JitCompileWithTry(PyThreadState *tstate, JitCompileResults *c) {
   JitSyntaxLevelScope jit_syntax_level_scope;
   StaticAnalysisExceptionCleaner exception_cleaner;
   CaptureContext::DisableScope compiler_disable_scope;
+  InitCompileConfig();
 
   if (!c->conf()->GetBoolConfig(GraphJitConfig::kCompileWithTry)) {
     return JitCompile(tstate, c);
@@ -983,6 +906,7 @@ static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, EvalFram
       MS_LOG(EXCEPTION) << "shouldn't reach here";
       break;
   }
+  MS_LOG(INFO) << "Fall back to python execute: " << ToString(PyFrameWrapper(frame).GetCode());
   c->set_origin_frame(nullptr);
   PyObject *res = _PyEval_EvalFrameDefault(tstate, frame, 0);
   return py::reinterpret_steal<py::object>(res);
@@ -1000,7 +924,7 @@ PyObject *CallCodeHook(PyThreadState *tstate, EvalFrameObject *f, JitCompileResu
   return res.inc_ref().ptr();
 }
 
-py::list CollectGradientArguments(PyCodeObject *co, PyObject **fast_locals) {
+py::list CollectGradientArguments(PyCodeObject *co, PyObject *const *fast_locals) {
   py::list arguments;
   bool has_va;
   bool has_kw_va;
@@ -1045,7 +969,7 @@ void AutoGrad(EvalFrameObject *frame, PyObject *ret) {
     return;
   }
   // only record primitive now
-  PyObject **f_localsplus = f.FastLocal();
+  auto f_localsplus = f.FastLocal();
   if (f_localsplus[0] == nullptr) {
     return;
   }
@@ -1248,11 +1172,10 @@ static void *GetCFunctionId(PyObject *op) {
 
 size_t FunctionId(const py::object &callable) {
   PyObject *op = callable.ptr();
-  if (PyMethod_Check(op)) {
-    op = PyMethod_GET_FUNCTION(op);
-  }
-  if (PyInstanceMethod_Check(op)) {
-    op = PyInstanceMethod_GET_FUNCTION(op);
+  // limit max reference depth
+  for (int limit = 10; limit && (PyMethod_Check(op) || PyInstanceMethod_Check(op)); --limit) {
+    op = PyMethod_Check(op) ? PyMethod_GET_FUNCTION(op) : op;
+    op = PyInstanceMethod_Check(op) ? PyInstanceMethod_GET_FUNCTION(op) : op;
   }
   void *result = op;
   if (PyCFunction_Check(op)) {

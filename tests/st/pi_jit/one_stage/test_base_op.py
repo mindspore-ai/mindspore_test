@@ -27,7 +27,7 @@ from mindspore.common import mutable
 from mindspore.common.api import jit
 from tests.mark_utils import arg_mark
 from mindspore._c_expression import get_code_extra
-from tests.st.pi_jit.share.utils import pi_jit_with_config
+from tests.st.pi_jit.share.utils import pi_jit_with_config, assert_equal
 from mindspore._c_expression import TensorPy as CppTensor
 from tests.st.pi_jit.share.utils import assert_graph_compile_status
 
@@ -1059,7 +1059,6 @@ def test_attr_as_inputs_3():
     assert_graph_compile_status(Net.construct.__wrapped__, 0)
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_attr_as_inputs_4():
     """
@@ -1082,7 +1081,66 @@ def test_attr_as_inputs_4():
     assert_graph_compile_status(Net.construct.__wrapped__, 0, 8, 3)
 
 
-@pytest.mark.skip
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_attr_as_inputs_5():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+
+    class Model(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.x = 1
+
+        def construct(self, x: Tensor) -> Tensor:
+            self.x = self.x + 2
+            return self.x + x
+
+    pynative_model = Model()
+    pijit_model = Model()
+    pijit_model.construct = jit(pijit_model.construct, capture_mode='bytecode')
+
+    pynative_outputs = []
+    pijit_outputs = []
+    for i in range(10):
+        x = Tensor([i])
+        y = pynative_model(x)
+        pynative_outputs.append(y)
+    for i in range(10):
+        x = Tensor([i])
+        y = pijit_model(x)
+        pijit_outputs.append(y)
+
+    assert_equal(pynative_model.x, pijit_model.x)
+    assert_equal(pynative_outputs, pijit_outputs)
+    assert_graph_compile_status(pijit_model.construct, 0, 8, 3)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_attr_as_inputs_6():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit(capture_mode="bytecode")
+        def construct(self, x):
+            return self.x + x
+
+    net = Net()
+    cond = [Tensor([99]), Tensor([61]), Tensor([32])]
+    for i in range(10):
+        net.x = cond[i % 3]
+        x = Tensor(np.random.rand(4,4))
+        y = net(x)
+        assert np.all((x + net.x == y).asnumpy())
+
+    assert_graph_compile_status(Net.construct.__wrapped__, 0, 9, 2)
+
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_attr_as_inputs_config():
     """

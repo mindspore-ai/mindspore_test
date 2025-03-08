@@ -31,7 +31,6 @@ using mindspore::tensor::Tensor;
 
 namespace mindspore {
 namespace pijit {
-constexpr auto kFuncGraphBuilderMod = "gtest_input.pipeline.pi.func_graph_builder";
 class TestFuncGraphBuilder : public UT::Common {
  public:
   TestFuncGraphBuilder() : get_py_fun_("gtest_input.pipeline.pi.func_graph_builder", true) {}
@@ -75,7 +74,8 @@ class TestFuncGraphBuilder : public UT::Common {
     for (size_t i = 0; i < shape_vec.size(); ++i) {
       shape[i] = py::int_(shape_vec[i]);
     }
-    py::module mod = python_adapter::GetPyModule(kFuncGraphBuilderMod);
+    constexpr auto func_graph_builder_mod = "gtest_input.pipeline.pi.func_graph_builder";
+    py::module mod = python_adapter::GetPyModule(func_graph_builder_mod);
     return python_adapter::CallPyModFn(mod, "create_int_tensor", shape);
   }
 

@@ -479,7 +479,10 @@ AObject *AbstractObjectBase::MakeFunction(const std::vector<AObject *> &args, co
   std::vector<py::object> pyarg;
   std::transform(args.begin(), args.end(), std::back_inserter(pyarg), [](AObject *i) { return i->GetPyObject(); });
   auto iter = pyarg.end() - 1;
-  PyObject *qualname = (*iter--).ptr();
+  PyObject *qualname = nullptr;
+#if !IS_PYTHON_3_11_PLUS
+  qualname = (*iter--).ptr();
+#endif
   PyObject *code = (*iter--).ptr();
   py::object f_handle = py::reinterpret_steal<py::object>(PyFunction_NewWithQualName(code, globals.ptr(), qualname));
   PyFunctionObject *func = reinterpret_cast<PyFunctionObject *>(f_handle.ptr());
@@ -548,7 +551,8 @@ py::object AbstractObjectBase::BuildOperations(const std::vector<py::object> &ar
   return py::reinterpret_steal<py::object>(res);
 }
 
-AObject *AbstractObjectBase::BuildOperations(const std::vector<AObject *> &inputs, int opcode) {
+AObject *AbstractObjectBase::BuildOperations(const std::vector<AObject *> &inputs, int opcode,
+                                             const AbstractWrapperPtr &wrapper) {
   AObject *res = nullptr;
   if (opcode == BUILD_LIST || opcode == BUILD_TUPLE) {
     auto type = opcode == BUILD_LIST ? kTypeList : kTypeTuple;
@@ -564,14 +568,8 @@ AObject *AbstractObjectBase::BuildOperations(const std::vector<AObject *> &input
     res = MakeAObject(kTypeDict, &PyDict_Type, nullptr, key_values);
   } else if (opcode == BUILD_MAP) {
     res = MakeAObject(kTypeDict, &PyDict_Type, nullptr, inputs);
-  } else if (opcode == BUILD_STRING) {
-    res = MakeAObject(kTypeString);
-  } else if (opcode == BUILD_SLICE) {
-    res = MakeAObject(kTypeSlice);
-  } else if (opcode == BUILD_SET) {
-    res = MakeAObject(kTypeSet);
   } else {
-    return MakeAObject(kTypeAnyValue);
+    return AObject::Convert(wrapper);
   }
   return res;
 }

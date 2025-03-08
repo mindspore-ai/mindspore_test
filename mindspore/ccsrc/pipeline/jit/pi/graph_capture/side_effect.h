@@ -141,6 +141,10 @@ class SideEffect {
   // return the side-effect handler required nodes
   const std::set<ValueNode *> &GetRequiredNodes() const;
 
+  // The argument `node` is a side-effect node, and the function returns the required nodes used to restore
+  // this side-effect operation.
+  std::vector<ValueNode *> GetKeepAlive(ValueNode *node) const;
+
  private:
   struct Entry {
     ValueNode *node_;
@@ -161,7 +165,7 @@ class SideEffect {
   void RestoreEntry(CodeGenerator *cg, const Entry &) const;
 
   // restore attribute
-  void RestoreAttrs(CodeGenerator *cg) const;
+  void RestoreAttr(CodeGenerator *cg, const Entry &) const;
 
   // restore global
   void RestoreGlobal(CodeGenerator *cg) const;

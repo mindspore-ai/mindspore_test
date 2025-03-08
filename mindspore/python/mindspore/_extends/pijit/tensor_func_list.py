@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""
-Helper module for pijit analyze
-"""
+"""Store and get tensor method"""
+from mindspore import Tensor
+from mindspore._c_expression import function_id
+
+tensor_method_id_to_name = {}
+for method_name in dir(Tensor):
+    method_id = function_id(getattr(Tensor, method_name))
+    tensor_method_id_to_name[method_id] = method_name
 
 
-from .pijit_func_white_list import _func_map as pijit_func_white_list_map
-from .tensor_func_list import get_tensor_method_name
-
-__all__ = ['pijit_func_white_list_map', "get_tensor_method_name"]
+def get_tensor_method_name(id):
+    """Get method name by function id"""
+    return tensor_method_id_to_name.get(id, None)

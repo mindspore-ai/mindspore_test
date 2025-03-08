@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,19 @@
 #include "pipeline/jit/pi/graph_capture/graph_analyzer.h"
 #include <algorithm>
 #include <list>
+#include <optional>
 #include <utility>
+#include <unordered_set>
+#include <stack>
 #include <string>
 #include <vector>
+#include "pipeline/jit/pi/capture_context.h"
 #include "pipeline/jit/pi/pi_jit_config.h"
 #include "pipeline/jit/pi/graph_guard/infer.h"
 #include "pipeline/jit/pi/graph_capture/graph.h"
 #include "pipeline/jit/pi/graph_capture/graph_build.h"
 #include "pipeline/jit/pi/graph_capture/side_effect.h"
+#include "pipeline/jit/pi/graph_build/build_graph_utils.h"
 
 #define ADD_NODE(container, node)                                                   \
   do {                                                                              \
@@ -39,57 +44,56 @@ void GraphAnalyzer::OptimizeSideEffectRecord() const {
   if (graph_->GetSideEffect()->IsEmpty()) {
     return;
   }
-  auto alive = graph_->CollectAliveNode(graph_->GetStopTraceBci());
-  auto side_effect_required_size = graph_->GetSideEffect()->GetRequiredNodes().size();
-  auto size = alive.size() - side_effect_required_size;
-  graph_->GetSideEffect()->Optimize({alive.begin(), alive.begin() + size});
+  const std::vector<ValueNode *> &alive = graph_->CollectAliveNode(graph_->GetStopTraceBci());
+  graph_->GetSideEffect()->Optimize(alive);
 }
 
+namespace {
+void CollectAllSubGraphs(const Graph *root, int break_bci, std::unordered_set<const Graph *> *sub_graphs) {
+  for (ValueNode *node : root->GetTracedNodes()) {
+    if (node->GetType() == ValueNode::Call && (break_bci == -1 || node->bci() < break_bci)) {
+      auto call_node = static_cast<CallNode *>(node);
+      if (call_node->GetSubGraph() != nullptr) {
+        Graph *sub_graph = call_node->GetSubGraph();
+        sub_graphs->insert(sub_graph);
+        CollectAllSubGraphs(sub_graph, sub_graph->GetStopTraceBci(), sub_graphs);
+      }
+    }
+  }
+}
+
+std::vector<ValueNode *> CollectSideEffectRecords(const Graph *graph, int break_bci) {
+  std::unordered_set<const Graph *> sub_graphs;
+  CollectAllSubGraphs(graph, break_bci, &sub_graphs);
+
+  std::vector<ValueNode *> result;
+  for (const auto &pair : graph->GetSideEffect()->nodes()) {
+    ValueNode *node = pair.first;
+    if (sub_graphs.find(node->GetGraph()) != sub_graphs.end() ||
+        (node->GetGraph() == graph && (break_bci == -1 || node->bci() < break_bci))) {
+      result.push_back(node);
+    }
+  }
+  return result;
+}
+}  // namespace
+
 void GraphAnalyzer::ResetSideEffectRecord() const {
-  // side-effect rollback, adapter later
-  // sub-graph side-effect rollback, adapter later
   int break_bci = graph_->GetStopTraceBci();
   if (break_bci == -1 || graph_->GetSideEffect()->IsEmpty()) {
     return;
   }
-  const auto &side_effect_nodes = graph_->GetSideEffect()->nodes();
-  for (const auto &pair : side_effect_nodes) {
-    Graph *g = pair.first->GetGraph();
-    if (g != nullptr && g != graph_) {
-      MS_LOG(ERROR) << "function " << PyCodeWrapper(g->GetCodeObj()).Name()
-                    << " has side-effect but not implement side-effect rollback";
-      return;
+  auto &side_effect = graph_->GetSideEffect();
+  std::vector<ValueNode *> nodes = CollectSideEffectRecords(graph_, break_bci);  // Top-graph side-effect nodes
+  if (graph_break_info_.is_break_at_call && !graph_break_info_.captured_subgraphs.empty()) {
+    for (const Graph *graph : graph_break_info_.captured_subgraphs) {
+      const std::vector<ValueNode *> &subgraph_nodes = CollectSideEffectRecords(graph, graph->GetStopTraceBci());
+      nodes.insert(nodes.end(), subgraph_nodes.begin(), subgraph_nodes.end());
     }
   }
+  side_effect->ResetRecord({nodes.begin(), nodes.end()});
 
-  // if break point is changed, rollback graph nodes(only reset break bci) and side-effect record
-  const auto &nodes = graph_->GetTracedNodes();
-  auto iter = std::find_if(nodes.begin(), nodes.end(), [&break_bci](ValueNode *i) { return i->bci() > break_bci; });
-  graph_->GetSideEffect()->ResetRecord({nodes.begin(), iter});
   OptimizeSideEffectRecord();  // after reset record, rollback side-effect record status
-}
-
-std::vector<ValueNode *> GraphAnalyzer::GetAliveLocals(Graph *g) {
-  int bci = g->GetStopTraceBci();
-  if (this->graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
-    GRAPH_JIT_LOG_F("UD analyze: enter GetAliveLocals bci %d", bci);
-  }
-  std::vector<ValueNode *> outputs = g->CollectAliveNode(bci);
-  mindspore::CompactSet<ValueNode *> uniques;
-  for (auto output : outputs) {
-    uniques.insert(output);
-  }
-  outputs.assign(uniques.begin(), uniques.end());
-
-  if (this->graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
-    GRAPH_JIT_LOG_F("UD analyze: alive node size : %ld", outputs.size());
-    for (auto node : outputs) {
-      if (node) {
-        GRAPH_JIT_LOG_F("UD analyze: alive node: %s", node->ToString().c_str());
-      }
-    }
-  }
-  return outputs;
 }
 
 void GraphAnalyzer::CapturedInfo::Info::clear() {
@@ -170,7 +174,28 @@ std::string GraphAnalyzer::CapturedInfo::ToString() {
   return s.str();
 }
 
+namespace {
+void UpdateBreakInfo(Graph *graph) {
+  Graph::BreakInfo info;
+  int bci = graph->GetStopTraceBci();
+  info.bci_ = bci;
+  info.reason_ = graph->GetStopTraceReason();
+  info.alive_nodes_ = graph->CollectAliveNode(graph->GetStopTraceBci(), &info.alive_locals_);
+  if (info.bci_ != -1) {
+    MS_EXCEPTION_IF_CHECK_FAIL(bci >= 0 && bci < SizeToInt(graph->GetCFG()->instr_pool().size()),
+                               "bci error: " + std::to_string(bci));
+    info.break_point_ = graph->GetCFG()->instr_pool()[bci].get();
+
+    auto &nodes = graph->GetTracedNodes();
+    auto it = std::find_if(nodes.begin(), nodes.end(), [bci](auto *node) { return node->bci() == bci; });
+    info.break_point_node_ = it == nodes.end() ? nullptr : *it;
+  }
+  graph->set_break_info(info);
+}
+}  // namespace
+
 void GraphAnalyzer::Analyze() {
+  MS_LOG(INFO) << "Start graph analyze";
   auto collect_trace_nodes = [this]() {
     const auto &nodes = graph_->GetTracedNodes();
     if (graph_->GetStopTraceBci() == -1) {
@@ -193,6 +218,7 @@ void GraphAnalyzer::Analyze() {
   // assume all values is captured to func_graph
   GetCaptureInfo().captured_.operations = collect_trace_nodes();
   UseDefAnalyze();
+  ResetSideEffectRecord();
 
   auto func_graph_builder = graph_builder_->FGBuilder();
   if (func_graph_builder->graph() == nullptr) {
@@ -204,24 +230,30 @@ void GraphAnalyzer::Analyze() {
       MS_LOG(INFO) << "no graph captured, trace break at " << co.FileName() << ", line "
                    << PyCode_Addr2Line(co.ptr(), origin_stop_bci);
     }
-    graph_->StopTraceAt(origin_stop_bci, StopTraceReason::kStopTraceDataDependsOnGraphOut);
-    need_interpret_ = true;
-    GetCaptureInfo().clear();
+    if (graph_break_info_.is_break_at_call && !graph_break_info_.captured_subgraphs.empty()) {
+      GetCaptureInfo().captured_.clear();
+    } else {
+      graph_->StopTraceAt(origin_stop_bci, StopTraceReason::kStopTraceDataDependsOnGraphOut);
+      UpdateBreakInfo(graph_);
+      need_interpret_ = true;
+      GetCaptureInfo().clear();
 
-    GetCaptureInfo().interpret_.inputs = graph_->GetFrame(0).GetLocals();
-    GetCaptureInfo().interpret_.operations = collect_trace_nodes();
-    GetCaptureInfo().interpret_.outputs = graph_->CollectAliveNode(origin_stop_bci, &alive_locals_);
-    // remove side-effect node
-    auto is_remove = [this](ValueNode *node) {
-      const auto &rec = this->graph_->GetSideEffect();
-      return rec->IsRecord(node) && !rec->NeedTrack(node);
-    };
-    auto *ops = &GetCaptureInfo().interpret_.operations;
-    ops->erase(std::remove_if(ops->begin(), ops->end(), is_remove), ops->end());
-    return;
+      GetCaptureInfo().interpret_.inputs = graph_->GetFrame(0).GetLocals();
+      GetCaptureInfo().interpret_.operations = collect_trace_nodes();
+      GetCaptureInfo().interpret_.outputs = graph_->break_info().alive_nodes_;
+      const auto &side_effect_nodes = graph_->GetSideEffect()->GetRequiredNodes();
+      std::copy(side_effect_nodes.begin(), side_effect_nodes.end(), std::back_inserter(info_.interpret_.outputs));
+      // remove side-effect node
+      auto is_remove = [this](ValueNode *node) {
+        const auto &rec = this->graph_->GetSideEffect();
+        return rec->IsRecord(node) && !rec->NeedTrack(node);
+      };
+      auto *ops = &GetCaptureInfo().interpret_.operations;
+      ops->erase(std::remove_if(ops->begin(), ops->end(), is_remove), ops->end());
+      return;
+    }
   }
 
-  ResetSideEffectRecord();
   CollectCapturedAndInterpret();
 
   need_interpret_ = true;
@@ -292,8 +324,7 @@ inline bool IsValidGraphOutput(const AbstractBasePtr &abstract) {
       return IsValidGraphOutput(elem.first) && IsValidGraphOutput(elem.second);
     });
   }
-  return FuncGraphBuilder::IsValidScalar(abstract) || FuncGraphBuilder::IsValidTensor(abstract) ||
-         // none is transform to LOAD_CONST
+  return IsValidOutputAbstractScalar(abstract) || IsValidOutputAbstractTensor(abstract) ||
          abstract->isa<abstract::AbstractNone>();
 }
 
@@ -362,7 +393,7 @@ ValueNode *GraphAnalyzer::MutateSequenceNode(ValueNode *node) {
   auto &captured = GetCaptureInfo().captured_;
   auto sequence = abstract->cast<abstract::AbstractSequencePtr>();
   auto func_graph_builder = graph_builder_->FGBuilder();
-  auto graph_node = func_graph_builder->GetNodeByWrapper(abstract_wrapper);
+  auto graph_node = func_graph_builder->FindOrCreateNodeByWrapper(abstract_wrapper);
   auto func_graph = func_graph_builder->graph(true);
   bool is_tuple = abstract->isa<abstract::AbstractTuple>();
 
@@ -436,7 +467,7 @@ std::pair<ValueNode *, ValueNode *> GraphAnalyzer::MutateDictNode(ValueNode *nod
   auto keys_wrapper = std::make_shared<AbstractWrapper>(std::make_shared<abstract::AbstractTuple>(key_abstracts));
   auto values_wrapper = std::make_shared<AbstractWrapper>(std::make_shared<abstract::AbstractTuple>(value_abstracts));
   auto func_graph_builder = graph_builder_->FGBuilder();
-  auto graph_node = func_graph_builder->GetNodeByWrapper(abstract_wrapper);
+  auto graph_node = func_graph_builder->FindOrCreateNodeByWrapper(abstract_wrapper);
   MS_EXCEPTION_IF_NULL(graph_node);
   auto func_graph = func_graph_builder->graph(true);
   auto keys = func_graph->NewCNodeInOrder(prim::kPrimDictGetKeys, {graph_node});
@@ -543,7 +574,7 @@ void GraphAnalyzer::ExpandGraphOutput() {
   }
 }
 
-bool GraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) {
+bool GraphAnalyzer::AnalyzeTopGraphAliveNodes(const std::vector<ValueNode *> &alive_nodes) {
   auto func_graph_builder = graph_builder_->FGBuilder();
   MS_EXCEPTION_IF_NULL(func_graph_builder);
   func_graph_builder->ClearOutputNodes();
@@ -553,7 +584,7 @@ bool GraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) {
 
   // use order set as work list
   mindspore::CompactSet<ValueNode *> nodes;
-  nodes.insert(aliveNodes.begin(), aliveNodes.end());
+  nodes.insert(alive_nodes.begin(), alive_nodes.end());
   while (!nodes.empty()) {
     auto node = *nodes.begin();
     nodes.erase(nodes.begin());
@@ -608,10 +639,6 @@ bool GraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) {
                                  << node->ToString();
     }
   }
-  ExpandGraphOutput();
-  std::reverse(outputs_optimize.operations.begin(), outputs_optimize.operations.end());
-  // avoid missing value, update use-def at last, update all inputs use new node
-  UpdateUseDefNode();
   return true;
 }
 
@@ -630,10 +657,20 @@ void GraphAnalyzer::CollectCapturedAndInterpret() {
 
   GetCaptureInfo().outputs_optimize_.inputs = CollectInputs(GetCaptureInfo().outputs_optimize_.operations);
   GetCaptureInfo().interpret_.inputs = graph_->GetFrame(0).GetLocals();
-  GetCaptureInfo().interpret_.outputs = graph_->CollectAliveNode(graph_->GetStopTraceBci(), &alive_locals_);
   const auto &prepare = graph_->prepare().operations_;
   auto &interpret = GetCaptureInfo().interpret_.operations;
   interpret.insert(interpret.begin(), prepare.begin(), prepare.end());
+  // interpret.outputs layout:
+  // | top-graph alive nodes | subgraph-1 alive nodes | ... | subgraph-n alive nodes | side-effect nodes |
+  GetCaptureInfo().interpret_.outputs = graph_->break_info().alive_nodes_;
+  if (graph_break_info_.is_break_at_call && !graph_break_info_.captured_subgraphs.empty()) {
+    for (const Graph *graph : graph_break_info_.captured_subgraphs) {
+      const std::vector<ValueNode *> &alive_nodes = graph->break_info().alive_nodes_;
+      std::copy(alive_nodes.begin(), alive_nodes.end(), std::back_inserter(info_.interpret_.outputs));
+    }
+  }
+  auto &side_effect_nodes = graph_->GetSideEffect()->GetRequiredNodes();
+  std::copy(side_effect_nodes.begin(), side_effect_nodes.end(), std::back_inserter(info_.interpret_.outputs));
 
   // remove side-effect node
   auto is_remove = [this](ValueNode *node) {
@@ -650,20 +687,347 @@ void GraphAnalyzer::CollectCapturedAndInterpret() {
   GetCaptureInfo().graph_inputs_.args = GetCaptureInfo().captured_.inputs;
 }
 
+namespace {
+// Collect side-effect keep alive nodes in this graph before the break bci.
+std::unordered_set<ValueNode *> CollectSideEffectAliveNodes(const Graph *graph, int break_bci) {
+  const std::vector<ValueNode *> &nodes = CollectSideEffectRecords(graph, break_bci);
+
+  std::unordered_set<ValueNode *> result;
+  auto &side_effect = graph->GetSideEffect();
+  for (ValueNode *node : nodes) {
+    const std::vector<ValueNode *> &alive_nodes = side_effect->GetKeepAlive(node);
+    result.insert(alive_nodes.begin(), alive_nodes.end());
+  }
+  return result;
+}
+
+// Get the alive nodes and side-effect alive nodes in this graph before the break bci.
+std::vector<ValueNode *> GetAliveNodes(const Graph *graph) {
+  int bci = graph->GetStopTraceBci();
+  if (graph->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
+    GRAPH_JIT_LOG_F("UD analyze: enter GetAliveNodes bci %d", bci);
+  }
+  std::vector<ValueNode *> alive_nodes = graph->CollectAliveNode(bci);
+  mindspore::CompactSet<ValueNode *> uniques;
+  for (auto node : alive_nodes) {
+    uniques.insert(node);
+  }
+  // Do not use SideEffect::GetRequiredNodes(), as it will collect side-effect nodes generated at break bci.
+  const std::unordered_set<ValueNode *> &sideeffect_alive_nodes = CollectSideEffectAliveNodes(graph, bci);
+  for (auto node : sideeffect_alive_nodes) {
+    uniques.insert(node);
+  }
+  alive_nodes.assign(uniques.begin(), uniques.end());
+
+  if (graph->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
+    GRAPH_JIT_LOG_F("UD analyze: alive node size : %ld", alive_nodes.size());
+    for (auto node : alive_nodes) {
+      if (node) {
+        GRAPH_JIT_LOG_F("UD analyze: alive node: %s", node->ToString().c_str());
+      }
+    }
+  }
+  return alive_nodes;
+}
+
+// If the graph is break at calling subgraph, then return the CallNode at break bci, or else return nullptr.
+CallNode *FindBreakAtCall(const Graph *graph) {
+  int break_bci = graph->GetStopTraceBci();
+  if (break_bci == -1) {
+    return nullptr;
+  }
+  const std::vector<ValueNode *> &traced_nodes = graph->GetTracedNodes();
+  auto it = std::find_if(traced_nodes.rbegin(), traced_nodes.rend(), [break_bci](ValueNode *node) {
+    return node->bci() == break_bci && node->GetType() == AbstractNode::Call &&
+           (static_cast<CallNode *>(node))->GetSubGraph() != nullptr;
+  });
+  return it != traced_nodes.rend() ? static_cast<CallNode *>(*it) : nullptr;
+}
+
+// Check if the graph is break at calling subgraph.
+inline bool IsBreakAtCall(Graph *graph) { return FindBreakAtCall(graph) != nullptr; }
+
+bool IsEnableSubGraphBreakOptimize(const Graph *graph) {
+#if IS_PYTHON_3_11_PLUS
+  return false;
+#else
+  return graph->Config().GetBoolConfig(GraphJitConfig::kSubgraphBreakOpt) &&
+         common::GetCompileConfig("PIJIT_SUBGRAPH_BREAK_OPTIMIZE") != "0";
+#endif
+}
+}  // namespace
+
 void GraphAnalyzer::UseDefAnalyze() {
-  // UD analyze: alive nodes analysis
-  std::vector<ValueNode *> aliveLocals = GetAliveLocals(graph_);
-  if (!aliveLocals.empty()) {
+  // Top-graph UD analyze
+  std::vector<ValueNode *> alive_nodes = GetAliveNodes(graph_);
+  if (!alive_nodes.empty()) {
     bool stop_analyze = false;
     while (!stop_analyze) {
       UpdateCapturedOrder();
       // Add graph output according to leaf nodes.
-      stop_analyze = AnalyzeAliveLocals(aliveLocals);
+      stop_analyze = AnalyzeTopGraphAliveNodes(alive_nodes);
       if (!stop_analyze) {
-        aliveLocals = GetAliveLocals(graph_);
+        alive_nodes = GetAliveNodes(graph_);
       }
     }
   }
+  UpdateBreakInfo(graph_);
+
+  // SubGraph break optimization.
+  if (IsBreakAtCall(graph_)) {
+    graph_break_info_.is_break_at_call = true;
+    if (IsEnableSubGraphBreakOptimize(graph_)) {
+      CallNode *call_node = FindBreakAtCall(graph_);
+      AnalyzeSubGraphBreakRecursive(call_node);
+    }
+  }
+
+  ExpandGraphOutput();
+  auto &outputs_optimize = GetCaptureInfo().outputs_optimize_;
+  std::reverse(outputs_optimize.operations.begin(), outputs_optimize.operations.end());
+  // avoid missing value, update use-def at last, update all inputs use new node
+  UpdateUseDefNode();
+}
+
+// Check if the bytecode at bci is in a block. Defined in other source file.
+bool FindBlock(int bci, const CFG *cfg);
+
+namespace {
+bool CanCapturePartialGraph(const Graph *graph) {
+  if (graph->GetStopTraceBci() == -1) {  // No graph break, is not a partial graph.
+    return false;
+  }
+  if (graph->ShouldNeverCompile()) {
+    MS_LOG(INFO) << "Hit never compile, can not capture graph: " << GetNameAndLocation(graph);
+    return false;
+  }
+  if (FindBlock(graph->GetStopTraceBci(), graph->GetCFG().get())) {
+    MS_LOG(INFO) << "Is break at block, can not capture graph: " << GetNameAndLocation(graph);
+    return false;
+  }
+  if (PyCodeWrapper(graph->GetCodeObj()).CellVarsSize() > 0) {
+    MS_LOG(INFO) << "Has cellvar, can not capture graph: " << GetNameAndLocation(graph);
+    return false;
+  }
+  const auto *capture_ctx = CaptureContext::GetInstance();
+  if (capture_ctx->IsSkip(graph->GetCodeObj(), graph->GetGlobals().ptr())) {
+    MS_LOG(INFO) << "Hit skip rules in CaptureContext, can not capture graph: " << GetNameAndLocation(graph);
+    return false;
+  }
+  static const std::unordered_set<int> unsupported_break_op = {
+    JUMP_IF_FALSE_OR_POP, JUMP_IF_TRUE_OR_POP,   POP_JUMP_IF_FALSE, POP_JUMP_IF_TRUE, YIELD_VALUE,
+    YIELD_FROM,           GET_YIELD_FROM_ITER,   SETUP_WITH,        SETUP_FINALLY,    WITH_CLEANUP_START,
+    WITH_CLEANUP_FINISH,  END_FINALLY,           SETUP_EXCEPT,      POP_EXCEPT,       RERAISE,
+    RAISE_VARARGS,        JUMP_IF_NOT_EXC_MATCH, BEGIN_FINALLY,     POP_FINALLY,      CALL_FINALLY,
+    JUMP_ABSOLUTE,        JUMP_FORWARD};
+  int break_bci = graph->GetStopTraceBci();
+  const auto &instr_pool = graph->GetCFG()->instr_pool();
+  MS_EXCEPTION_IF_CHECK_FAIL(break_bci >= 0 && break_bci < SizeToInt(instr_pool.size()), "Illegal break bci");
+  const Instr *break_point = instr_pool[break_bci].get();
+  if (unsupported_break_op.find(break_point->op()) != unsupported_break_op.end()) {
+    MS_LOG(INFO) << "Is unsupported break op: " << break_point->ToString()
+                 << " , can not capture graph: " << GetNameAndLocation(graph);
+    return false;
+  }
+  return true;
+}
+
+bool FgAddOutputs(const std::vector<pijit::ValueNode *> &subgraph_outputs,
+                  const AbstractWrapperPtr &subgraph_output_abs, const CallNode *call_node) {
+  FuncGraphBuilderPtr fg_builder = call_node->GetGraph()->func_graph_builder();
+  MS_EXCEPTION_IF_NULL(fg_builder);
+
+  auto AddOutput = [fg_builder, call_node](const AbstractWrapperPtr &output_abs, const ValueNode *output_node) {
+    if (fg_builder->AddOutput(output_abs, true)) {
+      AnfNodePtr node = fg_builder->ReadLocalVariable(output_abs);
+      MS_EXCEPTION_IF_NULL(node);
+      fg_builder->UpdateNodesMap(output_node->abstract_wrapper(), node);
+      return true;
+    }
+    MS_LOG(INFO) << "Failed to add output from subgraph: " << GetNameAndLocation(call_node->GetSubGraph())
+                 << ", output node is at line: " << output_node->GetLineNo() << ", " << ToString(output_node);
+    return false;
+  };
+
+  if (subgraph_outputs.size() == 1) {
+    MS_LOG(DEBUG) << "Subgraph has single output";
+    FuncGraphBuilderPtr sub_fg_builder = call_node->GetSubGraph()->func_graph_builder();
+    MS_EXCEPTION_IF_CHECK_FAIL(sub_fg_builder->GetOutputSize() == 1, "Graph output num should be 1");
+    if (!AddOutput(subgraph_output_abs, subgraph_outputs[0])) {
+      return false;
+    }
+  } else {
+    MS_LOG(DEBUG) << "Subgraph has " << subgraph_outputs.size() << " outputs";
+    // subgraph_output_abs should be an AbstractTuple.
+    auto unpacked_outputs = fg_build_utils::FgTupleUnpack(fg_builder, subgraph_output_abs);
+    if (!unpacked_outputs.has_value()) {
+      MS_LOG(INFO) << "Fail to unpack outputs for subgraph: " << GetNameAndLocation(call_node->GetSubGraph());
+      return false;
+    }
+    MS_EXCEPTION_IF_CHECK_FAIL(unpacked_outputs->size() == subgraph_outputs.size(), "Graph output num not equal!");
+    for (size_t i = 0; i < unpacked_outputs->size(); ++i) {
+      if (!AddOutput(unpacked_outputs->at(i), subgraph_outputs[i])) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+}  // namespace
+
+void GraphAnalyzer::AnalyzeSubGraphBreakRecursive(CallNode *root) {
+  MS_EXCEPTION_IF_NULL(root);
+  std::stack<CallNode *> call_stack;
+  std::stack<std::vector<ValueNode *>> alive_nodes_stack;
+  CallNode *call_node = root;
+  // 1.From top to bottom, do UD analysis on each subgraph.
+  while (call_node != nullptr) {
+    Graph *sub_graph = call_node->GetSubGraph();
+    MS_EXCEPTION_IF_NULL(sub_graph);
+    MS_LOG(INFO) << "Analyze subgraph: " << GetNameAndLocation(sub_graph);
+    if (!CanCapturePartialGraph(sub_graph)) {
+      break;
+    }
+    const std::vector<ValueNode *> &alive_nodes = SubGraphUseDefAnalyze(sub_graph);
+    if (sub_graph->GetStopTraceReason() == kStopTraceUDAnalyzeError) {
+      MS_LOG(INFO) << "UD analyze failed, can not capture subgraph: " << GetNameAndLocation(sub_graph);
+      break;
+    }
+    UpdateBreakInfo(sub_graph);
+    call_stack.push(call_node);
+    alive_nodes_stack.push(alive_nodes);
+    call_node = FindBreakAtCall(sub_graph);
+  }
+  // 2.From bottom to top, connect sub-graph to its parent-graph.
+  std::vector<ValueNode *> total_outputs;
+  while (!call_stack.empty()) {
+    call_node = call_stack.top();
+    const auto &alive_nodes = alive_nodes_stack.top();
+    total_outputs.insert(total_outputs.begin(), alive_nodes.begin(), alive_nodes.end());
+    call_stack.pop();
+    alive_nodes_stack.pop();  // It will destroy the std::vector object on top of the stack.
+
+    bool can_capture = true;
+    if (!total_outputs.empty()) {
+      // 2.1 Add AnfNode in parent-graph to call subgraph.
+      AbstractWrapperPtr output_abs = fg_build_utils::FgCallSubGraph(call_node);
+      if (output_abs == nullptr) {
+        can_capture = false;
+      } else {
+        // 2.2 Add the output nodes of subgraph to the output of parent-graph.
+        can_capture = FgAddOutputs(total_outputs, output_abs, call_node);
+      }
+    }
+    if (can_capture) {
+      graph_break_info_.captured_subgraphs.push_front(call_node->GetSubGraph());
+    } else {
+      graph_break_info_.captured_subgraphs.clear();
+      total_outputs.clear();
+    }
+  }
+  // 3.At last, add subgraphs outputs into top-graph captured_info.
+  if (!graph_break_info_.captured_subgraphs.empty()) {
+    auto &captured = info_.captured_;
+    captured.outputs.insert(captured.outputs.end(), total_outputs.begin(), total_outputs.end());
+    captured.operations.insert(captured.operations.end(), total_outputs.begin(), total_outputs.end());
+  } else {
+    MS_LOG(DEBUG) << "No subgraph captured";
+  }
+}
+
+std::vector<ValueNode *> GraphAnalyzer::SubGraphUseDefAnalyze(Graph *graph) {
+  std::vector<ValueNode *> alive_nodes = GetAliveNodes(graph);
+  std::vector<ValueNode *> graph_outputs;
+  if (!alive_nodes.empty()) {
+    bool finish = false;
+    while (!finish) {
+      finish = AnalyzeSubGraphAliveNodes(alive_nodes, graph, &graph_outputs);
+      if (!finish) {
+        alive_nodes = GetAliveNodes(graph);
+        graph_outputs.clear();
+      }
+    }
+  }
+  return graph_outputs;
+}
+
+namespace {
+bool CheckNewBreakBci(const Graph *graph, const ValueNode *new_break_point) {
+  const auto &traced_nodes = graph->GetTracedNodes();
+  if (std::find(traced_nodes.begin(), traced_nodes.end(), new_break_point) == traced_nodes.end()) {
+    MS_LOG(INFO) << "Not a traced node, cannot UD reset to: " << new_break_point;
+    return false;
+  }
+  int new_break_bci = new_break_point->bci();
+  if (new_break_bci <= 0 || new_break_bci >= graph->GetStopTraceBci()) {
+    MS_LOG(INFO) << "Reset bci error, new bci: " << new_break_bci << ", old bci: " << graph->GetStopTraceBci();
+    return false;
+  }
+  return true;
+}
+
+ValueNode *MutateFreeVarNode(ValueNode *node, std::vector<ValueNode *> *output_optimize) {
+  MS_LOG(DEBUG) << "Reconstruct freevar node: " << node->ToString();
+  output_optimize->push_back(node);
+  MS_EXCEPTION_IF_CHECK_FAIL(node->getInputs().size() == 1, "inputs.size() should be 1");
+  ValueNode *binary_subscr = node->getInputs()[0];
+  output_optimize->push_back(binary_subscr);
+  MS_EXCEPTION_IF_CHECK_FAIL(binary_subscr->getInputs().size() == 2, "inputs.size() should be 2");
+  ValueNode *load_attr = binary_subscr->getInputs()[0];
+  output_optimize->push_back(load_attr);
+  MS_EXCEPTION_IF_CHECK_FAIL(node->getInputs().size() == 1, "inputs.size() should be 1");
+  return load_attr->getInputs()[0];
+}
+}  // namespace
+
+bool GraphAnalyzer::AnalyzeSubGraphAliveNodes(const std::vector<ValueNode *> &alive_nodes, Graph *graph,
+                                              std::vector<ValueNode *> *graph_outputs) {
+  auto fg_builder = graph->func_graph_builder();
+  MS_EXCEPTION_IF_NULL(fg_builder);
+  fg_builder->ClearOutputNodes();
+  std::vector<ValueNode *> output_optimize;
+
+  std::list<ValueNode *> nodes(alive_nodes.begin(), alive_nodes.end());
+  while (!nodes.empty()) {
+    auto node = nodes.front();
+    nodes.pop_front();
+    if (NeedSkipAddGraphOutput(node)) {
+      MS_LOG(DEBUG) << "No need to add subgraph output: " << node->ToString();
+      continue;
+    }
+    if (std::find(graph_outputs->begin(), graph_outputs->end(), node) != graph_outputs->end()) {
+      continue;
+    }
+    if (node->GetOpcode() == LOAD_ATTR && node->GetName() == "cell_contents") {  // LOAD_DEREF
+      nodes.push_back(MutateFreeVarNode(node, &output_optimize));
+      continue;
+    }
+    if (fg_builder->AddOutput(node->abstract_wrapper(), true)) {
+      MS_LOG(DEBUG) << "Add subgraph output success: " << node->ToString();
+      graph_outputs->push_back(node);
+      continue;
+    }
+    if (!IsValidOutput(node) && node->GetOpcode() == LOAD_ATTR) {
+      MS_LOG(DEBUG) << "Reconstruct subgraph output: " << node->ToString();
+      output_optimize.push_back(node);
+      nodes.insert(nodes.end(), node->getInputs().begin(), node->getInputs().end());
+      continue;
+    }
+    MS_LOG(INFO) << "Add subgraph output failed: " << node->ToString();
+    if (!CheckNewBreakBci(graph, node)) {
+      graph->StopTraceAt(graph->GetStopTraceBci(), StopTraceReason::kStopTraceUDAnalyzeError);
+      fg_builder->ClearOutputNodes();
+      graph_outputs->clear();
+      return true;
+    }
+    MS_LOG(INFO) << "Reset subgraph break bci: " << node->ToString() << " at: \""
+                 << pijit::GetFileName(node->GetGraph()) << ":" << node->GetLineNo() << "\"";
+    graph->StopTraceAt(node->bci(), StopTraceReason::kStopTraceUDReset);
+    return false;
+  }
+  std::for_each(output_optimize.begin(), output_optimize.end(),
+                [this](ValueNode *node) { ADD_NODE(info_.outputs_optimize_.operations, node); });
+  return true;
 }
 
 namespace {
@@ -748,7 +1112,7 @@ bool GraphAnalyzer::NeedSkipAddGraphOutput(ValueNode *node) {
       return false;  // constant value no python object, can't make instruction
     } else if (CheckConstPyObject(op)) {
       // now, only python constant
-      if (PyUnicode_Check(op) && !FuncGraphBuilder::IsValidScalar(node->abstract_wrapper()->abstract())) {
+      if (PyUnicode_Check(op) && !IsValidOutputAbstractScalar(node->abstract_wrapper()->abstract())) {
         // filter FakeNodeKey
         return false;
       }

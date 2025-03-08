@@ -63,6 +63,8 @@ class CodeGenerator {
     std::vector<std::string> co_freevars;
     std::string co_name;
     py::object co_filename;
+    py::object co_qualname;
+    py::object co_exceptiontable;
   };
 
   explicit CodeGenerator(const NodeSet *nodes)
@@ -86,6 +88,8 @@ class CodeGenerator {
   void SetFreeVariableNames(const std::vector<std::string> &names) { code_.co_freevars = names; }
   void SetCodeName(const std::string &name) { code_.co_name = name; }
   void SetFileName(const py::object &file) { code_.co_filename = file; }
+  void SetQualName(const py::object &qualname) { code_.co_qualname = qualname; }
+  void SetExceptionTable(const py::object &exceptiontable) { code_.co_exceptiontable = exceptiontable; }
 
   void ClearAlive(ValueNode *node) { nodes_alive_.erase(node); }
   void ClearAlive() { nodes_alive_.clear(); }
@@ -245,7 +249,7 @@ class CodeBreakGenerator {
         no_graph_(false) {}
 
   // collect nodes inputs and outputs at graph analyze
-  void Init(const Graph *, const GraphAnalyzer &);
+  void Init(const GraphAnalyzer &, Graph *);
 
   // generate a code to call graph, unsupported operations, and untracked operations that will be compiled
   py::object MakeDispatchCode();
@@ -289,12 +293,13 @@ class CodeBreakGenerator {
   // make call operations of untracked bytecode for each branch
   void BreakAtIf(CodeGenerator *code_gen) const;
 
+  // generate specialize code if break point is call
+  void BreakAtCall(CodeGenerator *code_gen) const;
+  bool NeedHandleBreakAtCall() const;
+
   void RestoreStack(CodeGenerator *code_gen) const;
 
   void RestoreLocals(CodeGenerator *code_gen, bool load) const;
-
-  // return co_cellvars and co_freevars
-  std::vector<std::string> GetClosureNames() const;
 
   FuncGraphBuilderPtr FGBuilder() const { return fg_builder_; }
 
@@ -343,6 +348,10 @@ class CodeBreakGenerator {
   int extra_local_;
 
   bool no_graph_;
+
+  bool is_break_at_call_ = false;
+  // The top-graph is at the beginning of the vector and the bottommost subgraph at the end.
+  std::vector<Graph *> call_stack_{};
 };
 
 // add a key and value to py::dict, check key conflict or rename the key

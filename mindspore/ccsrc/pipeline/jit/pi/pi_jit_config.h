@@ -35,7 +35,7 @@ class GraphJitConfig {
     kPrintAfterAll,
     kPrintTraceback,
     kPrintBB,
-    kPrintCFG,
+    kPrintBytecode,
     kInterpretCapturedCode,
     kCompileWithoutCapture,
     kCompileWithTry,
@@ -64,6 +64,7 @@ class GraphJitConfig {
     kExpandGraphInput,
     kExpandGraphOutput,
     kReCaptureLoopBody,
+    kSubgraphBreakOpt,
     /* ------------------------------ */
     kIntConf,
     kSymbolic,

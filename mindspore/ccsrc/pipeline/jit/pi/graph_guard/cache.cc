@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <utility>
 #include "pipeline/jit/ps/pipeline.h"
+#include "include/common/utils/python_adapter.h"
 
 namespace mindspore {
 namespace pijit {
@@ -232,7 +233,7 @@ static bool MatchTracePath(const TracePtr &left, const TracePtr &right) {
     return true;
   }
   std::vector<std::pair<TracePtr, TracePtr>> stack;
-  stack.emplace_back(left, right);
+  (void)stack.emplace_back(left, right);
   while (!stack.empty()) {
     auto cmp = std::move(stack.back());
     stack.pop_back();
@@ -250,7 +251,7 @@ static bool MatchTracePath(const TracePtr &left, const TracePtr &right) {
         return false;
       }
       for (size_t i = 0, end = first->GetParamCount(); i != end; ++i) {
-        stack.emplace_back(first->GetParam(i), second->GetParam(i));
+        (void)stack.emplace_back(first->GetParam(i), second->GetParam(i));
       }
       continue;
     }

@@ -123,7 +123,8 @@ std::string ValueNode::ToString() const {
 
 std::string InstrNode::ToString() const {
   std::stringstream s;
-  s << std::setw(kTwo * kTwo) << std::left;
+  const int width = 4;
+  s << std::setw(width) << std::left;
   if (bci() >= 0) {
     s << bci();
   }
@@ -150,5 +151,8 @@ void CallNode::SetSubGraph(Graph *n) {
     n->SetParent(GetGraph());
   }
 }
+
+std::string ToString(const pijit::AbstractNode *node) { return node == nullptr ? "NULL" : node->ToString(); }
+
 }  // namespace pijit
 }  // namespace mindspore

@@ -37,39 +37,6 @@ static const char kDynamicLengthAttr[] = "__ms_dynamic_len__";
 static const char kMsClassAttr[] = "__ms_class__";
 static const int DefaultPercision = 6;
 
-std::string GetStopTraceReasonDesc(StopTraceReason res) {
-#define STOP_TRACE_REASON_KIND(kind, description) \
-  if (res == k##kind) {                           \
-    return description;                           \
-  }
-#include "stop_trace_reason.def"
-#undef STOP_TRACE_REASON_KIND
-  MS_EXCEPTION_IF_CHECK_FAIL(false, "Undefined STOP_TRACE_REASON");
-  return "";
-}
-
-std::string GetInlineReasonDesc(InlineReason res) {
-#define INLINE_REASON_KIND(kind, description) \
-  if (res == k##kind) {                       \
-    return description;                       \
-  }
-#include "inline_reason.def"
-#undef INLINE_REASON_KIND
-  MS_EXCEPTION_IF_CHECK_FAIL(false, "Undefined INLINE_REASON");
-  return "";
-}
-
-std::string GetLoopUnrollingReasonDesc(LoopUnrollingReason res) {
-#define LOOP_UNROLLING_REASON_KIND(kind, description) \
-  if (res == k##kind) {                               \
-    return description;                               \
-  }
-#include "loop_unrolling_reason.def"
-#undef LOOP_UNROLLING_REASON_KIND
-  MS_EXCEPTION_IF_CHECK_FAIL(false, "Undefined LOOP_UNROLLING_REASON");
-  return "";
-}
-
 std::string Utils::GetPyName(PyObject *obj) {
   const char *str = PyUnicode_AsUTF8(obj);
   return str != nullptr ? std::string(str) : "";
@@ -106,12 +73,16 @@ void Utils::DisFuncObject(PyObject *func) {
     GRAPH_JIT_LOG_F("(nil)\n");
     return;
   }
-  auto dis = py::module::import("dis").attr("dis");
-  PY_PRINTF("*** Dump ByteCode After CodeGen on [%A] ***", func);
-  auto args = PyTuple_Pack(1, func);
-  Py_XDECREF(PyObject_Call(dis.ptr(), args, nullptr));
-  Py_DECREF(args);
-  if (PyErr_Occurred()) {
+  py::object dis = py::module::import("dis").attr("dis");
+  py::object args = py::reinterpret_steal<py::object>(PyTuple_Pack(1, func));
+  py::object kw;
+#if IS_PYTHON_3_11_PLUS
+  kw = py::dict();
+  PyDict_SetItemString(kw.ptr(), "show_caches", Py_True);
+  PyDict_SetItemString(kw.ptr(), "adaptive", Py_True);
+#endif
+  py::object res = py::reinterpret_steal<py::object>(PyObject_Call(dis.ptr(), args.ptr(), kw.ptr()));
+  if (res.ptr() == nullptr) {
     PyErr_Print();
   }
   // By adding `print("", flush=True)`, the output of `dis` can be immediately printed out without being truncated

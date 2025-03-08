@@ -62,8 +62,6 @@ py::object ByteCodeGenerator::Generate(const ir::FunctionNodePtr &func) {
                     func->GetFlags(), byte_code.ptr(), consts.ptr(), names.ptr(), var_names.ptr(), free_vars.ptr(),
                     cell_vars.ptr(), py::str(func->GetFileName()).ptr(), py::str(func->GetName()).ptr(),
                     func->GetFirstLineNo(), lnotab.ptr());
-#else
-  MS_LOG(ERROR) << "not implement in python3.11";
 #endif
 
   globals_[py::str("__builtins__")] = builtins_.ptr();

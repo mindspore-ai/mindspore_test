@@ -16,6 +16,7 @@
 #ifndef MINDSPORE_PI_JIT_PYTHON_ADAPTER_PY_CODE_H
 #define MINDSPORE_PI_JIT_PYTHON_ADAPTER_PY_CODE_H
 
+#include <string>
 #include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pybind11/pybind11.h"
 
@@ -29,6 +30,7 @@ namespace py = pybind11;
  */
 class PyCodeWrapper {
  public:
+  PyCodeWrapper() = default;
   explicit PyCodeWrapper(PyCodeObject *co) : ptr_(co) {}
   explicit PyCodeWrapper(const py::handle &ptr);
 
@@ -42,6 +44,7 @@ class PyCodeWrapper {
   int PositionOnlyArgCount() const;
   int CellVarsSize() const;
   int FreeVarsSize() const;
+  Py_ssize_t *Cell2Arg();
   py::tuple CellVars();
   py::tuple FreeVars();
   py::tuple VarNames();
@@ -52,16 +55,23 @@ class PyCodeWrapper {
   int FastLocalSize() const;
   py::tuple FastLocalNames() const;
 
+  std::string ToString() const { return py::str(reinterpret_cast<PyObject *>(ptr())); }
+  py::tuple co_consts() const { return py::reinterpret_borrow<py::tuple>(ptr()->co_consts); }
+  py::tuple co_names() const { return py::reinterpret_borrow<py::tuple>(ptr()->co_names); }
+
   enum LocalKind {
     kCoFastLocal,
     kCoFastCell,
     kCoFastFree,
   };
   LocalKind FastLocalKind(int i) const;
+  int FastLocalIndex(LocalKind kind, int instr_arg);
 
  private:
   PyCodeObject *ptr_;
 };
+
+std::string ToString(const PyCodeWrapper &code);
 
 }  // namespace pijit
 }  // namespace mindspore

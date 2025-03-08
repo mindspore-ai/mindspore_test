@@ -346,6 +346,9 @@ bool OptGuard::Check(const EvalFrameObject *frame, bool print, std::map<size_t, 
 }
 
 bool OptGuard::GuardOn(TracePtr var, GuardLevel tp, bool needSpecialize, int recurseDepth) {
+  if (tp == GuardLevel::kGuardMatchIDS) {
+    return GuardIDS(var);
+  }
   // Now we have TypeGuard IdGuard NameGuard AttrGuard EqGuard, let's add guard to guardlist based on type
   PyObject *obj = var->GetObject();
   if (int_config_.find(kGuardRelaxCnt) != int_config_.end() && int_config_[kGuardRelaxCnt] != 0) {
@@ -373,6 +376,11 @@ bool OptGuard::GuardOn(TracePtr var, GuardLevel tp, bool needSpecialize, int rec
     // Check obj == None
     item = GuardEqual(var, 0);
   }
+  return Record(item);
+}
+
+bool OptGuard::Record(const GuardItemPtr &item) {
+  TracePtr var = item->GetTrace();
   if (item != nullptr) {
     size_t szItem = item->Info().Id();
     if (guardMap_.find(szItem) == guardMap_.end()) {
@@ -396,6 +404,29 @@ bool OptGuard::GuardOn(TracePtr var, GuardLevel tp, bool needSpecialize, int rec
   } else {
     return false;
   }
+}
+
+bool OptGuard::GuardIDS(const TracePtr &tr) {
+  if (tr == nullptr) {
+    return false;
+  }
+  GuardItemPtr item;
+  for (const auto &i : guardList_) {
+    bool is_match_ids = i->GetType() == GIType::kMatchIDS;
+    bool is_same_id = i->GetTrace()->GetObject() == tr->GetObject();
+    if (is_match_ids && is_same_id) {
+      item = i;
+      break;
+    }
+  }
+  auto new_item = pijit::GuardIDS(tr, item);
+  if (new_item != item) {
+    guardList_.push_back(new_item);
+    GuardItemPtr *ref = &guardMap_[new_item->Info().Id()];
+    *ref != nullptr ? (void)(MS_LOG(ERROR) << "guard hash conflict") : ((void)0);
+    *ref = new_item;
+  }
+  return true;
 }
 
 bool OptGuard::Erase(const GuardItemPtr &last) {
@@ -773,8 +804,8 @@ void OptGuard::RevertDynamicShape(EvalFrameObject *f, const std::vector<PyObject
 
 std::string OptGuard::ToString() const {
   std::stringstream s;
-  for (const auto &i : guardMap_) {
-    s << "  guard [" << i.first << "] [" << i.second->ToString() << " ] at [" << i.second.get() << "]\n";
+  for (const auto &i : guardList_) {
+    s << "  guard [" << i.get() << "] [" << i->ToString() << " ]" << std::endl;
   }
   return s.str();
 }

@@ -26,10 +26,10 @@
 #include "utils/log_adapter.h"
 #include "pipeline/jit/pi/graph_capture/abstract_object.h"
 #include "pipeline/jit/pi/graph_capture/constant_info.h"
-#include "pipeline/jit/pi/utils/utils.h"
 #include "pipeline/jit/pi/graph_guard/trace.h"
 #include "pipeline/jit/pi/graph_capture/abstract_wrapper.h"
 #include "pipeline/jit/pi/utils/opcode_declare.h"
+#include "pipeline/jit/pi/utils/inline_reason.h"
 
 namespace mindspore {
 namespace pijit {
@@ -201,6 +201,11 @@ class CallNode : public ValueNode {
 
   Graph *GetSubGraph() const { return sub_graph_; }
   void SetSubGraph(Graph *n);
+
+  // The input arguments when calling subgraph's FuncGraph.
+  const std::vector<AbstractWrapperPtr> &subgraph_args() const { return subgraph_args_; }
+  void set_subgraph_args(const std::vector<AbstractWrapperPtr> &subgraph_args) { subgraph_args_ = subgraph_args; }
+
   std::string ToString() const override;
   void SetInlineReason(InlineReason r) { reason_ = r; }
   InlineReason GetInlineReason() { return reason_; }
@@ -223,6 +228,8 @@ class CallNode : public ValueNode {
  private:
   // sub-graph if traced function
   Graph *sub_graph_;
+  // The input arguments when calling subgraph's FuncGraph.
+  std::vector<AbstractWrapperPtr> subgraph_args_{};
 
   InlineReason reason_ = InlineReason::kInlineUnknown;
 
@@ -246,6 +253,9 @@ class IterNode : public ValueNode {
 };
 
 bool IsNonLocalValue(ValueNode *i);
+
+std::string ToString(const pijit::AbstractNode *node);
+
 }  // namespace pijit
 }  // namespace mindspore
 

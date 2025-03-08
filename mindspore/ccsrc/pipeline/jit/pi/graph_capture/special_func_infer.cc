@@ -159,7 +159,7 @@ bool GuardConstCallNodeParam(CallNode *call_node, Graph *sub_graph, int max_guar
     }
     traces.push_back({tr, level});
   }
-  const auto &guard = sub_graph->GetGuard()->GetGuard();
+  const auto &guard = sub_graph->GetGuardManager()->GetGuard();
   guard->Backup();
   for (const auto &i : traces) {
     if (!guard->GuardOn(i.first, i.second)) {

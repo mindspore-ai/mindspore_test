@@ -24,6 +24,8 @@
 #include "pipeline/jit/pi/python_adapter/py_frame.h"
 #include "pipeline/jit/pi/graph_guard/cache.h"
 #include "pipeline/jit/pi/pi_jit_config.h"
+#include "pipeline/jit/pi/utils/inline_reason.h"
+#include "pipeline/jit/pi/utils/stop_trace_reason.h"
 
 namespace mindspore {
 namespace pijit {
@@ -44,7 +46,7 @@ class Traceback {
     std::string func_name_;
     std::string inline_name_;
     std::string root_name_;
-    int res;
+    InlineReason res;
     int code_size_;
     int depth;
     int line;
@@ -61,7 +63,7 @@ class Traceback {
 
   std::string raw_func_name() const { return raw_func_name_; }
   void PushTbs(const Element &tb) { tbs_.push_back(tb); }
-  void PushStopTraceRes(const std::string &func_name, int res) { stop_trace_res_.emplace(func_name, res); }
+  void PushStopTraceRes(const std::string &func_name, StopTraceReason res) { stop_trace_res_.emplace(func_name, res); }
   void PushInlineInfo(InlineInfo info);
   void DumpInlineInfo(std::stringstream &os, const std::string &func_name) const;
   int FindMaxNameLength(const std::list<Element> &tbs) const;
@@ -75,7 +77,7 @@ class Traceback {
   int raw_code_size_;
   std::list<Element> tbs_;
   // <func_name, stop_trace_reason>
-  std::unordered_map<std::string, int> stop_trace_res_;
+  std::unordered_map<std::string, StopTraceReason> stop_trace_res_;
   // <root_func_name, InlineInfo>
   std::map<std::string, std::list<InlineInfo>> inline_infos_;
 };
@@ -152,7 +154,8 @@ inline JitCompileResults *GetJitCompileResults(PyCodeObject *code) {
   return nullptr;
 }
 
-inline JitCompileResults *GetJitCompileResults(PyObject *code) {
+inline JitCompileResults *GetJitCompileResults(const py::handle &h) {
+  PyObject *code = h.ptr();
   code = PyMethod_Check(code) ? PyMethod_GET_FUNCTION(code) : code;
   code = PyFunction_Check(code) ? PyFunction_GET_CODE(code) : code;
   return PyCode_Check(code) ? GetJitCompileResults(reinterpret_cast<PyCodeObject *>(code)) : nullptr;
@@ -165,7 +168,8 @@ inline void SetJitCompileResults(PyCodeObject *code, JitCompileResults *ptr) {
   }
 }
 
-inline JitCompileResults *CreateJitCompileResults(PyObject *code) {
+inline JitCompileResults *CreateJitCompileResults(const py::handle &h) {
+  PyObject *code = h.ptr();
   code = PyMethod_Check(code) ? PyMethod_GET_FUNCTION(code) : code;
   code = PyFunction_Check(code) ? PyFunction_GET_CODE(code) : code;
   return PyCode_Check(code) ? JitCompileResults::Create(reinterpret_cast<PyCodeObject *>(code)) : nullptr;

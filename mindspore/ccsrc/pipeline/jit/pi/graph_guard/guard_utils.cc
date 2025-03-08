@@ -2967,21 +2967,98 @@ class AttrGuard : public GuardItem {
   std::string nameAttr_;
 };
 
+/* ======================================= MatchIDGuard ======================================= */
+
+class MatchIDGuard : public GuardItem {
+ public:
+  explicit MatchIDGuard(const TracePtr &tr) : GuardItem(tr) {
+    type_ = GIType::kMatchIDS;
+    items_.push_back(tr);
+  }
+  bool Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) override;
+  bool Check(PyObject *obj) override { return false; }
+  std::string ToString() override;
+  const InfoPack &Info() override;
+  bool operator==(const GuardItem &obj) const override;
+  void AddAlias(const TracePtr &i);
+
+ private:
+  std::vector<TracePtr> items_;
+};
+
+bool MatchIDGuard::Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
+  size_t index = 0;
+  size_t items_size = items_.size();
+
+  GuardItemPerfStart(perf, kGuardItemTotalStage);
+  // all items has same object id
+  PyObject *object_p = GetObjectFromTrace(frame, items_[index++], cache, perf);
+  void *expected = object_p;
+  Py_XDECREF(object_p);
+  for (; object_p != nullptr && object_p == expected && index < items_size; ++index) {
+    object_p = GetObjectFromTrace(frame, items_[index], cache, perf);
+    Py_XDECREF(object_p);
+  }
+  GuardItemPerfStage(perf, this, kGuardItemRetrieveStage);
+  bool ret = expected == object_p && index == items_size;
+  GuardItemPerfStage(perf, this, kGuardItemCompareStage);
+  return ret;
+}
+
+std::string MatchIDGuard::ToString() {
+  std::stringstream s;
+  s << "MatchIDGuard: ";
+  for (size_t i = 0, size = items_.size() - 1; i != size; ++i) {
+    s << "[" << items_[i]->ToString() << "] is ";
+  }
+  s << "[" << items_.back()->ToString() << "]";
+  std::string ret = s.str();
+  return ret;
+}
+
+const InfoPack &MatchIDGuard::Info() {
+  if (info_ != nullptr) {
+    return *info_;
+  }
+  info_ = std::make_shared<InfoPack>();
+  ((*info_) << static_cast<uint8_t>(type_)).Begin();
+  (*info_) << static_cast<void *>(items_[0]->GetObject());
+  info_->End().Update();
+  return *info_;
+}
+
+bool MatchIDGuard::operator==(const GuardItem &obj) const {
+  if (type_ != obj.GetType()) {
+    return false;
+  }
+  const MatchIDGuard &other = static_cast<const MatchIDGuard &>(obj);
+  return this->items_.size() == other.items_.size() && GetTrace()->GetObject() == other.GetTrace()->GetObject();
+}
+
+void MatchIDGuard::AddAlias(const TracePtr &i) {
+  if (std::any_of(items_.begin(), items_.end(), [&i](const TracePtr &j) { return i->Info().Id() == j->Info().Id(); })) {
+    return;
+  }
+  items_.push_back(i);
+}
+
+GuardItemPtr GuardIDS(const TracePtr &tr, const GuardItemPtr &reused) {
+  if (reused == nullptr || reused->GetType() != GIType::kMatchIDS) {
+    return std::make_shared<MatchIDGuard>(tr);
+  }
+  static_cast<MatchIDGuard *>(reused.get())->AddAlias(tr);
+  return reused;
+}
+
+/* ============================================================================================= */
+
 GuardItemPtr GuardEqual(TracePtr obj, bool needSpecialize, int recurseDepth) {
   return std::make_shared<EqGuard>(obj, needSpecialize, recurseDepth);
 }
 
 GuardItemPtr GuardType(TracePtr obj) { return std::make_shared<TypeGuard>(obj); }
 
-GuardItemPtr GuardId(TracePtr obj) {
-  auto pyObj = py::cast<py::object>(obj->GetObject());
-  bool is_param = IsParameterObject(pyObj);
-  if (!is_param && (IsStubTensor(pyObj) || tensor::IsTensorPy(pyObj))) {
-    return GuardEqual(obj, false, INT_MAX);
-  } else {
-    return std::make_shared<IdGuard>(obj);
-  }
-}
+GuardItemPtr GuardId(TracePtr obj) { return std::make_shared<IdGuard>(obj); }
 
 GuardItemPtr GuardRepr(TracePtr obj) { return std::make_shared<ReprGuard>(obj); }
 
@@ -3049,6 +3126,127 @@ PyObject *GetMsTensorType() {
   } else {
     return nullptr;
   }
+}
+
+template <typename S>
+ValuePtr CastScalarToScalar(S in, const TypeId &type_id) {
+  switch (type_id) {
+    case kNumberTypeInt32:
+      return MakeValue(static_cast<int>(in));
+    case kNumberTypeFloat16:
+      return MakeValue(static_cast<float16>(in).int_value());
+    case kNumberTypeFloat32:
+      return MakeValue(static_cast<float>(in));
+    case kNumberTypeBool:
+      return MakeValue(static_cast<bool>(in));
+    case kNumberTypeInt64:
+      return MakeValue(static_cast<int64_t>(in));
+    case kNumberTypeFloat64:
+      return MakeValue(static_cast<double>(in));
+    case kNumberTypeInt16:
+      return MakeValue(static_cast<int16_t>(in));
+    case kNumberTypeInt8:
+      return MakeValue(static_cast<int8_t>(in));
+    case kNumberTypeUInt64:
+      return MakeValue(static_cast<uint64_t>(in));
+    case kNumberTypeUInt32:
+      return MakeValue(static_cast<uint32_t>(in));
+    case kNumberTypeUInt16:
+      return MakeValue(static_cast<uint16_t>(in));
+    case kNumberTypeUInt8:
+      return MakeValue(static_cast<uint8_t>(in));
+    case kNumberTypeBFloat16:
+      return MakeValue(static_cast<float16>(in).int_value());
+    default:
+      MS_LOG(DEBUG) << "Not support cast to dst type: " << TypeIdToType(type_id)->ToString();
+      return nullptr;
+  }
+}
+
+template <typename S>
+ValuePtr CastScalarToTensor(S in, const TypeId &type_id) {
+  switch (type_id) {
+    case kNumberTypeInt32:
+      return std::make_shared<tensor::Tensor>(static_cast<int>(in), kInt32);
+    case kNumberTypeFloat16:
+      return std::make_shared<tensor::Tensor>(static_cast<float16>(in), kFloat16);
+    case kNumberTypeFloat32:
+      return std::make_shared<tensor::Tensor>(static_cast<float>(in), kFloat32);
+    case kNumberTypeBool:
+      return std::make_shared<tensor::Tensor>(static_cast<bool>(in), kBool);
+    case kNumberTypeInt64:
+      return std::make_shared<tensor::Tensor>(static_cast<int64_t>(in), kInt64);
+    case kNumberTypeFloat64:
+      return std::make_shared<tensor::Tensor>(static_cast<double>(in), kFloat64);
+    case kNumberTypeInt16:
+      return std::make_shared<tensor::Tensor>(static_cast<int16_t>(in), kInt16);
+    case kNumberTypeInt8:
+      return std::make_shared<tensor::Tensor>(static_cast<int8_t>(in), kInt8);
+    case kNumberTypeUInt64:
+      return std::make_shared<tensor::Tensor>(static_cast<uint64_t>(in), kUInt64);
+    case kNumberTypeUInt32:
+      return std::make_shared<tensor::Tensor>(static_cast<uint32_t>(in), kUInt32);
+    case kNumberTypeUInt16:
+      return std::make_shared<tensor::Tensor>(static_cast<uint16_t>(in), kUInt16);
+    case kNumberTypeUInt8:
+      return std::make_shared<tensor::Tensor>(static_cast<uint8_t>(in), kUInt8);
+    case kNumberTypeBFloat16:
+      return std::make_shared<tensor::Tensor>(static_cast<bfloat16>(in), kBFloat16);
+    default:
+      MS_LOG(DEBUG) << "Not support cast to dst type: " << TypeIdToType(type_id)->ToString();
+      return nullptr;
+  }
+}
+
+template <typename S>
+ValuePtr Cast(S in, const std::pair<TypeId, bool> &dst_type) {
+  bool has_tensor_input = dst_type.second;
+  if (has_tensor_input) {
+    return CastScalarToTensor(in, dst_type.first);
+  }
+  return CastScalarToScalar(in, dst_type.first);
+}
+
+ValuePtr ScalarToDstDtypeValue(const ValuePtr &src_value, const std::pair<TypeId, bool> &dst_type) {
+  MS_EXCEPTION_IF_NULL(src_value);
+  // Tensor not do scalar cast
+  if (src_value->isa<tensor::BaseTensor>()) {
+    return nullptr;
+  }
+  if (src_value->isa<Int64Imm>()) {
+    const auto &int64_v = src_value->cast<Int64ImmPtr>();
+    return Cast<int64_t>(int64_v->value(), dst_type);
+  }
+  if (src_value->isa<FP32Imm>()) {
+    const auto &fp32_v = src_value->cast<FP32ImmPtr>();
+    return Cast<float>(fp32_v->value(), dst_type);
+  }
+  if (src_value->isa<Int32Imm>()) {
+    const auto &int32_v = src_value->cast<Int32ImmPtr>();
+    return Cast<int32_t>(int32_v->value(), dst_type);
+  }
+  if (src_value->isa<FP64Imm>()) {
+    const auto &fp64_v = src_value->cast<FP64ImmPtr>();
+    return Cast<double>(fp64_v->value(), dst_type);
+  }
+  if (src_value->isa<BoolImm>()) {
+    const auto &bool_v = src_value->cast<BoolImmPtr>();
+    return Cast<bool>(bool_v->value(), dst_type);
+  }
+  if (src_value->isa<Int16Imm>()) {
+    const auto &int16_v = src_value->cast<Int16ImmPtr>();
+    return Cast<int16_t>(int16_v->value(), dst_type);
+  }
+  MS_LOG(DEBUG) << "Now, the value [" << src_value->ToString() << "] is not supported to cast directly.";
+  return nullptr;
+}
+
+tensor::BaseTensorPtr TensorToDstDtypeValue(const ValuePtr &src_value, const TypeId &dst_type_id) {
+  MS_EXCEPTION_IF_NULL(src_value);
+  auto src_tensor = src_value->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(src_tensor);
+  (void)src_tensor->set_data_type(dst_type_id);
+  return src_tensor;
 }
 
 }  // namespace pijit

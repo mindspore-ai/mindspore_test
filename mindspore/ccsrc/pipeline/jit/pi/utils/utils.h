@@ -36,30 +36,6 @@ constexpr auto kTwo = 2;
 constexpr auto kThree = 3;
 constexpr auto kFive = 5;
 
-enum StopTraceReason : uint8_t {
-#define STOP_TRACE_REASON_KIND(kind, description) k##kind,
-#include "stop_trace_reason.def"
-#undef STOP_TRACE_REASON_KIND
-};
-
-std::string GetStopTraceReasonDesc(StopTraceReason res);
-
-enum InlineReason : uint8_t {
-#define INLINE_REASON_KIND(kind, description) k##kind,
-#include "inline_reason.def"
-#undef INLINE_REASON_KIND
-};
-
-std::string GetInlineReasonDesc(InlineReason res);
-
-enum LoopUnrollingReason : uint8_t {
-#define LOOP_UNROLLING_REASON_KIND(kind, description) k##kind,
-#include "loop_unrolling_reason.def"
-#undef LOOP_UNROLLING_REASON_KIND
-};
-
-std::string GetLoopUnrollingReasonDesc(LoopUnrollingReason res);
-
 class Utils {
  public:
   Utils() = default;

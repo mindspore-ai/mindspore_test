@@ -16,6 +16,9 @@
 
 #ifndef MINDSPORE_PI_JIT_GRAPH_BUILD_BUILD_UTILS_H_
 #define MINDSPORE_PI_JIT_GRAPH_BUILD_BUILD_UTILS_H_
+#include <utility>
+#include <optional>
+#include <string>
 #include "pybind11/pybind11.h"
 #include "ir/anf.h"
 #include "ir/primitive.h"
@@ -24,16 +27,34 @@ namespace py = pybind11;
 
 namespace mindspore {
 namespace pijit {
-void SyncStubTensor(const py::handle &obj);
+std::pair<AbstractBasePtr, bool> InferAndCheck(const ValuePtr &value, const AbstractBasePtrList &input_abs_list);
+AbstractBasePtr BuildNodeAbstract(const AnfNodePtr &node);
 
 bool IsSpecialCallableObject(const py::object &obj);
 bool IsObjectCallable(const py::object &obj);
 bool IsSideEffectPrimitive(const PrimitivePtr &prim);
+bool IsValidOutputAbstractScalar(const AbstractBasePtr &abs);
+bool IsValidOutputAbstractTensor(const AbstractBasePtr &abs);
+bool IsPrimitiveCallable(const PrimitivePtr &prim, const AbstractBasePtr &abs);
+bool IsParameterSequence(const py::object &object);
+ParameterPtr AddParameter(const FuncGraphPtr &fg);
+std::string GetParameterName(const AnfNodePtr &node);
 
 py::tuple GetMethodInfo(const py::object &obj);
-bool IsPyCapsuleTensorOverloadMethod(const py::object &obj);
-bool IsPyCapsuleOverload(const py::object &obj);
-bool IsMsTensorMethod(const py::object &obj);
+std::string GetTensorMethodName(const py::object &obj);
+bool IsTensorMethod(const py::object &obj);
+bool IsTensorOverloadMethod(const py::object &obj);
+bool EnableTensorOverload();
+void SyncStubTensor(const py::handle &obj);
+
+ValuePtr ConvertPyObjToValue(const py::handle &handle);
+
+void PrintConstantAbstract(const AbstractBasePtr &abs);
+void AttachCustomBPropToGraph(const FuncGraphPtr &graph, const py::object &obj);
+
+// Check whether it is an nn.CellList.
+bool IsCellList(const py::object &obj);
+bool IsConvertToInterpretedObject(const py::object &obj);
 
 // Function for register hook
 constexpr auto kRegisterHookKey = "backward_register_hook";

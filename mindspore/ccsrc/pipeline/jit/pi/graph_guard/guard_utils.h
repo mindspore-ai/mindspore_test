@@ -37,6 +37,7 @@ typedef enum _GIType {
   GTAttr,
   GTEqual,
   GTId,
+  kMatchIDS,
 } GIType;
 
 class GuardItem : public std::enable_shared_from_this<GuardItem> {
@@ -77,10 +78,14 @@ GuardItemPtr GuardType(TracePtr obj);
 GuardItemPtr GuardId(TracePtr obj);
 GuardItemPtr GuardAttr(TracePtr obj);
 GuardItemPtr GuardRepr(TracePtr obj);
+GuardItemPtr GuardIDS(const TracePtr &tv, const GuardItemPtr &reused);
 bool IsPyObjectEqual(PyObject *src, PyObject *dst);
 PyObject *GetMsModule();
 PyObject *GetMsType();
 PyObject *GetMsTensorType();
+
+ValuePtr ScalarToDstDtypeValue(const ValuePtr &src_value, const std::pair<TypeId, bool> &dst_type);
+tensor::BaseTensorPtr TensorToDstDtypeValue(const ValuePtr &src_value, const TypeId &dst_type_id);
 
 }  // namespace pijit
 }  // namespace mindspore

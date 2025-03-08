@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """Define pijit context"""
-
+# pylint: disable=missing-docstring
 import inspect
 import types
 import functools
@@ -79,7 +79,6 @@ class PIJitCaptureContext:
             disable_pijit = self.config.get('_disable_pijit', None)
             if disable_pijit is not None and disable_pijit(args, kwds):
                 return self.fn(*args, **kwds)
-
             with self:
                 self.ret = self.fn(*args, **kwds)
                 return self.ret

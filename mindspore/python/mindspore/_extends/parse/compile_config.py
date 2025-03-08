@@ -325,6 +325,15 @@ Value Range:
 PYNATIVE_JIT_GRAD_MODE = ''
 
 """
+Name: PIJIT_SUBGRAPH_BREAK_OPTIMIZE
+Function: Whether to enable subgraph break optimization in PIJit.
+Value Range:
+    0: Disable subgraph break optimization in PIJit.
+    Default: Enable.
+"""
+PIJIT_SUBGRAPH_BREAK_OPTIMIZE = ''
+
+"""
 Name: PUT_ALL_CNODE_INTO_ORDER_LIST
 Function: Whether to put all CNode into order list in back prop.
 Value Range:
@@ -368,5 +377,6 @@ __all__ = [
     "GRAD_FOR_SCALAR",
     "DEBUG_LEVEL",
     "PYNATIVE_JIT_GRAD_MODE",
+    "PIJIT_SUBGRAPH_BREAK_OPTIMIZE",
     "PUT_ALL_CNODE_INTO_ORDER_LIST",
 ]

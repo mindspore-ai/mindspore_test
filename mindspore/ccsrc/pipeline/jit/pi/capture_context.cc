@@ -35,6 +35,10 @@ void CaptureContext::RegisterSkipCode(PyCodeObject *co) { SetJitCompileResults(c
 bool CaptureContext::IsSkip(const PyFrameWrapper &f) const {
   PyObject *globals = f.Globals().ptr();
   PyCodeObject *co = f.GetCode().ptr();
+  return IsSkip(co, globals);
+}
+
+bool CaptureContext::IsSkip(PyCodeObject *co, PyObject *globals) const {
   if (!PyDict_Check(globals)) {
     MS_LOG(DEBUG) << "skip because of unknown module dict";
     return true;

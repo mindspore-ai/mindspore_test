@@ -56,7 +56,6 @@ def test_guard_for_Cell_1():
 
     o3 = jit_net2(x, y)
     match_array(o1, o3, error=7)
-    assert_no_graph_break(jit_net2.construct, call_count=1)  # should recompile
 
     x = ops.randn(2, 4)
     y = ops.randn(4, 2)
@@ -64,11 +63,11 @@ def test_guard_for_Cell_1():
 
     o5 = jit_net1(x, y)
     match_array(o4, o5, error=7)
-    assert_no_graph_break(jit_net1.construct, call_count=2)  # should not recompile
 
     o6 = jit_net2(x, y)
     match_array(o4, o6, error=7)
-    assert_no_graph_break(jit_net2.construct, call_count=2)  # should not recompile
+    # not need guard unused self, grad is guard by `pynative_executor.grad`
+    assert_no_graph_break(jit_net2.construct, call_count=4)
 
 
 class MLP(nn.Cell):

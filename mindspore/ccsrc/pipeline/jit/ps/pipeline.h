@@ -46,6 +46,8 @@ namespace pipeline {
 
 namespace py = pybind11;
 
+constexpr auto kActualArgumentIndex = "argument_index";
+
 class Pipeline {
  public:
   Pipeline(const ResourcePtr &res, const std::vector<ActionItem> &actions) : resource_(res), actions_(actions) {}
