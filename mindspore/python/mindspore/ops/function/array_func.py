@@ -5893,32 +5893,39 @@ def max(input, axis=None, keepdims=False, *, initial=None, where=None):  # pylin
 
 def argmax(input, dim=None, keepdim=False):
     """
-    Return the indices of the maximum values of a tensor across a dimension.
+    Return the indices of the maximum values along a specified dimension of the tensor.
 
     Args:
-        input (Tensor): Input tensor.
-        dim (Union[int, None], optional): The dimension to reduce. If `dim` is ``None`` , the indices of the maximum
-            value within the flattened input will be returned. Default: ``None`` .
-        keepdim (bool, optional): Whether the output tensor retains the specified
-            dimension. Ignored if `dim` is None. Default: ``False`` .
+        input (Tensor): The input tensor.
+        dim (Union[int, None], optional): Specify the dimension for computation. If ``None`` , compute all elements in
+            the `input` . Default ``None`` .
+        keepdim (bool, optional): Whether the output tensor has dim retained. Default ``False`` .
 
     Returns:
-        Tensor, indices of the maximum values across a dimension.
-
-    Raises:
-        TypeError: If `keepdim` is not bool.
-        ValueError: If `dim` is out of range.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([[1, 20, 5], [67, 8, 9], [130, 24, 15]]).astype(np.float32))
-        >>> output = ops.argmax(x, dim=-1)
-        >>> print(output)
-        [1 0 0]
+        >>> import mindspore
+        >>> input = mindspore.tensor([[9, 3, 4, 5],
+        ...                           [5, 2, 7, 4],
+        ...                           [8, 1, 3, 6]])
+        >>> # case 1: By default, compute the maximum indice of all elements.
+        >>> mindspore.ops.argmax(input)
+        Tensor(shape=[], dtype=Int64, value= 0)
+        >>>
+        >>> # case 2: Compute maximum indice along dim 1.
+        >>> mindspore.ops.argmax(input, dim=1)
+        Tensor(shape=[3], dtype=Int64, value= [0, 2, 0])
+        >>>
+        >>> # case 3: If keepdim=True, the output shape will be same of that of the input.
+        >>> mindspore.ops.argmax(input, dim=1, keepdim=True)
+        Tensor(shape=[3, 1], dtype=Int64, value=
+        [[0],
+         [2],
+         [0]])
     """
     _check_attr_dtype("keepdim", keepdim, [bool], "argmax")
     if not input.shape:
@@ -6010,50 +6017,47 @@ def min(input, axis=None, keepdims=False, *, initial=None, where=None):  # pylin
 
 def aminmax(input, *, axis=0, keepdims=False):
     """
-    It returns the minimum and maximum value along the given axis of input tensor.
+    Return the minimum values and maximum values along the given axes of the tensor.
 
     Args:
-        input (Tensor): The input tensor, can be any dimension. Set the shape of input tensor as
-          :math:`(x_1, x_2, ..., x_N)` .
+        input (Tensor): The input tensor.
 
     Keyword Args:
-        axis (int, optional): The dimension to reduce. The value range of `axis` is [-rank, rank),
-            where "rank" is the dimension of `input`. If `axis` is None, computes the minimum and maximum value
-            along the entire input tensor. Default: ``0`` .
-        keepdims (bool, optional): Whether to maintain dimension. When set to True, the output will keep the same
-            dimension as the input, or the dimension specified by `axis` is reduced. Default: ``False`` .
+        axis (int, optional): Specify the axis for computation. If ``None`` , compute all elements in the `input` .
+            Default ``0`` .
+        keepdims (bool, optional): Whether the output tensor has dim retained. Default ``False`` .
 
     Returns:
-        tuple (Tensor), containing the minimum value and maximum value of the input tensor.
-
-        - If `keepdims` is True, the shape of output tensors is
-          :math:`(x_1, x_2, ..., x_{axis-1}, 1, x_{axis+1}, ..., x_N)`.
-        - If `keepdims` is False, the shape of output tensors is
-          :math:`(x_1, x_2, ..., x_{axis-1}, x_{axis+1}, ..., x_N)`.
-
-    Raises:
-        TypeError: If `keepdims` is not a bool.
-        TypeError: If `axis` is not an int and not None.
-        ValueError: If `axis` is not in range [-rank, rank).
+        Tuple(min, max) of 2 tensors.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([0.0, 0.4, 0.6, 0.7, 0.1]), mindspore.float32)
-        >>> output0, output1 = ops.aminmax(x)
-        >>> print(output0, output1)
-        0.0 0.7
-        >>> output2, output3 = ops.aminmax(x, axis=-1, keepdims=True)
-        >>> print(output2, output3)
-        [0.] [0.7]
-        >>> x = Tensor(np.array([[0.0, 0.4, 0.6, 0.7, 0.1], [0.78, 0.97, 0.5, 0.82, 0.99]]), mindspore.float32)
-        >>> output4, output5 = ops.aminmax(x, axis=None, keepdims=True)
-        >>> print(output4, output5)
-        [[0.]] [[0.99]]
+        >>> input = mindspore.tensor([[9, 3, 4, 5],
+        >>>                           [5, 2, 7, 4],
+        >>>                           [8, 1, 3, 6]])
+        >>>
+        >>> # case 1: By default, compute along axis 0.
+        >>> mindspore.ops.aminmax(input)
+        (Tensor(shape=[4], dtype=Int64, value= [5, 1, 3, 4]),
+         Tensor(shape=[4], dtype=Int64, value= [9, 3, 7, 6]))
+        >>>
+        >>> # case 2: Disregard NaN (Not a Number) values present in the input during computation.
+        >>> input = mindspore.tensor([[9, 3, 4, 5],
+        >>>                           [5, 2, 7, 4],
+        >>>                           [8, 1, 3, float('nan')]])
+        >>> mindspore.ops.aminmax(input, axis=None)
+        (Tensor(shape=[], dtype=Float32, value= 1),
+         Tensor(shape=[], dtype=Float32, value= 9))
+        >>>
+        >>> # case 3: If keepdims=True, the output shape will be same of that of the input.
+        >>> mindspore.ops.aminmax(input, axis=None, keepdims=True)
+        (Tensor(shape=[1, 1], dtype=Float32, value=
+         [[ 1.00000000e+00]]),
+         Tensor(shape=[1, 1], dtype=Float32, value=
+         [[ 9.00000000e+00]]))
     """
     if axis is None:
         output0, _ = ops.min(input, axis, keepdims)

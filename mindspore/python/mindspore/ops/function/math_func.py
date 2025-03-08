@@ -621,34 +621,39 @@ def exp2(input):
 
 def argmin(input, axis=None, keepdims=False):
     """
-    Returns the indices of the minimum value of a tensor across the axis.
-
-    If the shape of input tensor is :math:`(x_1, ..., x_N)`, the shape of the output tensor is
-    :math:`(x_1, ..., x_{axis-1}, x_{axis+1}, ..., x_N)`.
+    Return the indices of the minimum values along a specified dimension of the tensor.
 
     Args:
-        input (Tensor): Input tensor.
-        axis (Union[int, None], optional): Axis where the Argmin operation applies to. Default: ``None`` .
-        keepdims (bool, optional): Whether the output tensor retains the specified
-            dimension. Ignored if `axis` is None. Default: ``False`` .
+        input (Tensor): The input tensor.
+        axis (Union[int, None], optional): Specify the dimension for computation. If ``None`` , compute all elements in
+            the `input` . Default ``None`` .
+        keepdims (bool, optional): Whether the output tensor has dim retained. Default ``False`` .
 
     Returns:
-        Tensor, indices of the min value of input tensor across the axis.
-
-    Raises:
-        TypeError: If `axis` is not an int.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_x = Tensor(np.array([2.0, 3.1, 1.2]), mindspore.float32)
-        >>> index = ops.argmin(input_x)
-        >>> print(index)
-        2
+        >>> input = mindspore.tensor([[2, 5, 1, 6],
+        ...                           [3, -7, -2, 4],
+        ...                           [8, -4, 1, -3]])
+        >>> # case 1: By default, compute the minimum indice of all elements.
+        >>> mindspore.ops.argmin(input)
+        Tensor(shape=[], dtype=Int32, value= 5)
+        >>>
+        >>> # case 2: Compute the minimum indices along axis 1.
+        >>> mindspore.ops.argmin(input, axis=1)
+        Tensor(shape=[3], dtype=Int32, value= [2, 1, 1])
+        >>>
+        >>> # case 3: If keepdims=True, the output shape will be same of that of the input.
+        >>> mindspore.ops.argmin(input, axis=1, keepdims=True)
+        Tensor(shape=[3, 1], dtype=Int32, value=
+        [[2],
+         [1],
+         [1]])
     """
     if not input.shape:
         return Tensor(0)
@@ -6070,8 +6075,7 @@ def _create_cummin_perm(axis, x_shape):
 
 def cummin(input, axis):
     r"""
-    Returns a tuple (values,indices) where 'values' is the cumulative minimum value of input Tensor `input`
-    along the dimension `axis`, and `indices` is the index location of each minimum value.
+    Return the cumulative minimum values and their indices along the given axis of the tensor.
 
     .. math::
         \begin{array}{ll} \\
@@ -6079,19 +6083,11 @@ def cummin(input, axis):
         \end{array}
 
     Args:
-        input (Tensor): The input Tensor, rank of `input` > 0.
-        axis (int): The dimension to do the operation over. The value of `axis` must be in the range
-            `[-input.ndim, input.ndim - 1]`.
+        input (Tensor): The input tensor.
+        axis (int): Specify the axis for computation.
 
     Returns:
-        tuple [Tensor], tuple of 2 Tensors, containing the cumulative minimum of elements and the index.
-        The shape of each output tensor is the same as input `input`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `input` is a Tensor, but the type is complex or bool.
-        TypeError: If `axis` is not an int.
-        ValueError: If `axis` is out the range of `[-input.ndim, input.ndim - 1]`.
+        Tuple(min, min_indices) of 2 tensors.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
