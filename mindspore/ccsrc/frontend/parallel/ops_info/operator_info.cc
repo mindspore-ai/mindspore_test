@@ -1656,10 +1656,11 @@ Status OperatorInfo::InitWithTensorLayoutForNewShape(const std::vector<TensorLay
   size_t real_input_index = 0;
   for (const auto &input_layout : in_tensor_layouts) {
     // Insert placeholder TensorInfo for optional input
-    while (real_input_index < input_value_.size() && input_value_[real_input_index] != nullptr &&
-           input_value_[real_input_index]->isa<None>()) {
+    if (real_input_index < input_value_.size() && input_value_[real_input_index] != nullptr &&
+        input_value_[real_input_index]->isa<None>()) {
       (void)inputs_tensor_info_new_.emplace_back(std::make_shared<TensorInfoValue>(TensorInfo()));
       ++real_input_index;
+      continue;
     }
     if (input_layout->no_shape_layout()) {
       if (input_layout->is_list()) {
