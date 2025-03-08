@@ -345,6 +345,21 @@ class Shard : public MetaFuncGraph {
   size_t kShardInputSize = 0;
 };
 
+class AddAttr : public MetaFuncGraph {
+ public:
+  explicit AddAttr(const std::string &name) : MetaFuncGraph(name) {
+    signatures_ = std::vector<Signature>({{"func", SignatureEnumRW::kRWRead, SignatureEnumKind::kKindDefault},
+                                          {"attr_dict", SignatureEnumRW::kRWRead, SignatureEnumKind::kKindDefault}});
+    kAddAttrInputSize = signatures_.size();
+  }
+  ~AddAttr() override = default;
+  MS_DECLARE_PARENT(AddAttr, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+
+ private:
+  size_t kAddAttrInputSize = 0;
+};
+
 class VmapOperation : public MetaFuncGraph {
  public:
   explicit VmapOperation(const std::string &name);

@@ -63,6 +63,29 @@ bool ExpandMetaShardFg::operator()(const FuncGraphPtr &func_graph, const Optimiz
   }
   return res;
 }
+
+bool ExpandMetaAddAttrFg::operator()(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer) {
+  auto manager = func_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  const auto &all_nodes = manager->all_nodes();
+  // The expanding of meta fg may change the number of outer layer meta fgs.
+  // So, find all addattr meta fg and then expands them.
+  for (auto &expand_meta_fg_element : expand_meta_addattr_fg_list_) {
+    expand_meta_fg_element.second->GetMetaFgPrim(all_nodes);
+  }
+  bool res = false;
+  for (auto &expand_meta_fg_element_ : expand_meta_addattr_fg_list_) {
+    auto prim_nodes = expand_meta_fg_element_.second->prim_nodes();
+    if (prim_nodes.size() != 0) {
+      MS_LOG(INFO) << "Start expanding meta: " << expand_meta_fg_element_.first;
+      auto change = (*expand_meta_fg_element_.second)(func_graph, optimizer);
+      res = res || change;
+      MS_LOG(INFO) << "End expanding meta: " << expand_meta_fg_element_.first << ", change: " << change;
+    }
+  }
+  return res;
+}
+
 }  // namespace irpass
 }  // namespace opt
 }  // namespace mindspore
