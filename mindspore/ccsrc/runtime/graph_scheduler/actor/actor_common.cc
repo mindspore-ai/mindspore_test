@@ -35,6 +35,7 @@
 #include "runtime/graph_scheduler/actor/kernel_async_resize_actor.h"
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/device/device_address_utils.h"
+#include "runtime/hardware/device_context_manager.h"
 #endif
 
 namespace mindspore {
@@ -1244,18 +1245,33 @@ DeviceTensor *FetchParameter(const std::pair<KernelWithIndex, size_t> &parameter
                              const AID &from_aid) {
   auto front_node = parameter_index.first.first;
   MS_EXCEPTION_IF_NULL(front_node);
-  MS_EXCEPTION_IF_NULL(device_context);
-  MS_LOG(DEBUG) << "Fetch parameter for actor: " << from_aid.Name() << ", front node: " << front_node->DebugString()
-                << ", with index: " << parameter_index.first.second << ", addr index: " << parameter_index.second
-                << ", device type: " << device_context->GetDeviceType();
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
-  // Return device tensor from graph parameter store if data prepared.
   auto outer_index = parameter_index.second;
   auto inner_index = parameter_index.first.second;
+  DeviceContext *real_device_context = const_cast<DeviceContext *>(device_context);
+  // Control node may not have device context.
+  if (real_device_context == nullptr) {
+    auto device_tensors = graph_parameter_store->Fetch(outer_index, inner_index);
+    if (device_tensors.size() != 1) {
+      MS_LOG(EXCEPTION) << "Control node should have only one device tensor in graph parameter store when device "
+                           "context is null, but got "
+                        << device_tensors.size();
+    }
+    MS_EXCEPTION_IF_NULL(device_tensors[0]);
+    auto device_name = device_tensors[0]->device_name();
+    auto device_id = device_tensors[0]->device_id();
+    real_device_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
+  }
+  MS_EXCEPTION_IF_NULL(real_device_context);
+  MS_LOG(DEBUG) << "Fetch parameter for actor: " << from_aid.Name() << ", front node: " << front_node->DebugString()
+                << ", with index: " << parameter_index.first.second << ", addr index: " << parameter_index.second
+                << ", device type: " << real_device_context->GetDeviceType();
 
+  // Return device tensor from graph parameter store if data prepared.
   static std::shared_mutex mtx;
   std::shared_lock<std::shared_mutex> read_lock(mtx);
-  auto device_tensor = graph_parameter_store->Fetch(outer_index, inner_index, device_context->GetDeviceType());
+  auto device_tensor = graph_parameter_store->Fetch(outer_index, inner_index, real_device_context->GetDeviceType());
   if (graph_parameter_store->GetDeviceTensorPrepared(outer_index, inner_index)) {
     MS_EXCEPTION_IF_NULL(device_tensor);
     return device_tensor;
@@ -1263,7 +1279,7 @@ DeviceTensor *FetchParameter(const std::pair<KernelWithIndex, size_t> &parameter
 
   read_lock.unlock();
   std::unique_lock<std::shared_mutex> write_lock(mtx);
-  auto prepared_device_tensor = PrepareParameter(parameter_index, device_context, context, from_aid);
+  auto prepared_device_tensor = PrepareParameter(parameter_index, real_device_context, context, from_aid);
   MS_EXCEPTION_IF_NULL(prepared_device_tensor);
   bool is_non_weight_parameter =
     front_node->isa<Parameter>() && (!common::AnfAlgo::IsParameterWeight(front_node->cast<ParameterPtr>()));
