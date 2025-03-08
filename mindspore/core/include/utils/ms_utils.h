@@ -110,6 +110,7 @@ const char kRuntimePerformanceStatTopNum[] = "performance_statistics_top_num";
 const char kRuntimeAclnnCacheQueueLength[] = "aclnn_cache_queue_length";
 const char kRuntimeAclnnCache[] = "aclnn_cache";
 const char kRuntimePreBuildCommKernel[] = "pre_build_comm_kernel";
+const char kRuntimeExecutionOrderCheckIteration[] = "execution_order_check_iteration";
 const char kSingleQuote = '\'';
 const char kDoubleQuote = '"';
 const char kSemicolon = ';';
