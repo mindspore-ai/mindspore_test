@@ -157,6 +157,9 @@ const AnfNodePtr GroupedMatmulAssignaddFusion::Process(const FuncGraphPtr &graph
   auto grouped_matmul_add = NewCNode(inputs, graph);
   grouped_matmul_add->set_scope(grouped_matmul->scope());
   grouped_matmul_add->set_abstract(node->abstract());
+  if (common::AnfAlgo::HasNodeAttr(GRAPH_FLAG_SIDE_EFFECT_MEM, node->cast<CNodePtr>())) {
+    common::AnfAlgo::CopyNodeAttr(GRAPH_FLAG_SIDE_EFFECT_MEM, node, grouped_matmul_add);
+  }
   return grouped_matmul_add;
 }
 }  // namespace opt
