@@ -17,6 +17,7 @@ from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
 from mindspore.nn import Cell, GraphCell
 import mindspore.ops.operations as P
+import mindspore.runtime as rt
 import numpy as np
 from tests.mark_utils import arg_mark
 
@@ -42,6 +43,114 @@ def test_single_if():
     ret2 = foo(y, x)
     assert ret1 == (Tensor(2, mstype.int32), Tensor(4, mstype.int32))
     assert ret2 == (Tensor(4, mstype.int32), Tensor(1, mstype.int32))
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_single_if_twice_same_branch():
+    """
+    Feature: Contrtol flow inline.
+    Description: Inline switch node into kernel graph.
+    Expectation: Not throw exception.
+    """
+    rt.set_memory(optimize_level="O1")
+
+    @jit
+    def foo(x, y):
+        if x > y:
+            z = x + 1
+        else:
+            z = y * 3
+        return z
+
+    x1 = Tensor(5, mstype.int32)
+    y1 = Tensor(7, mstype.int32)
+    x2 = Tensor(6, mstype.int32)
+    y2 = Tensor(8, mstype.int32)
+    ret1 = foo(x1, y1)
+    ret2 = foo(x2, y2)
+    assert ret1 == Tensor(21, mstype.int32)
+    assert ret2 == Tensor(24, mstype.int32)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_single_if_twice_same_branch_multi_output():
+    """
+    Feature: Contrtol flow inline.
+    Description: Inline switch node into kernel graph.
+    Expectation: Not throw exception.
+    """
+    rt.set_memory(optimize_level="O1")
+
+    @jit
+    def foo(x, y):
+        if x > y:
+            z = x + 1
+        else:
+            z = y * 3
+        return z, z, z
+
+    x1 = Tensor(5, mstype.int32)
+    y1 = Tensor(7, mstype.int32)
+    x2 = Tensor(6, mstype.int32)
+    y2 = Tensor(8, mstype.int32)
+    ret1 = foo(x1, y1)
+    ret2 = foo(x2, y2)
+    assert ret1 == (Tensor(21, mstype.int32), Tensor(21, mstype.int32), Tensor(21, mstype.int32))
+    assert ret2 == (Tensor(24, mstype.int32), Tensor(24, mstype.int32), Tensor(24, mstype.int32))
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_single_if_twice_diff_branch_multi_output():
+    """
+    Feature: Contrtol flow inline.
+    Description: Inline switch node into kernel graph.
+    Expectation: Not throw exception.
+    """
+    rt.set_memory(optimize_level="O1")
+
+    @jit
+    def foo(x, y):
+        if x > y:
+            z = x + 1
+        else:
+            z = y * 3
+        return z, z, z
+
+    x1 = Tensor(5, mstype.int32)
+    y1 = Tensor(7, mstype.int32)
+    ret1 = foo(x1, y1)
+    ret2 = foo(y1, x1)
+    assert ret1 == (Tensor(21, mstype.int32), Tensor(21, mstype.int32), Tensor(21, mstype.int32))
+    assert ret2 == (Tensor(8, mstype.int32), Tensor(8, mstype.int32), Tensor(8, mstype.int32))
+
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_single_if_triple_diff_branch_multi_output():
+    """
+    Feature: Contrtol flow inline.
+    Description: Inline switch node into kernel graph.
+    Expectation: Not throw exception.
+    """
+    rt.set_memory(optimize_level="O1")
+
+    @jit
+    def foo(x, y):
+        if x > y:
+            z = x + 1
+        else:
+            z = y * 3
+        return z, z, z
+
+    x1 = Tensor(5, mstype.int32)
+    y1 = Tensor(7, mstype.int32)
+    ret1 = foo(x1, y1)
+    ret2 = foo(y1, x1)
+    ret1 = foo(x1, y1)
+    assert ret1 == (Tensor(21, mstype.int32), Tensor(21, mstype.int32), Tensor(21, mstype.int32))
+    assert ret2 == (Tensor(8, mstype.int32), Tensor(8, mstype.int32), Tensor(8, mstype.int32))
+    assert ret1 == (Tensor(21, mstype.int32), Tensor(21, mstype.int32), Tensor(21, mstype.int32))
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_single_if_return_parameter():
