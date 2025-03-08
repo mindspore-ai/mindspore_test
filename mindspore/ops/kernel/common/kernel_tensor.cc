@@ -523,8 +523,9 @@ bool KernelTensor::SyncDataFromDeviceToHost() const {
   constexpr char kWaitAsyncResizeAndLaunchFinishCallback[] = "WaitAsyncResizeAndLaunchFinish";
   static const auto wait_resize_and_launch_finish =
     KernelCallback::GetInstance().GetCallback<void>(kWaitAsyncResizeAndLaunchFinishCallback);
-  MS_EXCEPTION_IF_NULL(wait_resize_and_launch_finish);
-  wait_resize_and_launch_finish();
+  if (wait_resize_and_launch_finish) {
+    wait_resize_and_launch_finish();
+  }
   host_info_->value_mutex_.lock();
 
   void *device_ptr = this->device_ptr();
