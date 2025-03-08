@@ -16,6 +16,7 @@
 import os
 import subprocess
 import shutil
+import pytest
 import numpy as np
 import mindspore as ms
 import mindspore.context as context
@@ -35,6 +36,15 @@ def hook_mul_5(grad):
 
 def hook_print(grad):
     print("grad:", grad)
+
+def hook_double_with_print(grad):
+    print("hook_double")
+    return grad * 2
+
+def hook_with_ctrl_flow(grad):
+    if grad[0] < 10000000:
+        return hook_double(grad)
+    return hook_triple(grad)
 
 np_weight0 = np.array([1.0, 2.0, 3.0])
 np_weight1 = np.array([4.0, 5.0, 6.0])
@@ -104,6 +114,40 @@ class HookPrintNet(nn.Cell):
         out = x * self.weight1
         return out
 
+class HookInJITNet(nn.Cell):
+    def __init__(self):
+        super(HookInJITNet, self).__init__()
+        self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")
+        self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
+
+    @ms.jit
+    def hook(self, x):
+        x.register_hook(hook_double_with_print)
+        return x
+
+    def construct(self, x):
+        x = x * self.weight0
+        x = self.hook(x)
+        out = x * self.weight1
+        return out
+
+class CtrlFlowHookInJITNet(nn.Cell):
+    def __init__(self):
+        super(CtrlFlowHookInJITNet, self).__init__()
+        self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")
+        self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
+
+    @ms.jit
+    def hook(self, x):
+        x.register_hook(hook_with_ctrl_flow)
+        return x
+
+    def construct(self, x):
+        x = x * self.weight0
+        x = self.hook(x)
+        out = x * self.weight1
+        return out
+
 class NeedReorderHookStmtNet(nn.Cell):
     def __init__(self):
         super(NeedReorderHookStmtNet, self).__init__()
@@ -160,17 +204,21 @@ def test_one_tensor_multi_hook():
     net = OneTensorMultiHookNet()
     grad_op = ops.GradOperation(get_all=True, get_by_list=True)
     grad_net = grad_op(net, net.trainable_params())
-    output = grad_net(input_x)
-    output_x_grad = output[0][0].asnumpy()
-    output_weight0_grad = output[1][0].asnumpy()
-    output_weight1_grad = output[1][1].asnumpy()
-    expected_x_grad = hook_double(hook_triple(ground_output[0][0])).asnumpy()
-    expected_weight0_grad = hook_double(hook_triple(ground_output[1][0])).asnumpy()
-    expected_weight1_grad = ground_output[1][1].asnumpy()
 
-    assert np.allclose(output_x_grad, expected_x_grad)
-    assert np.allclose(output_weight0_grad, expected_weight0_grad)
-    assert np.allclose(output_weight1_grad, expected_weight1_grad)
+    with pytest.raises(RuntimeError) as e:
+        grad_net(input_x)
+        output = grad_net(input_x)
+        output_x_grad = output[0][0].asnumpy()
+        output_weight0_grad = output[1][0].asnumpy()
+        output_weight1_grad = output[1][1].asnumpy()
+        expected_x_grad = hook_double(hook_triple(ground_output[0][0])).asnumpy()
+        expected_weight0_grad = hook_double(hook_triple(ground_output[1][0])).asnumpy()
+        expected_weight1_grad = ground_output[1][1].asnumpy()
+
+        assert np.allclose(output_x_grad, expected_x_grad)
+        assert np.allclose(output_weight0_grad, expected_weight0_grad)
+        assert np.allclose(output_weight1_grad, expected_weight1_grad)
+    assert "It is not supported to register multiple hooks for a Tensor." in str(e.value)
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_multi_tensor_multi_hook():
@@ -184,17 +232,19 @@ def test_multi_tensor_multi_hook():
     net = MultiTensorMultiHookNet()
     grad_op = ops.GradOperation(get_all=True, get_by_list=True)
     grad_net = grad_op(net, net.trainable_params())
-    output = grad_net(input_x)
-    output_x_grad = output[0][0].asnumpy()
-    output_weight0_grad = output[1][0].asnumpy()
-    output_weight1_grad = output[1][1].asnumpy()
-    expected_x_grad = hook_double(hook_triple(hook_double(hook_triple(ground_output[0][0])))).asnumpy()
-    expected_weight0_grad = hook_double(hook_triple(hook_double(hook_triple(ground_output[1][0])))).asnumpy()
-    expected_weight1_grad = hook_double(hook_triple(ground_output[1][1])).asnumpy()
+    with pytest.raises(RuntimeError) as e:
+        output = grad_net(input_x)
+        output_x_grad = output[0][0].asnumpy()
+        output_weight0_grad = output[1][0].asnumpy()
+        output_weight1_grad = output[1][1].asnumpy()
+        expected_x_grad = hook_double(hook_triple(hook_double(hook_triple(ground_output[0][0])))).asnumpy()
+        expected_weight0_grad = hook_double(hook_triple(hook_double(hook_triple(ground_output[1][0])))).asnumpy()
+        expected_weight1_grad = hook_double(hook_triple(ground_output[1][1])).asnumpy()
 
-    assert np.allclose(output_x_grad, expected_x_grad)
-    assert np.allclose(output_weight0_grad, expected_weight0_grad)
-    assert np.allclose(output_weight1_grad, expected_weight1_grad)
+        assert np.allclose(output_x_grad, expected_x_grad)
+        assert np.allclose(output_weight0_grad, expected_weight0_grad)
+        assert np.allclose(output_weight1_grad, expected_weight1_grad)
+    assert "It is not supported to register multiple hooks for a Tensor." in str(e.value)
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_hook_no_return():
@@ -252,6 +302,31 @@ def test_need_reorder_hook_stmt_net():
     expected_x_grad = hook_mul_5(hook_triple(hook_double(ground_output[0][0]))).asnumpy()
     expected_weight0_grad = hook_mul_5(hook_triple(ground_output[1][0])).asnumpy()
     expected_weight1_grad = hook_mul_5(ground_output[1][1]).asnumpy()
+
+    assert np.allclose(output_x_grad, expected_x_grad)
+    assert np.allclose(output_weight0_grad, expected_weight0_grad)
+    assert np.allclose(output_weight1_grad, expected_weight1_grad)
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', [context.PYNATIVE_MODE, context.GRAPH_MODE])
+@pytest.mark.parametrize('net', [HookInJITNet(), CtrlFlowHookInJITNet()])
+def test_hook_in_jit(mode, net):
+    """
+    Feature: Tensor.register_hook(hook_fn) inside graph.
+    Description: Test register hook inside jit wrapper
+    Expectation: The grad of tensor is changed by hook.
+    """
+    context.set_context(mode=mode, device_target="CPU")
+    input_x = Tensor(np_input_x, ms.float32)
+    grad_op = ops.GradOperation(get_all=True, get_by_list=True)
+    grad_net = grad_op(net, net.trainable_params())
+    output = grad_net(input_x)
+    output_x_grad = output[0][0].asnumpy()
+    output_weight0_grad = output[1][0].asnumpy()
+    output_weight1_grad = output[1][1].asnumpy()
+    expected_x_grad = hook_double(ground_output[0][0]).asnumpy()
+    expected_weight0_grad = hook_double(ground_output[1][0]).asnumpy()
+    expected_weight1_grad = ground_output[1][1].asnumpy()
 
     assert np.allclose(output_x_grad, expected_x_grad)
     assert np.allclose(output_weight0_grad, expected_weight0_grad)

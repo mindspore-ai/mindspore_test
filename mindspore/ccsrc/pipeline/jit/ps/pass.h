@@ -53,7 +53,7 @@ bool AddCacheEmbeddingPass(const ResourcePtr &resource);
 bool GradPartialTransformPass(const ResourcePtr &resource);
 FRONTEND_EXPORT void ReclaimOptimizer();
 bool PynativeOptPass(const ResourcePtr &resource);
-bool EliminateSpecialOpOptPass(const ResourcePtr &resource);
+bool OptAfterJitGradPass(const ResourcePtr &resource);
 bool ME_EXPORT AutoMonadElimOptPass(const FuncGraphPtr &func_graph);
 FuncGraphPtr PrimBpOptPassStep1(const opt::irpass::OptimizeIRPassLib &irpass, const ResourcePtr &resource);
 FuncGraphPtr PrimBpOptPassStep2(const opt::irpass::OptimizeIRPassLib &irpass, const ResourcePtr &resource,

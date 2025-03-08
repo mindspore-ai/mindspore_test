@@ -149,6 +149,30 @@ ValuePtr CreateInsertGradientOf(const py::function &hook_fn) {
   return converted_res;
 }
 
+bool IsGradFgCaller(const AnfNodePtr &node) {
+  auto cnode = dyn_cast<CNode>(node);
+  if (cnode == nullptr || cnode->empty()) {
+    return false;
+  }
+  auto call_fg = GetValueNode<FuncGraphPtr>(cnode->input(0));
+  return call_fg != nullptr && call_fg->has_flag("grad_fg");
+}
+
+bool IsUsedAsGradFgArgs(const AnfNodePtr &node, const NodeUsersMap &node_users_map) {
+  if (!IsPrimitiveCNode(node, prim::kPrimMakeTuple)) {
+    return IsGradFgCaller(node);
+  }
+  auto node_users_iter = node_users_map.find(node);
+  if (node_users_iter == node_users_map.end()) {
+    return false;
+  }
+  auto node_users = node_users_iter->second;
+  if (node_users.size() != 1) {
+    return false;
+  }
+  return IsGradFgCaller(node_users.begin()->first);
+}
+
 void AddHookNodeForParameter(const FuncGraphPtr &func_graph, const ParameterPtr &param_node) {
   if (!(param_node->has_default() && param_node->default_param()->has_user_data("backward_hook"))) {
     return;
@@ -163,8 +187,15 @@ void AddHookNodeForParameter(const FuncGraphPtr &func_graph, const ParameterPtr 
     const auto insert_grad_of = CreateInsertGradientOf(hook_fn);
     auto value_node = NewValueNode(insert_grad_of);
     value_node->set_abstract(insert_grad_of->ToAbstract());
-    const auto node_users = func_graph->manager()->node_users()[param_node];
-    for (const auto &node_and_index : node_users) {
+    const auto node_users_map = func_graph->manager()->node_users();
+    auto node_users_iter = node_users_map.find(param_node);
+    if (node_users_iter == node_users_map.end()) {
+      return;
+    }
+    for (const auto &node_and_index : node_users_iter->second) {
+      if (IsUsedAsGradFgArgs(node_and_index.first, node_users_map)) {
+        continue;
+      }
       const auto &fg = node_and_index.first->func_graph();
       auto new_node = fg->NewCNode({value_node, param_node});
       new_node->set_abstract(param_node->abstract());
@@ -1399,7 +1430,7 @@ bool RewriterAfterOptAPassAfterJitBprop(const ResourcePtr &resource) {
   return true;
 }
 
-bool EliminateSpecialOpNode(const ResourcePtr &resource) {
+bool OptAfterJitGrad(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   if (resource->manager() == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "PynativeElimOpt error, manager is null.";
@@ -1407,7 +1438,7 @@ bool EliminateSpecialOpNode(const ResourcePtr &resource) {
   if (resource->func_graph() == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "PynativeElimOpt error, graph is null.";
   }
-  return EliminateSpecialOpOptPass(resource);
+  return OptAfterJitGradPass(resource);
 }
 
 bool HasIncorporateCall(const std::vector<AnfNodePtr> &all_nodes) {
@@ -2160,7 +2191,7 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
     (void)actions.emplace_back(std::make_pair(kRewriterAfterJitBprop, RewriterAfterOptAPassAfterJitBprop));
 
     // Eliminate the virtual mirror node
-    (void)actions.emplace_back(std::make_pair(kEliminateSpecialOpNode, EliminateSpecialOpNode));
+    (void)actions.emplace_back(std::make_pair(kOptAfterJitGrad, OptAfterJitGrad));
 
 #if defined(__linux__) && defined(WITH_BACKEND)
     if (!pipeline::IsPhaseExport(phase)) {

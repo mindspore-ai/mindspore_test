@@ -11,8 +11,9 @@ mindspore.Tensor.register_hook
         - 静态图模式下需满足如下约束：
 
           - `hook` 同样需满足静态图模式下的语法约束。
-          - 不支持在图内（即 `Cell.construct` 函数或被 `@jit` 修饰的函数）对 `Parameter` 注册 `hook`。
           - 不支持在图内对 `hook` 进行删除。
+          - 不支持在 `Tensor` 被使用之后再次对 `Tensor` 注册 `hook`。
+          - 不支持在图内对 `Tensor` 注册多个 `hook`。
           - 图内对 `Tensor` 注册 `hook` 将返回 `Tensor` 本身。
 
     参数：

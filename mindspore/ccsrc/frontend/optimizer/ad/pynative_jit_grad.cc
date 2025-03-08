@@ -40,9 +40,10 @@ mindspore::HashMap<std::string, pipeline::ResourcePtr> jit_forward_resource;
 
 namespace {
 static const std::vector<PrimitivePtr> UNREUSED_PRIM_LIST = {
-  prim::kPrimStopGradient,     prim::kPrimUpdateState, prim::kPrimMirror,
-  prim::kPrimVirtualDiv,       prim::kPrimMutable,     prim::kPrimConvertToAdapterTensor,
-  prim::kPrimConvertToMsTensor};
+  prim::kPrimStopGradient,      prim::kPrimUpdateState,      prim::kPrimMirror,
+  prim::kPrimVirtualDiv,        prim::kPrimMutable,          prim::kPrimConvertToAdapterTensor,
+  prim::kPrimConvertToMsTensor, prim::kPrimInsertGradientOf, prim::kPrimHookBackward,
+  prim::kPrimCellBackwardHook,  prim::kPrimPrintShapeType};
 
 // Optimizes the forward function graph.
 FuncGraphPtr OptimizeForwardGraph(const FuncGraphPtr &bprop_func_graph, bool need_renormalize = false) {
@@ -66,7 +67,7 @@ FuncGraphPtr OptimizeForwardGraph(const FuncGraphPtr &bprop_func_graph, bool nee
     manager->AddFuncGraph(new_fg);
   }
   (void)mindspore::opt::RewriterAfterOptA(resource->func_graph(), resource);
-  (void)EliminateSpecialOpOptPass(resource);
+  (void)OptAfterJitGradPass(resource);
   return resource->func_graph();
 }
 
@@ -327,9 +328,7 @@ std::pair<bool, FuncGraphPtr> GetBpropGraphWithParamalization(const pynative::Gr
     pynative::CommonUtils::DumpGraphIR("opt_backward_before_opt.ir", after_opt_fg);
     after_opt_fg = OptimizeBpropGraph(after_opt_fg, grad_param);
     MS_LOG(INFO) << "Bprop graph generated successfully.";
-    if (grad_param->is_func_grad && grad_param->is_control_flow) {
-      after_opt_fg = LiftingClone(after_opt_fg);
-    }
+
     if (grad_param->is_jit_graph || !grad_param->use_dynamic_shape_process) {
       pass_grad_graph_param_[grad_param->graph_cache_key] = {forward_fg, after_opt_fg};
     }
@@ -382,9 +381,7 @@ std::pair<bool, FuncGraphPtr> GetBpropGraphWithValueNodeReplacement(const pynati
     if (grad_param->is_func_grad) {
       PlantFuncGradBpropGraphDout(after_opt_fg, grad_param->input_size, grad_param->op_grad_info->out_abs);
     }
-    if (grad_param->is_func_grad && grad_param->is_control_flow) {
-      after_opt_fg = LiftingClone(after_opt_fg);
-    }
+
     if (grad_param->is_jit_graph || !grad_param->use_dynamic_shape_process) {
       // Control flow no need do valuenode replacement, just return the original funcgraph
       pass_grad_graph_valuenode_[grad_param->graph_cache_key] =

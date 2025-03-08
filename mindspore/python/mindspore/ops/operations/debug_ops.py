@@ -483,6 +483,7 @@ class Morph(PrimitiveWithInfer):
         - This primitive is only supported in GRAPH_MODE.
         - `fn` must satisfy the syntax constraints of the graph mode.
         - Users do not need to implement a custom backward function.
+        - `vararg`, `kwarg`, `kwonlyargs` and free variables are not supported in user-defined function.
 
     Args:
         fn (Function): Mindspore's function, user-defined function.

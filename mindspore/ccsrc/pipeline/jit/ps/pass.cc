@@ -297,6 +297,23 @@ FuncGraphPtr PrimBpOptPassStep2(const opt::irpass::OptimizeIRPassLib &irpass, co
 
 FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormalize) {
   opt::irpass::OptimizeIRPassLib irpass;
+  OptPassGroupMap map;
+
+  if (need_renormalize) {
+    opt::OptPassConfig after_resolve_pass = opt::OptPassConfig({irpass.replace_old_param_});
+    // Disable after_resolve_pass if Pre-Lift is enabled.
+    static const bool enable_pre_lift = (common::GetCompileConfig("PRE_LIFT") == "1");
+    if (enable_pre_lift) {
+      after_resolve_pass.set_disabled(true);
+    }
+    opt::OptPassConfig a_after_grad =
+      opt::OptPassConfig({irpass.inline_without_move_, irpass.stack_unstack_eliminate_});
+
+    (void)map.emplace_back("after_resolve", after_resolve_pass);
+    (void)map.emplace_back("a_after_grad", a_after_grad);
+    (void)map.emplace_back("renormalize", opt::OptPassConfig::Renormalize());
+  }
+
   opt::OptPassConfig grad_graph_opt = opt::OptPassConfig({
     irpass.inline_,
     irpass.list_to_tuple_eliminator_,
@@ -309,19 +326,29 @@ FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormaliz
     irpass.switch_simplify_,
     irpass.addn_zero_filter_,
     irpass.ad_related_special_op_eliminate_,
+    irpass.special_op_eliminate_,
   });
   opt::OptPassConfig fill_zeros_like = opt::OptPassConfig{irpass.zero_like_fill_zero_};
-  OptPassGroupMap map({
-    {"grad_graph_opt", grad_graph_opt},
-    {"zeros_like", fill_zeros_like},
-  });
-  if (need_renormalize) {
-    (void)map.emplace_back("renormalize", opt::OptPassConfig::Renormalize());
-  }
+
+  (void)map.emplace_back("grad_graph_opt", grad_graph_opt);
+  (void)map.emplace_back("zeros_like", fill_zeros_like);
+
   MS_EXCEPTION_IF_NULL(resource);
   auto func_graph = resource->func_graph();
   auto graph_opt = opt::Optimizer::MakeOptimizer("jit_bprop_graph_opt", resource, map);
-  return graph_opt->step(func_graph, false);
+  auto optimized_fg = graph_opt->step(func_graph, false);
+  auto lifted_fg = LiftingClone(optimized_fg);
+
+#ifdef ENABLE_DUMP_IR
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  bool enable_save_graphs = context->CanDump(kIntroductory);
+  if (enable_save_graphs) {
+    DumpIR("jit_bprop_graph_lift_" + lifted_fg->ToString(), lifted_fg);
+  }
+#endif
+
+  return lifted_fg;
 }
 
 FuncGraphPtr HighGradBpropGraphPass(const ResourcePtr &resource) {
@@ -624,7 +651,6 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, cons
      {"receive_attached", opt::OptPassConfig(parallel::IsolatedNodeAttach)},
      {"after_resolve", after_resolve_pass},
      {"a_after_grad", a_after_grad},
-     {"special_op_eliminate", opt::OptPassConfig({irpass.special_op_eliminate_})},
      {"renormalize", opt::OptPassConfig::Renormalize()},
      {"add_forward_monad_depend", opt::OptPassConfig(opt::irpass::AddForwardMonadDepend)},
      {"auto_monad_grad", opt::OptPassConfig(ReAutoMonadWrapper)},
@@ -725,7 +751,6 @@ OptPassGroupMap GetJitOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, c
      {"inplace_validation_after_expand", opt::OptPassConfig(InplaceValidationAfterExpandWrapper)},
      {"replace_old_param", opt::OptPassConfig({irpass.replace_old_param_})},
      {"inline_without_move", opt::OptPassConfig({irpass.inline_without_move_})},
-     {"special_op_eliminate", opt::OptPassConfig({irpass.special_op_eliminate_})},
      {"renormalize", opt::OptPassConfig::Renormalize()},
      {"add_forward_monad_depend", opt::OptPassConfig(opt::irpass::AddForwardMonadDepend)},
      {"auto_monad_grad", opt::OptPassConfig(ReAutoMonadWrapper)},
@@ -933,20 +958,19 @@ OptPassGroupMap GetSymbolEngineOptPass(const opt::irpass::OptimizeIRPassLib &irp
 }
 
 OptPassGroupMap GetJitOptPassesB(const opt::irpass::OptimizeIRPassLib &irpass) {
-  opt::OptPassConfig frontend_op_eliminate = opt::OptPassConfig({
-    irpass.zero_like_fill_zero_,
-    irpass.check_bprop_eliminate_,
-    irpass.special_op_eliminate_,
-    irpass.row_tensor_eliminate_,
-  });
+  std::vector<opt::SubstitutionPtr> frontend_op_eliminate_pass_list = {
+    irpass.zero_like_fill_zero_, irpass.check_bprop_eliminate_, irpass.row_tensor_eliminate_};
+  if (!pynative::GradState::Get().RequiresGrad()) {
+    (void)frontend_op_eliminate_pass_list.emplace_back(irpass.special_op_eliminate_);
+  }
+  opt::OptPassConfig frontend_op_eliminate = opt::OptPassConfig(frontend_op_eliminate_pass_list);
 
-  opt::OptPassConfig inline_after_opt_a = opt::OptPassConfig(
-    {
-      irpass.reset_defer_inline_,
-      irpass.inline_,
-      irpass.tuple_list_get_item_eliminator_,
-    },
-    false, true);
+  std::vector<opt::SubstitutionPtr> inline_after_opt_a_pass_list = {irpass.tuple_list_get_item_eliminator_};
+  if (!pynative::GradState::Get().RequiresGrad()) {
+    (void)inline_after_opt_a_pass_list.emplace_back(irpass.reset_defer_inline_);
+    (void)inline_after_opt_a_pass_list.emplace_back(irpass.inline_);
+  }
+  opt::OptPassConfig inline_after_opt_a = opt::OptPassConfig(inline_after_opt_a_pass_list, false, true);
 
   OptPassGroupMap opt_map(
     {{"frontend_op_eliminate", frontend_op_eliminate}, {"inline_after_opt_a", inline_after_opt_a}});
@@ -1532,13 +1556,14 @@ bool PynativeOptPass(const ResourcePtr &resource) {
   return true;
 }
 
-bool EliminateSpecialOpOptPass(const ResourcePtr &resource) {
+bool OptAfterJitGradPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   auto func_graph = resource->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
   opt::irpass::OptimizeIRPassLib irpass;
   opt::OptPassConfig ad_related_special_op_eliminate = opt::OptPassConfig({
     irpass.ad_related_special_op_eliminate_,
+    irpass.special_op_eliminate_,
   });
   opt::OptPassConfig mutable_op_eliminate = opt::OptPassConfig({
     irpass.mutable_op_eliminate_,
@@ -1551,8 +1576,14 @@ bool EliminateSpecialOpOptPass(const ResourcePtr &resource) {
     {"mutable_op_eliminate", mutable_op_eliminate},
     {"convert_tensor_op_eliminate", convert_tensor_op_eliminate},
   });
-  auto special_op_eliminate_opt = opt::Optimizer::MakeOptimizer("special_op_eliminate", resource, map);
-  (void)special_op_eliminate_opt->step(func_graph, false);
+  if (pynative::GradState::Get().RequiresGrad()) {
+    opt::OptPassConfig inline_after_jit_grad =
+      opt::OptPassConfig({irpass.reset_defer_inline_, irpass.inline_}, false, true);
+    (void)map.emplace_back("inline_after_jit_grad", inline_after_jit_grad);
+  }
+
+  auto opt_after_jit_grad = opt::Optimizer::MakeOptimizer("opt_after_jit_grad", resource, map);
+  (void)opt_after_jit_grad->step(func_graph, false);
   return true;
 }
 
