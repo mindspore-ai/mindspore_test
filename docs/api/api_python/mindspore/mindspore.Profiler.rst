@@ -3,6 +3,7 @@ mindspore.Profiler
 
 .. py:class:: mindspore.Profiler(**kwargs)
 
+    当前接口即将弃用，请使用 :class:`mindspore.profiler.profile` 代替。
     MindSpore用户能够通过该类对神经网络的性能进行采集。可以通过导入 :class:`mindspore.Profiler` 然后初始化Profiler对象以开始分析，使用 `Profiler.analyse()` 停止收集并分析结果。可通过 `MindStudio Insight <https://www.hiascend.com/developer/download/community/result?module=pt+sto+cann>`_ 工具可视化分析结果。目前，Profiler支持AICORE算子、AICPU算子、HostCPU算子、内存、设备通信、集群等数据的分析。
 
     参数：
@@ -24,7 +25,7 @@ mindspore.Profiler
         - **schedule** (schedule, 可选) - 设置采集的动作策略，由schedule类定义，需要配合step接口使用，默认值： ``None`` 。
         - **on_trace_ready** (Callable, 可选) - 设置当性能数据采集完成时，执行的回调函数。默认值： ``None`` 。
         - **profile_memory** (bool, 可选) -（仅限Ascend）表示是否收集Tensor内存数据。当值为 ``True`` 时，收集这些数据。使用此参数时， `activities` 必须设置为 ``[ProfilerActivity.CPU, ProfilerActivity.NPU]`` 。在图编译等级为O2时收集算子内存数据，需要从第一个step开始采集。默认值： ``False`` ，此参数目前采集的算子名称不完整。将在后续版本修复，建议使用环境变量 ``MS_ALLOC_CONF`` 代替。
-        - **aicore_metrics** (AicoreMetrics, 可选) -（仅限Ascend）收集的AICORE性能数据类型，使用此参数时， `activities` 必须包含 ``ProfilerActivity.NPU`` ，且值必须包含在AicoreMetrics枚举值中。当 `profiler_level` 为 ``ProfilerLevel.Level0`` 时，默认值为 ``AicoreMetrics.AiCoreNone``；当 `profiler_level` 为 ``ProfilerLevel.Level1`` 或 ``ProfilerLevel.Level2`` 时，默认值为 ``AicoreMetrics.PipeUtilization``，每种类型包含的数据项如下：
+        - **aic_metrics** (AicoreMetrics, 可选) -（仅限Ascend）收集的AICORE性能数据类型，使用此参数时， `activities` 必须包含 ``ProfilerActivity.NPU`` ，且值必须包含在AicoreMetrics枚举值中，默认值： ``AicoreMetrics.AiCoreNone`` ，每种类型包含的数据项如下：
 
           - AicoreMetrics.AiCoreNone：不收集任何AICORE数据。
           - AicoreMetrics.ArithmeticUtilization：包含mac_fp16/int8_ratio、vec_fp32/fp16/int32_ratio、vec_misc_ratio等。
@@ -34,6 +35,7 @@ mindspore.Profiler
           - AicoreMetrics.ResourceConflictRatio：包含vec_bankgroup/bank/resc_cflt_ratio等。
           - AicoreMetrics.MemoryUB：包含ub\_read/write_bw_mte、 ub\_read/write_bw_vector、 ub\_/write_bw_scalar等。
           - AicoreMetrics.L2Cache：包含write_cache_hit、 write_cache_miss_allocate、 r0_read_cache_hit、 r1_read_cache_hit等。本功能仅支持Atlas A2 训练系列产品。
+          - AicoreMetrics.MemoryAccess：主存以及L2 Cache的存访带宽和存量统计。
 
         - **with_stack** (bool, 可选) - （Ascend）表示是否收集Python侧的调用栈的数据，此数据在timeline中采用火焰图的形式呈现，使用此参数时， `activities` 必须包含 ``ProfilerActivity.CPU`` 。默认值： ``False`` 。
         - **data_simplification** (bool, 可选) - （仅限Ascend）是否开启数据精简，开启后将在导出性能数据后删除FRAMEWORK目录数据以及其他多余数据，仅保留profiler的交付件以及PROF_XXX目录下的原始性能数据，以节省空间。默认值: ``True`` 。
@@ -46,8 +48,9 @@ mindspore.Profiler
 
           - True：同步方式，在把算子发送到GPU之前，在CPU端记录开始时间戳。然后在算子执行完毕返回到CPU端后，再记录结束时间戳。算子耗时为两个时间戳的差值。
           - False：异步方式，算子耗时为从CPU发送到GPU的耗时。这种方式能减少因增加Profiler对整体训练时间的影响。
+
     异常：
-        - **RuntimeError** - 当CANN的版本与MindSpore版本不匹配时，生成的ascend_job_id目录结构MindSpore无法解析。
+        - **RuntimeError** - 当CANN的版本与MindSpore版本不匹配时，MindSpore无法解析生成的ascend_job_id目录结构。
 
     .. py:method:: add_metadata(key: str, value: str)
 
@@ -95,7 +98,7 @@ mindspore.Profiler
 
         参数：
             - **op_name** (str 或 list) - 表示要查询的primitive算子类型。
-            - **device_id** (int, 可选) - 设备卡号，表示指定解析哪张卡的算子性能数据。在网络训练或者推理时使用，该参数可选。基于离线数据解析使用该接口时，默认值： ``0`` 。
+            - **device_id** (int, 可选) - 设备卡号，表示指定解析哪张卡的算子性能数据。在网络训练或者推理时使用，该参数可选。基于离线数据解析使用该接口时，默认值： ``None`` 。
 
         异常：
             - **TypeError** - `op_name` 参数类型不正确。

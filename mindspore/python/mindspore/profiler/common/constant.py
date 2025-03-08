@@ -199,3 +199,8 @@ class JitLevel:
     KBK_LEVEL = "O0"
     KBK_DVM_LEVEL = "O1"
     GRAPH_LEVEL = "O2"
+
+
+class ExportType(Enum):
+    Db = "db"
+    Text = "text"

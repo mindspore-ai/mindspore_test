@@ -23,7 +23,7 @@ from mindspore import log as logger
 from mindspore.profiler.analysis.parser.base_parser import BaseParser
 from mindspore.profiler.common.file_manager import FileManager
 from mindspore.profiler.common.path_manager import PathManager
-from mindspore.profiler.common.constant import ProfilerLevel
+from mindspore.profiler.common.constant import ProfilerLevel, ExportType
 from mindspore.profiler.common.ascend_msprof_exporter import AscendMsprofExporter
 from mindspore.profiler.common.log import ProfilerLogger
 
@@ -50,6 +50,7 @@ class AscendMsprofParser(BaseParser):
         )
         self._ascend_ms_dir = self._kwargs.get("ascend_ms_dir")
         self._profiler_level = kwargs.get("profiler_level")
+        self._export_type = kwargs.get("export_type")
         ProfilerLogger.init(self._ascend_ms_dir)
         self._logger = ProfilerLogger.get_instance()
         self.op_summary = None
@@ -89,7 +90,8 @@ class AscendMsprofParser(BaseParser):
         Raises:
             RuntimeError: If no op summary files are found or read file failed.
         """
-        if self._profiler_level == ProfilerLevel.LevelNone.value:
+        if (self._profiler_level == ProfilerLevel.LevelNone.value or
+                self._export_type == [ExportType.Db.value]):
             return
         file_path_list = glob.glob(
             os.path.join(
@@ -117,6 +119,8 @@ class AscendMsprofParser(BaseParser):
         Raises:
             RuntimeError: If no msprof JSON files are found in the specified directory.
         """
+        if self._export_type == [ExportType.Db.value]:
+            return
         file_path_list = []
         for pattern in self._MSPROF_TIMELINE_FILE_PATTERN:
             file_path_list.extend(glob.glob(os.path.join(self._msprof_profile_output_path, pattern)))

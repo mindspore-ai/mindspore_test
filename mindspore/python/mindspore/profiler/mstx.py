@@ -45,7 +45,7 @@ class Mstx:
             >>> from mindspore import nn
             >>> import mindspore.dataset as ds
             >>> from mindspore import Profiler
-            >>> from mindspore.profiler import ProfilerLevel, ProfilerActivity, schedule, tensor_board_trace_handler
+            >>> from mindspore.profiler import ProfilerLevel, ProfilerActivity, schedule, tensorboard_trace_handler
             >>> from mindspore.profiler import mstx
             >>>
             >>> class Net(nn.Cell):
@@ -78,7 +78,7 @@ class Mstx:
             ...     ms.set_device(device_target="Ascend", device_id=0)
             ...     # Init Profiler
             ...     with Profiler(profiler_level=ProfilerLevel.LevelNone,
-            ...                   on_trace_ready=tensor_board_trace_handler,
+            ...                   on_trace_ready=tensorboard_trace_handler,
             ...                   activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
             ...                   schedule=schedule(wait=0, warmup=0, active=3, repeat=1, skip_first=0),
             ...                   mstx=True) as profiler:
@@ -120,7 +120,7 @@ class Mstx:
             >>> from mindspore import nn
             >>> import mindspore.dataset as ds
             >>> from mindspore import Profiler
-            >>> from mindspore.profiler import ProfilerLevel, ProfilerActivity, schedule, tensor_board_trace_handler
+            >>> from mindspore.profiler import ProfilerLevel, ProfilerActivity, schedule, tensorboard_trace_handler
             >>> from mindspore.profiler import mstx
             >>>
             >>> class Net(nn.Cell):
@@ -152,7 +152,7 @@ class Mstx:
             ...     ms.set_context(mode=ms.PYNATIVE_MODE)
             ...     ms.set_device(device_target="Ascend", device_id=0)
             ...     with Profiler(profiler_level=ProfilerLevel.LevelNone,
-            ...                   on_trace_ready=tensor_board_trace_handler,
+            ...                   on_trace_ready=tensorboard_trace_handler,
             ...                   activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
             ...                   schedule=schedule(wait=0, warmup=0, active=3, repeat=1, skip_first=0),
             ...                   mstx=True) as profiler:

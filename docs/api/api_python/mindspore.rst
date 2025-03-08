@@ -195,7 +195,8 @@ mindspore
 .. mscnautosummary::
     :toctree: mindspore
 
-    mindspore.Profiler
+    mindspore.profiler.profile
+    mindspore.profiler._ExperimentalConfig
     mindspore.profiler.mstx
     mindspore.profiler.DynamicProfilerMonitor
     mindspore.profiler.schedule
@@ -204,6 +205,7 @@ mindspore
     mindspore.SummaryLandscape
     mindspore.SummaryRecord
     mindspore.set_dump
+    mindspore.Profiler
 
 日志
 ^^^^^

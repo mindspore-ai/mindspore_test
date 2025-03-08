@@ -21,6 +21,7 @@ from mindspore.profiler.common.constant import (
     ProfilerLevel,
     AicoreMetrics,
     ProfilerActivity,
+    ExportType,
 )
 from mindspore.profiler.common.profiler_parameters import ProfilerParameters
 
@@ -107,13 +108,17 @@ class EnvProfiler:
                     params[param] = cls._convert_activities_to_list(
                         options[param], default_value
                     )
-                elif param == "aicore_metrics":
+                elif param == "aic_metrics":
                     params[param] = cls._convert_option_to_enum_value(
                         AicoreMetrics, options[param], default_value
                     )
                 elif param == "profiler_level":
                     params[param] = cls._convert_option_to_enum_value(
                         ProfilerLevel, options[param], default_value
+                    )
+                elif param == "export_type":
+                    params[param] = cls._convert_export_type_to_list(
+                        options[param], default_value
                     )
                 else:
                     params[param] = options[param]
@@ -134,5 +139,25 @@ class EnvProfiler:
         # remove duplicate
         return list(set(default_value if default_value in res else res))
 
+    @classmethod
+    def _convert_export_type_to_list(cls, export_types, default_value) -> list:
+        """
+        Check the export type to the list.
+        """
+        res = []
+        for export_type in export_types:
+            if export_type != "text" and export_type != "db":
+                logger.warning(
+                    f"The value '{export_type}' of parameter '{ExportType.__name__}' is invalid, "
+                    f"use default value '{default_value}' instead."
+                )
+                return default_value
+            res.append(
+                cls._convert_option_to_enum_value(
+                    ExportType, export_type, default_value
+                )
+            )
+        # remove duplicate
+        return list(set(res))
 
 EnvProfiler.init_profiler()

@@ -25,8 +25,12 @@ import mindspore._c_expression as c_expression
 
 from mindspore.profiler.common.path_manager import PathManager
 from mindspore.profiler.common.registry import PROFILERS
-from mindspore.profiler.common.constant import DeviceTarget, ProfilerActivity, AnalysisMode
-
+from mindspore.profiler.common.constant import (
+    DeviceTarget,
+    ProfilerActivity,
+    AnalysisMode,
+    ExportType,
+)
 from mindspore._c_expression import _framework_profiler_enable_mi, _framework_profiler_disable_mi
 from mindspore.profiler.common.profiler_context import ProfilerContext
 from mindspore.profiler.platform.base_profiler import BaseProfiler
@@ -147,15 +151,17 @@ class NPUProfilerAnalysis:
     """
 
     @classmethod
-    def online_analyse(cls):
+    def online_analyse(cls, async_mode: bool = False):
         """
         Online analysis for NPU
         """
         cls._pre_analyse_online()
-        if ProfilerContext().mode == AnalysisMode.SYNC_MODE.value:
-            cls._run_tasks(**ProfilerContext().to_dict())
-        elif ProfilerContext().mode == AnalysisMode.ASYNC_MODE.value:
+        if async_mode:
+            ProfilerContext().mode = AnalysisMode.ASYNC_MODE.value
             MultiProcessPool().add_async_job(cls._run_tasks, **ProfilerContext().to_dict())
+        else:
+            ProfilerContext().mode = AnalysisMode.SYNC_MODE.value
+            cls._run_tasks(**ProfilerContext().to_dict())
 
     @classmethod
     def offline_analyse(
@@ -248,6 +254,8 @@ class NPUProfilerAnalysis:
         task_mgr = cls._construct_task_mgr(**kwargs)
         task_mgr.run()
         ProfilerLogger.get_instance().info(json.dumps(task_mgr.cost_time, indent=4))
+        if ProfilerActivity.NPU.value in kwargs.get("activities"):  # pylint: disable=too-many-function-args
+            ProfilerPathManager().move_db_file()
         if kwargs.get("data_simplification") and ProfilerActivity.NPU.value in kwargs.get("activities"):
             ProfilerPathManager().simplify_data()
 
@@ -258,10 +266,21 @@ class NPUProfilerAnalysis:
         """
         task_mgr = TaskManager()
         activities = kwargs.get("activities", [])
+        export_type = kwargs.get("export_type", [])
         enable_data_process = kwargs.get("data_process", False)
 
         # CANN flow parser
         cann_flow_parsers = []
+
+        if export_type == [ExportType.Db.value]:
+            cann_flow_parsers.append(
+                AscendMsprofParser(**kwargs)
+            )
+            task_mgr.create_flow(
+                *cann_flow_parsers, flow_name="cann_flow", show_process=True
+            )
+            return task_mgr
+
         if ProfilerActivity.NPU.value in activities:
             cann_flow_parsers.append(
                 AscendMsprofParser(**kwargs)

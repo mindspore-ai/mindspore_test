@@ -15,6 +15,8 @@
 """Profiler Path Manager"""
 import os
 import socket
+import glob
+import shutil
 from datetime import datetime, timezone
 
 from mindspore import log as logger
@@ -29,10 +31,39 @@ class ProfilerPathManager:
     ProfilerPathManager is responsible for creating and managing all paths used by profiler.
     """
 
-    _ASCEND_MS_DIR = "{}_{}_{}_ascend_ms"
+    _ASCEND_MS_DIR = "{}_{}_ascend_ms"
+    MAX_WORKER_NAME_LENGTH = 226
 
     def __init__(self):
         self._prof_ctx = ProfilerContext()
+        self._worker_name = None
+        self._dir_path = None
+
+    def init(self, worker_name: str = None, dir_name: str = None) -> None:
+        """
+        Init the profiler path.
+        """
+        valid_wk_name = worker_name and isinstance(worker_name, str)
+        valid_wk_len = isinstance(worker_name, str) and len(worker_name) < self.MAX_WORKER_NAME_LENGTH
+        if (valid_wk_name and valid_wk_len) or worker_name is None:
+            self._worker_name = worker_name
+        else:
+            logger.warning("Invalid parameter worker_name, reset it to default.")
+            self._worker_name = None
+
+        valid_dir_name = dir_name and isinstance(dir_name, str)
+        if valid_dir_name:
+            dir_path = PathManager.get_real_path(dir_name)
+            PathManager.check_input_directory_path(dir_path)
+            self._dir_path = dir_path
+        elif dir_name is None:
+            self._dir_path = dir_name
+        else:
+            logger.warning(f"Invalid parameter dir_name, reset it to default.")
+            self._dir_path = None
+
+        if self._dir_path:
+            self._prof_ctx.on_trace_ready_output_path = self._dir_path
 
     def clean_analysis_cache(self):
         """
@@ -86,6 +117,22 @@ class ProfilerPathManager:
             elif os.path.isdir(cache_path):
                 PathManager.remove_path_safety(cache_path)
 
+    def move_db_file(self):
+        """
+        Copy the db file to the output path.
+        """
+        if not self._prof_ctx.msprof_profile_output_path:
+            return
+        db_files = glob.glob(os.path.join(os.path.dirname(self._prof_ctx.msprof_profile_output_path), 'msprof*.db'))
+        for db_file in db_files:
+            if os.path.isfile(db_file):
+                if self._prof_ctx.rank_id == "":
+                    new_file_name = f"ascend_mindspore_profiler.db"
+                else:
+                    new_file_name = f"ascend_mindspore_profiler_{self._prof_ctx.rank_id}.db"
+                new_file_path = os.path.join(self._prof_ctx.ascend_profiler_output_path, new_file_name)
+                shutil.move(db_file, new_file_path)
+
     def create_output_path(self):
         """
         Create ASCEND_PROFILER_OUTPUT dir, this method should call before analysis
@@ -112,9 +159,10 @@ class ProfilerPathManager:
         """
         Generate xxx_ascend_ms name
         """
-        return self._ASCEND_MS_DIR.format(
-            socket.gethostname(),
-            os.getpid(),
-            # save time with microseconds
-            datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S%f")[:-3],
-        )
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S%f")[:-3]
+        if not self._worker_name:
+            worker_name = f"{socket.gethostname()}_{os.getpid()}"
+        else:
+            worker_name = self._worker_name
+
+        return self._ASCEND_MS_DIR.format(worker_name, timestamp)

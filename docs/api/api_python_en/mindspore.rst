@@ -221,7 +221,8 @@ Debugging and Tuning
     :nosignatures:
     :template: classtemplate.rst
 
-    mindspore.Profiler
+    mindspore.profiler.profile
+    mindspore.profiler._ExperimentalConfig
     mindspore.profiler.mstx
     mindspore.profiler.DynamicProfilerMonitor
     mindspore.profiler.schedule
@@ -229,7 +230,8 @@ Debugging and Tuning
     mindspore.SummaryCollector
     mindspore.SummaryLandscape
     mindspore.SummaryRecord
-    mindspore.set_dump 
+    mindspore.set_dump
+    mindspore.Profiler
 
 Log
 ^^^^
