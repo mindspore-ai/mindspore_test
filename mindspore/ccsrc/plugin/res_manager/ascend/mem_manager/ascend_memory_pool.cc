@@ -75,7 +75,8 @@ DefaultAscendMemoryPool::DefaultAscendMemoryPool() {
 }
 
 AscendMemoryTimeEvent::AscendMemoryTimeEvent(int32_t device_id, const MemoryTimeEventPtr &memory_time_event)
-    : BaseReportData(device_id, "mindspore.memory_usage"), memory_time_event_(memory_time_event) {
+    : BaseReportData(device_id, static_cast<uint32_t>(profiler::ascend::ReportFileType::MEMORY_USAGE)),
+      memory_time_event_(memory_time_event) {
   stream_ptr_ = AscendStreamMng::GetInstance().GetStream(memory_time_event_->stream_id_);
 }
 
@@ -172,9 +173,6 @@ void DefaultEnhancedAscendMemoryPool::ReleaseDeviceRes() {
   MS_LOG(INFO) << "Start release device res.";
   instance_->ReleaseDeviceRes();
   tracker::MemTrackerManager::GetInstance().Dump(rank_id_getter_());
-  if (instance_->IsEnableTimeEvent()) {
-    profiler::ascend::ProfilingDataDumper::GetInstance().Flush();
-  }
 }
 
 DeviceMemPtr DefaultEnhancedAscendMemoryPool::AllocTensorMem(size_t size, bool from_persistent_mem, bool need_recycle,

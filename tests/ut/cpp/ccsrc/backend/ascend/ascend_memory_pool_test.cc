@@ -374,13 +374,13 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
   EXPECT_EQ(pool->release_device_res_, 0);
   enhanced_pool->ReleaseDeviceRes();
   EXPECT_EQ(pool->release_device_res_, 1);
-  EXPECT_EQ(pool->is_enable_time_event_, 1);
+  EXPECT_EQ(pool->is_enable_time_event_, 0);
 
   enhanced_pool->AllocTensorMem(0);
   EXPECT_EQ(pool->alloc_tensor_mem_, 0);
   EXPECT_EQ(pool->dump_dynamic_mem_pool_state_info_, 0);
   EXPECT_EQ(pool->dump_dynamic_mem_pool_debug_info_, 0);
-  EXPECT_EQ(pool->is_enable_time_event_, 2);
+  EXPECT_EQ(pool->is_enable_time_event_, 1);
   EXPECT_EQ(pool->actual_peak_statistics_.Get(), 0);
   EXPECT_EQ(pool->align_memory_size_.Get(), 1);
   EXPECT_EQ(pool->report_memory_pool_info_, 1);
@@ -398,7 +398,7 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
 
   enhanced_pool->FreePartTensorMems({}, {}, {});
   EXPECT_EQ(pool->free_part_tensor_mems_, 0);
-  EXPECT_EQ(pool->is_enable_time_event_, 4);
+  EXPECT_EQ(pool->is_enable_time_event_, 3);
   EXPECT_EQ(pool->do_free_part_tensor_mems_, 1);
   EXPECT_EQ(pool->actual_peak_statistics_.Get(), 0);
 
@@ -534,9 +534,9 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
   enhanced_pool->FreeIdleMemsByEagerFree();
   EXPECT_EQ(pool->free_idle_mems_by_eager_free_.Get(), 1);
 
-  EXPECT_EQ(pool->is_enable_time_event_, 4);
+  EXPECT_EQ(pool->is_enable_time_event_, 3);
   enhanced_pool->IsEnableTimeEvent();
-  EXPECT_EQ(pool->is_enable_time_event_, 5);
+  EXPECT_EQ(pool->is_enable_time_event_, 4);
 
   enhanced_pool->SetEnableTimeEvent(true);
   EXPECT_EQ(pool->set_enable_time_event_, 1);

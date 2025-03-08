@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,134 +28,18 @@ namespace profiler {
 namespace ascend {
 
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
-uint64_t GetClockMonotonicRawNs() {
-  struct timespec ts = {0};
-  clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-  return static_cast<uint64_t>(ts.tv_sec) * 1000000000 +
-         static_cast<uint64_t>(ts.tv_nsec);  // 1000000000为秒转换为纳秒的倍数
-}
-#else
-uint64_t GetClockMonotonicRawNs() { MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows."; }
-#endif
-
-inline void EncodeStrData(uint16_t type, const std::string &data, const std::unique_ptr<std::vector<uint8_t>> &result) {
-  for (size_t i = 0; i < sizeof(uint16_t); ++i) {
-    result->push_back((type >> (i * 8)) & 0xff);
-  }
-  uint32_t length = data.size();
-  for (size_t i = 0; i < sizeof(uint32_t); ++i) {
-    result->push_back((length >> (i * 8)) & 0xff);
-  }
-  result->insert(result->end(), data.begin(), data.end());
-}
-
-template <typename T>
-void EncodeFixedData(const std::vector<T> &data_list, const std::unique_ptr<std::vector<uint8_t>> &result) {
-  for (auto data : data_list) {
-    for (size_t i = 0; i < sizeof(T); ++i) {
-      result->push_back((static_cast<size_t>(data) >> (i * 8)) & 0xff);
-    }
-  }
-}
-
-template <typename T>
-void Encode2DIntegerMatrixDatas(const uint16_t type, const std::vector<std::vector<T>> &data_list,
-                                const std::unique_ptr<std::vector<uint8_t>> &result) {
-  std::string rst;
-  for (auto tensor : data_list) {
-    std::stringstream ss;
-    copy(tensor.begin(), tensor.end(), std::ostream_iterator<T>(ss, ","));
-    std::string str = ss.str();
-    if (!str.empty()) {
-      str.pop_back();
-    }
-    rst += (str + ";");
-  }
-  if (!rst.empty()) {
-    rst.pop_back();
-  }
-  EncodeStrData(type, rst, result);
-}
-
-inline void EncodeStrArrayData(const uint16_t type, const std::vector<std::string> &data_list,
-                               const std::unique_ptr<std::vector<uint8_t>> &result) {
-  std::string rst = std::accumulate(data_list.begin(), data_list.end(), std::string(""),
-                                    [](const std::string &r, const auto d) { return r + ';' + d; });
-  if (!rst.empty()) {
-    rst.pop_back();
-  }
-  EncodeStrData(type, rst, result);
-}
-
-inline void EncodeStrMapData(const uint16_t type, const std::map<std::string, std::string> &data_map,
-                             const std::unique_ptr<std::vector<uint8_t>> &result) {
-  std::string rst = std::accumulate(data_map.begin(), data_map.end(), std::string(""),
-                                    [](const std::string &r, const std::pair<const std::string, std::string> &element) {
-                                      return r + element.first + ":" + element.second + ";";
-                                    });
-  if (!rst.empty()) {
-    rst.pop_back();
-  }
-  EncodeStrData(type, rst, result);
-}
-
-std::vector<uint8_t> OpRangeData::encode() {
-  std::unique_ptr<std::vector<uint8_t>> result = std::make_unique<std::vector<uint8_t>>();
-  EncodeFixedData<int64_t>({start_ns, end_ns, sequence_number}, result);
-  EncodeFixedData<uint64_t>({process_id, start_thread_id, end_thread_id, forward_thread_id, flow_id, step}, result);
-  EncodeFixedData<int8_t>({level}, result);
-  result->push_back(is_async);
-  EncodeStrData(static_cast<uint16_t>(OpRangeDataType::NAME), name, result);
-  if (!input_dtypes.empty()) {
-    EncodeStrArrayData(static_cast<uint16_t>(OpRangeDataType::INPUT_DTYPES), input_dtypes, result);
-  }
-  if (!input_shapes.empty()) {
-    Encode2DIntegerMatrixDatas<int64_t>(static_cast<uint16_t>(OpRangeDataType::INPUT_SHAPE), input_shapes, result);
-  }
-  if (!stack.empty()) {
-    EncodeStrArrayData(static_cast<uint16_t>(OpRangeDataType::STACK), stack, result);
-  }
-  if (!custom_info.empty()) {
-    EncodeStrMapData(static_cast<uint16_t>(OpRangeDataType::CUSTOM_INFO), custom_info, result);
-  }
-  if (!module_hierarchy.empty()) {
-    EncodeStrArrayData(static_cast<uint16_t>(OpRangeDataType::MODULE_HIERARCHY), module_hierarchy, result);
-  }
-  std::vector<uint8_t> resultTLV;
-  uint16_t dataType = static_cast<uint16_t>(OpRangeDataType::OP_RANGE_DATA);
-  for (size_t i = 0; i < sizeof(uint16_t); ++i) {
-    resultTLV.push_back((dataType >> (i * 8)) & 0xff);
-  }
-  uint32_t length = result->size();
-  for (size_t i = 0; i < sizeof(uint32_t); ++i) {
-    resultTLV.push_back((length >> (i * 8)) & 0xff);
-  }
-  resultTLV.insert(resultTLV.end(), result->cbegin(), result->cend());
-  return resultTLV;
-}
-
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
 void ProfilingFrameworkData::RecordHostProfile(std::shared_ptr<ProfilerData> data) {
   auto profiler_manager = profiler::ProfilerManager::GetInstance();
   MS_EXCEPTION_IF_NULL(profiler_manager);
   if (!profiler_manager->EnableCollectHost()) {
     return;
   }
-  std::string op_name;
-  if (data->is_graph_data_) {
-    op_name = data->module_graph_ + "::" + data->event_graph_ + "::" + data->op_name_;
-  } else if (data->is_stage_) {
-    op_name = kProfilerStageString.at(data->stage_);
-  } else if (data->op_name_ != "flow") {
-    op_name = kProfilerModuleString.at(data->module_) + "::" + kProfilerEventString.at(data->event_) +
-              "::" + data->op_full_name_;
-  } else {
-    op_name = data->op_full_name_;
-  }
   auto &instance = runtime::ProfilerAnalyzer::GetInstance();
   std::unique_ptr<OpRangeData> report = std::make_unique<OpRangeData>(
-    data->start_time_, data->end_time_, 0, 0, data->tid_, data->tid_, data->tid_, false, op_name, data->flow_id_,
-    ProfilingFrameworkData::Device_Id, instance.step(), data->level_, data->custom_info_);
+    ProfilingFrameworkData::Device_Id, data->tid_, data->flow_id_, instance.step(), data->start_time_, data->end_time_,
+    data->tid_, static_cast<uint16_t>(data->module_), static_cast<uint16_t>(data->event_),
+    static_cast<uint16_t>(data->stage_), data->level_, data->is_graph_data_, data->is_stage_, data->op_name_,
+    data->op_full_name_, data->module_graph_, data->event_graph_, data->custom_info_);
   ProfilingDataDumper::GetInstance().Report(std::move(report));
 }
 #else

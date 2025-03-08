@@ -43,10 +43,10 @@ class FwkTimelineCreator(BaseTimelineCreator):
     def _create_base_events(self, pool: TimelineEventPool, fwk_tlv_data: List[Dict]) -> None:
         """Create base events from framework TLV data."""
         for data in fwk_tlv_data:
-            if data[FileConstant.FIX_SIZE_DATA][OpRangeStructField.START_NS.value] == 0:  # Filter abnormal data
+            if data[FileConstant.FIX_SIZE_DATA][OpRangeStructField.START_TIME_NS.value] == 0:  # Filter abnormal data
                 continue
-            if (data[FileConstant.FIX_SIZE_DATA][OpRangeStructField.START_NS.value] ==
-                    data[FileConstant.FIX_SIZE_DATA][OpRangeStructField.END_NS.value]):  # dur == 0
+            if (data[FileConstant.FIX_SIZE_DATA][OpRangeStructField.START_TIME_NS.value] ==
+                    data[FileConstant.FIX_SIZE_DATA][OpRangeStructField.END_TIME_NS.value]):  # dur == 0
                 event = FwkInstantEvent(data)
             else:
                 event = FwkCompleteEvent(data)

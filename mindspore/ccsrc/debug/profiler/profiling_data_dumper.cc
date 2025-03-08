@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2024 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,234 +19,30 @@
 #include <utility>
 #include "common/kernel.h"
 #include "debug/profiler/profiling.h"
+#include "debug/profiler/utils.h"
 
 namespace mindspore {
 namespace profiler {
 namespace ascend {
-
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
-bool Utils::IsFileExist(const std::string &path) {
-  if (path.empty() || path.size() > PATH_MAX) {
-    return false;
-  }
-  return (access(path.c_str(), F_OK) == 0) ? true : false;
-}
-
-bool Utils::IsFileWritable(const std::string &path) {
-  if (path.empty() || path.size() > PATH_MAX) {
-    return false;
-  }
-  return (access(path.c_str(), W_OK) == 0) ? true : false;
-}
-
-bool Utils::IsDir(const std::string &path) {
-  if (path.empty() || path.size() > PATH_MAX) {
-    return false;
-  }
-  struct stat st = {0};
-  int ret = lstat(path.c_str(), &st);
-  if (ret != 0) {
-    return false;
-  }
-  return S_ISDIR(st.st_mode) ? true : false;
-}
-
-bool Utils::CreateDir(const std::string &path) {
-  if (path.empty() || path.size() > PATH_MAX) {
-    return false;
-  }
-  if (IsFileExist(path)) {
-    return IsDir(path) ? true : false;
-  }
-  size_t pos = 0;
-  static const int DEFAULT_MKDIR_MODE = S_IRUSR | S_IWUSR;
-  while ((pos = path.find_first_of('/', pos)) != std::string::npos) {
-    std::string base_dir = path.substr(0, ++pos);
-    if (IsFileExist(base_dir)) {
-      if (IsDir(base_dir)) {
-        continue;
-      } else {
-        return false;
-      }
-    }
-    if (mkdir(base_dir.c_str(), DEFAULT_MKDIR_MODE) != 0) {
-      return false;
-    }
-  }
-  return (mkdir(path.c_str(), DEFAULT_MKDIR_MODE) == 0) ? true : false;
-}
-
-std::string Utils::RealPath(const std::string &path) {
-  if (path.empty() || path.size() > PATH_MAX) {
-    return "";
-  }
-  char realPath[PATH_MAX] = {0};
-  if (realpath(path.c_str(), realPath) == nullptr) {
-    return "";
-  }
-  return std::string(realPath);
-}
-
-std::string Utils::RelativeToAbsPath(const std::string &path) {
-  if (path.empty() || path.size() > PATH_MAX) {
-    return "";
-  }
-  if (path[0] != '/') {
-    char pwd_path[PATH_MAX] = {0};
-    if (getcwd(pwd_path, PATH_MAX) != nullptr) {
-      return std::string(pwd_path) + "/" + path;
-    }
-    return "";
-  }
-  return std::string(path);
-}
-
-std::string Utils::DirName(const std::string &path) {
-  if (path.empty()) {
-    return "";
-  }
-  std::string temp_path = std::string(path.begin(), path.end());
-  char *path_c = dirname(const_cast<char *>(temp_path.data()));
-  return path_c ? std::string(path_c) : "";
-}
-
-uint64_t Utils::GetClockMonotonicRawNs() {
-  struct timespec ts = {0};
-  clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-  return static_cast<uint64_t>(ts.tv_sec) * 1000000000 +
-         static_cast<uint64_t>(ts.tv_nsec);  // To convert to nanoseconds, it needs to be 1000000000.
-}
-
-bool Utils::CreateDumpFile(const std::string &path) {
-  if (path.empty() || path.size() > PATH_MAX || !CreateDir(DirName(path))) {
-    return false;
-  }
-  std::ofstream output_file(path);
-  output_file.close();
-  if (chmod(path.c_str(), S_IRUSR | S_IWUSR) == -1) {
-    MS_LOG(WARNING) << "chmod failed, path: " << path;
-    return false;
-  }
-  return true;
-}
-
-bool Utils::IsSoftLink(const std::string &path) {
-  if (path.empty() || path.size() > PATH_MAX || !IsFileExist(path)) {
-    return false;
-  }
-  struct stat st {};
-  if (lstat(path.c_str(), &st) != 0) {
-    return false;
-  }
-  return S_ISLNK(st.st_mode);
-}
-
-uint64_t Utils::GetTid() {
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
-  static thread_local uint64_t tid = static_cast<uint64_t>(syscall(SYS_gettid));
-#else
-  static thread_local uint64_t tid = 0;
-#endif
-  return tid;
-}
-
-uint64_t Utils::GetPid() {
-  static thread_local uint64_t pid = static_cast<uint64_t>(getpid());
-  return pid;
-}
-
-template <typename T>
-void RingBuffer<T>::Init(size_t capacity) {
-  capacity_ = capacity;
-  data_queue_.resize(capacity);
-  is_inited_ = true;
-  is_quit_ = false;
-}
-
-template <typename T>
-void RingBuffer<T>::UnInit() {
-  if (is_inited_) {
-    data_queue_.clear();
-    read_index_ = 0;
-    write_index_ = 0;
-    idle_write_index_ = 0;
-    capacity_ = 0;
-    is_quit_ = true;
-    is_inited_ = false;
-  }
-}
-
-template <typename T>
-size_t RingBuffer<T>::Size() {
-  size_t curr_read_index = read_index_.load(std::memory_order_acquire);
-  size_t curr_write_index = write_index_.load(std::memory_order_acquire);
-  if (curr_read_index >= curr_write_index) {
-    return 0;
-  }
-  return curr_write_index - curr_read_index;
-}
-
-template <typename T>
-bool RingBuffer<T>::Full() {
-  size_t curr_write_index = write_index_.load(std::memory_order_acquire);
-  if (curr_write_index >= capacity_) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-template <typename T>
-bool RingBuffer<T>::Push(T data) {
-  size_t curr_write_index = 0;
-  curr_write_index = write_index_.fetch_add(1, std::memory_order_acquire);
-  if (curr_write_index >= capacity_) {
-    return false;
-  }
-  data_queue_[curr_write_index] = std::move(data);
-  return true;
-}
-
-template <typename T>
-T RingBuffer<T>::Pop() {
-  if (!is_inited_) {
-    return nullptr;
-  }
-  size_t curr_read_index = read_index_.fetch_add(1, std::memory_order_acquire);
-  size_t curr_write_index = write_index_.load(std::memory_order_acquire);
-  if (curr_read_index >= curr_write_index || curr_read_index >= capacity_) {
-    return nullptr;
-  }
-  T data = std::move(data_queue_[curr_read_index]);
-  return data;
-}
-
-template <typename T>
-void RingBuffer<T>::Reset() {
-  write_index_ = 0;
-  read_index_ = 0;
-}
-
-ProfilingDataDumper::ProfilingDataDumper() : path_(""), start_(false), init_(false) {}
-
-ProfilingDataDumper::~ProfilingDataDumper() { UnInit(); }
+ProfilingDataDumper::ProfilingDataDumper() : name_("ProfilingDataDumper"), path_(""), start_(false), init_(false) {}
 
 ProfilingDataDumper &ProfilingDataDumper::GetInstance() {
   static ProfilingDataDumper instance;
   return instance;
 }
+ProfilingDataDumper::~ProfilingDataDumper() { UnInit(); }
 
-void ProfilingDataDumper::Init(const std::string &path, int32_t rank_id, size_t capacity) {
-  MS_LOG(INFO) << "init profiling data dumper, capacity: " << capacity;
+void ProfilingDataDumper::Init(const std::string &path, size_t capacity) {
   path_ = path;
-  rank_id_ = rank_id;
   data_chunk_buf_.Init(capacity);
   init_.store(true);
+  MS_LOG(INFO) << "Init ProfilingDataDumper, path: " << path << ", capacity: " << capacity;
 }
 
 void ProfilingDataDumper::UnInit() {
-  MS_LOG(INFO) << "uninit profiling data dumper.";
   if (init_.load()) {
+    data_chunk_buf_.UnInit();
     init_.store(false);
     start_.store(false);
     for (auto &f : fd_map_) {
@@ -256,37 +52,39 @@ void ProfilingDataDumper::UnInit() {
       }
     }
     fd_map_.clear();
+    MS_LOG(INFO) << "UnInit ProfilingDataDumper";
   }
 }
 
 void ProfilingDataDumper::Start() {
-  MS_LOG(INFO) << "start profiling data dumper.";
-  if (!init_.load() || !Utils::CreateDir(path_)) {
-    MS_LOG(ERROR) << "init_.load() " << !init_.load() << !Utils::CreateDir(path_);
+  if (!init_.load() || Thread::Start() != 0) {
     return;
   }
   start_.store(true);
+  MS_LOG(INFO) << "Start ProfilingDataDumper";
 }
 
 void ProfilingDataDumper::Stop() {
-  MS_LOG(INFO) << "stop profiling data dumper.";
   if (start_.load() == true) {
     start_.store(false);
+    Thread::Stop();
+    MS_LOG(INFO) << "ProfilingDataDumper Thread Stop";
   }
   Flush();
+  MS_LOG(INFO) << name_ << " Dump finished, total size: " << dump_count_ << " bytes";
 }
 
 void ProfilingDataDumper::GatherAndDumpData() {
-  std::map<std::string, std::vector<uint8_t>> dataMap;
+  std::unordered_map<std::string, std::vector<uint8_t>> dataMap;
   uint64_t batchSize = 0;
   while (batchSize < kBatchMaxLen) {
-    std::unique_ptr<BaseReportData> data = data_chunk_buf_.Pop();
-    if (data == nullptr) {
+    std::unique_ptr<BaseReportData> data{nullptr};
+    if (UNLIKELY(!data_chunk_buf_.Pop(data) || data == nullptr)) {
       break;
     }
     std::vector<uint8_t> encodeData = data->encode();
-    batchSize += encodeData.size();
-    const std::string &key = data->tag;
+    ++batchSize;
+    const std::string &key = kReportFileTypeMap.at(static_cast<ReportFileType>(data->tag));
     auto iter = dataMap.find(key);
     if (iter == dataMap.end()) {
       dataMap.insert({key, encodeData});
@@ -295,173 +93,81 @@ void ProfilingDataDumper::GatherAndDumpData() {
     }
   }
   if (dataMap.size() > 0) {
+    static bool create_flag = true;
+    if (create_flag) {
+      create_flag = !Utils::CreateDir(this->path_);
+    }
     Dump(dataMap);
   }
 }
 
-void ProfilingDataDumper::Flush() {
-  MS_LOG(INFO) << "data_chunk_buf_.Size: " << data_chunk_buf_.Size();
-  if (data_chunk_buf_.Size() == 0) {
-    return;
+void ProfilingDataDumper::Run() {
+  for (;;) {
+    if (!start_.load()) {
+      break;
+    }
+    if (data_chunk_buf_.Size() > kNotifyInterval) {
+      GatherAndDumpData();
+    } else {
+      usleep(kMaxWaitTimeUs);
+    }
   }
-  uint64_t start_time = profiler::GetClockSyscnt();
+}
 
-  while (data_chunk_buf_.Size() > 0) {
+void ProfilingDataDumper::Flush() {
+  while (data_chunk_buf_.Size() != 0) {
     GatherAndDumpData();
   }
-  data_chunk_buf_.Reset();
-  uint64_t end_time = profiler::GetClockSyscnt();
-  auto tid = LongToUlong(syscall(SYS_gettid));
-  std::unique_ptr<OpRangeData> save_data =
-    std::make_unique<OpRangeData>(start_time, end_time, tid, "Profiler_SaveDate", rank_id_);
-  data_chunk_buf_.Push(std::move(save_data));
-  GatherAndDumpData();
-  data_chunk_buf_.Reset();
 }
 
 void ProfilingDataDumper::Report(std::unique_ptr<BaseReportData> data) {
-  if (!start_.load() || data == nullptr) {
+  if (UNLIKELY(!start_.load() || data == nullptr)) {
     return;
   }
-  int i = 0;
-  while (is_flush_.load() && i < 10) {
-    usleep(kMaxWaitTimeUs);
-    i++;
-  }
-  if (!data_chunk_buf_.Push(std::move(data))) {
-    is_flush_.store(true);
-    std::lock_guard<std::mutex> flush_lock_(flush_mutex_);
-    if (data_chunk_buf_.Full()) {
-      Flush();
-    }
-    is_flush_.store(false);
-    if (!data_chunk_buf_.Push(std::move(data))) {
-      MS_LOG(ERROR) << "profiling data Report failed.";
-    }
-  }
+  data_chunk_buf_.Push(std::move(data));
 }
 
-void ProfilingDataDumper::Dump(const std::map<std::string, std::vector<uint8_t>> &dataMap) {
+void ProfilingDataDumper::Dump(const std::unordered_map<std::string, std::vector<uint8_t>> &dataMap) {
   for (auto &data : dataMap) {
     FILE *fd = nullptr;
     const std::string dump_file = path_ + "/" + data.first;
-
     auto iter = fd_map_.find(dump_file);
     if (iter == fd_map_.end()) {
-      if (!Utils::IsFileExist(dump_file) && !Utils::CreateDumpFile(dump_file)) {
-        MS_LOG(WARNING) << "create file failed, dump_file: " << dump_file;
+      if (!Utils::IsFileExist(dump_file) && !Utils::CreateFile(dump_file)) {
         continue;
       }
       fd = fopen(dump_file.c_str(), "ab");
       if (fd == nullptr) {
-        MS_LOG(WARNING) << "create file failed, dump_file: " << dump_file;
         continue;
       }
       fd_map_.insert({dump_file, fd});
     } else {
       fd = iter->second;
     }
+    MS_LOG(INFO) << name_ << " Dump file path: " << dump_file << ", size: " << data.second.size();
     fwrite(reinterpret_cast<const char *>(data.second.data()), sizeof(char), data.second.size(), fd);
-    fflush(fd);
+    dump_count_ += data.second.size();
   }
 }
 #else
-bool Utils::IsFileExist(const std::string &path) { MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows."; }
-
-bool Utils::IsFileWritable(const std::string &path) {
-  MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
-}
-bool Utils::IsDir(const std::string &path) { MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows."; }
-bool Utils::CreateDir(const std::string &path) { MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows."; }
-
-std::string Utils::RealPath(const std::string &path) {
-  MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
-}
-
-std::string Utils::RelativeToAbsPath(const std::string &path) {
-  MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
-}
-
-std::string Utils::DirName(const std::string &path) {
-  MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
-}
-
-uint64_t Utils::GetClockMonotonicRawNs() { MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows."; }
-
-bool Utils::CreateDumpFile(const std::string &path) {
-  MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
-}
-
-bool Utils::IsSoftLink(const std::string &path) { MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows."; }
-
-uint64_t Utils::GetTid() { MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows."; }
-
-uint64_t Utils::GetPid() { MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows."; }
-
-template <typename T>
-void RingBuffer<T>::Init(size_t capacity) {
-  MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
-}
-
-template <typename T>
-void RingBuffer<T>::UnInit() {
-  MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
-}
-
-template <typename T>
-size_t RingBuffer<T>::Size() {
-  MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
-}
-
-template <typename T>
-bool RingBuffer<T>::Full() {
-  MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
-}
-
-template <typename T>
-bool RingBuffer<T>::Push(T data) {
-  MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
-}
-
-template <typename T>
-T RingBuffer<T>::Pop() {
-  MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
-}
-
-template <typename T>
-void RingBuffer<T>::Reset() {
-  MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
-}
-
-ProfilingDataDumper::ProfilingDataDumper() : path_(""), start_(false), init_(false) {
-  MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
-}
-
+ProfilingDataDumper::ProfilingDataDumper() { MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows."; }
 ProfilingDataDumper::~ProfilingDataDumper() { MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows."; }
-
 ProfilingDataDumper &ProfilingDataDumper::GetInstance() {
   MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
 }
-
-void ProfilingDataDumper::Init(const std::string &path, int32_t rank_id, size_t capacity) {
+void ProfilingDataDumper::Init(const std::string &path, size_t capacity) {
   MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
 }
-
 void ProfilingDataDumper::UnInit() { MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows."; }
-
 void ProfilingDataDumper::Start() { MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows."; }
-
 void ProfilingDataDumper::Stop() { MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows."; }
-
-void ProfilingDataDumper::GatherAndDumpData() { MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows."; }
-
+void ProfilingDataDumper::Run() { MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows."; }
 void ProfilingDataDumper::Flush() { MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows."; }
-
+void ProfilingDataDumper::GatherAndDumpData() { MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows."; }
 void ProfilingDataDumper::Report(std::unique_ptr<BaseReportData> data) {
   MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
 }
-
-void ProfilingDataDumper::Dump(const std::map<std::string, std::vector<uint8_t>> &dataMap) {
+void ProfilingDataDumper::Dump(const std::unordered_map<std::string, std::vector<uint8_t>> &dataMap) {
   MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
 }
 #endif

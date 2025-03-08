@@ -15,79 +15,233 @@
 """Framework event classes for timeline analysis."""
 from enum import Enum
 from decimal import Decimal
-from typing import Dict, Optional, List, Tuple
+from typing import Dict, Optional, List
 
+from mindspore import log as logger
 from mindspore.profiler.common.constant import EventConstant, FileConstant
 from mindspore.profiler.analysis.time_converter import TimeConverter
 from mindspore.profiler.analysis.parser.timeline_event.base_event import (
     BaseEvent,
     CompleteEvent,
     MetaEvent,
-    InstantEvent
+    InstantEvent,
 )
+
+
+class ProfilerStage(Enum):
+    """Profiler stage enumeration."""
+    DEFAULT = "Default"
+    PYTHON = "Python"
+    CAPTURE = "Capture"
+    RUN_GRAPH = "RunGraph"
+    RUN_GRAD = "RunGrad"
+    RUN_OP = "RunOp"
+    ASNUMPY = "Asnumpy"
+    COMPILE_GRAD_GRAPH = "CompileGradGraph"
+    WAIT_PIPELINE = "WaitPipeline"
+    SYNC_STREAM = "SyncStream"
+
+
+class ProfilerModule(Enum):
+    """Profiler module enumeration."""
+    DEFAULT = "Default"
+    GRAPH_EXECUTOR_PY = "GraphExecutorPy"
+    RUNTIME_FRAMEWORK = "RuntimeFramework"
+    PYNATIVE_FRAMEWORK = "PynativeFramework"
+    KERNEL = "Kernel"
+    PYTHON = "Python"
+    CAPTURE = "Capture"
+    OTHER = "Other"
+
+
+class ProfilerEvent(Enum):
+    """Profiler event enumeration."""
+    DEFAULT = "Default"
+    KERNEL_INFER = "KernelInfer"
+    KERNEL_RESIZE = "KernelResize"
+    KERNEL_INFER_AND_RESIZE = "KernelInferAndResize"
+    KERNEL_LAUNCH = "KernelLaunch"
+    KERNEL_LAUNCH_CALLBACK = "KernelLaunckCallback"
+    KERNEL_UPDATE = "KernelUpdate"
+    KERNEL_PREPARE_DATA = "KernelPrepareData"
+    GRAPH_LAUNCH = "GraphLaunch"
+    INPUT_PROCESS = "InputProcess"
+    OUTPUT_PROCESS = "OutputProcess"
+    WAIT_TASK_FINISH = "WaitTaskFinish"
+    PRE_LAUNCH = "PreLaunch"
+    POST_LAUNCH = "PostLaunch"
+    SEND_OUTPUT = "SendOutput"
+    MEMORY_ALLOC = "MemoryAlloc"
+    MEMORY_FREE = "MemoryFree"
+    COPY_DATA = "CopyData"
+    STREAM_SYNC = "StreamSync"
+    PROCESS_MULTI_STREAM = "ProcessMultiStream"
+    WAIT_KERNELS_INFER_FINISH = "WaitKernelsInferFinish"
+    WAIT_KERNELS_RESIZE_FINISH = "WaitKernelsResizeFinish"
+    WAIT_KERNELS_LAUNCH_FINISH = "WaitKernelsLaunchFinish"
+    # Inner event is not counted in the total time.
+    KERNEL_INFER_INNER = "KernelInferInner"
+    KERNEL_INFER_DATA_SYNC = "KernelInferDataSync"
+    KERNEL_LAUNCH_INNER = "KernelLaunchInner"
+    BACKEND_GRAPH_RUN_INNER = "BackendGraphRunInner"
+    # PyNative Pipeline
+    RUN_OP = "RunOp"
+    PYNATIVE_FRONTEND_TASK = "PyNativeFrontendTask"
+    PYNATIVE_BACKEND_TASK = "PyNativeBackendTask"
+    PYNATIVE_DEVICE_TASK = "PyNativeDeviceTask"
+    PYNATIVE_LAUNCH_TASK = "PyNativeLaunchTask"
+    PYNATIVE_BPROP_TASK = "PyNativeBpropTask"
+    WAIT = "Wait"
+    # PyNative inner Event
+    PYNATIVE_GIL_ACQUIRE = "PyNativeGilAcquire"
+    PYNATIVE_CAST = "PyNativeCast"
+    PYNATIVE_INFER = "PyNativeInfer"
+    PYNATIVE_OP_COMPILE = "PyNativeOpCompile"
+    PYNATIVE_GRAD_EXPANDER = "PyNativeGradExpander"
+    PYNATIVE_GRAD_UPDATE_SENS = "PyNativeGradUpdateSens"
+    PYNATIVE_GRAD_CLEAR_TOP_CELL = "PyNativeGradClearTopCell"
+    PYNATIVE_GRAD_CLEAR_AUTO_GRAD_CELL = "PyNativeGradClearAutoGradCell"
+    # PyBoost
+    PYBOOST_INFER_OUTPUT = "PyBoostInferOutput"
+    PYBOOST_INFER_BY_OP_DEF = "PyBoostInferByOpDef"
+    PYBOOST_CREATE_OUTPUT_TENSOR = "PyBoostCreateOutputTensor"
+    PYBOOST_DEVICE_TASK = "PyBoostDeviceTask"
+    PYBOOST_MALLOC_INPUT = "PyBoostMallocInput"
+    PYBOOST_MALLOC_OUTPUT = "PyBoostMallocOutput"
+    PYBOOST_LAUNCH_ACLLNN = "PyBoostLaunchAclnn"
+    # pybind api
+    PYNATIVE_NEW_GRAPH = "PyNativeNewGraph"
+    PYNATIVE_END_GRAPH = "PyNativeEndGraph"
+    # Python
+    PYTHON_OBSERVED = "PythonObserved"
+    # Capture Event
+    CAPTURE_RUN_GRAPH = "CaptureRunGraph"
+    CAPTURE_PROCESS = "CaptureProcess"
+    CAPTURE_COMPILE = "CaptureCompile"
+    CAPTURE_GUARD = "CaptureGuard"
+    # AclNN
+    ACLNN_HIT_CACHE_STAGE_1 = "AclnnHitCacheStage1"
+    ACLNN_HIT_CACHE_STAGE_2 = "AclnnHitCacheStage2"
+    ACLNN_MISS_CACHE_STAGE_1 = "AclnnMissCacheStage1"
+    ACLNN_MISS_CACHE_STAGE_2 = "AclnnMissCacheStage2"
+    ACLNN_UPDATE_ADDRESS = "AclnnUpdateAddress"
+    ACLNN_RUN_OP = "AclnnRunOp"
+    # NoGraph grad
+    RUN_EXPANDER_FUNC = "RunExpanderFunc"
+    EMIT_OP = "EmitOp"
+    EXECUTE = "Execute"
+    RELEASE_RESOURCE = "ReleaseResource"
+    NATIVE_FUNC = "NativeFunc"
 
 
 class FwkFixSizeFormat:
     """Format definition for framework fixed-size data."""
 
-    # Fixed size data format: 3 long long (q) + 6 unsigned long long (Q) + bool (?) + padding (b)
-    OpRangeStruct = "<3q6Qb?"
+    OpRangeStruct = "<5Qi3Hb3?"
 
 
 class OpRangeStructField(Enum):
     """Field indices in operator range structure fixed-size data."""
-    START_NS = 0
-    END_NS = 1
-    SEQUENCE_NUMBER = 2
-    PROCESS_ID = 3
-    START_THREAD_ID = 4
-    END_THREAD_ID = 5
-    FORWARD_THREAD_ID = 6
-    ID = 7
-    STEP_ID = 8
+
+    THREAD_ID = 0
+    FLOW_ID = 1
+    STEP = 2
+    START_TIME_NS = 3
+    END_TIME_NS = 4
+    PROCESS_ID = 5
+    MODULE_INDEX = 6
+    EVENT_INDEX = 7
+    STAGE_INDEX = 8
     LEVEL = 9
-    IS_ASYNC = 10
+    IS_GRAPH_DATA = 10
+    IS_STAGE = 11
+    IS_STACK = 12
+    NAME = 13
+    FULL_NAME = 14
+    MODULE_GRAPH = 15
+    EVENT_GRAPH = 16
+    CUSTOM_INFO = 17
+
+class FwkProfileDataField:
+    """Framework profile data field."""
+
+    @staticmethod
+    def _get_enum_value(enum_class, index: int, enum_type: str) -> str:
+        """
+        Get enum value by index.
+        Args:
+            enum_class: The enum class to get value from.
+            index: The index of the enum value.
+            enum_type: The type name of enum for logging.
+        Returns:
+            The enum value string.
+        """
+        try:
+            return list(enum_class)[index].value
+        except IndexError:
+            logger.warning(f"Invalid {enum_type} index: {index}")
+            return enum_class.DEFAULT.value
+
+    @staticmethod
+    def get_stage_value(index: int) -> str:
+        """Get stage value."""
+        return FwkProfileDataField._get_enum_value(ProfilerStage, index, "stage")
+
+    @staticmethod
+    def get_module_value(index: int) -> str:
+        """Get module value."""
+        return FwkProfileDataField._get_enum_value(ProfilerModule, index, "module")
+
+    @staticmethod
+    def get_event_value(index: int) -> str:
+        """Get event value."""
+        return FwkProfileDataField._get_enum_value(ProfilerEvent, index, "event")
 
 
-class FwkArgsDecoder:
-    """Decoder for framework event arguments in TLV (Type-Length-Value) format."""
-    TLV_TYPES = {
-        EventConstant.OP_NAME: 3,
-        EventConstant.INPUT_SHAPES: 5,
-        EventConstant.INPUT_DTYPES: 4,
-        EventConstant.CALL_STACK: 6,
-        EventConstant.MODULE_HIERARCHY: 7,
-        EventConstant.FLOPS: 8,
-        EventConstant.CUSTOM_INFO: 9
-    }
+class FwkEventMixin:
+    """Mixin class for common framework event functionality."""
 
-    @classmethod
-    def decode(cls, origin_data: Dict, fix_size_data: Tuple) -> Dict:
-        """Decode event arguments from raw data."""
-        args = {
-            EventConstant.SEQUENCE_NUMBER: int(fix_size_data[OpRangeStructField.SEQUENCE_NUMBER.value]),
-            EventConstant.FORWARD_THREAD_ID: int(fix_size_data[OpRangeStructField.FORWARD_THREAD_ID.value])
-        }
+    def get_name(self) -> str:
+        """Get operator name."""
+        op_name = self._origin_data.get(OpRangeStructField.NAME.value, "")
+        is_stack = self.fix_size_data[OpRangeStructField.IS_STACK.value]
+        if is_stack:
+            return op_name
 
-        for field_name, type_id in cls.TLV_TYPES.items():
-            if field_name == EventConstant.OP_NAME or type_id not in origin_data:
-                continue
-            value = origin_data.get(type_id)
-            if field_name in {EventConstant.INPUT_SHAPES, EventConstant.INPUT_DTYPES, EventConstant.CALL_STACK}:
-                args[field_name] = value.replace("|", "\r\n")
-            elif field_name == EventConstant.CUSTOM_INFO and value:
-                pairs = [pair.split(':') for pair in value.split(';') if pair]
-                info_dict = {k: v for k, v in pairs[0:2] if len(pairs) >= 2}
-                args[field_name] = info_dict
-            else:
-                args[field_name] = value
+        is_graph_data = self.fix_size_data[OpRangeStructField.IS_GRAPH_DATA.value]
+        is_stage = self.fix_size_data[OpRangeStructField.IS_STAGE.value]
+        full_name = self._origin_data.get(OpRangeStructField.FULL_NAME.value, "")
 
-        return args
+        name = ""
+        if is_graph_data:
+            module_graph = self._origin_data.get(OpRangeStructField.MODULE_GRAPH.value, "")
+            event_graph = self._origin_data.get(OpRangeStructField.EVENT_GRAPH.value, "")
+            name = f"{module_graph}::{event_graph}::{op_name}"
+        elif is_stage:
+            stage_index = self.fix_size_data[OpRangeStructField.STAGE_INDEX.value]
+            name = FwkProfileDataField.get_stage_value(stage_index)
+        elif op_name != "flow":
+            module_index = self.fix_size_data[OpRangeStructField.MODULE_INDEX.value]
+            event_index = self.fix_size_data[OpRangeStructField.EVENT_INDEX.value]
+            module_name = FwkProfileDataField.get_module_value(module_index)
+            event_name = FwkProfileDataField.get_event_value(event_index)
+            name = f"{module_name}::{event_name}::{full_name}"
+        else:
+            name = full_name
+        return name
+
+    def get_custom_info(self) -> str:
+        """Get custom information."""
+        value = self._origin_data.get(OpRangeStructField.CUSTOM_INFO.value, None)
+        if value is None:
+            return ""
+        pairs = [pair.split(":") for pair in value.split(";") if pair]
+        info_dict = {k: v for k, v in pairs[0:2] if len(pairs) >= 2}
+        return str(info_dict)
 
 
-class FwkCompleteEvent(CompleteEvent):
+class FwkCompleteEvent(FwkEventMixin, CompleteEvent):
     """Framework complete event with duration."""
-    _args_decoder = FwkArgsDecoder()
 
     def __init__(self, data: Dict):
         """Initialize framework complete event."""
@@ -96,7 +250,7 @@ class FwkCompleteEvent(CompleteEvent):
         self._ts_cache = None
         self._te_cache = None
         self._dur_cache = None
-        self._args_cache = {}
+        self._name_cache = None
         self._parent: Optional[BaseEvent] = None
         self._children: List[BaseEvent] = []
 
@@ -118,14 +272,14 @@ class FwkCompleteEvent(CompleteEvent):
     @property
     def ts_raw(self) -> int:
         """Get raw start timestamp."""
-        return self.fix_size_data[OpRangeStructField.START_NS.value]
+        return self.fix_size_data[OpRangeStructField.START_TIME_NS.value]
 
     @property
     def ts(self) -> Decimal:
         """Get start time in us."""
         if not self._ts_cache:
             self._ts_cache = TimeConverter.convert_syscnt_to_timestamp_us(
-                self.fix_size_data[OpRangeStructField.START_NS.value]
+                self.fix_size_data[OpRangeStructField.START_TIME_NS.value]
             )
         return self._ts_cache
 
@@ -134,7 +288,7 @@ class FwkCompleteEvent(CompleteEvent):
         """Get end time in us."""
         if not self._te_cache:
             self._te_cache = TimeConverter.convert_syscnt_to_timestamp_us(
-                self.fix_size_data[OpRangeStructField.END_NS.value]
+                self.fix_size_data[OpRangeStructField.END_TIME_NS.value]
             )
         return self._te_cache
 
@@ -153,22 +307,34 @@ class FwkCompleteEvent(CompleteEvent):
     @property
     def tid(self) -> int:
         """Get thread ID."""
-        return int(self.fix_size_data[OpRangeStructField.START_THREAD_ID.value])
+        return int(self.fix_size_data[OpRangeStructField.THREAD_ID.value])
 
     @property
     def id(self) -> int:
         """Get event ID."""
-        return int(self.fix_size_data[OpRangeStructField.ID.value])
+        return int(self.fix_size_data[OpRangeStructField.FLOW_ID.value])
 
     @property
     def name(self) -> str:
         """Get operator name."""
-        return str(self._origin_data.get(self._args_decoder.TLV_TYPES.get(EventConstant.OP_NAME), ""))
+        if not self._name_cache:
+            self._name_cache = self.get_name()
+        return self._name_cache
 
     @property
     def step(self) -> int:
         """Get step ID."""
-        return int(self.fix_size_data[OpRangeStructField.STEP_ID.value])
+        return int(self.fix_size_data[OpRangeStructField.STEP.value])
+
+    @property
+    def is_stack(self) -> bool:
+        """Get is stack."""
+        return bool(self.fix_size_data[OpRangeStructField.IS_STACK.value])
+
+    @property
+    def cat(self) -> str:
+        """Get event category."""
+        return EventConstant.STACK_EVENT_CAT if self.is_stack else ""
 
     @property
     def level(self) -> int:
@@ -176,40 +342,32 @@ class FwkCompleteEvent(CompleteEvent):
         return int(self.fix_size_data[OpRangeStructField.LEVEL.value])
 
     @property
-    def args(self) -> Dict:
-        """Get decoded event arguments."""
-        if not self._args_cache:
-            self._args_cache = self._args_decoder.decode(self._origin_data, self.fix_size_data)
-        return self._args_cache
-
-    @property
     def custom_info(self) -> str:
         """Get custom information."""
-        return str(self.args.get(EventConstant.CUSTOM_INFO, ''))
+        return self.get_custom_info()
 
 
-class FwkInstantEvent(InstantEvent):
+class FwkInstantEvent(FwkEventMixin, InstantEvent):
     """Framework instant event without duration."""
-    _args_decoder = FwkArgsDecoder()
 
     def __init__(self, data: Dict):
         """Initialize framework instant event."""
         super().__init__(data)
         self.fix_size_data = self._origin_data[FileConstant.FIX_SIZE_DATA]
         self._ts_cache = None
-        self._args_cache = {}
+        self._name_cache = None
 
     @property
     def ts_raw(self) -> int:
         """Get raw start timestamp."""
-        return self.fix_size_data[OpRangeStructField.START_NS.value]
+        return self.fix_size_data[OpRangeStructField.START_TIME_NS.value]
 
     @property
     def ts(self) -> Decimal:
         """Get time in us."""
         if not self._ts_cache:
             self._ts_cache = TimeConverter.convert_syscnt_to_timestamp_us(
-                self.fix_size_data[OpRangeStructField.START_NS.value]
+                self.fix_size_data[OpRangeStructField.START_TIME_NS.value]
             )
         return self._ts_cache
 
@@ -221,17 +379,19 @@ class FwkInstantEvent(InstantEvent):
     @property
     def tid(self) -> int:
         """Get thread ID."""
-        return int(self.fix_size_data[OpRangeStructField.START_THREAD_ID.value])
+        return int(self.fix_size_data[OpRangeStructField.THREAD_ID.value])
 
     @property
     def name(self) -> str:
         """Get operator name."""
-        return str(self._origin_data.get(self._args_decoder.TLV_TYPES.get(EventConstant.OP_NAME), ""))
+        if not self._name_cache:
+            self._name_cache = self.get_name()
+        return self._name_cache
 
     @property
     def step(self) -> int:
         """Get step ID."""
-        return int(self.fix_size_data[OpRangeStructField.STEP_ID.value])
+        return int(self.fix_size_data[OpRangeStructField.STEP.value])
 
     @property
     def level(self) -> int:
@@ -239,16 +399,9 @@ class FwkInstantEvent(InstantEvent):
         return int(self.fix_size_data[OpRangeStructField.LEVEL.value])
 
     @property
-    def args(self) -> Dict:
-        """Get decoded event arguments."""
-        if not self._args_cache:
-            self._args_cache = self._args_decoder.decode(self._origin_data, self.fix_size_data)
-        return self._args_cache
-
-    @property
     def custom_info(self) -> str:
         """Get custom information."""
-        return str(self.args.get(EventConstant.CUSTOM_INFO, ''))
+        return self.get_custom_info()
 
 
 class FwkMetaEvent(MetaEvent):

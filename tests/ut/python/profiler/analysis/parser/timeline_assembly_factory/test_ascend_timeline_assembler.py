@@ -24,6 +24,7 @@ from mindspore.profiler.analysis.parser.timeline_event.timeline_event_pool impor
 from mindspore.profiler.analysis.parser.timeline_assembly_factory.ascend_timeline_assembler import (
     AscendTimelineAssembler
 )
+from mindspore.profiler.analysis.parser.timeline_event.fwk_event import OpRangeStructField
 
 
 # pylint: disable=protected-access
@@ -57,28 +58,18 @@ class TestAscendTimelineAssembler(unittest.TestCase):
     def _create_base_fwk_data(self, op_name, op_type, start_us, end_us, thread_id):
         """Create base framework operation data."""
         return {
-            FileConstant.FIX_SIZE_DATA: (
-                start_us,    # start_us
-                end_us,      # end_us
-                1,          # sequence_number
-                1,          # process_id
-                thread_id,  # start_thread_id
-                thread_id,  # end_thread_id
-                thread_id,  # forward_thread_id
-                123,        # flow_id
-                0,          # step_id
-                1,          # level
-                False       # is_async
-            ),
-            3: op_name,
-            9: f"type:{op_type}"
+            FileConstant.FIX_SIZE_DATA: (thread_id, 123, 0, start_us, end_us, 1, 1, 2, 3, 1, False, False, True),
+            OpRangeStructField.NAME.value: op_name,
+            OpRangeStructField.FULL_NAME.value: op_name,
+            OpRangeStructField.MODULE_GRAPH.value: "",
+            OpRangeStructField.EVENT_GRAPH.value: "",
+            OpRangeStructField.CUSTOM_INFO.value: f"type:{op_type}"
         }
 
     def _create_fwk_kbk_model_data(self):
         """Create framework operation data for KBK mode."""
-        return [self._create_base_fwk_data(
-            "KernelLaunch::Default/network-TrainOneStepCell/MatMul",
-            "MatMul", 1000000, 2000000, 100)]
+        return [self._create_base_fwk_data("KernelLaunch::Default/network-TrainOneStepCell/MatMul",
+                                           "MatMul", 1000000, 2000000, 100)]
 
     def _create_fwk_graph_model_data(self):
         """Create framework operation data for Graph mode."""

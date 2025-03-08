@@ -15,26 +15,27 @@ class TestFwkTimelineCreator(unittest.TestCase):
         """Set up test environment."""
         self.creator = FwkTimelineCreator()
         self.normal_data = {
-            FileConstant.FIX_SIZE_DATA: [1000, 2000, 1, 1, 2, 2, 3, 0, 0, 1, False],
-            3: "MatMul",  # OP_NAME
-            4: "float32",  # INPUT_DTYPES
-            5: "1,2,3",  # INPUT_SHAPES
-            6: "test_stack",  # CALL_STACK
-            7: "test_hierarchy",  # MODULE_HIERARCHY
-            8: "100",  # FLOPS
-            9: "key1:value1"  # CUSTOM_INFO
+            FileConstant.FIX_SIZE_DATA: [2, 0, 1, 1000, 2000, 1, 2, 2, 3, 1, False, False, True],
+            OpRangeStructField.NAME.value: "MatMul",
+            OpRangeStructField.FULL_NAME.value: "MatMul",
+            OpRangeStructField.MODULE_GRAPH.value: "",
+            OpRangeStructField.EVENT_GRAPH.value: "",
+            OpRangeStructField.CUSTOM_INFO.value: "key1:value1"
         }
         self.instant_data = {
-            FileConstant.FIX_SIZE_DATA: [1000, 1000, 1, 1, 2, 2, 3, 0, 0, 1, False],
-            3: "InstantOp"
+            FileConstant.FIX_SIZE_DATA: [2, 0, 1, 1000, 1000, 1, 2, 2, 3, 1, False, False, True],
+            OpRangeStructField.NAME.value: "InstantOp",
+            OpRangeStructField.FULL_NAME.value: "InstantOp"
         }
         self.flow_data = {
-            FileConstant.FIX_SIZE_DATA: [1000, 2000, 1, 1, 2, 2, 3, 123, 0, 1, False],
-            3: EventConstant.FLOW_OP
+            FileConstant.FIX_SIZE_DATA: [2, 123, 1, 1000, 2000, 1, 2, 2, 3, 1, False, False, True],
+            OpRangeStructField.NAME.value: EventConstant.FLOW_OP,
+            OpRangeStructField.FULL_NAME.value: EventConstant.FLOW_OP
         }
         self.flow_end_data = {
-            FileConstant.FIX_SIZE_DATA: [2000, 3000, 1, 1, 2, 2, 3, 123, 0, 1, False],
-            3: "FlowEnd"
+            FileConstant.FIX_SIZE_DATA: [2, 123, 1, 2000, 3000, 1, 2, 2, 3, 1, False, False, True],
+            OpRangeStructField.NAME.value: "FlowEnd",
+            OpRangeStructField.FULL_NAME.value: "FlowEnd"
         }
 
     def test_create_should_create_pool_when_input_valid_data(self):
@@ -83,7 +84,7 @@ class TestFwkTimelineCreator(unittest.TestCase):
     def test_create_base_events_should_filter_event_when_start_time_is_zero(self):
         """Filter event when start time is zero."""
         abnormal_data = dict(self.normal_data)
-        abnormal_data[FileConstant.FIX_SIZE_DATA][OpRangeStructField.START_NS.value] = 0
+        abnormal_data[FileConstant.FIX_SIZE_DATA][OpRangeStructField.START_TIME_NS.value] = 0
 
         pool = self.creator.event_pools.setdefault(
             EventConstant.MINDSPORE_PID,

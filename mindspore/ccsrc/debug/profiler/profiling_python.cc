@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 #include "debug/profiler/profiling_python.h"
+#include <Python.h>
+#include <typeinfo>
 #include "debug/profiler/profiling_data_dumper.h"
 #include "debug/profiler/profiling_framework_data.h"
 #include "debug/profiler/profiling.h"
-#include <Python.h>
-#include <typeinfo>
+#include "debug/profiler/report_data.h"
 
 namespace mindspore {
 namespace profiler {
@@ -127,7 +128,7 @@ void PythonTracer::Flush() {
   }
   for (auto &data : data_chunk_buf_) {
     std::unique_ptr<OpRangeData> op_range =
-      std::make_unique<OpRangeData>(data->start_time_, data->end_time_, tid_, op_index_map[data->map_index_], rank_id_);
+      std::make_unique<OpRangeData>(tid_, data->start_time_, data->end_time_, op_index_map[data->map_index_], rank_id_);
     ProfilingDataDumper::GetInstance().Report(std::move(op_range));
   }
   data_chunk_buf_.clear();

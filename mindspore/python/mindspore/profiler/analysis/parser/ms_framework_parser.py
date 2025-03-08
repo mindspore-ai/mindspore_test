@@ -29,7 +29,7 @@ from mindspore.profiler.common.log import ProfilerLogger
 class FrameworkParser(BaseParser):
     """Parser for MindSpore framework profiling data."""
 
-    _OP_RANGE_FILE_NAME = "op_range_{}"
+    _OP_RANGE_FILE_NAME = "mindspore.op_range"
     _CPU_OP_TIMESTAMP_FILE_NAME = "cpu_op_execute_timestamp_{}.txt"
 
     def __init__(self, next_parser: Optional[BaseParser] = None, **kwargs):
@@ -43,7 +43,7 @@ class FrameworkParser(BaseParser):
         self._ascend_ms_dir = kwargs.get("ascend_ms_dir")
         self._op_range_path = os.path.join(
             self._framework_path,
-            self._OP_RANGE_FILE_NAME.format(self._rank_id)
+            self._OP_RANGE_FILE_NAME
         )
         self._cpu_op_path = os.path.join(
             self._framework_path,
@@ -118,13 +118,13 @@ class FrameworkParser(BaseParser):
             return op_range_list
 
         first_step = min(
-            op[FileConstant.FIX_SIZE_DATA][OpRangeStructField.STEP_ID.value]
+            op[FileConstant.FIX_SIZE_DATA][OpRangeStructField.STEP.value]
             for op in op_range_list
         )
         adjusted_step_list = [step - 1 + first_step for step in self._step_list]
         return [
             op for op in op_range_list
-            if op[FileConstant.FIX_SIZE_DATA][OpRangeStructField.STEP_ID.value] in adjusted_step_list
+            if op[FileConstant.FIX_SIZE_DATA][OpRangeStructField.STEP.value] in adjusted_step_list
         ]
 
     def _parse_cpu_op_data(self) -> List[str]:
