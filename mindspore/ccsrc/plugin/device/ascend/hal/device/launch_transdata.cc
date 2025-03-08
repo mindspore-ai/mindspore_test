@@ -22,7 +22,7 @@
 #include "backend/common/session/single_kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "runtime/device/memory_manager.h"
+#include "runtime/device/res_manager/memory_manager.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_pool.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "kernel/ascend/acl/acl_kernel_build.h"

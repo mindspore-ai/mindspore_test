@@ -16,7 +16,7 @@
 #ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_ASCEND_ASCEND_PIN_MEM_POOL_H_
 #define MINDSPORE_CCSRC_RUNTIME_DEVICE_ASCEND_ASCEND_PIN_MEM_POOL_H_
 
-#include "runtime/device/gsm/pin_mem_pool.h"
+#include "runtime/device/res_manager/utils/pin_mem_pool.h"
 
 namespace mindspore {
 namespace device {

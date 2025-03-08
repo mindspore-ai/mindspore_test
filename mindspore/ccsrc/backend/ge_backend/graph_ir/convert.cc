@@ -49,7 +49,7 @@
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/collective/dummy_ascend_collective_comm_lib.h"
 #include "backend/ge_backend/executor/ge_utils.h"
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
+#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #include "plugin/res_manager/ascend/op_adapter/io_format_map.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_desc.h"

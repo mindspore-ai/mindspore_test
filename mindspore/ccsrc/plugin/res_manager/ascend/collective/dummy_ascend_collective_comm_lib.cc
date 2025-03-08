@@ -22,7 +22,7 @@
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
+#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #include "plugin/res_manager/ascend/collective/ascend_communication_group.h"
 
 namespace mindspore {

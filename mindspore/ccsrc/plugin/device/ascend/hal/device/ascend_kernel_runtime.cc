@@ -46,7 +46,7 @@
 #include "include/common/debug/env_config_parser.h"
 #endif
 #include "include/common/utils/config_manager.h"
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
+#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #ifdef ENABLE_DUMP_IR
 #include "include/common/debug/rdr/recorder_manager.h"
 #endif

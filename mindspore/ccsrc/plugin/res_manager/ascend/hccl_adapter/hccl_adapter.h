@@ -17,7 +17,7 @@
 #ifndef MINDSPORE_RUNTIME_HCCL_ADAPTER_HCCL_ADAPTER_H
 #define MINDSPORE_RUNTIME_HCCL_ADAPTER_HCCL_ADAPTER_H
 
-#include "plugin/device/ascend/hal/hccl_adapter/plugin/hccl_plugin.h"
+#include "plugin/res_manager/ascend/hccl_adapter/plugin/hccl_plugin.h"
 #include <string>
 #include <vector>
 #include <map>

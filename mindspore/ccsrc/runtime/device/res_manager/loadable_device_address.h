@@ -20,8 +20,7 @@
 #include <memory>
 #include <string>
 #include "common/device_address.h"
-#include "runtime/hardware/device_context.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/device/res_manager/utils/io_handle.h"
 
 namespace mindspore {
 namespace device {
@@ -40,7 +39,7 @@ struct LoadableMember {
 using LoadableMemberPtr = std::unique_ptr<LoadableMember>;
 
 // LoadableDeviceAddress provide the ability to offload data on device to ddr or disk and load it back later.
-class BACKEND_EXPORT LoadableDeviceAddress : public DeviceAddress {
+class RES_EXPORT LoadableDeviceAddress : public DeviceAddress {
  public:
   explicit LoadableDeviceAddress(const KernelTensorPtr &kernel_tensor) : DeviceAddress(kernel_tensor) {}
   LoadableDeviceAddress(void *ptr, size_t size) : DeviceAddress(ptr, size) {}
@@ -86,12 +85,6 @@ class BACKEND_EXPORT LoadableDeviceAddress : public DeviceAddress {
   }
 
  protected:
-  DeviceContext *GetDeviceContext() const {
-    DeviceContext *device_context = nullptr;
-    device_context = DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name(), device_id()});
-    return device_context;
-  }
-
   bool MoveToDevice(bool async, size_t stream_id = kDefaultStreamIndex) const;
   bool MoveToHost(bool async, size_t stream_id = kDefaultStreamIndex) const;
   bool MoveToFile(bool async, size_t stream_id = kDefaultStreamIndex) const;

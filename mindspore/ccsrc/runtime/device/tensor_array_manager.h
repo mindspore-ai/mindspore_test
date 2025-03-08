@@ -24,7 +24,7 @@
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "runtime/device/tensor_array.h"
+#include "runtime/device/res_manager/tensor_array.h"
 #include "runtime/device/tensors_queue.h"
 
 namespace mindspore {

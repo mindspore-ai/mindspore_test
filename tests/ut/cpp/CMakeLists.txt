@@ -211,7 +211,6 @@ file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_session.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_somas.cc"
         "../../../mindspore/ccsrc/backend/ge_backend/executor/ge_memory_manager.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/hal/hccl_adapter/all_to_all_v_calc_param.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/profiler/*.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/kernel/ascend_kernel_mod.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/kernel/hccl/*.cc"

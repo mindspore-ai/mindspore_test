@@ -20,13 +20,13 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "include/backend/anf_runtime_algorithm.h"
 #include "common/kernel.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
+#include "runtime/device/res_manager/utils/visible.h"
 
 namespace mindspore {
 namespace device {
-class BACKEND_EXPORT TensorArray {
+class RES_EXPORT TensorArray {
  public:
   // Base TensorArray. Constructed by name, dtype and shapes.
   TensorArray(const string &name, const TypePtr &dtype, const ShapeVector &shapes)
@@ -83,7 +83,7 @@ class BACKEND_EXPORT TensorArray {
   std::vector<mindspore::kernel::AddressPtr> tensors_;
 };
 using TensorArrayPtr = std::shared_ptr<TensorArray>;
-std::vector<size_t> BACKEND_EXPORT GetUniqueTensorListSize(const std::vector<tensor::TensorPtr> &tensor_list);
+std::vector<size_t> RES_EXPORT GetUniqueTensorListSize(const std::vector<tensor::TensorPtr> &tensor_list);
 }  // namespace device
 }  // namespace mindspore
 

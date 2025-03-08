@@ -19,7 +19,7 @@
 #include <algorithm>
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
+#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #include "plugin/res_manager/ascend/collective/hccl_watch_dog_thread.h"
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "utils/ms_context.h"

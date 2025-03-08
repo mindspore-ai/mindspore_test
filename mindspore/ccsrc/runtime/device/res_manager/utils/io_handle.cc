@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/device/gsm/io_handle.h"
+#include "runtime/device/res_manager/utils/io_handle.h"
 #ifdef _MSC_VER
 #include <windows.h>
 #else

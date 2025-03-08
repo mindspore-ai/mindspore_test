@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/device/gsm/pin_mem_pool.h"
+#include "runtime/device/res_manager/utils/pin_mem_pool.h"
 #include <string>
 #include <algorithm>
 #include <cstdlib>

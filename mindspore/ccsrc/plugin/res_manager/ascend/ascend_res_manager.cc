@@ -53,7 +53,7 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "common/kernel_callback.h"
-#include "runtime/device/tensor_array.h"
+#include "runtime/device/res_manager/tensor_array.h"
 
 namespace mindspore {
 namespace device {

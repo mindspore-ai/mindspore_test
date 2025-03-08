@@ -18,7 +18,7 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "runtime/device/memory_manager.h"
+#include "runtime/device/res_manager/memory_manager.h"
 #include "plugin/device/cpu/hal/device/cpu_hash_table_util.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_synchronizer.h"
@@ -26,7 +26,7 @@
 #include "plugin/device/cpu/hal/hardware/ms_collective_comm_lib.h"
 #endif
 #include "runtime/device/move_to.h"
-#include "runtime/device/tensor_array.h"
+#include "runtime/device/res_manager/tensor_array.h"
 
 namespace mindspore {
 namespace device {

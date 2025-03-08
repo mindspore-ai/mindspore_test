@@ -19,7 +19,7 @@
 #include <memory>
 #include <string>
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
+#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #include "plugin/device/ascend/kernel/hccl/pyboost/comm_common.h"
 #include "plugin/device/ascend/kernel/hccl/hcom_util.h"
 #include "include/backend/distributed/collective/collective_manager.h"

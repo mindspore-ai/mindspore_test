@@ -19,7 +19,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
-#include "runtime/device/memory_manager.h"
+#include "runtime/device/res_manager/memory_manager.h"
 #include "plugin/res_manager/gpu/visible.h"
 
 namespace mindspore {

@@ -23,7 +23,7 @@
 #include <mutex>
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "runtime/device/memory_manager.h"
+#include "runtime/device/res_manager/memory_manager.h"
 #include "plugin/res_manager/cpu/cpu_res_manager.h"
 
 namespace mindspore {

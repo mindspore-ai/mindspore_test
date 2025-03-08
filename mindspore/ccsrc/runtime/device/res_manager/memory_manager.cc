@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/device/memory_manager.h"
+#include "runtime/device/res_manager/memory_manager.h"
 #include <string>
 #include "utils/ms_context.h"
 

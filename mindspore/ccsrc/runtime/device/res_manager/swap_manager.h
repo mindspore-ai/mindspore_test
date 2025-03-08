@@ -24,13 +24,13 @@
 
 #include "include/backend/mem_reuse/dynamic_mem_pool.h"
 #include "common/device_address.h"
-#include "runtime/device/gsm/io_handle.h"
-#include "runtime/device/gsm/pin_mem_pool.h"
-#include "include/backend/visible.h"
+#include "runtime/device/res_manager/utils/io_handle.h"
+#include "runtime/device/res_manager/utils/pin_mem_pool.h"
+#include "runtime/device/res_manager/utils/visible.h"
 
 namespace mindspore {
 namespace device {
-class BACKEND_EXPORT SwapManager {
+class RES_EXPORT SwapManager {
  public:
   SwapManager(size_t stream_id, DynamicMemPool *device_memory_pool, PinMemPool *pin_mem_pool);
   ~SwapManager() = default;

@@ -75,7 +75,7 @@
 #include "common/oplib/oplib.h"
 #include "runtime/device/move_to.h"
 #include "debug/profiler/profiling.h"
-#include "runtime/device/tensor_array.h"
+#include "runtime/device/res_manager/tensor_array.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 

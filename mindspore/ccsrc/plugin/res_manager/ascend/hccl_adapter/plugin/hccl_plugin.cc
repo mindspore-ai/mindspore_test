@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/hal/hccl_adapter/plugin/hccl_plugin.h"
+#include "plugin/res_manager/ascend/hccl_adapter/plugin/hccl_plugin.h"
 #define google ascend_private
 #include "register/ops_kernel_builder_registry.h"
 #include "common/opskernel/ops_kernel_info_store.h"

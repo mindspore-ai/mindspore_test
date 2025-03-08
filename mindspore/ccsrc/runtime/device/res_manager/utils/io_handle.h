@@ -22,7 +22,7 @@
 #include <queue>
 #include <string>
 #include <utility>
-#include "include/backend/visible.h"
+#include "runtime/device/res_manager/utils/visible.h"
 
 namespace mindspore {
 namespace device {
@@ -46,7 +46,7 @@ class AsyncIO {
   virtual bool Wait(AsyncIOToken token) = 0;
 };
 
-class BACKEND_EXPORT IOHandle {
+class RES_EXPORT IOHandle {
  public:
   IOHandle() = default;
   ~IOHandle() = default;

@@ -31,7 +31,7 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "extendrt/delegate/ascend_native/ascend_native_impl/utils.h"
 #include "src/train/opt_allocator.h"
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
+#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 
 namespace mindspore {
 Status AscendNativeSession::MoveDataFromHostToDevice(void *sd, bool s_fp16, void *dd, bool d_fp16, size_t elem_num) {

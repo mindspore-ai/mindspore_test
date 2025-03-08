@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/device/gsm/swap_manager.h"
+#include "runtime/device/res_manager/swap_manager.h"
 
 #include <functional>
 #include <string>
