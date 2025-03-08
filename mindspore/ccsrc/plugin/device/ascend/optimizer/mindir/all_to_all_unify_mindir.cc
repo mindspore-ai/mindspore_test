@@ -126,6 +126,7 @@ CNodePtr NeighborExchangeUnifyMindIR::CreateAlltoAllVNode(const FuncGraphPtr &gr
   common::AnfAlgo::SetNodeAttr(kAttrSendRankIds, MakeValue<std::vector<int64_t>>(send_rank_ids), all_to_all_v);
   common::AnfAlgo::SetNodeAttr(kAttrRecvRankIds, MakeValue<std::vector<int64_t>>(recv_rank_ids), all_to_all_v);
   common::AnfAlgo::SetNodeAttr(kAttrGroup, MakeValue<std::string>(group), all_to_all_v);
+  common::AnfAlgo::SetNodeAttr(kAttrBlockSize, MakeValue<int64_t>(1), all_to_all_v);
   common::AnfAlgo::SetNodeAttr(kAttrGroupRankIds, MakeValue<std::vector<uint32_t>>(group_rank_ids), all_to_all_v);
   if (common::AnfAlgo::HasNodeAttr(parallel::COMM_REUSE, neighbor_exchange)) {
     common::AnfAlgo::CopyNodeAttr(parallel::COMM_REUSE, neighbor_exchange, all_to_all_v);
@@ -189,6 +190,7 @@ CNodePtr AllToAllUnifyMindIR::CreateAlltoAllVNode(const KernelGraphPtr &graph, c
   common::AnfAlgo::SetNodeAttr(kAttrSendRankIds, MakeValue<std::vector<int64_t>>(rank_ids), new_ata);
   common::AnfAlgo::SetNodeAttr(kAttrRecvRankIds, MakeValue<std::vector<int64_t>>(rank_ids), new_ata);
   common::AnfAlgo::SetNodeAttr(kAttrGroup, MakeValue<std::string>(group), new_ata);
+  common::AnfAlgo::SetNodeAttr(kAttrBlockSize, MakeValue<int64_t>(1), new_ata);
   common::AnfAlgo::SetNodeAttr(kAttrGroupRankIds, MakeValue<std::vector<uint32_t>>(group_rank_ids), new_ata);
   if (common::AnfAlgo::HasNodeAttr(parallel::COMM_REUSE, all_to_all)) {
     common::AnfAlgo::CopyNodeAttr(parallel::COMM_REUSE, all_to_all, new_ata);

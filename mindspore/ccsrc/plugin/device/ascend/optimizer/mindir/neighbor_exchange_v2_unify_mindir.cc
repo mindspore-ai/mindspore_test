@@ -355,6 +355,7 @@ CNodePtr CreateAlltoAllVNode(const FuncGraphPtr &graph, const CNodePtr &neighbor
   common::AnfAlgo::SetNodeAttr(kAttrRecvRankIds, MakeValue<std::vector<int64_t>>(real_recv_rank_ids), all_to_all_v);
   common::AnfAlgo::SetNodeAttr(kAttrRecvType, TypeIdToType(base_dtype), all_to_all_v);
   common::AnfAlgo::SetNodeAttr(kAttrGroup, MakeValue<std::string>(group), all_to_all_v);
+  common::AnfAlgo::SetNodeAttr(kAttrBlockSize, MakeValue<int64_t>(1), all_to_all_v);
   common::AnfAlgo::SetNodeAttr(kAttrGroupRankIds, MakeValue<std::vector<uint32_t>>(group_rank_ids), all_to_all_v);
   if (common::AnfAlgo::HasNodeAttr(parallel::COMM_REUSE, neighbor_exchange_v2_or_grad)) {
     common::AnfAlgo::CopyNodeAttr(parallel::COMM_REUSE, neighbor_exchange_v2_or_grad, all_to_all_v);

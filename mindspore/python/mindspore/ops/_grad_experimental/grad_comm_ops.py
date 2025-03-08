@@ -638,7 +638,7 @@ def get_bprop_all_to_all(self):
 @bprop_getters.register(AlltoAllV)
 def get_bprop_all_to_all_v(self):
     """Generate bprop for AlltoAll."""
-    all_to_all_v_grad = AlltoAllV(self.group)
+    all_to_all_v_grad = AlltoAllV(self.group, self.block_size)
     if hasattr(self, "instance_name") and self.instance_name:
         instance_name = "grad" + self.instance_name
         all_to_all_v_grad.set_prim_instance_name(instance_name)

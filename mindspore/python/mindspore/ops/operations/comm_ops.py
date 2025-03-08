@@ -1931,13 +1931,17 @@ class AlltoAllV(PrimitiveWithInfer):
           concatenated before call this primitive.
 
     Args:
-        group (str): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP``, which
-          means ``"hccl_world_group"`` in Ascend.
+        group (str, optional): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP``, which
+            means ``"hccl_world_group"`` in Ascend.
+        block_size (int, optional): The basic units for scatter and gather numel by `send_numel_list` and `recv_numel_list`.
+            Default: ``1``.
 
     Inputs:
         - **input_x** (Tensor) - flatten tensor to scatter. The shape of tensor is :math:`(x_1)`.
         - **send_numel_list** (Union[tuple[int], list[int], Tensor]) - split numel to scatter to different remote rank.
+          The actual distributed data numel is :math:`(send_numel_list * block_size * input_x.dtype)`.
         - **recv_numel_list** (Union[tuple[int], list[int], Tensor]) - split numel to gather from different remote rank.
+          The actual aggregated data numel is :math:`(recv_numel_list * block_size * input_x.dtype)`.
 
     Outputs:
         Tensor, flattened and concatenated tensor gather from remote ranks.
@@ -1994,7 +1998,9 @@ class AlltoAllV(PrimitiveWithInfer):
     """
 
     @prim_attr_register
-    def __init__(self, group=GlobalComm.WORLD_COMM_GROUP):
+    def __init__(self, group=GlobalComm.WORLD_COMM_GROUP, block_size=1):
         self.group = GlobalComm.WORLD_COMM_GROUP if group is None else _get_group(group)
         self.rank_size = get_group_size(self.group)
         self.add_prim_attr('group', self.group)
+        validator.check_value_type("block_size", block_size, [int], self.name)
+        self.add_prim_attr('block_size', self.block_size)
