@@ -36,7 +36,7 @@
 #include "backend/common/session/session_basic.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/graph_scheduler/graph_scheduler.h"
-#include "runtime/pipeline/task/device_task.h"
+#include "runtime/pynative/task/device_task.h"
 #include "runtime/pynative/op_compiler.h"
 #include "runtime/pynative/graph_adapter.h"
 #include "runtime/pynative/op_runner.h"

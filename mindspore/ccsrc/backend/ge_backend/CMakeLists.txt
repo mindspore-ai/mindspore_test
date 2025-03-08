@@ -11,7 +11,8 @@ if(ENABLE_D OR ENABLE_ACL)
     add_library(mindspore_ge_backend SHARED ${_GE_BACKEND_SRC_LIST})
 
     target_link_libraries(mindspore_ge_backend PRIVATE mindspore_core mindspore_ops mindspore_ascend_res_manager
-            mindspore_common mindspore_backend_manager mindspore_backend mindspore_ascend proto_input)
+            mindspore_common mindspore_backend_manager mindspore_backend mindspore_ascend proto_input
+            mindspore_runtime_pipeline)
     target_link_libraries(mindspore_ge_backend PRIVATE securec)
 
 

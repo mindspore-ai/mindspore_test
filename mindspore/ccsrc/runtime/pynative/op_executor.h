@@ -30,7 +30,7 @@
 #include "runtime/hardware/device_context.h"
 #include "runtime/graph_scheduler/graph_scheduler.h"
 #include "include/backend/visible.h"
-#include "runtime/pipeline/task/device_task.h"
+#include "runtime/pynative/task/device_task.h"
 #include "runtime/pipeline/async_rqueue.h"
 
 namespace mindspore::runtime {

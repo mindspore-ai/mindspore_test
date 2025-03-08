@@ -24,7 +24,7 @@
 #include "include/backend/visible.h"
 #include "backend/common/session/session_basic.h"
 #include "runtime/pynative/op_compiler.h"
-#include "runtime/pipeline/task/device_task.h"
+#include "runtime/pynative/task/device_task.h"
 
 namespace mindspore::compile {
 using BackendOpRunInfoPtr = session::BackendOpRunInfoPtr;

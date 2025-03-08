@@ -18,13 +18,13 @@
 
 #include <utility>
 #include "utils/ms_utils.h"
-#include "include/backend/visible.h"
+#include "runtime/pipeline/visible.h"
 #include "runtime/pipeline/async_rqueue.h"
 #include "runtime/pipeline/async_hqueue.h"
 
 namespace mindspore {
 namespace runtime {
-class BACKEND_EXPORT Pipeline {
+class RUNTIME_PIPELINE_EXPORT Pipeline {
  public:
   static Pipeline &Get();
 

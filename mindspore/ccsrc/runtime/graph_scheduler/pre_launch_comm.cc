@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/device/pre_launch_comm.h"
+#include "runtime/graph_scheduler/pre_launch_comm.h"
 
 #include <algorithm>
 #include <unordered_set>

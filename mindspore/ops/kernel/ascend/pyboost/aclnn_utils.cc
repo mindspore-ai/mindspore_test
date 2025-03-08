@@ -18,7 +18,7 @@
 #include <future>
 #include "kernel/ascend/acl_ir/op_api_util.h"
 #include "runtime/pipeline/pipeline.h"
-#include "runtime/pipeline/task/device_task.h"
+#include "runtime/pynative/task/device_task.h"
 #include "runtime/pynative/op_executor.h"
 namespace mindspore {
 namespace kernel {

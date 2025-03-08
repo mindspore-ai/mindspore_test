@@ -29,7 +29,7 @@
 #include <condition_variable>
 #include <utility>
 
-#include "include/backend/visible.h"
+#include "runtime/pipeline/visible.h"
 #include "runtime/pipeline/task/task.h"
 
 #include "runtime/pipeline/ring_queue.h"
@@ -49,7 +49,7 @@ enum kThreadWaitLevel : int {
 };
 
 // Create a new thread to execute the tasks in the queue sequentially.
-class BACKEND_EXPORT AsyncRQueue {
+class RUNTIME_PIPELINE_EXPORT AsyncRQueue {
  public:
   explicit AsyncRQueue(std::string name, kThreadWaitLevel wait_level)
       : name_(std::move(name)), wait_level_(wait_level) {}
