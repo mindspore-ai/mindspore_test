@@ -18,7 +18,7 @@
 #include <fstream>
 #include <chrono>
 #include <thread>
-#include "debug/data_dump/npy_header.h"
+#include "debug/dump/npy_header.h"
 #include "debug/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/debug/anf_dump_utils.h"

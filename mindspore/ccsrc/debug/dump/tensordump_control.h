@@ -22,11 +22,11 @@
 #include <array>
 #include "utils/ms_utils.h"
 #include "utils/ms_context.h"
-#include "include/backend/visible.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 
-class BACKEND_EXPORT TensorDumpStepManager {
+class DUMP_EXPORT TensorDumpStepManager {
  public:
   static TensorDumpStepManager &GetInstance() {
     static TensorDumpStepManager instance;
