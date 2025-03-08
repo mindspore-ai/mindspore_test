@@ -236,6 +236,14 @@ void ConditionGatherActor::UpdateRefDeviceAddress(OpContext<DeviceTensor> *const
     if (output_device_tensors_[i] == nullptr) {
       MS_LOG(EXCEPTION) << "Invalid input device tensor index:" << input_index << " for actor:" << GetAID();
     }
+
+    const auto &somas_outputs = kernel_info_->somas_output_result();
+    if (kernel_info_->IsTensorEnableSomas(somas_outputs, i) && i < somas_outputs.size() &&
+        somas_outputs[i].second > 0 && somas_graph_output_indexes_.count(i) > 0) {
+      MS_LOG(DEBUG) << "Skip set ref for output index:" << i << " for actor:" << GetAID();
+      continue;
+    }
+
     output_device_tensors_[i]->set_pointer_ref_count(input_device_tensors_[input_index]->pointer_ref_count());
     output_device_tensors_[i]->IncreaseNewRefCount();
     MS_LOG(DEBUG) << "Actor:" << GetAID() << " increase new ref count:" << output_device_tensors_[i]->new_ref_count()
