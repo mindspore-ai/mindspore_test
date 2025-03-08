@@ -38,7 +38,6 @@ uint64_t InternalBatchMatmul::GenerateTilingKey(const std::vector<KernelTensor *
   // User defined CacheKey, the inputs should include all the factors which will affect tiling result.
   return InternalTilingCache::GenerateKey(kernel_name_, inputs, output_format_);
 }
-MS_INTERNAL_KERNEL_FACTORY_REG(BatchMatMul, internal::kInternalMatMulOpName, InternalBatchMatmul);
 REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(BatchMatMul, INPUT_NUM_2, INDEX_0, INDEX_1);
 REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(BatchMatMul, OUTPUT_NUM_1, INDEX_0);
 }  // namespace kernel
