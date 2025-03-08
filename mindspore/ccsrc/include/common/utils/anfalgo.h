@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -188,6 +188,7 @@ class COMMON_EXPORT AnfAlgo {
   static TypeId GetCNodeOutputPrecision(const AnfNodePtr &node);
   // get fix output precision from prev node, input_idx is the input index of current node related to prev node.
   static TypeId GetPrevNodeOutputPrecision(const AnfNodePtr &node, size_t input_idx);
+  static std::string GetMoveToDstStr(const AnfNodePtr &node);
   static bool IsNodeInputDynamicShape(const CNodePtr &anf_node_ptr);
   static bool IsNodeOutputDynamicShape(const AnfNodePtr &node);
   static bool IsDynamicShape(const AnfNodePtr &node);

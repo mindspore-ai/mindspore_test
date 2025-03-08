@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2023 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,6 +97,7 @@ constexpr auto kAttrVisited = "visited";
 constexpr auto kAttrReshapePaddingAxis = "reshape_padding_axis";
 constexpr auto kAttrBeginNormAxis = "begin_norm_axis";
 constexpr auto kAttrBeginParamsAxis = "begin_params_axis";
+constexpr auto kAttrBackwardPrefetch = "backward_prefetch";
 constexpr auto kAttrShape = "shape";
 constexpr auto kAttrMomentum = "momentum";
 constexpr auto kAttrEps = "eps";

@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,6 +117,10 @@ class AclStreamAssign {
                                  uint32_t wait_stream_id, std::vector<CNodePtr> *exec_order,
                                  std::map<size_t, std::set<size_t>> *no_event_streams, CNodePtr pre_cnode = nullptr,
                                  CNodePtr next_cnode = nullptr);
+  void AddDelayedSendRecvKernel(const NotNull<mindspore::KernelGraphPtr> &kernel_graph, const CNodePtr &kernel,
+                                size_t exec_idx, uint32_t record_stream_id, std::vector<CNodePtr> *exec_order,
+                                std::map<size_t, std::set<size_t>> *no_event_streams,
+                                mindspore::HashMap<size_t, std::vector<CNodePtr>> *delayed_recv_nodes);
   void ProcessSideEffect(const NotNull<KernelGraphPtr> &kernel_graph, const CNodePtr kernel, size_t process_stream_id,
                          const CNodePtr last_kernel, std::vector<AnfNodePtr> *real_inputs,
                          std::map<AnfNodePtr, std::set<size_t>> *side_effect_map,
