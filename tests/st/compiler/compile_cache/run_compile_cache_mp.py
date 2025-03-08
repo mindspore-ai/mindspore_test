@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2023-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import argparse
 import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
@@ -27,6 +28,9 @@ from mindspore.communication import init
 from mindspore.nn.optim import Momentum
 import mindspore.dataset as ds
 
+parser = argparse.ArgumentParser(description='Parameters')
+parser.add_argument("--run_o2", type=bool, default=False)
+args, _ = parser.parse_known_args()
 ms.set_seed(1)
 
 class MyIter:
@@ -84,6 +88,10 @@ class Net(nn.Cell):
 
 
 context.set_context(mode=context.GRAPH_MODE)
+run_o2 = args.run_o2
+if run_o2:
+    print("run in o2 mode.", flush=True)
+    context.set_context(jit_config={"jit_level": "O2"})
 context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", pipeline_stages=8)
 init()
 data1 = Tensor(np.ones([32, 64]), dtype=ms.float32)
