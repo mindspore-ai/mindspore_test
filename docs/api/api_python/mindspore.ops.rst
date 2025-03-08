@@ -485,6 +485,7 @@ Tensor创建
     mindspore.ops.full_like
     mindspore.ops.linspace
     mindspore.ops.logspace
+    mindspore.ops.move_to
     mindspore.ops.one_hot
     mindspore.ops.ones
     mindspore.ops.ones_like
