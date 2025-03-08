@@ -1,59 +1,57 @@
-/**
- * Copyright 2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2014-2021. All rights reserved.
+ * Licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * Description: wcstok_s  function
+ * Create: 2014-02-25
  */
 
-#include "securec.h"
+#include "securecutil.h"
+
+SECUREC_INLINE int SecIsInDelimitW(wchar_t ch, const wchar_t *strDelimit)
+{
+    const wchar_t *ctl = strDelimit;
+    while (*ctl != L'\0' && *ctl != ch) {
+        ++ctl;
+    }
+    return (int)(*ctl != L'\0');
+}
 
 /*
- * FindBegin Wide character postion  function
+ * Find beginning of token (skip over leading delimiters).
+ * Note that there is no token if this loop sets string to point to the terminal null.
  */
-static wchar_t *SecFindBeginW(wchar_t *strToken, const wchar_t *strDelimit)
+SECUREC_INLINE wchar_t *SecFindBeginW(wchar_t *strToken, const wchar_t *strDelimit)
 {
-    /* Find beginning of token (skip over leading delimiters). Note that
-     * there is no token if this loop sets string to point to the terminal null.
-     */
     wchar_t *token = strToken;
     while (*token != L'\0') {
-        const wchar_t *ctl = strDelimit;
-        while (*ctl != L'\0' && *ctl != *token) {
-            ++ctl;
+        if (SecIsInDelimitW(*token, strDelimit) != 0) {
+            ++token;
+            continue;
         }
-        if (*ctl == L'\0') {
-            break;
-        }
-        ++token;
+        /* Don't find any delimiter in string header, break the loop */
+        break;
     }
     return token;
 }
 
 /*
- * FindBegin rest Wide character postion  function
+ * Find the end of the token. If it is not the end of the string, put a null there.
  */
-static wchar_t *SecFindRestW(wchar_t *strToken, const wchar_t *strDelimit)
+SECUREC_INLINE wchar_t *SecFindRestW(wchar_t *strToken, const wchar_t *strDelimit)
 {
-    /* Find the end of the token. If it is not the end of the string,
-     * put a null there.
-     */
     wchar_t *token = strToken;
     while (*token != L'\0') {
-        const wchar_t *ctl = strDelimit;
-        while (*ctl != L'\0' && *ctl != *token) {
-            ++ctl;
-        }
-        if (*ctl != L'\0') {
-            *token++ = L'\0';
+        if (SecIsInDelimitW(*token, strDelimit) != 0) {
+            /* Find a delimiter, set string terminator */
+            *token = L'\0';
+            ++token;
             break;
         }
         ++token;
@@ -64,14 +62,12 @@ static wchar_t *SecFindRestW(wchar_t *strToken, const wchar_t *strDelimit)
 /*
  * Update Token wide character  function
  */
-static wchar_t *SecUpdateTokenW(wchar_t *strToken, const wchar_t *strDelimit, wchar_t **context)
+SECUREC_INLINE wchar_t *SecUpdateTokenW(wchar_t *strToken, const wchar_t *strDelimit, wchar_t **context)
 {
-    /* point to updated position */
-    wchar_t *token = SecFindRestW(strToken, strDelimit);
-    /* Update the context */
-    *context = token;
-    /* Determine if a token has been found. */
-    if (token == strToken) {
+    /* Point to updated position.  Record string position for next search in the context */
+    *context = SecFindRestW(strToken, strDelimit);
+    /* Determine if a token has been found */
+    if (*context == strToken) {
         return NULL;
     }
     return strToken;
@@ -99,11 +95,11 @@ static wchar_t *SecUpdateTokenW(wchar_t *strToken, const wchar_t *strDelimit, wc
 wchar_t *wcstok_s(wchar_t *strToken, const wchar_t *strDelimit, wchar_t **context)
 {
     wchar_t *orgToken = strToken;
-    /* validation section */
+    /* Validation section */
     if (context == NULL || strDelimit == NULL) {
         return NULL;
     }
-    if (orgToken == NULL && (*context) == NULL) {
+    if (orgToken == NULL && *context == NULL) {
         return NULL;
     }
     /* If string==NULL, continue with previous string */

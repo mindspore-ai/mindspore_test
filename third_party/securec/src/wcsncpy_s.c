@@ -1,24 +1,20 @@
-/**
- * Copyright 2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2014-2021. All rights reserved.
+ * Licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * Description: wcsncpy_s  function
+ * Create: 2014-02-25
  */
-
-#define SECUREC_INLINE_DO_MEMCPY 1
 
 #include "securecutil.h"
 
-static errno_t SecDoWcsncpy(wchar_t *strDest, size_t destMax, const wchar_t *strSrc, size_t count)
+SECUREC_INLINE errno_t SecDoCpyLimitW(wchar_t *strDest, size_t destMax, const wchar_t *strSrc, size_t count)
 {
     size_t srcStrLen;
     if (count < destMax) {
@@ -27,7 +23,7 @@ static errno_t SecDoWcsncpy(wchar_t *strDest, size_t destMax, const wchar_t *str
         SECUREC_CALC_WSTR_LEN(strSrc, destMax, &srcStrLen);
     }
     if (srcStrLen == destMax) {
-        strDest[0] = '\0';
+        strDest[0] = L'\0';
         SECUREC_ERROR_INVALID_RANGE("wcsncpy_s");
         return ERANGE_AND_RESET;
     }
@@ -35,8 +31,8 @@ static errno_t SecDoWcsncpy(wchar_t *strDest, size_t destMax, const wchar_t *str
         return EOK;
     }
     if (SECUREC_STRING_NO_OVERLAP(strDest, strSrc, srcStrLen)) {
-        /* performance optimization srcStrLen not include '\0' */
-        SecDoMemcpy(strDest, strSrc, srcStrLen * sizeof(wchar_t));
+        /* Performance optimization srcStrLen not include '\0' */
+        SECUREC_MEMCPY_WARP_OPT(strDest, strSrc, srcStrLen * sizeof(wchar_t));
         *(strDest + srcStrLen) = L'\0';
         return EOK;
     } else {
@@ -64,7 +60,7 @@ static errno_t SecDoWcsncpy(wchar_t *strDest, size_t destMax, const wchar_t *str
  * <RETURN VALUE>
  *    EOK                  Success
  *    EINVAL               strDest is  NULL and destMax != 0 and destMax <= SECUREC_WCHAR_STRING_MAX_LEN
- *    EINVAL_AND_RESET     strDest != NULL and strSrc is NULLL and destMax != 0
+ *    EINVAL_AND_RESET     strDest != NULL and strSrc is NULL and destMax != 0
  *                         and destMax <= SECUREC_WCHAR_STRING_MAX_LEN
  *    ERANGE               destMax > SECUREC_WCHAR_STRING_MAX_LEN or destMax is 0
  *    ERANGE_AND_RESET     count > SECUREC_WCHAR_STRING_MAX_LEN or
@@ -85,7 +81,7 @@ errno_t wcsncpy_s(wchar_t *strDest, size_t destMax, const wchar_t *strSrc, size_
     if (strDest == NULL || strSrc == NULL) {
         SECUREC_ERROR_INVALID_PARAMTER("wcsncpy_s");
         if (strDest != NULL) {
-            strDest[0] = '\0';
+            strDest[0] = L'\0';
             return EINVAL_AND_RESET;
         }
         return EINVAL;
@@ -93,19 +89,19 @@ errno_t wcsncpy_s(wchar_t *strDest, size_t destMax, const wchar_t *strSrc, size_
     if (count > SECUREC_WCHAR_STRING_MAX_LEN) {
 #ifdef SECUREC_COMPATIBLE_WIN_FORMAT
         if (count == (size_t)(-1)) {
-            return SecDoWcsncpy(strDest, destMax, strSrc, destMax - 1);
+            return SecDoCpyLimitW(strDest, destMax, strSrc, destMax - 1);
         }
 #endif
-        strDest[0] = '\0';      /* clear dest string */
+        strDest[0] = L'\0';      /* Clear dest string */
         SECUREC_ERROR_INVALID_RANGE("wcsncpy_s");
         return ERANGE_AND_RESET;
     }
 
     if (count == 0) {
-        strDest[0] = '\0';
+        strDest[0] = L'\0';
         return EOK;
     }
 
-    return SecDoWcsncpy(strDest, destMax, strSrc, count);
+    return SecDoCpyLimitW(strDest, destMax, strSrc, count);
 }
 

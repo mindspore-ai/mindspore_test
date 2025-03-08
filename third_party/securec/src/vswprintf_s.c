@@ -1,21 +1,22 @@
-/**
- * Copyright 2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2014-2021. All rights reserved.
+ * Licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * Description: vswprintf_s  function
+ * Create: 2014-02-25
  */
 
-#include "secureprintoutput.h"
+#ifndef SECUREC_FOR_WCHAR
+#define SECUREC_FOR_WCHAR
+#endif
 
+#include "secureprintoutput.h"
 
 /*
  * <FUNCTION DESCRIPTION>
@@ -23,9 +24,9 @@
  *
  * <INPUT PARAMETERS>
  *    strDest                  Storage location for the output.
- *    destMax                Size of strDest
- *    format                  Format specification.
- *    argList                   pointer to list of arguments
+ *    destMax                  Maximum number of characters to store
+ *    format                   Format specification.
+ *    argList                  pointer to list of arguments
  *
  * <OUTPUT PARAMETERS>
  *    strDest                 is updated
@@ -39,19 +40,15 @@
 int vswprintf_s(wchar_t *strDest, size_t destMax, const wchar_t *format, va_list argList)
 {
     int retVal;               /* If initialization causes  e838 */
-
-    if (format == NULL || strDest == NULL || destMax == 0 || destMax > (SECUREC_WCHAR_STRING_MAX_LEN)) {
-        if (strDest != NULL && destMax > 0) {
-            strDest[0] = '\0';
-        }
+    if (SECUREC_VSPRINTF_PARAM_ERROR(format, strDest, destMax, SECUREC_WCHAR_STRING_MAX_LEN)) {
+        SECUREC_VSPRINTF_CLEAR_DEST(strDest, destMax, SECUREC_WCHAR_STRING_MAX_LEN);
         SECUREC_ERROR_INVALID_PARAMTER("vswprintf_s");
         return -1;
     }
 
     retVal = SecVswprintfImpl(strDest, destMax, format, argList);
-
     if (retVal < 0) {
-        strDest[0] = '\0';
+        strDest[0] = L'\0';
         if (retVal == SECUREC_PRINTF_TRUNCATE) {
             /* Buffer too small */
             SECUREC_ERROR_INVALID_RANGE("vswprintf_s");
@@ -62,5 +59,4 @@ int vswprintf_s(wchar_t *strDest, size_t destMax, const wchar_t *format, va_list
 
     return retVal;
 }
-
 

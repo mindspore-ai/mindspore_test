@@ -1,32 +1,27 @@
-/**
- * Copyright 2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2014-2021. All rights reserved.
+ * Licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * Description: wcsncat_s  function
+ * Create: 2014-02-25
  */
-
-#define SECUREC_INLINE_DO_MEMCPY 1
 
 #include "securecutil.h"
 
 /*
  * Befor this function, the basic parameter checking has been done
  */
-static errno_t SecDoWcsncat(wchar_t *strDest, size_t destMax, const wchar_t *strSrc, size_t count)
+SECUREC_INLINE errno_t SecDoCatLimitW(wchar_t *strDest, size_t destMax, const wchar_t *strSrc, size_t count)
 {
+    /* To calculate the length of a wide character, the parameter must be a wide character */
     size_t destLen;
     size_t srcLen;
-
-    /* To calculate the length of a wide character, the parameter must be a wide character */
     SECUREC_CALC_WSTR_LEN(strDest, destMax, &destLen);
     SECUREC_CALC_WSTR_LEN(strSrc, count, &srcLen);
 
@@ -48,7 +43,7 @@ static errno_t SecDoWcsncat(wchar_t *strDest, size_t destMax, const wchar_t *str
         SECUREC_ERROR_INVALID_RANGE("wcsncat_s");
         return ERANGE_AND_RESET;
     }
-    SecDoMemcpy(strDest + destLen, strSrc, srcLen * sizeof(wchar_t)); /* no  terminator */
+    SECUREC_MEMCPY_WARP_OPT(strDest + destLen, strSrc, srcLen * sizeof(wchar_t)); /* no  terminator */
     *(strDest + destLen + srcLen) = L'\0';
     return EOK;
 }
@@ -80,7 +75,8 @@ static errno_t SecDoWcsncat(wchar_t *strDest, size_t destMax, const wchar_t *str
  *    EOK                   Success
  *    EINVAL                strDest is  NULL and destMax != 0 and destMax <= SECUREC_WCHAR_STRING_MAX_LEN
  *    EINVAL_AND_RESET      (strDest unterminated and all other parameters are valid) or
- *                    (strDest != NULL and strSrc is NULLL and destMax != 0 and destMax <= SECUREC_WCHAR_STRING_MAX_LEN)
+ *                          (strDest != NULL and strSrc is NULL and destMax != 0 and
+ *                           destMax <= SECUREC_WCHAR_STRING_MAX_LEN)
  *    ERANGE                destMax > SECUREC_WCHAR_STRING_MAX_LEN or destMax is 0
  *    ERANGE_AND_RESET      strDest have not enough space  and all other parameters are valid  and not overlap
  *    EOVERLAP_AND_RESET     dest buffer and source buffer are overlapped and all  parameters are valid
@@ -103,16 +99,15 @@ errno_t wcsncat_s(wchar_t *strDest, size_t destMax, const wchar_t *strSrc, size_
     }
     if (count > SECUREC_WCHAR_STRING_MAX_LEN) {
 #ifdef  SECUREC_COMPATIBLE_WIN_FORMAT
-        if (count == ((size_t)-1)) {
+        if (count == ((size_t)(-1))) {
             /* Windows internal functions may pass in -1 when calling this function */
-            return SecDoWcsncat(strDest, destMax, strSrc, destMax);
+            return SecDoCatLimitW(strDest, destMax, strSrc, destMax);
         }
 #endif
         strDest[0] = L'\0';
         SECUREC_ERROR_INVALID_RANGE("wcsncat_s");
         return ERANGE_AND_RESET;
     }
-    return SecDoWcsncat(strDest, destMax, strSrc, count);
+    return SecDoCatLimitW(strDest, destMax, strSrc, count);
 }
-
 
