@@ -21,6 +21,8 @@ from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
 
+context.set_context(jit_level="O0")
+
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
@@ -34,7 +36,6 @@ def test_default_asgd(mode):
     from .optimizer_utils import default_fc1_weight_asgd, \
         default_fc1_bias_asgd, default_fc2_weight_asgd, default_fc2_bias_asgd
     context.set_context(mode=mode)
-    context.set_context(jit_config={"jit_level": "O0"})
     config = {'name': 'ASGD', 'lr': 0.01, 'lambd': 1e-4, 'alpha': 0.75, 't0': 1e6, 'weight_decay': 0.0}
     _, cells = build_network(config, FakeNet())
     assert np.allclose(cells.ax[0].asnumpy(), default_fc1_weight_asgd, atol=1.e-3)

@@ -27,6 +27,7 @@ from tests.device_utils import set_device, get_device
 from tests.mark_utils import arg_mark
 
 
+ms.context.set_context(jit_level="O0")
 
 def tile_func(x, multiplies):
     return ops.operations.manually_defined.tile(x, multiplies)

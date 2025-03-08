@@ -19,6 +19,9 @@ from mindspore import ops, nn, mutable
 from mindspore.ops import hfftn
 from tests.mark_utils import arg_mark
 
+
+ms.context.set_context(jit_level="O0")
+
 class HFFTNNet(nn.Cell):
     def __init__(self):
         super(HFFTNNet, self).__init__()

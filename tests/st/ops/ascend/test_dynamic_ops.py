@@ -24,6 +24,7 @@ import mindspore.dataset as ds
 from mindspore.common.initializer import One
 
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+context.set_context(jit_level="O0")
 set_seed(2)
 
 

@@ -24,6 +24,7 @@ import mindspore.common.dtype as mstype
 
 context.set_context(mode=context.GRAPH_MODE)
 context.set_context(device_target="Ascend")
+context.set_context(jit_level="O0")
 set_seed(2)
 
 

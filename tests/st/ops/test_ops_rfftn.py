@@ -20,6 +20,8 @@ from mindspore.ops import rfftn
 from tests.mark_utils import arg_mark
 
 
+ms.context.set_context(jit_level="O0")
+
 class RFFTNNet(nn.Cell):
     def __init__(self):
         super(RFFTNNet, self).__init__()

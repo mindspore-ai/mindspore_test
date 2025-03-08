@@ -20,6 +20,8 @@ from mindspore import ops, nn, mutable
 from mindspore.ops import rfft
 
 
+ms.context.set_context(jit_level="O0")
+
 class RFFTNet(nn.Cell):
     def __init__(self):
         super(RFFTNet, self).__init__()

@@ -20,6 +20,8 @@ from mindspore.ops import irfftn
 from tests.mark_utils import arg_mark
 
 
+ms.context.set_context(jit_level="O0")
+
 class IRFFTNNet(nn.Cell):
     def __init__(self):
         super(IRFFTNNet, self).__init__()

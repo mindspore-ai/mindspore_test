@@ -23,7 +23,7 @@ from mindspore.nn import Cell
 from tests.mark_utils import arg_mark
 
 ms.set_context(mode=ms.GRAPH_MODE)
-
+ms.set_context(jit_level="O0")
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
           essential_mark='unessential')

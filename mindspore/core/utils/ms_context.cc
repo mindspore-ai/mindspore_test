@@ -834,8 +834,8 @@ bool UseSimulationApi() {
 }
 
 bool UseNewBackend() {
-  static auto backend_env = common::GetEnv("MS_NEW_BACKEND");
-  if (!backend_env.empty()) {
+  static auto backend_env = common::GetEnv("MS_OLD_BACKEND");
+  if (backend_env.empty()) {
     MS_LOG(INFO) << "Use the new backend.";
     return true;
   } else {

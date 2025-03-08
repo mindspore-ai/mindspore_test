@@ -113,7 +113,6 @@ void ClearResPart1() {
   mindspore::RDR::Snapshot();
   mindspore::RDR::ResetRecorder();
 #endif
-  backend::BackendManager::GetInstance().Clear();
   runtime::GraphScheduler::GetInstance().Clear();
   runtime::ProfilerAnalyzer::GetInstance().Clear();
   opt::PassConfigure::Instance().Clear();
@@ -230,6 +229,7 @@ void ClearSingleton() {
   device::DataQueueMgr::GetInstance().Clear();
   session::SessionFactory::Get().Clear();
   device::KernelRuntimeManager::Instance().Clear();
+  backend::BackendManager::GetInstance().Clear();
   ExecuteOrderTracker::GetInstance().Clear();
   OpPrimPyRegister::GetInstance().Clear();
   DumpJsonParser::Finalize();
