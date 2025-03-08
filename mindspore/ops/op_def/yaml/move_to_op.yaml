@@ -1,0 +1,17 @@
+#operator move_to
+move_to:
+    args:
+        input:
+            dtype: tensor
+            type_cast: list[int], tuple[int]
+        to:
+            dtype: str
+            default: "'CPU'"
+        blocking:
+            dtype: bool
+            default: True
+    returns:
+        output:
+            dtype: tensor
+    dispatch:
+        enable: False

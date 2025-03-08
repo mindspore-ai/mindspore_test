@@ -528,6 +528,17 @@ bool KernelTensor::SyncDataFromDeviceToHost() const {
   }
   host_info_->value_mutex_.lock();
 
+  if (hete_info_ != nullptr && hete_info_->host_ptr_ != nullptr) {
+    if (!host_info_->kernel_tensor_value_) {
+      host_info_->kernel_tensor_value_ =
+        std::make_shared<KernelTensorValue>(hete_info_->host_ptr_, address_common_->size_, type_);
+    } else {
+      host_info_->kernel_tensor_value_->SetDataPtr(hete_info_->host_ptr_);
+      host_info_->kernel_tensor_value_->Resize(address_common_->size_);
+    }
+    return true;
+  }
+
   void *device_ptr = this->device_ptr();
   if (device_ptr == nullptr) {
     MS_LOG(ERROR) << "Not malloc device memory yet, sync data from device to host side failed, size: "

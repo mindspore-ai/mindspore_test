@@ -39,6 +39,8 @@ class HcomAlltoAllVKernel : public HcclKernel {
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   bool GetAllToAllVParam(const std::vector<int64_t> &send_numel_list, const std::vector<int64_t> &recv_numel_list);
 
+  std::vector<size_t> GetLaunchIgnoredInputAddressIdx() const override { return {kIndex1, kIndex2}; }
+
  protected:
   HcclDataType data_type_ = {};
   hccl::HcclAllToAllVParams params_ = {};

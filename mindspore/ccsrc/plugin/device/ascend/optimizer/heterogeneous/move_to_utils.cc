@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {
 namespace opt {
@@ -64,8 +65,11 @@ CNodePtr MoveToUtils::InsertMoveTo(const KernelGraphPtr &kernel_graph, const Mov
   }
 
   // Create MoveTo node
+  const auto &blocking_value = MakeValue(false);
+  auto blocking_value_node = kernel_graph->NewValueNode(blocking_value);
+  blocking_value_node->set_abstract(blocking_value->ToAbstract());
   const std::vector<AnfNodePtr> move_to_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimMoveTo->name())),
-                                                  info.data_previous_node_, to_input};
+                                                  info.data_previous_node_, to_input, blocking_value_node};
   auto move_to_node = kernel_graph->NewCNode(move_to_inputs);
   MS_EXCEPTION_IF_NULL(move_to_node);
   move_to_node->set_scope(info.data_following_node_->scope());
