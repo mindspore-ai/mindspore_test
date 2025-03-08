@@ -431,6 +431,7 @@ constexpr char FAKE_QUANT_PER_LAYER[] = "FakeQuantPerLayer";
 constexpr char FAKE_QUANT_PER_CHANNEL[] = "FakeQuantPerChannel";
 constexpr char MIN_MAX_UPDATE_PER_LAYER[] = "MinMaxUpdatePerLayer";
 constexpr char MIN_MAX_UPDATE_PER_CHANNEL[] = "MinMaxUpdatePerChannel";
+constexpr char EMBEDDING[] = "Embedding";
 constexpr char EMBEDDING_LOOKUP[] = "EmbeddingLookup";
 constexpr char CONCAT[] = "Concat";
 constexpr char SELECT[] = "Select";

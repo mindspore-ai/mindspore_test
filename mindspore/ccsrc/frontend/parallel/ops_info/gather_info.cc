@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,17 @@
 
 namespace mindspore {
 namespace parallel {
+
+constexpr char kNamePaddingIdx[] = "padding_idx";
+constexpr char kNameMaxNorm[] = "max_norm";
+constexpr char kNameNormType[] = "norm_type";
+constexpr char kNameScaleGradByFreq[] = "scale_grad_by_freq";
+constexpr int64_t kPaddingIdxIndex = 2;
+constexpr int64_t kMaxNormIndex = 3;
+constexpr int64_t kNormTypeIndex = 4;
+constexpr int64_t kScaleGradByFreqIndex = 5;
+constexpr float kNormType = 2.0;
+
 Status GatherInfo::GetManualSplitWithoutOffsetAttr() {
   auto manual_split_without_offset_iter = attrs_.find("manual_split");
   if (manual_split_without_offset_iter != attrs_.end()) {
@@ -102,7 +113,6 @@ Status GatherInfo::GetManualSplitAttr() {
       param_split_shapes_.push_back(param_split_row);
       index_offsets_.push_back(offset);
     }
-
     if (param_split_shapes_.empty()) {
       MS_LOG(ERROR) << name_ << ": Failed to extract param split with offset's split info";
       return FAILED;
@@ -196,7 +206,6 @@ Status GatherInfo::GetAttrs() {
     MS_LOG(ERROR) << name_ << ": The axis must be 0 if manual split, bug got " << axis_;
     return FAILED;
   }
-
   if (std::find(inputs_shape_[1].begin(), inputs_shape_[1].end(), -1) != inputs_shape_[1].end()) {
     dynamic_shape_indices_ = true;
   }
@@ -218,7 +227,6 @@ bool GatherInfo::ShardBatchAxisAndSp(const Shape &param_strategy, const Shape &i
   if ((param_strategy.size() != 2) || (indices_strategy.size() != 2)) {
     return false;
   }
-
   if ((param_strategy[1] != 1)) {
     return false;
   }
@@ -265,7 +273,6 @@ GatherMode GatherInfo::GetGatherMode(const Shape &param_strategy, const Shape &i
   if (batch_dims_ > 0) {
     return BATCH;
   }
-
   if (param_strategy[LongToSize(axis_)] == NO_SPLIT_STRATEGY) {
     return NORMAL;
   }
@@ -283,7 +290,11 @@ GatherMode GatherInfo::GetGatherMode(const Shape &param_strategy, const Shape &i
   }
 
   if (axis_ == 0 && param_strategy[0] != NO_SPLIT_STRATEGY) {
-    if (std::find(inputs_shape_[1].begin(), inputs_shape_[1].end(), -1) != inputs_shape_[1].end()) {
+    const Shape &shape_to_check =
+      (name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos)
+        ? inputs_shape_[0]
+        : inputs_shape_[1];
+    if (std::find(shape_to_check.begin(), shape_to_check.end(), -1) != shape_to_check.end()) {
       return SHARD_AXIS_0_DYNAMIC;
     } else {
       return SHARD_AXIS_0_STATIC;
@@ -410,20 +421,24 @@ Status NormalImpl::InferTensorMap() {
   for (int i = 0; i < size; ++i) {
     tmp_map.push_back(size - i - 1);  // tmp_map: [f, g, c, 1, e]
   }
-
   TensorMap param_map = tmp_map;                                                            // [f, g, c, 1, e]
   (void)param_map.erase(param_map.cbegin(), param_map.cbegin() + inputs_shape_[1].size());  // [c, 1, e]
 
   TensorMap indices_map = tmp_map;                                                              // [f, g, c, 1, e]
   (void)indices_map.erase(indices_map.cbegin() + inputs_shape_[1].size(), indices_map.cend());  // [f, g]
 
-  TensorMap out_map = param_map;                                                                         // [c, 1, e]
+  TensorMap out_map;
+  if (name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos) {
+    inputs_tensor_map_.push_back(indices_map);  // indices
+    inputs_tensor_map_.push_back(param_map);    // param
+  } else {
+    inputs_tensor_map_.push_back(param_map);    // param
+    inputs_tensor_map_.push_back(indices_map);  // indices
+  }
+  out_map = param_map;                                                                                   // [c, 1, e]
   (void)out_map.erase(out_map.cbegin() + LongToSize(axis_));                                             // [c, e]
   (void)out_map.insert(out_map.cbegin() + LongToSize(axis_), indices_map.cbegin(), indices_map.cend());  // [c, f, g, e]
-
-  inputs_tensor_map_.push_back(param_map);    // param
-  inputs_tensor_map_.push_back(indices_map);  // indices
-  outputs_tensor_map_.push_back(out_map);     // out
+  outputs_tensor_map_.push_back(out_map);                                                                // out
   return SUCCESS;
 }
 
@@ -519,8 +534,15 @@ Status ManualImpl::InferTensorMap() {
 
 Status ManualImpl::InferTensorInfo() {
   // infer tensor shape
-  Shape input_shape = inputs_shape_.at(0);
-  Shape input_index_shape = inputs_shape_.at(1);
+  Shape input_shape;
+  Shape input_index_shape;
+  if (name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos) {
+    input_shape = inputs_shape_.at(1);
+    input_index_shape = inputs_shape_.at(0);
+  } else {
+    input_shape = inputs_shape_.at(0);
+    input_index_shape = inputs_shape_.at(1);
+  }
   Shape output_shape = outputs_shape_.at(0);
   int64_t rank = g_device_manager->rank_index_in_stage();
   // infer tensor layout
@@ -710,7 +732,12 @@ Status ShardBatchAndAxisImpl::InferTensorMap() {
 Status ShardBatchAndAxisImpl::InferBias() {
   CheckGlobalDeviceManager();
   int64_t rank = g_device_manager->rank_index_in_stage();
-  auto input_shape = inputs_shape_.at(0);
+  Shape input_shape;
+  if (name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos) {
+    input_shape = inputs_shape_.at(1);
+  } else {
+    input_shape = inputs_shape_.at(0);
+  }
   MS_EXCEPTION_IF_ZERO("param_strategy_[0]", param_strategy_[0]);
   slice_size_ = input_shape[0] / param_strategy_[0];
   bias_ = rank % param_strategy_[0] * slice_size_;
@@ -813,19 +840,23 @@ Status ShardAxisImpl::CheckSplitAxisStrategy(const Shape &param_strategy, const 
 
 Status ShardAxisImpl::CheckStrategy(const Shape &param_strategy, const Shape &indices_strategy) {
   // only support 1-dim and 2-dim param
-  if (inputs_shape_.at(0).size() != 1 && inputs_shape_.at(0).size() != 2) {
-    MS_LOG(ERROR) << name_ << ": Don't support param dim " << inputs_shape_.at(0).size();
+  const int shape_index =
+    (name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos) ? 1 : 0;
+  const int scalar_index =
+    (name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos) ? 0 : 1;
+
+  if (inputs_shape_.at(shape_index).size() != 1 && inputs_shape_.at(shape_index).size() != 2) {
+    MS_LOG(ERROR) << name_ << ": Don't support param dim " << inputs_shape_.at(shape_index).size();
     return FAILED;
   }
-
-  // don't support scalar index
-  if (inputs_shape_[1].empty()) {
+  if (inputs_shape_.at(scalar_index).empty()) {
     MS_LOG(ERROR) << name_ << ": Don't support scalar index.";
     return FAILED;
   }
 
   // axis != 0, param_shape(0)%(param_strategy(0)*param_strategy(axis)) must be 0
   MS_EXCEPTION_IF_ZERO("param_strategy", param_strategy.at(0) * param_strategy.at(LongToSize(axis_)));
+
   if (axis_ != 0 && inputs_shape_[0][0] % (param_strategy.at(0) * param_strategy.at(LongToSize(axis_))) != 0) {
     MS_LOG(ERROR) << name_ << ": param_shape(0) can't be divided by (param_strategy(0)*param_strategy(axis)).";
     return FAILED;
@@ -843,7 +874,6 @@ Status ShardAxisImpl::CheckStrategy(const Shape &param_strategy, const Shape &in
 
 Status ShardAxisImpl::InferDevMatrixShape() {
   dev_matrix_shape_ = param_strategy_;
-
   // infer out dev_matrix_shape
   // axis is not 0, split axis
   if (axis_ != 0 && param_strategy_.at(LongToSize(axis_)) != 1) {
@@ -862,6 +892,7 @@ Status ShardAxisImpl::InferDevMatrixShape() {
   auto index_product =
     std::accumulate(indices_strategy_.begin(), indices_strategy_.end(), 1, std::multiplies<int64_t>());
   auto stage_device_size = SizeToLong(g_device_manager->GetDeviceListInThisStage().size());
+
   if (param_product * index_product < stage_device_size) {
     MS_EXCEPTION_IF_ZERO("param_product * index_product", param_product * index_product);
     repeated_calculation_num_ = stage_device_size / (param_product * index_product);  // set the repeat calc num
@@ -878,8 +909,12 @@ Status ShardAxisImpl::InferDevMatrixShape() {
 Status ShardAxisImpl::InferTensorMap() {
   // param_strategy(axis) is not 1
   // infer input tensor map
-  size_t param_size = inputs_shape_.at(0).size();
-  size_t index_size = inputs_shape_.at(1).size();
+  bool is_embedding =
+    (name_.find(EMBEDDING) != std::string::npos) && (name_.find(EMBEDDING_LOOKUP) == std::string::npos);
+  const int param_index = is_embedding ? 1 : 0;
+  const int index_index = is_embedding ? 0 : 1;
+  size_t param_size = inputs_shape_.at(param_index).size();
+  size_t index_size = inputs_shape_.at(index_index).size();
   Shape tensor_map_index;
   Shape tensor_map_params;
 
@@ -887,9 +922,11 @@ Status ShardAxisImpl::InferTensorMap() {
   for (size_t i = 0; i < param_size; ++i) {
     tensor_map_params.push_back(SizeToLong(param_size - i - 1));
   }
+  const auto &first_tensor_map = is_embedding ? tensor_map_index : tensor_map_params;
+  const auto &second_tensor_map = is_embedding ? tensor_map_params : tensor_map_index;
 
-  (void)inputs_tensor_map_.emplace_back(std::move(tensor_map_params));
-  (void)inputs_tensor_map_.emplace_back(std::move(tensor_map_index));
+  (void)inputs_tensor_map_.emplace_back(std::move(first_tensor_map));
+  (void)inputs_tensor_map_.emplace_back(std::move(second_tensor_map));
 
   // infer output tensor map
   Shape tensor_map_out;
@@ -917,7 +954,6 @@ Status ShardAxisImpl::InferTensorMap() {
     }
   }
   (void)outputs_tensor_map_.emplace_back(std::move(tensor_map_out));
-
   return SUCCESS;
 }
 
@@ -1012,7 +1048,6 @@ Status ShardAxisImpl::InferForwardCommunication() {
   OperatorParams params;
   OperatorArgs args = std::make_pair(attrs, params);
   Operator op = std::make_pair(operator_name, args);
-
   forward_op_.push_back(op);
   return SUCCESS;
 }
@@ -1020,7 +1055,13 @@ Status ShardAxisImpl::InferForwardCommunication() {
 Status ShardAxisImpl::InferBias() {
   CheckGlobalDeviceManager();
   int64_t rank = g_device_manager->rank_index_in_stage();
-  auto input_shape = inputs_shape_.at(0);
+  Shape input_shape;
+
+  if (name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos) {
+    input_shape = inputs_shape_.at(1);
+  } else {
+    input_shape = inputs_shape_.at(0);
+  }
   // params_size=1, axis=0
   if ((input_shape.size() == 1) && (axis_ == 0)) {
     MS_EXCEPTION_IF_ZERO("param_strategy_.at(0)", param_strategy_.at(0));
@@ -1091,7 +1132,6 @@ Status ShardAxisImpl::InferReplaceGraph(const CNodePtr &cnode) {
   auto relu = gen_g.PushBack({gen_g.NewOpInst(RELU), sub});
   auto minimum = gen_g.PushBack({gen_g.NewOpInst(MINIMUM), relu, CreateInt32Tensor(slice_size_ - 1)});
   auto equal = gen_g.PushBack({gen_g.NewOpInst(EQUAL), sub, minimum});
-
   AnfNodePtr gather_v2{nullptr};
   auto replace_op_name = GetPrimNameFromInfoName(replace_op_name_);
   if (replace_op_name == INDEX_SELECT) {
@@ -1100,11 +1140,13 @@ Status ShardAxisImpl::InferReplaceGraph(const CNodePtr &cnode) {
   } else if (replace_op_name == GATHERV2) {
     gather_v2 = gen_g.PushBack(
       {gen_g.NewOpInst(replace_op_name_), gen_g.virtual_input_node(), minimum, CreatInt64Imm(axis_), CreatInt64Imm(0)});
+  } else if (replace_op_name == EMBEDDING && name_.find(EMBEDDING_LOOKUP) == std::string::npos) {
+    gather_v2 = gen_g.PushBack({gen_g.NewOpInst(replace_op_name_), minimum, gen_g.virtual_input_node(),
+                                NewValueNode(kNone), NewValueNode(kNone), CreateFP32Imm(2.0), CreateBoolImm(false)});
   } else {
     gather_v2 =
       gen_g.PushBack({gen_g.NewOpInst(replace_op_name_), gen_g.virtual_input_node(), minimum, CreatInt64Imm(axis_)});
   }
-
   auto dtype = gen_g.PushBack({gen_g.NewOpInst(DTYPE), gather_v2});
   auto dtype_id =
     gen_g.PushBack({gen_g.NewOpInst(DTYPETOENUM), CreateStringImm("DtypeToEnum"), CreateStringImm("dtype"), dtype});
@@ -1112,7 +1154,13 @@ Status ShardAxisImpl::InferReplaceGraph(const CNodePtr &cnode) {
   auto expand_dims = gen_g.PushBack({gen_g.NewOpInst(EXPAND_DIMS), cast, CreatInt64Imm(axis_ - 1)});
   auto mul = gen_g.PushBack({gen_g.NewOpInst(MUL), gather_v2, expand_dims});
   // don't need expand dim, if param_size = 1
-  if (inputs_shape_.at(0).size() == 1) {
+  bool is_use_mul = false;
+  if (name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos) {
+    is_use_mul = inputs_shape_.at(1).size() == 1;
+  } else {
+    is_use_mul = inputs_shape_.at(0).size() == 1;
+  }
+  if (is_use_mul) {
     mul = gen_g.PushBack({gen_g.NewOpInst(MUL), gather_v2, cast});
   }
   if (InferGroup() != SUCCESS) {
@@ -1123,6 +1171,7 @@ Status ShardAxisImpl::InferReplaceGraph(const CNodePtr &cnode) {
   Attr attr_group = std::make_pair(GROUP, MakeValue(group_.name()));
   OperatorAttrs attrs = {attr_op, attr_group};
   AnfNodePtr reduce_op;
+
   if (dynamic_shape_indices_ || axis_split_forward_allreduce_ || is_assigned_parallel_) {
     reduce_op = gen_g.PushBack({gen_g.NewOpInst(ALL_REDUCE, attrs), mul});
   } else {
@@ -1131,10 +1180,11 @@ Status ShardAxisImpl::InferReplaceGraph(const CNodePtr &cnode) {
   std::vector<std::pair<AnfNodePtr, int64_t>> input_nodes = {std::make_pair(sub, 2), std::make_pair(gather_v2, 1)};
   if (replace_op_name == INDEX_SELECT) {
     input_nodes = {std::make_pair(sub, 3), std::make_pair(gather_v2, 1)};
+  } else if (replace_op_name == EMBEDDING && name_.find(EMBEDDING_LOOKUP) == std::string::npos) {
+    input_nodes = {std::make_pair(sub, 1), std::make_pair(gather_v2, 2)};
   }
   replace_graph_ = std::make_shared<std::pair<std::vector<std::pair<AnfNodePtr, int64_t>>, AnfNodePtr>>(
     std::make_pair(input_nodes, reduce_op));
-
   return SUCCESS;
 }
 
@@ -1144,13 +1194,11 @@ Status ShardAxisImpl::InferReplaceOps() {
   }
 
   int64_t bias = 0;
-
   if (InferBias() != SUCCESS) {
     MS_LOG(ERROR) << name_ << ": Infer offset failed.";
     return FAILED;
   }
   bias = bias_;
-
   OperatorName op_name = EMBEDDING_LOOKUP;
   OperatorAttrs attrs;
   Attr param_offset = std::make_pair("offset", MakeValue(bias));
@@ -1162,26 +1210,50 @@ Status ShardAxisImpl::InferReplaceOps() {
   return SUCCESS;
 }
 
+Status GatherInfo::CheckProductValidity(const Dimensions &param_strategy, const Dimensions &indices_strategy) {
+  const auto product_param = std::accumulate(param_strategy.begin(), param_strategy.end(), 1, std::multiplies<int>());
+  const auto product_indices =
+    std::accumulate(indices_strategy.begin(), indices_strategy.end(), 1, std::multiplies<int>());
+  const auto stage_device_size = SizeToLong(g_device_manager->GetDeviceListInThisStage().size());
+
+  if (product_param != 1 && product_param != stage_device_size) {
+    MS_LOG(ERROR) << name_ << "param_strategy " << param_strategy << " is not supported";
+    return FAILED;
+  }
+  if (product_indices != 1) {
+    MS_LOG(ERROR) << name_ << "indices_strategy " << indices_strategy << " is not supported";
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
 Status GatherInfo::CheckStrategy(const StrategyPtr &strategy) {
   if (CheckStrategyValue(strategy, inputs_shape_) != SUCCESS) {
     return FAILED;
   }
   gather_util_ = nullptr;
   gather_mode_ = INVALID;
-
-  // param slice shape preferably 32Byte aligned
-  auto param_shape = inputs_shape_[0];
-  auto input_dim = strategy->GetInputDim();
-  auto param_strategy = input_dim[0];
-  auto indices_strategy = input_dim[1];
-  MS_LOG(INFO) << name_ << ": the indices shape is " << inputs_shape_[1] << ", the strategy is " << input_dim[1];
+  Shape param_shape;
+  Strategies input_dim = strategy->GetInputDim();
+  Dimensions param_strategy, indices_strategy;
+  if (name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos) {
+    param_shape = inputs_shape_[1];
+    param_strategy = input_dim[1];
+    indices_strategy = input_dim[0];
+  } else {
+    param_shape = inputs_shape_[0];
+    param_strategy = input_dim[0];
+    indices_strategy = input_dim[1];
+  }
+  if (name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos &&
+      CheckProductValidity(param_strategy, indices_strategy) != SUCCESS) {
+    return FAILED;
+  }
   MS_EXCEPTION_IF_ZERO("param_strategy.at(param_strategy.size() - 1)", param_strategy.at(param_strategy.size() - 1));
   auto slice_shape = param_shape.at(param_shape.size() - 1) / param_strategy.at(param_strategy.size() - 1);
   if ((target_ != CPU) && (slice_shape % 8 != 0) && (slice_shape != 1)) {
     MS_LOG(WARNING) << "Gather: Last dim of param slice shape is not 32Byte aligned.";
   }
-
-  // get the gather mode, and choose the the corresponding implementation
   gather_mode_ = GetGatherMode(param_strategy, indices_strategy);
   switch (gather_mode_) {
     case BATCH: {
@@ -1241,24 +1313,18 @@ Status GatherInfo::CheckStrategy(const StrategyPtr &strategy) {
       MS_LOG(ERROR) << name_ << ": invalid gather mode: " << gather_mode_;
       return FAILED;
   }
-
   gather_util_->set_dynamic_shape_flag(dynamic_shape_flag_);
   gather_util_->set_inputs_divisor(inputs_divisor_);
   gather_util_->set_outputs_divisor(outputs_divisor_);
-
   gather_util_->DivisorsReplaceShapes();
   if (gather_util_->CheckStrategy(param_strategy, indices_strategy) != SUCCESS) {
     return FAILED;
   }
   gather_util_->ResumeShapes();
-
   gather_util_->set_param_strategy(param_strategy);
   gather_util_->set_indices_strategy(indices_strategy);
   gather_util_->set_gather_mode(gather_mode_);
-  MS_LOG(INFO) << name_ << ": the gather mode is " << gather_util_->GatherModeToString();
-
   repeated_num_in_dev_matrix_right_ = gather_util_->repeated_num_in_dev_matrix_right();  // set the base class member
-
   return SUCCESS;
 }
 
@@ -1294,23 +1360,26 @@ Status GatherInfo::CheckOutputStrategy(const StrategyPtr &out_strategy) {
   MS_EXCEPTION_IF_NULL(gather_util_);
   auto shard_axis_util = std::dynamic_pointer_cast<ShardAxisImpl>(gather_util_);
 
-  auto in_stra = strategy_->GetInputDim();
-  auto param_strategy = in_stra[0];
-  auto index_strategy = in_stra[1];
+  Strategies in_stra = strategy_->GetInputDim();
+  Dimensions param_strategy, index_strategy;
+  if (name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos) {
+    param_strategy = in_stra[1];
+    index_strategy = in_stra[0];
+  } else {
+    param_strategy = in_stra[0];
+    index_strategy = in_stra[1];
+  }
 
   // only for axis == 0
   auto allreduce_strategy = index_strategy;
   (void)allreduce_strategy.insert(allreduce_strategy.end(), param_strategy.begin() + 1, param_strategy.end());
   auto reduce_scatter_strategy = allreduce_strategy;
   reduce_scatter_strategy[0] *= param_strategy[0];
-
   auto out_stra = out_strategy->GetInputDim()[0];
   if (out_stra == allreduce_strategy) {
     if (shard_axis_util != nullptr) {
       shard_axis_util->set_axis_split_forward_allreduce(true);
     }
-
-    MS_LOG(INFO) << name_ << ": The output strategy is " << out_stra << ", forward use allreduce";
     return SUCCESS;
   } else if (out_stra == reduce_scatter_strategy) {
     if (gather_util_->gather_mode() != SHARD_AXIS_0_STATIC && gather_util_->gather_mode() != SHARD_BATCH_AND_AXIS &&
@@ -1347,6 +1416,7 @@ Status GatherInfo::InferMirrorOps() {
   }
 
   OperatorVector op_for_input_a, op_for_input_b, op_for_axis;
+
   if (input_a_group.empty()) {
     MS_LOG(INFO) << name_ << " : The mirror group is empty.";
     return SUCCESS;
@@ -1354,7 +1424,6 @@ Status GatherInfo::InferMirrorOps() {
     op_for_input_a = CreateMirrorOps(input_a_group[0].name(), input_a_group[0].GetDevNum());
     MS_LOG(INFO) << name_ << " : Create the mirror ops for input a success, group is " << input_a_group[0].name();
   }
-
   mirror_ops_.push_back(op_for_input_a);
   mirror_ops_.push_back(op_for_input_b);
   mirror_ops_.push_back(op_for_axis);
@@ -1375,11 +1444,9 @@ Status GatherInfo::InferDevMatrixShape() {
 Status GatherInfo::InferTensorMap() {
   // the dev matrix shape may be changed if repeat calculation, so need to reset the dev matrix shape for gather_util
   gather_util_->set_dev_matrix_shape(dev_matrix_shape_);
-
   if (gather_util_->InferTensorMap() != SUCCESS) {
     return FAILED;
   }
-
   inputs_tensor_map_ = gather_util_->inputs_tensor_map();
   outputs_tensor_map_ = gather_util_->outputs_tensor_map();
   return SUCCESS;
@@ -1430,7 +1497,6 @@ Status GatherInfo::InferTensorInfo() {
   // the tensor map of gather_util may be changed if repeat calculation, so need to reset
   gather_util_->set_inputs_tensor_map(inputs_tensor_map_);
   gather_util_->set_outputs_tensor_map(outputs_tensor_map_);
-
   if (gather_util_->InferTensorInfo() != SUCCESS) {
     return FAILED;
   }
@@ -1545,7 +1611,93 @@ std::shared_ptr<Strategies> GatherInfo::GenerateBatchStrategies() {
   return std::make_shared<Strategies>(strategy_v);
 }
 
+Status EmbeddingInfo::InferMirrorOps() {
+  mirror_ops_.clear();
+  Shape input_a_tensor_map = inputs_tensor_map_.at(0);
+  std::vector<Group> input_a_group;
+  if (CreateGroupByTensorMap(input_a_tensor_map, &input_a_group) != SUCCESS) {
+    ReportError(name_ + " : Create group for input a failed.");
+    return FAILED;
+  }
+
+  OperatorVector op_for_input_a, op_for_input_b;
+
+  if (input_a_group.empty()) {
+    MS_LOG(INFO) << name_ << " : The mirror group is empty.";
+    return SUCCESS;
+  } else {
+    op_for_input_a = CreateMirrorOps(input_a_group[0].name(), input_a_group[0].GetDevNum());
+    MS_LOG(INFO) << name_ << " : Create the mirror ops for input a success, group is " << input_a_group[0].name();
+  }
+  mirror_ops_.push_back(op_for_input_a);
+  mirror_ops_.push_back(op_for_input_b);
+  DealWithBatchDimsMirrorOp();
+  return SUCCESS;
+}
+
+Status EmbeddingInfo::GetAttrs() {
+  auto padding_idx_input_ptr = input_value_[kPaddingIdxIndex];
+  if (!padding_idx_input_ptr->isa<None>()) {
+    auto padding_idx = GetScalarValueFromInputsWithCheck<int64_t>(input_value_, name_, kNamePaddingIdx);
+    MS_LOG(ERROR) << "padding_idx must be none, but get " << padding_idx.value() << std::endl;
+    return FAILED;
+  }
+  auto max_norm_input_ptr = input_value_[kMaxNormIndex];
+  if (!max_norm_input_ptr->isa<None>()) {
+    auto max_norm = GetScalarValueFromInputsWithCheck<float>(input_value_, name_, kNameMaxNorm);
+    MS_LOG(ERROR) << "max_norm must be none, but get " << max_norm.value() << std::endl;
+    return FAILED;
+  }
+
+  auto norm_type_input_ptr = input_value_[kNormTypeIndex];
+  if (!norm_type_input_ptr->isa<None>()) {
+    auto norm_type = GetScalarValueFromInputsWithCheck<float>(input_value_, name_, kNameNormType);
+    if (norm_type.value() != kNormType) {
+      MS_LOG(ERROR) << "norm_type must be 2.0, but get " << norm_type.value() << std::endl;
+      return FAILED;
+    }
+  }
+
+  auto scale_grad_by_freq_input_ptr = input_value_[kScaleGradByFreqIndex];
+  if (!scale_grad_by_freq_input_ptr->isa<None>()) {
+    auto scale_grad_by_freq = GetScalarValueFromInputsWithCheck<bool>(input_value_, name_, kNameScaleGradByFreq);
+    if (scale_grad_by_freq.value()) {
+      MS_LOG(ERROR) << "scale_grad_by_freq must be False, but got " << (scale_grad_by_freq.value() ? "true" : "false")
+                    << std::endl;
+      return FAILED;
+    }
+  }
+
+  if (attrs_.find(TARGET) != attrs_.end()) {
+    target_ = GetStringAttr(TARGET);
+  }
+
+  // get axis, the third input is the axis, is a ValueNode, embeddinglookup doesn't have axis, and its offset.
+  if (target_ != CPU) {
+    auto params_shape = inputs_shape_.at(1);
+    if (params_shape.empty()) {
+      MS_LOG(ERROR) << name_ << ": weight can not be a scalar!";
+      return FAILED;
+    }
+  }
+
+  if (GetManualSplitAttr() != SUCCESS) {
+    return FAILED;
+  }
+
+  if (std::find(inputs_shape_[0].begin(), inputs_shape_[0].end(), -1) != inputs_shape_[0].end()) {
+    dynamic_shape_indices_ = true;
+  }
+#if defined(__linux__) && defined(WITH_BACKEND)
+  if (ps::PsDataPrefetch::GetInstance().cache_enable()) {
+    dynamic_shape_indices_ = true;
+  }
+#endif
+  return SUCCESS;
+}
+
 REGISTER(GatherInfo);
+REGISTER(EmbeddingInfo);
 REGISTER(IndexSelectInfo);
 REGISTER(SparseGatherV2Info);
 REGISTER(EmbeddingLookupInfo);
