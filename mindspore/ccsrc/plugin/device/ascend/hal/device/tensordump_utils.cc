@@ -19,12 +19,11 @@
 #include <fstream>
 #include <memory>
 
-#include "debug/data_dump/npy_header.h"
+#include "debug/dump/npy_header.h"
+#include "debug/dump/tensordump_control.h"
 #include "ir/tensor.h"
 #include "utils/file_utils.h"
 #include "utils/log_adapter.h"
-#include "include/backend/debug/data_dump/tensordump_control.h"
-#include "backend/common/session/session_basic.h"
 
 namespace mindspore::device::ascend {
 namespace {

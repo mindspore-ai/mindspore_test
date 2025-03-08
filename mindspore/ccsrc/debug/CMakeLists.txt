@@ -3,6 +3,8 @@ include_directories(${CMAKE_BINARY_DIR})
 file(STRINGS "${CMAKE_SOURCE_DIR}/version.txt" MSVERSION)
 add_definitions(-DMSVERSION=\"${MSVERSION}\")
 
+add_subdirectory(dump)
+
 set(_DEBUG_SRC_LIST)
 
 if(ENABLE_DUMP_IR)
@@ -43,12 +45,10 @@ list(APPEND _DEBUG_SRC_LIST
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_json_parser.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_utils.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/data_dumper.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/npy_header.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/utils.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/common/csv_writer.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/summary/summary.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_control.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/tensordump_control.cc"
     )
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")
     list(APPEND _DEBUG_SRC_LIST

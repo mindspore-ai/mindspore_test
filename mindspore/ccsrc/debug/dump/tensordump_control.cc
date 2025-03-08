@@ -20,8 +20,8 @@
 #include <optional>
 #include <algorithm>
 
-#include "include/backend/debug/data_dump/tensordump_control.h"
-#include "backend/common/session/session_basic.h"
+#include "debug/dump/tensordump_control.h"
+#include "utils/distributed_meta.h"
 #include "utils/log_adapter.h"
 #include "utils/file_utils.h"
 
@@ -49,6 +49,13 @@ bool EndsWith(const std::string &s, const std::string &sub) {
   return s.rfind(sub) == (s.length() - sub.length()) ? true : false;
 }
 
+std::uint32_t GetRankId() {
+  std::uint32_t rank_id = 0;
+  if (mindspore::DistributedMeta::GetInstance()->initialized()) {
+    rank_id = mindspore::DistributedMeta::GetInstance()->global_rank_id();
+  }
+  return rank_id;
+}
 }  // namespace
 namespace mindspore {
 

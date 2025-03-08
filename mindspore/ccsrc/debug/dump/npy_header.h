@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_DEBUG_DATA_DUMP_NPY_HEADER_H_
-#define MINDSPORE_MINDSPORE_CCSRC_DEBUG_DATA_DUMP_NPY_HEADER_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_DEBUG_DUMP_NPY_HEADER_H_
+#define MINDSPORE_MINDSPORE_CCSRC_DEBUG_DUMP_NPY_HEADER_H_
 
 #include <string>
 #include "utils/shape_utils.h"
 #include "ir/dtype/type_id.h"
-#include "include/backend/visible.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
-std::string BACKEND_EXPORT GenerateNpyHeader(const ShapeVector &shape, TypeId type_id, bool fortran_order = false);
+DUMP_EXPORT std::string GenerateNpyHeader(const ShapeVector &shape, TypeId type_id, bool fortran_order = false);
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_DEBUG_DATA_DUMP_NPY_HEADER_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_DEBUG_DUMP_NPY_HEADER_H_
