@@ -125,6 +125,8 @@ class AscendResManager : public HalResBase {
 
   DeviceEventPtr CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait);
   DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking, bool use_extensional_api) override;
+  bool DestroyEvent(const DeviceEventPtr &event) override;
+  bool DestroyAllEvents() override;
 
   bool single_op_multi_stream_enable() const override;
   void set_single_op_multi_stream_enable(bool single_op_multi_stream_enable) override;
@@ -161,6 +163,8 @@ class AscendResManager : public HalResBase {
 
   std::shared_ptr<SwapManager> swap_manager_{nullptr};
   std::shared_ptr<MemoryManager> mem_manager_{nullptr};
+  DeviceEventPtrList device_events_{};
+  std::mutex device_events_mutex_;
 };
 }  // namespace ascend
 }  // namespace device

@@ -816,6 +816,39 @@ DeviceEventPtr AscendResManager::CreateEventWithFlag(bool enable_timing, bool bl
   return event;
 }
 
+bool AscendResManager::DestroyEvent(const DeviceEventPtr &event) {
+  MS_EXCEPTION_IF_NULL(event);
+  if (!event->DestroyEvent()) {
+    MS_LOG(ERROR) << "Destroy Event failed.";
+    return false;
+  }
+  std::lock_guard<std::mutex> lock(device_events_mutex_);
+  const auto &iter = std::find(device_events_.begin(), device_events_.end(), event);
+  if (iter == device_events_.end()) {
+    MS_LOG(ERROR) << "Can't find specified device event.";
+    return false;
+  }
+  (void)device_events_.erase(iter);
+  return true;
+}
+
+bool AscendResManager::DestroyAllEvents() {
+  DeviceEventPtrList device_events_inner;
+  {
+    std::lock_guard<std::mutex> lock(device_events_mutex_);
+    device_events_inner = device_events_;
+    device_events_.clear();
+  }
+  (void)std::for_each(device_events_inner.begin(), device_events_inner.end(), [this](const auto &event) {
+    MS_EXCEPTION_IF_NULL(event);
+    if (!event->DestroyEvent()) {
+      MS_LOG(ERROR) << "Destroy Event failed.";
+    }
+  });
+  device_events_.clear();
+  return true;
+}
+
 bool AscendResManager::GetMemUceInfo(int32_t device_id) {
   aclrtMemUceInfo info[MAX_MEM_UCE_INFO_ARRAY_SIZE];
   size_t retSize = 0;

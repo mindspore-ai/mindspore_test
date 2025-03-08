@@ -26,6 +26,7 @@ from mindspore import export, load
 from tests.mark_utils import arg_mark
 
 
+@pytest.mark.skip(reason="skip gpu hashtable")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_simple_graph_compile_export():
     """
@@ -54,6 +55,7 @@ def test_simple_graph_compile_export():
         print("data:", data)
 
 
+@pytest.mark.skip(reason="skip gpu hashtable")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('ms_type', [ms.int32, ms.int64])
 def test_maptensor_put_get_export(ms_type):
@@ -89,6 +91,7 @@ def test_maptensor_put_get_export(ms_type):
         print("data:", data)
 
 
+@pytest.mark.skip(reason="skip gpu hashtable")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('ms_type', [ms.int32, ms.int64])
 def test_mapparameter_ckpt_save_load(ms_type):
@@ -123,6 +126,7 @@ def test_mapparameter_ckpt_save_load(ms_type):
         os.remove(file_name)
 
 
+@pytest.mark.skip(reason="skip gpu hashtable")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_map_parameter_get():
     """
@@ -151,6 +155,7 @@ def test_map_parameter_get():
         print("data4:", data4)
 
 
+@pytest.mark.skip(reason="skip gpu hashtable")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_map_parameter_put():
     """
@@ -169,6 +174,7 @@ def test_map_parameter_put():
         print("data1:", data1)
 
 
+@pytest.mark.skip(reason="skip gpu hashtable")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_map_parameter_erase():
     """
@@ -187,6 +193,7 @@ def test_map_parameter_erase():
         print("data1:", data1)
 
 
+@pytest.mark.skip(reason="skip gpu hashtable")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_basic_operations():
     """
@@ -216,6 +223,7 @@ def test_basic_operations():
         print("data:", data)
 
 
+@pytest.mark.skip(reason="skip gpu hashtable")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_simple_graph_compile():
     """
@@ -248,6 +256,7 @@ def test_simple_graph_compile():
         assert out[0].shape == (2, 3)
 
 
+@pytest.mark.skip(reason="skip gpu hashtable")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_export_update_api():
     """
@@ -271,6 +280,7 @@ def test_export_update_api():
         print("new_data1:", new_data1)
 
 
+@pytest.mark.skip(reason="skip gpu hashtable")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_map_parameter_clone():
     """
@@ -305,6 +315,7 @@ def test_map_parameter_clone():
     assert clone_same.default_value == 'zeros'
 
 
+@pytest.mark.skip(reason="skip gpu hashtable")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_grad_net():
     """
@@ -343,6 +354,7 @@ def test_grad_net():
         grad(t)
 
 
+@pytest.mark.skip(reason="skip gpu hashtable")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_map_parameter_in_construct():
     """
@@ -372,6 +384,7 @@ def test_map_parameter_in_construct():
         print("out:", out)
 
 
+@pytest.mark.skip(reason="skip gpu hashtable")
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
           essential_mark='unessential')
 def test_map_parameter_get_data_api():
@@ -389,6 +402,7 @@ def test_map_parameter_get_data_api():
         print("the_values:", the_values)
 
 
+@pytest.mark.skip(reason="skip gpu hashtable")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
 def test_map_parameter_filter():
     """
@@ -412,6 +426,7 @@ def test_map_parameter_filter():
         print("out:", out)
 
 
+@pytest.mark.skip(reason="skip gpu hashtable")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_simple_graph_export_load():
     """

@@ -26,10 +26,7 @@
 #include "plugin/device/gpu/hal/device/gpu_common.h"
 #include "plugin/res_manager/gpu/device/gpu_event.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
-#ifdef ENABLE_DUMP_IR
-#include "include/common/debug/rdr/recorder_manager.h"
 #include "plugin/res_manager/gpu/device/gpu_device_synchronizer.h"
-#endif
 
 namespace mindspore {
 namespace device {
@@ -61,9 +58,6 @@ bool GPUDeviceAddress::SyncDeviceToHost(size_t size, void *host_ptr) const {
   MS_EXCEPTION_IF_NULL(host_ptr);
   auto ret = GPUDeviceManager::GetInstance().SyncAllStreams();
   if (!ret) {
-#ifdef ENABLE_DUMP_IR
-    mindspore::RDR::TriggerAll();
-#endif
     MS_LOG(ERROR) << "SyncStream failed";
     return ret;
   }

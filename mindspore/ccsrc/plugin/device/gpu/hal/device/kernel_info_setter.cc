@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/res_manager/gpu/device/kernel_info_setter.h"
+#include "plugin/device/gpu/hal/device/kernel_info_setter.h"
 #include <algorithm>
 #include <memory>
 #include <tuple>

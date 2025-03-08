@@ -17,6 +17,7 @@
 #include "plugin/res_manager/gpu/device/gpu_device_synchronizer.h"
 #include "plugin/res_manager/gpu/device/gpu_device_manager.h"
 #include "plugin/device/gpu/hal/device/gpu_common.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {
@@ -34,9 +35,9 @@ bool GPUDeviceSynchronizer::SyncDeviceToHost(void *host_ptr, const void *device_
   }
   MS_ERROR_IF_NULL(stream);
 
-  auto gpu_device_context = DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
-  MS_EXCEPTION_IF_NULL(gpu_device_context);
-  if (!gpu_device_context->device_res_manager_->BindDeviceToCurrentThread(false)) {
+  auto gpu_res_manager = HalResManager::GetInstance().GetOrCreateResManager({DeviceType::kGPU, device_id});
+  MS_EXCEPTION_IF_NULL(gpu_res_manager);
+  if (!gpu_res_manager->BindDeviceToCurrentThread(false)) {
     MS_LOG(WARNING) << "Bind device to current thread failed.";
   }
 
@@ -60,9 +61,9 @@ bool GPUDeviceSynchronizer::SyncHostToDevice(void *device_ptr, const void *host_
   }
   MS_ERROR_IF_NULL(stream);
 
-  auto gpu_device_context = DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
-  MS_EXCEPTION_IF_NULL(gpu_device_context);
-  if (!gpu_device_context->device_res_manager_->BindDeviceToCurrentThread(false)) {
+  auto gpu_res_manager = HalResManager::GetInstance().GetOrCreateResManager({DeviceType::kGPU, device_id});
+  MS_EXCEPTION_IF_NULL(gpu_res_manager);
+  if (!gpu_res_manager->BindDeviceToCurrentThread(false)) {
     MS_LOG(WARNING) << "Bind device to current thread failed.";
   }
 

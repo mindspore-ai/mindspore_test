@@ -35,7 +35,7 @@
 #include "include/common/utils/utils.h"
 #include "include/common/utils/contract.h"
 #include "include/backend/optimizer/helper.h"
-#include "plugin/res_manager/gpu/device/kernel_info_setter.h"
+#include "plugin/device/gpu/hal/device/kernel_info_setter.h"
 
 namespace mindspore {
 namespace opt {
