@@ -943,14 +943,13 @@ OptPassGroupMap GetSymbolEngineOptPass(const opt::irpass::OptimizeIRPassLib &irp
 OptPassGroupMap GetJitOptPassesB(const opt::irpass::OptimizeIRPassLib &irpass) {
   std::vector<opt::SubstitutionPtr> frontend_op_eliminate_pass_list = {
     irpass.zero_like_fill_zero_, irpass.check_bprop_eliminate_, irpass.row_tensor_eliminate_};
-  auto pynative_grad_executor = pynative::PyNativeExecutor::grad_executor();
-  if (!pynative_grad_executor->RequiresGrad()) {
+  if (!pynative::GradState::Get().RequiresGrad()) {
     (void)frontend_op_eliminate_pass_list.emplace_back(irpass.special_op_eliminate_);
   }
   opt::OptPassConfig frontend_op_eliminate = opt::OptPassConfig(frontend_op_eliminate_pass_list);
 
   std::vector<opt::SubstitutionPtr> inline_after_opt_a_pass_list = {irpass.tuple_list_get_item_eliminator_};
-  if (!pynative_grad_executor->RequiresGrad()) {
+  if (!pynative::GradState::Get().RequiresGrad()) {
     (void)inline_after_opt_a_pass_list.emplace_back(irpass.reset_defer_inline_);
     (void)inline_after_opt_a_pass_list.emplace_back(irpass.inline_);
   }
@@ -1558,8 +1557,7 @@ bool OptAfterJitGradPass(const ResourcePtr &resource) {
     {"mutable_op_eliminate", mutable_op_eliminate},
     {"convert_tensor_op_eliminate", convert_tensor_op_eliminate},
   });
-  auto pynative_grad_executor = pynative::PyNativeExecutor::grad_executor();
-  if (pynative_grad_executor->RequiresGrad()) {
+  if (pynative::GradState::Get().RequiresGrad()) {
     opt::OptPassConfig inline_after_jit_grad =
       opt::OptPassConfig({irpass.reset_defer_inline_, irpass.inline_}, false, true);
     (void)map.emplace_back("inline_after_jit_grad", inline_after_jit_grad);
