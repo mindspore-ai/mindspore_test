@@ -18,7 +18,21 @@ from __future__ import absolute_import
 import inspect
 import os
 import time
-from collections import OrderedDict
+import warnings
+import itertools
+from collections import OrderedDict, namedtuple
+from typing import (
+    Dict,
+    Optional,
+    Set,
+    Callable,
+    List,
+    Tuple,
+    Iterator,
+    Any,
+    TypeVar,
+    Mapping
+)
 
 from mindspore._checkparam import args_type_check, check_hook_fn
 from mindspore.common._auto_dynamic import is_auto_dynamic, convert_inputs_to_dynamic
@@ -36,6 +50,7 @@ from mindspore.common.api import _convert_python_data, _get_args_for_run_predict
 from mindspore.common.api import _process_dyn_args, _generate_dyn_compile_args
 from mindspore.common.parameter import Parameter, ParameterTuple
 from mindspore.common.tensor import Tensor
+from mindspore.common._stub_tensor import StubTensor
 from mindspore.ops.operations import Cast
 from mindspore.ops.primitive import Primitive
 from mindspore.ops.operations import _inner_ops as inner
@@ -43,6 +58,48 @@ from mindspore.parallel.shard import Shard
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore.common._decorator import deprecated
 from mindspore.common._register_for_recompute import recompute_registry
+from mindspore.nn.utils.hooks import RemovableHandle
+from mindspore.nn.buffer import Buffer
+
+__all__ = [
+    "register_cell_buffer_registration_hook",
+]
+
+_global_buffer_registration_hooks: Dict[int, Callable] = OrderedDict()
+_EXTRA_STATE_KEY_SUFFIX = "_extra_state"
+
+
+class _IncompatibleKeys(namedtuple("IncompatibleKeys", ["missing_keys", "unexpected_keys"]),):
+    def __repr__(self):
+        if not self.missing_keys and not self.unexpected_keys:
+            return "<All keys matched successfully>"
+        return super().__repr__()
+
+    __str__ = __repr__
+
+
+def register_cell_buffer_registration_hook(hook: Callable[..., None],) -> RemovableHandle:
+    r"""Register a buffer registration hook common to all cells.
+
+    .. warning ::
+
+        This adds global state to the `nn.Cell` cell
+
+    The hook will be called every time :func:`register_buffer` is invoked.
+    It should have the following signature::
+
+        hook(cell, name, buffer) -> None or new buffer
+
+    The hook can modify the input or return a single modified value in the hook.
+
+    Returns:
+        :class:`mindspore.utils.hooks.RemovableHandle`:
+            a handle that can be used to remove the added hook by calling
+            ``handle.remove()``
+    """
+    handle = RemovableHandle(_global_buffer_registration_hooks)
+    _global_buffer_registration_hooks[handle.id] = hook
+    return handle
 
 
 class Cell(Cell_):
@@ -106,6 +163,8 @@ class Cell(Cell_):
                    '_attr_synced', 'pynative', 'requires_grad', 'cell_type',
                    '_parameters_forward_hook', '_parameters_backward_hook']
     total_instance_count = 0
+    _buffers: Dict[str, Optional[Tensor]]
+    _non_persistent_buffers_set: Set[str]
 
     def __init__(self, auto_prefix=True, flags=None):
         Cell_.__init__(self, self._cell_tag)
@@ -113,6 +172,12 @@ class Cell(Cell_):
         self.instance_count = Cell.total_instance_count
         self._params = OrderedDict()
         self._cells = OrderedDict()
+        super().__setattr__("_buffers", {})
+        super().__setattr__("_non_persistent_buffers_set", set())
+        super().__setattr__("_state_dict_hooks", OrderedDict())
+        super().__setattr__("_state_dict_pre_hooks", OrderedDict())
+        super().__setattr__("_load_state_dict_pre_hooks", OrderedDict())
+        super().__setattr__("_load_state_dict_post_hooks", OrderedDict())
         self._params_list = OrderedDict()
         self._primitives = OrderedDict()
         self.training = False
@@ -134,8 +199,8 @@ class Cell(Cell_):
         cells_compile_cache[id(self)] = self.compile_cache
         self.parameter_broadcast_done = False
         self._id = 1
-        self.exist_names = set("")
-        self.exist_objs = set()
+        self._exist_objs = None
+        self._exist_param_names = None
         self._recompute_cell = None
         self.mixed_precision_type = None
         self.sig = inspect.signature(self.construct)
@@ -206,6 +271,18 @@ class Cell(Cell_):
     @property
     def cell_init_args(self):
         return self._cell_init_args
+
+    @property
+    def exist_param_names(self):
+        if self._exist_param_names is None:
+            self._exist_param_names = dict()
+        return self._exist_param_names
+
+    @property
+    def exist_objs(self):
+        if self._exist_objs is None:
+            self._exist_objs = set()
+        return self._exist_objs
 
     @property
     def param_prefix(self):
@@ -393,6 +470,247 @@ class Cell(Cell_):
     def enable_backward_hook(self):
         return self._enable_backward_hook
 
+    @jit_forbidden_register
+    def register_buffer(
+            self, name: str, tensor: Optional[Tensor], persistent: bool = True
+    ) -> None:
+        r"""Add a buffer to the cell.
+
+        This is typically used to register a buffer that should not to be
+        considered a model parameter. For example, BatchNorm's ``running_mean``
+        is not a parameter, but is part of the cell's state. Buffers, by
+        default, are persistent and will be saved alongside parameters. This
+        behavior can be changed by setting :attr:`persistent` to ``False``. The
+        only difference between a persistent buffer and a non-persistent buffer
+        is that the latter will not be a part of this cell's
+        :attr:`state_dict`.
+
+        Buffers can be accessed as attributes using given names.
+
+        Args:
+            name (str): name of the buffer. The buffer can be accessed
+                from this cell using the given name
+            tensor (Tensor or None): buffer to be registered. If ``None``, then operations
+                that run on buffers, such as :attr:`cuda`, are ignored. If ``None``,
+                the buffer is **not** included in the cell's :attr:`state_dict`.
+            persistent (bool): whether the buffer is part of this cell's
+                :attr:`state_dict`.
+
+        Example::
+
+            >>> # xdoctest: +SKIP("undefined vars")
+            >>> self.register_buffer('running_mean', Tensor(np.array([1, 2, 3]).astype(np.float32)))
+
+        """
+
+        if "_buffers" not in self.__dict__:
+            raise AttributeError("cannot assign buffer before Cell.__init__() call")
+        if not isinstance(name, str):
+            raise TypeError(
+                f"buffer name should be a string.But got this type: {type(name)}"
+            )
+        if "." in name:
+            raise KeyError('buffer name can\'t contain "."')
+        if name == "":
+            raise KeyError('buffer name can\'t be empty string ""')
+        if hasattr(self, name) and name not in self._buffers:
+            raise KeyError(f"attribute '{name}' already exists")
+        if tensor is not None and not isinstance(tensor, Tensor):
+            raise TypeError(
+                f"cannot assign '{type(tensor)}' object to buffer '{name}' "
+                "(mindspore Tensor or None required)"
+            )
+        for hook in _global_buffer_registration_hooks.values():
+            output = hook(self, name, tensor)
+            if output is not None:
+                tensor = output
+            if isinstance(tensor, StubTensor):
+                tensor = tensor.stub_sync()
+        if isinstance(tensor, StubTensor):
+            tensor = tensor.stub_sync()
+        self._buffers[name] = tensor if isinstance(tensor, Buffer) else Buffer(tensor)
+        if persistent:
+            self._non_persistent_buffers_set.discard(name)
+        else:
+            self._non_persistent_buffers_set.add(name)
+
+    @jit_forbidden_register
+    def get_buffer(self, target: str) -> "Tensor":
+        """Return the buffer given by ``target`` if it exists, otherwise throw an error.
+
+        See the docstring for ``get_sub_cell`` for a more detailed
+        explanation of this method's functionality as well as how to
+        correctly specify ``target``.
+
+        Args:
+            target: The fully-qualified string name of the buffer
+                to look for. (See ``get_sub_cell`` for how to specify a
+                fully-qualified string.)
+
+        Returns:
+            Tensor: The buffer referenced by ``target``
+
+        Raises:
+            AttributeError: If the target string references an invalid
+                path or resolves to something that is not a
+                buffer
+        """
+        cell_path, _, buffer_name = target.rpartition(".")
+
+        cell = self.get_sub_cell(cell_path)
+
+        if not hasattr(cell, buffer_name):
+            raise AttributeError(
+                cell._get_name() + " has no attribute `" + buffer_name + "`"
+            )
+
+        buffer = getattr(cell, buffer_name)
+
+        if buffer_name not in cell._buffers:
+            raise AttributeError("`" + buffer_name + "` is not a buffer")
+
+        return buffer
+
+    @jit_forbidden_register
+    def named_buffers(
+            self, prefix: str = "", recurse: bool = True, remove_duplicate: bool = True
+    ) -> Iterator[Tuple[str, Tensor]]:
+        r"""Return an iterator over cell buffers, yielding both the name of the buffer as well as the buffer itself.
+
+        Args:
+            prefix (str): prefix to prepend to all buffer names.
+            recurse (bool, optional): if True, then yields buffers of this cell
+                and all sub cells. Otherwise, yields only buffers that
+                are direct members of this cell. Defaults to True.
+            remove_duplicate (bool, optional): whether to remove the duplicated buffers in the result. Defaults to True.
+
+        Yields:
+            (str, Tensor): Tuple containing the name and buffer
+
+        Example::
+
+            >>> # xdoctest: +SKIP("undefined vars")
+            >>> for name, buf in self.named_buffers():
+            >>>     if name in ['running_var']:
+            >>>         print(buf.size())
+
+        """
+        gen = self._named_members(
+            lambda cell: cell._buffers.items(),
+            prefix=prefix,
+            recurse=recurse,
+            remove_duplicate=remove_duplicate,
+        )
+        yield from gen
+
+    @jit_forbidden_register
+    def buffers(self, recurse: bool = True) -> Iterator[Tensor]:
+        r"""Return an iterator over cell buffers.
+
+        Args:
+            recurse (bool): if True, then yields buffers of this cell
+                and all sub cells. Otherwise, yields only buffers that
+                are direct members of this cell.
+
+        Yields:
+            mindspore.Tensor: cell buffer
+
+        Example::
+
+            >>> # xdoctest: +SKIP("undefined vars")
+            >>> for buf in model.buffers():
+            >>>     print(type(buf), buf.size())
+            <class 'mindspore.Tensor'> (20L,)
+            <class 'mindspore.Tensor'> (20L, 1L, 5L, 5L)
+
+        """
+        for _, buf in self.named_buffers(recurse=recurse):
+            yield buf
+
+    def _named_members(self, get_members_fn, prefix="", recurse=True, remove_duplicate: bool = True):
+        r"""Help yield various names + members of cells."""
+        memo = set()
+        cells = (
+            self.cells_and_names(name_prefix=prefix)
+            if recurse
+            else [(prefix, self)]
+        )
+        for cell_prefix, cell in cells:
+            members = get_members_fn(cell)
+            for k, v in members:
+                if v is None or v in memo:
+                    continue
+                if remove_duplicate:
+                    memo.add(v)
+                name = cell_prefix + ("." if cell_prefix else "") + k
+                yield name, v
+
+    @jit_forbidden_register
+    def get_sub_cell(self, target: str) -> "Cell":
+        """Return the sub cell given by ``target`` if it exists, otherwise throw an error.
+
+        For example, let's say you have an ``nn.Cell`` ``A`` that
+        looks like this:
+
+        .. code-block:: text
+
+            A(
+                (net_b): NetB(
+                    (net_c): NetC(
+                        (conv): Conv2d(16, 33, kernel_size=(3, 3), stride=(2, 2))
+                    )
+                    (dense): Dense(in_features=100, out_features=200, bias=True)
+                )
+            )
+
+        (The diagram shows an ``nn.Cell`` ``A``. ``A`` has a nested
+        sub cell ``net_b``, which itself has two sub cells ``net_c``
+        and ``dense``. ``net_c`` then has a sub cell ``conv``.)
+
+        To check whether or not we have the ``dense`` sub cell, we
+        would call ``get_sub_cell("net_b.dense")``. To check whether
+        we have the ``conv`` sub cell, we would call
+        ``get_sub_cell("net_b.net_c.conv")``.
+
+        The runtime of ``get_sub_cell`` is bounded by the degree
+        of cell nesting in ``target``. A query against
+        ``name_cells`` achieves the same result, but it is O(N) in
+        the number of transitive cells. So, for a simple check to see
+        if some sub cells exists, ``get_sub_cell`` should always be
+        used.
+
+        Args:
+            target: The fully-qualified string name of the sub cell
+                to look for. (See above example for how to specify a
+                fully-qualified string.)
+
+        Returns:
+            mindspore.nn.Cell: The sub cell referenced by ``target``
+
+        Raises:
+            AttributeError: If the target string references an invalid
+                path or resolves to something that is not an
+                ``mindspore.nn.Cell``
+        """
+        if target == "":
+            return self
+
+        atoms: List[str] = target.split(".")
+        cell = self
+
+        for item in atoms:
+            if not hasattr(cell, item):
+                raise AttributeError(
+                    cell._get_name() + " has no " "attribute `" + item + "`"
+                )
+
+            cell = getattr(cell, item)
+
+            if not isinstance(cell, Cell):
+                raise AttributeError("`" + item + "` is not " "an nn.Cell")
+
+        return cell
+
     def get_func_graph_proto(self):
         """Return graph binary proto."""
         exec_id = ".".join([self.phase, str(self.create_time), str(id(self))])
@@ -403,6 +721,10 @@ class Cell(Cell_):
             params = self.__dict__['_params']
             if name in params:
                 return params[name]
+        if '_buffers' in self.__dict__:
+            buffers = self.__dict__['_buffers']
+            if name in buffers:
+                return buffers[name]
         if '_cells' in self.__dict__:
             cells = self.__dict__['_cells']
             if name in cells:
@@ -425,6 +747,8 @@ class Cell(Cell_):
     def __delattr__(self, name):
         if name in self._params:
             del self._params[name]
+        elif name in self._buffers:
+            del self._buffers[name]
         elif name in self._cells:
             del self._cells[name]
         elif '_params_list' in self.__dict__ and name in self._params_list:
@@ -826,55 +1150,50 @@ class Cell(Cell_):
             self._add_attr(key, value)
         self._attr_synced = True
 
-    def _set_attr_for_parameter(self, name, value):
-        """Set attr for parameter."""
-        cells = self.__dict__.get('_cells')
-        params = self.__dict__.get('_params')
-        if params is None:
-            raise AttributeError("For 'Cell', can not assign params before Cell.__init__() is called.")
-        if name in self.__dict__:
-            if self.__dict__[name] is not None:
-                raise TypeError(f"For 'Cell', the {name} should not be Parameter.")
-            del self.__dict__[name]
-        if cells and name in cells:
-            raise TypeError(f"For 'Cell', the {name} must be Cell, but got Parameter.")
-        self.insert_param_to_cell(name, value)
-
-    def _set_attr_for_parameter_tuple(self, name, value):
-        """Set attr for parameter in ParameterTuple."""
-        params = self.__dict__.get('_params')
-        params_list = self.__dict__.get('_params_list')
-        if params is None:
-            raise AttributeError("For 'Cell', can not assign params before Cell.__init__() is called.")
-        exist_names = set("")
-        exist_objs = set()
-        for item in value:
-            if item in exist_objs:
-                # If there are multiple identical objects, their names only check once.
-                continue
-            exist_objs.add(item)
-            if item.name == PARAMETER_NAME_DEFAULT:
-                logger.warning("For 'Cell', the parameter definition is deprecated.\n"
-                               "Please set a unique name for the parameter in ParameterTuple '{}'.".format(value))
-                item.name = item.name + "$" + str(self._id)
-                self._id += 1
-            self.insert_param_to_cell(item.name, item, check_name_contain_dot=False)
-            if item.name in exist_names:
-                raise ValueError("The value {} , its name '{}' already exists. "
-                                 "Please set a unique name for the parameter.".format(value, item.name))
-            exist_names.add(item.name)
-
-        if context._get_mode() == context.PYNATIVE_MODE:
+    def _set_attr_for_param_or_param_tuple(self, name, value):
+        """Set attr for param and tensor."""
+        if isinstance(value, Parameter):
             if name in self.__dict__:
                 del self.__dict__[name]
-            if name in params:
-                del params[name]
-            params_list[name] = value
-        else:
-            object.__setattr__(self, name, value)
+            self.insert_param_to_cell(name, value)
+        elif isinstance(value, ParameterTuple):
+            remove_duplicates = set("")
+            for item in value:
+                if item in self.exist_objs:
+                    # If there are multiple identical objects, their names only check once.
+                    continue
+                self.exist_objs.add(item)
+                if item.name == PARAMETER_NAME_DEFAULT:
+                    logger.warning("For 'Cell', the parameter definition is deprecated.\n"
+                                   "Please set a unique name for the parameter in ParameterTuple '{}'.".format(value))
+                    item.name = item.name + "$" + str(self._id)
+                    self._id += 1
+                #  check duplicate parameter in the cell
+                if item.name in self.exist_param_names and self.exist_param_names[item.name] != name:
+                    raise ValueError(f"The value {value} , its name '{item.name}' already exists. "
+                                     "Please set a unique name for the parameter.")
+                #  check duplicate parameter in the parameter tuple
+                if item.name in remove_duplicates:
+                    raise ValueError(f"The value {value} , its name '{item.name}' already exists. "
+                                     "Please set a unique name for the parameter.")
+                self.insert_param_to_cell(item.name, item, check_name_contain_dot=False)
+                remove_duplicates.add(item.name)
+                self.exist_param_names[item.name] = name
+
+            if context._get_mode() == context.PYNATIVE_MODE:
+                if name in self.__dict__:
+                    del self.__dict__[name]
+                params = self.__dict__.get('_params')
+                if name in params:
+                    del params[name]
+                params_list = self.__dict__.get('_params_list')
+                params_list[name] = value
+            else:
+                object.__setattr__(self, name, value)
 
     def _set_attr_for_parameter_in_list_or_tuple(self, name, value):
         """Set attr for parameter in list or tuple."""
+        remove_duplicates = set("")
         for item in value:
             if item in self.exist_objs:
                 # If there are multiple identical objects, their names only check once.
@@ -883,25 +1202,25 @@ class Cell(Cell_):
             if item.name == PARAMETER_NAME_DEFAULT:
                 item.name = item.name + "$" + str(self._id)
                 self._id += 1
-            if item.name in self.exist_names:
-                raise ValueError("The value {} , its name '{}' already exists. "
-                                 "Please set a unique name for the parameter.".format(value, item.name))
-            self.exist_names.add(item.name)
+            #  check duplicate parameter in the cell
+            if item.name in self.exist_param_names and self.exist_param_names[item.name] != name:
+                raise ValueError(f"The value {value} , its name '{item.name}' already exists. "
+                                 "Please set a unique name for the parameter.")
+            #  check duplicate parameter in the list or tuple
+            if item.name in remove_duplicates:
+                raise ValueError(f"The value {value} , its name '{item.name}' already exists. "
+                                 "Please set a unique name for the parameter.")
+            remove_duplicates.add(item.name)
+            self.exist_param_names[item.name] = name
         object.__setattr__(self, name, value)
 
     def _set_attr_for_cell(self, name, value):
         """Set attr for cell."""
-        cells = self.__dict__.get('_cells')
-        params = self.__dict__.get('_params')
-        if cells is None:
-            raise AttributeError("For 'Cell', can not assign cells before Cell.__init__() is called.")
         if name in self.__dict__:
             del self.__dict__[name]
-        if params and name in params:
-            raise TypeError(f"For 'Cell', the {name} must be Parameter, but got Cell.")
         if self._auto_prefix:
             value.update_parameters_name(name + '.')
-        cells[name] = value
+        self.insert_child_to_cell(name, value)
         if hasattr(self, '_cell_init_args'):
             self.cell_init_args += str({name: value})
 
@@ -914,30 +1233,54 @@ class Cell(Cell_):
         else:
             self.insert_param_to_cell(name, None)
 
-    def __setattr__(self, name, value):
-        cells = self.__dict__.get('_cells')
+    def _set_attr_for_object(self, name, value):
+        """Set attr for py object."""
         params = self.__dict__.get('_params')
-        if isinstance(value, Parameter):
-            self._set_attr_for_parameter(name, value)
-        elif isinstance(value, ParameterTuple):
-            self._set_attr_for_parameter_tuple(name, value)
-        elif isinstance(value, (list, tuple)) and value and _check_param_list_tuple(value):
+        if params is not None and name in params:
+            if value is not None:
+                if isinstance(value, Tensor):
+                    params[name].set_data(value)
+                    return
+                raise TypeError(
+                    f"Parameter '{name}' already exists in network, "
+                    f"can not assign this type: '{type(value)}' as a parameter.")
+            params[name] = None
+            return
+        cells = self.__dict__.get('_cells')
+        if cells is not None and name in cells:
+            if value is not None:
+                raise TypeError(
+                    f"Sub cell '{name}' already exists in network, "
+                    f"can not assign this type: '{type(value)}' as a cell.")
+            cells[name] = None
+            return
+        buffers = self.__dict__.get('_buffers')
+        if buffers is not None and name in buffers:
+            if value is not None:
+                raise TypeError(
+                    f"Buffer '{name}' already exists in network, "
+                    f"can not assign this type: '{type(value)}' as a buffer.")
+            buffers[name] = None
+            return
+        object.__setattr__(self, name, value)
+
+    def __setattr__(self, name, value):
+        if isinstance(value, (Parameter, ParameterTuple)):
+            self._set_attr_for_param_or_param_tuple(name, value)
+        elif _is_parameter_list_or_tuple(value):
             self._set_attr_for_parameter_in_list_or_tuple(name, value)
         elif isinstance(value, Cell):
             self._set_attr_for_cell(name, value)
-        elif params and name in params:
-            self._set_attr_for_params(name, value)
-        elif cells and name in cells:
-            if value is not None:
-                raise TypeError(f"For 'Cell', the type of {name} must be cell, but got {type(value).__name__}.")
-            self._cells[name] = None
-        else:
-            if isinstance(value, Primitive):
-                value.set_prim_instance_name(name)
-                self._primitives[name] = value
+        elif isinstance(value, Buffer):
+            if name in self.__dict__:
+                del self.__dict__[name]
+            self.register_buffer(name, value)
+        elif isinstance(value, Primitive):
+            value.set_prim_instance_name(name)
+            self._primitives[name] = value
             object.__setattr__(self, name, value)
-        if name not in Cell.IGNORE_LIST:
-            self._attr_synced = False
+        else:
+            self._set_attr_for_object(name, value)
 
     def extend_repr(self):
         """
@@ -1207,8 +1550,8 @@ class Cell(Cell_):
         if '_params' not in self.__dict__:
             raise AttributeError(f"For 'insert_param_to_cell', please call Cell.__init__() firstly.")
         if hasattr(self, param_name) and param_name not in self._params:
-            raise KeyError(f"For 'insert_param_to_cell', the {param_name} parameter already exists in the network."
-                           f"Cannot insert another parameter with the same name.")
+            raise KeyError(f"For 'insert_param_to_cell', attribute {param_name} already exists in the network."
+                           f"Cannot insert parameter with the same name.")
         if not isinstance(param, Parameter) and param is not None:
             raise TypeError(f"For 'insert_param_to_cell', the argument 'param' must be 'Parameter' if not None, "
                             f"but got {type(param)}.")
@@ -1262,9 +1605,9 @@ class Cell(Cell_):
             >>> net2 = nn.Dense(2, 2)
             >>> net1.insert_child_to_cell("child", net2)
             >>> print(net1)
-            ReLU<
-              (child): Dense<input_channels=2, output_channels=2, has_bias=True>
-              >
+            ReLU(
+              (child): Dense(input_channels=2, output_channels=2, has_bias=True)
+            )
         """
         if not isinstance(child_name, str):
             raise TypeError(f"For 'insert_child_to_cell', the type of parameter 'child_name' must be str, "
@@ -1273,7 +1616,7 @@ class Cell(Cell_):
             raise KeyError(f"For 'insert_child_to_cell', the parameter 'child_name' can not be None and "
                            "can not contain '.' ")
         if hasattr(self, child_name) and child_name not in self._cells:
-            raise KeyError(f"For 'insert_child_to_cell', the {child_name} child cell already exists in the network."
+            raise KeyError(f"For 'insert_child_to_cell', attribute {child_name} already exists in the network."
                            f"Cannot insert another child cell with the same name.")
         if not isinstance(child_cell, Cell) and child_cell is not None:
             raise TypeError(f"For 'insert_child_to_cell', the argument 'child_cell' must be 'Cell' if not None, "
@@ -1687,7 +2030,7 @@ class Cell(Cell_):
             ...         return x
             >>> net = Net()
             >>> print(net.cells())
-            odict_values([Dense<input_channels=2, output_channels=2, has_bias=True>])
+            odict_values([Dense(input_channels=2, output_channels=2, has_bias=True)])
         """
         return self.name_cells().values()
 
@@ -1748,7 +2091,7 @@ class Cell(Cell_):
             ...         return x
             >>> net = Net()
             >>> print(net.name_cells())
-            OrderedDict([('dense', Dense<input_channels=2, output_channels=2, has_bias=True>)])
+            OrderedDict([('dense', Dense(input_channels=2, output_channels=2, has_bias=True))])
         """
         value_set = set()
         cells = OrderedDict()
@@ -1789,10 +2132,10 @@ class Cell(Cell_):
             ...     if isinstance(cell, nn.Dense):
             ...         cell.weight.set_data(initializer(One(), cell.weight.shape, cell.weight.dtype))
             >>> net.apply(func)
-            SequentialCell<
-              (0): Dense<input_channels=2, output_channels=2, has_bias=True>
-              (1): Dense<input_channels=2, output_channels=2, has_bias=True>
-              >
+            SequentialCell(
+              (0): Dense(input_channels=2, output_channels=2, has_bias=True)
+              (1): Dense(input_channels=2, output_channels=2, has_bias=True)
+            )
             >>> print(net[0].weight.asnumpy())
             [[1. 1.]
              [1. 1.]]
@@ -1924,8 +2267,8 @@ class Cell(Cell_):
             >>>
             >>> net = nn.Conv2d(120, 240, 4, has_bias=False, weight_init='normal')
             >>> net.to_float(mstype.float16)
-            Conv2d<input_channels=120, output_channels=240, kernel_size=(4, 4), stride=(1, 1), pad_mode=same,
-            padding=0, dilation=(1, 1), group=1, has_bias=False, weight_init=normal, bias_init=None, format=NCHW>
+            Conv2d(input_channels=120, output_channels=240, kernel_size=(4, 4), stride=(1, 1), pad_mode=same,
+            padding=0, dilation=(1, 1), group=1, has_bias=False, weight_init=normal, bias_init=None, format=NCHW)
         """
         if dst_type not in (mstype.float16, mstype.float32, mstype.bfloat16):
             raise ValueError("For 'to_float', the argument 'dst_type' must be mstype.float32, mstype.float16 or "
@@ -2357,6 +2700,439 @@ class Cell(Cell_):
                     "The backward pre hook return value size is {} not equal to output size {}".format(
                         len(ret), len(outputs)))
         return ret
+
+    def get_extra_state(self) -> Any:
+        """Return any extra state to include in the cell's state_dict.
+
+        Implement this and a corresponding :func:`set_extra_state` for your cell
+        if you need to store extra state. This function is called when building the
+        Cell's `state_dict()`.
+
+        Note that extra state should be picklable to ensure working serialization
+        of the state_dict. We only provide backwards compatibility guarantees
+        for serializing Tensors; other objects may break backwards compatibility if
+        their serialized pickled form changes.
+
+        Returns:
+            object: Any extra state to store in the cell's state_dict
+        """
+        raise RuntimeError(
+            "Reached a code path in Cell.get_extra_state() that should never be called."
+
+        )
+
+    def set_extra_state(self, state: Any) -> None:
+        """Set extra state contained in the loaded `state_dict`.
+
+        This function is called from :func:`load_state_dict` to handle any extra state
+        found within the `state_dict`. Implement this function and a corresponding
+        :func:`get_extra_state` for your cell if you need to store extra state within its
+        `state_dict`.
+
+        Args:
+            state (dict): Extra state from the `state_dict`
+        """
+        raise RuntimeError(
+            "Reached a code path in Cell.set_extra_state() that should never be called."
+        )
+
+    @jit_forbidden_register
+    def register_state_dict_post_hook(self, hook):
+        r"""Register a post-hook for the :meth:`~mindspore.nn.Cell.state_dict` method.
+
+        It should have the following signature::
+            hook(cell, state_dict, prefix, local_metadata) -> None
+
+        The registered hooks can modify the ``state_dict`` inplace.
+        """
+        handle = RemovableHandle(self._state_dict_hooks)
+        self._state_dict_hooks[handle.id] = hook
+        return handle
+
+    @jit_forbidden_register
+    def register_state_dict_pre_hook(self, hook):
+        r"""Register a pre-hook for the :meth:`~mindspore.nn.Cell.state_dict` method.
+
+        It should have the following signature::
+            hook(cell, prefix, keep_vars) -> None
+
+        The registered hooks can be used to perform pre-processing before the ``state_dict``
+        call is made.
+        """
+        handle = RemovableHandle(self._state_dict_pre_hooks)
+        self._state_dict_pre_hooks[handle.id] = hook
+        return handle
+
+    def _save_to_state_dict(self, destination, prefix, keep_vars):
+        r"""Save cell state to the `destination` dictionary.
+
+        The `destination` dictionary will contain the state
+        of the cell, but not its descendants. This is called on every
+        sub cell in :meth:`~mindspore.nn.Cell.state_dict`.
+
+        In rare cases, subclasses can achieve class-specific behavior by
+        overriding this method with custom logic.
+
+        Args:
+            destination (dict): a dict where state will be stored
+            prefix (str): the prefix for parameters and buffers used in this
+                cell
+        """
+        for name, param in self._params.items():
+            if param is not None:
+                destination[prefix + name] = param
+        for name, buf in self._buffers.items():
+            if buf is not None and name not in self._non_persistent_buffers_set:
+                destination[prefix + name] = buf
+        extra_state_key = prefix + _EXTRA_STATE_KEY_SUFFIX
+        if (
+                getattr(self.__class__, "get_extra_state", Cell.get_extra_state)
+                is not Cell.get_extra_state
+        ):
+            destination[extra_state_key] = self.get_extra_state()
+
+    # The user can pass an optional arbitrary mappable object to `state_dict`, in which case `state_dict` returns
+    # back that same object. But if they pass nothing, an `OrderedDict` is created and returned.
+    T_destination = TypeVar("T_destination", bound=Dict[str, Any])
+
+    @jit_forbidden_register
+    def state_dict(self, *args, destination=None, prefix="", keep_vars=False):
+        r"""Return a dictionary containing references to the whole state of the cell.
+
+        Both parameters and persistent buffers (e.g. running averages) are
+        included. Keys are corresponding parameter and buffer names.
+        Parameters and buffers set to ``None`` are not included.
+
+        .. note::
+            The returned object is a shallow copy. It contains references
+            to the cell's parameters and buffers.
+
+        .. warning::
+            Currently ``state_dict()`` also accepts positional arguments for
+            ``destination``, ``prefix`` and ``keep_vars`` in order. However,
+            this is being deprecated and keyword arguments will be enforced in
+            future releases.
+
+        .. warning::
+            Please avoid the use of argument ``destination`` as it is not
+            designed for end-users.
+
+        Args:
+            destination (dict, optional): If provided, the state of cell will
+                be updated into the dict and the same object is returned.
+                Otherwise, an ``OrderedDict`` will be created and returned.
+                Default: ``None``.
+            prefix (str, optional): a prefix added to parameter and buffer
+                names to compose the keys in state_dict. Default: ``''``.
+            keep_vars (bool, optional): by default the :class:`~mindspore.common.Tensor` s
+                returned in the state dict are detached from autograd. If it's
+                set to ``True``, detaching will not be performed.
+                Default: ``False``.
+
+        Returns:
+            dict:
+                a dictionary containing a whole state of the cell
+
+        Example::
+
+            >>> # xdoctest: +SKIP("undefined vars")
+            >>> cell.state_dict().keys()
+            ['bias', 'weight']
+
+        """
+        # TODO: Remove `args` and the parsing logic when BC allows.
+        if args:
+            # DeprecationWarning is ignored by default
+            warnings.warn(
+                "Positional args are being deprecated, use kwargs instead. Refer to "
+                "https://www.mindspore.cn/docs/zh-CN/master/api_python/nn/mindspore.nn.Cell.html"
+                " for details.",
+                FutureWarning,
+                stacklevel=2,
+            )
+            if destination is None:
+                destination = args[0]
+            if len(args) > 1 and prefix == "":
+                prefix = args[1]
+            if len(args) > 2 and keep_vars is False:
+                keep_vars = args[2]
+
+        if destination is None:
+            destination = OrderedDict()
+            destination._metadata = OrderedDict()
+
+        local_metadata = {}
+        if hasattr(destination, "_metadata"):
+            destination._metadata[prefix[:-1]] = local_metadata
+
+        for hook in self._state_dict_pre_hooks.values():
+            hook(self, prefix, keep_vars)
+        self._save_to_state_dict(destination, prefix, keep_vars)
+        for name, cell in self._cells.items():
+            if cell is not None:
+                cell.state_dict(
+                    destination=destination,
+                    prefix=prefix + name + ".",
+                    keep_vars=keep_vars,
+                )
+        for hook in self._state_dict_hooks.values():
+            hook_result = hook(self, destination, prefix, local_metadata)
+            if hook_result is not None:
+                raise RuntimeError("state_dict post-hook must return None")
+        return destination
+
+    @jit_forbidden_register
+    def register_load_state_dict_pre_hook(self, hook):
+        r"""Register a pre-hook to be run before cell's :meth:`~mindspore.nn.Cell.load_state_dict` is called.
+
+        It should have the following signature::
+            hook(cell, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs) -> None  # noqa: B950
+
+        Arguments:
+            hook (Callable): Callable hook that will be invoked before
+                loading the state dict.
+        """
+        handle = RemovableHandle(self._load_state_dict_pre_hooks)
+        self._load_state_dict_pre_hooks[handle.id] = hook
+        return handle
+
+    @jit_forbidden_register
+    def register_load_state_dict_post_hook(self, hook):
+        r"""Register a post-hook to be run after cell's :meth:`~mindspore.nn.Cell.load_state_dict` is called.
+
+        It should have the following signature::
+            hook(cell, incompatible_keys) -> None
+
+        The ``cell`` argument is the current cell that this hook is registered
+        on, and the ``incompatible_keys`` argument is a ``NamedTuple`` consisting
+        of attributes ``missing_keys`` and ``unexpected_keys``. ``missing_keys``
+        is a ``list`` of ``str`` containing the missing keys and
+        ``unexpected_keys`` is a ``list`` of ``str`` containing the unexpected keys.
+
+        The given incompatible_keys can be modified inplace if needed.
+
+        Note that the checks performed when calling :func:`load_state_dict` with
+        ``strict=True`` are affected by modifications the hook makes to
+        ``missing_keys`` or ``unexpected_keys``, as expected. Additions to either
+        set of keys will result in an error being thrown when ``strict=True``, and
+        clearing out both missing and unexpected keys will avoid an error.
+
+        Returns:
+            :class:`mindspore.nn.hooks.RemovableHandle`:
+                a handle that can be used to remove the added hook by calling
+                ``handle.remove()``
+        """
+        handle = RemovableHandle(self._load_state_dict_post_hooks)
+        self._load_state_dict_post_hooks[handle.id] = hook
+        return handle
+
+    def _load_from_state_dict(
+            self,
+            state_dict,
+            prefix,
+            local_metadata,
+            strict,
+            missing_keys,
+            unexpected_keys,
+            error_msgs,
+    ):
+        r"""Copy parameters and buffers from :attr:`state_dict` into only this cell, but not its descendants.
+
+        This is called on every sub cell
+        in :meth:`~mindspore.nn.Cell.load_state_dict`. Metadata saved for this
+        cell in input :attr:`state_dict` is provided as :attr:`local_metadata`.
+        For state dicts without metadata, :attr:`local_metadata` is empty.
+        Subclasses can achieve class-specific backward compatible loading using
+        the version number at `local_metadata.get("version", None)`.
+
+        .. note::
+            :attr:`state_dict` is not the same object as the input
+            :attr:`state_dict` to :meth:`~mindspore.nn.Cell.load_state_dict`. So
+            it can be modified.
+
+        Args:
+            state_dict (dict): a dict containing parameters and
+                persistent buffers.
+            prefix (str): the prefix for parameters and buffers used in this
+                cell
+            local_metadata (dict): a dict containing the metadata for this cell.
+                See
+            strict (bool): whether to strictly enforce that the keys in
+                :attr:`state_dict` with :attr:`prefix` match the names of
+                parameters and buffers in this cell
+            missing_keys (list of str): if ``strict=True``, add missing keys to
+                this list
+            unexpected_keys (list of str): if ``strict=True``, add unexpected
+                keys to this list
+            error_msgs (list of str): error messages should be added to this
+                list, and will be reported together in
+                :meth:`~mindspore.nn.Cell.load_state_dict`
+        """
+        for hook in self._load_state_dict_pre_hooks.values():
+            hook(
+                self,
+                state_dict,
+                prefix,
+                local_metadata,
+                strict,
+                missing_keys,
+                unexpected_keys,
+                error_msgs,
+            )
+
+        persistent_buffers = {
+            k: v
+            for k, v in self._buffers.items()
+            if k not in self._non_persistent_buffers_set
+        }
+        local_name_params = itertools.chain(
+            self._params.items(), persistent_buffers.items()
+        )
+        local_state = {k: v for k, v in local_name_params if v is not None}
+
+        for name, param in local_state.items():  # pylint: disable=R1702
+            key = prefix + name
+            if key in state_dict:
+                input_param = state_dict[key]
+                if not isinstance(input_param, Tensor):
+                    error_msgs.append(
+                        f'While copying the parameter named "{key}", '
+                        "expected Tensor or Tensor-like object from checkpoint but "
+                        f"received {type(input_param)}"
+                    )
+                    continue
+
+                if input_param.shape != param.shape:
+                    # local shape should match the one in checkpoint
+                    error_msgs.append(
+                        f"size mismatch for {key}: copying a param with shape {input_param.shape} from checkpoint, "
+                        f"the shape in current model is {param.shape}."
+                    )
+                    continue
+                try:
+                    param.assign_value(Tensor(input_param.asnumpy(), dtype=param.dtype))
+                except Exception as ex:  # pylint: disable=W0703
+                    error_msgs.append(
+                        f'While copy the parameter named "{key}", '
+                        f"whose shape in the model are {param.shape} and "
+                        f"whose shape in the checkpoint are {input_param.shape}, "
+                        f"an exception occurred : {ex.args}."
+                    )
+            elif strict:
+                missing_keys.append(key)
+
+        extra_state_key = prefix + _EXTRA_STATE_KEY_SUFFIX
+        if getattr(self.__class__, "set_extra_state", Cell.set_extra_state) is not Cell.set_extra_state:
+            if extra_state_key in state_dict:
+                self.set_extra_state(state_dict[extra_state_key])
+            elif strict:
+                missing_keys.append(extra_state_key)
+        elif strict and (extra_state_key in state_dict):
+            unexpected_keys.append(extra_state_key)
+
+        if strict:
+            for key in state_dict.keys():
+                if key.startswith(prefix) and key != extra_state_key:
+                    input_name = key[len(prefix):].split(".", 1)
+                    # Must be cell if it have attributes
+                    if len(input_name) > 1:
+                        if input_name[0] not in self._cells:
+                            unexpected_keys.append(key)
+                    elif input_name[0] not in local_state:
+                        unexpected_keys.append(key)
+
+    @jit_forbidden_register
+    def load_state_dict(
+            self, state_dict: Mapping[str, Any], strict: bool = True, assign: bool = False
+    ):
+        r"""Copy parameters and buffers from :attr:`state_dict` into this cell and its descendants.
+
+        If :attr:`strict` is ``True``, then
+        the keys of :attr:`state_dict` must exactly match the keys returned
+        by this cell's :meth:`~mindspore.nn.Cell.state_dict` function.
+
+        Args:
+            state_dict (dict): a dict containing parameters and
+                persistent buffers.
+            strict (bool, optional): whether to strictly enforce that the keys
+                in :attr:`state_dict` match the keys returned by this cell's
+                :meth:`~mindspore.nn.Cell.state_dict` function. Default: ``True``
+
+        Returns:
+            ``NamedTuple`` with ``missing_keys`` and ``unexpected_keys`` fields:
+                * **missing_keys** is a list of str containing any keys that are expected
+                    by this cell but missing from the provided ``state_dict``.
+                * **unexpected_keys** is a list of str containing the keys that are not
+                    expected by this cell but present in the provided ``state_dict``.
+
+        Note:
+            If a parameter or buffer is registered as ``None`` and its corresponding key
+            exists in :attr:`state_dict`, :meth:`load_state_dict` will raise a
+            ``RuntimeError``.
+        """
+        if not isinstance(state_dict, Mapping):
+            raise TypeError(
+                f"Expected state_dict to be dict-like, got {type(state_dict)}."
+            )
+
+        missing_keys: List[str] = []
+        unexpected_keys: List[str] = []
+        error_msgs: List[str] = []
+
+        # copy state_dict so _load_from_state_dict can modify it
+        metadata = getattr(state_dict, "_metadata", None)
+        state_dict = OrderedDict(state_dict)
+        if metadata is not None:
+            # mypy isn't aware that "_metadata" exists in state_dict
+            state_dict._metadata = metadata  # type: ignore[attr-defined]
+
+        def load(cell, local_state_dict, prefix=""):
+            local_metadata = {} if metadata is None else metadata.get(prefix[:-1], {})
+            cell._load_from_state_dict(
+                local_state_dict, prefix, local_metadata, True, missing_keys, unexpected_keys, error_msgs,
+            )
+            for name, child in cell._cells.items():
+                if child is not None:
+                    child_prefix = prefix + name + "."
+                    child_state_dict = {k: v for k, v in local_state_dict.items() if k.startswith(child_prefix)}
+                    load(child, child_state_dict, child_prefix)  # noqa: F821
+
+            # Note that the hook can modify missing_keys and unexpected_keys.
+            incompatible_keys = _IncompatibleKeys(missing_keys, unexpected_keys)
+            for hook in cell._load_state_dict_post_hooks.values():
+                out = hook(cell, incompatible_keys)
+                assert out is None, (
+                    "Hooks registered with ``register_load_state_dict_post_hook`` are not"
+                    "expected to return new values, if incompatible_keys need to be modified,"
+                    "it should be done inplace."
+                )
+
+        load(self, state_dict)
+        del load
+
+        if strict:
+            if unexpected_keys:
+                error_msgs.insert(
+                    0,
+                    "Unexpected key(s) in state_dict: {}. ".format(
+                        ", ".join(f'"{k}"' for k in unexpected_keys)
+                    ),
+                )
+            if missing_keys:
+                error_msgs.insert(
+                    0,
+                    "Missing key(s) in state_dict: {}. ".format(
+                        ", ".join(f'"{k}"' for k in missing_keys)
+                    ),
+                )
+
+        if error_msgs:
+            raise RuntimeError(
+                "Error(s) in loading state_dict for {}:\n\t{}".format(
+                    self.__class__.__name__, "\n\t".join(error_msgs)
+                )
+            )
+        return _IncompatibleKeys(missing_keys, unexpected_keys)
 
     def register_backward_hook(self, hook_fn):
         """
@@ -2865,13 +3641,15 @@ class GraphCell(Cell):
         return self.compile_and_run(*args, **kwargs)
 
 
-def _check_param_list_tuple(value):
+def _is_parameter_list_or_tuple(value):
     """
     Check the type of input in list or tuple is Parameter.
     :param value: list or tuple.
     :return: The types of all inputs are parameter.
     """
-    for item in value:
-        if not isinstance(item, Parameter):
-            return False
-    return True
+    if isinstance(value, (list, tuple)) and value:
+        for item in value:
+            if not isinstance(item, Parameter):
+                return False
+        return True
+    return False

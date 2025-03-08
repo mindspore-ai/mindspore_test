@@ -124,7 +124,7 @@ def test_parameter_same_name_between_tuple_or_list():
                                Parameter(Tensor([4], ms.float32))]
 
         def construct(self, x):
-            res = self.param_tuple[0] + self.param_tuple[1] + self.param_list[0] + self.param_listp[1] + x
+            res = self.param_tuple[0] + self.param_tuple[1] + self.param_list[0] + self.param_list[1] + x
             return res
 
     with pytest.raises(ValueError, match="its name 'name_a' already exists."):
