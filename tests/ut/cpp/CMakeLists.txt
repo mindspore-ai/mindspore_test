@@ -272,14 +272,14 @@ list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
         "../../../mindspore/ccsrc/plugin/device/ascend/kernel/hccl/hcom_receive.cc")
 
 add_library(_ut_mindspore_obj STATIC ${MINDSPORE_SRC_LIST})
-target_link_libraries(_ut_mindspore_obj PRIVATE mindspore_backend mindspore_core _c_dataengine
+target_link_libraries(_ut_mindspore_obj PRIVATE mindspore_ms_backend mindspore_core _c_dataengine
         mindspore_common mindspore_ops_kernel_common mindspore_backend_manager mindspore_res_manager
-        mindspore_profiler mindspore_memory_pool)
+        mindspore_profiler mindspore_memory_pool mindspore_backend_common)
 
 add_library(_ut_mindspore_ascend_obj STATIC ${MINDSPORE_ASCEND_SRC_LIST})
-target_link_libraries(_ut_mindspore_ascend_obj PRIVATE mindspore_backend mindspore_core
+target_link_libraries(_ut_mindspore_ascend_obj PRIVATE mindspore_ms_backend mindspore_core
         _c_dataengine mindspore_common mindspore_ops_kernel_common mindspore_backend_manager mindspore_res_manager
-        mindspore_profiler mindspore_memory_pool mindspore_runtime_pipeline)
+        mindspore_profiler mindspore_memory_pool mindspore_runtime_pipeline mindspore_backend_common)
 
 foreach(number RANGE 1 ${CORE_OBJECT_COUNT})
     list(APPEND CORE_OBJECT_LIST $<TARGET_OBJECTS:core_obj_${number}>)
@@ -290,8 +290,8 @@ endforeach()
 include_directories("${CMAKE_BINARY_DIR}/plugin/device/ascend/kernel/aicpu")
 
 add_library(_ut_obj_static STATIC ${UT_SRCS})
-target_link_libraries(_ut_obj_static PRIVATE mindspore_backend mindspore_pyboost mindspore_backend_manager
-                      mindspore_res_manager mindspore_profiler mindspore_memory_pool)
+target_link_libraries(_ut_obj_static PRIVATE mindspore_ms_backend mindspore_pyboost mindspore_backend_manager
+                      mindspore_res_manager mindspore_profiler mindspore_memory_pool mindspore_backend_common)
 foreach(comp ${ALL_UT_COMPS})
     add_executable(ut_${comp}_tests ${UT_${comp}_SRCS})
 
@@ -308,8 +308,9 @@ foreach(comp ${ALL_UT_COMPS})
 
     target_link_libraries(ut_${comp}_tests PRIVATE -Wl,--start-group mindspore_frontend mindspore_pynative
             _ut_obj_static -Wl,--end-group)
-    target_link_libraries(ut_${comp}_tests PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common
-            mindspore_backend_manager mindspore_res_manager mindspore_profiler mindspore_memory_pool)
+    target_link_libraries(ut_${comp}_tests PRIVATE mindspore_ms_backend mindspore_core mindspore_ops mindspore_common
+            mindspore_backend_manager mindspore_res_manager mindspore_profiler mindspore_memory_pool
+            mindspore_backend_common)
     if(CMAKE_SYSTEM_NAME MATCHES "Linux")
         target_link_libraries(ut_${comp}_tests PRIVATE mindspore::gtest mindspore::gmock mindspore::mockcpp
                 mindspore::event mindspore::event_pthreads mindspore::event_openssl mindspore::ssl mindspore::crypto

@@ -25,9 +25,6 @@
 #include <algorithm>
 #include <numeric>
 
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
-#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_manager.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_synchronizer.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_manager.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_vmm_adapter.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
@@ -394,40 +391,25 @@ std::vector<void *> AscendResManager::AllocateContinuousMemory(const std::vector
 
 DeviceAddressPtr AscendResManager::CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const {
   MS_EXCEPTION_IF_NULL(kernel_tensor);
-  if (!is_use_cpu_memory_) {
-    if (kernel_tensor->device_name().empty()) {
-      auto ms_context = MsContext::GetInstance();
-      MS_EXCEPTION_IF_NULL(ms_context);
-      auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-      auto device_type = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-      kernel_tensor->set_device_name(device_type);
-      kernel_tensor->set_device_id(device_id);
-    }
-    auto device_address = std::make_shared<AscendDeviceAddress>(kernel_tensor);
-    device_address->set_device_synchronizer(std::make_shared<AscendDeviceSynchronizer>());
-    return device_address;
-  } else {
-    if (kernel_tensor->device_name().empty()) {
-      kernel_tensor->set_device_name(kCPUDevice);
-      kernel_tensor->set_device_id(0);
-    }
-    auto device_address = std::make_shared<cpu::CPUDeviceAddress>(kernel_tensor);
-    device_address->set_device_synchronizer(std::make_shared<cpu::CPUDeviceSynchronizer>());
-    return device_address;
+  if (kernel_tensor->device_name().empty()) {
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    auto device_type = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    kernel_tensor->set_device_name(device_type);
+    kernel_tensor->set_device_id(device_id);
   }
+  auto device_address = std::make_shared<AscendDeviceAddress>(kernel_tensor);
+  device_address->set_device_synchronizer(std::make_shared<AscendDeviceSynchronizer>());
+  return device_address;
 }
 
 DeviceAddressPtr AscendResManager::CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
                                                        const Format &format, TypeId type_id,
                                                        const std::string &device_name, uint32_t device_id,
                                                        uint32_t stream_id) const {
-  if (!is_use_cpu_memory_) {
-    return std::make_shared<AscendDeviceAddress>(ptr, size, shape_vector, format, type_id, device_name, device_id,
-                                                 stream_id);
-  } else {
-    return std::make_shared<cpu::CPUDeviceAddress>(ptr, size, shape_vector, format, type_id, kCPUDevice, device_id,
-                                                   stream_id);
-  }
+  return std::make_shared<AscendDeviceAddress>(ptr, size, shape_vector, format, type_id, device_name, device_id,
+                                               stream_id);
 }
 
 bool AscendResManager::LoadCollectiveCommLib() {

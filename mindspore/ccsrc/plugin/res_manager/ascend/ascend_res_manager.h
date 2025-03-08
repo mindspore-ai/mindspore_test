@@ -154,7 +154,6 @@ class AscendResManager : public HalResBase {
   bool LaunchCallback(std::function<void(void)> callback_func, size_t stream_id, bool is_block = false) const override;
 
  private:
-  bool is_use_cpu_memory_ = false;
   MemUceInfo mem_uce_info_;
   std::mutex mem_uce_info_mutex_;
   bool initialized_ = false;

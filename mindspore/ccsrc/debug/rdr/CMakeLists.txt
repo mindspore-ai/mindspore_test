@@ -1,0 +1,8 @@
+if(ENABLE_DUMP_IR)
+    file(GLOB_RECURSE RDR_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
+    add_library(_mindspore_debug_rdr_obj OBJECT ${RDR_SRC_LIST})
+    if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+        target_compile_definitions(_mindspore_debug_rdr_obj PRIVATE BACKEND_DLL)
+    endif()
+    add_dependencies(_mindspore_debug_rdr_obj proto_input)
+endif()
