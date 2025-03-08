@@ -1780,11 +1780,11 @@ def infer_value_for_LpNormV2(input_x, p=2, dim=None, keepdim=False, eps=1e-12):
                                  ord=p))
 
 
-def infer_value_for_Svd(input_x):
+def infer_value_for_Svd(input_x, full_matrices, compute_uv):
     """Infer value for Svd op."""
     if input_x is None:
         return None
-    s, u, v = np.linalg.svd(input_x.asnumpy())
+    s, u, v = np.linalg.svd(input_x.asnumpy(), full_matrices=full_matrices, compute_uv=compute_uv)
     return Tensor(s), Tensor(u), Tensor(v)
 
 

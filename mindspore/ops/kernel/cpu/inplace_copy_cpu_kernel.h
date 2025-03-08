@@ -54,8 +54,8 @@ class InplaceCopyCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHel
   template <typename T>
   void InplaceCopyBroadcastTo(T *input, T *output, const std::vector<int64_t> &input_shape,
                               const std::vector<int64_t> &output_shape);
-  std::vector<int64_t> self_shape_;
-  std::vector<int64_t> value_shape_;
+  std::vector<int64_t> self_shape_ = {};
+  std::vector<int64_t> value_shape_ = {};
   TypeId self_dtype_;
   TypeId value_dtype_;
   int mode_;

@@ -28,7 +28,6 @@ namespace prim {
 
 // linalg
 GVAR_DEF(PrimitivePtr, kPrimLU, std::make_shared<Primitive>("LU"));
-GVAR_DEF(PrimitivePtr, kPrimSvd, std::make_shared<Primitive>("Svd"));
 
 // Maths
 GVAR_DEF(PrimitivePtr, kPrimBesselI0e, std::make_shared<Primitive>("BesselI0e"));

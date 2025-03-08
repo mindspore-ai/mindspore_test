@@ -27,7 +27,6 @@
 #include <functional>
 #include <map>
 #include <utility>
-#include "mindspore/ops/infer/svd.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/transpose_impl.cuh"

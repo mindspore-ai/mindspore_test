@@ -213,7 +213,7 @@ def svd(input, full_matrices=False, compute_uv=True):
         TypeError: If the type of input is not one of the following dtype: float32, float64.
 
     Supported Platforms:
-        ``GPU`` ``CPU``
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import numpy as np
