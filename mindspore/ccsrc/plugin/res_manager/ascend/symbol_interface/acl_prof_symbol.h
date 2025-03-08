@@ -30,6 +30,7 @@ ORIGIN_METHOD(aclprofStop, aclError, const aclprofConfig *)
 ORIGIN_METHOD(aclprofCreateStepInfo, aclprofStepInfo *)
 ORIGIN_METHOD(aclprofGetStepTimestamp, aclError, aclprofStepInfo *, aclprofStepTag, aclrtStream)
 ORIGIN_METHOD(aclprofDestroyStepInfo, void, aclprofStepInfo *)
+ORIGIN_METHOD(aclprofGetSupportedFeatures, aclError, size_t *, void **)
 
 extern aclprofCreateConfigFunObj aclprofCreateConfig_;
 extern aclprofDestroyConfigFunObj aclprofDestroyConfig_;
@@ -40,6 +41,7 @@ extern aclprofStopFunObj aclprofStop_;
 extern aclprofCreateStepInfoFunObj aclprofCreateStepInfo_;
 extern aclprofGetStepTimestampFunObj aclprofGetStepTimestamp_;
 extern aclprofDestroyStepInfoFunObj aclprofDestroyStepInfo_;
+extern aclprofGetSupportedFeaturesFunObj aclprofGetSupportedFeatures_;
 
 void LoadProfApiSymbol(const std::string &ascend_path);
 }  // namespace mindspore::device::ascend
