@@ -19,6 +19,8 @@ import mindspore as ms
 from tests.mark_utils import arg_mark
 
 ms.context.set_context(mode=ms.GRAPH_MODE)
+ms.context.set_context(jit_level='O0')
+
 
 @arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')

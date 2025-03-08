@@ -18,9 +18,12 @@ import mindspore as ms
 import mindspore.scipy as msp
 import mindspore.ops as ops
 import mindspore.nn as nn
+import mindspore.context as context
 import scipy
 
 from tests.mark_utils import arg_mark
+
+context.set_context(jit_level='O0')
 
 
 class SolveTriangularNet(nn.Cell):

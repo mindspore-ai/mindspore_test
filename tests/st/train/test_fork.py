@@ -19,8 +19,11 @@ import mindspore as ms
 import mindspore.ops as ops
 import mindspore.multiprocessing as mp
 import mindspore.ops.functional as F
+import mindspore.context as context
 import numpy as np
 from tests.mark_utils import arg_mark
+
+context.set_context(jit_level='O0')
 
 
 def subprocess(mode, i, q):

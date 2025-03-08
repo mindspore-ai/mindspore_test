@@ -26,6 +26,8 @@ from mindspore.ops import composite as C
 from mindspore.train.serialization import export, load
 from tests.mark_utils import arg_mark
 
+context.set_context(jit_level='O0')
+
 
 def weight_variable():
     return TruncatedNormal(0.02)

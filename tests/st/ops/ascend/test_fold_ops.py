@@ -26,6 +26,8 @@ from mindspore.ops import functional as F
 from tests.st.pynative.utils import GradOfAllInputs
 from tests.mark_utils import arg_mark
 
+context.set_context(jit_level='O0')
+
 
 class Fold(Cell):
     def __init__(self, kernel_size, dilation, padding, stride):

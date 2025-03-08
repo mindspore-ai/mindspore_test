@@ -26,6 +26,8 @@ import mindspore.ops as ops
 from mindspore import context
 from tests.mark_utils import arg_mark
 
+context.set_context(jit_level='O0')
+
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_teardown():

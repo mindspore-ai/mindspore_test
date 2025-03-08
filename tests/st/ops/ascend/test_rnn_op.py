@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import math
-import pytest
 import numpy as np
 from mindspore import context
 from mindspore import nn
@@ -23,6 +22,8 @@ from mindspore import Tensor
 from mindspore.common.parameter import ParameterTuple
 from mindspore.common.parameter import Parameter
 from mindspore.ops import composite as c
+
+context.set_context(jit_level='O0')
 
 
 class GradOfAllInputsAndParams(nn.Cell):

@@ -25,6 +25,8 @@ from mindspore import context
 from mindspore.common.parameter import Parameter
 from tests.mark_utils import arg_mark
 
+context.set_context(jit_level='O0')
+
 
 class Net(nn.Cell):
 

@@ -37,6 +37,7 @@ def test_scalar_ops():
     Description: test the scalar ops in Ascend backend
     Expectation: the output is same with numpy
     """
+    context.set_context(jit_level='O0')
     net = ScalarOpNet()
     x = ms.mutable(5.555)
     y = ms.mutable(6.666)
