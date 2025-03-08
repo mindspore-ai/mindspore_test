@@ -315,6 +315,7 @@ bool SymbolEngineExtender::ExtendNode(const AnfNodePtr &node, const FuncGraphPtr
   auto fuse_op_name = GkUtils::ExtractGraphKernelName(nodes, "", "packet");
   fg->set_attr(kAttrKernelPacketNode, MakeValue(fuse_op_name));
   fg->set_attr("only_depend_shape", FindOnlyDependShapeInputs(fg));
+  new_cnode->set_attrs(cnode->attrs());
   new_cnode->AddAttr(kAttrToPrim, MakeValue(AnfUtils::GetCNodeName(node) + "_packet"));
   MS_LOG(INFO) << "Replace " << node->fullname_with_scope() << " with " << new_cnode->fullname_with_scope();
   (void)main_fg->manager()->Replace(node, new_cnode);

@@ -235,7 +235,7 @@ bool Overlap1b1f::Run(const FuncGraphPtr &func_graph) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto pp_1f1b_value = ms_context->get_param<std::string>(MS_CTX_PP_1F1B_OVERLAP);
-  if (pp_1f1b_value != "AlltoAll") {
+  if (pp_1f1b_value.find("AlltoAll") == std::string::npos && pp_1f1b_value.find("AlltoAllV") == std::string::npos) {
     MS_LOG(DEBUG) << "Pipeline 1f1b overlap option is not AlltoAll, not enable AlltoAll overlap.";
     return false;
   }

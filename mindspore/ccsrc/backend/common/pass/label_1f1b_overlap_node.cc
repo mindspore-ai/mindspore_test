@@ -30,6 +30,7 @@
 namespace mindspore {
 namespace opt {
 namespace {
+constexpr int64_t kAll2AllSize = 262144;
 void LabelBpBegin(const std::vector<CNodePtr> &begin_cnodes, const std::string &output_tags) {
   if (!begin_cnodes.empty()) {
     size_t middle_cnode_index = begin_cnodes.size() / kSizeTwo;
@@ -77,15 +78,25 @@ FuncGraphManagerPtr GetManager(const FuncGraphPtr &cur_graph) {
 }
 
 bool IsNeededCNode(const CNodePtr &cnode) {
+  if (!(IsPrimitiveCNode(cnode, prim::kPrimAlltoAll) || IsPrimitiveCNode(cnode, prim::kPrimAllToAll) ||
+        IsPrimitiveCNode(cnode, prim::kPrimAlltoAllV))) {
+    return false;
+  }
   auto pp_1f1b_value = MsContext::GetInstance()->get_param<std::string>(MS_CTX_PP_1F1B_OVERLAP);
+  if (cnode->input(kIndex1)->abstract() && cnode->input(kIndex1)->abstract()->GetShape()) {
+    auto a2a_shape = cnode->input(kIndex1)->abstract()->GetShape()->GetShapeVector();
+    auto a2a_size = std::accumulate(a2a_shape.begin(), a2a_shape.end(), 1, std::multiplies<int64_t>());
+    if (std::find(a2a_shape.begin(), a2a_shape.end(), -1) == a2a_shape.end() && a2a_size < kAll2AllSize) {
+      return false;
+    }
+  }
   if (pp_1f1b_value == "AlltoAll") {
     return IsPrimitiveCNode(cnode, prim::kPrimAlltoAll) || IsPrimitiveCNode(cnode, prim::kPrimAllToAll);
   }
   if (pp_1f1b_value == "AlltoAllV") {
     return IsPrimitiveCNode(cnode, prim::kPrimAlltoAllV);
   }
-  return IsPrimitiveCNode(cnode, prim::kPrimAlltoAll) || IsPrimitiveCNode(cnode, prim::kPrimAllToAll) ||
-         IsPrimitiveCNode(cnode, prim::kPrimAlltoAllV);
+  return true;
 }
 }  // namespace
 void LabelAll2AllInputOutput(const FuncGraphPtr &cur_graph, const std::string &input_tags,
