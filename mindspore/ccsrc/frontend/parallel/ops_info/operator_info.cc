@@ -24,6 +24,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <set>
 
 #include "frontend/parallel/auto_parallel/edge_costmodel.h"
 #include "frontend/parallel/auto_parallel/graph_costmodel.h"
@@ -1602,7 +1603,11 @@ Status OperatorInfo::InitWithTensorLayout(const std::vector<std::shared_ptr<Tens
     ++real_input_index;
   }
   if (CheckInputLayout() != SUCCESS) {
-    MS_LOG(ERROR) << name_ << ": CheckInputLayout failed.";
+    if (CheckShardingPropagation()) {
+      MS_LOG(WARNING) << name_ << ": CheckInputLayout failed.";
+    } else {
+      MS_LOG(ERROR) << name_ << ": CheckInputLayout failed.";
+    }
     return FAILED;
   }
   for (const auto &output_layout : out_tensor_layouts) {
@@ -2664,6 +2669,76 @@ bool OperatorInfo::IsTmpIdentity() const {
   return false;
 }
 
+bool OperatorInfo::IsMultiInput() const {
+  MS_LOG(INFO) << "OperatorInfo::IsMultiInput inputs_shape_.size(): " << inputs_shape_.size();
+  if (inputs_shape_.size() < INT64_TWO) {
+    return false;
+  }
+  MS_LOG(INFO) << "OperatorInfo::IsMultiInput inputs[0]: " << inputs_shape_[INDEX_ZERO]
+               << "inputs[1]: " << inputs_shape_[INDEX_ONE];
+  return true;
+}
+
+bool CompareSwc(const std::pair<std::shared_ptr<StrategyWithCost>, std::pair<double, double>> &a,
+                const std::pair<std::shared_ptr<StrategyWithCost>, std::pair<double, double>> &b) {
+  if (std::abs(a.second.first - b.second.first) < EPS) {
+    return a.second.second < b.second.second;
+  }
+  return a.second.first < b.second.first;
+}
+
+bool OperatorInfo::AllInputsVisited() const {
+  MS_LOG(INFO) << "op: " << this->name() << " visited_edges_.size(): " << visited_edges_.size()
+               << " inputs_shape_.size(): " << inputs_shape_.size();
+  return visited_edges_.size() == inputs_shape_.size();
+}
+
+std::shared_ptr<StrategyWithCost> OperatorInfo::GetStrategyByVisitedEdges() {
+  MS_LOG(INFO) << "op: " << this->name() << " GetStrategyByVisitedEdges";
+  std::vector<std::pair<std::shared_ptr<StrategyWithCost>, std::pair<double, double>>> cur_op_swcs;
+  for (std::shared_ptr<StrategyWithCost> &cur_op_swc : strategy_cost_) {
+    MS_LOG(INFO) << "cur_op_swc strategy: " << cur_op_swc->strategy_ptr->ToString();
+    double communication_cost_sum = 0.0;
+    double computation_cost_sum = 0.0;
+    bool strategy_valid = true;
+    for (auto &visited_edge : visited_edges_) {
+      size_t visited_op_output_index = visited_edge->prev_op_output_index();
+      const TensorLayout &visited_op_layout =
+        visited_edge->prev_operator()->outputs_tensor_info()[visited_op_output_index].tensor_layout();
+
+      size_t cur_op_input_index = visited_edge->next_op_input_index();
+      const TensorLayout &cur_op_layout = cur_op_swc->inputs_ptr[cur_op_input_index].tensor_layout();
+
+      CostPtrKey ck = std::make_pair(visited_op_layout, cur_op_layout);
+
+      const CostPtr &cost = visited_edge->GetCostByLayoutPair(ck);
+
+      MS_LOG(INFO) << "visited_op: " << visited_edge->prev_operator()->name()
+                   << " layout: " << visited_op_layout.ToString();
+      MS_LOG(INFO) << "cur op layout: " << cur_op_layout.ToString();
+      if (cost == nullptr) {
+        MS_LOG(WARNING) << "cost nullptr";
+        strategy_valid = false;
+        break;
+      }
+      MS_LOG(INFO) << "communication cost: " << cost->communication_cost_
+                   << ", computation cost:" << cost->computation_cost_;
+      communication_cost_sum += cost->communication_cost_;
+      computation_cost_sum += cost->computation_cost_;
+    }
+    if (!strategy_valid) {
+      MS_LOG(WARNING) << "strategy invalid, continue searching";
+      continue;
+    }
+    MS_LOG(INFO) << "communication cost sum: " << communication_cost_sum
+                 << ", computation cost:" << computation_cost_sum;
+    cur_op_swcs.emplace_back(cur_op_swc, std::make_pair(communication_cost_sum, computation_cost_sum));
+  }
+  auto min_cur_op_swc = std::min_element(cur_op_swcs.begin(), cur_op_swcs.end(), CompareSwc);
+  MS_LOG(INFO) << "Return cur strategy selected by visited edges: " << min_cur_op_swc->first->strategy_ptr->ToString();
+  return min_cur_op_swc->first;
+}
+
 // Keep at most (1.0 / epsilon) number of available strategies for each operator.
 void OperatorInfo::ApproximateStrategies() {
   auto enable_approxi = CostModelContext::GetInstance()->dp_algo_enable_approxi();
@@ -3333,13 +3408,11 @@ std::vector<std::shared_ptr<TensorLayout>> OperatorInfo::InferLayoutsByStrategy(
   for (size_t i = 0; i < inputs.size(); i++) {
     auto in_layout = std::make_shared<TensorLayout>();
     if (i == layout_index) {
-      MS_LOG(ERROR) << "Begin InitFromExtendVector";
       if (in_layout->InitFromExtendVector(dev_matrix_shape_, prev_op_tensor_map, inputs_shape_[i]) != SUCCESS) {
         MS_LOG(ERROR) << "InferLayoutsByStrategy failed.";
         return std::vector<std::shared_ptr<TensorLayout>>();
       }
       in_layouts.push_back(in_layout);
-      MS_LOG(ERROR) << "in_layout:" << in_layout->ToString();
       continue;
     }
     std::vector<Shape> empty_tensor_map;

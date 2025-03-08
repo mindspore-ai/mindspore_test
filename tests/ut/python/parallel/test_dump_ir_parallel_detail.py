@@ -157,7 +157,7 @@ def test_dump_ir_parallel_detail_auto():
     validator = ParallelValidator(net, phase)
     assert validator.check_node_attrs('ReLU-0', {"inputs_tensor_map": '((1, 0))', "device_matrix": '(8, 1)',
                                                  "outputs_tensor_map": '((1, 0))'}, 0)
-    assert validator.check_node_attrs('Sub-0', {"inputs_tensor_map": '((1, 0), (1, 0))', "device_matrix": '(2, 4)',
+    assert validator.check_node_attrs('Sub-0', {"inputs_tensor_map": '((1, 0), (1, 0))', "device_matrix": '(8, 1)',
                                                 "outputs_tensor_map": '((1, 0))'}, 0)
     assert validator.check_node_attrs('Sub-1', {"inputs_tensor_map": '((1, 0), (0))', "device_matrix": '(2, 4)',
                                                 "outputs_tensor_map": '((1, 0))'}, 0)
