@@ -23,12 +23,87 @@ from tests.mark_utils import arg_mark
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level2', card_mark='onecard', essential_mark='essential')
+def test_custom_cpp_function_scalar():
+    """
+    Feature: Custom cpp autograd function.
+    Description: Custom forward function of scalar input single output.
+    Expectation: success.
+    """
+
+    class MyNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.p = Parameter(2.0, requires_grad=True)
+            self.my_ops = CustomOpBuilder("my_ops", ['./custom_src/function_ops.cpp'], backend="Ascend").load()
+
+        def construct(self, x, y):
+            z = self.my_ops.add(x, y)
+            return self.my_ops.add(z, self.p)
+
+    x = Tensor(1.0, ms.float32) * 2
+    y = Tensor(1.0, ms.float32) * 3
+    net = MyNet()
+    grad_op = ms.value_and_grad(net, grad_position=(0, 1), weights=net.trainable_params())
+    out, grads = grad_op(x, y)
+    assert np.allclose(out.asnumpy(), np.array([7.0], dtype=np.float32), 0.00001, 0.00001)
+    assert np.allclose(grads[0][0].asnumpy(), np.array([1.0], dtype=np.float32), 0.00001, 0.00001)
+    assert np.allclose(grads[0][1].asnumpy(), np.array([1.0], dtype=np.float32), 0.00001, 0.00001)
+    assert np.allclose(grads[1][0].asnumpy(), np.array([1.0], dtype=np.float32), 0.00001, 0.00001)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level2', card_mark='onecard', essential_mark='essential')
+def test_custom_cpp_function_tuple_tensor_input():
+    """
+    Feature: Custom cpp autograd function.
+    Description: Custom forward function of tuple input single output.
+    Expectation: success.
+    """
+
+    class MyNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.my_ops = CustomOpBuilder("my_ops", ['./custom_src/function_ops.cpp'], backend="Ascend").load()
+
+        def construct(self, x, y):
+            return self.my_ops.index(x, y)
+
+    x = Tensor(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), ms.float32)
+    y = Tensor(np.array([1]), ms.int64)
+    net = MyNet()
+    out = net(x, [y, y])
+    assert np.allclose(out.asnumpy(), np.array([5.0], dtype=np.float32), 0.00001, 0.00001)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level2', card_mark='onecard', essential_mark='essential')
+def test_custom_cpp_function_tuple_int_input():
+    """
+    Feature: Custom cpp autograd function.
+    Description: Custom forward function of tuple input single output.
+    Expectation: success.
+    """
+
+    class MyNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.my_ops = CustomOpBuilder("my_ops", ['./custom_src/function_ops.cpp'], backend="Ascend").load()
+
+        def construct(self, x, y):
+            return self.my_ops.broadcast_to(x, y)
+
+    x = Tensor(np.array([1.0, 2.0, 3.0]), ms.float32)
+    net = MyNet()
+    out = net(x, (2, 3))
+    assert np.allclose(out.asnumpy(), np.array([[1.0, 2.0, 3.0], [1.0, 2.0, 3.0]], dtype=np.float32), 0.00001, 0.00001)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level2', card_mark='onecard', essential_mark='essential')
 def test_custom_cpp_function_multi_input():
     """
     Feature: Custom cpp autograd function.
     Description: Custom forward function of multi input single output.
     Expectation: success.
     """
+
     class MyNet(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -57,6 +132,7 @@ def test_custom_cpp_function_mark_no_diff():
     Description: The output of function is marked non-diff.
     Expectation: success.
     """
+
     class MyNet(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -90,6 +166,7 @@ def test_custom_cpp_function_mark_input_no_diff():
         def construct(self, x):
             x_no_diff, _ = self.my_ops.mul_no_diff_in(x)
             return x * x_no_diff
+
     x = Tensor([2, 2], ms.float32)
     grad_op = ops.GradOperation(get_all=True)
     grad = grad_op(MyNet())(x)
@@ -111,6 +188,7 @@ def test_custom_cpp_function_dirty_tensor_is_need_grad_leaf():
 
         def construct(self, x, y):
             return self.my_ops.inplace_mul(x, y)
+
     x = Tensor([2, 2], ms.float32)
     y = Tensor([3, 3], ms.float32)
 
