@@ -661,7 +661,8 @@ void KernelActor::SetSomasMemory(OpContext<DeviceTensor> *const context) const {
       // In order to perform performance, the pointer validity is not checked here.
       // Check the graph output address need free.
       if (somas_graph_output_indexes_.count(i) && (output_device_tensors_[i]->GetPtr() != nullptr)) {
-        MS_LOG(ERROR) << GetAID().Name() << " does not free address for graph output index: " << i;
+        MS_LOG(ERROR) << GetAID().Name() << " does not free address for graph output index: " << i
+                      << " device address:" << output_device_tensors_[i]->PrintInfo();
         device_contexts_[0]->device_res_manager_->FreeMemory(output_device_tensors_[i]);
       }
       MS_LOG(DEBUG) << "Set ptr:" << device_ptr << " to device address:" << output_device_tensors_[i]
@@ -1198,12 +1199,9 @@ void KernelActor::ExecuteLaunchKernelTask(OpContext<DeviceTensor> *const context
     RefreshDeviceTensorCopyStore(context);
   }
 
+  // 3. Fix ref count.
   if (!ActorDispatcher::enable_use_trace_memory()) {
     IncreaseNewRefCounts(context);
-  }
-
-  // 3. Free memory.
-  if (!ActorDispatcher::enable_use_trace_memory()) {
     if (new_memory_free_list_.size() > 0 && copy_output_device_tensors_.empty()) {
       SendMemoryFreeReq(context);
     }
