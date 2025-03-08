@@ -3048,8 +3048,8 @@ EvalResultPtr PrimitiveToMetaEvaluator::EvalPrim(const AnalysisEnginePtr &engine
 
   const auto &op_name = prim_->name();
   const auto &meta_op = prim::CreateMetaImpl(op_name);
-  meta_op->set_prim(prim_);
   MS_EXCEPTION_IF_NULL(meta_op);
+  meta_op->set_prim(prim_);
   AnfNodePtrList op_inputs{NewValueNode(meta_op)};
   constexpr size_t index_data = 1;
   (void)std::transform(cnode->weak_inputs().begin() + index_data, cnode->weak_inputs().end(),
