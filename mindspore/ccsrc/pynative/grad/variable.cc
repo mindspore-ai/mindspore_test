@@ -19,6 +19,7 @@
 #include "pynative/grad/grad_utils.h"
 #include "pynative/pynative_utils.h"
 #include "include/common/pynative/common_utils.h"
+#include "debug/profiler/profiler.h"
 
 namespace mindspore::pynative::autograd {
 ValuePtrList BackwardNode::PostProcess(const ValuePtrList &gradient_value) {
@@ -50,6 +51,15 @@ ValuePtrList BackwardNode::LazeUpdateZeroGradient(const ValuePtrList &dout, Func
     }
   }
   return real_dout;
+}
+
+void Variable::Release() {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kReleaseResource,
+                                     runtime::ProfilerRecorder::kNoName, false);
+  MS_EXCEPTION_IF_NULL(func_node_);
+  func_node_->set_check_func(nullptr);
+  func_node_->set_op_output(nullptr);
+  func_node_->Release();
 }
 
 std::string FuncVariable::ToString() const {

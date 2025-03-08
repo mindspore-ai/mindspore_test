@@ -35,8 +35,7 @@ class CustomAclnnPyboostKernelModBase {
  public:
   explicit CustomAclnnPyboostKernelModBase(std::string &&op_type) : op_type_(std::move(op_type)) {}
   ~CustomAclnnPyboostKernelModBase() = default;
-  virtual bool Launch(const std::vector<tensor::BaseTensorPtr> &inputs,
-                      const std::vector<tensor::BaseTensorPtr> &outputs,
+  virtual bool Launch(const std::vector<ValuePtr> &inputs, const std::vector<tensor::BaseTensorPtr> &outputs,
                       const std::shared_ptr<pyboost::OpRunner> &op) = 0;
   std::string op_type_;
 };
@@ -46,7 +45,7 @@ class CustomAclnnPyboostKernelMod : public CustomAclnnPyboostKernelModBase {
  public:
   explicit CustomAclnnPyboostKernelMod(std::string op_type) : CustomAclnnPyboostKernelModBase(std::move(op_type)) {}
   ~CustomAclnnPyboostKernelMod() = default;
-  bool Launch(const std::vector<tensor::BaseTensorPtr> &inputs, const std::vector<tensor::BaseTensorPtr> &outputs,
+  bool Launch(const std::vector<ValuePtr> &inputs, const std::vector<tensor::BaseTensorPtr> &outputs,
               const std::shared_ptr<pyboost::OpRunner> &op) override {
     CallRun(op, inputs, outputs);
     return true;

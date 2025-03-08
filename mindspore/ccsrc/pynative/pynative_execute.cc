@@ -47,7 +47,6 @@ std::shared_ptr<PyNativeExecutor> PyNativeExecutor::executor_ = nullptr;
 ForwardExecutorPtr PyNativeExecutor::forward_executor_ = nullptr;
 GradExecutorPtr PyNativeExecutor::grad_executor_ = nullptr;
 std::mutex PyNativeExecutor::instance_lock_;
-
 namespace {
 template <typename T, typename... Args>
 T PyNativeExecutorTry(const std::function<T(const Args &...)> &method, const Args &... args) {

@@ -55,6 +55,12 @@ class AutoGrad {
   // Call custom function procedure
   virtual void CallCustomFunction(const std::shared_ptr<FunctionContext> &context) {}
 
+  // Call cpp function bprop
+  virtual void CallCPPFunctionBprop(const ValuePtrList &flatten_outputs, const BaseTensorPtrSet &input_base_tensors,
+                                    const BaseTensorPtrSet &dirty_tensors, const BaseTensorPtrSet &non_diff_tensors,
+                                    const ValuePtrList &inputs, const std::vector<InputType> &input_value_grad_type,
+                                    const BackwardNodePtr &node) {}
+
   virtual VariablePtr SafeGetVariableImpl(const tensor::BaseTensorPtr &tensor) { return nullptr; }
 
   // Store grad meta grad info

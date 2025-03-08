@@ -569,6 +569,48 @@ inline aclDataType ConvertType(const TypePtr &type) { return AclConverter::Conve
 
 inline const char *ConvertType(const std::string &value) { return value.c_str(); }
 
+inline void *ConvertType(const ValueTuplePtr &value) {
+  MS_EXCEPTION_IF_NULL(value);
+  auto elements = value->value();
+  if (elements.empty()) {
+    return nullptr;
+  } else if (elements[0]->isa<UInt8Imm>() || elements[0]->isa<BoolImm>()) {
+    auto bool_vector = GetValue<std::vector<uint8_t>>(value);
+    return ConvertType(bool_vector);
+  } else if (elements[0]->isa<FP32Imm>()) {
+    auto float_vector = GetValue<std::vector<float>>(value);
+    return ConvertType(float_vector);
+  } else if (elements[0]->isa<Int64Imm>()) {
+    auto int_vector = GetValue<std::vector<int64_t>>(value);
+    return ConvertType(int_vector);
+  } else {
+    MS_LOG(EXCEPTION) << "Unsupported type: " << value->ToString();
+  }
+}
+
+inline void *ConvertType(const ValuePtr &value) {
+  if (value == nullptr) {
+    MS_LOG(DEBUG) << "Convert value is null";
+    // optional input;
+    return nullptr;
+  } else if (value->isa<tensor::BaseTensor>()) {
+    const auto &base_tensor = dyn_cast<tensor::BaseTensor>(value);
+    return ConvertType(base_tensor);
+  } else if (value->isa<Scalar>()) {
+    const auto &scalar = dyn_cast<Scalar>(value);
+    return ConvertType(scalar);
+  } else if (value->isa<StringImm>()) {
+    const auto &str_value = dyn_cast<StringImm>(value);
+    auto str = GetValue<std::string>(str_value);
+    return const_cast<char *>(ConvertType(str));
+  } else if (value->isa<ValueTuple>()) {
+    const auto &tuple_value = dyn_cast<ValueTuple>(value);
+    return ConvertType(tuple_value);
+  } else {
+    MS_LOG(EXCEPTION) << "Unsupported type: " << value->ToString();
+  }
+}
+
 template <typename T, typename = std::enable_if_t<std::is_scalar_v<T>>>
 T ConvertType(T value) {
   return value;

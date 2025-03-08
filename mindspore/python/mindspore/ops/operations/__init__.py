@@ -58,7 +58,7 @@ from .comm_ops import (AllGather, AllReduce, Reduce, NeighborExchange, NeighborE
                        _HostAllGather, _HostReduceScatter, _MirrorMicroStepOperator, _MicroStepAllGather,
                        _VirtualPipelineEnd, AlltoAllV, ReduceScatter, _VirtualAssignKvCache)
 from .control_ops import GeSwitch, Merge
-from .custom_ops import (Custom)
+from .custom_ops import (Custom, CustomOpBuilder)
 from .debug_ops import (ImageSummary, InsertGradientOf, Morph, HookBackward, ScalarSummary,
                         TensorSummary, HistogramSummary, TensorDump, Print, Assert)
 from .image_ops import (CropAndResize, NonMaxSuppressionV3, HSVToRGB, AdjustHue, AdjustSaturation,
@@ -112,9 +112,10 @@ from .nn_ops import (LSTM, SGD, Adam, AdamWeightDecay, FusedSparseAdam, FusedSpa
                      ApplyAdaMax, ApplyAdadelta, ApplyAdagrad, ApplyAdagradV2, MultiMarginLoss, ApplyAdagradDA,
                      ApplyAddSign, ApplyPowerSign, ApplyGradientDescent, ApplyProximalGradientDescent,
                      ApplyRMSProp, ApplyCenteredRMSProp, BasicLSTMCell, InTopK, AdaptiveAvgPool2D, SoftShrink,
-                     ApplyAdamWithAmsgrad, ApplyAdamWithAmsgradV2, AdaptiveAvgPool3D, AdaptiveMaxPool3D,
+                     ApplyAdamWithAmsgrad, ApplyAdamWithAmsgradV2, AdaptiveAvgPool3D, AdaptiveMaxPool2D,
+                     AdaptiveMaxPool3D,
                      GridSampler3D, MaxPool3DWithArgmax, MaxUnpool2D, NuclearNorm, NthElement, MultilabelMarginLoss,
-                     Dilation2D, DataFormatVecPermute, DeformableOffsets, Dense, FractionalAvgPool, AdaptiveMaxPool2D,
+                     Dilation2D, DataFormatVecPermute, DeformableOffsets, Dense, FractionalAvgPool,
                      FractionalMaxPool, FractionalMaxPool3DWithFixedKsize, FractionalMaxPoolWithFixedKsize,
                      GridSampler2D, TripletMarginLoss, UpsampleNearest3D, UpsampleTrilinear3D, PadV3, ChannelShuffle,
                      GLU, MaxUnpool3D, Pdist, RmsNorm, PagedAttention, PagedAttentionMask, ReshapeAndCache,
@@ -545,6 +546,7 @@ __all__ = [
     "Send",
     "Receive",
     "Custom",
+    "CustomOpBuilder",
     "LuSolve",
     "CholeskyInverse",
     "Cummax",
