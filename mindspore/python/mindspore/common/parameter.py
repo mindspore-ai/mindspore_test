@@ -30,7 +30,6 @@ from mindspore.log import _LogActionOnce
 from mindspore._c_expression import ParamInfo
 from mindspore.common import dtype as mstype
 from mindspore import context
-from mindspore.parallel._utils import _get_parallel_mode
 from mindspore.common._utils import get_slice_num, get_slice_shape
 from mindspore.common.initializer import initializer
 from mindspore.common.tensor import Tensor
@@ -77,7 +76,7 @@ def _is_parallel_mode():
         return False
     if os.getenv("RUN_MODE") != "predict":
         return False
-    if get_group_size() > 1 and _get_parallel_mode() == "stand_alone":
+    if get_group_size() > 1:
         return True
     return False
 
@@ -559,9 +558,6 @@ class Parameter(Tensor_):
 
     @comm_fusion.setter
     def comm_fusion(self, comm_fusion_):
-        if context.get_context("mode") == context.PYNATIVE_MODE and "auto_parallel" in _get_parallel_mode():
-            raise RuntimeError(
-                "`comm_fusion` does not support PYNATIVE_MODE in AUTO_PARALLEL and SEMI_AUTO_PARALLEL mode.")
         Validator.check_non_negative_int(comm_fusion_)
         self.param_info.comm_fusion = comm_fusion_
 

@@ -28,7 +28,6 @@ from mindspore.train.serialization import save_checkpoint, _save_graph, _wait_as
     _wait_async_thread_save_ckpt, _check_async_save
 from mindspore.parallel._cell_wrapper import destroy_allgather_cell
 from mindspore.parallel._recovery_context import _set_recovery_context, _get_recovery_context
-from mindspore.parallel._utils import _get_device_num
 from mindspore.communication.management import get_rank, get_group_size
 from mindspore.train._utils import get_parameter_redundancy, remove_param_redundancy, _get_pp_size_from_redundancy_map
 from mindspore.train.callback._callback import Callback, set_cur_net
@@ -555,7 +554,7 @@ class ModelCheckpoint(Callback):
             from aiturbo.checkpoint import aiturbo_mindspore as aiturbo
             ckpt_storage_path = self._directory
             rank_id = get_rank()
-            device_num = _get_device_num()
+            device_num = get_group_size()
             param_layout = cb_params.train_network.parameter_layout_dict
             if not param_layout:
                 layout = {"stage_num": 1, "stage_rank_num": device_num, "stage_layout": None}

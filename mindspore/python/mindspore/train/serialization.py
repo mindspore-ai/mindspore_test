@@ -854,6 +854,15 @@ def _handle_shared_param_for_pipeline_parallel(save_obj):
             filtered_save_obj.append(param_dict)
     return filtered_save_obj
 
+
+def _is_auto_parallel_mode(save_obj):
+    """Check if in auto parallel mode by verifying parameter initialization."""
+    for _, param in save_obj.parameters_and_names():
+        if param.param_info.is_param_init:
+            return True
+    return False
+
+
 def _convert_list_to_param_list(save_obj, choice_func):
     """Convert a list of Parameter to param_list."""
     param_list = []
@@ -904,7 +913,7 @@ def _convert_dict_to_param_dict(save_obj, choice_func):
     return param_list
 
 
-def _convert_cell_param_and_names_to_dict(save_obj, choice_func):
+def _convert_cell_param_and_names_to_dict(save_obj, choice_func, is_parallel_mode):
     """Convert cell.parameters_and_names to OrderedDict."""
     param_dict = OrderedDict()
     for _, param in save_obj.parameters_and_names():
@@ -914,7 +923,7 @@ def _convert_cell_param_and_names_to_dict(save_obj, choice_func):
         judgment = not_sliced or param.has_init
         if param.param_info.is_pipeline_shared_param:
             continue
-        if is_graph_mode and _is_in_auto_parallel_mode() and judgment:
+        if is_graph_mode and is_parallel_mode and judgment:
             continue
         if choice_func is not None and not choice_func(param.name):
             continue
@@ -932,11 +941,12 @@ def _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_f
     sync_pipeline_shared_parameters(save_obj)
     param_list = []
     parameter_layout_dict = save_obj.parameter_layout_dict
-    if _is_in_auto_parallel_mode() and not parameter_layout_dict:
+    is_parallel_mode = _is_auto_parallel_mode(save_obj)
+    if is_parallel_mode and not parameter_layout_dict:
         parameter_layout_dict = _get_parameter_layout()
-    if not _is_in_auto_parallel_mode():
+    if not is_parallel_mode:
         save_obj.init_parameters_data()
-    param_dict = _convert_cell_param_and_names_to_dict(save_obj, choice_func)
+    param_dict = _convert_cell_param_and_names_to_dict(save_obj, choice_func, is_parallel_mode)
     if append_dict and "random_op" in append_dict:
         phase = 'train' + '.' + str(save_obj.create_time) + '.' + str(id(save_obj)) + '.' + save_obj.arguments_key
         if phase in save_obj.compile_cache and _executor.has_compiled(phase):
@@ -1877,7 +1887,6 @@ def _get_merged_param_data(net, parameter_layout_dict, param_name, param_data, i
 
     dev_mat = layout[0]
     tensor_map = layout[1]
-    uniform_split = layout[4]
     opt_shard_group = layout[5]
     before_reshape_slice_shape = layout[2]
     before_reshape_full_shape = layout[6]
@@ -1898,7 +1907,6 @@ def _get_merged_param_data(net, parameter_layout_dict, param_name, param_data, i
     else:
         logger.info("Need to create allgather net for %s", param_name)
         if integrated_save:
-            _check_param_for_integrate_save(context.get_auto_parallel_context("pipeline_stages"), uniform_split)
             # while any dim is not equal to -1, means param is split and needs to be merged
             # pipeline parallel need to be supported here later
             if mp_weight:

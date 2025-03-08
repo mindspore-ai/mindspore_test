@@ -93,7 +93,7 @@ class AutoParallel(Cell):
         self._loss_repeated_mean = True
 
         self._memory_offload_config = dict()
-        self._transformer_opt_config = ""
+        self._transformer_opt_config = None
 
     def no_init_parameters_in_compile(self):
         """
@@ -362,10 +362,7 @@ class AutoParallel(Cell):
         self._group_ckpt_save_file = file_path
 
     def print_local_norm(self):
-        """
-        Enable dump local_norm value, when the `parallel_mode` is set to ``semi_auto_parallel``
-        or ``auto_parallel``. Set dump local norm path for auto parallel.
-        """
+        """ Print local norm value for auto parallel. """
         self._dump_local_norm = True
 
     def dump_local_norm(self, file_path):
@@ -376,7 +373,7 @@ class AutoParallel(Cell):
             file_path (str): The path to save local_norm.
 
         Raises:
-            TypeError: If the type of 'file_path' is not str
+            TypeError: If the type of 'file_path' is not str.
         """
         if not isinstance(file_path, str):
             raise TypeError("the argument 'file_path' must be str, but got the type : {} .".format(type(file_path)))
@@ -388,15 +385,11 @@ class AutoParallel(Cell):
         self._dump_device_local_norm = True
 
     def enable_gradients_mean(self):
-        """
-        This is a developing feature, which shards the weight update computation for data parallel training in the
-        benefit of time and memory saving. Currently, auto and semi auto parallel mode support all optimizers in
-        both Ascend and GPU. Data parallel mode only supports `Lamb` and `AdamWeightDecay` in Ascend.
-        """
+        """ Perform mean operator after allreduce of gradients in parallel mode. """
         self._gradients_mean = True
 
     def disable_gradient_fp32_sync(self):
-        """Disable convert tensor type from fp16 to fp32 before parameter gradients allreduce."""
+        """ Disable convert tensor type from fp16 to fp32 before parameter gradients allreduce. """
         self._gradient_fp32_sync = False
 
     def disable_loss_repeated_mean(self):
@@ -405,13 +398,13 @@ class AutoParallel(Cell):
         """
         self._loss_repeated_mean = False
 
-    def transformer_opt(self, path=None):
+    def transformer_opt(self, file_path):
         r"""
         Check and set speedup config for auto parallel.
 
         Args:
-            path(str): The path to the parallel speed up json file, configuration
-            can refer to `parallel_speed_up.json
+            file_path(Union[str, None]): The path to the parallel speed up json file, configuration can refer to
+            `parallel_speed_up.json
             <https://gitee.com/mindspore/mindspore/blob/master/config/parallel_speed_up.json>`_ .
             If its value is None or '', it does not take effect. Default None.
 
@@ -478,9 +471,9 @@ class AutoParallel(Cell):
         # pylint: disable=W0212
         from mindspore.context import _context
         ctx = _context()
-        ctx._set_speedup_config_path(path)
-        self._transformer_opt_config = path
-        ctx.ascend_config['parallel_speed_up_json_path'] = path
+        ctx._set_speedup_config_path(file_path)
+        self._transformer_opt_config = file_path
+        ctx.ascend_config['parallel_speed_up_json_path'] = file_path
 
     def auto_memory_offload(self, config):
         self._memory_offload_config = config
