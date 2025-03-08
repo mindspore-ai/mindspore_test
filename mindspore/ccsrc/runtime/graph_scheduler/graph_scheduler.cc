@@ -400,7 +400,8 @@ bool CheckKbkSubGraphExecConditon(const std::vector<KernelGraphPtr> &graphs) {
   for (const auto &graph : graphs) {
     MS_EXCEPTION_IF_NULL(graph);
     // Note: Kbk sub graph mode doesn't support 'SwitchInline' and Fallback feature currently.
-    if (!graph->enable_kbk_sub_graph_execute() || graph->RunMode() != device::RunMode::kKernelMode) {
+    if (!graph->enable_kbk_sub_graph_execute() ||
+        (graph->RunMode() != device::RunMode::kKernelMode && graph->inline_sub_graph_kernels().empty())) {
       return false;
     }
   }
@@ -413,7 +414,7 @@ bool CheckKbkSubGraphExecConditon(const std::vector<KernelGraphPtr> &graphs) {
   // Note: Kbk sub graph mode doesn't support 'RpcSend, RpcRecv, ConditionSwitch, ConditionGather, PyExecute' currently.
   auto IsKernelNotSupportKbkSubGraphMode = [&](const CNodePtr &kernel) {
     MS_EXCEPTION_IF_NULL(kernel);
-    return (IsRpcActor(kernel) || IsInnerControlFlowActor(kernel) || IsFallBackKernel(kernel));
+    return (IsRpcActor(kernel) || IsFallBackKernel(kernel));
   };
 
   for (const auto &graph : graphs) {
@@ -887,7 +888,6 @@ ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info
                                   profiler::GetClockSyscnt(), 1);
   MS_EXCEPTION_IF_NULL(actor_set);
   CacheGraphOutputToActor(graph_compiler_info);
-  UpdateDeviceAddressByRefInternalParameter(graph_compiler_info);
   start_time_1 = profiler::GetClockSyscnt();
   PROF_START(GraphSchedulerLink);
   Link(actor_set.get(), graph_compiler_info);
@@ -1758,13 +1758,6 @@ void GraphScheduler::Link(ActorSet *actor_set, const GraphCompilerInfo &graph_co
   MS_EXCEPTION_IF_NULL(rpc_node_scheduler_);
   rpc_node_scheduler_->Link(actor_set);
 #endif
-  inline_control_flow_scheduler_.Link(
-    actor_set, graph_compiler_info,
-    execution_order_running_ || std::find_if(group_name_to_communication_nodes.begin(),
-                                             group_name_to_communication_nodes.end(), [](const auto &pair) {
-                                               return !pair.second.first.empty();
-                                             }) != group_name_to_communication_nodes.end());
-
   // Need to call after all link task finish, because all kernel actor of super kernel actor will be initialized and
   // need to known the graph output(ref count: SIZE_MAX)
   LinkKernelActorsForSubGraphExecute(actor_set);
@@ -2149,8 +2142,7 @@ std::vector<KernelActorPtr> GraphScheduler::BuildKernelActor(const GraphCompiler
         if (IsRpcActor(kernel)) {
           kernel_actor = GenerateRpcActor(kernel, real_device_context, strategy, ref_input_indexes, ref_output_indexes);
         } else if (IsInnerControlFlowActor(kernel)) {
-          kernel_actor =
-            GenerateInnerControlFlowActor(kernel, real_device_context, strategy, ref_input_indexes, ref_output_indexes);
+          MS_LOG(EXCEPTION) << "Can not build a sub graph which contains ConditionSwitch or ConditionSwitch by kbk.";
         } else {
           kernel_actor = std::make_shared<KernelActor>(GenerateActorIdByKernel(kernel), kernel, real_device_context,
                                                        memory_manager_aid_, debug_aid_, recorder_aid_, strategy,
@@ -2383,28 +2375,6 @@ KernelActorPtr GraphScheduler::GenerateRpcActor(const CNodePtr &kernel, const De
   }
 #endif
   return nullptr;
-}
-
-KernelActorPtr GraphScheduler::GenerateInnerControlFlowActor(const CNodePtr &kernel,
-                                                             const DeviceContext *device_context,
-                                                             GraphExecutionStrategy strategy,
-                                                             const std::set<size_t> &ref_input_indexes,
-                                                             const std::set<size_t> &ref_output_indexes) {
-  MS_EXCEPTION_IF_NULL(kernel);
-  if (common::AnfAlgo::GetCNodeName(kernel) != "ConditionSwitch" &&
-      common::AnfAlgo::GetCNodeName(kernel) != "ConditionGather") {
-    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, kernel)
-      << "#dmsg#Runtime error info:#dmsg#Kernel " << kernel->fullname_with_scope()
-      << " is not a inner control flow kernel.";
-  }
-  if (common::AnfAlgo::GetCNodeName(kernel) == "ConditionSwitch") {
-    return std::make_shared<ConditionSwitchActor>(GenerateActorIdByKernel(kernel), kernel, device_context,
-                                                  memory_manager_aid_, debug_aid_, recorder_aid_, strategy,
-                                                  ref_input_indexes, ref_output_indexes);
-  }
-  return std::make_shared<ConditionGatherActor>(GenerateActorIdByKernel(kernel), kernel, device_context,
-                                                memory_manager_aid_, debug_aid_, recorder_aid_, strategy,
-                                                ref_input_indexes, ref_output_indexes);
 }
 
 namespace {
@@ -3278,11 +3248,7 @@ void GraphScheduler::LinkGlobalControlArrow(ActorSet *const actor_set,
   // Link the control arrow by the execution order.
   if (execution_order_running_) {
     for (const auto &graph : graph_compiler_info.graphs_) {
-      if (graph->inline_sub_graph_kernels().empty()) {
-        LinkControlArrowByExecutionOrder(graph, graph_compiler_info);
-      } else {
-        inline_control_flow_scheduler_.LinkControlArrowByExecutionOrder(graph, graph_compiler_info);
-      }
+      LinkControlArrowByExecutionOrder(graph, graph_compiler_info);
     }
   }
 
@@ -3566,11 +3532,7 @@ void GraphScheduler::LinkControlArrowByCommunicationNode(const std::vector<CNode
   // Using the multi stream to optimize the performance in the future.
   if (!execution_order_running_) {
     for (const auto &graph : graphs) {
-      if (graph->inline_sub_graph_kernels().empty()) {
-        LinkControlArrowByExecutionOrder(graph, graph_compiler_info);
-      } else {
-        inline_control_flow_scheduler_.LinkControlArrowByExecutionOrder(graph, graph_compiler_info);
-      }
+      LinkControlArrowByExecutionOrder(graph, graph_compiler_info);
     }
   }
 }
@@ -3805,6 +3767,90 @@ void GraphScheduler::LinkKernelActorsForSubGraphExecute(const ActorSet *actor_se
     for (auto &super_kernel_actor : actor_set->super_kernel_actors_) {
       MS_EXCEPTION_IF_NULL(super_kernel_actor);
       super_kernel_actor->BuildAndLinkKernelActors();
+
+      std::map<size_t, std::pair<AID, DataArrow *>> input_index_to_input_arrow;
+      for (const auto &pair : super_kernel_actor->input_data_arrow_aids_) {
+        if (pair.second == nullptr) {
+          continue;
+        }
+        input_index_to_input_arrow[pair.second->to_input_index_] = pair;
+      }
+      for (size_t i = 0; i < super_kernel_actor->is_input_used_.size(); ++i) {
+        if (super_kernel_actor->is_input_used_[i]) {
+          continue;
+        }
+        const auto &iter = input_index_to_input_arrow.find(i);
+        if (iter == input_index_to_input_arrow.end()) {
+          continue;
+        }
+        const auto &input_arrow = iter->second.second;
+        const auto &from_actor = FetchActor(iter->second.first.Name());
+        if (from_actor == nullptr) {
+          continue;
+        }
+        if (from_actor->type() == KernelTransformType::kCopyActor) {
+          const auto &copy_actor = dynamic_cast<CopyActor *>(from_actor);
+          MS_EXCEPTION_IF_NULL(from_actor);
+          copy_actor->output_free_size_++;
+          MS_LOG(INFO) << "Add free size for copy actor:" << copy_actor->GetAID()
+                       << " to super kernel actor:" << super_kernel_actor->GetAID();
+        } else if (from_actor->type() == KernelTransformType::kSuperKernelActor) {
+          const auto &from_super_kernel_actor = dynamic_cast<SuperKernelActor *>(from_actor);
+          MS_EXCEPTION_IF_NULL(from_super_kernel_actor);
+          if (from_super_kernel_actor->output_data_nodes_.size() !=
+              from_super_kernel_actor->output_data_arrows_.size()) {
+            MS_LOG(DEBUG) << "Invalid output node size:" << from_super_kernel_actor->output_data_nodes_.size()
+                          << " and arrow size:" << from_super_kernel_actor->output_data_arrows_.size()
+                          << " for actor:" << from_super_kernel_actor->GetAID();
+            continue;
+          }
+          const auto &arrow_iter = std::find_if(
+            from_super_kernel_actor->output_data_arrows_.begin(), from_super_kernel_actor->output_data_arrows_.end(),
+            [input_arrow](const auto &arrow) { return arrow.get() == input_arrow; });
+          if (arrow_iter == from_super_kernel_actor->output_data_arrows_.end()) {
+            MS_LOG(DEBUG) << "Invalid input_data arrow, to actor:" << input_arrow->to_op_id_
+                          << " for actor:" << super_kernel_actor->GetAID();
+            continue;
+          }
+          size_t output_index = arrow_iter - from_super_kernel_actor->output_data_arrows_.begin();
+          const auto &from_kernel = from_super_kernel_actor->output_data_nodes_[output_index];
+          if (from_kernel == nullptr || !from_kernel->isa<CNode>() ||
+              from_super_kernel_actor->cnode_to_kernel_actor_.find(from_kernel) ==
+                from_super_kernel_actor->cnode_to_kernel_actor_.end()) {
+            MS_LOG(DEBUG) << "Invalid from kernel:" << (from_kernel == nullptr ? "nullptr" : from_kernel->DebugString())
+                          << " from actor:" << from_super_kernel_actor->GetAID()
+                          << " to actor:" << super_kernel_actor->GetAID();
+            continue;
+          }
+          const auto &kernel_actor = from_super_kernel_actor->cnode_to_kernel_actor_[from_kernel];
+          MS_EXCEPTION_IF_NULL(kernel_actor);
+          if (LongToSize(input_arrow->from_output_index_) >= kernel_actor->output_device_tensors_.size()) {
+            MS_LOG(DEBUG) << "Invalid kernel actor:" << kernel_actor->GetAID()
+                          << " output index:" << input_arrow->from_output_index_
+                          << " for kernel:" << from_kernel->fullname_with_scope();
+            continue;
+          }
+          auto &free_list = kernel_actor->new_memory_free_list_;
+          if (free_list.size() < kernel_actor->input_free_index_.size() + kernel_actor->output_free_index_.size()) {
+            MS_LOG(DEBUG) << "Invalid kernel actor:" << kernel_actor
+                          << " input free list:" << kernel_actor->input_free_index_
+                          << " output free list:" << kernel_actor->output_free_index_
+                          << " in actor:" << from_super_kernel_actor->GetAID();
+            continue;
+          }
+          free_list.insert(
+            free_list.begin() + kernel_actor->input_free_index_.size() + kernel_actor->output_free_index_.size(),
+            kernel_actor->output_device_tensors_[input_arrow->from_output_index_]);
+          MS_LOG(INFO) << "Add free index:" << input_arrow->from_output_index_
+                       << " device address:" << kernel_actor->output_device_tensors_[input_arrow->from_output_index_]
+                       << " for kernel actor:" << kernel_actor->GetAID()
+                       << " in super kernel actor:" << from_super_kernel_actor->GetAID();
+          kernel_actor->output_free_index_.emplace_back(input_arrow->from_output_index_);
+        } else {
+          MS_LOG(INFO) << "Skip fix ref count for actor:" << from_actor->GetAID()
+                       << " to actor:" << super_kernel_actor->GetAID() << " to index:" << i;
+        }
+      }
     }
   }
 }

@@ -197,6 +197,7 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
 
   address->set_ptr(device_ptr);
   address->set_from_mem_pool(true);
+  address->IncreaseNewRefCount();
   static bool enable_memory_tracker = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
   if (enable_memory_tracker) {
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, address, device_ptr);

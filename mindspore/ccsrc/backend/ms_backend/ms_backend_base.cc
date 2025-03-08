@@ -2093,6 +2093,85 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   return graph_compiler_info->id_;
 }
 
+namespace {
+bool IsMemoryLeak(const device::DeviceAddress *const device_tensor) {
+  return device_tensor != nullptr && device_tensor->new_ref_count() != SIZE_MAX &&
+         (device_tensor->GetPtr() != nullptr || device_tensor->new_ref_count() != 0);
+}
+
+void StrictCheckForDeviceAddress(const runtime::ActorSet *actor_set) {
+  if (!common::IsEnableRuntimeConfig(common::kRuntimeNewRefCount)) {
+    return;
+  }
+  MS_EXCEPTION_IF_NULL(actor_set);
+  for (const auto &kernel_actor : actor_set->kernel_actors_) {
+    MS_EXCEPTION_IF_NULL(kernel_actor);
+    MS_LOG(DEBUG) << "Check for kernel actor:" << kernel_actor->GetAID();
+    for (size_t i = 0; i < kernel_actor->output_device_tensors().size(); ++i) {
+      const auto &device_tensor = kernel_actor->output_device_tensors()[i];
+      if (IsMemoryLeak(device_tensor)) {
+        MS_LOG(EXCEPTION) << "Memory leak detected in actor:" << kernel_actor->GetAID()
+                          << " output device tensor:" << device_tensor->PrintInfo();
+      }
+    }
+    for (size_t i = 0; i < kernel_actor->workspace_device_tensors().size(); ++i) {
+      const auto &device_tensor = kernel_actor->workspace_device_tensors()[i];
+      if (IsMemoryLeak(device_tensor)) {
+        MS_LOG(EXCEPTION) << "Memory leak detected in actor:" << kernel_actor->GetAID()
+                          << " workspace device tensor:" << device_tensor->PrintInfo();
+      }
+    }
+  }
+
+  for (const auto &copy_actor : actor_set->copy_actors_) {
+    MS_EXCEPTION_IF_NULL(copy_actor);
+    if (IsMemoryLeak(copy_actor->output().get())) {
+      MS_LOG(EXCEPTION) << "Memory leak detected in actor:" << copy_actor->GetAID()
+                        << " output device tensor:" << copy_actor->output()->PrintInfo();
+    }
+  }
+
+  for (const auto &super_kernel_actor : actor_set->super_kernel_actors_) {
+    MS_EXCEPTION_IF_NULL(super_kernel_actor);
+    MS_LOG(DEBUG) << "Check for super kernel actor:" << super_kernel_actor->GetAID();
+    for (const auto &kernel_actor : super_kernel_actor->kernel_actors()) {
+      MS_EXCEPTION_IF_NULL(kernel_actor);
+      MS_LOG(DEBUG) << "Check output for actor:" << kernel_actor->GetAID();
+      for (size_t i = 0; i < kernel_actor->output_device_tensors().size(); ++i) {
+        const auto &device_tensor = kernel_actor->output_device_tensors()[i];
+        if (IsMemoryLeak(device_tensor)) {
+          MS_LOG(EXCEPTION) << "Memory leak detected in actor:" << kernel_actor->GetAID()
+                            << " output device tensor:" << device_tensor->PrintInfo();
+        }
+      }
+      MS_LOG(DEBUG) << "Check workspace for actor:" << kernel_actor->GetAID();
+      for (size_t i = 0; i < kernel_actor->workspace_device_tensors().size(); ++i) {
+        const auto &device_tensor = kernel_actor->workspace_device_tensors()[i];
+        if (IsMemoryLeak(device_tensor)) {
+          MS_LOG(EXCEPTION) << "Memory leak detected in actor:" << kernel_actor->GetAID()
+                            << " workspace device tensor:" << device_tensor->PrintInfo();
+        }
+      }
+    }
+  }
+
+  MS_LOG(DEBUG) << "Check parameter store";
+  auto graph_parameter_store = runtime::ParameterStore::GetInstance().GetGraphParameterStore();
+  if (graph_parameter_store != nullptr) {
+    for (const auto &pair : graph_parameter_store->GetAll()) {
+      for (const auto &sub_pair : pair) {
+        const auto &device_tensor = sub_pair.first;
+        if (IsMemoryLeak(device_tensor.get())) {
+          MS_LOG(EXCEPTION) << "Memory leak detected in parameter store for device address:"
+                            << device_tensor->PrintInfo();
+        }
+      }
+    }
+  }
+  MS_LOG(DEBUG) << "Check end";
+}
+}  // namespace
+
 RunningStatus MSBackendBase::Run(BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kBackendGraphRunInner,
                                      std::to_string(graph_id), true);
@@ -2180,6 +2259,7 @@ RunningStatus MSBackendBase::Run(BackendGraphId graph_id, const VectorRef &input
     PROFILER_END(start_time, runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kOutputProcess, actor_set->name_,
                  false);
   }
+  StrictCheckForDeviceAddress(actor_set);
   // Close abstract_lock for dynamic_shape
   AnfUtils::CloseAbstractLock();
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventRunGraph, kStageRunGraph, start_time_,

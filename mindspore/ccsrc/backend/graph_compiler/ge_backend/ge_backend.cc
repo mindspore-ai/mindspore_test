@@ -378,6 +378,7 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
     kernel_tensor->set_size(output_addr->GetSize());
     auto tensor_device_address =
       device_context->graph_executor_->CreateDeviceAddress(kernel_tensor, output_addr->is_ptr_persisted());
+    tensor_device_address->set_new_ref_count(SIZE_MAX);
     MS_EXCEPTION_IF_NULL(tensor_device_address);
 
     if (output_addr->is_ptr_persisted()) {
