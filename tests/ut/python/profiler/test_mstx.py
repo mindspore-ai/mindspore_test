@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch, Mock
 from mindspore.profiler import mstx
 import mindspore
+from mindspore import context
 
 
 class TestMstx(unittest.TestCase):
@@ -22,6 +23,7 @@ class TestMstx(unittest.TestCase):
 
         # Override the class attribute
         mstx.NPU_PROFILER = self.mock_profiler
+        context.set_context(device_target="Ascend")
 
     def test_mark_should_call_profiler_mark_when_message_provided(self):
         """Should call profiler's mstx_mark method when message is provided."""

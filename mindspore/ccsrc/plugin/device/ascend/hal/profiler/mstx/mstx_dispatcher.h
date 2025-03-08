@@ -26,30 +26,36 @@
 #include "acl/acl_prof.h"
 #include "hccl/hccl_types.h"
 #include "runtime/pipeline/task/task.h"
+#include "debug/profiler/mstx/mstx_impl.h"
 
 namespace mindspore {
 namespace profiler {
 namespace ascend {
 
 enum class MstxTaskType { mark, start, end };
+const char MSTX_OP_NAME_MARK[] = "Mark";
+const char MSTX_OP_NAME_RANGE_START[] = "RangeStart";
+const char MSTX_OP_NAME_RANGE_END[] = "RangeEnd";
 
-class MstxMgr {
+class MstxDispatcher {
  public:
-  MstxMgr();
-  ~MstxMgr() = default;
+  MstxDispatcher() = default;
+  ~MstxDispatcher() = default;
 
-  static MstxMgr &GetInstance() {
-    static MstxMgr instance;
+  static MstxDispatcher &GetInstance() {
+    static MstxDispatcher instance;
     return instance;
   }
 
-  void Mark(const char *message, void *stream);
-  uint64_t RangeStart(const char *message, void *stream);
-  void RangeEnd(uint64_t id);
+  void Mark(const char *message, void *stream, mstxDomainHandle_t domain = nullptr);
+  uint64_t RangeStart(const char *message, void *stream, mstxDomainHandle_t domain = nullptr);
+  void RangeEnd(uint64_t id, mstxDomainHandle_t domain = nullptr);
 
-  static void MarkImpl(const char *message, void *stream);
-  static void RangeStartImpl(const char *message, void *stream, uint64_t msRangeId);
-  static void RangeEndImpl(uint64_t msRangeId);
+  mstxDomainHandle_t DomainCreate(const char *name);
+  void DomainDestroy(mstxDomainHandle_t domain);
+
+  static void RangeStartImpl(mstxDomainHandle_t domain, const char *message, void *stream, uint64_t msRangeId);
+  static void RangeEndImpl(mstxDomainHandle_t domain, uint64_t msRangeId);
 
   void Enable();
   void Disable();
@@ -58,9 +64,9 @@ class MstxMgr {
   inline bool GetRangeId() { return msRangeId_++; }
 
  private:
-  bool IsProfEnable();
-  bool IsMsptiEnable();
-  bool IsMsptiEnableImpl();
+  void DispatchMarkTask(mstxDomainHandle_t domain, const char *message, void *stream);
+  void DispatchRangeStartTask(mstxDomainHandle_t domain, const char *message, void *stream, uint64_t msRangeId);
+  void DispatchRangeEndTask(mstxDomainHandle_t domain, uint64_t msRangeId);
 
  private:
   std::atomic<bool> isEnable_{false};
@@ -92,25 +98,6 @@ class MstxDeviceTask : public runtime::AsyncTask {
   std::function<void(void)> run_func_;
   MstxTaskType type_;
 };
-
-std::string GetMstxHcomMsg(const std::string &opName, uint64_t dataCnt, HcclDataType dataType, HcclComm comm);
-
-#define MSTX_START(rangeId, opName, dataType, dataCnt, comm, stream)                                            \
-  do {                                                                                                          \
-    if (mindspore::profiler::ascend::MstxMgr::GetInstance().IsEnable()) {                                       \
-      rangeId = mindspore::profiler::ascend::MstxMgr::GetInstance().GetRangeId();                               \
-      mindspore::profiler::ascend::MstxMgr::RangeStartImpl(                                                     \
-        mindspore::profiler::ascend::GetMstxHcomMsg(opName, dataCnt, dataType, comm).c_str(), stream, rangeId); \
-    }                                                                                                           \
-  } while (0);
-
-// Match MSRX_START to use.
-#define MSTX_END(rangeId)                                                 \
-  do {                                                                    \
-    if (mindspore::profiler::ascend::MstxMgr::GetInstance().IsEnable()) { \
-      mindspore::profiler::ascend::MstxMgr::RangeEndImpl(rangeId);        \
-    }                                                                     \
-  } while (0);
 
 }  // namespace ascend
 }  // namespace profiler

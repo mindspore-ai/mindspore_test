@@ -16,6 +16,7 @@
 #ifndef MINDSPORE_CCSRC_COMMON_DEBUG_PROFILER_UTILS_H
 #define MINDSPORE_CCSRC_COMMON_DEBUG_PROFILER_UTILS_H
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
+#include <dlfcn.h>
 #include <fcntl.h>
 #include <libgen.h>
 #include <linux/limits.h>
@@ -220,6 +221,16 @@ class Utils {
 
     return save_graphs_path + "/rank_" + std::to_string(rank_id) + "/" + file_name;
   }
+
+  static void *GetLibHandler(const std::string &lib_path, bool if_global = false) {
+    void *handler = nullptr;
+    auto flag = if_global ? RTLD_GLOBAL : RTLD_LAZY;
+    handler = dlopen(lib_path.c_str(), flag);
+    if (handler == nullptr) {
+      MS_LOG(ERROR) << "Dlopen " << lib_path << " failed! " << dlerror();
+    }
+    return handler;
+  }
 };
 #else
 class Utils {
@@ -241,6 +252,7 @@ class Utils {
                                                      const bool support_relative_path = false) {
     return "";
   }
+  static void *GetLibHandler(const std::string &lib_path, bool if_global = false) { return nullptr; }
 };
 #endif
 }  // namespace profiler
