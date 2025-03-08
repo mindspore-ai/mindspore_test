@@ -17,7 +17,7 @@ import mindspore as ms
 from mindspore import dtype as mstype
 from mindspore import context, Tensor, ops
 from mindspore.nn import Cell
-from mindspore.ops.auto_generate import grouped_matmul_v4, GroupedMatmulV4
+from mindspore.ops.auto_generate import GroupedMatmulV4
 
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -266,6 +266,61 @@ def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_none_pertoken(mode):
     np.testing.assert_allclose(except_np, res[0].float().asnumpy(), rtol=4e-3)
 
 
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_none_perchannel(mode):
+    """
+    Feature: Test grouped_matmul
+    Description: semi_auto_parallel
+    Expectation: shape is as expected.
+    """
+    context.set_context(device_target="Ascend")
+    if mode == 'KBK':
+        ms.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O0')
+    elif mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+    gmm_v4_net = GroupedMatmulV4Net()
+
+    split_item = 3
+    group_type = 0
+    group_list_type = 1
+
+    M0 = 32
+    K0 = 256
+    N0 = 128
+    E0 = 8
+    group_list_np = [1, 2, 7, 4, 4, 4, 2, 8]
+
+    # numpy calculate
+    np_x_all = np.random.uniform(-128, 127, size=[M0, K0]).astype(np.int8)
+    np_w_all = np.random.uniform(-128, 127, size=[E0, K0, N0]).astype(np.int8)
+    np_s_all = np.array(np.full([E0, N0], 10)).astype(np.float32)
+
+    np_x = split_x(np_x_all, np.cumsum(group_list_np))
+    np_w = split_w(np_w_all)
+    np_s = split_w(np_s_all)
+    res_np = [np.matmul(x0, w0 * s0) for x0, w0, s0 in zip(np_x, np_w, np_s)]
+    except_np = np.concatenate(res_np, axis=0)
+
+    # ms calculate
+    x = [ms.Tensor(np_x_all)]
+    w = [ms.Tensor(np_w_all)]
+    scale = [ms.Tensor(np_s_all, dtype=mstype.bfloat16)]
+
+    b = None
+    offset = None
+    antiquant_scale = None
+    antiquant_offset = None
+    group_list = ms.Tensor(group_list_np, dtype=mstype.int64)
+
+    res = gmm_v4_net(x, w, b, scale, offset, antiquant_scale, antiquant_offset, None, group_list,
+                     split_item, group_type, group_list_type)
+
+    # compare
+    np.testing.assert_allclose(except_np, res[0].float().asnumpy(), rtol=4e-3)
+
+
 @arg_mark(
     plat_marks=["platform_ascend910b"],
     level_mark="level1",
@@ -325,13 +380,14 @@ def test_ops_grouped_mamtul_v4_multi_dyn(mode):
     elif mode == 'pynative':
         ms.set_context(mode=ms.PYNATIVE_MODE)
     gmm_v4_net = GroupedMatmulV4Net()
-    
+
     split_item = 0
     group_type = -1
     group_list_type = 0
-    
+
     x = ms.mutable([Tensor(shape=(None, None), dtype=mstype.float16), Tensor(shape=(None, None), dtype=mstype.float16)])
-    weight = ms.mutable([Tensor(shape=(None, None), dtype=mstype.float16), Tensor(shape=(None, None), dtype=mstype.float16)])
+    weight = ms.mutable([Tensor(shape=(None, None), dtype=mstype.float16),
+                         Tensor(shape=(None, None), dtype=mstype.float16)])
     gmm_v4_net.set_inputs(x, weight, None, None, None, None, None, None, None, split_item, group_type, group_list_type)
 
     np_x0 = np.random.uniform(0.1, 2, size=[16, 256]).astype(np.float32)
@@ -348,7 +404,7 @@ def test_ops_grouped_mamtul_v4_multi_dyn(mode):
     np.testing.assert_allclose(expect0, res1[0].asnumpy(), rtol=1e-1)
     np.testing.assert_allclose(expect1, res1[1].asnumpy(), rtol=1e-1)
 
-    x2 = ms.mutable([ms.Tensor(np_x0, dtype=mstype.float16)])
-    weight2 = ms.mutable([ms.Tensor(np_w0, dtype=mstype.float16)])
+    x2 = ms.mutable([ms.Tensor(np_x0, dtype=mstype.float16), ms.Tensor(np_x1, dtype=mstype.float16)])
+    weight2 = ms.mutable([ms.Tensor(np_w0, dtype=mstype.float16), ms.Tensor(np_w1, dtype=mstype.float16)])
     res2 = gmm_v4_net(x2, weight2, split_item=split_item, group_type=group_type)
     np.testing.assert_allclose(expect0, res2[0].asnumpy(), rtol=1e-1)

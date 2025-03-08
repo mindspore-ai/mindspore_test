@@ -40,6 +40,9 @@ class OPS_API GroupedMatmulV4FuncImpl final : public GroupedMatmulBaseFuncImpl {
 
   int64_t FetchGroupListSize(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
+  int32_t PrivateCheckValidation(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
+                                 int64_t group_type) const override;
+
  private:
   int64_t group_list_type_idx_ = 14;
   int64_t per_token_scale_idx_ = 7;
