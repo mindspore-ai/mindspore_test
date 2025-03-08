@@ -24,7 +24,8 @@ import mindspore.nn as nn
 import mindspore.dataset as ds
 from mindspore import Tensor, Parameter, Model
 from mindspore.train import DynamicLossScaleManager
-from mindspore.nn.wrap.cell_wrapper import _VirtualDatasetCell, MicroBatchInterleaved, PipelineCell
+from mindspore.nn.wrap.cell_wrapper import _VirtualDatasetCell
+from mindspore.nn import MicroBatchInterleaved, PipelineCell
 from mindspore.nn.optim import AdamWeightDecay
 from mindspore.ops import operations as P
 from mindspore.ops import composite as C

@@ -28,10 +28,8 @@ from mindspore.train.serialization import save_checkpoint, _save_graph, _wait_as
     _wait_async_thread_save_ckpt, _check_async_save
 from mindspore.parallel._cell_wrapper import destroy_allgather_cell
 from mindspore.parallel._recovery_context import _set_recovery_context, _get_recovery_context
-from mindspore.parallel._auto_parallel_context import _get_auto_parallel_context
-from mindspore.parallel._utils import _get_device_num
-from mindspore.communication.management import get_rank
-from mindspore.train._utils import get_parameter_redundancy, remove_param_redundancy
+from mindspore.communication.management import get_rank, get_group_size
+from mindspore.train._utils import get_parameter_redundancy, remove_param_redundancy, _get_pp_size_from_redundancy_map
 from mindspore.train.callback._callback import Callback
 from mindspore.common.tensor import Tensor
 from mindspore.common.parameter import Parameter
@@ -554,19 +552,17 @@ class ModelCheckpoint(Callback):
             from aiturbo.checkpoint import aiturbo_mindspore as aiturbo
             ckpt_storage_path = self._directory
             rank_id = get_rank()
-            stage_num = _get_auto_parallel_context("pipeline_stages")
-            stage_rank_num = _get_device_num() // stage_num
+            device_num = get_group_size()
             param_layout = cb_params.train_network.parameter_layout_dict
             if not param_layout:
-                layout = {"stage_num": stage_num, "stage_rank_num": stage_rank_num, "stage_layout": None}
+                layout = {"stage_num": 1, "stage_rank_num": device_num, "stage_layout": None}
                 aiturbo.init(ckpt_storage_path, rank_id, layout, None, False, None)
             else:
-                device_num = _get_device_num()
-                chunk_size = device_num // stage_num
-                initial_rank = (rank_id // chunk_size) * chunk_size
-                param_redundancy_dict = get_parameter_redundancy(param_layout, initial_rank)
+                param_redundancy_dict = get_parameter_redundancy(param_layout)
+                pp_size = _get_pp_size_from_redundancy_map(param_redundancy_dict)
+                stage_num = device_num // pp_size
                 dp, _ = _get_dp_tp_from_layout(param_redundancy_dict)
-                layout = {"stage_num": stage_num, "stage_rank_num": stage_rank_num,
+                layout = {"stage_num": stage_num, "stage_rank_num": pp_size,
                           "stage_layout": param_redundancy_dict}
                 single_params = remove_param_redundancy(param_redundancy_dict)
                 single_params = {device_id: list(params) for device_id, params in single_params.items()}
@@ -690,18 +686,13 @@ class ModelCheckpoint(Callback):
                                 crc_check=self._config.crc_check, incremental=self._map_param_inc,
                                 global_step_num=cb_params.cur_step_num)
             elif self._config.remove_redundancy:
-                parallel_mode = context.get_auto_parallel_context("parallel_mode")
-                if parallel_mode == "stand_alone":
+                if get_group_size() == 1:
                     raise TypeError(f"The deduplication feature for saving checkpoint can only be used "
-                                    f"in parallel scenarios, but got {parallel_mode}.")
+                                    f"in parallel scenarios, but got 'stand_alone'.")
                 param_layout = network.parameter_layout_dict
                 rank_id = get_rank()
                 if param_layout:
-                    device_num = _get_device_num()
-                    stage_num = _get_auto_parallel_context("pipeline_stages")
-                    chunk_size = device_num // stage_num
-                    initial_rank = (rank_id // chunk_size) * chunk_size
-                    param_redundancy_dict = get_parameter_redundancy(param_layout, initial_rank)
+                    param_redundancy_dict = get_parameter_redundancy(param_layout)
                     single_params = remove_param_redundancy(param_redundancy_dict)
                     save_param_names = single_params.get(rank_id)
                     param_layout_set = set(param_layout.keys())

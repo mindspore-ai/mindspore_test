@@ -20,7 +20,7 @@ from mindspore import context, Tensor
 from mindspore.train import Model
 from mindspore.common.api import _cell_graph_executor
 from mindspore.nn import TrainOneStepCell, WithLossCell, Momentum
-from mindspore.nn.wrap.cell_wrapper import PipelineCell
+from mindspore.nn import PipelineCell
 from mindspore.communication.management import init, create_group, destroy_group, get_group_size, get_rank, \
     get_local_rank, get_world_rank_from_group_rank, get_group_rank_from_world_rank
 from tests.mark_utils import arg_mark

@@ -26,7 +26,7 @@ from mindspore.ops import operations as P
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
 from mindspore.train import Model, FlopsUtilizationCollector
-from mindspore.nn.wrap.cell_wrapper import PipelineCell, GradAccumulationCell
+from mindspore.nn import PipelineCell, GradAccumulationCell
 import mindspore.common.lazy_inline as lazy_inline
 
 

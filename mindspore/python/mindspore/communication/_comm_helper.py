@@ -178,8 +178,6 @@ def check_parameter_available(func):
         Wrapper. If not available, raise Error.
     """
     def wrapper(*args, **kargs):
-        if not GlobalComm.INITED:
-            raise RuntimeError("Distributed Communication has not been inited")
         group = None
         if "group" in kargs.keys():
             group = kargs.get("group")

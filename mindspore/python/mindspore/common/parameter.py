@@ -30,7 +30,6 @@ from mindspore.log import _LogActionOnce
 from mindspore._c_expression import ParamInfo
 from mindspore.common import dtype as mstype
 from mindspore import context
-from mindspore.parallel._utils import _get_parallel_mode, _get_global_rank
 from mindspore.common._utils import get_slice_num, get_slice_shape
 from mindspore.common.initializer import initializer
 from mindspore.common.tensor import Tensor
@@ -44,7 +43,7 @@ from mindspore.parallel._ps_context import _is_role_worker, _is_role_pserver, _i
 from mindspore.parallel._ps_context import _reinsert_hash_table_size, _insert_accumu_init_info, _cache_enable
 from mindspore.common._decorator import deprecated
 from mindspore.communication._comm_helper import _is_initialized
-from mindspore.communication import get_group_size
+from mindspore.communication import get_group_size, get_rank
 import mindspore.common._monad as monad
 
 __all__ = ['Parameter', 'ParameterTuple']
@@ -77,7 +76,7 @@ def _is_parallel_mode():
         return False
     if os.getenv("RUN_MODE") != "predict":
         return False
-    if get_group_size() > 1 and _get_parallel_mode() == "stand_alone":
+    if get_group_size() > 1:
         return True
     return False
 
@@ -120,7 +119,7 @@ def _gen_offload_file_path(offload_dir):
     offload_dir = os.path.relpath(offload_dir)
     if not os.path.exists(offload_dir):
         os.makedirs(offload_dir, mode=0o700, exist_ok=True)
-    offload_file_path = offload_dir + "/" + str(_get_global_rank()) + "_" + str(
+    offload_file_path = offload_dir + "/" + str(get_rank()) + "_" + str(
         _get_unique_parameter_key()) + "_" + str(time.time()) + ".data"
     return offload_file_path
 
@@ -559,9 +558,6 @@ class Parameter(Tensor_):
 
     @comm_fusion.setter
     def comm_fusion(self, comm_fusion_):
-        if context.get_context("mode") == context.PYNATIVE_MODE and "auto_parallel" in _get_parallel_mode():
-            raise RuntimeError(
-                "`comm_fusion` does not support PYNATIVE_MODE in AUTO_PARALLEL and SEMI_AUTO_PARALLEL mode.")
         Validator.check_non_negative_int(comm_fusion_)
         self.param_info.comm_fusion = comm_fusion_
 
@@ -658,7 +654,9 @@ class Parameter(Tensor_):
         if init != 'same':
             shape = self.shape if self.slice_num == 1 else self.param_info.origin_shape
             dtype = self.dtype
-            x.set_data(initializer(init, shape=shape, dtype=dtype))
+            tensor = initializer(init, shape=shape, dtype=dtype)
+            x.set_data(tensor)
+            x.init = tensor.init
         device = self._get_user_data("parameter_device")
         if device is not None:
             x._set_user_data("parameter_device", device)
@@ -980,8 +978,6 @@ class Parameter(Tensor_):
             >>> x = Parameter(Tensor(np.array([[1, 2], [3, 4]], dtype=np.float32)), name="param")
             >>> x.init_data()
         """
-        if self.is_default_input_init and self.is_in_parallel != _is_in_auto_parallel_mode():
-            raise RuntimeError("Must set or change parallel mode before any initializer Tensor created.")
         if self.init_mode is None or not self.has_init:
             return self
         if self.inited_param is not None:

@@ -638,7 +638,7 @@ def _add_loss_network(network, loss_fn, cast_model_type):
 
 
 def _is_grad_accumulation(mcell):
-    if mcell.cls_name == "GradAccumulationCell":
+    if mcell.cls_name == "GradAccumulationCell" or mcell.cls_name == "GradAccumulation":
         return True
     for cell in mcell.cells():
         if _is_grad_accumulation(cell):

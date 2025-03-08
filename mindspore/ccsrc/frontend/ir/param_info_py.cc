@@ -51,6 +51,7 @@ void RegParamInfo(const py::module *m) {
     .def_property("storage_format", &ParamInfo::storage_format, &ParamInfo::set_storage_format)
     .def_property("is_pipeline_shared_param", &ParamInfo::is_pipeline_shared_param,
                   &ParamInfo::set_is_pipeline_shared_param)
+    .def_property("is_param_init", &ParamInfo::is_param_init, &ParamInfo::set_is_param_init)
     .def(py::pickle(
       [](const ParamInfo &p) {  // __getstate__
         return py::make_tuple(p.name(), p.requires_grad(), p.layerwise_parallel());

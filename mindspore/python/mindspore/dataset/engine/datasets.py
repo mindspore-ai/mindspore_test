@@ -54,12 +54,11 @@ from mindspore import log as logger
 from mindspore.parallel._ps_context import _is_role_pserver, _is_role_sched, _get_ps_context, \
     _enable_distributed_mindrt
 from mindspore.dataset.engine.offload import GetOffloadModel
-
+from mindspore.communication.management import get_group_size
 import mindspore.dataset.transforms.c_transforms as c_transforms
 import mindspore.dataset.transforms.py_transforms as py_transforms
 import mindspore.dataset.transforms as transforms
 from mindspore.dataset.text.utils import SentencePieceModel, DE_C_INTER_SENTENCEPIECE_MODE
-from mindspore.parallel._utils import _get_device_num
 from mindspore.dataset.debug import DebugHook
 
 from mindspore.dataset.engine import samplers
@@ -2576,7 +2575,7 @@ def _check_shm_usage(num_worker, queue_size, in_rowsize, out_rowsize):
     threshold_ratio = 0.8
     # Verify available size only when using static shared memory on Linux
     if platform.system().lower() not in {"windows", "darwin"} and in_rowsize != -1 and out_rowsize != -1:
-        device_num = _get_device_num()
+        device_num = get_group_size()
         # In the cluster, _get_device_num indicates the number of the entire cluster. The maximum number of cards
         # on the ascend server is 8.
         if device_num > 1:

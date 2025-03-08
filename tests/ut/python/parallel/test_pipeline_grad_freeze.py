@@ -19,7 +19,7 @@ from mindspore import context
 from mindspore import Tensor
 from mindspore import Symbol
 from mindspore.train import Model
-from mindspore.nn.wrap.cell_wrapper import PipelineCell
+from mindspore.nn import PipelineCell
 from mindspore.ops import operations as P
 from mindspore import lazy_inline
 from .test_pipeline_split import DatasetLenet, MatMulCell

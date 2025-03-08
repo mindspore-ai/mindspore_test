@@ -836,14 +836,22 @@ class _Context:
                              f"'parallel_speed_up_json_path' is correct.")
         try:
             valid_option = {"recompute_comm_overlap": (ms_ctx_param.recompute_comm_overlap, bool),
+                            "recomputation_communication_overlap": (ms_ctx_param.recompute_comm_overlap, bool),
                             "matmul_grad_comm_overlap": (ms_ctx_param.matmul_grad_comm_overlap, bool),
+                            "grad_matmul_communication_overlap": (ms_ctx_param.matmul_grad_comm_overlap, bool),
                             "enable_task_opt": (ms_ctx_param.enable_task_opt, bool),
+                            "enable_communication_fusion": (ms_ctx_param.enable_task_opt, bool),
                             "enable_grad_comm_opt": (ms_ctx_param.enable_grad_comm_opt, bool),
+                            "grad_computation_allreduce_overlap": (ms_ctx_param.enable_grad_comm_opt, bool),
                             "recompute_allgather_overlap_fagrad":
+                                (ms_ctx_param.recompute_allgather_overlap_fagrad, bool),
+                            "grad_fa_allgather_overlap":
                                 (ms_ctx_param.recompute_allgather_overlap_fagrad, bool),
                             "interleaved_matmul_comm": (ms_ctx_param.interleaved_matmul_comm, bool),
                             "bias_add_comm_swap": (ms_ctx_param.bias_add_comm_swap, bool),
+                            "allreduce_and_biasadd_swap": (ms_ctx_param.bias_add_comm_swap, bool),
                             "enable_opt_shard_comm_opt": (ms_ctx_param.enable_opt_shard_comm_opt, bool),
+                            "computation_allgather_overlap": (ms_ctx_param.enable_opt_shard_comm_opt, bool),
                             "enable_begin_end_inline_opt": (ms_ctx_param.enable_begin_end_inline_opt, bool),
                             "enable_concat_eliminate_opt": (ms_ctx_param.enable_concat_eliminate_opt, bool),
                             "interleaved_layernorm_comm": (ms_ctx_param.interleaved_layernorm_comm, bool),
@@ -856,12 +864,24 @@ class _Context:
                             "enable_offloading_packed_experts": (ms_ctx_param.enable_offloading_packed_experts, bool),
                             "compute_communicate_fusion_level":
                                 (ms_ctx_param.compute_communicate_fusion_level, int),
+                            "computation_communication_fusion_level":
+                                (ms_ctx_param.compute_communicate_fusion_level, int),
                             "enable_flash_attention_load_balance":
                                 (ms_ctx_param.enable_flash_attention_load_balance, bool),
                             "pp_1f1b_overlap":
                                 (ms_ctx_param.pp_1f1b_overlap, str),
                             "dataset_broadcast_opt_level":
                                 (ms_ctx_param.dataset_broadcast_opt_level, int)}
+            name_replace = {
+                "recompute_comm_overlap": "recomputation_communication_overlap",
+                "matmul_grad_comm_overlap": "grad_matmul_communication_overlap",
+                "recompute_allgather_overlap_fagrad": "grad_fa_allgather_overlap",
+                "enable_task_opt": "enable_communication_fusion",
+                "enable_grad_comm_opt": "grad_computation_allreduce_overlap",
+                "enable_opt_shard_comm_opt": "computation_allgather_overlap",
+                "compute_communicate_fusion_level": "computation_communication_fusion_level",
+                "dataset_broadcast_opt_level": "dataset_broadcast_opt_level",
+                "bias_add_comm_swap": "allreduce_and_biasadd_swap"}
             with open(speedup_config_real_path, 'r') as f:
                 speedup_config = json.load(f)
                 for key, value in speedup_config.items():
@@ -869,6 +889,10 @@ class _Context:
                         raise TypeError("key {} is not a str".format(key))
                     if key not in valid_option:
                         raise ValueError("key {} should be one of {}.".format(key, valid_option.keys()))
+                    if key in name_replace:
+                        logger.warning(f"For 'context.set_context', '{key}' parameter is deprecated, "
+                                       "and will be removed in the next version, "
+                                       f"Please use '{name_replace.get(key)}' instead.")
                     set_func, valid_type = valid_option.get(key)
                     if not isinstance(value, valid_type):
                         raise TypeError(f"The value type of {key} must be {valid_type}, "

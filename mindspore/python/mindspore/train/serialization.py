@@ -27,9 +27,9 @@ import stat
 import atexit
 import threading
 from threading import Thread, RLock
-from multiprocessing import Pool, active_children
+from multiprocessing import active_children
 import multiprocessing as mp
-from collections import defaultdict, OrderedDict
+from collections import OrderedDict
 from io import BytesIO
 
 import math
@@ -67,18 +67,11 @@ from mindspore.communication.management import get_rank, get_group_size
 from mindspore.experimental import MapParameter
 from mindspore.ops import Cast
 from mindspore.parallel._cell_wrapper import get_allgather_cell, _single_parameter_broadcast
-from mindspore.parallel._tensor import _load_tensor, _get_tensor_strategy, _get_tensor_slice_index
-from mindspore.parallel._tensor import _reshape_param_data, _reshape_param_data_with_weight
-from mindspore.parallel._utils import _infer_rank_list, _remove_repeated_slices, _is_in_auto_parallel_mode, \
-    _get_device_num
-from mindspore.parallel._auto_parallel_context import _get_auto_parallel_context
-from mindspore.parallel._parallel_serialization import _convert_to_list, _convert_to_layout, _build_searched_strategy, \
-    _restore_group_info_list, _get_param_list_when_first_dim_sharded
+from mindspore.parallel._tensor import _reshape_param_data
+from mindspore.parallel._utils import _is_in_auto_parallel_mode
 from mindspore.parallel._ps_context import _set_checkpoint_load_status, _store_warm_up_ptr_by_tensor, \
     _store_warm_up_ptr_by_tensor_list, _cache_enable
 from mindspore.parallel.checkpoint_transform import sync_pipeline_shared_parameters
-from mindspore.parallel.transform_safetensors import _load_parallel_checkpoint, _get_device_num_from_strategy, \
-    _extract_pipeline_stage_num
 from mindspore.train._utils import read_proto, get_parameter_redundancy, _progress_bar, _load_and_transform
 from mindspore._c_expression import load_mindir, _encrypt, _decrypt, _is_cipher_file, \
     split_mindir, split_dynamic_mindir
@@ -152,13 +145,8 @@ atexit.register(_async_save_close)
 
 def _get_cur_rank_dp(parameter_layout_dict):
     """ Get dp and tp from layout dict. """
-    pp_num = _get_auto_parallel_context("pipeline_stages")
-    dev_num = _get_device_num()
     global_rank = get_rank()
-    pipe_size = dev_num // pp_num
-    initial_rank = (global_rank // pipe_size) * pipe_size
-    parameter_redundancy_dict = get_parameter_redundancy(
-        parameter_layout_dict, initial_rank)
+    parameter_redundancy_dict = get_parameter_redundancy(parameter_layout_dict)
     value_len = sys.maxsize
     min_value = ()
     min_value_set = set()
@@ -874,6 +862,15 @@ def _handle_shared_param_for_pipeline_parallel(save_obj):
             filtered_save_obj.append(param_dict)
     return filtered_save_obj
 
+
+def _is_auto_parallel_mode(save_obj):
+    """Check if in auto parallel mode by verifying parameter initialization."""
+    for _, param in save_obj.parameters_and_names():
+        if param.param_info.is_param_init:
+            return True
+    return False
+
+
 def _convert_list_to_param_list(save_obj, choice_func):
     """Convert a list of Parameter to param_list."""
     param_list = []
@@ -924,7 +921,7 @@ def _convert_dict_to_param_dict(save_obj, choice_func):
     return param_list
 
 
-def _convert_cell_param_and_names_to_dict(save_obj, choice_func):
+def _convert_cell_param_and_names_to_dict(save_obj, choice_func, is_parallel_mode):
     """Convert cell.parameters_and_names to OrderedDict."""
     param_dict = OrderedDict()
     for _, param in save_obj.parameters_and_names():
@@ -936,7 +933,7 @@ def _convert_cell_param_and_names_to_dict(save_obj, choice_func):
         judgment = not_sliced or param.has_init
         if param.param_info.is_pipeline_shared_param:
             continue
-        if is_graph_mode and _is_in_auto_parallel_mode() and judgment:
+        if is_graph_mode and is_parallel_mode and judgment:
             continue
         if choice_func is not None and not choice_func(param.name):
             continue
@@ -954,11 +951,12 @@ def _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_f
     sync_pipeline_shared_parameters(save_obj)
     param_list = []
     parameter_layout_dict = save_obj.parameter_layout_dict
-    if _is_in_auto_parallel_mode() and not parameter_layout_dict:
+    is_parallel_mode = _is_auto_parallel_mode(save_obj)
+    if is_parallel_mode and not parameter_layout_dict:
         parameter_layout_dict = _get_parameter_layout()
-    if not _is_in_auto_parallel_mode():
+    if not is_parallel_mode:
         save_obj.init_parameters_data()
-    param_dict = _convert_cell_param_and_names_to_dict(save_obj, choice_func)
+    param_dict = _convert_cell_param_and_names_to_dict(save_obj, choice_func, is_parallel_mode)
     if append_dict and "random_op" in append_dict:
         phase = 'train' + '.' + str(save_obj.create_time) + '.' + str(id(save_obj)) + '.' + save_obj.arguments_key
         if phase in save_obj.compile_cache and _executor.has_compiled(phase):
@@ -1730,29 +1728,14 @@ def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundanc
         _load_dismatch_prefix_params(net, parameter_dict, param_not_load, strict_load)
 
     if remove_redundancy:
-        parallel_mode = context.get_auto_parallel_context("parallel_mode")
-        if parallel_mode == "stand_alone":
+        if get_group_size() == 1:
             raise TypeError(f"The deduplication feature for loading checkpoint can only be used "
-                            f"in parallel scenarios, but got {parallel_mode}.")
+                            f"in parallel scenarios, but got stand_alone.")
         if not net.compile_cache and not net.parameter_layout_dict:
             raise ValueError("When loading a parameter dict that has removed redundancy, "
                              "the network should be compiled.")
         param_layout = net.parameter_layout_dict
-        rank_id = get_rank()
-        device_num = _get_device_num()
-        stage_num = _get_auto_parallel_context("pipeline_stages")
-        chunk_size = device_num // stage_num
-        initial_rank = (rank_id // chunk_size) * chunk_size
-        _single_parameter_broadcast(net, param_layout, rank_id, initial_rank, param_not_load)
-        mindspore.hal.synchronize()
-
-    logger.info("Loading parameters into net is finished.")
-    if param_not_load:
-        logger.warning("For 'load_param_into_net', "
-                       "{} parameters in the 'net' are not loaded, because they are not in the "
-                       "'parameter_dict', please check whether the network structure is consistent "
-                       "when training and loading checkpoint.".format(len(param_not_load)))
-        logger.warning("{} are not loaded.".format(param_not_load))
+        _single_parameter_broadcast(net, param_layout)
 
     return param_not_load, ckpt_not_load
 
@@ -1905,7 +1888,6 @@ def _get_merged_param_data(net, parameter_layout_dict, param_name, param_data, i
 
     dev_mat = layout[0]
     tensor_map = layout[1]
-    uniform_split = layout[4]
     opt_shard_group = layout[5]
     before_reshape_slice_shape = layout[2]
     before_reshape_full_shape = layout[6]
@@ -1926,7 +1908,6 @@ def _get_merged_param_data(net, parameter_layout_dict, param_name, param_data, i
     else:
         logger.info("Need to create allgather net for %s", param_name)
         if integrated_save:
-            _check_param_for_integrate_save(context.get_auto_parallel_context("pipeline_stages"), uniform_split)
             # while any dim is not equal to -1, means param is split and needs to be merged
             # pipeline parallel need to be supported here later
             if mp_weight:
@@ -1936,9 +1917,6 @@ def _get_merged_param_data(net, parameter_layout_dict, param_name, param_data, i
             elif opt_shard_group:
                 allgather_net = get_allgather_cell(opt_shard_group, False, do_reshape,
                                                    tuple(after_reshape_slice_shape))
-        elif opt_shard_group and context.get_auto_parallel_context("optimizer_weight_shard_aggregated_save"):
-            allgather_net = get_allgather_cell(opt_shard_group, False, do_reshape,
-                                               tuple(after_reshape_slice_shape))
         net.parallel_parameter_merge_net_dict[param_name] = allgather_net
     if allgather_net:
         param_data = allgather_net(param_data)
@@ -2594,567 +2572,6 @@ def parse_print(print_file_name):
     return tensor_list
 
 
-def _merge_param_with_strategy(sliced_data, parameter_name, strategy, is_even):
-    """
-    Merge data slices to one tensor with whole data when strategy is not None.
-
-    Args:
-        sliced_data (list[numpy.ndarray]): Data slices in order of rank_id.
-        parameter_name (str): Name of parameter.
-        strategy (dict): Parameter slice strategy.
-        is_even (bool): Slice manner that True represents slicing evenly and False represents slicing unevenly.
-
-    Returns:
-        Tensor, the merged Tensor which has the whole data.
-
-    Raises:
-        ValueError: Failed to merge.
-    """
-    layout = strategy.get(parameter_name)
-    try:
-        dev_mat = list(layout.dev_matrix[0].dim)
-        tensor_map = list(layout.tensor_map[0].dim)
-        param_split_shape = list(layout.param_split_shape[0].dim)
-        field_size = int(layout.field)
-    except BaseException as e:
-        raise ValueError(f"{e.__str__()}. For 'merge_sliced_parameter'"
-                         f", please make sure that 'strategy' is correct.") from e
-
-    device_count = 1
-    for dim in dev_mat:
-        device_count *= dim
-
-    if len(sliced_data) != device_count:
-        raise ValueError(f"For 'merge_sliced_parameter', the length of 'sliced_parameters' should be equal to "
-                         f"device_count. The length of 'sliced_parameters' is {len(sliced_data)}, but "
-                         f"device_count is {device_count}.")
-
-    if not param_split_shape:
-        if not is_even:
-            raise ValueError("For 'merge_sliced_parameter', the shape of every parameter in 'sliced_parameters' "
-                             "should be the same when slice manner is even.")
-
-        all_gather_tensor = Tensor(np.concatenate(sliced_data))
-
-        if field_size > 0:
-            merged_tensor = _reshape_param_data_with_weight(all_gather_tensor, dev_mat, field_size)
-        else:
-            merged_tensor = _reshape_param_data(all_gather_tensor, dev_mat, tensor_map)
-
-    else:
-        tensor_strategy = _get_tensor_strategy(dev_mat, tensor_map)
-
-        slice_count = 1
-        for dim in tensor_strategy:
-            slice_count *= dim
-
-        if len(param_split_shape) != slice_count:
-            raise ValueError(f"For 'merge_sliced_parameter', the param_split_shape length in 'strategy' should be "
-                             f"{slice_count}, but got {len(param_split_shape)}.")
-
-        tensor_slices_new = list(range(slice_count))
-        tensor_slices = sliced_data
-        for i in range(device_count):
-            slice_index = int(_get_tensor_slice_index(dev_mat, tensor_strategy, tensor_map, i))
-            if tensor_slices[i].shape[0] != param_split_shape[slice_index]:
-                raise ValueError(f"For 'merge_sliced_parameter', the slice {slice_index} should be "
-                                 f"{param_split_shape[slice_index]} in 0 axis, but got "
-                                 f"{tensor_slices[i].shape[0]}.")
-            tensor_slices_new[slice_index] = np.array(tensor_slices[i])
-
-        dim_len = len(tensor_strategy)
-        for i in range(dim_len):
-            ele_count = int(len(tensor_slices_new) / tensor_strategy[dim_len - 1 - i])
-            tensor_slices_new_inner = []
-            for j in range(ele_count):
-                new_tensor = tensor_slices_new[j * tensor_strategy[dim_len - 1 - i]]
-                for k in range(j * tensor_strategy[dim_len - 1 - i] + 1,
-                               (j + 1) * tensor_strategy[dim_len - 1 - i]):
-                    new_tensor = np.concatenate((new_tensor, tensor_slices_new[k]), axis=dim_len - 1 - i)
-                tensor_slices_new_inner.insert(len(tensor_slices_new_inner), np.array(new_tensor))
-            tensor_slices_new = tensor_slices_new_inner
-        merged_tensor = Tensor(tensor_slices_new[0])
-
-    return merged_tensor
-
-
-def restore_group_info_list(group_info_file_name):
-    """
-    Build rank list, the checkpoint of ranks in the rank list has the same contents with the local rank
-    who saves the `group_info_file_name`. To save the group info file, please export GROUP_INFO_FIL
-    environment variables like "export GROUP_INFO_FILE=/data/group_info.pb".
-
-    Args:
-        group_info_file_name (str): Name of group information file.
-
-    Returns:
-        List, the rank list.
-
-    Raises:
-        ValueError: group information file is incorrect.
-        TypeError: `group_info_file_name` is not str.
-
-    Examples:
-        >>> import mindspore as ms
-        >>> ms.restore_list = restore_group_info_list("./group_info.pb")
-    """
-    if not isinstance(group_info_file_name, str):
-        raise TypeError(f"For 'restore_group_info_list', the argument 'group_info_file_name' should be str, "
-                        f"but got {type(group_info_file_name)}.")
-
-    if not os.path.isfile(group_info_file_name):
-        raise ValueError(f"For 'restore_group_info_list', no such group information file: {group_info_file_name}.")
-
-    if os.path.getsize(group_info_file_name) == 0:
-        raise ValueError("For 'restore_group_info_list', the group information file should not be empty.")
-
-    return _restore_group_info_list(group_info_file_name)
-
-
-def build_searched_strategy(strategy_filename):
-    """
-    Build strategy of every parameter in network. Used in the case of distributed inference.
-
-    Args:
-        strategy_filename (str): Name of strategy file.
-
-    Returns:
-        Dict, whose key is parameter name and value is slice strategy of this parameter.
-
-    Raises:
-        ValueError: Strategy file is incorrect.
-        TypeError: `strategy_filename` is not a string.
-
-    Examples:
-        >>> import mindspore as ms
-        >>> strategy = ms.build_searched_strategy("./strategy_train.ckpt")
-    """
-    return _build_searched_strategy(strategy_filename)
-
-
-def merge_sliced_parameter(sliced_parameters, strategy=None):
-    """
-    Merge parameter slices into one parameter. Used in the case of distributed inference.
-
-    Args:
-        sliced_parameters (list[Parameter]): Parameter slices in order of rank id.
-        strategy (Optional[dict]): Parameter slice strategy, whose key is parameter name and
-            value is slice strategy of this parameter. If strategy is None, just merge
-            parameter slices in 0 axis order. Default: ``None``.
-
-    Returns:
-        Parameter, the merged parameter which has the whole data.
-
-    Raises:
-        ValueError: Failed to merge.
-        TypeError: The sliced_parameters is incorrect or strategy is not dict.
-        KeyError: The parameter name is not in keys of strategy.
-
-    Examples:
-        >>> import numpy as np
-        >>> import mindspore as ms
-        >>> from mindspore import Tensor, Parameter
-        >>>
-        >>> sliced_parameters = [
-        ...                      Parameter(Tensor(np.array([0.00023915, 0.00013939, -0.00098059])),
-        ...                                "network.embedding_table"),
-        ...                      Parameter(Tensor(np.array([0.00015815, 0.00015458, -0.00012125])),
-        ...                                "network.embedding_table"),
-        ...                      Parameter(Tensor(np.array([0.00042165, 0.00029692, -0.00007941])),
-        ...                                "network.embedding_table"),
-        ...                      Parameter(Tensor(np.array([0.00084451, 0.00089960, -0.00010431])),
-        ...                                "network.embedding_table")]
-        >>> merged_parameter = ms.merge_sliced_parameter(sliced_parameters)
-        >>> print(merged_parameter)
-        Parameter (name=network.embedding_table, shape=(12,), dtype=Float64, requires_grad=True)
-    """
-    if not isinstance(sliced_parameters, list):
-        raise TypeError(f"For 'merge_sliced_parameter', the argument 'sliced_parameters' should be list, "
-                        f"but got {type(sliced_parameters)}.")
-
-    if not sliced_parameters:
-        raise ValueError("For 'merge_sliced_parameter', the argument 'sliced_parameters' should not be empty.")
-
-    if strategy and not isinstance(strategy, dict):
-        raise TypeError(f"For 'merge_sliced_parameter', the argument 'strategy' should be dict, "
-                        f"but got {type(strategy)}.")
-
-    try:
-        parameter_name = sliced_parameters[0].name
-        parameter_shape = sliced_parameters[0].data.shape
-        parameter_shape_length = len(parameter_shape)
-    except BaseException as e:
-        raise TypeError(e.__str__() + f" For 'merge_sliced_parameter', the element in 'sliced_parameters' should be "
-                                      f"'Parameter', but got {type(sliced_parameters[0])} at index 0.") from e
-
-    is_even = True
-    for index, parameter in enumerate(sliced_parameters):
-        if not isinstance(parameter, Parameter):
-            raise TypeError(f"For 'merge_sliced_parameter', the element in 'sliced_parameters' should be 'Parameter', "
-                            f"but got {type(parameter)} at index {index}.")
-
-        if parameter.name != parameter_name \
-                or len(parameter.data.shape) != parameter_shape_length \
-                or parameter.data.shape[1:] != parameter_shape[1:]:
-            raise ValueError(f"For 'merge_sliced_parameter', please make sure that the elements in 'slice_parameters'"
-                             f" have the same name, dimension length and shape except 0 axis. The name, dimension "
-                             f"length, shape except 0 axis should be {parameter_name}, {parameter_shape_length}, "
-                             f"{parameter_shape[1:]}, but got name: {parameter.name}, dimension length: "
-                             f"{len(parameter.data.shape)}, shape except 0 axis: {parameter.data.shape[1:]} "
-                             f"at index {index}.")
-
-        if parameter.data.shape != parameter_shape:
-            is_even = False
-
-    layerwise_parallel = sliced_parameters[0].layerwise_parallel
-    requires_grad = sliced_parameters[0].requires_grad
-    sliced_data = []
-    for parameter in sliced_parameters:
-        if parameter.data.dtype == mstype.bfloat16:
-            sliced_data.append(cpu_cast(parameter.data, mstype.float32).asnumpy())
-        else:
-            sliced_data.append(parameter.data.asnumpy())
-
-    if not strategy:
-        merged_tensor = Tensor(np.concatenate(sliced_data))
-        merged_parameter = Parameter(merged_tensor, parameter_name, requires_grad, layerwise_parallel)
-
-    else:
-        if parameter_name not in strategy.keys():
-            raise KeyError(f"For 'merge_sliced_parameter', the parameter name {parameter_name} should be a key in "
-                           f"the 'strategy'. Please check 'sliced_parameter' and 'strategy'.")
-        merged_tensor = _merge_param_with_strategy(sliced_data, parameter_name, strategy, is_even)
-        merged_parameter = Parameter(merged_tensor, parameter_name, requires_grad, layerwise_parallel)
-
-    return merged_parameter
-
-
-def _gather_tasks_load_dis(unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir, dst_device_num,
-                           output_format, name_map, return_param_dict):
-    """gather transform tasks"""
-    tasks = []
-    for rank in range(0, dst_device_num):
-        tasks.append(
-            (unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir, rank, output_format, name_map,
-             return_param_dict))
-    return tasks
-
-
-def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None,
-                                train_strategy_filename=None, strict_load=False, dec_key=None, dec_mode='AES-GCM',
-                                format='ckpt', unified_safetensors_dir=None, dst_safetensors_dir=None, rank_id=None,
-                                output_format='safetensors', name_map=None, max_process_num=64,
-                                return_param_dict=False):
-    """
-    Load checkpoint into net for distributed predication. Used in the case of distributed inference.
-
-    Note:
-        `output_format` will only take effect when `format` is set to `safetensors` and `network` is set to `None`.
-
-    Args:
-        network (Cell): Network for distributed predication, When the format is `safetensors`, the network parameter
-                        can be left blank or passed as None, and the interface will execute save mode.
-        checkpoint_filenames (list[str]): The name of Checkpoint files in order of rank id. Default: ``None`` .
-        predict_strategy (Union[dict, str]): Strategy of predication process. It means that using one device to predict
-                                 when setting predict_strategy as None. Default: ``None`` .
-        train_strategy_filename (str): The filename of training strategy protocol buffer file.
-                                       When train_strategy_filename is None, the training strategy file will be
-                                       obtained from context.get_auto_parallel_context("strategy_ckpt_load_file").
-                                       Therefore, the training strategy file needs to be specified
-                                       in at least one of them. Default: ``None`` .
-        strict_load (bool): Whether to strict load the parameter into net. If ``False`` , it will load parameter
-                            into net when parameter name's suffix in checkpoint file is the same as the
-                            parameter in the network. When the types are inconsistent, perform type conversion
-                            on the parameters of the same type, such as float32 to float16. Default: ``False`` .
-        dec_key (Union[None, bytes]): Byte type key used for decryption. If the value is ``None`` , the decryption
-                                      is not required. Default: ``None`` .
-        dec_mode (str): Specifies the decryption
-                        mode, currently supports ``'AES-GCM'`` , ``'AES-CBC'``  and ``'SM4-CBC'`` .
-                        This parameter is valid only when dec_key is not set to ``None`` .
-                        Default: ``'AES-GCM'`` .
-        format (str): Input weight format to be loaded into the network.
-                      It can be set to either "ckpt" or "safetensors". Default: "ckpt".
-        unified_safetensors_dir (str): Directory of input weight files to be loaded into the network.
-                                       Default: ``None`` .
-        dst_safetensors_dir (str): In the save mode scenario, the save directory for weights.
-        rank_id (int): The logical sequence number of the card. In non save mode, it is automatically obtained
-                       globally by initializing the network; In save mode, save the file according to the input
-                       sequence number. If it is not input, save the entire file.
-        output_format (str, optional): Control the format of the output checkpoint after conversion.
-            It can be set to either "ckpt" or "safetensors". Default: "safetensors".
-        name_map (dict): The weight mapping dictionary will modify the weight names according to the mapping
-            dictionary before loading or saving the segmented weights into the network. Default: None.
-        max_process_num (int): Maximum number of processes. Default: 64.
-        return_param_dict (bool): Whether to return the param_dict. Default: ``False``.
-
-    Raises:
-        TypeError: The type of inputs do not match the requirements.
-        ValueError: Failed to load checkpoint into net.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        .. note::
-            Before running the following examples, you need to configure the communication environment variables.
-
-            For the Ascend devices, users need to prepare the rank table, set rank_id and device_id.
-            Please see the `rank table startup
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/rank_table.html>`_
-            for more details.
-
-            For the GPU devices, users need to prepare the host file and mpi, please see the `mpirun startup
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/mpirun.html>`_ .
-
-            For the CPU device, users need to write a dynamic cluster startup script, please see the `Dynamic Cluster
-            Startup <https://www.mindspore.cn/docs/en/master/model_train/parallel/dynamic_cluster.html>`_ .
-
-        >>> import os
-        >>> import numpy as np
-        >>> import mindspore as ms
-        >>> import mindspore.dataset as ds
-        >>> from mindspore import nn, ops, train
-        >>> from mindspore.communication import init
-        >>>
-        >>> step_per_epoch = 4
-        >>> device_num = 8
-        >>>
-        >>> # Define the network structure.
-        >>> class Net(nn.Cell):
-        ...     def __init__(self, matmul_size, strategy=None):
-        ...         super().__init__()
-        ...         matmul_np = np.full(matmul_size, 0.5, dtype=np.float32)
-        ...         self.matmul_weight = ms.Parameter(ms.Tensor(matmul_np))
-        ...         self.matmul = ops.MatMul()
-        ...         self.neg = ops.Neg()
-        ...         if strategy is not None:
-        ...             self.matmul.shard(strategy)
-        ...
-        ...     def construct(self, inputs):
-        ...         x = self.matmul(inputs, self.matmul_weight)
-        ...         x = self.neg(x)
-        ...         return x
-        >>>
-        >>> # Create dataset.
-        >>> def get_dataset(*inputs):
-        ...     def generate():
-        ...         for _ in range(step_per_epoch):
-        ...             yield inputs
-        ...     return generate
-        >>>
-        >>> # Train network and save distributed checkpoint.
-        >>> def train_net():
-        ...     ms.set_context(mode=ms.GRAPH_MODE)
-        ...     init()
-        ...     np.random.seed(1)
-        ...     input_data = np.random.rand(16, 96).astype(np.float32)
-        ...     label_data = np.random.rand(16, 16).astype(np.float32)
-        ...     fake_dataset = get_dataset(input_data, label_data)
-        ...     dataset = ds.GeneratorDataset(fake_dataset, ["input", "label"])
-        ...
-        ...     # Set parallel strategy.
-        ...     strategy = ((1, 4), (4, 1))
-        ...     ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL, device_num=device_num,
-        ...                                  strategy_ckpt_save_file="./train_strategy.ckpt")
-        ...     network = Net(matmul_size=(96, 16), strategy=strategy)
-        ...     net_opt = nn.Momentum(network.trainable_params(), 0.01, 0.9)
-        ...     net_loss = nn.SoftmaxCrossEntropyWithLogits(reduction="mean")
-        ...     model = ms.Model(network=network, loss_fn=net_loss, optimizer=net_opt)
-        ...     ckpt_config = train.CheckpointConfig(keep_checkpoint_max=1, integrated_save=False)
-        ...     global_rank_id = int(os.getenv("RANK_ID"))
-        ...     ckpt_path = "./rank_{}_ckpt".format(global_rank_id)
-        ...     ckpt_callback = train.ModelCheckpoint(prefix="parallel", directory=ckpt_path, config=ckpt_config)
-        ...     model.train(epoch=2, train_dataset=dataset, callbacks=[ckpt_callback], dataset_sink_mode=False)
-        ...     ms.reset_auto_parallel_context()
-        >>>
-        >>> # Load distributed checkpoint and test.
-        >>> def load_model():
-        ...     ms.set_context(mode=ms.GRAPH_MODE)
-        ...     init()
-        ...     ms.set_auto_parallel_context(full_batch=True, parallel_mode="semi_auto_parallel",
-        ...                                  strategy_ckpt_load_file="./train_strategy.ckpt", device_num=device_num)
-        ...     predict_data = ms.Tensor(np.random.randn(128, 96).astype(np.float32))
-        ...     network = Net(matmul_size=(96, 16))
-        ...     model = ms.Model(network)
-        ...     predict_layout = model.infer_predict_layout(ms.Tensor(predict_data))
-        ...     ckpt_file_list = ["./rank_{}_ckpt/parallel-2_4.ckpt".format(i) for i in range(0, device_num)]
-        ...     ms.load_distributed_checkpoint(network, ckpt_file_list, predict_layout)
-        ...     predict_result = model.predict(predict_data)
-        ...     print(predict_result)
-        >>>
-        >>> train_net()
-        >>> load_model()
-        [[-7.3259363 -7.497216  -7.398196  ... -7.374962  -7.204874  -7.234935 ]
-        [ 3.362938   3.3535435  3.3832688 ...  3.4263954  3.279045   3.3202887]
-        ...
-        [ 1.6067538  1.6244187  1.5384722 ...  1.5449994  1.6195512  1.6176052]]
-    """
-    if format not in ['safetensors', 'ckpt'] or output_format not in ['safetensors', 'ckpt']:
-        raise ValueError(
-            f"For 'load_distributed_checkpoint', 'format' and 'output_format' "
-            f"must be 'ckpt' or 'safetensors', but got {format}.")
-
-    if format == 'safetensors':
-        if unified_safetensors_dir is None:
-            raise ValueError(f"For 'load_distributed_checkpoint', 'unified_safetensors_dir' can not be None "
-                             f"when format is 'safetensors'.")
-        unsupport_param = [checkpoint_filenames, train_strategy_filename, dec_key]
-        for param in unsupport_param:
-            if param is not None:
-                raise ValueError(f"For 'load_distributed_checkpoint', {param} must be None "
-                                 f"when format is 'safetensors'.")
-        if strict_load or dec_mode != 'AES-GCM':
-            raise ValueError(f"For 'load_distributed_checkpoint', strict_load and dec_mode must be default "
-                             f"when format is 'safetensors'.")
-        if network is not None:
-            try:
-                rank_id = get_rank()
-            except RuntimeError:
-                rank_id = 0
-                logger.warning(f"Get rank failed, default loading weight for rank 0.")
-            param_dict = _load_parallel_checkpoint(
-                (unified_safetensors_dir, predict_strategy, network, None, rank_id, output_format, name_map,
-                 return_param_dict))
-            return param_dict
-        if dst_safetensors_dir is None:
-            raise ValueError(f"For 'load_distributed_checkpoint', 'dst_safetensors_dir' can not be None "
-                             f"when network is None.")
-        if rank_id is not None:
-            _load_parallel_checkpoint(
-                (unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir,
-                 rank_id, output_format, name_map, return_param_dict))
-        else:
-            dst_strategy_dict = _build_searched_strategy(predict_strategy)
-            dst_stage_device_num = _get_device_num_from_strategy(dst_strategy_dict)
-            dst_stage_num = _extract_pipeline_stage_num(dst_strategy_dict)
-            dst_device_num = dst_stage_device_num * dst_stage_num
-            tasks = _gather_tasks_load_dis(unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir,
-                                           dst_device_num, output_format, name_map, return_param_dict)
-            with Pool(processes=max_process_num) as pool:
-                list(pool.imap(_load_parallel_checkpoint, tasks))
-        return True
-
-    network = Validator.check_isinstance("network", network, nn.Cell)
-    _check_checkpoint_file(checkpoint_filenames)
-    _check_predict_strategy(predict_strategy)
-
-    dec_key = Validator.check_isinstance('dec_key', dec_key, (type(None), bytes))
-    dec_mode = Validator.check_isinstance('dec_mode', dec_mode, str)
-
-    if train_strategy_filename is None:
-        train_strategy_filename = context.get_auto_parallel_context("strategy_ckpt_load_file")
-    _train_strategy = build_searched_strategy(train_strategy_filename)
-    train_strategy = _convert_to_list(_train_strategy)
-
-    train_dev_count = 1
-    ckpt_file_len = len(checkpoint_filenames)
-    for dim in train_strategy[list(train_strategy.keys())[0]][0]:
-        train_dev_count *= dim
-    if train_dev_count != ckpt_file_len:
-        raise ValueError(f"For 'Load_distributed_checkpoint', the length of 'checkpoint_filenames' should be "
-                         f"equal to the device count of training process. "
-                         f"But got the length of 'checkpoint_filenames'"
-                         f" is {ckpt_file_len} and the device count is {train_dev_count}.")
-    rank_list = _infer_rank_list(train_strategy, predict_strategy)
-
-    param_total_dict = defaultdict(dict)
-    for file_index, file_name in enumerate(checkpoint_filenames):
-        ckpt_dict = load_checkpoint(file_name, dec_key=dec_key, dec_mode=dec_mode)
-        for param_name, param in ckpt_dict.items():
-            param_total_dict[param_name][file_index] = param
-
-    param_dict = {}
-    param_not_in_strategy = []
-    param_not_in_ckpt = []
-    for _, param in network.parameters_and_names():
-        sliced_params = []
-        if param.name not in rank_list.keys():
-            param_not_in_strategy.append(param.name)
-            continue
-        if param.name not in param_total_dict:
-            param_not_in_ckpt.append(param.name)
-            continue
-
-        param_rank = rank_list.get(param.name)[0]
-        skip_merge_split = rank_list.get(param.name)[1]
-        shard_stride = train_strategy.get(param.name)[4]
-        tensor_map = train_strategy.get(param.name)[1]
-        first_dim_shard_idx = tensor_map[0] if tensor_map else -1
-        device_arrangement = train_strategy.get(param.name)[0]
-        first_dim_shard_size = 1
-        if first_dim_shard_idx >= 0:
-            first_dim_shard_size = device_arrangement[-1 - first_dim_shard_idx]
-        if train_strategy.get(param.name)[5]:
-            repeat_size = int(ckpt_file_len / shard_stride / train_strategy.get(param.name)[5] / first_dim_shard_size)
-        else:
-            repeat_size = 0
-        for rank in param_rank:
-            param_total_list = list(range(0, ckpt_file_len))
-            if first_dim_shard_size != 1:
-                param_total_list = _get_param_list_when_first_dim_sharded(device_arrangement, first_dim_shard_idx, rank)
-            if repeat_size > 0:
-                shard_size = shard_stride * train_strategy.get(param.name)[5]
-                rank_index = param_total_list.index(rank)
-                start = rank_index // shard_size * shard_size
-                param_total_list = param_total_list[start:start + shard_size]
-            if shard_stride > 0:
-                param_stride = []
-                # merge pre parameter
-                param_index = param_total_list[0:param_total_list.index(rank) + 1][::-1][::shard_stride]
-                param_index.extend(param_total_list[param_total_list.index(rank):][::shard_stride])
-                param_index = list(set(param_index))
-                param_index.sort()
-                for rank_num in param_index:
-                    if param_total_dict[param.name][rank_num].data.dtype == mstype.bfloat16:
-                        param_stride.append(
-                            cpu_cast(param_total_dict[param.name][rank_num].data, mstype.float32).asnumpy())
-                    else:
-                        param_stride.append(param_total_dict[param.name][rank_num].data.asnumpy())
-
-                sliced_param = Parameter(Tensor(np.concatenate(param_stride)), name=param.name)
-            else:
-                sliced_param = param_total_dict[param.name][rank]
-
-            sliced_params.append(sliced_param)
-        if skip_merge_split:
-            split_param = sliced_params[0]
-        else:
-            param_unique_strategy = _remove_repeated_slices(train_strategy[param.name])
-            _param_unique_strategy = _convert_to_layout(param.name, param_unique_strategy)
-            split_param = _merge_and_split(sliced_params, _param_unique_strategy, predict_strategy)
-        opt_shard_group = predict_strategy[param.name][5] if predict_strategy else None
-        if opt_shard_group:
-            if split_param.data.dtype == mstype.bfloat16:
-                data = cpu_cast(split_param.data, mstype.float32).asnumpy()
-            else:
-                data = split_param.data.asnumpy()
-            rank = get_rank(opt_shard_group)
-            size = get_group_size(opt_shard_group)
-            try:
-                data_slice = np.split(data, size)[rank]
-            except BaseException as e:
-                logger.critical("Failed to load opt shard slice in load distributed checkpoint for {}. Data shape is {}"
-                                " and group is {}".format(param.name, split_param.data.shape, opt_shard_group))
-                raise RuntimeError(e.__str__() + f"\nFor 'load_distributed_checkpoint', failed to load opt shard slice"
-                                                 f" in load distributed checkpoint for {param.name}. Data shape is "
-                                                 f"{split_param.data.shape} and group is {opt_shard_group}.") from e
-            split_param = Parameter(Tensor(data_slice), param.name,
-                                    split_param.requires_grad, split_param.layerwise_parallel)
-        param_dict[param.name] = split_param
-
-    if param_not_in_strategy:
-        logger.warning("For 'load_distributed_checkpoint', {} parameters in network are not in the slice strategy, "
-                       "you can check whether 'predict_strategy' or 'train_strategy_filename' is correct."
-                       .format(param_not_in_strategy))
-    if param_not_in_ckpt:
-        logger.warning("For 'load_distributed_checkpoint', {} parameters in network and slice strategy but not in "
-                       "the checkpoint file, please check whether 'checkpoint_filenames' is correct."
-                       .format(param_not_in_ckpt))
-
-    load_param_into_net(network, param_dict, strict_load=strict_load)
-    return True
-
-
 def async_ckpt_thread_status():
     """
     Get the status of asynchronous save checkpoint thread.
@@ -3177,69 +2594,6 @@ def async_ckpt_thread_status():
                    "and will be removed in a future version.")
     thr_list = threading.enumerate()
     return True in [ele.getName() == "asyn_save_ckpt" for ele in thr_list]
-
-
-def _check_predict_strategy(predict_strategy):
-    """Check predict strategy."""
-
-    def _check_int_list(arg):
-        if not isinstance(arg, list):
-            return False
-        for item in arg:
-            if not isinstance(item, int):
-                return False
-        return True
-
-    if predict_strategy is None:
-        return
-
-    flag = True
-    predict_strategy = Validator.check_isinstance("predict_strategy", predict_strategy, dict)
-    for key in predict_strategy.keys():
-        if not isinstance(key, str) or not isinstance(predict_strategy[key], (list, tuple)) \
-                or len(predict_strategy[key]) < 4:
-            flag = False
-        dev_matrix, tensor_map, param_split_shape, field_size = predict_strategy[key][:4]
-        if not _check_int_list(dev_matrix) or not _check_int_list(tensor_map) or \
-                not (_check_int_list(param_split_shape) or not param_split_shape) or \
-                not (isinstance(field_size, int) and field_size == 0):
-            flag = False
-
-    if not flag:
-        raise ValueError(f"For 'load_distributed_checkpoint', the argument 'predict_strategy' is dict, "
-                         f"the key of it must be string, and the value of it must be list or tuple that "
-                         f"the first four elements must be dev_matrix (list[int]), tensor_map (list[int]), "
-                         f"param_split_shape (list[int]) and field_size (int, which value is 0)."
-                         f"Please check whether 'predict_strategy' is correct.")
-
-
-def _check_checkpoint_file(checkpoint_filenames):
-    """Check checkpoint file name."""
-    for index, filename in enumerate(checkpoint_filenames):
-        if not isinstance(filename, str) or not os.path.exists(filename) \
-                or filename[-5:] != ".ckpt" or os.path.getsize(filename) == 0:
-            raise ValueError(f"For 'load_distributed_checkpoint', please check 'checkpoint_filenames', and "
-                             f"make sure the {filename} at index {index} is a valid checkpoint file, it must "
-                             f"be a string ending with '.ckpt', and the checkpoint file it represents must "
-                             f"be exist and not empty.")
-
-
-def _merge_and_split(sliced_params, train_strategy, predict_strategy):
-    """Merge sliced parameter and split it according to the predict strategy."""
-    merged_param = merge_sliced_parameter(sliced_params, train_strategy)
-    if predict_strategy is None:
-        return merged_param
-    param_name = merged_param.name
-    tensor_layout = predict_strategy[param_name]
-    rank = get_rank()
-    split_tensor = _load_tensor(merged_param.data, tensor_layout[0], tensor_layout[1], rank_id=rank)
-    requires_grad = merged_param.requires_grad
-    layerwise_parallel = merged_param.layerwise_parallel
-    if merged_param.data.dtype == mstype.bfloat16:
-        split_param = Parameter(Tensor(split_tensor, mstype.bfloat16), param_name, requires_grad, layerwise_parallel)
-    else:
-        split_param = Parameter(split_tensor, param_name, requires_grad, layerwise_parallel)
-    return split_param
 
 
 def _calculation_net_size(net):
