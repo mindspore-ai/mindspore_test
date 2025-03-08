@@ -3,23 +3,15 @@ mindspore.ops.median
 
 .. py:function:: mindspore.ops.median(input, axis=-1, keepdims=False)
 
-    输出Tensor指定维度上的中值与索引。
+    返回tensor在指定轴上的中位数及其索引。
 
     .. warning::
-        - 如果 `input` 的中值不为唯一，则 `indices` 不一定对应第一个出现的中值。该接口的具体实现方式和后端类型相关，CPU和GPU的返回值可能不相同。
+        - 如果 `input` 的中值不唯一，则 `indices` 不一定对应第一个出现的中值。该接口的具体实现方式和后端类型相关，CPU和GPU的返回值可能不相同。
 
     参数：
-        - **input** (Tensor) - median的输入，任意维度的Tensor。数据类型支持int16、int32、int64、float32或float64。
-        - **axis** (int，可选) - 指定计算维度。默认值： ``-1`` 。取值范围为[-dims, dims - 1]，`dims` 表示 `input` 的维度长度。
-        - **keepdims** (bool，可选) - 表示是否减少维度，如果为 ``True`` ，输出将与输入保持相同的维度；如果为 ``False`` ，输出将减少维度。默认值： ``False`` 。
+        - **input** (Tensor) - 输入tensor。
+        - **axis** (int，可选) - 指定计算的轴。默认 ``-1`` 。
+        - **keepdims** (bool，可选) - 输出tensor是否保留维度。默认 ``False`` 。
 
     返回：
-        - **y** (Tensor) - 返回指定维度上的中值，数据类型与 `input` 相同。
-        - **indices** (bool) - 指定中值索引。数据类型为int64。
-
-    异常：
-        - **TypeError** - `input` 的数据类型不是: int16、int32、int64、float32、float64。
-        - **TypeError** - `input` 不是Tensor。
-        - **TypeError** - `axis` 不是int。
-        - **TypeError** - `keepdims` 不是bool。
-        - **ValueError** - `axis` 的范围不在[-dims, dims - 1]，`dims` 表示 `x` 的维度长度。
+        两个tensor组成的tuple(median, median_indices)

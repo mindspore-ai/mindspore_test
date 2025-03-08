@@ -3978,7 +3978,7 @@ def median_ext(input, dim=None, keepdim=False):
 
 def median(input, axis=-1, keepdims=False):
     r"""
-    Computes the median and indices of input tensor.
+    Return the median(s) and indice(s) of the tensor along the specified axis.
 
     .. warning::
         - `indices` does not necessarily contain the first occurrence of each median value found in the `input`,
@@ -3986,36 +3986,37 @@ def median(input, axis=-1, keepdims=False):
           The results may be different on CPU and GPU.
 
     Args:
-        input (Tensor): A Tensor of any dimension whose data type is int16, int32, int64, float32 or float64.
-        axis (int, optional): The dimension need to reduce. Default: ``-1`` .
-        keepdims (bool, optional): Whether the output tensor need to retain `axis` dimension or not.
-            Default: ``False`` .
+        input (Tensor): The input tensor.
+        axis (int, optional): Specify the axis for computation. Default ``-1`` .
+        keepdims (bool, optional): Whether the output tensor has dim retained. Default ``False`` .
 
     Returns:
-        y (Tensor), has the same dtype as the `input`. If `keepdims` is true,
-        the `y` has the same shape as the `input` except the shape of `y` in dimension `axis` is size 1.
-        Otherwise, the `y` lacks `axis` dimension than input.
-
-        indices (Tensor), has the same shape as the `y`, but dtype is int64.
-
-    Raises:
-        TypeError: If dtype of `input` is not one of the following: int16, int32, int64, float32, float64.
-        TypeError: If input `input` is not a Tensor.
-        TypeError: If `axis` is not an int.
-        TypeError: If `keepdims` is not a bool.
-        ValueError: If `axis` is not in range of [-x.dim, x.dim-1].
+        Tuple(median, median_indices) of 2 tensors.
 
     Supported Platforms:
         ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([[0.57, 0.11, 0.21],[0.38, 0.50, 0.57], [0.36, 0.16, 0.44]]).astype(np.float32))
-        >>> y = ops.median(x, axis=0, keepdims=False)
-        >>> print(y)
-        (Tensor(shape=[3], dtype=Float32, value= [ 3.79999995e-01,  1.59999996e-01,  4.39999998e-01]),
-        Tensor(shape=[3], dtype=Int64, value= [1, 2, 2]))
+        >>> import mindspore
+        >>> input = mindspore.tensor([[9, 3, 4, 5],
+        ...                           [5, 2, 7, 4],
+        ...                           [8, 1, 3, 6]])
+        >>> # case 1: By default, compute the median along axis -1.
+        >>> mindspore.ops.prod(input)
+        (Tensor(shape=[3], dtype=Int64, value= [4, 4, 3]),
+        Tensor(shape=[3], dtype=Int64, value= [2, 3, 2]))
+        >>>
+        >>> # case 2: Compute the median along axis 1.
+        >>> mindspore.ops.prod(input, axis=1)
+        (Tensor(shape=[4], dtype=Int64, value= [8, 2, 4, 5]),
+         Tensor(shape=[4], dtype=Int64, value= [2, 1, 0, 0]))
+        >>>
+        >>> # case 3: If keepdims=True, the output shape will be same of that of the input.
+        >>> mindspore.ops.prod(input, axis=1, keepdims=True)
+        (Tensor(shape=[1, 4], dtype=Int64, value=
+         [[8, 2, 4, 5]]),
+         Tensor(shape=[1, 4], dtype=Int64, value=
+         [[2, 1, 0, 0]]))
     """
     median_ = _get_cache_prim(Median)(global_median=False, axis=axis, keep_dims=keepdims, ignore_nan=False)
     return median_(input)
@@ -4323,31 +4324,23 @@ def histc(input, bins=100, min=0., max=0.):
     Elements lower than min or higher than max are ignored.
 
     Args:
-        input (Tensor): the input tensor, type support list :math:`[float16, float32, int32]`.
-        bins (int, optional): Number of histogram bins, optional. If specified, must be positive. Default: ``100`` .
-        min (int, float, optional): An optional float of the lower end of the range (inclusive). Default: ``0.0`` .
-        max (int, float, optional): An optional float of the upper end of the range (inclusive). Default: ``0.0`` .
+        input (Tensor): The input tensor.
+        bins (int, optional): Number of histogram bins. Default ``100`` .
+        min (int, float, optional): Minimum value of the histogram data range. Default ``0.`` .
+        max (int, float, optional): Maximum value of the histogram data range. Default ``0.`` .
 
     Returns:
-        1-D Tensor. If the input is int32, the output returns int32, otherwise it returns float32.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `input` datetype not in support list.
-        TypeError: If attr `min` or `max` is not float or int.
-        TypeError: If attr `bins` is not int.
-        ValueError: If attr value `min` > `max`.
-        ValueError: If attr `bins` <= 0.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor([1., 2, 1])
-        >>> y = ops.histc(x, bins=4, min=0.0, max=3.0)
-        >>> print(y)
-        [0. 2. 1. 0.]
+        >>> import mindspore
+        >>> input = mindspore.tensor([1., 1, 2, 2, 2, 5, 8])
+        >>> output = mindspore.ops.histc(input, bins=5, min=0, max=9)
+        >>> print(output)
+        [2. 3. 1. 0. 1.]
     """
     if not isinstance(min, (int, float)):
         raise TypeError(f"For 'histc', parameter 'min' must be an int or float, but got {type(min)}.")
@@ -6119,54 +6112,35 @@ def cummin(input, axis):
 
 def cumsum(x, axis, dtype=None):
     """
-    Computes the cumulative sum of input Tensor along `axis`.
+    Return the cumulative sum along the given axis of the tensor.
 
     .. math::
 
         y_i = x_1 + x_2 + x_3 + ... + x_i
 
-    Note:
-        On Ascend, the dtype of `x` only support :int8, uint8, int32, float16 or float32 in case of static shape.
-        For the case of dynamic shape, the dtype of `x` only support int32, float16 or float32.
-
     Args:
-        x (Tensor): The input Tensor of shape :math:`(N, *)` where :math:`*` means, any number
-            of additional dimensions.
-        axis (int): Axis along which the cumulative sum is computed.
-        dtype (:class:`mindspore.dtype`, optional): The desired dtype of returned Tensor. If specified,
-            the input Tensor will be cast to `dtype` before the computation. This is useful for preventing overflows.
-            If not specified, stay the same as original Tensor. Default: ``None`` .
+        x (Tensor): The input tensor.
+        axis (int): Specify the axis for computation.
+        dtype (:class:`mindspore.dtype`, optional): The data type returned. Default ``None`` .
 
     Returns:
-        Tensor, the shape of the output Tensor is consistent with the input Tensor's.
-
-    Raises:
-        TypeError: If `x` is not a Tensor.
-        ValueError: If the axis is out of range.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> from mindspore import ops
-        >>> x = Tensor(np.array([[3, 4, 6, 10], [1, 6, 7, 9], [4, 3, 8, 7], [1, 3, 7, 9]]).astype(np.float32))
-        >>> # case 1: along the axis 0
-        >>> y = ops.cumsum(x, 0)
-        >>> print(y)
-        [[ 3.  4.  6. 10.]
-         [ 4. 10. 13. 19.]
-         [ 8. 13. 21. 26.]
-         [ 9. 16. 28. 35.]]
-        >>> # case 2: along the axis 1
-        >>> y = ops.cumsum(x, 1)
-        >>> print(y)
-        [[ 3.  7. 13. 23.]
-         [ 1.  7. 14. 23.]
-         [ 4.  7. 15. 22.]
-         [ 1.  4. 11. 20.]]
+        >>> input = mindspore.tensor([[1, 2, 3],
+        >>>                           [4, 5, 6]])
+        >>> mindspore.ops.cumsum(input, axis=0)
+        Tensor(shape=[2, 3], dtype=Int64, value=
+        [[1, 2, 3],
+         [5, 7, 9]])
+        >>> mindspore.ops.cumsum(input, axis=1)
+        Tensor(shape=[2, 3], dtype=Int64, value=
+        [[ 1,  3,  6],
+         [ 4,  9, 15]])
     """
     if dtype is not None and x.dtype != dtype:
         x = x.astype(dtype, copy=False)
@@ -7677,84 +7651,39 @@ def amin_ext(input, dim=(), keepdim=False):
 
 def mean(x, axis=None, keep_dims=False):
     r"""
-    Reduces all dimension of a tensor by averaging all elements in the dimension, by default.
-    And reduce a dimension of `x` along the specified `axis`. `keep_dims`
-    determines whether the dimensions of the output and input are the same.
-
-    Note:
-        The `axis` with tensor type is only used for compatibility with older versions and is not recommended.
+    Compute the mean(s) of the tensor along the specified axis(axes).
 
     Args:
-        x (Tensor[Number]): The input tensor. The dtype of the tensor to be reduced is number.
-          :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
-        axis (Union[int, tuple(int), list(int), Tensor]): The dimensions to reduce. Default: ``None`` ,
-            reduce all dimensions. Only constant value is allowed. Assume the rank of `x` is r,
-            and the value range is [-r,r).
-        keep_dims (bool): If true, keep these reduced dimensions and the length is 1.
-                          If false, don't keep these dimensions. Default: ``False`` .
+        x (Tensor[Number]): The input tensor.
+        axis (Union[int, tuple(int), list(int), Tensor]): Specify the axis(axes) for computation. If ``None`` , compute
+            all elements in the `input` .
+        keep_dims (bool): Whether the output tensor has dim retained. Default ``False`` .
 
     Returns:
-        Tensor, has the same data type as input tensor.
-
-        - If `axis` is None, and `keep_dims` is False,
-          the output is a 0-D tensor representing the product of all elements in the input tensor.
-        - If `axis` is int, set as 1, and `keep_dims` is False,
-          the shape of output is :math:`(x_0, x_2, ..., x_R)`.
-        - If `axis` is tuple(int), set as (1, 2), and `keep_dims` is ``False`` ,
-          the shape of output is :math:`(x_0, x_3, ..., x_R)`.
-
-    Raises:
-        TypeError: If `x` is not a Tensor.
-        TypeError: If `axis` is not one of the following: int, tuple, list or Tensor.
-        TypeError: If `keep_dims` is not a bool.
-        ValueError: If `axis` is out of range.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.random.randn(3, 4, 5, 6).astype(np.float32))
-        >>> output = ops.mean(x, 1, keep_dims=True)
-        >>> result = output.shape
-        >>> print(result)
-        (3, 1, 5, 6)
-        >>> # case 1: Reduces a dimension by averaging all elements in the dimension.
-        >>> x = Tensor(np.array([[[2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2]],
-        ... [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
-        ... [[6, 6, 6, 6, 6, 6], [8, 8, 8, 8, 8, 8], [10, 10, 10, 10, 10, 10]]]),
-        ... mindspore.float32)
-        >>> output = ops.mean(x)
-        >>> print(output)
-        5.0
-        >>> print(output.shape)
-        ()
-        >>> # case 2: Reduces a dimension along the axis 0
-        >>> output = ops.mean(x, 0, True)
-        >>> print(output)
-        [[[4. 4. 4. 4. 4. 4.]
-          [5. 5. 5. 5. 5. 5.]
-          [6. 6. 6. 6. 6. 6.]]]
-        >>> # case 3: Reduces a dimension along the axis 1
-        >>> output = ops.mean(x, 1, True)
-        >>> print(output)
-        [[[2. 2. 2. 2. 2. 2.]]
-         [[5. 5. 5. 5. 5. 5.]]
-         [[8. 8. 8. 8. 8. 8.]]]
-        >>> # case 4: Reduces a dimension along the axis 2
-        >>> output = ops.mean(x, 2, True)
-        >>> print(output)
-        [[[ 2.]
-          [ 2.]
-          [ 2.]]
-         [[ 4.]
-          [ 5.]
-          [ 6.]]
-         [[ 6.]
-          [ 8.]
-          [10.]]]
+        >>> input = mindspore.tensor([[9, 3, 4, 5],
+        ...                           [5, 2, 7, 4],
+        ...                           [8, 1, 3, 6]])
+        >>> # case 1: By default, compute the mean of all elements.
+        >>> mindspore.ops.mean(input)
+        Tensor(shape=[], dtype=Int64, value= 4)
+        >>>
+        >>> # case 2: Compute the mean along axis 1.
+        >>> mindspore.ops.mean(input, axis=1)
+        Tensor(shape=[3], dtype=Int64, value= [5, 4, 4])
+        >>>
+        >>> # case 3: If keep_dims=True, the output shape will be same of that of the input.
+        >>> mindspore.ops.mean(input, axis=1, keep_dims=True)
+        Tensor(shape=[3, 1], dtype=Int64, value=
+        [[5],
+         [4],
+         [4]])
     """
     if axis is None:
         axis = ()
@@ -7850,85 +7779,40 @@ def mean_ext(input, axis=None, keep_dims=False, dtype=None):
 
 def prod(input, axis=None, keep_dims=False, dtype=None):
     r"""
-    Reduces a dimension of a tensor by multiplying all elements in the dimension, by default. And also can
-    reduce a dimension of `input` along the `axis`. Determine whether the dimensions of the output and input are the
-    same by controlling `keep_dims`.
-
-    Note:
-        The `axis` with tensor type is only used for compatibility with older versions and is not recommended.
+    Return the product(s) of the tensor along the specified axis(axes).
 
     Args:
-        input (Tensor[Number]): The input tensor. The dtype of the tensor to be reduced is number.
-            :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
-        axis (Union[int, tuple(int), list(int), Tensor]): The dimensions to reduce. Default: ``None`` , reduce all
-            dimensions. Only constant value is allowed. Assume the rank of `x` is r, and the value range is [-r,r).
-        keep_dims (bool): If ``True`` , keep these reduced dimensions and the length is 1.
-            If ``False`` , don't keep these dimensions. Default: ``False`` .
-        dtype (:class:`mindspore.dtype`): The desired data type of returned Tensor. Default: ``None`` .
+        input (Tensor[Number]): The input tensor.
+        axis (Union[int, tuple(int), list(int), Tensor]): Specify the axis(axes) for computation. If ``None`` , compute
+            all elements in the `input` . Default ``None`` .
+        keep_dims (bool): Whether the output tensor has dim retained. Default ``False`` .
+        dtype (:class:`mindspore.dtype`): The data type returned. Default ``None`` .
 
     Returns:
-        Tensor, has the same data type as the `input`.
-
-        - If `axis` is ``None`` , and `keep_dims` is ``False`` ,
-          the output is a 0-D tensor representing the product of all elements in the input tensor.
-        - If `axis` is int, set as 1, and `keep_dims` is ``False`` ,
-          the shape of output is :math:`(input_0, input_2, ..., input_R)`.
-        - If `axis` is tuple(int), set as (1, 2), and `keep_dims` is ``False`` ,
-          the shape of output is :math:`(input_0, input_3, ..., input_R)`.
-        - If `axis` is 1-D Tensor, set as [1, 2], and `keep_dims` is ``False`` ,
-          the shape of output is :math:`(input_0, input_3, ..., input_R)`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `axis` is not one of the following: int, tuple, list or Tensor.
-        TypeError: If `keep_dims` is not a bool.
-        ValueError: If `axis` is out of range.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.random.randn(3, 4, 5, 6).astype(np.float32))
-        >>> output = ops.prod(x, 1, keep_dims=True)
-        >>> result = output.shape
-        >>> print(result)
-        (3, 1, 5, 6)
-        >>> # case 1: Reduces a dimension by multiplying all elements in the dimension.
-        >>> x = Tensor(np.array([[[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3]],
-        ...                      [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
-        ...                      [[7, 7, 7, 7, 7, 7], [8, 8, 8, 8, 8, 8], [9, 9, 9, 9, 9, 9]]]), mindspore.float32)
-        >>> output = ops.prod(x)
-        >>> print(output)
-        2.2833798e+33
-        >>> print(output.shape)
-        ()
-        >>> # case 2: Reduces a dimension along axis 0.
-        >>> output = ops.prod(x, 0, True)
-        >>> print(output)
-        [[[ 28.  28.  28.  28.  28.  28.]
-          [ 80.  80.  80.  80.  80.  80.]
-          [162. 162. 162. 162. 162. 162.]]]
-        >>> # case 3: Reduces a dimension along axis 1.
-        >>> output = ops.prod(x, 1, True)
-        >>> print(output)
-        [[[  6.   6.   6.   6.   6.   6.]]
-         [[120. 120. 120. 120. 120. 120.]]
-         [[504. 504. 504. 504. 504. 504.]]]
-        >>> # case 4: Reduces a dimension along axis 2.
-        >>> output = ops.prod(x, 2, True)
-        >>> print(output)
-        [[[1.00000e+00]
-          [6.40000e+01]
-          [7.29000e+02]]
-         [[4.09600e+03]
-          [1.56250e+04]
-          [4.66560e+04]]
-         [[1.17649e+05]
-          [2.62144e+05]
-          [5.31441e+05]]]
+        >>> input = mindspore.tensor([[9, 3, 4, 5],
+        ...                           [5, 2, 7, 4],
+        ...                           [8, 1, 3, 6]])
+        >>> # case 1: By default, compute the product of all elements.
+        >>> mindspore.ops.prod(input)
+        Tensor(shape=[], dtype=Int64, value= 21772800)
+        >>>
+        >>> # case 2: Compute the product along axis 1.
+        >>> mindspore.ops.prod(input, axis=1)
+        Tensor(shape=[3], dtype=Int64, value= [540, 280, 144])
+        >>>
+        >>> # case 3: If keep_dims=True, the output shape will be same of that of the input.
+        >>> mindspore.ops.prod(input, axis=1, keep_dims=True)
+        Tensor(shape=[3, 1], dtype=Int64, value=
+        [[540],
+         [280],
+         [144]])
     """
     if not isinstance(axis, (tuple, list, Tensor)):
         return prod_ext_op(input, axis, keep_dims, dtype)
@@ -11301,8 +11185,7 @@ def einsum_ext(equation, *operands):
 
 def cumprod(input, dim, dtype=None):
     r"""
-    Computes the cumulative product of the `input` tensor along dimension `dim`.
-    For example, if `input` is a vector of size `N`, the result will also be a vector of size `N`, with elements.
+    Return the cumulative product along the given dimension of the tensor.
 
     .. math::
 
@@ -11310,29 +11193,27 @@ def cumprod(input, dim, dtype=None):
 
     Args:
         input (Tensor): The input tensor.
-            :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
-        dim (int): The dimensions to compute the cumulative product. Only constant value is allowed.
-        dtype (:class:`mindspore.dtype`, optional): The desired data type of output.
-            If not specified, remains the same as the original Tensor. Default: ``None`` .
+        dim (int): Specify the dimension for computation.
+        dtype (:class:`mindspore.dtype`, optional): The data type returned. Default ``None`` .
 
     Returns:
-        Tensor, has the same shape and dtype as the `input` unless `dtype` is specified.
-
-    Raises:
-        TypeError: If `dim` is not an int.
-        TypeError: If `dtype` conversion is not acceptable.
-        ValueError: If `dim` is None.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([1, 2, 3], np.float32))
-        >>> output = ops.cumprod(x, 0)
-        >>> print(output)
-        [1. 2. 6.]
+        >>> import mindspore
+        >>> input = mindspore.tensor([[1, 2, 3],
+        >>>                           [4, 5, 6]])
+        >>> mindspore.ops.cumprod(input, dim=0)
+        Tensor(shape=[2, 3], dtype=Int64, value=
+        [[ 1,  2,  3],
+         [ 4, 10, 18]])
+        >>> mindspore.ops.cumprod(input, dim=1)
+        Tensor(shape=[2, 3], dtype=Int64, value=
+        [[  1,   2,   6],
+         [  4,  20, 120]])
     """
     output = cumprod_(input, dim)
     if dtype:
