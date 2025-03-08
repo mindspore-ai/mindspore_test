@@ -181,13 +181,11 @@ RunMode GeDeviceContext::GetRunMode(const FuncGraphPtr &func_graph) const {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   if (common::AnfAlgo::IsDynamicShapeFuncGraph(func_graph)) {
-    if (context->get_param<std::string>(MS_CTX_JIT_LEVEL) == "O2" &&
-        context->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode) {
+    if (AnfAlgo::GetBackend(func_graph) == kBackendGE) {
       MS_LOG(INFO) << "set dynamic shape RunMode::kGraphMode";
       return RunMode::kGraphMode;
     }
-    MS_LOG(INFO) << "dynamic shape default RunMode::kKernelMode";
-    // Dynamic shape runs in kbk mode, not support ge graph sink mode.
+    MS_LOG(INFO) << "set dynamic shape RunMode::kKernelMode";
     auto set_ctx = [&context](bool task_sink, bool is_multi_graph_sink, bool enable_loop_sink) {
       context->set_param<bool>(MS_CTX_ENABLE_TASK_SINK, task_sink);
       context->set_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK, is_multi_graph_sink);
