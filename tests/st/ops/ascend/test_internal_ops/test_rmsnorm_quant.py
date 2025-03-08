@@ -151,7 +151,7 @@ def rmsnorm_quant_net_2_way(x_shape, ms_type):
     assert np.allclose(out1.asnumpy(), out_std1.asnumpy(), 0.0001, 1)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_ascend910b
 @pytest.mark.platform_ascend310p
 @pytest.mark.env_onecard
