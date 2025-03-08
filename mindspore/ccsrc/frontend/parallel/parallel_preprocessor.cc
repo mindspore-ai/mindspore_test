@@ -582,6 +582,15 @@ static void InsertAllGatherOp(const FuncGraphPtr &root, const std::string &group
   Operator op;
   CNodePtr allgather;
   auto param_name = node->cast<ParameterPtr>()->name();
+  auto real_param = RefParameterToActualNode(node, [&](const CNodePtr &cnode) {
+    bool filter = IsPrimitiveCNode(cnode, prim::kPrimCast) || IsPrimitiveCNode(cnode, prim::kPrimLoad) ||
+                  IsPrimitiveCNode(cnode, prim::kPrimDepend);
+    return std::make_pair(filter, 1);
+  });
+  if (real_param) {
+    param_name = real_param->cast<ParameterPtr>()->name();
+  }
+
   if (op_name == MICRO_STEP_ALL_GATHER) {
     op = CreateMicroStepAllGatherOp(group);
   } else {
@@ -599,6 +608,9 @@ static void InsertAllGatherOp(const FuncGraphPtr &root, const std::string &group
       auto mirror_group = mirror_group_list(param_ptr->user_data<TensorLayout>());
       is_with_mirror = mirror_group.size() > 1;
     }
+  }
+  if (ParallelContext::GetInstance()->zero3()) {
+    is_with_mirror = true;
   }
   if (!is_shared_param && cast_node) {
     allgather = ReplaceNode(op, cast_node, graph, PARALLEL_OPTIMIZER_ALLGATHER_NOT_COMPUTE, param_name, root);
@@ -635,7 +647,8 @@ void InsertParallelOpt(const FuncGraphManagerPtr &manager, const AnfNodeIndexSet
   bool insert_flag = false;
   auto param_ptr = parameter->cast<ParameterPtr>();
   MS_EXCEPTION_IF_NULL(param_ptr);
-  bool is_shared_param = param_ptr->user_data<TensorLayout>()->is_shared_param();
+  bool is_shared_param =
+    param_ptr->has_user_data<TensorLayout>() && param_ptr->user_data<TensorLayout>()->is_shared_param();
   for (auto &param_pair : param_sub_set) {
     auto cnode = param_pair.first->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
@@ -660,24 +673,34 @@ void InsertParallelOpt(const FuncGraphManagerPtr &manager, const AnfNodeIndexSet
   }
 }
 
-static void ApplyParallelOptOnParam(const FuncGraphManagerPtr &manager, const AnfNodeIndexSet &param_sub_set,
-                                    const FuncGraphPtr &root, const AnfNodePtr &parameter,
-                                    const std::string &opt_shard_group) {
+bool CheckApplyZero(const FuncGraphPtr &root, const AnfNodePtr &parameter, const std::string &opt_shard_group) {
   auto enable_opt_shard = ParallelContext::GetInstance()->enable_parallel_optimizer();
   if (!enable_opt_shard) {
-    return;
+    return false;
   }
   MS_EXCEPTION_IF_NULL(parameter);
   if (ParameterIsCloned(parameter)) {
-    return;
+    return false;
   }
 
   int32_t split_stage_num = ParallelContext::GetInstance()->pipeline_stage_split_num();
   if (opt_shard_group.empty() &&
       (split_stage_num <= 1 || !ParameterRequireGrad(parameter) || !root->has_flag(kTraining))) {
+    return false;
+  }
+  if (!parameter->isa<Parameter>()) {
+    return false;
+  }
+  return true;
+}
+
+static void ApplyParallelOptOnParam(const FuncGraphManagerPtr &manager, const AnfNodeIndexSet &param_sub_set,
+                                    const FuncGraphPtr &root, const AnfNodePtr &parameter,
+                                    const std::string &opt_shard_group) {
+  if (!CheckApplyZero(root, parameter, opt_shard_group)) {
     return;
   }
-
+  int32_t split_stage_num = ParallelContext::GetInstance()->pipeline_stage_split_num();
   // set all gather type
   int64_t grad_accumulation_step = ParallelContext::GetInstance()->grad_accumulation_step();
   std::string op_name = ALL_GATHER;
@@ -686,7 +709,29 @@ static void ApplyParallelOptOnParam(const FuncGraphManagerPtr &manager, const An
       op_name = MICRO_STEP_ALL_GATHER;
     }
   }
-
+  auto param_info = parameter->cast<ParameterPtr>()->param_info();
+  auto cell_reuse = MsContext::GetInstance()->CellReuseLevel() != CellReuseLevel::kNoCellReuse;
+  if (cell_reuse && ParallelContext::GetInstance()->zero3()) {
+    auto param_users = GetOutputNodesWithFilter(parameter, [&](const AnfNodePtr &anode) {
+      return IsPrimitiveCNode(anode, prim::kPrimCast) || IsPrimitiveCNode(anode, prim::kPrimDepend) ||
+             IsPrimitiveCNode(anode, prim::kPrimLoad);
+    });
+    std::vector<FuncGraphPtr> fg_list;
+    for (const auto &param_user : param_users) {
+      if (!param_user.first->isa<CNode>() || !IsValueNode<FuncGraph>(param_user.first->cast<CNodePtr>()->input(0))) {
+        continue;
+      }
+      auto fg = GetValueNode<FuncGraphPtr>(param_user.first->cast<CNodePtr>()->input(0));
+      if (std::find(fg_list.begin(), fg_list.end(), fg) != fg_list.end()) {
+        continue;
+      }
+      fg_list.push_back(fg);
+      auto fg_param = fg->parameters()[param_user.second - 1];
+      auto new_param_sub_set = manager->node_users()[fg_param];
+      InsertParallelOpt(manager, new_param_sub_set, root, fg_param, opt_shard_group, op_name);
+    }
+    return;
+  }
   // insert all gather
   InsertParallelOpt(manager, param_sub_set, root, parameter, opt_shard_group, op_name);
 }

@@ -654,6 +654,108 @@ class TestPipelineSplitWithNoOptimizer:
         self.cat_fp16_from_ir(pattern='(<Tensor[Float32], (32, 64)>) -> (<Tensor[Float32], (32, 64)>)',
                               target_count=2)
 
+    def test_pipeline_zero2_lazy_inline(self):
+        """
+        Feature: Test Pipeline with zero2.
+        Description: Zero2 means sharding accu grad.
+        Expectation: Two parallel optimizer reduce_scatter by virtual assign add.
+        """
+        context.reset_auto_parallel_context()
+        context.set_auto_parallel_context(device_num=32, global_rank=0, pipeline_stages=2,
+                                          enable_parallel_optimizer=True,
+                                          parallel_optimizer_config={"parallel_optimizer_threshold": 0,
+                                                                     "optimizer_level": "level2"})
+        context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+        strategy1 = ((16, 1), (1, 1))
+        strategy2 = ((8, 1), (1, 1))
+        pipeline_net = PipelineSplitLazyInline(strategy1, strategy2, dtype=ms.float16)
+        run_pipeline_split_function(pipeline_net, micro_batch_interleaved=1)
+        self.cat_fp16_from_ir(pattern='(<Tensor[Float32], (64, 64)>) -> (<Tensor[Float32], (4, 64)>)',
+                              target_count=2)
+        self.cat_fp16_from_ir(pattern='_grad_accumulation_shard_grad_VirtualAssignAdd',
+                              target_count=2)
+
+    def test_pipeline_zero3_lazy_inline(self):
+        """
+        Feature: Test Pipeline with zero3.
+        Description: Zero3 means recomputing parallel optimizer allgather.
+        Expectation: Three all_gather.
+        """
+        context.reset_auto_parallel_context()
+        context.set_auto_parallel_context(device_num=32, global_rank=0, pipeline_stages=2,
+                                          enable_parallel_optimizer=True,
+                                          parallel_optimizer_config={"parallel_optimizer_threshold": 0,
+                                                                     "optimizer_level": "level3"})
+        context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+        strategy1 = ((16, 1), (1, 1))
+        strategy2 = ((8, 1), (1, 1))
+        pipeline_net = PipelineSplitLazyInline(strategy1, strategy2, dtype=ms.float16)
+        run_pipeline_split_function(pipeline_net, micro_batch_interleaved=1)
+        self.cat_fp16_from_ir(pattern='(<Tensor[Float16], (4, 64)>) -> (<Tensor[Float16], (64, 64)>)',
+                              target_count=3)
+
+    def test_pipeline_zero3_lazy_inline_tp(self):
+        """
+        Feature: Test Pipeline with zero3.
+        Description: Zero3 means recomputing parallel optimizer allgather.
+        Expectation: Three all_gather.
+        """
+        context.reset_auto_parallel_context()
+        context.set_auto_parallel_context(device_num=32, global_rank=0, pipeline_stages=2,
+                                          enable_parallel_optimizer=True,
+                                          parallel_optimizer_config={"parallel_optimizer_threshold": 0,
+                                                                     "optimizer_level": "level3"})
+        context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+        strategy1 = ((8, 1), (1, 2))
+        strategy2 = ((8, 1), (1, 2))
+        pipeline_net = PipelineSplitLazyInline(strategy1, strategy2, dtype=ms.float16)
+        run_pipeline_split_function(pipeline_net, micro_batch_interleaved=1)
+        self.cat_fp16_from_ir(pattern='(<Tensor[Float16], (8, 32)>) -> (<Tensor[Float16], (64, 32)>)',
+                              target_count=3)
+
+    def test_pipeline_zero2_not_full_lazy_inline(self):
+        """
+        Feature: Test Pipeline with zero2, not full split.
+        Description: Zero2 means sharding accu grad.
+        Expectation: Two parallel optimizer reduce_scatter by virtual assign add.
+        """
+        context.reset_auto_parallel_context()
+        context.set_auto_parallel_context(device_num=32, global_rank=0, pipeline_stages=2,
+                                          enable_parallel_optimizer=True,
+                                          parallel_optimizer_config={"parallel_optimizer_threshold": 0,
+                                                                     "optimizer_weight_shard_size": 2,
+                                                                     "optimizer_level": "level2"})
+        context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+        strategy1 = ((16, 1), (1, 1))
+        strategy2 = ((8, 1), (1, 1))
+        pipeline_net = PipelineSplitLazyInline(strategy1, strategy2, dtype=ms.float16)
+        run_pipeline_split_function(pipeline_net, micro_batch_interleaved=1)
+        self.cat_fp16_from_ir(pattern='(<Tensor[Float32], (64, 64)>) -> (<Tensor[Float32], (32, 64)>)',
+                              target_count=2)
+        self.cat_fp16_from_ir(pattern='_grad_accumulation_shard_grad_VirtualAssignAdd',
+                              target_count=2)
+
+    def test_pipeline_zero3_not_full_lazy_inline(self):
+        """
+        Feature: Test Pipeline with zero3, not full split.
+        Description: Zero3 means recomputing parallel optimizer allgather.
+        Expectation: Three all_gather.
+        """
+        context.reset_auto_parallel_context()
+        context.set_auto_parallel_context(device_num=32, global_rank=0, pipeline_stages=2,
+                                          enable_parallel_optimizer=True,
+                                          parallel_optimizer_config={"parallel_optimizer_threshold": 0,
+                                                                     "optimizer_weight_shard_size": 2,
+                                                                     "optimizer_level": "level3"})
+        context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+        strategy1 = ((16, 1), (1, 1))
+        strategy2 = ((8, 1), (1, 1))
+        pipeline_net = PipelineSplitLazyInline(strategy1, strategy2, dtype=ms.float16)
+        run_pipeline_split_function(pipeline_net, micro_batch_interleaved=1)
+        self.cat_fp16_from_ir(pattern='(<Tensor[Float16], (32, 64)>) -> (<Tensor[Float16], (64, 64)>)',
+                              target_count=3)
+
+
     def test_pipeline_parallel_optimizer_cannot_split_lazy_inline(self):
         """
         Feature: Test Pipeline with Mirror Operator, when enabled the micro batch interleave.

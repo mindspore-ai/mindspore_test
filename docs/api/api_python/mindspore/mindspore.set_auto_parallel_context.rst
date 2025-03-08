@@ -72,9 +72,10 @@ mindspore.set_auto_parallel_context
           - pipeline_scheduler(str)：表示pipeline并行使用的调度策略。当前仅支持 ``gpipe/1f1b/seqpipe/seqvpp/seqsmartvpp``。当应用seqsmartvpp时，流水线并行必须是偶数。
         - **parallel_optimizer_config** (dict) - 用于开启优化器并行后的行为配置。仅在enable_parallel_optimizer=True的时候生效。目前支持如下关键字：
 
-          - gradient_accumulation_shard(bool)：设置累加梯度变量是否在数据并行维度上进行切分。开启后，将进一步减小模型的显存占用，但是会在反向计算梯度时引入额外的通信算子（ReduceScatter）。此配置仅在流水线并行训练和梯度累加模式下生效。默认值： ``True`` 。
-          - parallel_optimizer_threshold(int)：设置参数切分的阈值。占用内存小于该阈值的参数不做切分。占用内存大小计算方式为 shape[0] \* ... \* shape[n] \* size(dtype)。该阈值非负。单位：KB。默认值： ``64`` 。
+          - gradient_accumulation_shard(bool)：请使用 optimizer_level: ``level2`` 替换此配置。设置累加梯度变量是否在数据并行维度上进行切分。开启后，将进一步减小模型的显存占用，但是会在反向计算梯度时引入额外的通信算子（ReduceScatter）。此配置仅在流水线并行训练和梯度累加模式下生效。默认值： ``True`` 。
+          - parallel_optimizer_threshold(int)：设置参数切分的阈值。占用内存小于该阈值的参数不做切分。占用内存大小 = shape[0] \* ... \* shape[n] \* size(dtype)。该阈值非负。单位：KB。默认值： ``64`` 。
           - optimizer_weight_shard_size(int)：设置指定优化器权重切分通信域的大小。只有当启用优化器并行时生效。数值范围可以是(0, device_num]，若同时开启流水线并行，数值范围则为(0, device_num/stage]。如果参数的数据并行通信域大小不能被 `optimizer_weight_shard_size` 整除，那么指定的优化器权重切分通信域大小就不会生效。默认值为 ``-1`` ，表示优化器权重切片通信域大小是每个参数的数据并行通信域大小。
+          - optimizer_level(str, optional): optimizer_level配置用于指定优化器切分的切分级别。需要注意的是，静态图的优化器并行实现与动态图比如megatron不一致，但是显存优化效果相同。当 optimizer_level= ``level1`` 时，对权重与优化器状态进行切分。optimizer_level= ``level2`` 时，对权重、优化器状态以及梯度进行切分。当optimizer_level= ``level3`` 时，对权重、优化器状态、梯度进行切分，并且在反向开始前会对权重额外展开一次allgather通信，以释放前向allgather的显存。它必须是[ ``level1`` 、 ``level2`` 、 ``level3`` ]中的一个。默认值: ``level1``。
 
         - **comm_fusion** (dict) - 用于设置通信算子的融合配置。可以同一类型的通信算子按梯度张量的大小或者顺序分块传输。输入格式为{"通信类型": {"mode":str, "config": None int 或者 list}},每种通信算子的融合配置有两个键："mode"和"config"。支持以下通信类型的融合类型和配置：
 

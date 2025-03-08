@@ -266,6 +266,9 @@ class COMMON_EXPORT ParallelContext {
   void set_stra_file_only_trainable_params(const bool);
   bool stra_file_only_trainable_params() const { return stra_file_only_trainable_params_; }
 
+  void set_zero3(const bool);
+  bool zero3() const { return zero3_; }
+
   void set_symbol_infos(const std::vector<symshape::SymbolInfoList> &symbol_infos) { symbol_infos_ = symbol_infos; }
   const std::vector<symshape::SymbolInfoList> &symbol_infos() const { return symbol_infos_; }
 
@@ -340,6 +343,7 @@ class COMMON_EXPORT ParallelContext {
   bool direct_split_ = false;
   bool pipeline_result_broadcast_ = false;
   std::vector<symshape::SymbolInfoList> symbol_infos_;
+  bool zero3_ = false;
   bool is_dynamic_shape_parallel_ = false;
   bool dynamic_shape_parallel_flag_is_set_ = false;
 };

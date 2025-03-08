@@ -947,17 +947,17 @@ int32_t AddCommOpFusionType(const CNodePtr &comm_node, const AnfNodePtr &param_n
   MS_EXCEPTION_IF_NULL(prim);
   auto attrs = prim->attrs();
   auto param_info = param->param_info();
-  if (!param_info) {
-    MS_LOG(WARNING) << param->ToString() << "does not have parameter info.";
-    return 0;
+  int32_t fusion_type = 0;
+  if (param_info) {
+    fusion_type = param_info->comm_fusion();
   }
-  int32_t fusion_type = param_info->comm_fusion();
+
   attrs[FUSION] = MakeValue<int64_t>(fusion_type);
   (void)prim->SetAttrs(attrs);
-  bool parallel_optimizer_comm_recompute = param_info->parallel_optimizer_comm_recompute();
+  bool zero3 = ParallelContext::GetInstance()->zero3();
   std::string instance_name = prim->instance_name();
-  if (instance_name == PARALLEL_OPTIMIZER_ALLGATHER_NOT_COMPUTE && parallel_optimizer_comm_recompute &&
-      prim->name() == ALL_GATHER) {
+  if (instance_name == PARALLEL_OPTIMIZER_ALLGATHER_NOT_COMPUTE && zero3 &&
+      (prim->name() == ALL_GATHER || prim->name() == MICRO_STEP_ALL_GATHER)) {
     prim->set_attr(RECOMPUTE, MakeValue(true));
     prim->set_instance_name(PARALLEL_OPTIMIZER_ALLGATHER);
     auto node_users = comm_node->func_graph()->manager()->node_users();
@@ -975,7 +975,7 @@ int32_t AddCommOpFusionType(const CNodePtr &comm_node, const AnfNodePtr &param_n
       cast_prim->set_attr(RECOMPUTE, MakeValue(true));
     }
   }
-  MS_LOG(INFO) << "Set comm fusion:" << param->param_info()->name() << "'s fusion type is " << fusion_type;
+  MS_LOG(INFO) << "Set comm fusion:" << param->name() << "'s fusion type is " << fusion_type;
   return fusion_type;
 }
 

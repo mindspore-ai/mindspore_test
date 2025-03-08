@@ -167,6 +167,10 @@ void OverlapOptShardGradInPipeline(const FuncGraphPtr &graph) {
       parallel::ParallelContext::GetInstance()->parallel_mode() != parallel::kAutoParallel) {
     return;
   }
+  if (parallel::ParallelContext::GetInstance()->grad_accumulation_shard() ||
+      parallel::ParallelContext::GetInstance()->zero3()) {
+    return;
+  }
   if (parallel::g_device_manager == nullptr) {
     MS_LOG(INFO) << "parallel::g_device_manager is not initialized.";
     return;

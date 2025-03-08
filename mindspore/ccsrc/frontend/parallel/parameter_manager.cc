@@ -447,7 +447,8 @@ void SliceParameterObj(const ParameterPtr &parameter, const TensorLayoutPtr &ten
   (void)python_adapter::CallPyFn(SLICE_PARAMETER_FN_PATH, SLICE_PARAMETER_FN_NAME, py_obj, py::str(phase), layout);
 
   // handle cloned parameter, like accu_grad and optimizer param
-  auto grad_accumulation_shard = ParallelContext::GetInstance()->grad_accumulation_shard();
+  auto grad_accumulation_shard =
+    ParallelContext::GetInstance()->grad_accumulation_shard() || ParallelContext::GetInstance()->zero3();
   auto cloned_py_obj = GetPyParameterObj(param_info, CLONED_OBJ);
   if (!py::isinstance<py::none>(cloned_py_obj)) {
     if (!py::isinstance<py::list>(cloned_py_obj)) {
@@ -674,7 +675,8 @@ void GetSubRootParams(const AnfNodePtrList &root_params, AnfNodePtrList *sub_roo
 
 void SetClonedTensorShapeForOptimizer(const FuncGraphPtr &root) {
   MS_EXCEPTION_IF_NULL(root);
-  auto grad_accumulation_shard = ParallelContext::GetInstance()->grad_accumulation_shard();
+  auto grad_accumulation_shard =
+    ParallelContext::GetInstance()->grad_accumulation_shard() || ParallelContext::GetInstance()->zero3();
   auto root_params = root->parameters();
   AnfNodePtrList sub_root_params;
   GetSubRootParams(root_params, &sub_root_params);
@@ -893,6 +895,9 @@ static std::pair<AnfNodePtr, bool> FindParameterByParameter(const AnfNodePtr &no
     return std::make_pair(nullptr, false);
   }
   auto ref_param_layout = ref_param->user_data<parallel::TensorLayout>();
+  if (ref_param_layout && ParallelContext::GetInstance()->zero3()) {
+    return std::make_pair(ref_param, false);
+  }
   if (ref_param_layout && !ref_param_layout->opt_shard_group().empty() &&
       ref_param_layout->opt_shard_mirror_group().empty() && name == ALL_REDUCE) {
     return std::make_pair(nullptr, false);
@@ -910,6 +915,10 @@ static std::pair<AnfNodePtr, bool> FindParameterByFuncGraph(const AnfNodePtr &no
     return FindParameter(pre_node, pre_node->func_graph());
   }
   return std::make_pair(nullptr, false);
+}
+
+bool IsSkipNodes(const PrimitivePtr &prim) {
+  return prim->name() == DEPEND || prim->name() == LOAD || prim->name() == INSERTGRADIENTOF || prim->name() == CAST;
 }
 
 // Only used for InsertMirrorOps
@@ -950,9 +959,7 @@ std::pair<AnfNodePtr, bool> FindParameter(const AnfNodePtr &node, const FuncGrap
   for (size_t index = 0; index < cnode->size(); ++index) {
     PrimitivePtr prim = prim_anf_node->value()->cast<PrimitivePtr>();
     MS_EXCEPTION_IF_NULL(prim);
-    if ((prim->name() == DEPEND || prim->name() == LOAD || prim->name() == INSERTGRADIENTOF ||
-         IsInAllGatherNodeList(cnode)) &&
-        index != 1) {
+    if ((IsSkipNodes(prim) || IsInAllGatherNodeList(cnode)) && index != 1) {
       continue;
     }
     auto res = FindParameter(cnode->input(index), func_graph);
