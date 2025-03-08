@@ -24,6 +24,7 @@
 #include <thread>
 
 #include "minddata/dataset/kernels/image/dvpp/utils/AclLiteUtils.h"
+#include "minddata/utils.h"
 #include "utils/log_adapter.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
@@ -391,6 +392,7 @@ void DvppVideo::StartFrameDecoder() {
 
 // ffmpeg decoder entry
 void DvppVideo::FrameDecodeThreadFunction(void *decoderSelf) {
+  mindspore::dataset::BindThreadCoreForMindDataOp("dataset::DvppVideo::FrameDecodeThreadFunction");
   if (decoderSelf == nullptr) {
     return;
   }

@@ -33,6 +33,7 @@
 #include "minddata/dataset/util/status.h"
 #include "minddata/dataset/util/task_manager.h"
 #include "minddata/dataset/util/wait_post.h"
+#include "minddata/utils.h"
 #include "utils/file_utils.h"
 #include "utils/system/crc32c.h"
 
@@ -236,7 +237,7 @@ Status TFReaderOp::CalculateNumRowsPerShard() {
   } else {
     for (auto it = filename_index_->begin(); it != filename_index_->end(); ++it) {
       std::vector<std::string> file(1, it.value());
-      int64_t num = CountTotalRowsSectioned(file, 0, 1, compression_type_);
+      int64_t num = CountTotalRowsSectioned(file, 0, 1, compression_type_, false);
       filename_numrows_[it.value()] = num;
       num_rows_ += num;
     }
@@ -1048,12 +1049,12 @@ Status TFReaderOp::CountTotalRows(int64_t *out_total_rows, const std::vector<std
 
       if (estimate) {
         // Parse a single file for each chunk with estimate mode on
-        async_results.push_back(
-          std::async(std::launch::async, &CountTotalRowsSectioned, filenames, begin, begin + 1, compression_type));
+        async_results.push_back(std::async(std::launch::async, &CountTotalRowsSectioned, filenames, begin, begin + 1,
+                                           compression_type, true));
       } else {
         // Parse the whole chunk with estimate mode off
         async_results.push_back(
-          std::async(std::launch::async, &CountTotalRowsSectioned, filenames, begin, end, compression_type));
+          std::async(std::launch::async, &CountTotalRowsSectioned, filenames, begin, end, compression_type, true));
       }
 
       begin = end;
@@ -1081,7 +1082,10 @@ Status TFReaderOp::CountTotalRows(int64_t *out_total_rows, const std::vector<std
 }
 
 int64_t TFReaderOp::CountTotalRowsSectioned(const std::vector<std::string> &filenames, int64_t begin, int64_t end,
-                                            CompressionType compression_type) {
+                                            CompressionType compression_type, bool async_flag) {
+  if (async_flag) {
+    mindspore::dataset::BindThreadCoreForMindDataOp("dataset::TFReaderOp::CountTotalRowsSectioned");
+  }
   int64_t rows_read = 0;
   for (size_t i = begin; i < end; i++) {
     auto realpath = FileUtils::GetRealPath(filenames[i].c_str());

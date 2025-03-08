@@ -202,7 +202,11 @@ void ThreadBindCore::bind_thread_core(const std::vector<int> &cpu_list) {
     CPU_SET(static_cast<size_t>(cpu_id), &cpuset);
   }
 
-  pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+  int result = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+  if (result != 0) {
+    MS_LOG(ERROR) << "Failed to bind thread to core list.";
+    return;
+  }
   MS_LOG(INFO) << "Enable bind core to core list: " << cpu_list;
 #endif  // BIND_CORE
 }

@@ -17,6 +17,7 @@
 #include "utils/os.h"
 #include "minddata/dataset/util/log_adapter.h"
 #include "minddata/dataset/util/task_manager.h"
+#include "minddata/utils.h"
 #ifdef WITH_BACKEND
 #include "utils/ms_context.h"
 #include "mindspore/ccsrc/include/backend/data_queue/data_queue_mgr.h"
@@ -26,6 +27,7 @@ namespace dataset {
 thread_local Task *gMyTask = nullptr;
 
 void Task::operator()() {
+  mindspore::dataset::BindThreadCoreForMindDataOp(my_name_);
 #if !defined(_WIN32) && !defined(_WIN64)
   gMyTask = this;
 #endif
