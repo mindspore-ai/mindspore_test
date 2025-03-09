@@ -588,7 +588,7 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
 #endif
     }
     // global guard is generated while graph build
-    c->code()->guard_status() == nullptr;
+    c->code()->guard_status() = nullptr;
     aobject_resource.Release();
   }
   sc.ApplySignature();
