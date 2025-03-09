@@ -23,16 +23,15 @@
 #include "debug/hooker/adapter.h"
 #include "debug/hooker/hook_dynamic_loader.h"
 
-#define TO_MAP(var, id, map) map[id] = static_cast<void *>(&var);
+namespace mindspore {
+namespace hooker {
 
 using HookBeginPtr = void (*)(uint32_t device_id, int step_count_num, std::map<uint32_t, void *> ext_args);
 using HookEndPtr = void (*)(std::map<uint32_t, void *> ext_args);
 
-namespace mindspore {
-namespace hooker {
 class AclDataAdapter : public Adapter {
  public:
-  void AdaptOnStepBegin(uint32_t device_id, int step_count_num, std::vector<std::string> all_kernel_names,
+  void AdaptOnStepBegin(uint32_t device_id, int step_count_num, std::vector<std::string> &&all_kernel_names,
                         bool is_kbyk) override;
 
   void AdaptOnStepEnd() override;
@@ -44,7 +43,7 @@ class AclDataAdapter : public Adapter {
   ~AclDataAdapter() {}
 
  private:
-  bool isLoaded = false;
+  bool isLoaded_ = false;
 };
 
 }  // namespace hooker

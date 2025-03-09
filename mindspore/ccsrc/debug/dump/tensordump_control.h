@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_MINDSPORE_CCSRC_DEBUG_TENSORDUMP_CONTROL_H_
-#define MINDSPORE_MINDSPORE_CCSRC_DEBUG_TENSORDUMP_CONTROL_H_
+#ifndef MINDSPORE_CCSRC_DEBUG_TENSORDUMP_CONTROL_H_
+#define MINDSPORE_CCSRC_DEBUG_TENSORDUMP_CONTROL_H_
 
 #include <set>
 #include <string>

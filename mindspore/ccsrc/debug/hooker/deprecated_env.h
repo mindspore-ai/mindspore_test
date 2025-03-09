@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 
+#ifndef MINDSPORE_CCSRC_DEBUG_HOOKER_DEPRECATED_ENV_H_
+#define MINDSPORE_CCSRC_DEBUG_HOOKER_DEPRECATED_ENV_H_
+
 namespace mindspore {
 namespace hooker {
 void CheckDeprecatedDumpEnv();
 void PrintDeprecatedWarning(bool, bool);
 }  // namespace hooker
 }  // namespace mindspore
+
+#endif

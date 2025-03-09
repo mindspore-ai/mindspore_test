@@ -350,7 +350,7 @@ GEBackend::GEBackend() {
   graph_partition_ = std::make_shared<compile::GraphPartition>(cut_list, "ge");
   graph_compiler_ = std::make_shared<mindspore::ge_backend::runtime::GraphCompiler>(graph_executor_);
   mindspore::ge_backend::runtime::GraphScheduler::GetInstance().Initialize();
-#ifdef ENABLE_DEBUGGER
+#ifndef ENABLE_SECURITY
   dump::CheckDeprecatedDumpEnv();
 #endif
 }
@@ -1662,11 +1662,7 @@ void GEBackend::RunWholeGraph(BackendGraphId graph_id, const VectorRef &inputs, 
 
 // for data_dump
 #ifndef ENABLE_SECURITY
-  bool debugger_actor_need = common::GetEnv("MS_HOOK_ENABLE") == "on";
-  bool dump_flag = false;
-  if (debugger_actor_need) {
-    dump_flag = DebugOnStepBegin(func_graph);
-  }
+  bool dump_flag = DebugOnStepBegin(func_graph);
 #endif
 
   // for profiling
@@ -1713,9 +1709,7 @@ void GEBackend::RunWholeGraph(BackendGraphId graph_id, const VectorRef &inputs, 
 
 // for data_dump
 #ifndef ENABLE_SECURITY
-  if (debugger_actor_need) {
-    DebugOnStepEnd(func_graph, dump_flag);
-  }
+  DebugOnStepEnd(func_graph, dump_flag);
 #endif
 
   // for profiling
@@ -1738,6 +1732,7 @@ bool GEBackend::DebugOnStepBegin(const KernelGraphPtr &func_graph) {
 
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
+#ifndef ENABLE_SECURITY
   auto profiler = profiler::Profiler::GetInstance(kAscendDevice);
   if (profiler == nullptr || !profiler->IsInitialized()) {
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
@@ -1749,6 +1744,7 @@ bool GEBackend::DebugOnStepBegin(const KernelGraphPtr &func_graph) {
       return true;
     }
   }
+#endif
   return false;
 }
 
@@ -1756,6 +1752,7 @@ void GEBackend::DebugOnStepEnd(const KernelGraphPtr &graph, bool dump_flag) {
   if (!dump_flag) {
     return;
   }
+#ifndef ENABLE_SECURITY
   MS_LOG(INFO) << "Debug on step end.";
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -1771,6 +1768,7 @@ void GEBackend::DebugOnStepEnd(const KernelGraphPtr &graph, bool dump_flag) {
     res_manager->SyncAllStreams();
     hookDebugger.HookOnStepEnd();
   }
+#endif
   res_manager->SyncAllStreams();
 }
 

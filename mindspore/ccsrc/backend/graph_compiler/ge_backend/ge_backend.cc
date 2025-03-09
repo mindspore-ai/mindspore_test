@@ -422,11 +422,7 @@ void GEBackend::RunGraph(const std::string &graph_info, const device::DeviceCont
 
 // for data_dump
 #ifndef ENABLE_SECURITY
-  bool debugger_actor_need = common::GetEnv("MS_HOOK_ENABLE") == "on";
-  bool dump_flag = false;
-  if (debugger_actor_need) {
-    dump_flag = DebugOnStepBegin(func_graph);
-  }
+  bool dump_flag = DebugOnStepBegin(func_graph);
 #endif
 
   // for profiling
@@ -466,9 +462,7 @@ void GEBackend::RunGraph(const std::string &graph_info, const device::DeviceCont
 
 // for data_dump
 #ifndef ENABLE_SECURITY
-  if (debugger_actor_need) {
-    DebugOnStepEnd(func_graph, device_context, dump_flag);
-  }
+  DebugOnStepEnd(func_graph, device_context, dump_flag);
 #endif
 
   // for profiling
@@ -498,6 +492,7 @@ bool GEBackend::DebugOnStepBegin(const KernelGraphPtr &func_graph) {
 
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
+#ifndef ENABLE_SECURITY
   hooker::CheckDeprecatedDumpEnv();
   auto profiler = profiler::Profiler::GetInstance(kAscendDevice);
   if (profiler == nullptr || !profiler->IsInitialized()) {
@@ -509,6 +504,7 @@ bool GEBackend::DebugOnStepBegin(const KernelGraphPtr &func_graph) {
       return true;
     }
   }
+#endif
   return false;
 }
 
@@ -517,11 +513,13 @@ void GEBackend::DebugOnStepEnd(const KernelGraphPtr &graph, const device::Device
   if (!dump_flag) {
     return;
   }
+#ifndef ENABLE_SECURITY
   auto &hookDebugger = hooker::HookDebugger::GetInstance();
   if (hookDebugger.IsHookerEnabled()) {
     device_context->device_res_manager_->SyncAllStreams();
     hookDebugger.HookOnStepEnd();
   }
+#endif
   device_context->device_res_manager_->SyncAllStreams();
 }
 
