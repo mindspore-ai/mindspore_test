@@ -21,15 +21,12 @@ import math
 import copy
 import numpy as np
 from scipy import linalg as la
-from mindspore.context import ParallelMode
 import mindspore.nn as nn
 from mindspore.nn.optim import LARS
 from mindspore import log as logger
 from mindspore.common import Parameter
-from mindspore.communication.management import get_group_size
+from mindspore.communication.management import get_rank, get_group_size
 from mindspore.train.serialization import load_checkpoint
-from mindspore.parallel._utils import _get_global_rank
-from mindspore.parallel._auto_parallel_context import auto_parallel_context
 from mindspore.boost.less_batch_normalization import CommonHeadLastFN
 
 
@@ -329,7 +326,7 @@ def _get_local_pca_mat_path(weight_load_dir, pca_mat_path, n_component, device_n
     if os.path.exists(save_pca_end_path):
         os.remove(save_pca_end_path)
 
-    rank = _get_global_rank()
+    rank = get_rank()
     local_pca_mat_path = full_pca_mat_path[:-4] + "_rank_" + str(rank) + ".npy"
     if os.path.exists(local_pca_mat_path):
         os.remove(local_pca_mat_path)
@@ -498,8 +495,7 @@ def _save_local_pca_mat(pca_mat, full_pca_mat_path, n_component):
         full_pca_mat_path (str): the path of full pca mat.
         n_component (int): pca component.
     """
-    parallel_mode = auto_parallel_context().get_parallel_mode()
-    rank_size = 1 if parallel_mode == ParallelMode.STAND_ALONE else get_group_size()
+    rank_size = get_group_size()
     local_dim = math.ceil(n_component // rank_size)
     for rank_id in range(rank_size):
         start_index = rank_id * local_dim

@@ -20,8 +20,10 @@ from mindspore import Tensor, ops
 from mindspore.ops import operations as P
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
-from mindspore.nn.wrap.grad_reducer import PipelineGradReducer
+from mindspore.nn import PipelineGradReducer
 
+from mindspore.parallel.auto_parallel import AutoParallel
+from hccl_test.manage.api import Hccl
 
 class DatasetLenet():
     def __init__(self, data, label, length=3):
@@ -166,3 +168,44 @@ def test_pipeline_functional_shard_stage0():
     dataset = DatasetLenet(data, label, 3)
     for data, label in dataset:
         train_one_step(data, label)
+
+def test_pipeline_functional_shard_stage0_1():
+    """
+    Feature: pipeline parallel functional
+    Description:  test pipeline parallel functional with parameter shard
+    Expectation: success
+    """
+
+    hccl = Hccl()
+    hccl.rank_id = 3
+    hccl.rank_size = 32
+    data = Tensor(np.ones([32, 64]), dtype=ms.float32)
+    label = Tensor(np.ones([64, 64]), dtype=ms.float32)
+    strategy1 = ((16, 1), (1, 1))
+    strategy2 = ((8, 1), (1, 1))
+
+    net = nn.PipelineCell(Net(strategy1, strategy2), 4)
+
+    def forward_fn(inputs, target):
+        loss = net(inputs, target)
+        return loss
+
+    params = net.network.cell1.trainable_params()
+    grad_fn = ops.value_and_grad(forward_fn, None, params)
+    optimizer = nn.SGD(params, learning_rate=0.01)
+    pp_grad_reducer = PipelineGradReducer(optimizer.parameters, opt_shard=True)
+
+    @ms.jit
+    def train_one_step(inputs, target):
+        loss, grads = grad_fn(inputs, target)
+        grads = pp_grad_reducer(grads)
+        optimizer(grads)
+        return loss, grads
+
+    parallel_net = AutoParallel(train_one_step, parallel_mode="semi_auto")
+    parallel_net.hsdp()
+    parallel_net.pipeline(stages=2)
+
+    dataset = DatasetLenet(data, label, 3)
+    for data, label in dataset:
+        parallel_net.compile(data, label)

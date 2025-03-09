@@ -153,6 +153,9 @@ class ParamInfo {
     is_pipeline_shared_param_ = is_pipeline_shared_param;
   }
 
+  bool is_param_init() const { return is_param_init_; }
+  void set_is_param_init(bool is_param_init) { is_param_init_ = is_param_init; }
+
  private:
   std::string name_{"Parameter"};
   bool requires_grad_{true};
@@ -196,6 +199,8 @@ class ParamInfo {
   bool ignore_device_addr_{false};
   // Used to indicate shared parameter for pipeline parallel
   bool is_pipeline_shared_param_{false};
+  // Used to indicate is auto_parallel mode and parameter is inited.
+  bool is_param_init_{false};
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_IR_PARAM_INFO_H_

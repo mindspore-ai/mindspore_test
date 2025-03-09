@@ -507,6 +507,10 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("get_sharding_propagation", &ParallelContext::sharding_propagation, "Get sharding strategy propagation value.")
     .def("set_ops_strategy_json_config", &ParallelContext::set_ops_strategy_json_config,
          "Set ops strategy save&load config.")
+    .def("set_init_param_in_compile", &ParallelContext::set_init_param_in_compile, "Set init param in compile.")
+    .def("get_init_param_in_compile", &ParallelContext::init_param_in_compile, "Get the init param in compile.")
+    .def("set_auto_parallel_new_interface", &ParallelContext::set_auto_parallel_new_interface, "Set interface flag.")
+    .def("get_auto_parallel_new_interface", &ParallelContext::auto_parallel_new_interface, "Get interface flag.")
     .def("reset", &ParallelContext::Reset, "Reset auto parallel context.");
   MS_LOG(INFO) << "Start CostModelContext...";
   (void)py::class_<CostModelContext, std::shared_ptr<CostModelContext>>(m, "CostModelContext")

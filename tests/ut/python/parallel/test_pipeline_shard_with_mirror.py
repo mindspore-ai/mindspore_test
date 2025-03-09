@@ -21,7 +21,9 @@ import mindspore.ops.operations as P
 from mindspore import Tensor, Parameter
 from mindspore.nn.optim import Momentum
 from mindspore import context, lazy_inline
-from mindspore.nn.wrap.cell_wrapper import PipelineCell, _TrainGradAccuStepCell
+from mindspore.nn.wrap.cell_wrapper import _TrainGradAccuStepCell
+from mindspore.nn import PipelineCell
+from mindspore.parallel.nn import Pipeline
 from parallel.utils.utils import compile_net, ParallelValidator
 
 
@@ -119,6 +121,29 @@ def test_two_net_with_different_stages():
     label = Tensor(np.zeros([32, 768]).astype(np.float32))
     net = FullNet()
     net = PipelineCell(net, 4)
+
+    optimizer = Momentum(net.trainable_params(), learning_rate=0.1, momentum=0.9)
+    train_network = _TrainGradAccuStepCell(net, optimizer)
+    train_network.set_train()
+    phase = compile_net(train_network, inputs, label)
+    validator = ParallelValidator(train_network, phase)
+    expect_output = ['Net_construct', '(0, 0)', '(4, 768)', '(1, 1)', 0, 0, 0, 0, 0]
+    assert validator.check_node_inputs_fuzzy_match("StridedSlice-1", expect_output, graph_id=1)
+
+
+def test_two_net_with_different_stages_using_pipeline():
+    """
+    Feature: test new interface Pipeline
+    Description: test mirror insert
+    Expectation: compile success
+    """
+    context.set_context(mode=context.GRAPH_MODE)
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", pipeline_stages=2,
+                                      device_num=8, enable_parallel_optimizer=False)
+    inputs = Tensor(np.ones([32, 768]).astype(np.float32))
+    label = Tensor(np.zeros([32, 768]).astype(np.float32))
+    net = FullNet()
+    net = Pipeline(net, 4)
 
     optimizer = Momentum(net.trainable_params(), learning_rate=0.1, momentum=0.9)
     train_network = _TrainGradAccuStepCell(net, optimizer)

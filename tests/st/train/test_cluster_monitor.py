@@ -58,7 +58,7 @@ def test_ccae_dp_tp(mode):
     Expectation: Success.
     """
     ms.set_context(mode=mode)
-    dp, tp = _get_dp_tp_from_layout(parameter_layout_dict)
+    dp, tp = _get_dp_tp_from_layout(parameter_layout_dict, initial_rank=0)
     assert tp == [[0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15]]
     assert dp == [[0], [4], [8], [12], [1], [5], [9], [13], [2], [6], [10], [14], [3], [7], [11], [15]]
 

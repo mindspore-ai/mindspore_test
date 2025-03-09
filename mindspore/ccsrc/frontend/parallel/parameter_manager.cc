@@ -648,6 +648,8 @@ void AutoParallelPostProcess(const FuncGraphPtr &root) {
     if (layout != nullptr && !enable_param_init_prof.empty()) {
       MS_LOG(WARNING) << "Slice finish: " << param_ptr->name();
     }
+    auto param_info = param_ptr->param_info();
+    param_info->set_is_param_init(true);
   }
 }
 

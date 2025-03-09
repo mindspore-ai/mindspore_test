@@ -24,7 +24,7 @@ from mindspore.nn.wrap.cell_wrapper import _VirtualDatasetCell
 from mindspore.nn.optim import Momentum
 from mindspore.ops import operations as P
 from mindspore import context
-from mindspore.train.serialization import restore_group_info_list
+from mindspore import restore_group_info_list
 
 
 def setup_function():

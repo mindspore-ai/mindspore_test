@@ -22,7 +22,7 @@ from mindspore.common import *
 from mindspore.common import _tensor_docs
 del _tensor_docs
 from mindspore.mindrecord import *
-from mindspore.ops import _op_impl, grad, value_and_grad, vjp, jvp, jacfwd, jacrev, vmap, get_grad, constexpr, reshard
+from mindspore.ops import _op_impl, grad, value_and_grad, vjp, jvp, jacfwd, jacrev, vmap, get_grad, constexpr
 from mindspore.train import *
 from mindspore.log import *
 from mindspore.utils import *
@@ -35,7 +35,10 @@ from mindspore.version import __version__
 from mindspore.profiler import Profiler, EnvProfiler
 from mindspore.parallel import set_algo_parameters, get_algo_parameters, reset_algo_parameters, \
     rank_list_for_transform, transform_checkpoint_by_rank, transform_checkpoints, merge_pipeline_strategys, shard, \
-    Layout, sync_pipeline_shared_parameters, parameter_broadcast, load_segmented_checkpoints, unified_safetensors
+    Layout, sync_pipeline_shared_parameters, parameter_broadcast, load_segmented_checkpoints, unified_safetensors, \
+    load_distributed_checkpoint, merge_sliced_parameter, restore_group_info_list, \
+    build_searched_strategy
+from mindspore.parallel.function import reshard
 from mindspore.rewrite import SymbolTree, ScopedValue, Node, NodeType
 from mindspore.safeguard import obfuscate_ckpt, load_obf_params_into_net
 from mindspore._check_jit_forbidden_api import get_obj_module_and_name_info, is_jit_forbidden_module, \

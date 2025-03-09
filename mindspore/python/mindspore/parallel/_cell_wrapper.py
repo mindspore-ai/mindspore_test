@@ -168,15 +168,16 @@ def _remove_param_not_load(param_name, param_not_load):
         param_not_load.remove(param_name)
 
 
-def _single_parameter_broadcast(net, layout, cur_rank=0, initial_rank=0, param_not_load=None):
+def _single_parameter_broadcast(net, layout, param_not_load=None):
     """
     Broadcast single parameter to other rank in data parallel dimension.
     """
     from mindspore import Tensor
     origin_parallel_mode = context.get_auto_parallel_context("parallel_mode")
     origin_dataset_strategy = context.get_auto_parallel_context("dataset_strategy")
+    cur_rank = get_rank()
     if layout:
-        param_redundancy = get_parameter_redundancy(layout, initial_rank)
+        param_redundancy = get_parameter_redundancy(layout)
     else:
         param_redundancy = get_parameter_redundancy(net)
     if not param_redundancy:

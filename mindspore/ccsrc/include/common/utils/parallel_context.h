@@ -269,6 +269,12 @@ class COMMON_EXPORT ParallelContext {
   void set_zero3(const bool);
   bool zero3() const { return zero3_; }
 
+  void set_init_param_in_compile(const bool init_param_in_compile);
+  bool init_param_in_compile() const { return init_param_in_compile_; }
+
+  void set_auto_parallel_new_interface(const bool auto_parallel_new_interface);
+  bool auto_parallel_new_interface() const { return auto_parallel_new_interface_; }
+
   void set_symbol_infos(const std::vector<symshape::SymbolInfoList> &symbol_infos) { symbol_infos_ = symbol_infos; }
   const std::vector<symshape::SymbolInfoList> &symbol_infos() const { return symbol_infos_; }
 
@@ -346,6 +352,8 @@ class COMMON_EXPORT ParallelContext {
   bool zero3_ = false;
   bool is_dynamic_shape_parallel_ = false;
   bool dynamic_shape_parallel_flag_is_set_ = false;
+  bool init_param_in_compile_ = true;
+  bool auto_parallel_new_interface_ = false;
 };
 }  // namespace mindspore::parallel
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_PARALLEL_CONTEXT_H_

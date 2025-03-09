@@ -22,7 +22,7 @@ from mindspore.ops import operations as P
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
 from mindspore.train import Model
-from mindspore.nn.wrap.cell_wrapper import PipelineCell, Cell
+from mindspore.nn import PipelineCell, Cell
 from mindspore import lazy_inline
 from mindspore.communication import init
 from mindspore.nn.optim import Momentum

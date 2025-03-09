@@ -23,7 +23,7 @@ from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
 from mindspore.communication.management import get_group_size
 from mindspore.context import ParallelMode
-from mindspore.nn.wrap.grad_reducer import DistributedGradReducer
+from mindspore.nn import DistributedGradReducer
 from mindspore.ops import composite as C
 from mindspore.ops import functional as F
 from mindspore.ops import operations as P

@@ -101,6 +101,8 @@ void ParallelContext::Reset() {
   dump_device_local_norm_ = false;
   is_dynamic_shape_parallel_ = false;
   dynamic_shape_parallel_flag_is_set_ = false;
+  init_param_in_compile_ = true;
+  auto_parallel_new_interface_ = false;
   dataset_strategy_devmat_.clear();
   dataset_strategy_tensormap_.clear();
   dataset_strategy_alias_name_.clear();
@@ -365,6 +367,14 @@ void ParallelContext::set_dump_local_norm_path(const std::string &dump_local_nor
 
 void ParallelContext::set_dump_device_local_norm(const bool dump_device_local_norm) {
   dump_device_local_norm_ = dump_device_local_norm;
+}
+
+void ParallelContext::set_init_param_in_compile(const bool init_param_in_compile) {
+  init_param_in_compile_ = init_param_in_compile;
+}
+
+void ParallelContext::set_auto_parallel_new_interface(const bool auto_parallel_new_interface) {
+  auto_parallel_new_interface_ = auto_parallel_new_interface;
 }
 
 }  // namespace mindspore::parallel

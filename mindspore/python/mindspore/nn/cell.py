@@ -55,6 +55,7 @@ from mindspore.ops.operations import Cast
 from mindspore.ops.primitive import Primitive
 from mindspore.ops.operations import _inner_ops as inner
 from mindspore.parallel.shard import Shard
+from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_parallel_context
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore.common._decorator import deprecated
 from mindspore.common._register_for_recompute import recompute_registry
@@ -100,6 +101,7 @@ def register_cell_buffer_registration_hook(hook: Callable[..., None],) -> Remova
     handle = RemovableHandle(_global_buffer_registration_hooks)
     _global_buffer_registration_hooks[handle.id] = hook
     return handle
+
 
 
 class Cell(Cell_):
@@ -1493,9 +1495,11 @@ class Cell(Cell_):
             args (tuple): Args of the Cell object.
             kwargs (dict): Kwargs of the Cell object.
         """
+        _init_auto_parallel_context(self)
         self._compile_args = self._get_compile_args(args)
         _cell_graph_executor.compile(self, *self._compile_args, phase=self.phase,
                                      jit_config_dict=self._jit_config_dict, **kwargs)
+        _clear_auto_parallel_context(self)
 
     def compile_and_run(self, *args, **kwargs):
         """
@@ -3405,12 +3409,9 @@ class Cell(Cell_):
         if 'mp_comm_recompute' in kwargs.keys():
             self._mp_comm_recompute(kwargs.get('mp_comm_recompute', False))
         if 'parallel_optimizer_comm_recompute' in kwargs.keys():
-            if (kwargs.get('parallel_optimizer_comm_recompute', False) and
-                    context.get_auto_parallel_context("pipeline_stages") > 1):
+            if kwargs.get('parallel_optimizer_comm_recompute', False):
                 logger.warning("Currently, the communication operator allgathers introduced by optimizer shard "
-                               "are not support recomputation in pipeline parallel.")
-            elif context.get_auto_parallel_context("pipeline_stages") == 1:
-                self._parallel_optimizer_comm_recompute(kwargs.get('parallel_optimizer_comm_recompute', False))
+                               "is replaced with zero3.")
         if 'recompute_slice_activation' in kwargs:
             self._recompute_slice_activation(kwargs.get('recompute_slice_activation', False))
 

@@ -22,8 +22,8 @@ from mindspore.ops import operations as P
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
 from mindspore.train import Model
-from mindspore.nn.wrap.cell_wrapper import GradAccumulationCell, MicroBatchInterleaved
 from mindspore.parallel import set_algo_parameters
+from mindspore.nn import GradAccumulationCell, MicroBatchInterleaved
 from .test_pipeline_split import DatasetLenet
 
 
@@ -76,7 +76,6 @@ def test_grad_accumulation_base():
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
     model.train(2, dataset, dataset_sink_mode=False)
-
 
 def test_grad_accumulation_auto_parallel():
     '''
@@ -236,4 +235,49 @@ def test_grad_accumulation_with_micro_batch_interleaved_stage0():
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
+    model.train(2, dataset, dataset_sink_mode=False)
+
+
+def test_grad_accumulation_new_module():
+    '''
+    Feature: grad_accumulation in new module
+    Description: In grad_accumulation mode, expected success
+    Expectation: success
+    '''
+    from mindspore.parallel.nn import GradAccumulation
+    context.set_auto_parallel_context(device_num=32, global_rank=0)
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+    data = Tensor(np.ones([32, 64]), dtype=ms.float32)
+    label = Tensor(np.ones([64, 64]), dtype=ms.float32)
+    strategy1 = ((16, 1), (1, 1))
+    strategy2 = ((8, 1), (1, 1))
+    net = GradAccumulation(Net(strategy1, strategy2), 4)
+    params = net.network.trainable_params()
+    dataset = DatasetLenet(data, label, 3)
+    optimizer = nn.Lamb(params, learning_rate=0.01)
+    model = Model(net, optimizer=optimizer)
+    model.train(2, dataset, dataset_sink_mode=False)
+
+def test_grad_accumulation_using_autoparallel_cell():
+    '''
+    Feature: test GradAccumulation in new module using AutoParallel(cell)
+    Description: In grad_accumulation mode, expected success
+    Expectation: success
+    '''
+    from hccl_test.manage.api import Hccl
+    from mindspore.parallel.auto_parallel import AutoParallel
+    from mindspore.parallel.nn import GradAccumulation
+    hccl = Hccl()
+    hccl.rank_id = 0
+    hccl.rank_size = 32
+    data = Tensor(np.ones([32, 64]), dtype=ms.float32)
+    label = Tensor(np.ones([64, 64]), dtype=ms.float32)
+    strategy1 = ((16, 1), (1, 1))
+    strategy2 = ((8, 1), (1, 1))
+    net = GradAccumulation(Net(strategy1, strategy2), 4)
+    parallel_net = AutoParallel(net, parallel_mode="semi_auto")
+    params = net.network.trainable_params()
+    dataset = DatasetLenet(data, label, 3)
+    optimizer = nn.Lamb(params, learning_rate=0.01)
+    model = Model(parallel_net, optimizer=optimizer)
     model.train(2, dataset, dataset_sink_mode=False)

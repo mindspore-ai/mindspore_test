@@ -339,7 +339,7 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
     io_cost_time = 0
     if src_strategy_file is not None:
         from mindspore.train._utils import get_parameter_redundancy
-        redundancy_dict_tmp = get_parameter_redundancy(src_strategy_file)
+        redundancy_dict_tmp = get_parameter_redundancy(src_strategy_file, initial_rank=0)
         redundancy_dict = {}
         device_num = 0
         for param_name, redundancy in redundancy_dict_tmp.items():
