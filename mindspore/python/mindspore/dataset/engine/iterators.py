@@ -355,9 +355,11 @@ class Iterator:
                            "It might because Iterator stop() had been called, or C++ pipeline crashed silently.")
             raise RuntimeError("Iterator does not have a running C++ pipeline.")
 
-        if self.parallel_convert:
-            return self._parallel_transformation_iteration()
-        return self.serial_conversion_iteration()
+        from mindspore.profiler import mstx
+        range_id = mstx.range_start('dataloader', None)
+        out = self._parallel_transformation_iteration() if self.parallel_convert else self.serial_conversion_iteration()
+        mstx.range_end(range_id)
+        return out
 
     def __deepcopy__(self, memo):
         return self

@@ -21,6 +21,7 @@
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "common/ms_factory.h"
+#include "debug/profiler/mstx/mstx_impl.h"
 
 namespace mindspore {
 namespace kernel {
@@ -98,7 +99,11 @@ bool GetNextAclKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
     (void)wingman_queue->Pop();
   }
 
-  return AclKernelMod::Launch(inputs, workspace, outputs, stream_ptr);
+  uint64_t range_id = 0;
+  MSTX_START(range_id, mindspore::profiler::MSTX_GETNEXT, stream_ptr, mindspore::profiler::MSTX_DOMAIN_DEFAULT);
+  auto ret = AclKernelMod::Launch(inputs, workspace, outputs, stream_ptr);
+  MSTX_END(range_id, mindspore::profiler::MSTX_DOMAIN_DEFAULT);
+  return ret;
 }
 MS_KERNEL_FACTORY_REG(AclKernelMod, GetNext, GetNextAclKernelMod);
 }  // namespace kernel

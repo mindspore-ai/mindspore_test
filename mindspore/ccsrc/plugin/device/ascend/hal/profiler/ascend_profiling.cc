@@ -23,7 +23,7 @@
 #include "include/common/utils/utils.h"
 #include "debug/profiler/profiling_framework_data.h"
 #include "debug/profiler/profiling_python.h"
-#include "plugin/device/ascend/hal/profiler/mstx/mstx_mgr.h"
+#include "plugin/device/ascend/hal/profiler/mstx/mstx_dispatcher.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_pool.h"
 #include "plugin/device/ascend/hal/profiler/ascend_profiling.h"
@@ -232,7 +232,7 @@ void AscendProfiler::Start() {
       MS_LOG(EXCEPTION) << "Failed call aclprofStart function. error_code : " << static_cast<int>(aclRet);
     }
     if (config_.mstx) {
-      MstxMgr::GetInstance().Enable();
+      MstxDispatcher::GetInstance().Enable();
     }
     MS_LOG(INFO) << "Start AscendProfiler npu trace";
   }
@@ -255,7 +255,7 @@ void AscendProfiler::Stop() {
 
   if (config_.npuTrace) {
     if (config_.mstx) {
-      MstxMgr::GetInstance().Disable();
+      MstxDispatcher::GetInstance().Disable();
     }
     aclError aclRet = CALL_ASCEND_API(aclprofStop, aclConfig_);
     if (aclRet != ACL_SUCCESS) {
@@ -335,17 +335,17 @@ void AscendProfiler::StepStop() {
 
 void AscendProfiler::MstxMark(const std::string &message, void *stream) {
   MS_LOG(INFO) << "Ascend mstx mark, message: " << message;
-  MstxMgr::GetInstance().Mark(message.c_str(), stream);
+  MstxDispatcher::GetInstance().Mark(message.c_str(), stream);
 }
 
 int AscendProfiler::MstxRangeStart(const std::string &message, void *stream) {
   MS_LOG(INFO) << "Ascend mstx range start, message: " << message;
-  return MstxMgr::GetInstance().RangeStart(message.c_str(), stream);
+  return MstxDispatcher::GetInstance().RangeStart(message.c_str(), stream);
 }
 
 void AscendProfiler::MstxRangeEnd(int range_id) {
   MS_LOG(INFO) << "Ascend mstx range end, range_id: " << range_id;
-  MstxMgr::GetInstance().RangeEnd(range_id);
+  MstxDispatcher::GetInstance().RangeEnd(range_id);
 }
 
 }  // namespace ascend

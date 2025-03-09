@@ -820,6 +820,8 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
                     data = param["data"] if async_save != "process" else param["data"].asnumpy()
                     data_list[key].append(data)
 
+    from mindspore.profiler import mstx
+    range_id = mstx.range_start('save_checkpoint', None)
     if os.getenv("AITURBO") == "1":
         from aiturbo.checkpoint import aiturbo_mindspore as aiturbo
         ckpt_name = os.path.basename(ckpt_file_name)
@@ -857,6 +859,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
     else:
         _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format)
 
+    mstx.range_end(range_id)
     logger.info("Saving checkpoint process is finished.")
     end_save_time = time.time()
     save_checkpoint_cost_time = end_save_time - start_save_time

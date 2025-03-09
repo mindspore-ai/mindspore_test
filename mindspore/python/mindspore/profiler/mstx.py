@@ -16,6 +16,7 @@
 import mindspore
 import mindspore._c_expression as c_expression
 
+from mindspore import context
 from mindspore import log as logging
 from mindspore.runtime import Stream
 from mindspore.profiler.common.constant import DeviceTarget
@@ -87,6 +88,11 @@ class Mstx:
             ...             train(net)
             ...             profiler.step()
         """
+        if context.get_context('device_target') != DeviceTarget.NPU.value:
+            return
+        if not Mstx.NPU_PROFILER:
+            logging.warning("Invalid npu profiler for mstx, please check.")
+            return
         if not message or not isinstance(message, str):
             logging.warning("Invalid message for mstx.mark func. Please input valid message string.")
             return
@@ -161,6 +167,11 @@ class Mstx:
             ...             train(net)
             ...             profiler.step()
         """
+        if context.get_context('device_target') != DeviceTarget.NPU.value:
+            return 0
+        if not Mstx.NPU_PROFILER:
+            logging.warning("Invalid npu profiler for mstx, please check.")
+            return 0
         if not message or not isinstance(message, str):
             logging.warning("Invalid message for mstx.range_start func. Please input valid message string.")
             return 0
@@ -191,6 +202,11 @@ class Mstx:
             >>> # model.train(1, data)
             >>> # mstx.range_end(range_id)
         """
+        if context.get_context('device_target') != DeviceTarget.NPU.value:
+            return
+        if not Mstx.NPU_PROFILER:
+            logging.warning("Invalid npu profiler for mstx, please check.")
+            return
         if not isinstance(range_id, int):
             logging.warning(
                 "Invalid message for mstx.range_start func. Please input return value from mstx.range_start."
