@@ -16,6 +16,7 @@
 import os
 import math
 import numpy as np
+import time
 
 import mindspore as ms
 import mindspore.dataset as ds
@@ -242,6 +243,7 @@ def graph_func_train(parallel=True, parallel_config=None, cpkt_file=None):
     with open(cpkt_file, 'w') as file:
         file.write("")
     save_checkpoint(net, cpkt_file, integrated_save=True)
+    time.sleep(5)
 
 
 def graph_func_predict_net(parallel_config=None):
