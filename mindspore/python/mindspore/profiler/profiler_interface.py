@@ -20,6 +20,7 @@ from mindspore.common.api import _pynative_executor
 from mindspore.profiler.common.registry import PROFILERS
 from mindspore.profiler.platform.base_profiler import BaseProfiler
 from mindspore.profiler.common.profiler_context import ProfilerContext
+from mindspore.profiler.common.log import ProfilerLogger
 from mindspore.profiler.common.profiler_path_manager import ProfilerPathManager
 
 
@@ -106,6 +107,7 @@ class ProfilerInterface:
             return
         cls.platform_profilers_set.clear()
         cls.is_initialized = False
+        ProfilerLogger.destroy()
         logger.info("ProfilerInterface clear")
 
     @classmethod
