@@ -23,8 +23,8 @@
 #include "backend/ge_backend/graph_ir/utils.h"
 #define private public
 #define protected public
-#include "plugin/device/ascend/optimizer/mindir/dropout_unify_mindir.h"
-#include "plugin/device/ascend/optimizer/ge/lamb_fission.h"
+#include "backend/common/pass/mindir/dropout_unify_mindir.h"
+#include "backend/common/pass/other/lamb_fission.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
 #undef private
 #undef protected

@@ -19,7 +19,7 @@
 #define private public
 #define protected public
 #include "plugin/device/ascend/optimizer/ir_fission/concat_fission.h"
-#include "plugin/device/ascend/optimizer/ir_fission/ascend_convert_tuple_input_to_dynamic_input.h"
+#include "backend/common/pass/ir_fission/ascend_convert_tuple_input_to_dynamic_input.h"
 #undef private
 #undef protected
 
