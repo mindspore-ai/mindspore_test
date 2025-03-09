@@ -28,6 +28,7 @@
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "pynative/forward/forward_task.h"
+#include "include/common/utils/tensor_py.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "include/common/visible.h"
 
@@ -164,7 +165,7 @@ struct DataConvert {
 };
 
 struct PyBoost {
-  static FrontendOpRunInfoPtr Init(const PrimitivePtr &prim, const py::list &args);
+  static FrontendOpRunInfoPtr Init(const PrimitivePtr &prim);
   static void DoGrad(const kernel::pyboost::OpPtr &op, const OpGradInfoPtr &grad_info, const AsyncStatus &async_status);
   static void SetAnyValueForAbstract(const kernel::pyboost::OpPtr &op);
   static void UpdateStubOutput(const kernel::pyboost::OpPtr &op, const stub::StubNodePtr &stub_output,

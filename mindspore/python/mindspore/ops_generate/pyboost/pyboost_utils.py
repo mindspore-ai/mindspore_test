@@ -115,6 +115,54 @@ def get_convert_type_str(dtype: str, optional):
     raise TypeError(f"""Unsupported convert type {dtype} for args.""")
 
 
+def get_input_args_type_str(dtype: str, optional):
+    """
+    Convert type
+    """
+    # add more type here
+    native_type = {
+        'int': 'Int64ImmPtr',
+        'float': 'FP32ImmPtr',
+        'bool': 'BoolImmPtr',
+        'number': 'ScalarPtr',
+        'tuple[int]': 'ValueTuplePtr',
+        'tuple[float]': 'ValueTuplePtr',
+        'tuple[bool]': 'ValueTuplePtr',
+        'tuple[tensor]': 'ValueTuplePtr',
+        'list[int]': 'ValueTuplePtr',
+        'list[float]': 'ValueTuplePtr',
+        'list[bool]': 'ValueTuplePtr',
+        'list[tensor]': 'ValueTuplePtr',
+        'tensor': 'ValuePtr',
+        'str': 'StringImmPtr',
+        'type': 'Int64ImmPtr',
+    }
+    optional_type = {
+        'int': 'std::optional<Int64ImmPtr>',
+        'float': 'std::optional<FP32ImmPtr>',
+        'number': 'std::optional<ScalarPtr>',
+        'tensor': 'std::optional<ValuePtr>',
+        'type': 'std::optional<Int64ImmPtr>',
+        'str': 'std::optional<StringImmPtr>',
+        'tuple[int]': 'std::optional<ValueTuplePtr>',
+        'tuple[float]': 'std::optional<ValueTuplePtr>',
+        'tuple[bool]': 'std::optional<ValueTuplePtr>',
+        'tuple[tensor]': 'std::optional<ValueTuplePtr>',
+        'list[int]': 'std::optional<ValueTuplePtr>',
+        'list[float]': 'std::optional<ValueTuplePtr>',
+        'list[bool]': 'std::optional<ValueTuplePtr>',
+        'list[tensor]': 'std::optional<ValueTuplePtr>',
+    }
+    if optional:
+        if dtype in optional_type:
+            return optional_type[dtype]
+        raise TypeError(f"""Unknown optional type {dtype} for args.""")
+    if dtype in native_type:
+        return native_type[dtype]
+    raise TypeError(f"""Unknown type {dtype} for args.""")
+
+
+
 def get_value_convert_type_str(dtype: str, optional):
     """
     Convert type

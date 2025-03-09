@@ -955,7 +955,7 @@ void Common::ClearRes() { kGradAbstractConverter.clear(); }
 
 std::string PyParser::GetIdByPyObj(const py::object &obj) {
   if (tensor::IsTensorPy(obj)) {
-    return tensor::ConvertToTensor(obj)->id();
+    return tensor::ConvertToBaseTensor(obj)->id();
   }
   if (IsStubTensor(obj)) {
     return ConvertStubTensor(obj)->id();
@@ -1312,7 +1312,7 @@ ValuePtrList DataConvert::TensorListToValueList(const tensor::BaseTensorPtrList 
   return output_values;
 }
 
-FrontendOpRunInfoPtr PyBoost::Init(const PrimitivePtr &prim, const py::list &args) {
+FrontendOpRunInfoPtr PyBoost::Init(const PrimitivePtr &prim) {
   const auto &pynative_executor = Common::GetPyNativeExecutor();
   const auto &forward_executor = pynative_executor->forward_executor();
   const auto &op_run_info = std::make_shared<FrontendOpRunInfo>();

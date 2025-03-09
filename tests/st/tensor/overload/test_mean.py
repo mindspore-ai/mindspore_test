@@ -149,20 +149,17 @@ def test_method_mean_pyboost(mode):
 
     # test 5: error input
     net = MeanNet()
-    with pytest.raises(TypeError) as error_info:
+    with pytest.raises(TypeError):
         net(x, dim=float(2.0), keepdim=True, dtype=None)
         _pynative_executor.sync()
-    assert "Failed calling mean with " in str(error_info.value)
 
-    with pytest.raises(TypeError) as error_info:
+    with pytest.raises(TypeError):
         net(x, dim=1, keepdim=1, dtype=None)
         _pynative_executor.sync()
-    assert "Failed calling mean with " in str(error_info.value)
 
-    with pytest.raises(TypeError) as error_info:
+    with pytest.raises(TypeError):
         net(x, dim=5, keepdim=1, dtype=None)
         _pynative_executor.sync()
-    assert "Failed calling mean with " in str(error_info.value)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],

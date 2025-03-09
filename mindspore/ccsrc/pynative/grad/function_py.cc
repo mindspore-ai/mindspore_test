@@ -35,13 +35,11 @@ ValuePtr ConvertOutputTensorList(const py::object &obj) {
   ValuePtrList res;
   res.reserve(tuple.size());
   for (size_t i = 0; i < tuple.size(); i++) {
-    auto tensor = parse::ConvertTensor(tuple[i]);
+    auto tensor = parse::ConvertBaseTensor(tuple[i]);
     if (tensor == nullptr) {
       res.emplace_back(kNone);
     } else {
-      if (tensor->isa<tensor::BaseTensor>()) {
-        tensor->cast<tensor::BaseTensorPtr>()->set_need_pipeline_sync(true);
-      }
+      tensor->set_need_pipeline_sync(true);
       res.emplace_back(tensor);
     }
   }
@@ -69,9 +67,8 @@ static BaseTensorPtrSet parse_mark_dirty(const FunctionPtr &fptr) {
     if (!tensor::IsTensorPy(elem) && !IsStubTensor(elem)) {
       MS_LOG(EXCEPTION) << "element of dirty_tensors should be a tensor or subtensor, but get a " << elem.get_type();
     }
-    auto tensor = parse::ConvertTensor(elem);
-    auto value = PyNativeAlgo::Common::StubNodeToValue(tensor);
-    auto base_tensor = value->cast<tensor::BaseTensorPtr>();
+    auto base_tensor = parse::ConvertBaseTensor(elem);
+    MS_EXCEPTION_IF_NULL(base_tensor);
     dirty.insert(base_tensor);
     base_tensor->BumpVersion();
   }
@@ -96,9 +93,8 @@ static BaseTensorPtrSet parse_non_differentiable(const FunctionPtr &fptr) {
       MS_LOG(EXCEPTION) << "element of non_differentiable should be a tensor or subtensor, but get a "
                         << elem.get_type();
     }
-    auto tensor = parse::ConvertTensor(elem);
-    auto value = PyNativeAlgo::Common::StubNodeToValue(tensor);
-    auto base_tensor = value->cast<tensor::BaseTensorPtr>();
+    auto base_tensor = parse::ConvertBaseTensor(elem);
+    MS_EXCEPTION_IF_NULL(base_tensor);
     non_diff.insert(base_tensor);
   }
   fptr->set_non_differentiable(py::none());
@@ -124,9 +120,7 @@ static BaseTensorPtrSet parse_to_save(const FunctionPtr &fptr) {
     if (py::isinstance<py::none>(elem)) {
       continue;
     }
-    auto tensor = parse::ConvertTensor(elem);
-    auto value = PyNativeAlgo::Common::StubNodeToValue(tensor);
-    auto base_tensor = value->cast<tensor::BaseTensorPtr>();
+    auto base_tensor = parse::ConvertBaseTensor(elem);
     to_save_tensors.insert(base_tensor);
   }
   return to_save_tensors;
@@ -249,16 +243,12 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   py::tuple need_grad_input = py::tuple(inputs.size());
   runtime::Pipeline::Get().WaitBpropStage();  // wait to get inputs value
   for (size_t i = 0; i < inputs.size(); ++i) {
-    auto tensor = parse::ConvertTensor(inputs[i]);
-    if (tensor != nullptr) {
-      tensor = PyNativeAlgo::Common::StubNodeToValue(tensor);
+    auto base_tensor = parse::ConvertBaseTensor(inputs[i]);
+    if (base_tensor != nullptr) {
       (void)is_tensor_input.emplace_back(true);
-      if (tensor->isa<tensor::BaseTensor>()) {
-        tensor->cast<tensor::BaseTensorPtr>()->set_need_pipeline_sync(true);
-      }
-      auto base_tensor = tensor->cast<tensor::BaseTensorPtr>();
+      base_tensor->set_need_pipeline_sync(true);
       need_grad_input[i] = PyNativeAlgo::AutoGradUtil::NeedGrad(base_tensor) ? py::bool_(true) : py::bool_(false);
-      (void)context->inputs.emplace_back(tensor);
+      (void)context->inputs.emplace_back(base_tensor);
     } else {
       (void)is_tensor_input.emplace_back(false);
       need_grad_input[i] = py::bool_(false);

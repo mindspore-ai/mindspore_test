@@ -23,11 +23,11 @@
 
 namespace mindspore::pynative::autograd {
 namespace {
-AutoGradMetaDataWeakPtr BuildAutoGradMeta(const tensor::Tensor &tensor) {
+AutoGradMetaDataWeakPtr BuildAutoGradMeta(const tensor::BaseTensorPtr &tensor) {
   auto auto_grad_meta_data = impl::get_autograd_meta_impl(tensor);
   if (auto_grad_meta_data == nullptr) {
     auto_grad_meta_data = std::make_shared<AutoGradMetaData>();
-    const_cast<tensor::Tensor &>(tensor).set_auto_grad_meta_data(auto_grad_meta_data);
+    const_cast<tensor::BaseTensorPtr &>(tensor)->set_auto_grad_meta_data(auto_grad_meta_data);
     MS_LOG(DEBUG) << "Tensor has no auto_grad_meta_data, build it";
   }
   return {auto_grad_meta_data};
@@ -40,12 +40,12 @@ std::map<uint64_t, std::vector<uint64_t>> RegisterHook::tensor_id_with_unique_id
 std::map<uint64_t, std::weak_ptr<std::map<uint64_t, py::function>>> RegisterHook::tensor_id_with_hook_map_ = {};
 std::map<uint64_t, std::pair<AutoGradMetaDataWeakPtr, TensorBackwardHookPtr>> RegisterHook::hook_meta_fn_map_ = {};
 
-uint64_t RegisterHook::RegisterTensorBackwardHook(const tensor::Tensor &tensor, const py::function &hook) {
+uint64_t RegisterHook::RegisterTensorBackwardHook(const tensor::BaseTensorPtr &tensor, const py::function &hook) {
   // Delete char 'T'
-  const auto &tensor_id = GetTensorNumId(tensor.id());
+  const auto &tensor_id = GetTensorNumId(tensor->id());
   ++unique_id_;
   MS_LOG(DEBUG) << "Register hook " << py::str(py::cast<py::object>(hook)).cast<std::string>() << " for tensor "
-                << tensor.id() << " with handle " << unique_id_;
+                << tensor->id() << " with handle " << unique_id_;
 
   // Add hook for tensor
   auto meta = BuildAutoGradMeta(tensor);
@@ -53,18 +53,18 @@ uint64_t RegisterHook::RegisterTensorBackwardHook(const tensor::Tensor &tensor, 
   MS_EXCEPTION_IF_NULL(meta.lock());
   // If tensor has register hook before and finish once grad; And then register another hook fn, auto grad meta is not
   // nullptr and UpdateTensorBackwardHook will not be call at PyNative forward process. so Call it here.
-  UpdateTensorBackwardHook(meta.lock(), tensor.id());
+  UpdateTensorBackwardHook(meta.lock(), tensor->id());
   meta.lock()->AddBackwardHook(unique_id_, tensor_backward_hook);
   hook_meta_fn_map_.emplace(unique_id_, std::make_pair(meta, tensor_backward_hook));
   tensor_id_with_unique_id_[tensor_id].emplace_back(unique_id_);
 
   if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode) {
     std::shared_ptr<std::map<uint64_t, py::function>> hook_map;
-    if (tensor.has_user_data("backward_hook")) {
-      hook_map = tensor.user_data<std::map<uint64_t, py::function>>("backward_hook");
+    if (tensor->has_user_data("backward_hook")) {
+      hook_map = tensor->user_data<std::map<uint64_t, py::function>>("backward_hook");
     } else {
       hook_map = std::make_shared<std::map<uint64_t, py::function>>();
-      const_cast<tensor::Tensor &>(tensor).set_user_data("backward_hook", hook_map);
+      const_cast<tensor::BaseTensorPtr &>(tensor)->set_user_data("backward_hook", hook_map);
     }
     (*hook_map)[unique_id_] = hook;
 
@@ -127,8 +127,8 @@ void RegisterHook::RemoveTensorBackwardHook(uint64_t handle_id) {
   meta->RemoveBackwardHook(handle_id);
 }
 
-py::list RegisterHook::GetHooks(const tensor::Tensor &tensor) {
-  const auto &tensor_id = GetTensorNumId(tensor.id());
+py::list RegisterHook::GetHooks(const tensor::BaseTensorPtr &tensor) {
+  const auto &tensor_id = GetTensorNumId(tensor->id());
   py::list hooks;
 
   auto found = tensor_id_with_hook_map_.find(tensor_id);
@@ -167,7 +167,7 @@ struct HookAdapterRegister {
   HookAdapterRegister() {
     MS_LOG(DEBUG) << "Register hook adapter";
     HookAdapter::SetRegisterTensorBackwardHookHandler(
-      [](const tensor::Tensor &tensor, const py::function &hook) -> uint64_t {
+      [](const tensor::BaseTensorPtr &tensor, const py::function &hook) -> uint64_t {
         return RegisterHook::RegisterTensorBackwardHook(tensor, hook);
       });
 
@@ -175,7 +175,7 @@ struct HookAdapterRegister {
       [](uint64_t id) -> void { RegisterHook::RemoveTensorBackwardHook(id); });
 
     HookAdapter::SetGetHooksHandler(
-      [](const tensor::Tensor &tensor) -> py::list { return RegisterHook::GetHooks(tensor); });
+      [](const tensor::BaseTensorPtr &tensor) -> py::list { return RegisterHook::GetHooks(tensor); });
   }
 } hook_adapter_register;
 }  // namespace mindspore::pynative::autograd

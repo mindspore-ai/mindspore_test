@@ -16,7 +16,11 @@
 
 #include "include/common/utils/tensor_py.h"
 
+#include "ir/value.h"
 #include "utils/log_adapter.h"
+#include "include/common/utils/convert_utils_py.h"
+#include "debug/profiler/profiler.h"
+#include "pybind_api/gil_scoped_long_running.h"
 
 namespace mindspore {
 namespace tensor {
@@ -104,14 +108,27 @@ const std::string TensorPy::GetDevice() const { return device_; }
 void TensorPy::SetDevice(const std::string &dev) { device_ = dev; }
 
 const TensorPtr TensorPy::GetTensor() const {
-  auto base_tensor = GetBaseTensor();
-  MS_EXCEPTION_IF_NULL(base_tensor);
-  TensorPtr tensor = std::dynamic_pointer_cast<Tensor>(base_tensor);
+  if (tensor_ == nullptr) {
+    const_cast<BaseTensorPtr &>(tensor_) = GetBaseTensor();
+  }
+  TensorPtr tensor = std::dynamic_pointer_cast<Tensor>(tensor_);
   if (tensor == nullptr) {
-    tensor = std::make_shared<Tensor>(*base_tensor);
+    MS_LOG(INFO) << "Copy tensor " << tensor_->id() << " and detach!";
+    auto new_tensor = std::make_shared<Tensor>(*tensor_);
+    const_cast<BaseTensorPtr &>(tensor_) = new_tensor;
+    return new_tensor;
   }
   return tensor;
 }
+
+BaseTensorPtr TensorPy::GetBaseTensor() const {
+  if (tensor_ == nullptr) {
+    return std::static_pointer_cast<BaseTensor>(stub_->WaitValue());
+  }
+  return tensor_;
+}
+
+void TensorPy::UpdateStub(const BaseTensorPtr &tensor) { stub_->SetValue(tensor); }
 
 const py::object TensorPy::GetParentTensor() {
   if (!parent_tensor_.check() || parent_tensor_.is_none()) {
@@ -201,7 +218,8 @@ bool TensorPy::IsPersistentData() const { return GetTensor()->is_persistent_data
 int TensorPy::DataDim() const { return GetBaseTensor()->DataDim(); }
 
 TensorPy &TensorPy::AssignValue(const TensorPy &tensorpy) {
-  auto tensor = tensorpy.GetTensor().get();
+  // todo: assign value for base tensor.
+  auto tensor = tensorpy.GetTensor();
   GetTensor()->AssignValue(*tensor);
   return *this;
 }
@@ -418,6 +436,32 @@ const MetaTensorPtr GetMetaTensorFromValue(const ValuePtr &value) {
   return value->cast<MetaTensorPtr>();
 }
 
+const ValuePtr ConvertToValue(const py::handle &obj) {
+  PyObject *raw_ptr = obj.ptr();
+  PyObject *str_type = reinterpret_cast<PyObject *>(TensorPy_Type);
+  if (PyObject_IsInstance(raw_ptr, str_type)) {
+    PyType<TensorPy> *tensor = (PyType<TensorPy> *)raw_ptr;
+    auto &value = tensor->value;
+    if (value.has_stub()) {
+      return value.stub();
+    }
+    return value.GetBaseTensor();
+  }
+  MS_LOG(EXCEPTION) << "Not TensorPy object";
+}
+
+BaseTensorPtr ConvertToBaseTensor(const py::handle &obj) {
+  PyObject *raw_ptr = obj.ptr();
+  PyObject *str_type = reinterpret_cast<PyObject *>(TensorPy_Type);
+  if (PyObject_IsInstance(raw_ptr, str_type)) {
+    PyType<TensorPy> *tensor = (PyType<TensorPy> *)raw_ptr;
+    auto tensor_ptr = tensor->value.GetBaseTensor();
+    MS_EXCEPTION_IF_NULL(tensor_ptr);
+    return tensor_ptr;
+  }
+  return nullptr;
+}
+
 PyType<TensorPy> *ConvertPyObject2TensorPyType(const py::object obj) {
   PyType<TensorPy> *tensor_type = reinterpret_cast<PyType<TensorPy> *>(obj.ptr());
 
@@ -485,5 +529,53 @@ py::object PackTensorToPyObject(BaseTensorPtr tensor) {
   return py::reinterpret_steal<py::object>(tensor_py);
 }
 
+PyObject *PackTensor(const BaseTensorPtr &tensor) {
+  if (tensorModule == nullptr) {
+    tensorModule = PyImport_ImportModule("mindspore.common.tensor");
+  }
+  PyObject *python_tensor_class = PyObject_GetAttrString(tensorModule, "Tensor");
+  auto tensor_py_type = reinterpret_cast<PyTypeObject *>(python_tensor_class);
+  PyObject *obj = tensor_py_type->tp_alloc(tensor_py_type, 0);
+  if (obj == nullptr) {
+    PyErr_SetString(PyExc_RuntimeError, "Failed to create TensorPy object");
+    return nullptr;
+  }
+  auto result = (PyType<TensorPy> *)obj;
+  new (&result->value) TensorPy(tensor);
+  result->value.SetInitFinished(true);
+  return reinterpret_cast<PyObject *>(result);
+}
+
+PyObject *Wrap(const BaseTensorPtr &tensor) { return PackTensor(tensor); }
+
+PyObject *Wrap(const std::vector<BaseTensorPtr> &tensors) {
+  PyObject *output = PyTuple_New(static_cast<Py_ssize_t>(tensors.size()));
+  for (size_t i = 0; i < tensors.size(); ++i) {
+    PyTuple_SET_ITEM(output, i, Wrap(tensors[i]));
+  }
+  return output;
+}
+
+PyObject *Wrap(const ValuePtr &value) {
+  MS_EXCEPTION_IF_NULL(value);
+  if (value->isa<tensor::BaseTensor>()) {
+    return Wrap(value->cast<tensor::BaseTensorPtr>());
+  } else if (value->isa<ValueSequeue>()) {
+    auto sequeue = value->cast<ValueSequencePtr>();
+    const auto &values = sequeue->value();
+    size_t size = values.size();
+    PyObject *output = PyTuple_New(static_cast<Py_ssize_t>(size));
+    for (size_t i = 0; i < size; ++i) {
+      PyTuple_SET_ITEM(output, i, Wrap(values[i]));
+    }
+    return output;
+  } else {
+    return ValueToPyData(value).release().ptr();
+  }
+}
+
+PyTypeObject *getTensorPyType() { return TensorPy_Type; }
+
+void setTensorPyType(PyTypeObject *TensorPyType) { TensorPy_Type = TensorPyType; }
 }  // namespace tensor
 }  // namespace mindspore

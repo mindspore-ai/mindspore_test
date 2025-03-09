@@ -43,6 +43,7 @@ using mindspore::profiler::ProfilerManager;
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_reg.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/contiguous.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pynative {
@@ -856,7 +857,7 @@ ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) con
   MS_EXCEPTION_IF_NULL(op_run_info->op_grad_info->op_prim);
   py::list vm_op_inputs = py::list(op_run_info->input_size);
   for (size_t i = 0; i < op_run_info->input_size; ++i) {
-    vm_op_inputs[i] = ValueToPyData(op_run_info->op_grad_info->input_value[i]);
+    vm_op_inputs[i] = py::reinterpret_steal<py::object>(tensor::Wrap(op_run_info->op_grad_info->input_value[i]));
   }
   if (!utils::isa<PrimitivePy>(op_run_info->op_grad_info->op_prim)) {
     MS_LOG(EXCEPTION) << "Not a PrimitivePy, " << op_run_info->op_grad_info->op_prim->ToString();
@@ -890,6 +891,7 @@ bool ForwardExecutor::CellNotSetMixedPrecision(const FrontendOpRunInfoPtr &op_ru
 void ForwardExecutor::ExecuteLazyTask() const {
   runtime::ProfilerStageRecorder recorder(runtime::ProfilerStage::kWaitPipeline);
   runtime::Pipeline::Get().WaitAll();
+  MsException::Instance().CheckException();
 }
 
 std::string ForwardExecutor::GetCurrentDeviceTarget(const PrimitivePtr &op_prim) const {

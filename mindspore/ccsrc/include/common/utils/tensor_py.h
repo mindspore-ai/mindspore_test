@@ -18,20 +18,22 @@
 #define MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_TENSOR_PY_H_
 
 #include <memory>
+#include <utility>
 #include <vector>
 #include <functional>
 #include <string>
-
+#include <tuple>
 #include "pybind11/pybind11.h"
-
 #include "ir/tensor.h"
 #include "ir/tensor_py_base.h"
 #include "include/common/visible.h"
+#include "include/common/utils/stub_tensor.h"
 
 namespace py = pybind11;
 
 namespace mindspore {
 namespace tensor {
+
 // TensorPyBase: An entity class
 class COMMON_EXPORT TensorPy : public TensorPyBase {
  public:
@@ -482,6 +484,16 @@ class COMMON_EXPORT TensorPy : public TensorPyBase {
   /// \return Abstract of Tensor.
   abstract::AbstractBasePtr ToAbstract() override;
 
+  BaseTensorPtr GetBaseTensor() const override;
+
+  void UpdateStub(const BaseTensorPtr &tensor);
+  bool has_stub() const { return stub_ != nullptr; }
+  const stub::StubNodePtr &stub() const { return stub_; }
+  const stub::StubNodePtr &MakeStub() {
+    stub_ = std::make_shared<stub::StubNode>();
+    return stub_;
+  }
+
  private:
   bool init_finished_flag_{false};
   bool const_arg_flag_{false};
@@ -499,6 +511,7 @@ class COMMON_EXPORT TensorPy : public TensorPyBase {
   py::object slice_shape_of_persistent_data_;
   std::string device_;
   PyObject *flatten_tensor_;
+  stub::StubNodePtr stub_{nullptr};
 };
 
 using TensorPyPtr = std::shared_ptr<TensorPy>;
@@ -524,6 +537,8 @@ COMMON_EXPORT const py::handle ConvertToTensorPy(const py::handle &obj);
 ///
 /// \return A pointer address of C++ Tensor.
 COMMON_EXPORT const TensorPtr ConvertToTensor(const py::handle &obj);
+COMMON_EXPORT const ValuePtr ConvertToValue(const py::handle &obj);
+COMMON_EXPORT BaseTensorPtr ConvertToBaseTensor(const py::handle &obj);
 template <typename T>
 struct PyType {
   PyObject_HEAD T value;
@@ -582,6 +597,23 @@ COMMON_EXPORT const TensorPtr GetTensorFromValue(const ValuePtr &value);
 /// \return A MetaTensor.
 COMMON_EXPORT const MetaTensorPtr GetMetaTensorFromValue(const ValuePtr &value);
 
+COMMON_EXPORT PyObject *PackTensor(const BaseTensorPtr &tensor);
+COMMON_EXPORT PyObject *Wrap(const BaseTensorPtr &tensor);
+COMMON_EXPORT PyObject *Wrap(const std::vector<BaseTensorPtr> &tensors);
+template <typename... Args>
+PyObject *Wrap(const std::tuple<Args...> &tuple) {
+  constexpr size_t size = std::tuple_size<std::tuple<Args...>>::value;
+  PyObject *output = PyTuple_New(size);
+  std::apply(
+    [&output](const auto &... args) {
+      size_t index = 0;
+      ((PyTuple_SET_ITEM(output, index++, Wrap(args))), ...);
+    },
+    tuple);
+  return output;
+}
+
+COMMON_EXPORT PyObject *Wrap(const ValuePtr &value);
 }  // namespace tensor
 }  // namespace mindspore
 

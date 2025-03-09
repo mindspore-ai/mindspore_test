@@ -20,6 +20,9 @@
 #include "pybind_api/ir/tensor_api/auto_generate/tensor_api.h"
 #include "mindspore/ccsrc/pynative/op_function/auto_generate/tensor_func_utils.h"
 #include "pynative/op_function/converter.h"
+#include "pynative/op_function/auto_generate/pyboost_functions.h"
+#include "pipeline/jit/trace/trace_recorder.h"
+${ops_inc}
 
 namespace mindspore {
 namespace tensor {

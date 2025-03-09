@@ -70,7 +70,10 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
         self.pyboost_return_template = Template(
             '${arg_handler_processor}\n'
             'MS_LOG(INFO) << "Call Tensor${class_name}";\n'
-            'return mindspore::tensor::ToPython(${pyboost_base_func_name}_Base(${prim_name}, arg_list));\n'
+            'auto res = mindspore::tensor::ToPython('
+            '${pyboost_base_func_name}_OP(${prim_name}, parse_args.src_types_, ${convert_args}));\n'
+            'trace::Capture(parse_args.arg_list_, "${class_name}", &res);\n'
+            'return res;\n'
         )
         self.callback_python_template = Template(
             'MS_LOG(INFO) << "Callback python method: ${py_method}";\n'
@@ -311,13 +314,15 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
         func_proto_device = getattr(func_proto, device)
         if func_proto_device == 'pyboost':
             arg_handler_processor_str = self._get_arg_handler_processor(func_proto.func_name, func_proto.op_proto)
+            convert_args_str = self._get_convert_args_str(func_proto.op_proto)
             op_parser = OpTemplateParser(func_proto.op_proto)
             op_pyboost_func_name = op_parser.get_pyboost_func_name()
             prim_name = f"prim::kPrim{func_proto.op_proto.op_class.name}"
             return self.pyboost_return_template.replace(arg_handler_processor=arg_handler_processor_str,
                                                         class_name=func_proto.op_proto.op_class.name,
                                                         prim_name=prim_name,
-                                                        pyboost_base_func_name=op_pyboost_func_name)
+                                                        pyboost_base_func_name=op_pyboost_func_name,
+                                                        convert_args=convert_args_str)
         if func_proto_device == 'py_method':
             return self.callback_python_template.replace(py_method=func_proto.py_method)
 
@@ -326,6 +331,10 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
     def _get_arg_handler_processor(self, func_name, op_proto):
         op_parser = OpTemplateParser(op_proto)
         return op_parser.get_arg_handler_processor(func_name, op_proto, is_tensor_api=False)
+
+    def _get_convert_args_str(self, op_proto):
+        op_parser = OpTemplateParser(op_proto)
+        return op_parser.get_convert_args_str(op_proto, is_tensor_api=False)
 
     def _get_mint_func_reg_list(self, single_mint_func_data, overload_mint_func_data, cpp_class_names):
         """

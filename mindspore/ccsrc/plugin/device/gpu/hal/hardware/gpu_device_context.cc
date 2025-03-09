@@ -179,19 +179,19 @@ std::vector<void *> GPUDeviceResManager::AllocateContinuousMemory(const std::vec
 }
 
 std::pair<std::vector<size_t>, std::vector<size_t>> GPUDeviceResManager::AllocDeviceMemoryForTensorList(
-  const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
+  const std::vector<tensor::BaseTensorPtr> &tensor_list, bool enable_mem_align) {
   return gpu_res_manager_->AllocDeviceMemoryForTensorList(tensor_list, enable_mem_align);
 }
 
-tensor::TensorPtr GPUDeviceResManager::GetSliceByTensorListIndexHandle(
-  const std::vector<tensor::TensorPtr> &tensor_list, const std::vector<size_t> &before_padding_size,
+tensor::BaseTensorPtr GPUDeviceResManager::GetSliceByTensorListIndexHandle(
+  const std::vector<tensor::BaseTensorPtr> &tensor_list, const std::vector<size_t> &before_padding_size,
   const std::vector<size_t> &after_padding_size, size_t start, size_t end) {
   return gpu_res_manager_->GetSliceByTensorListIndexHandle(tensor_list, before_padding_size, after_padding_size, start,
                                                            end);
 }
 
-tensor::TensorPtr GPUDeviceResManager::GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start,
-                                                                    size_t end) {
+tensor::TensorPtr GPUDeviceResManager::GetSliceByPaddingShapeHandle(const tensor::BaseTensorPtr &first_tensor,
+                                                                    size_t start, size_t end) {
   return gpu_res_manager_->GetSliceByPaddingShapeHandle(first_tensor, start, end);
 }
 

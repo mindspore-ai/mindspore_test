@@ -1392,8 +1392,29 @@ ValuePtr ConvertNumber(const py::object &obj) {
 }
 
 ValuePtr ConvertTensor(const py::object &obj) {
+  if (tensor::IsTensorPy(obj)) {
+    return tensor::ConvertToValue(obj);
+  }
+
   if (IsStubTensor(obj)) {
     return PyStubNodeCast(obj);
+  }
+
+  return nullptr;
+}
+
+tensor::BaseTensorPtr ConvertBaseTensor(const py::object &obj) {
+  auto tensor = tensor::ConvertToBaseTensor(obj);
+  if (tensor != nullptr) {
+    return tensor;
+  }
+
+  if (IsStubTensor(obj)) {
+    auto v = PyStubNodeCast(obj);
+    if (v->isa<stub::StubNode>()) {
+      return v->cast<stub::StubNodePtr>()->WaitValue()->cast<tensor::BaseTensorPtr>();
+    }
+    return v->cast<tensor::BaseTensorPtr>();
   }
 
   if (tensor::IsTensorPy(obj)) {
@@ -1709,6 +1730,48 @@ ValuePtr ConvertTensorToInt64(const py::object &obj) {
   }
 }
 
+ValuePtr ConvertTensorToInt(const py::object &obj) {
+  auto tensor = ConvertTensorValue(obj);
+  if (tensor == nullptr) {
+    return nullptr;
+  }
+  if (tensor->DataSize() != 1) {
+    MS_LOG(ERROR) << "Can only convert tensor with one element to int, but got " << tensor->ToString();
+    return nullptr;
+  }
+  switch (tensor->data_type()) {
+    case kNumberTypeInt64:
+      return std::make_shared<Int64Imm>(static_cast<int64_t *>(GetTensorDataPtr(tensor))[0]);
+    case kNumberTypeInt32:
+      return std::make_shared<Int32Imm>(static_cast<int32_t *>(GetTensorDataPtr(tensor))[0]);
+    case kNumberTypeInt16:
+      return std::make_shared<Int64Imm>(static_cast<int16_t *>(GetTensorDataPtr(tensor))[0]);
+    case kNumberTypeInt8:
+      return std::make_shared<Int64Imm>(static_cast<int8_t *>(GetTensorDataPtr(tensor))[0]);
+    case kNumberTypeUInt64:
+      return std::make_shared<Int64Imm>(static_cast<uint64_t *>(GetTensorDataPtr(tensor))[0]);
+    case kNumberTypeUInt32:
+      return std::make_shared<Int64Imm>(static_cast<uint32_t *>(GetTensorDataPtr(tensor))[0]);
+    case kNumberTypeUInt16:
+      return std::make_shared<Int64Imm>(static_cast<uint16_t *>(GetTensorDataPtr(tensor))[0]);
+    case kNumberTypeUInt8:
+      return std::make_shared<Int64Imm>(static_cast<uint8_t *>(GetTensorDataPtr(tensor))[0]);
+    default:
+      MS_EXCEPTION(TypeError) << "Can not convert " << tensor->ToString() << " to Int.";
+  }
+}
+
+ValuePtr ConvertTensorAndInt(const py::object &obj) {
+  // bool is also an instance of py::int_
+  if (py::isinstance<py::bool_>(obj)) {
+    return nullptr;
+  } else if (py::isinstance<py::int_>(obj)) {
+    return ConvertIntegerWithType(obj);
+  } else {
+    return ConvertTensorToInt(obj);
+  }
+}
+
 ValuePtr ConvertTensorToFloat(const py::object &obj) {
   auto tensor = ConvertTensorValue(obj);
   if (tensor == nullptr) {
@@ -1795,14 +1858,14 @@ static const std::unordered_map<int32_t, OpDefConvertFunc> kConverters = {
   {(int32_t)mindspore::ops::DT_ANY, ConvertAny},
   {(int32_t)mindspore::ops::DT_TYPE, ConvertDtype},
   {(int32_t)mindspore::ops::DT_TUPLE_BOOL, ConvertSequence<py::tuple, ValueTuple, ConvertBool>},
-  {(int32_t)mindspore::ops::DT_TUPLE_INT, ConvertSequence<py::tuple, ValueTuple, ConvertInt>},
+  {(int32_t)mindspore::ops::DT_TUPLE_INT, ConvertSequence<py::tuple, ValueTuple, ConvertTensorAndInt>},
   {(int32_t)mindspore::ops::DT_TUPLE_FLOAT, ConvertSequence<py::tuple, ValueTuple, ConvertFloat>},
   {(int32_t)mindspore::ops::DT_TUPLE_NUMBER, ConvertSequence<py::tuple, ValueTuple, ConvertNumber>},
   {(int32_t)mindspore::ops::DT_TUPLE_TENSOR, ConvertSequence<py::tuple, ValueTuple, ConvertTensor>},
   {(int32_t)mindspore::ops::DT_TUPLE_STR, ConvertSequence<py::tuple, ValueTuple, ConvertStr>},
   {(int32_t)mindspore::ops::DT_TUPLE_ANY, ConvertSequence<py::tuple, ValueTuple, ConvertAny>},
   {(int32_t)mindspore::ops::DT_LIST_BOOL, ConvertSequence<py::list, ValueList, ConvertBool>},
-  {(int32_t)mindspore::ops::DT_LIST_INT, ConvertSequence<py::list, ValueList, ConvertInt>},
+  {(int32_t)mindspore::ops::DT_LIST_INT, ConvertSequence<py::list, ValueList, ConvertTensorAndInt>},
   {(int32_t)mindspore::ops::DT_LIST_FLOAT, ConvertSequence<py::list, ValueList, ConvertFloat>},
   {(int32_t)mindspore::ops::DT_LIST_NUMBER, ConvertSequence<py::list, ValueList, ConvertNumber>},
   {(int32_t)mindspore::ops::DT_LIST_TENSOR, ConvertSequence<py::list, ValueList, ConvertTensor>},

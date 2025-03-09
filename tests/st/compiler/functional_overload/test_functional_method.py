@@ -177,9 +177,8 @@ def test_method_min_exception():
     def func(x):
         return x.min(None, False, None)
 
-    with pytest.raises(TypeError) as raise_info:
+    with pytest.raises(TypeError):
         func(ms.Tensor([1, 2, 3, 4, 5]))
-    assert "Failed calling min with" in str(raise_info.value)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')

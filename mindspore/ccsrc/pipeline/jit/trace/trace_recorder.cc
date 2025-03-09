@@ -127,12 +127,12 @@ void Capture(const py::args &args, py::object *res) {
   *res = CaptureRun(py::args(py::tuple(args[1])), *res, args[0]);
 }
 
-void Capture(const py::list &args, py::object *res, std::string class_name) {
+void Capture(const py::list &args, const std::string &class_name, py::object *res) {
   if (!IsTracing()) {
     return;
   }
-  std::string ops_module_name = "mindspore.ops";
-  std::string auto_gen_module_name = "mindspore.ops.auto_generate";
+  static std::string ops_module_name = "mindspore.ops";
+  static std::string auto_gen_module_name = "mindspore.ops.auto_generate";
   py::module ops_mod = py::module::import(ops_module_name.c_str());
   py::module auto_gen_mod = py::module::import(auto_gen_module_name.c_str());
   py::object prim_py;
@@ -144,6 +144,29 @@ void Capture(const py::list &args, py::object *res, std::string class_name) {
     MS_LOG(EXCEPTION) << "Cannot find primitive for op: " << class_name;
   }
   *res = CaptureRun(py::args(py::tuple(args)), *res, prim_py);
+}
+
+void Capture(const std::vector<py::object> &args_vec, const std::string &class_name, py::object *res) {
+  if (!IsTracing()) {
+    return;
+  }
+  py::tuple args(args_vec.size());
+  for (size_t i = 0; i < args_vec.size(); i++) {
+    args[i] = args_vec[i];
+  }
+  static std::string ops_module_name = "mindspore.ops";
+  static std::string auto_gen_module_name = "mindspore.ops.auto_generate";
+  py::module ops_mod = py::module::import(ops_module_name.c_str());
+  py::module auto_gen_mod = py::module::import(auto_gen_module_name.c_str());
+  py::object prim_py;
+  if (py::hasattr(ops_mod, class_name.c_str())) {
+    prim_py = python_adapter::CallPyFn(ops_module_name, class_name);
+  } else if (py::hasattr(auto_gen_mod, class_name.c_str())) {
+    prim_py = python_adapter::CallPyFn(auto_gen_module_name, class_name);
+  } else {
+    MS_LOG(EXCEPTION) << "Cannot find primitive for op: " << class_name;
+  }
+  *res = CaptureRun(py::args(args), *res, prim_py);
 }
 
 py::object CaptureRun(const py::args &args, const py::object &res, const py::object &prim_py) {

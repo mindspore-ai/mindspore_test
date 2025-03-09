@@ -1,6 +1,6 @@
 py::function fn;
 py::object res;
-switch (sig.index_) {
+switch (parse_args.GetOvertLoadIndex()) {
   ${ut_dispatch_cases}
 }
 return res;

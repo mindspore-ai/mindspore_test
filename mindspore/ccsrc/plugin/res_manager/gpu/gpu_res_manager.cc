@@ -224,7 +224,7 @@ std::vector<void *> GPUResManager::AllocateContinuousMemory(const std::vector<si
 }
 
 std::pair<std::vector<size_t>, std::vector<size_t>> GPUResManager::AllocDeviceMemoryForTensorList(
-  const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
+  const std::vector<tensor::BaseTensorPtr> &tensor_list, bool enable_mem_align) {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   std::vector<size_t> before_padding_sizes = GetUniqueTensorListSize(tensor_list);
   std::vector<size_t> after_padding_sizes;
@@ -266,10 +266,9 @@ std::pair<std::vector<size_t>, std::vector<size_t>> GPUResManager::AllocDeviceMe
   return std::make_pair(before_padding_sizes, after_padding_sizes);
 }
 
-tensor::TensorPtr GPUResManager::GetSliceByTensorListIndexHandle(const std::vector<tensor::TensorPtr> &tensor_list,
-                                                                 const std::vector<size_t> &before_padding_size,
-                                                                 const std::vector<size_t> &after_padding_size,
-                                                                 size_t start, size_t end) {
+tensor::BaseTensorPtr GPUResManager::GetSliceByTensorListIndexHandle(
+  const std::vector<tensor::BaseTensorPtr> &tensor_list, const std::vector<size_t> &before_padding_size,
+  const std::vector<size_t> &after_padding_size, size_t start, size_t end) {
   if (start >= tensor_list.size() || end > tensor_list.size()) {
     MS_EXCEPTION(ValueError) << "start:" << start << ", end:" << end << ", but tensor_list size:" << tensor_list.size();
   }
@@ -292,7 +291,7 @@ tensor::TensorPtr GPUResManager::GetSliceByTensorListIndexHandle(const std::vect
   return tensor;
 }
 
-tensor::TensorPtr GPUResManager::GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start,
+tensor::TensorPtr GPUResManager::GetSliceByPaddingShapeHandle(const tensor::BaseTensorPtr &first_tensor, size_t start,
                                                               size_t end) {
   auto type_id = first_tensor->data_type();
   auto type_size = UnitSizeInBytes(type_id);

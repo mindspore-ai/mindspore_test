@@ -115,12 +115,12 @@ class AscendResManager : public HalResBase {
   bool SyncNotDefaultStreams() const override;
   size_t DefaultStream() const override;
   std::pair<std::vector<size_t>, std::vector<size_t>> AllocDeviceMemoryForTensorList(
-    const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) override;
-  TensorPtr GetSliceByTensorListIndexHandle(const std::vector<tensor::TensorPtr> &tensor_list,
-                                            const std::vector<size_t> &before_padding_size,
-                                            const std::vector<size_t> &after_padding_size, size_t start,
-                                            size_t end) override;
-  TensorPtr GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start, size_t end) override;
+    const std::vector<tensor::BaseTensorPtr> &tensor_list, bool enable_mem_align) override;
+  tensor::BaseTensorPtr GetSliceByTensorListIndexHandle(const std::vector<tensor::BaseTensorPtr> &tensor_list,
+                                                        const std::vector<size_t> &before_padding_size,
+                                                        const std::vector<size_t> &after_padding_size, size_t start,
+                                                        size_t end) override;
+  TensorPtr GetSliceByPaddingShapeHandle(const tensor::BaseTensorPtr &first_tensor, size_t start, size_t end) override;
   int ResetParams(const std::vector<tensor::TensorPtr> &params) const;
 
   DeviceEventPtr CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait);

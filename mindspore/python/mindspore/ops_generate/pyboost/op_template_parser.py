@@ -28,7 +28,8 @@ from common.op_proto import OpProto
 
 from . import pyboost_utils
 from .pyboost_utils import get_input_dtype, tuple_input_to_cpp_type, get_return_type, \
-    number_input_to_cpp_type, get_const_number_convert, get_tuple_input_convert, is_optional_param
+    number_input_to_cpp_type, get_const_number_convert, get_tuple_input_convert, is_optional_param, \
+    get_input_args_type_str
 
 
 class OpTemplateParser:
@@ -398,26 +399,41 @@ class OpTemplateParser:
             str: Generated argument handler processing code.
         """
         tensor_arg_handler_prt_template = Template(
-            "arg_list[${idx}] = "
-            "(*pynative::${func_str}(\"${func_name}\", \"${op_arg_name}\", arg_list[${idx}]))->value();\n"
+            "parse_args.arg_list_[${idx}] = "
+            "py::cast((*pynative::${func_str}(\"${func_name}\", \"${op_arg_name}\", \
+parse_args.arg_list_[${idx}]))->value());\n"
+            "parse_args.src_types_[${idx}] = ops::OP_DTYPE::DT_BEGIN;\n"
+            "parse_args.dst_types_[${idx}] = ${new_type};\n"
         )
         function_arg_handler_prt_template = Template(
-            "arg_list[${idx}] = "
-            "(*${func_str}(\"${func_name}\", \"${op_arg_name}\", arg_list[${idx}]))->value();\n"
+            "parse_args.arg_list_[${idx}] = "
+            "py::cast((*${func_str}(\"${func_name}\", \"${op_arg_name}\", parse_args.arg_list_[${idx}]))->value());\n"
+            "parse_args.src_types_[${idx}] = ops::OP_DTYPE::DT_BEGIN;\n"
+            "parse_args.dst_types_[${idx}] = ${new_type};\n"
         )
         arg_handler_prt_template = (
             tensor_arg_handler_prt_template) if is_tensor_api else function_arg_handler_prt_template
 
         arg_handler_template = Template(
-            "arg_list[${idx}] = "
-            "pynative::${func_str}(\"${func_name}\", \"${op_arg_name}\", arg_list[${idx}]);\n"
+            "parse_args.arg_list_[${idx}] = "
+            "py::cast(pynative::${func_str}(\"${func_name}\", \"${op_arg_name}\", parse_args.arg_list_[${idx}]));\n"
+            "parse_args.src_types_[${idx}] = ops::OP_DTYPE::DT_BEGIN;\n"
+            "parse_args.dst_types_[${idx}] = ${new_type};\n"
         )
         arg_handler_optional_template = Template(
-            'if (!py::isinstance<py::none>(arg_list[${idx}])) {\n'
+            'if (!py::isinstance<py::none>(parse_args.arg_list_[${idx}])) {\n'
             '  ${arg_handler_str}\n'
             '}\n'
         )
-
+        arg_handler_type_map = {"to_2d_paddings": "ops::OP_DTYPE::DT_TUPLE_INT",
+                                "dtype_to_type_id": "ops::OP_DTYPE::DT_INT",
+                                "to_kernel_size": "ops::OP_DTYPE::DT_TUPLE_INT",
+                                "to_strides": "ops::OP_DTYPE::DT_TUPLE_INT",
+                                "str_to_enum": "ops::OP_DTYPE::DT_INT",
+                                "to_pair": "ops::OP_DTYPE::DT_TUPLE_INT",
+                                "to_dilations": "ops::OP_DTYPE::DT_TUPLE_INT",
+                                "to_output_padding": "ops::OP_DTYPE::DT_TUPLE_INT",
+                                "to_rates": "ops::OP_DTYPE::DT_TUPLE_INT"}
         arg_handler_processor = []
         op_args = op_proto.op_args
         for idx, op_arg in enumerate(op_args):
@@ -426,16 +442,19 @@ class OpTemplateParser:
                                for word in arg_handler.split('_'))
             if arg_handler:
                 op_arg_name = op_arg.arg_name
+                new_type = arg_handler_type_map[arg_handler]
                 if func_str in ("StrToEnum", "DtypeToTypeId"):
                     arg_handler_str = arg_handler_prt_template.replace(func_str=func_str,
                                                                        func_name=func_name,
                                                                        op_arg_name=op_arg_name,
-                                                                       idx=idx)
+                                                                       idx=idx,
+                                                                       new_type=new_type)
                 else:
                     arg_handler_str = arg_handler_template.replace(func_str=func_str,
                                                                    func_name=func_name,
                                                                    op_arg_name=op_arg_name,
-                                                                   idx=idx)
+                                                                   idx=idx,
+                                                                   new_type=new_type)
 
                 if op_arg.default == "None":
                     arg_handler_str = arg_handler_optional_template.replace(idx=idx,
@@ -443,3 +462,56 @@ class OpTemplateParser:
                 arg_handler_processor.append(arg_handler_str)
 
         return arg_handler_processor
+
+    def get_input_tensor_index(self, op_proto):
+        """
+        Get index of input.
+
+        Args:
+            op_proto (OpProto): Function prototype to generate dispatch strings for.
+
+        Returns:
+            int: Index of input.
+        """
+        op_name = op_proto.op_class.name
+        op_args = op_proto.op_args
+        if op_name in K.INPUT_NAME_MAP:
+            self_index = [i for i in range(
+                len(op_args)) if op_args[i].arg_name == K.INPUT_NAME_MAP[op_name]]
+        else:
+            self_index = [i for i in range(
+                len(op_args)) if op_args[i].arg_name in K.INPUT_ARGS_NAME]
+        if len(self_index) != 1:
+            raise ValueError(
+                f'There must be only one field named \'input\'. But got {len(self_index)} in {op_name}')
+        return self_index[0]
+
+    def get_convert_args_str(self, op_proto, is_tensor_api):
+        """
+        Generates argument convert processing code for the given function prototype.
+
+        Args:
+            op_proto (OpProto): Operator prototype instance to generate argument processing for.
+
+        Returns:
+            str: Generated argument convert processing code.
+        """
+        self_index = 0
+        if is_tensor_api:
+            self_index = self.get_input_tensor_index(op_proto)
+        convert_args_str = ""
+        for idx, op_arg in enumerate(op_proto.op_args):
+            if is_tensor_api:
+                if self_index == idx:
+                    convert_args_str += "input_tensor, "
+                    continue
+            is_optional = is_optional_param(op_arg)
+            arg_convert_template = Template("parse_args.ConvertOptional<${des_type}>(${index}), ") if is_optional \
+                                   else Template("parse_args.Convert<${des_type}>(${index}), ")
+            if op_arg.is_type_id:
+                arg_type_str = get_input_args_type_str('type', False)
+            else:
+                arg_type_str = get_input_args_type_str(op_arg.arg_dtype, False)
+            convert_args_str += arg_convert_template.replace(index=idx,
+                                                             des_type=arg_type_str[:-3])
+        return convert_args_str[:-2]

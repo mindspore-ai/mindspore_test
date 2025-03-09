@@ -256,19 +256,19 @@ std::vector<void *> CPUDeviceResManager::AllocateContinuousMemory(const std::vec
 }
 
 std::pair<std::vector<size_t>, std::vector<size_t>> CPUDeviceResManager::AllocDeviceMemoryForTensorList(
-  const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
+  const std::vector<tensor::BaseTensorPtr> &tensor_list, bool enable_mem_align) {
   return cpu_res_manager_->AllocDeviceMemoryForTensorList(tensor_list, enable_mem_align);
 }
 
-tensor::TensorPtr CPUDeviceResManager::GetSliceByTensorListIndexHandle(
-  const std::vector<tensor::TensorPtr> &tensor_list, const std::vector<size_t> &before_padding_size,
+tensor::BaseTensorPtr CPUDeviceResManager::GetSliceByTensorListIndexHandle(
+  const std::vector<tensor::BaseTensorPtr> &tensor_list, const std::vector<size_t> &before_padding_size,
   const std::vector<size_t> &after_padding_size, size_t start, size_t end) {
   return cpu_res_manager_->GetSliceByTensorListIndexHandle(tensor_list, before_padding_size, after_padding_size, start,
                                                            end);
 }
 
-tensor::TensorPtr CPUDeviceResManager::GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start,
-                                                                    size_t end) {
+tensor::TensorPtr CPUDeviceResManager::GetSliceByPaddingShapeHandle(const tensor::BaseTensorPtr &first_tensor,
+                                                                    size_t start, size_t end) {
   return cpu_res_manager_->GetSliceByPaddingShapeHandle(first_tensor, start, end);
 }
 

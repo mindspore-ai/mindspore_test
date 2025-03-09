@@ -684,7 +684,7 @@ py::object Jit::GradJit(const py::args &args) {
     MS_LOG(DEBUG) << "Start gradjit using forward primal graph and adgrad graph";
     GradJitInner(op_run_info, grad_executor.get(), jit_primal_graph, jit_grad_graph);
     MS_EXCEPTION_IF_NULL(op_run_info->real_out);
-    ret = ValueToPyData(op_run_info->real_out);
+    ret = py::reinterpret_steal<py::object>(tensor::Wrap(op_run_info->real_out));
   } else {
     MS_LOG(INFO) << "Using valuenode replacement grad jit methond under pynative mode.";
     ret = executor->Run(args, py::str(graph_phase_));

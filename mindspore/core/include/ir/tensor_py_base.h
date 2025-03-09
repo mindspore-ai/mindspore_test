@@ -34,21 +34,21 @@ class MS_CORE_API TensorPyBase : public Value {
   explicit TensorPyBase(const BaseTensorPtr &input) : tensor_(input) {}
 
   /// Destructor of TensorPy.
-  ~TensorPyBase() = default;
+  ~TensorPyBase() override = default;
 
   MS_DECLARE_PARENT(TensorPyBase, Value);
 
   /// \brief Get the BaseTensor.
   ///
   /// \return The created BaseTensor.
-  const BaseTensorPtr &GetBaseTensor() const { return tensor_; }
+  virtual BaseTensorPtr GetBaseTensor() const = 0;
 
   /// \brief Set the BaseTensor.
   ///
   /// \param[in] base_tensor [BaseTensorPtr] The given BaseTensor.
   void SetBaseTensor(const BaseTensorPtr &base_tensor) { tensor_ = base_tensor; }
 
- private:
+ protected:
   BaseTensorPtr tensor_{nullptr};
 };
 

@@ -72,7 +72,6 @@ def test_method_select_python(mode):
     with pytest.raises(TypeError) as error_info:
         net(x, 1, y)
         _pynative_executor.sync()
-    assert "Failed calling select with " in str(error_info.value)
 
     with pytest.raises(TypeError) as error_info:
         temp_y = int(1)

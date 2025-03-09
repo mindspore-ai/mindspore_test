@@ -79,8 +79,10 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         self.pyboost_return_template = Template(
             '${arg_handler_processor}\n'
             'MS_LOG(INFO) << "Call Tensor${class_name}";\n'
-            'return ToPython(TensorPyboostMethodRegister::'
-            'GetOp(tensor::TensorPyboostMethod::k${class_name}Reg)(arg_list));\n'
+            'auto res = mindspore::pynative::'
+            '${pyboost_function}(mindspore::prim::kPrim${class_name}, parse_args.src_types_, ${convert_args});\n'
+            'trace::Capture(parse_args.arg_list_, "${class_name}", &res);\n'
+            'return res;\n'
         )
         self.callback_python_template = Template(
             'MS_LOG(INFO) << "Callback python method: ${py_method}";\n'
@@ -110,8 +112,8 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             alias_func_mapping (dict): A dictionary mapping function name to its alias function names.
         """
 
-        all_op_func_data, single_op_func_data, overload_op_func_data, _ = op_api_proto.categorize_func_data(
-            func_protos_data)
+        all_op_func_data, single_op_func_data, overload_op_func_data, op_class_name_set = \
+            op_api_proto.categorize_func_data(func_protos_data)
 
         tensor_method_list = self._get_op_enum_name_list(op_protos)
         func_call_body_list = []
@@ -121,9 +123,12 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             overload_op_func_data, func_call_body_list)
         merge_func_call_body = pyboost_utils.merge_strings_by_chunk_size(
             func_call_body_list)
-
+        ops_inc_head_set = set()
+        for op_class_name in op_class_name_set:
+            ops_inc_head_set.add(template.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_class_name[0].lower()))
         for i, func_body_chunk_str in enumerate(merge_func_call_body):
             tensor_api_source = self.TENSOR_API_SOURCE.replace(
+                ops_inc=list(sorted(ops_inc_head_set)),
                 tenosr_func_call_body=func_body_chunk_str)
             save_file(os.path.join(work_path, K.TENSOR_API_PATH), f"tensor_api_{i}.cc",
                       tensor_api_source)
@@ -435,10 +440,16 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         """
         func_proto_device = getattr(func_proto, device)
         if func_proto_device == 'pyboost':
-            arg_handler_processor_str = self._get_arg_handler_processor(
-                func_proto.func_name, func_proto.op_proto)
+            arg_handler_processor_str = self._get_arg_handler_processor(func_proto.func_name, func_proto.op_proto)
+            op_parser = OpTemplateParser(func_proto.op_proto)
+            op_pyboost_func_name = op_parser.get_pyboost_func_name() + "_OP"
+            convert_args_str = op_parser.get_convert_args_str(func_proto.op_proto, is_tensor_api=True)
+            self_index = op_parser.get_input_tensor_index(func_proto.op_proto)
             return self.pyboost_return_template.replace(arg_handler_processor=arg_handler_processor_str,
-                                                        class_name=func_proto.op_proto.op_class.name)
+                                                        class_name=func_proto.op_proto.op_class.name,
+                                                        pyboost_function=op_pyboost_func_name,
+                                                        self_index=self_index,
+                                                        convert_args=convert_args_str)
 
         if func_proto_device == 'py_method':
             return self.callback_python_template.replace(py_method=func_proto.py_method)

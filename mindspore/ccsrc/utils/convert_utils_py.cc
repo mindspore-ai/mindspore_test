@@ -200,9 +200,8 @@ py::object TensorToPyData(const tensor::BaseTensorPtr &tensor, const AbstractBas
   if (!py::isinstance<py::none>(scalar_obj)) {
     return scalar_obj;
   }
-  // use steal to transfer the lifetime to Python
-  py::object tensorpyObject = PackTensorToPyObject(tensor);
-  return SetAdaptedAttrToTensor(tensorpyObject, abs);
+  py::object py_tensor_obj = PackTensorToPyObject(tensor);
+  return SetAdaptedAttrToTensor(py_tensor_obj, abs);
 }
 
 py::object TensorPyToPyData(const tensor::TensorPyPtr &tensorpy, const AbstractBasePtr &abs) {
@@ -211,9 +210,8 @@ py::object TensorPyToPyData(const tensor::TensorPyPtr &tensorpy, const AbstractB
   if (!py::isinstance<py::none>(scalar_obj)) {
     return scalar_obj;
   }
-  // use steal to transfer the lifetime to Python
-  py::object tensorpyObject = PackTensorToPyObject(tensorpy->GetTensor());
-  return SetAdaptedAttrToTensor(tensorpyObject, abs);
+  py::object py_tensor_obj = PackTensorToPyObject(tensorpy->GetBaseTensor());
+  return SetAdaptedAttrToTensor(py_tensor_obj, abs);
 }
 
 py::object ScalarPtrToPyData(const ScalarPtr &value) {
@@ -923,7 +921,10 @@ py::object MakeCOOTensor(const VectorRef &value_list) {
   return ret[0];
 }
 
-bool IsStubTensor(const py::handle &obj) { return py::hasattr(obj, stub::PY_ATTR_STUB); }
+bool IsStubTensor(const py::handle &obj) {
+  static PyObject *attr_stub = PyUnicode_FromString(stub::PY_ATTR_STUB);
+  return PyObject_HasAttr(obj.ptr(), attr_stub);
+}
 
 tensor::TensorPtr ConvertStubTensor(const py::handle &obj) {
   auto py_stub = py::getattr(obj, stub::PY_ATTR_STUB);
@@ -940,8 +941,8 @@ tensor::TensorPtr ConvertStubTensor(const py::handle &obj) {
   return tensor;
 }
 
-tensor::TensorPtr ConvertTensorAndSyncCompiling(const py::handle &obj) {
-  auto tensor = tensor::ConvertToTensor(obj);
+tensor::BaseTensorPtr ConvertTensorAndSyncCompiling(const py::handle &obj) {
+  auto tensor = tensor::ConvertToBaseTensor(obj);
   MS_EXCEPTION_IF_NULL(tensor);
   bool is_parameter = py::hasattr(obj, "__parameter__") && tensor::IsTensorPy(obj);
   if (JitCompiling() && !is_parameter) {
@@ -996,7 +997,7 @@ ValuePtr PyStubNodeCast(const py::handle &obj) {
   auto py_stub = py::getattr(obj, stub::PY_ATTR_STUB);
   auto stub = py_stub.cast<stub::StubNodePtr>();
   if (stub == nullptr) {
-    auto tensor = tensor::ConvertToTensor(py::getattr(obj, stub::PY_ATTR_TENSOR));
+    auto tensor = tensor::ConvertToBaseTensor(py::getattr(obj, stub::PY_ATTR_TENSOR));
     MS_EXCEPTION_IF_NULL(tensor);
     return tensor;
   }
@@ -1008,7 +1009,7 @@ std::pair<ShapeVector, TypePtr> GetStubTensorInfo(const py::handle &obj) {
   ValuePtr stub = py_stub.cast<stub::StubNodePtr>();
   AbstractBasePtr stub_abs;
   if (stub == nullptr) {
-    auto tensor = tensor::ConvertToTensor(py::getattr(obj, stub::PY_ATTR_TENSOR));
+    auto tensor = tensor::ConvertToBaseTensor(py::getattr(obj, stub::PY_ATTR_TENSOR));
     MS_EXCEPTION_IF_NULL(tensor);
     stub_abs = tensor->ToAbstract();
   } else {
@@ -1059,7 +1060,7 @@ ValuePtr ConvertPyObjectToCObject(const py::object &input_object, bool is_base_t
       output = ConvertStubTensor(input_object);
     }
   } else if (tensor::IsTensorPy(input_object)) {
-    output = tensor::ConvertToTensor(input_object);
+    output = tensor::ConvertToBaseTensor(input_object);
   } else if (py::isinstance<py::none>(input_object)) {
     output = kNone;
   } else if (py::isinstance<py::float_>(input_object)) {

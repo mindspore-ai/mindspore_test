@@ -6,13 +6,12 @@ class ${cpp_func_name}Functional : public Functional {
     static PythonArgParser parser({
     ${signatures}
       }, "${func_name}");
-    py::list arg_list;
-    auto sig = parser.Parse(args, kwargs, &arg_list, false);
+    auto parse_args = parser.Parse(args, kwargs, false);
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
     std::string backend = ms_context->get_param < std::string > (MS_CTX_DEVICE_TARGET);
     #ifndef ENABLE_TEST
-      switch (sig.index_) {
+      switch (parse_args.GetOvertLoadIndex()) {
         ${dispatch_cases}
       }
       return py::none();

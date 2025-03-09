@@ -5,7 +5,6 @@ cumsum:
       dtype: tensor
     axis:
       dtype: int
-      arg_handler: dtype_to_type_id
       default: None
     dtype:
       dtype: TypeId

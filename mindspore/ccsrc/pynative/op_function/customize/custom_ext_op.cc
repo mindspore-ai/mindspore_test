@@ -31,7 +31,7 @@ namespace mindspore::pynative {
 py::object PYNATIVE_EXPORT PyboostCustomExtBase(const PrimitivePtr &prim, const py::list &args) {
 #ifndef ENABLE_TEST
   MS_LOG(DEBUG) << "Run Pyboost_CustomExt start";
-  auto op_run_info = PyNativeAlgo::PyBoost::Init(prim, args);
+  auto op_run_info = PyNativeAlgo::PyBoost::Init(prim);
   op_run_info->signatures = ops::gCustomExt.signatures_;
   static Converter converter(&ops::gCustomExt);
   converter.Parse(args);

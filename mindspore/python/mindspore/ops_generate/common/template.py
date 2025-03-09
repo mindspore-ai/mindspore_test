@@ -86,7 +86,7 @@ PYTHON_PRIM_TEMPLATE = Template("""
 class _Pyboost${class_name}Prim(${class_name}Prim_):
     def __call__(self, ${input_args}):
         ${process_func}
-        return _convert_stub(super().__call__([${processed_args}]))
+        return super().__call__([${processed_args}])
 
 
 ${func_impl_name}_impl = _Pyboost${class_name}Prim()
@@ -125,6 +125,9 @@ PYBOOST_FUNCTION_TEMPLATE = Template.load_from_file(
 
 PYBOOST_COMM_FUNCTION_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_comm_function.tpl'))
+
+PYBOOST_FUNCTION_DYNAMIC_OUTPUT_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_function_dynamic_output.tpl'))
 
 PYBOOST_FUNCTIONS_CC_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_functions_cc.tpl'))

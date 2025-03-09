@@ -28,6 +28,7 @@
 #include "pybind_api/ir/tensor_register/tensor_func_reg.h"
 #include "pybind_api/ir/tensor_register/auto_generate/tensor_py_gen.h"
 #include "include/common/pynative/adapter.h"
+#include "include/common/utils/exception.h"
 
 namespace mindspore {
 namespace tensor {
@@ -40,18 +41,23 @@ PyObjectPtr SafePtr1(PyObject *object) { return PyObjectPtr(object); }
 
 // add for tensorpy
 static PyObject *TensorPython_get_shape(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   py::tuple shape_tuple = obj->value.GetPyTupleShape();
   return shape_tuple.release().ptr();  // change to PyObject*
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_getShape(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   ShapeVector shape_tuple = obj->value.GetShape();
   return py::cast(shape_tuple).release().ptr();  // change to PyObject*
+  HANDLE_MS_EXCEPTION_END
 }
 
 static int TensorPython_set_shape(PyObject *self, PyObject *list_obj, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   std::vector<int64_t> shape;
   if (!PyList_Check(list_obj)) {
@@ -77,101 +83,135 @@ static int TensorPython_set_shape(PyObject *self, PyObject *list_obj, void *) {
 
   obj->value.GetBaseTensor()->set_shape(shape);
   return 0;
+  HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
 // setter
 static PyObject *TensorPython_get_InitFinish(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   return PyBool_FromLong(obj->value.IsInitFinished() ? 1 : 0);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_get_ConstArg(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   return py::bool_(obj->value.IsConstArg()).release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_get_init(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   py::object init_obj = obj->value.GetInitializer();
   return init_obj.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_get_device(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   std::string deviceString = obj->value.GetDevice();
   return PyUnicode_FromString(deviceString.c_str());
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_get_ParentTensor(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   py::object parentTensor_obj = obj->value.GetParentTensor();
   return parentTensor_obj.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_get_IndexOfParent(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   py::object indexOfParent_obj = obj->value.GetIndexOfParent();
   return indexOfParent_obj.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_get_init_flag(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   return PyBool_FromLong(obj->value.GetTensor()->is_init() ? 1 : 0);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_get_adapter_flag(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   return PyBool_FromLong(obj->value.GetTensor()->is_adapter() ? 1 : 0);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_get_dtype(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   TypePtr type_ptr = obj->value.GetBaseTensor()->Dtype();
   return py::cast(type_ptr).release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_get_size(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   size_t size = obj->value.GetBaseTensor()->DataSize();
   return PyLong_FromSize_t(size);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_get_itemsize(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   size_t itemsize = obj->value.GetBaseTensor()->data().itemsize();
   return PyLong_FromSize_t(itemsize);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_get_nbytes(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   size_t nbytes = obj->value.GetBaseTensor()->data().nbytes();  // use data().nbytes()
   return PyLong_FromSize_t(nbytes);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_get_strides(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   auto py_strides = TensorPybind::GetPyTupleStrides(*(obj->value.GetTensor()));
   return py_strides.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_get_paramInfo(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
 
   return py::cast(obj->value.GetParamInfo()).release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_get_Virtual(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   return py::bool_(obj->value.IsVirtual()).release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_get_SymbolicShape(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   py::object symbolicShape = obj->value.GetSymbolicShape();
   return symbolicShape.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static int TensorPython_set_ConstArg(PyObject *self, PyObject *value, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   if (!PyBool_Check(value)) {
     PyErr_SetString(PyExc_TypeError, "The init_flag property value must be a boolean.");
@@ -179,38 +219,48 @@ static int TensorPython_set_ConstArg(PyObject *self, PyObject *value, void *) {
   }
   obj->value.SetConstArg(value == Py_True);
   return 0;
+  HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
 static int TensorPython_set_init(PyObject *self, PyObject *value, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   py::object initializer_object = py::reinterpret_borrow<py::object>(value);
   Py_INCREF(value);
   obj->value.SetInitializer(initializer_object);
   return 0;
+  HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
 static int TensorPython_set_device(PyObject *self, PyObject *value, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   const char *deviceString = PyUnicode_AsUTF8(value);
   obj->value.SetDevice(std::string(deviceString));
   return 0;
+  HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
 static int TensorPython_set_ParentTensor(PyObject *self, PyObject *value, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   Py_INCREF(value);
   obj->value.SetParentTensor(py::reinterpret_borrow<py::object>(value));
   return 0;
+  HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
 static int TensorPython_set_IndexOfParent(PyObject *self, PyObject *value, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   Py_INCREF(value);
   obj->value.SetIndexOfParent(py::reinterpret_borrow<py::object>(value));
   return 0;
+  HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
 static int TensorPython_set_init_flag(PyObject *self, PyObject *value, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   if (!PyBool_Check(value)) {
     PyErr_SetString(PyExc_TypeError, "The init_flag property value must be a boolean.");
@@ -218,9 +268,11 @@ static int TensorPython_set_init_flag(PyObject *self, PyObject *value, void *) {
   }
   obj->value.GetTensor()->set_init_flag(value == Py_True);
   return 0;
+  HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
 static int TensorPython_set_adapter_flag(PyObject *self, PyObject *value, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   if (!PyBool_Check(value)) {
     PyErr_SetString(PyExc_TypeError, "The adapter_flag property value must be a boolean.");
@@ -228,23 +280,29 @@ static int TensorPython_set_adapter_flag(PyObject *self, PyObject *value, void *
   }
   obj->value.GetTensor()->set_adapter_flag(value == Py_True);
   return 0;
+  HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
 static int TensorPython_set_paramInfo(PyObject *self, PyObject *value, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   ParamInfoPtr paramInfo_object = py::cast<ParamInfoPtr>(value);
   obj->value.SetParamInfo(paramInfo_object);
   return 0;
+  HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
 static int TensorPython_set_dtypeObj(PyObject *self, PyObject *value, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   TypePtr dtype_object = py::cast<TypePtr>(value);
   obj->value.SetDtype(dtype_object);
   return 0;
+  HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
 static int TensorPython_set_VirtualFlag(PyObject *self, PyObject *value, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   if (!PyBool_Check(value)) {
     PyErr_SetString(PyExc_TypeError, "The init_flag property value must be a boolean.");
@@ -252,78 +310,103 @@ static int TensorPython_set_VirtualFlag(PyObject *self, PyObject *value, void *)
   }
   obj->value.SetVirtualFlag(value == Py_True);
   return 0;
+  HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
 static PyObject *TensorPython_get_slice_num_of_persistent_data_(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   py::object sliceNumOfPersistentData = obj->value.GetSliceNumOfPersistentData();
   return sliceNumOfPersistentData.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static int TensorPython_set_slice_num_of_persistent_data_(PyObject *self, PyObject *value, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   obj->value.SetSliceNumOfPersistentData(py::reinterpret_borrow<py::object>(value));
   return 0;
+  HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
 static PyObject *TensorPython_get_slice_shape_of_persistent_data_(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   py::object sliceNumOfPersistentData = obj->value.GetSliceShapeOfPersistentData();
   return sliceNumOfPersistentData.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static int TensorPython_set_slice_shape_of_persistent_data_(PyObject *self, PyObject *value, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   obj->value.SetSliceShapeOfPersistentData(py::reinterpret_borrow<py::object>(value));
   return 0;
+  HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
 static PyObject *TensorPython_get_grad(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   py::object sliceNumOfPersistentData = obj->value.GetGrad();
   return sliceNumOfPersistentData.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static int TensorPython_set_grad(PyObject *self, PyObject *value, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   obj->value.SetGrad(py::reinterpret_borrow<py::object>(value));
   return 0;
+  HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
 static PyObject *TensorPython_get_grad_fn(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   py::object sliceNumOfPersistentData = obj->value.GetGradFn();
   return sliceNumOfPersistentData.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static int TensorPython_set_grad_fn(PyObject *self, PyObject *value, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   obj->value.SetGradFn(py::reinterpret_borrow<py::object>(value));
   return 0;
+  HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
 static PyObject *TensorPython_get_requires_grad(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   py::object sliceNumOfPersistentData = obj->value.GetRequiresGrad();
   return sliceNumOfPersistentData.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static int TensorPython_set_requires_grad(PyObject *self, PyObject *value, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   obj->value.SetRequiresGrad(py::reinterpret_borrow<py::object>(value));
   return 0;
+  HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
 static PyObject *TensorPython_get_retain_grad(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   py::object sliceNumOfPersistentData = obj->value.GetRetainGrad();
   return sliceNumOfPersistentData.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static int TensorPython_set_retain_grad(PyObject *self, PyObject *value, void *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   obj->value.SetRetainGrad(py::reinterpret_borrow<py::object>(value));
   return 0;
+  HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
 static PyGetSetDef PyTensorPython_getseters[] = {
@@ -480,6 +563,7 @@ static int TensorPy_pyinit(PyObject *obj, PyObject *args, PyObject *kwargs) {
 }
 
 static PyObject *TensorPython_set_paramInfo_(PyObject *, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyObject *self;
   PyObject *value;
   if (!PyArg_ParseTuple(args, "OO", &self, &value)) {
@@ -490,9 +574,11 @@ static PyObject *TensorPython_set_paramInfo_(PyObject *, PyObject *args) {
   ParamInfoPtr paramInfo_object = py::cast<ParamInfoPtr>(value);
   obj->value.SetParamInfo(paramInfo_object);
   Py_RETURN_NONE;
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_asnumpy(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *py_tensor;
   pybind11::array np_array;
   if (self == NULL) {
@@ -506,27 +592,13 @@ static PyObject *TensorPython_asnumpy(PyObject *self, PyObject *args) {
   }
   TensorPy &tensorPy = py_tensor->value;
   auto tensor = tensorPy.GetTensor();
-  try {
-    np_array = TensorPybind::SyncAsNumpy(*tensor);
-  } catch (py::error_already_set &e) {
-    e.restore();
-    return NULL;
-  } catch (const std::runtime_error &e) {
-    if (dynamic_cast<const py::index_error *>(&e)) {
-      PyErr_SetString(PyExc_IndexError, e.what());
-    } else if (dynamic_cast<const py::value_error *>(&e)) {
-      PyErr_SetString(PyExc_ValueError, e.what());
-    } else if (dynamic_cast<const py::type_error *>(&e)) {
-      PyErr_SetString(PyExc_TypeError, e.what());
-    } else {
-      MS_LOG(ERROR) << "wrong pybind11 runtime_error type.";
-    }
-    return NULL;
-  }
+  np_array = TensorPybind::SyncAsNumpy(*tensor);
   return np_array.release().ptr();  // usr ptr() to get PyObject*
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_data_sync(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *py_tensor;
   bool need_wait;
   if (self != NULL) {
@@ -546,15 +618,19 @@ static PyObject *TensorPython_data_sync(PyObject *self, PyObject *args) {
     tensor.DataSync(need_wait);
   }
   Py_RETURN_NONE;
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_repr(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *py_tensor = (PyType<TensorPy> *)self;
   std::string repr = py_tensor->value.ToStringRepr();
   return PyUnicode_FromString(repr.c_str());
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_from_numpy(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyObject *numpy_array;
   if (!PyArg_ParseTuple(args, "O", &numpy_array)) {
     return nullptr;
@@ -573,9 +649,11 @@ static PyObject *TensorPython_from_numpy(PyObject *self, PyObject *args) {
   new (&result->value) TensorPy(tensor->GetTensor());
   result->value.SetInitFinished(true);
   return reinterpret_cast<PyObject *>(result);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorIndex_setitem_index_info(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyObject *py_data;
   PyObject *py_index;
   PyObject *py_value;
@@ -588,17 +666,13 @@ static PyObject *TensorIndex_setitem_index_info(PyObject *self, PyObject *args) 
   pybind11::object value = pybind11::reinterpret_borrow<pybind11::object>(py_value);
   pybind11::bool_ ascend = static_cast<bool>(is_ascend);
   py::object result;
-  try {
-    result = TensorIndex::SetItemIndexInfo(data, index, value, ascend);
-  } catch (py::error_already_set &e) {
-    e.restore();
-    return NULL;
-  }
-
+  result = TensorIndex::SetItemIndexInfo(data, index, value, ascend);
   return result.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorIndex_getitem_index_info(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyObject *py_data;
   PyObject *py_index;
   int is_ascend = 1;
@@ -610,21 +684,19 @@ static PyObject *TensorIndex_getitem_index_info(PyObject *self, PyObject *args) 
   py::bool_ ascend = static_cast<bool>(is_ascend);
   py::object result;
 
-  try {
-    result = TensorIndex::GetItemIndexInfo(data, index, ascend);
-  } catch (py::error_already_set &e) {
-    e.restore();
-    return NULL;
-  }
+  result = TensorIndex::GetItemIndexInfo(data, index, ascend);
+
   if (result.is_none()) {
     Py_INCREF(Py_None);
     return Py_None;
   }
 
   return result.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorIndex_is_flattened(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyObject *tensor_list;
   if (!PyArg_ParseTuple(args, "O", &tensor_list)) {
     PyErr_SetString(PyExc_TypeError, "Expected a list of TensorPy objects.");
@@ -643,14 +715,18 @@ static PyObject *TensorIndex_is_flattened(PyObject *self, PyObject *args) {
   }
   bool result = Tensor::IsFlattened(tensors);
   return PyBool_FromLong(result);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_check_stub(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   bool result = Tensor::CheckStub();
   return PyBool_FromLong(result);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPy_make_persistent_data_tensor(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyObject *py_input;
   PyObject *py_slice_num;
   if (!PyArg_ParseTuple(args, "OO", &py_input, &py_slice_num)) {
@@ -667,16 +743,20 @@ static PyObject *TensorPy_make_persistent_data_tensor(PyObject *self, PyObject *
   new (&result->value) TensorPy(tensor);
   result->value.SetInitFinished(true);
   return reinterpret_cast<PyObject *>(result);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_get_bytes(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   auto tensor = obj->value.GetTensor();
   py::bytes bytes = TensorPybind::GetBytes(*tensor);
   return bytes.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPy_convert_bytes_to_tensor(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyObject *bytes_obj;     // py::bytes object
   PyObject *dims_obj;      // py::tuple object
   PyObject *type_ptr_obj;  // TypePtr object
@@ -695,22 +775,28 @@ static PyObject *TensorPy_convert_bytes_to_tensor(PyObject *self, PyObject *args
   new (&py_tensor->value) TensorPy(tensor->GetTensor());
   py_tensor->value.SetInitFinished(true);
   return reinterpret_cast<PyObject *>(py_tensor);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_flush_from_cache(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   auto tensor = obj->value.GetTensor();
   TensorPybind::FlushFromCache(*tensor);
   Py_RETURN_NONE;
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_is_persistent_data(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   bool result = obj->value.IsPersistentData();
   return PyBool_FromLong(result);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_asnumpy_of_slice_persistent_data(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   int32_t param_key;
   int slice_index;
   if (!PyArg_ParseTuple(args, "ii", &param_key, &slice_index)) {
@@ -720,15 +806,19 @@ static PyObject *TensorPython_asnumpy_of_slice_persistent_data(PyObject *self, P
   auto tensorTmp = tensor->value.GetTensor();
   py::array np_array = TensorPybind::AsNumpyOfSlice(*tensorTmp, param_key, slice_index);
   return np_array.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_is_init(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = reinterpret_cast<PyType<TensorPy> *>(self);
   bool result = tensor->value.IsInit();
   return PyBool_FromLong(result);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_set_initFlag(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = reinterpret_cast<PyType<TensorPy> *>(self);
   int flag;
   if (!PyArg_ParseTuple(args, "i", &flag)) {
@@ -736,15 +826,19 @@ static PyObject *TensorPython_set_initFlag(PyObject *self, PyObject *args) {
   }
   tensor->value.SetInitFlag(static_cast<bool>(flag));
   Py_RETURN_NONE;
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_data_dim(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = reinterpret_cast<PyType<TensorPy> *>(self);
   int dim = tensor->value.DataDim();
   return PyLong_FromLong(dim);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_assign_value(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyObject *py_tensor;
   if (!PyArg_ParseTuple(args, "O", &py_tensor)) {
     return nullptr;
@@ -762,9 +856,11 @@ static PyObject *TensorPython_assign_value(PyObject *self, PyObject *args) {
   }
   Py_INCREF(self);
   return self;
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_set_dtype(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyObject *py_type;
 
   if (!PyArg_ParseTuple(args, "O", &py_type)) {
@@ -775,9 +871,11 @@ static PyObject *TensorPython_set_dtype(PyObject *self, PyObject *args) {
   TypePtr result = tensor->value.SetDtype(type_ptr);
 
   return py::cast(result).release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_offload(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   const char *file_path;
   if (!PyArg_ParseTuple(args, "s", &file_path)) {
     return nullptr;
@@ -785,15 +883,19 @@ static PyObject *TensorPython_offload(PyObject *self, PyObject *args) {
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
   bool success = tensor->value.Offload(file_path);
   return PyBool_FromLong(success);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_get_offload_file_path(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
   const std::string &file_path = tensor->value.GetOffloadFilePath();
   return PyUnicode_FromString(file_path.c_str());
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_move_to(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   const char *to;
   int blocking;
   if (!PyArg_ParseTuple(args, "si", &to, &blocking)) {
@@ -807,9 +909,11 @@ static PyObject *TensorPython_move_to(PyObject *self, PyObject *args) {
   new (&resultTensor->value) TensorPy(tmpTensor->GetTensor());
   resultTensor->value.SetInitFinished(true);
   return reinterpret_cast<PyObject *>(resultTensor);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPy_set_user_data(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
   const char *key;
   PyObject *value_obj;
@@ -817,21 +921,25 @@ static PyObject *TensorPy_set_user_data(PyObject *self, PyObject *args) {
     return nullptr;
   }
   Py_INCREF(value_obj);
-  TensorPybind::SetUserData(*(tensor->value.GetTensor()), py::str(key), py::reinterpret_borrow<py::object>(value_obj));
+  TensorPybind::SetUserData(tensor->value.GetBaseTensor(), py::str(key), py::reinterpret_borrow<py::object>(value_obj));
   Py_RETURN_NONE;
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPy_get_user_data(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
   const char *key;
   if (!PyArg_ParseTuple(args, "s", &key)) {
     return nullptr;
   }
-  py::object result = TensorPybind::GetUserData(*(tensor->value.GetTensor()), py::str(key));
+  py::object result = TensorPybind::GetUserData(tensor->value.GetBaseTensor(), py::str(key));
   return result.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_set_cast_dtype(PyObject *self, PyObject *args, PyObject *kwargs) {
+  HANDLE_MS_EXCEPTION
   PyObject *dtype_obj = nullptr;
   if (!PyArg_ParseTuple(args, "|O", &dtype_obj)) {
     return nullptr;
@@ -843,21 +951,27 @@ static PyObject *TensorPython_set_cast_dtype(PyObject *self, PyObject *args, PyO
   }
   tensor->value.SetCastDtype(dtype);
   Py_RETURN_NONE;
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_execute_lazy_task(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = reinterpret_cast<PyType<TensorPy> *>(self);
   tensor->value.ExecuteLazyTask();
   Py_RETURN_NONE;
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_is_contiguous(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
   bool result = tensor->value.IsContiguous();
   return PyBool_FromLong(result);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_get_stride(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
   std::vector<int64_t> stride = tensor->value.GetStride();
   PyObject *py_stride = PyList_New(stride.size());
@@ -866,15 +980,19 @@ static PyObject *TensorPython_get_stride(PyObject *self, PyObject *args) {
   }
 
   return py_stride;
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_get_storage_offset(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
   int64_t offset = tensor->value.GetStorageOffset();
   return PyLong_FromLongLong(offset);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *RegisterTensorBackwardHook(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyObject *tensor_obj;
   PyObject *hook_func;
   if (!PyArg_ParseTuple(args, "OO", &tensor_obj, &hook_func)) {
@@ -882,37 +1000,45 @@ static PyObject *RegisterTensorBackwardHook(PyObject *self, PyObject *args) {
   }
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)tensor_obj;
   py::function hook = py::cast<py::function>(hook_func);
-  uint64_t hook_id = pynative::HookAdapter::RegisterTensorBackwardHook(*(tensor->value.GetTensor()), hook);
+  uint64_t hook_id = pynative::HookAdapter::RegisterTensorBackwardHook(tensor->value.GetBaseTensor(), hook);
   return PyLong_FromUnsignedLongLong(hook_id);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *RemoveTensorBackwardHook(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   uint64_t handle_id;
   if (!PyArg_ParseTuple(args, "K", &handle_id)) {
     return nullptr;
   }
   pynative::HookAdapter::RemoveTensorBackwardHook(handle_id);
   Py_RETURN_NONE;
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_ToString(PyObject *self, PyObject *) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
   std::string result = tensor->value.ToString();
   return PyUnicode_FromString(result.c_str());
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_SetOffload(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
-  auto tensorTmp = tensor->value.GetTensor();
+  auto tensorTmp = tensor->value.GetBaseTensor();
   bool release;
   if (!PyArg_ParseTuple(args, "p", &release)) {
     return NULL;
   }
-  TensorPybind::Offload(*tensorTmp, release);
+  TensorPybind::Offload(tensorTmp, release);
   Py_RETURN_NONE;
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_set_device_address(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   uintptr_t addr;
   PyObject *shape_obj;
   PyObject *type_ptr_obj;
@@ -927,40 +1053,27 @@ static PyObject *TensorPython_set_device_address(PyObject *self, PyObject *args)
   }
   TypePtr type_ptr = py::cast<TypePtr>(py::handle(type_ptr_obj));
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
-  auto tensorTmp = tensor->value.GetTensor();
-  TensorPybind::SetDeviceAddress(*tensorTmp, addr, shape, type_ptr);
+  auto tensorTmp = tensor->value.GetBaseTensor();
+  TensorPybind::SetDeviceAddress(tensorTmp, addr, shape, type_ptr);
 
   Py_RETURN_NONE;
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_GetItem(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyObject *py_index = NULL;
   if (!PyArg_ParseTuple(args, "O", &py_index)) {
     return NULL;
   }
-  py::object result;
-  try {
-    result = TensorPybind::TensorGetItem(py::reinterpret_borrow<py::object>(self),
-                                         py::reinterpret_borrow<py::object>(py_index));
-  } catch (py::error_already_set &e) {
-    e.restore();
-    return NULL;
-  } catch (const std::runtime_error &e) {
-    if (dynamic_cast<const py::index_error *>(&e)) {
-      PyErr_SetString(PyExc_IndexError, e.what());
-    } else if (dynamic_cast<const py::value_error *>(&e)) {
-      PyErr_SetString(PyExc_ValueError, e.what());
-    } else if (dynamic_cast<const py::type_error *>(&e)) {
-      PyErr_SetString(PyExc_TypeError, e.what());
-    } else {
-      MS_LOG(ERROR) << "wrong pybind11 runtime_error type.";
-    }
-    return NULL;
-  }
+  py::object result =
+    TensorPybind::TensorGetItem(py::reinterpret_borrow<py::object>(self), py::reinterpret_borrow<py::object>(py_index));
   return result.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_SetItem(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyObject *py_index = NULL, *py_value = NULL;
   if (!PyArg_ParseTuple(args, "|OO", &py_index, &py_value)) {
     return NULL;
@@ -968,31 +1081,16 @@ static PyObject *TensorPython_SetItem(PyObject *self, PyObject *args) {
   py::object self_obj = py::reinterpret_borrow<py::object>(self);
   py::object py_index_obj = py::reinterpret_borrow<py::object>(py_index);
   py::object py_value_obj = py::reinterpret_borrow<py::object>(py_value);
-  py::object result;
-  try {
-    result = TensorPybind::TensorSetItem(self_obj, py_index_obj, py_value_obj);
-  } catch (py::error_already_set &e) {
-    e.restore();
-    return NULL;
-  } catch (const std::runtime_error &e) {
-    if (dynamic_cast<const py::index_error *>(&e)) {
-      PyErr_SetString(PyExc_IndexError, e.what());
-    } else if (dynamic_cast<const py::value_error *>(&e)) {
-      PyErr_SetString(PyExc_ValueError, e.what());
-    } else if (dynamic_cast<const py::type_error *>(&e)) {
-      PyErr_SetString(PyExc_TypeError, e.what());
-    } else {
-      MS_LOG(ERROR) << "wrong pybind11 runtime_error type.";
-    }
-    return NULL;
-  }
+  py::object result = TensorPybind::TensorSetItem(self_obj, py_index_obj, py_value_obj);
   if (result.is(py::none())) {
     return NULL;
   }
   return result.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_GetFlattenTensors(PyObject *self, PyObject *args, PyObject *kwargs) {
+  HANDLE_MS_EXCEPTION
   PyObject *py_tensor_list;
 
   if (!PyArg_ParseTuple(args, "O", &py_tensor_list)) {
@@ -1033,9 +1131,11 @@ static PyObject *TensorPython_GetFlattenTensors(PyObject *self, PyObject *args, 
     }
   }
   return result_tensorpys.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_FlattenTensors(PyObject *self, PyObject *args, PyObject *kwargs) {
+  HANDLE_MS_EXCEPTION
   PyObject *py_tensor_list = NULL;
   PyObject *fusion_size_ori = NULL;
   size_t fusion_size = 0;
@@ -1078,9 +1178,11 @@ static PyObject *TensorPython_FlattenTensors(PyObject *self, PyObject *args, PyO
     PyList_SetItem(resultList, index++, outTensor);
   }
   return resultList;
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_GetFusionSize(PyObject *self, PyObject *args, PyObject *kwargs) {
+  HANDLE_MS_EXCEPTION
   PyObject *py_tensor_list;
 
   if (!PyArg_ParseTuple(args, "O", &py_tensor_list)) {
@@ -1096,71 +1198,68 @@ static PyObject *TensorPython_GetFusionSize(PyObject *self, PyObject *args, PyOb
   }
   size_t out = Tensor::GetFusionSize(tensorpys);
   return PyLong_FromSize_t(out);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_GetNewItem(PyObject *self, PyObject *args, PyObject *kwargs) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
-  auto tensorTmp = tensor->value.GetTensor();
-  py::object result;
-  try {
-    result = TensorPybind::Item(*tensorTmp);
-  } catch (py::error_already_set &e) {
-    e.restore();
-    return NULL;
-  } catch (const std::runtime_error &e) {
-    if (dynamic_cast<const py::index_error *>(&e)) {
-      PyErr_SetString(PyExc_IndexError, e.what());
-    } else if (dynamic_cast<const py::value_error *>(&e)) {
-      PyErr_SetString(PyExc_ValueError, e.what());
-    } else if (dynamic_cast<const py::type_error *>(&e)) {
-      PyErr_SetString(PyExc_TypeError, e.what());
-    } else {
-      MS_LOG(ERROR) << "wrong pybind11 runtime_error type.";
-    }
-    return NULL;
-  }
+  auto tensorTmp = tensor->value.GetBaseTensor();
+  py::object result = TensorPybind::Item(tensorTmp);
   return result.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_ToList(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
-  auto tensorTmp = tensor->value.GetTensor();
-  py::object result = TensorPybind::ToList(*tensorTmp);
+  auto tensorTmp = tensor->value.GetBaseTensor();
+  py::object result = TensorPybind::ToList(tensorTmp);
   return result.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_HasAutoGrad(PyObject *self, PyObject *args, PyObject *kwargs) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
   bool result = tensor->value.HasAutoGrad();
   return PyBool_FromLong(result);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_GetHooks(PyObject *self, PyObject *args, PyObject *kwargs) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
-  auto tensorTmp = tensor->value.GetTensor();
-  py::list result = pynative::HookAdapter::GetHooks(*tensorTmp);
+  auto tensorTmp = tensor->value.GetBaseTensor();
+  py::list result = pynative::HookAdapter::GetHooks(tensorTmp);
   return result.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_GetDataPtr(PyObject *self, PyObject *args, PyObject *kwargs) {
+  HANDLE_MS_EXCEPTION
   PyObject *tensor_obj;
   if (!PyArg_ParseTuple(args, "O", &tensor_obj)) {
     return nullptr;
   }
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)tensor_obj;
-  auto tensorTmp = tensor->value.GetTensor();
-  uintptr_t dataPtr = TensorPybind::DataPtr(*tensorTmp);
+  auto tensorTmp = tensor->value.GetBaseTensor();
+  uintptr_t dataPtr = TensorPybind::DataPtr(tensorTmp);
   PyObject *dataPtrResult = PyLong_FromVoidPtr(reinterpret_cast<void *>(dataPtr));
   return dataPtrResult;
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_NeedContiguous(PyObject *self, PyObject *args, PyObject *kwargs) {
+  HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
   bool result = tensor->value.NeedContiguous();
   return PyBool_FromLong(result);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_getstate(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyObject *state;
   if (self != nullptr) {
     state = self;
@@ -1179,9 +1278,11 @@ static PyObject *TensorPython_getstate(PyObject *self, PyObject *args) {
   }
   py::tuple result = py::make_tuple(numpy_array);
   return result.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_setstate(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
   PyObject *state;
   PyObject *tensor;
   if (!PyArg_ParseTuple(args, "OO", &tensor, &state)) {
@@ -1208,6 +1309,7 @@ static PyObject *TensorPython_setstate(PyObject *self, PyObject *args) {
   resultTensor->value.SetInitFinished(true);
   Py_INCREF(resultTensor);
   return reinterpret_cast<PyObject *>(resultTensor);
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyMethodDef Tensor_methods[] = {
@@ -1477,9 +1579,11 @@ static PyMethodDef Tensor_methods[] = {
 
 static void TensorPy_pydealloc(PyObject *obj) {
   PyType<TensorPy> *self = reinterpret_cast<PyType<TensorPy> *>(obj);
-  // add for pyinit error
-  if (self->value.GetBaseTensor() != NULL) {
+  // Init tensor failed and don't need to exec ~TensorPy.
+  if (self->value.IsInitFinished()) {
     self->value.~TensorPy();
+  } else {
+    MS_LOG(WARNING) << "The tensor has not complete initialization and no need to execute destructor.";
   }
   // release Python self
   Py_TYPE(obj)->tp_free(obj);

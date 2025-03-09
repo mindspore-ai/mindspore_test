@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-#include "pynative/pynative_utils.h"
-#include "pybind11/pybind11.h"
+#include "include/common/utils/tensor_utils.h"
 
-namespace py = pybind11;
-namespace mindspore::pynative {
-//primitive to pyboost op
-${prim_func_list}
-
-//pyboost op api
-${op_func_list}
-}// namespace mindspore::pynative
+namespace mindspore {
+namespace tensor {
+void SetPromise(const std::tuple<stub::StubNodePtr> &promises, const BaseTensorPtr &tensor) {
+  const auto &p = std::get<0>(promises);
+  p->SetValue(tensor);
+}
+}  // namespace tensor
+}  // namespace mindspore

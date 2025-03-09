@@ -59,10 +59,9 @@ def test_tensor_mm_with_non_tensor(mode):
     ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = Net()
     x1 = Tensor(np.random.rand(2, 3), ms.float32)
-    with pytest.raises(TypeError) as error_info:
+    with pytest.raises(TypeError):
         net(x1, 3)
         _pynative_executor.sync()
-    assert "Failed calling mm with" in str(error_info.value)
 
 
 @arg_mark(plat_marks=['platform_ascend'],

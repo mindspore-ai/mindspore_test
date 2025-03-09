@@ -27,23 +27,18 @@
 #include "pynative/pynative_utils.h"
 #include "op_def/auto_generate/gen_ops_def.h"
 #include "pynative/op_function/customize/direct_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 
 namespace mindspore::pynative {
-
-py::object Empty(const py::list &args) {
+py::object Pyboost_Empty_OP(const PrimitivePtr &prim, const std::vector<mindspore::ops::OP_DTYPE> &source_type,
+                            const ValueTuplePtr &shape, const std::optional<Int64ImmPtr> &dtype,
+                            const std::optional<StringImmPtr> &device) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp, "Empty", false,
                                      true);
   static const TypePtr type = std::make_shared<TensorType>();
   auto stub_out = stub::MakeTopNode(type);
   auto stub_node = stub_out.second;
-
-  static pynative::Converter converter(&ops::gEmpty);
-  auto shape = converter.ToIntList<py::tuple>(args, kIndex0);
-  auto dtype = converter.ToDtypeOptional(args, kIndex1);
-  auto device = converter.ToStringOptional(args, kIndex2);
-
   MS_LOG(DEBUG) << "start Empty";
-
   pynative::DispatchOp(std::make_shared<pynative::PassthroughFrontendTask>(
     [stub_node, shape, dtype, device]() {
       std::string device_name;
@@ -99,6 +94,14 @@ py::object Empty(const py::list &args) {
   MS_LOG(DEBUG) << "finish Empty";
 
   return stub_out.first;
+}
+
+py::object Empty(const py::list &args) {
+  static pynative::Converter converter(&ops::gEmpty);
+  auto shape = converter.ToIntList<py::tuple>(args, kIndex0);
+  auto dtype = converter.ToDtypeOptional(args, kIndex1);
+  auto device = converter.ToStringOptional(args, kIndex2);
+  return Pyboost_Empty_OP(mindspore::prim::kPrimEmpty, converter.source_type(), shape, dtype, device);
 }
 
 py::object Pyboost_Empty_Base(const PrimitivePtr &prim, const py::list &args) {

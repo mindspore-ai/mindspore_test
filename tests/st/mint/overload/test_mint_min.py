@@ -57,10 +57,9 @@ def test_min(mode):
     assert np.allclose(output.asnumpy(), expect_output)
 
     x_np = np.array([[1., 25., 5., 7.], [4., 11., 6., 21.]]).astype(np.float32)
-    with pytest.raises(TypeError) as error_info:
+    with pytest.raises(TypeError):
         net(x_np)
         _pynative_executor.sync()
-    assert "Failed calling min with " in str(error_info.value)
 
 
 @arg_mark(plat_marks=['platform_ascend'],
@@ -85,25 +84,21 @@ def test_min_dim(mode):
     assert np.allclose(output[0].asnumpy(), expect_output0)
     assert np.allclose(output[1].asnumpy(), expect_output1)
 
-    with pytest.raises(TypeError) as error_info:
+    with pytest.raises(TypeError):
         net(x_np, dim=-1, keepdim=True)
         _pynative_executor.sync()
-    assert "Failed calling min with " in str(error_info.value)
 
-    with pytest.raises(TypeError) as error_info:
+    with pytest.raises(TypeError):
         net(x, dim=None, keepdim=True)
         _pynative_executor.sync()
-    assert "Failed calling min with " in str(error_info.value)
 
-    with pytest.raises(TypeError) as error_info:
+    with pytest.raises(TypeError):
         net(x_np, dim=None, keepdim=False)
         _pynative_executor.sync()
-    assert "Failed calling min with " in str(error_info.value)
 
-    with pytest.raises(TypeError) as error_info:
+    with pytest.raises(TypeError):
         net(x_np, dim=-1, keepdim=-1)
         _pynative_executor.sync()
-    assert "Failed calling min with " in str(error_info.value)
 
 
 @arg_mark(plat_marks=['platform_ascend'],

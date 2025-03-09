@@ -21,6 +21,7 @@
 #include "pynative/grad/function_py.h"
 #include "pynative/predict_out_type_map.h"
 #include "pynative/op_function/auto_grad_register.h"
+#include "include/common/utils/tensor_py.h"
 #include "pipeline/jit/ps/debug/trace.h"
 #include "pybind_api/pybind_patch.h"
 #include "pybind_api/gil_scoped_long_running.h"
@@ -103,28 +104,10 @@ py::object PyNativeExecutor::RunOpStub(const py::args &args) const {
   SetCallbackForInputTensor(op_run_info->op_grad_info->input_value);
 
   StoreAsyncStatus(op_run_info);
-  const auto &op_name = op_run_info->base_op_run_info.op_name;
-  // 1. get top_type from Primitive::PredictOutputType
-  auto top_type = PredictOutType(op_run_info);
-  // 2. if disable PyTraceAsync, return after infer(half-asynchronous) or run(synchronous mode)
-  if (!forward_executor()->EnablePipeline(op_name)) {
-    // Wait for async task finish
-    forward_executor()->WaitForwardTask();
-    // RunOp sync
-    PyNativeExecutorTry(forward_executor()->RunOpS, op_run_info);
-    return ValueToPyData(op_run_info->real_out);
-  }
-  // 3. create top stub node
-  auto node = stub::MakeTopNode(top_type);
-  // The task in the AsyncQueue may need to acquire gil.
-  {
-    GilReleaseWithCheck release_gil;
-    // 4. set abstract and value in asynchronous thread after infer and run
-    op_run_info->stub_output = node.second;
-    forward_executor()->DispatchFrontendTask(op_run_info);
-  }
-  // 5. return stub node
-  return node.first;
+  forward_executor()->WaitForwardTask();
+  // RunOp sync
+  PyNativeExecutorTry(forward_executor()->RunOpS, op_run_info);
+  return py::reinterpret_steal<py::object>(tensor::Wrap(op_run_info->real_out));
 }
 
 py::object PyNativeExecutor::RunSliceOpStub(const std::vector<ValuePtr> &input_values,
@@ -135,19 +118,9 @@ py::object PyNativeExecutor::RunSliceOpStub(const std::vector<ValuePtr> &input_v
   auto stream_id = forward_executor()->GetStreamId();
   SetCallbackForInputTensor(input_values);
   auto requires_grad = GradState::Get().RequiresGrad();
-  if (!forward_executor()->EnablePipeline("")) {
-    forward_executor()->WaitForwardTask();
-    auto ret = forward_executor()->RunSliceOpFrontend(input_values, slice_op_infos, requires_grad, nullptr, stream_id);
-    return ValueToPyData(ret);
-  }
-  auto top_type = kTensorType;
-  auto node = stub::MakeTopNode(top_type);
-  {
-    GilReleaseWithCheck release_gil;
-    forward_executor()->DispatchSilceOpFrontendTask(input_values, slice_op_infos, requires_grad, node.second,
-                                                    stream_id);
-  }
-  return node.first;
+  forward_executor()->WaitForwardTask();
+  auto ret = forward_executor()->RunSliceOpFrontend(input_values, slice_op_infos, requires_grad, nullptr, stream_id);
+  return py::reinterpret_steal<py::object>(tensor::Wrap(ret));
 }
 
 py::object PyNativeExecutor::RealRunOp(const py::args &args) const {
@@ -156,9 +129,9 @@ py::object PyNativeExecutor::RealRunOp(const py::args &args) const {
   PyNativeExecutorTry(forward_executor()->RunOpS, op_run_info);
   if (PyGILState_Check() == 0) {
     py::gil_scoped_acquire acquire;
-    return ValueToPyData(op_run_info->real_out);
+    return py::reinterpret_steal<py::object>(tensor::Wrap(op_run_info->real_out));
   }
-  return ValueToPyData(op_run_info->real_out);
+  return py::reinterpret_steal<py::object>(tensor::Wrap(op_run_info->real_out));
 }
 
 py::object PyNativeExecutor::CallConstantFolding(const py::args &args) const {
