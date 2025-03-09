@@ -22,6 +22,8 @@
 #include "infer/tuple_get_item.h"
 #include "infer/make_tuple.h"
 #include "extendrt/delegate/ascend_native/ops/ascend_native_composite.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 AnSubGraph::AnSubGraph(int index) : index_{index} { func_graph_ = std::make_shared<FuncGraph>(); }

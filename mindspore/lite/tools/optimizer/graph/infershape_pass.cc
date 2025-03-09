@@ -25,6 +25,9 @@
 #include "src/common/log_util.h"
 #include "ops_utils/op_utils.h"
 #include "tools/optimizer/graph/decrease_transpose_algo.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_w.h"
 
 namespace mindspore {
 namespace opt {

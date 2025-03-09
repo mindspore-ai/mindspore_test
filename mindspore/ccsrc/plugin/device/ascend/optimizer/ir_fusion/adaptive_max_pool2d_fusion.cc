@@ -18,7 +18,6 @@
 #include <vector>
 #include <string>
 #include "mindspore/ops/op_def/conv_pool_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "include/backend/optimizer/helper.h"
 #include "abstract/dshape.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -32,6 +31,7 @@
 #include "mindapi/base/type_id.h"
 #include "utils/log_adapter.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore {
 namespace opt {

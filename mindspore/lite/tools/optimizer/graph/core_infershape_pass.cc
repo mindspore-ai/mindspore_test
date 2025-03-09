@@ -26,6 +26,9 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "tools/lite_exporter/fetch_content.h"
 #include "tools/optimizer/common/format_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_w.h"
 
 namespace mindspore {
 namespace opt {

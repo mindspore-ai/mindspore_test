@@ -26,6 +26,7 @@
 #include "mindspore/lite/tools/converter/quantizer/quantize_util.h"
 #include "infer/ops_func_impl/incre_flash_attention.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore {
 namespace {

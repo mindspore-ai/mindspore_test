@@ -27,6 +27,7 @@
 
 #include "mindspore/ops/op_def/conv_pool_op_name.h"
 #include "mindspore/ops/op_def/math_op_name.h"
+#include "mindspore/ops/op_def/nn_op_name.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"

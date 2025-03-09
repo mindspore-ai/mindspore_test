@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore {
 namespace ops {

@@ -17,7 +17,6 @@
 #include "kernel/gpu/pyboost/customize/clamp_scalar.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "mindspore/ccsrc/pyboost/customize/op_common.h"
 
 namespace mindspore {

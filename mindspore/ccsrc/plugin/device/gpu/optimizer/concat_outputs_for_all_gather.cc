@@ -26,6 +26,9 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::opt {
 namespace {

@@ -39,6 +39,9 @@
 #include "include/common/utils/parallel_context.h"
 #include "include/common/utils/primfunc_utils.h"
 #include "frontend/operator/composite/multitype_funcgraph.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace parse {

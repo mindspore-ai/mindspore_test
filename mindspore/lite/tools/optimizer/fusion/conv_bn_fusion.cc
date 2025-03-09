@@ -21,6 +21,8 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/optimizer/fusion/batchnorm_to_scale_fusion.h"
 #include "nnacl/op_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 
 namespace mindspore::opt {
 namespace {

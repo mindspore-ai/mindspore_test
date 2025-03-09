@@ -34,59 +34,11 @@ namespace irpass {
 // {PrimAccumulateNV2, {kPrimMakeTuple, inputs}}
 class AccumulateNV2Eliminater : public AnfVisitor {
  public:
-  AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override {
-    Reset();
-    AnfVisitor::Match(prim::kPrimAccumulateNV2, {IsCNode})(node);
+  AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override;
 
-    if (inputs_.empty() || node->func_graph() == nullptr) {
-      return nullptr;
-    }
+  void Visit(const CNodePtr &cnode) override;
 
-    // If only two filtered inputs nodes, as {make_tuple, x}, return x.
-    if (inputs_.size() == 2) {
-      return inputs_[1];
-    }
-
-    // If only one filtered node, all inputs nodes are zerolike, return one of the input.
-    if (inputs_.size() == 1 && args_.size() > 0) {
-      return args_[0];
-    }
-
-    if (!has_zero_like_) {
-      return nullptr;
-    }
-
-    auto cnode = node->cast<CNodePtr>();
-    auto accumulaten = NewValueNode(GetValueNode(cnode->input(0)));
-    auto fg = node->func_graph();
-    auto make_tuple = fg->NewCNode(inputs_);
-    return fg->NewCNode({accumulaten, make_tuple});
-  }
-
-  void Visit(const CNodePtr &cnode) override {
-    if (!IsPrimitiveCNode(cnode, prim::kPrimMakeTuple)) {
-      return;
-    }
-
-    auto &inputs = cnode->inputs();
-    (void)std::copy(inputs.begin() + 1, inputs.end(), std::back_inserter(args_));
-
-    // {kPrimMakeTuple, X1, X2, ...}
-    inputs_.push_back(NewValueNode(prim::kPrimMakeTuple));
-    for (auto &x : args_) {
-      if (!IsPrimitiveCNode(x, prim::kPrimZerosLike)) {
-        inputs_.push_back(x);
-      } else {
-        has_zero_like_ = true;
-      }
-    }
-  }
-
-  void Reset() {
-    args_.clear();
-    inputs_.clear();
-    has_zero_like_ = false;
-  }
+  void Reset();
 
  private:
   std::vector<AnfNodePtr> inputs_{}, args_{};

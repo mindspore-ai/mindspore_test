@@ -35,6 +35,8 @@
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace compile {

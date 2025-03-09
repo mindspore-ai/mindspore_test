@@ -22,7 +22,6 @@
 
 #include "frontend/optimizer/irpass.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/anf_visitor.h"
 #include "frontend/operator/ops.h"
@@ -34,46 +33,11 @@ namespace irpass {
 // {PrimTranspose, X, AscendingNums}
 class TransposeSameIOEliminater : public AnfVisitor {
  public:
-  AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override {
-    Reset();
-    AnfVisitor::Match(prim::kPrimTranspose, {IsNode, IsVNode})(node);
+  AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override;
 
-    // check pattern match
-    if (tuple_ == nullptr) {
-      return nullptr;
-    }
+  void Visit(const AnfNodePtr &node) override;
 
-    auto value = GetValueNode(tuple_);
-    if (value == nullptr || !value->isa<ValueSequence>()) {
-      return nullptr;
-    }
-    auto elements = GetValue<std::vector<int64_t>>(value);
-    if (elements.empty()) {
-      return nullptr;
-    }
-
-    int64_t j = 0;
-    bool cmp = std::all_of(elements.cbegin(), elements.cend(), [&j](int64_t i) { return i == j++; });
-    // same IO settings, eliminate this transpose
-    if (cmp) {
-      return x_;
-    }
-
-    return nullptr;
-  }
-
-  void Visit(const AnfNodePtr &node) override {
-    if (x_ == nullptr) {
-      x_ = node;
-    } else {
-      tuple_ = node;
-    }
-  }
-
-  void Reset() {
-    x_ = nullptr;
-    tuple_ = nullptr;
-  }
+  void Reset();
 
  private:
   AnfNodePtr x_{nullptr}, tuple_{nullptr};

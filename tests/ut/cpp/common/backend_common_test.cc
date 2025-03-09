@@ -31,6 +31,7 @@
 #include "pipeline/jit/ps/action.h"
 #include "ir/anf.h"
 #include "ir/manager.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace {

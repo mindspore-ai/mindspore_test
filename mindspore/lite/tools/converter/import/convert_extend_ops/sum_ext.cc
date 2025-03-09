@@ -18,10 +18,11 @@
 #include <memory>
 #include <set>
 #include <vector>
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/converter/import/convert_extend_ops/utils.h"
 #include "tools/converter/import/convert_extend_ops/convert_extend_ops_pass.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::opt {
 namespace {

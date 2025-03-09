@@ -26,6 +26,7 @@
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace ops {

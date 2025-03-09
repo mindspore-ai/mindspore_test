@@ -18,7 +18,7 @@
 #include "tests/ut/cpp/operator/meta_dsl/dense.h"
 #include "pipeline/jit/ps/static_analysis/prim.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore::prim {
 class TestMetaDsl : public UT::Common {

@@ -24,6 +24,8 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "pipeline/jit/ps/fallback.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace abstract {

@@ -16,6 +16,7 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/strided_slice_parameter.h"
 #include "infer/grad/strided_slice_grad.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 using mindspore::ops::kNameStridedSliceGrad;
 using mindspore::schema::PrimitiveType_StridedSliceGrad;
 

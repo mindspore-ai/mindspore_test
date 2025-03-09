@@ -18,9 +18,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <map>
 #include <set>
-#include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "include/common/utils/anfalgo.h"

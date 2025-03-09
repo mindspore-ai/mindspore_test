@@ -20,6 +20,8 @@
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "backend/common/mem_reuse/mem_reuse_checker.h"
 #include "include/backend/optimizer/helper.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace memreuse {

@@ -22,6 +22,7 @@
 #include "pynative/pynative_utils.h"
 #include "debug/profiler/profiler.h"
 #include "include/common/pynative/common_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace pynative {

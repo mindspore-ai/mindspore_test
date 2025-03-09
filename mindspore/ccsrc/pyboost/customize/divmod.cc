@@ -19,6 +19,8 @@
 #include "mindspore/ccsrc/pyboost/customize/divmod.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/div.h"
 #include "mindspore/ops/op_def/op_enum.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace kernel {

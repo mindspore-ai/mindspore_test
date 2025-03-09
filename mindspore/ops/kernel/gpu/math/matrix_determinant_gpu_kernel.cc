@@ -25,6 +25,8 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/determinant_by_lu_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/matrix_transpose_impl.cuh"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace kernel {

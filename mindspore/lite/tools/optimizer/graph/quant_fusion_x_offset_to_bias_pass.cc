@@ -23,6 +23,8 @@
 #include "tools/converter/quantizer/quantize_util.h"
 #include "utils/anf_utils.h"
 #include "tools/optimizer/graph/quant_fusion_x_offset_to_bias_pass.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_q.h"
 
 namespace mindspore::opt {
 namespace {

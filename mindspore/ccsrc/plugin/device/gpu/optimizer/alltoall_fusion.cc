@@ -30,6 +30,8 @@
 #include "include/backend/distributed/init.h"
 #ifndef _WIN32
 #include "kernel/gpu/nccl/nccl_gpu_kernel.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #endif
 
 namespace mindspore {

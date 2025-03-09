@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "frontend/parallel/step_parallel_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace parallel {

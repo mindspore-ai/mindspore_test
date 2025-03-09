@@ -19,6 +19,7 @@
 #include <memory>
 #include "ops/ops_func_impl/simple_infer.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore::ops {
 BaseShapePtr AtanExtFuncImpl::InferShape(const PrimitivePtr &primitive,

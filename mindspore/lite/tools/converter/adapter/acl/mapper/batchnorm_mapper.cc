@@ -19,11 +19,12 @@
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
 #include "include/registry/converter_context.h"
-#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 
 namespace mindspore {
 namespace lite {
+BatchNormMapper::BatchNormMapper() : PrimitiveMapper(ops::kNameBatchNorm) {}
 STATUS BatchNormMapper::Mapper(const CNodePtr &cnode) {
   ValueNodePtr value_node = nullptr;
   PrimitivePtr src_prim = nullptr;

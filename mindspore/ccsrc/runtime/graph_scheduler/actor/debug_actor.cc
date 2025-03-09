@@ -38,6 +38,7 @@
 #include "debug/hooker/hook_debugger.h"
 #include "debug/hooker/deprecated_env.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 
 namespace mindspore {
 namespace runtime {

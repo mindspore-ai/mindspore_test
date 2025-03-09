@@ -30,7 +30,7 @@
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace device {

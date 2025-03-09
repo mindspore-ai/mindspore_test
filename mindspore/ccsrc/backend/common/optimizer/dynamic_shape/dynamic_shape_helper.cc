@@ -39,6 +39,7 @@
 #include "ir/anf.h"
 #include "ir/functor.h"
 #include "backend/operator/ops_backend_infer_function.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore {
 namespace opt::dynamic_shape {

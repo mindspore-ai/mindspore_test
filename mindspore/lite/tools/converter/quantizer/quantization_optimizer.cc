@@ -38,6 +38,7 @@
 #include "include/backend/optimizer/graph_optimizer.h"
 #include "tools/optimizer/graph/infershape_pass.h"
 #include "tools/converter/quantizer/split_shared_bias.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
 
 namespace mindspore::lite::quant {
 int QuantizationOptimizer::DoFullQuant(const FuncGraphPtr &old_graph, const std::shared_ptr<ConverterPara> &param) {

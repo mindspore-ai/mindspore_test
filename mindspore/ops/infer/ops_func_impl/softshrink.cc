@@ -23,12 +23,13 @@
 #include "ops/ops_func_impl/simple_infer.h"
 #include "ops_utils/op_utils.h"
 #include "utils/convert_utils_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {
 
 BaseShapePtr SoftShrinkFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                         const std::vector<AbstractBasePtr> &input_args) const {
+                                            const std::vector<AbstractBasePtr> &input_args) const {
   // Get input tensor shape.
   MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
   auto in_shape = input_args[kInputIndex0]->GetShape();
@@ -38,7 +39,7 @@ BaseShapePtr SoftShrinkFuncImpl::InferShape(const PrimitivePtr &primitive,
 }
 
 TypePtr SoftShrinkFuncImpl::InferType(const PrimitivePtr &primitive,
-                                   const std::vector<AbstractBasePtr> &input_args) const {
+                                      const std::vector<AbstractBasePtr> &input_args) const {
   MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
   auto x_type = input_args[kInputIndex0]->GetType();
   MS_EXCEPTION_IF_NULL(x_type);

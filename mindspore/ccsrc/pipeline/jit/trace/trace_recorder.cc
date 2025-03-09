@@ -35,6 +35,9 @@
 #include "include/common/utils/tensor_py.h"
 #include "include/common/pynative/grad_state.h"
 #include "include/common/pynative/adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace py = pybind11;
 namespace mindspore {

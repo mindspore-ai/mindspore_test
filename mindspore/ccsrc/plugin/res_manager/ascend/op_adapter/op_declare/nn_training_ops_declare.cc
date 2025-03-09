@@ -20,6 +20,9 @@
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "mindspore/ops/op_def/nn_optimizer_op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::device::ascend {
 // ApplyMomentum

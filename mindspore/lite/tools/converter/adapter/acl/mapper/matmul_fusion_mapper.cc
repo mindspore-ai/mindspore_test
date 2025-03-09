@@ -33,6 +33,10 @@
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "nnacl/op_base.h"
 #include "ops/base_operator.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 using mindspore::ops::kNameBatchMatMul;

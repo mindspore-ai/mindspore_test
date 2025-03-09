@@ -17,6 +17,7 @@
 
 #include <functional>
 #include "frontend/parallel/dynamic_creator.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace parallel {

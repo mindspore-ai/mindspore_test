@@ -24,6 +24,7 @@
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_w.h"
 
 namespace mindspore {
 namespace ops {

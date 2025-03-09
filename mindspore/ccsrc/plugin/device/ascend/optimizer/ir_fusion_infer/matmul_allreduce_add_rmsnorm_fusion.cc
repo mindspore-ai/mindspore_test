@@ -20,8 +20,6 @@
 
 #include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
 #include "include/backend/distributed/collective/collective_manager.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ir/core_ops_name.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "plugin/device/ascend/optimizer/common/gllo_utils.h"
@@ -31,6 +29,10 @@
 #include "include/backend/optimizer/helper.h"
 #include "ir/primitive.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

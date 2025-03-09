@@ -24,6 +24,9 @@
 #include "backend/operator/ops_backend_infer_function.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 
 namespace mindspore {
 namespace opt {

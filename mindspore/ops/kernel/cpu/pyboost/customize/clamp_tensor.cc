@@ -17,7 +17,6 @@
 #include "mindspore/ops/kernel/cpu/pyboost/customize/clamp_tensor.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "mindspore/ccsrc/pyboost/customize/op_common.h"
 
 namespace mindspore {

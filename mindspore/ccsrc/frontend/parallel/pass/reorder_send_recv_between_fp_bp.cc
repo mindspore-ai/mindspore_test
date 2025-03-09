@@ -22,6 +22,9 @@
 #include <queue>
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/parallel/step_parallel.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace parallel {

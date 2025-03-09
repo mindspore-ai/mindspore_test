@@ -17,6 +17,7 @@
 #include "kernel/cpu/fftfreq_cpu_kernel.h"
 #include "ops_utils/op_utils.h"
 #include "common/kernel.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace kernel {

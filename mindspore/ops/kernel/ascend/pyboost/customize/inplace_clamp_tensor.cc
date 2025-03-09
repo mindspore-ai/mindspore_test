@@ -15,7 +15,6 @@
  */
 
 #include "kernel/ascend/pyboost/customize/inplace_clamp_tensor.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"

@@ -34,6 +34,10 @@
 #include "utils/check_convert_utils.h"
 #include "infer/ops_func_impl/flash_attention_score.h"
 #include "mindspore/ops/op_def/op_enum.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 using mindspore::ops::FASInputLayoutMode;

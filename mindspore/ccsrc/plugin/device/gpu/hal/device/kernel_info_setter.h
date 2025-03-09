@@ -23,11 +23,6 @@
 #include <memory>
 #include <map>
 #include "ir/anf.h"
-#include "mindspore/ops/op_def/conv_pool_ops.h"
-#include "mindspore/ops/op_def/nn_optimizer_ops.h"
-#include "mindspore/ops/op_def/nn_ops.h"
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/math_op_name.h"
 #include "ir/dtype.h"
 #include "include/common/utils/utils.h"
 #include "common/kernel.h"
@@ -37,6 +32,17 @@
 #include "common/common_utils.h"
 #include "utils/ms_context.h"
 #include "include/backend/visible.h"
+#include "mindspore/ops/op_def/conv_pool_op_name.h"
+#include "mindspore/ops/op_def/conv_pool_ops.h"
+#include "mindspore/ops/op_def/nn_op_name.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/math_op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace device {

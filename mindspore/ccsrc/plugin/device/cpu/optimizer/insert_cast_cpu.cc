@@ -31,6 +31,8 @@
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "plugin/device/cpu/optimizer/cpu_pass_utils.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace opt {

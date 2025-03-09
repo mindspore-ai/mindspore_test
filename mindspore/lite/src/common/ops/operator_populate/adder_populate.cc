@@ -17,6 +17,7 @@
 #include "nnacl/conv_parameter.h"
 #include "infer/adder.h"
 #include "infer/cxx_api/adder_fusion.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 using mindspore::ops::kActivationType;
 using mindspore::ops::kNameAdder;
 using mindspore::ops::kNameAdderFusion;

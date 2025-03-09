@@ -21,6 +21,8 @@
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/slice_fusion.h"
 #include "infer/crop.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::lite {
 namespace {

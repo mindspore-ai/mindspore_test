@@ -20,12 +20,16 @@
 #include <vector>
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
-#include "tools/optimizer/common/gllo_utils.h"
 #include "ops_utils/op_utils.h"
 #include "src/common/log_util.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_s.h"
 
 namespace mindspore {
 namespace lite {
+using mindspore::ops::kNameSqueeze;
+
+SqueezeMapper::SqueezeMapper() : PrimitiveMapper(kNameSqueeze) {}
+
 bool SqueezeMapper::GetAxisValue(AnfNodePtr input_node, std::vector<int64_t> *axis_val) {
   if (input_node == nullptr || axis_val == nullptr) {
     return false;

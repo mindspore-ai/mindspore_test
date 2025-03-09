@@ -43,8 +43,6 @@
 #include "ir/value.h"
 #include "common/kernel_build_info.h"
 #include "mindapi/base/shape_vector.h"
-#include "op_def/auto_generate/gen_ops_name.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
 #include "op_def/framework_ops.h"
 #include "op_def/structure_ops.h"
 #include "op_def/other_ops.h"
@@ -57,6 +55,14 @@
 #include "utils/ms_utils.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "availability/silent_check/silent_check.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace pipeline {

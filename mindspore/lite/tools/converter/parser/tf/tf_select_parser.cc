@@ -19,7 +19,6 @@
 #include <map>
 #include <vector>
 #include "tools/converter/parser/tf/tf_node_parser_registry.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore {

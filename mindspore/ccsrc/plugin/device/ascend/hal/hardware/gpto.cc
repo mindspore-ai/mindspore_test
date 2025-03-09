@@ -47,6 +47,8 @@
 #include "include/common/debug/common.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_adapter.h"
 #include "include/common/runtime_conf/runtime_conf.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace gpto {

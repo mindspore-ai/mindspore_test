@@ -27,6 +27,7 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/lp_norm_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/elementwise/eltwise_ops_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/elementwise/eltwise_ops_type.cuh"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 namespace mindspore {
 namespace kernel {
 bool LpNormGpuKernelMod::GetLpNormAttr() {

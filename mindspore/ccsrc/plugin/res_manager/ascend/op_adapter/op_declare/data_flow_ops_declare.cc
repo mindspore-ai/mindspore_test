@@ -18,6 +18,8 @@
 #include <string>
 #include <vector>
 #include "mindspore/ops/op_def/structure_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 
 namespace mindspore::device::ascend {
 INPUT_MAP(TensorArray) = {{1, INPUT_DESC(size)}};

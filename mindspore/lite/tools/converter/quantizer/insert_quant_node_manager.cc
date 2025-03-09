@@ -40,6 +40,12 @@
 #include "infer/cxx_api/mat_mul_fusion.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "ir/dtype.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_q.h"
 
 namespace mindspore::lite::quant {
 namespace {

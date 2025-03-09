@@ -33,6 +33,7 @@
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "backend/common/pass/insert_type_transform_op.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::graphkernel::packet {
 using symshape::DependOn;

@@ -35,6 +35,7 @@
 #include "plugin/device/gpu/optimizer/trt_pass/trt_op_factory.h"
 #include "backend/graph_compiler/segment_runner.h"
 #include "include/common/debug/anf_ir_dump.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

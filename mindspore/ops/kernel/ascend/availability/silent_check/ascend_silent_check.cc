@@ -42,7 +42,6 @@
 #include "common/kernel.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/base/type_id.h"
-#include "op_def/auto_generate/gen_ops_name.h"
 #include "op_def/op_name.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
@@ -53,6 +52,11 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace silentcheck {

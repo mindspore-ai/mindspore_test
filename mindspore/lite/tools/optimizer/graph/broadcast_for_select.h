@@ -20,7 +20,6 @@
 #include <string>
 #include <vector>
 #include <map>
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "tools/optimizer/common/pattern_process_pass_extends.h"
 
 namespace mindspore {

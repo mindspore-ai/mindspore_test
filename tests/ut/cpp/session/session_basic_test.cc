@@ -23,6 +23,8 @@
 #include "include/common/utils/anfalgo.h"
 #include "backend/common/session/session_basic.h"
 #include "backend/common/session/session_factory.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace session {

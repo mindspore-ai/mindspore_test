@@ -23,6 +23,7 @@
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/runtime_conf/runtime_conf.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace device {

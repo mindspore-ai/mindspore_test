@@ -19,6 +19,7 @@
 #include <memory>
 #include "ops/ops_func_impl/simple_infer.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore::ops {
 BaseShapePtr AtanhFuncImpl::InferShape(const PrimitivePtr &primitive,
@@ -27,8 +28,7 @@ BaseShapePtr AtanhFuncImpl::InferShape(const PrimitivePtr &primitive,
   return input_shape->Clone();
 }
 
-TypePtr AtanhFuncImpl::InferType(const PrimitivePtr &primitive,
-                                 const std::vector<AbstractBasePtr> &input_args) const {
+TypePtr AtanhFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
   auto input_type = input_args[kIndex0]->GetType();
   auto input_type_id = input_type->cast<TensorTypePtr>()->element()->type_id();
   static const std::vector<TypeId> int_or_bool = {kNumberTypeUInt8, kNumberTypeInt8,  kNumberTypeInt16,

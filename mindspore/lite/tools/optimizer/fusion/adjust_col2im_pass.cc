@@ -29,6 +29,7 @@
 #include "infer/range_v2.h"
 #include "mindspore/ops/op_def/image_ops.h"
 #include "nnacl/op_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace opt {

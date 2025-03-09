@@ -21,7 +21,7 @@
 #include <vector>
 #include <string>
 #include "frontend/operator/composite/functional_overload.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+${ops_inc}
 
 namespace mindspore::ops {
 ${deprecated_method_decl}

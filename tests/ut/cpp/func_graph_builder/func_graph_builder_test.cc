@@ -25,7 +25,9 @@
 #include "include/common/utils/convert_utils.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 using mindspore::tensor::Tensor;
 

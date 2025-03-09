@@ -23,6 +23,7 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 
 namespace mindspore {
 namespace ops {

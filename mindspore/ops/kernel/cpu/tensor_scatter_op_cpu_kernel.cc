@@ -27,6 +27,7 @@
 #include "utils/profile.h"
 #include "Eigen/Eigen"
 #include "unsupported/Eigen/CXX11/Tensor"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace kernel {

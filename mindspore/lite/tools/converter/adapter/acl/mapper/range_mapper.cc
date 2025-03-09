@@ -20,12 +20,17 @@
 #include "src/common/log_util.h"
 #include "infer/range_v2.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_r.h"
 
 namespace mindspore {
 namespace lite {
 namespace {
 constexpr auto kNameInputNums = 4;
 }
+
+using mindspore::ops::kNameRange;
+
+RangeMapper::RangeMapper() : PrimitiveMapper(kNameRange) {}
 
 STATUS RangeMapper::Mapper(const CNodePtr &cnode) {
   CHECK_NULL_RETURN(cnode);

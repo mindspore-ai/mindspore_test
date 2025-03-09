@@ -25,6 +25,7 @@
 #include "mindspore/ops/infer/inplace_add.h"
 #include "mindspore/ops/infer/inplace_sub.h"
 #include "mindspore/ops/infer/inplace_update.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore {
 namespace kernel {

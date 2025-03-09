@@ -29,14 +29,14 @@ from pyboost import pyboost_utils
 
 
 OP_NAME_OP_DEF = """
-#ifndef MINDSPORE_CORE_OP_NAME_H_
-#define MINDSPORE_CORE_OP_NAME_H_
+#ifndef MINDSPORE_CORE_OP_NAME_${suffix}_H_
+#define MINDSPORE_CORE_OP_NAME_${suffix}_H_
 
 namespace mindspore::ops {
 $ops_namespace_body
 }  // namespace mindspore::ops
 
-#endif  // MINDSPORE_CORE_OP_NAME_H_
+#endif  // MINDSPORE_CORE_OP_NAME_${suffix}_H_
 """
 
 
@@ -63,15 +63,21 @@ class OpsNameHGenerator(BaseGenerator):
         Returns:
             None
         """
-        op_name_gen_list = []
+        import os
+        import collections
+
+        op_name_gen_dict = collections.defaultdict(list)
+
         for op_proto in op_protos:
             k_name_op = pyboost_utils.get_op_name(op_proto.op_name, op_proto.op_class.name)
-            op_name_gen_list.append(self.op_def_body_template.replace(k_name_op=k_name_op))
+            first_char = k_name_op[0].lower()
+            op_name_gen_dict[first_char].append(self.op_def_body_template.replace(k_name_op=k_name_op))
 
-        op_name_code = self.op_name_op_def_template.replace(ops_namespace_body=op_name_gen_list)
+        for first_char, op_name_gen_list in op_name_gen_dict.items():
+            op_name_code = self.op_name_op_def_template.replace(ops_namespace_body=op_name_gen_list,
+                                                                suffix=first_char.upper())
+            op_name_code = template.CC_LICENSE_STR + op_name_code
 
-        op_name_code = template.CC_LICENSE_STR + op_name_code
-
-        save_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH)
-        file_name = "gen_ops_name.h"
-        gen_utils.save_file(save_path, file_name, op_name_code)
+            save_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH)
+            file_name = f"gen_ops_name_{first_char}.h"
+            gen_utils.save_file(save_path, file_name, op_name_code)

@@ -33,6 +33,11 @@
 #include "kernel/ascend/acl_ir/acl_adapter_info.h"
 #include "kernel/ascend/acl_ir/ge_adapter_info.h"
 #include "utils/core_op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::device::ascend {
 namespace {

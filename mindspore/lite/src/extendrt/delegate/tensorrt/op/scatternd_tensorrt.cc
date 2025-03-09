@@ -20,6 +20,8 @@
 #include "infer/scatter_nd_update.h"
 #include "infer/tensor_scatter_update.h"
 #include "infer/tensor_scatter_add.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::lite {
 int ScatterNdTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

@@ -30,4 +30,3 @@
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "mindspore/ops/op_def/sparse_tensor_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"

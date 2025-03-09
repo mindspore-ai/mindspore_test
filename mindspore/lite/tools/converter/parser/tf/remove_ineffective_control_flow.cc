@@ -22,6 +22,10 @@
 #include "nnacl/op_base.h"
 #include "tools/converter/parser/tf/tf_util.h"
 #include "tools/optimizer/common/gllo_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace lite {

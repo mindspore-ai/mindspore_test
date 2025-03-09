@@ -88,6 +88,7 @@
 #endif
 
 #include "include/backend/debug/data_dump/dump_json_parser.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore {
 namespace session {

@@ -23,6 +23,10 @@
 #include "utils/anf_utils.h"
 #include "tools/optimizer/graph/kvcache_quant_pass.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 /* This pass changes the following pattern(s).
 

@@ -27,6 +27,7 @@
 #include "utils/custom_aot_extra.h"
 #include "mindspore/ops/infer/custom.h"
 #include "infer/ops_func_impl/custom_ext.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace ops {

@@ -29,6 +29,9 @@
 #include "ops/primitive_c.h"
 #include "ops_utils/op_utils.h"
 #include "src/common/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

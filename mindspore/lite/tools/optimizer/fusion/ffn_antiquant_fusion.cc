@@ -25,6 +25,10 @@
 #include "mindspore/lite/tools/optimizer/common/gllo_utils.h"
 #include "mindspore/lite/tools/converter/quantizer/quantize_util.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace {

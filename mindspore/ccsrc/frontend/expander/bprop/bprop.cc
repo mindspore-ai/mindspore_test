@@ -29,6 +29,10 @@
 #include "utils/anf_utils.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "frontend/expander/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
 
 namespace mindspore {
 namespace expander {

@@ -60,6 +60,7 @@
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/pipeline/task/run_graph_task.h"
 #include "include/common/utils/stub_tensor.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace compile {

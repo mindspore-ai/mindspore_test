@@ -25,6 +25,8 @@
 #include "nnacl/op_base.h"
 #include "ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_k.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
 namespace mindspore {
 namespace opt {

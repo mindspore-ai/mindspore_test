@@ -18,6 +18,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "backend/common/graph_kernel/adapter/callback_impl.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::graphkernel {
 ParallelOpConcatenater::ParallelOpConcatenater(const std::string &op_name, uint64_t min_num_branches,

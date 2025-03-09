@@ -19,10 +19,10 @@
 #include "src/common/log_util.h"
 #include "ops_utils/op_utils.h"
 #include "infer/bitwisexor.h"
-#include "mindspore/ops/op_def/array_ops.h"
 #include "tools/converter/adapter/acl/common/utils.h"
-#include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_l.h"
 
 namespace mindspore {
 namespace lite {
@@ -30,6 +30,8 @@ namespace {
 constexpr size_t kInput1Idx = 1;
 constexpr size_t kInput2Idx = 2;
 }  // namespace
+using mindspore::ops::kNameLogicalXor;
+XorMapper::XorMapper() : PrimitiveMapper(kNameLogicalXor) {}
 STATUS XorMapper::Mapper(const CNodePtr &cnode) {
   /*
    * input1(bool)  input2(bool)   input1(bool)          input2(bool)

@@ -22,6 +22,7 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/infer/ops_func_impl/maximum_grad.h"
 #include "mindspore/ops/infer/ops_func_impl/minimum_grad.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace kernel {

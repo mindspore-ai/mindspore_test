@@ -25,6 +25,9 @@
 #include "src/common/ops/anf_utils.h"
 #include "tools/optimizer/common/format_utils.h"
 #include "tools/common/node_util.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_q.h"
 
 namespace mindspore::lite::quant {
 bool QuantTypeDeterminer::DetermineQuantAll(const CNodePtr &cnode) {

@@ -25,6 +25,9 @@
 #include "tools/converter/quantizer/quantize_util.h"
 #include "tools/optimizer/common/format_utils.h"
 #include "tools/optimizer/common/gllo_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_q.h"
 
 namespace mindspore::lite::quant {
 // only enable for uint8

@@ -44,6 +44,9 @@
 #include "pynative/pynative_utils.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
 
 namespace mindspore {
 namespace pynative {

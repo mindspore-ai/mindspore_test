@@ -15,24 +15,26 @@
  */
 
 #include "ops/scalar_graph_holder.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_s.h"
 
 namespace mindspore {
 namespace ops {
 namespace {
-std::map<PrimitivePtr, ScalarOpType> node_type_map = {
-  {prim::kPrimShape, ScalarOpType::SHAPE},
-  {prim::kPrimTupleGetItem, ScalarOpType::TUPLE_GET_ITEM},
-  {prim::kPrimRealTupleGetItem, ScalarOpType::TUPLE_GET_ITEM},
-  {prim::kPrimScalarAdd, ScalarOpType::SCALAR_ADD},
-  {prim::kPrimScalarSub, ScalarOpType::SCALAR_SUB},
-  {prim::kPrimScalarMul, ScalarOpType::SCALAR_MUL},
-  {prim::kPrimScalarDiv, ScalarOpType::SCALAR_DIV},
-  {prim::kPrimScalarFloorDiv, ScalarOpType::SCALAR_FLOOR_DIV},
-  {prim::kPrimMakeTuple, ScalarOpType::MAKE_TUPLE},
-  {prim::kPrimRealMakeTuple, ScalarOpType::MAKE_TUPLE},
-  {prim::kPrimReshape, ScalarOpType::RESHAPE},
+std::map<std::string, ScalarOpType> node_type_map = {
+  {kNameShape, ScalarOpType::SHAPE},
+  {kTupleGetItemOpName, ScalarOpType::TUPLE_GET_ITEM},
+  {kRealTupleGetItemOpName, ScalarOpType::TUPLE_GET_ITEM},
+  {kNameScalarAdd, ScalarOpType::SCALAR_ADD},
+  {kNameScalarSub, ScalarOpType::SCALAR_SUB},
+  {kNameScalarMul, ScalarOpType::SCALAR_MUL},
+  {kNameScalarDiv, ScalarOpType::SCALAR_DIV},
+  {kNameScalarFloorDiv, ScalarOpType::SCALAR_FLOOR_DIV},
+  {kMakeTupleOpName, ScalarOpType::MAKE_TUPLE},
+  {kRealMakeTupleOpName, ScalarOpType::MAKE_TUPLE},
+  {kNameReshape, ScalarOpType::RESHAPE},
 };
 
 bool GetScalarValueFromNode(const ValueNodePtr &v_node, int64_t *v) {
@@ -65,7 +67,7 @@ std::shared_ptr<ScalarNode> CreateScalarNodeFromCNode(const CNodePtr &cnode,
   ScalarOpType op_type = ScalarOpType::VALUE;
   auto itr = node_type_map.begin();
   for (; itr != node_type_map.end(); ++itr) {
-    if (IsPrimitiveEquals(prim, itr->first)) {
+    if (prim->name() == itr->first) {
       op_type = itr->second;
       break;
     }

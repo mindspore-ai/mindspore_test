@@ -113,6 +113,9 @@
 #include "frontend/optimizer/irpass/symbol_engine_optimizer.h"
 #include "frontend/optimizer/irpass/add_forward_monad_depend.h"
 #include "pipeline/jit/ps/pass_config.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/util.h"

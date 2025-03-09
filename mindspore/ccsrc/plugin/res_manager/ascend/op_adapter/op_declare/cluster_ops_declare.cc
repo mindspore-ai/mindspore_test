@@ -16,6 +16,7 @@
 
 #include "plugin/res_manager/ascend/op_adapter/op_declare/cluster_ops_declare.h"
 #include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_k.h"
 
 namespace mindspore::device::ascend {
 // KMeansCentroids

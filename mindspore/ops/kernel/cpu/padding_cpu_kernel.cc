@@ -22,6 +22,7 @@
 #include <complex>
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/infer/padding.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore {
 namespace kernel {

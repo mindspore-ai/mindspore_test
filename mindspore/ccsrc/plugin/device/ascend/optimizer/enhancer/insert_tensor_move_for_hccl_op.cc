@@ -26,6 +26,8 @@
 #include "frontend/optimizer/opt.h"
 #include "plugin/device/ascend/optimizer/ascend_helper.h"
 #include "utils/trace_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 namespace mindspore {
 namespace opt {
 namespace {

@@ -23,6 +23,7 @@
 #include "src/extendrt/delegate/tensorrt/op/nmswithmask_tensorrt.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/nms_with_mask_impl.cuh"
 #include "infer/nms_with_mask.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
 
 namespace mindspore::lite {
 int NMSwithmaskTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

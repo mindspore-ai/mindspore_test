@@ -33,6 +33,8 @@
 #include "tools/optimizer/common/pass_manager_extends.h"
 #include "tools/common/node_util.h"
 #include "include/errorcode.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
 namespace mindspore::lite::quant {
 STATUS QATTransform::DoSingleGraphQATTransform(const FuncGraphPtr &func_graph) {
   if (param_->transformQuantParam.precision_mode == quant::PrecisionMode::FLOAT32) {

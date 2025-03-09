@@ -29,6 +29,8 @@
 #include "mindspore/ccsrc/frontend/parallel/ops_info/ops_utils.h"
 #include "ir/anf.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore::opt {
 std::unordered_map<std::string, VectorRef> AntiquantAddMulMatMulAllReduceFusion::DefinePatterns() const {

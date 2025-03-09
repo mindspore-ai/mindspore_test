@@ -30,6 +30,10 @@
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/static_analysis/prim.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 class TestCompilerFailureMode : public UT::Common {

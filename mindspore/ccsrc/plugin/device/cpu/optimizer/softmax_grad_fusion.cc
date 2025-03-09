@@ -19,10 +19,12 @@
 #include <set>
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/math_ops.h"
-#include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace opt {
@@ -86,6 +88,14 @@ bool NeedFusion(const AnfNodePtr &reduce_sum, const AnfNodePtr &, const AnfNodeP
   return true;
 }
 }  // namespace
+
+SoftmaxGradFusionCpu::SoftmaxGradFusionCpu(bool multigraph)
+    : PatternProcessPass("softmax_grad_fusion_cpu", multigraph) {
+  reduce_sum_ = std::make_shared<Var>(std::make_shared<Primitive>(prim::kPrimReduceSum->name()));
+  input0_ = std::make_shared<Var>();
+  input1_ = std::make_shared<Var>();
+  axis_ = std::make_shared<Var>();
+}
 
 const BaseRef SoftmaxGradFusionCpu::DefinePattern() const {
   // pattern: mul(out, sub(dout, reduce_sum(mul(out, dout), -1)))

@@ -29,6 +29,8 @@
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/kernel_info.h"
 #include "utils/trace_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace opt {

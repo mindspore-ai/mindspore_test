@@ -37,6 +37,7 @@
 #include "infer/sparse_count_sparse_output.h"
 #include "utils/check_convert_utils.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {

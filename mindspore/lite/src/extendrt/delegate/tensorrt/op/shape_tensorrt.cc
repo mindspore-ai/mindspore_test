@@ -17,6 +17,8 @@
 #include "src/extendrt/delegate/tensorrt/op/shape_tensorrt.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/dynamic_shape.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::lite {
 int ShapeTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

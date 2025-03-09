@@ -25,6 +25,7 @@
 #include "common/oplib/oplib.h"
 #include "plugin/res_manager/ascend/op_adapter/transform_util.h"
 #include "kernel/ascend/aicpu/aicpu_util.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace kernel {

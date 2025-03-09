@@ -22,6 +22,7 @@
 #include "backend/common/graph_kernel/expander/base/ir_builder.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::graphkernel {
 AnfNodePtr GraphKernelExpander::CreateExpandedNode(const CNodePtr &node, const std::string &name) const {

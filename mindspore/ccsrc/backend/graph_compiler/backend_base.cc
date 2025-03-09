@@ -69,6 +69,12 @@
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/distributed/collective/collect_hccl_init_info.h"
 #include "include/common/utils/parallel_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 namespace mindspore {
 namespace compile {
 bool Backend::GetCond(const BaseRef &c, bool *value) {

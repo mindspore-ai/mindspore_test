@@ -26,6 +26,7 @@
 #include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/pack.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/unpack.cuh"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
 
 namespace mindspore {
 namespace kernel {

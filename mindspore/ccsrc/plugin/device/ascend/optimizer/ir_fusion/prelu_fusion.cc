@@ -23,6 +23,10 @@
 #include "ir/primitive.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace opt {

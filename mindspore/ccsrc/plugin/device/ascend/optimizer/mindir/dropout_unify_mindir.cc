@@ -29,6 +29,9 @@
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 /*
     DropoutGenMask：

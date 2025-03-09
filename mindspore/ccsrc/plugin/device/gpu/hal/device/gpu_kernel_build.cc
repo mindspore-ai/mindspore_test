@@ -30,6 +30,10 @@
 #include "kernel/framework_utils.h"
 #include "plugin/device/gpu/hal/device/cuda_env_checker.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 namespace mindspore {
 namespace device {
 namespace gpu {

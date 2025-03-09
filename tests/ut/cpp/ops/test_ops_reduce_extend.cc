@@ -18,12 +18,14 @@
 #include "infer/ops_func_impl/mean_ext.h"
 #include "infer/ops_func_impl/sum_ext.h"
 #include "infer/ops_func_impl/prod_ext.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
 #include "abstract/abstract_value.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {

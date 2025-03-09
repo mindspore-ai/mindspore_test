@@ -26,6 +26,7 @@
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "mindspore/ccsrc/include/common/utils/comm_manager.h"
 #include "mindspore/ccsrc/include/common/debug/common.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {
 namespace opt {

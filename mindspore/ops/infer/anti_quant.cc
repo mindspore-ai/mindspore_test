@@ -34,6 +34,7 @@
 #include "utils/check_convert_utils.h"
 #include "utils/log_adapter.h"
 #include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore {
 namespace ops {

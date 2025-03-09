@@ -24,6 +24,8 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "include/errorcode.h"
 #include "nnacl/op_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::opt {
 constexpr size_t kTransposeInput = 1;

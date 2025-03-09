@@ -26,6 +26,7 @@
 #include "mindspore/ops/infer/dropout_nd.h"
 #include "kernel/cpu/nnacl/op_base.h"
 #include "kernel/cpu/nnacl//fp32/dropout_fp32.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {
 namespace kernel {

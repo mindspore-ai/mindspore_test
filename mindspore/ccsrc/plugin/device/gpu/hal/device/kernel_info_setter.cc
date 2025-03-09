@@ -30,6 +30,8 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "common/common_utils.h"
 #include "common/ms_factory.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/math_op_name.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "common/kernel.h"
 #include "common/kernel_build_info.h"
@@ -44,6 +46,12 @@
 #include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace device {

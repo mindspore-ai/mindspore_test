@@ -28,6 +28,11 @@
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_weight_preprocess_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_q.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

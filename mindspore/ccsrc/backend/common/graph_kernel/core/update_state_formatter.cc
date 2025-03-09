@@ -28,6 +28,9 @@
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 #include "backend/common/graph_kernel/core/eliminate_redundant_output.h"
 #include "include/common/utils/anfalgo.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore::graphkernel {
 bool IsUpdateState(const std::pair<AnfNodePtr, int> &user) {

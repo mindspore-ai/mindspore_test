@@ -18,23 +18,23 @@
 #include <set>
 #include <string>
 #include "ops/ops_func_impl/simple_infer.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {
 namespace {
 void CheckSignValidTypes(const PrimitivePtr &primitive, const TypeId &type_id) {
-    const std::set<TypeId> valid_types_set = {kNumberTypeBool,      kNumberTypeInt32,      kNumberTypeInt64,
-                                              kNumberTypeFloat16,   kNumberTypeFloat32,    kNumberTypeFloat64,
-                                              kNumberTypeComplex64, kNumberTypeComplex128, kNumberTypeBFloat16};
-    if (MS_UNLIKELY(valid_types_set.find(type_id) == valid_types_set.end())) {
-      std::string valid_types_str;
-      std::string spot = ", ";
-      for (const auto &type : valid_types_set) valid_types_str += (TypeIdToString(type) + spot);
-      valid_types_str.erase(valid_types_str.size() - spot.size());
-      MS_EXCEPTION(TypeError) << "For Primitive " << primitive->name() << ", the type of input must be in {"
-                              << valid_types_str << "}, but got " << TypeIdToString(type_id) << ".";
-    }
+  const std::set<TypeId> valid_types_set = {kNumberTypeBool,      kNumberTypeInt32,      kNumberTypeInt64,
+                                            kNumberTypeFloat16,   kNumberTypeFloat32,    kNumberTypeFloat64,
+                                            kNumberTypeComplex64, kNumberTypeComplex128, kNumberTypeBFloat16};
+  if (MS_UNLIKELY(valid_types_set.find(type_id) == valid_types_set.end())) {
+    std::string valid_types_str;
+    std::string spot = ", ";
+    for (const auto &type : valid_types_set) valid_types_str += (TypeIdToString(type) + spot);
+    valid_types_str.erase(valid_types_str.size() - spot.size());
+    MS_EXCEPTION(TypeError) << "For Primitive " << primitive->name() << ", the type of input must be in {"
+                            << valid_types_str << "}, but got " << TypeIdToString(type_id) << ".";
+  }
 }
 }  // namespace
 

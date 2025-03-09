@@ -38,6 +38,8 @@
 #include "tools/optimizer/common/pass_manager_extends.h"
 #include "tools/optimizer/fusion/matmul_add_fusion.h"
 #include "tools/optimizer/graph/remove_load_pass.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
 
 namespace mindspore::lite::quant {
 namespace {

@@ -22,7 +22,6 @@
 #include "ir/tensor.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {

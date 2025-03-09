@@ -29,6 +29,7 @@
 #include "base/base.h"
 #include "ops_utils/op_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::ops {
 static inline bool IsValidTraceExtType(TypeId t) {

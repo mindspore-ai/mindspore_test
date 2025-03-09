@@ -16,6 +16,7 @@
 
 #include "src/extendrt/delegate/tensorrt/op/conv3d_tensorrt.h"
 #include <memory>
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::lite {
 constexpr int BIAS_INDEX = 2;

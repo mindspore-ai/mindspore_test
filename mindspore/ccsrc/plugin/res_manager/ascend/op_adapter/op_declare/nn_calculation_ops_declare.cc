@@ -19,7 +19,10 @@
 #include <vector>
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 
 namespace mindspore::device::ascend {
 // BiasAddGrad

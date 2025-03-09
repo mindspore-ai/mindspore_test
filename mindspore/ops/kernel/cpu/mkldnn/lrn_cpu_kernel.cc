@@ -22,6 +22,7 @@
 #include <string>
 #include <map>
 #include "mindspore/ops/infer/lrn.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
 namespace mindspore {
 namespace kernel {

@@ -25,6 +25,8 @@
 #include "tools/optimizer/common/format_utils.h"
 #include "utils/ms_utils_secure.h"
 #include "nnacl/op_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace opt {

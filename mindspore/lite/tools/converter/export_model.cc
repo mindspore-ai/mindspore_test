@@ -36,6 +36,8 @@
 #include "tools/optimizer/graph/clip_convert_activation_pass.h"
 #include "nnacl/op_base.h"
 #include "src/common/log_util.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace lite {

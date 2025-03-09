@@ -21,6 +21,9 @@
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::debug {
 constexpr int kSummaryGetItem = 2;

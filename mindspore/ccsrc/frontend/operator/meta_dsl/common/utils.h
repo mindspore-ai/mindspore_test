@@ -28,12 +28,6 @@
 #include "ir/value.h"
 #include "ir/meta_func_graph.h"
 #include "ir/core_ops_primitive.h"
-#include "mindspore/ops/op_def/arithmetic_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/structure_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore::prim {
 #define EXPAND_PARAMS(...) __VA_ARGS__

@@ -110,7 +110,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             alias_func_mapping (dict): A dictionary mapping function name to its alias function names.
         """
 
-        all_op_func_data, single_op_func_data, overload_op_func_data = op_api_proto.categorize_func_data(
+        all_op_func_data, single_op_func_data, overload_op_func_data, _ = op_api_proto.categorize_func_data(
             func_protos_data)
 
         tensor_method_list = self._get_op_enum_name_list(op_protos)

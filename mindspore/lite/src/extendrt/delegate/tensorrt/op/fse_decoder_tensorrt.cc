@@ -27,6 +27,7 @@
 #include "src/extendrt/delegate/tensorrt/cuda_impl/fse_decode.cuh"
 #include "infer/fse_decode.h"
 #include "tools/converter/quantizer/fse_chunk_end.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 
 namespace mindspore::lite {
 namespace {

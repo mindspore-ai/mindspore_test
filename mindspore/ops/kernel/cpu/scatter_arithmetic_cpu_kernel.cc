@@ -25,6 +25,7 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "include/backend/distributed/embedding_cache/embedding_cache_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace kernel {

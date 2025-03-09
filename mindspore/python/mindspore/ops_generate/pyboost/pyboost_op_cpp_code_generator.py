@@ -27,7 +27,8 @@ from common.gen_utils import save_file
 from common.op_proto import OpProto
 from common.base_generator import BaseGenerator
 
-from .pyboost_utils import is_cube, AclnnUtils, get_return_type, merge_strings_by_chunk_size, is_op_multi_output
+from .pyboost_utils import is_cube, AclnnUtils, get_return_type, merge_strings_by_chunk_size, is_op_multi_output, \
+    chunk_list
 from .op_template_parser import OpTemplateParser
 
 
@@ -177,7 +178,8 @@ class PyboostOpCppGenerator:
         self.gen_path = gen_path
         self.device = device
 
-    def generate_customize_op_cpp_code(self, op_protos, merge_op_header, merge_op_function, merge_op_hccl_header=None, merge_op_hccl_function=None):
+    def generate_customize_op_cpp_code(self, op_protos, merge_op_header, merge_op_function, merge_op_inc,
+                                       merge_op_hccl_header=None, merge_op_hccl_function=None, merge_op_hccl_inc=None):
         """
         Generate C++ code for PyBoost operations using the provided operation prototypes.
 
@@ -236,6 +238,7 @@ class PyboostOpCppGenerator:
                                                                 call_args_with_type=call_args_with_type,
                                                                 return_type=cpp_func_return, call_impl=call_impl,
                                                                 register_custom_kernel=register_custom))
+                merge_op_hccl_inc.append(op_name_str)
             else:
                 merge_op_header.append(self.PYBOOST_SINGLE_OP_HEADER_TEMPLATE.replace(operator_name=operator_name,
                                                                                   customize_include=customize_include))
@@ -244,6 +247,7 @@ class PyboostOpCppGenerator:
                                                                 call_args_with_type=call_args_with_type,
                                                                 return_type=cpp_func_return, call_impl=call_impl,
                                                                 register_custom_kernel=register_custom))
+                merge_op_inc.append(op_name_str)
 
     def _get_register_custom_kernel(self, op_proto: OpProto):
         """
@@ -309,7 +313,7 @@ class PyboostViewOpCppGenerator:
         self.gen_path = gen_path
         self.device = device
 
-    def generate_view_op_cpp_code(self, op_protos, merge_op_header, merge_op_function):
+    def generate_view_op_cpp_code(self, op_protos, merge_op_header, merge_op_function, ascend_merge_op_inc):
         """
         Generate C++ code for view operations in PyBoost.
 
@@ -354,6 +358,7 @@ class PyboostViewOpCppGenerator:
                                                                return_type=cpp_func_return,
                                                                call_impl=call_impl,
                                                                register_custom_kernel=""))
+            ascend_merge_op_inc.append(op_proto.op_class.name)
 
 
 class AclnnOpCppCodeGenerator:
@@ -404,7 +409,7 @@ class AclnnOpCppCodeGenerator:
         self.gen_path = gen_path
         self.device = device
 
-    def generate_aclnn_op_cpp_code(self, op_protos, merge_op_header, merge_op_function):
+    def generate_aclnn_op_cpp_code(self, op_protos, merge_op_header, merge_op_function, ascend_merge_op_inc):
         """
         Generate C++ code for ACLNN operations in PyBoost.
 
@@ -487,6 +492,7 @@ class AclnnOpCppCodeGenerator:
                                                                return_type=cpp_func_return,
                                                                call_impl=call_impl,
                                                                register_custom_kernel=''))
+            ascend_merge_op_inc.append(op_proto.op_class.name)
 
     def _generate_tensor_cpu_cast_input_code(self, op_parser: OpTemplateParser):
         """
@@ -641,17 +647,24 @@ class PyboostOpFunctionGenerator(BaseGenerator):
         ascend_merge_op_function = []
         hccl_merge_op_header = []
         hccl_merge_op_function = []
+        ascend_merge_op_inc = []
+        ascend_merge_op_hccl_inc = []
         self.ascend_op_cpp_generator.generate_customize_op_cpp_code(op_protos, ascend_merge_op_header,
-                                                                    ascend_merge_op_function, hccl_merge_op_header, hccl_merge_op_function)
+                                                                    ascend_merge_op_function, ascend_merge_op_inc,
+                                                                    hccl_merge_op_header, hccl_merge_op_function,
+                                                                    ascend_merge_op_hccl_inc)
         self.ascend_view_op_cpp_generator.generate_view_op_cpp_code(op_protos, ascend_merge_op_header,
-                                                                    ascend_merge_op_function)
+                                                                    ascend_merge_op_function,
+                                                                    ascend_merge_op_inc)
         self.ascend_aclnn_cpp_generator.generate_aclnn_op_cpp_code(op_protos, ascend_merge_op_header,
-                                                                   ascend_merge_op_function)
+                                                                   ascend_merge_op_function,
+                                                                   ascend_merge_op_inc)
 
         ascend_op_header_merge_by_chunk_size = merge_strings_by_chunk_size(
             ascend_merge_op_header, chunk_size=120)
         ascend_op_function_merge_by_chunk_size = merge_strings_by_chunk_size(
             ascend_merge_op_function, chunk_size=120)
+        op_inc_list = chunk_list(ascend_merge_op_inc, n=120)
 
         new_gen_num = len(ascend_op_header_merge_by_chunk_size)
         self._delete_residual_merged_ops_files(os.path.join(
@@ -660,13 +673,21 @@ class PyboostOpFunctionGenerator(BaseGenerator):
         for i, op_header, op_function in zip(range(len(ascend_op_header_merge_by_chunk_size)),
                                              ascend_op_header_merge_by_chunk_size,
                                              ascend_op_function_merge_by_chunk_size):
+            ops_inc_head_set = set()
+            for op_name_inc in op_inc_list[i]:
+                ops_inc_head_set.add(template.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_name_inc[0].lower()))
+
             ascend_pyboost_op_source = self.PYBOOST_ASCEND_OP_SOURCE_TEMPLATE.replace(
-                merge_op_header=op_header, merge_op_function=op_function)
+                merge_op_header=op_header, merge_op_function=op_function, ops_inc=list(sorted(ops_inc_head_set)))
             save_file(os.path.join(work_path, self.ascend_gen_path), f"pyboost_ascend_ops_{i}.cc",
                       ascend_pyboost_op_source)
 
+        ops_hccl_inc_head_set = set()
+        for op_name_inc in ascend_merge_op_hccl_inc:
+            ops_hccl_inc_head_set.add(template.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_name_inc[0].lower()))
         hccl_pyboost_op_source = self.PYBOOST_ASCEND_OP_SOURCE_TEMPLATE.replace(
-            merge_op_header='\n'.join(hccl_merge_op_header), merge_op_function='\n'.join(hccl_merge_op_function))
+            merge_op_header='\n'.join(hccl_merge_op_header), merge_op_function='\n'.join(hccl_merge_op_function),
+            ops_inc=list(sorted(ops_hccl_inc_head_set)))
         save_file(os.path.join(work_path, self.hccl_gen_path), f"pyboost_hccl_ops.cc",
                     hccl_pyboost_op_source)
 
@@ -681,16 +702,18 @@ class PyboostOpFunctionGenerator(BaseGenerator):
         """
         cpu_merge_op_header = []
         cpu_merge_op_function = []
+        cpu_merge_op_inc = []
         self.cpu_op_cpp_generator.generate_customize_op_cpp_code(
-            op_protos, cpu_merge_op_header, cpu_merge_op_function)
+            op_protos, cpu_merge_op_header, cpu_merge_op_function, cpu_merge_op_inc)
         self.cpu_view_op_cpp_generator.generate_view_op_cpp_code(
-            op_protos, cpu_merge_op_header, cpu_merge_op_function)
+            op_protos, cpu_merge_op_header, cpu_merge_op_function, cpu_merge_op_inc)
         self.cpu_aclnn_cpp_generator.generate_aclnn_op_cpp_code(
-            op_protos, cpu_merge_op_header, cpu_merge_op_function)
+            op_protos, cpu_merge_op_header, cpu_merge_op_function, cpu_merge_op_inc)
         cpu_op_header_merge_by_chunk_size = merge_strings_by_chunk_size(
             cpu_merge_op_header, chunk_size=120)
         cpu_op_function_merge_by_chunk_size = merge_strings_by_chunk_size(
             cpu_merge_op_function, chunk_size=120)
+        op_inc_list = chunk_list(cpu_merge_op_inc, n=120)
 
         new_gen_num = len(cpu_op_header_merge_by_chunk_size)
         self._delete_residual_merged_ops_files(
@@ -699,8 +722,11 @@ class PyboostOpFunctionGenerator(BaseGenerator):
         for i, op_header, op_function in zip(range(len(cpu_op_header_merge_by_chunk_size)),
                                              cpu_op_header_merge_by_chunk_size,
                                              cpu_op_function_merge_by_chunk_size):
+            ops_inc_head_set = set()
+            for op_name_inc in op_inc_list[i]:
+                ops_inc_head_set.add(template.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_name_inc[0].lower()))
             cpu_pyboost_op_source = self.PYBOOST_CPU_OP_SOURCE_TEMPLATE.replace(
-                merge_op_header=op_header, merge_op_function=op_function)
+                merge_op_header=op_header, merge_op_function=op_function, ops_inc=list(sorted(ops_inc_head_set)))
             save_file(os.path.join(work_path, self.cpu_gen_path), f"pyboost_cpu_ops_{i}.cc",
                       cpu_pyboost_op_source)
 
@@ -715,16 +741,18 @@ class PyboostOpFunctionGenerator(BaseGenerator):
         """
         gpu_merge_op_header = []
         gpu_merge_op_function = []
+        gpu_merge_op_inc = []
         self.gpu_op_cpp_generator.generate_customize_op_cpp_code(
-            op_protos, gpu_merge_op_header, gpu_merge_op_function)
+            op_protos, gpu_merge_op_header, gpu_merge_op_function, gpu_merge_op_inc)
         self.gpu_view_op_cpp_generator.generate_view_op_cpp_code(
-            op_protos, gpu_merge_op_header, gpu_merge_op_function)
+            op_protos, gpu_merge_op_header, gpu_merge_op_function, gpu_merge_op_inc)
         self.gpu_aclnn_cpp_generator.generate_aclnn_op_cpp_code(
-            op_protos, gpu_merge_op_header, gpu_merge_op_function)
+            op_protos, gpu_merge_op_header, gpu_merge_op_function, gpu_merge_op_inc)
         gpu_op_header_merge_by_chunk_size = merge_strings_by_chunk_size(
             gpu_merge_op_header, chunk_size=120)
         gpu_op_function_merge_by_chunk_size = merge_strings_by_chunk_size(
             gpu_merge_op_function, chunk_size=120)
+        op_inc_list = chunk_list(gpu_merge_op_inc, n=120)
 
         new_gen_num = len(gpu_op_header_merge_by_chunk_size)
         self._delete_residual_merged_ops_files(
@@ -733,8 +761,11 @@ class PyboostOpFunctionGenerator(BaseGenerator):
         for i, op_header, op_function in zip(range(len(gpu_op_header_merge_by_chunk_size)),
                                              gpu_op_header_merge_by_chunk_size,
                                              gpu_op_function_merge_by_chunk_size):
+            ops_inc_head_set = set()
+            for op_name_inc in op_inc_list[i]:
+                ops_inc_head_set.add(template.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_name_inc[0].lower()))
             gpu_pyboost_op_source = self.PYBOOST_GPU_OP_SOURCE_TEMPLATE.replace(
-                merge_op_header=op_header, merge_op_function=op_function)
+                merge_op_header=op_header, merge_op_function=op_function, ops_inc=list(sorted(ops_inc_head_set)))
             save_file(os.path.join(work_path, self.gpu_gen_path), f"pyboost_gpu_ops_{i}.cc",
                       gpu_pyboost_op_source)
 

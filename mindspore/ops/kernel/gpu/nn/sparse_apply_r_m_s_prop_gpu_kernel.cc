@@ -17,6 +17,7 @@
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "common/common_utils.h"
 #include "mindspore/ops/infer/sparse_apply_r_m_s_prop.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace kernel {

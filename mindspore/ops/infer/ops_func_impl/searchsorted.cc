@@ -16,33 +16,24 @@
 
 #include "infer/ops_func_impl/searchsorted.h"
 
-#include <complex>
 #include <memory>
 #include <vector>
 #include <map>
 
-#include "abstract/abstract_value.h"
 #include "abstract/dshape.h"
-#include "abstract/ops/op_infer.h"
-#include "abstract/ops/primitive_infer_map.h"
-#include "abstract/utils.h"
 #include "base/base.h"
-#include "base/float16.h"
 #include "ir/anf.h"
 #include "ir/dtype/number.h"
 #include "ir/dtype/type.h"
-#include "ir/primitive.h"
 #include "ir/tensor.h"
 #include "mindapi/base/type_id.h"
-#include "mindapi/helper.h"
-#include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {

@@ -21,6 +21,7 @@
 #include "src/extendrt/delegate/tensorrt/op/cast_tensorrt.h"
 #include "src/extendrt/delegate/tensorrt/op/activation_opt_plugin.h"
 #include "infer/cxx_api/activation.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore::lite {
 namespace {

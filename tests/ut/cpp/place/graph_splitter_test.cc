@@ -18,6 +18,8 @@
 #define private public
 #include "mindspore/ops/op_def/math_ops.h"
 #include "frontend/parallel/graph_util/graph_splitter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace parallel {

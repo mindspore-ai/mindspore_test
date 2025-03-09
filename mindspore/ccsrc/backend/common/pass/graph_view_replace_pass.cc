@@ -27,9 +27,10 @@
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/math_op_name.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "mindspore/core/include/utils/ms_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace opt {

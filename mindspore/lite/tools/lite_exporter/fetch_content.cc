@@ -37,6 +37,8 @@
 #include "tools/optimizer/graph/specify_graph_input_format.h"
 #include "utils/check_convert_utils.h"
 #include "utils/ms_utils_secure.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace lite {

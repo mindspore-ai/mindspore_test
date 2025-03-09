@@ -20,6 +20,7 @@
 #include "extendrt/delegate/ascend_native/ascend_native_kernel_registry.h"
 #include "extendrt/delegate/ascend_native/ascend_native_impl/gather.h"
 #include "infer/ops_func_impl/gather.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 
 namespace mindspore::kernel {
 using mindspore::ops::kNameGather;

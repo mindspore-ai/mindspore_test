@@ -22,6 +22,7 @@
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "op_def/auto_generate/gen_ops_def.h"
+${ops_inc}
 ${pyboost_op_header_include}
 
 namespace mindspore {

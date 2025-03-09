@@ -27,7 +27,6 @@
 #include "ir/visitor.h"
 #include "ir/func_graph.h"
 #include "utils/shape_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {
 namespace opt {
@@ -843,19 +842,6 @@ class PConstant : public PBase<PConstant<T> > {
     }
   }
 };
-
-// Macro for binary operation functions
-#define BIN_OPERATION_PATTERN(Operator, MSPrimitive, Commutative)                   \
-  template <typename T, typename T2>                                                \
-  inline PBinOperation<T, T2> Operator(const PBase<T> &x, const PBase<T2> &y) {     \
-    return PBinOperation(MSPrimitive, x.get_object(), y.get_object(), Commutative); \
-  }
-
-// Arithmetic operations
-BIN_OPERATION_PATTERN(operator+, prim::kPrimAdd, true);
-BIN_OPERATION_PATTERN(operator*, prim::kPrimMul, true);
-BIN_OPERATION_PATTERN(operator/, prim::kPrimRealDiv, false);
-BIN_OPERATION_PATTERN(operator-, prim::kPrimSub, false);
 
 // Macros for match and replace
 #define MATCH_REPLACE(OrigNode, CaptureNode, ReplaceWith) \

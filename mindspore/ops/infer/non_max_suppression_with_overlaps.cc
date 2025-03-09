@@ -19,6 +19,7 @@
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/image_ops.h"
 #include "infer/non_max_suppression_with_overlaps.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
 
 namespace mindspore {
 namespace ops {

@@ -23,6 +23,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore {
 namespace lite {

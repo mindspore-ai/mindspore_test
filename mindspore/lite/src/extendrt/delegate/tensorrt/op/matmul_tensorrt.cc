@@ -20,6 +20,7 @@
 #include "src/extendrt/delegate/tensorrt/op/activation_tensorrt.h"
 #include "src/extendrt/delegate/tensorrt/tensorrt_runtime.h"
 #include "infer/cxx_api/mat_mul_fusion.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore::lite {
 MatMulTensorRT::~MatMulTensorRT() {

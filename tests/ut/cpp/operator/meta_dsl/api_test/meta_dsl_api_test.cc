@@ -24,8 +24,9 @@
 #include "frontend/optimizer/ad/grad.h"
 #include "frontend/optimizer/optimizer.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "tests/ut/cpp/operator/meta_dsl/api_test/api_define.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::prim {
 using AbstractTensor = abstract::AbstractTensor;

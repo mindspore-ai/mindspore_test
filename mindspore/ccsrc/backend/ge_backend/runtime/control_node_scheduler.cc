@@ -19,8 +19,8 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "backend/ge_backend/runtime/control_node_parser.h"
 #include "backend/ge_backend/runtime/scheduler_helper.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "backend/ge_backend/runtime/actor/actor_dump.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
 
 namespace mindspore {
 namespace ge_backend {

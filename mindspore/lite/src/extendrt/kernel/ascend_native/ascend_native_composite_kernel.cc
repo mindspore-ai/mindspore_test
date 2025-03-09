@@ -22,6 +22,9 @@
 #include "extendrt/delegate/ascend_native/ops/ascend_native_composite.h"
 #include "ops/primitive_c.h"
 #include "src/train/opt_allocator.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 #define DPRN() std::cout
 namespace mindspore::kernel {

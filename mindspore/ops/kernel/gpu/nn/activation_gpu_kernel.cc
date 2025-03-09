@@ -18,8 +18,9 @@
 #include <memory>
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace kernel {

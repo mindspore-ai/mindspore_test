@@ -25,7 +25,6 @@
 #include "ops/op_def.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "ir/tensor.h"
 #include "common/device_address.h"
 #include "include/backend/kernel_info.h"
@@ -44,6 +43,7 @@
 #include "common/device_type.h"
 #endif
 #include "runtime/pipeline/pipeline.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 using tensor::TensorPtr;

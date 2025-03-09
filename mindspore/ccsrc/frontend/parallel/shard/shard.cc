@@ -36,6 +36,8 @@
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
 #include "ir/anf.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
 
 namespace mindspore {
 namespace parallel {

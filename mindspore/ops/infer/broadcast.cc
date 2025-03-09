@@ -34,6 +34,7 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 
 namespace mindspore {
 namespace ops {

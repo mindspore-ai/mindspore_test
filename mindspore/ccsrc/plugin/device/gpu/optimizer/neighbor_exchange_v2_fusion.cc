@@ -34,6 +34,9 @@
 #include "include/backend/optimizer/helper.h"
 #ifndef _WIN32
 #include "kernel/gpu/nccl/nccl_gpu_kernel.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
 #endif
 
 namespace mindspore {

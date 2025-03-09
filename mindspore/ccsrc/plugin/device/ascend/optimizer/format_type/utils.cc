@@ -17,6 +17,7 @@
 #include "plugin/device/ascend/optimizer/format_type/utils.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "include/backend/optimizer/helper.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace opt {

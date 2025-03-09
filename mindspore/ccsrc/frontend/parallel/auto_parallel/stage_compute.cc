@@ -29,6 +29,9 @@
 #include "ir/func_graph.h"
 #include "include/common/utils/parallel_context.h"
 #include "utils/ms_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
 
 namespace mindspore {
 namespace parallel {

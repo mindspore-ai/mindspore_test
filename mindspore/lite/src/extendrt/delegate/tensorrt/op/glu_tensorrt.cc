@@ -17,8 +17,8 @@
 #include "src/extendrt/delegate/tensorrt/op/glu_tensorrt.h"
 #include <vector>
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 
 namespace mindspore::lite {
 int GLUTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

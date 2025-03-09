@@ -25,6 +25,9 @@
 #include "ops_utils/op_utils.h"
 #include "tools/common/node_util.h"
 #include "tools/converter/quantizer/quant_params.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_w.h"
 
 namespace mindspore {
 namespace opt {

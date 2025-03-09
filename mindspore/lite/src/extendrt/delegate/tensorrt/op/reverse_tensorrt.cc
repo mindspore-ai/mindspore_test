@@ -17,6 +17,7 @@
 #include "src/extendrt/delegate/tensorrt/op/reverse_tensorrt.h"
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore::lite {
 int ReverseTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

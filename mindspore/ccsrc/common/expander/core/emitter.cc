@@ -33,6 +33,12 @@
 #include "utils/check_convert_utils.h"
 #include "ops/op_def.h"
 #include "ir/primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace expander {
@@ -186,6 +192,14 @@ NodePtr Emitter::Reshape(const NodePtr &node, const NodePtr &shape) {
   }
   return node;
 }
+NodePtr Emitter::ScalarAdd(const NodePtr &lhs, const NodePtr &rhs) { return Emit(ops::kNameScalarAdd, {lhs, rhs}); }
+NodePtr Emitter::ScalarSub(const NodePtr &lhs, const NodePtr &rhs) { return Emit(ops::kNameScalarSub, {lhs, rhs}); }
+NodePtr Emitter::ScalarMul(const NodePtr &lhs, const NodePtr &rhs) { return Emit(ops::kNameScalarMul, {lhs, rhs}); }
+NodePtr Emitter::ScalarDiv(const NodePtr &lhs, const NodePtr &rhs) { return Emit(ops::kNameScalarDiv, {lhs, rhs}); }
+NodePtr Emitter::ScalarFloorDiv(const NodePtr &lhs, const NodePtr &rhs) {
+  return Emit(ops::kNameScalarFloorDiv, {lhs, rhs});
+}
+NodePtr Emitter::ScalarNeg(const NodePtr &node) { return Emit(ops::kNameScalarUsub, {node}); }
 
 NodePtr Emitter::MatMul(const NodePtr &a, const NodePtr &b, bool transpose_a, bool transpose_b) {
   return Emit(prim::kPrimMatMul->name(), {a, b, Value(transpose_a), Value(transpose_b)});

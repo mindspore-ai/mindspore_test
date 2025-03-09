@@ -38,6 +38,9 @@
 #include "frontend/operator/ops.h"
 #include "include/common/utils/cse.h"
 #include "include/common/utils/convert_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace opt {

@@ -25,6 +25,8 @@
 #include "ir/func_graph.h"
 #include "nnacl/op_base.h"
 #include "mindspore/ops/op_def/op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace opt {

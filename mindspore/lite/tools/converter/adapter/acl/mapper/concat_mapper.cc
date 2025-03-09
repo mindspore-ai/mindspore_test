@@ -23,9 +23,15 @@
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "src/common/log_util.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace lite {
+
+using mindspore::ops::kNameConcat;
+
+ConcatMapper::ConcatMapper() : PrimitiveMapper(kNameConcat) {}
+
 STATUS ConcatMapper::Mapper(const CNodePtr &cnode) {
   CHECK_NULL_RETURN(cnode);
   if (RenameNode(cnode) != RET_OK) {

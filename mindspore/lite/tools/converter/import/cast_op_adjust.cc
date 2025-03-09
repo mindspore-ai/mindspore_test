@@ -18,6 +18,7 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "tools/lite_exporter/fetch_content.h"
 #include "mindspore/lite/include/errorcode.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::opt {
 constexpr size_t kCastInputNum = 3;

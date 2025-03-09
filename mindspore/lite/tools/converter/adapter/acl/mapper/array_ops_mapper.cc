@@ -19,10 +19,16 @@
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "src/common/log_util.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_t.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace lite {
+using mindspore::ops::kNameDynamicShape;
+using mindspore::ops::kNameTensorShape;
+
+DynamicShapeMapper::DynamicShapeMapper() : PrimitiveMapper(kNameDynamicShape) {}
+
 STATUS DynamicShapeMapper::Mapper(const CNodePtr &cnode) {
   CHECK_NULL_RETURN(cnode);
   ops::Shape shape_op;
@@ -33,6 +39,8 @@ STATUS DynamicShapeMapper::Mapper(const CNodePtr &cnode) {
   }
   return lite::RET_OK;
 }
+
+TensorShapeMapper::TensorShapeMapper() : PrimitiveMapper(kNameTensorShape) {}
 
 STATUS TensorShapeMapper::Mapper(const CNodePtr &cnode) {
   ops::Shape shape_op;

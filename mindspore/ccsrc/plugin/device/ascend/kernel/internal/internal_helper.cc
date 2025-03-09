@@ -19,7 +19,6 @@
 #include <vector>
 #include <set>
 #include <unordered_map>
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "mindspore/ops/op_def/math_op_name.h"
 #include "mindspore/ops/op_def/nn_optimizer_op_name.h"
 #include "mindspore/ops/ops_utils/op_constants.h"
@@ -28,6 +27,7 @@
 #include "common/kernel_build_info.h"
 #include "mindapi/base/type_id.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace kernel {

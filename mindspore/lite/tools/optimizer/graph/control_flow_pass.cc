@@ -30,6 +30,10 @@
 #include "tools/common/node_util.h"
 #include "nnacl/op_base.h"
 #include "include/registry/converter_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_w.h"
 
 namespace mindspore::opt {
 void ControlFlowPass::ReplaceNode(const FuncGraphPtr &fg,

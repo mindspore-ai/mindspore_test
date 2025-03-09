@@ -21,7 +21,6 @@
 #include "ir/base_tensor.h"
 #include "ir/dtype/number.h"
 #include "infer/ops_func_impl/avg_pool2d.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
@@ -30,6 +29,7 @@
 #include "ops/test_ops.h"
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore::ops {
 struct AvgPool2DParams {

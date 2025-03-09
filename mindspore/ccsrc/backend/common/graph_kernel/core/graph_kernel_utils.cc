@@ -22,16 +22,18 @@
 #include <unordered_map>
 #include <utility>
 
-#include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "backend/common/graph_kernel/model/graph_builder.h"
 #include "backend/common/graph_kernel/model/node.h"
 #include "backend/common/graph_kernel/model/op_node.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
-#include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::graphkernel {
 ListSymbolPtr GkUtils::GetOutputSymbolicShape(const AnfNodePtr &node, size_t i) {

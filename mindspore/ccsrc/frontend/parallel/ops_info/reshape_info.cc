@@ -31,7 +31,8 @@
 #include "frontend/parallel/tensor_layout/tensor_transform.h"
 #include "frontend/parallel/auto_parallel/graph_costmodel.h"
 #include "utils/log_adapter.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace parallel {

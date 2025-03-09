@@ -20,7 +20,7 @@
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/max.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/cast.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace kernel {

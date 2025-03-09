@@ -30,13 +30,16 @@
 #include "mindspore/ops/op_def/math_op_name.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "mindspore/ops/op_def/other_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/parallel/graph_util/graph_utils.h"
 #include "frontend/parallel/pass/interleave_branches_utils.h"
 #include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 
 namespace mindspore {
 namespace parallel {

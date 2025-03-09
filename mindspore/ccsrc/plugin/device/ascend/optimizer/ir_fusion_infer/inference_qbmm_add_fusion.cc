@@ -20,6 +20,8 @@
 #include "plugin/device/ascend/optimizer/common/gllo_utils.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_weight_preprocess_utils.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_q.h"
 
 namespace mindspore {
 namespace opt {

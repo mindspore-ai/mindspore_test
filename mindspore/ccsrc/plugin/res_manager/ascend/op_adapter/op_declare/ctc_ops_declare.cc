@@ -17,6 +17,7 @@
 #include "plugin/res_manager/ascend/op_adapter/op_declare/ctc_ops_declare.h"
 #include <string>
 #include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::device::ascend {
 // CTCLoss

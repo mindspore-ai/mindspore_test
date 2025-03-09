@@ -123,6 +123,7 @@
 #include "backend/common/pass/broadcast_to_fusion.h"
 #include "backend/common/pass/add_attr_to_node/add_attr_to_node.h"
 #include "backend/common/pass/replace_addn_fusion.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace backend {

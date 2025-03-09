@@ -25,6 +25,7 @@
 #include "NvInferRuntimeCommon.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/boundingbox_decode_impl.cuh"
 #include "infer/bounding_box_decode.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 
 namespace mindspore::lite {
 int BoundingBoxDecodeTensorRT::IsSupport(const BaseOperatorPtr &base_operator,

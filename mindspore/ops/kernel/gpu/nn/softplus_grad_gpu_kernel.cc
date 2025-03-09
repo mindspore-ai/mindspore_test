@@ -20,6 +20,7 @@
 #include <memory>
 #include <utility>
 #include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace kernel {

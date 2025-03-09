@@ -29,6 +29,10 @@
 #include "kernel/framework_utils.h"
 #include "include/backend/kernel_info.h"
 #include "backend/common/graph_kernel/decrease_transfer_precision.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::graphkernel {
 namespace {

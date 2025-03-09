@@ -20,6 +20,8 @@
 #include "infer/cxx_api/arg_max_fusion.h"
 #include "infer/cxx_api/arg_min_fusion.h"
 #include "infer/cxx_api/topk_fusion.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::lite {
 namespace {

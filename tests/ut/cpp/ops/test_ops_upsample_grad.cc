@@ -24,7 +24,6 @@
 #include "infer/ops_func_impl/upsample_nearest2d_grad.h"
 #include "infer/ops_func_impl/upsample_nearest3d_grad.h"
 #include "infer/ops_func_impl/upsample_trilinear3d_grad.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
@@ -33,6 +32,7 @@
 #include "ops/test_ops.h"
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace ops {

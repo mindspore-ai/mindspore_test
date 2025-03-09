@@ -31,6 +31,7 @@
 #include "base/base.h"
 #include "ops_utils/op_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
 namespace mindspore::ops {
 static inline void IsValidLogAddExpType(const std::string &type_name, const TypeId &t, const TypePtr &type) {

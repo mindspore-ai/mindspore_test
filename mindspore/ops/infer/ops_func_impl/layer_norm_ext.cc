@@ -18,16 +18,15 @@
 #include <string>
 #include "abstract/abstract_value.h"
 #include "abstract/dshape.h"
-#include "abstract/ops/op_infer.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/helper.h"
-#include "mindspore/ops/op_def/nn_ops.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "ops_utils/op_utils.h"
 #include "utils/ms_context.h"
 #include "utils/shape_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
 namespace mindspore {
 namespace ops {

@@ -25,7 +25,6 @@
 #include "backend/common/graph_kernel/core/graph_kernel_pass_manager.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "ir/anf.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/phase.h"

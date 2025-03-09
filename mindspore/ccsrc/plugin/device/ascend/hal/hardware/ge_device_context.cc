@@ -47,6 +47,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_compiler_symbol.h"
 #include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace device {

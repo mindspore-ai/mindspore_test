@@ -33,6 +33,7 @@
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 
 namespace mindspore {
 namespace pijit {

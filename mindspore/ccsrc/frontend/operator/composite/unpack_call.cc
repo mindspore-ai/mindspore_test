@@ -28,6 +28,10 @@
 #include "frontend/optimizer/opt.h"
 #include "include/common/pybind_api/api_register.h"
 #include "pipeline/jit/ps/fallback.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 // namespace to support composite operators definition

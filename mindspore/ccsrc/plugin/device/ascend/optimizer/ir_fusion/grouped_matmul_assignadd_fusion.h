@@ -42,18 +42,7 @@ namespace opt {
  */
 class GroupedMatmulAssignaddFusion : public PatternProcessPass {
  public:
-  explicit GroupedMatmulAssignaddFusion(bool multigraph = true)
-      : PatternProcessPass("grouped_matmul_assignadd_fusion", multigraph) {
-    x_ = std::make_shared<Var>();
-    weight_ = std::make_shared<Var>();
-    group_list_ = std::make_shared<Var>();
-    split_item_ = std::make_shared<Var>();
-    group_type_ = std::make_shared<Var>();
-    out_ = std::make_shared<Var>();
-    transpose_a_ = std::make_shared<Var>();
-    transpose_b_ = std::make_shared<Var>();
-    grouped_matmul_ = std::make_shared<Var>(prim::kPrimGroupedMatmul);
-  }
+  explicit GroupedMatmulAssignaddFusion(bool multigraph = true);
   ~GroupedMatmulAssignaddFusion() override = default;
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;

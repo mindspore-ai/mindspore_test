@@ -20,8 +20,10 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {
 namespace opt {

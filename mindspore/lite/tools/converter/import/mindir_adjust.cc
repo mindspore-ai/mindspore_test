@@ -29,6 +29,7 @@
 #include "nnacl/op_base.h"
 #include "ops_utils/op_utils.h"
 #include "infer/fake_quant_param.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 
 namespace mindspore {
 namespace lite {

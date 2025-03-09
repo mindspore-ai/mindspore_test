@@ -23,7 +23,6 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
@@ -31,6 +30,13 @@
 #include "plugin/device/ascend/optimizer/create_node_helper.h"
 #include "utils/trace_base.h"
 #include "utils/tensor_construct_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

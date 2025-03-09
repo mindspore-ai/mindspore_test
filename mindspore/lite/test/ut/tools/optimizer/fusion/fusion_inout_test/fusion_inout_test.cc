@@ -26,6 +26,7 @@
 #include "src/common/log_adapter.h"
 #include "tools/common/tensor_util.h"
 #include "tools/optimizer/common/gllo_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 FuncGraphPtr FusionInoutTest::Fuse() {

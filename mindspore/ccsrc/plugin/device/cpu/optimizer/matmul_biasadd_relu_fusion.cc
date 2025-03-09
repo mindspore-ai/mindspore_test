@@ -15,10 +15,8 @@
  */
 
 #include "plugin/device/cpu/optimizer/matmul_biasadd_relu_fusion.h"
-#include <algorithm>
+
 #include <memory>
-#include <string>
-#include <utility>
 #include <vector>
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -26,12 +24,21 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/nn_ops.h"
-#include "mindspore/ops/op_def/nn_optimizer_ops.h"
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace opt {
 namespace {}
+
+MatMulBiasAddReluFusionCPU::MatMulBiasAddReluFusionCPU(bool multigraph)
+    : PatternProcessPass("matmul_biasadd_relu_fusion_cpu", multigraph) {
+  x0_ = std::make_shared<Var>();
+  x1_ = std::make_shared<Var>();
+  x2_ = std::make_shared<Var>();
+  matmul_var_ = std::make_shared<Var>(std::make_shared<Primitive>(prim::kPrimMatMul->name()));
+}
 
 const BaseRef MatMulBiasAddReluFusionCPU::DefinePattern() const {
   VectorRef matmul({matmul_var_, x0_, x1_});

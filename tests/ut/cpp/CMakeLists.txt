@@ -237,7 +237,6 @@ file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion/adaptive_max_pool2d_fusion.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion/batchnorm_to_bninfer.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion/batchnormgrad_to_bninfergrad.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion/histogram_fixed_width_fusion.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion_infer/add_layer_norm_fusion.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion_infer/add_rms_norm_quant_fusion.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion_infer/inference_matmul_split_fusion.cc"

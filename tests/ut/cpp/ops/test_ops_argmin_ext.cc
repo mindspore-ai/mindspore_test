@@ -19,8 +19,8 @@
 #include "infer/ops_func_impl/argmin_ext.h"
 #include "ops/test_value_utils.h"
 #include "abstract/dshape.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "utils/tensor_construct_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore {
 namespace ops {

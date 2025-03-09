@@ -22,9 +22,9 @@
 #include "infer/ops_func_impl/replication_pad_1d.h"
 #include "infer/ops_func_impl/replication_pad_2d.h"
 #include "infer/ops_func_impl/replication_pad_3d.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ops/test_value_utils.h"
 #include "abstract/dshape.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace ops {

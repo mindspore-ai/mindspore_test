@@ -24,6 +24,7 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "backend/common/graph_kernel/inplace_assign_builder.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore::graphkernel {
 class AtomicAddChecker {

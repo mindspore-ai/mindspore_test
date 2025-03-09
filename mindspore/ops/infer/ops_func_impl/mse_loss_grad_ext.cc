@@ -25,6 +25,7 @@
 #include "utils/shape_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "infer/ops_func_impl/mse_loss_grad_ext.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace ops {

@@ -16,6 +16,7 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/instance_norm_parameter.h"
 #include "infer/instance_norm.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 using mindspore::ops::kEpsilon;
 using mindspore::ops::kNameInstanceNorm;
 using mindspore::schema::PrimitiveType_InstanceNorm;

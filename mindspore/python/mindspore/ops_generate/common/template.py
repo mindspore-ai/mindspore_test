@@ -158,7 +158,6 @@ TENSOR_API_SOURCE = Template.load_from_file(
 TENSOR_FUNC_UTILS = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/tensor_func_utils_header.tpl'))
 
-
 TENSOR_FUNC_CALL_BODY = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/tensor_func_call_body.tpl'))
 
@@ -180,7 +179,6 @@ TENSOR_CPP_METHOD = Template.load_from_file(
 
 TENSOR_FUNC_CLASS_REG = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/tensor_func_class_reg.tpl'))
-
 
 PYBOOST_GRAD_FUNCTION_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pyboost/grad_functions/template/pyboost_grad_function.tpl'))
@@ -411,7 +409,7 @@ PRIMITIVE_CLASS_DESC = """    r\"\"\"
 """
 
 CC_LICENSE_STR = f"""/**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -435,13 +433,11 @@ $gen_default_py
 }
 """)
 
-
 op_labels_template = Template("""
 op_labels = {
 $gen_label_py
 }
 """)
-
 
 lite_ops_h_class_template = Template("""class OPS_API ${op_name} : public BaseOperator {
  public:
@@ -454,7 +450,8 @@ lite_ops_h_class_template = Template("""class OPS_API ${op_name} : public BaseOp
 op_cc_template = Template("""class OPS_API ${op_name} : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(${op_name});
-  ${op_name}() : BaseOperator(kName${op_name}) {}${arg_prim_init_list}
+  ${op_name}();
+  ${arg_prim_init_list}
 };
 
 """)
@@ -477,7 +474,6 @@ void ${kernelmod_name}::UpdateOutputShapeAndSize(const std::vector<KernelTensor 
   // Using outputs[index_x]->SetShapeVector(update_shape) and outputs[index_x]->set_size(update_size)
 }
 """)
-
 
 UPDATE_OUTPUT_SHAPE_AND_SIZE = """
   bool IsNeedUpdateOutputShapeAndSize() override { return true; }
@@ -520,3 +516,5 @@ TENSOR_PY_CC_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pybind_api/ir/template/tensor_py_gen.tpl'))
 TENSOR_PY_H_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pybind_api/ir/template/tensor_py_genH.tpl'))
+OP_DEF_INC_HEAD_TEMPLATE = Template(
+    "#include \"mindspore/ops/op_def/auto_generate/gen_ops_primitive_${prefix_char}.h\"")

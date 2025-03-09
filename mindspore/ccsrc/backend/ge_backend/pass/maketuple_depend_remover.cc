@@ -18,8 +18,7 @@
 #include <vector>
 #include <string>
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {
 namespace opt {

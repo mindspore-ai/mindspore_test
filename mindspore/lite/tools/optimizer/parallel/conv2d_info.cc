@@ -32,6 +32,7 @@
 #include "tools/optimizer/fisson/fisson_util.h"
 #include "nnacl/op_base.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 using mindspore::schema::PrimitiveType_Conv2DFusion;
 namespace mindspore {

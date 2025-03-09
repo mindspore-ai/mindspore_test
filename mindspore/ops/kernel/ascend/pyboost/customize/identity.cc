@@ -23,6 +23,7 @@
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
 #include "kernel/ascend/acl/acl_kernel_mod.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore {
 namespace kernel {

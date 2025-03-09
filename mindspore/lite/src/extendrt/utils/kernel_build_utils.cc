@@ -30,6 +30,7 @@
 #include "include/backend/kernel_info.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "mindspore/lite/src/common/common.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace infer {
