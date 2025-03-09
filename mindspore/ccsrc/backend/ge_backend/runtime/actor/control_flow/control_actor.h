@@ -111,8 +111,7 @@ class ControlActor : public MemoryAwareActor {
   void UpdateOutputData(OpData<DeviceTensor> *const output_data, const DataArrowPtr &data_arrow,
                         const AnfNodePtr &output_node, OpContext<DeviceTensor> *const context) override;
   void CreateHeterDeviceTensor(DeviceTensor *const node_device_tensor, DeviceTensor *const input_device_tensor,
-                               DeviceContext *const device_context, size_t index,
-                               OpContext<DeviceTensor> *const context, const AnfNodePtr &node);
+                               size_t index, OpContext<DeviceTensor> *const context, const AnfNodePtr &node);
   void SendOutput(OpContext<DeviceTensor> *const context) override;
   void EraseInput(const OpContext<DeviceTensor> *context) override;
 

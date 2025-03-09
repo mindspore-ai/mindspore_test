@@ -20,15 +20,14 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <set>
 #include <unordered_set>
 #include "backend/backend_manager/backend_manager.h"
 #include "backend/backend_manager/backend_jit_config.h"
 #include "include/backend/visible.h"
 #include "ir/tensor.h"
 #include "backend/common/session/kernel_graph_mgr.h"
-#include "runtime/hardware/device_context.h"
 #include "abstract/abstract_value.h"
-// subgraph, todo::move code
 #include "backend/graph_compiler/graph_partition.h"
 #include "backend/ge_backend/runtime/graph_compiler.h"
 #include "backend/ge_backend/runtime/actor/actor_set.h"
@@ -56,9 +55,14 @@ class BACKEND_EXPORT GEBackend : public BackendBase {
                  const std::map<std::string, std::shared_ptr<tensor::Tensor>> &init_tensors,
                  IRFormat ir_format) override;
 
+  void Clear() override;
+
  private:
   // for init
   void Init();
+  bool OpenTsd(const std::shared_ptr<MsContext> &ms_context_ptr);
+  bool CloseTsd(bool force);
+  void DestroyHccl();
 
   // for Build
   BackendGraphId CompileWholeGraph(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config);
@@ -89,21 +93,19 @@ class BACKEND_EXPORT GEBackend : public BackendBase {
   void WaitMultiStream();
   // inputs
   void ConstructInputs(const KernelGraphPtr &func_graph, const VectorRef &args,
-                       std::vector<tensor::TensorPtr> *inputs_tensor, const device::DeviceContext *device_context);
+                       std::vector<tensor::TensorPtr> *inputs_tensor);
   void ConstructInputsRefMode(const KernelGraphPtr &func_graph, const VectorRef &args,
-                              std::vector<tensor::TensorPtr> *inputs_tensor,
-                              const device::DeviceContext *device_context);
+                              std::vector<tensor::TensorPtr> *inputs_tensor);
   void UpdateInputsShapeAndSize(const ParameterPtr &input_node,
                                 const mindspore::device::DeviceAddressPtr &device_tensor,
-                                const tensor::TensorPtr &input_tensor, const device::DeviceContext *device_context);
+                                const tensor::TensorPtr &input_tensor);
   void SetTensorUpdateCallback(const tensor::TensorPtr &update_tensor);
   void SyncTensorData(const tensor::TensorPtr &host_tensor, const std::shared_ptr<device::DeviceAddress> &device_tensor,
                       const AnfNodePtr &node);
   bool Copy(const mindspore::device::DeviceAddress *dst_device_tensor,
             const mindspore::device::DeviceAddress *src_device_tensor);
   // outputs
-  void ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<tensor::TensorPtr> *outputs,
-                        const device::DeviceContext *device_context);
+  void ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<tensor::TensorPtr> *outputs);
   void ConstructOutputs(const AnfNodePtr &output_node, const std::vector<tensor::TensorPtr> &output_tensors,
                         size_t *output_position, VectorRef *outputs, std::vector<tensor::TensorPtr> *tuple_tensors);
   void ConstructOutputs(mindspore::ge_backend::runtime::ActorSet *actor_set, VectorRef *outputs,
@@ -116,16 +118,16 @@ class BACKEND_EXPORT GEBackend : public BackendBase {
 
   // for acl dump
   bool DebugOnStepBegin(const KernelGraphPtr &func_graph);
-  void DebugOnStepEnd(const KernelGraphPtr &graph, const device::DeviceContext *device_context, bool dump_flag);
+  void DebugOnStepEnd(const KernelGraphPtr &graph, bool dump_flag);
 
   // for profiling
-  bool ProfilerOnStepBegin(const KernelGraphPtr &graph, const device::DeviceContext *device_context);
-  void ProfilerOnStepEnd(const device::DeviceContext *device_context, bool profile_started);
+  bool ProfilerOnStepBegin(const KernelGraphPtr &graph);
+  void ProfilerOnStepEnd(bool profile_started);
 
   // The temp members for backend graph building and will be reset at the end of graph building, can't be used in the
   // backend graph running. Do not allow adding new temporary members.
   std::map<FuncGraphPtr, std::vector<std::vector<GraphId>>> func_graph_to_kernel_graph_ids_;
-  std::map<GraphId, DeviceContext *> graph_id_to_device_context_;
+  std::set<GraphId> graph_ids_;
   std::vector<AnfNodePtr> control_nodes_;
 
   // All the backend graphs shared the members and status in the graph building and running. Need clear the object when
@@ -145,6 +147,11 @@ class BACKEND_EXPORT GEBackend : public BackendBase {
 
   std::shared_ptr<mindspore::ge_backend::runtime::GraphCompiler> graph_compiler_;
   static BackendGraphId backend_graph_id_;
+  std::shared_ptr<device::GraphExecutor> graph_executor_;
+  BackendJitConfig backend_jit_config_;
+  compile::GraphPartitionPtr graph_partition_;
+  inline static std::mutex init_mutex_;
+  bool is_initialized_ = false;
 };
 
 using GEBackendPtr = std::shared_ptr<GEBackend>;

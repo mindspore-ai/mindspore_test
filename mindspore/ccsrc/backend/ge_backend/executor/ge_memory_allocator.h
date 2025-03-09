@@ -21,7 +21,6 @@
 #include <set>
 #include "include/backend/kernel_graph.h"
 #include "backend/ge_backend/graph_ir/types.h"
-#include "runtime/hardware/device_context.h"
 #include "backend/ge_backend/executor/ge_device_res_manager.h"
 #include "backend/ge_backend/executor/ge_summary.h"
 
@@ -30,8 +29,7 @@ namespace backend {
 namespace ge_backend {
 class GEMemoryAllocator {
  public:
-  static void ProcessGraphDeviceAddress(const KernelGraphPtr &kernel_graph, DeviceContext *device_context,
-                                        GeDeviceResManagerPtr res_manager);
+  static void ProcessGraphDeviceAddress(const KernelGraphPtr &kernel_graph, GeDeviceResManagerPtr res_manager);
   static void AllocGraphMemory(const backend::ge_backend::RunOptions &options, const KernelGraphPtr &graph,
                                const GraphSummary &summary, size_t stream_id, GeDeviceResManagerPtr res_manager);
   static void AllocUnuseInput(const KernelGraphPtr &kernel_graph, const AnfNodePtr &input_node,

@@ -651,7 +651,10 @@ void FetchInputDeviceTensorStore(const AnfNodePtr &key, size_t index, const Abst
                  << " same to:" << std::get<0>((*actor_inputs)[index]);
     return;
   }
-  auto device_tensor = DeviceTensorStore::GetInstance().Fetch(key.get(), actor->device_contexts()[0]->GetDeviceType());
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_type = device::GetDeviceTypeByName(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET));
+  auto device_tensor = DeviceTensorStore::GetInstance().Fetch(key.get(), device_type);
   (*actor_inputs)[index] = {input_name, device_tensor};
 }
 
@@ -741,11 +744,13 @@ void FetchOutputInfo(AbstractActor *actor, std::vector<DeviceAddressPtr> *output
 
 void DumpActorInfo(AbstractActor *actor, std::ofstream &ofs) {
   MS_EXCEPTION_IF_NULL(actor);
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   if (actor->type() == KernelTransformType::kSuperKernelActor || actor->type() == KernelTransformType::kOutputActor) {
-    ofs << "\t# device context: ";
-    std::for_each(actor->device_contexts().begin(), actor->device_contexts().end(), [&ofs](const auto &device_context) {
-      ofs << (device_context == nullptr ? "null" : device_context->device_context_key().ToString()) << " ";
-    });
+    ofs << "\t# actor name: " << actor->GetAID().Name() << ", device name: " << device_name
+        << ", device id: " << device_id;
     ofs << "\n";
   }
 }

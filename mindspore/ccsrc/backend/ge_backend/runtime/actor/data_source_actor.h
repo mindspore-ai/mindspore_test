@@ -26,7 +26,6 @@
 #include "utils/hash_map.h"
 #include "backend/ge_backend/runtime/actor/actor_common.h"
 #include "backend/ge_backend/runtime/actor/debug_aware_actor.h"
-#include "runtime/hardware/device_context.h"
 #include "backend/ge_backend/runtime/device_tensor_store.h"
 #include "backend/ge_backend/runtime/host_tensor_queue.h"
 #include "base/base.h"
@@ -34,7 +33,6 @@
 namespace mindspore {
 namespace ge_backend {
 namespace runtime {
-using mindspore::device::DeviceContext;
 using mindspore::device::KernelInfo;
 using mindspore::kernel::KernelLaunchAddr;
 

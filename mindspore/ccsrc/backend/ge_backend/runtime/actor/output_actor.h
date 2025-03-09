@@ -28,7 +28,6 @@
 #include "backend/ge_backend/runtime/device_tensor_store.h"
 #include "backend/ge_backend/runtime/actor/actor_common.h"
 #include "backend/ge_backend/runtime/actor/abstract_actor.h"
-#include "runtime/hardware/device_context.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/stub_tensor.h"
@@ -37,7 +36,6 @@
 namespace mindspore {
 namespace ge_backend {
 namespace runtime {
-using mindspore::device::DeviceContext;
 using mindspore::session::KernelWithIndex;
 using mindspore::tensor::TensorPtr;
 
@@ -55,7 +53,6 @@ class OutputActor : public AbstractActor {
     outputs_.resize(outputs_num);
     output_nodes_.resize(outputs_num);
     output_device_tensors_.resize(outputs_num);
-    device_contexts_.resize(outputs_num);
   }
   ~OutputActor() override = default;
 

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_DEVICE_TENSORDUMP_UTILS_H_
-#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_DEVICE_TENSORDUMP_UTILS_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_ASCEND_MBUF_MANAGER_TENSORDUMP_UTILS_H_
+#define MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_ASCEND_MBUF_MANAGER_TENSORDUMP_UTILS_H_
 
 #include <string>
 #include <vector>
@@ -25,12 +25,13 @@
 #include <memory>
 #include <utility>
 #include <condition_variable>
-#include "plugin/device/ascend/hal/device/mbuf_receive_manager.h"
+#include "plugin/res_manager/ascend/mbuf_manager/mbuf_receive_manager.h"
+#include "plugin/res_manager/ascend/visible.h"
 
 namespace mindspore::device::ascend {
 const std::pair<string, string> tensordump_mapping{"ms_tensor_dump", "TensorDump"};
 
-class TensorDumpUtils {
+class ASCEND_RES_MANAGER_EXPORT TensorDumpUtils {
  public:
   static TensorDumpUtils &GetInstance();
 
@@ -44,4 +45,4 @@ class TensorDumpUtils {
 };
 
 }  // namespace mindspore::device::ascend
-#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_DEVICE_TENSORDUMP_UTILS_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_ASCEND_MBUF_MANAGER_TENSORDUMP_UTILS_H_

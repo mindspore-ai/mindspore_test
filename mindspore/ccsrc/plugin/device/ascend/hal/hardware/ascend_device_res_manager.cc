@@ -15,7 +15,7 @@
  */
 
 #include "plugin/device/ascend/hal/hardware/ascend_device_res_manager.h"
-#include "plugin/device/ascend/hal/device/tensorreport_utils.h"
+#include "plugin/res_manager/ascend/mbuf_manager/tensorreport_utils.h"
 #ifndef _WIN32
 #include <dlfcn.h>
 #include <libgen.h>
@@ -27,7 +27,7 @@
 #include <algorithm>
 #include <numeric>
 
-#include "plugin/device/ascend/hal/device/mbuf_receive_manager.h"
+#include "plugin/res_manager/ascend/mbuf_manager/mbuf_receive_manager.h"
 #include "include/backend/data_queue/data_queue_mgr.h"
 #include "plugin/device/ascend/hal/special/parameter_replication.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"

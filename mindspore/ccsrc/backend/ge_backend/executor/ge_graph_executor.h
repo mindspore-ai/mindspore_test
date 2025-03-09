@@ -22,12 +22,13 @@
 #include <map>
 #include <set>
 #include <unordered_set>
-#include "runtime/hardware/device_context.h"
 #include "utils/ms_context.h"
 #include "backend/ge_backend/graph_ir/types.h"
 #include "backend/ge_backend/executor/ge_device_res_manager.h"
 #include "backend/ge_backend/executor/ge_summary.h"
 #include "backend/ge_backend/executor/ge_memory_manager.h"
+#include "include/backend/kernel_graph.h"
+#include "runtime/hardware/device_context.h"
 
 namespace mindspore {
 namespace backend {

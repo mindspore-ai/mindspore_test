@@ -30,12 +30,10 @@
 #include "backend/ge_backend/runtime/actor/data_source_actor.h"
 #include "backend/ge_backend/runtime/actor/debug_aware_actor.h"
 #include "backend/ge_backend/runtime/device_tensor_store.h"
-#include "runtime/hardware/device_context.h"
 
 namespace mindspore {
 namespace ge_backend {
 namespace runtime {
-using mindspore::device::DeviceContext;
 
 // The data prepare actor is used to prepare data for device tensor store and host tensor queue to represent the begin
 // of one step.
@@ -89,19 +87,18 @@ class DataPrepareActor : public DebugAwareActor {
 
   // Prepare the device data for persistent device tensor of weight node from host tensor.
   void PrepareDataForWeightNode(const AnfNodePtr &backend_node, const AnfNodePtr &front_node, const TensorPtr &tensor,
-                                const DeviceContext *device_context, OpContext<DeviceTensor> *const context);
+                                OpContext<DeviceTensor> *const context);
   // Prepare the device data for persistent device tensor of value node.
   void PrepareDataForValueNode(const ValueNodePtr &node, const AnfNodePtr &front_node,
-                               const DeviceContext *device_context, OpContext<DeviceTensor> *const context) const;
+                               OpContext<DeviceTensor> *const context) const;
   void PrepareDataForStringValue(const ValueNodePtr &node, size_t index, const AnfNodePtr &front_node,
-                                 const DeviceContext *device_context, OpContext<DeviceTensor> *const context) const;
+                                 OpContext<DeviceTensor> *const context) const;
   // Sync host data of Sequence or Scalar type value to device side.
   void PrepareDataForSequenceAndScalarValue(const ValueNodePtr &node, size_t index, const AnfNodePtr &front_node,
-                                            const DeviceContext *device_context,
                                             OpContext<DeviceTensor> *const context) const;
   //  The branch processing of PrepareDataForValueNode that value type is tensor.
   void PrepareDataForValueNodeTensor(const ValueNodePtr &node, const ValuePtr &node_value, const AnfNodePtr &front_node,
-                                     const DeviceContext *device_context, OpContext<DeviceTensor> *const context) const;
+                                     OpContext<DeviceTensor> *const context) const;
 
   // The data prepare in the control flow scene.
   // If the parameters in the root graph are only used by the control node, these parameters will not be initialized
@@ -112,8 +109,8 @@ class DataPrepareActor : public DebugAwareActor {
   void PrepareHostTensorQueueForControlNode(const std::vector<TensorPtr> &tensors,
                                             std::vector<TensorPtr> *const host_tensors,
                                             OpContext<DeviceTensor> *const context);
-  void PrepareDataForControlValueNode(const KernelWithIndex &node_with_index, const DeviceContext *device_context,
-                                      OpContext<DeviceTensor> *const context, const ControlNodeParserPtr &parser) const;
+  void PrepareDataForControlValueNode(const KernelWithIndex &node_with_index, OpContext<DeviceTensor> *const context,
+                                      const ControlNodeParserPtr &parser) const;
 
   void SetInitTensorsIfNeeded(const std::vector<std::vector<TensorPtr>> &input_tensors);
 

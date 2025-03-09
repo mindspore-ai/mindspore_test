@@ -22,7 +22,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "backend/ge_backend/runtime/actor/actor_common.h"
-#include "runtime/device/device_address_utils.h"
+#include "backend/ge_backend/utils/device_address_utils.h"
 #include "include/common/utils/convert_utils.h"
 #include "abstract/utils.h"
 #include "utils/ms_context.h"
@@ -30,6 +30,7 @@
 #include "abstract/abstract_function.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "kernel/framework_utils.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -200,54 +201,6 @@ void FetchRealParameterByNode(const KernelWithIndex &node, std::set<KernelWithIn
   }
 }
 
-// Topologically sort all funcgraphs according to the function call relationship.
-std::vector<FuncGraphPtr> TopoSortForFuncGraph(const FuncGraphPtr &root, FuncGraphCallRelation *const edges) {
-  MS_EXCEPTION_IF_NULL(root);
-  MS_EXCEPTION_IF_NULL(edges);
-  MS_EXCEPTION_IF_NULL(root->manager());
-  std::set<FuncGraphPtr> nodes;
-  (void)nodes.emplace(root);
-
-  FuncGraphSet subs = root->manager()->func_graphs();
-  for (auto sub : subs) {
-    if (sub != root) {
-      (void)nodes.emplace(sub);
-    }
-  }
-
-  std::queue<FuncGraphPtr> que;
-  for (const auto &node : nodes) {
-    if (edges->find(node) == edges->end()) {
-      que.push(node);
-    }
-  }
-
-  std::vector<FuncGraphPtr> result;
-  while (!que.empty()) {
-    const auto node = que.front();
-    que.pop();
-    (void)result.emplace_back(node);
-    for (auto iter = edges->begin(); iter != edges->end();) {
-      auto &sub_edges = iter->second;
-      for (auto sub_iter = sub_edges.begin(); sub_iter != sub_edges.end();) {
-        if (sub_iter->find(node) != sub_iter->end()) {
-          sub_iter = sub_edges.erase(sub_iter);
-        } else {
-          ++sub_iter;
-        }
-      }
-      if (sub_edges.empty()) {
-        que.push(iter->first);
-        iter = edges->erase(iter);
-      } else {
-        ++iter;
-      }
-    }
-  }
-
-  return result;
-}
-
 TypeId FetchTypeIdByNode(const AnfNodePtr &node, size_t index) {
   MS_EXCEPTION_IF_NULL(node);
   TypeId type_id = kTypeUnknown;
@@ -349,10 +302,8 @@ size_t FetchOutputSizeByNode(const AnfNodePtr &node, size_t index, TypeId type_i
 // Create a device tensor for the front node.
 // Get the output format and select kernel build info from the backend node corresponding to the front node to
 // create the device address.
-void CreateDeviceTensorForValueNode(const KernelWithIndex &front_node_with_index, const AnfNodePtr &backend_node,
-                                    const DeviceContext *device_context) {
+void CreateDeviceTensorForValueNode(const KernelWithIndex &front_node_with_index, const AnfNodePtr &backend_node) {
   MS_EXCEPTION_IF_NULL(backend_node);
-  MS_EXCEPTION_IF_NULL(device_context);
   const auto &front_node = front_node_with_index.first;
   MS_EXCEPTION_IF_NULL(front_node);
 
@@ -383,11 +334,18 @@ void CreateDeviceTensorForValueNode(const KernelWithIndex &front_node_with_index
     // Create device tensor.
     std::string output_format = AnfAlgo::GetOutputFormat(backend_node, 0);
 
+    const auto &ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    std::string device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
-      {backend_node, 0}, nullptr, tensor_size, output_format, output_type_id, ShapeVector(),
-      device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+      {backend_node, 0}, nullptr, tensor_size, output_format, output_type_id, ShapeVector(), device_name, device_id);
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(backend_node));
-    address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+    address = res_manager->CreateDeviceAddress(kernel_tensor);
   }
   MS_EXCEPTION_IF_NULL(address);
   MS_LOG(DEBUG) << "Create address for front node:" << front_node->DebugString()
@@ -400,8 +358,7 @@ void CreateDeviceTensorForValueNode(const KernelWithIndex &front_node_with_index
 // Create a device tensor for front node.
 // When the condition input of the switch and switchlayer or the output of a subgraph is a parameter or value node,
 // there is no corresponding backend node for this parameter, so a device tensor needs to be created for it.
-void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index, const DeviceContext *device_context) {
-  MS_EXCEPTION_IF_NULL(device_context);
+void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index) {
   const auto &node = front_node_with_index.first;
 
   MS_EXCEPTION_IF_NULL(node);
@@ -457,12 +414,20 @@ void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index
   const auto &abstract = AnfAlgo::GetNodeAbstractByIndex(front_node_with_index.first, front_node_with_index.second);
   bool is_map_parameter = abstract != nullptr && abstract->isa<abstract::AbstractMapTensor>();
   if (is_map_parameter) {
-    DeviceAddressUtils::CreateDeviceAddressByMapTensorNode(device_context, front_node_with_index.first,
-                                                           front_node_with_index.second);
+    backend::ge_backend::DeviceAddressUtils::CreateDeviceAddressByMapTensorNode(front_node_with_index.first,
+                                                                                front_node_with_index.second);
     UpdateRefCount(AnfAlgo::GetMutableOutputAddr(front_node_with_index.first, front_node_with_index.second).get(),
                    true);
     return;
   }
+
+  const auto &ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  std::string device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
 
   // Fetch mem size by shape, the shape is first obtained from the abstract to deal with the scenario where
   // the value node is a multi-level tuple.
@@ -482,18 +447,17 @@ void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index
       MS_EXCEPTION_IF_NULL(sub_abstract);
       const auto &kernel_tensor = std::make_shared<kernel::KernelTensor>(
         sub_abstract->BuildShape(), sub_abstract->BuildType(), sub_abstract->BuildValue(), nullptr, size,
-        kOpFormat_DEFAULT, type_id, ShapeVector(), device_context->device_context_key().device_name_,
-        device_context->device_context_key().device_id_);
+        kOpFormat_DEFAULT, type_id, ShapeVector(), device_name, device_id);
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(node));
-      address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+      address = res_manager->CreateDeviceAddress(kernel_tensor);
     }
   } else {
     // Create device tensor.
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
-      {node, front_node_with_index.second}, nullptr, size, kOpFormat_DEFAULT, type_id, ShapeVector(),
-      device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+      {node, front_node_with_index.second}, nullptr, size, kOpFormat_DEFAULT, type_id, ShapeVector(), device_name,
+      device_id);
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(node));
-    address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+    address = res_manager->CreateDeviceAddress(kernel_tensor);
   }
   MS_EXCEPTION_IF_NULL(address);
   MS_LOG(INFO) << "Create address for node that has no corresponding backend node:"
@@ -991,36 +955,13 @@ std::vector<AnfNodePtr> FetchAllMonadNodeByNode(const AnfNodePtr &node) {
 }
 
 void ControlNodeParser::Parse(const std::vector<AnfNodePtr> &control_nodes, const std::vector<KernelGraphPtr> &graphs,
-                              const std::vector<DeviceContext *> &device_contexts, const FuncGraphPtr &root_graph,
+                              const FuncGraphPtr &root_graph,
                               const FuncGraphToKernelGraphGroup &func_graph_to_kernel_graphs) {
-  if (graphs.size() != device_contexts.size()) {
-    MS_LOG(EXCEPTION) << "Graph num is not equal to device context, graph:" << graphs.size()
-                      << " device context num:" << device_contexts.size();
-  }
-
   if (control_nodes.size() <= 1) {
     MS_LOG(DEBUG) << "Control node parser is not inited.";
     return;
   }
   MS_LOG(INFO) << "Control node parse start.";
-
-  // Fetch default device context.
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  std::string device_name = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  DeviceContext *default_context = nullptr;
-  if (device_contexts.empty()) {
-    default_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
-  } else {
-    default_context = device_contexts[0];
-  }
-  MS_EXCEPTION_IF_NULL(default_context);
-
-  KernelGraphToDeviceContext kernel_graph_to_device_contexts;
-  for (size_t i = 0; i < graphs.size(); ++i) {
-    kernel_graph_to_device_contexts[graphs[i]] = device_contexts[i];
-  }
 
   for (const auto &control_node : control_nodes) {
     MS_EXCEPTION_IF_NULL(control_node);
@@ -1057,7 +998,7 @@ void ControlNodeParser::Parse(const std::vector<AnfNodePtr> &control_nodes, cons
 
   InsertDependForParallelCall(control_nodes);
 
-  ParseKernelGraphGroup(kernel_graph_to_device_contexts);
+  ParseKernelGraphGroup();
 
   ParseNodeLevel(control_nodes);
 
@@ -1065,15 +1006,13 @@ void ControlNodeParser::Parse(const std::vector<AnfNodePtr> &control_nodes, cons
 
   ParseFormalToRealParameter(control_nodes);
 
-  ParseFrontToBackendParameter(graphs, device_contexts);
+  ParseFrontToBackendParameter(graphs);
 
-  CreateDeviceTensorForRootGraphParameter(default_context);
+  CreateDeviceTensorForRootGraphParameter();
 
-  ParseFrontToBackendKernel(graphs, device_contexts);
+  ParseFrontToBackendKernel(graphs);
 
-  ParseDeviceContext(control_nodes, graphs, device_contexts, default_context, func_graph_to_kernel_graphs);
-
-  FetchFrontValueNode(control_nodes, default_context);
+  FetchFrontValueNode(control_nodes);
 
   ParseControlNodeParameter(control_nodes);
 
@@ -1127,20 +1066,20 @@ void PrintGraphGroupInfo(const std::set<KernelGraphGroupInfoPtr> &kernel_graph_g
       MS_EXCEPTION_IF_NULL(graph);
       MS_LOG(WARNING) << "Group:" << group->group_name_ << " graph:" << graph->ToString() << " level:" << group->level_;
       for (const auto &input : group->front_input_nodes_) {
-        MS_EXCEPTION_IF_NULL(input.first.first);
-        MS_LOG(WARNING) << "Input node:" << input.first.first->DebugString()
-                        << " full name:" << input.first.first->fullname_with_scope()
-                        << " node ptr:" << input.first.first << " index:" << input.first.second;
+        MS_EXCEPTION_IF_NULL(input.first);
+        MS_LOG(WARNING) << "Input node:" << input.first->DebugString()
+                        << " full name:" << input.first->fullname_with_scope() << " node ptr:" << input.first
+                        << " index:" << input.second;
       }
       for (const auto &output : group->front_output_nodes_) {
         MS_EXCEPTION_IF_NULL(output.first.first);
-        MS_EXCEPTION_IF_NULL(output.second.first.first);
+        MS_EXCEPTION_IF_NULL(output.second.first);
         MS_LOG(WARNING) << "Output front node:" << output.first.first->DebugString()
                         << " full name:" << output.first.first->fullname_with_scope()
                         << " node ptr:" << output.first.first << " index:" << output.first.second
-                        << " backend node:" << output.second.first.first->DebugString()
-                        << " full name:" << output.second.first.first->fullname_with_scope()
-                        << " node ptr:" << output.second.first.first << " index:" << output.second.first.second;
+                        << " backend node:" << output.second.first->DebugString()
+                        << " full name:" << output.second.first->fullname_with_scope()
+                        << " node ptr:" << output.second.first << " index:" << output.second.second;
       }
     }
   }
@@ -1577,7 +1516,7 @@ bool ControlNodeParser::IsRecursionKernelGraph(const KernelGraphPtr &graph) {
     return false;
   }
   for (const auto &front_input_node : group_info_iter->second->front_input_nodes_) {
-    const auto &node = front_input_node.first.first;
+    const auto &node = front_input_node.first;
     MS_EXCEPTION_IF_NULL(node);
     if (IsRecursionCallNode(node)) {
       return true;
@@ -1606,329 +1545,6 @@ bool ControlNodeParser::IsSameKernelGraphGroup(const AnfNodePtr &node, const Ker
 
   return iter1 != kernel_graphs_to_group_info_.end() && iter2 != kernel_graphs_to_group_info_.end() &&
          iter1->second == iter2->second;
-}
-
-void ControlNodeParser::ParseDeviceContext(const std::vector<AnfNodePtr> &control_nodes,
-                                           const std::vector<KernelGraphPtr> &kernel_graphs,
-                                           const std::vector<DeviceContext *> &device_contexts,
-                                           DeviceContext *default_context,
-                                           const FuncGraphToKernelGraphGroup &func_graph_to_kernel_graphs) {
-  MS_EXCEPTION_IF_NULL(default_context);
-  ParseDeviceContextForFuncGraph(kernel_graphs, device_contexts, default_context, func_graph_to_kernel_graphs);
-  ParseDeviceContextForReturnNode(default_context);
-  ParseDeviceContextForCallNode(control_nodes);
-  ParseDeviceContextForPartialNode(control_nodes);
-}
-
-void ControlNodeParser::ParseDeviceContextForFuncGraph(const std::vector<KernelGraphPtr> &kernel_graphs,
-                                                       const std::vector<DeviceContext *> &device_contexts,
-                                                       DeviceContext *default_context,
-                                                       const FuncGraphToKernelGraphGroup &func_graph_to_kernel_graphs) {
-  MS_EXCEPTION_IF_NULL(default_context);
-  if (device_contexts.size() != kernel_graphs.size()) {
-    MS_LOG(EXCEPTION) << "Invalid device context size:" << device_contexts.size()
-                      << " graph size:" << kernel_graphs.size();
-  }
-  mindspore::HashMap<KernelGraphPtr, DeviceContext *> kernel_graph_to_device_context;
-  for (size_t i = 0; i < kernel_graphs.size(); ++i) {
-    kernel_graph_to_device_context[kernel_graphs[i]] = device_contexts[i];
-  }
-
-  // Collect the device context type of the parameter in the kernel graph as the type of the real parameters.
-  for (const auto &func_graph_to_kernel_graph : func_graph_to_kernel_graphs) {
-    const auto &func_graph = func_graph_to_kernel_graph.first;
-    MS_EXCEPTION_IF_NULL(func_graph);
-    std::vector<KernelWithIndex> front_parameters;
-    for (const auto &parameter : func_graph->parameters()) {
-      const auto &abstract = parameter->abstract();
-      MS_EXCEPTION_IF_NULL(abstract);
-      for (size_t i = 0; i < common::AnfAlgo::GetOutputNumByAbstract(abstract); ++i) {
-        (void)front_parameters.emplace_back(parameter, i);
-      }
-    }
-    std::vector<const DeviceContext *> parameter_device_contexts(front_parameters.size(), default_context);
-    std::map<KernelWithIndex, DeviceContext *> front_parameter_to_device_context;
-
-    for (const auto &kernel_graph_group : func_graph_to_kernel_graph.second) {
-      for (const auto &kernel_graph : kernel_graph_group) {
-        MS_EXCEPTION_IF_NULL(kernel_graph);
-        const auto &backend_parameters = kernel_graph->parameters();
-
-        for (const auto &backend_parameter : backend_parameters) {
-          auto front_parameter = KernelWithIndex(kernel_graph->GetFrontAnfByBackendAnf(backend_parameter), 0);
-          if (front_parameter.first == nullptr) {
-            front_parameter = kernel_graph->GetElementInTupleBackendFrontIndexMap(backend_parameter);
-          }
-          if (front_parameter.first != nullptr && front_parameter.first->isa<Parameter>()) {
-            front_parameter_to_device_context[front_parameter] = kernel_graph_to_device_context[kernel_graph];
-          }
-        }
-      }
-    }
-
-    for (size_t i = 0; i < front_parameters.size(); ++i) {
-      const auto &front_parameter = front_parameters[i];
-      const auto &iter = front_parameter_to_device_context.find(front_parameter);
-      if (iter != front_parameter_to_device_context.end()) {
-        parameter_device_contexts[i] = iter->second;
-      }
-    }
-    func_graph_to_device_contexts_[func_graph] = parameter_device_contexts;
-  }
-
-  // If there is no kernel in funcgraph, the parameter uses the default device context type.
-  MS_EXCEPTION_IF_NULL(root_func_graph_);
-  MS_EXCEPTION_IF_NULL(root_func_graph_->manager());
-  FuncGraphSet sub_graphs = root_func_graph_->manager()->func_graphs();
-  for (auto sub_graph : sub_graphs) {
-    MS_EXCEPTION_IF_NULL(sub_graph);
-    if (func_graph_to_device_contexts_.find(sub_graph) == func_graph_to_device_contexts_.end()) {
-      size_t output_num = 0;
-      for (const auto &parameter : sub_graph->parameters()) {
-        const auto &abstract = parameter->abstract();
-        MS_EXCEPTION_IF_NULL(abstract);
-        output_num += common::AnfAlgo::GetOutputNumByAbstract(abstract);
-      }
-      func_graph_to_device_contexts_[sub_graph] = std::vector<const DeviceContext *>(output_num, default_context);
-    }
-  }
-}
-
-void ControlNodeParser::ParseDeviceContextForPartialNode(const std::vector<AnfNodePtr> &control_nodes) {
-  for (const auto &control_node : control_nodes) {
-    if (!common::AnfAlgo::CheckPrimitiveType(control_node, prim::kPrimPartial)) {
-      continue;
-    }
-
-    MS_EXCEPTION_IF_NULL(control_node);
-    const auto &cnode = control_node->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(cnode);
-    const auto &inputs = cnode->inputs();
-    if (inputs.size() <= kPartialFuncGraphPos) {
-      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Invalid input size for partial node:" << cnode->DebugString();
-    }
-    auto &func_node = inputs[kPartialFuncGraphPos];
-    // Ignore if the node is 'Partial(DeadNode,)'.
-    if (IsDeadNode(func_node)) {
-      MS_LOG(DEBUG) << "Ignore partial dead node:" << cnode->DebugString();
-      continue;
-    }
-    // Fetch the funcgraph in partial node.
-    const auto &func_graph = GetValueNode<FuncGraphPtr>(func_node);
-    if (func_graph == nullptr) {
-      MS_LOG_WITH_NODE(EXCEPTION, func_node)
-        << "Invalid funcgraph node:" << func_node->DebugString() << " for partial node:" << cnode->DebugString();
-    }
-
-    // Fetch the device contexts for the formal parameters in the funcgraph of partial node.
-    auto iter = func_graph_to_device_contexts_.find(func_graph);
-    if (iter == func_graph_to_device_contexts_.end()) {
-      MS_LOG(EXCEPTION) << "Failed to get device contexts for funcgraph:" << func_graph->ToString();
-    }
-
-    size_t input_num = 0;
-    for (size_t i = kPartialInputStartPos; i < inputs.size(); ++i) {
-      MS_EXCEPTION_IF_NULL(inputs[i]);
-      const auto &abstract = inputs[i]->abstract();
-      MS_EXCEPTION_IF_NULL(abstract);
-      input_num += common::AnfAlgo::GetOutputNumByAbstract(abstract);
-    }
-    if (input_num > iter->second.size()) {
-      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Invalid input num:" << input_num
-                                         << " for funcgraph:" << func_graph->ToString()
-                                         << " device context size:" << iter->second.size()
-                                         << " for partial node:" << cnode->DebugString();
-    }
-
-    // Get the device contexts for the real parameters.
-    std::vector<const DeviceContext *> device_contexts;
-    // In partial node, the first input is always a partial, maybe a funcgraph or a partial node, so we need
-    // to insert an empty device context for it.
-    (void)device_contexts.emplace_back(nullptr);
-    for (size_t i = 0; i < input_num; ++i) {
-      MS_EXCEPTION_IF_NULL(iter->second[i]);
-      (void)device_contexts.emplace_back(iter->second[i]);
-    }
-    control_node_to_device_contexts_[control_node] = device_contexts;
-  }
-}
-
-void CollectDeviceContextByDynamicLen(const CNodePtr &cnode, const FuncGraphPtr &func_graph,
-                                      const std::vector<const DeviceContext *> &parameter_contexts,
-                                      std::vector<const DeviceContext *> *arg_context) {
-  MS_EXCEPTION_IF_NULL(cnode);
-  MS_EXCEPTION_IF_NULL(func_graph);
-  MS_EXCEPTION_IF_NULL(arg_context);
-  size_t para_num = func_graph->parameters().size();
-  size_t arg_num = cnode->size() - 1;
-  if (arg_num > para_num) {
-    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Invalid arg size:" << arg_num << " parameter size:" << para_num
-                                       << "for call node:" << cnode->DebugString()
-                                       << " funcgraph:" << func_graph->ToString();
-  }
-  if (para_num != parameter_contexts.size()) {
-    MS_LOG(EXCEPTION) << "Invalid parameter context size:" << parameter_contexts.size()
-                      << " parameter size:" << para_num;
-  }
-  for (size_t i = para_num - arg_num; i < para_num; ++i) {
-    size_t output_num = common::AnfAlgo::GetOutputNumByAbstract(cnode->input(i + 1)->abstract());
-    for (size_t j = 0; j < output_num; ++j) {
-      arg_context->emplace_back(parameter_contexts[0]);
-    }
-  }
-}
-
-void ControlNodeParser::ParseDeviceContextForCallNode(const std::vector<AnfNodePtr> &control_nodes) {
-  for (const auto &control_node : control_nodes) {
-    MS_EXCEPTION_IF_NULL(control_node);
-    if (!common::AnfAlgo::IsCallNode(control_node)) {
-      continue;
-    }
-
-    // Fetch the device contexts of the funcgraph the node called.
-    const auto &func_graphs = FetchFuncGraphbyCallNode(control_node);
-    if (func_graphs.empty()) {
-      MS_LOG_WITH_NODE(EXCEPTION, control_node)
-        << "Failed to get funcgraph by call node:" << control_node->DebugString();
-    }
-    const auto &func_graph = *(func_graphs.begin());
-    MS_EXCEPTION_IF_NULL(func_graph);
-    auto iter = func_graph_to_device_contexts_.find(func_graph);
-    if (iter == func_graph_to_device_contexts_.end()) {
-      MS_LOG(EXCEPTION) << "Failed to get device contexts for funcgraph:" << func_graph->ToString();
-    }
-
-    std::vector<const DeviceContext *> device_contexts;
-    // In call node, the first input is always a partial, maybe a funcgraph or a partial node, so we need
-    // to insert an empty device context for it.
-    (void)device_contexts.emplace_back(nullptr);
-    const auto &cnode = control_node->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(cnode);
-    const auto &inputs = cnode->inputs();
-    size_t call_input_num = 0;
-    for (size_t i = kCallInputStartPos; i < inputs.size(); ++i) {
-      MS_EXCEPTION_IF_NULL(inputs[i]);
-      const auto &abstract = inputs[i]->abstract();
-      MS_EXCEPTION_IF_NULL(abstract);
-      call_input_num += common::AnfAlgo::GetOutputNumByAbstract(abstract);
-    }
-
-    if (call_input_num > iter->second.size()) {
-      MS_LOG(INFO) << "Call input size:" << call_input_num << " context size:" << iter->second.size() << "for funcgraph"
-                   << func_graph->ToString() << " for call node:" << cnode->DebugString();
-      CollectDeviceContextByDynamicLen(cnode, func_graph, iter->second, &device_contexts);
-      control_node_to_device_contexts_[control_node] = device_contexts;
-      continue;
-    }
-
-    // Fetch the device contexts for the real parameters on the call node.
-    for (size_t i = iter->second.size() - call_input_num; i < iter->second.size(); ++i) {
-      MS_EXCEPTION_IF_NULL(iter->second[i]);
-      (void)device_contexts.emplace_back(iter->second[i]);
-    }
-    control_node_to_device_contexts_[control_node] = device_contexts;
-  }
-}
-
-void ControlNodeParser::FetchDeviceContextByNode(const std::vector<KernelWithIndex> &output_nodes,
-                                                 std::vector<const DeviceContext *> *return_device_contexts,
-                                                 const FuncGraphPtr &func_graph, const DeviceContext *default_context) {
-  MS_EXCEPTION_IF_NULL(return_device_contexts);
-  for (const auto &output_node : output_nodes) {
-    MS_EXCEPTION_IF_NULL(output_node.first);
-    if (output_node.first->isa<Parameter>()) {
-      // If the output is parameter, get the device context type from the formal parameter.
-      const auto &iter = find(func_graph->parameters().begin(), func_graph->parameters().end(), output_node.first);
-      if (iter == func_graph->parameters().end()) {
-        MS_LOG_WITH_NODE(EXCEPTION, output_node.first)
-          << "Invalid parameter:" << output_node.first->DebugString() << " for func_graph:" << func_graph->ToString();
-      }
-      const auto &func_graph_iter = func_graph_to_device_contexts_.find(func_graph);
-      if (func_graph_iter == func_graph_to_device_contexts_.end()) {
-        MS_LOG(EXCEPTION) << "Cannot find device context for funcgraph:" << func_graph->ToString();
-      }
-      size_t index = LongToSize(iter - func_graph->parameters().begin());
-      MS_EXCEPTION_IF_NULL(func_graph_iter->second[index]);
-      (void)return_device_contexts->emplace_back(func_graph_iter->second[index]);
-    } else if (output_node.first->isa<ValueNode>()) {
-      // If the output is parameter, used the default context type.
-      (void)return_device_contexts->emplace_back(default_context);
-    } else if (common::AnfAlgo::IsCallNode(output_node.first)) {
-      // If the output is call node, get the device context type by the output of funcgraph.
-      const auto &func_graphs = call_node_to_func_graphs_[output_node.first];
-      std::vector<const DeviceContext *> call_device_contexts;
-      for (const auto &graph : func_graphs) {
-        MS_EXCEPTION_IF_NULL(graph);
-        const auto &node = graph->return_node();
-        MS_EXCEPTION_IF_NULL(node);
-        const auto &iter = control_node_to_device_contexts_.find(node);
-        if (iter != control_node_to_device_contexts_.end()) {
-          call_device_contexts = iter->second;
-          break;
-        }
-      }
-      // Since funcgraph has been topo-sorted according to the calling relationship, when there is a call node in
-      // the output, the output type of the funcgraph called by it should have been determined, if not, an exception
-      // will be thrown.
-      if (call_device_contexts.empty() || call_device_contexts.size() <= output_node.second) {
-        MS_LOG(DEBUG) << "Cannot find device context for call node:" << output_node.first->DebugString()
-                      << " device contexts size:" << call_device_contexts.size() << " index:" << output_node.second;
-        (void)return_device_contexts->emplace_back(default_context);
-      } else {
-        MS_EXCEPTION_IF_NULL(call_device_contexts[output_node.second]);
-        (void)return_device_contexts->emplace_back(call_device_contexts[output_node.second]);
-      }
-    } else if (common::AnfAlgo::CheckPrimitiveType(output_node.first, prim::kPrimPartial) ||
-               common::AnfAlgo::CheckPrimitiveType(output_node.first, prim::kPrimSwitch)) {
-      (void)return_device_contexts->emplace_back(default_context);
-    } else if (output_node.first->isa<CNode>()) {
-      // If the output is a cnode, get the device context type by the kernel.
-      const auto &iter = front_to_backend_kernels_.find(output_node);
-      if (iter == front_to_backend_kernels_.end()) {
-        MS_LOG(DEBUG) << "Cannot find backend kernel for cnode:" << output_node.first->DebugString();
-        (void)return_device_contexts->emplace_back(default_context);
-        continue;
-      }
-      MS_EXCEPTION_IF_NULL(iter->second.second);
-      (void)return_device_contexts->emplace_back(iter->second.second);
-    } else {
-      MS_LOG_WITH_NODE(EXCEPTION, output_node.first) << "Invalid node for return:" << output_node.first->DebugString();
-    }
-  }
-}
-
-void ControlNodeParser::ParseDeviceContextForReturnNode(const DeviceContext *default_context) {
-  MS_EXCEPTION_IF_NULL(default_context);
-  // Collect the call realationship between funcgraphs.
-  FuncGraphCallRelation func_graph_call_relation;
-  for (const auto &call_node_to_func_graphs : call_node_to_func_graphs_) {
-    const auto &call_node = call_node_to_func_graphs.first;
-    MS_EXCEPTION_IF_NULL(call_node);
-    const auto &func_graph = call_node->func_graph();
-    MS_EXCEPTION_IF_NULL(func_graph);
-    (void)func_graph_call_relation[func_graph].emplace_back(call_node_to_func_graphs.second);
-  }
-
-  // Topologically sort all funcgraphs according to the function call relationship.
-  const auto &topo_sort_func_graphs = TopoSortForFuncGraph(root_func_graph_, &func_graph_call_relation);
-
-  // Deduces the device context type of funcgraph outputs according to the topological order.
-  for (const auto &func_graph : topo_sort_func_graphs) {
-    MS_EXCEPTION_IF_NULL(func_graph);
-    const auto &return_node = func_graph->return_node();
-    MS_EXCEPTION_IF_NULL(return_node);
-    const auto &cnode = return_node->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(cnode);
-    const auto &inputs = cnode->inputs();
-    if (inputs.size() <= kReturnInputPos) {
-      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Invalid return node:" << cnode->DebugString();
-    }
-    const auto output_nodes = FetchInputNodeByNode(inputs[kReturnInputPos]);
-    std::vector<const DeviceContext *> return_device_contexts;
-
-    FetchDeviceContextByNode(output_nodes, &return_device_contexts, func_graph, default_context);
-    control_node_to_device_contexts_[return_node] = return_device_contexts;
-  }
 }
 
 void ControlNodeParser::ParseFrontNodeToKernelGraph(const std::vector<KernelGraphPtr> &graphs) {
@@ -1983,7 +1599,7 @@ bool ControlNodeParser::IsCallInputKernelGraphGroup(const std::string &group_nam
 KernelWithIndex ControlNodeParser::FetchBackendNodeByFrontNode(const KernelWithIndex &node_with_index) {
   const auto &iter = front_to_backend_kernels_.find(node_with_index);
   if (iter != front_to_backend_kernels_.end()) {
-    return iter->second.first;
+    return iter->second;
   }
   return {};
 }
@@ -2001,7 +1617,7 @@ FuncGraphPtr ControlNodeParser::FetchFuncGraphByKernelGraph(const KernelGraph *c
   return nullptr;
 }
 
-NodeWithIndexToContext ControlNodeParser::FetchBackendParameterWithContextByFrontParameter(
+KernelWithIndex ControlNodeParser::FetchBackendParameterWithContextByFrontParameter(
   const KernelWithIndex &front_parameter_with_index) {
   MS_EXCEPTION_IF_NULL(front_parameter_with_index.first);
   const auto &iter = front_to_backend_parameters_.find(front_parameter_with_index);
@@ -2009,16 +1625,16 @@ NodeWithIndexToContext ControlNodeParser::FetchBackendParameterWithContextByFron
     return {};
   }
 
-  for (const auto &node_with_index_to_context : iter->second) {
-    const auto &node = node_with_index_to_context.first.first;
+  for (const auto &node_with_index : iter->second) {
+    const auto &node = node_with_index.first;
     MS_EXCEPTION_IF_NULL(node);
-    if (AnfAlgo::GetOutputTensorMemSize(node, node_with_index_to_context.first.second) != 0) {
-      return node_with_index_to_context;
+    if (AnfAlgo::GetOutputTensorMemSize(node, node_with_index.second) != 0) {
+      return node_with_index;
     }
     const auto &abstract =
       AnfAlgo::GetNodeAbstractByIndex(front_parameter_with_index.first, front_parameter_with_index.second);
     if (abstract != nullptr && abstract->isa<abstract::AbstractMapTensor>()) {
-      return node_with_index_to_context;
+      return node_with_index;
     }
     MS_LOG(DEBUG) << "Backend node:" << node->DebugString()
                   << " for front node:" << front_parameter_with_index.first->DebugString()
@@ -2027,8 +1643,7 @@ NodeWithIndexToContext ControlNodeParser::FetchBackendParameterWithContextByFron
   return {};
 }
 
-void ControlNodeParser::CreateDeviceTensors(const std::vector<AnfNodePtr> &control_nodes,
-                                            const DeviceContext *const default_context) {
+void ControlNodeParser::CreateDeviceTensors(const std::vector<AnfNodePtr> &control_nodes) {
   for (const auto &control_node : control_nodes) {
     MS_EXCEPTION_IF_NULL(control_node);
     if (common::AnfAlgo::CheckPrimitiveType(control_node, prim::kPrimSwitch) ||
@@ -2037,8 +1652,8 @@ void ControlNodeParser::CreateDeviceTensors(const std::vector<AnfNodePtr> &contr
       for (size_t i = 0; i < input_with_indexs.size(); ++i) {
         MS_EXCEPTION_IF_NULL(input_with_indexs[i].first);
         if (IsFrontValueNode(input_with_indexs[i])) {
-          CreateDeviceTensorForFrontNode(input_with_indexs[i], default_context);
-          (void)front_value_nodes_.emplace(input_with_indexs[i], default_context);
+          CreateDeviceTensorForFrontNode(input_with_indexs[i]);
+          (void)front_value_nodes_.emplace(input_with_indexs[i]);
         }
       }
       continue;
@@ -2050,63 +1665,51 @@ void ControlNodeParser::CreateDeviceTensors(const std::vector<AnfNodePtr> &contr
     }
 
     auto input_with_indexs = FetchInputNodeByCNode(control_node);
-    auto iter = control_node_to_device_contexts_.find(control_node);
-    if (iter == control_node_to_device_contexts_.end() || iter->second.size() < input_with_indexs.size()) {
-      MS_LOG_WITH_NODE(EXCEPTION, control_node)
-        << "Invalid device context for control node:" << control_node->DebugString()
-        << " need:" << input_with_indexs.size() << " current:"
-        << (iter == control_node_to_device_contexts_.end() ? "null" : std::to_string(iter->second.size()));
-    }
     for (size_t i = 0; i < input_with_indexs.size(); ++i) {
       const auto &input_with_index = input_with_indexs[i];
-      if (IsFrontValueNode(input_with_index) &&
-          front_value_nodes_.find({input_with_index, iter->second[i]}) == front_value_nodes_.end()) {
+      if (IsFrontValueNode(input_with_index) && front_value_nodes_.find(input_with_index) == front_value_nodes_.end()) {
         MS_EXCEPTION_IF_NULL(input_with_index.first);
         MS_LOG(DEBUG) << "Create device tensor for value node:" << input_with_index.first->DebugString()
                       << " index:" << i << " in control node:" << control_node->DebugString();
-        const auto &node_with_index_with_context = FetchBackendParameterWithContextByFrontParameter(input_with_index);
-        const auto &backend_node = node_with_index_with_context.first.first;
+        const auto &node_with_index = FetchBackendParameterWithContextByFrontParameter(input_with_index);
+        const auto &backend_node = node_with_index.first;
         if (IsValidBackendParameter(backend_node)) {
-          CreateDeviceTensorForValueNode(input_with_index, backend_node, node_with_index_with_context.second);
-          (void)front_value_nodes_.emplace(input_with_index, node_with_index_with_context.second);
+          CreateDeviceTensorForValueNode(input_with_index, backend_node);
+          (void)front_value_nodes_.emplace(input_with_index);
         } else {
-          CreateDeviceTensorForFrontNode(input_with_index, default_context);
-          (void)front_value_nodes_.emplace(input_with_index, default_context);
+          CreateDeviceTensorForFrontNode(input_with_index);
+          (void)front_value_nodes_.emplace(input_with_index);
         }
       }
     }
   }
 }
 
-void ControlNodeParser::FetchFrontValueNode(const std::vector<AnfNodePtr> &control_nodes,
-                                            const DeviceContext *const default_context) {
-  MS_EXCEPTION_IF_NULL(default_context);
-
+void ControlNodeParser::FetchFrontValueNode(const std::vector<AnfNodePtr> &control_nodes) {
   for (const auto &formal_to_real_parameter : formal_to_real_parameters_) {
     for (const auto &real_parameter_with_index : formal_to_real_parameter.second) {
       if (!IsFrontValueNode(real_parameter_with_index)) {
         continue;
       }
 
-      const auto &node_with_index_to_context =
-        FetchBackendParameterWithContextByFrontParameter(real_parameter_with_index);
-      const auto &backend_node = node_with_index_to_context.first.first;
+      const auto &node_with_index = FetchBackendParameterWithContextByFrontParameter(real_parameter_with_index);
+      const auto &backend_node = node_with_index.first;
       if (IsValidBackendParameter(backend_node)) {
-        (void)front_value_nodes_.emplace(real_parameter_with_index, node_with_index_to_context.second);
-        CreateDeviceTensorForValueNode(real_parameter_with_index, backend_node, node_with_index_to_context.second);
+        (void)front_value_nodes_.emplace(real_parameter_with_index);
+        CreateDeviceTensorForValueNode(real_parameter_with_index, backend_node);
       } else {
-        (void)front_value_nodes_.emplace(real_parameter_with_index, default_context);
-        CreateDeviceTensorForFrontNode(real_parameter_with_index, default_context);
+        (void)front_value_nodes_.emplace(real_parameter_with_index);
+        CreateDeviceTensorForFrontNode(real_parameter_with_index);
       }
     }
   }
 
   // Create device tensors for those value nodes which direct return by a return node.
-  CreateDeviceTensors(control_nodes, default_context);
+  CreateDeviceTensors(control_nodes);
   for (const auto &front_node : front_value_nodes_) {
-    MS_EXCEPTION_IF_NULL(front_node.first.first);
-    MS_LOG(DEBUG) << "Print front value node:" << front_node.first.first->DebugString()
-                  << " addr:" << front_node.first.first << " index:" << front_node.first.second;
+    MS_EXCEPTION_IF_NULL(front_node.first);
+    MS_LOG(DEBUG) << "Print front value node:" << front_node.first->DebugString() << " addr:" << front_node.first
+                  << " index:" << front_node.second;
   }
 }
 
@@ -2284,18 +1887,11 @@ void ControlNodeParser::CreateBranchIDForCallNode(const std::vector<AnfNodePtr> 
   }
 }
 
-void ControlNodeParser::ParseFrontToBackendParameter(const std::vector<KernelGraphPtr> &graphs,
-                                                     const std::vector<DeviceContext *> &device_contexts) {
-  if (graphs.size() != device_contexts.size()) {
-    MS_LOG(EXCEPTION) << "Graph num is not equal to device context num.";
-  }
-
+void ControlNodeParser::ParseFrontToBackendParameter(const std::vector<KernelGraphPtr> &graphs) {
   // Fetch the mapping relationship between front parameters and backend parameters in the kernel graphs.
   for (size_t i = 0; i < graphs.size(); ++i) {
     const auto &graph = graphs[i];
-    auto device_context = device_contexts[i];
     MS_EXCEPTION_IF_NULL(graph);
-    MS_EXCEPTION_IF_NULL(device_context);
     for (const auto &parameter : graph->input_nodes()) {
       MS_EXCEPTION_IF_NULL(parameter);
       const auto &front_node = graph->GetFrontAnfByBackendAnf(parameter);
@@ -2315,17 +1911,16 @@ void ControlNodeParser::ParseFrontToBackendParameter(const std::vector<KernelGra
         for (const auto &real_parameter : real_parameters) {
           MS_EXCEPTION_IF_NULL(real_parameter.first);
           if (real_parameter.first->isa<Parameter>() || real_parameter.first->isa<ValueNode>()) {
-            (void)front_to_backend_parameters_[real_parameter].emplace(KernelWithIndex(parameter, 0), device_context);
+            (void)front_to_backend_parameters_[real_parameter].emplace(KernelWithIndex(parameter, 0));
             MS_LOG(DEBUG) << "Add front node:" << real_parameter.first->DebugString()
                           << " index:" << real_parameter.second
                           << " for backend parameter:" << parameter->DebugString();
           }
         }
       } else if (front_tuple_parameter_with_index.first != nullptr) {
-        (void)front_to_backend_parameters_[front_tuple_parameter_with_index].emplace(KernelWithIndex(parameter, 0),
-                                                                                     device_context);
+        (void)front_to_backend_parameters_[front_tuple_parameter_with_index].emplace(KernelWithIndex(parameter, 0));
       } else {
-        (void)front_to_backend_parameters_[{front_node, 0}].emplace(KernelWithIndex(parameter, 0), device_context);
+        (void)front_to_backend_parameters_[{front_node, 0}].emplace(KernelWithIndex(parameter, 0));
       }
     }
   }
@@ -2350,12 +1945,12 @@ void ControlNodeParser::ParseFrontToBackendParameter(const std::vector<KernelGra
   for (const auto &front_to_backend_parameters : front_to_backend_parameters_) {
     for (const auto &backend_parameter : front_to_backend_parameters.second) {
       MS_EXCEPTION_IF_NULL(front_to_backend_parameters.first.first);
-      MS_EXCEPTION_IF_NULL(backend_parameter.first.first);
+      MS_EXCEPTION_IF_NULL(backend_parameter.first);
       MS_LOG(DEBUG) << "Print front to backend parameter, front:"
                     << front_to_backend_parameters.first.first->DebugString()
                     << " index:" << front_to_backend_parameters.first.second
-                    << " backend:" << backend_parameter.first.first->DebugString()
-                    << " index:" << backend_parameter.first.second << " node addr:" << backend_parameter.first.first;
+                    << " backend:" << backend_parameter.first->DebugString() << " index:" << backend_parameter.second
+                    << " node addr:" << backend_parameter.first;
     }
   }
 }
@@ -2392,18 +1987,16 @@ const std::set<FuncGraphPtr> &ControlNodeParser::FetchFuncGraphbyCallNode(const 
   return iter->second;
 }
 
-void ControlNodeParser::ParseFrontToBackendKernel(const std::vector<KernelGraphPtr> &graphs,
-                                                  const std::vector<DeviceContext *> &device_contexts) {
+void ControlNodeParser::ParseFrontToBackendKernel(const std::vector<KernelGraphPtr> &graphs) {
   for (size_t i = 0; i < graphs.size(); ++i) {
     const auto &graph = graphs[i];
-    const auto &device_context = device_contexts[i];
     MS_EXCEPTION_IF_NULL(graph);
     auto execution_order = graph->execution_order();
     for (auto &kernel : execution_order) {
       auto front_node = graph->GetFrontAnfByBackendAnf(kernel);
       if (front_node != nullptr) {
         for (size_t j = 0; j < AnfAlgo::GetOutputTensorNum(kernel); ++j) {
-          front_to_backend_kernels_[{front_node, j}] = {{kernel, j}, device_context};
+          front_to_backend_kernels_[{front_node, j}] = {kernel, j};
           MS_LOG(DEBUG) << "Add front to backend kernel, front:" << common::AnfAlgo::GetNodeDebugString(front_node)
                         << "index:" << j << " addr:" << front_node
                         << " second:" << common::AnfAlgo::GetNodeDebugString(kernel) << "index:" << j
@@ -2427,17 +2020,17 @@ void ControlNodeParser::ParseFrontToBackendKernel(const std::vector<KernelGraphP
         }
       }
       if (real_node->isa<CNode>()) {
-        front_to_backend_kernels_[output_pair.first] = {output_pair.second, device_context};
+        front_to_backend_kernels_[output_pair.first] = output_pair.second;
       }
     }
   }
   for (const auto &front_to_backend_kernels : front_to_backend_kernels_) {
     MS_EXCEPTION_IF_NULL(front_to_backend_kernels.first.first);
-    MS_EXCEPTION_IF_NULL(front_to_backend_kernels.second.first.first);
+    MS_EXCEPTION_IF_NULL(front_to_backend_kernels.second.first);
     MS_LOG(DEBUG) << "Print front to backend kernel, front node:" << front_to_backend_kernels.first.first->DebugString()
                   << " front index:" << front_to_backend_kernels.first.second
-                  << " backend node:" << front_to_backend_kernels.second.first.first->DebugString()
-                  << " backend index:" << front_to_backend_kernels.second.first.second;
+                  << " backend node:" << front_to_backend_kernels.second.first->DebugString()
+                  << " backend index:" << front_to_backend_kernels.second.second;
   }
 }
 
@@ -2630,10 +2223,8 @@ void ControlNodeParser::ParseNeedStackControlNode(const std::vector<AnfNodePtr> 
   }
 }
 
-void CollectEffectiveInputByGraph(const KernelGraphPtr &graph, const DeviceContext *const device_context,
-                                  KernelGraphGroupInfo *const kernel_graph_group_info) {
+void CollectEffectiveInputByGraph(const KernelGraphPtr &graph, KernelGraphGroupInfo *const kernel_graph_group_info) {
   MS_EXCEPTION_IF_NULL(graph);
-  MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(kernel_graph_group_info);
 
   const auto &outputs = kernel_graph_group_info->front_output_nodes_;
@@ -2665,15 +2256,14 @@ void CollectEffectiveInputByGraph(const KernelGraphPtr &graph, const DeviceConte
                   << " fullname:" << front_node_with_index.first->fullname_with_scope()
                   << " node ptr:" << front_node_with_index.first << " index:" << front_node_with_index.second
                   << " backend node:" << parameter->DebugString() << " index:0";
-    kernel_graph_group_info->front_input_nodes_[front_node_with_index] = device_context;
+    kernel_graph_group_info->front_input_nodes_.insert(front_node_with_index);
   }
 }
 
-void CollectEffectiveOutputByGraph(const KernelGraphPtr &graph, DeviceContext *const device_context,
-                                   FrontToBackendKernelWithContext *const outputs,
+void CollectEffectiveOutputByGraph(const KernelGraphPtr &graph,
+                                   std::map<KernelWithIndex, KernelWithIndex> *const outputs,
                                    std::set<KernelWithIndex> *monad_outputs) {
   MS_EXCEPTION_IF_NULL(graph);
-  MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(outputs);
   MS_EXCEPTION_IF_NULL(monad_outputs);
 
@@ -2726,11 +2316,11 @@ void CollectEffectiveOutputByGraph(const KernelGraphPtr &graph, DeviceContext *c
                   << " backend node:" << front_to_backend.second.first->DebugString()
                   << " full name:" << front_to_backend.second.first->fullname_with_scope()
                   << " node ptr:" << front_to_backend.second.first << " index:" << front_to_backend.second.second;
-    (*outputs)[front_to_backend.first] = {front_to_backend.second, device_context};
+    (*outputs)[front_to_backend.first] = {front_to_backend.second};
   }
 }
 
-void ControlNodeParser::ParseKernelGraphGroup(const KernelGraphToDeviceContext &kernel_graph_to_device_contexts) {
+void ControlNodeParser::ParseKernelGraphGroup() {
   for (const auto &func_graph_to_kernel_graph_groups : func_graph_to_kernel_graph_groups_) {
     for (const auto &kernel_graph_group : func_graph_to_kernel_graph_groups.second) {
       if (kernel_graph_group.empty()) {
@@ -2744,18 +2334,15 @@ void ControlNodeParser::ParseKernelGraphGroup(const KernelGraphToDeviceContext &
         if (kernel_graph->execution_order().empty()) {
           continue;
         }
-        auto iter = kernel_graph_to_device_contexts.find(kernel_graph);
-        if (iter == kernel_graph_to_device_contexts.end()) {
-          MS_LOG(EXCEPTION) << "Failed to find device context for kernel graph:" << kernel_graph->ToString();
-        }
+
         // Collect kernel graphs in group.
         (void)kernel_graph_group_info->graphs_.emplace(kernel_graph);
 
         // Collect inputs in group.
-        CollectEffectiveInputByGraph(kernel_graph, iter->second, kernel_graph_group_info.get());
+        CollectEffectiveInputByGraph(kernel_graph, kernel_graph_group_info.get());
 
         // Collect outputs in group.
-        CollectEffectiveOutputByGraph(kernel_graph, iter->second, &(kernel_graph_group_info->front_output_nodes_),
+        CollectEffectiveOutputByGraph(kernel_graph, &(kernel_graph_group_info->front_output_nodes_),
                                       &(kernel_graph_group_info->monad_outputs_));
 
         kernel_graphs_to_group_info_[kernel_graph] = kernel_graph_group_info;
@@ -2810,7 +2397,7 @@ size_t ControlNodeParser::ParseControlNodeLevel(const AnfNodePtr &node, std::set
   MS_EXCEPTION_IF_NULL(group_info_iter->second);
   const auto &inputs = group_info_iter->second->front_input_nodes_;
   for (const auto &input : inputs) {
-    const auto &input_node = input.first.first;
+    const auto &input_node = input.first;
     size_t tmp_level = ParseControlNodeLevel(input_node, checked_nodes);
     level = (tmp_level > level ? tmp_level : level);
   }
@@ -2872,22 +2459,22 @@ void ControlNodeParser::ParseNodeLevel(const std::vector<AnfNodePtr> &control_no
     MS_EXCEPTION_IF_NULL(kernel_graph_group_info);
     level = 0;
     for (const auto &front_input_node : kernel_graph_group_info->front_input_nodes_) {
-      const auto &input_node = front_input_node.first.first;
+      const auto &input_node = front_input_node.first;
       auto iter = node_to_level_.find(input_node);
       if (iter != node_to_level_.end() && level < iter->second) {
         level = iter->second;
       }
     }
     for (const auto &front_output_node : kernel_graph_group_info->front_output_nodes_) {
-      MS_EXCEPTION_IF_NULL(front_output_node.second.first.first);
-      if (front_output_node.second.first.first->isa<Parameter>()) {
+      MS_EXCEPTION_IF_NULL(front_output_node.second.first);
+      if (front_output_node.second.first->isa<Parameter>()) {
         continue;
       }
       const auto &output_node = front_output_node.first.first;
       MS_EXCEPTION_IF_NULL(output_node);
       MS_LOG(DEBUG) << "Add level:" << level << " for node:" << output_node->DebugString();
       node_to_level_[output_node] = level;
-      const auto &real_output_node = GetRealOutputNode(front_output_node.first, front_output_node.second.first);
+      const auto &real_output_node = GetRealOutputNode(front_output_node.first, front_output_node.second);
       if (real_output_node != nullptr && node_to_level_.find(real_output_node) == node_to_level_.end()) {
         node_to_level_[real_output_node] = level;
       }
@@ -2899,7 +2486,7 @@ void ControlNodeParser::ParseNodeLevel(const std::vector<AnfNodePtr> &control_no
     MS_EXCEPTION_IF_NULL(kernel_graph_group_info);
     size_t max_level = 0;
     for (const auto &front_input_node : kernel_graph_group_info->front_input_nodes_) {
-      const auto &input_node = front_input_node.first.first;
+      const auto &input_node = front_input_node.first;
       MS_EXCEPTION_IF_NULL(input_node);
       auto iter = node_to_level_.find(input_node);
       if (iter == node_to_level_.end()) {
@@ -2952,8 +2539,7 @@ bool ControlNodeParser::IsInputInSameLevel(const AnfNodePtr &node) {
   return true;
 }
 
-void ControlNodeParser::CreateDeviceTensorForRootGraphParameter(DeviceContext *const default_context) {
-  MS_EXCEPTION_IF_NULL(default_context);
+void ControlNodeParser::CreateDeviceTensorForRootGraphParameter() {
   for (const auto &parameter : root_graph_parameters_) {
     MS_EXCEPTION_IF_NULL(parameter);
     const auto &abstract = parameter->abstract();
@@ -2963,8 +2549,8 @@ void ControlNodeParser::CreateDeviceTensorForRootGraphParameter(DeviceContext *c
       KernelWithIndex parameter_with_index(parameter, i);
       if (front_to_backend_parameters_.find(parameter_with_index) == front_to_backend_parameters_.end()) {
         MS_LOG(DEBUG) << "Create device tensor for root graph parameter:" << parameter->DebugString();
-        CreateDeviceTensorForFrontNode(parameter_with_index, default_context);
-        (void)front_to_backend_parameters_[parameter_with_index].emplace(parameter_with_index, default_context);
+        CreateDeviceTensorForFrontNode(parameter_with_index);
+        (void)front_to_backend_parameters_[parameter_with_index].emplace(parameter_with_index);
       }
     }
   }
@@ -2991,7 +2577,7 @@ KernelWithIndex ControlNodeParser::FetchBackendOutputByKernelGraph(const KernelG
   MS_EXCEPTION_IF_NULL(group_info_iter->second);
   const auto &output_iter = group_info_iter->second->front_output_nodes_.find(front_node_with_index);
   if (output_iter != group_info_iter->second->front_output_nodes_.end()) {
-    return output_iter->second.first;
+    return output_iter->second;
   }
   const auto &backend_iter = std::find_if(
     group_info_iter->second->front_output_nodes_.begin(), group_info_iter->second->front_output_nodes_.end(),
@@ -3001,41 +2587,40 @@ KernelWithIndex ControlNodeParser::FetchBackendOutputByKernelGraph(const KernelG
   if (backend_iter == group_info_iter->second->front_output_nodes_.end()) {
     return {nullptr, 0};
   }
-  return common::AnfAlgo::VisitKernelWithReturnType(backend_iter->second.first.first,
-                                                    backend_iter->second.first.second);
+  return common::AnfAlgo::VisitKernelWithReturnType(backend_iter->second.first, backend_iter->second.second);
 }
 
 void ControlNodeParser::PrintParseInfo() {
   for (const auto &group : kernel_graph_group_infos_) {
     MS_EXCEPTION_IF_NULL(group);
     for (const auto &input_pair : group->front_input_nodes_) {
-      if (input_pair.first.first != nullptr) {
+      if (input_pair.first != nullptr) {
         MS_LOG(WARNING) << "Kernel graph group:" << group->group_name_
-                        << " input node:" << input_pair.first.first->fullname_with_scope()
-                        << " debug string:" << input_pair.first.first->DebugString(kDebugStrDepthTwo)
-                        << " index:" << input_pair.first.second;
+                        << " input node:" << input_pair.first->fullname_with_scope()
+                        << " debug string:" << input_pair.first->DebugString(kDebugStrDepthTwo)
+                        << " index:" << input_pair.second;
       }
     }
     for (const auto &output_pair : group->front_output_nodes_) {
-      if (output_pair.first.first != nullptr && output_pair.second.first.first != nullptr) {
+      if (output_pair.first.first != nullptr && output_pair.second.first != nullptr) {
         MS_LOG(WARNING) << "Kernel graph group:" << group->group_name_
                         << " output node:" << output_pair.first.first->fullname_with_scope()
                         << " debug string:" << output_pair.first.first->DebugString(kDebugStrDepthTwo)
                         << " index:" << output_pair.first.second
-                        << " backend node:" << output_pair.second.first.first->fullname_with_scope()
-                        << " debug string:" << output_pair.second.first.first->DebugString(kDebugStrDepthTwo)
-                        << " index:" << output_pair.second.first.second;
+                        << " backend node:" << output_pair.second.first->fullname_with_scope()
+                        << " debug string:" << output_pair.second.first->DebugString(kDebugStrDepthTwo)
+                        << " index:" << output_pair.second.second;
       }
     }
   }
   for (const auto &f_to_b : front_to_backend_kernels_) {
-    if (f_to_b.first.first != nullptr && f_to_b.second.first.first != nullptr) {
+    if (f_to_b.first.first != nullptr && f_to_b.second.first != nullptr) {
       MS_LOG(WARNING) << "Front to backend map front node:" << f_to_b.first.first->fullname_with_scope()
                       << " debug string:" << f_to_b.first.first->DebugString(kDebugStrDepthTwo)
                       << " index:" << f_to_b.first.second
-                      << " backend node:" << f_to_b.second.first.first->fullname_with_scope()
-                      << " debug string:" << f_to_b.second.first.first->DebugString(kDebugStrDepthTwo)
-                      << " index:" << f_to_b.second.first.second;
+                      << " backend node:" << f_to_b.second.first->fullname_with_scope()
+                      << " debug string:" << f_to_b.second.first->DebugString(kDebugStrDepthTwo)
+                      << " index:" << f_to_b.second.second;
     }
   }
   for (const auto &pair : front_node_to_kernel_graph_) {

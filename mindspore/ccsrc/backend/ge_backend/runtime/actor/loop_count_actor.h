@@ -38,8 +38,7 @@ class LoopCountActor : public DebugAwareActor {
  public:
   LoopCountActor(const std::string &name, const std::string &graph_name, size_t loop_count, size_t sink_size,
                  const AID &memory_manager_aid, const AID *debug_aid, const AID *recorder_aid, const AID *profiler_aid,
-                 GraphExecutionStrategy strategy, const std::vector<DeviceContext *> &device_contexts,
-                 const bool is_need_sync_stream)
+                 GraphExecutionStrategy strategy, const bool is_need_sync_stream)
       : DebugAwareActor(name, KernelTransformType::kLoopCountActor, recorder_aid, memory_manager_aid, debug_aid,
                         profiler_aid),
         graph_name_(graph_name),
@@ -48,11 +47,7 @@ class LoopCountActor : public DebugAwareActor {
         current_count_(0),
         total_running_count_(0),
         strategy_(strategy),
-        is_need_sync_stream_(is_need_sync_stream) {
-    (void)std::transform(
-      device_contexts.begin(), device_contexts.end(), std::back_inserter(device_contexts_),
-      [](DeviceContext *device_context) { return static_cast<const DeviceContext *>(device_context); });
-  }
+        is_need_sync_stream_(is_need_sync_stream) {}
 
   ~LoopCountActor() override = default;
 

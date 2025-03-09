@@ -28,7 +28,6 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_info.h"
 #include "plugin/res_manager/ascend/op_adapter/transform_util.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"

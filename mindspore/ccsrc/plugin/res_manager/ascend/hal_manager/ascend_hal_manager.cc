@@ -24,6 +24,10 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
+namespace {
+constexpr auto kSaturationMode = "Saturation";
+constexpr auto kINFNANMode = "INFNAN";
+}  // namespace
 static thread_local aclrtContext thread_local_rt_context{nullptr};
 
 AscendHalManager &AscendHalManager::GetInstance() {
@@ -75,6 +79,32 @@ uint32_t AscendHalManager::GetDeviceCount() {
     MS_EXCEPTION(DeviceProcessError) << "Call rtGetDeviceCount, ret[" << static_cast<int>(ret) << "]";
   }
   return device_count;
+}
+
+void AscendHalManager::SetDeviceSatMode(const aclrtFloatOverflowMode &overflow_mode) {
+  auto overflow_mode_str =
+    (overflow_mode == aclrtFloatOverflowMode::ACL_RT_OVERFLOW_MODE_SATURATION) ? kSaturationMode : kINFNANMode;
+  MS_LOG(INFO) << "The current overflow detection mode is " << overflow_mode_str << ".";
+  auto ret = CALL_ASCEND_API(aclrtSetDeviceSatMode, overflow_mode);
+  if (ret != ACL_SUCCESS) {
+    MS_LOG(EXCEPTION) << "Set " << overflow_mode_str << " mode failed.";
+  }
+}
+
+void AscendHalManager::SetOpWaitTimeout(uint32_t op_wait_timeout) {
+  MS_LOG(DEBUG) << "Set op wait timeout: " << op_wait_timeout << " s";
+  auto acl_ret = CALL_ASCEND_API(aclrtSetOpWaitTimeout, op_wait_timeout);
+  if (acl_ret != ACL_SUCCESS) {
+    MS_LOG(EXCEPTION) << "Set op wait timeout failed, error: " << acl_ret;
+  }
+}
+
+void AscendHalManager::SetOpExecuteTimeOut(uint32_t op_execute_timeout) {
+  MS_LOG(DEBUG) << "Set op execute timeout: " << op_execute_timeout << " s";
+  auto acl_ret = CALL_ASCEND_API(aclrtSetOpExecuteTimeOut, op_execute_timeout);
+  if (acl_ret != ACL_SUCCESS) {
+    MS_LOG(EXCEPTION) << "Set op execute timeout failed, error: " << acl_ret;
+  }
 }
 
 aclrtContext AscendHalManager::CreateContext(uint32_t device_id) {

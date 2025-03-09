@@ -24,7 +24,6 @@
 #include "backend/ge_backend/runtime/actor/profiler_actor.h"
 #include "backend/ge_backend/runtime/actor/recorder_actor.h"
 #include "backend/ge_backend/runtime/graph_scheduler.h"
-#include "runtime/hardware/device_context_manager.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "include/common/runtime_conf/thread_bind_core.h"
 #include "debug/profiler/profiler.h"
@@ -34,7 +33,6 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
-#include "include/backend/optimizer/helper.h"
 #include "utils/anf_utils.h"
 #include "include/common/utils/config_manager.h"
 #include "utils/log_adapter.h"
@@ -51,18 +49,13 @@
 #endif
 #include "debug/profiler/profiling.h"
 #include "include/common/debug/common.h"
-#include "include/backend/distributed/collective/collective_manager.h"
-#if defined(__linux__) && defined(WITH_BACKEND)
-#include "include/backend/distributed/cluster/cluster_context.h"
-#else
-#include "include/backend/distributed/cluster/dummy_cluster_context.h"
-#endif
 #include "abstract/ops/primitive_infer_map.h"
 #include "utils/file_utils.h"
 
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "utils/numa_interface.h"
 #endif
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -117,17 +110,6 @@ int64_t GetLoopCount(const GraphCompilerInfo &graph_compiler_info) {
   }
 
   return loop_count;
-}
-
-bool IsDeviceTypeNotSame(const DeviceContext *from_device_context, const DeviceContext *to_device_context) {
-  MS_EXCEPTION_IF_NULL(from_device_context);
-  MS_EXCEPTION_IF_NULL(to_device_context);
-
-  if (from_device_context->GetDeviceType() == to_device_context->GetDeviceType()) {
-    return false;
-  } else {
-    return true;
-  }
 }
 
 bool IsTakenOverByControlFlow(const AnfNodePtr &front_node, const KernelGraphPtr &graph,
@@ -232,8 +214,8 @@ void GraphScheduler::Clear(const ActorInfo &actor_info, const std::vector<Kernel
   if (parser != nullptr && parser->IsInited()) {
     const auto &front_value_nodes = parser->front_value_nodes();
     for (const auto &front_value_node : front_value_nodes) {
-      const auto &node = front_value_node.first.first;
-      size_t index = front_value_node.first.second;
+      const auto &node = front_value_node.first;
+      size_t index = front_value_node.second;
       if (AnfAlgo::OutputAddrExist(node, index)) {
         AnfAlgo::SetOutputAddr(nullptr, index, node.get());
       }
@@ -407,10 +389,6 @@ ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info
                << ") transforms actor begin, strategy:" << kGraphExecutionStrategyStr.at(graph_compiler_info.strategy_);
   if (graph_compiler_info.graphs_.size() == 0 && graph_compiler_info.control_nodes_.size() <= 1) {
     MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#The number of graphs is zero.";
-  }
-  if (graph_compiler_info.graphs_.size() != graph_compiler_info.device_contexts_.size()) {
-    MS_LOG(INTERNAL_EXCEPTION)
-      << "#dmsg#Runtime error info:#dmsg#The number of graphs is not equal to the number of device contexts.";
   }
 
   PersistDeviceTensor(graph_compiler_info);
@@ -683,7 +661,6 @@ std::vector<DataSourceActorPtr> GraphScheduler::BuildDataSourceActor(const Graph
 
   for (size_t i = 0; i < graph_compiler_info.graphs_.size(); ++i) {
     const auto &graph = graph_compiler_info.graphs_[i];
-    const auto &graph_device_context = graph_compiler_info.device_contexts_[i];
     MS_EXCEPTION_IF_NULL(graph);
     // Build host queue data source actor.
     const std::vector<AnfNodePtr> &input_nodes = graph->input_nodes();
@@ -691,8 +668,6 @@ std::vector<DataSourceActorPtr> GraphScheduler::BuildDataSourceActor(const Graph
     for (size_t j = 0; j < input_nodes.size(); j++) {
       const auto &input_node = input_nodes[j];
       MS_EXCEPTION_IF_NULL(input_node);
-      const auto &device_context = graph_device_context;
-      MS_EXCEPTION_IF_NULL(device_context);
 
       if (IsHostQueueDSActor(input_node, graph, root_parameters, graph_compiler_info.strategy_)) {
         // In control flow, parameters from subgraph need not init in data source actor.
@@ -735,20 +710,10 @@ std::vector<DataSourceActorPtr> GraphScheduler::BuildDataSourceActor(const Graph
         // data source actor.
         if (front_node_position_temp_map.count(front_node_with_index) > 0) {
           auto front_node_index = front_node_position_temp_map[front_node_with_index];
-          if (!IsDeviceTypeNotSame(device_context, host_queue_ds_actor->device_contexts_[front_node_index])) {
-            (void)host_queue_ds_actor->data_node_position_map_.emplace(KernelWithIndex(input_node, 0),
-                                                                       front_node_index);
-            continue;
-          } else {
-            MS_LOG(DEBUG) << "Add heter ref node:" << input_node->DebugString() << " index:" << data_node_position
-                          << " to node:"
-                          << host_queue_ds_actor->data_node_with_indexs_[front_node_index].first->DebugString()
-                          << " index:" << front_node_index
-                          << " front node:" << front_node_with_index.first->DebugString() << " to data source actor.";
-          }
+          (void)host_queue_ds_actor->data_node_position_map_.emplace(KernelWithIndex(input_node, 0), front_node_index);
+          continue;
         }
         (void)host_queue_ds_actor->data_node_with_indexs_.emplace_back(input_node, 0);
-        (void)host_queue_ds_actor->device_contexts_.emplace_back(device_context);
         (void)host_queue_ds_actor->data_node_position_map_.emplace(KernelWithIndex(input_node, 0), data_node_position);
         // In control flow, need to rely on the front node to find the location of the corresponding real parameter.
         (void)host_queue_ds_actor->data_node_position_map_.emplace(front_node_with_index, data_node_position);
@@ -782,7 +747,6 @@ std::vector<SuperKernelActorPtr> GraphScheduler::BuildSuperKernelActor(const Gra
 
   for (size_t i = 0; i < graph_compiler_info.graphs_.size(); ++i) {
     const auto &graph = graph_compiler_info.graphs_[i];
-    const auto &device_context = graph_compiler_info.device_contexts_[i];
     MS_EXCEPTION_IF_NULL(graph);
     if (!graph->is_graph_run_mode()) {
       continue;
@@ -794,8 +758,9 @@ std::vector<SuperKernelActorPtr> GraphScheduler::BuildSuperKernelActor(const Gra
     }
     graph->CacheRootWeight(root_weights);
     auto actor_name = graph->ToString() + kSuperKernelActorNameSuffix;
-    auto super_kernel_actor = std::make_shared<SuperKernelActor>(
-      actor_name, graph, graph_compiler_info.graph_phase_, device_context, memory_manager_aid_, debug_aid_, nullptr);
+    auto super_kernel_actor =
+      std::make_shared<SuperKernelActor>(actor_name, graph, graph_compiler_info.graph_phase_, memory_manager_aid_,
+                                         debug_aid_, nullptr, graph_compiler_info.graph_executor_);
     MS_EXCEPTION_IF_NULL(super_kernel_actor);
     InsertActor(super_kernel_actor.get());
     (void)super_kernel_actors.emplace_back(super_kernel_actor);
@@ -810,7 +775,7 @@ LoopCountActorPtr GraphScheduler::BuildLoopCountActor(const GraphCompilerInfo &g
   auto is_need_sync_stream = GetNeedSyncStream(graph_compiler_info);
   auto loop_count_actor = std::make_shared<LoopCountActor>(
     actor_name, graph_compiler_info.name_, loop_count, sink_size, memory_manager_aid_, debug_aid_, recorder_aid_,
-    profiler_aid_, graph_compiler_info.strategy_, graph_compiler_info.device_contexts_, is_need_sync_stream);
+    profiler_aid_, graph_compiler_info.strategy_, is_need_sync_stream);
   MS_LOG(INFO) << "Create loop count actor: " << actor_name;
   MS_EXCEPTION_IF_NULL(loop_count_actor);
 
@@ -1438,15 +1403,12 @@ void GraphScheduler::CorrectControlArrowForAutoMonadActor(AbstractActor *const a
 void GraphScheduler::PersistDeviceTensor(const GraphCompilerInfo &graph_compiler_info) const {
   for (size_t i = 0; i < graph_compiler_info.graphs_.size(); ++i) {
     const auto &graph = graph_compiler_info.graphs_[i];
-    const auto &device_context = graph_compiler_info.device_contexts_[i];
     for (auto &value_node : graph->graph_value_nodes()) {
-      PersistDeviceTensorForValueNode(value_node, graph, device_context);
+      PersistDeviceTensorForValueNode(value_node, graph);
     }
 
     for (auto &input_node : graph->input_nodes()) {
-      const auto &real_device_context = device_context;
-      MS_EXCEPTION_IF_NULL(real_device_context);
-      PersistDeviceTensorForParameter(input_node, graph, graph_compiler_info, real_device_context);
+      PersistDeviceTensorForParameter(input_node, graph, graph_compiler_info);
     }
 
     // The device tensor store used by backoff kernel need update with the real device context.
@@ -1454,17 +1416,15 @@ void GraphScheduler::PersistDeviceTensor(const GraphCompilerInfo &graph_compiler
       if (!AnfAlgo::IsKernelSelectBackoffOp(kernel)) {
         continue;
       }
-      const auto &real_device_context = device_context;
-      MS_EXCEPTION_IF_NULL(real_device_context);
       for (size_t j = 0; j < common::AnfAlgo::GetInputTensorNum(kernel); ++j) {
         const auto &input_node = common::AnfAlgo::GetInputNode(kernel, j);
         const auto &real_input_node = common::AnfAlgo::VisitKernelWithReturnType(input_node, 0, false).first;
         MS_EXCEPTION_IF_NULL(real_input_node);
         if (real_input_node->isa<ValueNode>()) {
-          PersistDeviceTensorForValueNode(real_input_node, graph, real_device_context);
+          PersistDeviceTensorForValueNode(real_input_node, graph);
         }
         if (real_input_node->isa<Parameter>()) {
-          PersistDeviceTensorForParameter(real_input_node, graph, graph_compiler_info, real_device_context);
+          PersistDeviceTensorForParameter(real_input_node, graph, graph_compiler_info);
         }
       }
     }
@@ -1473,11 +1433,9 @@ void GraphScheduler::PersistDeviceTensor(const GraphCompilerInfo &graph_compiler
   PersistDeviceTensorForRootGraphControlNode(graph_compiler_info);
 }
 
-void GraphScheduler::PersistDeviceTensorForValueNode(const AnfNodePtr &value_node, const KernelGraphPtr &graph,
-                                                     const DeviceContext *device_context) const {
+void GraphScheduler::PersistDeviceTensorForValueNode(const AnfNodePtr &value_node, const KernelGraphPtr &graph) const {
   MS_EXCEPTION_IF_NULL(value_node);
   MS_EXCEPTION_IF_NULL(graph);
-  MS_EXCEPTION_IF_NULL(device_context);
   if (!AnfAlgo::OutputAddrExist(value_node, 0)) {
     MS_LOG(INFO) << "The device address is not exist: " << value_node->ToString();
     return;
@@ -1488,18 +1446,25 @@ void GraphScheduler::PersistDeviceTensorForValueNode(const AnfNodePtr &value_nod
   device_tensor->SetNodeIndex(value_node, 0);
   SchedulerHelper::AddDeviceTensorStore(front_node, device_tensor);
 
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+
   // If the device tensor store of this device type is not exist, then create the new device tensor of this type.
-  if (DeviceTensorStore::GetInstance().Fetch(front_node.get(), device_context->GetDeviceType()) == nullptr) {
-    MS_LOG(INFO) << "Fetch no device tensor store by:" << front_node->fullname_with_scope()
-                 << ", type:" << device_context->GetDeviceType() << " dtype:" << device_tensor->type_id()
-                 << " current device address:" << device_tensor << " in value node:" << value_node->DebugString();
+  if (DeviceTensorStore::GetInstance().Fetch(front_node.get(), device::GetDeviceTypeByName(device_name)) == nullptr) {
+    MS_LOG(INFO) << "Fetch no device tensor store by:" << front_node->fullname_with_scope() << ", type:" << device_name
+                 << " dtype:" << device_tensor->type_id() << " current device address:" << device_tensor
+                 << " in value node:" << value_node->DebugString();
 
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
       {value_node, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
-      device_tensor->host_shape(), device_context->device_context_key().device_name_,
-      device_context->device_context_key().device_id_);
+      device_tensor->host_shape(), device_name, device_id);
     kernel_tensor->set_stream_id(device_tensor->stream_id());
-    auto other_type_device_tensor = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+    auto other_type_device_tensor = res_manager->CreateDeviceAddress(kernel_tensor);
     MS_EXCEPTION_IF_NULL(other_type_device_tensor);
     other_type_device_tensor->SetNodeIndex(value_node, 0);
     other_type_device_tensor->set_from_persistent_mem(true);
@@ -1510,11 +1475,9 @@ void GraphScheduler::PersistDeviceTensorForValueNode(const AnfNodePtr &value_nod
 }
 
 void GraphScheduler::PersistDeviceTensorForParameter(const AnfNodePtr &parameter, const KernelGraphPtr &graph,
-                                                     const GraphCompilerInfo &graph_compiler_info,
-                                                     const DeviceContext *device_context) const {
+                                                     const GraphCompilerInfo &graph_compiler_info) const {
   MS_EXCEPTION_IF_NULL(parameter);
   MS_EXCEPTION_IF_NULL(graph);
-  MS_EXCEPTION_IF_NULL(device_context);
 
   const auto &parser = graph_compiler_info.control_node_parser_;
   MS_EXCEPTION_IF_NULL(parser);
@@ -1538,17 +1501,23 @@ void GraphScheduler::PersistDeviceTensorForParameter(const AnfNodePtr &parameter
     SchedulerHelper::AddDeviceTensorStore(front_node, device_tensor);
   }
 
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+
   // If the device tensor store of this device type is not exist, then create the new device tensor of this type.
-  if (DeviceTensorStore::GetInstance().Fetch(front_node.get(), device_context->GetDeviceType()) == nullptr) {
-    MS_LOG(INFO) << "Fetch no device tensor store by:" << front_node->fullname_with_scope()
-                 << ", type:" << device_context->GetDeviceType();
+  if (DeviceTensorStore::GetInstance().Fetch(front_node.get(), device::GetDeviceTypeByName(device_name)) == nullptr) {
+    MS_LOG(INFO) << "Fetch no device tensor store by:" << front_node->fullname_with_scope() << ", type:" << device_name;
 
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
       {parameter, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
-      device_tensor->host_shape(), device_context->device_context_key().device_name_,
-      device_context->device_context_key().device_id_);
+      device_tensor->host_shape(), device_name, device_id);
     kernel_tensor->set_stream_id(device_tensor->stream_id());
-    auto other_type_device_tensor = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+    auto other_type_device_tensor = res_manager->CreateDeviceAddress(kernel_tensor);
     if (front_node->isa<ValueNode>()) {
       const auto &value_node = front_node->cast<ValueNodePtr>();
       MS_EXCEPTION_IF_NULL(value_node);
@@ -1570,6 +1539,14 @@ void GraphScheduler::PersistDeviceTensorForRootGraphControlNode(const GraphCompi
     return;
   }
 
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+
   for (auto &root_graph_parameter : graph_compiler_info.origin_parameters_order_) {
     MS_EXCEPTION_IF_NULL(root_graph_parameter);
     if (!IsPersistentDeviceTensor(root_graph_parameter)) {
@@ -1585,18 +1562,15 @@ void GraphScheduler::PersistDeviceTensorForRootGraphControlNode(const GraphCompi
     // graph using the different root graph parameters. So can not use the device tensor of sub kernel graph parameter
     // directly and choose the first backend parameter in sub kernel graphs to create new device tensor to make sure
     // that the device tensor of root graph parameters are different.
-    const auto &node_with_index_with_context =
-      parser->FetchBackendParameterWithContextByFrontParameter({root_graph_parameter, 0});
-    if (node_with_index_with_context.first.first == nullptr) {
+    const auto &node_with_index = parser->FetchBackendParameterWithContextByFrontParameter({root_graph_parameter, 0});
+    if (node_with_index.first == nullptr) {
       MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, root_graph_parameter)
         << "#dmsg#Runtime error info:#dmsg#Can't find backend node for weight parameter:"
         << root_graph_parameter->DebugString();
     }
-    const auto &backend_node = node_with_index_with_context.first.first;
-    const auto &index = node_with_index_with_context.first.second;
-    const auto &device_context = node_with_index_with_context.second;
+    const auto &backend_node = node_with_index.first;
+    const auto &index = node_with_index.second;
     MS_EXCEPTION_IF_NULL(backend_node);
-    MS_EXCEPTION_IF_NULL(device_context);
     if (index != 0) {
       MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, backend_node)
         << "#dmsg#Runtime error info:#dmsg#Device tensor store does not support tuple type, node:"
@@ -1607,11 +1581,9 @@ void GraphScheduler::PersistDeviceTensorForRootGraphControlNode(const GraphCompi
 
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
       {backend_node, index}, nullptr, sub_device_tensor->GetSize(), sub_device_tensor->format(),
-      sub_device_tensor->type_id(), sub_device_tensor->host_shape(), device_context->device_context_key().device_name_,
-      device_context->device_context_key().device_id_);
-    MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
+      sub_device_tensor->type_id(), sub_device_tensor->host_shape(), device_name, device_id);
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(backend_node));
-    auto new_device_tensor = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+    auto new_device_tensor = res_manager->CreateDeviceAddress(kernel_tensor);
     MS_EXCEPTION_IF_NULL(new_device_tensor);
     new_device_tensor->SetNodeIndex(backend_node, index);
     new_device_tensor->set_is_ptr_persisted(sub_device_tensor->is_ptr_persisted());
@@ -1620,8 +1592,8 @@ void GraphScheduler::PersistDeviceTensorForRootGraphControlNode(const GraphCompi
 
     SchedulerHelper::AddDeviceTensorStore(root_graph_parameter, new_device_tensor);
     MS_LOG(INFO) << "Add device tensor store by root graph parameter:" << root_graph_parameter->fullname_with_scope()
-                 << ", backend node:" << backend_node->DebugString() << ", type:" << device_context->GetDeviceType()
-                 << " device_tensor:" << new_device_tensor;
+                 << ", backend node:" << backend_node->DebugString()
+                 << ", type:" << device::GetDeviceTypeByName(device_name) << " device_tensor:" << new_device_tensor;
   }
 }
 

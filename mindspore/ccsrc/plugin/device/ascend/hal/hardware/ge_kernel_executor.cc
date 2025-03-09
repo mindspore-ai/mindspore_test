@@ -43,7 +43,7 @@
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
 #include "plugin/device/ascend/kernel/graph_kernel/kernel_packet_ascend_kernel_mod.h"
-#include "plugin/device/ascend/hal/device/tensorreport_utils.h"
+#include "plugin/res_manager/ascend/mbuf_manager/tensorreport_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
 #ifdef ENABLE_DVM

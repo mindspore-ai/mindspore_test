@@ -29,12 +29,10 @@
 #include "backend/ge_backend/runtime/actor/actor_common.h"
 #include "backend/ge_backend/runtime/device_tensor_store.h"
 #include "backend/ge_backend/runtime/device_tensor_copy_store.h"
-#include "runtime/hardware/device_context.h"
 
 namespace mindspore {
 namespace ge_backend {
 namespace runtime {
-using mindspore::device::DeviceContext;
 using mindspore::kernel::KernelTensor;
 using mindspore::runtime::ProfilerEvent;
 using mindspore::runtime::ProfilerModule;
@@ -107,7 +105,6 @@ class AbstractActor : public OpActor<DeviceTensor> {
   // Get the member.
   KernelTransformType type() const { return type_; }
   int64_t actor_id() const { return actor_id_; }
-  const std::vector<const DeviceContext *> &device_contexts() const { return device_contexts_; }
   const std::vector<AnfNodePtr> &output_data_nodes() const { return output_data_nodes_; }
   const std::vector<std::pair<size_t, AnfNodePtr>> &device_tensor_store_keys() const {
     return device_tensor_store_keys_;
@@ -159,9 +156,6 @@ class AbstractActor : public OpActor<DeviceTensor> {
   bool IsOutputAddressPersisted(const DeviceTensor *output_device_tensor, const KernelWithIndex &output_node);
 
   KernelTransformType type_;
-
-  // The device interface.
-  std::vector<const DeviceContext *> device_contexts_;
 
   // The id of recorder actor. Send message to it for recording info.
   const AID *recorder_aid_;

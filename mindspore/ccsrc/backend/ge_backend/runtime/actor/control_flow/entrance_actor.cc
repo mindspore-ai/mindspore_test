@@ -263,10 +263,10 @@ void EntranceActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context) {
     memory_free_lists_.push(memory_free_list);
     if (ActorDispatcher::is_memory_free_sync()) {
       ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &(memory_free_lists_.back()),
-                                device_contexts_[0], context, GetAID());
+                                context, GetAID());
     } else {
-      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &(memory_free_lists_.back()),
-                            device_contexts_[0], context, GetAID());
+      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &(memory_free_lists_.back()), context,
+                            GetAID());
     }
   }
 }

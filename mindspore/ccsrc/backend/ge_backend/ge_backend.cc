@@ -24,7 +24,7 @@
 #include "backend/ge_backend/pass/ge_backend_optimization.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "ir/manager.h"
-#include "runtime/device/device_address_utils.h"
+#include "backend/ge_backend/utils/device_address_utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/config_manager.h"
 #include "debug/profiler/profiling.h"
@@ -37,7 +37,6 @@
 #endif
 #include "debug/summary/summary.h"
 #include "include/common/utils/callbacks.h"
-#include "runtime/hardware/device_context_manager.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/distributed/collective/collect_hccl_init_info.h"
 #include "backend/ge_backend/graph_ir/utils.h"
@@ -55,6 +54,22 @@
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "backend/ge_backend/runtime/control_node_parser.h"
 #include "include/common/utils/parallel_context.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
+#include "pybind_api/gil_scoped_long_running.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/res_manager/ascend/device_context_conf/op_tuning_conf.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
+#include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
+#include "runtime/device/res_manager/multi_stream_controller.h"
+#include "plugin/res_manager/ascend/mbuf_manager/tensorreport_utils.h"
+#include "plugin/res_manager/ascend/mbuf_manager/tensorprint_utils.h"
+#include "plugin/res_manager/ascend/mbuf_manager/tensordump_utils.h"
+#include "plugin/res_manager/ascend/mbuf_manager/tensorsummary_utils.h"
+#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
+#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/hccl_watch_dog_thread.h"
+#include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
 namespace backend {
@@ -74,6 +89,14 @@ using TypedPrimitiveAbstractClosurePtr = std::shared_ptr<abstract::TypedPrimitiv
 const char kModelNameRuntime[] = "Runtime";
 const char kEventCompileGraph[] = "CompileGraph";
 const char kStageCompileGraphs[] = "CompileGraphs";
+constexpr uint32_t kDefaultHcclExecTimeout = 1800;
+std::mutex g_tsd_mutex;
+
+void CheckContiguousTensor(const tensor::BaseTensorPtr &tensor) {
+  if (DeviceAddressUtils::IsContiguousTensor(tensor)) {
+    MS_LOG(EXCEPTION) << "The ge backend only support contiguous inputs, please check.";
+  }
+}
 
 void CheckNodeValid(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
@@ -311,15 +334,7 @@ mindspore::HashSet<const tensor::Tensor *> GEBackend::weights_need_reprepare_ = 
 BackendGraphId GEBackend::backend_graph_id_ = 0;
 
 GEBackend::GEBackend() {
-  Init();
-  graph_compiler_ = std::make_shared<mindspore::ge_backend::runtime::GraphCompiler>();
-  mindspore::ge_backend::runtime::GraphScheduler::GetInstance().Initialize();
-#ifdef ENABLE_DEBUGGER
-  dump::CheckDeprecatedDumpEnv();
-#endif
-}
-
-void GEBackend::Init() {
+  // Init();
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
@@ -328,6 +343,234 @@ void GEBackend::Init() {
     device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_target, device_id});
   MS_EXCEPTION_IF_NULL(device_context);
   device_context->Initialize();
+  graph_executor_ = device_context->graph_executor_;
+
+  const std::vector<PrimitivePtr> cut_list = {prim::kPrimReturn,    prim::kPrimPartial,  prim::kPrimSwitch,
+                                              prim::kPrimMakeTuple, prim::kPrimBpropCut, prim::kPrimSwitchLayer};
+  graph_partition_ = std::make_shared<compile::GraphPartition>(cut_list, "ge");
+  graph_compiler_ = std::make_shared<mindspore::ge_backend::runtime::GraphCompiler>(graph_executor_);
+  mindspore::ge_backend::runtime::GraphScheduler::GetInstance().Initialize();
+#ifdef ENABLE_DEBUGGER
+  dump::CheckDeprecatedDumpEnv();
+#endif
+}
+
+void GEBackend::Init() {
+  if (is_initialized_) {
+    return;
+  }
+  GilReleaseWithCheck gil_release;
+  std::lock_guard<std::mutex> lock(init_mutex_);
+  // graph_executor_ = std::make_shared<GeGraphExecutor>();
+
+  MS_LOG(INFO) << "Start initializing device context.";
+  if (UseSimulationApi()) {
+    device::ascend::LoadSimulationApiSymbols();
+  }
+
+  // set overflow mode
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  const auto &soc_version = ms_context->ascend_soc_version();
+  if (soc_version == "ascend910b" || soc_version == "ascend910_93") {
+    bool is_sat = (common::GetEnv("MS_ASCEND_CHECK_OVERFLOW_MODE") == "SATURATION_MODE");
+    auto mode = (is_sat) ? aclrtFloatOverflowMode::ACL_RT_OVERFLOW_MODE_SATURATION
+                         : aclrtFloatOverflowMode::ACL_RT_OVERFLOW_MODE_INFNAN;
+    device::ascend::AscendHalManager::GetInstance().SetDeviceSatMode(mode);
+  }
+
+  // ascend_res_manager init
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  res_manager->Initialize();
+
+  // set timeout
+  auto op_debug_conf = device::ascend::OpDebugConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_debug_conf);
+  uint32_t op_execute_timeout = op_debug_conf->execute_timeout();
+  std::string hccl_exec_timeout = common::GetEnv("HCCL_EXEC_TIMEOUT");
+  uint32_t notify_wait_timeout;
+  if (hccl_exec_timeout.empty()) {
+    notify_wait_timeout = kDefaultHcclExecTimeout;
+  } else {
+    try {
+      notify_wait_timeout = std::stoi(hccl_exec_timeout);
+    } catch (const std::exception &e) {
+      MS_LOG(EXCEPTION) << "Parse environment variable HCCL_EXEC_TIMEOUT failed, value" << hccl_exec_timeout
+                        << ", msg: " << e.what();
+    }
+  }
+  if (op_execute_timeout >= notify_wait_timeout) {
+    MS_LOG(INFO) << "OpExecuteTimeout should be less than NotifyWaitTimeout, but got OpExecuteTimeout "
+                 << op_execute_timeout << ", notify_wait_timeout " << notify_wait_timeout << "."
+                 << "1. You can set OpExecuteTimeout via mindspore.set_context(op_timeout=int)."
+                 << "2. You can set NotifyWaitTimeout via environment variable HCCL_EXEC_TIMEOUT. ";
+  }
+  // 310P does not contain the following interfaces
+  if (ms_context->ascend_soc_version() != "ascend310p" && ms_context->ascend_soc_version() != "ascend310b") {
+    const uint32_t reserve_time = 180;
+    uint32_t op_wait_timeout = notify_wait_timeout + reserve_time;
+    device::ascend::AscendHalManager::GetInstance().SetOpWaitTimeout(op_wait_timeout);
+    device::ascend::AscendHalManager::GetInstance().SetOpExecuteTimeOut(op_execute_timeout);
+  }
+
+  // set MS_CTX_ENABLE_GE_HETEROGENOUS true according to  heterogeneous mode
+  ms_context->set_param<bool>(MS_CTX_ENABLE_GE_HETEROGENOUS, false);
+  if (!UseSimulationApi()) {
+    graph_executor_->Initialize();
+  }
+
+  // InitializeAcl();
+
+  auto op_tuning_conf = device::ascend::OpTuningConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_tuning_conf);
+  if (op_tuning_conf->EnableAoeOnline()) {
+    backend::ge_backend::InitializeAoeUtil();
+  }
+  if (op_tuning_conf->EnableAoeOffline()) {
+    backend::ge_backend::EnableAoeOffline();
+  }
+  // open tsd
+  if (!common::UseDynamicCluster()) {
+    if (!OpenTsd(ms_context)) {
+      MS_LOG(EXCEPTION) << "Open tsd failed";
+    }
+  }
+  is_initialized_ = true;
+  MS_LOG(INFO) << "End initializing device context.";
+}
+
+void GEBackend::DestroyHccl() {
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (!context_ptr->get_param<bool>(MS_CTX_ENABLE_HCCL)) {
+    MS_LOG(INFO) << "Hccl is not enabled, no need to close.";
+    return;
+  }
+
+  if (common::GetEnv(kSimulationLevel).empty() &&
+      !device::ascend::AscendCollectiveCommLib::GetInstance().DestroyHcclComm()) {
+    MS_LOG(WARNING) << "Hccl destroy failed.";
+    return;
+  }
+  MS_LOG(INFO) << "Hccl destroy successful.";
+  context_ptr->set_param<bool>(MS_CTX_ENABLE_HCCL, false);
+}
+
+void GEBackend::Clear() {
+  if (!is_initialized_) {
+    return;
+  }
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto op_tuning_conf = device::ascend::OpTuningConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_tuning_conf);
+  if (op_tuning_conf->EnableAoeOnline()) {
+    backend::ge_backend::DestroyAoeUtil();
+  }
+
+  // destroy hccl things
+  if (ms_context->get_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG)) {
+    device::ascend::HcclWatchDogManager::GetInstance().DestoryHandler();
+  }
+  // DestroyHccl must be called before FreeDeviceMemory
+  (void)DestroyHccl();
+
+  graph_executor_->Finalize();
+
+  // Device resource manager must be destroyed before 'FinalizeGe' unless some runtime APIs will throw exception.
+  // for ge, has destropy in graph_executor->finalize
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  res_manager->Destroy();
+
+  if (hccl::HcclAdapter::GetInstance().Inited()) {
+    (void)hccl::HcclAdapter::GetInstance().FinalizeHccl();
+  }
+
+  CloseTsd(true);
+  is_initialized_ = false;
+}
+
+bool GEBackend::OpenTsd(const std::shared_ptr<MsContext> &ms_context_ptr) {
+  std::unique_lock<std::mutex> lock(g_tsd_mutex);
+  MS_EXCEPTION_IF_NULL(ms_context_ptr);
+  if (ms_context_ptr->get_param<bool>(MS_CTX_IS_PYNATIVE_GE_INIT)) {
+    return true;
+  }
+
+  if (UseSimulationApi()) {
+    return true;
+  }
+
+  if (ms_context_ptr->get_param<uint32_t>(MS_CTX_TSD_REF) != 0) {
+    MS_LOG(DEBUG) << "ACLTDT Dataset client is already opened.";
+    ms_context_ptr->increase_param<uint32_t>(MS_CTX_TSD_REF);
+    return true;
+  }
+
+  auto role = common::GetEnv("MS_ROLE");
+  if (strcmp(role.c_str(), "MS_SCHED") == 0 || strcmp(role.c_str(), "MS_PSERVER") == 0) {
+    return true;
+  }
+
+  uint32_t device_id = ms_context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+
+  ms_context_ptr->increase_param<uint32_t>(MS_CTX_TSD_REF);
+
+  if (!ms_context_ptr->get_param<bool>(MS_CTX_ENABLE_GE_HETEROGENOUS)) {
+    device::ascend::MbufDataHandlerManager::GetInstance().AddHandler(std::make_unique<device::ascend::MbufDataHandler>(
+      std::bind(&device::ascend::TensorPrintUtils::PrintReceiveData, &device::ascend::TensorPrintUtils::GetInstance(),
+                std::placeholders::_1),
+      device_id, kChannelNameNpuLog, kPrintOpName));
+  }
+
+  device::ascend::MbufDataHandlerManager::GetInstance().AddHandler(std::make_unique<device::ascend::MbufDataHandler>(
+    std::bind(&device::ascend::TensorDumpUtils::SaveDatasetToNpyFile, &device::ascend::TensorDumpUtils::GetInstance(),
+              std::placeholders::_1),
+    device_id, device::ascend::tensordump_mapping.first, device::ascend::tensordump_mapping.second));
+  if (device::ascend::TensorReportUtils::IsEnable()) {
+    device::ascend::MbufDataHandlerManager::GetInstance().AddHandler(std::make_unique<device::ascend::MbufDataHandler>(
+      std::bind(&device::ascend::TensorReportUtils::ReportReceiveData,
+                &device::ascend::TensorReportUtils::GetInstance(), std::placeholders::_1),
+      device_id, device::ascend::tensorreport_mapping.first, device::ascend::tensorreport_mapping.second));
+  }
+  for (const std::pair<string, string> &summary_mapping : device::ascend::summary_mappings) {
+    device::ascend::MbufDataHandlerManager::GetInstance().AddHandler(std::make_unique<device::ascend::MbufDataHandler>(
+      std::bind(device::ascend::SummaryReceiveData, std::placeholders::_1, summary_mapping.first), device_id,
+      summary_mapping.first, summary_mapping.second));
+  }
+
+  return true;
+}
+
+bool GEBackend::CloseTsd(bool force) {
+  std::unique_lock<std::mutex> lock(g_tsd_mutex);
+  auto ms_context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context_ptr);
+  MS_LOG(INFO) << "Start to close tsd, ref = " << ms_context_ptr->get_param<uint32_t>(MS_CTX_TSD_REF);
+  if (ms_context_ptr->get_param<uint32_t>(MS_CTX_TSD_REF) == 0) {
+    return true;
+  }
+  ms_context_ptr->decrease_param<uint32_t>(MS_CTX_TSD_REF);
+  if (force || ms_context_ptr->get_param<uint32_t>(MS_CTX_TSD_REF) == 0) {
+    ms_context_ptr->set_param<uint32_t>(MS_CTX_TSD_REF, 0);
+    pybind11::gil_scoped_release gil_release;
+    device::ascend::MbufDataHandlerManager::GetInstance().DestoryPrintHandler();
+    device::ascend::MbufDataHandlerManager::GetInstance().DestoryHandler();
+    ms_context_ptr->set_param<bool>(MS_CTX_IS_PYNATIVE_GE_INIT, false);
+    MS_LOG(INFO) << "Call  close tsd successful.";
+  } else {
+    MS_LOG(DEBUG) << "Acltdt Dataset client is used, no need to close, tsd reference = "
+                  << ms_context_ptr->get_param<uint32_t>(MS_CTX_TSD_REF) << ".";
+  }
+  return true;
 }
 
 BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
@@ -336,16 +579,16 @@ BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph, const BackendJit
   MS_LOG(INFO) << "Status record: start compile function graph: " << func_graph->ToString();
   uint64_t start_time = profiler::GetClockSyscnt();
   PROF_START(compile_backend_graph);
-  // todo: remove device_context
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  const auto &device_context =
-    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_target, device_id});
-  MS_EXCEPTION_IF_NULL(device_context);
 
-  device_context->device_res_manager_->BindDeviceToCurrentThread(false);
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+
+  res_manager->BindDeviceToCurrentThread(false);
 
   auto root_graph = WrapPrimitives(func_graph);
   MS_EXCEPTION_IF_NULL(root_graph);
@@ -387,7 +630,7 @@ BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph, const BackendJit
     graph_compile_type_[graph_id] = compile_type;
 
     // Clear the temp members.
-    graph_id_to_device_context_.clear();
+    graph_ids_.clear();
     func_graph_to_kernel_graph_ids_.clear();
     control_nodes_.clear();
 
@@ -745,14 +988,7 @@ BackendGraphId GEBackend::CompileWholeGraph(const FuncGraphPtr &func_graph,
     opt::OptimizationWithoutBackend(graph);
   }
 
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto device_context =
-    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_target, device_id});
-  MS_EXCEPTION_IF_NULL(device_context);
-  device_context->graph_executor_->OptimizeBeforeCompileGraph(root_graph);
+  graph_executor_->OptimizeBeforeCompileGraph(root_graph);
 
   auto manager = MakeManager();
   MS_EXCEPTION_IF_NULL(manager);
@@ -765,12 +1001,12 @@ BackendGraphId GEBackend::CompileWholeGraph(const FuncGraphPtr &func_graph,
   }
   root_graph->SetInputNodes();
 
-  if (!device_context->graph_executor_->CompileGraph(root_graph, {})) {
+  if (!graph_executor_->CompileGraph(std::dynamic_pointer_cast<FuncGraph>(root_graph), {})) {
     MS_LOG(EXCEPTION) << "Compile graph failed: " << root_graph->graph_id();
   }
   root_graph->CacheGraphOutputToFrontNodeWithIndex({root_graph->output()}, {func_graph->output()});
 
-  device_context->graph_executor_->InitGraphInfo(root_graph);
+  graph_executor_->InitGraphInfo(root_graph);
 
   auto cur_backend_graph_id = backend_graph_id_;
   ++backend_graph_id_;
@@ -792,10 +1028,6 @@ void GEBackend::WaitMultiStream() {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  const auto &device_context =
-    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_target, device_id});
-  MS_EXCEPTION_IF_NULL(device_context);
 
   if (device::ascend::AscendStreamMng::GetInstance().single_op_multi_stream_enable()) {
     device::HalResManager::GetInstance()
@@ -822,7 +1054,7 @@ RunningStatus GEBackend::Run(BackendGraphId graph_id, const VectorRef &inputs, V
   // Open abstract_lock for dynamic_shape
   AnfUtils::OpenAbstractLock();
   WaitTaskFinish();
-  // wait for other streams finish, device_context->device_res_manager_->SyncNotDefaultStreams();
+  // wait for other streams finish
   WaitMultiStream();
   // Release python gil.
   mindspore::ScopedLongRunning long_running;
@@ -868,10 +1100,10 @@ void GEBackend::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor,
   auto tensor_device_ptr = device_tensor->GetMutablePtr();
   auto tensor_device_size = device_tensor->GetSize();
   MS_EXCEPTION_IF_NULL(tensor_device_ptr);
-  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device_tensor->device_name(), device_tensor->device_id()});
-  MS_EXCEPTION_IF_NULL(device_context);
-  MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
+
+  device::ResKey res_key{device::GetDeviceTypeByName(device_tensor->device_name()), device_tensor->device_id()};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
 
   const auto &output_kernel_tensor = device_tensor->kernel_tensor();
   MS_EXCEPTION_IF_NULL(output_kernel_tensor);
@@ -896,12 +1128,11 @@ void GEBackend::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor,
 
     auto kernel_tensor = std::make_shared<kernel::KernelTensor>(
       nullptr, split_tensor_size, kernel::GetFormatFromStrToEnum(device_tensor->format()), device_tensor->type_id(),
-      split_tensor_shape, device_context->device_context_key().device_name_,
-      device_context->device_context_key().device_id_);
+      split_tensor_shape, device_tensor->device_name(), device_tensor->device_id());
     kernel_tensor->SetType(element_types[i]);
     kernel_tensor->SetShape((*tensor_shape)[i]);
     kernel_tensor->set_stream_id(device_tensor->stream_id());
-    auto split_device_tensor = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+    auto split_device_tensor = res_manager->CreateDeviceAddress(kernel_tensor);
     MS_LOG(DEBUG) << "Create device tensor:" << split_device_tensor << " type:" << device_tensor->type_id();
     // Copy data from origin tensor to the split tensor.
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "ConstructOutputByTupleTensor",
@@ -909,8 +1140,8 @@ void GEBackend::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor,
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "ConstructOutputByTupleTensor",
                                                    memory::mem_pool::MemType::kOther, split_device_tensor->GetSize(),
                                                    split_device_tensor.get());
-    if (!device_context->device_res_manager_->AllocateMemory(split_device_tensor.get())) {
-      MS_LOG(EXCEPTION) << "#umsg#Memory not enough:#umsg#Device(id:" << device_context->device_context_key().device_id_
+    if (!res_manager->AllocateMemory(split_device_tensor.get())) {
+      MS_LOG(EXCEPTION) << "#umsg#Memory not enough:#umsg#Device(id:" << device_tensor->device_id()
                         << ") memory isn't enough and alloc failed, kernel name: Split tuple outputs, alloc size: "
                         << split_device_tensor->GetSize() << "B.";
     }
@@ -1109,8 +1340,7 @@ void GEBackend::SetTensorUpdateCallback(const tensor::TensorPtr &update_tensor) 
 
 void GEBackend::UpdateInputsShapeAndSize(const ParameterPtr &input_node,
                                          const mindspore::device::DeviceAddressPtr &device_tensor,
-                                         const tensor::TensorPtr &input_tensor,
-                                         const device::DeviceContext *device_context) {
+                                         const tensor::TensorPtr &input_tensor) {
   MS_EXCEPTION_IF_NULL(input_node);
   MS_EXCEPTION_IF_NULL(device_tensor);
   MS_EXCEPTION_IF_NULL(input_tensor);
@@ -1125,7 +1355,7 @@ void GEBackend::UpdateInputsShapeAndSize(const ParameterPtr &input_node,
   MS_EXCEPTION_IF_NULL(output_kernel_tensor);
   if (input_tensor->base_shape_ptr() == nullptr || (!input_tensor->base_shape_ptr()->isa<abstract::SequenceShape>())) {
     output_kernel_tensor->SetShape(input_tensor->ToAbstract()->GetShape());
-    device_context->graph_executor_->AllocInputMemory(device_tensor);
+    graph_executor_->AllocInputMemory(device_tensor);
     return;
   }
   output_kernel_tensor->SetShape(input_tensor->base_shape_ptr());
@@ -1156,12 +1386,11 @@ void GEBackend::UpdateInputsShapeAndSize(const ParameterPtr &input_node,
     device_tensor->SetSize(device_address_size);
   }
 
-  device_context->graph_executor_->AllocInputMemory(device_tensor);
+  graph_executor_->AllocInputMemory(device_tensor);
 }
 
 void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const VectorRef &args,
-                                       std::vector<tensor::TensorPtr> *inputs_tensor,
-                                       const device::DeviceContext *device_context) {
+                                       std::vector<tensor::TensorPtr> *inputs_tensor) {
   MS_EXCEPTION_IF_NULL(func_graph);
   auto inputs = func_graph->inputs();
   MS_EXCEPTION_IF_CHECK_FAIL(inputs.size() == args.size(), "The args size is not equal to graph inputs size.");
@@ -1195,7 +1424,7 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
       auto host_tensor_address =
         std::dynamic_pointer_cast<mindspore::device::DeviceAddress>(flatten_tensors[j]->device_address());
 
-      UpdateInputsShapeAndSize(parameter, device_tensor, flatten_tensors[j], device_context);
+      UpdateInputsShapeAndSize(parameter, device_tensor, flatten_tensors[j]);
 
       // in different backend object, but has init, skip
       if (common::AnfAlgo::IsParameterWeight(parameter)) {
@@ -1245,7 +1474,7 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
             flatten_tensors[j]->data_sync();
             is_need_sync = true;
           } else {
-            runtime::DeviceAddressUtils::ConvertContiguousTensorSync(flatten_tensors[j]);
+            CheckContiguousTensor(flatten_tensors[j]);
             host_tensor_address =
               std::dynamic_pointer_cast<mindspore::device::DeviceAddress>(flatten_tensors[j]->device_address());
             // other not same: device copy
@@ -1268,9 +1497,8 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
 }
 
 void GEBackend::ConstructInputs(const KernelGraphPtr &func_graph, const VectorRef &args,
-                                std::vector<tensor::TensorPtr> *inputs_tensor,
-                                const device::DeviceContext *device_context) {
-  ConstructInputsRefMode(func_graph, args, inputs_tensor, device_context);
+                                std::vector<tensor::TensorPtr> *inputs_tensor) {
+  ConstructInputsRefMode(func_graph, args, inputs_tensor);
 }
 
 bool GEBackend::Copy(const mindspore::device::DeviceAddress *dst_device_tensor,
@@ -1350,8 +1578,7 @@ void GEBackend::SyncTensorData(const tensor::TensorPtr &host_tensor,
   }
 }
 
-void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<tensor::TensorPtr> *outputs,
-                                 const device::DeviceContext *device_context) {
+void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<tensor::TensorPtr> *outputs) {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(outputs);
   auto graph_outputs = common::AnfAlgo::GetAllOutputWithIndex(func_graph->output());
@@ -1384,8 +1611,7 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
     kernel_tensor->set_stream_id(output_addr->stream_id());
     // SetShape will calculate a default size by host shape, need to set real device size for special format.
     kernel_tensor->set_size(output_addr->GetSize());
-    auto tensor_device_address =
-      device_context->graph_executor_->CreateDeviceAddress(kernel_tensor, output_addr->is_ptr_persisted());
+    auto tensor_device_address = graph_executor_->CreateDeviceAddress(kernel_tensor, output_addr->is_ptr_persisted());
     MS_EXCEPTION_IF_NULL(tensor_device_address);
 
     if (output_addr->is_ptr_persisted()) {
@@ -1423,14 +1649,15 @@ void GEBackend::RunWholeGraph(BackendGraphId graph_id, const VectorRef &inputs, 
     MS_LOG(EXCEPTION) << "The graph is not found, graph: " << graph_id;
   }
 
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto device_context =
-    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_target, device_id});
-  MS_EXCEPTION_IF_NULL(device_context);
-  MS_EXCEPTION_IF_NULL(device_context->graph_executor_);
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+
+  MS_EXCEPTION_IF_NULL(graph_executor_);
   auto func_graph = graph_map_[graph_id];
 
 // for data_dump
@@ -1443,19 +1670,19 @@ void GEBackend::RunWholeGraph(BackendGraphId graph_id, const VectorRef &inputs, 
 #endif
 
   // for profiling
-  bool profile_started = ProfilerOnStepBegin(func_graph, device_context);
+  bool profile_started = ProfilerOnStepBegin(func_graph);
 
   // alloc input(static), output device memory; dynamic input will alloc later
-  device_context->graph_executor_->AllocGEInputOutputMemory(func_graph);
+  graph_executor_->AllocGEInputOutputMemory(func_graph);
   // alloc fixed feature memory when enable gekernel, once | const memory alloc in compilegraph
-  device_context->graph_executor_->AllocGEFixMemory();
+  graph_executor_->AllocGEFixMemory();
   // alloc refreshable feature memory
-  device_context->graph_executor_->AllocGERefreshableFeatureMemory(func_graph);
+  graph_executor_->AllocGERefreshableFeatureMemory(func_graph);
   // const alloc in compile graph
 
   // input, weight from host(inputs) to device(device_address in graph)
   std::vector<tensor::TensorPtr> inputs_tensor;
-  ConstructInputs(func_graph, inputs, &inputs_tensor, device_context);
+  ConstructInputs(func_graph, inputs, &inputs_tensor);
 
   // run graph
   {
@@ -1464,19 +1691,19 @@ void GEBackend::RunWholeGraph(BackendGraphId graph_id, const VectorRef &inputs, 
     MS_LOG(INFO) << "Start run graph, input size: " << inputs_tensor.size();
     runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kGraphLaunch,
                                        func_graph->ToString());
-    auto ret = device_context->graph_executor_->RunGraph(func_graph, inputs_tensor, &outputs_tensor, compile_options);
+    auto ret = graph_executor_->RunGraph(func_graph, inputs_tensor, &outputs_tensor, compile_options);
     if (!ret) {
       MS_LOG(EXCEPTION) << "Launch graph failed, graph id: " + std::to_string(func_graph->graph_id());
     }
   }
-  auto ret = device_context->device_res_manager_->SyncAllStreams();
+  auto ret = res_manager->SyncAllStreams();
   if (!ret) {
     MS_LOG(EXCEPTION) << "Sync Stream failed";
   }
 
   // output ->std::vector<tensor::TensorPtr> *outputs
   std::vector<tensor::TensorPtr> output_tensors;
-  ConstructOutputs(func_graph, &output_tensors, device_context);
+  ConstructOutputs(func_graph, &output_tensors);
   if (!output_tensors.empty()) {
     size_t output_position = 0;
     std::vector<tensor::TensorPtr> tuple_tensors;
@@ -1487,16 +1714,16 @@ void GEBackend::RunWholeGraph(BackendGraphId graph_id, const VectorRef &inputs, 
 // for data_dump
 #ifndef ENABLE_SECURITY
   if (debugger_actor_need) {
-    DebugOnStepEnd(func_graph, device_context, dump_flag);
+    DebugOnStepEnd(func_graph, dump_flag);
   }
 #endif
 
   // for profiling
-  ProfilerOnStepEnd(device_context, profile_started);
+  ProfilerOnStepEnd(profile_started);
 
   // free resource
-  device_context->graph_executor_->FreeGERefreshableFeatureMemory(func_graph);
-  device_context->graph_executor_->FreeInputOutputMemory(func_graph);
+  graph_executor_->FreeGERefreshableFeatureMemory(func_graph);
+  graph_executor_->FreeInputOutputMemory(func_graph);
 
   graph_run_iter_[func_graph]++;
   MS_LOG(INFO) << "Status record: end run graph: " << graph_id;
@@ -1525,22 +1752,29 @@ bool GEBackend::DebugOnStepBegin(const KernelGraphPtr &func_graph) {
   return false;
 }
 
-void GEBackend::DebugOnStepEnd(const KernelGraphPtr &graph, const device::DeviceContext *device_context,
-                               bool dump_flag) {
+void GEBackend::DebugOnStepEnd(const KernelGraphPtr &graph, bool dump_flag) {
   if (!dump_flag) {
     return;
   }
   MS_LOG(INFO) << "Debug on step end.";
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+
   auto &hookDebugger = dump::HookDebugger::GetInstance();
   if (hookDebugger.IsHookerEnabled()) {
     MS_LOG(INFO) << "On step end, hookdebugger is enable.";
-    device_context->device_res_manager_->SyncAllStreams();
+    res_manager->SyncAllStreams();
     hookDebugger.HookOnStepEnd();
   }
-  device_context->device_res_manager_->SyncAllStreams();
+  res_manager->SyncAllStreams();
 }
 
-bool GEBackend::ProfilerOnStepBegin(const KernelGraphPtr &graph, const device::DeviceContext *device_context) {
+bool GEBackend::ProfilerOnStepBegin(const KernelGraphPtr &graph) {
   auto profiler = profiler::Profiler::GetInstance(kAscendDevice);
   if (profiler == nullptr || !profiler->IsInitialized() || !profiler->GetEnableFlag()) {
     return false;
@@ -1550,27 +1784,42 @@ bool GEBackend::ProfilerOnStepBegin(const KernelGraphPtr &graph, const device::D
   }
 
   MS_EXCEPTION_IF_NULL(graph);
-  MS_EXCEPTION_IF_NULL(device_context);
-  if (device_context->GetDeviceType() == device::DeviceType::kAscend) {
-    device_context->device_res_manager_->BindDeviceToCurrentThread(false);
-    MS_LOG(INFO) << "Dot step start timestamp.";
-    profiler->StepStart(graph_run_iter_[graph], device_context->device_res_manager_->GetStream());
-    return true;
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  if (device::GetDeviceTypeByName(device_name) != device::DeviceType::kAscend) {
+    MS_LOG(EXCEPTION) << "GE backend only support Ascend, but got " << device_name;
   }
-  return false;
+
+  res_manager->BindDeviceToCurrentThread(false);
+  MS_LOG(INFO) << "Dot step start timestamp.";
+  profiler->StepStart(graph_run_iter_[graph], res_manager->GetStream());
+  return true;
 }
 
-void GEBackend::ProfilerOnStepEnd(const device::DeviceContext *device_context, bool profile_started) {
+void GEBackend::ProfilerOnStepEnd(bool profile_started) {
   if (!profile_started) {
     return;
   }
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+
   auto profiler = profiler::Profiler::GetInstance(kAscendDevice);
-  MS_EXCEPTION_IF_NULL(device_context);
-  device_context->device_res_manager_->BindDeviceToCurrentThread(false);
-  device_context->device_res_manager_->SyncAllStreams();
+  res_manager->BindDeviceToCurrentThread(false);
+  res_manager->SyncAllStreams();
   MS_LOG(INFO) << "Dot step end timestamp.";
   profiler->StepStop();
-  device_context->device_res_manager_->SyncAllStreams();
+  res_manager->SyncAllStreams();
 }
 
 void GEBackend::ConvertIR(const FuncGraphPtr &func_graph,
@@ -1580,18 +1829,12 @@ void GEBackend::ConvertIR(const FuncGraphPtr &func_graph,
   if (ir_format != IRFormat::kAir) {
     MS_LOG(EXCEPTION) << "The ir format not support.";
   }
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto device_context =
-    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_target, device_id});
-  MS_EXCEPTION_IF_NULL(device_context);
-  MS_EXCEPTION_IF_NULL(device_context->graph_executor_);
-  std::map<std::string, std::shared_ptr<tensor::Tensor>> real_init_tensors{};
-  const auto &infer_need_update_parameter_names = device_context->graph_executor_->GetInferParameterNames();
 
-  device_context->graph_executor_->BuildDFGraph(func_graph, real_init_tensors, true);
+  MS_EXCEPTION_IF_NULL(graph_executor_);
+  std::map<std::string, std::shared_ptr<tensor::Tensor>> real_init_tensors{};
+  const auto &infer_need_update_parameter_names = graph_executor_->GetInferParameterNames();
+
+  graph_executor_->BuildDFGraph(func_graph, real_init_tensors, true);
 }
 
 std::string GEBackend::ExportIR(const FuncGraphPtr &anf_graph, const std::string &file_name, bool is_save_to_file,
@@ -1599,15 +1842,9 @@ std::string GEBackend::ExportIR(const FuncGraphPtr &anf_graph, const std::string
   if (ir_format != IRFormat::kAir) {
     MS_LOG(EXCEPTION) << "The ir format not support.";
   }
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto device_context =
-    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_target, device_id});
-  MS_EXCEPTION_IF_NULL(device_context);
-  MS_EXCEPTION_IF_NULL(device_context->graph_executor_);
-  return device_context->graph_executor_->ExportDFGraph(file_name, anf_graph, is_save_to_file);
+
+  MS_EXCEPTION_IF_NULL(graph_executor_);
+  return graph_executor_->ExportDFGraph(file_name, anf_graph, is_save_to_file);
 }
 
 BackendGraphId GEBackend::CompileSubGraph(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
@@ -1654,11 +1891,10 @@ BackendGraphId GEBackend::CompileSubGraph(const FuncGraphPtr &func_graph, const 
   ++backend_graph_id_;
   (void)graph_id_to_graph_compiler_info_.emplace(cur_graph_id, std::move(graph_compiler_info));
 
-  for (const auto &graph_id_to_context : graph_id_to_device_context_) {
-    auto context = graph_id_to_context.second;
-    device::HalResManager::GetInstance().GetMultiStreamController(context->DeviceName())->Refresh();
-  }
-
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::HalResManager::GetInstance().GetMultiStreamController(device_target)->Refresh();
   MS_LOG(INFO) << "Status record: end compile graph.";
 
   return cur_graph_id;
@@ -1700,23 +1936,13 @@ void GEBackend::CompileGraphFromSegment(const GraphSegmentPtr &segment, const Ba
     AnfNodePtrList outputs;
     std::tie(fg, inputs, outputs) = compile::TransformSegmentToAnfGraph(segment->nodes_);
 
-    // Get the device context.
-    const auto &cur_device_name = GetCNodeTarget(segment->nodes_[0]);
-    auto context_ptr = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(context_ptr);
-    uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    auto device_context =
-      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({cur_device_name, device_id});
-    MS_EXCEPTION_IF_NULL(device_context);
-    device_context->Initialize();
-
-    GraphId graph_id = graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), device_context,
-                                                     backend_jit_config, device::RunMode::kGraphMode, false);
+    GraphId graph_id = graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), backend_jit_config,
+                                                     device::RunMode::kGraphMode, false);
     auto new_fg = graph_compiler_->Fetch(graph_id);
     MS_EXCEPTION_IF_NULL(new_fg);
 
     // CacheFuncGraphWithKernelGraphId(segment->nodes_[0]->func_graph(), graph_id, device_context);
-    graph_id_to_device_context_[graph_id] = device_context;
+    graph_ids_.insert(graph_id);
     if (func_graph_to_kernel_graph_ids_.find(segment->nodes_[0]->func_graph()) ==
         func_graph_to_kernel_graph_ids_.end()) {
       (void)func_graph_to_kernel_graph_ids_[segment->nodes_[0]->func_graph()].emplace_back(
@@ -1745,16 +1971,14 @@ std::shared_ptr<mindspore::ge_backend::runtime::GraphCompilerInfo> GEBackend::Co
   MS_EXCEPTION_IF_NULL(graph_compiler_);
 
   std::vector<KernelGraphPtr> graphs;
-  std::vector<DeviceContext *> device_contexts;
   std::string name = "kernel_graph";
   size_t graph_index = 0;
-  for (const auto &graph_id_to_context : graph_id_to_device_context_) {
-    (void)graphs.emplace_back(graph_compiler_->Fetch(graph_id_to_context.first));
-    (void)device_contexts.emplace_back(graph_id_to_context.second);
+  for (const auto &graph_id : graph_ids_) {
+    (void)graphs.emplace_back(graph_compiler_->Fetch(graph_id));
     if (graph_index == 0) {
-      (void)name.append("_").append(std::to_string(graph_id_to_context.first));
-    } else if (graph_index == graph_id_to_device_context_.size() - 1) {
-      (void)name.append("-").append(std::to_string(graph_id_to_context.first));
+      (void)name.append("_").append(std::to_string(graph_id));
+    } else if (graph_index == graph_ids_.size() - 1) {
+      (void)name.append("-").append(std::to_string(graph_id));
     }
     ++graph_index;
   }
@@ -1773,18 +1997,10 @@ std::shared_ptr<mindspore::ge_backend::runtime::GraphCompilerInfo> GEBackend::Co
       context_ptr->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
     strategy = mindspore::ge_backend::runtime::GraphExecutionStrategy::kPipelineWithExecutionOrder;
   }
-  auto compile_func = [graph_compiler = this->graph_compiler_, backend_jit_config](
-                        const GraphSegmentPtr &segment, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                        const DeviceContext *device_context, device::RunMode run_mode) -> KernelGraphPtr {
-    auto graph_id =
-      graph_compiler->CompileGraph(segment, io_nodes, device_context, backend_jit_config, run_mode, false);
-    return graph_compiler->Fetch(graph_id);
-  };
 
   return std::make_shared<mindspore::ge_backend::runtime::GraphCompilerInfo>(
-    graphs, device_contexts, tensors_mask, input_tensors, control_nodes_, root_graph->parameters(), parser,
-    outputs_order, outputs_num, root_graph->GetPositionalArgsCount(), name, false, strategy, compile_func,
-    root_graph->phase(), root_graph);
+    graphs, tensors_mask, input_tensors, control_nodes_, root_graph->parameters(), parser, outputs_order, outputs_num,
+    root_graph->GetPositionalArgsCount(), name, false, strategy, root_graph->phase(), root_graph, graph_executor_);
 }
 
 void GEBackend::ParseControlNodes(const mindspore::ge_backend::runtime::GraphCompilerInfo &graph_compile_info,
@@ -1806,8 +2022,7 @@ void GEBackend::ParseControlNodes(const mindspore::ge_backend::runtime::GraphCom
     }
   }
 
-  graph_compile_info.control_node_parser_->Parse(control_nodes_, graph_compile_info.graphs_,
-                                                 graph_compile_info.device_contexts_, root_graph,
+  graph_compile_info.control_node_parser_->Parse(control_nodes_, graph_compile_info.graphs_, root_graph,
                                                  func_graph_to_kernel_graphs);
 }
 

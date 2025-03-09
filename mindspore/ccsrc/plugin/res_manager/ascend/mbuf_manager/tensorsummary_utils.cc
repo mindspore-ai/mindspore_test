@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/hal/device/tensorsummary_utils.h"
+#include "plugin/res_manager/ascend/mbuf_manager/tensorsummary_utils.h"
 #include <map>
+#include <memory>
 #include <variant>
 #include "include/common/utils/python_adapter.h"
 #include "ir/tensor.h"
-#include "plugin/device/ascend/hal/device/mbuf_receive_manager.h"
+#include "plugin/res_manager/ascend/mbuf_manager/mbuf_receive_manager.h"
 #include "pybind11/pybind11.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/tensor_py.h"

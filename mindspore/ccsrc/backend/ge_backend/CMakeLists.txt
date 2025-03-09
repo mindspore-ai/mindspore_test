@@ -4,6 +4,7 @@ if(ENABLE_D OR ENABLE_ACL)
     file(GLOB _GE_BACKEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
     list(APPEND _GE_BACKEND_SRC_LIST $<TARGET_OBJECTS:_mindspore_ge_runtime_obj>)
     list(APPEND _GE_BACKEND_SRC_LIST $<TARGET_OBJECTS:_mindspore_ge_dump_obj>)
+    # list(APPEND _GE_BACKEND_SRC_LIST $<TARGET_OBJECTS:_mindspore_ge_utils_obj>)
 
 
     set_property(SOURCE ${_GE_BACKEND_SRC_LIST}
@@ -13,7 +14,7 @@ if(ENABLE_D OR ENABLE_ACL)
     target_link_libraries(mindspore_ge_backend PRIVATE mindspore_core mindspore_ops mindspore_ascend_res_manager
             mindspore_common mindspore_backend_manager mindspore_ms_backend mindspore_ascend proto_input
             mindspore_runtime_pipeline)
-    target_link_libraries(mindspore_ge_backend PRIVATE securec)
+    target_link_libraries(mindspore_ge_backend PRIVATE securec d_collective)
 
 
     if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
@@ -27,4 +28,5 @@ if(ENABLE_D OR ENABLE_ACL)
     add_subdirectory(executor)
     add_subdirectory(runtime)
     add_subdirectory(dump)
+    add_subdirectory(utils)
 endif()

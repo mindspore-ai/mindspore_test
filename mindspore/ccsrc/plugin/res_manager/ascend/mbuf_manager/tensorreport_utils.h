@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_DEVICE_TENSORREPORT_UTILS_H_
-#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_DEVICE_TENSORREPORT_UTILS_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_ASCEND_MBUF_MANAGER_TENSORREPORT_UTILS_H_
+#define MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_ASCEND_MBUF_MANAGER_TENSORREPORT_UTILS_H_
 
 #include <cstdint>
 #include <memory>
@@ -23,16 +23,17 @@
 #include <utility>
 #include "ir/anf.h"
 #include "common/kernel.h"
-#include "plugin/device/ascend/hal/device/mbuf_receive_manager.h"
+#include "plugin/res_manager/ascend/mbuf_manager/mbuf_receive_manager.h"
 #include "utils/dlopen_macro.h"
 #include "utils/ms_utils.h"
+#include "plugin/res_manager/ascend/visible.h"
 
 namespace mindspore::device::ascend {
 
 ORIGIN_METHOD(TFT_StartUpdatingOs, int, int64_t);
 const std::pair<string, string> tensorreport_mapping{"ms_tensor_report", "TensorReport"};
 
-class OptimizerEventInfo {
+class ASCEND_RES_MANAGER_EXPORT OptimizerEventInfo {
  public:
   static OptimizerEventInfo &GetInstance();
   ~OptimizerEventInfo() = default;
@@ -73,7 +74,7 @@ class OptimizerEventInfo {
   kernel::KernelMod *optimizer_end_kernel_mod_ = nullptr;
 };
 
-class TensorReportUtils {
+class ASCEND_RES_MANAGER_EXPORT TensorReportUtils {
  public:
   static TensorReportUtils &GetInstance();
 
@@ -90,4 +91,4 @@ class TensorReportUtils {
   TFT_StartUpdatingOsFunObj _optStart = nullptr;
 };
 }  // namespace mindspore::device::ascend
-#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_DEVICE_TENSORREPORT_UTILS_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_ASCEND_MBUF_MANAGER_TENSORREPORT_UTILS_H_

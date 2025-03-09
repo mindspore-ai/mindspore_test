@@ -23,7 +23,7 @@
 #include <list>
 #include <regex>
 #include "backend/ge_backend/runtime/graph_scheduler.h"
-#include "runtime/device/device_address_utils.h"
+#include "backend/ge_backend/utils/device_address_utils.h"
 #include "common/device_address.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/convert_utils.h"
@@ -148,14 +148,12 @@ void ResetNodeId(const std::vector<KernelGraphPtr> &graphs) {
 
 GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
                                     const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                                    const DeviceContext *device_context,
                                     const backend::BackendJitConfig &backend_jit_config, device::RunMode run_mode,
                                     bool run_in_pynative) {
   MS_EXCEPTION_IF_NULL(segment);
-  MS_EXCEPTION_IF_NULL(device_context);
   MS_LOG(INFO) << "Status record: start compile graph.";
   auto nodes = segment->nodes_;
-  auto device_target = device_context->GetDeviceType();
+  auto device_target = device::GetDeviceTypeByName(GetCNodeTarget(nodes[0]));
   // Generate kernel graph.
   uint64_t start_time = profiler::GetClockSyscnt();
   PROF_START(ConstructKernelGraph);
@@ -166,15 +164,13 @@ GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageConstructKernelGraph, start_time,
                                   profiler::GetClockSyscnt(), 1);
   SetGraphDependency(kernel_graph, segment);
-  return CompileGraph(kernel_graph, io_nodes, device_context, run_mode, run_in_pynative);
+  return CompileGraph(kernel_graph, io_nodes, run_mode, run_in_pynative);
 }
 
 GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
-                                    const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                                    const DeviceContext *device_context, device::RunMode run_mode,
+                                    const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes, device::RunMode run_mode,
                                     bool run_in_pynative) {
   MS_EXCEPTION_IF_NULL(session_);
-  MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(kernel_graph);
 
   const auto &outputs = io_nodes.second;
@@ -194,7 +190,7 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
   session_->SetInputNodeUsage(kernel_graph, manager);
   kernel_graph->SetOptimizerFlag();
 
-  GraphId graph_id = CompileGraphImpl(kernel_graph, device_context, run_in_pynative);
+  GraphId graph_id = CompileGraphImpl(kernel_graph, run_in_pynative);
 
   kernel_graph->set_front_outputs(outputs);
   kernel_graph->set_root_graph_id(graph_id);
@@ -217,10 +213,8 @@ GraphCompilerInfo::~GraphCompilerInfo() {
   GraphScheduler::GetInstance().Clear(name_, graphs_, origin_parameters_order_, control_node_parser_);
 }
 
-GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const DeviceContext *device_context,
-                                        bool run_in_pynative) const {
+GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, bool run_in_pynative) const {
   MS_EXCEPTION_IF_NULL(graph);
-  MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(session_);
   const auto &context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
@@ -256,9 +250,8 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
   start_time = profiler::GetClockSyscnt();
   PROF_START(PreprocessBeforeRun);
   if (!AnfAlgo::IsNoRealKernelGraph(graph)) {
-    MS_EXCEPTION_IF_NULL(device_context->graph_executor_);
-    dynamic_cast<backend::ge_backend::GeGraphExecutor *>(device_context->graph_executor_.get())
-      ->CompileGraph(std::dynamic_pointer_cast<FuncGraph>(graph), {});
+    MS_EXCEPTION_IF_NULL(graph_executor_);
+    graph_executor_->CompileGraph(std::dynamic_pointer_cast<FuncGraph>(graph), {});
   }
   PROF_END(PreprocessBeforeRun);
   (void)profiler::CollectHostInfo("Ascend", "PreprocessBeforeRun", "GePreprocess", start_time,
@@ -269,7 +262,7 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
 
   PROF_START(CreateDeviceAddress);
   // Create device address for all anf nodes of graph.
-  CreateDeviceAddress(graph, device_context);
+  CreateDeviceAddress(graph);
   PROF_END(CreateDeviceAddress);
 
   SetSummaryNodesRefCount(graph.get());
@@ -289,15 +282,11 @@ KernelGraphPtr GraphCompiler::Fetch(GraphId graph_id) const {
   return session_->GetGraph(graph_id);
 }
 
-void GraphCompiler::CreateDeviceAddress(const KernelGraphPtr &graph, const DeviceContext *device_context) const {
+void GraphCompiler::CreateDeviceAddress(const KernelGraphPtr &graph) const {
   MS_EXCEPTION_IF_NULL(graph);
   MS_LOG(INFO) << "Status record: start create device address. graph id: " << graph->graph_id();
-  DeviceAddressUtils::CreateParameterDeviceAddress(device_context, graph);
-  DeviceAddressUtils::CreateValueNodeDeviceAddress(device_context, graph);
-  DeviceAddressUtils::CreateKernelOutputDeviceAddress(device_context, graph, false);
-  DeviceAddressUtils::CreateKernelWorkspaceDeviceAddress(device_context, graph);
-  DeviceAddressUtils::UpdateDeviceAddressForInplaceNode(graph);
-  DeviceAddressUtils::UpdateDeviceAddressForRefNode(graph);
+  backend::ge_backend::DeviceAddressUtils::CreateParameterDeviceAddress(graph);
+  backend::ge_backend::DeviceAddressUtils::CreateValueNodeDeviceAddress(graph);
   MS_LOG(INFO) << "Status record: end create device address. graph id: " << graph->graph_id();
 }
 

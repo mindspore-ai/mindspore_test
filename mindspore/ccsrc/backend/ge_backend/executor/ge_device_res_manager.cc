@@ -15,16 +15,14 @@
  */
 
 #include "backend/ge_backend/executor/ge_device_res_manager.h"
-#include "runtime/device/kernel_runtime_manager.h"
-#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_manager.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_synchronizer.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
 namespace backend {
@@ -36,14 +34,13 @@ void GeDeviceResManager::Initialize() {
 
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  runtime_instance_ = device::KernelRuntimeManager::Instance().GetKernelRuntime(kAscendDevice, device_id);
-  MS_EXCEPTION_IF_NULL(runtime_instance_);
-  if (!runtime_instance_->Init()) {
-    MS_LOG(EXCEPTION) << "Kernel runtime init error.";
-  }
-  mem_manager_ = runtime_instance_->GetMemoryManager();
+  device::ResKey res_key{device::DeviceType::kAscend, device_id};
+  auto res_manager_ = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager_);
+  res_manager_->Initialize();
+  mem_manager_ = res_manager_->mem_manager();
+  MS_EXCEPTION_IF_NULL(mem_manager_);
 
   if (ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
     MS_LOG(WARNING) << "mem offload is not supported in ge.";
@@ -56,16 +53,12 @@ void GeDeviceResManager::Destroy() {
     return;
   }
   // release runtime
-  if (runtime_instance_ != nullptr) {
-    runtime_instance_->ReleaseDeviceRes();
-    runtime_instance_ = nullptr;
+  if (res_manager_ != nullptr) {
+    res_manager_->Destroy();
+    res_manager_ = nullptr;
   }
-  // Release memory.
-  if (mem_manager_ != nullptr) {
-    mem_manager_->Finalize();
-    mem_manager_ = nullptr;
-  }
-
+  // memory Released in res_manager_->Destroy.
+  mem_manager_ = nullptr;
   initialized_ = false;
 }
 

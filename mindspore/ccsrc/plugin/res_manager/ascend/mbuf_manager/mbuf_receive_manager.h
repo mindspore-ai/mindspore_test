@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_DEVICE_MBUF_RECEIVE_MANAGER_H_
-#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_DEVICE_MBUF_RECEIVE_MANAGER_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_ASCEND_MBUF_MANAGER_MBUF_RECEIVE_MANAGER_H_
+#define MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_ASCEND_MBUF_MANAGER_MBUF_RECEIVE_MANAGER_H_
 
 #include <atomic>
 #include <condition_variable>
@@ -36,6 +36,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_tdt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "plugin/res_manager/ascend/visible.h"
 
 #ifndef SECUREC_MEM_MAX_LEN
 #define SECUREC_MEM_MAX_LEN 0x7fffffffUL
@@ -167,7 +168,7 @@ enum class RecvDataState : uint8_t {
   kWaitForSync   // wait for a synchronization dataset
 };
 
-class MbufDataHandler {
+class ASCEND_RES_MANAGER_EXPORT MbufDataHandler {
  public:
   MbufDataHandler(MbufFuncType func, uint32_t device_id, string channel_name, string op_name = "",
                   size_t capacity = 128, int32_t timeout = 800);
@@ -215,7 +216,7 @@ class MbufDataHandler {
   bool QueryChannelSize(size_t *queue_size);
 };
 
-class MbufDataHandlerManager {
+class ASCEND_RES_MANAGER_EXPORT MbufDataHandlerManager {
  public:
   static MbufDataHandlerManager &GetInstance() {
     static MbufDataHandlerManager instance;
@@ -258,4 +259,4 @@ class MbufDataHandlerManager {
   std::vector<std::unique_ptr<MbufDataHandler>> handles_;
 };
 }  // namespace mindspore::device::ascend
-#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_DEVICE_TENSORDUMP_UTILS_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_ASCEND_MBUF_MANAGER_MBUF_RECEIVE_MANAGER_H_

@@ -1,0 +1,62 @@
+/**
+ * Copyright 2025 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef MINDSPORE_CCSRC_BACKEND_GE_BACKEND_UTILS_DEVICE_ADDRESS_UTILS_H_
+#define MINDSPORE_CCSRC_BACKEND_GE_BACKEND_UTILS_DEVICE_ADDRESS_UTILS_H_
+
+#include <vector>
+#include <string>
+#include <memory>
+#include <utility>
+#include "common/kernel.h"
+#include "common/device_type.h"
+#include "common/device_address.h"
+#include "include/backend/kernel_graph.h"
+
+namespace mindspore {
+namespace backend {
+namespace ge_backend {
+// Extract the methods related to DeviceAddress in GraphCompiler to the DeviceAddressUtils class.
+class BACKEND_EXPORT DeviceAddressUtils {
+ public:
+  static void CreateKernelTensor(const device::DeviceAddressPtr &device_address, const tensor::BaseTensor *tensor);
+  static void CreateKernelTensor(const device::DeviceAddressPtr &device_address, const AbstractBasePtr &abs);
+  static void CreateKernelTensor(const ValuePtr &input_value);
+  static void CreateKernelTensor(const tensor::TensorPtr &input_tensor);
+  static void CreateParameterDeviceAddress(const KernelGraphPtr &graph);
+  static device::DeviceAddressPtrList CreateDeviceAddressForTensorValue(const ValuePtr &node_value, size_t output_idx,
+                                                                        const ValueNodePtr &value_node);
+  static void CreateValueNodeDeviceAddress(const KernelGraphPtr &graph);
+
+  static void CreateDeviceAddressByMapTensorNode(const AnfNodePtr &node, size_t index);
+
+  static device::DeviceAddressPtr CloneEmptyDeviceAddress(const device::DeviceAddressPtr &old_device_address);
+
+  static void UpdateDeviceAddressHostInfoByNode(const device::DeviceAddressPtr &addr, const AnfNodePtr &node,
+                                                size_t output_idx);
+
+  static bool IsContiguousTensor(const tensor::BaseTensorPtr &tensor);
+
+ private:
+  // Whether device address of anf node is valid and device address type
+  // is consistent with device type, for example, device address type
+  // DeviceType::kGPU should be used on GPU device
+  static bool NodeDeviceAddressExist(const device::DeviceType &node_device_type, const AnfNodePtr &node, size_t index);
+};
+}  // namespace ge_backend
+}  // namespace backend
+}  // namespace mindspore
+#endif  // MINDSPORE_CCSRC_BACKEND_GE_BACKEND_UTILS_DEVICE_ADDRESS_UTILS_H_

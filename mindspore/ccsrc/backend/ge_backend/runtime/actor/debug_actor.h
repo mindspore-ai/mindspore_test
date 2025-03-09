@@ -20,13 +20,10 @@
 #include <string>
 #include <vector>
 #include "backend/ge_backend/runtime/actor/actor_common.h"
-#include "runtime/hardware/device_context.h"
 
 namespace mindspore {
 namespace ge_backend {
 namespace runtime {
-using mindspore::device::DeviceContext;
-
 // The debug actor is used to debug and dump kernel info, it gets the kernel real time execution info in the device, so
 // it is synchronous and blocked.
 class DebugActor : public ActorBase {
@@ -36,16 +33,17 @@ class DebugActor : public ActorBase {
 
   // The debug of each node.
   void DebugPreLaunch(const AnfNodePtr &node, const std::vector<DeviceTensor *> &op_input_kernel_tensors,
-                      const std::vector<DeviceTensor *> &op_output_kernel_tensors, const DeviceContext *device_context,
+                      const std::vector<DeviceTensor *> &op_output_kernel_tensors,
                       OpContext<DeviceTensor> *const op_context, const AID *from_aid);
   void DebugPostLaunch(const AnfNodePtr &node, const std::vector<DeviceTensor *> &op_input_kernel_tensors,
-                       const std::vector<DeviceTensor *> &op_output_kernel_tensors, const DeviceContext *device_context,
+                       const std::vector<DeviceTensor *> &op_output_kernel_tensors,
                        OpContext<DeviceTensor> *const op_context, const AID *from_aid);
+
   // The debug on step begin.
   void DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
                         const std::vector<AnfNodePtr> &origin_parameters_order,
-                        std::vector<DeviceContext *> device_contexts, OpContext<DeviceTensor> *const op_context,
-                        const AID *from_aid);
+                        OpContext<DeviceTensor> *const op_context, const AID *from_aid);
+
   // The debug on step end.
   void DebugOnStepEnd(OpContext<DeviceTensor> *const op_context, const AID *from_aid, int total_running_count,
                       int sink_size);
@@ -53,8 +51,6 @@ class DebugActor : public ActorBase {
  private:
   void Finalize() override;
   int step_count_ = 0;
-
-  DeviceContext *device_ctx_ = nullptr;
 };
 }  // namespace runtime
 }  // namespace ge_backend

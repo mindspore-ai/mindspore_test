@@ -76,7 +76,10 @@ void BackendManager::Register(const std::string &backend_name, BackendCreator &&
 
 void BackendManager::Clear() {
   for (size_t i = 0; i < kInvalidBackend; i++) {
-    backends_[i] = nullptr;
+    if (backends_[i] != nullptr) {
+      backends_[i]->Clear();
+      backends_[i] = nullptr;
+    }
   }
 
   backend_creators_.clear();
