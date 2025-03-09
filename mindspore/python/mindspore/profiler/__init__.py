@@ -21,21 +21,26 @@ Now, Profiler supports AICORE operator, AICPU operator, HostCPU operator, memory
 correspondence, cluster, etc data analysis.
 """
 __all__ = [
-    "tensor_board_trace_handler",
+    "tensorboard_trace_handler",
     "schedule",
     "Profiler",
     "EnvProfiler",
     "ProfilerLevel",
     "ProfilerActivity",
     "AicoreMetrics",
+    "ExportType",
     "DynamicProfilerMonitor",
-    "mstx"
+    "mstx",
+    "_ExperimentalConfig",
+    "profile"
 ]
 
 from mindspore.profiler.mstx import Mstx as mstx
 from mindspore.profiler.profiler import Profiler
-from mindspore.profiler.profiler import tensor_board_trace_handler
+from mindspore.profiler.profiler import tensorboard_trace_handler
 from mindspore.profiler.schedule import Schedule as schedule
 from mindspore.profiler.envprofiler import EnvProfiler
-from mindspore.profiler.common.constant import ProfilerLevel, ProfilerActivity, AicoreMetrics
+from mindspore.profiler.common.constant import ProfilerLevel, ProfilerActivity, AicoreMetrics, ExportType
 from mindspore.profiler.dynamic_profiler import DynamicProfilerMonitor
+from mindspore.profiler.experimental_config import _ExperimentalConfig
+from mindspore.profiler.profiler import Profile as profile

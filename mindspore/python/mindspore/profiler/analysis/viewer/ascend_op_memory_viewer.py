@@ -25,7 +25,6 @@ from mindspore.profiler.common.file_manager import FileManager
 from mindspore.profiler.common.log import ProfilerLogger
 from mindspore.profiler.common.constant import ProfilerActivity
 
-
 class OpMemoryIndexEnum(Enum):
     """Op memory index defining."""
 

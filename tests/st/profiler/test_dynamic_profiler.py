@@ -76,7 +76,7 @@ def test_tiny_transformer_pynative_with_dynamic_profiler():
     data_cfg = {
         "start_step": 2,
         "stop_step": 3,
-        "aicore_metrics": 1,
+        "aic_metrics": 1,
         "profiler_level": -1,
         "profile_framework": 1,
         "analyse_mode": 0,
@@ -144,7 +144,7 @@ def test_tiny_transformer_kbk_with_dynamic_profiler():
     data_cfg = {
         "start_step": 2,
         "stop_step": 3,
-        "aicore_metrics": 1,
+        "aic_metrics": 1,
         "profiler_level": -1,
         "profile_framework": 1,
         "analyse_mode": 0,
@@ -213,7 +213,7 @@ def test_tiny_transformer_o2_with_dynamic_profiler():
     data_cfg = {
         "start_step": 2,
         "stop_step": 3,
-        "aicore_metrics": 1,
+        "aic_metrics": 1,
         "profiler_level": -1,
         "profile_framework": 1,
         "analyse_mode": 0,

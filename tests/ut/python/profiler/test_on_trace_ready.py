@@ -19,8 +19,9 @@ import unittest.mock
 
 from mindspore.profiler.profiler import Profiler
 from mindspore.profiler.schedule import ProfilerAction
-from mindspore.profiler.profiler import tensor_board_trace_handler
+from mindspore.profiler.profiler import tensorboard_trace_handler
 from mindspore.profiler.profiler_interface import ProfilerInterface
+from mindspore.profiler.common.profiler_path_manager import ProfilerPathManager
 
 
 # pylint: disable=protected-access
@@ -33,42 +34,30 @@ class TestProfiler(unittest.TestCase):
     def tearDown(self):
         pass
 
-    @patch("mindspore.log.error")
-    @patch("mindspore.profiler.platform.npu_profiler.NPUProfilerAnalysis.online_analyse")
-    def test_should_tensor_board_trace_handler_correct_when_execute(self,
-                                                                    mock_npu_profiler_analysis_online_analyse,
-                                                                    mock_logger_error):
+    @patch("mindspore.log.warning")
+    def test_should_tensorboard_trace_handler_correct_when_execute(self, mock_logger_warning):
         """
-            Verify whether the tensor_board_trace_handler function executes normally
+            Verify whether the tensorboard_trace_handler function executes normally
         """
-        # Normal execution path with data simplification
         Profiler(start_profile=False)
-        tensor_board_trace_handler()
-        mock_npu_profiler_analysis_online_analyse.assert_called_once()
-        mock_logger_error.assert_not_called()
+        ProfilerPathManager()
+        ProfilerPathManager().init = unittest.mock.Mock()
+        tensorboard_trace_handler(analyse_flag="True")
+        mock_logger_warning.assert_called_with("analyse_flag is not bool, set by default.")
+        ProfilerPathManager().init.assert_called_once()
 
-        # Normal execution path without data simplification
-        mock_npu_profiler_analysis_online_analyse.reset_mock()
-        Profiler(start_profile=False, data_simplification=False)
-        tensor_board_trace_handler()
-        mock_npu_profiler_analysis_online_analyse.assert_called_once()
-        mock_logger_error.assert_not_called()
+        ProfilerPathManager().init = unittest.mock.Mock()
+        tensorboard_trace_handler(async_mode="True")
+        mock_logger_warning.assert_called_with("async_mode is not bool, set by default.")
+        ProfilerPathManager().init.assert_called_once()
 
-        # Error handling when an exception occurs
-        mock_npu_profiler_analysis_online_analyse.reset_mock()
-        mock_npu_profiler_analysis_online_analyse.side_effect = Exception("Test error")
-        tensor_board_trace_handler()
-        mock_npu_profiler_analysis_online_analyse.assert_called_once()
-        mock_logger_error.assert_called_once_with(
-            "Call tensorboard_trace_handler failed. Exception: %s", "Test error")
-
-    @patch("mindspore.profiler.profiler.tensor_board_trace_handler")
-    def test_should_tensor_board_trace_handler_correct_when_called(self, mock_tensor_board_trace_handler):
+    @patch("mindspore.profiler.profiler.tensorboard_trace_handler")
+    def test_should_tensorboard_trace_handler_correct_when_called(self, mock_tensorboard_trace_handler):
         """
-            Verify the behavior when tensor_board_trace_handler is called
+            Verify the behavior when tensorboard_trace_handler is called
         """
         # Correct registration of trace handler as callback
-        profiler = Profiler(start_profile=False, on_trace_ready=mock_tensor_board_trace_handler)
+        profiler = Profiler(start_profile=False, on_trace_ready=mock_tensorboard_trace_handler)
         prof_action_controller = profiler.action_controller
         self.assertEqual(
             prof_action_controller.handle_normal_action(ProfilerAction.RECORD_AND_SAVE, ProfilerAction.NONE),
@@ -78,9 +67,9 @@ class TestProfiler(unittest.TestCase):
                 prof_action_controller._trace_ready,
                 ProfilerInterface.clear
             ])
-        self.assertEqual(prof_action_controller.on_trace_ready, mock_tensor_board_trace_handler)
+        self.assertEqual(prof_action_controller.on_trace_ready, mock_tensorboard_trace_handler)
         prof_action_controller._trace_ready()
-        mock_tensor_board_trace_handler.assert_called_once()
+        mock_tensorboard_trace_handler.assert_called_once()
 
         # Error handling when the callback is not callable
         test_cases = [
@@ -90,9 +79,9 @@ class TestProfiler(unittest.TestCase):
         ]
         for callback, description in test_cases:
             with self.subTest(msg="Testing " + description):
-                mock_tensor_board_trace_handler.reset_mock()
+                mock_tensorboard_trace_handler.reset_mock()
                 profiler = Profiler(start_profile=False, on_trace_ready=callback)
                 prof_action_controller = profiler.action_controller
                 self.assertIsNone(prof_action_controller.on_trace_ready)
                 prof_action_controller._trace_ready()
-                mock_tensor_board_trace_handler.assert_not_called()
+                mock_tensorboard_trace_handler.assert_not_called()

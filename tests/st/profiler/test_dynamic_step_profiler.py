@@ -13,16 +13,15 @@
 # limitations under the License.
 # ============================================================================
 """test dynamic step profiler"""
-import glob
 import os
 import tempfile
+import glob
 import numpy as np
 import pandas as pd
 
-import mindspore as ms
-import mindspore.profiler as prof
+import mindspore
 import mindspore.dataset as ds
-from mindspore.profiler import Profiler, ProfilerLevel, ProfilerActivity
+from mindspore.profiler import ProfilerLevel, AicoreMetrics, ExportType, ProfilerActivity
 from mindspore import Tensor, context, nn
 from mindspore.profiler.profiler_interface import ProfilerInterface
 
@@ -49,7 +48,7 @@ def train_net(net):
     optimizer = nn.Momentum(net.trainable_params(), 1, 0.9)
     loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
     data = ds.GeneratorDataset(generator_net(), ["data", "label"])
-    model = ms.train.Model(net, loss, optimizer)
+    model = mindspore.train.Model(net, loss, optimizer)
     model.train(1, data)
 
 
@@ -70,9 +69,9 @@ def test_dynamic_step_single_active_kbk_profiler():
     """
     step_num = 15
     with tempfile.TemporaryDirectory(suffix="_step_profiler_1") as tmpdir:
-        schedule = ms.profiler.schedule(wait=1, warmup=1, active=1, repeat=2, skip_first=1)
+        schedule = mindspore.profiler.schedule(wait=1, warmup=1, active=1, repeat=2, skip_first=1)
         add = TinyAddNet()
-        _dynamic_step_train_profiler(tmpdir, add, step_num, schedule, ms.GRAPH_MODE, "O0")
+        _dynamic_step_train_profiler(tmpdir, add, step_num, schedule, mindspore.GRAPH_MODE, "O0")
         # Check whether the number of generated files is the same as the data collected by the step
         ascend_ms_dir_nums = len([d for d in os.listdir(tmpdir) if os.path.isdir(os.path.join(tmpdir, d))])
         assert ascend_ms_dir_nums == 2
@@ -137,9 +136,9 @@ def test_dynamic_step_multi_active_kbk_profiler():
     """
     step_num = 10
     with tempfile.TemporaryDirectory(suffix="_step_profiler_2") as tmpdir:
-        schedule = ms.profiler.schedule(wait=1, warmup=1, active=2, repeat=2, skip_first=1)
+        schedule = mindspore.profiler.schedule(wait=1, warmup=1, active=2, repeat=2, skip_first=1)
         add = TinyAddNet()
-        _dynamic_step_train_profiler(tmpdir, add, step_num, schedule, ms.GRAPH_MODE, "O0")
+        _dynamic_step_train_profiler(tmpdir, add, step_num, schedule, mindspore.GRAPH_MODE, "O0")
         # Check whether the number of generated files is the same as the data collected by the step
         ascend_ms_dir_nums = len([d for d in os.listdir(tmpdir) if os.path.isdir(os.path.join(tmpdir, d))])
         assert ascend_ms_dir_nums == 2
@@ -206,18 +205,21 @@ def test_dynamic_step_single_active_py_native_profiler():
     """
     step_num = 8
     with tempfile.TemporaryDirectory(suffix="_step_profiler_1") as tmpdir:
-        schedule = ms.profiler.schedule(wait=1, warmup=1, active=1, repeat=2, skip_first=1)
+        schedule = mindspore.profiler.schedule(wait=1, warmup=1, active=1, repeat=2, skip_first=1)
         net = Net()
-        context.set_context(mode=ms.PYNATIVE_MODE, device_target="Ascend")
-        profiler = Profiler(profiler_level=ProfilerLevel.Level2,
-                            data_process=False,
-                            l2_cache=True,
-                            output_path=tmpdir,
-                            schedule=schedule,
-                            on_trace_ready=prof.tensor_board_trace_handler)
+        context.set_context(mode=mindspore.PYNATIVE_MODE, device_target="Ascend")
+        # pylint: disable=protected-access
+        experimental_config = mindspore.profiler._ExperimentalConfig(profiler_level=ProfilerLevel.Level2,
+                                                                     l2_cache=True,
+                                                                     export_type=[ExportType.Text, ExportType.Db])
+        profile = mindspore.profiler.profile(data_process=False,
+                                             schedule=schedule,
+                                             on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
+                                                 dir_name=tmpdir),
+                                             experimental_config=experimental_config)
         for _ in range(step_num):
             train_net(net)
-            profiler.step()
+            profile.step()
         # Check whether the number of generated files is the same as the data collected by the step
         ascend_ms_dir_nums = len([d for d in os.listdir(tmpdir) if os.path.isdir(os.path.join(tmpdir, d))])
         assert ascend_ms_dir_nums == 2
@@ -267,6 +269,14 @@ def test_dynamic_step_single_active_py_native_profiler():
             ],
             fuzzy_match=True
         )
+        db_path = os.path.join(
+            tmpdir,
+            _sort_directories_by_timestamp(tmpdir)[0],  # The first sorted directory
+            "ASCEND_PROFILER_OUTPUT",
+        )
+        db_files = glob.glob(os.path.join(db_path, 'ascend_mindspore_profiler*.db'))
+        assert len(db_files) == 1
+        FileChecker.check_file_exists(db_files[0])
         # Check profiler.log
         profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
                                        f"logs/profiler_*.log")
@@ -284,16 +294,21 @@ def test_dynamic_step_npu_py_native_profiler():
     """
     step_num = 8
     with tempfile.TemporaryDirectory(suffix="_step_profiler_npu") as tmpdir:
-        schedule = ms.profiler.schedule(wait=1, warmup=1, active=1, repeat=1, skip_first=1)
+        schedule = mindspore.profiler.schedule(wait=1, warmup=1, active=1, repeat=1, skip_first=1)
         net = Net()
-        context.set_context(mode=ms.PYNATIVE_MODE, device_target="Ascend")
-        profiler = Profiler(activities=[ProfilerActivity.NPU],
-                            output_path=tmpdir,
-                            schedule=schedule,
-                            on_trace_ready=prof.tensor_board_trace_handler)
+        context.set_context(mode=mindspore.PYNATIVE_MODE, device_target="Ascend")
+        # pylint: disable=protected-access
+        experimental_config = mindspore.profiler._ExperimentalConfig()
+        profile = mindspore.profiler.profile(activities=[ProfilerActivity.NPU],
+                                             schedule=schedule,
+                                             on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
+                                                 dir_name=tmpdir),
+                                             experimental_config=experimental_config)
         for _ in range(step_num):
             train_net(net)
-            profiler.step()
+            profile.step()
+        ProfilerInterface.finalize()
+        ProfilerInterface.clear()
         _check_npu_profiler_data(tmpdir)
 
 
@@ -307,16 +322,21 @@ def test_dynamic_step_cpu_py_native_profiler():
     """
     step_num = 8
     with tempfile.TemporaryDirectory(suffix="_step_profiler_cpu") as tmpdir:
-        schedule = ms.profiler.schedule(wait=1, warmup=1, active=1, repeat=1, skip_first=1)
+        schedule = mindspore.profiler.schedule(wait=1, warmup=1, active=1, repeat=1, skip_first=1)
         net = Net()
-        context.set_context(mode=ms.PYNATIVE_MODE, device_target="Ascend")
-        profiler = Profiler(activities=[ProfilerActivity.CPU],
-                            output_path=tmpdir,
-                            schedule=schedule,
-                            on_trace_ready=prof.tensor_board_trace_handler)
+        context.set_context(mode=mindspore.PYNATIVE_MODE, device_target="Ascend")
+        # pylint: disable=protected-access
+        experimental_config = mindspore.profiler._ExperimentalConfig()
+        profile = mindspore.profiler.profile(activities=[ProfilerActivity.CPU],
+                                             schedule=schedule,
+                                             on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
+                                                 dir_name=tmpdir),
+                                             experimental_config=experimental_config)
         for _ in range(step_num):
             train_net(net)
-            profiler.step()
+            profile.step()
+        ProfilerInterface.finalize()
+        ProfilerInterface.clear()
         _check_cpu_profiler_data(tmpdir)
 
 
@@ -330,17 +350,22 @@ def test_dynamic_step_npu_graph_profiler():
     """
     step_num = 8
     with tempfile.TemporaryDirectory(suffix="_step_profiler_npu") as tmpdir:
-        schedule = ms.profiler.schedule(wait=1, warmup=1, active=1, repeat=1, skip_first=1)
+        schedule = mindspore.profiler.schedule(wait=1, warmup=1, active=1, repeat=1, skip_first=1)
         net = Net()
-        context.set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
+        context.set_context(mode=mindspore.GRAPH_MODE, device_target="Ascend")
         context.set_context(jit_config={"jit_level": "O0"})
-        profiler = Profiler(activities=[ProfilerActivity.NPU],
-                            output_path=tmpdir,
-                            schedule=schedule,
-                            on_trace_ready=prof.tensor_board_trace_handler)
+        # pylint: disable=protected-access
+        experimental_config = mindspore.profiler._ExperimentalConfig()
+        profile = mindspore.profiler.profile(activities=[ProfilerActivity.NPU],
+                                             schedule=schedule,
+                                             on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
+                                                 dir_name=tmpdir),
+                                             experimental_config=experimental_config)
         for _ in range(step_num):
             train_net(net)
-            profiler.step()
+            profile.step()
+        ProfilerInterface.finalize()
+        ProfilerInterface.clear()
         _check_npu_profiler_data(tmpdir)
 
 
@@ -354,34 +379,80 @@ def test_dynamic_step_cpu_graph_profiler():
     """
     step_num = 8
     with tempfile.TemporaryDirectory(suffix="_step_profiler_cpu") as tmpdir:
-        schedule = ms.profiler.schedule(wait=1, warmup=1, active=1, repeat=1, skip_first=1)
+        schedule = mindspore.profiler.schedule(wait=1, warmup=1, active=1, repeat=1, skip_first=1)
         net = Net()
-        context.set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
+        context.set_context(mode=mindspore.GRAPH_MODE, device_target="Ascend")
         context.set_context(jit_config={"jit_level": "O0"})
-        profiler = Profiler(activities=[ProfilerActivity.CPU],
-                            output_path=tmpdir,
-                            schedule=schedule,
-                            on_trace_ready=prof.tensor_board_trace_handler)
+        # pylint: disable=protected-access
+        experimental_config = mindspore.profiler._ExperimentalConfig()
+        profile = mindspore.profiler.profile(activities=[ProfilerActivity.CPU],
+                                             schedule=schedule,
+                                             on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
+                                                 dir_name=tmpdir),
+                                             experimental_config=experimental_config)
         for _ in range(step_num):
             train_net(net)
-            profiler.step()
+            profile.step()
+        ProfilerInterface.finalize()
+        ProfilerInterface.clear()
         _check_cpu_profiler_data(tmpdir)
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_dynamic_step_single_active_profiler_db():
+    """
+    Feature: Dynamic Step Profiler
+    Description: This test case verifies that the profiler can correctly profile the db data.
+    Expectation: The profiler should generate the db profiling data.
+    """
+    step_num = 1
+    test_export_types = ["db", [ExportType.Db]]
+    for test_export_type in test_export_types:
+        with tempfile.TemporaryDirectory(suffix="_step_profiler") as tmpdir:
+            schedule = mindspore.profiler.schedule(wait=0, warmup=0, active=1, repeat=0, skip_first=0)
+            net = Net()
+            context.set_context(mode=mindspore.PYNATIVE_MODE, device_target="Ascend")
+            # pylint: disable=protected-access
+            experimental_config = mindspore.profiler._ExperimentalConfig(profiler_level=ProfilerLevel.Level1,
+                                                                         l2_cache=True,
+                                                                         export_type=test_export_type)
+            profile = mindspore.profiler.profile(data_process=False,
+                                                 schedule=schedule,
+                                                 on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
+                                                     dir_name=tmpdir),
+                                                 experimental_config=experimental_config)
+            for _ in range(step_num):
+                train_net(net)
+                profile.step()
+            ProfilerInterface.finalize()
+            ProfilerInterface.clear()
+
+            db_path = os.path.join(
+                tmpdir,
+                _sort_directories_by_timestamp(tmpdir)[0],  # The first sorted directory
+                "ASCEND_PROFILER_OUTPUT",
+            )
+            db_files = glob.glob(os.path.join(db_path, 'ascend_mindspore_profiler*.db'))
+            assert len(db_files) == 1
+            FileChecker.check_file_exists(db_files[0])
+            assert not os.path.exists(os.path.join(db_path, 'kernel_details.csv'))
 
 def _dynamic_step_train_profiler(tmpdir, net, step_num, schedule, context_mode, jit_level=None):
     """ Collect performance data according to step"""
     context.set_context(mode=context_mode, device_target="Ascend")
     if jit_level:
         context.set_context(jit_config={"jit_level": jit_level})
-    with Profiler(profiler_level=ProfilerLevel.Level0,
-                  data_process=False,
-                  l2_cache=True,
-                  output_path=tmpdir,
-                  schedule=schedule,
-                  on_trace_ready=prof.tensor_board_trace_handler) as profiler:
+    # pylint: disable=protected-access
+    experimental_config = mindspore.profiler._ExperimentalConfig(profiler_level=ProfilerLevel.Level0,
+                                                                 aic_metrics=AicoreMetrics.AiCoreNone,
+                                                                 l2_cache=True,
+                                                                 export_type=[ExportType.Text])
+    with mindspore.profiler.profile(data_process=False,
+                                    schedule=schedule,
+                                    on_trace_ready=mindspore.profiler.tensorboard_trace_handler(dir_name=tmpdir),
+                                    experimental_config=experimental_config) as prof:
         for _ in range(step_num):
             train(net)
-            profiler.step()
+            prof.step()
     ProfilerInterface.finalize()
     ProfilerInterface.clear()
 
@@ -415,7 +486,6 @@ def _sort_directories_by_timestamp(path):
 
     # Returns the sorted list of folder names
     return [name for name, _ in directories_with_timestamp]
-
 
 def _check_npu_profiler_data(tmpdir):
     """ Check only NPU profiler data."""

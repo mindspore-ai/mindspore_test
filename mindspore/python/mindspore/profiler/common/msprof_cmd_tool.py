@@ -21,6 +21,7 @@ from typing import Dict, List, Optional
 
 from mindspore import log as logger
 from mindspore.profiler.common.command_executor import CommandExecutor
+from mindspore.profiler.common.constant import ExportType
 
 
 class MsprofCmdTool:
@@ -37,22 +38,30 @@ class MsprofCmdTool:
         self._msprof_profile_path = msprof_profile_path
         self._check_environment()
 
-    def run_ms_export_cmd(self) -> None:
-        """Run msprof export command."""
-        CommandExecutor.execute(
-            [
-                self._MSPROF_CMD,
-                "--export=on",
-                f"--output={self._msprof_profile_path}"
-            ]
-        )
+    def run_ms_export_cmd(self, analyse_export_type: List[str]) -> None:
+        """Run msprof export command.
 
-    def run_ms_py_export_cmd(self, model_id: int, iter_list: List[int]) -> None:
+        Args:
+            analyse_export_type (List[str]): The type of data to export.
+        """
+        export_cmd = [
+            self._MSPROF_CMD,
+            "--export=on",
+            f"--output={self._msprof_profile_path}",
+        ]
+        if ExportType.Text.value in analyse_export_type:
+            CommandExecutor.execute(export_cmd)
+        if ExportType.Db.value in analyse_export_type:
+            export_cmd.append("--type=db")
+            CommandExecutor.execute(export_cmd)
+
+    def run_ms_py_export_cmd(self, model_id: int, iter_list: List[int], analyse_export_type: List[str]) -> None:
         """Export timeline and summary data for the specified model and iterations.
 
         Args:
             model_id (int): The ID of the model to export data for.
             iter_list (List[int]): A list of iteration IDs to export data for.
+            analyse_export_type (List[str]): The type of data to export.
 
         Raises:
             FileNotFoundError: If msprof.py path cannot be found.
@@ -66,24 +75,34 @@ class MsprofCmdTool:
         export_cmd = ["python3", script_path]
         iter_param = self._get_iteration_params(model_id, iter_list)
 
-        for export_type in ("timeline", "summary"):
+        if ExportType.Text.value in analyse_export_type:
+            for export_type in ("timeline", "summary"):
+                cmd = (
+                    export_cmd
+                    + ["export", export_type, "-dir", self._msprof_profile_path]
+                    + iter_param
+                )
+                CommandExecutor.execute(cmd)
+        if ExportType.Db.value in analyse_export_type:
             cmd = (
                 export_cmd
-                + ["export", export_type, "-dir", self._msprof_profile_path]
-                + iter_param
+                + ["export", "db", "-dir", self._msprof_profile_path]
             )
             CommandExecutor.execute(cmd)
 
-    def run_ms_analyze_cmd(self) -> None:
+    def run_ms_analyze_cmd(self, analyse_export_type: List[str]) -> None:
         """Run msprof analyze command."""
-        CommandExecutor.execute(
-            [
-                self._MSPROF_CMD,
-                "--analyze=on",
-                "--rule=communication,communication_matrix",
-                f"--output={self._msprof_profile_path}",
-            ]
-        )
+        analyze_cmd = [
+            self._MSPROF_CMD,
+            "--analyze=on",
+            "--rule=communication,communication_matrix",
+            f"--output={self._msprof_profile_path}",
+        ]
+        if ExportType.Text.value in analyse_export_type:
+            CommandExecutor.execute(analyze_cmd)
+        if ExportType.Db.value in analyse_export_type:
+            analyze_cmd.append("--type=db")
+            CommandExecutor.execute(analyze_cmd)
 
     @lru_cache(maxsize=1)
     def get_msprof_info(self):

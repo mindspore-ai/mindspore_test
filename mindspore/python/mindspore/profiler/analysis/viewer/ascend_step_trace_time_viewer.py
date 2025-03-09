@@ -24,8 +24,12 @@ import numpy as np
 from mindspore import log as logger
 from mindspore.profiler.analysis.viewer.base_viewer import BaseViewer
 from mindspore.profiler.common.file_manager import FileManager
-from mindspore.profiler.common.constant import TimelineLayerName, OverlapAnalysisTidName, ProfilerLevel, \
+from mindspore.profiler.common.constant import (
+    TimelineLayerName,
+    OverlapAnalysisTidName,
+    ProfilerLevel,
     ProfilerActivity
+)
 from mindspore.profiler.analysis.parser.timeline_event.msprof_event import (
     MsprofCompleteEvent,
 )

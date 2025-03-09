@@ -87,10 +87,10 @@ class Schedule:
 
     Examples:
         >>> import numpy as np
-        >>> import mindspore as ms
+        >>> import mindspore
         >>> import mindspore.dataset as ds
-        >>> from mindspore import context, nn, Profiler
-        >>> from mindspore.profiler import schedule, tensor_board_trace_handler
+        >>> from mindspore import context, nn
+        >>> from mindspore.profiler import schedule, tensorboard_trace_handler
         >>>
         >>> class Net(nn.Cell):
         ...     def __init__(self):
@@ -108,18 +108,34 @@ class Schedule:
         ...     optimizer = nn.Momentum(test_net.trainable_params(), 1, 0.9)
         ...     loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
         ...     data = ds.GeneratorDataset(generator_net(), ["data", "label"])
-        ...     model = ms.train.Model(test_net, loss, optimizer)
+        ...     model = mindspore.train.Model(test_net, loss, optimizer)
         ...     model.train(1, data)
         >>>
         >>> if __name__ == '__main__':
-        ...     context.set_context(mode=ms.PYNATIVE_MODE, device_target="Ascend")
+        ...     # If the device_target is GPU, set the device_target to "GPU"
+        ...     context.set_context(mode=mindspore.GRAPH_MODE)
+        ...     mindspore.set_device("Ascend")
         ...
+        ...     # Init Profiler
+        ...     experimental_config = mindspore.profiler._ExperimentalConfig(
+        ...                                 profiler_level=ProfilerLevel.Level0,
+        ...                                 aic_metrics=AicoreMetrics.AiCoreNone,
+        ...                                 l2_cache=False,
+        ...                                 mstx=False,
+        ...                                 data_simplification=False,
+        ...                                 export_type=[ExportType.Text])
+        ...     steps = 10
         ...     net = Net()
-        ...     STEP_NUM = 15
+        ...     # Note that the Profiler should be initialized before model.train
+        ...     with mindspore.profiler.profile(activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
+        ...                                     schedule=mindspore.profiler.schedule(wait=1, warmup=1, active=2,
+        ...                                           repeat=1, skip_first=2),
+        ...                                     on_trace_ready=mindspore.profiler.tensorboard_trace_handler("./data"),
+        ...                                     profile_memory=False,
+        ...                                     experimental_config=experimental_config) as prof:
         ...
-        ...     with Profiler(schedule=schedule(wait=1, warmup=1, active=2, repeat=1, skip_first=2),
-        ...                   on_trace_ready=tensor_board_trace_handler) as prof:
-        ...         for i in range(STEP_NUM):
+        ...         # Train Model
+        ...         for step in range(steps):
         ...             train(net)
         ...             prof.step()
     """

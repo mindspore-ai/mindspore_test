@@ -21,6 +21,7 @@ from mindspore.profiler.common.constant import (
     ProfilerLevel,
     ProfilerActivity,
     AicoreMetrics,
+    ExportType
 )
 from mindspore.profiler.schedule import Schedule
 
@@ -35,7 +36,7 @@ class ProfilerParameters:
         "output_path": (str, "./data"),
         "profiler_level": (ProfilerLevel, ProfilerLevel.Level0),
         "activities": (list, [ProfilerActivity.CPU, ProfilerActivity.NPU]),
-        "aicore_metrics": (AicoreMetrics, AicoreMetrics.AiCoreNone),
+        "aic_metrics": (AicoreMetrics, AicoreMetrics.AiCoreNone),
         "with_stack": (bool, False),
         "profile_memory": (bool, False),
         "data_process": (bool, False),
@@ -46,6 +47,7 @@ class ProfilerParameters:
         "pcie": (bool, False),
         "sync_enable": (bool, True),
         "data_simplification": (bool, True),
+        "export_type": (list, [ExportType.Text]),
         "mstx": (bool, False),
         "schedule": (Schedule, None),
         "on_trace_ready": (Optional[Callable[..., Any]], None)
@@ -75,9 +77,11 @@ class ProfilerParameters:
         for param, (_, _) in self.PARAMS.items():
             if param == "profiler_level":
                 params[param] = getattr(self, param).value
-            elif param == "aicore_metrics":
+            elif param == "aic_metrics":
                 params[param] = getattr(self, param).value
             elif param == "activities":
+                params[param] = [item.value for item in getattr(self, param)]
+            elif param == "export_type":
                 params[param] = [item.value for item in getattr(self, param)]
             elif param == "schedule":
                 params[param] = getattr(self, param).to_dict()
@@ -97,13 +101,12 @@ class ProfilerParameters:
         """
         return {
             "profile_memory": self.profile_memory,
-            "aic_metrics": self.aicore_metrics.value,
+            "aicore_metrics": self.aic_metrics.value,
             "l2_cache": self.l2_cache,
             "hbm_ddr": self.hbm_ddr,
             "pcie": self.pcie,
             "parallel_strategy": self.parallel_strategy,
             "profiler_level": self.profiler_level.value,
-            "aicore_metrics": self.aicore_metrics.value,
             "with_stack": self.with_stack,
             "mstx": self.mstx,
             "cpu_trace": ProfilerActivity.CPU in self.activities,
@@ -126,6 +129,8 @@ class ProfilerParameters:
                 elif key == "schedule":
                     if not isinstance(value, Schedule):
                         setattr(self, key, Schedule(wait=0, active=1))
+                elif key == "export_type":
+                    setattr(self, key, self._check_and_get_export_type(value))
                 # 检查可迭代类型
                 elif isinstance(expected_type, type) and issubclass(expected_type, (list, tuple, set)):
                     if not (isinstance(value, expected_type) and
@@ -203,6 +208,27 @@ class ProfilerParameters:
             warnings.warn(f"when 'profiler_level' is set to '{self.__dict__.get('profiler_level')}', "
                           f"'aicore_metrics' cannot be set to 'AicoreMetrics.AiCoreNone', "
                           f"reset to 'AicoreMetrics.PipeUtilization'.")
+
+    def _check_and_get_export_type(self, export_type) -> list:
+        """
+        Check export type.
+        """
+        if not export_type:
+            return [ExportType.Text]
+
+        if isinstance(export_type, str):
+            if export_type in [ExportType.Text.value, ExportType.Db.value]:
+                return [ExportType(export_type)]
+
+        if isinstance(export_type, list):
+            if all(isinstance(type, ExportType) for type in export_type):
+                return list(set(export_type))
+
+        if isinstance(export_type, ExportType):
+            return [export_type]
+
+        logger.warning("Invalid parameter export_type, reset it to text.")
+        return [ExportType.Text]
 
     def __getattr__(self, name):
         """

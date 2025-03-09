@@ -25,12 +25,17 @@ import multiprocessing
 
 from mindspore import log as logger
 from mindspore.train import Callback
-from mindspore.profiler import Profiler, tensor_board_trace_handler, schedule
+from mindspore.profiler import Profiler, tensorboard_trace_handler, schedule
 from mindspore.communication import get_rank
 from mindspore.profiler.parser.ascend_analysis.file_manager import FileManager
 from mindspore.profiler.parser.ascend_analysis.path_manager import PathManager
 from mindspore.profiler.profiler_interface import ProfilerInterface
-from mindspore.profiler.common.constant import ProfilerActivity, ProfilerLevel, AicoreMetrics
+from mindspore.profiler.common.constant import (
+    ProfilerActivity,
+    ProfilerLevel,
+    AicoreMetrics,
+    ExportType,
+)
 from mindspore.profiler.common.util import no_exception_func
 
 
@@ -51,16 +56,17 @@ class DynamicProfilerArgs:
     """
     Data class for dynamic profile config.
     """
-    FMT = "i" * 6 + "?" * 6
+    FMT = "i" * 7 + "?" * 6
     SIZE = struct.calcsize(FMT)
 
     def __init__(self,
                  start_step: int = -1,
                  stop_step: int = -1,
-                 aicore_metrics: int = -1,
+                 aic_metrics: int = -1,
                  profiler_level: int = 0,
                  analyse_mode: int = -1,
                  activities: int = 0,
+                 export_type: int = 0,
                  profile_memory: bool = False,
                  mstx: bool = False,
                  parallel_strategy: bool = False,
@@ -70,10 +76,11 @@ class DynamicProfilerArgs:
                  **kwargs):
         self._start_step = start_step
         self._stop_step = stop_step
-        self._aicore_metrics = aicore_metrics
+        self._aic_metrics = aic_metrics
         self._profiler_level = profiler_level
         self._analyse_mode = analyse_mode
         self._activities = activities
+        self._export_type = export_type
         self._profile_memory = profile_memory
         self._mstx = mstx
         self._parallel_strategy = parallel_strategy
@@ -92,9 +99,9 @@ class DynamicProfilerArgs:
             logger.warning("stop_step should be int type, stop_step will be reset to -1.")
             self._stop_step = -1
 
-        if not isinstance(self._aicore_metrics, int):
-            logger.warning("aicore_metrics should be int type, aicore_metrics will be reset to -1.")
-            self._aicore_metrics = -1
+        if type(self._aic_metrics) != int: # pylint: disable=C0123
+            logger.warning("aic_metrics should be int type, aic_metrics will be reset to -1.")
+            self._aic_metrics = -1
 
         if not isinstance(self._profiler_level, int):
             logger.warning("profiler_level should be int type, profiler_level will be reset to 0.")
@@ -107,6 +114,10 @@ class DynamicProfilerArgs:
         if not isinstance(self._activities, int):
             logger.warning("activities should be int type, activities will be reset to 0.")
             self._activities = 0
+
+        if type(self._export_type) != int: # pylint: disable=C0123
+            logger.warning("export_type should be int type, export_type will be reset to 0.")
+            self._export_type = 0
 
         if not isinstance(self._profile_memory, bool):
             logger.warning("profile_memory should be bool type, profile_memory will be reset to False.")
@@ -172,7 +183,8 @@ class DynamicProfilerArgs:
         """ get all args in DynamicProfilerArgs."""
         self._profiler_level = self._convert_profiler_level(self._profiler_level)
         self._activities = self._convert_activities(self._activities)
-        self._aicore_metrics = self._convert_aicore_metrics(self._aicore_metrics)
+        self._aic_metrics = self._convert_aic_metrics(self._aic_metrics)
+        self._export_type = self._convert_export_type(self._export_type)
         not_supported_args = ['_start_step', '_stop_step', '_analyse_mode', '_is_valid']
         res = {}
         for key, value in self.__dict__.items():
@@ -223,26 +235,37 @@ class DynamicProfilerArgs:
             return [ProfilerActivity.NPU]
         return [ProfilerActivity.CPU, ProfilerActivity.NPU]
 
-    def _convert_aicore_metrics(self, aicore_metrics: int) -> AicoreMetrics:
-        """ convert aicore_metrics to real args in Profiler."""
-        if aicore_metrics == -1:
+    def _convert_aic_metrics(self, aic_metrics: int) -> AicoreMetrics:
+        """ convert aic_metrics to real args in Profiler."""
+        if aic_metrics == -1:
             return AicoreMetrics.AiCoreNone
-        if aicore_metrics == 0:
+        if aic_metrics == 0:
             return AicoreMetrics.PipeUtilization
-        if aicore_metrics == 1:
+        if aic_metrics == 1:
             return AicoreMetrics.ArithmeticUtilization
-        if aicore_metrics == 2:
+        if aic_metrics == 2:
             return AicoreMetrics.Memory
-        if aicore_metrics == 3:
+        if aic_metrics == 3:
             return AicoreMetrics.MemoryL0
-        if aicore_metrics == 4:
+        if aic_metrics == 4:
             return AicoreMetrics.MemoryUB
-        if aicore_metrics == 5:
+        if aic_metrics == 5:
             return AicoreMetrics.ResourceConflictRatio
-        if aicore_metrics == 6:
+        if aic_metrics == 6:
             return AicoreMetrics.L2Cache
+        if aic_metrics == 7:
+            return AicoreMetrics.MemoryAccess
         return AicoreMetrics.AiCoreNone
 
+    def _convert_export_type(self, export_type: int) -> ExportType:
+        """ convert export_type to real args in Profiler."""
+        if export_type == 0:
+            return [ExportType.Text]
+        if export_type == 1:
+            return [ExportType.Db]
+        if export_type == 2:
+            return [ExportType.Text, ExportType.Db]
+        return [ExportType.Text]
 
 class DynamicProfilerMonitorBase(Callback):
     """
@@ -316,7 +339,8 @@ class DynamicProfilerMonitorBase(Callback):
             if self._profiler is None:
                 prof_path = os.path.join(self._output_path, f"rank{self._rank_id}_start{start_step}_stop{stop_step}")
                 PathManager.check_input_directory_path(prof_path)
-                self._profiler = Profiler(output_path=prof_path, start_profile=False, **prof_args.args)
+                self._profiler = Profiler(on_trace_ready=tensorboard_trace_handler(dir_name=prof_path),
+                                          start_profile=False, **prof_args.args)
                 print_msg(f"Rank {self._rank_id} create output path {prof_path}")
 
             self._profiler.start()
@@ -411,7 +435,7 @@ class DynamicProfilerMonitorBase(Callback):
             ...      cfg_json = {
             ...          "start_step": 2,
             ...          "stop_step": 5,
-            ...          "aicore_metrics": -1,
+            ...          "aic_metrics": -1,
             ...          "profiler_level": 0,
             ...          "activities": 0,
             ...          "analyse_mode": -1,
@@ -467,12 +491,11 @@ class DynamicProfilerMonitorBase(Callback):
                 print_msg(f"Rank {self._rank_id} create output path {prof_path}")
                 print_msg(f"Rank {self._rank_id} Dynamic profile start at step {self._start_step}, "
                           f"will stop at step {self._stop_step}")
-                self._profiler = Profiler(output_path=prof_path,
-                                          schedule=schedule(wait=0, warmup=0,
+                self._profiler = Profiler(schedule=schedule(wait=0, warmup=0,
                                                             active=self._stop_step - self._start_step + 1,
                                                             repeat=1,
                                                             skip_first=1),
-                                          on_trace_ready=tensor_board_trace_handler,
+                                          on_trace_ready=tensorboard_trace_handler(dir_name=prof_path),
                                           **prof_args.args)
             else:
                 self._profiler = None
@@ -654,10 +677,10 @@ if sys.version_info >= (3, 8):
                   a relative value, with the first step of training being 1. The stop_step must be greater than or
                   equal to start_step. The default value is -1, indicating that data collection will not start during
                   the entire training process.
-                - aicore_metrics (int, optional) - The range of values corresponds to the Profiler. The default value -1
+                - aic_metrics (int, optional) - The range of values corresponds to the Profiler. The default value -1
                   indicates that AI Core utilization is not collected, and 0 indicates PipeUtilization, 1 indicates
                   ArithmeticUtilization, 2 stands for Memory, 3 stands for MemoryL0, 4 stands for MemoryUB, 5 indicates
-                  ResourceConflictRatio, 6 indicates L2Cache.
+                  ResourceConflictRatio, 6 indicates L2Cache, 7 indicates MemoryAccess.
                 - profiler_level (int, optional) - Sets the level of performance data collection, where -1 represents
                   ProfilerLevel.LevelNone, 0 represents ProfilerLevel.Level0, 1 represents ProfilerLevel.Level1, and
                   2 represents ProfilerLevel.Level2. The default value is 0, indicating the ProfilerLevel.Level0

@@ -18,8 +18,12 @@ import os
 from decimal import Decimal
 
 from mindspore.profiler.analysis.viewer.base_viewer import BaseViewer
-from mindspore.profiler.common.constant import JitLevel, ProfilerLevel, ProfilerActivity
-from mindspore.profiler.common.constant import OpSummaryHeaders
+from mindspore.profiler.common.constant import (
+    JitLevel,
+    ProfilerLevel,
+    OpSummaryHeaders,
+    ProfilerActivity
+)
 from mindspore.profiler.common.log import ProfilerLogger
 from mindspore.profiler.common.path_manager import PathManager
 
