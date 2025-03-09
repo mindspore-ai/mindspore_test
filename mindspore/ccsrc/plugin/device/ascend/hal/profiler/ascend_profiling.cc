@@ -50,14 +50,18 @@ constexpr auto kAclProfStepEndTag = 60001;
 
 using mindspore::profiler::PythonTracer;
 
-std::map<std::string, aclprofAicoreMetrics> kAicMetrics{{"ArithmeticUtilization", ACL_AICORE_ARITHMETIC_UTILIZATION},
-                                                        {"PipeUtilization", ACL_AICORE_PIPE_UTILIZATION},
-                                                        {"Memory", ACL_AICORE_MEMORY_BANDWIDTH},
-                                                        {"MemoryL0", ACL_AICORE_L0B_AND_WIDTH},
-                                                        {"ResourceConflictRatio", ACL_AICORE_RESOURCE_CONFLICT_RATIO},
-                                                        {"MemoryUB", ACL_AICORE_MEMORY_UB},
-                                                        {"L2Cache", ACL_AICORE_L2_CACHE},
-                                                        {"None", ACL_AICORE_NONE}};
+static constexpr int ACL_AICORE_MEMORY_ACCESS = 8;
+
+std::map<std::string, aclprofAicoreMetrics> kAicMetrics = {
+  {"ArithmeticUtilization", ACL_AICORE_ARITHMETIC_UTILIZATION},
+  {"PipeUtilization", ACL_AICORE_PIPE_UTILIZATION},
+  {"Memory", ACL_AICORE_MEMORY_BANDWIDTH},
+  {"MemoryL0", ACL_AICORE_L0B_AND_WIDTH},
+  {"ResourceConflictRatio", ACL_AICORE_RESOURCE_CONFLICT_RATIO},
+  {"MemoryUB", ACL_AICORE_MEMORY_UB},
+  {"L2Cache", ACL_AICORE_L2_CACHE},
+  {"MemoryAccess", static_cast<aclprofAicoreMetrics>(ACL_AICORE_MEMORY_ACCESS)},
+  {"None", ACL_AICORE_NONE}};
 
 std::map<std::string, uint64_t> profLevelMap{
   {"LevelNone", LevelNone}, {"Level0", Level0}, {"Level1", Level1}, {"Level2", Level2}};
@@ -132,7 +136,7 @@ void AscendProfiler::InitAclConfig() {
     }
   }
 
-  aclprofAicoreMetrics aicMetrics = GetAicMetrics();
+  aclprofAicoreMetrics aicMetrics = CheckAicMetricsFeature(GetAicMetrics(), config_.profilerLevel);
   uint64_t mask = GetAclProfMask(aicMetrics);
   uint32_t deviceList[1] = {config_.deviceId};
   uint32_t deviceNum = 1;
@@ -149,6 +153,16 @@ aclprofAicoreMetrics AscendProfiler::GetAicMetrics() const {
     MS_LOG(INFO) << "aicore_metrics is " << config_.aicoreMetrics << ", aicMetrics is " << aicMetrics;
   }
   return aicMetrics;
+}
+
+aclprofAicoreMetrics AscendProfiler::CheckAicMetricsFeature(aclprofAicoreMetrics aic_metrics,
+                                                            const std::string &profiler_level) {
+  if (aic_metrics == ACL_AICORE_MEMORY_ACCESS &&
+      !FeatureMgr::Instance().IsSupportFeature(FeatureType::FEATURE_MEMORY_ACCESS)) {
+    MS_LOG(WARNING) << "AicMetrics is not supported to set to MemoryAccess.";
+    return (profiler_level == "Level1" || profiler_level == "Level2") ? ACL_AICORE_PIPE_UTILIZATION : ACL_AICORE_NONE;
+  }
+  return aic_metrics;
 }
 
 uint64_t AscendProfiler::GetAclProfMask(aclprofAicoreMetrics aicMetrics) {
@@ -182,6 +196,7 @@ void AscendProfiler::Init(const std::string &profiling_path, uint32_t device_id,
   mindspore::device::ascend::InitializeAcl();
   (void)ErrorManagerAdapter::Init();
   InitAscendProfilerConfig(profiling_path, device_id, profiling_options);
+  FeatureMgr::Instance().Init();
 
   if (config_.cpuTrace) {
     ProfilingFrameworkData::Device_Id = config_.rankId;

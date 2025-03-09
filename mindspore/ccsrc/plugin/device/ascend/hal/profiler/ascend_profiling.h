@@ -22,6 +22,7 @@
 #include "common/kernel.h"
 #include "debug/profiler/profiling_data_dumper.h"
 #include "debug/profiler/profiling.h"
+#include "plugin/device/ascend/hal/profiler/feature_mgr.h"
 
 namespace mindspore {
 namespace profiler {
@@ -119,6 +120,7 @@ class AscendProfiler : public Profiler {
                                 const std::string &profiling_options);
   void InitAclConfig();
   aclprofAicoreMetrics GetAicMetrics() const;
+  aclprofAicoreMetrics CheckAicMetricsFeature(aclprofAicoreMetrics aic_metrics, const std::string &profiler_level);
   uint64_t GetAclProfMask(aclprofAicoreMetrics aicMetrics);
   void InitFwkMemProfiling();
   void StartFwkMemProfiling();

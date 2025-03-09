@@ -51,6 +51,7 @@ class AicoreMetrics(Enum):
     MemoryUB = "MemoryUB"
     ResourceConflictRatio = "ResourceConflictRatio"
     L2Cache = "L2Cache"
+    MemoryAccess = "MemoryAccess"
     AiCoreNone = "None"
 
 
