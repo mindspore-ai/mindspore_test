@@ -23,9 +23,7 @@ namespace runtime {
 GatherActor::GatherActor(const std::string &name, const AID &memory_manager_aid,
                          const std::vector<KernelWithIndex> &parameters, const AnfNodePtr &node)
     : ControlActor(name, KernelTransformType::kGatherActor, memory_manager_aid, parameters, node),
-      gather_input_(nullptr) {
-  device_contexts_.resize(parameters.size());
-}
+      gather_input_(nullptr) {}
 
 void GatherActor::SendOutput(OpContext<DeviceTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);

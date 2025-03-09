@@ -21,6 +21,7 @@
 #include "backend/ge_backend/runtime/scheduler_helper.h"
 #include "backend/ge_backend/runtime/actor/actor_dump.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -190,12 +191,16 @@ void ControlNodeScheduler::BuildDataSourceActorForControlNode(
     graph_compiler_info.origin_parameters_to_backend_parameters_[parameter_with_index.first].emplace_back(
       std::make_pair(parameter_with_index, parameter_with_index));
 
-    const auto &node_with_index_with_context =
-      parser->FetchBackendParameterWithContextByFrontParameter(parameter_with_index);
-    const auto &node_with_index = node_with_index_with_context.first;
-    const auto &device_context = node_with_index_with_context.second;
+    const auto &node_with_index = parser->FetchBackendParameterWithContextByFrontParameter(parameter_with_index);
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+
     MS_EXCEPTION_IF_NULL(node_with_index.first);
-    MS_EXCEPTION_IF_NULL(device_context);
     MS_LOG(DEBUG) << "Control node parameter front node:" << parameter_with_index.first->DebugString()
                   << " index:" << parameter_with_index.second
                   << " backend node:" << node_with_index.first->DebugString() << " index:" << node_with_index.second;
@@ -215,11 +220,10 @@ void ControlNodeScheduler::BuildDataSourceActorForControlNode(
       MS_EXCEPTION_IF_NULL(sub_abstract);
       const auto &kernel_tensor = std::make_shared<kernel::KernelTensor>(
         sub_abstract->BuildShape(), sub_abstract->BuildType(), nullptr, nullptr, device_address->GetSize(),
-        device_address->format(), device_address->type_id(), device_address->host_shape(),
-        device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+        device_address->format(), device_address->type_id(), device_address->host_shape(), device_name, device_id);
       MS_EXCEPTION_IF_NULL(kernel_tensor);
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(parameter_with_index.first));
-      auto new_address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+      auto new_address = res_manager->CreateDeviceAddress(kernel_tensor);
       MS_EXCEPTION_IF_NULL(new_address);
       MS_LOG(DEBUG) << "Create new address for node that has no corresponding backend node:"
                     << parameter_with_index.first->DebugString() << " index:" << parameter_with_index.second
@@ -232,7 +236,6 @@ void ControlNodeScheduler::BuildDataSourceActorForControlNode(
 
       (void)node_map.emplace(parameter_with_index, control_node_ds_actor->data_node_with_indexs_.size());
       (void)control_node_ds_actor->data_node_with_indexs_.emplace_back(parameter_with_index);
-      (void)control_node_ds_actor->device_contexts_.emplace_back(device_context);
     }
   }
 }
@@ -265,14 +268,6 @@ std::vector<GatherActorPtr> ControlNodeScheduler::BuildGatherActor(const GraphCo
       if (common::AnfAlgo::IsCallNode(control_node)) {
         gather_actor->output_branch_id_ = parser->FetchBranchIDByCallNode(control_node);
       }
-
-      // Fetch device contexts for gather actor.
-      const auto &iter = parser->control_node_to_device_contexts_.find(control_node);
-      if (iter == parser->control_node_to_device_contexts_.end()) {
-        MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, control_node)
-          << "#dmsg#Runtime error info:#dmsg#Failed to get device contexts for node:" << control_node->DebugString();
-      }
-      gather_actor->device_contexts_ = iter->second;
     }
   }
   return gather_actors;
@@ -327,18 +322,6 @@ std::vector<EntranceActorPtr> ControlNodeScheduler::BuildEntranceActor(
       const auto &entrance_actor =
         std::make_shared<EntranceActor>(actor_name, memory_manager_aid_, formal_parameters, call_nodes, control_node);
       MS_EXCEPTION_IF_NULL(entrance_actor);
-      auto context_iter = parser->func_graph_to_device_contexts_.find(func_graph);
-      if (context_iter == parser->func_graph_to_device_contexts_.end() ||
-          context_iter->second.size() < formal_parameters.size()) {
-        MS_LOG(INTERNAL_EXCEPTION)
-          << "#dmsg#Runtime error info:#dmsg#Invalid device contexts for funcgraph:" << func_graph->ToString()
-          << " parameter num:" << formal_parameters.size() << " device contexts num:"
-          << (context_iter == parser->func_graph_to_device_contexts_.end() ? 0 : context_iter->second.size());
-      }
-      entrance_actor->device_contexts_.clear();
-      (void)entrance_actor->device_contexts_.insert(
-        entrance_actor->device_contexts_.begin(), context_iter->second.begin(),
-        context_iter->second.begin() + SizeToLong(formal_parameters.size()));
       (void)entrance_actors.emplace_back(entrance_actor);
       InsertActor(entrance_actor.get());
     }
@@ -369,22 +352,10 @@ std::vector<ExitActorPtr> ControlNodeScheduler::BuildExitActor(const GraphCompil
         MS_LOG(DEBUG) << "Print formal parameter for actor:" << actor_name
                       << " parameter:" << parameter.first->DebugString() << " index:" << parameter.second;
       }
-      auto context_iter = parser->control_node_to_device_contexts_.find(control_node);
-      if (context_iter == parser->control_node_to_device_contexts_.end() ||
-          context_iter->second.size() != parameters.size()) {
-        MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#Failed to get device contexts for funcgraph:"
-                                   << func_graph->ToString();
-      }
-      exit_actor->device_contexts_ = context_iter->second;
+
       (void)exit_actors.emplace_back(exit_actor);
       InsertActor(exit_actor.get());
     }
-  }
-
-  if (graph_compiler_info.graphs_.size() != graph_compiler_info.device_contexts_.size()) {
-    MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#Invalid graphs num:"
-                               << graph_compiler_info.graphs_.size()
-                               << " and contexts num:" << graph_compiler_info.device_contexts_.size();
   }
 
   // 2. Replace the device address in the kernel actor when calling funcgraph, that is to say in the data exchange
@@ -399,7 +370,6 @@ std::vector<ExitActorPtr> ControlNodeScheduler::BuildExitActor(const GraphCompil
     std::vector<bool> is_need_dynamic_checks;
     std::vector<bool> is_dynamic_shapes;
     std::vector<KernelWithIndex> formal_parameters;
-    std::vector<const DeviceContext *> device_contexts;
 
     for (const auto &node_with_context : kernel_graph_group_info->front_output_nodes_) {
       if (HasAbstractMonad(node_with_context.first.first) || IsCsrNode(node_with_context.first.first)) {
@@ -408,16 +378,15 @@ std::vector<ExitActorPtr> ControlNodeScheduler::BuildExitActor(const GraphCompil
       // Collect inputs of exit actor.
       (void)formal_parameters.emplace_back(node_with_context.first);
       // Get the device contexts of the exit actor's cnode inputs.
-      const AnfNodePtr &backend_node = node_with_context.second.first.first;
+      const AnfNodePtr &backend_node = node_with_context.second.first;
       MS_EXCEPTION_IF_NULL(backend_node);
       (void)is_need_copy_device_tensors.emplace_back(
-        is_need_copy_device_tensor(backend_node, node_with_context.second.first.second));
+        is_need_copy_device_tensor(backend_node, node_with_context.second.second));
       (void)is_need_dynamic_checks.emplace_back(
         common::AnfAlgo::CheckPrimitiveType(backend_node, prim::kPrimConditionGather));
       auto is_dynamic_shape =
         common::AnfAlgo::IsDynamicShape(backend_node) || common::AnfAlgo::IsDynamicSequence(backend_node);
       (void)is_dynamic_shapes.emplace_back(is_dynamic_shape);
-      (void)device_contexts.emplace_back(node_with_context.second.second);
     }
     const auto &actor_name = kernel_graph_group_info->group_name_ + kExitActorNameSuffix;
     const auto &exit_actor = std::make_shared<ExitActor>(actor_name, memory_manager_aid_, formal_parameters, nullptr);
@@ -425,7 +394,6 @@ std::vector<ExitActorPtr> ControlNodeScheduler::BuildExitActor(const GraphCompil
     exit_actor->is_need_copy_device_tensors_.swap(is_need_copy_device_tensors);
     exit_actor->is_need_dynamic_checks_.swap(is_need_dynamic_checks);
     exit_actor->is_dynamic_shapes_.swap(is_dynamic_shapes);
-    exit_actor->device_contexts_.swap(device_contexts);
     for (const auto &graph : kernel_graph_group_info->graphs_) {
       MS_EXCEPTION_IF_NULL(graph);
       std::for_each(graph->GetRefMap().begin(), graph->GetRefMap().end(),
@@ -453,12 +421,11 @@ std::vector<StackActorPtr> ControlNodeScheduler::BuildStackActor(const GraphComp
     }
     const auto &actor_name = kernel_graph_group_info->group_name_ + kStackActorNameSuffix;
     size_t input_parameter_data_num = 0;
-    std::vector<const DeviceContext *> device_contexts;
     std::vector<KernelWithIndex> formal_parameters;
     // Collect inputs of stack actor.
     for (const auto &node_with_context : kernel_graph_group_info->front_input_nodes_) {
       // If the input comes from inside funcgraph, put it at the front of the vector, otherwise put it at the end.
-      const auto &from_node = node_with_context.first.first;
+      const auto &from_node = node_with_context.first;
       MS_EXCEPTION_IF_NULL(from_node);
       auto iter = parser->node_to_level_.find(from_node);
       if (iter == parser->node_to_level_.end()) {
@@ -467,22 +434,19 @@ std::vector<StackActorPtr> ControlNodeScheduler::BuildStackActor(const GraphComp
           << " in graph:" << kernel_graph_group_info->group_name_;
       }
       if (iter->second == kernel_graph_group_info->level_ && (!parser->IsRootGraphPersistentDeviceTensor(from_node))) {
-        (void)formal_parameters.emplace_back(node_with_context.first);
-        (void)device_contexts.emplace_back(node_with_context.second);
+        (void)formal_parameters.emplace_back(node_with_context);
         MS_LOG(DEBUG) << "Add normal parameter for actor:" << actor_name << " node:" << from_node->DebugString()
-                      << " index:" << node_with_context.first.second;
+                      << " index:" << node_with_context.second;
       } else {
-        (void)formal_parameters.insert(formal_parameters.begin(), node_with_context.first);
-        (void)device_contexts.insert(device_contexts.begin(), node_with_context.second);
+        (void)formal_parameters.insert(formal_parameters.begin(), node_with_context);
         MS_LOG(DEBUG) << "Add stack parameter for actor:" << actor_name << " node:" << from_node->DebugString()
-                      << " index:" << node_with_context.first.second;
+                      << " index:" << node_with_context.second;
         input_parameter_data_num++;
       }
     }
     const auto &stack_actor = std::make_shared<StackActor>(actor_name, memory_manager_aid_, formal_parameters);
     MS_EXCEPTION_IF_NULL(stack_actor);
     (void)stack_actors.emplace_back(stack_actor);
-    stack_actor->device_contexts_.swap(device_contexts);
     stack_actor->input_stack_data_num_ = input_parameter_data_num;
     InsertActor(stack_actor.get());
   }
@@ -502,7 +466,6 @@ void ControlNodeScheduler::BuildStackActorForControlNode(const GraphCompilerInfo
     MS_LOG(DEBUG) << "Build stack actor for control node:" << need_stack_control_node->DebugString();
     const auto &stack_actor_name = GetActorName(need_stack_control_node) + kStackActorNameSuffix;
     std::vector<KernelWithIndex> formal_parameters;
-    std::vector<const DeviceContext *> device_contexts;
     size_t input_parameter_data_num = 0;
     size_t input_parameter_partials_num = 0;
 
@@ -536,17 +499,10 @@ void ControlNodeScheduler::BuildStackActorForControlNode(const GraphCompilerInfo
     }
     auto control_actor = dynamic_cast<ControlActor *>(actor);
     MS_EXCEPTION_IF_NULL(control_actor);
-    if (control_actor->formal_parameters_.size() > control_actor->device_contexts_.size()) {
-      MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#Invalid device context size:"
-                                 << control_actor->device_contexts_.size()
-                                 << " and formal parameter size:" << control_actor->formal_parameters_.size()
-                                 << " for actor:" << control_actor->GetAID();
-    }
 
     // Collect formal parameters and device contexts, skip the value nodes.
     for (size_t i = 0; i < control_actor->formal_parameters_.size(); ++i) {
       const auto &parameter = control_actor->formal_parameters_[i];
-      auto device_context = control_actor->device_contexts_[i];
       MS_EXCEPTION_IF_NULL(parameter.first);
       if (parameter.first->isa<ValueNode>()) {
         continue;
@@ -564,12 +520,10 @@ void ControlNodeScheduler::BuildStackActorForControlNode(const GraphCompilerInfo
         MS_LOG(DEBUG) << "Add normal parameter:" << parameter.first->DebugString()
                       << " for stack actor:" << stack_actor_name;
         (void)formal_parameters.emplace_back(parameter);
-        (void)device_contexts.emplace_back(device_context);
       } else {
         MS_LOG(DEBUG) << "Add stack parameter:" << parameter.first->DebugString()
                       << " for stack actor:" << stack_actor_name;
         (void)formal_parameters.insert(formal_parameters.begin(), parameter);
-        (void)device_contexts.insert(device_contexts.begin(), device_context);
 
         const auto &abstract = parameter.first->abstract();
         MS_EXCEPTION_IF_NULL(abstract);
@@ -585,7 +539,6 @@ void ControlNodeScheduler::BuildStackActorForControlNode(const GraphCompilerInfo
     // Create stack actor.
     const auto &stack_actor = std::make_shared<StackActor>(stack_actor_name, memory_manager_aid_, formal_parameters);
     MS_EXCEPTION_IF_NULL(stack_actor);
-    stack_actor->device_contexts_ = device_contexts;
     stack_actor->input_stack_data_num_ = input_parameter_data_num;
     stack_actor->input_stack_partials_num_ = input_parameter_partials_num;
     stack_actor->node_ = need_stack_control_node;
@@ -1829,18 +1782,6 @@ void ControlNodeScheduler::LinkDataArrowForOutputActor(ActorSet *const actor_set
     SchedulerHelper::AddDataArrowForExitActor(exit_actor, to_actor.get(), i, i, 0);
     to_actor->input_datas_num_++;
   }
-
-  auto control_node_to_device_contexts = parser->control_node_to_device_contexts_;
-  auto iter = control_node_to_device_contexts.find(return_node);
-  if (iter == control_node_to_device_contexts.end()) {
-    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, return_node)
-      << "#dmsg#Runtime error info:#dmsg#Failed to find device contexts for node:" << return_node->DebugString();
-  }
-  if (iter->second.size() != to_actor->device_contexts().size()) {
-    MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#Invalid context size, need:"
-                               << to_actor->device_contexts().size() << " current:" << iter->second.size();
-  }
-  to_actor->device_contexts_ = iter->second;
 }
 
 void ControlNodeScheduler::LinkArrowForRootGraphEntranceActor(const ActorSet *actor_set,

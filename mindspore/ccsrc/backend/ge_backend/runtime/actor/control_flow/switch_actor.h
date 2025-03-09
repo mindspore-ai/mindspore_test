@@ -27,7 +27,6 @@
 namespace mindspore {
 namespace ge_backend {
 namespace runtime {
-using mindspore::device::DeviceContext;
 using mindspore::session::KernelWithIndex;
 
 // Switch actor is used to execute the branch according to the input condition.

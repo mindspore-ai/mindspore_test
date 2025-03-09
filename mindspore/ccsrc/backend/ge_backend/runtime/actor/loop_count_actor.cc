@@ -25,9 +25,7 @@
 #include "backend/ge_backend/runtime/actor/control_flow/entrance_actor.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
-#include "runtime/device/stream_synchronizer.h"
-#if defined(__linux__) && defined(WITH_BACKEND)
-#endif
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -69,16 +67,14 @@ void LoopCountActor::IncreaseLoopCount(OpContext<DeviceTensor> *const context) {
   if ((strategy_ == GraphExecutionStrategy::kPipeline) && is_need_sync_stream_) {
     MS_LOG(INFO) << "Sync stream in the step end.";
     ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kStreamSync, GetAID().Name());
-    std::set<const DeviceContext *> sync_stream_device_contexts;
-    for (auto &device_context : device_contexts_) {
-      MS_EXCEPTION_IF_NULL(device_context);
-      if ((sync_stream_device_contexts.count(device_context) == 0) &&
-          (!device::StreamSynchronizer::GetInstance()->SyncStream(device_context->device_context_key().device_name_))) {
-        SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context),
-                                          ("Sync stream failed:" + device_context->device_context_key().ToString()));
-      }
-      (void)sync_stream_device_contexts.insert(device_context);
-    }
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    res_manager->SyncAllStreams();
     MS_LOG(INFO) << "Sync stream success.";
   }
 

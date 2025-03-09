@@ -34,8 +34,7 @@
 #include "utils/log_adapter.h"
 #include "ir/tensor.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
-#include "runtime/device/device_address_utils.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "backend/ge_backend/utils/device_address_utils.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "debug/profiler/profiler.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
@@ -48,11 +47,8 @@ using mindspore::session::KernelWithIndex;
 using tensor::TensorPtr;
 using DeviceTensor = mindspore::device::DeviceAddress;
 using DeviceTensorPtr = std::shared_ptr<DeviceTensor>;
-using mindspore::device::DeviceContext;
+using mindspore::backend::ge_backend::DeviceAddressUtils;
 using mindspore::device::KernelInfo;
-using mindspore::runtime::DeviceAddressUtils;
-using CompileFunc = std::function<KernelGraphPtr(
-  const GraphSegmentPtr &, const std::pair<AnfNodePtrList, AnfNodePtrList> &, const DeviceContext *, device::RunMode)>;
 
 // The execution result of actor.
 constexpr int kSuccess = 0;
@@ -126,27 +122,26 @@ enum class KernelTransformType {
     return;                                                                          \
   } while (0);
 
-#define SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(strategy, op_context, device_context, kernel_name, alloc_size) \
-  do {                                                                                                             \
-    std::string message = "#umsg#Memory not enough:#umsg#";                                                        \
-    if ((device_context).device_context_key().device_name_ == "CPU") {                                             \
-      message += "Memory isn't enough and alloc failed, kernel name: " + (kernel_name) +                           \
-                 ", alloc size: " + std::to_string(alloc_size) + "B.";                                             \
-    } else {                                                                                                       \
-      message += "Device(id:" + std::to_string((device_context).device_context_key().device_id_) +                 \
-                 ") memory isn't enough and alloc failed, kernel name: " + (kernel_name) +                         \
-                 ", alloc size: " + std::to_string(alloc_size) + "B.";                                             \
-    }                                                                                                              \
-    if ((strategy) == GraphExecutionStrategy::kStep) {                                                             \
-      MS_LOG(EXCEPTION) << message;                                                                                \
-    } else {                                                                                                       \
-      MS_LOG(ERROR) << message;                                                                                    \
-    }                                                                                                              \
-    if ((op_context).error_info_.empty()) {                                                                        \
-      (op_context).error_info_ = message;                                                                          \
-    }                                                                                                              \
-    (op_context).SetFailed(kFailure);                                                                              \
-    return;                                                                                                        \
+#define SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(strategy, op_context, kernel_name, alloc_size) \
+  do {                                                                                             \
+    std::string message = "#umsg#Memory not enough:#umsg#";                                        \
+    auto ms_context = MsContext::GetInstance();                                                    \
+    MS_EXCEPTION_IF_NULL(ms_context);                                                              \
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);                            \
+    message += "Device(id:" + std::to_string(device_id) +                                          \
+               ") memory isn't enough and alloc failed, kernel name: " + (kernel_name) +           \
+               ", alloc size: " + std::to_string(alloc_size) + "B.";                               \
+                                                                                                   \
+    if ((strategy) == GraphExecutionStrategy::kStep) {                                             \
+      MS_LOG(EXCEPTION) << message;                                                                \
+    } else {                                                                                       \
+      MS_LOG(ERROR) << message;                                                                    \
+    }                                                                                              \
+    if ((op_context).error_info_.empty()) {                                                        \
+      (op_context).error_info_ = message;                                                          \
+    }                                                                                              \
+    (op_context).SetFailed(kFailure);                                                              \
+    return;                                                                                        \
   } while (0);
 
 // Encapsulate the actor APIs associated with execution.
@@ -273,7 +268,7 @@ void UpdateRefCount(DeviceTensor *const device_tensor, bool is_max_ref_count = f
 // Update the reference count of device tensor by the output index of node.
 void UpdateRefCount(const AnfNodePtr &node, size_t output_idx, bool is_max_ref_count = false);
 
-void FreeMemoryByDeviceContext(DeviceTensor *const device_tensor, const DeviceContext *device_context);
+void FreeMemoryByDeviceContext(DeviceTensor *const device_tensor);
 // The memory free for the pynative bprop graph which is managed by the value node.
 void FreeMemoryByValueNode(const std::vector<std::weak_ptr<ValueNode>> &held_by_nodes, DeviceTensor *device_tensor);
 

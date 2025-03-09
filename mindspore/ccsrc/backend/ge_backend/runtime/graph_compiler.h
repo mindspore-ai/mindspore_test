@@ -24,7 +24,6 @@
 #include <map>
 #include <set>
 #include "utils/hash_map.h"
-#include "runtime/hardware/device_context.h"
 #include "backend/ge_backend/runtime//actor/actor_common.h"
 #include "backend/ge_backend/runtime//control_node_parser.h"
 #include "backend/common/session/session_basic.h"
@@ -33,11 +32,12 @@
 #include "include/backend/visible.h"
 #include "kernel/framework_utils.h"
 #include "common/device_type.h"
+#include "backend/ge_backend/executor/ge_graph_executor.h"
+#include "runtime/hardware/device_context.h"
 
 namespace mindspore {
 namespace ge_backend {
 namespace runtime {
-using device::DeviceContext;
 using session::CallBackFunc;
 using session::GraphOutputInfo;
 using session::InputInfo;
@@ -79,16 +79,15 @@ using KernelMapPosition = std::map<KernelWithIndex, std::vector<size_t>, session
 // The origin outputs order is used to correspond to the output args.
 // The need_erase means need erase this GraphCompilerInfo object after run actor set.
 struct BACKEND_EXPORT GraphCompilerInfo {
-  GraphCompilerInfo(const std::vector<KernelGraphPtr> &graphs, const std::vector<DeviceContext *> &device_contexts,
-                    const std::vector<std::vector<int64_t> *> &tensors_mask,
+  GraphCompilerInfo(const std::vector<KernelGraphPtr> &graphs, const std::vector<std::vector<int64_t> *> &tensors_mask,
                     const std::vector<std::vector<TensorPtr> *> &input_tensors,
                     const std::vector<AnfNodePtr> &control_nodes,
                     const std::vector<AnfNodePtr> &origin_parameters_order, const ControlNodeParserPtr &parser,
                     const KernelMapPosition &origin_outputs_order, size_t outputs_num, size_t inputs_num,
-                    const std::string &name, bool need_erase, GraphExecutionStrategy strategy, CompileFunc compile_func,
-                    const std::string &graph_phase, const FuncGraphPtr &root_graph)
+                    const std::string &name, bool need_erase, GraphExecutionStrategy strategy,
+                    const std::string &graph_phase, const FuncGraphPtr &root_graph,
+                    const std::shared_ptr<device::GraphExecutor> &graph_executor)
       : graphs_(graphs),
-        device_contexts_(device_contexts),
         tensors_mask_(tensors_mask),
         input_tensors_(input_tensors),
         control_nodes_(control_nodes),
@@ -101,12 +100,11 @@ struct BACKEND_EXPORT GraphCompilerInfo {
         need_erase_(need_erase),
         exist_flatten_concat_(false),
         strategy_(strategy),
-        compile_func_(std::move(compile_func)),
         graph_phase_(graph_phase),
-        root_graph_(root_graph) {}
+        root_graph_(root_graph),
+        graph_executor_(graph_executor) {}
   ~GraphCompilerInfo();
   std::vector<KernelGraphPtr> graphs_;
-  std::vector<DeviceContext *> device_contexts_;
   std::vector<std::vector<int64_t> *> tensors_mask_;
   std::vector<std::vector<TensorPtr> *> input_tensors_;
   std::vector<AnfNodePtr> control_nodes_;
@@ -121,24 +119,27 @@ struct BACKEND_EXPORT GraphCompilerInfo {
   bool need_erase_;
   mutable bool exist_flatten_concat_;
   mutable GraphExecutionStrategy strategy_;
-  CompileFunc compile_func_;
   std::string graph_phase_;
   FuncGraphPtr root_graph_;
+  std::shared_ptr<device::GraphExecutor> graph_executor_;
 };
 
 class GraphCompiler {
  public:
-  GraphCompiler() { session_ = session::SessionFactory::Get().Create(kSessionBasic); }
+  explicit GraphCompiler(std::shared_ptr<device::GraphExecutor> graph_executor) {
+    session_ = session::SessionFactory::Get().Create(kSessionBasic);
+    graph_executor_ = graph_executor;
+  }
   ~GraphCompiler() = default;
 
   // Construct kernel graph from anf nodes list and compile kernel graph in Graph mode,
   // the detailed implementation of compiling graph is in 'CompileGraphImpl'.
   GraphId CompileGraph(const GraphSegmentPtr &segment, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                       const DeviceContext *device_context, const backend::BackendJitConfig &backend_jit_config,
-                       device::RunMode run_mode, bool run_in_pynative = false);
+                       const backend::BackendJitConfig &backend_jit_config, device::RunMode run_mode,
+                       bool run_in_pynative = false);
 
   GraphId CompileGraph(const KernelGraphPtr &kernel_graph, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                       const DeviceContext *device_context, device::RunMode run_mode, bool run_in_pynative);
+                       device::RunMode run_mode, bool run_in_pynative);
 
   // Get graph by graph id, if not exist return nullptr, used in Graph mode.
   KernelGraphPtr Fetch(GraphId graph_id) const;
@@ -150,15 +151,14 @@ class GraphCompiler {
 
   // The implementation of compiling graph in Graph Mode, including optimizing graph,
   // setting operator info, creating kernel and transforming kernel graph to ActorSet.
-  GraphId CompileGraphImpl(const KernelGraphPtr &graph, const DeviceContext *device_context,
-                           bool run_in_pynative = true) const;
+  GraphId CompileGraphImpl(const KernelGraphPtr &graph, bool run_in_pynative = true) const;
   const session::SessionPtr &session_ptr() const { return session_; }
 
  private:
   DISABLE_COPY_AND_ASSIGN(GraphCompiler);
 
   // Create device address for all anf nodes of graph.
-  void CreateDeviceAddress(const KernelGraphPtr &graph, const DeviceContext *device_context) const;
+  void CreateDeviceAddress(const KernelGraphPtr &graph) const;
 
   // Set Graph's dependencies for pre_graph and post_graph
   void SetGraphDependency(const KernelGraphPtr &graph, const GraphSegmentPtr &segment) const;
@@ -166,6 +166,7 @@ class GraphCompiler {
   // The member variable 'session_' will be removed after removing session module.
   // Now all the GraphCompiler share the same 'session_'.
   session::SessionPtr session_;
+  std::shared_ptr<device::GraphExecutor> graph_executor_;
 };
 }  // namespace runtime
 }  // namespace ge_backend

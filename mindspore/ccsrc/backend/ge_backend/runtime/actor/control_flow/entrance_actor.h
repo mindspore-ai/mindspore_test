@@ -39,7 +39,6 @@ class EntranceActor : public ControlActor {
                 const std::set<KernelWithIndex> &call_nodes, const AnfNodePtr &node)
       : ControlActor(name, KernelTransformType::kEntranceActor, memory_manager_aid, parameters, node),
         call_nodes_(call_nodes) {
-    device_contexts_.resize(parameters.size());
     input_device_tensors_.resize(parameters.size());
   }
   ~EntranceActor() override = default;

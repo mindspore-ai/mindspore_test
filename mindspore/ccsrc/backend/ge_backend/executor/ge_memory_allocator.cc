@@ -29,7 +29,7 @@
 #include "abstract/abstract_value.h"
 #include "include/backend/kernel_graph.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
-#include "runtime/device/device_address_utils.h"
+#include "backend/ge_backend/utils/device_address_utils.h"
 #include "backend/ge_backend/executor/ge_memory_manager.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.h"
@@ -37,12 +37,14 @@
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "common/kernel_build_info.h"
 #include "ops/array_ops.h"
+#include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {
 namespace backend {
 namespace ge_backend {
 namespace {
 constexpr size_t kNeedRecycleOutput = 5;
+using mindspore::session::KernelWithIndex;
 
 void UpdateTracker(const std::string &task_name, const std::string &node_name, const std::string &graph_str,
                    size_t size, void *device_ptr, memory::mem_pool::MemType mem_type) {
@@ -176,15 +178,13 @@ device::DeviceAddressPtr CreateOutputDeviceAddress(const KernelGraphPtr &kernel_
   return output_device_addr;
 }
 
-void AllocParameterMemory(const KernelGraphPtr &kernel_graph, DeviceContext *device_context,
-                          std::set<KernelGraphPtr> *memo) {
+void AllocParameterMemory(const KernelGraphPtr &kernel_graph, std::set<KernelGraphPtr> *memo) {
   // Set Device Type to be same as Host Type, AssignStaticMemoryInput will ignore parameters without DeviceType
   MS_EXCEPTION_IF_NULL(kernel_graph);
-  MS_EXCEPTION_IF_NULL(device_context);
   if (memo == nullptr) {
     MS_LOG(INFO) << "Start AllocParameterMemory, kernel graph: " << kernel_graph->ToString();
     std::set<KernelGraphPtr> memo_set;
-    AllocParameterMemory(kernel_graph, device_context, &memo_set);
+    AllocParameterMemory(kernel_graph, &memo_set);
     MS_LOG(INFO) << "AllocParameterMemory finish.";
     return;
   } else if (memo->find(kernel_graph) != memo->end()) {
@@ -199,7 +199,7 @@ void AllocParameterMemory(const KernelGraphPtr &kernel_graph, DeviceContext *dev
     }
     SetKernelInfo(parameter);
   }
-  runtime::DeviceAddressUtils::CreateParameterDeviceAddress(device_context, kernel_graph);
+  DeviceAddressUtils::CreateParameterDeviceAddress(kernel_graph);
 }
 
 void AllocOutputMemory(const KernelGraphPtr &kernel_graph, GeDeviceResManagerPtr res_manager) {
@@ -379,9 +379,9 @@ void GEMemoryAllocator::AllocUnuseInput(const KernelGraphPtr &kernel_graph, kern
                 memory::mem_pool::MemType::kOther);
 }
 
-void GEMemoryAllocator::ProcessGraphDeviceAddress(const KernelGraphPtr &kernel_graph, DeviceContext *device_context,
+void GEMemoryAllocator::ProcessGraphDeviceAddress(const KernelGraphPtr &kernel_graph,
                                                   GeDeviceResManagerPtr res_manager) {
-  AllocParameterMemory(kernel_graph, device_context, nullptr);
+  AllocParameterMemory(kernel_graph, nullptr);
   AllocOutputMemory(kernel_graph, res_manager);
   EnableGraphInputZeroCopy(kernel_graph);
   EnableGraphOutputZeroCopy(kernel_graph);

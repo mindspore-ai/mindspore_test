@@ -17,6 +17,7 @@
 #include "backend/ge_backend/runtime/actor/abstract_actor.h"
 #include "backend/ge_backend/runtime/actor/output_actor.h"
 #include "utils/log_adapter.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -121,14 +122,16 @@ void AbstractActor::FetchInputByTensorStore(
   std::vector<DeviceTensor *> *const input_device_tensors, std::vector<KernelTensor *> *const input_kernel_tensors,
   std::vector<abstract::AbstractBasePtr> *const input_kernel_tensors_for_infer,
   std::vector<DeviceTensor *> *const memory_free_tensors, OpContext<DeviceTensor> *const context) const {
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  auto device_type = device::GetDeviceTypeByName(context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET));
   for (auto &device_tensor_store_key : device_tensor_store_keys_) {
-    auto device_tensor = DeviceTensorStore::GetInstance()
-                           .Fetch(device_tensor_store_key.second.get(), device_contexts_[0]->GetDeviceType())
-                           .get();
+    auto device_tensor =
+      DeviceTensorStore::GetInstance().Fetch(device_tensor_store_key.second.get(), device_type).get();
     if (device_tensor == nullptr) {
-      std::string error_info =
-        GetAID().Name() + " get device tensor store failed: " + device_tensor_store_key.second->DebugString() +
-        ", device type:" + std::to_string(static_cast<int>(device_contexts_[0]->GetDeviceType()));
+      std::string error_info = GetAID().Name() +
+                               " get device tensor store failed: " + device_tensor_store_key.second->DebugString() +
+                               ", device type:" + std::to_string(static_cast<int>(device_type));
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
     if ((*input_device_tensors)[device_tensor_store_key.first] != device_tensor) {

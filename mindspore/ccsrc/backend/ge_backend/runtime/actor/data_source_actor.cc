@@ -86,50 +86,43 @@ void HostQueueDataSourceActor::FillDataBuffer() {
 }
 
 void HostQueueDataSourceActor::SendMemoryAllocReq(OpContext<DeviceTensor> *const context) {
-  if (device_contexts_.empty()) {
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Empty device contexts in device data source actor.");
-  }
   auto &device_tensors = buffers_.back();
   if (ActorDispatcher::is_memory_allocation_sync()) {
     if (IsSameDeviceType()) {
-      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &device_tensors,
-                                device_contexts_[0], context, GetAID());
+      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &device_tensors, context,
+                                GetAID());
     } else {
-      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateBatchMemory, &device_tensors,
-                                &device_contexts_, context, GetAID());
+      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateBatchMemory, &device_tensors, context,
+                                GetAID());
     }
     OnMemoryAllocFinish(context);
   } else {
     if (IsSameDeviceType()) {
-      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &device_tensors,
-                            device_contexts_[0], context, GetAID());
+      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &device_tensors, context,
+                            GetAID());
     } else {
-      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateBatchMemory, &device_tensors,
-                            &device_contexts_, context, GetAID());
+      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateBatchMemory, &device_tensors, context,
+                            GetAID());
     }
   }
 }
 
 void HostQueueDataSourceActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context) {
-  if (device_contexts_.empty()) {
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Empty device contexts in device data source actor.");
-  }
   auto &device_tensors = buffers_.front();
   if (ActorDispatcher::is_memory_free_sync()) {
     if (IsSameDeviceType()) {
-      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &device_tensors,
-                                device_contexts_[0], context, GetAID());
+      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &device_tensors, context,
+                                GetAID());
     } else {
-      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeBatchMemory, &device_tensors,
-                                &device_contexts_, context, GetAID());
+      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeBatchMemory, &device_tensors, context,
+                                GetAID());
     }
   } else {
     if (IsSameDeviceType()) {
-      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &device_tensors, device_contexts_[0],
-                            context, GetAID());
+      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &device_tensors, context, GetAID());
     } else {
-      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeBatchMemory, &device_tensors,
-                            &device_contexts_, context, GetAID());
+      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeBatchMemory, &device_tensors, context,
+                            GetAID());
     }
   }
 }
@@ -141,7 +134,7 @@ void HostQueueDataSourceActor::AddCopyDataCallBack(bool enable_async_copy,
     return;
   }
 
-  device::CallbackFunc callback_func = [host_tensors]() {
+  std::function<void(void)> callback_func = [host_tensors]() {
     // Clear buffer automatically.
   };
 
@@ -259,14 +252,7 @@ KernelWithIndex HostQueueDataSourceActor::FetchNode(size_t node_position) const 
   return data_node_with_indexs_[node_position];
 }
 
-bool HostQueueDataSourceActor::IsSameDeviceType() const {
-  for (size_t i = 1; i < device_contexts_.size(); i++) {
-    if (device_contexts_[i] != device_contexts_[0]) {
-      return false;
-    }
-  }
-  return true;
-}
+bool HostQueueDataSourceActor::IsSameDeviceType() const { return true; }
 
 void HostQueueDataSourceActor::ReleaseData() {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kOutputProcess, "DataSourceActorReleaseData");
@@ -287,16 +273,17 @@ void HostQueueDataSourceActor::ReleaseData() {
     }
     // If the address from input tensor and the address is not used by runtime.
     if (old_address->original_ref_count() == SIZE_MAX && !old_address->is_ptr_persisted()) {
-      auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {old_address->device_name(), old_address->device_id()});
-      MS_EXCEPTION_IF_NULL(device_context);
+      device::ResKey res_key{device::GetDeviceTypeByName(old_address->device_name()), old_address->device_id()};
+      auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+      MS_EXCEPTION_IF_NULL(res_manager);
+
       const auto &kernel_tensor = old_address->kernel_tensor();
       MS_EXCEPTION_IF_NULL(kernel_tensor);
       auto new_kernel_tensor = kernel_tensor->CloneKernelTensor();
       MS_EXCEPTION_IF_NULL(new_kernel_tensor);
       new_kernel_tensor->set_device_ptr(nullptr);
 
-      auto new_address = device_context->device_res_manager_->CreateDeviceAddress(new_kernel_tensor);
+      auto new_address = res_manager->CreateDeviceAddress(new_kernel_tensor);
       MS_EXCEPTION_IF_NULL(new_address);
       MS_LOG(DEBUG) << "Create device tensor:" << new_address << " type:" << new_address->type_id()
                     << ", kernel tensor addr:" << new_kernel_tensor.get();

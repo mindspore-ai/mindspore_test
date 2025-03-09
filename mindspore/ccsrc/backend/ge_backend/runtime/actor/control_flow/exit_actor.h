@@ -37,7 +37,6 @@ class ExitActor : public ControlActor {
   ExitActor(const std::string &name, const AID &memory_manager_aid, const std::vector<KernelWithIndex> &parameters,
             const AnfNodePtr &node)
       : ControlActor(name, KernelTransformType::kExitActor, memory_manager_aid, parameters, node) {
-    device_contexts_.resize(parameters.size());
     input_device_tensors_.resize(parameters.size());
   }
   ~ExitActor() override = default;

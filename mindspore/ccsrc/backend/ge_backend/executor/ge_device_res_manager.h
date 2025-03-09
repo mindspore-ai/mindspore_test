@@ -18,9 +18,8 @@
 
 #include <memory>
 #include <string>
-#include "runtime/device/kernel_runtime.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "external/ge/ge_allocator.h"
+#include "runtime/device/res_manager/hal_res_base.h"
 
 namespace mindspore {
 namespace backend {
@@ -50,8 +49,8 @@ class GeDeviceResManager {
 
  private:
   bool initialized_ = false;
-  device::KernelRuntime *runtime_instance_ = nullptr;
   std::shared_ptr<device::MemoryManager> mem_manager_{nullptr};
+  device::HalResBase *res_manager_ = nullptr;
 };
 using GeDeviceResManagerPtr = std::shared_ptr<GeDeviceResManager>;
 

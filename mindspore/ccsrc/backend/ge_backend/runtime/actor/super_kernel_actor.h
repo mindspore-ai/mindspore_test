@@ -26,14 +26,13 @@
 #include <set>
 #include "backend/ge_backend/runtime/actor/debug_aware_actor.h"
 #include "backend/ge_backend/runtime/actor/actor_common.h"
-#include "runtime/hardware/device_context.h"
 #include "ir/anf.h"
+#include "backend/ge_backend/executor/ge_graph_executor.h"
 
 namespace mindspore {
 namespace ge_backend {
 namespace runtime {
 using mindspore::device::DeviceAddress;
-using mindspore::device::DeviceContext;
 
 struct OutputMemoryInfo {
   size_t size;
@@ -44,13 +43,14 @@ struct OutputMemoryInfo {
 class SuperKernelActor : public DebugAwareActor {
  public:
   SuperKernelActor(const std::string &name, const KernelGraphPtr &graph, const std::string &graph_phase,
-                   const DeviceContext *device_context, const AID &memory_manager_aid, const AID *debug_aid,
-                   const AID *recorder_aid, KernelTransformType type = KernelTransformType::kSuperKernelActor)
+                   const AID &memory_manager_aid, const AID *debug_aid, const AID *recorder_aid,
+                   const std::shared_ptr<device::GraphExecutor> &graph_executor,
+                   KernelTransformType type = KernelTransformType::kSuperKernelActor)
       : DebugAwareActor(name, type, recorder_aid, memory_manager_aid, debug_aid, nullptr),
         graph_(graph),
         graph_phase_(graph_phase),
-        is_infer_phase_(IsInferPhase(graph_phase)) {
-    (void)device_contexts_.emplace_back(device_context);
+        is_infer_phase_(IsInferPhase(graph_phase)),
+        graph_executor_(graph_executor) {
     input_device_tensors_.resize(graph->input_nodes().size());
   }
   ~SuperKernelActor() override = default;
@@ -83,8 +83,8 @@ class SuperKernelActor : public DebugAwareActor {
   std::queue<std::vector<DeviceTensor *>> memory_free_lists_;
 
  private:
-  bool CopyInputDataPersistedHandle(const DeviceContext *device_context, DeviceTensor *input_device_tensor,
-                                    const DeviceTensorPtr &node_device_tensor, size_t i);
+  bool CopyInputDataPersistedHandle(DeviceTensor *input_device_tensor, const DeviceTensorPtr &node_device_tensor,
+                                    size_t i);
 
   void FetchPersistentDeviceTensor();
 
@@ -110,6 +110,7 @@ class SuperKernelActor : public DebugAwareActor {
   std::vector<DeviceTensorPtr> copy_input_device_tensors_;
   // Record the device address to the output node of graph.
   std::map<DeviceAddress *, OutputMemoryInfo> device_address_to_node_;
+  std::shared_ptr<device::GraphExecutor> graph_executor_;
 };
 
 using SuperKernelActorPtr = std::shared_ptr<SuperKernelActor>;

@@ -249,14 +249,6 @@ void SchedulerHelper::AddResultArrow(AbstractActor *const from_actor, OutputActo
                 << " original ref count:" << device_tensor->original_ref_count()
                 << " ref count:" << device_tensor->ref_count()
                 << " dynamic ref count:" << device_tensor->dynamic_ref_count();
-
-  // Set the device contexts of to_actor.
-  if (output_position >= to_actor->device_contexts_.size()) {
-    MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#The output position is out of range.";
-  }
-  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device_tensor->device_name(), device_tensor->device_id()});
-  to_actor->device_contexts_[output_position] = device_context;
 }
 
 void SchedulerHelper::AddControlArrow(AbstractActor *const from_actor, AbstractActor *const to_actor) {

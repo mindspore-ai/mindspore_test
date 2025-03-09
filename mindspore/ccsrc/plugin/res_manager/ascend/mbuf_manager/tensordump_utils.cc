@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/device/tensordump_utils.h"
+#include "plugin/res_manager/ascend/mbuf_manager/tensordump_utils.h"
 #include <string>
 #include <fstream>
 #include <memory>

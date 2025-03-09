@@ -20,6 +20,7 @@
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -33,8 +34,7 @@ void OnMemoryAllocFinish(const AID &from_aid, OpContext<DeviceTensor> *const op_
 }  // namespace
 
 void MemoryManagerActor::AllocateMemory(const std::vector<DeviceTensor *> *alloc_list,
-                                        const DeviceContext *device_context, OpContext<DeviceTensor> *const op_context,
-                                        const AID &from_aid) {
+                                        OpContext<DeviceTensor> *const op_context, const AID &from_aid) {
   for (auto &device_tensor : *alloc_list) {
     MS_EXCEPTION_IF_NULL(device_tensor);
     // Unused device address need skip to reduce memory use.
@@ -48,14 +48,21 @@ void MemoryManagerActor::AllocateMemory(const std::vector<DeviceTensor *> *alloc
     }
 
     try {
+      auto ms_context = MsContext::GetInstance();
+      MS_EXCEPTION_IF_NULL(ms_context);
+      auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+      const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+      device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+      auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+      MS_EXCEPTION_IF_NULL(res_manager);
       // Allocate memory through the device context.
-      bool success = device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex);
+      bool success = res_manager->AllocateMemory(device_tensor, kDefaultStreamIndex);
       if (!success) {
-        SetOpContextMemoryAllocFail(from_aid.Name(), device_context, device_tensor->GetSize(), op_context);
+        SetOpContextMemoryAllocFail(from_aid.Name(), device_tensor->GetSize(), op_context);
         return;
       }
     } catch (const std::exception &e) {
-      SetOpContextMemoryAllocFail(from_aid.Name(), device_context, device_tensor->GetSize(), op_context);
+      SetOpContextMemoryAllocFail(from_aid.Name(), device_tensor->GetSize(), op_context);
       return;
     }
 
@@ -69,24 +76,24 @@ void MemoryManagerActor::AllocateMemory(const std::vector<DeviceTensor *> *alloc
 }
 
 void MemoryManagerActor::AllocateBatchMemory(const std::vector<DeviceTensor *> *alloc_list,
-                                             const std::vector<const DeviceContext *> *device_contexts,
                                              OpContext<DeviceTensor> *const op_context, const AID &from_aid) {
   uint64_t start_time = 0;
   PROFILER_START(start_time);
 
   MS_EXCEPTION_IF_NULL(alloc_list);
-  MS_EXCEPTION_IF_NULL(device_contexts);
   MS_EXCEPTION_IF_NULL(op_context);
-  if ((*alloc_list).size() != (*device_contexts).size()) {
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*op_context),
-                                      "The size of alloc list is not equal to the size of device contexts.");
-  }
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
 
   for (size_t i = 0; i < (*alloc_list).size(); ++i) {
     auto &device_tensor = (*alloc_list)[i];
-    auto &device_context = (*device_contexts)[i];
     MS_EXCEPTION_IF_NULL(device_tensor);
-    MS_EXCEPTION_IF_NULL(device_context);
     // Unused device address need skip to reduce memory use.
     if (device_tensor->IsNotNeedAlloc()) {
       continue;
@@ -97,12 +104,12 @@ void MemoryManagerActor::AllocateBatchMemory(const std::vector<DeviceTensor *> *
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "BatchMemory", "");
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
         AddMemInfo, from_aid.Name(), memory::mem_pool::MemType::kBatchMemory, device_tensor->GetSize(), device_tensor);
-      if (!device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex)) {
-        SetOpContextMemoryAllocFail(from_aid.Name(), device_context, device_tensor->GetSize(), op_context);
+      if (!res_manager->AllocateMemory(device_tensor, kDefaultStreamIndex)) {
+        SetOpContextMemoryAllocFail(from_aid.Name(), device_tensor->GetSize(), op_context);
         return;
       }
     } catch (const std::exception &e) {
-      SetOpContextMemoryAllocFail(from_aid.Name(), device_context, device_tensor->GetSize(), op_context);
+      SetOpContextMemoryAllocFail(from_aid.Name(), device_tensor->GetSize(), op_context);
       return;
     }
   }
@@ -113,31 +120,23 @@ void MemoryManagerActor::AllocateBatchMemory(const std::vector<DeviceTensor *> *
   PROFILER_END(start_time, ProfilerModule::kRuntime, ProfilerEvent::kMemoryAlloc, from_aid.Name(), false);
 }
 
-void MemoryManagerActor::FreeMemory(const std::vector<DeviceTensor *> *free_list, const DeviceContext *device_context,
-                                    OpContext<DeviceTensor> *, const AID &from_aid) {
+void MemoryManagerActor::FreeMemory(const std::vector<DeviceTensor *> *free_list, OpContext<DeviceTensor> *,
+                                    const AID &from_aid) {
   for (auto &device_tensor : *free_list) {
-    FreeMemoryByRefCount(device_tensor, device_context, from_aid.Name());
+    FreeMemoryByRefCount(device_tensor, from_aid.Name());
   }
 }
 
 void MemoryManagerActor::FreeBatchMemory(const std::vector<DeviceTensor *> *free_list,
-                                         const std::vector<const DeviceContext *> *device_contexts,
                                          OpContext<DeviceTensor> *const op_context, const AID &from_aid) {
   uint64_t start_time = 0;
   PROFILER_START(start_time);
-
   MS_EXCEPTION_IF_NULL(free_list);
-  MS_EXCEPTION_IF_NULL(device_contexts);
   MS_EXCEPTION_IF_NULL(op_context);
-  if ((*free_list).size() != (*device_contexts).size()) {
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*op_context),
-                                      "The size of free list is not equal to the size of device contexts.");
-  }
 
   for (size_t i = 0; i < (*free_list).size(); ++i) {
     auto &device_tensor = (*free_list)[i];
-    auto &device_context = (*device_contexts)[i];
-    FreeMemoryByRefCount(device_tensor, device_context, from_aid.Name());
+    FreeMemoryByRefCount(device_tensor, from_aid.Name());
   }
 
   PROFILER_END(start_time, ProfilerModule::kRuntime, ProfilerEvent::kMemoryFree, from_aid.Name(), false);
@@ -149,8 +148,7 @@ void MemoryManagerActor::Wait(OpContext<DeviceTensor> *const op_context, const A
 }
 
 // Only one of the static and dynamic reference counts will take effect.
-void MemoryManagerActor::FreeMemoryByRefCount(DeviceTensor *const device_tensor, const DeviceContext *device_context,
-                                              const std::string &op_name) {
+void MemoryManagerActor::FreeMemoryByRefCount(DeviceTensor *const device_tensor, const std::string &op_name) {
   if (device_tensor == nullptr) {
     return;
   }
@@ -163,7 +161,7 @@ void MemoryManagerActor::FreeMemoryByRefCount(DeviceTensor *const device_tensor,
       if (device_tensor->GetPtr() != nullptr) {
         auto held_by_nodes = device_tensor->held_by_nodes();
         if (held_by_nodes.empty()) {
-          FreeMemoryByDeviceContext(device_tensor, device_context);
+          FreeMemoryByDeviceContext(device_tensor);
         } else {
           FreeMemoryByValueNode(held_by_nodes, device_tensor);
         }
@@ -181,15 +179,13 @@ void MemoryManagerActor::FreeMemoryByRefCount(DeviceTensor *const device_tensor,
         device_tensor->set_ptr(nullptr);
         return;
       }
-      FreeMemoryByDeviceContext(device_tensor, device_context);
+      FreeMemoryByDeviceContext(device_tensor);
     }
   }
 }
 
-void MemoryManagerActor::SetOpContextMemoryAllocFail(const std::string &kernel_name,
-                                                     const DeviceContext *device_context, size_t alloc_size,
+void MemoryManagerActor::SetOpContextMemoryAllocFail(const std::string &kernel_name, size_t alloc_size,
                                                      OpContext<DeviceTensor> *const op_context) {
-  MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(op_context);
 
   std::lock_guard<std::mutex> locker(mem_alloc_failed_mutex_);
@@ -198,8 +194,8 @@ void MemoryManagerActor::SetOpContextMemoryAllocFail(const std::string &kernel_n
   if (mem_alloc_failed_step_ids_.find(step_id) == mem_alloc_failed_step_ids_.end()) {
     mem_alloc_failed_step_ids_.clear();
     (void)mem_alloc_failed_step_ids_.insert(step_id);
-    SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *op_context, *device_context,
-                                                kernel_name, alloc_size);
+    SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *op_context, kernel_name,
+                                                alloc_size);
   }
 }
 }  // namespace runtime

@@ -22,6 +22,8 @@
 #include "utils/log_adapter.h"
 #include "utils/file_utils.h"
 #include "debug/profiler/profiling.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -31,22 +33,27 @@ namespace runtime {
  * Target device group: Ascend.
  * Description: Add step start timestamp when profiler is started.
  */
-void ProfilerActor::AscendStepStart(const std::vector<KernelGraphPtr> &graphs,
-                                    std::vector<DeviceContext *> device_contexts) {
+void ProfilerActor::AscendStepStart(const std::vector<KernelGraphPtr> &graphs) {
   auto profiler = profiler::Profiler::GetInstance(kAscendDevice);
   if (profiler == nullptr || !profiler->IsInitialized() || graphs.empty()) {
     return;
   }
   if (profiler->GetEnableFlag() && !graphs[0]->IsDatasetGraph()) {
     profile_started_ = false;
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+
     for (size_t i = 0; i < graphs.size(); ++i) {
       MS_EXCEPTION_IF_NULL(graphs[i]);
-      MS_EXCEPTION_IF_NULL(device_contexts[i]);
-      if (device_contexts[i]->GetDeviceType() == device::DeviceType::kAscend && !profile_started_) {
-        device_ctx_ = device_contexts[i];
-        device_ctx_->device_res_manager_->BindDeviceToCurrentThread(false);
+      if (!profile_started_) {
+        res_manager->BindDeviceToCurrentThread(false);
         MS_LOG(INFO) << "Dot step start timestamp.";
-        profiler->StepStart(current_step++, device_contexts[i]->device_res_manager_->GetStream());
+        profiler->StepStart(current_step++, res_manager->GetStream());
         profile_started_ = true;
       }
     }
@@ -61,9 +68,16 @@ void ProfilerActor::AscendStepStart(const std::vector<KernelGraphPtr> &graphs,
 void ProfilerActor::AscendStepEnd() {
   auto profiler = profiler::Profiler::GetInstance(kAscendDevice);
   if (profile_started_ && profiler != nullptr && profiler->GetEnableFlag()) {
-    MS_EXCEPTION_IF_NULL(device_ctx_);
-    device_ctx_->device_res_manager_->BindDeviceToCurrentThread(false);
-    device_ctx_->device_res_manager_->SyncAllStreams();
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+
+    res_manager->BindDeviceToCurrentThread(false);
+    res_manager->SyncAllStreams();
     MS_LOG(INFO) << "Dot step end timestamp.";
     profiler->StepStop();
     profile_started_ = false;
@@ -77,18 +91,11 @@ void ProfilerActor::AscendStepEnd() {
  */
 void ProfilerActor::ProfilerOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
                                         const std::vector<AnfNodePtr> &origin_parameters_order,
-                                        std::vector<DeviceContext *> device_contexts,
                                         OpContext<DeviceTensor> *const op_context, const AID *) {
   MS_LOG(INFO) << "Profiler on step begin.";
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  std::string backend = context->backend_policy();
-  device_ctx_ = device_contexts[0];
-  if (backend == "ge") {
-    AscendStepStart(graphs, device_contexts);
-    MS_LOG(INFO) << "Profiler_actor ProfilerOnStepBegin.";
-    return;
-  }
+  AscendStepStart(graphs);
+  MS_LOG(INFO) << "Profiler_actor ProfilerOnStepBegin.";
+  return;
 }
 
 /*
@@ -105,7 +112,15 @@ void ProfilerActor::ProfilerOnStepEnd(OpContext<DeviceTensor> *const op_context,
   step_count = total_running_count_;
   if (backend == "ge") {
     AscendStepEnd();
-    device_ctx_->device_res_manager_->SyncAllStreams();
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+
+    res_manager->SyncAllStreams();
     MS_LOG(INFO) << "Profiler_actor ProfilerOnStepEnd.";
     return;
   }

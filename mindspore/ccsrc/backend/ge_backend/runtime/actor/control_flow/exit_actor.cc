@@ -17,8 +17,8 @@
 #include <algorithm>
 #include "backend/ge_backend/runtime/actor/control_flow/exit_actor.h"
 #include "backend/ge_backend/runtime/actor/output_actor.h"
-#include "runtime/hardware/device_context_manager.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -43,7 +43,7 @@ void ExitActor::Init() {
   }
 
   // Check device contexts number.
-  if (device_contexts_.size() != input_device_tensors_.size()) {
+  if (formal_parameters_.size() != input_device_tensors_.size()) {
     MS_LOG(EXCEPTION) << "The device contexts number is wrong.";
   }
 }
@@ -167,22 +167,27 @@ void ExitActor::IncreaseDynamicRefCounts(OpContext<DeviceTensor> *const context)
       IncreaseDynamicRefCount(output_partial);
     }
   }
-  if (input_device_tensors_.size() != device_contexts_.size()) {
+  if (input_device_tensors_.size() != formal_parameters_.size()) {
     MS_LOG(ERROR) << "Input device tensor size:" << input_device_tensors_.size()
-                  << " is not equal to context size:" << device_contexts_.size() << " for actor:" << GetAID();
+                  << " is not equal to parameter size:" << formal_parameters_.size() << " for actor:" << GetAID();
   }
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  auto device_type = device::GetDeviceTypeByName(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET));
+  device::ResKey res_key{device_type, device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+
   // The input device tensor may not have users and needs to free the memory.
   for (size_t i = 0; i < input_device_tensors_.size(); ++i) {
-    if ((input_device_tensors_[i] != nullptr) && (input_device_tensors_[i]->dynamic_ref_count() == 0) &&
-        (device_contexts_[i] != nullptr)) {
+    if (device_type != input_device_tensors_[i]->GetDeviceType()) {
+      MS_LOG(EXCEPTION) << "GE backend only support Ascend, but get " << input_device_tensors_[i]->device_name();
+    }
+    if ((input_device_tensors_[i] != nullptr) && (input_device_tensors_[i]->dynamic_ref_count() == 0)) {
       MS_LOG(INFO) << GetAID().Name() << " input index:" << i << " has no user and free the memory.";
-      // Update the real used device context by the input data.
-      if (device_contexts_[i]->GetDeviceType() != input_device_tensors_[i]->GetDeviceType()) {
-        device_contexts_[i] = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-          {input_device_tensors_[i]->device_name(), input_device_tensors_[i]->device_id()});
-        MS_LOG(INFO) << "Update device context type to:" << device_contexts_[i]->GetDeviceType();
-      }
-      device_contexts_[i]->device_res_manager_->FreeMemory(input_device_tensors_[i]);
+      res_manager->FreeMemory(input_device_tensors_[i]);
     }
   }
 }
@@ -309,12 +314,12 @@ void ExitActor::CopyDeviceAddress(OpContext<DeviceTensor> *const context) {
   }
   if (input_device_tensors_.size() != is_need_copy_device_tensors_.size() ||
       input_device_tensors_.size() != is_dynamic_shapes_.size() ||
-      input_device_tensors_.size() != device_contexts_.size() ||
+      input_device_tensors_.size() != formal_parameters_.size() ||
       input_device_tensors_.size() != is_need_dynamic_checks_.size()) {
     std::string error_info = "Invalid input device tensor size:" + std::to_string(input_device_tensors_.size()) +
                              " need tensor size:" + std::to_string(is_need_copy_device_tensors_.size()) +
                              " need dynamic shape size:" + std::to_string(is_dynamic_shapes_.size()) +
-                             " need context size:" + std::to_string(device_contexts_.size()) +
+                             " need context size:" + std::to_string(formal_parameters_.size()) +
                              " for actor:" + GetAID().Name();
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
   }
@@ -339,14 +344,16 @@ void ExitActor::CopyDeviceAddress(OpContext<DeviceTensor> *const context) {
     }
 
     // Update the real used device context by the input data.
-    auto &device_context = device_contexts_[i];
-    MS_EXCEPTION_IF_NULL(device_context);
-    MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-    if (device_context->GetDeviceType() != input_device_tensor->GetDeviceType()) {
-      device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {input_device_tensor->device_name(), input_device_tensor->device_id()});
-      MS_LOG(INFO) << "Update device context type to:" << device_context->GetDeviceType();
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    auto device_type = device::GetDeviceTypeByName(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET));
+    if (device_type != input_device_tensor->GetDeviceType()) {
+      device_type = input_device_tensor->GetDeviceType();
     }
+    device::ResKey res_key{device_type, device_id};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
 
     const KernelWithIndex &node_with_index = input_device_tensor->GetNodeIndex();
     MS_EXCEPTION_IF_NULL(node_with_index.first);
@@ -356,7 +363,7 @@ void ExitActor::CopyDeviceAddress(OpContext<DeviceTensor> *const context) {
     auto new_kernel_tensor = kernel_tensor->CloneKernelTensor();
     MS_EXCEPTION_IF_NULL(new_kernel_tensor);
     new_kernel_tensor->set_device_ptr(nullptr);
-    DeviceTensorPtr new_device_tensor = device_context->device_res_manager_->CreateDeviceAddress(new_kernel_tensor);
+    DeviceTensorPtr new_device_tensor = res_manager->CreateDeviceAddress(new_kernel_tensor);
     MS_EXCEPTION_IF_NULL(new_device_tensor);
     MS_LOG(DEBUG) << "Actor:" << GetAID() << " create new device tensor:" << new_device_tensor
                   << " type:" << new_device_tensor->type_id() << " by input device tensor:" << input_device_tensor
@@ -378,9 +385,9 @@ void ExitActor::CopyDeviceAddress(OpContext<DeviceTensor> *const context) {
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), "CopyDeviceAddress", "");
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, GetAID().Name(), memory::mem_pool::MemType::kOther,
                                                      new_device_tensor->GetSize(), new_device_tensor.get());
-      if (!device_context->device_res_manager_->AllocateMemory(new_device_tensor.get(), kDefaultStreamIndex)) {
-        SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, *device_context,
-                                                    GetAID().Name(), new_device_tensor->GetSize());
+      if (!res_manager->AllocateMemory(new_device_tensor.get(), kDefaultStreamIndex)) {
+        SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, GetAID().Name(),
+                                                    new_device_tensor->GetSize());
       }
       if (!new_device_tensor->SyncDeviceToDevice(input_device_tensor)) {
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Sync device to device failed.");

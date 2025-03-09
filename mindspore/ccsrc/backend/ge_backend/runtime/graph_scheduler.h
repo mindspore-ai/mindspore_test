@@ -37,7 +37,6 @@
 namespace mindspore {
 namespace ge_backend {
 namespace runtime {
-using mindspore::device::DeviceContext;
 using mindspore::session::KernelGraph;
 using mindspore::session::KernelWithIndex;
 
@@ -165,11 +164,9 @@ class BACKEND_EXPORT GraphScheduler {
 
   // Persist device tensors of graph's some nodes(such as weights and value nodes).
   void PersistDeviceTensor(const GraphCompilerInfo &graph_compiler_info) const;
-  void PersistDeviceTensorForValueNode(const AnfNodePtr &value_node, const KernelGraphPtr &graph,
-                                       const DeviceContext *device_context) const;
+  void PersistDeviceTensorForValueNode(const AnfNodePtr &value_node, const KernelGraphPtr &graph) const;
   void PersistDeviceTensorForParameter(const AnfNodePtr &parameter, const KernelGraphPtr &graph,
-                                       const GraphCompilerInfo &graph_compiler_info,
-                                       const DeviceContext *device_context) const;
+                                       const GraphCompilerInfo &graph_compiler_info) const;
   // When the parameters of root graph are not in backend kernel graphs, need persist device tensor by this function.
   void PersistDeviceTensorForRootGraphControlNode(const GraphCompilerInfo &graph_compiler_info) const;
 

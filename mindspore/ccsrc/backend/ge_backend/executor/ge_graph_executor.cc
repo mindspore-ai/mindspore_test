@@ -32,7 +32,7 @@
 #include "abstract/abstract_value.h"
 #include "include/backend/kernel_graph.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
-#include "runtime/device/device_address_utils.h"
+#include "backend/ge_backend/utils/device_address_utils.h"
 #include "backend/ge_backend/executor/ge_memory_allocator.h"
 #include "backend/ge_backend/executor/ge_utils.h"
 #include "plugin/device/ascend/hal/hardware/ge_device_context.h"
@@ -53,6 +53,7 @@ namespace backend {
 namespace ge_backend {
 namespace {
 const std::set<std::string> kIgnoreGEShapeOps = {kSoftMarginLossOpName};
+using mindspore::session::KernelWithIndex;
 
 void GetMeRetDataType(const AbstractBasePtr &cnode_data, std::vector<TypeId> *me_types) {
   MS_EXCEPTION_IF_NULL(cnode_data);
@@ -171,7 +172,7 @@ bool BuildFakeGraph(const FuncGraphPtr &anf_graph) {
   return true;
 }
 
-void ClearForwardOutputAddress(const KernelGraphPtr &graph, const DeviceContext *device_context) {
+void ClearForwardOutputAddress(const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
   if (!graph->has_flag(kFlagPyNativeRunInGraph)) {
     return;
@@ -183,7 +184,7 @@ void ClearForwardOutputAddress(const KernelGraphPtr &graph, const DeviceContext 
     if (parameter != nullptr) {
       if (parameter->has_user_data(kForwardOutput)) {
         auto device_address = AnfAlgo::GetMutableOutputAddr(parameter, 0);
-        auto new_address = runtime::DeviceAddressUtils::CloneEmptyDeviceAddress(device_address, device_context);
+        auto new_address = DeviceAddressUtils::CloneEmptyDeviceAddress(device_address);
         AnfAlgo::SetOutputAddr(new_address, 0, parameter.get());
         MS_LOG(DEBUG) << "Clear old address " << device_address.get() << " and set new address " << new_address.get()
                       << " to parameter " << parameter->name();
@@ -492,7 +493,7 @@ bool GeGraphExecutor::CompileGraph(const KernelGraphPtr &graph,
       graph->SetGraphDynamicAttr(true);
     }
   }
-  GEMemoryAllocator::ProcessGraphDeviceAddress(graph, device_context_, ge_res_manager_);
+  GEMemoryAllocator::ProcessGraphDeviceAddress(graph, ge_res_manager_);
 
   graph->set_run_mode(device::RunMode::kGraphMode);
   graph->set_memory_managed_by_ge(true);
@@ -564,7 +565,10 @@ void GeGraphExecutor::AllocInputMemory(const device::DeviceAddressPtr &input_add
   }
 
   if (!ge_res_manager_->AllocateMemory(input_address.get(), kDefaultStreamIndex)) {
-    MS_LOG(EXCEPTION) << "#umsg#Memory not enough:#umsg#Device(id:" << device_context_->device_context_key().device_id_
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    MS_LOG(EXCEPTION) << "#umsg#Memory not enough:#umsg#Device(id:" << device_id
                       << ") memory isn't enough and alloc failed, kernel name: Split tuple outputs, alloc size: "
                       << input_address->GetSize() << "B.";
   }
@@ -597,8 +601,10 @@ void GeGraphExecutor::AllocGEInputOutputMemory(const KernelGraphPtr &graph) cons
       UpdateTracker("AllocInputs", need_update_input[i].first.lock()->fullname_with_scope(), graph->ToString(),
                     mem_type, input_address);
       if (!ge_res_manager_->AllocateMemory(input_address, kDefaultStreamIndex)) {
-        MS_LOG(EXCEPTION) << "#umsg#Memory not enough:#umsg#Device(id:"
-                          << device_context_->device_context_key().device_id_
+        auto ms_context = MsContext::GetInstance();
+        MS_EXCEPTION_IF_NULL(ms_context);
+        auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+        MS_LOG(EXCEPTION) << "#umsg#Memory not enough:#umsg#Device(id:" << device_id
                           << ") memory isn't enough and alloc failed, kernel name: Split tuple outputs, alloc size: "
                           << input_address->GetSize() << "B.";
       }
@@ -640,8 +646,10 @@ void GeGraphExecutor::AllocGEInputOutputMemory(const KernelGraphPtr &graph) cons
       UpdateTracker("AllocOutputs", graph_outputs[i].first.lock()->fullname_with_scope(), graph->ToString(),
                     memory::mem_pool::MemType::kGraphOutput, output_address);
       if (!ge_res_manager_->AllocateMemory(output_address, kDefaultStreamIndex)) {
-        MS_LOG(EXCEPTION) << "#umsg#Memory not enough:#umsg#Device(id:"
-                          << device_context_->device_context_key().device_id_
+        auto ms_context = MsContext::GetInstance();
+        MS_EXCEPTION_IF_NULL(ms_context);
+        auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+        MS_LOG(EXCEPTION) << "#umsg#Memory not enough:#umsg#Device(id:" << device_id
                           << ") memory isn't enough and alloc failed, kernel name: Split tuple outputs, alloc size: "
                           << output_address->GetSize() << "B.";
       }
@@ -981,7 +989,7 @@ bool GeGraphExecutor::RunGraphRefMode(const FuncGraphPtr &graph, const std::vect
       MS_LOG(EXCEPTION) << "Sync stream failed";
     }
   }
-  ClearForwardOutputAddress(kg, device_context_);
+  ClearForwardOutputAddress(kg);
   return true;
 }
 
@@ -1335,6 +1343,9 @@ void GeGraphExecutor::InitializeGe() {
 
   if (static_cast<bool>(ms_context->get_param<uint32_t>(MS_CTX_GE_REF))) {
     ms_context->increase_param<uint32_t>(MS_CTX_GE_REF);
+    if (ge_res_manager_ == nullptr) {
+      MS_LOG(INFO) << "There exist at least two ge_graph_executor, please check.";
+    }
     return;
   }
   std::map<std::string, std::string> ge_options;

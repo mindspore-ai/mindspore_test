@@ -26,9 +26,8 @@ namespace mindspore {
 namespace ge_backend {
 namespace runtime {
 void RecorderActor::RecordInfo(const std::string op_name, const KernelLaunchAddr *launch_info,
-                               const DeviceContext *device_context, OpContext<DeviceTensor> *const op_context) {
+                               OpContext<DeviceTensor> *const op_context) {
   MS_EXCEPTION_IF_NULL(launch_info);
-  MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(op_context);
 
 #ifdef ENABLE_DUMP_IR

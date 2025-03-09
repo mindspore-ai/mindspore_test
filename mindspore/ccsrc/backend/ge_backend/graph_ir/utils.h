@@ -38,9 +38,9 @@ using DfGraphConvertorPtr = std::shared_ptr<backend::ge_backend::DfGraphConverto
 bool IsInitDataSetQueueNode(const AnfNodePtr &node);
 
 void ClearGeSessionAndRunner();
-void InitializeAoeUtil();
-void DestroyAoeUtil();
-void EnableAoeOffline();
+BACKEND_EXPORT void InitializeAoeUtil();
+BACKEND_EXPORT void DestroyAoeUtil();
+BACKEND_EXPORT void EnableAoeOffline();
 
 // convert_type
 std::vector<GeTensorPtr> ConvertInputTensors(const std::vector<MeTensorPtr> &me_tensors, const std::string &format);

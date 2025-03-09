@@ -36,6 +36,9 @@ class ASCEND_RES_MANAGER_EXPORT AscendHalManager {
   uint32_t GetDeviceCount();
   void InitDevice(uint32_t device_id);
   void ResetDevice(uint32_t device_id);
+  void SetDeviceSatMode(const aclrtFloatOverflowMode &overflow_mode);
+  void SetOpWaitTimeout(uint32_t op_wait_timeout);
+  void SetOpExecuteTimeOut(uint32_t op_execute_timeout);
 
   // context
   aclrtContext CreateContext(uint32_t device_id);

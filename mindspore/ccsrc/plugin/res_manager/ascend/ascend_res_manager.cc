@@ -51,6 +51,7 @@
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "common/kernel_callback.h"
 #include "runtime/device/res_manager/tensor_array.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_err_manager.h"
 
 namespace mindspore {
 namespace device {
@@ -127,11 +128,22 @@ void AclrtLaunchCallback(void *user_data) {
 }  // namespace
 
 void AscendResManager::Initialize() {
-  if (initialized_) {
-    return;
-  }
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  if (initialized_) {
+    AscendHalManager::GetInstance().SetContextForce(device_id);
+    return;
+  }
+
+  // init error_manager
+  if (!ErrorManagerAdapter::Init()) {
+    MS_LOG(WARNING) << "Init ErrorManager failed.";
+  }
+
+  // init device
+  AscendHalManager::GetInstance().InitDevice(device_id);
+  AscendStreamMng::GetInstance().CreateDefaultStream();
 
   if (!(IS_VLOG_ON(VL_RUNTIME_FRAMEWORK_MEMORY_ALLOCATE_CHECK))) {
     mem_manager_ = std::make_shared<AscendMemoryManager>();
@@ -146,15 +158,28 @@ void AscendResManager::Initialize() {
 }
 
 void AscendResManager::Destroy() {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   if (!initialized_) {
+    AscendHalManager::GetInstance().SetContextForce(device_id);
     return;
   }
+
   (void)DestroyAllEvents();
+
   // Release memory.
   if (mem_manager_ != nullptr) {
     mem_manager_->Finalize();
     mem_manager_ = nullptr;
   }
+  AscendStreamMng::GetInstance().DestroyAllRtEvents();
+  if (!AscendStreamMng::GetInstance().DestroyAllStreams()) {
+    MS_LOG(EXCEPTION) << "Fail to destroy all streams when reset device.";
+  }
+  (void)ErrorManagerAdapter::Finalize();
+
+  AscendHalManager::GetInstance().ResetDevice(device_id);
 
   initialized_ = false;
 }

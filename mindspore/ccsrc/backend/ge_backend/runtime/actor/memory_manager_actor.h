@@ -25,12 +25,10 @@
 #include "utils/hash_map.h"
 #include "backend/ge_backend/runtime/actor/actor_common.h"
 #include "backend/ge_backend/runtime/device_tensor_store.h"
-#include "runtime/hardware/device_context.h"
 
 namespace mindspore {
 namespace ge_backend {
 namespace runtime {
-using mindspore::device::DeviceContext;
 using mindspore::runtime::ProfilerEvent;
 using mindspore::runtime::ProfilerModule;
 using mindspore::runtime::ProfilerRecorder;
@@ -45,24 +43,20 @@ class MemoryManagerActor : public ActorBase {
   ~MemoryManagerActor() override = default;
 
   // The process entry of memory alloc.
-  void AllocateMemory(const std::vector<DeviceTensor *> *alloc_list, const DeviceContext *device_context,
-                      OpContext<DeviceTensor> *const op_context, const AID &from_aid);
+  void AllocateMemory(const std::vector<DeviceTensor *> *alloc_list, OpContext<DeviceTensor> *const op_context,
+                      const AID &from_aid);
 
-  // device_contexts is from different device, the size of device_contexts must be equal to the alloc_list.
-  void AllocateBatchMemory(const std::vector<DeviceTensor *> *alloc_list,
-                           const std::vector<const DeviceContext *> *device_contexts,
-                           OpContext<DeviceTensor> *const op_context, const AID &from_aid);
+  void AllocateBatchMemory(const std::vector<DeviceTensor *> *alloc_list, OpContext<DeviceTensor> *const op_context,
+                           const AID &from_aid);
 
   // The process entry of memory free.
-  void FreeMemory(const std::vector<DeviceTensor *> *free_list, const DeviceContext *device_context,
-                  OpContext<DeviceTensor> *const op_context, const AID &from_aid);
-  // device_contexts is from different device, the size of device_contexts must be equal to the free_list.
-  void FreeBatchMemory(const std::vector<DeviceTensor *> *free_list,
-                       const std::vector<const DeviceContext *> *device_contexts,
-                       OpContext<DeviceTensor> *const op_context, const AID &from_aid);
+  void FreeMemory(const std::vector<DeviceTensor *> *free_list, OpContext<DeviceTensor> *const op_context,
+                  const AID &from_aid);
 
-  void FreeMemoryByRefCount(DeviceTensor *const device_tensor, const DeviceContext *device_context,
-                            const std::string &op_name);
+  void FreeBatchMemory(const std::vector<DeviceTensor *> *free_list, OpContext<DeviceTensor> *const op_context,
+                       const AID &from_aid);
+
+  void FreeMemoryByRefCount(DeviceTensor *const device_tensor, const std::string &op_name);
 
   // Wait the MemoryManagerActor to finish running all current messages.
   void Wait(OpContext<DeviceTensor> *const op_context, const AID &from_aid);
@@ -72,8 +66,8 @@ class MemoryManagerActor : public ActorBase {
   DISABLE_COPY_AND_ASSIGN(MemoryManagerActor);
 
   // When allocate device memory fail, print error log and set op context failed status.
-  void SetOpContextMemoryAllocFail(const std::string &kernel_name, const DeviceContext *device_context,
-                                   size_t alloc_size, OpContext<DeviceTensor> *const op_context);
+  void SetOpContextMemoryAllocFail(const std::string &kernel_name, size_t alloc_size,
+                                   OpContext<DeviceTensor> *const op_context);
 
   // MemoryManagerActor object is used like a single instance, if one actor allocates memory failed in one batch, which
   // will set fail message info OpContext, major thread will destroy the OpContext object, subsequent actor can not set

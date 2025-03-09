@@ -22,14 +22,12 @@
 #include <vector>
 #include "backend/ge_backend/runtime/actor/actor_common.h"
 #include "backend/ge_backend/runtime/device_tensor_store.h"
-#include "runtime/hardware/device_context.h"
 #include "debug/profiler/profiling.h"
 #include "common/kernel.h"
 
 namespace mindspore {
 namespace ge_backend {
 namespace runtime {
-using mindspore::device::DeviceContext;
 using mindspore::kernel::KernelLaunchAddr;
 using mindspore::kernel::KernelTensor;
 
@@ -40,7 +38,7 @@ class RecorderActor : public ActorBase {
   ~RecorderActor() override = default;
 
   // The memory recorder of each node.
-  void RecordInfo(const std::string op_name, const KernelLaunchAddr *launch_info, const DeviceContext *device_context,
+  void RecordInfo(const std::string op_name, const KernelLaunchAddr *launch_info,
                   OpContext<DeviceTensor> *const op_context);
 
   // Clear memory recorder at the step end.

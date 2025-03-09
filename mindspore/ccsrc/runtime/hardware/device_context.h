@@ -154,7 +154,7 @@ class DeviceContext {
 
   DeviceContextKey device_context_key_;
   std::unique_ptr<DeviceResManager> device_res_manager_;
-  std::unique_ptr<GraphExecutor> graph_executor_;
+  std::shared_ptr<GraphExecutor> graph_executor_;
 
  protected:
 #ifdef __APPLE__
@@ -561,7 +561,7 @@ class DeviceInterface<T, Args...> : public DeviceInterface<Args...> {
     } else if constexpr (std::is_base_of_v<GraphExecutor, T>) {
       DeviceInterface::CheckUnset(reinterpret_cast<void *>(DeviceContext::graph_executor_.get()),
                                   "GraphExecutor has been registered!");
-      DeviceContext::graph_executor_ = std::make_unique<T>();
+      DeviceContext::graph_executor_ = std::make_shared<T>();
       DeviceContext::graph_executor_->SetDeviceContext(this);
     } else if constexpr (std::is_base_of_v<KernelExecutor, T>) {
       DeviceInterface::CheckUnset(reinterpret_cast<void *>(DeviceContext::GetKernelExecutor(false).get()),

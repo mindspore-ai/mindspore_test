@@ -26,6 +26,7 @@
 #include "ir/anf.h"
 #include "hccl/hccl_types.h"
 #include "common/kernel.h"
+#include "include/backend/visible.h"
 
 using mindspore::kernel::KernelTensor;
 
@@ -55,7 +56,7 @@ struct HcclAllToAllParams {
 
 enum HcclMode { kGraph, kPynative, kKernelByKernel };
 
-class HcclAdapter {
+class BACKEND_EXPORT HcclAdapter {
  public:
   static HcclAdapter &GetInstance();
 

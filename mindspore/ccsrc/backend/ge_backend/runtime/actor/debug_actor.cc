@@ -24,6 +24,7 @@
 #include "backend/ge_backend/dump/hook_debugger.h"
 #endif
 #include "debug/profiler/profiling.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -31,33 +32,25 @@ namespace runtime {
 
 void DebugActor::DebugPreLaunch(const AnfNodePtr &node, const std::vector<DeviceTensor *> &input_device_tensors,
                                 const std::vector<DeviceTensor *> &output_device_tensors,
-                                const DeviceContext *device_context, OpContext<DeviceTensor> *const op_context,
-                                const AID *) {
+                                OpContext<DeviceTensor> *const op_context, const AID *) {
   MS_EXCEPTION_IF_NULL(node);
-  MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(op_context);
 }
 
 void DebugActor::DebugPostLaunch(const AnfNodePtr &node, const std::vector<DeviceTensor *> &input_device_tensors,
                                  const std::vector<DeviceTensor *> &output_device_tensors,
-                                 const DeviceContext *device_context, OpContext<DeviceTensor> *const op_context,
-                                 const AID *) {
+                                 OpContext<DeviceTensor> *const op_context, const AID *) {
   MS_EXCEPTION_IF_NULL(node);
-  MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(op_context);
 }
-
 void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
                                   const std::vector<AnfNodePtr> &origin_parameters_order,
-                                  std::vector<DeviceContext *> device_contexts,
                                   OpContext<DeviceTensor> *const op_context, const AID *) {
   MS_LOG(INFO) << "Debug on step begin.";
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  device_ctx_ = device_contexts[0];
   auto profiler = profiler::Profiler::GetInstance(kAscendDevice);
-  if ((profiler == nullptr || !profiler->IsInitialized()) &&
-      device_ctx_->GetDeviceType() == device::DeviceType::kAscend) {
+  if (profiler == nullptr || !profiler->IsInitialized()) {
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
     auto &hookDebugger = dump::HookDebugger::GetInstance();
     if (hookDebugger.IsHookerEnabled()) {
@@ -70,13 +63,21 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
 void DebugActor::DebugOnStepEnd(OpContext<DeviceTensor> *const, const AID *, int total_running_count, int sink_size) {
   MS_LOG(INFO) << "Debug on step end. total_running_count is: " << total_running_count;
   step_count_ = total_running_count;
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+
   auto &hookDebugger = dump::HookDebugger::GetInstance();
   if (hookDebugger.IsHookerEnabled()) {
     MS_LOG(INFO) << "On step end, hookdebugger is enable.";
-    device_ctx_->device_res_manager_->SyncAllStreams();
+    res_manager->SyncAllStreams();
     hookDebugger.HookOnStepEnd();
   }
-  device_ctx_->device_res_manager_->SyncAllStreams();
+  res_manager->SyncAllStreams();
 }
 void DebugActor::Finalize() {}
 }  // namespace runtime

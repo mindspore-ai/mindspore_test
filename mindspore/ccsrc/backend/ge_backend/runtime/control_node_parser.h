@@ -28,13 +28,11 @@
 #include <algorithm>
 #include <unordered_map>
 #include "utils/hash_map.h"
-#include "runtime/hardware/device_context.h"
 #include "include/backend/kernel_graph.h"
 
 namespace mindspore {
 namespace ge_backend {
 namespace runtime {
-using mindspore::device::DeviceContext;
 using mindspore::session::KernelGraph;
 using mindspore::session::KernelWithIndex;
 
@@ -70,18 +68,8 @@ constexpr size_t kMakeTensorInputStartPos = 1;
 constexpr size_t kMakeCSRTensorInputNum = 4;
 constexpr size_t kMakeCOOTensorInputNum = 3;
 
-using NodeWithIndexToContext = std::pair<KernelWithIndex, DeviceContext *>;
-struct NodeWithContextCmp {
-  bool operator()(const NodeWithIndexToContext &node1, const NodeWithIndexToContext &node2) const {
-    return node1.second->GetDeviceType() < node2.second->GetDeviceType();
-  }
-};
-
-using FrontToBackendNodeWithContext = std::map<KernelWithIndex, std::set<NodeWithIndexToContext, NodeWithContextCmp>>;
-using FrontToBackendKernelWithContext = std::map<KernelWithIndex, std::pair<KernelWithIndex, DeviceContext *>>;
 using FuncGraphToKernelGraphGroup = mindspore::HashMap<FuncGraphPtr, std::vector<std::vector<KernelGraphPtr>>>;
 using HostParameterToWeight = std::map<AnfNodePtr, std::set<AnfNodePtr>>;
-using NodeWithDeviceContext = std::set<std::pair<KernelWithIndex, const DeviceContext *>>;
 using RealToFormalNode = mindspore::HashMap<AnfNodePtr, std::vector<AnfNodePtr>>;
 using FormalToRealParameter = std::map<KernelWithIndex, std::set<KernelWithIndex>>;
 using RealToFormalParameter = std::map<KernelWithIndex, std::set<KernelWithIndex>>;
@@ -90,7 +78,6 @@ using FrontNodeToKernelGraph = mindspore::HashMap<AnfNodePtr, KernelGraphPtr>;
 using FuncGraphCallRelation = mindspore::HashMap<FuncGraphPtr, std::vector<std::set<FuncGraphPtr>>>;
 using FuncGraphToCallNode = mindspore::HashMap<FuncGraphPtr, std::set<AnfNodePtr>>;
 using CallNodeToFuncGraph = mindspore::HashMap<AnfNodePtr, std::set<FuncGraphPtr>>;
-using KernelGraphToDeviceContext = mindspore::HashMap<KernelGraphPtr, DeviceContext *>;
 using GroupNameToCommuNodes =
   mindspore::HashMap<std::string, std::pair<std::vector<CNodePtr>, std::vector<KernelGraphPtr>>>;
 using ReturnDynamicLenArgIndex =
@@ -108,8 +95,8 @@ struct KernelGraphGroupInfo {
   std::set<KernelGraphPtr> graphs_;
   std::set<AnfNodePtr> monad_inputs_;
   std::set<KernelWithIndex> monad_outputs_;
-  std::map<KernelWithIndex, const DeviceContext *> front_input_nodes_;
-  FrontToBackendKernelWithContext front_output_nodes_;
+  std::set<KernelWithIndex> front_input_nodes_;
+  std::map<KernelWithIndex, KernelWithIndex> front_output_nodes_;
 };
 using KernelGraphGroupInfoPtr = std::shared_ptr<KernelGraphGroupInfo>;
 
@@ -140,8 +127,7 @@ class BACKEND_EXPORT ControlNodeParser {
 
   // Parse the control node and put the results of the parsing into member variables.
   void Parse(const std::vector<AnfNodePtr> &control_nodes, const std::vector<KernelGraphPtr> &graphs,
-             const std::vector<DeviceContext *> &device_contexts, const FuncGraphPtr &root_graph,
-             const FuncGraphToKernelGraphGroup &func_graph_to_kernel_graphs);
+             const FuncGraphPtr &root_graph, const FuncGraphToKernelGraphGroup &func_graph_to_kernel_graphs);
 
   bool IsInited() const { return is_inited_; }
   // Check whether there is a call node in the front input nodes of the kernel graph.
@@ -166,8 +152,10 @@ class BACKEND_EXPORT ControlNodeParser {
   bool IsParallelCallRecursionGraph(const AnfNodePtr &call_node1, const AnfNodePtr &call_node2,
                                     const FuncGraphToCallNode &func_graph_to_call_node);
   const std::vector<KernelWithIndex> &control_node_parameters() const { return control_node_parameters_; }
-  const FrontToBackendNodeWithContext &front_to_backend_parameters() const { return front_to_backend_parameters_; }
-  const NodeWithDeviceContext &front_value_nodes() const { return front_value_nodes_; }
+  const std::map<KernelWithIndex, std::set<KernelWithIndex>> &front_to_backend_parameters() const {
+    return front_to_backend_parameters_;
+  }
+  const std::set<KernelWithIndex> &front_value_nodes() const { return front_value_nodes_; }
   const std::unordered_map<FuncGraphPtr, AnfNodePtr> &func_graph_to_partial_node() {
     return func_graph_to_partial_node_;
   }
@@ -184,8 +172,7 @@ class BACKEND_EXPORT ControlNodeParser {
   KernelWithIndex FetchBackendNodeByFrontNode(const KernelWithIndex &node_with_index);
   FuncGraphPtr FetchFuncGraphByKernelGraph(const KernelGraph *const graph);
   std::string FetchGroupNameByKernelGraph(const KernelGraphPtr &graph);
-  NodeWithIndexToContext FetchBackendParameterWithContextByFrontParameter(
-    const KernelWithIndex &front_parameter_with_index);
+  KernelWithIndex FetchBackendParameterWithContextByFrontParameter(const KernelWithIndex &front_parameter_with_index);
   // Create tensor for value like scalar or monad U.
   tensor::TensorPtr CreateTensorForValue(const ValuePtr &value);
   void AddControlNodeTensor(const tensor::TensorPtr &tensor) { (void)control_node_tensors_.emplace_back(tensor); }
@@ -198,8 +185,8 @@ class BACKEND_EXPORT ControlNodeParser {
   // value nodes will not enter the kernel graph, so these nodes need to be saved separately, and space is allocated for
   // them separately during initialization.
   // The interface is initialized by finding the backend node in the kernel graph that the front node finally sends to.
-  void FetchFrontValueNode(const std::vector<AnfNodePtr> &control_nodes, const DeviceContext *const default_context);
-  void CreateDeviceTensors(const std::vector<AnfNodePtr> &control_nodes, const DeviceContext *const default_context);
+  void FetchFrontValueNode(const std::vector<AnfNodePtr> &control_nodes);
+  void CreateDeviceTensors(const std::vector<AnfNodePtr> &control_nodes);
   // Create branch id for all call node in the control flow.
   void CreateBranchIDForCallNode(const std::vector<AnfNodePtr> &control_nodes);
 
@@ -207,8 +194,7 @@ class BACKEND_EXPORT ControlNodeParser {
   // include two parts:
   // 1. The parameter from kernel graph.
   // 2. The parameter from control nodes.
-  void ParseFrontToBackendParameter(const std::vector<KernelGraphPtr> &graphs,
-                                    const std::vector<DeviceContext *> &device_contexts);
+  void ParseFrontToBackendParameter(const std::vector<KernelGraphPtr> &graphs);
   // The relationship between front parameters indicates that the parameter is directly used as the input of the
   // funcgraph. There are two situations:
   // 1. The parameter is used as the input of the call node,
@@ -223,25 +209,6 @@ class BACKEND_EXPORT ControlNodeParser {
   // Get all the call nodes without a recursion call relation.
   void ParseUnRecursionCallNode();
 
-  // Parse the device context of the control node. In a heterogeneous scenario, different device contexts need to be
-  // copied between different device memories. The analysis steps:
-  // 1. Get the device context of the funcgraph parameter according to the device type of the kernel in the funcgraph.
-  // 2. Determine the type of device context output by funcgraph according to the call relationship of funcgrpah.
-  // 3. Determine the type of device context output for the real parameters on the partial nodes and call nodes.
-  void ParseDeviceContext(const std::vector<AnfNodePtr> &control_nodes,
-                          const std::vector<KernelGraphPtr> &kernel_graphs,
-                          const std::vector<DeviceContext *> &device_contexts, DeviceContext *default_context,
-                          const FuncGraphToKernelGraphGroup &func_graph_to_kernel_graphs);
-  void ParseDeviceContextForFuncGraph(const std::vector<KernelGraphPtr> &kernel_graphs,
-                                      const std::vector<DeviceContext *> &device_contexts,
-                                      DeviceContext *default_context,
-                                      const FuncGraphToKernelGraphGroup &func_graph_to_kernel_graphs);
-  void ParseDeviceContextForReturnNode(const DeviceContext *default_context);
-  void ParseDeviceContextForCallNode(const std::vector<AnfNodePtr> &control_nodes);
-  void ParseDeviceContextForPartialNode(const std::vector<AnfNodePtr> &control_nodes);
-  void FetchDeviceContextByNode(const std::vector<KernelWithIndex> &output_nodes,
-                                std::vector<const DeviceContext *> *return_device_contexts,
-                                const FuncGraphPtr &func_graph, const DeviceContext *default_context);
   // In the actor model, when the funcgraph comes to an end temporarily, the exit of the funcgraph needs to notify
   // the entrance actor so that it can process next parameters. This is used to obtain the nodes corresponding to all
   // actors in the funcgraph that need to send control messages to the entrance.
@@ -251,8 +218,7 @@ class BACKEND_EXPORT ControlNodeParser {
   void ParseCallNodeToFuncGraph(const std::vector<AnfNodePtr> &control_nodes);
 
   // Get the relationship between the front and backend of the executable kernel in all kernel graphs.
-  void ParseFrontToBackendKernel(const std::vector<KernelGraphPtr> &graphs,
-                                 const std::vector<DeviceContext *> &device_contexts);
+  void ParseFrontToBackendKernel(const std::vector<KernelGraphPtr> &graphs);
   void ParseFrontNodeToKernelGraph(const std::vector<KernelGraphPtr> &graphs);
   // nodes and call nodes of the root funcgraph.
   void ParseControlNodeParameter(const std::vector<AnfNodePtr> &control_nodes);
@@ -260,7 +226,7 @@ class BACKEND_EXPORT ControlNodeParser {
   // When a control node or kernel graph has input that is a call node, you need to add a stack actor for it.
   void ParseNeedStackControlNode(const std::vector<AnfNodePtr> &control_nodes);
   bool IsCallNodeNeedStack(const AnfNodePtr &node);
-  void ParseKernelGraphGroup(const KernelGraphToDeviceContext &kernel_graph_to_device_contexts);
+  void ParseKernelGraphGroup();
   // Parse the level of inputs and outputs of graphs and all control nodes.
   void ParseNodeLevel(const std::vector<AnfNodePtr> &control_nodes);
   // Get the level of the control node, recursively traverse all the inputs of the node, and find the largest level
@@ -271,7 +237,7 @@ class BACKEND_EXPORT ControlNodeParser {
   void InsertDependForParallelCall(const std::vector<AnfNodePtr> &control_nodes);
   // When the parameter is directly used as the condition of the switch, there will be no back-end node, and a device
   // tensor needs to be created for it.
-  void CreateDeviceTensorForRootGraphParameter(DeviceContext *const default_context);
+  void CreateDeviceTensorForRootGraphParameter();
   void ParseDynamicLenFormalParameter(const std::vector<AnfNodePtr> &control_nodes);
   void ParseDynamicLenFormalParameterByCallNode(const AnfNodePtr &node);
   void ParseDynamicLenFormalParameterByPartial(const AnfNodePtr &node);
@@ -283,9 +249,9 @@ class BACKEND_EXPORT ControlNodeParser {
   FrontNodeToKernelGraph front_node_to_kernel_graph_;
 
   // The front to backend parameters is used to build and link the host data source actor in the control flow scenario.
-  FrontToBackendNodeWithContext front_to_backend_parameters_;
+  std::map<KernelWithIndex, std::set<KernelWithIndex>> front_to_backend_parameters_;
   // Relationship between the front and backend of the executable kernel in all kernel graphs.
-  FrontToBackendKernelWithContext front_to_backend_kernels_;
+  std::map<KernelWithIndex, KernelWithIndex> front_to_backend_kernels_;
 
   // Relationship between formal parameters and real parameters.
   FormalToRealParameter formal_to_real_parameters_;
@@ -310,7 +276,7 @@ class BACKEND_EXPORT ControlNodeParser {
   FuncGraphToCallNode func_graph_to_call_nodes_;
   // The front value node saves all value nodes that are not in the kernel graph. These nodes are generally the
   // input of the control node.
-  NodeWithDeviceContext front_value_nodes_;
+  std::set<KernelWithIndex> front_value_nodes_;
 
   // Parameters of control node which come from the host actor.
   std::vector<KernelWithIndex> control_node_parameters_;
@@ -332,13 +298,6 @@ class BACKEND_EXPORT ControlNodeParser {
   // Those control nodes that need to create the corresponding stack actor, when there is a call node in the inputs
   // of the control node, the stack actor is needed to collect these inputs.
   std::set<AnfNodePtr> need_stack_control_nodes_;
-
-  // In heterogeneous scenario, each parameter has its own device context type, so the device context corresponding
-  // to the type needs to be parsed in advance so that it can add some copy operation in the scheduler.
-  // 1. The device context type of the formal parameters of funcgraph.
-  mindspore::HashMap<FuncGraphPtr, std::vector<const DeviceContext *>> func_graph_to_device_contexts_;
-  // 2. The device context type of the control node inputs.
-  mindspore::HashMap<AnfNodePtr, std::vector<const DeviceContext *>> control_node_to_device_contexts_;
 
   // Kernel graph to the group info it belongs.
   mindspore::HashMap<KernelGraphPtr, KernelGraphGroupInfoPtr> kernel_graphs_to_group_info_;

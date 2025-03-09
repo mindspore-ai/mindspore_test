@@ -65,6 +65,9 @@ class BACKEND_MANAGER_EXPORT BackendBase {
     return "";
   }
 
+  // clear the resource, init is in constructor function
+  virtual void Clear() {}
+
   virtual void SetPyBoostRegistered(const IsPyBoostRegisteredFunc &func, const RunPyBoostCallFunc &call_func) {}
 };
 

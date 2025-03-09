@@ -23,12 +23,10 @@
 #include <string>
 #include "backend/ge_backend/runtime/actor/actor_common.h"
 #include "backend/ge_backend/runtime/device_tensor_store.h"
-#include "runtime/hardware/device_context.h"
 
 namespace mindspore {
 namespace ge_backend {
 namespace runtime {
-using mindspore::device::DeviceContext;
 using mindspore::kernel::KernelLaunchAddr;
 
 // The debug actor is used to debug and dump kernel info, it gets the kernel real time execution info in the device, so
@@ -38,15 +36,14 @@ class ProfilerActor : public ActorBase {
   ProfilerActor() : ActorBase("GEProfilerActor") {}
   ~ProfilerActor() override = default;
 
-  void AscendStepStart(const std::vector<KernelGraphPtr> &graphs, std::vector<DeviceContext *> device_contexts);
+  void AscendStepStart(const std::vector<KernelGraphPtr> &graphs);
 
   void AscendStepEnd();
 
   // The debug on step begin.
   void ProfilerOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
                            const std::vector<AnfNodePtr> &origin_parameters_order,
-                           std::vector<DeviceContext *> device_contexts, OpContext<DeviceTensor> *const op_context,
-                           const AID *from_aid);
+                           OpContext<DeviceTensor> *const op_context, const AID *from_aid);
 
   // The debug on step end.
   void ProfilerOnStepEnd(OpContext<DeviceTensor> *const op_context, const AID *from_aid, int total_running_count_);
@@ -60,7 +57,6 @@ class ProfilerActor : public ActorBase {
   int is_dataset_sink = 0;
 
   bool profile_started_ = false;
-  DeviceContext *device_ctx_ = nullptr;
 
   // Support multi-thread.
   std::mutex debug_mutex_;

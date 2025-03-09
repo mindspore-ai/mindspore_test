@@ -24,12 +24,12 @@
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/backend/distributed/ps/ps_context.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #ifndef BUILD_LITE
 #include "backend/ge_backend/runtime/actor/memory_manager_actor.h"
-#include "runtime/device/device_address_utils.h"
+#include "backend/ge_backend/utils/device_address_utils.h"
 #endif
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -291,17 +291,19 @@ void UpdateRefCount(const AnfNodePtr &node, size_t output_idx, bool is_max_ref_c
   UpdateRefCount(device_tensor.get(), is_max_ref_count);
 }
 
-void FreeMemoryByDeviceContext(DeviceTensor *const device_tensor, const DeviceContext *device_context) {
+void FreeMemoryByDeviceContext(DeviceTensor *const device_tensor) {
   MS_EXCEPTION_IF_NULL(device_tensor);
-  // The device context may be not accurate in the control flow scene, so need fetch by device name and device id.
-  if ((device_context == nullptr) || (device_context->GetDeviceType() != device_tensor->GetDeviceType())) {
-    const auto &new_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device_tensor->device_name(), device_tensor->device_id()});
-    MS_EXCEPTION_IF_NULL(new_device_context);
-    new_device_context->device_res_manager_->FreeMemory(device_tensor);
-  } else {
-    device_context->device_res_manager_->FreeMemory(device_tensor);
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  auto device_type = device::GetDeviceTypeByName(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET));
+  if (device_tensor->GetDeviceType() != device_type) {
+    device_type = device_tensor->GetDeviceType();
   }
+  device::ResKey res_key{device_type, device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  res_manager->FreeMemory(device_tensor);
 }
 
 void FreeMemoryByValueNode(const std::vector<std::weak_ptr<ValueNode>> &held_by_nodes, DeviceTensor *device_tensor) {
@@ -511,7 +513,9 @@ TensorPtr FetchInputTensorByArg(const VectorRef &args, size_t arg_index, const K
   auto tensor = flatten_tensors[input_tensor_index];
   // The tensor needs to be converted to contiguous before being given to the actors.
   // After the view feature is supported in the graph mode, the following code will be deleted.
-  DeviceAddressUtils::ConvertContiguousTensorSync(tensor);
+  if (DeviceAddressUtils::IsContiguousTensor(tensor)) {
+    MS_LOG(EXCEPTION) << "The ge backend only support contiguous inputs, please check.";
+  }
   DeviceAddressUtils::CreateKernelTensor(tensor);
 
   return tensor;

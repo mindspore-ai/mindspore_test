@@ -15,10 +15,10 @@
  */
 
 #include "backend/ge_backend/runtime/actor/output_actor.h"
-#include "runtime/hardware/device_context_manager.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -83,10 +83,6 @@ void UpdateDynamicSequenceType(const AnfNodePtr &output_node, const kernel::Kern
 }
 
 void OutputActor::Init() {
-  // Check device contexts number.
-  if (device_contexts_.size() != output_nodes_.size()) {
-    MS_LOG(EXCEPTION) << "The device contexts number is wrong.";
-  }
   // Check outputs number.
   if (output_nodes_.size() != outputs_.size()) {
     MS_LOG(EXCEPTION) << "The outputs number is wrong.";
@@ -109,7 +105,7 @@ void OutputActor::FreeOutputNodeMem() {
       continue;
     }
     if (!IsOutputAddressPersisted(output_device_tensor, output_nodes_[i])) {
-      FreeMemoryByDeviceContext(output_device_tensor, device_contexts_[i]);
+      FreeMemoryByDeviceContext(output_device_tensor);
     }
   }
 }
@@ -126,7 +122,7 @@ void OutputActor::FreeSummaryNodeMem() {
       continue;
     }
     if (!IsOutputAddressPersisted(output_device_addr.get(), summary_nodes_[i])) {
-      FreeMemoryByDeviceContext(output_device_addr.get(), nullptr);
+      FreeMemoryByDeviceContext(output_device_addr.get());
     }
   }
 }
@@ -335,21 +331,24 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
     tensor->set_base_shape(output_kernel_tensor->GetShape());
   }
 
-  if (output_position >= device_contexts_.size()) {
+  if (output_position >= outputs_num_) {
     MS_LOG(ERROR) << "The output position is of range: " << output_position;
     return nullptr;
   }
-  auto &device_context = device_contexts_[output_position];
-  MS_EXCEPTION_IF_NULL(device_context);
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+
   const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(output_node, output_index, false);
   MS_EXCEPTION_IF_NULL(device_tensor);
   device_tensor->set_padding_type(AnfAlgo::GetOutputReshapeType(output_node, output_index));
-  if (device_context->GetDeviceType() != device_tensor->GetDeviceType()) {
-    auto old_device_context = device_context;
-    device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device_tensor->device_name(), device_tensor->device_id()});
-    MS_LOG(INFO) << "Update device context from:" << old_device_context->GetDeviceType()
-                 << " to:" << device_context->GetDeviceType();
+  if (device::GetDeviceTypeByName(device_name) != device_tensor->GetDeviceType()) {
+    MS_LOG(EXCEPTION) << "GE backend only support Ascend, but got " << device_tensor->device_name();
   }
 
   // Create the device address and put it into host tensor.
@@ -358,14 +357,13 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   } else {
     auto kernel_tensor = std::make_shared<kernel::KernelTensor>(
       nullptr, device_tensor->GetSize(), kernel::GetFormatFromStrToEnum(device_tensor->format()),
-      device_tensor->type_id(), device_tensor->host_shape(), device_context->device_context_key().device_name_,
-      device_context->device_context_key().device_id_);
+      device_tensor->type_id(), device_tensor->host_shape(), device_name, device_id);
     kernel_tensor->SetType(output_kernel_tensor->GetType());
     kernel_tensor->SetShape(output_kernel_tensor->GetShape());
     kernel_tensor->set_stream_id(device_tensor->stream_id());
     // SetShape will calculate a default size by host shape, need to set real device size for special format.
     kernel_tensor->set_size(device_tensor->GetSize());
-    auto tensor_device_address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+    auto tensor_device_address = res_manager->CreateDeviceAddress(kernel_tensor);
     MS_EXCEPTION_IF_NULL(tensor_device_address);
     MS_LOG(DEBUG) << "Create device tensor:" << tensor_device_address << ", size: " << kernel_tensor->size()
                   << " type:" << tensor_device_address->type_id()
@@ -435,17 +433,21 @@ void OutputActor::UpdateOutputDeviceAddress() {
       continue;
     }
 
-    auto device_context = device_contexts_[i];
-    MS_EXCEPTION_IF_NULL(device_context);
-    MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+
     // If the output node whose output address ptr can't be changed, then alloc the new device memory and copy the data:
     if (IsOutputAddressPersisted(device_tensor, output_nodes_[i])) {
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, GetAID().Name(), memory::mem_pool::MemType::kOther,
                                                      tensor_device_address->GetSize(), tensor_device_address.get());
-      if (!device_context->device_res_manager_->AllocateMemory(tensor_device_address.get(), kDefaultStreamIndex)) {
+      if (!res_manager->AllocateMemory(tensor_device_address.get(), kDefaultStreamIndex)) {
         MS_LOG_WITH_NODE(EXCEPTION, output_node)
-          << "Device(id:" << device_context->device_context_key().device_id_
-          << ") memory isn't enough and alloc failed in output actor, kernel name: "
+          << "Device(id:" << device_id << ") memory isn't enough and alloc failed in output actor, kernel name: "
           << output_node->fullname_with_scope() << ", alloc size: " << tensor_device_address->GetSize() << "B.";
       }
       if (common::IsDisableRuntimeConfig(common::kRuntimeCopyAsync)) {
