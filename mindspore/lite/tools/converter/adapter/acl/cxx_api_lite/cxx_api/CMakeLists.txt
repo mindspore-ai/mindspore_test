@@ -171,20 +171,20 @@ endif()
 if(ENABLE_D OR ENABLE_GPU)
     if(BUILD_LITE)
         target_link_libraries(mslite_shared_lib PRIVATE -Wl,--as-needed ${SECUREC_LIBRARY}
-                mindspore_backend mindspore_core mindspore_ops mindspore_common mindspore_ops_kernel_common
-                proto_input mindspore::protobuf mindspore_profiler)
+                mindspore_ms_backend mindspore_core mindspore_ops mindspore_common mindspore_ops_kernel_common
+                mindspore_backend_common proto_input mindspore::protobuf mindspore_profiler)
     else()
         target_link_libraries(mindspore_shared_lib PRIVATE -Wl,--as-needed ${SECUREC_LIBRARY}
-                mindspore_backend mindspore_core mindspore_ops mindspore_common mindspore_ops_kernel_common
-                mindspore_profiler proto_input mindspore::protobuf)
+                mindspore_ms_backend mindspore_core mindspore_ops mindspore_common mindspore_ops_kernel_common
+                mindspore_backend_common mindspore_profiler proto_input mindspore::protobuf)
     endif()
 else()
     if(BUILD_LITE)
         target_link_libraries(mslite_shared_lib PRIVATE mindspore_core mindspore_ops ${SECUREC_LIBRARY})
     else()
         target_link_libraries(mindspore_shared_lib PRIVATE ${PY3_LIBG} ${SECUREC_LIBRARY}
-                mindspore_backend mindspore mindspore_core mindspore_ops mindspore_common mindspore_ops_kernel_common
-                mindspore_profiler proto_input mindspore::protobuf)
+                mindspore_ms_backend mindspore mindspore_core mindspore_ops mindspore_common mindspore_ops_kernel_common
+                mindspore_backend_common mindspore_profiler proto_input mindspore::protobuf)
     endif()
 endif()
 

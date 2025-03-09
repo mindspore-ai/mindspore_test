@@ -58,9 +58,9 @@ install(
 )
 
 install(
-  TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend mindspore_pyboost mindspore_pynative
+  TARGETS mindspore_core mindspore_ops mindspore_common mindspore_ms_backend mindspore_pyboost mindspore_pynative
         mindspore_backend_manager mindspore_res_manager mindspore_frontend mindspore_ops_kernel_common
-        mindspore_profiler mindspore_memory_pool mindspore_runtime_pipeline mindspore_dump
+        mindspore_profiler mindspore_memory_pool mindspore_runtime_pipeline mindspore_dump mindspore_backend_common
   DESTINATION ${INSTALL_LIB_DIR}
   COMPONENT mindspore
 )
@@ -74,7 +74,10 @@ if(MSVC AND DEBUG_MODE)
 
   install(
     FILES  $<TARGET_PDB_FILE:mindspore_core> $<TARGET_PDB_FILE:mindspore_ops>
-    $<TARGET_PDB_FILE:mindspore_common> $<TARGET_PDB_FILE:mindspore_backend> $<TARGET_PDB_FILE:mindspore_pyboost>
+    $<TARGET_PDB_FILE:mindspore_common>
+    $<TARGET_PDB_FILE:mindspore_ms_backend>
+    $<TARGET_PDB_FILE:mindspore_backend_common>
+    $<TARGET_PDB_FILE:mindspore_pyboost>
     $<TARGET_PDB_FILE:mindspore_pynative>
     $<TARGET_PDB_FILE:mindspore_backend_manager>
     $<TARGET_PDB_FILE:mindspore_res_manager>
