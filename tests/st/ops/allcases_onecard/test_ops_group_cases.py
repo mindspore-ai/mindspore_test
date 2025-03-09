@@ -50,6 +50,7 @@ from tests.st.ops import (
     test_ops_transpose,
     test_ops_unbind,
     test_ops_unfold,
+    test_ops_upsample_nearest,
     test_ops_var,
 )
 from tests.st.mint import (
@@ -139,6 +140,7 @@ ops_group_cases_registry_level0 = [
     [test_ops_unbind.test_ops_unbind_forward, ("ascend910b",), 3, (('pynative',),)],
     [test_ops_unbind.test_ops_unbind_backward, ("ascend910b",), 8, (('pynative',),)],
     [test_ops_unfold.test_unfold, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE),)],
+    [test_ops_upsample_nearest.test_upsample_nearest, ("ascend910b",), 4, (("GRAPH_MODE_O0", "PYNATIVE_MODE"),)],
     [test_ops_var.test_ops_var_normal, ("ascend910b",), 4, (('pynative', 'KBK'),)],
     [test_diff.test_ops_diff_binary_cases, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE),)],
     [test_float_power.test_float_power_tensor_tensor_forward, ("ascend910b",), 4,

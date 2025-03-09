@@ -625,7 +625,7 @@ class ConvTranspose2DNet(nn.Cell):
         return gen.ConvTranspose2D()(x, weight, bias, stride, padding, output_padding, groups, dilation)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('bias, stride, padding, output_padding, groups, dilation',
                          [(0, 2, 0, 1, 1, 2), ([1], [2, 2], [1, 1], [1, 1], 1, [2, 2])])
 def test_export_convtranspose2d(bias, stride, padding, output_padding, groups, dilation):

@@ -315,6 +315,7 @@
   },
   "Compile_Ascend_ARM_CentOS": {
     "DIR_ARRAY": [
+      "version.txt",
       "build.sh",
       "graphengine",
       "CMakeLists.txt",
