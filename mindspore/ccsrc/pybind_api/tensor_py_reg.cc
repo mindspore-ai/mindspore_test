@@ -1272,10 +1272,6 @@ static PyObject *TensorPython_getstate(PyObject *self, PyObject *args) {
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)state;
   auto tensorTmp = tensor->value.GetTensor();
   py::array numpy_array = TensorPybind::SyncAsNumpy(*tensorTmp);
-
-  if (numpy_array == NULL) {
-    return NULL;
-  }
   py::tuple result = py::make_tuple(numpy_array);
   return result.release().ptr();
   HANDLE_MS_EXCEPTION_END
