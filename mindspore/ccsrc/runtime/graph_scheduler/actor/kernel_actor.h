@@ -335,6 +335,10 @@ class KernelActor : public DebugAwareActor {
   std::vector<bool> is_output_kernel_;
   std::vector<bool> is_monad_input_;
   bool is_mc2_kernel_{false};
+  // This flag are only valid in control flow. In inline control flow, due to the existence of switch branches, some
+  // kernel actors will not be executed, and the condition switch actor controls whether to execute. It points to
+  // the flag of the control branch in the condition switch actor. When the switch confirms the execution of a branch,
+  // it sets the flag of the branch to true to enable the actor in this branch.
   bool *is_enable_{nullptr};
 };
 

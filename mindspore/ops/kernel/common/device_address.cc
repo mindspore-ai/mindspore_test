@@ -89,7 +89,7 @@ DeviceAddress::DeviceAddress(void *ptr, size_t size, const std::string &format, 
 }
 
 DeviceAddress::~DeviceAddress() {
-  if (address_common_ != nullptr && address_common_->pointer_ref_count_ != nullptr &&
+  if (IS_OUTPUT_ON(mindspore::kDebug) && address_common_ != nullptr && address_common_->pointer_ref_count_ != nullptr &&
       address_common_->pointer_ref_count_->new_ref_count() != SIZE_MAX && GetPtr() != nullptr) {
     MS_LOG(DEBUG) << "Maybe memory leak detect in device address:" << PrintInfo();
   }
@@ -107,7 +107,8 @@ std::string DeviceAddress::PrintInfo() const {
   if (kernel_tensor_ != nullptr) {
     ofs << " " << kernel_tensor_->PrintInfo();
   }
-  ofs << " device address deleter:" << (deleter_ != nullptr);
+  ofs << " device address deleter:" << (deleter_ != nullptr) << " flag:" << flag_
+      << " need sync user data:" << need_sync_user_data_ << " is view:" << is_view_;
   return ofs.str();
 }
 

@@ -266,6 +266,7 @@ class AbstractActor : public OpActor<DeviceTensor> {
 
   // Whether use input optimize.
   bool enable_input_optimize_;
+  std::string debug_info_;
 };
 
 using AbstractActorPtr = std::shared_ptr<AbstractActor>;

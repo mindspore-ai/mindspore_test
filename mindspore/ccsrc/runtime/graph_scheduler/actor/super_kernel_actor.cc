@@ -931,16 +931,13 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<DeviceTensor> *const context) 
 
       Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernel, context, kernel_actor.get());
     } else {
-      if (!WaitRuntimePipelineFinish(context)) {
-        MS_LOG(INFO) << "Run failed and early stop.";
-        return false;
-      }
       MS_LOG(DEBUG) << "Sync launch kernel actor:" << kernel_actor->GetAID() << " in actor:" << GetAID();
       kernel_actor->InferAndUpdateDeviceTensorSize(context);
       kernel_actor->ExecuteLaunchKernelTask(context);
     }
 
-    if (common::AnfAlgo::CheckPrimitiveType(kernel_actor->kernel_, prim::kPrimConditionSwitch)) {
+    if (enable_inline_control_flow_ &&
+        common::AnfAlgo::CheckPrimitiveType(kernel_actor->kernel_, prim::kPrimConditionSwitch)) {
       if (!WaitRuntimePipelineFinish(context)) {
         MS_LOG(INFO) << "Run failed and early stop.";
         return false;
