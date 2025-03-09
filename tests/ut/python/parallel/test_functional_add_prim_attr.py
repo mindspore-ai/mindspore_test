@@ -42,11 +42,10 @@ class GradWrap(nn.Cell):
 
 class TestFunctionalAddPrimAttrs:
     def setup_method(self):
-        context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", dataset_strategy="full_batch")
-        context.set_auto_parallel_context(device_num=8, global_rank=0)
+        pass
 
     def teardown_method(self):
-        context.reset_auto_parallel_context()
+        pass
 
     def _get_nodes_info(self, graph_validator):
         d = graph_validator.graph_info_dict
@@ -77,6 +76,8 @@ class TestFunctionalAddPrimAttrs:
         Description:  add primitive attr for functional mint
         Expectation: assert pass
         """
+        context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", dataset_strategy="full_batch")
+        context.set_auto_parallel_context(device_num=8, global_rank=0)
         class MatMulCell(nn.Cell):
             def __init__(self):
                 super(MatMulCell, self).__init__()
@@ -100,6 +101,8 @@ class TestFunctionalAddPrimAttrs:
         Description: _add_attr for multiple operators and nested _add_attr
         Expectation: assert pass
         """
+        context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", dataset_strategy="full_batch")
+        context.set_auto_parallel_context(device_num=8, global_rank=0)
         class MatMulCell(nn.Cell):
             def __init__(self):
                 super(MatMulCell, self).__init__()
@@ -121,3 +124,26 @@ class TestFunctionalAddPrimAttrs:
                                     {'test1': 123, 'test2': True, 'embbed': True}) and \
                self._check_node_and_primattr(node_infos, 'ReLU', {'relu_attr': 1}) and \
                self._check_no_addattr_node_in_graph(node_infos)
+
+    def test_use_addattr_in_standalone_mode(self):
+        """
+        Feature: test _add_attr for multiple operators in standalone mode
+        Description: _add_attr for multiple operators and nested _add_attr
+        Expectation: compile pass
+        """
+        context.set_auto_parallel_context(parallel_mode="stand_alone")
+        class MatMulCell(nn.Cell):
+            def __init__(self):
+                super(MatMulCell, self).__init__()
+                self.w1 = Parameter(Tensor(np.random.randn(32, 128).astype(np.float16)), name='weight1')
+                self.tagged_mm = _add_attr(_add_attr(mint.matmul, test1=123, test2=True), embbed=True)
+                self.tagged_relu = _add_attr(mint.nn.functional.relu, relu_attr=1)
+
+            def construct(self, x):
+                out = self.tagged_mm(x, self.w1)
+                out = self.tagged_relu(out)
+                return out
+
+        input_x = Tensor(np.random.randn(16, 32), dtype=ms.float16)
+        net = GradWrap(NetWithLoss(MatMulCell()))
+        compile_net(net, input_x)
