@@ -36,6 +36,7 @@
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "debug/profiler/mstx/mstx_impl.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 static constexpr const auto kHcclPluginFileName = "libhccl_plugin.so";
 
@@ -80,44 +81,61 @@ namespace {
 const char kDefaultGroup[] = "__default_group";
 constexpr uint32_t kDeviceNumOfServer = 8;
 
-std::string GetMstxMsg(const std::string &opName, HcclDataType dataType, size_t dataCnt, HcclComm comm) {
+std::string MapToJson(const std::map<std::string, std::string> &map) {
+  std::stringstream ss;
+  ss << "{";
+  bool first = true;
+  for (const auto &pair : map) {
+    if (!first) {
+      ss << ",";
+    }
+    ss << "\\\"" << pair.first << "\\\""
+       << ": "
+       << "\\\"" << pair.second << "\\\"";
+    first = false;
+  }
+  ss << "}";
+  return ss.str();
+}
+
+std::string GetMstxMsg(const std::string &opName, HcclDataType dataType, size_t dataCnt, HcclComm comm, size_t streamId,
+                       uint32_t srcRank, uint32_t destRank) {
   static const std::map<HcclDataType, std::string> dataTypes = {
     {HCCL_DATA_TYPE_INT8, "int8"},     {HCCL_DATA_TYPE_INT16, "int16"}, {HCCL_DATA_TYPE_INT32, "int32"},
     {HCCL_DATA_TYPE_FP16, "fp16"},     {HCCL_DATA_TYPE_FP32, "fp32"},   {HCCL_DATA_TYPE_INT64, "int64"},
     {HCCL_DATA_TYPE_UINT64, "uint64"}, {HCCL_DATA_TYPE_UINT8, "uint8"}, {HCCL_DATA_TYPE_UINT16, "uint16"},
     {HCCL_DATA_TYPE_UINT32, "uint32"}, {HCCL_DATA_TYPE_FP64, "fp64"},   {HCCL_DATA_TYPE_BFP16, "bfp16"}};
   constexpr int64_t MAX_GROUP_NAME_LEN = 128;
-  static char commName[MAX_GROUP_NAME_LEN] = {0};
   static std::map<HcclComm, std::string> commNames;
-  if (!mindspore::profiler::MstxImpl::GetInstance().IsEnable()) {
-    return "";
-  }
-  std::vector<std::string> opDescVec;
-  opDescVec.push_back(opName);
+  std::map<std::string, std::string> opDescMap;
+  opDescMap["opName"] = opName;
   auto nameIter = commNames.find(comm);
   if (nameIter != commNames.end()) {
-    opDescVec.push_back(nameIter->second);
+    opDescMap["groupName"] = nameIter->second;
   } else {
-    if (HcclGetCommName(comm, commName) != HCCL_SUCCESS) {
-      opDescVec.push_back("na");
-    } else {
+    opDescMap["groupName"] = "na";
+    static char commName[MAX_GROUP_NAME_LEN] = {0};
+    if (HcclGetCommName(comm, commName) == HCCL_SUCCESS) {
       std::string name(commName);
-      opDescVec.push_back(name);
-      commNames.emplace(comm, name);
+      opDescMap["groupName"] = name;
+      commNames.insert({comm, name});
     }
   }
+  if (srcRank != UINT32_MAX) {
+    opDescMap["srcRank"] = std::to_string(srcRank);
+  }
+  if (destRank != UINT32_MAX) {
+    opDescMap["destRank"] = std::to_string(destRank);
+  }
+  opDescMap["dataType"] = "na";
   auto iter = dataTypes.find(dataType);
   if (iter != dataTypes.end()) {
-    opDescVec.push_back(iter->second);
-  } else {
-    opDescVec.push_back("na");
+    opDescMap["dataType"] = iter->second;
   }
-  opDescVec.push_back(std::to_string(dataCnt));
-  std::string opDescMsg =
-    std::accumulate(opDescVec.begin(), opDescVec.end(), std::string(""),
-                    [](const std::string &a, const std::string &b) { return a.empty() ? b : a + "," + b; });
-  std::string hcomMsg = "comm:" + opDescMsg;
-  return hcomMsg;
+  opDescMap["count"] = std::to_string(dataCnt);
+  opDescMap["streamId"] = std::to_string(streamId);
+  std::string opDescMsg = MapToJson(opDescMap);
+  return opDescMsg;
 }
 }  // namespace
 
@@ -367,10 +385,15 @@ HcclResult HcclAdapter::HcclBroadcast(void *buf, uint64_t count, HcclDataType da
     return HCCL_SUCCESS;
   }
   uint64_t rangeId = 0;
-  MSTX_START(rangeId, GetMstxMsg(__func__, dataType, count, hccl_comm).c_str(), stream,
-             mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    size_t streamId = mindspore::device::ascend::AscendStreamMng::GetInstance().GetStreamId(stream);
+    MSTX_START(rangeId, GetMstxMsg(__func__, dataType, count, hccl_comm, streamId, -1, -1).c_str(), stream,
+               mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   HcclResult ret = launch_hccl_broadcast_(buf, count, dataType, root, hccl_comm, stream);
-  MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   return ret;
 }
 
@@ -381,10 +404,15 @@ HcclResult HcclAdapter::HcclAllReduce(void *send_buf, void *recv_buf, uint64_t c
     return HCCL_SUCCESS;
   }
   uint64_t rangeId = 0;
-  MSTX_START(rangeId, GetMstxMsg(__func__, dataType, count, hccl_comm).c_str(), stream,
-             mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    size_t streamId = mindspore::device::ascend::AscendStreamMng::GetInstance().GetStreamId(stream);
+    MSTX_START(rangeId, GetMstxMsg(__func__, dataType, count, hccl_comm, streamId, -1, -1).c_str(), stream,
+               mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   HcclResult ret = launch_hccl_all_reduce_(send_buf, recv_buf, count, dataType, op, hccl_comm, stream);
-  MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   return ret;
 }
 
@@ -395,20 +423,30 @@ HcclResult HcclAdapter::HcclReduce(void *send_buf, void *recv_buf, uint64_t coun
     return HCCL_SUCCESS;
   }
   uint64_t rangeId = 0;
-  MSTX_START(rangeId, GetMstxMsg(__func__, dataType, count, hccl_comm).c_str(), stream,
-             mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    size_t streamId = mindspore::device::ascend::AscendStreamMng::GetInstance().GetStreamId(stream);
+    MSTX_START(rangeId, GetMstxMsg(__func__, dataType, count, hccl_comm, streamId, -1, -1).c_str(), stream,
+               mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   HcclResult ret = launch_hccl_reduce_(send_buf, recv_buf, count, dataType, op, root, hccl_comm, stream);
-  MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   return ret;
 }
 
 HcclResult HcclAdapter::HcclScatter(void *send_buf, void *recv_buf, uint64_t count, HcclDataType dataType,
                                     uint32_t root, HcclComm comm, aclrtStream stream) const {
   uint64_t rangeId = 0;
-  MSTX_START(rangeId, GetMstxMsg(__func__, dataType, count, comm).c_str(), stream,
-             mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    size_t streamId = mindspore::device::ascend::AscendStreamMng::GetInstance().GetStreamId(stream);
+    MSTX_START(rangeId, GetMstxMsg(__func__, dataType, count, comm, streamId, -1, -1).c_str(), stream,
+               mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   HcclResult ret = launch_hccl_scatter_(send_buf, recv_buf, count, dataType, root, comm, stream);
-  MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   return ret;
 }
 
@@ -419,10 +457,15 @@ HcclResult HcclAdapter::HcclReduceScatter(void *send_buf, void *recv_buf, uint64
     return HCCL_SUCCESS;
   }
   uint64_t rangeId = 0;
-  MSTX_START(rangeId, GetMstxMsg(__func__, dataType, count, hccl_comm).c_str(), stream,
-             mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    size_t streamId = mindspore::device::ascend::AscendStreamMng::GetInstance().GetStreamId(stream);
+    MSTX_START(rangeId, GetMstxMsg(__func__, dataType, count, hccl_comm, streamId, -1, -1).c_str(), stream,
+               mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   HcclResult ret = launch_hccl_reduce_scatter_(send_buf, recv_buf, count, dataType, op, hccl_comm, stream);
-  MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   return ret;
 }
 
@@ -433,10 +476,15 @@ HcclResult HcclAdapter::HcclAllGather(void *send_buf, void *recv_buf, uint64_t c
     return HCCL_SUCCESS;
   }
   uint64_t rangeId = 0;
-  MSTX_START(rangeId, GetMstxMsg(__func__, dataType, count, hccl_comm).c_str(), stream,
-             mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    size_t streamId = mindspore::device::ascend::AscendStreamMng::GetInstance().GetStreamId(stream);
+    MSTX_START(rangeId, GetMstxMsg(__func__, dataType, count, hccl_comm, streamId, -1, -1).c_str(), stream,
+               mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   HcclResult ret = launch_hccl_all_gather_(send_buf, recv_buf, count, dataType, hccl_comm, stream);
-  MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   return ret;
 }
 
@@ -447,10 +495,15 @@ HcclResult HcclAdapter::HcclSend(void *send_buf, uint64_t count, HcclDataType da
     return HCCL_SUCCESS;
   }
   uint64_t rangeId = 0;
-  MSTX_START(rangeId, GetMstxMsg(__func__, dataType, count, hccl_comm).c_str(), stream,
-             mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    size_t streamId = mindspore::device::ascend::AscendStreamMng::GetInstance().GetStreamId(stream);
+    MSTX_START(rangeId, GetMstxMsg(__func__, dataType, count, hccl_comm, streamId, -1, destRank).c_str(), stream,
+               mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   HcclResult ret = launch_hccl_send_(send_buf, count, dataType, destRank, hccl_comm, stream);
-  MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   return ret;
 }
 
@@ -461,10 +514,15 @@ HcclResult HcclAdapter::HcclRecv(void *recv_buf, uint64_t count, HcclDataType da
     return HCCL_SUCCESS;
   }
   uint64_t rangeId = 0;
-  MSTX_START(rangeId, GetMstxMsg(__func__, dataType, count, hccl_comm).c_str(), stream,
-             mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    size_t streamId = mindspore::device::ascend::AscendStreamMng::GetInstance().GetStreamId(stream);
+    MSTX_START(rangeId, GetMstxMsg(__func__, dataType, count, hccl_comm, streamId, srcRank, -1).c_str(), stream,
+               mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   HcclResult ret = launch_hccl_recv_(recv_buf, count, dataType, srcRank, hccl_comm, stream);
-  MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   return ret;
 }
 
@@ -483,10 +541,16 @@ HcclResult HcclAdapter::HcclBatchISendIRecv(HcclSendRecvItem *sendRecvInfo, uint
     return HCCL_SUCCESS;
   }
   uint64_t rangeId = 0;
-  MSTX_START(rangeId, GetMstxMsg(__func__, sendRecvInfo[0].dataType, sendRecvInfo[0].count, comm).c_str(), stream,
-             mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    size_t streamId = mindspore::device::ascend::AscendStreamMng::GetInstance().GetStreamId(stream);
+    MSTX_START(rangeId,
+               GetMstxMsg(__func__, sendRecvInfo[0].dataType, sendRecvInfo[0].count, comm, streamId, -1, -1).c_str(),
+               stream, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   HcclResult ret = launch_hccl_batch_isend_irecv_(sendRecvInfo, itemNum, comm, stream);
-  MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   return ret;
 }
 
@@ -778,13 +842,18 @@ HcclResult HcclAdapter::HcclAlltoAllV(void *send_buf, void *recv_buf, hccl::Hccl
   CHECK_SYMBOL_NULL(launch_hccl_all_to_allv_);
   MS_EXCEPTION_IF_NULL(hccl_comm);
   uint64_t rangeId = 0;
-  MSTX_START(rangeId,
-             GetMstxMsg(__func__, dataType, static_cast<uint64_t>(params.sendcounts.size()), hccl_comm).c_str(), stream,
-             mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    uint64_t counts = static_cast<uint64_t>(params.sendcounts.size());
+    size_t streamId = mindspore::device::ascend::AscendStreamMng::GetInstance().GetStreamId(stream);
+    MSTX_START(rangeId, GetMstxMsg(__func__, dataType, counts, hccl_comm, streamId, -1, -1).c_str(), stream,
+               mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   HcclResult ret =
     launch_hccl_all_to_allv_(send_buf, params.sendcounts.data(), params.sdispls.data(), dataType, recv_buf,
                              params.recvcounts.data(), params.rdispls.data(), dataType, hccl_comm, stream);
-  MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   return ret;
 }
 
@@ -798,11 +867,16 @@ HcclResult HcclAdapter::HcclAllToAll(void *send_buf, void *recv_buf, hccl::HcclA
   CHECK_SYMBOL_NULL(launch_hccl_all_to_all_);
   MS_EXCEPTION_IF_NULL(hccl_comm);
   uint64_t rangeId = 0;
-  MSTX_START(rangeId, GetMstxMsg(__func__, dataType, params.sendcount, hccl_comm).c_str(), stream,
-             mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    size_t streamId = mindspore::device::ascend::AscendStreamMng::GetInstance().GetStreamId(stream);
+    MSTX_START(rangeId, GetMstxMsg(__func__, dataType, params.sendcount, hccl_comm, streamId, -1, -1).c_str(), stream,
+               mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   HcclResult ret = launch_hccl_all_to_all_(send_buf, params.sendcount, dataType, recv_buf, params.recvcount, dataType,
                                            hccl_comm, stream);
-  MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
+    MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
+  }
   return ret;
 }
 
