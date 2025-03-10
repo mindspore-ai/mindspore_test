@@ -54,6 +54,7 @@ Tensor
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.argwhere
     mindspore.mint.cat
     mindspore.mint.chunk
     mindspore.mint.concat

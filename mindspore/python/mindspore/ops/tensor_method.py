@@ -1636,6 +1636,11 @@ def deprecated_tensor_addmv(input, mat, vec, *, beta=1, alpha=1):
     return addmv(input, mat, vec, beta=beta, alpha=alpha)
 
 
+# 810
+def deprecated_argwhere(input):
+    return F.nonzero(input)
+
+
 # 846
 def deprecated_tensor_count_nonzero(input,
                                     axis=(),
