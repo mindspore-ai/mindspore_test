@@ -404,7 +404,7 @@ TensorPtr DataPrepareActor::FetchInputTensor(const std::vector<TensorPtr> &tenso
     auto tensor = tensors[tensor_index];
     // The tensor needs to be converted to contiguous before being given to the actors.
     // After the view feature is supported in the graph mode, the following code will be deleted.
-    if (DeviceAddressUtils::IsContiguousTensor(tensor)) {
+    if (!DeviceAddressUtils::IsContiguousTensor(tensor)) {
       MS_LOG(EXCEPTION) << "The ge backend only support contiguous inputs, please check.";
     }
     DeviceAddressUtils::CreateKernelTensor(tensor);
@@ -445,7 +445,7 @@ TensorPtr DataPrepareActor::FetchInputTensor(const std::vector<TensorPtr> &tenso
 
   // The tensor needs to be converted to contiguous before being given to the actors.
   // After the view feature is supported in the graph mode, the following code will be deleted.
-  if (DeviceAddressUtils::IsContiguousTensor(tensor)) {
+  if (!DeviceAddressUtils::IsContiguousTensor(tensor)) {
     MS_LOG(EXCEPTION) << "The ge backend only support contiguous inputs, please check.";
   }
   DeviceAddressUtils::CreateKernelTensor(tensor);
