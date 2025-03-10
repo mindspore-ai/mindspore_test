@@ -1,5 +1,7 @@
 pixel_shuffle:
     description: |
+        pixel_shuffle(input, upscale_factor) -> Tensor
+
         Rearrange elements in a tensor according to an upscaling factor.
 
         Rearranges elements in a tensor of shape :math:`(*, C \times r^2, H, W)`
@@ -31,7 +33,7 @@ pixel_shuffle:
         Supported Platforms:
             ``Ascend``
 
-        Examples::
+        Examples:
             >>> from mindspore import mint
             >>> input = mint.randn(1, 9, 4, 4)
             >>> output = mint.nn.functional.pixel_shuffle(input, 3)
