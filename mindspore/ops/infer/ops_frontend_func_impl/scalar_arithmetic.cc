@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #include <limits>
 #include <map>
 #include <string>
+#include <algorithm>
 #include "mindspore/ops/op_def/op_name.h"
 #include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
@@ -212,6 +213,24 @@ ValuePtr PowImpl(const ValuePtr &x_value, const ValuePtr &y_value, const std::st
   return MakeValue(static_cast<T>(std::pow(x, y)));
 }
 
+template <typename T>
+ValuePtr MaxImpl(const ValuePtr &x_value, const ValuePtr &y_value, const std::string &op_name) {
+  MS_EXCEPTION_IF_NULL(x_value);
+  MS_EXCEPTION_IF_NULL(y_value);
+  auto x = GetScalarCastValue<T>(op_name, x_value);
+  auto y = GetScalarCastValue<T>(op_name, y_value);
+  return MakeValue(static_cast<T>(std::max(x, y)));
+}
+
+template <typename T>
+ValuePtr MinImpl(const ValuePtr &x_value, const ValuePtr &y_value, const std::string &op_name) {
+  MS_EXCEPTION_IF_NULL(x_value);
+  MS_EXCEPTION_IF_NULL(y_value);
+  auto x = GetScalarCastValue<T>(op_name, x_value);
+  auto y = GetScalarCastValue<T>(op_name, y_value);
+  return MakeValue(static_cast<T>(std::min(x, y)));
+}
+
 using MathImplFunc = std::function<ValuePtr(const ValuePtr &, const ValuePtr &, const std::string &)>;
 
 template <typename T>
@@ -220,11 +239,12 @@ MathImplFunc ChooseFunc(const std::string &prim_name) {
     {kNameScalarAdd, AddImpl<T>}, {kNameScalarSub, SubImpl<T>}, {kNameScalarMul, MulImpl<T>},
     {kNameScalarDiv, DivImpl<T>}, {kNameScalarMod, ModImpl<T>}, {kNameScalarEq, EqImpl<T>},
     {kNameScalarGt, GtImpl<T>},   {kNameScalarLt, LtImpl<T>},   {kNameScalarGe, GeImpl<T>},
-    {kNameScalarLe, LeImpl<T>},   {kNameScalarPow, PowImpl<T>}, {kNameScalarFloorDiv, FloorDivImpl<T>}};
+    {kNameScalarLe, LeImpl<T>},   {kNameScalarPow, PowImpl<T>}, {kNameScalarFloorDiv, FloorDivImpl<T>},
+    {kNameScalarMax, MaxImpl<T>}, {kNameScalarMin, MinImpl<T>}};
   auto iter = infer_value_func_map.find(prim_name);
   if (iter == infer_value_func_map.end()) {
     MS_EXCEPTION(TypeError) << "For '" << prim_name
-                            << "' don't support. Only support [Add, Sub, Mul, Div, Mod, Eq, Le, Ge, Lt, Gt]";
+                            << "' don't support. Only support [Add, Sub, Mul, Div, Mod, Eq, Le, Ge, Lt, Gt, Max, Min]";
   }
   return iter->second;
 }
@@ -299,5 +319,7 @@ REGISTER_PRIMITIVE_FUNCTION_FRONTEND_FUNC_IMPL("ScalarMod", ScalarModFrontendFun
 REGISTER_PRIMITIVE_FUNCTION_FRONTEND_FUNC_IMPL("ScalarMul", ScalarMulFrontendFuncImpl);
 REGISTER_PRIMITIVE_FUNCTION_FRONTEND_FUNC_IMPL("ScalarPow", ScalarPowFrontendFuncImpl);
 REGISTER_PRIMITIVE_FUNCTION_FRONTEND_FUNC_IMPL("ScalarSub", ScalarSubFrontendFuncImpl);
+REGISTER_PRIMITIVE_FUNCTION_FRONTEND_FUNC_IMPL("ScalarMax", ScalarMaxFrontendFuncImpl);
+REGISTER_PRIMITIVE_FUNCTION_FRONTEND_FUNC_IMPL("ScalarMin", ScalarMinFrontendFuncImpl);
 }  // namespace ops
 }  // namespace mindspore

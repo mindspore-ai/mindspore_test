@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,8 @@ constexpr auto kScalarGe = "ScalarGe";
 constexpr auto kScalarLt = "ScalarLt";
 constexpr auto kScalarLe = "ScalarLe";
 constexpr auto kScalarEq = "ScalarEq";
+constexpr auto kScalarMax = "ScalarMax";
+constexpr auto kScalarMin = "ScalarMin";
 constexpr size_t kInputNum = 2;
 constexpr size_t kInputx = 0;
 constexpr size_t kInputy = 1;
@@ -202,6 +204,20 @@ void GeImpl(const T *in_x, const S *in_y, N *out) {
   *out = static_cast<N>(x >= y);
 }
 
+template <typename T, typename S, typename N>
+void MaxImpl(const T *in_x, const S *in_y, N *out) {
+  N x = static_cast<N>(*in_x);
+  N y = static_cast<N>(*in_y);
+  *out = static_cast<N>(std::max(x, y));
+}
+
+template <typename T, typename S, typename N>
+void MinImpl(const T *in_x, const S *in_y, N *out) {
+  N x = static_cast<N>(*in_x);
+  N y = static_cast<N>(*in_y);
+  *out = static_cast<N>(std::min(x, y));
+}
+
 bool ScalarArithmeticCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &outputs) {
   if (inputs.size() != kInputNum) {
@@ -241,7 +257,8 @@ bool ScalarArithmeticCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *
     {kScalarAdd, AddImpl<T, S, N>}, {kScalarSub, SubImpl<T, S, N>}, {kScalarMul, MulImpl<T, S, N>},
     {kScalarDiv, DivImpl<T, S, N>}, {kScalarMod, ModImpl<T, S, N>}, {kScalarEq, EqImpl<T, S, N>},
     {kScalarGt, GtImpl<T, S, N>},   {kScalarLt, LtImpl<T, S, N>},   {kScalarGe, GeImpl<T, S, N>},
-    {kScalarLe, LeImpl<T, S, N>},   {kScalarPow, PowImpl<T, S, N>}, {kScalarFloorDiv, FloorDivImpl<T, S, N>}};
+    {kScalarLe, LeImpl<T, S, N>},   {kScalarPow, PowImpl<T, S, N>}, {kScalarFloorDiv, FloorDivImpl<T, S, N>},
+    {kScalarMax, MaxImpl<T, S, N>}, {kScalarMin, MinImpl<T, S, N>}};
   auto iter = func_map.find(kernel_name_);
   if (iter == func_map.end()) {
     MS_EXCEPTION(TypeError) << "For '" << kernel_name_
@@ -392,5 +409,9 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, ScalarLt,
                                  []() { return std::make_shared<ScalarArithmeticCpuKernelMod>(kScalarLt); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, ScalarLe,
                                  []() { return std::make_shared<ScalarArithmeticCpuKernelMod>(kScalarLe); });
+MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, ScalarMax,
+                                 []() { return std::make_shared<ScalarArithmeticCpuKernelMod>(kScalarMax); });
+MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, ScalarMin,
+                                 []() { return std::make_shared<ScalarArithmeticCpuKernelMod>(kScalarMin); });
 }  // namespace kernel
 }  // namespace mindspore

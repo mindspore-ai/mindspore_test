@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2023-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -528,6 +528,64 @@ class ScalarBool(Primitive):
         return bool(x)
 
 
+class ScalarMax(Primitive):
+    r"""
+    Return the maximum of two input scalars.
+
+    .. note::
+        The inputs can be constant/variable value. Usage is the same as 'max' in Python.
+        This primitive only have 'CPU' implementation, for other platform, it runs using heterogeneous.
+
+    Inputs:
+        - **x** (Scalar) - A constant or variable scalar.
+        - **y** (Scalar) - A constant or variable scalar.
+
+    Outputs:
+        Scalar, and the data type is the one with higher precision or higher digits among the two inputs.
+
+    Raises:
+        TypeError: If `x` and `y` are not scalar.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+    """
+    @prim_attr_register
+    def __init__(self):
+        """Initialize ScalarMax"""
+
+    def __call__(self, x, y):
+        return max(x, y)
+
+
+class ScalarMin(Primitive):
+    r"""
+    Return the minimum of two input scalars.
+
+    .. note::
+        The inputs can be constant/variable value. Usage is the same as 'min' in Python.
+        This primitive only have 'CPU' implementation, for other platform, it runs using heterogeneous.
+
+    Inputs:
+        - **x** (Scalar) - A constant or variable scalar.
+        - **y** (Scalar) - A constant or variable scalar.
+
+    Outputs:
+        Scalar, and the data type is the one with higher precision or higher digits among the two inputs.
+
+    Raises:
+        TypeError: If `x` and `y` are not scalar.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+    """
+    @prim_attr_register
+    def __init__(self):
+        """Initialize ScalarMin"""
+
+    def __call__(self, x, y):
+        return min(x, y)
+
+
 scalar_div = ScalarDiv()
 scalar_mod = ScalarMod()
 scalar_add = ScalarAdd()
@@ -544,7 +602,8 @@ scalar_log = ScalarLog()
 scalar_pow = ScalarPow()
 scalar_uadd = ScalarUadd()
 scalar_usub = ScalarUsub()
-
+scalar_max = ScalarMax()
+scalar_min = ScalarMin()
 
 class BatchNorm(Primitive):
     r"""
