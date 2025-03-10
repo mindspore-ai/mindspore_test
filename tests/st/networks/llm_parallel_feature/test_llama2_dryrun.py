@@ -411,9 +411,9 @@ def test_llama2_cell_dp2mp4pp2_fgi():
     parm_reducescatter_allgather_check_pairs = {'ReduceScatter': '48',
                                                 'AllGather': '48'}
     # 反向掩盖（mp/cp场景都开启）控制边名字个数
-    parm_parallel_speed_up_check_pairs = {'grad_overlap_matmul': '22',
-                                          'matmul_grad_depend2: Bool(1)': '11',
-                                          'matmul_grad_depend3: Bool(1)': '11'}
+    parm_parallel_speed_up_check_pairs = {'grad_overlap_matmul': '24',
+                                          'matmul_grad_depend2: Bool(1)': '12',
+                                          'matmul_grad_depend3: Bool(1)': '12'}
     real_log_path = log_path_preprocess(output_file, rank_list, case_name)
     for log_path in real_log_path:
         check_log(log_path, check_pair)
