@@ -6,7 +6,6 @@ moe_token_unpermute:
             - It is only supported on Atlas A2 Training Series Products.
             - The inputs `permuted_tokens` and `probs` only support the bfloat16 data type in the current version.
             - `sorted_indices` must not have duplicate values, otherwise the result is undefined.
-            - This is an experimental API that is subject to change or deletion.
 
         Args:
             permuted_tokens (Tensor): The tensor of permuted tokens to be unpermuted.

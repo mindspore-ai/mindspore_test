@@ -5,7 +5,6 @@ isneginf:
     Determines which elements are -inf for each position.
 
     .. warning::
-        - This is an experimental API that is subject to change.
         - For Ascend, it is only supported on platforms above Atlas A2.
 
     Returns:

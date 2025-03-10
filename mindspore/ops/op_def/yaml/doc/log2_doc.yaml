@@ -6,7 +6,6 @@ log2:
             y_i = \log_2(x_i)
 
         .. warning::
-            - This is an experimental API that is subject to change or deletion.
             - If the input value of operator Log2 is within the range (0, 0.01] or [0.95, 1.05], the output accuracy
               may be affacted.
 

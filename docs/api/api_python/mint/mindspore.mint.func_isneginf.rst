@@ -6,7 +6,6 @@ mindspore.mint.isneginf
     确定输入Tensor每个位置上的元素是否为负无穷。
 
     .. warning::
-        - 这是一个实验性API，后续可能修改或删除。
         - 该API目前只支持在Atlas A2训练系列产品上使用。
 
     参数：

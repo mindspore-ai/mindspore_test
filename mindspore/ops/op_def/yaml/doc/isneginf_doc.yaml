@@ -3,7 +3,6 @@ isneginf:
     Determines which elements are -inf for each position.
 
     .. warning::
-        - This is an experimental API that is subject to change.
         - This API can be used only on the Atlas A2 training series.
 
     Args:

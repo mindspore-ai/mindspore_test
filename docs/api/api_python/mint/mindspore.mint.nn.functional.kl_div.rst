@@ -26,9 +26,6 @@ mindspore.mint.nn.functional.kl_div
         - 目前不支持需要 `input` 广播到  `target` 的输入。
         - 仅当 `reduction` 设置为 ``"batchmean"`` 时，输出才与Kullback-Leibler散度的数学定义一致。
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **input** (Tensor) - 输入Tensor。数据类型必须为float16、float32或bfloat16（仅Atlas A2训练系列产品支持）。
         - **target** (Tensor) - 目标Tensor，其数据类型与 `input` 相同。 `target` 的shape必须能够广播到 `input` 的shape。

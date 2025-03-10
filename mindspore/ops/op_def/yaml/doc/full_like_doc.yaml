@@ -2,9 +2,6 @@ full_like:
     description: |
         Return a Tensor of the same shape as `input` and filled with `fill_value`.
 
-        .. warning::
-            This is an experimental API that is subject to change or deletion.
-
         Args:
             input (Tensor): Input Tensor and the output Tensor have the same shape as `input`.
             fill_value (Number): Value to fill the returned tensor. Complex numbers are not supported for now.
