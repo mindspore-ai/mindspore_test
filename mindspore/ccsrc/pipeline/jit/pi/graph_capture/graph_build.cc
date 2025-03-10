@@ -2435,7 +2435,20 @@ ValueNode *GetSelfFromMethod(ValueNode *method) {
   ValueNode *self = method->input(0);
   PyTypeObject *tp = self->GetVobj() ? self->GetVobj()->GetTypeObject() : nullptr;
   PyTypeObject *real_tp = method->GetVobj()->GetAttr("__self__")->GetTypeObject();
-  return tp == real_tp ? self : nullptr;
+  if (tp == real_tp) {
+    return self;
+  }
+  MS_LOG(DEBUG) << "Types of 'self' are different, " << (tp ? tp->tp_name : "NULL") << " vs "
+                << (real_tp ? real_tp->tp_name : "NULL");
+  if (real_tp != nullptr && tp != nullptr && IsTensorType<true>(real_tp) && IsStubTensorType<true>(tp)) {
+    // When pijit processes LOAD_METHOD or LOAD_ATTR for a StubTensor, it reads the attribute from the real Tensor (in
+    // AbstractTensor::GetAttr()), so `method.__self__` here is a Tensor, not a StubTensor.
+    return self;
+  }
+  // In case of this situation:
+  // a = TypeA(); b = TypeB(); a.method = b.method
+  // then tp of a.method is TypeA, but real_tp is TypeB.
+  return nullptr;
 }
 
 bool GraphBuilder::ReplaceCall(CallNode *call_node, const py::object &old_func) {
