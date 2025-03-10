@@ -190,7 +190,6 @@ abstract::BaseShapePtr TransposeBatchMatmulTransposeFuncImpl::InferShape(
 
   auto perm_in_res = GetArrayValue<int64_t>(input_args[kTBMMTInputPermIn]);
   auto perm_out_res = GetArrayValue<int64_t>(input_args[kTBMMTInputPermOut]);
-
   auto x_shp = x_shape_map[kShape];
   auto x_rank = x_shp.size();
   if (MS_UNLIKELY(!perm_in_res.has_value() || !perm_out_res.has_value())) {
@@ -200,7 +199,6 @@ abstract::BaseShapePtr TransposeBatchMatmulTransposeFuncImpl::InferShape(
 
   auto transpose_a_op = GetScalarValue<bool>(input_args[kTBMMTInputTransposeA]->GetValue());
   auto transpose_b_op = GetScalarValue<bool>(input_args[kTBMMTInputTransposeB]->GetValue());
-
   if (MS_UNLIKELY(!transpose_a_op.has_value() || !transpose_b_op.has_value())) {
     ShapeVector out_shape(x_rank, abstract::TensorShape::kShapeDimAny);
     return std::make_shared<abstract::TensorShape>(out_shape);

@@ -62,12 +62,6 @@ int64_t GroupedMatmulV4FuncImpl::FetchGroupListSize(const PrimitivePtr &primitiv
 
 TypeIdList GroupedMatmulV4FuncImpl::InferType(const PrimitivePtr &primitive,
                                               const InferInfoPtrList &input_infos) const {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->IsEnableInferBoost() && ms_context->ascend_soc_version() == kAscendVersion310p) {
-    return {kNumberTypeFloat16};
-  }
-
   const auto &x_tensors = input_infos[idxes_.x]->GetSequenceElements();
   const auto &scale_infos = input_infos[scale_idx_];
   TypeIdList output_types;

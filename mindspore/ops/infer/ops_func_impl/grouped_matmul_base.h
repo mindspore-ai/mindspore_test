@@ -20,6 +20,7 @@
 #include <memory>
 #include <vector>
 #include <utility>
+#include <string>
 
 #include "mindapi/base/types.h"
 #include "ops/ops_func_impl/op_func_impl.h"
@@ -57,6 +58,8 @@ class OPS_API GroupedMatmulBaseFuncImpl : public OpFuncImpl {
 
   std::pair<int32_t, int64_t> CommonCheckValidation(const PrimitivePtr &primitive,
                                                     const InferInfoPtrList &input_infos) const;
+
+  bool EnableInternal(const std::string &op_name) const;
 
   virtual int32_t PrivateCheckValidation(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
                                          int64_t group_type) const {

@@ -61,6 +61,7 @@ bool SequenceMulCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &in
   auto input_x_size = inputs[0]->size();
   if (input_x_size != 0) {
     size_t offset = 0;
+    MS_EXCEPTION_IF_NULL(input_y_addr);
     for (auto i = 0; i < input_y_addr[0]; ++i) {
       auto cp_ret = memcpy_s(output_addr + offset, input_x_size, input_x_addr, input_x_size);
       if (cp_ret != EOK) {
