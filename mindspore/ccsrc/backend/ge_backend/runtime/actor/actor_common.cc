@@ -513,7 +513,7 @@ TensorPtr FetchInputTensorByArg(const VectorRef &args, size_t arg_index, const K
   auto tensor = flatten_tensors[input_tensor_index];
   // The tensor needs to be converted to contiguous before being given to the actors.
   // After the view feature is supported in the graph mode, the following code will be deleted.
-  if (DeviceAddressUtils::IsContiguousTensor(tensor)) {
+  if (!DeviceAddressUtils::IsContiguousTensor(tensor)) {
     MS_LOG(EXCEPTION) << "The ge backend only support contiguous inputs, please check.";
   }
   DeviceAddressUtils::CreateKernelTensor(tensor);

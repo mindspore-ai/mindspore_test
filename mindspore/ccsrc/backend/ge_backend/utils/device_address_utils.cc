@@ -517,20 +517,20 @@ void DeviceAddressUtils::CreateKernelTensor(const device::DeviceAddressPtr &devi
 
 bool DeviceAddressUtils::IsContiguousTensor(const tensor::BaseTensorPtr &tensor) {
   if (tensor == nullptr || tensor->storage_info() == nullptr) {
-    MS_LOG(ERROR) << "It is a contiguous tensor, tensor: " << tensor;
+    MS_LOG(INFO) << "It is a contiguous tensor, tensor: " << tensor;
     return true;
   }
 
   auto device_address = tensor->device_address();
   const auto &old_storage_info = device_address->GetTensorStorageInfo();
   if (old_storage_info == nullptr) {
-    MS_LOG(ERROR) << "It is a contiguous tensor, tensor: " << tensor;
+    MS_LOG(INFO) << "It is a contiguous tensor, tensor: " << tensor;
     return true;
   }
 
   auto new_storage_info = tensor->storage_info();
   if (old_storage_info->shape == new_storage_info->shape) {
-    MS_LOG(ERROR) << "It is a contiguous tensor, tensor: " << tensor;
+    MS_LOG(INFO) << "It is a contiguous tensor, tensor: " << tensor;
     return true;
   }
 

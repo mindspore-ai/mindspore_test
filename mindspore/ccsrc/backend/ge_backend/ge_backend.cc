@@ -93,7 +93,7 @@ constexpr uint32_t kDefaultHcclExecTimeout = 1800;
 std::mutex g_tsd_mutex;
 
 void CheckContiguousTensor(const tensor::BaseTensorPtr &tensor) {
-  if (DeviceAddressUtils::IsContiguousTensor(tensor)) {
+  if (!DeviceAddressUtils::IsContiguousTensor(tensor)) {
     MS_LOG(EXCEPTION) << "The ge backend only support contiguous inputs, please check.";
   }
 }
