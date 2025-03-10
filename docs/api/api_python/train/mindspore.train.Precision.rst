@@ -29,13 +29,13 @@ mindspore.train.Precision
 
     .. py:method:: update(*inputs)
 
-        使用预测值 `y_pred` 和真实标签 `y` 更新局部变量。在多标签情况下，`y` 和 `y_pred` 的元素必须为0或1。
+        使用预测值 :math:`y\_pred` 和真实标签 :math:`y` 更新局部变量。在多标签情况下， :math:`y` 和 :math:`y\_pred` 的元素必须为0或1。
 
         参数：
-            - **inputs** - 输入 `y_pred` 和 `y`。`y_pred` 和 `y` 支持Tensor、list或numpy.ndarray类型。
+            - **inputs** - 输入 :math:`y\_pred` 和 :math:`y`。 :math:`y\_pred` 和 :math:`y` 支持Tensor、list或numpy.ndarray类型。
 
-              - 对于 ``'classification'`` 情况，`y_pred` 在大多数情况下由范围 :math:`[0, 1]` 中的浮点数组成，shape为 :math:`(N, C)` ，其中 :math:`N` 是样本数， :math:`C` 是类别数。`y` 由整数值组成，如果是one_hot编码格式，shape是 :math:`(N, C)` ；如果是类别索引，shape是 :math:`(N,)` 。
-              - 对于 ``'multilabel'`` 情况，`y_pred` 和 `y` 只能是值为0或1的one-hot编码格式，其中值为1的索引表示正类别。`y_pred` 和 `y` 的shape都是 :math:`(N, C)` 。
+              - 对于 ``'classification'`` 情况， :math:`y\_pred` 在大多数情况下由范围 :math:`[0, 1]` 中的浮点数组成，shape为 :math:`(N, C)` ，其中 :math:`N` 是样本数， :math:`C` 是类别数。 :math:`y` 由整数值组成，如果是one_hot编码格式，shape是 :math:`(N, C)` ；如果是类别索引，shape是 :math:`(N,)` 。
+              - 对于 ``'multilabel'`` 情况， :math:`y\_pred` 和 :math:`y` 只能是值为0或1的one-hot编码格式，其中值为1的索引表示正类别。 :math:`y\_pred` 和 :math:`y` 的shape都是 :math:`(N, C)` 。
 
         异常：
             - **ValueError** - inputs数量不是2。

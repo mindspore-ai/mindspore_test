@@ -9,7 +9,7 @@ mindspore.train.TrainFaultTolerance
         该特性仅支持Ascend后端的静态图模式，并且只支持sink_size值小于等于1的场景。
 
     参数：
-        - **ckpt_save_path** (str) -  异常发生时ckpt保存的路径，该路径是一个目录。保存时，会在该目录下创建新的名为‘ttp_saved_checkpoints-step_{cur_step_num}’目录。默认值为: ``None``。
+        - **ckpt_save_path** (str) - 异常发生时ckpt保存的路径，该路径是一个目录。保存时，会在该目录下创建新的名为‘ttp_saved_checkpoints-step_{cur_step_num}’目录。默认值为: ``None``。
         - **kwargs** (dict) - 其他字典类型参数。
 
     异常：

@@ -1800,7 +1800,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
         Args:
             axis (int, optional): The dimension to reduce. Default: ``0`` .
-            keep_dims (bool, optional): Whether to reduce dimension, if ``true`` the output will keep the same dimension
+            keep_dims (bool, optional): Whether to keep dimension, if ``true`` the output will keep the same dimension
                 as the input, the output will reduce dimension if ``False`` . Default: ``False`` .
 
         Returns:
@@ -2611,7 +2611,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
     def uniform_(self, from_=0, to=1, *, generator=None):
         r"""
-        Update the `self` tensor in place by generating random numbers sampled from uniform distribution in the
+        Update the `self` Tensor in place by generating random numbers sampled from uniform distribution in the
         half-open interval :math:`[from\_, to)`.
 
         .. math::
@@ -2726,10 +2726,10 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
         Args:
             from\_ (Union[number.Number, Tensor], optional): the lower bound of the generated random number.
-                It can be a scalar value or a tensor of any dimension with only a single element. Default: 0.
+                It can be a scalar value or a Tensor of any dimension with only a single element. Default: 0.
             to (Union[number.Number, Tensor], optional): the upper bound of the generated random number.
                 By default it's the upper limit of the input data type.
-                It can be a scalar value or a tensor of any dimension with only a single element.
+                It can be a scalar value or a Tensor of any dimension with only a single element.
                 Default: ``None``.
 
         Keyword Args:

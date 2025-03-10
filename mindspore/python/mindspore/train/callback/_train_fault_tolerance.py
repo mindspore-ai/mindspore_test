@@ -178,15 +178,16 @@ def _tft_rebuild_sub_groups(fault_ranks, args, ctx):
 class TrainFaultTolerance(Callback):
     """
     This callback is used to enable the TFT feature
-    `MindIO TFT <https://www.hiascend.com/document/detail/zh/mindx-dl/60rc2/mindio/mindiottp/mindiottp001.html>`_.
-    This callback will execute TFT operations during training process, such as TFT init, report and exception handle.
+    `MindIO TFT <https://www.hiascend.com/document/detail/zh/mindx-dl/60rc2/mindio/mindiottp/mindiottp001.html>`_
+    and will execute TFT operations during training process, such as TFT init, report and exception handle.
 
     Note:
         Required for Ascend graph mode only. And sink size must be less than or equal to 1.
 
     Args:
-        ckpt_save_path (str): Checkpoint save directory when failure occurs, checkpoint file will save to directory
-           named ttp_saved_checkpoints-step_{cur_step_num} under this directory. Default: ``None``.
+        ckpt_save_path (str): Checkpoint save directory when failure occurs. When saved,
+            a new directory named 'ttp_saved_checkpoints-step_{cur_step_num}'
+            is created in that directory. Default: ``None``.
         kwargs (dict): Other dictionary type parameters.
 
     Raises:

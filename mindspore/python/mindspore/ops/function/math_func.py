@@ -4406,7 +4406,7 @@ def logaddexp(input, other):
     r"""
     Computes the logarithm of the sum of exponentiations of the inputs.
     This function is useful in statistics where the calculated probabilities of events may be
-    so small as to exceed the range of normal floating point numbers.
+    too small (exceed the range of normal floating point numbers).
 
     .. math::
 

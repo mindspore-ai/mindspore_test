@@ -7495,7 +7495,7 @@ def one_hot_ext(tensor, num_classes):
 def from_numpy(array):
     r"""
     Convert numpy array to Tensor.
-    If the data is not C contiguous, the data will be copied to C contiguous to construct the tensor.
+    If the data is not C contiguous, the data will be copied to C contiguous, then construct the tensor.
     Otherwise, the tensor will be constructed using this numpy array without copy.
 
     Args:

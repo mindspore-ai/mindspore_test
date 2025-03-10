@@ -238,8 +238,8 @@ class COOTensor(COOTensor_):
 
     Args:
         indices (Tensor): A 2-D integer Tensor of shape :math:`(N, ndims)`,
-            where N and ndims are the number of `values` and number of dimensions in
-            the COOTensor, respectively. Currently, `ndims` must be 2. Default: ``None`` .
+            where :math:`N` and :math:`ndims` are the number of `values` and number of dimensions in
+            the COOTensor, respectively. Currently, :math:`ndims` must be 2. Default: ``None`` .
             Please make sure that the indices are in range of the given shape.
         values (Tensor): A 1-D tensor of any type and shape :math:`(N)`, which
             supplies the values for each element in `indices`. Default: ``None`` .
@@ -659,16 +659,21 @@ class CSRTensor(CSRTensor_):
     of `indices` and `values` should be equal to the number of non-zero values in the tensor. To be concrete, get
     the query indices of none-zero elements in every line according to `indptr`. Then get the column positions of
     none-zero elements in every line by looking up query indices in `indices`. Finally, get the actual values of
-    none-zero elements in every line by looking up query indices in `values`. In the former example, 'indptr' of
+    none-zero elements in every line by looking up query indices in `values`.
+
+    In the former example, 'indptr' of
     [0, 2, 5, 6] represents that the indices of 0th row of the tensor origins from [0, 2), the indices of
-    the 1st row of the tensor origins from [2, 5) and the 2nd row of the tensor origins from [5, 6). For example,
-    the column positions of the non-zero elements of the 0th row in the tensor are provided by the [0, 2) elements in
-    `indices` (i.e. [0, 3]) and the corresponding values are provided by the [0, 2) elements in `values`
-    (i.e. [1., 2.]). The column positions of the non-zero elements of the 1st row in the tensor are provided by the
-    [2, 5) elements in `indices` (i.e. [1, 2, 4]) and the corresponding values are provided by the [2, 5) elements in
-    `values` (i.e. [3., 4., 5.]). The column positions of the non-zero elements of the 2nd row in the tensor are
-    provided by the [5, 6) elements in `indices` (i.e. [2]) and the corresponding values are provided by the [5, 6)
-    elements in `values` (i.e. [6.]).
+    the 1st row of the tensor origins from [2, 5) and the 2nd row of the tensor origins from [5, 6). For example:
+
+    - The column positions of the non-zero elements of the 0th row in the tensor are provided by the [0, 2) elements in
+      `indices` (i.e. [0, 3]) and the corresponding values are provided by the [0, 2) elements in `values`
+      (i.e. [1., 2.]).
+    - The column positions of the non-zero elements of the 1st row in the tensor are provided by the
+      [2, 5) elements in `indices` (i.e. [1, 2, 4]) and the corresponding values are provided by the [2, 5) elements in
+      `values` (i.e. [3., 4., 5.]).
+    - The column positions of the non-zero elements of the 2nd row in the tensor are
+      provided by the [5, 6) elements in `indices` (i.e. [2]) and the corresponding values are provided by the [5, 6)
+      elements in `values` (i.e. [6.]).
 
     Common arithmetic operations include: addition (+), subtraction (-), multiplication (*),
     and division (/). For details about operations supported by `CSRTensor`, see
@@ -689,10 +694,10 @@ class CSRTensor(CSRTensor_):
             indicates the which column `values` should be placed. Default: ``None``. If provided,
             must be int16, int32 or int64.
         values (Tensor): Tensor, which has the same length as `indices` (values.shape[0] == indices.shape[0]).
-            `values`  stores the data for CSRTensor. Default: ``None``.
+            `values` stores the data for CSRTensor. Default: ``None``.
         shape (tuple(int)): An integer tuple of shape :math:`(ndims)`, and `shape[0]` must equal to `M - 1`,
             which all equal to number of rows of the CSRTensor. Default: ``None``.
-        csr_tensor (CSRTensor): A CSRTensor object.  Values' feature dimension should match with
+        csr_tensor (CSRTensor): A CSRTensor object. Values' feature dimension should match with
             CSRTensor's feature dimension :math:`(values.shape[1:] == csr\_tensor.shape[2:])` . Default: ``None``.
 
     Outputs:

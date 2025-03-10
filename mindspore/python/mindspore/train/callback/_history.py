@@ -25,10 +25,13 @@ class History(Callback):
     """
     Records the network outputs and metrics information into a `History` object.
 
-    The network outputs information will be the loss value if not custimizing the train network or eval network;
-    if the custimized network returns a `Tensor` or `numpy.ndarray`, the mean value of network output
-    will be recorded, if the custimized network returns a `tuple` or `list`, the first element of network
-    outputs will be recorded.
+    - The network outputs information will be the loss value if not custimizing the train network or eval network;
+    - If the train network or eval network is custimized:
+
+      - if the custimized network returns a `Tensor` or `numpy.ndarray`, the mean value of network output
+        will be recorded.
+      - if the custimized network returns a `tuple` or `list`, the first element of network
+        outputs will be recorded.
 
     Note:
         Normally used in :func:`mindspore.train.Model.train` or :func:`mindspore.train.Model.fit`.

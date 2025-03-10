@@ -10,7 +10,7 @@ mindspore.Tensor.fill_diagonal
 
     参数：
         - **fill_value** (float) - 对角线的填充值。
-        - **wrap** (bool, 可选) - 控制在矩阵为高矩阵（矩阵的行比列多）的情况下，对角线的元素是否继续在剩余的行上填充。默认值：``False``。
+        - **wrap** (bool, 可选) - 控制在矩阵为高矩阵（矩阵的行比列多）的情况下，对角线的元素是否继续在剩余的行上填充。默认值： ``False``。
 
     返回：
         - **y** (Tensor) - 和 `self` 具有相同的shape和数据类型。

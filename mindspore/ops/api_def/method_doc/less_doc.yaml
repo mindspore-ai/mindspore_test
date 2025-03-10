@@ -14,7 +14,7 @@ less:
             \end{cases}
 
     Args:
-        other (Union[Tensor, Number, bool]): A number or a bool or a tensor whose data type is number or bool.
+        other (Union[Tensor, Number, bool]): The values to be compared. Supports Number, bool, or Tensor[Number/bool].
 
     Returns:
         Tensor, the shape is the same as the one after broadcasting, and the data type is bool.
