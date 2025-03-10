@@ -17,7 +17,7 @@ mindspore.ops.Morph
         - 用户无需实现自定义反向函数。
         - 用户自定义函数不支持 `vararg`、`kwarg`、`kwonlyargs` 和自由变量。
 
-    参数:
+    参数：
         - **fn** (Function) - MindSpore Function，用户自定义函数。
         - **infer_shape** (Function) - Mindspore Function，用户自定义 `infer_shape` 函数。
         - **infer_dtype** (Function) - Mindspore Function，用户自定义 `infer_dtype` 函数。
@@ -28,5 +28,5 @@ mindspore.ops.Morph
     输出：
         用户自定义 `fn` 的输出。
 
-    异常:
+    异常：
         - **RuntimeError** - 如果算子在非图模式下被使用。

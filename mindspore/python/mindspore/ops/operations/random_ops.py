@@ -373,11 +373,17 @@ class Gamma(PrimitiveWithInfer):
         \text{P}(x|α,β) = \frac{\exp(-x/β)}{{β^α}\cdot{\Gamma(α)}}\cdot{x^{α-1}}
 
     Note:
-        - Random seed: a set of regular random numbers can be obtained through some complex mathematical algorithms,
-          and the random seed determines the initial value of this random number. If the random seed is the same in two
-          separate calls, the random number generated will not change.
-        - Using the Philox algorithm to scramble seed and seed2 to obtain random seed so that the user doesn't need
-          to worry about which seed is more important.
+        - Random Seed: Through some complex mathematical algorithms, a set of regular random numbers can be obtained,
+          and the random seed is the initial value of this random number.
+          The random seed is the same, the random number obtained will not change.
+        - When neither the global random seed nor the operator layer random seed
+          is set or both are 0: generate completely random numbers.
+        - When the global random seed is set, but the operator layer random seed is not set:
+          splice the global random seed with 0.
+        - When the global random seed is not set, but the operator layer random seed is set:
+          splice 0 with the operator layer random seed.
+        - When both the global random seed and the operator layer random seed are set:
+          splice the global random seed with the operator layer random seed.
 
     .. warning::
         The Ascend backend does not support the reproducibility of random numbers, so

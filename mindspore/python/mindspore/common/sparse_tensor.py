@@ -211,7 +211,8 @@ class SparseTensor(COOTensor_):
 
 class COOTensor(COOTensor_):
     """
-    A sparse representation of a set of nonzero elements from a tensor at given indices.
+    A sparse representation of a set of nonzero elements from a tensor at given indices,
+    where the indices indicate the position of each non-zero element.
 
     For a tensor dense, its COOTensor(indices, values, shape) has
     `dense[indices[i]] = values[i]`.

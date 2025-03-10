@@ -2899,7 +2899,7 @@ class Scan(Primitive):
 
 class ForiLoop(Primitive):
     """
-    Provide a useful op for loop from lower to upper.
+    Performs a loop operation within the specified range.
     The execution logic of the ForiLoop operator can be roughly represented by the following code:
 
     .. code-block:: python

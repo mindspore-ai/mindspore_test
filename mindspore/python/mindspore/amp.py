@@ -325,7 +325,7 @@ class StaticLossScaler(LossScaler):
 
 class DynamicLossScaler(LossScaler):
     r"""
-    Dynamic Loss scale class.
+    Manager for dynamically adjusting the loss scaling factor.
 
     Dynamic loss scaling tries to determine the largest loss scale value that
     will keep gradients finite. It does this by increasing the loss scale every

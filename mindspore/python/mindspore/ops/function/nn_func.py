@@ -4052,8 +4052,10 @@ def rrelu(input, lower=1.0 / 8, upper=1.0 / 3):
 
     Args:
         input (Tensor): The input of rrelu is a Tensor of any dimension.
-        lower (Union[int, float]): Slope of the activation function at data of `input` < 0. Default: ``1.0 / 8`` .
-        upper (Union[int, float]): Slope of the activation function at data of `input` < 0. Default: ``1.0 / 3`` .
+        lower (Union[int, float]): Slope of the activation function at data of `input` is less than 0.
+            Default: ``1.0 / 8`` .
+        upper (Union[int, float]): Slope of the activation function at data of `input`` is less than 0.
+            Default: ``1.0 / 3`` .
 
     Returns:
         Tensor, after rrelu, has the same type and shape as the `input`.
@@ -4315,7 +4317,7 @@ def nll_loss(inputs, target, weight=None, ignore_index=-100, reduction='mean', l
     N is the batch size, :math:`c` belonging to :math:`[0, C-1]` is class index, where :math:`C` is the number of
     classes.
 
-    If `reduction` is not ``None`` (default ``'mean'``), then
+    If `reduction` is not ``'None'`` (default ``'mean'``), then
 
     .. math::
 

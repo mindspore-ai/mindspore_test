@@ -273,7 +273,7 @@ class Im2Col(Primitive):
     each sliding `ksizes`- sized block within the spatial dimensions
     of input `x` into a column (i.e., last dimension) of a 4-D output
     tensor of shape :math:`(N, C, \prod(\text{kernel_size}), L)`, where
-    :math:`C \times \prod(\text{kernel_size})` is the total number of values
+    :math:`C \times \prod(\text{kernel_size})` is the total number of elements
     within each block (a block has :math:`\prod(\text{kernel_size})` spatial
     locations each containing a `C`-channeled vector), and :math:`L` is
     the total number of such blocks:
@@ -2113,7 +2113,7 @@ class ScatterNdUpdate(Primitive):
     the relatively highest priority data type.
 
     Args:
-        use_locking (bool): Whether to protect the assignment by a lock. Default: ``True`` .
+        use_locking (bool, optional): Whether to protect the assignment by a lock. Default: ``True`` .
 
     Inputs:
         - **input_x** (Union[Parameter, Tensor]) - The target tensor, with data type of Parameter or Tensor.
@@ -3838,10 +3838,11 @@ class EmbeddingLookup(Primitive):
     `offset`.
 
     Inputs:
-        - **input_params** (Tensor) - The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.
-          This represents a Tensor slice, instead of the entire Tensor. Currently, the dimension is restricted to be 2.
-        - **input_indices** (Tensor) - The shape of tensor is :math:`(y_1, y_2, ..., y_S)`.
-          Specifies the indices of elements of the original Tensor. Values can be out of range of `input_params`,
+        - **input_params** (Tensor) - a Tensor slice, the shape is :math:`(x_1, x_2, ..., x_R)`.
+          Currently, the dimension is restricted to be 2.
+        - **input_indices** (Tensor) - Specifies the indices of elements of the original Tensor.
+          The shape is :math:`(y_1, y_2, ..., y_S)`.
+          Values can be out of range of `input_params`,
           and the exceeding part will be filled with 0 in the output. Values do not support negative and the result
           is undefined if values are negative. The data type should be int32 or int64.
         - **offset** (int) - Specifies the offset value of this `input_params` slice. Thus the real indices
@@ -5743,7 +5744,7 @@ class TopK(Primitive):
           - CPU: all numeric types.
 
         - **k** (Union(Tensor, int)) - The number of top elements to be computed along the last dimension.
-          If `k` is a Tensor, the supported dtype is int32 and it should be 0-D or 1-D with shape :math:`(1, )` .
+          The supported dtype is int32 and it should be 0-D or 1-D Tensor with shape :math:`(1, )` .
 
     Outputs:
         A tuple consisting of `values` and `indexes`.

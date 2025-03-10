@@ -31,7 +31,7 @@ def imshow_det_bbox(image, bboxes, labels, segm=None, class_names=None, score_th
         image (numpy.ndarray): The image to be displayed, shaped :math:`<C, H, W>` or :math:`<H, W, C>`,
             formatted RGB.
         bboxes (numpy.ndarray): Bounding boxes (with scores), shaped :math:`<N, 4>` or :math:`<N, 5>`,
-            data should be ordered with <N, x, y, w, h>.
+            data should be ordered with :math:`<N,X,Y,W,H>`.
         labels (numpy.ndarray): Labels of bboxes, shaped :math:`<N, 1>`.
         segm (numpy.ndarray): The segmentation masks of image in M classes, shaped :math:`<M, H, W>`.
             Default: ``None``.
