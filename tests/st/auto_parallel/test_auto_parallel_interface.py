@@ -32,7 +32,7 @@ def test_msrun_pipeline_remove_redundancy():
     assert return_code == 0
 
 
-@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level3", card_mark="allcards", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="essential")
 def test_msrun_cpkt_transfer_functional():
     '''
     Feature: test checkpoints file transfer with auto_parallel interface.
