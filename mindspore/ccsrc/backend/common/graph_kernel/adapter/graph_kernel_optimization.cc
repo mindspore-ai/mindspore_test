@@ -89,6 +89,7 @@ using opt::GraphOptimizer;
 namespace {
 auto constexpr PARALLEL_OPS_LIMIT = 7;
 inline unsigned int GetPassLevelByFlag(bool flag) { return flag ? OptLevel_1 : OptLevel_MAX; }
+constexpr char kDisableKernelBackoff[] = "MS_DISABLE_KERNEL_BACKOFF";
 }  // namespace
 
 void GraphKernelOptimizer::Init() const {
@@ -105,7 +106,8 @@ PassManagerPtr GraphKernelOptimizer::PreProcess() const {
   pm->Add(std::make_shared<GetitemTuple>(), OptLevel_1);
 
   // Fallback some operations for further expanding or fusing
-  pm->Add(std::make_shared<ProactiveFallbackExpander>(), OptLevel_1, is_dvm);
+  pm->Add(std::make_shared<ProactiveFallbackExpander>(), OptLevel_1,
+          is_dvm && !(common::GetEnv(kDisableKernelBackoff) == "1"));
 
   // Transform Transpose + Mutmul to a single Matmul with attribute trans_a/trans_b
   pm->Add(std::make_shared<TransposeMatmulFusion>(), OptLevel_2, is_ascend);

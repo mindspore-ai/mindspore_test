@@ -79,6 +79,9 @@ void DvmKernelMod::CodeGen(const std::vector<ShapeVector> &inputs_shape,
     for (auto sh : inputs_shape[i]) {
       input_size_list_[i] *= LongToSize(sh);
     }
+    if (input_size_list_[i] == 0) {
+      skip_launch_ = true;
+    }
   }
   for (size_t i = 0; i < outputs_shape.size(); ++i) {
     output_size_list_[i] = outputs_type_byte_[i];
@@ -89,19 +92,27 @@ void DvmKernelMod::CodeGen(const std::vector<ShapeVector> &inputs_shape,
   if (UseSimulationApi()) {
     return;
   }
-  size_t workspace_size = kernel_.CodeGen();
+  size_t workspace_size{0};
+  if (!skip_launch_) {
+    workspace_size = kernel_.CodeGen();
+  }
   if (workspace_size) {
     workspace_size_list_ = {workspace_size};
   }
   if (dump_kernel_) {
     dump_buf_ << "[dvm kernel] " << op_name_ << " " << op_fullname_ << "\n";
-    dump_buf_ << kernel_.Dump() << "\n";
-    dump_buf_ << kernel_.Das() << "\n";
+    if (skip_launch_) {
+      dump_buf_ << "This kernel is skipped\n";
+    } else {
+      dump_buf_ << kernel_.Dump() << "\n";
+      dump_buf_ << kernel_.Das() << "\n";
+    }
     DumpToFile();
   }
 }
 
 BaseShapePtr DvmKernelMod::InferShape(const AbstractBasePtrList &inputs_abs) {
+  skip_launch_ = false;
   BaseShapePtr result{nullptr};
   // update input shape
   for (size_t i = 0; i < inputs_abs.size(); ++i) {
@@ -114,6 +125,9 @@ BaseShapePtr DvmKernelMod::InferShape(const AbstractBasePtrList &inputs_abs) {
     for (auto sh : inputs_shape_[i]) {
       input_size_list_[i] *= LongToSize(sh);
     }
+    if (input_size_list_[i] == 0) {
+      skip_launch_ = true;
+    }
   }
   if (dump_kernel_) {
     dump_buf_ << "[inputs shape list] " << op_name_ << " " << op_fullname_ << "\n";
@@ -122,7 +136,12 @@ BaseShapePtr DvmKernelMod::InferShape(const AbstractBasePtrList &inputs_abs) {
   }
 
   // re-codegen by new input shape
-  size_t workspace_size = kernel_.CodeGen();
+  size_t workspace_size{0};
+  if (skip_launch_) {
+    kernel_.Infer();
+  } else {
+    workspace_size = kernel_.CodeGen();
+  }
   if (workspace_size) {
     workspace_size_list_ = {workspace_size};
   }
@@ -133,8 +152,12 @@ BaseShapePtr DvmKernelMod::InferShape(const AbstractBasePtrList &inputs_abs) {
     dump_buf_ << "[outputs shape list] " << op_name_ << " " << op_fullname_ << "\n";
     dump_buf_ << ShapesStr(outputs_shape_) << "\n";
     dump_buf_ << "[dvm kernel] " << op_name_ << " " << op_fullname_ << "\n";
-    dump_buf_ << kernel_.Dump() << "\n";
-    dump_buf_ << kernel_.Das() << "\n";
+    if (skip_launch_) {
+      dump_buf_ << "This kernel is skipped\n";
+    } else {
+      dump_buf_ << kernel_.Dump() << "\n";
+      dump_buf_ << kernel_.Das() << "\n";
+    }
     DumpToFile();
   }
 
@@ -206,6 +229,10 @@ void SingleDvmKernelMod::UpdateIO() {
 
 bool SingleDvmKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                                 const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+  if (skip_launch_) {
+    MS_LOG(DEBUG) << "Skip launch node: " << op_fullname_ << ", because size of some input is zero.";
+    return true;
+  }
   for (size_t i = 0; i < inputs_addr_.size(); ++i) {
     inputs_addr_[i] = inputs[inputs_idx_[i]]->device_ptr();
   }
@@ -278,6 +305,10 @@ void ParallelDvmKernelMod::UpdateIO() {
 bool ParallelDvmKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &workspace,
                                   const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+  if (skip_launch_) {
+    MS_LOG(EXCEPTION) << "Unexpected behavior in parallel fusion: for node: " << op_fullname_
+                      << ", size of some input is zero.";
+  }
   for (size_t i = 0; i < inputs_map_.size(); i++) {
     inputs_addr_[i] = inputs[inputs_map_[i]]->device_ptr();
   }
