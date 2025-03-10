@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef MINDSPORE_CCSRC_BACKEND_GE_BACKEND_DUMP_HOOK_DEBUGGER_H_
+#define MINDSPORE_CCSRC_BACKEND_GE_BACKEND_DUMP_HOOK_DEBUGGER_H_
+
 #include <vector>
 #include "include/backend/kernel_graph.h"
 
@@ -50,3 +53,5 @@ class BACKEND_EXPORT HookDebugger {
 };
 }  // namespace dump
 }  // namespace mindspore
+
+#endif

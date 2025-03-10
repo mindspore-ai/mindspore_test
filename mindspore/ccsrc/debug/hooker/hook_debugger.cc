@@ -16,6 +16,7 @@
 
 #include "debug/hooker/hook_debugger.h"
 #include <string>
+#include <utility>
 #include "debug/hooker/adapter.h"
 
 namespace mindspore {
@@ -53,7 +54,7 @@ void HookDebugger::HookOnStepBegin(uint32_t device_id, const std::vector<KernelG
     if (step_count_num == 0) {
       registered_adapter->Load();
     }
-    registered_adapter->AdaptOnStepBegin(device_id, step_count_num, all_kernel_names, is_kbyk);
+    registered_adapter->AdaptOnStepBegin(device_id, step_count_num, std::move(all_kernel_names), is_kbyk);
   } else {
     MS_LOG(WARNING) << "Ascend Adapter is not found! Hook Dump not validate!";
     return;
@@ -82,7 +83,7 @@ void HookDebugger::HookOnStepBegin(uint32_t device_id, const KernelGraphPtr &gra
     if (step_count_num == 0) {
       registered_adapter->Load();
     }
-    registered_adapter->AdaptOnStepBegin(device_id, step_count_num, all_kernel_names, is_kbyk);
+    registered_adapter->AdaptOnStepBegin(device_id, step_count_num, std::move(all_kernel_names), is_kbyk);
   } else {
     MS_LOG(WARNING) << "Ascend Adapter is not found! Hook Dump not validate!";
     return;

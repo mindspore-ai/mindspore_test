@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_DEBUG_DUMP_NPY_HEADER_H_
-#define MINDSPORE_MINDSPORE_CCSRC_DEBUG_DUMP_NPY_HEADER_H_
+#ifndef MINDSPORE_CCSRC_DEBUG_DUMP_NPY_HEADER_H_
+#define MINDSPORE_CCSRC_DEBUG_DUMP_NPY_HEADER_H_
 
 #include <string>
 #include "utils/shape_utils.h"
@@ -25,4 +25,4 @@
 namespace mindspore {
 DUMP_EXPORT std::string GenerateNpyHeader(const ShapeVector &shape, TypeId type_id, bool fortran_order = false);
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_DEBUG_DUMP_NPY_HEADER_H_
+#endif

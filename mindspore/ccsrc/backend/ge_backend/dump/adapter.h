@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef MINDSPORE_CCSRC_BACKEND_GE_BACKEND_DUMP_ADAPTER_H_
+#define MINDSPORE_CCSRC_BACKEND_GE_BACKEND_DUMP_ADAPTER_H_
+
 #include <string>
 #include <vector>
 #include <map>
@@ -21,11 +24,10 @@
 #include "include/backend/visible.h"
 #include "common/device_type.h"
 
-constexpr auto kMSHookEnable = "MS_HOOK_ENABLE";
-constexpr auto kEnable = "on";
-
 namespace mindspore {
 namespace dump {
+constexpr auto kMSHookEnable = "MS_HOOK_ENABLE";
+constexpr auto kEnable = "on";
 
 class BACKEND_EXPORT Adapter {
  public:
@@ -33,7 +35,7 @@ class BACKEND_EXPORT Adapter {
 
   virtual ~Adapter() {}
 
-  virtual void AdaptOnStepBegin(uint32_t device_id, int step_count_num, std::vector<std::string> all_kernel_names,
+  virtual void AdaptOnStepBegin(uint32_t device_id, int step_count_num, std::vector<std::string> &&all_kernel_names,
                                 bool is_kbyk) = 0;
 
   virtual void AdaptOnStepEnd() = 0;
@@ -69,3 +71,5 @@ class BACKEND_EXPORT AdapterManager {
 
 }  // namespace dump
 }  // namespace mindspore
+
+#endif

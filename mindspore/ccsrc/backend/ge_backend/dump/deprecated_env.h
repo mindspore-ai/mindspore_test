@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#ifndef MINDSPORE_CCSRC_BACKEND_GE_BACKEND_DUMP_DEPRECATED_ENV_H_
+#define MINDSPORE_CCSRC_BACKEND_GE_BACKEND_DUMP_DEPRECATED_ENV_H_
 namespace mindspore {
 namespace dump {
 void CheckDeprecatedDumpEnv();
 void PrintDeprecatedWarning(bool, bool);
 }  // namespace dump
 }  // namespace mindspore
+#endif

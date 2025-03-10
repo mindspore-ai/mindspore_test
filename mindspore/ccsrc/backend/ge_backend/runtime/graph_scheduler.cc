@@ -47,6 +47,9 @@
 #ifdef ENABLE_DUMP_IR
 #include "include/common/debug/rdr/recorder_manager.h"
 #endif
+#ifndef ENABLE_SECURITY
+#include "backend/ge_backend/dump/hook_debugger.h"
+#endif
 #include "debug/profiler/profiling.h"
 #include "include/common/debug/common.h"
 #include "abstract/ops/primitive_infer_map.h"
@@ -360,7 +363,10 @@ void GraphScheduler::BuildAndScheduleGlobalActor() {
   }
 
   // Create and schedule debug actor.
-  bool debugger_actor_need = (common::GetEnv("MS_HOOK_ENABLE") == "on");
+  bool debugger_actor_need = false;
+#ifndef ENABLE_SECURITY
+  debugger_actor_need = dump::HookDebugger::GetInstance().IsHookerEnabled();
+#endif
   if (debugger_actor_need) {
     auto debug_actor = std::make_shared<DebugActor>();
     MS_EXCEPTION_IF_NULL(debug_actor);

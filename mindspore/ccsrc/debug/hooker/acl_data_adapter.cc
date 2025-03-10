@@ -21,14 +21,15 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 
+namespace mindspore {
+namespace hooker {
+#define TO_MAP(var, id, map) map[id] = static_cast<void *>(&var);
 constexpr uint32_t kAllKernelNames = 0;
 constexpr uint32_t kIsKbyK = 1;
 
-namespace mindspore {
-namespace hooker {
-void AclDataAdapter::AdaptOnStepBegin(uint32_t device_id, int step_count_num, std::vector<std::string> all_kernel_names,
-                                      bool is_kbyk) {
-  if (!isLoaded) {
+void AclDataAdapter::AdaptOnStepBegin(uint32_t device_id, int step_count_num,
+                                      std::vector<std::string> &&all_kernel_names, bool is_kbyk) {
+  if (!isLoaded_) {
     MS_LOG(WARNING) << "Hook library is not loaded, please check.";
     return;
   }
@@ -47,7 +48,7 @@ void AclDataAdapter::AdaptOnStepBegin(uint32_t device_id, int step_count_num, st
 }
 
 void AclDataAdapter::AdaptOnStepEnd() {
-  if (!isLoaded) {
+  if (!isLoaded_) {
     MS_LOG(WARNING) << "Hook library is not loaded, please check.";
     return;
   }
@@ -62,11 +63,11 @@ void AclDataAdapter::AdaptOnStepEnd() {
 }
 
 void AclDataAdapter::Load() {
-  if (common::GetEnv(kMSHookEnable) != kEnable || isLoaded) {
+  if (common::GetEnv(kMSHookEnable) != kEnable || isLoaded_) {
     return;
   }
   auto &loader = HookDynamicLoader::GetInstance();
-  isLoaded = loader.LoadLibrary();
+  isLoaded_ = loader.LoadLibrary();
 }
 
 REGISTER_ADAPTER(device::DeviceType::kAscend, AclDataAdapter);
