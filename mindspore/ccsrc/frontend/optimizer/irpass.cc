@@ -71,6 +71,7 @@
 #include "frontend/optimizer/irpass/j_node_and_user_rematch.h"
 #include "frontend/optimizer/irpass/loop_unroll.h"
 #include "frontend/optimizer/irpass/morph.h"
+#include "frontend/optimizer/irpass/make_tuple_from_fprop_eliminate.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
@@ -354,6 +355,11 @@ ResolveIRPassLib::ResolveIRPassLib() {
 GradPartialPassLib::GradPartialPassLib() {
   grad_partial_transform_ =
     MakeSubstitution(std::make_shared<GradPartialTransform>(), "grad_partial_transform", IsCNode);
+}
+
+AdjustGraphAfterValidatePassLib::AdjustGraphAfterValidatePassLib() {
+  make_tuple_from_fprop_eliminater_ =
+    MakeSubstitution(std::make_shared<make_tuple_from_fprop_eliminater>(), "make_tuple_from_fprop_eliminater", IsCNode);
 }
 }  // namespace irpass
 }  // namespace opt

@@ -148,6 +148,8 @@ std::vector<PassItem> GetJitPasses(const ResourcePtr &resource, bool build_top_g
     return jit_passes;
   }
 
+  (void)jit_passes.emplace_back(std::make_pair(kBackendPass, BackendPass));
+
 #ifndef WITH_BACKEND
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
