@@ -69,22 +69,26 @@ TypeIdList GroupedMatmulV4FuncImpl::InferType(const PrimitivePtr &primitive,
   }
 
   const auto &x_tensors = input_infos[idxes_.x]->GetSequenceElements();
-  const auto &per_token_scale_info = input_infos[per_token_scale_idx_];
+  const auto &scale_infos = input_infos[scale_idx_];
   TypeIdList output_types;
-  if (per_token_scale_info->IsNone()) {
+  if (scale_infos->IsNone()) {
     std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
                    [](const InferInfoPtr &info) { return info->GetType(); });
   } else {
-    if (input_infos[scale_idx_]->IsNone()) {
-      MS_EXCEPTION(ValueError) << "For '" << primitive->name() << "', the scale cannot be None in per-token quant.";
-    }
-    const auto &scale_tensors = input_infos[scale_idx_]->GetSequenceElements();
-    for (const InferInfoPtr &info : scale_tensors) {
-      auto scale_type = info->GetType();
-      if (scale_type != kNumberTypeBFloat16) {
-        MS_EXCEPTION(TypeError) << "For '" << primitive->name() << "', the scales must be BFloat16 in per-token quant.";
-      }
-      output_types.emplace_back(scale_type);
+    const auto &scale_tensors = scale_infos->GetSequenceElements();
+    TypeId scale_type = scale_tensors[0]->GetType();
+    if (scale_type == kNumberTypeUInt64) {
+      std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
+                     [](const InferInfoPtr &info) { return kNumberTypeInt8; });
+    } else if (scale_type == kNumberTypeBFloat16) {
+      std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
+                     [](const InferInfoPtr &info) { return kNumberTypeBFloat16; });
+    } else if (scale_type == kNumberTypeFloat32) {
+      std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
+                     [](const InferInfoPtr &info) { return kNumberTypeFloat16; });
+    } else {
+      MS_EXCEPTION(ValueError) << "For '" << primitive->name()
+                               << "', the scale only support Uint16, BFloat16 and Float32.";
     }
   }
   return output_types;
