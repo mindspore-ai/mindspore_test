@@ -23,7 +23,7 @@
 #include <string>
 #include <vector>
 
-#include "mindspore/ccsrc/minddata/dataset/engine/ir/cache/dataset_cache.h"
+#include "mindspore/lite/minddata/dataset/engine/ir/cache/dataset_cache.h"
 #include "mindspore/lite/minddata/dataset/engine/ir/datasetops/dataset_node.h"
 
 namespace mindspore {
