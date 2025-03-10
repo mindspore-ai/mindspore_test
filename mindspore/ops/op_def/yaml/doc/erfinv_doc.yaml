@@ -1,37 +1,33 @@
 erfinv:
   description: |
-    Returns the result of the inverse error function with `input`. It is defined in the range `(-1, 1)` as:
+    Compute the inverse error of input tensor element-wise.
+
+    It is defined in the range `(-1, 1)` as:
 
     .. math::
 
         erfinv(erf(x)) = x
 
-    where :math:`x` is the `input`.
-
     Args:
-        input (Tensor): The input tensor to compute with.
-            Supported dtypes:
-
-            - Ascend: float16, float32, int8, int16, int32, int64, uint8, bool.
-            - GPU/CPU: float16, float32 or float64.
+        input (Tensor): The input tensor.
 
     Returns:
-        Tensor. When the `input` is int8, int16, int32, int64, uint8, bool, the return value type is float32.
-        Otherwise, the return value type is the same as the input type.
-
-    :raise TypeError: If dtype of `input` is not as follows
-
-        - Ascend: float16, float32, int8, int16, int32, int64, uint8, bool.
-        - GPU/CPU: float16, float32 or float64.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([0, 0.5, -0.9]), mindspore.float32)
-        >>> output = ops.erfinv(input)
-        >>> print(output)
-        [ 0.          0.47693613 -1.1630869 ]
+        >>> # When the `input` is int8, int16, int32, int64, uint8, bool, the return value type is float32.
+        >>> input = mindspore.tensor([0, 0.5, -0.9], mindspore.int64)
+        >>> mindspore.ops.erfinv(input)
+        Tensor(shape=[3], dtype=Float32, value= [ 0.00000000e+00,  4.76936276e-01, -1.16308715e+00])
+        >>>
+        >>> # Otherwise, the return value type is the same as the input type.
+        >>> input = mindspore.tensor([0, 0.5, -0.9], mindspore.float64)
+        >>> mindspore.ops.erfinv(input)
+        Tensor(shape=[3], dtype=Float64, value= [ 0.00000000e+00,  4.76936276e-01, -1.16308715e+00])
+
+        
+        

@@ -818,56 +818,58 @@ def multiply(input, other):
 
 def div(input, other, *, rounding_mode=None):
     r"""
-    Divides the first input tensor by the second input tensor in floating-point type element-wise.
+    Divide the first input tensor by the second input tensor in floating-point type element-wise.
 
     .. math::
 
         out_{i} = input_{i} / other_{i}
 
     Note:
-        - When the two inputs have different shapes, they must be able to broadcast to a common shape.
-        - The two inputs can not be bool type at the same time,
-          [True, Tensor(True, bool\_), Tensor(np.array([True]), bool\_)] are all considered bool type.
-        - The two inputs comply with the implicit type conversion rules to make the data types
+        - The two input tensors must be broadcastable.
+        - The two input tensors can not be bool type at the same time,
+        - The two input tensors comply with the implicit type conversion rules to make the data types
           consistent.
 
     Args:
-        input (Union[Tensor, Number, bool]): The first input is a number or
-            a bool or a tensor whose data type is number or bool.
-        other (Union[Tensor, Number, bool]): The second input is a number or
-            a bool when the first input is a tensor or a tensor whose data type is number or bool.
+        input (Union[Tensor, Number, bool]): The first input tensor.
+        other (Union[Tensor, Number, bool]): The second input tensor.
 
     Keyword Args:
-        rounding_mode (str, optional): Type of rounding applied to the result. Default: ``None`` .
-            Three types are defined as,
+        rounding_mode (str, optional): Type of rounding applied to the result. Default ``None`` .
+            Three types are defined as:
 
-            - None: Default behavior, which is the same as true division in Python or `true_divide` in NumPy.
+            - None: the same as true division in Python or `true_divide` in NumPy.
 
-            - "floor": Rounds the division of the inputs down, which is the same as floor division in Python
+            - "floor": rounds the results of the division down, which is the same as floor division in Python
               or `floor_divide` in NumPy.
 
-            - "trunc": Rounds the division of the inputs towards zero, which is the same as C-style integer division.
+            - "trunc": rounds the results of the division towards zero, which is the same as C-style integer division.
 
     Returns:
-        Tensor, the shape is the same as the one after broadcasting,
-        and the data type is the one with higher precision or higher digits among the two inputs.
-
-    Raises:
-        TypeError: If `input` and `other` is not one of the following: Tensor, Number, bool.
-        ValueError: If `rounding_mode` value is not None, "floor" or "trunc".
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([1.0, 2.0, 3.0]), mindspore.float32)
-        >>> y = Tensor(np.array([4.0, 5.0, 6.0]), mindspore.float32)
-        >>> output = ops.div(x, y)
+        >>> input = mindspore.tensor([[-0.3711, -1.9353, -0.4605, -0.2917],
+        ...                           [ 0.1815, -1.0111,  0.9805, -1.5923],
+        ...                           [ 0.1062,  1.4581,  0.7759, -1.2344],
+        ...                           [-0.1830, -0.0313,  1.1908, -1.4757]])
+        >>> other = mindspore.tensor([ 0.8032,  0.2930, -0.8113, -0.2308])
+        >>> output = mindspore.ops.div(input, other)
         >>> print(output)
-        [0.25 0.4 0.5]
+        [[-0.4620269  -6.605119    0.5676076   1.2638649 ]
+         [ 0.22597112 -3.4508533  -1.2085541   6.899047  ]
+         [ 0.13222112  4.97645    -0.95636636  5.348354  ]
+         [-0.22783864 -0.10682594 -1.4677677   6.3938475 ]]
+        >>> output = mindspore.ops.div(input, other, rounding_mode='floor')
+        >>> print(output)
+        [[-1. -7.  0.  1.]
+         [ 0. -4. -2.  6.]
+         [ 0.  4. -1.  5.]
+         [-1. -1. -2.  6.]]
     """
     if rounding_mode is not None and rounding_mode not in ['floor', 'trunc']:
         raise ValueError("For ops.div, rounding_mode value should be None, 'floor' or 'trunc'.")
@@ -5970,27 +5972,21 @@ def _check_input_dtype(param_name, input_dtype, allow_dtypes, cls_name):
 
 def deg2rad(x):
     """
-    Converts angles in degrees to angles in radians element-wise.
+    Convert angles from degrees to radians element-wise.
 
     Args:
         x (Tensor): The input tensor.
-            With float16, float32 or float64 data type.
 
     Returns:
-        Tensor, has the same dtype as the `x`.
-
-    Raises:
-        TypeError: If `x` is not a Tensor.
-        TypeError: If dtype of `x` isn't float16, float32 or float64.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([[90.0, -90.0], [180.0, -180.0], [270.0, -270.0]]).astype(np.float32))
-        >>> output = ops.deg2rad(x)
+        >>> import mindspore
+        >>> input = mindspore.tensor([[90.0, -90.0], [180.0, -180.0], [270.0, -270.0]])
+        >>> output = mindspore.ops.deg2rad(input)
         >>> print(output)
         [[ 1.5707964 -1.5707964]
          [ 3.1415927 -3.1415927]
@@ -6405,11 +6401,10 @@ def _check_is_int(arg_value, arg_name, cls_name):
 
 def diff(x, n=1, axis=-1, prepend=None, append=None):
     r"""
-    Computes the n-th discrete difference along a specified axis of a given input `x`.
+    Computes the n-th forward difference along the given axis.
 
-    The first difference is calculated as :math:`out[i] = x[i+1] - x[i]` along the specified `axis`.
-    To compute higher differences, the function is called recursively
-    using the output from the previous iteration as input.
+    The first-order differences is calculated as :math:`out[i] = x[i+1] - x[i]` .
+    Higher-order differences are calculated by using :func:`mindspore.ops.diff recursively..
 
     Note:
         Zero-shaped Tensor is not supported, a value error is raised if
@@ -6418,44 +6413,50 @@ def diff(x, n=1, axis=-1, prepend=None, append=None):
         empty Tensor.
 
     Args:
-        x (Tensor): Input tensor.
-            Full support for signed integers, partial support for floats and complex numbers
-        n (int, optional): The number of times values are differenced. If zero,
-            the input is returned as-is. Currently only 1 is supported. Default: ``1`` .
-        axis (int, optional): The axis along which the difference is taken, default
-            is the last axis. Default: ``-1`` .
+        x (Tensor): The input tensor.
+        n (int, optional): The number of times to compute the difference. Currently only 1 is supported. Default
+            ``1`` .
+        axis (int, optional): The axis to compute the difference along. Default ``-1`` .
         prepend (Tensor, optional): Values to prepend to `x` along
-            `axis` prior to performing the difference. Scalar values are expanded to
-            arrays with length 1 in the direction of `axis` and the shape of the input
-            array along all other axis. Otherwise the dimension and shape must
-            match `x` except along `axis`. Default: ``None`` .
+            `axis` before performing the difference. Their dimensions must be equivalent to that of `x`, and their
+            shapes must match input’s shape except on dim. Default ``None`` .
         append (Tensor, optional): Values to append to `x` along
-            `axis` prior to performing the difference. Scalar values are expanded to
-            arrays with length 1 in the direction of `axis` and the shape of the input
-            array along all other axis. Otherwise the dimension and shape must
-            match `x` except along `axis`. Default: ``None`` .
+            `axis` before performing the difference. Their dimensions must be equivalent to that of `x`, and their
+            shapes must match input’s shape except on dim. Default ``None`` .
 
     Returns:
         Tensor, the n-th differences of input. The shape of the output is the same as `x`
         except along `axis` where the size is reduced by `n`. The type of the output
         is the same as `x`.
 
-    Raises:
-        TypeError: If the data type of the elementes in `x` is uint16, uint32 or uint64.
-        TypeError: If `x` is not a tensor.
-        ValueError: If `x` is an empty Tensor.
-        ValueError: If the dim of `x` is less than 1.
-        RuntimeError: If `n` is not 1.
-
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor([1, 3, -1, 0, 4])
-        >>> out = ops.diff(x)
-        >>> print(out.asnumpy())
-        [ 2 -4  1  4]
+        >>> import mindspore
+        >>> x = mindspore.tensor([1, 3, 2])
+        >>> # case 1: By default, compute the first-order differences along axis -1.
+        >>> mindspore.ops.diff(x)
+        Tensor(shape=[2], dtype=Int64, value= [ 2, -1])
+        >>>
+        >>> # case 2: When argument prepend is setting:
+        >>> n = mindspore.tensor([4, 5])
+        >>> mindspore.ops.diff(x, prepend=n)
+        Tensor(shape=[4], dtype=Int64, value= [ 1, -4,  2, -1])
+        >>>
+        >>> # case 3: When argument append is setting:
+        >>> mindspore.ops.diff(x, append=n)
+        Tensor(shape=[4], dtype=Int64, value= [ 2, -1,  2,  1])
+        >>>
+        >>> # case 4: When input is 2-D dimensional tensor, compute forward difference along different axis.
+        >>> x = mindspore.tensor([[1, 2, 3], [3, 4, 5]])
+        >>> mindspore.ops.diff(x, axis=0)
+        Tensor(shape=[1, 3], dtype=Int64, value=
+        [[2, 2, 2]])
+        >>> mindspore.ops.diff(x, axis=1)
+        Tensor(shape=[2, 2], dtype=Int64, value=
+        [[1, 1],
+         [1, 1]])
     """
     if not isinstance(x, Tensor):
         raise TypeError(f"For 'diff', 'x' must be a tensor, but got {type(x)}")
@@ -11352,7 +11353,7 @@ def lgamma(input):
 
 def digamma(input):
     r"""
-    Computes the derivative of the lgamma function on input.
+    Computes the logarithmic derivative of the gamma function on input tensor.
 
     .. math::
         P(x) = \frac{d}{dx}(\ln (\Gamma(x)))
@@ -11361,25 +11362,20 @@ def digamma(input):
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        input (Tensor): The input tensor. With type of float16 or float32 or float64.
+        input (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same dtype as `input`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If dtype of `input` is not float16 or float32 or float64.
+        Tensor
 
     Supported Platforms:
         ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([1.5, 0.5, 9]).astype(np.float16))
-        >>> output = ops.digamma(x)
+        >>> import mindspore
+        >>> input = mindspore.tensor([1.5, 0.5, 9])
+        >>> output = mindspore.ops.digamma(input)
         >>> print(output)
-        [ 0.0365 -1.964   2.14  ]
+        [ 0.03648992 -1.9635109   2.1406415 ]
     """
     return digamma_(input)
 
