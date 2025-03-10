@@ -48,6 +48,8 @@ class RUNTIME_PIPELINE_EXPORT Pipeline {
 
   void ChildAfterFork();
 
+  void ParentBeforeFork();
+
   void DisablePipeline();
 
   static void DisableMultiThreadAfterFork();

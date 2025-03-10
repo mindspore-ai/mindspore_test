@@ -116,32 +116,32 @@ void AsyncRQueue::WorkerLoop() {
   BindCoreForThread();
 
   while (true) {
-    std::shared_ptr<AsyncTask> task = tasks_queue_.Head();
+    std::shared_ptr<AsyncTask> task = tasks_queue_->Head();
 
     MS_LOG(DEBUG) << "Get task";
     MS_EXCEPTION_IF_NULL(task);
     if (task->task_type() == kExitTask) {
-      tasks_queue_.Dequeue();
+      tasks_queue_->Dequeue();
       MS_LOG(DEBUG) << "Thread exit";
       return;
     }
 
     try {
       task->Run();
-      tasks_queue_.Dequeue();
+      tasks_queue_->Dequeue();
     } catch (const std::exception &e) {
       MS_LOG(INFO) << "Run task failed, error msg:" << e.what();
       {
         MsException::Instance().SetException();
         // MsException is unreliable because it gets modified everywhere.
         auto e_ptr = std::current_exception();
-        while (!tasks_queue_.IsEmpty()) {
-          auto &t = tasks_queue_.Head();
+        while (!tasks_queue_->IsEmpty()) {
+          auto &t = tasks_queue_->Head();
           if (t->task_type() == kExitTask) {
             break;
           }
           t->SetException(e_ptr);
-          tasks_queue_.Dequeue();
+          tasks_queue_->Dequeue();
         }
       }
     }
@@ -166,7 +166,7 @@ void AsyncRQueue::Push(const AsyncTaskPtr &task) {
   if (current_level_ >= wait_level_) {
     MS_LOG(EXCEPTION) << "Cannot push task from thread " << current_level_ << " to queue " << wait_level_;
   }
-  tasks_queue_.Enqueue(task);
+  tasks_queue_->Enqueue(task);
 }
 
 bool AsyncRQueue::CanPush() const {
@@ -198,17 +198,17 @@ void AsyncRQueue::Wait() {
                                      false);
 
   MS_LOG(DEBUG) << "Start to wait thread " << name_;
-  while (!tasks_queue_.IsEmpty()) {
+  while (!tasks_queue_->IsEmpty()) {
   }
   MsException::Instance().CheckException();
   MS_LOG(DEBUG) << "End to wait thread " << name_;
 }
 
-bool AsyncRQueue::Empty() { return tasks_queue_.IsEmpty(); }
+bool AsyncRQueue::Empty() { return tasks_queue_->IsEmpty(); }
 
 void AsyncRQueue::Clear() {
   {
-    if (tasks_queue_.IsEmpty()) {
+    if (tasks_queue_->IsEmpty()) {
       return;
     }
 
@@ -217,7 +217,7 @@ void AsyncRQueue::Clear() {
     // Avoid to push task after WorkerJoin.
     if (worker_ != nullptr && worker_->joinable()) {
       auto task = std::make_shared<WaitTask>();
-      tasks_queue_.Enqueue(task);
+      tasks_queue_->Enqueue(task);
     }
   }
   // There is still one task in progress
@@ -226,7 +226,7 @@ void AsyncRQueue::Clear() {
 
 void AsyncRQueue::Reset() {
   {
-    if (tasks_queue_.IsEmpty()) {
+    if (tasks_queue_->IsEmpty()) {
       return;
     }
 
@@ -236,10 +236,10 @@ void AsyncRQueue::Reset() {
 }
 
 void AsyncRQueue::ClearTaskWithException() {
-  while (!tasks_queue_.IsEmpty()) {
-    auto &t = tasks_queue_.Head();
+  while (!tasks_queue_->IsEmpty()) {
+    auto &t = tasks_queue_->Head();
     t->SetException(std::make_exception_ptr(std::runtime_error("Clean up tasks that are not yet running")));
-    tasks_queue_.Dequeue();
+    tasks_queue_->Dequeue();
   }
 }
 
@@ -252,7 +252,7 @@ void AsyncRQueue::WorkerJoin() {
     if (worker_->joinable() && worker_->get_id() != std::this_thread::get_id()) {
       {
         auto task = std::make_shared<ExitTask>();
-        tasks_queue_.Enqueue(task);
+        tasks_queue_->Enqueue(task);
         MS_LOG(DEBUG) << "Push exit task and notify all";
       }
       worker_->join();
@@ -278,11 +278,21 @@ void AsyncRQueue::ChildAfterFork() {
     (void)worker_.release();
     worker_ = nullptr;
   }
+  tasks_queue_ = std::make_unique<RingQueue<AsyncTaskPtr, kQueueCapacity>>();
   MS_LOG(DEBUG) << "AsyncQueue " << name_ << " reinitialize after fork done.";
 }
 
+void AsyncRQueue::ParentBeforeFork() {
+  WorkerJoin();
+  if (worker_ != nullptr) {
+    (void)worker_.release();
+    worker_ = nullptr;
+  }
+  tasks_queue_ = std::make_unique<RingQueue<AsyncTaskPtr, kQueueCapacity>>();
+}
+
 void AsyncRQueue::SetSpin(bool spin) {
-  tasks_queue_.set_spin(spin);
+  tasks_queue_->set_spin(spin);
   MS_LOG(INFO) << "Thread " << name_ << " is set spin to " << spin;
 }
 }  // namespace runtime
