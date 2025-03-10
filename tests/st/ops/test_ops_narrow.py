@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, jit, JitConfig
+from mindspore import ops, jit
 from mindspore.mint import narrow
 import tests.st.utils.test_utils as test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -41,7 +41,7 @@ def narrow_forward_func(x, dim, start, length):
 
 @test_utils.run_with_cell
 def narrow_backward_func(x, dim, start, length):
-    return ops.grad(narrow_forward_func, (0))(x, dim, start, length)
+    return ops.grad(narrow_forward_func, (0))(x, dim, start, length)  # pylint: disable=not-callable
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -66,9 +66,9 @@ def test_ops_narrow_forward(context_mode):
         output_grad = narrow_backward_func(ms.Tensor(x), dim, start, length)
     else:
         output_forward = \
-            (jit(narrow_forward_func, jit_level="O0"))(ms.Tensor(x), dim, start, length)
+            (jit(narrow_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), dim, start, length)
         output_grad = \
-            (jit(narrow_backward_func, jit_level="O0"))(ms.Tensor(x), dim, start, length)
+            (jit(narrow_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), dim, start, length)
 
     np.testing.assert_allclose(output_forward.asnumpy(), expect_forward, rtol=1e-3)
     np.testing.assert_allclose(output_grad.asnumpy(), expect_grad, rtol=1e-3)
@@ -96,9 +96,9 @@ def test_ops_narrow_forward_case01(context_mode):
         output_grad = narrow_backward_func(ms.Tensor(x), dim, start, length)
     else:
         output_forward = \
-            (jit(narrow_forward_func, jit_level="O0"))(ms.Tensor(x), dim, start, length)
+            (jit(narrow_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), dim, start, length)
         output_grad = \
-            (jit(narrow_backward_func, jit_level="O0"))(ms.Tensor(x), dim, start, length)
+            (jit(narrow_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), dim, start, length)
 
     np.testing.assert_allclose(output_forward.asnumpy(), expect_forward, rtol=1e-3)
     np.testing.assert_allclose(output_grad.asnumpy(), expect_grad, rtol=1e-3)

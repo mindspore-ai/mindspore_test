@@ -14,12 +14,17 @@
 # ============================================================================
 import mindspore
 from mindspore import context
-from mindspore import Tensor, nn
+from mindspore import Tensor, nn, jit
 from mindspore.ops import operations as P
 from mindspore.common import dtype as mstype
 import numpy as np
 
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+
+@jit(backend="ms_backend")
+def grad_func(net, x, y, z):
+    grad = mindspore.grad(net)
+    grad(x, y, z)
 
 
 def test_ge_nested_tuple():
@@ -54,5 +59,4 @@ def test_ge_nested_tuple():
     y = Tensor(10, mindspore.float32)
     z = Tensor(np.random.rand(4, 4, 4), dtype=mstype.float32)
     net(x, y, z)
-    grad = mindspore.grad(net)
-    grad(x, y, z)
+    grad_func(net, x, y, z)

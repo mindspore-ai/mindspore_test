@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, mint, jit, JitConfig
+from mindspore import ops, mint, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
@@ -58,8 +58,8 @@ def test_asin_std(mode):
         output = asin_forward_func(ms.Tensor(x))
         output_grad = asin_backward_func(ms.Tensor(x))
     else:
-        output = (jit(asin_forward_func, jit_level="O0"))(ms.Tensor(x))
-        output_grad = (jit(asin_backward_func, jit_level="O0"))(ms.Tensor(x))
+        output = (jit(asin_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x))
+        output_grad = (jit(asin_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x))
 
     assert np.allclose(output.asnumpy(), expect, rtol=1e-4, equal_nan=True)
     assert np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-4, equal_nan=True)

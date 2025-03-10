@@ -29,7 +29,7 @@ def test_if_in_if_5():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_if_in_if():
         x = list([1, 2, 3, 4])
         if max(x) >= 4:
@@ -51,7 +51,7 @@ def test_if_else_in_if_else_2():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_if_in_if():
         x = Tensor(10)
         y = Tensor(7)
@@ -84,7 +84,7 @@ def test_if_in_if_multi_conds_2():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_if_in_if():
         x = Tensor(10)
         y = Tensor(2)
@@ -111,7 +111,7 @@ def test_if_in_if_4():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_if_in_if():
         x = np.array([1, 2, 3, 4, 5])
         y = x % 2

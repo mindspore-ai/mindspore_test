@@ -18,7 +18,7 @@ from mindspore import Tensor, jit
 from mindspore.common import dtype as mstype
 
 
-@jit
+@jit(backend="ms_backend")
 def hof(x):
     def f(x):
         return x + 3

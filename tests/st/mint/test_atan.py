@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, mint, jit, JitConfig
+from mindspore import ops, mint, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
@@ -58,8 +58,8 @@ def test_atan_std(mode):
         output = atan_forward_func(ms.Tensor(x))
         output_grad = atan_backward_func(ms.Tensor(x))
     else:
-        output = (jit(atan_forward_func, jit_level="O0"))(ms.Tensor(x))
-        output_grad = (jit(atan_backward_func, jit_level="O0"))(ms.Tensor(x))
+        output = (jit(atan_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x))
+        output_grad = (jit(atan_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x))
 
     np.allclose(output.asnumpy(), expect, rtol=1e-5, equal_nan=True)
     np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-5, equal_nan=True)

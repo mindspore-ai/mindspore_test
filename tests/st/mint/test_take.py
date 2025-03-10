@@ -75,7 +75,7 @@ def test_take_std(mode):
         ms.context.set_context(mode=ms.PYNATIVE_MODE)
         output = mint_take_forward_func(ms.Tensor(input_x), ms.Tensor(index))
     else:
-        output = (jit(mint_take_forward_func, jit_config=JitConfig(jit_level="O0")))(
+        output = (jit(mint_take_forward_func, backend="ms_backend", jit_config=JitConfig(jit_level="O0")))(
             ms.Tensor(input_x), ms.Tensor(index))
     np.allclose(output.asnumpy(), expect_out.asnumpy(),
                 rtol=1e-5, equal_nan=True)

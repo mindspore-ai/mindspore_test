@@ -88,7 +88,7 @@ def test_single_while():
     Description: The else branches of while loops aren't supported.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_while(x, y):
         while x > y:
             y += x
@@ -113,7 +113,7 @@ def test_single_while_tensor():
     Description: The else branches of while loops aren't supported.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_while_tensor(x):
         while x:
             x -= 1

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 import mindspore as ms
-from mindspore import mint, ops, context, jit, JitConfig
+from mindspore import mint, ops, context, jit
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
 
@@ -32,7 +32,7 @@ def test_bernoulli_normal(mode):
         output = bernoulli_forward_func(input_x, generator=generator)
     elif mode == 'kbk':
         context.set_context(mode=ms.GRAPH_MODE)
-        output = (jit(bernoulli_forward_func, jit_level="O0"))(input_x, generator=generator)
+        output = (jit(bernoulli_forward_func, backend="ms_backend", jit_level="O0"))(input_x, generator=generator)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         output = bernoulli_forward_func(input_x, generator=generator)
@@ -46,7 +46,7 @@ def test_bernoulli_normal(mode):
         input_grad = bernoulli_backward_func(input_x, generator=generator)
     elif mode == 'kbk':
         context.set_context(mode=ms.GRAPH_MODE)
-        input_grad = (jit(bernoulli_backward_func, jit_level="O0"))(input_x, generator=generator)
+        input_grad = (jit(bernoulli_backward_func, backend="ms_backend", jit_level="O0"))(input_x, generator=generator)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         input_grad = bernoulli_backward_func(input_x, generator=generator)
@@ -73,8 +73,8 @@ def test_bernoulli_randomness(mode):
         output2 = bernoulli_forward_func(input_x, generator=generator)
     elif mode == 'kbk':
         context.set_context(mode=ms.GRAPH_MODE)
-        output1 = (jit(bernoulli_forward_func, jit_level="O0"))(input_x, generator=generator)
-        output2 = (jit(bernoulli_forward_func, jit_level="O0"))(input_x, generator=generator)
+        output1 = (jit(bernoulli_forward_func, backend="ms_backend", jit_level="O0"))(input_x, generator=generator)
+        output2 = (jit(bernoulli_forward_func, backend="ms_backend", jit_level="O0"))(input_x, generator=generator)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         output1 = bernoulli_forward_func(input_x, generator=generator)
@@ -89,9 +89,9 @@ def test_bernoulli_randomness(mode):
         output2 = bernoulli_forward_func(input_x, generator=generator)
     elif mode == 'kbk':
         context.set_context(mode=ms.GRAPH_MODE)
-        output1 = (jit(bernoulli_forward_func, jit_level="O0"))(input_x, generator=generator)
+        output1 = (jit(bernoulli_forward_func, backend="ms_backend", jit_level="O0"))(input_x, generator=generator)
         generator.set_state(state)
-        output2 = (jit(bernoulli_forward_func, jit_level="O0"))(input_x, generator=generator)
+        output2 = (jit(bernoulli_forward_func, backend="ms_backend", jit_level="O0"))(input_x, generator=generator)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         output1 = bernoulli_forward_func(input_x, generator=generator)

@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import mint
+from mindspore import mint, jit
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -33,6 +33,12 @@ def dropout2d_forward_func(x, p, training):
 @test_utils.run_with_cell
 def dropout2d_backward_func(x, p, training):
     return ms.grad(dropout2d_forward_func, (0,))(x, p, training)
+
+
+@jit(backend="ms_backend")
+@test_utils.run_with_cell
+def nn_dropout2d_backward_func(net, x):
+    return ms.grad(net, (0,))(x)
 
 
 def compare_output(x, p, output):
@@ -110,7 +116,7 @@ def test_nn_Dropout2d(shape, mode):
     net = mint.nn.Dropout2d(p)
     net.set_train()
     output = net(ms.Tensor(x))
-    output_grad = ms.grad(net, (0,))(ms.Tensor(x))
+    output_grad = nn_dropout2d_backward_func(net, ms.Tensor(x))
 
     assert output.shape == shape
     assert output.dtype == ms.float32

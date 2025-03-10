@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import Tensor
+from mindspore import Tensor, jit
 from mindspore.mint import tril
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -41,6 +41,7 @@ def tril_forward_func(x, k):
 def tril_backward_func(x, k):
     return ms.grad(tril_forward_func, (0))(x, k)
 
+@jit(backend="ms_backend")
 @test_utils.run_with_cell
 def tril_vmap_func(x, k):
     return ms.ops.vmap(tril_forward_func, in_axes=(0, None), out_axes=(0,))(x, k)

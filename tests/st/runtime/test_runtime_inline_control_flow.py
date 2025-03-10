@@ -185,7 +185,7 @@ def test_return_parameter():
     param_a = Parameter(Tensor(5))
     param_b = Parameter(Tensor(5))
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, param_a, param_b):
         if x < 3:
             return param_a
@@ -205,7 +205,7 @@ def test_return_param_untail_call():
     param_a = Parameter(Tensor(5))
     param_b = Parameter(Tensor(6))
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, param_a, param_b):
         if x < 3:
             z = param_a

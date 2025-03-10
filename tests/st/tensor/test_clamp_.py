@@ -14,7 +14,7 @@
 # ============================================================================
 import pytest
 import numpy as np
-from mindspore import ops, Tensor, jit, JitConfig, dtype as mstype
+from mindspore import ops, Tensor, jit, dtype as mstype
 import mindspore as ms
 import tests.st.utils.test_utils as test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -86,8 +86,8 @@ def test_mint_clamp_normal1(context_mode):
         output = clamp_forward_func(x, input_min, input_max)
         grad = clamp_backward_func(x, input_min, input_max)
     else:
-        output = (jit(clamp_forward_func, jit_level="O0"))(x, input_min, input_max)
-        grad = (jit(clamp_backward_func, jit_level="O0"))(x, input_min, input_max)
+        output = (jit(clamp_forward_func, backend="ms_backend", jit_level="O0"))(x, input_min, input_max)
+        grad = (jit(clamp_backward_func, backend="ms_backend", jit_level="O0"))(x, input_min, input_max)
     np.allclose(expect_out, output.asnumpy(), rtol=1e-5)
     np.allclose(expect_grad, grad[0].asnumpy(), rtol=1e-5)
 
@@ -110,8 +110,9 @@ def test_mint_clamp_normal2(context_mode):
         output = clamp_forward_func(x, input_min, input_max)
         grad, grad_min, grad_max = clamp_backward_func(x, input_min, input_max)
     else:
-        output = (jit(clamp_forward_func, jit_level="O0"))(x, input_min, input_max)
-        grad, grad_min, grad_max = (jit(clamp_backward_func, jit_level="O0"))(x, input_min, input_max)
+        output = (jit(clamp_forward_func, backend="ms_backend", jit_level="O0"))(x, input_min, input_max)
+        grad, grad_min, grad_max = (jit(clamp_backward_func, backend="ms_backend", jit_level="O0"))(
+            x, input_min, input_max)
     np.allclose(expect_out, output.asnumpy(), rtol=1e-5)
     np.allclose(expect_grad, grad.asnumpy(), rtol=1e-5)
     np.allclose(expect_min, grad_min.asnumpy(), rtol=1e-5)

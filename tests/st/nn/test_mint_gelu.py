@@ -73,8 +73,8 @@ def test_gelu_net(mode):
         output = GELU_forward(x)
         out_grad = GELU_grad(x)
     elif mode == 'KBK':
-        output = (jit(GELU_forward, jit_level="O0"))(x)
-        out_grad = (jit(GELU_grad, jit_level="O0"))(x)
+        output = (jit(GELU_forward, backend="ms_backend", jit_level="O0"))(x)
+        out_grad = (jit(GELU_grad, backend="ms_backend", jit_level="O0"))(x)
     else:
         output = (jit(GELU_forward, backend="GE"))(x)
         out_grad = (jit(GELU_grad, backend="GE"))(x)

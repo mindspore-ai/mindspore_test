@@ -29,7 +29,7 @@ def test_if_in_for_tensor():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for():
         x = Tensor(7)
         y = Tensor(0)
@@ -50,7 +50,7 @@ def test_if_in_for_tensor_2():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for():
         x = Tensor(7)
         y = Tensor(0)
@@ -73,7 +73,7 @@ def test_if_in_for_tensor_3():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for():
         x = Tensor(7)
         y = Tensor(0)
@@ -95,7 +95,7 @@ def test_if_in_for_numpy_5():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for():
         x = np.array([1, 2, 3, 4])
         y = (Tensor(1), Tensor(3), Tensor(5))

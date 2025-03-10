@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 import mindspore as ms
-from mindspore import mint, jit, JitConfig
+from mindspore import mint, jit
 from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
@@ -63,9 +63,9 @@ def test_atan2_std(mode):
         output_forward = atan2_forward_func(ms.Tensor(x), ms.Tensor(y))
         output_grad = atan2_backward_func(ms.Tensor(x), ms.Tensor(y))
     else:
-        output_forward = (jit(atan2_forward_func, jit_level="O0"))(ms.Tensor(x),
+        output_forward = (jit(atan2_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x),
                                                                                          ms.Tensor(y))
-        output_grad = (jit(atan2_backward_func, jit_level="O0"))(ms.Tensor(x),
+        output_grad = (jit(atan2_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x),
                                                                                        ms.Tensor(y))
 
     np.testing.assert_allclose(output_forward.asnumpy(), expect_forward, 1e-5, 1e-5)
@@ -108,10 +108,10 @@ def mint_atan2_binary_compare(input_binary_data, output_binary_data, mode):
         out_forward = atan2_forward_func(ms.Tensor(input_binary_data[0]), ms.Tensor(input_binary_data[1]))
         out_grad = atan2_backward_func(ms.Tensor(input_binary_data[0]), ms.Tensor(input_binary_data[1]))
     else:
-        out_forward = (jit(atan2_forward_func, jit_level="O0"))(ms.Tensor(input_binary_data[0]),
-                                                                ms.Tensor(input_binary_data[1]))
-        out_grad = (jit(atan2_backward_func, jit_level="O0"))(ms.Tensor(input_binary_data[0]),
-                                                              ms.Tensor(input_binary_data[1]))
+        out_forward = (jit(atan2_forward_func, backend="ms_backend", jit_level="O0"))(
+            ms.Tensor(input_binary_data[0]), ms.Tensor(input_binary_data[1]))
+        out_grad = (jit(atan2_backward_func, backend="ms_backend", jit_level="O0"))(
+            ms.Tensor(input_binary_data[0]), ms.Tensor(input_binary_data[1]))
 
     assert np.allclose(out_forward.asnumpy(), output_binary_data[0], 1e-04, 1e-04)
     assert np.allclose(out_grad[0].asnumpy(), output_binary_data[1], 1e-04, 1e-04)

@@ -70,7 +70,7 @@ def run_with_mode(fn):
         if mode == "graph":
             return (jit(fn, backend="GE"))(*args, **kwargs)
         if mode == "kbk":
-            return (jit(fn, jit_level="O0"))(*args, **kwargs)
+            return (jit(fn, backend="ms_backend", jit_level="O0"))(*args, **kwargs)
         return fn(*args, **kwargs)
 
     setattr(wrapper, "__wrapped_with_mode__", True)

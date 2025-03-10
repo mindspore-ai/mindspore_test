@@ -30,7 +30,7 @@ def test_for_after_for_2():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def func():
         x = Tensor([0])
         for i in range(3):
@@ -58,7 +58,7 @@ def test_for_after_for_3():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def func():
         y = np.array([5, 6, 7])
         k = 0

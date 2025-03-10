@@ -32,7 +32,7 @@ def test_single_if_4():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_if():
         x = Tensor(7).astype("int32")
         y = Tensor(0).astype("int32")
@@ -53,7 +53,7 @@ def test_single_if_two_cond():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_if():
         x = Tensor(1)
         y = np.array(2)
@@ -72,7 +72,7 @@ def test_single_if_builtin_function_abs():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_if():
         x = Tensor(-11, mstype.float32)
         if abs(x) > Tensor(np.array(2)):
@@ -90,7 +90,7 @@ def test_single_if_builtin_function_abs_min():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_if():
         x = Tensor(-11, mstype.float32)
         y = Tensor(12, mstype.float32)
@@ -159,7 +159,7 @@ def test_single_if_tensor_asnumpy_as_condition():
     Description: Test PyExecute as condition.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def tensor_asnumpy_as_condition(x):
         cond = x.asnumpy()
         if cond:

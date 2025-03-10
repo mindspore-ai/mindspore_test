@@ -31,7 +31,7 @@ def test_while_in_if_1():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_if():
         x = Tensor([1])
         if x > Tensor([0]):
@@ -54,7 +54,7 @@ def test_while_in_if_2():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_while():
         x = Tensor([6]).astype("int32")
         y = Tensor([0]).astype("int32")
@@ -78,7 +78,7 @@ def test_while_in_if_3():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_while():
         x = Tensor([7]).astype("int32")
         y = Tensor([0]).astype("int32")
@@ -103,7 +103,7 @@ def test_while_two_cond_in_if_1():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_while():
         x = Tensor([1])
         y = Tensor([8])
@@ -128,7 +128,7 @@ def test_while_two_cond_in_if_2():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_while():
         x = Tensor([7]).astype("int32")
         y = Tensor([0]).astype("int32")

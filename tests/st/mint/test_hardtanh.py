@@ -72,9 +72,9 @@ def test_hardtanh_std(mode):
         output_grad = hardtanh_backward_func(x, min_val, max_val)
         inplace_x = inplace_hardtanh_forward_func(ms.Tensor(x_np, dtype=ms.float32), min_val, max_val)
     else:
-        output = (jit(hardtanh_forward_func, jit_level="O0"))(x, min_val, max_val)
-        output_grad = (jit(hardtanh_backward_func, jit_level="O0"))(x, min_val, max_val)
-        inplace_x = (jit(inplace_hardtanh_forward_func, jit_level="O0"))(
+        output = (jit(hardtanh_forward_func, backend="ms_backend", jit_level="O0"))(x, min_val, max_val)
+        output_grad = (jit(hardtanh_backward_func, backend="ms_backend", jit_level="O0"))(x, min_val, max_val)
+        inplace_x = (jit(inplace_hardtanh_forward_func, backend="ms_backend", jit_level="O0"))(
             ms.Tensor(x_np, dtype=ms.float32), min_val, max_val)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-5, atol=1e-5)
     np.testing.assert_allclose(output_grad.asnumpy(), expect_grad, rtol=1e-5, atol=1e-5)

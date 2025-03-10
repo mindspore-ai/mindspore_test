@@ -167,8 +167,8 @@ def test_batchnorm3d(mode):
         output = forward_batch_norm_3d_net(x, num_features)
         out_grad = grad_batch_norm_3d_net(x, num_features)
     elif mode == 'KBK':
-        output = (jit(forward_batch_norm_3d_net, jit_level="O0"))(x, num_features)
-        out_grad = (jit(grad_batch_norm_3d_net, jit_level="O0"))(
+        output = (jit(forward_batch_norm_3d_net, backend="ms_backend", jit_level="O0"))(x, num_features)
+        out_grad = (jit(grad_batch_norm_3d_net, backend="ms_backend", jit_level="O0"))(
             x, num_features)
     else:
         output = (jit(forward_batch_norm_3d_net, backend="GE"))(x, num_features)

@@ -126,6 +126,11 @@ def childprocess(mode, i, q):
     assert np.allclose(fgrad[1].asnumpy(), np.array([0.]), 1e-3)
 
 
+@ms.jit(backend="ms_backend")
+def grad_func(net, x, y):
+    F.grad(net, grad_position=(0, 1))(x, y)
+
+
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
@@ -145,8 +150,7 @@ def test_fork_subgraphs(mode):
     x = np.array([-1], np.float32)
     y = np.array([2], np.float32)
     net = Net()
-    grad_net = F.grad(net, grad_position=(0, 1))
-    fgrad = grad_net(ms.Tensor(x), ms.Tensor(y))
+    fgrad = grad_func(net, ms.Tensor(x), ms.Tensor(y))
     assert np.allclose(fgrad[0].asnumpy(), np.array([1.]), 1e-3)
     assert np.allclose(fgrad[1].asnumpy(), np.array([0.]), 1e-3)
 

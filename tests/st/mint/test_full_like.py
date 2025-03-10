@@ -55,8 +55,8 @@ def test_full_like_normal(mode):
         grad = full_like_backward_func(x, fill_value, dtype)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
-        output = (jit(full_like_forward_func, jit_level="O0"))(x, fill_value, dtype)
-        grad = (jit(full_like_backward_func, jit_level="O0"))(x, fill_value, dtype)
+        output = (jit(full_like_forward_func, backend="ms_backend", jit_level="O0"))(x, fill_value, dtype)
+        grad = (jit(full_like_backward_func, backend="ms_backend", jit_level="O0"))(x, fill_value, dtype)
     np.testing.assert_allclose(output.asnumpy(), expect_out, rtol=1e-3)
     np.testing.assert_allclose(grad.asnumpy(), expect_grad, rtol=1e-3)
 

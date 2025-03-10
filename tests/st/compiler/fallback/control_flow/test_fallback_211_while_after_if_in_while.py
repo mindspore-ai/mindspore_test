@@ -29,7 +29,7 @@ def test_while_after_if_in_while_tensor():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_while_after_if_in_while():
         x = Tensor([1])
         y = Tensor([2])
@@ -60,7 +60,7 @@ def test_while_after_if_in_while_numpy_2():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_while_after_if_in_while():
         x = np.array([1])
         y = np.array([10])
@@ -89,7 +89,7 @@ def test_while_after_if_in_while_tensor_2():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_while_after_if_in_while():
         x = Tensor([1])
         y = Tensor([2])

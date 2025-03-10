@@ -27,7 +27,7 @@ c4 = Tensor([0], mstype.int32)
 c5 = Tensor([14], mstype.int32)
 
 
-@jit
+@jit(backend="ms_backend")
 def simple_if(x, y):
     if x < y:
         x = x + 1
@@ -37,7 +37,7 @@ def simple_if(x, y):
     return x
 
 
-@jit
+@jit(backend="ms_backend")
 def if_by_if(x, y):
     if x < y:
         x = x + 1
@@ -47,7 +47,7 @@ def if_by_if(x, y):
     return x
 
 
-@jit
+@jit(backend="ms_backend")
 def if_in_if(x, y, z):
     out = c4
     if x < y:
@@ -60,7 +60,7 @@ def if_in_if(x, y, z):
     return out
 
 
-@jit
+@jit(backend="ms_backend")
 def simple_while(x, y):
     y = y + 4
     while x < y:
@@ -69,7 +69,7 @@ def simple_while(x, y):
     return x
 
 
-@jit
+@jit(backend="ms_backend")
 def while_by_while(x, y, z):
     while x < y:
         x = x + 1
@@ -80,7 +80,7 @@ def while_by_while(x, y, z):
     return x
 
 
-@jit
+@jit(backend="ms_backend")
 def while_in_while(x, y, z):
     out = c4
     while x < y:
@@ -93,7 +93,7 @@ def while_in_while(x, y, z):
     return out
 
 
-@jit
+@jit(backend="ms_backend")
 def while_by_while_in_while(x, y, z):
     out = c4
     while x < c2:
@@ -110,7 +110,7 @@ def while_by_while_in_while(x, y, z):
     return out
 
 
-@jit
+@jit(backend="ms_backend")
 def while_in_while_in_while(x, y, z):
     out = c4
     while x < c2:

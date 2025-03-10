@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import mindspore as ms
-from mindspore import ops, Tensor, mint
+from mindspore import ops, Tensor, mint, jit
 
 import tests.st.utils.test_utils as test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -27,6 +27,7 @@ from tests.mark_utils import arg_mark
 def matrix_norm_forward_func(x, p='fro', dim=(-2, -1), keepdim=False):
     return ops.matrix_norm(x, ord=p, axis=dim, keepdims=keepdim)
 
+@jit(backend="ms_backend")
 def matrix_norm_backward_func(x, p, dim, keepdim):
     return ms.grad(matrix_norm_forward_func, (0))(x, p, dim, keepdim)
 

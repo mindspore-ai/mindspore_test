@@ -30,7 +30,7 @@ def test_while_after_for_in_for_2():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def func2322():
         x = Tensor([0])
         for i in range(3):
@@ -64,7 +64,7 @@ def test_while_after_for_in_for_3():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def func2323():
         y = [5, 6, 7]
         for _ in (0, 1, 2):

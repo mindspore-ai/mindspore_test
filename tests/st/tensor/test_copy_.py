@@ -66,11 +66,11 @@ def test_copy_std(mode):
         output_z = copy_forward_func(ms.Tensor(x), ms.Tensor(z))
         output_z_grad = copy_backward_func(ms.Tensor(x), ms.Tensor(z))
     else:
-        output_y = (jit(copy_forward_func, jit_level="O0"))(ms.Tensor(x), ms.Tensor(y))
-        output_y_grad = (jit(copy_backward_func, jit_level="O0"))(ms.Tensor(x), ms.Tensor(y))
+        output_y = (jit(copy_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), ms.Tensor(y))
+        output_y_grad = (jit(copy_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), ms.Tensor(y))
 
-        output_z = (jit(copy_forward_func, jit_level="O0"))(ms.Tensor(x), ms.Tensor(z))
-        output_z_grad = (jit(copy_backward_func, jit_level="O0"))(ms.Tensor(x), ms.Tensor(z))
+        output_z = (jit(copy_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), ms.Tensor(z))
+        output_z_grad = (jit(copy_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), ms.Tensor(z))
     np.allclose(output_y.asnumpy(), y, rtol=1e-5, equal_nan=True)
     np.allclose(output_y_grad[1].asnumpy(), expect_y_grad, rtol=1e-5, equal_nan=True)
 

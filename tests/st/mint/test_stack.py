@@ -19,7 +19,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import ops
 from mindspore.mint import stack
-from mindspore import jit, JitConfig
+from mindspore import jit
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -70,8 +70,8 @@ def test_stack_forward_backward(mode):
         output = stack_forward_func(tensor_inputs[0], tensor_inputs[1])
         outputs = stack_backward_func(tensor_inputs[0], tensor_inputs[1])
     else:
-        output = (jit(stack_forward_func, jit_level="O0"))(tensor_inputs[0], tensor_inputs[1])
-        outputs = (jit(stack_backward_func, jit_level="O0"))(tensor_inputs[0], tensor_inputs[1])
+        output = (jit(stack_forward_func, backend="ms_backend", jit_level="O0"))(tensor_inputs[0], tensor_inputs[1])
+        outputs = (jit(stack_backward_func, backend="ms_backend", jit_level="O0"))(tensor_inputs[0], tensor_inputs[1])
     assert np.allclose(output.asnumpy(), expect)
     for output, expect in zip(outputs, expects):
         assert np.allclose(output.asnumpy(), expect)

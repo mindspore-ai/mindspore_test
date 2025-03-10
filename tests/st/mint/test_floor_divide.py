@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import mint, jit, JitConfig
+from mindspore import mint, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
@@ -45,7 +45,7 @@ def test_floor_divide_normal0(mode):
         ms.context.set_context(mode=ms.PYNATIVE_MODE)
         y = floor_divide_forward_func(x, other)
     else:
-        y = (jit(floor_divide_forward_func, jit_config=JitConfig(jit_level="O0")))(x, other)
+        y = (jit(floor_divide_forward_func, backend="ms_backend"))(x, other)
 
     np.testing.assert_allclose(y.asnumpy(), expect_y, rtol=1e-5)
 
@@ -66,7 +66,7 @@ def test_floor_divide_normal1(mode):
         ms.context.set_context(mode=ms.PYNATIVE_MODE)
         y = floor_divide_forward_func(x, other)
     else:
-        y = (jit(floor_divide_forward_func, jit_config=JitConfig(jit_level="O0")))(x, other)
+        y = (jit(floor_divide_forward_func, backend="ms_backend"))(x, other)
 
     np.testing.assert_allclose(y.asnumpy(), expect_y, rtol=1e-5)
 
@@ -87,7 +87,7 @@ def test_floor_divide_normal2(mode):
         ms.context.set_context(mode=ms.PYNATIVE_MODE)
         y = floor_divide_forward_func(x, other)
     else:
-        y = (jit(floor_divide_forward_func, jit_config=JitConfig(jit_level="O0")))(x, other)
+        y = (jit(floor_divide_forward_func, backend="ms_backend"))(x, other)
 
     np.testing.assert_allclose(y.asnumpy(), expect_y, rtol=1e-5)
 

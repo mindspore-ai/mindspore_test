@@ -28,7 +28,7 @@ def test_for_after_if_in_while_tensor():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for_after_if_in_while():
         x = Tensor([1])
         y = Tensor([0])
@@ -56,7 +56,7 @@ def test_for_after_if_in_while_tensor_2():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for_after_if_in_while():
         x = Tensor([1])
         y = Tensor([0])

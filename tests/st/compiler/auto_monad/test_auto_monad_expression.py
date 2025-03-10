@@ -493,7 +493,7 @@ def test_control_while_for_if_break_parameter():
             add_np = np.full((4, 4, 4), 0.5, dtype=np.float32)
             self.add_weight = Parameter(Tensor(add_np), name="add_weight")
 
-        @jit
+        @jit(backend="ms_backend")
         def construct(self, x, y, z):
             out = z
             while x < y:

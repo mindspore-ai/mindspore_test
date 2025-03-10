@@ -114,11 +114,11 @@ def test_ops_xlogy(mode):
         douty3 = xlogy_backward_func(2, Tensor(y))
     elif mode == "KBK":
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        op = ms.jit(xlogy_forward_func, jit_level="O0")
+        op = ms.jit(xlogy_forward_func, backend="ms_backend", jit_level="O0")
         out = op(Tensor(x), Tensor(y))
         out2 = op(Tensor(x), 2)
         out3 = op(2, Tensor(y))
-        op = ms.jit(xlogy_backward_func, jit_level="O0")
+        op = ms.jit(xlogy_backward_func, backend="ms_backend", jit_level="O0")
         doutx, douty = op(Tensor(x), Tensor(y))
         doutx2 = op(Tensor(x), 2)
         douty3 = op(2, Tensor(y))
@@ -162,7 +162,7 @@ def test_ops_xlogy_forward_910b_nan(mode):
 
     elif mode == "KBK":
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        op = ms.jit(xlogy_forward_func, jit_level="O0")
+        op = ms.jit(xlogy_forward_func, backend="ms_backend", jit_level="O0")
         out = op(x, y)
     else:
         ms.context.set_context(mode=ms.GRAPH_MODE)

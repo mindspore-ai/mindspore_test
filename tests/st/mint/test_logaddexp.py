@@ -18,7 +18,7 @@ from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 import mindspore as ms
-from mindspore import mint, Tensor, jit, context, JitConfig, ops
+from mindspore import mint, Tensor, jit, context, ops
 
 
 @test_utils.run_with_cell
@@ -48,7 +48,7 @@ def test_logaddexp_forward_backward(mode):
         out = logaddexp_forward_func(input_x, other)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        out = (jit(logaddexp_forward_func, jit_level="O0"))(input_x, other)
+        out = (jit(logaddexp_forward_func, backend="ms_backend", jit_level="O0"))(input_x, other)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         out = logaddexp_forward_func(input_x, other)
@@ -65,7 +65,7 @@ def test_logaddexp_forward_backward(mode):
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
         input_grad, other_grad = \
-            (jit(logaddexp_backward_func, jit_level="O0"))(input_x, other)
+            (jit(logaddexp_backward_func, backend="ms_backend", jit_level="O0"))(input_x, other)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         input_grad, other_grad = logaddexp_backward_func(input_x, other)

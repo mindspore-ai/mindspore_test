@@ -58,8 +58,8 @@ def test_ops(mode, dtype):
         res = mm_forward_func(ms.Tensor(input_x), ms.Tensor(mat2))
         res_grad = mm_backward_func(ms.Tensor(input_x), ms.Tensor(mat2))
     elif mode == 'KBK':
-        res = (jit(mm_forward_func, jit_level="O0"))(ms.Tensor(input_x), ms.Tensor(mat2))
-        res_grad = (jit(mm_backward_func, jit_level="O0"))(ms.Tensor(input_x), ms.Tensor(mat2))
+        res = (jit(mm_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(input_x), ms.Tensor(mat2))
+        res_grad = (jit(mm_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(input_x), ms.Tensor(mat2))
     else:
         res = (jit(mm_forward_func, backend="GE"))(ms.Tensor(input_x), ms.Tensor(mat2))
         res_grad = (jit(mm_backward_func, backend="GE"))(ms.Tensor(input_x), ms.Tensor(mat2))
