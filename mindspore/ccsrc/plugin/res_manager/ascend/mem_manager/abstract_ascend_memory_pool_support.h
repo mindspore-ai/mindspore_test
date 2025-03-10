@@ -20,12 +20,13 @@
 #include <memory>
 
 #include "include/backend/mem_reuse/dynamic_mem_pool.h"
+#include "plugin/res_manager/ascend/visible.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
 // Definition for abstract ascend memory pool support class, wrap device interface of ascend.
-class BACKEND_EXPORT AbstractAscendMemoryPoolSupport : virtual public DynamicMemPool {
+class ASCEND_RES_MANAGER_EXPORT AbstractAscendMemoryPoolSupport : virtual public DynamicMemPool {
  public:
   ~AbstractAscendMemoryPoolSupport() override = default;
 

@@ -19,11 +19,12 @@
 
 #include <string>
 #include "include/backend/device_synchronizer.h"
+#include "plugin/res_manager/ascend/visible.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
-class AscendDeviceSynchronizer : public DeviceSynchronizer {
+class ASCEND_RES_MANAGER_EXPORT AscendDeviceSynchronizer : public DeviceSynchronizer {
  public:
   AscendDeviceSynchronizer() = default;
   ~AscendDeviceSynchronizer() override = default;

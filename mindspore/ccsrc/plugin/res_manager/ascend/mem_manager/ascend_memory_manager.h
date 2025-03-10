@@ -27,7 +27,7 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
-class BACKEND_EXPORT AscendMemoryManager : public MemoryManager {
+class ASCEND_RES_MANAGER_EXPORT AscendMemoryManager : public MemoryManager {
  public:
   AscendMemoryManager() = default;
   ~AscendMemoryManager() override = default;
@@ -76,7 +76,7 @@ class BACKEND_EXPORT AscendMemoryManager : public MemoryManager {
   uint8_t *MallocDynamicMem(size_t size, bool communication_mem) override;
 };
 
-class BACKEND_EXPORT EnhancedAscendMemoryManager : public AscendMemoryManager {
+class ASCEND_RES_MANAGER_EXPORT EnhancedAscendMemoryManager : public AscendMemoryManager {
  public:
   EnhancedAscendMemoryManager() = default;
   ~EnhancedAscendMemoryManager() override = default;

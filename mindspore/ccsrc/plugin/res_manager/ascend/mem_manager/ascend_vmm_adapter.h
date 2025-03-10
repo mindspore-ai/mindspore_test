@@ -35,11 +35,12 @@
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
+#include "plugin/res_manager/ascend/visible.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
-class AscendVmmAdapter {
+class ASCEND_RES_MANAGER_EXPORT AscendVmmAdapter {
  public:
   static AscendVmmAdapter &GetInstance() {
     static AscendVmmAdapter instance{};

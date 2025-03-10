@@ -31,7 +31,7 @@ namespace mindspore {
 namespace device {
 class LaunchKernel;
 namespace ascend {
-class AscendDeviceAddress : public LoadableDeviceAddress {
+class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public LoadableDeviceAddress {
  public:
   explicit AscendDeviceAddress(const KernelTensorPtr &kernel_tensor) : LoadableDeviceAddress(kernel_tensor) {
     SetDevicePtrDeleter();
