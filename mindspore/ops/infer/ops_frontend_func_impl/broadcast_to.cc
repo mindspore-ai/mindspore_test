@@ -34,4 +34,8 @@ class BroadcastToFrontendFuncImpl : public OpFrontendFuncImpl {
 };
 
 REGISTER_PRIMITIVE_FUNCTION_FRONTEND_FUNC_IMPL(kBroadcastTo, BroadcastToFrontendFuncImpl);
+
+// Reuse abstract infer for BroadcastToView kernel
+class BroadcastToViewFrontendFuncImpl : public BroadcastToFrontendFuncImpl {};
+REGISTER_PRIMITIVE_FUNCTION_FRONTEND_FUNC_IMPL("BroadcastToView", BroadcastToViewFrontendFuncImpl);
 }  // namespace mindspore::ops
