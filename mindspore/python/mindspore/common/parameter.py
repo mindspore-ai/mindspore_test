@@ -1102,10 +1102,10 @@ class ParameterTuple(tuple):
                 set  data according to `init`. Default: ``'same'``.
 
                 - If `init` is a `Tensor` , set the new Parameter data to the input Tensor.
-                - If `init` is `numbers.Number` , set the new Parameter data to the input number.
                 - If `init` is a `str`, data will be set according to the initialization method of the same name in
                   the `Initializer`. When it is ``'same'``, the new Parameter will have the same value
                   with the original Parameter.
+                - If `init` is `numbers.Number` , set the new Parameter data to the input number.
 
         Returns:
             Tuple, the new Parameter tuple.

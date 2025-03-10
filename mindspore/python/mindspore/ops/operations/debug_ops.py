@@ -127,7 +127,7 @@ class ImageSummary(Primitive):
     be loaded and shown by MindInsight, see `MindInsight documents <https://www.mindspore.cn/
     mindinsight/docs/en/master/index.html>`_ for details.
     In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
-    can be set to solve operator execution failure when calling this operator intensively.
+    can be set to solve execution failure when calling this operator intensively.
 
     Inputs:
         - **name** (str) - The name of the input variable, it must not be an empty string.

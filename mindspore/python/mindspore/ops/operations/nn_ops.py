@@ -6203,10 +6203,7 @@ class AvgPool3D(Primitive):
 
     Typically the input is of shape :math:`(N, C, D_{in}, H_{in}, W_{in})`, AvgPool3D outputs
     regional average in the :math:`(D_{in}, H_{in}, W_{in})`-dimension. Given kernel size
-    :math:`ks = (d_{ker}, h_{ker}, w_{ker})` and stride :math:`s = (s_0, s_1, s_2)`, the operation is as follows.
-
-    .. warning::
-        "kernel_size" is in the range [1, 255]. "strides" is in the range [1, 63].
+    :math:`ks = (d_{ker}, h_{ker}, w_{ker})` and stride :math:`s = (s_0, s_1, s_2)`, the operation is as follows:
 
     .. math::
         \text{output}(N_i, C_j, d, h, w) =
@@ -6219,10 +6216,11 @@ class AvgPool3D(Primitive):
     Args:
         kernel_size (Union[int, tuple[int]], optional): The size of kernel used to take the average value,
             is an int number that represents depth, height and width are both kernel_size, or a tuple
-            of three int numbers that represent depth, height and width respectively. Default: ``1`` .
+            of three int numbers that represent depth, height and width respectively.
+            Default: ``1`` . The value range is: [1, 255].
         strides (Union[int, tuple[int]], optional): The distance of kernel moving, an int number that represents
             the depth, height and width of movement are both strides, or a tuple of three int numbers that
-            represent depth, height and width of movement respectively. Default: ``1`` .
+            represent depth, height and width of movement respectively. Default: ``1`` . The value range is: [1, 63].
         pad_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
             ``"same"`` , ``"valid"`` or ``"pad"`` . Default: ``"valid"`` .
 

@@ -7,7 +7,6 @@
 
     一般情况下，当输入shape为 :math:`(N, C, D_{in}, H_{in}, W_{in})` 时，AvgPool3D会在 :math:`(D_{in}, H_{in}, W_{in})` 维度上输出区域平均值。给定 `kernel_size` 为 :math:`ks = (d_{ker}, h_{ker}, w_{ker})` ，给定 `stride`  为 :math:`s = (s_0, s_1, s_2)` ，运算如下：
 
-
     .. math::
         \text{output}(N_i, C_j, d, h, w) =
         \frac{1}{d_{ker} * h_{ker} * w_{ker}} \sum_{l=0}^{d_{ker}-1} \sum_{m=0}^{h_{ker}-1} \sum_{n=0}^{w_{ker}-1}

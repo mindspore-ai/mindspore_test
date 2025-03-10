@@ -1345,7 +1345,8 @@ _ALL_TO_ALL_CACHE = {}
 def all_to_all_single_with_output_shape(output_shape, tensor, output_split_sizes=None,
                                         input_split_sizes=None, group=None, async_op=False):
     """
-    scatter and gather input with split size to/from all rank, and return result in a single tensor.
+    Based on the slice size of the user input, the input `tensor` is sliced and sent to other devices
+    and receives the sliced chunks from the other devices, which are then merged into an output Tensor.
 
     Note:
         'output_shape' and 'tensor' shape should be match across ranks.

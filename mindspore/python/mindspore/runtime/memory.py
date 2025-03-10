@@ -97,7 +97,7 @@ def memory_stats():
     Returns status information queried from the memory pool.
 
     Note:
-        - For the `CPU` backend, a dictionary with empty data is always returned.
+        For the `CPU` backend, a dictionary with empty data is always returned.
 
     Returns:
         dict, the queried memory information.

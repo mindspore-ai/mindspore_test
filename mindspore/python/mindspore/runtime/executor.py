@@ -24,18 +24,14 @@ from mindspore import log as logger
 
 def launch_blocking():
     """
-    Whether to enable synchronous execution.
-    Default: ``False`` . When the value is set to ``False`` , the operator is executed asynchronously on the
-    device. When an error occurs in the execution of the operator, the specific error script code location
-    cannot be located. When this API is called , the value will be changed to true, the operator is executed
-    synchronously on the device. It will reduce the execution performance of the program. At this time, when
-    an error occurs in the execution of the operator, the location of the error script code can be located
-    according to the call stack of the error.
+    Indicates that synchronizing the execution of the startup device reduces the execution performance of the program.
 
-    Note:
-        - No parameters are required.
-        - By default, operations are executed asynchronously.
-        - Calling this function enables synchronous execution.
+    - In the initial state when this interface is not called, the operator executes asynchronously on the device.
+      In this case, when an error occurs in the execution of the operator,
+      it will not be possible to locate the position of the particular error script code.
+    - When this interface is called, the operator is executed in a synchronized manner on the device.
+      At this point, when an error occurs in the execution of the operator,
+      the location of the erroneous script code can be located based on the error call stack.
 
     Examples:
         >>> import mindspore as ms
