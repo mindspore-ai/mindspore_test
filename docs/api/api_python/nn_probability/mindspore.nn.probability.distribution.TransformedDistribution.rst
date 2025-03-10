@@ -4,7 +4,7 @@ mindspore.nn.probability.distribution.TransformedDistribution
 .. py:class:: mindspore.nn.probability.distribution.TransformedDistribution(bijector, distribution, seed=None, name='transformed_distribution')
 
     转换分布（Transformed Distribution）。
-    该类包含一个Bijector和一个分布，并通过Bijector定义的操作将原始分布转换为新分布。可如果原始分布为 :math:`X` ，Bijector的映射函数为 :math:`g(x)`，那么对应的转换分布为 :math:`Y = g(X)` 。
+    该类包含一个Bijector和一个分布，并通过Bijector定义的操作将原始分布转换为新分布。如果原始分布为 :math:`X` ，Bijector的映射函数为 :math:`g(x)`，那么对应的转换分布为 :math:`Y = g(X)` 。
 
 
     参数：
@@ -59,7 +59,7 @@ mindspore.nn.probability.distribution.TransformedDistribution
 
     .. py:method:: cdf(value)
 
-        计算给定值的累积分布函数（Cumulatuve Distribution Function, CDF）。
+        计算给定值的累积分布函数（Cumulative Distribution Function, CDF）。
 
         参数：
             - **value** (Tensor) - 要计算的值。

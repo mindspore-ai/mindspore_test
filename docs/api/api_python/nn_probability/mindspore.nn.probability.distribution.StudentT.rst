@@ -18,7 +18,7 @@ mindspore.nn.probability.distribution.StudentT
         - **mean** (Union[int, float, list, numpy.ndarray, Tensor], 可选) - StudentT分布的平均值。
           如果输入为None，那么分布的平均值将在运行时传入。默认值： ``None`` 。
         - **sd** (Union[int, float, list, numpy.ndarray, Tensor], 可选) - StudentT分布的标准差。
-          如果输入为None，那么分布的标准差差将在运行时传入。默认值： ``None`` 。
+          如果输入为None，那么分布的标准差将在运行时传入。默认值： ``None`` 。
         - **seed** (int, 可选) - 采样时使用的种子。如果为None，则使用全局种子。默认值： ``None`` 。
         - **dtype** (mindspore.dtype, 可选) - 事件样例的类型。默认值： ``mstype.float32`` 。
         - **name** (str, 可选) - 分布的名称。默认值： ``'StudentT'`` 。

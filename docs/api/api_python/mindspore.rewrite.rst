@@ -2,7 +2,7 @@ mindspore.rewrite
 =================
 MindSpore的ReWrite模块允许用户通过自定义规则，修改网络的前向计算过程，支持插入、删除和替换语句等操作。
 
-如何快速使用ReWrite，请参考 `使用ReWrite修改网络 <https://www.mindspore.cn/docs/zh-CN/master/api_python/samples/rewrite/rewrite_tutorial.html>`_ 。
+关于如何快速使用ReWrite，请参考 `使用ReWrite修改网络 <https://www.mindspore.cn/docs/zh-CN/master/api_python/samples/rewrite/rewrite_tutorial.html>`_ 。
 
 .. py:class:: mindspore.rewrite.Node(node: NodeImpl)
 
@@ -11,7 +11,7 @@ MindSpore的ReWrite模块允许用户通过自定义规则，修改网络的前�
     节点可以表达前向计算过程的Cell调用语句、Primitive调用语句、算术运算语句、返回语句等。
 
     参数：
-        - **node** (NodeImpl) - `Node` 的内部实现实例。建议调用Node下的指定方法来创建Node，例如 `create_call_cell` ，而不是直接\
+        - **node** (NodeImpl) - `Node` 的内部实现实例。建议调用Node类下的指定方法来创建Node，例如 `create_call_cell` ，而不是直接\
           调用Node的构造函数。用户不需关心NodeImpl是什么，只需作为句柄看待。
 
     .. py:method:: mindspore.rewrite.Node.create_call_cell(cell: Cell, targets: List[Union[ScopedValue, str]], args: List[ScopedValue] = None, kwargs: Dict[str, ScopedValue] = None, name: str = "", is_sub_net: bool = False)

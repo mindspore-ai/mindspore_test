@@ -61,13 +61,13 @@ mindspore.nn.probability.bijector.GumbelCDF
 
     .. py:method:: inverse(value)
 
-        正映射，计算输出随机变量对应的输入随机变量的值。
+        逆映射，计算输出随机变量对应的输入随机变量的值。
 
         参数：
             - **value** (Tensor) - 输出随机变量的值。
 
         返回：
-            Tensor，输出随机变量的值。
+            Tensor，输入随机变量的值。
 
     .. py:method:: inverse_log_jacobian(value)
 
