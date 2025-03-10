@@ -15,6 +15,9 @@
  */
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include <cmath>
@@ -33,6 +36,34 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore::expander::bprop {
+namespace {
+double PowFetchScalarValue(const ValuePtr &value_ptr, const std::string &arg_name, const std::string &op_name) {
+  using value_func = std::function<double(const ValuePtr &value_ptr)>;
+  const std::unordered_map<TypeId, value_func> func_map{{kNumberTypeBool,
+                                                         [](const ValuePtr &value_ptr) -> double {
+                                                           auto value_opt = mindspore::GetScalarValue<bool>(value_ptr);
+                                                           return static_cast<double>(value_opt.value());
+                                                         }},
+                                                        {kNumberTypeInt64,
+                                                         [](const ValuePtr &value_ptr) -> double {
+                                                           auto value_opt =
+                                                             mindspore::GetScalarValue<int64_t>(value_ptr);
+                                                           return static_cast<double>(value_opt.value());
+                                                         }},
+                                                        {kNumberTypeFloat32, [](const ValuePtr &value_ptr) -> double {
+                                                           auto fp32imm_ptr = value_ptr->cast<FP32ImmPtr>();
+                                                           MS_EXCEPTION_IF_NULL(fp32imm_ptr);
+                                                           return ops::GetDoubleValueFromScalar(fp32imm_ptr);
+                                                         }}};
+
+  auto type_id = value_ptr->type()->type_id();
+  auto it = func_map.find(type_id);
+  if (it == func_map.end()) {
+    MS_LOG_EXCEPTION << "For " << op_name << ", got an invalid '" << arg_name << "' type: " << TypeIdToString(type_id);
+  }
+  return it->second(value_ptr);
+}
+}  // namespace
 NodePtrList AddnGradFunc(BpropBuilder *ib) {
   auto dout = ib->GetInput(kIndex2);
   auto x_abs = ib->GetInput(kIndex0)->abstract();
@@ -2034,67 +2065,72 @@ REG_BPROP_BUILDER("Pow").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("PowScalarTensor").SetBody(BODYFUNC(ib) {
-  auto input_x = ib->GetInput(kIndex0);
+  auto input = ib->GetInput(kIndex0);
   auto exponent = ib->GetInput(kIndex1);
   auto out = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex3);
 
-  auto input_x_ptr = input_x->BuildValue();
-  auto type_id = input_x_ptr->type()->type_id();
-  double input_value;
-
-  if (type_id == kNumberTypeBool) {
-    auto input_opt = mindspore::GetScalarValue<bool>(input_x_ptr);
-    input_value = static_cast<double>(input_opt.value());
-  } else if (type_id == kNumberTypeInt64) {
-    auto input_opt = mindspore::GetScalarValue<int64_t>(input_x_ptr);
-    input_value = static_cast<double>(input_opt.value());
-  } else if (type_id == kNumberTypeFloat32) {
-    auto input_opt = mindspore::GetScalarValue<float>(input_x_ptr);
-    input_value = static_cast<double>(input_opt.value());
+  NodePtr dexponent{nullptr};
+  auto input_ptr = input->BuildValue();
+  if (input_ptr->isa<ValueAny>()) {
+    auto double_input = ib->Emit("ScalarCast", {input, ib->Value(static_cast<int64_t>(kNumberTypeFloat64))});
+    auto log_input = ib->Emit("ScalarLog", {double_input});
+    auto grad_lambda = ib->Muls(out, log_input);
+    auto cond = ib->Equal(double_input, ib->Value<double>(0));
+    auto true_branch = [&](Emitter *e) -> NodePtrList {
+      auto exp_positive = e->GreaterEqual(exponent, e->Tensor(0, exponent->dtype()));
+      auto zero_tensor = e->Emit("ZerosLikeExt", {exponent, e->EmitValue(kNone)});
+      return {e->Select(exp_positive, zero_tensor, grad_lambda)};
+    };
+    auto false_branch = [&](Emitter *e) -> NodePtrList { return {grad_lambda}; };
+    dexponent = ib->Conditional(cond, true_branch, false_branch);
   } else {
-    MS_LOG_EXCEPTION << "For PowScalarTensor, got an invalid 'input' type: " << TypeIdToString(type_id);
+    double input_value = PowFetchScalarValue(input_ptr, "input", "PowScalarTensor");
+    auto grad_lambda = ib->Muls(out, ib->Value<double>(std::log(input_value)));
+    if (fabs(input_value) < 1e-15) {
+      auto exp_positive = ib->GreaterEqual(exponent, ib->Tensor(0, ib->GetDtype(exponent)));
+      auto zero_tensor = ib->Emit("ZerosLikeExt", {exponent, ib->EmitValue(kNone)});
+      dexponent = ib->Select(exp_positive, zero_tensor, grad_lambda);
+    } else {
+      dexponent = grad_lambda;
+    }
   }
-
-  auto log_input = log(input_value);
-  auto dexponent = ib->Mul(out, ib->Tensor(log_input, ib->GetDtype(out)));
-  if (fabs(input_value) < 1e-15) {
-    auto exp_positive = ib->GreaterEqual(exponent, ib->Tensor(0, ib->GetDtype(exponent)));
-    auto zero_tensor = ib->Emit("ZerosLikeExt", {exponent, ib->Value(static_cast<int64_t>(ib->GetDtypeId(exponent)))});
-    dexponent = ib->Select(exp_positive, zero_tensor, dexponent);
-  }
-
   dexponent = ib->Mul(dout, dexponent);
-  return {ib->OutZeros(input_x), dexponent};
+
+  return {ib->OutZeros(input), dexponent};
 });
 
 REG_BPROP_BUILDER("PowTensorScalar").FreeUselessValues_O({}).SetBody(BODYFUNC(ib) {
   auto input_x = ib->GetInput(kIndex0);
   auto exponent = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
+
+  NodePtr grad_input{nullptr};
   auto exponent_ptr = exponent->BuildValue();
-  auto type_id = exponent_ptr->type()->type_id();
-  double exp_value;
-  if (type_id == kNumberTypeBool) {
-    auto exp_opt = mindspore::GetScalarValue<bool>(exponent_ptr);
-    exp_value = static_cast<double>(exp_opt.value());
-  } else if (type_id == kNumberTypeInt64) {
-    auto exp_opt = mindspore::GetScalarValue<int64_t>(exponent_ptr);
-    exp_value = static_cast<double>(exp_opt.value());
-  } else if (type_id == kNumberTypeFloat32) {
-    auto exp_opt = mindspore::GetScalarValue<float>(exponent_ptr);
-    exp_value = static_cast<double>(exp_opt.value());
+  if (exponent_ptr->isa<ValueAny>()) {
+    auto double_exponent = ib->Emit("ScalarCast", {exponent, ib->Value(static_cast<int64_t>(kNumberTypeFloat64))});
+    auto cond = ib->Equal(double_exponent, ib->Value<double>(0));
+    auto true_branch = [&](Emitter *e) -> NodePtrList {
+      auto grad_input = e->Emit("ZerosLikeExt", {input_x, e->EmitValue(kNone)});
+      return {grad_input};
+    };
+    auto false_branch = [&](Emitter *e) -> NodePtrList {
+      // grad_input = grad * (exp * input.pow(exp - 1))
+      auto y = e->Emit("PowTensorScalar", {input_x, e->Emit("ScalarSub", {double_exponent, ib->Value<double>(1)})});
+      auto grad_input = e->Mul(dout, e->Muls(y, exponent));
+      return {grad_input};
+    };
+    grad_input = ib->Conditional(cond, true_branch, false_branch);
   } else {
-    MS_LOG_EXCEPTION << "For PowTensorScalar, got an invalid 'exponent' type: " << TypeIdToString(type_id);
+    double exp_value = PowFetchScalarValue(exponent_ptr, "exponent", "PowTensorScalar");
+    if (fabs(exp_value) < 1e-15) {
+      grad_input = ib->Emit("ZerosLikeExt", {input_x, ib->EmitValue(kNone)});
+    } else {
+      auto y = ib->Emit("PowTensorScalar", {input_x, ib->Value<double>(exp_value - 1)});
+      grad_input = ib->Mul(dout, ib->Muls(y, ib->Value<double>(exp_value)));
+    }
   }
 
-  if (fabs(exp_value) < 1e-15) {
-    auto zero_tensor = ib->Emit("ZerosLikeExt", {input_x, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input_x)))});
-    return {zero_tensor, ib->OutZeros(exponent)};
-  }
-
-  auto grad_input = ib->Mul(
-    dout, ib->Emit("Muls", {ib->Emit("PowTensorScalar", {input_x, ib->Value<float>(exp_value - 1)}), exponent}));
   return {grad_input, ib->OutZeros(exponent)};
 });
 

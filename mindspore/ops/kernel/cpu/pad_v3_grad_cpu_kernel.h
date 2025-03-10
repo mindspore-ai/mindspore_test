@@ -55,10 +55,21 @@ class PadV3GradCpuKernelMod : public NativeCpuKernelMod {
   template <typename S>
   bool GetPaddings(const std::vector<KernelTensor *> &inputs);
 
+  template <typename S, typename T>
+  void MemcpySrcToTarget(S *src, T *tar, int64_t num);
+
+  template <typename T>
+  void RealKernel(T *input, T *output);
+
   template <typename T, typename S>
   bool LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                     const std::vector<kernel::KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &outputs);
+
+  template <typename S>
+  bool LaunchKernelForHalf(const std::vector<kernel::KernelTensor *> &inputs,
+                           const std::vector<kernel::KernelTensor *> &workspace,
+                           const std::vector<kernel::KernelTensor *> &outputs);
 
   template <typename T>
   void PadV3GradCompute(T *input, T *output, int64_t p) const;
@@ -110,6 +121,7 @@ class PadV3GradCpuKernelMod : public NativeCpuKernelMod {
   int64_t paddings_num_{0};
   int64_t input_dim_{0};
   int64_t input_num_{1};
+  int64_t output_num_{1};
 };
 }  // namespace kernel
 }  // namespace mindspore

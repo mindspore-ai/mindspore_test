@@ -15,6 +15,9 @@
  */
 
 #include "kernel/cpu/pad_v3_grad_cpu_kernel.h"
+#include <cstdint>
+#include <functional>
+#include <numeric>
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/op_def/op_name.h"
@@ -82,7 +85,9 @@ int PadV3GradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   auto input_shape = inputs[kIndex0]->GetShapeVector();
   input_dim_ = SizeToLong(input_shape.size());
   input_shape_ = inputs[kIndex0]->GetDeviceShapeVector();
+  input_num_ = std::accumulate(input_shape_.begin(), input_shape_.end(), int64_t(1), std::multiplies<int64_t>());
   output_shape_ = outputs[kIndex0]->GetDeviceShapeVector();
+  output_num_ = std::accumulate(output_shape_.begin(), output_shape_.end(), int64_t(1), std::multiplies<int64_t>());
 
   auto padding_shape = inputs[kIndex1]->GetShapeVector();
   // get padding_num
@@ -91,6 +96,14 @@ int PadV3GradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   } else {
     paddings_num_ = SizeToLong(padding_shape[0]);
   }
+
+  // apply workspace for fp16 input
+  if (dtype_ == kNumberTypeFloat16) {
+    auto unit_size = sizeof(float);
+    workspace_size_list_.push_back(LongToSize(input_num_) * unit_size);
+    workspace_size_list_.push_back(LongToSize(output_num_) * unit_size);
+  }
+
   return KRET_OK;
 }
 
@@ -130,6 +143,16 @@ bool PadV3GradCpuKernelMod::GetPaddings(const std::vector<KernelTensor *> &input
     paddings_[padding_pos_2] = tmp[1];
   }
   return true;
+}
+
+template <typename S, typename T>
+void PadV3GradCpuKernelMod::MemcpySrcToTarget(S *src, T *tar, int64_t num) {
+  auto task = [&](int64_t start, int64_t end) {
+    for (int p = start; p < end; p++) {
+      tar[p] = static_cast<T>(src[p]);
+    }
+  };
+  ParallelLaunchAutoSearch(task, num, this, &parallel_search_info_);
 }
 
 template <typename T>
@@ -209,12 +232,8 @@ int64_t PadV3GradCpuKernelMod::IndexCalculate(int64_t pad_value, int64_t pad_end
   return ip;
 }
 
-template <typename T, typename S>
-bool PadV3GradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
-                                         const std::vector<KernelTensor *> &outputs) {
-  if (!GetPaddings<S>(inputs)) {
-    MS_LOG(EXCEPTION) << "get paddings failed";
-  }
+template <typename T>
+void PadV3GradCpuKernelMod::RealKernel(T *input, T *output) {
   output_w_ = output_shape_.end()[-kwidth];
   output_h_ = output_shape_.end()[-kheight];
   output_c_ = output_shape_.end()[-kchannel];
@@ -236,16 +255,7 @@ bool PadV3GradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inpu
   pad_d_ = paddings_[kpad_d];
   pad_b_ = paddings_[kpad_b];
 
-  int64_t output_num_ = 1;
-  for (int64_t i = 0; i < input_dim_; i++) {
-    output_num_ *= output_shape_[i];
-  }
-
-  auto input = static_cast<T *>(inputs[0]->device_ptr());
-  MS_EXCEPTION_IF_NULL(input);
-  auto output = static_cast<T *>(outputs[0]->device_ptr());
-  MS_EXCEPTION_IF_NULL(output);
-
+  // memset output
   if (dtype_ == kNumberTypeComplex64 || dtype_ == kNumberTypeComplex128) {
     for (size_t i = 0; i < LongToSize(output_num_); ++i) {
       output[i] = static_cast<T>(0);
@@ -262,12 +272,52 @@ bool PadV3GradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inpu
     }
   };
   ParallelLaunchAutoSearch(task, parallelSliceNum_, this, &parallel_search_info_);
+}
+
+template <typename T, typename S>
+bool PadV3GradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
+                                         const std::vector<KernelTensor *> &workspace,
+                                         const std::vector<KernelTensor *> &outputs) {
+  if (!GetPaddings<S>(inputs)) {
+    MS_LOG(EXCEPTION) << "get paddings failed";
+  }
+
+  auto input = static_cast<T *>(inputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input);
+  auto output = static_cast<T *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output);
+  RealKernel<T>(input, output);
+
+  return true;
+}
+
+template <typename S>
+bool PadV3GradCpuKernelMod::LaunchKernelForHalf(const std::vector<kernel::KernelTensor *> &inputs,
+                                                const std::vector<kernel::KernelTensor *> &workspace,
+                                                const std::vector<kernel::KernelTensor *> &outputs) {
+  if (!GetPaddings<S>(inputs)) {
+    MS_LOG(EXCEPTION) << "get paddings failed";
+  }
+
+  auto input = GetDeviceAddress<float16>(inputs, kIndex0);
+  MS_EXCEPTION_IF_NULL(input);
+  auto output = GetDeviceAddress<float16>(outputs, kIndex0);
+  MS_EXCEPTION_IF_NULL(output);
+  auto tmp_input = GetDeviceAddress<float>(workspace, kIndex0);
+  MS_EXCEPTION_IF_NULL(tmp_input);
+  auto tmp_output = GetDeviceAddress<float>(workspace, kIndex1);
+  MS_EXCEPTION_IF_NULL(tmp_output);
+
+  MemcpySrcToTarget<float16, float>(input, tmp_input, input_num_);
+  RealKernel<float>(tmp_input, tmp_output);
+  MemcpySrcToTarget<float, float16>(tmp_output, output, output_num_);
+
   return true;
 }
 
 std::vector<std::pair<KernelAttr, PadV3GradCpuKernelMod::SelectFunc>> PadV3GradCpuKernelMod::func_list_ = {
   {KernelAttr().AddInputAttr(kNumberTypeFloat16).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeFloat16),
-   &PadV3GradCpuKernelMod::LaunchKernel<float16, int64_t>},
+   &PadV3GradCpuKernelMod::LaunchKernelForHalf<int64_t>},
   {KernelAttr().AddInputAttr(kNumberTypeFloat32).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeFloat32),
    &PadV3GradCpuKernelMod::LaunchKernel<float, int64_t>},
   {KernelAttr().AddInputAttr(kNumberTypeFloat64).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeFloat64),
@@ -295,7 +345,7 @@ std::vector<std::pair<KernelAttr, PadV3GradCpuKernelMod::SelectFunc>> PadV3GradC
   {KernelAttr().AddInputAttr(kNumberTypeBool).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeBool),
    &PadV3GradCpuKernelMod::LaunchKernel<bool, int64_t>},
   {KernelAttr().AddInputAttr(kNumberTypeFloat16).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeFloat16),
-   &PadV3GradCpuKernelMod::LaunchKernel<float16, int32_t>},
+   &PadV3GradCpuKernelMod::LaunchKernelForHalf<int32_t>},
   {KernelAttr().AddInputAttr(kNumberTypeFloat32).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeFloat32),
    &PadV3GradCpuKernelMod::LaunchKernel<float, int32_t>},
   {KernelAttr().AddInputAttr(kNumberTypeFloat64).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeFloat64),

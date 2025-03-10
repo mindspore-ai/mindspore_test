@@ -36,7 +36,7 @@ void GroupedMatmulV4FuncImpl::FetchGroupInfo(const PrimitivePtr &primitive, cons
       dyn_input_sizes.push_back(0);
       continue;
     }
-    if (i == idxes_.group_list) {
+    if (i == LongToSize(idxes_.group_list)) {
       dyn_input_sizes.push_back(1);
       continue;
     }
