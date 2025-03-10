@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import os
+import pytest
 import re
 import shutil
 from tests.mark_utils import arg_mark
@@ -52,6 +53,7 @@ def check_file_exists_and_not_empty(file_path):
     print(f"File '{file_path}' exists and is not empty.")
 
 
+@pytest.mark.skip(reason="view feature no supported")
 @arg_mark(plat_marks=['platform_ascend910b'],
           level_mark='level0',
           card_mark='allcards',

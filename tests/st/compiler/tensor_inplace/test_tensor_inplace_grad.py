@@ -321,10 +321,10 @@ def test_inplace_backward_clone_input():
         return np.where(((min_val < x) & (x < max_val)), 1., 0.)
 
     context.set_context(mode=0, jit_level='O2')
-    x_np = np.random.randn(2, 3).astype(np.float32)
-    x = ms.Tensor(x_np, dtype=ms.float32)
     values = [[0.1, 0.9], [-1, 1]]
     for value in values:
+        x_np = np.random.randn(2, 3).astype(np.float32)
+        x = ms.Tensor(x_np, dtype=ms.float32)
         grad1 = hardtanh_backward_func(x, value[0], value[1])
         grad2 = get_expect_grad(x_np, value[0], value[1])
         assert np.allclose(grad1.asnumpy(), grad2)
