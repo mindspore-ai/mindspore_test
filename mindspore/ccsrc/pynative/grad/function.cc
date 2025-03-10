@@ -189,7 +189,7 @@ ValuePtrList GradPostProcess(const BaseTensorPtrList &outputs, std::vector<bool>
 namespace pybind11::detail {
 bool type_caster<mindspore::tensor::BaseTensorPtr>::load(handle src, bool) {
   if (mindspore::tensor::IsTensorPy(src)) {
-    value = mindspore::tensor::ConvertToTensor(src);
+    value = mindspore::tensor::ConvertToBaseTensor(src);
     return true;
   }
   if (mindspore::IsStubTensor(src)) {
@@ -201,9 +201,6 @@ bool type_caster<mindspore::tensor::BaseTensorPtr>::load(handle src, bool) {
 
 handle type_caster<mindspore::tensor::BaseTensorPtr>::cast(const mindspore::tensor::BaseTensorPtr &src,
                                                            return_value_policy, handle) {
-  auto tensor_py = std::make_shared<mindspore::tensor::TensorPy>(std::make_shared<mindspore::tensor::Tensor>(*src));
-  auto obj = py::cast(tensor_py);
-  const auto py_tensor_class = module::import("mindspore.common.tensor").attr("Tensor");
-  return py_tensor_class(obj).release();
+  return handle(mindspore::tensor::Wrap(src));
 }
 }  // namespace pybind11::detail
