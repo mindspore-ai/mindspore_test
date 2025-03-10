@@ -951,6 +951,22 @@ static PyObject *TensorPython_is_contiguous(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION_END
 }
 
+static PyObject *TensorPython_is_complex(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
+  PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
+  bool result = tensor->value.IsComplex();
+  return PyBool_FromLong(result);
+  HANDLE_MS_EXCEPTION_END
+}
+
+static PyObject *TensorPython_is_signed(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
+  PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
+  bool result = tensor->value.IsSigned();
+  return PyBool_FromLong(result);
+  HANDLE_MS_EXCEPTION_END
+}
+
 static PyObject *TensorPython_get_stride(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
@@ -1522,6 +1538,35 @@ static PyMethodDef Tensor_methods[] = {
    "Execute pending tasks in the tensor pipeline."},
   {"is_contiguous", (PyCFunction)TensorPython_is_contiguous, METH_NOARGS,
    "Check if the tensor is contiguous in memory."},
+  {"is_complex", (PyCFunction)TensorPython_is_complex, METH_NOARGS, R"mydelimiter(
+                              Check if the type of tensor is complex.
+                              For details, please refer to: func:'mindspore.ops.is_complex'.
+
+                              Returns:
+                                  A Boolean, check whether the tensor is of complex type.
+
+                              Examples
+                                  >>> x = mindspore.Tensor([1 + 1j], dtype=mindspore.complex128)
+                                  >>> y = mindspore.Tensor([1], dtype=mindspore.int32)
+                                  >>> x.is_complex()
+                                  Ture
+                                  >>> y.is_complex()
+                                  False
+                              )mydelimiter"},
+  {"is_signed", (PyCFunction)TensorPython_is_signed, METH_NOARGS, R"mydelimiter(
+                              Judge whether the data type of tensor is a signed data type.
+
+                              Returns:
+                                  A Boolean, check whether the tensor is of signed type.
+
+                              Examples:
+                                  >>> x = mindspore.Tensor([1.0], dtype=mindspore.float32)
+                                  >>> y = mindspore.Tensor([1], dtype=mindspore.uint32)
+                                  >>> x.is_signed()
+                                  Ture
+                                  >>> y.is_signed()
+                                  False
+                              )mydelimiter"},
   {"stride", (PyCFunction)TensorPython_get_stride, METH_NOARGS, "Get the stride of the tensor."},
   {"storage_offset", (PyCFunction)TensorPython_get_storage_offset, METH_NOARGS,
    "Get the storage offset of the tensor."},

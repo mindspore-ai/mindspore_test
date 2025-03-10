@@ -280,6 +280,43 @@ TensorPyPtrList TensorPy::GetFlattenedTensors(const TensorPyPtrList &tensorpys) 
   return result_tensorpys;
 }
 
+bool TensorPy::IsComplex() const {
+  auto base_tensor = GetBaseTensor();
+  TypeId type_id = base_tensor->data_type();
+  switch (type_id) {
+    case TypeId::kNumberTypeComplex:
+    case TypeId::kNumberTypeComplex64:
+    case TypeId::kNumberTypeComplex128:
+      return true;
+    default:
+      break;
+  }
+  return false;
+}
+
+bool TensorPy::IsSigned() const {
+  auto base_tensor = GetBaseTensor();
+  TypeId type_id = base_tensor->data_type();
+  switch (type_id) {
+    case TypeId::kNumberTypeInt:
+    case TypeId::kNumberTypeInt8:
+    case TypeId::kNumberTypeInt16:
+    case TypeId::kNumberTypeInt32:
+    case TypeId::kNumberTypeInt64:
+    case TypeId::kNumberTypeFloat:
+    case TypeId::kNumberTypeFloat32:
+    case TypeId::kNumberTypeFloat64:
+    case TypeId::kNumberTypeBFloat16:
+    case TypeId::kNumberTypeComplex:
+    case TypeId::kNumberTypeComplex64:
+    case TypeId::kNumberTypeComplex128:
+      return true;
+    default:
+      break;
+  }
+  return false;
+}
+
 size_t TensorPy::GetFusionSize(const TensorPyPtrList &flat_tensorpys) {
   TensorPtrList tensors;
   (void)std::transform(flat_tensorpys.begin(), flat_tensorpys.end(), std::back_inserter(tensors),

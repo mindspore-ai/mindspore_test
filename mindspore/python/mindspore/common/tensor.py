@@ -1453,12 +1453,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('isreal')(self)
 
-    def is_complex(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.is_complex`.
-        """
-        return tensor_operator_registry.get('is_complex')(self)
-
     def inv(self):
         r"""
         For details, please refer to :func:`mindspore.ops.inv`.
@@ -3495,29 +3489,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.is_floating_point`.
         """
         return tensor_operator_registry.get('is_floating_point')(self)
-
-    def is_signed(self):
-        """
-        Judge whether the data type of tensor is a signed data type.
-
-        Returns:
-            Bool. If the dtype of the tensor is a signed data type, return True. Otherwise, return False.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import mindspore as ms
-            >>> x = ms.Tensor([1, 2, 3], ms.int64)
-            >>> y = ms.Tensor([1, 2, 3], ms.uint64)
-            >>> output = x.is_signed()
-            >>> output2 = y.is_signed()
-            >>> print(output)
-            True
-            >>> print(output2)
-            False
-        """
-        return self.dtype in mstype.signed_type
 
     def lstsq(self, A):
         r"""
