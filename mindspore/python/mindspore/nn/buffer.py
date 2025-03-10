@@ -14,9 +14,7 @@
 # ============================================================================
 
 """Buffer for cell."""
-from mindspore.ops.operations.other_ops import StopGradient
 from mindspore.common.tensor import Tensor, _TensorMeta
-from mindspore.common._stub_tensor import StubTensor
 
 __all__ = ["Buffer"]
 
@@ -51,11 +49,10 @@ class Buffer(Tensor, metaclass=_BufferMeta):
     def __new__(cls, data=None, *, persistent=True):
         if data is None:
             raise ValueError('For create Buffer, input data should not be None')
-        if not isinstance(data, (Tensor, StubTensor)):
+        if not isinstance(data, Tensor):
             raise TypeError('For create Buffer, type of input data should be Tensor')
-        if isinstance(data, StubTensor):
-            data = data.stub_sync()
-        t = StopGradient()(data)
+        from mindspore.ops import stop_gradient
+        t = stop_gradient(data)
         t._is_buffer = True  # pylint: disable=W0212
         t.persistent = persistent
         return t

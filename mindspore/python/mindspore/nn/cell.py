@@ -50,7 +50,6 @@ from mindspore.common.api import _convert_python_data, _get_args_for_run_predict
 from mindspore.common.api import _process_dyn_args, _generate_dyn_compile_args
 from mindspore.common.parameter import Parameter, ParameterTuple
 from mindspore.common.tensor import Tensor
-from mindspore.common._stub_tensor import StubTensor
 from mindspore.ops.operations import Cast
 from mindspore.ops.primitive import Primitive
 from mindspore.ops.operations import _inner_ops as inner
@@ -526,11 +525,7 @@ class Cell(Cell_):
             output = hook(self, name, tensor)
             if output is not None:
                 tensor = output
-            if isinstance(tensor, StubTensor):
-                tensor = tensor.stub_sync()
-        if isinstance(tensor, StubTensor):
-            tensor = tensor.stub_sync()
-        self._buffers[name] = tensor if isinstance(tensor, Buffer) else Buffer(tensor)
+        self._buffers[name] = tensor if tensor is None or isinstance(tensor, Buffer) else Buffer(tensor)
         if persistent:
             self._non_persistent_buffers_set.discard(name)
         else:
@@ -3066,9 +3061,7 @@ class Cell(Cell_):
                         unexpected_keys.append(key)
 
     @jit_forbidden_register
-    def load_state_dict(
-            self, state_dict: Mapping[str, Any], strict: bool = True, assign: bool = False
-    ):
+    def load_state_dict(self, state_dict: Mapping[str, Any], strict: bool = True):
         r"""Copy parameters and buffers from :attr:`state_dict` into this cell and its descendants.
 
         If :attr:`strict` is ``True``, then
