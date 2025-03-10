@@ -79,5 +79,9 @@ class SplitTensorFrontendFuncImpl : public OpFrontendFuncImpl {
   }
 };
 REGISTER_PRIMITIVE_FUNCTION_FRONTEND_FUNC_IMPL("SplitTensor", SplitTensorFrontendFuncImpl);
+
+// Reuse abstract infer for SplitTensorView kernel
+class SplitTensorViewFrontendFuncImpl : public SplitTensorFrontendFuncImpl {};
+REGISTER_PRIMITIVE_FUNCTION_FRONTEND_FUNC_IMPL("SplitTensorView", SplitTensorViewFrontendFuncImpl);
 }  // namespace ops
 }  // namespace mindspore
