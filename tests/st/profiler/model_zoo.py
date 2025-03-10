@@ -18,7 +18,6 @@ from mindspore.ops import operations as P
 from mindspore import nn, Parameter, Tensor
 from mindspore.common.initializer import initializer
 from mindspore.common.initializer import TruncatedNormal
-from mindspore.communication.management import  HCCL_WORLD_COMM_GROUP
 
 
 class TinyAddNet(nn.Cell):
@@ -202,21 +201,18 @@ class CustomAICpuNet(nn.Cell):
 class AllReduceNet(nn.Cell):
     def __init__(self):
         super(AllReduceNet, self).__init__()
-        x = np.ones([3, 1, 3, 3]).astype(np.float32) * 0.01
-        self.x1 = Parameter(initializer(Tensor(x), x.shape), name='x1')
-        self.x2 = Parameter(initializer(Tensor(x), x.shape), name='x2')
-        # self.x3 = Parameter(initializer(Tensor(x), x.shape), name='x3')
+        self.mul = P.Mul()
+        self.all_reduce = P.AllReduce()
+        self.add = P.Add()
+        self.y1 = Tensor(np.array([[2, 2, 2, 2], [2, 2, 2, 2], [2, 2, 2, 2]])).astype(np.float32)
+        self.y2 = Tensor(np.array([[-16, -16, -16, -16], [-16, -16, -16, -16], \
+                                   [-16, -16, -16, -16]])).astype(np.float32)
 
-        self.op0 = "sum"
-        self.op1 = "sum"
-        self.op2 = "sum"
-
-        self.all_reduce1 = P.AllReduce(self.op0, group=HCCL_WORLD_COMM_GROUP)
-        self.all_reduce2 = P.AllReduce(self.op1, group=HCCL_WORLD_COMM_GROUP)
-        self.all_reduce3 = P.AllReduce(self.op2, group=HCCL_WORLD_COMM_GROUP)
-
-    def construct(self):
-        x3 = self.x1 + self.x2
-        return (self.all_reduce1(self.x1),
-                self.all_reduce2(self.x2),
-                self.all_reduce3(x3))
+    def construct(self, x):
+        x = self.mul(x, 2)
+        z = self.add(x, self.y1)
+        z = self.all_reduce(z)
+        out = self.add(z, self.y2)
+        out = self.all_reduce(out)
+        out = self.mul(out, 2)
+        return out
