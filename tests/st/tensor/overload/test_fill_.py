@@ -18,7 +18,7 @@ import pytest
 import random
 
 import mindspore as ms
-from mindspore import Tensor
+from mindspore import Tensor, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 from tests.st.utils.test_utils import run_with_cell
@@ -55,7 +55,7 @@ def fill__forward_func(input_x, value):
     temp = input_x + 0
     return temp.fill_(value)
 
-
+@jit(backend="ms_backend")
 def fill__backward_func_scalar(input_x, value):
     grad_fn = ms.grad(fill__forward_func, grad_position=(0))
     return grad_fn(input_x, value)

@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import mint, jit, JitConfig
+from mindspore import mint, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -59,10 +59,10 @@ def test_ops_addcmul_ext_normal(mode):
         output_grad = addcmul_ext_backward_func(ms.Tensor(x), ms.Tensor(x1), ms.Tensor(x2), value=v)
     else:
         output = (
-            jit(addcmul_ext_forward_func, jit_config=JitConfig(jit_level="O0"))
+            jit(addcmul_ext_forward_func, backend="ms_backend")
         )(ms.Tensor(x), ms.Tensor(x1), ms.Tensor(x2), v)
         output_grad = (
-            jit(addcmul_ext_backward_func, jit_config=JitConfig(jit_level="O0"))
+            jit(addcmul_ext_backward_func, backend="ms_backend")
         )(ms.Tensor(x), ms.Tensor(x1), ms.Tensor(x2), v)
     expect = generate_expect_forward_output(x, x1, x2, value=v)
     print("output_grad:", output_grad)

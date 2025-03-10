@@ -199,7 +199,7 @@ class Rprop(Optimizer):
         self.select = P.Select()
         self.ones_like = P.OnesLike()
 
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, gradients):
         gradients = self.flatten_gradients(gradients)
         gradients = self.decay_weight(gradients)

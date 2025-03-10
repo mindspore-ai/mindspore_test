@@ -180,7 +180,7 @@ class ASGD(Optimizer):
         self.cast = P.Cast()
         self.squeeze = P.Squeeze()
 
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, gradients):
         gradients = self.flatten_gradients(gradients)
         gradients = self.decay_weight(gradients)

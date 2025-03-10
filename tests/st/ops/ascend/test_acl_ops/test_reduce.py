@@ -14,7 +14,6 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 import numpy as np
-import pytest
 import mindspore
 import mindspore.context as context
 import mindspore.nn as nn
@@ -34,7 +33,7 @@ class Grad(nn.Cell):
         self.grad = GradOperation(get_all=True)
         self.network = network
 
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, input_):
         return self.grad(self.network)(input_)
 

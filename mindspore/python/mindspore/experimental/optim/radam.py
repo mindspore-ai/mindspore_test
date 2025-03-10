@@ -157,7 +157,7 @@ class RAdam(Optimizer):
         self.increase_tensor = Tensor(1, mstype.int32)
         self.assignadd = P.AssignAdd()
 
-    @jit
+    @jit(backend="ms_backend")
     def implementation(self, lr, beta1, beta2, weight_decay, eps, start_id, end_id, gradients):
         """Extract the common computing part for acceleration"""
         params = self.parameters[start_id: end_id]

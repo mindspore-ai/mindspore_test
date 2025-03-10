@@ -51,7 +51,7 @@ def test_joinedstr_basic_variable_ascend():
     Description: Support joinedstr.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def joined_net(x, y):
         if (x > 2 * y).all():
             res = f"res: {2 * y}"
@@ -74,7 +74,7 @@ def test_joinedstr_basic_variable_2():
     Description: Support joinedstr.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def joined_net(x, y):
         if (x > 2 * y).all():
             res = f"{2 * y}"

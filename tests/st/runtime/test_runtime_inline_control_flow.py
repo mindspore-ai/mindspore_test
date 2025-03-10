@@ -322,7 +322,7 @@ def test_branch_kernel_backoff():
     Expectation: Not throw exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, shape):
         x = x + Tensor(2, mstype.int32)
         if y < 5:
@@ -466,7 +466,7 @@ def test_tuple_args_to_dynamic_tuple_para():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         y_shape = ops.shape(y)
         if x < 3:
@@ -491,7 +491,7 @@ def test_tuple_input_to_switch():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, dst_shape):
         y, _ = ops.unique(y)
         y = ops.reshape(y, dst_shape)
@@ -518,7 +518,7 @@ def test_dynamic_tuple_input_to_switch():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, dyn_tuple):
         if x < 3:
             dyn_tuple = dyn_tuple * 2
@@ -595,7 +595,7 @@ def test_branch_output_include_refnode_with_dynamic_shape():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, dst_shape):
         y, _ = ops.unique(y)
         y = ops.reshape(y, dst_shape)
@@ -730,7 +730,7 @@ def test_include_dynamic_shape():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         y, _ = ops.unique(y)
         if x < 3:
@@ -787,7 +787,7 @@ def test_branch_only_u_input():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         x = x + 1
         if x < 3:
@@ -809,7 +809,7 @@ def test_branch_u_input_and_input():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         x = x + 1
         if x < 3:
@@ -832,7 +832,7 @@ def test_branch_output_real_tuple():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         if x < 3:
             y, _ = ops.unique(y)
@@ -857,7 +857,7 @@ def test_branch_output_dynamic_tuple():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, shape):
         if y < 5:
             z = ops.reshape(x, shape)

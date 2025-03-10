@@ -21,7 +21,7 @@ def hypermap_add_in_dynamic(para_a, para_b, para_c):
     """Add function."""
     return para_a + para_b + para_c
 
-@jit
+@jit(backend="ms_backend")
 def hypermap_in_dynamic(para_a, para_b, para_c, para_d):
     """Multiply tuple by mutable and add again."""
     return ops.HyperMap()(hypermap_add_in_dynamic, para_a * para_d, para_b * para_d, para_c * para_d)

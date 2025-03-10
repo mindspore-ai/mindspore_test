@@ -16,7 +16,7 @@
 import numpy as np
 import mindspore.nn as nn
 import mindspore.ops as ops
-from mindspore import context, Tensor, Parameter
+from mindspore import context, Tensor, Parameter, jit
 from mindspore.nn import TrainOneStepCell
 from mindspore.nn.optim import Momentum
 from mindspore.ops.composite import GradOperation
@@ -145,6 +145,6 @@ def test_high_grad_environ_eliminate():
     y = np.array([4], np.float32)
     net = AutoNet()
     grad_net = F.grad(net, grad_position=(0, 1))
-    sgrad_net = F.grad(grad_net)
+    sgrad_net = jit(F.grad(grad_net), backend="ms_backend")
     sgrad = sgrad_net(Tensor(x), Tensor(y))
     print('second grad: ', sgrad)

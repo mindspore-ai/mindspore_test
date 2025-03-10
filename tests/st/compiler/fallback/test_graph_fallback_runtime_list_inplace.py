@@ -37,7 +37,7 @@ def test_global_list_used_in_graph():
     Description: List passed as global should not change the python obj
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         return global_list_1
 

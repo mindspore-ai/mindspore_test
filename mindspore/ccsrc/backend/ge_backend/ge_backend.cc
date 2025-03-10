@@ -328,7 +328,6 @@ void UnifyIR(const CNodePtr &cnode) {
     op_name = iter->second;
   }
 }
-
 }  // namespace
 mindspore::HashSet<const tensor::Tensor *> GEBackend::weights_need_reprepare_ = {};
 BackendGraphId GEBackend::backend_graph_id_ = 0;
@@ -738,7 +737,7 @@ CompileType GEBackend::CheckGraph(const FuncGraphPtr &func_graph) const {
       if (GetCNodePrimitive(node) == nullptr) {
         continue;
       }
-      if (is_dynamic_graph) {
+      if (is_dynamic_graph && common::AnfAlgo::IsDynamic(node)) {
         if (!ConvertCheck(node)) {
           MS_LOG(ERROR) << node->fullname_with_scope() << " can not find adpt.";
           return CompileType::NotSupport;

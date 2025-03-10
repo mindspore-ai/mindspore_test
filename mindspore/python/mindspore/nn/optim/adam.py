@@ -1024,7 +1024,7 @@ class AdamWeightDecay(Optimizer):
         self.fused_opt = P.AdamWeightDecay()
         self.use_fused_opt = True
 
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, gradients):
         gradients = self.flatten_gradients(gradients)
         weight_decay = self.get_weight_decay()

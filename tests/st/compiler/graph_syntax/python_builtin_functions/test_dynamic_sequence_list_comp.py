@@ -49,7 +49,7 @@ def test_dynamic_sequence_list_comp_2():
     Description: support dynamic length sequence as the input of ListComprehension
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         out = [i + 1 for i in x]
         return out

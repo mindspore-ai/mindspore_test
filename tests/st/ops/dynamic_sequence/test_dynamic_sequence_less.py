@@ -13,10 +13,9 @@
 # limitations under the License.
 # ============================================================================
 from tests.mark_utils import arg_mark
-import pytest
 
 import mindspore.nn as nn
-from mindspore import context
+from mindspore import context, jit
 from mindspore.ops.operations import _sequence_ops as _seq
 from mindspore.common import mutable
 from mindspore.ops.composite import GradOperation
@@ -120,5 +119,5 @@ def test_seq_getitem_grad():
     x = mutable((2, 3, 4, 5, 6), True)
     y = mutable((1, 2, 3, 4, 5, 6), True)
     dout = True
-    grad_func = GradOperation(get_all=True, sens_param=True)(net_ms)
+    grad_func = jit(GradOperation(get_all=True, sens_param=True)(net_ms), backend="ms_backend")
     print("grad out1 = ", grad_func(x, y, dout))

@@ -167,7 +167,7 @@ def test_int_asnumpy():
     Description: Support tensor.asnumpy().
     Expectation: No exception.
     """
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def func(x):
         return int(x.asnumpy())
 
@@ -185,7 +185,7 @@ def test_int_asnumpy_calculation():
     Description: Support tensor.asnumpy().
     Expectation: No exception.
     """
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def func(x):
         return int(x.asnumpy()) + 1
 
@@ -221,7 +221,7 @@ def test_int_mutable():
     Description: Support mutable.
     Expectation: No exception.
     """
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def func(x):
         return int(x)
 
@@ -238,7 +238,7 @@ def test_float_mutable():
     Description: Support mutable.
     Expectation: No exception.
     """
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def func(x):
         return float(x)
 
@@ -255,7 +255,7 @@ def test_bool_condition():
     Description: Support scalar calculation.
     Expectation: No exception.
     """
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def func(x):
         if bool(x):
             return x + 1
@@ -333,7 +333,7 @@ def test_bool_asnumpy():
     Description: Support scalar calculation.
     Expectation: No exception.
     """
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def func(x):
         return bool(x.asnumpy())
 
@@ -350,7 +350,7 @@ def test_bool_asnumpy_condition():
     Description: Support scalar calculation.
     Expectation: No exception.
     """
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def func(x):
         if bool(x.asnumpy()):
             return x * 2
@@ -435,7 +435,7 @@ def test_scalar_tuple_in_inner_function():
             return int(x) + 1, x
         return int(x) + 2, x * 2
 
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def func(x):
         return inner_func(x)
 

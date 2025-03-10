@@ -168,7 +168,7 @@ def test_scan_simple_loop():
         res = res + el
         return res, res
 
-    @jit
+    @jit(backend="ms_backend")
     def test_simple_scan_inner(result_init):
         array = [1, 2, 3, 4]
         scan_op = ops.Scan()

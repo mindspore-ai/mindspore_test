@@ -29,7 +29,7 @@ def test_fallback_runtime_max():
     Expectation: No exception
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         return max(Tensor([1, 2, 3]).asnumpy())
 
@@ -46,7 +46,7 @@ def test_fallback_runtime_min():
     Expectation: No exception
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         return min(Tensor([1, 2, 3]).asnumpy())
 

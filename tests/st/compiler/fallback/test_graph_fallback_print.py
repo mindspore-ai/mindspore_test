@@ -74,7 +74,7 @@ def test_np_print_1():
     Description: Support print.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def np_print():
         x = np.array([1, 2, 3, 4, 5])
         print("x: ", x)
@@ -204,7 +204,7 @@ def test_print_cnode_3():
     Description: Support print.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def print_func():
         x = np.array([1, 2, 3, 4, 5])
         y = np.array([1, 2, 3, 4, 5])
@@ -231,7 +231,7 @@ def test_print_validate_tuple():
     Description: Support print.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def print_func():
         x = Tensor(np.array([1, 2, 3, 4, 5]))
         y = Tensor(np.array([1, 2, 3, 4, 5]))
@@ -255,7 +255,7 @@ def test_print_validate():
     Description: Support print.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def print_func():
         np_x = np.array([1, 2, 3, 4, 5])
         np_y = np.array([1, 2, 3, 4, 5])
@@ -302,7 +302,7 @@ def test_print_format_tensor():
     Description: Support print.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def print_func():
         x = Tensor(np.array([1, 2, 3, 4, 5]))
         y = Tensor(np.array([1, 2, 3, 4, 5]))
@@ -329,7 +329,7 @@ def test_print_string_format():
     Description: Support print(string % var).
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def print_func():
         print("I'm %s. I'm %d years old." % ('MindSpore', 3))
         return 0
@@ -425,7 +425,7 @@ def test_print_dict():
     Description: Support print(dict).
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def print_func():
         dict_x1 = dict(zip(['one', 'two', 'three'], [1, 2, 3]))
         dict_x2 = dict([("one", 1), ("two", 2)])

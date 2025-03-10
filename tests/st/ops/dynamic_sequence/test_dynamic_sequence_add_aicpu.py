@@ -20,7 +20,7 @@ import pytest
 
 import mindspore.nn as nn
 from mindspore.ops.operations import _sequence_ops as seq
-from mindspore import context
+from mindspore import context, jit
 from mindspore.common import mutable
 from mindspore.nn import Cell
 from mindspore.ops.composite import GradOperation
@@ -95,7 +95,7 @@ def test_seq_add_grad_aicpu():
     input_x = mutable((1, 2, 3), True)
     input_y = mutable((3, 4, 5, 6), True)
     dout = (1, 1, 1, 1, 1, 1, 1)
-    grad_func = GradOperation(get_all=True, sens_param=True)(net_ms)
+    grad_func = jit(GradOperation(get_all=True, sens_param=True)(net_ms), backend="ms_backend")
     print("grad out = ", grad_func(input_x, input_y, dout))
 
 
@@ -115,5 +115,5 @@ def test_seq_add_grad_other_aicpu():
     input_x = mutable((1, 2, 3), True)
     input_y = (3, 4, 5, 6)
     dout = (1, 1, 1, 1, 1, 1, 1)
-    grad_func = GradOperation(get_all=True, sens_param=True)(net_ms)
+    grad_func = jit(GradOperation(get_all=True, sens_param=True)(net_ms), backend="ms_backend")
     print("grad out1 = ", grad_func(input_x, input_y, dout))

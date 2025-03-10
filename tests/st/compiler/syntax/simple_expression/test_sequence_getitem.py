@@ -14,7 +14,6 @@
 # ============================================================================
 """ test graph mode sequence getitem """
 
-import pytest
 import numpy as np
 from mindspore import context, jit, mutable
 from mindspore.common.tensor import Tensor
@@ -69,7 +68,7 @@ def test_tuple_getitem_with_variable_bool_index():
     """
     @jit
     def foo(x):
-        if x > 0:
+        if x > 0:  # pylint: disable=simplifiable-if-statement
             index = True
         else:
             index = False
@@ -89,7 +88,7 @@ def test_tuple_getitem_with_variable_bool_index_2():
     Description: sequence getitem
     Expectation: No exception
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, a):
         m = (x, x+1, x+2, x+3)
         return m[a == 1], m[a == 2]
@@ -107,7 +106,7 @@ def test_tuple_getitem_with_variable_bool_index_3():
     Description: sequence getitem
     Expectation: No exception
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(a):
         m = (1, 2, 3, 4)
         return m[a == 1], m[a == 2]
@@ -143,7 +142,7 @@ def test_list_getitem_with_constant_bool_index_2():
     Description: sequence getitem
     Expectation: No exception
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         m = [x, x+1, x+2, x+3]
         return m[True], m[False]
@@ -163,7 +162,7 @@ def test_list_getitem_with_variable_bool_index():
     """
     @jit
     def foo(x):
-        if x > 0:
+        if x > 0:  # pylint: disable=simplifiable-if-statement
             index = True
         else:
             index = False

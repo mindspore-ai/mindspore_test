@@ -14,10 +14,9 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 import random
-import pytest
 
 import mindspore.nn as nn
-from mindspore import context
+from mindspore import context, jit
 from mindspore.common import mutable
 from mindspore.ops.composite import GradOperation
 from mindspore.ops.operations import _sequence_ops as seq
@@ -122,5 +121,5 @@ def test_seq_min_grad_mutable():
     x = (mutable(1), 2, 3)
     dout = mutable(2)
     net = MinNet()
-    grad_func = GradOperation(get_all=True, sens_param=True)(net)
+    grad_func = jit(GradOperation(get_all=True, sens_param=True)(net), backend="ms_backend")
     print("grad=:", grad_func(x, dout))

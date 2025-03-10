@@ -320,8 +320,8 @@ def test_vmap_nested_axes():
     y_hat = Tensor([[1, 2, 3], [4, 5, 6]], mstype.float32)
     z_hat = 1
 
-    ((res1, res2), res3), res4, res5 = \
-        vmap(AddNet(), in_axes=(1, [-1, None]), out_axes=((0, None), 0, None))(x_hat, (y_hat, z_hat))
+    ((res1, res2), res3), res4, res5 = jit(vmap(AddNet(), in_axes=(1, [-1, None]), out_axes=((0, None), 0, None)),
+                                           backend="ms_backend")(x_hat, (y_hat, z_hat))
     expect_res1 = Tensor([1, 1, 1], mstype.float32)
     expect_res2 = Tensor([2, 2, 2], mstype.float32)
     expect_res3 = 3

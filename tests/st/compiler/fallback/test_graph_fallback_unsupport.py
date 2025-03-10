@@ -36,7 +36,7 @@ def test_return_interpret_object():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         return [1, x, np.array([1, 2, 3, 4])]
 
@@ -75,7 +75,7 @@ def test_str_format_in_variable_scene():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         return "{}, {}".format(x, y)
 
@@ -110,7 +110,7 @@ def test_in_with_none():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         a = [1, 2, None]
         return None in a
@@ -200,7 +200,7 @@ def test_compress_with_mutable_input():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         cond = [1, 0, 1, 1]
         a = [x, x + 1, x + 2, x + 3]
@@ -289,7 +289,7 @@ def test_np_ix_with_variable():
         mesh = np.ix_(*grids)
         return np.stack(np.broadcast_arrays(*mesh), axis=-1)
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         return convert(mutable(0), mutable(5), mutable(1))
 
@@ -325,7 +325,7 @@ def test_numpy_prod_with_variable_axis():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         a = x.asnumpy()
         return np.prod(a, axis=y)

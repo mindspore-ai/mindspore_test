@@ -65,11 +65,11 @@ def test_dict_in_function():
         return {"a": 1}
 
     os.unsetenv("MS_DEV_JIT_SYNTAX_LEVEL")
-    func1 = ms.jit(function=func, fullgraph=True)
+    func1 = ms.jit(function=func, backend="ms_backend", fullgraph=True)
     out1 = func1()
     assert isinstance(out1, tuple)
 
-    func2 = ms.jit(function=func)
+    func2 = ms.jit(function=func, backend="ms_backend")
     out2 = func2()
     assert isinstance(out2, dict)
 

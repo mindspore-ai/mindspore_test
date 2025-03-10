@@ -29,7 +29,7 @@ def test_dict_generated_from_list():
     Description: support dict comp, which is generated from list.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def dict_generate():
         x = [('a', 1), ('b', 2), ('c', 3)]
         res = {k: v for (k, v) in x if v > 1}

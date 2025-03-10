@@ -270,7 +270,7 @@ class Net(nn.Cell):
         return out
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_trace_train_1():
     """
     Feature: JIT trace function
@@ -288,7 +288,7 @@ def test_trace_train_1():
     assert [x for x in net.get_parameters()][0].value()[0][0] != 1
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_trace_train_2():
     """
     Feature: JIT trace function
