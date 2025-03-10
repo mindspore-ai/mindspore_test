@@ -25,6 +25,7 @@
 #include <limits>
 
 #include "ir/anf.h"
+#include "plugin/res_manager/ascend/visible.h"
 
 namespace mindspore {
 namespace device {
@@ -44,7 +45,7 @@ struct MemoryBlock {
 class AscendMemAdapter;
 using AscendMemAdapterPtr = std::shared_ptr<AscendMemAdapter>;
 
-class AscendMemAdapter {
+class ASCEND_RES_MANAGER_EXPORT AscendMemAdapter {
  public:
   virtual ~AscendMemAdapter() = default;
   static AscendMemAdapterPtr GetInstance();

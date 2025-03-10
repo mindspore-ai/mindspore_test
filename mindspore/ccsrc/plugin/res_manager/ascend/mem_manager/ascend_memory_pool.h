@@ -25,7 +25,7 @@
 
 #include "include/backend/mem_reuse/abstract_dynamic_mem_pool.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
-#include "include/backend/visible.h"
+#include "plugin/res_manager/ascend/visible.h"
 #include "plugin/res_manager/ascend/mem_manager/abstract_ascend_memory_pool_support.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
@@ -35,8 +35,8 @@ namespace mindspore {
 namespace device {
 namespace ascend {
 
-class BACKEND_EXPORT DefaultAscendMemoryPool : public AbstractAscendMemoryPoolSupport,
-                                               public AbstractEnhancedDynamicMemPool {
+class ASCEND_RES_MANAGER_EXPORT DefaultAscendMemoryPool : public AbstractAscendMemoryPoolSupport,
+                                                          public AbstractEnhancedDynamicMemPool {
  public:
   DefaultAscendMemoryPool();
   DefaultAscendMemoryPool(const DefaultAscendMemoryPool &) = delete;
@@ -57,7 +57,7 @@ class BACKEND_EXPORT DefaultAscendMemoryPool : public AbstractAscendMemoryPoolSu
 };
 using DefaultAscendMemoryPoolPtr = std::shared_ptr<DefaultAscendMemoryPool>;
 
-class BACKEND_EXPORT DefaultEnhancedAscendMemoryPool : public DefaultAscendMemoryPool {
+class ASCEND_RES_MANAGER_EXPORT DefaultEnhancedAscendMemoryPool : public DefaultAscendMemoryPool {
  public:
   explicit DefaultEnhancedAscendMemoryPool(const DefaultAscendMemoryPoolPtr &instance);
   DefaultEnhancedAscendMemoryPool(const DefaultEnhancedAscendMemoryPool &) = delete;
@@ -228,7 +228,8 @@ class BACKEND_EXPORT DefaultEnhancedAscendMemoryPool : public DefaultAscendMemor
   size_t last_vmm_used_size_{0};
 };
 
-class BACKEND_EXPORT BestFitAscendMemoryPool : public AbstractAscendMemoryPoolSupport, public DynamicMemPoolBestFit {
+class ASCEND_RES_MANAGER_EXPORT BestFitAscendMemoryPool : public AbstractAscendMemoryPoolSupport,
+                                                          public DynamicMemPoolBestFit {
  public:
   BestFitAscendMemoryPool();
   BestFitAscendMemoryPool(const BestFitAscendMemoryPool &) = delete;
@@ -250,7 +251,7 @@ class BACKEND_EXPORT BestFitAscendMemoryPool : public AbstractAscendMemoryPoolSu
   void ReportMemoryTimeEvent(const MemoryTimeEventPtr &time_event) override;
 };
 
-class BACKEND_EXPORT AscendMemoryPool {
+class ASCEND_RES_MANAGER_EXPORT AscendMemoryPool {
  public:
   AscendMemoryPool(const AscendMemoryPool &) = delete;
   AscendMemoryPool &operator=(const AscendMemoryPool &) = delete;

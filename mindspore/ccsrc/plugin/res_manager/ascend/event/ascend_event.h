@@ -19,11 +19,12 @@
 
 #include "ir/device_event.h"
 #include "acl/acl_rt.h"
+#include "plugin/res_manager/ascend/visible.h"
 
 namespace mindspore::device::ascend {
 constexpr uint32_t ACL_EVENT_DEFAULT = 0x0000000Eu;
 
-class AscendEvent : public DeviceEvent {
+class ASCEND_RES_MANAGER_EXPORT AscendEvent : public DeviceEvent {
  public:
   AscendEvent();
   explicit AscendEvent(uint32_t flag, bool use_extensional_api = true);
@@ -57,7 +58,7 @@ class AscendEvent : public DeviceEvent {
   bool has_flag_{false};
 };
 
-class AscendTimeEvent : public AscendEvent {
+class ASCEND_RES_MANAGER_EXPORT AscendTimeEvent : public AscendEvent {
  public:
   AscendTimeEvent();
   ~AscendTimeEvent() override = default;
