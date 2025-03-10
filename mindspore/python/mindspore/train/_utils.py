@@ -391,7 +391,7 @@ def _get_initial_rank(parameter_layout):
 
 def _get_pp_size_from_redundancy_map(param_redundancy):
     """Get pp size from redundancy map."""
-    for _, v in param_redundancy.item():
+    for _, v in param_redundancy.items():
         return len(v) * len(v[0])
 
 
