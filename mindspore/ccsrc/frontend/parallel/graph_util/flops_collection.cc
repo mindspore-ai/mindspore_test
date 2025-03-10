@@ -332,9 +332,12 @@ void ToJson(const CNodePtr &para_node, std::unordered_map<std::string, OpInfoPtr
     op_info = op_info_map_dx_dw_map[para_node->UniqueId()];
   }
   MS_EXCEPTION_IF_NULL(op_info);
-  op_info->is_recompute = common::AnfAlgo::IsRecompute(para_node);
-  op_info->op_type = prim->name();
-  (*all_op_info)[op_id] = op_info;
+  OpInfoPtr new_op_info = std::make_shared<OpInfo>();
+  new_op_info->full_flops = op_info->full_flops;
+  new_op_info->shard_flops = op_info->shard_flops;
+  new_op_info->is_recompute = common::AnfAlgo::IsRecompute(para_node);
+  new_op_info->op_type = prim->name();
+  (*all_op_info)[op_id] = new_op_info;
 }
 
 void GetCalOps(const FuncGraphPtr &graph, size_t *op_id, std::unordered_map<std::string, OpInfoPtr> *all_op_info,
