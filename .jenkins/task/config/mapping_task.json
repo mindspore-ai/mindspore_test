@@ -308,6 +308,7 @@
   },
   "Compile_Ascend_ARM_CentOS": {
     "DIR_ARRAY": [
+      "version.txt",
       "graphengine",
       "CMakeLists.txt",
       ".gitignore",
