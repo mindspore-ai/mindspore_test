@@ -24,10 +24,10 @@ mindspore.nn.SoftMarginLoss
         - **labels** (Tensor) - 目标值，shape与 `logits` 的相同。GE模式下类型需要与 `logits` 相同。
 
     输出：
-        Tensor或Scalar，如果 `reduction` 为"none"，其shape与 `logits` 相同。否则，将返回Scalar。
+        Tensor或Scalar，如果 `reduction` 为 ``"none"`` ，其shape与 `logits` 相同。否则，将返回Scalar。
 
     异常：
         - **TypeError** - `logits` 或 `labels` 不是Tensor。
         - **TypeError** - `logits` 或 `labels` 的数据类型不是float16、float32、bfloat16（Atlas训练系列产品不支持）。
         - **ValueError** - `logits` 的shape与 `labels` 不同。
-        - **ValueError** - `reduction` 不为"mean"，"sum"，或"none"。
+        - **ValueError** - `reduction` 不为 ``"mean"`` ， ``"sum"`` ，或 ``"none"`` 。
