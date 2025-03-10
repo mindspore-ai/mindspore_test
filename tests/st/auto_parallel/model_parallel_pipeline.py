@@ -169,12 +169,11 @@ def test_parallel_mp_compare_context_autoparallel_pipeline_config():
     loss_monitor = LossMonitor(per_print_times=1)
     clean_all_ckpt_files(context_ckpt_path)
     net_with_loss = PipelineCell(nn.WithLossCell(context_net, loss_fn), micro_size=4)
-
     # train WithLossCell
     model = Model(network=net_with_loss, optimizer=optimizer)
     model.train(epoch=2, train_dataset=context_dataset, dataset_sink_mode=False, callbacks=[loss_monitor])
-    # AutoParallel(net)
-    # config
+
+    # AutoParallel(net) config
     ms.set_seed(1)
     context.reset_auto_parallel_context()
     context.set_context(mode=context.GRAPH_MODE, device_target='Ascend', save_graphs=True,
@@ -186,8 +185,8 @@ def test_parallel_mp_compare_context_autoparallel_pipeline_config():
     # net
     with no_init_parameters():
         net_tmp = ParallelPPNetworkFinal(pp_strategy)
+        optimizer = nn.Momentum(net_tmp.trainable_params(), learning_rate=0.1, momentum=0.9)
     # train_model ops loss
-    optimizer = nn.Momentum(net_tmp.trainable_params(), learning_rate=0.1, momentum=0.9)
     loss_fn = nn.MSELoss(reduction='mean')
 
     clean_all_ckpt_files(parallel_ckpt_path)
@@ -200,8 +199,6 @@ def test_parallel_mp_compare_context_autoparallel_pipeline_config():
     loss_monitor_pp = LossMonitor(per_print_times=1)
     # train WithLossCell
     model = Model(network=pp_net, optimizer=optimizer)
-    model.build(epoch=2, train_dataset=parallel_dataset)
-    pp_net.init_parameters_data(auto_parallel_mode=True)
     model.train(epoch=2, train_dataset=parallel_dataset, dataset_sink_mode=False, callbacks=[loss_monitor_pp])
 
 def test_parallel_mp_compare_context_auto_pp_config_lazy_init():
@@ -254,8 +251,8 @@ def test_parallel_mp_compare_context_auto_pp_config_lazy_init():
     # net
     with no_init_parameters():
         net_tmp = ParallelPPNetworkFinal(pp_strategy)
+        optimizer = nn.Momentum(net_tmp.trainable_params(), learning_rate=0.1, momentum=0.9)
     # train_model ops loss
-    optimizer = nn.Momentum(net_tmp.trainable_params(), learning_rate=0.1, momentum=0.9)
     loss_fn = nn.MSELoss(reduction='mean')
 
     clean_all_ckpt_files(parallel_ckpt_path)
@@ -268,11 +265,8 @@ def test_parallel_mp_compare_context_auto_pp_config_lazy_init():
     loss_monitor_pp = LossMonitor(per_print_times=1)
     # train WithLossCell
     model = Model(network=pp_net, optimizer=optimizer)
-    model.build(epoch=2, train_dataset=parallel_dataset)
-    pp_net.init_parameters_data(auto_parallel_mode=True)
     model.train(epoch=2, train_dataset=parallel_dataset, dataset_sink_mode=False,
                 callbacks=[loss_monitor_pp])
-
 
 def test_parallel_mp_compare_context_auto_pp_config_lazy_init_dp():
     """
@@ -323,10 +317,9 @@ def test_parallel_mp_compare_context_auto_pp_config_lazy_init_dp():
     # net
     with no_init_parameters():
         net_tmp = ParallelPPNetworkFinal(pp_strategy)
+        optimizer = nn.Momentum(net_tmp.trainable_params(), learning_rate=0.1, momentum=0.9)
     # train_model ops loss
-    optimizer = nn.Momentum(net_tmp.trainable_params(), learning_rate=0.1, momentum=0.9)
     loss_fn = nn.MSELoss(reduction='mean')
-
     clean_all_ckpt_files(parallel_ckpt_path)
     pp_net_with_loss = PipelineCell(nn.WithLossCell(net_tmp, loss_fn), micro_size=4,
                                     stage_config={"_backbone.cell1": 0,
@@ -337,13 +330,11 @@ def test_parallel_mp_compare_context_auto_pp_config_lazy_init_dp():
     loss_monitor_pp = LossMonitor(per_print_times=1)
     # train WithLossCell
     model = Model(network=pp_net, optimizer=optimizer)
-    model.build(epoch=2, train_dataset=parallel_dataset)
-    pp_net.init_parameters_data(auto_parallel_mode=True)
     model.train(epoch=2, train_dataset=parallel_dataset, dataset_sink_mode=False,
                 callbacks=[loss_monitor_pp])
 
 
-def test_parallel_mp_compare_context_autoparallel_pipeline_config_with_lazy_init_lazy_inline():
+def test_parallel_mp_compare_context_auto_pp_config_with_lazy_init_inline():
     """
     Feature:test_parallel_mp_compare_context_autoparallel_pipeline_config_with_lazy_init_lazy_inline
     Description:
@@ -393,9 +384,8 @@ def test_parallel_mp_compare_context_autoparallel_pipeline_config_with_lazy_init
     # net
     with no_init_parameters():
         net_tmp = ParallelPPNetworkFinal(pp_strategy)
-
+        optimizer = nn.Momentum(net_tmp.trainable_params(), learning_rate=0.1, momentum=0.9)
     # train_model ops loss
-    optimizer = nn.Momentum(net_tmp.trainable_params(), learning_rate=0.1, momentum=0.9)
     loss_fn = nn.MSELoss(reduction='mean')
 
     clean_all_ckpt_files(parallel_ckpt_path)
@@ -408,8 +398,6 @@ def test_parallel_mp_compare_context_autoparallel_pipeline_config_with_lazy_init
     loss_monitor_pp = LossMonitor(per_print_times=1)
     # train WithLossCell
     model = Model(network=pp_net, optimizer=optimizer)
-    model.build(epoch=2, train_dataset=parallel_dataset)
-    pp_net.init_parameters_data(auto_parallel_mode=True)
     model.train(epoch=2, train_dataset=parallel_dataset, dataset_sink_mode=False, callbacks=[loss_monitor_pp])
 
 def test_parallel_mp_compare_context_auto_pp_cfg_lazy_init_inline_sink():
@@ -464,8 +452,8 @@ def test_parallel_mp_compare_context_auto_pp_cfg_lazy_init_inline_sink():
     # net
     with no_init_parameters():
         net_tmp = ParallelPPNetworkFinal(pp_strategy)
+        optimizer = nn.Momentum(net_tmp.trainable_params(), learning_rate=0.1, momentum=0.9)
     # train_model ops loss
-    optimizer = nn.Momentum(net_tmp.trainable_params(), learning_rate=0.1, momentum=0.9)
     loss_fn = nn.MSELoss(reduction='mean')
     loss_monitor_pp = LossMonitor(per_print_times=1)
     clean_all_ckpt_files(parallel_ckpt_path)
@@ -479,7 +467,5 @@ def test_parallel_mp_compare_context_auto_pp_cfg_lazy_init_inline_sink():
     pp_net.pipeline(stages=2, scheduler="1f1b")
     # train WithLossCell
     model = Model(network=pp_net, optimizer=optimizer)
-    model.build(epoch=2, train_dataset=parallel_dataset, sink_mode=True)
-    pp_net.init_parameters_data(auto_parallel_mode=True)
     model.train(epoch=2, train_dataset=parallel_dataset, dataset_sink_mode=True, sink_size=-1,
                 callbacks=[loss_monitor_pp])
