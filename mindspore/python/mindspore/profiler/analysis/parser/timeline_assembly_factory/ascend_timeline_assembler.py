@@ -19,7 +19,7 @@ from collections import defaultdict
 
 from mindspore import context
 from mindspore import log as logger
-from mindspore.profiler.common.constant import EventConstant, TimelineLayerName, ProfilerLevel
+from mindspore.profiler.common.constant import EventConstant, TimelineLayerName, ProfilerLevel, JitLevel
 from mindspore.profiler.analysis.parser.timeline_event.base_event import BaseEvent
 from mindspore.profiler.analysis.parser.timeline_event.timeline_event_pool import TimelineEventPool
 from mindspore.profiler.analysis.parser.timeline_event.flow_event import FlowStartEvent, FlowEndEvent
@@ -40,6 +40,7 @@ class AscendTimelineAssembler(BaseTimelineAssembler):
         super().__init__()
         self._profiler_level = kwargs.get("profiler_level")
         self._context_mode = kwargs.get("context_mode")
+        self._jit_level = kwargs.get("jit_level")
         self._init_creators()
 
     def _init_creators(self):
@@ -127,11 +128,13 @@ class AscendTimelineAssembler(BaseTimelineAssembler):
         """Create flow events between framework and hardware events."""
         acl_to_npu_flow_dict = self._msprof_creator.get_acl_to_npu_flow_dict()
         fwk_launch_op_list = self.trace_view_container.kernel_launch_op_event
-        if not acl_to_npu_flow_dict:
+        # The graph mode O2 does not have the flow from CANN to hardware at each step
+        if not acl_to_npu_flow_dict and self._jit_level != JitLevel.GRAPH_LEVEL:
             logger.error("Cannot find connection between CANN layer and Ascend Hardware layer.")
             return []
-        if not fwk_launch_op_list:
-            logger.warning("Cannot find launch op in MindSpore framework. Please verify if it's in graph mode.")
+        # The graph model O2 does not have "KernelLaunch" or "LaunchTask" keywords
+        if not fwk_launch_op_list and self._jit_level != JitLevel.GRAPH_LEVEL:
+            logger.warning("Cannot find launch op in MindSpore framework.")
             return []
         if (set(acl_to_npu_flow_dict.keys()) != set(fwk_launch_op_list.keys()) and
                 self._context_mode == context.PYNATIVE_MODE):

@@ -165,10 +165,9 @@ class AscendKernelDetailsViewer(BaseViewer):
         """
         _generate_hardware_op_event_step_id(dev_kernels, step_id_to_time_dict)
 
-        if not dev_kernels:
+        if not dev_kernels and self._jit_level != JitLevel.GRAPH_LEVEL:
             logger.warning(
                 "Cannot find the device kernels with MindSpore framework launch op, "
-                "Please verify if it's in graph mode."
             )
             return
 
