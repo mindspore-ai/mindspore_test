@@ -115,6 +115,14 @@ void CustomLaunchAclnnImpl(const std::string &aclnn_name, const ValuePtrList &in
     if (inp->isa<tensor::BaseTensor>()) {
       (void)input_tensors.emplace_back(inp->cast<tensor::BaseTensorPtr>());
     }
+    if (inp->isa<ValueTuple>()) {
+      auto tuple = inp->cast<ValueTuplePtr>();
+      auto element = tuple->value();
+      if (!element.empty() && element[0]->isa<tensor::BaseTensor>()) {
+        auto tuple_vector = ConvertValueTupleToVector<BaseTensorPtr>(tuple);
+        (void)std::copy(tuple_vector.begin(), tuple_vector.end(), std::back_inserter(input_tensors));
+      }
+    }
   }
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensors);
 

@@ -583,6 +583,9 @@ inline void *ConvertType(const ValueTuplePtr &value) {
   } else if (elements[0]->isa<Int64Imm>()) {
     auto int_vector = GetValue<std::vector<int64_t>>(value);
     return ConvertType(int_vector);
+  } else if (elements[0]->isa<tensor::BaseTensor>()) {
+    auto tensor_vector = GetValue<std::vector<tensor::BaseTensorPtr>>(value);
+    return ConvertType(tensor_vector);
   } else {
     MS_LOG(EXCEPTION) << "Unsupported type: " << value->ToString();
   }
