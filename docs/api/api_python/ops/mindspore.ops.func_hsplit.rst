@@ -13,5 +13,5 @@ mindspore.ops.hsplit
         tuple[Tensor]。
 
     异常：
-        - **TypeError** - 如果 `input` 不是Tensor。
-        - **ValueError** - 如果 `input` 的维度小于2。
+        - **TypeError** - `input` 不是Tensor。
+        - **ValueError** - `input` 的维度小于2。
