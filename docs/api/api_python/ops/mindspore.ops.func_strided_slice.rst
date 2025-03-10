@@ -5,7 +5,7 @@ mindspore.ops.strided_slice
 
     对输入Tensor根据步长和索引进行切片提取。
 
-    该算子在给定的 `input_x` 中提取大小为 `(end-begin)/strides` 的片段。根据起始索引、结束索引和步长进行提取，直到所有维度的索引都不小于结束索引为止, 返回提取出的切片。
+    该算子在给定的 `input_x` 中提取大小为 `(end-begin)/strides` 的片段。根据起始索引、结束索引和步长进行提取，直到所有维度的索引都不小于结束索引为止，返回提取出的切片。
 
     .. note::
         - `begin` 、 `end` 和 `strides` 的shape必须相同。
@@ -13,11 +13,11 @@ mindspore.ops.strided_slice
 
     切片时，第i维从索引 `begin[i]` 开始取到索引 `end[i]` ，步长为 `strides[i]`。
 
-    例：`input_x` 是shape为 :math:`(5, 6, 7)` 的三维Tensor， `begin` 为(1, 3, 2), `end` 为(3, 5, 6), `strides` 为(1, 1, 2)。切片时，第零维从索引1开始取到3，步长为1；第一维从索引3开始取到5，步长为1；第二维从索引2开始取到6，步长为2。相当于Python式切片 `input_x[1:3, 3:5, 2:6:2]` 。
+    例：`input_x` 是shape为 :math:`(5, 6, 7)` 的三维Tensor， `begin` 为(1, 3, 2)， `end` 为(3, 5, 6)， `strides` 为(1, 1, 2)。切片时，第零维从索引1开始取到3，步长为1；第一维从索引3开始取到5，步长为1；第二维从索引2开始取到6，步长为2。相当于Python式切片 `input_x[1:3, 3:5, 2:6:2]` 。
 
     如果 `begin` 、 `end` 和 `strides` 的长度小于 `input_x` 的维度， 则缺失的维度默认切取所有的元素， 相当于 `begin` 用0补足， `end` 用相应维度的长度补足， `strides` 用1补足。
 
-    例：`input_x` 是shape为 :math:`(5, 6, 7)` 的三维Tensor， `begin` 为(1, 3), `end` 为(3, 5), `strides` 为(1, 1)。切片时，第零维从索引1开始取到3，步长为1；第一维从索引3开始取到5，步长为1；第二维从索引0开始取到6，步长为1。相当于Python式切片 `input_x[1:3, 3:5, 0:7]` 。
+    例：`input_x` 是shape为 :math:`(5, 6, 7)` 的三维Tensor， `begin` 为(1, 3)， `end` 为(3, 5)， `strides` 为(1, 1)。切片时，第零维从索引1开始取到3，步长为1；第一维从索引3开始取到5，步长为1；第二维从索引0开始取到6，步长为1。相当于Python式切片 `input_x[1:3, 3:5, 0:7]` 。
 
     mask（掩码）的工作原理：
 
@@ -64,4 +64,4 @@ mindspore.ops.strided_slice
         - **TypeError** - `begin_mask` 、 `end_mask` 、 `ellipsis_mask` 、 `new_axis_mask` 或 `shrink_axis_mask` 不是int。
         - **TypeError** - `begin` 、 `end` 或 `strides` 不是数据类型为int的tuple。
         - **ValueError** - `begin_mask` 、 `end_mask` 、 `ellipsis_mask` 、 `new_axis_mask` 或 `shrink_axis_mask` 小于0。
-        - **ValueError** - `begin` 、 `end` 和 `strides` 的shape不同。
+        - **ValueError** - `begin` 、 `end` 和 `strides` 三者的shape不同。
