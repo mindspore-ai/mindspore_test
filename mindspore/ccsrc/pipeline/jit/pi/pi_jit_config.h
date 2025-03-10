@@ -30,7 +30,6 @@ class GraphJitConfig {
   enum Options {
     kBoolConf = 0,
     kAutoJitCell,
-    kAutoGrad,
     kAutoJit,
     kPrintAfterAll,
     kPrintTraceback,
@@ -46,7 +45,6 @@ class GraphJitConfig {
     kPrintGuard,
     kPruneCase,
     kLoopUnrolling,
-    kInferOnly,
     kInferPrimitive,
     kStrictTrace,
     kPerfStatistics,

@@ -26,7 +26,6 @@
 #include <utility>
 #include "pybind11/pybind11.h"
 #include "include/common/utils/convert_utils_py.h"
-#include "pipeline/jit/pi/auto_grad/function_node.h"
 #include "pipeline/jit/pi/external.h"
 #include "pipeline/jit/pi/graph_build/parameter_manager.h"
 #include "pipeline/jit/pi/graph_capture/graph_build.h"
@@ -949,45 +948,6 @@ py::list CollectGradientArguments(PyCodeObject *co, PyObject *const *fast_locals
   }
 
   return arguments;
-}
-
-void AutoGrad(EvalFrameObject *frame, PyObject *ret) {
-  // improve performance for infer
-  if (kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kInferOnly)) {
-    return;
-  }
-  PyFrameWrapper f(frame);
-  auto co_wrapper = f.GetCode();
-  // must have a return value and prim must have argument
-  if (ret == nullptr || co_wrapper.FastLocalSize() <= 0) {
-    return;
-  }
-  PyCodeObject *co = co_wrapper.ptr();
-  const char *co_name = PyUnicode_AsUTF8(co->co_name);
-  // the call function of primitive
-  if (std::string(co_name) != "__call__") {
-    return;
-  }
-  // only record primitive now
-  auto f_localsplus = f.FastLocal();
-  if (f_localsplus[0] == nullptr) {
-    return;
-  }
-  if (!py::isinstance<Primitive>(f_localsplus[0]) && !py::isinstance<PrimitivePy>(f_localsplus[0]) &&
-      !py::isinstance<PrimitivePyAdapter>(f_localsplus[0])) {
-    return;
-  }
-  // gradient info check
-  if (!grad::FunctionNode::HasAttrReqGrad(ret) && !py::isinstance<py::tuple>(ret)) {
-    return;
-  }
-  MS_EXCEPTION_IF_CHECK_FAIL(co->co_kwonlyargcount == 0, "Must not have kw only args.");
-  auto inputs = CollectGradientArguments(co, f_localsplus);
-  if (!std::any_of(inputs.begin(), inputs.end(),
-                   [](const auto &input) { return grad::FunctionNode::IsRequiresGradient(input); })) {
-    return;
-  }
-  grad::FunctionNode::RecordPrimitive(py::cast<py::object>(f_localsplus[0]), py::cast<py::object>(ret), inputs);
 }
 
 PyObject *EvalFrame(PY_FRAME_EVAL_FUNCTION_SIGNATURE) {

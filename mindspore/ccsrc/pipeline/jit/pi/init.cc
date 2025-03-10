@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 #include "include/common/pybind_api/api_register.h"
-#include "pipeline/jit/pi/auto_grad/function_node.h"
 #include "pipeline/jit/pi/external.h"
 namespace mindspore {
 namespace pijit {
 namespace py = pybind11;
-using FunctionNode = mindspore::pijit::grad::FunctionNode;
 
 // Interface with python
 void RegPIJitInterface(py::module *m) {
@@ -51,11 +49,6 @@ void RegPIJitInterface(py::module *m) {
 
   (void)m->def("function_id", &mindspore::FunctionId,
                "Get cpp function pointer, or python function pointer, or object pointer");
-
-  (void)py::class_<FunctionNode, mindspore::pijit::grad::FunctionNodePtr>(*m, "FunctionNode_")
-    .def_static("record_primitive", &FunctionNode::RecordPrimitive, py::arg("prim"), py::arg("out"), py::arg("inputs"),
-                "Record the executed primitive during forward execution.")
-    .def("apply", &FunctionNode::Apply, py::arg("grad"), "Calculate the gradient of the function node.");
 #endif
 }
 }  // namespace pijit

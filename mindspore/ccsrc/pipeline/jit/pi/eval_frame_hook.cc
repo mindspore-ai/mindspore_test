@@ -40,15 +40,6 @@ bool ApplyAutoJit(PyThreadState *ts, EvalFrameObject *f, PyObject **result) {
   return true;
 }
 
-bool ApplyAutoGrad(PyThreadState *ts, EvalFrameObject *f, PyObject **result) {
-  if (kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kInferOnly)) {
-    return false;
-  }
-  *result = _PyEval_EvalFrameDefault(ts, f, 0);
-  AutoGrad(f, *result);
-  return true;
-}
-
 bool ApplyCaptureContext(PyThreadState *tstate, EvalFrameObject *ef, PyObject **result) {
   PyFrameWrapper f(ef);
   auto ctx = CaptureContext::GetInstance();
@@ -78,7 +69,6 @@ bool ApplyCaptureContext(PyThreadState *tstate, EvalFrameObject *ef, PyObject **
 }
 
 PyFrameEvalHookManager::PyFrameEvalHookManager() : func_() {
-  this->Register(ApplyAutoGrad);
   this->Register(ApplyAutoJit);
   this->Register(ApplyCaptureContext);
 }
