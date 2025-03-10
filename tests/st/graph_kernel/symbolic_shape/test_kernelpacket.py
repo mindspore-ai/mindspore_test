@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2024-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,28 +14,33 @@
 # ============================================================================
 
 import os
-import numpy as np
-import mindspore as ms
-from mindspore import ops, nn, Tensor
+import copy
+import subprocess
 from tests.mark_utils import arg_mark
-import pytest
 
 
-def helper(net_type, inputs_dyn, inputs):
-    ms.set_context(mode=ms.GRAPH_MODE, enable_graph_kernel=True)
-    os.environ["MS_DEV_ENABLE_KERNEL_PACKET"] = "off"
-    net1 = net_type()
-    net1.set_inputs(*inputs_dyn)
-    expect = net1(*inputs)
-    os.environ["MS_DEV_ENABLE_KERNEL_PACKET"] = "on"
-    net2 = net_type()
-    net2.set_inputs(*inputs_dyn)
-    output = net2(*inputs)
-    del os.environ["MS_DEV_ENABLE_KERNEL_PACKET"]
-    if isinstance(expect, ms.Tensor):
-        assert np.allclose(expect.asnumpy(), output.asnumpy(), 1e-4, 1e-4)
-    else:
-        assert all(np.allclose(e.asnumpy(), o.asnumpy(), 1e-4, 1e-4) for e, o in zip(expect, output))
+def run_with_log(test_case, log_file):
+    env = copy.deepcopy(os.environ)
+    env['ASCEND_GLOBAL_EVENT_ENABLE'] = '1'
+    env['ASCEND_GLOBAL_LOG_LEVEL'] = '1'
+    env['ASCEND_SLOG_PRINT_TO_STDOUT'] = '0'
+    env['GLOG_v'] = '1'
+    env['MS_SUBMODULE_LOG_v'] = r'{RUNTIME_FRAMEWORK:0,SYMBOLIC_SHAPE:0,GRAPH_KERNEL:0}'
+    command = "pytest --disable-warnings -s {} > {} 2>&1".format(test_case, log_file)
+    try:
+        subprocess.run(command, shell=True, env=env, timeout=600, check=True, text=True)
+    except Exception as e:
+        import datetime
+        t = datetime.datetime.now()
+        f = t.strftime('%m%d%H%M%S')
+        os.system(f"mkdir ~/graph_kernel_log_{f}")
+        os.system(f"cp -rf {log_file} ~/graph_kernel_log_{f}")
+        if os.path.isfile(log_file):
+            with open(log_file, 'r') as f:
+                for line in f:
+                    print(line)
+        os.system(f"cp -rf ~/ascend/log ~/graph_kernel_log_{f}")
+        raise RuntimeError("{}\n case {} run failed!".format(e, test_case))
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -45,27 +50,7 @@ def test_reshape():
     Description: test kernelpacket with reshape
     Expectation: success
     """
-    os.environ["GLOG_v"] = "1"
-
-    class ReshapeNet(nn.Cell):
-        def __init__(self):
-            super(ReshapeNet, self).__init__()
-            self.shape = ops.Shape()
-            self.reshape = ops.Reshape()
-
-        def construct(self, x, y):
-            shape = self.shape(x)
-            a = shape[0]
-            y2 = self.reshape(y, (a, a))
-            z = y2 + x
-            return z
-    x_dyn = Tensor(shape=[None], dtype=ms.float32)
-    y_dyn = Tensor(shape=[None, None], dtype=ms.float32)
-
-    x = Tensor(np.random.random([2]), dtype=ms.float32)
-    y = Tensor(np.random.random([2, 2]), dtype=ms.float32)
-    helper(ReshapeNet, (x_dyn, y_dyn), (x, y))
-    del os.environ["GLOG_v"]
+    run_with_log("kernelpacket_cases.py::test_reshape", "test_kernelpacket_reshape.log")
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -75,50 +60,17 @@ def test_reducesum():
     Description: test kernelpacket with ReduceSum
     Expectation: success
     """
-    os.environ["GLOG_v"] = "1"
-
-    class ReduceSumNet(nn.Cell):
-        def __init__(self):
-            super(ReduceSumNet, self).__init__()
-            self.add = ops.Add()
-            self.shape = ops.Shape()
-            self.reducesum = ops.ReduceSum(True, True)
-
-        def construct(self, x):
-            shape = self.shape(x)
-            b = shape[1]
-            y = self.reducesum(x, b)
-            return y
-    x_dyn = Tensor(shape=[None, None], dtype=ms.float32)
-    x = Tensor(np.array([[2], [1]]), dtype=ms.float32)
-    helper(ReduceSumNet, (x_dyn,), (x,))
-    del os.environ["GLOG_v"]
+    run_with_log("kernelpacket_cases.py::test_reducesum", "test_reducesum.log")
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('data_type', [ms.float16, ms.float32])
-def test_fuse_host_ops(data_type):
+def test_fuse_host_ops():
     """
     Feature: KernelPacket
     Description: test kernelpacket with host-device ops
     Expectation: success
     """
-    os.environ["GLOG_v"] = "1"
-
-    class Net(nn.Cell):
-        def construct(self, x, y, z):
-            # Shape-RealTupleGetItem-ScalarPow-ScalarToTensor-Mul
-            t = ops.shape(x)[-1] ** 0.5
-            # Shape-RealTupleGetItem-ScalarDiv-ScalarToTensor-Mul
-            sy = ops.shape(y)
-            t2 = sy[0] / sy[1]
-            return t * z + t2 * z
-    dyn = Tensor(shape=[None, None], dtype=data_type)
-    x = Tensor(np.random.random([32, 32]), dtype=data_type)
-    y = Tensor(np.random.random([20, 15]), dtype=data_type)
-    z = Tensor(np.random.random([16, 16]), dtype=data_type)
-    helper(Net, (dyn, dyn, dyn), (x, y, z))
-    del os.environ["GLOG_v"]
+    run_with_log("kernelpacket_cases.py::test_fuse_host_ops", "test_fuse_host_ops.log")
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -128,23 +80,7 @@ def test_stridedslice():
     Description: test kernelpacket with stridedslice
     Expectation: success
     """
-    class SdNet(nn.Cell):
-        def __init__(self):
-            super(SdNet, self).__init__()
-            self.stack = ops.Stack()
-            self.tensorshape = ops.TensorShape()
-            self.stridedslice = ops.StridedSlice(2, 2, 0, 0, 1)
-
-        def construct(self, x):
-            shape = self.tensorshape(x)
-            shape2 = shape[1]
-            a = Tensor(1, ms.int64)
-            shape3 = self.stack([a, shape2])
-            y = self.stridedslice(x, (0, 0), shape3, (1, 1))
-            return y
-    x_dyn = Tensor(shape=[32, None], dtype=ms.float32)
-    input_x = Tensor(np.random.random([32, 16]), dtype=ms.float32)
-    helper(SdNet, (x_dyn,), (input_x,))
+    run_with_log("kernelpacket_cases.py::test_stridedslice", "test_stridedslice.log")
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -154,31 +90,7 @@ def test_matmul_only_shape():
     Description: test kernelpacket to fuse the only-shape-depended ops.
     Expectation: success
     """
-    os.environ["GLOG_v"] = "1"
-
-    class Net(nn.Cell):
-        def construct(self, p1, p2, p3, p4):
-            m = ops.matmul(p1, p2)
-            a = ops.add(m, p3)
-            return ops.reshape(p4, ops.shape(a))
-    p_dyn = Tensor(shape=[None, None], dtype=ms.float32)
-    p1 = Tensor(np.random.random([1, 16]), dtype=ms.float32)
-    p2 = Tensor(np.random.random([16, 8]), dtype=ms.float32)
-    p3 = Tensor(np.random.random([32, 1]), dtype=ms.float32)
-    p4 = Tensor(np.random.random([64, 4]), dtype=ms.float32)
-    ms.set_context(graph_kernel_flags="--enable_cluster_ops_only=Add")
-    helper(Net, (p_dyn, p_dyn, p_dyn, p_dyn), (p1, p2, p3, p4))
-    del os.environ["GLOG_v"]
-
-
-class GradNet(nn.Cell):
-    def __init__(self, net):
-        super(GradNet, self).__init__()
-        self.net = net
-        self.grad = ops.composite.GradOperation(get_all=True)
-
-    def construct(self, *inputs):
-        return self.grad(self.net)(*inputs)
+    run_with_log("kernelpacket_cases.py::test_matmul_only_shape", "test_matmul_only_shape.log")
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -188,22 +100,7 @@ def test_concat_grad():
     Description: test kernelpacket with slice
     Expectation: success
     """
-    os.environ["GLOG_v"] = "1"
-
-    class Net(nn.Cell):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.abs = ops.Abs()
-
-        def construct(self, x, y):
-            t = ops.concat((self.abs(x), self.abs(y)), 0)
-            return self.abs(t)
-
-    dyn = ms.Tensor(shape=[None, None], dtype=ms.float32)
-    x = ms.Tensor(np.random.rand(1, 3).astype(np.float32))
-    y = ms.Tensor(np.random.rand(5, 3).astype(np.float32))
-    helper(lambda: GradNet(Net()), (dyn, dyn), (x, y))
-    del os.environ["GLOG_v"]
+    run_with_log("kernelpacket_cases.py::test_concat_grad", "test_concat_grad.log")
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -213,18 +110,4 @@ def test_stridedslice_grad():
     Description: test kernelpacket with stridedslicegrad
     Expectation: success
     """
-    class Net(nn.Cell):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.stridedslice = ops.StridedSlice(0, 0, 0, 0, 0)
-
-        def construct(self, x, y):
-            shape = ops.shape(y)
-            end = (10, shape[0])
-            return self.stridedslice(x, (0, 0), end, (1, 1))
-
-    x_dyn = ms.Tensor(shape=[None, None], dtype=ms.float32)
-    y_dyn = ms.Tensor(shape=[None], dtype=ms.float32)
-    x = ms.Tensor(np.random.rand(32, 16).astype(np.float32))
-    y = ms.Tensor(np.random.rand(10).astype(np.float32))
-    helper(lambda: GradNet(Net()), (x_dyn, y_dyn), (x, y))
+    run_with_log("kernelpacket_cases.py::test_stridedslice_grad", "test_stridedslice_grad.log")
