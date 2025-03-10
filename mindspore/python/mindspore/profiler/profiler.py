@@ -121,7 +121,7 @@ def tensorboard_trace_handler(dir_name: str = None, worker_name: str = None,
 
 class Profiler:
     r"""
-    The current interface is deprecated, please use: class: ` mindspore.Profilers.Profile ` instead.
+    The current interface is deprecated, please use: class: ` mindspore.profiler.profile ` instead.
     This class to enable the profiling of MindSpore neural networks.
     MindSpore users can import the mindspore.Profiler, initialize the Profiler object to start profiling,
     and use Profiler.analyse() to stop profiling and analyse the results.
