@@ -2688,7 +2688,7 @@ def scatter_nd_add(input_x, indices, updates, use_locking=False):
             The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
         updates (Tensor): The tensor doing the addition operation with `input_x`,
             the data type is same as `input_x`, the shape is `indices.shape[:-1] + x.shape[indices.shape[-1]:]`.
-        use_locking (bool): Whether to protect the assignment by a lock. Default: ``False`` .
+        use_locking (bool, optional): Whether to protect the assignment by a lock. Default: ``False`` .
 
     Returns:
         Tensor, the updated `input_x`, has the same shape and type as `input_x`.

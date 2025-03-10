@@ -3279,7 +3279,7 @@ class ComputeAccidentalHits(Primitive):
     the weight is FLOAT_MAX. FLOAT_MAX indicates the max value in the type of Float
 
     Args:
-        num_true (int): The number of target classes per training example. Default: ``1`` .
+        num_true (int, optional): The number of target classes per training example. Default: ``1`` .
 
     Inputs:
         - **true_classes** (Tensor) - The target classes. With data type of int64
@@ -4084,7 +4084,7 @@ class KLDivLoss(Primitive):
           or ``'sum'``.
 
     Args:
-        reduction (str): Specifies the reduction to be applied to the output.
+        reduction (str, optional): Specifies the reduction to be applied to the output.
             Default: ``'mean'`` .
 
             - ``'none'``: no reduction will be applied.
@@ -4674,8 +4674,8 @@ class ApplyProximalAdagrad(Primitive):
     the relatively highest priority data type.
 
     Args:
-        use_locking (bool): If ``True`` , the var and accumulation tensors will be protected from being updated.
-            Default: ``False`` .
+        use_locking (bool, optional): If ``True`` , the var and accumulation tensors will be protected
+            from being updated. Default: ``False`` .
 
     Inputs:
         - **var** (Union[Parameter, Tensor]) - Variable to be updated. The data type must be float16 or float32.

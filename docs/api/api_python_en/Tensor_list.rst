@@ -45,6 +45,19 @@
     :exclude-members: infer_value, infer_shape, infer_dtype, get_bprop
     :members:
 
+{% elif fullname=="mindspore.profiler.profile" %}
+{{ fullname | underline }}
+
+.. autoclass:: {{ name }}
+    :members:
+    :exclude-members:
+
+{% elif fullname=="mindspore.profiler._ExperimentalConfig" %}
+{{ fullname | underline }}
+
+.. autoclass:: {{ name }}
+    :members:
+
 {% elif fullname=="mindspore.profiler.DynamicProfilerMonitor" %}
 {{ fullname | underline }}
 

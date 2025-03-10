@@ -15,7 +15,7 @@ floor_divide:
         out_{i} = \text{floor}( \frac{self_i}{other_i})
 
     where the :math:`floor` indicates the Floor operator. For more details,
-    please refer to the :class:`mindspore.mint.Floor` operator.
+    please refer to the :class:`mindspore.mint.floor` operator.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.

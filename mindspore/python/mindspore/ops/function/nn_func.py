@@ -1565,7 +1565,7 @@ def dropout(input, p=0.5, training=True, seed=None):
         input (Tensor): The input Tensor of shape :math:`(*, N)`, with data type of float16, float32 or float64.
         p (float, optional): The dropping rate, between 0 and 1, e.g. p = 0.1,
             means dropping out 10% of input units. Default: ``0.5`` .
-        training (bool): Apply dropout if is True. Default: ``True``.
+        training (bool, optional): Apply dropout if is True. Default: ``True``.
         seed (int, optional): Seed is used as entropy source for Random number engines generating pseudo-random numbers.
             Default: ``None`` , which will be treated as ``0`` .
 
@@ -4657,8 +4657,8 @@ def cross_entropy_ext(input, target, weight=None, ingore_index=-100, reduction='
     Args:
         input (Tensor): :math:`(N)` or :math:`(N, C)` where `C = number of classes` or :math:`(N, C, H, W)`
             in case of 2D Loss, or :math:`(N, C, d_1, d_2, ..., d_K)`.
-            `input` is expected to be log-probabilities, data type must be float16 or float32 or bfloat16(only supported
-            by Atlas A2 training series products).
+            `input` is expected to be log-probabilities, data type must be float16 or float32 or bfloat16
+            (only supported by Atlas A2 training series products).
         target (Tensor): For class indices, tensor of shape :math:`()`, :math:`(N)` or
             :math:`(N, d_1, d_2, ..., d_K)` , data type must be int32 or int64. For probabilities, tensor of shape
             :math:`(N,)` , :math:`(N, C)` or :math:`(N, C, d_1, d_2, ..., d_K)` , data type must be float16 or float32
@@ -4942,8 +4942,8 @@ def leaky_relu(input, alpha=0.2):
 
     Args:
         input (Tensor): The input of leaky_relu is a Tensor of any dimension.
-        alpha (Union[int, float]): Slope of the activation function when the element of `input` is less than 0.
-          Default: ``0.2`` .
+        alpha (Union[int, float], optional): Slope of the activation function when
+            the element of `input` is less than 0. Default: ``0.2`` .
 
     Returns:
         Tensor, has the same type and shape as the `input`.

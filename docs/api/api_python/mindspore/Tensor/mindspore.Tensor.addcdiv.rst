@@ -1,7 +1,7 @@
 mindspore.Tensor.addcdiv
 ========================
 
-.. py:method:: Tensor.addcdiv(tensor1, tensor2, *, value=1)
+.. py:method:: mindspore.Tensor.addcdiv(tensor1, tensor2, *, value=1)
 
     执行 `tensor1` `tensor2` 的逐元素除法，将结果乘以标量值 `value` ，并将其添加到输入的Tensor中。
 

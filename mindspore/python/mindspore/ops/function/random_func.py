@@ -673,13 +673,13 @@ def log_uniform_candidate_sampler(true_classes, num_true=1, num_sampled=5, uniqu
     Args:
         true_classes (Tensor): The target classes. With data type of int64 and
           shape :math:`(batch\_size, num\_true)` .
-        num_true (int): The number of target classes per training example. Default: ``1`` .
-        num_sampled (int): The number of classes to randomly sample. Default: ``5`` .
-        unique (bool): Determines whether sample with rejection. If `unique` is ``True`` ,
+        num_true (int, optional): The number of target classes per training example. Default: ``1`` .
+        num_sampled (int, optional): The number of classes to randomly sample. Default: ``5`` .
+        unique (bool, optional): Determines whether sample with rejection. If `unique` is ``True`` ,
           all sampled classes in a batch are unique. Default: ``True`` .
-        range_max (int): The number of possible classes. When `unique` is ``True`` ,
+        range_max (int, optional): The number of possible classes. When `unique` is ``True`` ,
           `range_max` must be greater than or equal to `num_sampled`. Default: ``5`` .
-        seed (int): Random seed, must be non-negative. Default: ``0`` .
+        seed (int, optional): Random seed, must be non-negative. Default: ``0`` .
 
     Returns:
         Tuple of 3 Tensors.

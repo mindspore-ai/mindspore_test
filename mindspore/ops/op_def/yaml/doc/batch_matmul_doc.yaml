@@ -10,9 +10,9 @@ batch_mat_mul:
         if the environment is GPU or CPU.
 
         Args:
-            transpose_a (bool): If ``True`` , the last two dimensions of `x` is transposed before multiplication.
+            transpose_a (bool, optional): If ``True`` , the last two dimensions of `x` is transposed before multiplication.
                 Default: ``False`` .
-            transpose_b (bool): If ``True`` , the last two dimensions of `y` is transposed before multiplication.
+            transpose_b (bool, optional): If ``True`` , the last two dimensions of `y` is transposed before multiplication.
                 Default: ``False`` .
 
         Inputs:

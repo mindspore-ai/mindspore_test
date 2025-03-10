@@ -2869,7 +2869,7 @@ class HingeEmbeddingLoss(LossBase):
     where :math:`L = \{l_1,\dots,l_N\}^\top`.
 
     Args:
-        margin (float, int): Threshold defined by Hinge Embedding Loss :math:`margin`.
+        margin (float, int, optional): Threshold defined by Hinge Embedding Loss :math:`margin`.
             Represented as :math:`\Delta` in the formula. Default: ``1.0`` .
         reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
             ``'sum'`` . Default: ``'mean'`` .
