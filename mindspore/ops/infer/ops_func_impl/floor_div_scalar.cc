@@ -21,6 +21,11 @@
 
 namespace mindspore {
 namespace ops {
+static inline bool IsIntBoolType(TypeId t) {
+  return t == kNumberTypeInt8 || t == kNumberTypeInt16 || t == kNumberTypeInt32 || t == kNumberTypeInt64 ||
+         t == kNumberTypeUInt8 || t == kNumberTypeBool;
+}
+
 ShapeArray FloorDivScalarFuncImpl::InferShape(const PrimitivePtr &primitive,
                                               const InferInfoPtrList &input_infos) const {
   return {input_infos[kInputIndex0]->GetShape()};
@@ -30,7 +35,17 @@ std::vector<TypeId> FloorDivScalarFuncImpl::InferType(const PrimitivePtr &primit
                                                       const InferInfoPtrList &input_infos) const {
   const auto input_type = input_infos[kInputIndex0]->GetType();
   const auto other_type = input_infos[kInputIndex1]->GetType();
-  return {PromoteType(input_type, other_type, primitive->name())};
+  TypeId out_type;
+
+  if (IsIntBoolType(input_type) && other_type == kNumberTypeFloat32) {
+    out_type = kNumberTypeFloat32;
+  } else if (input_type == kNumberTypeBool && IsIntBoolType(other_type)) {
+    out_type = kNumberTypeInt64;
+  } else {
+    out_type = input_type;
+  }
+
+  return {out_type};
 }
 }  // namespace ops
 }  // namespace mindspore
