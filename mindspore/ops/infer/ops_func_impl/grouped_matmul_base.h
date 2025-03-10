@@ -74,7 +74,7 @@ class OPS_API GroupedMatmulBaseFuncImpl : public OpFuncImpl {
 
   ShapeArray InferShapeForSingleOutput(const PrimitivePtr &primitive, const ShapeArray &x_shapes,
                                        const ShapeArray &w_shapes, int64_t group_list_size, int64_t group_type,
-                                       bool transpose_b) const;
+                                       bool transpose_b, bool is_int4 = false) const;
 
   void CheckInputAndWeightShapeForMultiOutput(const PrimitivePtr &primitive, const ShapeVector &x_shape,
                                               const ShapeVector &w_shape, size_t i) const;

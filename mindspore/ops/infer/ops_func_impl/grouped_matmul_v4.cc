@@ -134,7 +134,7 @@ TypeIdList GroupedMatmulV4FuncImpl::InferType(const PrimitivePtr &primitive,
                      [](const InferInfoPtr &info) { return kNumberTypeFloat16; });
     } else {
       MS_EXCEPTION(ValueError) << "For '" << primitive->name()
-                               << "', the scale only support Uint16, BFloat16 and Float32.";
+                               << "', the scale only support Uint16, BFloat16 and Float32, but got " << scale_type;
     }
   }
   return output_types;
