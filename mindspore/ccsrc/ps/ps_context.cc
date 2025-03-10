@@ -353,26 +353,25 @@ void PSContext::set_checkpoint_load_status(bool status) {
 #endif
 }
 
-int32_t PSContext::StoreWarmUpPtrByTensor(const int32_t param_key, const tensor::TensorPyPtr &tensorpy_ptr) {
+int32_t PSContext::StoreWarmUpPtrByTensor(const int32_t param_key, const py::object &tensorpy_ptr) {
   MS_EXCEPTION_IF_NULL(tensorpy_ptr);
 #if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
-  auto tensor_ptr = tensorpy_ptr->GetTensor();
+  auto tensor_ptr = tensor::ConvertToTensor(tensorpy_ptr);
   return embedding_cache_table_manager.StoreWarmUpPtr(param_key, tensor_ptr);
 #else
   return -1;
 #endif
 }
 
-int32_t PSContext::StoreWarmUpPtrByTensorList(const int32_t param_key, const tensor::TensorPyPtr &key_ptr,
-                                              const tensor::TensorPyPtr &value_ptr,
-                                              const tensor::TensorPyPtr &status_ptr) {
+int32_t PSContext::StoreWarmUpPtrByTensorList(const int32_t param_key, const py::object &key_ptr,
+                                              const py::object &value_ptr, const py::object &status_ptr) {
   MS_EXCEPTION_IF_NULL(key_ptr);
   MS_EXCEPTION_IF_NULL(value_ptr);
   MS_EXCEPTION_IF_NULL(status_ptr);
 #if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
-  auto key_ptr_ = key_ptr->GetTensor();
-  auto value_ptr_ = value_ptr->GetTensor();
-  auto status_ptr_ = status_ptr->GetTensor();
+  auto key_ptr_ = tensor::ConvertToTensor(key_ptr);
+  auto value_ptr_ = tensor::ConvertToTensor(value_ptr);
+  auto status_ptr_ = tensor::ConvertToTensor(status_ptr);
   return embedding_cache_table_manager.StoreWarmUpPtr(param_key, key_ptr_, value_ptr_, status_ptr_);
 #else
   return -1;

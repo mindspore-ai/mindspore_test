@@ -107,23 +107,23 @@ std::tuple<py::array, py::array, py::array, bool> MapTensorPy::ExportPersistentS
                          TensorPybind::AsNumpy(*(map_tensor->status_tensor())), last_slice);
 }
 
-static tensor::TensorPyPtr PyMapTensorGetKeys(const MapTensorPtr &map_tensor) {
+static py::object PyMapTensorGetKeys(const MapTensorPtr &map_tensor) {
   MS_EXCEPTION_IF_NULL(map_tensor);
   auto tensor_ptr = map_tensor->key_tensor();
-  return std::make_shared<tensor::TensorPy>(tensor_ptr);
+  return tensor::PackTensorToPyObject(tensor_ptr);
 }
 
-static tensor::TensorPyPtr PyMapTensorGetValues(const MapTensorPtr &map_tensor) {
+static py::object PyMapTensorGetValues(const MapTensorPtr &map_tensor) {
   MS_EXCEPTION_IF_NULL(map_tensor);
   auto tensor_ptr = map_tensor->value_tensor();
-  return std::make_shared<tensor::TensorPy>(tensor_ptr);
+  return tensor::PackTensorToPyObject(tensor_ptr);
 }
 
-static std::pair<tensor::TensorPyPtr, tensor::TensorPyPtr> PyMapTensorGetData(const MapTensorPtr &map_tensor) {
+static std::pair<py::object, py::object> PyMapTensorGetData(const MapTensorPtr &map_tensor) {
   MS_EXCEPTION_IF_NULL(map_tensor);
-  auto keys = std::make_shared<tensor::TensorPy>(map_tensor->key_tensor());
-  auto values = std::make_shared<tensor::TensorPy>(map_tensor->value_tensor());
-  return std::pair<tensor::TensorPyPtr, tensor::TensorPyPtr>(keys, values);
+  auto keys = tensor::PackTensorToPyObject(map_tensor->key_tensor());
+  auto values = tensor::PackTensorToPyObject(map_tensor->value_tensor());
+  return std::pair<py::object, py::object>(keys, values);
 }
 
 namespace tensor {
