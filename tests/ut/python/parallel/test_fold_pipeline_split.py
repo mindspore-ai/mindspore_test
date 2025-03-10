@@ -340,7 +340,7 @@ class TestPipelineSplitWithNoOptimizer:
         self.cat_fp16_from_ir(pattern='grad_mirror_MirrorMicroStepOperator',
                               target_count=4)
         self.cat_fp16_from_ir(pattern='Cast(',
-                              target_count=24)
+                              target_count=12)
 
 
 def test_fold_pipeline_split_stage0_device_num_48():

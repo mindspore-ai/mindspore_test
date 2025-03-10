@@ -115,6 +115,7 @@
 #include "frontend/optimizer/irpass/expand_dump_flag.h"
 #include "frontend/optimizer/irpass/symbol_engine_optimizer.h"
 #include "frontend/optimizer/irpass/add_forward_monad_depend.h"
+#include "frontend/optimizer/irpass/inplace_input_replace.h"
 #include "pipeline/jit/ps/pass_config.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
@@ -650,6 +651,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, cons
      {"cell_reuse_handle_not_recompute_node_pass", cell_reuse_handle_not_recompute_node_pass},
      {"merge_recompute_call_nodes", opt::OptPassConfig(parallel::MergeRecomputeCallNodes)},
      {"before_grad", before_grad},
+     {"inplace_input_replacement", opt::OptPassConfig(opt::irpass::InplaceInputReplace())},
      {kSetForwardCommIdForCommNodePass, opt::OptPassConfig(parallel::SetForwardCommIdForCommNode)},
      {kMetaFgExpandFlag, opt::OptPassConfig(opt::irpass::ExpandMetaFg())},
      {"flash_sp_send_recv_attached", opt::OptPassConfig(parallel::FlashSPSendRecvNodeAttach)},
@@ -750,6 +752,7 @@ OptPassGroupMap GetJitOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, c
      {"cell_reuse_handle_not_recompute_node_pass",
       opt::OptPassConfig({irpass.remove_not_recompute_node_}, false, true)},
      {"j_node_and_user_rematch", opt::OptPassConfig({irpass.j_node_and_user_rematch_})},
+     {"inplace_input_replacement", opt::OptPassConfig(opt::irpass::InplaceInputReplace())},
      {kMetaFgExpandFlag, opt::OptPassConfig(opt::irpass::ExpandMetaFg())},
      {"replace_old_param", opt::OptPassConfig({irpass.replace_old_param_})},
      {"inline_without_move", opt::OptPassConfig({irpass.inline_without_move_})},

@@ -58,7 +58,7 @@ def test_uniform__normal(mode):
     else:
         ms.context.set_context(mode=ms.GRAPH_MODE, jit_level="O0")
         input_grad = uniform__backward_func(input_x, from_, to)
-    assert np.all(input_grad.asnumpy() == 1)
+    assert np.all(input_grad.asnumpy() == 0)
     assert input_grad.asnumpy().dtype == np.float64
 
 

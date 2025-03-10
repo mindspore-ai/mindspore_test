@@ -21,6 +21,7 @@ from mindspore import Tensor, nn, context, Parameter, ParameterTuple, mint
 from mindspore import dtype as mstype
 from mindspore import ops
 from mindspore.ops import operations as P
+from mindspore.ops.auto_generate.gen_ops_def import inplace_add_ext_op
 from tests.mark_utils import arg_mark
 from tests.st.pynative.utils import GradOfAllInputs, GradOfAllParams
 from tests.st.utils import test_utils
@@ -233,7 +234,7 @@ def test_tensor_inplace_add_grad_first_input():
     y = Tensor([2], dtype=mstype.float32)
     output = GradOfFirstInput(Net1())(x, y)
     print("output:", output)
-    assert output == 0
+    assert output == 1
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
@@ -253,14 +254,14 @@ def test_tensor_inplace_add_grad_all_inputs_and_param():
         def construct(self, x, y):
             out = self.param1 + self.param2 + x + y
             out = out * x
-            P.AssignAdd()(out, y)
+            out.add_(y)
             return out
 
     x = Tensor([1], dtype=mstype.float32)
     y = Tensor([2], dtype=mstype.float32)
     output = GradOfAllInputsAndParams(Net7())(x, y)
     print("output:", output)
-    assert output == ((6, 1), (1, 1))
+    assert output == ((6, 2), (1, 1))
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
@@ -357,3 +358,56 @@ def test_inplace_backward_with_control_flow():
     net = Net()
     grads = func(x, y, net)
     assert grads == 1
+
+
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
+def test_inplace_backward_param_replace():
+    """
+    Feature: Support inplace param replace in graph mode.
+    Description: Support inplace param replace in graph mode.
+    Expectation: Run success.
+    """
+    class Net(ms.nn.Cell):
+        def construct(self, x, y):
+            inplace_add_ext_op(x, y)
+            return x
+
+    @ms.jit
+    def func(x, y, net):
+        return ms.grad(net, grad_position=1)(x, y)
+
+    ms.set_context(mode=0)
+    x = ms.Tensor([1])
+    y = ms.Tensor([4])
+    net = Net()
+    grads = func(x, y, net)
+    assert grads == 1
+
+
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
+def test_inplace_backward_param_replace2():
+    """
+    Feature: Support inplace param replace in graph mode.
+    Description: Support inplace param replace in graph mode.
+    Expectation: Run success.
+    """
+    class Net(ms.nn.Cell):
+        def construct(self, x, input_tensor):
+            m = input_tensor
+            inplace_add_ext_op(m, x)
+            n = input_tensor
+            inplace_add_ext_op(n, m)
+            return input_tensor
+
+    @ms.jit
+    def func(x, y, net):
+        return ms.grad(net, grad_position=1)(x, y)
+
+    ms.set_context(mode=0)
+    x = ms.Tensor([1])
+    y = ms.Tensor([4])
+    net = Net()
+    grads = func(x, y, net)
+    assert grads == 2

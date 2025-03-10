@@ -147,6 +147,7 @@ std::string Primitive::GetAttrsText() const {
 void Primitive::set_signatures(const std::vector<Signature> &signatures) {
   signatures_ = signatures;
   set_has_signature(!signatures.empty());
+  rw_write_input_indexes_.clear();
   for (size_t i = 0; i < signatures.size(); ++i) {
     if (signatures[i].rw == SignatureEnumRW::kRWWrite) {
       (void)rw_write_input_indexes_.emplace_back(i);
