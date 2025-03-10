@@ -32,7 +32,7 @@ void DistCommBarrierAscendCustomize(const std::shared_ptr<OpRunner> &op, const S
   PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, input_tensor);
   op->set_outputs({input_tensor});
   auto run_func = [op, input_tensor, op_type_enum, group]() {
-    PyBoostUtils::MallocOpInputs(op->device_context(), input_tensor);
+    PyBoostUtils::MallocOpOutputs(op->device_context(), {input_tensor});
     auto [hccl_count, hccl_data_type] = HcomUtil::GetHcclCountAndTypeFromTensor(op->primitive(), input_tensor);
 
     const auto &op_name = op->primitive()->name();

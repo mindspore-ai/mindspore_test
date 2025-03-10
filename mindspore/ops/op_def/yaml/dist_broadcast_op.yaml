@@ -5,6 +5,8 @@ dist_comm_broadcast:
             dtype: tensor
         src:
             dtype: int
+        rank_id:
+            dtype: int
         group:
             dtype: str
     returns:
