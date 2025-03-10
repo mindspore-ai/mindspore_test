@@ -89,9 +89,6 @@ bool InternalKernelMod::Init(const std::vector<KernelTensor *> &inputs, const st
 
 bool InternalKernelMod::IsNeedRecreate(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
-  if (internal_op_ == nullptr) {
-    return true;
-  }
   g_hash_offset = 0;
   for (auto idx : recreate_cared_indices_) {
     auto input = inputs[idx];
@@ -154,7 +151,7 @@ bool InternalKernelMod::IsNeedRecreate(const std::vector<KernelTensor *> &inputs
   }
 
   if (g_hash_offset == 0) {
-    return false;
+    return internal_op_ == nullptr;
   }
 
   auto hash_id = calc_hash_id();

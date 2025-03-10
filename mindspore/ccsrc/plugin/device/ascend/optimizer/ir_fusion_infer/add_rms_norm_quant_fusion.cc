@@ -187,7 +187,7 @@ bool IsSupport(const AnfNodePtr &node, const FuncGraphPtr &graph) {
   FuncGraphManagerPtr mng = graph->manager();
   MS_EXCEPTION_IF_NULL(mng);
 
-  auto reshape_users_num = GetRealNodeUsedList(graph, node)->size();
+  auto reshape_users_num = GetRealNodeUsedList(graph, reshape_node)->size();
   if (reshape_users_num > 1) {
     MS_LOG(INFO) << "The number of users of reshape_node is more than one: " << reshape_users_num;
     return false;

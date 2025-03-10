@@ -19,10 +19,17 @@ import os
 import numpy as np
 import pytest
 
+# should be inited before importing mindspore
+from op_checker import InternalOpEnabledChecker
+op_checker = InternalOpEnabledChecker({'MS_SUBMODULE_LOG_v': '{DEVICE:1}'}, True, "./add_rmsnorm_dynamic_quant_log")
+
 import mindspore as ms
 from mindspore import nn, Tensor, context, Parameter
 from mindspore import ops
 from tests.mark_utils import arg_mark
+
+
+KEYWORD = "kernel opname:AddRmsNormDynamicQuant, kernel type:internal_kernel"
 
 
 class AddRmsNormNet(nn.Cell):
@@ -84,6 +91,11 @@ def _test_add_rms_norm_dynamic_quant_fusion(shape, dtype, has_smooth_scale, inte
 
     output = net(Tensor(input_x, dtype=tensor_dtype), Tensor(input_y, dtype=tensor_dtype),
                  Tensor(gamma, dtype=tensor_dtype))
+
+    if internal_kernel:
+        assert op_checker.CheckOpExistByKeyword(KEYWORD)
+    else:
+        assert op_checker.CheckOpNotExistByKeyword(KEYWORD)
 
     return output[0].astype(ms.float32).asnumpy(), output[1].astype(ms.float32).asnumpy(), \
         output[2].astype(ms.float32).asnumpy()
