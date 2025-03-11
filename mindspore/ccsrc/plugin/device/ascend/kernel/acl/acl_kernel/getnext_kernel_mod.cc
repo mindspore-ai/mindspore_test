@@ -100,9 +100,9 @@ bool GetNextAclKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
   }
 
   uint64_t range_id = 0;
-  MSTX_START(range_id, mindspore::profiler::MSTX_GETNEXT, stream_ptr, mindspore::profiler::MSTX_DOMAIN_DEFAULT);
+  MSTX_START_WITHOUT_DOMAIN(range_id, mindspore::profiler::MSTX_GETNEXT, stream_ptr);
   auto ret = AclKernelMod::Launch(inputs, workspace, outputs, stream_ptr);
-  MSTX_END(range_id, mindspore::profiler::MSTX_DOMAIN_DEFAULT);
+  MSTX_END_WITHOUT_DOMAIN(range_id);
   return ret;
 }
 MS_KERNEL_FACTORY_REG(AclKernelMod, GetNext, GetNextAclKernelMod);

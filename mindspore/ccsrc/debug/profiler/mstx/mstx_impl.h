@@ -80,6 +80,16 @@ class PROFILER_EXPORT MstxImpl {
     mindspore::profiler::MstxImpl::GetInstance().RangeEndImpl(domainHandle, rangeId);               \
   } while (0);
 
+#define MSTX_START_WITHOUT_DOMAIN(rangeId, message, stream)                                           \
+  do {                                                                                                \
+    rangeId = mindspore::profiler::MstxImpl::GetInstance().RangeStartAImpl(nullptr, message, stream); \
+  } while (0);
+
+#define MSTX_END_WITHOUT_DOMAIN(rangeId)                                         \
+  do {                                                                           \
+    mindspore::profiler::MstxImpl::GetInstance().RangeEndImpl(nullptr, rangeId); \
+  } while (0);
+
 }  // namespace profiler
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_DEBUG_PROFILER_MSTX_MSTXIMPL_H_
