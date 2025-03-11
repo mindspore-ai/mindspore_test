@@ -17,7 +17,7 @@ import pytest
 
 import mindspore as ms
 import mindspore.nn as nn
-from mindspore import Tensor, Parameter
+from mindspore import Tensor, Parameter, Symbol
 from mindspore import context
 from mindspore.common.api import _cell_graph_executor
 from mindspore.ops import operations as P
@@ -169,6 +169,66 @@ def test_layout_extend_add_different_dim_broadcast_failed(ops_name):
     net = Net(second, layout1, ops_name=ops_name)
     with pytest.raises(RuntimeError):
         compile_net(net, first)
+
+
+@pytest.mark.parametrize('ops_name', ['add', 'sub', 'mul', 'div', 'real_div'])
+def test_layout_extend_add_same_shape_same_shard_dynamic(ops_name):
+    """
+    Feature: test layout extend
+    Description: dev_num is 8.
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
+    layout = Layout((4, 1, 2), ("dp", "sp", "mp"))
+    layout1 = (layout("dp", "mp"), layout("dp", "mp"))
+    s1 = Symbol(divisor=8)
+    first = Tensor(shape=[s1, 1024], dtype=ms.float32)
+    second = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    net = Net(second, layout1, ops_name=ops_name)
+    net.set_inputs(first)
+    phase = compile_net(net, first)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_parameter_shape('w1', [256, 512])
+
+
+@pytest.mark.parametrize('ops_name', ['add', 'sub', 'mul', 'div', 'real_div'])
+def test_layout_extend_add_different_dim_broadcast_dynamic(ops_name):
+    """
+    Feature: test layout extend
+    Description: dev_num is 8.
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
+    layout = Layout((4, 1, 2), ("dp", "sp", "mp"))
+    layout1 = (layout("sp", "mp"), layout("dp", "mp"))
+    s1 = Symbol(divisor=1)
+    first = Tensor(shape=[s1, 1024], dtype=ms.float32)
+    second = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    net = Net(second, layout1, ops_name=ops_name)
+    net.set_inputs(first)
+    phase = compile_net(net, first)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_parameter_shape('w1', [256, 512])
+
+
+@pytest.mark.parametrize('ops_name', ['add', 'sub', 'mul', 'div', 'real_div'])
+def test_layout_extend_add_different_dim_broadcast_no_eql_length_dynamic(ops_name):
+    """
+    Feature: test layout extend
+    Description: dev_num is 8.
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
+    layout = Layout((4, 1, 2), ("dp", "sp", "mp"))
+    layout1 = (layout("mp"), layout("dp", "mp"))
+    s1 = Symbol(divisor=4)
+    first = Tensor(shape=[s1,], dtype=ms.float32)
+    second = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    net = Net(second, layout1, ops_name=ops_name)
+    net.set_inputs(first)
+    phase = compile_net(net, first)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_parameter_shape('w1', [256, 512])
 
 
 @pytest.mark.parametrize('ops_name', ['add', 'sub', 'mul', 'div', 'real_div'])
