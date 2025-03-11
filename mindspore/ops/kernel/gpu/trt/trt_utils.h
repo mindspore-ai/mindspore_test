@@ -27,7 +27,6 @@
 #include <variant>
 #include <NvInfer.h>
 #include "utils/log_adapter.h"
-#include "utils/ms_utils.h"
 #include "utils/singleton.h"
 #include "utils/convert_utils_base.h"
 #include "utils/shape_utils.h"
@@ -109,7 +108,7 @@ class TrtLogger : public nvinfer1::ILogger {
  public:
   TrtLogger() {
     log_level_ = MsLogLevel::kWarning;  // set default log level to WARNING
-    const char *glog_config = common::EnvHelper::GetInstance()->GetEnv("GLOG_v");
+    const char *glog_config = std::getenv("GLOG_v");
     if (glog_config == nullptr) {
       return;
     }

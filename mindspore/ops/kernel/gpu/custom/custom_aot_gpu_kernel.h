@@ -32,7 +32,6 @@
 #include "common/common_utils.h"
 #include "utils/custom_aot_extra.h"
 #include "utils/file_utils.h"
-#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -127,7 +126,7 @@ class CustomAOTGpuKernelMod : public NativeGpuKernelMod {
     if (auto pos = exec_info.find(":"); pos != std::string::npos) {
       auto path = exec_info.substr(0, pos);
       if (primitive_->HasAttr("path_from_env") && GetValue<bool>(primitive_->GetAttr("path_from_env"))) {
-        const char *path_in_env = common::EnvHelper::GetInstance()->GetEnv(path.c_str());
+        const char *path_in_env = std::getenv(path.c_str());
         if (path_in_env == nullptr) {
           MS_LOG(WARNING) << "For '" << kernel_name_ << "' on GPU, the attr path_from_env is set but the env var ["
                           << path << "] is empty. Use [" << path << "] as the path to the library instead.";
@@ -270,7 +269,7 @@ class CustomAOTGpuKernelMod : public NativeGpuKernelMod {
 
   void PathChecking() {
     constexpr auto kWhiteList = "MS_CUSTOM_AOT_WHITE_LIST";
-    const char *value = common::EnvHelper::GetInstance()->GetEnv(kWhiteList);
+    const char *value = std::getenv(kWhiteList);
     if (value == nullptr) {
       static bool print_gpu_warning_once = true;
       if (print_gpu_warning_once) {

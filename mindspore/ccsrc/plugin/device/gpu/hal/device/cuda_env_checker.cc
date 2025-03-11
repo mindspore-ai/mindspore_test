@@ -18,7 +18,6 @@
 #include <dirent.h>
 #include <algorithm>
 #include "utils/log_adapter.h"
-#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace device {
@@ -58,7 +57,7 @@ void CudaEnvChecker::GetRealPaths(std::set<std::string> *paths) const {
     MS_LOG(ERROR) << "The pointer paths is nullptr";
     return;
   }
-  auto env_paths_ptr = common::EnvHelper::GetInstance()->GetEnv(kPathEnv);
+  auto env_paths_ptr = std::getenv(kPathEnv);
   if (env_paths_ptr == nullptr) {
     MS_LOG(ERROR) << "Please export environment variable PATH";
     return;
