@@ -97,7 +97,7 @@ mindspore.common.initializer
 
 .. py:class:: mindspore.common.initializer.XavierNormal(gain=1)
 
-    生成一个服从Xarvier正态分布的随机数组 :math:`{N}(0, \text{sigma}^2)` 用于初始化Tensor，其中：
+    生成一个服从Xavier正态分布的随机数组 :math:`{N}(0, \text{sigma}^2)` 用于初始化Tensor，其中：
 
     .. math::
         sigma = gain * \sqrt{\frac{2}{n_{in} + n_{out}}}
@@ -111,7 +111,7 @@ mindspore.common.initializer
 
 .. py:class:: mindspore.common.initializer.XavierUniform(gain=1)
 
-    生成一个服从Xarvier均匀分布 :math:`{U}(-\text{boundary}, \text{boundary})` 的随机数组用于初始化Tensor，均匀分布的取值范围为[-boundary, boundary]，其中：
+    生成一个服从Xavier均匀分布 :math:`{U}(-\text{boundary}, \text{boundary})` 的随机数组用于初始化Tensor，均匀分布的取值范围为[-boundary, boundary]，其中：
 
     .. math::
         boundary = gain * \sqrt{\frac{6}{n_{in} + n_{out}}}

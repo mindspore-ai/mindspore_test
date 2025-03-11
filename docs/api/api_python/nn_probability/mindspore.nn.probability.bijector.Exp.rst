@@ -35,7 +35,7 @@ mindspore.nn.probability.bijector.Exp
 
     .. py:method:: inverse(value)
 
-        正映射，计算输出随机变量对应的输入随机变量的值，即 :math:`X = \log(Y)`。
+        逆映射，计算输出随机变量对应的输入随机变量的值，即 :math:`X = \log(Y)`。
 
         参数：
             - **value** (Tensor) - 输出随机变量的值，公式中的 :math:`Y`。
