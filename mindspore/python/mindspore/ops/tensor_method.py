@@ -1559,6 +1559,11 @@ def deprecated_tensor_addcdiv(input, tensor1, tensor2, value=1):
 def tensor_addcdiv_ext(input, tensor1, tensor2, *, value=1):
     return addcdiv_ext_op(input, tensor1, tensor2, value=value)
 
+# 306
+def tensor_ge_(input, other):
+    raise NotImplementedError('Tensor.ge_ only supports Ascend.')
+
+
 # 501
 def tensor_addbmm(input, batch1, batch2, *, beta=1, alpha=1):
     return addbmm(input, batch1, batch2, beta=beta, alpha=alpha)

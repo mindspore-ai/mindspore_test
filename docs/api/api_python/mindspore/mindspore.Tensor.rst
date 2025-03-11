@@ -211,6 +211,7 @@ mindspore.Tensor
     mindspore.Tensor.gather_nd
     mindspore.Tensor.gcd
     mindspore.Tensor.ge
+    mindspore.Tensor.ge_
     mindspore.Tensor.geqrf
     mindspore.Tensor.ger
     mindspore.Tensor.greater
