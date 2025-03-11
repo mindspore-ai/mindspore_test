@@ -640,15 +640,7 @@ static PyObject *TensorPython_from_numpy(PyObject *self, PyObject *args) {
     return nullptr;
   }
   py::array input = py::cast<py::array>(numpy_array);
-  TensorPyPtr tensor = TensorPyImpl::MakeTensorOfNumpy(input);
-  PyType<TensorPy> *result = (PyType<TensorPy> *)TensorPyType->tp_alloc(TensorPyType, 0);
-  if (result == nullptr) {
-    PyErr_SetString(PyExc_RuntimeError, "Failed to create TensorPy object");
-    return nullptr;
-  }
-  new (&result->value) TensorPy(tensor->GetTensor());
-  result->value.SetInitFinished(true);
-  return reinterpret_cast<PyObject *>(result);
+  return tensor::PackTensor(TensorPybind::MakeTensorOfNumpy(input));
   HANDLE_MS_EXCEPTION_END
 }
 
