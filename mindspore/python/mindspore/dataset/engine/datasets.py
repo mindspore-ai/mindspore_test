@@ -897,6 +897,24 @@ class Dataset:
               and `num_parallel_workers>1` supports adding network computing operators from mindspore.nn and
               mindspore.ops or other network computing operators into this `operations` .
               Otherwise, adding to `operations` is not supported.
+            - Currently only some scenarios support calling DVPP operators in Python functions passed in with the
+              `operations` parameter:
+
+              +---------------+----------------------------+----------------------------+----------------------------+
+              |               |                            |                     Multiprocessing                     |
+              |               |       Multithreading       +----------------------------+----------------------------+
+              |               |                            |           spawn            |            fork            |
+              +===============+============================+============================+============================+
+              |Independent    |Data Processing: support    |Data Processing: support    |Data Processing: support    |
+              |               |                            |                            |                            |
+              |process mode   |Data Processing + Network   |Data Processing + Network   |Data Processing + Network   |
+              |               |training: not support       |training: support           |training: not support       |
+              +---------------+----------------------------+----------------------------+----------------------------+
+              |Non-independent|Data Processing: support    |Data Processing: support    |Data Processing: support    |
+              |               |                            |                            |                            |
+              |process mode   |Data Processing + Network   |Data Processing + Network   |Data Processing + Network   |
+              |               |training: support           |training: support           |training: not support       |
+              +---------------+----------------------------+----------------------------+----------------------------+
 
         Returns:
             Dataset, a new dataset with the above operation applied.

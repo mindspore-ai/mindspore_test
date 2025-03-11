@@ -820,6 +820,25 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
           to `spawn` mode by ds.config.set_multiprocessing_start_method("spawn") with `python_ multiprocessing=True`
           and `num_parallel_workers>1` supports adding network computing operators from mindspore.nn and mindspore.ops
           or others into this `source`, otherwise adding to the `source` is not supported.
+        - When the user defined dataset by `source` calls the DVPP operator during dataset loading and processing,
+          the supported scenarios are as follows:
+
+          +---------------+----------------------------+----------------------------+----------------------------+
+          |               |                            |                     Multiprocessing                     |
+          |               |       Multithreading       +----------------------------+----------------------------+
+          |               |                            |           spawn            |            fork            |
+          +===============+============================+============================+============================+
+          |Independent    |Data Processing: support    |Data Processing: support    |Data Processing: support    |
+          |               |                            |                            |                            |
+          |process mode   |Data Processing + Network   |Data Processing + Network   |Data Processing + Network   |
+          |               |training: not support       |training: support           |training: not support       |
+          +---------------+----------------------------+----------------------------+----------------------------+
+          |Non-independent|Data Processing: support    |Data Processing: support    |Data Processing: support    |
+          |               |                            |                            |                            |
+          |process mode   |Data Processing + Network   |Data Processing + Network   |Data Processing + Network   |
+          |               |training: support           |training: support           |training: not support       |
+          +---------------+----------------------------+----------------------------+----------------------------+
+
         - The parameters `num_samples` , `shuffle` , `num_shards` , `shard_id` can be used to control the sampler
           used in the dataset, and their effects when combined with parameter `sampler` are as follows.
 
