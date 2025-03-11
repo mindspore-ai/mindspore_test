@@ -245,11 +245,11 @@ straspb::ParallelStrategyMap StrategyCheckpointInfo::to_protobuf() const {
     straspb::ParallelLayouts *parallel_layouts = parallel_layout_item->mutable_parallel_layouts();
     straspb::DevMatrix *dev_matrix = parallel_layouts->add_dev_matrix();
     MS_EXCEPTION_IF_NULL(dev_matrix);
-    for (auto dev_dim : tensor_layout->device_arrangement().array()) {
-      dev_matrix->add_dim(UlongToUint(LongToUlong(dev_dim)));
-    }
 
     if (!tensor_layout->init_from_extend_vector()) {
+      for (auto dev_dim : tensor_layout->device_arrangement().array()) {
+        dev_matrix->add_dim(UlongToUint(LongToUlong(dev_dim)));
+      }
       // tensor_map_before is empty, the param is in strategy process
       straspb::TensorMap *tensor_map = parallel_layouts->add_tensor_map();
       MS_EXCEPTION_IF_NULL(tensor_map);
@@ -257,6 +257,10 @@ straspb::ParallelStrategyMap StrategyCheckpointInfo::to_protobuf() const {
         tensor_map->add_dim(LongToInt(map_dim));
       }
     } else {
+      // save original device matrix specified by user
+      for (auto dev_dim : tensor_layout->device_arrangement_origin().array()) {
+        dev_matrix->add_dim(UlongToUint(LongToUlong(dev_dim)));
+      }
       // tensor_map_before is not empty, the param is in layout process
       for (auto tensor_map_vec : tensor_layout->tensor_map_before()) {
         straspb::TensorMap *tensor_map = parallel_layouts->add_tensor_map();
