@@ -334,7 +334,12 @@ const AnfNodePtr DealRefOutput::Process(const FuncGraphPtr &graph, const AnfNode
   if (ref_infos.empty()) {
     return nullptr;
   }
-
+  if (cnode->kernel_info() != nullptr) {
+    auto kernel_info = dynamic_cast<device::KernelInfo *>(cnode->kernel_info());
+    MS_EXCEPTION_IF_NULL(kernel_info);
+    std::for_each(ref_infos.begin(), ref_infos.end(),
+                  [&kernel_info](const auto &pair) { kernel_info->AddRefMap(pair.first, pair.second); });
+  }
   auto type = cnode->Type();
   MS_EXCEPTION_IF_NULL(type);
   if (!type->isa<Tuple>()) {

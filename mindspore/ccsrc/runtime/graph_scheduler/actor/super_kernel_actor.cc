@@ -1828,6 +1828,45 @@ void SuperKernelActor::GetRefCountForGraphOutput(const std::vector<AnfNodePtr> &
   }
 }
 
+std::string GetBranchNameByIndex(const KernelActorPtr &kernel_actor, const AnfNodePtr &input_node, size_t input_index) {
+  MS_EXCEPTION_IF_NULL(kernel_actor);
+  MS_EXCEPTION_IF_NULL(kernel_actor->kernel());
+  if (!common::AnfAlgo::CheckPrimitiveType(kernel_actor->kernel(), prim::kPrimConditionGather)) {
+    MS_LOG(EXCEPTION) << "Invalid gather actor:" << kernel_actor->GetAID();
+  }
+  if (!kernel_actor->kernel()->HasAttr(kAttrBranchOutputNum)) {
+    MS_LOG(EXCEPTION) << "Failed to get branch output num by condition gather actor:"
+                      << kernel_actor->kernel()->fullname_with_scope()
+                      << " input node:" << input_node->fullname_with_scope() << " in actor:" << kernel_actor->GetAID();
+  }
+  const auto &output_value = kernel_actor->kernel()->GetAttr(kAttrBranchOutputNum);
+  MS_EXCEPTION_IF_NULL(output_value);
+  size_t branch_output_num = GetValue<size_t>(output_value);
+  if (!kernel_actor->kernel()->HasAttr(kAttrBranchGraphName)) {
+    MS_LOG(EXCEPTION) << "Failed to get inline graph name by condition gather actor:"
+                      << kernel_actor->kernel()->fullname_with_scope()
+                      << " input node:" << input_node->fullname_with_scope() << " in actor:" << kernel_actor->GetAID();
+  }
+  const auto &branch_graph_names = kernel_actor->kernel()->GetAttr(kAttrBranchGraphName);
+  MS_EXCEPTION_IF_NULL(branch_graph_names);
+  MS_LOG(DEBUG) << "Branch graph name:" << branch_graph_names->ToString() << " for actor:" << kernel_actor->GetAID();
+  if (!branch_graph_names->isa<ValueTuple>()) {
+    MS_LOG(EXCEPTION) << "Invalid branch group name:" << branch_graph_names->ToString()
+                      << " for gather actor:" << kernel_actor->kernel()->fullname_with_scope()
+                      << " input node:" << input_node->fullname_with_scope() << " in actor:" << kernel_actor->GetAID();
+  }
+  const auto &tuple_name = branch_graph_names->cast<ValueTuplePtr>();
+  MS_EXCEPTION_IF_NULL(tuple_name);
+  if (input_index / branch_output_num >= tuple_name->size()) {
+    MS_LOG(EXCEPTION) << "Invalid input index:" << input_index
+                      << " for input node:" << input_node->fullname_with_scope()
+                      << " branch output size:" << branch_output_num
+                      << " branch name:" << branch_graph_names->ToString()
+                      << " for gather actor:" << kernel_actor->kernel()->fullname_with_scope();
+  }
+  return GetValue<std::string>(tuple_name->value()[input_index / branch_output_num]);
+}
+
 void SuperKernelActor::SetInputFreePositionForKernelActor(
   const KernelActorPtr &kernel_actor,
   const mindspore::HashMap<AnfNodePtr, device::DeviceContextKey> &kernel_to_context_key,
@@ -1881,10 +1920,17 @@ void SuperKernelActor::SetInputFreePositionForKernelActor(
       if (common::AnfAlgo::CheckPrimitiveType(input_node, prim::kPrimConditionSwitch)) {
         const auto &iter = graph_->inline_sub_graph_kernels().find(kernel_actor->kernel_);
         if (iter == graph_->inline_sub_graph_kernels().end()) {
-          MS_LOG(EXCEPTION) << "Failed to get branch info for kernel:" << kernel_actor->kernel_->fullname_with_scope()
-                            << " in actor:" << GetAID();
+          if (!common::AnfAlgo::CheckPrimitiveType(kernel_actor->kernel_, prim::kPrimConditionGather)) {
+            MS_LOG(EXCEPTION) << "Failed to get branch info for kernel:" << kernel_actor->kernel_->fullname_with_scope()
+                              << " input node:" << input_node->fullname_with_scope() << " in actor:" << GetAID();
+          }
+          input_info.branch_name = GetBranchNameByIndex(kernel_actor, input_node, i);
+          MS_LOG(INFO) << "Input branch name:" << input_info.branch_name << " for input index:" << i
+                       << " input node:" << input_node->fullname_with_scope()
+                       << " for gather actor:" << kernel_actor->kernel_->fullname_with_scope();
+        } else {
+          input_info.branch_name = iter->second;
         }
-        input_info.branch_name = iter->second;
       }
     }
 

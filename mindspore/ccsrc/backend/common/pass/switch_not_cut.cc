@@ -59,7 +59,8 @@ bool IsValidInlinePartial(const AnfNodePtr &node, std::set<FuncGraphPtr> *checke
       return false;
     }
   } else if (outputs.size() == 1) {
-    const auto &real_output_node = outputs.begin()->first;
+    const auto &real_output_node =
+      common::AnfAlgo::VisitKernelWithReturnType(outputs.begin()->first, outputs.begin()->second, false).first;
     if (real_output_node == nullptr || real_output_node->isa<ValueNode>()) {
       return false;
     } else if (real_output_node->isa<Parameter>()) {
