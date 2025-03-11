@@ -12,5 +12,5 @@ mindspore.ops.rad2deg
         Tensor，其数据类型和shape与 `x` 相同。
 
     异常：
-        - **TypeError** - 如果 `x` 不是一个Tensor。
-        - **TypeError** - 如果 `x` 的数据类型不是float16，float32或float64。
+        - **TypeError** - `x` 不是一个Tensor。
+        - **TypeError** - `x` 的数据类型不是float16、float32或float64。

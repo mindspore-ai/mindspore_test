@@ -16,11 +16,11 @@ mindspore.ops.floor_divide
         这是一个实验性API，后续可能修改或删除。
 
     参数：
-        - **input** (Union[Tensor, Number, bool]) - 第一个输入，为数值型，或bool，或数据类型为数值型或bool的Tensor。
-        - **other** (Union[Tensor, Number, bool]) - 第二个输入，为数值型，或bool，或数据类型为数值型或bool的Tensor。
+        - **input** (Union[Tensor, Number, bool]) - 第一个输入。当类型为Tensor时，该Tensor的数据类型为Number或bool。
+        - **other** (Union[Tensor, Number, bool]) - 第二个输入。当类型为Tensor时，该Tensor的数据类型为Number或bool。
 
     返回：
         Tensor，输出的shape与广播后的shape相同，数据类型取两个输入中精度较高或数字较高的。
 
     异常：
-        - **TypeError** - 如果 `input` 和 `other` 不是以下之一: Tensor，number.Number或bool。
+        - **TypeError** - 如果 `input` 和 `other` 不是以下之一: Tensor、number.Number或bool。

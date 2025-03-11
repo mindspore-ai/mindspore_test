@@ -17,6 +17,6 @@ mindspore.ops.hstack
         堆叠后的Tensor。
 
     异常：
-        - **TypeError** - 如果 `tensors` 不是 list或tuple。
-        - **TypeError** - 如果 `tensors` 的元素不是 Tensor。
-        - **ValueError** - 如果 `tensors` 为空。
+        - **TypeError** - `tensors` 不是 list或tuple。
+        - **TypeError** - `tensors` 的元素不是 Tensor。
+        - **ValueError** - `tensors` 为空。

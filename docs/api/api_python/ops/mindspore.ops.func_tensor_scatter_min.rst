@@ -5,7 +5,7 @@
 
     根据指定的更新值 `updates` 和输入索引 `indices` ，使用最小值运算更新 `input_x`，输出结果通过新的输出Tensor返回。
 
-    索引 `indices` 的最后一个轴是每个索引向量的深度。对于每个索引向量， `updates` 中必须有相应的值。 并且其shape应该等于 `input_x[indices]` 的shape。更多详细信息，请参见下方样例。
+    索引 `indices` 的最后一个轴是每个索引向量的深度。对于每个索引向量， `updates` 中必须有相应的值，并且其shape应该等于 `input_x[indices]` 的shape。更多详细信息，请参见下方样例。
 
     .. math::
         output\left [indices  \right ] = \min(input\_x, update)

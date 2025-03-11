@@ -93,7 +93,7 @@ mindspore.ops.prompt_flash_attention
         - **inner_precise** (int，可选) - 一个 {0, 1} 中的整数，指定计算模式。 ``0`` 为高精度模式（适用于float16 数据类型）， ``1`` 为高性能模式。默认值为 ``1`` 。
 
     返回：
-        - **attention_out** (Tensor) - 输出Tensor，与 `query` 的shape相同： `(B, q_S, q_H)` 或 `(B, q_N, q_S, q_D)`。输出数据类型由多种因素决定，请参阅上面的Note部分获取详细信息。
+        - **attention_out** (Tensor) - 输出Tensor，与 `query` 的shape相同： `(B, q_S, q_H)` 或 `(B, q_N, q_S, q_D)`。输出数据类型由多种因素决定，请参阅上文说明部分获取详细信息。
 
     异常：
         - **TypeError** - `query` 的数据类型不是int8、float16或bfloat16。

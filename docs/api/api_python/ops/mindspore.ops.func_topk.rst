@@ -6,7 +6,7 @@ mindspore.ops.topk
     沿给定维度查找 `k` 个最大或最小元素和对应的索引。
 
     .. warning::
-        - 如果 `sorted` 设置为False，它将使用aicpu运算符，性能可能会降低，另外，由于在不同平台上存在内存排布以及遍历方式不同等问题，`sorted` 设置为False时计算结果的显示顺序可能会出现不一致的情况。
+        - 如果 `sorted` 设置为False，它将使用aicpu运算符，性能可能会降低。此外，由于在不同平台上存在内存排布以及遍历方式不同等问题，`sorted` 设置为False时计算结果的显示顺序可能会出现不一致的情况。
 
     如果 `input` 是一维Tensor，则查找Tensor中 `k` 个最大或最小元素，并将其值和索引输出为Tensor。 `values[k]` 是 `input` 中 `k` 个最大元素，其索引是 `indices[k]` 。
 
@@ -31,7 +31,7 @@ mindspore.ops.topk
         - **indices** (Tensor) - `k` 最大元素的对应索引。
 
     异常：
-        - **TypeError** - 如果 `sorted` 不是bool。
-        - **TypeError** - 如果 `input` 不是Tensor。
-        - **TypeError** - 如果 `k` 不是int。
-        - **TypeError** - 如果 `input` 的数据类型不是以下之一：float16、float32或int32。
+        - **TypeError** - `sorted` 不是bool。
+        - **TypeError** - `input` 不是Tensor。
+        - **TypeError** - `k` 不是int。
+        - **TypeError** - `input` 的数据类型不是以下之一：float16、float32或int32。
