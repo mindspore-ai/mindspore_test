@@ -48,13 +48,15 @@ class PyCodeWrapper {
   int PositionOnlyArgCount() const;
   int CellVarsSize() const;
   int FreeVarsSize() const;
-  Py_ssize_t *Cell2Arg();
   py::tuple CellVars();
   py::tuple FreeVars();
   py::tuple VarNames();
   py::object Code();
   py::object LineTab() const;
   py::object DeepCopy();
+
+  int Cell2Arg(int cell_var_index);
+  int Cell2Arg(const char *cell_var_name);
 
   std::string ToString() const { return py::str(reinterpret_cast<PyObject *>(ptr())); }
   py::tuple co_consts() const { return py::reinterpret_borrow<py::tuple>(ptr()->co_consts); }

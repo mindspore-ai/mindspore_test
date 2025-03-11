@@ -612,8 +612,10 @@ AbstractWrapperPtr FuncGraphBuilder::AddNode(const py::object &callable_obj,
 }
 
 AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionKw(const ValuePtr &callable_value,
-                                                           const AbstractWrapperPtrList &inputs_abstract_wrapper) {
+                                                           const AbstractWrapperPtrList &inputs_abstract_wrapper,
+                                                           const py::object &kw_names) {
   MS_LOG(INFO) << "Handle CallFunctionKw with callable_value: " << callable_value->ToString();
+#if !IS_PYTHON_3_11_PLUS
   auto key_abstract = inputs_abstract_wrapper.back()->abstract();
   if (key_abstract == nullptr || !key_abstract->isa<abstract::AbstractTuple>()) {
     MS_LOG(INFO) << "Key abstract should be tuple but got: " << key_abstract->ToString();
@@ -626,8 +628,14 @@ AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionKw(const ValuePtr &calla
     return nullptr;
   }
   size_t dict_len = key_tuple_abstract->size();
-  MS_EXCEPTION_IF_CHECK_FAIL(inputs_abstract_wrapper.size() >= dict_len + 1, "kwargs length check error");
-  size_t arg_len = inputs_abstract_wrapper.size() - dict_len - 1;
+#else
+  MS_EXCEPTION_IF_CHECK_FAIL(kw_names.ptr() != nullptr && py::tuple::check_(kw_names), "must be tuple");
+  size_t dict_len = py::reinterpret_borrow<py::tuple>(kw_names).size();
+  auto key_tuple_value = ConvertPyObjToValue(kw_names);
+#endif
+  const int offset = !IS_PYTHON_3_11_PLUS;
+  MS_EXCEPTION_IF_CHECK_FAIL(inputs_abstract_wrapper.size() >= dict_len + offset, "kwargs length check error");
+  size_t arg_len = inputs_abstract_wrapper.size() - dict_len - offset;
 
   auto fg = std::make_shared<FuncGraph>();
   std::vector<AnfNodePtr> arg_inputs = {NewValueNode(prim::kPrimMakeTuple)};
@@ -653,14 +661,15 @@ AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionKw(const ValuePtr &calla
 }
 
 AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionKw(const py::object &callable_obj,
-                                                           const AbstractWrapperPtrList &inputs_abstract_wrapper) {
+                                                           const AbstractWrapperPtrList &inputs_abstract_wrapper,
+                                                           const py::object &kw_names) {
   MS_LOG(INFO) << "Handle CallFunctionKw with callable_object: " << py::str(callable_obj);
   auto callable_value = ConvertPyObjToValue(callable_obj);
   if (callable_value == nullptr) {
     MS_LOG(INFO) << "Convert to value failed for callable_obj: " << py::str(callable_obj);
     return nullptr;
   }
-  return AddNodeCallFunctionKw(callable_value, inputs_abstract_wrapper);
+  return AddNodeCallFunctionKw(callable_value, inputs_abstract_wrapper, kw_names);
 }
 
 AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionEx(const ValuePtr &callable_value,

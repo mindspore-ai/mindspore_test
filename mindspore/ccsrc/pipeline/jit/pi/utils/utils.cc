@@ -174,7 +174,7 @@ static std::pair<py::object, py::object> PackExArgs(const std::vector<py::object
 }
 
 std::pair<py::object, py::object> Utils::PackCallStackArgs(const std::vector<py::object> &args, int callop,
-                                                           bool ret_vector_args) {
+                                                           const py::object &kw_names, bool ret_vector_args) {
   std::pair<py::object, py::object> failed;
   size_t args_size = args.size();
   if (std::find_if(args.begin(), args.end(), [](const py::object &o) { return o.ptr() == nullptr; }) != args.end()) {
@@ -185,12 +185,14 @@ std::pair<py::object, py::object> Utils::PackCallStackArgs(const std::vector<py:
   py::object pargs;
   py::object kwargs;
   if (Opcode(callop).IsCall()) {
-    if (callop == CALL_FUNCTION_KW) {
-      py::object keys = args.back();
+    if (kw_names.ptr() != nullptr) {
+      py::object keys = kw_names;
       if (!PyTuple_Check(keys.ptr())) {
         return failed;
       }
+#if !IS_PYTHON_3_11_PLUS
       psize--;
+#endif
       kwsize = PyTuple_GET_SIZE(keys.ptr());
       if (psize < kwsize) {
         return failed;

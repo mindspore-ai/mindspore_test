@@ -100,7 +100,9 @@ std::string ParamNode::ToString() const {
 
 std::string CallNode::ToString() const {
   std::stringstream s;
-  s << this->ValueNode::ToString() << "sub-graph=" << sub_graph_;
+  s << this->ValueNode::ToString()
+    << (kw_names().ptr() != nullptr ? ("kw:" + std::string(py::str(kw_names().ptr()))) : std::string())
+    << " sub-graph=" << sub_graph_;
   return s.str();
 }
 
@@ -156,6 +158,23 @@ void CallNode::SetSubGraph(Graph *n) {
     n->SetParent(GetGraph());
   }
 }
+
+CallNode::CallNode(int opcode, int oparg, const std::vector<ValueNode *> &inputs)
+    : ValueNode(Call, nullptr, opcode, oparg, inputs), sub_graph_(nullptr) {
+#if !IS_PYTHON_3_11_PLUS
+  if (opcode != CALL_FUNCTION_KW) {
+    return;
+  }
+
+  MS_EXCEPTION_IF_CHECK_FAIL(inputs.size() > 0, "error stack status");
+  kw_names_ = inputs.back()->GetVobj()->GetPyObject();  // must be tuple of str
+  MS_EXCEPTION_IF_CHECK_FAIL(kw_names().ptr() != nullptr && PyTuple_CheckExact(kw_names().ptr()),
+                             "key words must be tuple of str");
+#endif
+}
+
+bool CallNode::IsCallKW() { return kw_names().ptr() != nullptr; }
+bool CallNode::IsCallEX() { return GetOpcode() == CALL_FUNCTION_EX; }
 
 std::string ToString(const pijit::AbstractNode *node) { return node == nullptr ? "NULL" : node->ToString(); }
 

@@ -196,16 +196,17 @@ class ParamNode : public ValueNode {
 
 class CallNode : public ValueNode {
  public:
-  CallNode(int opcode, int oparg, const std::vector<ValueNode *> &inputs)
-      : ValueNode(Call, nullptr, opcode, oparg, inputs), sub_graph_(nullptr) {}
+  CallNode(int opcode, int oparg, const std::vector<ValueNode *> &inputs);
   virtual ~CallNode() {}
 
-  // python3.11 ~ python3.12 only
+  // python3.11 ~ python3.13 only
   void set_kw_names(const py::object &kw) { kw_names_ = kw; }
   const auto &kw_names() const { return kw_names_; }
 
   Graph *GetSubGraph() const { return sub_graph_; }
   void SetSubGraph(Graph *n);
+  bool IsCallKW();
+  bool IsCallEX();
 
   // The input arguments when calling subgraph's FuncGraph.
   const std::vector<AbstractWrapperPtr> &subgraph_args() const { return subgraph_args_; }

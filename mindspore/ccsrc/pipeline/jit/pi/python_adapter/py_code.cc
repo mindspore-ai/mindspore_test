@@ -81,15 +81,6 @@ py::tuple PyCodeWrapper::CellVars() {
 #endif
 }
 
-Py_ssize_t *PyCodeWrapper::Cell2Arg() {
-#if IS_PYTHON_3_11_PLUS
-  return nullptr;
-#else
-  PyCodeObject *co = this->ptr_;
-  return co->co_cell2arg;
-#endif
-}
-
 py::tuple PyCodeWrapper::FreeVars() {
   PyCodeObject *co = this->ptr_;
 #if IS_PYTHON_3_11_PLUS
@@ -147,6 +138,43 @@ py::tuple PyCodeWrapper::FastLocalNames() const {
   Py_XDECREF(tmp);
   return py::reinterpret_steal<py::tuple>(res);
 #endif
+}
+
+int PyCodeWrapper::Cell2Arg(int cell_var_index) {
+  py::tuple names = CellVars();
+  int size = names.size();
+  if (cell_var_index < size) {
+    return -1;
+  }
+#if IS_PYTHON_3_11_PLUS
+  const char *cell_var_name = PyUnicode_AsUTF8(PyTuple_GET_ITEM(names.ptr(), cell_var_index));
+  return Cell2Arg(cell_var_name);
+#else
+  return ptr_->co_cell2arg != nullptr && ptr_->co_cell2arg[cell_var_index] != CO_CELL_NOT_AN_ARG
+           ? ptr_->co_cell2arg[cell_var_index]
+           : -1;
+#endif
+}
+
+int PyCodeWrapper::Cell2Arg(const char *cell_var_name) {
+#if IS_PYTHON_3_11_PLUS
+  py::tuple names = VarNames();
+  for (int i = 0, size = names.size(); i < size; ++i) {
+    const char *name = PyUnicode_AsUTF8(PyTuple_GET_ITEM(names.ptr(), i));
+    if (strcmp(name, cell_var_name) == 0) {
+      return i;
+    }
+  }
+#else
+  py::tuple names = CellVars();
+  for (int i = 0, size = names.size(); i < size; ++i) {
+    const char *name = PyUnicode_AsUTF8(PyTuple_GET_ITEM(names.ptr(), i));
+    if (strcmp(name, cell_var_name) == 0) {
+      return Cell2Arg(i);
+    }
+  }
+#endif
+  return -1;
 }
 
 PyCodeWrapper::LocalKind PyCodeWrapper::FastLocalKind(int i) const {

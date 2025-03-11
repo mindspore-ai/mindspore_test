@@ -61,7 +61,7 @@ bool JustCallAndSetRes(CallNode *call_node, GraphBuilder *unused) {
   std::vector<py::object> args;
   std::transform(call_node->getInputs().begin() + 1, call_node->getInputs().end(), std::back_inserter(args),
                  [](ValueNode *n) { return n->GetVobj() ? n->GetVobj()->GetPyObject() : py::object(); });
-  auto pair = Utils::PackCallStackArgs(args, call_node->GetOpcode());
+  auto pair = Utils::PackCallStackArgs(args, call_node->GetOpcode(), call_node->kw_names());
   if (pair.first.ptr() == nullptr) {
     return SetCallResType<AObject::kTypeAnyValue>(call_node);
   }
@@ -87,7 +87,7 @@ bool JustCallAndSetResWithArgs(CallNode *call_node, const std::vector<py::object
     return SetCallResType<AObject::kTypeAnyValue>(call_node);
   }
 
-  auto pair = Utils::PackCallStackArgs(args, call_node->GetOpcode());
+  auto pair = Utils::PackCallStackArgs(args, call_node->GetOpcode(), call_node->kw_names());
   if (pair.first.ptr() == nullptr) {
     return SetCallResType<AObject::kTypeAnyValue>(call_node);
   }
@@ -223,7 +223,7 @@ void HandleGradFuncCall(CallNode *call_node, AObject *decorated, bool sens_param
     param_ready = stack_args.back().ptr() != nullptr;
   }
   if (param_ready) {
-    auto pair = Utils::PackCallStackArgs(stack_args, call_node->GetOpcode());
+    auto pair = Utils::PackCallStackArgs(stack_args, call_node->GetOpcode(), call_node->kw_names());
     args = pair.first;
     kwargs = pair.second;
     param_ready = pair.first.ptr() != nullptr;

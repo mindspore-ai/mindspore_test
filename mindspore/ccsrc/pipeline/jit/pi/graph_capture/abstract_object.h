@@ -212,7 +212,7 @@ class AbstractType : public AbstractObject {
 
   Type GetTypeType() const { return type_type_; }
   AObject *BuildAbstractInstance(const std::vector<AObject *> &args, int opcode);
-  py::object BuildInstance(const std::vector<py::object> &args, int opcode);
+  py::object BuildInstance(const std::vector<py::object> &args, int opcode, const py::object &kw);
 
  private:
   Type type_type_;

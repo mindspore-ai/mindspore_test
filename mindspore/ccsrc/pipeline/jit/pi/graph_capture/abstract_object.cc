@@ -966,12 +966,12 @@ AObject *AbstractType::BuildAbstractInstance(const std::vector<AObject *> &args,
 }
 
 // this function call object without error
-py::object AbstractType::BuildInstance(const std::vector<py::object> &args, int opcode) {
+py::object AbstractType::BuildInstance(const std::vector<py::object> &args, int opcode, const py::object &kw) {
   if (value_.ptr() == nullptr) {
     MS_LOG(INFO) << "Create instance failed, unknown class";
     return py::object();
   }
-  auto pair = Utils::PackCallStackArgs(args, opcode, true);
+  auto pair = Utils::PackCallStackArgs(args, opcode, kw, true);
   if (pair.first.ptr() == nullptr) {
     MS_LOG(INFO) << "Create instance failed, unknown opcode or arguments";
     return py::object();
@@ -1071,8 +1071,9 @@ bool AbstractSequence::SetItem(AObject *k, AObject *v) {
     }
   }
   auto seq = static_cast<AbstractSequence *>(MakeAObject(type_, type_object_, nullptr, elements));
-  seq->element_type_ =
-    v->GetType() == element_type_ ? element_type_ : v->GetType() == kTypeAnyValue ? kTypeAnyValue : kTypeMultiType;
+  seq->element_type_ = v->GetType() == element_type_   ? element_type_
+                       : v->GetType() == kTypeAnyValue ? kTypeAnyValue
+                                                       : kTypeMultiType;
   SetNextVersion(seq);
   return true;
 }

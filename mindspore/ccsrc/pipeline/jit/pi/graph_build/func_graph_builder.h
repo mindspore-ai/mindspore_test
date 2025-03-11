@@ -119,19 +119,23 @@ class FuncGraphBuilder {
   ///
   /// \param[in] callable_obj The callable python object.
   /// \param[in] inputs_obj The input python objects.
+  /// \param[in] kw_names The input python objects.
   ///
   /// \return The abstract wrapper of the infer result.
   AbstractWrapperPtr AddNodeCallFunctionKw(const py::object &callable_obj,
-                                           const AbstractWrapperPtrList &inputs_abstract_wrapper);
+                                           const AbstractWrapperPtrList &inputs_abstract_wrapper,
+                                           const py::object &kw_names);
 
   /// \brief Add a cnode to the graph with graph is parsed in ast and byte code is CallFunctionKw.
   ///
   /// \param[in] callable_value The callable value.
   /// \param[in] inputs_obj The input python objects.
+  /// \param[in] kw_names The input python objects.
   ///
   /// \return The abstract wrapper of the infer result.
   AbstractWrapperPtr AddNodeCallFunctionKw(const ValuePtr &callable_value,
-                                           const AbstractWrapperPtrList &inputs_abstract_wrapper);
+                                           const AbstractWrapperPtrList &inputs_abstract_wrapper,
+                                           const py::object &kw_names);
 
   /// \brief Add a python object to graph.
   ///

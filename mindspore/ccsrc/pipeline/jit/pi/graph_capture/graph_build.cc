@@ -1189,11 +1189,11 @@ std::pair<PyObject *, ValueNode *> GraphBuilder::SearchSelfPyObject(PyCodeObject
     MS_EXCEPTION_IF_CHECK_FAIL(PyCell_Check(obj), "First arg is not a cell");
     value = frame_.Closure(0)->GetValue();
     obj = SetLocalPyObject(frame_.Closure(0));
-  } else if (obj == NULL && co_wrapper.Cell2Arg()) {
+  } else if (obj == NULL) {
     // the first argument might be a cell
-    n = PyTuple_GET_SIZE(co_wrapper.CellVars().ptr());
+    n = co_wrapper.CellVarsSize();
     for (i = 0; i < n; i++) {
-      if (co_wrapper.Cell2Arg()[i] == 0) {
+      if (co_wrapper.Cell2Arg(i) == 0) {
         value = frame_.Closure(i)->GetValue();
         obj = SetLocalPyObject(frame_.Closure(i));
         break;
@@ -2512,7 +2512,7 @@ ValueNode *GraphBuilder::BuildCallClassNode(CallNode *call_node) {
       AObject *i = n->GetVobj();
       return i ? FilterCTensorInZip(vobj, i->GetPyObject()) : py::object();
     });
-    py::object res = t->BuildInstance(args, call_node->GetOpcode());
+    py::object res = t->BuildInstance(args, call_node->GetOpcode(), call_node->kw_names());
     instance = res.ptr() ? AObject::Convert(res) : nullptr;
   } else if (reinterpret_cast<PyTypeObject *>(vobj->GetPyObject().ptr()) == &PySuper_Type) {
     // take super ptr and compare with PySuper_Type
@@ -3030,6 +3030,8 @@ bool GraphBuilder::PackKwParams(const py::object &func, std::vector<ValueNode *>
   }
 
   params->erase(param_iter + 1, params->end());
+  MS_LOG(ERROR) << "pack kw names: " << k_cnt << " kw " << keys_info->ToString()
+                << " other param size: " << params->size();
   if (!has_kw_va) {
     return kw_2_p_cnt == k_cnt;  // if not equal, too many key-word arguments
   }
@@ -3134,7 +3136,7 @@ bool GraphBuilder::HandleCallParameters(const py::object &func_info, CallNode *c
 
   std::vector<ValueNode *> params(call_node->getInputs().begin() + 1, call_node->getInputs().end());
   int op = call_node->GetOpcode();
-  bool has_kw = (op == CALL_FUNCTION_KW || call_node->kw_names().ptr() != nullptr);
+  bool has_kw = call_node->kw_names().ptr() != nullptr;
   if (op == CALL_FUNCTION_EX && !UnpackCallExParams(&params, co->co_nlocals, &has_kw, call_node)) {
     return false;  // ex_dict infer failed or user-defined sequence and map arguments
   }
@@ -3151,10 +3153,9 @@ bool GraphBuilder::HandleCallParameters(const py::object &func_info, CallNode *c
   // after store all params
   // cell2arg
   const Py_ssize_t ncells = co_wrapper.CellVarsSize();
-  const Py_ssize_t *c2a_arr = reinterpret_cast<const Py_ssize_t *>(co_wrapper.Cell2Arg());
-  for (int i = 0; c2a_arr != nullptr && i < ncells; ++i) {
-    if (c2a_arr[i] != CO_CELL_NOT_AN_ARG) {
-      Py_ssize_t arg_index = c2a_arr[i];
+  for (int i = 0; i < ncells; ++i) {
+    int arg_index = co_wrapper.Cell2Arg(i);
+    if (arg_index >= 0) {
       CellVarNode *cell_node = frame->Closure(i);
       ValueNode *arg_node = frame->Local(arg_index);
       /**
@@ -3178,8 +3179,6 @@ bool GraphBuilder::HandleCallParameters(const py::object &func_info, CallNode *c
   }
   return true;
 }
-
-static void SetGradFuncInfo(mindspore::pijit::CallNode *call_node);
 
 bool GraphBuilder::ResolveNoGrad(CallNode *call_node, StopTraceReason *stop_reason) {
   AObject *callable = call_node->input(0)->GetVobj();
@@ -3212,10 +3211,6 @@ py::object GraphBuilder::ResolveCallableWithByteCode(CallNode *call_node, StopTr
 
   AObject::Type callable_type = callable->GetType();
   if (callable_info.ptr() == nullptr) {
-    if (callable->TestMsFlag(AObject::kMsFlagGradFunc | AObject::kMsFlagShardFunc | AObject::kMsFlagVmapFunc)) {
-      SetGradFuncInfo(call_node);
-      *stop_reason = StopTraceReason::kNonStopTrace;
-    }
     return py::object();
   }
 
@@ -4094,58 +4089,6 @@ AObject *InferFuncResult(const py::object &callable, const py::object &args, con
   return InferFuncResult(callable, args, kwargs, conf, true);
 }
 
-static bool GetGradSens(ValueNode *grad_node) {
-  AObject *grad_object = grad_node->GetVobj();
-  if (grad_object->GetPyObject().ptr() != nullptr) {
-    return grad_object->GetAttr("sens_param")->GetPyObject().ptr() == Py_True;
-  }
-  bool sens_param = false;
-  AObject *cls = grad_node->getInputs().size() > 0 ? grad_node->input(0)->GetVobj() : nullptr;
-  if (!(Opcode(grad_node->GetOpcode()).IsCall() && cls != nullptr && cls->GetType() == AObject::kTypeType)) {
-    return sens_param;
-  }
-  if (Opcode(grad_node->GetOpcode()).IsCallFunc() && grad_node->getInputs().size() > 3) {
-    AObject *tmp = grad_node->input(3)->GetVobj();
-    sens_param = tmp ? tmp->GetPyObject().ptr() == Py_True : false;
-  } else if (grad_node->GetOpcode() == CALL_FUNCTION_KW) {
-    py::object kwnames = grad_node->getInputs().back()->GetVobj()->GetPyObject();
-    PyObject **arr = &PyTuple_GET_ITEM(kwnames.ptr(), 0);
-    Py_ssize_t size = PyTuple_GET_SIZE(kwnames.ptr());
-    PyObject **iter = std::find_if(arr, arr + size, [](PyObject *k) {
-      // find sens_param key
-      return !PyUnicode_CompareWithASCIIString(k, "sens_param");
-    });
-    AObject *tmp = iter - arr != size ? grad_node->input(iter - arr)->GetVobj() : nullptr;
-    sens_param = tmp ? tmp->GetPyObject().ptr() == Py_True : false;
-  }
-  return sens_param;
-}
-
-static void SetGradFuncInfo(CallNode *call_node) {
-  const int flag = AObject::kMsFlagGradFunc | AObject::kMsFlagShardFunc | AObject::kMsFlagVmapFunc;
-  ValueNode *grad_func_node = call_node->input(0);
-  if (grad_func_node->getInputs().size() < 2) {
-    grad_func_node->GetVobj()->ClearMsFlag(flag);
-    return;
-  }
-  ValueNode *grad_node = grad_func_node->input(0);
-  ValueNode *deco_func_node = grad_func_node->input(1);
-  AObject *grad_object = grad_node->GetVobj();
-  AObject *deco_func = deco_func_node->GetVobj();
-  bool sens_param = false;
-  if (grad_func_node->GetVobj()->TestMsFlag(AObject::kMsFlagGradFunc) &&
-      grad_object->GetType() == AObject::kTypeMetaFuncGraph) {
-    sens_param = GetGradSens(grad_node);
-  }
-
-  HandleGradFuncCall(call_node, deco_func, sens_param);
-
-  // guard forward net for grad
-  if (grad_func_node->GetVobj()->TestMsFlag(flag) && !call_node->GetGraph()->GuardValueNode(deco_func_node)) {
-    grad_func_node->GetVobj()->ClearMsFlag(flag);
-  }
-}
-
 void GraphBuilder::DumpDFG() { GRAPH_JIT_LOG_F("%s", graph_->ToString().c_str()); }
 
 void GraphBuilder::AddVarInput(ValueNode *cur, bool is_var_keywords) {
@@ -4377,9 +4320,9 @@ void GraphBuilder::FGAddNode(CallNode *call_node, const py::object &callable_inf
                              StopTraceReason *stop_reason) {
   MS_LOG(INFO) << "Try add node: " << py::str(callable_info);
   AbstractWrapperPtr res;
-  if (call_node->GetOpcode() == CALL_FUNCTION_KW) {
-    res = FGBuilder()->AddNodeCallFunctionKw(callable_info, args);
-  } else if (call_node->GetOpcode() == CALL_FUNCTION_EX) {
+  if (call_node->IsCallKW()) {
+    res = FGBuilder()->AddNodeCallFunctionKw(callable_info, args, call_node->kw_names());
+  } else if (call_node->IsCallEX()) {
     res = FGBuilder()->AddNodeCallFunctionEx(callable_info, args);
   } else {
     res = FGBuilder()->AddNode(callable_info, args);
@@ -4391,9 +4334,9 @@ void GraphBuilder::FGAddNode(CallNode *call_node, const ValuePtr &callable_value
                              StopTraceReason *stop_reason) {
   MS_LOG(INFO) << "Try add node: " << callable_value->ToString();
   AbstractWrapperPtr res;
-  if (call_node->GetOpcode() == CALL_FUNCTION_KW) {
-    res = FGBuilder()->AddNodeCallFunctionKw(callable_value, args);
-  } else if (call_node->GetOpcode() == CALL_FUNCTION_EX) {
+  if (call_node->IsCallKW()) {
+    res = FGBuilder()->AddNodeCallFunctionKw(callable_value, args, call_node->kw_names());
+  } else if (call_node->IsCallEX()) {
     res = FGBuilder()->AddNodeCallFunctionEx(callable_value, args);
   } else {
     res = FGBuilder()->AddNode(callable_value, args);
@@ -4483,14 +4426,6 @@ BindArgumentsHelper<ValueNode *> GraphBuilder::PackInputsForFunc(const py::objec
   BindArgumentsHelper<ValueNode *> bind_helper(co);
 
   bool pack_success = true;
-#if !IS_PYTHON_3_11_PLUS
-  auto cast_keys = [](ValueNode *node) {
-    MS_EXCEPTION_IF_CHECK_FAIL(node->IsConstantValue(), "'CALL_FUNCTION_KW' has error stack");
-    return node->GetVobj()->GetPyObject().cast<std::vector<std::string>>();
-  };
-#else
-  auto cast_keys = [](py::object kw_names) { return kw_names.cast<std::vector<std::string>>(); };
-#endif
   auto cast_seq = [this, &pack_success](ValueNode *node) {
     size_t size = this->frame_.GetStacks().size();
     if (!pack_success || !this->UnpackElements(node)) {
@@ -4527,7 +4462,7 @@ BindArgumentsHelper<ValueNode *> GraphBuilder::PackInputsForFunc(const py::objec
     return res;
   };
   PackCallStackHelper<ValueNode *> pack_helper(op_code);
-  if (!pack_helper.Pack({inputs.begin() + 1, inputs.end()}, cast_keys, cast_seq, cast_map, kw_names)) {
+  if (!pack_helper.Pack({inputs.begin() + 1, inputs.end()}, cast_seq, cast_map, kw_names)) {
     MS_LOG(EXCEPTION) << "Pack helper pack failed.";
   }
   if (eliminate_sens) {
@@ -5075,7 +5010,7 @@ AbstractNamedTuple *MakeNamedtupleAObj(const CallNode *call_node) {
   std::vector<py::object> args;
   std::transform(params.begin() + 1, params.end(), std::back_inserter(args),
                  [](ValueNode *n) { return n->GetVobj()->GetPyObject(); });
-  py::object namedtuple = abstract_type->BuildInstance(args, call_node->GetOpcode());
+  py::object namedtuple = abstract_type->BuildInstance(args, call_node->GetOpcode(), call_node->kw_names());
   if (namedtuple.ptr() == nullptr) {
     MS_LOG(INFO) << "Create namedtuple python object failed";
     return nullptr;
