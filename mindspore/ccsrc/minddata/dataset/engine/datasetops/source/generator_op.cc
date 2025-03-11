@@ -314,8 +314,9 @@ Status GeneratorOp::operator()() {
   // Handshake with TaskManager to synchronize thread creation
   TaskManager::FindMe()->Post();
   RETURN_IF_NOT_OK(wp_.Register(tree_->AllTasks()));
-  num_rows_sampled_ = sampler_ ? sampler_->CalculateNumSamples(num_rows_) : num_rows_;
   RETURN_IF_NOT_OK(Init());
+  // calculate number samples after init the sampler
+  num_rows_sampled_ = sampler_ ? sampler_->CalculateNumSamples(num_rows_) : num_rows_;
 
   RETURN_IF_NOT_OK(GetNextEpochBatchSizes());
   RETURN_IF_NOT_OK(GetNextBatchSize());
@@ -462,8 +463,8 @@ Status GeneratorOp::ComputeColMap() {
 Status GeneratorOp::GetNextRowPullMode(TensorRow *const row) {
   RETURN_UNEXPECTED_IF_NULL(row);
   if (!prepared_data_) {
-    num_rows_sampled_ = sampler_ ? sampler_->CalculateNumSamples(num_rows_) : num_rows_;
     RETURN_IF_NOT_OK(Init());
+    num_rows_sampled_ = sampler_ ? sampler_->CalculateNumSamples(num_rows_) : num_rows_;
     MS_LOG(DEBUG) << "num_rows_sampled: " << num_rows_sampled_;
     RETURN_IF_NOT_OK(GetNextEpochBatchSizes());
     prepared_data_ = true;

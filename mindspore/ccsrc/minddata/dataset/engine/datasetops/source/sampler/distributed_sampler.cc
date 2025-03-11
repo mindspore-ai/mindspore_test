@@ -73,7 +73,6 @@ Status DistributedSamplerRT::InitSampler() {
       samples_per_tensor_--;
     }
   } else {
-    offset_ = 0;
     samples_per_tensor_ = (num_rows_ + num_devices_ - 1) / num_devices_;  // equals to ceil(num_rows/num_devices)
   }
   samples_per_tensor_ = num_samples_ < samples_per_tensor_ ? num_samples_ : samples_per_tensor_;
@@ -124,13 +123,19 @@ Status DistributedSamplerRT::GetNextSample(TensorRow *out) {
     auto id_ptr = sample_ids->begin<int64_t>();
     bool flag_add_1 = false;
     while (cnt_ < samples_per_tensor_ && id_ptr != sample_ids->end<int64_t>()) {
-      int64_t middle_value = num_devices_ * cnt_ + device_id_ - offset_;
+      int64_t middle_value = num_devices_ * cnt_ + device_id_;
+      if (offset_ != -1) {
+        middle_value -= offset_;
+      }
       // if index < 0, we move back one place
       if (middle_value < 0) {
         samples_per_tensor_++;
         cnt_++;
         flag_add_1 = true;
-        middle_value = num_devices_ * cnt_ + device_id_ - offset_;
+        middle_value = num_devices_ * cnt_ + device_id_;
+        if (offset_ != -1) {
+          middle_value -= offset_;
+        }
       }
       int64_t sampled_id = middle_value % num_rows_;
 
@@ -181,12 +186,13 @@ int64_t DistributedSamplerRT::CalculateNumSamples(int64_t num_rows) {
     child_num_rows = child_[0]->CalculateNumSamples(num_rows);
   }
   int64_t num_samples = (num_samples_ > 0) ? std::min(child_num_rows, num_samples_) : child_num_rows;
-  int64_t remainder = (child_num_rows + offset_) % num_devices_;
-  int64_t shard_size = (child_num_rows + offset_) / num_devices_;
+  int64_t shard_size;
   if (offset_ != -1 || !even_dist_) {
     if (offset_ == -1) {
       offset_ = 0;
     }
+    shard_size = (child_num_rows + offset_) / num_devices_;
+    int64_t remainder = (child_num_rows + offset_) % num_devices_;
     if (device_id_ < remainder) {
       shard_size++;
     }
