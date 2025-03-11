@@ -703,26 +703,21 @@ def positive(input):
 
 def numel(input):
     r"""
-    Returns a Scalar of type int that represents the total number of elements in the Tensor.
+    Return the total number of elements in the tensor.
 
     Args:
-        input (Tensor): Input Tensor.
+        input (Tensor): The input tensor.
 
     Returns:
-        int. A scalar representing the total of elements in the Tensor.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
+        The total number of elements in tensor.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_x = Tensor(np.array([[2, 2], [2, 2]]), mindspore.float32)
-        >>> print(ops.numel(input_x))
+        >>> input_x = mindspore.tensor([[2, 2], [2, 2]], mindspore.float32)
+        >>> print(mindspore.ops.numel(input_x))
         4
     """
     _check_is_tensor("input", input, "numel")
@@ -731,29 +726,23 @@ def numel(input):
 
 def permute(input, axis):
     """
-    Permutes the dimensions of the input tensor according to input `axis` .
+    Permute the input tensor along the specified axis.
 
     Args:
-        input (Tensor): Input Tensor.
-        axis (tuple(int)): Permute will permute the tensor to the input `axis` order.
+        input (Tensor): The input tensor.
+        axis (tuple(int)): The axis in a specified order.
 
     Returns:
-        Tensor, has the same dimension as input tensor, with `axis` suitably permuted.
-
-    Raises:
-        ValueError: If `axis` is None.
-        ValueError: If the number of elements of `axis` is not equal to `input` ndim.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_x = Tensor(np.array([[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]]), mindspore.float32)
+        >>> input_x = mindspore.tensor([[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]], mindspore.float32)
         >>> input_perm = (0, 2, 1)
-        >>> print(ops.permute(input_x, input_perm))
+        >>> print(mindspore.ops.permute(input_x, input_perm))
         [[[ 1.  4.]
           [ 2.  5.]
           [ 3.  6.]]
@@ -3927,41 +3916,28 @@ def median(input, axis=-1, keepdims=False):
 def nanmedian(input, axis=-1, keepdims=False):
     r"""
     Computes the median and indices of `input` in specified dimension, ignoring NaN.
-    If all elements in the specified dimensions are NaN, the result will be NaN.
 
     .. warning::
         `indices` does not necessarily contain the first occurrence of each median value found in the `input`,
         unless it is unique.
 
     Args:
-        input (Tensor): The input tensor to calculate the median and indices.
-        axis (int, optional): The dimension need to calculate median and indices.
-            Default: ``-1`` , calculate the last dimension.
-        keepdims (bool, optional): Whether the output tensor needs to retain dimension or not.
-            Default: ``False``, not to retain dimensions.
+        input (Tensor): The input tensor.
+        axis (int, optional): The specified axis for computation. Default ``-1`` .
+        keepdims (bool, optional): Whether the output tensor needs to retain dimension or not. Default ``False`` .
 
     Returns:
-        Tensor, the median of input along the specified dimension, has the same dtype as `input`.
-
-        indices (Tensor), median index, dtype is int64.
-
-    Raises:
-        TypeError: If dtype of `input` is not one of the following: int16, int32, int64, float32, float64.
-        TypeError: If input `input` is not a Tensor.
-        TypeError: If `axis` is not int.
-        TypeError: If `keepdims` is not bool.
-        ValueError: If `axis` is not in range of [-r, r) which `r` means the rank of `input`.
+        Tuple(median, median_indices)
 
     Supported Platforms:
         ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor([[0.57, 0.11, float("nan")],
+        >>> x = mindspore.tensor([[0.57, 0.11, float("nan")],
         ...             [0.38, float("nan"), float("nan")],
         ...             [0.36, 0.16, float("nan")]], mindspore.float32)
-        >>> y, idx = ops.nanmedian(x, axis=0, keepdims=False)
+        >>> y, idx = mindspore.ops.nanmedian(x, axis=0, keepdims=False)
         >>> print(y)
         [0.38 0.11  nan]
         >>> print(idx)
@@ -3974,36 +3950,25 @@ def nanmedian(input, axis=-1, keepdims=False):
 def nanmean(input, axis=None, keepdims=False, *, dtype=None):
     r"""
     Computes the mean of `input` in specified dimension, ignoring NaN.
-    If all elements in the specified dimensions are NaN, the result will be NaN.
 
     Args:
-        input (Tensor): The input tensor to calculate the mean.
-        axis (int, optional): The dimension need to reduce. Default: ``None``, all dimensions are reduced.
-        keepdims (bool, optional): Whether the output tensor needs to retain dimension or not.
-            Default: ``False``, not to retain dimensions.
+        input (Tensor): The input tensor.
+        axis (int, optional): The specified axis for computation. Default ``None`` .
+        keepdims (bool, optional): Whether the output tensor has to dim retained. Default ``False`` .
 
     Keyword Args:
-        dtype (mindspore.dtype, optional): The output Tensor data type. Default: ``None`` , the data type of output
-            Tensor is same as the input.
+        dtype (:class:`mindspore.dtype`, optional): The data type returned. Default ``None`` .
 
     Returns:
-        Tensor, the mean of input `input` in the given dimension axis, while ignoring NaNs.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `axis` is not int.
-        TypeError: If `keepdims` is not bool.
-        TypeError: If `dtype` is not mindspore dtype.
-        ValueError: If `axis` is not in range of [-r, r) which `r` means the rank of `input`.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor([[0.5, -1.1, float('nan')], [3.4, float('nan'), float('nan')]], mindspore.float32)
-        >>> y = ops.nanmean(x, axis=0, keepdims=False)
+        >>> x = mindspore.tensor([[0.5, -1.1, float('nan')], [3.4, float('nan'), float('nan')]], mindspore.float32)
+        >>> y = mindspore.ops.nanmean(x, axis=0, keepdims=False)
         >>> print(y)
         [ 1.95 -1.1    nan]
     """
@@ -11316,47 +11281,43 @@ def _check_repeat_in_axis(axis, x_ndim, prim_name):
 
 def nansum(input, axis=None, keepdims=False, *, dtype=None):
     """
-    Computes sum of `input` over a given dimension, treating NaNs as zero.
+    Computes sum of `input` over a given dimension, ignoring NaN.
 
     Args:
-        input (Tensor): The input Tensor.
+        input (Tensor): The input tensor.
         axis (Union[int, tuple(int)], optional): The dimensions to reduce. Supposed the rank of `input` is r,
-            axis must be in the range [-rank(input), rank(input)). Default: ``None``, all dimensions are reduced.
-        keepdims (bool, optional): Whether the output Tensor keeps dimensions or not. Default: ``False``.
+            axis must be in the range [-rank(input), rank(input)). Default ``None``, all dimensions are reduced.
+        keepdims (bool, optional): Whether the output tensor keeps has dim retained. Default ``False``.
 
     Keyword Args:
-        dtype (:class:`mindspore.dtype`, optional): The dtype of output Tensor. Default: ``None``.
+        dtype (:class:`mindspore.dtype`, optional): The dtype of output tensor. Default ``None``.
 
     Returns:
-        Tensor, the sum of input `input` in the given dimension dim, treating NaNs as zero.
-
-        - If axis is None, keepdims is False,
-          the output is a 0-D Tensor representing the sum of all elements in the input Tensor.
-        - If axis is int, set as 2, and keepdims is False,
-          the shape of output is :math:`(input_1, input_3, ..., input_R)`.
-        - If axis is tuple(int) or list(int), set as (2, 3), and keepdims is False,
-          the shape of output is :math:`(input_1, input_4, ..., input_R)`.
-
-    Raises:
-        TypeError: If `input` is not Tensor.
-        TypeError: If `keepdims` is not a bool.
-        TypeError: If the dtype of `input` or `dtype` is complex type.
-        ValueError: If 'axis' not in [-rank(`input`), rank(`input`)).
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
+
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([[float("nan"), 2, 3], [1, 2, float("nan")]]), mindspore.float32)
-        >>> output1 = ops.nansum(x, axis=0, keepdims=False, dtype=mindspore.float32)
-        >>> output2 = ops.nansum(x, axis=0, keepdims=True, dtype=mindspore.float32)
+        >>> x = mindspore.tensor([[float("nan"), 2, 3], [1, float("nan"), 3], [1, 2, float("nan")]], mindspore.float32)
+        >>> # case1: axis is None, keepdims is False,
+        >>> output1 = mindspore.ops.nansum(x, axis=None, dtype=mindspore.float32)
         >>> print(output1)
-        [1. 4. 3.]
+        12.0
+        >>> # case2: axis is int, set as 0, and keepdims is False
+        >>> output2 = mindspore.ops.nansum(x, axis=0, dtype=mindspore.float32)
         >>> print(output2)
-        [[1. 4. 3.]]
+        [2. 4. 6.]
+        >>> # case3: axis is int, set as 0, and keepdims is False
+        >>> output3 = mindspore.ops.nansum(x, axis=0, keepdims=True, dtype=mindspore.float32)
+        >>> print(output3)
+        [[2. 4. 6.]]
+        >>> # case4: axis is tuple(int) or list(int), set as (0, 1), and keepdims is False
+        >>> output4 = mindspore.ops.nansum(x, axis=(0, 1), dtype=mindspore.float32)
+        >>> print(output4)
+        12.0
     """
     _check_is_tensor("input", input, "nansum")
     _check_repeat_in_axis(axis, input.ndim, "nansum")

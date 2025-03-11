@@ -668,17 +668,17 @@ class ErrorOnDynamicShapeInput(PrimitiveWithInfer):
 
 class SequenceMask(PrimitiveWithCheck):
     """
-    Returns a mask tensor representing the first N positions of each cell.
+    Returns a mask tensor representing the first N positions of each cell. The internal element data type is bool.
 
     If lengths has shape [d_1, d_2, ..., d_n], then the resulting tensor mask has type and shape
     [d_1, d_2, ..., d_n, maxlen], with mask[i_1, i_2, ..., i_n, j] = (j < lengths[i_1, i_2, ..., i_n])
 
     Inputs:
-        - **lengths** (Tensor) - Tensor to calculate the mask for. All values in this tensor should be
+        - **lengths** (Tensor) - The input tensor. All values in this tensor should be
           less than or equal to `maxlen`. Values greater than `maxlen` will be treated as `maxlen`.
           Must be type int32 or int64.
 
-        - **maxlen** (int) - size of the last dimension of returned tensor. Must be positive and same
+        - **maxlen** (int) - Specify the length of the returned tensor. Must be positive and same
           type as elements in `lengths`.
 
     Outputs:

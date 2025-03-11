@@ -21,10 +21,8 @@ non_zero:
 
         Examples:
             >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> input = Tensor(np.array([1, 0, 2, 0, 3]), mindspore.int32)
-            >>> output = ops.NonZero()(input)
+            >>> input = mindspore.tensor([1, 0, 2, 0, 3], mindspore.int32)
+            >>> output = mindspore.ops.NonZero()(input)
             >>> print(output)
             [[0]
              [2]

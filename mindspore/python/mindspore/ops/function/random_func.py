@@ -920,51 +920,44 @@ def normal_ext(mean=0.0, std=1.0, size=None, generator=None):
 @_function_forbid_reuse
 def normal(shape, mean, stddev, seed=None):
     """
-    Generates random numbers according to the Normal (or Gaussian) random number distribution.
+    Return a random tensor that conforms to the normal (Gaussian) distribution.
 
     .. warning::
         The Ascend backend does not support the reproducibility of random numbers, so
         the `seed` parameter has no effect.
 
     Args:
-        shape (tuple): The shape of random tensor to be generated.
-            The format is :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
-        mean (Union[Tensor, int, float]): The mean μ distribution parameter, which specifies the location of the peak.
-        stddev (Union[Tensor, int, float]): The deviation σ distribution parameter. It should be greater than 0.
-        seed (int, optional): Seed is used as entropy source for the Random number engines to
-            generate pseudo-random numbers.
-            The value must be non-negative. Default: ``None`` , which will be treated as 0.
+        shape (tuple): The shape of returned tensor.
+        mean (Union[Tensor, int, float]): The mean of the normal distribution for the returned tensor.
+        stddev (Union[Tensor, int, float]): The standard deviation of the normal distribution for the returned tensor.
+        seed (int): Random seed. Default: ``None`` , which is equivalent to 0.
 
     Returns:
-        Tensor. The shape should be equal to the broadcasted shape between the input `shape` and shapes
-        of `mean` and `stddev`.
-        The dtype supports float32 and float64.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
         >>> shape = (3, 1, 2)
-        >>> mean = Tensor(np.array([[3, 4], [5, 6]]), mindspore.float32)
-        >>> stddev = Tensor(1.0, mindspore.float32)
-        >>> output = ops.normal(shape, mean, stddev, seed=5)
+        >>> mean = mindspore.tensor([[3, 4], [5, 6]], mindspore.float32)
+        >>> stddev = mindspore.tensor(1.0, mindspore.float32)
+        >>> output = mindspore.ops.normal(shape, mean, stddev, seed=5)
         >>> result = output.shape
         >>> print(result)
         (3, 2, 2)
         >>> shape = (3, 1, 3)
-        >>> mean = Tensor(np.array([[3, 4, 3], [3, 5, 6]]), mindspore.float32)
-        >>> stddev = Tensor(1.0, mindspore.float32)
-        >>> output = ops.normal(shape, mean, stddev, seed=5)
+        >>> mean = mindspore.tensor([[3, 4, 3], [3, 5, 6]], mindspore.float32)
+        >>> stddev = mindspore.tensor(1.0, mindspore.float32)
+        >>> output = mindspore.ops.normal(shape, mean, stddev, seed=5)
         >>> result = output.shape
         >>> print(result)
         (3, 2, 3)
         >>> shape = (3, 1, 3)
-        >>> mean = Tensor(np.array([[1, 2, 3], [3, 4, 3], [3, 5, 6]]), mindspore.float32)
-        >>> stddev = Tensor(1.0, mindspore.float32)
-        >>> output = ops.normal(shape, mean, stddev, seed=5)
+        >>> mean = mindspore.tensor([[1, 2, 3], [3, 4, 3], [3, 5, 6]], mindspore.float32)
+        >>> stddev = mindspore.tensor(1.0, mindspore.float32)
+        >>> output = mindspore.ops.normal(shape, mean, stddev, seed=5)
         >>> result = output.shape
         >>> print(result)
         (3, 3, 3)
