@@ -3,7 +3,9 @@ mindspore.ops.fmod
 
 .. py:function:: mindspore.ops.fmod(input, other)
 
-    计算除法运算 input/other 的浮点余数。
+    逐元素计算第一个输入除以第二个输入的余数。
+
+    支持广播、类型提升。
 
     .. math::
         out = input - n * other
@@ -16,7 +18,4 @@ mindspore.ops.fmod
         - **other** (Union[Tensor, Number]) - 除数。
 
     返回：
-        Tensor，输出的shape与广播后的shape相同，数据类型取两个输入中精度较高或数字较高的。
-
-    异常：
-        - **TypeError** - `input` 和 `other` 都不是Tensor。
+        Tensor
