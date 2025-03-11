@@ -22,7 +22,6 @@
 #include <cstdlib>
 #include "nlohmann/json.hpp"
 #include "include/common/utils/utils.h"
-#include "utils/ms_utils.h"
 
 namespace {
 constexpr auto kLogValidFlag =
@@ -166,9 +165,8 @@ const LazyFusionFlags &LazyFusionFlags::GetInstance() {
 }
 
 LazyFusionFlags::LazyFusionFlags() {
-  std::string str_flags = common::EnvHelper::GetInstance()->GetEnv("MS_DEV_LAZY_FUSION_FLAGS") == nullptr
-                            ? ""
-                            : std::string(common::EnvHelper::GetInstance()->GetEnv("MS_DEV_LAZY_FUSION_FLAGS"));
+  std::string str_flags =
+    std::getenv("MS_DEV_LAZY_FUSION_FLAGS") == nullptr ? "" : std::string(std::getenv("MS_DEV_LAZY_FUSION_FLAGS"));
   std::map<std::string, std::string> flag_map = ParseFlags(str_flags);
   RegisterFlags(&flag_map);
   MS_LOG(INFO) << "lazy_fusion_flags :" << DumpAllFlags();

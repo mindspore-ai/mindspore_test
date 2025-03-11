@@ -16,7 +16,6 @@
 #ifndef MINDSPORE_CORE_UTILS_MS_UTILS_H_
 #define MINDSPORE_CORE_UTILS_MS_UTILS_H_
 
-#include <map>
 #include <memory>
 #include <utility>
 #include <string>
@@ -28,7 +27,6 @@
 #include <chrono>
 #include <algorithm>
 #include <cctype>
-#include <mutex>
 #include <set>
 #include <sstream>
 #include "mindapi/base/macros.h"
@@ -129,23 +127,8 @@ MS_CORE_API bool IsEnableAllocConfig(const std::string &alloc_config);
 MS_CORE_API bool IsDisableAllocConfig(const std::string &alloc_config);
 MS_CORE_API bool IsEnableAclnnViewOp(const std::string &op);
 
-// Get env thread safe with cache.
-struct EnvHelper;
-using EnvHelperPtr = std::shared_ptr<EnvHelper>;
-struct MS_CORE_API EnvHelper {
-  static EnvHelperPtr &GetInstance();
-
-  const char *GetEnv(const char *conf, bool cache_env = false);
-
-  // Reset env cache, if conf is nullptr, reset all cache.
-  void ResetCache(const char *conf);
-
-  std::map<std::string, std::string> env_cache_;
-  std::mutex mutex_;
-};
-
 static inline std::string GetEnv(const std::string &envvar, const std::string &default_value = "") {
-  const char *value = EnvHelper::GetInstance()->GetEnv(envvar.c_str());
+  const char *value = std::getenv(envvar.c_str());
 
   if (value == nullptr) {
     return default_value;
@@ -158,7 +141,6 @@ static inline int SetEnv(const char *envname, const char *envvar, int overwrite 
 #if defined(_WIN32)
   return 0;
 #else
-  EnvHelper::GetInstance()->ResetCache(envname);
   return ::setenv(envname, envvar, overwrite);
 #endif
 }

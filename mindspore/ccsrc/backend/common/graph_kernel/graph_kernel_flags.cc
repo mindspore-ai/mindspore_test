@@ -23,7 +23,6 @@
 #include <utility>
 #include "nlohmann/json.hpp"
 #include "utils/ms_context.h"
-#include "utils/ms_utils.h"
 #include "utils/file_utils.h"
 #include "include/common/utils/utils.h"
 
@@ -253,7 +252,7 @@ std::pair<std::string, bool> GraphKernelFlags::GetGraphKernelConfig() {
     enable_gk = (jit_level == kAttrJitLevelO1);
   }
   // use environ flags in priority
-  auto flags_env = common::EnvHelper::GetInstance()->GetEnv("MS_DEV_GRAPH_KERNEL_FLAGS");
+  auto flags_env = std::getenv("MS_DEV_GRAPH_KERNEL_FLAGS");
   if (flags_env != nullptr) {
     return std::make_pair(std::string(flags_env), enable_gk);
   }
