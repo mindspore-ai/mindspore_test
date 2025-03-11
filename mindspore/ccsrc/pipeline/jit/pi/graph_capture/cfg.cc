@@ -121,6 +121,8 @@ static int DeOptimizedOpcode(int op) {
    * add them at code gen
    */
   op = (op == PRECALL || op == MAKE_CELL || op == COPY_FREE_VARS) ? NOP : op;
+#else
+  op = op == LOAD_METHOD ? LOAD_ATTR : (op == CALL_METHOD ? CALL_FUNCTION : op);
 #endif
   // for python3.11+, the bytes from getattr(code, "co_code"), all opcode is de-optimized
   return op;

@@ -1519,19 +1519,24 @@ py::object CodeBreakGenerator::MakeDispatchCode() {
 
   CodeGenerator code_gen(&interpret_);
 
-  // for python3.11+ copy origin instruction need pop the null pointer (which is only consume by call instruction)
-  // from stack. here generate code from node avoid pop null
   if (IsCopyCapturedInstructions()) {
     MS_LOG(DEBUG) << "No graph captured";
     interpret_.outputs.resize(interpret_.outputs.size() - side_effect_handler_->GetRequiredNodes().size());
     int stack_count = interpret_.outputs.size() - alive_locals_.size();
-    std::vector<ValueNode *> locals(co_->co_nlocals, &ValueNode::kUnboundLocal);
-    for (size_t i = 0, size = alive_locals_.size(); i < size; ++i) {
-      locals[alive_locals_[i]] = interpret_.outputs[stack_count + i];
+    int output_index = 0;
+    std::vector<std::unique_ptr<Instr>> instrs;
+    std::vector<ValueNode *> locals(co_->co_nlocals + stack_count, &ValueNode::kUnboundLocal);
+    for (; output_index < stack_count; ++output_index) {
+      locals[co_->co_nlocals + output_index] = interpret_.outputs[output_index];
+      instrs.push_back(std::make_unique<Instr>(STORE_FAST, co_->co_nlocals + output_index));
+    }
+    for (size_t i = 0, size = alive_locals_.size(); i < size; ++i, ++output_index) {
+      locals[alive_locals_[i]] = interpret_.outputs[output_index];
     }
     std::swap(locals, interpret_.inputs);
     code_gen.Init();
     code_gen.AddInstrs(CodeGenerator::CopyInstr(GetCFG()->instr_pool(), 0, break_bci_, true));
+    code_gen.AddInstrs({std::make_move_iterator(instrs.rbegin()), std::make_move_iterator(instrs.rend())});
     std::swap(locals, interpret_.inputs);
   } else {
     code_gen.SetGlobals(globals_);

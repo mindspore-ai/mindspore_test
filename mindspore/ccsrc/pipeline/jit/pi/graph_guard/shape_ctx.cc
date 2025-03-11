@@ -240,10 +240,13 @@ void ShapeContext::ApplySignature() {
   if (!CheckValid()) {
     return;
   }
-  PyCodeWrapper co = frame_.GetCode();
+  PyCodeWrapper co_wrapper = frame_.GetCode();
   // in python3.11+, modify fast local maybe cause error
   PyObject **fast_local = const_cast<PyObject **>(frame_.FastLocal());
-  int argc = co.ArgCount();
+  bool has_va;
+  bool has_kw_va;
+  int argc = co_wrapper.ArgCount(&has_va, &has_kw_va);
+  argc = argc - has_va - has_kw_va;
   for (int i = (is_method_ ? 1 : 0), j = 0; i < argc; ++i, ++j) {
     PyObject *sig_item = PyTuple_GetItem(signature_, j);
     PyObject *org_item = fast_local[i];
@@ -258,9 +261,12 @@ void ShapeContext::RevertSignature() {
   if (!applied_) {
     return;
   }
-  PyCodeWrapper co = frame_.GetCode();
+  PyCodeWrapper co_wrapper = frame_.GetCode();
   PyObject **fast_local = const_cast<PyObject **>(frame_.FastLocal());
-  int argc = co.ArgCount();
+  bool has_va;
+  bool has_kw_va;
+  int argc = co_wrapper.ArgCount(&has_va, &has_kw_va);
+  argc = argc - has_va - has_kw_va;
   for (int i = (is_method_ ? 1 : 0), j = 0; i < argc; ++i, ++j) {
     fast_local[i] = origin_[j];
   }

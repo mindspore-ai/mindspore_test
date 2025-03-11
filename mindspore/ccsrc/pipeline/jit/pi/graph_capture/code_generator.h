@@ -254,6 +254,9 @@ class CodeBreakGenerator {
 
  private:
   const CFG *GetCFG() const { return cfg_; }
+
+  // for python3.11+ copy origin instruction need pop the null pointer (which is only consume by call instruction)
+  // from stack. here generate code from node avoid pop null
   bool IsCopyCapturedInstructions() const { return !IS_PYTHON_3_11_PLUS && no_graph_ && !NeedHandleBreakAtCall(); }
 
   void ExtendCodeInfo(CodeGenerator *cg, bool merge_kw_only) const;
