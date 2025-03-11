@@ -832,7 +832,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         if isinstance(array, np.ndarray) and not array.flags['C_CONTIGUOUS']:
             array = np.ascontiguousarray(array)
 
-        return Tensor(TensorPy_.from_numpy(array))
+        return TensorPy_.from_numpy(array)
 
     def ndimension(self):
         r"""
