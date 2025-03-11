@@ -32,7 +32,7 @@ mindspore.ops.PrimitiveWithCheck
             Scalar的shape是一个空元组。
 
         参数：
-            - **args** (tuple(int)) - 输入tensor的shape。
+            - **args** (tuple(int)) - 输入Tensor的shape。
 
         返回：
             None。
