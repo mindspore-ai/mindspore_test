@@ -462,6 +462,8 @@ std::vector<std::unique_ptr<Instr>> CodeGenerator::ByteCodePrefix() const {
 py::object CodeGenerator::NewCode() {
   auto &instr = code_.co_code;
   EraseUnusedInstr(&instr);
+  auto prefix = ByteCodePrefix();
+  instr.insert(instr.begin(), std::make_move_iterator(prefix.begin()), std::make_move_iterator(prefix.end()));
   return Transform(code_);
 }
 
@@ -693,7 +695,7 @@ int CodeGenerator::AllocLocal(ValueNode *node, int index) {
   for (auto i = used_slots.begin(); i != used_slots.end() && res == (*i); ++i, ++res) {
   }
   locals_map_.insert({node, res});
-  SetLocalsCount(res);
+  SetLocalsCount(std::max(locals_map_.size(), static_cast<size_t>(res)));
   return res;
 }
 
@@ -730,7 +732,7 @@ void CodeGenerator::LoadValue(ValueNode *node) {
   }
   int opcode = node->GetOpcode();
   if (opcode == LOAD_DEREF) {
-    NewInstr(opcode, node->GetOparg());
+    AddInstr(std::make_unique<Instr>(opcode, node->GetOparg(), node->GetName()));
     return;
   }
   std::string key = node->GetName();
@@ -1463,9 +1465,10 @@ py::object CodeBreakGenerator::MakeDispatchCode() {
   if (IsCopyCapturedInstructions()) {
     MS_LOG(DEBUG) << "No graph captured";
     interpret_.outputs.resize(interpret_.outputs.size() - side_effect_handler_->GetRequiredNodes().size());
+    int stack_count = interpret_.outputs.size() - alive_locals_.size();
     std::vector<ValueNode *> locals(co_->co_nlocals, &ValueNode::kUnboundLocal);
     for (size_t i = 0, size = alive_locals_.size(); i < size; ++i) {
-      locals[alive_locals_[i]] = interpret_.outputs[i];
+      locals[alive_locals_[i]] = interpret_.outputs[stack_count + i];
     }
     std::swap(locals, interpret_.inputs);
     code_gen.Init();
@@ -1790,7 +1793,7 @@ static bool FindBlock(int start_bci, const CFG *cfg, int *end_bci, int *stack_ef
   return *end_bci != start_bci - 1;
 }
 
-#elif (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION < 9)
+#elif !IS_PYTHON_3_9_PLUS
 
 static size_t FindTryBlockEnd(int start_bci, const CFG *cfg) {
   const auto &list = cfg->instr_pool();

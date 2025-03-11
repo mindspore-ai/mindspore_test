@@ -174,6 +174,7 @@ class CFG {
   std::string ToString() const;
 
  private:
+  Instr *GetInstruction(int bci);
   void BuildInst(const uint8_t *begin, const uint8_t *end);
   std::map<int, Block *> BuildBB(const uint8_t *begin, const uint8_t *end);
   void BuildCFG(const std::map<int, Block *> &labels);

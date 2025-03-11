@@ -392,14 +392,19 @@ PyObject *RootTrace::RetrieveDeref(PTraceContext context) {
   int index = context->f_code_.FastLocalIndex(PyCodeWrapper::kCoFastCell, idx_);
   MS_EXCEPTION_IF_CHECK_FAIL(index >= 0, "Error trace");
   PyObject *cell = context->frame_.FastLocal()[index];
+
+#if IS_PYTHON_3_11_PLUS
   if (cell == nullptr) {
-    return nullptr;
-  }
-  if (PyCell_Check(cell)) {
-    ret = PyCell_GET(cell);
+    py::tuple free_vars = context->frame_.FreeVars();
+    size_t size = free_vars.size();
+    size_t off_end = context->f_code_.FastLocalSize() - index;
+    ret = size < off_end ? nullptr : PyCell_GET(PyTuple_GET_ITEM(free_vars.ptr(), size - off_end));
   } else {
     ret = cell;
   }
+#else
+  ret = PyCell_GET(cell);
+#endif
   Py_XINCREF(ret);
   return ret;
 }
@@ -409,11 +414,21 @@ PyObject *RootTrace::RetrieveClosure(PTraceContext context) {
   int index = context->f_code_.FastLocalIndex(PyCodeWrapper::kCoFastCell, idx_);
   MS_EXCEPTION_IF_CHECK_FAIL(index >= 0, "Error trace");
   PyObject *cell = context->frame_.FastLocal()[index];
-  if (cell == nullptr || !PyCell_Check(cell)) {
-    ret = PyCell_New(ret);
+
+#if IS_PYTHON_3_11_PLUS
+  if (cell == nullptr) {
+    py::tuple free_vars = context->frame_.FreeVars();
+    size_t size = free_vars.size();
+    size_t off_end = context->f_code_.FastLocalSize() - index;
+    ret = size < off_end ? PyCell_New(nullptr) : Py_NewRef(PyTuple_GET_ITEM(free_vars.ptr(), size - off_end));
   } else {
-    ret = Py_NewRef(ret);
+    ret = PyCell_New(cell);
   }
+#else
+  ret = cell;
+  Py_XINCREF(ret);
+#endif
+
   return ret;
 }
 

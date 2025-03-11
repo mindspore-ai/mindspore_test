@@ -111,6 +111,24 @@ void CFG::GenerateCFG() {
 #endif
 }
 
+static int DeOptimizedOpcode(int op) {
+  op = op == LOAD_METHOD ? LOAD_ATTR : op;
+#if IS_PYTHON_3_11_PLUS
+  /**
+   * `PRECALL` is only for python3.11, and it's a optimized opcode that do nothing if not bound method call
+   * It's same as `LOAD_METHOD` and `CALL_METHOD`, here ignore it
+   * `MAKE_CELL` and `COPY_FREE_VARS` is prefix of code, used to complete `FrameType` object. If reuse
+   * free variable and cell variable, and change local position, need change these codes. Here ignore it,
+   * add them at code gen
+   */
+  op = (op == PRECALL || op == MAKE_CELL || op == COPY_FREE_VARS) ? NOP : op;
+#else
+  op = op == CALL_METHOD ? CALL_FUNCTION : op;
+#endif
+  // for python3.11+, the bytes from getattr(code, "co_code"), all opcode is de-optimized
+  return op;
+}
+
 // Skip inline CACHE entries
 template <typename Ft = void (*)(int off, int op, int arg)>
 inline void DecodeInstructionBytes(const uint8_t *begin, const uint8_t *end, Ft yield) {
@@ -125,7 +143,6 @@ inline void DecodeInstructionBytes(const uint8_t *begin, const uint8_t *end, Ft 
       continue;
     }
     int op = code[i];
-    // for python3.11+, the bytes from getattr(code, "co_code"), all opcode is de-optimized
     Opcode deop(op);
     caches = deop.InstrSize() - 1;
     arg = code[i + 1] | extended_arg;
@@ -134,39 +151,47 @@ inline void DecodeInstructionBytes(const uint8_t *begin, const uint8_t *end, Ft 
   }
 }
 
+Instr *CFG::GetInstruction(int bci) {
+  if (instrs_[bci] == nullptr) {
+    instrs_[bci] = std::make_unique<Instr>(CACHE);
+  }
+  return instrs_[bci].get();
+}
+
+static void SetInstructionName(PyCodeWrapper co, Instr *cur) {
+  Opcode opcode(cur->op());
+  int arg = cur->arg();
+  if (opcode.IsLocalAccess() || opcode.HasFree()) {
+    PyCodeWrapper::LocalKind k = opcode.IsLocalAccess() ? PyCodeWrapper::kCoFastLocal : PyCodeWrapper::kCoFastFree;
+    cur->set_name(co.FastLocalName(co.FastLocalIndex(k, arg)));
+  }
+  if (opcode.HasName()) {
+    int index = arg;
+#if IS_PYTHON_3_12_PLUS
+    index = opcode == LOAD_ATTR ? (index >> 1) : index;
+#elif IS_PYTHON_3_11_PLUS
+    index = opcode == LOAD_GLOBAL ? (index >> 1) : index;
+#endif
+    py::object names = co.co_names();
+    cur->set_name(PyUnicode_AsUTF8(PyTuple_GET_ITEM(names.ptr(), index)));
+  }
+}
+
 void CFG::BuildInst(const uint8_t *begin, const uint8_t *end) {
   py::object kw_names;
   const auto make_instr = [this, &kw_names](int off, int op, int arg) {
-    op = op == LOAD_METHOD ? LOAD_ATTR : op;
-#if IS_PYTHON_3_11_PLUS
-    /**
-     * `PRECALL` is only for python3.11, and it's a optimized opcode that do nothing if not bound method call
-     * It's same as `LOAD_METHOD` and `CALL_METHOD`, here ignore it
-     * `MAKE_CELL` and `COPY_FREE_VARS` is prefix of code, used to complete `FrameType` object. If reuse
-     * free variable and cell variable, and change local position, need change these codes. Here ignore it,
-     * add them at code gen
-     */
-    op = (op == PRECALL || op == MAKE_CELL || op == COPY_FREE_VARS) ? NOP : op;
-#else
-    op = op == CALL_METHOD ? CALL_FUNCTION : op;
-#endif
+    op = DeOptimizedOpcode(op);
     Opcode opcode(op);
     int bci = off / PY_BCSIZE;
     MS_EXCEPTION_IF_CHECK_FAIL(static_cast<size_t>(bci) < instrs_.size(), "Error byte code end");
 
     int line = PyCode_Addr2Line(co_.ptr(), off);
-    if (instrs_[bci] == nullptr) {
-      instrs_[bci] = std::make_unique<Instr>(op);
-    }
-    const auto &cur = instrs_[bci];
+    Instr *cur = GetInstruction(bci);
     cur->set_bci(bci);
     cur->set_op(op);
     cur->set_arg(arg);
     cur->set_line(line);
-    if (opcode.IsLocalAccess() || opcode.HasFree()) {
-      PyCodeWrapper::LocalKind k = opcode.IsLocalAccess() ? PyCodeWrapper::kCoFastLocal : PyCodeWrapper::kCoFastFree;
-      cur->set_name(co_.FastLocalName(co_.FastLocalIndex(k, arg)));
-    }
+    SetInstructionName(co_, cur);
     if (opcode.HasConst()) {  // KW_NAMES, LOAD_CONST, RETURN_CONST
       cur->set_cnst(co_.co_consts()[arg]);
       if (op == KW_NAMES) {
@@ -177,23 +202,10 @@ void CFG::BuildInst(const uint8_t *begin, const uint8_t *end) {
       cur->set_cnst(kw_names);
       kw_names = py::object();
     }
-    if (opcode.HasName()) {
-      int index = arg;
-#if IS_PYTHON_3_12_PLUS
-      index = op == LOAD_ATTR ? (index >> 1) : index;
-#elif IS_PYTHON_3_11_PLUS
-      index = op == LOAD_GLOBAL ? (index >> 1) : index;
-#endif
-      cur->set_name(PyUnicode_AsUTF8(co_.co_names()[index].ptr()));
+    if (opcode.HasJump()) {
+      int jump = opcode.JumpTarget(bci, arg);
+      cur->set_extra_jump(GetInstruction(jump));
     }
-    if (!opcode.HasJump()) {
-      return;
-    }
-    int jump = opcode.JumpTarget(bci, arg);
-    if (instrs_[jump] == nullptr) {
-      instrs_[jump] = std::make_unique<Instr>(op);
-    }
-    cur->set_extra_jump(instrs_[jump].get());
   };
 
   DecodeInstructionBytes(begin, end, make_instr);

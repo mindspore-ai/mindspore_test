@@ -678,12 +678,10 @@ bool GraphBuilder::DoLocalAccess(const Instr &instr) {
 }
 
 namespace {
-bool IsFreeVar(PyCodeObject *code, int closure_index) {
-#if IS_PYTHON_3_11_PLUS
-  MS_LOG(INFO) << "Python 3.11 is not supported";
-  throw py::error_already_set();
-#endif
-  return closure_index >= PyCodeWrapper(code).CellVarsSize();
+bool IsFreeVar(PyCodeObject *code, int oparg) {
+  PyCodeWrapper co(code);
+  int fast_local_index = co.FastLocalIndex(PyCodeWrapper::LocalKind::kCoFastFree, oparg);
+  return fast_local_index >= (co.FastLocalSize() - co.FreeVarsSize());
 }
 }  // namespace
 
@@ -1939,48 +1937,60 @@ GraphBuilder::GraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, P
 
 GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
     : root_(this), parent_(nullptr), graph_(nullptr), current_block_(nullptr), no_grad_(false), side_effect_outputs_() {
-  auto co_wrapper = f.GetCode();
-  PyCodeObject *co = co_wrapper.ptr();
-  int argc = co_wrapper.ArgCount();
-  int nlocals = co->co_nlocals;
-  int fast_local_size = co_wrapper.FastLocalSize();
-  auto varnames_release_handle = co_wrapper.VarNames();
-  PyObject *names = varnames_release_handle.ptr();
-  auto fast_locals = f.FastLocal();
-  graph_ = NewGraph(co, f.Globals().ptr());
-  frame_.ResizeLocal(nlocals);
-  for (int i = 0; i < argc; i++) {
-    if (fast_locals[i] == nullptr) {
-      continue;
+  PyCodeWrapper co_wrapper = f.GetCode();
+  py::tuple free_vars = f.FreeVars();  // new object
+  graph_ = NewGraph(co_wrapper.ptr(), f.Globals().ptr());
+  frame_.ResizeLocal(co_wrapper.LocalSize());
+  frame_.ResizeClosure(co_wrapper.FastLocalSize() - co_wrapper.LocalSize());
+
+  auto local_handler = [this, &co_wrapper](PyObject *ptr, int index) {
+    if (ptr == nullptr) {
+      return;
     }
-    auto vo = AObject::Convert(fast_locals[i]);
-    ParamNode *n = graph_->NewParamNode(vo, i, PyUnicode_AsUTF8(PyTuple_GET_ITEM(names, i)));
-    frame_.SetLocal(i, n);
-    graph_->GetSideEffect()->data()->Track(fast_locals[i], n);
-  }
-  frame_.ResizeClosure(fast_local_size - nlocals);
-  for (int fast_index = nlocals; fast_index < fast_local_size; fast_index++) {
-    PyObject *cell = fast_locals[fast_index];
-    if (cell == nullptr) {
-      continue;
-    }
-    int offset = fast_index - nlocals;
-    int oparg = IS_PYTHON_3_11_PLUS ? fast_index : offset;
-    PyObject *cell_contents = PyCell_GET(cell);
-    CellVarNode *n = graph_->NewCellNode(AObject::Convert(cell), LOAD_CLOSURE, oparg);
+    auto vo = AObject::Convert(ptr);
+    ParamNode *n = graph_->NewParamNode(vo, index, co_wrapper.FastLocalName(index));
+    frame_.SetLocal(index, n);
+    graph_->GetSideEffect()->data()->Track(ptr, n);
+  };
+  auto cell_handler = [this, &co_wrapper](PyObject *ptr, int index) {
+    py::object cell = py::reinterpret_borrow<py::object>(ptr);
+#if IS_PYTHON_3_11_PLUS
+    // Do `MAKE_CELL` at start
+    cell = py::reinterpret_steal<py::object>(PyCell_New(ptr));
+    ptr = cell.ptr();
+#endif
+    int offset = index - co_wrapper.LocalSize();
+    int oparg = IS_PYTHON_3_11_PLUS ? index : offset;
+    const char *name = co_wrapper.FastLocalName(index);
+    CellVarNode *n = graph_->NewCellNode(AObject::Convert(cell), LOAD_CLOSURE, oparg, {}, name);
     graph_->GetTracedNodes().push_back(n);
     frame_.SetClosure(offset, n);
-    if (cell_contents == nullptr) {
-      n->SetValue(&ValueNode::kUnboundLocal);
-    } else {
-      // The bci of this ValueNode is set to 0.
-      ValueNode *param = NewValueNode(AObject::Convert(cell_contents), LOAD_DEREF, oparg);
-      graph_->GetTracedNodes().push_back(param);
-      param->SetGraph(graph_);
-      n->AddCellOper(param);
-      n->SetValue(param);
-    }
-  }
+    ValueNode *param = NewValueNode(AObject::Convert(PyCell_GET(ptr)), LOAD_DEREF, oparg, {}, name);
+    graph_->GetTracedNodes().push_back(param);
+    param->SetGraph(graph_);
+    n->SetValue(param);
+  };
+  auto free_handler = [this, &co_wrapper, &free_vars](PyObject *ptr, int index) {
+    py::object cell = py::reinterpret_borrow<py::object>(ptr);
+#if IS_PYTHON_3_11_PLUS
+    // Do `COPY_FREE_VARS` at start
+    int free_start = co_wrapper.FastLocalSize() - free_vars.size();
+    cell = py::reinterpret_borrow<py::object>(PyTuple_GET_ITEM(free_vars.ptr(), index - free_start));
+    ptr = cell.ptr();
+#endif
+    int offset = index - co_wrapper.LocalSize();
+    int oparg = IS_PYTHON_3_11_PLUS ? index : offset;
+    const char *name = co_wrapper.FastLocalName(index);
+    CellVarNode *n = graph_->NewCellNode(AObject::Convert(cell), LOAD_CLOSURE, oparg, {}, name);
+    graph_->GetTracedNodes().push_back(n);
+    frame_.SetClosure(offset, n);
+    ValueNode *param = NewValueNode(AObject::Convert(PyCell_GET(ptr)), LOAD_DEREF, oparg, {}, name);
+    graph_->GetTracedNodes().push_back(param);
+    param->SetGraph(graph_);
+    n->SetValue(param);
+  };
+  f.ForEachFastLocal(local_handler, cell_handler, free_handler);
+
   const char *name = co_wrapper.Name();
   int first_line = co_wrapper.FirstLine();
   auto fg_builder = std::make_shared<FuncGraphBuilder>(true);
@@ -3877,64 +3887,17 @@ StopTraceReason GraphBuilder::TraceRun() {
 }
 
 /**
- * Generate a graph from callable, this function will actually create python frame
- */
-static std::unique_ptr<GraphBuilder> GenerateRootGraph(const py::object &callable, const py::object &args,
-                                                       const py::object &kwargs, const GraphJitConfig &conf) {
-  PyFrameObject *frame = Utils::PrepareFrame(callable.ptr(), args.ptr(), kwargs.ptr());
-  if (frame == nullptr) {
-    PyErr_Clear();
-    return nullptr;
-  }
-  PyFrameWrapper ef(FrameConvert(frame));
-  PyCodeObject *co = ef.GetCode().ptr();
-  auto jcr = JitCompileResults::Create(co);
-  jcr->set_conf(std::make_shared<GraphJitConfig>(conf));
-  jcr->set_code(jcr->codehub()->AddOptTarget(OptOption::CreateOptionByPoint(jcr)));
-
-  auto res = std::make_unique<GraphBuilder>(ef);
-
-  Py_DECREF(frame);
-  return res;
-}
-
-/**
  * build graph and infer func result
  * it used to infer mindspore function, maybe replace with mindspore func_graph to infer.
  */
 AObject *InferFuncResult(const py::object &callable, const py::object &args, const py::object &kwargs,
                          const GraphJitConfig &conf, bool clear_guard) {
-  auto g = GenerateRootGraph(callable, args, kwargs, conf);
-  if (g == nullptr) {
-    return nullptr;
-  }
-  g->TraceRun();
-  if (conf.GetBoolConfig(GraphJitConfig::kPrintAfterAll)) {
-    g->DumpDFG();
-  }
-  if (clear_guard) {
-    Graph *graph = g->GetGraph();
-    auto jcr = GetJitCompileResults(graph->GetCodeObj());
-    jcr->codehub()->DelOptTarget(OptOption::CreateOptionByPoint(jcr), graph->GetGuardManager());
-  }
-
-  ValueNode *res = g->GetGraph()->GetRetVal();
-  if (res == nullptr) {
-    return nullptr;
-  }
-  return res->GetVobj();
+  MS_LOG(INTERNAL_EXCEPTION) << "dead code, shouldn't reach here";
 }
 
 AObject *InferFuncResult(const py::object &func, const std::vector<AObject *> &stack_args, int opcode,
                          const GraphJitConfig &conf, bool clear_guard) {
-  std::vector<py::object> args;
-  std::transform(stack_args.begin(), stack_args.end(), std::back_inserter(args),
-                 [](AObject *i) { return i ? i->GetPyObject() : py::object(); });
-  auto pair = Utils::PackCallStackArgs(args, opcode);
-  if (pair.first.ptr() == nullptr) {
-    return nullptr;
-  }
-  return InferFuncResult(func, pair.first, pair.second, conf, clear_guard);
+  MS_LOG(INTERNAL_EXCEPTION) << "dead code, shouldn't reach here";
 }
 
 AObject *InferFuncResult(const py::object &callable, const py::object &args, const py::object &kwargs,

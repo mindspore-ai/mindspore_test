@@ -56,17 +56,11 @@ class PyFrameWrapper {
     auto code = GetCode();
     for (auto size = code.FastLocalSize(), i = 0; i < size; ++i) {
       auto k = code.FastLocalKind(i);
-      if (fast[i] == nullptr) {
-        continue;
-      }
       if (k == PyCodeWrapper::kCoFastLocal) {
         FastLocalIterFunc(lh)(fast[i], i);
       } else if (k == PyCodeWrapper::kCoFastCell) {
         FastLocalIterFunc(ch)(fast[i], i);
       } else if (k == PyCodeWrapper::kCoFastFree) {
-        if (std::is_same<FreeHandler, nullptr_t>::value) {
-          break;
-        }
         FastLocalIterFunc(fh)(fast[i], i);
       }
     }
@@ -85,7 +79,6 @@ class PyFrameWrapper {
   EvalFrameObject *frame_;
 };
 
-EvalFrameObject *FrameConvert(PyFrameObject *);
 PyFunctionObject *FunctionNew(PyFunctionObject *old_func, PyCodeObject *new_code);
 
 }  // namespace pijit
