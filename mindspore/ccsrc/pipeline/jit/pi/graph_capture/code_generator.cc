@@ -419,11 +419,8 @@ std::vector<std::unique_ptr<Instr>> CodeGenerator::ByteCodePrefix() const {
   if (code_.co_freevars.size() != 0) {
     prefix.push_back(std::make_unique<Instr>(COPY_FREE_VARS, code_.co_freevars.size()));
   }
-  if (code_.co_cellvars.size() != 0 || code_.co_freevars.size() != 0) {
-    for (const auto &name : code_.co_cellvars) {
-      prefix.push_back(std::make_unique<Instr>(MAKE_CELL, 0, name));
-    }
-  }
+  const auto make_cell = [](const std::string &name) { return std::make_unique<Instr>(MAKE_CELL, 0, name); };
+  std::transform(code_.co_cellvars.begin(), code_.co_cellvars.end(), std::back_inserter(prefix), make_cell);
   prefix.push_back(std::make_unique<Instr>(RESUME));
   return prefix;
 }

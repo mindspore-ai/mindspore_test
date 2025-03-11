@@ -3635,7 +3635,7 @@ bool GraphBuilder::TraceRunForIterDict(int jump_bci) {
     ValueNode *dict_node = iter_node->iterable();
     push(dict_node);
     DoAttrAccess({LOAD_ATTR, 0, "keys"});
-    DoCall(NewCallFuncInstr(0));
+    DoCall({CALL_FUNCTION, 0});
     ValueNode *keys_node = pop();
     DoLoadConst({LOAD_CONST, 0, py::cast<py::object>(reinterpret_cast<PyObject *>(&PyTuple_Type))});
     push(keys_node);

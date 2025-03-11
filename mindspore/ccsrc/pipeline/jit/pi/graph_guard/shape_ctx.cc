@@ -36,7 +36,7 @@ void ShapeContext::RevertSignature() {}
 #else
 
 ShapeContext::ShapeContext(PyFrameWrapper f, const py::object &h)
-    : frame_(f), signature_(signature), is_method_(false), applied_(false) {
+    : frame_(f), signature_(h.ptr()), is_method_(false), applied_(false) {
   PyObject *signature = h.ptr();
   Py_XINCREF(signature);
   if (signature != nullptr) {
@@ -241,6 +241,7 @@ void ShapeContext::ApplySignature() {
     return;
   }
   PyCodeWrapper co = frame_.GetCode();
+  // in python3.11+, modify fast local maybe cause error
   PyObject **fast_local = const_cast<PyObject **>(frame_.FastLocal());
   int argc = co.ArgCount();
   for (int i = (is_method_ ? 1 : 0), j = 0; i < argc; ++i, ++j) {

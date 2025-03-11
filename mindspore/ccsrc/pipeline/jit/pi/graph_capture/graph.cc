@@ -408,12 +408,8 @@ TracePtr GuardBuilder::GetTrace(ValueNode *node, int depth) {
       }
       break;
     case AbstractNode::Type::Param:
-      if (oparg == -1) {
-        return nullptr;
-      }
-      ret = std::make_shared<RootTrace>(obj, mindspore::pijit::TraceType::Param, oparg, name);
+      ret = oparg == -1 ? nullptr : std::make_shared<RootTrace>(obj, mindspore::pijit::TraceType::Param, oparg, name);
       break;
-    case AbstractNode::Type::kUnbound:
     default:
       break;
   }
