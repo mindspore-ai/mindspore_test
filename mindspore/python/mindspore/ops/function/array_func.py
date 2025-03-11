@@ -4768,21 +4768,21 @@ def population_count(input_x):
 
 def is_tensor(obj):
     r"""
-    Check whether the input object is a :class:`mindspore.Tensor` .
+    Check whether the input object is :class:`mindspore.Tensor` .
 
     Args:
         obj (Object): input object.
 
     Returns:
-        Bool. Return True if `obj` is a Tensor, otherwise, return False.
+        Bool.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor, ops
-        >>> a = Tensor([1.9, 2.2, 3.1])
-        >>> ops.is_tensor(a)
+        >>> import mindspore
+        >>> a = mindspore.tensor([1.9, 2.2, 3.1])
+        >>> mindspore.ops.is_tensor(a)
         True
     """
     return isinstance(obj, Tensor)
@@ -4953,26 +4953,22 @@ def scalar_to_array(input_x):
 
 def scalar_to_tensor(input_x, dtype=mstype.float32):
     """
-    Converts a scalar to a `Tensor`, and converts the data type to the specified type.
+    Converts a scalar to a tensor with the specified dtype.
 
     Args:
-        input_x (Union[bool, int, float]): The input is a scalar. Only constant value is allowed.
-        dtype (mindspore.dtype): The target data type. Only constant value is allowed. Default: ``mstype.float32``.
+        input_x (Union[bool, int, float]): The input scalar. Only constant value is allowed.
+        dtype (mindspore.dtype): The dtype of returned tensor. Only constant value is allowed.
 
     Returns:
-        Tensor. 0-D Tensor and the content is the input.
-
-    Raises:
-        TypeError: If `input_x` is neither bool nor int nor float.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import ops
         >>> data = 1
-        >>> output = ops.scalar_to_tensor(data, mindspore.float32)
+        >>> output = mindspore.ops.scalar_to_tensor(data, mindspore.float32)
         >>> print(output)
         1.0
     """
@@ -4983,28 +4979,23 @@ def tuple_to_array(input_x):
     """
     Converts a tuple to a tensor.
 
-    If the type of the first number in the tuple is integer, the data type of the output tensor is int.
-    Otherwise, the data type of the output tensor is float.
+    .. note::
+        If the type of the first number in the tuple is integer, the data type of the output tensor is int.
+        Otherwise, the data type of the output tensor is float.
 
     Args:
-        input_x (tuple): A tuple of numbers. These numbers have the same type. Only constant value is allowed.
-            The shape is :math:`(N,)`.
+        input_x (tuple): A tuple of numbers. Only constant value is allowed.
 
     Returns:
-        Tensor, if the input tuple contains `N` numbers, then the shape of the output tensor is (N,).
-
-    Raises:
-        TypeError: If `input_x` is not a tuple.
-        ValueError: If length of `input_x` is less than or equal to 0.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> input_x = (1,2,3)
-        >>> print(type(input_x))
-        <class 'tuple'>
-        >>> output = ops.tuple_to_array(input_x)
+        >>> import mindspore
+        >>> input_x = (1, 2, 3)
+        >>> output = mindspore.ops.tuple_to_array(input_x)
         >>> print(type(output))
         <class 'mindspore.common.tensor.Tensor'>
         >>> print(output)
