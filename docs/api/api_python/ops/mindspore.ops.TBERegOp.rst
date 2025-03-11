@@ -29,7 +29,7 @@
 
     .. py:method:: binfile_name(binfile_name)
 
-        设置算子底层的二进制文件名，此动作可选。
+        设置算子底层的二进制文件名，此操作可选。
 
         参数：
             - **binfile_name** (str) - 表示算子底层的二进制文件名。
@@ -46,7 +46,7 @@
         表示算子是否支持动静合一。
 
         参数：
-            - **dynamic_compile_static** (bool) - 表示动静合一的标识。默认值： ``False`` 。
+            - **dynamic_compile_static** (bool) - 表示算子是否支持动静合一的标识。默认值： ``False`` 。
 
     .. py:method:: dynamic_rank_support(dynamic_rank_support)
 
@@ -54,7 +54,7 @@
 
         参数：
             - **dynamic_rank_support** (bool) - 表示算子是否支持 DynamicRank（动态维度）。
-              ``True``：表示支持 DynamicRank，算子支持Shape（-2），用于判断是否进行动态。
+              ``True``：表示支持 DynamicRank，算子支持Shape(-2)，用于判断是否进行动态维度处理。
               ``False``：表示算子不支持DynamicRank。
               默认值： ``False`` 。
 
@@ -90,7 +90,7 @@
         表示算子是否需要op_select_format函数来动态选择合适的数据格式和数据类型。
 
         参数：
-            - **is_dynamic_format** (bool) - 表示否需要op_select_format函数来动态选择合适的数据格式和数据类型的标识。默认值： ``False`` 。
+            - **is_dynamic_format** (bool) - 表示是否需要op_select_format函数来动态选择合适的数据格式和数据类型的标识。默认值： ``False`` 。
 
     .. py:method:: kernel_name(kernel_name)
 
@@ -148,7 +148,7 @@
 
     .. py:method:: unknown_shape_formats(unknown_shape_formats)
 
-        动态Shape场景下算子输入/输出Tensor的数据排布。
+        动态Shape场景下算子，输入/输出Tensor的数据排布。
 
         参数：
-            - **unknown_shape_formats** (list) - 表示动态Shape场景下算子输入/输出Tensor的数据排布。
+            - **unknown_shape_formats** (list) - 表示动态Shape场景下，算子输入/输出Tensor的数据排布。

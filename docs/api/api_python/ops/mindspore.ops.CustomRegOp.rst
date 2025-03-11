@@ -16,7 +16,7 @@ mindspore.ops.CustomRegOp
             - **name** (str) - 表示属性的名称。如果该值为None，键"index"将不会出现在属性信息字典中。默认值： ``None`` 。
             - **param_type** (str) - 表示属性的参数类型，可以是["required", "optional"]之一。如果该值为None，键"param_type"将不会出现在属性信息字典中。默认值： ``None`` 。
 
-              - "required": 表示必须通过在注册信息中设置默认值的方式或者在调用自定义算子时提供输入值的方式来为此属性提供值。
+              - "required": 表示必须为此属性提供值。可通过两种方式实现：通过在注册信息中设置默认值；在调用自定义算子时提供输入值。
               - "optional": 表示不强制为此属性提供值。
 
             - **value_type** (str) - 表示属性的值的类型，可以是["int", "str", "bool", "float", "listInt", "listStr", "listBool", "listFloat"]之一。如果该值为None，键"value_type"将不会出现在属性信息字典中。默认值： ``None`` 。
@@ -41,7 +41,7 @@ mindspore.ops.CustomRegOp
 
     .. py:method:: dtype_format(*args)
 
-        指定 :class:`mindspore.ops.Custom` 的 `func` 参数的每个输入Tensor和输出Tensor所支持的数据类型和数据格式。正如上面给出的样例，该函数应在 `input` 和 `output` 函数之后被调用。
+        指定 :class:`mindspore.ops.Custom` 的 `func` 参数的每个输入Tensor和输出Tensor所支持的数据类型和数据格式。如上述样例，该函数应在 `input` 和 `output` 函数之后被调用。
 
         参数：
             - **\*args** (tuple) - 表示（数据类型、格式）组合的列表，`args` 的长度应该等于输入Tensor和输出Tensor数目的总和。 `args` 中的每一项也是一个tuple，tuple[0]和tuple[1]都是str类型，分别指定了一个Tensor的数据类型和数据格式。 :class:`mindspore.ops.DataType` 提供了很多预定义的（数据类型、格式）组合，例如 `DataType.F16_Default` 表示数据类型是float16，数据格式是默认格式。
@@ -51,7 +51,7 @@ mindspore.ops.CustomRegOp
 
     .. py:method:: get_op_info()
 
-        将生成的注册信息以字典类型返回。正如上面给出的样例， `CustomRegOp` 实例最后调用该函数。
+        将生成的注册信息以字典类型返回。如上述样例， `CustomRegOp` 实例最后调用该函数。
 
     .. py:method:: input(index=None, name=None, param_type="required", **kwargs)
 
