@@ -69,7 +69,6 @@ class Traceback {
   int FindMaxNameLength(const std::list<Element> &tbs) const;
   std::string Dump(bool is_all = false) const;
   std::string DumpSummary() const;
-  std::string GetStopTrace();
 
  private:
   std::string raw_func_name_;

@@ -32,7 +32,6 @@ class GraphJitConfig {
     kAutoJitCell,
     kAutoJit,
     kPrintAfterAll,
-    kPrintTraceback,
     kPrintBB,
     kPrintBytecode,
     kInterpretCapturedCode,

@@ -208,9 +208,7 @@ std::string Traceback::Dump(bool is_all) const {
     DumpInlineInfo(os, tb.func_name_);
   }
   os << "\n\n";
-  if (is_all) {
-    os << DumpSummary();
-  }
+  os << DumpSummary();
   return os.str();
 }
 
@@ -243,7 +241,6 @@ std::string Traceback::DumpSummary() const {
   os << tbs_.size() << "\n";
 
   std::array<int, kStopTrace_Reason_Count> stop_trace_reason_array{0};
-  std::array<int, kInline_Reason_Count> inline_reason_array{0};
   int graph_mode_num = 0;
   int raw_code_size = raw_code_size_;
   int pynative_code_size = 0;
@@ -260,17 +257,6 @@ std::string Traceback::DumpSummary() const {
       // count stop trace reason
       stop_trace_reason_array[it_trace->second]++;
     }
-    const auto &it_inline = inline_infos_.find(tb.func_name_);
-    if (it_inline == inline_infos_.cend()) {
-      continue;
-    }
-    for (const auto &info : it_inline->second) {
-      // count inline reason
-      inline_reason_array[info.res]++;
-      if (info.res == InlineReason::kInline || info.res == InlineReason::kInlinePartial) {
-        raw_code_size += info.code_size_;
-      }
-    }
   }
   PrintLabel(os, "graph_mode_num");
   os << graph_mode_num << "\n";
@@ -282,29 +268,13 @@ std::string Traceback::DumpSummary() const {
   os << graph_mode_code_size << "\n";
   os << "----------stop_trace_reason----------\n";
   for (size_t i = 0; i < stop_trace_reason_array.size(); ++i) {
-    PrintLabel(os, GetStopTraceReasonDesc(static_cast<StopTraceReason>(i)));
-    os << stop_trace_reason_array[i] << "\n";
-  }
-  os << "----------inline_reason----------\n";
-  for (size_t i = 0; i < inline_reason_array.size(); ++i) {
-    PrintLabel(os, GetInlineReasonDesc(static_cast<InlineReason>(i)));
-    os << inline_reason_array[i] << "\n";
+    if (stop_trace_reason_array[i] > 0) {
+      PrintLabel(os, GetStopTraceReasonDesc(static_cast<StopTraceReason>(i)));
+      os << stop_trace_reason_array[i] << "\n";
+    }
   }
   os << "\n\n";
   return os.str();
-}
-
-std::string Traceback::GetStopTrace() {
-  std::string res;
-  for (auto item : stop_trace_res_) {
-    if (res.size() == 0) {
-      res += std::string("\"") + item.first + "\":" + std::to_string(SizeToInt(item.second));
-    } else {
-      res += std::string("\"") + item.first + "\":" + std::to_string(SizeToInt(item.second));
-    }
-  }
-  res = std::string("{") + res + std::string("}");
-  return res;
 }
 
 int Traceback::FindMaxNameLength(const std::list<Element> &tbs) const {
@@ -705,11 +675,6 @@ static py::object CallCompiledResults(PyThreadState *tstate, const PyFrameWrappe
   }
   c->code()->Inc();
 
-  // dump traceback
-  if (c->conf()->GetBoolConfig(GraphJitConfig::kPrintTraceback)) {
-    // dump all traceback for the root function
-    GRAPH_JIT_LOG_F("%s\n", c->tbs()->Dump(true).c_str());
-  }
   if (!PyErr_Occurred()) {
     c->tbs()->Clear();
   }
