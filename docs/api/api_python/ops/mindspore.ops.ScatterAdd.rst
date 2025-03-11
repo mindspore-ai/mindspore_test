@@ -16,7 +16,7 @@ mindspore.ops.ScatterAdd
         这是一个运行即更新的算子。因此， `input_x` 在运算完成后即更新。
 
     参数：
-        - **use_locking** (bool) - 是否启用锁保护。如果为 ``True`` ，则 `input_x` 将受到锁的保护。否则计算结果是未定义的。默认值： ``False`` 。
+        - **use_locking** (bool，可选) - 是否启用锁保护。如果为 ``True`` ，则 `input_x` 将受到锁的保护。否则计算结果是未定义的。默认值： ``False`` 。
 
     输入：
         - **input_x** (Union[Parameter, Tensor]) - ScatterAdd的输入，数据类型为Parameter或Tensor。
@@ -30,4 +30,4 @@ mindspore.ops.ScatterAdd
         - **TypeError** - `use_locking` 不是bool。
         - **TypeError** - `indices` 不是int32或者int64。
         - **ValueError** - `updates` 的shape不等于 `indices.shape + x.shape[1:]` 。
-        - **RuntimeError** - 当 `input_x` 和 `updates` 类型不一致，需要进行类型转换时，如果 `updates` 不支持转成 `input_x` 需要的数据类型，就会报错。
+        - **RuntimeError** - 当 `input_x` 和 `updates` 类型不一致，需要进行类型转换时，如果 `updates` 不支持转成 `input_x` 需要的数据类型，即报该错误。

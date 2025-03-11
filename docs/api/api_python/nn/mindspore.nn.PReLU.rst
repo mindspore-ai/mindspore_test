@@ -13,7 +13,7 @@ mindspore.nn.PReLU
 
     其中 :math:`x_i` 是输入的Tensor。
 
-    这里 :math:`w` 是一个可学习的参数，默认初始值0.25。
+    这里 :math:`w` 是一个可学习的参数，默认初始值 ``0.25``。
 
     当带参数调用时每个通道上学习一个 :math:`w` 。如果不带参数调用时，则将在所有通道中共享单个参数 :math:`w` 。
 
@@ -23,8 +23,8 @@ mindspore.nn.PReLU
         :align: center
 
     参数：
-        - **channel** (int，可选) - 可训练参数 :math:`w` 的数量。它可以是int，值是1或输入Tensor `x` 的通道数。默认值： ``1`` 。
-        - **w** (Union[float, list, Tensor]，可选) - 参数的初始值。它可以是float、float组成的list或与输入Tensor `x` 具有相同数据类型的Tensor。默认值： ``0.25`` 。
+        - **channel** (int，可选) - 可训练参数 :math:`w` 的数量。它可以是int，值是 ``1``，或输入Tensor `x` 的通道数。默认值： ``1`` 。
+        - **w** (Union[float, list, Tensor]，可选) - 参数的初始值。它可以是float，float组成的list，或与输入Tensor `x` 具有相同数据类型的Tensor。默认值： ``0.25`` 。
 
     输入：
         - **x** (Tensor) - PReLU的输入Tensor，其shape为 :math:`(N, *)` ，其中 :math:`*` 表示任意的额外维度，数据类型为float16或float32。
