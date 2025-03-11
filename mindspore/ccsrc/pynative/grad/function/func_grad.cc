@@ -919,6 +919,10 @@ void FuncGrad::CallCPPFunctionBprop(const ValuePtrList &flatten_outputs, const B
   auto variable = std::make_shared<FuncVariable>(node, false);
   (void)variable_set_.insert(variable);
 
+  for (auto &dirty_tensor : dirty_tensors) {
+    dirty_tensor->BumpVersion();
+  }
+
   ProcessForwardOutput(flatten_outputs, input_base_tensors, dirty_tensors, non_diff_tensors, inputs,
                        input_value_grad_type, variable);
   // for tensor hook
