@@ -157,10 +157,14 @@ def test_runtime_reset_peak_memory_stats():
 
     net = Net()
     net(Tensor(2.0))
+    reserved_before_reset = ms.runtime.memory_reserved()
+    allocated_before_reset = ms.runtime.memory_allocated()
     ms.runtime.reset_peak_memory_stats()
-    res = ms.runtime.memory_stats()
+    reserved_peak_after_reset = ms.runtime.max_memory_reserved()
+    allocated_peak_after_reset = ms.runtime.max_memory_allocated()
     _pynative_executor.sync()
-    assert (res["max_reserved_memory"] == 0 and res["max_allocated_memory"] == 0)
+    assert (reserved_before_reset == reserved_peak_after_reset and
+            allocated_before_reset == allocated_peak_after_reset)
 
 
 @arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
@@ -177,10 +181,11 @@ def test_runtime_reset_max_memory_reserved():
 
     net = Net()
     net(Tensor(2.0))
+    reserved_before_reset = ms.runtime.memory_reserved()
     ms.runtime.reset_max_memory_reserved()
-    res = ms.runtime.max_memory_reserved()
+    reserved_peak_after_reset = ms.runtime.max_memory_reserved()
     _pynative_executor.sync()
-    assert res == 0
+    assert reserved_before_reset == reserved_peak_after_reset
 
 
 @arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
@@ -196,7 +201,8 @@ def test_runtime_reset_max_memory_allocated():
 
     net = Net()
     net(Tensor(2.0))
+    allocated_before_reset = ms.runtime.memory_allocated()
     ms.runtime.reset_max_memory_allocated()
-    res = ms.runtime.max_memory_allocated()
+    allocated_peak_after_reset = ms.runtime.max_memory_allocated()
     _pynative_executor.sync()
-    assert res == 0
+    assert allocated_before_reset == allocated_peak_after_reset

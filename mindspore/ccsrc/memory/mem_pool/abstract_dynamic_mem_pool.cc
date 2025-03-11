@@ -1020,11 +1020,9 @@ size_t AbstractDynamicMemPool::TotalEagerFreeMemStatistics() const { return mem_
 
 size_t AbstractDynamicMemPool::UsedMemPeakStatistics() const { return mem_stat_.peak_size_; }
 
-size_t AbstractDynamicMemPool::MaxMemAllocatedStatistics() const { return mem_stat_.temp_peak_size_; }
+size_t AbstractDynamicMemPool::MaxMemAllocatedStatistics() const { return mem_stat_.iter_used_peak_size_; }
 
-size_t AbstractDynamicMemPool::MaxMemReservedStatistics() const {
-  return mem_stat_.alloc_size_ - mem_stat_.temp_alloc_size_;
-}
+size_t AbstractDynamicMemPool::MaxMemReservedStatistics() const { return mem_stat_.iter_alloc_peak_size_; }
 
 size_t AbstractDynamicMemPool::ActualPeakStatistics() const {
   if (IsEnableVmm()) {
@@ -1101,14 +1099,12 @@ AbstractDynamicMemPool::PersistentMemBlocksInfoStatistics() const {
 
 void AbstractDynamicMemPool::ResetMaxMemReserved() {
   LockGuard lock(lock_);
-  mem_stat_.temp_alloc_size_ = mem_stat_.alloc_size_;
+  mem_stat_.iter_alloc_peak_size_ = mem_stat_.alloc_size_;
 }
 
 void AbstractDynamicMemPool::ResetMaxMemAllocated() {
   LockGuard lock(lock_);
-  mem_stat_.temp_used_size_ = mem_stat_.used_size_;
-  mem_stat_.temp_used_by_event_size_ = mem_stat_.used_by_event_size_;
-  mem_stat_.temp_peak_size_ = 0;
+  mem_stat_.iter_used_peak_size_ = mem_stat_.used_size_;
 }
 
 AbstractEnhancedDynamicMemPool::AbstractEnhancedDynamicMemPool() {}

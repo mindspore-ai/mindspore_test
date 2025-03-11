@@ -103,12 +103,9 @@ class DynamicMemBlock {
 
 struct DeviceState {
   void UpdatePeakSize() {
-    size_t total_used_size_ = total_used_mem_size_ + total_used_by_event_mem_size_;
-    size_t temp_used_size_ = temp_total_used_mem_size_ + temp_total_used_by_event_mem_size_;
-    used_mem_peak_size_ = std::max(used_mem_peak_size_, total_used_size_);
-    if (total_used_size_ > temp_used_size_) {
-      temp_used_mem_peak_size_ = std::max(temp_used_mem_peak_size_, total_used_size_ - temp_used_size_);
-    }
+    used_mem_peak_size_ = std::max(used_mem_peak_size_, total_used_mem_size_);
+    iter_used_mem_peak_size_ = std::max(iter_used_mem_peak_size_, total_used_mem_size_);
+    iter_total_mem_peak_size_ = std::max(iter_total_mem_peak_size_, total_mem_size_);
   }
 
   // Memory allocated from device
@@ -123,14 +120,10 @@ struct DeviceState {
   size_t total_eager_free_mem_size_{0};
   // Maximum peak memory usage
   size_t used_mem_peak_size_{0};
-  // Recorded data for memory in use since reset maximum allocated memory
-  size_t temp_total_used_mem_size_{0};
-  // Recorded data for memory in use by event since reset maximum allocated memory
-  size_t temp_total_used_by_event_mem_size_{0};
   // Recorded data for maximum peak memory usage since reset maximum allocated memory
-  size_t temp_used_mem_peak_size_{0};
+  size_t iter_used_mem_peak_size_{0};
   // Temporary recorded data for memory reserved since reset maximum reserved memory
-  size_t temp_total_mem_size_{0};
+  size_t iter_total_mem_peak_size_{0};
 };
 
 struct MemStatusManager {

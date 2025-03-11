@@ -835,7 +835,6 @@ bool DynamicMemPoolBestFit::PreCombineMemBuf(const DynamicMemBufPtr &mem_buf, co
   auto device_addr = mem_buf->device_addr_;
   if (mem_buf->status_ == DynamicMemBufStatus::kMemBufUsed && !mem_buf->IsEventNotUsed()) {
     mem_buf->status_ = DynamicMemBufStatus::kMemBufUsedByEvent;
-    mem_mng->mps_.total_used_mem_size_ -= mem_buf->size_;
     mem_mng->mps_.total_used_by_event_mem_size_ += mem_buf->size_;
     MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Combine mem buf exit since mem buf is used by event, device_addr : "
                                          << device_addr
@@ -901,6 +900,7 @@ void DynamicMemPoolBestFit::CombineMemBuf(const DynamicMemBlockPtr &mem_block,
       MS_LOG(EXCEPTION) << "The total used by event mem size : " << mem_mng->mps_.total_used_by_event_mem_size_
                         << " is less than the size of membuf : " << mem_buf->size_ << ".";
     }
+    mem_mng->mps_.total_used_mem_size_ -= mem_buf->size_;
     mem_mng->mps_.total_used_by_event_mem_size_ -= mem_buf->size_;
     MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Combine mem buf for addr : " << mem_buf->device_addr_
                                          << ", used by event mem size : " << mem_mng->mps_.total_used_by_event_mem_size_
@@ -1265,11 +1265,10 @@ void DynamicMemPoolBestFit::DumpDynamicMemPoolDebugInfo() {
     if (device_state.total_eager_free_mem_size_ != total_eager_free_mem_in_mem_mng) {
       MS_LOG(ERROR) << "Check error: the eager free memory in the mem_block is not equal the global eager free memory.";
     }
-    if (device_state.total_mem_size_ != device_state.total_used_mem_size_ + device_state.total_used_by_event_mem_size_ +
-                                          device_state.total_idle_mem_size_ + device_state.total_eager_free_mem_size_) {
+    if (device_state.total_mem_size_ != device_state.total_used_mem_size_ + device_state.total_idle_mem_size_ +
+                                          device_state.total_eager_free_mem_size_) {
       MS_LOG(ERROR) << "Check error: the the total memory : " << device_state.total_mem_size_
                     << " is not equal the sum of used memory : " << device_state.total_used_mem_size_
-                    << ", use by event memory : " << device_state.total_used_by_event_mem_size_
                     << ", idle memory : " << device_state.total_idle_mem_size_
                     << " and eager free memory : " << device_state.total_eager_free_mem_size_ << ".";
     }
@@ -1449,11 +1448,10 @@ size_t DynamicMemPoolBestFit::UsedMemPeakStatistics() const {
   return common_mem_->mps_.used_mem_peak_size_ + persistent_mem_->mps_.used_mem_peak_size_;
 }
 size_t DynamicMemPoolBestFit::MaxMemAllocatedStatistics() const {
-  return common_mem_->mps_.temp_used_mem_peak_size_ + persistent_mem_->mps_.temp_used_mem_peak_size_;
+  return common_mem_->mps_.iter_used_mem_peak_size_ + persistent_mem_->mps_.iter_used_mem_peak_size_;
 }
 size_t DynamicMemPoolBestFit::MaxMemReservedStatistics() const {
-  return common_mem_->mps_.total_mem_size_ + persistent_mem_->mps_.total_mem_size_ -
-         common_mem_->mps_.temp_total_mem_size_ - persistent_mem_->mps_.temp_total_mem_size_;
+  return common_mem_->mps_.iter_total_mem_peak_size_ + persistent_mem_->mps_.iter_total_mem_peak_size_;
 }
 size_t DynamicMemPoolBestFit::ActualPeakStatistics() const {
   if (IsEnableVmm()) {
@@ -1486,16 +1484,12 @@ DynamicMemPoolBestFit::PersistentMemBlocksInfoStatistics() const {
   return ExtractBlocksListInfo(persistent_mem_);
 }
 void DynamicMemPoolBestFit::ResetMaxMemReserved() {
-  common_mem_->mps_.temp_total_mem_size_ = common_mem_->mps_.total_mem_size_;
-  persistent_mem_->mps_.temp_total_mem_size_ = persistent_mem_->mps_.total_mem_size_;
+  common_mem_->mps_.iter_total_mem_peak_size_ = common_mem_->mps_.total_mem_size_;
+  persistent_mem_->mps_.iter_total_mem_peak_size_ = persistent_mem_->mps_.total_mem_size_;
 }
 void DynamicMemPoolBestFit::ResetMaxMemAllocated() {
-  common_mem_->mps_.temp_total_used_mem_size_ = common_mem_->mps_.total_used_mem_size_;
-  persistent_mem_->mps_.temp_total_used_mem_size_ = persistent_mem_->mps_.total_used_mem_size_;
-  common_mem_->mps_.temp_total_used_by_event_mem_size_ = common_mem_->mps_.total_used_by_event_mem_size_;
-  persistent_mem_->mps_.temp_total_used_by_event_mem_size_ = persistent_mem_->mps_.total_used_by_event_mem_size_;
-  common_mem_->mps_.temp_used_mem_peak_size_ = 0;
-  persistent_mem_->mps_.temp_used_mem_peak_size_ = 0;
+  common_mem_->mps_.iter_used_mem_peak_size_ = common_mem_->mps_.total_used_mem_size_;
+  persistent_mem_->mps_.iter_used_mem_peak_size_ = persistent_mem_->mps_.total_used_mem_size_;
 }
 }  // namespace device
 }  // namespace mindspore
