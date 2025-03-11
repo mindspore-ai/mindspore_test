@@ -16,7 +16,7 @@ mindspore.dataset.Schema
         向schema中添加新列。
 
         参数：
-            - **name** (str) - 列的新名称。
+            - **name** (str) - 新列的名称。
             - **de_type** (str) - 列的数据类型。
             - **shape** (list[int], 可选) - 列shape。默认值： ``None`` ， ``-1`` 表示该维度的shape是未知的。
 
@@ -42,8 +42,8 @@ mindspore.dataset.Schema
         参数：
             - **columns** (Union[dict, list[dict], tuple[dict]]) - 数据集属性信息，从schema文件解码。
 
-              - **list** [dict]：'name'和 'type'必须为key值， 'shape'可选。
-              - **dict** ：columns.keys()作为名称，columns.values()是dict，其中包含 'type'， 'shape'可选。
+              - **list** [dict]： `name` 和 `type` 必须为key值， `shape` 可选。
+              - **dict** ：columns.keys()作为名称，columns.values()是dict，其中包含可选的 `type`， `shape` 。
 
         异常：
             - **RuntimeError** - 解析列失败。
@@ -55,5 +55,5 @@ mindspore.dataset.Schema
         获取schema的JSON字符串。
 
         返回：
-            str，模式的JSON字符串。
+            str，schema模式的JSON字符串。
         

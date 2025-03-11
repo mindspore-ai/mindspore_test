@@ -306,7 +306,7 @@
         获取此Cell的parameter字典。
 
         参数：
-            - **recurse** (bool) - 是否递归得包含所有子Cell的parameter。默认值： ``True`` 。
+            - **recurse** (bool) - 是否递归地包含所有子Cell的parameter。默认值： ``True`` 。
 
         返回：
             OrderedDict类型，返回参数字典。
