@@ -23,6 +23,7 @@ from mindspore.nn import TrainOneStepCell, WithLossCell, Momentum
 from mindspore.nn.wrap.cell_wrapper import PipelineCell
 from mindspore.communication.management import init, create_group, destroy_group, get_group_size, get_rank, \
     get_local_rank, get_world_rank_from_group_rank, get_group_rank_from_world_rank
+from mindspore.communication.comm_func import barrier
 from tests.mark_utils import arg_mark
 
 os.environ["MS_SIMULATION_LEVEL"] = "0"
@@ -319,4 +320,16 @@ def test_simu_execute_pipeline_graph():
     model = Model(pipe_net, optimizer=optimizer)
     model.train(1, dataset, dataset_sink_mode=False)
     context.reset_auto_parallel_context()
+    os.environ["MS_SIMULATION_LEVEL"] = ""
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+def test_simu_execute_simu_barrier():
+    """
+    Feature: simulation level.
+    Description: run barrier when set simulation level 3.
+    Expectation: no exception.
+    """
+    os.environ["MS_SIMULATION_LEVEL"] = "3"
+    context.set_context(jit_level='O0')
+    barrier()
     os.environ["MS_SIMULATION_LEVEL"] = ""
