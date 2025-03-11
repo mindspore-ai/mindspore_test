@@ -417,36 +417,37 @@ class DistributedSampler(BuiltinSampler):
     """
     A sampler that accesses a shard of the dataset, it helps divide dataset into multi-subset for distributed training.
 
-    - The shuffling modes supported for different datasets are as follows:
+    Note:
+        The shuffling modes supported for different datasets are as follows:
 
-    .. list-table:: List of support for shuffling mode
-        :widths: 50 50 50 50
-        :header-rows: 1
+        .. list-table:: List of support for shuffling mode
+            :widths: 50 50 50 50
+            :header-rows: 1
 
-        * - Shuffling Mode
-          - MindDataset
-          - TFRecordDataset
-          - Others
-        * - ``Shuffle.ADAPTIVE``
-          - Supported
-          - Not Supported
-          - Not Supported
-        * - ``Shuffle.GLOBAL``
-          - Supported
-          - Supported
-          - Supported
-        * - ``Shuffle.PARTIAL``
-          - Supported
-          - Not Supported
-          - Not Supported
-        * - ``Shuffle.FILES``
-          - Supported
-          - Supported
-          - Not Supported
-        * - ``Shuffle.INFILE``
-          - Supported
-          - Not Supported
-          - Not Supported
+            * - Shuffling Mode
+              - MindDataset
+              - TFRecordDataset
+              - Others
+            * - ``Shuffle.ADAPTIVE``
+              - Supported
+              - Not Supported
+              - Not Supported
+            * - ``Shuffle.GLOBAL``
+              - Supported
+              - Supported
+              - Supported
+            * - ``Shuffle.PARTIAL``
+              - Supported
+              - Not Supported
+              - Not Supported
+            * - ``Shuffle.FILES``
+              - Supported
+              - Supported
+              - Not Supported
+            * - ``Shuffle.INFILE``
+              - Supported
+              - Not Supported
+              - Not Supported
 
     Args:
         num_shards (int): Number of shards to divide the dataset into.
@@ -686,36 +687,37 @@ class RandomSampler(BuiltinSampler):
     """
     Samples the elements randomly.
 
-    - The shuffling modes supported for different datasets are as follows:
+    Note:
+        The shuffling modes supported for different datasets are as follows:
 
-    .. list-table:: List of support for shuffling mode
-        :widths: 50 50 50 50
-        :header-rows: 1
+        .. list-table:: List of support for shuffling mode
+            :widths: 50 50 50 50
+            :header-rows: 1
 
-        * - Shuffling Mode
-          - MindDataset
-          - TFRecordDataset
-          - Others
-        * - ``Shuffle.ADAPTIVE``
-          - Supported
-          - Not Supported
-          - Not Supported
-        * - ``Shuffle.GLOBAL``
-          - Supported
-          - Supported
-          - Supported
-        * - ``Shuffle.PARTIAL``
-          - Supported
-          - Not Supported
-          - Not Supported
-        * - ``Shuffle.FILES``
-          - Supported
-          - Supported
-          - Not Supported
-        * - ``Shuffle.INFILE``
-          - Supported
-          - Not Supported
-          - Not Supported
+            * - Shuffling Mode
+              - MindDataset
+              - TFRecordDataset
+              - Others
+            * - ``Shuffle.ADAPTIVE``
+              - Supported
+              - Not Supported
+              - Not Supported
+            * - ``Shuffle.GLOBAL``
+              - Supported
+              - Supported
+              - Supported
+            * - ``Shuffle.PARTIAL``
+              - Supported
+              - Not Supported
+              - Not Supported
+            * - ``Shuffle.FILES``
+              - Supported
+              - Supported
+              - Not Supported
+            * - ``Shuffle.INFILE``
+              - Supported
+              - Not Supported
+              - Not Supported
 
     Args:
         replacement (bool, optional): If True, put the sample ID back for the next draw. Default: ``False``.

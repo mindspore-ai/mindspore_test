@@ -29,7 +29,7 @@
 #endif
 #include "mindspore/lite/minddata/dataset/engine/datasetops/dataset_op.h"
 #include "mindspore/lite/minddata/dataset/util/status.h"
-#include "mindspore/ccsrc/minddata/dataset/engine/perf/profiling.h"
+#include "mindspore/lite/minddata/dataset/engine/perf/profiling.h"
 namespace mindspore {
 namespace dataset {
 // Forward declares
