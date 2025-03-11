@@ -15,6 +15,7 @@
  */
 
 #include "plugin/res_manager/ascend/collective/lowlatency_communication_group.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace device {
@@ -41,7 +42,7 @@ bool LowlatencyCommunicationGroup::Initialize(void *root_info) {
     return true;
   }
 
-  uint32_t device_id = std::stoi(std::getenv("DEVICE_ID"));
+  uint32_t device_id = std::stoi(common::EnvHelper::GetInstance()->GetEnv("DEVICE_ID"));
   auto ret = aclrtSetDevice(device_id);
   if (ret != ACL_RT_SUCCESS) {
     return false;

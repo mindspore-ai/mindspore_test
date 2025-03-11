@@ -27,6 +27,7 @@
 #include "abstract/utils.h"
 #include "plugin/device/cpu/hal/device/cpu_common.h"
 #include "utils/file_utils.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -47,7 +48,7 @@ void CustomAOTCpuKernelMod::SetKernelPath() {
   if (auto pos = exec_info.find(":"); pos != std::string::npos) {
     auto path = exec_info.substr(0, pos);
     if (primitive_->HasAttr("path_from_env") && GetValue<bool>(primitive_->GetAttr("path_from_env"))) {
-      const char *path_in_env = std::getenv(path.c_str());
+      const char *path_in_env = common::EnvHelper::GetInstance()->GetEnv(path.c_str());
       if (path_in_env == nullptr) {
         MS_LOG(WARNING) << "For '" << kernel_name_ << "' on CPU, the attr path_from_env is set but the env var ["
                         << path << "] is empty. Use [" << path << "] as the path to the library instead.";
@@ -63,7 +64,7 @@ void CustomAOTCpuKernelMod::SetKernelPath() {
     func_name_ = exec_info.substr(pos + 1);
 
     constexpr auto kWhiteList = "MS_CUSTOM_AOT_WHITE_LIST";
-    const char *value = std::getenv(kWhiteList);
+    const char *value = common::EnvHelper::GetInstance()->GetEnv(kWhiteList);
     if (value == nullptr) {
       static bool print_cpu_warning_once = true;
       if (print_cpu_warning_once) {

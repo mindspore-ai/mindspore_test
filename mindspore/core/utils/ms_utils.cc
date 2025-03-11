@@ -15,6 +15,7 @@
  */
 #include "utils/ms_utils.h"
 #include <map>
+#include <mutex>
 #include <set>
 #include <string>
 #include <sstream>
@@ -45,16 +46,24 @@ class Config {
  private:
   static std::map<std::string, std::map<std::string, std::string>> configs;
   static std::set<std::string> has_parsed_config;
+
+  static std::mutex mutex_;
 };
 
 std::map<std::string, std::map<std::string, std::string>> Config::configs;
 std::set<std::string> Config::has_parsed_config;
+std::mutex Config::mutex_;
 
 std::string Config::GetValue(const std::string &config, const std::string &config_key) {
+  std::lock_guard<std::mutex> lock(mutex_);
   auto ret_val = has_parsed_config.insert(config);
   if (ret_val.second) {
     // Parse config.
-    std::string env_value = GetEnv(config);
+    const auto env_config = EnvHelper::GetInstance()->GetEnv(config.c_str(), false);
+    if (env_config == nullptr) {
+      return "";
+    }
+    std::string env_value = std::string(env_config);
     if (env_value.empty()) {
       return "";
     }
@@ -103,7 +112,10 @@ std::string Config::GetValue(const std::string &config, const std::string &confi
   return configs_iter->second.at(config_key);
 }
 
-void Config::Reset(const std::string &config) { (void)has_parsed_config.erase(config); }
+void Config::Reset(const std::string &config) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  (void)has_parsed_config.erase(config);
+}
 }  // namespace
 
 MS_CORE_API void ResetConfig(const std::string &config) { Config::Reset(config); }
@@ -164,5 +176,42 @@ bool IsEnableAclnnViewOp(const std::string &op) {
   return false;
 }
 
+EnvHelperPtr &EnvHelper::GetInstance() {
+  static std::once_flag init_flag = {};
+  static EnvHelperPtr instance = nullptr;
+  std::call_once(init_flag, [&]() { instance = std::make_shared<EnvHelper>(); });
+  return instance;
+}
+
+const char *EnvHelper::GetEnv(const char *conf, bool cache_env) {
+  if (conf == nullptr) {
+    return nullptr;
+  }
+
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (!cache_env) {
+    return std::getenv(conf);
+  }
+
+  auto &&it = env_cache_.find(conf);
+  if (it != env_cache_.end()) {
+    return it->second.c_str();
+  }
+
+  auto ret = std::getenv(conf);
+  if (ret != nullptr) {
+    env_cache_[conf] = ret;
+  }
+  return ret;
+}
+
+void EnvHelper::ResetCache(const char *conf) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (conf == nullptr) {
+    env_cache_.clear();
+  } else {
+    (void)env_cache_.erase(conf);
+  }
+}
 }  // namespace common
 }  // namespace mindspore

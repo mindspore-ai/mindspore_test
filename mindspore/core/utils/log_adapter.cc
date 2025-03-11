@@ -34,6 +34,7 @@
 #include <vector>
 #include <limits>
 #include "utils/convert_utils_base.h"
+#include "utils/ms_utils.h"
 
 // namespace to support utils module definition
 namespace mindspore {
