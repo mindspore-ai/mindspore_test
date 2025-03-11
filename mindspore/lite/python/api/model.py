@@ -723,13 +723,13 @@ class ModelGroupFlag(Enum):
 
     The `ModelGroupFlag` is used to define the flags used to construct a `ModelGroup`. Currently, supports:
 
-    1. `ModelGroupFlag.SHARE_WEIGHT`, multiple models share weights share workspace memory, default construction flag
-    for `ModelGroup`.
+    1. `ModelGroupFlag.SHARE_WEIGHT`, multiple models share weights(including constatns and variables) memory.
+       Currently only supported in cloud side Ascend inference and the provider is GE.
 
-    2. `ModelGroupFlag.SHARE_WORKSPACE`, multiple models share weights(including constatns and variables) memory.
-    Currently only supported in cloud side Ascend inference and the provider is GE.
+    2. `ModelGroupFlag.SHARE_WORKSPACE`, multiple models share weights share workspace memory, default construction flag
+       for `ModelGroup`.
 
-    3. 'ModelGroupFlag.SHARE_WEIGHT_WORKSPACE', shared weight memory and workspace memory.
+    3. `ModelGroupFlag.SHARE_WEIGHT_WORKSPACE`, shared weight memory and workspace memory.
 
     Examples:
         >>> import mindspore_lite as mslite
