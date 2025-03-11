@@ -225,7 +225,7 @@ bool GraphJitConfig::SetAutoJitFilter(PyObject *callable) {
   return true;
 }
 
-bool GraphJitConfig::ShouldAutoJit(EvalFrameObject *f) {
+bool GraphJitConfig::ShouldAutoJit(PyFrameWrapper f) {
   if (!GetBoolConfig(kAutoJit)) {
     return false;
   }
@@ -240,7 +240,7 @@ bool GraphJitConfig::ShouldAutoJit(EvalFrameObject *f) {
     (void)SetBool<kAutoJit>(Py_False);
     return false;
   }
-  PyObject *arg = reinterpret_cast<PyObject *>(f);
+  PyObject *arg = reinterpret_cast<PyObject *>(f.GetCode().ptr());
   PyObject *res = PyObject_Vectorcall(filter, &arg, 1, nullptr);
   if (PyErr_Occurred()) {
     MS_LOG(ERROR) << "***" << py::error_already_set().what() << "*** at " << std::string(py::str(filter)) << " ignored";

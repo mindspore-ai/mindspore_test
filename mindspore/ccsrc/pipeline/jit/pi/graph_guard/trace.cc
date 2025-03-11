@@ -2637,9 +2637,8 @@ void UnsupportedTrace::Detach() {
 
 bool UnsupportedTrace::Support(TraceType tt) { return tt == TraceType::Unsupported; }
 
-PyObject *GetObjectFromTrace(const EvalFrameObject *frame, TracePtr trace, std::map<size_t, PyObject *> *cache,
-                             bool perf) {
-  PyFrameWrapper w(const_cast<EvalFrameObject *>(frame));
+PyObject *GetObjectFromTrace(PyFrameWrapper frame, TracePtr trace, std::map<size_t, PyObject *> *cache, bool perf) {
+  PyFrameWrapper w = frame;
   TraceContext context = {w, w.GetCode(), w.Globals(), w.Builtins(), w.Locals(), cache};
   if (trace != nullptr) {
     return trace->Retrieve(&context, perf);

@@ -2480,7 +2480,7 @@ class EqGuard : public GuardItem {
     last_ = obj->GetObject();
   }
 
-  virtual bool Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
+  virtual bool Check(PyFrameWrapper frame, std::map<size_t, PyObject *> *cache, bool perf) {
     if (var_->IsConst()) {
       return true;
     }
@@ -2591,7 +2591,7 @@ class TypeGuard : public GuardItem {
     }
   }
 
-  virtual bool Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
+  virtual bool Check(PyFrameWrapper frame, std::map<size_t, PyObject *> *cache, bool perf) {
     if (var_->IsConst() || is_const_) {
       return true;
     }
@@ -2686,7 +2686,7 @@ class IdGuard : public GuardItem {
     refId_ = obj->GetObject();
   }
 
-  virtual bool Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
+  virtual bool Check(PyFrameWrapper frame, std::map<size_t, PyObject *> *cache, bool perf) {
     if (var_->IsConst()) {
       return true;
     }
@@ -2756,7 +2756,7 @@ class ReprGuard : public GuardItem {
 
   virtual ~ReprGuard() { Py_XDECREF(refRepr_); }
 
-  virtual bool Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
+  virtual bool Check(PyFrameWrapper frame, std::map<size_t, PyObject *> *cache, bool perf) {
     if (var_->IsConst()) {
       return true;
     }
@@ -2872,7 +2872,7 @@ class AttrGuard : public GuardItem {
 
   ~AttrGuard() = default;
 
-  virtual bool Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
+  virtual bool Check(PyFrameWrapper frame, std::map<size_t, PyObject *> *cache, bool perf) {
     if (var_->IsConst()) {
       return true;
     }
@@ -2965,7 +2965,7 @@ class MatchIDGuard : public GuardItem {
     type_ = GIType::kMatchIDS;
     items_.push_back(tr);
   }
-  bool Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) override;
+  bool Check(PyFrameWrapper frame, std::map<size_t, PyObject *> *cache, bool perf) override;
   bool Check(PyObject *obj) override { return false; }
   std::string ToString() override;
   const InfoPack &Info() override;
@@ -2976,7 +2976,7 @@ class MatchIDGuard : public GuardItem {
   std::vector<TracePtr> items_;
 };
 
-bool MatchIDGuard::Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
+bool MatchIDGuard::Check(PyFrameWrapper frame, std::map<size_t, PyObject *> *cache, bool perf) {
   size_t index = 0;
   size_t items_size = items_.size();
 

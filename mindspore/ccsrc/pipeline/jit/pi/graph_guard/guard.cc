@@ -294,7 +294,7 @@ static std::string GuardCheckFailInfo(const GuardItemPtr &item, const py::handle
   return s.str();
 }
 
-bool OptGuard::Check(const EvalFrameObject *frame, bool print, std::map<size_t, PyObject *> *cache,
+bool OptGuard::Check(PyFrameWrapper frame, bool print, std::map<size_t, PyObject *> *cache,
                      std::map<size_t, bool> *success, std::map<size_t, bool> *fail, bool perf) {
   // filter failure case
   if (fail != nullptr) {

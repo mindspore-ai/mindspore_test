@@ -113,7 +113,7 @@ class JitCompileResults {
 
   void set_stat(State s);
   void set_input_signature(const py::object &sig) { input_signature_ = sig; }
-  void set_origin_frame(EvalFrameObject *f) { compile_frame_ = PyFrameWrapper(f); }
+  void set_origin_frame(PyFrameWrapper f) { compile_frame_ = f; }
   void set_code(const OptCodePtr &p) { cache_.set_code(p); }
   void set_tbs(const std::shared_ptr<Traceback> &t) { tbs_ = t; }
   void set_conf(const std::shared_ptr<GraphJitConfig> &c) { conf_ = c; }

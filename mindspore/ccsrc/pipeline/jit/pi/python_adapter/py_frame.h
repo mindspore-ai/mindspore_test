@@ -22,6 +22,12 @@
 namespace mindspore {
 namespace pijit {
 
+#if IS_PYTHON_3_11_PLUS
+using EvalFrameObject = _PyInterpreterFrame;
+#else
+using EvalFrameObject = PyFrameObject;
+#endif  // IS_PYTHON_3_11_PLUS
+
 /**
  * wrapper Frame object to fast access it's field
  */

@@ -544,7 +544,7 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
   if (UnsupportedCodeTypeCheck(code)) {
     return false;
   }
-  ShapeContext sc(c->origin_frame().frame(), c->input_signature().ptr());
+  ShapeContext sc(c->origin_frame(), c->input_signature());
   MS_LOG(INFO) << "Start compile " << ToString(frame.GetCode());
 
   ParameterManager::ScopedCleaner param_auto_cleaner;
@@ -743,7 +743,7 @@ static bool CheckGuard(JitCompileResults *c, const PyFrameWrapper &f) {
     auto oc = set[i - 1];
     OptGuardPtr guard = oc->GetGuard();
     bool print_guard = c->conf()->GetBoolConfig(GraphJitConfig::kPrintGuard);
-    if (guard != nullptr && guard->Check(f.frame(), print_guard, &cache, &success, &fail,
+    if (guard != nullptr && guard->Check(f, print_guard, &cache, &success, &fail,
                                          c->conf()->GetBoolConfig(GraphJitConfig::kLogGuardPerf))) {
       c->set_code(oc);
       c->codehub()->UpdateOptTarget(opt, oc);
@@ -796,7 +796,7 @@ static bool JitCompileWithTry(PyThreadState *tstate, JitCompileResults *c) {
   return compiled;
 }
 
-static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, EvalFrameObject *frame) {
+static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, PyFrameWrapper frame) {
   PyCodeObject *co = PyFrameWrapper(frame).GetCode().ptr();
   bool just_compiled = false;
   switch (c->stat()) {
@@ -808,7 +808,7 @@ static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, EvalFram
       }
     /* fallthrough */
     case JitCompileResults::GRAPH_CANDIDATE:
-      MS_EXCEPTION_IF_CHECK_FAIL(c->origin_frame().frame() == nullptr || c->origin_frame().frame() == frame,
+      MS_EXCEPTION_IF_CHECK_FAIL(c->origin_frame().frame() == nullptr || c->origin_frame().frame() == frame.frame(),
                                  "check recursive call compiling function");
       c->set_origin_frame(frame);
       if (!JitCompileWithTry(tstate, c)) {
@@ -819,7 +819,7 @@ static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, EvalFram
     /* fallthrough */
     case JitCompileResults::GRAPH_CALLABLE: {
       if (CheckGuard(c, PyFrameWrapper(frame))) {
-        c->set_origin_frame(nullptr);
+        c->set_origin_frame(PyFrameWrapper());
         return CallCompiledResults(tstate, PyFrameWrapper(frame), c);
       }
       if (c->stat() == JitCompileResults::NEVER_COMPILE) {
@@ -840,12 +840,12 @@ static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, EvalFram
       break;
   }
   MS_LOG(INFO) << "Fall back to python execute: " << ToString(PyFrameWrapper(frame).GetCode());
-  c->set_origin_frame(nullptr);
-  PyObject *res = _PyEval_EvalFrameDefault(tstate, frame, 0);
+  c->set_origin_frame(PyFrameWrapper{});
+  PyObject *res = _PyEval_EvalFrameDefault(tstate, frame.frame(), 0);
   return py::reinterpret_steal<py::object>(res);
 }
 
-PyObject *CallCodeHook(PyThreadState *tstate, EvalFrameObject *f, JitCompileResults *c) {
+PyObject *CallCodeHook(PyThreadState *tstate, PyFrameWrapper f, JitCompileResults *c) {
   py::object res;
   try {
     res = CodeHook(tstate, c, f);
@@ -892,7 +892,7 @@ PyObject *EvalFrame(PY_FRAME_EVAL_FUNCTION_SIGNATURE) {
   if (exc != 0) {
     return _PyEval_EvalFrameDefault(ts, f, exc);
   }
-  return PyFrameEvalHookManager::GetInstance()->RunHook(ts, f);
+  return PyFrameEvalHookManager::GetInstance()->RunHook(ts, PyFrameWrapper(f));
 }
 }  // namespace pijit
 }  // namespace mindspore

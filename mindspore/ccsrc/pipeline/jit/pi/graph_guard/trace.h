@@ -297,8 +297,8 @@ class UnsupportedTrace : public Trace {
 using UnsupportedTracePtr = std::shared_ptr<UnsupportedTrace>;
 
 /// \brief Get the reference for the object by Py_INCREF and call Py_DECREF by yourself.
-PyObject *GetObjectFromTrace(const EvalFrameObject *frame, TracePtr trace,
-                             std::map<size_t, PyObject *> *cache = nullptr, bool perf = false);
+PyObject *GetObjectFromTrace(PyFrameWrapper frame, TracePtr trace, std::map<size_t, PyObject *> *cache = nullptr,
+                             bool perf = false);
 }  // namespace pijit
 }  // namespace mindspore
 
