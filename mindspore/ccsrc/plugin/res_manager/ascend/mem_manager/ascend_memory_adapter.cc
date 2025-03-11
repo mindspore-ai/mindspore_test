@@ -105,6 +105,11 @@ bool AscendMemAdapter::Initialize() {
     return true;
   }
 
+  float huge_page_reserve_size = runtime::RuntimeConf::GetInstance()->mem_huge_page_reserve_size();
+  device_hbm_huge_page_reserved_size_ = static_cast<size_t>(huge_page_reserve_size * kGBToByte);
+  MS_LOG(INFO) << "Config huge_page_reserve_size : " << huge_page_reserve_size
+               << ", device_hbm_huge_page_reserved_size_ : " << device_hbm_huge_page_reserved_size_;
+
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   auto ret = CALL_ASCEND_API(aclrtGetMemInfo, ACL_HBM_MEM, &device_hbm_free_size_, &device_hbm_total_size_);
@@ -229,6 +234,56 @@ bool AscendMemAdapter::DeInitialize() {
   return true;
 }
 
+namespace {
+struct HugeMemReserver {
+  HugeMemReserver(size_t size, size_t reserver_size) {
+    MS_LOG(INFO) << "Huge mem reserve size : " << size << ", reserve_size : " << reserver_size << ".";
+    if (reserver_size < kMBToByte) {
+      return;
+    }
+    size_t free_size = 0;
+    size_t total_size = 0;
+    auto ret = CALL_ASCEND_API(aclrtGetMemInfo, ACL_HBM_MEM_HUGE, &free_size, &total_size);
+    MS_LOG(INFO) << "Huge mem reserve free_size : " << free_size << ", total_size : " << total_size << ".";
+    if (ret == ACL_ERROR_NONE) {
+      if (free_size < reserver_size + size) {
+        MS_LOG(WARNING) << "Free size of huge page mem[" << free_size
+                        << "] is not enough for reserving, reserver_size : " << reserver_size << ", size : " << size
+                        << ", total size : " << total_size << ", trigger reserve operation.";
+        if (free_size < reserver_size) {
+          MS_LOG(ERROR) << "Free size of huge page mem[" << free_size
+                        << "] is less than reserver_size : " << reserver_size
+                        << ", change reserve operation with free size.";
+          reserver_size = free_size;
+        }
+        ret = CALL_ASCEND_API(aclrtMalloc, reinterpret_cast<void **>(&addr_), reserver_size, ACL_MEM_MALLOC_HUGE_ONLY);
+        if (ret != ACL_RT_SUCCESS) {
+          addr_ = nullptr;
+          MS_LOG(ERROR) << "aclrtMalloc mem size[" << reserver_size << "] fail, ret[" << ret << "]";
+        } else {
+          MS_LOG(INFO) << "Huge mem reserve success, addr : " << addr_ << ", size : " << reserver_size << ".";
+        }
+      }
+    } else {
+      MS_LOG(WARNING) << "aclrtGetMemInfo mem size[" << size << "] fail, ret[" << ret << "]";
+    }
+  }
+
+  ~HugeMemReserver() {
+    if (addr_ != nullptr) {
+      auto ret = CALL_ASCEND_API(aclrtFree, addr_);
+      if (ret != ACL_ERROR_NONE) {
+        MS_LOG(ERROR) << "aclrtFree mem [" << addr_ << "] fail, ret[" << ret << "]";
+      } else {
+        MS_LOG(INFO) << "Huge mem reserve success, free : " << addr_ << ".";
+      }
+    }
+  }
+
+  void *addr_{nullptr};
+};
+}  // namespace
+
 uint8_t *AscendMemAdapter::MallocFromRts(size_t size) const {
   uint8_t *ptr = nullptr;
   if (AscendVmmAdapter::GetInstance().IsEnabled()) {
@@ -238,6 +293,7 @@ uint8_t *AscendMemAdapter::MallocFromRts(size_t size) const {
     return AscendGmemAdapter::GetInstance().MmapMemory(size, reinterpret_cast<void *>(ptr));
   }
 
+  HugeMemReserver huge_mem_reserver(size, device_hbm_huge_page_reserved_size_);
   auto ret = CALL_ASCEND_API(aclrtMalloc, reinterpret_cast<void **>(&ptr), size, ACL_MEM_TYPE_HIGH_BAND_WIDTH);
   if (ret != ACL_RT_SUCCESS) {
     if (ret == ACL_ERROR_RT_MEMORY_ALLOCATION) {

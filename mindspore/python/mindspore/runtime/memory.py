@@ -23,11 +23,19 @@ from mindspore import log as logger
 import mindspore as ms
 
 _MEMORY_PATTERN = r'[1-9][0-9]*(\.)?[0-9]*GB|0\.[0-9]*GB'
+_RESERVE_PATTERN = r'[0-9][0-9]*(\.)?[0-9]*GB|0\.[0-9]*GB'
 _device_context_mgr = DeviceContextManager.get_instance()
 
 
-@args_type_check(init_size=str, increase_size=str, max_size=str, optimize_level=str)
-def set_memory(init_size="2GB", increase_size="2GB", max_size="1024GB", optimize_level="O0"):
+@args_type_check(
+    init_size=str,
+    increase_size=str,
+    max_size=str,
+    optimize_level=str,
+    huge_page_reserve_size=str,
+)
+def set_memory(init_size="2GB", increase_size="2GB", max_size="1024GB", optimize_level="O0",
+               huge_page_reserve_size="0GB"):
     """
     Set the memory parameters of runtime device memory management that is implemented using a memory pool.
 
@@ -41,6 +49,7 @@ def set_memory(init_size="2GB", increase_size="2GB", max_size="1024GB", optimize
             The actual used memory size is the minimum of the available memory of the device and max_device_memory.
             The format is "xxGB". Default is the maximum available memory of the device, expressed as ``1024GB``.
         optimize_level (str): The memory optimize level. The value must be in ['O0', 'O1']. Default: ``O0`` .
+        huge_page_reserve_size (str): The reserved size of huge page memory. The format is "xxGB". Default: ``0GB``.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -48,7 +57,7 @@ def set_memory(init_size="2GB", increase_size="2GB", max_size="1024GB", optimize
     Examples:
         >>> import mindspore as ms
         >>> ms.set_device("Ascend", 1)
-        >>> ms.runtime.set_memory("10GB", "2GB", "60GB", "O1")
+        >>> ms.runtime.set_memory("10GB", "2GB", "60GB", "O1", "0GB")
     """
     if RuntimeConf.get_instance().is_memory_configured():
         raise RuntimeError("The 'set_memory' can not be set repeatedly.")
@@ -56,9 +65,11 @@ def set_memory(init_size="2GB", increase_size="2GB", max_size="1024GB", optimize
     _check_memory_conf_valid(init_size)
     _check_memory_conf_valid(increase_size)
     _check_memory_conf_valid(max_size)
+    Validator.check_str_by_regular(huge_page_reserve_size, _RESERVE_PATTERN)
     init_value = float(init_size[:-2])
     increase_value = float(increase_size[:-2])
     max_value = float(max_size[:-2])
+    huge_page_reserve_value = float(huge_page_reserve_size[:-2])
 
     memory_optimize_levels = ["O0", "O1"]
     if optimize_level not in memory_optimize_levels:
@@ -68,7 +79,13 @@ def set_memory(init_size="2GB", increase_size="2GB", max_size="1024GB", optimize
     if optimize_level == "O1":
         optimize_value = 1
 
-    return RuntimeConf.get_instance().set_memory(init_value, increase_value, max_value, optimize_value)
+    return RuntimeConf.get_instance().set_memory(
+        init_value,
+        increase_value,
+        max_value,
+        optimize_value,
+        huge_page_reserve_value,
+    )
 
 
 def _check_memory_conf_valid(memory_size):
