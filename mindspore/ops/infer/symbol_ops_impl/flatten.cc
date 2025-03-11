@@ -22,6 +22,7 @@ namespace ops {
 class OPS_API Flatten : public InferShapeOp {
  public:
   using InferShapeOp::InferShapeOp;
+  explicit Flatten(const SymbolPtr &input) : InferShapeOp({input}) {}
   Flatten(const SymbolPtr &input, const SymbolPtr &start, const SymbolPtr &end) : InferShapeOp({input, start, end}) {}
   ~Flatten() override = default;
   MS_DECLARE_PARENT(Flatten, InferShapeOp)
@@ -31,8 +32,9 @@ class OPS_API Flatten : public InferShapeOp {
 
 SymbolPtr Flatten::Eval() {
   auto x = input_as<ListSymbol>(kIndex0);
-  auto start_sym = input_as<IntSymbol>(kIndex1);
-  auto end_sym = input_as<IntSymbol>(kIndex2);
+  bool is_flatten_ext = input_num() > 1;
+  auto start_sym = is_flatten_ext ? input_as_sptr<IntSymbol>(kIndex1) : kSym1;
+  auto end_sym = is_flatten_ext ? input_as_sptr<IntSymbol>(kIndex2) : kSymNeg1;
   if (!x->HasData()) {
     return GenVList();
   }
@@ -41,7 +43,12 @@ SymbolPtr Flatten::Eval() {
   }
   if (x->size() == 1) {
     DoNotEvalOnRun();
-    return input(kIndex0);
+    if (is_flatten_ext) {
+      return input(kIndex0);
+    } else {
+      // the Flatten's output is always 2-D
+      return GenList(SymbolPtrList{x->item(0), kSym1});
+    }
   }
   if (!start_sym->HasData() || !end_sym->HasData()) {
     return GenVList();
@@ -57,9 +64,11 @@ SymbolPtr Flatten::Eval() {
     return input(kIndex0);
   }
   SymbolPtrList result;
-  result.reserve(x->size());
+  result.reserve(x->size() - end + start);
   for (size_t i = 0; i < x->size(); i++) {
-    if (start < i && i < end) {
+    // the flatten range is [start, end].
+    // when i == start, put the x[i] into result. when i > start, we can use result.back() = result.back() * x[i]
+    if (start < i && i <= end) {
       result.back() = Emit(std::make_shared<ScalarMul>(result.back(), x->item(i)));
     } else {
       (void)result.emplace_back(x->item(i));
@@ -68,9 +77,7 @@ SymbolPtr Flatten::Eval() {
   return ResultIntList(std::move(result));
 }
 
-REG_SYMBOL_OP_BUILDER("Flatten").SetShapeDepend({DependOn::kShape}).SetShapeFunc([](OperationBuilder *b) -> SymbolPtr {
-  return b->Emit(std::make_shared<Flatten>(b->GetInputShape(kIndex0), kSym1, kSymNeg1));
-});
+REG_SYMBOL_OP_BUILDER("Flatten").SetShapeDepend({DependOn::kShape}).SetShapeFuncWith<Flatten>();
 REG_SYMBOL_OP_BUILDER("FlattenExt")
   .SetShapeDepend({DependOn::kShape, DependOn::kValue, DependOn::kValue})
   .SetShapeFuncWith<Flatten>();
