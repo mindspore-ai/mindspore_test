@@ -15,6 +15,9 @@
  */
 
 #include "include/backend/distributed/init.h"
+#if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
+#include <signal.h>
+#endif
 #include <vector>
 #include <string>
 #include <memory>
@@ -22,7 +25,6 @@
 #include <functional>
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/debug/tft_adapter/tft_wait_sem.h"
-#include "runtime/pynative/op_executor.h"
 #include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
@@ -31,6 +33,7 @@ using distributed::recovery::RecoveryContext;
 using mindspore::debug::tft::TFTWaitSem;
 
 constexpr char kStopSchedulerFunc[] = "StopRuntimeSchedulerOnException";
+constexpr char kOpExecutorWorkerJoinFunc[] = "OpExecutorWorkerJoin";
 std::map<std::string, std::function<void()>> gDistributedCallbackMap;
 
 bool Initialize() {
@@ -67,7 +70,7 @@ bool Initialize() {
 
     // Release PyNative resources.
     runtime::Pipeline::Get().WaitAll();
-    runtime::OpExecutor::GetInstance().WorkerJoin();
+    gDistributedCallbackMap[kOpExecutorWorkerJoinFunc]();
     MS_LOG(INFO) << "Scheduler ends waiting for cluster to exit.";
     exit(0);
     return true;

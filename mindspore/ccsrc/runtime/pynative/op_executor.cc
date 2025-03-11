@@ -19,6 +19,7 @@
 #include "runtime/pipeline/pipeline.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
+#include "include/backend/distributed/init.h"
 
 namespace mindspore::runtime {
 OpExecutor &OpExecutor::GetInstance() {
@@ -89,4 +90,7 @@ void OpExecutor::ChildAfterFork() {
   RegisterCallbackForMemoryPool();
   MS_LOG(DEBUG) << "OpExecutor reinitialize after fork done.";
 }
+
+void OpExecutorWorkerJoin() { runtime::OpExecutor::GetInstance().WorkerJoin(); }
+REGISTER_DISTRIBUTED_CALLBACK(OpExecutorWorkerJoin);
 }  // namespace mindspore::runtime
