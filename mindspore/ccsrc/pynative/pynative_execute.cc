@@ -287,7 +287,7 @@ py::object PyNativeExecutor::GetDynamicInput(const py::object &actual_input) con
 
 void PyNativeExecutor::ParentBeforeFork() {
   MS_LOG(DEBUG) << "PyNativeExecutor prepare before fork.";
-  runtime::Pipeline::Get().WaitAll();
+  runtime::Pipeline::Get().ParentBeforeFork();
   MS_LOG(DEBUG) << "PyNativeExecutor prepare before fork done.";
 }
 

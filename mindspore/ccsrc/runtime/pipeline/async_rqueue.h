@@ -52,7 +52,9 @@ enum kThreadWaitLevel : int {
 class RUNTIME_PIPELINE_EXPORT AsyncRQueue {
  public:
   explicit AsyncRQueue(std::string name, kThreadWaitLevel wait_level)
-      : name_(std::move(name)), wait_level_(wait_level) {}
+      : name_(std::move(name)),
+        wait_level_(wait_level),
+        tasks_queue_(std::make_unique<RingQueue<AsyncTaskPtr, kQueueCapacity>>()) {}
   virtual ~AsyncRQueue();
 
   // Add task to the end of the queue.
@@ -81,7 +83,9 @@ class RUNTIME_PIPELINE_EXPORT AsyncRQueue {
   // Call once before all ChildAfterFork
   static void ChildAfterForkPre();
 
-  bool Spin() { return tasks_queue_.spin(); }
+  void ParentBeforeFork();
+
+  bool Spin() { return tasks_queue_->spin(); }
 
   void SetSpin(bool spin);
 
@@ -102,7 +106,7 @@ class RUNTIME_PIPELINE_EXPORT AsyncRQueue {
 
   void BindCoreForThread();
 
-  RingQueue<AsyncTaskPtr, kQueueCapacity> tasks_queue_;
+  std::unique_ptr<RingQueue<AsyncTaskPtr, kQueueCapacity>> tasks_queue_;
 
   bool disable_multi_thread_{false};
 

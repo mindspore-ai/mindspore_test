@@ -74,6 +74,19 @@ void Pipeline::ChildAfterFork() {
   MS_LOG(DEBUG) << "Pipeline reinitialize after fork end.";
 }
 
+void Pipeline::ParentBeforeFork() {
+  WaitAll();
+  GilReleaseWithCheck gil_release;
+  stress_detect_->Wait();
+  MS_LOG(DEBUG) << "ParentBeforeFork start";
+  frontend_stage_->ParentBeforeFork();
+  bprop_stage_->ParentBeforeFork();
+  backend_stage_->ParentBeforeFork();
+  launch_stage_->ParentBeforeFork();
+  stress_detect_->ParentBeforeFork();
+  MS_LOG(DEBUG) << "ParentBeforeFork end";
+}
+
 void Pipeline::DisablePipeline() {
   auto disable_pipeline = [](const AsyncRQueuePtr &stage) { stage->DisableMultiThread(); };
   disable_pipeline(frontend_stage_);

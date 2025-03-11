@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """ test fork. """
+import time
 import platform
 import pytest
 import mindspore as ms
@@ -162,3 +163,46 @@ def test_fork_subgraphs(mode):
         q.put(ms.Tensor(2, dtype=ms.float32))
         p.join(5) # timeout:5s
         assert p.exitcode == 0, f"child process idx:{i}, exitcode:{p.exitcode}"
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_fork_with_pynative_pipeline():
+    """
+    Feature: Fork test
+    Description: Test multiprocessing with PyNative pipeline.
+    Expectation: No exception
+    """
+    ms.set_context(mode=ms.PYNATIVE_MODE)
+
+    def my_child_process(q):
+        for _ in range(10):
+            y = ops.log(ms.Tensor(2.0))
+        y.asnumpy()
+
+        # wait condition variable
+        time.sleep(2)
+
+        # execute log op to weak up condition variable.
+        y = ops.log(ms.Tensor(2.0))
+        y.asnumpy()
+
+        q.put(y)
+
+    mp.set_start_method("fork", force=True)
+
+    # enable thread
+    for _ in range(10):
+        output = ops.log(ms.Tensor(1.0))
+    output.asnumpy()
+
+    # wait condition variable
+    time.sleep(2)
+
+    q = mp.Queue()
+    p = mp.Process(target=my_child_process, args=(q,))
+    p.start()
+    assert q.get().asnumpy() == ops.log(ms.Tensor(2.0)).asnumpy()
+    p.join()
