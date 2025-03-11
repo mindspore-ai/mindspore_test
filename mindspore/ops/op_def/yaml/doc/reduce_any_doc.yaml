@@ -8,7 +8,7 @@ reduce_any:
             The `axis` with tensor type is only used for compatibility with older versions and is not recommended.
 
         Args:
-            keep_dims (bool): If ``True`` , keep these reduced dimensions and the length is 1.
+            keep_dims (bool, optional): If ``True`` , keep these reduced dimensions and the length is 1.
                 If ``False`` , don't keep these dimensions. Default: ``False`` .
 
         Inputs:

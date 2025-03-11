@@ -25,57 +25,6 @@ mindspore.Tensor
     输出：
         Tensor。
 
-    **样例**：
-
-        >>> import numpy as np
-        >>> import mindspore as ms
-        >>> from mindspore import Tensor
-        >>> from mindspore.common.initializer import One
-        >>> # initialize a tensor with numpy.ndarray
-        >>> t1 = Tensor(np.zeros([1, 2, 3]), ms.float32)
-        >>> print(t1)
-        [[[0. 0. 0.]
-        [0. 0. 0.]]]
-        >>> print(type(t1))
-        <class 'mindspore.common.tensor.Tensor'>
-        >>> print(t1.shape)
-        (1, 2, 3)
-        >>> print(t1.dtype)
-        Float32
-        >>>
-        >>> # initialize a tensor with a float scalar
-        >>> t2 = Tensor(0.1)
-        >>> print(t2)
-        0.1
-        >>> print(type(t2))
-        <class 'mindspore.common.tensor.Tensor'>
-        >>> print(t2.shape)
-        ()
-        >>> print(t2.dtype)
-        Float32
-        >>>
-        >>> # initialize a tensor with a tuple
-        >>> t3 = Tensor((1, 2))
-        >>> print(t3)
-        [1 2]
-        >>> print(type(t3))
-        <class 'mindspore.common.tensor.Tensor'>
-        >>> print(t3.shape)
-        (2,)
-        >>> print(t3.dtype)
-        Int64
-        ...
-        >>> # initialize a tensor with init
-        >>> t4 = Tensor(shape = (1, 3), dtype=ms.float32, init=One())
-        >>> print(t4)
-        [[1. 1. 1.]]
-        >>> print(type(t4))
-        <class 'mindspore.common.tensor.Tensor'>
-        >>> print(t4.shape)
-        (1, 3)
-        >>> print(t4.dtype)
-        Float32
-
 .. mscnautosummary::
     :toctree: Tensor
     :nosignatures:

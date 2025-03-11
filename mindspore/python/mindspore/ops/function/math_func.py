@@ -3120,7 +3120,8 @@ def matrix_solve(matrix, rhs, adjoint=False):  # pylint: disable=redefined-outer
     Args:
         matrix (Tensor): The shape of tensor is :math:`(..., M, M)` .
         rhs (Tensor): The shape of tensor is :math:`(..., M, K)` . `rhs` must have the same dtype as `matrix`.
-        adjoint(bool): Indicating whether to solve with matrix or its (block-wise) adjoint. Default: ``False`` .
+        adjoint(bool, optional): Indicating whether to solve with matrix or its (block-wise) adjoint.
+            Default: ``False`` .
 
     Returns:
         x (Tensor), The dtype and shape is the same as 'rhs'.

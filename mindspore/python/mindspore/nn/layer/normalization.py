@@ -286,8 +286,8 @@ class BatchNorm2d(_BatchNorm):
         Note that the formula for updating the :math:`moving\_mean` and :math:`moving\_var` is
 
         .. math::
-            \text{moving_mean}=\text{moving_mean*momentum}+μ_β\text{*(1−momentum)}\\
-            \text{moving_var}=\text{moving_var*momentum}+σ^2_β\text{*(1−momentum)}
+            \text{moving_mean}=\text{moving_mean*momentum}+μ_β\text{*(1-momentum)}\\
+            \text{moving_var}=\text{moving_var*momentum}+σ^2_β\text{*(1-momentum)}
 
         where :math:`moving\_mean` is the updated mean, :math:`moving\_var` is the updated variance,
         :math:`μ_β, σ^2_β` are the observed value (mean and variance) of each batch of data.
@@ -295,28 +295,31 @@ class BatchNorm2d(_BatchNorm):
     Args:
         num_features (int): The number of channels of the input tensor. Expected input size is :math:`(N, C, H, W)`,
             `C` represents the number of channels.
-        eps (float): :math:`\epsilon` added to the denominator for numerical stability. Default: ``1e-5`` .
-        momentum (float): A floating hyperparameter of the momentum for the
+        eps (float, optional): :math:`\epsilon` added to the denominator for numerical stability. Default: ``1e-5`` .
+        momentum (float, optional): A floating hyperparameter of the momentum for the
             running_mean and running_var computation. Default: ``0.9`` .
-        affine (bool): A bool value. When set to ``True`` , :math:`\gamma` and :math:`\beta` can be learned.
+        affine (bool, optional): A bool value. When set to ``True`` , :math:`\gamma` and :math:`\beta` can be learned.
             Default: ``True`` .
-        gamma_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the :math:`\gamma` weight.
+        gamma_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initializer for the
+            :math:`\gamma` weight.
             The values of str refer to the function `mindspore.common.initializer
             <https://www.mindspore.cn/docs/en/master/api_python/mindspore.common.initializer.html>`_
             including ``'zeros'`` , ``'ones'`` , etc. Default: ``'ones'`` .
-        beta_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the :math:`\beta` weight.
+        beta_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initializer for the
+            :math:`\beta` weight.
             The values of str refer to the function `mindspore.common.initializer
             <https://www.mindspore.cn/docs/en/master/api_python/mindspore.common.initializer.html>`_
             including ``'zeros'`` , ``'ones'`` , etc. Default: ``'zeros'`` .
-        moving_mean_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the moving mean.
+        moving_mean_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initializer for the moving mean.
             The values of str refer to the function `mindspore.common.initializer
             <https://www.mindspore.cn/docs/en/master/api_python/mindspore.common.initializer.html>`_
             including ``'zeros'`` , ``'ones'`` , etc. Default: ``'zeros'`` .
-        moving_var_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the moving variance.
+        moving_var_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initializer for
+            the moving variance.
             The values of str refer to the function `mindspore.common.initializer
             <https://www.mindspore.cn/docs/en/master/api_python/mindspore.common.initializer.html>`_
             including ``'zeros'`` , ``'ones'`` , etc. Default: ``'ones'`` .
-        use_batch_statistics (bool): Default: ``None`` .
+        use_batch_statistics (bool, optional): Default: ``None`` .
 
             - If ``true`` , use the mean value and variance value of current batch data and track running mean
               and running variance.

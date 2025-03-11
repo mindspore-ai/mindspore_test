@@ -2859,7 +2859,6 @@ class Cell(Cell_):
                 a dictionary containing a whole state of the cell
 
         Example::
-
             >>> # xdoctest: +SKIP("undefined vars")
             >>> cell.state_dict().keys()
             ['bias', 'weight']
@@ -2944,8 +2943,8 @@ class Cell(Cell_):
 
         Returns:
             :class:`mindspore.nn.hooks.RemovableHandle`:
-                a handle that can be used to remove the added hook by calling
-                ``handle.remove()``
+            a handle that can be used to remove the added hook by calling
+            ``handle.remove()``
         """
         handle = RemovableHandle(self._load_state_dict_post_hooks)
         self._load_state_dict_post_hooks[handle.id] = hook

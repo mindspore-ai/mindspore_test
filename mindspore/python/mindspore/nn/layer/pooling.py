@@ -299,11 +299,12 @@ class MaxPool3d(_PoolNd):
         For Atlas training series products, this interface is not supported.
 
     Args:
-        kernel_size (Union[int, tuple[int]]): The size of kernel used to take the maximum value,
+        kernel_size (Union[int, tuple[int]], optional): The size of kernel used to take the maximum value,
             is an int number or a single element tuple that represents depth, height and width of the kernel, or a tuple
             of three int numbers that represent depth, height and width respectively.
             The value must be a positive integer. Default: ``1`` .
-        stride (Union[int, tuple[int]]): The moving stride of pooling operation, an int number or a single element tuple
+        stride (Union[int, tuple[int]], optional): The moving stride of pooling operation,
+            an int number or a single element tuple
             that represents the moving stride of pooling kernel in the directions of depth, height and the width,
             or a tuple of three int numbers that represent depth, height and width of movement respectively.
             The value must be a positive integer. If the value is None, the default value `kernel_size` is used.
@@ -324,18 +325,19 @@ class MaxPool3d(_PoolNd):
               in the depth, height and width dimension is determined by the `padding` parameter.
               If this mode is set, `padding` must be greater than or equal to 0.
 
-        padding (Union(int, tuple[int], list[int])): Pooling padding value. Default: ``0`` .
+        padding (Union(int, tuple[int], list[int]), optional): Pooling padding value. Default: ``0`` .
             `padding` can only be an integer or a tuple/list containing one or three integers.
             If `padding` is an integer or a tuple/list containing one integer, it will be padded in six directions of
             front, back, top, bottom, left and right of the input. If `padding` is a tuple/list containing three
             integers, it will be padded in front and back of the input `padding[0]` times, up and down `padding[1]`
             times, and left and right of the input `padding[2]` times.
-        dilation (Union(int, tuple[int])): The spacing between the elements of the kernel in convolution,
+        dilation (Union(int, tuple[int]), optional): The spacing between the elements of the kernel in convolution,
             used to increase the receptive field of the pooling operation. If it is a tuple, it must contain one or
             three integers. Default: ``1`` .
-        return_indices (bool): If ``True`` , output is a Tuple of 2 Tensors, representing the maxpool result and where
+        return_indices (bool, optional): If ``True`` , output is a Tuple of 2 Tensors,
+            representing the maxpool result and where
             the max values are generated. Otherwise, only the maxpool result is returned. Default: ``False`` .
-        ceil_mode (bool): If ``True``, use ceil to calculate output shape.
+        ceil_mode (bool, optional): If ``True``, use ceil to calculate output shape.
             If ``False``, use ceil to calculate output shape. Default: ``False`` .
 
     Inputs:

@@ -19,7 +19,7 @@ mindspore.Tensor
         To convert dtype of a `Tensor`, it is recommended to use `Tensor.astype()` rather than
         `Tensor(sourceTensor, dtype=newDtype)`.
 
-    Args:
+    Parameters
         - **input_data** (Union[Tensor, float, int, bool, tuple, list, numpy.ndarray]) - The data to be stored. It can be
           another Tensor, Python number or NumPy ndarray. Default: ``None`` .
         - **dtype** (:class:`mindspore.dtype`) - Used to indicate the data type of the output Tensor. The argument should

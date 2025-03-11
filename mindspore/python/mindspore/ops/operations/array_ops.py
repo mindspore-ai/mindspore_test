@@ -1802,9 +1802,9 @@ class Unstack(Primitive):
     Refer to :func:`mindspore.ops.unstack` for more details.
 
     Args:
-        axis (int): Dimension along which to unpack. Default: ``0`` .
+        axis (int, optional): Dimension along which to unpack. Default: ``0`` .
             Negative values wrap around. The range is [-R, R).
-        num (Union[None, int]): The number of output tensors.
+        num (Union[None, int], optional): The number of output tensors.
             Automatically inferred by input_x and axis if ``None`` . Default: ``None`` .
 
     Inputs:
@@ -2426,7 +2426,7 @@ class ScatterSub(Primitive):
     the relatively highest priority data type.
 
     Args:
-        use_locking (bool): Whether to protect the assignment by a lock. Default: ``False`` .
+        use_locking (bool, optional): Whether to protect the assignment by a lock. Default: ``False`` .
 
     Inputs:
         - **input_x** (Union[Parameter, Tensor]) - The target tensor, with data type of Parameter or Tensor.
