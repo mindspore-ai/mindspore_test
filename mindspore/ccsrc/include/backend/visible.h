@@ -30,6 +30,18 @@
 #endif
 
 #if (defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__CYGWIN__))
+#ifdef BACKEND_COMMON_DLL
+#define BACKEND_COMMON_EXPORT __declspec(dllexport)
+#else
+#define BACKEND_COMMON_EXPORT __declspec(dllimport)
+#endif
+#define BACKEND_COMMON_LOCAL
+#else
+#define BACKEND_COMMON_EXPORT __attribute__((visibility("default")))
+#define BACKEND_COMMON_LOCAL __attribute__((visibility("hidden")))
+#endif
+
+#if (defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__CYGWIN__))
 #ifdef BUILDING_GPU_DLL
 #define GPU_EXPORT __declspec(dllexport)
 #else

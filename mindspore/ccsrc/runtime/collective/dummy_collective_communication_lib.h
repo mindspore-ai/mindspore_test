@@ -55,7 +55,7 @@ class DummyCommunicationGroup : public CommunicationGroup {
 /// \brief DummyCollectiveCommunicationLib to maintain collective communication relationship without real device
 /// communication.
 ///
-class BACKEND_EXPORT DummyCollectiveCommunicationLib : public CollectiveCommunicationLib {
+class BACKEND_COMMON_EXPORT DummyCollectiveCommunicationLib : public CollectiveCommunicationLib {
  public:
   DummyCollectiveCommunicationLib();
 

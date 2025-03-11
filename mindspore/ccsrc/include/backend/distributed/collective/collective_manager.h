@@ -75,7 +75,7 @@ struct CreateGroupConfig {
 // The collective communication API.
 // MindSpore uses OpenMPI on CPU, NCCL on GPU, HCCL on Ascend, to achieve distributed training.
 // Besides, MindSpore also has its own communication library which is implemented on the CPU side.
-class BACKEND_EXPORT CollectiveManager {
+class BACKEND_COMMON_EXPORT CollectiveManager {
  public:
   ~CollectiveManager();
   DISABLE_COPY_AND_ASSIGN(CollectiveManager);

@@ -26,7 +26,7 @@
 namespace mindspore {
 namespace distributed {
 namespace collective {
-class BACKEND_EXPORT CollectHcclInitInfo {
+class BACKEND_COMMON_EXPORT CollectHcclInitInfo {
  public:
   ~CollectHcclInitInfo() {}
   DISABLE_COPY_AND_ASSIGN(CollectHcclInitInfo);

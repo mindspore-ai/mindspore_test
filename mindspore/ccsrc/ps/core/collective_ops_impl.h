@@ -54,7 +54,7 @@ struct CommunicationGroupInfo {
 // CollectiveOpsImpl is the collective communication API of the server.
 // For now, it implements two AllReduce algorithms: RingAllReduce and BroadcastAllReduce. Elastic AllReduce is also
 // supported for the elastic scaling feature of the server.
-class CollectiveOpsImpl {
+class BACKEND_COMMON_EXPORT CollectiveOpsImpl {
  public:
   static CollectiveOpsImpl &GetInstance() {
     static CollectiveOpsImpl instance;

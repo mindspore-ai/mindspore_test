@@ -78,7 +78,8 @@ set_property(SOURCE ${SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID
 add_library(mindspore_frontend SHARED ${SUB_OBJECTS_SRC})
 target_link_libraries(mindspore_frontend PRIVATE mindspore_ms_backend mindspore_core mindspore::pybind11_module
                       mindspore_pyboost mindspore_common mindspore_ops mindspore_ops_kernel_common
-                      mindspore_backend_manager proto_input mindspore_profiler mindspore_runtime_pipeline)
+                      mindspore_backend_manager proto_input mindspore_profiler mindspore_runtime_pipeline
+                      mindspore_backend_common)
 # for PYBIND_SRC
 target_compile_definitions(mindspore_frontend PRIVATE FRONTEND_DLL BUILDING_ME_DLL BUILDING_NP_DTYPE_DLL)
 
@@ -147,7 +148,11 @@ endif()
 
 
 set(BACKEND_COMMON_SUB_COMP
+        ps
+        distributed
         backend/operator
+        runtime/collective
+        runtime/hardware
         )
 
 foreach(_comp ${BACKEND_COMMON_SUB_COMP})
@@ -157,7 +162,7 @@ foreach(_comp ${BACKEND_COMMON_SUB_COMP})
         list(APPEND BACKEND_COMMON_SUB_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_${sub}_obj>)
         add_dependencies(_mindspore_${sub}_obj proto_input)
         if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-            target_compile_definitions(_mindspore_${sub}_obj PRIVATE BACKEND_DLL)
+            target_compile_definitions(_mindspore_${sub}_obj PRIVATE BACKEND_COMMON_DLL)
         endif()
     endif()
 endforeach()
@@ -167,7 +172,8 @@ set_property(SOURCE ${BACKEND_COMMON_SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIO
         SUBMODULE_ID=mindspore::SubModuleId::SM_ME)
 add_library(mindspore_backend_common SHARED ${BACKEND_COMMON_SUB_OBJECTS_SRC})
 target_link_libraries(mindspore_backend_common PRIVATE mindspore_core mindspore_ops mindspore_common
-        mindspore_ops_kernel_common)
+        mindspore_ops_kernel_common proto_input mindspore_backend_manager mindspore_memory_pool
+        mindspore_res_manager mindspore_profiler mindspore_runtime_pipeline)
 
 
 set(MS_BACKEND_SUB_COMP
@@ -175,8 +181,6 @@ set(MS_BACKEND_SUB_COMP
         debug/rdr
         debug/summary
         kernel
-        ps
-        distributed
         backend/common/somas
         backend/ms_backend
         backend/graph_compiler
@@ -186,11 +190,9 @@ set(MS_BACKEND_SUB_COMP
         backend/common/session
         backend/common/graph_kernel
         backend/common/expander
-        runtime/collective
         runtime/data_queue
         runtime/device
         runtime/graph_scheduler
-        runtime/hardware
         runtime/pynative
         plugin/device/cpu/hal/device
         plugin/device/cpu/hal/hardware
@@ -219,21 +221,18 @@ set_property(SOURCE ${MS_BACKEND_SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIONS
 add_library(mindspore_ms_backend SHARED ${MS_BACKEND_SUB_OBJECTS_SRC})
 
 
-if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-    target_link_libraries(mindspore_ms_backend PRIVATE mindspore::pybind11_module)
-endif()
-
+target_link_libraries(mindspore_ms_backend PRIVATE mindspore::pybind11_module)
 target_link_libraries(mindspore_ms_backend PRIVATE mindspore_core mindspore_ops
         mindspore_common mindspore_ops_kernel_common mindspore_backend_manager proto_input mindspore_res_manager
         mindspore_profiler mindspore_runtime_pipeline mindspore_dump mindspore_backend_common)
+
+target_link_libraries(mindspore_backend_common PRIVATE securec)
 target_link_libraries(mindspore_ms_backend PRIVATE securec)
-
-
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    set_target_properties(mindspore_ms_backend PROPERTIES MACOSX_RPATH ON)
-    set_target_properties(mindspore_ms_backend PROPERTIES INSTALL_RPATH @loader_path)
+    set_target_properties(mindspore_backend_common PROPERTIES MACOSX_RPATH ON)
+    set_target_properties(mindspore_backend_common PROPERTIES INSTALL_RPATH @loader_path)
 else()
-    set_target_properties(mindspore_ms_backend PROPERTIES INSTALL_RPATH $ORIGIN)
+    set_target_properties(mindspore_backend_common PROPERTIES INSTALL_RPATH $ORIGIN)
 endif()
 
 if(ENABLE_CPU)
@@ -241,23 +240,24 @@ if(ENABLE_CPU)
 endif()
 
 if(NOT WIN32)
-    target_link_libraries(mindspore_ms_backend PRIVATE mindspore::ssl mindspore::crypto)
+    target_link_libraries(mindspore_ms_backend PRIVATE mindspore::crypto)
+    target_link_libraries(mindspore_backend_common PRIVATE mindspore::ssl mindspore::crypto)
 endif()
 
 if(ENABLE_DEBUGGER)
     # debugger: link grpc
     if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-        target_link_libraries(mindspore_ms_backend PRIVATE mindspore::grpc++)
+        target_link_libraries(mindspore_backend_common PRIVATE mindspore::grpc++)
     else()
-        target_link_libraries(mindspore_ms_backend PRIVATE -Wl,--no-as-needed mindspore::grpc++)
+        target_link_libraries(mindspore_backend_common PRIVATE -Wl,--no-as-needed mindspore::grpc++)
     endif()
 endif()
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    target_link_libraries(mindspore_ms_backend PRIVATE mindspore::event mindspore::event_pthreads
+    target_link_libraries(mindspore_backend_common PRIVATE mindspore::event mindspore::event_pthreads
             mindspore::event_openssl mindspore::event_core ps_cache)
 elseif(ENABLE_CPU AND NOT WIN32)
-    target_link_libraries(mindspore_ms_backend PRIVATE mindspore::event mindspore::event_pthreads
+    target_link_libraries(mindspore_backend_common PRIVATE mindspore::event mindspore::event_pthreads
             mindspore::event_openssl -Wl,--no-as-needed mindspore::event_core ps_cache)
 endif()
 

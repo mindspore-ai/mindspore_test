@@ -32,22 +32,22 @@ namespace distributed {
 // The static methods of MindSpore distributed execution. They can be exported by Pybind.
 
 // Initialize and finalize distributed execution.
-BACKEND_EXPORT bool Initialize();
-BACKEND_EXPORT bool Finalize();
+BACKEND_COMMON_EXPORT bool Initialize();
+BACKEND_COMMON_EXPORT bool Finalize();
 
 // Initialize and finalize the cluster based on MindSpore communication framework.
-BACKEND_EXPORT bool InitializeCluster();
-BACKEND_EXPORT bool FinalizeCluster();
+BACKEND_COMMON_EXPORT bool InitializeCluster();
+BACKEND_COMMON_EXPORT bool FinalizeCluster();
 
 // Initialize and finalize collective communication for distributed execution.
-BACKEND_EXPORT bool InitializeCollective();
-BACKEND_EXPORT bool FinalizeCollective();
+BACKEND_COMMON_EXPORT bool InitializeCollective();
+BACKEND_COMMON_EXPORT bool FinalizeCollective();
 
 // Set and get whether this process in cluster exits with exception.
-BACKEND_EXPORT void set_cluster_exit_with_exception();
-BACKEND_EXPORT bool cluster_exit_with_exception();
+BACKEND_COMMON_EXPORT void set_cluster_exit_with_exception();
+BACKEND_COMMON_EXPORT bool cluster_exit_with_exception();
 
-BACKEND_EXPORT void RegisterCallback(const std::string &name, const std::function<void()> &func);
+BACKEND_COMMON_EXPORT void RegisterCallback(const std::string &name, const std::function<void()> &func);
 }  // namespace distributed
 }  // namespace mindspore
 

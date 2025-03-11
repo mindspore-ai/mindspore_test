@@ -50,7 +50,7 @@ struct HashMapElement {
 
 // EmbeddingHashMap is used to manage the id -> index mapping of the embedding cache table on the host
 // side. The cache content can be stored on the device or host side.
-class BACKEND_EXPORT EmbeddingHashMap {
+class BACKEND_COMMON_EXPORT EmbeddingHashMap {
  public:
   using Element = typename Cache<int, int>::Element;
 

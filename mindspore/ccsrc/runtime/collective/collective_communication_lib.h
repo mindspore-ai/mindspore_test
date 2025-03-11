@@ -44,7 +44,7 @@ enum CollectiveOpReduceType : int64_t {
 // For collective communication on the device side like GPU, the entry is NvidiaCollectiveCommLib which calls NCCL.
 // For collective communication on the host side, the entry is MPICollectiveCommLib which call OpenMPI, or
 // MsCollectiveCommLib which uses the host-side communication library developed by MindSpore.
-class BACKEND_EXPORT CollectiveCommunicationLib {
+class BACKEND_COMMON_EXPORT CollectiveCommunicationLib {
  public:
   CollectiveCommunicationLib()
       : initialized_(false), finalized_(false), global_rank_id_(0), local_rank_id_(0), global_rank_size_(0) {}

@@ -63,7 +63,7 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
             ${CCSRC_DIR}/runtime/device/memory_scheduler.cc
             ${CCSRC_DIR}/runtime/device/memory_offload_strategy.cc
             ${CCSRC_DIR}/runtime/device/res_manager/memory_manager.cc
-            ${CCSRC_DIR}/runtime/device/auto_mem_offload.cc
+            ${CCSRC_DIR}/runtime/device/res_manager/auto_mem_offload.cc
             ${CCSRC_DIR}/runtime/device/gsm/mem_usage_analyzer.cc
             ${CCSRC_DIR}/runtime/device/gsm/swap_strategy_builder.cc
             ${CCSRC_DIR}/runtime/device/common_somas_allocator.cc

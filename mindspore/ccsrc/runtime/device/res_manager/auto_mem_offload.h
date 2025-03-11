@@ -27,10 +27,11 @@
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "utils/hash_map.h"
 #include "utils/hash_set.h"
+#include "runtime/device/res_manager/utils/visible.h"
 
 namespace mindspore {
 namespace device {
-class OffloadedMemPool {
+class RES_EXPORT OffloadedMemPool {
  public:
   OffloadedMemPool() = default;
   ~OffloadedMemPool() = default;
@@ -68,7 +69,7 @@ class MemHandler {
   std::shared_ptr<MemoryManager> memory_manager_;
 };
 
-class BACKEND_EXPORT AutoMemoryOffload {
+class RES_EXPORT AutoMemoryOffload {
  public:
   explicit AutoMemoryOffload(std::shared_ptr<MemHandler> mem_handler) : mem_handler_(std::move(mem_handler)) {}
   ~AutoMemoryOffload() = default;

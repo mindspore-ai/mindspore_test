@@ -27,7 +27,7 @@ namespace ps {
 namespace core {
 class SchedulerNode;
 }  // namespace core
-class BACKEND_EXPORT Scheduler {
+class BACKEND_COMMON_EXPORT Scheduler {
  public:
   static Scheduler &GetInstance();
 

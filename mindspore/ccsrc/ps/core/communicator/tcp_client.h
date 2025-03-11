@@ -42,7 +42,7 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-class TcpClient {
+class BACKEND_COMMON_EXPORT TcpClient {
  public:
   using OnConnected = std::function<void()>;
   using OnDisconnected = std::function<void()>;

@@ -85,7 +85,7 @@ struct HashTableInfo {
 // ids information that needs to be exchanged with the local host cache. Note that the following information of
 // all embedding cache tables on the device side is same: hash mapping, and feature ids of feature vectors that need
 // to be swapped with the local host cache.
-struct EmbeddingDeviceCache {
+struct BACKEND_COMMON_EXPORT EmbeddingDeviceCache {
   explicit EmbeddingDeviceCache(size_t batch_ids_num);
 
   std::unique_ptr<int[]> device_to_host_index;
@@ -98,7 +98,7 @@ struct EmbeddingDeviceCache {
 // information that needs to be exchanged with the remote cache and device cache. Note that the following information of
 // all embedding cache tables on the local host side is same: hash mapping, and feature ids of feature vectors that need
 // to be swapped with the remote cache and device cache.
-struct EmbeddingHostCache {
+struct BACKEND_COMMON_EXPORT EmbeddingHostCache {
   explicit EmbeddingHostCache(size_t batch_ids_num);
 
   std::unique_ptr<int[]> host_to_server_index;
@@ -203,7 +203,7 @@ struct IdsAndIndices {
 
 // The EmbeddingCacheTableManager class is used to save all Parameter information for enabling cache, such as device
 // cache size, host cache size, etc., and can allocate memory for the embedding cache table.
-class BACKEND_EXPORT EmbeddingCacheTableManager {
+class BACKEND_COMMON_EXPORT EmbeddingCacheTableManager {
  public:
   using WarmUpCacheMapValue = std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr>;
   using WarmUpCacheMapEntry = std::pair<int32_t, WarmUpCacheMapValue>;
@@ -365,7 +365,7 @@ class BACKEND_EXPORT EmbeddingCacheTableManager {
  * within the Huge Embedding Table's lookup and update. EmbeddingStorageManager provides Add and Get API to add, replace
  * and acquire EmbeddingStorage instances.
  */
-class BACKEND_EXPORT EmbeddingStorageManager {
+class BACKEND_COMMON_EXPORT EmbeddingStorageManager {
  public:
   static EmbeddingStorageManager &GetInstance();
 
@@ -415,8 +415,8 @@ class BACKEND_EXPORT EmbeddingStorageManager {
  * @param[in] `embedding_dim`: The size of each embedding vector.
  * @param[in] `capacity`: The capacity for new embedding storage.
  */
-BACKEND_EXPORT void CreateEmbeddingStorage(std::pair<TypeId, TypeId> key_value_types, int32_t embedding_key,
-                                           size_t embedding_dim, size_t capacity);
+BACKEND_COMMON_EXPORT void CreateEmbeddingStorage(std::pair<TypeId, TypeId> key_value_types, int32_t embedding_key,
+                                                  size_t embedding_dim, size_t capacity);
 }  // namespace distributed
 
 static distributed::EmbeddingCacheTableManager &embedding_cache_table_manager =

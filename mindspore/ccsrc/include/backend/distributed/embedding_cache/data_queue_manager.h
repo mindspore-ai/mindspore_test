@@ -31,7 +31,7 @@ using IndicesDataQueue = BlockingQueue<IndexDataInfo>;
 using IdsAndIndicesDataQueuePair = std::pair<std::shared_ptr<IdsDataQueue>, std::shared_ptr<IndicesDataQueue>>;
 
 // This class is used to manage the Cache prefetch queue in the Embedding Cache mode.
-class BACKEND_EXPORT DataQueueManager {
+class BACKEND_COMMON_EXPORT DataQueueManager {
  public:
   static DataQueueManager &GetInstance();
 

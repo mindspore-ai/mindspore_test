@@ -31,7 +31,7 @@ const uint32_t kInvalidGraphId = UINT32_MAX;
 const uint32_t kInvalidDistincLabel = UINT32_MAX;
 namespace device {
 using kernel::KernelTensorPtr;
-class BACKEND_EXPORT KernelInfo : public KernelInfoDevice {
+class BACKEND_COMMON_EXPORT KernelInfo : public KernelInfoDevice {
  public:
   KernelInfo() {
     kernel_mod_ = nullptr;

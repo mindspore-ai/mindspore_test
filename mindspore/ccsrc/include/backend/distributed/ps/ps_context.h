@@ -40,7 +40,7 @@ namespace core {
 struct ClusterConfig;
 }  // namespace core
 
-class BACKEND_EXPORT PSContext {
+class BACKEND_COMMON_EXPORT PSContext {
  public:
   ~PSContext();
   PSContext(PSContext const &) = delete;
