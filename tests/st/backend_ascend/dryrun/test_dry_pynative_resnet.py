@@ -36,6 +36,7 @@ def get_used_max_memory(log_file_path):
     used_peak = 0
     with open(log_file_path, 'r') as file:
         for line in file:
+            print(f"log debug: {log_file_path}, {line}", flush=True)
             if "Used peak memory" in line:
                 match = re.search(r'\d+', line)
                 if match:
