@@ -65,10 +65,12 @@ class CodeGenerator {
     py::object co_filename;
     py::object co_qualname;
     py::object co_exceptiontable;
+    py::object co_line_table;
   };
 
   explicit CodeGenerator(const NodeSet *nodes)
       : nodes_(nodes), globals_(), code_(), nodes_alive_(), locals_map_(), missing_value_to_undefine_(false) {}
+  explicit CodeGenerator(Code &&ccode) : code_(std::move(ccode)) {}
 
   void set_missing_value_to_undefine(bool v) { missing_value_to_undefine_ = v; }
 
@@ -90,6 +92,7 @@ class CodeGenerator {
   void SetFileName(const py::object &file) { code_.co_filename = file; }
   void SetQualName(const py::object &qualname) { code_.co_qualname = qualname; }
   void SetExceptionTable(const py::object &exceptiontable) { code_.co_exceptiontable = exceptiontable; }
+  void SetLineTable(const py::object &bytes) { code_.co_line_table = bytes; }
 
   void ClearAlive(ValueNode *node) { nodes_alive_.erase(node); }
   void ClearAlive() { nodes_alive_.clear(); }
@@ -100,7 +103,8 @@ class CodeGenerator {
   void NewInstr(int op, int arg = 0, int line = -1);
   void AddInstrs(std::vector<std::unique_ptr<Instr>> &&list);
   void AddInstr(std::unique_ptr<Instr> &&instr);
-  void EraseUnusedInstr();
+  void AddCallInstr(size_t load_args_offset, int oparg);
+  py::object NewCode();
 
   // initialize local map of parameters
   void Init();
@@ -123,14 +127,6 @@ class CodeGenerator {
   int AllocLocal(ValueNode *node, int index = INT_MAX);
 
   /**
-   * Transform code info to PyCodeObject
-   *
-   * \param ccode code info
-   * \return PyCodeObject
-   */
-  static py::object Transform(const Code &ccode);
-
-  /**
    * Calculate max stack size
    *
    * \param list instruct nodes list
@@ -138,16 +134,6 @@ class CodeGenerator {
    * \return max depth of stack, or -1 if stack out of bound
    */
   static int CalculateStackSize(const std::vector<std::unique_ptr<Instr>> &list, int sp = 0);
-
-  /**
-   * Convert instruction list to bytes object. generate line table.
-   *
-   * \param list instruct nodes list
-   * \param first_line first line
-   * \return first is co_code, second is co_lnotab
-   */
-  static std::pair<py::bytes, py::bytes> ConvertToCodeBytes(const std::vector<std::unique_ptr<Instr>> &list,
-                                                            int first_line);
 
   /**
    * Copy instruction list at range [start, end).
@@ -193,6 +179,10 @@ class CodeGenerator {
 
  private:
   void MarkAlive(ValueNode *node, int order);
+
+  static py::object Transform(const Code &ccode);
+  static std::pair<py::bytes, py::bytes> ConvertToCodeBytes(const Code &ccode);
+  std::vector<std::unique_ptr<Instr>> ByteCodePrefix() const;
 
   const NodeSet *nodes_;
   py::dict globals_;
@@ -259,6 +249,7 @@ class CodeBreakGenerator {
 
  private:
   const CFG *GetCFG() const { return cfg_; }
+  bool IsCopyCapturedInstructions() const { return no_graph_ && !NeedHandleBreakAtCall(); }
 
   void ExtendCodeInfo(CodeGenerator *cg, bool merge_kw_only) const;
 

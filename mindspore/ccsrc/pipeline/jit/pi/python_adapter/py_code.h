@@ -52,9 +52,6 @@ class PyCodeWrapper {
   py::object LineTab() const;
   py::object DeepCopy();
 
-  int FastLocalSize() const;
-  py::tuple FastLocalNames() const;
-
   std::string ToString() const { return py::str(reinterpret_cast<PyObject *>(ptr())); }
   py::tuple co_consts() const { return py::reinterpret_borrow<py::tuple>(ptr()->co_consts); }
   py::tuple co_names() const { return py::reinterpret_borrow<py::tuple>(ptr()->co_names); }
@@ -64,8 +61,11 @@ class PyCodeWrapper {
     kCoFastCell,
     kCoFastFree,
   };
-  LocalKind FastLocalKind(int i) const;
-  int FastLocalIndex(LocalKind kind, int instr_arg);
+  LocalKind FastLocalKind(int fast_local_index) const;
+  int FastLocalIndex(LocalKind kind, int instr_arg) const;
+  const char *FastLocalName(int fast_local_index) const;
+  py::tuple FastLocalNames() const;
+  int FastLocalSize() const;
 
  private:
   PyCodeObject *ptr_;

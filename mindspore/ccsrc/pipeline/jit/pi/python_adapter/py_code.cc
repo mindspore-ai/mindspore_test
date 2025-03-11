@@ -169,7 +169,7 @@ PyCodeWrapper::LocalKind PyCodeWrapper::FastLocalKind(int i) const {
   return LocalKind::kCoFastFree;
 }
 
-int PyCodeWrapper::FastLocalIndex(PyCodeWrapper::LocalKind kind, int instr_arg) {
+int PyCodeWrapper::FastLocalIndex(PyCodeWrapper::LocalKind kind, int instr_arg) const {
   if (kind == LocalKind::kCoFastLocal) {
     return instr_arg;
   }
@@ -181,6 +181,24 @@ int PyCodeWrapper::FastLocalIndex(PyCodeWrapper::LocalKind kind, int instr_arg) 
 #endif
   }
   return -1;
+}
+
+const char *PyCodeWrapper::FastLocalName(int fast_local_index) const {
+  PyCodeObject *co = this->ptr_;
+
+#if IS_PYTHON_3_11_PLUS
+  return PyUnicode_AsUTF8(PyTuple_GET_ITEM(co->co_localsplusnames, fast_local_index));
+#else
+  if (fast_local_index < co->co_nlocals) {
+    return PyUnicode_AsUTF8(PyTuple_GET_ITEM(co->co_varnames, fast_local_index));
+  } else if (fast_local_index < FastLocalSize()) {
+    int size = PyTuple_GET_SIZE(co->co_cellvars);
+    int index = fast_local_index - co->co_nlocals;
+    return PyUnicode_AsUTF8(index < size ? PyTuple_GET_ITEM(co->co_cellvars, index)
+                                         : PyTuple_GET_ITEM(co->co_freevars, index - size));
+  }
+#endif
+  return nullptr;
 }
 
 py::object PyCodeWrapper::DeepCopy() {

@@ -54,6 +54,7 @@ class Instr {
 
   const std::string &name() const { return name_; }
   void set_name(const std::string &n) { name_ = n; }
+  void set_name(const char *n) { name_ = n ? n : ""; }
   const py::object &cnst() const { return cnst_; }
   void set_cnst(const py::handle &cnst) { cnst_ = py::reinterpret_borrow<py::object>(cnst); }
 
@@ -67,6 +68,7 @@ class Instr {
   int line_;
   // these field only one is valid, union this these field like this { const char *, PyObject *, Instr * } ?
   std::string name_;
+  // if python3.11 ~ python3.12 and opcode is call, `cnst_` is KW_NAMES
   py::object cnst_;
   Instr *jump_;
 };

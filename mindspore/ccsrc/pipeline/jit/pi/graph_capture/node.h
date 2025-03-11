@@ -199,6 +199,10 @@ class CallNode : public ValueNode {
       : ValueNode(Call, nullptr, opcode, oparg, inputs), sub_graph_(nullptr) {}
   virtual ~CallNode() {}
 
+  // python3.11 ~ python3.12 only
+  void set_kw_names(const py::object &kw) { kw_names_ = kw; }
+  const auto &kw_names() const { return kw_names_; }
+
   Graph *GetSubGraph() const { return sub_graph_; }
   void SetSubGraph(Graph *n);
 
@@ -234,6 +238,8 @@ class CallNode : public ValueNode {
   InlineReason reason_ = InlineReason::kInlineUnknown;
 
   std::vector<ValueNode *> params_;  // extra values for inline function
+
+  py::object kw_names_;
 };
 
 class IterNode : public ValueNode {

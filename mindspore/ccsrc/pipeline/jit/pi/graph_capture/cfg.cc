@@ -135,11 +135,20 @@ inline void DecodeInstructionBytes(const uint8_t *begin, const uint8_t *end, Ft 
 }
 
 void CFG::BuildInst(const uint8_t *begin, const uint8_t *end) {
-  const auto make_instr = [this](int off, int op, int arg) {
-#if IS_PYTHON_3_11_PLUS
+  py::object kw_names;
+  const auto make_instr = [this, &kw_names](int off, int op, int arg) {
     op = op == LOAD_METHOD ? LOAD_ATTR : op;
+#if IS_PYTHON_3_11_PLUS
+    /**
+     * `PRECALL` is only for python3.11, and it's a optimized opcode that do nothing if not bound method call
+     * It's same as `LOAD_METHOD` and `CALL_METHOD`, here ignore it
+     * `MAKE_CELL` and `COPY_FREE_VARS` is prefix of code, used to complete `FrameType` object. If reuse
+     * free variable and cell variable, and change local position, need change these codes. Here ignore it,
+     * add them at code gen
+     */
+    op = (op == PRECALL || op == MAKE_CELL || op == COPY_FREE_VARS) ? NOP : op;
 #else
-    op = op == LOAD_METHOD ? LOAD_ATTR : (op == CALL_METHOD ? CALL_FUNCTION : op);
+    op = op == CALL_METHOD ? CALL_FUNCTION : op;
 #endif
     Opcode opcode(op);
     int bci = off / PY_BCSIZE;
@@ -154,8 +163,19 @@ void CFG::BuildInst(const uint8_t *begin, const uint8_t *end) {
     cur->set_op(op);
     cur->set_arg(arg);
     cur->set_line(line);
+    if (opcode.IsLocalAccess() || opcode.HasFree()) {
+      PyCodeWrapper::LocalKind k = opcode.IsLocalAccess() ? PyCodeWrapper::kCoFastLocal : PyCodeWrapper::kCoFastFree;
+      cur->set_name(co_.FastLocalName(co_.FastLocalIndex(k, arg)));
+    }
     if (opcode.HasConst()) {  // KW_NAMES, LOAD_CONST, RETURN_CONST
       cur->set_cnst(co_.co_consts()[arg]);
+      if (op == KW_NAMES) {
+        kw_names = cur->cnst();
+      }
+    }
+    if (kw_names.ptr() != nullptr && opcode.IsCall()) {
+      cur->set_cnst(kw_names);
+      kw_names = py::object();
     }
     if (opcode.HasName()) {
       int index = arg;
