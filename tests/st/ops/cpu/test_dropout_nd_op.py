@@ -17,6 +17,7 @@ from operator import mul
 from functools import reduce
 import numpy as np
 import pytest
+import mindspore
 import mindspore.nn as nn
 from mindspore import Tensor
 import mindspore.context as context
@@ -174,3 +175,19 @@ def test_dropout_nd_dy_shape(func_name):
     dropout.set_inputs(input_dyn)
     output, mask = dropout(Tensor(input_x))
     check_dropout_nd_by_keep_prob(func_name, input_x, output.asnumpy(), mask.asnumpy(), keep_prob)
+
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
+def test_dropout_nd_zero_shape():
+    """
+    Feature: Test dropout3d Zero Shape.
+    Description: fuzz case.
+    Expectation: run successfully.
+    """
+    np.random.seed(23704088)
+    context.set_context(device_target="CPU", mode=context.PYNATIVE_MODE)
+    tensor_input = mindspore.Tensor(np.random.uniform(-10, 10, size=[0, 1, 2, 1, 2])).astype(np.float32)
+    p = 0.5
+    training = True
+    _ = mindspore.ops.dropout3d(tensor_input, p=p, training=training)
