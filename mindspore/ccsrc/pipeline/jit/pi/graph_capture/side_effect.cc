@@ -318,6 +318,7 @@ void SideEffect::RestoreEntry(CodeGenerator *cg, const Entry &e) const {
     cg->LoadValue(GetSource(i));
   }
   cg->NewInstr(opcode, oparg);
+  cg->GetCode().co_code.back()->set_name(node->GetName());
   if (Opcode(node->GetOpcode()).IsCall()) {
     cg->NewInstr(POP_TOP);
   }

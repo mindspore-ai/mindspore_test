@@ -153,10 +153,14 @@ PyCodeWrapper::LocalKind PyCodeWrapper::FastLocalKind(int i) const {
   PyCodeObject *co = this->ptr_;
 #if IS_PYTHON_3_11_PLUS
   auto kind = _PyLocals_GetKind(co->co_localspluskinds, i);
+  if (kind & CO_FAST_FREE) {
+    return LocalKind::kCoFastFree;
+  }
+  if (kind & CO_FAST_CELL) {
+    return LocalKind::kCoFastCell;
+  }
   if (kind & CO_FAST_LOCAL) {
     return LocalKind::kCoFastLocal;
-  } else if (kind & CO_FAST_CELL) {
-    return LocalKind::kCoFastCell;
   }
 #else
   if (i < co->co_nlocals) {

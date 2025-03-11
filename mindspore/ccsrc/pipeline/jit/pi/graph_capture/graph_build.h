@@ -301,6 +301,7 @@ class GraphBuilder {
   bool DoPopStack(const Instr &instr);
   bool DoRaiseVarags(const Instr &instr);
   bool DoLoadName(const Instr &instr);
+  bool DoPushNull(const Instr &instr);
 
   const auto &root() const { return root_; }
   const auto &frame() const { return frame_; }

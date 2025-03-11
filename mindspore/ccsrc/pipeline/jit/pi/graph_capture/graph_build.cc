@@ -185,6 +185,7 @@ const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> GraphBuilde
   {BUILD_MAP_UNPACK, &GraphBuilder::DoBuildMapWithUnpack},
   {BUILD_MAP_UNPACK_WITH_CALL, &GraphBuilder::DoBuildMapWithUnpack},
   {LOAD_NAME, &GraphBuilder::DoLoadName},
+  {PUSH_NULL, &GraphBuilder::DoPushNull},
 };
 
 bool GraphBuilder::DoOtherBytecode(const Instr &instr) {
@@ -245,7 +246,16 @@ ValueNode *GraphBuilder::NewValueNode(AObject *o, int op, int arg, const std::ve
 }
 
 ValueNode *GraphBuilder::NewValueNode(AObject *o, const Instr &i, const std::vector<ValueNode *> &p) {
-  ValueNode *v = NewValueNode(o, i.op(), i.arg(), p, i.name());
+  int op = i.op();
+
+#if !IS_PYTHON_3_12_PLUS
+  op = op == LOAD_METHOD ? LOAD_ATTR : op;
+#endif
+#if !IS_PYTHON_3_11_PLUS
+  op = op == CALL_METHOD ? CALL_FUNCTION : op;
+#endif
+
+  ValueNode *v = NewValueNode(o, op, i.arg(), p, i.name());
   v->SetLineNo(i.line());
   graph_->GetTracedNodes().push_back(v);
   return v;
@@ -517,6 +527,21 @@ bool GraphBuilder::DoBuildMapWithUnpack(const Instr &instr) {
 bool GraphBuilder::DoCall(const Instr &instr) {
   Opcode opcode(instr.op());
   int oparg = instr.arg();
+
+#if IS_PYTHON_3_11_PLUS
+  auto iter = frame_.GetStacks().end() - instr.arg() - 2;
+  if (iter >= frame_.GetStacks().begin() && (*iter == &ValueNode::kStackNull)) {
+    frame_.GetStacks().erase(iter);  // pop null
+  }
+#if !IS_PYTHON_3_12_PLUS
+  // python3.11 only, use iterable object as self. Although the oparg is 0, actual number of args is 1
+  if (opcode == CALL && seek(oparg)->GetOpcode() == GET_ITER &&
+      frame_.GetStacks().size() > static_cast<size_t>(oparg) && seek(oparg + 1)->GetOpcode() == MAKE_FUNCTION) {
+    oparg = oparg + 1;
+  }
+#endif
+#endif
+
   int tmp_arg = oparg;
   std::vector<ValueNode *> params;
   if (opcode == CALL_FUNCTION_EX) {
@@ -688,15 +713,35 @@ bool IsFreeVar(PyCodeObject *code, int oparg) {
 bool GraphBuilder::DoCellAccess(const Instr &instr) {
   int opcode = instr.op();
   int oparg = instr.arg();
+  PyCodeWrapper co(graph_->GetCodeObj());
+  int closure_index = oparg;
+
+#if IS_PYTHON_3_11_PLUS
+  py::tuple cell_names = co.CellVars();
+  auto begin = &PyTuple_GET_ITEM(cell_names.ptr(), 0);
+  auto end = begin + PyTuple_GET_SIZE(cell_names.ptr());
+  auto iter = std::find_if(begin, end, [&instr](PyObject *op) { return instr.name() == PyUnicode_AsUTF8(op); });
+  if (iter == end) {  // free var
+    int off_end = co.FastLocalSize() - co.FastLocalIndex(PyCodeWrapper::kCoFastFree, oparg);
+    int free_var_name_index = co.FreeVarsSize() - off_end;
+    closure_index = co.CellVarsSize() + free_var_name_index;
+  } else {  // cell var
+    int cell_var_name_index = iter - begin;
+    closure_index = cell_var_name_index;
+  }
+#endif
+  MS_LOG(DEBUG) << "closure_index: " << closure_index << " : " << instr.name();
+  CellVarNode *closure_node = frame_.Closure(closure_index);
+
   ValueNode *node;
   ValueNode *value;
-  PyObject *cell = frame_.Closure(oparg)->GetVobj()->GetPyObject().ptr();
+  PyObject *cell = closure_node->GetVobj()->GetPyObject().ptr();
   MS_EXCEPTION_IF_CHECK_FAIL(cell && PyCell_Check(cell), "must be a cell object");
   if (opcode == LOAD_CLOSURE) {
-    push(frame_.Closure(oparg));
+    push(closure_node);
   } else if (opcode == LOAD_DEREF) {
-    MS_EXCEPTION_IF_NULL(frame_.Closure(oparg)->GetValue());
-    push(frame_.Closure(oparg)->GetValue());
+    MS_EXCEPTION_IF_NULL(closure_node->GetValue());
+    push(closure_node->GetValue());
   } else if (opcode == STORE_DEREF) {
     if (IsFreeVar(graph_->GetCodeObj(), oparg) && !IsTopGraph()) {
       // The side-effect of free-variable STORE_DEREF in subgraph will be supported later.
@@ -704,20 +749,17 @@ bool GraphBuilder::DoCellAccess(const Instr &instr) {
       return false;
     }
     value = pop();
-    bool is_same = value->GetOpcode() == LOAD_DEREF && frame_.Closure(oparg) == frame_.Closure(value->GetOparg());
-    if (!is_same) {
-      node = NewValueNode(nullptr, instr, {value});
-      frame_.Closure(oparg)->SetValue(value);
-      frame_.Closure(oparg)->AddCellOper(node);
-    }
+    node = NewValueNode(nullptr, instr, {value});
+    closure_node->SetValue(value);
+    closure_node->AddCellOper(node);
   } else if (opcode == DELETE_DEREF) {
     if (IsFreeVar(graph_->GetCodeObj(), oparg) && !IsTopGraph()) {
       graph_->StopTraceAt(cur_bci_, kStopTraceByteCode_Unsupported);
       return false;
     }
     node = NewValueNode(nullptr, instr, {});
-    frame_.Closure(oparg)->SetValue(&ValueNode::kUnboundLocal);
-    frame_.Closure(oparg)->AddCellOper(node);
+    closure_node->SetValue(&ValueNode::kUnboundLocal);
+    closure_node->AddCellOper(node);
   } else {
     MS_LOG(INTERNAL_EXCEPTION) << "parser got an error instruction " << instr.ToString();
   }
@@ -1007,10 +1049,21 @@ void GraphBuilder::DoLoadGlobal(const Instr &instr) {
   node->set_abstract_wrapper(FGBuilder()->AddLocalVariable(handle));
   GetGraph()->GuardGlobal(node);
 }
+bool GraphBuilder::DoPushNull(const Instr &instr) {
+#if IS_PYTHON_3_11_PLUS
+  push(&ValueNode::kStackNull);
+#endif
+  return true;
+}
 
 bool GraphBuilder::DoGlobalAccess(const Instr &instr) {
   int opcode = instr.op();
   if (opcode == LOAD_GLOBAL) {
+#if IS_PYTHON_3_11_PLUS
+    if (instr.arg() & 1) {
+      DoPushNull(instr);
+    }
+#endif
     auto cache_result = graph_->GetSideEffect()->LoadGlobal(graph_->GetModuleName(), instr.name());
     if (cache_result.is_deleted_value_) {
       return false;  // name error
@@ -1156,6 +1209,18 @@ bool GraphBuilder::DoAttrAccess(const Instr &instr) {
   int opcode = instr.op();
   if (opcode == LOAD_METHOD || opcode == LOAD_ATTR) {
     auto o = pop();
+
+#if IS_PYTHON_3_12_PLUS
+    if (instr.arg() & 1) {
+      DoPushNull(instr);
+    }
+#endif
+#if IS_PYTHON_3_11_PLUS
+    if (instr.op() == LOAD_METHOD) {
+      DoPushNull(instr);
+    }
+#endif
+
     if (HandleSuper(instr, o->GetVobj())) {
       return true;
     }
@@ -1939,9 +2004,10 @@ GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
     : root_(this), parent_(nullptr), graph_(nullptr), current_block_(nullptr), no_grad_(false), side_effect_outputs_() {
   PyCodeWrapper co_wrapper = f.GetCode();
   py::tuple free_vars = f.FreeVars();  // new object
+  py::tuple cell_names = co_wrapper.CellVars();
   graph_ = NewGraph(co_wrapper.ptr(), f.Globals().ptr());
   frame_.ResizeLocal(co_wrapper.LocalSize());
-  frame_.ResizeClosure(co_wrapper.FastLocalSize() - co_wrapper.LocalSize());
+  frame_.ResizeClosure(co_wrapper.CellVarsSize() + co_wrapper.FreeVarsSize());
 
   auto local_handler = [this, &co_wrapper](PyObject *ptr, int index) {
     if (ptr == nullptr) {
@@ -1952,19 +2018,26 @@ GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
     frame_.SetLocal(index, n);
     graph_->GetSideEffect()->data()->Track(ptr, n);
   };
-  auto cell_handler = [this, &co_wrapper](PyObject *ptr, int index) {
+  auto cell_handler = [this, &cell_names, &co_wrapper](PyObject *ptr, int index) {
     py::object cell = py::reinterpret_borrow<py::object>(ptr);
+    const char *name = co_wrapper.FastLocalName(index);
+    int closure_index = index - co_wrapper.LocalSize();
+    int oparg = closure_index;
 #if IS_PYTHON_3_11_PLUS
+    auto begin = &PyTuple_GET_ITEM(cell_names.ptr(), 0);
+    auto end = begin + PyTuple_GET_SIZE(cell_names.ptr());
+    auto iter = std::find_if(begin, end, [&name](PyObject *op) { return strcmp(PyUnicode_AsUTF8(op), name) == 0; });
+    int cell_var_name_index = iter - begin;
     // Do `MAKE_CELL` at start
     cell = py::reinterpret_steal<py::object>(PyCell_New(ptr));
     ptr = cell.ptr();
+    closure_index = cell_var_name_index;
+    oparg = index;
+    MS_LOG(DEBUG) << "closure_index: " << closure_index << " : " << name;
 #endif
-    int offset = index - co_wrapper.LocalSize();
-    int oparg = IS_PYTHON_3_11_PLUS ? index : offset;
-    const char *name = co_wrapper.FastLocalName(index);
     CellVarNode *n = graph_->NewCellNode(AObject::Convert(cell), LOAD_CLOSURE, oparg, {}, name);
     graph_->GetTracedNodes().push_back(n);
-    frame_.SetClosure(offset, n);
+    frame_.SetClosure(closure_index, n);
     ValueNode *param = NewValueNode(AObject::Convert(PyCell_GET(ptr)), LOAD_DEREF, oparg, {}, name);
     graph_->GetTracedNodes().push_back(param);
     param->SetGraph(graph_);
@@ -1972,18 +2045,21 @@ GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
   };
   auto free_handler = [this, &co_wrapper, &free_vars](PyObject *ptr, int index) {
     py::object cell = py::reinterpret_borrow<py::object>(ptr);
-#if IS_PYTHON_3_11_PLUS
-    // Do `COPY_FREE_VARS` at start
-    int free_start = co_wrapper.FastLocalSize() - free_vars.size();
-    cell = py::reinterpret_borrow<py::object>(PyTuple_GET_ITEM(free_vars.ptr(), index - free_start));
-    ptr = cell.ptr();
-#endif
-    int offset = index - co_wrapper.LocalSize();
-    int oparg = IS_PYTHON_3_11_PLUS ? index : offset;
     const char *name = co_wrapper.FastLocalName(index);
+    int closure_index = index - co_wrapper.LocalSize();
+    int oparg = closure_index;
+#if IS_PYTHON_3_11_PLUS
+    int free_var_name_index = index - (co_wrapper.FastLocalSize() - free_vars.size());
+    // Do `COPY_FREE_VARS` at start
+    cell = py::reinterpret_borrow<py::object>(PyTuple_GET_ITEM(free_vars.ptr(), free_var_name_index));
+    ptr = cell.ptr();
+    closure_index = co_wrapper.CellVarsSize() + free_var_name_index;
+    oparg = index;
+    MS_LOG(DEBUG) << "closure_index: " << closure_index << " : " << name;
+#endif
     CellVarNode *n = graph_->NewCellNode(AObject::Convert(cell), LOAD_CLOSURE, oparg, {}, name);
     graph_->GetTracedNodes().push_back(n);
-    frame_.SetClosure(offset, n);
+    frame_.SetClosure(closure_index, n);
     ValueNode *param = NewValueNode(AObject::Convert(PyCell_GET(ptr)), LOAD_DEREF, oparg, {}, name);
     graph_->GetTracedNodes().push_back(param);
     param->SetGraph(graph_);
@@ -2211,18 +2287,6 @@ bool CheckSupportCreateInstance(CallNode *call_node) {
   if (first_param == nullptr) {
     return false;
   }
-
-  if (first_param->GetType() == AObject::kTypeAnyValue) {
-    if (iterable_node->GetOpcode() != CALL_FUNCTION || call_node->bci() - 1 != iterable_node->bci()) {
-      return false;
-    }
-    /**
-     * just process this case:
-     *    z = list(zip(list(x), list(y)))
-     *    z = list(enumerate(x))
-     */
-    // this case, zip object and enumerate object is dead variable
-  }
   return limit_create_instance_type.find(tp) != limit_create_instance_type.end();
 }
 
@@ -2254,8 +2318,8 @@ AObject *GraphBuilder::BuildSuperObject(PyCodeObject *co) {
     assert(PyUnicode_Check(name));
     // check class id
     if (!strcmp("__class__", PyUnicode_AsUTF8(name))) {
-      Py_ssize_t index = PyTuple_GET_SIZE(co_wrapper.CellVars().ptr()) + i;
-      PyObject *cell = SetLocalPyObject(frame_.Closure(index));
+      size_t index = PyTuple_GET_SIZE(co_wrapper.CellVars().ptr()) + i;
+      PyObject *cell = index < frame_.GetClosures().size() ? SetLocalPyObject(frame_.Closure(index)) : nullptr;
       if (cell == NULL || !PyCell_Check(cell)) {
         PyErr_SetString(PyExc_RuntimeError, "super(): bad __class__ cell");
         return nullptr;
@@ -2836,10 +2900,24 @@ bool GraphBuilder::UnpackDynamicLengthTupleByBytecode(std::vector<ValueNode *> *
 bool GraphBuilder::PackKwParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame,
                                 std::vector<ValueNode *> *kwvargs) {
   PyCodeWrapper co(PyFunction_GET_CODE(func.ptr()));
-  AObject *keys_info = params->back()->GetVobj();
+
+  AObject *keys_info;
+#if IS_PYTHON_3_11_PLUS
+  auto call_node = static_cast<CallNode *>(seek(0));
+  if (call_node->kw_names().ptr() != nullptr) {
+    keys_info = AObject::Convert(call_node->kw_names());
+  } else {
+    MS_EXCEPTION_IF_CHECK_FAIL(call_node->GetOpcode() == CALL_FUNCTION_EX, "must be kw names");
+    keys_info = params->back()->GetVobj();
+    params->pop_back();
+  }
+#else
+  keys_info = params->back()->GetVobj();
   if (params->back()->GetOpcode() != LOAD_CONST || keys_info->GetType() != AObject::kTypeTuple) {
     return false;  // other case
   }
+  params->pop_back();
+#endif
 
   const int posonlyargcount = co.PositionOnlyArgCount();
   py::object varnames = co.VarNames();
@@ -2850,16 +2928,16 @@ bool GraphBuilder::PackKwParams(const py::object &func, std::vector<ValueNode *>
   int argc = co.ArgCount(&has_va, &has_kw_va);
   argc = argc - has_va - has_kw_va;
   PyObject **kwnames = &PyTuple_GET_ITEM(keys_info->GetPyObject().ptr(), 0);
-  const int k_cnt = PyTuple_GET_SIZE(keys_info->GetPyObject().ptr());
-  // kwnames must be string
-  MS_ASSERT(static_cast<AbstractTuple *>(keys_info)->GetElementType() == AObject::kTypeString);
-  MS_EXCEPTION_IF_CHECK_FAIL(SizeToInt(params->size()) > k_cnt, "check param");
+  const size_t k_cnt = PyTuple_GET_SIZE(keys_info->GetPyObject().ptr());
+  MS_EXCEPTION_IF_CHECK_FAIL(params->size() >= k_cnt, "check param");
 
-  int kw_2_p_cnt = 0;
+  size_t kw_2_p_cnt = 0;
 
   // for each kw argument
-  for (int i = k_cnt - 1; i >= 0; --i) {
+  auto param_iter = params->end() - 1;
+  for (int i = k_cnt - 1; i >= 0; --i, --param_iter) {
     PyObject *key = kwnames[i];
+    ValueNode *v = *param_iter;
     // find position and kwonly argument for key
     int pos = std::find_if(vars, vars + argc, [&key](PyObject *k) { return !PyUnicode_Compare(key, k); }) - vars;
     if (pos < posonlyargcount) {
@@ -2867,7 +2945,6 @@ bool GraphBuilder::PackKwParams(const py::object &func, std::vector<ValueNode *>
       return false;
     }
 
-    ValueNode *v = *(params->end() - 1 - k_cnt + i);
     // if key is position arg, store it
     if (pos < argc) {
       frame->SetLocal(pos, v);
@@ -2881,7 +2958,7 @@ bool GraphBuilder::PackKwParams(const py::object &func, std::vector<ValueNode *>
     kwvargs->push_back(v);
   }
 
-  params->resize(params->size() - 1 - k_cnt);
+  params->erase(param_iter + 1, params->end());
   if (!has_kw_va) {
     return kw_2_p_cnt == k_cnt;  // if not equal, too many key-word arguments
   }
@@ -2981,7 +3058,8 @@ bool GraphBuilder::HandleCallParameters(const py::object &func_info, CallNode *c
     MS_LOG(EXCEPTION) << "HandleCallParameters with empty func_info input.";
   }
   PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func_info.ptr()));
-  frame->ResizeLocal(co->co_nlocals);
+  PyCodeWrapper co_wrapper(co);
+  frame->ResizeLocal(co_wrapper.LocalSize());
 
   std::vector<ValueNode *> params(call_node->getInputs().begin() + 1, call_node->getInputs().end());
   int op = call_node->GetOpcode();
@@ -3001,7 +3079,6 @@ bool GraphBuilder::HandleCallParameters(const py::object &func_info, CallNode *c
   // python3.10 and lower only
   // after store all params
   // cell2arg
-  PyCodeWrapper co_wrapper(co);
   const Py_ssize_t ncells = co_wrapper.CellVarsSize();
   const Py_ssize_t *c2a_arr = reinterpret_cast<const Py_ssize_t *>(co_wrapper.Cell2Arg());
   for (int i = 0; c2a_arr != nullptr && i < ncells; ++i) {
@@ -3160,7 +3237,7 @@ void GraphBuilder::ResolveClosure(const py::object &func_info, CallNode *call_no
     bool make_func = func_node->GetOpcode() == MAKE_FUNCTION;
     ValueNode *closures_node = nullptr;
     if (make_func) {
-      closures_node = *(func_node->getInputs().end() - 3);
+      closures_node = *(func_node->getInputs().end() - 2 - (!IS_PYTHON_3_11_PLUS));
     } else if (closure) {
       closures_node = TrackExtraAttrArgs(func_node, "__closure__");
     } else {
@@ -3405,11 +3482,6 @@ bool GraphBuilder::TraceRunForIterSequence(int jump_bci) {
 
 static bool CheckForIterEnumerate(ValueNode *iter_node) {
   ValueNode *enumerate_node = iter_node->input(0);
-  if (enumerate_node->GetOpcode() != CALL_FUNCTION || iter_node->bci() - 1 != enumerate_node->bci()) {
-    // enumerate object maybe alive, shouldn't reduce it
-    MS_LOG(INFO) << "Unsupported enumerate node: " << enumerate_node->ToString();
-    return false;
-  }
   PyObject *enumerate = enumerate_node->GetVobj()->GetPyObject().ptr();
   if (enumerate == nullptr) {
     MS_LOG(INFO) << "enumerate() python object is null!";
@@ -3481,10 +3553,6 @@ bool GraphBuilder::TraceRunForIterEnumerate(int jump_bci) {
 
 static bool CheckForIterZip(ValueNode *iter_node) {
   ValueNode *zip_node = iter_node->input(0);
-  if (zip_node->GetOpcode() != CALL_FUNCTION || iter_node->bci() - 1 != zip_node->bci()) {
-    MS_LOG(INFO) << "Unsupported zip node: " << zip_node->ToString();
-    return false;
-  }
   PyObject *zip = zip_node->GetVobj()->GetPyObject().ptr();
   if (zip == nullptr) {
     MS_LOG(INFO) << "zip() python object is null!";
@@ -3566,8 +3634,8 @@ bool GraphBuilder::TraceRunForIterDict(int jump_bci) {
   if (index == 0) {
     ValueNode *dict_node = iter_node->iterable();
     push(dict_node);
-    DoAttrAccess({LOAD_METHOD, 0, "keys"});
-    DoCall({CALL_METHOD, 0});
+    DoAttrAccess({LOAD_ATTR, 0, "keys"});
+    DoCall(NewCallFuncInstr(0));
     ValueNode *keys_node = pop();
     DoLoadConst({LOAD_CONST, 0, py::cast<py::object>(reinterpret_cast<PyObject *>(&PyTuple_Type))});
     push(keys_node);

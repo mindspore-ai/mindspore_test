@@ -105,6 +105,7 @@ class InstrNode : public AbstractNode {
 class ValueNode : public InstrNode {
  public:
   static ValueNode kUnboundLocal;
+  static ValueNode kStackNull;
 
   ValueNode(AObject *vobj, int opcode, int oparg, const std::vector<ValueNode *> &inputs = {})
       : InstrNode(Value, opcode, oparg), vobj_(vobj), inputs_(inputs) {}

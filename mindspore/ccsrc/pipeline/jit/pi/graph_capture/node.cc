@@ -23,11 +23,13 @@ namespace pijit {
 
 static AbstractObjectBase kNullObject(AObject::kTypeAnyValue);
 ValueNode ValueNode::kUnboundLocal(ValueNode::kUnbound, &kNullObject, 0, 0);
+ValueNode ValueNode::kStackNull(ValueNode::kUnbound, &kNullObject, 0, 0);
 
 // these value node not in locals
 bool IsNonLocalValue(ValueNode *i) {
   int op = i->GetOpcode();
-  return op == LOAD_CONST || op == LOAD_GLOBAL || op == LOAD_DEREF;
+  return op == LOAD_CONST || op == LOAD_GLOBAL || op == LOAD_DEREF || i == &ValueNode::kUnboundLocal ||
+         i == &ValueNode::kStackNull;
 }
 
 void ValueNode::SetVobj(AObject *object_info) {
@@ -105,6 +107,9 @@ std::string CallNode::ToString() const {
 std::string ValueNode::ToString() const {
   if (this == &ValueNode::kUnboundLocal) {
     return "(kUnboundLocal)";
+  }
+  if (this == &ValueNode::kStackNull) {
+    return "(kStackNull)";
   }
   std::stringstream s;
   int w = 30;

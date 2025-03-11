@@ -112,7 +112,6 @@ void CFG::GenerateCFG() {
 }
 
 static int DeOptimizedOpcode(int op) {
-  op = op == LOAD_METHOD ? LOAD_ATTR : op;
 #if IS_PYTHON_3_11_PLUS
   /**
    * `PRECALL` is only for python3.11, and it's a optimized opcode that do nothing if not bound method call
@@ -122,8 +121,6 @@ static int DeOptimizedOpcode(int op) {
    * add them at code gen
    */
   op = (op == PRECALL || op == MAKE_CELL || op == COPY_FREE_VARS) ? NOP : op;
-#else
-  op = op == CALL_METHOD ? CALL_FUNCTION : op;
 #endif
   // for python3.11+, the bytes from getattr(code, "co_code"), all opcode is de-optimized
   return op;
@@ -169,7 +166,8 @@ static void SetInstructionName(PyCodeWrapper co, Instr *cur) {
     int index = arg;
 #if IS_PYTHON_3_12_PLUS
     index = opcode == LOAD_ATTR ? (index >> 1) : index;
-#elif IS_PYTHON_3_11_PLUS
+#endif
+#if IS_PYTHON_3_11_PLUS
     index = opcode == LOAD_GLOBAL ? (index >> 1) : index;
 #endif
     py::object names = co.co_names();

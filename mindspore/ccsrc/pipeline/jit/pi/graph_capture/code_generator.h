@@ -99,7 +99,7 @@ class CodeGenerator {
   void MarkAlive(ValueNode *node) { MarkAlive(node, INT_MAX); }
   void MarkAlive();
   // make the node same as other node, use same local index, if the node not in locals, try to load it
-  void MakeSameLocal(ValueNode *new_node, ValueNode *old_node);
+  void MakeSameLocal(ValueNode *new_node, ValueNode *old_node, bool clear = false);
   void NewInstr(int op, int arg = 0, int line = -1);
   void AddInstrs(std::vector<std::unique_ptr<Instr>> &&list);
   void AddInstr(std::unique_ptr<Instr> &&instr);
@@ -182,7 +182,12 @@ class CodeGenerator {
 
   static py::object Transform(const Code &ccode);
   static std::pair<py::bytes, py::bytes> ConvertToCodeBytes(const Code &ccode);
+
+  // python3.11+ only
   std::vector<std::unique_ptr<Instr>> ByteCodePrefix() const;
+  void FixOffset();
+  void FixLocalOffset(int invalid_index);
+  void FixFreeOffset(const std::vector<std::string> &other_closure_names);
 
   const NodeSet *nodes_;
   py::dict globals_;
@@ -249,7 +254,7 @@ class CodeBreakGenerator {
 
  private:
   const CFG *GetCFG() const { return cfg_; }
-  bool IsCopyCapturedInstructions() const { return no_graph_ && !NeedHandleBreakAtCall(); }
+  bool IsCopyCapturedInstructions() const { return !IS_PYTHON_3_11_PLUS && no_graph_ && !NeedHandleBreakAtCall(); }
 
   void ExtendCodeInfo(CodeGenerator *cg, bool merge_kw_only) const;
 
@@ -269,7 +274,7 @@ class CodeBreakGenerator {
   void HandleOutputOpt(CodeGenerator *code_gen);
 
   // make function of untracked bytecode, build restore frame operations of untracked bytecode
-  py::object MakeUntrackedCode(int untracked_bci, int untracked_stack_effect) const;
+  py::object MakeUntrackedCode(int untracked_bci, int untracked_stack_effect, int *argc) const;
 
   void ReconstructStack(CodeGenerator *code_gen, int untracked_bci, int untracked_stack_effect) const;
 

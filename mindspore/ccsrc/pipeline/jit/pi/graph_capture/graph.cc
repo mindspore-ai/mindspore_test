@@ -400,6 +400,9 @@ TracePtr GuardBuilder::GetTrace(ValueNode *node, int depth) {
       break;
     case AbstractNode::Type::Call:
       if (!has_unsupported) {
+#if IS_PYTHON_3_11_PLUS
+        MS_EXCEPTION_IF_CHECK_FAIL(static_cast<CallNode *>(node)->kw_names().ptr() == nullptr, "adapter later");
+#endif
         const std::string &func_name = node->input(0)->GetName();
         ret = CreateOpTrace(obj, opcode, oparg, tv, module_name, func_name, strict, print);
       }
