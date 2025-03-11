@@ -50,7 +50,9 @@ def test_max_index_for_gather():
     @jit
     def foo(x, y, z):
         x = x - y
-        return ops.gather(z, y / x, 0)
+        z1 = y / x
+        z2 = ops.cast(z1, y.dtype)
+        return ops.gather(z, z2, 0)
 
     x = Tensor(2)
     y = Tensor(2)

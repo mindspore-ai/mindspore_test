@@ -21,6 +21,7 @@ from mindspore.ops.composite.multitype_ops._constexpr_utils import log_warning, 
 from mindspore.ops.composite import base
 from mindspore.ops import functional as F
 from mindspore.common import COOTensor
+from mindspore.ops.auto_generate import div_op
 
 
 div = base.MultitypeFuncGraph("div", True)
@@ -84,7 +85,7 @@ def _div_tensor(x, y):
     Returns:
         Tensor, has the same dtype as x.
     """
-    return F.tensor_div(x, y)
+    return div_op(x, y)
 
 
 @div.register("Number", "Tensor")
@@ -99,7 +100,7 @@ def _scalar_div_tensor(x, y):
     Returns:
         Tensor, has the same dtype as x.
     """
-    return F.tensor_div(x, y)
+    return div_op(x, y)
 
 
 @div.register("Tensor", "Number")
@@ -114,7 +115,7 @@ def _tensor_div_scalar(x, y):
     Returns:
         Tensor, has the same dtype as x.
     """
-    return F.tensor_div(x, y)
+    return div_op(x, y)
 
 
 @div.register("Tuple", "Tensor")
