@@ -50,7 +50,7 @@ using ProcessCache = std::function<std::vector<ShapeVector>(const device::ascend
                                                             const std::vector<std::vector<void *>> &)>;
 using RunApiFunc = int (*)(void *, uint64_t, device::ascend::aclOpExecutor *, const aclrtStream);
 
-class OpApiDefaultResource {
+class OPS_ASCEND_API OpApiDefaultResource {
  public:
   static OpApiDefaultResource &GetInstance();
 
