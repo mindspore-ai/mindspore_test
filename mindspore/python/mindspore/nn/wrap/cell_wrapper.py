@@ -21,6 +21,7 @@ from __future__ import division
 import os
 from types import FunctionType, MethodType
 
+import mindspore as ms
 from mindspore import log as logger
 from mindspore.parallel._utils import _get_device_num, _get_gradients_mean,\
     _get_parallel_mode, _get_enable_parallel_optimizer, _is_pynative_parallel
@@ -855,3 +856,114 @@ class _BroadCastCell(Cell):
         params = self.broadcast(params)
         new_params = self.map_(F.partial(_cast_datatype), datatypes, params)
         return new_params
+
+
+class PipelineCell(Cell):
+    """
+    Slice MiniBatch into finer-grained MicroBatch for use in pipeline-parallel training.
+
+    Note:
+        micro_size must be greater or equal to pipeline stages.
+
+    Args:
+        network (Cell): The target network to wrap.
+        micro_size (int): MicroBatch size.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU``
+
+    Examples:
+        >>> import mindspore.nn as nn
+        >>> # Define the network structure of LeNet5. Refer to
+        >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/lenet.py
+        >>> net = LeNet5()
+        >>> net = nn.PipelineCell(net, 4)
+    """
+    def __init__(self, network, micro_size, stage_config=None):
+        super(PipelineCell, self).__init__(auto_prefix=False)
+        self.network = network
+        self.micro_inputs = nn.CellList()
+        self.micro_size = micro_size
+        self.add_list = []
+        if not isinstance(network, Cell):
+            raise TypeError("For 'PipelineCell', the argument 'network' must cell type, "
+                            "but got the type : {}.".format(type(network)))
+        if not isinstance(micro_size, int):
+            raise TypeError("For 'PipelineCell', the argument 'micro_size' must be integer, "
+                            "but got the type : {}.".format(type(micro_size)))
+        if micro_size <= 0:
+            raise ValueError("For 'PipelineCell', the argument 'micro_size' must be large than 0, "
+                             "but got {}.".format(micro_size))
+        for i in range(micro_size):
+            micro_input = _MicroBatch(micro_size)
+            self.micro_inputs.append(micro_input)
+            self.add = P.Add().add_prim_attr("pipeline_end", i)
+            self.add_list.append(self.add)
+        self._get_attr_from_cell(network)
+
+        # prase stage_config
+        config_dict = {}
+        if stage_config is not None:
+            for cell_name, stage_num in stage_config.items():
+                config_cell_name = cell_name
+                config_stage_num = stage_num
+                config_dict[config_cell_name] = config_stage_num
+
+        # set cell.stage_config
+            for cell_name, cell in self.network.cells_and_names():
+                for config_cell_name, config_stage_num in config_dict.copy().items():
+                    if not cell_name or not config_cell_name:
+                        continue
+                    if cell_name == config_cell_name:
+                        setattr(cell, "pipeline_stage", config_stage_num)
+                        del config_dict[config_cell_name]
+
+            for config_cell_name, config_stage_num in config_dict.copy().items():
+                if str(network) == config_cell_name:
+                    setattr(network, "pipeline_stage", config_stage_num)
+                    del config_dict[config_cell_name]
+
+            # if there are any config elements left, print them
+            if config_dict:
+                for config_cell_name, config_stage_num in config_dict.items():
+                    print("pipeline_cell stage_config set pipeline_stage fail!")
+                    print("config cell name:" + str(config_cell_name) +
+                          " config stage num:" + str(config_stage_num))
+                print("network:" + str(self.network))
+                print("cell name available:")
+                for cell_name, cell in self.network.cells_and_names():
+                    print(cell_name)
+                raise KeyError("For 'PipelineCell', the argument 'stage_config' : {} is not "
+                               "found in 'network' : {}".format(config_dict, network))
+
+    def construct(self, *inputs):
+        ret = None
+        for i in range(self.micro_size):
+            micro_input = self.micro_inputs[i](i, *inputs)
+            output = self.network(*micro_input)
+            if ret is not None:
+                ret = self.add_list[i](ret, output)
+            else:
+                ret = output
+        return ret
+
+
+class MicroBatchInterleaved:
+    """
+    This function splits the input at the 0th into interleave_num pieces and then performs
+    the computation of the wrapped cell. Application scenario: When there is model parallelism in semi-automatic mode
+    and network, if the first slice data is calculating forward, the second slice data will execute the
+    communication operators at the same time, to achieve the performance acceleration of communication and computing
+    concurrency."
+    """
+    def __init__(self, network, interleave_num=2):
+        self._nn_micro_batch_interleaved = ms.parallel.nn.MicroBatchInterleaved(network, interleave_num)
+
+    def __getattr__(self, name):
+        return getattr(self._nn_micro_batch_interleaved, name)
+
+    def __setattr__(self, name, value):
+        if name == '_nn_micro_batch_interleaved':
+            super().__setattr__(name, value)
+        else:
+            setattr(self._nn_micro_batch_interleaved, name, value)

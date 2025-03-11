@@ -72,6 +72,10 @@ from mindspore.parallel._utils import _is_in_auto_parallel_mode
 from mindspore.parallel._ps_context import _set_checkpoint_load_status, _store_warm_up_ptr_by_tensor, \
     _store_warm_up_ptr_by_tensor_list, _cache_enable
 from mindspore.parallel.checkpoint_transform import sync_pipeline_shared_parameters
+from mindspore.parallel.checkpoint_transform import restore_group_info_list as new_restore_group_info_list
+from mindspore.parallel.checkpoint_transform import load_distributed_checkpoint as new_load_distributed_checkpoint
+from mindspore.parallel.checkpoint_transform import merge_sliced_parameter as new_merge_sliced_parameter
+from mindspore.parallel.checkpoint_transform import build_searched_strategy as new_build_searched_strategy
 from mindspore.train._utils import read_proto, get_parameter_redundancy, _progress_bar, _load_and_transform
 from mindspore._c_expression import load_mindir, _encrypt, _decrypt, _is_cipher_file, \
     split_mindir, split_dynamic_mindir
@@ -2892,3 +2896,35 @@ def safetensors_to_ckpt(file_path, save_path=None, name_map=None, file_name_rege
         ckpt_filename = os.path.basename(file_path).replace(".safetensors", ".ckpt")
         dst_file = os.path.join(save_path if save_path else os.path.dirname(file_path), ckpt_filename)
         mindspore.save_checkpoint(param_dict_tensor, dst_file)
+
+
+def restore_group_info_list(group_info_file_name):
+    """
+    Build rank list, the checkpoint of ranks in the rank list has the same contents with the local rank
+    who saves the `group_info_file_name`. To save the group info file, please export GROUP_INFO_FIL
+    environment variables like "export GROUP_INFO_FILE=/data/group_info.pb".
+    """
+    new_restore_group_info_list(group_info_file_name)
+
+
+def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None,
+                                train_strategy_filename=None, strict_load=False, dec_key=None, dec_mode='AES-GCM',
+                                format='ckpt', unified_safetensors_dir=None, dst_safetensors_dir=None, rank_id=None,
+                                output_format='safetensors', name_map=None, max_process_num=64,
+                                return_param_dict=False):
+    """ Load checkpoint into net for distributed predication. Used in the case of distributed inference. """
+    new_load_distributed_checkpoint(network, checkpoint_filenames, predict_strategy,
+                                    train_strategy_filename, strict_load, dec_key, dec_mode,
+                                    format, unified_safetensors_dir, dst_safetensors_dir, rank_id,
+                                    output_format, name_map, max_process_num,
+                                    return_param_dict)
+
+
+def merge_sliced_parameter(sliced_parameters, strategy=None):
+    """ Merge parameter slices into one parameter. Used in the case of distributed inference. """
+    new_merge_sliced_parameter(sliced_parameters, strategy)
+
+
+def build_searched_strategy(strategy_filename):
+    """ Build strategy of every parameter in network. Used in the case of distributed inference. """
+    new_build_searched_strategy(strategy_filename)
