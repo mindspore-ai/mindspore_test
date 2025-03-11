@@ -1281,8 +1281,15 @@ static PyObject *TensorPython_setstate(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
   PyObject *state;
   PyObject *tensor;
-  if (!PyArg_ParseTuple(args, "OO", &tensor, &state)) {
-    return nullptr;
+  if (self != nullptr) {
+    tensor = self;
+    if (!PyArg_ParseTuple(args, "O", &state)) {
+      return nullptr;
+    }
+  } else {
+    if (!PyArg_ParseTuple(args, "OO", &tensor, &state)) {
+      return nullptr;
+    }
   }
   if (!PyTuple_Check(state) || PyTuple_Size(state) != 1) {
     PyErr_SetString(PyExc_RuntimeError, "Invalid state!");
@@ -1529,10 +1536,8 @@ static PyMethodDef Tensor_methods[] = {
   {"set_device_address", TensorPython_set_device_address, METH_VARARGS, "Set the device address for the tensor."},
   {"__getitem__", (PyCFunction)TensorPython_GetItem, METH_VARARGS, "Get item from TensorPy"},
   {"__setitem__", (PyCFunction)TensorPython_SetItem, METH_VARARGS, "Set item to TensorPy"},
-  {"__getstate__", (PyCFunction)TensorPython_getstate, METH_STATIC | METH_VARARGS,
-   "Get the state of the TensorPy object"},
-  {"__setstate__", (PyCFunction)TensorPython_setstate, METH_STATIC | METH_VARARGS,
-   "Set the state of the TensorPy object"},
+  {"__getstate__", (PyCFunction)TensorPython_getstate, METH_VARARGS, "Get the state of the TensorPy object"},
+  {"__setstate__", (PyCFunction)TensorPython_setstate, METH_VARARGS, "Set the state of the TensorPy object"},
   {"_get_flattened_tensors", (PyCFunction)TensorPython_GetFlattenTensors, METH_STATIC | METH_VARARGS,
    "Flatten the input tensors."},
   {"_flatten_tensors", (PyCFunction)TensorPython_FlattenTensors, METH_STATIC | METH_VARARGS | METH_KEYWORDS,
