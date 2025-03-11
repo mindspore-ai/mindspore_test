@@ -18,6 +18,7 @@
 #define MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_ASCEND_HAL_MANAGER_ASCEND_HAL_MANAGER_H_
 
 #include <map>
+#include <mutex>
 #include <set>
 #include "acl/acl_rt.h"
 #include "plugin/res_manager/ascend/visible.h"
@@ -39,6 +40,8 @@ class ASCEND_RES_MANAGER_EXPORT AscendHalManager {
   void SetDeviceSatMode(const aclrtFloatOverflowMode &overflow_mode);
   void SetOpWaitTimeout(uint32_t op_wait_timeout);
   void SetOpExecuteTimeOut(uint32_t op_execute_timeout);
+  void InitializeAcl();
+  bool EnableLccl();
 
   // context
   aclrtContext CreateContext(uint32_t device_id);
@@ -56,6 +59,9 @@ class ASCEND_RES_MANAGER_EXPORT AscendHalManager {
 
   // rt_contexts by aclrtCreateContext, to destroy
   std::set<aclrtContext> rt_contexts_;
+
+  bool acl_initialized_ = false;
+  std::mutex acl_init_mutex_;
 };
 
 }  // namespace ascend

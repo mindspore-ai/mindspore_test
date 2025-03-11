@@ -24,6 +24,7 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "plugin/device/ascend/optimizer/common/gllo_utils.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"
@@ -67,7 +68,7 @@ bool MatMulAllReduceAddRmsNormFusion::IsSupport(const AnfNodePtr &node, const Fu
     return false;
   }
 
-  bool is_enable_lccl = device::ascend::EnableLccl();
+  bool is_enable_lccl = device::ascend::AscendHalManager::GetInstance().EnableLccl();
   if (is_enable_lccl) {
     MS_LOG(INFO) << "disable MatMulAllReduceAddRmsNormFusion when lccl is enabled.";
     return false;

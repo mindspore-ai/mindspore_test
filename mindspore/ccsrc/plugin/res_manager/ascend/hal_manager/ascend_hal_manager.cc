@@ -16,9 +16,16 @@
 
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 
+#include <fstream>
+#include <string>
+#include <nlohmann/json.hpp>
+#include "include/common/debug/common.h"
+#include "acl/acl_rt.h"
 #include "utils/log_adapter.h"
 #include "utils/convert_utils_base.h"
+#include "utils/ms_context.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
@@ -162,6 +169,67 @@ void AscendHalManager::SetContext(uint32_t device_id) {
     MS_EXCEPTION(DeviceProcessError) << "Call aclrtSetCurrentContext, ret[" << ret << "]";
   }
   thread_local_rt_context = default_device_context_map_[device_id];
+}
+
+namespace {
+bool GenerateAclInitJson(const std::string &json_file_path) {
+  nlohmann::json acl_init_json;
+  acl_init_json["err_msg_mode"] = "1";
+  std::string json_file_str = acl_init_json.dump();
+  std::ofstream json_file(json_file_path);
+  if (!json_file.is_open()) {
+    MS_LOG(WARNING) << "Open file [" << json_file_path << "] failed!";
+    return false;
+  }
+  json_file << json_file_str;
+  json_file.close();
+  MS_LOG(INFO) << "Generate aclInit json to file : " << json_file_path;
+  return true;
+}
+}  // namespace
+
+void AscendHalManager::InitializeAcl() {
+  std::lock_guard<std::mutex> lock(acl_init_mutex_);
+  if (acl_initialized_) {
+    return;
+  }
+  const char *acl_json_path = nullptr;
+  std::string file_name = "./aclinit.json";
+  auto realpath = Common::CreatePrefixPath(file_name);
+  if (realpath.has_value()) {
+    if (Common::FileExists(realpath.value()) || GenerateAclInitJson(realpath.value())) {
+      acl_json_path = realpath.value().c_str();
+    }
+  } else {
+    MS_LOG(WARNING) << "Failed to get real path: [" << file_name << "] in generate aclInit json file path.";
+  }
+  if (CALL_ASCEND_API(aclInit, acl_json_path) != ACL_ERROR_NONE) {
+    MS_LOG(WARNING) << "Call aclInit failed, acl data dump function will be unusable.";
+  } else {
+    MS_LOG(INFO) << "Call aclInit successfully";
+  }
+  acl_initialized_ = true;
+}
+
+bool AscendHalManager::EnableLccl() {
+  auto ascend_soc_version = MsContext::GetInstance()->ascend_soc_version();
+  if (ascend_soc_version != "ascend910b" && ascend_soc_version != "ascend910_93") {
+    return false;
+  }
+  auto enable_infer_boost = MsContext::GetInstance()->IsEnableInferBoost();
+  if (enable_infer_boost) {
+    static bool disable_lccl = common::GetEnv("MS_ENABLE_LCCL") == "off";
+    if (disable_lccl) {
+      return false;
+    }
+    return true;
+  } else {
+    static bool enable_lccl = common::GetEnv("MS_ENABLE_LCCL") == "on";
+    if (enable_lccl) {
+      return true;
+    }
+    return false;
+  }
 }
 
 // void AscendHalManager::BindDeviceToCurrentThread(uint32_t device_id, bool force_bind) const {

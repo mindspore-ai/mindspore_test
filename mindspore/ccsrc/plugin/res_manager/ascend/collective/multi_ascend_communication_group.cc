@@ -15,6 +15,7 @@
  */
 
 #include "plugin/res_manager/ascend/collective/multi_ascend_communication_group.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 
 namespace mindspore {
 namespace device {
@@ -29,7 +30,7 @@ MultiAscendCommunicationGroup::MultiAscendCommunicationGroup(const std::string &
 
 bool MultiAscendCommunicationGroup::Initialize(void *root_info) {
 #ifdef ENABLE_INTERNAL_KERNELS
-  if (device::ascend::EnableLccl() && lccl_group_ != nullptr) {
+  if (device::ascend::AscendHalManager::GetInstance().EnableLccl() && lccl_group_ != nullptr) {
     if (!lccl_group_->Initialize(root_info)) {
       MS_LOG(ERROR) << "Failed to initialize LCCL group " << name_;
       return false;
@@ -60,7 +61,7 @@ bool MultiAscendCommunicationGroup::Initialize(void *root_info) {
 
 bool MultiAscendCommunicationGroup::Finalize() {
 #ifdef ENABLE_INTERNAL_KERNELS
-  if (device::ascend::EnableLccl() && lccl_group_ != nullptr) {
+  if (device::ascend::AscendHalManager::GetInstance().EnableLccl() && lccl_group_ != nullptr) {
     if (!lccl_group_->Finalize()) {
       MS_LOG(ERROR) << "Failed to finalize LCCL group" << name_;
       return false;

@@ -44,6 +44,7 @@
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
 #include "plugin/device/ascend/kernel/graph_kernel/kernel_packet_ascend_kernel_mod.h"
 #include "plugin/res_manager/ascend/mbuf_manager/tensorreport_utils.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
 #ifdef ENABLE_DVM
@@ -967,7 +968,7 @@ void GeKernelExecutor::Initialize() {
   if (initialized_) {
     return;
   }
-  InitializeAcl();
+  device::ascend::AscendHalManager::GetInstance().InitializeAcl();
   MS_EXCEPTION_IF_NULL(device_context_);
   res_manager_ = device_context_->device_res_manager_.get();
   MS_EXCEPTION_IF_NULL(res_manager_);

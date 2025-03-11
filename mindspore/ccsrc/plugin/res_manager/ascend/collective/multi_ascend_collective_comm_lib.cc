@@ -16,6 +16,7 @@
 
 #include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
 #include "include/backend/distributed/collective/collective_manager.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 
 namespace mindspore {
 namespace device {
@@ -58,7 +59,7 @@ bool MultiAscendCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t glo
   global_rank_size_ = global_rank_size;
   local_rank_id_ = local_rank_id;
 #ifdef ENABLE_INTERNAL_KERNELS
-  if (device::ascend::EnableLccl()) {
+  if (device::ascend::AscendHalManager::GetInstance().EnableLccl()) {
     std::string lowlatency_comm_lib_name = GetCurrentDir() + "/ascend/liblowlatency_collective.so";
     auto loader = std::make_shared<CollectiveCommLibLoader>(lowlatency_comm_lib_name);
     MS_EXCEPTION_IF_NULL(loader);
@@ -99,7 +100,8 @@ bool MultiAscendCollectiveCommLib::DestroyDeviceCommunicationGroup(const std::st
 
 bool MultiAscendCollectiveCommLib::DestroyCommunicationGroup(const std::string &group_name) {
 #ifdef ENABLE_INTERNAL_KERNELS
-  if (device::ascend::EnableLccl() && lccl_enabled_groups.find(group_name) != lccl_enabled_groups.end()) {
+  if (device::ascend::AscendHalManager::GetInstance().EnableLccl() &&
+      lccl_enabled_groups.find(group_name) != lccl_enabled_groups.end()) {
     RETURN_IF_FALSE_WITH_LOG(lowlatency_collective_comm_lib_->DestroyCommunicationGroup(group_name),
                              "Failed to destroy LCCL communication group " + group_name);
     lccl_enabled_groups.erase(group_name);
@@ -135,7 +137,7 @@ bool MultiAscendCollectiveCommLib::CreateCommunicationGroup(const std::string &g
     group_name, group_ranks, global_rank_id_, local_group_rank, local_group_size);
   MS_EXCEPTION_IF_NULL(group);
 #ifdef ENABLE_INTERNAL_KERNELS
-  if (device::ascend::EnableLccl() && isGroupWithinLocalMachine(group_ranks)) {
+  if (device::ascend::AscendHalManager::GetInstance().EnableLccl() && isGroupWithinLocalMachine(group_ranks)) {
     RETURN_IF_FALSE_WITH_LOG(lowlatency_collective_comm_lib_->CreateCommunicationGroup(
                                group_name, group_ranks, local_group_rank, local_group_size),
                              "Failed to create LCCL communication group" + group_name);

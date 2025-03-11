@@ -34,6 +34,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_err_manager.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 
 using mindspore::device::ascend::ErrorManagerAdapter;
 
@@ -193,7 +194,7 @@ uint64_t AscendProfiler::GetAclProfMask(aclprofAicoreMetrics aicMetrics) {
 
 void AscendProfiler::Init(const std::string &profiling_path, uint32_t device_id, const std::string &profiling_options) {
   MS_LOG(INFO) << "Init AscendProfiler";
-  mindspore::device::ascend::InitializeAcl();
+  device::ascend::AscendHalManager::GetInstance().InitializeAcl();
   (void)ErrorManagerAdapter::Init();
   InitAscendProfilerConfig(profiling_path, device_id, profiling_options);
   FeatureMgr::Instance().Init();
