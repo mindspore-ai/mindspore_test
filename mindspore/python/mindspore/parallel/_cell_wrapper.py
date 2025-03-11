@@ -225,8 +225,21 @@ def _insert_virtual_pp_dim(layout):
     tensor_map = layout_info["tensor_map"]
     alias_name = layout_info["alias_name"]
     new_devmat = Layout((remain_pp,) + device_matrix, ("remain_pp",) + alias_name)
-    tensor_map_alias_name = [alias_name[len(device_matrix) - val - 1] if val != -1 else "None" for val in
-                             tensor_map]
+    tensor_map_alias_name = []
+    for val in tensor_map:
+        sub_alias_name = []
+        if isinstance(val, tuple):
+            for sub_val in val:
+                if sub_val == -1:
+                    sub_alias_name.append("None")
+                else:
+                    sub_alias_name.append(alias_name[len(device_matrix) - sub_val - 1])
+            tensor_map_alias_name.append(tuple(sub_alias_name))
+        else:
+            if val == -1:
+                tensor_map_alias_name.append("None")
+            else:
+                tensor_map_alias_name.append(alias_name[len(device_matrix) - val - 1])
     new_layout = new_devmat(*tensor_map_alias_name)
     return new_layout
 
