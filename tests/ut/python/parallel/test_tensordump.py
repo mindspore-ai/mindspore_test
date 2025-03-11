@@ -48,12 +48,13 @@ def get_tensordump_node_infos(graph_validator):
                 tensordump_node_infos.append(node_info)
     return tensordump_node_infos
 
-def check_dump_path(info_list, expect_dump_path):
+def check_dump_path_and_attr(info_list, expect_dump_path, expect_attr_dict):
     for td_info in info_list:
         # info format: {'inputs': [], 'attrs' {}}
         node_dump_path = td_info['inputs'][0]
+        node_attr = td_info['attrs']
         if node_dump_path == expect_dump_path:
-            return True
+            return bool(set(expect_attr_dict.items()).issubset(node_attr.items()))
     return False
 
 
@@ -659,13 +660,17 @@ def test_cell_level_dump_in_with_certain_cell_no_side_effect_tensordump():
             self.matmul2 = MatMulCell((self.hz1, self.hz2), st2)
             self.matmul3 = MatMulCell((self.hz1, self.hz2), st3)
             self.add = P.Add()
+            self.dump = ops.TensorDump('in')
+            self.dump.add_prim_attr("def_attr", True)
 
         def construct(self, x):
             x = self.matmul1(x)
             sft = self.softmax(x)
             out1 = self.matmul2(x)
-            result = self.add(sft, out1)
-            result = self.matmul3(result)
+            out1 = self.add(sft, out1)
+            self.dump("dump_out1.npy", out1)
+            out1 = ops.relu(out1)
+            result = self.matmul3(out1)
             return result
 
     context.set_auto_parallel_context(parallel_mode='semi_auto_parallel')
@@ -680,5 +685,6 @@ def test_cell_level_dump_in_with_certain_cell_no_side_effect_tensordump():
     validator = ParallelValidator(net, phase)
     tensordump_num = get_tensordump_node_num(validator)
     tensordump_node_infos = get_tensordump_node_infos(validator)
-    assert tensordump_num == 1
-    assert check_dump_path(tensordump_node_infos, "softmax_input_dump_in.npy")
+    assert tensordump_num == 2
+    assert check_dump_path_and_attr(tensordump_node_infos, "softmax_input_dump_in.npy", {})
+    assert check_dump_path_and_attr(tensordump_node_infos, "dump_out1_in.npy", {"def_attr": True})

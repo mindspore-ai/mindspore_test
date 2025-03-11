@@ -202,15 +202,18 @@ void ParallelTensorDumpHandler::InsertNewTensorDump(const CNodePtr &dump_cnode,
   ValueNodePtr name_value = NewValueNode(name);
   tensordump_need_remove_.insert(dump_cnode);
   CNodePtr new_dump_node;
+  auto dump_cnode_prim = GetCNodePrimitive(dump_cnode);
+  MS_EXCEPTION_IF_NULL(dump_cnode_prim);
+  auto new_dump_prim = dump_cnode_prim->Clone();
   if (is_side_effect_tensordump) {
     auto monad_node = NewValueNode(kIOMonad);
     monad_node->set_abstract(kIOMonad->ToAbstract());
-    new_dump_node = func_graph->NewCNode(
-      {NewValueNode(prim::kPrimTensorDump->Clone()), name_value, last_insert_redistribution_op, monad_node});
-  } else {
     new_dump_node =
-      func_graph->NewCNode({NewValueNode(prim::kPrimTensorDump->Clone()), name_value, last_insert_redistribution_op});
+      func_graph->NewCNode({NewValueNode(new_dump_prim), name_value, last_insert_redistribution_op, monad_node});
+  } else {
+    new_dump_node = func_graph->NewCNode({NewValueNode(new_dump_prim), name_value, last_insert_redistribution_op});
   }
+
   // ops of update_state and depend are used to keep sequence
   auto monad_node = NewValueNode(kIOMonad);
   monad_node->set_abstract(kIOMonad->ToAbstract());
@@ -219,7 +222,6 @@ void ParallelTensorDumpHandler::InsertNewTensorDump(const CNodePtr &dump_cnode,
   auto new_depend_kIndex2_input = is_side_effect_tensordump ? new_update_state_node : new_dump_node;
   auto new_depend_node = func_graph->NewCNode({NewValueNode(prim::kPrimDepend), depend_prev, new_depend_kIndex2_input});
   // config new nodes attributes
-  PrimitivePtr new_dump_prim = GetCNodePrimitive(new_dump_node);
   MS_EXCEPTION_IF_NULL(new_dump_prim);
   new_dump_prim->set_instance_name(name + "_new_generate");
   new_dump_prim->AddAttr("side_effect_io", MakeValue(is_side_effect_tensordump));
@@ -249,18 +251,14 @@ void ParallelTensorDumpHandler::ProcessTensorDumps(const std::vector<AnfNodePtr>
     PrimitivePtr prim = GetCNodePrimitive(dump_cnode);
     MS_EXCEPTION_IF_NULL(prim);
     std::string dump_mode = GetValue<std::string>(prim->GetAttr("input_output"));
-    if (dump_mode == "out") {
-      // Default setting do nothing
-    } else if (dump_mode == "all") {
-      MS_LOG(ERROR) << "TensorDump's parameter mode has deprecated 'all' value."
-                    << "Now parameter mode only support value in [out, in].";
-    } else if (dump_mode == "in") {
+    if (dump_mode == OUT_MODE || dump_mode == IN_INSERTED) {
+      continue;
+    } else if (dump_mode == IN_MODE) {
       InsertNewTensorDump(dump_cnode, last_insert_op, node, pos_u, func_graph, scope, "in");
     } else {
-      MS_LOG(ERROR) << "Dump mode of " << dump_mode << "is not supported, only support mode in [out, in]";
+      MS_EXCEPTION(ValueError) << "Dump mode of " << dump_mode << "is not supported, only support mode in [out, in]";
     }
   }
 }
-
 }  // namespace parallel
 }  // namespace mindspore

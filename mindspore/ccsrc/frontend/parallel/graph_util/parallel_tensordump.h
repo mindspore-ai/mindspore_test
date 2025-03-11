@@ -28,6 +28,11 @@
 
 namespace mindspore {
 namespace parallel {
+
+constexpr char IN_MODE[] = "in";
+constexpr char OUT_MODE[] = "out";
+constexpr char IN_INSERTED[] = "in_inserted";
+
 class ParallelTensorDumpHandler {
  public:
   explicit ParallelTensorDumpHandler(
@@ -50,6 +55,7 @@ class ParallelTensorDumpHandler {
   AnfNodePtrList CollectNodePathBetween(AnfNodePtr start, std::pair<AnfNodePtr, int> end);
   AnfNodePtrList CollectSuccessorDumpNodes(const AnfNodePtr &parent_of_dump_nodes, const FuncGraphManagerPtr &manager);
 };
+
 }  // namespace parallel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_FRONTEND_PARALLEL_PARALLEL_TENSORDUMP_H_
