@@ -55,7 +55,7 @@ namespace mindspore {
 namespace pijit {
 
 void AddConfigToGuard(const GraphJitConfig &c, OptGuardPtr guard);
-static void AddGradFlagForParam(const OptGuardPtr &guard, bool detach);
+static void AddGradFlagForParam(const OptGuardPtr &guard);
 static void CollectTraceBack(JitCompileResults *c, PyCodeObject *code, bool is_graph_mode);
 
 class StaticAnalysisExceptionCleaner {
@@ -323,7 +323,7 @@ static void GuardForFrame(const PyFrameWrapper &f, const OptCodePtr &oc, const G
   const char *code_name = f.GetCode().Name();
   AddConfigToGuard(conf, oc->GetGuard());
   // parameter guard is delay to graph parameter build
-  AddGradFlagForParam(oc->GetGuard(), conf.GetBoolConfig(GraphJitConfig::kGuardDetachObject));
+  AddGradFlagForParam(oc->GetGuard());
   // It tooks too much time in Guard's GetDescript function when trace depth is too large.
   MS_LOG(DEBUG) << "Guard on " << code_name << " by " << oc->GetGuard()->GetDescript() << "!" << std::endl;
 }
@@ -515,7 +515,7 @@ void AddConfigToGuard(const GraphJitConfig &c, OptGuardPtr guard) {
   guard->UpdateConfig(bool_cfg, int_cfg);
 }
 
-static void AddGradFlagForParam(const OptGuardPtr &guard, bool detach) {
+static void AddGradFlagForParam(const OptGuardPtr &guard) {
   bool grad_flag = pynative::GradState::Get().RequiresGrad();
   CustomizedTracePtr ptr = std::make_shared<CustomizedTrace>(
     grad_flag ? Py_True : Py_False,
@@ -532,9 +532,6 @@ static void AddGradFlagForParam(const OptGuardPtr &guard, bool detach) {
              std::string("}(type:") + std::to_string(TraceType::Customized) + std::string(")");
     });
   guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GEqual, true);
-  if (detach) {
-    ptr->Detach();
-  }
 }
 
 extern bool UnsupportedCodeTypeCheck(PyCodeObject *co);

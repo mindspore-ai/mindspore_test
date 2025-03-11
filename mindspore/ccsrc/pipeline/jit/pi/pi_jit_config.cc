@@ -45,7 +45,6 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"specialize_scalar", &GraphJitConfig::SetBool<GraphJitConfig::kGuardSpecializeScalar>},
   {"specialize_container", &GraphJitConfig::SetBool<GraphJitConfig::kGuardSpecializeContainer>},
   {"specialize_tensor", &GraphJitConfig::SetBool<GraphJitConfig::kGuardSpecializeTensor>},
-  {"guard_detach_object", &GraphJitConfig::SetBool<GraphJitConfig::kGuardDetachObject>},
   {"print_guard", &GraphJitConfig::SetBool<GraphJitConfig::kPrintGuard>},
   {"loop_unrolling", &GraphJitConfig::SetBool<GraphJitConfig::kLoopUnrolling>},
   {"infer_only", &GraphJitConfig::SetBool<GraphJitConfig::kInferOnly>},
@@ -86,7 +85,6 @@ GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
   bool_conf[kGuardSpecializeScalar - kBoolConf] = true;
   bool_conf[kGuardSpecializeContainer - kBoolConf] = false;
   bool_conf[kGuardSpecializeTensor - kBoolConf] = false;
-  bool_conf[kGuardDetachObject - kBoolConf] = false;
   bool_conf[kPrintGuard - kBoolConf] = false;
   bool_conf[kLoopUnrolling - kBoolConf] = true;
   bool_conf[kSkipException - kBoolConf] = false;

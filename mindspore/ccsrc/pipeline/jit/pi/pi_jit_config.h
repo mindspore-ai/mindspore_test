@@ -40,7 +40,6 @@ class GraphJitConfig {
     kGuardSpecializeScalar,
     kGuardSpecializeContainer,
     kGuardSpecializeTensor,
-    kGuardDetachObject,
     kPrintGuard,
     kLoopUnrolling,
     kInferOnly,
