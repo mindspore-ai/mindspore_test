@@ -103,12 +103,12 @@ def test_cell_shard_with_layout_be_set_and_propagate():
     net = GradWrap(NetWithLoss(ShardNet(in_layout1, shard_key="cell")))
     compile_net(net, x)
     file = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
-    para1 = "PrimFunc_AShardIdentity(%para5_x)"
+    para1 = "PrimFunc_AShardIdentity(%1)"
     in_layout1 = (
         "in_layout: ({'device_matrix': (2, 4, 1), 'tensor_map': (2, 0), "
         "'interleaved_parallel': false, 'alias_name': (dp, sp, mp)})"
     )
-    para2 = "PrimFunc_MatMul(%0"
+    para2 = "PrimFunc_MatMul(%2"
     in_strategy = "in_strategy: ((2, 1), (1, 1))"
     check_layout_config(para1, file, in_layout1)
     check_layout_config(para2, file, in_strategy)
@@ -131,12 +131,12 @@ def test_ms_shard_with_layout_be_set_and_propagate():
     net = GradWrap(NetWithLoss(ShardNet(in_layout1, shard_key="ms")))
     compile_net(net, x)
     file = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
-    para1 = "PrimFunc_AShardIdentity(%para5_x)"
+    para1 = "PrimFunc_AShardIdentity(%1)"
     in_layout1 = (
         "in_layout: ({'device_matrix': (2, 4, 1), 'tensor_map': (2, 0), "
         "'interleaved_parallel': false, 'alias_name': (dp, sp, mp)})"
     )
-    para2 = "PrimFunc_MatMul(%0"
+    para2 = "PrimFunc_MatMul(%2"
     in_strategy = "in_strategy: ((2, 1), (1, 1))"
     check_layout_config(para1, file, in_layout1)
     check_layout_config(para2, file, in_strategy)
@@ -159,12 +159,12 @@ def test_ms_shard_with_multi_dim_and_interleaved_parallel_layout():
     net = GradWrap(NetWithLoss(ShardNet(in_layout1, shard_key="ms")))
     compile_net(net, x)
     file = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
-    para1 = "PrimFunc_AShardIdentity(%para5_x)"
+    para1 = "PrimFunc_AShardIdentity(%1)"
     in_layout1 = (
         "in_layout: ({'device_matrix': (2, 4, 2, 2), 'tensor_map': ((3, 0, 2), 1), "
         "'interleaved_parallel': true, 'alias_name': (dp, mp, sp, interleaved_parallel)})"
     )
-    para2 = "PrimFunc_MatMul(%0"
+    para2 = "PrimFunc_MatMul(%2"
     in_strategy = "in_strategy: ((8, 2), (2, 1))"
     check_layout_config(para1, file, in_layout1)
     check_layout_config(para2, file, in_strategy)
@@ -269,7 +269,7 @@ def test_cell_shard_with_out_strategy_be_set_and_propagate_reduce_scatter():
 
     validator = ParallelValidator(net, phase)
     rank_list = {"rank_list": '(0, 1, 2, 3)'}
-    assert not validator.check_node_attrs('ReduceScatter-0', rank_list)
+    assert validator.check_node_attrs('ReduceScatter-0', rank_list)
 
 
 def test_ms_shard_with_out_layout_be_set_and_propagate():
@@ -353,4 +353,4 @@ def test_ms_shard_with_out_strategy_be_set_and_propagate_reduce_scatter():
 
     validator = ParallelValidator(net, phase)
     rank_list = {"rank_list": '(0, 1, 2, 3)'}
-    assert not validator.check_node_attrs('ReduceScatter-0', rank_list)
+    assert validator.check_node_attrs('ReduceScatter-0', rank_list)

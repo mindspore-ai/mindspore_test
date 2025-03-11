@@ -2693,13 +2693,13 @@ bool CompareSwc(const std::pair<std::shared_ptr<StrategyWithCost>, std::pair<dou
 }
 
 bool OperatorInfo::AllInputsVisited() const {
-  MS_LOG(INFO) << "op: " << this->name() << " visited_edges_.size(): " << visited_edges_.size()
+  MS_LOG(INFO) << "op: " << name_ << " visited_edges_.size(): " << visited_edges_.size()
                << " inputs_shape_.size(): " << inputs_shape_.size();
   return visited_edges_.size() == inputs_shape_.size();
 }
 
 std::shared_ptr<StrategyWithCost> OperatorInfo::GetStrategyByVisitedEdges() {
-  MS_LOG(INFO) << "op: " << this->name() << " GetStrategyByVisitedEdges";
+  MS_LOG(INFO) << "op: " << name_ << " GetStrategyByVisitedEdges";
   std::vector<std::pair<std::shared_ptr<StrategyWithCost>, std::pair<double, double>>> cur_op_swcs;
   for (std::shared_ptr<StrategyWithCost> &cur_op_swc : strategy_cost_) {
     MS_LOG(INFO) << "cur_op_swc strategy: " << cur_op_swc->strategy_ptr->ToString();
@@ -2714,7 +2714,7 @@ std::shared_ptr<StrategyWithCost> OperatorInfo::GetStrategyByVisitedEdges() {
       size_t cur_op_input_index = visited_edge->next_op_input_index();
       const TensorLayout &cur_op_layout = cur_op_swc->inputs_ptr[cur_op_input_index].tensor_layout();
 
-      CostPtrKey ck = std::make_pair(visited_op_layout, cur_op_layout);
+      CostPtrKey ck = {visited_op_layout, cur_op_layout};
 
       const CostPtr &cost = visited_edge->GetCostByLayoutPair(ck);
 
