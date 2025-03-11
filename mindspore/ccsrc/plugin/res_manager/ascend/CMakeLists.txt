@@ -28,7 +28,7 @@ if(ENABLE_D OR ENABLE_ACL)
 
   add_library(mindspore_ascend_res_manager SHARED ${ASCEND_RES_MANAGER_OBJECTS_SRC})
   target_link_libraries(mindspore_ascend_res_manager PRIVATE mindspore_core mindspore_common pybind11::module
-    proto_input mindspore_profiler mindspore_ops_kernel_common mindspore_memory_pool mindspore_res_manager)
+    proto_input mindspore_profiler mindspore_ops_kernel_common mindspore_res_manager)
   # if(ENABLE_NATIVE_PROTOBUF)
   #     target_link_libraries(mindspore_ascend_res_manager PRIVATE ${PROTOBUF_LIB})
   # elseif(NOT TARGET_AOS_ARM AND NOT ANDROID_NDK)
