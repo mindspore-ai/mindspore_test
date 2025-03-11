@@ -71,8 +71,8 @@ void check_bprop_input_grads(const py::tuple &py_args, const py::tuple &grads, c
                             << (py_args.size() - filter_args_size) << ", but got:" << grads.size() << ".";
   }
   for (size_t i = 0; i < grads.size(); i++) {
-    if (tensor::IsTensorPy(py_args[i]) || IsStubTensor(py_args[i])) {
-      if (!tensor::IsTensorPy(grads[i]) && !IsStubTensor(grads[i])) {
+    if (tensor::IsTensorPy(py_args[i])) {
+      if (!tensor::IsTensorPy(grads[i])) {
         MS_EXCEPTION(TypeError) << "For user defined method 'bprop' of net '" << bprop_cls_name << "', the " << i
                                 << "th return value(gradient of the " << i << "th argument) should be Tensor, but got "
                                 << py::cast<std::string>(grads[i].attr("__class__").attr("__name__"))
@@ -969,28 +969,9 @@ tensor::BaseTensorPtr StubNodeToTensor(const py::object &obj) {
   MS_LOG(EXCEPTION) << "It should be stub tensor, but got " << tensor->ToString();
 }
 
-py::object CTensorToPyStubNodes(const ValuePtr &val) {
-  if (val->isa<tensor::BaseTensor>()) {
-    // We need acquire gil from outer function before call this method.
-    py::module stub_tensor_module = py::module::import("mindspore.common._stub_tensor");
-    auto node = stub::MakeTopNode(kTensorType);
-    auto tensor = val->cast<tensor::BaseTensorPtr>();
-    auto simple_info = std::make_shared<ValueSimpleInfo>();
-    simple_info->dtype_vector_ = {tensor->Dtype()};
-    simple_info->shape_vector_ = {tensor->shape()};
-    simple_info->size_ = 1;
-    node.second->SetValueSimpleInfo(simple_info);
-    node.second->SetValue(val);
-    return stub_tensor_module.attr("_convert_stub")(node.first);
-  } else if (val->isa<ValueSequence>()) {
-    auto val_seq = val->cast<ValueSequencePtr>();
-    py::tuple tuple_grads(val_seq->size());
-    for (size_t i = 0; i < val_seq->value().size(); ++i) {
-      tuple_grads[i] = CTensorToPyStubNodes(val_seq->value()[i]);
-    }
-    return std::move(tuple_grads);
-  }
-  return py::none();
+py::object CValueToPybindObj(const ValuePtr &val) {
+  const auto obj = tensor::Wrap(val);
+  return py::reinterpret_steal<py::object>(obj);
 }
 
 ValuePtr PyStubNodeCast(const py::handle &obj) {
@@ -1035,20 +1016,21 @@ ValuePtr ShallowCopyTensorValue(const ValuePtr &value) {
       shallow_tensor->set_param_info(tensor_value->param_info());
     }
     return shallow_tensor;
-  } else if (value->isa<ValueSequence>()) {
+  }
+  if (value->isa<ValueSequence>()) {
     std::vector<ValuePtr> values;
     const auto &value_seq = value->cast<ValueSequencePtr>();
     MS_EXCEPTION_IF_NULL(value_seq);
     (void)std::transform(value_seq->value().begin(), value_seq->value().end(), std::back_inserter(values),
                          [](const ValuePtr &elem) { return ShallowCopyTensorValue(elem); });
     return std::make_shared<ValueTuple>(values);
-  } else if (value->isa<stub::StubNode>()) {
+  }
+  if (value->isa<stub::StubNode>()) {
     auto stub_node = value->cast<stub::StubNodePtr>();
     MS_EXCEPTION_IF_NULL(stub_node);
     return ShallowCopyTensorValue(stub_node->WaitValue());
-  } else {
-    return value;
   }
+  return value;
 }
 
 ValuePtr ConvertPyObjectToCObject(const py::object &input_object, bool is_base_tensor) {
@@ -1095,6 +1077,24 @@ ValuePtr ConvertPyObjectToCObject(const py::object &input_object, bool is_base_t
 
 ValuePtr ConvertPyObjectToCTensor(const py::object &input_object) {
   return ConvertPyObjectToCObject(input_object, false);
+}
+
+void ConvertPybindTupleGradToCValue(const py::tuple &input_tuple, std::vector<ValuePtr> *gradient_values,
+                                    bool is_base_tensor) {
+  gradient_values->reserve(input_tuple.size());
+  for (size_t i = 0; i < input_tuple.size(); i++) {
+    ValuePtr value;
+    const auto item = input_tuple[i];
+    if (tensor::IsTensorPy(item)) {
+      value = is_base_tensor ? tensor::ConvertToBaseTensor(item) : tensor::ConvertToTensor(item);
+    } else if (py::isinstance<py::none>(item)) {
+      value = kNone;
+    } else {
+      MS_LOG(EXCEPTION) << "The position " << i
+                        << " std of input_tuple is not a Tensor, type is: " << py::str(item.get_type());
+    }
+    (void)gradient_values->emplace_back(value);
+  }
 }
 
 void ConvertPyObjectToCTensor(const py::object &input_object, std::vector<ValuePtr> *tensors, bool is_base_tensor) {

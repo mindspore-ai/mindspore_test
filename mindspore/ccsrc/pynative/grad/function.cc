@@ -192,10 +192,6 @@ bool type_caster<mindspore::tensor::BaseTensorPtr>::load(handle src, bool) {
     value = mindspore::tensor::ConvertToBaseTensor(src);
     return true;
   }
-  if (mindspore::IsStubTensor(src)) {
-    value = mindspore::ConvertStubTensor(src);
-    return true;
-  }
   return false;
 }
 

@@ -23,14 +23,6 @@
 
 namespace mindspore {
 namespace {
-ValuePtr PydataToCValue(const py::object &ret) {
-  auto tensor = tensor::ConvertToBaseTensor(ret);
-  if (tensor != nullptr) {
-    return tensor;
-  }
-  return StubNodeToTensor(ret);
-}
-
 py::object RunHook(uint64_t tensor_id, const py::function &hook, const py::object &arg) {
   if (hook.ptr() == nullptr) {
     MS_LOG(DEBUG) << "Hook for tensor id " << tensor_id << " have been deleted by python";
@@ -46,6 +38,10 @@ py::object RunHook(uint64_t tensor_id, const py::function &hook, const py::objec
   if (MS_UNLIKELY(py::isinstance<py::tuple>(res) || py::isinstance<py::list>(res))) {
     MS_LOG(EXCEPTION) << "Tensor hook should be return None or a single value";
   }
+
+  if (!tensor::IsTensorPy(res)) {
+    MS_LOG(EXCEPTION) << "Tensor hook should be return Tensor";
+  }
   return res;
 }
 }  // namespace
@@ -57,8 +53,9 @@ TensorBackwardHook::~TensorBackwardHook() { py::gil_scoped_acquire acquire_gil; 
 
 ValuePtr TensorBackwardHook::operator()(const ValuePtr &grad) {
   py::gil_scoped_acquire acquire_gil;
-  auto py_arg = CTensorToPyStubNodes(grad);
-  auto ret = RunHook(tensor_id_, hook_, py_arg);
-  return PydataToCValue(ret);
+  const auto py_arg = CValueToPybindObj(grad);
+  const auto ret = RunHook(tensor_id_, hook_, py_arg);
+  auto val = tensor::ConvertToBaseTensor(ret);
+  return val;
 }
 }  // namespace mindspore

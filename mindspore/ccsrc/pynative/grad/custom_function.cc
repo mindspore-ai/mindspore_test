@@ -72,7 +72,7 @@ ValuePtrList CustomBackward::CallBackward(const ValuePtrList &grads) {
 
   // Run bprop function.
   py::gil_scoped_acquire gil_acquire;
-  py::object py_tensor_grad = CTensorToPyStubNodes(filled_zeros_grad);
+  py::object py_tensor_grad = CValueToPybindObj(filled_zeros_grad);
   py::list list_inputs = bprop_inputs_.cast<py::list>();
   list_inputs.append(py_tensor_grad);
   size_t non_inp_args_size = is_recompute_ ? kSizeOne : kSizeTwo;
@@ -102,7 +102,7 @@ ValuePtrList CustomBackward::CallBackward(const ValuePtrList &grads) {
   }
   MS_LOG(DEBUG) << "Run cell custom bprop function end.";
   ValuePtrList gradient_values;
-  ConvertPyObjectToCTensor(input_grads, &gradient_values, true);
+  ConvertPybindTupleGradToCValue(input_grads, &gradient_values, true);
   if (gradient_values.empty()) {
     MS_LOG(EXCEPTION) << "Hook fn grad output is empty!";
   }
@@ -138,9 +138,9 @@ ValuePtrList PyBackwardNode::CallBackward(const ValuePtrList &grads) {
     // Python grad func can not process None, we need to convert None to zero tensor.
     auto func_builder = FuncBuilder(name_, device_target, nullptr);
     auto filled_zeros_grad = func_builder.FillZeros(gradients, out_abstract_);
-    py_tensor_grad = CTensorToPyStubNodes(filled_zeros_grad);
+    py_tensor_grad = CValueToPybindObj(filled_zeros_grad);
   } else {
-    py_tensor_grad = CTensorToPyStubNodes(gradients);
+    py_tensor_grad = CValueToPybindObj(gradients);
   }
   MS_LOG(DEBUG) << "Args info, grad is tuple " << py::isinstance<py::tuple>(py_tensor_grad) << ", is tensor input size "
                 << ctx->is_tensor_input().size() << "materialize_grads " << ctx->materialize_grads();
@@ -150,7 +150,8 @@ ValuePtrList PyBackwardNode::CallBackward(const ValuePtrList &grads) {
   py::object grads_obj = backward_fn_(*fn_args);
 
   (void)ensure_obj_tuple(&grads_obj);
-  size_t num_backward_out = (py::cast<py::tuple>(grads_obj)).size();
+  auto grad_tuple = py::cast<py::tuple>(grads_obj);
+  size_t num_backward_out = grad_tuple.size();
   size_t num_forward_in = ctx->is_tensor_input().size();
   if (num_backward_out != num_forward_in) {
     MS_LOG(EXCEPTION) << "Function backward return a wrong number of gradients, expect: " << num_forward_in
@@ -159,21 +160,21 @@ ValuePtrList PyBackwardNode::CallBackward(const ValuePtrList &grads) {
 
   for (size_t i = 0; i < num_backward_out; i++) {
     bool is_tensor = (ctx->is_tensor_input())[i];
-    py::object output = (py::cast<py::tuple>(grads_obj))[i];
+    py::object output = grad_tuple[i];
     // The gradient of Input that is not tensor should be none.
     if (!is_tensor && !py::isinstance<py::none>(output)) {
       MS_LOG(EXCEPTION) << "Input is not tensor, but gradient is not none, position: " << i
                         << " type: " << output.get_type();
     }
     // The gradient should be either none or tensor.
-    if (!py::isinstance<py::none>(output) && !tensor::IsTensorPy(output) && !IsStubTensor(output)) {
+    if (!py::isinstance<py::none>(output) && !tensor::IsTensorPy(output)) {
       MS_LOG(EXCEPTION) << "Gradient should be none or tensor, position: " << i << " type: " << output.get_type();
     }
   }
 
   // Convert python object to tensor.
   ValuePtrList gradient_values;
-  ConvertPyObjectToCTensor(grads_obj, &gradient_values, true);
+  ConvertPybindTupleGradToCValue(grad_tuple, &gradient_values, true);
   if (gradient_values.empty()) {
     MS_LOG(EXCEPTION) << "Custom backward function output is empty!";
   }
