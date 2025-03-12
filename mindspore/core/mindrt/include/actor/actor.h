@@ -87,6 +87,9 @@ class MS_CORE_API ActorBase {
   inline void set_actor_mgr(const std::shared_ptr<ActorMgr> &mgr) { actor_mgr_ = mgr; }
   inline std::shared_ptr<ActorMgr> get_actor_mgr() const { return actor_mgr_; }
 
+  void set_exclusive(bool exclusive) { exclusive_ = exclusive; }
+  bool get_exclusive() const { return exclusive_; }
+
  protected:
   using ActorFunction = std::function<void(const std::unique_ptr<MessageBase> &msg)>;
 
@@ -216,6 +219,12 @@ class MS_CORE_API ActorBase {
 
   ActorThreadPool *pool_{nullptr};
   std::shared_ptr<ActorMgr> actor_mgr_;
+
+  // Record whether the actor is exclusive. An exclusive actor may have its status_ set to idle before
+  // reaching the wait stage during the run with spin process. If an exclusive actor enters the queue
+  // at the time, it will hold the thread in the run state, and its status_ may still be idle.
+  // Therefore, this flag is used to modify status_.
+  bool exclusive_{false};
 };
 using ActorReference = std::shared_ptr<ActorBase>;
 };  // namespace mindspore
