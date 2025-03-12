@@ -129,7 +129,7 @@ def obfuscate_ckpt(network, ckpt_files, target_modules=None, obf_config=None, sa
     Args:
         network (nn.Cell): The original network that need to be obfuscated.
         ckpt_files (str): The directory path of original ckpt files.
-        target_modules (list[str]): The target ops that need to be obfuscated in the network. The first string
+        target_modules (list[str], optional): The target ops that need to be obfuscated in the network. The first string
             represents the network path of the target ops in the original network, which should be in form of
             ``"A/B/C"``. The second string represents the names of multiple target ops in the same path, which
             should be in form of ``"D|E|F"``. For example, the target_modules of GPT2 can be ``['backbone/blocks
@@ -137,10 +137,11 @@ def obfuscate_ckpt(network, ckpt_files, target_modules=None, obf_config=None, sa
             format of 'obfuscate_layers:all' or 'obfuscate_layers:int', which represents the number of layers
             need to be obfuscated of duplicate layers (such as transformer layers or resnet blocks).
             Default: ``None``.
-        obf_config (dict): The configuration of model obfuscation polices. Default: ``None``.
-        saved_path (str): The directory path for saving obfuscated ckpt files. Default: ``'./'``.
-        obfuscate_scale (Union[float, int]): Obfuscate scale of weights. The generated random obf_ratios will be in
-            range of (1 / obfuscate_scale, obfuscate_scale). Default: 100.
+        obf_config (dict, optional): The configuration of model obfuscation polices. Default: ``None``.
+        saved_path (str, optional): The directory path for saving obfuscated ckpt files. Default: ``'./'``.
+        obfuscate_scale (Union[float, int], optional): Obfuscate scale of weights.
+            The generated random obf_ratios will be in
+            range of (1 / obfuscate_scale, obfuscate_scale). Default: ``100``.
 
     Returns:
         dict[str], obf_metadata, which is the necessary data that needs to be load when running obfuscated network.

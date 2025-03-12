@@ -1402,7 +1402,7 @@ def unique_consecutive(input, return_inverse=False, return_counts=False, dim=Non
             maps to the position in the output. Default: ``False`` .
         return_counts (bool, optional): Whether to return the counts of each unique element. Default: ``False`` .
         dim (int, optional): The dimension to apply unique. If ``None`` , the unique of the flattened input is
-            returned. If specified, it must be int32 or int64. Default: ``None`` .
+            returned. If the dimension is specified, it must be int32 or int64. Default: ``None`` .
 
     Returns:
         A tensor or a tuple of tensors containing tensor objects (`output`, `inverse_indices`, `counts`).
@@ -1569,8 +1569,6 @@ def cdist(x1, x2, p=2.0, compute_mode='use_mm_for_euclid_dist_if_necessary'):
 
     Note:
         On Ascend, the supported dtypes are float16 and float32.
-        On CPU, the supported dtypes are float16 and float32.
-        On GPU, the supported dtypes are float32 and float64.
 
     Args:
         x1 (Tensor): Input tensor of shape :math:`(B, P, M)`.

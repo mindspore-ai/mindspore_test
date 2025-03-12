@@ -41,8 +41,8 @@ mindspore.mint.nn.functional.max_pool2d
     异常：
         - **TypeError** - `input` 不是Tensor。
         - **ValueError** - `input` 的维度不是4D。
-        - **TypeError** - `kernel_size` 、`stride` 、`padding` 、`dilation` 不是int或者tuple。
-        - **ValueError** - `kernel_size`、`stride` 或者 `dilation` 的元素值小于1。
+        - **TypeError** - `kernel_size` 、 `stride` 、 `padding` 、 `dilation` 不是int或者tuple。
+        - **ValueError** - `kernel_size`、 `stride` 或者 `dilation` 的元素值小于1。
         - **ValueError** - `dilation` 不是全为1。
         - **ValueError** - `padding` 的元素值小于0。
         - **ValueError** - `padding` 的元素值大于 `kernel_size` 的一半。
