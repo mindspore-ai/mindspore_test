@@ -118,11 +118,18 @@ def _clear_auto_parallel_context(net):
 
 
 def _get_auto_parallel_net(net):
-    for cell in net.cells():
+    for _, cell in net.cells_and_names():
         if type(cell).__name__ == 'AutoParallel':
             return cell
     return net
 
+def _parallel_mode_map(parallel_mode):
+    parallel_mode_map = {
+        "sharding_propagation": "auto_parallel",
+        "recursive_programming": "auto_parallel",
+        "semi_auto": "semi_auto_parallel"
+    }
+    return parallel_mode_map[parallel_mode]
 
 def _get_parallel_mode():
     """Get parallel mode."""
