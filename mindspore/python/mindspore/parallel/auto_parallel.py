@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
 # ============================================================================
 """Cell of auto parallel"""
 import os
-from mindspore import context
 from mindspore.nn.cell import Cell
 from mindspore.parallel.shard import Layout
 from mindspore.communication.management import get_rank, get_group_size
@@ -22,7 +21,7 @@ from mindspore.communication.management import get_rank, get_group_size
 class AutoParallel(Cell):
     """
     AutoParallel enable auto parallel configuration for neural network cells. This class provides multiple
-    parallel strategies to optimize distributed training across Ascend/GPU/CPU devices.
+    parallel strategies to optimize distributed training across Ascend/GPU devices.
 
     Args:
         network (Cell): Top-level cell or function in the forward network. Defines the core computational graph
@@ -43,7 +42,7 @@ class AutoParallel(Cell):
                        recursive program analysis.
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``Ascend`` ``GPU``
     """
 
     def __init__(self, network, parallel_mode="semi_auto"):
@@ -98,6 +97,9 @@ class AutoParallel(Cell):
     def no_init_parameters_in_compile(self):
         """
         Suppress the parameter initialization process in the compilation procedure.
+
+        .. warning::
+        This is an experimental interface, may be changed or canceled in the future;
         """
         self._init_param_in_compile = False
 
@@ -231,9 +233,6 @@ class AutoParallel(Cell):
             else:
                 raise TypeError("For 'AutoParallel.dataset_strategy', the element of argument "
                                 "'config' must be tuple or Layout, but got the type : {} .".format(type(ele)))
-        if context.get_context('mode') == context.PYNATIVE_MODE:
-            raise ValueError("In PyNative mode, the setting value of 'config' must be either 'full_batch' "
-                             f"or 'data_parallel', but got {config}.")
         self._dataset_strategy_config = config
 
     def hsdp(self, shard_size=-1, threshold=64, optimizer_level="level1"):
@@ -474,9 +473,6 @@ class AutoParallel(Cell):
         ctx._set_speedup_config_path(file_path)
         self._transformer_opt_config = file_path
         ctx.ascend_config['parallel_speed_up_json_path'] = file_path
-
-    def auto_memory_offload(self, config):
-        self._memory_offload_config = config
 
     def construct(self, *inputs):
         return self.network(*inputs)
