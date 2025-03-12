@@ -14,7 +14,7 @@ endif()
 set_property(SOURCE ${RES_MANAGER_LIST} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
 add_library(mindspore_res_manager SHARED ${RES_MANAGER_LIST})
 target_link_libraries(mindspore_res_manager PRIVATE mindspore_core mindspore_ops mindspore_common
-        mindspore_ops_kernel_common mindspore_memory_pool)
+        mindspore_ops_kernel_common PUBLIC mindspore_memory_pool)
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
         target_compile_definitions(mindspore_res_manager PRIVATE RES_MANAGER_DLL)
 endif()
