@@ -1018,12 +1018,14 @@ static PyObject *TensorPython_ToString(PyObject *self, PyObject *) {
 
 static PyObject *TensorPython_SetOffload(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
-  PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
-  auto tensorTmp = tensor->value.GetBaseTensor();
-  bool release;
-  if (!PyArg_ParseTuple(args, "p", &release)) {
+  PyObject *tensor_obj;
+  PyObject *releaseObj;
+  if (!PyArg_ParseTuple(args, "OO", &tensor_obj, &releaseObj)) {
     return NULL;
   }
+  PyType<TensorPy> *tensor = (PyType<TensorPy> *)tensor_obj;
+  bool release = (PyObject_IsTrue(releaseObj) == 1);
+  auto tensorTmp = tensor->value.GetBaseTensor();
   TensorPybind::Offload(tensorTmp, release);
   Py_RETURN_NONE;
   HANDLE_MS_EXCEPTION_END
@@ -1278,10 +1280,8 @@ static PyObject *TensorPython_setstate(PyObject *self, PyObject *args) {
     if (!PyArg_ParseTuple(args, "O", &state)) {
       return nullptr;
     }
-  } else {
-    if (!PyArg_ParseTuple(args, "OO", &tensor, &state)) {
-      return nullptr;
-    }
+  } else if (!PyArg_ParseTuple(args, "OO", &tensor, &state)) {
+    return nullptr;
   }
   if (!PyTuple_Check(state) || PyTuple_Size(state) != 1) {
     PyErr_SetString(PyExc_RuntimeError, "Invalid state!");
