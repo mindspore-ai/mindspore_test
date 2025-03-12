@@ -123,15 +123,26 @@ class ProfilerPathManager:
         """
         if not self._prof_ctx.msprof_profile_output_path:
             return
-        db_files = glob.glob(os.path.join(os.path.dirname(self._prof_ctx.msprof_profile_output_path), 'msprof*.db'))
+        db_files = glob.glob(os.path.join(
+            os.path.dirname(self._prof_ctx.msprof_profile_output_path),
+            'msprof*.db'
+        )) + glob.glob(os.path.join(
+            os.path.dirname(self._prof_ctx.msprof_profile_output_path),
+            "analyze",
+            "communication_analyzer.db"
+        ))
         for db_file in db_files:
             if os.path.isfile(db_file):
-                if self._prof_ctx.rank_id == "":
-                    new_file_name = f"ascend_mindspore_profiler.db"
+                db_file_name = os.path.basename(db_file)
+                if db_file_name == "communication_analyzer.db":
+                    new_file_name = os.path.join(self._prof_ctx.ascend_profiler_output_path, db_file_name)
+                    shutil.copy(db_file, new_file_name)
                 else:
-                    new_file_name = f"ascend_mindspore_profiler_{self._prof_ctx.rank_id}.db"
-                new_file_path = os.path.join(self._prof_ctx.ascend_profiler_output_path, new_file_name)
-                shutil.move(db_file, new_file_path)
+                    new_file_name = f"ascend_mindspore_profiler_{self._prof_ctx.rank_id}.db" if self._prof_ctx.rank_id \
+                        else f"ascend_mindspore_profiler.db"
+                    new_file_path = os.path.join(self._prof_ctx.ascend_profiler_output_path, new_file_name)
+                    shutil.move(db_file, new_file_path)
+
 
     def create_output_path(self):
         """
@@ -163,6 +174,6 @@ class ProfilerPathManager:
         if not self._worker_name:
             worker_name = f"{socket.gethostname()}_{os.getpid()}"
         else:
-            worker_name = self._worker_name
+            worker_name = f"{self._worker_name}_{os.getpid()}"
 
         return self._ASCEND_MS_DIR.format(worker_name, timestamp)
