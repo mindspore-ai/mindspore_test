@@ -224,6 +224,10 @@ bool StepAutoParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
       << "The recursive auto parallel strategy searching mode requires the device num be the power of 2.";
   }
 
+  if (strategy_search_mode == kDynamicProgramming) {
+    MS_LOG(WARNING) << "The dynamic programming auto parallel strategy searching mode will soon not be used.";
+  }
+
   // set grad accumulation step
   SetGradAccumulationStep(all_nodes);
   // mark the forward cnodes, parallel only care these nodes
