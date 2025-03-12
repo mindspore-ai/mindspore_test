@@ -37,62 +37,55 @@ py::object PYNATIVE_EXPORT PyboostCustomExtBase(const PrimitivePtr &prim, const 
   converter.Parse(args);
   auto tensors = converter.ToTensorList<py::tuple>(args, kIndex0);
 
-  static auto top_type = PredictOutType(op_run_info);
-  auto node = stub::MakeTopNode(top_type);
-  GilReleaseWithCheck release_gil;
   static auto op_type = kernel::pyboost::GetOpTypeFromOpdef(ops::gCustomExt);
-  op_run_info->stub_output = node.second;
   op_run_info->source_type = converter.source_type();
   op_run_info->op_grad_info->operator_type = op_type;
-  DispatchOp(std::make_shared<FrontendTask>(
-    [tensors, prim](const FrontendOpRunInfoPtr &op_run_info) {
-      MS_LOG(DEBUG) << "Run frontend task Pyboost_CustomExt start";
-      auto old_stream_id = kernel::pyboost::PyBoostUtils::cur_stream_id();
-      kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->base_op_run_info.stream_id);
 
-      // stub tensor to tensor.
-      auto tensors_tensor_list =
-        PyNativeAlgo::Common::ConvertStubNodeToValueTuple(tensors, true, op_run_info->requires_grad);
+  {
+    GilReleaseWithCheck no_gil;
+    runtime::Pipeline::Get().frontend_stage()->Wait();
+  }
 
-      // Do mixed precision and implicit cast
-      static const std::vector<std::vector<size_t>> same_type_table{};
-      auto [cast_tensors_tensor_list] =
-        PyNativeAlgo::PyBoost::SetPyBoostCastForInputs<0>(op_run_info, same_type_table, tensors_tensor_list);
+  MS_LOG(DEBUG) << "Run frontend task Pyboost_CustomExt start";
+  auto old_stream_id = kernel::pyboost::PyBoostUtils::cur_stream_id();
+  kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->base_op_run_info.stream_id);
 
-      // Create op
-      auto op = CREATE_PYBOOST_OP(CustomExt, op_run_info->base_op_run_info.device_target);
-      op->set_primitive(prim);
-      // Run op
-      (void)op->Call(cast_tensors_tensor_list);
+  // stub tensor to tensor.
+  auto tensors_tensor_list =
+    PyNativeAlgo::Common::ConvertStubNodeToValueTuple(tensors, true, op_run_info->requires_grad);
 
-      // Create output value
-      auto real_out = PyNativeAlgo::AutoGradUtil::MakeMultiOutput(
-        op_run_info->requires_grad, op,
-        op_run_info->requires_grad
-          ? PyNativeAlgo::Common::GetPyNativeExecutor()->grad_executor()->top_cell()->op_index()
-          : 0);
-      // Do auto grad
-      if (op_run_info->requires_grad) {
-        op_run_info->op_grad_info->op_prim = op->primitive();
-        op_run_info->op_grad_info->input_value = {cast_tensors_tensor_list};
-        op_run_info->op_grad_info->out_value = real_out;
-        PyNativeAlgo::AutoGradUtil::SetInferMultiOutputToGrad(op_run_info->op_grad_info, op);
-        PyNativeAlgo::PyBoost::DoGrad(op, op_run_info->op_grad_info, op_run_info->async_status);
-      } else if (op_type == OperatorType::kInplaceOp) {
-        PyNativeAlgo::PyBoost::BumpVersionAsync(op->outputs()[0]);
-      }
+  // Do mixed precision and implicit cast
+  static const std::vector<std::vector<size_t>> same_type_table{};
+  auto [cast_tensors_tensor_list] =
+    PyNativeAlgo::PyBoost::SetPyBoostCastForInputs<0>(op_run_info, same_type_table, tensors_tensor_list);
 
-      // Set output value to python
-      PyNativeAlgo::PyBoost::UpdateStubOutput(op, op_run_info->stub_output, op->output_abs(), real_out);
-      // Data sync in mix mode(Graph and PyNative)
-      PyNativeAlgo::PyBoost::DataSyncForGraph(op);
-      kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
+  // Create op
+  auto op = CREATE_PYBOOST_OP(CustomExt, op_run_info->base_op_run_info.device_target);
+  op->set_primitive(prim);
+  // Run op
+  (void)op->Call(cast_tensors_tensor_list);
 
-      MS_LOG(DEBUG) << "Run frontend task Pyboost_CustomExt end";
-    },
-    op_run_info));
+  // Create output value
+  auto real_out = PyNativeAlgo::AutoGradUtil::MakeMultiOutput(
+    op_run_info->requires_grad, op,
+    op_run_info->requires_grad ? PyNativeAlgo::Common::GetPyNativeExecutor()->grad_executor()->top_cell()->op_index()
+                               : 0);
+  // Do auto grad
+  if (op_run_info->requires_grad) {
+    op_run_info->op_grad_info->op_prim = op->primitive();
+    op_run_info->op_grad_info->input_value = {cast_tensors_tensor_list};
+    op_run_info->op_grad_info->out_value = real_out;
+    PyNativeAlgo::AutoGradUtil::SetInferMultiOutputToGrad(op_run_info->op_grad_info, op);
+    PyNativeAlgo::PyBoost::DoGrad(op, op_run_info->op_grad_info, op_run_info->async_status);
+  } else if (op_type == OperatorType::kInplaceOp) {
+    PyNativeAlgo::PyBoost::BumpVersionAsync(op->outputs()[0]);
+  }
+
+  // Data sync in mix mode(Graph and PyNative)
+  PyNativeAlgo::PyBoost::DataSyncForGraph(op);
+  kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
   MS_LOG(DEBUG) << "Run Pyboost_CustomExt end";
-  return node.first;
+  return py::reinterpret_steal<py::object>(tensor::Wrap(real_out));
 #else
   return PyNativeAlgo::PyBoost::RunPyFunction(prim, args);
 #endif

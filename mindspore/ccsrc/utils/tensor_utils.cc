@@ -22,5 +22,20 @@ void SetPromise(const std::tuple<stub::StubNodePtr> &promises, const BaseTensorP
   const auto &p = std::get<0>(promises);
   p->SetValue(tensor);
 }
+
+void FlattenOutputs(const ValuePtr &value, std::vector<BaseTensorPtr> *outputs) {
+  MS_EXCEPTION_IF_NULL(value);
+  if (value->isa<BaseTensor>()) {
+    outputs->emplace_back(value->cast<BaseTensorPtr>());
+  } else if (value->isa<ValueSequence>()) {
+    auto seq = value->cast<ValueSequencePtr>();
+    const auto &elements = seq->value();
+    for (const auto &element : elements) {
+      FlattenOutputs(element, outputs);
+    }
+  } else {
+    MS_LOG(EXCEPTION) << "Not support type " << value->ToString();
+  }
+}
 }  // namespace tensor
 }  // namespace mindspore
