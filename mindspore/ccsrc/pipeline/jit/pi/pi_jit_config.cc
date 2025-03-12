@@ -43,7 +43,6 @@ bool GraphJitConfig::SetBool<GraphJitConfig::Options::kPIJitContextMode>(PyObjec
 static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *)> key_map = {
   {"auto_jit_func_filter", &GraphJitConfig::SetAutoJitFilter},
   {"auto_jit_cell", &GraphJitConfig::SetBool<GraphJitConfig::kAutoJitCell>},
-  {"auto_grad", &GraphJitConfig::SetBool<GraphJitConfig::kAutoGrad>},
   {"print_after_all", &GraphJitConfig::SetBool<GraphJitConfig::kPrintAfterAll>},
   {"print_tb", &GraphJitConfig::SetBool<GraphJitConfig::kPrintTraceback>},
   {"print_bb", &GraphJitConfig::SetBool<GraphJitConfig::kPrintBB>},
@@ -58,7 +57,6 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"print_guard", &GraphJitConfig::SetBool<GraphJitConfig::kPrintGuard>},
   {"prune_case", &GraphJitConfig::SetBool<GraphJitConfig::kPruneCase>},
   {"loop_unrolling", &GraphJitConfig::SetBool<GraphJitConfig::kLoopUnrolling>},
-  {"infer_only", &GraphJitConfig::SetBool<GraphJitConfig::kInferOnly>},
   {"infer_primitive", &GraphJitConfig::SetBool<GraphJitConfig::kInferPrimitive>},
   {"strict_trace", &GraphJitConfig::SetBool<GraphJitConfig::kStrictTrace>},
   {"perf_statistics", &GraphJitConfig::SetBool<GraphJitConfig::kPerfStatistics>},
@@ -98,7 +96,6 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
 
 GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
   bool_conf[kAutoJitCell - kBoolConf] = false;
-  bool_conf[kAutoGrad - kBoolConf] = false;
   bool_conf[kPrintAfterAll - kBoolConf] = false;
   bool_conf[kPrintTraceback - kBoolConf] = false;
   bool_conf[kPrintBB - kBoolConf] = false;
@@ -114,7 +111,6 @@ GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
   bool_conf[kPruneCase - kBoolConf] = true;
   bool_conf[kLoopUnrolling - kBoolConf] = true;
   bool_conf[kSkipException - kBoolConf] = false;
-  bool_conf[kInferOnly - kBoolConf] = true;
   bool_conf[kInferPrimitive - kBoolConf] = true;
   bool_conf[kStrictTrace - kBoolConf] = true;
   bool_conf[kPerfStatistics - kBoolConf] = false;

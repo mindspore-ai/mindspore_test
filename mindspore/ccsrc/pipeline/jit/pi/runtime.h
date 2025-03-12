@@ -24,7 +24,6 @@ namespace mindspore {
 namespace pijit {
 namespace py = pybind11;
 
-void AutoGrad(EvalFrameObject *f, PyObject *ret);
 PyObject *CallCodeHook(PyThreadState *tstate, EvalFrameObject *f, JitCompileResults *c);
 
 }  // namespace pijit
