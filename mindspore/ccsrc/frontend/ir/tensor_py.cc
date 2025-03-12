@@ -750,8 +750,9 @@ void TensorPybind::Offload(const BaseTensorPtr &tensor, bool release) {
       return;
     }
     if (device_address->GetPtr() == nullptr) {
-      MS_LOG(EXCEPTION) << "For Offload, this tensor's device_ptr is nullptr, it may have been offloaded or released by"
-                        << " the framework.";
+      MS_LOG(INFO) << "For Offload, this tensor's device_ptr is nullptr, it may have been offloaded or released by"
+                   << " the framework.";
+      return;
     }
     MS_LOG(INFO) << "Tensor Offload start, the tensor's device_address is : " << device_address.get()
                  << ", the tensor's size is : " << device_address->GetSize();
