@@ -994,21 +994,21 @@ def adaptive_avg_pool3d(input, output_size):
     That is, for any input size, the size of the specified output is :math:`(D, H, W)`.
     The number of output features is equal to the number of input planes.
 
-    Suppose the last 3 dimension size of x is :math:`(inD, inH, inW)`, the last 3 dimension size of output is
-    :math:`(outD, outH, outW)`.
+    Suppose the last 3 dimension size of x is :math:`(D_{in}, H_{in}, W_{in})`, the last 3 dimension size of output is
+    :math:`(D_{out}, H_{out}, W_{out})`.
 
     .. math::
         \begin{array}{ll} \\
-            \forall \quad od \in [0,outD-1], oh \in [0,outH-1], ow \in [0,outW-1]\\
+            \forall \quad od \in [0, D_{out}-1], oh \in [0, H_{out}-1], ow \in [0, W_{out}-1] \\
             output[od,oh,ow] = \\
-            \qquad mean(x[istartD:iendD+1,istartH:iendH+1,istartW:iendW+1])\\
-            where,\\
-            \qquad istartD= \left\lceil \frac{od * inD}{outD} \right\rceil \\
-            \qquad iendD=\left\lfloor \frac{(od+1)* inD}{outD} \right\rfloor \\
-            \qquad istartH=\left\lceil \frac{oh * inH}{outH} \right\rceil \\
-            \qquad iendH=\left\lfloor \frac{(oh+1) * inH}{outH} \right\rfloor \\
-            \qquad istartW=\left\lceil \frac{ow * inW}{outW} \right\rceil \\
-            \qquad iendW=\left\lfloor \frac{(ow+1) * inW}{outW} \right\rfloor
+            \qquad mean(x[D_{istart}:D_{iend}+1,H_{istart}:H_{iend}+1,W_{istart}:W_{iend}+1]) \\
+            where, \\
+            \qquad D_{istart}= \left\lceil \frac{od * D_{in}}{D_{out}} \right\rceil \\
+            \qquad D_{iend}=\left\lfloor \frac{(od+1)* D_{in}}{D_{out}} \right\rfloor \\
+            \qquad H_{istart}=\left\lceil \frac{oh * H_{in}}{H_{out}} \right\rceil \\
+            \qquad H_{iend}=\left\lfloor \frac{(oh+1) * H_{in}}{H_{out}} \right\rfloor \\
+            \qquad W_{istart}=\left\lceil \frac{ow * W_{in}}{W_{out}} \right\rceil \\
+            \qquad W_{iend}=\left\lfloor \frac{(ow+1) * W_{in}}{W_{out}} \right\rfloor
         \end{array}
 
     .. warning::
