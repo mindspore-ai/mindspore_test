@@ -715,9 +715,9 @@ Status DropoutExtInfo::InferTensorInfo() {
 
   size_t real_input_index = 0;
   for (size_t i = 0; i < inputs_tensor_map_.size(); ++i) {
-    // Insert placeholder TensorInfo for optional input
+    // Insert placeholder TensorInfo for `keep_prob`, which is a float
     while (real_input_index < input_value_.size() && input_value_[real_input_index] != nullptr &&
-           input_value_[real_input_index]->isa<None>()) {
+           (input_value_[real_input_index]->isa<None>() || input_value_[real_input_index]->isa<FloatImm>())) {
       (void)inputs_tensor_info_.emplace_back(TensorInfo());
       ++real_input_index;
     }
@@ -762,26 +762,28 @@ CNodePtr DropoutExtInfo::GetGeneratorCNode(const CNodePtr &cnode) const {
   }
 
   // if using mint.nn.Dropout, seed and offset are TupleGetItem from Generator
-  // if using dropout_ext_op(input, p, seed, offset) directly, seed and offset should be Tensor, which is ValueNode
+  // if using dropout_ext_op(input, p, seed, offset) directly, seed and offset should be Tensor or Parameter
   AnfNodePtr get_item_seed = cnode->input(DROPOUT_EXT_SEED_INDEX);
   MS_EXCEPTION_IF_NULL(get_item_seed);
   if (!get_item_seed->isa<CNode>()) {
-    MS_LOG(DEBUG) << name_ << ": Seed is not from Generator";
     return nullptr;
   }
   auto get_item_seed_cnode = get_item_seed->cast<CNodePtr>();
-  if (get_item_seed_cnode->size() != TUPLE_GETITEM_CNODE_SIZE) {
-    MS_LOG_WITH_NODE(EXCEPTION, get_item_seed_cnode)
-      << "Size should be " << TUPLE_GETITEM_CNODE_SIZE << ", but get " << get_item_seed_cnode->size();
+  if (GetPrimName(get_item_seed_cnode) != TUPLE_GETITEM_OP) {
+    return nullptr;
   }
 
   // Generator CNode
   AnfNodePtr generator = get_item_seed_cnode->input(1);
   MS_EXCEPTION_IF_NULL(generator);
   if (!generator->isa<CNode>()) {
-    MS_LOG_WITH_NODE(EXCEPTION, get_item_seed_cnode) << "input[1] should be a CNode";
+    return nullptr;
   }
-  return generator->cast<CNodePtr>();
+  auto generator_cnode = generator->cast<CNodePtr>();
+  if (GetPrimName(generator_cnode) != GENERATOR) {
+    return nullptr;
+  }
+  return generator_cnode;
 }
 
 bool DropoutExtInfo::HaveManualSeed(const CNodePtr &generator_cnode) const {
@@ -854,6 +856,7 @@ void DropoutExtInfo::ReplaceNodeInputOrAttrs() {
     // if using dropout_ext_op(input, p, seed, offset) directly, can not get generator here
     // no need to rest seed since it is manual passed in directly
     if (generator == nullptr) {
+      MS_LOG(DEBUG) << name_ << ": Seed is not from Generator";
       continue;
     }
     // Generator with a False `manual_seed` means default_generator using random generated seed rather than manual seed
