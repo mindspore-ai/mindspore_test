@@ -1261,8 +1261,8 @@ bool IsCreatedByViewOp(const AnfNodePtr &node) {
   }
   auto abstract = node->abstract();
   if (abstract != nullptr && abstract->isa<abstract::AbstractRefTensor>()) {
-    constexpr auto kViewOp = abstract::AbstractRefTensor::DataType::kViewOp;
-    if (abstract->cast_ptr<abstract::AbstractRefTensor>()->data_type() == kViewOp) {
+    constexpr auto kViewOp = abstract::AbstractRefTensor::RefTensorType::kViewOp;
+    if (abstract->cast_ptr<abstract::AbstractRefTensor>()->ref_type() == kViewOp) {
       return true;
     }
   }
