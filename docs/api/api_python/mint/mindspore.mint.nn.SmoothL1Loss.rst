@@ -7,5 +7,5 @@ mindspore.mint.nn.SmoothL1Loss
 
     .. warning::
         这是一个实验性API，后续可能修改或删除。
-    
+
     参见 :func:`mindspore.mint.nn.functional.smooth_l1_loss` 获取更多详情。

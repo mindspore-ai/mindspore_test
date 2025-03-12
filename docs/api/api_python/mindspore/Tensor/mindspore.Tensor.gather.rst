@@ -3,7 +3,7 @@ mindspore.Tensor.gather
 
 .. py:method:: mindspore.Tensor.gather(dim, index)
 
-    返回输入Tensor在指定 `index` 对应的元素组成的切片，公示如下：
+    返回输入Tensor在指定 `index` 对应的元素组成的切片。公式如下：
 
     .. math::
         output[(i_0, i_1, ..., i_{dim}, i_{dim+1}, ..., i_n)] = input[(i_0, i_1, ..., index[(i_0, i_1, ..., i_{dim}, i_{dim+1}, ..., i_n)], i_{dim+1}, ..., i_n)]

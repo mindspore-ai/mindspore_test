@@ -11,5 +11,5 @@ mindspore.mint.nn.Dropout2d
 
     .. warning::
         这是一个实验性API，后续可能修改或删除。
-    
+
     更多参考详见 :func:`mindspore.mint.nn.functional.dropout2d`。

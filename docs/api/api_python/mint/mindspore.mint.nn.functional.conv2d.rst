@@ -32,7 +32,7 @@ mindspore.mint.nn.functional.conv2d
 
     .. warning::
         这是一个实验性API，后续可能修改或删除。
-    
+
     参数：
         - **input** (Tensor) - shape为 :math:`(N, C_{in}, H_{in}, W_{in})` 或 :math:`(C_{in}, H_{in}, W_{in})` 的Tensor。
         - **weight** (Tensor) - shape为 :math:`(C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]}, \text{kernel_size[1]})` ，则卷积核的大小为 :math:`(\text{kernel_size[0]}, \text{kernel_size[1]})` 。
