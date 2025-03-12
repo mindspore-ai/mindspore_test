@@ -76,7 +76,7 @@ from mindspore.ops.function.math_func import atan2
 # 14 bfloat16
 
 # 15 bmm
-
+from mindspore.ops.function.math_func import bmm
 # 16 bool
 
 # 17 broadcast_to
@@ -558,7 +558,11 @@ def tensor_atan2(input, other):
 # 14 bfloat16
 
 # 15 bmm
+def tensor_bmm(input, mat2):
+    return bmm(input, mat2)
 
+def deprecated_tensor_bmm(input, mat2):
+    return bmm(input, mat2)
 # 16 bool
 
 # 17 broadcast_to

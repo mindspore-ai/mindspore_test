@@ -1,0 +1,37 @@
+bmm:
+  description: |
+    bmm(mat2) -> Tensor
+  
+    Performs batch matrix multiplication of two three-dimensional tensors. `self` must be a three-dimensional tensor of shape `(b, n, m)` .
+
+    .. math::
+        \text{output}= \text{self} @ \text{mat2}
+
+    Args:
+        mat2 (Tensor): The second batch of matrices to be multiplied. Must be a three-dimensional tensor of shape `(b, m, p)` .
+
+    Returns:
+        Tensor, the output tensor of shape `(b, n, p)` , where each matrix is the product of the corresponding matrices in the `self` batches.
+
+    Raises:
+        ValueError: If `self` or `mat2` is not three-dimensional tensor.
+        ValueError: If the length of the third dimension of `self` is not equal to the length of the second dimension of `mat2` .
+        ValueError: If the batch size of `self` is not equal to the batch size of `mat2` .
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> a = Tensor(np.ones(shape=[2, 3, 4]), mindspore.float32)
+        >>> b = Tensor(np.ones(shape=[2, 4, 5]), mindspore.float32)
+        >>> output = a.(b)
+        >>> print(output)
+        [[[4. 4. 4. 4. 4.]
+          [4. 4. 4. 4. 4.]
+          [4. 4. 4. 4. 4.]]
+         [[4. 4. 4. 4. 4.]
+          [4. 4. 4. 4. 4.]
+          [4. 4. 4. 4. 4.]]]
