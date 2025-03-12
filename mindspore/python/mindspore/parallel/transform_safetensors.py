@@ -308,18 +308,14 @@ def _find_remove_redundancy_rank_id(pipe_param_list, single_param_dict, file_dic
             end_time = time.time()
             cost_time = end_time - start_time
             io_time += cost_time
-            save_param_name = param_name
             if choice_func is not None:
                 choice_out = choice_func(param_name)
-                if isinstance(choice_out, bool):
-                    if not choice_out:
-                        continue
-                elif isinstance(choice_out, str):
-                    save_param_name = choice_out
-                else:
+                if isinstance(choice_out, bool) and not choice_out:
+                    continue
+                if not isinstance(choice_out, (bool, str)):
                     raise ValueError("For 'unified_safetensors', the return value type of the function "
                                      f"'choice_func' must be bool or str, but got {type(choice_out)}.")
-            saftensor_dict[save_param_name] = output
+            saftensor_dict[param_name] = output
         else:
             raise ValueError(f"For _transform_safetensors_single, {param_name} should be in "
                              f"{redundancy_ranks}, but in {single_param_dict[param_name]}.")
@@ -396,18 +392,14 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
                             cost_time = end_time - start_time
                             io_time += cost_time
                             io_cost_time += io_time
-                            save_param_name = param_name
                             if choice_func is not None:
                                 choice_out = choice_func(param_name)
-                                if isinstance(choice_out, bool):
-                                    if not choice_out:
-                                        continue
-                                elif isinstance(choice_out, str):
-                                    save_param_name = choice_out
-                                else:
+                                if isinstance(choice_out, bool) and not choice_out:
+                                    continue
+                                if not isinstance(choice_out, (bool, str)):
                                     raise ValueError("For 'unified_safetensors', the return value type of the function "
                                                      f"'choice_func' must be bool or str, but got {type(choice_out)}.")
-                            saftensor_dict[save_param_name] = output
+                            saftensor_dict[param_name] = output
             else:
                 start_time = time.time()
                 saftensor_dict = load_file(all_safetensor_files_map.get(int(needed_rank)))
@@ -433,7 +425,7 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
             local_rank_id = transform_rank % dst_stage_device_num
             transform_param_dict = _transform_parallel_safetensor(local_rank_id, param_total_dict,
                                                                   param_attr_dict, src_strategy_list, dst_strategy_list,
-                                                                  param_total_dict_keys, src_strategy_file)
+                                                                  param_total_dict_keys, src_strategy_file, choice_func)
             if file_index is not None:
                 save_safetensor_file = f"part{file_index}.{output_format}"
                 save_safetensor_file_dir = dst_safetensors_dir
@@ -642,7 +634,8 @@ def load_file_by_param_name(filename, parme_name_list):
 
 
 def _transform_parallel_safetensor(rank_id, param_total_dict, param_attr_dict, src_strategy_list,
-                                   dst_strategy_list, param_total_dict_keys=None, src_strategy_file=None):
+                                   dst_strategy_list, param_total_dict_keys=None, src_strategy_file=None,
+                                   choice_func=None):
     """
     Transform model parallel dimension for distributed safetensor files.
     """
@@ -712,13 +705,20 @@ def _transform_parallel_safetensor(rank_id, param_total_dict, param_attr_dict, s
         transform_operator_stack = _generate_transform_operator_stack(param_rank_map, rank_id)
         param_total_dict_copy = param_total_dict[param_name].copy()
         _apply_tensor_transform_operators(transform_operator_stack, param_total_dict_copy, device_num)
-
+        if choice_func is not None:
+            choice_out = choice_func(param_name)
+            if isinstance(choice_out, str):
+                param_name = choice_out
         transform_param_dict[param_name] = param_total_dict_copy[rank_id % device_num]
         if str(type(transform_param_dict[param_name])) == "<class 'builtins.PySafeSlice'>":
             transform_param_dict[param_name] = transform_param_dict[param_name][:]
 
     # Handle those parameter like learning_rate, global_step which not in strategy_file.
     for param_name in param_total_dict_keys:
+        if choice_func is not None:
+            choice_out = choice_func(param_name)
+            if isinstance(choice_out, str):
+                continue
         if param_name not in transform_param_dict:
             transform_para = param_total_dict[param_name][rank_id % device_num]
             transform_param_dict[param_name] = transform_para
