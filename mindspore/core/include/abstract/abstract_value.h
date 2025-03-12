@@ -1444,17 +1444,17 @@ using AbstractEllipsisPtr = std::shared_ptr<AbstractEllipsis>;
 class MS_CORE_API AbstractRefTensor final : public AbstractTensor {
  public:
   // The order of these enum values determines the priority in AbstractRefTensor::Join().
-  enum class DataType : char { kParameter = 0, kInplaceOp, kViewOp };
-  static std::string ToString(DataType type);
+  enum class RefTensorType : char { kParameter = 0, kInplaceOp, kViewOp };
+  static std::string ToString(RefTensorType type);
 
  public:
   /// \brief Constructor of AbstractRef.
   ///
   /// \param[in] ref_value The tensor.
   /// \param[in] ref_key_value The ref key of tensor.
-  /// \param[in] data_type The data source of this tensor.
+  /// \param[in] ref_type The data source of this tensor.
   AbstractRefTensor(const AbstractTensorPtr &ref_value, const ValuePtr &ref_key_value,
-                    DataType data_type = DataType::kParameter);
+                    RefTensorType ref_type = RefTensorType::kParameter);
 
   /// \brief Destructor of AbstractEllipsis.
   ~AbstractRefTensor() override = default;
@@ -1491,8 +1491,8 @@ class MS_CORE_API AbstractRefTensor final : public AbstractTensor {
   void set_ref_key_value(const ValuePtr &ref_key_value) { ref_key_value_ = ref_key_value; }
 
   /// \brief Whether it is a Parameter.
-  bool is_parameter() const { return data_type_ == DataType::kParameter; }
-  DataType data_type() const { return data_type_; }
+  bool is_parameter() const { return ref_type_ == RefTensorType::kParameter; }
+  RefTensorType ref_type() const { return ref_type_; }
 
   AbstractBasePtr Broaden() const override;
 
@@ -1504,7 +1504,7 @@ class MS_CORE_API AbstractRefTensor final : public AbstractTensor {
  private:
   // ref_key_value is the reference key of AbstractRef, the value can be a string value or kValueAny
   ValuePtr ref_key_value_;
-  DataType data_type_;
+  RefTensorType ref_type_;
 };
 using AbstractRefPtr = std::shared_ptr<AbstractRefTensor>;
 

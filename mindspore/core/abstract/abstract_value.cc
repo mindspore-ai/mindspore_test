@@ -2073,8 +2073,8 @@ AbstractBasePtr AbstractJTagged::element() { return element_; }
 std::size_t AbstractJTagged::hash() const { return hash_combine(tid(), element_->hash()); }
 
 AbstractRefTensor::AbstractRefTensor(const AbstractTensorPtr &ref_value, const ValuePtr &ref_key_value,
-                                     DataType data_type)
-    : AbstractTensor(*ref_value), ref_key_value_(ref_key_value), data_type_(data_type) {
+                                     RefTensorType ref_type)
+    : AbstractTensor(*ref_value), ref_key_value_(ref_key_value), ref_type_(ref_type) {
   set_type(std::make_shared<RefType>());
   MS_EXCEPTION_IF_NULL(ref_key_value);
   if (ref_key_value != kValueAny && !ref_key_value->isa<RefKey>()) {
@@ -2111,10 +2111,10 @@ AbstractBasePtr AbstractRefTensor::Join(const std::shared_ptr<AbstractRefTensor>
   // Secondly , join the tensor value.
   auto joined_tensor = AbstractTensor::Join(other)->cast<AbstractTensorPtr>();
   MS_EXCEPTION_IF_NULL(joined_tensor);
-  if (data_type_ != other->data_type_) {
+  if (ref_type_ != other->ref_type_) {
     MS_LOG(INFO) << "Joining RefTensors of different types! this: " << ToString() << ", other: " << other->ToString();
   }
-  DataType joined_type = data_type_ > other->data_type_ ? data_type_ : other->data_type_;
+  RefTensorType joined_type = ref_type_ > other->ref_type_ ? ref_type_ : other->ref_type_;
   return std::make_shared<AbstractRefTensor>(joined_tensor, joined_ref_key, joined_type);
 }
 
@@ -2138,24 +2138,24 @@ AbstractBasePtr AbstractRefTensor::Join(const AbstractBasePtr &other) {
 
 AbstractBasePtr AbstractRefTensor::Clone() const {
   auto abs_tensor = AbstractTensor::Clone()->cast<AbstractTensorPtr>();
-  return std::make_shared<AbstractRefTensor>(abs_tensor, ref_key_value_, data_type_);
+  return std::make_shared<AbstractRefTensor>(abs_tensor, ref_key_value_, ref_type_);
 }
 
 AbstractBasePtr AbstractRefTensor::Broaden() const {
   // Always broaden for ref
   auto abs_tensor = AbstractTensor::Broaden()->cast<AbstractTensorPtr>();
   // Broaden the tensor value and keep the ref_key_value.
-  return std::make_shared<AbstractRefTensor>(abs_tensor, ref_key_value_, data_type_);
+  return std::make_shared<AbstractRefTensor>(abs_tensor, ref_key_value_, ref_type_);
 }
 
-std::string AbstractRefTensor::ToString(DataType type) {
-  return type == DataType::kParameter ? "kParameter" : type == DataType::kInplaceOp ? "kInplaceOp" : "kViewOP";
+std::string AbstractRefTensor::ToString(RefTensorType type) {
+  return type == RefTensorType::kParameter ? "Parameter" : type == RefTensorType::kInplaceOp ? "InplaceOp" : "ViewOP";
 }
 
 std::string AbstractRefTensor::ToString() const {
   std::ostringstream buffer;
   MS_EXCEPTION_IF_NULL(ref_key_value_);
-  buffer << type_name() << "(key: " << ref_key_value_->ToString() << ", data_type: " << ToString(data_type_)
+  buffer << type_name() << "(key: " << ref_key_value_->ToString() << ", ref_type: " << ToString(ref_type_)
          << ", ref_value: " << AbstractTensor::ToString();
   auto value = GetValueTrack();
   if (value != nullptr) {
