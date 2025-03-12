@@ -3,7 +3,7 @@
 
 .. py:class:: mindspore.ops.Digamma
 
-    计算输入的lgamma函数的导数。
+    计算对数gamma函数在输入上的导数。
 
     .. math::
         P(x) = grad(ln(gamma(x)))
