@@ -441,38 +441,38 @@ def eye(n, m=None, dtype=None):
 
 def hamming_window(window_length, periodic=True, alpha=0.54, beta=0.46, *, dtype=None):
     r"""
-    Returns the Hamming window.
+    Hamming window function.
 
     .. math::
 
         w[n]=\alpha − \beta \cos \left( \frac{2 \pi n}{N - 1} \right),
 
-    where :math:`N` is the full window size.
+    where :math:`N` is the full window size, and n is natural number less than :math:`N` :[0, 1, ..., N-1].
 
     Args:
-        window_length (int): The size of returned window. Must be a non negative integer.
-        periodic (bool, optional): If True, return a periodic window. If False, return a symmetric window.
-            Default: ``True`` .
-        alpha (float, optional): The coefficient α. Default: ``0.54`` .
-        beta (float, optional): The coefficient β. Default: ``0.46`` .
+        window_length (int): The size of window.
+        periodic (bool, optional): If ``True`` , return a periodic window. If ``False``, return a symmetric window.
+            Default ``True`` .
+        alpha (float, optional): The coefficient α. Default ``0.54`` .
+        beta (float, optional): The coefficient β. Default ``0.46`` .
 
     Keyword Args:
-        dtype (mindspore.dtype, optional): The output window data type. Default: ``None`` .
+        dtype (mindspore.dtype, optional): The data type specified. Default ``None`` .
 
     Returns:
-        Tensor, a 1-D tensor of size (window_length) containing the window.
-
-    Raises:
-        TypeError: If `window_length` is a negative integer.
-        TypeError: If `periodic` is not bool.
+        A 1-D tensor.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import ops
-        >>> print(ops.hamming_window(6, False))
-        [0.08 0.39785218 0.91214782  0.91214782  0.39785218 0.08]
+        >>> import mindspore
+        >>> output = mindspore.ops.hamming_window(5)
+        >>> print(output)
+        [0.08000001 0.3978522  0.9121478  0.9121478  0.3978522 ]
+        >>> output = mindspore.ops.hamming_window(5, periodic=False)
+        >>> print(output)
+        [0.08000001 0.54       1.         0.54       0.08000001]
     """
     if not isinstance(window_length, int):
         raise TypeError(f"For array function 'hamming_window', 'window_length' must be int, but got"

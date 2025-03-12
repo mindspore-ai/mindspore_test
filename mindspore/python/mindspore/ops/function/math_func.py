@@ -2383,24 +2383,18 @@ def inv(x):
         out_i = \frac{1}{x_{i} }
 
     Args:
-        x (Tensor): Tensor of any dimension. Must be one of the following types: float16, float32 or int32.
+        x (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same type and shape as input shape value.
-
-    Raises:
-        TypeError: If `x` is not a Tensor.
-        TypeError: If dtype of `x` is not one of float16, float32, int32.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([0.25, 0.4, 0.31, 0.52]), mindspore.float32)
-        >>> output = ops.inv(x)
+        >>> input = mindspore.tensor([0.25, 0.4, 0.31, 0.52])
+        >>> output = mindspore.ops.inv(input)
         >>> print(output)
         [4.        2.5       3.2258065 1.923077 ]
     """
@@ -4479,36 +4473,31 @@ def vander(x, N=None):
     The i-th output column is the input vector raised element-wise to the power of :math:`N - i - 1`.
 
     Args:
-        x (Tensor): 1-D input array.
-        N (int, optional): Number of columns in the output. Default: ``None``,
+        x (Tensor): The 1-D input tensor.
+        N (int, optional): Number of columns in the output. Default ``None``,
             `N` will be assigned as :math:`len(x)`.
 
     Returns:
-        Tensor, the columns are :math:`x^0, x^1, ..., x^{(N-1)}`.
-
-    Raises:
-        TypeError: If input `x` is not Tensor.
-        ValueError: If `x` is not 1-D.
-        TypeError: If input `N` is not int.
-        ValueError: If `N` <= 0.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor, ops
-        >>> a = Tensor([1., 2., 3., 5.])
-        >>> print(ops.vander(a, N=3))
-        [[1.   1.   1.]
-         [4.   2.   1.]
-         [9.   3.   1.]
-         [25.  5.   1.]]
-        >>> a = Tensor([1., 2., 3., 5.])
-        >>> print(ops.vander(a))
-        [[1.    1.   1.   1.]
-         [8.    4.   2.   1.]
-         [27.   9.   3.   1.]
-         [125.  25.  5.   1.]]
+        >>> import mindspore
+        >>> input = mindspore.tensor([1., 2., 3., 5.])
+        >>> output = mindspore.ops.vander(input)
+        >>> print(output)
+        [[  1.   1.   1.   1.]
+         [  8.   4.   2.   1.]
+         [ 27.   9.   3.   1.]
+         [125.  25.   5.   1.]]
+        >>> output = mindspore.ops.vander(input, N=3)
+        >>> print(output)
+        [[ 1.  1.  1.]
+         [ 4.  2.  1.]
+         [ 9.  3.  1.]
+         [25.  5.  1.]]
     """
     if not isinstance(x, Tensor):
         raise TypeError(
@@ -7120,38 +7109,33 @@ def copysign(x, other):
 
 def hann_window(window_length, periodic=True, *, dtype=None):
     r"""
-    Generates a Hann Window.
-
-    The Hann window is defined as
+    Hann window function.
 
     .. math::
         w(n) = \frac{1}{2} - \frac{1}{2} \cos\left(\frac{2\pi{n}}{M-1}\right),\qquad 0 \leq n \leq M-1
 
     Args:
-        window_length (int): Length of window.
-        periodic (bool, optional): When set to ``True`` , generates a periodic window for spectral analysis.
-            When set to ``False`` , generates a symmetric window for filter design.Default: ``True`` .
+        window_length (int): The size of window.
+        periodic (bool, optional): If ``True`` , return a periodic window. If ``False``, return a symmetric window.
+            Default ``True`` .
 
     Keyword Args:
-        dtype (mindspore.dtype, optional): The output window data type, it must be float. Default: ``None`` .
+        dtype (mindspore.dtype, optional): The data type specified. Default ``None`` .
 
     Returns:
-        Tensor, a Hann window.
-
-    Raises:
-        TypeError: If `window_length` is not an integer.
-        TypeError: If `periodic` is not a variable of Boolean type.
-        ValueError: If `window_length` is negative.
+        A 1-D tensor.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import ops
-        >>> window_length = 5
-        >>> out = ops.hann_window(window_length)
-        >>> print(out.asnumpy())
+        >>> import mindspore
+        >>> output = mindspore.ops.hann_window(5)
+        >>> print(output)
         [0.        0.3454915 0.9045085 0.9045085 0.3454915]
+        >>> output = mindspore.ops.hann_window(5, periodic=False)
+        >>> print(output)
+        [0.08000001 0.54       1.         0.54       0.08000001]
     """
     if not isinstance(window_length, int):
         raise TypeError(
@@ -8895,9 +8879,7 @@ def gumbel_softmax(logits, tau=1.0, hard=False, dim=-1):
 
 def kaiser_window(window_length, periodic=True, beta=12.0, *, dtype=None):
     r"""
-    Generates a Kaiser window, which is also known as the Kaiser-Bessel window.
-
-    The Kaiser window is defined as
+    Kaiser window function.
 
     .. math::
         w(n) = \frac{I_{0}\left( \beta\sqrt{1 - \frac{4n^{2}}{(M - 1)^{2}}} \right)}{I_{0}(\beta)}
@@ -8910,32 +8892,30 @@ def kaiser_window(window_length, periodic=True, beta=12.0, *, dtype=None):
     where :math:`I_0` is the modified zeroth-order Bessel function.
 
     Args:
-        window_length (int): Length of window.
-        periodic (bool, optional): When set to ``True`` , generates a periodic window for spectral analysis.
-            When set to ``False`` , generates a symmetric window for filter design. Default: ``True`` .
+        window_length (int): The size of window.
+        periodic (bool, optional): If ``True`` , return a periodic window. If ``False``, return a symmetric window.
+            Default ``True`` .
         beta (float, optional): Shape parameter, when `beta` gets large, the window narrows. Default: ``12.0`` .
 
     Keyword Args:
-        dtype (mindspore.dtype, optional): The output window data type, it must be float. Default: ``None`` .
+        dtype (mindspore.dtype, optional): The data type specified. Default ``None`` .
 
     Returns:
-        Tensor, a Kaiser window.
-
-    Raises:
-        TypeError: If `window_length` is not an integer.
-        TypeError: If `periodic` is not a variable of Boolean type.
-        ValueError: If `window_length` is negative.
+        A 1-D tensor.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import ops
-        >>> window_length = 5
-        >>> out = ops.kaiser_window(window_length)
-        >>> print(out.asnumpy())
+        >>> import mindspore
+        >>> output = mindspore.ops.kaiser_window(5)
+        >>> print(output)
         [5.27734413e-05 1.01719688e-01 7.92939834e-01 7.92939834e-01
          1.01719688e-01]
+        >>> output = mindspore.ops.kaiser_window(5, periodic=False)
+        >>> print(output)
+        [5.27734413e-05 2.15672745e-01 1.00000000e+00 2.15672745e-01
+         5.27734413e-05]
     """
     if not isinstance(window_length, int):
         raise TypeError(
@@ -11454,29 +11434,24 @@ def logical_xor(input, other):
 
 def imag(input):
     r"""
-    Returns a new tensor containing imaginary value of the `input`.
-    If `input` is real, it will return zeros.
+    Return a new tensor containing imaginary value of the input tensor, element-wise.
+    If element in the input tensor is real, it will return zero.
 
     Args:
-        input (Tensor): The input tensor to compute to.
+        input (Tensor): The input tensor.
 
     Returns:
-        Tensor, the shape is the same as the `input`.
-
-    Raises:
-       TypeError: If `input` is not a Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.asarray(np.complex(1.3 + 0.4j)), mindspore.complex64)
-        >>> output = ops.imag(x)
+        >>> input = mindspore.tensor([0.22+0.3511j, -0.55-0.6796j, -1.92-0.033j, -0.38-0.2991j])
+        >>> output = mindspore.ops.imag(input)
         >>> print(output)
-        0.4
+        [ 0.3511 -0.6796 -0.033  -0.2991]
     """
     return imag_(input)
 
@@ -12720,7 +12695,9 @@ def tensor_dot(x1, x2, axes):
 
 def vecdot(x, y, *, axis=-1):
     r"""
-    Calculates the dot product of two batches of vectors across the specified dimension.
+    Calculates the dot product of two batches of vectors along the specified dimension.
+
+    Support broadcasting.
 
     The formula of calculation is as follows.
     :math:`\bar{x_{i}}` represents the conjugate for complex vectors,
@@ -12734,24 +12711,14 @@ def vecdot(x, y, *, axis=-1):
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        x (Tensor): First batch of vectors. The shape of Tensor is :math:`(*,N)`
-            where :math:`*` means, any number of additional dimensions. Supporting broadcasting.
-            The dtype of Tensor should be one of the following types: float, double, int, complex64 and complex128.
-        y (Tensor): Second batch of vectors. The shape of Tensor is :math:`(*,N)`
-            where :math:`*` means, any number of additional dimensions. Supporting broadcasting.
-            The dtype of Tensor should be one of the following types: float, double, int, complex64 and complex128.
+        x (Tensor): The first batch of tensors.
+        y (Tensor): The second batch of tensors.
 
     Keyword Args:
-        axis (int): Dimension across which to calculate the dot product. Default: ``-1`` .
+        axis (int): Specify the axis for computation. Default ``-1`` .
 
     Returns:
-        Tensor, the shape is almost same as the shape of Tensor after broadcasting,
-        while the specified dimension `axis` in shape has been removed.
-
-    Raises:
-        TypeError: If `x` or `y` is not a Tensor.
-        TypeError: If type of `axis` is not int.
-        ValueError: If `axis` is out of range.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -12760,13 +12727,13 @@ def vecdot(x, y, *, axis=-1):
         Currently, complex numbers are not supported on GPU.
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import ops
-        >>> x = ms.Tensor([[1, 3], [5, 7], [9, 8]], dtype=ms.float32)
-        >>> y = ms.Tensor([[4, 5], [6, 7], [3, 2]], dtype=ms.float32)
-        >>> output = ops.vecdot(x, y, axis=-1)
-        >>> print(output)
-        [19. 79. 43.]
+        >>> import mindspore
+        >>> x = mindspore.tensor([[1, 3], [5, 7], [9, 8]])
+        >>> y = mindspore.tensor([[4, 5], [6, 7], [3, 2]])
+        >>> mindspore.ops.vecdot(x, y)
+        Tensor(shape=[3], dtype=Int64, value= [19, 79, 43])
+        >>> mindspore.ops.vecdot(x, y, axis=0)
+        Tensor(shape=[2], dtype=Int64, value= [61, 80])
     """
     if (not isinstance(x, Tensor)) or (not isinstance(y, Tensor)):
         raise TypeError("For vecdot, x or y must be Tensor.")
