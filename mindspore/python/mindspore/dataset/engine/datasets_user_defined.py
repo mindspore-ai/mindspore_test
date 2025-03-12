@@ -221,31 +221,28 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
         self.pids = []
         self.check_interval = get_multiprocessing_timeout_interval()  # the interval of check queue's size
 
-        multiprocessing.set_start_method(get_multiprocessing_start_method(), True)
-        # Event for end of epoch
         if self.multi_process is True:
+            multiprocessing.set_start_method(get_multiprocessing_start_method(), True)
+            # Event for end of epoch
             try:
                 self.eof = multiprocessing.Event()
             except Exception:
                 raise RuntimeError("Init multiprocessing.Event() failed, This might be caused by insufficient shm,"
                                    + " and the recommended shm size is at least 5 GB.")
-        else:
-            self.eof = threading.Event()
-        # Create workers
 
-        # get default queue size and adjust queue size per worker if there are large # workers
-        queue_size = get_prefetch_size()
-        queue_size = min(queue_size, queue_size * 4 // self.num_worker)
-        queue_size = max(2, queue_size)
+            # Create workers
+            # get default queue size and adjust queue size per worker if there are large # workers
+            queue_size = get_prefetch_size()
+            queue_size = min(queue_size, queue_size * 4 // self.num_worker)
+            queue_size = max(2, queue_size)
 
-        if self.multi_process and get_enable_shared_mem():
-            # generator dataset use idx_queue and res_queue to transfer data between main and subprocess
-            # idx_queue is used multiprocess.Queue which is not shared memory, so it's size is 0.
-            # res_queue is used shared memory, so its size is max_rowsize which is defined by user.
-            _check_shm_usage(self.num_worker, queue_size, 0, self.max_rowsize)
-        self.count = multiprocessing.Value('i', 0)
-        for worker_id in range(self.num_worker):
-            if self.multi_process is True:
+            if get_enable_shared_mem():
+                # generator dataset use idx_queue and res_queue to transfer data between main and subprocess
+                # idx_queue is used multiprocess.Queue which is not shared memory, so it's size is 0.
+                # res_queue is used shared memory, so its size is max_rowsize which is defined by user.
+                _check_shm_usage(self.num_worker, queue_size, 0, self.max_rowsize)
+            self.count = multiprocessing.Value('i', 0)
+            for worker_id in range(self.num_worker):
                 try:
                     logger.info("Multiprocessing start method: {}".format(multiprocessing.get_start_method()))
                     worker = _GeneratorWorkerMp(self.dataset, self.eof, self.max_rowsize, queue_size, self.ppid,
@@ -267,17 +264,19 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                     raise RuntimeError("Failed to launch multiprocessing of GeneratorDataset: {0}".format(e))
                 self.pids.append(worker.pid)
                 self.need_join = True
-            else:
-                worker = _GeneratorWorkerMt(self.dataset, self.eof, worker_id)
-                worker.daemon = True
-                self.need_join = True
-            self.workers.append(worker)
-        multiprocessing.set_start_method("fork", True)
+                self.workers.append(worker)
+            multiprocessing.set_start_method("fork", True)
 
-        if self.multi_process:
             logger.info("Launch generator worker process(es): {}".format([worker.pid for worker in self.workers]))
             if platform.system().lower() != 'windows':
                 self._launch_monitor()
+        else:
+            self.eof = threading.Event()
+            for worker_id in range(self.num_worker):
+                worker = _GeneratorWorkerMt(self.dataset, self.eof, worker_id)
+                worker.daemon = True
+                self.need_join = True
+                self.workers.append(worker)
 
     def terminate(self):
         self._stop_subprocess()
