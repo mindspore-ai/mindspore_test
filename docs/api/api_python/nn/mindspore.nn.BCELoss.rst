@@ -38,9 +38,9 @@ mindspore.nn.BCELoss
         - **labels** (Tensor) - 输入目标值Tensor，shape :math:`(N, *)` ，其中 :math:`*` 代表任意数量的附加维度。与 `logits` 的shape和数据类型相同。
 
     输出：
-        Tensor，数据类型与 `logits` 相同。如果 `reduction` 为'none'，则shape与 `logits` 相同。否则，输出为Scalar的Tensor。
+        Tensor，数据类型与 `logits` 相同。如果 `reduction` 为 ``'none'``，则shape与 `logits` 相同。否则，输出为Scalar的Tensor。
 
     异常：
-        - **TypeError** - `logits` 的数据类型，`labels` 或 `weight` （如果给定）既不是float16，也不是float32。
+        - **TypeError** - `logits` 的数据类型， `labels` 或 `weight` （如果给定）既不是float16，也不是float32。
         - **ValueError** - `reduction` 不为 ``'none'`` 、 ``'mean'`` 或 ``'sum'`` 。
         - **ValueError** - `logits` 的shape与 `labels` 或 `weight` （如果给定）不同。
