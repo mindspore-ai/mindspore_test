@@ -1587,7 +1587,7 @@ def tensor_addmv(input, mat, vec, *, beta=1, alpha=1):
     return addmv(input, mat, vec, beta=beta, alpha=alpha)
 
 
-def deprecated_tensor_addmv(input, mat, vec, *, beta=1, alpha=1):
+def deprecated_tensor_addmv(input, mat, vec, beta=1, alpha=1):
     r"""
     For details, please refer to :func:`mindspore.ops.addmv`.
     """

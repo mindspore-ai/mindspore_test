@@ -9,7 +9,6 @@ addmv:
 
   - op_yaml: deprecated/addmv_method.yaml
     py_method: deprecated_tensor_addmv
-    kwonlyargs: beta, alpha
     Ascend: py_method
     CPU: py_method
     GPU: py_method
