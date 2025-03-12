@@ -146,16 +146,9 @@ bool AscendCommunicationGroup::InitializeByRootInfoConfig(void *root_info, uint3
                   << config_.hcclBufferSize << " MB."
                   << " hcclDeterministic is " << config_.hcclDeterministic;
   unique_id_ = *(static_cast<HcclRootInfo *>(root_info));
-
-  HcclCommConfig config;
-  HcclCommConfigInit(&config);
-  auto ret = strcpy_s(config.hcclCommName, sizeof(config.hcclCommName) / sizeof(config.hcclCommName[0]), name_.c_str());
-  if (ret != EOK) {
-    MS_LOG(ERROR) << "Call strcpy_s failed, group name: " << name_ << ", error no (" << ret << ")";
-    return false;
-  }
-  if (HcclCommInitRootInfoConfig(static_cast<uint32_t>(group_size), &unique_id_, static_cast<uint32_t>(group_rank),
-                                 &config, &comm_) != static_cast<int32_t>(HCCL_SUCCESS)) {
+  // MindSpore 2.5 uses HcclCommInitRootInfo to avoid using hcclconfig feature.
+  if (HcclCommInitRootInfo(static_cast<uint32_t>(group_size), &unique_id_, static_cast<uint32_t>(group_rank), &comm_) !=
+      static_cast<int32_t>(HCCL_SUCCESS)) {
     const string &error_message = ErrorManagerAdapter::GetErrorMessage(true);
     MS_LOG(ERROR) << "HcclCommInitRootInfo failed. " + error_message;
     return false;

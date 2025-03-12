@@ -4215,6 +4215,7 @@ void DfGraphConvertor::AddCommAttrForHcclNode(const CNodePtr &node, const Operat
       MS_LOG(INFO) << "Set comm handle and comm group name of the hccl node: " << node->fullname_with_scope()
                    << ". Comm handle: " << comm << ", comm name:" << hccl_inner_comm_name;
       MS_EXCEPTION_IF_NULL(comm);
+      (void)converted_op->SetAttr("comm", reinterpret_cast<int64_t>(comm));
       (void)converted_op->SetAttr("group", hccl_inner_comm_name);
     } else {
       // For rank_table manner, 'group' attr should be user set group name.
