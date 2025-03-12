@@ -1034,15 +1034,15 @@ static PyObject *TensorPython_SetOffload(PyObject *self, PyObject *args) {
 static PyObject *TensorPython_set_device_address(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
   uintptr_t addr;
+  ShapeVector shape;
   PyObject *shape_obj;
   PyObject *type_ptr_obj;
 
-  if (!PyArg_ParseTuple(args, "kO!O!", &addr, &PyList_Type, &shape_obj, &PyCapsule_Type, &type_ptr_obj)) {
+  if (!PyArg_ParseTuple(args, "KOO", &addr, &shape_obj, &type_ptr_obj)) {
     return nullptr;
   }
-  ShapeVector shape;
-  for (Py_ssize_t i = 0; i < PyList_Size(shape_obj); ++i) {
-    PyObject *item = PyList_GetItem(shape_obj, i);
+  for (Py_ssize_t i = 0; i < PyTuple_Size(shape_obj); ++i) {
+    PyObject *item = PyTuple_GET_ITEM(shape_obj, i);
     shape.push_back(PyLong_AsLong(item));
   }
   TypePtr type_ptr = py::cast<TypePtr>(py::handle(type_ptr_obj));
@@ -1233,7 +1233,9 @@ static PyObject *TensorPython_GetHooks(PyObject *self, PyObject *args, PyObject 
 static PyObject *TensorPython_GetDataPtr(PyObject *self, PyObject *args, PyObject *kwargs) {
   HANDLE_MS_EXCEPTION
   PyObject *tensor_obj;
-  if (!PyArg_ParseTuple(args, "O", &tensor_obj)) {
+  if (self != nullptr) {
+    tensor_obj = self;
+  } else if (!PyArg_ParseTuple(args, "O", &tensor_obj)) {
     return nullptr;
   }
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)tensor_obj;
@@ -1566,7 +1568,7 @@ static PyMethodDef Tensor_methods[] = {
                                 )mydelimiter"},
   {"_has_auto_grad", (PyCFunction)TensorPython_HasAutoGrad, METH_VARARGS | METH_KEYWORDS, "HasAutoGrad."},
   {"hooks", (PyCFunction)TensorPython_GetHooks, METH_VARARGS | METH_KEYWORDS, "get hooks."},
-  {"_data_ptr", (PyCFunction)TensorPython_GetDataPtr, METH_STATIC | METH_VARARGS, "get Data ptr."},
+  {"_data_ptr", (PyCFunction)TensorPython_GetDataPtr, METH_VARARGS, "get Data ptr."},
   {"_need_contiguous", (PyCFunction)TensorPython_NeedContiguous, METH_VARARGS | METH_KEYWORDS, "need Contiguous."},
   {NULL, NULL, 0, NULL}};
 
