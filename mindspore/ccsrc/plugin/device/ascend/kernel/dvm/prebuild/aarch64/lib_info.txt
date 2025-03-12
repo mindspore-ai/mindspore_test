@@ -1,3 +1,3 @@
 [lib information]
-git branch: r2.5
-commit  id: a7e4fbcb1b13a7a42367342bcab7139867096d1a
+git branch: r2.6
+commit  id: 52057fd97cc5cf111ee83f191bca14b2cf027d95
