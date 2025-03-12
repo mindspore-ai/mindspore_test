@@ -1548,6 +1548,7 @@ def deprecated_bitwise_xor(input, other):
 def tensor_logical_xor(input, other):
     return logical_xor_op(input, other)
 
+
 # 162
 def tensor_log10(input):
     return log10(input)

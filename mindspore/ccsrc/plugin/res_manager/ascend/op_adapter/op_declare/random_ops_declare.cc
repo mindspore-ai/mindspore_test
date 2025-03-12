@@ -212,7 +212,8 @@ REG_ADPT_DESC(Dropout3D, kNameDropout3D, CUST_ADPT_DESC(Dropout3D));
 
 // ShuffleChannel
 INPUT_MAP(ShuffleChannel) = {{1, INPUT_DESC(x)}};
-ATTR_MAP(ShuffleChannel) = {{"group", ATTR_DESC(group, AnyTraits<int64_t>())}};
+ATTR_MAP(ShuffleChannel) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(ShuffleChannel) = {{2, ATTR_DESC(group, AnyTraits<int64_t>())}};
 OUTPUT_MAP(ShuffleChannel) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(ShuffleChannel, kNameChannelShuffle, ADPT_DESC(ShuffleChannel));
 }  // namespace mindspore::device::ascend

@@ -3715,6 +3715,8 @@ REG_BPROP_BUILDER("MultiMarginLoss").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) 
   return {dx, ib->OutZeros(target), ib->OutZeros(weight)};
 });
 
+REG_BPROP_BUILDER("ChannelShuffle").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
+
 REG_BPROP_BUILDER("DropoutGenMask").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("DropoutDoMask").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {

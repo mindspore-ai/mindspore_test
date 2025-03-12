@@ -109,6 +109,7 @@ static const std::map<std::string, std::vector<std::pair<std::string, size_t>>> 
   {"Triu", {{"diagonal", 2}}},
   {"SoftMarginLoss", {{"reduction", 3}}},
   {"SmoothL1Loss", {{"beta", 3}, {"reduction", 4}}},
+  {"ChannelShuffle", {{"group", 2}}},
   {"TensorScatterElements", {{"axis", 4}, {"reduction", 5}, {"reduce", 5}}}  // reduce OR reduction is passed
 };
 

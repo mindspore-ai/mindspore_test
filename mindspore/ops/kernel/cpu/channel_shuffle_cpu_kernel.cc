@@ -23,7 +23,7 @@
 namespace mindspore {
 namespace kernel {
 namespace {
-constexpr size_t kChannelShuffleInputsNum = 1;
+constexpr size_t kChannelShuffleInputsNum = 2;
 constexpr size_t kChannelShuffleOutputsNum = 1;
 #define SHUFFLE_CHANNEL_COMPUTE_CASE(DTYPE, TYPE, INPUTS, OUTPUTS) \
   case (DTYPE): {                                                  \
@@ -34,8 +34,8 @@ constexpr size_t kChannelShuffleOutputsNum = 1;
 
 bool ChannelShuffleCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &outputs) {
-  input_dtype_ = inputs[0]->dtype_id();
-  group_ = GetValue<int64_t>(primitive_->GetAttr("group"));
+  input_dtype_ = inputs[kIndex0]->dtype_id();
+  group_ = inputs[kIndex1]->GetValueWithCheck<int64_t>();
   return true;
 }
 
@@ -73,18 +73,50 @@ int ChannelShuffleCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs
 }
 
 std::vector<KernelAttr> ChannelShuffleCpuKernelMod::GetOpSupport() {
-  static std::vector<KernelAttr> support_list = {
-    KernelAttr().AddInputAttr(kNumberTypeInt8).AddOutputAttr(kNumberTypeInt8),
-    KernelAttr().AddInputAttr(kNumberTypeInt16).AddOutputAttr(kNumberTypeInt16),
-    KernelAttr().AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeInt32),
-    KernelAttr().AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeInt64),
-    KernelAttr().AddInputAttr(kNumberTypeUInt8).AddOutputAttr(kNumberTypeUInt8),
-    KernelAttr().AddInputAttr(kNumberTypeUInt16).AddOutputAttr(kNumberTypeUInt16),
-    KernelAttr().AddInputAttr(kNumberTypeUInt32).AddOutputAttr(kNumberTypeUInt32),
-    KernelAttr().AddInputAttr(kNumberTypeUInt64).AddOutputAttr(kNumberTypeUInt64),
-    KernelAttr().AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeFloat16),
-    KernelAttr().AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32),
-    KernelAttr().AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeFloat64)};
+  static std::vector<KernelAttr> support_list = {KernelAttr()
+                                                   .AddInputAttr(kNumberTypeInt8)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeInt8),
+                                                 KernelAttr()
+                                                   .AddInputAttr(kNumberTypeInt16)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeInt16),
+                                                 KernelAttr()
+                                                   .AddInputAttr(kNumberTypeInt32)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeInt32),
+                                                 KernelAttr()
+                                                   .AddInputAttr(kNumberTypeInt64)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeInt64),
+                                                 KernelAttr()
+                                                   .AddInputAttr(kNumberTypeUInt8)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeUInt8),
+                                                 KernelAttr()
+                                                   .AddInputAttr(kNumberTypeUInt16)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeUInt16),
+                                                 KernelAttr()
+                                                   .AddInputAttr(kNumberTypeUInt32)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeUInt32),
+                                                 KernelAttr()
+                                                   .AddInputAttr(kNumberTypeUInt64)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeUInt64),
+                                                 KernelAttr()
+                                                   .AddInputAttr(kNumberTypeFloat16)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeFloat16),
+                                                 KernelAttr()
+                                                   .AddInputAttr(kNumberTypeFloat32)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeFloat32),
+                                                 KernelAttr()
+                                                   .AddInputAttr(kNumberTypeFloat64)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeFloat64)};
   return support_list;
 }
 
