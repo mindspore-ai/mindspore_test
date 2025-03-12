@@ -246,6 +246,8 @@ class GraphBuilder {
 
   // bytecode operations
   bool TraceRunControl(const Instr &instr);
+  bool ConditionJump(const Instr &instr, int *cond, int *jump_to, ValueNode **cond_node);
+  bool ConditionJumpPy311(const Instr &instr, int *cond, int *jump_to, ValueNode **cond_node);
   bool TraceRunForIter(const Instr &instr);
   bool DoUnpack(const Instr &instr);
   bool DoBuildWithUnpack(const Instr &instr);

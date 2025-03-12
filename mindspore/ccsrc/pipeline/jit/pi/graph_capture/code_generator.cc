@@ -630,10 +630,10 @@ std::vector<std::unique_ptr<Instr>> CodeGenerator::RotStack(int stack) {
   std::vector<std::unique_ptr<Instr>> res;
   if (stack == 0) {
     return res;
-#if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION == 11)
+#if PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION == 11
   } else {
     res.push_back(std::make_unique<Instr>(SWAP, stack + 1));
-#elif (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION == 10)
+#elif PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION == 10
   } else {
     res.push_back(std::make_unique<Instr>(ROT_N, stack + 1));
 #elif PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 10 && PY_MINOR_VERSION >= 7

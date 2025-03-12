@@ -3706,7 +3706,7 @@ bool GraphBuilder::TraceRunForIterDict(int jump_bci) {
     ValueNode *dict_node = iter_node->iterable();
     push(dict_node);
     DoAttrAccess({LOAD_ATTR, 0, "keys"});
-    DoCall({CALL_FUNCTION, 0});
+    DoCall(NewCallFuncInstr(0));
     ValueNode *keys_node = pop();
     DoLoadConst({LOAD_CONST, 0, py::cast<py::object>(reinterpret_cast<PyObject *>(&PyTuple_Type))});
     push(keys_node);
@@ -3968,6 +3968,58 @@ static void LogPrunBranch(ValueNode *cond, const Instr &instr, const GraphJitCon
   }
 }
 
+bool GraphBuilder::ConditionJumpPy311(const Instr &instr, int *pred, int *jump_bci, ValueNode **pred_node) {
+  Opcode opcode(instr.op());
+  ValueNode *cond_node = nullptr;
+  int cond = -1;
+  int jump_to = -1;
+  bool is_if_bool = opcode == POP_JUMP_BACKWARD_IF_FALSE || opcode == POP_JUMP_BACKWARD_IF_TRUE ||
+                    opcode == POP_JUMP_FORWARD_IF_FALSE || opcode == POP_JUMP_FORWARD_IF_TRUE;
+  bool is_if_none = opcode == POP_JUMP_BACKWARD_IF_NONE || opcode == POP_JUMP_BACKWARD_IF_NOT_NONE ||
+                    opcode == POP_JUMP_FORWARD_IF_NONE || opcode == POP_JUMP_FORWARD_IF_NOT_NONE;
+  if (is_if_bool) {
+    cond_node = pop();
+    cond = CondIsTrue(cond_node);
+    bool jump_if_true = (opcode == POP_JUMP_FORWARD_IF_TRUE || opcode == POP_JUMP_BACKWARD_IF_TRUE);
+    jump_to = ((cond == 0) ^ jump_if_true) ? instr.extra_jump()->bci() : cur_bci_ + 1;
+  } else if (is_if_none) {
+    cond_node = pop();
+    cond = CondIsNotNone(cond_node);
+    bool jump_if_not_none = (opcode == POP_JUMP_BACKWARD_IF_NOT_NONE || opcode == POP_JUMP_FORWARD_IF_NOT_NONE);
+    jump_to = ((cond == 0) ^ jump_if_not_none) ? instr.extra_jump()->bci() : cur_bci_ + 1;
+  } else {
+    return false;
+  }
+  *pred = cond;
+  *jump_bci = jump_to;
+  *pred_node = cond_node;
+  return true;
+}
+
+bool GraphBuilder::ConditionJump(const Instr &instr, int *pred, int *jump_bci, ValueNode **pred_node) {
+  Opcode opcode(instr.op());
+  ValueNode *cond_node = nullptr;
+  int cond = -1;
+  int jump_to = -1;
+  if (opcode == POP_JUMP_IF_FALSE || opcode == POP_JUMP_IF_TRUE) {
+    cond_node = pop();
+    cond = CondIsTrue(cond_node);
+    jump_to = ((cond == 0) ^ (opcode == POP_JUMP_IF_TRUE)) ? instr.extra_jump()->bci() : cur_bci_ + 1;
+  } else if (opcode == JUMP_IF_FALSE_OR_POP || opcode == JUMP_IF_TRUE_OR_POP) {
+    cond_node = seek(0);
+    cond = CondIsTrue(cond_node);
+    bool jump = (cond == 0) ^ (opcode == JUMP_IF_TRUE_OR_POP);
+    cond_node = jump ? seek(0) : pop();
+    jump_to = jump ? instr.extra_jump()->bci() : cur_bci_ + 1;
+  } else {
+    return ConditionJumpPy311(instr, pred, jump_bci, pred_node);
+  }
+  *pred = cond;
+  *jump_bci = jump_to;
+  *pred_node = cond_node;
+  return true;
+}
+
 bool GraphBuilder::TraceRunControl(const Instr &instr) {
   MS_EXCEPTION_IF_NULL(instr.extra_jump());
   Opcode opcode(instr.op());
@@ -3979,31 +4031,8 @@ bool GraphBuilder::TraceRunControl(const Instr &instr) {
     return true;
   } else if (opcode == FOR_ITER) {
     return TraceRunForIter(instr);
-  } else if (opcode == POP_JUMP_IF_FALSE || opcode == POP_JUMP_IF_TRUE) {
-    cond_node = pop();
-    cond = CondIsTrue(cond_node);
-    jump_to = ((cond == 0) ^ (opcode == POP_JUMP_IF_TRUE)) ? instr.extra_jump()->bci() : cur_bci_ + 1;
-  } else if (opcode == JUMP_IF_FALSE_OR_POP || opcode == JUMP_IF_TRUE_OR_POP) {
-    cond_node = seek(0);
-    cond = CondIsTrue(cond_node);
-    bool jump = (cond == 0) ^ (opcode == JUMP_IF_TRUE_OR_POP);
-    cond_node = jump ? seek(0) : pop();
-    jump_to = jump ? instr.extra_jump()->bci() : cur_bci_ + 1;
-#if IS_PYTHON_3_11_PLUS
-  } else if (opcode == POP_JUMP_BACKWARD_IF_FALSE || opcode == POP_JUMP_BACKWARD_IF_TRUE ||
-             opcode == POP_JUMP_FORWARD_IF_FALSE || opcode == POP_JUMP_FORWARD_IF_TRUE) {
-    cond_node = pop();
-    cond = CondIsTrue(cond_node);
-    auto is_jump_is_true = (opcode == POP_JUMP_FORWARD_IF_TRUE || opcode == POP_JUMP_BACKWARD_IF_TRUE) ? true : false;
-    jump_to = ((cond == 0) ^ is_jump_is_true) ? instr.extra_jump()->bci() : cur_bci_ + 1;
-  } else if (opcode == POP_JUMP_BACKWARD_IF_NONE || opcode == POP_JUMP_BACKWARD_IF_NOT_NONE ||
-             opcode == POP_JUMP_FORWARD_IF_NONE || opcode == POP_JUMP_FORWARD_IF_NOT_NONE) {
-    cond_node = pop();
-    cond = CondIsNotNone(cond_node);
-    auto is_jump_is_not_none =
-      (opcode == POP_JUMP_BACKWARD_IF_NOT_NONE || opcode == POP_JUMP_FORWARD_IF_NOT_NONE) ? true : false;
-    jump_to = ((cond == 0) ^ is_jump_is_not_none) ? instr.extra_jump()->bci() : cur_bci_ + 1;
-#endif
+  } else if (ConditionJump(instr, &cond, &jump_to, &cond_node)) {
+    MS_LOG(DEBUG) << "condition jump: " << instr.ToString();
   } else {
     graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceByteCode_Unsupported);
     return false;
