@@ -8,7 +8,7 @@ mindspore.Tensor.std
     .. py:method:: mindspore.Tensor.std(dim=None, *, correction=1, keepdim=False)
         :noindex:
 
-    计算指定维度 `dim` 上的标准差。 `dim` 可以是单个维度、维度列表，也可以是 `None` ，表示移除所有维度。
+    计算指定维度 `dim` 上的标准差。 `dim` 可以是单个维度或维度列表，也可以是 `None` ，表示移除所有维度。
 
     标准差 (:math:`\sigma`) 计算如下：
 
@@ -38,8 +38,8 @@ mindspore.Tensor.std
 
     异常：
         - **TypeError** - 如果 `self` 不是Tensor。
-        - **TypeError** - 如果 `self` 的数据类型不是bfloat16，float16或float32。
-        - **TypeError** - 如果 `dim` 不是None，int或tuple类型。
+        - **TypeError** - 如果 `self` 的数据类型不是bfloat16、float16或float32。
+        - **TypeError** - 如果 `dim` 不是None、int或tuple类型。
         - **TypeError** - 如果 `correction` 不是int类型。
         - **TypeError** - 如果 `keepdim` 不是bool类型。
         - **ValueError** - 如果 `dim` 不在 :math:`[-self.ndim, self.ndim)` 范围内。

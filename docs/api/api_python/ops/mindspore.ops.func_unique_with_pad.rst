@@ -7,7 +7,7 @@ mindspore.ops.unique_with_pad
 
     基本操作与unique相同，但unique_with_pad多了pad操作。
     unique运算符对Tensor处理后所返回的元组（ `y` ， `idx` ）， `y` 与 `idx` 的shape通常会有差别。因此，为了解决上述情况，
-    unique_with_pad操作符将用用户指定的 `pad_num` 填充 `y` ，使其具有与 `idx` 相同shape。
+    unique_with_pad操作符将以用户指定的 `pad_num` 填充 `y` ，使其具有与 `idx` 相同的shape。
 
     .. warning::
         :func:`mindspore.ops.unique_with_pad` 从2.4版本开始已被弃用，并将在未来版本中被移除。

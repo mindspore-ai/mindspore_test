@@ -10,11 +10,11 @@ mindspore.ops.hypot
         out_i = \sqrt{input_i^2 + other_i^2}
 
     参数：
-        - **input** (Tensor) - 第一个输入Tesnor。
-        - **other** (Tensor) - 第二个输入Tesnor。
+        - **input** (Tensor) - 第一个输入Tensor。
+        - **other** (Tensor) - 第二个输入Tensor。
 
     返回：
-        Tensor，shape和广播后的shape相同，数据类型为两个输入数据中精度更高的。
+        Tensor，shape和广播后的shape相同，数据类型为两个输入数据中精度更高的类型。
 
     异常：
         - **TypeError** - `input` 或 `other` 的类型不是float32或float64。

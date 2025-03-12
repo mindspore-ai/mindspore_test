@@ -3,7 +3,7 @@ mindspore.ops.UniqueConsecutive
 
 .. py:class:: mindspore.ops.UniqueConsecutive(return_inverse=False, return_counts=False, dim=None)
 
-    对输入张量中连续且重复的元素去重。
+    对输入Tensor中连续且重复的元素去重。
 
     .. warning::
         这是一个实验性API，后续可能修改或删除。

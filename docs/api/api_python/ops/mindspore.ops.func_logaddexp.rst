@@ -12,7 +12,7 @@ mindspore.ops.logaddexp
 
     参数：
         - **input** (Tensor) - 输入Tensor，其数据类型必须是float。
-        - **other** (Tensor) - 输入Tensor，其数据类型必须是float。如果 `input` 的shape不等于 `other` 的shape，它们必须被广播成相同shape(输出的形状)。
+        - **other** (Tensor) - 输入Tensor，其数据类型必须是float。如果 `input` 的shape不等于 `other` 的shape，它们必须被广播成相同shape。
 
     返回：
         Tensor。
