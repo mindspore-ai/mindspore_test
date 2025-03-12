@@ -47,7 +47,7 @@ def test_inner_out_net_1():
     Description: Check the name of parameter in two network.
     Expectation: No exception.
     """
-    with pytest.raises(ValueError, match="its name 'name_a' already exists."):
+    with pytest.raises(RuntimeError, match="its name 'name_a' already exists."):
         net1 = InnerNet()
         net2 = InnerNet()
         out_net = OutNet1(net1, net2)

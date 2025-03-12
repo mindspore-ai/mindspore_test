@@ -202,7 +202,7 @@ class Cell(Cell_):
         self.parameter_broadcast_done = False
         self._id = 1
         self._exist_objs = None
-        self._exist_param_names = None
+        self._exist_names = None
         self._recompute_cell = None
         self.mixed_precision_type = None
         self.sig = inspect.signature(self.construct)
@@ -275,10 +275,10 @@ class Cell(Cell_):
         return self._cell_init_args
 
     @property
-    def exist_param_names(self):
-        if self._exist_param_names is None:
-            self._exist_param_names = dict()
-        return self._exist_param_names
+    def exist_names(self):
+        if self._exist_names is None:
+            self._exist_names = set("")
+        return self._exist_names
 
     @property
     def exist_objs(self):
@@ -1180,28 +1180,23 @@ class Cell(Cell_):
                 del self.__dict__[name]
             self.insert_param_to_cell(name, value)
         elif isinstance(value, ParameterTuple):
-            remove_duplicates = set("")
+            exist_names = set("")
+            exist_objs = set()
             for item in value:
-                if item in self.exist_objs:
+                if item in exist_objs:
                     # If there are multiple identical objects, their names only check once.
                     continue
-                self.exist_objs.add(item)
+                exist_objs.add(item)
                 if item.name == PARAMETER_NAME_DEFAULT:
                     logger.warning("For 'Cell', the parameter definition is deprecated.\n"
                                    "Please set a unique name for the parameter in ParameterTuple '{}'.".format(value))
                     item.name = item.name + "$" + str(self._id)
                     self._id += 1
-                #  check duplicate parameter in the cell
-                if item.name in self.exist_param_names and self.exist_param_names[item.name] != name:
-                    raise ValueError(f"The value {value} , its name '{item.name}' already exists. "
-                                     "Please set a unique name for the parameter.")
-                #  check duplicate parameter in the parameter tuple
-                if item.name in remove_duplicates:
-                    raise ValueError(f"The value {value} , its name '{item.name}' already exists. "
-                                     "Please set a unique name for the parameter.")
                 self.insert_param_to_cell(item.name, item, check_name_contain_dot=False)
-                remove_duplicates.add(item.name)
-                self.exist_param_names[item.name] = name
+                if item.name in exist_names:
+                    raise ValueError("The value {} , its name '{}' already exists. "
+                                     "Please set a unique name for the parameter.".format(value, item.name))
+                exist_names.add(item.name)
 
             if context._get_mode() == context.PYNATIVE_MODE:
                 if name in self.__dict__:
@@ -1216,7 +1211,6 @@ class Cell(Cell_):
 
     def _set_attr_for_parameter_in_list_or_tuple(self, name, value):
         """Set attr for parameter in list or tuple."""
-        remove_duplicates = set("")
         for item in value:
             if item in self.exist_objs:
                 # If there are multiple identical objects, their names only check once.
@@ -1225,16 +1219,10 @@ class Cell(Cell_):
             if item.name == PARAMETER_NAME_DEFAULT:
                 item.name = item.name + "$" + str(self._id)
                 self._id += 1
-            #  check duplicate parameter in the cell
-            if item.name in self.exist_param_names and self.exist_param_names[item.name] != name:
+            if item.name in self.exist_names:
                 raise ValueError(f"The value {value} , its name '{item.name}' already exists. "
                                  "Please set a unique name for the parameter.")
-            #  check duplicate parameter in the list or tuple
-            if item.name in remove_duplicates:
-                raise ValueError(f"The value {value} , its name '{item.name}' already exists. "
-                                 "Please set a unique name for the parameter.")
-            remove_duplicates.add(item.name)
-            self.exist_param_names[item.name] = name
+            self.exist_names.add(item.name)
         object.__setattr__(self, name, value)
 
     def _set_attr_for_cell(self, name, value):
@@ -1575,8 +1563,8 @@ class Cell(Cell_):
         if '_params' not in self.__dict__:
             raise AttributeError(f"For 'insert_param_to_cell', please call Cell.__init__() firstly.")
         if hasattr(self, param_name) and param_name not in self._params:
-            raise KeyError(f"For 'insert_param_to_cell', attribute {param_name} already exists in the network."
-                           f"Cannot insert parameter with the same name.")
+            raise KeyError(f"For 'insert_param_to_cell', the {param_name} parameter already exists in the network."
+                           f"Cannot insert another parameter with the same name.")
         if not isinstance(param, Parameter) and param is not None:
             raise TypeError(f"For 'insert_param_to_cell', the argument 'param' must be 'Parameter' if not None, "
                             f"but got {type(param)}.")
@@ -1641,7 +1629,7 @@ class Cell(Cell_):
             raise KeyError(f"For 'insert_child_to_cell', the parameter 'child_name' can not be None and "
                            "can not contain '.' ")
         if hasattr(self, child_name) and child_name not in self._cells:
-            raise KeyError(f"For 'insert_child_to_cell', attribute {child_name} already exists in the network."
+            raise KeyError(f"For 'insert_child_to_cell', the {child_name} child cell already exists in the network."
                            f"Cannot insert another child cell with the same name.")
         if not isinstance(child_cell, Cell) and child_cell is not None:
             raise TypeError(f"For 'insert_child_to_cell', the argument 'child_cell' must be 'Cell' if not None, "
