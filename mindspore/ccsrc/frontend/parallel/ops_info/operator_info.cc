@@ -1607,6 +1607,7 @@ Status OperatorInfo::InitWithTensorLayout(const std::vector<std::shared_ptr<Tens
     inputs_tensor_info_.push_back(input_tensor_info);
     ++real_input_index;
   }
+  DivisorsReplaceShapes();
   if (CheckInputLayout() != SUCCESS) {
     if (CheckShardingPropagation()) {
       MS_LOG(WARNING) << name_ << ": CheckInputLayout failed.";
@@ -1615,6 +1616,7 @@ Status OperatorInfo::InitWithTensorLayout(const std::vector<std::shared_ptr<Tens
     }
     return FAILED;
   }
+  ResumeShapes();
   for (const auto &output_layout : out_tensor_layouts) {
     TensorInfo output_tensor_info(*output_layout);
     outputs_tensor_info_.push_back(output_tensor_info);
@@ -1635,10 +1637,12 @@ Status OperatorInfo::InitWithTensorLayout(const std::vector<std::shared_ptr<Tens
     return FAILED;
   }
 
+  DivisorsReplaceShapes();
   if (CheckOutputLayout() != SUCCESS) {
     MS_LOG(ERROR) << name_ << ": CheckLayout failed.";
     return FAILED;
   }
+  ResumeShapes();
 
   // Need be override
   if (InferForwardCommunicationByLayout() != SUCCESS) {
@@ -1690,10 +1694,12 @@ Status OperatorInfo::InitWithTensorLayoutForNewShape(const std::vector<TensorLay
     }
     ++real_input_index;
   }
+  DivisorsReplaceShapes();
   if (CheckInputLayout() != SUCCESS) {
     MS_LOG(ERROR) << name_ << ": CheckInputLayout failed.";
     return FAILED;
   }
+  ResumeShapes();
   for (const auto &output_layout : out_tensor_layouts) {
     if (output_layout->is_list()) {
       outputs_tensor_info_new_.emplace_back(std::make_shared<TensorInfoList>(output_layout));
@@ -1717,10 +1723,12 @@ Status OperatorInfo::InitWithTensorLayoutForNewShape(const std::vector<TensorLay
     return FAILED;
   }
 
+  DivisorsReplaceShapes();
   if (CheckOutputLayout() != SUCCESS) {
     MS_LOG(ERROR) << name_ << ": CheckLayout failed.";
     return FAILED;
   }
+  ResumeShapes();
 
   // Need be override
   if (InferForwardCommunicationByLayout() != SUCCESS) {
