@@ -25,6 +25,7 @@ from mindspore.parallel.nn.parallel_cell_wrapper import PipelineCell, MicroBatch
 from mindspore.nn.learning_rate_schedule import *
 from mindspore.nn.dynamic_lr import *
 from mindspore.nn.cell import Cell, GraphCell
+from mindspore.nn.buffer import Buffer
 from mindspore.nn.layer import *
 from mindspore.nn.loss import *
 from mindspore.nn.optim import *
@@ -35,7 +36,7 @@ from mindspore.nn.sparse import *
 from mindspore.nn.reinforcement import *
 from mindspore.nn.utils import *
 
-__all__ = ["Cell", "GraphCell", "PipelineGradReducer", "PipelineCell", "MicroBatchInterleaved"]
+__all__ = ["Cell", "GraphCell", "PipelineGradReducer", "PipelineCell", "MicroBatchInterleaved", "Buffer"]
 __all__.extend(layer.__all__)
 __all__.extend(loss.__all__)
 __all__.extend(optim.__all__)
