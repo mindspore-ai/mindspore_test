@@ -35,7 +35,8 @@ ShapeArray InferRepeatWithRepeatsValueKnowen(const ShapeVector &input_shape,
                                              const ArrayValue<ShapeValueDType> &repeats) {
   size_t repeat_it = 0;
   ShapeVector output_shape{};
-  auto repeat_len = repeats.size(), input_rank = input_shape.size();
+  const auto repeat_len = repeats.size();
+  const auto input_rank = input_shape.size();
   auto copy_count = repeat_len - input_rank;
   for (; repeat_it < copy_count; ++repeat_it) {
     output_shape.push_back(InferRepeatCheckRepeatValue(repeat_it, repeats[repeat_it]));
