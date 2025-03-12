@@ -833,6 +833,40 @@ def test_heter_backoff_inplace_in_super_kernel_actor():
     assert out2 == 10
 
 
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
+def test_heter_backoff_inplace_in_super_kernel_actor_2():
+    """
+    Feature: Support tensor inplace.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.assignadd_ascend = P.AssignAdd()
+            self.assignadd = P.AssignAdd()
+            self.assignadd.set_device("CPU")
+            self.seq_slice = S.SequenceSlice()
+
+        def construct(self, x, y, z):
+            aa = P.AddN()(z)
+            z = z.append(x)
+            z = z[0]
+            z = self.assignadd_ascend(z, y)
+            z = self.assignadd_ascend(z, aa)
+            return z
+
+    input_x = ms.Tensor(2)
+    input_y = ms.Tensor(3)
+    input_z = mutable([input_x, input_y], dynamic_len=True)
+    net = Net()
+    out1 = net(input_x, input_y, input_z)
+    out2 = net(input_x, input_y, input_z)
+    print("out:", out1)
+    assert out1 == 10
+    assert out2 == 10
+
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_heter_backoff_control_flow_inplace_in_super_kernel_actor():
     """
