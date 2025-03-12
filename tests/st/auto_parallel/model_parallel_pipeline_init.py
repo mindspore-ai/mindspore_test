@@ -29,11 +29,11 @@ from mindspore.train import Model, CheckpointConfig, ModelCheckpoint, load_check
 from mindspore.communication.management import init, get_rank, get_group_size
 from mindspore.parallel.auto_parallel import AutoParallel
 from mindspore.nn.utils import no_init_parameters
-from mindspore.nn import PipelineCell
+from mindspore.nn import Pipeline
 from mindspore.common import set_seed
 from mindspore.context import ParallelMode
-from .model_parallel_lazy_init import FakeData, FakeDataInitMode
-from .model_parallel_lazy_init import allclose_nparray
+from .model_parallel import FakeData, FakeDataInitMode
+from .model_parallel import allclose_nparray
 from .model_parallel_pipeline import ParallelPPNetworkFinal
 from mindspore.nn.wrap.cell_wrapper import WithLossCell, _TrainGradAccuStepCell
 
@@ -165,9 +165,9 @@ def set_parallel_mode(net=None, parallel_config=None):
     if parallel_config.get("stages", None) is not None:
         net.pipeline(parallel_config["stages"])
     if parallel_config.get("save_strategy_file", None) is not None:
-        net.save_strategy_file(parallel_config["save_strategy_file"])
+        net.save_param_strategy_file(parallel_config["save_strategy_file"])
     if parallel_config.get("load_strategy_file", None) is not None:
-        net.save_strategy_file(parallel_config["load_strategy_file"])
+        net.load_param_strategy_file(parallel_config["load_strategy_file"])
     if parallel_config.get("enable_parallel_optimizer", None) is True:
         net.hsdp()
     return net
@@ -190,22 +190,19 @@ def find_newest_ckpt_file(folder_path):
     return max(ckpt_files, key=os.path.getctime)
 
 # creat model
-def create_train_model(network, parallel_config):
+def create_train_model(network, parallel_config, net_optim):
     loss_fn = nn.SoftmaxCrossEntropyWithLogits(reduction="mean")
-    net_optim = nn.Momentum(network.trainable_params(), learning_rate=0.01, momentum=0.9)
     network = nn.WithLossCell(network, loss_fn)
     if parallel_config.get("stage_config", None) is not None:
-        network = PipelineCell(network, 4, stage_config=parallel_config["stage_config"])
+        network = Pipeline(network, 4, stage_config=parallel_config["stage_config"])
     else:
-        network = PipelineCell(network, 4)
+        network = Pipeline(network, 4)
     network = set_parallel_mode(network, parallel_config)
     model = Model(network, optimizer=net_optim)
     return model
 
 # save checkpoint when model train
 def model_train(model, epoch, dataset, ckpt_path, ckpt_prefix, integral_save, remove_redundancy):
-    model.build(train_dataset=dataset, epoch=epoch)
-    model.train_network.init_parameters_data(auto_parallel_mode=True)
     ckpt_config = CheckpointConfig(save_checkpoint_steps=1,
                                    keep_checkpoint_max=5,
                                    integrated_save=integral_save,
@@ -218,17 +215,13 @@ def model_train(model, epoch, dataset, ckpt_path, ckpt_prefix, integral_save, re
 # Find the available checkpoint file and return the paths.
 def parallel_mode_get_ckpt_path_with_strategy(strategy_file=None, cpkt_path=None):
     ckpt_file = find_newest_ckpt_file(cpkt_path)
-    strategy_file = strategy_file
-
     ckpt_file_new = get_ckpt_path_with_strategy(ckpt_file, strategy_file)
     print(f"ckpt_file_new {ckpt_file_new}")
-
 
 # load the newest checkpoint and predict
 def load_newest_cpkt_predict(model, parallel_config, ckpt_path, remove_redundancy, inputs,
                              label=None):
     newest_ckpt_file = find_newest_ckpt_file(ckpt_path)
-    ckpt_path = ckpt_path
     param_dict = load_checkpoint(newest_ckpt_file, remove_redundancy=remove_redundancy)
     param_not_load, _ = load_param_into_net(model.train_network, param_dict,
                                             remove_redundancy=remove_redundancy)
@@ -237,12 +230,6 @@ def load_newest_cpkt_predict(model, parallel_config, ckpt_path, remove_redundanc
     set_parallel_mode(model.train_network, parallel_config)
     predict_result = model.predict(inputs, label)
     return predict_result
-
-
-# compare accuracy
-def compare_params(ex_params, actual_params):
-    assert np.allclose(ex_params, actual_params, atol=1e-3, rtol=1e-3)
-
 
 def semi_auto_ckpt_with_redundancy_dp2_mp2_pp2():
     cur_dir = './train_pp/auto_parallel/with_redundancy'
@@ -256,6 +243,7 @@ def semi_auto_ckpt_with_redundancy_dp2_mp2_pp2():
     in_strategy = ((1, 2), (2, 2))
     with no_init_parameters():
         parallel_net = Network1(strategy=in_strategy)
+        net_optim = nn.Momentum(parallel_net.trainable_params(), learning_rate=0.01, momentum=0.9)
     parallel_net.flatten.pipeline_stage = 0
     parallel_net.layer1.pipeline_stage = 0
     parallel_net.relu1.pipeline_stage = 0
@@ -267,7 +255,7 @@ def semi_auto_ckpt_with_redundancy_dp2_mp2_pp2():
     parallel_config = {"parallel_mode": "semi_auto", "data_strategy": "data_parallel",
                        "stages": 2,
                        "save_strategy_file": stra_ckpt_file}
-    parallel_model = create_train_model(parallel_net, parallel_config)
+    parallel_model = create_train_model(parallel_net, parallel_config, net_optim)
 
     # model train
     remove_redundancy = False
@@ -288,7 +276,6 @@ def semi_auto_ckpt_with_redundancy_dp2_mp2_pp2():
     context.reset_auto_parallel_context()
     return my_predict
 
-
 def semi_auto_ckpt_with_redundancy_dp2_mp2_pp2_new_pp():
     cur_dir = './train_pp/auto_parallel/with_redundancy'
     context.set_context(save_graphs=True, save_graphs_path=f'{cur_dir}/graphs')
@@ -302,6 +289,7 @@ def semi_auto_ckpt_with_redundancy_dp2_mp2_pp2_new_pp():
     in_strategy = ((1, 2), (2, 2))
     with no_init_parameters():
         parallel_net = Network1(strategy=in_strategy)
+        net_optim = nn.Momentum(parallel_net.trainable_params(), learning_rate=0.01, momentum=0.9)
     # creat model
     stra_ckpt_file = f"{cur_dir}/train_strategy.ckpt"
     parallel_config = {"parallel_mode": "semi_auto", "data_strategy": "data_parallel",
@@ -315,7 +303,7 @@ def semi_auto_ckpt_with_redundancy_dp2_mp2_pp2_new_pp():
                                         "_backbone.layer3": 1
                                         }
                       }
-    parallel_model = create_train_model(parallel_net, parallel_config)
+    parallel_model = create_train_model(parallel_net, parallel_config, net_optim)
 
     # model train
     remove_redundancy = False
@@ -335,7 +323,6 @@ def semi_auto_ckpt_with_redundancy_dp2_mp2_pp2_new_pp():
     context.reset_auto_parallel_context()
     return my_predict
 
-
 # Functional Cases
 def autoparallel_functional_programming_pp(strategy):
     dataset = FakeData(size=64, batch_size=8, image_size=(4, 4), num_classes=16,
@@ -346,13 +333,11 @@ def autoparallel_functional_programming_pp(strategy):
     # no init
     with no_init_parameters():
         net = ParallelPPNetworkFinal(strategy=strategy)
-
-    # loss_fn = nn.MSELoss(reduction='mean')
-    loss_fn = nn.SoftmaxCrossEntropyWithLogits(sparse=False)
-    optimizer = nn.Momentum(net.trainable_params(), learning_rate=0.1, momentum=0.9)
+        optimizer = nn.Momentum(net.trainable_params(), learning_rate=0.1, momentum=0.9)
+    loss_fn = nn.MSELoss(reduction='mean')
     pp_net = WithLossCell(net, loss_fn)
-    pp_net = PipelineCell(pp_net, micro_size=2,
-                          stage_config={"_backbone.cell1": 0, "_backbone.cell2": 1, "_loss_fn": 1})
+    pp_net = Pipeline(pp_net, micro_size=2,
+                      stage_config={"_backbone.cell1": 0, "_backbone.cell2": 1, "_loss_fn": 1})
     pp_net = _TrainGradAccuStepCell(pp_net, optimizer).set_train()
 
     parallel_net = AutoParallel(pp_net, parallel_mode="semi_auto")
@@ -361,71 +346,46 @@ def autoparallel_functional_programming_pp(strategy):
     # traverse all the element inside the dataset
     iter_ = 0
     for input_x, label in dataset:
-        parallel_net.compile(input_x, label)
-        net.init_parameters_data(auto_parallel_mode=True)
-        optimizer.init_parameters_data(auto_parallel_mode=True)
         loss = parallel_net(input_x, label)
         print("iter_:" + str(iter_) + " loss:" + str(loss))
         iter_ += 1
     return loss
 
-def context_functional_programming(strategy):
+# Functional Cases
+def context_functional_programming_pp(strategy):
     dataset = FakeData(size=64, batch_size=8, image_size=(4, 4), num_classes=16,
                        fakedata_mode=FakeDataInitMode.UniqueInit)
-    ir_path = "model_parallel_functional_programming_ir/context_ir_" + str(strategy)
-    context.set_context(mode=ms.GRAPH_MODE, device_target='Ascend', save_graphs=True, save_graphs_path=ir_path)
-    context.set_auto_parallel_context(parallel_mode=ParallelMode.SEMI_AUTO_PARALLEL)
-
+    ir_path = "model_parallel_functional_programming_ir/parallel_ir_" + str(strategy)
+    context.set_context(mode=ms.GRAPH_MODE, device_target='Ascend', save_graphs=True,
+                        save_graphs_path=ir_path)
+    context.set_auto_parallel_context(parallel_mode=ParallelMode.SEMI_AUTO_PARALLEL, pipeline_stages=2)
+    # no init
     net = ParallelPPNetworkFinal(strategy=strategy)
-    # loss_fn = nn.MSELoss(reduction='mean')
-    loss_fn = nn.SoftmaxCrossEntropyWithLogits(sparse=False)
     optimizer = nn.Momentum(net.trainable_params(), learning_rate=0.1, momentum=0.9)
+    loss_fn = nn.MSELoss(reduction='mean')
+    pp_net = WithLossCell(net, loss_fn)
+    pp_net = Pipeline(pp_net, micro_size=2,
+                      stage_config={"_backbone.cell1": 0, "_backbone.cell2": 1, "_loss_fn": 1})
+    pp_net = _TrainGradAccuStepCell(pp_net, optimizer).set_train()
 
-    def forward_fn(data, target):
-        logits = net(data)
-        loss = loss_fn(logits, target)
-        return loss
-
-    grad_fn = ms.value_and_grad(forward_fn, None, net.trainable_params())
-
-    @ms.jit
-    def train_one_step(inputs, targets):
-        loss_value, grads = grad_fn(inputs, targets)
-        optimizer(grads)
-        return loss_value
-
+    # traverse all the element inside the dataset
     iter_ = 0
     for input_x, label in dataset:
-        loss = train_one_step(input_x, label)
+        loss = pp_net(input_x, label)
         print("iter_:" + str(iter_) + " loss:" + str(loss))
         iter_ += 1
     return loss
 
-def test_remove_redundancy_precision_with_new_pp():
-    """
-    Feature:autoparallel_functional_programming with new pp
-    Description:
-        1.create pp Net
-        2.train the net, using new pipeline_stage config with lazy init & functional styles
-        3.predict net
-    Expectation:
-        1.train ok
-        2.the predcit result is the same
-    """
-    ex_predict = semi_auto_ckpt_with_redundancy_dp2_mp2_pp2()
-    rm_predict = semi_auto_ckpt_with_redundancy_dp2_mp2_pp2_new_pp()
-    compare_params(ex_predict, rm_predict)
-
 def run_compare_context_autoparallel_functional_programming(strategy):
     init(backend_name='hccl')
+    # set_parallel_context
+    context.reset_auto_parallel_context()
+    print("the loss when training using set_auto_parallel_context is :")
+    context_loss = context_functional_programming_pp(strategy)
     # AutoParallel(net)
     ms.set_seed(1)
     print("the loss when training using AutoParallel(net) is :")
     parallel_loss = autoparallel_functional_programming_pp(strategy)
-    # set_parallel_context
-    context.reset_auto_parallel_context()
-    print("the loss when training using set_auto_parallel_context is :")
-    context_loss = context_functional_programming(strategy)
     allclose_nparray(np.array(parallel_loss), np.array(context_loss), 0.001, 0.001)
 
 def test_parallel_mp_compare_context_auto_fun_programming():
@@ -441,3 +401,21 @@ def test_parallel_mp_compare_context_auto_fun_programming():
     """
     strategy = ((1, 1), (1, 2))
     run_compare_context_autoparallel_functional_programming(strategy)
+# compare accuracy
+def compare_params(ex_params, actual_params):
+    assert np.allclose(ex_params, actual_params, atol=1e-3, rtol=1e-3)
+
+def test_parallel_mp_compare_context_model():
+    """
+    Feature:autoparallel_functional_programming with new pp
+    Description:
+        1.create pp Net
+        2.train the net, using new pipeline_stage config with lazy init & functional styles
+        3.predict net (in Model style)
+    Expectation:
+        1.train ok
+        2.the predcit result is the same
+    """
+    ex_predict = semi_auto_ckpt_with_redundancy_dp2_mp2_pp2()
+    rm_predict = semi_auto_ckpt_with_redundancy_dp2_mp2_pp2_new_pp()
+    compare_params(ex_predict, rm_predict)

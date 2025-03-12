@@ -34,6 +34,7 @@ class PipelineCell(Cell):
     Args:
         network (Cell): The target network to wrap.
         micro_size (int): MicroBatch size.
+        stage_config (dict): The stage configuration for each cell's execution in pipeline parallel.
 
     Supported Platforms:
         ``Ascend`` ``GPU``
@@ -43,7 +44,7 @@ class PipelineCell(Cell):
         >>> # Define the network structure of LeNet5. Refer to
         >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/lenet.py
         >>> net = LeNet5()
-        >>> net = nn.PipelineCell(net, 4)
+        >>> net = nn.PipelineCell(net, 4, stage_config={"cell_name_0": 0, "cell_name_1": 1})
     """
     def __init__(self, network, micro_size, stage_config=None):
         super(PipelineCell, self).__init__(auto_prefix=False)
@@ -133,7 +134,7 @@ class Pipeline(PipelineCell):
         >>> # Define the network structure of LeNet5. Refer to
         >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/lenet.py
         >>> net = LeNet5()
-        >>> net = Pipeline(net, 4)
+        >>> net = Pipeline(net, 4, stage_config={"cell_name_0": 0, "cell_name_1": 1})
     """
 
 class MicroBatchInterleaved(Cell):
