@@ -317,7 +317,7 @@ inline void PrintOpSelectedNum(const std::vector<size_t> &op_selected_num) {
 }
 
 void InlineSubGraph(const KernelGraphPtr &graph, const KernelGraphPtr &sub_graph, CNodePtr kernel_cnode,
-                    AnfNodePtr *last_call, bool is_switch_inline) {
+                    AnfNodePtr *last_call, AnfNodePtr *pre_last_call, bool is_switch_inline) {
   MS_EXCEPTION_IF_NULL(kernel_cnode);
   MS_EXCEPTION_IF_NULL(sub_graph);
   MS_LOG(INFO) << "InlineSubGraph: " << kernel_cnode->fullname_with_scope() << ", sub graph: " << sub_graph->graph_id()
@@ -334,14 +334,32 @@ void InlineSubGraph(const KernelGraphPtr &graph, const KernelGraphPtr &sub_graph
   MS_EXCEPTION_IF_NULL(ms_context);
   auto pp_1f1b_value = ms_context->get_param<std::string>(MS_CTX_PP_1F1B_OVERLAP);
   for (size_t i = 1; i < call_input.size(); i++) {
-    if (pp_1f1b_value.empty() && last_call != nullptr && (*last_call) != nullptr) {
+    if ((pp_1f1b_value.empty() || !kernel_cnode->HasAttr(kCNodeAttr1f1bIndexFp)) && last_call != nullptr &&
+        (*last_call) != nullptr) {
       auto depend = graph->NewCNode({NewValueNode(prim::kPrimDepend), call_input[i], (*last_call)});
       MS_EXCEPTION_IF_NULL(depend);
       depend->set_abstract(call_input[i]->abstract());
+      depend->AddAttr("inline_depend", MakeValue(true));
+      if (!pp_1f1b_value.empty() && pre_last_call != nullptr && (*pre_last_call) != nullptr) {
+        auto depend_new = graph->NewCNode({NewValueNode(prim::kPrimDepend), depend, (*pre_last_call)});
+        depend_new->set_abstract(call_input[i]->abstract());
+        depend_new->AddAttr("inline_depend2", MakeValue(true));
+        inp.push_back(depend_new);
+      } else {
+        inp.push_back(depend);
+      }
+    } else if (kernel_cnode->HasAttr(kCNodeAttr1f1bIndexFp) && pre_last_call != nullptr &&
+               (*pre_last_call) != nullptr) {
+      auto depend = graph->NewCNode({NewValueNode(prim::kPrimDepend), call_input[i], (*pre_last_call)});
+      depend->set_abstract(call_input[i]->abstract());
+      depend->AddAttr("inline_depend1", MakeValue(true));
       inp.push_back(depend);
     } else {
       inp.push_back(call_input[i]);
     }
+  }
+  if (pre_last_call != nullptr && last_call != nullptr) {
+    (*pre_last_call) = (*last_call);
   }
   const auto &ref_map = sub_graph->GetRefMap();
   auto out = session::KernelGraphMgr::DoInline(sub_graph, main_graph, inp, kernel_cnode, kernel_info->graph_id(),
@@ -355,17 +373,10 @@ void InlineSubGraph(const KernelGraphPtr &graph, const KernelGraphPtr &sub_graph
       auto value_node = graph->NewValueNode(MakeValue(std::make_shared<tensor::Tensor>(1)));
       MS_EXCEPTION_IF_NULL(value_node);
       CNodePtr tensor_move = nullptr;
-      if (pp_1f1b_value.empty()) {
-        auto depend = graph->NewCNode({NewValueNode(prim::kPrimDepend), value_node, out});
-        MS_EXCEPTION_IF_NULL(depend);
-        depend->set_abstract(value_node->abstract());
-        tensor_move =
-          graph->NewCNode({NewValueNode(std::make_shared<Primitive>(prim::kPrimTensorMove->name())), depend});
-      } else {
-        tensor_move =
-          graph->NewCNode({NewValueNode(std::make_shared<Primitive>(prim::kPrimTensorMove->name())), value_node});
-      }
-
+      auto depend = graph->NewCNode({NewValueNode(prim::kPrimDepend), value_node, out});
+      MS_EXCEPTION_IF_NULL(depend);
+      depend->set_abstract(value_node->abstract());
+      tensor_move = graph->NewCNode({NewValueNode(std::make_shared<Primitive>(prim::kPrimTensorMove->name())), depend});
       MS_EXCEPTION_IF_NULL(tensor_move);
       tensor_move->set_abstract(value_node->abstract());
       common::AnfAlgo::SetNodeAttr(kAttrKernelGraphBoundary, MakeValue(sub_graph->ToString()), tensor_move);
@@ -392,6 +403,7 @@ void InlineCallGraph(const KernelGraphPtr &graph) {
   graph->SetExecOrderByDefault();
   auto kernel_cnodes = graph->execution_order();
   AnfNodePtr last_call = nullptr;
+  AnfNodePtr pre_last_call = nullptr;
   std::vector<FuncGraphManagerPtr> subgraph_managers;
   for (auto &kernel_cnode : kernel_cnodes) {
     MS_EXCEPTION_IF_NULL(kernel_cnode);
@@ -406,7 +418,7 @@ void InlineCallGraph(const KernelGraphPtr &graph) {
         // subgraph is not changed when InlineSubGraph, hold the manager of subgraph to avoid being released.
         subgraph_managers.emplace_back(manager);
       }
-      InlineSubGraph(graph, inline_subgraph, kernel_cnode, &last_call, false);
+      InlineSubGraph(graph, inline_subgraph, kernel_cnode, &last_call, &pre_last_call, false);
     }
   }
   GEGraphOptimization::GetInstance().OptimizeACLGraphAfterInline(graph);
@@ -881,7 +893,7 @@ void InlineSwitchGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *co
         inline_subgraph->set_manager(sub_manager);
         subgraph_managers.emplace_back(sub_manager);
       }
-      InlineSubGraph(graph, inline_subgraph, kernel_cnode, nullptr, true);
+      InlineSubGraph(graph, inline_subgraph, kernel_cnode, nullptr, nullptr, true);
     } else {
       MS_LOG_WITH_NODE(EXCEPTION, kernel_cnode) << "Invalid node type, node: " << kernel_cnode->fullname_with_scope();
     }

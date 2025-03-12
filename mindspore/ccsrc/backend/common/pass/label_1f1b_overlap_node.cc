@@ -42,21 +42,50 @@ void LabelBpBegin(const std::vector<CNodePtr> &begin_cnodes, const std::string &
   }
 }
 
+void LabelOutputNodesWithCheck(const AnfNodePtr &node, std::function<bool(const AnfNodePtr &)> check) {
+  auto func_graph = node->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
+  auto manager = func_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  const auto &node_users = manager->node_users();
+  std::queue<AnfNodePtr> anf_queue;
+  anf_queue.push(node);
+  while (!anf_queue.empty()) {
+    auto queue_end = anf_queue.front();
+    anf_queue.pop();
+    if (node_users.count(queue_end) == 0) {
+      continue;
+    }
+    auto user_set = node_users.at(queue_end);
+    for (auto &pair : user_set) {
+      anf_queue.push(pair.first);
+      if (check(pair.first)) {
+        pair.first->cast<CNodePtr>()->AddAttr("last_all2all_node_user", MakeValue(true));
+        continue;
+      }
+    }
+  }
+}
+
 void LabelEndCNode(const CNodePtrList &order_cnode_list, const std::string &input_tags, size_t all2all_input_index,
                    size_t last_a2a_index) {
   std::vector<CNodePtr> end_cnodes;
+  auto last_all2all = order_cnode_list.at(last_a2a_index);
+  LabelOutputNodesWithCheck(last_all2all, [](auto cnode) {
+    return IsPrimitiveCNode(cnode) && AnfUtils::IsRealKernel(cnode) && !common::AnfAlgo::IsNopNode(cnode) &&
+           !common::AnfAlgo::IsCommunicationOp(cnode);
+  });
   for (size_t idx = last_a2a_index + 1; idx < order_cnode_list.size(); ++idx) {
     auto cnode = order_cnode_list[idx];
-    if (IsPrimitiveCNode(cnode) && AnfUtils::IsRealKernel(cnode) && !common::AnfAlgo::IsNopNode(cnode) &&
-        !common::AnfAlgo::IsCommunicationOp(cnode)) {
+    if (cnode->HasAttr("last_all2all_node_user")) {
       end_cnodes.push_back(cnode);
     }
   }
   if (!end_cnodes.empty()) {
-    size_t middle_cnode_index = end_cnodes.size() / kSizeTwo;
+    size_t middle_cnode_index = end_cnodes.size() * kSizeThree / kSizeFour;
     auto end_cnode = end_cnodes[middle_cnode_index];
     end_cnode->AddAttr(input_tags, MakeValue<size_t>(all2all_input_index));
-    if (end_cnodes.size() > kSizeThree && input_tags == kCNodeAttrForwardAll2AllInput) {
+    if (end_cnodes.size() > middle_cnode_index + kSizeOne && input_tags == kCNodeAttrForwardAll2AllInput) {
       end_cnodes[middle_cnode_index + kSizeOne]->AddAttr(kCNodeAttr1f1bMiddleCNode, MakeValue(true));
       for (size_t k = middle_cnode_index + kSizeTwo; k < end_cnodes.size(); ++k) {
         end_cnodes[k]->AddAttr(kCNodeAttr1f1bLastCNode, MakeValue(true));
@@ -77,9 +106,35 @@ FuncGraphManagerPtr GetManager(const FuncGraphPtr &cur_graph) {
   return mng;
 }
 
+bool IsNeededAllGatherReduceScatter(const CNodePtr &cnode, const std::string &pp_1f1b_value) {
+  bool is_target = false;
+  if (pp_1f1b_value.find("MorphAllGather") != std::string::npos) {
+    is_target =
+      is_target || (IsPrimitiveCNode(cnode, prim::kPrimAllGather) &&
+                    GetCNodePrimitive(cnode)->instance_name().find("parallel_optimizer") == std::string::npos &&
+                    GetCNodePrimitive(cnode)->instance_name().find("redistribution") == std::string::npos &&
+                    GetCNodePrimitive(cnode)->instance_name().find("forward_op") == std::string::npos);
+  } else if (pp_1f1b_value.find("AllGather") != std::string::npos) {
+    is_target =
+      is_target || (IsPrimitiveCNode(cnode, prim::kPrimAllGather) &&
+                    GetCNodePrimitive(cnode)->instance_name().find("parallel_optimizer") == std::string::npos);
+  }
+  if (pp_1f1b_value.find("MorphReduceScatter") != std::string::npos) {
+    is_target =
+      is_target || (IsPrimitiveCNode(cnode, prim::kPrimReduceScatter) &&
+                    GetCNodePrimitive(cnode)->instance_name().find("parallel_optimizer") == std::string::npos &&
+                    GetCNodePrimitive(cnode)->instance_name().find("redistribution") == std::string::npos &&
+                    GetCNodePrimitive(cnode)->instance_name().find("forward_op") == std::string::npos);
+  } else if (pp_1f1b_value.find("ReduceScatter") != std::string::npos) {
+    is_target =
+      is_target || (IsPrimitiveCNode(cnode, prim::kPrimReduceScatter) &&
+                    GetCNodePrimitive(cnode)->instance_name().find("parallel_optimizer") == std::string::npos);
+  }
+  return is_target;
+}
+
 bool IsNeededCNode(const CNodePtr &cnode) {
-  if (!(IsPrimitiveCNode(cnode, prim::kPrimAlltoAll) || IsPrimitiveCNode(cnode, prim::kPrimAllToAll) ||
-        IsPrimitiveCNode(cnode, prim::kPrimAlltoAllV))) {
+  if (!common::AnfAlgo::IsCommunicationOp(cnode)) {
     return false;
   }
   auto pp_1f1b_value = MsContext::GetInstance()->get_param<std::string>(MS_CTX_PP_1F1B_OVERLAP);
@@ -90,13 +145,16 @@ bool IsNeededCNode(const CNodePtr &cnode) {
       return false;
     }
   }
-  if (pp_1f1b_value == "AlltoAll") {
-    return IsPrimitiveCNode(cnode, prim::kPrimAlltoAll) || IsPrimitiveCNode(cnode, prim::kPrimAllToAll);
+  bool is_target = false;
+  if (pp_1f1b_value.find("AlltoAll") != std::string::npos) {
+    is_target =
+      is_target || IsPrimitiveCNode(cnode, prim::kPrimAlltoAll) || IsPrimitiveCNode(cnode, prim::kPrimAllToAll);
   }
-  if (pp_1f1b_value == "AlltoAllV") {
-    return IsPrimitiveCNode(cnode, prim::kPrimAlltoAllV);
+  if (pp_1f1b_value.find("AlltoAllV") != std::string::npos) {
+    is_target = is_target || IsPrimitiveCNode(cnode, prim::kPrimAlltoAllV);
   }
-  return true;
+  is_target = is_target || IsNeededAllGatherReduceScatter(cnode, pp_1f1b_value);
+  return is_target;
 }
 }  // namespace
 void LabelAll2AllInputOutput(const FuncGraphPtr &cur_graph, const std::string &input_tags,
@@ -113,7 +171,7 @@ void LabelAll2AllInputOutput(const FuncGraphPtr &cur_graph, const std::string &i
   for (size_t idx = 0; idx < order_cnode_list.size(); ++idx) {
     auto cnode = order_cnode_list[idx];
     if (IsPrimitiveCNode(cnode) && AnfUtils::IsRealKernel(cnode) && !common::AnfAlgo::IsNopNode(cnode) &&
-        !common::AnfAlgo::IsCommunicationOp(cnode)) {
+        !common::AnfAlgo::IsCommunicationOp(cnode) && cnode->size() > kSizeOne) {
       if (push_begin_cnode) {
         begin_cnodes.push_back(cnode);
       }
@@ -140,7 +198,9 @@ void LabelAll2AllInputOutput(const FuncGraphPtr &cur_graph, const std::string &i
   }
 
   LabelBpBegin(begin_cnodes, output_tags);
-  LabelEndCNode(order_cnode_list, input_tags, all2all_input_index, last_a2a_index);
+  if (last_a2a_index > 0) {
+    LabelEndCNode(order_cnode_list, input_tags, all2all_input_index, last_a2a_index);
+  }
 }
 
 bool Label1F1BOverlapNode::Run(const FuncGraphPtr &func_graph) {
@@ -148,7 +208,7 @@ bool Label1F1BOverlapNode::Run(const FuncGraphPtr &func_graph) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto pp_1f1b_value = ms_context->get_param<std::string>(MS_CTX_PP_1F1B_OVERLAP);
-  if (pp_1f1b_value.find("AlltoAll") == std::string::npos && pp_1f1b_value.find("AlltoAllV") == std::string::npos) {
+  if (pp_1f1b_value.empty()) {
     MS_LOG(DEBUG) << "Pipeline 1f1b overlap option is not AlltoAll, not enable AlltoAll overlap.";
     return false;
   }
