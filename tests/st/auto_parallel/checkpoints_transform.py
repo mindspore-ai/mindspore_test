@@ -94,8 +94,7 @@ def compile_net_and_save_ckpt(network, input_data, enable_parallel_optimizer=Fal
     model = Model(network=network, optimizer=optimizer)
     model.infer_predict_layout(input_data)
     ckpt_format = 'safetensors' if use_safetensor else 'ckpt'
-    for param in network.trainable_params():
-        print(param)
+
     if save_ckpt_path:
         if not os.path.exists(os.path.join(save_ckpt_path, 'rank_{}'.format(get_rank()))):
             os.makedirs(os.path.join(save_ckpt_path, 'rank_{}'.format(get_rank())), exist_ok=True)
@@ -255,7 +254,7 @@ def test_checkpoints_transform_by_layout_with_opt_shard():
 
 def test_checkpoints_transform_by_layout_with_opt_shard_safetensor():
     """ test checkpoints transform using layout with optimizer shard. """
-    layout = Layout(device_matrix=(4, 2), alias_name=('dp', 'mp'))
+    layout = Layout(device_matrix=(4, 1, 2), alias_name=('dp', 'one', 'mp'))
     src_in_strategy = {
         'mul_0.weight': (layout('None', ('dp', 'mp')), layout(('dp', 'mp'))),
         'matmul_0.weight': (layout('dp', 'None'), layout('None', 'mp')),
