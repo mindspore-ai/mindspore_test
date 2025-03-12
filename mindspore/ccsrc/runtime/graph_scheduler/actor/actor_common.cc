@@ -1018,6 +1018,7 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
     UpdateDynamicShapeAndSize(tensor, device_tensor, outer_index, inner_index);
     graph_parameter_store->ResetAddrRefCount(outer_index, inner_index, device_tensor->GetDeviceType());
     if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
+      device_tensor->IncreaseNewRefCount();
       MS_LOG(DEBUG) << from_aid.Name() << " do not use input outer index: " << outer_index
                     << ", inner index: " << inner_index << ", address: " << device_tensor
                     << " from graph parameter store.";
