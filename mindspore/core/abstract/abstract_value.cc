@@ -1540,6 +1540,7 @@ AbstractBasePtr AbstractTuple::Join(const AbstractBasePtr &other) {
     }
     if (other_sequence->size() != size()) {
       auto dyn_len_sequence = BroadenToDynamicLenSequence();
+      MS_EXCEPTION_IF_CHECK_FAIL(dyn_len_sequence->dynamic_len(), "Broaden to dynamic length failed");
       return dyn_len_sequence->Join(other_sequence->BroadenToDynamicLenSequence());
     }
   } catch (std::exception &e) {
