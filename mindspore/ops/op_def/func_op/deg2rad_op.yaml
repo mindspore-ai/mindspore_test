@@ -1,0 +1,12 @@
+#operator deg2rad
+deg2rad:
+  args:
+    input:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor
+  bprop_expander: False
+  dispatch:
+    enable: True
+    Ascend: Deg2radAscend

@@ -389,6 +389,10 @@ deprecated_tensor_method_map = {
     "addmv": "deprecated_tensor_addmv",
     # 846
     "count_nonzero": "deprecated_tensor_count_nonzero",
+    # 853
+    "deg2rad": "deprecated_tensor_deg2rad",
+    "rad2deg": "deprecated_tensor_rad2deg",
+
     # 1028
     "var": "deprecated_tensor_var",
 }

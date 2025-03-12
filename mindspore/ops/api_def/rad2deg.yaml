@@ -1,0 +1,14 @@
+rad2deg:
+  - op_yaml: rad2deg_op.yaml
+    py_method: tensor_rad2deg
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/rad2deg_method.yaml
+    py_method: deprecated_tensor_rad2deg
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

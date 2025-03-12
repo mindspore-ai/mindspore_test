@@ -1,0 +1,8 @@
+#deprecated rad2deg
+rad2deg:
+  args:
+    x:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor

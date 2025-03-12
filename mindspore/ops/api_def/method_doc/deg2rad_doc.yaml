@@ -1,0 +1,33 @@
+deg2rad:
+  description: |
+    deg2rad() -> Tensor
+
+    Returns a new tensor with each of the elements of input converted from angles in degrees to radians.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    .. note::
+        The supported dtypes of the `self` tensor are as follows:
+
+        - Ascend: float16, float32, float64, uint8, int8, int16, int32, int64, or bool.
+        - CPU/GPU: float16, float32, float64.
+
+    Returns:
+        Tensor. For floating-point inputs (float16/float32/float64), the output dtype matches the `self`.
+        If the `self` is one of uint8, int8, int16, or bool, the output dtype is float32.
+
+    Raises:
+        TypeError: If the dtype of `self` is complex64, complex128, uint16, uint32 and so on.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> x = Tensor(np.array([[180., -180.], [360., -360.]]).astype(np.float32))
+        >>> output = x.deg2rad()
+        >>> print(output)
+        [[ 3.1415927 -3.1415927]
+         [ 6.2831855 -6.2831855]]

@@ -120,6 +120,7 @@ from mindspore.ops.function.math_func import einsum_ext as einsum
 # 33
 
 # 34
+from mindspore.ops.auto_generate import deg2rad, rad2deg
 
 # 35
 from mindspore.ops.functional import erfinv
@@ -1711,6 +1712,8 @@ __all__ = [
     # 33
     'split',
     # 34
+    'deg2rad',
+    'rad2deg',
 
     # 35
     'erfinv',

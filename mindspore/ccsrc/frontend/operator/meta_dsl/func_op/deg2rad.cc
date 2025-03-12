@@ -1,0 +1,45 @@
+/**
+ * Copyright 2025 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "mindspore/ccsrc/frontend/operator/meta_dsl/func_op/deg2rad.h"
+#include "mindapi/base/type_id.h"
+#include "ir/dtype/type.h"
+#include "utils/shape_utils.h"
+#include "utils/core_op_utils.h"
+#include "utils/check_convert_utils.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/ops_utils/op_constants.h"
+
+namespace mindspore::prim {
+void CheckDeg2radInputs(const PrimitivePtr &primitive, const AbstractBasePtrList &input_args) {
+  auto tensor_type = input_args[kIndex0]->GetType();
+  TypeId data_type = tensor_type->cast<TensorTypePtr>()->element()->type_id();
+  static const std::vector<TypeId> supported_dtypes = {
+    kNumberTypeBool,  kNumberTypeInt8,    kNumberTypeInt16,   kNumberTypeInt32,   kNumberTypeInt64,
+    kNumberTypeUInt8, kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeFloat64, kNumberTypeBFloat16};
+  bool is_supported = std::any_of(supported_dtypes.begin(), supported_dtypes.end(),
+                                  [&data_type](const TypeId &type) { return data_type == type; });
+  if (!is_supported) {
+    MS_EXCEPTION(TypeError) << "For `Deg2rad`, the dtype of `input` is not supported.";
+  }
+}
+
+BeginFunction(Deg2rad, input) {
+  constexpr double M_PI_180 = 0.017453292519943295769236907684886127134428718885417;
+  Return(Call(Prim(Muls), input, Value(std::make_shared<FP64Imm>(M_PI_180))));
+}
+EndFunction(Deg2rad)
+}  // namespace mindspore::prim

@@ -1,0 +1,12 @@
+#operator rad2deg
+rad2deg:
+  args:
+    input:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor
+  bprop_expander: False
+  dispatch:
+    enable: True
+    Ascend: Rad2degAscend
