@@ -23,6 +23,7 @@
       "mindspore/ccsrc/plugin/device/gpu/OWNERS",
       "mindspore/ccsrc/plugin/device/cpu/OWNERS",
       "mindspore/ccsrc/backend/common/OWNERS",
+      "mindspore/core/mindrt/OWNERS",
       "LICENSE",
       "NOTICE",
       "SECURITY.md",

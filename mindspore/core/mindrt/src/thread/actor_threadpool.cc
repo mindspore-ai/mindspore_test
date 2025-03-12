@@ -62,6 +62,11 @@ bool ActorWorker::RunQueueActorTask() {
     return false;
   }
 
+  // Set the status_ to kThreadBusy for the actor keeps thread.
+  if (actor->get_exclusive()) {
+    status_ = kThreadBusy;
+  }
+
   actor->Run();
   return true;
 }
