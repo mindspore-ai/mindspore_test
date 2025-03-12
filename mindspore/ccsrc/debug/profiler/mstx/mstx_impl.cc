@@ -118,7 +118,7 @@ uint64_t MstxImpl::RangeStartAImpl(mstxDomainHandle_t domain, const char *messag
     txTaskId = CALL_MSTX_API(mstxRangeStartA, message, stream);
   }
   if (txTaskId == 0) {
-    MS_LOG(WARNING) << "Failed to call mstx range startA func for message " << message;
+    return txTaskId;
   }
   {
     std::lock_guard<std::mutex> lock(g_mstxRangeIdsMtx);
@@ -132,6 +132,9 @@ void MstxImpl::RangeEndImpl(mstxDomainHandle_t domain, uint64_t txTaskId) {
     return;
   }
   if (!IsSupportMstxApi(domain != nullptr)) {
+    return;
+  }
+  if (txTaskId == 0) {
     return;
   }
   uint64_t startTime = 0;
