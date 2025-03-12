@@ -24,6 +24,7 @@
 #include "plugin/device/ascend/optimizer/ir_fusion/batchmatmul_reducescatter_alltoall_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/mc2_fusion.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
@@ -78,7 +79,7 @@ bool IsKbkAclnnMode() {
   MS_EXCEPTION_IF_NULL(ms_context);
 
   bool is_k_by_k_mode = ms_context->IsKByKExecutorMode();
-  bool enable_lccl = device::ascend::EnableLccl();
+  bool enable_lccl = device::ascend::AscendHalManager::GetInstance().EnableLccl();
   //  When lccl communication is not enabled in the kbk scenario
   return is_k_by_k_mode && !enable_lccl;
 }

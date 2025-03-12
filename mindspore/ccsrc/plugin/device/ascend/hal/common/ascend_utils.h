@@ -33,11 +33,7 @@ namespace mindspore {
 namespace device {
 namespace ascend {
 
-bool EnableLccl();
-
 bool EnableDvmComm();
-
-void InitializeAcl();
 
 void SavePrevStepWeight(const std::vector<AnfNodePtr> &weights, aclrtStream stream);
 }  // namespace ascend

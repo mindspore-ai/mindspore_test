@@ -32,6 +32,7 @@
 #include "plugin/device/ascend/kernel/host/host_kernel_build.h"
 #include "plugin/device/ascend/kernel/host/host_kernel_metadata.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "common/kernel_build_info.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
 #include "kernel/ascend/acl_ir/op_api_util.h"
@@ -380,7 +381,7 @@ bool ReadAclnnEnableEnv(const std::string &op_name) {
                                                      "AlltoAllAllGatherBatchMatMul",
                                                      "BatchMatMulReduceScatterAlltoAll"};
   //  In the current kbk, MatMulAllReduce can also be implemented using LCCL operator.
-  bool enable_lccl = device::ascend::EnableLccl();
+  bool enable_lccl = device::ascend::AscendHalManager::GetInstance().EnableLccl();
   if (!enable_lccl) {
     kAscendcKernelList = {"AllFinite",
                           "AllGatherMatmul",

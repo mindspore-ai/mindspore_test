@@ -423,7 +423,7 @@ void GEBackend::Init() {
     graph_executor_->Initialize();
   }
 
-  // InitializeAcl();
+  device::ascend::AscendHalManager::GetInstance().InitializeAcl();
 
   auto op_tuning_conf = device::ascend::OpTuningConf::GetInstance();
   MS_EXCEPTION_IF_NULL(op_tuning_conf);

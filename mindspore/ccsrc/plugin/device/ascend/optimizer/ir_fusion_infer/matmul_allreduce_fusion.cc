@@ -34,6 +34,7 @@
 #include "ir/anf.h"
 #include "utils/phase.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
@@ -95,7 +96,7 @@ bool IsBpropNode(const AnfNodePtr &node) {
 
 bool IsKbkAclnnMode(const KernelGraphPtr &kernel_graph) {
   bool is_k_by_k_mode = !kernel_graph->is_graph_run_mode();
-  bool enable_lccl = device::ascend::EnableLccl();
+  bool enable_lccl = device::ascend::AscendHalManager::GetInstance().EnableLccl();
   //  When lccl communication is not enabled in the kbk scenario
   return is_k_by_k_mode && !enable_lccl;
 }
@@ -258,7 +259,7 @@ const AnfNodePtr MatMulAllReduceFusion::Process(const mindspore::FuncGraphPtr &f
     }
 
     auto phase = PhaseManager::GetInstance().phase();
-    bool enable_lccl = device::ascend::EnableLccl();
+    bool enable_lccl = device::ascend::AscendHalManager::GetInstance().EnableLccl();
     if (!enable_lccl || phase.rfind(kPhaseNamePrefill) == std::string::npos) {
       return nullptr;
     }

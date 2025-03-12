@@ -32,6 +32,7 @@
 #include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_manager.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 
 using AscendCollectiveCommLib = mindspore::device::ascend::AscendCollectiveCommLib;
@@ -104,7 +105,7 @@ HcclKernel::HcclKernel()
 bool isSupportLccl(const std::string &group_name, const std::string &kernel_name,
                    const std::unordered_set<std::string> &lccl_enabled_groups) {
 #ifdef ENABLE_INTERNAL_KERNELS
-  bool enable_lccl = device::ascend::EnableLccl();
+  bool enable_lccl = device::ascend::AscendHalManager::GetInstance().EnableLccl();
   std::set<std::string> support_lccl_op_names = {kAllReduceOpName, kReduceScatterOpName,   kBroadcastOpName,
                                                  kAllGatherOpName, kMatMulAllReduceOpName, kBarrierOpName};
   if (enable_lccl && lccl_enabled_groups.find(group_name) != lccl_enabled_groups.end() &&
