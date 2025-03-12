@@ -1,0 +1,14 @@
+broadcast_to:
+  - op_yaml: broadcast_to_op.yaml
+    py_method: tensor_broadcast_to
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/broadcast_to_method.yaml
+    py_method: deprecated_tensor_broadcast_to
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

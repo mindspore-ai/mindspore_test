@@ -566,7 +566,11 @@ def deprecated_tensor_bmm(input, mat2):
 # 16 bool
 
 # 17 broadcast_to
+def tensor_broadcast_to(input, shape):
+    return broadcast_to(input, shape)
 
+def deprecated_tensor_broadcast_to(input, shape):
+    return broadcast_to(input, shape)
 # 18 byte
 
 # 19 ceil
