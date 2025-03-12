@@ -9,7 +9,7 @@ mindspore.nn.probability.distribution.Normal
     .. math:: 
         f(x, \mu, \sigma) = 1 / \sigma\sqrt{2\pi} \exp(-(x - \mu)^2 / 2\sigma^2).
 
-    其中 :math:`\mu, \sigma` 为分别为正态分布的期望与标准差。
+    其中 :math:`\mu, \sigma` 分别为正态分布的期望与标准差。
 
     参数：
         - **mean** (int, float, list, numpy.ndarray, Tensor) - 正态分布的平均值。默认值： ``None`` 。
@@ -44,7 +44,7 @@ mindspore.nn.probability.distribution.Normal
 
     .. py:method:: cdf(value, mean, sd)
 
-        计算给定值的累积分布函数（Cumulatuve Distribution Function, CDF）。
+        计算给定值的累积分布函数（Cumulative Distribution Function, CDF）。
 
         参数：
             - **value** (Tensor) - 要计算的值。

@@ -9,7 +9,7 @@ mindspore.nn.probability.distribution.Laplace
     .. math::
         f(x, \mu, b) = 1 / (2 * b) * \exp(-abs(x - \mu) / b).
 
-    其中 :math:`\mu, b` 为分别为拉普拉斯分布的期望与扩散度。
+    其中 :math:`\mu, b` 分别为拉普拉斯分布的期望与扩散度。
 
     参数：
         - **mean** (Union[int, float, list, numpy.ndarray, Tensor], 可选) - 拉普拉斯分布的平均值。
