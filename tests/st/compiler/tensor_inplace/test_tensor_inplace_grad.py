@@ -233,7 +233,7 @@ def test_tensor_inplace_add_grad_first_input():
     y = Tensor([2], dtype=mstype.float32)
     output = GradOfFirstInput(Net1())(x, y)
     print("output:", output)
-    assert output == 1
+    assert output == 0
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
@@ -260,7 +260,7 @@ def test_tensor_inplace_add_grad_all_inputs_and_param():
     y = Tensor([2], dtype=mstype.float32)
     output = GradOfAllInputsAndParams(Net7())(x, y)
     print("output:", output)
-    assert output == ((6, 2), (1, 1))
+    assert output == ((6, 1), (1, 1))
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0',

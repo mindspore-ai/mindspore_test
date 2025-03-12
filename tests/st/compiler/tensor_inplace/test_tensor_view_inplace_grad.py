@@ -17,7 +17,8 @@ import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import ops, mint
-from mindspore.ops.auto_generate.gen_ops_prim import select_ext_op, inplace_copy_op, slice_ext_op
+from mindspore.ops.auto_generate.gen_ops_prim import select_ext_view_op as select_ext_op
+from mindspore.ops.auto_generate.gen_ops_prim import inplace_copy_op, slice_ext_op
 from tests.mark_utils import arg_mark
 
 ms.set_context(mode=ms.GRAPH_MODE, jit_config={"jit_level": "O0"})
@@ -116,7 +117,7 @@ def test_tensor_view_grad():
 
 @pytest.mark.skip(reason="View Gradient with control flow is not correct yet.")
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_tensor_view_grad():
+def test_tensor_view_grad1():
     """
     Feature: Support tensor inplace view gradient.
     Description: Support tensor inplace view gradient.
@@ -128,7 +129,7 @@ def test_tensor_view_grad():
             y = ops.abs(x)
             y_viewed1 = select_ext_op(y, 0, 0)
             inplace_copy_op(y_viewed1, ms.Tensor(-1, dtype=ms.float32))
-            y_viewed2 = slice_ext_op(y, 0, 1)
+            y_viewed2 = select_ext_op(y, 0, 1)
             inplace_copy_op(y_viewed2, ms.Tensor(-1, dtype=ms.float32))
             return y
 

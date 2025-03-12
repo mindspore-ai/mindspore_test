@@ -468,7 +468,7 @@ AnfNodePtr KPrim::BuildOutput(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &
       std::transform(inputs.cbegin() + 1, inputs.cend(), std::back_inserter(args),
                      [bprop_fg](const AnfNodePtr &arg) { return CalDoutWithMask(bprop_fg, arg); });
     } else {
-      if (is_view_inplace) {
+      if (!extra_lifted_args.empty()) {
         (void)args.insert(args.cend(), extra_lifted_args.cbegin(), extra_lifted_args.cend());
       }
       (void)args.insert(args.cend(), inputs.cbegin() + 1, inputs.cend());

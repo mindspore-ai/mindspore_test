@@ -157,7 +157,8 @@ void AddToManage(const pipeline::ResourceBasePtr &resources, const FuncGraphPtr 
 }  // namespace
 
 FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer, bool is_top,
-                              BpropAutoMonadLevel level) {
+                              BpropAutoMonadLevel level, bool is_view_inplace) {
+  MS_LOG(ERROR) << "is_view_inplace: " << is_view_inplace;
   MS_EXCEPTION_IF_NULL(func_graph);
   auto gradkv = func_graph->transforms().find("grad");
   if (gradkv != func_graph->transforms().end()) {
@@ -173,7 +174,7 @@ FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &func_graph, const opt::Optimiz
     }
   };
 
-  auto f = std::make_shared<DFunctor>(func_graph, resources, is_top);
+  auto f = std::make_shared<DFunctor>(func_graph, resources, is_top, is_view_inplace);
   auto user_defined = f->KUserDefined(func_graph);
   if (user_defined != nullptr) {
     multi_graph_sink(user_defined);
@@ -205,7 +206,7 @@ FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &func_graph, const opt::Optimiz
 }
 
 FuncGraphPtr Grad(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer, bool is_top,
-                  BpropAutoMonadLevel level) {
+                  BpropAutoMonadLevel level, bool is_view_inplace) {
   MS_EXCEPTION_IF_NULL(func_graph);
   auto gradkv = func_graph->transforms().find("grad");
   if (gradkv != func_graph->transforms().end()) {
@@ -222,11 +223,12 @@ FuncGraphPtr Grad(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optim
   } else {
     lift_fv_before_grad = false;
   }
-  return GradOneFuncGraph(grad_fg, optimizer, is_top, level);
+  return GradOneFuncGraph(grad_fg, optimizer, is_top, level, is_view_inplace);
 }
 
 FuncGraphVector GradMultiFuncGraph(const FuncGraphVector &func_graphs, const opt::OptimizerPtr &optimizer,
-                                   bool is_top) {
+                                   const std::vector<bool> &is_view_inplace, bool is_top) {
+  MS_EXCEPTION_IF_CHECK_FAIL(func_graphs.size() == is_view_inplace.size(), "GradMultiFuncGraph check size failed");
   auto parallel_context = parallel::ParallelContext::GetInstance();
   MS_EXCEPTION_IF_NULL(parallel_context);
   auto parallel_mode = parallel_context->parallel_mode();
@@ -235,7 +237,7 @@ FuncGraphVector GradMultiFuncGraph(const FuncGraphVector &func_graphs, const opt
   BpropAutoMonadLevel bprop_auto_monad_level = is_parallel_mode ? kLevelTop : kLevelWhole;
   FuncGraphVector grad_fgs;
   if (func_graphs.size() == 1) {
-    auto grad_fg = Grad(func_graphs[0], optimizer, is_top, bprop_auto_monad_level);
+    auto grad_fg = Grad(func_graphs[0], optimizer, is_top, bprop_auto_monad_level, is_view_inplace[0]);
     grad_fgs.push_back(grad_fg);
     return grad_fgs;
   }
@@ -253,8 +255,9 @@ FuncGraphVector GradMultiFuncGraph(const FuncGraphVector &func_graphs, const opt
     before_grad_fgs = func_graphs;
     lift_fv_before_grad = false;
   }
-  for (const auto &func_graph : before_grad_fgs) {
-    auto grad_fg = GradOneFuncGraph(func_graph, optimizer, is_top, bprop_auto_monad_level);
+  for (size_t i = 0; i < before_grad_fgs.size(); ++i) {
+    const auto &func_graph = before_grad_fgs[i];
+    auto grad_fg = GradOneFuncGraph(func_graph, optimizer, is_top, bprop_auto_monad_level, is_view_inplace[i]);
     grad_fgs.push_back(grad_fg);
   }
   return grad_fgs;

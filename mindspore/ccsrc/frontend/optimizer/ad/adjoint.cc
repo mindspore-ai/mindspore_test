@@ -18,7 +18,6 @@
 
 #include "ir/anf.h"
 #include "frontend/optimizer/ad/dfunctor.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "mindspore/ccsrc/frontend/operator/composite/composite.h"
 
 namespace mindspore {

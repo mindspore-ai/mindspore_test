@@ -25,7 +25,6 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "ir/anf.h"
 #include "utils/info.h"
 #include "ir/func_graph_cloner.h"
@@ -43,12 +42,16 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
+#include "mindspore/ccsrc/frontend/operator/composite/composite.h"
 
 namespace mindspore {
 namespace ad {
@@ -372,10 +375,8 @@ CNodePtr DFunctor::CalDoutTuple(const CNodePtr &cnode_morph, const CNodePtr &din
   auto dmask_tuple =
     caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), din_tuple, NewValueNode(int64_t(1))});
   auto dmask = caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), dmask_tuple, NewValueNode(int64_t(0))});
-  auto ops_type =
-    caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), dmask_tuple, NewValueNode(int64_t(1))});
 
-  if (IsPrimitiveCNode(cnode_morph, prim::kPrimDepend)) {
+  if (IsPrimitiveCNode(cnode_morph, prim::kPrimDepend) && (index == 1)) {
     auto fg_dmask_tuple =
       caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), dout_, NewValueNode(int64_t(1))});
     return caller->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), din, fg_dmask_tuple});
@@ -783,7 +784,7 @@ FuncGraphPtr DFunctor::KUserDefined(const FuncGraphPtr &primal) {
     // Reset defer_inline to enable successive inlining
     primal->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, false);
 
-    auto functor = std::make_shared<DFunctor>(primal, resources_, false);
+    auto functor = std::make_shared<DFunctor>(primal, resources_, false, is_view_inplace_);
     functor->Init();
     functor->k_graph_ = fg;
 
@@ -875,7 +876,7 @@ AnfNodePtr DFunctor::MapFuncGraphToK(const AnfNodePtr &primal) {
     MS_LOG(DEBUG) << "K graph functor user defined bprop " << func_graph->ToString() << ".";
     return NewValueNode(k_user_defined);
   }
-  auto functor = std::make_shared<DFunctor>(func_graph, resources_, false);
+  auto functor = std::make_shared<DFunctor>(func_graph, resources_, false, is_view_inplace_);
   functor->Init();
   functor->MapObject();
   functor->MapMorphism();

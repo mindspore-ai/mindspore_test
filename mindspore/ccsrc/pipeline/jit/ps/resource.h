@@ -185,10 +185,6 @@ class Resource : public ResourceBase {
 
   PiplineLevel pipeline_level() const { return pipeline_level_; }
   void set_pipeline_level(PiplineLevel pipeline_level) { pipeline_level_ = pipeline_level; }
-  void set_is_pynative_grad_view_inplace(bool is_pynative_grad_view_inplace) {
-    is_pynative_grad_view_inplace_ = is_pynative_grad_view_inplace;
-  }
-  bool is_pynative_grad_view_inplace() const { return is_pynative_grad_view_inplace_; }
 
  private:
   abstract::AnalysisEnginePtr engine_;
