@@ -844,7 +844,7 @@ class Profile:
         self._sync_enable = sync_enable
         self._schedule = schedule
         self._on_trace_ready = on_trace_ready
-        self._experimental_config = experimental_config
+        self._experimental_config = experimental_config or _ExperimentalConfig()
         self._profiler = Profiler(
             profiler_level=self._experimental_config.profiler_level,
             activities=self._activities,
