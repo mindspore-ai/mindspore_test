@@ -341,9 +341,9 @@ def test_inplace_backward_with_control_flow():
     class Net(ms.nn.Cell):
         def construct(self, x, y):
             if x < y:
-                a = x*y
+                a = x * y
             else:
-                a = x/y
+                a = x + y
             P.AssignAdd()(x, y)
             return a
 
