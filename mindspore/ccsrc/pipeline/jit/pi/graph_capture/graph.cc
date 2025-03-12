@@ -64,6 +64,7 @@ Graph::Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf)
       co_(py::cast<py::object>(reinterpret_cast<PyObject *>(co))),
       f_globals_(py::cast<py::object>(globals)),
       conf_(conf),
+      side_effect_handler_(std::make_shared<SideEffectHandler>(this)),
       func_graph_builder_(nullptr) {
   guard_builder_ = std::make_unique<GuardBuilder>(
     // save config
@@ -187,9 +188,6 @@ bool Graph::PrepareParameter(ValueNode *node) {
   return false;
 }
 
-const std::shared_ptr<SideEffect> &Graph::GetSideEffect() const { return side_effect_; }
-void Graph::SetSideEffect(const std::shared_ptr<SideEffect> &handler) { side_effect_ = handler; }
-
 void Graph::AddNodeInfo(ValueNode *node, AObject *obj_info, const std::string &name) {
   Graph *graph = this;
 
@@ -252,6 +250,7 @@ CellVarNode *Graph::NewCellNode(AObject *obj_info, int op, int arg, const std::v
 ParamNode *Graph::NewParamNode(AObject *obj_info, int index, const std::string &name) {
   ParamNode *node = this->allocator().NewNode<ParamNode>(obj_info, index);
   AddNodeInfo(node, obj_info, name);
+  params_.push_back(node);
   return node;
 }
 
@@ -599,6 +598,10 @@ std::vector<ValueNode *> Graph::CollectAliveNode(int bci, std::vector<int> *ids)
   // alive locals must be original node
   for (auto &node : result) {
     auto new_node = this->GetSideEffect()->GetSource(node);
+    if (new_node->GetScope() == AbstractObjectBase::SCOPE_LOCAL ||
+        new_node->GetScope() == AbstractObjectBase::SCOPE_NOT_SPECIFIED) {
+      continue;
+    }
     if (new_node->GetOpcode() == LOAD_ATTR) {  // transform the alive attribute source
       auto &attr_source = new_node->getInputs()[0];
       attr_source = this->GetSideEffect()->GetSource(attr_source);

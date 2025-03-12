@@ -176,6 +176,8 @@ class Graph {
     return py::str(c->co_name);
   }
 
+  const std::vector<ValueNode *> &GetParameters() const { return params_; }
+
   void GuardParameter(ValueNode *param);
   void GuardGlobal(ValueNode *global_value);
   void GuardAttribute(ValueNode *attr_value);
@@ -202,8 +204,9 @@ class Graph {
   void SetParent(Graph *parent) { parent_ = parent; }
   Graph *GetParent() const { return parent_; }
 
-  const std::shared_ptr<SideEffect> &GetSideEffect() const;
-  void SetSideEffect(const std::shared_ptr<SideEffect> &handler);
+  const std::shared_ptr<SideEffect> &GetSideEffect() const { return side_effect_; }
+  void SetSideEffect(const std::shared_ptr<SideEffect> &handler) { side_effect_ = handler; }
+  const std::shared_ptr<SideEffectHandler> &GetSideEffectHandler() const { return side_effect_handler_; }
 
   std::vector<ValueNode *> CollectAliveNode(int bci, std::vector<int> *ids = nullptr) const;
   // collect alive node, clear the bit if alive local is unbound
@@ -231,6 +234,8 @@ class Graph {
   std::map<int, std::unique_ptr<FrameStates>> frame_states_;
   std::vector<ValueNode *> traced_nodes_;
 
+  std::vector<ValueNode *> params_;
+
   // return value
   ValueNode *ret_val_;
 
@@ -253,6 +258,7 @@ class Graph {
 
   Graph *parent_{nullptr};
   std::shared_ptr<SideEffect> side_effect_;
+  std::shared_ptr<SideEffectHandler> side_effect_handler_;
   bool found_inner_class = false;
 
   struct PrepareInfo {

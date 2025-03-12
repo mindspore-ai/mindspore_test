@@ -94,7 +94,7 @@ const std::unique_ptr<ConstantInfo> &ValueNode::MakeConstantInfo() {
 std::string ParamNode::ToString() const {
   std::stringstream s;
   s << this->AbstractNode::ToString() << " Parameter " << GetOparg() << "("
-    << (GetName().empty() ? "<unnamed>" : GetName()) << ") = " << GetVobj()->ToString();
+    << (GetName().empty() ? "<unnamed>" : GetName()) << ") = " << GetOwnVobj()->ToString();
   return s.str();
 }
 
@@ -116,7 +116,10 @@ std::string ValueNode::ToString() const {
   std::stringstream s;
   int w = 30;
   s << std::setw(w) << std::left << this->InstrNode::ToString() << " ";
-  s << this->AbstractNode::ToString() << " vobj=" << (vobj_ ? vobj_->ToString() : "(nil)");
+  s << this->AbstractNode::ToString();
+  s << ((IsVmNode() && IsGraphNode()) ? " [V|G]" : (IsVmNode() ? " [V]" : " [G]"));
+  s << "[" << GetScopeDesc() << "]";
+  s << " vobj=" << (vobj_ ? vobj_->ToString() : "(nil)");
   s << " inputs=(";
   for (auto i : inputs_) {
     s << i << ',';

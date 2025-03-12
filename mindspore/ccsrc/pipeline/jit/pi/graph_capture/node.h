@@ -119,7 +119,7 @@ class ValueNode : public InstrNode {
 
   void SetVobj(AObject *vobj);
   const auto GetVobj() const { return vobj_ == nullptr ? vobj_ : vobj_->GetLatestVersion(); }
-
+  const auto &GetOwnVobj() const { return vobj_; }
   AObject *get_attr(const std::string &nam);
 
   AObject *binary_subscr(ValueNode *sub);
@@ -135,12 +135,27 @@ class ValueNode : public InstrNode {
 
   TracePtr GetTrace() { return trace_; }
   void SetTrace(TracePtr t) { trace_ = t; }
+  const auto GetScope() const { return vobj_ == nullptr ? AObject::Scope::SCOPE_NOT_SPECIFIED : vobj_->GetScope(); }
+  void SetScope(AObject::Scope scope) { vobj_ == nullptr ? void(0) : vobj_->SetScope(scope); }
+  void AddScope(AObject::Scope scope) { vobj_ == nullptr ? void(0) : vobj_->AddScope(scope); }
+  const auto GetScopeDesc() const { return vobj_ == nullptr ? "SCOPE_NOT_SPECIFIED" : vobj_->GetScopeDesc(); }
+  void MarkVmNode() { flag_ = (flag_ & ~NODE_GRAPH) | MODE_BYTECODE; }
+  bool IsVmNode() const { return flag_ & MODE_BYTECODE; }
+  void MarkGraphNode() { flag_ = (flag_ & ~MODE_BYTECODE) | NODE_GRAPH; }
+  bool IsGraphNode() const { return flag_ & NODE_GRAPH; }
+  void MarkVmGraphNode() { flag_ = flag_ | NODE_GRAPH | MODE_BYTECODE; }
+  bool IsSideEffectNode() const { return flag_ & NODE_SIDE_EFFECT; }
+  void MarkSideEffectNode() { flag_ = flag_ | NODE_SIDE_EFFECT; }
 
  protected:
   ValueNode(Type type, AObject *vobj, int opcode, int oparg, const std::vector<ValueNode *> &inputs = {})
       : InstrNode(type, opcode, oparg), vobj_(vobj), inputs_(inputs) {}
 
  private:
+  static constexpr int MODE_BYTECODE = 1;
+  static constexpr int NODE_GRAPH = 1 << 1;
+  static constexpr int NODE_SIDE_EFFECT = 2 << 1;
+
   // value info
   AObject *vobj_;
 
@@ -155,6 +170,9 @@ class ValueNode : public InstrNode {
 
   // Trace cache to be reused
   TracePtr trace_;
+
+  // mark the node used in bytecode(VM) or graph
+  int flag_{MODE_BYTECODE};
 };
 
 // simulate PyCellObject, oparg is index

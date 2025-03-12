@@ -226,9 +226,9 @@ std::string AbstractObjectBase::ToString() const {
   return s.str();
 }
 
-AObject *AbstractObjectBase::GetLatestVersion() {
+AObject *AbstractObjectBase::GetLatestVersion() const {
   if (next_version_ == nullptr) {
-    return this;
+    return const_cast<AObject *>(this);
   }
   auto latest = next_version_;
   while (latest->next_version_ != nullptr) {
@@ -268,6 +268,23 @@ const AObject *AbstractObjectBase::GetBaseVersion() const {
     pre_version = pre_version->pre_version_;
   }
   return pre_version;
+}
+
+const std::string &AbstractObjectBase::GetScopeDesc() const {
+  static const std::map<Scope, std::string> scope_descs = {
+    {SCOPE_NOT_SPECIFIED, "SCOPE_NOT_SPECIFIED"},
+    {SCOPE_LOCAL, "SCOPE_LOCAL"},
+    {SCOPE_PARAM, "SCOPE_PARAM"},
+    {SCOPE_FREE_VAR, "SCOPE_FREE_VAR"},
+    {SCOPE_GLOBAL, "SCOPE_GLOBAL"},
+    {static_cast<Scope>(static_cast<int>(SCOPE_LOCAL) | static_cast<int>(SCOPE_GLOBAL)), "SCOPE_LOCAL | SCOPE_GLOBAL"},
+    {static_cast<Scope>(static_cast<int>(SCOPE_PARAM) | static_cast<int>(SCOPE_GLOBAL)), "SCOPE_PARAM | SCOPE_GLOBAL"},
+    {static_cast<Scope>(static_cast<int>(SCOPE_FREE_VAR) | static_cast<int>(SCOPE_GLOBAL)),
+     "SCOPE_FREE_VAR | SCOPE_GLOBAL"}};
+
+  auto check = scope_descs.find(scope_) != scope_descs.end();
+  MS_EXCEPTION_IF_CHECK_FAIL(check, "Not Expected state " + std::to_string(scope_));
+  return scope_descs.at(scope_);
 }
 
 std::string AbstractObject::ToString() const {
@@ -1799,7 +1816,7 @@ AObject *AbstractTensor::GetAttr(const std::string &name) {
 std::string AbstractTensor::ToString() const {
   std::stringstream s;
   s << this->AbstractObjectBase::ToString();
-  s << this << "{";
+  s << " " << this << "{";
   auto v = this->GetBaseVersion();
   while (v != nullptr) {
     s << v << ", ";

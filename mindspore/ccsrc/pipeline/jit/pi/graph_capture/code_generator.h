@@ -77,8 +77,14 @@ class CodeGenerator {
     std::vector<ExceptionCodeItem> co_exceptiontable;
   };
 
-  explicit CodeGenerator(const NodeSet *nodes)
-      : nodes_(nodes), globals_(), code_(), nodes_alive_(), locals_map_(), missing_value_to_undefine_(false) {}
+  explicit CodeGenerator(const NodeSet *nodes, bool vm_mode = false)
+      : nodes_(nodes),
+        globals_(),
+        code_(),
+        nodes_alive_(),
+        locals_map_(),
+        missing_value_to_undefine_(false),
+        vm_mode_(vm_mode) {}
   explicit CodeGenerator(Code &&ccode) : code_(std::move(ccode)) {}
 
   void set_missing_value_to_undefine(bool v) { missing_value_to_undefine_ = v; }
@@ -86,6 +92,7 @@ class CodeGenerator {
   void SetGlobals(const py::dict &dict) { globals_ = dict; }
   const py::dict &GetGlobals() const { return globals_; }
   const std::unordered_map<ValueNode *, int> &GetLocalsMap() const { return locals_map_; }
+  std::unordered_map<ValueNode *, int> &GetLocalsMap() { return locals_map_; }
   const Code &GetCode() const { return code_; }
   void SetArgsInfo(int argcount, int kwonlyargcount) {
     code_.co_argcount = argcount;
@@ -192,6 +199,7 @@ class CodeGenerator {
   std::unordered_map<ValueNode *, int> nodes_alive_;
   std::unordered_map<ValueNode *, int> locals_map_;
   bool missing_value_to_undefine_;
+  bool vm_mode_;
 };
 
 class LoopBodyReCaptureCodeGenerator {
@@ -334,8 +342,6 @@ class CodeBreakGenerator {
 
   // break bci alive locals
   std::vector<int> alive_locals_;
-
-  std::shared_ptr<SideEffect> side_effect_handler_;
 
   // break bci
   int break_bci_;

@@ -672,6 +672,7 @@ static void TensorAssignValue(CallNode *call_node, GraphBuilder *parent, ValueNo
   auto new_node = parent->MakeTensorCopy(new_value);
 
   call_node->SetSubGraph(nullptr);
+  old_value->GetVobj()->SetNextVersion(new_node->GetVobj());
   call_node->SetVobj(new_node->GetVobj());
 
   // update frame status and record side-effect

@@ -76,6 +76,14 @@ class AbstractObjectBase {
   static_assert(static_cast<int>(kTypeSlice) + 8 == static_cast<int>(kTypeType));  // builtin type
   static_assert(static_cast<int>(kTypeUnknown) == 0);
 
+  enum Scope {
+    SCOPE_NOT_SPECIFIED = 0,
+    SCOPE_LOCAL = 1,
+    SCOPE_PARAM = 1 << 1,
+    SCOPE_FREE_VAR = 1 << 2,
+    SCOPE_GLOBAL = 1 << 3
+  };
+
   // record PyObject and check self reference for list,tuple,dict
   static std::unordered_map<AObject::Type, PyTypeObject *> aobj_type_map;
   PyTypeObject *GetPyTypeObject(const Type &type) {
@@ -144,7 +152,7 @@ class AbstractObjectBase {
   static const char *GetTypeDesc(AObject::Type type);
   static std::string ToString(PyObject *, bool print_type = true, size_t limit = SIZE_MAX);
   bool IsLatestVersion() const { return next_version_ == nullptr; }
-  AObject *GetLatestVersion();
+  AObject *GetLatestVersion() const;
   const AObject *GetPreVersion() const { return pre_version_; }
   void SetPreVersion(AObject *pre_version);
   const AObject *GetNextVersion() const { return next_version_; }
@@ -156,6 +164,10 @@ class AbstractObjectBase {
   void RemoveUser(AObject *user) { users_.erase(user); }
   bool HasMultiVersion() const { return pre_version_ != nullptr || next_version_ != nullptr; }
   virtual void CreateVersionWithNewValue() {}
+  void SetScope(Scope scope) { scope_ = scope; }
+  void AddScope(Scope scope) { scope_ = static_cast<Scope>(static_cast<int>(scope_) | static_cast<int>(scope)); }
+  Scope GetScope() const { return scope_; }
+  const std::string &GetScopeDesc() const;
 
  protected:
   static AObject *Convert(const abstract::AbstractBasePtr &abstract);
@@ -167,6 +179,7 @@ class AbstractObjectBase {
   AObject *next_version_{nullptr};
   std::set<AObject *> users_;
   AbstractWrapperPtr abstract_wrapper_{nullptr};
+  Scope scope_{SCOPE_NOT_SPECIFIED};
 };
 
 class AbstractObject : public AbstractObjectBase {

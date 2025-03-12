@@ -987,6 +987,10 @@ void CodeGenerator::BuildOper(ValueNode *node, int index) {
     return;
   }
 
+  if ((vm_mode_ && !node->IsVmNode()) || (!vm_mode_ && !node->IsGraphNode())) {
+    return;
+  }
+
   int load_args_offset = code_.co_code.size();
   for (auto param : node->getInputs()) {
     LoadValue(param);
@@ -1177,7 +1181,11 @@ void CodeBreakGenerator::FixInterpretOuput(CodeGenerator *code_gen) {
       }
     } else {
       code_gen->MarkAlive(captured_.outputs[0]);
-      code_gen->MakeSameLocal(nullptr, captured_.outputs[0], true);  // remove placeholder
+      // The placeholder of captured_.outputs[0] is nullptr, invalid node, should be replaced.
+      auto iter = code_gen->GetLocalsMap().find(nullptr);
+      MS_EXCEPTION_IF_CHECK_FAIL(iter != code_gen->GetLocalsMap().end(), "Can't find the placeholder of output.");
+      code_gen->GetLocalsMap()[captured_.outputs[0]] = iter->second;
+      code_gen->GetLocalsMap().erase(iter);
     }
   }
   // reconstruct interpret values if need
@@ -1675,11 +1683,10 @@ void CodeBreakGenerator::CallUntrackedCode(CodeGenerator *code_gen) {
 py::object CodeBreakGenerator::MakeDispatchCode() {
   auto jcr = GetJitCompileResults(co_);
 
-  CodeGenerator code_gen(&interpret_);
+  CodeGenerator code_gen(&interpret_, true);
 
   if (IsCopyCapturedInstructions()) {
     MS_LOG(DEBUG) << "No graph captured";
-    interpret_.outputs.resize(interpret_.outputs.size() - side_effect_handler_->GetRequiredNodes().size());
     int stack_count = interpret_.outputs.size() - alive_locals_.size();
     int output_index = 0;
     std::vector<std::unique_ptr<Instr>> instrs;
@@ -1709,9 +1716,6 @@ py::object CodeBreakGenerator::MakeDispatchCode() {
 
     CallCapturedCode(&code_gen);
     FixInterpretOuput(&code_gen);
-
-    side_effect_handler_->Restore(&code_gen);
-    interpret_.outputs.resize(interpret_.outputs.size() - side_effect_handler_->GetRequiredNodes().size());
   }
   CallUntrackedCode(&code_gen);
   MakeReturn(&code_gen);
@@ -1762,7 +1766,7 @@ void CodeBreakGenerator::MakeReturn(CodeGenerator *code_gen) const {
 py::object CodeBreakGenerator::MakeInterpretCapturedCode() const {
   auto jcr = GetJitCompileResults(co_);
 
-  CodeGenerator code_gen(&interpret_);
+  CodeGenerator code_gen(&interpret_, true);
   code_gen.SetGlobals(globals_);
   code_gen.Init();
   code_gen.Build();
@@ -1825,7 +1829,6 @@ void CodeBreakGenerator::Init(const GraphAnalyzer &analyzer, Graph *graph) {
   graph_inputs_info_.vargs = info.graph_inputs_.vargs;
   graph_inputs_info_.kwargs = info.graph_inputs_.kwargs;
   graph_inputs_info_.globals = info.graph_inputs_.globals;
-  side_effect_handler_ = graph->GetSideEffect();
   no_graph_ = captured_.operations.empty();
 
   const auto &break_info = analyzer.graph_break_info();

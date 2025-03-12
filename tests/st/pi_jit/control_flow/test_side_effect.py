@@ -25,6 +25,8 @@ from tests.mark_utils import arg_mark
 from ..share.utils import match_array, assert_executed_by_graph_mode
 from tests.st.pi_jit.share.utils import pi_jit_with_config
 
+jit_cfg = {"compile_with_try":False}
+
 def assert_no_graph_break(func, call_count: int = None):
     jcr = get_code_extra(getattr(func, "__wrapped__", func))
     assert jcr is not None
@@ -62,10 +64,13 @@ def test_store_subscr_side_effect_1():
 
     def func(x):
         x[0] = Tensor([1, 2])
-        x[1] = Tensor([1, 2])
+        x[1] = Tensor([3, 4])
         return x
 
-    jit(function=func, capture_mode="bytecode")([Tensor([1]), Tensor([1])])
+    x = [Tensor([1]), Tensor([1])]
+    pi_jit_with_config(func, jit_config=jit_cfg)(x)
+    match_array(x[0], Tensor([1, 2]))
+    match_array(x[1], Tensor([3, 4]))
     jcr = get_code_extra(func)
     new_code = jcr["code"]["compiled_code_"]
     for i in dis.get_instructions(new_code):
@@ -90,7 +95,7 @@ def test_store_subscr_side_effect_2():
         x[0] = Tensor([1, 2])
         return x
 
-    jit(function=func, capture_mode="bytecode")()
+    pi_jit_with_config(func, jit_config=jit_cfg)()
     jcr = get_code_extra(func)
     context.set_context(mode=context.PYNATIVE_MODE)
     assert jcr["break_count_"] == 0
@@ -108,7 +113,10 @@ def test_del_subscr_side_effect_3():
         del arg[0]
         return arg
 
-    jit(function=func, capture_mode="bytecode")([Tensor([1]), Tensor([1])])
+    arg = [Tensor([1]), Tensor([1])]
+    pi_jit_with_config(func, jit_config=jit_cfg)(arg)
+    assert len(arg) == 1
+    match_array(arg[0], Tensor([1]))
     jcr = get_code_extra(func)
     new_code = jcr["code"]["compiled_code_"]
 
@@ -133,7 +141,9 @@ def test_dict_pop_side_effect_4():
         d.pop("b")
         return d
 
-    jit(function=func, capture_mode="bytecode")()
+    d = pi_jit_with_config(func, jit_config=jit_cfg)()
+    assert len(d) == 1
+    match_array(d['a'], Tensor([1, 2]))
     jcr = get_code_extra(func)
     context.set_context(mode=context.PYNATIVE_MODE)
     assert jcr["break_count_"] == 0
@@ -149,9 +159,12 @@ def test_dict_pop_side_effect_5():
 
     def func(d):
         d.pop("b")
-        return d
+        return d["a"]
 
-    jit(function=func, capture_mode="bytecode")({"a": Tensor([1, 2]), "b": Tensor([1, 2])})
+    d = {"a": Tensor([1, 2]), "b": Tensor([3, 4])}
+    pi_jit_with_config(func, jit_config=jit_cfg)(d)
+    assert len(d) == 1
+    match_array(d['a'], Tensor([1, 2]))
     jcr = get_code_extra(func)
     context.set_context(mode=context.PYNATIVE_MODE)
     assert jcr["break_count_"] == 0
@@ -167,11 +180,12 @@ def test_store_global_side_effect_6():
 
     def func():
         global tmp
-        tmp = Tensor([1])
+        tmp = Tensor([1, 3])
         tmp *= 2
         return tmp
 
-    jit(function=func, capture_mode="bytecode")()
+    pi_jit_with_config(func, jit_config=jit_cfg)()
+    match_array(tmp, Tensor([2, 6]))
     jcr = get_code_extra(func)
     context.set_context(mode=context.PYNATIVE_MODE)
     assert jcr["break_count_"] == 0
@@ -193,7 +207,7 @@ def test_del_global_side_effect_7():
         return tmp
 
     with pytest.raises(NameError, match="name 'tmp' is not defined"):
-        jit(function=func, capture_mode="bytecode")()
+        pi_jit_with_config(func, jit_config=jit_cfg)()
 
     context.set_context(mode=context.PYNATIVE_MODE)
 
@@ -213,7 +227,7 @@ def test_fix_bug_store_subscr_side_effect_1():
         return x
 
     net = NetAssign0002()
-    result = jit(function=func, capture_mode="bytecode")(net)
+    result = pi_jit_with_config(func, jit_config=jit_cfg)(net)
     jcr = get_code_extra(func)
 
     assert jcr["break_count_"] == 0
@@ -244,7 +258,7 @@ def test_modify_mix1(test_optimize):
         return y, res
 
     excepted = func(Tensor([1]))
-    result = jit(function=func, capture_mode="bytecode")(Tensor([1]))
+    result = pi_jit_with_config(func, jit_config=jit_cfg)(Tensor([1]))
 
     assert str(excepted) == str(result)
 
@@ -269,7 +283,7 @@ def test_modify_mix2():
     x1 = {'param': Tensor([1]), 'remove': 1}
     x2 = {**x1}
     excepted = func(x1)
-    result = jit(function=func, capture_mode="bytecode")(x2)
+    result = pi_jit_with_config(func, jit_config=jit_cfg)(x2)
 
     assert excepted == result
     assert x1 == x2
@@ -300,7 +314,7 @@ def test_global_modified_cross_module():
     magic_number_excepted = global_dict.pop('magic_number')
 
     del magic_number
-    result = jit(function=func, capture_mode="bytecode")(x)
+    result = pi_jit_with_config(func, jit_config=jit_cfg)(x)
     magic_number_result = global_dict.pop('magic_number')
 
     assert x == magic_number_excepted == magic_number_result
@@ -315,7 +329,7 @@ def test_object_consistency():
     Expectation: No exception
     """
 
-    @jit(capture_mode="bytecode")
+    @pi_jit_with_config(jit_config=jit_cfg)
     def object_consistency(x, y):
         x.f = y.get
         y.test = x
@@ -346,7 +360,7 @@ def test_object_consistency2():
     Expectation: No exception
     """
 
-    @jit(capture_mode="bytecode")
+    @pi_jit_with_config(jit_config=jit_cfg)
     def func(x, y):
         x.append(1)
         y.append(2)
@@ -374,7 +388,7 @@ def test_tensor_assign(assign_fn):
     Expectation: No exception
     """
 
-    @jit(capture_mode="bytecode")
+    @pi_jit_with_config(jit_config=jit_cfg)
     def func(x, y, assign, rand):
         a = x + y
         if rand:
@@ -413,7 +427,7 @@ def test_tensor_consistency(assign_fn):
     if assign_fn.__name__ == "<lambda>":
         pytest.skip("sub graph side-effect value can't return to top graph")
 
-    @jit(capture_mode="bytecode")
+    @pi_jit_with_config(jit_config=jit_cfg)
     def func(assign, x, y, x1, y1):
         a = x + y
         assign(x, y)
@@ -432,10 +446,6 @@ def test_tensor_consistency(assign_fn):
     assert x.value() == x1 and y.value() == y1
     assert a1 == Tensor([3]) and b1 == Tensor([7])
     assert a2 == Tensor([7]) and b2 == Tensor([7])
-
-
-jit_cfg = {'compile_with_try': False}
-
 
 @pytest.mark.skip(reason='unsupported for now')
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -992,7 +1002,7 @@ def test_side_effect_eliminate(has_side_effect : bool):
     if not has_side_effect:
         pytest.skip("Variable escape analysis not implement. For this case, the variable 't' is escaped if 'r[1]' returned")
 
-    @jit(capture_mode='bytecode')
+    @pi_jit_with_config(jit_config=jit_cfg)
     def func(has_side_effect : bool, x : Tensor = Tensor([3])):
         t = Tensor([1])
         r = [[t + t], [t]]
@@ -1015,7 +1025,7 @@ def test_side_effect_eliminate_2():
     Description: Validate side effect optimize
     Expectation: No exception
     """
-    @jit(capture_mode='bytecode')
+    @pi_jit_with_config(jit_config=jit_cfg)
     def func(x : Tensor = Tensor([3, 3])):
         # t = Tensor.new_zeros(x, x.shape) builtin method new_zeros of PyCapsule
         # t = mindspore.tensor(x) fix it after Tensor constant
@@ -1048,7 +1058,7 @@ def test_side_effect_merge():
     x2=Tensor(data)
 
     func(x1)
-    jit(func, capture_mode="bytecode")(x2)
+    pi_jit_with_config(func, jit_config=jit_cfg)(x2)
     assert (x1 == x2).all()
 
     assert_no_graph_break(func)
