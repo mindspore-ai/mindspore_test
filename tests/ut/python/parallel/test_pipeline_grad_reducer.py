@@ -21,7 +21,7 @@ from mindspore.ops import operations as P
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
 from mindspore.nn import PipelineGradReducer
-
+from mindspore.nn.utils import no_init_parameters
 from mindspore.parallel.auto_parallel import AutoParallel
 from hccl_test.manage.api import Hccl
 
@@ -177,23 +177,23 @@ def test_pipeline_functional_shard_stage0_1():
     """
 
     hccl = Hccl()
-    hccl.rank_id = 3
+    hccl.rank_id = 0
     hccl.rank_size = 32
     data = Tensor(np.ones([32, 64]), dtype=ms.float32)
     label = Tensor(np.ones([64, 64]), dtype=ms.float32)
     strategy1 = ((16, 1), (1, 1))
     strategy2 = ((8, 1), (1, 1))
 
-    net = nn.PipelineCell(Net(strategy1, strategy2), 4)
+    with no_init_parameters():
+        net = nn.PipelineCell(Net(strategy1, strategy2), 4)
+        params = net.network.cell1.trainable_params()
+        optimizer = nn.SGD(params, learning_rate=0.01)
+        pp_grad_reducer = PipelineGradReducer(optimizer.parameters, opt_shard=True)
 
     def forward_fn(inputs, target):
         loss = net(inputs, target)
         return loss
-
-    params = net.network.cell1.trainable_params()
     grad_fn = ops.value_and_grad(forward_fn, None, params)
-    optimizer = nn.SGD(params, learning_rate=0.01)
-    pp_grad_reducer = PipelineGradReducer(optimizer.parameters, opt_shard=True)
 
     @ms.jit
     def train_one_step(inputs, target):

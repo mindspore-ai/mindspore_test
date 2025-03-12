@@ -58,6 +58,7 @@ class PipelineGradReducer(Cell):
     Args:
         parameters (list): the parameters to be updated.
         scale_sense (float): the scale sense of the gradient. Default: 1.0.
+        opt_shard(bool): if use parallel optimizer, set opt_shard True.
 
     Raise:
         RuntimeError: If the mode is not graph mode.
@@ -87,7 +88,6 @@ class PipelineGradReducer(Cell):
         >>>
         >>> ms.set_context(mode=ms.GRAPH_MODE)
         >>> ms.reset_auto_parallel_context()
-        >>> ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL, pipeline_stages=2)
         >>> init()
         >>> ms.set_seed(1)
         >>>
@@ -133,6 +133,8 @@ class PipelineGradReducer(Cell):
         ...     optimizer(grads)
         ...     return loss, grads
         >>>
+        >>> parallel_net = AutoParallel(train_one_step, parallel_mode="semi_auto")
+        >>> parallel_net.pipeline(stages=2)
         >>> inputs = Tensor(np.ones([size, in_features]).astype(np.float32))
         >>> label = Tensor(np.ones([size, out_features]).astype(np.float32))
         >>> loss, _ = train_one_step(inputs, label)
