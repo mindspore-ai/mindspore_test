@@ -21,11 +21,11 @@ mindspore.ops.floor_mod
         - 如果shape表示为 :math:`(D1, D2 ..., Dn)` ，那么 D1\*D2... \*DN<=1000000,n<=8。
 
     参数：
-        - **x** (Union[Tensor, Number, bool]) - 第一个输入，为数值型，或bool，或数据类型为数值型或bool的Tensor。
-        - **y** (Union[Tensor, Number, bool]) - 第二个输入，为数值型，或bool，或数据类型为数值型或bool的Tensor。
+        - **x** (Union[Tensor, Number, bool]) - 第一个输入。当类型为Tensor时，该Tensor的数据类型为Number或bool。
+        - **y** (Union[Tensor, Number, bool]) - 第二个输入。当类型为Tensor时，该Tensor的数据类型为Number或bool。
 
     返回：
         Tensor，输出的shape与广播后的shape相同，数据类型取两个输入中精度较高或数字较高的。
 
     异常：
-        - **TypeError** - 如果 `x` 和 `y` 不是以下之一：Tensor，number.Number或bool。
+        - **TypeError** - 如果 `x` 和 `y` 不是以下之一：Tensor、number.Number或bool。

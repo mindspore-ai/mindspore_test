@@ -27,11 +27,11 @@ mindspore.ops.cholesky_solve
         Tensor，shape和数据类型与 `input` 相同。
 
     异常：
-        - **TypeError** - 如果 `upper` 不是bool。
-        - **TypeError** - 如果 `input` 和 `input2` 的数据类型不是float32或float64。
-        - **TypeError** - 如果 `input` 不是Tensor。
-        - **TypeError** - 如果 `input2` 不是Tensor。
-        - **ValueError** - 如果 `input` 和 `input2` 的批次大小相同。
-        - **ValueError** - 如果 `input` 和 `input2` 的行数不同。
-        - **ValueError** - 如果 `input` 不是2D或3D的矩阵。
-        - **ValueError** - 如果 `input2` 不是2D或3D的方阵。
+        - **TypeError** - `upper` 不是bool。
+        - **TypeError** - `input` 和 `input2` 的数据类型不是float32或float64。
+        - **TypeError** - `input` 不是Tensor。
+        - **TypeError** - `input2` 不是Tensor。
+        - **ValueError** - `input` 和 `input2` 的批次大小相同。
+        - **ValueError** - `input` 和 `input2` 的行数不同。
+        - **ValueError** - `input` 不是2D或3D的矩阵。
+        - **ValueError** - `input2` 不是2D或3D的方阵。

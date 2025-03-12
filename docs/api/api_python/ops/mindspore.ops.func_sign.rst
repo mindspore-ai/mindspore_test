@@ -19,4 +19,4 @@ mindspore.ops.sign
         Tensor， `input` 的sign计算结果。
 
     异常：
-        - **TypeError** - 如果 `input` 不是Tensor。
+        - **TypeError** - `input` 不是Tensor。

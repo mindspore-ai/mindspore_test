@@ -21,5 +21,5 @@ mindspore.ops.mse_loss
         Tensor，数据类型为float，如果 `reduction` 为 ``'mean'`` 或 ``'sum'`` 时，shape为0；如果 `reduction` 为 ``'none'`` ，输入的shape则是广播之后的shape。
 
     异常：
-        - **ValueError** - 如果 `reduction` 的值不是以下其中之一时：``'none'`` 、 ``'mean'`` 、 ``'sum'`` 。
-        - **ValueError** - 如果 `input` 和 `target` 的shape不相同且无法广播。
+        - **ValueError** - `reduction` 的值不是以下其中之一时：``'none'`` 、 ``'mean'`` 、 ``'sum'`` 。
+        - **ValueError** - `input` 和 `target` 的shape不相同且无法广播。

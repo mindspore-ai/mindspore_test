@@ -25,4 +25,4 @@ mindspore.ops.isinf
         Tensor，shape与相同的输入，数据的类型为bool。
 
     异常：
-        - **TypeError** - 如果 `input` 不是Tensor。
+        - **TypeError** - `input` 不是Tensor。

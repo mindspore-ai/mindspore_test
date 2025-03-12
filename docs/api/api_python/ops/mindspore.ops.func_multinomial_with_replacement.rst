@@ -19,11 +19,11 @@ mindspore.ops.multinomial_with_replacement
         Tensor，具有与输入 `x` 有相同的行。每行的采样索引数为 `numsamples` 。
 
     异常：
-        - **TypeError** - 如果 `x` 不是1D或2DTensor。
-        - **TypeError** - 如果 `x` 数据类型不是float16、float32或float64。
-        - **TypeError** - 如果 `num_sample` 不是int类型。
-        - **TypeError** - 如果 `replacement` bool类型。
-        - **ValueError** - 如果 `replacement` 为False的时候， `numsamples` 的值不大于x_shape[-1]。
-        - **ValueError** - 如果 `x` 某一行元素的和小于零。
-        - **ValueError** - 如果 `x` 每一行都存在小于零的值。
-        - **ValueError** - 如果 `numsamples` 小于等于0。
+        - **TypeError** - `x` 不是1D或2DTensor。
+        - **TypeError** - `x` 数据类型不是float16、float32或float64。
+        - **TypeError** - `num_sample` 不是int类型。
+        - **TypeError** - `replacement` bool类型。
+        - **ValueError** - `replacement` 为False的时候， `numsamples` 的值不大于x_shape[-1]。
+        - **ValueError** - `x` 某一行元素的和小于零。
+        - **ValueError** - `x` 每一行都存在小于零的值。
+        - **ValueError** - `numsamples` 小于等于0。
