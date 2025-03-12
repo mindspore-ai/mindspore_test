@@ -1488,24 +1488,26 @@ static std::unordered_map<int, PythonBytecodeFuncSet> kBytecodeExecuter = {
     }}},
   {INPLACE_XOR,
    {ByteCodeTest(INPLACE_XOR),
-    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject * {
-      if (ByteCodeCheck(INPLACE_XOR, opargs, objs)) {
-        return PyNumber_InPlaceXor(objs[0], objs[1]);
-      } else {
-        Py_INCREF(objs[0]);
-        return objs[0];
-      }
-    }}},
+    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject
+                                                                   * {
+                                                                     if (ByteCodeCheck(INPLACE_XOR, opargs, objs)) {
+                                                                       return PyNumber_InPlaceXor(objs[0], objs[1]);
+                                                                     } else {
+                                                                       Py_INCREF(objs[0]);
+                                                                       return objs[0];
+                                                                     }
+                                                                   }}},
   {INPLACE_OR,
    {ByteCodeTest(INPLACE_OR),
-    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject * {
-      if (ByteCodeCheck(INPLACE_OR, opargs, objs)) {
-        return PyNumber_InPlaceOr(objs[0], objs[1]);
-      } else {
-        Py_INCREF(objs[0]);
-        return objs[0];
-      }
-    }}},
+    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject
+                                                                   * {
+                                                                     if (ByteCodeCheck(INPLACE_OR, opargs, objs)) {
+                                                                       return PyNumber_InPlaceOr(objs[0], objs[1]);
+                                                                     } else {
+                                                                       Py_INCREF(objs[0]);
+                                                                       return objs[0];
+                                                                     }
+                                                                   }}},
   {RETURN_VALUE, {ByteCodeUnsupported, nullptr}},
   {IMPORT_STAR, {ByteCodeUnsupported, nullptr}},
   {SETUP_ANNOTATIONS, {ByteCodeUnsupported, nullptr}},

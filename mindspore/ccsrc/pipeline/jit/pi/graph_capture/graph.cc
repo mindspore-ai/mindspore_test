@@ -215,9 +215,7 @@ void Graph::AddNodeInfo(ValueNode *node, AObject *obj_info, const std::string &n
   }
   ConstantInfo::CollectConstantInfo(node);
   if (node->IsConstantValue() && obj_info && CheckConstPyObject(obj_info->GetPyObject().ptr())) {
-    if (node->GetOpcode() != KW_NAMES || node->GetOpcode() != LOAD_CONST) {
-      node->SetOpcode(LOAD_CONST);
-    }
+    node->SetOpcode(LOAD_CONST);
     node->SetOparg(-1);
     node->ClearInputs();
   }

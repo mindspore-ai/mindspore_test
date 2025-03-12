@@ -1710,39 +1710,16 @@ bool GraphBuilder::DoBinary(const Instr &instr) {
 }
 
 bool GraphBuilder::DoBinaryOp(const Instr &instr) {
+#if IS_PYTHON_3_11_PLUS
   switch (instr.arg()) {
     case NB_ADD:
       return DoBinaryAdd(instr);
     case NB_INPLACE_ADD:
       return DoInplaceAdd(instr);
-    case NB_POWER:
-    case NB_MULTIPLY:
-    case NB_REMAINDER:
-    case NB_SUBTRACT:
-    case NB_FLOOR_DIVIDE:
-    case NB_TRUE_DIVIDE:
-    case NB_MATRIX_MULTIPLY:
-    case NB_LSHIFT:
-    case NB_RSHIFT:
-    case NB_AND:
-    case NB_XOR:
-    case NB_OR:
-    case NB_INPLACE_MATRIX_MULTIPLY:
-    case NB_INPLACE_FLOOR_DIVIDE:
-    case NB_INPLACE_TRUE_DIVIDE:
-    case NB_INPLACE_SUBTRACT:
-    case NB_INPLACE_MULTIPLY:
-    case NB_INPLACE_POWER:
-    case NB_INPLACE_REMAINDER:
-    case NB_INPLACE_LSHIFT:
-    case NB_INPLACE_RSHIFT:
-    case NB_INPLACE_AND:
-    case NB_INPLACE_XOR:
-    case NB_INPLACE_OR:
-      return DoBinary(instr);
     default:
-      return false;
+      return DoBinary(instr);
   }
+#endif
   return false;
 }
 
@@ -2059,7 +2036,7 @@ bool GraphBuilder::DoByteCode(const Instr &instr) {
     return false;
   }
 
-  if (instr.extra_jump() == nullptr || instr.op() == PRECALL) {
+  if (instr.extra_jump() == nullptr) {
     ++cur_bci_;
   } else {
     bool valid = (cur_bci_ == instr.bci() + 1) || cur_bci_ == instr.extra_jump()->bci();
@@ -4012,6 +3989,7 @@ bool GraphBuilder::TraceRunControl(const Instr &instr) {
     bool jump = (cond == 0) ^ (opcode == JUMP_IF_TRUE_OR_POP);
     cond_node = jump ? seek(0) : pop();
     jump_to = jump ? instr.extra_jump()->bci() : cur_bci_ + 1;
+#if IS_PYTHON_3_11_PLUS
   } else if (opcode == POP_JUMP_BACKWARD_IF_FALSE || opcode == POP_JUMP_BACKWARD_IF_TRUE ||
              opcode == POP_JUMP_FORWARD_IF_FALSE || opcode == POP_JUMP_FORWARD_IF_TRUE) {
     cond_node = pop();
@@ -4025,6 +4003,7 @@ bool GraphBuilder::TraceRunControl(const Instr &instr) {
     auto is_jump_is_not_none =
       (opcode == POP_JUMP_BACKWARD_IF_NOT_NONE || opcode == POP_JUMP_FORWARD_IF_NOT_NONE) ? true : false;
     jump_to = ((cond == 0) ^ is_jump_is_not_none) ? instr.extra_jump()->bci() : cur_bci_ + 1;
+#endif
   } else {
     graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceByteCode_Unsupported);
     return false;

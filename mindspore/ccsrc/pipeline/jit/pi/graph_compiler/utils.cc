@@ -210,10 +210,15 @@ std::string GraphUtils::OpCodeToGraphName(int op_code) {
 
 std::string GraphUtils::OpCompareArgToGraphName(int oparg) {
   static std::map<int, std::string> compare_arg_2_graph_name = {
-    {Py_LT, "less"},      {Py_LE, "less_equal"},     {Py_EQ, "equal"},
-    {Py_NE, "not_equal"}, {Py_GT, "greater"},        {Py_GE, "greater_equal"},
+    {Py_LT, "less"},
+    {Py_LE, "less_equal"},
+    {Py_EQ, "equal"},
+    {Py_NE, "not_equal"},
+    {Py_GT, "greater"},
+    {Py_GE, "greater_equal"},
 #if (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 9)
-    {PyCmp_IN, "in_"},    {PyCmp_NOT_IN, "not_in_"},
+    {PyCmp_IN, "in_"},
+    {PyCmp_NOT_IN, "not_in_"},
 #endif
   };
   auto iter = compare_arg_2_graph_name.find(oparg);
@@ -226,6 +231,8 @@ std::string GraphUtils::OpCompareArgToGraphName(int oparg) {
 std::string GraphUtils::ContainsOpToGraphName(int oparg) { return oparg == 1 ? "not_in_" : "in_"; }
 
 std::string GraphUtils::BinaryOpToGraphName(int oparg) {
+#if IS_PYTHON_3_11_PLUS
+
   static std::map<int, std::string> binary_op_arg_2_graph_name = {{NB_ADD, "add"},
                                                                   {NB_POWER, "pow_"},
                                                                   {NB_MULTIPLY, "mul"},
@@ -252,10 +259,11 @@ std::string GraphUtils::BinaryOpToGraphName(int oparg) {
                                                                   {NB_INPLACE_XOR, "bitwise_xor"},
                                                                   {NB_INPLACE_OR, "bitwise_or"}};
   auto iter = binary_op_arg_2_graph_name.find(oparg);
-  if (iter == binary_op_arg_2_graph_name.end()) {
-    return "";
+  if (iter != binary_op_arg_2_graph_name.end()) {
+    return iter->second;
   }
-  return iter->second;
+#endif
+  return "";
 }
 
 AnfNodePtr GraphUtils::GetMetaFuncGraph(int op_code) {

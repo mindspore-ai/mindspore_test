@@ -199,7 +199,8 @@ class PackCallStackHelper {
   auto &result() { return result_; }
 
   template <typename CastKeys, typename CastSequence, typename CastKeyWords>
-  bool Pack(const std::vector<T> &stack_args, CastKeys to_keys, CastSequence to_seq, CastKeyWords to_map, PyObject *kw_names) {
+  bool Pack(const std::vector<T> &stack_args, CastKeys to_keys, CastSequence to_seq, CastKeyWords to_map,
+            PyObject *kw_names) {
     if (opcode_ == CALL_FUNCTION_EX) {
       result_.args_ = to_seq(stack_args[0]);
       result_.kw_ = stack_args.size() > 1 ? to_map(stack_args[1]) : std::map<std::string, T>();
