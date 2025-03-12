@@ -62,6 +62,10 @@ if(LOCAL_LIBS_SERVER)
 endif()
 
 function(__download_pkg pkg_name pkg_url pkg_sha256)
+    set(custom_func "")
+    if(ARGN)
+        list(GET ARGN 0 custom_func)
+    endif()
 
     if(LOCAL_LIBS_SERVER)
         set(REGEX_IP_ADDRESS "^([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)$")
@@ -84,37 +88,8 @@ function(__download_pkg pkg_name pkg_url pkg_sha256)
         FetchContent_Populate(${pkg_name})
         set(${pkg_name}_SOURCE_DIR ${${pkg_name}_SOURCE_DIR} PARENT_SCOPE)
 
-        if(${pkg_name} STREQUAL "cppjieba")
-            set(LIMONP_SRC "${TOP_DIR}/build/mindspore/_deps/limonp-src")
-            set(CPPJIEBA_SRC "${TOP_DIR}/build/mindspore/_deps/cppjieba-src")
-            set(limonp_name "limonp")
-            set(limonp_url "https://github.com/yanyiwu/limonp/archive/refs/tags/v0.6.6.tar.gz")
-            set(limonp_sha256 "3a69a673a5f12e83660f699c43b29fc4c509a2078aa901193264f40e94ca4d01")
-
-            if(LOCAL_LIBS_SERVER)
-                set(REGEX_IP_ADDRESS "^([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)$")
-                get_filename_component(LIMONP_FILE_NAME ${limonp_url} NAME)
-                if(${LOCAL_LIBS_SERVER} MATCHES ${REGEX_IP_ADDRESS})
-                    set(limonp_url "http://${LOCAL_LIBS_SERVER}:8081/libs/${limonp_name}/${LIMONP_FILE_NAME}"
-                        ${limonp_url})
-                else()
-                    set(limonp_url "https://${LOCAL_LIBS_SERVER}/libs/${limonp_name}/${LIMONP_FILE_NAME}" ${limonp_url})
-                endif()
-            endif()
-
-            FetchContent_Declare(
-                    ${limonp_name}
-                    URL      ${limonp_url}
-                    URL_HASH SHA256=${limonp_sha256}
-            )
-            FetchContent_GetProperties(${limonp_name})
-
-            if(NOT ${limonp_name}_POPULATED)
-                FetchContent_Populate(${limonp_name})
-                set(${limonp_name}_SOURCE_DIR ${${limonp_name}_SOURCE_DIR} PARENT_SCOPE)
-            endif()
-
-            file(COPY "${LIMONP_SRC}/." DESTINATION "${CPPJIEBA_SRC}/deps/limonp")
+        if(custom_func)
+            cmake_language(CALL ${custom_func})
         endif()
     endif()
 
@@ -262,7 +237,7 @@ function(mindspore_add_pkg pkg_name)
 
     set(options)
     set(oneValueArgs URL SHA256 GIT_REPOSITORY GIT_TAG VER EXE DIR HEAD_ONLY CMAKE_PATH RELEASE
-            LIB_PATH CUSTOM_CMAKE)
+            LIB_PATH CUSTOM_CMAKE CUSTOM_SUBMODULE_DOWNLOAD CUSTOM_SUBMODULE_INFO)
     set(multiValueArgs
             CMAKE_OPTION LIBS PRE_CONFIGURE_COMMAND CONFIGURE_COMMAND BUILD_OPTION INSTALL_INCS
             INSTALL_LIBS PATCHES SUBMODULES SOURCEMODULES ONLY_MAKE ONLY_MAKE_INCS ONLY_MAKE_LIBS
@@ -297,6 +272,9 @@ function(mindspore_add_pkg pkg_name)
             ${${pkg_name}_CXXFLAGS}-${${pkg_name}_CFLAGS}-${${pkg_name}_LDFLAGS}")
     if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
         set(${pkg_name}_CONFIG_TXT "${${pkg_name}_CONFIG_TXT}--${CMAKE_OSX_DEPLOYMENT_TARGET}")
+    endif()
+    if(PKG_CUSTOM_SUBMODULE_INFO)
+        set(${pkg_name}_CONFIG_TXT "${${pkg_name}_CONFIG_TXT}-${PKG_CUSTOM_SUBMODULE_INFO}")
     endif()
     string(REPLACE ";" "-" ${pkg_name}_CONFIG_TXT ${${pkg_name}_CONFIG_TXT})
     string(SHA256 ${pkg_name}_CONFIG_HASH ${${pkg_name}_CONFIG_TXT})
@@ -343,7 +321,11 @@ function(mindspore_add_pkg pkg_name)
         if(PKG_GIT_REPOSITORY)
             __download_pkg_with_git(${pkg_name} ${PKG_GIT_REPOSITORY} ${PKG_GIT_TAG} ${PKG_SHA256})
         else()
-            __download_pkg(${pkg_name} ${PKG_URL} ${PKG_SHA256})
+            if(PKG_CUSTOM_SUBMODULE_DOWNLOAD)
+                __download_pkg(${pkg_name} ${PKG_URL} ${PKG_SHA256} ${PKG_CUSTOM_SUBMODULE_DOWNLOAD})
+            else()
+                __download_pkg(${pkg_name} ${PKG_URL} ${PKG_SHA256})
+            endif()
         endif()
         foreach(_SUBMODULE_FILE ${PKG_SUBMODULES})
             STRING(REGEX REPLACE "(.+)_(.+)" "\\1" _SUBMODEPATH ${_SUBMODULE_FILE})
