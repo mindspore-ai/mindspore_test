@@ -60,7 +60,7 @@ def test_is_int_and_int():
     assert not ret2
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_is_int_and_int_2():
     """
     Feature: Is with variable input will be converted to PyExecute node.
