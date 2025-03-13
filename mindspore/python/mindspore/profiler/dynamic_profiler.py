@@ -667,7 +667,7 @@ if sys.version_info >= (3, 8):
         This class to enable the dynamic profile monitoring of MindSpore neural networks.
 
         Args:
-            cfg_path (str): Dynamic profile json config file directory. The requirement is a shared path
+            cfg_path (str): (Ascend only) Dynamic profile json config file directory. The requirement is a shared path
                 that can be accessed by all nodes. The parameters of the json configuration file are as follows:
 
                 - start_step (int, required) - Sets the step number at which the Profiler starts collecting data.
@@ -688,6 +688,8 @@ if sys.version_info >= (3, 8):
                 - activities (int, optional) - Sets the devices for performance data collection, where 0 represents
                   CPU+NPU, 1 represents CPU, and 2 represents NPU. The default value is 0, indicating the collection
                   of CPU+NPU performance data.
+                - export_type (int, optional) -  Sets the data type to export, where 0 represents text, 1 represents db,
+                  and 2 represents text and db. The default value is 0, indicating only export text type data.
                 - profile_memory (bool, optional) - Set whether to collect memory performance data, true indicates that
                   memory performance data is collected, false indicates that memory performance data is not collected.
                   The default value is false, indicating that memory performance data is not collected.
@@ -706,8 +708,8 @@ if sys.version_info >= (3, 8):
                   to enable and false means not to enable. The default value is true, indicating that data
                   simplification is enabled.
 
-            output_path (str, optional): Output data path. Default: ``"./dyn_profile_data"`` .
-            poll_interval (int, optional): The polling period of the monitoring process, in seconds.
+            output_path (str, optional): (Ascend only) Output data path. Default: ``"./dyn_profile_data"`` .
+            poll_interval (int, optional): (Ascend only) The polling period of the monitoring process, in seconds.
                 Default value: ``2``.
 
         Raises:
