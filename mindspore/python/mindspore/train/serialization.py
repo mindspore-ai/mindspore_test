@@ -1738,8 +1738,16 @@ def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundanc
             raise ValueError("When loading a parameter dict that has removed redundancy, "
                              "the network should be compiled.")
         param_layout = net.parameter_layout_dict
-        _single_parameter_broadcast(net, param_layout)
+        _single_parameter_broadcast(net, param_layout, param_not_load)
+        mindspore.hal.synchronize()
 
+    logger.info("Loading parameters into net is finished.")
+    if param_not_load:
+        logger.warning("For 'load_param_into_net', "
+                       "{} parameters in the 'net' are not loaded, because they are not in the "
+                       "'parameter_dict', please check whether the network structure is consistent "
+                       "when training and loading checkpoint.".format(len(param_not_load)))
+        logger.warning("{} are not loaded.".format(param_not_load))
     return param_not_load, ckpt_not_load
 
 
