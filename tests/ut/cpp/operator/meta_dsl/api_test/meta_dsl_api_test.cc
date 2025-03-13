@@ -151,4 +151,32 @@ TEST_F(TestMetaDslApi, test_scan) {
   ASSERT_TRUE(out_abs->isa<AbstractTuple>());
   ASSERT_EQ(GetPrimitiveSize(fg, prim::kPrimScan), 1);
 }
+
+/// Feature: Meta DSL
+/// Description: Test And in MetaDSL.
+/// Expectation: Run successfully.
+TEST_F(TestMetaDslApi, test_and) {
+  auto op = CreateMetaImpl("TestAnd");
+  auto abs_scalar = std::make_shared<AbstractScalar>(static_cast<int64_t>(0));
+  AbstractBasePtrList abs_list{NewAbstractTensor(1, kInt32), abs_scalar};
+  auto fg = NewFuncGraph(op, abs_list);
+  auto out_abs = fg->return_node()->abstract();
+  MS_EXCEPTION_IF_NULL(out_abs);
+  ASSERT_TRUE(out_abs->isa<AbstractTensor>());
+  ASSERT_GE(GetPrimitiveSize(fg, prim::kPrimSwitch), 1);
+}
+
+/// Feature: Meta DSL
+/// Description: Test Or in MetaDSL.
+/// Expectation: Run successfully.
+TEST_F(TestMetaDslApi, test_or) {
+  auto op = CreateMetaImpl("TestOr");
+  auto abs_scalar = std::make_shared<AbstractScalar>(static_cast<int64_t>(0));
+  AbstractBasePtrList abs_list{NewAbstractTensor(1, kFloat64), abs_scalar};
+  auto fg = NewFuncGraph(op, abs_list);
+  auto out_abs = fg->return_node()->abstract();
+  MS_EXCEPTION_IF_NULL(out_abs);
+  ASSERT_TRUE(out_abs->isa<AbstractTensor>());
+  ASSERT_GE(GetPrimitiveSize(fg, prim::kPrimSwitch), 1);
+}
 }  // namespace mindspore::prim
