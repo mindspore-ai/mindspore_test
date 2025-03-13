@@ -28,28 +28,32 @@ namespace mindspore {
 
 namespace pynative {
 
-FRONTEND_EXPORT std::optional<Int64ImmPtr> DtypeToTypeId(const std::string &op_name, const std::string &arg_name,
-                                                         PyObject *obj);
+FRONTEND_EXPORT PyObject *DtypeToTypeId(const std::string &op_name, const std::string &arg_name, PyObject *obj);
 
-FRONTEND_EXPORT std::optional<Int64ImmPtr> StrToEnum(const std::string &op_name, const std::string &arg_name,
-                                                     PyObject *obj);
+FRONTEND_EXPORT PyObject *StrToEnum(const std::string &op_name, const std::string &arg_name, PyObject *obj);
 
-FRONTEND_EXPORT std::vector<int> ToPair(const std::string &op_name, const std::string &arg_name, PyObject *arg_val);
+FRONTEND_EXPORT PyObject *ToPair(const std::string &op_name, const std::string &arg_name, PyObject *arg_val);
 
-FRONTEND_EXPORT std::vector<int> To2dPaddings(const std::string &op_name, const std::string &arg_name, PyObject *pad);
+FRONTEND_EXPORT PyObject *To2dPaddings(const std::string &op_name, const std::string &arg_name, PyObject *pad);
 
-FRONTEND_EXPORT std::vector<int> ToKernelSize(const std::string &op_name, const std::string &arg_name,
-                                              PyObject *kernel_size);
+FRONTEND_EXPORT PyObject *ToKernelSize(const std::string &op_name, const std::string &arg_name, PyObject *kernel_size);
 
-FRONTEND_EXPORT std::vector<int> ToStrides(const std::string &op_name, const std::string &arg_name, PyObject *stride);
+FRONTEND_EXPORT PyObject *ToStrides(const std::string &op_name, const std::string &arg_name, PyObject *stride);
 
-FRONTEND_EXPORT std::vector<int> ToDilations(const std::string &op_name, const std::string &arg_name,
-                                             PyObject *dilation);
+FRONTEND_EXPORT PyObject *ToDilations(const std::string &op_name, const std::string &arg_name, PyObject *dilation);
 
-FRONTEND_EXPORT std::vector<int> ToOutputPadding(const std::string &op_name, const std::string &arg_name,
-                                                 PyObject *output_padding);
+FRONTEND_EXPORT PyObject *ToOutputPadding(const std::string &op_name, const std::string &arg_name,
+                                          PyObject *output_padding);
 
-FRONTEND_EXPORT std::vector<int> ToRates(const std::string &op_name, const std::string &arg_name, PyObject *rates);
+FRONTEND_EXPORT PyObject *ToRates(const std::string &op_name, const std::string &arg_name, PyObject *rates);
+
+FRONTEND_EXPORT PyObject *NormalizeIntSequence(const std::string &op_name, const std::string &arg_name,
+                                               PyObject *arg_val);
+FRONTEND_EXPORT PyObject *ScalarTensorToScalar(const std::string &op_name, const std::string &arg_name,
+                                               PyObject *arg_val);
+FRONTEND_EXPORT PyObject *ScalarTensorToInt(const std::string &op_name, const std::string &arg_name, PyObject *arg_val);
+FRONTEND_EXPORT PyObject *ScalarTensorToFloat(const std::string &op_name, const std::string &arg_name,
+                                              PyObject *arg_val);
 
 }  // namespace pynative
 }  // namespace mindspore

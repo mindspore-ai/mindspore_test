@@ -48,6 +48,10 @@ std::vector<OP_DTYPE> GetSourceDtypeByArgHandler(const std::string &arg_handler_
     {"to_2d_paddings", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
     {"dtype_to_type_id", {OP_DTYPE::DT_TYPE}},
     {"str_to_enum", {OP_DTYPE::DT_STR}},
+    {"_scalar_tensor_to_scalar", {OP_DTYPE::DT_NUMBER, OP_DTYPE::DT_TENSOR}},
+    {"_scalar_tensor_to_int", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TENSOR}},
+    {"_scalar_tensor_to_float", {OP_DTYPE::DT_FLOAT, OP_DTYPE::DT_TENSOR}},
+    {"_normalize_int_sequence", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY, OP_DTYPE::DT_TENSOR}},
   };
   auto iter = arg_handler_map.find(arg_handler_func);
   if (iter == arg_handler_map.end()) {

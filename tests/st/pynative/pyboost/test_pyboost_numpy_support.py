@@ -76,7 +76,7 @@ def test_mint_argmin_with_invalid_dim():
     Expectation: Run success
     """
     x = ms.Tensor(np.random.randn(4, 4).astype(np.float32))
-    for dim in [4.0, np.float64(4.), ms.Tensor(4), np.array(4)]:
+    for dim in [4.0, np.float64(4.), np.array(4)]:
         with pytest.raises(TypeError):
             ms.mint.argmin(x, dim)
 

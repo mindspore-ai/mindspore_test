@@ -5,6 +5,7 @@ xlogy_scalar_other:
             dtype: tensor
         other:
             dtype: number
+            disable_tensor_to_scalar: True
     returns:
         out:
             dtype: tensor
