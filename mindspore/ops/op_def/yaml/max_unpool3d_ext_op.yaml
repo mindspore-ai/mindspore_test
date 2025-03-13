@@ -1,0 +1,29 @@
+#operator max_unpool3d_ext
+max_unpool3d_ext:
+    args:
+        input:
+            dtype: tensor
+        indices:
+            dtype: tensor
+        kernel_size:
+            dtype: tuple[int]
+            type_cast: int
+        stride:
+            dtype: tuple[int]
+            default: None
+            type_cast: int
+        padding:
+            dtype: tuple[int]
+            default: 0
+            type_cast: int
+        output_size:
+            dtype: tuple[int]
+            default: None
+    returns:
+        output:
+            dtype: tensor
+    class:
+        name: MaxUnpool3DExt
+    dispatch:
+        enable: True
+        Ascend: MaxUnpool3DExtAscend

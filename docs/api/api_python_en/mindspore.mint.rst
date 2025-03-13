@@ -402,6 +402,7 @@ Pooling Layers
     mindspore.mint.nn.AvgPool2d
     mindspore.mint.nn.AvgPool3d
     mindspore.mint.nn.MaxUnpool2d
+    mindspore.mint.nn.MaxUnpool3d
 
 Padding Layers
 ^^^^^^^^^^^^^^
@@ -494,6 +495,7 @@ Pooling functions
     mindspore.mint.nn.functional.avg_pool3d
     mindspore.mint.nn.functional.max_pool2d
     mindspore.mint.nn.functional.max_unpool2d
+    mindspore.mint.nn.functional.max_unpool3d
 
 Non-linear activation functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
