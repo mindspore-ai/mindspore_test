@@ -24,7 +24,7 @@
 
 namespace mindspore::session {
 class Executor;
-class BACKEND_EXPORT ExecutorManager {
+class BACKEND_COMMON_EXPORT ExecutorManager {
  public:
   static ExecutorManager &Instance();
   std::shared_ptr<Executor> GetExecutor(const std::string &device_name, uint32_t device_id);

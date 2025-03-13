@@ -33,7 +33,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT InplaceNodePass : public NodePass {
+class BACKEND_COMMON_EXPORT InplaceNodePass : public NodePass {
  public:
   explicit InplaceNodePass(const std::string &name = "") : NodePass(name) {}
   ~InplaceNodePass() override = default;

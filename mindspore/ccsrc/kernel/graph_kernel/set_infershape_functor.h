@@ -28,7 +28,7 @@ namespace mindspore::graphkernel {
 using opt::dynamic_shape::InferShapeFunctor;
 using opt::dynamic_shape::kAttrInferShapeFunctor;
 
-class BACKEND_EXPORT SymbolEngineInfer : public InferShapeFunctor {
+class BACKEND_COMMON_EXPORT SymbolEngineInfer : public InferShapeFunctor {
  public:
   SymbolEngineInfer(const std::string &name, const SymbolEnginePtr &engine, const AbstractBasePtr &out_abstract)
       : InferShapeFunctor(name), engine_(engine), out_abstract_(out_abstract) {}

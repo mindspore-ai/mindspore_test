@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT MergeTransData : public Pass {
+class BACKEND_COMMON_EXPORT MergeTransData : public Pass {
  public:
   MergeTransData() : Pass("MergeTransData") {}
   ~MergeTransData() override = default;

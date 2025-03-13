@@ -27,7 +27,7 @@ using CallBackFunc = uint32_t (*)(uint32_t graph_id,
                                   const std::map<std::string, mindspore::tensor::TensorPtr> &params_list);
 using mindspore::session::KernelGraph;
 
-class BACKEND_EXPORT Summary {
+class BACKEND_COMMON_EXPORT Summary {
  public:
   static Summary &GetInstance();
   void RecurseSetSummaryNodesForAllGraphs(KernelGraph *graph);

@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT GetNextForGE : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT GetNextForGE : public PatternProcessPass {
  public:
   explicit GetNextForGE(bool multigraph = true) : PatternProcessPass("getnext_for_ge", multigraph) {}
   ~GetNextForGE() override = default;

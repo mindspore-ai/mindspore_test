@@ -29,7 +29,7 @@
 namespace mindspore::graphkernel {
 class Callback;
 using CallbackPtr = std::shared_ptr<Callback>;
-class BACKEND_EXPORT Callback {
+class BACKEND_COMMON_EXPORT Callback {
  public:
   virtual ~Callback() = default;
   static CallbackPtr Instance() { return instance_; }
@@ -178,7 +178,7 @@ class BACKEND_EXPORT Callback {
 
   friend class CallbackImplRegister;
 #ifndef _MSC_VER
-  BACKEND_EXPORT inline static CallbackPtr instance_{nullptr};
+  BACKEND_COMMON_EXPORT inline static CallbackPtr instance_{nullptr};
 #else
   inline static CallbackPtr instance_{nullptr};
 #endif

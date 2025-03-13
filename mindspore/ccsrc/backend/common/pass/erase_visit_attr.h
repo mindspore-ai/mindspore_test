@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT EraseVisitAttr : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT EraseVisitAttr : public PatternProcessPass {
  public:
   explicit EraseVisitAttr(bool multigraph = true) : PatternProcessPass("erase_visit_attr", multigraph) {}
   ~EraseVisitAttr() override = default;

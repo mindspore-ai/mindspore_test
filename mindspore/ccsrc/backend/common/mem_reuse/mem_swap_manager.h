@@ -30,7 +30,7 @@ namespace mindspore {
 namespace device {
 namespace memswap {
 // todo: delete with kernel-runtime
-class BACKEND_EXPORT MemSwapManager {
+class BACKEND_COMMON_EXPORT MemSwapManager {
  public:
   explicit MemSwapManager(const MemCopyManagerPtr &mem_copy_manager)
       : tensor_size_threshold_(0),

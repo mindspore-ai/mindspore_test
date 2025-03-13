@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT ConvertUnusedTupleParaToMakeTuple : public Pass {
+class BACKEND_COMMON_EXPORT ConvertUnusedTupleParaToMakeTuple : public Pass {
  public:
   ConvertUnusedTupleParaToMakeTuple() : Pass("convert_unused_tuple_para_to_make_tuple") {}
   ~ConvertUnusedTupleParaToMakeTuple() override = default;

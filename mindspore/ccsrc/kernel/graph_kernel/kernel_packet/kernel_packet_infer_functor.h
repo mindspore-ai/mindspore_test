@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
-class BACKEND_EXPORT KernelPacketInfer : public graphkernel::SymbolEngineInfer {
+class BACKEND_COMMON_EXPORT KernelPacketInfer : public graphkernel::SymbolEngineInfer {
  public:
   KernelPacketInfer(const std::string &name, const FuncGraphPtr &fg, KernelPacketKernelMod *kernelmod)
       : SymbolEngineInfer(name, fg->symbol_engine(), fg->output()->abstract()), kernel_mod_holder_(kernelmod) {}

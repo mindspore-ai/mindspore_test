@@ -40,7 +40,8 @@ constexpr size_t kValueNodeOutputIndex = 0;
  * Description: Convert int4 data_type into int8 data_type. The int4_data is 2 int4 data stored in 1 int8 data. After
  * split, the int8_data is 1 int4 data stored int 1 int8 data.
  */
-BACKEND_EXPORT bool SplitInt8ToInt4x2(const void *int4_data, size_t in_data_len, void *int8_data, size_t out_data_len);
+BACKEND_COMMON_EXPORT bool SplitInt8ToInt4x2(const void *int4_data, size_t in_data_len, void *int8_data,
+                                             size_t out_data_len);
 
 /*
  * Feature group: Dump.
@@ -49,7 +50,8 @@ BACKEND_EXPORT bool SplitInt8ToInt4x2(const void *int4_data, size_t in_data_len,
  * Description: Convert uint1 data_type into uint8 data_type. The in_data is 8 uint1 data stored in 1 uint8 data.
  * After split, the out_data is 1 uint1 data stored in 1 uint8 data.
  */
-BACKEND_EXPORT void SplitUint1x8ToUint8s(const void *in_data, size_t in_data_len, ShapeVector shape, void *out_data);
+BACKEND_COMMON_EXPORT void SplitUint1x8ToUint8s(const void *in_data, size_t in_data_len, ShapeVector shape,
+                                                void *out_data);
 
 /*
  * Feature group: Dump.
@@ -101,7 +103,7 @@ bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_
  * Description: Dump string content into file path. Current purpose is to save operator overflow information in json
  * file in ascend a+m dump mode.
  */
-BACKEND_EXPORT void DumpToFile(const std::string &file_name, const std::string &dump_str);
+BACKEND_COMMON_EXPORT void DumpToFile(const std::string &file_name, const std::string &dump_str);
 }  // namespace mindspore
 
 #endif  // MINDSPORE_MINDSPORE_CCSRC_DEBUG_DATA_DUMP_DUMP_UTILS_H_

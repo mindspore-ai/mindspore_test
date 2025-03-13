@@ -25,7 +25,7 @@
 namespace mindspore {
 namespace debug {
 namespace tft {
-class BACKEND_EXPORT TFTWaitSem {
+class BACKEND_COMMON_EXPORT TFTWaitSem {
  public:
   static TFTWaitSem &GetInstance();
   ~TFTWaitSem();

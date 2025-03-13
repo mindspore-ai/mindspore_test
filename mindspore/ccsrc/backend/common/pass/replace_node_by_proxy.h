@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace opt {
-class ReplaceNodeByProxy : public Pass {
+class BACKEND_COMMON_EXPORT ReplaceNodeByProxy : public Pass {
  public:
   explicit ReplaceNodeByProxy(const std::string &name) : Pass(name) {}
   ~ReplaceNodeByProxy() override = default;

@@ -125,7 +125,7 @@ class ExitTask : public Task {
 
 enum class ExecutorEvent { kClear, kRunGraphFinished, kException };
 
-class BACKEND_EXPORT Executor {
+class BACKEND_COMMON_EXPORT Executor {
  public:
   Executor(std::string device_name, uint32_t device_id) : device_name_(std::move(device_name)), device_id_(device_id) {
     worker_ = std::make_shared<std::thread>(&Executor::WorkerLoop, this);

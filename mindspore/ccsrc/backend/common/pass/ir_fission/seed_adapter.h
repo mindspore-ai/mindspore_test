@@ -21,7 +21,7 @@
 #include "include/backend/visible.h"
 
 namespace mindspore::opt {
-class BACKEND_EXPORT SeedAdapter : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT SeedAdapter : public PatternProcessPass {
  public:
   explicit SeedAdapter(bool multigraph = true) : PatternProcessPass("seed_adapter", multigraph) {}
   ~SeedAdapter() override = default;

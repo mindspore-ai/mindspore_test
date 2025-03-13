@@ -30,7 +30,7 @@
 #include "include/backend/visible.h"
 
 namespace mindspore::opt {
-class BACKEND_EXPORT OpAdaptationInfo {
+class BACKEND_COMMON_EXPORT OpAdaptationInfo {
  public:
   explicit OpAdaptationInfo(const std::string &me_op_name, std::string device_name, bool flag)
       : me_op_name_(me_op_name),
@@ -71,7 +71,7 @@ class BACKEND_EXPORT OpAdaptationInfo {
   bool is_ascend_mindir_{false};
 };
 
-class BACKEND_EXPORT OpAdaptationInfoRegister {
+class BACKEND_COMMON_EXPORT OpAdaptationInfoRegister {
  public:
   static OpAdaptationInfoRegister &GetInstance();
   static void RegOpAdaptationInfo(OpAdaptationInfo *reg_info);
@@ -95,7 +95,7 @@ class BACKEND_EXPORT OpAdaptationInfoRegister {
   static std::set<std::string> &GetOpName();
 };
 
-class BACKEND_EXPORT RegisterHelper {
+class BACKEND_COMMON_EXPORT RegisterHelper {
  public:
   RegisterHelper(const std::string &me_op_name, const std::string &device_name, bool flag, int len, ...);
   RegisterHelper(const OpAdaptationInfo &op_adaptation_info);

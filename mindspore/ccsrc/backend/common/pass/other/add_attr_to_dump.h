@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT AddAttrToDump : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT AddAttrToDump : public PatternProcessPass {
  public:
   explicit AddAttrToDump(bool multigraph = true) : PatternProcessPass("add_attr_to_dump", multigraph) {}
   ~AddAttrToDump() override = default;

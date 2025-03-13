@@ -47,7 +47,7 @@ struct PartialFuncInfo {
   size_t multi_tuple;
 };
 
-class BACKEND_EXPORT KernelGraphMgr {
+class BACKEND_COMMON_EXPORT KernelGraphMgr {
  public:
   KernelGraphMgr() {}
   virtual ~KernelGraphMgr() {}

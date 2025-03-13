@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT ReplaceAddNFusion : public PatternToPatternPass {
+class BACKEND_COMMON_EXPORT ReplaceAddNFusion : public PatternToPatternPass {
  public:
   ReplaceAddNFusion() : PatternToPatternPass("replace_addn") {}
   ~ReplaceAddNFusion() override = default;

@@ -35,7 +35,7 @@ using DeviceTensorPtr = std::shared_ptr<DeviceTensor>;
 // which represents the basic data structure of kernel launch and transfers between actors.
 // Some device tensors (such as weights and value nodes of graph) are fixed addresses and persistent,
 // so they are more suitable for store and can be obtained when they are used by actor.
-class BACKEND_EXPORT DeviceTensorStore {
+class BACKEND_COMMON_EXPORT DeviceTensorStore {
  public:
   static DeviceTensorStore &GetInstance();
 

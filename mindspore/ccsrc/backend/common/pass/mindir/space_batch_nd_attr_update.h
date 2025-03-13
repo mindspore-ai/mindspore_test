@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT SpaceToBatchNDAttrUpdate : public PatternToPatternPass {
+class BACKEND_COMMON_EXPORT SpaceToBatchNDAttrUpdate : public PatternToPatternPass {
  public:
   SpaceToBatchNDAttrUpdate() : PatternToPatternPass("space_to_batch_nd_attr_update", true) {}
   ~SpaceToBatchNDAttrUpdate() override = default;
@@ -31,7 +31,7 @@ class BACKEND_EXPORT SpaceToBatchNDAttrUpdate : public PatternToPatternPass {
   bool CheckMatchedDAG(const PatternMap &, const FuncGraphPtr &, const AnfNodePtr &) const override;
 };
 
-class BACKEND_EXPORT BatchToSpaceNDAttrUpdate : public PatternToPatternPass {
+class BACKEND_COMMON_EXPORT BatchToSpaceNDAttrUpdate : public PatternToPatternPass {
  public:
   BatchToSpaceNDAttrUpdate() : PatternToPatternPass("batch_to_space_nd_attr_update", true) {}
   ~BatchToSpaceNDAttrUpdate() override = default;

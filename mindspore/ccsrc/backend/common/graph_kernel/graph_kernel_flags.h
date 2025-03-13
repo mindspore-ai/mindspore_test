@@ -37,7 +37,7 @@ constexpr unsigned int OpLevel_2 = 2;
 constexpr unsigned int OpLevel_MAX = 3;
 constexpr unsigned int default_cpu_refer_tread_num = 8;
 
-class BACKEND_EXPORT GraphKernelFlags {
+class BACKEND_COMMON_EXPORT GraphKernelFlags {
  public:
   static const GraphKernelFlags &GetInstance();
   static void SaveJitConfig(const std::map<std::string, std::string> &jit_config);
@@ -351,7 +351,7 @@ class BACKEND_EXPORT GraphKernelFlags {
   bool enable_graph_kernel_;
 };
 
-class BACKEND_EXPORT GraphKernelPassChecker {
+class BACKEND_COMMON_EXPORT GraphKernelPassChecker {
  public:
   static GraphKernelPassChecker &GetInstance();
   GraphKernelPassChecker(const GraphKernelPassChecker &flags) = delete;

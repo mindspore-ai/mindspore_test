@@ -28,7 +28,7 @@ constexpr int64_t kConcatInputDivisor = 63;
 
 using OutputInfo = std::tuple<std::vector<TypeId>, std::vector<ShapeVector>>;
 
-class BACKEND_EXPORT ConcatOutputsForAllGather : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT ConcatOutputsForAllGather : public PatternProcessPass {
  public:
   explicit ConcatOutputsForAllGather(bool multigraph = true)
       : PatternProcessPass("concat_outputs_for_all_gather", multigraph), inputs_divisor_(kConcatInputDivisor) {}

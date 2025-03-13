@@ -25,7 +25,7 @@
 // The function data type will be processed in mindRT, but it is not supported in kernel graph.
 // This pass is used to eliminate function data type for kernel graph.
 namespace mindspore::opt {
-class BACKEND_EXPORT EliminateFuncDataType : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT EliminateFuncDataType : public PatternProcessPass {
  public:
   explicit EliminateFuncDataType(bool multigraph = true) : PatternProcessPass("eliminate_func_type", multigraph) {
     Init();

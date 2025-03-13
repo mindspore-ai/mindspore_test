@@ -41,7 +41,7 @@ if(MSLITE_ENABLE_CONVERTER)
                 ${CCSRC_DIR}/kernel/kash/kernel_pack.cc
                 ${OPS_DIR}/kernel/common/kernel_build_info.cc
                 ${OPS_DIR}/kernel/common/oplib/oplib.cc
-                ${CCSRC_DIR}/runtime/device/kernel_info.cc
+                ${CCSRC_DIR}/kernel/kernel_info.cc
                 ${CCSRC_DIR}/runtime/device/res_manager/utils/convert_tensor_utils.cc
                 ${CCSRC_DIR}/utils/ms_device_shape_transfer.cc
                 ${CCSRC_DIR}/runtime/device/kernel_runtime_manager.cc

@@ -62,9 +62,9 @@ struct CommOrderInfo {
 
 using CommOrderInfoPtr = std::shared_ptr<CommOrderInfo>;
 
-bool EnableExecuteOrderDump();
+BACKEND_COMMON_EXPORT bool EnableExecuteOrderDump();
 
-class BACKEND_EXPORT ExecuteOrderTracker {
+class BACKEND_COMMON_EXPORT ExecuteOrderTracker {
  public:
   static ExecuteOrderTracker &GetInstance();
 

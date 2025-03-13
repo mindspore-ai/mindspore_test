@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT InsertTensorMoveForHcclOpGe : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT InsertTensorMoveForHcclOpGe : public PatternProcessPass {
  public:
   explicit InsertTensorMoveForHcclOpGe(bool multigraph = true)
       : PatternProcessPass("insert_tensor_move_for_hccl_op_ge", multigraph) {}

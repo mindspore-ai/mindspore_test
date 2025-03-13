@@ -25,7 +25,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT SparseSoftmaxCrossEntropyWithLogitsUnifyMindIR : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT SparseSoftmaxCrossEntropyWithLogitsUnifyMindIR : public PatternProcessPass {
  public:
   explicit SparseSoftmaxCrossEntropyWithLogitsUnifyMindIR(
     const std::string &name = "sparse_softmax_cross_entropy_with_logits_unify_mindir", bool multigraph = true)
@@ -38,7 +38,7 @@ class BACKEND_EXPORT SparseSoftmaxCrossEntropyWithLogitsUnifyMindIR : public Pat
   std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
-class BACKEND_EXPORT GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR : public PatternProcessPass {
  public:
   explicit GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR(bool multigraph = true)
       : PatternProcessPass("grad_sparse_softmax_cross_entropy_with_logits_unify_mindir", multigraph) {}
@@ -50,7 +50,7 @@ class BACKEND_EXPORT GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR : public
   std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
-class BACKEND_EXPORT GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIRV2 : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIRV2 : public PatternProcessPass {
  public:
   explicit GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIRV2(bool multigraph = true)
       : PatternProcessPass("grad_sparse_softmax_cross_entropy_with_logits_unify_mindir_v2", multigraph) {}
@@ -62,7 +62,7 @@ class BACKEND_EXPORT GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIRV2 : publ
   std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
-class BACKEND_EXPORT PynativeSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR
+class BACKEND_COMMON_EXPORT PynativeSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR
     : public SparseSoftmaxCrossEntropyWithLogitsUnifyMindIR {
  public:
   explicit PynativeSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR(bool multigraph = true)
@@ -72,7 +72,7 @@ class BACKEND_EXPORT PynativeSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR
   const AnfNodePtr Process(const FuncGraphPtr &graph, const AnfNodePtr &node, const EquivPtr &) const override;
 };
 
-class BACKEND_EXPORT PynativeGradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT PynativeGradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR : public PatternProcessPass {
  public:
   explicit PynativeGradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR(bool multigraph = true)
       : PatternProcessPass("pynative_grad_sparse_softmax_cross_entropy_with_logits_unify_mindir", multigraph) {}
@@ -84,7 +84,7 @@ class BACKEND_EXPORT PynativeGradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR 
   std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
-class BACKEND_EXPORT PynativeGradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIRV2 : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT PynativeGradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIRV2 : public PatternProcessPass {
  public:
   explicit PynativeGradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIRV2(bool multigraph = true)
       : PatternProcessPass("pynative_grad_sparse_softmax_cross_entropy_with_logits_unify_mindir_v2", multigraph) {}
@@ -96,7 +96,7 @@ class BACKEND_EXPORT PynativeGradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIRV
   std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
-class BACKEND_EXPORT GeSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT GeSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR : public PatternProcessPass {
  public:
   explicit GeSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR(
     const std::string &name = "ge_sparse_softmax_cross_entropy_with_logits_unify_mindir", bool multigraph = true)

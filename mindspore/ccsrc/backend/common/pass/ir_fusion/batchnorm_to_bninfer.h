@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT BatchNorm2BNInfer : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT BatchNorm2BNInfer : public PatternProcessPass {
  public:
   explicit BatchNorm2BNInfer(bool multigraph = true) : PatternProcessPass("batchnorm_to_bninfer", multigraph) {}
   ~BatchNorm2BNInfer() override = default;

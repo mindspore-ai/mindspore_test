@@ -27,7 +27,7 @@ namespace mindspore {
 namespace opt {
 constexpr size_t kAdamWeightDecaySingleOpInputNum = 11;
 
-class BACKEND_EXPORT AdamWeightDecayUnifyMindIR : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT AdamWeightDecayUnifyMindIR : public PatternProcessPass {
  public:
   explicit AdamWeightDecayUnifyMindIR(bool multigraph = true)
       : PatternProcessPass("adam_weight_decay_unify_mindir", multigraph) {}

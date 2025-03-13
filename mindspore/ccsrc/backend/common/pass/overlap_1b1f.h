@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT Overlap1b1f : public Pass {
+class BACKEND_COMMON_EXPORT Overlap1b1f : public Pass {
  public:
   explicit Overlap1b1f(const std::string &name = "overlap_1b1f") : Pass(name) {}
   ~Overlap1b1f() override = default;

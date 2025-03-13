@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT EraseInvalidMicroDepend : public Pass {
+class BACKEND_COMMON_EXPORT EraseInvalidMicroDepend : public Pass {
  public:
   explicit EraseInvalidMicroDepend(const std::string &name = "erase_invalid_micro_depend") : Pass(name) {}
   ~EraseInvalidMicroDepend() override = default;

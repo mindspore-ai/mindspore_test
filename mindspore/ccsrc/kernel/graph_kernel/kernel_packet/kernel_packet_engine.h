@@ -27,7 +27,7 @@ namespace packet {
 using mindspore::symshape::SymbolEngineImpl;
 
 /// \brief SymbolEngine for kernel packet graph.
-class BACKEND_EXPORT KernelPacketEngine : public SymbolEngineImpl {
+class BACKEND_COMMON_EXPORT KernelPacketEngine : public SymbolEngineImpl {
  public:
   using SymbolEngineImpl::SymbolEngineImpl;
   ~KernelPacketEngine() = default;

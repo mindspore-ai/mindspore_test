@@ -21,7 +21,7 @@
 #include "include/backend/optimizer/pass.h"
 
 namespace mindspore::opt {
-class BACKEND_EXPORT BindValueToGraph : public opt::Pass {
+class BACKEND_COMMON_EXPORT BindValueToGraph : public opt::Pass {
  public:
   BindValueToGraph() : Pass("bind_value_to_graph") {}
   ~BindValueToGraph() override = default;

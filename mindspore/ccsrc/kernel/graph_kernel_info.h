@@ -36,7 +36,7 @@ class GraphKernelInfo {
 
 using GraphKernelInfoCreator = std::function<std::shared_ptr<GraphKernelInfo>()>;
 
-class BACKEND_EXPORT GraphKernelInfoManager {
+class BACKEND_COMMON_EXPORT GraphKernelInfoManager {
  public:
   static GraphKernelInfoManager &Instance() {
     static GraphKernelInfoManager instance{};

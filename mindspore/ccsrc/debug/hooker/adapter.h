@@ -30,7 +30,7 @@ namespace hooker {
 constexpr auto kMSHookEnable = "MS_HOOK_ENABLE";
 constexpr auto kEnable = "on";
 
-class BACKEND_EXPORT Adapter {
+class BACKEND_COMMON_EXPORT Adapter {
  public:
   Adapter() = default;
 
@@ -44,7 +44,7 @@ class BACKEND_EXPORT Adapter {
   virtual void Load() = 0;
 };
 
-class BACKEND_EXPORT AdapterManager {
+class BACKEND_COMMON_EXPORT AdapterManager {
  public:
   static AdapterManager &Instance();
 

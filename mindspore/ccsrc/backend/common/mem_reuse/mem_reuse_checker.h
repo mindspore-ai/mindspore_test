@@ -30,7 +30,7 @@ namespace mindspore {
 namespace memreuse {
 constexpr auto kSplitC = '/';
 // todo: delete with kernel-runtime
-class BACKEND_EXPORT MemReuseChecker {
+class BACKEND_COMMON_EXPORT MemReuseChecker {
  public:
   static MemReuseChecker &GetInstance();
   MemReuseChecker(const MemReuseChecker &) = delete;

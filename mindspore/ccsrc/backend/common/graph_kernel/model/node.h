@@ -43,7 +43,7 @@ using DFormat = std::string;
 using DShape = ShapeVector;
 using DAttrs = mindspore::HashMap<std::string, ValuePtr>;
 
-struct BACKEND_EXPORT NodeBase {
+struct BACKEND_COMMON_EXPORT NodeBase {
   DShape shape;
   TypeId type;
   DFormat format;
@@ -51,14 +51,14 @@ struct BACKEND_EXPORT NodeBase {
 };
 using NodeBaseList = std::vector<NodeBase>;
 
-struct BACKEND_EXPORT ExtraInfo {
+struct BACKEND_COMMON_EXPORT ExtraInfo {
   DAttrs cnode_attrs_;
 };
 
-class BACKEND_EXPORT Node;
+class BACKEND_COMMON_EXPORT Node;
 using NodePtr = std::shared_ptr<Node>;
 using NodePtrList = std::vector<NodePtr>;
-class BACKEND_EXPORT Node : public NodeBase, public std::enable_shared_from_this<Node> {
+class BACKEND_COMMON_EXPORT Node : public NodeBase, public std::enable_shared_from_this<Node> {
  public:
   explicit Node(const NodeBase &baseinfo) : NodeBase(baseinfo) {}
   virtual ~Node() { ClearInputs(); }  // remove this node from the previous nodes' user.
@@ -110,7 +110,7 @@ class BACKEND_EXPORT Node : public NodeBase, public std::enable_shared_from_this
   void RemoveUser(Node *const user, size_t index);
 };
 
-class BACKEND_EXPORT ConstTensorNode : public Node {
+class BACKEND_COMMON_EXPORT ConstTensorNode : public Node {
  public:
   explicit ConstTensorNode(const tensor::BaseTensorPtr &data)
       : Node({data->DataSize() == 1 ? DShape({1}) : data->shape(), data->data_type(), kOpFormat_DEFAULT}),

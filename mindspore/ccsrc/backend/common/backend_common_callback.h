@@ -44,7 +44,7 @@ struct Callback : CallbackBase {
   Ret invoke(Args... args) { return func(args...); }
 };
 
-class BACKEND_EXPORT BackendCommonCallback {
+class BACKEND_COMMON_EXPORT BackendCommonCallback {
  public:
   static BackendCommonCallback &GetInstance() {
     static BackendCommonCallback instance;

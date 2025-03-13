@@ -149,10 +149,18 @@ endif()
 
 set(BACKEND_COMMON_SUB_COMP
         ps
+        debug
         distributed
+        kernel
         backend/operator
         runtime/collective
         runtime/hardware
+        backend/common/mem_reuse
+        backend/common/optimizer
+        backend/common/pass
+        backend/common/session
+        backend/common/graph_kernel
+        backend/common/expander
         )
 
 foreach(_comp ${BACKEND_COMMON_SUB_COMP})
@@ -173,23 +181,13 @@ set_property(SOURCE ${BACKEND_COMMON_SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIO
 add_library(mindspore_backend_common SHARED ${BACKEND_COMMON_SUB_OBJECTS_SRC})
 target_link_libraries(mindspore_backend_common PRIVATE mindspore_core mindspore_ops mindspore_common
         mindspore_ops_kernel_common proto_input mindspore_backend_manager mindspore_memory_pool
-        mindspore_res_manager mindspore_profiler mindspore_runtime_pipeline)
+        mindspore_res_manager mindspore_profiler mindspore_runtime_pipeline mindspore_dump)
 
 
 set(MS_BACKEND_SUB_COMP
-        debug
-        debug/rdr
-        debug/summary
-        kernel
         backend/common/somas
         backend/ms_backend
         backend/graph_compiler
-        backend/common/mem_reuse
-        backend/common/optimizer
-        backend/common/pass
-        backend/common/session
-        backend/common/graph_kernel
-        backend/common/expander
         runtime/data_queue
         runtime/device
         runtime/graph_scheduler
@@ -224,7 +222,7 @@ add_library(mindspore_ms_backend SHARED ${MS_BACKEND_SUB_OBJECTS_SRC})
 target_link_libraries(mindspore_ms_backend PRIVATE mindspore::pybind11_module)
 target_link_libraries(mindspore_ms_backend PRIVATE mindspore_core mindspore_ops
         mindspore_common mindspore_ops_kernel_common mindspore_backend_manager proto_input mindspore_res_manager
-        mindspore_profiler mindspore_runtime_pipeline mindspore_dump mindspore_backend_common)
+        mindspore_profiler mindspore_runtime_pipeline mindspore_backend_common)
 
 target_link_libraries(mindspore_backend_common PRIVATE securec)
 target_link_libraries(mindspore_ms_backend PRIVATE securec)

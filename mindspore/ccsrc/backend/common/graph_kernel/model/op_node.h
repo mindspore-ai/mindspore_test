@@ -32,7 +32,7 @@ namespace mindspore::graphkernel::inner {
     }                                                                                             \
   } while (0)
 
-class BACKEND_EXPORT PrimOp : public Node {
+class BACKEND_COMMON_EXPORT PrimOp : public Node {
  public:
   enum class ComputeType : int {
     VIRTUAL = 0,

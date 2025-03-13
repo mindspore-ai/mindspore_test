@@ -133,12 +133,13 @@ class GkUtils {
   /**
    * @brief Get manager of func graph. If there is no manager, a new one will be created.
    */
-  BACKEND_EXPORT static FuncGraphManagerPtr GetFuncGraphManager(const FuncGraphPtr &func_graph);
+  BACKEND_COMMON_EXPORT static FuncGraphManagerPtr GetFuncGraphManager(const FuncGraphPtr &func_graph);
 
   /**
    * @brief Update func graph manager. Do nothing if the manager is nullptr.
    */
-  BACKEND_EXPORT static void UpdateFuncGraphManager(const FuncGraphManagerPtr &mng, const FuncGraphPtr &func_graph);
+  BACKEND_COMMON_EXPORT static void UpdateFuncGraphManager(const FuncGraphManagerPtr &mng,
+                                                           const FuncGraphPtr &func_graph);
 
   /**
    * @brief Get op's prim by op name.

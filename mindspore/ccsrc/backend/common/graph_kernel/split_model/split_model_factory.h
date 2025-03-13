@@ -23,7 +23,7 @@
 #include "include/backend/visible.h"
 
 namespace mindspore::graphkernel::inner {
-class BACKEND_EXPORT SplitModelFactory {
+class BACKEND_COMMON_EXPORT SplitModelFactory {
  public:
   static SplitModelFactory &Instance() {
     static SplitModelFactory instance = SplitModelFactory();

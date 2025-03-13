@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT FlattenConcatFission : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT FlattenConcatFission : public PatternProcessPass {
  public:
   explicit FlattenConcatFission(bool multigraph = true) : PatternProcessPass("flatten_concat_fission", multigraph) {}
   ~FlattenConcatFission() override = default;

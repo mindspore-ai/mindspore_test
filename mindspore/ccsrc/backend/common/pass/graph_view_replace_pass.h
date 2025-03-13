@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT GraphViewReplacePass : public Pass {
+class BACKEND_COMMON_EXPORT GraphViewReplacePass : public Pass {
  public:
   explicit GraphViewReplacePass(const std::string &name = "graph_view_replace") : Pass(name) {}
   ~GraphViewReplacePass() override = default;

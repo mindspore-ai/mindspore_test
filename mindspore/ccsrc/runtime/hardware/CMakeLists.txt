@@ -1,6 +1,6 @@
 file(GLOB_RECURSE HARDWARE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "device_context_manager.cc" "device_context.cc")
-list(APPEND HARDWARE_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../device/kernel_info.cc")
+list(APPEND HARDWARE_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../graph_scheduler/device_tensor_store.cc")
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-delete-abstract-non-virtual-dtor")

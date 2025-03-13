@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT ConvertDynamicBroadcastTo : public PatternToPatternPass {
+class BACKEND_COMMON_EXPORT ConvertDynamicBroadcastTo : public PatternToPatternPass {
  public:
   ConvertDynamicBroadcastTo() : PatternToPatternPass("convert_dynamic_broadcast_to", true) {}
   ~ConvertDynamicBroadcastTo() override = default;
