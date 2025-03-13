@@ -96,6 +96,32 @@ struct ShapeRef {
   size_t size;
 };
 
+class Float16 {
+ public:
+  explicit Float16(const uint16_t &v) : value_(v) {}
+  explicit Float16(const float &v);
+  explicit Float16(const int32_t &v);
+  explicit operator float() const;
+  explicit operator int32_t() const;
+  uint16_t int_value() const { return value_; }
+
+ private:
+  uint16_t value_;
+};
+
+class BFloat16 {
+ public:
+  explicit BFloat16(const uint16_t &v) : value_(v) {}
+  explicit BFloat16(const float &v);
+  explicit BFloat16(const int32_t &v);
+  explicit operator float() const;
+  explicit operator int32_t() const;
+  uint16_t int_value() const { return value_; }
+
+ private:
+  uint16_t value_;
+};
+
 struct RelocTable {
   NDObject **inputs;
   size_t inputs_size;
@@ -134,6 +160,7 @@ class Kernel {
   NDObject *Load(void *addr, ShapeRef *shape, DType type);
   NDObject *SliceLoad(void *addr, ShapeRef *shape, ShapeRef *start, ShapeRef *size, DType type);
   NDObject *StridedSliceLoad(void *addr, ShapeRef *shape, ShapeRef *start, ShapeRef *end, ShapeRef *step, DType type);
+  NDObject *MultiLoad(void *addr, ShapeRef *shape, DType type, const Comm *comm);
   NDObject *Store(void *addr, NDObject *input);
   NDObject *PadStore(void *addr, NDObject *input, int64_t pad_size);
 
@@ -161,6 +188,9 @@ class Kernel {
 
   // collective communication
   NDObject *AllReduce(NDObject *input, const Comm *comm);
+  NDObject *AllGather(NDObject *input, const Comm *comm);
+  NDObject *AllGatherV2(NDObject *input, const Comm *comm);
+  NDObject *ReduceScatter(NDObject *input, const Comm *comm);
 
   void StageSwitch(KernelType type);
   NDObject *StageLoad(NDObject *stage_store);
