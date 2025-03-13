@@ -213,6 +213,13 @@ class GradPartialPassLib {
   SubstitutionPtr grad_partial_transform_;
 };
 
+class AdjustGraphAfterValidatePassLib {
+ public:
+  AdjustGraphAfterValidatePassLib();
+  ~AdjustGraphAfterValidatePassLib() = default;
+  SubstitutionPtr make_tuple_from_fprop_eliminater_;
+};
+
 // Predicate functions
 inline bool IsNode(const AnfNodePtr &) { return true; }
 

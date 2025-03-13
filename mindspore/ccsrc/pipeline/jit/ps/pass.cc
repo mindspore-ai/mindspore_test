@@ -1725,6 +1725,23 @@ bool AddEmbeddingCachePass(const ResourcePtr &resource) {
   return true;
 }
 
+bool BackendPass(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  auto func_graph = resource->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
+  opt::irpass::AdjustGraphAfterValidatePassLib irpass;
+  opt::OptPassConfig make_tuple_from_fprop_eliminate = opt::OptPassConfig({
+    irpass.make_tuple_from_fprop_eliminater_,
+  });
+  OptPassGroupMap map({
+    {"make_tuple_from_fprop_eliminate", make_tuple_from_fprop_eliminate},
+    {"renormalize", opt::OptPassConfig::Renormalize()},
+  });
+  auto backend_pass = opt::Optimizer::MakeOptimizer("backend_pass", resource, map, false, true);
+  (void)backend_pass->step(func_graph, false);
+  return true;
+}
+
 REGISTER_PASS_FUNC_IMPL(CconvPass)
 REGISTER_PASS_FUNC_IMPL(AddCacheEmbeddingPass)
 REGISTER_PASS_FUNC_IMPL(RemoveValueNodeDuplicationsPass)

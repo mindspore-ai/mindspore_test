@@ -2224,6 +2224,8 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
     return actions;
   }
 
+  (void)actions.emplace_back(std::make_pair(kBackendPass, BackendPass));
+
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
 #ifndef WITH_BACKEND
