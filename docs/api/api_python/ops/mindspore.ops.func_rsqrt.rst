@@ -9,11 +9,10 @@ mindspore.ops.rsqrt
         out_{i} =  \frac{1}{\sqrt{input_{i}}}
 
     参数：
-        - **input** (Tensor) - rsqrt的输入Tensor，其每个元素都为非负，若某个元素为负，计算结果为nan。
+        - **input** (Tensor) - rsqrt的输入Tensor，其每个元素都为非负，若某个元素为负，计算结果为NaN。
 
     返回：
         Tensor，具有与 `input` 相同的shape。
 
     异常：
         - **TypeError** - 如果 `input` 不是Tensor。
-

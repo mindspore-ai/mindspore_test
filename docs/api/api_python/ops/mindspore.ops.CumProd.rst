@@ -5,7 +5,7 @@ mindspore.ops.CumProd
 
     计算 `x` 沿着指定axis的元素累计积。
 
-    例如，如果输入是长度为N的vector，则输出也是长度为N的vector。其中的每一个元素为
+    例如，如果输入是长度为N的vector，则输出也是长度为N的vector。其中的每一个元素为：
 
     .. math::
         y_i = x_1 * x_2 * x_3 * ... * x_i
@@ -23,5 +23,5 @@ mindspore.ops.CumProd
 
     异常：
         - **TypeError** - `exclusive` 或 `reverse` 不是bool类型。
-        - **TypeError** - `axis` 不是int。
-        - **ValueError** - `axis` 是None。
+        - **TypeError** - `axis` 不是int类型。
+        - **ValueError** - `axis` 为None。

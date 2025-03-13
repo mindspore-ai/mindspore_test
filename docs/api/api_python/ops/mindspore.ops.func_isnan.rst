@@ -3,16 +3,16 @@ mindspore.ops.isnan
 
 .. py:function:: mindspore.ops.isnan(input)
 
-    判断输入数据每个位置上的值是否是Nan。
+    判断输入数据每个位置上的值是否是NaN。
 
     .. math::
 
         out_i = \begin{cases}
-          & \ True,\ \text{ if } input_{i} = \text{Nan} \\
-          & \ False,\ \text{ if } input_{i} \ne  \text{Nan}
+          & \ True,\ \text{ if } input_{i} = \text{NaN} \\
+          & \ False,\ \text{ if } input_{i} \ne  \text{NaN}
         \end{cases}
 
-    其中 :math:`Nan` 表示不是number。
+    其中 :math:`NaN` 表示不是number。
 
     参数：
         - **input** (Tensor) - 输入Tensor。

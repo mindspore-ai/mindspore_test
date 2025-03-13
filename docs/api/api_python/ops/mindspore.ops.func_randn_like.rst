@@ -3,7 +3,7 @@ mindspore.ops.randn_like
 
 .. py:function:: mindspore.ops.randn_like(input, seed=None, *, dtype=None)
 
-    返回一个Tensor，shape和dtype由输入决定，其元素为服从标准正态分布的数字。
+    返回一个Tensor，其shape和dtype由输入决定，元素为服从标准正态分布的数字。
 
     .. warning::
         Ascend后端不支持随机数重现功能， `seed` 参数不起作用。
@@ -16,7 +16,7 @@ mindspore.ops.randn_like
         - **dtype** (:class:`mindspore.dtype`，可选) - 需求的输出Tensor的dtype，必须是float类型。如果是 ``None`` ，则使用 ``mindspore.float32`` 。默认值： ``None`` 。
 
     返回：
-        Tensor，shape和dtype由输入决定其元素为服从标准正态分布的数字。
+        Tensor，shape和dtype由输入决定，其元素为服从标准正态分布的数字。
 
     异常：
         - **TypeError** - 如果 `seed` 不是非负整数。

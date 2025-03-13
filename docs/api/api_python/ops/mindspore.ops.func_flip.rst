@@ -12,9 +12,9 @@ mindspore.ops.flip
         - **dims** (Union[list[int], tuple[int]]) - 需要翻转的一个轴或多个轴。在元组中指定的所有轴上执行翻转，如果 `dims` 是一个包含负数的整数元组，则该轴为按倒序计数的轴位置。
 
     返回：
-        返回沿给定轴翻转计算结果的Tensor。
+        Tensor，沿给定轴翻转计算结果的Tensor。
 
     异常：
         - **TypeError** - `input` 不是Tensor。
         - **ValueError** - `dims` 为None。
-        - **ValueError** - `dims` 不为int组成的list或tuple。
+        - **ValueError** - `dims` 不是由int组成的list或tuple。
