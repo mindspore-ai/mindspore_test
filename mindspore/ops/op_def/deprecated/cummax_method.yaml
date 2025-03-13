@@ -1,0 +1,12 @@
+# rename cummax
+cummax:
+  args:
+    input:
+      dtype: tensor
+    dim:
+      dtype: int
+  returns:
+    values:
+      dtype: tensor
+    indices:
+      dtype: tensor

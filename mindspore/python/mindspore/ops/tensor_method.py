@@ -1722,6 +1722,18 @@ def tensor_expm1(input):
     return expm1(input)
 
 
+# 849
+def tensor_cummax(input, dim):
+    """Only used to rename axis/dim in Graph Mode (O0)"""
+    return F.cummax(input, dim)
+
+
+# 850
+def deprecated_tensor_cummin(input, dim):
+    values, indices = F.cummin(input, dim)
+    return values, F.cast(indices, mstype.int64)
+
+
 # 853 deg2rad
 def tensor_deg2rad(x):
     r"""

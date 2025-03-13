@@ -1049,18 +1049,19 @@ def cumsum(x, axis=None, dtype=None):
     return cumsum_(x, axis)
 
 
-def cummin(x, axis):
+def cummin(x, dim):
     """
     Returns the cumulative minimum of elements and the index.
     """
-    return F.cummin(x, axis)
+    values, indices = F.cummin(x, dim)
+    return values, F.cast(indices, mstype.int64)
 
 
-def cummax(x, axis):
+def cummax(x, dim):
     """
     Returns the cumulative maximum of elements and the index.
     """
-    return F.cummax(x, axis)
+    return F.cummax(x, dim)
 
 
 def index_fill(x, axis, index, value):

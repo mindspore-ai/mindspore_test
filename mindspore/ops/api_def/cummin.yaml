@@ -1,0 +1,15 @@
+# cummin
+cummin:
+  - op_yaml: cummin_ext_op.yaml
+    py_method: deprecated_tensor_cummin
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method  # callback to cummin_op which supports GPU
+    interface: tensor
+
+  - op_yaml: deprecated/cummin_method.yaml
+    py_method: deprecated_tensor_cummin
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

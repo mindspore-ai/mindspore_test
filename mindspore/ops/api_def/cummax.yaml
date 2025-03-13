@@ -1,0 +1,8 @@
+# cummax
+cummax:
+  - op_yaml: deprecated/cummax_method.yaml
+    py_method: tensor_cummax
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
