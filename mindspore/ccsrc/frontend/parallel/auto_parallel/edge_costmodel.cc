@@ -406,8 +406,7 @@ StrategyPtr Edge::GetNextOpStrategyByOutStrategy(const StrategyPtr &out_strategy
 }
 
 std::shared_ptr<StrategyWithCost> Edge::GetNextOpStrategyByCurMultiInput(
-  const StrategyPtr &cur_op_stra, std::map<OperatorInfoPtr, int64_t, OpsPtrCompare> *waitting_list, int64_t curr_depth,
-  bool *exist_candidates) {
+  std::map<OperatorInfoPtr, int64_t, OpsPtrCompare> *waitting_list, int64_t curr_depth, bool *exist_candidates) {
   auto next_op = next_op_;
   const auto &swc_list = next_op->GetStrategyCost();
   std::vector<std::shared_ptr<Edge>> &next_op_visited_edges = next_op->get_visited_edges();

@@ -24,6 +24,7 @@ AnfNodePtr ExpandShard(const CNodePtr &node) {
   auto vnode = node->input(1)->cast<ValueNodePtr>();
   auto func_graph = GetValueNode<FuncGraphPtr>(vnode);
   MS_EXCEPTION_IF_NULL(func_graph);
+  func_graph->erase_flag(FUNC_GRAPH_FLAG_DEFER_INLINE);
   return NewValueNode(func_graph);
 }
 

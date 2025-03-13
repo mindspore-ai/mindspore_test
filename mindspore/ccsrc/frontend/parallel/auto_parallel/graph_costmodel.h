@@ -238,6 +238,8 @@ class CostGraph {
     const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare>::const_iterator &configured_ops_it);
   bool CheckBFSNextNode(const std::shared_ptr<Edge> &edge, const OperatorInfoPtr &curr_op,
                         const OperatorInfoPtr &next_op, int64_t curr_depth);
+  void SetOpStrategy(const OperatorInfoPtr &curr_op, const std::shared_ptr<StrategyWithCost> &candidate_swc,
+                     const StrategyPtr &curr_op_stra, int64_t curr_depth);
 
   bool CheckVisitedEdgeConsistency(const EdgePtr &edge) const;
   bool CheckConfiguredSuccEdgeConsistency(const EdgePtr &edge) const;

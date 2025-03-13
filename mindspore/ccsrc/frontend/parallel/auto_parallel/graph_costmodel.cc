@@ -20,7 +20,6 @@
 #include <utility>
 #include <vector>
 #include <set>
-#include <unordered_set>
 
 #include "frontend/parallel/auto_parallel/graph_costmodel.h"
 #include "frontend/parallel/ops_info/reshape_info.h"
@@ -294,18 +293,9 @@ void CostGraph::BFSPrevNode(const std::shared_ptr<Edge> &edge, int64_t curr_dept
                       << "'s strategy is null in the edge: " << edge->edge_name();
   }
   (void)next_level.emplace(std::make_pair(prev_op, std::make_pair(prev_op_stra, -1)), curr_depth + 1);
-  prev_op->SetSelectedStrategy(prev_op_stra, LongToSize(curr_depth + 1));
-  prev_op->ClearStrategyCost();
-  if (prev_op->SetCostUnderStrategyWithCost(candidate_swc) == SUCCESS) {
-    prev_op->set_config_by_layout(true);
-  } else {
-    MS_LOG(WARNING) << "Operator " << prev_op->name()
-                    << " not support SetCostUnderStrategyWithCost. Try to SetCostUnderStrategy.";
-    prev_op->ClearStrategyCost();
-    if (prev_op->SetCostUnderStrategy(prev_op_stra) != SUCCESS) {
-      MS_LOG(EXCEPTION) << "Operator " << prev_op->name() << " SetCostUnderStrategy failed";
-    }
-  }
+
+  SetOpStrategy(prev_op, candidate_swc, prev_op_stra, curr_depth);
+
   prev_op->LayoutPropagationEnd();
   visited.at(prev_op) = true;
   return;
@@ -348,6 +338,22 @@ void CostGraph::BFSNextNodeIfCurrIsReshape(const std::shared_ptr<Edge> &edge, in
   }
   visited.at(next_op) = true;
   return;
+}
+
+void CostGraph::SetOpStrategy(const OperatorInfoPtr &curr_op, const std::shared_ptr<StrategyWithCost> &candidate_swc,
+                              const StrategyPtr &curr_op_stra, int64_t curr_depth) {
+  curr_op->SetSelectedStrategy(curr_op_stra, LongToSize(curr_depth + 1));
+  curr_op->ClearStrategyCost();
+  if (curr_op->SetCostUnderStrategyWithCost(candidate_swc) == SUCCESS) {
+    curr_op->set_config_by_layout(true);
+  } else {
+    MS_LOG(WARNING) << "Operator " << curr_op->name()
+                    << " failed to set cost by layout. Try to set cost by strategy tuple.";
+    curr_op->ClearStrategyCost();
+    if (curr_op->SetCostUnderStrategy(curr_op_stra) != SUCCESS) {
+      MS_LOG(EXCEPTION) << "Operator " << curr_op->name() << " set cost by strategy tuple failed";
+    }
+  }
 }
 
 bool CostGraph::CheckBFSNextNode(const std::shared_ptr<Edge> &edge, const OperatorInfoPtr &curr_op,
@@ -424,8 +430,7 @@ void CostGraph::BFSNextNode(const std::shared_ptr<Edge> &edge, int64_t curr_dept
                  << " cnode name: " << next_op->cnode()->fullname_with_scope();
     bool exist_candidate_strategy = false;
     next_op->AddVisitedEdge(edge);
-    candidate_swc = edge->GetNextOpStrategyByCurMultiInput(curr_op->selected_strategy(), &waitting_list_, curr_depth,
-                                                           &exist_candidate_strategy);
+    candidate_swc = edge->GetNextOpStrategyByCurMultiInput(&waitting_list_, curr_depth, &exist_candidate_strategy);
     if (exist_candidate_strategy) {
       MS_LOG(INFO) << "BFSNextNode next_op is multi-input op! exist candidate strategy";
       // Do nothing when next_op has candidate strategies
@@ -453,18 +458,9 @@ void CostGraph::BFSNextNode(const std::shared_ptr<Edge> &edge, int64_t curr_dept
     return;
   }
   (void)next_level.emplace(std::make_pair(next_op, std::make_pair(next_op_stra, -1)), curr_depth + 1);
-  next_op->SetSelectedStrategy(next_op_stra, LongToSize(curr_depth + 1));
-  next_op->ClearStrategyCost();
-  if (next_op->SetCostUnderStrategyWithCost(candidate_swc) == SUCCESS) {
-    next_op->set_config_by_layout(true);
-  } else {
-    MS_LOG(WARNING) << "Current op " << next_op->name()
-                    << " failed to set cost by layout. Try to set cost by strategy tuple.";
-    next_op->ClearStrategyCost();
-    if (next_op->SetCostUnderStrategy(next_op_stra) != SUCCESS) {
-      MS_LOG(EXCEPTION) << "Current op " << next_op->name() << " set cost by strategy tuple failed";
-    }
-  }
+
+  SetOpStrategy(next_op, candidate_swc, next_op_stra, curr_depth);
+
   next_op->LayoutPropagationEnd();
   visited.at(next_op) = true;
 }
@@ -515,17 +511,8 @@ void CostGraph::BFS(const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare>:
       std::shared_ptr<StrategyWithCost> selected_swc = op_with_cands->GetStrategyByVisitedEdges();
 
       StrategyPtr &selected_strategy = selected_swc->strategy_ptr;
-      op_with_cands->SetSelectedStrategy(selected_strategy, LongToSize(curr_depth + 1));
-      op_with_cands->ClearStrategyCost();
-      if (op_with_cands->SetCostUnderStrategyWithCost(selected_swc) != SUCCESS) {
-        MS_LOG(WARNING) << "Operator " << op_with_cands->name()
-                        << " SetCostUnderStrategyWithCost failed. Try to SetCostUnderStrategy.";
-        op_with_cands->ClearStrategyCost();
-        if (op_with_cands->SetCostUnderStrategy(selected_strategy) != SUCCESS) {
-          MS_LOG(EXCEPTION) << "Operator " << op_with_cands->name() << " SetCostUnderStrategy failed";
-        }
-      }
-      op_with_cands->set_config_by_layout(true);
+
+      SetOpStrategy(op_with_cands, selected_swc, selected_strategy, curr_depth);
 
       MS_LOG(INFO) << "waitting_list_ to next_level, name: " << op_with_cands->name() << " depth: " << saved_depth
                    << " selected strategy: " << selected_strategy->ToString();
