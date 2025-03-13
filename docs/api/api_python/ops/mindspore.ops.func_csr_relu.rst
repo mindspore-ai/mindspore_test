@@ -5,7 +5,7 @@ mindspore.ops.csr_relu
 
     逐元素计算CSRTensor的ReLU（Rectified Linear Unit）激活值。
 
-    返回 max(x, 0) 的值。负值神经元将被设置为0，正值神经元将保持不变。
+    返回 max(x, 0) 的值，其中负值神经元将被设置为0，而正值神经元将保持不变。
 
     .. math::
         ReLU(x) = (x)^+ = \max(0, x)

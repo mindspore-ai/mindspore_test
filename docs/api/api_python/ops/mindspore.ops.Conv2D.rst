@@ -45,19 +45,19 @@ mindspore.ops.Conv2D
           - ``"valid"``：不对输入进行填充，返回输出可能的最大高度和宽度，不能构成一个完整stride的额外的像素将被丢弃。如果设置了此模式， `pad` 必须为0。
           - ``"pad"``：对输入填充指定的量。在这种模式下，在输入的高度和宽度方向上填充的量由 `pad` 参数指定。如果设置此模式， `pad` 必须大于或等于0。
 
-        - **pad** (Union(int, tuple[int])，可选) - 指当 `pad_mode` 为 ``"pad"`` 时，指定在输入 `x` 的高度和宽度方向上填充的数量。可以为单个int或包含四个int组成的tuple。如果 `pad` 是单个int，那么上、下、左、右的填充量都等于 `pad` 。如果 `pad` 是一个由四个int组成的tuple，那么上、下、左、右的填充分别等于 `pad[0]` 、 `pad[1]` 、 `pad[2]` 和 `pad[3]` 。int值应该要大于或等于0，默认值： ``0`` 。
+        - **pad** (Union(int, tuple[int])，可选) - 当 `pad_mode` 为 ``"pad"`` 时，指定在输入 `x` 的高度和宽度方向上填充的数量。可以为单个int或包含四个int组成的tuple。如果 `pad` 是单个int，那么上、下、左、右的填充量都等于 `pad` 。如果 `pad` 是一个由四个int组成的tuple，那么上、下、左、右的填充分别等于 `pad[0]` 、 `pad[1]` 、 `pad[2]` 和 `pad[3]` 。int值应该要大于或等于0，默认值： ``0`` 。
         - **stride** (Union(int, tuple[int])，可选) - 卷积核移动的步长。可以为单个int，或由两个/四个int组成的tuple。单个int表示在高度和宽度方向的移动步长均为该值。两个int组成的tuple分别表示在高度和宽度方向的移动步长。若为四个int，N、C两维度默认为1，H、W两维度分别对应高度和宽度上的步长。默认值： ``1`` 。
         - **dilation** (Union(int, tuple[int])，可选) - 卷积核膨胀尺寸。可以为单个int，或者由两个/四个int组成的tuple。单个int表示在高度和宽度方向的膨胀尺寸均为该值。两个int组成的tuple分别表示在高度和宽度方向的膨胀尺寸。若为四个int，N、C两维度int默认为1，H、W两维度分别对应高度和宽度上的膨胀尺寸。
-          假设 :math:`dilation=(d0, d1)`, 则卷积核在高度方向间隔 :math:`d0-1` 个元素进行采样，在宽度方向间隔 :math:`d1-1` 个元素进行采样。高度和宽度上取值范围分别为[1, H]和[1, W]。默认值： ``1`` 。
+          假设 :math:`dilation=(d0, d1)` ，则卷积核在高度方向间隔 :math:`d0-1` 个元素进行采样，在宽度方向间隔 :math:`d1-1` 个元素进行采样。高度和宽度上取值范围分别为[1, H]和[1, W]。默认值： ``1`` 。
         - **group** (int，可选) - 分组卷积时在通道上分割输入 `x` 的组数。默认值： ``1`` 。
         - **data_format** (str，可选) - 数据格式的可选值有 ``"NHWC"`` ， ``"NCHW"`` 。默认值： ``"NCHW"`` 。（目前仅GPU支持NHWC。）
 
     输入：
-        - **x** (Tensor) - 输入Tensor，shape为 :math:`(N, C_{in}, H_{in}, W_{in})` 或者 :math:`(N, H_{in}, W_{in}, C_{in}, )` ，具体哪种取决于 `data_format` 。
+        - **x** (Tensor) - 输入Tensor，shape为 :math:`(N, C_{in}, H_{in}, W_{in})` 或者 :math:`(N, H_{in}, W_{in}, C_{in})` ，具体哪种取决于 `data_format` 。
         - **weight** (Tensor) - 卷积核的值，其shape应为 :math:`(C_{out}, C_{in} / \text{group}, \text{kernel_size[0]}, \text{kernel_size[1]})` 。
 
     输出：
-        Tensor，卷积操作后的值。shape为 :math:`(N, C_{out}, H_{out}, W_{out})` 或 :math:`(N, H_{out}, W_{out}, C_{out}, )` 。
+        Tensor，卷积操作后的值。shape为 :math:`(N, C_{out}, H_{out}, W_{out})` 或 :math:`(N, H_{out}, W_{out}, C_{out})` 。
         要了解不同的填充模式如何影响输出shape，请参考 :class:`mindspore.nn.Conv2d` 以获取更多详细信息。
 
     异常：

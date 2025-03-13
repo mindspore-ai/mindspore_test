@@ -3,7 +3,7 @@ mindspore.ops.bessel_i0e
 
 .. py:function:: mindspore.ops.bessel_i0e(x)
 
-    逐元素计算指数缩放第一类零阶修正贝塞尔函数。
+    逐元素计算指数缩放的第一类零阶修正贝塞尔函数。
 
     计算公式定义如下：
 
@@ -13,7 +13,7 @@ mindspore.ops.bessel_i0e
             {\infty} \frac{x^{2 m}}{2^{2 m} (m !)^{2}}
         \end{array}
 
-    其中 :math:`I_{0}` 是第一类零阶修正Bessel函数。
+    其中 :math:`I_{0}` 是第一类零阶修正贝塞尔函数。
 
     参数：
         - **x** (Tensor) - Tensor的输入。数据类型应为float16，float32或float64。
