@@ -29,4 +29,10 @@ def reshard(tensor, layout):
     Returns:
         Tensor. The mathematically equivalent of the input tensor.
     """
-    new_reshard(tensor, layout)
+    return new_reshard(tensor, layout)
+
+__all__ = [
+    'reshard'
+]
+
+__all__.sort()

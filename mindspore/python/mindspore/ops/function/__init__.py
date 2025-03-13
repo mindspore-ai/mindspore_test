@@ -27,6 +27,16 @@ from . import (
     linalg_func,
     clip_func,
     fft_func,
+    reshard_func,
+    sparse_func,
+    random_func,
+    debug_func,
+    image_func,
+    spectral_func,
+    vmap_func,
+    sparse_unary_func,
+    other_func,
+    _add_attr_func
 )
 from .array_func import (
     unique,
@@ -779,6 +789,10 @@ from ._add_attr_func import (
     _add_attr,
 )
 
+from .reshard_func import (
+    reshard,
+)
+
 from ..operations.manually_defined import (rank, scalar_cast)
 
 __all__ = []
@@ -799,4 +813,5 @@ __all__.extend(clip_func.__all__)
 __all__.extend(fft_func.__all__)
 __all__.extend(other_func.__all__)
 __all__.extend(_add_attr_func.__all__)
+__all__.extend(reshard_func.__all__)
 __all__.sort()
