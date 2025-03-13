@@ -127,7 +127,7 @@ DfGraphWrapperPtr GetGraphByName(const std::string &name) { return DfGraphManage
 
 void AddOptimizeGraph(const std::string &name) { AoeUtil::GetInstance().AddOptimizeGraph(name); }
 
-void InitializeAoeUtil() { AoeUtil::GetInstance().Initialize(); }
+void InitializeAoeUtil(const std::string &aoe_job_type) { AoeUtil::GetInstance().Initialize(aoe_job_type); }
 
 void DestroyAoeUtil() { AoeUtil::GetInstance().Destroy(); }
 
