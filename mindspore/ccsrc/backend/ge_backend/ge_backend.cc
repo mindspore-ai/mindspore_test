@@ -576,6 +576,10 @@ bool GEBackend::CloseTsd(bool force) {
 BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
   WaitTaskFinish();
   MS_EXCEPTION_IF_NULL(func_graph);
+  // Clear the temp members of last graph.
+  graph_ids_.clear();
+  func_graph_to_kernel_graph_ids_.clear();
+  control_nodes_.clear();
   MS_LOG(INFO) << "Status record: start compile function graph: " << func_graph->ToString();
   uint64_t start_time = profiler::GetClockSyscnt();
   PROF_START(compile_backend_graph);

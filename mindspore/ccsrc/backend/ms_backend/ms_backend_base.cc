@@ -1985,6 +1985,11 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   WaitTaskFinish();
   MS_EXCEPTION_IF_NULL(graph_compiler_);
   MS_EXCEPTION_IF_NULL(func_graph);
+  // Clear the resource of last graph.
+  root_graph_ = nullptr;
+  graph_id_to_device_context_.clear();
+  func_graph_to_kernel_graph_ids_.clear();
+  control_nodes_.clear();
   MS_LOG(INFO) << "Status record: start compile function graph: " << func_graph->ToString();
   uint64_t start_time = profiler::GetClockSyscnt();
   PROF_START(compile_backend_graph);
