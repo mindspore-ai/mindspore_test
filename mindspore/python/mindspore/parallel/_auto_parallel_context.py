@@ -81,6 +81,7 @@ class _PipelineScheduler:
     PIPELINE_SEQPIPE = "seqpipe"
     PIPELINE_SEQVPP = "seqvpp"
     PIPELINE_SEQSMARTVPP = "seqsmartvpp"
+    PIPELINE_ZBV = "zero_bubble_v"
 
 
 class _AutoParallelContext:
@@ -998,7 +999,8 @@ class _AutoParallelContext:
                                                                _PipelineScheduler.PIPELINE_GPIPE,
                                                                _PipelineScheduler.PIPELINE_SEQPIPE,
                                                                _PipelineScheduler.PIPELINE_SEQVPP,
-                                                               _PipelineScheduler.PIPELINE_SEQSMARTVPP])
+                                                               _PipelineScheduler.PIPELINE_SEQSMARTVPP,
+                                                               _PipelineScheduler.PIPELINE_ZBV])
         if not pipeline_config[pp_interleave] and pipeline_config[pp_scheduler] != _PipelineScheduler.PIPELINE_1F1B:
             raise ValueError(f"When pipeline_interleave is False, {pp_scheduler} is not supported")
 

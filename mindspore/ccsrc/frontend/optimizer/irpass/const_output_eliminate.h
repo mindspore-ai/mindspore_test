@@ -34,6 +34,10 @@ class ConstOutputEliminater : public AnfVisitor {
  public:
   AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override {
     Reset();
+    auto scheduler = parallel::ParallelContext::GetInstance()->pipeline_scheduler();
+    if (scheduler == parallel::ZBV) {
+      return nullptr;
+    }
     auto flag = IsEliminate(node);
     if (!flag) {
       return nullptr;

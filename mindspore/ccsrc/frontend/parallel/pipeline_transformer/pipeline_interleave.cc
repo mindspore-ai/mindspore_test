@@ -217,6 +217,10 @@ void PipelineInterleave::Init() {
     }
     global_rank_ = UintToInt(rank_id);
   }
+  auto scheduler = parallel::ParallelContext::GetInstance()->pipeline_scheduler();
+  if (scheduler == ZBV) {
+    is_v_shape_ = true;
+  }
   int64_t device_num = 0;
   auto stage_num = parallel::ParallelContext::GetInstance()->pipeline_stage_split_num();
   if (!parallel::ParallelContext::GetInstance()->device_num_is_set()) {
@@ -405,7 +409,11 @@ void PipelineInterleave::Coloring() {
         auto node_users = manager_->node_users()[node];
         for (auto &user_pair : node_users) {
           auto user_node = user_pair.first->cast<CNodePtr>();
-          user_node->set_user_data<NodeStageInfo>(std::make_shared<NodeStageInfo>(graph->stage()));
+          auto stage_info = std::make_shared<NodeStageInfo>(graph->stage());
+          if (graph->segment() != -1 && is_v_shape_) {
+            stage_info->set_chunk(graph->segment());
+          }
+          user_node->set_user_data<NodeStageInfo>(stage_info);
           auto user_node_graph = user_node->func_graph();
           if (graph->stage() == stage_ && user_node_graph->stage() == -1) {
             user_node_graph->set_stage(graph->stage());
@@ -461,6 +469,9 @@ void PipelineInterleave::BroadCastColoring() {
           need_coloring = true;
           user_node->AddPrimalAttr(CHUNK, MakeValue(chunk));
           user_node->AddPrimalAttr(STAGE, MakeValue(stage));
+          continue;
+        }
+        if (is_v_shape_) {
           continue;
         }
         auto user_node_stage = user_stage_info->stage();
@@ -784,7 +795,7 @@ static AnfNodePtr CreateTupleZeroTensor(const FuncGraphPtr &graph, const AnfNode
 }
 
 void PipelineInterleave::InsertSendReceive(const AnfNodePtr &node, const AnfNodePtr &user_node, int64_t order,
-                                           int64_t index) {
+                                           int64_t index, bool is_v_shape) {
   auto node_stage_info = node->user_data<NodeStageInfo>();
   auto user_node_stage_info = user_node->user_data<NodeStageInfo>();
   auto node_stage = node_stage_info->stage();
@@ -808,6 +819,7 @@ void PipelineInterleave::InsertSendReceive(const AnfNodePtr &node, const AnfNode
   send->AddPrimalAttr(CHUNK, MakeValue(node_stage_info->chunk()));
   send->AddPrimalAttr(STAGE, MakeValue(node_stage_info->stage()));
   send->AddPrimalAttr(ORDER, MakeValue(order));
+  send->AddPrimalAttr(V_SHAPE, MakeValue(is_v_shape));
 
   attr_rank = std::make_pair(SRC_RANK, MakeValue(node_stage));
   auto shape_type_pair = GetShapeType(node, {1}, 0);
@@ -828,6 +840,7 @@ void PipelineInterleave::InsertSendReceive(const AnfNodePtr &node, const AnfNode
   recv->AddPrimalAttr(CHUNK, MakeValue(user_node_stage_info->chunk()));
   recv->AddPrimalAttr(STAGE, MakeValue(user_node_stage_info->stage()));
   recv->AddPrimalAttr(ORDER, MakeValue(order));
+  recv->AddPrimalAttr(V_SHAPE, MakeValue(is_v_shape));
   auto micro = user_node->cast<CNodePtr>()->GetPrimalAttr(MICRO);
   if (micro != nullptr) {
     recv->AddPrimalAttr(MICRO, micro);
@@ -856,6 +869,16 @@ void PipelineInterleave::CutBorderForNode(const FuncGraphPtr &graph, const AnfNo
     if (!micro) {
       MS_LOG(INFO) << "Can't find micro_batch information, use micro(0)";
       micro = MakeValue(int64_t(0));
+    }
+    auto stage_num = ParallelContext::GetInstance()->pipeline_stage_split_num();
+    auto node_chunk = stage_info->chunk();
+    auto user_node_chunk = user_stage_info->chunk();
+    if (is_v_shape_ && node_chunk < user_node_chunk) {
+      if (stage_ == stage_num - 1) {
+        InsertSendReceive(node, user_node, *order, user_pair.second, true);
+      }
+      (*order) += 1;
+      continue;
     }
     if (node_stage != user_node_stage) {
       InsertSendReceive(node, user_node, *order, user_pair.second);
@@ -1233,6 +1256,10 @@ AnfNodePtr PipelinePostProcess::GenerateMainGraphRecv(const AnfNodePtr &fg_node,
 void PipelinePostProcess::Init(const std::vector<AnfNodePtr> &nodes) {
   shared_cell_ = nullptr;
   shared_cell_users_.clear();
+  auto scheduler = parallel::ParallelContext::GetInstance()->pipeline_scheduler();
+  if (scheduler == ZBV) {
+    is_v_shape_ = true;
+  }
   for (auto &node : nodes) {
     if ((IsPrimitiveCNode(node, prim::kPrimSend) || IsPrimitiveCNode(node, prim::kPrimReceive)) &&
         shared_cell_ == nullptr) {
@@ -1325,6 +1352,9 @@ std::vector<AnfNodePtr> PipelinePostProcess::PartitionChunkGraph(const FuncGraph
   std::vector<AnfNodePtr> temp;
   std::vector<AnfNodePtr> recvs;
   std::vector<AnfNodePtr> sends;
+  if (is_v_shape_) {
+    RemoveMonadNode(fg, chunk);
+  }
   GetSendsRecvs(fg, chunk, &recvs, &sends, &temp);
   AnfNodePtr out;
   if (!temp.empty()) {
@@ -1372,9 +1402,6 @@ std::vector<AnfNodePtr> PipelinePostProcess::PartitionChunkGraph(const FuncGraph
     auto index = cusr->GetPrimalAttr(INDEX);
     auto temp_sends = GenerateMainGraphSend(sends, new_usr, micro, index);
     if (temp_sends.empty()) {
-      if (stage_ != stage_num_ - 1) {
-        MS_LOG_WITH_NODE(EXCEPTION, new_usr) << "Some wrong with PipelineParallel.";
-      }
       manager_->Replace(usr, new_usr);
     }
     main_graph_sends.insert(main_graph_sends.end(), temp_sends.begin(), temp_sends.end());
@@ -1431,30 +1458,77 @@ void PipelinePostProcess::MoveSharedParamMirrorOutCall(const std::vector<AnfNode
   }
 }
 
+std::vector<AnfNodePtr> PipelinePostProcess::PartitionVShapeChunkGraph(const std::vector<AnfNodePtr> &sends) {
+  auto all_nodes = DeepScopedGraphSearch(main_graph_->get_return());
+  auto node_users_map = manager_->node_users();
+  for (const auto &node : all_nodes) {
+    if (!IsPrimitiveCNode(node, prim::kPrimReceive)) {
+      continue;
+    }
+    auto recv_c = node->cast<CNodePtr>();
+    auto is_v_shape = GetValue<bool>(recv_c->GetPrimalAttr(V_SHAPE));
+    if (!is_v_shape) {
+      continue;
+    }
+    auto recv_tag = GetValue<int64_t>(recv_c->GetPrimalAttr(ORDER));
+    for (const auto &send : sends) {
+      auto send_c = send->cast<CNodePtr>();
+      auto send_tag = GetValue<int64_t>(send_c->GetPrimalAttr(ORDER));
+      if (recv_tag != send_tag) {
+        continue;
+      }
+      auto node_users = node_users_map.at(node);
+      for (const auto &node_user : node_users) {
+        manager_->SetEdge(node_user.first, node_user.second, send_c->input(1));
+      }
+      break;
+    }
+  }
+
+  std::vector<AnfNodePtr> out_input = {NewValueNode(prim::kPrimMakeTuple)};
+  for (const auto &send : sends) {
+    auto send_c = send->cast<CNodePtr>();
+    auto is_v_shape = GetValue<bool>(send_c->GetPrimalAttr(V_SHAPE));
+    if (is_v_shape) {
+      continue;
+    }
+    out_input.emplace_back(send);
+  }
+  return out_input;
+}
+
 void PipelinePostProcess::GraphPartition(const std::vector<AnfNodePtr> &all_nodes) {
   LabelInterleaveIndex();
   if (NeededHandleShardParam()) {
     MoveSharedParamMirrorOutCall(all_nodes);
   }
   std::vector<AnfNodePtr> send_ops;
+  auto no_need_clone_stage = is_v_shape_ ? 0 : stage_num_ - 1;
   for (size_t i = 0; i < LongToSize(chunk_num_); ++i) {
     auto chunk_fg = shared_cell_;
-    if (stage_ != stage_num_ - 1 || i != LongToSize(chunk_num_ - 1)) {
+    if (stage_ != no_need_clone_stage || i != LongToSize(chunk_num_ - 1)) {
       chunk_fg = BasicClone(shared_cell_);
       chunk_fg->set_flag(FUNC_GRAPH_FLAG_CELL_REUSE, true);
       manager_->AddFuncGraph(chunk_fg);
     }
+    chunk_fg->set_attr(CHUNK, MakeValue(i));
     auto sends = PartitionChunkGraph(chunk_fg, i);
     send_ops.insert(send_ops.begin(), sends.begin(), sends.end());
   }
   auto make_tuple = CreateMakeTupleNode(main_graph_, send_ops);
   auto outputs = GetZeroOutputs(main_graph_);
-  if (stage_ == stage_num_ - 1) {
+  if (stage_ == no_need_clone_stage) {
     outputs = main_graph_->output();
   }
   std::vector<AnfNodePtr> out = {NewValueNode(prim::kPrimDepend), outputs, make_tuple};
   auto out_node = main_graph_->NewCNode(out);
   (void)manager_->Replace(main_graph_->output(), out_node);
+  if (is_v_shape_) {
+    auto out_input = PartitionVShapeChunkGraph(send_ops);
+    if (out_input.size() > 1) {
+      make_tuple->set_inputs(out_input);
+    }
+  }
 }
 
 void PipelinePostProcess::HandleSendParam() {
@@ -1520,6 +1594,38 @@ void PipelinePostProcess::HandleSendParam() {
 void PipelinePostProcess::ElimGraphStage() {
   for (auto &fg : manager_->func_graphs()) {
     fg->set_stage(-1);
+  }
+}
+
+void PipelinePostProcess::RemoveMonadNode(const FuncGraphPtr &fg, int64_t chunk) {
+  auto all_nodes = DeepScopedGraphSearch(fg->get_return());
+  auto node_users_map = manager_->node_users();
+  for (auto &node : all_nodes) {
+    if (!IsPrimitiveCNode(node, prim::kPrimUpdateState)) {
+      continue;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    auto abs = cnode->abstract();
+    MS_EXCEPTION_IF_NULL(abs);
+    auto stage_info = cnode->user_data<NodeStageInfo>();
+    if (stage_info == nullptr) {
+      continue;
+    }
+    auto stage = stage_info->stage();
+    auto cur_chunk = stage_info->chunk();
+    if ((stage != stage_ && stage != -1) || cur_chunk != chunk) {
+      auto node_users = node_users_map[node];
+      for (auto &user_node : node_users) {
+        auto monad_node = NewValueNode(kUMonad);
+        monad_node->set_abstract(kUMonad->ToAbstract());
+        if (abs->isa<abstract::AbstractIOMonad>()) {
+          monad_node = NewValueNode(kIOMonad);
+          monad_node->set_abstract(kIOMonad->ToAbstract());
+        }
+        (void)manager_->SetEdge(user_node.first, user_node.second, monad_node);
+      }
+    }
   }
 }
 

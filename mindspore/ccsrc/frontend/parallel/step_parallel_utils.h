@@ -227,6 +227,7 @@ AnfNodePtr MoveSingeMirrorOutCallFunc(const CNodePtr &micro_mirror);
 int64_t LongAdd(int64_t base, int64_t shift);
 bool NeededHandleShardParam();
 bool IsCommunicateNode(const AnfNodePtr &node);
+bool StringToInt(std::string *str, int64_t *value);
 }  // namespace parallel
 }  // namespace mindspore
 

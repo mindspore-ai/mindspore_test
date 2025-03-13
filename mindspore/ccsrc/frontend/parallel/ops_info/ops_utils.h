@@ -770,8 +770,10 @@ constexpr char GENERATOR[] = "Generator";
 constexpr char MEANEXT[] = "MeanExt";
 
 // pipeline
+constexpr int64_t DW_INDEX = 3;
 constexpr size_t PIPELINE_FUSTION_OFFSET = 100;
 constexpr char MICRO[] = "micro";
+constexpr char VISITED[] = "visited";
 constexpr char SEQ_CHUNK[] = "seq_chunk";
 constexpr char ENABLE_PIPELINE_MEMORY_OPTIMIZE[] = "ENABLE_PIPELINE_MEMORY_OPTIMIZE";
 constexpr char DST_GLOBAL_RANK[] = "dst_global_rank";
@@ -785,6 +787,8 @@ constexpr char STAGE[] = "stage";
 constexpr auto MICRO_INTERLEAVED_TAG = "micro_interleaved_tag";
 constexpr char DEST_RANK[] = "dest_rank";
 constexpr char SRC_RANK[] = "src_rank";
+constexpr char ZBV[] = "zero_bubble_v";
+constexpr char V_SHAPE[] = "v_shape";
 constexpr char PIPELINE_PARAM[] = "pipeline_param";
 constexpr char PIPELINE_END[] = "pipeline_end";
 constexpr char PIPELINE_BEGIN[] = "pipeline_begin";

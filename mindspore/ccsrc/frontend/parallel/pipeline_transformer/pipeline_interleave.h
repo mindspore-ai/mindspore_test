@@ -58,7 +58,8 @@ class PipelineInterleave {
   void HandleSharedParam(int64_t *order);
   void RedundancyNode(const AnfNodePtr &node, mindspore::HashMap<CNodePtr, std::vector<AnfNodePtr>> *make_tuple_map);
   bool IsRedundancyParameter(const AnfNodePtr &parameter, const std::vector<AnfNodePtr> &non_cloned_parameters);
-  void InsertSendReceive(const AnfNodePtr &node, const AnfNodePtr &user_node, int64_t order, int64_t index);
+  void InsertSendReceive(const AnfNodePtr &node, const AnfNodePtr &user_node, int64_t order, int64_t index,
+                         bool is_v_shape = False);
   void RemoveMonadNode();
   void BroadCastGraphStage(const FuncGraphPtr &fg);
   std::vector<AnfNodePtr> GetLoadNodeByParam(const AnfNodePtr &param) const;
@@ -82,6 +83,7 @@ class PipelineInterleave {
   std::string world_group_;
   std::vector<std::string> group_;
   bool is_train_{true};
+  bool is_v_shape_{false};
   int64_t global_rank_ = 0;
   int64_t per_stage_rank_num_ = 0;
 };
@@ -101,7 +103,9 @@ class PipelinePostProcess {
 
  private:
   void LabelInterleaveIndex();
+  void RemoveMonadNode(const FuncGraphPtr &fg, int64_t chunk);
   std::vector<AnfNodePtr> PartitionChunkGraph(const FuncGraphPtr &fg, int64_t chunk);
+  std::vector<AnfNodePtr> PartitionVShapeChunkGraph(const std::vector<AnfNodePtr> &sends);
   void GetSendsRecvs(const FuncGraphPtr &fg, int64_t chunk, std::vector<AnfNodePtr> *recvs,
                      std::vector<AnfNodePtr> *sends, std::vector<AnfNodePtr> *temp);
   void SetNodeAbstract(const std::vector<AnfNodePtr> &nodes);
@@ -117,6 +121,7 @@ class PipelinePostProcess {
   int64_t stage_num_;
   FuncGraphPtr root_;
   int64_t chunk_num_ = 1;
+  bool is_v_shape_{false};
   FuncGraphPtr main_graph_;
   FuncGraphPtr shared_cell_;
   std::vector<AnfNodePtr> shared_cell_users_;

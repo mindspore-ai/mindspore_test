@@ -3852,5 +3852,15 @@ bool IsCommunicateNode(const AnfNodePtr &node) {
                                             prim::kPrimSend,      prim::kPrimReceive};
   return IsOneOfPrimitiveCNode(node, comm_op_type);
 }
+
+bool StringToInt(std::string *str, int64_t *value) {
+  try {
+    *value = stoi(*str);
+  } catch (std::invalid_argument &) {
+    MS_LOG(ERROR) << "Catch invalid argument, invalid of digit string:" << *str;
+    return false;
+  }
+  return true;
+}
 }  // namespace parallel
 }  // namespace mindspore

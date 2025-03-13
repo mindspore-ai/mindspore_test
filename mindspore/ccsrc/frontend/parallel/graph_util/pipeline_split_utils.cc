@@ -81,6 +81,12 @@ bool IsLastStage() {
   MS_EXCEPTION_IF_NULL(g_device_manager);
   auto stage_num = g_device_manager->stage_num();
   auto stage_id = g_device_manager->stage_id();
+  auto parallel_context = parallel::ParallelContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(parallel_context);
+  auto pp_scheduler = parallel_context->pipeline_scheduler();
+  if (pp_scheduler == ZBV) {
+    return (stage_id == 0);
+  }
   return ((stage_num - 1) == stage_id);
 }
 

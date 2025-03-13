@@ -44,6 +44,7 @@
 #include "frontend/parallel/step_auto_parallel.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
 #include "frontend/parallel/pipeline_transformer/pipeline_scheduler.h"
+#include "frontend/parallel/pipeline_transformer/detach_backward.h"
 #include "frontend/parallel/pipeline_transformer/pipeline_interleave.h"
 #include "frontend/parallel/pipeline_transformer/gpipe_interleave_scheduler.h"
 #include "frontend/parallel/pass/merge_comm.h"
@@ -1523,6 +1524,36 @@ bool DatasetRepeatReaderOptPass(const ResourcePtr &resource) {
 bool PipelineSplitPass(const ResourcePtr &resource) { return PipelineSplit(resource); }
 
 bool ParallelVirtualDatasetPass(const ResourcePtr &resource) { return ParallelVirtualDataset(resource); }
+
+bool DetachBackward(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  auto parallel_context = parallel::ParallelContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(parallel_context);
+  auto parallel_mode = parallel_context->parallel_mode();
+  if (parallel_mode != parallel::kSemiAutoParallel && parallel_mode != parallel::kAutoParallel) {
+    MS_LOG(INFO) << "Only auto_parallel and semi_auto_parallel support detach backward graph.";
+    return true;
+  }
+  auto pp_scheduler = parallel_context->pipeline_scheduler();
+  auto stage_num = parallel_context->pipeline_stage_split_num();
+  if (pp_scheduler == parallel::ZBV && stage_num > 1) {
+    auto manager = resource->manager();
+    auto root = resource->func_graph();
+    auto stage = parallel::InferStage();
+    std::shared_ptr<parallel::DetachBackward> processor =
+      std::make_shared<parallel::DetachBackward>(manager, root, stage);
+    processor->Init();
+    processor->Run();
+    abstract::AbstractBasePtrList args_abs;
+    auto parameters = root->parameters();
+    (void)std::transform(parameters.begin(), parameters.end(), std::back_inserter(args_abs),
+                         [](const AnfNodePtr &p) -> AbstractBasePtr { return p->abstract(); });
+    FuncGraphPtr new_fg = pipeline::Renormalize(resource, root, args_abs);
+    resource->set_func_graph(new_fg);
+    resource->set_args_abs(args_abs);
+  }
+  return true;
+}
 
 bool PipelineParallelScheduler(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
