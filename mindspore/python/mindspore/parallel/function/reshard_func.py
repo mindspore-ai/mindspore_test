@@ -24,6 +24,7 @@ from mindspore.parallel.shard import Layout, _DistributedTensorInfo
 from mindspore.parallel._auto_parallel_context import _get_all_auto_parallel_context, _recover_auto_parallel_context
 
 REDIST_CELL_CACHE = {}
+COMM_TENSOR_CELL_CACHE = {}
 
 # pylint: disable=W0212
 def reshard(tensor, layout):
@@ -184,7 +185,18 @@ def _redistribute(tensor, dst_dtensor_info):
         # rank3 12           04 14
         from mindspore.parallel._cell_wrapper import CommTensorDataForPP
         if get_rank() in dst_dtensor_info.layout.to_dict()["rank_list"]:
-            comm_tensor_data_func = CommTensorDataForPP(tensor._dtensor_info, dst_dtensor_info)
+            comm_tensor_cache_key = (
+                f"{src_layout_info['device_matrix']}, {src_layout_info['tensor_map']}, {src_layout_info['rank_list']}"
+                f" -> "
+                f"{dst_layout_info['device_matrix']}, {dst_layout_info['tensor_map']}, {dst_layout_info['rank_list']}")
+            global COMM_TENSOR_CELL_CACHE
+            if comm_tensor_cache_key not in COMM_TENSOR_CELL_CACHE:
+                comm_tensor_data_func = CommTensorDataForPP(tensor._dtensor_info, dst_dtensor_info)
+                COMM_TENSOR_CELL_CACHE[comm_tensor_cache_key] = comm_tensor_data_func
+                logger.debug(f"comm_tensor_cache_key is {comm_tensor_cache_key}, not match cache")
+            else:
+                comm_tensor_data_func = COMM_TENSOR_CELL_CACHE[comm_tensor_cache_key]
+                logger.debug(f"comm_tensor_cache_key is {comm_tensor_cache_key}, match cache")
             if not comm_tensor_data_func._current_rank_has_data:
                 new_tensor_shape = tuple([tensor_data.shape[i] // tensor._dtensor_info.sharding_strategy[i]
                                           for i in range(len(tensor.shape))])
@@ -193,6 +205,9 @@ def _redistribute(tensor, dst_dtensor_info):
                 tensor_data = comm_tensor_data_func.comm_data(tensor)
             all_reduce_data = True
     ms.communication.comm_func.barrier()
+    if src_layout_info['device_matrix'] == dst_layout_info['device_matrix'] and src_layout_info['tensor_map'] == \
+            dst_layout_info['tensor_map']:
+        return tensor_data
     dataset_strategy = (_insert_virtual_pp_dim(tensor._dtensor_info.layout),)
     if get_rank() not in tensor._dtensor_info.layout.to_dict()["rank_list"] and not all_reduce_data:
         dataset_strategy = "full_batch"
