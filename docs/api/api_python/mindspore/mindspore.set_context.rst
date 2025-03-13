@@ -108,9 +108,9 @@ mindspore.set_context
     参数：
         - **device_id** (int) - 表示目标设备的ID，其值必须在[0, device_num_per_host-1]范围中，且 `device_num_per_host` 的值不应超过4096。默认值： ``0`` 。此参数将被弃用，将在后续版本中删除，请配合 `device_target` 使用接口 :func:`mindspore.set_device` 代替。
         - **device_target** (str) - 表示待运行的目标设备，支持 'Ascend'、 'GPU'和 'CPU'。如果未设置此参数，则使用MindSpore包对应的后端设备。此参数将被弃用，将在后续版本中删除，请配合 `device_id` 使用接口 :func:`mindspore.set_device` 代替。
-        - **max_device_memory** (str) - 设置设备可用的最大内存。格式为"xxGB"。默认值： ``1024GB`` 。实际使用的内存大小是设备的可用内存和 `max_device_memory` 值中的最小值。 `max_device_memory` 需要在程序运行之前设置。当使能虚拟内存时，过小的 `max_device_memory` 会导致频繁的碎片整理，影响性能。此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.runtime.set_memory` 代替。
+        - **max_device_memory** (str) - 设置设备可用的最大内存。格式为"xxGB"。默认值： ``1024GB`` 。实际使用的内存大小是设备的可用内存和 `max_device_memory` 值中的较小值。 `max_device_memory` 需要在程序运行之前设置。当使能虚拟内存时，过小的 `max_device_memory` 会导致频繁的碎片整理，影响性能。此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.runtime.set_memory` 代替。
         - **variable_memory_max_size** (str) - 此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.runtime.set_memory` 代替。
-        - **mempool_block_size** (str) - 关闭虚拟内存下生效，设置设备内存池的块大小。格式为"xxGB"。默认值： ``1GB`` 。最小值是1GB。实际使用的内存池块大小是设备的可用内存和 `mempool_block_size` 值中的最小值。当内存足够时，将按照此值扩展内存。此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.runtime.set_memory` 代替。
+        - **mempool_block_size** (str) - 关闭虚拟内存下生效，设置设备内存池的块大小。格式为"xxGB"。默认值： ``1GB`` 。最小值是1GB。实际使用的内存池块大小是设备的可用内存和 `mempool_block_size` 值中的较小值。当内存足够时，将按照此值扩展内存。此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.runtime.set_memory` 代替。
         - **op_timeout** (int) - 设置一个算子的最大执行时间，以秒为单位。如果执行时间超过这个值，系统将终止该任务。0意味着使用默认值，AI Core和AICPU算子在不同硬件上的默认值有差异，详细信息请查看 `昇腾社区关于aclrtSetOpExecuteTimeOut文档说明 <https://www.hiascend.com/en/document/detail/zh/CANNCommunityEdition/80RC1alpha003/apiref/appdevgapi/aclcppdevg_03_0228.html>`_。MindSpore默认设置值： ``900`` 。此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.device_context.ascend.op_debug.execute_timeout` 代替。
         - **save_graphs** (bool 或 int) - 表示是否保存中间编译图。默认值： ``0`` 。可用的选项为：
 
@@ -129,8 +129,8 @@ mindspore.set_context
           - ON：开启算子确定性运行模式。
           - OFF：关闭算子确定性运行模式。
 
-          当确定性开启时，模型中的算子将在Ascend中具有确定性。这意味着，如果算子在同一硬件上使用相同的输入运行多次，则每次都会有完全相同的输出。这对于调试模型很有用。
-          在分布式场景下，建议用户在调用接口 :func:`mindspore.communication.init` 前设置确定性计算，以保证使能全局通信域上的通信算子确定性。
+          当开启算子确定性运行模式时，模型中的算子将在Ascend中具有确定性。这意味着，如果算子在同一硬件上使用相同的输入运行多次，则每次都会有完全相同的输出。这对于调试模型很有用。
+          在分布式场景下，建议用户在调用接口 :func:`mindspore.communication.init` 前开启算子确定性运行模式，以保证通信算子确定性运行模式在全局通信域上使能。
           此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.set_deterministic` 代替。
         - **print_file_path** (str) - 此参数将被弃用，将在后续版本中删除。
         - **env_config_path** (str) - 此参数将被弃用，将在后续版本中删除。
@@ -142,7 +142,7 @@ mindspore.set_context
         - **aoe_tune_mode** (str) - 表示启动AOE调优，默认不设置。设置为 ``online`` 时，将启动在线调优，设置为 ``offline`` 时，将为离线调优保存GE图 。此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.device_context.ascend.op_tuning.aoe_tune_mode` 代替。
         - **aoe_config** (dict) - 设置aoe工具专用的参数，默认不设置。
 
-          - **job_type** (str): 设置调优类型，有算子调优和子图调优。默认为算子调优。
+          - **job_type** (str): 设置调优类型，有算子调优和子图调优两种类型。默认为算子调优。
 
             - ``"1"``: 设置为子图调优。
             - ``"2"``: 设置为算子调优。
@@ -155,7 +155,7 @@ mindspore.set_context
         - **enable_compile_cache** (bool) - 表示是否加载或者保存图编译缓存。当 `enable_compile_cache` 被设置为True时，在第一次执行的过程中，一个编译缓存会被生成并且导出为一个MINDIR文件。当该网络被再次执行时，如果 `enable_compile_cache` 仍然为True并且网络脚本没有被更改，那么这个编译缓存会被加载。注意目前只支持有限的Python脚本更改的自动检测，这意味着可能有正确性风险。默认值： ``False`` 。当前不支持编译后大于2G的图。这是一个实验特性，可能会被更改或者删除。此参数将被弃用，将在后续版本中删除，请使用环境变量 `MS_COMPILER_CACHE_ENABLE` 代替。
         - **compile_cache_path** (str) - 保存编译缓存的路径。默认值： ``"."`` 。如果目录不存在，系统会自动创建这个目录。缓存会被保存到如下目录： `compile_cache_path/rank_${rank_id}/` 。 `rank_id` 是集群上当前设备的ID。此参数将被弃用，将在后续版本中删除，请使用环境变量 `MS_COMPILER_CACHE_PATH` 代替。
         - **inter_op_parallel_num** (int) - 算子间并行数控制。 默认值为 ``0`` ，表示由框架默认指定。此参数将被弃用，将在后续版本中删除。请使用接口 :func:`mindspore.runtime.dispatch_threads_num` 代替。
-        - **runtime_num_threads** (int) - 运行时actor和CPU算子核使用的线程池线程数，必须大于等于 ``0`` 。默认值为 ``30`` ，如果同时运行多个进程，应将该值设置得小一些，以避免线程争用。如果设置为1，则无法使能运行时异步流水能力，可能会影响执行性能。此参数将被弃用，将在后续版本中删除。请使用接口 :func:`mindspore.device_context.cpu.op_tuning.threads_num` 代替。
+        - **runtime_num_threads** (int) - 运行时actor和CPU算子使用的线程池线程数，必须大于等于 ``0`` 。默认值为 ``30`` ，如果同时运行多个进程，应将该值设置得小一些，以避免线程争用。如果设置为1，则无法使能运行时异步流水能力，可能会影响执行性能。此参数将被弃用，将在后续版本中删除。请使用接口 :func:`mindspore.device_context.cpu.op_tuning.threads_num` 代替。
         - **disable_format_transform** (bool) - 表示是否取消NCHW到NHWC的自动格式转换功能。当fp16的网络性能不如fp32的时，可以设置 `disable_format_transform` 为 ``True`` ，以尝试提高训练性能。默认值： ``False`` 。
         - **support_binary** (bool) - 是否支持在图形模式下运行.pyc或.so。如果要支持在图形模式下运行.so或.pyc，可将 `support_binary` 置为 ``True`` ，并运行一次.py文件，从而将接口源码保存到接口定义.py文件中，因此要保证该文件可写。然后将.py文件编译成.pyc或.so文件，即可在图模式下运行。当前，该配置选项仅支持单机模式。
         - **memory_optimize_level** (str) - 内存优化级别，默认值： ``O0`` 。其值必须在 ['O0', 'O1'] 范围中。
@@ -243,8 +243,8 @@ mindspore.set_context
               - 3: 同时优化场景1和2。
             - **bias_add_comm_swap** (bool): 为 ``True`` 时表示开启matmul-add结构下，通信算子与add算子执行顺序互换。当前仅支持bias为一维的情况。默认值： ``False`` 。
             - **enable_allreduce_slice_to_reducescatter** (bool): 为 ``True`` 时，表示开启allreduce优化。在batchmatmul模型并行引入allreduce的场景中，如果后续节点是配置了模型并行的stridedslice算子，在已识别可优化的模式中，将allreduce优化为reducescatter。典型的用在开启了groupwise alltoall的MoE模块。默认值： ``False`` 。
-            - **enable_interleave_split_concat_branch** (bool): 为 ``True`` 时，表示针对带enable_interleave属性的split和concat算子形成的分支，开启通信计算并行优化。典型的使用场景为MoE模块并行场景，对输入数据进行split后，各切片数据进行MoE模块运算，再对分支结果进行concat，开启后各分支的MoE模块进行通信计算并行。默认值： ``False`` 。
-            - **enable_interleave_parallel_branch** (bool): 为 ``True`` 时，表示针对可并行的分支，如果分支汇聚点带parallel_branch属性，开启通信计算并行优化。典型的使用场景为MoE模块带路由专家和共享专家分支的并行场景，开启后并行分支进行通信计算并行。默认值： ``False`` 。
+            - **enable_interleave_split_concat_branch** (bool): 为 ``True`` 时，表示针对带enable_interleave属性的split和concat算子形成的分支，开启通信计算并行优化。典型的使用场景为MoE模块并行场景，对输入数据进行split后，对各切片数据进行MoE模块运算，再对分支结果进行concat，开启后各分支的MoE模块进行通信计算并行优化。默认值： ``False`` 。
+            - **enable_interleave_parallel_branch** (bool): 为 ``True`` 时，表示针对可并行的分支，如果分支汇聚点带parallel_branch属性，开启通信计算并行优化。典型的使用场景为MoE模块带路由专家和共享专家分支的并行场景，开启后并行分支进行通信计算并行优化。默认值： ``False`` 。
           - **host_scheduling_max_threshold** (int): 控制静态小图（根图）执行时是否使用动态shape调度的最大阈值，默认阈值为0。如果静态根图节点个数小于最大阈值，则使用动态shape调度。大模型场景，该方式可以节约stream资源。如果静态根图节点个数大于最大阈值，则保持原有流程不变。
           - **hccl_watchdog** (bool): 开启一个线程监控集合通信故障。默认值： ``True`` 。
 
