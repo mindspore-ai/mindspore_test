@@ -15,7 +15,7 @@
  */
 #include "plugin/device/ascend/optimizer/ir_fusion/flash_attention_fusion.h"
 #include <memory>
-#include "plugin/device/ascend/optimizer/common/gllo_utils.h"
+#include "backend/common/pass/common/gllo_utils.h"
 #include "ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"

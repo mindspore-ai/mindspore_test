@@ -22,12 +22,13 @@
 #include <vector>
 #include "include/backend/optimizer/node_pass.h"
 #include "mindspore/ops/op_def/other_ops.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace opt {
 using AnfNodeIndex = std::pair<AnfNodePtr, int>;
 using AnfNodeIndexList = std::vector<AnfNodeIndex>;
-class AllToAllAllGatherBatchMatMulFusion : public NodePass {
+class BACKEND_COMMON_EXPORT AllToAllAllGatherBatchMatMulFusion : public NodePass {
  public:
   explicit AllToAllAllGatherBatchMatMulFusion(const std::string &name = "alltoall_allgather_batch_matmul_fusion")
       : NodePass(name) {}

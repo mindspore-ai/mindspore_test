@@ -21,11 +21,12 @@
 #include <vector>
 #include <unordered_map>
 #include "include/backend/optimizer/optimizer.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace opt {
 enum MC2FusionLevel { kMC2NotFusion = 0, kMC2FusionForward = 1, kMC2FusionBackward = 2, kMC2FusionFull = 3 };
-class MC2FusionBase : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT MC2FusionBase : public PatternProcessPass {
  public:
   explicit MC2FusionBase(const std::string &name = "", bool multigraph = true) : PatternProcessPass(name, multigraph) {}
   ~MC2FusionBase() override = default;
@@ -39,7 +40,7 @@ class MC2FusionBase : public PatternProcessPass {
                                      const EquivPtr &equiv) const = 0;
 };
 
-class MatmulReduceScatterFusion : public MC2FusionBase {
+class BACKEND_COMMON_EXPORT MatmulReduceScatterFusion : public MC2FusionBase {
  public:
   explicit MatmulReduceScatterFusion(const std::string &name = "matmul_reduce_scatter_fusion", bool multigraph = true)
       : MC2FusionBase(name, multigraph) {}
@@ -52,7 +53,7 @@ class MatmulReduceScatterFusion : public MC2FusionBase {
   std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
-class AllGatherMatmulFusion : public MC2FusionBase {
+class BACKEND_COMMON_EXPORT AllGatherMatmulFusion : public MC2FusionBase {
  public:
   explicit AllGatherMatmulFusion(const std::string &name = "allgather_matmul_fusion", bool multigraph = true)
       : MC2FusionBase(name, multigraph) {}
@@ -65,7 +66,7 @@ class AllGatherMatmulFusion : public MC2FusionBase {
   std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
-class QuantBatchMatmulAllReduceFusion : public MC2FusionBase {
+class BACKEND_COMMON_EXPORT QuantBatchMatmulAllReduceFusion : public MC2FusionBase {
  public:
   explicit QuantBatchMatmulAllReduceFusion(const std::string &name = "quantbatchmatmul_reduce_fusion",
                                            bool multigraph = true)

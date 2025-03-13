@@ -25,7 +25,7 @@
 
 #define private public
 #define protected public
-#include "plugin/device/ascend/optimizer/ir_fission/bn_grad_split.h"
+#include "backend/common/pass/ir_fission/bn_grad_split.h"
 #undef private
 #undef protected
 

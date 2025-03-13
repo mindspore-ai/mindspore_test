@@ -20,10 +20,11 @@
 #include <string>
 #include <vector>
 #include "include/backend/optimizer/optimizer.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace opt {
-class BatchNormGradInferFission : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT BatchNormGradInferFission : public PatternProcessPass {
  public:
   explicit BatchNormGradInferFission(bool multigraph = true)
       : PatternProcessPass("batch_norm_grad_infer_fission", multigraph),

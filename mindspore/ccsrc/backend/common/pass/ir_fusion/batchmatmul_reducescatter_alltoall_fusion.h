@@ -21,10 +21,11 @@
 #include <vector>
 #include "include/backend/optimizer/node_pass.h"
 #include "mindspore/ops/op_def/other_ops.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace opt {
-class BatchMatMulReduceScatterAllToAllFusion : public NodePass {
+class BACKEND_COMMON_EXPORT BatchMatMulReduceScatterAllToAllFusion : public NodePass {
  public:
   explicit BatchMatMulReduceScatterAllToAllFusion(const std::string &name = "batchmatmul_reducescatter_alltoall_fusion")
       : NodePass(name) {}

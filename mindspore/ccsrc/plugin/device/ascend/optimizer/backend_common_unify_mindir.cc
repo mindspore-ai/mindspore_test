@@ -31,9 +31,9 @@
 #include "backend/common/pass/ir_fission/cdist_fission.h"
 #include "plugin/device/ascend/optimizer/ir_fission/tensor_scatter_fission.h"
 #include "plugin/device/ascend/optimizer/ir_fission/adam_weight_decay_fission.h"
-#include "plugin/device/ascend/optimizer/ir_fission/batch_norm_grad_infer_fission.h"
-#include "plugin/device/ascend/optimizer/ir_fission/bn_split.h"
-#include "plugin/device/ascend/optimizer/ir_fission/bn_grad_split.h"
+#include "backend/common/pass/ir_fission/batch_norm_grad_infer_fission.h"
+#include "backend/common/pass/ir_fission/bn_split.h"
+#include "backend/common/pass/ir_fission/bn_grad_split.h"
 #include "backend/common/pass/ir_fission/ascend_convert_tuple_input_to_dynamic_input.h"
 #include "backend/common/pass/ir_fusion/batchnorm_to_bninfer.h"
 #include "backend/common/pass/ir_fusion/batchnormgrad_to_bninfergrad.h"
@@ -66,7 +66,7 @@
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_cast_rms_norm_cast_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/transpose_batch_matmul_transpose_fusion.h"
 #include "backend/common/pass/other/avg_pool_grad_for_ge.h"
-#include "plugin/device/ascend/optimizer/ir_fusion/mc2_fusion.h"
+#include "backend/common/pass/ir_fusion/mc2_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/insert_depend_for_all_gather.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/shape_reshape_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/split_concat_fusion.h"
@@ -83,8 +83,8 @@
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_elemwise_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/remove_fa_tensor_to_tuple_ops.h"
 #include "utils/phase.h"
-#include "plugin/device/ascend/optimizer/ir_fusion/batchmatmul_reducescatter_alltoall_fusion.h"
-#include "plugin/device/ascend/optimizer/ir_fusion/alltoall_allgather_batch_matmul_fusion.h"
+#include "backend/common/pass/ir_fusion/batchmatmul_reducescatter_alltoall_fusion.h"
+#include "backend/common/pass/ir_fusion/alltoall_allgather_batch_matmul_fusion.h"
 
 namespace mindspore {
 namespace opt {

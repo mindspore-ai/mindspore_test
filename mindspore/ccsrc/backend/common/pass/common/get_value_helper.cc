@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/optimizer/get_value_helper.h"
+#include "backend/common/pass/common/get_value_helper.h"
 #include "mindapi/base/format.h"
 #include "ops_utils/op_utils.h"
 
