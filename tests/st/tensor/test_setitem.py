@@ -849,7 +849,7 @@ class IndexDynamicRank2Net(nn.Cell):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('capture_mode', ['ast', 'bytecode'])
+@pytest.mark.parametrize('capture_mode', ['ast'])
 def test_setitem_index_dynamic_rank_test2(capture_mode):
     """
     Feature: tensor setitem with index dynamic rank

@@ -325,7 +325,8 @@ abstract::AnalysisResult AbstractAnalyze(const ValuePtr &func, const abstract::A
   auto infer_graph = func->isa<FuncGraph>() ? func->cast<FuncGraphPtr>() : ConstructGraphForEval(func, args_abs);
 
   auto top_graph = parse::Parser::GetTopFuncGraph();
-  auto manager = top_graph == nullptr ? Manage(infer_graph, true) : top_graph->manager();
+  auto manager =
+    top_graph == nullptr || top_graph->manager() == nullptr ? Manage(infer_graph, true) : top_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
   manager->AddFuncGraph(infer_graph);
 

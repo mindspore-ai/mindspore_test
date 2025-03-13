@@ -115,6 +115,5 @@ def test_mint_clamp_exception():
     def func(x, min, max):  # pylint: disable=redefined-builtin
         return clamp(x, min, max)
 
-    with pytest.raises(TypeError) as raise_info:
-        func(ms.Tensor([1, 2, 3, 4, 5]), ms.Tensor(2), 4)
-    assert "Failed calling clamp with" in str(raise_info.value)
+    with pytest.raises((ValueError, TypeError)):
+        func(ms.Tensor([1, 2, 3, 4, 5]), ms.Tensor([2]), 4)

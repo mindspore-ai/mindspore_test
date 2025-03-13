@@ -69,7 +69,7 @@ def test_method_select_python(mode):
     expect_output = np.array([2., 2.], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expect_output)
 
-    with pytest.raises(TypeError) as error_info:
+    with pytest.raises((ValueError, TypeError)) as error_info:
         net(x, 1, y)
         _pynative_executor.sync()
 

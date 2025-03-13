@@ -845,12 +845,12 @@ bool FunctionSignature::Parse(const py::list &args, const py::dict &kwargs, Pars
         return false;
       }
       parser_args.SetArg(param.GetDefaultValue(), convert_type, out_arglist_index++);
-    } else if (CheckParamValid(obj, param, raise_error, out_error_msg, convert_type, error_idx)) {
-      parser_args.SetArg(obj, convert_type, out_arglist_index++);
     } else if (CheckArgsAsIntlist(args, check_arg_as_intlist)) {
       // tensor.reshape(1, 2, 3) as tensor.reshape((1, 2, 3))
       parser_args.SetArg(args, {OP_DTYPE::DT_LIST_INT, param.type_}, out_arglist_index++);
       arg_pos = nargs;
+    } else if (CheckParamValid(obj, param, raise_error, out_error_msg, convert_type, error_idx)) {
+      parser_args.SetArg(obj, convert_type, out_arglist_index++);
     } else {
       RAISE_PARSE_ERROR(out_error_msg, raise_error, GetTypeErrorMsg(is_kwd, error_idx, obj, param, arg_pos), name_);
       return false;

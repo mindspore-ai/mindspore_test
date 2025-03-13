@@ -1550,7 +1550,7 @@ ValuePtr ConvertTensorToInt64(const py::object &obj) {
     return nullptr;
   }
   if (tensor->DataSize() != 1) {
-    MS_LOG(ERROR) << "Can only convert tensor with one element to int, but got " << tensor->ToString();
+    MS_LOG(ERROR) << "Can only convert single_element tensor to int, but got " << tensor->ToString();
     return nullptr;
   }
   if (tensor->data_type() == kNumberTypeInt64) {
@@ -1575,7 +1575,7 @@ ValuePtr ConvertTensorToInt(const py::object &obj) {
     return nullptr;
   }
   if (tensor->DataSize() != 1) {
-    MS_LOG(ERROR) << "Can only convert tensor with one element to int, but got " << tensor->ToString();
+    MS_LOG(ERROR) << "Can only convert single_element tensor to int, but got " << tensor->ToString();
     return nullptr;
   }
   switch (tensor->data_type()) {
@@ -1617,7 +1617,7 @@ ValuePtr ConvertTensorToFloat(const py::object &obj) {
     return nullptr;
   }
   if (tensor->DataSize() != 1) {
-    MS_LOG(ERROR) << "Can only convert tensor with one element to float, but got " << tensor->ToString();
+    MS_LOG(ERROR) << "Can only convert single_element tensor to float, but got " << tensor->ToString();
     return nullptr;
   }
   if (tensor->data_type() != kNumberTypeFloat64) {
@@ -1645,7 +1645,7 @@ ValuePtr ConvertTensorToNumber(const py::object &obj) {
     return nullptr;
   }
   if (tensor->DataSize() != 1) {
-    MS_EXCEPTION(ValueError) << "Can only convert tensor with one element to number, but got " << tensor->ToString();
+    MS_EXCEPTION(ValueError) << "Can only convert single-element tensor to number, but got " << tensor->ToString();
   }
 
   switch (tensor->data_type()) {

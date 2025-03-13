@@ -180,7 +180,7 @@ class OpPrimPyGenerator(BaseGenerator):
         if type_cast:
             assign_str += f"type_it('{class_name}', '{arg.arg_name}', {arg.arg_name}, "
             if len(type_cast) == 1:
-                assign_str += gen_utils.get_type_str(type_cast[0]) + ', '
+                assign_str += gen_utils.get_type_str(list(type_cast)[0]) + ', '
             else:
                 assign_str += '(' + ', '.join(gen_utils.get_type_str(ct) for ct in type_cast) + '), '
             assign_str += gen_utils.get_type_str(arg.arg_dtype) + ')'

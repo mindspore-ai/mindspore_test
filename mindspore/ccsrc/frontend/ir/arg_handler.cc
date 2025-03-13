@@ -21,6 +21,8 @@
 #include "frontend/ir/arg_handler.h"
 #include "ops/op_def.h"
 #include "mindspore/ops/op_def/op_enum.h"
+#include "pipeline/jit/ps/parse/data_converter.h"
+#include "utils/anf_utils.h"
 
 namespace mindspore {
 
@@ -54,26 +56,25 @@ Int64ImmPtr ToDtype(const py::object &obj) {
   return nullptr;
 }
 
-std::optional<Int64ImmPtr> DtypeToTypeId(const std::string &op_name, const std::string &arg_name,
-                                         const py::object &obj) {
+py::object DtypeToTypeId(const std::string &op_name, const std::string &arg_name, const py::object &obj) {
   if (py::isinstance<py::none>(obj)) {
-    return std::nullopt;
+    return obj;
   }
   if (py::isinstance<mindspore::Type>(obj)) {
-    return std::make_optional(ToDtype(obj));
+    auto dtype = ToDtype(obj);
+    return dtype ? py::cast(dtype->value()) : py::none();
   }
   if (obj.equal(py::type::of(py::bool_()))) {
-    auto ms_bool_type = mindspore::Bool();
-    return std::make_optional(ToDtype(py::cast(ms_bool_type)));
+    return py::cast(static_cast<int>(kNumberTypeBool));
   }
   MS_LOG(EXCEPTION) << "For '" << op_name << "', the input '" << arg_name
                     << "' should be one of ['mindspore dtype', 'bool'], but got " << obj << ".";
-  return std::nullopt;
+  return py::none();
 }
 
-std::optional<Int64ImmPtr> StrToEnum(const std::string &op_name, const std::string &arg_name, const py::object &obj) {
+py::object StrToEnum(const std::string &op_name, const std::string &arg_name, const py::object &obj) {
   if (py::isinstance<py::none>(obj)) {
-    return std::nullopt;
+    return obj;
   }
   if (!py::isinstance<py::str>(obj)) {
     MS_LOG(EXCEPTION) << "For '" << op_name << "', the input '" << arg_name << "' should be a str, but got "
@@ -81,81 +82,153 @@ std::optional<Int64ImmPtr> StrToEnum(const std::string &op_name, const std::stri
   }
   auto string_value = obj.cast<std::string>();
   auto enum_value = mindspore::ops::StringToEnumImpl(op_name, arg_name, string_value);
-  return std::make_optional(std::make_shared<Int64Imm>(enum_value));
+  return py::cast(enum_value);
 }
 
-std::vector<int> ToPair(const std::string &op_name, const std::string &arg_name, const py::object &arg_val) {
+py::object ToPair(const std::string &op_name, const std::string &arg_name, const py::object &arg_val) {
   if (py::isinstance<py::int_>(arg_val) || py::isinstance<py::float_>(arg_val)) {
     int value = arg_val.cast<int>();
-    return {value, value};
+    return py::cast(std::vector<int>({value, value}));
   }
   if (py::isinstance<py::list>(arg_val) || py::isinstance<py::tuple>(arg_val)) {
     std::vector<int> values;
     auto items = py::cast<std::vector<py::object>>(arg_val);
     std::transform(items.begin(), items.end(), std::back_inserter(values),
                    [](const py::object &item) { return item.cast<int>(); });
-    return values;
+    return py::cast(values);
   }
   MS_LOG(EXCEPTION) << "For '" << op_name << "', the value of '" << arg_name << "' is invalid: '"
                     << py::str(arg_val).cast<std::string>() << ".";
 }
 
-std::vector<int> To2dPaddings(const std::string &op_name, const std::string &arg_name, const py::object &pad) {
+py::object To2dPaddings(const std::string &op_name, const std::string &arg_name, const py::object &pad) {
   if (py::isinstance<py::int_>(pad)) {
     int value = pad.cast<int>();
-    return {value, value};
+    return py::cast(std::vector<int>({value, value}));
   }
   if (py::isinstance<py::list>(pad) || py::isinstance<py::tuple>(pad)) {
     std::vector<int> values;
     auto items = py::cast<std::vector<py::object>>(pad);
     std::transform(items.begin(), items.end(), std::back_inserter(values),
                    [](const py::object &item) { return item.cast<int>(); });
-    return values;
+    return py::cast(values);
   }
   MS_LOG(EXCEPTION) << "For '" << op_name << "', the value of '" << arg_name << "' is invalid: '"
                     << py::str(pad).cast<std::string>() << ".";
 }
 
-std::vector<int> ToVector(const std::string &op_name, const std::string &arg_name, const py::object &arg) {
+py::object ToVector(const std::string &op_name, const std::string &arg_name, const py::object &arg) {
   if (py::isinstance<py::int_>(arg)) {
     int value = arg.cast<int>();
-    return {value, value};
+    return py::cast(std::vector<int>({value, value}));
   }
   if (py::isinstance<py::list>(arg) || py::isinstance<py::tuple>(arg)) {
     if (py::len(arg) == 4) {
       py::list arg_list = arg.cast<py::list>();
-      return {arg_list[2].cast<int>(), arg_list[3].cast<int>()};
+      return py::cast(std::vector<int>({arg_list[2].cast<int>(), arg_list[3].cast<int>()}));
     }
     std::vector<int> values;
     auto items = py::cast<std::vector<py::object>>(arg);
     std::transform(items.begin(), items.end(), std::back_inserter(values),
                    [](const py::object &item) { return item.cast<int>(); });
-    return values;
+    return py::cast(values);
   }
   MS_LOG(EXCEPTION) << "For '" << op_name << "', the value of '" << arg_name << "' is invalid: '"
                     << py::str(arg).cast<std::string>() << ".";
 }
 
-std::vector<int> ToKernelSize(const std::string &op_name, const std::string &arg_name, const py::object &kernel_size) {
+py::object ToKernelSize(const std::string &op_name, const std::string &arg_name, const py::object &kernel_size) {
   return ToVector(op_name, arg_name, kernel_size);
 }
 
-std::vector<int> ToStrides(const std::string &op_name, const std::string &arg_name, const py::object &stride) {
+py::object ToStrides(const std::string &op_name, const std::string &arg_name, const py::object &stride) {
   return ToVector(op_name, arg_name, stride);
 }
 
-std::vector<int> ToDilations(const std::string &op_name, const std::string &arg_name, const py::object &dilation) {
+py::object ToDilations(const std::string &op_name, const std::string &arg_name, const py::object &dilation) {
   return ToVector(op_name, arg_name, dilation);
 }
 
-std::vector<int> ToOutputPadding(const std::string &op_name, const std::string &arg_name,
-                                 const py::object &output_padding) {
+py::object ToOutputPadding(const std::string &op_name, const std::string &arg_name, const py::object &output_padding) {
   return ToVector(op_name, arg_name, output_padding);
 }
 
-std::vector<int> ToRates(const std::string &op_name, const std::string &arg_name, const py::object &rates) {
+py::object ToRates(const std::string &op_name, const std::string &arg_name, const py::object &rates) {
   return ToVector(op_name, arg_name, rates);
 }
 
+py::object NormalizeIntSequence(const std::string &op_name, const std::string &arg_name, const py::object &arg) {
+  if (!py::isinstance<py::list>(arg) && !py::isinstance<py::tuple>(arg)) {
+    if (py::isinstance<py::int_>(arg)) {
+      return py::cast(std::vector<int>({arg.cast<int>()}));
+    }
+    MS_EXCEPTION(TypeError) << "For '" << op_name << "', the value of '" << arg_name << "' is invalid: '"
+                            << py::str(arg).cast<std::string>() << ". It should be a list or tuple.";
+  }
+  auto items = py::cast<std::vector<py::object>>(arg);
+  py::tuple int_tuple(items.size());
+  auto convert_type = parse::CombineTypesForTypeCast(ops::DT_TENSOR, ops::DT_INT);
+  auto convert_func = parse::GetConverterByType(convert_type);
+  MS_EXCEPTION_IF_NULL(convert_func);
+  size_t i = 0;
+  for (const auto &item : items) {
+    if (py::isinstance<py::int_>(item)) {
+      int_tuple[i] = item;
+    } else {
+      ValuePtr value = convert_func(item);
+      if (!value) {
+        MS_EXCEPTION(ValueError) << "For '" << op_name << "', '" << arg_name << "' contain non-integer element: '"
+                                 << py::str(item).cast<std::string>() << "'.";
+      }
+      int_tuple[i] = py::cast(AnfUtils::GetIntValue(value));
+    }
+    i++;
+  }
+  return int_tuple;
+}
+
+py::object ScalarTensorToScalar(const std::string &op_name, const std::string &arg_name, const py::object &arg) {
+  if (py::isinstance<py::int_>(arg)) {
+    return py::cast(arg.cast<int>());
+  } else if (py::isinstance<py::float_>(arg)) {
+    return py::cast(arg.cast<double>());
+  } else if (py::isinstance<py::bool_>(arg)) {
+    return py::cast(arg.cast<bool>());
+  }
+
+  auto tensor = parse::ConvertTensorValue(arg);
+  if (tensor) {
+    if (tensor->DataDim() != 0) {
+      MS_EXCEPTION(ValueError) << "For '" << op_name << "', '" << arg_name << "' is not a scalar: '"
+                               << py::str(arg).cast<std::string>() << "'.";
+    }
+    auto convert_type = parse::CombineTypesForTypeCast(ops::DT_TENSOR, ops::DT_NUMBER);
+    auto convert_func = parse::GetConverterByType(convert_type);
+    ValuePtr value = convert_func(arg);
+    if (!value) {
+      MS_EXCEPTION(TypeError) << "For '" << op_name << "', '" << arg_name << "' is not an integral type: '"
+                              << py::str(arg).cast<std::string>() << "'.";
+    }
+    if (value->isa<Int64Imm>()) {
+      return py::cast(GetValue<int64_t>(value));
+    } else if (value->isa<Int32Imm>()) {
+      return py::cast(GetValue<int32_t>(value));
+    } else if (value->isa<FP32Imm>()) {
+      return py::cast(GetValue<float>(value));
+    } else if (value->isa<FP64Imm>()) {
+      return py::cast(GetValue<double>(value));
+    } else if (value->isa<BoolImm>()) {
+      return py::cast(GetValue<bool>(value));
+    }
+  }
+  return arg;
+}
+py::object ScalarTensorToInt(const std::string &op_name, const std::string &arg_name, const py::object &arg) {
+  return ScalarTensorToScalar(op_name, arg_name, arg);
+}
+
+py::object ScalarTensorToFloat(const std::string &op_name, const std::string &arg_name, const py::object &arg) {
+  return ScalarTensorToScalar(op_name, arg_name, arg);
+}
 }  // namespace pynative
 }  // namespace mindspore

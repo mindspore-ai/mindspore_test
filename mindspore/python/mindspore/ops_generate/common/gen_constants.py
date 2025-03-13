@@ -56,7 +56,7 @@ TENSOR_PY_CC_PATH = "mindspore/ccsrc/pybind_api/ir/tensor_register/auto_generate
 # yaml keys def
 OP_KEYS = {'args', 'args_signature', 'returns', 'function', 'class', 'view', 'graph_view', 'dispatch', 'labels',
            'bprop_expander', 'non-differentiable'}
-ARG_KEYS = {'dtype', 'default', 'prim_init', 'type_cast', 'arg_handler'}
+ARG_KEYS = {'dtype', 'default', 'prim_init', 'type_cast', 'arg_handler', 'disable_tensor_to_scalar'}
 RETURN_KEYS = {'dtype', 'inplace', 'type_cast'}
 ARG_SIGNATURE_KEYS = {'rw_write', 'rw_read', 'rw_ref', 'dtype_group'}
 CLASS_KEYS = {'name', 'disable'}
@@ -71,6 +71,10 @@ ARG_HANDLER_MAP = {"to_2d_paddings": "int|tuple[int]|list[int]",
                    "to_kernel_size": "int|tuple[int]|list[int]",
                    "to_strides": "int|tuple[int]|list[int]",
                    "str_to_enum": "str",
+                   "_normalize_int_sequence": "tuple[int]|list[int]|int",
+                   "_scalar_tensor_to_scalar": "number|tensor",
+                   "_scalar_tensor_to_int": "int|tensor",
+                   "_scalar_tensor_to_float": "float|tensor",
                    "to_pair": "int|tuple[int]|list[int]|float",
                    "to_dilations": "tuple[int]|list[int]|int",
                    "to_output_padding": "int|tuple[int]|list[int]",
