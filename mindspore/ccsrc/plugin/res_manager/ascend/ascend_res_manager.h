@@ -39,7 +39,7 @@ struct MemUceInfo {
 };
 
 using DeviceMemInfo = std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>;
-class AscendResManager : public HalResBase {
+class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
  public:
   explicit AscendResManager(const ResKey &res_key) : HalResBase(res_key) { Initialize(); }
   ~AscendResManager() override = default;
@@ -64,6 +64,8 @@ class AscendResManager : public HalResBase {
                                        TypeId type_id, const std::string &device_name, uint32_t device_id,
                                        uint32_t stream_id) const override;
 
+  // This method should be deleted after collective so is extracted.
+  void RegisterLoadCollectiveCallback(const std::function<CollectiveCommunicationLib *(void)> &callback);
   bool LoadCollectiveCommLib() override;
   bool IsEnableVmm() const override;
 
@@ -158,6 +160,7 @@ class AscendResManager : public HalResBase {
   std::mutex mem_uce_info_mutex_;
   bool initialized_ = false;
   // The collective communication library.
+  std::function<CollectiveCommunicationLib *(void)> load_comm_lib_cb_;
   CollectiveCommunicationLib *collective_comm_lib_;
 
   std::shared_ptr<SwapManager> swap_manager_{nullptr};

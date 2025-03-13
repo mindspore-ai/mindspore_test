@@ -25,6 +25,7 @@ if(ENABLE_D OR ENABLE_ACL)
   list(APPEND ASCEND_RES_MANAGER_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ascend_mem_manager_obj>)
   list(APPEND ASCEND_RES_MANAGER_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_hccl_adapter_obj>)
   list(APPEND ASCEND_RES_MANAGER_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ascend_mbuf_manager_obj>)
+  list(APPEND ASCEND_RES_MANAGER_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ascend_res_manager_obj>)
 
   add_library(mindspore_ascend_res_manager SHARED ${ASCEND_RES_MANAGER_OBJECTS_SRC})
   target_link_libraries(mindspore_ascend_res_manager PRIVATE mindspore_core mindspore_common pybind11::module
