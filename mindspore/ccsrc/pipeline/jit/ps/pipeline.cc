@@ -2174,10 +2174,10 @@ bool InitExecDatasetVm(const std::string &queue_name, int64_t size, int64_t batc
 #endif
 
   compile::SetMindRTEnable();
-  auto backend = compile::CreateBackend();
-  MS_EXCEPTION_IF_NULL(backend);
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
+  context_ptr->Refresh();
+
 #if defined(__linux__) && defined(WITH_BACKEND)
   if (ps::PSContext::instance()->is_worker() && ps::PSContext::instance()->cache_enable()) {
     distributed::DataQueueManager::GetInstance().CreateDataQueue(queue_name, size, 128);
@@ -2196,6 +2196,8 @@ bool InitExecDatasetVm(const std::string &queue_name, int64_t size, int64_t batc
     return true;
   }
 
+  auto backend = compile::CreateBackend();
+  MS_EXCEPTION_IF_NULL(backend);
   // The data set graph compiling and running of mindRT.
   if (context_ptr->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
     const auto &mindrt_backend = std::dynamic_pointer_cast<compile::MindRTBackend>(backend);

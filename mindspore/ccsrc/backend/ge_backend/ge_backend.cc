@@ -428,7 +428,8 @@ void GEBackend::Init() {
   auto op_tuning_conf = device::ascend::OpTuningConf::GetInstance();
   MS_EXCEPTION_IF_NULL(op_tuning_conf);
   if (op_tuning_conf->EnableAoeOnline()) {
-    backend::ge_backend::InitializeAoeUtil();
+    std::string aoe_job_type = op_tuning_conf->aoe_job_type();
+    backend::ge_backend::InitializeAoeUtil(aoe_job_type);
   }
   if (op_tuning_conf->EnableAoeOffline()) {
     backend::ge_backend::EnableAoeOffline();

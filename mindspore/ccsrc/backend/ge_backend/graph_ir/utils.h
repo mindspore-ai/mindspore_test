@@ -38,7 +38,7 @@ using DfGraphConvertorPtr = std::shared_ptr<backend::ge_backend::DfGraphConverto
 bool IsInitDataSetQueueNode(const AnfNodePtr &node);
 
 void ClearGeSessionAndRunner();
-BACKEND_EXPORT void InitializeAoeUtil();
+BACKEND_EXPORT void InitializeAoeUtil(const std::string &aoe_job_type);
 BACKEND_EXPORT void DestroyAoeUtil();
 BACKEND_EXPORT void EnableAoeOffline();
 

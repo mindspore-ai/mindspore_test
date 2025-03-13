@@ -44,7 +44,7 @@ class AoeUtil {
                           const backend::ge_backend::DfGraphPtr &graph) const;
   static AoeUtil &GetInstance();
   ~AoeUtil();
-  void Initialize();
+  void Initialize(const std::string &aoe_job_type);
   void Destroy();
   void SaveOptimizedGraph(const int32_t &graph_id);
   bool IsSaveOptimizedGraph(const int32_t &graph_id) const;

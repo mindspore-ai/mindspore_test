@@ -30,6 +30,7 @@
 #include "utils/phase.h"
 #include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_tuning_conf.h"
+#include "plugin/res_manager/ascend/device_context_conf/op_precision_conf.h"
 #include "utils/file_utils.h"
 #include "utils/ms_context.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
@@ -112,6 +113,31 @@ void UpdateTopoOrderOptions(const string &graph_name, OptionMap *option) {
     topo_sorting_mode = "2";
   }
   (*option)["ge.topoSortingMode"] = topo_sorting_mode;
+}
+
+void UpdatePrecisionOptions(const string &graph_name, OptionMap *option, bool is_cloud) {
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  auto soc_version = context->ascend_soc_version();
+
+  auto op_precision_conf = device::ascend::OpPrecisionConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_precision_conf);
+  auto precision_mode = op_precision_conf->precision_mode();
+  if (!precision_mode.empty()) {
+    MS_LOG(INFO) << "Set precision_mode " << precision_mode << " for graph " << graph_name << " by user.";
+    (*option)["ge.exec.precision_mode"] = precision_mode;
+  } else if (is_cloud && !IsTwoPhaseInfer()) {
+    if (soc_version == "ascend910b" || soc_version == "ascend910_93") {
+      (*option)["ge.exec.precision_mode"] = "must_keep_origin_dtype";
+      MS_LOG(INFO) << "Set precision_mode must_keep_origin_dtype, soc_version is " << soc_version << ".";
+    } else {
+      (*option)["ge.exec.precision_mode"] = "allow_fp32_to_fp16";
+      MS_LOG(INFO) << "Set precision_mode allow_fp32_to_fp16, soc_version is " << soc_version << ".";
+    }
+  } else {
+    (*option)["ge.exec.precision_mode"] = "force_fp16";
+    MS_LOG(INFO) << "Set precision_mode force_fp16, soc_version is " << soc_version << ".";
+  }
 }
 
 OptionMap GetComputeGraphOptions(const ShapeArray &input_shapes, bool is_dynamic_shape) {
@@ -349,6 +375,8 @@ bool AddDFGraph(const FuncGraphPtr &anf_graph, const backend::ge_backend::Tensor
   auto options = GetComputeGraphOptions(converter->input_shapes(), converter->dynamic_shape_inputs());
   GetComputeGraphReuseOptions(anf_graph, &options);
   UpdateTopoOrderOptions(graph_name, &options);
+  UpdatePrecisionOptions(graph_name, &options, is_cloud);
+
   MS_LOG(INFO) << "Set options of compute graph: " << graph_name << " to " << MapToString(options);
   (void)backend::ge_backend::AddGraph(graph_name, backend::ge_backend::GetComputeGraph(converter),
                                       backend::ge_backend::DfGraphConfig(options, is_cloud, need_aoe, export_air));
