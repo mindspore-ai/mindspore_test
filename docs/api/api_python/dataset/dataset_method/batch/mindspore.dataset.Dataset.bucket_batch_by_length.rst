@@ -6,6 +6,7 @@ mindspore.dataset.Dataset.bucket_batch_by_length
     根据数据的长度进行分桶。每个桶将在数据填满的时候进行填充和批处理操作。
 
     对数据集中的每一条数据进行长度计算。根据该条数据的长度计算结果和每个分桶的范围将该数据归类到特定的桶里面。
+    
     当某个分桶中数据条数达到指定的大小 `bucket_batch_sizes` 时，将根据 `pad_info` 的信息对分桶进行填充，再进行批处理。
 
     执行流程参考下图：
@@ -13,7 +14,7 @@ mindspore.dataset.Dataset.bucket_batch_by_length
     .. image:: bucket_batch_by_length_cn.png
 
     .. note::
-        - 在静态图模式使用 `数据下沉 <https://www.mindspore.cn/docs/zh-CN/master/model_train/train_process/optimize/sink_mode.html#%E6%95%B0%E6%8D%AE%E4%B8%8B%E6%B2%89>`_ 时，网络输入的 Shape 应保持一致，此时应设置 `drop_remainder` 为 "True" 以丢弃最后一个不完整的批数据，或通过补充/删除样本以确保数据集大小能被 `batch_size` 整除。
+        - 在静态图模式使用 `数据下沉 <https://www.mindspore.cn/docs/zh-CN/master/model_train/train_process/optimize/sink_mode.html#%E6%95%B0%E6%8D%AE%E4%B8%8B%E6%B2%89>`_ 时，网络输入的shape应保持一致，此时应设置 `drop_remainder` 为 "True" 以丢弃最后一个不完整的批数据，或通过补充/删除样本以确保数据集大小能被 `batch_size` 整除。
 
     参数：
         - **column_names** (list[str]) - 传递给参数 `element_length_function` 的数据列，用于计算数据的长度。
@@ -28,7 +29,7 @@ mindspore.dataset.Dataset.bucket_batch_by_length
           注意，`pad_info` 中任何填充shape为None的列，其每条数据长度都将被填充为当前批处理中最长数据的长度，除非指定 `pad_to_bucket_boundary` 为 ``True`` 。默认值： ``None`` ，不填充。
         - **pad_to_bucket_boundary** (bool, 可选) - 如果为 ``True`` ，则 `pad_info` 中填充shape为None的列，会被填充至由参数 `bucket_batch_sizes` 指定的对应分桶长度-1的长度。
           如果有任何数据落入最后一个分桶中，则将报错。默认值： ``False`` 。
-        - **drop_remainder** (bool, 可选) - 当每个分桶中的最后一个批处理数据数据条目小于 `bucket_batch_sizes` 时，是否丢弃该批处理数据。默认值： ``False`` ，不丢弃。
+        - **drop_remainder** (bool, 可选) - 当每个分桶中的最后一个批处理数据条目小于 `bucket_batch_sizes` 时，是否丢弃该批处理数据。默认值： ``False`` ，不丢弃。
 
     返回：
         Dataset，应用了上述操作的新数据集对象。

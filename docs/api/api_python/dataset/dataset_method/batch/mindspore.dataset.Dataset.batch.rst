@@ -13,7 +13,7 @@ mindspore.dataset.Dataset.batch
 
     .. note::
         - 执行 `repeat` 和 `batch` 操作的先后顺序，会影响批处理数据的数量及 `per_batch_map` 的结果。建议在 `batch` 操作完成后执行 `repeat` 操作。
-        - 在静态图模式使用 `数据下沉 <https://www.mindspore.cn/docs/zh-CN/master/model_train/train_process/optimize/sink_mode.html#%E6%95%B0%E6%8D%AE%E4%B8%8B%E6%B2%89>`_ 时，网络输入的 Shape 应保持一致，此时应设置 `drop_remainder` 为 "True" 以丢弃最后一个不完整的批数据，或通过补充/删除样本以确保数据集大小能被 `batch_size` 整除。
+        - 在静态图模式使用 `数据下沉 <https://www.mindspore.cn/docs/zh-CN/master/model_train/train_process/optimize/sink_mode.html#%E6%95%B0%E6%8D%AE%E4%B8%8B%E6%B2%89>`_ 时，网络输入的shape应保持一致，此时应设置 `drop_remainder` 为 ``True`` 以丢弃最后一个不完整的批数据，或通过补充/删除样本以确保数据集大小能被 `batch_size` 整除。
 
     参数：
         - **batch_size** (Union[int, Callable]) - 指定每个批处理数据包含的数据条目。
@@ -34,13 +34,13 @@ mindspore.dataset.Dataset.batch
             如果 `per_batch_map` 不为 ``None`` ，列表中列名的个数应与 `per_batch_map` 中包含的列数匹配。默认值： ``None`` ，不指定。
           - output_columns (Union[str, list[str]], 可选) - 指定 `batch` 操作的输出数据列。如果输入数据列与输入数据列的长度不相等，则必须指定此参数。
             此列表中列名的数量必须与 `per_batch_map` 方法的返回值数量相匹配。默认值： ``None`` ，输出列将与输入列具有相同的名称。
-          - python_multiprocessing (bool, 可选) - 是否启动Python多进程模式并行执行 `per_batch_map` ， ``True`` 意为Python多进程模式， ``False`` 意为Python多线程模式。如果 `per_batch_map` 是I/O密集型任务可以用多线程，CPU密集型任务建议使用多进程以避免GIL锁影响。默认值： ``False`` ，启用多线程模式。
+          - python_multiprocessing (bool, 可选) - 是否启动Python多进程模式并行执行 `per_batch_map` ， ``True`` 意为Python多进程模式， ``False`` 意为Python多线程模式。如果 `per_batch_map` 是I/O密集型任务可以用多线程，CPU密集型任务建议使用多进程，以避免GIL锁影响。默认值： ``False`` ，启用多线程模式。
           - max_rowsize (Union[int, list[int]], 可选) - 指定在多进程之间复制数据时，共享内存分配的基本单位，单位为MB，总占用的共享内存会随着 ``num_parallel_workers`` 和 :func:`mindspore.dataset.config.set_prefetch_size` 增加而变大。
             仅当 `python_multiprocessing` 为 ``True`` 时，该选项有效。默认值： ``None`` ，动态分配共享内存（后续版本将废弃此参数）。
             
             - 如果设置为 ``-1`` / ``None`` ，共享内存将随数据大小动态分配；
             - 如果是int值，代表 ``input_columns`` 和 ``output_columns`` 均使用该值为单位创建共享内存；
-            - 如果是列表，第一个元素代表 ``input_columns`` 使用该值为单位创建共享内存，第二个元素代表 ``output_columns`` 使用该值为单位创建共享内存。
+            - 如果是列表，代表 ``input_columns`` 使用第一个元素为单位创建共享内存， ``output_columns`` 使用第二个元素为单位创建共享内存。
 
     返回：
         Dataset，应用了上述操作的新数据集对象。

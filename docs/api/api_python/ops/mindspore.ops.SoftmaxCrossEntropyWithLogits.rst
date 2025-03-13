@@ -20,7 +20,7 @@ mindspore.ops.SoftmaxCrossEntropyWithLogits
         - **labels** (Tensor) - 输入真实值，其shape为 :math:`(N, C)` ，数据类型与 `logits` 的相同。
 
     输出：
-        两个Tensor(loss, dlogits)组成的tuple， `loss` 的shape为 :math:`(N,)` ， `dlogits` 的shape与 `logits` 的相同。
+        两个Tensor( `loss` , `dlogits` )组成的tuple， `loss` 的shape为 :math:`(N,)` ， `dlogits` 的shape与 `logits` 的相同。
 
     异常：
         - **TypeError** - `logits` 或  `labels` 的数据类型既不是float16也不是float32。
