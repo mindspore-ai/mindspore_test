@@ -290,7 +290,7 @@ class BatchNorm2d(_BatchNorm):
             \text{moving_var}=\text{moving_var*momentum}+σ^2_β\text{*(1-momentum)}
 
         where :math:`moving\_mean` is the updated mean, :math:`moving\_var` is the updated variance,
-        :math:`μ_β, σ^2_β` are the observed value (mean and variance) of each batch of data.
+        :math:`μ_β, σ^2_β` are the observed value (mean and variance respectively) of each batch of data.
 
     Args:
         num_features (int): The number of channels of the input tensor. Expected input size is :math:`(N, C, H, W)`,
@@ -343,7 +343,7 @@ class BatchNorm2d(_BatchNorm):
         TypeError: If `eps` is not a float.
         ValueError: If `num_features` is less than 1.
         ValueError: If `momentum` is not in range [0, 1].
-        ValueError: If `data_format` is neither 'NHWC' not 'NCHW'.
+        ValueError: If `data_format` is neither ``'NHWC'` not ``'NCHW'``.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

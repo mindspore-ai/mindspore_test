@@ -16,18 +16,18 @@ gather:
 
     Args:
         dim (int): the axis to index along, must be in range `[-self.rank, self.rank)`.
-        index (Tensor): The index tensor, with int32 or int64 data type. An valid `index` should be:
+        index (Tensor): The index tensor, with int32 or int64 data type. A valid `index` should be:
 
-            - `index.rank == self.rank`;
-            - for `axis != dim`, `index.shape[axis] <= self.shape[axis]`;
-            - the value of `index` is in range `[-self.shape[dim], self.shape[dim])`.
+            - :math:`index.rank == self.rank`;
+            - for :math:`axis != dim`, :math:`index.shape[axis] <= self.shape[axis]`;
+            - the value of :math:`index` is in range :math:`[-self.shape[dim], self.shape[dim])`.
 
     Returns:
         Tensor, has the same type as `self` and the same shape as `index`.
 
     Raises:
         ValueError: If the shape of `index` is illegal.
-        ValueError: If `dim` is not in `[-self.rank, self.rank)`.
+        ValueError: If `dim` is not in :math:`[-self.rank, self.rank)`.
         ValueError: If the value of `index` is out of the valid range.
         TypeError: If the type of `index` is illegal.
 
@@ -57,12 +57,12 @@ gather:
     where params represents the input `input_params`, and indices represents the index to be sliced `input_indices`.
 
     .. note::
-        1. The value of input_indices must be in the range of `[0, input_param.shape[axis])`.
-           On CPU and GPU, an error is raised if an out of bound indice is found. On Ascend, the results may be
-           undefined.
-        2. The data type of self cannot be
-           `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ on Ascend
-           platform currently.
+        - The value of input_indices must be in the range of `[0, input_param.shape[axis])`.
+          On CPU and GPU, an error is raised if an out of bound indice is found. On Ascend, the results may be
+          undefined.
+        - The data type of self cannot be
+          `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ on Ascend
+          platform currently.
 
     Args:
         input_indices (Tensor): Index tensor to be sliced, the shape of tensor is :math:`(y_1, y_2, ..., y_S)`.
@@ -82,7 +82,7 @@ gather:
         ValueError: If `axis` is a Tensor and its size is not 1.
         TypeError:  If `self` is not a tensor.
         TypeError:  If `input_indices` is not a tensor of type int.
-        RuntimeError: If `input_indices` is out of range `[0, input_param.shape[axis])` on CPU or GPU.
+        RuntimeError: If `input_indices` is out of range :math:`[0, input_param.shape[axis])` on CPU or GPU.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

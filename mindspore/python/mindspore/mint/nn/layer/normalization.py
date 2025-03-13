@@ -249,8 +249,8 @@ class BatchNorm2d(_BatchNorm):
     elements of :math:`\gamma` are set to 1 and the elements of :math:`\beta` are set to 0.
 
     .. warning::
-        This API does not support Dynamic Rank.
-        This is an experimental API that is subject to change or deletion.
+        - This API does not support Dynamic Rank.
+        - This is an experimental API that is subject to change or deletion.
 
     Args:
         num_features (int): `C` from an expected input of shape :math:`(N, C, H, W)`.
@@ -263,7 +263,7 @@ class BatchNorm2d(_BatchNorm):
         track_running_stats (bool, optional): a boolean value that when set to ``True``, this
             cell tracks the running mean and variance, and when set to ``False``,
             this cell does not track such statistics. And this cell always uses batch statistics
-            in both training and eval modes. Default: ``True`` .
+            in both train and eval modes. Default: ``True`` .
         dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``None`` .
 
     Inputs:

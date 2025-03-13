@@ -667,11 +667,13 @@ class SmoothL1Loss(LossBase):
 
           - Ascend: float16, float32, bfloat16.
           - CPU/GPU: float16, float32, float64.
+
         - **labels** (Tensor) - Ground truth data.
 
           - CPU/Ascend: has the same shape as the `logits`,
             `logits` and `labels` comply with the implicit type conversion rules to make the data types consistent.
           - GPU: has the same shape and dtype as the `logits`.
+
     Outputs:
         Tensor, if `reduction` is ``'none'``, then output is a tensor with the same shape as `logits`.
         Otherwise the shape of output tensor is :math:`()`.
@@ -816,8 +818,8 @@ class SoftmaxCrossEntropyWithLogits(LossBase):
 
     Raises:
         TypeError: If `sparse` is not a bool.
-        TypeError: If `sparse` is True and dtype of `labels` is neither int32 nor int64.
-        TypeError: If `sparse` is False and dtype of `labels` is neither float16 not float32.
+        TypeError: If `sparse` is ``True`` and dtype of `labels` is neither int32 nor int64.
+        TypeError: If `sparse` is ``False`` and dtype of `labels` is neither float16 not float32.
         ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``.
 
     Supported Platforms:

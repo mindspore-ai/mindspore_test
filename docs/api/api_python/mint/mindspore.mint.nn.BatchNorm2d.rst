@@ -13,8 +13,8 @@ mindspore.mint.nn.BatchNorm2d
     默认情况下，:math:`\gamma` 中的元素被赋值为1。:math:`\beta` 的元素则被赋值为0.
 
     .. warning::
-        该接口不支持动态Rank。
-        这是一个实验性API，后续可能修改或删除。
+        - 该接口不支持动态Rank。
+        - 这是一个实验性API，后续可能修改或删除。
 
     参数：
         - **num_features** (int) - 输入的shape :math:`(N, C, H, W)` 中的 `C` 值。
@@ -22,7 +22,7 @@ mindspore.mint.nn.BatchNorm2d
         - **momentum** (float, 可选) - 动态均值和动态方差所使用的动量。当想计算累计平均值时，可设置为 ``None``。默认值： ``0.1`` 。
         - **affine** (bool, 可选) - bool类型。设置为 ``True`` 时，可学习到反射参数值。默认值： ``True`` 。
         - **track_running_stats** (bool, 可选) - bool类型。设置为 ``True`` 时，会跟踪运行时的均值和方差。当设置为 ``False`` 时，
-          则不会跟踪这些统计信息。且在tran和eval模式下，该cell总是使用batch的统计信息。
+          则不会跟踪这些统计信息。且在tran和eval模式下，该cell总是使用batch的统计信息。默认值： ``True`` 。
         - **dtype** (:class:`mindspore.dtype`, 可选) - Parameters的dtype。默认值： ``None`` 。
 
     输入：

@@ -3124,7 +3124,7 @@ def matrix_solve(matrix, rhs, adjoint=False):  # pylint: disable=redefined-outer
             Default: ``False`` .
 
     Returns:
-        x (Tensor), The dtype and shape is the same as 'rhs'.
+        x (Tensor), The dtype and shape is the same as `rhs`.
 
     Raises:
         TypeError: If adjoint is not the type of bool.
@@ -8916,15 +8916,17 @@ def _check_logits_shape(logits):
 
 def gumbel_softmax(logits, tau=1.0, hard=False, dim=-1):
     r"""
-    Returns the samples from the Gumbel-Softmax distribution and optionally discretizes. If `hard = True`, the returned
+    Returns the samples from the Gumbel-Softmax distribution and optionally discretizes.
+    If `hard` is ``True``, the returned
     samples will be one-hot, otherwise it will be probability distributions that sum to 1 across `dim`.
 
     Args:
         logits (Tensor): Unnormalized log probabilities. The data type must be float16 or float32.
-        tau (float): The scalar temperature, which is a positive number. Default: ``1.0`` .
-        hard (bool): if `True`, the returned samples will be discretized as one-hot vectors, but will be differentiated
-          as if it is the soft sample in autograd. Default: ``False`` .
-        dim (int): Dim for softmax to compute. Default: ``-1`` .
+        tau (float, optional): The scalar temperature, which is a positive number. Default: ``1.0`` .
+        hard (bool, optional): If ``True``, the returned samples will be discretized as one-hot vectors,
+            but will be differentiated
+            as if it is the soft sample in autograd. Default: ``False`` .
+        dim (int, optional): Dim for softmax to compute. Default: ``-1`` .
 
     Returns:
         Tensor, has the same dtype and shape as `logits`.
@@ -10013,7 +10015,7 @@ def remainder(input, other):
     Args:
         input (Union[Tensor, numbers.Number, bool]): The first input is a number, a bool
             or a tensor whose data type is number.
-        other (Union[Tensor, numbers.Number, bool]): When the first input is a tensor, The second input
+        other (Union[Tensor, numbers.Number, bool]): When the first input is a tensor, the second input
             could be a number, a bool or a tensor whose data type is number.
 
     Returns:
@@ -10022,7 +10024,7 @@ def remainder(input, other):
 
     Raises:
         TypeError: If neither `input` nor `other` is one of the following: Tensor, number, bool.
-        ValueError: If the shape `input` and `other` cannot be broadcasted to each other.
+        ValueError: If the shapes of `input` and `other` cannot be broadcasted to each other.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -10595,7 +10597,7 @@ def einsum(equation, *operands):
     r"""
     According to the Einstein summation Convention (Einsum),
     the product of the input tensor elements is summed along the specified dimension.
-    You can use this operator to perform diagonal, reducesum, transpose, matmul, mul, inner product operations, etc.
+    This operator can be used to perform diagonal, reducesum, transpose, matmul, mul, inner product operations, etc.
 
     Note:
         The sublist format is also supported. For example, ops.einsum(op1, sublist1, op2, sublist2, ..., sublist_out).
@@ -11281,7 +11283,7 @@ def igammac(input, other):
 
     is the upper incomplete Gama function.
 
-    Above :math:`P(a, x)` is the lower regularized complete Gamma function.
+    Above :math:`P(a, x)` is the lower regularized incomplete Gamma function.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.

@@ -1061,7 +1061,8 @@ def load(file_name, **kwargs):
         kwargs (dict): Configuration options dictionary.
 
             - dec_key (bytes): Byte-type key used for decryption. The valid length is 16, 24, or 32.
-            - dec_mode (Union[str, function]): Specifies the decryption mode, to take effect when dec_key is set.
+            - dec_mode (Union[str, function], optional):
+              Specifies the decryption mode, to take effect when dec_key is set.
 
               - Option: 'AES-GCM', 'AES-CBC', 'SM4-CBC' or customized decryption. Default: ``'AES-GCM'``.
               - For details of using the customized decryption, please check the `tutorial

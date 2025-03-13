@@ -273,9 +273,9 @@ def arange(start=0, end=None, step=1, *, dtype=None):
         dtype (mindspore.dtype, optional): The required data type of returned Tensor. Default: ``None`` .
             When `dtype` is not specified or ``None``:
 
-            If `start`, `end`, and `step` are all integers, the dtype of output is int64,
+            - If `start`, `end`, and `step` are all integers, the dtype of output is int64,
 
-            If `start`, `end`, and `step` contain at least one floating-point number, the dtype of output is float32.
+            - If `start`, `end`, and `step` contain at least one floating-point number, the dtype of output is float32.
 
     Returns:
         A 1-D Tensor, with the same type as the inputs.
@@ -7319,7 +7319,7 @@ def gather_ext(input, dim, index):
     Args:
         input (Tensor): The target tensor to gather values.
         dim (int): the axis to index along, must be in range `[-input.rank, input.rank)`.
-        index (Tensor): The index tensor, with int32 or int64 data type. An valid `index` should be:
+        index (Tensor): The index tensor, with int32 or int64 data type. A valid `index` should be:
 
             - `index.rank == input.rank`;
             - for `axis != dim`, `index.shape[axis] <= input.shape[axis]`;

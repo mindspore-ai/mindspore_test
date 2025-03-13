@@ -950,7 +950,7 @@ def normal(shape, mean, stddev, seed=None):
     Returns:
         Tensor. The shape should be equal to the broadcasted shape between the input `shape` and shapes
         of `mean` and `stddev`.
-        The dtype is [float32, float64].
+        The dtype supports float32 and float64.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

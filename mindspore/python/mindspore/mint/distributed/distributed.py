@@ -1688,7 +1688,7 @@ def recv(tensor, src=0, group=None, tag=0):
         group (str, optional): The communication group to work on. If ``None``, which means ``"hccl_world_group"`` in
             Ascend. Default: ``None``.
         tag (int, optional): A required integer identifying the send/recv message tag. The message will
-            be received by the Send op with the same "tag". Default: 0. It is a reserved parameter currently.
+            be received by the Send op with the same "tag". Default: ``0``. It is a reserved parameter currently.
 
     Returns:
         int, If success, return ``0``.

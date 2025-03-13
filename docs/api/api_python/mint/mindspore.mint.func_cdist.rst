@@ -9,7 +9,7 @@ mindspore.mint.cdist
         这是一个实验性API，后续可能修改或删除。
 
     .. note::
-        Ascend上支持的输入数据类型为[float16, float32]。
+        Ascend上支持的输入数据类型为float16和float32。
 
     参数：
         - **x1** (Tensor) - 输入Tensor，shape为 :math:`(B, P, M)` ， :math:`B` 表示0或者正整数。 :math:`B` 维度为0时该维度被忽略，shape为 :math:`(P, M)` 。

@@ -226,7 +226,8 @@ class DropoutExt(Cell):
     Args:
         p (float, optional): The dropout rate of input neurons, E.g. `p` =0.9, dropping out 90% of input neurons.
             Default: ``0.5`` .
-        inplace (bool, optional): If set to ``True`` , will do this operation in-place. Default: ``False`` .
+        inplace (bool, optional): Whether to enable the operation in-place.
+            If set to ``True`` , will do this operation in-place. Default: ``False`` .
 
     Inputs:
         - **x** (Tensor) - The input of Dropout.
