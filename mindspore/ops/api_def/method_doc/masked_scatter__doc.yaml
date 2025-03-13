@@ -1,0 +1,33 @@
+masked_scatter_:
+    description: |
+        masked_scatter_(mask, source) -> Tensor
+        
+        Updates the value in the `self` with the `source` value according to the `mask`, and returns a Tensor.
+        The shape of `mask` and the `self` must be the same or `mask` is broadcastable.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            mask (Tensor[bool]): A bool tensor with a shape broadcastable to the `self`.
+            source (Tensor): A tensor with the same data type as the `self`. The number
+                of elements must be greater than or equal to the number of True's in `mask`.
+
+        Returns:
+            Tensor, with the same type and shape as the `self`.
+
+        Supported Platforms:
+            ``Ascend``
+    
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore
+            >>> from mindspore import Tensor
+            >>> x = Tensor(np.array([1., 2., 3., 4.]), mindspore.float32)
+            >>> mask = Tensor(np.array([True, True, False, True]), mindspore.bool_)
+            >>> tensor = Tensor(np.array([5., 6., 7.]), mindspore.float32)
+            >>> output = x.masked_scatter_(mask, tensor)
+            >>> print(output)
+            [5. 6. 3. 7.]
+            >>> print(x)
+            [5. 6. 3. 7.]
