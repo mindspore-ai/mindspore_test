@@ -11655,52 +11655,54 @@ def diag_embed(input, offset=0, dim1=-2, dim2=-1):
 
 def sum(input, dim=None, keepdim=False, *, dtype=None):
     """
-    Calculate sum of Tensor elements over a given dim.
+    Calculate sum of tensor elements over a given dim.
 
     Note:
         The `dim` with tensor type is only used for compatibility with older versions and is not recommended.
 
     Args:
         input (Tensor): The input tensor.
-        dim (Union[None, int, tuple(int), list(int), Tensor]): Dimensions along which a sum is performed.
-            If ``None`` , sum all the elements of the input tensor.
-            If the `dim` is a tuple or list of ints, a sum is performed on all the dimensions specified in the tuple.
-            Must be in the range :math:`[-input.ndim, input.ndim)` . Default: ``None`` .
+        dim (Union[None, int, tuple(int), list(int), Tensor]): Dimensions along which the sum is calculated.
+            Default ``None`` .
         keepdim (bool): Whether the output tensor has dim retained or not.
             If ``True`` , keep these reduced dimensions and the length is 1.
-            If ``False`` , don't keep these dimensions. Default: ``False`` .
+            If ``False`` , will not keep these dimensions. Default ``False`` .
+
+    Note:
+        - If `dim` is ``None`` , sum is calculated on all the elements of the input tensor.
+        - If `dim` is a tuple or list of ints or tensor, sum is calculated on all dimensions specified in  `dim` .
 
     Keyword Args:
-        dtype (:class:`mindspore.dtype`, optional): The desired data type of returned Tensor. Default: ``None`` .
+        dtype (:class:`mindspore.dtype`, optional): The data type returned.
 
     Returns:
-        A Tensor, sum of elements over a given dim in `input`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `dim` is not an int, tulpe(int), list(int), Tensor or None.
-        ValueError: If `dim` is not in the range :math:`[-input.ndim, input.ndim)` .
-        TypeError: If `keepdim` is not a bool.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore import dtype as mstype
-        >>> x = Tensor(np.array([[[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3]],
+        >>> import mindspore
+        >>> x = mindspore.tensor([[[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3]],
         ...                      [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
-        ...                      [[7, 7, 7, 7, 7, 7], [8, 8, 8, 8, 8, 8], [9, 9, 9, 9, 9, 9]]]), mstype.float32)
-        >>> out = ops.sum(x)
+        ...                      [[7, 7, 7, 7, 7, 7], [8, 8, 8, 8, 8, 8], [9, 9, 9, 9, 9, 9]]], mindspore.float32)
+        >>> out = mindspore.ops.sum(input=x)
         >>> print(out)
         270.0
-        >>> out = ops.sum(x, dim=2)
+        >>> out = mindspore.ops.sum(input=x, dim=1)
+        >>> print(out)
+        [[ 6.  6.  6.  6.  6.  6.]
+         [15. 15. 15. 15. 15. 15.]
+         [24. 24. 24. 24. 24. 24.]]
+        >>> out = mindspore.ops.sum(input=x, dim=2)
         >>> print(out)
         [[ 6. 12. 18.]
          [24. 30. 36.]
          [42. 48. 54.]]
-        >>> out = ops.sum(x, dim=2, keepdim=True)
+        >>> out = mindspore.ops.sum(input=x, dim=[1, 2])
+        >>> print(out)
+        [ 36.  90. 144.]
+        >>> out = mindspore.ops.sum(input=x, dim=2, keepdim=True)
         >>> print(out)
         [[[ 6.]
          [12.]
@@ -11711,6 +11713,8 @@ def sum(input, dim=None, keepdim=False, *, dtype=None):
         [[42.]
          [48.]
          [54.]]]
+        >>> print(out.ndim)
+        3
     """
     return sum_ext_op(input, dim, keepdim, dtype)
 
