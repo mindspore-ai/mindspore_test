@@ -16,11 +16,37 @@ from tests.mark_utils import arg_mark
 import os
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_dfs_exec_order():
+@arg_mark(
+    plat_marks=["platform_ascend910b"],
+    level_mark="level1",
+    card_mark="onecard",
+    essential_mark="unessential",
+)
+def test_gpto_exec_order():
     """
     Feature: this test call gpto_net.py
     Description: this test use msrun to run the gpto test
+    Expectation: the test should pass without any error
+    """
+    os.environ['MS_ENABLE_GPTO'] = "1"
+    return_code = os.system(
+        "msrun --worker_num=1 --local_worker_num=1 --master_addr=127.0.0.1 "
+        "--master_port=10967 --join=True gpto_net.py"
+    )
+    del os.environ['MS_ENABLE_GPTO']
+    assert return_code == 0
+
+
+@arg_mark(
+    plat_marks=["platform_ascend910b"],
+    level_mark="level1",
+    card_mark="onecard",
+    essential_mark="unessential",
+)
+def test_dfs_exec_order():
+    """
+    Feature: this test call dfs_net.py
+    Description: this test use msrun to run the dfs test
     Expectation: the test should pass without any error
     """
     return_code = os.system(

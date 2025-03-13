@@ -2505,7 +2505,8 @@ std::unordered_map<std::string, Time> GetProfCost() {
 SchedulingInput ExtractSchedulingInput(mindspore::device::DeviceResManager *device_res_manager,
                                        const KernelGraphPtr &kernel_graph,
                                        std::unordered_map<CNodePtr, GptoTaskPtr> *cnode_to_task_map_ptr,
-                                       [[maybe_unused]] std::map<std::string, size_t> *group_to_id) {
+                                       [[maybe_unused]] std::map<std::string, size_t> *group_to_id,
+                                       bool *has_dynamic_shape) {
   MS_EXCEPTION_IF_NULL(cnode_to_task_map_ptr);
   SchedulingInput scheduling_input;  // to fill in and return
   std::unordered_map<GptoTaskPtr, std::pair<size_t, size_t>> switch_attribute_ids;
@@ -2527,9 +2528,8 @@ SchedulingInput ExtractSchedulingInput(mindspore::device::DeviceResManager *devi
 
     if (common::AnfAlgo::IsDynamicShape(cnode) || common::AnfAlgo::IsDynamicSequence(cnode) ||
         common::AnfAlgo::IsDynamicValue(cnode)) {
-      MS_LOG(INFO) << "GPTO can't parse graph with dynamic shape or dynamic value now.";
-      scheduling_input.tasks.clear();
-      return scheduling_input;
+      MS_LOG(INFO) << "Node " << cnode->fullname_with_scope() << " has dynamic shape";
+      *has_dynamic_shape = true;
     }
 
     GptoTaskPtr task = std::make_shared<GptoTask>(
@@ -2946,7 +2946,7 @@ std::vector<std::vector<GptoTensorPtr>> CommunicationNodeProcess(
       std::vector<GptoTensorPtr> inputs;
       for (const auto &in_tensor : task->in_tensors()) {
         MS_EXCEPTION_IF_NULL(in_tensor);
-        if (in_tensor->weight() > 0) {
+        if (in_tensor->weight() == 0) {
           MS_EXCEPTION(ValueError) << "The size of communication in_tensor is zero, tensor id: " +
                                         std::to_string(in_tensor->id());
         }
@@ -2963,7 +2963,7 @@ std::vector<std::vector<GptoTensorPtr>> CommunicationNodeProcess(
       std::vector<GptoTensorPtr> outputs;
       for (const auto &out_tensor : task->out_tensors()) {
         MS_EXCEPTION_IF_NULL(out_tensor);
-        if (out_tensor->weight() > 0) {
+        if (out_tensor->weight() == 0) {
           MS_EXCEPTION(ValueError) << "The size of communication out_tensor is zero, tensor id: " +
                                         std::to_string(out_tensor->id());
         }
@@ -2994,12 +2994,19 @@ std::vector<std::vector<GptoTensorPtr>> CommunicationNodeProcess(
   return contiguous_tensors_list;
 }
 
-void UpdateRefNodeGpto(const KernelGraphPtr &graph, std::unordered_map<CNodePtr, GptoTaskPtr> *cnode_to_task_map_ptr) {
+void UpdateRefNodeGpto(const KernelGraphPtr &graph, std::unordered_map<CNodePtr, GptoTaskPtr> *cnode_to_task_map_ptr,
+                       const bool &has_dynamic_shape) {
   // Retrieve necessary ref node and contiguous info
   auto in_out_vector = RefNodeProcess(graph, cnode_to_task_map_ptr);
   std::vector<std::vector<GptoTensorPtr>> ref_node_vector =
     GetRegularUnionTensorsList(MAX_TENSOR_ID + 1, in_out_vector);
-  auto contiguous_tensors_list = CommunicationNodeProcess(cnode_to_task_map_ptr);
+  std::vector<std::vector<GptoTensorPtr>> contiguous_tensors_list;
+  if (has_dynamic_shape) {
+    MS_LOG(WARNING)
+      << "CommunicationNodeProcess is skipped as some nodes have dynamic shape, contiguous tensors list will be empty";
+  } else {
+    contiguous_tensors_list = CommunicationNodeProcess(cnode_to_task_map_ptr);
+  }
   auto contiguous_ref_index_map = GetContiguousRefIndexMap(ref_node_vector, contiguous_tensors_list);
 
   // Loop to update ref node tensor sizes and gpto graph logic
@@ -3136,10 +3143,11 @@ void GPTO(mindspore::device::DeviceResManager *device_res_manager, const KernelG
 
   std::unordered_map<CNodePtr, GptoTaskPtr> cnode_to_task;
   std::map<std::string, size_t> group_to_id;
+  bool has_dynamic_shape = false;
   MS_LOG(INFO) << "Start ExtractSchedulingInput";
   PARAMETER_SIZE = 0;
   SchedulingInput scheduling_input =
-    ExtractSchedulingInput(device_res_manager, kernel_graph, &cnode_to_task, &group_to_id);
+    ExtractSchedulingInput(device_res_manager, kernel_graph, &cnode_to_task, &group_to_id, &has_dynamic_shape);
   MS_LOG(INFO) << "Parameter size: " << PARAMETER_SIZE;
   MS_LOG(INFO) << "End ExtractSchedulingInput";
 
@@ -3155,7 +3163,7 @@ void GPTO(mindspore::device::DeviceResManager *device_res_manager, const KernelG
   MS_LOG(INFO) << "End Graph Output Process";
 
   MS_LOG(INFO) << "Start Update Ref Node for Gpto";
-  UpdateRefNodeGpto(kernel_graph, &cnode_to_task);
+  UpdateRefNodeGpto(kernel_graph, &cnode_to_task, has_dynamic_shape);
   MS_LOG(INFO) << "End Update Ref Node for Gpto";
 
   Memory memory_lower_bound = 0;

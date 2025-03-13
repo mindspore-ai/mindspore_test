@@ -542,11 +542,11 @@ std::vector<std::vector<GptoTensorPtr>> CommunicationNodeProcess(std::unordered_
 std::map<GptoTensorPtr, GptoTensorPtr> GetRefTensorsInContiguousList(const std::vector<std::vector<GptoTensorPtr>> &);
 std::map<size_t, size_t> GetContiguousRefIndexMap(const std::vector<std::vector<GptoTensorPtr>> &,
                                                   const std::vector<std::vector<GptoTensorPtr>> &);
-void UpdateRefNodeGpto(const KernelGraphPtr &, std::unordered_map<CNodePtr, GptoTaskPtr> *);
+void UpdateRefNodeGpto(const KernelGraphPtr &, std::unordered_map<CNodePtr, GptoTaskPtr> *, const bool &);
 
 // Scheduling main functions
 SchedulingInput ExtractSchedulingInput(mindspore::device::DeviceResManager *, const KernelGraphPtr &,
-                                       std::unordered_map<CNodePtr, GptoTaskPtr> *);
+                                       std::unordered_map<CNodePtr, GptoTaskPtr> *, bool *);
 SchedulingOutput MemAwareScheduler(const SchedulingInput &, [[maybe_unused]] std::map<std::string, size_t> *);
 SchedulingOutput MemAwareSchedulerCore(const std::vector<GptoTaskPtr> &, const std::map<GptoTaskType, int32_t> &,
                                        const TaskSortFunction &, bool);

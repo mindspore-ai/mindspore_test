@@ -1053,6 +1053,8 @@ bool SymEngOptGroup(const ResourcePtr &resource) { return OptPassGroup(resource,
 bool OptPassGradEpilogueGroup(const ResourcePtr &resource) { return OptPassGroup(resource, "opt_grad_epilogue"); }
 bool OptPassAddAttr(const ResourcePtr &resource) { return OptPassGroup(resource, "add_attr"); }
 
+bool IsPassDisableForGPTO() { return common::GetEnv("MS_ENABLE_GPTO") >= "1"; }
+
 bool AddRecomputationPass(const ResourcePtr &resource) {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
@@ -1101,24 +1103,36 @@ bool SliceReuseRecomputedActivationPass(const ResourcePtr &resource) {
 
 bool LabelMicroInterleavedIndexPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
+  if (IsPassDisableForGPTO()) {
+    return true;
+  }
   parallel::LabelMicroInterleavedIndex(resource->func_graph());
   return true;
 }
 
 bool OverlapRecomputeAllGatherAndFlashAttentionGradPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
+  if (IsPassDisableForGPTO()) {
+    return true;
+  }
   parallel::OverlapRecomputeAllGatherAndFlashAttentionGrad(resource->func_graph());
   return true;
 }
 
 bool OverlapGradRingAttentionPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
+  if (IsPassDisableForGPTO()) {
+    return true;
+  }
   parallel::OverlapGradRingAttention(resource->func_graph());
   return true;
 }
 
 bool OverlapGradFlashSP(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
+  if (IsPassDisableForGPTO()) {
+    return true;
+  }
   if (parallel::OverlapGradFlashSP(resource->func_graph())) {
     FuncGraphPtr func_graph = resource->func_graph();
     FuncGraphPtr new_fg = LiftingClone(func_graph);
@@ -1129,30 +1143,45 @@ bool OverlapGradFlashSP(const ResourcePtr &resource) {
 
 bool InterleaveSplitConcatBranches(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
+  if (IsPassDisableForGPTO()) {
+    return true;
+  }
   parallel::InterleaveSplitConcatBranches(resource->func_graph());
   return true;
 }
 
 bool InterleaveParallelBranches(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
+  if (IsPassDisableForGPTO()) {
+    return true;
+  }
   parallel::InterleaveParallelBranches(resource->func_graph());
   return true;
 }
 
 bool OptimizeParallelAllGatherCommPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
+  if (IsPassDisableForGPTO()) {
+    return true;
+  }
   parallel::OptimizeParallelAllGatherComm(resource->func_graph());
   return true;
 }
 
 bool OptimizeParamGatherPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
+  if (IsPassDisableForGPTO()) {
+    return true;
+  }
   parallel::OverlapParamGather(resource->func_graph());
   return true;
 }
 
 bool LabelFineGrainedInterleavedIndexPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
+  if (IsPassDisableForGPTO()) {
+    return true;
+  }
   parallel::LabelFineGrainedInterleavedIndex(resource->func_graph());
   return true;
 }
@@ -1220,12 +1249,18 @@ bool BiasAddCommSwap(const ResourcePtr &resource) {
 
 bool ReorderSendRecvBetweenFpBpPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
+  if (IsPassDisableForGPTO()) {
+    return true;
+  }
   parallel::ReorderSendRecvBetweenFpBp(resource->func_graph());
   return true;
 }
 
 bool MicroInterLeavedOrderControlPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
+  if (IsPassDisableForGPTO()) {
+    return true;
+  }
   parallel::MicroInterleavedOrderControl(resource->func_graph());
   return true;
 }
@@ -1238,6 +1273,9 @@ bool OverlapGradCommPass(const ResourcePtr &resource) {
 
 bool FullMicroInterLeavedOrderControlPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
+  if (IsPassDisableForGPTO()) {
+    return true;
+  }
   parallel::FullMicroInterleavedOrderControl(resource->func_graph());
   return true;
 }
@@ -1274,6 +1312,9 @@ bool AddCommOpReusePass(const ResourcePtr &resource) {
 
 bool OverlapOptShardInPipelinePass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
+  if (IsPassDisableForGPTO()) {
+    return true;
+  }
   parallel::OverlapOptShardInPipeline(resource->func_graph());
   return true;
 }
@@ -1299,12 +1340,18 @@ bool BeginEndOverlapInlinePass(const ResourcePtr &resource) {
 
 bool OverlapGradMatmulAndGradAllreduce(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
+  if (IsPassDisableForGPTO()) {
+    return true;
+  }
   parallel::OverlapGradMatmulAndGradAllreduce(resource->func_graph());
   return true;
 }
 
 bool OverlapOptShardGradInPipelinePass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
+  if (IsPassDisableForGPTO()) {
+    return true;
+  }
   parallel::OverlapOptShardGradInPipeline(resource->func_graph());
   return true;
 }
@@ -1329,6 +1376,9 @@ bool LoopUnrollPass(const ResourcePtr &resource) {
 
 bool OverlapRecomputeAndGradModelParallel(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
+  if (IsPassDisableForGPTO()) {
+    return true;
+  }
   parallel::OverlapRecomputeAndGradModelParallel(resource->func_graph());
   return true;
 }
@@ -1431,6 +1481,9 @@ bool ExpandDumpFlagPass(const ResourcePtr &resource) {
 
 bool ControlDataBroadcastOrderPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
+  if (IsPassDisableForGPTO()) {
+    return true;
+  }
   auto graph = resource->func_graph();
   parallel::ControlOptShardCommAndDataBroadcastOrder(graph);
   parallel::ControlPipelineCommAndDataBroadcastOrder(graph);
