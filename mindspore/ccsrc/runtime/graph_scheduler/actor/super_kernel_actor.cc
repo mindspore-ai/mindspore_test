@@ -426,7 +426,7 @@ void SuperKernelActor::Run(OpContext<DeviceTensor> *const context) {
     MS_LOG(WARNING) << "Need Profile Memory, launch actor name: " << GetAID().Name()
                     << ", kernel graph: " << graph_->ToString();
   }
-  if (!WaitRuntimePipelineFinish(context)) {
+  if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
     MS_LOG(INFO) << "Run failed and early stop.";
     return;
   }
@@ -653,11 +653,12 @@ void SuperKernelActor::FreeTraceMemory() const {
 
 bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<DeviceTensor> *const context,
                                                const KernelActorPtr &kernel_actor) const {
-  if (!WaitRuntimePipelineFinish(context)) {
+  if (!WaitRuntimePipelineFinish(context, kernel_actor->kernel_mod_->kernel_name())) {
     return false;
   }
 
-  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kCopyData, GetAID().Name());
+  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kCopyData,
+                            kernel_actor->kernel_mod_->kernel_name());
   for (const auto &output_index_to_copy_address : kernel_actor->copy_output_device_tensors_) {
     const auto &output_index = output_index_to_copy_address.first;
     const auto &dest_device_address = output_index_to_copy_address.second.first.get();
@@ -898,7 +899,7 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<DeviceTensor> *const context) 
       // value depend case can not handle in KernelTensor auto sync phase currently.
       if (kernel_actor->kernel_mod_->need_user_data() && kernel_actor->has_dynamic_) {
         MS_LOG(DEBUG) << "Begin wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
-        if (!WaitRuntimePipelineFinish(context)) {
+        if (!WaitRuntimePipelineFinish(context, kernel_actor->kernel_mod_->kernel_name())) {
           return false;
         }
         MS_LOG(DEBUG) << "End wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
@@ -912,7 +913,7 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<DeviceTensor> *const context) 
       // The computed depend kernel should wait output shape update after kernel launch.
       if (kernel_actor->kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
         MS_LOG(DEBUG) << "Begin wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
-        if (!WaitRuntimePipelineFinish(context)) {
+        if (!WaitRuntimePipelineFinish(context, kernel_actor->kernel_mod_->kernel_name())) {
           return false;
         }
         MS_LOG(DEBUG) << "End wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
@@ -930,6 +931,16 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<DeviceTensor> *const context) 
       }
 
       Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernel, context, kernel_actor.get());
+
+      // The computed depend kernel should wait output shape update after kernel launch.
+      if (kernel_actor->kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
+        MS_LOG(DEBUG) << "Begin wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
+        if (!WaitRuntimePipelineFinish(context, kernel_actor->kernel_mod_->kernel_name())) {
+          MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_actor->kernel_->fullname_with_scope();
+          return false;
+        }
+        MS_LOG(DEBUG) << "End wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
+      }
     } else {
       MS_LOG(DEBUG) << "Sync launch kernel actor:" << kernel_actor->GetAID() << " in actor:" << GetAID();
       kernel_actor->InferAndUpdateDeviceTensorSize(context);
@@ -938,7 +949,7 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<DeviceTensor> *const context) 
 
     if (enable_inline_control_flow_ &&
         common::AnfAlgo::CheckPrimitiveType(kernel_actor->kernel_, prim::kPrimConditionSwitch)) {
-      if (!WaitRuntimePipelineFinish(context)) {
+      if (!WaitRuntimePipelineFinish(context, kernel_actor->kernel_mod_->kernel_name())) {
         MS_LOG(INFO) << "Run failed and early stop.";
         return false;
       }
@@ -1130,6 +1141,11 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<DeviceTensor> *const con
   // 2. Allocate somas memory for graph
   if ((somas_info_ != nullptr) && (somas_info_->whole_block_size_ != 0)) {
     MemoryManagerActor::GetInstance()->AllocateSomasMemory(somas_info_, device_contexts_[0], context, GetAID());
+    if (IsRunningFailed(context)) {
+      // Maybe allocate memory failed, early stop to run graph.
+      MS_LOG(INFO) << "Run failed and early stop to run graph: " << graph_->ToString();
+      return;
+    }
   }
 
   if (enable_trace_memory_ && graph_->is_dynamic_shape() && (graph_phase_.find("increment") != std::string::npos)) {
@@ -1155,7 +1171,7 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<DeviceTensor> *const con
 
   if (((somas_info_ != nullptr) && (somas_info_->whole_block_size_ != 0)) ||
       ActorDispatcher::enable_trace_dynamic_memory() || ActorDispatcher::enable_use_trace_memory()) {
-    WaitRuntimePipelineFinish(context);
+    WaitRuntimePipelineFinish(context, GetAID().Name());
   }
 
   // 4. Free somas or cached memory for graph.

@@ -608,7 +608,7 @@ void AnyTypeKernelActor::Run(OpContext<DeviceTensor> *const context) {
   actor_state_ = AnyTypeKernelActorState::kAnyTypeKernelActorSendInput;
   MS_LOG(DEBUG) << "Any type kernel actor:" << GetAID() << " run.";
   FetchInputDeviceTensor(context);
-  if (!WaitRuntimePipelineFinish(context)) {
+  if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
     MS_LOG(INFO) << "Run failed and early stop.";
     return;
   }

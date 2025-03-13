@@ -84,6 +84,7 @@ enum class ProfilerEvent {
   // Inner event is not counted in the total time.
   kKernelInferInner,
   kKernelInferDataSync,
+  kKernelResizeInner,
   kKernelLaunchInner,
   kBackendGraphRunInner,
 
@@ -182,6 +183,7 @@ static const std::map<ProfilerEvent, std::string> kProfilerEventString = {
   {ProfilerEvent::kWaitKernelsLaunchFinish, "WaitKernelsLaunchFinish"},
   // Inner event.
   {ProfilerEvent::kKernelInferInner, "KernelInferInner"},
+  {ProfilerEvent::kKernelResizeInner, "KernelResizeInner"},
   {ProfilerEvent::kKernelInferDataSync, "KernelInferDataSync"},
   {ProfilerEvent::kKernelLaunchInner, "KernelLaunchInner"},
   {ProfilerEvent::kBackendGraphRunInner, "BackendGraphRunInner"},

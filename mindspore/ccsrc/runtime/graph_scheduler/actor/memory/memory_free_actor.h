@@ -45,7 +45,7 @@ class MemoryFreeActor : public MemoryAwareActor {
 
  protected:
   void Run(OpContext<DeviceTensor> *const context) override {
-    if (!WaitRuntimePipelineFinish(context)) {
+    if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
       MS_LOG(INFO) << "Run graph failed and please check error log.";
       return;
     }

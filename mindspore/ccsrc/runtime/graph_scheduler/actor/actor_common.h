@@ -504,7 +504,8 @@ bool EnableParallelDispatchKernel();
 
 // If enable async launch kernel, wait all kernels launch task finish.
 // If enable infer->resize->launch pipeline, also wait all infer, resize and launch task finish.
-bool WaitRuntimePipelineFinish(const OpContext<DeviceTensor> *context, bool wait_kernel_launch_finish = true);
+bool WaitRuntimePipelineFinish(const OpContext<DeviceTensor> *context, const std::string &name,
+                               bool wait_kernel_launch_finish = true);
 
 size_t GetDefragMemoryStepFreq();
 

@@ -57,7 +57,7 @@ void LoopCountActor::IncreaseLoopCount(OpContext<DeviceTensor> *const context) {
   current_count_++;
   MS_LOG(INFO) << "Loop count actor(" << GetAID().Name() << ") running, loop count: " << loop_count_
                << ", current count: " << current_count_ << ", total running count: " << total_running_count_;
-  if (!WaitRuntimePipelineFinish(context)) {
+  if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
     MS_LOG(INFO) << "Run graph failed and please check error log.";
     return;
   }

@@ -21,16 +21,21 @@
 #include "runtime/graph_scheduler/actor/kernel_async_launch_actor.h"
 #include "runtime/graph_scheduler/graph_scheduler.h"
 #include "runtime/graph_scheduler/embedding_cache_scheduler.h"
+#include "debug/profiler/profiler.h"
 
 namespace mindspore {
 namespace backend {
 namespace ms_backend {
 namespace {
+const auto kSyncDataFromDeviceToHost = "SyncDataFromDeviceToHost";
 // The runtime pipeline: InferShape->ResizeKernelMod->LaunchKernel, the latter cannot wait for the former, otherwise
 // deadlock may occur.
 // 1. infer shape task needs to wait for resize and kernel launch.
 // 2. Internally, the resize task only needs to wait for the kernel launch
 void WaitAsyncResizeAndLaunchFinish() {
+  uint64_t start_time = 0;
+  PROFILER_START(start_time);
+
   if (runtime::ActorDispatcher::enable_runtime_multi_pipeline()) {
     const auto &cur_thread_id = std::this_thread::get_id();
     if (cur_thread_id != runtime::KernelAsyncResizeActor::GetInstance()->actor_thread_id() &&
@@ -46,6 +51,9 @@ void WaitAsyncResizeAndLaunchFinish() {
   if (runtime::ActorDispatcher::enable_async_launch_kernel()) {
     runtime::KernelAsyncLaunchActor::GetInstance()->Wait();
   }
+
+  PROFILER_END(start_time, runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kWaitTaskFinish,
+               kSyncDataFromDeviceToHost, false);
 }
 }  // namespace
 

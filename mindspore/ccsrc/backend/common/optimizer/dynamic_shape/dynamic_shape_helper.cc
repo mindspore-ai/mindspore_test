@@ -492,14 +492,14 @@ inline bool IsCpuKernelMod(kernel::KernelModType kernel_mod_type) {
 
 BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
   MS_EXCEPTION_IF_NULL(primitive);
+  const auto &op_name = primitive->name();
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kKernelInferInner,
+                                     op_name, true);
   if (primitive->HasAttr(kAttrInferShapeFunctor)) {
     auto functor = primitive->GetAttr(kAttrInferShapeFunctor)->cast<InferShapeFunctorPtr>();
     MS_EXCEPTION_IF_NULL(functor);
     return functor->InferShape(input_args);
   }
-  const auto &op_name = primitive->name();
-  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kKernelInferInner,
-                                     op_name, true);
   auto shape_optional = abstract::InferShapeByFuncImpl(primitive, input_args, false);
   if (shape_optional.has_value()) {
     return shape_optional.value();

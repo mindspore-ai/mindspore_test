@@ -412,8 +412,12 @@ size_t GetDefragMemoryStepFreq() {
   return defrag_memory_step_freq;
 }
 
-bool WaitRuntimePipelineFinish(const OpContext<DeviceTensor> *context, bool wait_kernel_launch_finish) {
+bool WaitRuntimePipelineFinish(const OpContext<DeviceTensor> *context, const std::string &name,
+                               bool wait_kernel_launch_finish) {
 #ifndef BUILD_LITE
+  uint64_t start_time = 0;
+  PROFILER_START(start_time);
+
   if (ActorDispatcher::enable_runtime_multi_pipeline()) {
     KernelAsyncInferActor::GetInstance()->Wait();
     KernelAsyncResizeActor::GetInstance()->Wait();
@@ -422,6 +426,7 @@ bool WaitRuntimePipelineFinish(const OpContext<DeviceTensor> *context, bool wait
   if (ActorDispatcher::enable_async_launch_kernel() && wait_kernel_launch_finish) {
     KernelAsyncLaunchActor::GetInstance()->Wait();
   }
+  PROFILER_END(start_time, ProfilerModule::kRuntime, ProfilerEvent::kWaitTaskFinish, name, false);
 
   if (ActorDispatcher::enable_async_launch_kernel() && IsRunningFailed(context)) {
     MS_LOG(ERROR) << "Wait runtime pipeline finish and an error occurred: " << context->error_info_;

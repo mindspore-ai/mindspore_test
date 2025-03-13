@@ -551,7 +551,7 @@ void KernelActor::RunWithMultiPipeline(OpContext<DeviceTensor> *const context) {
   // depend case can not handle in KernelTensor auto sync phase currently.
   if (kernel_mod_->need_user_data() && has_dynamic_) {
     MS_LOG(DEBUG) << "Begin wait runtime pipeline for kernel: " << kernel_->fullname_with_scope();
-    if (!WaitRuntimePipelineFinish(context)) {
+    if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
       MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_->fullname_with_scope();
       return;
     }
@@ -571,7 +571,7 @@ void KernelActor::RunWithMultiPipeline(OpContext<DeviceTensor> *const context) {
   // The computed depend kernel should wait output shape update after kernel launch.
   if (kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
     MS_LOG(DEBUG) << "Begin wait runtime pipeline for kernel: " << kernel_->fullname_with_scope();
-    if (!WaitRuntimePipelineFinish(context)) {
+    if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
       MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_->fullname_with_scope();
       return;
     }
@@ -589,6 +589,15 @@ void KernelActor::RunWithAsyncLaunchKernel(OpContext<DeviceTensor> *const contex
   if (IsRunningFailed(context)) {
     MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_->fullname_with_scope();
     return;
+  }
+
+  if (kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
+    MS_LOG(DEBUG) << "Begin wait runtime pipeline for kernel: " << kernel_->fullname_with_scope();
+    if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
+      MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_->fullname_with_scope();
+      return;
+    }
+    MS_LOG(DEBUG) << "End wait runtime pipeline for kernel: " << kernel_->fullname_with_scope();
   }
 
   // PostLaunchKernel
@@ -848,7 +857,7 @@ void KernelActor::CopyInputDeviceTensor(DeviceTensor *device_tensor, size_t inpu
     return;
   }
 
-  if (!WaitRuntimePipelineFinish(context)) {
+  if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
     MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_->fullname_with_scope();
     return;
   }
@@ -1225,7 +1234,7 @@ void KernelActor::InferAndResize(OpContext<DeviceTensor> *const context) {
     // If the kernel need user data and is dynamic, maybe need input kernel's output user data to infer shape, this
     // value depend case can not handle in KernelTensor auto sync phase currently.
     if (ActorDispatcher::enable_async_launch_kernel() && kernel_mod_->need_user_data() &&
-        !WaitRuntimePipelineFinish(context)) {
+        !WaitRuntimePipelineFinish(context, GetAID().Name())) {
       MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_->fullname_with_scope();
       return;
     }
@@ -1281,6 +1290,7 @@ void KernelActor::InferShape() {
 }
 
 void KernelActor::ResizeKernelMod() {
+  ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kKernelResizeInner, GetAID().Name(), true);
   MS_LOG(DEBUG) << "Begin Resize kernel mod for kernel: " << kernel_->fullname_with_scope();
   int ret = kernel_mod_->Resize(input_kernel_tensors_, output_kernel_tensors_);
   MS_LOG(DEBUG) << "End Resize kernel mod for kernel: " << kernel_->fullname_with_scope()

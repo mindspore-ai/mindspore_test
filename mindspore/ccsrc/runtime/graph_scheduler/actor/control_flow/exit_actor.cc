@@ -74,7 +74,7 @@ void ClearDeviceTensorCopyStore(const std::map<KernelWithIndex, KernelWithIndex>
 
 void ExitActor::FetchInput(OpContext<DeviceTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
-  if (!WaitRuntimePipelineFinish(context)) {
+  if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
     MS_LOG(INFO) << "Run failed and early stop.";
     return;
   }

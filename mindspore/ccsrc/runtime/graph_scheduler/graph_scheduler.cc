@@ -402,14 +402,19 @@ bool CheckKbkSubGraphExecConditon(const std::vector<KernelGraphPtr> &graphs) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   if (!ms_context->IsKByKExecutorMode()) {
+    MS_LOG(INFO) << "Disable kbk sub graph mode because the executor mode is not kbk.";
     return false;
   }
 
   for (const auto &graph : graphs) {
     MS_EXCEPTION_IF_NULL(graph);
-    // Note: Kbk sub graph mode doesn't support 'SwitchInline' and Fallback feature currently.
+    // Note: Kbk sub graph mode doesn't support Fallback feature currently.
     if (!graph->enable_kbk_sub_graph_execute() ||
         (graph->RunMode() != device::RunMode::kKernelMode && graph->inline_sub_graph_kernels().empty())) {
+      MS_LOG(INFO) << "Disable kbk sub graph mode for graph: " << graph->ToString()
+                   << ", enable kbk sub graph execute: " << graph->enable_kbk_sub_graph_execute()
+                   << ", graph mode: " << device::run_mode_to_name_map.at(graph->RunMode())
+                   << ", has inline sub graph: " << !(graph->inline_sub_graph_kernels().empty());
       return false;
     }
   }
@@ -419,7 +424,7 @@ bool CheckKbkSubGraphExecConditon(const std::vector<KernelGraphPtr> &graphs) {
     return common::AnfAlgo::GetCNodeName(kernel) == "PyExecute";
   };
 
-  // Note: Kbk sub graph mode doesn't support 'RpcSend, RpcRecv, ConditionSwitch, ConditionGather, PyExecute' currently.
+  // Note: Kbk sub graph mode doesn't support 'RpcSend, RpcRecv, PyExecute' currently.
   auto IsKernelNotSupportKbkSubGraphMode = [&](const CNodePtr &kernel) {
     MS_EXCEPTION_IF_NULL(kernel);
     return (IsRpcActor(kernel) || IsFallBackKernel(kernel));
@@ -429,6 +434,8 @@ bool CheckKbkSubGraphExecConditon(const std::vector<KernelGraphPtr> &graphs) {
     MS_EXCEPTION_IF_NULL(graph);
     if (std::any_of(graph->execution_order().begin(), graph->execution_order().end(),
                     [&](const CNodePtr &kernel) { return IsKernelNotSupportKbkSubGraphMode(kernel); })) {
+      MS_LOG(INFO) << "Disable kbk sub graph mode for graph: " << graph->ToString()
+                   << ", kbk sub graph mode doesn't support 'RpcSend', 'RpcRecv', 'PyExecute' currently.";
       return false;
     }
   }
