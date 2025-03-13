@@ -3,23 +3,11 @@ mindspore.Tensor.argmin_with_value
 
 .. py:method:: mindspore.Tensor.argmin_with_value(axis=0, keep_dims=False)
 
-    根据指定的索引，在给定轴上计算输入Tensor的最小值，并且返回最小值和索引。
-
-    .. note::
-        - 在auto_parallel和semi_auto_parallel模式下，不能使用第一个输出索引。
-        - 如果有多个最小值，则取第一个最小值的索引。
-        - `axis` 的取值范围为[-dims, dims - 1]。`dims` 为输入Tensor的维度长度。
+    返回tensor在指定轴上的最小值及其索引。
 
     参数：
-        - **axis** (int, 可选) - 指定计算维度。默认值： ``0`` 。
-        - **keep_dims** (bool, 可选) - 表示是否保留维度。如果为 ``True`` ，则输出维度和输入维度相同。如果为 ``False`` ，则减少输出维度。默认值： ``False`` 。
+        - **axis** (int, 可选) - 指定计算轴。如果为 ``None`` ，计算tensor中的所有元素。默认 ``0`` 。
+        - **keep_dims** (bool, 可选) - 输出tensor是否保留维度。默认 ``False`` 。
 
     返回：
-        tuple (Tensor)，表示2个Tensor组成的tuple，包含对应的索引和输入Tensor的最小值。
-
-        - **index** (Tensor) - 输入Tensor最小值的索引。如果 `keep_dims` 为 ``True`` ，则输出Tensor的shape为 :math:`(x_1, x_2, ..., x_{axis-1}, 1, x_{axis+1}, ..., x_N)` 。否则，shape为 :math:`(x_1, x_2, ..., x_{axis-1}, x_{axis+1}, ..., x_N)` 。
-        - **output_x** (Tensor) - 输入Tensor的最小值，其shape与索引相同。
-
-    异常：
-        - **TypeError** - `keep_dims` 不是bool。
-        - **TypeError** - `axis` 不是int。
+        两个tensor组成的tuple(min, min_indices)。

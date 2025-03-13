@@ -1714,46 +1714,49 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
     def argmax_with_value(self, axis=0, keep_dims=False):
         """
-        Compute the max value of input Tensor on the specified axis, and return the max value and index.
-
-        Note:
-            - In auto_parallel and semi_auto_parallel mode, the first output index can not be used.
-            - If there are multiple maximum values, the index of the first maximum value is used.
-            - The value range of `axis` is [-dims, dims - 1]. `dims` is the dimension length of this tensor.
+        Return the maximum values and their indices along the given axis of the tensor.
 
         Args:
-            axis (int, optional): The dimension to reduce. Default: ``0`` .
-            keep_dims (bool, optional): Whether to keep dimension, if ``true`` the output will keep the same dimension
-                as the input, the output will reduce dimension if ``False`` . Default: ``False`` .
+            axis (Union[int, None], optional): Specify the axis for computation. If ``None`` , compute all elements in
+                the tensor. Default ``0`` .
+            keep_dims (bool, optional): Whether the output tensor has dim retained. Default ``False`` .
 
         Returns:
-            tuple (Tensor), tuple of 2 tensors, containing the corresponding index and the maximum value of the input
-            tensor.
-
-            - **index** (Tensor) - The index for the maximum value of the input tensor.
-              If `keep_dims` is ``true`` , the shape of
-              output tensors is :math:`(x_1, x_2, ..., x_{axis-1}, 1, x_{axis+1}, ..., x_N)`. Otherwise, the shape is
-              :math:`(x_1, x_2, ..., x_{axis-1}, x_{axis+1}, ..., x_N)` .
-            - **value** (Tensor) - The maximum value of input tensor, with the same shape as index.
-
-        Raises:
-            TypeError: If `keep_dims` is not a bool.
-            TypeError: If `axis` is not an int.
+            Tuple(max, max_indices) of 2 tensors.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
 
         Examples:
-            >>> import numpy as np
             >>> import mindspore
-            >>> from mindspore import Tensor
-            >>> x = Tensor(np.array([0.0, 0.4, 0.6, 0.7, 0.1]), mindspore.float32)
-            >>> output, index = x.argmax_with_value()
-            >>> print(output, index)
-            0.7 3
-            >>> output, index = x.argmax_with_value(keep_dims=True)
-            >>> print(output, index)
-            [0.7] [3]
+            >>> x = mindspore.tensor([[9, 3, 4, 5],
+            ...                       [5, 2, 7, 4],
+            ...                       [8, 1, 3, 6]])
+            >>> # case 1: By default, compute the maximum along axis 0.
+            >>> x.argmax_with_value()
+            (Tensor(shape=[4], dtype=Int64, value= [9, 3, 7, 6]),
+             Tensor(shape=[4], dtype=Int64, value= [0, 0, 1, 2]))
+            >>>
+            >>> # case 2: Compute the maximum along axis 1.
+            >>> x.argmax_with_value(axis=1)
+            (Tensor(shape=[3], dtype=Int64, value= [9, 7, 8]),
+             Tensor(shape=[3], dtype=Int64, value= [0, 2, 0]))
+            >>>
+            >>> # case 3: If keep_dims=True, the output shape will be same of that of the input.
+            >>> x.argmax_with_value(axis=1, keep_dims=True)
+            (Tensor(shape=[3, 1], dtype=Int64, value=
+             [[9],
+              [7],
+              [8]]),
+             Tensor(shape=[3, 1], dtype=Int64, value=
+             [[0],
+              [2],
+              [0]]))
+            >>>
+            >>> # case 4: If axis=None, compute the maximum of all elements.
+            >>> x.argmax_with_value(axis=1, keep_dims=True)
+            (Tensor(shape=[], dtype=Int64, value= 9),
+             Tensor(shape=[], dtype=Int64, value= 0))
         """
         if self.shape == ():
             return (self, Tensor(0))
@@ -1761,46 +1764,49 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
     def argmin_with_value(self, axis=0, keep_dims=False):
         """
-        Compute the max value of input Tensor on the specified axis, return the minimum value and index.
-
-        Note:
-            - In auto_parallel and semi_auto_parallel mode, the first output index can not be used.
-            - If there are multiple minimum values, the index of the first minimum value is used.
-            - The value range of `axis` is [-dims, dims - 1]. `dims` is the dimension length of this tensor.
+        Return the minimum values and their indices along the given axis of the tensor.
 
         Args:
-            axis (int, optional): The dimension to reduce. Default: ``0``.
-            keep_dims (bool, optional): Whether to reduce dimension, if true the output will keep the same dimension
-                as the input, the output will reduce dimension if false. Default: ``False``.
+            axis (Union[int, None], optional): Specify the axis for computation. If ``None`` , compute all elements in
+                the tensor. Default ``0`` .
+            keep_dims (bool, optional): Whether the output tensor has dim retained. Default ``False`` .
 
         Returns:
-            tuple (Tensor), tuple of 2 tensors, containing the corresponding index and the minimum value of the input
-            tensor.
-
-            - **index** (Tensor) - The index for the minimum value of the input tensor.
-              If `keep_dims` is true, the shape of
-              output tensors is :math:`(x_1, x_2, ..., x_{axis-1}, 1, x_{axis+1}, ..., x_N)`. Otherwise, the shape is
-              :math:`(x_1, x_2, ..., x_{axis-1}, x_{axis+1}, ..., x_N)` .
-            - **value** (Tensor) - The minimum value of input tensor, with the same shape as index.
-
-        Raises:
-            TypeError: If `keep_dims` is not a bool.
-            TypeError: If `axis` is not an int.
+            Tuple(min, min_indices) of 2 tensors.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
 
         Examples:
-            >>> import numpy as np
             >>> import mindspore
-            >>> from mindspore import Tensor
-            >>> x = Tensor(np.array([0.0, 0.4, 0.6, 0.7, 0.1]), mindspore.float32)
-            >>> output, index = x.argmin_with_value()
-            >>> print(output, index)
-            0.0 0
-            >>> output, index = x.argmin_with_value(keep_dims=True)
-            >>> print(output, index)
-            [0.0] [0]
+            >>> x = mindspore.tensor([[2, 5, 1, 6],
+            ...                       [3, -7, -2, 4],
+            ...                       [8, -4, 1, -3]])
+            >>> # case 1: By default, compute the minimum along axis 0.
+            >>> x.argmax_with_value()
+            (Tensor(shape=[4], dtype=Int64, value= [ 2, -7, -2, -3]),
+             Tensor(shape=[4], dtype=Int64, value= [0, 1, 1, 2]))
+            >>>
+            >>> # case 2: Compute the minimum along axis 1.
+            >>> x.argmax_with_value(axis=1)
+            (Tensor(shape=[3], dtype=Int64, value= [ 1, -7, -4]),
+             Tensor(shape=[3], dtype=Int64, value= [2, 1, 1]))
+            >>>
+            >>> # case 3: If keep_dims=True, the output shape will be same of that of the input.
+            >>> x.argmax_with_value(axis=1, keep_dims=True)
+            (Tensor(shape=[3, 1], dtype=Int64, value=
+             [[ 1],
+              [-7],
+              [-4]]),
+             Tensor(shape=[3, 1], dtype=Int64, value=
+             [[2],
+              [1],
+              [1]]))
+            >>>
+            >>> # case 4: If axis=None, compute the minimum of all elements.
+            >>> x.argmax_with_value(axis=1, keep_dims=True)
+            (Tensor(shape=[], dtype=Int64, value= -7),
+             Tensor(shape=[], dtype=Int64, value= 0))
         """
         if self.shape == ():
             return (self, Tensor(0))
