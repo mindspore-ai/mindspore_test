@@ -53,7 +53,8 @@ bool SliceCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const st
                                                                 {kNumberTypeFloat64, sizeof(double)},
                                                                 {kNumberTypeFloat16, sizeof(float16)},
                                                                 {kNumberTypeComplex64, sizeof(std::complex<float>)},
-                                                                {kNumberTypeComplex128, sizeof(std::complex<double>)}};
+                                                                {kNumberTypeComplex128, sizeof(std::complex<double>)},
+                                                                {kNumberTypeBFloat16, sizeof(bfloat16)}};
 
   size_t input_num = inputs.size();
   if (input_num != kSliceInputsNum) {
@@ -278,7 +279,8 @@ std::vector<KernelAttr> SliceCpuKernelMod::GetOpSupport() {
     SLICE_CPU_REGISTER_KERNEL_ATTR(kNumberTypeUInt16),    SLICE_CPU_REGISTER_KERNEL_ATTR(kNumberTypeUInt32),
     SLICE_CPU_REGISTER_KERNEL_ATTR(kNumberTypeUInt64),    SLICE_CPU_REGISTER_KERNEL_ATTR(kNumberTypeFloat16),
     SLICE_CPU_REGISTER_KERNEL_ATTR(kNumberTypeFloat32),   SLICE_CPU_REGISTER_KERNEL_ATTR(kNumberTypeFloat64),
-    SLICE_CPU_REGISTER_KERNEL_ATTR(kNumberTypeComplex64), SLICE_CPU_REGISTER_KERNEL_ATTR(kNumberTypeComplex128)};
+    SLICE_CPU_REGISTER_KERNEL_ATTR(kNumberTypeComplex64), SLICE_CPU_REGISTER_KERNEL_ATTR(kNumberTypeComplex128),
+    SLICE_CPU_REGISTER_KERNEL_ATTR(kNumberTypeBFloat16)};
   return support_list;
 }
 

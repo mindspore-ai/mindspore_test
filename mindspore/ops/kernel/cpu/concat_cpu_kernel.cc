@@ -133,7 +133,8 @@ const std::vector<std::pair<KernelAttr, ConcatCpuKernelMod::KernelRunFunc>> &Con
     CONCAT_CPU_KERNEL_ATTR(kNumberTypeInt64, int64_t),         CONCAT_CPU_KERNEL_ATTR(kNumberTypeUInt8, uint8_t),
     CONCAT_CPU_KERNEL_ATTR(kNumberTypeUInt16, uint16_t),       CONCAT_CPU_KERNEL_ATTR(kNumberTypeUInt32, uint32_t),
     CONCAT_CPU_KERNEL_ATTR(kNumberTypeUInt64, uint64_t),       CONCAT_CPU_KERNEL_ATTR(kNumberTypeComplex64, complex64),
-    CONCAT_CPU_KERNEL_ATTR(kNumberTypeComplex128, complex128), CONCAT_CPU_KERNEL_ATTR(kNumberTypeBool, bool)};
+    CONCAT_CPU_KERNEL_ATTR(kNumberTypeComplex128, complex128), CONCAT_CPU_KERNEL_ATTR(kNumberTypeBool, bool),
+    CONCAT_CPU_KERNEL_ATTR(kNumberTypeBFloat16, bfloat16)};
 
   return func_list;
 }

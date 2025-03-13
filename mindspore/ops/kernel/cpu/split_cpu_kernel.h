@@ -126,7 +126,13 @@ class SplitCpuKernelMod : public NativeCpuKernelMod {
                                                      .AddInputAttr(kNumberTypeBool)
                                                      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
                                                      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
-                                                     .AddOutputAttr(kNumberTypeBool)};
+                                                     .AddOutputAttr(kNumberTypeBool),
+                                                   KernelAttr()
+                                                     .AddAllSameAttr(true)
+                                                     .AddInputAttr(kNumberTypeBFloat16)
+                                                     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                     .AddOutputAttr(kNumberTypeBFloat16)};
     return support_list;
   }
 
