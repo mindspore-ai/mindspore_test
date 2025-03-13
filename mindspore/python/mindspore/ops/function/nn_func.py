@@ -2286,33 +2286,23 @@ def _check_input_tensor(arg_name, *tensors):
 
 def flip(input, dims):
     """
-    Reverses the order of elements in a tensor along the given axis.
-
-    The shape of the tensor is preserved, but the elements are reordered.
+    Reverses elements in a tensor along the given dims.
 
     Args:
-        input (Tensor): Input tensor.
-        dims (Union[list[int], tuple[int]]): Axis or axes along which to flip over.
-            Flipping is performed on all of the axes specified in the tuple,
-            If `dims` is a tuple of integers contains negative, it counts from the last to the first axis.
+        input (Tensor): The input tensor.
+        dims (Union[list[int], tuple[int]]): The dimension to flip.
 
     Returns:
-        Tensor, with the entries of `dims` reversed.
-
-    Raises:
-        TypeError: If the input is not a tensor.
-        ValueError: If `dims` is None.
-        ValueError: If `dims` is not a list/tuple of ints.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import ops
         >>> import numpy as np
-        >>> input = mindspore.Tensor(np.arange(1, 9).reshape((2, 2, 2)))
-        >>> output = ops.flip(input, (0, 2))
+        >>> input = mindspore.tensor(np.arange(1, 9).reshape((2, 2, 2)))
+        >>> output = mindspore.ops.flip(input, (0, 2))
         >>> print(output)
         [[[6 5]
           [8 7]]
@@ -2325,26 +2315,22 @@ def flip(input, dims):
 
 def flipud(input):
     """
-    Flips the elements of each column in the up/down direction, while preserving the rows of the input tensor.
+    Flip the input tensor in up/down direction.
 
     Args:
-        input (Tensor): Input array.
+        input (Tensor): The input tensor, the dimension must be at least 2.
 
     Returns:
-        Tensor, the result after the flip.
-
-    Raises:
-        TypeError: If the input is not a tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import ops
+        >>> import mindspore
         >>> import numpy as np
-        >>> input = ms.Tensor(np.arange(1, 9).reshape((2, 2, 2)))
-        >>> output = ops.flipud(input)
+        >>> input = mindspore.tensor(np.arange(1, 9).reshape((2, 2, 2)))
+        >>> output = mindspore.ops.flipud(input)
         >>> print(output)
         [[[5 6]
           [7 8]]
@@ -2356,26 +2342,22 @@ def flipud(input):
 
 def fliplr(input):
     """
-    Flips the elements of each row in the left/right direction, while preserving the columns of the input tensor.
+    Flip the input tensor in left/right direction.
 
     Args:
-        input (Tensor): Input tensor.
+        input (Tensor): The input tensor, the dimension must be at least 2.
 
     Returns:
-        Tensor after the flip.
-
-    Raises:
-        TypeError: If the input is not a tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import ops
+        >>> import mindspore
         >>> import numpy as np
-        >>> input = ms.Tensor(np.arange(1, 9).reshape((2, 2, 2)))
-        >>> output = ops.fliplr(input)
+        >>> input = mindspore.tensor(np.arange(1, 9).reshape((2, 2, 2)))
+        >>> output = mindspore.ops.fliplr(input)
         >>> print(output)
         [[[3 4]
           [1 2]]

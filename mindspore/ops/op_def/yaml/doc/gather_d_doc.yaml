@@ -10,11 +10,10 @@ gather_d:
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([[1, 2], [3, 4]]), mindspore.int32)
-        >>> index = Tensor(np.array([[0, 0], [1, 0]]), mindspore.int32)
+        >>> x = mindspore.tensor(np.array([[1, 2], [3, 4]]), mindspore.int32)
+        >>> index = mindspore.tensor(np.array([[0, 0], [1, 0]]), mindspore.int32)
         >>> dim = 1
-        >>> output = ops.gather_d(x, dim, index)
+        >>> output = mindspore.ops.gather_d(x, dim, index)
         >>> print(output)
         [[1 1]
          [4 3]]

@@ -3,20 +3,15 @@ mindspore.ops.hstack
 
 .. py:function:: mindspore.ops.hstack(tensors)
 
-    将多个Tensor沿着水平方向进行堆叠。
-    对于1-D Tensor，沿第一个轴进行堆叠。其他维度的Tensor沿第二个轴进行堆叠。
+    将多个tensor沿着水平方向堆叠。
 
     .. note::
-        Float64类型的8-D Tensor的动态rank输入不支持在 `图模式(mode=mindspore.GRAPH_MODE) <https://www.mindspore.cn/tutorials/zh-CN/master/compile/static_graph.html>`_ 下执行。
+        - 在 `graph mode <https://www.mindspore.cn/tutorials/zh-CN/master/compile/static_graph.html>`_ 下，不支持 ``mindspore.float64`` 类型的8-D tensor的动态rank输入。
+        - 对于一维tensor，沿第一个轴堆叠。其他维度的tensor沿第二个轴堆叠。
+        - 对于维度大于一的tensor，除了第二个轴外，所有tensor的shape必须相同。对于一维tensor，可拥有任意的长度。
 
     参数：
-        - **tensors** (Union[tuple[Tensor], list[Tensor]]) - 包含多个Tensor。对于维度大于1-D的Tensor，除了第二个轴外，所有的\
-          Tensor必须有相同的shape。对于1-D Tensor，可拥有任意的长度。
+        - **tensors** (Union[tuple[Tensor], list[Tensor]]) - 由多个tensor组成的tuple或list。
 
     返回：
-        堆叠后的Tensor。
-
-    异常：
-        - **TypeError** - `tensors` 不是 list或tuple。
-        - **TypeError** - `tensors` 的元素不是 Tensor。
-        - **ValueError** - `tensors` 为空。
+        Tensor
