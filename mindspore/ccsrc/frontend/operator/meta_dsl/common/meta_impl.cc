@@ -196,8 +196,8 @@ FuncGraphPtr MetaImpl::BuildSubFunction(const std::string &func_name, const Bloc
 
 NodePtr MetaImpl::IfCond(const NodePtr &condition, const BlockFunc &true_branch, const BlockFunc &false_branch,
                          const NodePtrList &args) {
-  auto true_branch_graph = BuildSubFunction("true_branch", true_branch);
-  auto false_branch_graph = BuildSubFunction("false_branch", false_branch);
+  auto true_branch_graph = BuildSubFunction("ifexp_true", true_branch);
+  auto false_branch_graph = BuildSubFunction("ifexp_false", false_branch);
   auto bool_condition = NewNode({{NewValueNode(prim::kPrimCond), condition, NewValueNode(MakeValue(false))}});
   auto switch_node = NewNode({NewValueNode(prim::kPrimSwitch), bool_condition, NewValueNode(true_branch_graph),
                               NewValueNode(false_branch_graph)});
@@ -281,14 +281,30 @@ NodePtr MetaImpl::IsNotNone(const NodePtr &node) {
 }
 
 NodePtr MetaImpl::And(const NodePtr &x, const NodePtr &y) {
-  auto true_branch = [&]() { Return(y); };
-  auto false_branch = [&]() { Return(x); };
+  auto true_branch = [&]() {
+    (void)NewParam("x");
+    auto param_y = NewParam("y");
+    Return(param_y);
+  };
+  auto false_branch = [&]() {
+    auto param_x = NewParam("x");
+    (void)NewParam("y");
+    Return(param_x);
+  };
   return IfCond(x, true_branch, false_branch, {x, y});
 }
 
 NodePtr MetaImpl::Or(const NodePtr &x, const NodePtr &y) {
-  auto true_branch = [&]() { Return(x); };
-  auto false_branch = [&]() { Return(y); };
+  auto true_branch = [&]() {
+    auto param_x = NewParam("x");
+    (void)NewParam("y");
+    Return(param_x);
+  };
+  auto false_branch = [&]() {
+    (void)NewParam("x");
+    auto param_y = NewParam("y");
+    Return(param_y);
+  };
   return IfCond(x, true_branch, false_branch, {x, y});
 }
 

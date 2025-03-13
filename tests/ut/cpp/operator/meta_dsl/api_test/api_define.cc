@@ -121,4 +121,24 @@ BeginFunction(TestScan, init, xs) {
   Return(out);
 }
 EndFunction(TestScan)
+
+/** Python code:
+ *  def func(x, y):
+ *    return x and y
+ */
+BeginFunction(TestAnd, x, y) {
+  auto out = And(x, y);
+  Return(out);
+}
+EndFunction(TestAnd)
+
+/** Python code:
+ *  def func(x, y):
+ *    return x or y
+ */
+BeginFunction(TestOr, x, y) {
+  auto out = Or(x, y);
+  Return(out);
+}
+EndFunction(TestOr)
 }  // namespace mindspore::prim
