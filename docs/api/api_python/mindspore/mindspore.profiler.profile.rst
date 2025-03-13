@@ -17,8 +17,8 @@ mindspore.profiler.profile
           - ProfilerActivity.GPU：收集GPU数据。
         - **schedule** (schedule, 可选) - 设置采集的动作策略，由schedule类定义，需要配合step接口使用，默认值： ``None`` 。
         - **on_trace_ready** (Callable, 可选) - 设置当性能数据采集完成时，执行的回调函数。默认值： ``None`` 。
-        - **profile_memory** (bool, 可选) -（仅限Ascend）表示是否收集Tensor内存数据。当值为 ``True`` 时，收集这些数据。使用此参数时， `activities` 必须设置为 ``[ProfilerActivity.CPU, ProfilerActivity.NPU]`` 。在图编译等级为O2时收集算子内存数据，需要从第一个step开始采集。默认值： ``False`` ，此参数目前采集的算子名称不完整。将在后续版本修复，建议使用环境变量 ``MS_ALLOC_CONF`` 代替。
-        - **with_stack** (bool, 可选) - （Ascend）表示是否收集Python侧的调用栈的数据，此数据在timeline中采用火焰图的形式呈现，使用此参数时， `activities` 必须包含 ``ProfilerActivity.CPU`` 。默认值： ``False`` 。
+        - **profile_memory** (bool, 可选) -（仅限Ascend）表示是否收集Tensor内存数据。当值为 ``True`` 时，收集这些数据。使用该参数时， `activities` 必须设置为 ``[ProfilerActivity.CPU, ProfilerActivity.NPU]`` 。在图编译等级为O2时收集算子内存数据，需要从第一个step开始采集。默认值： ``False`` ，该参数目前采集的算子名称不完整。将在后续版本修复，建议使用环境变量 ``MS_ALLOC_CONF`` 代替。
+        - **with_stack** (bool, 可选) - （仅限Ascend）表示是否收集Python侧的调用栈的数据，此数据在timeline中采用火焰图的形式呈现，使用该参数时， `activities` 必须包含 ``ProfilerActivity.CPU`` 。默认值： ``False`` 。
         - **hbm_ddr** (bool, 可选) -（仅限Ascend）是否收集片上内存/DDR内存读写速率数据，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。
         - **pcie** (bool, 可选) -（仅限Ascend）是否收集PCIe带宽数据，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。
         - **data_process** (bool, 可选) -（Ascend/GPU）表示是否收集数据准备性能数据，默认值： ``False`` 。
@@ -77,6 +77,6 @@ mindspore.profiler.profile
         参数：
             - **profiler_path** (str) - 需要进行离线分析的profiling数据路径，指定到profiler上层目录。
             - **max_process_number** (int, 可选) - 最大进程数，默认值为 ``os.cpu_count() // 2`` 。
-            - **pretty** (bool, 可选) - 对json文件进行格式化处理。此参数默认值为 ``False``，即不进行格式化。
-            - **step_list** (list, 可选) - 只解析指定step的性能数据，指定的step必须是连续的整数。此参数默认值为 ``None``，即进行全解析。
+            - **pretty** (bool, 可选) - 对json文件进行格式化处理。该参数默认值为 ``False``，即不进行格式化。
+            - **step_list** (list, 可选) - 只解析指定step的性能数据，指定的step必须是连续的整数。该参数默认值为 ``None``，即进行全解析。
             - **data_simplification** (bool, 可选) - 数据精简开关功能。默认值为 ``True``，即开启数据精简。

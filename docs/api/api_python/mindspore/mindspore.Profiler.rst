@@ -4,10 +4,10 @@ mindspore.Profiler
 .. py:class:: mindspore.Profiler(**kwargs)
 
     当前接口即将弃用，请使用 :class:`mindspore.profiler.profile` 代替。
-    MindSpore用户能够通过该类对神经网络的性能进行采集。可以通过导入 :class:`mindspore.Profiler` 然后初始化Profiler对象以开始分析，使用 `Profiler.analyse()` 停止收集并分析结果。可通过 `MindStudio Insight <https://www.hiascend.com/developer/download/community/result?module=pt+sto+cann>`_ 工具可视化分析结果。目前，Profiler支持AICORE算子、AICPU算子、HostCPU算子、内存、设备通信、集群等数据的分析。
+    MindSpore用户能够通过该类对神经网络的性能进行采集。首先通过创建Profiler初始化对象开始分析，然后使用 `Profiler.analyse()` 停止收集并分析结果。可通过 `MindStudio Insight <https://www.hiascend.com/developer/download/community/result?module=pt+sto+cann>`_ 工具可视化分析结果。目前，Profiler支持AICORE算子、AICPU算子、HostCPU算子、内存、设备通信、集群等数据的分析。
 
     参数：
-        - **start_profile** (bool, 可选) - 该参数控制是否在Profiler初始化的时候开启数据采集。默认值： ``True`` 。
+        - **start_profile** (bool, 可选) - 该参数控制是否在Profiler初始化时开启数据采集。默认值： ``True`` 。
         - **output_path** (str, 可选) - 表示输出数据的路径。默认值： ``"./data"`` 。
         - **profiler_level** (ProfilerLevel, 可选) -（仅限Ascend）表示采集性能数据级别。默认值：``ProfilerLevel.Level0`` 。
 
@@ -24,8 +24,8 @@ mindspore.Profiler
 
         - **schedule** (schedule, 可选) - 设置采集的动作策略，由schedule类定义，需要配合step接口使用，默认值： ``None`` 。
         - **on_trace_ready** (Callable, 可选) - 设置当性能数据采集完成时，执行的回调函数。默认值： ``None`` 。
-        - **profile_memory** (bool, 可选) -（仅限Ascend）表示是否收集Tensor内存数据。当值为 ``True`` 时，收集这些数据。使用此参数时， `activities` 必须设置为 ``[ProfilerActivity.CPU, ProfilerActivity.NPU]`` 。在图编译等级为O2时收集算子内存数据，需要从第一个step开始采集。默认值： ``False`` ，此参数目前采集的算子名称不完整。将在后续版本修复，建议使用环境变量 ``MS_ALLOC_CONF`` 代替。
-        - **aic_metrics** (AicoreMetrics, 可选) -（仅限Ascend）收集的AICORE性能数据类型，使用此参数时， `activities` 必须包含 ``ProfilerActivity.NPU`` ，且值必须包含在AicoreMetrics枚举值中，默认值： ``AicoreMetrics.AiCoreNone`` ，每种类型包含的数据项如下：
+        - **profile_memory** (bool, 可选) -（仅限Ascend）表示是否收集Tensor内存数据。当值为 ``True`` 时，收集这些数据。使用该参数时， `activities` 必须设置为 ``[ProfilerActivity.CPU, ProfilerActivity.NPU]`` 。在图编译等级为O2时收集算子内存数据，需要从第一个step开始采集。默认值： ``False`` ，该参数目前采集的算子名称不完整。将在后续版本修复，建议使用环境变量 ``MS_ALLOC_CONF`` 代替。
+        - **aic_metrics** (AicoreMetrics, 可选) -（仅限Ascend）收集的AICORE性能数据类型，使用该参数时， `activities` 必须包含 ``ProfilerActivity.NPU`` ，且值必须包含在AicoreMetrics枚举值中，默认值： ``AicoreMetrics.AiCoreNone`` ，每种类型包含的数据项如下：
 
           - AicoreMetrics.AiCoreNone：不收集任何AICORE数据。
           - AicoreMetrics.ArithmeticUtilization：包含mac_fp16/int8_ratio、vec_fp32/fp16/int32_ratio、vec_misc_ratio等。
@@ -37,8 +37,8 @@ mindspore.Profiler
           - AicoreMetrics.L2Cache：包含write_cache_hit、 write_cache_miss_allocate、 r0_read_cache_hit、 r1_read_cache_hit等。本功能仅支持Atlas A2 训练系列产品。
           - AicoreMetrics.MemoryAccess：主存以及L2 Cache的存访带宽和存量统计。
 
-        - **with_stack** (bool, 可选) - （Ascend）表示是否收集Python侧的调用栈的数据，此数据在timeline中采用火焰图的形式呈现，使用此参数时， `activities` 必须包含 ``ProfilerActivity.CPU`` 。默认值： ``False`` 。
-        - **data_simplification** (bool, 可选) - （仅限Ascend）是否开启数据精简，开启后将在导出性能数据后删除FRAMEWORK目录数据以及其他多余数据，仅保留profiler的交付件以及PROF_XXX目录下的原始性能数据，以节省空间。默认值: ``True`` 。
+        - **with_stack** (bool, 可选) - （仅限Ascend）表示是否收集Python侧的调用栈的数据，此数据在timeline中采用火焰图的形式呈现，使用该参数时， `activities` 必须包含 ``ProfilerActivity.CPU`` 。默认值： ``False`` 。
+        - **data_simplification** (bool, 可选) - （仅限Ascend）是否开启数据精简，开启后将在导出性能数据后删除FRAMEWORK目录数据以及其他多余数据，仅保留Profiler的交付件以及PROF_XXX目录下的原始性能数据，以节省空间。默认值: ``True`` 。
         - **l2_cache** (bool, 可选) -（仅限Ascend）是否收集l2缓存数据，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。
         - **hbm_ddr** (bool, 可选) -（仅限Ascend）是否收集片上内存/DDR内存读写速率数据，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。
         - **pcie** (bool, 可选) -（仅限Ascend）是否收集PCIe带宽数据，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。
@@ -73,10 +73,10 @@ mindspore.Profiler
         收集和分析训练的性能数据，支持在训练中和训练后调用。样例如上所示。
 
         参数：
-            - **offline_path** (Union[str, None], 可选) - 需要使用离线模式进行分析的数据路径。离线模式用于非正常退出场景。对于在线模式，此参数应设置为 ``None`` 。默认值： ``None`` 。
-            - **pretty** (bool, 可选) - 对json文件进行格式化处理。此参数默认值为 ``False``，即不进行格式化。
-            - **step_list** (list, 可选) - 只解析指定step的性能数据，指定的step必须是连续的整数。此参数默认值为 ``None``，即进行全解析。
-            - **mode** (str, 可选) - 解析模式，同步解析或异步解析，可选参数为["sync", "async"], 默认值为 ``"sync"``。
+            - **offline_path** (Union[str, None], 可选) - 需要使用离线模式进行分析的数据路径。离线模式用于非正常退出场景。对于在线模式，该参数应设置为 ``None`` 。默认值： ``None`` 。
+            - **pretty** (bool, 可选) - 对json文件进行格式化处理。该参数默认值为 ``False``，即不进行格式化。
+            - **step_list** (list, 可选) - 只解析指定step的性能数据，指定的step必须是连续的整数。该参数默认值为 ``None``，即进行全解析。
+            - **mode** (str, 可选) - 解析模式，同步解析或异步解析，可选参数为["sync", "async"]，默认值为 ``"sync"``。
 
               - "sync"：同步模式解析性能数据，会阻塞当前进程。
               - "async"：异步模式，另起一个子进程解析性能数据，不会阻塞当前进程。由于解析进程会额外占用CPU资源，请根据实际资源情况开启该模式。
@@ -87,9 +87,9 @@ mindspore.Profiler
         离线分析训练的性能数据，性能数据采集结束后调用。
 
         参数：
-            - **path** (str) - 需要进行离线分析的profiling数据路径，指定到profiler上层目录。
-            - **pretty** (bool, 可选) - 对json文件进行格式化处理。此参数默认值为 ``False``，即不进行格式化。
-            - **step_list** (list, 可选) - 只解析指定step的性能数据，指定的step必须是连续的整数。此参数默认值为 ``None``，即进行全解析。
+            - **path** (str) - 需要进行离线分析的profiling数据路径，指定到Profiler上层目录。
+            - **pretty** (bool, 可选) - 对json文件进行格式化处理。该参数默认值为 ``False``，即不进行格式化。
+            - **step_list** (list, 可选) - 只解析指定step的性能数据，指定的step必须是连续的整数。该参数默认值为 ``None``，即进行全解析。
             - **data_simplification** (bool, 可选) - 数据精简开关功能。默认值为 ``True``，即开启数据精简。
 
     .. py:method:: op_analyse(op_name, device_id=None)
