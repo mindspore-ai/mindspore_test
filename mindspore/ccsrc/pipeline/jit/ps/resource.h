@@ -66,6 +66,7 @@ const char kInline[] = "inline";
 const char kAddAttr[] = "add_attr";
 const char kPreAutoParallel[] = "pre_auto_parallel";
 const char kPipelineSplit[] = "pipeline_split";
+const char kDetachBackwardAction[] = "detach_backward";
 const char kPipelineParallelScheduler[] = "pipeline_parallel_scheduler";
 const char kOptimize[] = "optimize";
 const char kAutoMonadReorder[] = "auto_monad_reorder";
