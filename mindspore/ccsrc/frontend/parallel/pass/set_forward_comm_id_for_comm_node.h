@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace parallel {
-constexpr char SET_PRIMAL_ATTR_FOR_COMM_NODE_RUN_ONCE_ONLY[] = "set_primal_attr_for_comm_none_run_once_only";
+constexpr char SET_PRIMAL_ATTR_FOR_COMM_NODE_RUN_ONCE_ONLY[] = "set_primal_attr_for_comm_node_run_once_only";
 bool SetForwardCommIdForCommNode(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer);
 }  // namespace parallel
 }  // namespace mindspore

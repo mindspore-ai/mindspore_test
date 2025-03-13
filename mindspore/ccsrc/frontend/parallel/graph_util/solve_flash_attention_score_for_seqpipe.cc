@@ -71,6 +71,17 @@ int64_t InferSeqDimByInputLayout(int64_t input_layout) {
   MS_LOG(EXCEPTION) << "Cannot find seq dim in layout: " << input_layout_str;
 }
 
+bool IsFlashAttentionVarLen(const CNodePtr &fa_cnode) {
+  MS_EXCEPTION_IF_NULL(fa_cnode);
+  auto input_layout = GetInputValueFromCNode<int64_t>(fa_cnode, ops::kFlashAttentionScoreInputLayoutIndex + 1);
+  if (ops::layoutMap.find(input_layout) == ops::layoutMap.end()) {
+    MS_LOG(DEBUG) << "The input_layout " << input_layout << " is not support yet.";
+    return false;
+  }
+  auto input_layout_str = ops::layoutMap.at(input_layout);
+  return input_layout_str.find('T') != std::string::npos;
+}
+
 FASparseInfo ExtractSparseInfoFromFlashAttentionScore(const CNodePtr &fa_cnode) {
   MS_EXCEPTION_IF_NULL(fa_cnode);
   if (!IsPrimitiveCNode(fa_cnode)) {
@@ -115,6 +126,11 @@ std::optional<FASparseInfo> SolveFuncGraphIfContainFlashAttentionScore(const Fun
       return std::nullopt;
     }
   }
+  if (IsFlashAttentionVarLen(fa_cnode_list.front())) {
+    MS_LOG(DEBUG) << "There is no need to replace sparse parameter for FlashAttentionScoreVarLen, skip this pass.";
+    return std::nullopt;
+  }
+
   auto new_pre_tokens_tensor = std::make_shared<Parameter>(func_graph);
   auto new_next_tokens_tensor = std::make_shared<Parameter>(func_graph);
   auto new_sparse_mode_tensor = std::make_shared<Parameter>(func_graph);
