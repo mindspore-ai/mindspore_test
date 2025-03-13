@@ -22,7 +22,7 @@ from common.gen_utils import save_file
 import common.template as template
 from common.template import Template
 from common.base_generator import BaseGenerator
-
+from pyboost import pyboost_utils
 
 class TensorPyCppGenerator(BaseGenerator):
     """
@@ -63,7 +63,7 @@ class TensorPyCppGenerator(BaseGenerator):
         tensor_api_defs = []
         stubtensor_api_defs = []
         for api_name, _ in tensor_method_protos.items():
-            pascal_api_name = _format_api_name(api_name)
+            pascal_api_name = pyboost_utils.format_func_api_name(api_name)
             snake_api_name = api_name
             wrapper_defs.append(self.cpy_wrapper_template.replace(pascal_api_name=pascal_api_name))
             tensor_api_defs.append(
