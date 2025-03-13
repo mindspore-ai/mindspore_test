@@ -19,7 +19,7 @@ third_party_modules_whitelist = (
     # Python built-in modules.
     "datetime", "re", "difflib", "math", "cmath", "random",
     # Machine Learning.
-    "ml_metrics", "nupic", "sklearn", "pyspark", "vowpal_porpoise", "xgboost",
+    "ml_metrics", "nupic", "sklearn", "pyspark", "vowpal_porpoise", "xgboost", "tensorflow", "torch", "jax",
     # Natual Language Processing.
     "gensim", "jieba", "langid", "nltk", "pattern", "polyglot", "snownlp", "spacy", "textblob", "quepy", "yalign",
     "spammy", "genius", "konlpy", "nut", "rosetta", "bllipparser", "pynlpl", "ucto", "frog", "zpar", "colibricore",
