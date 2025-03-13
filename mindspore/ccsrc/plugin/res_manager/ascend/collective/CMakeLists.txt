@@ -24,7 +24,7 @@ if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
     set_property(SOURCE ${LOWLATENCY_COLLECTIVE_SRCS} PROPERTY COMPILE_DEFINITIONS
             SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
     add_library(lowlatency_collective SHARED ${LOWLATENCY_COLLECTIVE_SRCS})
-    target_link_libraries(lowlatency_collective PRIVATE lcal)
+    target_link_libraries(lowlatency_collective PRIVATE lcal mindspore_core)
     add_compile_definitions(ENABLE_INTERNAL_KERNELS)
 endif()
 

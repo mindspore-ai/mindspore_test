@@ -86,7 +86,7 @@ void ProfilingUtils::GetTraceHccl(const std::vector<CNodePtr> &cnode_exec_order)
 }
 
 void ProfilingUtils::SetTraceFpStart(const std::vector<CNodePtr> &cnode_exec_order) {
-  const char *trace_fp_start = std::getenv(kFpStartNode);
+  const char *trace_fp_start = common::EnvHelper::GetInstance()->GetEnv(kFpStartNode);
   if (trace_fp_start != nullptr) {
     profiling_trace.trace_fp_start = std::string(trace_fp_start);
     MS_LOG(INFO) << "Set the Fp Start Op Name from Environment Variable:" << profiling_trace.trace_fp_start;
@@ -112,7 +112,7 @@ void ProfilingUtils::SetTraceFpStart(const std::vector<CNodePtr> &cnode_exec_ord
 }
 
 void ProfilingUtils::SetTraceBpEnd(const std::vector<CNodePtr> &cnode_exec_order) {
-  const char *trace_bp_end = std::getenv(kBpEndNode);
+  const char *trace_bp_end = common::EnvHelper::GetInstance()->GetEnv(kBpEndNode);
   if (trace_bp_end != nullptr) {
     profiling_trace.trace_bp_end = std::string(trace_bp_end);
     MS_LOG(INFO) << "Set the Bp End Op Name from Environment Variable:" << profiling_trace.trace_bp_end;
@@ -160,7 +160,7 @@ void ProfilingUtils::SetTraceBpEnd(const std::vector<CNodePtr> &cnode_exec_order
 }
 
 void ProfilingUtils::SetTraceIterEnd(const std::vector<CNodePtr> &cnode_exec_order) {
-  const char *trace_iter_end = std::getenv(kIterEndNode);
+  const char *trace_iter_end = common::EnvHelper::GetInstance()->GetEnv(kIterEndNode);
   if (trace_iter_end != nullptr) {
     profiling_trace.trace_iter_end = std::string(trace_iter_end);
     MS_LOG(INFO) << "Set the Iter End Op Name from Environment Variable:" << profiling_trace.trace_iter_end;
