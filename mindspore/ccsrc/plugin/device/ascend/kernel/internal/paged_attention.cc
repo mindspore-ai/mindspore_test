@@ -84,7 +84,8 @@ bool InternalPagedAttention::UpdateParam(const std::vector<KernelTensor *> &inpu
 
 uint64_t InternalPagedAttention::GenerateTilingKey(const std::vector<KernelTensor *> &inputs) {
   // User defined CacheKey, the inputs should include all the factors which will affect tiling result.
-  return InternalTilingCache::GenerateKey(kernel_name_, inputs, param_.q_seq_len, param_.kv_seq_len, param_.has_q_seq_lens, param_.mla_v_dim);
+  return InternalTilingCache::GenerateKey(kernel_name_, inputs, param_.q_seq_len, param_.kv_seq_len,
+                                          param_.has_q_seq_lens, param_.mla_v_dim);
 }
 
 MS_INTERNAL_KERNEL_FACTORY_REG(PagedAttention, internal::kInternalPagedAttentionOpName, InternalPagedAttention);
