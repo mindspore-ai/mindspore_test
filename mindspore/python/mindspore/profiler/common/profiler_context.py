@@ -77,10 +77,10 @@ class ProfilerContext:
         # only paths in on_trace_ready take effect
         if self._on_trace_ready_output_path:
             final_path = self._on_trace_ready_output_path
-            kwargs["output_path"] = final_path
             if "output_path" in kwargs:
                 logger.warning(f"Both on_trace_ready path and output_path are provided. "
                                f"The on_trace_ready path takes effect. Final path is {final_path}")
+            kwargs["output_path"] = final_path
 
         self._profiler_params_mgr: ProfilerParameters = ProfilerParameters(**kwargs)
         self._profiler_path_mgr: ProfilerOutputPath = ProfilerOutputPath(
