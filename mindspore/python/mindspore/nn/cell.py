@@ -525,7 +525,9 @@ class Cell(Cell_):
             output = hook(self, name, tensor)
             if output is not None:
                 tensor = output
-        self._buffers[name] = tensor if tensor is None or isinstance(tensor, Buffer) else Buffer(tensor)
+        if tensor is not None:
+            tensor._is_buffer = True
+        self._buffers[name] = tensor
         if persistent:
             self._non_persistent_buffers_set.discard(name)
         else:
@@ -2875,6 +2877,12 @@ class Cell(Cell_):
                 prefix = args[1]
             if len(args) > 2 and keep_vars is False:
                 keep_vars = args[2]
+        if destination is not None and not isinstance(destination, OrderedDict):
+            raise TypeError(f"The type of destination must be OrderedDict, but got {type(destination)}")
+        if not isinstance(prefix, str):
+            raise TypeError(f"The type of prefix must be string, but got {type(prefix)}")
+        if not isinstance(keep_vars, bool):
+            raise TypeError(f"The type of keep_vars must be bool, but got {type(keep_vars)}")
 
         if destination is None:
             destination = OrderedDict()

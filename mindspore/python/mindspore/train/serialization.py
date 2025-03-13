@@ -47,7 +47,6 @@ from mindspore.train.print_pb2 import Print
 
 import mindspore
 import mindspore.nn as nn
-from mindspore.nn.buffer import Buffer
 from mindspore import context
 from mindspore import log as logger
 from mindspore.log import vlog_print
@@ -857,6 +856,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
     save_checkpoint_cost_time = end_save_time - start_save_time
     vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save checkpoint cost time {save_checkpoint_cost_time}.")
 
+
 def _handle_shared_param_for_pipeline_parallel(save_obj):
     """ Remove shared param for save_obj """
     filtered_save_obj = []
@@ -916,7 +916,7 @@ def _convert_dict_to_param_dict(save_obj, choice_func):
     """Convert a dict of Parameter to param_list."""
     param_list = []
     for (key, value) in save_obj.items():
-        if isinstance(key, str) and isinstance(value, (Parameter, Buffer, str)):
+        if isinstance(key, str) and (isinstance(value, (Parameter, str)) or _is_buffer_type(value)):
             if choice_func is not None and not choice_func(key):
                 continue
             each_param = {"name": key, "data": value}
@@ -1047,6 +1047,12 @@ def _check_append_dict(append_dict):
             raise TypeError(f"For 'save_checkpoint', the type of dict 'append_info' must be key: string, "
                             f"value: int, float, bool or Generator, but got key: {type(key)}, value: {type(value)}")
     return append_dict
+
+
+def _is_buffer_type(value):
+    if isinstance(value, Tensor) and getattr(value, "_is_buffer", False):
+        return True
+    return False
 
 
 def load(file_name, **kwargs):
