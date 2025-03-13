@@ -60,7 +60,7 @@ mindspore.nn.probability.bijector.ScalarAffine
 
     .. py:method:: inverse(value)
 
-        正映射，计算输出随机变量对应的输入随机变量的值。
+        逆映射，计算输出随机变量对应的输入随机变量的值。
 
         参数：
             - **value** (Tensor) - 输出随机变量的值。
