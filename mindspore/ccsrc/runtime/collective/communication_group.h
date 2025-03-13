@@ -24,12 +24,13 @@
 #include <sstream>
 #include <algorithm>
 #include "pybind11/pybind11.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace device {
 // The communication group for collecive operations. All of the collective communication happens within one specified
 // communication group. MindSpore uses 'hccl_world_group' or 'nccl_world_group' as the default group.
-class CommunicationGroup {
+class BACKEND_COMMON_EXPORT CommunicationGroup {
  public:
   explicit CommunicationGroup(const std::string &name, const std::vector<uint32_t> &group_ranks, uint32_t global_rank,
                               uint32_t local_group_rank, uint32_t local_group_size);

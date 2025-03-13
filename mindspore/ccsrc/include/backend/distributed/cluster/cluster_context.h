@@ -42,7 +42,7 @@ constexpr char kNodeId[] = "MS_NODE_ID";
 constexpr int kJsonIndentation = 4;
 class ActorRouteTableProxy;
 // Node role based cluster built by MindSpore communication framework.
-class BACKEND_EXPORT ClusterContext {
+class BACKEND_COMMON_EXPORT ClusterContext {
  public:
   ~ClusterContext();
   DISABLE_COPY_AND_ASSIGN(ClusterContext)

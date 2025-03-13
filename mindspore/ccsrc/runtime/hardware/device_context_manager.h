@@ -32,7 +32,7 @@
 
 namespace mindspore {
 namespace plugin_loader {
-class BACKEND_EXPORT PluginLoader {
+class BACKEND_COMMON_EXPORT PluginLoader {
  public:
   static bool LoadDynamicLib(const std::string &plugin_file, std::map<std::string, void *> *all_handles,
                              std::stringstream *err_msg, const bool gpu_env = false);
@@ -50,9 +50,10 @@ using DeviceContextCreator = std::function<std::shared_ptr<DeviceContext>(const 
 // This callback registers stateless functions to _c_expression. It is set by different device contexts.
 using RegisterStatelessFuncCb = std::function<void(py::module *m)>;
 
-const DeviceContext *FetchRealDeviceContext(const AnfNodePtr &node, const DeviceContext *device_context);
+BACKEND_COMMON_EXPORT const DeviceContext *FetchRealDeviceContext(const AnfNodePtr &node,
+                                                                  const DeviceContext *device_context);
 
-class BACKEND_EXPORT DeviceContextManager {
+class BACKEND_COMMON_EXPORT DeviceContextManager {
  public:
   ~DeviceContextManager() = default;
   static DeviceContextManager &GetInstance();
@@ -98,7 +99,7 @@ class BACKEND_EXPORT DeviceContextManager {
   std::map<std::string, RegisterStatelessFuncCb> register_func_cbs_;
 };
 
-class BACKEND_EXPORT DeviceContextRegister {
+class BACKEND_COMMON_EXPORT DeviceContextRegister {
  public:
   DeviceContextRegister(const std::string &device_name, DeviceContextCreator &&runtime_creator) {
     DeviceContextManager::GetInstance().Register(device_name, std::move(runtime_creator));
@@ -112,7 +113,7 @@ class BACKEND_EXPORT DeviceContextRegister {
       return std::make_shared<DEVICE_CONTEXT_CLASS>(device_context_key); \
     });
 
-class BACKEND_EXPORT StatelessFuncCbRegister {
+class BACKEND_COMMON_EXPORT StatelessFuncCbRegister {
  public:
   StatelessFuncCbRegister(const std::string &device_name, const RegisterStatelessFuncCb &func) {
     DeviceContextManager::GetInstance().SetRegisterDeviceStatelessFuncCb(device_name, func);

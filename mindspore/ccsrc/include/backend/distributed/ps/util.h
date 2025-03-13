@@ -33,7 +33,7 @@ namespace ps {
 constexpr size_t kNodeInputWeightNameOffset = 1;
 constexpr size_t kNodeInputWeightIndexOffset = 2;
 
-class BACKEND_EXPORT Util {
+class BACKEND_COMMON_EXPORT Util {
  public:
   static bool IsRoleOfPServer();
   static bool IsRoleOfScheduler();

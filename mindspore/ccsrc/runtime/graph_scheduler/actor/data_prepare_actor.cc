@@ -24,7 +24,7 @@
 #include "runtime/graph_scheduler/actor/debug_actor.h"
 #include "runtime/graph_scheduler/actor/profiler_actor.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "runtime/device/auto_mem_offload.h"
+#include "runtime/device/res_manager/auto_mem_offload.h"
 #include "runtime/device/device_address_utils.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"

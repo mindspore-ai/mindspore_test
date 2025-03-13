@@ -30,7 +30,7 @@ namespace distributed {
 namespace rpc {
 class TCPComm;
 
-class BACKEND_EXPORT TCPServer : public RPCServerBase {
+class BACKEND_COMMON_EXPORT TCPServer : public RPCServerBase {
  public:
   explicit TCPServer(bool enable_ssl = false, const ServerPortRange &port_range = {})
       : RPCServerBase(enable_ssl, port_range), tcp_comm_(nullptr) {}

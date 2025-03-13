@@ -25,7 +25,7 @@
 
 namespace mindspore {
 namespace device {
-class BACKEND_EXPORT CollectiveCommLibLoader {
+class BACKEND_COMMON_EXPORT CollectiveCommLibLoader {
  public:
   explicit CollectiveCommLibLoader(const std::string &comm_lib_name)
       : collective_comm_lib_ptr_(nullptr), comm_lib_name_(comm_lib_name) {}

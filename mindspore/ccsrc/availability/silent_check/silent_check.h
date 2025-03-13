@@ -19,7 +19,7 @@
 #include <map>
 #include <memory>
 #include <string>
-#include "include/backend/visible.h"
+#include "include/common/visible.h"
 #include "ir/tensor.h"
 #include "mindspore/core/include/ir/base_tensor.h"
 
@@ -29,7 +29,7 @@ const char kAttrSilentCheckOpType[] = "silent_check_type";
 enum SilentCheckOpType : int { kSilentCheckGradLastOp = 0, kSilentCheckGradCommOp = 1 };
 using tensor::BaseTensorPtr;
 
-class BACKEND_EXPORT SilentCheckerBase {
+class COMMON_EXPORT SilentCheckerBase {
  public:
   static std::shared_ptr<SilentCheckerBase> GetInstance();
 

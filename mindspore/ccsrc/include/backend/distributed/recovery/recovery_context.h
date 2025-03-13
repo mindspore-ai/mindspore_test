@@ -43,7 +43,7 @@ std::string RecoveryPath();
 
 // Used to save disaster recovery-related state quantities and provide disaster recovery-related
 // functions, such as reinitializing collective communication, etc.
-class BACKEND_EXPORT RecoveryContext {
+class BACKEND_COMMON_EXPORT RecoveryContext {
  public:
   static std::shared_ptr<RecoveryContext> &GetInstance() {
     if (instance_ == nullptr) {

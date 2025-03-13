@@ -22,7 +22,7 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-class AbstractPSNode : public AbstractNode {
+class BACKEND_COMMON_EXPORT AbstractPSNode : public AbstractNode {
  public:
   AbstractPSNode() = default;
   ~AbstractPSNode() override = default;

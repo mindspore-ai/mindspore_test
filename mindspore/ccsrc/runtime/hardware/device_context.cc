@@ -15,7 +15,6 @@
  */
 
 #include "runtime/hardware/device_context.h"
-#include "backend/common/optimizer/common_backend_optimization.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {
@@ -108,6 +107,5 @@ std::shared_ptr<SwapManager> DeviceResManager::swap_manager() const {
   return nullptr;
 }
 
-void KernelExecutor::UnifyMindIR(const KernelGraphPtr &graph) const { opt::CommonUnifyMindIR(graph); }
 }  // namespace device
 }  // namespace mindspore

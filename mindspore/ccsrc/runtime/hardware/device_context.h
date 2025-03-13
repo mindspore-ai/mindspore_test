@@ -33,7 +33,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "runtime/hardware/deprecated_interface.h"
-#include "runtime/device/auto_mem_offload.h"
+#include "runtime/device/res_manager/auto_mem_offload.h"
 #include "runtime/device/res_manager/memory_manager.h"
 #include "include/backend/optimizer/graph_optimizer.h"
 #include "runtime/pipeline/task/task.h"
@@ -85,7 +85,7 @@ inline pid_t GetCurrentPID() {
 }
 
 // DeviceContext is unified interface of interaction with device.
-class DeviceContext {
+class BACKEND_COMMON_EXPORT DeviceContext {
  public:
   explicit DeviceContext(const DeviceContextKey &device_context_key)
       : device_context_key_(device_context_key), initialized_(false), pid_(GetCurrentPID()) {}
@@ -172,7 +172,7 @@ class DeviceContext {
 };
 using DeviceContextPtr = std::shared_ptr<DeviceContext>;
 
-class BACKEND_EXPORT DeviceResManager {
+class BACKEND_COMMON_EXPORT DeviceResManager {
  public:
   DeviceResManager() : collective_comm_lib_(nullptr), device_context_(nullptr) {
     offloaded_mem_pool_ = std::make_shared<device::OffloadedMemPool>();
@@ -468,7 +468,7 @@ class GraphExecutor {
 
 using CallbackFunc = std::function<void(void)>;
 
-class BACKEND_EXPORT KernelExecutor {
+class BACKEND_COMMON_EXPORT KernelExecutor {
  public:
   virtual ~KernelExecutor() = default;
 
@@ -497,7 +497,7 @@ class BACKEND_EXPORT KernelExecutor {
   }
 
   // Unify the MindIR, the default behavior uses the common unified MindIR.
-  virtual void UnifyMindIR(const KernelGraphPtr &graph) const;
+  virtual void UnifyMindIR(const KernelGraphPtr &graph) const {};
   virtual void AddMindIRPass(const KernelGraphPtr &graph) const {}
 
   // Get rank id for distributed training.
@@ -513,16 +513,15 @@ class BACKEND_EXPORT KernelExecutor {
 
   virtual std::vector<size_t> GetLaunchIgnoredInputAddressIdx(const AnfNodePtr &node) const {
     MS_EXCEPTION_IF_NULL(node);
-    auto kernel_mod = AnfAlgo::GetKernelMod(node);
+    auto kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());
+    MS_EXCEPTION_IF_NULL(kernel_info);
+    auto kernel_mod = kernel_info->MutableKernelMod();
     MS_EXCEPTION_IF_NULL(kernel_mod);
     return kernel_mod->GetLaunchIgnoredInputAddressIdx();
   }
 
   virtual bool IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, size_t input_idx) const {
-    MS_EXCEPTION_IF_NULL(node);
-    auto kernel_mod = AnfAlgo::GetKernelMod(node);
-    MS_EXCEPTION_IF_NULL(kernel_mod);
-    auto ignored_input_list = kernel_mod->GetLaunchIgnoredInputAddressIdx();
+    auto ignored_input_list = GetLaunchIgnoredInputAddressIdx(node);
     if (std::find(ignored_input_list.begin(), ignored_input_list.end(), input_idx) != ignored_input_list.end()) {
       return true;
     }

@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-#include "runtime/device/auto_mem_offload.h"
+#include "runtime/device/res_manager/auto_mem_offload.h"
 #include <vector>
-#include "runtime/hardware/device_context.h"
-#include "runtime/device/memory_offload_strategy.h"
 
 namespace mindspore {
 namespace device {
