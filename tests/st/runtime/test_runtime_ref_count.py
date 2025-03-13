@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
-from mindspore import context, Tensor
+from mindspore import context, Tensor, mutable, jit, ops
 from mindspore.ops import operations as P
 from tests.mark_utils import arg_mark
 
@@ -106,3 +107,48 @@ def test_no_used_input_from_parameter_store_to_super_kerenl_actor():
     out = net(input_x, input_y)
     print("out:", out)
     assert out[1] == 9
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_no_used_flag_parameter():
+    """
+    Feature: Support runtime ref count.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.add = P.Add()
+            self.add.set_device("CPU")
+
+        def construct(self, x):
+            return x[1] + x[1]
+
+    net = Net()
+    input_x = ms.Tensor([2])
+    input_y = ms.Tensor([3])
+    input_all = mutable([input_x, input_y])
+    out = net(input_all)
+    print("out:", out)
+    assert out == 6
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_no_used_flag_parameter_2():
+    """
+    Feature: Support runtime ref count.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    @jit
+    def avg_pool_forward_func(x):
+        return ops.AvgPool(kernel_size=2, strides=2, pad_mode="VALID", data_format="NCHW")(x)
+
+    @jit
+    def avg_pool_backward_func(x):
+        return ops.grad(avg_pool_forward_func, (0,))(x)
+
+    x = ms.Tensor(np.arange(1 * 3 * 3 * 4).reshape(1, 3, 3, 4), ms.float32)
+    grads = avg_pool_backward_func(x)
+    print(grads)
