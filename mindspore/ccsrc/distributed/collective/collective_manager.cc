@@ -433,6 +433,7 @@ bool CollectiveManager::DestroyCommunicationGroup(const std::string &group_name)
 }
 
 std::string CollectiveManager::GetCommName(const std::string &group_name) {
+  WaitCommInitDone(group_name);
   if (!common::GetEnv(kSimulationLevel).empty()) {
     MS_EXCEPTION_IF_NULL(dummy_comm_lib_instance_);
     return dummy_comm_lib_instance_->CommName(group_name);
