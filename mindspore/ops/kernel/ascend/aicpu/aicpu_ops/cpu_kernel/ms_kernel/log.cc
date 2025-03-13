@@ -122,10 +122,12 @@ uint32_t LogCpuKernel::LogCompute(CpuKernelContext &ctx) {
   size_t data_num = ctx.Input(0)->NumElements();
   if (data_num <= 4 * 1024) {
     for (size_t i = 0; i < data_num; i++) {
-      if (*(input_x + i) <= static_cast<T>(0)) {
-        *(output_y + i) = std::numeric_limits<T>::quiet_NaN();
-      } else {
+      if (*(input_x + i) > static_cast<T>(0)) {
         *(output_y + i) = std::log(*(input_x + i) * scale_ + shift_) / std::log(base_);
+      } else if (*(input_x + i) == static_cast<T>(0)) {
+        *(output_y + i) = -std::numeric_limits<T>::infinity();
+      } else {
+        *(output_y + i) = -std::numeric_limits<T>::quiet_NaN();
       }
     }
   } else {
@@ -136,10 +138,12 @@ uint32_t LogCpuKernel::LogCompute(CpuKernelContext &ctx) {
     }
     auto shard_log = [&](size_t start, size_t end) {
       for (size_t i = start; i < end; i++) {
-        if (*(input_x + i) <= static_cast<T>(0)) {
-          *(output_y + i) = std::numeric_limits<T>::quiet_NaN();
-        } else {
+        if (*(input_x + i) > static_cast<T>(0)) {
           *(output_y + i) = std::log(*(input_x + i) * scale_ + shift_) / std::log(base_);
+        } else if (*(input_x + i) == static_cast<T>(0)) {
+          *(output_y + i) = -std::numeric_limits<T>::infinity();
+        } else {
+          *(output_y + i) = -std::numeric_limits<T>::quiet_NaN();
         }
       }
       return KERNEL_STATUS_PARAM_INVALID;
@@ -226,11 +230,13 @@ uint32_t LogCpuKernel::LogCompute3(CpuKernelContext &ctx) {
 
   if (data_num <= 4 * 1024) {
     for (size_t i = 0; i < data_num; i++) {
-      if (*(input_x + i) == static_cast<T>(0)) {
-        CUST_KERNEL_LOG_ERROR(ctx, "[%llu] must be at least more than 0.", i);
-        return KERNEL_STATUS_PARAM_INVALID;
+      T x = *(input_x + i);
+      T transformed = x * scale_ + shift_;
+      if (x == static_cast<T>(0) || transformed == static_cast<T>(0)) {
+        *(output_y + i) = T(-std::numeric_limits<typename T::value_type>::infinity(), 0.0);
+        continue;
       }
-      *(output_y + i) = std::log(*(input_x + i) * scale_ + shift_) / std::log(base_);
+      *(output_y + i) = std::log(transformed) / std::log(base_);
     }
   } else {
     uint32_t min_core_num = 1;
@@ -240,11 +246,13 @@ uint32_t LogCpuKernel::LogCompute3(CpuKernelContext &ctx) {
     }
     auto shard_log = [&](size_t start, size_t end) {
       for (size_t i = start; i < end; i++) {
-        if (*(input_x + i) == static_cast<T>(0)) {
-          CUST_KERNEL_LOG_ERROR(ctx, "[%llu] must be at least more than 0.", i);
-          return KERNEL_STATUS_PARAM_INVALID;
+        T x = *(input_x + i);
+        T transformed = *(input_x + i) * scale_ + shift_;
+        if (x == static_cast<T>(0) || transformed == static_cast<T>(0)) {
+          *(output_y + i) = T(-std::numeric_limits<typename T::value_type>::infinity(), 0.0);
+          continue;
         }
-        *(output_y + i) = std::log(*(input_x + i) * scale_ + shift_) / std::log(base_);
+        *(output_y + i) = std::log(transformed) / std::log(base_);
       }
       return KERNEL_STATUS_PARAM_INVALID;
     };
