@@ -3,11 +3,9 @@ mindspore.ops.truncate_mod
 
 .. py:function:: mindspore.ops.truncate_mod(x, y)
 
-    逐元素取模。
-
-    输入 `x` 和 `y` 应遵循隐式类型转换规则，使数据类型保持一致。
-    当输入为两个Tensor时，数据类型不能同时为bool类型，且支持shape广播。
-    当输入是一个Tensor和一个标量时，标量只能是一个常数。
+    将 `x` 和 `y` 逐元素取模。
+    
+    支持隐式类型转换，支持广播。
 
     .. warning::
         - 输入数值不能为0。
@@ -16,13 +14,8 @@ mindspore.ops.truncate_mod
         - 若shape为（D1、D2...、Dn），则D1*D2...*DN<=1000000，n<=8。
 
     参数：
-        - **x** (Union[Tensor, numbers.Number, bool]) - Number或bool类型的Tensor。
-        - **y** (Union[Tensor, numbers.Number, bool]) - Number或bool类型的Tensor。
+        - **x** (Union[Tensor, Number, bool]) - 第一个输入tensor。
+        - **y** (Union[Tensor, Number, bool]) - 第二个输入tensor。
 
     返回：
-        Tensor，shape为输入进行广播后的shape，数据类型为两个输入中精度较高的类型。
-
-    异常：
-        - **TypeError** - `x` 和 `y` 数据类型不是以下之一：Tensor、Number、bool。
-        - **TypeError** - `x` 和 `y` 均不是Tensor。
-        - **ValueError** - `x` 和 `y` 的shape无法进行广播转换。
+        Tensor
