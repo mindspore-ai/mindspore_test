@@ -36,12 +36,14 @@ class Net(Cell):
         self.dropout2 = dropout_ext_op.shard(dropout_ext_strategy)
         self.relu2 = P.ReLU().shard(strategy2)
         self.mul_weight = Parameter(mul_weight, "w1")
+        self.seed = Parameter(Tensor(42))
+        self.offset = Parameter(Tensor(2))
 
     def construct(self, x):
         out = self.mul(x, self.mul_weight)
         out, _ = self.dropout1(out, 0.5, ms.Tensor(1), ms.Tensor(1))
         out = self.relu1(out)
-        out, _ = self.dropout2(out, 0.6, ms.Tensor(42), ms.Tensor(2))
+        out, _ = self.dropout2(out, 0.6, self.seed, self.offset)
         out = self.relu2(out)
         return out
 
