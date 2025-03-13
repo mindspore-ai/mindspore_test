@@ -75,28 +75,19 @@ class ProfilerContext:
         """
         # output_path and on_trace_ready cannot be set at the same time. If both are set,
         # only paths in on_trace_ready take effect
-        if "output_path" in kwargs and "on_trace_ready" in kwargs:
-            if self._on_trace_ready_output_path and kwargs["output_path"]:
-                final_path = self._on_trace_ready_output_path
-                logger.warning(f"When you pass a valid on_trace_ready path and a valid path in output_path, "
-                               f"the output_path takes effect, and the on_trace_ready path takes effect. "
-                               f"The final path is {final_path}")
-            elif kwargs["output_path"]:
-                final_path = kwargs["output_path"]
-                logger.warning(f"When you pass an empty on_trace_ready path and a valid path in output_path, "
-                               f"output_path takes effect and the final path is {final_path}")
-            else:
-                final_path = "./data"
-                logger.warning(f"When you pass an invalid on_trace_ready path and an invalid path in output_path, "
-                               f"the final path is the default path is {final_path}")
+        if self._on_trace_ready_output_path:
+            final_path = self._on_trace_ready_output_path
+            kwargs["output_path"] = final_path
+            if "output_path" in kwargs:
+                logger.warning(f"Both on_trace_ready path and output_path are provided. "
+                               f"The on_trace_ready path takes effect. Final path is {final_path}")
 
         self._profiler_params_mgr: ProfilerParameters = ProfilerParameters(**kwargs)
         self._profiler_path_mgr: ProfilerOutputPath = ProfilerOutputPath(
             device_id=int(self._device_id), rank_id=int(self._rank_id)
         )
 
-        self._profiler_path_mgr.output_path = self._on_trace_ready_output_path if self._on_trace_ready_output_path \
-            else self._profiler_params_mgr.output_path
+        self._profiler_path_mgr.output_path = self._profiler_params_mgr.output_path
 
     @property
     def on_trace_ready_output_path(self) -> str:

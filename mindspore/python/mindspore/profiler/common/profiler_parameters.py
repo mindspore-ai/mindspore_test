@@ -62,7 +62,7 @@ class ProfilerParameters:
         self._check_deprecated_params(**kwargs)
         # Initialize parameters with kwargs
         for param, (_, default_value) in self.PARAMS.items():
-            setattr(self, param, kwargs.get(param, default_value))
+            setattr(self, param, kwargs.get(param) if kwargs.get(param) is not None else default_value)
 
         self._check_params_type()
         self._handle_compatibility()
