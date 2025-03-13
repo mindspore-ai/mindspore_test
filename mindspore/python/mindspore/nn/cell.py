@@ -1703,7 +1703,7 @@ class Cell(Cell_):
 
         Note:
             trainable_params() and other similar interfaces may return different parameter instance after
-            `init_parameters_data`, do not save these results.
+            `init_parameters_data`. It is not recommended to save these results.
 
         Args:
             auto_parallel_mode (bool): If running in auto_parallel_mode. Default: ``False`` .

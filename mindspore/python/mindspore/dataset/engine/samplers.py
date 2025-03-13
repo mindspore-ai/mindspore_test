@@ -1072,8 +1072,9 @@ class WeightedRandomSampler(BuiltinSampler):
 
     Args:
         weights (list[float, int]): A sequence of weights, not necessarily summing up to 1.
-        num_samples (int, optional): Number of elements to sample. Default: ``None`` , which means sample all elements.
-        replacement (bool): If ``True``, put the sample ID back for the next draw. Default: ``True``.
+        num_samples (int, optional): Number of elements to sample. Default: ``None`` ,
+            which means sample all elements.
+        replacement (bool, optional): If ``True``, put the sample ID back for the next draw. Default: ``True``.
 
     Raises:
         TypeError: If elements of `weights` are not of type number.

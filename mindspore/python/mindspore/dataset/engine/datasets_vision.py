@@ -408,7 +408,7 @@ class CelebADataset(MappableDataset, VisionBaseDataset):
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
             `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
-        decrypt (callable, optional): Image decryption function, which accepts the path of the encrypted image file
+        decrypt (callable, optional): Image decryption function, which receives the path of the encrypted image file
             and returns the decrypted bytes data. Default: ``None`` , no decryption.
 
     Raises:
@@ -782,7 +782,8 @@ class CityscapesDataset(MappableDataset, VisionBaseDataset):
             by :func:`mindspore.dataset.config.set_num_parallel_workers` .
         shuffle (bool, optional): Whether to perform shuffle on the dataset. Default: ``None`` , expected
             order behavior shown in the table below.
-        decode (bool, optional): Decode the images after reading. Default: ``None``, default to be ``False``.
+        decode (bool, optional): Decode the images after reading. Default: ``None``,
+            which means ``False``, the images are not decoded after reading.
         sampler (Sampler, optional): Object used to choose samples from the
             dataset. Default: ``None`` , expected order behavior shown in the table below.
         num_shards (int, optional): Number of shards that the dataset will be divided
@@ -3390,7 +3391,8 @@ class QMnistDataset(MappableDataset, VisionBaseDataset):
         dataset_dir (str): Path to the root directory that contains the dataset.
         usage (str, optional): Usage of this dataset, can be ``'train'``, ``'test'``, ``'test10k'``,
             ``'test50k'``, ``'nist'`` or ``'all'``. Default: ``None`` , will read all samples.
-        compat (bool, optional): Whether the label for each example is class number (compat= ``True`` )
+        compat (bool, optional): Specifies the labeling information for each sample.
+            Whether the label for each example is class number (compat= ``True`` )
             or the full QMNIST information (compat= ``False`` ). Default: ``True``.
         num_samples (int, optional): The number of images to be included in the dataset.
             Default: ``None`` , will read all images.

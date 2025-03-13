@@ -420,17 +420,17 @@ class AdaSumByGradWrapCell(Cell):
     and the subscripts represent different devices in the data-parallel dimension.
 
     Note:
-        When using AdaSum, the number of traning cards needs to be a power of 2 and at least 16 cards are required.
-        Currently, the optimizer sharding and pipeline parallel is not supported when using AdaSum.
-        It is recommended to using AdaSumByGradWrapCell in semi auto parallel/auto parallel mode. In data parallel
-        mode, we recommend to using mindspore.boost to applying AdaSum.
+        - It is recommended to using AdaSumByGradWrapCell in semi auto parallel/auto parallel mode. In data parallel
+          mode, we recommend to using mindspore.boost to applying AdaSum.
+        - When using AdaSum, the number of traning cards needs to be a power of 2 and at least 16 cards are required.
+          Currently, the optimizer sharding and pipeline parallel is not supported when using AdaSum.
 
     Args:
         optimizer (Union[Cell]): Optimizer for updating the weights. The construct function of the optimizer
             requires only one input.
 
     Inputs:
-        - **grads** (Tuple(Tensor)) - Tuple of gradients, same with the input of passed optimizer.
+        - **grads** (Tuple[Tensor]) - Tuple of gradients, same with the input of passed optimizer.
 
     Raises:
         RuntimeError: If `parallel_mode` uses `stand_alone` mode, AdaSum only supports use in distributed scenarios.

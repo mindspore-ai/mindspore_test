@@ -15,7 +15,7 @@ resize_nearest_neighbor:
             - **input_x** (Tensor) - The input tensor. The shape of the tensor is :math:`(N, C, H, W)`.
     
         Outputs:
-            Tensor, the shape of the output tensor is  :math:`(N, C, NEW\_H, NEW\_W)`.
+            Tensor, the shape of the output tensor is :math:`(N, C, NEW\_H, NEW\_W)`.
             The data type is the same as the `input_x`.
     
         Raises:

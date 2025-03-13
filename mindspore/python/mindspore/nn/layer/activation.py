@@ -82,7 +82,7 @@ class CELU(Cell):
         :align: center
 
     Args:
-        alpha (float): The :math:`\alpha` value for the Celu formulation. Default: ``1.0`` .
+        alpha (float, optional): The :math:`\alpha` value for the Celu formulation. Default: ``1.0`` .
 
     Inputs:
         - **x** (Tensor) - The input of CELU. The required dtype is float16 or float32.
@@ -136,20 +136,22 @@ class Softmin(Cell):
     where :math:`x_{i}` is the :math:`i`-th slice in the given dimension of the input Tensor.
 
     Args:
-        axis (Union[int, tuple[int]]): The axis to apply Softmin operation, if the dimension of input `x` is x.ndim,
-            the range of axis is `[-x.ndim, x.ndim)`. -1 means the last dimension. Default: ``-1`` .
+        axis (Union[int, tuple[int]], optional): The axis to apply Softmin operation,
+            if the dimension of input `x` is x.ndim,
+            the range of axis is :math:`[-x.ndim, x.ndim)`. -1 means the last dimension.
+            Default: ``-1`` . In CPU environment, `axis` only supports int type.
 
     Inputs:
         - **x** (Tensor) - Tensor for computing Softmin functions with data type of float16 or float32.
 
     Outputs:
-        Tensor, which has the same type and shape as `x` with values in the range [0,1].
+        Tensor, which has the same type and shape as `x` with values in the range :math:`[0, 1]`.
 
     Raises:
         TypeError: If `axis` is neither an int nor a tuple.
         TypeError: If dtype of `x` is neither float16 nor float32.
         ValueError: If `axis` is a tuple whose length is less than 1.
-        ValueError: If `axis` is a tuple whose elements are not all in the range [-x.ndim, x.ndim).
+        ValueError: If `axis` is a tuple whose elements are not all in the range :math:`[-x.ndim, x.ndim)`.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -1175,9 +1177,9 @@ class PReLU(Cell):
         :align: center
 
     Args:
-        channel (int): The elements number of parameter :math:`w`.
+        channel (int, optional): The elements number of parameter :math:`w`.
           It could be an int, and the value is 1 or the channels number of input tensor `x`. Default: ``1`` .
-        w (Union[float, list, Tensor]): The initial value of parameter. It could be a float, a float list or
+        w (Union[float, list, Tensor], optional): The initial value of parameter. It could be a float, a float list or
           a tensor has the same dtype as the input tensor `x`. Default: ``0.25`` .
 
     Inputs:
@@ -1189,7 +1191,7 @@ class PReLU(Cell):
 
     Raises:
         TypeError: If `channel` is not an int.
-        TypeError: If `w` is not one of a float, a float list, a float Tensor.
+        TypeError: If `w` is not one of a float, a list[float], a Tensor[float].
         TypeError: If dtype of `x` is neither float16 nor float32.
         ValueError: If the `x` is a 0-D or 1-D Tensor on Ascend.
         ValueError: If `channel` is less than 1.
@@ -1728,7 +1730,7 @@ class GLU(Cell):
     Here :math:`\sigma` is the sigmoid function, and :math:`\otimes` is the Hadamard product.
 
     Args:
-        axis (int): the axis to split the input. Default: ``-1`` , the last axis in `x`.
+        axis (int, optional): the axis to split the input. Default: ``-1`` , the last axis in `x`.
 
     Inputs:
         - **x** (Tensor) - :math:`(\ast_1, N, \ast_2)` where `*` means, any number of additional dimensions.
