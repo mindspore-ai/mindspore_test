@@ -35,7 +35,7 @@ MindSpore的核心数据加载模块是Dataset，是一种基于Pipeline设计�
   `vision数据集 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.loading.html#视觉数据集>`_ 、
   `nlp数据集 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.loading.html#文本数据集>`_ 、
   `audio数据集 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.loading.html#音频数据集>`_ ) 来加载已支持的数据集，
-  或者使用 `自定义数据集加载 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.loading.html#自定义数据集加载>`_ ，通过Python逻辑自定义数据集行为；
+  或者使用 `自定义数据集加载 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.loading.html#自定义数据集加载-1>`_ ，通过Python逻辑自定义数据集行为；
 
 - 数据集操作（filter/ skip）：用户通过数据集对象方法 `.shuffle <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/operation/mindspore.dataset.Dataset.shuffle.html#mindspore.dataset.Dataset.shuffle>`_ / 
   `.filter <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/operation/mindspore.dataset.Dataset.filter.html#mindspore.dataset.Dataset.filter>`_ / 
@@ -45,13 +45,14 @@ MindSpore的核心数据加载模块是Dataset，是一种基于Pipeline设计�
 
 - 数据集样本变换操作（map）：用户可以将数据变换操作 （`vision数据变换 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.transforms.html#视觉>`_ ， 
   `nlp数据变换 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.transforms.html#文本>`_ ， 
-  `audio数据变换 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.transforms.html#音频>`_ ） 添加到map操作中执行，
+  `audio数据变换 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.transforms.html#音频>`_ ）
+  添加到 `.map <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/operation/mindspore.dataset.Dataset.map.html>`_ 操作中执行，
   数据预处理过程中可以定义多个map操作，用于执行不同变换操作，数据变换操作也可以支持传入用户自定义Python函数 ；
 
 - 批（batch）：用户在样本完成变换后，使用 `.batch <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/batch/mindspore.dataset.Dataset.batch.html#mindspore.dataset.Dataset.batch>`_ 
-  操作将多个样本组织成batch，也可以通过batch的参数 `per_batch_map`` 来自定义batch逻辑；
+  操作将多个样本组织成batch，也可以通过batch的参数 `per_batch_map` 来自定义batch逻辑；
 
-- 迭代器（create_dict_iterator）：最后用户通过数据集对象方法 `.create_dict_iterator <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/iterator/mindspore.dataset.Dataset.create_dict_iterator.html>`_ / 
+- 迭代器（iterator）：最后用户通过数据集对象方法 `.create_dict_iterator <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/iterator/mindspore.dataset.Dataset.create_dict_iterator.html>`_ / 
   `.create_tuple_iterator <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/iterator/mindspore.dataset.Dataset.create_tuple_iterator.html>`_ 来创建迭代器将预处理完成的数据循环输出。
 
 数据处理Pipeline快速上手
