@@ -1,10 +1,6 @@
 diag:
     description: |
-        Constructs a diagonal tensor with a given diagonal values.
-
-        Assume `input` has dimensions :math:`(D_1,... D_k)` , the output is a tensor of
-        rank 2k with dimensions :math:`(D_1,..., D_k, D_1,..., D_k)` where:
-        :math:`output[i_1,..., i_k, i_1,..., i_k] = input[i_1,..., i_k]` and 0 everywhere else.
+        Return a tensor with the `input` as its diagonal elements and ``0`` elsewhere.
 
         .. warning::
             This is an experimental API that is subject to change or deletion.
@@ -13,21 +9,41 @@ diag:
             input (Tensor): The input tensor.
 
         Returns:
-            Tensor, has the same dtype as the `input`.
-        
-        Raises:
-            TypeError: If `input` is not a Tensor.
-            ValueError: If rank of `input` less than 1.
+            Tensor
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
 
         Examples:
-            >>> from mindspore import Tensor, ops
-            >>> input = Tensor([1, 2, 3, 4]).astype('int32')
-            >>> output = ops.diag(input)
+            >>> import mindspore
+            >>> # case 1: When input is a 1-D tensor:
+            >>> input = mindspore.ops.randn(3)
+            >>> output = mindspore.ops.diag(input)
             >>> print(output)
-            [[1 0 0 0]
-             [0 2 0 0]
-             [0 0 3 0]
-             [0 0 0 4]]
+            [[ 1.7477764  0.         0.       ]
+             [ 0.        -1.2616369  0.       ]
+             [ 0.         0.         2.3283238]]
+            >>>
+            >>> # case 2: When input is a multi-dimensional tensor:
+            >>> input = mindspore.ops.randn(2, 3)
+            >>> print(input)
+            [[ 0.21546374 -0.0120403  -0.7330481 ]
+             [-2.5405762   0.44775972 -1.4063131 ]]
+            >>> output = mindspore.ops.diag(input)
+            >>> print(output)
+            [[[[ 0.21546374  0.          0.        ]
+               [ 0.          0.          0.        ]]
+              [[ 0.         -0.0120403   0.        ]
+               [ 0.          0.          0.        ]]
+              [[ 0.          0.         -0.7330481 ]
+               [ 0.          0.          0.        ]]]
+             [[[ 0.          0.          0.        ]
+               [-2.5405762   0.          0.        ]]
+              [[ 0.          0.          0.        ]
+               [ 0.          0.44775972  0.        ]]
+              [[ 0.          0.          0.        ]
+               [ 0.          0.         -1.4063131 ]]]]
+            >>> # Assume input has dimensions (D_1,... D_k), the output is a tensor of rank 2k with dimensions
+                (D_1,..., D_k, D_1,..., D_k).
+            >>> print(output.shape)
+            (2, 3, 2, 3)

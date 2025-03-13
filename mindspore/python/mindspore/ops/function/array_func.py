@@ -6430,46 +6430,41 @@ def _check_diagonal_scatter_shape(diag_shape, src_shape):
 
 def diagonal_scatter(input, src, offset=0, dim1=0, dim2=1):
     """
-    `dim1` and `dim2` specify the two dimensions of `input`,
-    the elements in these two dimensions will be treated as elements of a matrix,
-    and `src` is embedded on the diagonal of the matrix.
+    Embeds the values of the `src` tensor into `input` along the diagonal elements of input, with respect to `dim1`
+    and `dim2` .
 
     Note:
         Currently, ``inf`` value of elements in `input` or `src` is not supported.
 
     Args:
-        input (Tensor): Input Tensor, whose dimension is larger than 1.
-        src (Tensor): The source Tensor to embed.
-        offset (int, optional): `offset` controls which diagonal to choose. Default: ``0`` .
+        input (Tensor): The input tensor, whose dimension is larger than 1.
+        src (Tensor): The source tensor to embed.
+        offset (int, optional): Diagonal offset. Default ``0`` .
 
-            - When `offset` is zero, the diagonal chosen is the main diagonal.
-            - When `offset` is a positive integer, the diagonal chosen is up the main diagonal.
-            - When `offset` is a negative integer, the diagonal chosen is down the main diagonal.
-
-        dim1 (int, optional): Axis to be used as the first axis of the 2-D
-            sub-arrays from which the diagonals should be taken. Default: ``0`` .
-        dim2 (int, optional): Axis to be used as the second axis of the 2-D
-            sub-arrays from which the diagonals should be taken. Default: ``1`` .
+              - When `offset` is a positive integer, shift the diagonal upward.
+              - When `offset` is a negative integer, shift the diagonal downward.
+        dim1 (int, optional): First dimension with respect to which to take diagonal. Default ``0`` .
+        dim2 (int, optional): Second dimension with respect to which to take diagonal. Default ``1`` .
 
     Returns:
-        Tensor after embedding, has the same shape and dtype as `input`.
-
-    Raises:
-        TypeError: If `input` or `src` is not a Tensor.
-        TypeError: If `offset` , `dim1` or `dim2` is not an integer.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> input = ms.ops.zeros((3,3))
-        >>> src = ms.ops.ones(2)
-        >>> out = ms.ops.diagonal_scatter(input, src, 1, dim1=1, dim2=0)
-        >>> print(out)
-        [[0. 0. 0.]
-         [1. 0. 0.]
-         [0. 1. 0.]]
+        >>> import mindspore
+        >>> input = mindspore.ops.zeros((3, 3))
+        >>> output = mindspore.ops.diagonal_scatter(input, mindspore.ops.ones(3), 0)
+        >>> print(output)
+        [[1. 0. 0.]
+         [0. 1. 0.]
+         [0. 0. 1.]]
+        >>> output = mindspore.ops.diagonal_scatter(input, mindspore.ops.ones(2), 1)
+        >>> print(output)
+        [[0. 1. 0.]
+         [0. 0. 1.]
+         [0. 0. 0.]]
     """
     _check_is_tensor("input", input, "diagonal_scatter")
     _check_is_tensor("src", src, "diagonal_scatter")

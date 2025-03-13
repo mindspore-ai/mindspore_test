@@ -3,20 +3,14 @@ mindspore.ops.combinations
 
 .. py:function:: mindspore.ops.combinations(input, r=2, with_replacement=False)
 
-    返回输入Tensor中元素的所有长度为 `r` 的子序列。
+    返回输入tensor中所有长度为 `r` 的子序列。
 
     当 `with_replacement` 为 ``False`` 时，功能与Python的 `itertools.combinations` 类似；当为 ``True`` 时，功能与 `itertools.combinations_with_replacement` 一致。
 
     参数：
-        - **input** (Tensor) - 一维Tensor。
-        - **r** (int，可选) - 进行组合的元素个数。默认值： ``2`` 。
-        - **with_replacement** (bool，可选) - 是否允许组合存在重复值。默认值： ``False`` 。
+        - **input** (Tensor) - 一维输入tensor。
+        - **r** (int，可选) - 进行组合的子序列长度。默认 ``2`` 。
+        - **with_replacement** (bool，可选) - 是否允许组合存在重复值。默认 ``False`` 。
 
     返回：
-        Tensor，包含输入Tensor元素的所有组合值。
-
-    异常：
-        - **TypeError** - 如果 `input` 不是Tensor。
-        - **TypeError** - 如果 `r` 不是int类型。
-        - **TypeError** - 如果 `with_replacement` 不是bool类型。
-        - **ValueError** - 如果 `input` 不是一维。
+        Tensor

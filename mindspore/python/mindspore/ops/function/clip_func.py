@@ -226,9 +226,7 @@ def clip_by_value(x, clip_value_min=None, clip_value_max=None):
 
 def clamp(input, min=None, max=None):
     r"""
-    Clamps tensor values between the specified minimum value and maximum value.
-
-    Limits the value of :math:`input` to a range, whose lower limit is `min` and upper limit is `max` .
+    Clamp all elements of the input tensor within the range [min, max].
 
     .. math::
 
@@ -241,41 +239,37 @@ def clamp(input, min=None, max=None):
 
     Note:
         - `min` and `max` cannot be None at the same time;
-        - When `min` is None and `max` is not None, the elements in Tensor larger than `max` will become `max`;
-        - When `min` is not None and `max` is None, the elements in Tensor smaller than `min` will become `min`;
+        - If `min` is ``None`` , there is no lower bound.
+        - if `max` is ``None`` , there is no upper bound.
         - If `min` is greater than `max`, the value of all elements in Tensor will be set to `max`;
-        - The data type of `input`, `min` and `max` should support implicit type conversion and cannot be bool type.
 
     Args:
-          input (Tensor): Input data, which type is Tensor. Tensors of arbitrary dimensions are supported.
-          min (Union(Tensor, float, int), optional): The minimum value. Default: ``None`` .
-          max (Union(Tensor, float, int), optional): The maximum value. Default: ``None`` .
+          input (Tensor): The input tensor.
+          min (Union(Tensor, float, int), optional): The minimum value. Default ``None`` .
+          max (Union(Tensor, float, int), optional): The maximum value. Default ``None`` .
 
     Returns:
-          Tensor, a clipped Tensor.
-          The data type and shape are the same as input.
-
-    Raises:
-          ValueError: If both `min` and `max` are None.
-          TypeError: If the type of `input` is not in Tensor.
-          TypeError: If the type of `min` is not in None, Tensor, float or int.
-          TypeError: If the type of `max` is not in None, Tensor, float or int.
+          Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> # case 1: the data type of input is Tensor
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> import numpy as np
-        >>> min_value = Tensor(5, mindspore.float32)
-        >>> max_value = Tensor(20, mindspore.float32)
-        >>> input = Tensor(np.array([[1., 25., 5., 7.], [4., 11., 6., 21.]]), mindspore.float32)
-        >>> output = ops.clamp(input, min_value, max_value)
-        >>> print(output)
-        [[ 5. 20.  5.  7.]
-         [ 5. 11.  6. 20.]]
+        >>> # case 1: `min` and `max` are integer
+        >>> input = mindspore.tensor([[1, 25, 5, 7], [4, 11, 6, 21]])
+        >>> mindspore.ops.clamp(input, 5, 20)
+        Tensor(shape=[2, 4], dtype=Int64, value=
+        [[ 5, 20,  5,  7],
+         [ 5, 11,  6, 20]])
+        >>>
+        >>> # case 2: If `min` and `max` are tensors, their shapes need to be broadcastable with input.
+        >>> min = mindspore.tensor([2, 4, 6, 8])
+        >>> max = mindspore.tensor([10, 12, 14, 18])
+        >>> mindspore.ops.clamp(input, min, max)
+        Tensor(shape=[2, 4], dtype=Int64, value=
+        [[ 2, 12,  6,  8],
+         [ 4, 11,  6, 18]])
     """
     if isinstance(min, Tensor) or isinstance(max, Tensor):
         return clamp_tensor(input, min, max)
