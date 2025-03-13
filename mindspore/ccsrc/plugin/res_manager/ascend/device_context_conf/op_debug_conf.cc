@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
+#include <map>
 #include <fstream>
 #include "include/common/debug/common.h"
 #include <nlohmann/json.hpp>
@@ -23,6 +24,12 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
+namespace {
+constexpr auto dump_scene = "dump_scene";
+constexpr auto lite_exception = "lite_exception";
+constexpr auto lite_exception_disable = "lite_exception:disable";
+}  // namespace
+
 std::shared_ptr<OpDebugConf> OpDebugConf::inst_context_ = nullptr;
 
 std::shared_ptr<OpDebugConf> OpDebugConf::GetInstance() {
@@ -30,16 +37,31 @@ std::shared_ptr<OpDebugConf> OpDebugConf::GetInstance() {
   std::call_once(inst_context_init_flag_, [&]() {
     if (inst_context_ == nullptr) {
       MS_LOG(DEBUG) << "Create new mindspore OpDebugConf";
-      inst_context_ = std::make_shared<OpDebugConf>();
+      inst_context_ = std::shared_ptr<OpDebugConf>(new OpDebugConf());
     }
   });
   MS_EXCEPTION_IF_NULL(inst_context_);
   return inst_context_;
 }
 
+OpDebugConf::OpDebugConf() {
+  acl_init_json_["err_msg_mode"] = "1";
+  acl_init_json_["dump"][dump_scene] = lite_exception;
+}
+
 void OpDebugConf::set_execute_timeout(uint32_t op_timeout) {
   is_execute_timeout_configured_ = true;
   execute_timeout_ = op_timeout;
+}
+
+void OpDebugConf::set_lite_exception_dump(const std::map<std::string, std::string> &dump_config) {
+  auto it = dump_config.find(dump_scene);
+  if (it == dump_config.end()) {
+    return;
+  }
+  if (it->second == lite_exception_disable) {
+    acl_init_json_.erase("dump");
+  }
 }
 
 uint32_t OpDebugConf::execute_timeout() const {
@@ -62,14 +84,12 @@ std::string OpDebugConf::debug_option() const {
   return debug_option;
 }
 
-bool OpDebugConf::GenerateAclInitJson() {
-  std::string file_name = "./aclinit.json";
-  auto realpath = Common::CreatePrefixPath(file_name);
+bool OpDebugConf::GenerateAclInitJson(const std::string &file_path) {
   // write to file
   std::string json_file_str = acl_init_json_.dump();
-  std::ofstream json_file(realpath.value());
+  std::ofstream json_file(file_path);
   if (!json_file.is_open()) {
-    MS_LOG(WARNING) << "Open file [" << realpath.value() << "] failed!";
+    MS_LOG(WARNING) << "Open file [" << file_path << "] failed!";
     return false;
   }
   json_file << json_file_str;
@@ -98,11 +118,11 @@ void RegOpDebugConf(py::module *m) {
     .def("execute_timeout", &OpDebugConf::execute_timeout, "Get Execute Timeout.")
     .def("set_debug_option", &OpDebugConf::set_debug_option, "Set Debug Option.")
     .def("debug_option", &OpDebugConf::debug_option, "Get Debug Option.")
+    .def("set_lite_exception_dump", &OpDebugConf::set_lite_exception_dump, "Set lite exception dump")
     .def("is_execute_timeout_configured", &OpDebugConf::IsExecuteTimeoutConfigured, "Is Execute Timeout Configured.")
     .def("is_debug_option_configured", &OpDebugConf::IsDebugOptionConfigured, "Is Debug Option Configured.")
     .def("set_max_opqueue_num", &OpDebugConf::set_max_opqueue_num, "set_max_opqueue_num")
-    .def("set_err_msg_mode", &OpDebugConf::set_err_msg_mode, "set_err_msg_mode")
-    .def("generate_aclinit_json", &OpDebugConf::GenerateAclInitJson, "Generate AclInit Json");
+    .def("set_err_msg_mode", &OpDebugConf::set_err_msg_mode, "set_err_msg_mode");
 }
 }  // namespace ascend
 }  // namespace device

@@ -18,6 +18,7 @@
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_DEVICE_CONTEXT_CONF_OP_DEBUG_CONF_H_
 
 #include <memory>
+#include <map>
 #include <string>
 #include <nlohmann/json.hpp>
 #include "include/common/pybind_api/api_register.h"
@@ -30,7 +31,6 @@ namespace ascend {
 const uint32_t kOpTimeout = 900;
 class ASCEND_RES_MANAGER_EXPORT OpDebugConf {
  public:
-  OpDebugConf() = default;
   ~OpDebugConf() = default;
   OpDebugConf(const OpDebugConf &) = delete;
   OpDebugConf &operator=(const OpDebugConf &) = delete;
@@ -41,12 +41,14 @@ class ASCEND_RES_MANAGER_EXPORT OpDebugConf {
   void set_debug_option(const std::string &option_value) { debug_option_ = option_value; }
   void set_max_opqueue_num(const std::string &opqueue_num);
   void set_err_msg_mode(const std::string &msg_mode);
-  bool GenerateAclInitJson();
+  void set_lite_exception_dump(const std::map<std::string, std::string> &);
+  bool GenerateAclInitJson(const std::string &file_name);
   bool IsExecuteTimeoutConfigured() const { return is_execute_timeout_configured_; }
   bool IsDebugOptionConfigured() const { return !debug_option_.empty(); }
 
  private:
-  nlohmann::json acl_init_json_{{"err_msg_mode", "1"}};
+  nlohmann::json acl_init_json_;
+  OpDebugConf();
   static std::shared_ptr<OpDebugConf> inst_context_;
   uint32_t execute_timeout_{kOpTimeout};
   bool is_execute_timeout_configured_{false};
