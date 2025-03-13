@@ -37,30 +37,6 @@ namespace mindspore {
 namespace device {
 constexpr size_t kDecimalPrecision = 3;
 
-class BACKEND_EXPORT AbstractDynamicMemPool;
-
-class BACKEND_EXPORT Lock {
- public:
-  inline void lock() {
-    while (locked.test_and_set(std::memory_order_acquire)) {
-    }
-  }
-
-  inline void unlock() { locked.clear(std::memory_order_release); }
-
- protected:
-  std::atomic_flag locked = ATOMIC_FLAG_INIT;
-};
-
-class BACKEND_EXPORT LockGuard {
- public:
-  explicit LockGuard(const Lock &lock);
-  ~LockGuard();
-
- private:
-  Lock *lock_;
-};
-
 struct BACKEND_EXPORT MemBlock;
 
 using MemBufStatus = DynamicMemBufStatus;
@@ -247,6 +223,8 @@ struct BACKEND_EXPORT MemStat {
   size_t temp_alloc_size_;
 };
 
+class AbstractDynamicMemPool;
+
 class BACKEND_EXPORT MemBufAllocator {
  public:
   explicit MemBufAllocator(std::function<MemBlock *(size_t)> mem_block_expander,
@@ -325,6 +303,8 @@ class BACKEND_EXPORT MemBufAllocator {
 };
 using MemBufAllocatorPtr = std::shared_ptr<MemBufAllocator>;
 
+using Lock = memory::mem_pool::Lock;
+using LockGuard = memory::mem_pool::LockGuard;
 class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
  public:
   AbstractDynamicMemPool();

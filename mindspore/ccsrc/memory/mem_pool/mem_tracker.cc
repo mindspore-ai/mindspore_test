@@ -511,7 +511,7 @@ void MemoryTrackerEnabled::AddMemInfo(const std::string &task_name, MemType type
     if (iter != task_map_.end()) {
       device::DynamicMemAllocatorDebugInfo::SetDebugInfo(iter->second->node_name, type);
     } else {
-      MS_LOG(INFO) << "Find task : " << task_name << " failed.";
+      MS_LOG(WARNING) << "Find task : " << task_name << " failed.";
     }
   }
 }
@@ -940,26 +940,32 @@ void MemoryTrackerEnabled::DumpProfilingMemInfo(size_t rank_id, const std::strin
 
 void MemoryTrackerDisabled::AddTask(const std::string &task_name, const std::string &node_name,
                                     const std::string &graph_name, const std::string &file_name, size_t line_num) {
-  return AddTask(task_name, node_name, graph_name, false, file_name, line_num);
+  AddTask(task_name, node_name, graph_name, false, file_name, line_num);
 }
 
 void MemoryTrackerDisabled::AddTask(const std::string &task_name, const std::string &node_name,
                                     const std::string &graph_name, const bool to_graph, const std::string &file_name,
                                     size_t line_num) {
   if (MS_UNLIKELY(enable_memory_debug_info_)) {
-    if (task_map_.count(task_name) == 0) {
-      (void)task_map_.emplace(task_name, node_name);
-    }
+    LockGuard lock(lock_);
+    task_map_[task_name] = node_name;
   }
+}
+
+void MemoryTrackerDisabled::AddNestedTask(const std::string &task_name, const std::string &node_name,
+                                          const std::string &graph_name, const std::string &file_name,
+                                          size_t line_num) {
+  AddTask(task_name, node_name, graph_name, false, file_name, line_num);
 }
 
 void MemoryTrackerDisabled::AddMemInfo(const std::string &task_name, MemType type, size_t size,
                                        DeviceAddress *device_address, const std::string &file_name,
                                        const size_t line_num) {
   if (MS_UNLIKELY(enable_memory_debug_info_)) {
+    LockGuard lock(lock_);
     auto &&iter = task_map_.find(task_name);
     if (iter == task_map_.end()) {
-      MS_LOG(INFO) << "Find task : " << task_name << " failed.";
+      MS_LOG(WARNING) << "Find task : " << task_name << " failed.";
     } else {
       DynamicMemAllocatorDebugInfo::SetDebugInfo(iter->second, type);
     }

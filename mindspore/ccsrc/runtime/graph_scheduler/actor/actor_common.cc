@@ -283,6 +283,11 @@ bool EnableAsyncInfer() {
 }
 
 bool EnableTraceMemory() {
+  static const bool enable_mem_tracker = common::IsEnableAllocConfig(common::kAllocMemoryTracker);
+  if (enable_mem_tracker) {
+    return false;
+  }
+
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
@@ -1004,9 +1009,7 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
   MS_EXCEPTION_IF_NULL(context);
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   auto device_tensors = graph_parameter_store->Fetch(outer_index, inner_index);
-  if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), from_aid.Name(), "", false);
-  }
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), from_aid.Name(), "", false);
   bool in_callback = false;
   for (const auto device_tensor : device_tensors) {
     // Update dynamic shape and size.
@@ -1061,9 +1064,7 @@ void SyncDeviceTensorsInParameterStore(size_t outer_index, size_t inner_index, c
   MS_EXCEPTION_IF_NULL(tensor_address);
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   auto device_tensors = graph_parameter_store->Fetch(outer_index, inner_index);
-  if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), from_aid.Name(), "", false);
-  }
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), from_aid.Name(), "", false);
   bool in_callback = false;
   for (const auto device_tensor : device_tensors) {
     // Update dynamic shape and size.

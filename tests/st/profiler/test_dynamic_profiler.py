@@ -126,7 +126,7 @@ def test_tiny_transformer_pynative_with_dynamic_profiler():
         # Check operate_memory.csv
         operate_memory_path = glob.glob(f"{profiler_path}/*_ascend_ms/"
                                         f"ASCEND_PROFILER_OUTPUT/operator_memory.csv")[0]
-        FileChecker.check_csv_items(operate_memory_path, {"Name": ["Unknown"]})
+        FileChecker.check_csv_items(operate_memory_path, {"Name": ["*MatMul*"]})
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

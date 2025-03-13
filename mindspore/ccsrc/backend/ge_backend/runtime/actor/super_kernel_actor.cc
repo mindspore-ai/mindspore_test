@@ -191,9 +191,7 @@ void SuperKernelActor::FetchInputDeviceTensor(OpContext<DeviceTensor> *const con
 void SuperKernelActor::Run(OpContext<DeviceTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   MS_EXCEPTION_IF_NULL(graph_);
-  if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), "SuperKernelActor", graph_->ToString());
-  }
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), "SuperKernelActor", graph_->ToString());
 
   MS_LOG(INFO) << "Super kernel actor(" << GetAID().Name()
                << ") launches graph: " << std::to_string(graph_->graph_id());

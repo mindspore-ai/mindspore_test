@@ -182,6 +182,7 @@ class BACKEND_EXPORT MemTracker {
   virtual void SetEnableMemoryDebugInfo(bool enable_memory_debug_info) {
     enable_memory_debug_info_ = enable_memory_debug_info;
   }
+  bool enable_memory_debug_info() { return enable_memory_debug_info_; }
 
  protected:
   bool enable_memory_debug_info_{false};
@@ -265,6 +266,8 @@ class BACKEND_EXPORT MemoryTrackerEnabled : public MemTracker {
   }
 };
 
+using Lock = memory::mem_pool::Lock;
+using LockGuard = memory::mem_pool::LockGuard;
 class BACKEND_EXPORT MemoryTrackerDisabled : public MemTracker {
   friend class MemTrackerManager;
 
@@ -275,7 +278,7 @@ class BACKEND_EXPORT MemoryTrackerDisabled : public MemTracker {
   void AddTask(const std::string &task_name, const std::string &node_name, const std::string &graph_name,
                const bool to_graph, const std::string &file_name, size_t line_num) override;
   void AddNestedTask(const std::string &task_name, const std::string &node_name, const std::string &graph_name,
-                     const std::string &file_name, size_t line_num) override {}
+                     const std::string &file_name, size_t line_num) override;
   void DelNestedTask() override {}
   void UpdateTask(const std::string &task_name, const std::unordered_map<std::string, std::string> &attrs) override {}
   void CacheLastTask() override {}
@@ -313,6 +316,7 @@ class BACKEND_EXPORT MemoryTrackerDisabled : public MemTracker {
     return instance;
   }
 
+  Lock lock_;
   std::map<std::string, std::string> task_map_;
 };
 
@@ -377,8 +381,7 @@ class BACKEND_EXPORT GraphTracker {
 class BACKEND_EXPORT MemTrackerManager {
  public:
   static MemTracker &GetInstance() {
-    static bool enable_trace_mem = common::IsEnableAllocConfig(common::kAllocMemoryTracker) ||
-                                   MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PROF_MEM);
+    static bool enable_trace_mem = common::IsEnableAllocConfig(common::kAllocMemoryTracker);
     if (enable_trace_mem) {
       return MemoryTrackerEnabled::getInstance();
     } else {

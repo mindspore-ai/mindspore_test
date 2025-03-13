@@ -84,6 +84,17 @@ void TrackInputOutputMemory(const std::vector<DeviceTensor *> &input_device_tens
                                                    device_addr->GetShapeVector(), device_addr->GetTensorStorageInfo());
   }
 }
+
+void AddNodeMemTrackerInfo(const CNodePtr cnode, const std::string &actor_name, bool is_stream_recv_actor) {
+  if (is_stream_recv_actor || IsPrimitiveCNode(cnode, prim::kPrimStreamSend)) {
+    auto node_name = is_stream_recv_actor ? "WaitEvent" : "RecordEvent";
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, node_name, node_name, "", true);
+  } else {
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, actor_name, cnode->fullname_with_scope(),
+                                                   cnode->func_graph()->ToString(), true);
+  }
+}
+
 void AddNodeToGraphTracker(const CNodePtr cnode, const std::string &actor_name) {
   auto type = common::AnfAlgo::GetCNodeName(cnode);
   auto stream_id = std::to_string(AnfAlgo::GetStreamId(cnode));
@@ -508,10 +519,8 @@ void KernelActor::Run(OpContext<DeviceTensor> *const context) {
   try {
     MS_EXCEPTION_IF_NULL(kernel_);
     MS_EXCEPTION_IF_NULL(kernel_->func_graph());
-    if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), kernel_->fullname_with_scope(),
-                                                     kernel_->func_graph()->ToString(), false);
-    }
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), kernel_->fullname_with_scope(),
+                                                   kernel_->func_graph()->ToString(), false);
     FetchInputDeviceTensor(context);
     UpdateRefDeviceAddress(context, true);
     if (ActorDispatcher::enable_runtime_multi_pipeline()) {
@@ -1304,6 +1313,8 @@ bool KernelActor::LaunchKernelWithDebug(OpContext<DeviceTensor> *const context, 
   if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
     AddNodeToGraphTracker(kernel_, GetAID().Name());
     TrackInputOutputMemory(input_device_tensors_, output_device_tensors_, GetAID().Name(), depend_shape_input_list_);
+  } else {
+    AddNodeMemTrackerInfo(kernel_, GetAID().Name(), is_stream_recv_actor_);
   }
   bool ret = true;
   if (!skip_launch) {
@@ -1331,6 +1342,8 @@ bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_s
     if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
       AddNodeToGraphTracker(kernel_, GetAID().Name());
       TrackInputOutputMemory(input_device_tensors_, output_device_tensors_, GetAID().Name(), depend_shape_input_list_);
+    } else {
+      AddNodeMemTrackerInfo(kernel_, GetAID().Name(), is_stream_recv_actor_);
     }
     return true;
   }
@@ -1347,6 +1360,8 @@ bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_s
         AddNodeToGraphTracker(kernel_, GetAID().Name());
         TrackInputOutputMemory(input_device_tensors_, output_device_tensors_, GetAID().Name(),
                                depend_shape_input_list_);
+      } else {
+        AddNodeMemTrackerInfo(kernel_, GetAID().Name(), is_stream_recv_actor_);
       }
       return true;
     } else {
