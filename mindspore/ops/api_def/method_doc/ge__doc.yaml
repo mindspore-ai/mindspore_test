@@ -15,7 +15,7 @@ ge_:
             a bool or a tensor whose data type is number or bool.
 
     Returns:
-        Tensor, the shape is the same as `self` , and the data type is the same as `self` .
+        Tensor, the shape and the data type are the same as those of `self` .
 
     Raises:
         RuntimeError: If `other` cannot be broadcast to `self`.

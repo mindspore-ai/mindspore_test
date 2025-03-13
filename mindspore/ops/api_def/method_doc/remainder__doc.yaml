@@ -1,0 +1,44 @@
+remainder_:
+  description: |
+    remainder_(other) -> Tensor
+
+    Computes the remainder of `self` divided by `other` element-wise. The result has the same sign as the divisor `other`
+    and its absolute value is less than that of `other`.
+
+    .. code-block::
+
+        remainder(self, other) == self - self.div(other, rounding_mode="floor") * other
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Note:
+        - Complex inputs are not supported.
+        - The dividend `self` is a tensor whose data type is
+          `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+        - When `self` and `other` have different shapes, `other` should be able to broadcast to a `self`.
+
+    Args:
+        other (Union[Tensor, number, bool]): The divisor is a number or
+            a bool or a tensor whose data type is number or bool.
+
+    Returns:
+        Tensor, the shape and the data type are the same as those of `self` .
+
+    Raises:
+        RuntimeError: If `other` cannot be broadcast to `self`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor
+        >>> import numpy as np
+        >>> x = Tensor(np.array([2, 4, -1]), mindspore.int32)
+        >>> other = Tensor(np.array([3, -6, -2]), mindspore.int32)
+        >>> output = x.remainder_(other)
+        >>> print(output)
+        [ 2 -2 -1]
+        >>> print(x)
+        [ 2 -2 -1]
