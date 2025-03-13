@@ -23,7 +23,7 @@
 #include "pynative/forward/forward_task.h"
 #include "runtime/pynative/op_runner.h"
 #include "runtime/pynative/op_executor.h"
-#include "include/common/utils/stub_tensor.h"
+#include "include/common/utils/tensor_utils.h"
 #include "pynative/pynative_utils.h"
 #include "op_def/auto_generate/gen_ops_def.h"
 #include "pynative/op_function/customize/direct_ops.h"
@@ -35,12 +35,11 @@ py::object Pyboost_Empty_OP(const PrimitivePtr &prim, const std::vector<mindspor
                             const std::optional<StringImmPtr> &device) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp, "Empty", false,
                                      true);
-  static const TypePtr type = std::make_shared<TensorType>();
-  auto stub_out = stub::MakeTopNode(type);
-  auto stub_node = stub_out.second;
+  auto py_output = tensor::MakeTuple<tensor::TensorWrapper, 1>();
+  auto promises = tensor::TransformPromise(py_output);
   MS_LOG(DEBUG) << "start Empty";
   pynative::DispatchOp(std::make_shared<pynative::PassthroughFrontendTask>(
-    [stub_node, shape, dtype, device]() {
+    [shape, dtype, device, promises]() {
       std::string device_name;
       if (device.has_value()) {
         device_name = device.value()->value();
@@ -70,16 +69,10 @@ py::object Pyboost_Empty_OP(const PrimitivePtr &prim, const std::vector<mindspor
         output_shape.push_back(shape_i);
       }
 
-      auto value_simple_info = std::make_shared<ValueSimpleInfo>();
-      value_simple_info->shape_vector_.push_back(output_shape);
-      value_simple_info->dtype_vector_.push_back(TypeIdToType(real_type));
-      value_simple_info->size_ = 1;
-      stub_node->SetValueSimpleInfo(value_simple_info);
-
       std::vector<tensor::BaseTensorPtr> outputs;
       kernel::pyboost::PyBoostUtils::CreateOutputTensor(real_type, output_shape, &outputs);
       kernel::pyboost::PyBoostUtils::PrepareOpOutputs(device_ctx, 0, outputs);
-      stub_node->SetValue(outputs[0]);
+      tensor::SetPromise(promises, outputs[0]);
 
       auto fn = [device_ctx, outputs]() { kernel::pyboost::PyBoostUtils::MallocOpOutputs(device_ctx, outputs); };
 
@@ -90,10 +83,10 @@ py::object Pyboost_Empty_OP(const PrimitivePtr &prim, const std::vector<mindspor
         fn();
       }
     },
-    stub_node));
+    [promises]() { tensor::SetException(promises); }));
   MS_LOG(DEBUG) << "finish Empty";
 
-  return stub_out.first;
+  return py::reinterpret_steal<py::object>(tensor::TransformOutput(py_output));
 }
 
 py::object Empty(const py::list &args) {

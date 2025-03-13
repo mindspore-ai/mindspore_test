@@ -29,7 +29,6 @@ import numpy as np
 import mindspore as ms
 from mindspore._c_expression import Oplib, typing
 from mindspore._c_expression import pyboost_custom_ext
-from mindspore.common._stub_tensor import _convert_stub
 from mindspore import context
 from mindspore.common import Tensor
 from mindspore.common import dtype as mstype
@@ -1099,7 +1098,7 @@ class Custom(ops.PrimitiveWithInfer):
 
     def __call__(self, *args):
         if self.enable_pyboost:
-            res = _convert_stub(pyboost_custom_ext(self.custom_pyboost, [args]))
+            res = pyboost_custom_ext(self.custom_pyboost, [args])
             return res if self.multi_output else res[0]
         should_elim, output = self.check_elim(*args)
         if should_elim:

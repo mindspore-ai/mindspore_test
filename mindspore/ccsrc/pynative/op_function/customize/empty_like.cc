@@ -23,7 +23,7 @@
 #include "pynative/forward/forward_task.h"
 #include "runtime/pynative/op_runner.h"
 #include "runtime/pynative/op_executor.h"
-#include "include/common/utils/stub_tensor.h"
+#include "include/common/utils/tensor_utils.h"
 #include "pynative/pynative_utils.h"
 #include "op_def/auto_generate/gen_ops_def.h"
 #include "pynative/op_function/customize/direct_ops.h"
@@ -33,9 +33,8 @@ namespace mindspore::pynative {
 py::object EmptyLike(const py::list &args) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp, "EmptyLike",
                                      false, true);
-  static const TypePtr type = std::make_shared<TensorType>();
-  auto stub_out = stub::MakeTopNode(type);
-  auto stub_node = stub_out.second;
+  auto py_output = tensor::MakeTuple<tensor::TensorWrapper, 1>();
+  auto promises = tensor::TransformPromise(py_output);
 
   static pynative::Converter converter(&ops::gEmptyLike);
   auto input_tensor = converter.ToTensor(args, kIndex0);
@@ -45,7 +44,7 @@ py::object EmptyLike(const py::list &args) {
   MS_LOG(DEBUG) << "start EmptyLike";
 
   pynative::DispatchOp(std::make_shared<pynative::PassthroughFrontendTask>(
-    [stub_node, input_tensor, dtype, device]() {
+    [input_tensor, dtype, device, promises]() {
       auto tensor_ptr = pynative::PyNativeAlgo::Common::ConvertStubNodeToTensor(input_tensor, true, false);
       std::string device_name;
       if (device.has_value()) {
@@ -86,17 +85,10 @@ py::object EmptyLike(const py::list &args) {
       }
       auto output_shape = tensor_ptr->shape();
 
-      auto value_simple_info = std::make_shared<ValueSimpleInfo>();
-      value_simple_info->shape_vector_.push_back(output_shape);
-      value_simple_info->dtype_vector_.push_back(TypeIdToType(real_type));
-      value_simple_info->size_ = 1;
-      stub_node->SetValueSimpleInfo(value_simple_info);
-
       std::vector<tensor::BaseTensorPtr> outputs;
       kernel::pyboost::PyBoostUtils::CreateOutputTensor(real_type, output_shape, &outputs);
       kernel::pyboost::PyBoostUtils::PrepareOpOutputs(device_ctx, 0, outputs);
-      stub_node->SetValue(outputs[0]);
-
+      tensor::SetPromise(promises, outputs[0]);
       auto fn = [device_ctx, outputs]() { kernel::pyboost::PyBoostUtils::MallocOpOutputs(device_ctx, outputs); };
 
       if (!runtime::OpExecutor::NeedSync()) {
@@ -106,9 +98,9 @@ py::object EmptyLike(const py::list &args) {
         fn();
       }
     },
-    stub_node));
+    [promises]() { tensor::SetException(promises); }));
   MS_LOG(DEBUG) << "finish EmptyLike";
 
-  return stub_out.first;
+  return py::reinterpret_steal<py::object>(tensor::TransformOutput(py_output));
 }
 }  // namespace mindspore::pynative

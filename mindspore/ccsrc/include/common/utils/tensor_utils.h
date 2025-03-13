@@ -117,20 +117,7 @@ void SetPromise(const std::tuple<T1...> &t1, const std::tuple<T2...> &t2) {
   SetPromiseImpl(t1, t2, std::index_sequence_for<T1...>{});
 }
 
-void FlattenOutputs(const ValuePtr &value, std::vector<BaseTensorPtr> *outputs) {
-  MS_EXCEPTION_IF_NULL(value);
-  if (value->isa<BaseTensor>()) {
-    outputs->emplace_back(value->cast<BaseTensorPtr>());
-  } else if (value->isa<ValueSequence>()) {
-    auto seq = value->cast<ValueSequencePtr>();
-    const auto &elements = seq->value();
-    for (const auto &element : elements) {
-      FlattenOutputs(element, outputs);
-    }
-  } else {
-    MS_LOG(EXCEPTION) << "Not support type " << value->ToString();
-  }
-}
+COMMON_EXPORT void FlattenOutputs(const ValuePtr &value, std::vector<BaseTensorPtr> *outputs);
 
 template <typename... Ts>
 std::vector<std::common_type_t<Ts...>> tuple_to_vector(const std::tuple<Ts...> &t) {
