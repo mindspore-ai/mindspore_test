@@ -660,20 +660,20 @@ bool Shard(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
 }
 
 static std::vector<std::pair<std::string, ValuePtr>> GetPrimAttrFromAddAttrNode(const AnfNodePtr &addattr_node) {
-  const size_t kAddAttrAttrPairIndex = 2;
+  const size_t add_attr_attr_pair_index = 2;
   std::vector<std::pair<std::string, ValuePtr>> kv_pair_vec;
   if (!addattr_node || !addattr_node->isa<CNode>() || !IsPrimitiveCNode(addattr_node, prim::kPrimAddAttr)) {
     return kv_pair_vec;
   }
   CNodePtr addattr_cnode = addattr_node->cast<CNodePtr>();
-  AnfNodePtr attr_pair_node = addattr_cnode->input(kAddAttrAttrPairIndex);
+  AnfNodePtr attr_pair_node = addattr_cnode->input(add_attr_attr_pair_index);
   MS_EXCEPTION_IF_NULL(attr_pair_node);
   ValueNodePtr attr_pair_vnode = attr_pair_node->cast<ValueNodePtr>();
-  MS_EXCEPTION_IF_NULL(attr_pair_vnode->value());
+  MS_EXCEPTION_IF_NULL(attr_pair_vnode);
   if (!attr_pair_vnode->value()->isa<ValueTuple>()) {
     MS_LOG_WITH_NODE(EXCEPTION, addattr_node) << "Parse attr_pair to ValueTuple failed. Please check attr_pair format.";
   }
-  std::vector<ValuePtr> attr_pair_vals = attr_pair_vnode->value()->cast<ValueTuplePtr>()->value();
+  const std::vector<ValuePtr> attr_pair_vals = attr_pair_vnode->value()->cast<ValueTuplePtr>()->value();
   MS_LOG(INFO) << "In HandleAddAttr, Parse attr pairs success.";
   for (const ValuePtr &val : attr_pair_vals) {
     if (!val->isa<ValueTuple>()) {
@@ -697,10 +697,10 @@ static void GetNestedAddAttrPrims(const AnfNodePtr &addattr_node,
   if (!addattr_node || !addattr_node->isa<CNode>() || !IsPrimitiveCNode(addattr_node, prim::kPrimAddAttr)) {
     return;
   }
-  const size_t kAddAttrFnIndex = 1;
+  const size_t add_attr_fn_index = 1;
   CNodePtr addattr_cnode = addattr_node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(addattr_cnode);
-  AnfNodePtr fn_node = addattr_cnode->input(kAddAttrFnIndex);
+  AnfNodePtr fn_node = addattr_cnode->input(add_attr_fn_index);
   MS_EXCEPTION_IF_NULL(fn_node);
   ValueNodePtr fn_vnode = fn_node->cast<ValueNodePtr>();
   MS_EXCEPTION_IF_NULL(fn_vnode);
@@ -722,10 +722,10 @@ static void GetNodesToTagAttr(const AnfNodePtr &addattr_node, AnfNodePtrList *no
   if (!addattr_node || !addattr_node->isa<CNode>() || !IsPrimitiveCNode(addattr_node, prim::kPrimAddAttr)) {
     return;
   }
-  const size_t kAddAttrFnIndex = 1;
+  const size_t add_attr_fn_index = 1;
   CNodePtr addattr_cnode = addattr_node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(addattr_cnode);
-  AnfNodePtr fn_node = addattr_cnode->input(kAddAttrFnIndex);
+  AnfNodePtr fn_node = addattr_cnode->input(add_attr_fn_index);
   MS_EXCEPTION_IF_NULL(fn_node);
   ValueNodePtr fn_vnode = fn_node->cast<ValueNodePtr>();
   MS_EXCEPTION_IF_NULL(fn_vnode);

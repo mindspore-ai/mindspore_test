@@ -780,7 +780,10 @@ OptPassGroupMap GetAddAttr(const opt::irpass::OptimizeIRPassLib &irpass) {
   (void)addattr_pass_group.emplace_back("tag_attr", opt::OptPassConfig(parallel::HandleAddAttr));
   (void)addattr_pass_group.emplace_back("meta_addattr_fg_expand",
                                         opt::OptPassConfig(opt::irpass::ExpandMetaAddAttrFg()));
-  (void)addattr_pass_group.emplace_back("addattr_inline", opt::OptPassConfig({irpass.inline_}));
+  if (parallel::ParallelContext::GetInstance()->parallel_mode() == "semi_auto_parallel" ||
+      parallel::ParallelContext::GetInstance()->parallel_mode() == "auto_parallel") {
+    (void)addattr_pass_group.emplace_back("addattr_inline", opt::OptPassConfig({irpass.inline_}));
+  }
   return addattr_pass_group;
 }
 

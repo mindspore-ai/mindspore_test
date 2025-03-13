@@ -75,7 +75,7 @@ bool ExpandMetaAddAttrFg::operator()(const FuncGraphPtr &func_graph, const Optim
   }
   bool res = false;
   for (auto &expand_meta_fg_element_ : expand_meta_addattr_fg_list_) {
-    auto prim_nodes = expand_meta_fg_element_.second->prim_nodes();
+    const auto prim_nodes = expand_meta_fg_element_.second->prim_nodes();
     if (prim_nodes.size() != 0) {
       MS_LOG(INFO) << "Start expanding meta: " << expand_meta_fg_element_.first;
       auto change = (*expand_meta_fg_element_.second)(func_graph, optimizer);

@@ -2132,9 +2132,9 @@ FuncGraphPtr AddAttr::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list
   }
   // Make AddAttr Node
   AnfNodePtrList addattr_inputs;
-  addattr_inputs.emplace_back(NewValueNode(prim::kPrimAddAttr));
+  (void)addattr_inputs.emplace_back(NewValueNode(prim::kPrimAddAttr));
   for (size_t i = 0; i < args_abs_list.size(); ++i) {
-    addattr_inputs.emplace_back(addattr_fg->add_parameter());
+    (void)addattr_inputs.emplace_back(addattr_fg->add_parameter());
   }
   CNodePtr addattr_node = addattr_fg->NewCNodeInOrder(std::move(addattr_inputs));
   addattr_fg->set_output(addattr_node);

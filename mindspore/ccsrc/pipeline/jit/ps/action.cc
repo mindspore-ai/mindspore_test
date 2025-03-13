@@ -1349,11 +1349,7 @@ bool OptInlineAction(const ResourcePtr &resource) {
 }
 
 bool OptAddAttrWithInlineAction(const ResourcePtr &resource) {
-  if (parallel::ParallelContext::GetInstance()->parallel_mode() == "semi_auto_parallel" ||
-      parallel::ParallelContext::GetInstance()->parallel_mode() == "auto_parallel") {
-    return OptimizeAction(resource, kAddAttrWithInlinePass);
-  }
-  return true;
+  return OptimizeAction(resource, kAddAttrWithInlinePass);
 }
 
 bool VmOptimizeAction(const ResourcePtr &resource) {
