@@ -24,9 +24,9 @@ mindspore.ops.logspace
         Tensor，shape为 :math:`(step, )` ，数据类型由属性 `dtype` 设置。
 
     异常：
-        - **TypeError** - 若 `start` 不是一个float或Tensor。
-        - **TypeError** - 若 `end` 不是一个float或Tensor。
-        - **TypeError** - 若 `steps` 不是一个整数。
-        - **TypeError** - 若 `base` 不是一个整数。
-        - **ValueError** - 若 `steps` 不是非负整数。
-        - **ValueError** - 若 `base` 不是非负整数。
+        - **TypeError** - `start` 不是一个float或Tensor。
+        - **TypeError** - `end` 不是一个float或Tensor。
+        - **TypeError** - `steps` 不是一个整数。
+        - **TypeError** - `base` 不是一个整数。
+        - **ValueError** - `steps` 不是非负整数。
+        - **ValueError** - `base` 不是非负整数。

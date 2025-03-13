@@ -16,6 +16,6 @@ mindspore.ops.select_scatter
 
     异常：
         - **ValueError** - `src` 的shape与散布在 `input` 上的shape不一样。
-        - **TypeError** - 如果 `input` 不是一个Tensor。
-        - **TypeError** - 如果 `src` 不是一个Tensor。
-        - **TypeError** - 如果 `axis` 或 `index` 不是整数。
+        - **TypeError** - `input` 不是一个Tensor。
+        - **TypeError** - `src` 不是一个Tensor。
+        - **TypeError** - `axis` 或 `index` 不是整数。

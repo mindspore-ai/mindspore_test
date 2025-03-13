@@ -12,4 +12,4 @@ mindspore.ops.frac
         Tensor， `x` 的frac计算结果。
 
     异常：
-        - **TypeError** - 如果 `x` 不是Tensor。
+        - **TypeError** - `x` 不是Tensor。

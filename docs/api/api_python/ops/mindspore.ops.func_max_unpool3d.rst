@@ -7,7 +7,7 @@ mindspore.ops.max_unpool3d
 
     `max_unpool3d` 在计算过程中，保留最大值位置的元素，并将非最大值位置元素设置为0。
     支持的输入数据格式为 :math:`(N, C, D_{in}, H_{in}, W_{in})` 或 :math:`(C, D_{in}, H_{in}, W_{in})` ，
-    输出数据的个格式为 :math:`(N, C, D_{out}, H_{out}, W_{out})` 或 :math:`(C, D_{out}, H_{out}, W_{out})` ，计算公式如下：
+    输出数据的格式为 :math:`(N, C, D_{out}, H_{out}, W_{out})` 或 :math:`(C, D_{out}, H_{out}, W_{out})` ，计算公式如下：
 
     .. math::
         \begin{array}{ll} \\
@@ -39,10 +39,10 @@ mindspore.ops.max_unpool3d
 
     异常：
         - **TypeError** - `x` 或 `indices` 的数据类型不支持。
-        - **TypeError** - `kernel_size` ， `stride` 或 `padding` 既不是整数也不是tuple。
-        - **ValueError** - `stride` ， `kernel_size` 或 `padding` 的值不是非负的。
+        - **TypeError** - `kernel_size` 、 `stride` 或 `padding` 既不是整数也不是tuple。
+        - **ValueError** - `stride` 、 `kernel_size` 或 `padding` 的值不是非负的。
         - **ValueError** - `x` 和 `indices` 的shape不一致。
-        - **ValueError** - `kernel_size` ， `stride` 或 `padding` 为tuple时长度不等于3。
+        - **ValueError** - `kernel_size` 、 `stride` 或 `padding` 为tuple时长度不等于3。
         - **ValueError** - `x` 的长度不为4或5。
         - **ValueError** - `output_size` 的类型不是tuple。
         - **ValueError** - `output_size` 的长度不为0、4或5。

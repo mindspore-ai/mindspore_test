@@ -23,6 +23,6 @@ mindspore.ops.batch_dot
         - **ValueError** - 在 `axes` 中使用了代表批量的维度。
         - **ValueError** - `axes` 的长度小于2。
         - **ValueError** - `axes` 不是其一：None，int，或(int, int)。
-        - **ValueError** - 如果 `axes` 为负值，低于输入数组的维度。
-        - **ValueError** - 如果 `axes` 的值高于输入数组的维度。
+        - **ValueError** - `axes` 为负值，低于输入数组的维度。
+        - **ValueError** - `axes` 的值高于输入数组的维度。
         - **ValueError** - `x1` 和 `x2` 的第一维度batch维的大小不相同。
