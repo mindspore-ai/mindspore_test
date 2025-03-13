@@ -14,11 +14,12 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 import numpy as np
+import pytest
 import mindspore.context as context
 import mindspore as ms
 from mindspore import nn
 from mindspore import Tensor
-from mindspore.ops.auto_generate import BroadcastToView, ExpandDimsView, NarrowView
+from mindspore.ops.auto_generate import BroadcastToView, ExpandDimsView, NarrowView, SelectExtView, SplitTensorView
 import mindspore.ops as P
 
 
@@ -283,3 +284,40 @@ def test_transpose_ext_view():
     net = TransposeExtViewNet()
     output = net(x)
     assert output.shape == (4, 3, 2)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_view_and_inplace_nested_ctrl_dynamic_rank():
+    """
+    Feature: Runtime view graph mode.
+    Description: Runtime view graph mode.
+    Expectation: No exception.
+    """
+    class DynamicNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.reducesum = P.ReduceSum()
+            self.expanddimsview = ExpandDimsView()
+            self.selectview = SelectExtView()
+            self.splittensorview = SplitTensorView()
+
+        def construct(self, x, y):
+            if self.reducesum(x) < 3 * self.reducesum(y):
+                x.add_(y)
+            else:
+                y = self.expanddimsview(y, 1)
+            if x.shape == (2, 4, 8):
+                x = self.selectview(x, 0, 1)
+                y = self.splittensorview(y, 2, 0)
+            return x, y
+
+    context.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
+    with pytest.raises(ValueError) as raise_info:
+        x_np = np.ones([2, 4, 8]).astype(np.int32)
+        input_x = Tensor(x_np)
+        y_np = 2 * np.ones([2, 4, 8]).astype(np.int32)
+        input_y = Tensor(y_np)
+        net = DynamicNet()
+        out = net(input_x, input_y)
+        print("out: ", out)
+    assert "Unsupported dynamic shape for graph mode." in str(raise_info.value)
