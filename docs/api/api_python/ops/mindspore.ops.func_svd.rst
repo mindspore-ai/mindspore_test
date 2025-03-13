@@ -13,7 +13,7 @@ mindspore.ops.svd
     参数：
         - **input** (Tensor) - 待分解的矩阵。shape为 :math:`(*, M, N)` ，支持的数据类型为float32和float64。
         - **full_matrices** (bool, 可选) - 如果为 ``True`` ，则计算完整的 :math:`U` 和 :math:`V` 。否则仅计算前P个奇异向量，P为M和N中的较小值，M和N分别是输入矩阵的行和列。默认值： ``False`` 。
-        - **compute_uv** (bool, 可选) - 如果这个参数为 ``True`` ，则计算 :math:`U` 和 :math:`V` ，否则只计算 :math:`S` 。默认值： ``True`` 。
+        - **compute_uv** (bool, 可选) - 如果此参数的值为 ``True`` ，则计算 :math:`U` 和 :math:`V` ，否则只计算 :math:`S` 。默认值： ``True`` 。
 
     返回：
         - **s** (Tensor) - 奇异值。shape为 :math:`(*, P)` 。
