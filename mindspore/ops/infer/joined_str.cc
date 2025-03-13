@@ -28,11 +28,11 @@ namespace ops {
 class JoinedStrInfer : public abstract::OpInferBase {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &, const std::vector<AbstractBasePtr> &) const override {
-    return std::make_shared<abstract::NoShape>();
+    return std::make_shared<abstract::Shape>(ShapeVector({1}));
   }
 
   TypePtr InferType(const PrimitivePtr &, const std::vector<AbstractBasePtr> &) const override {
-    return std::make_shared<String>();
+    return std::make_shared<TensorType>(kInt64);
   }
 
   ValuePtr InferValue(const PrimitivePtr &, const std::vector<AbstractBasePtr> &input_args) const override {

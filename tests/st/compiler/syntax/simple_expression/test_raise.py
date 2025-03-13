@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Huawei Technologies Co., Ltd
+# Copyright 2021-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -172,5 +172,93 @@ def test_not_raise_single_string_control_flow_grad_in_pynative():
     input_x = Tensor([0])
     input_y = Tensor([1])
     ret = grad_foo_not_raise_error(foo, input_x, input_y)
+    assert np.all(ret.asnumpy() == np.array([1]))
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_raise_empty_input_control_flow():
+    """
+    Feature: Test raise syntax in strict mode.
+    Description: Test raise syntax in strict mode.
+    Expectation: Throw correct exception when needed.
+    """
+    @jit
+    def foo(x, y):
+        if x > y:
+            raise ValueError()
+        return x + y
+    context.set_context(mode=context.PYNATIVE_MODE)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '0'
+    input_x = Tensor([2])
+    input_y = Tensor([1])
+    with pytest.raises(ValueError) as raise_info:
+        ret = foo(input_x, input_y)
+        print(ret)
+    assert "" == str(raise_info.value)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_not_raise_empty_input_control_flow():
+    """
+    Feature: Test raise syntax in strict mode.
+    Description: Test raise syntax in strict mode.
+    Expectation: Throw correct exception when needed.
+    """
+    @jit
+    def foo(x, y):
+        if x > y:
+            raise ValueError()
+        return x + y
+    context.set_context(mode=context.PYNATIVE_MODE)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '0'
+    input_x = Tensor([0])
+    input_y = Tensor([1])
+    ret = foo(input_x, input_y)
+    assert np.all(ret.asnumpy() == np.array([1]))
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_raise_multi_input_control_flow():
+    """
+    Feature: Test raise syntax in strict mode.
+    Description: Test raise syntax in strict mode.
+    Expectation: Throw correct exception when needed.
+    """
+    @jit
+    def foo(x, y):
+        if x > y:
+            raise ValueError("x is bigger than y", ".")
+        return x + y
+    context.set_context(mode=context.PYNATIVE_MODE)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '0'
+    input_x = Tensor([2])
+    input_y = Tensor([1])
+    with pytest.raises(ValueError) as raise_info:
+        ret = foo(input_x, input_y)
+        print(ret)
+    assert "('x is bigger than y', '.')" == str(raise_info.value)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_not_raise_multi_input_control_flow():
+    """
+    Feature: Test raise syntax in strict mode.
+    Description: Test raise syntax in strict mode.
+    Expectation: Throw correct exception when needed.
+    """
+    @jit
+    def foo(x, y):
+        if x > y:
+            raise ValueError("x is bigger than y", ".")
+        return x + y
+    context.set_context(mode=context.PYNATIVE_MODE)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '0'
+    input_x = Tensor([0])
+    input_y = Tensor([1])
+    ret = foo(input_x, input_y)
     assert np.all(ret.asnumpy() == np.array([1]))
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'

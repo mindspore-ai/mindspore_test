@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2023 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@
 #include "ir/anf.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "utils/log_adapter.h"
+#include "plugin/device/cpu/kernel/pyexecute/joinedstr_cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {
@@ -47,7 +48,31 @@ bool RaiseCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const 
   MS_EXCEPTION_IF_NULL(exception_type_abs);
   MS_EXCEPTION_IF_NULL(exception_msg_abs);
   const auto &exception_type_str = GetValue<std::string>(exception_type_abs->BuildValue());
-  const auto &exception_msg = GetValue<std::string>(exception_msg_abs->BuildValue());
+  py::gil_scoped_acquire gil_acquire;
+  AbstractBase *object_input_first = inputs[exception_msg_abs_index];
+  auto exception_msg = object_input_first->has_user_data("str_exception_result")
+                         ? *object_input_first->user_data<string>("str_exception_result")
+                         : ConvertAbsToStr(exception_msg_abs);
+  bool is_multi_inputs = inputs.size() > 3;
+  bool is_str = object_input_first->has_user_data("str_exception_result") ||
+                inputs[exception_msg_abs_index]->GetType()->ToString() == "String";
+  if (is_multi_inputs) {
+    exception_msg = is_str ? "('" + exception_msg + "', " : "(" + exception_msg + ", ";
+  }
+  // multi inputs
+  for (size_t index = 2; index < inputs.size() - 1; index++) {
+    auto input = inputs[index];
+    MS_EXCEPTION_IF_NULL(input);
+    AbstractBase *object_input = input;
+    bool is_str = object_input->has_user_data("str_exception_result") || input->GetType()->ToString() == "String";
+    auto object_input_data = object_input->has_user_data("str_exception_result")
+                               ? *object_input->user_data<string>("str_exception_result")
+                               : ConvertAbsToStr(input);
+    object_input_data = is_str ? "'" + object_input_data + "'" : object_input_data;
+    // if is last inputs index
+    object_input_data = index == inputs.size() - 2 ? object_input_data + ")" : object_input_data + ", ";
+    exception_msg += object_input_data;
+  }
   auto iter = exception_types_map.find(exception_type_str);
   if (iter == exception_types_map.end()) {
     MS_LOG(ERROR) << "Found unexpected exception type " << exception_type_str;
@@ -56,6 +81,11 @@ bool RaiseCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const 
   auto exception_type = iter->second;
   auto &handler = LogWriter::GetExceptionHandler();
   MS_EXCEPTION_IF_NULL(handler);
+  // if inputs is empty
+  if (inputs.size() == 2) {
+    handler(exception_type, "");
+    return true;
+  }
   handler(exception_type, exception_msg);
   return true;
 }
