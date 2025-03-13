@@ -227,6 +227,7 @@ Debugging and Tuning
     mindspore.profiler.DynamicProfilerMonitor
     mindspore.profiler.schedule
     mindspore.profiler.tensorboard_trace_handler
+    mindspore.profiler.profiler.analyse
     mindspore.SummaryCollector
     mindspore.SummaryLandscape
     mindspore.SummaryRecord

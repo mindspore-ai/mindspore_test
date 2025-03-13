@@ -1110,8 +1110,8 @@ def analyse(profiler_path: str, max_process_number: int = os.cpu_count() // 2, p
     Analyze training performance data offline, which is invoked after performance data collection is completed.
 
     Args:
-        profiler_path (str): The profiling data path which need to be analyzed offline.
-            There needs to be a profiler directory in this path.
+        profiler_path (str): The path to profiling data that needs to be analyzed offline,
+            specified to the upper directory ``*_ascend_ms``.
         max_process_number (int, optional): Maximum number of processes.
             The default value is ``os.cpu_count() // 2``.
         pretty (bool, optional): Format the JSON file. Default: ``False``,
