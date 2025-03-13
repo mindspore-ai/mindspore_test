@@ -45,7 +45,7 @@ mindspore.ops.conv1d
 
         - **padding** (Union(int, tuple[int], list[int])，可选) - 当 `pad_mode` 为 ``"pad"`` 时，指定在输入 `input` 的宽度方向上填充的数量。数据类型为int或包含1个int组成的tuple。表示宽度方向的 `padding` 数量（左右两边均为该值）。值必须大于等于0，默认值： ``0`` 。
         - **dilation** (Union(int, tuple[int])，可选) - 卷积核膨胀尺寸。可以为单个int，或者由一个int组成的tuple。
-          假设 :math:`dilation=(d0,)`, 则卷积核在宽度方向间隔 :math:`d0-1` 个元素进行采样。取值范围为[1, L]。默认值： ``1`` 。
+          假设 :math:`dilation=(d0,)`，则卷积核在宽度方向间隔 :math:`d0-1` 个元素进行采样。取值范围为[1, L]。默认值： ``1`` 。
         - **groups** (int，可选) - 将过滤器拆分为组。默认值： ``1`` 。
 
     返回：

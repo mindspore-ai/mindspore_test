@@ -5,7 +5,7 @@ mindspore.ops.avg_pool3d
 
     在输入Tensor上应用3D平均池化，输入Tensor可以看作是由一系列3D平面组成的。
 
-    一般地，输入的shape为 :math:`(N, C, D_{in}, H_{in}, W_{in})` ，输出 :math:`(D_{in}, H_{in}, W_{in})` 维度的区域平均值。给定 `kernel_size` 为 :math:`ks = (d_{ker}, h_{ker}, w_{ker})` 和 `stride` 为 :math:`s = (s_0, s_1, s_2)`，运算如下：
+    一般地，输入的shape为 :math:`(N, C, D_{in}, H_{in}, W_{in})` ，输出 :math:`(D_{in}, H_{in}, W_{in})` 维度的区域平均值。给定 `kernel_size` 为 :math:`ks = (d_{ker}, h_{ker}, w_{ker})` ， `stride` 为 :math:`s = (s_0, s_1, s_2)`，运算如下：
 
     .. math::
         \text{output}(N_i, C_j, d, h, w) =

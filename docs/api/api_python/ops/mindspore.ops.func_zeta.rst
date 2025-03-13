@@ -20,6 +20,6 @@ mindspore.ops.zeta
         Tensor，Hurwitz zeta的输出。
 
     异常：
-        - **TypeError** - 如果 `input` 和 `other` 均不是Tensor。
+        - **TypeError** - `input` 和 `other` 均不是Tensor。
         - **TypeError** - `input` 的数据类型不是float32或者float64。
         - **TypeError** - `other` 的数据类型不是float32或者float64。
