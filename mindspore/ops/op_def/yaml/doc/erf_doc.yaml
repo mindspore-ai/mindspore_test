@@ -1,36 +1,28 @@
 erf:
     description: |
-        Computes the Gauss error function of `input` element-wise.
+        Compute the Gauss error of input tensor element-wise.
 
         .. math::
 
             \text{erf}(x)=\frac{2} {\sqrt{\pi}} \int\limits_0^{x} e^{-t^{2}} dt
 
         Args:
-            input (Tensor): The input tensor of Gaussian error function. :math:`x` in the following formula.
-                Supported dtypes: 
-
-                - GPU/CPU: float16, float32, float64.
-                - Ascend: float16, float32, float64, int64, bool, bfloat16.
+            input (Tensor): The input tensor.
 
         Returns:
-            Tensor, has the same shape as the `input`. 
-            The dtype of output is float32 when dtype of `input` is in
-            [bool, int64]. Otherwise output has the same dtype as the `input`.
-
-        :raise TypeError: If `input` is not a Tensor.
-        :raise TypeError:
-                * GPU/CPU: If dtype of `input` is not float16, float32, float64.
-                * Ascend: If dtype of `input` is not float16, float32, float64, int64, bool, bfloat16.
+            Tensor
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
 
         Examples:
             >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> input = Tensor(np.array([-1, 0, 1, 2, 3]), mindspore.float32)
-            >>> output = ops.erf(input)
-            >>> print(output)
-            [-0.8427168   0.          0.8427168   0.99530876  0.99997765]
+            >>> # The dtype of output is float32 when dtype of input is int64.
+            >>> input = mindspore.tensor([-1, 0, 1, 2, 3], mindspore.int64)
+            >>> mindspore.ops.erf(input)
+            Tensor(shape=[5], dtype=Float32, value= [-8.42700793e-01,  0.00000000e+00,  8.42700793e-01,  9.95322265e-01,  9.99977910e-01])
+            >>>
+            >>> # Otherwise output has the same dtype as the input.
+            >>> input = mindspore.tensor([-1, 0, 1, 2, 3], mindspore.float64)
+            >>> mindspore.ops.erf(input)
+            Tensor(shape=[5], dtype=Float64, value= [-8.42700793e-01,  0.00000000e+00,  8.42700793e-01,  9.95322265e-01,  9.99977910e-01])

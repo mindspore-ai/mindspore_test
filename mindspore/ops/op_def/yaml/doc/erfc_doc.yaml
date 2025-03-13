@@ -1,37 +1,28 @@
 erfc:
   description: |
-    Computes the complementary error function of `input` element-wise.
+    Compute the complementary error function of input tensor element-wise.
 
     .. math::
 
         \text{erfc}(x) = 1 - \frac{2} {\sqrt{\pi}} \int\limits_0^{x} e^{-t^{2}} dt
 
     Args:
-        input (Tensor): The input tensor of the complementary error function, :math:`x` in the above formula. 
-            Supported dtypes:
-
-            - Ascend: float16, float32, float64, int64, bool, bfloat16.
-            - GPU/CPU: float16, float32, float64.
+        input (Tensor): The input tensor. 
 
     Returns:
-        Tensor.
-        The dtype of output is float32 when dtype of `input` is in
-        [bool, int64]. Otherwise output has the same dtype as the `input`.
-
-    :raise TypeError: If `input` is not a Tensor.
-    :raise TypeError: If dtype of `input` is not the following:
-    
-            * Ascend: float16, float32, float64, int64, bool, bfloat16.
-            * GPU/CPU: float16, float32, float64.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([-1, 0, 1, 2, 3]), mindspore.float32)
-        >>> output = ops.erfc(input)
-        >>> print(output)
-        [1.8427008e+00 1.0000000e+00 1.5729921e-01 4.6777348e-03 2.2090497e-05]
+        >>> # The dtype of output is float32 when dtype of input is int64.
+        >>> input = mindspore.tensor([-1, 0, 1, 2, 3], mindspore.int64)
+        >>> mindspore.ops.erfc(input)
+        Tensor(shape=[5], dtype=Float32, value= [ 1.84270079e+00,  1.00000000e+00,  1.57299207e-01,  4.67773498e-03,  2.20904970e-05])
+        >>>
+        >>> # Otherwise output has the same dtype as the input.
+        >>> input = mindspore.tensor([-1, 0, 1, 2, 3], mindspore.float64)
+        >>> mindspore.ops.erfc(input)
+        Tensor(shape=[5], dtype=Float64, value= [ 1.84270079e+00,  1.00000000e+00,  1.57299207e-01,  4.67773498e-03,  2.20904970e-05])
