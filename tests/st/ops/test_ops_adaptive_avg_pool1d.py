@@ -38,7 +38,33 @@ def grad_adaptive_avg_pool1d_net(input_x, output_size):
     return ms.grad(net)(input_x, output_size)
 
 
-def ops_adpative_avg_pool1d_case1(input_binary_data=None, output_binary_data=None):
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
+def test_batchnorm1d_dyn():
+    """
+    Feature: Dynamic shape of adaptive_avg_pool1d
+    Description: test adaptive_avg_pool1d with dynamic rank/shape.
+    Expectation: success
+    """
+    in1 = Tensor(np.random.randn(4, 4), dtype=ms.float32)
+    in2 = Tensor(np.random.randn(2, 4, 2), dtype=ms.float32)
+    TEST_OP(forward_adaptive_avg_pool1d_net_dyn, [[in1], [in2]], '',
+            disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', ['pynative', 'KBK'])
+def test_adaptive_avg_pool1d(mode):
+    """
+    Feature: adaptive_avg_pool1d
+    Description: Verify the result of adaptive_avg_pool1d.
+    Expectation: success
+    """
+
+    if mode == 'pynative':
+        ms.context.set_context(mode=ms.PYNATIVE_MODE)
+    elif mode == 'KBK':
+        ms.context.set_context(jit_config={"jit_level": "O0"}, mode=ms.GRAPH_MODE)
     input_np = np.arange(0, 2 * 4 * 4, 1).reshape(2, 4, 4).astype(np.float32)
     input_ms = ms.Tensor(input_np)
     expect_out = ms.Tensor([[[0.5000, 2.5000], [4.5000, 6.5000],
@@ -57,33 +83,3 @@ def ops_adpative_avg_pool1d_case1(input_binary_data=None, output_binary_data=Non
     assert np.allclose(output.asnumpy(), expect_out, 1e-03, 1e-03)
     output_grad = grad_adaptive_avg_pool1d_net(input_ms, 2)
     assert np.allclose(output_grad.asnumpy(), expect_grad, 1e-03, 1e-03)
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', ['pynative', 'KBK'])
-def test_adaptive_avg_pool1d(mode):
-    """
-    Feature: adaptive_avg_pool1d
-    Description: Verify the result of adaptive_avg_pool1d.
-    Expectation: success
-    """
-
-    if mode == 'pynative':
-        ms.context.set_context(mode=ms.PYNATIVE_MODE)
-    elif mode == 'KBK':
-        ms.context.set_context(jit_config={"jit_level": "O0"}, mode=ms.GRAPH_MODE)
-    ops_adpative_avg_pool1d_case1()
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
-          card_mark='onecard', essential_mark='unessential')
-def test_batchnorm1d_dyn():
-    """
-    Feature: Dynamic shape of adaptive_avg_pool1d
-    Description: test adaptive_avg_pool1d with dynamic rank/shape.
-    Expectation: success
-    """
-    in1 = Tensor(np.random.randn(4, 4), dtype=ms.float32)
-    in2 = Tensor(np.random.randn(2, 4, 2), dtype=ms.float32)
-    TEST_OP(forward_adaptive_avg_pool1d_net_dyn, [[in1], [in2]], '',
-            disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
