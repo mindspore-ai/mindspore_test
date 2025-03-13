@@ -116,6 +116,11 @@ bool DropoutNdCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inpu
     }
     return true;
   }
+  if (channels_ == 0) {
+    // fuzz case
+    MS_LOG(DEBUG) << "For '" << kernel_name_ << "', channels equal to 0, return directly.";
+    return true;
+  }
   size_t inner_size = input_elements_ / channels_;
   int ret_code = EOK;
   for (size_t i = 0; i < channels_; ++i) {
