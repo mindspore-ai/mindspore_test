@@ -267,6 +267,8 @@ AID ActorMgr::Spawn(const ActorReference &actor, bool shareThread) {
     mailbox->SetNotifyHook(std::move(hook));
     actor->Spawn(actor, std::move(mailbox));
   } else {
+    MS_LOG(DEBUG) << "Set the status_ to kThreadBusy for " << actor->GetAID().Name() << " which keeps thread.";
+    actor->set_exclusive(true);
     auto mailbox = std::unique_ptr<MailBox>(new (std::nothrow) BlockingMailBox());
     actor->Spawn(actor, std::move(mailbox));
     ActorMgr::GetActorMgrRef()->SetActorReady(actor);

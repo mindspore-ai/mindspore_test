@@ -745,6 +745,7 @@ void GraphScheduler::Initialize() {
     }
   }
 
+  MS_LOG(DEBUG) << "Bind core list size: " << numa_cpus_.size();
   auto ret =
     actor_manager->Initialize(true, actor_thread_num, actor_and_kernel_thread_num, actor_queue_size, numa_cpus_);
   if (ret != MINDRT_OK) {
