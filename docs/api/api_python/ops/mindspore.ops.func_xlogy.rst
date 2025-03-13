@@ -8,10 +8,10 @@ mindspore.ops.xlogy
     .. math::
         out_i = input_{i}\ln{other_{i}}
 
-    `input` 和 `other` 的输入遵循隐式类型转换规则，使数据类型一致。输入必须是两个Tensor或一个Tensor和一个Scalar。当输入是两个Tensor时，它们的shape可以广播。当输入是一个Tensor和一个Scalar时，Scalar只能是一个常量。
+    `input` 和 `other` 的输入遵循隐式类型转换规则，使数据类型保持一致。输入必须是两个Tensor或一个Tensor和一个Scalar。当输入是两个Tensor时，它们的shape可以广播。当输入是一个Tensor和一个Scalar时，Scalar只能是一个常量。
 
     .. warning::
-        - 在Ascend上， `input` 和 `other` 必须为float16或float32。
+        在Ascend上， `input` 和 `other` 必须为float16或float32。
 
     参数：
         - **input** (Union[Tensor, numbers.Number, bool]) - 第一个输入为数值型。数据类型为 `number <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 或 `bool_ <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 。

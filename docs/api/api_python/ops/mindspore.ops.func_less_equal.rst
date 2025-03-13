@@ -16,11 +16,11 @@ mindspore.ops.less_equal
         - 当输入是一个Tensor和一个Scalar时，Scalar只能是一个常数。
 
     参数：
-        - **input** (Union[Tensor, Number, bool]) - 第一个输入，为数值型，或bool，或数据类型为数值型或bool的Tensor。
-        - **other** (Union[Tensor, Number, bool]) - 第二个输入，为数值型，或bool，或数据类型为数值型或bool的Tensor。
+        - **input** (Union[Tensor, Number, bool]) - 第一个输入，可以是数值型、bool类型，或数据类型为数值型或bool的Tensor。
+        - **other** (Union[Tensor, Number, bool]) - 第二个输入，可以是数值型、bool类型，或数据类型为数值型或bool的Tensor。
 
     返回：
         Tensor，shape与广播后的shape相同，数据类型为bool。
 
     异常：
-       - **TypeError** - 如果 `input` 和 `other` 不是以下之一：Tensor、数值型、bool。
+       - **TypeError** - 如果 `input` 和 `other` 不是以下类型之一：Tensor、数值型、bool。
