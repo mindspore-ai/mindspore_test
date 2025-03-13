@@ -24,6 +24,7 @@
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/dump_utils.h"
 #include "include/common/debug/anf_dump_utils.h"
+#include "backend/common/session/session_basic.h"
 
 namespace mindspore {
 namespace {

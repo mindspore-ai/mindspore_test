@@ -31,7 +31,6 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_context.h"
-#include "runtime/device/kernel_runtime_manager.h"
 #include "include/common/utils/config_manager.h"
 #include "utils/file_utils.h"
 #include "include/backend/debug/data_dump/tensor_stat_dump.h"

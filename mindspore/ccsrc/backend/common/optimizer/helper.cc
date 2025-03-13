@@ -47,6 +47,7 @@
 #include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
 #include "debug/profiler/profiler.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "ops/op_def.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"

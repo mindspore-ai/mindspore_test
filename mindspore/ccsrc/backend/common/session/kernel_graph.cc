@@ -33,7 +33,6 @@
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "runtime/device/kernel_runtime_manager.h"
 #include "utils/anf_utils.h"
 #include "utils/check_convert_utils.h"
 #include "utils/hash_set.h"
@@ -1517,15 +1516,7 @@ bool KernelGraph::IsChildGraphResult(const AnfNodePtr &node) {
   return find(child_graph_results.begin(), child_graph_results.end(), node) != child_graph_results.end();
 }
 
-KernelGraph::~KernelGraph() {
-  try {
-    device::KernelRuntimeManager::Instance().ClearGraphResource(graph_id_);
-  } catch (const std::exception &e) {
-    MS_LOG(ERROR) << "KernelGraph call destructor failed: " << e.what();
-  } catch (...) {
-    MS_LOG(ERROR) << "KernelGraph call destructor failed";
-  }
-}
+KernelGraph::~KernelGraph() {}
 
 std::vector<abstract::AbstractBasePtr> FetchInputAbstracts(const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(cnode);

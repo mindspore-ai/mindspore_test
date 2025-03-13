@@ -27,9 +27,12 @@
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "utils/ms_context.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
+#ifdef ENABLE_DEBUGGER
+#include "include/backend/debug/debugger/debugger.h"
+#include "include/backend/debug/tensor_data.h"
+#endif
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "runtime/device/kernel_runtime_manager.h"
 #include "include/common/utils/utils.h"
 #include "include/common/debug/common.h"
 #include "runtime/graph_scheduler/device_tensor_store.h"
@@ -113,15 +116,6 @@ void SplitUint1x8ToUint8s(const void *in_data, size_t in_data_len, ShapeVector s
     *dst_data = (*src_data >> j) & 1;
     ++dst_data;
   }
-}
-
-uint32_t ConvertPhysicalDeviceId(uint32_t device_id) {
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  auto device_target = context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  auto kernel_runtime = device::KernelRuntimeManager::Instance().GetSingleKernelRuntime(device_target, device_id);
-  MS_EXCEPTION_IF_NULL(kernel_runtime);
-  return kernel_runtime->device_id();
 }
 
 std::string GenerateDumpPath(uint32_t graph_id, uint32_t rank_id, bool is_cst) {

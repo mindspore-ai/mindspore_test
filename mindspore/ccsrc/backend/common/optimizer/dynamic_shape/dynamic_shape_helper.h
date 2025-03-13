@@ -26,7 +26,6 @@
 #include "utils/ms_utils.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/optimizer/helper.h"
-#include "runtime/pynative/op_compiler.h"
 #include "kernel/framework_utils.h"
 
 namespace mindspore::opt::dynamic_shape {
