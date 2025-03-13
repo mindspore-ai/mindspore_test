@@ -116,6 +116,9 @@ const TensorPtr TensorPy::GetTensor() const {
     MS_LOG(INFO) << "Copy tensor " << tensor_->id() << " and detach!";
     auto new_tensor = std::make_shared<Tensor>(*tensor_);
     const_cast<BaseTensorPtr &>(tensor_) = new_tensor;
+    if (stub_ != nullptr) {
+      stub_->SetValue(new_tensor);
+    }
     return new_tensor;
   }
   return tensor;

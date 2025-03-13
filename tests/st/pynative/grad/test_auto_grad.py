@@ -140,6 +140,29 @@ class StopGradientNet(nn.Cell):
         return z
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_auto_grad_input_asnumpy():
+    """
+    Feature: Test auto grad multi input
+    Description: Test multi input with asnumpy.
+    Expectation: Success.
+    """
+    x = Tensor([0], mindspore.float32) + 1
+    y = Tensor([0], mindspore.float32) + 2
+    z = Tensor([0], mindspore.float32) + 3
+    # convert tensor and device to host.
+    x.asnumpy()
+    y.asnumpy()
+    z.asnumpy()
+    net = MultiInputNet()
+    grad_net = C.GradOperation(get_all=True)
+    grads = grad_net(net)(x, (y, z))
+    assert np.allclose(grads[0][0].asnumpy(), np.array([4], dtype=np.float32), 0.00001, 0.00001)
+
+
 def test_auto_grad_multi_input():
     """
     Feature: Test auto grad multi input
