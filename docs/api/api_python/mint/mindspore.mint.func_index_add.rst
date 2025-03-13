@@ -16,6 +16,7 @@ mindspore.mint.index_add
         这是一个实验性API，后续可能修改或删除。
 
     参数：
+        - **input** (Tensor) - 输入 `Tensor`。
         - **dim** (int) - 指定 `index` 属于哪个维度。
         - **index** (Tensor) - 指定 `input` 和 `source` 在轴 `dim` 的指定下标位置相加，数据类型为 `int32`。要求 `index` shape的维度为一维，并且 `index` shape的大小与 `source` shape在 `dim` 轴上的大小一致。 `index` 中元素取值范围为[0, b)，其中b的值为 `input` shape在 `dim` 轴上的大小。
         - **source** (Tensor) - 输入的要进行相加的Tensor，一定要与 `input` 有相同的数据类型，与 `input` 在 `dim` 维度有相同的shape。
