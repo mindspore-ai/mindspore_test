@@ -94,6 +94,8 @@ class PyExecuteInitializer {
 
   ~PyExecuteInitializer() = default;
 
+  static ValuePtr GetValueFromAbstract(const abstract::AbstractBase *abstract) { return GetValueByAbstract(abstract); }
+
  private:
   static ValuePtr GetValueByAbstract(const abstract::AbstractBase *abstract) {
     MS_EXCEPTION_IF_NULL(abstract);
