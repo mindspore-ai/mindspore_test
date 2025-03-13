@@ -753,24 +753,24 @@ void SuperKernelActor::FetchParameterInput(const KernelActorPtr &kernel_actor, O
                   << ", device tensor: " << device_tensor << ", ptr: " << device_tensor->GetPtr()
                   << ", ref cnt: " << device_tensor->ref_count() << " new ref count:" << device_tensor->new_ref_count();
     kernel_actor->SetInputDeviceTensor(device_tensor, parameter_index.first);
+  }
 
-    const auto &iter = kernel_actor_to_graph_parameters_map_.find(kernel_actor);
-    if (iter != kernel_actor_to_graph_parameters_map_.end()) {
-      for (const auto &input_pair : iter->second) {
-        auto actor_input_idx = input_pair.first;
-        if (!first_step_for_inference_ && kernel_actor->is_weight_[actor_input_idx]) {
-          continue;
-        }
-        if (memory_free_lists_.empty()) {
-          memory_free_lists_.push({});
-        }
-        if (ActorDispatcher::enable_use_trace_memory()) {
-          if (kernel_actor->input_device_tensors_[actor_input_idx]->new_ref_count() != SIZE_MAX) {
-            memory_free_lists_.back().emplace_back(kernel_actor->input_device_tensors_[actor_input_idx]);
-            MS_LOG(DEBUG) << "Add memory free list for trace:"
-                          << kernel_actor->input_device_tensors_[actor_input_idx]->PrintInfo()
-                          << " in actor:" << GetAID();
-          }
+  const auto &iter = kernel_actor_to_graph_parameters_map_.find(kernel_actor);
+  if (iter != kernel_actor_to_graph_parameters_map_.end()) {
+    for (const auto &input_pair : iter->second) {
+      auto actor_input_idx = input_pair.first;
+      if (!first_step_for_inference_ && kernel_actor->is_weight_[actor_input_idx]) {
+        continue;
+      }
+      if (memory_free_lists_.empty()) {
+        memory_free_lists_.push({});
+      }
+      if (ActorDispatcher::enable_use_trace_memory()) {
+        if (kernel_actor->input_device_tensors_[actor_input_idx]->new_ref_count() != SIZE_MAX) {
+          memory_free_lists_.back().emplace_back(kernel_actor->input_device_tensors_[actor_input_idx]);
+          MS_LOG(DEBUG) << "Add memory free list for trace:"
+                        << kernel_actor->input_device_tensors_[actor_input_idx]->PrintInfo()
+                        << " in actor:" << GetAID();
         }
       }
     }
