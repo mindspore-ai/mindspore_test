@@ -20,8 +20,6 @@ from sys import getsizeof
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from mindspore import log as logger
-import mindspore.communication as comm
-import mindspore.communication._comm_helper as comm_helper
 from mindspore.profiler.common.constant import ProfilerStepNameConstant, DeviceTarget
 from mindspore.profiler.common.profiler_context import ProfilerContext
 from mindspore.profiler.platform.npu_profiler import NPUProfilerAnalysis
@@ -31,8 +29,8 @@ from mindspore.profiler.profiler_interface import ProfilerInterface
 from mindspore.profiler.schedule import _default_schedule_fn, ProfilerAction, Schedule
 from mindspore.profiler.common.record_function import RecordFunction
 from mindspore.profiler.common.path_manager import PathManager
-from mindspore.profiler.common.file_manager import FileManager
 from mindspore.profiler.common.profiler_path_manager import ProfilerPathManager
+from mindspore.profiler.common.profiler_meta_data import ProfilerMetaData
 
 
 def tensorboard_trace_handler(dir_name: str = None, worker_name: str = None,
@@ -369,7 +367,6 @@ class Profiler:
             self.action_controller.transit_action(self.current_action, None)
         else:
             ProfilerInterface.stop()
-        self._dump_metadata()
 
     def analyse(self, offline_path=None, pretty=False, step_list=None, mode="sync") -> None:
         """
@@ -566,6 +563,7 @@ class Profiler:
             if key in self._metadata:
                 logger.warning(f"{key} is already saved as metadata, override it.")
             self._metadata[key] = value
+            ProfilerMetaData.set_metadata(self._metadata)
         else:
             logger.warning("Too many metadata added. Skip this metadata")
 
@@ -597,6 +595,7 @@ class Profiler:
                 if key in self._metadata:
                     logger.warning(f"{key} is already saved as metadata, override it.")
                 self._metadata[key] = json.loads(value)
+                ProfilerMetaData.set_metadata(self._metadata)
             except ValueError:
                 logger.warning("The metadata value must be json format string. Skip this metadata")
         else:
@@ -660,36 +659,6 @@ class Profiler:
         parser = GpuFrameWorkParser(self._prof_context.framework_path, dev_id, op_name)
         op_info = parser.parse()
         return op_info
-
-    def _dump_metadata(self):
-        """Dump metadata to file."""
-        self._add_group_info_to_metadata()
-        if not self._metadata:
-            return
-        save_path = os.path.join(self._prof_context.ascend_ms_dir, "profiler_metadata.json")
-        FileManager.create_json_file(save_path, self._metadata)
-        self._metadata.clear()
-
-    def _add_group_info_to_metadata(self):
-        """Add parallel group info to metadata"""
-        try:
-            # pylint:disable=protected-access
-            if self._prof_context.device_target == DeviceTarget.NPU.value and comm.GlobalComm.INITED \
-               and comm.GlobalComm.BACKEND == comm_helper.Backend.HCCL:
-                group_info = {}
-                for group_name in comm_helper._get_group_map().keys(): # pylint:disable=protected-access
-                    comm_name = comm.get_comm_name(group_name)
-                    if not comm_name:
-                        continue
-                    group_info[comm_name] = {
-                        "group_name": group_name,
-                        "group_rank": comm.get_local_rank(group_name),
-                        "global_ranks": comm.get_process_group_ranks(group_name)
-                    }
-                if group_info:
-                    self._metadata.update({"parallel_group_info": group_info})
-        except Exception as err: # pylint: disable=W0703
-            logger.error(f"Failed to get parallel group info, Exception: {str(err)}.")
 
     def __enter__(self) -> 'Profiler':
         if not self._has_started:
