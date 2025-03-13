@@ -2522,19 +2522,49 @@ FuncGraphPtr ForHalfUnrollLess::GenerateFuncGraph(const AbstractBasePtrList &arg
   return fg;
 }
 
+bool IsDoutTupleContainsMask(const AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
+  constexpr size_t expected_size = 2;
+  auto tuple_abs = abs->cast<abstract::AbstractTuplePtr>();
+  if (tuple_abs == nullptr || tuple_abs->dynamic_len() || tuple_abs->elements().size() != expected_size) {
+    return false;
+  }
+  constexpr auto index_first = 1;
+  const auto &mask_abs = tuple_abs->elements().at(index_first);
+  auto mask_tuple_abs = mask_abs->cast<abstract::AbstractTuplePtr>();
+  if (mask_tuple_abs == nullptr || mask_tuple_abs->dynamic_len() ||
+      mask_tuple_abs->elements().size() != expected_size) {
+    return false;
+  }
+  const auto &dmask_abs = mask_tuple_abs->elements().at(0);
+  const auto &ops_type_abs = mask_tuple_abs->elements().at(index_first);
+  if (!ops_type_abs->isa<AbstractScalar>() || dmask_abs->isa<AbstractTuple>()) {
+    return false;
+  }
+  auto ops_type_scalar_abs = ops_type_abs->cast<abstract::AbstractScalarPtr>();
+  auto ops_type_value = ops_type_scalar_abs->BuildValue();
+  if (ops_type_value->ContainsValueAny()) {
+    return true;
+  }
+  if (!ops_type_value->isa<Int64Imm>()) {
+    return false;
+  }
+  auto value = GetValue<int64_t>(ops_type_value);
+  return value == 0 || value == 1 || value == 2;
+}
+
 FuncGraphPtr AccumulateDout::BuildAddOutputFG(const std::string &name) {
   auto fg = std::make_shared<FuncGraph>();
   fg->debug_info()->set_name(name);
   auto dout_tuple_input = fg->add_parameter();
   auto factor_tuple_input = fg->add_parameter();
-  auto dout = fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), dout_tuple_input, NewValueNode(int64_t(0))});
+  auto dout =
+    fg->NewCNodeInOrder({NewValueNode(std::make_shared<prim::GetRealBpropOut>("get_real_dout")), dout_tuple_input});
   auto factor =
-    fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), factor_tuple_input, NewValueNode(int64_t(0))});
+    fg->NewCNodeInOrder({NewValueNode(std::make_shared<prim::GetRealBpropOut>("get_real_dout")), factor_tuple_input});
   auto factor_inner_tuple =
     fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), factor_tuple_input, NewValueNode(int64_t(1))});
   auto cal_dout = fg->NewCNodeInOrder({NewValueNode(prim::GetPythonOps("hyper_add")), dout, factor});
-  auto dout_inner_tuple =
-    fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), dout_tuple_input, NewValueNode(int64_t(1))});
   auto cal_res = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), cal_dout, factor_inner_tuple});
   fg->set_output(cal_res);
   return fg;
@@ -2556,14 +2586,15 @@ FuncGraphPtr AccumulateDout::BuildAccumulateInplaceOutputFG(const std::string &n
     fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), dout_inner_tuple, NewValueNode(int64_t(0))});
   auto factor_mask =
     fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), factor_inner_tuple, NewValueNode(int64_t(0))});
-  auto dout1 = fg->NewCNodeInOrder({NewValueNode(prim::kPrimSelect), dout_mask, dout,
-                                    fg->NewCNodeInOrder({NewValueNode(prim::kPrimOnesLike), dout})});
+  auto dout1 = fg->NewCNodeInOrder(
+    {NewValueNode(prim::kPrimSelect), dout_mask, dout, fg->NewCNodeInOrder({NewValueNode(prim::kPrimOnesLike), dout})});
   auto factor1 = fg->NewCNodeInOrder({NewValueNode(prim::kPrimSelect), factor_mask, factor,
                                       fg->NewCNodeInOrder({NewValueNode(prim::kPrimOnesLike), factor})});
   auto cal_dout = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMul), dout1, factor1});
   auto cal_mask = fg->NewCNodeInOrder({NewValueNode(prim::kPrimLogicalOr), dout_mask, factor_mask});
-  auto cal_res = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), cal_dout,
-                                      fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), cal_mask, NewValueNode(int64_t(2))})});
+  auto cal_res = fg->NewCNodeInOrder(
+    {NewValueNode(prim::kPrimMakeTuple), cal_dout,
+     fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), cal_mask, NewValueNode(int64_t(2))})});
   fg->set_output(cal_res);
   return fg;
 }
@@ -2589,7 +2620,6 @@ FuncGraphPtr AccumulateDout::BuildSelectOutputFG(const std::string &name) {
   return fg;
 }
 
-
 // AccumulateDout has two inputs, indicate two dout to accumulate:
 //  1) dout_tuple: (dout, (dout_mask, dout_type))
 //  2) factor_tuple: (factor, (factor_mask, factor_type))
@@ -2611,28 +2641,28 @@ FuncGraphPtr AccumulateDout::GenerateFuncGraph(const AbstractBasePtrList &args_a
     inner_fg->debug_info()->set_name("accumulate_dout_not_add_dout");
     auto inner_dout_tuple_input = inner_fg->add_parameter();
     auto inner_factor_tuple_input = inner_fg->add_parameter();
-    auto inner_factor_inner_tuple = inner_fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem),
-                                                               inner_factor_tuple_input, NewValueNode(int64_t(1))});
-    auto inner_dout_inner_tuple = inner_fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem),
-                                                             inner_dout_tuple_input, NewValueNode(int64_t(1))});
-    auto inner_dout_type = inner_fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), inner_dout_inner_tuple,
-                                                      NewValueNode(int64_t(1))});
-    auto inner_factor_type = inner_fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), inner_factor_inner_tuple,
-                                                        NewValueNode(int64_t(1))});
+    auto inner_factor_inner_tuple = inner_fg->NewCNodeInOrder(
+      {NewValueNode(prim::kPrimTupleGetItem), inner_factor_tuple_input, NewValueNode(int64_t(1))});
+    auto inner_dout_inner_tuple = inner_fg->NewCNodeInOrder(
+      {NewValueNode(prim::kPrimTupleGetItem), inner_dout_tuple_input, NewValueNode(int64_t(1))});
+    auto inner_dout_type = inner_fg->NewCNodeInOrder(
+      {NewValueNode(prim::kPrimTupleGetItem), inner_dout_inner_tuple, NewValueNode(int64_t(1))});
+    auto inner_factor_type = inner_fg->NewCNodeInOrder(
+      {NewValueNode(prim::kPrimTupleGetItem), inner_factor_inner_tuple, NewValueNode(int64_t(1))});
     auto inner_dout_type_is_inplace =
       inner_fg->NewCNodeInOrder({NewValueNode(prim::GetPythonOps("equal")), inner_dout_type, NewValueNode(int64_t(2))});
-    auto inner_factor_type_is_inplace = inner_fg->NewCNodeInOrder({NewValueNode(prim::GetPythonOps("equal")),
-                                                                   inner_factor_type, NewValueNode(int64_t(2))});
-    auto inner_cond = inner_fg->NewCNodeInOrder({NewValueNode(prim::GetPythonOps("logical_and")),
-                                                 inner_dout_type_is_inplace, inner_factor_type_is_inplace});
+    auto inner_factor_type_is_inplace = inner_fg->NewCNodeInOrder(
+      {NewValueNode(prim::GetPythonOps("equal")), inner_factor_type, NewValueNode(int64_t(2))});
+    auto inner_cond = inner_fg->NewCNodeInOrder(
+      {NewValueNode(prim::GetPythonOps("logical_and")), inner_dout_type_is_inplace, inner_factor_type_is_inplace});
     auto accumulate_inplace_fg = BuildAccumulateInplaceOutputFG("accumulate_dout_inplace");
     auto select_fg = BuildSelectOutputFG("accumulate_dout_select");
-    auto inner_switch = inner_fg->NewCNodeInOrder({NewValueNode(prim::kPrimSwitch), inner_cond,
-                                                   NewValueNode(accumulate_inplace_fg), NewValueNode(select_fg)});
+    auto inner_switch = inner_fg->NewCNodeInOrder(
+      {NewValueNode(prim::kPrimSwitch), inner_cond, NewValueNode(accumulate_inplace_fg), NewValueNode(select_fg)});
     auto inner_ret = inner_fg->NewCNodeInOrder({inner_switch, inner_dout_tuple_input, inner_factor_tuple_input});
     inner_fg->set_output(inner_ret);
-    auto switch_node = fg->NewCNodeInOrder({NewValueNode(prim::kPrimSwitch), add_out_cond, NewValueNode(add_output_fg),
-                                            NewValueNode(inner_fg)});
+    auto switch_node = fg->NewCNodeInOrder(
+      {NewValueNode(prim::kPrimSwitch), add_out_cond, NewValueNode(add_output_fg), NewValueNode(inner_fg)});
     auto ret_node = fg->NewCNodeInOrder({switch_node, dout_tuple_input, factor_tuple_input});
     fg->set_output(ret_node);
     return fg;
@@ -2657,6 +2687,10 @@ void AccumulateDout::CheckAccumulateDoutInputAbstract(const AbstractBasePtrList 
 
   auto check_abstract = [this](const AbstractBasePtr &abs, const std::string &input_name) {
     MS_EXCEPTION_IF_NULL(abs);
+    if (!IsDoutTupleContainsMask(abs)) {
+      types_[input_name] = 0;
+      return;
+    }
     if (!abs->isa<abstract::AbstractTuple>()) {
       MS_LOG(INTERNAL_EXCEPTION) << input_name << " should be tuple but got " << abs->ToString();
     }
@@ -2772,30 +2806,6 @@ FuncGraphPtr GenerateBpropOutTuple::GenerateFuncGraph(const AbstractBasePtrList 
   return fg;
 }
 
-bool IsDoutTupleContainsMask(const AbstractBasePtr &abs) {
-  MS_EXCEPTION_IF_NULL(abs);
-  constexpr size_t expected_size = 2;
-  auto tuple_abs = abs->cast<abstract::AbstractTuplePtr>();
-  if (tuple_abs == nullptr || tuple_abs->dynamic_len() || tuple_abs->elements().size() != expected_size) {
-    return false;
-  }
-  constexpr auto index_first = 1;
-  const auto &mask_abs = tuple_abs->elements().at(index_first);
-  auto mask_tuple_abs = mask_abs->cast<abstract::AbstractTuplePtr>();
-  if (mask_tuple_abs == nullptr || mask_tuple_abs->dynamic_len() ||
-      mask_tuple_abs->elements().size() != expected_size) {
-    return false;
-  }
-  const auto &ops_type_abs = mask_tuple_abs->elements().at(index_first);
-  auto ops_type_scalar_abs = ops_type_abs->cast<abstract::AbstractScalarPtr>();
-  auto ops_type_value = ops_type_scalar_abs->BuildValue();
-  if (!ops_type_value->isa<Int64Imm>()) {
-    return false;
-  }
-  auto value = GetValue<int64_t>(ops_type_value);
-  return value == 0 || value == 1 || value == 2;
-}
-
 AnfNodePtr GenerateRealBpropOutput(const FuncGraphPtr &fg, const AnfNodePtr &node, const AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
   auto tuple_abs = abs->cast<abstract::AbstractTuplePtr>();
@@ -2837,6 +2847,29 @@ FuncGraphPtr GetRealBpropOut::GenerateFuncGraph(const AbstractBasePtrList &args_
   constexpr size_t index_input = 0;
   auto real_bprop_output = GenerateRealBpropOutput(fg, input, args_abs_list[index_input]);
   fg->set_output(real_bprop_output);
+  return fg;
+}
+
+FuncGraphPtr GetDependDoutTuple::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
+  constexpr size_t required_size = 2;
+  if (args_abs_list.size() != required_size) {
+    MS_LOG(INTERNAL_EXCEPTION) << "For " << name_ << ", the input length should be " << required_size << " but got "
+                               << args_abs_list.size();
+  }
+  auto fg = std::make_shared<FuncGraph>();
+  auto din_abs = args_abs_list[0];
+  auto fg_dout_abs = args_abs_list[1];
+  auto din_tuple = fg->add_parameter();
+  auto fg_dout_tuple = fg->add_parameter();
+  if (IsDoutTupleContainsMask(din_abs) && IsDoutTupleContainsMask(fg_dout_abs)) {
+    auto fg_mask_tuple =
+      fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), fg_dout_tuple, NewValueNode(int64_t(1))});
+    auto din = fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), din_tuple, NewValueNode(int64_t(0))});
+    auto depend_dout_tuple = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), din, fg_mask_tuple});
+    fg->set_output(depend_dout_tuple);
+    return fg;
+  }
+  fg->set_output(din_tuple);
   return fg;
 }
 }  // namespace prim

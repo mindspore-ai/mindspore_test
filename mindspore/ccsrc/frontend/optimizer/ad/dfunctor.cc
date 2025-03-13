@@ -352,6 +352,15 @@ static AnfNodePtr SkipHookNodeInBackProp(const AnfNodePtr &node) {
   return node;
 }
 
+bool IsLastDepend(const AnfNodePtr &node, const NodeUsersMap &node_users_map) {
+  auto node_user_iter = node_users_map.find(node);
+  if (node_user_iter == node_users_map.end()) {
+    return false;
+  }
+  return std::all_of(node_user_iter->second.begin(), node_user_iter->second.end(),
+                     [](const auto &pair) { return IsPrimitiveCNode(pair.first, prim::kPrimReturn); });
+}
+
 CNodePtr DFunctor::CalDoutTuple(const CNodePtr &cnode_morph, const CNodePtr &din_tuple, const AdjointPtr &node_adjoint,
                                 int index) {
   bool single_tensor_view = false;
@@ -370,17 +379,19 @@ CNodePtr DFunctor::CalDoutTuple(const CNodePtr &cnode_morph, const CNodePtr &din
   }
 
   auto caller = node_adjoint->caller();
+
+  if (IsPrimitiveCNode(cnode_morph, prim::kPrimDepend) && (index == 1)) {
+    auto node_users_map = resources_->manager()->node_users();
+    if (IsLastDepend(cnode_morph, node_users_map)) {
+      auto get_depend_dout_tuple = std::make_shared<prim::GetDependDoutTuple>("get_depend_dout_tuple");
+      return caller->NewCNodeInOrder({NewValueNode(get_depend_dout_tuple), din_tuple, dout_});
+    }
+  }
   // Get Din/dmask/ops_type from din_tuple: (din, (dmask, ops_tye));
   auto din = caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), din_tuple, NewValueNode(int64_t(0))});
   auto dmask_tuple =
     caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), din_tuple, NewValueNode(int64_t(1))});
   auto dmask = caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), dmask_tuple, NewValueNode(int64_t(0))});
-
-  if (IsPrimitiveCNode(cnode_morph, prim::kPrimDepend) && (index == 1)) {
-    auto fg_dmask_tuple =
-      caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), dout_, NewValueNode(int64_t(1))});
-    return caller->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), din, fg_dmask_tuple});
-  }
 
   if (inplace_prim) {
     // For inplace_prim, Change the ops_type when do backpropagate.

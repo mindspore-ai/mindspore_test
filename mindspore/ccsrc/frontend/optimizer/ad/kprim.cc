@@ -511,6 +511,7 @@ AnfNodePtr KPrim::BuildOutput(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &
     } else {
       (void)extra_lifted_args.insert(extra_lifted_args.cbegin(), NewValueNode(prim::kPrimMakeTuple));
       auto extra_tuple = NewCNode(extra_lifted_args, bprop_fg);
+      tuple_env = NewCNode({tuple_add_ops, tuple_env, extra_tuple}, bprop_fg);
     }
   }
   auto bprop_fg_output = bprop_fg->output();

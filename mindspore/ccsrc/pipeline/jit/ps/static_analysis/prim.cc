@@ -171,7 +171,7 @@ AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const Abstra
   // If output is a tensor.
   if (output_abs->isa<AbstractTensor>()) {
     auto inplace_index = inplace_indexes[0];
-    if (inplace_index != -1) {
+    if (inplace_index != -1 && !IsValueKnown(input_args[inplace_index])) {
       auto res_abs = input_args[inplace_index];
       return res_abs->isa<AbstractRefTensor>() ? res_abs : res_abs->inplace_abstract();
     }
@@ -189,7 +189,7 @@ AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const Abstra
     }
     for (size_t i = 0; i < inplace_indexes.size(); ++i) {
       auto inplace_index = inplace_indexes[i];
-      if (inplace_index != -1) {
+      if (inplace_index != -1 && !IsValueKnown(input_args[inplace_index])) {
         auto outi_arg = input_args[inplace_index]->isa<AbstractRefTensor>()
                           ? input_args[inplace_index]
                           : input_args[inplace_index]->inplace_abstract();

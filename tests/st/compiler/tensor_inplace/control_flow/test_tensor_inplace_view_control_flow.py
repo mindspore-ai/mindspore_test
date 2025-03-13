@@ -39,7 +39,7 @@ def test_view_in_control_flow1():
                 m = select_ext_op(input_tensor1, 0, 0)
             else:
                 m = select_ext_op(input_tensor1, 0, 1)
-            m.mul_(x)
+            m.add_(x)
             return input_tensor1
 
     class NetJit(nn.Cell):
@@ -51,7 +51,7 @@ def test_view_in_control_flow1():
                 m = select_ext_op(input_tensor1, 0, 0)
             else:
                 m = select_ext_op(input_tensor1, 0, 1)
-            m.mul_(x)
+            m.add_(x)
             return input_tensor1
 
     net = NetPynative()
@@ -84,7 +84,7 @@ def test_view_in_control_flow2():
                     m = select_ext_op(input_tensor1, 0, 1)
                 else:
                     m = select_ext_op(input_tensor1, 1, 1)
-            m.mul_(x)
+            m.add_(x)
             return input_tensor1
 
     class NetJit(nn.Cell):
@@ -102,7 +102,7 @@ def test_view_in_control_flow2():
                     m = select_ext_op(input_tensor1, 0, 1)
                 else:
                     m = select_ext_op(input_tensor1, 1, 1)
-            m.mul_(x)
+            m.add_(x)
             return input_tensor1
 
     net = NetPynative()
@@ -137,7 +137,7 @@ def test_view_in_control_flow3():
                 else:
                     m = select_ext_op(input_tensor1, 1, 1)
                 m.add_(x)
-            m.mul_(x)
+            m.add_(x)
             return input_tensor1
 
     class NetJit(nn.Cell):
@@ -157,7 +157,7 @@ def test_view_in_control_flow3():
                 else:
                     m = select_ext_op(input_tensor1, 1, 1)
                 m.add_(x)
-            m.mul_(x)
+            m.add_(x)
             return input_tensor1
 
     net = NetPynative()
@@ -234,7 +234,7 @@ def test_view_in_control_flow5():
                 n = select_ext_op(input_tensor1, 0, 1)
             else:
                 n = select_ext_op(input_tensor1, 0, 0)
-            n.mul_(m)
+            n.add_(m)
 
             return input_tensor1
 
@@ -252,7 +252,7 @@ def test_view_in_control_flow5():
                 n = select_ext_op(input_tensor1, 0, 1)
             else:
                 n = select_ext_op(input_tensor1, 0, 0)
-            n.mul_(m)
+            n.add_(m)
 
             return input_tensor1
 
@@ -332,7 +332,7 @@ def test_view_in_control_flow7():
         def construct(self, x, input_tensor):
             input_tensor1 = ops.abs(input_tensor)
             m = foo(input_tensor1)
-            m.mul_(x)
+            m.add_(x)
             return input_tensor1
 
     class NetJit(nn.Cell):
@@ -341,7 +341,7 @@ def test_view_in_control_flow7():
         def construct(self, x, input_tensor):
             input_tensor1 = ops.abs(input_tensor)
             m = foo(input_tensor1)
-            m.mul_(x)
+            m.add_(x)
             return input_tensor1
 
     net = NetPynative()

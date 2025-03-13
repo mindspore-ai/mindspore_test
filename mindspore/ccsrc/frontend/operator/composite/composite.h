@@ -458,7 +458,7 @@ class ForHalfUnrollLess : public MetaFuncGraph {
 
 class AccumulateDout : public MetaFuncGraph {
  public:
-  AccumulateDout(const std::string &name) : MetaFuncGraph(name) {}
+  explicit AccumulateDout(const std::string &name) : MetaFuncGraph(name) {}
   ~AccumulateDout() override = default;
   MS_DECLARE_PARENT(AccumulateDout, MetaFuncGraph)
   FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
@@ -476,38 +476,42 @@ class AccumulateDout : public MetaFuncGraph {
 
 class GenerateMask : public MetaFuncGraph {
  public:
-  GenerateMask(const std::string &name) : MetaFuncGraph(name) {}
+  explicit GenerateMask(const std::string &name) : MetaFuncGraph(name) {}
   ~GenerateMask() override = default;
   MS_DECLARE_PARENT(GenerateMask, MetaFuncGraph)
   FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
   friend bool operator==(const GenerateMask &lhs, const GenerateMask &rhs) { return lhs.name_ == rhs.name_; }
 };
 
-class GetDout : public MetaFuncGraph {
- public:
-  GetDout(const std::string &name) : MetaFuncGraph(name) {}
-  ~GetDout() override = default;
-  MS_DECLARE_PARENT(GetDout, MetaFuncGraph)
-  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
-  friend bool operator==(const GetDout &lhs, const GetDout &rhs) { return lhs.name_ == rhs.name_; }
-};
-
 class GenerateBpropOutTuple : public MetaFuncGraph {
  public:
-  GenerateBpropOutTuple(const std::string &name) : MetaFuncGraph(name) {}
+  explicit GenerateBpropOutTuple(const std::string &name) : MetaFuncGraph(name) {}
   ~GenerateBpropOutTuple() override = default;
   MS_DECLARE_PARENT(GenerateBpropOutTuple, MetaFuncGraph)
   FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
-  friend bool operator==(const GenerateBpropOutTuple &lhs, const GenerateBpropOutTuple &rhs) { return lhs.name_ == rhs.name_; }
+  friend bool operator==(const GenerateBpropOutTuple &lhs, const GenerateBpropOutTuple &rhs) {
+    return lhs.name_ == rhs.name_;
+  }
 };
 
 class GetRealBpropOut : public MetaFuncGraph {
  public:
-  GetRealBpropOut(const std::string &name) : MetaFuncGraph(name) {}
+  explicit GetRealBpropOut(const std::string &name) : MetaFuncGraph(name) {}
   ~GetRealBpropOut() override = default;
   MS_DECLARE_PARENT(GetRealBpropOut, MetaFuncGraph)
   FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
   friend bool operator==(const GetRealBpropOut &lhs, const GetRealBpropOut &rhs) { return lhs.name_ == rhs.name_; }
+};
+
+class GetDependDoutTuple : public MetaFuncGraph {
+ public:
+  explicit GetDependDoutTuple(const std::string &name) : MetaFuncGraph(name) {}
+  ~GetDependDoutTuple() override = default;
+  MS_DECLARE_PARENT(GetDependDoutTuple, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+  friend bool operator==(const GetDependDoutTuple &lhs, const GetDependDoutTuple &rhs) {
+    return lhs.name_ == rhs.name_;
+  }
 };
 }  // namespace prim
 }  // namespace mindspore
