@@ -101,7 +101,7 @@
 #include "backend/common/pass/other/avg_pool_grad_for_ge.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/mc2_fusion.h"
 #include "backend/common/pass/other/add_attr_to_dump.h"
-#include "plugin/device/ascend/optimizer/mindir/ascend_mindir_op_adapter.h"
+#include "backend/ge_backend/pass/ascend_mindir_op_adapter.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/flash_attention_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_allreduce_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_allreduce_add_rmsnorm_fusion.h"
@@ -219,7 +219,7 @@ mindspore::opt::PassManagerPtr GetBackendCommonUnifyMindIRPassManager() {
   unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::SyncBnGradSplit>());
   unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::AvgPoolGradForGE>());
   unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::AddAttrToDump>());
-  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::AscendMindIROpAdapter>());
+  unify_mindir_pm->AddPass(std::make_shared<mindspore::opt::AscendMindIROpAdapterForGe>());
   return unify_mindir_pm;
 }
 
