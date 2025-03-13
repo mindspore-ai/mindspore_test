@@ -321,9 +321,19 @@ void ClearAttrForGraph(const KernelGraphPtr &graph, const std::string &attr_name
   }
 }
 
-void PrepareValueNode(const AnfNodePtr &value_node, DeviceTensor *device_tensor) {
-  MS_EXCEPTION_IF_NULL(value_node);
+void PrepareValueNode(const AnfNodePtr &node, DeviceTensor *device_tensor) {
+  MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(device_tensor);
+  if (!node->isa<ValueNode>()) {
+    return;
+  }
+  const auto &value_node = node->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(value_node);
+  const auto &node_value = value_node->value();
+  if (node_value != nullptr && (node_value->isa<None>() || node_value->isa<Type>())) {
+    MS_LOG(DEBUG) << "No need to prepare data for None or type value node:" << node->DebugString();
+    return;
+  }
   const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
     {device_tensor->device_name(), device_tensor->device_id()});
   MS_EXCEPTION_IF_NULL(device_context);
@@ -332,21 +342,21 @@ void PrepareValueNode(const AnfNodePtr &value_node, DeviceTensor *device_tensor)
       MS_LOG(EXCEPTION) << "Failed to allocate memory for device tensor store:" << device_tensor;
     }
     MS_LOG(DEBUG) << "Device address:" << device_tensor << " allocate ptr:" << device_tensor->GetPtr()
-                  << " for value node:" << value_node->DebugString();
+                  << " for value node:" << node->DebugString();
   } else {
     MS_LOG(DEBUG) << "Device address:" << device_tensor << " already has ptr:" << device_tensor->GetPtr()
-                  << " for value node:" << value_node->DebugString();
+                  << " for value node:" << node->DebugString();
   }
 
   const auto &kernel_tensor = device_tensor->kernel_tensor();
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   if (!device_tensor->SyncHostToDevice(kernel_tensor->GetShapeVector(), kernel_tensor->size(),
                                        kernel_tensor->dtype_id(), kernel_tensor->GetValuePtr())) {
-    MS_LOG_WITH_NODE(EXCEPTION, value_node) << "Failed to sync data for value node:" << value_node->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Failed to sync data for value node:" << node->DebugString();
   }
 
   MS_LOG(DEBUG) << "Device address:" << device_tensor << " ptr:" << device_tensor->GetPtr()
-                << " for value node:" << value_node->DebugString();
+                << " for value node:" << node->DebugString();
 }
 
 void PersisitValueNode(const KernelGraphPtr &graph, const DeviceContext *device_context) {
