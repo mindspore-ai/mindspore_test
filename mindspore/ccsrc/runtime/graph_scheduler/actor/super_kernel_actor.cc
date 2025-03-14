@@ -953,10 +953,9 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<DeviceTensor> *const context) 
         << "Copy for heterogeneous output failed, kernel actor: " << kernel_actor->GetAID().Name();
     }
   }
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
-  if (enable_infer_boost) {
+
+  // Remove after input optimize simplify.
+  if (enable_infer_boost_) {
     first_step_for_inference_ = false;
   }
 
@@ -2268,8 +2267,8 @@ void SuperKernelActor::AnalyseNodesDependence(
 void SuperKernelActor::RecordKernelActorWeight() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto enable_infer_boost = ms_context->IsEnableInferBoost();
-  if (!EnableInputOptimize() || !enable_infer_boost) {
+  enable_infer_boost_ = ms_context->IsEnableInferBoost();
+  if (!EnableInputOptimize() || !enable_infer_boost_) {
     return;
   }
   const auto &execution_order = graph_->execution_order();
