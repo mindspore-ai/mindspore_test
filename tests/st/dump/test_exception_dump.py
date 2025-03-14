@@ -24,11 +24,11 @@ from mindspore import Tensor
 from tests.mark_utils import arg_mark
 from dump_test_utils import generate_dump_json, check_dump_structure
 
-ms.set_context(mode=0, device_target='Ascend')
+ms.set_context(mode=ms.GRAPH_MODE, device_target='Ascend')
 
 
 class Net(ms.nn.Cell):
-    """Gather算子溢出场景"""
+    """Gather算子越界场景"""
     def construct(self, params, indices, axis):
         """Construct."""
         out = ops.gather(params, indices, axis)
@@ -36,7 +36,7 @@ class Net(ms.nn.Cell):
 
 
 def run_exception_net():
-    ms.set_context(jit_level='O0')
+    ms.set_context(jit_config={"jit_level": "O0"})
     input_params = Tensor(np.random.uniform(0, 1, size=(64,)).astype("float32"))
     input_indices = Tensor(np.array([100000, 101]), ms.int32)
     input_axis = 0
@@ -72,26 +72,22 @@ def test_exception_dump():
         del os.environ['MINDSPORE_DUMP_CONFIG']
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_acl_dump_exception():
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_lite_exception_dump():
     """
-    Feature: Test exception dump.
+    Feature: Test lite exception dump.
     Description: abnormal node should be dumped.
     Expectation: The exception data is save.
     """
-    if sys.platform != 'linux':
-        return
-    with tempfile.TemporaryDirectory(dir='/tmp') as tmp_dir:
-        dump_path = os.path.join(tmp_dir, 'test_acl_dump_exception')
-        dump_config_path = os.path.join(tmp_dir, 'test_acl_dump_exception.json')
-        generate_dump_json(dump_path, dump_config_path, 'test_acl_dump_exception', 'exception_data')
-        os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
-        exec_network_cmd = ('cd {0}; python -c "from test_exception_dump import run_exception_net;'
-                            'run_exception_net()"').format(os.getcwd())
-        _ = os.system(exec_network_cmd)
-        exception_file_path = "./extra-info"
-        for _ in range(3):
-            if not os.path.exists(exception_file_path):
-                time.sleep(2)
-        assert os.path.exists(exception_file_path)
-        del os.environ['MINDSPORE_DUMP_CONFIG']
+    exception_file_path = "./extra-info"
+    if os.path.exists(exception_file_path):
+        shutil.rmtree(exception_file_path)
+    exec_network_cmd = ('cd {0}; python -c "from test_exception_dump import run_exception_net;'
+                        'run_exception_net()"').format(os.getcwd())
+    _ = os.system(exec_network_cmd)
+
+    for _ in range(3):
+        if not os.path.exists(exception_file_path):
+            time.sleep(2)
+    assert os.path.exists(exception_file_path)
+    shutil.rmtree(exception_file_path)
