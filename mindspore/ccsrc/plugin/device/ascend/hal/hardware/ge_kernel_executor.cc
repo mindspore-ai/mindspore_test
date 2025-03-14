@@ -919,6 +919,27 @@ std::string GetBranchName(const KernelGraphPtr &graph, const CNodePtr &kernel) {
   return current_branch;
 }
 
+std::set<std::string> GetSwitchBranchName(const AnfNodePtr &node) {
+  if (node == nullptr || !node->isa<CNode>()) {
+    return {};
+  }
+  const auto &kernel = node->cast<CNodePtr>();
+  if (kernel == nullptr || !common::AnfAlgo::CheckPrimitiveType(kernel, prim::kPrimConditionSwitch) ||
+      !kernel->HasAttr(kInlineSubGraphName)) {
+    return {};
+  }
+  const auto &inline_sub_graph_names = kernel->GetAttr(kInlineSubGraphName);
+  if (inline_sub_graph_names == nullptr || !inline_sub_graph_names->isa<ValueTuple>()) {
+    return {};
+  }
+  const auto &tuple_name = inline_sub_graph_names->cast<ValueTuplePtr>();
+  MS_EXCEPTION_IF_NULL(tuple_name);
+  std::set<std::string> branch_names;
+  for_each(tuple_name->value().begin(), tuple_name->value().end(),
+           [&branch_names](const auto &value) { branch_names.emplace(GetValue<std::string>(value)); });
+  return branch_names;
+}
+
 // Put the kernels belonging to the same inline subgraph together in the execution order.
 void FixExecutionOrderForInlineControlFlowGraph(const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
@@ -931,6 +952,7 @@ void FixExecutionOrderForInlineControlFlowGraph(const KernelGraphPtr &graph) {
     std::vector<CNodePtr> new_order_after_switch;
     MS_EXCEPTION_IF_NULL(condition_node_pair.first);
     MS_EXCEPTION_IF_NULL(condition_node_pair.second);
+    std::set<std::string> switch_branchs = GetSwitchBranchName(condition_node_pair.second);
     std::string current_branch = GetBranchName(graph, condition_node_pair.second->cast<CNodePtr>());
     bool is_get_switch = false;
     for (auto iter = execution_order.begin(); iter != execution_order.end(); ++iter) {
@@ -949,7 +971,12 @@ void FixExecutionOrderForInlineControlFlowGraph(const KernelGraphPtr &graph) {
         new_order.insert(new_order.end(), iter, execution_order.end());
         break;
       }
-      if (!is_get_switch || current_branch == GetBranchName(graph, *iter)) {
+      // In subgraph, the input of cnode maybe empty or all of them are value node, it maybe in front of the switch node
+      // in toposort.
+      if (!is_get_switch && switch_branchs.find(GetBranchName(graph, *iter)) != switch_branchs.end()) {
+        MS_LOG(INFO) << "Kernel:" << (*iter)->fullname_with_scope() << " reorder behind the condition switch node.";
+        new_order_after_switch.emplace_back(*iter);
+      } else if (!is_get_switch || current_branch == GetBranchName(graph, *iter)) {
         new_order.emplace_back(*iter);
       } else {
         new_order_after_switch.emplace_back(*iter);
