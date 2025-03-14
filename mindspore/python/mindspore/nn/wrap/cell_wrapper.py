@@ -21,7 +21,6 @@ from __future__ import division
 import os
 from types import FunctionType, MethodType
 
-import mindspore as ms
 from mindspore import log as logger
 from mindspore.parallel._utils import _get_device_num, _get_gradients_mean,\
     _get_parallel_mode, _get_enable_parallel_optimizer, _is_pynative_parallel
@@ -948,22 +947,56 @@ class PipelineCell(Cell):
         return ret
 
 
-class MicroBatchInterleaved:
+class MicroBatchInterleaved(Cell):
     """
     This function splits the input at the 0th into interleave_num pieces and then performs
     the computation of the wrapped cell. Application scenario: When there is model parallelism in semi-automatic mode
     and network, if the first slice data is calculating forward, the second slice data will execute the
     communication operators at the same time, to achieve the performance acceleration of communication and computing
-    concurrency."
+    concurrency.
+
+    Args:
+        network (Cell): The target network to wrap.
+        interleave_num (int, optional): split num of batch size. Default: ``2`` .
+
+    Inputs:
+        tuple[Tensor]. It's the same with the input of the `network` .
+
+    Outputs:
+        The wrapped input. The output of the input `network` should be a Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU``
+
+    Examples:
+        >>> import mindspore.nn as nn
+        >>> # Define the network structure of LeNet5. Refer to
+        >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/lenet.py
+        >>> net = LeNet5()
+        >>> net = nn.MicroBatchInterleaved(net, 2)
     """
     def __init__(self, network, interleave_num=2):
-        self._nn_micro_batch_interleaved = ms.parallel.nn.MicroBatchInterleaved(network, interleave_num)
+        super(MicroBatchInterleaved, self).__init__(auto_prefix=False)
+        if not isinstance(interleave_num, int):
+            raise TypeError("For 'MicroBatchInterleaved', the argument 'interleave_num' must be integer, "
+                            "but got the type : {}.".format(type(interleave_num)))
+        if interleave_num <= 0:
+            raise ValueError("For 'MicroBatchInterleaved', the argument 'interleave_num' must be large than 0, "
+                             "but got {}.".format(interleave_num))
+        self.network = network
+        self.interleave_num = interleave_num
+        self.interleave_inputs = nn.CellList()
+        self.add = P.Add().add_prim_attr("micro_interleaved_add_flag", True)
+        for _ in range(interleave_num):
+            interleave_data = _MicroBatch(interleave_num)
+            interleave_data.strided_slice.add_prim_attr("strided_slice_flag", True)
+            interleave_data.strided_slice.add_prim_attr("interleave_num", interleave_num)
+            self.interleave_inputs.append(interleave_data)
+        self._get_attr_from_cell(network)
 
-    def __getattr__(self, name):
-        return getattr(self._nn_micro_batch_interleaved, name)
-
-    def __setattr__(self, name, value):
-        if name == '_nn_micro_batch_interleaved':
-            super().__setattr__(name, value)
-        else:
-            setattr(self._nn_micro_batch_interleaved, name, value)
+    def construct(self, *inputs):
+        output = 0.0
+        for i in range(self.interleave_num):
+            interleave_input = self.interleave_inputs[i](i, *inputs)
+            output = self.add(output, self.network(*interleave_input))
+        return output

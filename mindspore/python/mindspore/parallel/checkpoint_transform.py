@@ -1134,8 +1134,8 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
 
     if train_strategy_filename is None:
         parallel_net = _get_auto_parallel_net(network)
-        if type(parallel_net).__name__ == 'AutoParallel':
-            train_strategy_filename = parallel_net._save_operator_strategy_file
+        if parallel_net.__class__.__name__ == "AutoParallel":
+            train_strategy_filename = parallel_net._save_strategy_file_path
         else:
             train_strategy_filename = ms.context.get_auto_parallel_context("strategy_ckpt_load_file")
 

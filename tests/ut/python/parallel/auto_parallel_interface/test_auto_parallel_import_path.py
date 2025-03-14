@@ -34,6 +34,11 @@ from mindspore.train.serialization import merge_sliced_parameter
 from mindspore.train.serialization import build_searched_strategy
 from mindspore.train.serialization import restore_group_info_list
 
+from mindspore.train import load_distributed_checkpoint as second_load_distributed_checkpoint
+from mindspore.train import merge_sliced_parameter as second_merge_sliced_parameter
+from mindspore.train import build_searched_strategy as second_build_searched_strategy
+from mindspore.train import restore_group_info_list as second_restore_group_info_list
+
 
 ms.set_context(mode=ms.GRAPH_MODE)
 ms.set_seed(1)
