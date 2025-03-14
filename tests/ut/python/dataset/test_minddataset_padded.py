@@ -796,7 +796,8 @@ def inputs(vectors, maxlen=50):
     return input_, mask, segment
 
 
-def test_minddataset_padded_samples_exception():
+@pytest.mark.parametrize("cleanup_tmp_file", ["test_padded_sample.mindrecord*"], indirect=True)
+def test_minddataset_padded_samples_exception(cleanup_tmp_file):
     """
     Feature: MindDataset
     Description: Test invalid padded_sample
@@ -824,20 +825,19 @@ def test_minddataset_padded_samples_exception():
         assert "Invalid padded_sample, the value of column: data should be string or number but got: {}, " + \
             "check 'padded_sample'." in str(err.value)
 
-        with pytest.raises(RuntimeError) as e:
-            data_set = ds.MindDataset(mindrecord_name, columns_list, 1,
-                                      padded_sample=padded_sample, num_padded=1, shuffle=False)
-        assert "When the padded sample logic is enabled, the sampler which is specified by " in str(e.value)
+        child_sample = ds.RandomSampler()
+        sampler = ds.SequentialSampler()
+        sampler.add_child(child_sample)
 
-        if os.path.exists(mindrecord_name):
-            os.remove(mindrecord_name)
-        if os.path.exists("{}.db".format(mindrecord_name)):
-            os.remove("{}.db".format(mindrecord_name))
+        data_set = ds.MindDataset(mindrecord_name, columns_list, 1, sampler=sampler,
+                                  padded_sample=padded_sample, num_padded=1)
+        with pytest.raises(RuntimeError) as e:
+            for _ in data_set.create_dict_iterator(num_epochs=1, output_numpy=True):
+                pass
+        assert "When the padded sample logic is enabled and use sampler chain,the first sampler which " + \
+            "is specified by parameter sampler " in str(e.value)
+
     except Exception as error:
-        if os.path.exists(mindrecord_name):
-            os.remove(mindrecord_name)
-        if os.path.exists("{}.db".format(mindrecord_name)):
-            os.remove("{}.db".format(mindrecord_name))
         raise error
 
 
@@ -854,4 +854,4 @@ if __name__ == '__main__':
     test_nlp_minddataset_reader_basic_padded_samples()
     test_nlp_minddataset_reader_basic_padded_samples_multi_epoch()
     test_nlp_minddataset_reader_basic_padded_samples_check_whole_reshuffle_result_per_epoch()
-    test_minddataset_padded_samples_exception()
+    test_minddataset_padded_samples_exception(cleanup_tmp_file)
