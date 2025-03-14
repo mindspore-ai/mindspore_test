@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """Profiler Meta Data"""
+import os
 from typing import Dict
 
 import mindspore.communication as comm
