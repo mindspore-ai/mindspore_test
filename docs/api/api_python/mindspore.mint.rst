@@ -290,16 +290,6 @@ BLAS和LAPACK运算
 mindspore.mint.nn
 ------------------
 
-损失函数
-^^^^^^^^^^^^^^^^^^^
-
-.. mscnplataclnnautosummary::
-    :toctree: mint
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.mint.nn.L1Loss
-
 卷积层
 ^^^^^^^^^^^^^^^^^^
 .. mscnplataclnnautosummary::
@@ -434,6 +424,7 @@ Dropout层
     mindspore.mint.nn.BCEWithLogitsLoss
     mindspore.mint.nn.CrossEntropyLoss
     mindspore.mint.nn.KLDivLoss
+    mindspore.mint.nn.L1Loss
     mindspore.mint.nn.MSELoss
     mindspore.mint.nn.NLLLoss
     mindspore.mint.nn.SmoothL1Loss
