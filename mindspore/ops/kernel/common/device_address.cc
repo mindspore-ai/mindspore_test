@@ -357,6 +357,12 @@ void DeviceAddress::Swap(DeviceAddress *other) {
   deleter_ = nullptr;
   kernel_tensor()->set_task_id_on_stream(other->kernel_tensor()->task_id_on_stream());
   kernel_tensor()->set_managed_by_somas(other->kernel_tensor()->managed_by_somas());
+  if (this->kernel_tensor()->heterogeneous_info() != nullptr) {
+    other->kernel_tensor()->set_heterogeneous_info(std::make_shared<kernel::HeterogeneousInfo>());
+    *(other->kernel_tensor()->heterogeneous_info()) = *(this->kernel_tensor()->heterogeneous_info());
+    this->kernel_tensor()->heterogeneous_info()->host_ptr_ = nullptr;
+    this->kernel_tensor()->heterogeneous_info()->file_name_ = "";
+  }
 }
 
 const UserDataPtr &DeviceAddress::user_data() const { return kernel_tensor_->user_data(); }
