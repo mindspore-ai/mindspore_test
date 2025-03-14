@@ -1,14 +1,15 @@
 new_full:
     description: |
-        new_full(size, fill_value, dtype=None) -> Tensor
+        new_full(size, fill_value, *, dtype=None) -> Tensor
 
         Return a tensor of `size` filled with `fill_value`.
 
         Args:
             size (Union[tuple(int), list(int)]): A list or tuple of integers defining the output shape.
             fill_value (Union[number.Number, bool]): The value to fill the output tensor.
-            dtype (:class:`mindspore.dtype`, optional): The desired dtype of the output tensor. If None, the returned
-                tensor has the same dtype as `self`. Default: ``None``.
+
+        Keyword Args:
+            dtype (:class:`mindspore.dtype`, optional): The desired data type of returned Tensor. If None, the returned tensor has the same dtype as `self`. Default: ``None``.
 
         Returns:
             Tensor, the shape and dtype is defined above and filled with `fill_value`.
