@@ -12,8 +12,8 @@ mindspore.Tensor.remainder
         remainder(input, other) == input - input.div(other, rounding_mode="floor") * other
 
     .. note::
-        输入不支持复数类型。至少一个输入为tensor，且不能都为布尔型tensor。
-        除数 `self` 为数据类型为 `number <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 或 `bool_ <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 的Tensor。
+        输入不支持复数类型。至少一个输入为Tensor，且不能都为bool型Tensor。
+        除数 `self` 是数据类型为 `number <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 或 `bool_ <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 的Tensor。
 
     参数：
         - **other** (Union[Tensor, numbers.Number, bool]) - 被除数为数值型、bool或数据类型为数值型或bool的Tensor。当除数是Tensor时，则被除数是数值型、bool或数据类型为数值型或bool的Tensor。
@@ -22,7 +22,7 @@ mindspore.Tensor.remainder
         Tensor，经过隐式类型提升和广播。
 
     异常：
-        - **TypeError** - 如果 `self` 和 `other` 不是以下类型之一：(tensor, tensor)，(tensor, number)，(tensor, bool)，(number, tensor) 或 (bool, tensor)。
+        - **TypeError** - 如果 `self` 和 `other` 不是以下类型之一：(Tensor, Tensor)，(Tensor, Number)，(Tensor, bool)，(Number, Tensor) 或 (bool, Tensor)。
         - **ValueError** - 如果 `self` 和 `other` 不能被广播。
 
     .. py:method:: mindspore.Tensor.remainder(divisor)
@@ -51,5 +51,5 @@ mindspore.Tensor.remainder
         Tensor，具有和其中一个输入广播后相同的shape，数据类型是两个输入中精度较高的数据类型。
 
     异常：
-        - **TypeError** - `self` 和 `divisor` 的类型不是Tensor，number或bool。
-        - **ValueError** - `self` 和 `divisor` 的shape不能广播成对方的shape。
+        - **TypeError** - `self` 和 `divisor` 的类型不是Tensor、Number或bool。
+        - **ValueError** - `self` 和 `divisor` 的shape不能广播为对方的shape。

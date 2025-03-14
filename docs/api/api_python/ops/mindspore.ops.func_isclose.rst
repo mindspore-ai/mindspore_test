@@ -3,7 +3,7 @@ mindspore.ops.isclose
 
 .. py:function:: mindspore.ops.isclose(input, other, rtol=1e-05, atol=1e-08, equal_nan=False)
 
-    返回一个布尔型Tensor，表示 `input` 的每个元素与 `other` 的对应元素在给定容忍度内是否“接近”。其中“接近”的数学公式为：
+    返回一个bool型Tensor，表示 `input` 的每个元素与 `other` 的对应元素在给定容忍度内是否“接近”。其中“接近”的数学公式为：
 
     .. math::
         |input-other| ≤ atol + rtol × |other|
@@ -16,7 +16,7 @@ mindspore.ops.isclose
         - **equal_nan** (bool, 可选) - 若为True，则两个NaN被视为相同。默认值： ``False`` 。
 
     返回：
-        Tensor，shape与广播后的shape相同，数据类型是布尔型。
+        Tensor，shape与广播后的shape相同，数据类型是bool型。
 
     异常：
         - **TypeError** - `input` 和 `other` 中的任何一个不是Tensor。

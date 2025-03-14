@@ -20,14 +20,14 @@ mindspore.Tensor.clamp
         - 当 `min` 为None，`max` 不为None时，Tensor中大于 `max` 的元素会变为 `max`；
         - 当 `min` 不为None，`max` 为None时，Tensor中小于 `min` 的元素会变为 `min`；
         - 当 `min` 大于 `max` 时，Tensor中所有元素的值会被置为 `max`；
-        - `self`，`min` 和 `max` 的数据类型需支持隐式类型转换，且不能为布尔型。
+        - `self`、 `min` 和 `max` 的数据类型需支持隐式类型转换，且不能为bool型。
 
     参数：
         - **min** (Union(Tensor, float, int)，可选) - 指定最小值。默认值为 ``None`` 。
         - **max** (Union(Tensor, float, int)，可选) - 指定最大值。默认值为 ``None`` 。
 
     返回：
-        Tensor，表示裁剪后的Tensor。其shape和数据类型和 `self` 相同。
+        Tensor，表示裁剪后的Tensor。其shape和数据类型与 `self` 相同。
 
     异常：
         - **ValueError** - 如果 `min` 和 `max` 都为None。

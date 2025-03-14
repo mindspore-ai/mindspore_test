@@ -3,8 +3,8 @@ mindspore.ops.scatter_max
 
 .. py:function:: mindspore.ops.scatter_max(input_x, indices, updates)
 
-    根据指定更新值和输入索引通过最大值操作更新输入数据的值。
-    该操作在更新完成后输出 `input_x` ，这样方便使用更新后的值。
+    根据指定更新值和输入索引，通过最大值比较操作，更新输入数据的值。
+    该操作返回更新后的 `input_x` ，以便直接使用更新后的值。
 
     对于 `indices.shape` 的每个 :math:`i, ..., j` ：
 
@@ -20,10 +20,10 @@ mindspore.ops.scatter_max
         - **updates** (Tensor) - 指定与 `input_x` 取最大值操作的Tensor，数据类型与 `input_x` 相同，shape为 `indices.shape + input_x.shape[1:]` 。
 
     返回：
-        Tensor，更新后的 `input_x` ，shape和类型与 `input_x` 相同。
+        Tensor，更新后的 `input_x` ，shape和数据类型与原始 `input_x` 相同。
 
     异常：
         - **TypeError** - `indices` 不是int32或者int64。
         - **ValueError** - `updates` 的shape不等于 `indices.shape + input_x.shape[1:]` 。
-        - **RuntimeError** - 当 `input_x` 和 `updates` 类型不一致，需要进行类型转换时，如果 `updates` 不支持转成 `input_x` 需要的数据类型，就会报错。
-        - **RuntimeError** - 在Ascend平台上，输入的 `input_x` ， `indices` 和 `updates` 的数据维度大于八维。
+        - **RuntimeError** - 当 `input_x` 和 `updates` 类型不一致，需要进行类型转换时，如果 `updates` 不支持转换成 `input_x` 需要的数据类型，就会报错。
+        - **RuntimeError** - 在Ascend平台上，输入的 `input_x` 、 `indices` 和 `updates` 的数据维度大于八维。
